@@ -16,8 +16,14 @@ if( $args{sid} ) {
 if( $args{cancel} ) {
   $gui->rmsession( $session );
 }
+
+
 if( exists( $args{insert} ) ) {
   my %node = %{ $session->{node} };
+  
+  # Remove the '0x' from the MAC address
+  $node{dot1dBaseBridgeAddress} =~ s/^0x//;
+  
   if( Node->search( name => "$args{node}" ) 
       || Node->search( physaddr => $node{dot1dBaseBridgeAddress} ) ) {
     ; # do nothing
@@ -31,7 +37,6 @@ if( exists( $args{insert} ) ) {
       ;
     } else {
       $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
-      $tmp{physaddr} =~ s/^0x//;
     }
     $tmp{type} = "0";   # maybe tmp; can't be null
     $tmp{device} = "0"; # same
@@ -59,7 +64,10 @@ if( exists( $args{insert} ) ) {
 	  if( $node{interface}{$int}{$ifnames{$dbname}} ne "-" ) {
 	    $tmp{$dbname} = $node{interface}{$int}{$ifnames{$dbname}};
 	  }
-	} else {
+	} elsif ($dbname eq "physaddr"){
+	    $node{interface}{$int}{$ifnames{$dbname}} =~ s/^0x//;
+	    $tmp{$dbname} = $node{interface}{$int}{$ifnames{$dbname}};
+	}else {
 	  $tmp{$dbname} = $node{interface}{$int}{$ifnames{$dbname}};
 	}
       }
@@ -195,6 +203,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.29  2003/07/21 15:00:58  netdot
+#  Revised the 0x removal and did the same for the interfaces -- cv
+#
 #  Revision 1.28  2003/07/17 06:08:04  netdot
 #  making sure comstr is used and propagated
 #
