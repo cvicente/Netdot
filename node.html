@@ -5,14 +5,17 @@ foreach my $j ( keys %ARGS ) {
   $args{$j} = $ARGS{$j};
 }
 </%perl>
+<!-- node.html -->
 % if( exists( $args{node} ) ) {
   <& header, title => "Node" &>
   <p><% $args{node} %>
 %   $nv->build_config( "device", $args{node} );
 %   if( my( %node ) = $nv->get_device( "device", $args{node} ) ) {
 %     if( %node ) {
-% #      <& test2.html, discover => \%node &>
-%       print string_config( "device", $args{node} );
+%       my $f = \%node;
+
+% #      <& create.html, discover => \%node &>
+%       print "<code><pre>", $nv->string_config( "device", $args{node} ), "</pre></code>\n";
 %     } else {
         <p>Failed to get config.
 %     }
@@ -48,6 +51,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.6  2003/06/17 23:23:58  netdot
+#  *** empty log message ***
+#
 #  Revision 1.5  2003/06/17 00:03:11  netdot
 #  bugger if i know
 #

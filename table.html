@@ -6,7 +6,7 @@ foreach my $j ( keys %ARGS ) {
 $WIDTH = $args{width} if( exists( $args{width} ) );
 $LINK  = $args{link}  if( exists( $args{link} ) );
 $TITLE = $args{title} if( exists( $args{title} ) );
-map { push @tbls, $_ unless( $_->name eq "Meta" ) } 
+map { push @tbls, $_ } # unless( $_->name eq "Meta" ) } 
   sort { $a->name cmp $b->name } Meta->retrieve_all();
 </%perl>
 
@@ -18,16 +18,20 @@ map { push @tbls, $_ unless( $_->name eq "Meta" ) }
    <tr><td>
        <table border="0" cellspacing="3" cellpadding="1" width="100%" class="tablebackground">
        <tr>
-% my $j = 0;
 % for (my($i)=0; $i < scalar( @tbls ); $i++ ) {
 %   if( $i % $WIDTH == 0 && $i != 0 ) { 
        </tr>
        <tr>
 %   }
-       <td><a href="<% $LINK %>?table=<% $tbls[$j]->name %>"><% $tbls[$j]->name %></a></td>
+%   $fill{$j} = 1;
+     <td><a href="<% $LINK %>?table=<% $j %>"> <% $j %> <% $tbls[$j]->name %></a></td>
+% #       <td><a href="<% $LINK %>?table=<% $tbls[$j]->name %>"><% $tbls[$j]->name %></a></td>
 %   $j += int( scalar( @tbls ) / $WIDTH );
 %   if( $j >= scalar( @tbls ) ) {
 %     $j -= ( scalar( @tbls ) - 1 );
+%     while( exists( $fill{$j} ) ) {
+%       $j++;
+%     }
 %   } 
 % }
        </tr>
@@ -37,14 +41,18 @@ map { push @tbls, $_ unless( $_->name eq "Meta" ) }
 </td>
 </tr>   
 </table>
-
+<%args>
+$j => 0
+%args => undef
+$WIDTH => 2
+$LINK => "browse.html"
+@tbls => ()
+$TITLE => undef
+%fill => ()
+</%args>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-my( %args, $WIDTH, $LINK, $TITLE, @tbls );
-$WIDTH = 2;
-$LINK = "browse.html";
-undef( @tbls );
 
 </%init>
 
@@ -60,6 +68,9 @@ Arguments:
 
 ######################################################################
 #  $Log: table.html,v $
+#  Revision 1.5  2003/06/17 23:24:57  netdot
+#  *** empty log message ***
+#
 #  Revision 1.4  2003/06/17 18:40:43  netdot
 #  added css references -miyake
 #
