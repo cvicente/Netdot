@@ -20,13 +20,16 @@ $SORT => undef
 $META => undef
 $LBL => undef
 $PAGE => "view.html"
-$gui => Netdot::UI->new()
+$ui => Netdot::UI->new()
 $VIEW => "column"
 
 </%args>
+
 <%init>
+my @sorted;
 
 </%init>
+
 <%perl>
 # expect name of Table & objects that require sorting
 foreach my $j ( keys %ARGS ) {
@@ -44,34 +47,43 @@ if( exists( $args{page} ) ) {
 }
 if( $args{table} ) {
   undef( $META );
-  $META = $gui->getmeta( $args{table} );
+  $META = $ui->getmeta( $args{table} );
   if( defined( $META ) ) {
     my $i = 1;
     my @tmp;
     ##############################################
-    # if sort arg; check to make sure column doesn't exist & set SORT
+    # if sort arg; check to make sure column exists & set SORT
     if( exists( $args{sort} ) ) {
       my(%col);
       map { $col{$_}++ } $args{table}->columns;
-      if( ! exists( $col{ $args{sort} } ) ) {
+      if( exists( $col{ $args{sort} } ) ) {
         $SORT = $args{sort};
+	@sorted = sort { $a->$SORT cmp $b->$SORT } @{ $args{object} };
       }
     }
     ##############################################
     # get the label for this table (as defined in Meta)
-    $LBL = ($gui->getlabels( $args{table} ))[0];
+    $LBL = ($ui->getlabels( $args{table} ))[0];
+
+    ##############################################
+    # If no sort arg, sort by actual label
+    # 
     if( ! defined( $SORT ) ) {
-      $SORT = $LBL;
+	my @labels = $ui->getlabelarr( $args{table} );
+	@sorted = map  { $_->[0] }
+	sort { $a->[1] cmp $b->[1] }
+	map { [$_ , $ui->getlabelvalue($_, \@labels)] } @{ $args{object} };
+	    
     }
     ##############################################
     # get linksto info
-    %linksto = $gui->getlinksto( $args{table} );
+    %linksto = $ui->getlinksto( $args{table} );
     ##############################################
     # define order
-    %order = $gui->getcolumnorderbrief( $args{table} );
+    %order = $ui->getcolumnorderbrief( $args{table} );
     ##############################################
     # Get tags
-    %tags = $gui->getcolumntags( $args{table} );
+    %tags = $ui->getcolumntags( $args{table} );
     ##############################################
     # remove id and aliases (if present)
     if( exists( $order{id} ) ) {
@@ -131,7 +143,7 @@ Otherwise, print an empty row.
     </TR>
 %    }
 % ####################################################################
-% foreach my $o ( sort { $a->$SORT cmp $b->$SORT } @{ $args{object} } ) {
+% foreach my $o ( @sorted ) {
 %    my $flag = 1;
 %
 % ####################################################################
@@ -179,7 +191,7 @@ If it's a link to another column....
 </%doc>
 % ####################################################################
 %          if ( exists($linksto{$c}) ) {
-%             my $ft = $gui->getmeta( $linksto{$c} );
+%             my $ft = $ui->getmeta( $linksto{$c} );
 %             if( ! defined( $ft ) ) {
 %             ##########################
 %             # foreign table does not exist
@@ -194,7 +206,7 @@ If it's a link to another column....
       &nbsp -
 %             } else {
 %                my $obj = $linksto{$c}->retrieve( int( $o->$c ) );
-%                my $lbl = $gui->getobjlabel( $obj, ", " );
+%                my $lbl = $ui->getobjlabel( $obj, ", " );
 %                if( $flag ) {
       &nbsp;
 %                #######################

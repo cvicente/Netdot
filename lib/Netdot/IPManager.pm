@@ -38,20 +38,8 @@ sub new {
     bless $self, $class;
     $self = $self->SUPER::new();
 
-    my $DB_TYPE        = $self->{'DB_TYPE'};
-    my $DB_DATABASE    = $self->{'DB_DATABASE'};
-    my $DB_NETDOT_USER = $self->{'DB_NETDOT_USER'};
-    my $DB_NETDOT_PASS = $self->{'DB_NETDOT_PASS'};
-    #
     # Some operations require a lot of speed.  We override 
     # Class::DBI to avoid overhead in certain cases
-#    unless ($self->{dbh} = DBI->connect ("dbi:$DB_TYPE:$DB_DATABASE", 
-#					 "$DB_NETDOT_USER", 
-#					 "$DB_NETDOT_PASS")){
-#	$self->error(sprintf("Can't connect to db: %s\n", $DBI::errstr));
-#	return 0;
-#   }
-    
     eval {
 	$self->{dbh} = Netdot::DBI->db_Main();
     };
