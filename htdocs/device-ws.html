@@ -194,6 +194,13 @@ if ( defined($search) && $search =~ /\w+/ ){
       }
     }
   }  
+  # Do this to 'flush' the values associated with the object
+  # before redisplaying
+  $o = undef;
+  if ($id){
+     $o = Device->retrieve($id);
+     $name = $o->name;
+   }
 }
 
 </%perl>
