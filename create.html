@@ -38,16 +38,11 @@ if( $args{table} ) {
     $sid, { Directory => $DIR, LockDirectory => $DIR };
   $sid = $session{_session_id};
 }
-##################################################
-# strange case: path has no elements (we popped last element)
-#               user hit commit on previous page and reloads current table
-#               need to prevent going back to start page and put back on
-#               the last table page (the one we popped) -- check created
-if( $args{commit} && 
-    ( ! defined( $session{path} ) || length( $session{path} ) < 1 ) ) {
-  print "yup...";
-  $session{path} = ( keys %{ $args{create} } )[0];
-  delete( $args{confirm} );
+if( $DEBUG ) {
+  print "ARGS: ";
+  print Dumper( %ARGS );
+  print "SESSION: ";
+  print Dumper( %session );
 }
 ##################################################
 # if Cancel, delete state
@@ -78,23 +73,35 @@ if( exists( $args{submit} ) || exists( $rev{New} ) ) {
 ##################################################
 # get back some history of where user has clicked
 if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
+  ################################################
+  # if user hits reload after a 'Confirm' (and we're displaying a table
+  #   form submit page), we need to be sure we go back to the proper
+  #   table/object page and do not create empty objects in the DB.
+  if( $args{confirm} && ! exists( $session{tables}{ $args{create} } ) ) {
+    delete( $args{confirm} );
+    my ( $x, %z );
+    map { $z{$_} = 1 } split( /;/, $session{path} );
+    foreach my $y ( keys %{ $session{tables} } ) {
+      if( ! exists( $z{$y} ) ) {
+        $x = $y;
+      }
+    }
+    ( length( $session{path} ) > 1 ) ?
+      ( $session{path} .= ";$x" ) : ( $session{path} = "$x" );
+  }
   my @tbls = split( /;/, $session{path} );
-  $FLAG = join( ":", @tbls );
   if( scalar( @tbls ) > 0 ) {
     if( ! exists( $args{submit} ) ) {
       my $tmp = pop @tbls;
       $TBL = $tmp;
     }
   }
-  $FLAG .= " -- ";
-  $FLAG = join( ":", @tbls );
   $session{path} = join( ';', @tbls );
 }
+
 ##################################################
 # if commit, handle here
 if( $args{confirm} eq "Confirm" ) {
-  print Dumper( %session );
-  print Dumper( %ARGS );
   my $T = $args{create};
   my $c = $T->create( \%{ $session{tables}{$T} } );
   delete( $session{tables}{ $args{create} } );
@@ -129,22 +136,25 @@ if( defined( $TBL ) ) {
 </%perl>
 
 % ####################################################################
-<p>
 <& header, title =>"$TBL Create" &>
 <!-- begin create.html -->
-
-
+<p>
 % if( $args{confirm} eq "Confirm" ) {
     <p><font size=-1>(created an <% $args{create} %> object) </font> <br>
 % }
+
+% ####################################################################
+% if( $DEBUG ) {
  tables : TBL <% $TBL %> : table <% $args{table} %><br>
+ PREV : <% $PREV %> <br>
  flag : <% $FLAG %> <br>
  ARGS :
 %print Dumper( %ARGS );
 <br> session: 
 %print Dumper( %session );
  <hr>
-
+% }
+% ####################################################################
 
 % if( $args{"submit"} eq "Submit" ) {
 
@@ -154,25 +164,29 @@ if( defined( $TBL ) ) {
 %   map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
 %       split( /,/, $obj->linksto );
     <p><blockquote><strong><% $TBL %></strong><ul>
-%   foreach my $C ( keys %{ $session{tables}{$TBL} } ) {
+%   foreach my $C ( split( /,/, $obj->columnorder() ) ) {
       <li>
       <% $C %> :
-%     if( $linksto{$C} ) {
-%       my $ft = (Meta->search( name => $linksto{$C} ))[0];
-%       if( ! defined( $ft ) ) {
-          No such object <% $linksto{$C} %>
-%       } elsif( $session{tables}{$TBL}{$C} == 0 ) {
-          -
-%       } elsif( ! defined( $linksto{$C}->
-%                           retrieve( int( $session{tables}{$TBL}{$C} ) ) ) ) {
-          -
-%       } else {
-%         my $lbl = $ft->label;
-%         my $o = $linksto{$C}->retrieve( $session{tables}{$TBL}{$C} );
-          <% $o->$lbl %>
-%       }
+%     if( ! exists( $session{tables}{$TBL}{$C} ) ) {
+        -
 %     } else {
-        <% $session{tables}{$TBL}{$C} %>
+%       if( $linksto{$C} ) {
+%         my $ft = (Meta->search( name => $linksto{$C} ))[0];
+%         if( ! defined( $ft ) ) {
+            No such object <% $linksto{$C} %>
+%         } elsif( $session{tables}{$TBL}{$C} == 0 ) {
+            -
+%         } elsif( ! defined( $linksto{$C}->
+%                    retrieve( int( $session{tables}{$TBL}{$C} ) ) ) ) {
+            -
+%         } else {
+%           my $lbl = $ft->label;
+%           my $o = $linksto{$C}->retrieve( $session{tables}{$TBL}{$C} );
+            <% $o->$lbl %>
+%         }
+%       } else {
+          <% $session{tables}{$TBL}{$C} %>
+%       }
 %     }
 %   }
     </ul></blockquote>
@@ -211,7 +225,7 @@ if( defined( $TBL ) ) {
     </table>
     </form>
 % } # if/else table
-
+<p>
 <!-- end create.html -->
 <& footer &>
 % ####################################################################
@@ -239,6 +253,7 @@ undef( $sid );
 
 my $FLAG;
 undef($FLAG);
+my $DEBUG = 0;
 </%init>
 
 <%doc>
@@ -248,6 +263,8 @@ create.html
 
     table -- name of table to create
     sid   -- session id (used for keeping state while creating objects)
+    cancel - cancels all existing state and returns to null state
+    submit - 
     (column names from any/all tables)
 
   Possible states:
@@ -268,6 +285,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.9  2003/05/29 00:03:33  netdot
+#  added columnorder when displaying confirmation page
+#
 #  Revision 1.8  2003/05/27 23:13:05  netdot
 #  added catch for %state such that args passed from other scripts
 #  (ie. GET create?table=x&name=foo) will work
