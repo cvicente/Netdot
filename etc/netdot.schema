@@ -663,9 +663,7 @@ my $schema = {
    'version', 'integer', '', '', '', '',
    'parent', 'integer', '', '', '', '',
    'interface', 'integer', '', '', '', '',
-   'registered', 'bool', '', '', '', '',
-   'allocated', 'bool', '', '', '', '',
-   'delegated', 'bool', '', '', '', '',
+   'status', 'integer', '', '', '', '',
    'entity', 'integer', '', '', '', '',
    'description', 'varchar', 'NULL', '128', '', '',
    'last_seen', 'timestamp', '', '', '', '',
@@ -674,6 +672,16 @@ my $schema = {
  'primary_key' => 'id',
  'unique' => [ ['address', 'prefix'] ],
  'index' => [ ['last_seen'], ['physaddr'], ['interface'] ],
+},
+
+'IpblockStatus' => {
+ 'columns' => [
+   'id', 'serial', '', '', '', '',
+   'name', 'varchar', '', '64', '', '',
+ ],
+ 'primary_key' => 'id',
+ 'unique' => [ ['name'] ],
+ 'index' => [ ],
 },
 
 
@@ -852,6 +860,17 @@ my $schema = {
   'index' => [ ['origin'] ],
 },
 
+'RRIp' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'rr', 'integer', '', '', '', '',
+    'ip', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['rr', 'ip'] ],
+  'index' => [  ],
+},
+
 'RRType' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
@@ -863,16 +882,6 @@ my $schema = {
   'index' => [  ],
 },
 
-'RRIp' => {
-  'columns' => [
-    'id', 'serial', '', '', '', '',
-    'rr', 'integer', '', '', '', '',
-    'ip', 'integer', '', '', '', '',
-  ],
-  'primary_key' => 'id',
-  'unique' => [ ['rr', 'ip'] ],
-  'index' => [  ],
-},
 
 'Service' => {
   'columns' => [

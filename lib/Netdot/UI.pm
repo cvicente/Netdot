@@ -15,13 +15,6 @@ use strict;
 ######################################################################
 # Constructor
 ######################################################################
-#sub new {
-#    my $class = shift;
-#    my $self  = { '_error' => undef };
-#    bless($self, $class);
-#    return $self;
-#}
-
 sub new { 
     my $proto = shift;
     my $class = ref( $proto ) || $proto;
@@ -746,7 +739,10 @@ sub textArea($@)
 
     $htmlExtra = "" if (!$htmlExtra);
 
-    die("Error: Unable to determine table name. Please pass valid object and/or table name.\n") unless ($o || $table);
+    unless ($o || $table){
+	$self->{'_error'} = "Error: Unable to determine table name. Please pass valid object and/or table name.\n";
+	return 0;
+    }
 
     if ($isEditing)
     {

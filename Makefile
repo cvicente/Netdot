@@ -56,10 +56,12 @@ tests:
 	perl -MHTML::Mason -e 1
 	perl -MApache::Session -e 1
 	perl -MApache::DBI -e 1
+#	perl -MSiteControl::AccessController -e 1
 	perl -MNet::SNMP -e 1
 	perl -MDBIx::DBSchema -e 1
 	perl -MDBIx::DataSource -e 1
-	perl -MNet::IP -e 1
+	perl -MNetAddr::IP -e 1
+	perl -MTime::Piece -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi

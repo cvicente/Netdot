@@ -51,7 +51,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'tstamp,interface', 
 	  'tstamp:Timestamp,interface:Interface',
 	  '',
-	  '', 
+	  'interface:Interface', 
 	  'entries:ArpCacheEntry:arpcache', 
 	  '0', 
 	  'Device ARP Cache');
@@ -60,7 +60,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
   VALUES ('ArpCacheEntry', 
 	  'ipaddr,physaddr', 
 	  'ipaddr,physaddr,arpcache', 
-	  'ipaddr,physaddr', 
+	  'ipaddr,physaddr,arpcache', 
 	  'ipaddr:IP Address,physaddr:Physical Address,arpchache:ARP Cache',
 	  '',
 	  'ipaddr:Ipblock,physaddr:PhysAddr,arpcache:ArpCache', 
@@ -505,15 +505,17 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Ipblock', 
 	  'address', 
-	  'address,prefix,version,parent,interface,registered,allocated,delegated,entity,description,last_seen,physaddr', 
+	  'address,prefix,version,parent,interface,status,entity,description,last_seen,physaddr', 
 	  'address,prefix',
-	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,registered:Registered?,allocated:Allocated?,delegated:Delegated?,entity:Assigned to,description:Description,last_seen:Last Seen,physaddr:MAC Address',
+	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,entity:Used by,description:Description,last_seen:Last Seen,physaddr:MAC Address',
 	  '',
-	  'interface:Interface,parent:Ipblock,entity:Entity,physaddr:PhysAddr', 
-	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,resourcerecords:RRIp:ip,children:Ipblock:parent:{on_delete=>"restrict"},dhcpentries:DhcpScope:subnet:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
+	  'interface:Interface,parent:Ipblock,status:IpblockStatus,entity:Entity,physaddr:PhysAddr',
+	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,resourcerecords:RRIp:ip,children:Ipblock:parent:{on_delete=>"set-null"},dhcpentries:DhcpScope:subnet:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
 	  '0', 
 	  'An IP (v4 or v6) Address');
 
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
+  VALUES ('IpblockStatus', 'name',  'name', 'name', '', 'ipblocks:Ipblock:status:{on_delete=>"restrict"}', '0', 'IP block status');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('IpRange', 
@@ -568,7 +570,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	    'address:Address,last_seen:Last Seen',
 	    '',
 	    '', 
-	    'interfaces:Interface:physaddr:{on_delete=>"set-null"},devices:Device:physaddr:{on_delete=>"set-null"},fwtableentries:FWTableEntry:physaddr,registeredips:Ipblock:physaddr,arpentries:ArpCache:physaddr', 
+	    'interfaces:Interface:physaddr:{on_delete=>"set-null"},devices:Device:physaddr:{on_delete=>"set-null"},fwtableentries:FWTableEntry:physaddr,registeredips:Ipblock:physaddr,arpentries:ArpCacheEntry:physaddr', 
 	    '0', 
 	    'A physical or MAC address');
 
@@ -609,18 +611,6 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	    'DNS Resource Record');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
-    VALUES ('RRType', 
-	    'name',
-	    'name,info', 
-	    'name',
-	    'name:Name,info:Comments', 
-	    '',
-	    '', 
-	    'rrs:RR:type:{on_delete=>"restrict"},', 
-	    '0', 
-	    'Resource Record Type');
-
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
     VALUES ('RRIp', 
 	    'rr,ip',
 	    'rr,ip', 
@@ -631,6 +621,18 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	    '', 
 	    '1', 
 	    'RR to IP join table');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RRType', 
+	    'name',
+	    'name,info', 
+	    'name',
+	    'name:Name,info:Comments', 
+	    '',
+	    '', 
+	    'rrs:RR:type:{on_delete=>"restrict"},', 
+	    '0', 
+	    'Resource Record Type');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Service', 

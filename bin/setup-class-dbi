@@ -44,15 +44,38 @@ q /
 __PACKAGE__->add_relationship_type( has_many => "Class::DBI::Relationship::odHasMany" );
 
   
+##########################################
+## Convert from IP address to integer
+##########################################
 sub ip2int {
     my $self = shift;
     my $ipobj;
-    unless ( $ipobj = new Net::IP ($self->address) ){
-	die  "Invalid IP address: ", $self->address ;
+    unless ( $ipobj = NetAddr::IP->new($self->address) ){
+	return $self->_croak("Invalid IP address: ", $self->address);
     }
-    $self->address( $ipobj->intip() );
+    $self->address( ($ipobj->numeric)[0] );
 }
 
+
+##########################################
+## Convert from integer to IP address
+##########################################
+##########################################
+## Crap, doesn't read v6 integer addresses
+## Have to use Net::IP
+##########################################
+#sub int2ip {
+#    my $self = shift;
+#    my $ipobj;
+#    unless ( $ipobj = NetAddr::IP->new($self->address) ){
+#	return $self->_croak("Invalid Integer IP address: ", $self->address) ;
+#    }
+#    $self->address( $ipobj->addr() );
+#}
+
+##########################################
+## Convert from integer to IP address
+##########################################
 sub int2ip {
     my $self = shift;
     if ($self->version == 4){
@@ -62,10 +85,11 @@ sub int2ip {
 	my $bin = ip_inttobin($self->address, 6);
 	$self->address(ip_compress_address(ip_bintoip($bin, 6), 6) );
     } else {
-	return $self->_croak("Did not supply an IP version");
+	return $self->_croak("No IP version");
     }
 }
-  
+
+
 Ipblock->add_trigger( deflate_for_create => \&ip2int );
 Ipblock->add_trigger( deflate_for_update => \&ip2int );
 Ipblock->add_trigger( select => \&int2ip );
