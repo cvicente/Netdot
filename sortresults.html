@@ -14,8 +14,8 @@ if( $arg{table} ) {
   if( defined( $obj ) ) {
     my $i = 1;
     undef( %order );
-    if( defined( $obj->columnOrder ) ) {
-      map { $order{$_} = $i++; } split( /,/, $obj->columnOrder );
+    if( defined( $obj->columnorderbrief ) ) {
+      map { $order{$_} = $i++; } split( /,/, $obj->columnorderbrief );
     } else {
       $order{"id"} = $i++;
       foreach ( sort { $a cmp $b } $obj->name->columns() ) {
@@ -25,10 +25,10 @@ if( $arg{table} ) {
     }
     undef( %linksto );
     map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
-        split( /,/, $obj->linksTo );
+        split( /,/, $obj->linksto );
     undef( %linksfrom );
     map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k } 
-        split( /,/, $obj->linksFrom );
+        split( /,/, $obj->linksfrom );
   }
 }
 </%perl>
@@ -93,6 +93,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.7  2003/05/02 18:53:25  netdot
+# Changed references to linksto, linksfrom and columnorderbrief
+#
 # Revision 1.6  2003/05/01 00:50:03  netdot
 # handling case of foreign key == 0
 #
