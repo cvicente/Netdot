@@ -15,22 +15,11 @@ if( $args{table} ) {
   if( defined( $args{id} ) ) {
     $obj = $args{table}->retrieve($args{id}) ;
   }
-  $META = (Meta->search( name => $args{table} ))[0];
+  $META = $gui->getmeta( $args{table} );
   if( defined( $META ) ) {
     my $i = 1;
-    undef( %order );
-    if( defined( $META->columnorder ) ) {
-      map { $order{$_} = $i++; } split( /,/, $META->columnorder );
-    } else {
-      $order{"id"} = $i++;
-      foreach ( sort { $a cmp $b } $META->name->columns() ) {
-        next if( $_ eq "id" );
-        $order{$_} = $i++;
-      }
-    }
-    undef( %linksto );
-    map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
-        split( /,/, $META->linksto );
+    %order = $gui->getcolumnorder( $args{table} );
+    %linksto = $gui->getlinksto( $args{table} );
   }
 }
 </%perl>
@@ -39,9 +28,6 @@ if( $args{table} ) {
 % ####################################################################
 
 % if( defined( $args{table} ) ) {
-%   if( $DEBUG ) {
-%     print "args: ", Dumper( %args );
-%   }
     <table cellpadding="3" cellspacing="1" border="0" bgcolor="#CCCCCC">
     <tr>
     <input type="hidden" name="table" value="<% $args{table} %>">
@@ -117,12 +103,13 @@ if( $args{table} ) {
 $obj => undef
 %session => undef
 $META => undef
+$gui => Netdot::GUI->new()
 
 </%args>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-use Data::Dumper;
+use Netdot::GUI;
 my( %args, %order, %orderbrief, %linksto, %linksfrom, $obj, %session );
 undef( %session );
 
@@ -138,6 +125,9 @@ Arguments:
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.16  2003/06/13 20:48:42  netdot
+#  working conversion to use of GUI.pm
+#
 #  Revision 1.15  2003/06/13 18:42:17  netdot
 #  using <%args> format
 #
