@@ -25,7 +25,7 @@ if( exists( $args{insert} ) ) {
     my( %tmp, $newnode );
     my @ifrsv = NvIfReserved->retrieve_all();
     $tmp{name} = $args{node};
-#    $tmp{community} = $comstr;
+    $tmp{community} = $comstr;
     $tmp{sysdescription} = $node{sysDescr};
     $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
     $tmp{type} = "0";   # maybe tmp; can't be null
@@ -178,6 +178,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.21  2003/07/15 15:51:46  netdot
+#  added community for Node
+#
 #  Revision 1.20  2003/07/14 23:35:46  netdot
 #  added code for optional community string
 #
