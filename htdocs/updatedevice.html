@@ -1,5 +1,17 @@
 
 <& header, title => "Update device $device"  &>
+
+<%perl>
+
+if ( ! ($id = (Device->search(name => "$device"))[0]) ){
+   print "<br><STRONG>Device $device not found on db.  Run discovery instead</STRONG>";
+   return;
+}else{
+
+open OUTPUT, "$PREFIX/bin/updatedevices.pl -n $device -v|"
+                or die "can't fork: $!";
+
+</%perl>
 <table width="90%" align="center">
  <tr><td>
     <font size="-1">
@@ -13,22 +25,23 @@
 </table>
 
 <& footer &>
+%}
 
 <%args>
+
+$PREFIX => "/usr/local/netdot"
+$id => undef
 $DEBUG => 0
-$device => $ARGS{device};
+$device => $ARGS{device}
+
 </%args>
 
 <%init>
-my $PREFIX = "/usr/local/netdot";
-my $id;
-unless ( $id = (Device->search(name => "$device"))[0] ){
-   print "<STRONG>Device $device not found on db.  Run discovery instead</STRONG>";
-}
-open OUTPUT, "$PREFIX/bin/updatedevices.pl -n $device -v|"
-                or die "can't fork: $!";
+
 </%init>
+
 <%doc>
+
 Web interface for bin/updatedevices.pl
 
 </%doc>
