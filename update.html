@@ -56,7 +56,9 @@ if( defined( $META ) ) {
 %	  if ( $c eq 'info' ){
 	     <td colspan="2">
 	        <textarea name="<% $c %>" rows="10" cols="38">
-	           <% $obj->$c %>
+%		   if ($obj->$c =~ /\S+/){
+ 	              <% $obj->$c %>
+%		   }
 		</textarea>
              </td>
 %	  }else{
@@ -133,6 +135,31 @@ unless (scalar keys(%fields)){
    print "<strong>Missing field/value pairs to update</strong>";
    exit;
 }
+##########################################
+## Insert current object in history table
+##########################################
+
+my %current_data;
+foreach my $col ($obj->columns){
+   next if ($col eq 'id');
+   $current_data{$col} = $obj->$col;
+}
+my $h_table = "$table" . "_history";
+my $orig_id = lc("$table" . "_id");
+my $new_hist_obj = $h_table->create(\%current_data);
+$new_hist_obj->set($orig_id, $id);
+$new_hist_obj->set("modifier", $user) if (defined($user));
+my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
+    $wday, $yday, $isdst) = localtime;
+my $datetime = sprintf("%04d/%02d/%02d %02d:%02d:%02d",
+     $year+1900, $month+1, $day_of_month, $hours, $minutes, $seconds);
+$new_hist_obj->set("modified", $datetime);
+$new_hist_obj->update;
+
+##########################################
+## Update fields that have changed
+##########################################
+
 foreach my $col (keys %fields){
    if ($fields{$col} ne $obj->$col){
       $obj->set($col, $fields{$col});
@@ -149,6 +176,6 @@ $obj->update;
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-my( %fields, %linksto, %linksfrom, %order, $table, $id, $obj, %upd);
+my( %fields, %linksto, %linksfrom, %order, $table, $id, $obj, %upd, $user);
            
 </%init>
