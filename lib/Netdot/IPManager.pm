@@ -21,6 +21,22 @@ sub new {
     my $class = ref( $proto ) || $proto;
     my $self = {};
     bless $self, $class;
+    $self = $self->SUPER::new();
+
+    my $DB_TYPE        = $self->{'DB_TYPE'};
+    my $DB_DATABASE    = $self->{'DB_DATABASE'};
+    my $DB_NETDOT_USER = $self->{'DB_NETDOT_USER'};
+    my $DB_NETDOT_PASS = $self->{'DB_NETDOT_PASS'};
+    #
+    # Some operations require a lot of speed.  We override 
+    # Class::DBI to avoid overhead in certain cases
+    unless ($self->{dbh} = DBI->connect ("dbi:$DB_TYPE:$DB_DATABASE", 
+					 "$DB_NETDOT_USER", 
+					 "$DB_NETDOT_PASS")){
+	$self->error(sprintf("Can't connect to db: %s\n", $DBI::errstr));
+	return 0;
+    }
+
     wantarray ? ( $self, '' ) : $self; 
 }
 
@@ -291,8 +307,10 @@ sub auto_allocate {
 
 
 ######################################################################
-## Build Tree
-## Traverse IP block tree and set dependencies
+## Builds the IPv4 or IPv6 space tree
+## A very fast, simplified digital tree (or trie) that sets
+## the dependencies of ipblock objects.
+## 
 ## Arguments: IP space version (4/6)
 ######################################################################
 sub build_tree { 
@@ -301,41 +319,41 @@ sub build_tree {
 	$self->error("Invalid IP version: $version");
 	return 0;
     }
-    # Walk all blocks, starting from the longest prefixes
-    # 
-    my $it = Ipblock->search(version => $version, { order_by=> 'prefix DESC' } ); 
-    unless ($it->count){
-	$self->error("No version $version blocks found in DB");
-	return 0;	
-    }
-    # Now for each block,
-    # walk all blocks of shorter prefixes, decrementing by 1 each time
-    # 
-    while (my $ipb = $it->next){
-	my $pr;
-	if ($version == 6 && $ipb->prefix == 128){
-	    ## Jump to /64 subnet
-	    $pr = 64;
-	}else{
-	    $pr = $ipb->prefix - 1;
-	}
-	my $ipad = NetAddr::IP->new($ipb->address, $ipb->prefix);
-	my $found = 0;
-	while ($pr > 0 && !$found){
-	    my $it2 = Ipblock->search(version => $version, prefix => $pr);
-	    while (my $ipb2 = $it2->next){
-		# 
-		# Assign closest parent and stop
-		my $ipad2 = NetAddr::IP->new($ipb2->address, $ipb2->prefix);
-		if ($ipad->within($ipad2)){
-		    $ipb->parent($ipb2->id);
-		    $ipb->update;
-		    $found = 1;
-		    last;
-		}
+    my $size = ($version == 4)? 32 : 128;
+    my $trie = {};
+    my %parents;
+    # Override Class::DBI for speed.
+    my $sth = $self->{dbh}->prepare("SELECT id,address,prefix,parent 
+                                     FROM Ipblock 
+                                     WHERE version = $version 
+                                     ORDER BY prefix");	
+    $sth->execute;
+    
+    while (my ($id,$address,$prefix,$parent) = $sth->fetchrow_array){
+	my $p = $trie;
+	my $bit = $size;
+	my $last_p;
+	while ($bit > $size - $prefix){
+	    $bit--;
+	    $last_p = $p->{id} if defined $p->{id};
+	    #
+	    # If we reach a subnet leaf, all /32s (or /128s) below it
+	    # don't need to be inserted.  Purpose is to find parents
+	    last if (defined $last_p && $prefix == $size && !(keys %$p));
+	    my $r = ($address & 2**$bit)/2**$bit;
+	    if (! exists $p->{$r} ){
+		$p->{$r} = {};	
 	    }
-	    $pr--;
-	}		    
+	    $p = $p->{$r};
+	    $p->{id} = $id if ($bit == $size - $prefix);
+	}    
+	# Parent is the last valid node known
+	$parents{$id} = $last_p if ($parent != $last_p);
+    }
+    undef $sth;
+    my $sth = $self->{dbh}->prepare("UPDATE Ipblock SET parent = ? WHERE id = ?");
+    foreach (keys %parents){
+	$sth->execute($parents{$_}, $_);
     }
     return 1;
 }

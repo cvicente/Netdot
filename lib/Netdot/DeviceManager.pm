@@ -56,7 +56,7 @@ sub _clear_output {
 }
 
 #####################################################################
-# Clear output buffer
+# Convert hex values returned from SNMP into a readable string
 #####################################################################
 sub _readablehex {
     my ($self, $v) = @_;
