@@ -65,6 +65,11 @@ foreach my $node ( @nodes ) {
   # get information from the device
   if( my( %dev ) = $nv->get_device( "device", $node->name ) ) {
     print "Have node ", $node->name, " information\n" if( $DEBUG );
+    if( $dev{sysUpTime} < 0 ) {
+      printf "Node %s has sysUpTime value of %d; skipping\n", 
+	$node->name, $dev{sysUpTime} if( $DEBUG );
+      next;
+    }
     my %ntmp;
     $ntmp{sysdescription} = $dev{sysDescr};
     $ntmp{physaddr} = $dev{dot1dBaseBridgeAddress};
