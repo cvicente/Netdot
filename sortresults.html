@@ -5,7 +5,10 @@ foreach my $j ( keys %ARGS ) {
   $args{$j} = $ARGS{$j};
 }
 if( exists( $args{view} ) ) {
-  $VIEW = $args{view};
+  $args{view} = lc( $ARGS{view} );
+  if( $args{view} eq "row" || $args{view} eq "column" ) {
+    $VIEW = $args{view};
+  }
 }
 if( $args{table} ) {
   undef( $META );
@@ -46,28 +49,29 @@ if( $args{table} ) {
 </%perl>
 % ####################################################################
 
-<!-- begin sortresults -->
 % if( defined( $META ) && defined( $args{object} ) ) {
+<!-- begin sortresults -->
     <table BORDER="0" CELLSPACING="1" CELLPADDING="3" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
 %   if( $VIEW eq "row" ) {
       <tr>
 %     foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
       <th><% $o %></th>
 %     }
-%     </tr>
+      </tr>
+      <tr>   
 %   }
 % ####################################################################
 %   foreach my $o ( sort { $a->id <=> $b->id } @{ $args{object} } ) {
 %     my $flag = 1;
 %     my @order = sort { $order{$a} <=> $order{$b} } keys %order;
 %     foreach my $c ( @order ) {
-        <tr>
 %       if( $VIEW eq "column" ) {
+        <tr>
         <td align="RIGHT" valign="TOP" WIDTH="100"><b><% $c %></b>: </td>
 %       }
         <td align="LEFT" valign="TOP">
 %       if( exists( $linksto{$c} ) ) {
-%         my $ft = (Meta->search( name => $linksto{$c} ))[0];
+%         my $ft = $gui->getmeta( $linksto{$c} );
 %         if( ! defined( $ft ) ) {
             No such object <% $linksto{$c} %>
 %         } elsif( $o->$c == 0 ) {
@@ -75,15 +79,16 @@ if( $args{table} ) {
 %         } elsif( ! defined( $linksto{$c}->retrieve( int( $o->$c ) ) ) ) {
             -
 %         } else {
-%           my $lbl = $ft->label;
+%           my $obj = $linksto{$c}->retrieve( int( $o->$c ) );
+%           my $lbl = $gui->getobjlabel( $obj, " " );
 %           if( $flag ) {
               <strong>
               <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
-              <% $o->$c->$lbl %>
+              <% $lbl %>
 	      </a>
               </strong>
 %           } else {
-              <% $o->$c->$lbl %>
+              <% $lbl %>
 %           }
 %         }
 %       } else {
@@ -111,8 +116,8 @@ if( $args{table} ) {
 %   } # for o
 % ####################################################################
     </table>
-% } # if
 <!-- end sortresults -->
+% } # if
 
 % ####################################################################
 <%args>
@@ -132,6 +137,7 @@ $VIEW => "column"
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::GUI;
+use Data::Dumper;
 
 </%init>
 <%doc>
@@ -143,6 +149,10 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.18  2003/06/27 18:03:36  netdot
+# cleaned up how VIEW is defined; fixed problem with how label is
+# fetched for foreign keys; other minor stuff
+#
 # Revision 1.17  2003/06/26 22:55:08  netdot
 # merging in option to view as a row or as a column
 #
