@@ -6,18 +6,17 @@
 </%doc>
 
 <%args>
-$table
-$field
-$val
-$search_field
-$caller        => undef
+
+$val    => $ARGS{crit};
+$caller => $ARGS{self};
+
 </%args>
 
 <%init>
-my ($ui, @terms, $DEBUG, $MAX_RESULTS);
-$ui          = Netdot::UI->new();
-$DEBUG       = 0;
-$MAX_RESULTS = 2000;
+my @terms;
+my $ui          = Netdot::UI->new();
+my $DEBUG       = 1;
+my $MAX_RESULTS = 2000;
 
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
@@ -33,12 +32,15 @@ if ($val =~ /\w+/) {
     print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
 }
 
-my $site_id = $terms[0] if (scalar(@terms));
-my $site = Site->retrieve($site_id);
-my @closets = $site->closets;
-my @results = ();
-my %stored = ();
-my @backbones = ();
+my $site_id   = $terms[0] if (scalar(@terms));
+my $site;
+unless ( $site = Site->retrieve($site_id) ){
+    $m->comp("error.mhtml", error=>"Can't retrieve site id $site_id");
+}
+my @closets   = $site->closets;
+my @results;
+my %stored;
+my @backbones;
 
 </%init>
 

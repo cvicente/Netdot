@@ -25,6 +25,7 @@ use lib "PREFIX/lib";
 use Netdot::UI;
 use Netdot::IPManager;
 use Netdot::DNSManager;
+use Data::Dumper;
 
 use lib "NVPREFIX/lib";
 use NetViewer::RRD::SNMP::NV;
@@ -242,6 +243,7 @@ sub update {
 	$self->output($msg);
 	$devtmp{name} = $device->name;
 	$rr = $device->name;
+	$host = $device->name->name;
     }else{
 	my $msg = sprintf ("Name %s not in DB. Adding DNS entry.", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
@@ -323,15 +325,39 @@ sub update {
 		$ent = 0;
 	    }
 	}
+	###############################################
+	# Try to guess product type
+	# First based on name, then on some key oids
+
+	my $type;
+	my $typename;
+	foreach my $str ( keys %{ $self->{config}->{DEV_NAME2TYPE} } ){
+	    if ( $host =~ /$str/ ){
+		$typename = $self->{config}->{DEV_NAME2TYPE}->{$str};
+	    }
+	} 
+        if ( $typename ){
+		$type = (ProductType->search(name=>$typename))[0];	    
+	}else{
+	    if ( $dev{router} ){
+		$type = (ProductType->search(name=>"Router"))[0];
+	    }elsif ( $dev{hub} ){
+		$type = (ProductType->search(name=>"Hub"))[0];
+	    }elsif ( $dev{dot11} ){
+		$type = (ProductType->search(name=>"Access Point"))[0];
+	    }elsif ( scalar $dev{interface} ){
+		$type = (ProductType->search(name=>"Switch"))[0];
+	    }
+	}
 	my %prodtmp = ( name         => $dev{productname} || $dev{sysobjectid},
 			description  => $dev{productname} || $dev{sysdescription},
 			sysobjectid  => $dev{sysobjectid},
-			type         => 0,
+			type         => $type->id,
 			manufacturer => $ent,
 			);
 	my $newprodid;
 	if ( ($newprodid = $self->{ui}->insert(table => 'Product', state => \%prodtmp)) ){
-	    my $msg = sprintf("Created product: %s.  Please set type, etc.", $prodtmp{name});
+	    my $msg = sprintf("Created product: %s.  Guessing type is %s.", $prodtmp{name}, $type->name);
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg );		
 	    $self->output($msg);
@@ -983,14 +1009,16 @@ sub update {
 			      ); 
 		my $ent;
 		# Check if Entity exists
-		unless ( ( $ent = (Entity->search( asname => $dev{bgppeer}{$peer}{asname}))[0] ) ||  
-			 ( $ent = (Entity->search( name => $dev{bgppeer}{$peer}{orgname}))[0] )
+		unless ( ( $ent = (Entity->search( asnumber => $dev{bgppeer}{$peer}{asnumber}))[0] ) ||  
+			 ( $ent = (Entity->search( asname   => $dev{bgppeer}{$peer}{asname}))  [0] ) ||  
+			 ( $ent = (Entity->search( name     => $dev{bgppeer}{$peer}{orgname})) [0] )
 			 ){
 		    
 		    # Doesn't exist. Create Entity
+		    my $msg = sprintf("Entity %s (%s) not found. Creating", 
+				      $dev{bgppeer}{$peer}{orgname}, $dev{bgppeer}{$peer}{asname});
 		    $self->debug( loglevel => 'LOG_INFO',
-				  message  => "Entity %s (%s) not found. Creating", 
-				  args => [$dev{bgppeer}{$peer}{orgname}, $dev{bgppeer}{$peer}{asname}]);
+				  message  => $msg );
 		    my $t;
 		    unless ( $t = (EntityType->search(name => "Peer"))[0] ){
 			$t = 0; 
@@ -1003,15 +1031,16 @@ sub update {
 								     asname   => $dev{bgppeer}{$peer}{asname},
 								     asnumber => $dev{bgppeer}{$peer}{asnumber},
 								     type => $t }) ){
-			my $msg = sprintf("Created Entity: %s. ", $entname);
+			my $msg = sprintf("Created Peer Entity: %s. ", $entname);
 			$self->debug( loglevel => 'LOG_NOTICE',
 				      message  => $msg );		
 			$ent = Entity->retrieve($entid);
 		    }else{
+			my $msg = sprintf("Could not create new Entity: %s: %s",$entname, $self->{ui}->error);
 			$self->debug( loglevel => 'LOG_ERR',
-				      message  => "Could not create new Entity: %s: %s",
-				      args     => [$entname, $self->{ui}->error],
+				      message  => $msg,
 				      );
+			$self->output($msg);
 			$ent = 0;
 		    }
 		}
@@ -1028,11 +1057,13 @@ sub update {
 						    state => \%ptmp ) ) ){
 			my $msg = sprintf("Created Peering with: %s. ", $ent->name);
 			$self->debug( loglevel => 'LOG_NOTICE',
-				      message  => $msg );		
+				      message  => $msg );
+			$self->output($msg);
 		    }else{
+			my $msg = sprintf("Could not create Peering with : %s: %s",
+					  $ent->name, $self->{ui}->error );
 			$self->debug( loglevel => 'LOG_ERR',
-				      message  => "Could not create Peering with : %s: %s",
-				      args     => [$ent->name, $self->{ui}->error],
+				      message  => $msg,
 				      );
 		    }
 		}
@@ -1114,6 +1145,10 @@ sub get_dev_info {
 		  message => $msg );
     $self->output($msg);
 
+    my $msg = sprintf("Netviewer output: \n%s", join "\n", Dumper(%nv));
+    $self->debug( loglevel => 'LOG_DEBUG',
+		  message => $msg );
+
     ################################################################
     # Device's global vars
 
@@ -1136,8 +1171,15 @@ sub get_dev_info {
     if ( $self->_is_valid($nv{sysLocation}) ){
 	$dev{syslocation} = $nv{sysLocation};
     }
+    ################################################################
+    # Does it route?
     if ( $self->_is_valid($nv{ipForwarding}) && $nv{ipForwarding} == 1 ){
 	$dev{router} = 1;
+    }
+    ################################################################
+    # Is it an access point?
+    if ( $self->_is_valid($nv{dot11StationID}) ){
+	$dev{dot11} = 1;
     }
     if( $self->_is_valid($nv{dot1dBaseBridgeAddress})  ) {
 	# Canonicalize address
@@ -1378,20 +1420,20 @@ sub get_dev_info {
     }
     ##############################################
     # for each hubport discovered...
-    if ( ! exists($self->{badhubs}->{$nv{sysObjectID}} )){
-	foreach my $newport ( keys %{ $nv{hubPorts} } ) {
-	    
-	    $dev{interface}{$newport}{name}         = $newport;
-	    $dev{interface}{$newport}{number}       = $newport;
-	    $dev{interface}{$newport}{speed}        = "10 Mbps"; #most likely
-	    $dev{interface}{$newport}{oper_duplex}  = "[na]";
-	    $dev{interface}{$newport}{admin_duplex} = "[na]";
-	    $dev{interface}{$newport}{oper_status}  = "[na]";
-	    $dev{interface}{$newport}{admin_status} = "[na]";
-	    
-	} #foreach newport
-    } #unless badhubs
-
+    if ( scalar ( my @hubports = keys %{ $nv{hubPorts} } ) ){
+	$dev{hub} = 1;
+	if ( ! exists($self->{badhubs}->{$nv{sysObjectID}} )){
+	    foreach my $newport ( @hubports ) {
+		$dev{interface}{$newport}{name}         = $newport;
+		$dev{interface}{$newport}{number}       = $newport;
+		$dev{interface}{$newport}{speed}        = "10 Mbps"; #most likely
+		$dev{interface}{$newport}{oper_duplex}  = "[na]";
+		$dev{interface}{$newport}{admin_duplex} = "[na]";
+		$dev{interface}{$newport}{oper_status}  = "[na]";
+		$dev{interface}{$newport}{admin_status} = "[na]";
+	    }
+	}
+    }
     
     if ( $self->{config}->{ADD_BGP_PEERS} ){
 	##############################################
@@ -1405,24 +1447,29 @@ sub get_dev_info {
 	    
 	    # Query any configured WHOIS servers for more info
 	    #
-	    my $found = 0;
-	    foreach my $host ( keys %{$self->{config}->{WHOISQ}} ){
-		last if $found;
-		my @lines = `whois -h $host AS$asn`;
-		foreach (@lines){
-		    foreach my $key ( keys %{$self->{config}->{WHOISQ}->{$host}} ){
-			if (/No entries found/i){
-			    last;
-			}
-			my $exp = $self->{config}->{WHOISQ}->{$host}->{$key};
-			if ( /$exp/ ){
-			    my (undef, $val) = split /:\s+/, $_; 
-			    chomp($val);
-			    $dev{bgppeer}{$peer}{$key} = $val;
-			    $found = 1;
+	    if ( $self->{config}->{DO_WHOISQ} ){
+		my $found = 0;
+		foreach my $host ( keys %{$self->{config}->{WHOISQ}} ){
+		    last if $found;
+		    my @lines = `whois -h $host AS$asn`;
+		    foreach (@lines){
+			foreach my $key ( keys %{$self->{config}->{WHOISQ}->{$host}} ){
+			    if (/No entries found/i){
+				last;
+			    }
+			    my $exp = $self->{config}->{WHOISQ}->{$host}->{$key};
+			    if ( /$exp/ ){
+				my (undef, $val) = split /:\s+/, $_; 
+				chomp($val);
+				$dev{bgppeer}{$peer}{$key} = $val;
+				$found = 1;
+			    }
 			}
 		    }
 		}
+	    }else{
+		$dev{bgppeer}{$peer}{asname} = "AS $asn";
+		$dev{bgppeer}{$peer}{orgname} = "AS $asn";
 	    }
 	}
     }

@@ -48,6 +48,8 @@ my $list;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 if( defined($search) && $search =~ /\w+/ ){
+    # remove spaces
+    $search =~ s/\s*//g;
     unless ( ($list = $dns->getdevbynamelike($search)) ){
 	$m->comp("index.html", title => "Device Worksheet: $name ", s2name => $s2name);
 	print  "<p><b>No results</b>";
@@ -350,12 +352,6 @@ function setNull(field){
 	     </td>
 	   </tr>
            <tr>
-             <td class="formtablec1">Part of: </td>
-	     <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"part_of", lookup=>"Device", edit=>"$editgen");
-	     </td>
-	   </tr>
-           <tr>
              <td class="formtablec1">Inventory #: </td>
 	     <td class="formtablec2"> 
 %               $ui->textField(object=>$o, column=>"inventorynumber", edit=>$editgen);
@@ -375,7 +371,7 @@ function setNull(field){
     </tr>
     <tr>
       <td colspan="2" align="left">
-%       $ui->textArea(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=80");
+%       $ui->textArea(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=60");
      </td>
     </tr>
   </table>
@@ -451,7 +447,6 @@ function setNull(field){
 	</tr>
       </table>
      </td>
-   </tr>
    </tr>
   </table>
 <!-- End Location Table -->

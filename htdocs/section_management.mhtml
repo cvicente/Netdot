@@ -15,7 +15,8 @@ if (exists($caller_args{page}))
 }
 
 my $page = $currentUser->getAttribute("MANAGEMENT_PAGE");
-my $ipm = Netdot::IPManager->new();
+my $ipm  = Netdot::IPManager->new();
+my $ui   = Netdot::UI->new();
 
 </%init>
 
@@ -85,7 +86,7 @@ my $ipm = Netdot::IPManager->new();
 	    <tr>
 	      <td>Name:
 	        <input type="text" name="host" size="20" value="">
-	        Community: <input type="text" name="comstr" size="10" value="public">
+	        Community: <input type="text" name="comstr" size="10" value="<% $ui->{config}->{'DEFAULT_SNMPCOMMUNITY'} %>">
 	      	<input type="hidden" name="action" value="discover">
 		<input type="submit" name="submit" value="discover">
 	      </td>
