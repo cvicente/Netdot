@@ -161,9 +161,9 @@ sub update {
     my ($host, $comstr, %dev);
     $self->_clear_output();
 
+    my $dumpargs = sprintf("Arguments to 'update': %s", (join " ", Dumper(%argv)) );
     $self->debug(loglevel => 'LOG_DEBUG',
-		 message => "Arguments are: %s" ,
-		 args => [ join ', ', map {"$_ = $argv{$_}"} keys %argv ]);
+		 message => $dumpargs);
     
     unless ( ($host = $argv{host}) && (%dev = %{$argv{dev}}) ){
 	$self->error( sprintf("Missing required arguments") );
@@ -731,7 +731,7 @@ sub update {
 		# Create A records for each ip address discovered
 		# 
 		unless ( $ipobj->arecords ){
-		    my $msg = sprintf("Creating DNS entry for %s", 
+		    my $msg = sprintf("Creating DNS A record for %s", 
 				      $ipobj->address);
 		    $self->debug(loglevel => 'LOG_ERR',
 				 message  => $msg );
@@ -1145,7 +1145,7 @@ sub get_dev_info {
 		  message => $msg );
     $self->output($msg);
 
-    my $msg = sprintf("Netviewer output: \n%s", join "\n", Dumper(%nv));
+    $msg = sprintf("SNMP info: %s", join " ", Dumper(%nv));
     $self->debug( loglevel => 'LOG_DEBUG',
 		  message => $msg );
 
@@ -1266,7 +1266,7 @@ sub get_dev_info {
     ################################################################
     # Map dot3StatsDuplexStatus
 
-    my %DOT3DUPLEX = ( 1 => "[na]",
+    my %DOT3DUPLEX = ( 1 => "na",
 		       2 => "half",
 		       3 => "full",
 		       );
@@ -1325,7 +1325,7 @@ sub get_dev_info {
 		if ( exists $SPEED_MAP{$speed} ){
 		    $dev{interface}{$newif}{$dbname} = $SPEED_MAP{$speed};
 		}else{
-		    $dev{interface}{$newif}{$dbname} = $speed;
+		    $dev{interface}{$newif}{$dbname} = "na";
 		}
 	    }elsif( $dbname eq "description" ) {
 		# Ignore these descriptions
@@ -1371,7 +1371,7 @@ sub get_dev_info {
 	    $opdupval = $nv{interface}{$newif}{portDuplex};
 	    $opdup = $CATDUPLEX{$opdupval} || "";
 	}
-	$dev{interface}{$newif}{oper_duplex} = $opdup || "[na]" ;  	    
+	$dev{interface}{$newif}{oper_duplex} = $opdup || "na" ;  	    
 
 	################################################################
 	# Set Admin Duplex mode
@@ -1382,7 +1382,7 @@ sub get_dev_info {
 	    $admindupval = $nv{interface}{$newif}{ifMauDefaultType};
 	    $admindup= $MAU2DUPLEX{$admindupval} || 0;
 	}
-	$dev{interface}{$newif}{admin_duplex} = $admindup || "[na]";
+	$dev{interface}{$newif}{admin_duplex} = $admindup || "na";
 
 	####################################################################
 	# IP addresses and masks 
@@ -1427,10 +1427,10 @@ sub get_dev_info {
 		$dev{interface}{$newport}{name}         = $newport;
 		$dev{interface}{$newport}{number}       = $newport;
 		$dev{interface}{$newport}{speed}        = "10 Mbps"; #most likely
-		$dev{interface}{$newport}{oper_duplex}  = "[na]";
-		$dev{interface}{$newport}{admin_duplex} = "[na]";
-		$dev{interface}{$newport}{oper_status}  = "[na]";
-		$dev{interface}{$newport}{admin_status} = "[na]";
+		$dev{interface}{$newport}{oper_duplex}  = "na";
+		$dev{interface}{$newport}{admin_duplex} = "na";
+		$dev{interface}{$newport}{oper_status}  = "na";
+		$dev{interface}{$newport}{admin_status} = "na";
 	    }
 	}
     }
