@@ -16,10 +16,11 @@ use strict;
 # Constructor
 ######################################################################
 sub new { 
-    my $proto = shift;
+    my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
     my $self = {};
     bless $self, $class;
+    $self = $self->SUPER::new( %argv );
     wantarray ? ( $self, '' ) : $self; 
 }
  
@@ -770,10 +771,10 @@ sub radioGroupBoolean($@)
 sub textField($@)
 {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $htmlExtra, $makeLink) = ($args{object}, $args{table}, 
-								   $args{column}, $args{edit}, 
-								   $args{htmlExtra}, $args{makeLink},
-								   $args{default});
+    my ($o, $table, $column, $isEditing, $htmlExtra, $makeLink, $default) = ($args{object}, $args{table}, 
+									     $args{column}, $args{edit}, 
+									     $args{htmlExtra}, $args{makeLink},
+									     $args{default});
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : $default);

@@ -1034,7 +1034,5 @@ sub discover {
     $self->debug( loglevel => 'LOG_NOTICE',
 		  message  => $msg );
     $self->output($msg);
-    return 1;
+    return $device;
 }
- 
-

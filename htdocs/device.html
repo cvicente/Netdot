@@ -1,437 +1,75 @@
+<& index.html, title => "Device Discovery: $host ", s2name => $s2name  &>
 <%perl>
-my %args;
-foreach my $j ( keys %ARGS ) {
-  next if( $ARGS{$j} !~ /\w+/ );
-  $args{$j} = $ARGS{$j};
-}
-if( exists( $args{comstr} ) ) {
-  $comstr = $args{comstr};
+if ( $action eq "discover" ){
+    if ($device = $dns->getdevbyname($host)){
+	$o = $dm->discover(device => $device, host => $host, comstr => $device->community);
+    }elsif($dns->getrrbyname($host)){
+	$o = $dm->discover(host => $host, comstr => $comstr);
+    }elsif(my $ip = $ipm->searchblock($host)){
+	if ( $device = $ip->interface->device ){
+	    $o = $dm->discover(device => $device, host => $host, comstr => $device->community);
+	}else{
+	    $o = $dm->discover(host => $host, comstr => $comstr);
+	}
+    }else{
+	$o = $dm->discover(host => $host, comstr => $comstr);
+    }
+    unless ($o){
+	$m->comp('error', caller => "device.html", error => $dm->error);
+	$m->abort;
+    }
+    for my $ver (qw (4 6)){
+	unless( $ipm->build_tree($ver) ){
+	    printf("Could not rebuild IPv%s space tree!: %s\n", $ver, $ipm->error);
+	}
+    }
+    if ($dm->output){
+</%perl>
+       <p>
+       <table class="formtablebg">
+	  <tr>
+	    <td>
+	    <pre><% $dm->output %></pre>
+	    </td>
+	  </tr>
+       </table>
+<%perl>
+    }
 }else{
-  $comstr = "public";
+    $m->comp('error', caller => "device.html", error => "Unknown action: $action");
+    $m->abort;
 }
-if( $args{device} && ! $args{sid} ) {
-  $session = $ui->mksession( $TMP );
+unless (defined ($name = $o->name->name)){
+    $name = "device"
 }
-if( $args{sid} ) {
-  $session = $ui->getsession( $TMP, $args{sid} );
-}
-if( $args{cancel} ) {
-  $ui->rmsession( $session );
-}
-
-if ( $args{action} eq "discover" ){
-
- if( exists( $args{insert} ) ) {
-
-    my %dev = %{$session->{device}};
-
-    if (!RR->search(name => "$args{device}"))
-    {
-    my (%devtmp, $newdevice, %rrtmp);
-    my @ifrsv = NvIfReserved->retrieve_all();
-
-    $rrtmp{name} = $args{device};
-    $devtmp{community} = $comstr;
-    
-    my %dev = %{$session->{device}};
-
-    $devtmp{sysdescription} = $dev{sysDescr};
-    if (length($dev{dot1dBaseBridgeAddress}) > 0 && $dev{dot1dBaseBridgeAddress} ne "noSuchObject")
-    {
-        $dev{dot1dBaseBridgeAddress} =~ s/^0x//;
-        my $physaddr = undef;
-        if ($physaddr = (PhysAddr->search(address=>$dev{dot1dBaseBridgeAddress}))[0])
-        {
-            # XXX: If MAC already exists perhaps this should blow up.
-            $devtmp{physaddr} = $physaddr;
-        }
-        else
-        {
-            unless ($physaddr = $ui->insert(table=>"PhysAddr", state=>{address=>$dev{dot1dBaseBridgeAddress}}))
-            {
-                die("Error: " . $ui->error());
-            }
-
-            $devtmp{physaddr} = $physaddr;
-        }
-    }
-
-    if (length($dev{entPhysicalSerialNum}) > 0 && $dev{entPhysicalSerialNum} ne "noSuchObject")
-    {
-        $devtmp{serialnumber} = $dev{entPhysicalSerialNum};
-    }
-
-    # attempt to determine device type
-    # -------------------------------------------------------------------------
-    if ($rrtmp{name} =~ /hub/)
-    {
-        $devtmp{type} = (DeviceType->search(name=>"Hub"))[0]->id;
-    }
-    elsif ($rrtmp{name} =~ /switch/ || $rrtmp{name} =~ /backbone/)
-    {
-        $devtmp{type} = (DeviceType->search(name=>"Switch"))[0]->id;
-    }
-    elsif ($rrtmp{name} =~ /-gw/ || $rrtmp{name} =~ /router/)
-    {
-        $devtmp{type} = (DeviceType->search(name=>"Router"))[0]->id;
-    }
-    elsif ($rrtmp{name} =~ /-ap/)
-    {
-        $devtmp{type} = (DeviceType->search(name=>"Access Point"))[0]->id;
-    }
-    elsif ($rrtmp{name} =~ /shaper/)
-    {
-        $devtmp{type} = (DeviceType->search(name=>"Packet Shaper"))[0]->id;
-    }
-    elsif ($rrtmp{name} =~ /-sgw/)
-    {
-        $devtmp{type} = (DeviceType->search(name=>"Wireless Gateway"))[0]->id;
-    }
-    else
-    {
-        $devtmp{type} = 0;
-    }
-
-    # and product
-    # -------------------------------------------------------------------------
-    if (my $prod = (Product->search(sysobjectid=>$dev{sysObjectID}))[0])
-    {
-	    $devtmp{productname} = $prod->id;
-    }
-
-    else
-    {
-        $devtmp{productname} = 0;
-    }
-
-    # create the RR
-    # -------------------------------------------------------------------------
-    $rrtmp{name} = $args{device};
-    $rrtmp{origin} = "0";
-    $rrtmp{type} = (RRType->search(name=>"A"))[0]->id;
-    $rrtmp{active} = 1;
-    $rrtmp{zone} = 0;
-    $rrtmp{data} = "0";
-
-    my $rr_id;
-    unless ($rr_id = $ui->insert(table=>"RR", state=>\%rrtmp))
-    {
-        die("Error: " . $ui->error());
-    }
-    
-    
-    # create the Device
-    # -------------------------------------------------------------------------
-    $devtmp{name} = $rr_id;
-    $devtmp{part_of} = 0;
-    $devtmp{site} = 0;
-    $devtmp{contactlist} = 0;
-    $devtmp{person} = 0;
-    $devtmp{entity} = 0;
-    $devtmp{managed} = 1;
-    unless ($newdevice = $ui->insert(table=>"Device", state=>\%devtmp))
-    {
-        my $uierr = $ui->error;
-        die("Error: $uierr");
-    }
-    
-    $inserted = $newdevice;
-    my %iftmp;
-
-    #print("<PRE>", Dumper(keys(%{$dev{interface}})), "</PRE>\n");
-    
-    foreach my $int (keys(%{$dev{interface}}))
-    {
-        my $skip = 0;
-        foreach my $rsv (@ifrsv)
-        {
-            my $n = $rsv->name;
-            $skip = 1 if($int =~ /$n/);
-        }
-        next if($skip);
-        next if(Interface->search(device=>$newdevice, 
-                                  number=>$dev{interface}{$int}{instance}));
-        
-        $iftmp{device} = $newdevice;
-        $iftmp{name} = $int;
-        $iftmp{managed} = 0;
-        foreach my $dbname (keys(%ifnames))
-        {
-            if($ifnames{$dbname} eq "descr")
-            {
-                if($dev{interface}{$int}{$ifnames{$dbname}} ne "-")
-                {
-                    $iftmp{$dbname} = $dev{interface}{$int}{$ifnames{$dbname}};
-                }
-            } 
-            elsif ($dbname eq "physaddr")
-            {
-                # create the PhysAddr record, if necessary, and assign
-                # the appropriate id to this interface.
-                $dev{interface}{$int}{$ifnames{"physaddr"}} =~ s/^0x//;
-                my $physaddr = undef;
-                if ($dev{interface}{$int}{$ifnames{"physaddr"}})
-                {
-                    if ($physaddr = (PhysAddr->search("address"=>$dev{interface}{$int}{$ifnames{"physaddr"}}))[0])
-                    {
-                        $iftmp{"physaddr"} = $physaddr->id;
-                    }
-                    else
-                    {
-                        unless ($physaddr = $ui->insert(table=>"PhysAddr", state=>{"address"=>$dev{interface}{$int}{$ifnames{"physaddr"}}}))
-                        {
-                            die("Error: " . $ui->error());
-                        }
-
-                        $iftmp{"physaddr"} = $physaddr;
-                    }
-                }
-            }
-
-            else
-            {
-                $iftmp{$dbname} = $dev{interface}{$int}{$ifnames{$dbname}};
-            }
-        }
-        
-        # Create Interface
-        # ---------------------------------------------------------------------
-        my $if;
-        unless ($if = $ui->insert(table=>"Interface", state=>\%iftmp))
-        {
-            die "Error: " . $ui->error();
-        }
-        
-        if (exists($dev{interface}{$int}{ipAdEntIfIndex}))
-        {
-            my @ips = keys(%{$dev{interface}{$int}{ipAdEntIfIndex}});
-            foreach my $ip (@ips)
-            {
-                printf("<PRE>%s</PRE>\n", $ip);
-            }
-            
-            #XXX This has changed dramatically...
-            #foreach my $ip (@ips)
-            #{
-            #    my($ipobj, $maskobj, $subnet, %iptmp, %nettmp);
-            #    $iptmp{mask} = $dev{interface}{$int}{ipAdEntIfIndex}{$ip};
-            #    unless ($ipobj = new NetAddr::IP($ip, $iptmp{mask}))
-            #    {
-            #        print "Could not create IP object: $ip<br>\n" if ($DEBUG);
-            #        next;
-            #    }
-	        #    if ($ip =~ /127\.0\.0\./)
-            #    {
-            #        print "Skipping loopback address: $ip<br>\n" if ($DEBUG);
-	        #        next;
-            #    }
-            #    $iptmp{interface} = $if;
-            #    $iptmp{address} = $ip;
-            #    $devips{$ip}{mac} = $dev{interface}{$int}{ifPhysAddress};
-                #if ($subnet = (Subnet->search(address=>$ipobj->network->addr, prefix=>$ipobj->masklen))[0])
-                #{
-                #    print "Subnet ",$ipobj->network," exists<br>\n" if ($DEBUG);
-                #    $iptmp{subnet} = $subnet->id;
-                #    $devips{$ip}{subnet} = $subnet;
-                #}
-                #else 
-                #{
-                #    print "Subnet ",$ipobj->network, " does not exist<br>\n" if ($DEBUG);
-                    #$nettmp{address} = $ipobj->network->addr;
-                    #$nettmp{entity} = 0;
-                    #eval { $subnet = Subnet->create( \%nettmp ); }
-                    #  or die "Unable to create Subnet $ipobj->network: $@<br>\n";
-                #    $iptmp{subnet} = 0;
-                #}
-                
-                # Create IP
-                # -------------------------------------------------------------
-                #my $newip;
-                #if (Ip->search(address=>$ip))
-                #{
-                #    ;  # We should say something here
-                #} 
-                #else
-                #{
-                #    unless ($newip = $ui->insert(table=>"Ip", state=>\%iptmp))
-                #    {
-                #        my $err = $ui->error;
-                #        die "Error: $err";
-                #    }
-                #}
-            #}
-        }
-    }
-
-    # Add Hub ports
-    # 
-    # Hack for HP-ICF-OID::hpAdvStkEnetSHAgent (et al).
-    # These hubs assign a random value for the port group number
-    # every time they reboot.  For that reason we do those manually
-    # (don't add their ports here)
-    unless (exists ($ignoredHubs{$dev{sysObjectID}}))
-    {
-        my %porttmp;
-        foreach my $port (keys(%{$dev{hubPorts}}))
-        {
-            next if (Interface->search(device=>$newdevice, number=>$dev{hubPorts}{$port}{instance}));
-            $porttmp{device} = $newdevice;
-            $porttmp{number} = $dev{hubPorts}{$port}{instance};
-            $porttmp{name} = $port;
-            $porttmp{managed} = "0";
-            # Create Interface (port)
-            my $if;
-            unless ($if = $ui->insert(table=>"Interface", state=>\%porttmp))
-            {
-                die("Error: " . $ui->error());
-            }
-        }
-    }
-
-    print("<PRE>", Dumper(%iftmp), "</PRE>\n") if ($DEBUG);
-
-    #my $dev = Device->retrieve($newdevice);
-    #unless ( $ui->update( object => $dev, state => \%devtmp ) ){
-    #  my $uierr = $ui->error;
-    #  die "Error: $uierr"; 
-    #}
-    #$ui->rmsession( $session );
-  }
- }
 </%perl>
-% if( $inserted ) {
-  <& device-ws.html, id => $inserted &>
-% } else {
-<& header, title => "Device" &>
-<!-- device.html -->
-<br>
-<blockquote>
-<form action="device.html" method="POST">
-<table>
-<tr>
-<td ALIGN="LEFT">Device</td><td ALIGN="LEFT">Community</td>
-</tr>
-<tr>
-<td><input type="text" name="device" size="30" value="<% $args{device} %>"></td>
-<td><input type="text" name="comstr" size="30" value="<% $comstr %>"></td>
-<td>
-   <select name="action">
-     <option>discover</option>
-     <option>update</option>
-   </select>
-</td></tr>
-</table>
-<input name="submit" value="Discover" type="submit">
-</form>
-</blockquote>
-%   if( exists( $args{cancel} ) ) {
-%     ;
-%   } elsif( exists( $args{insert} ) ) {
-<hr>
-%     # check to see if device already exists in Device table
-%     my %dev = %{ $session->{device} };
-%     my $id;
-%     if( ($id = (Device->search( name => "$args{device}" ))[0])
-%         || ($id = (Device->search( physaddr => $dev{dot1dBaseBridgeAddress}))[0] ) ) {
-        <p>Device <a href="device-ws.html?id=<% $id %>"><% $args{device} %></a> already exists in Device table.
-%     }
-%   } elsif( exists( $args{device} ) ) {
-<hr>
-<p><% $args{device} %>
-%     $nv->build_config( "device", $args{device}, $comstr );
-%     if( my( %dev ) = $nv->get_device( "device", $args{device}, $comstr ) ) {
-%       if( keys %{ $dev{interface} } || keys %{ $dev{hubPorts} }) {
-%         $session->{device} = \%dev;
-    <form>
-    <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
-    <input type="hidden" name="device" value="<% $args{device} %>">
-    <input type="hidden" name="comstr" value="<% $comstr %>">
-    <input type="hidden" name="action" value="discover">
-    <table cellpadding="3" cellspacing="1" border="0">
-    <tr align="LEFT">
-    <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
-    <input name="insert" value="Submit" type="submit">
-    </td>
-    <td>
-    <input name="cancel" value="Cancel" type="submit">
-    </td>
-    </tr>
-    </table>
-    </form>
-%         printf "<pre>%s</pre>\n", Dumper( \%dev ) if( $DEBUG );
-%         print "<code><pre>", $nv->string_config( "device", $args{device} ), "</pre></code>\n";
-%       } else {
-%         if( exists( $args{sid} ) && defined( $session ) ) {
-%           $ui->rmsession( $session );
-%         }
-    <p>Failed to get details.
-%       }
-%     } else {
-%       if( exists( $args{sid} ) && defined( $session ) ) {
-%         $ui->rmsession( $session );
-%       }
-    <p>Failed to build information.
-%     }
-%   }
-    <& footer &>
-% }
-%}elsif ( $args{action} eq "update" ){
-<%perl>
-  my $id;
-  if ( ! ($id = (Device->search(name => "$args{device}"))[0]) ){
-   print "<br><STRONG>Device $args{device} not found on db.  Run discovery instead</STRONG>";
-   return;
-  }else{
+ <p>
+ Go to <a href="device-ws.html?id=<% $o->id %>"><% $name %></a>
 
-    open OUTPUT, "$PREFIX/bin/updatedevices.pl -d $args{device} -v|"
-                or die "can't fork: $!";
-
-</%perl>
-    <table width="90%" align="center">
-      <tr><td>
-        <font size="-1">
-%       while (<OUTPUT>){
-%         if (/error/i){
-            <font color = "#FF0000"><% $_ %></font><br>
-%	  }elsif (/insert|remov/i){
-            <strong><% $_ %></strong><br>
-%	  }else{
-            <% $_ %><br>
-%	  }
-%       }
-        </font>
-        <p>
-        <A HREF="device-ws.html?id=<% $id %>">Go to <% $args{device} %></A>
-      </tr></td>
-    </table>
-%  }
- <& footer &>
-%}
-
+<& footer &>
 
 <%args>
-$PREFIX => "/usr/local/netdot"
-$comstr => undef
-$DEBUG => 1
-$TMP => "$PREFIX/tmp"
-$session => undef
-$inserted => 0
-%ifnames => ( physaddr => "ifPhysAddress", number => "instance", type => "ifType", description => "descr", speed => "ifSpeed", status => "ifAdminStatus" )
+$action
+$host
+$comstr   => "public"
+$id       => undef
+$s2name   => "Management"
 </%args>
 
 <%init>
-use Netdot::Netviewer;
 my $ui = Netdot::UI->new();
-my $nv = Netdot::Netviewer->new();
-my %ignoredHubs = ( 
-                     '1.3.6.1.4.1.11.2.3.7.8.2.5' => 1,
-                   );
-
-my %devips;
+my $dm = Netdot::DeviceManager->new();
+my $ipm = Netdot::IPManager->new();
+my $dns = Netdot::DNSManager->new();
+my $device;
+my $DEBUG = 0;
+my $o;
+my $name;
+print Dumper(%ARGS) if $DEBUG;
 </%init>
 
 <%doc>
 
-Device discovery & updates
+Web interface for device discovery and updates
 
 </%doc>

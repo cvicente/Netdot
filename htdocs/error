@@ -1,23 +1,33 @@
 
-%unless ( defined($ARGS{caller}) && defined($ARGS{error}) ){
-   <strong>Missing required parameters 'caller' and/or 'error'</strong>
-%   $m->abort;
-%}
-
-
-<p>
-<h3><% $ARGS{caller} %></h3> produced the following error:
-<p>
-<pre><% $ARGS{error} %></pre>
-
-<p><br>
-<strong>Return to Netdot's <a href="index.html">Main page</a></strong>
 <p>
 
+<p>
+ <table class="formtablebg">
+   <tr>
+    <td>
+     <strong><% $caller %></strong> produced the following error:
+     <pre><% $error %></pre>
+    </td>
+   </tr>
+ </table>
+<p>
+If you believe this is a bug, please copy the above message and send it to 
+<a href="mailto:<% $ui->{'ADMINEMAIL'} %>"><% $ui->{'ADMINEMAIL'} %></a>
+<p>
 
-<%init>
-</%init>
 
 <%args>
+$caller
+$error
 $user => $ENV{REMOTE_USER}
 </%args>
+
+<%init>
+my $ui = Netdot::UI->new();
+</%init>
+
+<%doc>
+
+User-friendly error messages
+
+</%doc>
