@@ -15,16 +15,32 @@ sub DESTROY { }
 
 use Exporter;
 
+#Be sure to return 1
+1;
 
 ######################################################################
 # Constructor
 ######################################################################
 sub new {
     my $class = shift;
-    my $self  = { };
+    my $self  = { '_error' => undef };
     bless($self, $class);
     return $self;
 } 
+
+#####################################################################
+# return error message
+#####################################################################
+sub error {
+  $_[0]->{'_error'} || '';
+}
+
+#####################################################################
+# clear error - private method
+#####################################################################
+sub _clear_error {
+  $_[0]->{'_error'} = undef;
+}
 
 ######################################################################
 # Get a Meta object for a table
@@ -271,8 +287,71 @@ sub rmsessions {
   }
 }
 
-#Be sure to return 1
-1;
+#####################################################################
+# update row in DB table
+#####################################################################
+sub update {
+  my( $self, %argv ) = @_;
+  my($obj) = $argv{object};
+  my(%state) = %{ $argv{state} };
+  my $change = 0;
+  $self->_clear_error();
+  foreach my $col ( keys %state ) {
+    if( $state{$col} ne $obj->$col ) {
+      $change = 1;
+      eval { $obj->set( $col, $state{$col} ); };
+      if( $@ ) {
+	$self->{'_error'} = "Unable to set $col to $state{$col}: $@";
+	return 0;
+      }
+    }
+  }
+  if( $change ) {
+    eval { $obj->update(); };
+    if( $@ ) {
+      $self->{'_error'} = "Unable to update: $@";
+      return 0;
+    }
+  }
+  return 1;
+}
+
+#####################################################################
+# insert row in DB table
+#####################################################################
+sub insert {
+  my($self, %argv) = @_;
+  my($tbl) = $argv{table};
+  my(%state) = %{ $argv{state} };
+  my $ret;
+  $self->_clear_error();
+  eval { $ret = $tbl->create( \%state ); };
+  if( $@ ) {
+    $self->{'_error'} = "Unable to insert into $tbl: $@";
+    return 0;
+  } else {
+    return $ret;
+  }
+}
+
+#####################################################################
+# remove row from table 
+#####################################################################
+sub remove {
+  my($self, %argv) = @_;
+  my($tbl) = $argv{table};
+  my($id) = $argv{id};
+  $self->_clear_error();
+  my($obj) = $tbl->retrieve($id);
+  eval { $obj->delete(); };
+  if( $@ ) {
+    $self->{'_error'} = "Unable to delete: $@";
+    return 0;
+  } else {
+    return 1;
+  }
+}
+
 
 ######################################################################
 #  $Log: GUI.pm,v $
@@ -344,6 +423,13 @@ Netdot::GUI groups common methods and variables related to Netdot's user interfa
   $gui = Netdot::GUI->new();
 
 Creates a new GUI object (basic constructor)
+
+=head2 error
+
+  $error = $gui->error();
+
+Returns error message.  If a method returns 0, you can call this method to 
+get the error string.
 
 =head2 getmeta
 
@@ -470,3 +556,34 @@ Removes specific session associated with the hash %session.
 Removes state older than $age (the supplied argument) from the 
 directory $dir.  Returns 1 for success and 0 for failure.  Remember, age 
 is in seconds.
+
+=head2 update - update a DB table row
+
+  $result = $gui->update( object => $obj, state => \%state );
+
+Updates values for a particular row in a DB table.  Takes two arguments. 
+The first argument 'object' is a Netdot::DBI (and consequently Class::DBI
+) object that represents the table row you wish to update.  The second 
+argument 'state' is a hash reference which is a simple composition 
+of column => value pairs.  Returns 1 for success and 0 for failure.
+
+=head2 insert - insert row into DB table
+
+  $result = $gui->insert( table => $tbl, state => \%state );
+
+Inserts row into database.  Method takes two arguments.  The first 
+argument 'table' is the name of the table to add a row to.  The second 
+argument 'state' is a hash reference which is a simple composition 
+of column => value pairs.  If the method succeeds, it returns a positive 
+integer which is the value of the newly inserted row's id column. 
+Otherwise, the method returns 0.
+
+=head2 remove - remove row from DB table
+
+  $result = $gui->remove( table => $tbl, id => $id );
+
+Removes row from table $tbl with id $id.  Function takes two arguments.
+The first argument is 'table', which is the name of the table a row will
+be removed from.  The second argument 'id' specifies the value of the id
+column.  Because id is a unique value, this will delete that specific row.
+Returns 1 for success and 0 for failure.
