@@ -39,6 +39,17 @@ if( $args{table} ) {
   $sid = $session{_session_id};
 }
 ##################################################
+# strange case: path has no elements (we popped last element)
+#               user hit commit on previous page and reloads current table
+#               need to prevent going back to start page and put back on
+#               the last table page (the one we popped) -- check created
+if( $args{commit} && 
+    ( ! defined( $session{path} ) || length( $session{path} ) < 1 ) ) {
+  print "yup...";
+  $session{path} = ( keys %{ $args{create} } )[0];
+  delete( $args{confirm} );
+}
+##################################################
 # if Cancel, delete state
 if( $args{cancel} eq "Cancel" ) {
   undef( $TBL );
@@ -81,7 +92,42 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
 }
 ##################################################
 # if commit, handle here
-
+if( $args{confirm} eq "Confirm" ) {
+  print Dumper( %session );
+  print Dumper( %ARGS );
+  my $T = $args{create};
+  my $c = $T->create( \%{ $session{tables}{$T} } );
+  delete( $session{tables}{ $args{create} } );
+  if( length( $session{path} ) < 1 ) {
+    tied(%session)->delete if( %session );
+  }
+  my $id = $c->id;
+  $session{created}{$T} = $id;
+}
+##################################################
+# create %state to pass to form.html
+if( defined( $TBL ) ) {
+  my %lt;
+  my $meta = (Meta->search( name => $TBL ))[0];
+  map { my($j, $k) = split( /:/, $_ ); $lt{$j} = $k } 
+      split( /,/, $meta->linksto );
+  if( exists( $session{tables}{$TBL} ) ) {
+    foreach my $c ( keys %{ $session{tables}{$TBL} } ) {
+      if( $lt{$c} ) {
+        $FLAG .= "- 1";
+      }
+      if( $session{created}{$lt{$c}} ) {
+        $FLAG .= " - 2";
+      }
+      if( $lt{$c} && $session{created}{$lt{$c}} ) {
+        $FLAG .= " - 3";
+        $state{$c} = $session{created}{$lt{$c}};
+      } else {
+        $state{$c} = $session{tables}{$TBL}{$c};
+      }
+    }
+  }
+}
 </%perl>
 
 % ####################################################################
@@ -91,16 +137,11 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
 
 
 % if( $args{confirm} eq "Confirm" ) {
-    <p> I would have created an <% $args{create} %> object <br>
-%   delete( $session{tables}{ $args{create} } );
-%   if( length( $session{path} ) < 1 ) {
-%     tied(%session)->delete if( %session );
-      deleting state<br>
-%   }
+    <p><font size=-1>(created an <% $args{create} %> object) </font> <br>
 % }
-tables : <% $TBL %> : <% $args{table} %><br>
-flag : <% $FLAG %> <br>
-% print Dumper( %session );
+ tables : <% $TBL %> : <% $args{table} %><br>
+ flag : <% $FLAG %> <br>
+%print Dumper( %session );
  <hr>
 
 
@@ -119,6 +160,11 @@ flag : <% $FLAG %> <br>
 %       my $ft = (Meta->search( name => $linksto{$C} ))[0];
 %       if( ! defined( $ft ) ) {
           No such object <% $linksto{$C} %>
+%       } elsif( $session{tables}{$TBL}{$C} == 0 ) {
+          -
+%       } elsif( ! defined( $linksto{$C}->
+%                           retrieve( int( $session{tables}{$TBL}{$C} ) ) ) ) {
+          -
 %       } else {
 %         my $lbl = $ft->label;
 %         my $o = $linksto{$C}->retrieve( $session{tables}{$TBL}{$C} );
@@ -151,7 +197,7 @@ flag : <% $FLAG %> <br>
 % } else {
     <form action="create.html" method="POST">
     <input type="hidden" name="sid" value="<% $sid %>">
-    <& form.html, table => $TBL, showdisabled => '0' &>
+    <& form.html, table => $TBL, showdisabled => '0', session => \%state &>
     <table cellpadding="3" cellspacing="1" border="0">
     <tr align="LEFT">
     <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
@@ -176,13 +222,14 @@ use Data::Dumper;
 use Apache::Session::File;
 use Apache::Session::Lock::File;
 my( %args, %order, %linksto, %linksfrom );
-my( $obj, %session, $TBL, $PREV, $id, $sid );
+my( $obj, %session, $TBL, $PREV, $id, $sid, %state );
 my $DIR = "/home/netdot/public_html/tmp";
 undef( %args );
 undef( %order );
 undef( %linksto );
 undef( %linksfrom );
 undef( %session );
+undef( %state );
 undef( $obj );
 undef( $TBL );
 undef( $PREV );
@@ -220,6 +267,17 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.7  2003/05/23 23:45:38  netdot
+#  lots of changes.  in a nutshell, create stuff now works -- actually
+#  creates data.  it also passes state to form.html to fill in some
+#  details where necessary.  there is a problem if a user does:
+#
+#    - user hits confirm on one page
+#    - we pop the last element out of path (and table is not set)
+#    - user hits reload
+#
+#  create then goes back to first page, not back to that table page.
+#
 #  Revision 1.6  2003/05/22 23:23:48  netdot
 #  have most of the driving functionality in place -- so links take you
 #  where you're supposed to go with the requisite state.  also displaying
