@@ -807,10 +807,11 @@ if ( defined($search) && $search =~ /\w+/ ){
 		         <option></option> 
 		       </select>
 %		    }else{  #too many instances.  Offer a keyword search
-		       <input type="text" name="InterfaceDep_srch" value="Keywords">
+%		       my $srchf = '_' . $int->id . 'parent_srch';  #name of the form input tag
+		       <input type="text" name="<% $srchf %>" value="Keywords">
 		       &nbsp;<input type="button" name="" value="List" 
-		       onClick="sendquery(<% "_InterfaceDep__" . $par->id ."__parent" %>, InterfaceDep_srch.value, 'Interface')" >
-		       <br><select name="<% "_InterfaceDep__" . $par->id ."__parent" %>">
+		       onClick="sendquery(<% '_InterfaceDep__' . $par->id . '__parent' %>, <% $srchf . '.value' %>, 'Interface')" >
+		       <br><select name="<% '_InterfaceDep__' . $par->id . '__parent' %>">
 		          <option value="<% $par->parent->id %>" selected><% $lbl %></option>
 			  <option value="0">[null]</option>
 		       </select>
@@ -823,9 +824,10 @@ if ( defined($search) && $search =~ /\w+/ ){
 %	   }else{ # No parents exist
 %	      if ($edit eq "intinfo"){	 
 %	       if (scalar($int->ips)){ #only interfaces with ip addresses (might change later)
-	        <input type="text" name="InterfaceDep_srch" value="Keywords">
+%	        my $srchf = '_' . $int->id . 'parent_srch';  #name of the form input tag
+		<input type="text" name="<% $srchf %>" value="Keywords">
 	        &nbsp;<input type="button" name="" value="List" 
-	        onClick="sendquery(<% "_InterfaceDep__" . $int->id ."__new" %>, InterfaceDep_srch.value, 'Interface')" >
+	        onClick="sendquery(<% "_InterfaceDep__" . $int->id ."__new" %>, <% $srchf . '.value' %>, 'Interface')" >
 	        <br><select name="<% "_InterfaceDep__" . $int->id ."__new" %>">
 	 	  <option value="0">[null]</option>
 	        </select>	      

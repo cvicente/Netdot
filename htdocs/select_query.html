@@ -1,8 +1,12 @@
 <%perl>
+
+print "<pre> ", Dumper(%ARGS), "</pre><br>";
+
 if ($crit =~ /\w+/){
-  if ($crit =~ /\s+/){  #If there's more than one word
+  if ($crit =~ /\w+\s+\w+/){  #If there's more than one word
      @terms = split /\s+/, $crit;
   }else{
+     $crit =~ s/\s+//;
      push @terms, $crit;    
   }
   print "terms are: ",  join ', ', @terms, "<br>" if $debug;
@@ -19,15 +23,16 @@ print "labels are: ", join ', ', @labels, "<br>" if $debug;
 foreach my $c (@labels){
 	if (! $linksto{$c} ){ # column is local
 	  foreach my $term (@terms){
-	    print "Searching  $term in $c <br>" if $debug;
+	    print "Searching $term in $c <br>" if $debug;
 	      my $it = $table->search_like( $c => "%" . $term . "%" );
 	      while (my $obj = $it->next){
-	         if (exists $un{$obj}){ # store intersected elements
-	           $int{$obj} = $obj;
+	         if (exists $un{$obj->id}){ # store intersected elements
+	           $int{$obj->id} = $obj;
 		   print "$obj added to intersection<br>" if $debug;
-	         }
-	         $un{$obj} = $obj;
-		 print "$obj added to union<br>" if $debug;
+	         }else{
+	           $un{$obj->id} = $obj;
+		   print "$obj added to union<br>" if $debug;
+		 }
 	    }	
           }
 	}else{ # column is a foreign key.
@@ -44,12 +49,13 @@ foreach my $c (@labels){
 		  while (my $ro = $rit->next){
 		     my $it2 = $table->search($c => $ro);
 		     while (my $obj = $it2->next){
-	       	       if (exists $un{$obj}){ # store intersected elements
-		           $int{$obj} = $obj;
-			   print "$obj added to intersection<br>" if $debug;
+	       	       if (exists $un{$obj->id}){ # store intersected elements
+		          $int{$obj->id} = $obj;
+			  print "$obj added to intersection<br>" if $debug;
+		       }else{
+		         $un{$obj->id} = $obj;
+		         print "$obj added to union<br>" if $debug;
 		       }
-		       $un{$obj} = $obj;
-		       print "$obj added to union<br>" if $debug;
 		     } 
 		  }	
 	       }# that's it. Just go down one level
@@ -61,13 +67,13 @@ foreach my $c (@labels){
 if (scalar (keys %int)){
      $ret = \%int;
      print "return set is the intersection<br>" if $debug;
-     if (scalar (keys %int) >= $max){
+     if ( (scalar(keys %int)) >= $max){
         $toomany = 1;
      }
 }else { #no intersected elements, use union
     $ret = \%un;
      print "return set is the union<br>" if $debug;
-     if (scalar (keys %un) >= $max){
+     if ( (scalar(keys %un)) >= $max){
         $toomany = 1;
      }
 }
@@ -80,16 +86,16 @@ if (scalar (keys %int)){
 %    if ($toomany){
        <input type="hidden" name="" value="More than <% $max %> matches.  Refine search">
 %    }
-%    my @objs = keys %$ret;
-%    my $lblfield = ( $gui->getlabels(ref($ret->{$objs[0]})) )[0];	 
-%    @objs = sort { $ret->{$a}->$lblfield cmp $ret->{$b}->$lblfield } @objs; 
+%    my @objs = map { $table->retrieve($_) } keys %$ret;
+%    my $lblfield = ( $gui->getlabels($table) )[0];
+%    @objs = sort { $a->$lblfield cmp $b->$lblfield } @objs;
 %    foreach my $o (@objs){
-%       my $lbl = $gui->getobjlabel($ret->{$o}, ", ");
-        <input type="hidden" name="<% $ret->{$o}->id %>" value="<% $lbl %>">
+%       my $lbl = $gui->getobjlabel($o, ", ");
+        <input type="hidden" name="<% $o->id %>" value="<% $lbl %>">
 %       last if ($count++) == $max;
 %    }
 %}else{
-       <input type="hidden" name="" value="No matches">
+       <input type="hidden" name="0" value="No matches">
 %}
 </form>
 
