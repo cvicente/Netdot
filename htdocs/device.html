@@ -264,6 +264,17 @@ function showVlan(){
 <td valign="top" align="center">
 
 <!-- Location Table -->
+%   if ($editloc) {
+    <script language="JavaScript">
+    <!--
+    var closetList = new DynamicList("netdotform", "Device__<% $id %>__closet", "site", "Closet", "Device__<% $id %>__site");
+    var roomList = new DynamicList("netdotform", "Device__<% $id %>__room", "floor", "Room", "Device__<% $id %>__site");
+    roomList.setQueryURL("room_site_query.html");
+    LIST_MANAGER.addList(closetList, roomList);
+    -->
+    </script>
+
+%   }
 
   <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
    <tr class="formtabletitle" >
@@ -290,18 +301,36 @@ function showVlan(){
 %               $ui->selectLookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html");
 	   </td>
 	   <td class="formtablec1">Site: </td>
-	   <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", linkPage=>"view.html");
+	   <td class="formtablec2">
+%               $ui->selectLookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="closetList.doIt(); roomList.doIt();"');
 	   </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Room: </td>
 	   <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"room", lookup=>"Room", edit=>$editloc, linkPage=>"view.html");
+%               if ($editloc) {       
+                <select name="Device__<% $id %>__room">
+%               if ($o->room) {
+                <option value="<% $o->room->id %>"><% $o->room->name %></option>
+%               }
+                <option value="0">[null]</option>
+                </select>
+%               } else {
+                <% $o->room ? sprintf("<A HREF=\"view.html?table=Room&id=%d\">%s</A>", $o->room->id, $o->room->name) : "" %>
+%               }       
 	   </td>
 	   <td class="formtablec1"> <i>- or -</i> Closet: </td>
-	   <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"closet", lookup=>"Closet", edit=>$editloc, linkPage=>"view.html");
+	   <td class="formtablec2">
+%               if ($editloc) {       
+                <select name="Device__<% $id %>__closet">
+%               if ($o->closet) {
+                <option value="<% $o->closet->id %>"><% $o->closet->name %></option>
+%               }
+                <option value="0">[null]</option>
+                </select>
+%               } else {
+                <% $o->closet ? sprintf("<A HREF=\"closet.html?id=%d\">%s</A>", $o->closet->id, $o->closet->name) : "" %>
+%               }       
 	   </td>
         <tr>
 	   <td class="formtablec1">Rack: </td>

@@ -26,6 +26,29 @@ if (defined($ARGS{_action})) {
         $site = $o->floor->site || $o->site;
     }
 }
+
+if (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS{__picture}) && $ARGS{__picture} ne "") {
+    my $ret = $ui->insertbinfile($ARGS{__picture});
+    $m->comp("error.mhtml", $ui->error()) if (!$ret);
+    $m->comp("error.mhtml", $ui->error()) if (!($ui->insert(table=>"ClosetPicture", state=>{closet=>$id, binfile=>$ret})));
+} elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_PICTURES") {
+    my %deleted = ();
+    foreach my $key (keys(%ARGS)) {
+        if ($key =~ /^__delete_pic_(\d+)/o) {
+            # if deleting a picture
+            my $obj = ClosetPicture->retrieve($1);
+            my $binfileid = $obj->binfile->id;
+            my $objid = $obj->id;
+            $m->comp("error.mhtml", $ui->error()) if (!($ui->remove(table=>"ClosetPicture", id=>$objid)));
+            $m->comp("error.mhtml", $ui->error()) if (!($ui->remove(table=>"BinFile", id=>$binfileid)));
+            $deleted{$1} = 1;
+        } elsif ($key =~ /^__picture_(\d+)/o && !exists($deleted{$1})) {
+            # if uploading a new picture in place of another.
+            next if ($ARGS{$key} eq "");
+            $m->comp("error.mhtml", $ui->error()) if (!($ui->updatebinfile($ARGS{$key}, $1)));
+        }
+    }
+}
 # end insertion/update code
 # -----------------------------------------------------------------------------
 </%perl>
@@ -250,6 +273,124 @@ LIST_MANAGER.addList(floorSearchList);
     </tr>
 </table>
 <!-- End Closet Table -->
+
+<!-- Begin Closet Pictures -->
+% if (defined($o)) {
+<A NAME="pics"></A>
+<table border="0" width="95%" align="center"  class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="center">
+    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+    <tr class="formtabletitle">
+     <td colspan="2">
+     <form name="cable_strand_form" action="closet.html" method="POST" enctype="multipart/form-data">
+     <input type="hidden" name="id" value="<% $id %>">
+     <input type="hidden" name="_action" value="UPDATE_PICTURES">
+     <input type="hidden" name="s2name" value="<% $s2name %>">
+      <table width="100%" border="0">
+       <tr>
+         <th width="80%" align="center">Closet Pictures</th>
+%	 if ($editPictures) {	 
+            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
+%	 } else {
+            <td align="right">
+                <a href="closet.html?id=<% $id %>&edit=closetpictures#pics">[edit]</a>
+            </td>
+%	 }
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      
+    <table border="0" width="90%">
+    <%perl>
+    my @pictures;
+    map { push (@pictures, $_) } $o->pictures;
+    </%perl>
+
+%	if (scalar(@pictures)) {
+    <tr>
+        <td align="left">
+            <a href="closet.html?id=<% $id %>&pic_sort=filename#pics">File Name</a>
+        </td>
+        <td align="left">
+            <a href="closet.html?id=<% $id %>&pic_sort=filesize#pics">Size</a>
+        </td>
+        <td align="left">
+            <a href="closet.html?id=<% $id %>&o_sort=filetype#pics">File Type</a>
+        </td>
+        <td align="left">
+            <a href="closet.html?id=<% $id %>&strand_sort=info#pics">Comments</a>
+        </td>
+    </tr>
+
+    <%perl>
+    my @sorted_pics;
+    $pic_sort = "filename" if (!$pic_sort);
+    @sorted_pics = sort { $a->binfile->$pic_sort cmp $b->binfile->$pic_sort } @pictures;
+    </%perl>
+
+%   my $i = 0;
+%   foreach my $pic (@sorted_pics) {
+%   $i = ($i + 1) % 2;
+    <tr align="left" class="<% $cssitem{$i} %>">
+        <td align="left">
+%       if ($editPictures) {
+            <input type="checkbox" name="<% "__delete_pic_". $pic->id %>">[del]
+%           $ui->textField(object=>$pic->binfile, table=>"BinFile", column=>"filename", edit=>$editPictures);
+            <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Update Picture: &nbsp;<input type="file" name="__picture_<% $pic->id %>" size="20" value="">
+%       } else {
+            <a href="display_bin.html?id=<% $pic->binfile->id %>" TARGET=_new><% $pic->binfile->filename %></a>
+%       }
+        </td>
+
+        <td align="left">
+            <% $pic->binfile ? $pic->binfile->filesize : "" %>
+        </td>
+
+        <td align="left">
+%           $ui->textField(object=>$pic->binfile, table=>"BinFile", column=>"filetype", edit=>$editPictures); 
+        </td>
+
+        <td align="left">
+%           $ui->textArea(object=>$pic->binfile, table=>"BinFile", column=>"info",
+%                         edit=>$editPictures, htmlExtra=>"rows='2' cols='40'");
+
+        </td>
+    </tr>
+%   }
+%}
+    </table>
+    </td>
+    </tr>
+    </table>
+    </form>
+
+    <br>
+
+%	 if (!$editPictures) {
+    <form action="closet.html" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="_action" value="ADD_PICTURE">
+    <table border="0" width="100%">
+        <tr align="left" class="<% $cssitem{0} %>">
+            <td align="left">
+            Add New Picture: &nbsp;<input type="file" name="__picture" size="30" value="">
+	        &nbsp;<input type="submit" name="__picture_add" value="Add">
+            </td>
+        </tr>
+    </table>
+    </form>
+%   }
+
+</td>
+</tr>
+</table>
+% }
+<!-- End Closet Picture Table -->
 
 
 % if (defined($o)) {
@@ -544,6 +685,7 @@ $id => undef;
 $edit => undef;
 $bb_sort => undef;
 $cable_sort => undef;
+$pic_sort => undef;
 $s2name => "Plant";
 </%args>
 
@@ -554,6 +696,7 @@ my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
 my $site = undef;
 my $editCloset = 0;
+my $editPictures = 0;
 my $editBackbones = 0;
 my $editHorizontal = 0;
 
@@ -563,6 +706,7 @@ if ($id && $id ne "NEW")  {
 }
 
 $editCloset = 1 if ($id eq "NEW" || $edit eq "closetinfo");
+$editPictures = 1 if ($edit eq "closetpictures");
 $editBackbones = 1 if ($edit eq "bbinfo");
 $editHorizontal = 1 if ($edit eq "cableinfo");
 </%init>

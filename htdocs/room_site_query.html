@@ -1,6 +1,6 @@
 <%perl>
 ###############################################################################
-# Based on select_query.html w/ some customization.
+# A customized version of the generic dynamic_list_query.html
 ###############################################################################
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
@@ -22,25 +22,26 @@ if ($val =~ /\w+/) {
 <script language="JavaScript">
 <!--
 <%perl>
-my $lblField = ($ui->getlabels($table))[0];
-my @results;
-foreach my $term (@terms) {
-   push(@results, $table->search($search_field=>$term)); 
+my @results = ();
+my $site_id = $terms[0];
+my $site = Site->retrieve($site_id);
+foreach my $floor ($site->floors) {
+    foreach my $room ($floor->rooms) {
+        push (@results, $room);
+    }
 }
 
 printf("var listdata = new Array();\n");
 
 if (scalar(@results) < $MAX_RESULTS) {
-    @results = sort { $a->$lblField cmp $b->$lblField } @results;
+    @results = sort { $a->name cmp $b->name } @results;
 
     printf("listdata.push(new Option(\"No Matches\", \"\"));\n") unless (scalar(@results));
-
-    foreach my $res (@results) {
-        printf("listdata.push(new Option(\"%s\", \"%s\"));\n", $res->$lblField, $res->id);
+    
+    foreach my $room (@results) {
+        printf("listdata.push(new Option(\"%s\", \"%s\"));\n", $room->name, $room->id);
     }
-}
-
-else {
+} else {
     printf("listdata.push(new Option(\"Too Many Results\", \"\"));\n")
 }
 

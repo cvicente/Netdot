@@ -650,6 +650,89 @@ sub remove {
   return 1;
 }
 
+=head2 insertbinfile - inserts a binary file into the DB.
+
+  $ret = $ui->insertbinfile(file, filetype);
+
+  inserts binary object into the BinFile table. If filetype is not
+  specified it will be (hopefully) determined automatically.
+
+  Returns the id of the newly inserted row, or 0 for failure and error
+  should be set.
+
+=cut
+
+sub insertbinfile($$$) {
+    my ($self, $fh, $filetype) = @_;
+    my $extension = $1 if ($fh =~ /\.(\w+)$/);
+    my %mimeTypes = ("jpg"=>"image/jpeg", "jpeg"=>"image/jpeg", "gif"=>"image/gif",
+                     "png"=>"image/png", "bmp"=>"image/bmp", "tiff"=>"image/tiff", 
+                     "tif"=>"image/tiff", "pdf"=>"application/pdf");
+
+    if (!exists($mimeTypes{lc($extension)})) {
+        $self->error("File type could not be determined: extension \".$extension\" is unknown.");
+        return 0;
+    }
+
+    my $mimetype = $mimeTypes{lc($extension)};
+    my $data;
+    while (<$fh>) {
+        $data .= $_;
+    }
+    
+    my %tmp;
+    $tmp{bindata} = $data;
+    $tmp{filename} = $fh;
+    $tmp{filetype} = $mimetype;
+    $tmp{filesize} = -s $fh;
+    
+    return $self->insert(table=>"BinFile", state=>\%tmp);
+}
+
+=head2 updatebinfile - updates a binary file in the DB.
+
+  $ret = $ui->updatebinfile(file, binfile_id);
+
+  updates the the binary object with the specified id.
+
+  Returns positive int on success, or 0 for failure and error
+  should be set.
+
+=cut
+
+sub updatebinfile($$$) {
+    my ($self, $fh, $id) = @_;
+    my $extension = $1 if ($fh =~ /\.(\w+)$/);
+    my %mimeTypes = ("jpg"=>"image/jpeg", "jpeg"=>"image/jpeg", "gif"=>"image/gif",
+                     "png"=>"image/png", "bmp"=>"image/bmp", "tiff"=>"image/tiff", 
+                     "tif"=>"image/tiff", "pdf"=>"application/pdf");
+
+    if (!exists($mimeTypes{lc($extension)})) {
+        $self->error("File type could not be determined for $fh: extension \".$extension\" is unknown.");
+        return 0;
+    }
+
+    my $obj = BinFile->retrieve($id);
+    if (!defined($obj)) {
+        $self->error("Could not locate row in BinFile with id $id.");
+        return 0;
+    }
+
+    my $mimetype = $mimeTypes{lc($extension)};
+    my $data;
+    while (<$fh>) {
+        $data .= $_;
+    }
+    
+    my %tmp;
+    $tmp{bindata} = $data;
+    $tmp{filename} = $fh;
+    $tmp{filetype} = $mimetype;
+    $tmp{filesize} = -s $fh;
+
+    return $self->update(object=>$obj, state=>\%tmp);
+}
+
 =head2 timestamp
 
   $lastseen = $ui->timestamp();
