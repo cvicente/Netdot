@@ -1,0 +1,110 @@
+2003-04-16  netdot  <netdot@tiroloco.uoregon.edu>
+
+	* ins.sample.data: thinking through Meta table
+
+	* DBI.pm, netdot.schema:
+	fix to Meta -- changed mainObjects to mainObject
+
+	* DBI.pm: added more details to Meta.
+
+	* netdot.schema: added Meta table for storing meta information
+
+	* DBI.pm:
+	added Meta table for holding meta information.  this should include:
+	  * column sorting
+	  * table relationships
+	  * 'main object'
+	still needs to be fleshed out....
+
+2003-04-15  netdot  <netdot@tiroloco.uoregon.edu>
+
+	* DBI.pm:
+	couple more bugfixes: another 'qw' forgot in Availability and misnamed
+	column in Customer (s/hours/availability/)
+
+	* DBI.pm: removed tables() function.  Use DBI::tables() instead.
+
+	* DBI.pm: fixed another bug in Peer package -- forgot 'qw'.
+
+	* DBI.pm:
+	added tables() to base class.  I need a way to discover all the tables
+	in the database -- don't see a way to do that in Class::DBI.  Fixed
+	bug in package Peer.
+
+	* ins.sample.data: added some nero entries to flesh things out a bit
+
+	* ins.sample.data: New file.
+
+2003-04-14  netdot  <netdot@tiroloco.uoregon.edu>
+
+	* netdot.schema, DBI.pm:
+	added disabled column to those classes with has_many relationships
+
+2003-04-10  netdot  <netdot@tiroloco.uoregon.edu>
+
+	* DBI.pm:
+	reflected change in netdot.schema.  Ip has_a Interface; Interface
+	has_many Ip.
+
+	* netdot.schema: removed ip from Interface and added interface to Ip.
+
+	* DBI.pm:
+	added the rest of the classes and completed the relationships between
+	all of them
+
+	* netdot.schema: changed contactpool to contactPool in Customer;
+	added status to Circuit;
+	added ip to Interface;
+	added availability to Peer.
+
+	* netdot.schema: changed nodeId to nodeID; still need to add 'disabled'
+
+	* DBI.pm: updated column names to new naming convention
+
+	* DBI.pm: added a few more classes
+
+	* netdot.schema:
+	changed naming convention for column names (first letter now lowercase)
+
+	* DBI.pm:
+	no changes on this rev; just sorting packages in alphabetical listing
+
+	* DBI.pm: fleshing out has_a relationships for existing classes.
+
+	* netdot.schema: more sorting
+
+	* netdot.schema:
+	no changes; just resorted everything to better find a given table.
+	sort order is now alphabetical
+
+2003-04-09  netdot  <netdot@tiroloco.uoregon.edu>
+
+	* DBI.pm: fleshing out definitions of each class.
+
+	* netdot.schema:
+	changed Hours to Availability in Customer to make consistent with Site
+	& Person tables.
+
+	* netdot.schema:
+	added Availability table -- used by a number of other tables
+
+	* DBI.pm: adding landmarks
+
+	* netdot.schema:
+	added Status table so that one can specify the status of a given circuit
+
+2003-04-08  netdot  <netdot@tiroloco.uoregon.edu>
+
+	* DBI.pm: testing trigger
+
+	* README: New file.
+
+	* netdot.schema: initial revision
+
+	* netdot.schema: New file.
+
+	* setup-class-dbi.pl: initial checkin
+
+	* setup-class-dbi.pl, initacls.Pg: New file.
+
+Added ifAlias and jackNumber to Interface
