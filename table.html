@@ -6,8 +6,7 @@ foreach my $j ( keys %ARGS ) {
 $WIDTH = $args{width} if( exists( $args{width} ) );
 $LINK  = $args{link}  if( exists( $args{link} ) );
 $TITLE = $args{title} if( exists( $args{title} ) );
-map { push @tbls, $_ } # unless( $_->name eq "Meta" ) } 
-  sort { $a->name cmp $b->name } Meta->retrieve_all();
+map { push @tbls, $_ } sort { $a cmp $b } $gui->gettables;
 $MAX = scalar( @tbls );
 </%perl>
 
@@ -24,7 +23,7 @@ $MAX = scalar( @tbls );
        </tr>
        <tr>
 %   }
-       <td><a href="<% $LINK %>?table=<% $tbls[$j]->name %>"><% $tbls[$j]->name %></a></td>
+       <td><a href="<% $LINK %>?table=<% $tbls[$j] %>"><% $tbls[$j] %></a></td>
 %   if( ( ( $i ) % $WIDTH ) < ( $MAX % $WIDTH ) ) {
 %     $j += int( $MAX / $WIDTH ) + 1;
 %   } else {
@@ -53,6 +52,8 @@ $MAX => 0
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
+use Netdot::GUI;
+my $gui = Netdot::GUI->new();
 
 </%init>
 
@@ -68,6 +69,9 @@ Arguments:
 
 ######################################################################
 #  $Log: table.html,v $
+#  Revision 1.7  2003/07/11 00:47:13  netdot
+#  Modified to use Netdot::GUI and not call Meta directly
+#
 #  Revision 1.6  2003/06/18 16:42:24  netdot
 #  fixed bug in how this goes through a list of items
 #
