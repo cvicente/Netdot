@@ -401,6 +401,9 @@ sub _read_globals {
   my $self = shift ;
   foreach my $inst ( Netviewer->retrieve_all() ) {
     my( $n, $v ) = ( $inst->name, $inst->value );
+    if( $n eq "aliases" ) {
+      $n = "cat";
+    }
     $self->{"_$n"} = $v;
   }
 } # read_globals
