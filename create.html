@@ -1,6 +1,10 @@
 <%perl>
+##################################################
+# clean out old state files
 my $locker = new Apache::Session::Lock::File ;
 $locker->clean( $DIR, 3600 );  # remove files older than 1 hr
+##################################################
+# grab arguments to this script
 my %rev = reverse %ARGS;
 foreach my $j ( keys %ARGS ) {
   if( $ARGS{$j} eq "New" ) {
@@ -11,7 +15,7 @@ foreach my $j ( keys %ARGS ) {
   $args{$j} = $ARGS{$j};
 }
 ##################################################
-# defined TBL (if not already) and set previous table was for reference
+# define TBL (if not already) and set previous table for reference
 if( $TBL && $args{table} ) {
   $PREV = $args{table}
 } elsif( ! defined( $TBL ) ) {
@@ -24,18 +28,22 @@ unless( defined( $PREV ) ) {
 # get state back
 if( defined( $args{sid} ) ) {
   $sid = $args{sid};
+  tie %session, 'Apache::Session::File', 
+    $sid, { Directory => $DIR, LockDirectory => $DIR };
 }
-if( $TBL ) {
+##################################################
+# create state if necessary
+if( $args{table} ) {
   tie %session, 'Apache::Session::File', 
     $sid, { Directory => $DIR, LockDirectory => $DIR };
   $sid = $session{_session_id};
 }
 ##################################################
 # if Cancel, delete state
-if( $args{submit} eq "Cancel" ) {
+if( $args{cancel} eq "Cancel" ) {
   undef( $TBL );
   undef( $PREV );
-  tied(%session)->delete;
+  tied(%session)->delete if( %session );
   delete( $args{sid} );
   delete( $args{table} );
   delete( $args{submit} );
@@ -43,7 +51,7 @@ if( $args{submit} eq "Cancel" ) {
   delete( $rev{New} );
 }
 ##################################################
-# fill in the rest of state details
+# fill in the rest of state details -- for Submit or New
 if( exists( $args{submit} ) || exists( $rev{New} ) ) {
   foreach my $arg ( keys %args ) {
     next if( $arg eq "submit" || $arg eq "sid" 
@@ -56,9 +64,19 @@ if( exists( $args{submit} ) || exists( $rev{New} ) ) {
       : ( $session{path} = "$args{table}" );
   }
 }
-if( exists( $args{submit} ) ) {
+##################################################
+# get back some history of where user has clicked
+if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
   my @tbls = split( /;/, $session{path} );
-  $TBL = pop @tbls;
+  $FLAG = join( ":", @tbls );
+  if( scalar( @tbls ) > 0 ) {
+    if( ! exists( $args{submit} ) ) {
+      my $tmp = pop @tbls;
+      $TBL = $tmp;
+    }
+  }
+  $FLAG .= " -- ";
+  $FLAG = join( ":", @tbls );
   $session{path} = join( ';', @tbls );
 }
 ##################################################
@@ -69,28 +87,56 @@ if( exists( $args{submit} ) ) {
 % ####################################################################
 <p>
 <& header, title =>"$TBL Create" &>
+<!-- begin create.html -->
 
-% if( $args{"submit"} eq "Submit" && ! defined( $TBL ) ) {
+
+% if( $args{confirm} eq "Confirm" ) {
+    <p> I would have created an <% $args{create} %> object <br>
+%   delete( $session{tables}{ $args{create} } );
+%   if( length( $session{path} ) < 1 ) {
+%     tied(%session)->delete if( %session );
+      deleting state<br>
+%   }
+% }
+tables : <% $TBL %> : <% $args{table} %><br>
+flag : <% $FLAG %> <br>
+% print Dumper( %session );
+ <hr>
+
+
+% if( $args{"submit"} eq "Submit" ) {
 
     <p>Please confirm the following:
-%   foreach my $T ( keys %{ $session{tables} } ) {
-%     my $obj = (Meta->search( name => $T ))[0];
-%     my %linksto;
-%     map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
-%         split( /,/, $obj->linksto );
-      <p><blockquote><strong><% $T %></strong><ul>
-%     foreach my $C ( keys %{ $session{tables}{$T} } ) {
-
-        <li><% $C %> : <% $session{tables}{$T}{$C} %>
+%   my $obj = (Meta->search( name => $TBL ))[0];
+%   my %linksto;
+%   map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
+%       split( /,/, $obj->linksto );
+    <p><blockquote><strong><% $TBL %></strong><ul>
+%   foreach my $C ( keys %{ $session{tables}{$TBL} } ) {
+      <li>
+      <% $C %> :
+%     if( $linksto{$C} ) {
+%       my $ft = (Meta->search( name => $linksto{$C} ))[0];
+%       if( ! defined( $ft ) ) {
+          No such object <% $linksto{$C} %>
+%       } else {
+%         my $lbl = $ft->label;
+%         my $o = $linksto{$C}->retrieve( $session{tables}{$TBL}{$C} );
+          <% $o->$lbl %>
+%       }
+%     } else {
+        <% $session{tables}{$TBL}{$C} %>
 %     }
-      </ul></blockquote>
 %   }
+    </ul></blockquote>
     <form action="create.html" method="POST">
     <input type="hidden" name="sid" value="<% $sid %>">
-    <input name="commit" value="Submit" type="submit">
-%   tied(%session)->delete if( %session );
+    <input type="hidden" name="create" value="<% $TBL %>">
+    <input name="confirm" value="Confirm" type="submit">
+    <input name="cancel" value="Cancel" type="submit">
+    </form>
 
-% } elsif( ! $TBL || $args{submit} eq "Cancel" ) {
+% } elsif( ! $TBL || $args{cancel} ) {
 
 %   my @t = Meta->retrieve_all();
 
@@ -112,16 +158,14 @@ if( exists( $args{submit} ) ) {
     <input name="submit" value="Submit" type="submit">
     </td>
     <td>
-    <input name="submit" value="Cancel" type="submit">
+    <input name="cancel" value="Cancel" type="submit">
     </td>
     </tr>
     </table>
     </form>
 % } # if/else table
 
-% #<hr>
-% #print Dumper( %session );
-
+<!-- end create.html -->
 <& footer &>
 % ####################################################################
 
@@ -176,6 +220,13 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.6  2003/05/22 23:23:48  netdot
+#  have most of the driving functionality in place -- so links take you
+#  where you're supposed to go with the requisite state.  also displaying
+#  the linksto stuff instead of the integer.  still need to pass state
+#  (if it exists) to form.html.  after that, it is a matter of doing the
+#  actual inserts! -sf
+#
 #  Revision 1.5  2003/05/13 23:36:15  netdot
 #  more changes.  still need to remap the confirm stuff to confirm after
 #  every click on submit; then go back to previous table or null state
