@@ -63,14 +63,17 @@ if( $args{table} ) {
 
 % if( defined( $META ) && defined( $args{object} ) ) {
 <!-- begin sortresults -->
-     <table BORDER="1" CELLSPACING="0" CELLPADDING="0" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
+     <table BORDER="0" CELLSPACING="0" CELLPADDING="0" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
 %    if( $VIEW eq "row" ) {
      <tr>
 %       foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
            <th><% $o %></th>
 %       }
+         <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
      </tr>
-% }
+%    } else {
+       <tr><td width="1" colspan="2" class="delimiter" bgcolor="#DDDDDD"></td>
+%    }
 % ####################################################################
 % foreach my $o ( sort { $a->$SORT cmp $b->$SORT } @{ $args{object} } ) {
 %    my $flag = 1;
@@ -81,11 +84,11 @@ if( $args{table} ) {
 %    foreach my $c ( @order ) {
 %       if( $VIEW eq "column" ) {
           <tr>
-             <td align="RIGHT" valign="TOP" WIDTH="100">
+             <td align="RIGHT" valign="TOP" WIDTH="100" class="column1" bgcolor="#DDDDDD">
                 <b><% $c %></b>: 
              </td>
 %       }
-        <td align="LEFT" valign="TOP">
+        <td align="LEFT" valign="TOP" class="column2">
 %          if( exists( $linksto{$c} ) ) {
 %             my $ft = $gui->getmeta( $linksto{$c} );
 %             if( ! defined( $ft ) ) {
@@ -119,18 +122,28 @@ if( $args{table} ) {
 %             }
 %          } # else fi
         </td>
-%       $flag = 0 if( $flag );
+%       print "<td width=\"1\" class=\"delimiter\" bgcolor=\"#DDDDDD\"></td>\n" if ($VIEW eq "column");
+%       $flag = 0 if( $flag );          
 %       if( $VIEW eq "column" ) {
            </tr>
 %       }
 %     } # for c
 %     if( $VIEW eq "column" ) {
-         <tr>
-            <td colspan=2><br></td>
+         <tr height="1" class="delimiter">
+            <td colspan="3" height="1"></td>
          </tr>
+         <tr>
+            <td colspan="3"><br></td>
+         </tr>
+         <tr height="1" class="delimiter">
+            <td colspan="3" height="1"></td>
+         </tr>
+         
 %     }
 %     if( $VIEW eq "row" ) {
+         <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
          </tr>
+         <tr class="delimiter" height="1"><td colspan="15"></td>
 %     }
 %   } # for o
 % ####################################################################
@@ -169,6 +182,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.28  2003/07/15 23:34:34  netdot
+# massaged formatting -miyake
+#
 # Revision 1.27  2003/07/14 20:35:10  netdot
 # Added css tags and massaged formatting -miyake
 #
