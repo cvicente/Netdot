@@ -363,9 +363,10 @@ my $schema = {
     'natted', 'bool', '', '', '', '',
     'site', 'integer', '', '', '', '',
     'room', 'integer', 'NULL', '', '', '',
+    'closet', 'integer', 'NULL', '', '', '',
     'rack', 'varchar', 'NULL', '32', '', '',
-    'lastupdated', 'date', 'NULL', '', '', '',
-    'dateinstalled', 'date', 'NULL', '', '', '',
+    'lastupdated', 'timestamp', 'NULL', '', '', '',
+    'dateinstalled', 'timestamp', 'NULL', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
 ],
   'primary_key' => 'id',
@@ -399,10 +400,11 @@ my $schema = {
     'customer_managed', 'bool', '', '', '', '',
     'natted', 'bool', '', '', '', '',
     'site', 'integer', '', '', '', '',
-    'room', 'varchar', 'NULL', '64', '', '',
+    'room', 'integer', 'NULL', '', '', '',
+    'closet', 'integer', 'NULL', '', '', '',
     'rack', 'varchar', 'NULL', '32', '', '',
-    'lastupdated', 'date', 'NULL', '', '', '',
-    'dateinstalled', 'date', 'NULL', '', '', '',
+    'lastupdated', 'timestamp', 'NULL', '', '', '',
+    'dateinstalled', 'timestamp', 'NULL', '', '', '',
     'modified', 'timestamp', '', '', '', '',
     'modifier', 'varchar', 'NULL', '32', '', '',
 ],
@@ -411,7 +413,7 @@ my $schema = {
   'index' => [ ['device_id'] ],
 },
 
-'DeviceType' => {
+'ProductType' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
@@ -454,7 +456,7 @@ my $schema = {
     'type', 'integer', '', '', '', '',
     'name', 'integer', 'NULL', '', '', '',
     'part_of', 'integer', 'NULL', '', '', '',
-    'subnet', 'integer', 'NULL', '', '', '',
+    'ipblock', 'integer', 'NULL', '', '', '',
     'service', 'integer', 'NULL', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
@@ -688,12 +690,13 @@ my $schema = {
    'status', 'integer', '', '', '', '',
    'entity', 'integer', '', '', '', '',
    'description', 'varchar', 'NULL', '128', '', '',
+   'first_seen', 'timestamp', '', '', '', '',
    'last_seen', 'timestamp', '', '', '', '',
    'physaddr', 'integer', 'NULL', '', '', '',
  ],
  'primary_key' => 'id',
  'unique' => [ ['address', 'prefix'] ],
- 'index' => [ ['parent'], ['status'], ['last_seen'], ['physaddr'], ['interface'] ],
+ 'index' => [ ['parent'], ['status'], ['first_seen'], ['last_seen'], ['physaddr'], ['interface'] ],
 },
 
 'IpblockStatus' => {
@@ -706,18 +709,6 @@ my $schema = {
  'index' => [ ],
 },
 
-
-'IpRange' => {
-  'columns' => [
-    'id', 'serial', '', '', '', '',
-    'start_ip', 'integer', '', '', '', '',
-    'end_ip', 'integer', '', '', '', '',
-    'dhcp_attr', 'integer', '', '', '', '',
-  ],
-  'primary_key' => 'id',
-  'unique' => [ ['start_ip','end_ip'] ],
-  'index' => [ ['dhcp_attr'] ],
-},
 
 'IpService' => {
   'columns' => [
@@ -736,8 +727,8 @@ my $schema = {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
-    'columnorder', 'varchar', 'NULL', '255', '', '',
-    'columnorderbrief', 'varchar', 'NULL', '255', '', '',
+    'columnorder', 'long varbinary', 'NULL', '', '', '',
+    'columnorderbrief', 'long varbinary', 'NULL', '', '', '',
     'columntypes', 'long varbinary', 'NULL', '', '', '',
     'columntags', 'long varbinary', 'NULL', '', '', '',
     'columndescr', 'long varbinary', 'NULL', '', '', '',
@@ -806,11 +797,13 @@ my $schema = {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'address', 'varchar', '', '128', '', '',
+    'first_seen', 'timestamp', '', '', '', '',
     'last_seen', 'timestamp', '', '', '', '',
+    'static', 'bool', '', '', '', '',
   ],
   'primary_key' => 'id',
   'unique' => [ ['address'] ],
-  'index' => [ ['last_seen']  ],
+  'index' => [ ['first_seen'], ['last_seen'] ],
 },
 
 'Product' => {
@@ -861,35 +854,107 @@ my $schema = {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'zone', 'integer', '', '', '', '',
-    'origin', 'varchar', '', '128', '', '',
+    'origin', 'varchar', 'NULL', '128', '', '',
     'name', 'varchar', '', '128', '', '',
-    'type', 'integer', '', '', '', '',
-    'data', 'varchar', '', '128', '', '',
-    'ttl', 'integer', 'NULL', '', '', '',
     'active', 'bool', '', '', '', '',
     'contactlist', 'integer', '', '', '', '',
   ],
   'primary_key' => 'id',
-  'unique' => [ ['zone','name','type','data',] ],
-  'index' => [ ['origin'], ['name'] ],
+  'unique' => [ ['zone','name'] ],
+  'index' => [ ['origin'] ],
 },
 
-'RRIp' => {
+'RRADDR' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'rr', 'integer', '', '', '', '',
-    'ip', 'integer', '', '', '', '',
+    'ipblock', 'integer', '', '', '', '',
+    'ttl', 'integer', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
-  'unique' => [ ['rr', 'ip'] ],
+  'unique' => [ ['rr', 'ipblock'] ],
   'index' => [  ],
+},
+
+'RRCNAME' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'alias', 'varchar', '', '128', '', '',
+    'cname', 'integer', '', '', '', '',
+    'ttl', 'integer', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['alias', 'cname'] ],
+  'index' => [  ],
+},
+
+'RRHINFO' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'rr', 'integer', '', '', '', '',
+    'cpu', 'varchar', 'NULL', '32', '', '',
+    'os', 'varchar', 'NULL', '32', '', '',
+    'ttl', 'integer', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [  ],
+  'index' => [ ['rr'] ],
+},
+
+'RRMX' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'rr', 'integer', '', '', '', '',
+    'preference', 'integer', 'NULL', '', '', '',
+    'exchange', 'integer', '', '', '', '',
+    'ttl', 'integer', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['rr','exchange'] ],
+  'index' => [  ],
+},
+
+'RRNS' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'rr', 'integer', '', '', '', '',
+    'nsdname', 'varchar', 'NULL', '64', '', '',
+    'ttl', 'integer', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['rr', 'nsdname']  ],
+  'index' => [  ],
+},
+
+'RRPTR' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'rr', 'integer', '', '', '', '',
+    'ipblock', 'integer', '', '', '', '',
+    'ttl', 'integer', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['rr', 'ipblock']  ],
+  'index' => [  ],
+},
+
+'RRTXT' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'rr', 'integer', '', '', '', '',
+    'txt', 'varchar', 'NULL', '128', '', '',
+    'ttl', 'integer', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [  ],
+  'index' => [ ['rr'] ],
 },
 
 'RRType' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
-    'name', 'varchar', '', '128', '', '',
-    'info', 'long varbinary', 'NULL', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'tablename', 'varchar', '', '64', '', '',
   ],
   'primary_key' => 'id',
   'unique' => [ ['name'] ],

@@ -210,7 +210,7 @@ sub getcolumntypes{
 
 =head2 getcolumntags
 
-  %tags = $ui->getcolumtags($table);
+  %tags = $ui->getcolumntags($table);
 
 Returns a hash contaning the user-friendly display names for a table's columns
 
@@ -1017,7 +1017,7 @@ sub radioGroupBoolean($@){
      }
 
     if ($isEditing){
-        printf("Y<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"1\" %s>&nbsp;\n", $name, ($value ? "CHECKED" : ""));
+        printf("Y<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"1\" %s>&nbsp;<br>\n", $name, ($value ? "CHECKED" : ""));
         printf("N<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"0\" %s>\n", $name, (!$value ? "CHECKED" : ""));
     }else{
         printf("%s\n", ($value ? "Y" : "N"));

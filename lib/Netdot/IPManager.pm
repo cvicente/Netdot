@@ -231,7 +231,10 @@ sub insertblock {
 		  interface => $args{interface},
 		  );
    
-    $state{last_seen} = $ui->timestamp if (! $args{manual} );
+    if (! $args{manual} ){
+	$state{first_seen} = $ui->timestamp;
+	$state{last_seen} = $ui->timestamp;
+    }
 		  
     if ( my $r = $ui->insert( table => "Ipblock", state => \%state)){
 	return (my $o = Ipblock->retrieve($r)) ;
@@ -250,7 +253,7 @@ sub insertblock {
  Optional Arguments:
    status: id of IpblockStatus
    interface: id of Interface where IP was found
- Returns: New Ipblock object
+ Returns: Updated Ipblock object
 
 =cut
 
@@ -289,11 +292,12 @@ sub updateblock {
 		  interface => $args{interface},
 		  last_seen => $ui->timestamp,
 		  );
-    unless ( $ui->update( object => $ipblock, state => \%state)){
+    my $id;
+    unless ( $id = $ui->update( object => $ipblock, state => \%state)){
 	$self->error($ui->error);
 	return 0;
     }
-    return 1;
+    return Ipblock->retrieve($id);
 }
 
 =head2 removeblock -  Remove IP block

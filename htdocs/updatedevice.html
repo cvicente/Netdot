@@ -18,7 +18,11 @@
     $argv{host} = $host;
     $session->{argv} = \%argv;
 </%perl>
-    <table class="formtablebg" cellpadding="0" cellspacing="0" width="100%">
+    <form action="updatedevice.html" method="POST">
+    <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
+    <input type="hidden" name="host" value="<% $host %>">
+    <input type="hidden" name="action" value="update">
+    <table class="formtablebg" cellpadding="0" cellspacing="2" width="100%">
       <tr>
         <td>&nbsp;</td>
         <td align="left">
@@ -30,19 +34,53 @@
         <td class="formtablec1">Description:</td>
         <td class="formtablec2"><strong><% $dev->{sysdescription} %></strong></td>
       </tr>
+%     unless ($argv{device}){      
       <tr>
-        <td class="formtablec1">Location:</td>
-        <td class="formtablec2"><strong><% $dev->{syslocation} %></strong></td>
+        <td colspan="2" align="left"><br></td>
       </tr>
       <tr>
-        <td class="formtablec1">Contact:</td>
-        <td class="formtablec2"><strong><% $dev->{syscontact} %></strong></td>
+        <td colspan="2" align="center"><strong> Please provide the following:</strong></td>
       </tr>
+      <tr>
+        <td class="formtablec1">Entity:</td>
+        <td class="formtablec2">
+           <select name="entity">
+%	   my @allents = Entity->retrieve_all; 
+%          @allents = sort { $a->name cmp $b->name } @allents;
+%          foreach my $ent (@allents){
+	         <option value="<% $ent->id %>"><% $ent->name %></option>
+%	   }	
+   	   <option value="0">[null]</option>
+	   </select>
+	</td>
+      </tr>
+      <tr>
+        <td class="formtablec1">Site:</td>
+        <td class="formtablec2">
+           <select name="site">
+%	   my @allsites = Site->retrieve_all; 
+%          @allsites = sort { $a->name cmp $b->name } @allsites;
+%          foreach my $site (@allsites){
+	         <option value="<% $site->id %>"><% $site->name %></option>
+%	   }	
+   	   <option value="0">[null]</option>
+	   </select>
+	</td>
+      </tr>
+      <tr>
+        <td class="formtablec1">Contact Group:</td>
+        <td class="formtablec2">
+           <select name="contactlist">
+%	   my @allcls = ContactList->retrieve_all; 
+%          @allcls = sort { $a->name cmp $b->name } @allcls;
+%          foreach my $cl (@allcls){
+	         <option value="<% $cl->id %>"><% $cl->name %></option>
+%	   }	
+   	   <option value="0">[null]</option>
+	   </select>
+	</td>
+%     }
       <tr><td colspan="2">&nbsp;</td></tr>
-      <form action="updatedevice.html" method="POST">
-      <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
-      <input type="hidden" name="host" value="<% $host %>">
-      <input type="hidden" name="action" value="update">
       <tr class="rowtitle0">
         <td colspan="2" align="center">
          <input name="insert" value="Update" type="submit">&nbsp;
@@ -55,6 +93,10 @@
 }elsif ( $action eq "update" ){
     if ( $insert ){
         %argv = %{ $session->{argv} };
+	$argv{entity}      = $entity      ||  0;
+	$argv{site}        = $site        ||  0;
+	$argv{contactlist} = $contactlist ||  0;
+
         # Update database
         $argv{addsubnets} = $ADDSUBNETS;
         $o = $dm->update(%argv);
@@ -79,7 +121,6 @@
           <pre><% $dm->output %></pre>
           </td>
 	  </tr>
-
 %      }
 	  <tr>
           <td>
@@ -110,13 +151,15 @@
 <%args>
 $action
 $host
-$comstr     => "public"
-$id         => undef
-$s2name     => "Management"
-$sid        => undef
-$insert     => undef
-$cancel     => undef
-
+$comstr      => "public"
+$id          => undef
+$s2name      => "Management"
+$sid         => undef
+$insert      => undef
+$cancel      => undef
+$entity      => undef
+$site        => undef
+$contactlist => undef
 </%args>
 
 <%init>

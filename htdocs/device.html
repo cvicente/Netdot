@@ -1,6 +1,4 @@
-
 <& index.html, title => "Device Worksheet: $name ", s2name => $s2name  &>
-
 <script language="javascript" src="select.js"></script>
 
 % print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -110,8 +108,21 @@ if ( !defined($search) ){
 <!-- Header Table -->
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
-    <td align="left">
-     Device: <b><% $name %></b>&nbsp;&nbsp; 
+    <td valign="top" align="left">
+     Device: <b><% $name %></b>&nbsp;&nbsp;
+    </td>
+    <td valign="top" align="left">
+    <form>
+    VLAN view 
+    <select>
+       <option value="all" SELECTED>all</option>     
+%      foreach my $vid ( sort keys %vlans ){
+          <option value="<% $vid %>"><% $vid %></option>     
+%      }
+    </select>
+    </form>
+    <td width="50%" valign="top" align="left">&nbsp;</td>
+    <td valign="top" align="right">
     <a href="device.html?id=<% $id %>"> [refresh]</a>&nbsp;
     <a href="deldevice.html?id=<% $id %>"> [delete]</a>&nbsp;
     </td>
@@ -183,7 +194,7 @@ if ( !defined($search) ){
 	     </td> 
 	   </tr>
            <tr>
-             <td class="formtablec1">Installed:</td>
+             <td class="formtablec1">First Discovered:</td>
 	     <td class="formtablec2"> 
 %               $ui->textField(object=>$o, column=>"dateinstalled", edit=>$editgen);
 	     </td> 
@@ -260,7 +271,7 @@ if ( !defined($search) ){
    </tr>
    <tr>
      <td>
-      <table border="0">
+      <table border="0" width="100%">
 %	my @ips;
 %	foreach my $if ($o->interfaces) {
 %	  my @intips;
@@ -269,9 +280,11 @@ if ( !defined($search) ){
 %	}
 %	if (scalar @ips){
          <tr>
-	   <td align="center"><a href="device.html?id=<% $id %>&ipsort=ip">IP</a></td>
-	   <td align="center"><a href="device.html?id=<% $id %>&ipsort=subnet">Subnet</a></td>
-	   <td align="center"><a href="device.html?id=<% $id %>&ipsort=interface">Interface</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=ip">Address</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=subnet">Subnet</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=interface">Interface</a></td>
+	   <td align="left">DNS Name</td>
+	   <td align="left">Monitored?</td>
          </tr>
 %	}
 <%perl>	
@@ -310,7 +323,22 @@ if ( !defined($search) ){
 	       <a href="view.html?table=Ipblock&id=<% $ip->parent->id %>"><% $ip->parent->address %>/<% $ip->parent->prefix %></a><br>
 %            }
 	   </td>
-	   <td align="left"><font size="-1"><% $ip->interface->name %></font></td>
+	   <td align="left"><% $ip->interface->name %></td>
+           <td align="left">
+%              if ( $ip->arecords ){
+%                 foreach my $ar ($ip->arecords){
+%	             if ($editips){	 
+  	                <input type="checkbox" name="<% "RR__" . $ar->rr->id . "__delete" %>" >[del]
+%	             }
+%                    $ui->textField(object=> $ar->rr, column=>"name", edit=>$editips, makeLink=>1);
+%		  }
+%              }else{
+	          
+%	       }
+           </td>
+           <td align="left">
+%              $ui->radioGroupBoolean(object=>$ip->interface, column=>"monitored", edit=>$editips);
+           </td>
 	  </tr>
 %	}# foreach	
      </table>
@@ -346,29 +374,33 @@ if ( !defined($search) ){
    </tr>
    <tr>
      <td>
-      <table border="0">
+      <table border="0" width="100%">
         <tr>
 	   <td class="formtablec1">Entity: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %               $ui->selectLookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", makeLink=>1);
-	     </td>
-	</tr>
-        <tr>
+	   </td>
 	   <td class="formtablec1">Site: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %               $ui->selectLookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1);
-	     </td>
+	   </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Room: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %               $ui->selectLookup(object=>$o, column=>"room", lookup=>"Room", edit=>$editloc, makeLink=>1);
-	</tr>
+	   </td>
+	   <td class="formtablec1"> <i>- or -</i> Closet: </td>
+	   <td class="formtablec2"> 
+%               $ui->selectLookup(object=>$o, column=>"closet", lookup=>"Closet", edit=>$editloc, makeLink=>1);
+	   </td>
         <tr>
 	   <td class="formtablec1">Rack: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %               $ui->textField(object=>$o, column=>"rack", edit=>$editloc);
-	     </td>
+	   </td>
+	   <td>&nbsp; </td>
+	   <td>&nbsp; </td>
 	</tr>
       </table>
      </td>
@@ -516,13 +548,14 @@ if ( !defined($search) ){
 %	   if ($editints){	 
 	      <td align="center">[del]</td>
 %	   }
-	   <td align="left">Number</td>
-	   <td align="left">Name</td>
-	   <td align="left">Vlan</td>
-	   <td align="left">Jack</td>
-	   <td align="left">Description</td>
-	   <td align="left">Parents</td>
-	   <td align="left">Monitored?</td>
+	   <td align="left"><strong>Number</strong></td>
+	   <td align="left"><strong>Name</strong></td>
+	   <td align="left"><strong>VLAN</strong></td>
+	   <td align="left"><strong>Duplex</strong></td>
+	   <td align="left"><strong>Jack</strong></td>
+	   <td align="left"><strong>Description</strong></td>
+	   <td align="left"><strong>Upstream<br>Connections</strong></td>
+	   <td align="left"><strong>Downstream<br>Connections</strong></td>
         </tr>
 
 %	#####################################
@@ -558,15 +591,17 @@ if ( !defined($search) ){
 %               $ui->textField(object=>$if, column=>"name", edit=>$editints);
 	   </td>
 	   <td align="left"> 
-%	      if (scalar( my @ifv = $if->vlans)){
+%	      if (exists $ifvlans{$if}){
 %	         my @links;
-%	         foreach my $ifv (@ifv){
-%		   my $v = $ifv->vlan;
-%		   push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $v->id, $v->vid );
+%	         foreach my $v ( keys %{$ifvlans{$if}} ){
+%		   push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $v, $v );
 %		 }
 %		 print join ', ', @links;
 
 %	      }
+	   </td>
+	   <td align="left"> 
+%               $ui->textField(object=>$if, column=>"duplex", edit=>$editints);
 	   </td>
 	   <td align="left">
 %           $ui->selectLookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
@@ -575,6 +610,7 @@ if ( !defined($search) ){
 	   <td align="left"> 
 %               $ui->textField(object=>$if, column=>"description", edit=>$editints);
 	   </td>
+<!-- Upstream Connections Field -->
 	   <td align="left">
 %	   my @parents = $if->parents;
 %	   if (scalar(@parents)){
@@ -619,10 +655,54 @@ if ( !defined($search) ){
 	        </select>	      
 %	     }
 %	   }
-
 	   </td>
-	   <td align="left"> 
-%                $ui->radioGroupBoolean(object=>$if, column=>"monitored", edit=>$editints);
+
+<!-- Downstream Connections Field -->
+	   <td align="left">
+%	   my @children = $if->children;
+%	   if (scalar(@children)){
+%	     foreach my $ch (@children){	   
+%		 my $lbl = $ui->getobjlabel($ch->child, ", ");
+%	      	 if ($editints){	 
+%		 # Check for amount of objects in table before retrieving all
+%		    my $count = Interface->count_all;
+%		    if ( $count <= $maxselect ){			      
+%		       my @allifs = Interface->retrieve_all;
+%		       @allifs = sort { $a->number <=> $b->number } @allifs; 
+   		       <select name="<% "InterfaceDep__" . $ch->id ."__child" %>">
+		         <option value="$ch->child->id" selected><% $lbl %> </option> 
+%		          foreach my $if ( @allifs ) {
+		            <option value="<% $if->id %>"><% $ui->getobjlabel($if, ", ") %></option>
+%			  }
+		         <option></option> 
+		       </select>
+%		    }else{  #too many instances.  Offer a keyword search
+%		       my $srchf = '_' . $if->id . 'child_srch';  #name of the form input tag
+		       <input type="text" name="<% $srchf %>" value="Keywords">
+		       &nbsp;<input type="button" name="" value="List" 
+		       onClick="sendquery(<% "_InterfaceDep__" . $ch->id . "__child" %>, <% $srchf . '.value' %>, 'Interface')" >
+		       <br><select name="<% "_InterfaceDep__" . $ch->id . "__child" %>">
+		          <option value="<% $ch->child->id %>" selected><% $lbl %></option>
+			  <option value="0">[null]</option>
+		       </select>
+		       <input type="checkbox" name=<% "InterfaceDep__" . $ch->id . "__delete" %> >[del]
+%		    }
+%	         }else{
+		    <% $lbl %><br>
+%		 }
+%	     } #foreach my $ch
+%	   }else{ # No children exist
+%	      if ($editints){	 
+%	        my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
+		<input type="text" name="<% $srchf %>" value="Keywords">
+	        &nbsp;<input type="button" name="" value="List" 
+	        onClick="sendquery(<% "_InterfaceDep__" . $if->id ."__new" %>, <% $srchf . '.value' %>, 'Interface')" >
+	        <br><select name="<% "_InterfaceDep__" . $if->id ."__new" %>">
+	 	  <option value="0">[null]</option>
+	        </select>	      
+%	     }
+%	   }
+
 	   </td>
 	  </tr>
 %       } #foreach
@@ -680,13 +760,28 @@ my $o = undef;
 my $ci = 0;
 my %arg;
 my $name;
+my %ifvlans;
+my %vlans;
 
 if ($id){
    $o = Device->retrieve($id);
    $name = ($o->name && $o->name->name) ? $o->name->name : "Name N/A!";
+   # Build a hash of Interface Vlans
+   foreach my $if ($o->interfaces){
+       if (scalar( my @ifv = $if->vlans)){
+	   foreach my $ifv (@ifv){
+	       my $vid = $ifv->vlan->vid;
+	       $ifvlans{$if}{$vid} = "";
+	       $vlans{$vid} = "";
+	   }
+       }
+   }
 }else{
    $name = "Search"
 }
+
+
+
 </%init>
 
 <%doc>

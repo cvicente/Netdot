@@ -17,6 +17,7 @@ use lib "PREFIX/lib";
 use base qw( Netdot );
 use Netdot::DBI;
 use Netdot::UI;
+use Socket;
 use strict;
 
 #Be sure to return 1
@@ -46,11 +47,8 @@ sub new {
 
 sub getrrbyname {
     my ($self, $name) = @_;
-    my $rrta = (RRType->search(name => "A"))[0];
-    my $rrt4a = (RRType->search(name => "AAAA"))[0];
     my $rr;
-    if ( ($rr = (RR->search(name => $name, type => $rrta))[0]) ||
-	 ($rr = (RR->search(name => $name, type => $rrt4a))[0]) ){
+    if ( $rr = (RR->search(name => $name))[0] ){
 	return $rr;
     }
     return 0;
@@ -66,11 +64,8 @@ sub getrrbyname {
 sub getrrbynamelike {
     my ($self, $name) = @_;
     $name = "%" . $name . "%";
-    my $rrta = (RRType->search(name => "A"))[0];
-    my $rrt4a = (RRType->search(name => "AAAA"))[0];
     my @rrs;
-    if ( (@rrs = RR->search_like(name => $name, type => $rrta)) ||
-	 (@rrs = RR->search_like(name => $name, type => $rrt4a)) ){
+    if ( @rrs = RR->search_like(name => $name) ){
 	return \@rrs;
     }
     return;
@@ -111,7 +106,7 @@ sub getdevbynamelike {
 	}
 	return \@devs;
     }
-    return 0;
+    return;
 }
 
 
@@ -130,45 +125,51 @@ sub getzonebyname {
     return 0;
 }
 
-=head2 insertrr - Insert a Resource Record
- Args: 
-   name:
-   type:
-   zone:
-   origin:
-   ttl:
-   data:
-   contactlist:
-   active
+=head2 insert_rr - Insert a base Resource Record
 
+Note:  This object does not contain actual DNS records.
+       Each record type has its own table that references
+       this base record.
+
+ Args: 
+  name:        Unique record identifier (AKA "owner")
+  zone:        SOA record
+  origin:      optional origin prefix
+  contactlist: ContactList object
+  active:      If not active, it is somehow reserved
+    
 Returns: RR object
 
 =cut
 
-sub insertrr {
+sub insert_rr {
 
     my ($self, %argv) = @_;
     my ($type, $zone);
+    if ( $argv{zone} ){
+	unless ( $self->getzonebyname($argv{zone}) ){
+	    $self->error(sprintf("Unknown DNS Zone: %s", $argv{zone}));
+	    return 0;
+	}
+    }else{
+	$argv{zone} = $self->{'DEFAULT_DNSDOMAIN'};
+    }
+    # Insert zone if necessary;
+    unless ( $zone = $self->getzonebyname($argv{zone})){
+	unless ($zone = $self->insert_zone(mname => $argv{zone})){
+	    return 0;
+	    # error should be set
+	}
+    }
     if (my $rrid = $self->getrrbyname($argv{name})){
-	$self->error(sprintf("RR %s already exists.", $argv{name}));
-	return 0;
-    }
-    unless ( $type = (RRType->search(name => $argv{type}))[0] ){
-	$self->error(sprintf("Unknown RR type: %s", $argv{type}));
-	return 0;
-    }
-    unless ( $zone = (Zone->search(mname => $argv{zone}))[0] ){
-	$self->error(sprintf("Unknown DNS Zone: %s", $argv{zone}));
+	$self->error(sprintf("Record %s already exists.", $argv{name}));
 	return 0;
     }
     my %state = (name        => $argv{name},
-		 type        => $type,
-		 zone        => $zone,
-		 origin      => $argv{origin}      || 0,
-		 ttl         => $argv{ttl}         || $zone->minimum,
-		 data        => $argv{data}        || 0,
+		 zone        => $zone->id,
+		 origin      => $argv{origin}      || "",
 		 contactlist => $argv{contactlist} || 0,
-		 active      => $argv{contactlist} || 0,
+		 active      => $argv{active}      || 1,
 		 );
     
     my $ui = Netdot::UI->new();
@@ -179,7 +180,56 @@ sub insertrr {
     return 0;
 }
 
-=head2 insertzone - Insert a DNS Zone (SOA Record)
+=head2 insert_a - Insert an address (A/AAAA)  Resource Record
+
+Args: 
+  rr:          Base resource record (optional, see below)
+  ip:          Ipblock object (required)
+  ttl:         Time To Live (optional)
+  
+If 'rr' not suplied:
+  name:        Unique record identifier (required)
+  zone:        SOA record
+  origin:      optional origin prefix
+  contactlist: ContactList object
+  active:      If not active, it is somehow reserved
+
+Returns: RRADDR object
+
+=cut
+
+sub insert_a{
+
+    my ($self, %argv) = @_;
+    my ($rr, $ip);
+    unless ( $ip = $argv{ip} ){
+	$self->error("Missing required args");
+	return 0;
+    }
+    unless ( $rr = $argv{rr} ){
+	unless ($rr = $self->insert_rr(name        => $argv{name}, 
+				       zone        => $argv{zone},
+				       origin      => $argv{origin},
+				       contactlist => $argv{contactlist},
+				       active      => $argv{active} )){
+	    return 0;
+	    # error should be set
+	}
+    }
+    my %state = (rr       => $rr,
+		 ipblock  => $ip,
+		 ttl      => $argv{ttl} || $rr->zone->minimum,
+		 );
+    
+    my $ui = Netdot::UI->new();
+    if (my $newrr = $ui->insert(table => "RRADDR", state => \%state )){
+	return RRADDR->retrieve($newrr);
+    }
+    $self->error($ui->error);
+    return 0;
+}
+
+=head2 insert_zone - Insert a DNS Zone (SOA Record)
 
 Args: 
    mname:   domain name *(required)
@@ -194,7 +244,7 @@ Returns: Zone object
 
 =cut
 
-sub insertzone {
+sub insert_zone {
     my ($self, %argv) = @_;
     unless (exists $argv{mname}){
 	$self->error("Missing required argument \'mname\'");
@@ -220,4 +270,23 @@ sub insertzone {
     }
     $self->error($ui->error);
     return 0;    
+}
+
+=head2 resolve_name - Resolve name to ip adress
+
+=cut 
+
+sub resolve_name {
+    my ($self, $name) = @_;
+    my @addresses;
+    eval {
+	@addresses = gethostbyname($name);
+	@addresses = map { inet_ntoa($_) } @addresses[4 .. $#addresses];
+    };
+    if ($@){
+	$self->error("Can't resolve $name: $@");
+	return;
+    }
+
+    return @addresses;
 }

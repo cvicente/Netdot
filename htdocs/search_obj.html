@@ -124,8 +124,7 @@
 	 
          # Check that we have at least one parameter
          unless (scalar keys(%sarg)){
-            print "<strong>Missing search criteria</strong>";
-	    exit;
+	    $m->comp('error.html', error => "Missing Search Criteria");	    
          }
          my @objs = $table->search_like(\%sarg);
 </%perl>

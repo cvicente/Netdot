@@ -151,7 +151,7 @@ sub find_dev {
 
 sub update {
     my ($self, %argv) = @_;
-    my ($host, $comstr, %dev, $device, $dvn, %ifs, %dbifdeps);
+    my ($host, $comstr, %dev);
 
     $self->debug(loglevel => 'LOG_DEBUG',
 		 message => "Arguments are: %s" ,
@@ -165,16 +165,27 @@ sub update {
 		     message => $self->error);
 	return 0;
     }
-    $device = $argv{device} if exists $argv{device};
+    my $device = $argv{device} || "";
+
+    my %devtmp;
+    $devtmp{sysdescription} = $dev{sysdescription} || "";
+    $devtmp{community}      = $comstr;
+    $devtmp{entity}         = $device->entity      || $argv{entity}        || 0;
+    $devtmp{site}           = $device->site        || $argv{site}          || 0;
+    $devtmp{contactlist}    = $device->contactlist || $argv{contactlist}   || 0;
+    
+    my %ifs;
+    my %dbifdeps;
     
     if ( $device ){
 	################################################     
 	# Keep a hash of stored Interfaces for this Device
 	map { $ifs{ $_->id } = $_ } $device->interfaces();
-
+	
 	# 
 	# Get all stored interface dependencies, associate with ip
 	# 
+
 	foreach my $ifid (keys %ifs){
 	    my $if = $ifs{$ifid};
 	    foreach my $dep ( $if->parents() ){		
@@ -199,13 +210,9 @@ sub update {
 	    }
 	}
     }
-    my %devtmp;
-    $devtmp{sysdescription} = $dev{sysdescription};
-    $devtmp{community} = $comstr;
     ##############################################
     # Make sure name is in DNS
 
-    my $zone = $self->{'DEFAULT_DNSDOMAIN'};
     my $rr;
     if ( $rr = $self->{dns}->getrrbyname($host) ) {
 	my $msg = sprintf("Name %s exists in DB. Pointing to it", $host);
@@ -224,30 +231,11 @@ sub update {
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg );
 	$self->output($msg);
-	unless ($self->{dns}->getzonebyname($zone)){
-	    my $msg = sprintf("Zone %s does not exist in DNS. Creating", $host);
-	    $self->debug( loglevel => 'LOG_NOTICE',
-			  message  => $msg );
-	    $self->output($msg);
-	    $self->debug( loglevel => 'LOG_DEBUG',
-			  message => "SOA defaults are: refresh: %s, retry: %s, expire: %s, minimum: %s", 
-			  args => [ $self->{'DEFAULT_DNSREFRESH'}, 
-				    $self->{'DEFAULT_DNSRETRY'}, 
-				    $self->{'DEFAULT_DNSEXPIRE'}, 
-				    $self->{'DEFAULT_DNSMINIMUM'} ] );	    	 
-	    unless ($self->{dns}->insertzone(mname => $zone)){
-		$self->debug( loglevel => 'LOG_ERR',
-			      message  => "Could not insert Zone %s to DB: %s",
-			      args => [$zone, $self->{dns}->error]);	    
-	    }
-	}
-	if ($rr = $self->{dns}->insertrr(name => $host,
-				type => "A",
-				zone => $zone,
-				)){
+	if ($rr = $self->{dns}->insert_rr(name        => $host, 
+					  contactlist => $devtmp{contactlist})){
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => "Inserted name %s into DB",
-			  args => [ $host . "\." . $zone ], 
+			  args => [ $host ], 
 			  );	    
 	    $devtmp{name} = $rr;
 	}else{
@@ -259,7 +247,17 @@ sub update {
 	    return 0;
 	}
     }
-
+    # We'll use these later when adding A records for each address
+    my %nameips;
+    if (my @addrs = $self->{dns}->resolve_name($rr->name)){
+	map { $nameips{$_} = "" } @addrs;
+    }else{
+	my $msg = sprintf("Could resolve name %s: %s", $rr->name, $self->{dns}->error);
+	$self->debug( loglevel => 'LOG_NOTICE',
+		      message  => $msg
+		      );	    
+	$self->error($msg);	
+    }
     ###############################################
     # Try to assign Product based on SysObjectID
 
@@ -297,8 +295,7 @@ sub update {
 	    if ( ($ent = $self->{ui}->insert(table => 'Entity', 
 					     state => { name => $oid,
 							oid  => $oid,
-							type => $t })
-		  ) ){
+							type => $t }) ) ){
 		my $msg = sprintf("Created Entity with Enterprise OID: %s.  Please set name, etc.", $oid);
 		$self->debug( loglevel => 'LOG_NOTICE',
 			      message  => $msg );		
@@ -368,6 +365,7 @@ sub update {
 	    #
 	}else{
 	    my %phaddrtmp = ( address => $dev{physaddr},
+			      first_seen => $self->{ui}->timestamp,
 			      last_seen => $self->{ui}->timestamp,
 			      );
 	    my $newphaddr;
@@ -416,7 +414,7 @@ sub update {
     # Update/Add Device
     
     if ( $device ){
-	$devtmp{lastupdated} = $self->{ui}->date;
+	$devtmp{lastupdated} = $self->{ui}->timestamp;
 	unless( $self->{ui}->update( object => $device, state => \%devtmp ) ) {
 	    $self->error( sprintf("Error updating device %s: %s", $host, $self->{ui}->error) ); 
 	    $self->debug( loglevel => 'LOG_ERR',
@@ -432,7 +430,7 @@ sub update {
 	$devtmp{canautoupdate}    = 1;
 	$devtmp{customer_managed} = 0;
 	$devtmp{natted}           = 0;
-	$devtmp{dateinstalled}    = $self->{ui}->date;
+	$devtmp{dateinstalled}    = $self->{ui}->timestamp;
 	my $newdevid;
 	unless( $newdevid = $self->{ui}->insert( table => 'Device', state => \%devtmp ) ) {
 	    $self->error( sprintf("Error creating device %s: %s", $host, $self->{ui}->error) ); 
@@ -461,15 +459,14 @@ sub update {
 			 type        => "",
 			 description => "",
 			 speed       => "",
-			 status      => "" );
+			 status      => "",
+			 duplex      => "");
 	
 	foreach my $field ( keys %{ $dev{interface}{$newif} } ){
 	    if (exists $iffields{$field}){
 		$iftmp{$field} = $dev{interface}{$newif}{$field};
 	    }
 	}
-
-	$iftmp{monitored} = 1 if exists ($dev{interface}{$newif}{ips});
 
 	###############################################
 	# Update/add PhsyAddr for Interface
@@ -491,8 +488,9 @@ sub update {
 		# address is new.  Add it
 		#
 	    }else{
-		my %phaddrtmp = ( address => $addr,
-				  last_seen => $self->{ui}->timestamp,
+		my %phaddrtmp = ( address    => $addr,
+				  first_seen => $self->{ui}->timestamp,
+				  last_seen  => $self->{ui}->timestamp,
 				  );
 		my $newphaddr;
 		if ( ! ($newphaddr = $self->{ui}->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
@@ -529,7 +527,8 @@ sub update {
 		next;
 	    }
 	} else {
-	    $iftmp{monitored} = 0;
+
+	    $iftmp{monitored} = ( exists ($dev{interface}{$newif}{ips}) ) ? 1 : 0;
 	    $iftmp{speed}   ||= 0; #can't be null
 	    
 	    my $msg = sprintf("Interface %s,%s doesn't exist. Inserting", $iftmp{number}, $iftmp{name} );
@@ -586,22 +585,21 @@ sub update {
 		# 
 		# Keep all new ips in a hash
 		$newips{$newip} = $if;
-		
-		if ( exists ($dbips{$newip}) ){
+		my $ipobj;
+		if ( my $ipid = $dbips{$newip} ){
 		    #
 		    # update
 		    my $msg = sprintf("%s's IP %s/%s exists. Updating", $if->name, $newip, $prefix);
 		    $self->debug( loglevel => 'LOG_NOTICE',
 				  message  => $msg );
 		    $self->output($msg);
-		    my $ifid = $dbips{$newip};
 		    delete( $dbips{$newip} );
 		    
-		    unless( $self->{ipm}->updateblock(id        => $ifid, 
-						      address   => $newip, 
-						      prefix    => $prefix,
-						      status    => "Assigned",
-						      interface => $if )){
+		    unless( $ipobj = $self->{ipm}->updateblock(id        => $ipid, 
+								address   => $newip, 
+								prefix    => $prefix,
+								status    => "Assigned",
+								interface => $if )){
 			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
@@ -609,7 +607,7 @@ sub update {
 			next;
 		    }
 
-		}elsif ( my $dbip = $self->{ipm}->searchblock($newip) ){
+		}elsif ( $ipobj = $self->{ipm}->searchblock($newip) ){
 		    # IP exists but not linked to this interface
 		    # update
 		    my $msg = sprintf("IP %s/%s exists but not linked to %s. Updating", 
@@ -617,11 +615,11 @@ sub update {
 		    $self->debug( loglevel => 'LOG_NOTICE',
 				  message  => $msg );
 		    $self->output($msg);
-		    unless( $self->{ipm}->updateblock(id        => $dbip->id, 
-						      address   => $newip, 
-						      prefix    => $prefix,
-						      status    => "Assigned",
-						      interface => $if )){
+		    unless( $ipobj = $self->{ipm}->updateblock(id        => $ipobj->id, 
+							       address   => $newip, 
+							       prefix    => $prefix,
+							       status    => "Assigned",
+							       interface => $if )){
 			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
@@ -635,10 +633,10 @@ sub update {
 		    $self->output($msg);
 		    #
 		    # Create a new Ip
-		    unless( $self->{ipm}->insertblock(address   => $newip, 
-						      prefix    => $prefix, 
-						      status    => "Assigned",
-						      interface => $if)){
+		    unless( $ipobj = $self->{ipm}->insertblock(address   => $newip, 
+								 prefix    => $prefix, 
+								 status    => "Assigned",
+								 interface => $if)){
 			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
@@ -684,6 +682,44 @@ sub update {
 			$self->debug( loglevel => 'LOG_NOTICE',
 				      message  => $msg );
 			$self->output($msg);			    
+		    }
+		}
+		########################################################
+		# Create A records for each ip address discovered
+		# 
+		unless ($ipobj->arecords){
+		    my $msg = sprintf("Creating DNS entry for %s", 
+				      $ipobj->address);
+		    $self->debug(loglevel => 'LOG_ERR',
+				 message  => $msg );
+		    $self->output($msg);
+		    
+		    if (exists $nameips{$ipobj->address}){
+			# This is the 'main' address
+			# We already have an RR created
+			unless ($self->{dns}->insert_a(rr          => $device->name, 
+						       ip          => $ipobj,
+						       contactlist => $device->contactlist)){
+			    my $msg = sprintf("Could not insert DNS entry for %s: %s", 
+					      $ipobj->address, $self->{dns}->error);
+			    $self->debug(loglevel => 'LOG_ERR',
+					 message  => $msg );
+			    $self->output($msg);
+			}
+		    }else{
+			# Insert necessary records
+			my $name = $self->_canonize_int_name($ipobj->interface->name) . "." . $device->name->name ;
+			unless ($self->{dns}->insert_a(name        => $name,
+						       ip          => $ipobj,
+						       contactlist => $device->contactlist
+						       )){
+			    my $msg = sprintf("Could not insert DNS entry for %s: %s", 
+					      $ipobj->address, $self->{dns}->error);
+			    $self->debug(loglevel => 'LOG_ERR',
+					 message  => $msg );
+			    $self->output($msg);
+			}
+			
 		    }
 		}
 	    } # foreach newip
@@ -884,27 +920,6 @@ sub update {
 	}
 	
     }
-    ##################################################################
-    # If device has only one IP, assign subnet's entity to it
-    # 
-   if ( (scalar(keys %newips)) == 1 ){
-    
-	unless ($device->entity != 0){
-	    my $ipaddr = (keys(%newips))[0];
-	    if ( my $ipobj = $self->{ipm}->searchblock($ipaddr) ){
-		if ((my $subnet = $ipobj->parent) != 0 ){
-		    if ( $subnet->entity != 0 ){
-			$devtmp{entity} = $subnet->entity->id;
-			my $msg = sprintf("Assigning subnet's entity \'%s\' to %s", 
-					  $subnet->entity->name, $host);
-			$self->debug( loglevel => 'LOG_NOTICE',
-				      message  => $msg );
-			$self->output($msg);
-		    }
-		}
-	    }
-	}
-   }
     ################################################################
     # Update device if any changes since creation
     
@@ -999,7 +1014,7 @@ sub get_dev_info {
 
     ################################################################
     # MAU-MIB's ifMauType to half/full translations
-    my %Mau2Duplex = ( '13.6.1.2.1.26.4.10' => "half",
+    my %Mau2Duplex = ( '1.3.6.1.2.1.26.4.10' => "half",
 		       '1.3.6.1.2.1.26.4.11' => "full",
 		       '1.3.6.1.2.1.26.4.12' => "half",
 		       '1.3.6.1.2.1.26.4.13' => "full",
@@ -1082,18 +1097,18 @@ sub get_dev_info {
 	if ($self->_is_valid($nv{interface}{$newif}{ifMauType})){
 	    $dupval = $nv{interface}{$newif}{ifMauType};
 	    $dupval =~ s/^\.(.*)/$1/;
-	    $dev{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "unknown";
+	    $dev{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "";
 	    ################################################################
 	    # Other Standard (used by some HP)	    
 	}elsif($self->_is_valid($nv{interface}{$newif}{ifSpecific})){
 	    $dupval = $nv{interface}{$newif}{ifSpecific};
 	    $dupval =~ s/^\.(.*)/$1/;
-	    $nv{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "unknown";
+	    $dev{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "";
 	    ################################################################
 	    # Catalyst
 	}elsif($self->_is_valid($nv{interface}{$newif}{portDuplex})){
 	    $dupval = $nv{interface}{$newif}{portDuplex};
-	    $nv{interface}{$newif}{duplex} = (exists ($CatDuplex{$dupval})) ? $CatDuplex{$dupval} : "unknown";
+	    $dev{interface}{$newif}{duplex} = (exists ($CatDuplex{$dupval})) ? $CatDuplex{$dupval} : "";
 	}
 
 	####################################################################
@@ -1178,7 +1193,27 @@ sub _readablehex {
 }
 
 #####################################################################
-# Find Device
-# Performs some lookups in various places to determine
-# if device exists in DB
+# Canonize Interface Name (for DNS)
 #####################################################################
+sub _canonize_int_name {
+    my ($self, $name) = @_;
+
+    # This should go in the config file 
+    my %abbr = ('Ethernet'        => 'e-',
+		'FastEthernet'    => 'fe-',
+		'GigabitEthernet' => 'ge-',
+		'Serial'          => 'ser-',
+		'Tunnel'          => 'tun-',
+		'POS'             => 'pos-',
+		'Loopback'        => 'lo-',
+		);
+
+    foreach my $ab (keys %abbr){
+	if ($name =~ /$ab/){
+	    $name =~ s/$ab/$abbr{$ab}/i;
+	}
+    }
+    $name =~ s/\/|\./-/g;
+    return lc( $name );
+}
+

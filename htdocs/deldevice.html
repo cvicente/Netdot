@@ -9,10 +9,24 @@
 <tr><td>
    Going to delete device <% $name %>
    <input type="hidden" name="Device__<% $id %>" value="on">
-   <br>
+   <p>
+    Delete DNS records?<p>
 % if ($o->name){
-    Delete DNS records
-	<input type="checkbox" name="RR__<% $o->name->id %>" CHECKED>
+	<% $o->name->name %>  <input type="checkbox" name="RR__<% $o->name->id %>" CHECKED><br>
+% }
+% if ( my @ints = $o->interfaces ){
+%    foreach my $int (@ints){
+%        if ( my @ips = $int->ips ){
+%	   foreach my $ip ( @ips ){
+%	      if ( my @ras = $ip->arecords ){
+%	         foreach my $ra ( @ras ){
+%                   next if ( $ra->rr->id eq $o->name->id );
+		    <% $ra->rr->name %>  <input type="checkbox" name="RR__<% $ra->rr->id %>" CHECKED><br>
+%		 }
+%	      }	      
+%	   }
+%       }
+%    }
 % }
    <p><br>
     <input type="submit" name="submit" value="Delete">

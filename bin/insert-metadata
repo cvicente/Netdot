@@ -305,11 +305,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Device', 
 	  'name', 
-	  'name,aliases,sysdescription,physaddr,oobname,oobnumber,entity,contactlist,person,monitored,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,rack,lastupdated,dateinstalled,info', 
+	  'name,aliases,sysdescription,physaddr,oobname,oobnumber,entity,contactlist,person,monitored,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,closet,rack,lastupdated,dateinstalled,info', 
 	  'name,productname', 
-	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,monitored:Monitored?,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?,site:Building,room:Room,rack:Rack,lastupdated:Last Updated on,dateinstalled:Installed on,info:Comments',
+	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,monitored:Monitored?,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?,site:Building,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments',
 	  '',
-	  'name:RR,entity:Entity,contactlist:ContactList,person:Person,productname:Product,part_of:Device,site:Site,room:Room,physaddr:PhysAddr', 
+	  'name:RR,entity:Entity,contactlist:ContactList,person:Person,productname:Product,part_of:Device,site:Site,room:Room,closet:Closet,physaddr:PhysAddr', 
 	  'interfaces:Interface:device,parts:Device:part_of', 
 	  '0', 
 	  'A network device');
@@ -317,9 +317,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Device_history', 
 	  'modified', 
-	  'name,aliases,sysdescription,physaddr,oobname,oobnumber,entity,contactlist,person,monitored,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,rack,lastupdated,dateinstalled,info,modified,modifier', 
+	  'name,aliases,sysdescription,physaddr,oobname,oobnumber,entity,contactlist,person,monitored,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,closet,rack,lastupdated,dateinstalled,info,modified,modifier', 
 	  'modified,modifier,name,productname', 
-	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,monitored:Monitored?,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?site:Location,room:Room,rack:Rack,lastupdated:Last Updated on,dateinstalled:Installed on,info:Comments,modified:Modified on,modifier:Modified by',
+	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,monitored:Monitored?,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?site:Location,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments,modified:Modified on,modifier:Modified by',
 	  '',
 	  'name:RR,entity:Entity,contactlist:ContactList,person:Person,productname:Product,part_of:Device,site:Site,room:Room,physaddr:PhysAddr', 
 	  '', 
@@ -327,7 +327,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('DeviceType', 
+  VALUES ('ProductType', 
 	  'name', 
 	  'name,info', 
 	  'name',
@@ -365,11 +365,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('DhcpScope', 
 	  'service,type,name', 
-	  'type,name,part_of,subnet,service,info', 
+	  'type,name,part_of,ipblock,service,info', 
 	  'service,type,name',
-	  'name:Name,part_of:Belongs to,subnet:Subnet,service:DHCP Service,info:Comments',
+	  'name:Name,part_of:Belongs to,ipblock:IP Block,service:DHCP Service,info:Comments',
 	  '',
-	  'type:DhcpScopeType,part_of:DhcpScope,subnet:Ipblock,service:IpService', 
+	  'type:DhcpScopeType,part_of:DhcpScope,ipblock:Ipblock,service:IpService', 
 	  'attributes:DhcpAttr:host', 
 	  '0', 
 	  'A DHCP Scope');
@@ -520,27 +520,17 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Ipblock', 
 	  'address,prefix', 
-	  'address,prefix,version,parent,interface,status,entity,description,last_seen,physaddr', 
+	  'address,prefix,version,parent,interface,status,entity,description,first_seen,last_seen,physaddr', 
 	  'address,prefix,version',
-	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,entity:Used by,description:Description,last_seen:Last Seen,physaddr:MAC Address',
+	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,entity:Used by,description:Description,first_seen:First Seen:last_seen:Last Seen,physaddr:MAC Address',
 	  '',
 	  'interface:Interface,parent:Ipblock,status:IpblockStatus,entity:Entity,physaddr:PhysAddr',
-	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,resourcerecords:RRIp:ip,children:Ipblock:parent:{on_delete=>"set-null"},dhcpentries:DhcpScope:subnet:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
+	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,arecords:RRADDR:ipblock,ptrrecords:RRPTR:ipblock,children:Ipblock:parent:{on_delete=>"set-null"},dhcpentries:DhcpScope:ipblock:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
 	  '0', 
 	  'An IP (v4 or v6) Address');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('IpblockStatus', 'name',  'name', 'name', '', 'ipblocks:Ipblock:status:{on_delete=>"restrict"}', '0', 'IP block status');
-
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('IpRange', 
-	  'start_ip,end_ip', 
-	  'start_ip,end_ip', 
-	  'start_ip,end_ip', 
-	  'start_ip:Ipblock,end_ip:Ipblock,dhcp_attr:DhcpAttr', 
-	  '', 
- 	  '0', 
-	  'An IP range for DHCP dynamic assignments');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('IpService', 
@@ -580,9 +570,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
     VALUES ('PhysAddr', 
 	    'address', 
-	    'address,last_seen', 
-	    'address,last_seen', 
-	    'address:Address,last_seen:Last Seen',
+	    'address,static,first_seen,last_seen', 
+	    'address,static,first_seen,last_seen', 
+	    'address:Address,static:Static?,first_seen:First Seen,last_seen:Last Seen',
 	    '',
 	    '', 
 	    'interfaces:Interface:physaddr:{on_delete=>"set-null"},devices:Device:physaddr:{on_delete=>"set-null"},fwtableentries:FWTableEntry:physaddr,registeredips:Ipblock:physaddr,arpentries:ArpCacheEntry:physaddr', 
@@ -596,7 +586,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name,type,description,manufacturer', 
 	  'name:Name,type:Type,description:Description,sysobjectid:System ID,manufacturer:Manufacturer,info:Comments',
 	  '',
-	  'type:DeviceType,manufacturer:Entity', 
+	  'type:ProductType,manufacturer:Entity', 
 	  'devices:Device:productname:{on_delete=>"restrict"}', 
 	  '0', 
 	  'Product Names');
@@ -608,7 +598,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'modified,modifier,name,type,description,manufacturer', 
 	  'name:Name,type:Type,description:Description,manufacturer:Manufacturer,info:Comments,modified:Modified on,modifier:Modified by',
 	  '',
-	  'type:DeviceType,manufacturer:Entity', 
+	  'type:ProductType,manufacturer:Entity', 
 	  '', 
 	  '0', 
 	  '');
@@ -629,38 +619,110 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
     VALUES ('RR', 
 	    'name',
-	    'zone,origin,name,type,data,ttl,active,contactlist', 
-	    'zone,origin,name,type', 
-	    'zone:Zone,origin:Origin,name:Name,type:Type,data:Data,ttl:TTL,active:Active?,contactlist:ContactList', 
+	    'name,zone,origin,active,contactlist', 
+	    'name,zone,origin', 
+	    'zone:Zone,origin:Origin,name:Name,active:Active?,contactlist:ContactList', 
 	    '',
-	    'zone:Zone,type:RRType,contactlist:ContactList',
-	    'ips:RRIp:rr,devices:Device:name:{on_delete=>"restrict"}', 
+	    'zone:Zone,contactlist:ContactList',
+	    'arecords:RRADDR:rr,aliases:RRCNAME:cname,hinforecords:RRHINFO:rr,mxrecords:RRMX:rr,nsrecords:RRNS:rr,ptrrecords:RRPTR:rr,txtrecords:RRTXT:rr,exchanges:RRMX:exchange,domains:RRNS:nsdname,devices:Device:name:{on_delete=>"restrict"}', 
 	    '0', 
 	    'DNS Resource Record');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
-    VALUES ('RRIp', 
-	    'rr,ip',
-	    'rr,ip', 
-	    'rr,ip',
-	    'rr:Resource Record,ip:IP Address', 
+    VALUES ('RRADDR', 
+	    'ipblock,rr',
+	    'ipblock,rr,ttl', 
+	    'ipblock,rr', 
+	    'rr:Resource Record,ipblock:Ipblock,ttl:TTL', 
 	    '',
-	    'rr:RR,ip:Ipblock', 
+	    'rr:RR,ipblock:Ipblock',
 	    '', 
-	    '1', 
-	    'RR to IP join table');
+	    '0', 
+	    'DNS A or AAAA Record');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RRCNAME', 
+	    'alias,cname',
+	    'alias,cname,ttl', 
+	    'alias,cname', 
+	    'alias:Alias,cname:CNAME,ttl:TTL', 
+	    '',
+	    'cname:RR',
+	    '', 
+	    '0', 
+	    'DNS CNAME Record');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RRHINFO', 
+	    'cpu,os,rr',
+	    'cpu,os,rr,ttl', 
+	    'cpu,os,rr', 
+	    'rr:Resource Record,cpu:CPU,os:OS,ttl:TTL', 
+	    '',
+	    'rr:RR',
+	    '', 
+	    '0', 
+	    'DNS HINFO Record');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RRMX', 
+	    'preference,exchange,rr',
+	    'preference,exchange,rr,ttl', 
+	    'preference,exchange,rr', 
+	    'rr:Resource Record,preference:Preference,exchange:Exchange,ttl:TTL', 
+	    '',
+	    'rr:RR,exchange:RR',
+	    '', 
+	    '0', 
+	    'DNS MX Record');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RRNS', 
+	    'nsdname,rr',
+	    'nsdname,rr,ttl', 
+	    'nsdname,rr', 
+	    'rr:Resource Record,nsdname:Name Server,ttl:TTL', 
+	    '',
+	    'rr:RR,nsdname:RR',
+	    '', 
+	    '0', 
+	    'DNS NS Record');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RRPTR', 
+	    'ipblock,rr',
+	    'ipblock,rr,,ttl', 
+	    'ipblock,rr', 
+	    'rr:Resource Record,ipblock:IP,ttl:TTL', 
+	    '',
+	    'rr:RR,ipblock:Ipblock',
+	    '', 
+	    '0', 
+	    'DNS PTR Record');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RRTXT', 
+	    'txt,rr',
+	    'txt,rr,ttl', 
+	    'txt,rr', 
+	    'rr:Resource Record,txt:Text,ttl:TTL', 
+	    '',
+	    'rr:RR',
+	    '', 
+	    '0', 
+	    'DNS TXT Record');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
     VALUES ('RRType', 
 	    'name',
-	    'name,info', 
-	    'name',
-	    'name:Name,info:Comments', 
+	    'name,tablename', 
+	    'name,tablename',
+	    'name:Name,tablename:Table', 
 	    '',
 	    '', 
-	    'rrs:RR:type:{on_delete=>"restrict"}', 
+	    '', 
 	    '0', 
-	    'Resource Record Type');
+	    'Resource Record Types and their tables');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Service', 
