@@ -1,6 +1,13 @@
+<%doc>
+
+Add an IP service object from device worksheet
+
+</%doc>
+
 <%args>
-$ip  =>   undef
-$Add =>   undef
+$ip     =>   undef
+$Add    =>   undef
+$Cancel =>   undef
 </%args>
 
 <%init>
@@ -12,7 +19,7 @@ if ( $ip ){
     $ipobj = Ipblock->retrieve($ip);
     $iplbl = $ui->getobjlabel($ipobj, "/");
 }
-my %reserved = ( Add => "",
+my %reserved = ( Add    => "",
 		 Cancel => "",
 		);
 
@@ -20,10 +27,6 @@ my $newsrvid;
 
 </%init>
 
-<%doc>
-Add an IP service object from device worksheet
-
-</%doc>
 <%perl>
 if ( $Add ){
     foreach my $arg ( keys %ARGS ){
@@ -32,11 +35,17 @@ if ( $Add ){
     }
     unless ( $newsrvid = $ui->insert(table => "IpService", state => \%state) ){
 	$m->comp("error.mhtml", error => $ui->error);
-    
+    }  
 </%perl>
     <body class="bodytag" onUnload="opener.location.reload()">
     <a href="#" onClick="window.close()">[done]</a>
 
+%}elsif ( $Cancel ){
+    <body class="bodytag">
+    Cancelled.
+    <br>
+    <a href="#" onClick="window.close()">[done]</a>
+    
 %}else{
 
 
@@ -96,4 +105,3 @@ if ( $Add ){
  
 </body>
 </html>
-
