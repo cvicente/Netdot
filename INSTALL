@@ -1,0 +1,77 @@
+-----------------------------------------------------------------------
+REQUIREMENTS
+-----------------------------------------------------------------------
+* Perl 5.6.1 or later
+* Apache 1.3.x or 2.x with mod_perl
+* A DBMS (so far, tested with MySQL only)
+
+* Make sure you have the following Perl Modules installed:
+
+DBI
+Class::DBI (0.93)
+HTML::Mason
+Apache::Session
+Apache::DBI
+DBIx::DBSchema
+DBIx::DataSource
+
+-----------------------------------------------------------------------
+PATCHES
+-----------------------------------------------------------------------
+
+Netdot needs the following Perl module files patched to fix bugs
+and have extra functionality:
+
+YOUR-@INC-PATH/Class/DBI.pm with contrib/ClassDBI.patch
+YOUR-@INC-PATH/Apache/Session/Lock/File.pm with contrib/ApacheSession.patch
+
+-----------------------------------------------------------------------
+INSTALLING THE PACKAGE
+-----------------------------------------------------------------------
+
+Run these from the main directory and answer any prompts
+you encounter:
+
+make install PREFIX=YOUR-PREFIX (i.e: /usr/local/netdot)
+make installdb
+
+-----------------------------------------------------------------------
+APACHE CONFIGURATION
+-----------------------------------------------------------------------
+
+* Add lines similar to these to your httpd.conf,
+
+<VirtualHost your.ip.address>
+    ServerName YOUR-NETDOT-HOSTNAME
+    DocumentRoot YOUR-PREFIX/htdocs
+
+    # this line applies to Apache2+mod_perl2 only
+    PerlModule Apache2 Apache::compat
+
+    PerlHandler Apache::DBI
+    PerlRequire YOUR-PREFIX/bin/mason.pl
+
+    <Location />
+        SetHandler perl-script
+        PerlHandler Netdot::Mason
+	AuthType Basic
+	AuthName "NetDoT Access"
+	AuthUserFile YOUR-PREFIX/htpasswd.users
+	require valid-user
+    </Location>
+
+    <Location /img>
+        SetHandler default-handler	 
+    </Location>
+
+</VirtualHost>
+
+* Create the file YOUR-PREFIX/htpasswd.users 
+  and add username/passwords to authenticate 
+  accesss to the Netdot pages.
+
+  Alternatively, you can use external authentication such as Radius
+  (note: mod_radius not working with Apache2 at the time of this writing)
+
+* Edit mason.pl to your needs.  
+  Pay attention to the Apache2-only directives, and also the paths.
