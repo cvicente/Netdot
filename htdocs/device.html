@@ -33,12 +33,14 @@ if ( $args{action} eq "discover" ){
     $tmp{name} = $args{device};
     $tmp{community} = $comstr;
     $tmp{sysdescription} = $device{sysDescr};
-    unless( $device{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
+    if( length( $device{dot1dBaseBridgeAddress} ) > 0 
+        && $device{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
       # Remove the '0x' from the MAC address
       $device{dot1dBaseBridgeAddress} =~ s/^0x//;
       $tmp{physaddr} = $device{dot1dBaseBridgeAddress};
     }
-    unless( $device{entPhysicalSerialNum} eq "noSuchObject" ) {
+    if( length( $device{entPhysicalSerialNum} ) > 0 
+        && $device{entPhysicalSerialNum} ne "noSuchObject" ) {
       $tmp{serialnumber} = $device{entPhysicalSerialNum};
     }
     # Try to guess some values
