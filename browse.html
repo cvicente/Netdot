@@ -9,8 +9,7 @@ foreach my $j ( keys %ARGS ) {
 
 % if( ! exists( $args{table} ) ) {
 %   my( @t );
-%   map { push @t, $_ unless( $_->name eq "Meta" ) } 
-%     sort { $a->name cmp $b->name } Meta->retrieve_all();
+%   @t = $gui->gettables();
     <p>
     <blockquote>
     <& table.html, width => $WIDTH, link => "browse.html", title => "Please select an object to browse:" &>
@@ -48,6 +47,9 @@ use Netdot::DBI;
 
 ######################################################################
 #  $Log: browse.html,v $
+#  Revision 1.8  2003/07/12 20:42:23  netdot
+#  using gettables in GUI
+#
 #  Revision 1.7  2003/07/08 21:01:21  netdot
 #  Added css tags -miyake
 #
