@@ -2909,10 +2909,10 @@ sub _set_info_defaults {
   my( $self, $type, $dev, $cat, $key, $inst, %aux ) = @_ ;
   my $diff = 0 ; # incase this is a new instance
   my %targets = %{ $self->{targets} } if( $self->{targets} ) ;
-  if( $cat eq "interface" 
-      && ( $key =~ /Loopback/io || $key =~ /Null/io  || $key =~ /^T1/io ) ) {
-    return ;
-  }
+#  if( $cat eq "interface" 
+#      && ( $key =~ /Loopback/io || $key =~ /Null/io  || $key =~ /^T1/io ) ) {
+#    return ;
+#  }
   if( defined( $metacat{$cat}{append} ) ) {
     $inst .= "$metacat{$cat}{append}" ;
   }
@@ -3363,6 +3363,9 @@ sub _sysUpTime {
 
 ##########################################################################
 # $Log: Netviewer.pm,v $
+# Revision 1.7  2003/07/03 22:44:05  netdot
+# commenting out skip over loopback and other reserved IFs.
+#
 # Revision 1.6  2003/06/12 23:27:23  netdot
 # added get_device; fixed grab_aux_info; other stuff....
 #
