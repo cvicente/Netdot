@@ -178,14 +178,18 @@ sub getsqltype {
 # Build input tag based on SQL type and other options
 ######################################################################
 sub getinputtag {
-    my ($self, $col, $proto) = @_;
-    my ($class, $value);
+    my ($self, $col, $proto, $value) = @_;
+    my $class;
     my $tag = "";
     if ( $class = ref $proto ){  # $proto is an object
-	$value = $proto->$col;
+	if ( defined($value) ){
+	    die "getinputtag: ERROR: Can't supply a value for an existing object\n";
+	}else{
+	    $value = $proto->$col;
+	}
     }else{                       # $proto is a class
 	$class = $proto;
-	$value = "";
+	$value ||=  "";
     }
     
     if ($col eq "info"){
@@ -260,6 +264,9 @@ sub rmsessions {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.14  2003/07/11 21:00:43  netdot
+#  Modified getinputtag to accept a value when passed a table name
+#
 #  Revision 1.13  2003/07/11 00:48:28  netdot
 #  Added gettables method
 #
@@ -379,8 +386,9 @@ Given a table and a column name, returns the SQL type as defined in the schema
 
 =head2 getinputtag
  
-Given column name and object, builds an HTML <input> tag based on the sql type of the 
-field and other parameters
+Accepts column name and object (or table name) and builds an HTML <input> tag based on the SQL type of the 
+field and other parameters.  When specifying a table name, the caller has the option to pass
+a value to be displayed in the tag.
 
 =head2 mksession - create state for a session across multiple pages
 
