@@ -48,15 +48,8 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_INTERFACE")
     {
         push(@interfaces, $ARGS{interfaces});
     }
-    
-    my ($int_obj, %tmp_int);
-    $tmp_int{jack} = $id;
-    foreach my $int (@interfaces)
-    {
-        $int_obj = Interface->retrieve($int);
-        $tmp_int{id} = $int;
-        die ("Error: " . $ui->error) if (!($ui->update(object=>$int_obj, state=>\%tmp_int)));
-    }
+
+    die($cable_manager->error()) if (!($cable_manager->insertinterfaces($o, @interfaces)));
 }
 
 # end insertion/update code
@@ -148,10 +141,10 @@ my @sites = Site->retrieve_all();
         </tr>
         <tr align="left" valign="top">
             <td width="40%">
-            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td align="left">Jack ID: </td>
-                <td align="left">
+                <td align="left" class="formtablec2">
 %           if ($editCable) {
                 <input type="text" name="__jackid" value="<% $o ? $o->jackid : "" %>" onChange="document.horizform.HorizontalCable__<% $id %>__jackid.value = this.value" DISABLED>
 %           } else {
@@ -163,7 +156,7 @@ my @sites = Site->retrieve_all();
 %           if ($editCable) {
             <tr align="left" valign="top">
                 <td align="left">Jack Number: </td>
-                <td align="left">
+                <td align="left" class="formtablec2">
                 <input type="text" value="" name="__jackno">
                 <input type="button" value="Create Jack ID" name="createjack" onClick="return createJackID();"> 
                 </td>
@@ -172,7 +165,7 @@ my @sites = Site->retrieve_all();
             
             <tr align="left" valign="top">
                 <td align="left">Cable Type: </td>
-                <td align="left">
+                <td align="left" class="formtablec2">
 %               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"type",
 %                                 lookup=>"CableType", edit=>$editCable);
                 </td>
@@ -180,15 +173,15 @@ my @sites = Site->retrieve_all();
 
             <tr align="left" valign="top">
                 <td align="left">Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
-                <td align="left">
-%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"installdate", 
+                <td align="left" class="formtablec2">
+%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"installdate", default=>$ui->date(),
 %                              edit=>$editCable);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Tested on <font size="-1">(yyyy-mm-dd)</font>: </td>
-                <td align="left">
+                <td align="left" class="formtablec2">
 %               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"datetested", 
 %                              edit=>$editCable);
                 </td>
@@ -197,7 +190,7 @@ my @sites = Site->retrieve_all();
             
             <tr align="left" valign="top">
                 <td align="left">Test Passed: </td>
-                <td align="left">
+                <td align="left" class="formtablec2">
 %               $ui->radioGroupBoolean(object=>$o, table=>"HorizontalCable", 
 %                                      column=>"testpassed", edit=>$editCable);
                 </td>
@@ -206,14 +199,14 @@ my @sites = Site->retrieve_all();
             </td>
 
             <td width="40%">
-            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td align="left">Closet: </td>
-                <td align="left">
+                <td align="left" class="formtablec2">
 %               if ($editCable) {
 %               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", 
 %                                 edit=>$editCable, where=>{site=>($site ? $site->id : "")});
-                    &nbsp;<select name="closet_srch" onChange="closetSearchList.doIt();" style="width: 150px;">
+                    &nbsp;<select name="closet_srch" onChange="closetSearchList.doIt();">
                     <option value="">Lookup by Site</option>
                     <%perl>
                     foreach my $s (@sites)
@@ -230,11 +223,11 @@ my @sites = Site->retrieve_all();
             
             <tr align="left" valign="top">
                 <td align="left">Room: </td>
-                <td align="left">
+                <td align="left" class="formtablec2">
 %               if ($editCable) {
 %                   $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"room", lookup=>"Room",
 %                                     edit=>$editCable, where=>{id=>($o ? $o->room : "")});
-                    &nbsp;<select name="room_site_srch" onChange="siteFloorLookup.doIt();" style="width: 150px;">
+                    &nbsp;<select name="room_site_srch" onChange="siteFloorLookup.doIt();">
                     <option value="">Lookup by Site</option>
                     <%perl>
                     foreach my $s (@sites)
@@ -253,7 +246,7 @@ my @sites = Site->retrieve_all();
 
             <tr align="left" valign="top">
                 <td align="left">Account: </td>
-                <td align="left">
+                <td align="left" class="formtablec2">
 %               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"account", 
 %                              edit=>$editCable);
                 </td>
@@ -352,16 +345,16 @@ my @sites = Site->retrieve_all();
      <td>
       <table border="0" width="90%">
     <tr>
-        <td align="center">
+        <td align="left">
             <a href="cable_horizontal.html?id=<% $id %>&int_sort=name#interface">Name</a>
         </td>
-        <td align="center">
+        <td align="left">
             <a href="cable_horizontal.html?id=<% $id %>&int_sort=number#interface">Number</a>
         </td>
-        <td align="center">
+        <td align="left">
             <a href="cable_horizontal.html?id=<% $id %>&int_sort=type#interface">Type</a>
         </td>
-        <td align="center">
+        <td align="left">
             <a href="cable_horizontal.html?id=<% $id %>&int_sort=device#interface">Device</a>
         </td>
     </tr>
@@ -442,6 +435,7 @@ $s2name => "Plant";
 <%init>
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
+my $cable_manager = Netdot::CablePlantManager->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
 my $site = undef;

@@ -1,0 +1,47 @@
+<%doc>
+Displays all cable strands for a given backbone. Used primarily for setting
+up splice relationships.
+
+Arguments:
+    - bb_id: the BackboneCable id.
+    - form_name: the name of the html form we are dealing with
+    - field_name: the name of the <select> widget to update.
+</%doc>
+
+% print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+<html>
+<body>
+<script language="JavaScript">
+<%perl>
+my $bb = BackboneCable->retrieve($bb_id);
+
+printf("opener.document.forms[\'%s\'][\'%s\'].options.length = 0;\n", $form_name, $field_name);
+printf("opener.document.forms[\'%s\'][\'%s\'].options[0] = new Option();\n", $form_name, $field_name);
+printf("opener.document.forms[\'%s\'][\'%s\'].options[0].value = 0;\n", $form_name, $field_name);
+printf("opener.document.forms[\'%s\'][\'%s\'].options[0].text = \'-- Make your selection --\';\n", $form_name, $field_name);
+
+my $i = 1;
+foreach my $strand (sort { (split(/\./o, $a->name, 2))[1] <=> (split(/\./o, $b->name, 2))[1] } $bb->strands)
+{
+    printf("opener.document.forms[\'%s\'][\'%s\'].options[%d] = new Option();\n", $form_name, $field_name, $i);
+    printf("opener.document.forms[\'%s\'][\'%s\'].options[%d].value = %d;\n", $form_name, $field_name, $i, $strand->id);
+    printf("opener.document.forms[\'%s\'][\'%s\'].options[%d].text = \'%s\';\n", $form_name, $field_name, $i, $strand->name);
+    ++$i;
+}
+
+printf("window.close();\n");
+</%perl>
+</script>
+</body>
+</html>
+
+<%init>
+my $DEBUG = 0;
+</%init>
+
+<%args>
+$bb_id => $ARGS{"bb_id"};
+$field_name => $ARGS{"field_name"};
+$form_name => $ARGS{"form_name"};
+</%args>

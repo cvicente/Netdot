@@ -3,7 +3,7 @@
 
 NDIR = Netdot
 
-FILES = Netdot.pm Debug.pm $(NDIR)/UI.pm $(NDIR)/odHasMany.pm  $(NDIR)/DefaultConfig.pm $(NDIR)/SiteConfig.pm $(NDIR)/NetdotPermissionFactory.pm $(NDIR)/IPManager.pm $(NDIR)/DeviceManager.pm $(NDIR)/DNSManager.pm
+FILES = Netdot.pm Debug.pm $(NDIR)/UI.pm $(NDIR)/odHasMany.pm  $(NDIR)/DefaultConfig.pm $(NDIR)/SiteConfig.pm $(NDIR)/NetdotPermissionFactory.pm $(NDIR)/IPManager.pm $(NDIR)/DeviceManager.pm $(NDIR)/DNSManager.pm $(NDIR)/CablePlantManager.pm
 
 all: dir files
 

@@ -53,6 +53,7 @@ if(defined($ARGS{_action}))
     <input type="hidden" name="end_id" value="<% $end_id %>">
     <input type="hidden" name="backbone_srch" value="<% $backbone_srch %>">
     <input type="hidden" name="backbone_id_srch" value="<% $backbone_id_srch %>">
+    <input type="hidden" name="circuit_srch" value="<% $ARGS{circuit_srch} %>">
     <input type="hidden" name="site_srch" value="<% $site_srch %>">
     <input type="hidden" name="page_type" value="<% $page_type %>">
     <input type="hidden" name="_action" value="<% $id ? "UPDATE" : "NEW" %>">
@@ -197,6 +198,7 @@ if(defined($ARGS{_action}))
 % elsif (uc($page_type) eq "BACKBONE") {
 <%perl>
 my @cables = ();
+my $header_descr = "";
 
 # if we are searching by backbone name...
 if ($backbone_srch && !defined($submit_site)) 
@@ -243,6 +245,8 @@ elsif ($start_id && $end_id)
                                             BackboneCable->search(start_closet=>$c1_id, end_closet=>$c_id)));
         }
     }
+
+    $header_descr = sprintf("connected to <a href=\"view.html?table=Site&id=%d\">%s</a>, <a href=\"view.html?table=Site&id=%d\">%s</a>", $s1->id, $s1->name, $s2->id, $s2->name);
 }
 
 elsif ($start_id)
@@ -256,6 +260,8 @@ elsif ($start_id)
         my @cab = BackboneCable->search(start_closet=>$start_c->id);
         push (@cables, @cab);
     }
+
+    $header_descr = sprintf("connected to <a href=\"view.html?table=Site&id=%d\">%s</a>", $start_site->id, $start_site->name);
 }
 </%perl>
 
@@ -269,7 +275,7 @@ elsif ($start_id)
       <table width="100%" border="0">
        <tr>
          <td width="10%" align="left">&nbsp;</td>
-         <th width="70%" align="center">Backbone Cable</th>
+         <th width="70%" align="center">Backbone Cable <% $header_descr ? $header_descr : "" %></th>
 %	 if ($edit eq "cableinfo"){	 
             <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 } else {
@@ -289,19 +295,29 @@ elsif ($start_id)
 
 %	if (scalar(@cables)) {
     <tr>
-        <td align="center">
+        <td align="left">
             <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=name&page_type=<% $page_type %>">Name</a>
         </td>
-        <td align="center">
+        <td align="left">
             <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=type&page_type=<% $page_type %>">Type</a>
          </td>
-        <td align="center">
+%        if ($edit ne "cableinfo") {
+         <td align="left">
+            <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=start_building&page_type=<% $page_type %>">Start Building</a>
+        </td>
+%       }
+        <td align="left">
             <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=start_closet&page_type=<% $page_type %>">Start Closet</a>
         </td>
-        <td align="center">
+%        if ($edit ne "cableinfo") {
+         <td align="left">
+            <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=end_building&page_type=<% $page_type %>">End Building</a>
+        </td>
+%       }        
+        <td align="left">
             <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=end_closet&page_type=<% $page_type %>">End Closet</a>
         </td>
-        <td align="center">
+        <td align="left">
             <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=owner&page_type=<% $page_type %>">Owner</a>
         </td>
     </tr>
@@ -328,6 +344,14 @@ elsif ($start_id)
     elsif ($cable_sort eq "owner")
     {
         @sorted_cables = sort { $a->owner->name cmp $b->owner->name } @cables;
+    }
+    elsif ($cable_sort eq "start_building")
+    {
+        @sorted_cables = sort { $a->start_closet->site->name cmp $b->start_closet->site->name } @cables;
+    }
+    elsif ($cable_sort eq "end_building")
+    {
+        @sorted_cables = sort { $a->end_closet->site->name cmp $b->end_closet->site->name } @cables;
     }
     else
     {
@@ -358,6 +382,12 @@ elsif ($start_id)
 %           $ui->selectLookup(object=>$cable, column=>"type", lookup=>"CableType", edit=>($edit eq "cableinfo"));
         </td>
 
+%       if ($edit ne "cableinfo") {
+        <td align="left">
+            <a href="view.html?table=Site&id=<% $cable->start_closet->site->id %>"><% $cable->start_closet->site->name %></a>
+        </td>
+%       }
+
         <td align="left">
 %       if ($edit eq "cableinfo") {
 %           $ui->selectLookup(object=>$cable, column=>"start_closet", lookup=>"Closet", 
@@ -366,6 +396,12 @@ elsif ($start_id)
             <a href="closet.html?id=<% $cable->start_closet %>"><% $cable->start_closet->name %></a>
 %       }
         </td>
+
+%       if ($edit ne "cableinfo") {
+        <td align="left">
+            <a href="view.html?table=Site&id=<% $cable->end_closet->site->id %>"><% $cable->end_closet->site->name %></a>
+        </td>
+%       }
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
@@ -487,8 +523,12 @@ elsif ($start_id)
         </td>        
         
         <td align="left">
+%       if ($edit eq "cableinfo") {
 %           $ui->selectLookup(object=>$closet, table=>"Closet", column=>"floor", lookup=>"Floor", 
 %                             edit=>($edit eq "cableinfo"), where=>{site=>$site->id});
+%       } else {
+            <a href="floor.html?id=<% $closet->floor %>"><% $closet->floor->level %></a>
+%       }
          </td>
     </tr>
 %   }
@@ -565,7 +605,7 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
     my @sorted_strands;
     if ($cable_sort eq "name")
     {
-        @sorted_strands = sort { $a->name cmp $b->name } @strands;
+        @sorted_strands = sort { (split(/\./o, $a->name, 2))[1] <=> (split(/\./o, $b->name, 2))[1] } @strands;
     }
     elsif ($cable_sort eq "direction")
     {
@@ -607,8 +647,6 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
 %           } elsif (defined($strand)) {
                 <% (int($strand->direction) == 1 ? "RX" : "TX") %>
 %           }
-        
-%           #$ui->textField(object=>$strand, table=>"CableStrand", column=>"direction", edit=>($edit eq "cableinfo"));
         </td>                
     </tr>
 %   }
@@ -628,7 +666,132 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
 % # BEGIN CIRCUIT CODE
 % #############################################################################
 % elsif (uc($page_type) eq "CIRCUITS") {
-% $m->abort();
+<%perl>
+my @circuits = ();
+# if we are searching by backbone name...
+if ($ARGS{circuit_srch}) 
+{
+    @circuits = Circuit->search_like(cid=>"%". $ARGS{circuit_srch} . "%");
+}
+elsif ($ARGS{submit_site} && $start_id && $end_id)
+{
+    foreach my $c (Circuit->retrieve_all())
+    {
+        push (@circuits, $c) if ($c->nearend->device->site->id eq $start_id || $c->farend->device->site->id eq $end_id);
+    }
+}
+</%perl>
+
+% if (scalar(@circuits) > $MAX_SELECTION) {
+        <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+% } else {
+        <% scalar(@circuits) %> row(s) returned.
+
+<table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+   <tr class="formtabletitle" >
+     <td colspan="5">
+      <table width="100%" border="0">
+       <tr>
+         <td width="10%" align="left">&nbsp;</td>
+         <th width="70%" align="center">Circuits</th>
+%	 if ($edit eq "cableinfo"){	 
+            <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
+%	 } else {
+            <td width="20%" align="right">
+                <a href="circuit.html?id=NEW">[new]</a> &nbsp;||&nbsp; 
+                <a href="cable_plant.html?circuit_srch=<% $ARGS{circuit_srch} %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+            </td>
+%	 }
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      <table border="0" width="100%">
+% }      
+
+%	if (scalar(@circuits) && scalar(@circuits) < $MAX_SELECTION) {
+    <tr>
+        <td align="center">
+            <a href="cable_plant.html?circuit_srch=<% $ARGS{circuit_srch} %>&cable_sort=cid&page_type=<% $page_type %>">Circuit ID</a>
+        </td>
+        <td align="center">
+            <a href="cable_plant.html?circuit_srch=<% $ARGS{circuit_srch} %>&cable_sort=nearend&page_type=<% $page_type %>">Near Int</a>
+        </td>
+        <td align="center">
+            <a href="cable_plant.html?circuit_srch=<% $ARGS{circuit_srch} %>&cable_sort=farend&page_type=<% $page_type %>">Far Int</a>
+        </td>
+        <td align="center">
+            <a href="cable_plant.html?circuit_srch=<% $ARGS{circuit_srch} %>&cable_sort=type&page_type=<% $page_type %>">Type</a>
+        </td>
+    </tr>
+
+    <%perl>
+    # sort
+    # -------------------------------------------------------------------------
+    $cable_sort = "cid" if (!defined($cable_sort) || $cable_sort eq "");
+    my @sorted_circuits;
+    if ($cable_sort eq "cid")
+    {
+        @sorted_circuits = sort { $a->cid cmp $b->cid } @circuits;
+    }
+    elsif ($cable_sort eq "nearend" || $cable_sort eq "farend")
+    {
+        @sorted_circuits = sort { $a->$cable_sort->name cmp $b->$cable_sort->name } @circuits;
+    }
+    elsif ($cable_sort eq "type")
+    {
+        @sorted_circuits = sort { $a->type->name cmp $b->type->name } @circuits;
+    }
+    else
+    {
+        die("ERROR: Unknown value for cable_sort: \"$cable_sort\"\n");
+    }
+    # -------------------------------------------------------------------------
+</%perl>
+%   my $i = 0;
+%   foreach my $circuit (@sorted_circuits)
+%   {
+%   $i = ($i + 1) % 2;
+    <tr align="left" class="<% $cssitem{$i} %>">
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+            <input type="checkbox" name="<% "Circuit__" . $circuit->id . "__delete" %>">[del]
+%           $ui->textField(object=>$circuit, table=>"Circuit", column=>"cid", edit=>($edit eq "cableinfo"));
+%       } else {
+            <a href="circuit.html?id=<% $circuit->id %>"><% $circuit->cid %></a>
+%       }
+        </td>
+
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+%           $ui->selectLookup(object=>$circuit, table=>"Circuit", column=>"nearend", lookup=>"Interface",
+%                             edit=>($edit eq "cableinfo"));
+%       } else {
+            <a href="interface.html?id=<% $circuit->nearend->id %>"><% $circuit->nearend->name %></a>
+%       }
+        </td>
+        
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+%           $ui->selectLookup(object=>$circuit, table=>"Circuit", column=>"farend", lookup=>"Interface",
+%                             edit=>($edit eq "cableinfo"));
+%       } else {
+            <a href="interface.html?id=<% $circuit->farend->id %>"><% $circuit->farend->name %></a>
+%       }
+        </td>
+        <td align="left">
+%           $ui->selectLookup(object=>$circuit, table=>"Circuit", column=>"type", lookup=>"CircuitType",
+%                             edit=>($edit eq "cableinfo"));
+        </td>
+    </tr>
+%   }
+%}
+    </table>
+    </td>
+    </tr>
+</table>
 %}
 % #############################################################################
 % # END CIRCUIT CODE
@@ -662,7 +825,7 @@ $s2name => "Plant";
 
 <%init>
 my $DEBUG = 0;
-my $MAX_SELECTION = 150;
+my $MAX_SELECTION = 500;
 my $ui = Netdot::UI->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;

@@ -63,7 +63,7 @@ my $schema = {
   ],
   'primary_key' => 'id',
   'unique' => [ ['name'] ],
-  'index' => [  ],
+  'index' => [ ['name'], ['start_closet'], ['end_closet'] ],
 },
 
 'BackboneCable_history' => {
@@ -103,7 +103,9 @@ my $schema = {
 'CableStrand' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
+    'number', 'integer', '', '', '', '',
     'cable', 'integer', '', '', '', '',
+    'fiber_type', 'integer', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
     'status', 'integer', '', '', '', '',
     'datetested', 'date', 'NULL', '', '', '',
@@ -111,12 +113,11 @@ my $schema = {
     'direction', 'bool', '', '', '', '',
     'circuit_id', 'integer', '', '', '', '',
     'description', 'varchar', 'NULL', '128', '', '',
-    'parent', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
   'unique' => [ ['cable', 'name'] ],
-  'index' => [  ],
+  'index' => [ ['cable'], ['name'], ['number'], ['circuit_id'] ],
 },
 
 'CableStrand_history' => {
@@ -131,7 +132,6 @@ my $schema = {
     'direction', 'varchar', 'NULL', '32', '', '',
     'description', 'varchar', 'NULL', '128', '', '',
     'circuit_id', 'integer', '', '', '', '',
-    'parent', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
     'modified', 'timestamp', '', '', '', '',
     'modifier', 'varchar', 'NULL', '32', '', '',
@@ -169,7 +169,7 @@ my $schema = {
   ],
   'primary_key' => 'id',
   'unique' => [ ['vendor', 'cid'] ],
-  'index' => [  ],
+  'index' => [ ['nearend'], ['farend'], ['connectionid'] ],
 },
 
 'Circuit_history' => {
@@ -234,12 +234,18 @@ my $schema = {
     'catv_taps', 'varchar', 'NULL', '128', '', '',
     'access_key_type', 'varchar', 'NULL', '128', '', '',
     'work_needed', 'varchar', 'NULL', '128', '', '',
-    'picture', 'integer', '', '', '', '',
+    'shared_with', 'varchar', 'NULL', '255', '', '',
+    'hvac_type', 'varchar', 'NULL', '255', '', '',
+    'ground_buss', 'bool', '', '', '', '',
+    'asbestos_tiles', 'bool', '', '', '', '',
+    'rack_type', 'varchar', 'NULL', '255', '', '',
+    'pair_count', 'varchar', 'NULL', '128', '', '',
+    'converted_patch_panels', 'bool', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
-  'unique' => [ ['name'], ['site','floor'] ],
-  'index' => [  ],
+  'unique' => [ ],
+  'index' => [ ['name'], ['site'], ['number'], ['floor'] ],
 },
 
 'Connection' => {
@@ -532,11 +538,21 @@ my $schema = {
   'index' => [  ],
 },
 
+'FiberType' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name'] ],
+},
+
 'Floor' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'level', 'varchar', '', '32', '', '',
-    'plan', 'integer', 'NULL', '', '', '',
     'site', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
@@ -587,7 +603,7 @@ my $schema = {
   ],
   'primary_key' => 'id',
   'unique' => [ ['jackid', 'closet', 'room' ] ],
-  'index' => [ ['account'] ],
+  'index' => [ ['account'], ['jackid'], ['closet'], ['room'] ],
 },
 
 'Interface' => {
@@ -838,7 +854,7 @@ my $schema = {
    ],
    'primary_key' => 'id',
    'unique' => [ ['name', 'floor'] ],
-   'index' => [ [ 'name' ] ] ,
+   'index' => [ [ 'name' ], ['floor'] ] ,
 },
 
 'RR' => {
@@ -911,7 +927,7 @@ my $schema = {
   ],
   'primary_key' => 'id',
   'unique' => [ ['name'], ['number'] ],
-  'index' => [ ['street1'] ],
+  'index' => [ ['street1'], ['name'], ['number'] ],
 },
 
 'Site_history' => {
@@ -937,6 +953,19 @@ my $schema = {
   'primary_key' => 'id',
   'unique' => [  ],
   'index' => [ ['site_id']  ],
+},
+
+'Splice' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'strand1', 'integer', '', '', '', '',
+    'strand2', 'integer', '', '', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+    
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ],
+  'index' => [ ['strand1'], ['strand2'] ],
 },
 
 'StrandStatus' => {

@@ -114,7 +114,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'bindata:Binary Data,filename:File Name,filesize:File Size,filetype:File Type,info:Comments',
 	  '',
 	  '', 
-	  'closets:Closet:picture,floorplans:Floor:plan',
+	  '',
 	  '0', 
 	  'A Binary File'
 	  );
@@ -122,23 +122,23 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('CableStrand', 
 	  'name', 
-	  'name,cable,status,datetested,loss,direction,circuit_id,description,parent,info', 
+	  'name,cable,status,datetested,loss,direction,fiber_type,circuit_id,description,info', 
 	  'name,cable,direction,status',
-	  'name:Strand ID,cable:Cable ID,status:Status,datetested:Date Tested,loss:Loss,direction:Direction (Tx/Rx),circuit_id:Circuit,description:Description,parent:Parent Strand,info:Comments',
+	  'name:Strand ID,cable:Cable ID,status:Status,datetested:Date Tested,loss:Loss,direction:Direction (Tx/Rx),circuit_id:Circuit,description:Description,info:Comments',
 	  '',
-	  'cable:BackboneCable,status:StrandStatus,parent:CableStrand,circuit_id:Circuit', 
-	  '', 
+	  'cable:BackboneCable,fiber_type:FiberType,status:StrandStatus,circuit_id:Circuit', 
+	  'splices:Splice:strand1',
 	  '0', 
 	  'A single cable strand/pair'
 	  );
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('CableStrand_history', 
 	  'modified', 
-	  'cable,name,status,loss,direction,circuit_id,description,parent,info,modified,modifier', 
+	  'cable,name,status,loss,direction,circuit_id,fiber_type,description,info,modified,modifier', 
 	  'modified,modifier,cable,name,direction', 
-	  'name:Strand ID,cable:Cable ID,status:Status,datetested:Date Tested,loss:Loss,direction:Direction (Tx/Rx),circuit_id:Circuit,description:Description,parent:Parent Strand,info:Commentsmodified:Modified on,Modifier:Modified by',
+	  'name:Strand ID,cable:Cable ID,status:Status,datetested:Date Tested,loss:Loss,direction:Direction (Tx/Rx),circuit_id:Circuit,description:Description,info:Commentsmodified:Modified on,Modifier:Modified by',
 	  '',
-	  'cable:BackboneCable,status:StrandStatus,parent:CableStrand', 
+	  'cable:BackboneCable,status:StrandStatus', 
 	  '', 
 	  '0', 
 	  ''
@@ -156,6 +156,20 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '0', 
 	  'Types of Cables'
 	  );
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('FiberType',
+      'name',
+      'name,info',
+      'name',
+      'name:Name,info:Comments',
+      '',
+      '',
+      'strands:CableStrand:fiber_type',
+      '0',
+      'Types of Fiber'
+      );
+
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
   VALUES ('Circuit', 
 	  'cid', 
@@ -164,7 +178,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'cid:Circuit ID,connectionid:Part of Connection,status:Status,nearend:Near Interface,farend:Far Interface,type:Type,speed:Speed,dlci:DLCI,installdate:Installed on,vendor:Provider,info:Comments',
 	  '',
 	  'type:CircuitType,nearend:Interface,farend:Interface,connectionid:Connection,vendor:Entity,status:CircuitStatus', 
-	  '', 
+	  'strands:CableStrand:circuit_id', 
 	  '0', 
 	  'A WAN circuit provided by a third party'
 	  );
@@ -208,11 +222,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
   VALUES ('Closet', 
 	  'name,site', 
-	  'name,number,site,floor,dimensions,racks,outlets,ru_avail,patch_panels,110_blocks,66_blocks,catv_taps,access_key_type,work_needed,picture,info', 
+	  'name,number,site,floor,dimensions,racks,outlets,ru_avail,patch_panels,110_blocks,66_blocks,catv_taps,access_key_type,work_needed,shared_with,hvac_type,ground_buss,asbestos_tiles,rack_type,pair_count,converted_patch_panels,info', 
 	  'name,number,site,floor', 
-	  'name:ID,number:Number,site:Site,floor:Floor,dimensions:Dimensions ("),racks:Racks,outlets:Outlets,ru_avail:Rack Units Available,patch_panels:Patch Panels,110_blocks:110 Blocks,66_blocks:66 Blocks,catv_taps:CableTV Taps,access_key_type:Access Key Type,work_needed:Work Needed,picture:Picture,info:Comments',
+	  'name:ID,number:Number,site:Site,floor:Floor,dimensions:Dimensions ("),racks:Racks,outlets:Outlets,ru_avail:Rack Units Available,patch_panels:Patch Panels,110_blocks:110 Blocks,66_blocks:66 Blocks,catv_taps:CableTV Taps,access_key_type:Access Key Type,work_needed:Work Needed,shared_with:Shared With,hvac_type:HVAC Type,ground_buss:Ground Buss,asbestos_tiles:Asbestos Tiles,rack_type:Rack Type,pair_count:Pair Count,converted_patch_panels:Converted Patch Panels,info:Comments',
 	  '',
-	  'site:Site,floor:Floor,picture:BinFile', 
+	  'site:Site,floor:Floor', 
 	  'horizontalcables:HorizontalCable:closet,backbones_start:BackboneCable:start_closet,backbones_end:BackboneCable:end_closet', 
 	  '0', 
 	  'A Communications Closet');
@@ -419,11 +433,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Floor', 
 	  'level', 
-	  'level,plan,site,info', 
+	  'level,site,info', 
 	  'level,site', 
-	  'level:Level,plan:Plan,site:Site,info:Comments',
+	  'level:Level,site:Site,info:Comments',
 	  '',
-	  'site:Site,plan:BinFile',
+	  'site:Site',
 	  'closets:Closet:floor,rooms:Room:floor', 
 	  '0', 
 	  'Floor Table');
@@ -682,6 +696,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '', 
 	  '0', 
 	  '');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
+  VALUES ('Splice', 'strand1,strand2',  'strand1,strand2', 'strand1,strand2', 'strand1:CableStrand,strand2:CableStrand', '', '0', 'Cable Splices');
 
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)

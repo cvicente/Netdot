@@ -1,0 +1,150 @@
+<%doc>
+Display sequences for the given strands.
+
+TODO: revisit this code at some point and move appropriate sections
+      to CablePlantManager, tweak for performance, etc.
+
+Arguments:
+    - strands: an array of CableStrands to display sequences for
+    - table_view: if set, output is in a table format.
+</%doc>
+
+<%perl>
+my %used = ();
+my %sequences = ();
+foreach my $st (@{$strands})
+{
+    next if (exists($used{$st->id})); # we want to ignore strands we have already processed
+
+    # bit of a special case for those that aren't actually defined in splices within the 
+    # DB, but may belong to a circuit. 
+    my @seq_data = ();
+    if (!scalar($st->splices))
+    {
+        push(@seq_data, $st);
+        $used{$st->id} = 1;
+        $sequences{$seq_data[0]->name} = \@seq_data;
+        next;
+    }
+    
+    my $current_strand = $st;
+    my $prev_strand = undef;
+    
+    if (scalar($st->splices) == 2)
+    {
+        # if we have more than one splice (i.e., this strand is in the middle
+        # of some sequence) then we first move to an endpoint before generating
+        # output. This should (hopefully) put the sequence in some sort of sane order.
+        $current_strand = $st;
+        while (my @tmp_splices = $current_strand->splices)
+        {
+            if (scalar(@tmp_splices == 1))
+            {
+                # we've hit an endpoint! set our beginning strand and bail.
+                $current_strand = $tmp_splices[0]->strand1;
+                last;
+            }
+
+            my $idx = (!defined($prev_strand) || $tmp_splices[0]->strand2->id == $prev_strand->id ? 1 : 0);
+            $prev_strand = $current_strand;
+            $current_strand = $tmp_splices[$idx]->strand2;
+        }
+    }
+
+    # at this point current_strand should be pointing to a cable_strand at the "beginning"/"end" 
+    # of our sequence, so now we build up our sequence.
+    my @splices = $current_strand->splices;
+    push(@seq_data, $current_strand);
+    $used{$current_strand->id} = 1;
+    $prev_strand = $current_strand;
+    $current_strand = $splices[0]->strand2;
+
+    while (@splices = $current_strand->splices)
+    {
+        # if we only have one splice, this marks the end.
+        if (scalar(@splices) == 1)
+        {
+            push(@seq_data, $splices[0]->strand1);
+            $used{$splices[0]->strand1->id} = 1;
+            last;
+        }
+        
+        my $idx = ($splices[0]->strand2->id == $prev_strand->id ? 1 : 0);
+        push(@seq_data, $splices[$idx]->strand1);
+        $used{$splices[$idx]->strand1->id} = 1;
+
+        $prev_strand = $current_strand;
+        $current_strand = $splices[$idx]->strand2;
+    }
+
+    # we store the sequence keyed by the beginning strand name for easier sorting.
+    $sequences{$seq_data[0]->name} = \@seq_data;
+}
+</%perl>
+
+% if ($table_view) {
+
+<table border="0" width="95%" align="center"  class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="center">
+    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+    <tr class="formtabletitle">
+     <td colspan="2">
+      <table width="100%" border="0">
+       <tr>
+         <td width="10%" align="left">&nbsp;</td>
+         <th width="80%" align="center">Cable Strand Sequence(s)</th>
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      
+    <table border="0" width="90%">
+%   my $j = 0;
+%   foreach my $seq (sort { (split(/\./o, $a, 2))[1] <=> (split(/\./o, $b, 2))[1] } keys(%sequences))
+%   {
+%       $j = ($j + 1) % 2;
+%       my @links = ();
+%       my @seq_arr = @{$sequences{$seq}};
+%       foreach my $st (@seq_arr)
+%       {
+%           push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", $st->id, $st->name));
+%       }
+        <tr align="left" class="<% $cssitem{$j} %>">
+            <td align="left"><% join("  -----  ", @links) %></td>
+        </tr>
+%   }
+</table>
+</td>
+</tr>
+</table>
+
+% } else {
+
+<%perl>
+    foreach my $seq (sort { (split(/\./o, $a, 2))[1] <=> (split(/\./o, $b, 2))[1] } keys(%sequences))
+    {
+        my @links = ();
+        my @seq_arr = @{$sequences{$seq}};
+        foreach my $st (@seq_arr)
+        {
+            push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", $st->id, $st->name));
+        }
+
+        printf("%s\n", join(" ----- ", @links));
+    }
+</%perl>
+
+% }
+
+<%args>
+$strands => undef;
+$table_view => undef;
+</%args>
+
+<%init>
+my %cssitem = ( 0 => "formtablec1", 1 => "formtablec2" );
+my $ci = 0;
+</%init>

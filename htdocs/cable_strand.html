@@ -25,11 +25,23 @@ if (defined($ARGS{_action}))
     # Do this to 'flush' the values associated with the object
     # before redisplaying
     $o = undef;
-    if ($id && $id ne "NEW")
+    $o = CableStrand->retrieve($id) if ($id && $id ne "NEW");
+
+    # Special case for splices, store in many to many table...
+    if (defined($ARGS{__splice1}) || defined($ARGS{__splice2}))
     {
-        $o = CableStrand->retrieve($id);
+        # first delete all splices for this cable strand.
+        die($cable_manager->error()) if (!($cable_manager->deletesplices($o)));
+        
+        # and now add back any splices...
+        my @splices = ("__splice1", "__splice2");
+        foreach my $sp (@splices)
+        {
+            next if (!defined($ARGS{$sp}) || $ARGS{$sp} eq "");
+            die($cable_manager->error()) if (!($cable_manager->insertsplice($o, CableStrand->retrieve($ARGS{$sp}))));
+        }
     }
-}  
+}
 # end insertion/update code
 # -----------------------------------------------------------------------------
 </%perl>     
@@ -68,22 +80,29 @@ if (defined($ARGS{_action}))
 
         <tr align="left" valign="top">
             <td width="40%">
-            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td>Name: </td>
-                <td>
+                <td class="formtablec2">
 %               $ui->textField(object=>$o, table=>"CableStrand", column=>"name", edit=>$editStrand);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
+                <td>Number: </td>
+                <td class="formtablec2">
+                <% $o ? $o->number : "" %>
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
                 <td>Backbone: </td>
-                <td>
+                <td class="formtablec2">
 %               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable", 
 %                                 where=>{id=>($backbone_id ? $backbone_id : "")}, edit=>$editStrand);
 %               if ($editStrand) {
 %               my $srchf = "backbone_srch";  # name of the form input tag
-	            <input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;" style="width: 100px;">
+	            <input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;">
 	            &nbsp;<input type="button" name="" value="Lookup" onClick="sendquery(<% 'CableStrand__' . $id . '__cable' %>, <% $srchf . '.value' %>, 'BackboneCable')">
 %               }
                 </td>
@@ -91,16 +110,22 @@ if (defined($ARGS{_action}))
 
             <tr align="left" valign="top">
                 <td>Status: </td>
-                <td>
+                <td class="formtablec2">
 %               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"status", lookup=>"StrandStatus", edit=>$editStrand);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Spliced with: </td>
-                <td>
-%               if (!$editStrand && $o->parent) {
-                <a href="cable_strand.html?id=<% $o->parent->id %>"><% $o->parent->name %></a>
+                <td class="formtablec2">
+%               if (!$editStrand) {
+%                   my @splices = $o->splices;
+%                   if (scalar(@splices)) {
+                        <a href="cable_strand.html?id=<% $splices[0]->strand2->id %>"><% $splices[0]->strand2->name %></a>
+%                   }
+%                   if (scalar(@splices) == 2) {
+                        , <a href="cable_strand.html?id=<% $splices[1]->strand2->id %>"><% $splices[1]->strand2->name %></a> 
+%                   }
 %               } elsif ($editStrand && defined($o)) {
                 <%perl>
                 # first we need to grab all backbones for start and end sites of this strand.
@@ -116,45 +141,87 @@ if (defined($ARGS{_action}))
 
                 <script language="JavaScript">
                 <!--
-                var backboneList = new DynamicList("netdotform", "CableStrand__<% $id %>__parent", "cable", "CableStrand", "backbone_list_srch");
-                LIST_MANAGER.addList(backboneList);
+                function lookupStrands(bb_id, field_name, form_name)
+                {
+                    if (!bb_id)
+                    {
+                        alert("You must select a backbone.");
+                    }
+                    
+                    var url = "strand_backbone_list_query.html?bb_id=";
+                    url += bb_id + "&field_name=" + field_name;
+                    url += "&form_name=" + form_name;
+                    
+                    var wind = window.open(url, "tmp", "width=1,height=1");
+                    wind.blur();
+                }
                 -->
                 </script>
 
-                <SELECT NAME="backbone_list_srch" onChange="backboneList.doIt();">
+                <SELECT NAME="backbone_list_srch1" onChange="lookupStrands(this.value, '__splice1', 'netdotform');">
                 <OPTION VALUE="">Lookup by Backbone</OPTION>
                 <%perl>
+                my @splices = $o->splices;
                 my %stored = ();
                 foreach my $bb (sort { $a->name cmp $b->name } @backbones)
                 {
-                    next if ($bb->id == $o->cable || exists($stored{$bb}));
+                    next if ($bb->id == int($o->cable) || exists($stored{$bb}));
                     $stored{$bb} = 1;
                     printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
                 }
                 </%perl>
-                </SELECT> &nbsp;                
-%               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"parent", lookup=>"CableStrand", edit=>$editStrand,
-%                                 where=>{cable=>$o->parent->cable});
-%               } else {
-%               my $srchfld = "strand_srch";  # name of the form input tag
-	            <input type="text" name="<% $srchfld %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;" style="width: 100px;">
-	            &nbsp;<input type="button" name="" value="Lookup" onClick="sendquery(<% 'CableStrand__' . $id . '__parent' %>, <% $srchfld . '.value' %>, 'CableStrand')"> &nbsp;
-%               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"parent", lookup=>"CableStrand", edit=>$editStrand,
-%                                 where=>{cable=>0});
+                </SELECT> &nbsp; 
+                <select name="__splice1">
+                <option value="">-- Make your selection --</option>
+%               if (scalar(@splices)) {
+                <option value="<% $splices[0]->strand2->id %>" SELECTED><% $splices[0]->strand2->name %></option>
 %               }
+                <option value="">[null]</option>
+                </select>
+                <br>
+                <SELECT NAME="backbone_list_srch2" onChange="lookupStrands(this.value, '__splice2', 'netdotform');">
+                <OPTION VALUE="">Lookup by Backbone</OPTION>
+                <%perl>
+                %stored = ();
+                foreach my $bb (sort { $a->name cmp $b->name } @backbones)
+                {
+                    next if ($bb->id == int($o->cable) || exists($stored{$bb}));
+                    $stored{$bb} = 1;
+                    printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+                }
+                </%perl>
+                </SELECT> &nbsp; 
+                <select name="__splice2">
+                <option value="">-- Make your selection --</option>
+%               if (scalar(@splices) == 2) {
+                <option value="<% $splices[1]->strand2->id %>" SELECTED><% $splices[1]->strand2->name %></option>
+%               }
+                <option value="">[null]</option>
+                </select>
+%               } 
                 </td>
             </tr>
 
+%           if (defined($o) && !$editStrand) {            
+            <tr align="left" valign="top">
+                <td>Part of Sequence:</td>
+                <td class="formtablec2">
+%               my @strands = ($o);
+                <& display_sequence.mhtml, strands=>\@strands &>
+                </td>
+            </tr>
+%           }
+
             <tr align="left" valign="top">
                 <td>Circuit: </td>
-                <td>
+                <td class="formtablec2">
 %               if (!$editStrand) {
-                <a href="view.html?table=Circuit&id=<% $o->circuit_id %>"><% $o->circuit_id ? $o->circuit_id->cid : "" %></a>
+                <a href="circuit.html?id=<% $o->circuit_id %>"><% $o->circuit_id ? $o->circuit_id->cid : "" %></a>
 %               } else {
 %               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"circuit_id", lookup=>"Circuit", edit=>$editStrand);
 %               if ($editStrand) {
 %                   my $srchfld = "circuit_srch";  # name of the form input tag
-	                <input type="text" name="<% $srchfld %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;" style="width: 100px;">
+	                <input type="text" name="<% $srchfld %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;">
 	                &nbsp;<input type="button" name="" value="Lookup" onClick="sendquery(<% 'CableStrand__' . $id . '__circuit_id' %>, <% $srchfld . '.value' %>, 'Circuit')">
 %               }                    
 %               }
@@ -164,24 +231,31 @@ if (defined($ARGS{_action}))
             </td>
 
             <td width="40%">
-            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td>Tested on: <font size="-1">(yyyy-mm-dd)</font>: </td>
-                <td>
+                <td class="formtablec2">
 %               $ui->textField(object=>$o, table=>"CableStrand", column=>"datetested", edit=>$editStrand);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
+                <td>Fiber Type: </td>
+                <td class="formtablec2">
+%               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"fiber_type", lookup=>"FiberType", edit=>$editStrand);
+                </td>
+            </tr>            
+
+            <tr align="left" valign="top">
                 <td>Loss: </td>
-                <td>
+                <td class="formtablec2">
 %               $ui->textField(object=>$o, table=>"CableStrand", column=>"loss", edit=>$editStrand);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Direction: </td>
-                <td>
+                <td class="formtablec2">
 %               if ($editStrand) {
 %                   my $dir_name = "CableStrand__" . $id . "__direction";
                     <input type="radio" name="<% $dir_name %>" value="0" <% ($o && int($o->direction) == 0 ? "CHECKED" : "") %>>TX &nbsp;&nbsp;&nbsp; 
@@ -192,9 +266,10 @@ if (defined($ARGS{_action}))
                 </td>
             </tr>
 
+
             <tr align="left" valign="top">
                 <td>Description: </td>
-                <td>
+                <td class="formtablec2">
 %               $ui->textField(object=>$o, table=>"CableStrand", column=>"description", edit=>$editStrand);                
                 </td>
             </tr>
@@ -233,14 +308,15 @@ $s2name => "Plant";
 <%init>
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
+my $cable_manager = Netdot::CablePlantManager->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
 my $editStrand = 0;
 
 if ($id && $id ne "NEW") 
 {
-   $o = CableStrand->retrieve($id);
-   $backbone_id = $o->cable;
+    $o = CableStrand->retrieve($id);
+    $backbone_id = $o->cable;
 }
 
 $editStrand = 1 if ($id eq "NEW" || $edit eq "strandinfo");

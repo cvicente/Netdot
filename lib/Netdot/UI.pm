@@ -707,6 +707,7 @@ sub radioGroupBoolean($@)
 #   - object: DBI object, can be null if a table object is included
 #   - table: Name of table in DB. (required if object is null)
 #   - column: name of field in DB.
+#   - default: default value to display if no value is defined in DB.
 #   - edit: true if editing, false otherwise.
 #   - htmlExtra: extra html you want included in the output. Common use
 #                would be to include style="width: 150px;" and the like.
@@ -714,12 +715,12 @@ sub radioGroupBoolean($@)
 sub textField($@)
 {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $htmlExtra) = ($args{object}, $args{table}, 
-                                                        $args{column}, $args{edit}, 
-                                                        $args{htmlExtra});
+    my ($o, $table, $column, $default, $isEditing, $htmlExtra) = ($args{object}, $args{table}, 
+                                                                  $args{column}, $args{default},
+                                                                  $args{edit}, $args{htmlExtra});
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
-    my $value = ($o ? $o->$column : "");
+    my $value = ($o ? $o->$column : $default);
     my $name = $tableName . "__" . $id . "__" . $column;
 
     $htmlExtra = "" if (!$htmlExtra);

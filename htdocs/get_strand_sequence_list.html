@@ -1,0 +1,141 @@
+<%doc>
+Code to determine available "sequences" between a starting an ending
+site. A sequence is a set of CableStrands with splice relationships.
+
+XXX: Need to tweak this code for performance/readability. Plan on moving
+     some of the uglier sections to the CablePlantManager module. Will likely
+     bypass Class::DBI...
+
+Arguments;
+    - start_id: id of starting Site.
+    - end_id: id of ending Site.
+    - form_name: name of html form.
+    - field_name: name of <select> field to store results.
+
+</%doc>
+
+% print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+<html>
+<body>
+<pre>
+<%perl>
+my $start_site = Site->retrieve($start_id);
+my $end_site = Site->retrieve($end_id);
+my @start_backbones;
+my $closet = undef;
+
+# first generate an array of backbones that begin at the
+# selected site.
+foreach $closet ($start_site->closets)
+{
+    my $c_id = $closet->id;
+    map { push(@start_backbones, $_) } (BackboneCable->search(start_closet=>$c_id),
+                                        BackboneCable->search(end_closet=>$c_id));
+}
+
+my %found = ();
+my %sequences = ();
+
+# now iterate over each strand for each backbone, checking for
+# potential sequences.
+foreach my $bb (@start_backbones)
+{
+    next if (exists($found{$bb->id}));
+    $found{$bb->id} = 1;
+    my $closet_field = ($bb->start_closet->site eq $start_site ? "end_closet" : "start_closet");
+    
+    foreach my $st ($bb->strands)
+    {
+        next if (int($st->circuit_id) != 0); # skip if this strand is already part of a circuit.
+
+        my @seq_data = ();
+        if ($bb->$closet_field->site eq $end_site)
+        {
+            # if we're already at the selected end site, add this strand/sequence and
+            # move to the next.
+            push(@seq_data, $st);
+            $sequences{$seq_data[0]->name} = \@seq_data;
+            next;
+        }
+        
+        foreach my $splice ($st->splices)
+        {
+            push(@seq_data, $st);
+
+            # otherwise we iterate over our set of splices until we hit the end site.
+            my $current_strand = $splice->strand2;
+            my $prev_strand = $splice->strand1;
+            while (my @tmp_splices = $current_strand->splices)
+            {
+                # if we only have one splice, it is the end of the road.
+                if (scalar(@tmp_splices) == 1)
+                {
+                    push(@seq_data, $tmp_splices[0]->strand1);
+                    last;
+                }
+
+                # some trickery to determine the correct direction to move in
+                # (i.e., next strand is splice1 or splice2 ?).
+                my $idx = ($tmp_splices[0]->strand2->id == $prev_strand->id ? 1 : 0);
+                push(@seq_data, $tmp_splices[$idx]->strand1);
+
+                $prev_strand = $current_strand;
+                $current_strand = $tmp_splices[$idx]->strand2;
+            }
+            
+            # only add to our list of sequences if we have arrived at the specified end site.
+            if ($current_strand->cable->$closet_field->site eq $end_site)
+            {
+                $sequences{$seq_data[0]->name} = \@seq_data;
+                last;
+            }
+        }
+    }
+}
+</%perl>
+</pre>
+
+<script language="JavaScript">
+<!--
+
+<%perl>
+printf("opener.document.forms[\'%s\'][\'%s\'].options.length = 0;\n", $form_name, $field_name);
+
+my $i = 0;
+foreach my $seq (sort { (split(/\./o, $a, 2))[1] <=> (split(/\./o, $b, 2))[1] } keys(%sequences))
+{
+    my @seq_arr = @{$sequences{$seq}};
+    my (@names, @ids);
+    foreach my $st (@seq_arr)
+    {
+        push(@names, $st->name);
+        push(@ids, $st->id);
+    }
+
+    printf("opener.document.forms[\'%s\'][\'%s\'].options[%d] = new Option();\n", $form_name, $field_name, $i);
+    printf("opener.document.forms[\'%s\'][\'%s\'].options[%d].value = \'%s\';\n", $form_name, $field_name, $i, join(",", @ids));
+    printf("opener.document.forms[\'%s\'][\'%s\'].options[%d].text = \'%s\';\n", $form_name, $field_name, $i, join(" ---- ", @names));
+    ++$i;
+}
+
+printf("window.close();\n") if (!$DEBUG);
+</%perl>
+-->
+</script>
+</body>
+</html>
+
+<%init>
+my ($ui, @terms, $DEBUG, $MAX_RESULTS);
+$ui = Netdot::UI->new();
+$DEBUG = 0;
+$MAX_RESULTS = 1000;
+</%init>
+
+<%args>
+$start_id => $ARGS{"start"};
+$end_id => $ARGS{"end"};
+$field_name => $ARGS{"field_name"};
+$form_name => $ARGS{"form_name"};
+</%args>
