@@ -1,6 +1,11 @@
 <%doc>
-Interface for viewing/updating information relevant for a
-given customer.
+
+-- NOC/Operations Worksheet -- 
+
+Interface (similar to device worksheet) for viewing/updating
+NOC relevant information.  This includes customer contacts, 
+devices, sites, circuits.
+
 </%doc>
 %
 %
@@ -9,13 +14,19 @@ $id     => undef
 $search => undef
 $edit   => undef
 $ipsort => undef
+$s2name => "Operations"
+$view => "Basics"
+$user => $ENV{REMOTE_USER}
 </%args>
 %
 %
 <%init>
 my $DEBUG = 0;
-my $gui = Netdot::GUI->new();
-my %colors = ( 0 => "#EEEEDD", 1 => "#E6E6DC" );
+my $ui = Netdot::UI->new();
+my $dns = Netdot::DNSManager->new();
+my $ipm = Netdot::IPManager->new();
+my $dm = Netdot::DeviceManager->new();
+my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
 my $maxselect = 100;
 my $obj = undef;
 my $ci = 0;
@@ -31,20 +42,16 @@ if($id){
 if( $ARGS{q} ) {
   $search = $ARGS{q};
 }
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 </%init>
 %
-<& header, title => "NOC Information: $name "  &>
-<div id="body">
 %
-% if( ! defined( $obj ) ) {
-%    if( defined( $search ) ) {
-<& search.mhtml, q => $search, page => "noc.html", table => "Entity" &>
-%    } else {
-<& search.mhtml, page => "noc.html", table => "Entity" &>
-%    }
-% } else {
+<& index.html, title => "Operations: $name ", s2name => $s2name &>
+<div id="margins">
 
-<p>Display information about <% $name %>
+<p>Display information about <% $search %>
 
-% }
+
 </div>
+
+<& footer.mhtml &>
