@@ -45,14 +45,14 @@ if( exists( $args{insert} ) ) {
       $tmp{ifspeed} = $node{interface}{$int}{ifSpeed};
       $tmp{ifadminstatus} = $node{interface}{$int}{ifAdminStatus};
       $tmp{managed} = "0";
-      my $i = Interface->create( \%tmp );
+      my $if = Interface->create( \%tmp );
       if( exists( $node{interface}{$int}{ipAdEntIfIndex} ) ) {
          undef( %tmp );
          foreach my $ip ( keys %{ $node{interface}{$int}{ipAdEntIfIndex} } ) {
-            $tmp{interface} = $i->id;
+            $tmp{interface} = $if->id;
             $tmp{address} = $ip;
             $tmp{mask} = $node{interface}{$int}{ipAdEntIfIndex}{$ip};
-            my $ip = Ip->create( \%tmp );
+            Ip->create( \%tmp );
          }
       }
     }
@@ -134,6 +134,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.14  2003/07/09 21:24:09  netdot
+#  *** empty log message ***
+#
 #  Revision 1.13  2003/07/08 22:44:01  netdot
 #  added code to insert ip addresses
 #
