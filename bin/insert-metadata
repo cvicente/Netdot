@@ -108,6 +108,19 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  );
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('BGPPeering', 
+	  'device,entity', 
+	  'device,entity,bgppeerid,bgppeeraddr,monitored', 
+	  'device,entity,bgppeeraddr', 
+	  'device:Device,entity:Entity,monitor:Monitored?',
+	  '', 
+	  'device:Device,entity:Entity', 
+	  '',
+	  '0', 
+	  'A BGP Peering'
+	  );
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('BinFile', 
 	  'filename', 
 	  'bindata,filename,filesize,filetype,info', 
@@ -322,7 +335,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,monitored:Monitored?,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?,site:Building,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments',
 	  '',
 	  'name:RR,entity:Entity,contactlist:ContactList,person:Person,productname:Product,part_of:Device,site:Site,room:Room,closet:Closet,physaddr:PhysAddr', 
-	  'interfaces:Interface:device,parts:Device:part_of', 
+	  'interfaces:Interface:device,parts:Device:part_of,bgppeers:BGPPeering:device', 
 	  '0', 
 	  'A network device');
 
@@ -337,18 +350,6 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '', 
 	  '0', 
 	  '');
-
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('ProductType', 
-	  'name', 
-	  'name,info', 
-	  'name',
-	  'name:Name,info:Comments',
-	  '',
-	  '', 
-	  'products:Product:type:{on_delete=>"restrict"}', 
-	  '0', 
-	  'Types of network devices');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('DhcpAttr', 
@@ -401,21 +402,21 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Entity', 
 	  'name', 
-	  'name,aliases,type,availability,contactlist,acctnumber,maint_contract,autsys,bgppeerip,oid,info', 
+	  'name,aliases,type,availability,contactlist,acctnumber,maint_contract,asname,asnumber,oid,info', 
 	  'name,type', 
-	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact Group,acctnumber:Account Number,maint_contract:Maintenance Contract,autsys:Autonomous System,bgppeerip:BGP Peer IP,oid:Enterprise OID,info:Comments',
+	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact Group,acctnumber:Account Number,maint_contract:Maintenance Contract,asname:AS Name,asnumber:AS Number,oid:Enterprise OID,info:Comments',
 	  '',
 	  'contactlist:ContactList,availability:Availability,type:EntityType', 
-	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,subnets:Ipblock:entity:{on_delete=>"set-null"},cables:BackboneCable:owner:{on_delete=>"set-null"},devices:Device:entity:{on_delete=>"set-null"},people:Person:entity', 
+	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,subnets:Ipblock:entity:{on_delete=>"set-null"},cables:BackboneCable:owner:{on_delete=>"set-null"},devices:Device:entity:{on_delete=>"set-null"},people:Person:entity,bgppeers:BGPPeering:entity', 
 	  '0', 
 	  'An organization related to the network in some way');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Entity_history', 
 	  'modified',
-	  'name,aliases,type,availability,contactlist,acctnumber,maint_contract,autsys,bgppeerip,info,modified,modifier', 
+	  'name,aliases,type,availability,contactlist,acctnumber,maint_contract,asname,asnumber,bgppeerip,info,modified,modifier', 
 	  'modified,modifier,name,type', 
-	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact Group,acctnumber:Account Number,maint_contract:Maintenance Contract,autsys:Autonomous System,bgppeerip:BGP Peer IP,info:Comments,modified:Modified on,modifier:Modified by',
+	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact Group,acctnumber:Account Number,maint_contract:Maintenance Contract,asname:AS Name,asnumber:AS Number,bgppeerip:BGP Peer IP,info:Comments,modified:Modified on,modifier:Modified by',
 	  '',
 	  'contactlist:ContactList,availability:Availability,type:EntityType', 
 	  '', 
@@ -546,7 +547,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'address,prefix', 
 	  'address,prefix,version,parent,interface,status,entity,description,first_seen,last_seen,monitored,physaddr', 
 	  'address,prefix,version',
-	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,entity:Used by,description:Description,first_seen:First Seen:last_seen:Last Seen,monitored:Monitored?,physaddr:MAC Address',
+	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,entity:Used by,description:Description,first_seen:First Seen,last_seen:Last Seen,monitored:Monitored?,physaddr:MAC Address',
 	  '',
 	  'interface:Interface,parent:Ipblock,status:IpblockStatus,entity:Entity,physaddr:PhysAddr',
 	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,arecords:RRADDR:ipblock,ptrrecords:RRPTR:ipblock,children:Ipblock:parent:{on_delete=>"set-null"},dhcpentries:DhcpScope:ipblock:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
@@ -626,6 +627,18 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '', 
 	  '0', 
 	  '');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('ProductType', 
+	  'name', 
+	  'name,info', 
+	  'name',
+	  'name:Name,info:Comments',
+	  '',
+	  '', 
+	  'products:Product:type:{on_delete=>"restrict"}', 
+	  '0', 
+	  'Types of network devices');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Room',

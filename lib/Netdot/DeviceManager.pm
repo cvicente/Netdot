@@ -22,6 +22,10 @@ Netdot::DeviceManager - Device-related Functions for Netdot
 =cut
 
 use lib "PREFIX/lib";
+use Netdot::UI;
+use Netdot::IPManager;
+use Netdot::DNSManager;
+
 use lib "NVPREFIX/lib";
 use NetViewer::RRD::SNMP::NV;
 
@@ -174,7 +178,8 @@ sub update {
 
     my %ifs;
     my %dbifdeps;
-    
+    my %bgppeers;
+
     if ( $device ){
 	################################################     
 	# Keep a hash of stored Interfaces for this Device
@@ -321,7 +326,7 @@ sub update {
 			);
 	my $newprodid;
 	if ( ($newprodid = $self->{ui}->insert(table => 'Product', state => \%prodtmp)) ){
-	    my $msg = sprintf("Created product: %s.  Please type, etc.", $prodtmp{name});
+	    my $msg = sprintf("Created product: %s.  Please set type, etc.", $prodtmp{name});
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg );		
 	    $devtmp{productname} = $newprodid;
@@ -717,7 +722,7 @@ sub update {
 			}
 		    }else{
 			# Insert necessary records
-			my $name = $self->_canonize_int_name($ipobj->interface->name);
+			my $name = $self->_canonicalize_int_name($ipobj->interface->name);
 			if ( exists $name2int{$name} ){
 			    # Interface has more than one ip
 			    # Append the ip address to the name to make it unique
@@ -938,6 +943,120 @@ sub update {
 	}
 	
     }
+
+    ###############################################################
+    #
+    # Add/Delete BGP Peerings
+    #
+    ###############################################################
+
+    if ( $self->{config}->{ADD_BGP_PEERS} ){
+
+	################################################     
+	# Keep a hash of current peerings for this Device
+	#
+	map { $bgppeers{ $_->id } = '' } $device->bgppeers();
+	
+	################################################
+	# For each discovered peer
+	#
+	foreach my $peer ( keys %{$dev{bgppeer}} ){
+	    my $p; # bgppeering object
+
+	    # Check if peering exists
+	    unless ( $p = (BGPPeering->search( device => $device->id,
+					       bgppeeraddr => $peer ))[0] ){
+		# Doesn't exist.  
+		# Check if we have some Entity info
+		next unless ( exists ($dev{bgppeer}{$peer}{asname}) ||
+			      exists ($dev{bgppeer}{$peer}{orgname})
+			      ); 
+		my $ent;
+		# Check if Entity exists
+		unless ( ( $ent = (Entity->search( asname => $dev{bgppeer}{$peer}{asname}))[0] ) ||  
+			 ( $ent = (Entity->search( name => $dev{bgppeer}{$peer}{orgname}))[0] )
+			 ){
+		    
+		    # Doesn't exist. Create Entity
+		    $self->debug( loglevel => 'LOG_INFO',
+				  message  => "Entity %s (%s) not found. Creating", 
+				  args => [$dev{bgppeer}{$peer}{orgname}, $dev{bgppeer}{$peer}{asname}]);
+		    my $t;
+		    unless ( $t = (EntityType->search(name => "Peer"))[0] ){
+			$t = 0; 
+		    }
+		    my $entname = $dev{bgppeer}{$peer}{orgname} || $dev{bgppeer}{$peer}{asname} ;
+		    $entname .= "($dev{bgppeer}{$peer}{asnumber})";
+
+		    if ( my $entid = $self->{ui}->insert(table => 'Entity', 
+							  state => { name     => $entname,
+								     asname   => $dev{bgppeer}{$peer}{asname},
+								     asnumber => $dev{bgppeer}{$peer}{asnumber},
+								     type => $t }) ){
+			my $msg = sprintf("Created Entity: %s. ", $entname);
+			$self->debug( loglevel => 'LOG_NOTICE',
+				      message  => $msg );		
+			$ent = Entity->retrieve($entid);
+		    }else{
+			$self->debug( loglevel => 'LOG_ERR',
+				      message  => "Could not create new Entity: %s: %s",
+				      args     => [$entname, $self->{ui}->error],
+				      );
+			$ent = 0;
+		    }
+		}
+
+		# Create Peering
+		if ( $ent ){
+		    my %ptmp = (device      => $device,
+				entity      => $ent,
+				bgppeerid   => $dev{bgppeer}{$peer}{bgppeerid},
+				bgppeeraddr => $peer,
+				monitored     => 1,
+				);
+		    if ( ($p = $self->{ui}->insert(table => 'BGPPeering', 
+						    state => \%ptmp ) ) ){
+			my $msg = sprintf("Created Peering with: %s. ", $ent->name);
+			$self->debug( loglevel => 'LOG_NOTICE',
+				      message  => $msg );		
+		    }else{
+			$self->debug( loglevel => 'LOG_ERR',
+				      message  => "Could not create Peering with : %s: %s",
+				      args     => [$ent->name, $self->{ui}->error],
+				      );
+		    }
+		}
+	    }else{
+		# Peering Exists.  Delete from list
+		delete $bgppeers{$p->id};
+	    }
+	}
+	
+	##############################################
+	# remove each BGP Peering that no longer exists
+	
+	foreach my $nonpeer ( keys %bgppeers ) {
+	    my $p = BGPPeering->retrieve($nonpeer);
+	    my $msg = sprintf("BGP Peering with %s (%s) no longer exists.  Removing.", 
+			      $p->entity->name, $p->bgppeeraddr);
+	    $self->debug( loglevel => 'LOG_NOTICE',
+			  message  => $msg,
+			  );
+	    $self->output($msg);		
+	    unless( $self->{ui}->remove( table => 'BGPPeering', id => $nonpeer ) ) {
+		my $msg = sprintf("Could not remove BGPPeering %s: %s", 
+				  $p->id, $self->{ui}->error);
+		$self->debug( loglevel => 'LOG_ERR',
+			      message  => $msg,
+			      );
+		$self->output($msg);
+		next;
+	    }
+	}
+
+    } # endif ADD_BGP_PEERS
+    
+    # END 
 
     my $msg = sprintf("Discovery of %s completed\n\n", $host);
     $self->debug( loglevel => 'LOG_NOTICE',
@@ -1255,6 +1374,41 @@ sub get_dev_info {
 	    
 	} #foreach newport
     } #unless badhubs
+
+    
+    if ( $self->{config}->{ADD_BGP_PEERS} ){
+	##############################################
+	# for each BGP Peer discovered...
+	
+	foreach my $peer ( keys %{ $nv{bgpPeer} } ) {
+	    
+	    $dev{bgppeer}{$peer}{bgppeerid} = $nv{bgpPeer}{$peer}{bgpPeerIdentifier};
+	    my $asn = $nv{bgpPeer}{$peer}{bgpPeerRemoteAs};
+	    $dev{bgppeer}{$peer}{asnumber} = $asn;
+	    
+	    # Query any configured WHOIS servers for more info
+	    #
+	    my $found = 0;
+	    foreach my $host ( keys %{$self->{config}->{WHOISQ}} ){
+		last if $found;
+		my @lines = `whois -h $host AS$asn`;
+		foreach (@lines){
+		    foreach my $key ( keys %{$self->{config}->{WHOISQ}->{$host}} ){
+			if (/No entries found/i){
+			    last;
+			}
+			my $exp = $self->{config}->{WHOISQ}->{$host}->{$key};
+			if ( /$exp/ ){
+			    my (undef, $val) = split /:\s+/, $_; 
+			    chomp($val);
+			    $dev{bgppeer}{$peer}{$key} = $val;
+			    $found = 1;
+			}
+		    }
+		}
+	    }
+	}
+    }
     
     return \%dev;
 }
@@ -1292,9 +1446,9 @@ sub _readablehex {
 }
 
 #####################################################################
-# Canonize Interface Name (for DNS)
+# Canonicalize Interface Name (for DNS)
 #####################################################################
-sub _canonize_int_name {
+sub _canonicalize_int_name {
     my ($self, $name) = @_;
 
     my %ABBR = % {$self->{config}->{IF_DNS_ABBR} };

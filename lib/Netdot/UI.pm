@@ -570,6 +570,7 @@ sub update {
     my($obj) = $argv{object};
     my(%state) = %{ $argv{state} };
     my $change = 0;
+    my $table = $obj->table;
     
     foreach my $col ( keys %state ) {
 	my $v = ( ref($obj->$col) ) ? $obj->$col->id : $obj->$col;
@@ -587,7 +588,7 @@ sub update {
     if( $change ) {
 	eval { $obj->update(); };
 	if( $@ ) {
-	    $self->error("Unable to update: $@");
+	    $self->error("Unable to update $table $obj: $@");
 	    return 0;
 	}
     }
@@ -814,7 +815,8 @@ sub form_to_db{
                  'save'      => '',
                  'show'      => '',
                  '_action'   => '',
-                 'page_type' => ''
+                 'page_type' => '',
+		 'view'      => '',
     );
 
     # Ignore empty and control fields

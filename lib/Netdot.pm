@@ -2,6 +2,7 @@ package Netdot;
 
 use lib "PREFIX/lib";
 use Debug;
+use Netdot::DBI;
 
 #Be sure to return 1
 1;

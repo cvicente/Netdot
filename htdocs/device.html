@@ -9,7 +9,7 @@
 */
  function showVlan(){
     var name = document.showvlans.showvlan.value;
-    window.location = "device.html?id=<% $id %>&showvlan="+name;
+    window.location = "device.html?id=<% $id %>&view=<% $view %>&showvlan="+name;
  }
  function addService(ip){
      var url = "addservice.html?ip="+ip;
@@ -28,40 +28,79 @@
  </tr>
  <tr>
    <td valign="top" width="50%" align="center">
-      <& sortresults.mhtml, table => "Device", object => $list, view => "row", page => "device.html", withdelete => 1&>
+      <& sortresults.mhtml, table => "Device", object => $list, view => "row", page => "device.html", withdelete => 1 &>
   </td>
   </tr>
 </table>
-% }elsif ( ! $search ){
+
+% }else{  # we're not searching
 
 <!-- Header Table -->
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
-    <td valign="top" align="left">
-     Device: <b><% $name %></b>&nbsp;&nbsp;
+    <td valign="top" width="50%" align="left">
+         Device: <b><% $name %></b>&nbsp;
     </td>
-    <td valign="top" align="left">
-    <form name="showvlans">
-    VLAN view 
-    <select name="showvlan" onchange="showVlan()">
-%      if ( $showvlan eq 'all' ){
-	 <option value="all" SELECTED>all</option>
-%      }else{
-	 <option value="all">all</option>
-%      }
-%      foreach my $vid ( sort keys %vlans ){
-%        if ( $showvlan eq $vid ){
-            <option value="<% $vid %>" SELECTED><% $vid %></option>     
-%        }else{
-          <option value="<% $vid %>"><% $vid %></option>     
-%        }
-%      }
-    </select>
-    </form>
-    <td width="50%" valign="top" align="left">&nbsp;</td>
-    <td valign="top" align="right">
-    <a href="device.html?id=<% $id %>"> [refresh]</a>&nbsp;
-    <a href="deldevice.html?id=<% $id %>"> [delete]</a>&nbsp;
+    <td valign="top" width="50%" align="right">
+        <a href="device.html?id=<% $id %>&view=<% $view %>"> [refresh]</a>&nbsp;
+	<a href="deldevice.html?id=<% $id %>"> [delete]</a>&nbsp;
+    </td>
+ </tr>
+ <tr class="rowtitle0" >
+    <td valign="top" width="50%" align="left">
+       View: 
+%    if ( $view eq "Basics" ){
+	[Basics]
+%    }else{
+         <a href="device.html?id=<% $id %>&view=Basics">[Basics]</a>
+%    }
+%    if ( $view eq "IP" ){
+	[IP info]
+%    }else{
+	 <a href="device.html?id=<% $id %>&view=IP">[IP info]</a>
+%    }
+%    if ( $view eq "Interfaces" ){
+	[Interfaces]
+%    }else{
+	 <a href="device.html?id=<% $id %>&view=Interfaces">[Interfaces]</a>
+%    }
+%    if ( $view eq "BGP" ){
+	[BGP Peers]
+%    }else{
+	 <a href="device.html?id=<% $id %>&view=BGP">[BGP Peers]</a>
+%    }
+%    if ( $view eq "Topology" ){
+	[BGP Peers]
+%    }else{
+	 <a href="device.html?id=<% $id %>&view=Topology">[Topology]</a>
+%    }
+%    if ( $view eq "All" ){
+	[All]
+%    }else{
+	 <a href="device.html?id=<% $id %>&view=All">[All]</a>
+%    }
+    </td>
+    <td valign="top" width="50%" align="right">
+%        if ( $view eq "Interfaces" || $view eq "All" ){
+           <form name="showvlans">
+           VLAN view 
+           <select name="showvlan" onchange="showVlan()">
+%          if ( $showvlan eq 'all' ){
+    	      <option value="all" SELECTED>all</option>
+%          }else{
+	      <option value="all">all</option>
+%          }
+%          foreach my $vid ( sort keys %vlans ){
+%            if ( $showvlan eq $vid ){
+               <option value="<% $vid %>" SELECTED><% $vid %></option>     
+%            }else{
+               <option value="<% $vid %>"><% $vid %></option>     
+%            }
+%          }
+           </select>
+           </form>
+%       }
+
     </td>
  </tr>
 </table>
@@ -71,11 +110,15 @@
  <tr>
    <td valign="top" width="50%" align="center">
 
-% if ( $editgen || $editloc || $editmgmt || $editips || $editints ){	 
+% if ( $editgen || $editloc || $editmgmt || $editips || $editints || $editbgp ){	 
     <form name="netdotform" action="device.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="s2name" value="<% $s2name %>">
+    <input type="hidden" name="view" value="<% $view %>">
 % }
+
+% if ( $view eq "Basics" || $view eq "All" ){
+
 <!-- General Info Table -->
    <table border="0" width="100%" cellpadding="0" cellspacing="2" class="formtablebg">
    <tr class="formtabletitle" >
@@ -87,7 +130,7 @@
 %	 if ($editgen){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&editgen=1">[edit]</a></td>
+            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editgen=1">[edit]</a></td>
 %	 }
        </tr>
       </table>
@@ -200,7 +243,6 @@
     roomList.setQueryURL("room_site_query.html");
     LIST_MANAGER.addList(closetList, roomList);
 
-
     function setNull(field)
     {
         if (!field)
@@ -230,7 +272,7 @@
 %	 if ($editloc){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&editloc=1">[edit]</a></td>
+            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editloc=1">[edit]</a></td>
 %	 }
        </tr>
       </table>
@@ -303,7 +345,7 @@
 %	 if ($editmgmt){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&editmgmt=1">[edit]</a></td>
+            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editmgmt=1">[edit]</a></td>
 %	 }
        </tr>
       </table>
@@ -397,6 +439,10 @@
 
 <!-- End Management Table -->
 
+% } 
+
+% if ( $view eq "IP" || $view eq "All" ){
+
   </td>
  </tr>
  <tr>
@@ -414,7 +460,7 @@
 %	 if ($editips){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&editips=1">[edit]</a></td>
+            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editips=1">[edit]</a></td>
 %	 }
        </tr>
       </table>
@@ -425,9 +471,9 @@
       <table border="0" width="100%">
 %	if (scalar @ips){
          <tr>
-	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Ipblock.address">Address</a></td>
-	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Ipblock.parent">Subnet</a></td>
-	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Interface.name">Interface</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Ipblock.address">Address</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Ipblock.parent">Subnet</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Interface.name">Interface</a></td>
 	   <td align="left">DNS Name</td>
 	   <td align="left">Monitored?</td>
 	   <td align="left">Services</td>
@@ -494,8 +540,13 @@
     </form>
 % }
 
+
 <!-- End IPs Table -->
     <br>
+
+% } 
+% if ( $view eq "Interfaces" || $view eq "All" ){
+
 <!-- Interface Table -->
 
   <table border="0" width="100%" align="left" class="formtablebg" cellpadding="0" cellspacing="2">
@@ -508,7 +559,7 @@
 %	 if ($editints){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&editints=1">[edit]</a></td>
+            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editints=1">[edit]</a></td>
 %	 }
        </tr>
       </table>
@@ -714,11 +765,76 @@
   </table>
 <!-- End Interface Table -->
 
+% } 
+% if ( $view eq "BGP" || $view eq "All" ){
+
+<!-- BGP Peers Table -->
+
+% my @peers = sort { $a->entity->name cmp $b->entity->name } $o->bgppeers() ;
+
+  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+   <tr class="formtabletitle" >
+     <td colspan="2">
+      <table width="100%" border="0">
+       <tr>
+         <td width="10%" align="left">&nbsp;</td>
+         <th width="80%" align="center">BGP Peers</th>
+%	 if ($editbgp){	 
+            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+%	 }else{
+            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editbgp=1">[edit]</a></td>
+%	 }
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      <table border="0" width="100%">
+%	if (scalar @peers){
+         <tr>
+	   <th align="left">Remote IP</th>
+	   <th align="left">ID</th>
+	   <th align="left">Entity</th>
+	   <th align="left">AS Name</th>
+	   <th align="left">AS Number</th>
+	   <th align="left">Monitored?</th>
+         </tr>
+%	}
+
+%	foreach my $peer (@peers){
+         <tr>
+	   <td align="left"><% $peer->bgppeeraddr %></td>
+	   <td align="left"><% $peer->bgppeerid %></td>
+	   <td align="left">
+%#           $ui->textField(object=>$peer->entity, column=>"name", edit=>$editbgp, linkPage=>"view.html");
+	     <a href="view.html?table=Entity&id=<% $peer->entity->id %>"><% $peer->entity->name %></a>
+	   </td>
+	   <td align="left"><% $peer->entity->asname %></td>
+	   <td align="left"><% $peer->entity->asnumber %></td>
+	   <td align="left">
+%	      $ui->radioGroupBoolean(object=>$peer, column=>"monitored", edit=>$editbgp);
+	   </td>
+         </tr>
+
+%       }	   
+      </table>
+    </td>
+   </tr>
+ </table>
+<!-- End BGP Peers Table -->
+% }  
+
+% if ($editbgp){	 
+    </form>
+% }
+
  </td></tr>
 </table>
 <!-- End Margins Table -->
 %} # if !defined search
 
+<& footer.mhtml &>
 
 <%args>
 $id       => undef
@@ -729,12 +845,14 @@ $editloc  => undef
 $editmgmt => undef
 $editips  => undef
 $editints => undef
+$editbgp  => undef
 $ipsort   => "Ipblock.address"
 $s2name   => "Management"
 $user     => $ENV{REMOTE_USER}
 $showvlan => "all"
 $intadd   => undef
 $submit   => undef
+$view     => "Basics"
 </%args>
 
 <%init>
@@ -802,33 +920,37 @@ if ($id){
     }   
     $name = ($o->name && $o->name->name) ? $o->name->name : "Name N/A!";
 
-    # Build a hash of Interface Vlans
-    foreach my $if ($o->interfaces){
-	if (scalar( my @ifv = $if->vlans)){
-	    foreach my $ifv (@ifv){
-		my $vid = $ifv->vlan->vid;
-		$ifvlans{$if}{$vid} = "";
+    if ( $view eq "Interfaces" || $view eq "All" ){
+	# Build a hash of Interface Vlans
+	foreach my $if ($o->interfaces){
+	    if (scalar( my @ifv = $if->vlans)){
+		foreach my $ifv (@ifv){
+		    my $vid = $ifv->vlan->vid;
+		    $ifvlans{$if}{$vid} = "";
 		$vlans{$vid} = $ifv->vlan->id;
+		}
 	    }
 	}
     }
-    
-    Ipblock->set_sql(allips => qq{
-	SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
-	    FROM Ipblock, Interface, Device
-	    WHERE Interface.id = Ipblock.interface AND
-	    Device.id = Interface.device AND
-	    Device.id = ?
-	    ORDER BY $ipsort
-	});
-    
-    eval {
-	@ips = Ipblock->search_allips($o->id);
-    };
-    if ($@){
-	$m->comp('error.mhtml', error=>"$@");
-    }
 
+    if ( $view eq "IP" || $view eq "All" ){
+	# Get all ip address info
+	Ipblock->set_sql(allips => qq{
+	    SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
+		FROM Ipblock, Interface, Device
+		WHERE Interface.id = Ipblock.interface AND
+		Device.id = Interface.device AND
+		Device.id = ?
+		ORDER BY $ipsort
+	    });
+    
+	eval {
+	    @ips = Ipblock->search_allips($o->id);
+	};
+	if ($@){
+	    $m->comp('error.mhtml', error=>"$@");
+	}
+    }
 }else{
     $name = "Search";
 }

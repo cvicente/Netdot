@@ -71,6 +71,24 @@
 # For locale section, remember that you should refer to the DS name of
 # the variable you are collecting, not it's mib name.
 
+bgpPeer {
+   cftype avg:max ;
+   descr "BGP Peer" ;
+   map $bgpPeerIdentifier ;
+   key instance ;
+   test { $bgpLocalAs != $bgpPeerRemoteAs.inst } ;
+   interval 5 ;
+   aux {
+        $bgpPeerIdentifier.inst ;
+        $bgpPeerRemoteAs.inst ;
+        $bgpPeerState.inst ;
+        $bgpPeerAdminStatus.inst ;
+   }
+   vars {
+        bgpPeerInUpdates ;
+   }
+}
+
 cviRoutedVlan {
    interval 5 ;
    aux {

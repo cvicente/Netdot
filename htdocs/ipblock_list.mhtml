@@ -1,38 +1,36 @@
 
 <table border="0" width="100%" cellspacing="0" cellpadding="1" class="tablebackground">
-    <tr class="rowtitle0">
+  <tr class="rowtitle0">
     <td>Address/Prefix</td>
     <td>Entity</td>
     <td>Description</td>
     <td>Status</td>
     <td>Last Seen</td>
-    </tr>
+  </tr>
 
-
-%  foreach my $ip ( @{ $ipmanager->sortblocksbyaddr($objects) } ) {
-%   $ci = ($ci + 1) % 2;
-    <tr class="<% $cssitem{$ci} %>">
-	<td align="left">
-	  <b><a href="ip-ws.html?id=<% $ip->id %>"><% $ip->address %>/<% $ip->prefix %></a></b>
-	</td>   
-	<td align="left">
-	  <b><% $ip->entity->name %></b>
-	</td>   
-	<td align="left">
-	  <b><% $ip->description %></b>
-	</td>   
-	<td align="left">
-	  <b><% $ip->status->name %></b>
-	</td>   
-	<td align="left">
-	  <b><% $ip->last_seen %></b>
-	</td>   
-    </tr>
-    <tr height="1" class="delimiter">
-	<td colspan="5" height="1"></td>
-    </tr>
-%    }   
-
+% foreach my $ip ( @{ $ipmanager->sortblocksbyaddr($objects) } ) {
+% $ci = ($ci + 1) % 2;
+  <tr class="<% $cssitem{$ci} %>">
+     <td align="left">
+        <b><a href="ip-ws.html?id=<% $ip->id %>"><% $ip->address %>/<% $ip->prefix %></a></b>
+     </td>   
+     <td align="left">
+	<b><% $ip->entity->name %></b>
+     </td>   
+     <td align="left">
+	<b><% $ip->description %></b>
+     </td>   
+     <td align="left">
+	<b><% $ip->status->name %></b>
+     </td>   
+     <td align="left">
+	<b><% $ip->last_seen %></b>
+     </td>   
+  </tr>
+  <tr height="1" class="delimiter">
+     <td colspan="5" height="1"></td>
+  </tr>
+% }   
 </table>
 
 <%args>
