@@ -13,10 +13,10 @@ map { push @tbls, $_ unless( $_->name eq "Meta" ) }
 <table border="0" cellspacing="0" cellpadding="0" width="100%">
 <tr>
 <td>
-   <table border="1" cellspacing="0" cellpadding="0" width="90%">
-   <tr><td colspan="3" bgcolor="#6ab1f0"><b><% $TITLE %></b></td></tr>
-   <tr><td bgcolor="WHITESMOKE">
-       <table border="0" cellspacing="3" cellpadding="1" width="100%">
+   <table border="1" cellspacing="0" cellpadding="0" width="90%" class="tablebackground">
+   <tr><td colspan="3" bgcolor="#6ab1f0" class="rowtitle0"><b><% $TITLE %></b></td></tr>
+   <tr><td>
+       <table border="0" cellspacing="3" cellpadding="1" width="100%" class="tablebackground">
        <tr>
 % my $j = 0;
 % for (my($i)=0; $i < scalar( @tbls ); $i++ ) {
@@ -24,7 +24,7 @@ map { push @tbls, $_ unless( $_->name eq "Meta" ) }
        </tr>
        <tr>
 %   }
-       <td><a href="<% $LINK %>?table=<% $tbls[$j]->name %>" style="text-decoration:none"><% $tbls[$j]->name %></a></td>
+       <td><a href="<% $LINK %>?table=<% $tbls[$j]->name %>"><% $tbls[$j]->name %></a></td>
 %   $j += int( scalar( @tbls ) / $WIDTH );
 %   if( $j >= scalar( @tbls ) ) {
 %     $j -= ( scalar( @tbls ) - 1 );
@@ -60,6 +60,9 @@ Arguments:
 
 ######################################################################
 #  $Log: table.html,v $
+#  Revision 1.4  2003/06/17 18:40:43  netdot
+#  added css references -miyake
+#
 #  Revision 1.3  2003/05/30 22:58:44  netdot
 #  reset default WIDTH to 2 (from 3)
 #
