@@ -111,9 +111,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
   VALUES ('EntityType', 'name', 'name,info', 'name', '', 'entities:Entity:type:{on_delete=>"restrict"}', '0', 'Types of Entities');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('Interface', 'number,name,device', 'number,name,device,description,type,speed,status,physaddr,info,managed', 'number,name,device,description', 'device:Device', 'ips:Ip:interface,parents:InterfaceDep:child,children:InterfaceDep:parent,nearcircuits:Circuit:nearend:{on_delete=>"set-null"},farcircuits:Circuit:farend:{on_delete=>"set-null"}', '0', 'An interface associated with a device');
+  VALUES ('Interface', 'number,name,device', 'number,name,device,room,jack,description,type,speed,status,physaddr,info,managed', 'number,name,device,room,jack,description', 'device:Device', 'ips:Ip:interface,parents:InterfaceDep:child,children:InterfaceDep:parent,nearcircuits:Circuit:nearend:{on_delete=>"set-null"},farcircuits:Circuit:farend:{on_delete=>"set-null"}', '0', 'An interface associated with a device');
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('Interface_history', 'modified', 'number,name,device,description,type,speed,status,physaddr,info,managed,modified,modifier', 'number,name,device,description,modified,modifier,', 'device:Device', '', '0', '');
+  VALUES ('Interface_history', 'modified', 'number,name,device,room,jack,description,type,speed,status,physaddr,info,managed,modified,modifier', 'number,name,device,room,jack,description,modified,modifier,', 'device:Device', '', '0', '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('InterfaceDep', 'parent,child', 'parent,child', 'parent,child', 'parent:Interface,child:Interface', '', '1', 'Dependency relationship between two interfaces. Provides a basis for topology information');
