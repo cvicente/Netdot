@@ -26,8 +26,7 @@ foreach my $j ( keys %ARGS ) {
     <tr><td class="delimiter"> </td></tr>
     </table>
     <%perl>
-    foreach my $meta ( Meta->retrieve_all() ) {
-      my $tbl = $meta->name;
+    foreach my $tbl ( $gui->gettables() ) {
       %linksto = $gui->getlinksto($tbl);
       foreach my $col ( $tbl->columns() ) {
         if( $linksto{$col} ) {
@@ -92,6 +91,9 @@ use Netdot::GUI;
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.17  2003/07/12 20:45:57  netdot
+# use gettables from GUI
+#
 # Revision 1.16  2003/06/17 21:48:10  netdot
 # added css references -miyake
 #
