@@ -45,9 +45,14 @@ if( $arg{table} ) {
           <strong>
           <a href="circuit.html?id=<% $o->id %>"><% $o->id %></a>
           </strong>
-%       } elsif( $linksto{$c} ) {
-%             my $name = (Meta->search( name => $linksto{$c} ))[0]->label;
-              <% $o->$c->$name %>
+%       } elsif( exists( $linksto{$c} ) ) {
+%         my $t = (Meta->search( name => $linksto{$c} ))[0];
+%         if( ! defined( $t ) ) {
+            No such object <% $linksto{$c} %>
+%         } else {
+%           my $lbl = $t->label;
+            <% $o->$c->$lbl %>
+%         }
 %       } else {
           <% $o->$c %>
 %       } # else fi
@@ -72,6 +77,10 @@ my( %arg, %order, %linksto, %linksfrom, $obj );
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.4  2003/04/30 23:54:54  netdot
+# integrated some changes carlos had made to a different copy of this
+# file.  basically, there is some error checking now.
+#
 # Revision 1.3  2003/04/30 23:30:37  netdot
 # if a foreign key, display label instead of the id.
 #
