@@ -51,14 +51,14 @@ tests:
 	@echo "Installation directory: $(PREFIX)"
 	@echo 
 	@echo "Testing for required perl modules...."
-	perl -e 'require DBI;'
-	perl -e 'require Class::DBI;'
-	perl -e 'require HTML::Mason;'
-	perl -e 'require Apache::Session;'
-	perl -e 'require Apache::DBI;'
-	perl -e 'require Net::SNMP;'
-	perl -e 'require DBIx::DBSchema;'
-	perl -e 'require DBIx::DataSource;'
+	perl -MDBI -e 1
+	perl -MClass::DBI -e 1
+	perl -MHTML::Mason -e 1
+	perl -MApache::Session -e 1
+	perl -MApache::DBI -e 1
+	perl -MNet::SNMP -e 1
+	perl -MDBIx::DBSchema -e 1
+	perl -MDBIx::DataSource -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi
