@@ -38,7 +38,26 @@ if( exists( $args{insert} ) ) {
     unless( $device{entPhysicalSerialNum} eq "noSuchObject" ) {
       $tmp{serialnumber} = $device{entPhysicalSerialNum};
     }
-    $tmp{type} = "0";   # maybe tmp; can't be null
+    # Try to guess some values
+    if ($tmp{name} =~ /hub/){
+      my $typeid = (DeviceType->search(name => "Hub"))[0];     
+      $tmp{type} = $typeid;
+    }elsif ($tmp{name} =~ /switch/ || $tmp{name} =~ /backbone/){
+      my $typeid = (DeviceType->search(name => "Switch"))[0];     
+      $tmp{type} = $typeid;
+    }elsif ($tmp{name} =~ /-gw/ || $tmp{name} =~ /router/ ){
+      my $typeid = (DeviceType->search(name => "Router"))[0];     
+      $tmp{type} = $typeid;
+    }elsif ($tmp{name} =~ /-ap/){
+      my $typeid = (DeviceType->search(name => "Access Point"))[0];     
+      $tmp{type} = $typeid;
+    }else{
+      $tmp{type} = 0;
+    }
+    $tmp{component_type} = "0"; 
+    $tmp{productname} = "0"; 
+    $tmp{part_of} = "0"; 
+    $tmp{site} = "0"; 
     $tmp{contactlist} = "0"; # same
     $tmp{user} = "0"; # same
     $tmp{entity} = "0"; # same
