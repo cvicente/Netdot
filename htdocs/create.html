@@ -6,6 +6,12 @@ $gui->rmsessions( $TMP, $AGE );
 # grab arguments to this script
 my %rev = reverse %ARGS;
 foreach my $j ( keys %ARGS ) {
+  ################################################
+  # in case apache makes the value an array, set to last value
+  if( ref( $ARGS{$j} ) eq "ARRAY" ) {
+    my @t = @{ $ARGS{$j} };
+    $ARGS{$j} = $t[$#t];
+  }
   if( $ARGS{$j} eq "New" ) {
     $TBL = $j;
     next;
