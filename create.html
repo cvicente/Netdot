@@ -65,6 +65,9 @@ if( exists( $args{discover} ) ) {
   }
   $nv->build_config( "device", $args{discover} );
   %node = $nv->get_device( "device", $args{discover} );
+  $args{name} = $args{discover};
+  $args{sysdescription} = $node{sysDescr};
+  $args{physaddr} = $node{dot1dBaseBridgeAddress};
 } 
 ##################################################
 # fill in the rest of state details -- for Submit or New
@@ -228,7 +231,6 @@ if( defined( $TBL ) ) {
     <hr>
     <br>
 %   }
-
     <& form.html, table => $TBL, showdisabled => '0', session => \%state &>
     <table cellpadding="3" cellspacing="1" border="0">
     <tr align="LEFT">
@@ -264,7 +266,7 @@ $id => undef
 $sid => undef
 %IfRsv => undef
 %node => undef
-$DEBUG => 1
+$DEBUG => 0
 
 </%args>
 <%init>
@@ -306,6 +308,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.14  2003/06/13 20:49:13  netdot
+#  status pending while I deliberate node discovery in create.html
+#
 #  Revision 1.13  2003/06/12 23:49:47  netdot
 #  integrating node discovery into create; moved variable declarations to
 #  <%args>
