@@ -10,6 +10,11 @@ usage:
 	@echo "modify the PREFIX value in the Makefile. "
 	@echo "It currently defaults to $(PREFIX)"
 	@echo 
+	@echo "For the defaults used in database installation, please see"
+	@echo "bin/Makefile.  In particular, these variables may be of interest:"
+	@echo "     DB_TYPE, DB_HOME, DB_DBA, DB_HOST, "
+	@echo "     DB_NETDOT_USER, DB_NETDOT_PASS "
+	@echo "Again, please see bin/Makefile for details.  Change at your own risk!"
 
 #
 # You really don't want to muck with anything below.  
@@ -64,4 +69,4 @@ lib:
 	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR="$@/Netdot"
 
 bin: 
-	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) 
+	cd $@ ; make install_db PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) 
