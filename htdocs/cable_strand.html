@@ -99,12 +99,7 @@ if (defined($ARGS{_action}))
                 <td>Backbone: </td>
                 <td class="formtablec2">
 %               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable", 
-%                                 where=>{id=>($backbone_id ? $backbone_id : "")}, edit=>$editStrand);
-%               if ($editStrand) {
-%               my $srchf = "backbone_srch";  # name of the form input tag
-	            <input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;">
-	            &nbsp;<input type="button" name="" value="Lookup" onClick="sendquery(<% 'CableStrand__' . $id . '__cable' %>, <% $srchf . '.value' %>, 'BackboneCable')">
-%               }
+%                                 edit=>$editStrand);
                 </td>
             </tr>
 
@@ -219,11 +214,6 @@ if (defined($ARGS{_action}))
                 <a href="circuit.html?id=<% $o->circuit_id %>"><% $o->circuit_id ? $o->circuit_id->cid : "" %></a>
 %               } else {
 %               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"circuit_id", lookup=>"Circuit", edit=>$editStrand);
-%               if ($editStrand) {
-%                   my $srchfld = "circuit_srch";  # name of the form input tag
-	                <input type="text" name="<% $srchfld %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;">
-	                &nbsp;<input type="button" name="" value="Lookup" onClick="sendquery(<% 'CableStrand__' . $id . '__circuit_id' %>, <% $srchfld . '.value' %>, 'Circuit')">
-%               }                    
 %               }
                 </td>
             </tr>

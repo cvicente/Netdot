@@ -139,10 +139,6 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "STRAND_UPDATE")
 
 <script language="JavaScript">
 <!--
-var startClosetSearch = new DynamicList("netdotform", "BackboneCable__<% $id %>__start_closet", "site", "Closet", "start_srch");
-var endClosetSearch = new DynamicList("netdotform", "BackboneCable__<% $id %>__end_closet", "site", "Closet", "end_srch"); 
-LIST_MANAGER.addList(startClosetSearch, endClosetSearch);
-
 /* suggestName()
  *
  * Suggests a backbone cable name. This typically takes on the format:
@@ -252,21 +248,9 @@ function suggestName()
             <tr align="left" valign="top">
                 <td>Start Closet: </td>
                 <td class="formtablec2">
-%               my @sites = undef;
 %               if ($editBackbone) {
 %               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"start_closet", lookup=>"Closet", 
-%                                 edit=>$editBackbone, where=>{site=>$start_site_id});
-                    &nbsp;<select name="start_srch" onChange="startClosetSearch.doIt();">
-                    <option value="">Lookup by Site</option>
-                    <%perl>
-                    @sites = Site->retrieve_all();
-                    @sites = sort { $a->name cmp $b->name } @sites;
-                    foreach my $s (@sites)
-                    {
-                        printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
-                    }
-                    </%perl>
-                    </select>
+%                                 edit=>$editBackbone);
 %               } else {
                 <a href="closet.html?id=<% $o->start_closet %>"><% $o->start_closet->name %></a> 
 %               }
@@ -278,16 +262,7 @@ function suggestName()
                 <td class="formtablec2">
 %               if ($editBackbone) {
 %               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"end_closet", lookup=>"Closet", 
-%                                 edit=>$editBackbone, where=>{site=>$end_site_id});
-                    &nbsp;<select name="end_srch" onChange="endClosetSearch.doIt();">
-                    <option value="">Lookup by Site</option>
-                    <%perl>
-                    foreach my $s (@sites)
-                    {
-                        printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
-                    }
-                    </%perl>
-                    </select>
+%                                 edit=>$editBackbone);
 %               } else {
                 <a href="closet.html?id=<% $o->end_closet %>"><% $o->end_closet->name %></a>
 %               }

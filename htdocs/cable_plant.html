@@ -170,7 +170,7 @@ if(defined($ARGS{_action}))
         <td align="left">
 %           if ($edit eq "cableinfo") {
 %           $ui->selectLookup(object=>$cable, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", 
-%                             edit=>($edit eq "cableinfo"), where=>{site=>$site->id});
+%                             edit=>($edit eq "cableinfo"));
 %           } else {
             <a href="closet.html?id=<% $cable->closet %>"><% $cable->closet->name %></a>
 %           }
@@ -391,7 +391,7 @@ elsif ($start_id)
         <td align="left">
 %       if ($edit eq "cableinfo") {
 %           $ui->selectLookup(object=>$cable, column=>"start_closet", lookup=>"Closet", 
-%                             edit=>($edit eq "cableinfo"), where=>{site=>$start_site_id});
+%                             edit=>($edit eq "cableinfo"));
 %       } else {
             <a href="closet.html?id=<% $cable->start_closet %>"><% $cable->start_closet->name %></a>
 %       }
@@ -406,7 +406,7 @@ elsif ($start_id)
         <td align="left">
 %       if ($edit eq "cableinfo") {
 %           $ui->selectLookup(object=>$cable, column=>"end_closet", lookup=>"Closet", 
-%                             edit=>($edit eq "cableinfo"), where=>{site=>$end_site_id});
+%                             edit=>($edit eq "cableinfo"));
 %       } else {
             <a href="closet.html?id=<% $cable->end_closet %>"><% $cable->end_closet->name %></a>
 %       }
@@ -525,7 +525,7 @@ elsif ($start_id)
         <td align="left">
 %       if ($edit eq "cableinfo") {
 %           $ui->selectLookup(object=>$closet, table=>"Closet", column=>"floor", lookup=>"Floor", 
-%                             edit=>($edit eq "cableinfo"), where=>{site=>$site->id});
+%                             edit=>($edit eq "cableinfo"));
 %       } else {
             <a href="floor.html?id=<% $closet->floor %>"><% $closet->floor->level %></a>
 %       }
@@ -586,6 +586,20 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
 % }      
 
 %	if (scalar(@strands) && scalar(@strands) < $MAX_SELECTION) {
+<%perl>
+my @backbones = ();
+
+if ($edit eq "cableinfo")
+{
+    # we need to grab all backbones for start and end sites of this strand.
+    my ($start_site, $end_site) = ($backbone->start_closet->floor->site, $backbone->end_closet->floor->site);
+    foreach my $closet (($start_site->closets, $end_site->closets))
+    {
+        map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$closet),
+                                       BackboneCable->search(end_closet=>$closet));
+    }
+}
+</%perl>
     <tr>
         <td align="center">
             <a href="cable_plant.html?backbone_id_srch=<% $backbone_id_srch %>&cable_sort=name&page_type=<% $page_type %>">Name</a>
@@ -596,6 +610,10 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
         <td align="center">
             <a href="cable_plant.html?backbone_id_srch=<% $backbone_id_srch %>&cable_sort=direction&page_type=<% $page_type %>">Direction</a>
         </td>
+        <td align="center">Spliced with</td>
+%   if ($edit ne "cableinfo") {
+        <td align="center">Part of Sequence</td>
+%   }        
     </tr>
 
     <%perl>
@@ -647,7 +665,85 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
 %           } elsif (defined($strand)) {
                 <% (int($strand->direction) == 1 ? "RX" : "TX") %>
 %           }
-        </td>                
+        </td>
+                <td align="left">
+%           if ($edit ne "cableinfo") {
+%               my @splices = $strand->splices;
+%               if (scalar(@splices)) {
+                    <a href="cable_strand.html?id=<% $splices[0]->strand2->id %>"><% $splices[0]->strand2->name %></a>
+%               }
+%               if (scalar(@splices) == 2) {
+                , <a href="cable_strand.html?id=<% $splices[1]->strand2->id %>"><% $splices[1]->strand2->name %></a> 
+%               }
+%           } else {
+                <script language="JavaScript">
+                <!--
+                function lookupStrands(bb_id, field_name, form_name)
+                {
+                    if (!bb_id)
+                    {
+                        alert("You must select a backbone.");
+                    }
+                    
+                    var url = "strand_backbone_list_query.html?bb_id=";
+                    url += bb_id + "&field_name=" + field_name;
+                    url += "&form_name=" + form_name;
+                    
+                    var wind = window.open(url, "tmp", "width=1,height=1");
+                    wind.blur();
+                }
+                -->
+                </script>
+
+                <SELECT NAME="backbone_list_srch1_<% $strand->id %>" onChange="lookupStrands(this.value, '__splice1_<% $strand->id %>', 'netdotform');">
+                <OPTION VALUE="">Lookup by Backbone</OPTION>
+                <%perl>
+                my @splices = $strand->splices;
+                my %stored = ();
+                foreach my $bb (sort { $a->name cmp $b->name } @backbones)
+                {
+                    next if ($bb->id == int($strand->cable) || exists($stored{$bb}));
+                    $stored{$bb} = 1;
+                    printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+                }
+                </%perl>
+                </SELECT> &nbsp; 
+                <select name="__splice1_<% $strand->id %>">
+                <option value="">-- Make your selection --</option>
+%               if (scalar(@splices)) {
+                <option value="<% $splices[0]->strand2->id %>" SELECTED><% $splices[0]->strand2->name %></option>
+%               }
+                <option value="">[null]</option>
+                </select>
+                <br>
+                <SELECT NAME="backbone_list_srch2_<% $strand->id %>" onChange="lookupStrands(this.value, '__splice2_<% $strand->id %>', 'netdotform');">
+                <OPTION VALUE="">Lookup by Backbone</OPTION>
+                <%perl>
+                %stored = ();
+                foreach my $bb (sort { $a->name cmp $b->name } @backbones)
+                {
+                    next if ($bb->id == int($strand->cable) || exists($stored{$bb}));
+                    $stored{$bb} = 1;
+                    printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+                }
+                </%perl>
+                </SELECT> &nbsp; 
+                <select name="__splice2_<% $strand->id %>">
+                <option value="">-- Make your selection --</option>
+%               if (scalar(@splices) == 2) {
+                <option value="<% $splices[1]->strand2->id %>" SELECTED><% $splices[1]->strand2->name %></option>
+%               }
+                <option value="">[null]</option>
+                </select>
+%           }
+        </td>
+
+%       if ($edit ne "cableinfo") {
+        <td align="left">
+%           my @strands = ($strand);
+            <& display_sequence.mhtml, strands=>\@strands &>
+        </td>
+
     </tr>
 %   }
 %}
@@ -665,7 +761,7 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
 % #############################################################################
 % # BEGIN CIRCUIT CODE
 % #############################################################################
-% elsif (uc($page_type) eq "CIRCUITS") {
+% } elsif (uc($page_type) eq "CIRCUITS") {
 <%perl>
 my @circuits = ();
 # if we are searching by backbone name...

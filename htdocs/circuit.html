@@ -106,9 +106,6 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{seque
 %               if ($editCircuit) {
 %                   $ui->selectLookup(object=>$o, table=>"Circuit", column=>"nearend", lookup=>"Interface",
 %                                     edit=>$editCircuit);
-%               my $srchf = "near_int_srch";  # name of the form input tag
-	            <input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;" style="width: 100px;">
-	            &nbsp;<input type="button" name="nearintbutton" value="Lookup" onClick="sendquery(<% 'Circuit__' . $id . '__nearend' %>, <% $srchf . '.value' %>, 'Interface');">
 %               } else {
                     <a href="interface.html?id=<% $o->nearend %>"><% $o->nearend->name %></a>
 %               }
@@ -121,10 +118,6 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{seque
 %               if ($editCircuit) {
 %                   $ui->selectLookup(object=>$o, table=>"Circuit", column=>"farend", lookup=>"Interface",
 %                                     edit=>$editCircuit);
-%               my $srchf = "far_int_srch";  # name of the form input tag
-	            <input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;" style="width: 100px;">
-	            &nbsp;<input type="button" name="farintbutton" value="Lookup" onClick="sendquery(<% 'Circuit__' . $id . '__farend' %>, <% $srchf . '.value' %>, 'Interface');">
-
 %               } else {
                     <a href="interface.html?id=<% $o->farend %>"><% $o->farend->name %></a>
 %               }

@@ -553,44 +553,13 @@
 		    <% $if->jack->room %>
 %		 }
 	   </td>
-	   <td align="left"> 
-%	      	 if ($editints){	 
-%		    my $count = HorizontalCable->count_all;
-%                   if (defined($if->jack)){
-%		      if ( $count <= $maxselect ){			      
-%		         my @alljacks = HorizontalCable->retrieve_all;
-%		         @alljacks = sort { $a->jackid <=> $b->jackid } @alljacks; 
-   		         <select name="<% "Interface__" . $if->id ."__jack" %>">
-		           <option value="$if->jack->id" selected><% $if->jack->jackid %> </option> 
-%		            foreach my $jack ( @alljacks ) {
-%                             next if ($jack->id == $if->jack->id);  
-		              <option value="<% $jack->id %>"><% $jack->jackid %></option>
-%			    }
-		           <option value="0">[null]</option> 
-		         </select>
-%		      }else{  #too many instances.  Offer a keyword search
-%		         my $srchf = '_' . $if->id . 'jack_srch';  #name of the form input tag
-		         <input type="text" name="<% $srchf %>" value="Keywords">
-		         &nbsp;<input type="button" name="" value="List" 
-		         onClick="sendquery(<% '_Interface__' . $if->id . '__jack' %>, <% $srchf . '.value' %>, 'HorizontalCable')" >
-		         <br><select name="<% '_Interface__' . $if->id . '__jack' %>">
-		            <option value="<% $if->jack->id %>" selected><% $if->jack->jackid %></option>
-			    <option value="0">[null]</option>
-		         </select>
-%		      }
-%                   }else{  # No jacks assigned yet.  Offer a keyword search
-%		       my $srchf = '_' . $if->id . 'jack_srch';  #name of the form input tag
-		       <input type="text" name="<% $srchf %>" value="Keywords">
-		       &nbsp;<input type="button" name="" value="List" 
-		       onClick="sendquery(<% '_Interface__' . $if->id . '__jack' %>, <% $srchf . '.value' %>, 'HorizontalCable')" >
-		       <br><select name="<% '_Interface__' . $if->id . '__jack' %>">
-			  <option value="0">[null]</option>
-		       </select>
-%                   } 
-
-%	         }elsif(defined($if->jack)){
-		    <a href="view.html?table=HorizontalCable&id=<% $if->jack->id %>"><% $if->jack->jackid %></a>
-%		 }
+	   <td align="left">
+%       if ($editints) {       
+%           $ui->selectLookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
+%                             edit=>$editints);
+%	    } elsif(defined($if->jack)) {
+            <a href="cable_horizontal.html?id=<% $if->jack->id %>"><% $if->jack->jackid %></a>
+%       }
 	   </td>
 	   <td align="left"> 
 %               $ui->textField(object=>$if, column=>"description", edit=>$editints);
