@@ -15,8 +15,6 @@ Netdot::DNSManager - DNS-related Functions for Netdot
 use lib "PREFIX/lib";
 
 use base qw( Netdot );
-use Netdot::DBI;
-use Netdot::UI;
 use Socket;
 use strict;
 
@@ -152,7 +150,7 @@ sub insert_rr {
 	    return 0;
 	}
     }else{
-	$argv{zone} = $self->{'DEFAULT_DNSDOMAIN'};
+	$argv{zone} = $self->{config}->{'DEFAULT_DNSDOMAIN'};
     }
     # Insert zone if necessary;
     unless ( $zone = $self->getzonebyname($argv{zone})){
@@ -259,10 +257,10 @@ sub insert_zone {
     my %state = (mname     => $argv{mname},
 		 rname     => $argv{rname}   || "hostmaster.$argv{mname}",
 		 serial    => $argv{serial}  || $ui->dateserial . "00",
-		 refresh   => $argv{refresh} || $self->{'DEFAULT_DNSREFRESH'},
-                 retry     => $argv{retry}   || $self->{'DEFAULT_DNSRETRY'},
-                 expire    => $argv{expire}  || $self->{'DEFAULT_DNSEXPIRE'},
-                 minimum   => $argv{minimum} || $self->{'DEFAULT_DNSMINIMUM'},
+		 refresh   => $argv{refresh} || $self->{config}->{'DEFAULT_DNSREFRESH'},
+                 retry     => $argv{retry}   || $self->{config}->{'DEFAULT_DNSRETRY'},
+                 expire    => $argv{expire}  || $self->{config}->{'DEFAULT_DNSEXPIRE'},
+                 minimum   => $argv{minimum} || $self->{config}->{'DEFAULT_DNSMINIMUM'},
                  active    => $argv{active}  || 1,
 		 );
     if (my $z = $ui->insert(table => "Zone", state => \%state )){

@@ -2,7 +2,7 @@
 # makefile for lib
 
 
-FILES = Default.conf Site.conf categories
+FILES = Default.conf categories
 
 all: files
 

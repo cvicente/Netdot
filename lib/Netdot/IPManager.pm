@@ -15,8 +15,6 @@ Netdot::IPManager - IP Address Space Functions for Netdot
 use lib "PREFIX/lib";
 
 use base qw( Netdot );
-use Netdot::DBI;
-use Netdot::UI;
 use NetAddr::IP;
 use strict;
 
@@ -48,7 +46,7 @@ sub new {
 	return 0;
     }
     # Max number of blocks returned by search functions
-    $self->{'MAXBLOCKS'} = 200;
+    $self->{config}->{'MAXBLOCKS'} = 200;
 
     wantarray ? ( $self, '' ) : $self; 
 }
@@ -112,7 +110,7 @@ sub searchblock {
     }else{
 	@ipb = Ipblock->search( address => ($ip->numeric)[0]);
     }
-    if (scalar (@ipb) > $self->{'MAXBLOCKS'}){
+    if (scalar (@ipb) > $self->{config}->{'MAXBLOCKS'}){
 	$self->error("Too many entries. Please refine search");
 	return;
     }    
@@ -134,7 +132,7 @@ sub searchblockslike {
     while (my $ipb = $it->next){
 	$_ = $ipb->address . '/' . $ipb->prefix;
 	push @ipb, $ipb if (/$string/);
-	if (scalar (@ipb) > $self->{'MAXBLOCKS'}){
+	if (scalar (@ipb) > $self->{config}->{'MAXBLOCKS'}){
 	    $self->error("Too many entries. Please refine search");
 	    return;
 	}

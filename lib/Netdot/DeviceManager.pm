@@ -26,10 +26,10 @@ use lib "NVPREFIX/lib";
 use NetViewer::RRD::SNMP::NV;
 
 use base qw( Netdot );
-use Netdot::DBI;
-use Netdot::UI;
-use Netdot::IPManager;
-use Netdot::DNSManager;
+#use Netdot::DBI;
+#use Netdot::UI;
+#use Netdot::IPManager;
+#use Netdot::DNSManager;
 use strict;
 
 #Be sure to return 1
@@ -56,10 +56,10 @@ sub new {
 
     $self = $self->SUPER::new( %argv );
 
-    $self->{'_snmpversion'}   = $argv{'snmpversion'}   || $self->{'DEFAULT_SNMPVERSION'};
-    $self->{'_snmpcommunity'} = $argv{'community'}     || $self->{'DEFAULT_SNMPCOMMUNITY'};
-    $self->{'_snmpretries'}   = $argv{'retries'}       || $self->{'DEFAULT_SNMPRETRIES'};
-    $self->{'_snmptimeout'}   = $argv{'timeout'}       || $self->{'DEFAULT_SNMPTIMEOUT'};
+    $self->{'_snmpversion'}   = $argv{'snmpversion'}   || $self->{config}->{'DEFAULT_SNMPVERSION'};
+    $self->{'_snmpcommunity'} = $argv{'community'}     || $self->{config}->{'DEFAULT_SNMPCOMMUNITY'};
+    $self->{'_snmpretries'}   = $argv{'retries'}       || $self->{config}->{'DEFAULT_SNMPRETRIES'};
+    $self->{'_snmptimeout'}   = $argv{'timeout'}       || $self->{config}->{'DEFAULT_SNMPTIMEOUT'};
 
     $self->{nv} = NetViewer::RRD::SNMP::NV->new(aliases     => "PREFIX/etc/categories",
 						snmpversion => $self->{'_snmpversion'},
@@ -71,7 +71,7 @@ sub new {
     $self->{ipm} = Netdot::IPManager->new();
     $self->{dns} = Netdot::DNSManager->new();
     $self->{badhubs} = {};
-    foreach my $oid (split /\s+/, $self->{'BADHUBS'}){
+    foreach my $oid (split /\s+/, $self->{config}->{'BADHUBS'}){
 	$self->{badhubs}->{$oid} = '';
     }
     
@@ -1082,7 +1082,7 @@ sub get_dev_info {
     ################################################################
     # Map dot3StatsDuplexStatus
 
-    my %DOT3DUPLEX = ( 1 => "unknown",
+    my %DOT3DUPLEX = ( 1 => "[na]",
 		       2 => "half",
 		       3 => "full",
 		       );
@@ -1098,7 +1098,7 @@ sub get_dev_info {
     # (*) MIB says "disagree", but we can assume it was auto and the other 
     # end wasn't
     
-    my @ifrsv = split /\s+/, $self->{'IFRESERVED'};
+    my @ifrsv = @{ $self->{config}->{'IFRESERVED'} };
     
     $self->debug( loglevel => 'LOG_DEBUG',
 		  message => "Ignoring Interfaces: %s", 
@@ -1291,22 +1291,13 @@ sub _readablehex {
 sub _canonize_int_name {
     my ($self, $name) = @_;
 
-    # This should go in the config file 
-    my %ABBR = ('Ethernet'        => 'e-',
-		'FastEthernet'    => 'fe-',
-		'GigabitEthernet' => 'ge-',
-		'Serial'          => 'ser-',
-		'Tunnel'          => 'tun-',
-		'POS'             => 'pos-',
-		'Loopback'        => 'lo-',
-		);
-
+    my %ABBR = % {$self->{config}->{IF_DNS_ABBR} };
     foreach my $ab (keys %ABBR){
 	if ($name =~ /$ab/){
 	    $name =~ s/$ab/$ABBR{$ab}/i;
 	}
     }
-    $name =~ s/\/|\./-/g;
+    $name =~ s/\/|\.|\s+/-/g;
     return lc( $name );
 }
 

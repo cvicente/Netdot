@@ -26,7 +26,6 @@ use Apache::Session::File;
 use Apache::Session::Lock::File;
 
 use base qw( Netdot );
-use Netdot::DBI;
 use strict;
 
 #Be sure to return 1
@@ -949,7 +948,7 @@ sub selectLookup($@){
 	 $args{maxCount});
     
     $htmlExtra = "" if (!$htmlExtra);
-    $maxCount = $args{maxCount} || $self->{"DEFAULT_SELECTMAX"};
+    $maxCount = $args{maxCount} || $self->{config}->{"DEFAULT_SELECTMAX"};
     my @labels = $self->getlabelarr($lookup);
 
     if ($isEditing){

@@ -19,8 +19,6 @@ Netdot::UI groups common methods and variables related to Netdot's Cable Plant l
 use lib "PREFIX/lib";
 
 use base qw( Netdot );
-use Netdot::DBI;
-use Netdot::UI;
 use strict;
 
 #Be sure to return 1

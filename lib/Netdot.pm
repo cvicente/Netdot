@@ -14,32 +14,34 @@ Netdot - Network Documentation Tool
 
 =head1 SYNOPSIS
 
-=cut
-
 =head1 METHODS
 =cut
-
-
+    
+######################################################################
+# We have two config files.  First one contains defaults
+# and second one is site-specific (and optional)
+# Values are stored in this base class under the 'config' key
+######################################################################
+    
 sub _read_defaults {
     my $self = shift;
-    my @files = qw( PREFIX/etc/Default.conf PREFIX/etc/Site.conf);
+    my @files = qw( PREFIX/etc/Default.conf);
+    push @files, "PREFIX/etc/Site.conf", if ( -e "PREFIX/etc/Site.conf" );
     foreach my $file (@files){
-	open (IN, $file) 
-	    or die "Netdot.pm: Could not open file $file for reading: $!";
-	while (<IN>){
-	    next if (/^\#/);
-	    s/^(.*)\#.*$/$1/;  # Discard anything after the #
-	    my ($name, $value) = /^(\w+)\s+(.*)$/;
-	    $value =~ s/^\s*(.*)\s*/$1/;
-	    $self->{$name} = $value;
+	my $config_href = do $file or die $@ || $!;
+	foreach my $key ( %$config_href ) {
+	    $self->{config}->{$key} = $config_href->{$key};
 	}
-	close (IN);
     }
 }
 
 =head2 new
 
 =cut
+
+######################################################################
+# Constructor
+######################################################################
 
 sub new {
    my ($proto, %argv) = @_;
@@ -49,9 +51,9 @@ sub new {
 
    $self->_read_defaults;
 
-   $self->{'_logfacility'} = $argv{'logfacility'} || $self->{'DEFAULT_LOGFACILITY'},
-   $self->{'_loglevel'}    = $argv{'loglevel'}    || $self->{'DEFAULT_LOGLEVEL'},
-   $self->{'_logident'}    = $argv{'logident'}    || $self->{'DEFAULT_SYSLOGIDENT'},   
+   $self->{'_logfacility'} = $argv{'logfacility'} || $self->{config}->{'DEFAULT_LOGFACILITY'},
+   $self->{'_loglevel'}    = $argv{'loglevel'}    || $self->{config}->{'DEFAULT_LOGLEVEL'},
+   $self->{'_logident'}    = $argv{'logident'}    || $self->{config}->{'DEFAULT_SYSLOGIDENT'},   
    $self->{'_foreground'}  = $argv{'foreground'}  || 0,   
    
    $self->{debug} = Debug->new(logfacility => $self->{'_logfacility'}, 

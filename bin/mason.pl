@@ -31,6 +31,7 @@ use strict;
     use NetAddr::IP;
     use Data::Dumper;
     use lib "PREFIX/lib";
+    use Netdot::DBI;
     use Netdot::UI;
     use Netdot::IPManager;
     use Netdot::DeviceManager;
