@@ -65,18 +65,19 @@ foreach my $j ( keys %ARGS ) {
 %       my @objs;
 %       map { push @objs, $results{$tbl}{$_} } keys %{ $results{$tbl} };
         <p>
+        <blockquote>
         <table cellpadding="0" border="0"  bgcolor="#CCCCCC">
 	<tr>
         <td><strong><% $tbl %></strong>
         <& sortresults.html, table => $tbl, object => \@objs, view => "expanded" &>
         </td></tr>
         </table>
+        </blockquote>
 
 %     } # end foreach tbl
 %   } # end else
-
 % }
-
+<br>
 <!-- end search -->
 <& footer &>
 
@@ -93,6 +94,9 @@ undef( %results );
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.13  2003/06/03 20:43:25  netdot
+# added blockquotes to space things out
+#
 # Revision 1.12  2003/05/23 16:48:38  netdot
 # added html markers
 #
