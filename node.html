@@ -36,7 +36,8 @@ if( exists( $args{insert} ) ) {
     foreach my $int ( keys %{ $node{interface} } ) {
       my $skip = 0;
       foreach my $rsv ( @ifrsv ) {
-        $skip = 1 if( $rsv =~ /$int/ );
+        my $n = $rsv->name;
+        $skip = 1 if( $int =~ /$n/ );
       }
       next if( $skip );
       next if( Interface->search
@@ -178,6 +179,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.22  2003/07/15 19:08:30  netdot
+#  fixed code for skipping interfaces
+#
 #  Revision 1.21  2003/07/15 15:51:46  netdot
 #  added community for Node
 #
