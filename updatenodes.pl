@@ -102,18 +102,18 @@ foreach my $node ( @nodes ) {
 	  # does this subnet already exist?
 	  if( $subnet = (Subnet->search( address => $net ) )[0] ) {
 	    print "Subnet $net exists \n" if( $DEBUG );
-	    ; # do nothing
+	    $iptmp{subnet} = $subnet->id;
 	  } else {
 	    my %tmp;
 	    $tmp{address} = $net;
 	    $tmp{entity} = 0;
-	    print "Subnet $net doesn't exist; inserting\n" if( $DEBUG );
-	    unless( $subnet = insert( object => "Subnet", state => \%tmp ) ){
-	      next;
-	    }
+	    $iptmp{subnet} = 0;
+	    #print "Subnet $net doesn't exist; inserting\n" if( $DEBUG );
+	    #unless( $subnet = insert( object => "Subnet", state => \%tmp ) ){
+	    #  next;
+	    #}
 	  }
 	  $iptmp{interface} = $if->id;
-	  $iptmp{subnet} = $subnet->id;
 	  $iptmp{address} = $newip;
 	  $iptmp{mask} = $dev{interface}{$newif}{ipAdEntIfIndex}{$newip};
 	  ########################################
@@ -219,6 +219,9 @@ sub calc_subnet {
 
 ######################################################################
 #  $Log: updatenodes.pl,v $
+#  Revision 1.11  2003/07/16 22:38:54  netdot
+#  disabling chunk of subnet code
+#
 #  Revision 1.10  2003/07/15 19:11:50  netdot
 #  fix for skip interfaces and community string
 #
