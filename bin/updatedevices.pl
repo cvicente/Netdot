@@ -66,10 +66,15 @@ foreach my $device ( @devices ) {
   # get information from the device
   if( my( %dev ) = $nv->get_device( "device", $device->name ) ) {
     print "Have device ", $device->name, " information\n" if( $DEBUG );
-    if( $dev{sysUpTime} < 0 ) {
-      printf "Device %s has sysUpTime value of %d; skipping\n", 
+    unless ( exists $dev{sysUpTime} ){
+	printf "Device %s not found or didn't respond; skipping\n", 
+	$device->name if( $DEBUG );
+	next;	    
+    }
+    if ($dev{sysUpTime} < 0 ) {
+	printf "Device %s has sysUpTime value of %d; skipping\n", 
 	$device->name, $dev{sysUpTime} if( $DEBUG );
-      next;
+	next;
     }
     my %ntmp;
     $ntmp{sysdescription} = $dev{sysDescr};
