@@ -28,7 +28,7 @@ if( $args{table} ) {
 % ####################################################################
 
 % if( defined( $args{table} ) ) {
-    <table cellpadding="3" cellspacing="1" border="0" bgcolor="#CCCCCC">
+    <table cellpadding="3" cellspacing="1" border="0" bgcolor="#CCCCCC" class="formtablebg">
     <tr>
     <input type="hidden" name="table" value="<% $args{table} %>">
 %   if( $args{id} ) {
@@ -40,7 +40,7 @@ if( $args{table} ) {
 % ################################################
 %     if( ! exists( $linksto{$c} ) ) { # local field
         <tr>
-        <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
+        <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
 %       if( defined( $args{id} ) ) {
           <td colspan="2"><input type="text" size="40" name="<% $c %>" value="<% $obj->$c %>"></td>
 %       } elsif( exists( $session{$c} ) ) {
@@ -52,7 +52,7 @@ if( $args{table} ) {
 % ################################################
 %     } else {
         <tr>
-        <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
+        <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
 %       if( defined( $obj ) && $obj->$c == 0 ) {
           -
 %	} elsif( defined( $obj ) 
@@ -119,6 +119,9 @@ Arguments:
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.21  2003/07/16 16:54:03  netdot
+#  added css tags -miyake
+#
 #  Revision 1.20  2003/07/12 03:01:55  cvicente
 #  Minor bug fix
 #
