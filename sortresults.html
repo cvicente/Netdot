@@ -5,6 +5,9 @@ foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
   $arg{$j} = $ARGS{$j};
 }
+if( ! exists( $arg{"view"} ) ) {
+  $arg{view} = "expanded";
+}
 if( $arg{table} ) {
   undef( $obj );
   $obj = (Meta->search( name => $arg{table} ))[0];
@@ -43,12 +46,18 @@ if( $arg{table} ) {
         <td align="CENTER" valign="TOP" bgcolor="#FFFFFF">
 %       if( $c eq "id" ) {
           <strong>
-          <a href="circuit.html?id=<% $o->id %>"><% $o->id %></a>
+%         if( $arg{view} eq "expanded" ) {
+            <a href="expview.html?table=<% $arg{table} %>&id=<% $o->id %>"><% $o->id %></a>
+%         } elsif( $arg{view} eq "table" ) {
+            <a href="tblview.html?table=<% $arg{table} %>&id=<% $o->id %>"><% $o->id %></a>
+%         } else {
+            <a href="expview.html?table=<% $arg{table} %>&id=<% $o->id %>"><% $o->id %></a>
+%         }
           </strong>
 %       } elsif( exists( $linksto{$c} ) ) {
 %         my $t = (Meta->search( name => $linksto{$c} ))[0];
-%         if( ! defined( $t ) ) {
-            No such object <% $linksto{$c} %>
+%         if( ! defined( $t ) || $o->$c->id != 0 ) {
+            No such object <% $linksto{$c} %> <% $o->$c->id %>
 %         } else {
 %           my $lbl = $t->label;
             <% $o->$c->$lbl %>
@@ -74,9 +83,17 @@ my( %arg, %order, %linksto, %linksfrom, $obj );
 
 </%init>
 <%doc>
+Supported arguments:
+
+  table  - name of a table in the database
+  object - reference to a list of objects in that table for displaying in html
+  view   - table | expanded
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.5  2003/05/01 00:38:32  netdot
+# added check for when foreign key is 0.  needs testing
+#
 # Revision 1.4  2003/04/30 23:54:54  netdot
 # integrated some changes carlos had made to a different copy of this
 # file.  basically, there is some error checking now.
