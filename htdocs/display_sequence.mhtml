@@ -33,17 +33,24 @@ my %sequences = ();
      <td>
     <table border="0" width="90%">
 %   my $j = 0;
+%   my $i = 0;
 %   my %found = ();
 %   foreach my $st (@{$strands}) {
 %       next if (exists($found{$st}));
 %       $j = ($j + 1) % 2;
+%       ++$i;
 %       my @links = ();
+%       my @ids = ();
 %       foreach my $row (@{$cable_manager->getsequence($st)}) {
 %           $found{@$row[0]} = 1;
 %           push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", @$row[0], @$row[1]));
+%           push(@ids, @$row[0]);
 %       }
         <tr align="left" class="<% $cssitem{$j} %>">
-            <td align="left"><% join("  -----  ", @links) %></td>
+            <td align="left">
+                <input type="hidden" name="__sequence_<% $i %>" value="<% join(",", @ids) %>"> 
+                [unassign] <input type="checkbox" name="__unassign_<% $i %>"> <% join("  -----  ", @links) %>
+            </td>
         </tr>
 %   }
 </table>

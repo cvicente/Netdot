@@ -357,6 +357,8 @@ sub getsequencepath($$) {
         push(@ret, $tmp_strand);
     }
 
+    $st->finish();
+
     return @ret;
 }
 

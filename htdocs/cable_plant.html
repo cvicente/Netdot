@@ -88,7 +88,7 @@ if(defined($ARGS{_action})) {
          <td width="10%" align="left">&nbsp;</td>
          <th width="70%" align="center">Horizontal Cable</th>
 %	 if ($edit eq "cableinfo"){	 
-            <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
+            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %	 } else {
             <td width="20%" align="right">
                 <a href="cable_horizontal.html?id=NEW&site_id=<% $id %>">[new]</a> &nbsp;||&nbsp; 
@@ -258,7 +258,7 @@ elsif ($start_id) {
          <td width="10%" align="left">&nbsp;</td>
          <th width="70%" align="center">Backbone Cable <% $header_descr ? $header_descr : "" %></th>
 %	 if ($edit eq "cableinfo"){	 
-            <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
+            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %	 } else {
             <td width="20%" align="right">
                 <a href="cable_backbone.html?id=NEW">[new]</a> &nbsp;||&nbsp; 
@@ -405,11 +405,28 @@ elsif ($start_id) {
 % # BEGIN CLOSET CODE
 % #############################################################################
 % elsif (uc($page_type) eq "CLOSETS") {
-%   $m->abort() if (!defined($o));
-%   my @closets;
-
+%   $m->abort() if (!defined($o) && !exists($ARGS{closet_srch}));
+%   my @closets = ();
     <%perl>
-    map { push (@closets, $_) } $o->closets;
+    if (exists($ARGS{closet_srch})) {
+        my $crit = $ARGS{closet_srch};
+        my @terms = ();
+        if ($crit =~ /\w+/) {
+            if ($crit =~ /\w+\s+\w+/) {
+                @terms = split(/\s+/, $crit);
+            } else { 
+                $crit =~ s/\s+//;
+                push(@terms, $crit);
+            }
+        }
+        
+        my $r = $ui->selectQuery(table=>"Closet", terms=>\@terms, $MAX_SELECTION);
+        @closets = map { $r->{$_} } keys(%$r);
+    
+    } else {
+        map { push (@closets, $_) } $o->closets;
+    }
+
     print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
     </%perl>
 
@@ -427,7 +444,7 @@ elsif ($start_id) {
          <td width="10%" align="left">&nbsp;</td>
          <th width="70%" align="center">Closets</th>
 %	 if ($edit eq "cableinfo"){	 
-            <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
+            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %	 } else {
             <td width="20%" align="right">
                 <a href="closet.html?id=NEW&site_id=<% $id %>">[new]</a> &nbsp;||&nbsp; 
@@ -535,7 +552,7 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
          <td width="10%" align="left">&nbsp;</td>
          <th width="70%" align="center">Cable Strands</th>
 %	 if ($edit eq "cableinfo"){	 
-            <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
+            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %	 } else {
             <td width="20%" align="right">
                 <a href="cable_strand.html?id=NEW">[new]</a> &nbsp;||&nbsp; 
@@ -744,7 +761,7 @@ if ($ARGS{circuit_srch}) {
          <td width="10%" align="left">&nbsp;</td>
          <th width="70%" align="center">Circuits</th>
 %	 if ($edit eq "cableinfo"){	 
-            <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
+            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %	 } else {
             <td width="20%" align="right">
                 <a href="circuit.html?id=NEW">[new]</a> &nbsp;||&nbsp; 

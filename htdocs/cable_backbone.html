@@ -176,7 +176,7 @@ function suggestName()
         <tr class="formtabletitle">
             <td colspan="2" align="left">Backbone Cable</td>
 %           if ($editBackbone) {
-            <td align="right"><input name="submit" value="save" type="submit"></td>
+            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %           } else {
             <td align="right"><a href="cable_backbone.html?id=NEW">[new]</a> || <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a> || <a href="delete.html?table=BackboneCable&id=<% $id %>">[delete]</a></td>
 %           }
@@ -349,12 +349,11 @@ function editSelected(id)
 %    }
       <table width="100%" border="0">
        <tr>
-         <td width="10%" align="left">&nbsp;</td>
          <th width="80%" align="center">Cable Strands</th>
 %	 if ($editStrand) {	 
-            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+            <td align="right"><input type="button" name="cancel_st_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %	 } else {
-            <td width="10%" align="right">
+            <td align="right">
                 <a href="cable_strand.html?id=NEW&backbone_id=<% $o->id %>">[new]</a> &nbsp;||&nbsp;
                 <a href="#" onClick="editSelected(<% $id %>);">[edit]</a> &nbsp;||&nbsp;
                 <a href="cable_backbone.html?id=<% $id %>&edit=strandinfo#cable_strand">[edit all]</a>

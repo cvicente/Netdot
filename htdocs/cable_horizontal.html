@@ -123,7 +123,7 @@ my @sites = Site->retrieve_all();
         <tr class="formtabletitle">
             <td colspan="2" align="left">Horizonal Cable</td>
 %           if ($editCable) {
-            <td align="right"><input name="submit" value="save" type="submit"></td>
+            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %           } else {
             <td align="right"><a href="cable_horizontal.html?id=NEW">[new]</a> || <a href="cable_horizontal.html?id=<% $id %>&edit=cableinfo">[edit]</a> || <a href="delete.html?table=HorizontalCable&id=<% $id %>">[delete]</a></td>
 %           }
@@ -273,6 +273,10 @@ my @sites = Site->retrieve_all();
 % if (defined($o)) {
 <A NAME="interface"></A>
 <table border="0" width="95%" align="center"  class="tablebackground">
+    <tr class="formtabletitle">
+    <td>Add Interfaces</td>
+    </tr>
+
     <tr>
     <td valign="top" width="50%" align="center">
 
@@ -288,11 +292,11 @@ my @sites = Site->retrieve_all();
     <td>
 %       my $srchf = "interface_srch";  # name of the form input tag
 	    <input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;">
-	    &nbsp;<input type="button" name="" value="Lookup" 
+	    &nbsp;<input type="button" name="" value="Interface Lookup" 
         onClick="sendquery(<% 'interfaces' %>, <% $srchf . '.value' %>, 'Interface')">
 		&nbsp;&nbsp;<select name="interfaces" multiple size="3">
             <option value="0">[null]</option>
-        </select> &nbsp;<input type="submit" name="add_interfaces" value="Add Interface(s)">
+        </select> &nbsp;<input type="submit" name="add_interfaces" value="Add">
     </td>
     </tr>
     </table>
@@ -315,12 +319,11 @@ my @sites = Site->retrieve_all();
      <td colspan="2">
       <table width="100%" border="0">
        <tr>
-         <td width="10%" align="left">&nbsp;</td>
          <th width="80%" align="center">Interfaces</th>
 %	 if ($editInt) {	 
-            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %	 } else {
-            <td width="10%" align="right">
+            <td align="right">
                 <a href="cable_horizontal.html?id=<% $id %>&edit=intinfo#interface">[edit]</a>
             </td>
 %	 }

@@ -35,6 +35,11 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
     foreach my $seq (@sequences) {
         $cable_manager->assigncircuit($circuit_id, split(/,/o, $seq));
     }
+} elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_SEQUENCES") {
+    foreach my $key (keys(%ARGS)) {
+        next if ($key !~ /^__unassign_(\d+)/o);
+        $cable_manager->removecircuit(split(/,/o, $ARGS{"__sequence_" . $1}));
+    }
 }
 # end insertion/update code
 # -----------------------------------------------------------------------------
@@ -63,7 +68,7 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
         <tr class="formtabletitle">
             <td colspan="2" align="left">Circuit</td>
 %           if ($editCircuit) {
-            <td align="right"><input name="submit" value="save" type="submit"></td>
+            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %           } else {
             <td align="right"><a href="circuit.html?id=NEW">[new]</a> || <a href="circuit.html?id=<% $id %>&edit=circuitinfo">[edit]</a> || <a href="delete.html?table=Circuit&id=<% $id %>">[delete]</a></td>
 %           }
@@ -188,7 +193,15 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 %   foreach my $s ($o->strands) {
 %       push(@strands, $s->id);
 %   }
+    <form name="sequence_form" action="circuit.html" method="POST">
+    <input type="hidden" name="_action" value="UPDATE_SEQUENCES">
+    <input type="hidden" name="id" value="<% $id %>">
     <& display_sequence.mhtml, strands=>\@strands, table_view=>1 &>
+%   if (scalar(@strands)) {    
+    <div align="left"><input type="submit" name="submit_seq" value="Submit Changes"></div>
+%   }    
+    </form>
+    <P>
 %   }
 
 %   # Allow the user to add strands to this circuit by backbone.
@@ -280,7 +293,7 @@ $s2name => "Plant";
 </%args>
 
 <%init>
-my $DEBUG = 0;
+my $DEBUG = 1;
 my $ui = Netdot::UI->new();
 my $cable_manager = Netdot::CablePlantManager->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
