@@ -2338,7 +2338,7 @@ sub detect_rollover
 # Must supply $type (usually 'device'), device name in %targets
 #
 sub build_config {
-  my( $self, $type, $device ) = @_ ;
+  my( $self, $type, $device, $comstr ) = @_ ;
   my ( $host, $num, $session, $error, $skipped );
 #	 $version, $comstr, $timeout, $retries, $skipped,
 #	 @frstuff, @oids, %data ) ;
@@ -2351,7 +2351,7 @@ sub build_config {
 		  message => "build_config: $type:$device not defined");
     $targets{$type}{$device}{autoconfigure} = "yes" ;
     $targets{$type}{$device}{version} = $self->{'_snmpversion'} ;
-    $targets{$type}{$device}{community} = $self->{'_community'} ;
+    $targets{$type}{$device}{community} = $comstr || $self->{'_community'};
     $targets{$type}{$device}{collect} = $self->{'_defaultcollect'} ;
     $self->{targets} = \%targets ;
   }
@@ -3361,6 +3361,9 @@ sub _sysUpTime {
 
 ##########################################################################
 # $Log: Netviewer.pm,v $
+# Revision 1.9  2003/07/14 23:05:31  netdot
+# allow option to supply community string to build_config
+#
 # Revision 1.8  2003/07/08 22:05:02  netdot
 # changes to get ip address/netmask determination to work
 #
