@@ -41,10 +41,13 @@ if( defined( $mi->columnorder ) ) {
 <p> 
 <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
 <tr> 
+<td align="center" colspan="2" bgcolor="#FFFFFF"><strong><% $table %></strong></td>
+</tr>
+<tr> 
 <td bgcolor="#DDDDDD">id:</td><td><strong><% $obj->id %></strong></td>
 </tr>
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%      next if ($c eq 'id');
+%      next if ($c eq 'id' || $c eq 'disabled');
        <tr> 
        <td bgcolor="#DDDDDD"><% $c %>:</td>
 %      if (!exists($linksto{$c}) ){
@@ -54,7 +57,7 @@ if( defined( $mi->columnorder ) ) {
          <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
          <tr><td>
 %	 my $fkobj;
-%	 unless( defined($fkobj = $linksto{$c}->retrieve($obj->$c->id) )){
+%	 unless( defined($obj->$c) && defined($fkobj = $linksto{$c}->retrieve($obj->$c->id) )){
 	 - </td></tr></table> 
 %	 next;
 %        }
@@ -65,34 +68,54 @@ if( defined( $mi->columnorder ) ) {
 %      }
      </tr>
 %   }
-<tr> 
-<td bgcolor="#DDDDDD">related:</td>
-<td>
-%foreach my $i (keys %linksfrom){
-%  my $j;
-%  map { $j = $_ } keys %{ $linksfrom{$i} };
-   <a href="search_obj.html?table=<% $j %>&<% $linksfrom{$i}{$j} %>=<% $obj %>"><font size="-1"><% $i %></font></a>&nbsp;
-%}
-</td>
 </tr>
 <tr> 
 <td align="center" colspan="2" bgcolor="#FFFFFF"><a href="expview.html?table=<% $table %>&id=<% $obj %>&edit=1">edit</a></td>
 </tr>
 </table>
 
-%} else {
+%# List all the has_many objects for this object             
+%foreach my $i (keys %linksfrom){
+%  my ($j, $rtbl, @robjs, @jobjs, $col);
+%  map { $j = $_ } keys %{ $linksfrom{$i} };
+%  my $meta = ( Meta->search(name => $j) )[0];
+%  # Do some magic if table is a join table
+%  if ( defined($meta) && ($meta->mainobject == 0) ){
+%     @jobjs = $obj->$i();  # these are the join table objects
+%     next unless (scalar(@jobjs));
+%     my $jclass = ref($jobjs[0]);  #name of the join table class
+%     # Pick the fk column of the other table
+%     map { $col = $_  if ($_ ne $linksfrom{$i}{$j}); } $jclass->columns();
+%     map { push @robjs, $_->$col } @jobjs;
+%     $rtbl = ref($robjs[0]); 
+%  } else{
+%     @robjs = $obj->$i();
+%     next unless (scalar(@robjs));
+%     $rtbl = $j;
+%  }
+           <p>
+           <table cellpadding="0" border="0"  bgcolor="#CCCCCC">
+	   <tr>
+           <td><strong><% $i %></strong>
+	   <& sortresults.html, table => $rtbl, object => \@robjs, view => "expanded" &>
+	   </td></tr>
+	   </table>
+
+%}
+
+%} else {     # option edit
 
    <form action="update.html" method="POST">
    <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
-   <input type="hidden" name="table"><% $table %>
+   <input type="hidden" name="table" value="<% $table %>">
    <tr>
-   <td bgcolor="#DDDDDD"><strong>id</strong></td><td><input type="hidden" name="id"><% $obj->id %></input></td>
+   <td bgcolor="#DDDDDD"><strong>id</strong></td><td><input type="hidden" name="id" value="<% $obj->id %>"><% $obj->id %></td>
    </tr>
 %  foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %     next if ($c eq 'id');
 %     if (!exists($linksto{$c}) ){  # The column is 'local'
          <tr> 
-         <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td><td><input type="text" size="40" value="<% $obj->$c %>"</td>
+         <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td><td><input type="text" name="<% $c %>" size="40" value="<% $obj->$c %>"</td>
 	 </tr>
 %     } else {  # The column is a foreign key. Provide a list to select.
          <tr>
@@ -101,11 +124,11 @@ if( defined( $mi->columnorder ) ) {
 %         my $t = (Meta->search( name => $linksto{$c} ))[0];
 %         if( ! defined( $t ) ) {
             No <% $linksto{$c} %> in Meta table
-%         } elsif( $obj->$c->id == 0 ) {
+%         } elsif( $obj->$c == 0 ) {
 	    -
 %         } else {
 %           my $lbl = $t->label;
-            <select name="$c">
+            <select name="<% $c %>">
 	    <option value="<% $obj->$c->id %>" selected><% $obj->$c->$lbl %></option>
 %	    my @fkobjs = $linksto{$c}->retrieve_all; 
 %	    foreach my $fkobj (@fkobjs){
@@ -132,7 +155,7 @@ if( defined( $mi->columnorder ) ) {
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-use Data::Dumper;
+
 my( %arg, %linksto, %linksfrom, $obj, $table, $mi, %order);
                
 </%init>
