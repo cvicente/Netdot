@@ -494,6 +494,18 @@ my $schema = {
  'index' => [ ['ip_id']  ],
 },
 
+'IpService' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'ip', 'integer', '', '', '', '',
+    'service', 'integer', '', '', '', '',
+    'contactlist', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['ip','service'] ],
+  'index' => [ ['ip'],['service'] ],
+},
+
 'Meta' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
@@ -548,17 +560,6 @@ my $schema = {
   'index' => [   ],
 },
 
-
-'DeviceService' => {
-  'columns' => [
-    'id', 'serial', '', '', '', '',
-    'device', 'integer', '', '', '', '',
-    'service', 'integer', '', '', '', '',
-  ],
-  'primary_key' => 'id',
-  'unique' => [ ['device','service'] ],
-  'index' => [ ['device'],['service'] ],
-},
 
 'DeviceType' => {
   'columns' => [
