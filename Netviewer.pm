@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/local/bin/perl 
 
 # NetViewer
 # Copyright 2001-2003 Stephen Fromm  stephenf@nero.net
@@ -24,11 +24,9 @@ use lib "/home/netdot/public_html/lib";
 use strict ;
 use Fcntl qw(:DEFAULT :flock) ;
 use Sys::Syslog qw( :DEFAULT setlogsock ) ;
-use SNMP_Session;
+use Net::SNMP ;
 use Netdot::DBI;
 use Data::Dumper;
-#use base 'Class::DBI';
-#use Net::SNMP ;
 
 use vars qw ( @ISA @EXPORT @EXPORT_OK $VERSION 
 	      %aliases %labels %dstype %metacat %ifdata %localevars %ifType
@@ -46,7 +44,7 @@ my( $_FOREGROUND, $HOME,  $_LOGLEVEL, $_LOGFACILITY, $SOCKET, $_SYSLOGIDENT,
     %logfacility, %loglevel, %lognum ) ;
 
 $_FOREGROUND = 0 ;
-$HOME = "/nfs/zero/u1/home/stephenf/netviewer" ; 
+$HOME = "/home/netdot/public_html";
 
 sub DEFAULT_DATADIR     { "$HOME/data" }
 sub DEFAULT_IMGDIR      { "$HOME/img" }
@@ -55,10 +53,8 @@ sub DEFAULT_GLOBAL      { "$HOME/etc/netviewer.conf" }
 sub DEFAULT_CONF        { "$HOME/etc/collect.conf" }
 sub DEFAULT_STORE       { "$HOME/etc/collect.store" }
 sub DEFAULT_CAT         { "$HOME/etc/categories" }
-sub DEFAULT_LABEL       { "$HOME/etc/labels" }
 sub DEFAULT_TYPES       { "$HOME/etc/ifTypes" }
 sub DEFAULT_LOCALE      { "$HOME/etc/locale.conf" }
-sub DEFAULT_HWPROFILES  { "$HOME/etc/hardware.conf" }
 sub DEFAULT_COLLECT     { "no" }
 sub DEFAULT_ALWAYSFETCH { "yes" }
 sub DEFAULT_INTERVAL    { 5 }
@@ -130,7 +126,10 @@ sub get_types {
 sub get_devices { 
   my $self = shift ; 
   my %devices ;
-  %devices = %{  %{ $self->{targets} }->{device} } if( $self->{targets} ) ;
+  if( $self->{targets} ) {
+    my %t = %{ $self->{targets} };
+    %devices = %{ $t{device} } ;
+  }
   return %devices ;
 }
 
@@ -192,7 +191,6 @@ sub get_dstype { return %dstype ; }
 
 
 ######################################################################
-#
 sub get_umask { my $self = shift ; return $self->{'_umask'} ; }
 
 
@@ -202,7 +200,6 @@ sub get_localevars { return %localevars ; }
 
 
 ######################################################################
-#
 sub string_state {
   my $self = shift ;
   my $data ;
@@ -217,7 +214,6 @@ sub string_state {
 
 ######################################################################
 # PUBLIC
-#
 # return error message (if it exists)
 sub error {
   $_[0]->{'_error'} || '' ;
@@ -259,14 +255,12 @@ sub new {
 	      '_datadir'        => DEFAULT_DATADIR,
 	      '_imgdir'         => DEFAULT_IMGDIR,
 	      '_rrdbindir'      => DEFAULT_RRDBINDIR,
-	      '_global'         => DEFAULT_GLOBAL,
 	      '_conf'           => DEFAULT_CONF,
 	      '_store'          => DEFAULT_STORE,
 	      '_cat'            => DEFAULT_CAT,
-	      '_label'          => DEFAULT_LABEL,
+
 	      '_types'          => DEFAULT_TYPES,
 	      '_locale'         => DEFAULT_LOCALE,
-	      '_hwprofiles'     => DEFAULT_HWPROFILES,
 	      '_defaultcollect' => DEFAULT_COLLECT,
 	      '_alwaysfetch'    => DEFAULT_ALWAYSFETCH,
 	      '_interval'       => DEFAULT_INTERVAL,
@@ -288,9 +282,6 @@ sub new {
 	      '_status'         => 0,
 	      '_foreground'     => 0,
 	      '_error'          => '' } ;
-  if( $argv{global} ) {
-    $self->{'_global'} = $argv{global} ;
-  }
   bless $self, $class ;
   $self->_init( %argv ) ;
   #    $_LOGFACILITY = $self->{'_logfacility'} ;
@@ -323,6 +314,11 @@ sub _init {
   $self->_set_defaults( %argv ) ;
   $self->_read_aliases() ;
   $self->_read_types() ;
+  # $self->_read_collect();
+}
+
+sub _read_collect {
+  my $self = shift;
   my $status = 3 ;
   my %targets = %{ $self->{targets} } if( $self->{targets} );
   if( -f "$self->{'_conf'}.tmp" ) {
@@ -379,7 +375,6 @@ sub _init {
 }
 
 
-
 ######################################################################
 # PRIVATE
 #
@@ -405,14 +400,7 @@ sub _read_globals {
 sub _set_defaults {
   my ($self, %argv ) = @_ ;
   foreach ( keys %argv ) {
-    if( /^global$/ ) {
-      if( -f $argv{$_} ) {
-	$self->{'_global'} = $argv{$_} ;
-      } else {
-	warn( "set_defaults: Invalid global conf ($argv{$_});" 
-	      . " Will try $self->{'_global'}" ) ;
-      }
-    } elsif ( /^datadir$/io ) { 
+    if ( /^datadir$/io ) { 
       if( -d $argv{$_} ) { 
 	$self->{'_datadir'} = $argv{$_} ; 
       } else {
@@ -454,13 +442,6 @@ sub _set_defaults {
 	warn( "set_defaults: Invalid alias file ($argv{$_}); " 
 	      . "Will try $self->{'_cat'}" ) ;
       }
-    }	elsif( /^labels$/io ) {
-      if( -f $argv{$_} ) {
-	$self->{'_label'} = $argv{$_} ; 
-      } else {
-	warn( "set_defaults: Invalid labels file ($argv{$_}); " 
-	      . "Will try $self->{'_label'}");
-      }
     } elsif( /^types$/io ) { 
       if( -f $argv{$_} ) {
 	$self->{'_types'} = $argv{$_} ; 
@@ -474,13 +455,6 @@ sub _set_defaults {
       } else {
 	warn( "set_defaults: Invalid locale file ($argv{$_}); "
 	      . "Will try $self->{'_locale'}" );
-      }
-    } elsif( /^hwprofiles$/io ) { 
-      if( -f $argv{$_} ) {
-	$self->{'_hwprofiles'} = $argv{$_} ; 
-      } else {
-	warn( "set_defaults: Invalid hardware file ($argv{$_}); " 
-	      . "Will try $self->{'_hwprofiles'}" );
       }
     } elsif( /^defaultcollect$/io ) {
       if( $argv{$_} =~ /^(yes|no)$/io ) {
@@ -1127,36 +1101,6 @@ sub _read_types
 
 
 ######################################################################
-# PRIVATE
-#
-# read hardware profiles from conf file
-#========================================
-sub _read_hardwareprofiles
-  {
-    my $self = shift ;
-    my($var, $hwclass, $cap, $mib) ;
-    $self->debug( loglevel => "LOG_DEBUG", 
-		  message => "Entering read_hardwareprofiles" );
-    open( HWPROF, $self->{'_hwprofiles'} )
-      or $self->debug( loglevel => "LOG_ERR", 
-		       message => "Unable to open $self->{'_hwprofiles'}: $!");
-    while( <HWPROF> ) {
-      if( /^\s*(1.3.6.[\d\.]+)\s+(\w+)\s*$/ ) {
-	$hardware{sysObjectIDs}{$1} = $2 ;
-      } elsif( /^\s*(\w+)\s*$/ ) {
-	$hwclass = $1 ;
-      } elsif( /^\s*(\w+)=(\w+)\s*$/ ) {
-	($cap, $mib) = ($1, $2) ;
-	$hardware{$hwclass}{$1}{$2} = 1 ;
-      } else {
-	; # don't know what it is
-      }
-    }
-    close( HWPROF ) ;
-  }
-
-
-######################################################################
 # PUBLIC
 #
 # read collect.conf ($self->{'_conf'}) and build %targets....
@@ -1797,7 +1741,6 @@ sub _set_dev_filename {
 
 ######################################################################
 # set SOCKET
-#
 sub set_socket {
   my($self, $arg) = @_ ;
   $self->debug( loglevel => "LOG_INFO", 
@@ -1818,7 +1761,6 @@ sub unset_socket {
 
 ######################################################################
 # set debug level -- this level and above will be logged
-#
 sub set_loglevel {
   my($self, $arg) = @_ ;
   my( %levelgol ) = reverse %loglevel;
@@ -3079,50 +3021,6 @@ sub _set_highcounter {
 
 
 ######################################################################
-# PRIVATE method
-# determine hardware class
-#
-sub _get_hwprofile {
-  my( $self, $type, $dev ) = @_ ;
-  my %targets = %{ $self->{targets} } if( $self->{targets} ) ;
-  $self->debug( loglevel => "LOG_DEBUG", 
-		message => "Entering _get_hwprofile: $type:$dev" ) ;
-  my $sysobjectid = $targets{$type}{$dev}{sysObjectID} ;
-  if( defined( $hardware{sysObjectIDs}{$sysobjectid} ) ) {
-    my $class = $hardware{sysObjectIDs}{$sysobjectid} ;
-    while( my($cat,undef) = each( %{$hardware{$class}{cat}} ) ) {
-      my $inst = 0 ;
-      unless( defined( $targets{$type}{$dev}{$cat}{$inst}{collect} ) ) {
-	$targets{$type}{$dev}{$cat}{$inst}{collect} = "yes" ;
-      }
-      unless( defined( $targets{$type}{$dev}{$cat}{$inst}{interval} ) ) {
-	$targets{$type}{$dev}{$cat}{$inst}{interval} = 
-	  $metacat{$cat}{interval} ;
-      }
-      unless( defined( $targets{$type}{$dev}{$cat}{$inst}{filename} ) ) {
-	$targets{$type}{$dev}{$cat}{$inst}{filename} = 
-	  $self->_set_dev_filename( $type, $dev, $cat, "0" ) ;
-      }
-      unless( $metacat{$cat}{instance} eq "null" ) {
-	$targets{$type}{$dev}{$cat}{$inst}{instance} 
-	  = $metacat{$cat}{instance} ;
-      }
-      $targets{$type}{$dev}{$cat}{$inst}{valid} = 1 ;
-      unless( $targets{$type}{$dev}{$cat}{$inst}{lockdescr} eq "yes" ) {
-	$targets{$type}{$dev}{$cat}{$inst}{descr} = $metacat{$cat}{descr} ;
-	$targets{$type}{$dev}{$cat}{$inst}{lockdescr} = "no" ;
-      }
-    }
-  } else {
-    $self->debug( loglevel => "LOG_WARNING", 
-		  message => "_get_hwprofile: $type:$dev: can't map " 
-		  . "sysObjectID to a hardware class ($sysobjectid)" ) ;
-  }
-  # $self->{targets} = \%targets ;
-}
-
-
-######################################################################
 # build up info for all locales
 #
 sub build_alllocales {
@@ -3442,6 +3340,9 @@ sub _sysUpTime {
 
 ##########################################################################
 # $Log: Netviewer.pm,v $
+# Revision 1.4  2003/06/11 22:44:10  netdot
+# more work to migrate
+#
 # Revision 1.3  2003/06/11 00:10:25  netdot
 # modified read_globals; still working on schema
 #
