@@ -114,7 +114,11 @@ setup.class.dbi:
 
 files:
 	for file in $(FILES); do \
-	    install -m $(FMOD) $$file $(PREFIX)/$(DIR) ; \
+	    sed -e 's|YOUR-PREFIX|$(PREFIX)|g' \
+		-e "s|use lib[ \t]*[^\$$]netdot.*|use lib \"$(PREFIX)/lib\"; |" \
+		$$file > $$file.tmp ; \
+	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
+	    rm -rf $$file.tmp ; \
 	done
 
 
