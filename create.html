@@ -111,16 +111,14 @@ if( defined( $TBL ) ) {
   my $meta = (Meta->search( name => $TBL ))[0];
   map { my($j, $k) = split( /:/, $_ ); $lt{$j} = $k } 
       split( /,/, $meta->linksto );
+  foreach my $c ( split( /,/, $meta->columnorder ) ) {
+    if( $args{$c} ) {
+      $state{$c} = $args{$c};
+    }
+  }
   if( exists( $session{tables}{$TBL} ) ) {
     foreach my $c ( keys %{ $session{tables}{$TBL} } ) {
-      if( $lt{$c} ) {
-        $FLAG .= "- 1";
-      }
-      if( $session{created}{$lt{$c}} ) {
-        $FLAG .= " - 2";
-      }
       if( $lt{$c} && $session{created}{$lt{$c}} ) {
-        $FLAG .= " - 3";
         $state{$c} = $session{created}{$lt{$c}};
       } else {
         $state{$c} = $session{tables}{$TBL}{$c};
@@ -139,8 +137,11 @@ if( defined( $TBL ) ) {
 % if( $args{confirm} eq "Confirm" ) {
     <p><font size=-1>(created an <% $args{create} %> object) </font> <br>
 % }
- tables : <% $TBL %> : <% $args{table} %><br>
+ tables : TBL <% $TBL %> : table <% $args{table} %><br>
  flag : <% $FLAG %> <br>
+ ARGS :
+%print Dumper( %ARGS );
+<br> session: 
 %print Dumper( %session );
  <hr>
 
@@ -267,6 +268,10 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.8  2003/05/27 23:13:05  netdot
+#  added catch for %state such that args passed from other scripts
+#  (ie. GET create?table=x&name=foo) will work
+#
 #  Revision 1.7  2003/05/23 23:45:38  netdot
 #  lots of changes.  in a nutshell, create stuff now works -- actually
 #  creates data.  it also passes state to form.html to fill in some
