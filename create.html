@@ -24,14 +24,12 @@ unless( defined( $PREV ) ) {
   $PREV = $TBL;
 }
 ##################################################
-# get state back
+# get state back if sid defined
+#   otherwise create state if necessary
 if( defined( $args{sid} ) ) {
   $sid = $args{sid};
   $session = $gui->getsession( $DIR, $sid );
-}
-##################################################
-# create state if necessary
-if( $args{table} ) {  
+} elsif( $args{table} ) {  
   $session = $gui->mksession( $DIR );
   $sid = $session->{_session_id};
 }
@@ -47,7 +45,7 @@ if( $args{cancel} eq "Cancel" ) {
   undef( $TBL );
   undef( $PREV );
   if( defined( $session ) ) {
-    $gui->rmsession( $session );
+    ; #$gui->rmsession( $session );
   }
   delete( $args{sid} );
   delete( $args{table} );
@@ -228,7 +226,7 @@ if( defined( $TBL ) ) {
 % ####################################################################
 <%args>
 
-$DEBUG => 0
+$DEBUG => 1
 $TBL => undef
 $PREV => undef
 $id => undef
@@ -240,7 +238,6 @@ $WIDTH => 2
 $session => undef
 $gui => Netdot::GUI->new()
 %args => undef
-
 %order => undef
 %linksto => undef
 
@@ -250,8 +247,8 @@ use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::GUI;
 use Data::Dumper;
-#%state => undef
 my %state;
+undef( %state );
 
 </%init>
 
@@ -284,6 +281,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.23  2003/07/08 00:44:44  netdot
+#  *** empty log message ***
+#
 #  Revision 1.22  2003/07/03 22:39:31  netdot
 #  still cleaning up from state/session changes
 #
