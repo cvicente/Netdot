@@ -5,18 +5,19 @@ use base 'Class::DBI';
 Netdot::DBI->set_db('Main', 'dbi:mysql:netdot', 'netdot_user', 'netdot_pass');
 
 __PACKAGE__->
-  add_trigger( before_delete=>
-	       sub {
-		 my $self = shift;
-		 my $class   = ref($self);
-		 my %cascade = %{ $class->__hasa_list || {} };
-		 foreach my $remote (keys %cascade) {
-		   foreach ($remote->search($cascade{$remote} => $self->id)){
-		     $_->set($cascade{$remote}, 'NULL');
-		     $_->update;
-		   }
-		 }
-	       }
+  add_trigger( 
+	      before_delete=>
+	      sub {
+		my $self = shift;
+		my $class   = ref($self);
+		my %cascade = %{ $class->__hasa_list || {} };
+		foreach my $remote (keys %cascade) {
+		  foreach ($remote->search($cascade{$remote} => $self->id)){
+		    $_->set($cascade{$remote}, 'NULL');
+		    $_->update;
+		  }
+		}
+	      }
 	     );
 
 
@@ -25,7 +26,6 @@ package Circuit;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Circuit');
-
 __PACKAGE__->columns(All => qw/ id CID Vendor StartSite EndSite Type Speed InstallDate Connection Info /);
 
 __PACKAGE__->has_a(Type => 'CircuitType');
@@ -40,7 +40,6 @@ package CircuitType;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('CircuitType');
-
 __PACKAGE__->columns(All => qw/id Name Info /);
 
 __PACKAGE__->has_many('circuits', 'Circuit' => 'Type');
@@ -55,6 +54,7 @@ __PACKAGE__->columns(All => qw /id Name Customer StartSite EndSite Info /);
 
 __PACKAGE__->has_a('StartSite' => 'Site');
 __PACKAGE__->has_a('EndSite' => 'Site');
+__PACKAGE__->has_a('Customer' => 'Customer');
 __PACKAGE__->has_many('circuits', 'Circuit' => 'Connection');
 
 
@@ -63,10 +63,33 @@ package Vendor;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Vendor');
-
 __PACKAGE__->columns(All => qw/id Name Contactpool AcctNumber Address Info/);
+
 __PACKAGE__->has_a(Address => 'Address');
+__PACKAGE__->has_a(Contactpool => 'ContactPool');
 __PACKAGE__->has_many('circuits', 'Circuit' => 'Vendor');
+__PACKAGE__->has_many('models', 'Model' => 'Vendor');
+
+
+######################################################################
+package Model;
+use base 'Netdot::DBI';
+
+__PACKAGE__->table('Model');
+__PACKAGE__->columns(All => qw/id Name Vendor Info/ );
+
+__PACKAGE__->has_a(Vendor => 'Vendor');
+
+
+######################################################################
+package JnCustomerSite;
+use base 'Netdot::DBI';
+
+__PACKAGE__->table('JnCustomerSite');
+__PACKAGE__->columns(All => qw/id Customer Site/ );
+
+__PACKAGE__->has_a(Customer => 'Customer');
+__PACKAGE__->has_a(Site => 'Site');
 
 
 ######################################################################
@@ -84,6 +107,7 @@ __PACKAGE__->has_many('startconnections', 'Connection' => 'StartSite');
 __PACKAGE__->has_many('endconnections', 'Connection' => 'EndSite');
 
 
+
 ######################################################################
 package Address;
 use base 'Netdot::DBI';
@@ -94,6 +118,30 @@ __PACKAGE__->columns(All => qw /id Street1 Street2 POBox City State Zip Country 
 __PACKAGE__->has_many('vendors', 'Vendor' => 'Address');
 __PACKAGE__->has_many('sites', 'Site' => 'Address');
 __PACKAGE__->has_many('persons', 'Person' => 'Address');
+
+
+######################################################################
+package Customer;
+use base 'Netdot::DBI';
+
+__PACKAGE__->table('Customer');
+__PACKAGE__->columns(All => qw /id Name Hours Address ContactPool Info/ );
+
+__PACKAGE__->has_a(Address => 'Address');
+__PACKAGE__->has_a(Hours => 'Availability');
+
+
+######################################################################
+package Availability;
+use base 'Netdot::DBI';
+
+__PACKAGE__->table('Availability');
+__PACKAGE__->columns(All => /id Name Info/);
+
+__PACKAGE__->has_many('customers', 'Customer' => 'Hours');
+__PACKAGE__->has_many('sites', 'Site' => 'Availability' );
+__PACKAGE__->has_many('persons', 'Person' => 'Availability' );
+
 
 
 ######################################################################
@@ -113,8 +161,7 @@ package ContactInfo;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('ContactInfo');
-__PACKAGE__->columns(All => qw /id ContactType ContactPool Person Email Office Home Cell Pager 
-		     EmailPager Fax Info /);
+__PACKAGE__->columns(All => qw /id ContactType ContactPool Person Email Office Home Cell Pager EmailPager Fax Info /);
 
 __PACKAGE__->has_a(ContactType => 'ContactPool');
 __PACKAGE__->has_a(ContactType => 'ContactType');
@@ -149,6 +196,9 @@ __PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'Person');
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.5  2003/04/10 00:37:15  netdot
+#  fleshing out definitions of each class.
+#
 #  Revision 1.4  2003/04/09 20:59:40  netdot
 #  adding landmarks
 #
