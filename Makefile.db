@@ -3,7 +3,7 @@
 #
 
 PERL    =  `which perl`
-PREFIX  =  /usr/local/httpd/htdocs/netdot
+PREFIX  =  `cat ../.prefix`
 
 #################################################################
 # Database setup
@@ -108,4 +108,5 @@ insert.sample.data:
 setup.class.dbi:
 	$(PERL) setup-class-dbi '$(DB_TYPE)' '$(DB_DATABASE)' '$(DB_NETDOT_USER)' '$(DB_NETDOT_PASS)'  
 	install -m $(FMOD) DBI.pm $(PREFIX)/lib/Netdot/DBI.pm
+
 
