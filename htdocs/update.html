@@ -45,30 +45,28 @@ object will show in the drop-down box.</font>
 
 %} else { # parse form and update fields
 
-%if ( $ARGS{cancel} eq 'Cancel' ){
-    <& view.html, table => $table, id => $id &>
-%   exit;
-%}
 <%perl>
-# Get fields to update
-$obj = $table->retrieve($id);
-foreach my $j (keys %ARGS){
-	next if ($j eq 'submit' || $j eq 'table' || $j eq 'id' || $j eq 'res');
-	$fields{$j} = $ARGS{$j};	
-}
 
-#print Dumper (%fields) ; exit;
+ unless ( $ARGS{cancel} eq 'Cancel' ){
 
-# Check that we have at least one column parameter
-unless (scalar keys(%fields)){
-   print "<strong>Missing field/value pairs to update</strong>";
-   exit;
-}
+  # Get fields to update
+  $obj = $table->retrieve($id);
+  foreach my $j (keys %ARGS){
+     next if ($j eq 'submit' || $j eq 'table' || $j eq 'id' || $j eq 'res');
+     $fields{$j} = $ARGS{$j};	
+  }
 
 
-##########################################
-## Update fields that have changed
-##########################################
+  # Check that we have at least one column parameter
+  unless (scalar keys(%fields)){
+    print "<strong>Missing field/value pairs to update</strong>";
+    exit;
+  }
+
+
+ ##########################################
+ ## Update fields that have changed
+ ##########################################
 
 </%perl>
 
@@ -85,10 +83,13 @@ unless (scalar keys(%fields)){
 %     exit;
 %   }
   
-<& view.html, table => $table, id => $id &>
+  <& view.html, table => $table, id => $id &>
 
-%}
+% }else{
+   <& view.html, table => $table, id => $id &>
 
+% }
+%} 
 <%init>
 my ( %linksto, %linksfrom, %order, %inputtypes,
     $table, $id, $obj, %fields );
