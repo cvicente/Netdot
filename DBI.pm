@@ -146,7 +146,7 @@ package Interface;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Interface' );
-__PACKAGE__->columns( All => qw/id nodeId hostName physAddr ifIndex ifType ifDescr ifSpeed ifStatus info disabled/ );
+__PACKAGE__->columns( All => qw/id nodeId hostName physAddr jackNumber ifIndex ifType ifAlias ifDescr ifSpeed ifStatus info disabled/ );
 
 __PACKAGE__->has_a( nodeID => 'Node' );
 __PACKAGE__->has_many( 'ips', 'Ip' => 'interface' );
@@ -213,6 +213,7 @@ __PACKAGE__->table( 'Model' );
 __PACKAGE__->columns( All => qw/id name vendor info/ );
 
 __PACKAGE__->has_a( vendor => 'Vendor' );
+__PACKAGE__->has_many( 'nodes', 'Node' => 'model' );
 
 
 ######################################################################
@@ -220,10 +221,11 @@ package Node;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Node' );
-__PACKAGE__->columns( All => qw/id name type sysDescription serialNumber site customer room rack dateInstalled sw_version contactPool info disabled/ );
+__PACKAGE__->columns( All => qw/id name type sysDescription serialNumber site customer room rack dateInstalled sw_version contactPool model info disabled/ );
 
 __PACKAGE__->has_a( site => 'Site' );
 __PACKAGE__->has_a( customer => 'Customer' );
+__PACKAGE__->has_a( model => 'Model' );
 __PACKAGE__->has_a( contactPool => 'ContactPool' );
 __PACKAGE__->has_a( type => 'NodeType' );
 __PACKAGE__->has_many( 'interfaces', 'Interface' => 'nodeID' );
@@ -324,6 +326,9 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.22  2003/04/18 00:46:45  cvicente
+#  Reflected changes from netdot.schema.
+#
 #  Revision 1.21  2003/04/18 00:10:39  netdot
 #  columnorder -> columnOrder to reflect change in netdot.schema
 #
