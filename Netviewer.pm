@@ -20,20 +20,16 @@
 
 package Netviewer ;
 
-use Data::Dumper;
-
 use strict ;
-use Storable qw(nstore store_fd nstore_fd freeze thaw dclone retrieve ) ;
 use Fcntl qw(:DEFAULT :flock) ;
-use RRDs ;
 use Sys::Syslog qw( :DEFAULT setlogsock ) ;
-use Net::SNMP ;
+use SNMP_Session;
+use Netdot::DBI;
+#use Net::SNMP ;
 
-use vars qw ( 
-	     @ISA @EXPORT @EXPORT_OK $VERSION 
-	     %aliases %labels %dstype %metacat %ifdata %localevars %ifType
-	     %hardware %aliasDS
-	    ) ;
+use vars qw ( @ISA @EXPORT @EXPORT_OK $VERSION 
+	      %aliases %labels %dstype %metacat %ifdata %localevars %ifType
+	      %hardware %aliasDS ) ;
 
 sub BEGIN { }
 sub END { }
@@ -41,7 +37,7 @@ sub DESTROY { }
 
 use Exporter ;
 @ISA = qw( Exporter ) ;
-$VERSION = 20020916 ;
+$VERSION = 20030609 ;
 
 my( $_FOREGROUND, $HOME,  $_LOGLEVEL, $_LOGFACILITY, $SOCKET, $_SYSLOGIDENT,
     %logfacility, %loglevel, %lognum ) ;
@@ -3521,6 +3517,10 @@ sub _sysUpTime {
 
 ##########################################################################
 # $Log: Netviewer.pm,v $
+# Revision 1.2  2003/06/10 00:10:54  netdot
+# forked from NetViewer (see VERSION for when).  trimming out
+# unnecessary functions and will move config stuff into DB.
+#
 # Revision 1.1  2003/06/09 23:37:55  netdot
 # Initial revision
 #
