@@ -47,6 +47,7 @@ tests:
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi
+	echo $PREFIX > .prefix
 
 dir:
 	@echo 
@@ -68,5 +69,8 @@ doc:
 lib:
 	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR="$@/Netdot"
 
-bin: 
-	cd $@ ; make install_db PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) 
+dropdb: 
+	cd bin ; make dropdb FMOD=$(FMOD) 
+
+installdb: 
+	cd bin ; make install FMOD=$(FMOD) 
