@@ -65,7 +65,7 @@ if( $args{table} ) {
 <!-- begin sortresults -->
      <table BORDER="0" CELLSPACING="0" CELLPADDING="0" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
 %    if( $VIEW eq "row" ) {
-     <tr>
+     <tr class="rowtitle2">
 %       foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
            <th><% $o %></th>
 %       }
@@ -78,7 +78,13 @@ if( $args{table} ) {
 % foreach my $o ( sort { $a->$SORT cmp $b->$SORT } @{ $args{object} } ) {
 %    my $flag = 1;
 %    if( $VIEW eq "row" ) {
-        <tr>
+        <tr class="rowtitle3">
+%    }
+
+%    if( $VIEW eq "column" ) {
+        <tr height="1" class="delimiter">
+           <td colspan="3" height="1"></td>
+        </tr>
 %    }
 %    my @order = sort { $order{$a} <=> $order{$b} } keys %order;
 %    foreach my $c ( @order ) {
@@ -143,10 +149,11 @@ if( $args{table} ) {
          <tr>
             <td colspan="3"><br></td>
          </tr>
+<!--
          <tr height="1" class="delimiter">
             <td colspan="3" height="1"></td>
          </tr>
-         
+-->         
 %     }
 %     if( $VIEW eq "row" ) {
          <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
@@ -190,6 +197,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.30  2003/07/16 21:09:30  netdot
+# add css tags to tr tags -maiy[3~[3~
+#
 # Revision 1.29  2003/07/15 23:48:12  netdot
 # fix if LBL field is empty -- be sure to print something
 #
