@@ -43,6 +43,10 @@ foreach my $node ( @nodes ) {
   # get information from the device
   if( my( %dev ) = $nv->get_device( "device", $node->name ) ) {
     print "Have node ", $node->name, " information\n" if( $DEBUG );
+    my %ntmp;
+    $ntmp{sysdescription} = $dev{sysDescr};
+    $ntmp{physaddr} = $dev{dot1dBaseBridgeAddress};
+    update( object => \$node, state => \%ntmp ); 
     ##############################################
     # for each interface just discovered...
     foreach my $newif ( keys %{ $dev{interface} } ) {
@@ -175,6 +179,9 @@ sub calc_subnet {
 
 ######################################################################
 #  $Log: updatenodes.pl,v $
+#  Revision 1.7  2003/07/11 21:20:20  netdot
+#  update general node info
+#
 #  Revision 1.6  2003/07/11 21:15:22  netdot
 #  looks near final; added code to delete stuff
 #
