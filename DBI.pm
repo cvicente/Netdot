@@ -202,7 +202,7 @@ package Meta;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Meta' );
-__PACKAGE__->columns( All => qw/id table/ );
+__PACKAGE__->columns(All => qw/id table columnorder hasA hasMany mainObjects/);
 
 
 ######################################################################
@@ -324,6 +324,9 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.18  2003/04/16 23:14:26  netdot
+#  added more details to Meta.
+#
 #  Revision 1.17  2003/04/16 22:30:56  netdot
 #  added Meta table for holding meta information.  this should include:
 #    * column sorting
