@@ -84,6 +84,7 @@ my $dbh = DBI->connect ("dbi:$DB_TYPE:$DB_DATABASE", "$DB_NETDOT_USER", "$DB_NET
     or die "Can't connect to db: $DBI::errstr\n";
 
 my @tables = $dbh->tables;
+map { $_ =~ s/\`//g } @tables;
 
 foreach my $table (@tables){
     print ("\n\n######################################################################\n");
