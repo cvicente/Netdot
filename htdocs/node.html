@@ -8,10 +8,10 @@ if( exists( $args{comstr} ) ) {
   $comstr = $args{comstr};
 }
 if( $args{node} && ! $args{sid} ) {
-  $session = $gui->mksession( $DIR );
+  $session = $gui->mksession( $TMP );
 }
 if( $args{sid} ) {
-  $session = $gui->getsession( $DIR, $args{sid} );
+  $session = $gui->getsession( $TMP, $args{sid} );
 }
 if( $args{cancel} ) {
   $gui->rmsession( $session );
@@ -180,7 +180,7 @@ if( exists( $args{insert} ) ) {
 <%args>
 $comstr => "public"
 $DEBUG => 0
-$DIR => "/home/netdot/public_html/tmp"
+$TMP => "/home/netdot/public_html/tmp"
 $nv => Netdot::Netviewer->new()
 $gui => Netdot::GUI->new()
 $session => undef

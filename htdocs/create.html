@@ -1,7 +1,7 @@
 <%perl>
 ##################################################
 # clean out old state files
-$gui->rmsessions( $DIR, $AGE );
+$gui->rmsessions( $TMP, $AGE );
 ##################################################
 # grab arguments to this script
 my %rev = reverse %ARGS;
@@ -28,9 +28,9 @@ unless( defined( $PREV ) ) {
 #   otherwise create state if necessary
 if( defined( $args{sid} ) ) {
   $sid = $args{sid};
-  $session = $gui->getsession( $DIR, $sid );
+  $session = $gui->getsession( $TMP, $sid );
 } elsif( $args{table} ) {  
-  $session = $gui->mksession( $DIR );
+  $session = $gui->mksession( $TMP );
   $sid = $session->{_session_id};
 }
 if( $DEBUG ) {
@@ -233,7 +233,7 @@ $PREV => undef
 $id => undef
 $sid => undef
 $nv => undef
-$DIR => "/home/netdot/public_html/tmp"
+$TMP => "/home/netdot/public_html/tmp"
 $AGE => 86400
 $WIDTH => 2
 $session => undef
