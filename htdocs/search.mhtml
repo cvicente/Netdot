@@ -16,7 +16,6 @@ $search => undef
 %results => undef
 $page => "view.html"
 $alwaysdisplaybox => 0
-$gui => Netdot::GUI->new()
 
 </%args>
 
@@ -27,10 +26,10 @@ if( exists( $ARGS{q} ) ) {
 if( exists( $ARGS{table} ) ) {
    @tables = split( /;/, $ARGS{table} );
 } else {
-   @tables = $gui->gettables();
+   @tables = $ui->gettables();
 }
 if( $tables[0] =~ /^a(ny|ll)$/io ) {
-   @tables = $gui->gettables();
+   @tables = $ui->gettables();
 }
 if( exists( $ARGS{page} ) ) {
    $page = $ARGS{page};
@@ -58,7 +57,7 @@ if( exists( $ARGS{displaybox} ) ) {
 
 <%perl>
 foreach my $tbl ( @tables ) {
-   %linksto = $gui->getlinksto($tbl);
+   %linksto = $ui->getlinksto($tbl);
    foreach my $col ( $tbl->columns() ) {
       if( $linksto{$col} ) {
          foreach my $fc ( $linksto{$col}->columns() ) {

@@ -161,10 +161,6 @@ sub update {
     my ($host, $comstr, %dev);
     $self->_clear_output();
 
-    my $dumpargs = sprintf("Arguments to 'update': %s", (join " ", Dumper(%argv)) );
-    $self->debug(loglevel => 'LOG_DEBUG',
-		 message => $dumpargs);
-    
     unless ( ($host = $argv{host}) && (%dev = %{$argv{dev}}) ){
 	$self->error( sprintf("Missing required arguments") );
 	$self->debug(loglevel => 'LOG_ERR',
@@ -178,7 +174,7 @@ sub update {
 
     my %devtmp;
     $devtmp{sysdescription} = $dev{sysdescription} || "";
-    $devtmp{community}      = $argv{comstr} || "";
+    $devtmp{community}      = $argv{comstr}        || "";
 
     my %ifs;
     my %dbifdeps;
@@ -490,7 +486,7 @@ sub update {
 
     my (%dbips, %newips, %dbvlans, %ifvlans, %name2int);
 
-    foreach my $newif ( sort keys %{ $dev{interface} } ) {
+    foreach my $newif ( sort { $a <=> $b } keys %{ $dev{interface} } ) {
 
 	############################################
 	# set up IF state data
@@ -636,31 +632,36 @@ sub update {
 		    my $newmask;
 		    if ( $newmask = $dev{interface}{$newif}{ips}{$newip} ){
 			my $subnetaddr = $self->{ipm}->getsubnetaddr($newip, $newmask);
-			if ( ! ($self->{ipm}->searchblock($subnetaddr, $newmask)) ){
-			    my $msg = sprintf("Subnet %s/%s doesn't exist.  Inserting", $subnetaddr, $newmask);
-			    $self->debug( loglevel => 'LOG_NOTICE',
-					  message  => $msg );
-			    $self->output($msg);
-			    unless( $self->{ipm}->insertblock(address     => $subnetaddr, 
-							      prefix      => $newmask, 
-							      statusname  => "Subnet",
-							      ) ){
-				my $err = $self->{ipm}->error();
-				my $msg = sprintf("Could not insert Subnet %s/%s: %s", 
-						  $subnetaddr, $newmask, $err);
-				$self->debug(loglevel => 'LOG_ERR',
-					     message  => $msg );
+			if ( $subnetaddr ne $newip ){
+			    if ( ! ($self->{ipm}->searchblock($subnetaddr, $newmask)) ){
+				my $msg = sprintf("Subnet %s/%s doesn't exist.  Inserting", $subnetaddr, $newmask);
+				$self->debug( loglevel => 'LOG_NOTICE',
+					      message  => $msg );
 				$self->output($msg);
+				unless( $self->{ipm}->insertblock(address     => $subnetaddr, 
+								  prefix      => $newmask, 
+								  statusname  => "Subnet",
+								  ) ){
+				    my $err = $self->{ipm}->error();
+				    my $msg = sprintf("Could not insert Subnet %s/%s: %s", 
+						      $subnetaddr, $newmask, $err);
+				    $self->debug(loglevel => 'LOG_ERR',
+						 message  => $msg );
+				    $self->output($msg);
+				}else{
+				    my $msg = sprintf("Created Subnet %s/%s", $subnetaddr, $newmask);
+				    $self->debug(loglevel => 'LOG_NOTICE',
+						 message  => $msg );
+				    $self->output($msg);
+				}
 			    }else{
-				my $msg = sprintf("Created Subnet %s/%s", $subnetaddr, $newmask);
-				$self->debug(loglevel => 'LOG_NOTICE',
-					     message  => $msg );
-				$self->output($msg);
+				my $msg = sprintf("Subnet %s/%s already exists", $subnetaddr, $newmask);
+				$self->debug( loglevel => 'LOG_DEBUG',
+					      message  => $msg );
 			    }
 			}else{
-			    my $msg = sprintf("Subnet %s/%s already exists", $subnetaddr, $newmask);
-			    $self->debug( loglevel => 'LOG_DEBUG',
-					  message  => $msg );
+			    # do nothing
+			    # This is probably a /32 address (loopback interface)
 			}
 		    }
 		}
@@ -732,7 +733,7 @@ sub update {
 		# 
 		unless ( $ipobj->arecords ){
 		    my $msg = sprintf("Creating DNS A record for %s", 
-				      $ipobj->address);
+				      $newip);
 		    $self->debug(loglevel => 'LOG_ERR',
 				 message  => $msg );
 		    $self->output($msg);
@@ -1145,9 +1146,6 @@ sub get_dev_info {
 		  message => $msg );
     $self->output($msg);
 
-    $msg = sprintf("SNMP info: %s", join " ", Dumper(%nv));
-    $self->debug( loglevel => 'LOG_DEBUG',
-		  message => $msg );
 
     ################################################################
     # Device's global vars
@@ -1239,6 +1237,12 @@ sub get_dev_info {
 		     );
 
     ################################################################
+    # Interface status (oper/admin)
+
+    my %IFSTATUS = ( '1' => 'up',
+		     '2' => 'down' );
+
+    ################################################################
     # MAU-MIB's ifMauType to half/full translations
 
     my %MAU2DUPLEX = ( '.1.3.6.1.2.1.26.4.10' => "half",
@@ -1299,6 +1303,7 @@ sub get_dev_info {
 		     admin_status      => "ifAdminStatus",
 		     oper_status       => "ifOperStatus" );
 
+
     ##############################################
     # for each interface discovered...
     
@@ -1312,12 +1317,14 @@ sub get_dev_info {
 	next if( $skip );
 
 	foreach my $dbname ( keys %IFFIELDS ) {
-	    if( $dbname eq "oper_status" ) {
-		# NV changes admin but not oper
-		if( $nv{interface}{$newif}{$IFFIELDS{$dbname}} eq "1" ){
-		    $dev{interface}{$newif}{$dbname} = "up";
-		}elsif( $nv{interface}{$newif}{$IFFIELDS{$dbname}} eq "2" ){
-		    $dev{interface}{$newif}{$dbname} = "down";
+	    if( $dbname =~ /status/ ) {
+		my $val = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
+		if( $val =~ /\d+/ ){
+		    $dev{interface}{$newif}{$dbname} = $IFSTATUS{$val};
+		}else{
+		    # Netviewer changes it in some cases.
+		    # Just use the value
+		    $dev{interface}{$newif}{$dbname} = $val;	    
 		}
 	    }elsif( $dbname eq "speed" ) {
 		# Translate speed to something more readable
@@ -1466,6 +1473,10 @@ sub get_dev_info {
 			    }
 			}
 		    }
+		}
+		unless ( $found ){
+		    $dev{bgppeer}{$peer}{asname} = "AS $asn";
+		    $dev{bgppeer}{$peer}{orgname} = "AS $asn";		    
 		}
 	    }else{
 		$dev{bgppeer}{$peer}{asname} = "AS $asn";

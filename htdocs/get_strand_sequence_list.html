@@ -11,19 +11,17 @@ Arguments;
 </%doc>
 
 <%args>
-$start_id => $ARGS{"start"};
-$end_id => $ARGS{"end"};
+$start_id   => $ARGS{"start"};
+$end_id     => $ARGS{"end"};
 $field_name => $ARGS{"field_name"};
-$form_name => $ARGS{"form_name"};
+$form_name  => $ARGS{"form_name"};
 </%args>
 
 
 <%init>
-my ($ui, @terms, $DEBUG, $MAX_RESULTS);
-$ui = Netdot::UI->new();
-my $cable_manager = Netdot::CablePlantManager->new();
-$DEBUG = 0;
-$MAX_RESULTS = 1000;
+my @terms;
+my $DEBUG       = 0;
+my $MAX_RESULTS = 1000;
 </%init>
 
 % print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;

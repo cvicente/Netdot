@@ -8,6 +8,16 @@ Arguments:
     - field_name: the name of the <select> widget to update.
 </%doc>
 
+<%args>
+$bb_id      => $ARGS{"bb_id"};
+$field_name => $ARGS{"field_name"};
+$form_name  => $ARGS{"form_name"};
+</%args>
+
+<%init>
+my $DEBUG = 0;
+</%init>
+
 % print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 <html>
@@ -36,12 +46,3 @@ printf("window.close();\n");
 </body>
 </html>
 
-<%init>
-my $DEBUG = 0;
-</%init>
-
-<%args>
-$bb_id => $ARGS{"bb_id"};
-$field_name => $ARGS{"field_name"};
-$form_name => $ARGS{"form_name"};
-</%args>

@@ -37,6 +37,12 @@ use strict;
     use Netdot::DeviceManager;
     use Netdot::DNSManager;
     use Netdot::CablePlantManager;
+    use vars qw ( $ui $dm $dns $ipm $cable_manager );
+    $ui            = Netdot::UI->new();
+    $dm            = Netdot::DeviceManager->new();
+    $dns           = Netdot::DNSManager->new();
+    $ipm           = Netdot::IPManager->new();
+    $cable_manager = Netdot::CablePlantManager->new();
 }
 # Create ApacheHandler object at startup.
 my $ah =
