@@ -52,7 +52,7 @@ if( defined( $args{sid} ) ) {
 }
 
 ##################################################
-if( $DEBUG && 0 ) {
+if( $DEBUG ) {
   print "ARGS: ";
   printf "<pre>%s</pre>\n", Dumper( \%ARGS );
   print "SESSION: ";
@@ -60,18 +60,22 @@ if( $DEBUG && 0 ) {
 }
 
 ##################################################
-# if Cancel, delete state
+# if Cancel, go back to last state
 if( $args{cancel} eq "Cancel" ) {
-  undef( $TBL );
-  undef( $PREV );
-  if( defined( $session ) ) {
+  if( ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) {
     $gui->rmsession( $session );
+    $TBL = $PREV;
   }
-  delete( $args{sid} );
-  delete( $args{table} );
-  delete( $args{submit} );
-  delete( $ARGS{ $rev{New} } );
-  delete( $rev{New} );
+#  undef( $TBL );
+#  undef( $PREV );
+#  if( defined( $session ) ) {
+#    $gui->rmsession( $session );
+#  }
+#  delete( $args{sid} );
+#  delete( $args{table} );
+#  delete( $args{submit} );
+#  delete( $ARGS{ $rev{New} } );
+#  delete( $rev{New} );
 }
 
 ##################################################
@@ -79,7 +83,7 @@ if( $args{cancel} eq "Cancel" ) {
 if( exists( $args{submit} ) 
     || exists( $rev{New} ) || exists( $args{discover} ) ) {
   foreach my $arg ( keys %args ) {
-    next if( $arg eq "submit" || $arg eq "sid" 
+    next if( $arg eq "submit" || $arg eq "sid" || $arg eq "commit"
              || $arg eq "table" || $arg eq "commit" );
     next if( length( $arg ) < 1 || ! defined( $args{$arg} ) );
     $session->{tables}{$PREV}{$arg} = $args{$arg};
@@ -155,8 +159,6 @@ if( $args{confirm} eq "Confirm" ) {
   } else {
     $r = $gui->insert( table => $T, state => \%{ $session->{tables}{$T} } );
   }
-#  print "$T : $TBL ; $r : $ID \n";
-#  print $gui->error, "\n";
   if( ! $r ) {
     my $err = $gui->error;
     die "Error: $err";
@@ -328,7 +330,7 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
 % }
 % ####################################################################
 <%args>
-$DEBUG => 0
+$DEBUG => 1
 $NEW => 0
 $TBL => undef
 $PREV => undef
