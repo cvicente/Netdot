@@ -13,45 +13,167 @@ devices, sites, circuits.
 $id     => undef
 $search => undef
 $edit   => undef
-$ipsort => undef
 $s2name => "Operations"
-$view => "Basics"
-$user => $ENV{REMOTE_USER}
+$view   => "Basics"
+$user   => $ENV{REMOTE_USER}
 </%args>
 %
 %
 <%init>
-my $DEBUG = 0;
-my $ui = Netdot::UI->new();
-my $dns = Netdot::DNSManager->new();
-my $ipm = Netdot::IPManager->new();
-my $dm = Netdot::DeviceManager->new();
-my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
+my $DEBUG     = 0;
+my $ui        = Netdot::UI->new();
+my $dns       = Netdot::DNSManager->new();
+my $ipm       = Netdot::IPManager->new();
+my $dm        = Netdot::DeviceManager->new();
+my %cssitem   = ( 0 => "formtablec1", 1 => "formtablec2" );
 my $maxselect = 100;
-my $obj = undef;
-my $ci = 0;
+my $obj       = undef;
+my $ci        = 0;
+my $list;
 my %arg;
 my $name;
+my @tables = qw( Connection Device Entity Person Site  );
+my %results;
+my %entities;
+my $entity;
 
-if($id){
-   $obj = Entity->retrieve($id);
-   $name = $obj->name;
-}else{
-   $name = "Search"
-}
-if( $ARGS{q} ) {
-  $search = $ARGS{q};
-}
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+if( defined( $search ) && $search =~ /\w+/ ) {
+
+    # walk through a set of tables and search each column
+    foreach my $tbl ( @tables ) {
+        my @columns = ( "name" );
+        if( $tbl eq "Person" ) {
+            @columns = ( "lastname", "firstname", "aliases" );
+        } elsif( $tbl ne "Connection" ) {
+            push @columns, "aliases";
+        }
+        foreach my $col ( @columns ) {
+            my $q = "%" . $search . "%";
+            map { $results{$tbl}{$_->id} = $_ } 
+               $tbl->search_like( $col => $q );  
+        }
+    }
+
+} elsif( defined( $search ) && $search !~ /\w+/ ) {
+
+    $m->comp( "index.html", title => "Operations: $name ", s2name => $s2name );
+    print "<p><b>No search criteria</b>";
+    $m->comp( "footer.mhtml" );
+    $m->abort;
+
+} elsif( defined( $id ) ) {
+
+    $entity = Entity->retrieve($id);
+    if( ! defined( $entity) ) {
+        $m->comp( 'error.mhtml', error => "Could not retrieve Entity with id $id" );
+    }
+
+}
+
+if( %results ) {
+
+    # Tables with entity column: Connection Device Person
+    # Site must use EntitySite to look up the corresponding Entity
+    foreach my $tbl ( keys %results ) {
+        foreach my $id ( keys %{ $results{$tbl} } ) {
+            my $name;
+	    if( $tbl eq "Person" ) {
+                $name = $results{$tbl}{$id}->lastname() . ", " 
+		    . $results{$tbl}{$id}->firstname()
+            } else {
+	        $name = $results{$tbl}{$id}->name();
+            }
+            if( $tbl eq "Site" ) {
+	        my $site = ( EntitySite->search( site => $id ) )[0];
+		if( defined( $site ) ) {
+		    my $entity = $site->entity();
+                    $entities{$entity->name()}{foundby} = $tbl . " " . $name;
+		    $entities{$entity->name()}{object} = $entity;
+                }
+            } elsif( $tbl eq "Entity" ) {
+	        my $entity = $results{$tbl}{$id};
+		$entities{$entity->name()}{foundby} = $tbl . " " . $name;
+		$entities{$entity->name()}{object} = $entity;
+            } else {
+                my $entity = $results{$tbl}{$id}->entity();
+		$entities{$entity->name()}{foundby} = $tbl . " " . $name;
+		$entities{$entity->name()}{object} = $entity;
+            }
+        }
+    }
+    if( %entities && scalar( keys %entities ) == 1 ) {
+        undef( $search );
+	my $e = ( keys %entities )[0];
+        $entity = $entities{$e}{object};
+	$id = $entity->id();
+    } else {
+        foreach my $e ( keys %entities ) {
+            push @{ $list }, $entities{$e}{object};
+        }
+    }
+
+} elsif( $entity ) {
+
+    ; # do nothing
+
+} else {
+
+    $m->comp("index.html", title => "Operations: $name ", s2name => $s2name);
+    print  "<p><b>No results</b>";
+    $m->comp("footer.mhtml");
+    $m->abort;
+
+}
+
 </%init>
 %
 %
 <& index.html, title => "Operations: $name ", s2name => $s2name &>
+%
+<script language="javascript" src="select.js"></script>
+%
 <div id="margins">
-
-<p>Display information about <% $search %>
-
-
+%
+% if( $search ) {
+%
+<table border="0" align="center" class="tablebackground">
+ <tr class="rowtitle0" >
+    <td valign="top" align="left">
+       <b><% scalar(@$list) %> results for <i><% $search %></i></b>
+    </td>
+ </tr>
+ <tr>
+   <td valign="top" width="50%" align="center">
+      <& sortresults.mhtml, object => $list, view => "row", page => "operations.html", withdelete => 1 &>
+  </td>
+ </tr>
+</table>
+%
+% } else {
+%
+<table border="0" width="100%" cellpadding="1" cellspacing="0" align="center" class="tablebackground">
+    <tr class="rowtitle0" >
+        <td valign="top" width="50%" align="left">
+         Entity: <b><% $entity->name %></b>&nbsp;
+         </td>
+    </tr>
+    <tr class="rowtitle0">
+        <td valign="top" width="50%" align="left">
+            View:
+%       if( $view eq "Basics" ) {
+            [Basics]
+%       } else {
+            <a href="operations.html?id=<% $id %>&view=Basics">[Basics]</a>
+%       }
+        </td>
+    </tr>
+</table>
+%
+% }
+%
 </div>
-
+%
 <& footer.mhtml &>
+
