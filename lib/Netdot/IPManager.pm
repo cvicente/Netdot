@@ -232,7 +232,7 @@ These checks are more specific to the way Netdot manages the address space.
 sub _validate {
     my ($self, $args) = @_;
     my $ipblock;
-    unless ( $ipblock = Ipblock->retrieve( $args->{id} ) )
+    unless ( $ipblock = Ipblock->retrieve( $args->{id} ) ){
 	$self->error("Cannot retrieve Ipblock id: $args->{id}");
 	return 0;
     }
