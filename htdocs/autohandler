@@ -7,14 +7,17 @@ Works as a wrapper for the different sections
 title   => "Network Documentation Tool"
 section => "Main"
 </%attr>
-
+%
 <%init>
 my $title   = $m->base_comp->attr('title')   || "Network Documentation Tool";
 my $section = $m->base_comp->attr('section') || "Main";
 my $user    = SiteControl::AccessController::getCurrentUser($r);
 </%init>
-
+%
 <& header.mhtml, title => $title, section => $section, user => $user &>
-<& section1.mhtml, title => $title, section => $section, user => $user &>
+<& section1.mhtml, title => $title, section => $section, user => $user
+&>
+<div id="content">
 % $m->call_next(user => $user);
+</div>
 <& footer.mhtml &>
