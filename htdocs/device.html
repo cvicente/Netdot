@@ -28,53 +28,55 @@ if ( $args{action} eq "discover" ){
       || Device->search( physaddr => $device{dot1dBaseBridgeAddress} ) ) {
     ; # do nothing
   } else {
-    my( %tmp, $newdevice );
+    my( %devtmp, $newdevice );
     my @ifrsv = NvIfReserved->retrieve_all();
-    $tmp{name} = $args{device};
-    $tmp{community} = $comstr;
-    $tmp{sysdescription} = $device{sysDescr};
+    $devtmp{name} = $args{device};
+    $devtmp{community} = $comstr;
+    $devtmp{sysdescription} = $device{sysDescr};
     if( length( $device{dot1dBaseBridgeAddress} ) > 0 
         && $device{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
       # Remove the '0x' from the MAC address
       $device{dot1dBaseBridgeAddress} =~ s/^0x//;
-      $tmp{physaddr} = $device{dot1dBaseBridgeAddress};
+      $devtmp{physaddr} = $device{dot1dBaseBridgeAddress};
     }
     if( length( $device{entPhysicalSerialNum} ) > 0 
         && $device{entPhysicalSerialNum} ne "noSuchObject" ) {
-      $tmp{serialnumber} = $device{entPhysicalSerialNum};
+      $devtmp{serialnumber} = $device{entPhysicalSerialNum};
     }
     # Try to guess some values
     my $typeid;
-    if ($tmp{name} =~ /hub/){
+    if ($devtmp{name} =~ /hub/){
       $typeid = (DeviceType->search(name => "Hub"))[0];     
-      $tmp{type} = $typeid;
-    }elsif ($tmp{name} =~ /switch/ || $tmp{name} =~ /backbone/){
+      $devtmp{type} = $typeid;
+    }elsif ($devtmp{name} =~ /switch/ || $devtmp{name} =~ /backbone/){
       $typeid = (DeviceType->search(name => "Switch"))[0];     
-      $tmp{type} = $typeid;
-    }elsif ($tmp{name} =~ /-gw/ || $tmp{name} =~ /router/ ){
+      $devtmp{type} = $typeid;
+    }elsif ($devtmp{name} =~ /-gw/ || $devtmp{name} =~ /router/ ){
       $typeid = (DeviceType->search(name => "Router"))[0];     
-      $tmp{type} = $typeid;
-    }elsif ($tmp{name} =~ /-ap/){
+      $devtmp{type} = $typeid;
+    }elsif ($devtmp{name} =~ /-ap/){
       $typeid = (DeviceType->search(name => "Access Point"))[0];     
-      $tmp{type} = $typeid;
+      $devtmp{type} = $typeid;
     }else{
-      $tmp{type} = 0;
+      $devtmp{type} = 0;
     }
-    $tmp{component_type} = "0"; 
-    $tmp{productname} = "0"; 
-    $tmp{part_of} = "0"; 
-    $tmp{site} = "0"; 
-    $tmp{contactlist} = "0"; # same
-    $tmp{user} = "0"; # same
-    $tmp{entity} = "0"; # same
-    $tmp{managed} = "1"; # same
+    $devtmp{component_type} = "0"; 
+    $devtmp{productname} = "0"; 
+    $devtmp{part_of} = "0"; 
+    $devtmp{site} = "0"; 
+    $devtmp{contactlist} = "0"; 
+    $devtmp{user} = "0"; 
+    $devtmp{entity} = "0"; 
+    $devtmp{managed} = "1"; 
 
     # Create the Device
 
-    unless ($newdevice = $gui->insert(table => 'Device', state => \%tmp )){
-        die "Unable to create device $args{device}: $@ \n";
+    unless ($newdevice = $gui->insert(table => 'Device', state => \%devtmp )){
+       my $err = $gui->error;
+       die "Error: $err"; 
     }
     $inserted = $newdevice;
+    my %inttmp;
     foreach my $int ( keys %{ $device{interface} } ) {
       my $skip = 0;
       foreach my $rsv ( @ifrsv ) {
@@ -85,42 +87,46 @@ if ( $args{action} eq "discover" ){
       next if( Interface->search
                  ( device => $newdevice,
                    number => $device{interface}{$int}{instance} ) );
-      undef( %tmp );
-      $tmp{device} = $newdevice;
-      $tmp{name} = $int;
-      $tmp{managed} = "1";
+
+      $inttmp{device} = $newdevice;
+      $inttmp{name} = $int;
+      $inttmp{managed} = "0";
       foreach my $dbname ( keys %ifnames ) {
 	if( $ifnames{$dbname} eq "descr" ) {
 	  if( $device{interface}{$int}{$ifnames{$dbname}} ne "-" ) {
-	    $tmp{$dbname} = $device{interface}{$int}{$ifnames{$dbname}};
+	    $inttmp{$dbname} = $device{interface}{$int}{$ifnames{$dbname}};
 	  }
 	} elsif ($dbname eq "physaddr"){
 	    $device{interface}{$int}{$ifnames{$dbname}} =~ s/^0x//;
-	    $tmp{$dbname} = $device{interface}{$int}{$ifnames{$dbname}};
+	    $inttmp{$dbname} = $device{interface}{$int}{$ifnames{$dbname}};
 	}else {
-	  $tmp{$dbname} = $device{interface}{$int}{$ifnames{$dbname}};
+	  $inttmp{$dbname} = $device{interface}{$int}{$ifnames{$dbname}};
 	}
       }
 
       # Create Interface
       
       my $if;
-      unless ($if = $gui->insert(table => 'Interface', state => \%tmp)){
-         die "Unable to create Interface $int: $@\n";
+      unless ($if = $gui->insert(table => 'Interface', state => \%inttmp)){
+         my $err = $gui->error;
+         die "Error: $err"; 
       }
-      undef( %tmp );
       if( exists( $device{interface}{$int}{ipAdEntIfIndex} ) ) {
-         foreach my $ip ( keys %{ $device{interface}{$int}{ipAdEntIfIndex} } ) {
+         my @ips = keys %{ $device{interface}{$int}{ipAdEntIfIndex} };
+	 my $multi = 1 if (scalar(@ips) > 1);
+         foreach my $ip ( @ips ) {
             my( $subnet, %iptmp, %nettmp );
 	    $iptmp{interface} = $if;
             $iptmp{address} = $ip;
             $iptmp{mask} = $device{interface}{$int}{ipAdEntIfIndex}{$ip};
-            $tmp{subnet} = 0;
             my $decip = unpack('N', (pack ('C*', split (/\./, $ip))));
             my $decmask = unpack('N', (pack ('C*', split (/\./, $iptmp{mask}))));
             my $net = inet_ntoa(pack('N',$decip & $decmask));
 	    if( $subnet = (Subnet->search( address => $net ) )[0] ) {
               $iptmp{subnet} = $subnet->id;
+	      unless ($multi) {
+	         $devtmp{entity} = $subnet->entity;
+	      }
 	    } else {
 	      $nettmp{address} = $net;
 	      $nettmp{entity} = 0;
@@ -136,18 +142,25 @@ if ( $args{action} eq "discover" ){
               ;  # We should say something here
             } else {
 	      unless ( $newip = $gui->insert(table => 'Ip', state => \%iptmp)){
-	         die "Unable to create IP $ip: $@\n";
+	        my $err = $gui->error;
+	        die "Error: $err"; 
 	      }
             }
          }
       }
+    }
+    # Update device if any changes
+    my $dev = Device->retrieve($newdevice);
+    unless ( $gui->update( object => $dev, state => \%devtmp ) ){
+      my $err = $gui->error;
+      die "Error: $err"; 
     }
     $gui->rmsession( $session );
   }
  }
 </%perl>
 % if( $inserted ) {
-  <& view.html, table => "Device", id => $inserted &>
+  <& device-ws.html, id => $inserted &>
 % } else {
 <& header, title => "Device" &>
 <!-- device.html -->

@@ -62,7 +62,7 @@ if ( defined($search) && $search =~ /\w+/ ){
           <td>&nbsp;
           </td>
           <td>
-            <form action="device-ws.html" method="post">
+            <form action="device-ws.html" method="POST">
             <input type="text" name="search" size="20" value=""> 
             <input name="submit" value="search" type="submit">
             </form>
@@ -83,7 +83,7 @@ if ( defined($search) && $search =~ /\w+/ ){
           <td>&nbsp;
           </td>
           <td>
-            <form action="device-ws.html" method="post">
+            <form action="device-ws.html" method="POST">
             <input type="text" name="search" size="20" value=""> 
             <input name="submit" value="search" type="submit">
             </form>
@@ -95,7 +95,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 %    $m->abort;
 
 <%perl>
-} elsif( defined($ARGS{intadd}) ){
+}elsif( $ARGS{intadd} ){
 
   # Add a group of interfaces
 
@@ -104,7 +104,7 @@ if ( defined($search) && $search =~ /\w+/ ){
      $tmpint{device} = $id;
      $tmpint{managed} = 1;
      $tmpint{number} = 1000;
-   my $i;
+     my $i;
      for ($i = 0; $i <= $ARGS{intaddnum}; $i++){
         $tmpint{number}++;
      	if (!($gui->insert(table => "Interface", state => \%tmpint)) ){
@@ -223,12 +223,12 @@ if ( defined($search) && $search =~ /\w+/ ){
  <tr>
    <td valign="top" width="50%" align="center">
 
-  <!-- Device Search Table -->
+<!-- Device Search Table -->
   
    <table border="0" width="100%" bgcolor="whitesmoke" cellpadding="0" cellspacing="2" >
      <tr>
        <td align="right">
-         <form action="device-ws.html" method="post">
+         <form action="device-ws.html" method="POST">
             Device: <input type="text" name="search" size="20" value=""> 
             <input name="submit" value="search" type="submit">
          </form>
@@ -436,6 +436,9 @@ if ( defined($search) && $search =~ /\w+/ ){
      </td>
    </tr>
  </table>
+% if ($edit eq "geninfo"){	 
+    </form>
+% }
 <!-- End General Info Table -->
 
 <br>
@@ -510,6 +513,9 @@ if ( defined($search) && $search =~ /\w+/ ){
     </td>
    </tr>
   </table>
+% if ($edit eq "ipinfo"){	 
+    </form>
+% }
 
 <!-- End IPs Table -->
 
@@ -602,6 +608,9 @@ if ( defined($search) && $search =~ /\w+/ ){
    </tr>
    </tr>
   </table>
+% if ($edit eq "locinfo"){	 
+    </form>
+% }
 
 <!-- End Location Table -->
 <br>
@@ -741,6 +750,9 @@ if ( defined($search) && $search =~ /\w+/ ){
 
    </tr>
   </table>
+% if ($edit eq "mgmtinfo"){	 
+    </form>
+% }
 
 <!-- End Management Table -->
 
@@ -769,7 +781,7 @@ if ( defined($search) && $search =~ /\w+/ ){
    </tr>
    <tr>
      <td>
-      <table border="0">
+      <table border="0" width="100%">
         <tr>
 %	   if ($edit eq "intinfo"){	 
 	      <td align="center">[del]</td>
@@ -905,26 +917,27 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   </td>
 	  </tr>
 %       } #foreach
-% if ( $edit ){	 
-    </form>
-% }
      <tr>
-	    <form action="device-ws.html" method="post">
-	      <td colspan="7" width="100%" align="left">
+%    if ($edit eq "intinfo"){	 
+            <td colspan="8" width="100%" align="right">
+	       <input name="submit" value="save" type="submit">
+	    </td>
+	    </form>
+%    }else{
+	    <form action="device-ws.html" method="POST">
+	      <td colspan="8" width="100%" align="left">
 	        <input type="hidden" name="id" value="<% $id %>">
 	        <input type="submit" name="intadd" value="Add">
 	        <input type="text" name="intaddnum" value="0" size="3"> lines
               </td>
 	    </form>
-
+%    }
      </tr>
      </table>
     </td>
-   </tr>
+       </tr>
   </table>
 <!-- End Interface Table -->
-
-
 
  </td></tr>
 </table>
@@ -953,6 +966,8 @@ my $name;
 if ($id){
    $o = Device->retrieve($id);
    $name = $o->name;
+}else{
+   $name = "Search"
 }
 </%init>
 
