@@ -648,7 +648,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	    'zone:Zone,origin:Origin,name:Name,active:Active?,contactlist:ContactList', 
 	    '',
 	    'zone:Zone,contactlist:ContactList',
-	    'arecords:RRADDR:rr,aliases:RRCNAME:cname,hinforecords:RRHINFO:rr,mxrecords:RRMX:rr,nsrecords:RRNS:rr,ptrrecords:RRPTR:rr,txtrecords:RRTXT:rr,exchanges:RRMX:exchange,domains:RRNS:nsdname,devices:Device:name:{on_delete=>"restrict"}', 
+	    'arecords:RRADDR:rr,aliases:RRCNAME:cname,hinforecords:RRHINFO:rr,mxrecords:RRMX:rr,nsrecords:RRNS:rr,ptrrecords:RRPTR:rr,srvrecords:RRSRV:rr,txtrecords:RRTXT:rr,exchanges:RRMX:exchange,domains:RRNS:nsdname,devices:Device:name:{on_delete=>"restrict"}', 
 	    '0', 
 	    'DNS Resource Record');
 
@@ -723,6 +723,18 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	    '', 
 	    '0', 
 	    'DNS PTR Record');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RRSRV', 
+	    'target,rr',
+	    'target,rr,ttl,priority,weight,port,target', 
+	    'target,rr', 
+	    'rr:Resource Record,ttl:TTL,priority:Priority,weight:Weight,port:Port,target:Target', 
+	    '',
+	    'rr:RR,target:RR',
+	    '', 
+	    '0', 
+	    'DNS SRV Record');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
     VALUES ('RRTXT', 
