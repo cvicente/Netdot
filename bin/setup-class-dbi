@@ -27,7 +27,7 @@ my $head =
 qq /package Netdot::DBI;
 use base 'Class::DBI';
 use Net::IP qw(:PROC);
-#use Netdot::eHasMany;
+use Netdot::odHasMany;
 
 ## This file was generated from a script.  Do not edit. ##
 
@@ -41,7 +41,7 @@ sub VERSION { "0.5" }
 
 $head .= 
 q /
-#__PACKAGE__->add_relationship_type( e_has_many => "Class::DBI::Relationship::eHasMany" );
+__PACKAGE__->add_relationship_type( has_many => "Class::DBI::Relationship::odHasMany" );
 
   
 sub ip2int {
@@ -159,11 +159,9 @@ foreach my $table (@tables){
 		my $numfields = scalar @fields;
 		if ($numfields == 3){
 		    my ($meth, $tab, $col) = split /:/, $item; 
-#		    print "__PACKAGE__->e_has_many( '$meth', '$tab' => '$col' );\n";
 		    print "__PACKAGE__->has_many( '$meth', '$tab' => '$col' );\n";
 		}elsif ($numfields == 4){
 		    my ($meth, $tab, $col, $args) = split /:/, $item; 
-#		    print "__PACKAGE__->e_has_many( '$meth', '$tab' => '$col', $args );\n";
 		    print "__PACKAGE__->has_many( '$meth', '$tab' => '$col', $args );\n";
 		}else{
 		    print STDERR "ERROR!: Incorrect number of fields: $numfields, in linksfrom for table $table\n";

@@ -6,6 +6,7 @@ unless ( $ARGS{table} && $ARGS{id} ){
 $table = $ARGS{table};
 $obj = $table->retrieve($ARGS{id});
 
+
 unless ( $obj ){
    print "<strong>Nonexistent record: $ARGS{id}</strong>";
    exit;
@@ -17,11 +18,14 @@ unless ( $obj ){
 
 </%perl>
 
+<& header, title => "Delete $table object"  &>
+<br>
+<center>
+<& section1 &>
 
 %if ( !exists( $ARGS{submit} ) ){
 
 % my $labelstr = $ui->getobjlabel($obj, ", ");
-<& header, title=>" Delete: $table: $labelstr" &>
 
 <table align="center" valign="top" border="0" width="95%">
 <tr><td>
@@ -49,7 +53,6 @@ unless ( $obj ){
 %}elsif ($ARGS{confirm} && $ARGS{submit} eq "Proceed"){
 
 % my $labelstr = $ui->getobjlabel($obj, ", ");
-<& header, title=>" Delete: $table: $labelstr" &>
 
 <table align="center" valign="top" border="0" width="95%">
 <tr><td>
@@ -74,6 +77,10 @@ unless ( $obj ){
    <& view.html, table => $table, id => $obj->id &>
 %  exit;
 %}
+
+<%args>
+
+</%args>
 
 <%init>
 use lib "/home/netdot/public_html/lib"; 
