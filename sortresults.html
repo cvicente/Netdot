@@ -58,11 +58,13 @@ if( $args{table} ) {
       <th><% $o %></th>
 %     }
       </tr>
-      <tr>   
 %   }
 % ####################################################################
 %   foreach my $o ( sort { $a->id <=> $b->id } @{ $args{object} } ) {
 %     my $flag = 1;
+%     if( $VIEW eq "row" ) {
+      <tr>
+%     }
 %     my @order = sort { $order{$a} <=> $order{$b} } keys %order;
 %     foreach my $c ( @order ) {
 %       if( $VIEW eq "column" ) {
@@ -80,7 +82,7 @@ if( $args{table} ) {
             -
 %         } else {
 %           my $obj = $linksto{$c}->retrieve( int( $o->$c ) );
-%           my $lbl = $gui->getobjlabel( $obj, " " );
+%           my $lbl = $gui->getobjlabel( $obj, ", " );
 %           if( $flag ) {
               <strong>
               <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
@@ -111,6 +113,9 @@ if( $args{table} ) {
 %     if( $VIEW eq "column" ) {
       <tr>
       <td colspan=2><br></td>
+      </tr>
+%     }
+%     if( $VIEW eq "row" ) {
       </tr>
 %     }
 %   } # for o
@@ -148,6 +153,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.21  2003/06/27 21:04:27  netdot
+# more layout fixes
+#
 # Revision 1.20  2003/06/27 18:40:31  netdot
 # back to columnorderbrief
 #
