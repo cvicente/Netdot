@@ -18,13 +18,16 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-package Netviewer ;
+package Netdot::Netviewer ;
 
+use lib "/home/netdot/public_html/lib";
 use strict ;
 use Fcntl qw(:DEFAULT :flock) ;
 use Sys::Syslog qw( :DEFAULT setlogsock ) ;
 use SNMP_Session;
 use Netdot::DBI;
+use Data::Dumper;
+#use base 'Class::DBI';
 #use Net::SNMP ;
 
 use vars qw ( @ISA @EXPORT @EXPORT_OK $VERSION 
@@ -382,91 +385,15 @@ sub _init {
 #
 # set global values; 
 # these can be altered if desired (performed in set_defaults)
-# read from global conf file, $GLOBAL, netviewer.conf
+# read from Netdot Database
 #=======================================
-sub _read_globals 
-  {
-    my $self = shift ;
-    my $file = $self->{'_global'} ;
-    unless( -f $file ) {
-      $self->debug( loglevel => "LOG_WARNING", 
-		    message => "read_globals: file $file doesn't exist" ) ;
-      die( "NetViewer._read_globals: file $file doesn't exist" ) ;
-    }
-    unless( -r $file ) {
-      $self->debug( loglevel => "LOG_WARNING", 
-		    message => "read_globals: file $file is not readable" ) ;
-      die( "_read_globals: file $file is not readable" ) ;
-    }
-    open( NV, $file )
-      or die "Unable to open $self->{'_global'}: $!\n" ;
-    while ( <NV> ) {
-      next if ( /^\#/ ) ;
-      next if ( /^\s*$/ ) ;
-      if ( /ROOT\s+([\w\.\/]+)\s*/o ) { 
-	$self->{ '_home' } = $1 ;
-      } elsif( /DATADIR\s+([\w\.\/]+)\s*/o ) { 
-	$self->{ '_datadir' } = $1 ;
-      } elsif( /IMGDIR\s+([\w\.\/]+)\s*/o ) { 
-	$self->{ '_imgdir' } = $1 ;
-      } elsif( /RRDBINDIR\s+([\w\.\/]+)\s*/o ) { 
-	$self->{'_rrdbindir'} = $1 ;
-      } elsif( /CONF\s+([\w\.\/]+)\s*/o ) { 
-	$self->{'_conf'} = $1 ;
-      } elsif( /STORE\s+([\w\.\/]+)\s*/o ) { 
-	$self->{'_store'} = $1 ;
-      } elsif( /ALIASES\s+([\w\.\/]+)\s*/o ) { 
-	$self->{'_cat'} = $1 ;
-      } elsif( /LABELS\s+([\w\.\/]+)\s*/o ) { 
-	$self->{'_label'} = $1 ;
-      } elsif( /TYPES\s+([\w\.\/]+)\s*/o ) { 
-	$self->{'_types'} = $1 ;
-      } elsif( /LOCALE\s+([\w\.\/]+)\s*/o ) {
-	$self->{'_locale'} = $1 ;
-      } elsif( /HWPROFILES\s+([\w\.\/]+)\s*/o ) {
-	$self->{'_hwprofiles'} = $1 ;
-      } elsif( /DEFAULTCOLLECT\s+(yes|no)\s*/io ) {
-	$self->{'_defaultcollect'} = lc( $1 ) ;
-      } elsif( /ALWAYSFETCH\s+(yes|no)\s*/io ) {
-	$self->{'_alwaysfetch'} = lc( $1 ) ;
-      } elsif( /INTERVAL\s+(\d+)\s*/o ) { 
-	$self->{'_interval'} = $1 ;
-      } elsif( /SHORTINTERVAL\s+(\d+)\s*/o ) { 
-	$self->{'_interval_s'} = $1 ;
-      } elsif( /LONGINTERVAL\s+(\d+)\s*/o ) { 
-	$self->{'_interval_l'} = $1 ;
-      } elsif( /HCLIMIT\s+(\d+)\s*/o ) { 
-	$self->{'_hclimit'} = $1 ;
-      } elsif( /CARLIMIT\s+(\d+)\s*/o ) {
-	$self->{'_carlimit'} = $1 ;
-      } elsif( /VLANSPEED\s+(\d+)\s*/o ) { 
-	$self->{'_vlanspeed'} = $1 ;
-      } elsif( /UMASK\s+(\d+)\s*/o ) {
-	$self->{'_umask'} = $1 ;
-      } elsif( /LOGFACILITY\s+(\w+)\s*/o ) {
-	$self->{'_logfacility'} = $1 ;
-      } elsif( /LOGLEVEL\s+(\w+)\s*/o ) {
-	$self->{'_loglevel'} = $1 ;
-      } elsif( /TIMEOUT\s+([\d\.]+)\s*/o ) {
-	$self->{'_timeout'} = $1 ;
-	if( $self->{'_timeout'} < 1 || $self->{'_timeout'} > 60 ) {
-	  die( "read_globals: TIMEOUT $self->{'_timeout'} " . 
-		 "variable outside valid range; must be between 1.0 and 60.0");
-	}
-      } elsif( /RETRIES\s+(\d+)\s*/o ) {
-	$self->{'_retries'} = $1 ;
-      } elsif( /SNMPVERSION\s+(\w+)\s*/o ) {
-	$self->{'_snmpversion'} = $1 ;
-      } elsif( /COMMUNITY\s+(\S+)\s*/o ) {
-	$self->{'_community'} = $1 ;
-      } elsif( /SYSLOGIDENT\s+(\S+)\s*/o ) {
-	$self->{'_syslogident'} = $1 ;
-      } else { 
-	die( "read_globals: Unknown variable/value pair:  $_" ) ; 
-      }
-    } # while
-    close( NV ) ;
-  } # read_globals
+sub _read_globals {
+  my $self = shift ;
+  foreach my $inst ( Netviewer->retrieve_all() ) {
+    my( $n, $v ) = ( $inst->name, $inst->value );
+    $self->{"_$n"} = $v;
+  }
+} # read_globals
 
 
 ######################################################################
@@ -475,215 +402,213 @@ sub _read_globals
 # set default values for certain variables
 # cmdline args to init will override defaults in $GLOBAL
 #=======================================
-sub _set_defaults
-  {
-    my ($self, %argv ) = @_ ;
-    foreach ( keys %argv ) {
-      if( /^global$/ ) {
-	if( -f $argv{$_} ) {
-	  $self->{'_global'} = $argv{$_} ;
-	} else {
-	  warn( "set_defaults: Invalid global conf ($argv{$_});" 
-		. " Will try $self->{'_global'}" ) ;
-	}
-      } elsif ( /^datadir$/io ) { 
-	if( -d $argv{$_} ) { 
-	  $self->{'_datadir'} = $argv{$_} ; 
-	} else {
-	  warn(	"set_defaults: Invalid directory ($argv{$_}); " 
+sub _set_defaults {
+  my ($self, %argv ) = @_ ;
+  foreach ( keys %argv ) {
+    if( /^global$/ ) {
+      if( -f $argv{$_} ) {
+	$self->{'_global'} = $argv{$_} ;
+      } else {
+	warn( "set_defaults: Invalid global conf ($argv{$_});" 
+	      . " Will try $self->{'_global'}" ) ;
+      }
+    } elsif ( /^datadir$/io ) { 
+      if( -d $argv{$_} ) { 
+	$self->{'_datadir'} = $argv{$_} ; 
+      } else {
+	warn(	"set_defaults: Invalid directory ($argv{$_}); " 
 		. "Will try $self->{'_datadir'}");
-	}
-      }	elsif( /^rrdbindir$/io ) {
-	if( -d $argv{$_} ) { 
-	  $self->{'_rrdbindir'} = $argv{$_} ; 
-	} else {
-	  warn(	"set_defaults: Invalid directory ($argv{$_}); " . 
+      }
+    }	elsif( /^rrdbindir$/io ) {
+      if( -d $argv{$_} ) { 
+	$self->{'_rrdbindir'} = $argv{$_} ; 
+      } else {
+	warn(	"set_defaults: Invalid directory ($argv{$_}); " . 
 		"Will try $self->{'_rrdbindir'}");
-	}
-      } elsif( /^imgdir$/io ) {
-	if( -d $argv{$_} ) {
-	  $self->{'_imgdir'} = $argv{$_} ; 
-	} else {
-	  warn( "set_defaults: Invalid directory ($argv{$_}); " 
-		. "Will try $self->{'_imgdir'}" );
-	}
-      } elsif( /^conf$/io ) {
-	if( -f $argv{$_} ) {
-	  $self->{'_conf'} = $argv{$_} ; 
-	} else {
-	  warn( "set_defaults: Invalid conffile ($argv{$_});" 
-		. " Will try $self->{'_conf'}" ) ;
-	}
-      }	elsif( /^store$/io ) {
-	if( -e $argv{$_} ) {
-	  $self->{'_store'} = $argv{$_} ; 
-	} else {
-	  warn( "set_defaults: Invalid store file ($argv{$_}); " 
-		. "Will try $self->{'_store'}" );
-	}
-      }	elsif( /^aliases$/io ) {
-	if( -f $argv{$_} ) {
-	  $self->{'_cat'} = $argv{$_} ; 
-	} else {
-	  warn( "set_defaults: Invalid alias file ($argv{$_}); " 
-		. "Will try $self->{'_cat'}" ) ;
-	}
-      }	elsif( /^labels$/io ) {
-	if( -f $argv{$_} ) {
-	  $self->{'_label'} = $argv{$_} ; 
-	} else {
-	  warn( "set_defaults: Invalid labels file ($argv{$_}); " 
-		. "Will try $self->{'_label'}");
-	}
-      } elsif( /^types$/io ) { 
-	if( -f $argv{$_} ) {
-	  $self->{'_types'} = $argv{$_} ; 
-	} else {
-	  warn( "set_defaults: Invalid ifTypes file ($argv{$_}); " 
-		. "Will try $self->{'_types'}" );
-	}
-      } elsif( /^locale$/io ) { 
-	if( -f $argv{$_} ) {
-	  $self->{'_locale'} = $argv{$_} ; 
-	} else {
-	  warn( "set_defaults: Invalid locale file ($argv{$_}); "
-		. "Will try $self->{'_locale'}" );
-	}
-      } elsif( /^hwprofiles$/io ) { 
-	if( -f $argv{$_} ) {
-	  $self->{'_hwprofiles'} = $argv{$_} ; 
-	} else {
-	  warn( "set_defaults: Invalid hardware file ($argv{$_}); " 
-		. "Will try $self->{'_hwprofiles'}" );
-	}
-      } elsif( /^defaultcollect$/io ) {
-	if( $argv{$_} =~ /^(yes|no)$/io ) {
-	  $self->{'_defaultcollect'} = lc( $argv{$_} ) ;
-	} else {
-	  warn( "set_defaults: " . "Invalid value for DEFAULTCOLLECT;"
-		. " Will try $self->{'_defaultcollect'}" ) ;
-	}
-      } elsif( /^alwaysfetch$/io ) {
-	if( $argv{$_} =~ /^(yes|no)$/io ) {
-	  $self->{'_alwaysfetch'} = lc( $argv{$_} ) ;
-	} else {
-	  warn( "set_defaults: " . "Invalid value for ALWAYSFETCH;"
-		. " Will try $self->{'_alwaysfetch'}" ) ;
-	}
-      } elsif( /^interval$/io ) {
-	if( $argv{$_} =~ /^\d+$/ ) {
-	  $self->{'_interval'} = $argv{$_} ;
-	} else {
-	  warn( "set_defaults: Invalid value for interval ($argv{$_});"
-		. " Will try $self->{'_interval'}" );
-	}
-
-      } elsif ( /^shortinterval$/io ) {
-	if( $argv{$_} =~ /^\d+$/ ) {
-	  $self->{'_interval_s'} = $argv{$_} ; 
-	} else {
-	  warn( "set_defaults: Invalid value for shortinterval " 
-		. "($argv{$_}); Will try $self->{'_interval_s'}" );
-	}
-      } elsif ( /^longinterval$/io ) {
-	if( $argv{$_} =~ /^\d+$/ ) {
-	  $self->{'_interval_l'} = $argv{$_} ; 
-	} else {
-	  warn( "set_defaults: Invalid value for longinterval " 
-		. "($argv{$_}); Will try $self->{'_interval_l'}" );
-	}
-      } elsif( /^hclimit$/io ) {
-	if( $argv{$_} =~ /^\d+$/o ) {
-	  $self->{'_hclimit'} = $argv{$_} ;
-	} else {
-	  warn( "NetViewer.set_defaults: Invalid value for "
-		."hclimit ($argv{$_}); will try $self->{'_hclimit'}" ) ;
-	}
-      } elsif( /^carlimit$/io ) {
-	if( $argv{$_} =~ /^\d+$/o ) {
-	  $self->{'_carlimit'} = $argv{$_} ;
-	} else {
-	  warn( "NetViewer.set_defaults: Invalid value for "
-		."carlimit ($argv{$_}); will try $self->{'_carlimit'}" ) ;
-	}
-      } elsif( /^vlanspeed$/io ) {
-	if( $argv{$_} =~ /^\d+$/o ) {
-	  $self->{'_vlanspeed'} = $argv{$_} ;
-	} else {
-	  warn( "NetViewer.set_defaults: Invalid value for "
-		."vlanspeed ($argv{$_}); will try $self->{'_vlanspeed'}" ) ;
-	}
-      } elsif( /^xff$/io ) {
-	if( $argv{$_} =~ /^\d+$/o ) {
-	  $self->{'_xff'} = $argv{$_} ;
-	} else {
-	  warn( "NetViewer.set_defaults: Invalid value for "
-		."xff ($argv{$_}); will try $self->{'_xff'}" ) ;
-	}
-      }	elsif( /^umask$/io ) {
-	if( $argv{$_} =~ /^\d+$/o ) {
-	  $self->{'_umask'} = $argv{$_} ;
-	} else {
-	  warn( "set_defaults: Invalid value for UMASK ($argv{$_}); " 
-		. "Will try $self->{'_umask'}" ) ;
-	}
-      } elsif( /^logfacility$/io ) {
-	if( $argv{$_} =~ /^\w+$/ && $logfacility{ $argv{$_} } ) {
-	  $self->{'_logfacility'} = $argv{$_} ;
-	} else {
-	  warn( "set_defaults: Invalid value for " 
-		. "logfacility ($argv{$_}); Using $self->{'_logfacility'}" ) ;
-	}
-      } elsif( /^loglevel$/io ) {
-	if( $argv{$_} =~ /^\w+$/ ) {
-	  $self->{'_loglevel'} = $argv{$_} ;
-	} else {
-	  warn( "set_defaults: Invalid value for " 
-		. "loglevel ($argv{$_}); Using $self->{'_loglevel'}" ) ;
-	}
-      } elsif( /^timeout$/io ) {
-	if( $argv{$_} =~ /^[\d\.]+$/o ) {
-	  $self->{'_timeout'} = $argv{$_} ;
-	  if( $self->{'_timeout'} < 1 || $self->{'_timeout'} > 60 ) {
-	    warn( "set_defaults: TIMEOUT $self->{'_timeout'} " 
-		   . " variable outside valid range; " 
-		   . "must be between 1.0 and 60.0" ) ;
-	    $self->{'_timeout'} = DEFAULT_TIMEOUT ;
-	  }
-	} else {
-	  warn( "set_defaults: Invalid value for " 
-		. "timeout ($argv{$_}); using $self->{'_timeout'}" ) ;
-	}
-      } elsif( /^retries$/io ) {
-	if( $argv{$_} =~ /^\d+$/o ) {
-	  $self->{'_retries'} = $argv{$_} ;
-	} else {
-	  warn( "set_defaults: Invalid value for " 
-		. "retries ($argv{$_}); using $self->{'_retries'}" ) ;
-	}
-      } elsif( /^snmpversion$/io ) {
-	if( $argv{$_} =~ /^\w+$/o ) {
-	  $self->{'_snmpversion'} = $argv{$_} ;
-	} else {
-	  warn( "set_defaults: Invalid value for " 
-		. "snmpversion ($argv{$_}); using $self->{'_snmpversion'}" );
-	}
-      } elsif( /^community$/io ) {
-	$self->{'_community'} = $argv{$_} ;
-      } elsif( /^syslogident$/io ) {
-	$self->{'_syslogident'} = $argv{$_} ;
-      } elsif( /^foreground$/io ) {
- 	if( $argv{$_} =~ /^(0|1)$/ ) {
-	  $_FOREGROUND = $self->{'_foreground'} = $argv{$_} ;
-	} else {
-	  warn( "set_defaults: Invalid value for " 
-		. "foreground ($argv{$_}); Using $self->{'_foreground'} ");
+      }
+    } elsif( /^imgdir$/io ) {
+      if( -d $argv{$_} ) {
+	$self->{'_imgdir'} = $argv{$_} ; 
+      } else {
+	warn( "set_defaults: Invalid directory ($argv{$_}); " 
+	      . "Will try $self->{'_imgdir'}" );
+      }
+    } elsif( /^conf$/io ) {
+      if( -f $argv{$_} ) {
+	$self->{'_conf'} = $argv{$_} ; 
+      } else {
+	warn( "set_defaults: Invalid conffile ($argv{$_});" 
+	      . " Will try $self->{'_conf'}" ) ;
+      }
+    }	elsif( /^store$/io ) {
+      if( -e $argv{$_} ) {
+	$self->{'_store'} = $argv{$_} ; 
+      } else {
+	warn( "set_defaults: Invalid store file ($argv{$_}); " 
+	      . "Will try $self->{'_store'}" );
+      }
+    }	elsif( /^aliases$/io ) {
+      if( -f $argv{$_} ) {
+	$self->{'_cat'} = $argv{$_} ; 
+      } else {
+	warn( "set_defaults: Invalid alias file ($argv{$_}); " 
+	      . "Will try $self->{'_cat'}" ) ;
+      }
+    }	elsif( /^labels$/io ) {
+      if( -f $argv{$_} ) {
+	$self->{'_label'} = $argv{$_} ; 
+      } else {
+	warn( "set_defaults: Invalid labels file ($argv{$_}); " 
+	      . "Will try $self->{'_label'}");
+      }
+    } elsif( /^types$/io ) { 
+      if( -f $argv{$_} ) {
+	$self->{'_types'} = $argv{$_} ; 
+      } else {
+	warn( "set_defaults: Invalid ifTypes file ($argv{$_}); " 
+	      . "Will try $self->{'_types'}" );
+      }
+    } elsif( /^locale$/io ) { 
+      if( -f $argv{$_} ) {
+	$self->{'_locale'} = $argv{$_} ; 
+      } else {
+	warn( "set_defaults: Invalid locale file ($argv{$_}); "
+	      . "Will try $self->{'_locale'}" );
+      }
+    } elsif( /^hwprofiles$/io ) { 
+      if( -f $argv{$_} ) {
+	$self->{'_hwprofiles'} = $argv{$_} ; 
+      } else {
+	warn( "set_defaults: Invalid hardware file ($argv{$_}); " 
+	      . "Will try $self->{'_hwprofiles'}" );
+      }
+    } elsif( /^defaultcollect$/io ) {
+      if( $argv{$_} =~ /^(yes|no)$/io ) {
+	$self->{'_defaultcollect'} = lc( $argv{$_} ) ;
+      } else {
+	warn( "set_defaults: " . "Invalid value for DEFAULTCOLLECT;"
+	      . " Will try $self->{'_defaultcollect'}" ) ;
+      }
+    } elsif( /^alwaysfetch$/io ) {
+      if( $argv{$_} =~ /^(yes|no)$/io ) {
+	$self->{'_alwaysfetch'} = lc( $argv{$_} ) ;
+      } else {
+	warn( "set_defaults: " . "Invalid value for ALWAYSFETCH;"
+	      . " Will try $self->{'_alwaysfetch'}" ) ;
+      }
+    } elsif( /^interval$/io ) {
+      if( $argv{$_} =~ /^\d+$/ ) {
+	$self->{'_interval'} = $argv{$_} ;
+      } else {
+	warn( "set_defaults: Invalid value for interval ($argv{$_});"
+	      . " Will try $self->{'_interval'}" );
+      }
+    } elsif ( /^shortinterval$/io ) {
+      if( $argv{$_} =~ /^\d+$/ ) {
+	$self->{'_interval_s'} = $argv{$_} ; 
+      } else {
+	warn( "set_defaults: Invalid value for shortinterval " 
+	      . "($argv{$_}); Will try $self->{'_interval_s'}" );
+      }
+    } elsif ( /^longinterval$/io ) {
+      if( $argv{$_} =~ /^\d+$/ ) {
+	$self->{'_interval_l'} = $argv{$_} ; 
+      } else {
+	warn( "set_defaults: Invalid value for longinterval " 
+	      . "($argv{$_}); Will try $self->{'_interval_l'}" );
+      }
+    } elsif( /^hclimit$/io ) {
+      if( $argv{$_} =~ /^\d+$/o ) {
+	$self->{'_hclimit'} = $argv{$_} ;
+      } else {
+	warn( "NetViewer.set_defaults: Invalid value for "
+	      ."hclimit ($argv{$_}); will try $self->{'_hclimit'}" ) ;
+      }
+    } elsif( /^carlimit$/io ) {
+      if( $argv{$_} =~ /^\d+$/o ) {
+	$self->{'_carlimit'} = $argv{$_} ;
+      } else {
+	warn( "NetViewer.set_defaults: Invalid value for "
+	      ."carlimit ($argv{$_}); will try $self->{'_carlimit'}" ) ;
+      }
+    } elsif( /^vlanspeed$/io ) {
+      if( $argv{$_} =~ /^\d+$/o ) {
+	$self->{'_vlanspeed'} = $argv{$_} ;
+      } else {
+	warn( "NetViewer.set_defaults: Invalid value for "
+	      ."vlanspeed ($argv{$_}); will try $self->{'_vlanspeed'}" ) ;
+      }
+    } elsif( /^xff$/io ) {
+      if( $argv{$_} =~ /^\d+$/o ) {
+	$self->{'_xff'} = $argv{$_} ;
+      } else {
+	warn( "NetViewer.set_defaults: Invalid value for "
+	      ."xff ($argv{$_}); will try $self->{'_xff'}" ) ;
+      }
+    }	elsif( /^umask$/io ) {
+      if( $argv{$_} =~ /^\d+$/o ) {
+	$self->{'_umask'} = $argv{$_} ;
+      } else {
+	warn( "set_defaults: Invalid value for UMASK ($argv{$_}); " 
+	      . "Will try $self->{'_umask'}" ) ;
+      }
+    } elsif( /^logfacility$/io ) {
+      if( $argv{$_} =~ /^\w+$/ && $logfacility{ $argv{$_} } ) {
+	$self->{'_logfacility'} = $argv{$_} ;
+      } else {
+	warn( "set_defaults: Invalid value for " 
+	      . "logfacility ($argv{$_}); Using $self->{'_logfacility'}" ) ;
+      }
+    } elsif( /^loglevel$/io ) {
+      if( $argv{$_} =~ /^\w+$/ ) {
+	$self->{'_loglevel'} = $argv{$_} ;
+      } else {
+	warn( "set_defaults: Invalid value for " 
+	      . "loglevel ($argv{$_}); Using $self->{'_loglevel'}" ) ;
+      }
+    } elsif( /^timeout$/io ) {
+      if( $argv{$_} =~ /^[\d\.]+$/o ) {
+	$self->{'_timeout'} = $argv{$_} ;
+	if( $self->{'_timeout'} < 1 || $self->{'_timeout'} > 60 ) {
+	  warn( "set_defaults: TIMEOUT $self->{'_timeout'} " 
+		. " variable outside valid range; " 
+		. "must be between 1.0 and 60.0" ) ;
+	  $self->{'_timeout'} = DEFAULT_TIMEOUT ;
 	}
       } else {
-	warn( "set_defaults: Invalid argument $_" ) ; 
+	warn( "set_defaults: Invalid value for " 
+	      . "timeout ($argv{$_}); using $self->{'_timeout'}" ) ;
       }
+    } elsif( /^retries$/io ) {
+      if( $argv{$_} =~ /^\d+$/o ) {
+	$self->{'_retries'} = $argv{$_} ;
+      } else {
+	warn( "set_defaults: Invalid value for " 
+	      . "retries ($argv{$_}); using $self->{'_retries'}" ) ;
+      }
+    } elsif( /^snmpversion$/io ) {
+      if( $argv{$_} =~ /^\w+$/o ) {
+	$self->{'_snmpversion'} = $argv{$_} ;
+      } else {
+	warn( "set_defaults: Invalid value for " 
+	      . "snmpversion ($argv{$_}); using $self->{'_snmpversion'}" );
+      }
+    } elsif( /^community$/io ) {
+      $self->{'_community'} = $argv{$_} ;
+    } elsif( /^syslogident$/io ) {
+      $self->{'_syslogident'} = $argv{$_} ;
+    } elsif( /^foreground$/io ) {
+      if( $argv{$_} =~ /^(0|1)$/ ) {
+	$_FOREGROUND = $self->{'_foreground'} = $argv{$_} ;
+      } else {
+	warn( "set_defaults: Invalid value for " 
+	      . "foreground ($argv{$_}); Using $self->{'_foreground'} ");
+      }
+    } else {
+      warn( "set_defaults: Invalid argument $_" ) ; 
     }
   }
+}
 
 
 ######################################################################
@@ -3517,6 +3442,9 @@ sub _sysUpTime {
 
 ##########################################################################
 # $Log: Netviewer.pm,v $
+# Revision 1.3  2003/06/11 00:10:25  netdot
+# modified read_globals; still working on schema
+#
 # Revision 1.2  2003/06/10 00:10:54  netdot
 # forked from NetViewer (see VERSION for when).  trimming out
 # unnecessary functions and will move config stuff into DB.
