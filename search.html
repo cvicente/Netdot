@@ -1,0 +1,98 @@
+<& header, title =>'Generic Search' &>
+
+<form action="sf-generic-search.html" method="POST">
+
+<%perl>
+my %arg;
+foreach my $j ( keys %ARGS ) {
+    next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+    if( $j eq "q" ) {
+      $ARGS{$j} = "%" . $ARGS{$j} . "%" ; # munge for search_like
+    }
+    $arg{$j} = $ARGS{$j};
+}
+</%perl>
+
+<p><font size=+1>Netdot Search</font>
+
+<form>
+<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+<tr>
+<td><input type="text" name="q" size="25"></td>
+<td>
+<input name="submit" value="Submit" type="submit">
+</td>
+</tr>
+</table>
+</form>
+
+% if( %arg ) {
+<table width="100%">
+<tr><td width="100%" height="5" bgcolor="#000099"> </td></tr>
+</table>
+<%perl>
+undef %results;  # may be cached copy in memory
+foreach my $tbl ( $dbh->tables() ) {
+  foreach my $col ( $tbl->columns() ) {
+    map { $results{$tbl}{$_->id} = $_ } $tbl->search_like( $col => $arg{q} );
+  }
+}
+</%perl>
+<table cellpadding="0" border="0" align="center" width="100%" bgcolor="#CCCCCC">
+<tr>
+%   if( ! %results ) {
+   <td>No matching records were found.</td>
+%   } else {
+%     foreach my $tbl ( keys %results ) {
+%       next if( $tbl eq "Meta" );
+   <td>
+   <font face="Helvetica, Arial">
+   <table bgcolor="#CCCCCC"  width="100%">
+   <tr bgcolor="#CCCCCC">
+   <td align="CENTER" bgcolor="#FFFFFF" ><font size=-1>table</font></td>
+%       foreach my $col ( $tbl->columns() ) {
+   <td align="CENTER" bgcolor="#FFFFFF"><font size=-1><% $col %></font></td>
+%       }
+%       foreach my $elm ( keys %{ $results{$tbl} } ) {
+   <tr><td align="CENTER" bgcolor="#FFFFFF"><% $tbl %></td>
+%         foreach my $col ( $tbl->columns() ) {
+%           if( defined( $results{$tbl}{$elm}->$col ) ) {
+   <td align="CENTER" bgcolor="#FFFFFF"><% $results{$tbl}{$elm}->$col %></td>
+%           } else {
+   <td align="CENTER" bgcolor="#FFFFFF"> - </td>
+%           }
+%          } # end foreach my col
+   </tr>
+%       } # end foreach elm
+   </table></td></tr>
+%     } # end foreach tbl
+%   } # end else
+</tr>
+</table>
+% }
+
+
+<& footer &>
+
+<%init>
+use lib "/home/netdot/public_html/lib";
+use Netdot::DBI;
+use Data::Dumper;
+use DBI;
+
+use vars qw( %results );
+
+my $dbh = DBI->connect( "dbi:mysql:netdot", "netdot_user", "netdot_pass" )
+	  or die "Can't connect to db: $DBI::errstr\n";
+
+# <font size="-1" color="#200767" face="Helvetica, Arial">
+              
+</%init>
+<%perl>
+######################################################################
+# $Log: search.html,v $
+# Revision 1.1  2003/04/23 17:13:08  netdot
+# Initial revision
+#
+
+<%/perl>

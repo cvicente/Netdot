@@ -1,0 +1,76 @@
+<%perl>
+# expect name of Table & objects that require sorting
+undef( %arg );
+foreach my $j ( keys %ARGS ) {
+  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+  $arg{$j} = $ARGS{$j};
+}
+if( $arg{table} ) {
+  undef( $obj );
+  $obj = (Meta->search( name => $arg{table} ))[0];
+  if( defined( $obj ) ) {
+    my $i = 1;
+    undef( %order );
+    if( $obj->columnOrder ) {
+      map { $order{$_} = $i++; } split( /,/, $obj->columnOrder );
+    } else {
+      $order{"id"} = $i++;
+      foreach ( $obj->name->columns() ) {
+        next if( $_ eq "id" );
+        $order{$_} = $i++;
+      }
+    }
+    undef( %linksto );
+    map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
+        split( /,/, $obj->linksTo );
+    undef( %linksfrom );
+    map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k } 
+        split( /,/, $obj->linksFrom );
+  }
+}
+</%perl>
+
+% if( defined( $obj ) && defined( $arg{object} ) ) {
+    <table cellpadding="3" cellspacing="1" border="0" width="100%" bgcolor="#DDDDDD">
+    <tr>
+%   foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+      <th><% $o %></th>
+%   }
+    </tr>
+%   foreach my $o ( @{ $arg{object} } ) {
+      <tr>
+%     foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+        <td align="CENTER" valign="TOP" bgcolor="#FFFFFF">
+%       if( $c eq "id" ) {
+          <strong>
+          <a href="circuit.html?id=<% $o->id %>"><% $o->id %></a>
+          </strong>
+%       } else {
+          <% $o->$c %>
+%       } # else fi
+        </td>
+%     } # for c
+      </tr>
+%   } # for o
+    </table>
+% } # if
+
+
+
+<%init>
+use lib "/home/netdot/public_html/lib";
+use Netdot::DBI;
+use Data::Dumper;
+my( %arg, %order, %linksto, %linksfrom, $obj );
+
+
+</%init>
+<%doc>
+
+######################################################################
+# $Log: sortresults.html,v $
+# Revision 1.1  2003/04/23 17:15:52  netdot
+# Initial revision
+#
+#
+</%doc>
