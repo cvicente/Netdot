@@ -37,7 +37,7 @@ print "Fetching current list of nodes....\n" if( $DEBUG );
 foreach my $node ( @nodes ) {
   my %ifs;
   print "Checking node ", $node->name, " \n" if( $DEBUG );
-  map { $ifs{ $_->id } = 1 } Node->interfaces();
+  map { $ifs{ $_->id } = 1 } $node->interfaces();
   $nv->build_config( "device", $node->name );
   ################################################
   # get information from the device
@@ -179,6 +179,9 @@ sub calc_subnet {
 
 ######################################################################
 #  $Log: updatenodes.pl,v $
+#  Revision 1.8  2003/07/12 21:07:56  netdot
+#  fixed interfaces call
+#
 #  Revision 1.7  2003/07/11 21:20:20  netdot
 #  update general node info
 #
