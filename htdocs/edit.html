@@ -52,7 +52,7 @@ if( defined( $args{sid} ) ) {
 }
 
 ##################################################
-if( $DEBUG ) {
+if( $DEBUG && 0 ) {
   print "ARGS: ";
   printf "<pre>%s</pre>\n", Dumper( \%ARGS );
   print "SESSION: ";
@@ -62,20 +62,17 @@ if( $DEBUG ) {
 ##################################################
 # if Cancel, go back to last state
 if( $args{cancel} eq "Cancel" ) {
-  if( ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) {
-    $gui->rmsession( $session );
-    $TBL = $PREV;
+  if( $args{create} ) {
+    $TBL = $args{create};
+    delete( $args{create};
+  } else {
+    if( ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) {
+      $gui->rmsession( $session );
+      $TBL = $PREV;
+    } else {
+      $TBL = $gui->popsessionpath( $session );
+    }
   }
-#  undef( $TBL );
-#  undef( $PREV );
-#  if( defined( $session ) ) {
-#    $gui->rmsession( $session );
-#  }
-#  delete( $args{sid} );
-#  delete( $args{table} );
-#  delete( $args{submit} );
-#  delete( $ARGS{ $rev{New} } );
-#  delete( $rev{New} );
 }
 
 ##################################################
@@ -221,113 +218,9 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
     <hr>
 % }
 
-% ####################################################################
-% if( $args{confirm} eq "Confirm" && ( ! $TBL || $args{cancel} ) ) {
-    <& view.html, table => $args{create}, id => $ID &>
-% } else {
-% ################################################
-% # Header
-%   if( $args{submit} eq "Submit" ) {
-      <& header, title => "Confirm: $TBL" &>
-%   } elsif( $OBJ) {
-%     my $labelstr = $gui->getobjlabel($OBJ, ", ");
-      <& header, title => "Edit: $TBL: $labelstr" &>
-%   } else {
-      <& header, title => "Create: $TBL" &>
-%   }
-    <!-- begin edit.html -->
-    <p>
-% ####################################################################
-% # Confirm Submission
-%   if( $args{"submit"} eq "Submit" ) {
-      <p>Please confirm the following:
-%     my $obj = $gui->getmeta( $TBL );
-%     my %linksto = $gui->getlinksto( $TBL );
-      <p><blockquote><strong><% $TBL %></strong><ul>
-%     foreach my $C ( split( /,/, $obj->columnorder() ) ) {
-        <li>
-        <% $C %> :
-%       if( ! exists( $session->{tables}{$TBL}{$C} ) ) {
-          -
-%       } else {
-%         if( $linksto{$C} ) {
-%           my $ft = $gui->getmeta( $linksto{$C} );
-%           if( ! defined( $ft ) ) {
-              No such object <% $linksto{$C} %>
-%           } elsif( $session->{tables}{$TBL}{$C} == 0 ) {
-              -
-%           } elsif( ! defined( $linksto{$C}->
-%                    retrieve( int( $session->{tables}{$TBL}{$C} ) ) ) ) {
-              -
-%           } else {
-%             my $o = $linksto{$C}->retrieve( $session->{tables}{$TBL}{$C} );
-%             my $lbl = $gui->getobjlabel( $o, ", " );
-              <% $lbl %>
-%           }
-%         } else {
-            <% $session->{tables}{$TBL}{$C} %>
-%         }
-%       }
-%     }
-      </ul></blockquote>
-      <form action="edit.html" method="POST">
-      <input type="hidden" name="sid" value="<% $sid %>">
-      <input type="hidden" name="create" value="<% $TBL %>">
-%     if( $ID ) {
-      <input type="hidden" name="id" value="<% $ID %>">
-%     }
-      <input name="confirm" value="Confirm" type="submit">
-      <input name="cancel" value="Cancel" type="submit">
-      </form>
-%   ##############################################
-%   } elsif( ! $TBL ) {
-      <p>
-      <blockquote>
-      <& table, width => $WIDTH, link => "edit.html", title => "Please select an object to create:" &>
-      </blockquote>
-%   ##############################################
-    } elsif( $args{cancel} ) {
-      <p>
-      <blockquote>
-      <& table, width => $WIDTH, link => "edit.html", title => "Please select an object to create:" &>
-      </blockquote>
-%   ##############################################
-%   } else {
-      <br>
-      <blockquote>
-      <form action="edit.html" method="POST">
-      <input type="hidden" name="sid" value="<% $sid %>">
-%     ############################################
-%     # special clause for node
-%     if( $TBL eq "Node" ) {
-        <a href="node.html">Auto Discover Node</a><br>
-        <p>
-%     }
-%     if( $ID && ! $NEW ) {
-      <& form, table => $TBL, showdisabled => '0', id => $ID &>
-%     } else {
-%       if( $ID ) {
-      <input type="hidden" name="id" value="<% $ID %>">
-%       }
-      <& form, table => $TBL, showdisabled => '0', session => \%state &>
-%     }
-      <table cellpadding="3" cellspacing="1" border="0">
-      <tr align="LEFT">
-      <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
-      <input name="submit" value="Submit" type="submit">
-      </td>
-      <td>
-      <input name="cancel" value="Cancel" type="submit">
-      </td>
-      </tr>
-      </table>
-      </form>
-      </blockquote>
-%   } # if/else table
-    <p>
-    <!-- end edit.html -->
-    <& footer &>
-% }
+<& edit_html, args => \%args, id => $ID, table => $TBL, obj => $OBJ, sid => $sid, session => $session, state => \%state &>
+
+
 % ####################################################################
 <%args>
 $DEBUG => 1
@@ -339,7 +232,6 @@ $OBJ => undef
 $sid => undef
 $TMP => "/home/netdot/public_html/tmp"
 $AGE => 86400
-$WIDTH => 2
 $session => undef
 $gui => Netdot::GUI->new()
 %args => undef

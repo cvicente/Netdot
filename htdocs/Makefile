@@ -1,7 +1,7 @@
 #
 # makefile for htdocs
 
-FILES = index.html browse.html edit.html search.html view.html delete.html search_obj.html form sortresults header footer table banner style.css footer2 device.html error custom
+FILES = index.html browse.html edit.html search.html view.html delete.html search_obj.html form sortresults header footer table banner style.css footer2 device.html error custom edit_html
 IMG = title.jpg
 
 all:  images
