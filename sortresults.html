@@ -1,38 +1,31 @@
 <%perl>
 # expect name of Table & objects that require sorting
-undef( %arg );
 foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
-  $arg{$j} = $ARGS{$j};
+  $args{$j} = $ARGS{$j};
 }
-if( $arg{table} ) {
+if( $args{table} ) {
   undef( $META );
-  $META = (Meta->search( name => $arg{table} ))[0];
+  $META = $gui->getmeta( $args{table} );
   if( defined( $META ) ) {
     my $i = 1;
     my @tmp;
     ##############################################
     # get the label for this table (as defined in Meta)
-    undef( $LBL );
-    $LBL = $META->label;
+    $LBL = ($gui->getlabels( $args{table} ))[0];
     ##############################################
     # get linksto info
-    undef( %linksto );
-    map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
-        split( /,/, $META->linksto );
+    %linksto = $gui->getlinksto( $args{table} );
     ##############################################
     # define order
-    undef( %order );
-    if( defined( $META->columnorderbrief ) ) {
-      @tmp = split( /,/, $META->columnorderbrief );
-    } else {
-      @tmp = sort { $a cmp $b } $META->name->columns();
-    }
+    %order = $gui->getcolumnorder( $args{table} );
     ##############################################
     # remove id and aliases (if present)
-    foreach my $c ( @tmp ) {
-      next if( $c eq "id" || $c eq "aliases" );
-      $order{$c} = $i++;
+    if( exists( $order{id} ) ) {
+      delete( $order{id} );
+    }
+    if( exists( $order{aliases} ) ) {
+      delete( $order{aliases} );
     }
     ##############################################
     # munge so that label is first 
@@ -51,7 +44,7 @@ if( $arg{table} ) {
 % ####################################################################
 
 <!-- begin sortresults -->
-% if( defined( $META ) && defined( $arg{object} ) ) {
+% if( defined( $META ) && defined( $args{object} ) ) {
   <br>
     <table cellpadding="3" cellspacing="1" border="0" width="100%" bgcolor="#DDDDDD">
     <tr>
@@ -60,7 +53,7 @@ if( $arg{table} ) {
 %   }
     </tr>
 % ####################################################################
-%   foreach my $o ( sort { $a->id <=> $b->id } @{ $arg{object} } ) {
+%   foreach my $o ( sort { $a->id <=> $b->id } @{ $args{object} } ) {
 %     my $flag = 1;
 %     my @order = sort { $order{$a} <=> $order{$b} } keys %order;
       <tr>
@@ -79,7 +72,7 @@ if( $arg{table} ) {
 %           if( $flag ) {
 %             $flag = 0;
               <strong>
-              <a href="<% $PAGE %>?table=<% $arg{table} %>&id=<% $o->id %>">
+              <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
               <% $o->$c->$lbl %>
 	      </a>
               </strong>
@@ -91,7 +84,7 @@ if( $arg{table} ) {
 %         if( $flag ) {
 %           $flag = 0;
             <strong>
-            <a href="<% $PAGE %>?table=<% $arg{table} %>&id=<% $o->id %>">
+            <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
             <% $o->$c %>
             </a>
             </strong>
@@ -111,13 +104,14 @@ if( $arg{table} ) {
 % ####################################################################
 <%args>
 
-%arg => undef
+%args => undef
 %order => undef
 %linksto => undef
 %linksfrom => undef
 $META => undef
 $LBL => undef
 $PAGE => "view.html"
+$gui => Netdot::GUI->new()
 
 </%args>
 <%init>
@@ -134,6 +128,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.14  2003/06/13 18:34:43  netdot
+# now using GUI.pm
+#
 # Revision 1.13  2003/06/13 18:07:14  netdot
 # moving to <%args>
 #
