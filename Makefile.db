@@ -43,7 +43,7 @@ DB_HOST =  localhost
 # specifiy the port the database server is running on below.
 # It's generally safe to leave this blank 
 
-DB_PORT =       
+DB_PORT = 
 
 #
 # Set this to the canonical name of the interface NetDoT will be talking to the 
@@ -85,7 +85,7 @@ acls:
 		'$(DB_NETDOT_PASS)' '$(DB_NETDOT_HOST)' '$(DB_NETDOT_USER)' 
 
 genschema:
-	$(PERL) initdb '$(DB_TYPE)' '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DATABASE)' generate
+	$(PERL) initdb  '$(DB_TYPE)' '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DATABASE)' generate
 
 dropdb: 
 	$(PERL) initdb '$(DB_TYPE)' '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DATABASE)' drop
@@ -100,12 +100,12 @@ initdb.user:
 	$(PERL) initdb '$(DB_TYPE)' '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_NETDOT_USER)' '$(DB_DATABASE)' insert
 
 insert.metadata:
-	$(PERL) insert-metadata $(DB_HOME) $(DB_DATABASE) $(DB_DBA)
+	$(PERL) insert-metadata '$(DB_HOME)' '$(DB_DATABASE)' '$(DB_DBA)'
 
 insert.sample.data:
-	$(PERL) ins.sample.data $(DB_HOME) $(DB_DATABASE) $(DB_DBA)
+	$(PERL) ins.sample.data '$(DB_HOME)' '$(DB_DATABASE)' '$(DB_DBA)'
 
 setup.class.dbi:
-	$(PERL) setup-class-dbi $(DB_TYPE) $(DB_DATABASE) $(DB_NETDOT_USER) $(DB_NETDOT_PASS)  
+	$(PERL) setup-class-dbi '$(DB_TYPE)' '$(DB_DATABASE)' '$(DB_NETDOT_USER)' '$(DB_NETDOT_PASS)'  
 	install -m $(FMOD) DBI.pm $(PREFIX)/lib/Netdot/DBI.pm
 
