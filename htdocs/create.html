@@ -71,7 +71,7 @@ if( exists( $args{submit} )
     $session->{tables}{$PREV}{$arg} = $args{$arg};
   }
   if( ! defined( $args{submit} ) ) {
-    $gui->setsessionpath( $session, $args{table} );
+    $gui->pushsessionpath( $session, $args{table} );
   }
 }
 ##################################################
@@ -93,14 +93,12 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
     ( length( $session->{path} ) > 1 ) ?
       ( $session->{path} .= ";$x" ) : ( $session->{path} = "$x" );
   }
-  my @tbls = split( /;/, $session->{path} );
-  if( scalar( @tbls ) > 0 ) {
-    if( ! exists( $args{submit} ) ) {
-      my $tmp = pop @tbls;
+  if( ! exists( $args{submit} ) ) {
+    my $tmp = $gui->popsessionpath( $session );
+    if( defined( $tmp ) && length( $tmp ) > 0 ) {
       $TBL = $tmp;
     }
   }
-  $session->{path} = join( ';', @tbls );
 }
 
 ##################################################
