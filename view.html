@@ -98,27 +98,28 @@ my $h_meta = $gui->getmeta($h_table);
   <!-- Begin left hand menu -->
   <td align="left" valign="top" width="20%">
 % if ($table !~ /_history/){
-   <table border="0" cellspacing="0" bgcolor="#CCCCCC" width="80%">
+   <table border="0" cellspacing="0" bgcolor="#CCCCCC" width="80%" class="tablebackground">
     <tr><td>
      <font size="-1">
-      <table border="0" cellspacing="0" cellpadding="1" bgcolor="#FFFFFF" width="100%">
-        <tr><td bgcolor="#DDDDDD"><strong>View</strong></td></tr>
-	<tr><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">all</td></tr>
-	<tr><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $table %>"><% lc($table) %></a></td></tr>
+      <table border="0" cellspacing="0" cellpadding="1" bgcolor="#FFFFFF" width="100%" class="tablebackground">
+        <tr class="rowtitle0"><td bgcolor="#DDDDDD" class="rowtitle0"><strong>View</strong></td></tr>
+	<tr class="rowtitle1"><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">all</td></tr>
+	<tr class="rowtitle1"><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $table %>"><% lc($table) %></a></td></tr>
+
 %	foreach my $i (keys %ftables){
 %           if ($ftables{$i}{robjs}){
-              <tr><td colspan="2"><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>"><% $i %></a></td></tr>
+              <tr class="rowtitle1"><td colspan="2"><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>"><% $i %></a></td></tr>
 %	   }  
 %	}
           <tr><td>&nbsp;</td></tr>
 %	  if ( defined($h_meta) ){  # only if there's a history table.
-   	     <tr><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a></td></tr>
+   	     <tr class="rowtitle1"><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a></td></tr>
 %	  }
 	  <tr><td>&nbsp;</td></tr>
 %	  if (scalar keys %ftables){
-            <tr><td bgcolor="#DDDDDD"><strong>Add to this <% $table %>:</strong></td></tr>
+            <tr class="rowtitle0"><td bgcolor="#DDDDDD" class="rowtitle0"><strong>Add to this <% $table %>:</strong></td></tr>
 %	      foreach my $i (keys %ftables){
-	        <tr>
+	        <tr class="rowtitle1">
 	          <td><font color="#FF0000">&gt;</font> <a href="create.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>"><% $i %></a></td>
 	        </tr>
 %	      }
@@ -134,11 +135,11 @@ my $h_meta = $gui->getmeta($h_table);
   <td width="100%" align="center" valign="top">
 
 %if ($view eq 'all' || $view eq "$table"){
-    <table cellpadding="1" cellspacing="1" border="0" bgcolor="CCCCCC" width="80%">
+    <table cellpadding="1" cellspacing="1" border="0" bgcolor="CCCCCC" width="80%" class="tablebackground">
       <tr>
         <td colspan="2">
-         <table bgcolor="#FFFFFF" border="0" width="100%">
-          <tr>
+         <table border="0" width="100%" class="tabletitle">
+          <tr class="tabletitle">
            <td align="left" width="20%">&nbsp;</td>
            <td align="center" width="60%"><strong><% $table %></strong></td>
            <td align="right" width="20%">
@@ -154,7 +155,7 @@ my $h_meta = $gui->getmeta($h_table);
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %      next if ($c eq 'id' || $c eq 'aliases');
        <tr> 
-       <td width="20%" align="right" valign="center" bgcolor="#DDDDDD"><% $c %>:</td>
+       <td width="20%" align="right" valign="center" bgcolor="#DDDDDD" class="column1"><% $c %>:</td>
 %      if (!exists($linksto{$c}) ){
 %          if ( $gui->getsqltype($table,$c) =~ /bool/ ){
 %	      if ($obj->$c){
@@ -163,7 +164,7 @@ my $h_meta = $gui->getmeta($h_table);
 	         <td><strong>no</strong></td>
 %	      }
 %	   }else{
-	      <td><strong><% $obj->$c %></strong></td>
+	      <td class="column2"><strong><% $obj->$c %></strong></td>
 %	   }
 %      }else{
          <td align="left" valign="bottom">
@@ -222,6 +223,9 @@ my $gui = Netdot::GUI->new();
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.20  2003/07/08 22:56:28  netdot
+#  Added some css tags -miyake
+#
 #  Revision 1.19  2003/07/07 21:34:01  netdot
 #  Fixed problem with form that calls for a specific record.
 #
