@@ -181,11 +181,6 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
         unless ($o){
             $m->comp('error.mhtml', error => $dm->error);
         }
-        for my $ver (qw (4 6)){
-            unless( $ipm->build_tree($ver) ){
-                printf("Could not rebuild IPv%s space tree!: %s\n", $ver, $ipm->error);
-            }
-        }
         unless ($o->name && ($name = $o->name->name)){
             $name = "device"
             }

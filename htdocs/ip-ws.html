@@ -1,8 +1,14 @@
 <& index.html, title => "IP Worksheet: $title", s2name => $s2name  &>
 
 <table width="95%" border="0" cellspacing="0" cellpadding="0" class="tablebackground"> 
-<tr><td>
+<tr>
+  <td>
+    <br>
+  </td>
+</tr>
 
+<tr>
+  <td>
 <%perl>
 
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -32,7 +38,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     Query <b><em><% $search %></em></b> returned: <b><% $num %> matches</b>
 
 %      if ( $num ){
-          <& ipblock_list.mhtml, objects => \@list &>
+        <& sortresults.mhtml, table => "Ipblock", object => \@list, view => "row", sort => 0, page => "ip-ws.html" &>
 %      }elsif ( $ipm->error ){
           <p><b><% $ipm->error %></b>
 %      }
@@ -48,20 +54,15 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 
 }elsif( defined($_action) && ($_action eq "UPDATE")){
 
-##  TODO:
-##  Pass %ARGS to a validation function first 
-##  (enforce some rules)
-  
-    if (!$ui->form_to_db(%ARGS)){
-	$m->comp('error.mhtml', error => $ui->error);
-    }
-    
-    # Do this to 'flush' the values associated with the object
-    # before redisplaying
-    $o = undef;
-    if ($id)
-    {
-	$o = Ipblock->retrieve($id);
+    if ( $ui->form_to_db(%ARGS) ){
+	# Do this to 'flush' the values associated with the object
+	# before redisplaying
+	$o = undef;
+	if ($id){
+	    $o = Ipblock->retrieve($id);
+	}
+    }else{
+	printf ("<p><b>Error: %s</b><br>", $ui->error);
     }
 
 #######################################################################################
@@ -72,23 +73,18 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     unless ($allocate =~ /\//){
 </%perl>
 
-     <p><b>Error: New block must have a prefix</b>   
+     <p><b>Error: New block must have prefix length</b><br>   
 
 <%perl>
      $m->abort;
     }
     my ($address, $prefix) = split /\//, $allocate;
     my $newblock;
-    unless( $newblock = $ipm->insertblock(address => $address, 
-					  prefix  => $prefix, 
-					  status  => "Allocated",
-					  manual  => 1 )){
-	$m->comp('error.mhtml', error => $ipm->error);
-    }
-    # 
-    # Rebuild tree
-    unless ( $ipm->build_tree($newblock->version) ){
-       $m->comp('error.mhtml', error => $ipm->error);    
+    unless( $newblock = $ipm->insertblock(address     => $address, 
+					  prefix      => $prefix, 
+					  statusname  => "Container",
+					  manual      => 1 )){
+	print "<b>Error: ", $ipm->error, "</b><br>";
     }
     if ($newblock)
     {
@@ -101,19 +97,14 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 #
 #######################################################################################
 }elsif ( defined($_action) && ($_action eq "AUTOALLOCATE") ){
-    # Chop "/" if any
+    # Strip "/" if any
     $length =~ s/\///;
     my $newblock;
-    unless( $newblock = $ipm->auto_allocate($parent, $length) ){
-      $m->comp('error.mhtml', error => $ipm->error);
+    unless( $newblock = $ipm->auto_allocate($parent, $length, $strategy) ){
+	print "<b>Error: ", $ipm->error, "</b><br>";
     }
-    # 
-    # Rebuild tree
-    unless ( $ipm->build_tree($newblock->version) ){
-       $m->comp('error.mhtml', error => $ipm->error);    
-    }
-    if ($newblock)
-    {
+    if ($newblock){
+	undef $o;
 	$o = $newblock;
 	$id = $newblock->id;
     }
@@ -127,7 +118,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     my ($parentid, $address, $prefix, $version) = ($o->parent->id, $o->address, $o->prefix, $o->version);
     # Remove from Database
     #
-    unless ($ipm->removeblock(address => $address, prefix => $prefix)){
+    unless ($ipm->removeblock( id => $o->id )){
 	$m->comp('error.mhtml', error => $ipm->error);
     }
     # 
@@ -138,7 +129,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     
 </%perl>
 
-    <p>Block <b><% $address %>/<% $prefix %></b> has been removed.
+    <p>Block <b><% $address %>/<% $prefix %></b> has been removed<br>.
 
 <%perl>
 #    Show parent block
@@ -168,7 +159,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     <input type="hidden" name="s2name" value="<% $s2name %>">
     <input type="hidden" name="_action" value="UPDATE">
 % }
-% if ( ! $ipm->issubnet($o) ){  
+% if ( $ipm->isaddress($o) ){  
 %#######################################################################################
 %# View IP address
 %#######################################################################################
@@ -179,7 +170,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
      <td colspan="2">
       <table width="100%" border="0">
        <tr>
-         <th width="50%" align="left">IP Info</th>
+         <th width="50%" align="left">Address Info</th>
 %	 if ($edit eq "ipinfo"){	 
             <td width="50%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
@@ -197,27 +188,36 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
       <td valign="top" width="50%">
          <table width="100%" border="0">
            <tr>
-             <td class="formtablec1">Block: </td>
-	     <td class="formtablec2"> 
-		 <b><% $o->address %>/<% $o->prefix %></b> 
-	     </td>
-	   </tr>
-           <tr>
-             <td class="formtablec1">Parent Block: </td>
-	     <td class="formtablec2"> 
-%	     if (defined($o->parent) && int($o->parent)){
-		 <b><a href="ip-ws.html?id=<% $o->parent->id %>"><% $o->parent->address %>/<% $o->parent->prefix %></a></b> 
-%	     }else{
-	         <b><font size="-1">(root block)</font></b>
-%	     }
-	     </td>
+	     <td class="formtablec1">Address: </td>
+	     <td class="formtablec2"><b><% $o->address %>/<% $o->prefix %></b></td>
 	   </tr>
            <tr>
              <td class="formtablec1">Status: </td>
 	     <td class="formtablec2"> 
-%                $ui->selectLookup(object=>$o, column=>"status", lookup=>"IpblockStatus", edit=>"$editIP");
+%	       my @valid_block_status = qw ( Static Dynamic Reserved );
+%	       if ( my $sn = $o->status->name ){
+%	          if ( $edit eq "ipinfo" ){
+                    <select name="Ipblock__<% $o->id %>__statusname">
+%	            foreach my $st ( @valid_block_status ){
+%		      if ( $st eq $sn ){
+  		         <option value="<% $st %>" SELECTED><% $st %></option>
+%		      }else{
+  		         <option value="<% $st %>"><% $st %></option>
+%		      }
+%		    }
+		    </select>
+%                 }else{
+	            <b><% $sn %></b>
+%                 }
+%	       }
 	     </td> 
 	   </tr>
+           <tr>
+             <td class="formtablec1">Description: </td>
+	     <td class="formtablec2"> 
+%               $ui->textField(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+	     </td>
+	  </tr>
 %          if (scalar($o->arecords)){	   
            <tr>
 	     <td colspan="2">
@@ -244,7 +244,12 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	      </table>
 	    </td>
 	   </tr>
-%        } #enidf 
+%        }else{
+           <tr>
+             <td class="formtablec1"></td>
+	     <td class="formtablec2">[Add DNS Records]</td>
+	  </tr>
+%	 }
 %          if (scalar($o->services)){	   
            <tr>
 	     <td colspan="2">
@@ -258,21 +263,17 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 		  <tr>
 	            <td class="formtablec2">
 %	      	    if ($edit eq "ipinfo"){	 
-%                     $ui->selectLookup(object=>$ipservice, column=>"service", lookup=>"Service", edit=>$editIP);
+%                     $ui->selectLookup(object=>$ipservice, column=>"service", lookup=>"Service", edit=>$edit_ip);
 %	            }else{
 		      <a href="view.html?table=Service&id=<% $ipservice->service->id %>">
 		      <% $ipservice->service->name %></td></a>
 %		    }
 	            <td class="formtablec2">
-%	      	    if ($edit eq "ipinfo"){	 
-%                     $ui->radioGroupBoolean(object=>$ipservice, column=>"monitored", edit=>$editIP);
-%	            }else{
-		      <b><% $ipservice->monitored ? "Yes" : "No" %></b>
-%		    }
+%                     $ui->radioGroupBoolean(object=>$ipservice, column=>"monitored", edit=>$edit_ip);
 		    </td>
 	            <td class="formtablec2">
 %	      	    if ($edit eq "ipinfo"){	 
-%                     $ui->selectLookup(object=>$ipservice, column=>"contactlist", lookup=>"ContactList", edit=>$editIP);
+%                     $ui->selectLookup(object=>$ipservice, column=>"contactlist", lookup=>"ContactList", edit=>$edit_ip);
 %                   }elsif ($o->entity){
 		      <a href="view.html?table=ContactList&id=<% $ipservice->contactlist %>">
 		      <% $ipservice->contactlist->name %></td></a>
@@ -288,6 +289,28 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
       </td>
       <td valign="top" width="50%">
          <table  border="0">
+           <tr>
+             <td class="formtablec1">Parent Block: </td>
+	     <td class="formtablec2"> 
+%	     if (defined($o->parent) && int($o->parent)){
+		 <a href="ip-ws.html?id=<% $o->parent->id %>"><% $o->parent->address %>/<% $o->parent->prefix %></a>
+%	     }else{
+	         <b><font size="-1">(root block)</font></b>
+%	     }
+	     </td>
+	   </tr>
+           <tr>
+             <td class="formtablec1">First seen: </td>
+	     <td class="formtablec2"> 
+%               $ui->textField(object=>$o, column=>"first_seen", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+	     </td>
+	  </tr>
+           <tr>
+             <td class="formtablec1">Last Seen: </td>
+	     <td class="formtablec2"> 
+%               $ui->textField(object=>$o, column=>"last_seen", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+	     </td>
+	  </tr>
            <tr>
              <td class="formtablec1">Configured in Interface: </td>
 	     <td class="formtablec2"> 
@@ -318,120 +341,217 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	      </table>
 	    </td>
 	   </tr>
- </table>
+         </table>
+       </td>
+     </tr>
+  </table>
 <!-- End IP Info Table -->
 
 %} else {     
 %#######################################################################################
-%# View Subnet
+%# View Block
 %#######################################################################################
 
-<!-- Subnet Info Table -->
+<!-- Block Info Table -->
    <table border="0" width="100%" cellpadding="0" cellspacing="0" class="formtablebg">
    <tr class="formtabletitle" >
      <td colspan="2">
       <table width="100%" border="0">
        <tr>
-         <th width="50%" align="left">Subnet Info</th>
-%	 if ($edit eq "subnetinfo"){	 
+         <th width="50%" align="left">Block Info</th>
+%	 if ($edit eq "blockinfo"){	 
             <td width="50%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
             <td width="50%" align="right">
 		<a href="ip-ws.html?id=<% $id %>">[refresh]</a>
 		<a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
-		<a href="ip-ws.html?id=<% $id %>&edit=subnetinfo">[edit]</a>
+		<a href="ip-ws.html?id=<% $id %>&edit=blockinfo">[edit]</a>
 	    </td>
 %       }
       </tr>
       </table>
      <td>
-   </tr>
-   <tr>
-      <td valign="top" width="50%">
-         <table border="0">
+  </tr>
+  <tr>
+     <td valign="top" width="50%">
+        <table width="100%" border="0">
            <tr>
-             <td class="formtablec1">Block: </td>
-	     <td class="formtablec2"> 
-		 <b><% $o->address %>/<% $o->prefix %></b> 
-	     </td>
+	     <td class="formtablec1">Address: </td>
+	     <td class="formtablec2"><b><% $o->address %>/<% $o->prefix %></b></td>
+	   </tr>
+	   <tr>
+             <td class="formtablec1">Status: </td>
+	     <td class="formtablec2">
+%	       my @valid_block_status = qw ( Container Subnet Reserved );
+%	       if ( my $sn = $o->status->name ){
+%	          if ( $edit eq "blockinfo" ){
+                    <select name="Ipblock__<% $o->id %>__statusname">
+%	            foreach my $st ( @valid_block_status ){
+%		      if ( $st eq $sn ){
+  		         <option value="<% $st %>" SELECTED><% $st %></option>
+%		      }else{
+  		         <option value="<% $st %>"><% $st %></option>
+%		      }
+%		    }
+		    </select>
+%                 }else{
+	            <b><% $sn %></b>
+%                 }
+%	       }
+	     </td> 
 	   </tr>
            <tr>
+             <td class="formtablec1">Description: </td>
+	     <td class="formtablec2"> 
+%               $ui->textField(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+	     </td>
+	  </tr>
+          <tr>
+             <td class="formtablec1">Used by: </td>
+	     <td class="formtablec2"> 
+%	      	 if ($edit eq "blockinfo"){	 
+%                   $ui->selectLookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>$edit_block);
+%                }elsif ($o->entity){
+		   <a href="view.html?table=Entity&id=<% $o->entity->id %>"><% $o->entity->name %></a> 
+%                }
+	     </td>
+	  </tr>
+% if ($o->status->name eq "Subnet"){
+          <tr>
+             <td class="formtablec1">Utilization: </td>
+<%perl>
+          my $used = (scalar $o->children);
+	  my $total = $ipm->subnet_num_addr($o);
+	  my $avail = $total - $used;
+	  my $u = sprintf("%.1f", $used / $total * 100 );
+</%perl>
+	     <td class="formtablec2"><% $used %> of <% $total %> (<% $u %>%), Avail: <% $avail %> </td>
+	  </tr>
+	  <tr>
+             <td class="formtablec1">Enable DHCP: </td>
+             <td class="formtablec2">
+%              $ui->radioGroupBoolean(object=>$o, column=>"dhcp_enabled", edit=>$edit_block);
+	     </td>
+	  </tr>
+	  <tr>
+             <td class="formtablec1">Delegate DNS: </td>
+             <td class="formtablec2">
+%              $ui->radioGroupBoolean(object=>$o, column=>"dns_delegated", edit=>$edit_block);
+	     </td>
+	  </tr>
+% }elsif ($o->status->name eq "Container"){
+	  <tr>
+             <td class="formtablec1">Delegate DNS: </td>
+             <td class="formtablec2">
+%              $ui->radioGroupBoolean(object=>$o, column=>"dns_delegated", edit=>$edit_block);
+	     </td>
+	  </tr>
+% }
+	</table>
+      </td>
+      <td valign="top" width="50%">
+         <table width="100%" border="0">
+	   <tr>
              <td class="formtablec1">Parent Block: </td>
 	     <td class="formtablec2"> 
 %	     if (defined($o->parent) && int($o->parent)){
-		 <b><a href="ip-ws.html?id=<% $o->parent->id %>"><% $o->parent->address %>/<% $o->parent->prefix %></a></b> 
+		 <a href="ip-ws.html?id=<% $o->parent->id %>"><% $o->parent->address %>/<% $o->parent->prefix %></a>
 %	     }else{
 	         <b><font size="-1">(root block)</font></b>
 %	     }
 	     </td>
 	   </tr>
            <tr>
-             <td class="formtablec1">Status: </td>
-	     <td class="formtablec2"> 
-%                $ui->selectLookup(object=>$o, column=>"status", lookup=>"IpblockStatus", edit=>"$editSubnet");
-	     </td> 
-	   </tr>
-	 </table>
-      </td>
-      <td valign="top" width="50%">
-         <table  border="0">
+             <td class="formtablec1">Created: </td>
+	     <td class="formtablec2"><% $o->first_seen %></td>
+	  </tr>
            <tr>
-             <td class="formtablec1">Used by: </td>
-	     <td class="formtablec2"> 
-%	      	 if ($edit eq "subnetinfo"){	 
-%                   $ui->selectLookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>$editSubnet);
-%                }elsif ($o->entity){
-		   <a href="view.html?table=Entity&id=<% $o->entity->id %>"><% $o->entity->name %></a> 
-%                }
-	     </td>
-	   </tr>
-	   <tr>
-             <td class="formtablec1">Description: </td>
-	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"description", edit=>$editSubnet, htmlExtra =>"style='width: 250px'");
-	     </td>
-	   </tr>
-% if ($edit eq "subnetinfo"){	 
+             <td class="formtablec1">Last Updated: </td>
+	     <td class="formtablec2"><% $o->last_seen %></td>
+	  </tr>
+% if ($edit eq "blockinfo"){	 
          </table>
       </td>
     </form>
-% }elsif ($o->status->name eq "Allocated"){
+% }elsif ($o->status->name eq "Container"){
            <tr>
-             <td class="formtablec1">
-	     New subnet of size: </td>
+             <td class="formtablec1">New sub-block of length: / </td>
 	     <td class="formtablec2"> 
 	     <form name="netdotform" action="ip-ws.html" method="POST">
 	     <input type="hidden" name="id" value="<% $id %>">
 	     <input type="hidden" name="s2name" value="<% $s2name %>">
 	     <input type="hidden" name="_action" value="AUTOALLOCATE">
 	     <input type="hidden" name="parent" value="<% $id %>">
-	     <input type="text" size = "4" name="length" value="">
+	     <input type="text" size = "4" name="length" value="<% $o->prefix + 1 %>">
+	     <select name="strategy">
+	       <option value="first">First Fit</option>
+	       <option value="last">Last Fit</option>
+	     </select>
 	     <input name="submit" value="Get" type="submit">
 	     </td>
+	   </tr>
+	   <tr>
+             <td class="formtablec1">Choose Manually:</td>
+             <td class="formtablec2">[view availability]</td>
+	   </tr>
+         </table>
+      </td>
+% }elsif ($o->status->name eq "Subnet"){
+           <tr>
+             <td class="formtablec1">
+	     New address: </td>
+	     <td class="formtablec2"> 
+	     <form name="netdotform" action="ip-ws.html" method="POST">
+	     <input type="hidden" name="id" value="<% $id %>">
+	     <input type="hidden" name="s2name" value="<% $s2name %>">
+	     <input type="hidden" name="_action" value="AUTOALLOCATE">
+	     <input type="hidden" name="parent" value="<% $id %>">
+%	     if ($o->version == 4){
+ 	        <input type="hidden" name="length" value="32">
+%	     }elsif ($o->version == 6){
+	        <input type="hidden" name="length" value="128">
+%	     }
+	     <select name="strategy">
+	       <option value="first">First Fit</option>
+	       <option value="last">Last Fit</option>
+	     </select>
+	     <input name="submit" value="Get" type="submit">
+	     </td>
+	   </tr>
+	   <tr>
+             <td class="formtablec1">Choose Manually:</td>
+             <td class="formtablec2">[view availability]</td>
 	   </tr>
          </table>
       </td>
 % }else{
-         </table>
+        </table>
       </td>    
 % } 
 
-% if (scalar($o->children)){
-</tr>
+<%perl>
+# 
+# Get children
+#
+my @children;  
+if (scalar( @children = $ipm->getchildren($o->id) )){
+</%perl>
+
+   <tr>
+     <td><br></td>
+   </tr>
    <tr class="formtabletitle" >
-     <th colspan="2" align="left">
-      Children Addresses/Blocks     
-     </th>
-     <tr>
-       <td colspan="2">
-%       my @children = $o->children;
-        <& ipblock_list.mhtml, objects => \@children &>
-       </td>
-     </tr>
-</tr>
-</table>
+     <th colspan="2" align="left">Children Addresses/Blocks </th>
+   </tr>
+   <tr>
+     <td colspan="2">
+      <& sortresults.mhtml, table => "Ipblock", object => \@children, view => "row", sort => 0, page => "ip-ws.html" &>
+      </td>
+   </tr>
+   </table>
+
 % }
-<!-- End Subnet Info Table -->
+<!-- End Block Info Table -->
 %} 
 % if ($edit){	 
     </form>
@@ -453,6 +573,7 @@ $delete    => undef
 $allocate  => undef
 $parent    => undef
 $length    => undef
+$strategy  => undef
 $edit      => undef
 $submit    => undef
 $s2name    => "Management"
@@ -463,27 +584,25 @@ $user      => $ENV{REMOTE_USER}
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
 my $ipm = Netdot::IPManager->new();
-my $maxselect = 100;
 my $o;
 my $ci = 0;
 my %arg;
 my $title;
 if ($id){
-    eval {
-	$o = Ipblock->retrieve($id)
-    };
-    if ( $@ ){
-	$m->comp('error.mhtml', error => $@);
+    unless( $o = Ipblock->retrieve($id) ){
+	$m->comp('error.mhtml', error => "Could not retrieve Ipblock id: $id");
+    }else{
+	$title = $o->address . "/" . $o->prefix;
     }
-    $title = $o->address . "/" . $o->prefix;
 }else{
     $title = "Search";
 }
 
-my $editIP = 0;
-my $editSubnet = 0;
-$editIP = 1 if ($edit eq "ipinfo");
-$editSubnet = 1 if ($edit eq "subnetinfo");
+my $edit_ip = 0;
+my $edit_block = 0;
+$edit_ip = 1 if ($edit eq "ipinfo");
+$edit_block = 1 if ($edit eq "blockinfo");
+
 
 </%init>
 

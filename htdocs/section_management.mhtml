@@ -1,9 +1,26 @@
-% # section_management.mhtml
-% #
-% # Network Management Functions
-% #
-% #############################################################################
-  
+
+<%doc>
+
+ section_management.mhtml
+ Network Management Functions
+
+</%doc>
+
+<%init>
+my $currentUser = SiteControl::AccessController::getCurrentUser($r);
+my %caller_args = $m->caller_args(-1);
+
+if (exists($caller_args{page}))
+{
+    $currentUser->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
+}
+
+my $page = $currentUser->getAttribute("MANAGEMENT_PAGE");
+my $ipm = Netdot::IPManager->new();
+
+</%init>
+
+
 <tr class="rowtitle0" align="center">
     <td align="center"><h3>Management</h3></td>
 </tr>
@@ -86,36 +103,42 @@
     <td>
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
        <tr>
+          <td colspan="2" align="center">
+              <form action="ip-ws.html" method="POST">
+              <select name="id">
+	          <option value="0" SELECTED> -- Select Root -- </option>
+%	      my @rbs = $ipm->getrootblocks;
+%             if (scalar @rbs){
+%               foreach my $r ( @rbs ){
+                  <option value="<% $r->id %>"><% $r->address . "/" . $r->prefix %></option>
+%               }
+%             }else{
+                <option value="0"> - </option>                 
+%             }
+              </select>
+              <input name="submit" value="Go" type="submit">
+              <input type="hidden" name="_action" value="VIEW">
+              </form>
+          </td>
+      </tr>
           <td>
               <form action="ip-ws.html" method="POST">
-              Find Block: (IP[/prefix]) <input type="text" name="search" size="20" value=""> 
-              <input name="submit" value="search" type="submit">
+              Find Block (IP[/prefix])<input type="text" name="search" size="20" value=""> 
+              <input name="submit" value="Find" type="submit">
               <input type="hidden" name="_action" value="SEARCH">
               </form>
           </td>
           <td>
               <form action="ip-ws.html" method="POST">
-              Allocate New Block: (IP/prefix) <input type="text" name="allocate" size="20" value=""> 
-              <input name="submit" value="allocate" type="submit">
+              Allocate New Block (IP/prefix)<input type="text" name="allocate" size="20" value=""> 
+              <input name="submit" value="Allocate" type="submit">
               <input type="hidden" name="_action" value="ALLOCATE">
               </form>
           </td>
+       <tr>
       </tr>
     </table>
     </td>
 </tr>
 
 %}
-
-
-<%init>
-my $currentUser = SiteControl::AccessController::getCurrentUser($r);
-my %caller_args = $m->caller_args(-1);
-
-if (exists($caller_args{page}))
-{
-    $currentUser->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
-}
-
-my $page = $currentUser->getAttribute("MANAGEMENT_PAGE");
-</%init>

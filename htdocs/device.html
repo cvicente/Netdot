@@ -488,7 +488,7 @@
 	   <td align="left">
 %	      	 if ($editips){	 
 		    <input type="checkbox" name="<% "Ipblock__" . $ip->id . "__delete" %>" >[del]
-		    <input type="text" size="15" name="<% "Ipblock__" . $ip->id . "__address" %>" value="<% $ip->address %>">
+		    <% $ip->address %>
 		    <br>
 %	         }else{
 		    <a href="ip-ws.html?id=<% $ip->id %>"><% $ip->address %></a><br>
@@ -496,7 +496,11 @@
 	   </td>
 	   <td align="left">
 %	     if ( int($ip->parent) != 0  ){
-	       <a href="ip-ws.html?id=<% $ip->parent->id %>"><% $ip->parent->address %>/<% $ip->parent->prefix %></a><br>
+%	     	 if ($editips){	 
+                   <% $ip->parent->address %>/<% $ip->parent->prefix %>
+%                }else{
+	           <a href="ip-ws.html?id=<% $ip->parent->id %>"><% $ip->parent->address %>/<% $ip->parent->prefix %></a><br>
+%                }
 %            }
 	   </td>
 	   <td align="left"><% $ip->interface->name %></td>

@@ -1,12 +1,4 @@
 #PERL
-# (c-file-style: "gnu")
-# Local Variables:
-# mode: perl
-# tab-width: 8
-# c-basic-offset: 4
-# c-hanging-comment-ender-p: nil
-# indent-tabs-mode: nil
-# End:
 
 use lib "PREFIX/lib";
 use Getopt::Long qw(:config no_ignore_case bundling);
@@ -144,7 +136,6 @@ if ($host){
     die "Error: You need to specify one of -H, -s or -d\n";
 }
 
-&build_ip_tree if $success;
 
 sub discover {
     my (%argv) = @_;
@@ -155,7 +146,7 @@ sub discover {
     my ($c, $d) = $dm->find_dev($argv{host});
     $argv{comstr} = $c if defined($c);
     $argv{device} = $d if defined($d);
-    printf ("%s\n", $dm->output) if ($VERBOSE && ! $DEBUG);
+    printf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
 
     # Fetch SNMP info
     $argv{dev} = $dm->get_dev_info($argv{host}, $argv{comstr});
@@ -163,11 +154,11 @@ sub discover {
 	printf("Error: %s\n", $dm->error) if $VERBOSE;
 	return 0;
     }
-    printf ("%s\n", $dm->output) if ($VERBOSE && ! $DEBUG);
+    printf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
 
     # Update database
     if ( $r = $dm->update(%argv) ){
-	printf ("%s\n", $dm->output) if ($VERBOSE && ! $DEBUG);
+	printf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
     }else{
 	printf("Error: %s\n", $dm->error) if $VERBOSE;
 	return 0;
@@ -175,12 +166,3 @@ sub discover {
     return $r;
 }
 
-sub build_ip_tree{
-    for my $ver (qw (4 6)){
-	unless( $ipm->build_tree($ver) ){
-	    printf("Could not rebuild IPv%s space tree!: %s\n", $ver, $ipm->error);
-	}else{
-	    printf("Rebuilt IPv%s space tree\n", $ver);
-	}
-    }
-}

@@ -9,71 +9,66 @@ Supported arguments:
 </%doc>
 <%args>
 
-%args       => undef
-%order      => undef
-%tags       => undef
-%linksto    => undef
-%linksfrom  => undef
-$cellspc    => 0
-$cellpad    => 0
-$SORT       => undef
-$META       => undef
-$LBL        => undef
-$PAGE       => "view.html"
-$ui         => Netdot::UI->new()
-$VIEW       => "column"
 $table      => undef
+$object     => undef
+$view       => "column"
+$sort       => undef
+$page       => "view.html"
 $withdelete => 0
+%order      => undef
 </%args>
 
 <%init>
 my @sorted;
-
+my %tags;
+my %linksto;
+my %linksfrom;
+my $cellspc = 0;
+my $cellpad = 0;
+my $META;
+my $LBL;
+my $ui = Netdot::UI->new();
+my %cssitem = ( 0 => "formtablec1", 1 => "formtablec2" );
+my $ci = 1;
 </%init>
 
 <%perl>
-# expect name of Table & objects that require sorting
-foreach my $j ( keys %ARGS ) {
-  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
-  $args{$j} = $ARGS{$j};
-}
-if( exists( $args{view} ) ) {
-  $args{view} = lc( $ARGS{view} );
-  if( $args{view} eq "row" || $args{view} eq "column" ) {
-    $VIEW = $args{view};
+
+if( $view ) {
+  unless ( $view eq "row" || $view eq "column" ) {
+      $m->comp('error.mhtml', error => "Invalid value for view: $view");
   }
 }
-if( exists( $args{page} ) ) {
-  $PAGE = $args{page};
-}
 if( $table ) {
-  undef( $META );
   $META = $ui->getmeta( $table );
   if( defined( $META ) ) {
     my $i = 1;
     my @tmp;
     ##############################################
-    # if sort arg; check to make sure column exists & set SORT
-    if( exists( $args{sort} ) ) {
-      my(%col);
-      map { $col{$_}++ } $table->columns;
-      if( exists( $col{ $args{sort} } ) ) {
-        $SORT = $args{sort};
-	@sorted = sort { $a->$SORT cmp $b->$SORT } @{ $args{object} };
-      }
-    }
-    ##############################################
     # get the label for this table (as defined in Meta)
     $LBL = ($ui->getlabels( $table ))[0];
 
     ##############################################
+    # If sort arg
+    if( defined( $sort ) ) {
+	if ( $sort == 0 || $sort eq "no"){
+	    # We're told not to sort
+	    @sorted =  @{ $object };
+	}else{
+	    my(%col);
+	    map { $col{$_}++ } $table->columns;
+	    if( exists( $col{ $sort } ) ) {
+		@sorted = sort { $a->$sort cmp $b->$sort } @{ $object };
+	    }
+	}
+    ##############################################
     # If no sort arg, sort by actual label
     # 
-    if( ! defined( $SORT ) ) {
+    }else{
 	my @labels = $ui->getlabelarr( $table );
 	@sorted = map  { $_->[0] }
 	sort { $a->[1] cmp $b->[1] }
-	map { [$_ , $ui->getlabelvalue($_, \@labels)] } @{ $args{object} };
+	map { [$_ , $ui->getlabelvalue($_, \@labels)] } @{ $object };
 	    
     }
     ##############################################
@@ -108,23 +103,23 @@ if( $table ) {
 }
 </%perl>
 %
-% if( defined( $META ) && defined( $args{object} ) ) {
+% if( defined( $META ) && defined( $object ) ) {
 <!-- begin sortresults -->
 % ####################################################################
 <%doc>
 Begin the table for this instance of sortresults
 </%doc>
 % ####################################################################
-% if( $VIEW eq "row" ) {
+% if( $view eq "row" ) {
 %   ($cellspc, $cellpad) = ( 0, 0 );
-% } elsif( $VIEW eq "column" ) {
+% } elsif( $view eq "column" ) {
 %   ($cellspc, $cellpad) = ( 0, 1 );
 % }
   <TABLE BORDER="0" CELLSPACING="<% $cellspc %>" CELLPADDING="<% $cellpad %>" width="100%" class="tablebackground">
 % if ( $withdelete ){
     <FORM ACTION="delete.html" METHOD="POST">
 % }
-%    if( $VIEW eq "row" ) {
+%    if( $view eq "row" ) {
 % ####################################################################
 <%doc>
 If the VIEW is a row, print the column headers.  
@@ -151,16 +146,16 @@ Otherwise, print an empty row.
 % ####################################################################
 % foreach my $o ( @sorted ) {
 %    my $flag = 1;
-%
+%    $ci = ($ci + 1) % 2;
 % ####################################################################
 <%doc>
 Print relevant delimiters for whether a ROW or COLUMN view
 </%doc>
 % ####################################################################
 %
-%    if( $VIEW eq "row" ) {
-    <TR class="rowtitle3">
-%    } elsif( $VIEW eq "column" ) {
+%    if( $view eq "row" ) {
+      <TR class="<% $cssitem{$ci} %>">
+%    } elsif( $view eq "column" ) {
     <TR height="1" class="delimiter">
       <TD colspan="2" height="1"></TD>
     </TR>
@@ -180,17 +175,18 @@ If a COLUMN view, start a row with the column name.
 </%doc>
 % ####################################################################
 %
-%       if( $VIEW eq "column" ) {
-    <TR>
-      <TD align="RIGHT" valign="TOP" WIDTH="18%" class="column1">
-%	   if ( exists($tags{$c}) ){
-      <b><% $tags{$c} %></b>:&nbsp;
-%	   } else {
-      <b><% $c %></b>:&nbsp;
-%	   }
-      </TD>
+%       if( $view eq "column" ) {
+          <TR class="<% $cssitem{$ci} %>">
+%#          <TR>
+           <TD align="RIGHT" valign="TOP" WIDTH="18%">
+%	     if ( exists($tags{$c}) ){
+               <b><% $tags{$c} %></b>:&nbsp;
+%	     } else {
+               <b><% $c %></b>:&nbsp;
+%	     }
+          </TD>
 %       }
-      <TD align="LEFT" valign="MIDDLE" class="column2">
+      <TD align="LEFT" valign="MIDDLE">
 % ####################################################################
 <%doc>
 If it's a link to another column....
@@ -218,7 +214,7 @@ If it's a link to another column....
 %                #######################
 %                # if flag is set, make the item a url
       <strong>
-      <a href="<% $PAGE %>?table=<% $table %>&id=<% $o->id %>">
+      <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">
 %                   if( length( $lbl ) < 1 ) {
       N/A
 %                   } else {
@@ -242,7 +238,7 @@ It's not a pointer to another column
 %
 %             if( $flag ) {
       <strong>
-      <a href="<% $PAGE %>?table=<% $table %>&id=<% $o->id %>">
+      <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">
 %                if( length( $o->$c ) < 1 ) {
       N/A
 %                } else {
@@ -261,17 +257,17 @@ Wrap this row up.
 </%doc>
 % ####################################################################
 %       $flag = 0 if( $flag );          
-%       if( $VIEW eq "column" ) {
+%       if( $view eq "column" ) {
     </TR>
 %       }
 %     } # for c
 %
 
-%     if( $VIEW eq "column" ) {
+%     if( $view eq "column" ) {
 %        if ( $withdelete ){
-           <TR>
-             <TD align="RIGHT" valign="TOP" WIDTH="18%" class="column1"></TD>
-             <TD align="LEFT" valign="MIDDLE" class="column2">
+           <TR class="<% $cssitem{$ci} %>">
+             <TD align="RIGHT" valign="TOP" WIDTH="18%">del</TD>
+             <TD align="LEFT" valign="MIDDLE">
                <input type="checkbox" name="<% $table %>__<% $o->id %>">
              </TD>
            </TR>
@@ -280,7 +276,7 @@ Wrap this row up.
       <TD colspan="2" height="1"></TD>
     </TR>
 
-%     } elsif( $VIEW eq "row" ) {
+%     } elsif( $view eq "row" ) {
 %         if ( $withdelete ){
             <TD align="LEFT" valign="MIDDLE" class="column2">
               <input type="checkbox" name="<% $table %>__<% $o->id %>">

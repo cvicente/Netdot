@@ -94,7 +94,7 @@ sub output {
     return $self->{'_output'};
 }
 
-=head2 find_dev - Perform some preliminary checks to determine device's existence
+=head2 find_dev - Perform some preliminary checks to determine if a device exists
 
     my ($c, $d) = $dm->find_dev($host);
 
@@ -139,7 +139,7 @@ sub find_dev {
 
 =head2 update - Insert/Update Device in Database
 
- This method can be called from Netdot's web components or 
+ This method can be called from Netdot s web components or 
  from independent scripts.  Should be able to update existing 
  devices or create new ones
 
@@ -154,6 +154,7 @@ sub find_dev {
 sub update {
     my ($self, %argv) = @_;
     my ($host, $comstr, %dev);
+    $self->_clear_output();
 
     $self->debug(loglevel => 'LOG_DEBUG',
 		 message => "Arguments are: %s" ,
@@ -403,12 +404,12 @@ sub update {
     # Serial Number
     
     if( defined $dev{serialnumber} ) {
-
-	if ( ! $device ){
-	    if ( my $otherdev = (Device->search(serialnumber => $dev{serialnumber}))[0] ){
-		
+	if ( my $otherdev = (Device->search(serialnumber => $dev{serialnumber}))[0] ){
+	    if ( defined($device) && $device != $otherdev ){
+		my $othername = (defined $otherdev->name && defined $otherdev->name->name) ? 
+		    $otherdev->name->name : $otherdev->id;
 		$self->error( sprintf("S/N %s belongs to existing device %s. Aborting.", 
-				      $dev{serialnumber}, $host) ); 
+				      $dev{serialnumber}, $othername) ); 
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $self->error,
 			      );
@@ -541,7 +542,7 @@ sub update {
 	    }
 	} else {
 
-	    $iftmp{speed}   ||= 0; #can't be null
+	    $iftmp{speed}  ||= 0; #can't be null
 	    
 	    my $msg = sprintf("Interface %s,%s doesn't exist. Inserting", $iftmp{number}, $iftmp{name} );
 	    $self->debug( loglevel => 'LOG_NOTICE',
@@ -594,75 +595,7 @@ sub update {
 		my( $ipobj, $maskobj, $subnet, $ipdbobj );
 		my $version = ($newip =~ /:/) ? 6 : 4;
 		my $prefix = ($version == 6) ? 128 : 32;
-		# 
-		# Keep all new ips in a hash
-		$newips{$newip} = $if;
-		my $ipobj;
-		if ( my $ipid = $dbips{$newip} ){
-		    #
-		    # update
-		    my $msg = sprintf("%s's IP %s/%s exists. Updating", $if->name, $newip, $prefix);
-		    $self->debug( loglevel => 'LOG_NOTICE',
-				  message  => $msg );
-		    $self->output($msg);
-		    delete( $dbips{$newip} );
-		    
-		    unless( $ipobj = $self->{ipm}->updateblock(id        => $ipid, 
-							       address   => $newip, 
-							       prefix    => $prefix,
-							       status    => "Assigned",
-							       interface => $if )){
-			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
-			$self->debug( loglevel => 'LOG_ERR',
-				      message  => $msg );
-			$self->output($msg);
-			next;
-		    }
 
-		}elsif ( $ipobj = $self->{ipm}->searchblock($newip) ){
-		    # IP exists but not linked to this interface
-		    # update
-		    my $msg = sprintf("IP %s/%s exists but not linked to %s. Updating", 
-				      $newip, $prefix, $if->name);
-		    $self->debug( loglevel => 'LOG_NOTICE',
-				  message  => $msg );
-		    $self->output($msg);
-		    unless( $ipobj = $self->{ipm}->updateblock(id        => $ipobj->id, 
-							       address   => $newip, 
-							       prefix    => $prefix,
-							       status    => "Assigned",
-							       monitored => 1,
-							       interface => $if )){
-			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
-			$self->debug( loglevel => 'LOG_ERR',
-				      message  => $msg );
-			$self->output($msg);
-			next;
-		    }
-		}else {
-		    my $msg = sprintf("IP %s doesn't exist.  Inserting", $newip);
-		    $self->debug( loglevel => 'LOG_NOTICE',
-				  message  => $msg );
-		    $self->output($msg);
-		    #
-		    # Create a new Ip
-		    unless( $ipobj = $self->{ipm}->insertblock(address   => $newip, 
-							       prefix    => $prefix, 
-							       status    => "Assigned",
-							       monitored => 1,
-							       interface => $if)){
-			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->{ipm}->error);
-			$self->debug( loglevel => 'LOG_ERR',
-				      message  => $msg );
-			$self->output($msg);
-			next;
-		    }else{
-			my $msg = sprintf("Inserted IP %s", $newip);
-			$self->debug( loglevel => 'LOG_NOTICE',
-				      message  => $msg );
-			$self->output($msg);
-		    }
-		}
 		########################################################
 		# Create subnet if device is a router (ipForwarding true)
 		# and addsubnets flag is on
@@ -675,10 +608,10 @@ sub update {
 			$self->debug( loglevel => 'LOG_NOTICE',
 				      message  => $msg );
 			$self->output($msg);
-			unless( $self->{ipm}->insertblock(address => $subnetaddr, 
-							  prefix  => $newmask, 
-							  status  => "Assigned",
-							  manual  => 1 ) ){
+			unless( $self->{ipm}->insertblock(address     => $subnetaddr, 
+							  prefix      => $newmask, 
+							  statusname  => "Subnet",
+							  ) ){
 			    my $err = $self->{ipm}->error();
 			    my $msg = sprintf("Could not insert Subnet %s/%s: %s", 
 					      $subnetaddr, $newmask, $err);
@@ -693,9 +626,71 @@ sub update {
 			}
 		    }else{
 			my $msg = sprintf("Subnet %s/%s already exists", $subnetaddr, $newmask);
+			$self->debug( loglevel => 'LOG_DEBUG',
+				      message  => $msg );
+		    }
+		}
+		# 
+		# Keep all discovered ips in a hash
+		$newips{$newip} = $if;
+		my $ipobj;
+		if ( my $ipid = $dbips{$newip} ){
+		    #
+		    # update
+		    my $msg = sprintf("%s's IP %s/%s exists. Updating", $if->name, $newip, $prefix);
+		    $self->debug( loglevel => 'LOG_DEBUG',
+				  message  => $msg );
+		    delete( $dbips{$newip} );
+		    
+		    unless( $ipobj = $self->{ipm}->updateblock(id           => $ipid, 
+							       statusname   => "Static",
+							       interface    => $if->id )){
+			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
+			$self->debug( loglevel => 'LOG_ERR',
+				      message  => $msg );
+			$self->output($msg);
+			next;
+		    }
+
+		}elsif ( $ipobj = $self->{ipm}->searchblock($newip) ){
+		    # IP exists but not linked to this interface
+		    # update
+		    my $msg = sprintf("IP %s/%s exists but not linked to %s. Updating", 
+				      $newip, $prefix, $if->name);
+		    $self->debug( loglevel => 'LOG_NOTICE',
+				  message  => $msg );
+		    unless( $ipobj = $self->{ipm}->updateblock(id         => $ipobj->id, 
+							       statusname => "Static",
+							       monitored  => 1,
+							       interface  => $if->id )){
+			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
+			$self->debug( loglevel => 'LOG_ERR',
+				      message  => $msg );
+			$self->output($msg);
+			next;
+		    }
+		}else {
+		    my $msg = sprintf("IP %s doesn't exist.  Inserting", $newip);
+		    $self->debug( loglevel => 'LOG_NOTICE',
+				  message  => $msg );
+		    $self->output($msg);
+		    #
+		    # Create a new Ip
+		    unless( $ipobj = $self->{ipm}->insertblock(address    => $newip, 
+							       prefix     => $prefix, 
+							       statusname => "Static",
+							       monitored  => 1,
+							       interface  => $if->id)){
+			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->{ipm}->error);
+			$self->debug( loglevel => 'LOG_ERR',
+				      message  => $msg );
+			$self->output($msg);
+			next;
+		    }else{
+			my $msg = sprintf("Inserted IP %s", $newip);
 			$self->debug( loglevel => 'LOG_NOTICE',
 				      message  => $msg );
-			$self->output($msg);			    
+			$self->output($msg);
 		    }
 		}
 		########################################################
@@ -909,7 +904,7 @@ sub update {
 			  message  => $msg,
 			  );
 	    $self->output($msg);		
-	    unless( $self->{ipm}->removeblock( address => $nonip ) ) {
+	    unless( $self->{ipm}->removeblock( id => $dbips{$nonip} ) ) {
 		my $msg = sprintf("Could not remove IP %s: %s", 
 				  $nonip, $self->{ipm}->error);
 		$self->debug( loglevel => 'LOG_ERR',
@@ -1058,7 +1053,7 @@ sub update {
     
     # END 
 
-    my $msg = sprintf("Discovery of %s completed\n\n", $host);
+    my $msg = sprintf("Discovery of %s completed", $host);
     $self->debug( loglevel => 'LOG_NOTICE',
 		  message  => $msg );
     $self->output($msg);
@@ -1067,7 +1062,7 @@ sub update {
 
 =head2 get_dev_info - Get SNMP info from Device
  
- Use the SNMP libraries to get a hash with the device's information
+ Use the SNMP libraries to get a hash with the device s information
  This should hide all possible underlying SNMP code logic from our
  device insertion/update code
 
@@ -1080,6 +1075,7 @@ sub update {
 
 sub get_dev_info {
     my ($self, $host, $comstr) = @_;
+    $self->_clear_output();
 
     $self->{nv}->build_config( "device", $host, $comstr );
     my (%nv, %dev);

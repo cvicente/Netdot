@@ -27,6 +27,7 @@ use Apache::Session::Lock::File;
 
 use base qw( Netdot );
 use strict;
+use Data::Dumper;
 
 #Be sure to return 1
 1;
@@ -48,6 +49,9 @@ sub new {
     my $self = {};
     bless $self, $class;
     $self = $self->SUPER::new( %argv );
+
+    $self->{ipm} = Netdot::IPManager->new();
+
     wantarray ? ( $self, '' ) : $self; 
 }
  
@@ -57,7 +61,7 @@ sub new {
   $mi = $ui->getmeta( $table );
 
 When passed a table name, it searches the "Meta" table and returns the object associated
-with such table.  This object then gives access to the table's metadata.
+with such table.  This object then gives access to the tables metadata. 
 Ideally meant to be called from other methods in this class.
 
 =cut
@@ -84,9 +88,9 @@ sub gettables{
 
   %linksto = $ui->getlinksto($table);
 
-When passed a table name, returns a hash containing the table's one-to-many relationships, 
+When passed a table name, returns a hash containing the tables one-to-many relationships, 
 being this talble the "one" side (has_a definitions in Class::DBI).  
-The hash's keys are the names of the local fields, and the values are the names of the tables 
+The hashs keys are the names of the local fields, and the values are the names of the tables 
 that these fields reference.
 
 =cut
@@ -106,11 +110,11 @@ sub getlinksto{
 
   %linksfrom = $ui->getlinksfrom($table);
 
-When passwd a table name, returns a hash of hashes containing the table's one-to-many relationships,
+When passwd a table name, returns a hash of hashes containing the tables one-to-many relationships,
 being this table the "many" side (equivalent to has_many definitions in Class::DBI).
-The keys of the main hash are identifiers for the relationship.  The next hash's keys are names of 
+The keys of the main hash are identifiers for the relationship.  The next hashs keys are names of 
 the tables that reference this table.  The values are the names of the fields in those tables that
-reference this table's primary key.
+reference this tables primary key.
 
 =cut
 
@@ -130,7 +134,7 @@ sub getlinksfrom{
 
   %order = $ui->getcolumnorder($table);
 
-Accepts a table name and returns its column names, ordered in the same order they're supposed to be 
+Accepts a table name and returns its column names, ordered in the same order theyre supposed to be 
 displayed. It returns a hash with column names as keys and their positions and values.
 
 =cut
@@ -211,7 +215,7 @@ sub getcolumntypes{
 
   %tags = $ui->getcolumntags($table);
 
-Returns a hash contaning the user-friendly display names for a table's columns
+Returns a hash contaning the user-friendly display names for a tables columns
 
 =cut
 
@@ -233,8 +237,8 @@ sub getcolumntags{
 
   @lbls = $ui->getlabels($table);
 
-Returns a table's list of labels.  Labels are one or more columns used as hyperlinks to retrieve 
-the specified object.  They're also used as a meaningful instance identifier.
+Returns a tables list of labels.  Labels are one or more columns used as hyperlinks to retrieve 
+the specified object.  Theyre also used as a meaningful instance identifier.
 
 =cut
 
@@ -254,7 +258,7 @@ sub getlabels{
   $lbl = $ui->getobjlabel( $obj );
   $lbl = $ui->getobjlabel( $obj, ", " );
 
-Returns an object's label string, composed from the list of labels and the values of those labels
+Returns an objects label string, composed from the list of labels and the values of those labels
 for this object, which might reside in more than one table.  
 Accepts an object reference and a (optional) delimiter.  
 Returns a string.
@@ -561,7 +565,7 @@ The first argument 'object' is a Netdot::DBI (and consequently Class::DBI
 ) object that represents the table row you wish to update.  The second 
 argument 'state' is a hash reference which is a simple composition 
 of column => value pairs.  Returns positive integer representing the 
-modified row's id column for success and 0 for failure.
+modified rows id column for success and 0 for failure.
 
 =cut 
 
@@ -603,7 +607,7 @@ Inserts row into database.  Method takes two arguments.  The first
 argument 'table' is the name of the table to add a row to.  The second 
 argument 'state' is a hash reference which is a simple composition 
 of column => value pairs.  If the method succeeds, it returns a positive 
-integer which is the value of the newly inserted row's id column. 
+integer which is the value of the newly inserted rows id column. 
 Otherwise, the method returns 0.
 
 =cut
@@ -852,9 +856,23 @@ sub form_to_db{
     # Actions (like delete) take precedence over value updates
     foreach my $table (keys %objs){
         foreach my $id (keys %{ $objs{$table} }){
+	    #################################################################
+	    # Some tables require more complex validation
+	    # We pass the data to external functions
+	    if ( $table eq "Ipblock" ) {
+		$objs{$table}{$id}{id} = $id;
+		unless ( $self->{ipm}->updateblock( %{ $objs{$table}{$id} } ) ){
+		    $self->error($self->{ipm}->error);
+		    return 0;
+		}
+		$form_to_db_info{$table}{action} = "update";
+		$form_to_db_info{$table}{key} = $id;
+		return %form_to_db_info;	 
+	    }
+
             my $act = 0;
             foreach my $field (keys %{ $objs{$table}{$id} }){
-                if ($field eq "delete" && $objs{$table}{$id}{$field} eq "on"){
+	        if ($field eq "delete" && $objs{$table}{$id}{$field} eq "on"){
                     # Remove object from DB
                     if (!$self->remove(table => "$table", id => "$id")){
                         return 0; # error should already be set.
@@ -865,7 +883,7 @@ sub form_to_db{
                     # Set the 'action' flag
                     $act = 1;
                     last;
-		    ######################################################################################
+		    #################################################################
                     # Special case
 		}elsif ($table eq "InterfaceDep" && $field =~ /new/ ){
 		    my %state;
@@ -898,7 +916,6 @@ sub form_to_db{
                 $form_to_db_info{$table}{key} = $newid;
                 $act = 1;
             }
-
             # Now update the thing
             if (!$act){
 		# only if no other actions were performed
@@ -1036,7 +1053,7 @@ sub selectLookup($@){
 
   $r = $ui->selectQuery(table => $table, terms => \@terms, max => $max);
 
- Search keywords in a table's label fields. If label field is a foreign
+ Search keywords in a tables label fields. If label field is a foreign
  key, recursively search for same keywords in foreign table.
  If objects exist that match both keys, return those.  Otherwise, return all
  objects that match either keyword
@@ -1178,7 +1195,8 @@ sub textField($@){
    - column: name of field in DB. 
    - edit: true if editing, false otherwise.
    - htmlExtra: extra html you want included in the output. Common use
-                would be to include style="width: 150px;" and the like.
+     would be to include style="width: 150px;" and the like.
+
 =cut
 
 sub textArea($@){
@@ -1203,4 +1221,3 @@ sub textArea($@){
         printf("%s\n", $value);
     }
 }
-
