@@ -45,14 +45,14 @@ if( $args{table} ) {
 
 <!-- begin sortresults -->
 % if( defined( $META ) && defined( $args{object} ) ) {
-  <table BORDER="0" CELLSPACING="1" CELPADDING="3" BGCOLOR="whitesmoke" width="100%">
+  <table BORDER="0" CELLSPACING="1" CELLPADDING="3" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
 % ####################################################################
 %   foreach my $o ( sort { $a->id <=> $b->id } @{ $args{object} } ) {
 %     my $flag = 1;
 %     my @order = sort { $order{$a} <=> $order{$b} } keys %order;
 %     foreach my $c ( @order ) {
         <tr>
-        <td align="RIGHT" valign="TOP" ><b><% $c %></b>: </td>
+        <td align="RIGHT" valign="TOP" WIDTH="100"><b><% $c %></b>: </td>
         <td align="LEFT" valign="TOP">
 %       if( exists( $linksto{$c} ) ) {
 %         my $ft = (Meta->search( name => $linksto{$c} ))[0];
@@ -125,6 +125,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.16  2003/06/17 22:17:14  netdot
+# made no real changes -miyake
+#
 # Revision 1.15  2003/06/13 18:39:30  netdot
 # merged efforts from sortresults2.html
 #
