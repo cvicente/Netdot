@@ -141,12 +141,12 @@ foreach my $j ( keys %ARGS ) {
          <TR><TD WIDTH="15">&nbsp &nbsp </TD><TD>
          <TR><TD WIDTH=15>&nbsp &nbsp <TD><B>Add</B>:  
          <select name="table">
-%        my @t = Meta->retrieve_all();
-%        foreach my $t ( sort { $a->name cmp $b->name } @t ) {
-%           next if( $t->name eq "Meta" );
-%           $mi = (Meta->search(name => $t->name))[0];
+%        my @t = $gui->gettables;
+%        foreach my $t ( sort { $a cmp $b } @t ) {
+%           next if( $t eq "Meta" || $t =~ /_history/ );
+%           $mi = $gui->getmeta($t);
 %           next if (defined($mi) &&  $mi->isjoin);
-           <option><% $t->name %></option>
+           <option><% $t %></option>
 %        }
          </select>
          <input name="submit" value="Go" type="submit">
@@ -177,6 +177,8 @@ foreach my $j ( keys %ARGS ) {
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
+use Netdot::GUI;
+my $gui = Netdot::GUI->new();
 use Data::Dumper;
 use vars qw( %results %linksto $mi $page);
 undef( %results );              
