@@ -60,8 +60,8 @@ unless ( $obj ){
 %      $obj->delete;
 %      };
 % if ($@){
-  <& error, caller => "delete.html", error => $@ &>
-  exit;
+  <& error, caller => "delete.html", error => "$@" &>
+%  $m->abort;
 % } else{
 <strong><% "$table $lbl" %></strong> deleted.
 %}

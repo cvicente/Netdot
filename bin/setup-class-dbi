@@ -26,6 +26,7 @@ select (OUT);  # spit it all out to the output file by default
 my $head = 
 qq /package Netdot::DBI;
 use base 'Class::DBI';
+use Netdot::eHasMany;
 
 ## This file was generated from a script.  Do not edit. ##
 
@@ -53,8 +54,10 @@ q /
 ##########################################
 ## Insert object in history table
 ##########################################
-
-
+    
+__PACKAGE__->add_relationship_type(
+			       e_has_many   => "Class::DBI::Relationship::eHasMany",
+			       );
 __PACKAGE__->
   add_trigger( 
 	      before_update=>
@@ -140,10 +143,10 @@ foreach my $table (@tables){
 		my $numfields = scalar @fields;
 		if ($numfields == 3){
 		    my ($meth, $tab, $col) = split /:/, $item; 
-		    print "__PACKAGE__->has_many( '$meth', '$tab' => '$col' );\n";
+		    print "__PACKAGE__->e_has_many( '$meth', '$tab' => '$col' );\n";
 		}elsif ($numfields == 4){
 		    my ($meth, $tab, $col, $args) = split /:/, $item; 
-		    print "__PACKAGE__->has_many( '$meth', '$tab' => '$col', $args );\n";
+		    print "__PACKAGE__->e_has_many( '$meth', '$tab' => '$col', $args );\n";
 		}else{
 		    print STDERR "ERROR!: Incorrect number of fields: $numfields, in linksfrom for table $table\n";
 		    print STDERR "fields are: ", join (', ', @fields), "\n";

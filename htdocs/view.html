@@ -6,7 +6,7 @@ foreach	my $j (keys %ARGS){
 
 unless ( $arg{table} && ($arg{id} || $arg{pos}) ){
    print "<strong>Missing required parameters 'table' and/or 'id'</strong>";
-   exit;
+   $m->abort;
 }
 $table = $arg{table};
 
@@ -24,7 +24,7 @@ if ( $arg{view} ) {
 }
 unless ( $obj ){
    print "<strong>Nonexistent record: $id</strong>";
-   exit;
+   $m->abort;
 }
 
 %linksto = $gui->getlinksto($table);

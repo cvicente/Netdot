@@ -1,21 +1,18 @@
-<%perl>
-unless ( $ARGS{caller} && $ARGS{error} ){
-   print "<strong>Missing required parameters 'table' and/or 'id'</strong>";
-   exit;
-}
 
-</%perl>
+%unless ( defined($ARGS{caller}) && defined($ARGS{error}) ){
+   <strong>Missing required parameters 'caller' and/or 'error'</strong>
+%   $m->abort;
+%}
 
-<& header, title=>" ERROR!" &>
+
 <p>
-<h3><% $ARGS{caller} %> produced the following error:</h3>
+<h3><% $ARGS{caller} %></h3> produced the following error:
 <p>
 <pre><% $ARGS{error} %></pre>
 
 <p><br>
 <strong>Return to Netdot's <a href="index.html">Main page</a></strong>
 <p>
-<& footer &>
 
 
 <%init>
