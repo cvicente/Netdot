@@ -12,9 +12,9 @@ if ( defined($search) && $search =~ /\w+/ ){
 </%perl>     
   
 
-% if (my $num = scalar(@list)){
-<table width="97%" border="0" align="center"> 
-<tr><td>
+%  if (my $num = scalar(@list)){
+ <table width="97%" border="0" align="center"> 
+ <tr><td>
    <p><br>
    <b>Total matches: <% $num %></b>
    <p>
@@ -95,6 +95,25 @@ if ( defined($search) && $search =~ /\w+/ ){
 %    $m->abort;
 
 <%perl>
+} elsif( defined($ARGS{intadd}) ){
+
+  # Add a group of interfaces
+
+  if (defined ($ARGS{intaddnum}) &&  $ARGS{intaddnum} > 0){
+     my %tmpint;
+     $tmpint{device} = $id;
+     $tmpint{managed} = 1;
+     $tmpint{number} = 1000;
+   my $i;
+     for ($i = 0; $i <= $ARGS{intaddnum}; $i++){
+        $tmpint{number}++;
+     	if (!($gui->insert(table => "Interface", state => \%tmpint)) ){
+	   my $err = $gui->error;
+	   die "Error: $err"; 
+	}
+     }
+    
+  }
 
 }elsif( defined($ARGS{submit}) ){
 
@@ -107,12 +126,6 @@ if ( defined($search) && $search =~ /\w+/ ){
 		 'show'   => '',
   );
   
-  # Define some abbreviations
-  my %abrv = (
-	      'Int'   => "Interface",
-	      'Dev'   => "Device",
-  );
-
   print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
   # Ignore empty and control fields
@@ -141,7 +154,6 @@ if ( defined($search) && $search =~ /\w+/ ){
   my %objs;
   foreach my $item (keys %arg){
      my ($table, $id, $field) = split /__/, $item;
-     $table = $abrv{$table} if ( exists($abrv{$table}) );
      $objs{$table}{$id}{$field} = $arg{$item};
   }
   print "objs is <pre>", Dumper{%objs}, "</pre><br>" if $DEBUG;
@@ -263,7 +275,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	      <td align="left">Name: </td>
 	      <td align="left"> 
 %	      	 if ($edit eq "geninfo"){	 
-		    <input type="text" name="Dev__<% $id %>__name" value="<% $o->name %>">  
+		    <input type="text" name="Device__<% $id %>__name" value="<% $o->name %>">  
 %	         }else{
 		    <b><% $o->name %></b>
 %		 }
@@ -273,7 +285,7 @@ if ( defined($search) && $search =~ /\w+/ ){
              <td  align="left">Type: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "geninfo"){	 
-		    <select name="Dev__<% $id %>__type">
+		    <select name="Device__<% $id %>__type">
 %		     my $lblfield = ( $gui->getlabels("DeviceType") )[0];	 
 		     <option value="<% $o->type->id %>" SELECTED> <% $o->type->name %> </option>
 %		     my @fo = DeviceType->retrieve_all();
@@ -293,7 +305,7 @@ if ( defined($search) && $search =~ /\w+/ ){
              <td align="left">Component: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "geninfo"){	 
-		     <select name="Dev__<% $id %>__component_type" >
+		     <select name="Device__<% $id %>__component_type" >
 %		     my $lblfield = ( $gui->getlabels("ComponentType") )[0];	 
 		       <option value="<% $o->component_type->id %>" SELECTED> <% $o->component_type->name %> </option>
 %		       my @fo = ComponentType->retrieve_all();
@@ -313,7 +325,7 @@ if ( defined($search) && $search =~ /\w+/ ){
              <td align="left">S/N: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "geninfo"){	 
-		    <input type="text" name="Dev__<% $id %>__serialnumber" value="<% $o->serialnumber %>">  
+		    <input type="text" name="Device__<% $id %>__serialnumber" value="<% $o->serialnumber %>">  
 %	         }else{
 		    <b><% $o->serialnumber %></b>
 %		 }
@@ -324,7 +336,7 @@ if ( defined($search) && $search =~ /\w+/ ){
              <td align="left">MAC: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "geninfo"){	 
-		    <input type="text" name="Dev__<% $id %>__physaddr" value="<% $o->physaddr %>">  
+		    <input type="text" name="Device__<% $id %>__physaddr" value="<% $o->physaddr %>">  
 %	         }else{
 		    <b><% $o->physaddr %> </b>
 %		 }
@@ -335,7 +347,7 @@ if ( defined($search) && $search =~ /\w+/ ){
              <td align="left">Installed on <font size="-1">(yyyy-mm-dd)</font>:</td>
 	     <td align="left"> 
 %	      	 if ($edit eq "geninfo"){	 
-		    <input type="text" name="Dev__<% $id %>__dateinstalled" value="<% $o->dateinstalled %>">  
+		    <input type="text" name="Device__<% $id %>__dateinstalled" value="<% $o->dateinstalled %>">  
 %	         }else{
 		    <b><% $o->dateinstalled %> </b>
 %		 }	        
@@ -349,7 +361,7 @@ if ( defined($search) && $search =~ /\w+/ ){
              <td align="left">Product: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "geninfo"){	 
-		    <select name="Dev__<% $id %>__productname">
+		    <select name="Device__<% $id %>__productname">
 %		       my $lblfield = ( $gui->getlabels("Product") )[0];	 
 		       <option value="<% $o->productname->id %>" SELECTED> <% $o->productname->name %> </option>
 %		       my @fo = Product->retrieve_all();
@@ -370,7 +382,7 @@ if ( defined($search) && $search =~ /\w+/ ){
              <td align="left">Part of: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "geninfo"){	 
-		    <select name="Dev__<% $id %>__part_of">
+		    <select name="Device__<% $id %>__part_of">
 %		       my $lblfield = ( $gui->getlabels("Device") )[0];	 
 		       <option value="<% $o->part_of->id %>" SELECTED> <% $o->part_of->name %> </option>
 %		       my @fo = Device->retrieve_all();
@@ -391,7 +403,7 @@ if ( defined($search) && $search =~ /\w+/ ){
              <td align="left">Inventory: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "geninfo"){	 
-		    <input type="text" name="Dev__<% $id %>__inventorynumber" value="<% $o->inventorynumber %>">  
+		    <input type="text" name="Device__<% $id %>__inventorynumber" value="<% $o->inventorynumber %>">  
 %	         }else{
 		    <b><% $o->inventorynumber %></b>
 %		 }
@@ -401,7 +413,7 @@ if ( defined($search) && $search =~ /\w+/ ){
              <td align="left">System Descr: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "geninfo"){	 
-		    <textarea name="Dev__<% $id %>__sysdescription" rows="3" cols="30"><% $o->sysdescription %></textarea>
+		    <textarea name="Device__<% $id %>__sysdescription" rows="3" cols="30"><% $o->sysdescription %></textarea>
 %	         }else{
 	            <font size="-1"> <% $o->sysdescription %> </font>
 %		 }
@@ -417,7 +429,7 @@ if ( defined($search) && $search =~ /\w+/ ){
    <tr>
      <td colspan="2" align="left">
 %	      	 if ($edit eq "geninfo"){	 
-		    <textarea name="Dev__<% $id %>__info" rows="3" cols="80"><% $o->info %></textarea>
+		    <textarea name="Device__<% $id %>__info" rows="3" cols="80"><% $o->info %></textarea>
 %	         }else{
 	            <font size="-1"><pre><% $o->info %></pre></font>
 %		 }
@@ -470,7 +482,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 		    <input type="text" size="15" name="<% "Ip__" . $ip->id . "__address" %>" value="<% $ip->address %>">
 		    <br>
 %	         }else{
-		    <% $ip->address %><br>
+		    <a href="view.html?table=Ip&id=<% $ip->id %>"><% $ip->address %></a><br>
 %		 }
 	   </td>
 	   <td align="left">
@@ -488,7 +500,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 		    </select>
 		    <br>
 %	         }elsif ( int($ip->subnet) ){
-		    <% $ip->subnet->address %>/<% $ip->subnet->prefix %><br>
+		    <a href="view.html?table=Subnet&id=<% $ip->subnet->id %>"><% $ip->subnet->address %>/<% $ip->subnet->prefix %></a><br>
 %		 }
 	   </td>
 	   <td align="left"><font size="-1"><% $ip->interface->name %></font></td>
@@ -529,7 +541,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   <td align="left">Entity: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "locinfo"){	 
-		    <select name="Dev__<% $id %>__entity">
+		    <select name="Device__<% $id %>__entity">
 %		       my $lblfield = ( $gui->getlabels("Entity") )[0];	 
 		       <option value="<% $o->entity->id %>" SELECTED> <% $o->entity->name %> </option>
 %		       my @fo = Entity->retrieve_all();
@@ -549,7 +561,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   <td align="left">Site: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "locinfo"){	 
-		    <select name="Dev__<% $id %>__site">
+		    <select name="Device__<% $id %>__site">
 %		       my $lblfield = ( $gui->getlabels("Site") )[0];	 
 		       <option value="<% $o->site->id %>" SELECTED> <% $o->site->name %> </option>
 %		       my @fo = Site->retrieve_all();
@@ -569,7 +581,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   <td align="left">Room: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "locinfo"){	 
-		    <input type="text" name="Dev__<% $id %>__room" value="<% $o->room %>">  
+		    <input type="text" name="Device__<% $id %>__room" value="<% $o->room %>">  
 %	         }else{
 		    <b><% $o->room %></b>
 %		 }
@@ -579,7 +591,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   <td align="left">Rack: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "locinfo"){	 
-		    <input type="text" name="Dev__<% $id %>__rack" value="<% $o->rack %>">  
+		    <input type="text" name="Device__<% $id %>__rack" value="<% $o->rack %>">  
 %	         }else{
 		    <b><% $o->rack %></b>
 %		 }
@@ -618,7 +630,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   <td align="left">Contact Group: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "mgmtinfo"){	 
-		    <select name="Dev__<% $id %>__contactlist">
+		    <select name="Device__<% $id %>__contactlist">
 %		       my $lblfield = ( $gui->getlabels("ContactList") )[0];	 
 		       <option value="<% $o->contactlist->id %>" SELECTED> <% $o->contactlist->name %> </option>
 %		       my @fo = ContactList->retrieve_all();
@@ -639,7 +651,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	     <td align="left"> 
 %	         my $lbl = $gui->getobjlabel($o->user, ", ");
 %	      	 if ($edit eq "mgmtinfo"){	 
-		    <select name="Dev__<% $id %>__user">
+		    <select name="Device__<% $id %>__user">
 %		       my $lblfield = ( $gui->getlabels("Person") )[0];	 
 		       <option value="<% $o->user->id %>" SELECTED> <% $lbl %> </option>
 %		       my @fo = Person->retrieve_all();
@@ -660,7 +672,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   <td align="left">Out-of-band hostname: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "mgmtinfo"){	 
-		    <input type="text" name="Dev__<% $id %>__oobname" value="<% $o->oobname %>">  
+		    <input type="text" name="Device__<% $id %>__oobname" value="<% $o->oobname %>">  
 %	         }else{
 		    <b><% $o->oobname %></b>
 %		 }
@@ -670,7 +682,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   <td align="left">Out-of-band number: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "mgmtinfo"){	 
-		    <input type="text" name="Dev__<% $id %>__oobnumber" value="<% $o->oobnumber %>">  
+		    <input type="text" name="Device__<% $id %>__oobnumber" value="<% $o->oobnumber %>">  
 %	         }else{
 		    <b><% $o->oobnumber %></b>
 %		 }
@@ -682,15 +694,15 @@ if ( defined($search) && $search =~ /\w+/ ){
 %		 my $value = $o->managed;	 
 %	      	 if ($edit eq "mgmtinfo"){	 
 %		    if ($value == 1){
-		      <input type="radio" name="Dev__<% $id %>__managed" value="1" checked> <b>yes</b>
-		      <input type="radio" name="Dev__<% $id %>__managed" value="0"> <b>no
+		      <input type="radio" name="Device__<% $id %>__managed" value="1" checked> <b>yes</b>
+		      <input type="radio" name="Device__<% $id %>__managed" value="0"> <b>no
 %		    }elsif ($value eq ""){
-  		       <input type="radio" name="Dev__<% $id %>__managed" value="1"> <b>yes</b>
-		       <input type="radio" name="Dev__<% $id %>__managed" value="0"> <b>no</b>
-		       <input type="radio" name="Dev__<% $id %>__managed" value="" checked> <b>n/a</b>
+  		       <input type="radio" name="Device__<% $id %>__managed" value="1"> <b>yes</b>
+		       <input type="radio" name="Device__<% $id %>__managed" value="0"> <b>no</b>
+		       <input type="radio" name="Device__<% $id %>__managed" value="" checked> <b>n/a</b>
 %		    }elsif ($value == 0){
-		       <input type="radio" name="Dev__<% $id %>__managed" value="1"> <b>yes</b>
-		       <input type="radio" name="Dev__<% $id %>__managed" value="0" checked> <b>no</b>
+		       <input type="radio" name="Device__<% $id %>__managed" value="1"> <b>yes</b>
+		       <input type="radio" name="Device__<% $id %>__managed" value="0" checked> <b>no</b>
 %		    }
 		 
 %	         }else{
@@ -708,7 +720,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   <td align="left">SNMP Community: </td>
 	     <td align="left"> 
 %	      	 if ($edit eq "mgmtinfo"){	 
-		    <input type="text" name="Dev__<% $id %>__community" value="<% $o->community %>">  
+		    <input type="text" name="Device__<% $id %>__community" value="<% $o->community %>">  
 %	         }else{
 		    <b><% $o->community %></b>
 %		 }
@@ -780,40 +792,40 @@ if ( defined($search) && $search =~ /\w+/ ){
 	  <tr bgcolor="<% $colors{$ci} %>">
 %		 if ($edit eq "intinfo"){	 
 		   <td align="left">
-		    <input type="checkbox" name="<% "Int__" . $int->id . "__delete" %>" >
+		    <input type="checkbox" name="<% "Interface__" . $int->id . "__delete" %>" >
 		   </td>	   
 %	         }
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="3" name="<% "Int__" . $int->id . "__number" %>" value="<% $int->number %>">
+		    <input type="text" size="3" name="<% "Interface__" . $int->id . "__number" %>" value="<% $int->number %>">
 %	         }else{
 		    <a href="view.html?table=Interface&id=<% $int->id %>"><% $int->number %></a>
 %		 }
 	   </td>
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="15" name="<% "Int__" . $int->id . "__name" %>" value="<% $int->name %>">
+		    <input type="text" size="15" name="<% "Interface__" . $int->id . "__name" %>" value="<% $int->name %>">
 %	         }else{
 		    <% $int->name %>
 %		 }
 	   </td>
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="6" name="<% "Int__" . $int->id . "__room" %>" value="<% $int->room %>">
+		    <input type="text" size="6" name="<% "Interface__" . $int->id . "__room" %>" value="<% $int->room %>">
 %	         }else{
 		    <% $int->room %>
 %		 }
 	   </td>
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="9" name="<% "Int__" . $int->id . "__jack" %>" value="<% $int->jack %>">
+		    <input type="text" size="9" name="<% "Interface__" . $int->id . "__jack" %>" value="<% $int->jack %>">
 %	         }else{
 		    <% $int->jack %>
 %		 }
 	   </td>
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="40" name="<% "Int__" . $int->id . "__description" %>" value="<% $int->description %>">
+		    <input type="text" size="40" name="<% "Interface__" . $int->id . "__description" %>" value="<% $int->description %>">
 %	         }else{
 		    <% $int->description %>
 %		 }
@@ -870,15 +882,15 @@ if ( defined($search) && $search =~ /\w+/ ){
 %		 my $value = $int->managed;	 
 %	      	 if ($edit eq "intinfo"){	 
 %		    if ($value == 1){
-		      <input type="radio" name="<% "Int__" . $int->id ."__managed" %>" value="1" checked> Y
-		      <input type="radio" name="<% "Int__" . $int->id ."__managed" %>" value="0"> N
+		      <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="1" checked> Y
+		      <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="0"> N
 %		    }elsif ($value eq ""){
-  		       <input type="radio" name="<% "Int__" . $int->id ."__managed" %>" value="1"> Y
-		       <input type="radio" name="<% "Int__" . $int->id ."__managed" %>" value="0"> N
-		       <input type="radio" name="<% "Int__" . $int->id ."__managed" %>" value="" checked> n/a
+  		       <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="1"> Y
+		       <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="0"> N
+		       <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="" checked> n/a
 %		    }elsif ($value == 0){
-		       <input type="radio" name="<% "Int__" . $int->id ."__managed" %>" value="1"> Y
-		       <input type="radio" name="<% "Int__" . $int->id ."__managed" %>" value="0" checked> N
+		       <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="1"> Y
+		       <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="0" checked> N
 %		    }
 		 
 %	         }else{
@@ -893,6 +905,19 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   </td>
 	  </tr>
 %       } #foreach
+% if ( $edit ){	 
+    </form>
+% }
+     <tr>
+	    <form action="device-ws.html" method="post">
+	      <td colspan="7" width="100%" align="left">
+	        <input type="hidden" name="id" value="<% $id %>">
+	        <input type="submit" name="intadd" value="Add">
+	        <input type="text" name="intaddnum" value="0" size="3"> lines
+              </td>
+	    </form>
+
+     </tr>
      </table>
     </td>
    </tr>
@@ -900,9 +925,6 @@ if ( defined($search) && $search =~ /\w+/ ){
 <!-- End Interface Table -->
 
 
-% if ( $edit ){	 
-    </form>
-% }
 
  </td></tr>
 </table>
