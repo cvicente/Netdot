@@ -1,7 +1,7 @@
 <%perl>
 ##################################################
 # clean out old state files
-#$gui->rmstate( $DIR, $AGE );
+$gui->rmsessions( $DIR, $AGE );
 ##################################################
 # grab arguments to this script
 my %rev = reverse %ARGS;
@@ -31,12 +31,12 @@ unless( defined( $PREV ) ) {
 # get state back
 if( defined( $args{sid} ) ) {
   $sid = $args{sid};
-  %session = $gui->getstate( $DIR, $sid );
+  %session = $gui->getsession( $DIR, $sid );
 }
 ##################################################
 # create state if necessary
 if( $args{table} ) {  
-  %session = $gui->mkstate( $DIR );
+  %session = $gui->mksession( $DIR );
   $sid = $session{_session_id};
 }
 if( $DEBUG ) {
@@ -116,10 +116,8 @@ if( $args{confirm} eq "Confirm" ) {
 ##################################################
 # create %state to pass to form.html
 if( defined( $TBL ) ) {
-  my %lt;
-  my $meta = (Meta->search( name => $TBL ))[0];
-  map { my($j, $k) = split( /:/, $_ ); $lt{$j} = $k } 
-      split( /,/, $meta->linksto );
+  my $meta = $gui->getmeta( $TBL );
+  my %lt = $gui->getlinksto( $TBL );
   foreach my $c ( split( /,/, $meta->columnorder ) ) {
     if( $args{$c} ) {
       $state{$c} = $args{$c};
@@ -159,10 +157,8 @@ if( defined( $TBL ) ) {
 
 % if( $args{"submit"} eq "Submit" ) {
     <p>Please confirm the following:
-%   my $obj = (Meta->search( name => $TBL ))[0];
-%   my %linksto;
-%   map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
-%       split( /,/, $obj->linksto );
+%   my $obj = $gui->getmeta( $TBL );
+%   my %linksto = $gui->getlinksto( $TBL );
     <p><blockquote><strong><% $TBL %></strong><ul>
 %   foreach my $C ( split( /,/, $obj->columnorder() ) ) {
       <li>
@@ -171,7 +167,7 @@ if( defined( $TBL ) ) {
         -
 %     } else {
 %       if( $linksto{$C} ) {
-%         my $ft = (Meta->search( name => $linksto{$C} ))[0];
+%         my $ft = $gui->getmeta( $linksto{$C} );
 %         if( ! defined( $ft ) ) {
             No such object <% $linksto{$C} %>
 %         } elsif( $session{tables}{$TBL}{$C} == 0 ) {
@@ -287,6 +283,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.19  2003/07/01 19:04:23  netdot
+#  *** empty log message ***
+#
 #  Revision 1.18  2003/07/01 05:07:53  netdot
 #  *** empty log message ***
 #
