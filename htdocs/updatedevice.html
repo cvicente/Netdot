@@ -2,14 +2,14 @@
 <script language="javascript">
 <!--
    var formfield;
-   # Open a window to create the object if user hits 'new'
+// Open a window to create the object if user hits 'new'
    function opencreatewindow(table, field){
      var wind;
      formfield = field;
      var url = "edit.html?table="+table+"&showheader=0";
      wind = window.open(url, "Create "+table+" object", "width=500,height=500");
    }
-   # Once the object is created, substitute value in form
+// Once the object is created, substitute value in form
    function setselect(id, label){
      var form_name = "netdotform";
      var len = document.forms[form_name].length;
@@ -71,6 +71,9 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
     <input type="hidden" name="host" value="<% $host %>">
     <input type="hidden" name="action" value="update">
     <table class="formtablebg" cellpadding="0" cellspacing="2" width="100%" border="0">
+      <tr>
+        <td colspan="2"><br></td>
+      </tr>
       <tr>
         <td>&nbsp;</td>
         <td align="left">
@@ -191,25 +194,31 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
           <table class="formtablebg" cellpadding="0" cellspacing="0" width="100%">
 
 %      if ($dm->output){
-	  <tr>
-          <td>
-          <pre><% $dm->output %></pre>
-          </td>
-	  </tr>
+	    <tr>
+              <td align="left">&nbsp;</td>
+              <td><br></td>
+	    </tr>
+	    <tr>
+              <td align="left">&nbsp;</td>
+              <td align="left">
+                <pre><% $dm->output %></pre>
+              </td>
+	    </tr>
 %      }
-	  <tr>
-          <td>
-	    Go to <a href="device.html?id=<% $o->id %>"><% $name %></a>
-          </td>
-	  </tr>
+	    <tr>
+              <td align="left">&nbsp;</td>
+              <td align="left">
+	        Go to <a href="device.html?id=<% $o->id %>"><% $name %></a>
+              </td>
+	    </tr>
           </table>
 %  }elsif ( $cancel ){
           <p>
           <table class="formtablebg" cellpadding="0" cellspacing="0" width="100%">
-	  <tr>
-          <td>Discovery of <% $host %> cancelled.
-          </td>
-	  </tr>
+	    <tr>
+              <td align="left">&nbsp;</td>
+              <td align="left">Discovery of <% $host %> cancelled.</td>
+	    </tr>
           </table>
 %  }
 
