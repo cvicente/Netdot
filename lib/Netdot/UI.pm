@@ -22,7 +22,8 @@ use lib "PREFIX/lib";
 use Apache::Session::File;
 use Apache::Session::Lock::File;
 
-use base qw( Netdot );
+#use base qw( Netdot );
+use base qw( Netdot::IPManager );
 use strict;
 
 #Be sure to return 1
@@ -47,7 +48,7 @@ sub new {
     $self = $self->SUPER::new( %argv );
 
     # There's only one case where a method from 
-    # IP.pm is needed.  It doesn't seem justifiable
+    # IPManager is needed.  It doesn't seem justifiable
     # to complicate things by inheriting from IPManager here.
     # Just create an object
     $self->{ipm} = Netdot::IPManager->new();
@@ -568,7 +569,7 @@ sub text_field($@){
     	    printf("<a href=\"$linkPage.html?id=%s\"> %s </a>\n", $o->id, $value);
 	}
     }else{
-        printf("%s\n", $value);
+        printf("%s", $value);
     }
 }
 

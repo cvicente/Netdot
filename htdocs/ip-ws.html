@@ -31,7 +31,6 @@ $submit    => undef
 my $DEBUG = 0;
 my $o;
 my $ci = 0;
-my %arg;
 my $title;
 if ( $id ){
     unless ( $o = Ipblock->retrieve($id) ){
@@ -47,6 +46,7 @@ my $edit_ip    = 0;
 my $edit_block = 0;
 $edit_ip       = 1 if ($edit eq "ipinfo");
 $edit_block    = 1 if ($edit eq "blockinfo");
+
 # By default, view object after any operation
 # ( some exceptions will override )
 my $view       = 1;
@@ -123,11 +123,10 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
      $m->abort;
     }
     my ($address, $prefix) = split /\//, $allocate;
-    my $newblock;
+    my $newblock; 
     unless( $newblock = $ipm->insertblock(address     => $address, 
 					  prefix      => $prefix, 
-					  statusname  => "Container",
-					  manual      => 1 )){
+					  statusname  => "Container")){
 	print "<b>Error: ", $ipm->error, "</b><br>";
     }
     if ($newblock)
@@ -253,7 +252,9 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
          <table width="100%" border="0">
            <tr>
 	     <td class="formtablec1">Address: </td>
-	     <td class="formtablec2"><b><% $o->address %>/<% $o->prefix %></b></td>
+	     <td class="formtablec2"><b>
+%            $ui->text_field(object=>$o, column=>"address", edit=>$edit_ip, htmlExtra =>"style='width: 15em'"); print "/"; print $o->prefix;
+             </b></td>
 	   </tr>
            <tr>
              <td class="formtablec1">Status: </td>
@@ -279,7 +280,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
            <tr>
              <td class="formtablec1">Description: </td>
 	     <td class="formtablec2"> 
-%               $ui->text_field(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+%               $ui->text_field(object=>$o, column=>"description", edit=>$edit_ip, htmlExtra =>"style='width: 25em'");
 	     </td>
 	  </tr>
 %          if (scalar($o->arecords)){	   
@@ -366,13 +367,13 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
            <tr>
              <td class="formtablec1">First seen: </td>
 	     <td class="formtablec2"> 
-%               $ui->text_field(object=>$o, column=>"first_seen", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+%               $ui->text_field(object=>$o, column=>"first_seen", edit=>$edit_ip, htmlExtra =>"style='width: 25em'");
 	     </td>
 	  </tr>
            <tr>
              <td class="formtablec1">Last Seen: </td>
 	     <td class="formtablec2"> 
-%               $ui->text_field(object=>$o, column=>"last_seen", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+%               $ui->text_field(object=>$o, column=>"last_seen", edit=>$edit_ip, htmlExtra =>"style='width: 25em'");
 	     </td>
 	  </tr>
            <tr>
@@ -451,7 +452,10 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
         <table width="100%" border="0">
            <tr>
 	     <td class="formtablec1">Address: </td>
-	     <td class="formtablec2"><b><% $o->address %>/<% $o->prefix %></b></td>
+	     <td class="formtablec2"><b>
+%# Kind of weird, but only way to get the "/" in the middle with no spaces
+%              $ui->text_field(object=>$o, column=>"address", edit=>$edit_block, htmlExtra =>"style='width: 15em'"); print "/"; $ui->text_field(object=>$o, column=>"prefix", edit=>$edit_block, htmlExtra =>"style='width: 2em'");
+             </b></td>
 	   </tr>
 	   <tr>
              <td class="formtablec1">Status: </td>
@@ -477,7 +481,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
            <tr>
              <td class="formtablec1">Description: </td>
 	     <td class="formtablec2"> 
-%               $ui->text_field(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+%               $ui->text_field(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 25em'");
 	     </td>
 	  </tr>
           <tr>

@@ -38,11 +38,8 @@ sub new {
 
     # Some operations require a lot of speed.  We override 
     # Class::DBI to avoid any overhead in certain cases
-    eval {
-	$self->{dbh} = Netdot::DBI->db_Main();
-    };
-    if ( $@ ){
-	$self->error(sprintf("Can't get db handle: %s\n", $@));
+    unless ( $self->{dbh} = Netdot::DBI->db_Main() ){
+	$self->error("Can't get db handle\n");
 	return 0;
     }
     # Max number of blocks returned by search functions
@@ -122,14 +119,7 @@ sub searchblockslike {
 
 sub getrootblocks {
     my ($self) = @_;
-    my @ipb;
-    
-    eval {
-	@ipb = Ipblock->search_roots();
-    };
-    if ($@){
-	$self->error($@);
-    }
+    my @ipb = Ipblock->search_roots();
     wantarray ? ( @ipb ) : $ipb[0]; 
 }
 
@@ -139,16 +129,8 @@ sub getrootblocks {
     
 sub getchildren {
     my ($self, $id) = @_;
-    my @ipb;
-    eval {
-	@ipb = Ipblock->search_children($id);
-    };
-    if ($@){
-	$self->error("getchildren: $@");
-	return;
-    }
+    my @ipb = Ipblock->search_children($id);
     wantarray ? ( @ipb ) : $ipb[0]; 
-    
 }
 
 =head2 issubnet - Is Ipblock a subnet?
@@ -191,6 +173,144 @@ sub getsubnetaddr {
     return $ip->network->addr;
     
 }
+
+=head2 _prevalidate - Validate block before creating and updating
+
+These checks are related to basic IP addressing rules
+
+  Arguments:
+    ip address and prefix
+    prefix can be null.  NetAddr::IP will assume it is a host (/32 or /128)
+  Returns:
+    NetAddr::IP object or 0 if failure
+
+=cut
+
+sub _prevalidate {
+    my ($self, $address, $prefix) = @_;
+    my $ip;
+    unless ( $address ){
+	$self->error("Address arg is required");
+	return 0;		
+    }
+    unless( $ip = NetAddr::IP->new($address, $prefix) ){
+	$self->error("Invalid IP: $address/$prefix");
+	return 0;	
+    }
+    # Make sure that what we're inserting is the base address
+    # of the block, and not an address within the block
+    unless( $ip->network == $ip ){
+	$self->error("Invalid IP: $address/$prefix");
+	return 0;		
+    }
+    if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
+	 || $ip eq '::1' ) {
+	$self->error("IP is a loopback: ", $ip->addr, "/", $ip->masklen);
+	return 0;	
+    }elsif ( ( ($ip->version == 4 && $ip->masklen != 32) ||
+	       ($ip->version == 6 && $ip->masklen != 128) ) && 
+	     $ip->network->broadcast == $ip ) {
+	$self->error("Address is broadcast: ", $ip->addr, "/", $ip->masklen);
+	return 0;	
+    }
+    return $ip;
+}
+
+
+=head2 _validate - Validate block when creating and updating
+
+This method assumes the block has already been inserted in the DB (and the
+binary tree has been updated).  This facilitates the checks.
+These checks are more specific to the way Netdot manages the address space.
+
+  Arguments:
+    ARGS    - Hash ref of arguments passed to insertblock/updateblock. 
+  Returns:
+    True or False
+=cut
+
+sub _validate {
+    my ($self, $args) = @_;
+    my $ipblock;
+    unless ( $ipblock = Ipblock->retrieve( $args->{id} ) )
+	$self->error("Cannot retrieve Ipblock id: $args->{id}");
+	return 0;
+    }
+    # Values are what the block is being set to
+    # or what it already has
+    $args->{statusname}    ||= $ipblock->status->name;
+    $args->{dhcp_enabled}  ||= $ipblock->dhcp_enabled;
+    $args->{dns_delegated} ||= $ipblock->dns_delegated;
+    $args->{monitored}     ||= $ipblock->monitored;
+    
+    my $pstatus;
+    if ( $ipblock->parent && $ipblock->parent->id ){
+	$pstatus = $ipblock->parent->status->name;
+	if ( $self->isaddress($ipblock ) ){
+	    if ($pstatus eq "Reserved" ){
+		$self->error("Address allocations not allowed under Reserved blocks");
+		return 0;	    
+	    }
+	}else{
+	    if ($pstatus ne "Container" ){
+		$self->error("Block allocations only allowed under Container blocks");
+		return 0;	    
+	    }	    
+	}
+    }
+    if ( $args->{statusname} eq "Subnet" ){
+	foreach my $ch ( $ipblock->children ){
+	    unless ( $self->isaddress($ch) ){
+		$self->error("Subnet blocks can only contain addresses");
+		return 0;
+	    }
+	}
+    }elsif ( $args->{statusname} eq "Container" ){
+	if ( $args->{dhcp_enabled} ){
+		$self->error("Can't enable DHCP in Container blocks");
+		return 0;	    
+	}
+    }elsif ( $args->{statusname} eq "Reserved" ){
+	if ( $ipblock->children ){
+	    $self->error("Reserved blocks can't contain other blocks");
+	    return 0;
+	}
+	if ( $args->{dhcp_enabled} ){
+		$self->error("Can't enable DHCP on Reserved blocks");
+		return 0;	    	    
+	}
+	if ( $args->{dns_delegated} ){
+		$self->error("Can't delegate DNS on Reserved blocks");
+		return 0;	    	    
+	}
+    }elsif ( $args->{statusname} eq "Dynamic" ) {
+	unless ( $self->isaddress($ipblock) ){
+	    $self->error("Only addresses can be set to Dynamic");
+	    return 0;	    
+	}
+	unless ( $pstatus eq "Subnet" ){
+		$self->error("Dynamic addresses must be within Subnet blocks");
+		return 0;	    
+	}
+	unless ( $ipblock->parent->dhcp_enabled ){
+		$self->error("Parent Subnet must have DHCP enabled");
+		return 0;	    
+	}
+    }elsif ( $args->{statusname} eq "Static" ) {
+	unless ( $self->isaddress($ipblock) ){
+	    $self->error("Only addresses can be set to Static");
+	    return 0;	    
+	}
+    }
+    if ( $args->{monitored} ){
+	unless ( $self->isaddress($ipblock) ){
+	    $self->error("Only addresses can be monitored");
+	    return 0;	    
+	}
+    }
+    return 1;
+}
+
 =head2 insertblock -  Insert a new block
 
 Required Arguments: 
@@ -222,25 +342,19 @@ sub insertblock {
     $args{monitored}     ||= 0; 
     $args{dhcp_enabled}  ||= 0; 
     $args{dns_delegated} ||= 0; 
-
+    
+    # $ip is a NetAddr::IP object;
     my $ip;
-    unless( $ip = NetAddr::IP->new($args{address}, $args{prefix}) ){
-	$self->error("Invalid IP: $args{address}/$args{prefix}");
-	return 0;	
-    }
-    if ( Ipblock->search(address => ($ip->numeric)[0], prefix => $ip->masklen) ){
-	$self->error("Block already exists in db");
+    unless ( $ip = $self->_prevalidate($args{address}, $args{prefix}) ){
+	$self->debug(loglevel => 'LOG_DEBUG',
+		     message => "insertblock: could not validate: %s/%s: %s" ,
+		     args => [$args{address}, $args{prefix}, $self->error]);
 	return 0;
     }
-    if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
-	 || $ip eq '::1' ) {
-	$self->error("IP is a loopback: ", $ip->addr, "/", $ip->masklen);
-	return 0;	
-    }elsif ( ( ($ip->version == 4 && $ip->masklen != 32) ||
-	       ($ip->version == 6 && $ip->masklen != 128) ) && 
-	     $ip->network->broadcast == $ip ) {
-	$self->error("Address is broadcast: ", $ip->addr, "/", $ip->masklen);
-	return 0;	
+    if ( Ipblock->search(address => ($ip->numeric)[0], prefix => $ip->masklen) ){
+	my $msg = sprintf("Block %s/%s already exists in db", $ip->addr, $ip->masklen);
+	$self->error($msg);
+	return 0;
     }
     # Determine Status.  It can be either a name
     # or a IpblockStatus id
@@ -286,11 +400,10 @@ sub insertblock {
 	# makes things much simpler.  Workarounds welcome.
 	#####################################################################
 	$args{id} = $r;
-	unless ( $self->_validateblock(\%args) ){
-
+	unless ( $self->_validate(\%args) ){
 	    $self->debug(loglevel => 'LOG_DEBUG',
-			 message => "insertblock: could not validate: %s/%s" ,
-			 args => [$ip->addr, $ip->masklen]);
+			 message => "insertblock: could not validate: %s/%s: %s" ,
+			 args => [$ip->addr, $ip->masklen, $self->error]);
 
 	    $self->remove( table => "Ipblock", id => $r );
 	    return 0;
@@ -305,54 +418,6 @@ sub insertblock {
     }else{
 	return 0;
     }
-}
-
-=head2 changeblock - Change an existing block to something else
-
- Arguments: 
-  id: id of existing Ipblock object
-  address: ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
-  prefix:  dotted-quad mask or prefix length
- Returns: 
-    Changed Ipblock object
-    False if error
-
-=cut 
-
-sub changeblock {
-    my ($self, %args) = @_;
-    unless ( $args{id} && $args{address} && $args{prefix} ){
-	$self->error("Missing required args");
-	return 0;	
-    }
-    my $ipblock;
-    unless ($ipblock = Ipblock->retrieve($args{id})){
-	$self->error("Ipblock id $args{id} not in db");
-	return 0;
-    }
-    # Do some validation
-    my $ip;
-    unless($ip = NetAddr::IP->new($args{address}, $args{prefix})){
-	$self->error("Invalid IP: $args{address}/$args{prefix}");
-	return 0;	
-    }
-    if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
-	 || $ip eq '::1' ) {
-	$self->error("Address is loopback: $args{address}");
-	return 0;	
-    }elsif ( $ip->network->broadcast == $ip ) {
-	$self->error("Address is broadcast: $args{address}");
-	return 0;	
-    }
-    my %state = ( address => $args{address},
-		  prefix  => $args{prefix} );
-
-    unless ( $self->update( object => $ipblock, state => \%state)){
-	$self->error($self->error);
-	return 0;
-    }
-    return $ipblock;
-
 }
 
 =head2 updateblock -  Update existing IP block
@@ -389,6 +454,24 @@ sub updateblock {
 	$self->error("Ipblock id $args{id} not in db");
 	return 0;
     }
+    # We need at least these two args before proceeding
+    # If not passed, use current values
+    $args{address} ||= $ipblock->address;
+    $args{prefix}  ||= $ipblock->prefix;
+    my $ip;
+    unless ( $ip = $self->_prevalidate($args{address}, $args{prefix}) ){
+	$self->debug(loglevel => 'LOG_DEBUG',
+		     message => "updateblock: could not validate: %s/%s: %s" ,
+		     args => [$args{address}, $args{prefix}, $self->error]);
+	return 0;
+    }
+    if ( my $tmp = (Ipblock->search(address => ($ip->numeric)[0], 
+				   prefix => $ip->masklen))[0] ){
+	if ( $tmp->id != $args{id} ){
+	    $self->error("Block $args{address}/$args{prefix} already exists in db");
+	    return 0;
+	}
+    }
     # Determine Status.  It can be either a name
     # or a IpblockStatus id
     # 
@@ -409,10 +492,10 @@ sub updateblock {
     #####################################################################
     # Now check for rules
     #####################################################################
-    unless ( $self->_validateblock(\%args) ){
+    unless ( $self->_validate(\%args) ){
 	$self->debug(loglevel => 'LOG_DEBUG',
-		     message => "updateblock: could not validate: %s/%s" ,
-		     args => [$ipblock->address, $ipblock->prefix]);
+		     message => "updateblock: could not validate: %s/%s: %s" ,
+		     args => [$ipblock->address, $ipblock->prefix, $self->error]);
 	return 0;
 	# Error should be set
     }
@@ -433,99 +516,7 @@ sub updateblock {
     return $ipblock;
 }
 
-=head2 _validateblock - Validate blocks before creating and updating
 
-  Arguments:
-    ARGS    - Hash ref of arguments passed to insertblock/updateblock. 
-  Returns:
-    True or False
-=cut
-
-sub _validateblock {
-    my ($self, $argsref) = @_;
-    my %args = %{ $argsref };
-    my $ipblock;
-    eval {
-	$ipblock = Ipblock->retrieve( $args{id} );
-	};
-    if ( $@ ){
-	$self->error("Cannot retrieve ipblock: $@");
-	return 0;
-    }
-    # Values are what the block is being set to
-    # or what it already has
-    $args{statusname}    ||= $ipblock->status->name;
-    $args{dhcp_enabled}  ||= $ipblock->dhcp_enabled;
-    $args{dns_delegated} ||= $ipblock->dns_delegated;
-    $args{monitored}     ||= $ipblock->monitored;
-    
-    my $pstatus;
-    if ( $ipblock->parent && $ipblock->parent->id ){
-	$pstatus = $ipblock->parent->status->name;
-	if ( $self->isaddress($ipblock ) ){
-	    if ($pstatus eq "Reserved" ){
-		$self->error("Address allocations not allowed under Reserved blocks");
-		return 0;	    
-	    }
-	}else{
-	    if ($pstatus ne "Container" ){
-		$self->error("Block allocations only allowed under Container blocks");
-		return 0;	    
-	    }	    
-	}
-    }
-    if ( $args{statusname} eq "Subnet" ){
-	foreach my $ch ( $ipblock->children ){
-	    unless ( $self->isaddress($ch) ){
-		$self->error("Subnet blocks can only contain addresses");
-		return 0;
-	    }
-	}
-    }elsif ( $args{statusname} eq "Container" ){
-	if ( $args{dhcp_enabled} ){
-		$self->error("Can't enable DHCP in Container blocks");
-		return 0;	    
-	}
-    }elsif ( $args{statusname} eq "Reserved" ){
-	if ( $ipblock->children ){
-	    $self->error("Reserved blocks can't contain other blocks");
-	    return 0;
-	}
-	if ( $args{dhcp_enabled} ){
-		$self->error("Can't enable DHCP on Reserved blocks");
-		return 0;	    	    
-	}
-	if ( $args{dns_delegated} ){
-		$self->error("Can't delegate DNS on Reserved blocks");
-		return 0;	    	    
-	}
-    }elsif ( $args{statusname} eq "Dynamic" ) {
-	unless ( $self->isaddress($ipblock) ){
-	    $self->error("Only addresses can be set to Dynamic");
-	    return 0;	    
-	}
-	unless ( $pstatus eq "Subnet" ){
-		$self->error("Dynamic addresses must be within Subnet blocks");
-		return 0;	    
-	}
-	unless ( $ipblock->parent->dhcp_enabled ){
-		$self->error("Parent Subnet must have DHCP enabled");
-		return 0;	    
-	}
-    }elsif ( $args{statusname} eq "Static" ) {
-	unless ( $self->isaddress($ipblock) ){
-	    $self->error("Only addresses can be set to Static");
-	    return 0;	    
-	}
-    }
-    if ( $args{monitored} ){
-	unless ( $self->isaddress($ipblock) ){
-	    $self->error("Only addresses can be monitored");
-	    return 0;	    
-	}
-    }
-    return 1;
-}
 
 =head2 removeblock -  Remove IP block
 
