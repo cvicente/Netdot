@@ -197,7 +197,7 @@ sub getinputtag {
 ######################################################################
 # create state for a session across web pages
 ######################################################################
-sub createstate {
+sub mkstate {
   my( $self, $dir ) = @_;
   my( $sid, %session );
   tie %session, 'Apache::Session::File', 
@@ -208,7 +208,7 @@ sub createstate {
 ######################################################################
 # fetch state for a session across web pages
 ######################################################################
-sub fetchstate {
+sub getstate {
   my( $self, $dir, $sid ) = @_;
   my %session;
   tie %session, 'Apache::Session::File', 
@@ -234,6 +234,9 @@ sub rmstate {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.8  2003/07/01 05:09:48  netdot
+#  renaming state functions
+#
 #  Revision 1.7  2003/07/01 04:53:20  netdot
 #  *** empty log message ***
 #
