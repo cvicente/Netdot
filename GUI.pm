@@ -195,7 +195,7 @@ sub getinputtag {
     if ($col eq "info"){
 	return "<textarea name=\"$col\" rows=\"10\" cols=\"38\">$value</textarea>\n";
     }
-    my $sqltype = $self->getsqltype($class,$col);
+    my $sqltype = $self->getsqltype($class, $col);
     if ($sqltype =~ /bool/){
 	if ($value == 1){
 	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\" checked> yes<br>";
@@ -205,7 +205,7 @@ sub getinputtag {
 	    $tag .= "<input type=\"radio\" name=\"$col\" value=\"0\" checked> no";
 	}
     }elsif ($sqltype eq "date"){
-	$tag = "<input type=\"text\" name=\"$col\" size=\"27\" value=\"$value\"> (YYYY-MM-DD)";
+	$tag = "<input type=\"text\" name=\"$col\" size=\"15\" value=\"$value\"> (yyyy-mm-dd)";
     }else{
 	$tag = "<input type=\"text\" name=\"$col\" size=\"40\" value=\"$value\">";
     }
@@ -264,6 +264,9 @@ sub rmsessions {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.15  2003/07/14 20:19:29  netdot
+#  *** empty log message ***
+#
 #  Revision 1.14  2003/07/11 21:00:43  netdot
 #  Modified getinputtag to accept a value when passed a table name
 #
