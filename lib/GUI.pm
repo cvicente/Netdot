@@ -267,13 +267,27 @@ sub getsession {
 }
 
 ######################################################################
-# set session path (so you know what tables have been visited
+# push onto session path (so you know what tables have been visited
 ######################################################################
-sub setsessionpath {
+sub pushsessionpath {
   my( $self, $session, $table ) = @_;
   defined( $session->{path} ) ?
     ( $session->{path} .= ";$table" ) : ( $session->{path} = "$table" );
   return 1;
+}
+
+######################################################################
+# pop from session path (so you know what tables have been visited
+######################################################################
+sub popsessionpath {
+  my( $self, $session ) = @_;
+  my $tbl;
+  my @tbls = split( /;/, $session->{path} );
+  if( scalar( @tbls ) > 0 ) {
+    $tbl = pop @tbls;
+  }
+  $session->{path} = join( ';', @tbls );
+  return $tbl;
 }
 
 ######################################################################
