@@ -2,6 +2,8 @@ package Netdot::DBI;
 
 use base 'Class::DBI';
 
+our $VERSION = 20030415;
+
 Netdot::DBI->set_db('Main', 'dbi:mysql:netdot', 'netdot_user', 'netdot_pass');
 
 __PACKAGE__->
@@ -20,16 +22,6 @@ __PACKAGE__->
 	      }
 	     );
 
-######################################################################
-# be sure to add all the tables/packages in database to this function
-sub tables {
-  return ( "Address", "Availability", "Circuit", "CircuitType",
-	   "Connection", "ContactInfo", "ContactPool", "ContactType",
-	   "Customer", "Interface", "InterfaceDep", "Ip", 
-	   "JnNodeService", "JnCustomerSite", "Model", "Node",
-	   "NodeType", "Peer", "Person", "Service", "Site", "Status",
-	   "Vendor" );
-}
 
 ######################################################################
 package Address;
@@ -324,6 +316,9 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.15  2003/04/15 21:36:35  netdot
+#  removed tables() function.  Use DBI::tables() instead.
+#
 #  Revision 1.14  2003/04/15 21:13:48  netdot
 #  fixed another bug in Peer package -- forgot 'qw'.
 #
