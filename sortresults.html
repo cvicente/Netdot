@@ -4,6 +4,9 @@ foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
   $args{$j} = $ARGS{$j};
 }
+if( exists( $args{view} ) ) {
+  $VIEW = $args{view};
+}
 if( $args{table} ) {
   undef( $META );
   $META = $gui->getmeta( $args{table} );
@@ -45,14 +48,23 @@ if( $args{table} ) {
 
 <!-- begin sortresults -->
 % if( defined( $META ) && defined( $args{object} ) ) {
-  <table BORDER="0" CELLSPACING="1" CELLPADDING="3" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
+    <table BORDER="0" CELLSPACING="1" CELLPADDING="3" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
+%   if( $VIEW eq "row" ) {
+      <tr>
+%     foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+      <th><% $o %></th>
+%     }
+%     </tr>
+%   }
 % ####################################################################
 %   foreach my $o ( sort { $a->id <=> $b->id } @{ $args{object} } ) {
 %     my $flag = 1;
 %     my @order = sort { $order{$a} <=> $order{$b} } keys %order;
 %     foreach my $c ( @order ) {
         <tr>
+%       if( $VIEW eq "column" ) {
         <td align="RIGHT" valign="TOP" WIDTH="100"><b><% $c %></b>: </td>
+%       }
         <td align="LEFT" valign="TOP">
 %       if( exists( $linksto{$c} ) ) {
 %         my $ft = (Meta->search( name => $linksto{$c} ))[0];
@@ -87,11 +99,15 @@ if( $args{table} ) {
 %       } # else fi
         </td>
 %       $flag = 0 if( $flag );
+%       if( $VIEW eq "column" ) {
         </tr>
+%       }
 %     } # for c
+%     if( $VIEW eq "column" ) {
       <tr>
       <td colspan=2><br></td>
       </tr>
+%     }
 %   } # for o
 % ####################################################################
     </table>
@@ -109,6 +125,7 @@ $META => undef
 $LBL => undef
 $PAGE => "view.html"
 $gui => Netdot::GUI->new()
+$VIEW => "column"
 
 </%args>
 <%init>
@@ -122,9 +139,13 @@ Supported arguments:
 
   table  - name of a table in the database
   object - reference to a list of objects in that table for displaying in html
+  view   - [row|column]
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.17  2003/06/26 22:55:08  netdot
+# merging in option to view as a row or as a column
+#
 # Revision 1.16  2003/06/17 22:17:14  netdot
 # made no real changes -miyake
 #
