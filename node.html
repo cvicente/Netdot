@@ -35,13 +35,16 @@ if( exists( $args{insert} ) ) {
         $skip = 1 if( $rsv =~ /$int/ );
       }
       next if( $skip );
+      next if( Interface->search
+                 ( node => $newnode->id,
+                   ifindex => $node{interface}{$int}{instance} ) );
       undef( %tmp );
       $tmp{node} = $newnode->id;
       $tmp{ifdescr} = $int;
       $tmp{managed} = "0";
       foreach my $dbname ( keys %ifnames ) {
 	if( $ifnames{$dbname} eq "descr" ) {
-	  if( $node{interface}{$newif}{$ifnames{$dbname}} ne "-" ) {
+	  if( $node{interface}{$int}{$ifnames{$dbname}} ne "-" ) {
 	    $tmp{$dbname} = $node{interface}{$int}{$ifnames{$dbname}};
 	  }
 	} else {
@@ -51,15 +54,32 @@ if( exists( $args{insert} ) ) {
       my $if;
       eval { $if = Interface->create( \%tmp ); }
         or die "Unable to create Interface $int: $@\n";
+      undef( %tmp );
       if( exists( $node{interface}{$int}{ipAdEntIfIndex} ) ) {
          foreach my $ip ( keys %{ $node{interface}{$int}{ipAdEntIfIndex} } ) {
-            undef( %tmp );
-	    $tmp{interface} = $if->id;
-            $tmp{address} = $ip;
-            $tmp{mask} = $node{interface}{$int}{ipAdEntIfIndex}{$ip};
+            my( $subnet, %iptmp, %nettmp );
+	    $iptmp{interface} = $if->id;
+            $iptmp{address} = $ip;
+            $iptmp{mask} = $node{interface}{$int}{ipAdEntIfIndex}{$ip};
             $tmp{subnet} = 0;
-            eval { Ip->create( \%tmp ); }
-              or die "Unable to create IP $ip: $@\n";
+            my $decip = unpack('N', (pack ('C*', split (/\./, $ip))));
+            my $decmask = unpack('N', (pack ('C*', split (/\./, $iptmp{mask}))));
+            my $net = inet_ntoa(pack('N',$decip & $decmask));
+	    if( $subnet = (Subnet->search( address => $net ) )[0] ) {
+              ;
+	    } else {
+	      $nettmp{address} = $net;
+	      $nettmp{entity} = 0;
+	      eval { $subnet = Subnet->create( \%nettmp ); }
+                or die "Unable to create Subnet $net: $@\n";
+ 	    }
+	    $iptmp{subnet} = $subnet->id;
+	    if( Ip->search( address => $ip ) ) {
+              ;
+            } else {
+              eval { Ip->create( \%iptmp ); }
+                or die "Unable to create IP $ip: $@\n";
+            }
          }
       }
     }
@@ -135,6 +155,7 @@ use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::Netviewer;
 use Netdot::GUI;
+use Socket;
 use Data::Dumper;
 
 </%init>
@@ -144,6 +165,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.19  2003/07/12 21:13:23  netdot
+#  more updates and checks; interfaces, ips, subnets, etc.
+#
 #  Revision 1.18  2003/07/12 18:34:51  netdot
 #  more fixes; cancel works and added series of eval statements
 #
