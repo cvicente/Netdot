@@ -225,6 +225,7 @@ sub getinputtag {
     }
     my $sqltype = $self->getsqltype($class, $col);
     if ($sqltype =~ /bool/){
+	if ($value == 1){
 	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\" checked> yes";
 	    $tag .= " <input type=\"radio\" name=\"$col\" value=\"0\"> no";
 	}elsif ($value eq ""){
