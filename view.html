@@ -41,6 +41,7 @@ if( defined( $mi->columnorder ) ) {
    }
 }
 
+if ($table !~ /_history/){
  # List all the has_many objects for this object
  undef (%ftables);
  foreach my $i (keys %linksfrom){
@@ -50,7 +51,7 @@ if( defined( $mi->columnorder ) ) {
   $ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
   my $mj = ( Meta->search(name => $j) )[0]; #get meta info for other table
   # If foreign table is a join table, try to hide it
-  if ( defined($mj) && ($mj->isjoin) ){
+  if ( defined($mj) && ($mj->mainobject == 0) ){
      undef( %jlinksto );
      # Get has_a entries 
      map { my($a, $b) = split( /:/, $_ ); $jlinksto{$a} = $b }
@@ -69,6 +70,7 @@ if( defined( $mi->columnorder ) ) {
      $ftables{$i}{robjs} = 0;
   }
  }
+}
 
 </%perl>
 
@@ -77,49 +79,15 @@ if( defined( $mi->columnorder ) ) {
 
 <table align="top" border="0" width="97%">
 <tr><td colspan="2">
-
-%#######################################################
-%#  <table width="100%">
-%#  <tr>
-%#  <td valign="center" align="left" width="20%" >
-%#      <form action="view.html" method="POST">
-%#      <input type="hidden" name="table" value="<% $table %>">
-%#        my (@objl, $p);
-%#        my $numrec =  scalar(@objl = map { $_->id } $table->retrieve_all);
-%#        for (my $i=0; $i < $numrec; $i++) { if ($objl[$i] == $obj->id) { $p = $i; last; }  };
-%#        record <input type="text" size="3" name="id" value="<% $p + 1 %>"> of <% $numrec %> 
-%#     </form>
-%# </td>
-%# <td valign="top" align="center" width="80%">
-%#     [<a href="view.html?table=<% $table %>&id=<% $objl[0] %>&view=<% $view %>">|&lt;</a>]
-%#     &nbsp;&nbsp;[<a href="view.html?table=<% $table %>&id=<% (($objl[$p-1]) != 0) ? ($objl[$p-1]): $numrec %>&view=<% $view %>">&lt;&lt;</a>]
-%#     &nbsp;&nbsp; [<a href="view.html?table=<% $table %>&id=<% $objl[($p+1)%($numrec)] %>&view=<% $view %>">&gt;&gt;</a>] 
-%#     &nbsp;&nbsp;[<a href="view.html?table=<% $table %>&id=<% $objl[$numrec-1] %>&view=<% $view %>">&gt;|</a>]
-%# </td>
-%# </tr>
-%# </table>
-%#######################################################
   <table width="100%">
   <tr>
   <td valign="center" align="left" width="20%" >
       <form action="view.html" method="POST">
       <input type="hidden" name="table" value="<% $table %>">
-%        my (@all, @objl, $p, %unobjs);
-%        @all = $table->retrieve_all;
-%	 # Get the largest id value (current instance) for every object_id
-%	 foreach my $o (@all){
-%	    if (exists $unobjs{$o->object_id}){ 
-%	       if ($o->id > $unobjs{$o->object_id}){
-%	         $unobjs{$o->object_id} = $o->id;
-%	       }
-%	    }else{
-%	       $unobjs{$o->object_id} = $o->id;
-%	    }
-%	 }
-%	 @objl = map { $unobjs{$_} } keys %unobjs;
-%	 my $numrec = scalar @objl;
+%        my (@objl, $p);
+%        my $numrec =  scalar(@objl = map { $_->id } $table->retrieve_all);
 %        for (my $i=0; $i < $numrec; $i++) { if ($objl[$i] == $obj->id) { $p = $i; last; }  };
-         record <input type="text" size="3" name="id" value="<% $p + 1 %>"> of <% $numrec %> 
+         record <input type="text" size="3" name="id" value="<% $p %>"> of <% $numrec %> 
       </form>
   </td>
   <td valign="top" align="center" width="80%">
@@ -130,13 +98,13 @@ if( defined( $mi->columnorder ) ) {
   </td>
   </tr>
   </table>
-%######################################################
 <p><br>
 </td></tr>
 
 <tr>
   <!-- Begin left hand menu -->
   <td align="left" valign="top" width="20%">
+% if ($table !~ /_history/){
    <table border="0" cellspacing="0" bgcolor="#CCCCCC" width="80%">
     <tr><td>
      <font size="-1">
@@ -150,22 +118,21 @@ if( defined( $mi->columnorder ) ) {
 %	   }  
 %	}
           <tr><td>&nbsp;</td></tr>
-%	  if ($view ne "history"){
-   	    <tr><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a></td></tr>
-	    <tr><td>&nbsp;</td></tr>
-%	    if (scalar keys %ftables){
+   	  <tr><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a></td></tr>
+	  <tr><td>&nbsp;</td></tr>
+%	  if (scalar keys %ftables){
             <tr><td bgcolor="#DDDDDD"><strong>Add to this <% $table %>:</strong></td></tr>
 %	      foreach my $i (keys %ftables){
 	        <tr>
 	          <td><font color="#FF0000">&gt;</font> <a href="create.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>"><% $i %></a></td>
 	        </tr>
 %	      }
-%           }  
-%	  }
+%         }  
       </table>
      </font>
     </td></tr>
    </table>
+% }
   </td>
   <!-- End left hand menu -->
 
@@ -180,7 +147,9 @@ if( defined( $mi->columnorder ) ) {
            <td align="left" width="20%">&nbsp;</td>
            <td align="center" width="60%"><strong><% $table %></strong></td>
            <td align="right" width="20%">
-	    [<a href="update.html?table=<% $table %>&id=<% $obj %>">edit</a>] 
+%	    if ($table !~ /_history/){
+	      [<a href="update.html?table=<% $table %>&id=<% $obj %>">edit</a>] 
+%	    }
 	    [<a href="delete.html?table=<% $table %>&id=<% $obj %>">delete</a>]
 	   </td>
           </tr>
@@ -224,22 +193,13 @@ if( defined( $mi->columnorder ) ) {
 %      }
 %     }
 %    } 
-%#######################################################################
-%#  if ( $view eq 'history' ){
-%#   my $h_table = "$table" . "_history";
-%#   my $id_f = lc("$table" . "_id");
-%#   my @h_objs = $h_table->search($id_f => "$obj->id");
-%#    <& sortresults.html, table => $h_table, object => \@h_objs &>
-%#  } 
-%#######################################################################
 
 %  if ( $view eq 'history' ){
-%    my @hobjs;
-%    map { push @hobjs, $_ if ($_->id != $obj->id) } $table->search(object_id => $obj->object_id);
-%    if (scalar @hobjs){
-        <& sortresults.html, table => $table, object => \@hobjs &>
-%    }
-%  }
+%   my $h_table = "$table" . "_history";
+%   my $id_f = lc("$table" . "_id");
+%   my @h_objs = $h_table->search($id_f => "$obj->id");
+    <& sortresults.html, table => $h_table, object => \@h_objs &>
+%  } 
 
 </td></tr>
 </table>
@@ -258,11 +218,9 @@ my( %arg, %linksto, %linksfrom, $obj, $table, $lbl, $view, $mi, %order, @addlink
 
 ######################################################################
 #  $Log: view.html,v $
-#  Revision 1.15  2003/06/10 22:09:39  netdot
-#  Changed to use one-table model for history.
-#
-#  Revision 1.14  2003/06/10 17:48:36  netdot
-#  *** empty log message ***
+#  Revision 1.16  2003/06/10 22:20:51  netdot
+#  Went back to duplicate-table model for history.
+#  Also kept some fixes from previous version
 #
 #  Revision 1.13  2003/06/09 23:02:43  netdot
 #  Added logic for viewing an object's history (separate table model)
