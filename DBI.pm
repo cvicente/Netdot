@@ -26,11 +26,11 @@ package Address;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Address');
-__PACKAGE__->columns(All => qw /id Street1 Street2 POBox City State Zip Country Info /);
+__PACKAGE__->columns(All => qw /id street1 street2 poBox city state zip country info /);
 
-__PACKAGE__->has_many('vendors', 'Vendor' => 'Address');
-__PACKAGE__->has_many('sites', 'Site' => 'Address');
-__PACKAGE__->has_many('persons', 'Person' => 'Address');
+__PACKAGE__->has_many('vendors', 'Vendor' => 'address');
+__PACKAGE__->has_many('sites', 'Site' => 'address');
+__PACKAGE__->has_many('persons', 'Person' => 'address');
 
 
 ######################################################################
@@ -38,11 +38,11 @@ package Availability;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Availability');
-__PACKAGE__->columns(All => /id Name Info/);
+__PACKAGE__->columns(All => /id name info/);
 
-__PACKAGE__->has_many('customers', 'Customer' => 'Hours');
-__PACKAGE__->has_many('sites', 'Site' => 'Availability' );
-__PACKAGE__->has_many('persons', 'Person' => 'Availability' );
+__PACKAGE__->has_many('customers', 'Customer' => 'availability');
+__PACKAGE__->has_many('sites', 'Site' => 'availability' );
+__PACKAGE__->has_many('persons', 'Person' => 'availability' );
 
 
 ######################################################################
@@ -50,13 +50,13 @@ package Circuit;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Circuit');
-__PACKAGE__->columns(All => qw/ id CID Vendor StartSite EndSite Type Speed InstallDate Connection Info /);
+__PACKAGE__->columns(All => qw/ id cid vendor startSite endSite type speed installDate connection info /);
 
-__PACKAGE__->has_a(Type => 'CircuitType');
-__PACKAGE__->has_a(StartSite => 'Site');
-__PACKAGE__->has_a(EndSite => 'Site');
-__PACKAGE__->has_a(Connection => 'Connection');
-__PACKAGE__->has_a(Vendor => 'Vendor');
+__PACKAGE__->has_a(type => 'CircuitType');
+__PACKAGE__->has_a(startSite => 'Site');
+__PACKAGE__->has_a(endSite => 'Site');
+__PACKAGE__->has_a(connection => 'Connection');
+__PACKAGE__->has_a(vendor => 'Vendor');
 
 
 ######################################################################
@@ -64,9 +64,9 @@ package CircuitType;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('CircuitType');
-__PACKAGE__->columns(All => qw/id Name Info /);
+__PACKAGE__->columns(All => qw/id name info /);
 
-__PACKAGE__->has_many('circuits', 'Circuit' => 'Type');
+__PACKAGE__->has_many('circuits', 'Circuit' => 'type');
 
 
 ######################################################################
@@ -74,12 +74,12 @@ package Connection;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Connection');
-__PACKAGE__->columns(All => qw /id Name Customer StartSite EndSite Info /);
+__PACKAGE__->columns(All => qw /id name customer startSite endSite info /);
 
-__PACKAGE__->has_a('StartSite' => 'Site');
-__PACKAGE__->has_a('EndSite' => 'Site');
-__PACKAGE__->has_a('Customer' => 'Customer');
-__PACKAGE__->has_many('circuits', 'Circuit' => 'Connection');
+__PACKAGE__->has_a('startSite' => 'Site');
+__PACKAGE__->has_a('endSite' => 'Site');
+__PACKAGE__->has_a('customer' => 'Customer');
+__PACKAGE__->has_many('circuits', 'Circuit' => 'connection');
 
 
 ######################################################################
@@ -87,11 +87,11 @@ package ContactInfo;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('ContactInfo');
-__PACKAGE__->columns(All => qw /id ContactType ContactPool Person Email Office Home Cell Pager EmailPager Fax Info /);
+__PACKAGE__->columns(All => qw /id contactType contactPool person email office home cell pager emailPager fax info /);
 
-__PACKAGE__->has_a(ContactPool => 'ContactPool');
-__PACKAGE__->has_a(ContactType => 'ContactType');
-__PACKAGE__->has_a(Person => 'Person');
+__PACKAGE__->has_a(contactPool => 'ContactPool');
+__PACKAGE__->has_a(contactType => 'ContactType');
+__PACKAGE__->has_a(person => 'Person');
 
 
 ######################################################################
@@ -99,11 +99,11 @@ package ContactPool;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('ContactPool');
-__PACKAGE__->columns(All => qw /id Name Info /);
+__PACKAGE__->columns(All => qw /id name info /);
 
-__PACKAGE__->has_many('vendors', 'Vendor' => 'ContactPool');
-__PACKAGE__->has_many('sites', 'Site' => 'ContactPool');
-__PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'ContactPool');
+__PACKAGE__->has_many('vendors', 'Vendor' => 'contactPool');
+__PACKAGE__->has_many('sites', 'Site' => 'contactPool');
+__PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'contactPool');
 
 
 ######################################################################
@@ -111,9 +111,9 @@ package ContactType;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('ContactType');
-__PACKAGE__->columns(All => qw /id Name Info /);
+__PACKAGE__->columns(All => qw /id name info /);
 
-__PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'ContactType');
+__PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'contactType');
 
 
 ######################################################################
@@ -121,11 +121,11 @@ package Customer;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Customer');
-__PACKAGE__->columns(All => qw /id Name Hours Address ContactPool Info/ );
+__PACKAGE__->columns(All => qw /id name Hours Address ContactPool info/ );
 
-__PACKAGE__->has_a(Address => 'Address');
-__PACKAGE__->has_a(Hours => 'Availability');
-__PACKAGE__->has_a(ContactPool => 'ContactPool');
+__PACKAGE__->has_a(address => 'Address');
+__PACKAGE__->has_a(hours => 'Availability');
+__PACKAGE__->has_a(contactPool => 'ContactPool');
 
 
 ######################################################################
@@ -133,9 +133,9 @@ package Interface;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Interface');
-__PACKAGE__->columns(All => qw/id NodeId HostName PhysAddr ifIndex ifType ifDescr ifSpeed ifStatus Info/ );
+__PACKAGE__->columns(All => qw/id nodeId hostName physAddr ifIndex ifType ifDescr ifSpeed ifStatus info/ );
 
-__PACKAGE__->has_a(NodeID => 'Node');
+__PACKAGE__->has_a(nodeID => 'Node');
 __PACKAGE__->has_many( 'interfacedeps', 'InterfaceDep' => 'parent');
 __PACKAGE__->has_many( 'interfacedeps', 'InterfaceDep' => 'child');
 
@@ -156,10 +156,10 @@ package JnCustomerSite;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('JnCustomerSite');
-__PACKAGE__->columns(All => qw/id Customer Site/ );
+__PACKAGE__->columns(All => qw/id customer site/ );
 
-__PACKAGE__->has_a(Customer => 'Customer');
-__PACKAGE__->has_a(Site => 'Site');
+__PACKAGE__->has_a(customer => 'Customer');
+__PACKAGE__->has_a(site => 'Site');
 
 
 ######################################################################
@@ -167,9 +167,9 @@ package Model;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Model');
-__PACKAGE__->columns(All => qw/id Name Vendor Info/ );
+__PACKAGE__->columns(All => qw/id name vendor info/ );
 
-__PACKAGE__->has_a(Vendor => 'Vendor');
+__PACKAGE__->has_a(vendor => 'Vendor');
 
 
 ######################################################################
@@ -177,11 +177,11 @@ package Person;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Person');
-__PACKAGE__->columns(All => qw /id FirstName LastName Position Department Address Availability Info /);
+__PACKAGE__->columns(All => qw /id firstName lastName position department address availability info /);
 
-__PACKAGE__->has_a(Address => 'Address');
-__PACKAGE__->has_a(Availability => 'Availability');
-__PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'Person');
+__PACKAGE__->has_a(address => 'Address');
+__PACKAGE__->has_a(availability => 'Availability');
+__PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'person');
 
 
 ######################################################################
@@ -190,15 +190,15 @@ use base 'Netdot::DBI';
 
 __PACKAGE__->table('Site');
 
-__PACKAGE__->columns(All => qw/id Name Availability Address ContactPool Info /);
+__PACKAGE__->columns(All => qw/id name availability address contactPool info/);
 
-__PACKAGE__->has_a(Address => 'Address');
-__PACKAGE__->has_a(Availability => 'Availability');
-__PACKAGE__->has_a(ContactPool => 'ContactPool');
-__PACKAGE__->has_many('startcircuits', 'Circuit' => 'StartSite');
-__PACKAGE__->has_many('endcircuits', 'Circuit' => 'EndSite');
-__PACKAGE__->has_many('startconnections', 'Connection' => 'StartSite');
-__PACKAGE__->has_many('endconnections', 'Connection' => 'EndSite');
+__PACKAGE__->has_a(address => 'Address');
+__PACKAGE__->has_a(availability => 'Availability');
+__PACKAGE__->has_a(contactPool => 'ContactPool');
+__PACKAGE__->has_many('startcircuits', 'Circuit' => 'startSite');
+__PACKAGE__->has_many('endcircuits', 'Circuit' => 'endSite');
+__PACKAGE__->has_many('startconnections', 'Connection' => 'startSite');
+__PACKAGE__->has_many('endconnections', 'Connection' => 'endSite');
 
 
 ######################################################################
@@ -206,12 +206,12 @@ package Vendor;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Vendor');
-__PACKAGE__->columns(All => qw/id Name ContactPool AcctNumber Address Info/);
+__PACKAGE__->columns(All => qw/id name contactPool acctNumber address info/);
 
-__PACKAGE__->has_a(Address => 'Address');
-__PACKAGE__->has_a(ContactPool => 'ContactPool');
-__PACKAGE__->has_many('circuits', 'Circuit' => 'Vendor');
-__PACKAGE__->has_many('models', 'Model' => 'Vendor');
+__PACKAGE__->has_a(address => 'Address');
+__PACKAGE__->has_a(contactPool => 'ContactPool');
+__PACKAGE__->has_many('circuits', 'Circuit' => 'vendor');
+__PACKAGE__->has_many('models', 'Model' => 'vendor');
 
 
 
@@ -222,6 +222,9 @@ __PACKAGE__->has_many('models', 'Model' => 'Vendor');
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.9  2003/04/10 21:51:26  netdot
+#  updated column names to new naming convention
+#
 #  Revision 1.8  2003/04/10 21:41:36  netdot
 #  added a few more classes
 #
