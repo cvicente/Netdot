@@ -47,7 +47,7 @@ if( defined( $mi->columnorder ) ) {
 <td bgcolor="#DDDDDD">id:</td><td><strong><% $obj->id %></strong></td>
 </tr>
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%      next if ($c eq 'id' || $c eq 'disabled');
+%      next if ($c eq 'id');
        <tr> 
        <td bgcolor="#DDDDDD"><% $c %>:</td>
 %      if (!exists($linksto{$c}) ){
@@ -70,7 +70,9 @@ if( defined( $mi->columnorder ) ) {
 %   }
 </tr>
 <tr> 
-<td align="center" colspan="2" bgcolor="#FFFFFF"><a href="expview.html?table=<% $table %>&id=<% $obj %>&edit=1">edit</a></td>
+<td align="center" colspan="2" bgcolor="#FFFFFF"><a href="expview.html?table=<% $table %>&id=<% $obj %>&edit=1">edit</a>
+&nbsp;<a href="delete.html?table=<% $table %>&id=<% $obj %>&edit=1">delete</a>
+</td>
 </tr>
 </table>
 
@@ -126,6 +128,9 @@ my( %arg, %linksto, %linksfrom, $obj, $table, $mi, %order);
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.9  2003/05/21 17:59:48  netdot
+#  *** empty log message ***
+#
 #  Revision 1.8  2003/05/14 16:28:02  netdot
 #  added id arg to call to form.html
 #
