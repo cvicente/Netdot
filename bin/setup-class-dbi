@@ -26,6 +26,7 @@ select (OUT);  # spit it all out to the output file by default
 my $head = 
 qq /package Netdot::DBI;
 use base 'Class::DBI';
+use Net::IP qw(:PROC);
 #use Netdot::eHasMany;
 
 ## This file was generated from a script.  Do not edit. ##
@@ -36,18 +37,43 @@ sub VERSION { "0.5" }
 
 /;
 
-
 ## No interpolation from now on (q//)
 
 $head .= 
 q /
+#__PACKAGE__->add_relationship_type( e_has_many => "Class::DBI::Relationship::eHasMany" );
+
+  
+sub ip2int {
+    my $self = shift;
+    my $ipobj;
+    unless ( $ipobj = new Net::IP ($self->address) ){
+	die  "Invalid IP address: ", $self->address ;
+    }
+    $self->address( $ipobj->intip() );
+}
+
+sub int2ip {
+    my $self = shift;
+    if ($self->version == 4){
+	my $bin = ip_inttobin($self->address, 4);
+	$self->address(ip_bintoip($bin, 4));
+    }elsif ($self->version == 6) {
+	my $bin = ip_inttobin($self->address, 6);
+	$self->address(ip_compress_address(ip_bintoip($bin, 6), 6) );
+    } else {
+	return $self->_croak("Did not supply an IP version");
+    }
+}
+  
+Ipblock->add_trigger( deflate_for_create => \&ip2int );
+Ipblock->add_trigger( deflate_for_update => \&ip2int );
+Ipblock->add_trigger( select => \&int2ip );
+
 ##########################################
 ## Insert object in history table
 ##########################################
     
-__PACKAGE__->add_relationship_type(
-			       e_has_many   => "Class::DBI::Relationship::eHasMany",
-			       );
 __PACKAGE__->
   add_trigger( 
 	      before_update=>

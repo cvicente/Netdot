@@ -605,15 +605,19 @@ my $schema = {
 },
 
 
-'Ip' => {
+'Ipblock' => {
  'columns' => [
    'id', 'serial', '', '', '', '',
-   'interface', 'integer', '', '', '', '',
-   'address', 'varchar', '', '64', '', '',
+   'address', 'numeric', '', '40,0', '', '',
    'prefix', 'integer', '', '', '', '',
-   'subnet', 'integer', '', '', '', '',
    'version', 'integer', '', '', '', '',
+   'parent', 'integer', '', '', '', '',
+   'interface', 'integer', '', '', '', '',
    'registered', 'bool', '', '', '', '',
+   'allocated', 'bool', '', '', '', '',
+   'delegated', 'bool', '', '', '', '',
+   'entity', 'integer', '', '', '', '',
+   'description', 'varchar', 'NULL', '128', '', '',
    'last_seen', 'timestamp', '', '', '', '',
    'physaddr', 'integer', 'NULL', '', '', '',
  ],
@@ -622,25 +626,6 @@ my $schema = {
  'index' => [ ['last_seen'], ['physaddr'], ['interface'] ],
 },
 
-'Ip_history' => {
- 'columns' => [
-   'id', 'serial', '', '', '', '',
-   'ip_id', 'integer', '', '', '', '',
-   'interface', 'integer', '', '', '', '',
-   'address', 'varchar', '', '64', '', '',
-   'prefix', 'integer', '', '', '', '',
-   'subnet', 'integer', '', '', '', '',
-   'version', 'integer', '', '', '', '',
-   'registered', 'bool', '', '', '', '',
-   'last_seen', 'timestamp', '', '', '', '',
-   'physaddr', 'integer', '', '', '', '',
-   'modified', 'timestamp', '', '', '', '',
-   'modifier', 'varchar', 'NULL', '32', '', '',
-],
- 'primary_key' => 'id',
- 'unique' => [  ],
- 'index' => [ ['ip_id']  ],
-},
 
 'IpService' => {
   'columns' => [
@@ -896,45 +881,7 @@ my $schema = {
   'index' => [  ],
 },
 
-'Subnet' => {
-  'columns' => [
-    'id', 'serial', '', '', '', '',
-    'address', 'varchar', 'NULL', '255', '', '',
-    'prefix', 'integer', '', '', '', '',
-    'ipversion', 'integer', '', '', '', '',
-    'allocated', 'bool', '', '', '', '',
-    'description', 'varchar', 'NULL', '128', '', '',
-    'entity', 'integer', '', '', '', '',
-    'delegated', 'bool', '', '', '', '',
-    'info', 'long varbinary', 'NULL', '', '', '',
-  ],
-  'primary_key' => 'id',
-  'unique' => [ ['address','prefix'] ],
-  'index' => [ ['entity'] ],
-},
 
-'Subnet_history' => {
-  'columns' => [
-    'id', 'serial', '', '', '', '',
-    'subnet_id', 'integer', '', '', '', '',
-    'ipversion', 'integer', '', '', '', '',
-    'address', 'varchar', 'NULL', '255', '', '',
-    'prefix', 'integer', '', '', '', '',
-    'allocated', 'bool', '', '', '', '',
-    'description', 'varchar', 'NULL', '128', '', '',
-    'entity', 'integer', '', '', '', '',
-    'fw_domain', 'integer', '', '', '', '',
-    'rev_domain', 'integer', '', '', '', '',
-    'dhcp_enabled', 'bool', '', '', '', '',
-    'dhcp_server', 'integer', 'NULL', '', '', '',
-    'info', 'long varbinary', 'NULL', '', '', '',
-    'modified', 'timestamp', '', '', '', '',
-    'modifier', 'varchar', 'NULL', '32', '', '',
-  ],
-  'primary_key' => 'id',
-  'unique' => [ ],
-  'index' => [ ['subnet_id'] ],
-},
 
 'SubnetZone' => {
   'columns' => [

@@ -63,7 +63,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'ipaddr,physaddr', 
 	  'ipaddr:IP Address,physaddr:Physical Address,arpchache:ARP Cache',
 	  '',
-	  'ipaddr:Ip,physaddr:PhysAddr,arpcache:ArpCache', 
+	  'ipaddr:Ipblock,physaddr:PhysAddr,arpcache:ArpCache', 
 	  '', 
 	  '0', 
 	  'ARP Cache Entry');
@@ -76,7 +76,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Time Period,info:Comments',
 	  '',
 	  '', 
-	  'sites:Site:availability:{on_delete=>"set-null"},entities:Entity:availability:{on_delete=>"set-null"},notify_emails:Contact:notify_email:{on_delete=>"set-null"},notify_pagers:Contact:notify_pager:{on_delete=>"set-null"},notify_voices:Contact:notify_voice:{on_delete=>"set-null"},', 
+	  'sites:Site:availability:{on_delete=>"set-null"},entities:Entity:availability:{on_delete=>"set-null"},email_notifications:Contact:notify_email:{on_delete=>"set-null"},page_notifications:Contact:notify_pager:{on_delete=>"set-null"},voice_notifications:Contact:notify_voice:{on_delete=>"set-null"},', 
 	  '0',
 	  'A Time Period'
 	  );
@@ -329,7 +329,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'service,type,name',
 	  'name:Name,part_of:Belongs to,subnet:Subnet,service:DHCP Service,info:Comments',
 	  '',
-	  'type:DhcpScopeType,part_of:DhcpScope,subnet:Subnet,service:IpService', 
+	  'type:DhcpScopeType,part_of:DhcpScope,subnet:Ipblock,service:IpService', 
 	  'attributes:DhcpAttr:host', 
 	  '0', 
 	  'A DHCP Scope');
@@ -354,7 +354,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact Group,acctnumber:Account Number,maint_contract:Maintenance Contract,autys:Autonomous System,bgppeerip:BGP Peer IP,info:Comments',
 	  '',
 	  'contactlist:ContactList,availability:Availability,type:EntityType', 
-	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,subnets:Subnet:entity:{on_delete=>"set-null"},cables:BackboneCable:owner:{on_delete=>"set-null"},devices:Device:entity:{on_delete=>"set-null"},people:Person:entity', 
+	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,subnets:Ipblock:entity:{on_delete=>"set-null"},cables:BackboneCable:owner:{on_delete=>"set-null"},devices:Device:entity:{on_delete=>"set-null"},people:Person:entity', 
 	  '0', 
 	  'An organization related to the network in some way');
 
@@ -436,7 +436,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'number:Number,name:Name,device:Device,jack:Jack,description:Description,type:Type,speed:Speed,duplex:Duplex,status:Status,physaddr:Physical (MAC) Address,info:Comments,managed:Managed?,contactlist:Contact List',
 	  '',
 	  'device:Device,jack:HorizontalCable,physaddr:PhysAddr', 
-	  'ips:Ip:interface,parents:InterfaceDep:child,children:InterfaceDep:parent,nearcircuits:Circuit:nearend:{on_delete=>"set-null"},farcircuits:Circuit:farend:{on_delete=>"set-null"},fwtentries:FWTableEntry:interface,vlans:InterfaceVlan:interface', 
+	  'ips:Ipblock:interface,parents:InterfaceDep:child,children:InterfaceDep:parent,nearcircuits:Circuit:nearend:{on_delete=>"set-null"},farcircuits:Circuit:farend:{on_delete=>"set-null"},fwtentries:FWTableEntry:interface,vlans:InterfaceVlan:interface', 
 	  '0', 
 	  'An interface associated with a device'
 	  );
@@ -466,35 +466,26 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
 	    'Interface to VLAN join table');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Ip', 
+  VALUES ('Ipblock', 
 	  'address', 
-	  'address,prefix,interface,subnet,version,registered,last_seen,physaddr', 
-	  'address,prefix,interface',
-	  'address:Address,prefix:Mask Prefix,interface:Interface,subnet:Subnet,version:Version (4/6),registered:Registered?,last_seen:Last Seen,physaddr:Physical (MAC) Address',
+	  'address,prefix,version,parent,interface,registered,allocated,delegated,entity,description,last_seen,physaddr', 
+	  'address,prefix',
+	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,registered:Registered?,allocated:Allocated?:delegated:Delegated?,entity:Assigned to,description:Description,last_seen:Last Seen,physaddr:MAC Address',
 	  '',
-	  'interface:Interface,subnet:Subnet,physaddr:PhysAddr', 
-	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,resourcerecords:RRIp:ip', 
+	  'interface:Interface,parent:Ipblock,entity:Entity,physaddr:PhysAddr', 
+	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,resourcerecords:RRIp:ip,children:Ipblock:parent:{on_delete=>"restrict"},dhcpentries:DhcpScope:subnet:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
 	  '0', 
 	  'An IP (v4 or v6) Address');
 
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Ip_history', 
-	  'modified', 
-	  'address,prefix,interface,subnet,version,registered,last_seen,physaddr,modified,modifier', 
-	  'modified,modifier,address,prefix,interface', 
-	  'address:Address,prefix:Mask Prefix,interface:Interface,subnet:Subnet,version:Version (4/6),registered:Registered?,last_seen:Last Seen,physaddr:Physical (MAC) Address,modified:Modified on,modifier:Modified by',
-	  '',
-	  'interface:Interface,subnet:Subnet,physaddr:PhysAddr', 
-	  '', 
-	  '0', 
-	  '');
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
+  VALUES ('StrandStatus', 'name',  'name', 'name', '', 'strands:CableStrand:status:{on_delete=>"restrict"}', '0', 'Cable strand/pair status');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('IpService', 
 	  'ip,service', 
 	  'ip,service,managed,contactlist', 
 	  'ip,service', 
-	  'ip:Ip,service:Service,contactlist:ContactList', 
+	  'ip:Ipblock,service:Service,contactlist:ContactList', 
 	  'dhcpconfigs:DhcpScope:service', 
  	  '0', 
 	  'A relationship linking an Ip address with a running Internet service');
@@ -532,7 +523,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	    'address:Address,last_seen:Last Seen',
 	    '',
 	    '', 
-	    'interfaces:Interface:physaddr:{on_delete=>"set-null"},devices:Device:physaddr:{on_delete=>"set-null"},fwtableentries:FWTableEntry:physaddr,registeredips:Ip:physaddr,arpentries:ArpCache:physaddr', 
+	    'interfaces:Interface:physaddr:{on_delete=>"set-null"},devices:Device:physaddr:{on_delete=>"set-null"},fwtableentries:FWTableEntry:physaddr,registeredips:Ipblock:physaddr,arpentries:ArpCache:physaddr', 
 	    '0', 
 	    'A physical or MAC address');
 
@@ -591,7 +582,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	    'rr,ip',
 	    'rr:Resource Record,ip:IP Address', 
 	    '',
-	    'rr:RR,ip:Ip', 
+	    'rr:RR,ip:Ipblock', 
 	    '', 
 	    '1', 
 	    'RR to IP join table');
@@ -632,39 +623,13 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '0', 
 	  '');
 
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('StrandStatus', 'name',  'name', 'name', '', 'strands:CableStrand:status:{on_delete=>"restrict"}', '0', 'Cable strand/pair status');
-
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Subnet', 
-	  'address,prefix', 
-	  'address,prefix,ipversion,allocated,description,entity,delegated,info', 
-	  'address,prefix,allocated,entity,description', 
-	  'address:Address,prefix:Prefix,ipversion:IP Version,allocated:Allocated?,delegated:Delegated?,description:Description,entity:Assigned to,info:Comments',
-	  '',
-	  'entity:Entity', 
-	  'ips:Ip:subnet:{on_delete=>"restrict"},dhcpentries:DhcpScope:subnet:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
-	  '0', 
-	  'An IP network subnet');
-
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Subnet_history', 
-	  'modified', 
-	  'address,prefix,ipversion,allocated,description,entity,delegated,info,modified,modifier', 
-	  'modified,modifier,address,prefix,allocated,entity,description', 
-	  'address:Address,prefix:Prefix,ipversion:IP Version,allocated:Allocated?,delegated:Delegated?,description:Description,entity:Assigned to,info:Comments,modified:Modified on,modifier:Modified by',
-	  '',
-	  'entity:Entity', 
-	  '', 
-	  '0', 
-	  '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('SubnetZone', 
 	  'subnet,zone', 
 	  'subnet,zone,', 
 	  'subnet,zone', 
-	  'subnet:Subnet,zone:Zone', 
+	  'subnet:Ipblock,zone:Zone', 
 	  '', 
  	  '1', 
 	  'IP Subnet to DNS Zone join table');
@@ -676,7 +641,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'vid',
 	  'vid:VLAN ID,subnet:Subnet,description:Description,info:Comments',
 	  '',
-	  'subnet:Subnet', 
+	  'subnet:Ipblock', 
 	  'interfaces:InterfaceVlan:vlan', 
 	  '0', 
 	  'A Virtual LAN');

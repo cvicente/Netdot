@@ -59,7 +59,7 @@ tests:
 	perl -MNet::SNMP -e 1
 	perl -MDBIx::DBSchema -e 1
 	perl -MDBIx::DataSource -e 1
-	perl -MNetAddr::IP -e 1
+	perl -MNet::IP -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi
