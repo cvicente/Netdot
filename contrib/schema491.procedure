@@ -16,6 +16,13 @@ ALTER TABLE Site ADD COLUMN city varchar(64) after pobox;
 ALTER TABLE Site ADD COLUMN state varchar(32) after city;
 ALTER TABLE Site ADD COLUMN zip varchar(16) after state;
 ALTER TABLE Site ADD COLUMN country varchar(64) after zip;
+ALTER TABLE Site_history ADD COLUMN street1 varchar(128) after availability;
+ALTER TABLE Site_history  ADD COLUMN street2 varchar(128) after street1;
+ALTER TABLE Site_history  ADD COLUMN pobox varchar(32) after street2;
+ALTER TABLE Site_history  ADD COLUMN city varchar(64) after pobox;
+ALTER TABLE Site_history  ADD COLUMN state varchar(32) after city;
+ALTER TABLE Site_history  ADD COLUMN zip varchar(16) after state;
+ALTER TABLE Site_history  ADD COLUMN country varchar(64) after zip;
 
 * Run conversion script to move Address info into Site table:
 # cd ~netdot
@@ -24,6 +31,7 @@ ALTER TABLE Site ADD COLUMN country varchar(64) after zip;
 * Remove unneeded tables and fields:
   (rename address -> location in Person table)
 ALTER TABLE Site DROP COLUMN address;
+ALTER TABLE Site_history DROP COLUMN address;
 DROP TABLE Address;
 DROP TABLE Address_history;
 ALTER TABLE Person CHANGE COLUMN address location integer;
