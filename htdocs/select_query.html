@@ -77,13 +77,16 @@ if (scalar (keys %int)){
 %if (scalar (keys %$ret) ){
 %    my $count = 0;
      <input type="hidden" name="" value="">
-%    foreach my $o (keys %$ret){
+%    if ($toomany){
+       <input type="hidden" name="" value="More than <% $max %> matches.  Refine search">
+%    }
+%    my @objs = keys %$ret;
+%    my $lblfield = ( $gui->getlabels(ref($ret->{$objs[0]})) )[0];	 
+%    @objs = sort { $ret->{$a}->$lblfield cmp $ret->{$b}->$lblfield } @objs; 
+%    foreach my $o (@objs){
 %       my $lbl = $gui->getobjlabel($ret->{$o}, ", ");
         <input type="hidden" name="<% $ret->{$o}->id %>" value="<% $lbl %>">
 %       last if ($count++) == $max;
-%    }
-%    if ($toomany){
-       <input type="hidden" name="" value="More than <% $max %> matches.  Refine search">
 %    }
 %}else{
        <input type="hidden" name="" value="No matches">
