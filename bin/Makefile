@@ -4,6 +4,7 @@
 
 PERL    =  `which perl`
 PREFIX  =  `cat ../.prefix`
+FMOD = 0644
 
 FILES = mason.pl updatedevices.pl
 
