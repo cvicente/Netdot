@@ -202,7 +202,7 @@ sub mksession {
   my( $sid, %session );
   tie %session, 'Apache::Session::File', 
     $sid, { Directory => $dir, LockDirectory => $dir };
-  return %session ;
+  return \%session ;
 }
 
 ######################################################################
@@ -213,7 +213,19 @@ sub getsession {
   my %session;
   tie %session, 'Apache::Session::File', 
     $sid, { Directory => $dir, LockDirectory => $dir };
-  return %session;
+  return \%session;
+}
+
+######################################################################
+# remove specific session
+######################################################################
+sub rmsession {
+  my( $self, $session ) = @_;
+  if( tied(%{ $session })->delete() ) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 ######################################################################
@@ -234,6 +246,9 @@ sub rmsessions {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.11  2003/07/02 23:23:44  netdot
+#  more changes to state code.  should work now.
+#
 #  Revision 1.10  2003/07/01 17:17:53  netdot
 #  more tweaking of state code
 #
@@ -346,12 +361,14 @@ field and other parameters
 =head2 mksession - create state for a session across multiple pages
 
   $dir = "/tmp";  # location for locks & state files
-  %session = $gui->mksession( $dir );
+  $session = $gui->mksession( $dir );
 
 Creates a state session that can be used to store data across multiple 
-web pages for a given session.  Returns a hash to store said data in.
-Requires an argument specifying what directory to use when storing data 
-(and the relevant lock files).  The session-id is $session{_session_id}.
+web pages for a given session.  Returns a hash reference to store said data
+in.  Requires an argument specifying what directory to use when storing 
+data (and the relevant lock files).  The session-id is 
+$session{_session_id}.  Be aware that you do not want to de-ref the 
+hash reference (otherwise, changes made to the subsequent hash are lost).
 
 =head2 getsession - fetch state for a session across multiple pages
 
@@ -359,9 +376,16 @@ Requires an argument specifying what directory to use when storing data
   $sessionid = $args{sid};  # session-id must be handed off to new pages
   %session = $gui->getsession( $dir, $sessionid );
 
-Fetches a state session and its accompanying data.  Returns a hash.  
+Fetches a state session and its accompanying data.  Returns a hash ref.  
 Requires two arguments:  the working directory and the session-id (as 
-described above).  
+described above).  The same warning for mksession() regarding 
+de-referencing the returned object applies.
+
+=head2 rmsession - remove state for specific session
+
+  $gui->rmsession( \%session );
+
+Removes specific session associated with the hash %session.
 
 =head2 rmsessions - clear out old state
 
