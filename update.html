@@ -51,21 +51,31 @@ unless ( $obj ){
         <td align="right" bgcolor="#DDDDDD"><% $c %>:</td>
           <td>
           <select name="<% $c %>">
-%         foreach my $fkobj ( $linksto{$c}->retrieve_all ) {
-%           my $lbl = $gui->getobjlabel($fkobj, ", ");
-%           if( ! defined( $linksto{$c}->retrieve( int( $obj->$c ) ) ) ) {
-              <option value="<% $fkobj->id %>"><% $lbl %></option>	       
-%	    }elsif( $fkobj->id == $obj->$c->id )  {
-              <option value="<% $fkobj->id %>" selected><% $lbl %></option>
-%           }else {
-              <option value="<% $fkobj->id %>"><% $lbl %></option>
-%           }
-%         } # for
-          <option value="0">[null]</option>
+%	  unless ( ref($obj->$c) ){
+	     <& error.html, caller => "update.html", error => "$c is not a FK in $table!" &>
+%	     exit;
+%	  }
+%	  my @fkobjs = $linksto{$c}->retrieve_all;
+%         if( !$obj-$c || !defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) {
+%	     foreach my $fkobj (@fkobjs){
+%	        my $lbl = $gui->getobjlabel($fkobj, ", ");
+                <option value="<% $fkobj->id %>"><% $lbl %></option>  
+%	     }
+	     <option value="0" selected>[null]</option>
+%	  }else{
+%	     foreach my $fkobj (@fkobjs){
+%	        my $lbl = $gui->getobjlabel($fkobj, ", ");
+%	        if( $fkobj->id == $obj->$c->id )  {
+                   <option value="<% $fkobj->id %>" selected><% $lbl %></option>
+%	        }else{
+                   <option value="<% $fkobj->id %>"><% $lbl %></option>	     
+%	        }
+%	     }
+%	  }
           </select>
           </td>
 	  <td>
-	    [<a href="create.html?table=<% $linksto{$c} %>" target="_blank">new</a>]
+	    [<a href="create.html?table=<% $linksto{$c} %>" target="_blank">new</a>]*
 	  </td>
         </td>
         </tr>
@@ -83,6 +93,8 @@ unless ( $obj ){
 <p><br>
 
 </form>
+<p><font size="-1">(*) After creating the object in the other screen, close it and refresh this page.  The newly created
+object will show in the drop-down manu.</font>
 
 </td></tr>
 </table>
@@ -118,7 +130,6 @@ unless (scalar keys(%fields)){
 
 </%perl>
 
-%unless (
 %   eval {
 %      foreach my $col (keys %fields){
 %         if ($fields{$col} ne $obj->$col){
@@ -126,14 +137,12 @@ unless (scalar keys(%fields)){
 %         }
 %      }
 %         $obj->update;
-%   } 
-%) { 
-  <& error.html, caller => "update.html", error => $@ &>
-% exit
+%   };
+%   if ($@){
+      <& error.html, caller => "update.html", error => $@ &>
+%     exit;
+%   }
   
-%}
-
-
 <& view.html, table => $table, id => $id &>
 
 %}
