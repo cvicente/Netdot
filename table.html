@@ -8,6 +8,7 @@ $LINK  = $args{link}  if( exists( $args{link} ) );
 $TITLE = $args{title} if( exists( $args{title} ) );
 map { push @tbls, $_ } # unless( $_->name eq "Meta" ) } 
   sort { $a->name cmp $b->name } Meta->retrieve_all();
+$MAX = scalar( @tbls );
 </%perl>
 
 <table border="0" cellspacing="0" cellpadding="0" width="100%">
@@ -18,20 +19,19 @@ map { push @tbls, $_ } # unless( $_->name eq "Meta" ) }
    <tr><td>
        <table border="0" cellspacing="3" cellpadding="1" width="100%" class="tablebackground">
        <tr>
-% for (my($i)=0; $i < scalar( @tbls ); $i++ ) {
+% for (my($i)=0; $i < $MAX; $i++ ) {
 %   if( $i % $WIDTH == 0 && $i != 0 ) { 
        </tr>
        <tr>
 %   }
-%   $fill{$j} = 1;
-     <td><a href="<% $LINK %>?table=<% $j %>"> <% $j %> <% $tbls[$j]->name %></a></td>
-% #       <td><a href="<% $LINK %>?table=<% $tbls[$j]->name %>"><% $tbls[$j]->name %></a></td>
-%   $j += int( scalar( @tbls ) / $WIDTH );
-%   if( $j >= scalar( @tbls ) ) {
-%     $j -= ( scalar( @tbls ) - 1 );
-%     while( exists( $fill{$j} ) ) {
-%       $j++;
-%     }
+       <td><a href="<% $LINK %>?table=<% $tbls[$j]->name %>"><% $tbls[$j]->name %></a></td>
+%   if( ( ( $i ) % $WIDTH ) < ( $MAX % $WIDTH ) ) {
+%     $j += int( $MAX / $WIDTH ) + 1;
+%   } else {
+%     $j += int( $MAX / $WIDTH );
+%   }
+%   if( $j >= $MAX ) {
+%     $j -= ( $MAX - 1 );
 %   } 
 % }
        </tr>
@@ -48,7 +48,7 @@ $WIDTH => 2
 $LINK => "browse.html"
 @tbls => ()
 $TITLE => undef
-%fill => ()
+$MAX => 0
 </%args>
 <%init>
 use lib "/home/netdot/public_html/lib";
@@ -68,6 +68,9 @@ Arguments:
 
 ######################################################################
 #  $Log: table.html,v $
+#  Revision 1.6  2003/06/18 16:42:24  netdot
+#  fixed bug in how this goes through a list of items
+#
 #  Revision 1.5  2003/06/17 23:24:57  netdot
 #  *** empty log message ***
 #
