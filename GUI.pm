@@ -83,6 +83,28 @@ sub getcolumnorder{
 } 
 
 ######################################################################
+# Get a table's columns in the desired brief display order
+######################################################################
+sub getcolumnorderbrief {
+  my ($self, $table) = @_;
+  my (%order, $i, $mi);
+  if ( defined($mi = $self->getmeta($table)) ){
+    $i = 1;
+    if( defined( $mi->columnorder ) ) {
+      map { $order{$_} = $i++; } split( /,/, $mi->columnorderbrief );
+    } else {
+      $order{"id"} = $i++;
+      foreach ( sort { $a cmp $b } $mi->name->columns() ) {
+	next if( $_ eq "id" );
+	$order{$_} = $i++;
+      }
+    }
+    return %order;
+  }
+  return undef;
+} 
+
+######################################################################
 # Get a table's column types
 ######################################################################
 sub getcolumntypes{
@@ -174,6 +196,9 @@ sub getinputtag {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.4  2003/06/13 18:23:49  netdot
+#  added getcolumnorderbrief -sf
+#
 #  Revision 1.3  2003/06/13 18:15:34  netdot
 #  added log section
 #
@@ -230,6 +255,12 @@ reference this table's primary key.
 
 Accepts a table name and returns its column names, ordered in the same order they're supposed to be 
 displayed. It returns a hash with column names as keys and their positions and values.
+
+=head2 getcolumnorderbrief
+
+Similar to getcolumnorder().  Accepts a table name and returns the brief 
+listing for that table.  The method returns a hash with column names as keys
+and their positions as values.
 
 =head2 getcolumntypes
 
