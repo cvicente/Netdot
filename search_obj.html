@@ -4,7 +4,10 @@ foreach my $j (keys %ARGS){
 	next if ($ARGS{$j} !~ /\w+/ || $j eq 'submit');
 	$arg{$j} = $ARGS{$j};	
 }
-die "Missing table parameter" unless ( $arg{table} );
+unless ( $arg{table} ){
+   print "<strong>Missing 'table' parameter</strong>";
+   exit;
+}
 $table = $arg{table};
 
 # Get some Meta info
@@ -40,11 +43,11 @@ if( defined( $mi->columnorder ) ) {
 <p>
    <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
 %  foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%     next if ($c eq 'id');
+%     next if ($c eq 'disabled');
 %     if (!exists($linksto{$c}) ){  # The column is 'local'
          <tr> 
          <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-	 <td><input type="text" size="40" value=""</td>
+	 <td><input type="text" name="<% $c %>" size="40" value=""</td>
 	 </tr>
 %     } else {  # The column is a foreign key. Provide a list to select.
          <tr>
@@ -84,6 +87,12 @@ foreach my $j (keys %arg){
 	next if ($j eq 'submit' || $j eq 'table');
 	$sarg{$j} = $arg{$j};	
 }
+# Check that we have at least one parameter
+unless (scalar keys(%sarg)){
+   print "<strong>Missing search criteria</strong>";
+   exit;
+}
+
 my @objs = $table->search_like(\%sarg);
 </%perl>
 
