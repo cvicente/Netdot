@@ -1,6 +1,8 @@
 package Netdot::GUI;
 
 use lib "/home/netdot/public_html/lib";
+use Apache::Session::File;
+use Apache::Session::Lock::File;
 use Netdot::DBI;
 use strict;
 
@@ -53,8 +55,9 @@ sub getlinksfrom{
     my ($self, $table) = @_;
     my (%linksfrom, $mi);
     if ( defined($mi = $self->getmeta($table)) ){
-	map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
-	   split( /,/, $mi->linksfrom );
+	map { my($i, $j, $k, $args) = split( /:/, $_ ); 
+	      $linksfrom{$i}{$j} = $k; 
+	  }  split( /,/, $mi->linksfrom );
 	return %linksfrom;
     }
     return undef;
@@ -191,11 +194,50 @@ sub getinputtag {
     return $tag;
 }
 
+######################################################################
+# create state for a session across web pages
+######################################################################
+sub createstate {
+  my( $self, $dir ) = @_;
+  my( $sid, %session );
+  tie %session, 'Apache::Session::File', 
+    $sid, { Directory => $dir, LockDirectory => $dir };
+  $sid = $session{_session_id};
+  return %session ;
+}
+
+######################################################################
+# fetch state for a session across web pages
+######################################################################
+sub fetchstate {
+  my( $self, $dir, $sid ) = @_;
+  my %session;
+  tie %session, 'Apache::Session::File', 
+    $sid, { Directory => $dir, LockDirectory => $dir };
+  return %session;
+}
+
+######################################################################
+# clean out old state
+######################################################################
+sub rmstate {
+  my( $self, $dir, $age ) = @_;
+  my $locker = new Apache::Session::Lock::File ;
+  if( $locker->clean( $dir, $age ) ) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 #Be sure to return 1
 1;
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.6  2003/07/01 04:48:42  netdot
+#  initial merge of functions for state across web pages
+#
 #  Revision 1.5  2003/06/21 01:27:42  netdot
 #  Fixed a bug in getobjlabel (too many parameters in the recursive call)
 #
