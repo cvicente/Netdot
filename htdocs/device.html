@@ -21,9 +21,6 @@ if( $args{cancel} ) {
 if( exists( $args{insert} ) ) {
   my %device = %{ $session->{device} };
   
-  # Remove the '0x' from the MAC address
-  $device{dot1dBaseBridgeAddress} =~ s/^0x//;
-  
   if( Device->search( name => "$args{device}" ) 
       || Device->search( physaddr => $device{dot1dBaseBridgeAddress} ) ) {
     ; # do nothing
@@ -33,10 +30,13 @@ if( exists( $args{insert} ) ) {
     $tmp{name} = $args{device};
     $tmp{community} = $comstr;
     $tmp{sysdescription} = $device{sysDescr};
-    if( $device{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
-      ;
-    } else {
+    unless( $device{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
+      # Remove the '0x' from the MAC address
+      $device{dot1dBaseBridgeAddress} =~ s/^0x//;
       $tmp{physaddr} = $device{dot1dBaseBridgeAddress};
+    }
+    unless( $device{entPhysicalSerialNum} eq "noSuchObject" ) {
+      $tmp{serialnumber} = $device{entPhysicalSerialNum};
     }
     $tmp{type} = "0";   # maybe tmp; can't be null
     $tmp{contactlist} = "0"; # same

@@ -2459,12 +2459,13 @@ sub _get_sysinfo {
   }
   $self->debug( loglevel => "LOG_DEBUG", 
 		message => "get_sysinfo: getting sysDescr sysObjectID " 
-		. "sysName sysLocation sysUpTime" ) ;
+		. "sysName sysLocation dot1dBaseBridgeAddress entPhysicalSerialNum" ) ;
   my(@oids) = ( $aliases{general}{sysDescr},
 		$aliases{general}{sysObjectID},
 		$aliases{general}{sysName}, 
 		$aliases{general}{sysLocation},
-		$aliases{general}{dot1dBaseBridgeAddress} );
+		$aliases{general}{dot1dBaseBridgeAddress},
+		$aliases{general}{entPhysicalSerialNum} );
 
   my %res = $self->get_snmp_values( type => $type, dev => $dev, 
 				    oids => \@oids, session => $session ) ;
@@ -2483,6 +2484,7 @@ sub _get_sysinfo {
   $targets{$type}{$dev}{"sysLocation"} = $sysloc ;
   $targets{$type}{$dev}{"sysUpTime"} = $self->get_sysUpTime( $type, $dev ) ;
   $targets{$type}{$dev}{"dot1dBaseBridgeAddress"} = $res{ $oids[4] };
+  $targets{$type}{$dev}{"dot1dBaseBridgeAddress"} = $res{ $oids[5] };
 }
 
 

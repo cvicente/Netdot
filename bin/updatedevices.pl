@@ -75,6 +75,7 @@ foreach my $device ( @devices ) {
     $ntmp{sysdescription} = $dev{sysDescr};
     $ntmp{physaddr} = $dev{dot1dBaseBridgeAddress};
     $ntmp{physaddr} =~ s/^0x//; 
+    $ntmp{serialnumber} = $dev{entPhysicalSerialNum};
     unless( update( object => $device, state => \%ntmp ) ) {
       next;
     }
