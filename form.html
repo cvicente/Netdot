@@ -5,6 +5,9 @@ foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
   $args{$j} = $ARGS{$j};
 }
+if( exists( $args{session} ) ) {
+  %session = %{ $args{session} };
+}
 unless( defined( $args{showdisabled} ) ) {
   $args{showdisabled} = 0;
 }
@@ -48,6 +51,8 @@ if( $args{table} ) {
         <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
 %       if( defined( $args{id} ) ) {
           <td colspan="2"><input type="text" size="40" name="<% $c %>" value="<% $obj->$c %>"></td>
+%       } elsif( exists( $session{$c} ) ) {
+          <td colspan="2"><input type="text" size="40" name="<% $c %>" value="<% $session{$c} %>"></td>
 %       } else {
           <td colspan="2"><input type="text" size="40" name="<% $c %>"></td>
 %       }
@@ -66,8 +71,8 @@ if( $args{table} ) {
           <td>
           <select name="<% $c %>">
 %         foreach my $fkobj ( $linksto{$c}->retrieve_all ) {
-
-%           if( defined( $obj ) && $fkobj->id == $obj->$c->id ) {
+%           if( ( defined( $obj ) && $fkobj->id == $obj->$c->id ) 
+%               || ( $fkobj->id == $session{$c} ) ) {
               <option value="<% $fkobj->id %>" selected><% $fkobj->$lbl %></option>
 %           } else {
               <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
@@ -94,8 +99,8 @@ if( $args{table} ) {
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Data::Dumper;
-my( %args, %order, %orderbrief, %linksto, %linksfrom, $obj );
-
+my( %args, %order, %orderbrief, %linksto, %linksfrom, $obj, %session );
+undef( %session );
 
 </%init>
 <%doc>
@@ -104,9 +109,14 @@ Arguments:
   table         -  name of table (REQUIRED)
   id            -  id (row) from the above table  (OPTIONAL)
   showdisabled  -  1|0  whether to show disabled columns
+  session       -  ref to a hash with values to insert (if object ! exist)
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.6  2003/05/14 17:52:19  netdot
+#  changes to support session -- ability to put values in boxes when the
+#  object doesn't exist
+#
 #  Revision 1.5  2003/05/14 16:26:52  netdot
 #  added some markers
 #
