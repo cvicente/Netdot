@@ -1,4 +1,5 @@
 <%perl>
+
 ##################################################
 # clean out old state files
 $gui->rmsessions( $TMP, $AGE );
@@ -16,6 +17,7 @@ foreach my $j ( keys %ARGS ) {
   if( $ARGS{$j} eq "New" ) {
     $TBL = $j;
     $TBL =~ s/^_//;
+    $NEW = 1;
     next;
   }
   next if( $ARGS{$j} !~ /\w+/ || $j !~ /\w+/ );
@@ -31,14 +33,6 @@ if( $TBL && $args{table} ) {
 }
 unless( defined( $PREV ) ) {
   $PREV = $TBL;
-}
-if( exists( $args{id} ) ) {
-  $ID = $ARGS{id};
-  if( $args{create} ) {
-    $OBJ = $args{create}->retrieve($ID);
-  } else {
-    $OBJ = $TBL->retrieve($ID);
-  }
 }
 
 ##################################################
@@ -110,6 +104,29 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
 }
 
 ##################################################
+# get id and object now that TBL is set finally
+if( exists( $args{id} ) ) {
+  if( $NEW ) {
+    $TBLID = "$TBL:$args{id}";
+  } else {
+    $ID = $ARGS{id};
+  }
+} elsif( exists( $args{tblid} ) ) {
+  $TBLID = $args{tblid};
+  my($tbl, $id) = split( /:/, $args{tblid} );
+  if( $tbl eq $TBL ) {
+    $ID = $id;
+  }
+}
+if( $ID ) {
+  if( $args{create} ) {
+    $OBJ = $args{create}->retrieve($ID);
+  } else {
+    $OBJ = $TBL->retrieve($ID);
+  }
+}
+
+##################################################
 # if confirm, handle here
 if( $args{confirm} eq "Confirm" ) {
   my( $T, $msg, $r );
@@ -173,7 +190,9 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
     <& view.html, table => $args{create}, id => $ID &>
 % } else {
 % ################################################
-%   if( $ID ) {
+%   if( $args{submit} eq "Submit" ) {
+      <& header, title => "Confirm: $TBL" &>
+%   } elsif( $ID ) {
 %     my $labelstr = $gui->getobjlabel($OBJ, ", ");
       <& header, title => "Edit: $TBL: $labelstr" &>
 %   } else {
@@ -216,7 +235,11 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
       <form action="edit.html" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
       <input type="hidden" name="create" value="<% $TBL %>">
+%     if( $ID ) {
       <input type="hidden" name="id" value="<% $ID %>">
+%     } elsif( $TBLID ) {
+      <input type="hidden" name="tblid" value="<% $TBLID %>">
+%     }
       <input name="confirm" value="Confirm" type="submit">
       <input name="cancel" value="Cancel" type="submit">
       </form>
@@ -244,9 +267,12 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
         <a href="node.html">Auto Discover Node</a><br>
         <p>
 %     }
-%     if( $ID ) {
+%     if( $ID && ! $NEW ) {
       <& form, table => $TBL, showdisabled => '0', id => $ID &>
 %     } else {
+%       if( $ID ) {
+      <input type="hidden" name="id" value="<% $ID %>">
+%       }
       <& form, table => $TBL, showdisabled => '0', session => \%state &>
 %     }
       <table cellpadding="3" cellspacing="1" border="0">
@@ -268,11 +294,13 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
 % }
 % ####################################################################
 <%args>
-$DEBUG => 0
+$DEBUG => 1
+$NEW => 0
 $TBL => undef
 $PREV => undef
 $ID => undef
 $OBJ => undef
+$TBLID => undef
 $sid => undef
 $nv => undef
 $TMP => "/home/netdot/public_html/tmp"
