@@ -202,7 +202,7 @@ package Meta;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Meta' );
-__PACKAGE__->columns(All => qw/id name columnOrder hasA hasMany mainObject/);
+__PACKAGE__->columns(All => qw/id name columnOrder linksTo linksFrom mainObject/);
 
 
 ######################################################################
@@ -326,6 +326,10 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.24  2003/04/22 18:00:36  netdot
+#  changed hasA -> linksTo and hasMany -> linksFrom in Meta because of
+#  problems with Class::DBI
+#
 #  Revision 1.23  2003/04/18 15:29:07  netdot
 #  has_a( nodeID => 'Node' );  ->  has_a( nodeId => 'Node' );
 #
