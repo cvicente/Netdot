@@ -1,3 +1,31 @@
+<%doc>
+Supported arguments:
+
+  table  - name of a table in the database
+  object - reference to a list of objects in that table for displaying in html
+  view   - [row|column]
+  sort   - column to sort by
+</%doc>
+<%args>
+
+%args => undef
+%order => undef
+%tags => undef
+%linksto => undef
+%linksfrom => undef
+$cellspc => 0
+$cellpad => 0
+$SORT => undef
+$META => undef
+$LBL => undef
+$PAGE => "view.html"
+$gui => Netdot::GUI->new()
+$VIEW => "column"
+
+</%args>
+<%init>
+
+</%init>
 <%perl>
 # expect name of Table & objects that require sorting
 foreach my $j ( keys %ARGS ) {
@@ -62,150 +90,196 @@ if( $args{table} ) {
   }
 }
 </%perl>
-% ####################################################################
-
+%
 % if( defined( $META ) && defined( $args{object} ) ) {
 <!-- begin sortresults -->
-     <table BORDER="0" CELLSPACING="0" CELLPADDING="0" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
+% ####################################################################
+<%doc>
+Begin the table for this instance of sortresults
+</%doc>
+% ####################################################################
+% if( $VIEW eq "row" ) {
+%   ($cellspc, $cellpad) = ( 0, 0 );
+% } elsif( $VIEW eq "column" ) {
+%   ($cellspc, $cellpad) = ( 0, 1 );
+% }
+  <TABLE BORDER="0" CELLSPACING="<% $cellspc %>" CELLPADDING="<% $cellpad %>" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
 %    if( $VIEW eq "row" ) {
-     <tr class="rowtitle2">
+% ####################################################################
+<%doc>
+If the VIEW is a row, print the column headers.  
+Otherwise, print an empty row.
+</%doc>
+% ####################################################################
+    <TR class="rowtitle2">
 %       foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%	   if ( exists($tags{$c}) ){
-               <th><% $tags{$c} %>&nbsp</th>
-%	   }else{
-	       <th><% $c %>&nbsp</th>
+%	   if( exists( $tags{$c} ) ) {
+      <TH><% $tags{$c} %></TH>
+%	   } else {
+      <TH><% $c %></TH>
 %	   }
 %       }
-         <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
-     </tr>
+%###    <TD width="1" class="delimiter" bgcolor="#DDDDDD"></TD>
+    </TR>
 %    } else {
-       <tr><td width="1" colspan="2" class="delimiter" bgcolor="#DDDDDD"></td>
+    <TR>
+      <TD width="1" colspan="2" class="delimiter" bgcolor="#DDDDDD"></TD>
+    </TR>
 %    }
 % ####################################################################
 % foreach my $o ( sort { $a->$SORT cmp $b->$SORT } @{ $args{object} } ) {
 %    my $flag = 1;
+%
+% ####################################################################
+<%doc>
+Print relevant delimiters for whether a ROW or COLUMN view
+</%doc>
+% ####################################################################
+%
 %    if( $VIEW eq "row" ) {
-        <tr class="rowtitle3">
+    <TR class="rowtitle3">
+%    } elsif( $VIEW eq "column" ) {
+    <TR height="1" class="delimiter">
+      <TD colspan="2" height="1"></TD>
+    </TR>
 %    }
-
-%    if( $VIEW eq "column" ) {
-        <tr height="1" class="delimiter">
-           <td colspan="3" height="1"></td>
-        </tr>
-%    }
+%
+% ####################################################################
+<%doc>
+Get the column order and process each item.
+</%doc>
+% ####################################################################
 %    my @order = sort { $order{$a} <=> $order{$b} } keys %order;
 %    foreach my $c ( @order ) {
+%
+% ####################################################################
+<%doc>
+If a COLUMN view, start a row with the column name.
+</%doc>
+% ####################################################################
+%
 %       if( $VIEW eq "column" ) {
-          <tr>
-             <td align="RIGHT" valign="TOP" WIDTH="100" class="column1" bgcolor="#DDDDDD">
-%		if ( exists($tags{$c}) ){
-  	           <b><% $tags{$c} %>&nbsp</b>: 
-%		}else{
-		    <b><% $c %>&nbsp</b>: 
-%		}
-             </td>
+    <TR>
+      <TD align="RIGHT" valign="TOP" WIDTH="18%" class="column1" bgcolor="#DDDDDD">
+%	   if ( exists($tags{$c}) ){
+      <b><% $tags{$c} %></b>:&nbsp;
+%	   } else {
+      <b><% $c %></b>:&nbsp;
+%	   }
+      </TD>
 %       }
-        <td align="LEFT" valign="TOP" class="column2">
+      <TD align="LEFT" valign="MIDDLE" class="column2">
+% ####################################################################
+<%doc>
+If it's a link to another column....
+</%doc>
+% ####################################################################
 %          if ( exists($linksto{$c}) ) {
 %             my $ft = $gui->getmeta( $linksto{$c} );
 %             if( ! defined( $ft ) ) {
-                 No such object <% $linksto{$c} %>
+%             ##########################
+%             # foreign table does not exist
+      No such object <% $linksto{$c} %>
 %             } elsif( $o->$c == 0 ) {
-                 &nbsp -
+%             ##########################
+%             # it's a pointing to zero, so it's nada
+      &nbsp -
 %             } elsif( ! defined( $linksto{$c}->retrieve( int( $o->$c ) ) ) ) {
-                 &nbsp -
+%             ##########################
+%             # the id pointed to does not exist
+      &nbsp -
 %             } else {
 %                my $obj = $linksto{$c}->retrieve( int( $o->$c ) );
 %                my $lbl = $gui->getobjlabel( $obj, ", " );
 %                if( $flag ) {
-                    <strong>
-                    <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
+      &nbsp;
+%                #######################
+%                # if flag is set, make the item a url
+      <strong>
+      <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
 %                   if( length( $lbl ) < 1 ) {
-                      N/A
+      N/A
 %                   } else {
-                      <% $lbl %>
+      <% $lbl %>
 %                   }
-	            </a> 
-                    </strong> &nbsp
+      </a> 
+      </strong>
 %                } else {
-                    <% $lbl %> &nbsp
+%                #######################
+%                # otherwise, just print the instance
+      <% $lbl %>
 %                }
 %            }
 %          } else {
+%
+% ####################################################################
+<%doc>
+It's not a pointer to another column
+</%doc>
+% ####################################################################
+%
 %             if( $flag ) {
-                 <strong>
-                 <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
+      <strong>
+      <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
 %                if( length( $o->$c ) < 1 ) {
-                    N/A
+      N/A
 %                } else {
-                    <% $o->$c %>
+      <% $o->$c %>
 %                }
-                 </a>
-                 </strong> &nbsp
+      </a>
+      </strong>
 %             } else {
-                 <% $o->$c %> &nbsp
+      <% $o->$c %>
 %             }
 %          } # else fi
-        </td>
-%       if ($VIEW eq "column") {
-        <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
-%       }
+      </TD>
+% ####################################################################
+<%doc>
+Wrap this row up.
+</%doc>
+% ####################################################################
 %       $flag = 0 if( $flag );          
 %       if( $VIEW eq "column" ) {
-           </tr>
+    </TR>
 %       }
 %     } # for c
+%
+% ####################################################################
+<%doc>
+
+If this is a COLUMN or ROW view....
+
+</%doc>
+% ####################################################################
 %     if( $VIEW eq "column" ) {
-         <tr height="1" class="delimiter">
-            <td colspan="3" height="1"></td>
-         </tr>
-         <tr>
-            <td colspan="3"><br></td>
-         </tr>
+    <TR height="1" class="delimiter">
+      <TD colspan="2" height="1"></TD>
+    </TR>
+    <TR>
+      <TD colspan="2"><br></TD>
+    </TR>
 <!--
          <tr height="1" class="delimiter">
             <td colspan="3" height="1"></td>
          </tr>
 -->         
-%     }
-%     if( $VIEW eq "row" ) {
-         <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
-         </tr>
-         <tr class="delimiter" height="1"><td colspan="15"></td>
+%     } elsif( $VIEW eq "row" ) {
+%###    <TD width="1" class="delimiter" bgcolor="#DDDDDD"></TD>
+    </TR>
+
+    <TR class="delimiter" height="1">
+      <TD colspan="15"></TD>
 %     }
 %} # for o
 % ####################################################################
-    </table>
+  </TABLE>
 
 <!-- end sortresults -->
 % } # if
 
 % ####################################################################
-<%args>
 
-%args => undef
-%order => undef
-%tags => undef
-%linksto => undef
-%linksfrom => undef
-$SORT => undef
-$META => undef
-$LBL => undef
-$PAGE => "view.html"
-$gui => Netdot::GUI->new()
-$VIEW => "column"
-
-</%args>
-<%init>
-
-</%init>
 <%doc>
-Supported arguments:
-
-  table  - name of a table in the database
-  object - reference to a list of objects in that table for displaying in html
-  view   - [row|column]
-  sort   - column to sort by
 
 ######################################################################
 # $Log: sortresults,v $
