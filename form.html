@@ -67,7 +67,7 @@ if( $args{table} ) {
 %       my $ft = (Meta->search( name => $linksto{$c} ))[0];
 %       if( ! defined( $ft ) ) {
           No <% linksto{$c} %> in Meta table
-%       } elsif( defined( $obj ) && $obj->$c->id == 0 ) {
+%       } elsif( defined( $obj ) && $obj->$c == 0 ) {
           -
 %       } else {
 %         my $lbl = $ft->label;
@@ -116,6 +116,10 @@ Arguments:
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.8  2003/05/15 21:49:44  netdot
+#  removed same bug that afflicted sortresults.html:
+#   ( $obj->$c->id  =>  $obj->$c ) around line 70
+#
 #  Revision 1.7  2003/05/15 21:34:47  netdot
 #  added hidden input field for id (if it is defined)
 #
