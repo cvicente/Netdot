@@ -116,14 +116,23 @@ unless (scalar keys(%fields)){
 ## Update fields that have changed
 ##########################################
 
-
-foreach my $col (keys %fields){
-   if ($fields{$col} ne $obj->$col){
-      $obj->set($col, $fields{$col});
-   }
-}
-$obj->update;
 </%perl>
+
+%unless (
+%   eval {
+%      foreach my $col (keys %fields){
+%         if ($fields{$col} ne $obj->$col){
+%            $obj->set($col, $fields{$col});
+%         }
+%      }
+%         $obj->update;
+%   } 
+%) { 
+  <& error.html, caller => "update.html", error => $@ &>
+% exit
+  
+%}
+
 
 <& view.html, table => $table, id => $id &>
 
