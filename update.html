@@ -86,7 +86,6 @@ unless ( $obj ){
 
 </td></tr>
 </table>
-
 <p><br>
 <& footer &>
 
@@ -117,10 +116,10 @@ unless (scalar keys(%fields)){
 ## Update fields that have changed
 ##########################################
 
+
 foreach my $col (keys %fields){
    if ($fields{$col} ne $obj->$col){
       $obj->set($col, $fields{$col});
-      $upd{$col} = $fields{$col};
    }
 }
 $obj->update;
@@ -135,7 +134,7 @@ use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::GUI;
 my ( %linksto, %linksfrom, %order, %inputtypes,
-    $table, $id, $obj, %upd, %fields );
+    $table, $id, $obj, %fields );
 my $gui = Netdot::GUI->new();
 
 
