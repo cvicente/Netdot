@@ -6,10 +6,6 @@
 my %arg;
 foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
-# don't do this here...DEPRECATED
-#  if( $j eq "q" ) {
-#    $ARGS{$j} = "%" . $ARGS{$j} . "%" ; # munge for search_like
-#  }
   $arg{$j} = $ARGS{$j};
 }
 </%perl>
@@ -32,9 +28,7 @@ foreach my $j ( keys %ARGS ) {
     <%perl>
     foreach my $meta ( Meta->retrieve_all() ) {
       my $tbl = $meta->name;
-      undef( %linksto );
-      map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
-        split( /,/, $meta->linksto );
+      %linksto = $gui->getlinksto($tbl);
       foreach my $col ( $tbl->columns() ) {
         if( $linksto{$col} ) {
           foreach my $fc ( $linksto{$col}->columns() ) {
@@ -70,7 +64,7 @@ foreach my $j ( keys %ARGS ) {
         <td colspan="2" bgcolor="#6ab1f0"><strong><% $tbl %></strong></td>
         </tr>
         <tr><td>
-        <& sortresults2.html, table => $tbl, object => \@objs, view => "expanded" &>
+        <& sortresults.html, table => $tbl, object => \@objs, view => "expanded" &>
         </td></tr>
 %     } # end foreach tbl
       </table>
@@ -80,13 +74,17 @@ foreach my $j ( keys %ARGS ) {
 <br>
 <!-- end search -->
 <& footer &>
+<%args>
 
+%results => undef
+%linksto => undef
+$gui => Netdot::GUI->new()
+
+</%args>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-use Data::Dumper;
-use vars qw( %results %linksto );
-undef( %results );
+use Netdot::GUI;
               
 </%init>
 
@@ -94,6 +92,9 @@ undef( %results );
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.15  2003/06/13 18:40:18  netdot
+# now using GUI; back to sortresults.html
+#
 # Revision 1.14  2003/06/03 22:16:22  netdot
 # a few changes to make work with forked sortresults2.html for testing
 #
