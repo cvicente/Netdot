@@ -266,9 +266,11 @@ LIST_MANAGER.addList(floorSearchList);
 <!-- End Closet Table -->
 
 
-<!-- Begin BackboneCable Table -->
 % if (defined($o)) {
-
+<table border="0" width="95%" align="center" class="tablebackground">
+<tr valign="top">
+    <td width="50%" valign="top">
+<!-- Begin BackboneCable Table -->
 <%perl>
 my @sites;
 if ($editBackbones)
@@ -279,9 +281,9 @@ if ($editBackbones)
 </%perl>
 
 <A NAME="backbones"></A>
-<table border="0" width="95%" align="center"  class="tablebackground">
+<table border="0" width="100%" align="left"  class="tablebackground">
     <tr>
-    <td valign="top" width="50%" align="center">
+    <td valign="top" width="50%" align="left">
     <%perl>
     my @bbones;
     map { push (@bbones, $_) } ($o->backbones_start, $o->backbones_end);
@@ -299,11 +301,11 @@ if ($editBackbones)
       <table width="100%" border="0">
        <tr>
          <td width="10%" align="left">&nbsp;</td>
-         <th width="80%" align="center">Backbone Cable(s)</th>
+         <th width="70%" align="center">Backbone Cable</th>
 %	 if ($editBackbones) {	 
-            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+            <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 } else {
-            <td width="10%" align="right">
+            <td width="20%" align="right">
                 <a href="cable_backbone.html?id=NEW">[new]</a> | <a href="closet.html?id=<% $id %>&edit=bbinfo#backbones">[edit]</a>
             </td>
 %	 }
@@ -449,13 +451,130 @@ if ($editBackbones)
 </td>
 </tr>
 </table>
-% }
 <!-- End BackboneCable Table -->
+    </td>
+
+    <td width="50%" align="top">
+<!-- Begin  HorizontalCable Table -->
+    <A NAME="horizontal"></A>
+<table border="0" width="100%" align="right" class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="right">
+    <%perl>
+    my @cables;
+    map { push (@cables, $_) } $o->horizontalcables;
+    </%perl>
+%	if (scalar(@cables)) {
+    
+    <form name="cable_form" action="closet.html" method="POST">
+    <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="_action" value="UPDATE">
+    <input type="hidden" name="s2name" value="<% $s2name %>">
+
+    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+    <tr class="formtabletitle">
+     <td colspan="2">
+      <table width="100%" border="0">
+       <tr>
+         <td width="10%" align="left">&nbsp;</td>
+         <th width="70%" align="center">Horizontal Cable</th>
+%	 if ($editHorizontal) {
+            <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
+%	 } else {
+            <td width="20%" align="right">
+                <a href="cable_horizontal.html?id=NEW">[new]</a> | <a href="closet.html?id=<% $id %>&edit=cableinfo#horizontal">[edit]</a>
+            </td>
+%	 }
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      <table border="0" width="90%">
+    <tr>
+        <td align="center">
+            <a href="closet.html?id=<% $id %>&cable_sort=jackid#horizontal">Jack ID</a>
+        </td>
+        <td align="center">
+            <a href="closet.html?id=<% $id %>&cable_sort=type#horizontal">Type</a>
+        </td>
+        <td align="center">
+            <a href="closet.html?id=<% $id %>&cable_sort=room#horizontal">Room</a>
+        </td>
+    </tr>
+
+    <%perl>
+    $cable_sort = "jackid" if (!defined($cable_sort) || $cable_sort eq "");
+    my @sorted_cables;
+    if ($cable_sort eq "jackid")
+    {
+        @sorted_cables = sort { $a->jackid cmp $b->jackid } @cables;
+    }
+    elsif ($cable_sort eq "type")
+    {
+        @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
+    }
+    elsif ($cable_sort eq "room")
+    {
+        @sorted_cables = sort { $a->room->name cmp $b->room->name } @cables;
+    }
+    else
+    {
+        @sorted_cables = sort { $a->$cable_sort cmp $b->$cable_sort } @cables;
+    }
+    </%perl>
+
+%   my $i = 0;
+%   foreach my $cable (@sorted_cables) {
+%   $i = ($i + 1) % 2;
+    <tr align="left" class="<% $cssitem{$i} %>">
+        <td align="left">
+%       if ($editHorizontal) {
+            <input type="checkbox" name="<% "HorizontalCable__" . $cable->id . "__delete" %>">[del]
+%           $ui->textField(object=>$cable, table=>"HorizontalCable", column=>"jackid",
+%                          edit=>$editHorizontal);
+%       } else {
+            <a href="cable_horizontal.html?id=<% $cable->id %>"><% $cable->jackid %></a>
+%       }
+        </td>
+        
+        <td align="left">
+%           $ui->selectLookup(object=>$cable, table=>"HorizontalCable", column=>"type", 
+%                             lookup=>"CableType", edit=>$editHorizontal);
+        </td>
+
+        <td align="left">
+%           $ui->selectLookup(object=>$cable, table=>"HorizontalCable", column=>"room",
+%                           lookup=>"Room", edit=>$editHorizontal);
+        </td>
+    </tr>
+%   }
+    <tr align="left" valign="top">
+        <td align="left" colspan="4">
+        </td>
+    </tr>
+    </table>
+    </td>
+    </tr>
+    </table>
+    </form>
+%  }    
+</td>
+</tr>
+</table>
+<!-- End HorizontalCable Table -->
+    
+    </td>
+</tr>
+</table>
+% }
 
 <%args>
 $id => undef;
 $edit => undef;
 $bb_sort => undef;
+$cable_sort => undef;
 $s2name => "Plant";
 </%args>
 
@@ -467,6 +586,7 @@ my $o = undef;
 my $site = undef;
 my $editCloset = 0;
 my $editBackbones = 0;
+my $editHorizontal = 0;
 
 if ($id && $id ne "NEW") 
 {
@@ -476,4 +596,5 @@ if ($id && $id ne "NEW")
 
 $editCloset = 1 if ($id eq "NEW" || $edit eq "closetinfo");
 $editBackbones = 1 if ($edit eq "bbinfo");
+$editHorizontal = 1 if ($edit eq "cableinfo");
 </%init>
