@@ -51,72 +51,74 @@ if( $args{table} ) {
 
 % if( defined( $META ) && defined( $args{object} ) ) {
 <!-- begin sortresults -->
-    <table BORDER="0" CELLSPACING="1" CELLPADDING="3" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
-%   if( $VIEW eq "row" ) {
-      <tr>
-%     foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-      <th><% $o %></th>
-%     }
-      </tr>
-%   }
+     <table BORDER="0" CELLSPACING="1" CELLPADDING="3" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
+%    if( $VIEW eq "row" ) {
+     <tr>
+%       foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+           <th><% $o %></th>
+%       }
+     </tr>
+% }
 % ####################################################################
-%   foreach my $o ( sort { $a->id <=> $b->id } @{ $args{object} } ) {
-%     my $flag = 1;
-%     if( $VIEW eq "row" ) {
-      <tr>
-%     }
-%     my @order = sort { $order{$a} <=> $order{$b} } keys %order;
-%     foreach my $c ( @order ) {
-%       if( $VIEW eq "column" ) {
+% foreach my $o ( sort { $a->id <=> $b->id } @{ $args{object} } ) {
+%    my $flag = 1;
+%    if( $VIEW eq "row" ) {
         <tr>
-        <td align="RIGHT" valign="TOP" WIDTH="100"><b><% $c %></b>: </td>
+%    }
+%    my @order = sort { $order{$a} <=> $order{$b} } keys %order;
+%    foreach my $c ( @order ) {
+%       if( $VIEW eq "column" ) {
+          <tr>
+             <td align="RIGHT" valign="TOP" WIDTH="100">
+                <b><% $c %></b>: 
+             </td>
 %       }
         <td align="LEFT" valign="TOP">
-%       if( exists( $linksto{$c} ) ) {
-%         my $ft = $gui->getmeta( $linksto{$c} );
-%         if( ! defined( $ft ) ) {
-            No such object <% $linksto{$c} %>
-%         } elsif( $o->$c == 0 ) {
-            -
-%         } elsif( ! defined( $linksto{$c}->retrieve( int( $o->$c ) ) ) ) {
-            -
-%         } else {
-%           my $obj = $linksto{$c}->retrieve( int( $o->$c ) );
-%           my $lbl = $gui->getobjlabel( $obj, ", " );
-%           if( $flag ) {
-              <strong>
-              <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
-              <% $lbl %>
-	      </a>
-              </strong>
-%           } else {
-              <% $lbl %>
-%           }
-%         }
-%       } else {
-%         if( $flag ) {
-            <strong>
-            <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
-            <% $o->$c %>
-            </a>
-            </strong>
-%         } else {
-            <% $o->$c %>
-%         }
-%       } # else fi
+%          if( exists( $linksto{$c} ) ) {
+%             my $ft = $gui->getmeta( $linksto{$c} );
+%             if( ! defined( $ft ) ) {
+                 No such object <% $linksto{$c} %>
+%             } elsif( $o->$c == 0 ) {
+                 -
+%             } elsif( ! defined( $linksto{$c}->retrieve( int( $o->$c ) ) ) ) {
+                 -
+%             } else {
+%                my $obj = $linksto{$c}->retrieve( int( $o->$c ) );
+%                my $lbl = $gui->getobjlabel( $obj, ", " );
+%                if( $flag ) {
+                    <strong>
+                    <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
+                    <% $lbl %>
+	            </a>
+                    </strong>
+%                } else {
+                    <% $lbl %>
+%                }
+%            }
+%          } else {
+%             if( $flag ) {
+                 <strong>
+                 <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
+                 <% $o->$c %>
+                 </a>
+                 </strong>
+%             } else {
+                 <% $o->$c %>
+%             }
+%          } # else fi
         </td>
 %       $flag = 0 if( $flag );
 %       if( $VIEW eq "column" ) {
-        </tr>
+           </tr>
 %       }
 %     } # for c
 %     if( $VIEW eq "column" ) {
-      <tr>
-      <td colspan=2><br></td>
-      </tr>
+         <tr>
+            <td colspan=2><br></td>
+         </tr>
 %     }
 %     if( $VIEW eq "row" ) {
-      </tr>
+         </tr>
 %     }
 %   } # for o
 % ####################################################################
@@ -153,6 +155,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.22  2003/07/10 23:54:40  netdot
+# added css references and massaged formatting
+#
 # Revision 1.21  2003/06/27 21:04:27  netdot
 # more layout fixes
 #
