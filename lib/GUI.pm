@@ -357,9 +357,7 @@ sub insert {
   my(%state) = %{ $argv{state} };
   my $ret;
   $self->_clear_error();
-  warn "gui.insert: pre create\n";
   eval { $ret = $tbl->create( \%state ); };
-  warn "gui.insert: post create\n";
   if( $@ ) {
     $self->{'_error'} = "Unable to insert into $tbl: $@";
     return 0;
