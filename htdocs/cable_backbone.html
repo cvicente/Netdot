@@ -81,14 +81,14 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>Cable Type: </td>
                 <td>
-%               $form_manager->selectLookup(object=>$o, table=>"BackboneCable", column=>"type", lookup=>"CableType");
+%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"type", lookup=>"CableType");
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Owner: </td>
                 <td>
-%               $form_manager->selectLookup(object=>$o, table=>"BackboneCable", column=>"owner", lookup=>"Entity");
+%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"owner", lookup=>"Entity");
                 </td>
             </tr>
 
@@ -109,7 +109,7 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>Start Site: </td>
                 <td>
-%               $form_manager->selectLookup(object=>$o, table=>"BackboneCable", column=>"startsite", lookup=>"Site");
+%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"startsite", lookup=>"Site");
                 </td>
             </tr>
 
@@ -121,7 +121,7 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>End Site: </td>
                 <td>
-%               $form_manager->selectLookup(object=>$o, table=>"BackboneCable", column=>"endsite", lookup=>"Site");
+%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"endsite", lookup=>"Site");
                 </td>
             </tr>
 
@@ -255,7 +255,7 @@ if (defined($ARGS{_action}))
 
         <td align="left">
 %       if ($edit eq "strandinfo") {
-%           $form_manager->selectLookup(object=>$st, column=>"status", lookup=>"StrandStatus");
+%           $ui->selectLookup(object=>$st, column=>"status", lookup=>"StrandStatus");
 %       } else {
             <% $st->status ? $st->status->name : "" %>
 %       }
@@ -292,11 +292,8 @@ $s2name => "Plant";
 </%args>
 
 <%init>
-use Netdot::FormManager;
-
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
-my $form_manager = Netdot::FormManager->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
 

@@ -70,7 +70,7 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>Cable Type: </td>
                 <td>
-%               $form_manager->selectLookup(object=>$o, table=>"HorizontalCable", column=>"type", lookup=>"CableType");
+%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"type", lookup=>"CableType");
                 </td>
             </tr>
 
@@ -88,7 +88,7 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>Test Passed: </td>
                 <td>
-%               $form_manager->radioGroupBoolean(object=>$o, table=>"HorizontalCable", column=>"testpassed");
+%               $ui->radioGroupBoolean(object=>$o, table=>"HorizontalCable", column=>"testpassed");
                 </td>
             </tr>
             </table>
@@ -99,7 +99,7 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>Site: </td>
                 <td>
-%               $form_manager->selectLookup(object=>$o, table=>"HorizontalCable", column=>"site", lookup=>"Site");
+%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"site", lookup=>"Site");
                 </td>
             </tr>
 
@@ -126,7 +126,7 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>Contact List: </td>
                 <td>
-%               $form_manager->selectLookup(object=>$o, table=>"HorizontalCable", column=>"contactlist", lookup=>"ContactList");
+%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"contactlist", lookup=>"ContactList");
                 </td>
             </tr>
             </table>
@@ -256,7 +256,7 @@ if (defined($ARGS{_action}))
 
         <td align="left">
 %       if ($edit eq "intinfo") {
-%           $form_manager->selectLookup(object=>$int, table=>"Interface", column=>"device", lookup=>"Device");
+%           $ui->selectLookup(object=>$int, table=>"Interface", column=>"device", lookup=>"Device");
 %       } else {
             <% $int->device ? $int->device->name : "" %>
 %       }
@@ -286,11 +286,8 @@ $s2name => "Plant";
 </%args>
 
 <%init>
-use Netdot::FormManager;
-
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
-my $form_manager = Netdot::FormManager->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
 my $site = undef;

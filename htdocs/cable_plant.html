@@ -136,7 +136,7 @@ if(defined($ARGS{_action}))
         
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $form_manager->selectLookup(object=>$cable, column=>"type", lookup=>"CableType");
+%           $ui->selectLookup(object=>$cable, column=>"type", lookup=>"CableType");
 %       } else {
             <% $cable->type ? $cable->type->name : "" %>
 %       }
@@ -280,7 +280,7 @@ if(defined($ARGS{_action}))
         
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $form_manager->selectLookup(object=>$cable, column=>"type", lookup=>"CableType");
+%           $ui->selectLookup(object=>$cable, column=>"type", lookup=>"CableType");
 %       } else {
             <% $cable->type ? $cable->type->name : "" %>
 %       }
@@ -288,7 +288,7 @@ if(defined($ARGS{_action}))
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $form_manager->selectLookup(object=>$cable, column=>"startsite", lookup=>"Site");
+%           $ui->selectLookup(object=>$cable, column=>"startsite", lookup=>"Site");
 %       } else {
             <% $cable->startsite ? $cable->startsite->name : "" %>
 %       }
@@ -296,7 +296,7 @@ if(defined($ARGS{_action}))
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $form_manager->selectLookup(object=>$cable, column=>"endsite", lookup=>"Site");
+%           $ui->selectLookup(object=>$cable, column=>"endsite", lookup=>"Site");
 %       } else {
             <% $cable->endsite ? $cable->endsite->name : "" %>
 %       }
@@ -304,7 +304,7 @@ if(defined($ARGS{_action}))
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $form_manager->selectLookup(object=>$cable, column=>"owner", lookup=>"Entity");
+%           $ui->selectLookup(object=>$cable, column=>"owner", lookup=>"Entity");
 %       } else {
             <% $cable->owner ? $cable->owner->name : "" %>
 %       }
@@ -342,11 +342,8 @@ $s2name => "Plant";
 </%args>
 
 <%init>
-use Netdot::FormManager;
-
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
-my $form_manager = Netdot::FormManager->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $maxselect = 100;
 my $o = undef;
