@@ -38,7 +38,7 @@ foreach my $j ( keys %ARGS ) {
     }
     </%perl>
 
-%   if( ! %results ) {
+%   if( scalar( keys %results ) < 1 || ! %results ) {
       No matching records were found.
 %   } else {
 %     foreach my $tbl ( keys %results ) {
@@ -79,6 +79,9 @@ my $dbh = DBI->connect( "dbi:mysql:netdot", "netdot_user", "netdot_pass" )
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.7  2003/05/01 16:51:20  netdot
+# *** empty log message ***
+#
 # Revision 1.6  2003/05/01 00:55:48  netdot
 # more changes to make layout prettier
 #
