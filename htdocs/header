@@ -1,65 +1,105 @@
+<%doc>
+  
+  Options for header:
+
+  $title <string>
+         If title set to empty string, header acts as banner for opening page
+
+</%doc>
+
 <html>
 <head>
    <LINK REL=StyleSheet HREF="style.css" TYPE="text/css">
+   <LINK REL="alternate stylesheet" TITLE="Gray" HREF="style-gray.css" TYPE="text/css">
+
+% ######################################
+% if( $title ) {
    <title>Netdot : <% $title %></title>
+% } else {
+   <title>Netdot: NETwork DOcumentation Tool</title>
+% }
+% ######################################
+
 </head>
 <body class="bodytag">
-<table border="1" cellspacing="0" cellpadding="0" valign=top width="100%" height="93%">
-   <tr height="0"><td valign=top height="0">
-      <table cellpadding="0" border="0" align="center" valign="top" width="100%" height="0" bgcolor="#CCCCCC" class="headertable">
-         <tr>
-            <td width="0" height="20" colspan="0" rowspan="0" align="left" valign=middle>
-		<font size="+1" color="000000" class="headerfont"><a href="index.html" class="bannerfont">Netdot</a>: <% $title %></font>
-	    </td>
-            <td width="0" height="20" colspan="0" rowspan="0" align="right">
-               <table cellpadding="0" cellspacing="0" border="0" bgcolor="CCCCCC">
-                  <tr>
-                     <td ALIGN=RIGHT VALIGN=TOP>
-     	                <table border="0" cellpadding="0" cellspacing="0">
- 	                   <tr>
-			      <td ALIGN=LEFT>
-			         <table BORDER="0" CELLSPACING="0" CELLPADDING="0" WIDTH="100%" class="utilitytable">
 
-			            <tr>
-					<TD ALIGN="RIGHT">
-					   <font color="000000" class="utilityfont"><B>search</B>:
-                                        </TD>
-                                        <TD COLSPAN="2">
-					   <form action="search.html" method="post">
-  				           <input type="text" name="q" size="10" value="">
-   				           </form>
-                                        </TD>
-				    </TR>
-		                    <tr>
-					<td ALIGN="RIGHT">
-					   <font color="000000" class="utilityfont"><B>user:</B></font>
-					</td>
-					<td ALIGN="CENTER">                                             
-					   <font color="000000" class="utilityfont">
-                                           <% $user %>
-                                           </font>
-					</td>
-					<td ALIGN="CENTER">
-					   <!-- <font color="000000" class="utilityfont">[<a href="logout.html" class="utilityfont">logout</a>]</font> -->
-					</td>
-				    </tr>
-				 </table>
-			      </td>
-			   </tr>
-	   	        </table>
-		     </td>
-		  </tr>
-	       </table>
-	    </td>
-          </tr>
-	  <tr>
-	     <td colspan="2" width="0" height="5" bgcolor="#000099" class="delimiter">
-	     </td>
-	  </tr>
-       </table>
-   </tr>
-   <tr align="left" valign="top" height="100%"><td>
-<!-- header ends header ends header ends -->
+<!-- Binding Table - Expands to Fit Browser Window -->
+<TABLE border="1" cellspacing="0" cellpadding="0" valign=top width="100%" height="100%">
+  <TR height="0"><td valign=top height="0">
+    <TABLE cellpadding="0" border="0" align="center" valign="top" width="100%" height="0" bgcolor="#CCCCCC" class="headertable">
+      <TR>
+
+% ######################################
+% if( $title ) {
+        <TD width="0" height="20" colspan="0" rowspan="0" align="left" valign=middle>
+          <font size="+1" color="000000" class="headerfont"><a href="index.html" class="bannerfont">Netdot</a>: <% $title %></font>
+	</TD>
+% } else {
+        <TD align="left" valign="top">
+          <IMG SRC="img/title.jpg" ALT="NETDOT: Network Documentation Tool">
+        </TD>
+% }
+% ######################################
+
+        <TD width="0" height="20" colspan="0" rowspan="0" align="right">
+
+          <!-- UTILITY TABLE - START  -->
+          <TABLE cellpadding="0" cellspacing="0" border="0" bgcolor="CCCCCC">
+            <TR>
+              <TD ALIGN=RIGHT VALIGN=TOP>
+     	        <TABLE border="0" cellpadding="0" cellspacing="0">
+ 	          <TR>
+		    <TD ALIGN=LEFT>
+
+		      <TABLE BORDER="0" CELLSPACING="0" CELLPADDING="0" WIDTH="100%" class="utilitytable">
+		        <TR>
+		          <TD ALIGN="RIGHT">
+			    <font color="000000" class="utilityfont"><B>search</B>:
+                          </TD>
+                          <TD COLSPAN="2">
+			    <form action="search.html" method="post">
+  			    <input type="text" name="q" size="10" value="">
+   			    </form>
+                          </TD>
+			</TR>
+		        <TR>
+			  <TD ALIGN="RIGHT">
+			    <font color="000000" class="utilityfont"><B>user:</B></font>
+			  </TD>
+			  <TD ALIGN="CENTER">
+			    <font color="000000" class="utilityfont">
+                            <% $user %>
+                            </font>
+			  </TD>
+			  <TD ALIGN="CENTER">
+			    <!-- <font color="000000" class="utilityfont">[<a href="logout.html" class="utilityfont">logout</a>]</font> -->
+			  </TD>
+			</TR>
+		      </TABLE>
+
+		    </TD>
+		  </TR>
+	   	</TABLE>
+	      </TD>
+	    </TR>
+	  </TABLE>
+          <!-- UTILITY TABLE - END -->
+
+	</TD>
+      </TR>
+% ######################################
+% # pretty gray line
+      <TR>
+        <TD colspan="2" width="0" height="5" bgcolor="#000099" class="delimiter" />
+
+      </TR>
+
+    </TABLE>
+  </TR>
+  <TR align="left" valign="top" height="100%">
+    <TD>
+      <!-- header ends header ends header ends -->
+
 <%args>
 $title 
 $user => $ENV{REMOTE_USER}
