@@ -1,0 +1,320 @@
+<%perl>
+##################################################
+# clean out old state files
+$gui->rmsessions( $TMP, $AGE );
+
+##################################################
+# grab arguments to this script
+my %rev = reverse %ARGS;
+foreach my $j ( keys %ARGS ) {
+  ################################################
+  # in case apache makes the value an array, set to last value
+  if( ref( $ARGS{$j} ) eq "ARRAY" ) {
+    my @t = @{ $ARGS{$j} };
+    $ARGS{$j} = $t[$#t];
+  }
+  if( $ARGS{$j} eq "New" ) {
+    $TBL = $j;
+    $TBL =~ s/^_//;
+    next;
+  }
+  next if( $ARGS{$j} !~ /\w+/ || $j !~ /\w+/ );
+  $args{$j} = $ARGS{$j};
+}
+
+##################################################
+# define TBL (if not already) and set previous table for reference
+if( $TBL && $args{table} ) {
+  $PREV = $args{table}
+} elsif( ! defined( $TBL ) ) {
+  $TBL = $args{table};
+}
+unless( defined( $PREV ) ) {
+  $PREV = $TBL;
+}
+if( exists( $args{id} ) ) {
+  $ID = $ARGS{id};
+  if( $args{create} ) {
+    $OBJ = $args{create}->retrieve($ID);
+  } else {
+    $OBJ = $TBL->retrieve($ID);
+  }
+}
+
+##################################################
+# get state back if sid defined
+#   otherwise create state if necessary
+if( defined( $args{sid} ) ) {
+  $sid = $args{sid};
+  $session = $gui->getsession( $TMP, $sid );
+} elsif( $args{table} ) {  
+  $session = $gui->mksession( $TMP );
+  $sid = $session->{_session_id};
+}
+
+##################################################
+# if Cancel, delete state
+if( $args{cancel} eq "Cancel" ) {
+  undef( $TBL );
+  undef( $PREV );
+  if( defined( $session ) ) {
+    $gui->rmsession( $session );
+  }
+  delete( $args{sid} );
+  delete( $args{table} );
+  delete( $args{submit} );
+  delete( $ARGS{ $rev{New} } );
+  delete( $rev{New} );
+}
+
+##################################################
+# fill in the rest of state details -- for Submit or New
+if( exists( $args{submit} ) 
+    || exists( $rev{New} ) || exists( $args{discover} ) ) {
+  foreach my $arg ( keys %args ) {
+    next if( $arg eq "submit" || $arg eq "sid" 
+             || $arg eq "table" || $arg eq "commit" );
+    next if( length( $arg ) < 1 || ! defined( $args{$arg} ) );
+    $session->{tables}{$PREV}{$arg} = $args{$arg};
+  }
+  if( ! defined( $args{submit} ) ) {
+    $gui->pushsessionpath( $session, $args{table} );
+  }
+}
+
+##################################################
+# get back some history of where user has clicked
+if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
+  ################################################
+  # if user hits reload after a 'Confirm' (and we're displaying a table
+  #   form submit page), we need to be sure we go back to the proper
+  #   table/object page and do not create empty objects in the DB.
+  if( $args{confirm} && ! exists( $session->{tables}{ $args{create} } ) ) {
+    delete( $args{confirm} );
+    my ( $x, %z );
+    map { $z{$_} = 1 } split( /;/, $session->{path} );
+    foreach my $y ( keys %{ $session->{tables} } ) {
+      if( ! exists( $z{$y} ) ) {
+        $x = $y;
+      }
+    }
+    ( length( $session->{path} ) > 1 ) ?
+      ( $session->{path} .= ";$x" ) : ( $session->{path} = "$x" );
+  }
+  if( ! exists( $args{submit} ) ) {
+    my $tmp = $gui->popsessionpath( $session );
+    if( defined( $tmp ) && length( $tmp ) > 0 ) {
+      $TBL = $tmp;
+    }
+  }
+}
+
+##################################################
+# if confirm, handle here
+if( $args{confirm} eq "Confirm" ) {
+  my( $T, $msg, $r );
+  $T = $args{create};
+  if( $ID ) {  # we're updating an object
+    $r = $gui->update( object => $OBJ, state => \%{ $session->{tables}{$T} } );
+    $msg = "Unable to edit $T" if( ! $r );
+  } else {
+    $r = $gui->insert( table => $T, state => \%{ $session->{tables}{$T} } );
+    $msg = "Unable to create $T" if( ! $r );
+  }
+  if( ! $r ) {
+    die "$msg : $r : $ID: ", $gui->error;
+  }
+  delete( $session->{tables}{ $args{create} } );
+  if( length( $session->{path} ) < 1 && ! defined( $TBL ) ) {
+    if( defined( $session ) ) {
+      $gui->rmsession( $session );
+    }
+  }
+  $ID = $r;
+  $session->{created}{$T} = $ID;
+}
+
+##################################################
+# create %state to pass to form
+if( defined( $TBL ) && ! defined( $ID ) ) {
+  my $meta = $gui->getmeta( $TBL );
+  my %lt = $gui->getlinksto( $TBL );
+  foreach my $c ( split( /,/, $meta->columnorder ) ) {
+    if( $args{$c} ) {
+      $state{$c} = $args{$c};
+    }
+  }
+  if( exists( $session->{tables}{$TBL} ) ) {
+    foreach my $c ( keys %{ $session->{tables}{$TBL} } ) {
+      if( $lt{$c} && $session->{created}{$lt{$c}} ) {
+        $state{$c} = $session->{created}{$lt{$c}};
+      } else {
+        $state{$c} = $session->{tables}{$TBL}{$c};
+      }
+    }
+  }
+}
+</%perl>
+
+% ####################################################################
+% if( $DEBUG ) {
+    tables : TBL <% $TBL %> ; table <% $args{table} %><br>
+    id : <% $ID %><br>
+    PREV : <% $PREV %> <br>
+    ARGS :
+%   printf "<pre>%s</pre>\n", Dumper( \%ARGS );
+    <br> session: 
+%   printf "<pre>%s</pre>\n", Dumper( $session );
+    <hr>
+% }
+
+% ####################################################################
+% if( $args{confirm} eq "Confirm" && ( ! $TBL || $args{cancel} ) ) {
+    <& view.html, table => $args{create}, id => $ID &>
+% } else {
+% ################################################
+%   if( $ID ) {
+%     my $labelstr = $gui->getobjlabel($OBJ, ", ");
+      <& header, title => "Edit: $TBL: $labelstr" &>
+%   } else {
+      <& header, title => "Create: $TBL" &>
+%   }
+    <!-- begin edit.html -->
+    <p>
+% ####################################################################
+%   if( $args{"submit"} eq "Submit" ) {
+      <p>Please confirm the following:
+%     my $obj = $gui->getmeta( $TBL );
+%     my %linksto = $gui->getlinksto( $TBL );
+      <p><blockquote><strong><% $TBL %></strong><ul>
+%     foreach my $C ( split( /,/, $obj->columnorder() ) ) {
+        <li>
+        <% $C %> :
+%       if( ! exists( $session->{tables}{$TBL}{$C} ) ) {
+          -
+%       } else {
+%         if( $linksto{$C} ) {
+%           my $ft = $gui->getmeta( $linksto{$C} );
+%           if( ! defined( $ft ) ) {
+              No such object <% $linksto{$C} %>
+%           } elsif( $session->{tables}{$TBL}{$C} == 0 ) {
+              -
+%           } elsif( ! defined( $linksto{$C}->
+%                    retrieve( int( $session->{tables}{$TBL}{$C} ) ) ) ) {
+              -
+%           } else {
+%             my $o = $linksto{$C}->retrieve( $session->{tables}{$TBL}{$C} );
+%             my $lbl = $gui->getobjlabel( $o, ", " );
+              <% $lbl %>
+%           }
+%         } else {
+            <% $session->{tables}{$TBL}{$C} %>
+%         }
+%       }
+%     }
+      </ul></blockquote>
+      <form action="edit.html" method="POST">
+      <input type="hidden" name="sid" value="<% $sid %>">
+      <input type="hidden" name="create" value="<% $TBL %>">
+      <input type="hidden" name="id" value="<% $ID %>">
+      <input name="confirm" value="Confirm" type="submit">
+      <input name="cancel" value="Cancel" type="submit">
+      </form>
+%   ##############################################
+%   } elsif( ! $TBL ) {
+      <p>
+      <blockquote>
+      <& table, width => $WIDTH, link => "edit.html", title => "Please select an object to create:" &>
+      </blockquote>
+%   ##############################################
+    } elsif( $args{cancel} ) {
+      <p>
+      <blockquote>
+      <& table, width => $WIDTH, link => "edit.html", title => "Please select an object to create:" &>
+      </blockquote>
+%   ##############################################
+%   } else {
+      <br>
+      <blockquote>
+      <form action="edit.html" method="POST">
+      <input type="hidden" name="sid" value="<% $sid %>">
+%     ############################################
+%     # special clause for node
+%     if( $TBL eq "Node" ) {
+        <a href="node.html">Auto Discover Node</a><br>
+        <p>
+%     }
+%     if( $ID ) {
+      <& form, table => $TBL, showdisabled => '0', id => $ID &>
+%     } else {
+      <& form, table => $TBL, showdisabled => '0', session => \%state &>
+%     }
+      <table cellpadding="3" cellspacing="1" border="0">
+      <tr align="LEFT">
+      <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
+      <input name="submit" value="Submit" type="submit">
+      </td>
+      <td>
+      <input name="cancel" value="Cancel" type="submit">
+      </td>
+      </tr>
+      </table>
+      </form>
+      </blockquote>
+%   } # if/else table
+    <p>
+    <!-- end edit.html -->
+    <& footer &>
+% }
+% ####################################################################
+<%args>
+$DEBUG => 1
+$TBL => undef
+$PREV => undef
+$ID => undef
+$OBJ => undef
+$sid => undef
+$nv => undef
+$TMP => "/home/netdot/public_html/tmp"
+$AGE => 86400
+$WIDTH => 2
+$session => undef
+$gui => Netdot::GUI->new()
+%args => undef
+%order => undef
+%linksto => undef
+</%args>
+
+<%init>
+my %state;
+undef( %state );
+</%init>
+
+<%doc>
+edit.html
+
+  Arguments:
+
+    table -- name of table to create/edit
+    id    -- row in a specific table if editing
+    sid   -- session id (used for keeping state while creating objects)
+    cancel - cancels all existing state and returns to null state
+    submit - 
+    (column names from any/all tables)
+
+  Possible states:
+
+    - null 
+    new page to create any table
+    - table is set
+    present page to create that table
+    - user clicked New on a table page
+    present page to create object for New; keep state for previous 
+    table page
+    - cancel
+    user clicks on cancel; should clear all state
+    - submit
+    if this is the last table, goto confirm page; otherwise, go to 
+    last edited table
+    
+</%doc>
