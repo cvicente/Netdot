@@ -27,14 +27,15 @@ foreach my $j ( keys %ARGS ) {
   }
   next if( $j !~ /\w+/ );
 
-# Ignore fields that don't belong to the table
-# /_srch/ elements are added for javascript only
-# we don't need them here
-
+  ################################################
+  # Ignore fields that don't belong to the table
+  # /_srch/ elements are added for javascript only
+  # we don't need them here
   next if ($j =~ /_srch/ );
-   
-# "/^_/" is added to avoid using reserved words in javascript
-# chop it off
+
+  ################################################
+  # "/^_/" is added to avoid using reserved words in javascript
+  # chop it off
   my $k = $j;
   $k =~ s/^_//;
   $args{$k} = $ARGS{$j};	   
@@ -116,7 +117,6 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
   #   form submit page), we need to be sure we go back to the proper
   #   table/object page and do not create empty objects in the DB.
   if( $args{confirm} && ! exists( $session->{tables}{ $args{create} } ) ) {
-      print "deleting Confirm\n";
     delete( $args{confirm} );
     ##############################################
     # get sessionpath and look for table not in session{tables}

@@ -35,7 +35,11 @@ This block catches the case where we've confirmed a submission and now
 want to go to the page to view it
 
 </%doc>
-% if( $args{confirm} eq "Confirm" && ( ! $TBL || $args{cancel} ) ) {
+% if( $args{cancel} && $TBL && $ID
+%     && $args{table} eq $TBL
+%     && ( ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) ){
+    <& view.html, table => $TBL, id => $ID &>
+% } elsif( $args{confirm} eq "Confirm" && ( ! $TBL || $args{cancel} ) ) {
     <& view.html, table => $args{create}, id => $ID &>
 % ####################################################################
 % } else {
@@ -109,17 +113,6 @@ available tables.
 
 </%doc>
 %   } elsif( ! $TBL ) {
-      <p>
-      <blockquote>
-      <& table, width => $WIDTH, link => "edit.html", title => "Please select an object to create:" &>
-      </blockquote>
-%   ##############################################
-    } elsif( $args{cancel} ) {
-<%doc>
-
-User has clicked on cancel.
-
-</%doc>
       <p>
       <blockquote>
       <& table, width => $WIDTH, link => "edit.html", title => "Please select an object to create:" &>
