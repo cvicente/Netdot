@@ -1,6 +1,6 @@
 <%perl>
-my $l = new Apache::Session::Lock::File ;
-$l->clean( $DIR, 3600 );  # remove files older than 1 hr
+my $locker = new Apache::Session::Lock::File ;
+$locker->clean( $DIR, 3600 );  # remove files older than 1 hr
 my %rev = reverse %ARGS;
 foreach my $j ( keys %ARGS ) {
   if( $ARGS{$j} eq "New" ) {
@@ -35,9 +35,7 @@ if( $TBL ) {
 if( $args{submit} eq "Cancel" ) {
   undef( $TBL );
   undef( $PREV );
-  if( %session ) {
-    tied(%session)->delete;
-  }
+  tied(%session)->delete;
   delete( $args{sid} );
   delete( $args{table} );
   delete( $args{submit} );
@@ -46,9 +44,10 @@ if( $args{submit} eq "Cancel" ) {
 }
 ##################################################
 # fill in the rest of state details
-if( $args{submit} || $rev{New} ) {
+if( exists( $args{submit} ) || exists( $rev{New} ) ) {
   foreach my $arg ( keys %args ) {
-    next if( $arg eq "submit" || $arg eq "sid" || $arg eq "table" );
+    next if( $arg eq "submit" || $arg eq "sid" 
+             || $arg eq "table" || $arg eq "commit" );
     $session{tables}{$PREV}{$arg} = $args{$arg};
   }
   if( ! defined( $args{submit} ) ) {
@@ -57,11 +56,14 @@ if( $args{submit} || $rev{New} ) {
       : ( $session{path} = "$args{table}" );
   }
 }
-if( $args{submit} ) {
+if( exists( $args{submit} ) ) {
   my @tbls = split( /;/, $session{path} );
   $TBL = pop @tbls;
   $session{path} = join( ';', @tbls );
 }
+##################################################
+# if commit, handle here
+
 </%perl>
 
 % ####################################################################
@@ -72,17 +74,26 @@ if( $args{submit} ) {
 
     <p>Please confirm the following:
 %   foreach my $T ( keys %{ $session{tables} } ) {
+%     my $obj = (Meta->search( name => $T ))[0];
+%     my %linksto;
+%     map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
+%         split( /,/, $obj->linksto );
       <p><blockquote><strong><% $T %></strong><ul>
 %     foreach my $C ( keys %{ $session{tables}{$T} } ) {
+
         <li><% $C %> : <% $session{tables}{$T}{$C} %>
 %     }
       </ul></blockquote>
 %   }
+    <form action="create.html" method="POST">
+    <input type="hidden" name="sid" value="<% $sid %>">
+    <input name="commit" value="Submit" type="submit">
 %   tied(%session)->delete if( %session );
 
 % } elsif( ! $TBL || $args{submit} eq "Cancel" ) {
-%   tied(%session)->delete if( %session );
+
 %   my @t = Meta->retrieve_all();
+
     <p>Please select an object to create:<br>
     <ul>
 %   foreach my $t ( sort { $a->name cmp $b->name } @t ) {
@@ -90,6 +101,7 @@ if( $args{submit} ) {
       <li><a href="create.html?table=<% $t->name %>"><% $t->name %></a>
 %   }
     </ul>
+
 % } else {
     <form action="create.html" method="POST">
     <input type="hidden" name="sid" value="<% $sid %>">
@@ -107,8 +119,8 @@ if( $args{submit} ) {
     </form>
 % } # if/else table
 
-    <hr>
-%   print Dumper( %session );
+% #<hr>
+% #print Dumper( %session );
 
 <& footer &>
 % ####################################################################
@@ -132,13 +144,42 @@ undef( $TBL );
 undef( $PREV );
 undef( $id );
 undef( $sid );
+
+my $FLAG;
+undef($FLAG);
 </%init>
 
 <%doc>
-mason file
+create.html
+
+  Arguments:
+
+    table -- name of table to create
+    sid   -- session id (used for keeping state while creating objects)
+    (column names from any/all tables)
+
+  Possible states:
+
+    - null 
+    new page to create any table
+    - table is set
+    present page to create that table
+    - user clicked New on a table page
+    present page to create object for New; keep state for previous 
+    table page
+    - cancel
+    user clicks on cancel; should clear all state
+    - submit
+    if this is the last table, goto confirm page; otherwise, go to 
+    last edited table
+    
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.5  2003/05/13 23:36:15  netdot
+#  more changes.  still need to remap the confirm stuff to confirm after
+#  every click on submit; then go back to previous table or null state
+#
 #  Revision 1.4  2003/05/12 23:23:58  netdot
 #  trying to clean up some of the logic and cover the cases of 'submit',
 #  'new', and 'cancel'.  also better document some of the chunks of code.
