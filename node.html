@@ -47,15 +47,13 @@ if( exists( $args{insert} ) ) {
       $tmp{managed} = "0";
       my $if = Interface->create( \%tmp );
       if( exists( $node{interface}{$int}{ipAdEntIfIndex} ) ) {
-#         undef( %tmp );
          foreach my $ip ( keys %{ $node{interface}{$int}{ipAdEntIfIndex} } ) {
- 	    my %ipinfo;
-	    $ipinfo{interface} = "blah1";
-            $ipinfo{address} = "blah2";
-            $ipinfo{mask} = "blah3";
-	    #print "ip $ip  mask $node{interface}{$int}{ipAdEntIfIndex}{$ip} \n";
-	    printf ("<pre>%s</pre>",Dumper(%ipinfo));
-            #Ip->create( \%tmp );
+            undef( %tmp );
+	    $tmp{interface} = $if->id;
+            $tmp{address} = $ip;
+            $tmp{mask} = $node{interface}{$int}{ipAdEntIfIndex}{$ip};
+            $tmp{subnet} = 0;
+            Ip->create( \%tmp );
          }
       }
     }
@@ -137,6 +135,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.16  2003/07/10 00:09:14  netdot
+#  fixed latest bug; still need to add subnet code
+#
 #  Revision 1.15  2003/07/09 21:56:04  netdot
 #  *** empty log message ***
 #
