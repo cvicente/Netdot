@@ -94,7 +94,7 @@ foreach my $device ( @devices ) {
       # set up IF state data
       my( %iftmp, %iptmp, $if );
       $iftmp{device} = $device->id;
-      $iftmp{ifdescr} = $newif;
+      $iftmp{name} = $newif;
       foreach my $dbname ( keys %ifnames ) {
 	if( $ifnames{$dbname} eq "descr" ) {
 	  if( $dev{interface}{$newif}{$ifnames{$dbname}} ne "-" ) {
