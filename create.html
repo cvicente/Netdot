@@ -31,12 +31,12 @@ unless( defined( $PREV ) ) {
 # get state back
 if( defined( $args{sid} ) ) {
   $sid = $args{sid};
-  %session = $gui->fetchstate( $DIR, $sid );
+  %session = $gui->getstate( $DIR, $sid );
 }
 ##################################################
 # create state if necessary
 if( $args{table} ) {  
-  %session = $gui->createstate( $DIR );
+  %session = $gui->mkstate( $DIR );
   $sid = $session{_session_id};
 }
 if( $DEBUG ) {
@@ -287,6 +287,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.18  2003/07/01 05:07:53  netdot
+#  *** empty log message ***
+#
 #  Revision 1.17  2003/07/01 05:03:00  netdot
 #  migrating state functionality to GUI.pm
 #
