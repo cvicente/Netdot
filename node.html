@@ -15,10 +15,12 @@ if( $args{cancel} ) {
 }
 if( exists( $args{insert} ) ) {
   my %node = %{ $session->{node} };
-  if( Node->search( name => "$args{node}" ) ) {
+  if( Node->search( name => "$args{node}" ) 
+      || Node->search( physaddr => $node{dot1dBaseBridgeAddress} ) ) {
     ; # do nothing
   } else {
     my %tmp;
+    my @ifrsv = NvIfRserved->retrieve_all();
     $tmp{name} = $args{node};
     $tmp{sysdescription} = $node{sysDescr};
     $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
@@ -28,6 +30,11 @@ if( exists( $args{insert} ) ) {
     my $nodeid = (Node->search( name => "$args{node}" ))[0];
     $inserted = $nodeid->id;
     foreach my $int ( keys %{ $node{interface} } ) {
+      my $skip = 0;
+      foreach my $rsv ( @ifrsv ) {
+        $skip = 1 if( $rsv =~ /$int/ );
+      }
+      next if( $skip );
       undef( %tmp );
       $tmp{node} = $nodeid;
       $tmp{ifdescr} = $int;
@@ -60,7 +67,9 @@ if( exists( $args{insert} ) ) {
 %   if( exists( $args{insert} ) ) {
 <hr>
 %     # check to see if node already exists in Node table
-%     if( Node->search( name => "$args{node}" ) ) {
+%     my %node = %{ $session->{node} };
+%     if( Node->search( name => "$args{node}" )
+%         || Node->search( physaddr => $node{dot1dBaseBridgeAddress} ) ) {
         <p>Node <% $args{node} %> already exists in Node table.
 %     }
 %   } elsif( exists( $args{node} ) ) {
@@ -117,6 +126,11 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.11  2003/07/03 23:12:04  netdot
+#  more fixes:
+#    * be sure to check Reserved IFs
+#    * check whether base address is already
+#
 #  Revision 1.10  2003/07/03 21:31:33  netdot
 #  fix so that call to view.html works
 #
