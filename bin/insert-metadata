@@ -420,7 +420,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
   VALUES ('HorizontalCable', 
 	  'jackid', 
 	  'jackid,type,datetested,testpassed,installdate,site,floor,closet,room,account,contactlist,info', 
-	  'jackid,building,floor,closet,room', 
+	  'jackid,site,floor,closet,room', 
 	  'jackid:Jack ID,type:Type,datetested:Date Tested,testpassed:Passed Test?,installdate:Date Installed,site:Site,floor:Floor,closet:Closet,room:Room,account:Account,contaclist:Contact List,info:Comments',
 	  '',
 	  'type:CableType,site:Site,contactlist:ContactList', 
@@ -494,8 +494,8 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
 	  'ip,service', 
 	  'ip,service,managed,contactlist', 
 	  'ip,service', 
-	  'ip:Ip,service:Service,managed:Managed,contactlist:ContactList', 
-	  'attributes:DhcpAttr:server,dhcphosts:DhcpHost:server,dhcpsubnets:Subnet:dhcp_server:{on_delete=>"set-null"}', 
+	  'ip:Ip,service:Service,contactlist:ContactList', 
+	  'dhcpconfigs:DhcpScope:service', 
  	  '0', 
 	  'A relationship linking an Ip address with a running Internet service');
 
@@ -611,9 +611,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Site', 
 	  'name', 
-	  'name,siteid,aliases,street1,street2,pobox,city,state,zip,country,availability,contactlist,info', 
-	  'name,siteid,street1,city', 
-	  'name:Name,siteid:Site ID,aliases:Aliases,street1:Street (1),street2:Street (2),pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact Group,info:Comments',
+	  'name,number,aliases,street1,street2,pobox,city,state,zip,country,availability,contactlist,info', 
+	  'name,number,street1,city', 
+	  'name:Name,number:Site ID,aliases:Aliases,street1:Street (1),street2:Street (2),pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact Group,info:Comments',
 	  '',
 	  'availability:Availability,contactlist:ContactList', 
 	  'nearconnections:Connection:nearend,farconnections:Connection:farend,entities:EntitySite:site:{on_delete=>"set-null"},devices:Device:site:{on_delete=>"set-null"},people:Person:location:{on_delete=>"set-null"},horizontalcables:HorizontalCable:site', 
@@ -623,9 +623,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Site_history', 
 	  'modified', 
-	  'name,siteid,aliases,street1,street2,pobox,city,state,zip,country,availability,contactlist,info,modified,modifier', 
-	  'modified,modifier,name,siteid,street1', 
-	  'name:Name,siteid:Site ID,aliases:Aliases,street1:Address Line 1,street2:Address Line 2,pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact Group,info:Comments,modified:Modified on,modifier:Modified by',
+	  'name,number,aliases,street1,street2,pobox,city,state,zip,country,availability,contactlist,info,modified,modifier', 
+	  'modified,modifier,name,number,street1', 
+	  'name:Name,number:Site ID,aliases:Aliases,street1:Address Line 1,street2:Address Line 2,pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact Group,info:Comments,modified:Modified on,modifier:Modified by',
 	  '',
 	  'availability:Availability,contactlist:ContactList', 
 	  '', 
@@ -643,7 +643,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'address:Address,prefix:Prefix,ipversion:IP Version,allocated:Allocated?,delegated:Delegated?,description:Description,entity:Assigned to,info:Comments',
 	  '',
 	  'entity:Entity', 
-	  'ips:Ip:subnet:{on_delete=>"restrict"},dhcpentries:DHCPScope:subnet:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
+	  'ips:Ip:subnet:{on_delete=>"restrict"},dhcpentries:DhcpScope:subnet:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
 	  '0', 
 	  'An IP network subnet');
 
