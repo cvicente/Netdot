@@ -12,27 +12,15 @@ unless ( $obj ){
    exit;
 }
 
-my $META = (Meta->search( name => $table ))[0];
-if( defined( $META ) ) {
-  my $i = 1;
-  undef( %order );
-  if( defined( $META->columnorder ) ) {
-    map { $order{$_} = $i++; } split( /,/, $META->columnorder );
-  } else {
-    $order{"id"} = $i++;
-    foreach ( sort { $a cmp $b } $META->name->columns() ) {
-      next if( $_ eq "id" );
-      $order{$_} = $i++;
-    }
-  }
-  undef( %linksto );
-  map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
-      split( /,/, $META->linksto );
-}
+%linksto = $gui->getlinksto($table);
+%linksfrom = $gui->getlinksfrom($table);
+%order = $gui->getcolumnorder($table);
+
 </%perl>
 
 %if ( !$ARGS{res} ){ # show the form
-<& header, title => " Edit $table Details" &>
+% my $labelstr = $gui->getobjlabel($obj, ", ");
+<& header, title=>" Edit: $table: $labelstr" &>
 
 <table border="0" width="95%" align="center">
 <tr><td align="center">
@@ -53,37 +41,24 @@ if( defined( $META ) ) {
 %     if( ! exists( $linksto{$c} ) ) { # local field
         <tr>
           <td align="right" bgcolor="#DDDDDD"><% $c %>:</td>
-%	  if ( $c eq 'info' ){
-	     <td colspan="2">
-	        <textarea name="<% $c %>" rows="10" cols="38">
-%		   if ($obj->$c =~ /\S+/){
- 	              <% $obj->$c %>
-%		   }
-		</textarea>
-             </td>
-%	  }else{
-             <td colspan="2"><input type="text" size="40" name="<% $c %>" value="<% $obj->$c %>"></td>
-%	  }
-	  
+	  <td colspan="2">
+	  <% $gui->getinputtag($c, $obj) %>	        
+	  </td>
         </tr>
 % ################################################
 %     } else {  # field is a foreign key
         <tr>
         <td align="right" bgcolor="#DDDDDD"><% $c %>:</td>
-%       my $ft = (Meta->search( name => $linksto{$c} ))[0];
-%       if( ! defined( $ft ) ) {
-          <td>No <% linksto{$c} %> in Meta table</td>
-%       } else {
-%         my $lbl = $ft->label;
           <td>
           <select name="<% $c %>">
 %         foreach my $fkobj ( $linksto{$c}->retrieve_all ) {
+%           my $lbl = $gui->getobjlabel($fkobj, ", ");
 %           if( ! defined( $linksto{$c}->retrieve( int( $obj->$c ) ) ) ) {
-              <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>	       
+              <option value="<% $fkobj->id %>"><% $lbl %></option>	       
 %	    }elsif( $fkobj->id == $obj->$c->id )  {
-              <option value="<% $fkobj->id %>" selected><% $fkobj->$lbl %></option>
+              <option value="<% $fkobj->id %>" selected><% $lbl %></option>
 %           }else {
-              <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
+              <option value="<% $fkobj->id %>"><% $lbl %></option>
 %           }
 %         } # for
           <option value="0">[null]</option>
@@ -92,7 +67,6 @@ if( defined( $META ) ) {
 	  <td>
 	    [<a href="create.html?table=<% $linksto{$c} %>" target="_blank">new</a>]
 	  </td>
-%       } # else
         </td>
         </tr>
 %     } # else
@@ -130,31 +104,14 @@ foreach my $j (keys %ARGS){
 	$fields{$j} = $ARGS{$j};	
 }
 
+#print Dumper (%fields) ; exit;
+
 # Check that we have at least one column parameter
 unless (scalar keys(%fields)){
    print "<strong>Missing field/value pairs to update</strong>";
    exit;
 }
-##########################################
-## Insert current object in history table
-##########################################
 
-my %current_data;
-foreach my $col ($obj->columns){
-   next if ($col eq 'id');
-   $current_data{$col} = $obj->$col;
-}
-my $h_table = "$table" . "_history";
-my $orig_id = lc("$table" . "_id");
-my $new_hist_obj = $h_table->create(\%current_data);
-$new_hist_obj->set($orig_id, $id);
-$new_hist_obj->set("modifier", $user) if (defined($user));
-my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
-    $wday, $yday, $isdst) = localtime;
-my $datetime = sprintf("%04d/%02d/%02d %02d:%02d:%02d",
-     $year+1900, $month+1, $day_of_month, $hours, $minutes, $seconds);
-$new_hist_obj->set("modified", $datetime);
-$new_hist_obj->update;
 
 ##########################################
 ## Update fields that have changed
@@ -176,6 +133,14 @@ $obj->update;
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-my( %fields, %linksto, %linksfrom, %order, $table, $id, $obj, %upd, $user);
-           
+use Netdot::GUI;
+my ( %linksto, %linksfrom, %order, %inputtypes,
+    $table, $id, $obj, %upd, %fields );
+my $gui = Netdot::GUI->new();
+
+
 </%init>
+
+<%args>
+$user => $ENV{REMOTE_USER}
+</%args>

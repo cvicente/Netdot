@@ -20,26 +20,9 @@ unless ( $obj ){
    exit;
 }
 
-# Get some Meta info
-$mi = (Meta->search( name => $table ))[0];
-$lbl = $mi->label;
-undef( %linksto );
-map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
-   split( /,/, $mi->linksto );
-undef( %linksfrom );
-map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
-   split( /,/, $mi->linksfrom );
-my $i = 1;
-undef( %order );
-if( defined( $mi->columnorder ) ) {
-   map { $order{$_} = $i++; } split( /,/, $mi->columnorder );
-} else {
-   $order{"id"} = $i++;
-   foreach ( sort { $a cmp $b } $mi->name->columns() ) {
-      next if( $_ eq "id" );
-      $order{$_} = $i++;
-   }
-}
+%linksto = $gui->getlinksto($table);
+%linksfrom = $gui->getlinksfrom($table);
+%order = $gui->getcolumnorder($table);
 
 if ($table !~ /_history/){
  # List all the has_many objects for this object
@@ -51,7 +34,7 @@ if ($table !~ /_history/){
   $ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
   my $mj = ( Meta->search(name => $j) )[0]; #get meta info for other table
   # If foreign table is a join table, try to hide it
-  if ( defined($mj) && ($mj->mainobject == 0) ){
+  if ( defined($mj) && ($mj->isjoin) ){
      undef( %jlinksto );
      # Get has_a entries 
      map { my($a, $b) = split( /:/, $_ ); $jlinksto{$a} = $b }
@@ -72,12 +55,15 @@ if ($table !~ /_history/){
  }
 }
 
+my $h_table = "$table" . "_history";
+my $h_meta = $gui->getmeta($h_table);
+
 </%perl>
 
-%my $label = $obj->$lbl;
-<& header, title=>" $table Details: $label" &>
+% my $labelstr = $gui->getobjlabel($obj, ", ");
+<& header, title=>" View: $table: $labelstr" &>
 
-<table align="top" border="0" width="97%">
+<table valign="top" border="0" width="95%">
 <tr><td colspan="2">
   <table width="100%">
   <tr>
@@ -87,7 +73,7 @@ if ($table !~ /_history/){
 %        my (@objl, $p);
 %        my $numrec =  scalar(@objl = map { $_->id } $table->retrieve_all);
 %        for (my $i=0; $i < $numrec; $i++) { if ($objl[$i] == $obj->id) { $p = $i; last; }  };
-         record <input type="text" size="3" name="id" value="<% $p %>"> of <% $numrec %> 
+         record <input type="text" size="3" name="id" value="<% $p + 1 %>"> of <% $numrec %> 
       </form>
   </td>
   <td valign="top" align="center" width="80%">
@@ -118,7 +104,9 @@ if ($table !~ /_history/){
 %	   }  
 %	}
           <tr><td>&nbsp;</td></tr>
-   	  <tr><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a></td></tr>
+%	  if ( defined($h_meta) ){  # only if there's a history table.
+   	     <tr><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a></td></tr>
+%	  }
 	  <tr><td>&nbsp;</td></tr>
 %	  if (scalar keys %ftables){
             <tr><td bgcolor="#DDDDDD"><strong>Add to this <% $table %>:</strong></td></tr>
@@ -159,9 +147,17 @@ if ($table !~ /_history/){
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %      next if ($c eq 'id' || $c eq 'aliases');
        <tr> 
-       <td align="right" valign="bottom" bgcolor="#DDDDDD"><% $c %>:</td>
+       <td width="20%" align="right" valign="center" bgcolor="#DDDDDD"><% $c %>:</td>
 %      if (!exists($linksto{$c}) ){
-	  <td><strong><% $obj->$c %></strong></td>
+%          if ( $gui->getsqltype($table,$c) =~ /bool/ ){
+%	      if ($obj->$c){
+	         <td><strong>yes</strong></td>
+%	      }else{
+	         <td><strong>no</strong></td>
+%	      }
+%	   }else{
+	      <td><strong><% $obj->$c %></strong></td>
+%	   }
 %      }else{
          <td align="left" valign="bottom">
 %	    my $fkobj;
@@ -195,7 +191,6 @@ if ($table !~ /_history/){
 %    } 
 
 %  if ( $view eq 'history' ){
-%   my $h_table = "$table" . "_history";
 %   my $id_f = lc("$table" . "_id");
 %   my @h_objs = $h_table->search($id_f => "$obj->id");
     <& sortresults.html, table => $h_table, object => \@h_objs &>
@@ -209,15 +204,20 @@ if ($table !~ /_history/){
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
+use Netdot::GUI;
+my( %arg, %linksto, %linksfrom, $obj, $table, $view, %order, %ftables);
 
-my( %arg, %linksto, %linksfrom, $obj, $table, $lbl, $view, $mi, %order, @addlinks, %ftables);
-               
+my $gui = Netdot::GUI->new();
+             
 </%init>
 
 <%doc>
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.17  2003/06/24 21:25:22  netdot
+#  *** empty log message ***
+#
 #  Revision 1.16  2003/06/10 22:20:51  netdot
 #  Went back to duplicate-table model for history.
 #  Also kept some fixes from previous version

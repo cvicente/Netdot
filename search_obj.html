@@ -3,113 +3,128 @@ foreach my $j (keys %ARGS){
 	next if ($ARGS{$j} !~ /\w+/ || $j eq 'submit');
 	$arg{$j} = $ARGS{$j};	
 }
-unless ( $arg{table} ){
-   print "<strong>Missing 'table' parameter</strong>";
-   exit;
-}
-$table = $arg{table};
-
-# Get some Meta info
-$mi = (Meta->search( name => $table ))[0];
-undef( %linksto );
-map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
-   split( /,/, $mi->linksto );
-undef( %linksfrom );
-map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
-   split( /,/, $mi->linksfrom );
-my $i = 1;
-undef( %order );
-if( defined( $mi->columnorder ) ) {
-   map { $order{$_} = $i++; } split( /,/, $mi->columnorder );
-} else {
-   $order{"id"} = $i++;
-   foreach ( sort { $a cmp $b } $mi->name->columns() ) {
-      next if( $_ eq "id" );
-      $order{$_} = $i++;
-   }
-}
 </%perl>
 
-%if ( $arg{form} ){
+%if(! $arg{table} ){ # offer a list of tables to select
 
-<& header, title => "Search \'$table\' objects"  &>
-<p>
-<form action="search_obj.html" method="POST">
-<input type="hidden" name="table" value="<% $table %>">
-
-<p>Specify one or more of the following:
-<br><font size="-1">(Use '%' as a wildcard. i.e: %HCG%)</font>
-<p>
-   <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
-%  foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%     next if ($c eq 'disabled');
-%     if (!exists($linksto{$c}) ){  # The column is 'local'
-         <tr> 
-         <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-	 <td><input type="text" name="<% $c %>" size="40" value=""</td>
-	 </tr>
-%     } else {  # The column is a foreign key. Provide a list to select.
-         <tr>
-	 <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-	 <td>
-%         my $t = (Meta->search( name => $linksto{$c} ))[0];
-%         if( ! defined( $t ) ) {
-            No <% $linksto{$c} %> in Meta table
-%         } else {
-%           my $lbl = $t->label;
-            <select name="<% $c %>">
-	    <option></option> 
-%	    my @fkobjs = $linksto{$c}->retrieve_all; 
-%	    foreach my $fkobj (@fkobjs){
-              <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
-%           }
-            </select>
-	    </td></tr>        
-%        } 
-
-%    }
-%  }
-   </tr>
-   <tr><td bgcolor="#FFFFFF"align=center colspan=2>
-   <input name="submit" value="Search" type="submit">
-   </td></tr>
-   </table>
-
-
-</form>
+<& header, title=>"Advanced Search" &>
 <p><br>
 
-%} else {
+<table align="center" border="0" width="95%">
+   <tr>
+      <td>
+         <& table.html, width => 3, link => "search_obj.html", title => "Please select a table to search:" &>
+      </td>
+   </tr>
+</table>
 
 <%perl>
-foreach my $j (keys %arg){
-	next if ($j eq 'submit' || $j eq 'table');
-	$sarg{$j} = $arg{$j};	
-}
-# Check that we have at least one parameter
-unless (scalar keys(%sarg)){
-   print "<strong>Missing search criteria</strong>";
-   exit;
-}
+} else {  # we have a table
 
-my @objs = $table->search_like(\%sarg);
+   $table = $arg{table};
+   
+   # Get some Meta info
+
+   %linksto = $gui->getlinksto($table);
+   %linksfrom = $gui->getlinksfrom($table);
+   %order = $gui->getcolumnorder($table);
+   
+   if ( !$arg{res} ){ # show the fill-out form
 </%perl>
 
-<& header, title => "Search Results for \'$table\'"  &>
-<p>
+<& header, title=>"Advanced $table Search" &>
+<p><br>
 
-<& sortresults.html, table => "$table", object => \@objs &>
+<table align="center" border="0" width="95%">
+   <tr>
+      <td>
+           <form action="search_obj.html" method="POST">
+	      <input type="hidden" name="table" value="<% $table %>">
+	      <input type="hidden" name="res" value="1">
+	      <p>Specify one or more of the following:
+	      <p>
+	      <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+%	      foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%	         next if ($c eq 'disabled');
+%		 if (!exists($linksto{$c}) ){  # The column is 'local'
+                    <tr> 
+		       <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
+		       <td><input type="text" name="<% $c %>" size="40" value=""></td>
+		    </tr>
+%		 }else {  # The column is a foreign key. Provide a list to select.
+                   <tr>
+		      <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
+		      <td>
+%		         my $t = (Meta->search( name => $linksto{$c} ))[0];
+%			 if( ! defined( $t ) ) {
+			    No <% $linksto{$c} %> in Meta table
+%			 } else {
+%			    my $lbl = $t->label;
+			    <select name="<% $c %>">
+			       <option></option> 
+%			       my @fkobjs = $linksto{$c}->retrieve_all; 
+%			       foreach my $fkobj (@fkobjs){
+			          <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
+%			       }
+			    </select>
+		      </td>
+		   </tr>        
+%                        } 
+%                }
+%             }
+                    </tr>
+                    <tr>
+                       <td bgcolor="#FFFFFF"align=center colspan=2>
+	                 <input name="submit" value="Search" type="submit">
+	               </td>
+                    </tr>
+              </table>
+           </form>
+
+      </td>
+   </tr>
+</table>
+
+%   } else { # Process input and search
+<%perl>
+         foreach my $j (keys %arg){
+            next if ($arg{$j} eq '' || $j eq 'submit' || $j eq 'table' || $j eq 'res');
+            $sarg{$j} = $arg{$j};
+            if (! exists( $linksto{$j} )){  # The column is 'local'
+               $sarg{$j} = "%" . $sarg{$j} . "%";  # Add wildcards
+            }
+         }
+         # Check that we have at least one parameter
+         unless (scalar keys(%sarg)){
+            print "<strong>Missing search criteria</strong>";
+            exit;
+         }
+         my @objs = $table->search_like(\%sarg);
+</%perl>
+        <& header, title => "Search Results for $table"  &>
+
+<table align="center" border="0" width="95%">
+   <tr>
+      <td>
+             <& sortresults.html, table => "$table", object => \@objs &>
+       </td>
+   </tr>
+</table>
 
 <p><br>
 
-%}
+%   } # endif !$arg{res}
+
+
+%} 
 
 <& footer &>
 
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-use Data::Dumper;
-my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order);
+use Netdot::GUI;
+my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order );
+my $gui = Netdot::GUI->new();
            
 </%init>

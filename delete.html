@@ -31,14 +31,13 @@ unless ( $obj ){
 
 <form method="POST" action="delete.html">
 
-%# List all the has_many objects for this object             
 
 %if (scalar (keys %linksfrom)){
-   <p>This <% $table %>  is referenced by:
-
 %  foreach my $i (keys %linksfrom){
 %     my ($j, @robjs);
 %     map { $j = $_ } keys %{ $linksfrom{$i} };
+%     if ($linksfrom{$i}{on_delete} == "restrict"){
+<p>The following items reference this <% $table %>:
 %        @robjs = $obj->$i();
 %        next unless (scalar(@robjs));
            <p>
@@ -48,13 +47,9 @@ unless ( $obj ){
 	      <& sortresults.html, table => $j, object => \@robjs, view => "expanded" &>
 	    </td>
 	   </tr>
-	   <tr>
-	    <td><input type="radio" name="<% $i %>" value="nullify" checked> Set references to NULL</td>
-	   <tr>
-	   </tr>
-	    <td><input type="radio" name="<% $i %>" value="delete"> Delete these referencing objects</td>
-	   </tr>
 	   </table>
+<p>Deletion will be restricted until there are no more <% $j %> objects referencing this <% $table %>
+%    }
 %  }
 %}
 <p>
