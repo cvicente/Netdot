@@ -39,13 +39,15 @@ if ($table !~ /_history/){
   @tmp = $obj->$i;  
   map { $j = $_ } keys %{ $linksfrom{$i} };
   $ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
-  my $mj = ( Meta->search(name => $j) )[0]; #get meta info for other table
-  # If foreign table is a join table, try to hide it
-  if ( defined($mj) && ($mj->isjoin) ){
+#  my $mj = ( Meta->search(name => $j) )[0]; #get meta info for other table
+### If foreign table is a join table, try to hide it
+### THIS MUST CHANGE TO USE THE MAPPING FEATURE FROM CLASS::DBI INSTEAD
+  if ( $gui->isjointable($j) ){
      undef( %jlinksto );
      # Get has_a entries 
-     map { my($a, $b) = split( /:/, $_ ); $jlinksto{$a} = $b }
-        split( /,/, $mj->linksto );
+#     map { my($a, $b) = split( /:/, $_ ); $jlinksto{$a} = $b }
+#        split( /,/, $mj->linksto );
+     %jlinksto = $gui->getlinksto($j);
      # Column in join table that points to third table
      map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
      map { push @{ $ftables{$i}{robjs} }, $_->$col } @tmp;
@@ -252,6 +254,9 @@ my $gui = Netdot::GUI->new();
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.26  2003/07/14 21:38:22  netdot
+#  Changed some calls to Meta info
+#
 #  Revision 1.25  2003/07/14 19:01:19  netdot
 #  added css tags and massaged appearance -miyake
 #
