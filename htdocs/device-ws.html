@@ -707,15 +707,18 @@ if ( defined($search) && $search =~ /\w+/ ){
 %		 }
 	     </td>
 	</tr>
-        <tr>
 %	if ($edit eq "mgmtinfo"){	 
 
 %	}else{
+        <tr>
 	   <td class="formtablec1"><b><a href="device.html?device=<% $name %>&action=update">[update]</a></b></td>
-	     <td class="formtablec2">Fetch SNMP info from device and update database
-	     </td>
-%	} 
+	     <td class="formtablec2">Fetch SNMP info from device and update database</td>
 	</tr>
+        <tr>
+	   <td class="formtablec1">Connect via: </td>
+	   <td colspan="2" class="formtablec2" ><a href="http://<% $name %>">[HTTP]</a> <a href="ssh://<% $user %>@<% $name %>">[SSH]</a> <a href="telnet://<% $name %>">[Telnet]</a></td>
+	</tr>
+%	} 
     </table>
      </td>
    </tr>
@@ -942,6 +945,7 @@ $search => undef
 $edit   => undef
 $ipsort => undef
 $s2name  => "Management"
+$user => $ENV{REMOTE_USER}
 </%args>
 
 <%init>
