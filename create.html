@@ -35,9 +35,9 @@ if( defined( $args{sid} ) ) {
 }
 if( $DEBUG ) {
   print "ARGS: ";
-  print Dumper( %ARGS );
+  printf "<pre>%s</pre>\n", Dumper( \%ARGS );
   print "SESSION: ";
-  print Dumper( $session );
+  printf "<pre>%s</pre>\n", Dumper( $session );
 }
 ##################################################
 # if Cancel, delete state
@@ -101,15 +101,18 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
 ##################################################
 # if confirm, handle here
 if( $args{confirm} eq "Confirm" ) {
-  my $T = $args{create};
-  my $c = $T->create( \%{ $session->{tables}{$T} } );
+  my( $T, $c );
+  $T = $args{create};
+  eval { $c = $T->create( \%{ $session->{tables}{$T} } ); }
+    or die "Unable to create $T: $@\n";
   delete( $session->{tables}{ $args{create} } );
-  if( length( $session->{path} ) < 1 ) {
+  if( length( $session->{path} ) < 1 && ! defined( $TBL ) ) {
     if( defined( $session ) ) {
+      print "removing session <br>\n";
       $gui->rmsession( $session );
     }
   }
-  my $id = $c->id;
+  $id = $c->id;
   $session->{created}{$T} = $id;
 }
 ##################################################
@@ -133,95 +136,95 @@ if( defined( $TBL ) ) {
   }
 }
 </%perl>
-
-% ####################################################################
-<& header, title =>"$TBL Create" &>
-<!-- begin create.html -->
-<p>
-% if( $args{confirm} eq "Confirm" ) {
-    <p><font size=-1>(created an <% $args{create} %> object) </font> <br>
-% }
-
 % ####################################################################
 % if( $DEBUG ) {
- tables : TBL <% $TBL %> : table <% $args{table} %><br>
- PREV : <% $PREV %> <br>
- ARGS :
-% print Dumper( %ARGS );
- <br> session: 
-% print Dumper( $session );
- <hr>
+    tables : TBL <% $TBL %> : table <% $args{table} %><br>
+    PREV : <% $PREV %> <br>
+    ARGS :
+%   printf "<pre>%s</pre>\n", Dumper( \%ARGS );
+    <br> session: 
+%   printf "<pre>%s</pre>\n", Dumper( $session );
+    <hr>
 % }
 % ####################################################################
-
-% if( $args{"submit"} eq "Submit" ) {
-    <p>Please confirm the following:
-%   my $obj = $gui->getmeta( $TBL );
-%   my %linksto = $gui->getlinksto( $TBL );
-    <p><blockquote><strong><% $TBL %></strong><ul>
-%   foreach my $C ( split( /,/, $obj->columnorder() ) ) {
-      <li>
-      <% $C %> :
-%     if( ! exists( $session->{tables}{$TBL}{$C} ) ) {
-        -
-%     } else {
-%       if( $linksto{$C} ) {
-%         my $ft = $gui->getmeta( $linksto{$C} );
-%         if( ! defined( $ft ) ) {
-            No such object <% $linksto{$C} %>
-%         } elsif( $session->{tables}{$TBL}{$C} == 0 ) {
-            -
-%         } elsif( ! defined( $linksto{$C}->
-%                    retrieve( int( $session->{tables}{$TBL}{$C} ) ) ) ) {
-            -
-%         } else {
-%           my $o = $linksto{$C}->retrieve( $session->{tables}{$TBL}{$C} );
-%           my $lbl = $gui->getobjlabel( $o, ", " );
-            <% $lbl %>
-%         }
+% if( $args{confirm} eq "Confirm" && ( ! $TBL || $args{cancel} ) ) {
+    <& view.html, table => $args{create}, id => $id &>
+% } else {
+    <& header, title =>"$TBL Create" &>
+    <!-- begin create.html -->
+    <p>
+% ####################################################################
+%   if( $args{"submit"} eq "Submit" ) {
+      <p>Please confirm the following:
+%     my $obj = $gui->getmeta( $TBL );
+%     my %linksto = $gui->getlinksto( $TBL );
+      <p><blockquote><strong><% $TBL %></strong><ul>
+%     foreach my $C ( split( /,/, $obj->columnorder() ) ) {
+        <li>
+        <% $C %> :
+%       if( ! exists( $session->{tables}{$TBL}{$C} ) ) {
+          -
 %       } else {
-          <% $session->{tables}{$TBL}{$C} %>
+%         if( $linksto{$C} ) {
+%           my $ft = $gui->getmeta( $linksto{$C} );
+%           if( ! defined( $ft ) ) {
+              No such object <% $linksto{$C} %>
+%           } elsif( $session->{tables}{$TBL}{$C} == 0 ) {
+              -
+%           } elsif( ! defined( $linksto{$C}->
+%                    retrieve( int( $session->{tables}{$TBL}{$C} ) ) ) ) {
+              -
+%           } else {
+%             my $o = $linksto{$C}->retrieve( $session->{tables}{$TBL}{$C} );
+%             my $lbl = $gui->getobjlabel( $o, ", " );
+              <% $lbl %>
+%           }
+%         } else {
+            <% $session->{tables}{$TBL}{$C} %>
+%         }
 %       }
 %     }
-%   }
-    </ul></blockquote>
-    <form action="create.html" method="POST">
-    <input type="hidden" name="sid" value="<% $sid %>">
-    <input type="hidden" name="create" value="<% $TBL %>">
-    <input name="confirm" value="Confirm" type="submit">
-    <input name="cancel" value="Cancel" type="submit">
-    </form>
-% } elsif( ! $TBL || $args{cancel} ) {
+      </ul></blockquote>
+      <form action="create.html" method="POST">
+      <input type="hidden" name="sid" value="<% $sid %>">
+      <input type="hidden" name="create" value="<% $TBL %>">
+      <input name="confirm" value="Confirm" type="submit">
+      <input name="cancel" value="Cancel" type="submit">
+      </form>
+%   } elsif( ! $TBL || $args{cancel} ) {
+      <p>
+      <blockquote>
+      <& table.html, width => $WIDTH, link => "create.html", title => "Please select an object to create:" &>
+      </blockquote>
+%   } else {
+      <br>
+      <blockquote>
+      <form action="create.html" method="POST">
+      <input type="hidden" name="sid" value="<% $sid %>">
+%     ############################################
+%     # special clause for node
+%     if( $TBL eq "Node" ) {
+        <a href="node.html">Auto Discover Node</a><br>
+        <p>
+%     }
+      <& form.html, table => $TBL, showdisabled => '0', session => \%state &>
+      <table cellpadding="3" cellspacing="1" border="0">
+      <tr align="LEFT">
+      <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
+      <input name="submit" value="Submit" type="submit">
+      </td>
+      <td>
+      <input name="cancel" value="Cancel" type="submit">
+      </td>
+      </tr>
+      </table>
+      </form>
+      </blockquote>
+%   } # if/else table
     <p>
-    <blockquote>
-    <& table.html, width => $WIDTH, link => "create.html", title => "Please select an object to create:" &>
-    </blockquote>
-% } else {
-    <br>
-    <blockquote>
-    <form action="create.html" method="POST">
-    <input type="hidden" name="sid" value="<% $sid %>">
-%   if( $TBL eq "Node" ) {
-    <a href="node.html">Auto Discover Node</a><br>
-    <p>
-%   }
-    <& form.html, table => $TBL, showdisabled => '0', session => \%state &>
-    <table cellpadding="3" cellspacing="1" border="0">
-    <tr align="LEFT">
-    <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
-    <input name="submit" value="Submit" type="submit">
-    </td>
-    <td>
-    <input name="cancel" value="Cancel" type="submit">
-    </td>
-    </tr>
-    </table>
-    </form>
-    </blockquote>
-% } # if/else table
-<p>
-<!-- end create.html -->
-<& footer &>
+    <!-- end create.html -->
+    <& footer &>
+% }
 % ####################################################################
 <%args>
 
@@ -232,7 +235,7 @@ $id => undef
 $sid => undef
 $nv => undef
 $DIR => "/home/netdot/public_html/tmp"
-$AGE => 3600
+$AGE => 86400
 $WIDTH => 2
 $session => undef
 $gui => Netdot::GUI->new()
@@ -280,6 +283,10 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.25  2003/07/11 16:11:36  netdot
+#  fixed bug where state could be loss; call view.html after last object
+#  is created; changed debug code a little
+#
 #  Revision 1.24  2003/07/08 21:27:40  netdot
 #  state seems to be working along with other updates to calls to GUI.pm
 #
