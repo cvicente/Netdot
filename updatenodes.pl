@@ -30,8 +30,9 @@ if( @ARGV ) {
   }
 }
 
-my $nv = Netdot::Netviewer->new( foreground => 0 );
+my $nv = Netdot::Netviewer->new( foreground => '0', loglevel => 'LOG_ERR' );
 my @nodes = Node->retrieve_all();
+my @ifrsv = NvIfReserved->retrieve_all();
 
 print "Fetching current list of nodes....\n" if( $DEBUG );
 foreach my $node ( @nodes ) {
@@ -46,10 +47,19 @@ foreach my $node ( @nodes ) {
     my %ntmp;
     $ntmp{sysdescription} = $dev{sysDescr};
     $ntmp{physaddr} = $dev{dot1dBaseBridgeAddress};
-    update( object => \$node, state => \%ntmp ); 
+    unless( update( object => \$node, state => \%ntmp ) ) {
+      next;
+    }
     ##############################################
     # for each interface just discovered...
     foreach my $newif ( keys %{ $dev{interface} } ) {
+      ############################################
+      # check whether should skip IF
+      my $skip = 0;
+      foreach my $rsv ( @ifrsv ) {
+        $skip = 1 if( $rsv =~ /$newif/ );
+      }
+      next if( $skip );
       ############################################
       # set up IF state data
       my( %iftmp, %iptmp, $if );
@@ -69,13 +79,17 @@ foreach my $node ( @nodes ) {
       if( $if = (Interface->search( node => $node->id, ifindex => $dev{interface}{$newif}{instance}))[0] ) {
 	print "Interface node ", $node->name, ":$newif exists; updating\n"
 	  if( $DEBUG );
-	update( object => \$if, state => \%iftmp ); 
 	delete( $ifs{ $if->id } );
+	unless( update( object => \$if, state => \%iftmp ) ) {
+	  next;
+	}
       } else {
 	$iftmp{managed} = 0;
 	print "Interface node ", $node->name, ":$newif doesn't exist; ",
 	  "inserting\n" if( $DEBUG );
-	$if = insert( object => "Interface", state => \%iftmp );
+	unless( $if = insert( object => "Interface", state => \%iftmp ) ) {
+	  next;
+	}
       }
       if( exists( $dev{interface}{$newif}{ipAdEntIfIndex} ) ) {
 	foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
@@ -92,7 +106,9 @@ foreach my $node ( @nodes ) {
 	    $tmp{address} = $net;
 	    $tmp{entity} = 0;
 	    print "Subnet $net doesn't exist; inserting\n" if( $DEBUG );
-	    $subnet = insert( object => "Subnet", state => \%tmp );
+	    unless( $subnet = insert( object => "Subnet", state => \%tmp ) ){
+	      next;
+	    }
 	  }
 	  $iptmp{interface} = $if->id;
 	  $iptmp{subnet} = $subnet->id;
@@ -102,11 +118,15 @@ foreach my $node ( @nodes ) {
 	  # does this ip already exist in the DB?
 	  if( $ip = (Ip->search( address => $newip ))[0] ) {
 	    print "Interface $newif IP $newip exists; updating\n" if($DEBUG);
-	    update( object => \$ip, state => \%iptmp );
+	    unless( update( object => \$ip, state => \%iptmp ) ) {
+	      next;
+	    }
 	  } else {
 	    print "Interface $newif IP $newip doesn't exist; inserting\n" 
 	      if($DEBUG);
-	    $ip = insert( object => "Ip", state => \%iptmp );
+	    unless( $ip = insert( object => "Ip", state => \%iptmp ) ){
+	      next;
+	    }
 	  }
 	} # for
       }
@@ -116,7 +136,9 @@ foreach my $node ( @nodes ) {
     foreach my $nonif ( keys %ifs ) {
       print "Node ", $node->name, " Interface ifIndex $nonif ",
 	"doesn't exist; removing\n" if( $DEBUG );
-      remove( object => "Interface", id => $nonif );
+      unless( remove( object => "Interface", id => $nonif ) ) {
+	next;
+      }
     }
   } else {
     print "Unable to access node ", $node->name, "\n" if( $DEBUG );
@@ -135,14 +157,21 @@ sub update {
   foreach my $col ( keys %state ) {
     if( $state{$col} ne $obj->$col ) {
       $change = 1;
-      eval { $obj->set( $col, $state{$col} ); }
-	or die "Unable to set $col to $state{$col}: $@ \n";
+      eval { $obj->set( $col, $state{$col} ); };
+      if( $@ ) {
+	warn "Unable to set $col to $state{$col}: $@ \n";
+	return 0;
+      }
     }
   }
   if( $change ) {
-    eval { $obj->update; } 
-      or die "Unable to update: $@\n";
+    eval { $obj->update; };
+    if( $@ ) {
+      warn "Unable to update: $@\n";
+      return 0;
+    }
   }
+  return 1;
 }
 
 
@@ -152,9 +181,13 @@ sub insert {
   my($obj) = $argv{object};
   my(%state) = %{ $argv{state} };
   my($ret);
-  eval { $ret = $obj->create( \%state ); }
-    or die "Unable to insert into $obj: $@\n";
-  return $ret;
+  eval { $ret = $obj->create( \%state ); };
+  if( $@ ) {
+    warn "Unable to insert into $obj: $@\n";
+    return 0;
+  } else {
+    return $ret;
+  }
 }
 
 
@@ -164,8 +197,13 @@ sub remove {
   my($obj) = $argv{object};
   my($id) = $argv{id};
   my $o = $obj->retrieve( $id );
-  eval { $o->delete; }
-    or die "Unable to delete: $@ \n";
+  eval { $o->delete; };
+  if( $@ ) {
+    warn "Unable to delete: $@ \n";
+    return 0;
+  } else {
+    return 1;
+  }
 }
 
 
@@ -179,6 +217,10 @@ sub calc_subnet {
 
 ######################################################################
 #  $Log: updatenodes.pl,v $
+#  Revision 1.9  2003/07/15 16:26:09  netdot
+#  series of fixes to make consistent with node.html and more graceful
+#  with errors.
+#
 #  Revision 1.8  2003/07/12 21:07:56  netdot
 #  fixed interfaces call
 #
