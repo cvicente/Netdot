@@ -10,68 +10,110 @@ if( $arg{table} ) {
   $obj = (Meta->search( name => $arg{table} ))[0];
   if( defined( $obj ) ) {
     my $i = 1;
-    undef( %order );
-    if( defined( $obj->columnorderbrief ) ) {
-      map { $order{$_} = $i++; } split( /,/, $obj->columnorderbrief );
-    } else {
-      $order{"id"} = $i++;
-      foreach ( sort { $a cmp $b } $obj->name->columns() ) {
-        next if( $_ eq "id" );
-        $order{$_} = $i++;
-      }
-    }
+    my @tmp;
+    ##############################################
+    # get the label for this table (as defined in Meta)
+    undef( $LBL );
+    $LBL = $obj->label;
+    ##############################################
+    # get linksto info
     undef( %linksto );
     map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
         split( /,/, $obj->linksto );
-    undef( %linksfrom );
-    map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k } 
-        split( /,/, $obj->linksfrom );
+    ##############################################
+    # define order
+    undef( %order );
+    if( defined( $obj->columnorderbrief ) ) {
+      @tmp = split( /,/, $obj->columnorderbrief );
+    } else {
+      @tmp = sort { $a cmp $b } $obj->name->columns();
+    }
+    ##############################################
+    # remove id and aliases (if present)
+    foreach my $c ( @tmp ) {
+      next if( $c eq "id" || $c eq "aliases" );
+      $order{$c} = $i++;
+    }
+    ##############################################
+    # munge so that label is first 
+    if( defined( $LBL ) && length( $LBL ) > 0 ) {
+      unless( $order{$LBL} == 1 ) {
+        my $j = $order{$LBL};
+        my %rev = reverse %order;
+        my $k = $rev{2} ;
+        $order{$k} = $j;
+        $order{$LBL} = 1;
+      }
+    }
   }
 }
 </%perl>
+% ####################################################################
 
+<!-- begin sortresults -->
 % if( defined( $obj ) && defined( $arg{object} ) ) {
+  <br>
     <table cellpadding="3" cellspacing="1" border="0" width="100%" bgcolor="#DDDDDD">
     <tr>
 %   foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
       <th><% $o %></th>
 %   }
     </tr>
+% ####################################################################
 %   foreach my $o ( sort { $a->id <=> $b->id } @{ $arg{object} } ) {
+%     my $flag = 1;
+%     my @order = sort { $order{$a} <=> $order{$b} } keys %order;
       <tr>
-%     foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%     foreach my $c ( @order ) {
         <td align="CENTER" valign="TOP" bgcolor="#FFFFFF">
-%       if( $c eq "id" ) {
-          <strong>
-          <a href="<% $PAGE %>?table=<% $arg{table} %>&id=<% $o->id %>"><% $o->id %></a>
-          </strong>
-%       } elsif( exists( $linksto{$c} ) ) {
+%       if( exists( $linksto{$c} ) ) {
 %         my $ft = (Meta->search( name => $linksto{$c} ))[0];
 %         if( ! defined( $ft ) ) {
             No such object <% $linksto{$c} %>
 %         } elsif( $o->$c == 0 ) {
-	    -
+            -
+%         } elsif( ! defined( $linksto{$c}->retrieve( int( $o->$c ) ) ) ) {
+            -
 %         } else {
 %           my $lbl = $ft->label;
-            <% $o->$c->$lbl %>
+%           if( $flag ) {
+%             $flag = 0;
+              <strong>
+              <a href="<% $PAGE %>?table=<% $arg{table} %>&id=<% $o->id %>">
+              <% $o->$c->$lbl %>
+	      </a>
+              </strong>
+%           } else {
+              <% $o->$c->$lbl %>
+%           }
 %         }
 %       } else {
-          <% $o->$c %>
+%         if( $flag ) {
+%           $flag = 0;
+            <strong>
+            <a href="<% $PAGE %>?table=<% $arg{table} %>&id=<% $o->id %>">
+            <% $o->$c %>
+            </a>
+            </strong>
+%         } else {
+            <% $o->$c %>
+%         }
 %       } # else fi
         </td>
 %     } # for c
       </tr>
 %   } # for o
+% ####################################################################
     </table>
 % } # if
+<!-- end sortresults -->
 
-
-
+% ####################################################################
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Data::Dumper;
-my( %arg, %order, %linksto, %linksfrom, $obj );
+my( %arg, %order, %linksto, %linksfrom, $obj, $LBL );
 my $PAGE = "expview.html";
 
 </%init>
@@ -83,6 +125,11 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.10  2003/05/23 19:05:45  netdot
+# major overhaul.  work mostly intended to remove 'id' from display.
+# also makes sure that label is first thing displayed.  otherwise, added
+# some landmarks and cleaned up the process of displaying each row
+#
 # Revision 1.9  2003/05/14 23:48:28  netdot
 # sort results on display (id in increasing order)
 #
