@@ -64,13 +64,9 @@ foreach my $device ( @devices ) {
   $nv->build_config( "device", $device->name, $comstr );
   ################################################
   # get information from the device
-  if( my( %dev ) = $nv->get_device( "device", $device->name ) ) {
+  my %dev;
+  if( (%dev  = $nv->get_device( "device", $device->name )) && exists $dev{sysUpTime} ) {
     print "Have device ", $device->name, " information\n" if( $DEBUG );
-    unless ( exists $dev{sysUpTime} ){
-	printf "Device %s not found or didn't respond; skipping\n", 
-	$device->name if( $DEBUG );
-	next;	    
-    }
     if ($dev{sysUpTime} < 0 ) {
 	printf "Device %s has sysUpTime value of %d; skipping\n", 
 	$device->name, $dev{sysUpTime} if( $DEBUG );
@@ -86,6 +82,7 @@ foreach my $device ( @devices ) {
     }
     ##############################################
     # for each interface just discovered...
+    my %dbips;
     foreach my $newif ( keys %{ $dev{interface} } ) {
       ############################################
       # check whether should skip IF
@@ -129,6 +126,7 @@ foreach my $device ( @devices ) {
 	}
       }
       if( exists( $dev{interface}{$newif}{ipAdEntIfIndex} ) ) {
+	  map { $dbips{ $_->id } = 1 } $if->ips();
 	foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
 	  ## ignore loopback IPs
 	  next if ($newip =~ /127\.0\.0\.1/);
@@ -160,6 +158,7 @@ foreach my $device ( @devices ) {
 	    unless( update( object => $ip, state => \%iptmp ) ) {
 	      next;
 	    }
+	    delete( $dbips{ $ip } );
 	  } else {
 	    print "Interface $newif IP $newip doesn't exist; inserting\n" if($DEBUG);
 	    unless( $ip = insert( object => "Ip", state => \%iptmp ) ){
@@ -178,8 +177,21 @@ foreach my $device ( @devices ) {
       next if ($intobj->device->type->name eq "Hub");
   
       print "Device ", $device->name, " Interface number", $intobj->number,
-	"doesn't exist; removing\n" if( $DEBUG );
+	" doesn't exist; removing\n" if( $DEBUG );
       unless( remove( object => "Interface", id => $nonif ) ) {
+	next;
+      }
+    }
+    ##############################################
+    # remove each ip address  that no longer exists
+    foreach my $nonip ( keys %dbips ) {
+
+      # hubs are somewhat tricky.  Don't delete their ports.
+      my $ipobj = Ip->retrieve($nonip);
+  
+      print "Device ", $device->name, " Ip Address ", $ipobj->address,
+	" doesn't exist; removing\n" if( $DEBUG );
+      unless( remove( object => "Ip", id => $nonip ) ) {
 	next;
       }
     }
