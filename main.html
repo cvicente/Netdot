@@ -127,7 +127,7 @@ foreach my $j ( keys %ARGS ) {
 %        foreach my $t ( sort { $a->name cmp $b->name } @t ) {
 %           next if( $t->name eq "Meta" );
 %           $mi = (Meta->search(name => $t->name))[0];
-%           next if (defined($mi) &&  !$mi->mainobject);
+%           next if (defined($mi) &&  $mi->isjoin);
            <option><% $t->name %></option>
 %        }
          </select>
