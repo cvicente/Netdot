@@ -98,13 +98,15 @@ if( $args{table} ) {
 	   onClick="sendquery(<% '_' . $c  %>, <% $srchf . '.value' %>, <% "\'" . $linksto{$c} . "\'" %>)" >
 	   <br><select name="<% '_' . $c %>"> 
 %             if( defined( $obj ) && $flag && $obj->$c->id ) {
-%		my $fkobj = $linksto{$c}->retrieve( $obj->$c->id );
-%               my $lbl = $gui->getobjlabel( $fkobj, ", " );
-            	<option value="<% $fkobj->id %>" selected><% $lbl %></option>
+%		if (my $fkobj = $linksto{$c}->retrieve( $obj->$c->id )){
+%                 my $lbl = $gui->getobjlabel( $fkobj, ", " );
+            	  <option value="<% $fkobj->id %>" selected><% $lbl %></option>
+%		}
 %             }elsif ( exists $session{$c} ){
-%		my $fkobj = $linksto{$c}->retrieve( $session{$c} );
-%               my $lbl = $gui->getobjlabel( $fkobj, ", " );
-            	<option value="<% $fkobj->id %>" selected><% $lbl %></option>		
+%		if (my $fkobj = $linksto{$c}->retrieve( $session{$c} ) ){
+%                  my $lbl = $gui->getobjlabel( $fkobj, ", " );
+            	   <option value="<% $fkobj->id %>" selected><% $lbl %></option>
+%		}
 %	      }    
               <option value="0">[null]</option>
 	   </select>
