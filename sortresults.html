@@ -56,8 +56,10 @@ if( $arg{table} ) {
           </strong>
 %       } elsif( exists( $linksto{$c} ) ) {
 %         my $t = (Meta->search( name => $linksto{$c} ))[0];
-%         if( ! defined( $t ) || $o->$c->id != 0 ) {
-            No such object <% $linksto{$c} %> <% $o->$c->id %>
+%         if( ! defined( $t ) ) {
+            No such object <% $linksto{$c} %>
+%         } elsif( $o->$c->id == 0 ) {
+	    -
 %         } else {
 %           my $lbl = $t->label;
             <% $o->$c->$lbl %>
@@ -91,6 +93,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.6  2003/05/01 00:50:03  netdot
+# handling case of foreign key == 0
+#
 # Revision 1.5  2003/05/01 00:38:32  netdot
 # added check for when foreign key is 0.  needs testing
 #
