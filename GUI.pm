@@ -170,14 +170,20 @@ sub getsqltype {
 # Build input tag based on SQL type and other options
 ######################################################################
 sub getinputtag {
-    my ($self, $col, $obj) = @_;
+    my ($self, $col, $proto) = @_;
+    my ($class, $value);
     my $tag = "";
-    my $value = $obj->$col;
+    if ( $class = ref $proto ){  # $proto is an object
+	$value = $proto->$col;
+    }else{                       # $proto is a class
+	$class = $proto;
+	$value = "";
+    }
+    
     if ($col eq "info"){
 	return "<textarea name=\"$col\" rows=\"10\" cols=\"38\">$value</textarea>\n";
     }
-    my $table = ref($obj);
-    my $sqltype = $self->getsqltype($table,$col);
+    my $sqltype = $self->getsqltype($class,$col);
     if ($sqltype =~ /bool/){
 	if ($value == 1){
 	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\" checked> yes<br>";
@@ -246,6 +252,9 @@ sub rmsessions {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.12  2003/07/09 23:37:11  netdot
+#  Changed getinputtag so it accepts either an object or a class
+#
 #  Revision 1.11  2003/07/02 23:23:44  netdot
 #  more changes to state code.  should work now.
 #
