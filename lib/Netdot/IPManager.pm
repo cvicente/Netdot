@@ -23,7 +23,7 @@ use strict;
 
 =head1 METHODS
 
-=head2 new - Create a new IPManager object
+=head2 new - Create a new IP object
 
   $ipm = Netdot::IPManager->new();  
 
@@ -47,8 +47,6 @@ sub new {
     }
     # Max number of blocks returned by search functions
     $self->{config}->{'MAXSEARCHBLOCKS'} = 200;
-    # Max number of blocks returned by search functions
-    $self->{config}->{'MAXROOTBLOCKS'} = 10;
 
     wantarray ? ( $self, '' ) : $self; 
 }
@@ -126,13 +124,6 @@ sub getrootblocks {
     my ($self) = @_;
     my @ipb;
     
-    Ipblock->set_sql(roots => qq{
-	SELECT Ipblock.id, Ipblock.prefix, Ipblock.parent
-	    FROM Ipblock
-	    WHERE Ipblock.parent = 0
-	    ORDER BY Ipblock.prefix
-	    LIMIT $self->{config}->{'MAXROOTBLOCKS'}
-	});
     eval {
 	@ipb = Ipblock->search_roots();
     };
@@ -148,17 +139,6 @@ sub getrootblocks {
     
 sub getchildren {
     my ($self, $id) = @_;
-    
-# We want the DB to sort the addresses
-# while in decimal
-    
-    Ipblock->set_sql(children => qq{
-	SELECT Ipblock.id, Ipblock.address, Ipblock.parent
-	    FROM Ipblock
-	    WHERE Ipblock.parent = ?
-	    ORDER BY Ipblock.address
-	});
-    
     my @ipb;
     eval {
 	@ipb = Ipblock->search_children($id);
@@ -280,7 +260,6 @@ sub insertblock {
 	$args{statusname}  = $stobj->name; # use for validation
     }
 
-    my $ui = Netdot::UI->new();
     my %state = ( address       => $ip->addr, 
 		  prefix        => $ip->masklen,
 		  version       => $ip->version,
@@ -291,10 +270,10 @@ sub insertblock {
 		  dns_delegated => $args{dns_delegated},
 		  );
     
-    $state{first_seen} = $ui->timestamp;
-    $state{last_seen}  = $ui->timestamp;
+    $state{first_seen} = $self->timestamp;
+    $state{last_seen}  = $self->timestamp;
   
-    if ( my $r = $ui->insert( table => "Ipblock", state => \%state)){
+    if ( my $r = $self->insert( table => "Ipblock", state => \%state)){
 	# 
 	# Rebuild tree
 	unless ( $self->build_tree($ip->version) ){
@@ -313,7 +292,7 @@ sub insertblock {
 			 message => "insertblock: could not validate: %s/%s" ,
 			 args => [$ip->addr, $ip->masklen]);
 
-	    $ui->remove( table => "Ipblock", id => $r );
+	    $self->remove( table => "Ipblock", id => $r );
 	    return 0;
 	}
 	my $newblock = Ipblock->retrieve($r);
@@ -324,7 +303,6 @@ sub insertblock {
 
 	return $newblock;
     }else{
-	$self->error($ui->error);
 	return 0;
     }
 }
@@ -366,12 +344,11 @@ sub changeblock {
 	$self->error("Address is broadcast: $args{address}");
 	return 0;	
     }
-    my $ui = Netdot::UI->new();
     my %state = ( address => $args{address},
 		  prefix  => $args{prefix} );
 
-    unless ( $ui->update( object => $ipblock, state => \%state)){
-	$self->error($ui->error);
+    unless ( $self->update( object => $ipblock, state => \%state)){
+	$self->error($self->error);
 	return 0;
     }
     return $ipblock;
@@ -440,19 +417,17 @@ sub updateblock {
 	# Error should be set
     }
 
-    my $ui = Netdot::UI->new();
     my %state;
     foreach my $key ( keys %args ){
 	if ( $key eq 'status' || $key eq 'statusname' ){
 	    $state{status} = $statusid;
 	}elsif ( $key eq 'last_seen' ){
-	    $state{last_seen} = $ui->timestamp;
+	    $state{last_seen} = $self->timestamp;
 	}else {
 	    $state{$key} = $args{$key};
 	}
     }
-    unless ( $ui->update( object => $ipblock, state => \%state)){
-	$self->error($ui->error);
+    unless ( $self->update( object => $ipblock, state => \%state)){
 	return 0;
     }
     return $ipblock;
@@ -587,9 +562,8 @@ sub removeblock {
     }
     my $version = $o->version;
 
-    my $ui = Netdot::UI->new();
-    unless ($ui->remove(table => 'Ipblock', id => $id)){
-	$self->error(sprintf("removeblock: %s", $ui->error));
+    unless ($self->remove(table => 'Ipblock', id => $id)){
+	$self->error(sprintf("removeblock: %s", $self->error));
 	return 0;
     }
     # 

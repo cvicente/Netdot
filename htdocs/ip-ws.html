@@ -277,7 +277,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
            <tr>
              <td class="formtablec1">Description: </td>
 	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+%               $ui->text_field(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
 	     </td>
 	  </tr>
 %          if (scalar($o->arecords)){	   
@@ -325,17 +325,17 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 		  <tr>
 	            <td class="formtablec2">
 %	      	    if ($edit eq "ipinfo"){	 
-%                     $ui->selectLookup(object=>$ipservice, column=>"service", lookup=>"Service", edit=>$edit_ip);
+%                     $ui->select_lookup(object=>$ipservice, column=>"service", lookup=>"Service", edit=>$edit_ip);
 %	            }else{
 		      <a href="view.html?table=Service&id=<% $ipservice->service->id %>">
 		      <% $ipservice->service->name %></td></a>
 %		    }
 	            <td class="formtablec2">
-%                     $ui->radioGroupBoolean(object=>$ipservice, column=>"monitored", edit=>$edit_ip);
+%                     $ui->radio_group_boolean(object=>$ipservice, column=>"monitored", edit=>$edit_ip);
 		    </td>
 	            <td class="formtablec2">
 %	      	    if ($edit eq "ipinfo"){	 
-%                     $ui->selectLookup(object=>$ipservice, column=>"contactlist", lookup=>"ContactList", edit=>$edit_ip);
+%                     $ui->select_lookup(object=>$ipservice, column=>"contactlist", lookup=>"ContactList", edit=>$edit_ip);
 %                   }elsif ($o->entity){
 		      <a href="view.html?table=ContactList&id=<% $ipservice->contactlist %>">
 		      <% $ipservice->contactlist->name %></td></a>
@@ -364,13 +364,13 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
            <tr>
              <td class="formtablec1">First seen: </td>
 	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"first_seen", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+%               $ui->text_field(object=>$o, column=>"first_seen", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
 	     </td>
 	  </tr>
            <tr>
              <td class="formtablec1">Last Seen: </td>
 	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"last_seen", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+%               $ui->text_field(object=>$o, column=>"last_seen", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
 	     </td>
 	  </tr>
            <tr>
@@ -475,14 +475,14 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
            <tr>
              <td class="formtablec1">Description: </td>
 	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
+%               $ui->text_field(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 250px'");
 	     </td>
 	  </tr>
           <tr>
              <td class="formtablec1">Used by: </td>
 	     <td class="formtablec2"> 
 %	      	 if ($edit eq "blockinfo"){	 
-%                   $ui->selectLookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>$edit_block);
+%                   $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>$edit_block);
 %                }elsif ($o->entity){
 		   <a href="view.html?table=Entity&id=<% $o->entity->id %>"><% $o->entity->name %></a> 
 %                }
@@ -502,20 +502,20 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	  <tr>
              <td class="formtablec1">Enable DHCP: </td>
              <td class="formtablec2">
-%              $ui->radioGroupBoolean(object=>$o, column=>"dhcp_enabled", edit=>$edit_block);
+%              $ui->radio_group_boolean(object=>$o, column=>"dhcp_enabled", edit=>$edit_block);
 	     </td>
 	  </tr>
 	  <tr>
              <td class="formtablec1">Delegate DNS: </td>
              <td class="formtablec2">
-%              $ui->radioGroupBoolean(object=>$o, column=>"dns_delegated", edit=>$edit_block);
+%              $ui->radio_group_boolean(object=>$o, column=>"dns_delegated", edit=>$edit_block);
 	     </td>
 	  </tr>
 % }elsif ($o->status->name eq "Container"){
 	  <tr>
              <td class="formtablec1">Delegate DNS: </td>
              <td class="formtablec2">
-%              $ui->radioGroupBoolean(object=>$o, column=>"dns_delegated", edit=>$edit_block);
+%              $ui->radio_group_boolean(object=>$o, column=>"dns_delegated", edit=>$edit_block);
 	     </td>
 	  </tr>
 % }

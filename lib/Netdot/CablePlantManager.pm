@@ -86,12 +86,10 @@ sub insertstrands($$$) {
     my $strand_count = scalar(@cables);
     my %tmp_strands;
     $tmp_strands{cable} = $backbone->id;
-    my $ui = Netdot::UI->new();
     for (my $i = 0; $i < $number; ++$i) {
         $tmp_strands{name} = $backbone_name . "." . (++$strand_count);
         $tmp_strands{number} = $strand_count;
-        if (!($ui->insert(table=>"CableStrand", state=>\%tmp_strands))) {
-            $self->error($ui->error());
+        if (!($self->insert(table=>"CableStrand", state=>\%tmp_strands))) {
             return 0;
         }
     }
@@ -118,11 +116,9 @@ sub insertinterfaces($$@) {
         return 0;
     }
 
-    my $ui = Netdot::UI->new();
     foreach my $int (@interfaces) {
         my $int_obj = Interface->retrieve($int);
-        if (!($ui->update(object=>$int_obj, state=>{jack=>$jack->id, id=>$int}))) {
-            $self->error($ui->error());
+        if (!($self->update(object=>$int_obj, state=>{jack=>$jack->id, id=>$int}))) {
             return 0;
         }
     }
@@ -149,11 +145,11 @@ sub insertsplice($$$) {
         return 0;
     }
 
-    my $ui = Netdot::UI->new();
-    $self->error($ui->error()) if (!($ui->insert(table=>"Splice", state=>{strand1=>$strand1->id, 
-                                                                          strand2=>$strand2->id})));
-    $self->error($ui->error()) if (!($ui->insert(table=>"Splice", state=>{strand1=>$strand2->id, 
-                                                                          strand2=>$strand1->id})));
+    $self->insert(table=>"Splice", state=>{strand1=>$strand1->id, 
+					   strand2=>$strand2->id});
+
+    $self->insert(table=>"Splice", state=>{strand1=>$strand2->id, 
+					   strand2=>$strand1->id});
 
     return $self->error() ? 0 : 1;
 }
@@ -172,7 +168,6 @@ Returns: 1 on success, 0 on failure and error is set.
 =cut
 sub deletesplices($@) {
     my ($self, @strands) = @_;
-    my $ui = Netdot::UI->new();
 
     foreach my $strand (@strands) {
         # delete all splices associated with this strand
@@ -186,8 +181,7 @@ sub deletesplices($@) {
                 }
             }
             
-            if (!($ui->remove(table=>"Splice", id=>$splice->id))) {
-                $self->error($ui->error());
+            if (!($self->remove(table=>"Splice", id=>$splice->id))) {
                 return 0;
             }
         }

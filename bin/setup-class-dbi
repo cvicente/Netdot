@@ -123,6 +123,80 @@ Ipblock->add_trigger( select => \&int2ip );
 __PACKAGE__->add_trigger( before_update => \&historize );
 
 
+#################################################
+# These are specific SQL queries tailored to
+# some of Netdot's classes' needs
+# The syntax for calling the looks like
+#   <Tablename>->search_<key>
+# e.g.  
+#   Ipblock->search_children
+################################################
+
+# We want the DB to sort the addresses
+# while in decimal
+Ipblock->set_sql(children => qq{
+    SELECT Ipblock.id, Ipblock.address, Ipblock.parent
+	FROM Ipblock
+	WHERE Ipblock.parent = ?
+	ORDER BY Ipblock.address
+    });
+   
+# Easy way to retrieve a limited list of root blocks
+#
+Ipblock->set_sql(roots => qq{
+    SELECT Ipblock.id, Ipblock.prefix, Ipblock.parent
+	FROM Ipblock
+	WHERE Ipblock.parent = 0
+	ORDER BY Ipblock.prefix
+	LIMIT 10
+});
+
+# Short way to retrieve all the ip addresses from a device
+# 
+# Apparently one can't bind the "ORDER BY" parameter :-(
+#
+Ipblock->set_sql(devipsbyaddr => qq{
+    SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
+	FROM Ipblock, Interface, Device
+	WHERE Interface.id = Ipblock.interface AND
+	Device.id = Interface.device AND
+	Device.id = ?
+	ORDER BY Ipblock.address
+    });
+Ipblock->set_sql(devipsbyint => qq{
+    SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
+	FROM Ipblock, Interface, Device
+	WHERE Interface.id = Ipblock.interface AND
+	Device.id = Interface.device AND
+	Device.id = ?
+	ORDER BY Interface.name
+    });
+
+# Get all the interfaces from a Device
+#
+# By name
+Interface->set_sql(ifsbyname => qq{
+    SELECT *
+	FROM Interface
+	WHERE device = ?
+	ORDER BY name
+    });
+# By speed
+Interface->set_sql(ifsbyspeed => qq{
+    SELECT *
+	FROM Interface
+	WHERE device = ?
+	ORDER BY speed
+    });
+# By Description
+Interface->set_sql(ifsbydescr => qq{
+    SELECT *
+	FROM Interface
+	WHERE device = ?
+	ORDER BY description
+    });
+
+
 ^;
 
 print $head;

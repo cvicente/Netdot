@@ -170,11 +170,9 @@ sub insert_rr {
 		 active      => $argv{active}      || 1,
 		 );
     
-    my $ui = Netdot::UI->new();
-    if (my $newrr = $ui->insert(table => "RR", state => \%state )){
+    if (my $newrr = $self->insert(table => "RR", state => \%state )){
 	return RR->retrieve($newrr);
     }
-    $self->error($ui->error);
     return 0;
 }
 
@@ -219,11 +217,9 @@ sub insert_a{
 		 ttl      => $argv{ttl} || $rr->zone->minimum,
 		 );
     
-    my $ui = Netdot::UI->new();
-    if (my $newrr = $ui->insert(table => "RRADDR", state => \%state )){
+    if (my $newrr = $self->insert(table => "RRADDR", state => \%state )){
 	return RRADDR->retrieve($newrr);
     }
-    $self->error($ui->error);
     return 0;
 }
 
@@ -252,21 +248,19 @@ sub insert_zone {
 	$self->error("Zone $argv{mname} already exists.");
 	return 0;
     }
-    my $ui = Netdot::UI->new();
     #apply some defaults if not supplied
     my %state = (mname     => $argv{mname},
 		 rname     => $argv{rname}   || "hostmaster.$argv{mname}",
-		 serial    => $argv{serial}  || $ui->dateserial . "00",
+		 serial    => $argv{serial}  || $self->dateserial . "00",
 		 refresh   => $argv{refresh} || $self->{config}->{'DEFAULT_DNSREFRESH'},
                  retry     => $argv{retry}   || $self->{config}->{'DEFAULT_DNSRETRY'},
                  expire    => $argv{expire}  || $self->{config}->{'DEFAULT_DNSEXPIRE'},
                  minimum   => $argv{minimum} || $self->{config}->{'DEFAULT_DNSMINIMUM'},
                  active    => $argv{active}  || 1,
 		 );
-    if (my $z = $ui->insert(table => "Zone", state => \%state )){
+    if (my $z = $self->insert(table => "Zone", state => \%state )){
 	return Zone->retrieve($z);
     }
-    $self->error($ui->error);
     return 0;    
 }
 

@@ -22,15 +22,12 @@ Netdot::DeviceManager - Device-related Functions for Netdot
 =cut
 
 use lib "PREFIX/lib";
-use Netdot::UI;
-use Netdot::IPManager;
-use Netdot::DNSManager;
 use Data::Dumper;
 
 use lib "NVPREFIX/lib";
 use NetViewer::RRD::SNMP::NV;
 
-use base qw( Netdot );
+use base qw( Netdot::IPManager Netdot::DNSManager );
 use strict;
 
 #Be sure to return 1
@@ -68,9 +65,6 @@ sub new {
 						retries     => $self->{'_snmpretries'},
 						timeout     => $self->{'_snmptimeout'},
 						);
-    $self->{ui}  = Netdot::UI->new();
-    $self->{ipm} = Netdot::IPManager->new();
-    $self->{dns} = Netdot::DNSManager->new();
     $self->{badhubs} = {};
     foreach my $oid (split /\s+/, $self->{config}->{'BADHUBS'}){
 	$self->{badhubs}->{$oid} = '';
@@ -107,18 +101,18 @@ sub find_dev {
     $self->error(undef);
     $self->_clear_output();
 
-    if ($device = $self->{dns}->getdevbyname($host)){
+    if ($device = $self->getdevbyname($host)){
 	my $msg = sprintf("Device %s exists in DB.  Will try to update.", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg );
 	$self->output($msg);
 	$comstr = $device->community
-    }elsif($self->{dns}->getrrbyname($host)){
+    }elsif($self->getrrbyname($host)){
 	my $msg = sprintf("Name %s exists but Device not in DB.  Will try to create.", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg );
 	$self->output($msg);
-    }elsif(my $ip = $self->{ipm}->searchblock($host)){
+    }elsif(my $ip = $self->searchblock($host)){
 	if ( $ip->interface && ($device = $ip->interface->device) ){
 	    my $msg = sprintf("Device with address %s exists in DB. Will try to update.", $ip->address);
 	    $self->debug( loglevel => 'LOG_NOTICE',
@@ -227,7 +221,7 @@ sub update {
     # Make sure name is in DNS
 
     my $rr;
-    if ( $rr = $self->{dns}->getrrbyname($host) ) {
+    if ( $rr = $self->getrrbyname($host) ) {
 	my $msg = sprintf("Name %s exists in DB. Pointing to it", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg);
@@ -246,7 +240,7 @@ sub update {
 	     $host =~ /:/){
 	    # It is, so look it up
 	    my $name;
-	    if ( $name = $self->{dns}->resolve_ip($host) ){
+	    if ( $name = $self->resolve_ip($host) ){
 		my $msg = sprintf("Name associated with %s: %s", $host, $name );
 		$self->debug( loglevel => 'LOG_DEBUG',
 			      message  => $msg
@@ -254,15 +248,15 @@ sub update {
 		# Use this name instead
 		$host = $name;
 	    }else{
-		my $msg = sprintf("%s", $self->{dns}->error);
+		my $msg = sprintf("%s", $self->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg
 			      );	    
 		$self->error($msg);	
 	    }
 	}
-	if ($rr = $self->{dns}->insert_rr(name        => $host, 
-					  contactlist => $devtmp{contactlist})){
+	if ($rr = $self->insert_rr(name        => $host, 
+				   contactlist => $devtmp{contactlist})){
 
 	    my $msg = sprintf("Inserted DNS name %s into DB", $host);
 	    $self->debug( loglevel => 'LOG_NOTICE',
@@ -271,7 +265,7 @@ sub update {
 	    $self->output($msg);
 	    $devtmp{name} = $rr;
 	}else{
-	    my $msg = sprintf("Could not insert DNS entry %s: %s", $host, $self->{dns}->error);
+	    my $msg = sprintf("Could not insert DNS entry %s: %s", $host, $self->error);
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => $msg
 			  );	    
@@ -281,7 +275,7 @@ sub update {
     }
     # We'll use these later when adding A records for each address
     my %hostnameips;
-    if (my @addrs = $self->{dns}->resolve_name($rr->name)){
+    if (my @addrs = $self->resolve_name($rr->name)){
 	map { $hostnameips{$_} = "" } @addrs;
 	
 	my $msg = sprintf("Addresses associated with hostname: %s", (join ", ", keys %hostnameips) );
@@ -289,7 +283,7 @@ sub update {
 		      message  => $msg
 		      );	    
     }else{
-	my $msg = sprintf("%s", $self->{dns}->error);
+	my $msg = sprintf("%s", $self->error);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg
 		      );	    
@@ -329,7 +323,7 @@ sub update {
 		$t = 0; 
 	    }
 	    my $entname = $dev{manufacturer} || $oid;
-	    if ( ($ent = $self->{ui}->insert(table => 'Entity', 
+	    if ( ($ent = $self->insert(table => 'Entity', 
 					     state => { name => $entname,
 							oid  => $oid,
 							type => $t }) ) ){
@@ -339,7 +333,7 @@ sub update {
 	    }else{
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => "Could not create new Entity: %s: %s",
-			      args     => [$entname, $self->{ui}->error],
+			      args     => [$entname, $self->error],
 			      );
 		$ent = 0;
 	    }
@@ -375,7 +369,7 @@ sub update {
 			manufacturer => $ent,
 			);
 	my $newprodid;
-	if ( ($newprodid = $self->{ui}->insert(table => 'Product', state => \%prodtmp)) ){
+	if ( ($newprodid = $self->insert(table => 'Product', state => \%prodtmp)) ){
 	    my $msg = sprintf("Created product: %s.  Guessing type is %s.", $prodtmp{name}, $type->name);
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg );		
@@ -384,7 +378,7 @@ sub update {
 	}else{
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => "Could not create new Product: %s: %s",
-			  args     => [$prodtmp{name}, $self->{ui}->error],
+			  args     => [$prodtmp{name}, $self->error],
 			  );		
 	    $devtmp{productname} = 0;
 	}
@@ -414,9 +408,9 @@ sub update {
 		# Just point to it from this Device
 		#
 		$devtmp{physaddr} = $phy->id;
-		$self->{ui}->update( object => $phy, 
-				     state  => {last_seen => $self->{ui}->timestamp },
-				     );
+		$self->update( object => $phy, 
+			       state  => {last_seen => $self->timestamp },
+			       );
 	    }
 	    $self->debug( loglevel => 'LOG_INFO',
 			  message  => "Pointing to existing %s as base bridge address",
@@ -427,14 +421,14 @@ sub update {
 	    #
 	}else{
 	    my %phaddrtmp = ( address => $dev{physaddr},
-			      first_seen => $self->{ui}->timestamp,
-			      last_seen => $self->{ui}->timestamp,
+			      first_seen => $self->timestamp,
+			      last_seen => $self->timestamp,
 			      );
 	    my $newphaddr;
-	    if ( ! ($newphaddr = $self->{ui}->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
+	    if ( ! ($newphaddr = $self->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => "Could not create new PhysAddr: %s: %s",
-			      args => [$phaddrtmp{address}, $self->{ui}->error],
+			      args => [$phaddrtmp{address}, $self->error],
 			      );
 		$devtmp{physaddr} = 0;
 	    }else{
@@ -476,9 +470,9 @@ sub update {
     # Update/Add Device
     
     if ( $device ){
-	$devtmp{lastupdated} = $self->{ui}->timestamp;
-	unless( $self->{ui}->update( object => $device, state => \%devtmp ) ) {
-	    $self->error( sprintf("Error updating device %s: %s", $host, $self->{ui}->error) ); 
+	$devtmp{lastupdated} = $self->timestamp;
+	unless( $self->update( object => $device, state => \%devtmp ) ) {
+	    $self->error( sprintf("Error updating device %s: %s", $host, $self->error) ); 
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => $self->error,
 			  );
@@ -492,10 +486,10 @@ sub update {
 	$devtmp{canautoupdate}    = 1;
 	$devtmp{customer_managed} = 0;
 	$devtmp{natted}           = 0;
-	$devtmp{dateinstalled}    = $self->{ui}->timestamp;
+	$devtmp{dateinstalled}    = $self->timestamp;
 	my $newdevid;
-	unless( $newdevid = $self->{ui}->insert( table => 'Device', state => \%devtmp ) ) {
-	    $self->error( sprintf("Error creating device %s: %s", $host, $self->{ui}->error) ); 
+	unless( $newdevid = $self->insert( table => 'Device', state => \%devtmp ) ) {
+	    $self->error( sprintf("Error creating device %s: %s", $host, $self->error) ); 
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => $self->error,
 			  );
@@ -542,8 +536,8 @@ sub update {
 		# Just point to it from this Interface
 		#
 		$iftmp{physaddr} = $phy->id;
-		$self->{ui}->update( object => $phy, 
-			     state => {last_seen => $self->{ui}->timestamp} );
+		$self->update( object => $phy, 
+			     state => {last_seen => $self->timestamp} );
 		$self->debug( loglevel => 'LOG_INFO',
 			      message  => "Interface %s,%s has existing PhysAddr %s",
 			      args => [$iftmp{number}, $iftmp{name}, $addr],
@@ -553,17 +547,17 @@ sub update {
 		#
 	    }else{
 		my %phaddrtmp = ( address    => $addr,
-				  first_seen => $self->{ui}->timestamp,
-				  last_seen  => $self->{ui}->timestamp,
+				  first_seen => $self->timestamp,
+				  last_seen  => $self->timestamp,
 				  );
 		my $newphaddr;
-		if ( ! ($newphaddr = $self->{ui}->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
+		if ( ! ($newphaddr = $self->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => "Could not create new PhysAddr %s for Interface %s,%s: %s",
 				  args     => [$phaddrtmp{address}, 
 					       $iftmp{number}, 
 					       $iftmp{name}, 
-					       $self->{ui}->error],
+					       $self->error],
 				  );
 		    $iftmp{physaddr} = 0;
 		}else{
@@ -581,9 +575,9 @@ sub update {
 				      number => $iftmp{number}))[0] ) {
 	    delete( $ifs{ $if->id } );
 	    
-	    unless( $self->{ui}->update( object => $if, state => \%iftmp ) ) {
+	    unless( $self->update( object => $if, state => \%iftmp ) ) {
 		my $msg = sprintf("Could not update Interface %s,%s: .", 
-				  $iftmp{number}, $iftmp{name}, $self->{ui}->error);
+				  $iftmp{number}, $iftmp{name}, $self->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
 			      );
@@ -599,10 +593,10 @@ sub update {
 			  message  => $msg,
 			  );
 	    $self->output($msg);
-	    if ( ! (my $ifid = $self->{ui}->insert( table => 'Interface', 
+	    if ( ! (my $ifid = $self->insert( table => 'Interface', 
 					    state => \%iftmp )) ) {
 		$msg = sprintf("Error inserting Interface %s,%s: %s", 
-			       $iftmp{number}, $iftmp{name}, $self->{ui}->error);
+			       $iftmp{number}, $iftmp{name}, $self->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
 			      );
@@ -654,18 +648,18 @@ sub update {
 		if ( $dev{router} && $argv{addsubnets}){
 		    my $newmask;
 		    if ( $newmask = $dev{interface}{$newif}{ips}{$newip} ){
-			my $subnetaddr = $self->{ipm}->getsubnetaddr($newip, $newmask);
+			my $subnetaddr = $self->getsubnetaddr($newip, $newmask);
 			if ( $subnetaddr ne $newip ){
-			    if ( ! ($self->{ipm}->searchblock($subnetaddr, $newmask)) ){
+			    if ( ! ($self->searchblock($subnetaddr, $newmask)) ){
 				my $msg = sprintf("Subnet %s/%s doesn't exist.  Inserting", $subnetaddr, $newmask);
 				$self->debug( loglevel => 'LOG_NOTICE',
 					      message  => $msg );
 				$self->output($msg);
-				unless( $self->{ipm}->insertblock(address     => $subnetaddr, 
-								  prefix      => $newmask, 
-								  statusname  => "Subnet",
-								  ) ){
-				    my $err = $self->{ipm}->error();
+				unless( $self->insertblock(address     => $subnetaddr, 
+							   prefix      => $newmask, 
+							   statusname  => "Subnet",
+							   ) ){
+				    my $err = $self->error();
 				    my $msg = sprintf("Could not insert Subnet %s/%s: %s", 
 						      $subnetaddr, $newmask, $err);
 				    $self->debug(loglevel => 'LOG_ERR',
@@ -700,28 +694,28 @@ sub update {
 				  message  => $msg );
 		    delete( $dbips{$newip} );
 		    
-		    unless( $ipobj = $self->{ipm}->updateblock(id           => $ipid, 
-							       statusname   => "Static",
-							       interface    => $if->id )){
-			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
+		    unless( $ipobj = $self->updateblock(id           => $ipid, 
+							statusname   => "Static",
+							interface    => $if->id )){
+			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
 			$self->output($msg);
 			next;
 		    }
 
-		}elsif ( $ipobj = $self->{ipm}->searchblock($newip) ){
+		}elsif ( $ipobj = $self->searchblock($newip) ){
 		    # IP exists but not linked to this interface
 		    # update
 		    my $msg = sprintf("IP %s/%s exists but not linked to %s. Updating", 
 				      $newip, $prefix, $if->name);
 		    $self->debug( loglevel => 'LOG_NOTICE',
 				  message  => $msg );
-		    unless( $ipobj = $self->{ipm}->updateblock(id         => $ipobj->id, 
-							       statusname => "Static",
-							       monitored  => 1,
-							       interface  => $if->id )){
-			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
+		    unless( $ipobj = $self->updateblock(id         => $ipobj->id, 
+							statusname => "Static",
+							monitored  => 1,
+							interface  => $if->id )){
+			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
 			$self->output($msg);
@@ -734,12 +728,12 @@ sub update {
 		    $self->output($msg);
 		    #
 		    # Create a new Ip
-		    unless( $ipobj = $self->{ipm}->insertblock(address    => $newip, 
-							       prefix     => $prefix, 
-							       statusname => "Static",
-							       monitored  => 1,
-							       interface  => $if->id)){
-			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->{ipm}->error);
+		    unless( $ipobj = $self->insertblock(address    => $newip, 
+							prefix     => $prefix, 
+							statusname => "Static",
+							monitored  => 1,
+							interface  => $if->id)){
+			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
 			$self->output($msg);
@@ -769,11 +763,11 @@ sub update {
 			# We should already have an RR created
 			# Create the A record to link that RR with this ipobj
 			if ( $device->name ){
-			    unless ($self->{dns}->insert_a(rr          => $device->name, 
-							   ip          => $ipobj,
-							   contactlist => $device->contactlist)){
+			    unless ($self->insert_a(rr          => $device->name, 
+						    ip          => $ipobj,
+						    contactlist => $device->contactlist)){
 				my $msg = sprintf("Could not insert DNS A record for %s: %s", 
-						  $ipobj->address, $self->{dns}->error);
+						  $ipobj->address, $self->error);
 				$self->debug(loglevel => 'LOG_ERR',
 					     message  => $msg );
 				$self->output($msg);
@@ -801,12 +795,12 @@ sub update {
 			my $suffix = $device->name->name;
 			$suffix =~ s/^.*\.(.*)/$1/;
 			$name .= "." . $suffix ;
-			unless ($self->{dns}->insert_a(name        => $name,
+			unless ($self->insert_a(name        => $name,
 						       ip          => $ipobj,
 						       contactlist => $device->contactlist
 						       )){
 			    my $msg = sprintf("Could not insert DNS A record for %s: %s", 
-					      $ipobj->address, $self->{dns}->error);
+					      $ipobj->address, $self->error);
 			    $self->debug(loglevel => 'LOG_ERR',
 					 message  => $msg );
 			    $self->output($msg);
@@ -862,9 +856,9 @@ sub update {
 				$role = "child"; 
 				$rel = "parent"; 
 			    }
-			    unless ( $self->{ui}->update(object => $ifdep, state => {$role => $newif} )){
+			    unless ( $self->update(object => $ifdep, state => {$role => $newif} )){
 				my $msg = sprintf("Could not update Dependency for %s: %s", 
-						  $nonif, $self->{ui}->error);
+						  $nonif, $self->error);
 				$self->debug( loglevel => 'LOG_ERR',
 					      message  => $msg,
 					      );
@@ -897,9 +891,9 @@ sub update {
 			  message  => $msg,
 			  );
 	    $self->output($msg);
-	    unless( $self->{ui}->remove( table => "Interface", id => $nonif ) ) {
+	    unless( $self->remove( table => "Interface", id => $nonif ) ) {
 		my $msg = sprintf("Could not remove Interface %s,%s: %s", 
-				  $ifobj->number, $ifobj->name, $self->{ui}->error);
+				  $ifobj->number, $ifobj->name, $self->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
 			      );
@@ -918,9 +912,9 @@ sub update {
 		#create
 		my %votmp = ( vid         => $vid,
 			      description => $vname );
-		if ( ! (my $vobjid = $self->{ui}->insert (table => "Vlan", state => \%votmp)) ) {
+		if ( ! (my $vobjid = $self->insert (table => "Vlan", state => \%votmp)) ) {
 		    my $msg = sprintf("Could not insert Vlan %s: %s", 
-				      $vo->description, $self->{ui}->error);
+				      $vo->description, $self->error);
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => $msg,
 				  );
@@ -940,9 +934,9 @@ sub update {
 		my $if = Interface->retrieve($ifid);
 		if( ! exists $dbvlans{$ifid} ){
 		    my %jtmp = (interface => $if, vlan => $vo);
-		    unless ( my $j = $self->{ui}->insert(table => "InterfaceVlan", state => \%jtmp) ){
+		    unless ( my $j = $self->insert(table => "InterfaceVlan", state => \%jtmp) ){
 			my $msg = sprintf("Could not insert InterfaceVlan join %s:%s: %s", 
-					  $if->name, $vo->vid, $self->{ui}->error);
+					  $if->name, $vo->vid, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg,
 				      );
@@ -978,9 +972,9 @@ sub update {
 			  message  => $msg,
 			  );
 	    $self->output($msg);		
-	    unless( $self->{ipm}->removeblock( id => $dbips{$nonip} ) ) {
+	    unless( $self->removeblock( id => $dbips{$nonip} ) ) {
 		my $msg = sprintf("Could not remove IP %s: %s", 
-				  $nonip, $self->{ipm}->error);
+				  $nonip, $self->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
 			      );
@@ -1001,9 +995,9 @@ sub update {
 		      message  => $msg,
 		      );
 	$self->output($msg);		
-	unless( $self->{ui}->remove( table => 'InterfaceVlan', id => $nonvlan ) ) {
+	unless( $self->remove( table => 'InterfaceVlan', id => $nonvlan ) ) {
 	    my $msg = sprintf("Could not remove InterfaceVlan %s: %s", 
-			      $j->id, $self->{ui}->error);
+			      $j->id, $self->error);
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => $msg,
 			  );
@@ -1059,17 +1053,17 @@ sub update {
 		    my $entname = $dev{bgppeer}{$peer}{orgname} || $dev{bgppeer}{$peer}{asname} ;
 		    $entname .= "($dev{bgppeer}{$peer}{asnumber})";
 
-		    if ( my $entid = $self->{ui}->insert(table => 'Entity', 
-							  state => { name     => $entname,
-								     asname   => $dev{bgppeer}{$peer}{asname},
-								     asnumber => $dev{bgppeer}{$peer}{asnumber},
-								     type => $t }) ){
+		    if ( my $entid = $self->insert(table => 'Entity', 
+						   state => { name     => $entname,
+							      asname   => $dev{bgppeer}{$peer}{asname},
+							      asnumber => $dev{bgppeer}{$peer}{asnumber},
+							      type => $t }) ){
 			my $msg = sprintf("Created Peer Entity: %s. ", $entname);
 			$self->debug( loglevel => 'LOG_NOTICE',
 				      message  => $msg );		
 			$ent = Entity->retrieve($entid);
 		    }else{
-			my $msg = sprintf("Could not create new Entity: %s: %s",$entname, $self->{ui}->error);
+			my $msg = sprintf("Could not create new Entity: %s: %s",$entname, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg,
 				      );
@@ -1086,15 +1080,15 @@ sub update {
 				bgppeeraddr => $peer,
 				monitored     => 1,
 				);
-		    if ( ($p = $self->{ui}->insert(table => 'BGPPeering', 
-						    state => \%ptmp ) ) ){
+		    if ( ($p = $self->insert(table => 'BGPPeering', 
+					     state => \%ptmp ) ) ){
 			my $msg = sprintf("Created Peering with: %s. ", $ent->name);
 			$self->debug( loglevel => 'LOG_NOTICE',
 				      message  => $msg );
 			$self->output($msg);
 		    }else{
 			my $msg = sprintf("Could not create Peering with : %s: %s",
-					  $ent->name, $self->{ui}->error );
+					  $ent->name, $self->error );
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg,
 				      );
@@ -1117,9 +1111,9 @@ sub update {
 			  message  => $msg,
 			  );
 	    $self->output($msg);		
-	    unless( $self->{ui}->remove( table => 'BGPPeering', id => $nonpeer ) ) {
+	    unless( $self->remove( table => 'BGPPeering', id => $nonpeer ) ) {
 		my $msg = sprintf("Could not remove BGPPeering %s: %s", 
-				  $p->id, $self->{ui}->error);
+				  $p->id, $self->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
 			      );
@@ -1487,17 +1481,18 @@ sub get_dev_info {
 
 sub getdevips {
     my ($self, $id, $ipsort) = @_;
-    
-    Ipblock->set_sql(allips => qq{
-	SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
-	    FROM Ipblock, Interface, Device
-	    WHERE Interface.id = Ipblock.interface AND
-	    Device.id = Interface.device AND
-	    Device.id = ?
-	    ORDER BY $ipsort
-	});
-    if ( my @ips = Ipblock->search_allips( $id ) ){
-	return @ips;
+    my @ips;
+    if ( $ipsort eq "address" ){
+	if ( @ips = Ipblock->search_devipsbyaddr( $id ) ){
+	    return @ips;
+	}
+    }elsif ( $ipsort eq "interface" ){
+	if ( @ips = Ipblock->search_devipsbyint( $id ) ){
+	    return @ips;
+	}
+    }else{
+	$self->error("invalid sort criteria: $ipsort");
+	return;
     }
     return;
 }
@@ -1537,8 +1532,8 @@ sub add_interfaces {
     my $i;
     for ($i = 0; $i < $num; $i++){
 	$tmp{number}++;
-	if (!($self->{ui}->insert(table => "Interface", state => \%tmp)) ){
-	    $self->error(sprintf("add_interfaces: %s", $self->{ui}->error));
+	if (!($self->insert(table => "Interface", state => \%tmp)) ){
+	    $self->error(sprintf("add_interfaces: %s", $self->error));
 	    return 0;
 	}
     }
@@ -1588,14 +1583,8 @@ sub interfaces_by_name {
     my ( $self, $o ) = @_;
     my @ifs;
     my $id = $o->id;
-    Interface->set_sql(ifs => qq{
-	SELECT *
-	    FROM Interface
-	    WHERE device = $id
-	    ORDER BY name
-	});
     eval {
-	@ifs = Interface->search_ifs();
+	@ifs = Interface->search_ifsbyname($id);
     };
     if ($@){
 	$self->error("$@");
@@ -1616,14 +1605,8 @@ sub interfaces_by_speed {
     my ( $self, $o ) = @_;
     my @ifs;
     my $id = $o->id;
-    Interface->set_sql(ifs => qq{
-	SELECT *
-	    FROM Interface
-	    WHERE device = $id
-	    ORDER BY speed
-	});
     eval {
-	@ifs = Interface->search_ifs();
+	@ifs = Interface->search_ifsbyspeed($id);
     };
     if ($@){
 	$self->error("$@");
@@ -1668,14 +1651,8 @@ sub interfaces_by_descr {
     my ( $self, $o ) = @_;
     my @ifs;
     my $id = $o->id;
-    Interface->set_sql(ifs => qq{
-	SELECT *
-	    FROM Interface
-	    WHERE device = $id
-	    ORDER BY description
-	});
     eval {
-	@ifs = Interface->search_ifs();
+	@ifs = Interface->search_ifsbydescr($id);
     };
     if ($@){
 	$self->error("$@");

@@ -17,7 +17,7 @@ $editmgmt  => undef
 $editips   => undef
 $editints  => undef
 $editbgp   => undef
-$ipsort    => "Ipblock.address"
+$ipsort    => "address"
 $ifsort    => "number"
 $peersort  => "ip"
 $s2name    => "Management"
@@ -318,25 +318,25 @@ function setNull(field){
            <tr>
              <td class="formtablec1">S/N: </td>
 	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"serialnumber", edit=>$editgen);
+%               $ui->text_field(object=>$o, column=>"serialnumber", edit=>$editgen);
 	     </td> 
 	   </tr>
            <tr>
              <td class="formtablec1">MAC: </td>
 	     <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", linkPage=>"view.html");
+%               $ui->select_lookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", linkPage=>"view.html");
 	     </td> 
 	   </tr>
            <tr>
              <td class="formtablec1">First Discovered:</td>
 	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"dateinstalled", edit=>$editgen);
+%               $ui->text_field(object=>$o, column=>"dateinstalled", edit=>$editgen);
 	     </td> 
 	   </tr>
            <tr>
              <td class="formtablec1">Last updated:</td>
 	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"lastupdated", edit=>$editgen);
+%               $ui->text_field(object=>$o, column=>"lastupdated", edit=>$editgen);
 	     </td> 
 	   </tr>
 	 </table>
@@ -346,19 +346,19 @@ function setNull(field){
            <tr>
              <td class="formtablec1">Product: </td>
 	     <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"productname", lookup=>"Product", edit=>"$editgen", linkPage=>"view.html");
+%               $ui->select_lookup(object=>$o, column=>"productname", lookup=>"Product", edit=>"$editgen", linkPage=>"view.html");
 	     </td>
 	   </tr>
            <tr>
              <td class="formtablec1">Inventory #: </td>
 	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"inventorynumber", edit=>$editgen);
+%               $ui->text_field(object=>$o, column=>"inventorynumber", edit=>$editgen);
 	     </td> 
 	   </tr>
            <tr>
              <td class="formtablec1">System Descr: </td>
 	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"sysdescription", edit=>$editgen);
+%               $ui->text_field(object=>$o, column=>"sysdescription", edit=>$editgen);
              </td> 
 	   </tr>
 	 </table>
@@ -369,7 +369,7 @@ function setNull(field){
     </tr>
     <tr>
       <td colspan="2" align="left">
-%       $ui->textArea(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=60");
+%       $ui->text_area(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=60");
      </td>
     </tr>
   </table>
@@ -404,11 +404,11 @@ function setNull(field){
          <tr>
 	   <td class="formtablec1">Entity: </td>
 	   <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html");
+%               $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html");
 	   </td>
 	   <td class="formtablec1">Site: </td>
 	   <td class="formtablec2">
-%               $ui->selectLookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="closetList.doIt(); roomList.doIt();"');
+%               $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="closetList.doIt(); roomList.doIt();"');
 	   </td>
 	 </tr>
          <tr>
@@ -433,12 +433,12 @@ function setNull(field){
 	   <td class="formtablec1"> <i>- or -</i> Closet: </td>
 	   <td class="formtablec2">
 %               my $closet_js = sprintf("onChange=\"setNull(document.netdotform.Device__%d__room);\"", $id);
-%               $ui->selectLookup(object=>$o, column=>"closet", lookup=>"Closet", edit=>$editloc, where=>{site=>($o ? $o->site : "")}, makeLink=>1, linkPage=>"closet.html", htmlExtra=>$closet_js);
+%               $ui->select_lookup(object=>$o, column=>"closet", lookup=>"Closet", edit=>$editloc, where=>{site=>($o ? $o->site : "")}, makeLink=>1, linkPage=>"closet.html", htmlExtra=>$closet_js);
 	   </td>
          <tr>
 	   <td class="formtablec1">Rack: </td>
 	   <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"rack", edit=>$editloc);
+%               $ui->text_field(object=>$o, column=>"rack", edit=>$editloc);
 	   </td>
 	   <td>&nbsp; </td>
 	   <td>&nbsp; </td>
@@ -477,31 +477,31 @@ function setNull(field){
           <tr>
 	    <td class="formtablec1">Contact Group: </td>
 	    <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"contactlist", lookup=>"ContactList", edit=>"$editmgmt", linkPage=>"view.html");
+%               $ui->select_lookup(object=>$o, column=>"contactlist", lookup=>"ContactList", edit=>"$editmgmt", linkPage=>"view.html");
 	    </td>
 	  </tr>
           <tr>
 	    <td class="formtablec1">User: </td>
 	    <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"person", lookup=>"Person", edit=>"$editmgmt", linkPage=>"view.html");
+%               $ui->select_lookup(object=>$o, column=>"person", lookup=>"Person", edit=>"$editmgmt", linkPage=>"view.html");
 	    </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Out-of-band hostname: </td>
 	    <td class="formtablec2">
-%               $ui->textField(object=>$o, column=>"oobname", edit=>$editmgmt);
+%               $ui->text_field(object=>$o, column=>"oobname", edit=>$editmgmt);
 	    </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Out-of-band tel: </td>
 	   <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"oobnumber", edit=>$editmgmt);
+%               $ui->text_field(object=>$o, column=>"oobnumber", edit=>$editmgmt);
 	   </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">SNMP Community: </td>
 	   <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"community", edit=>$editmgmt);
+%               $ui->text_field(object=>$o, column=>"community", edit=>$editmgmt);
 	   </td>
 	</tr>
        </table>
@@ -511,31 +511,31 @@ function setNull(field){
          <tr>
 	   <td class="formtablec1">Monitored?: </td>
 	   <td class="formtablec2"> 
-%                $ui->radioGroupBoolean(object=>$o, column=>"monitored", edit=>$editmgmt);
+%                $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>$editmgmt);
 	   </td>
 	 </tr>
          <tr>
 	   <td class="formtablec1">Customer-managed?: </td>
 	   <td class="formtablec2"> 
-%                $ui->radioGroupBoolean(object=>$o, column=>"customer_managed", edit=>$editmgmt);
+%                $ui->radio_group_boolean(object=>$o, column=>"customer_managed", edit=>$editmgmt);
 	   </td>
 	 </tr>
          <tr>
 	   <td class="formtablec1">SNMP-managed?: </td>
 	   <td class="formtablec2"> 
-%                $ui->radioGroupBoolean(object=>$o, column=>"snmp_managed", edit=>$editmgmt);
+%                $ui->radio_group_boolean(object=>$o, column=>"snmp_managed", edit=>$editmgmt);
 	   </td>
 	 </tr>
          <tr>
 	   <td class="formtablec1">Auto-update?: </td>
 	   <td class="formtablec2"> 
-%                $ui->radioGroupBoolean(object=>$o, column=>"canautoupdate", edit=>$editmgmt);
+%                $ui->radio_group_boolean(object=>$o, column=>"canautoupdate", edit=>$editmgmt);
 	   </td>
 	 </tr>
          <tr>
 	   <td class="formtablec1">NATted?: </td>
 	   <td class="formtablec2"> 
-%                $ui->radioGroupBoolean(object=>$o, column=>"natted", edit=>$editmgmt);
+%                $ui->radio_group_boolean(object=>$o, column=>"natted", edit=>$editmgmt);
 	   </td>
 	 </tr>
        </table>
@@ -596,9 +596,9 @@ function setNull(field){
        <table border="0" width="100%">
 %    if (scalar @ips){
          <tr>
-	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Ipblock.address">Address</a></th>
-	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Ipblock.parent">Subnet</a></th>
-	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Interface.name">Interface</a></th>
+	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=address">Address</a></th>
+	   <th align="left">Subnet</th>
+	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=interface">Interface</a></th>
 	   <th align="left">DNS Name</th>
 	   <th align="left">Monitored?</th>
 	   <th align="left">Services</th>
@@ -634,19 +634,19 @@ function setNull(field){
 %	             if ($editips){	 
   	                <input type="checkbox" name="<% "RR__" . $ar->rr->id . "__delete" %>" >[del]
 %	             }
-%                    $ui->textField(object=> $ar->rr, column=>"name", edit=>$editips, linkPage=>"view.html");
+%                    $ui->text_field(object=> $ar->rr, column=>"name", edit=>$editips, linkPage=>"view.html");
 %		  }
 %              }else{
 	          
 %	       }
            </td>
            <td align="left">
-%              $ui->radioGroupBoolean(object=>$ip, column=>"monitored", edit=>$editips);
+%              $ui->radio_group_boolean(object=>$ip, column=>"monitored", edit=>$editips);
            </td>
            <td align="left">
 %	      if ( scalar ($ip->services) ){
 %	       foreach my $ipsrv ($ip->services){
-%#                $ui->selectLookup(object=>$ipsrv, column=>"service", lookup=>"Service", edit=>"$editips", linkPage=>"view.html");       
+%#                $ui->select_lookup(object=>$ipsrv, column=>"service", lookup=>"Service", edit=>"$editips", linkPage=>"view.html");       
                   <a href="view.html?table=IpService&id=<% $ipsrv->id %>"><% $ipsrv->service->name %></a>
 %                if ( $editips ){
 		   <input type="checkbox" name="<% "IpService__" . $ipsrv->id . "__delete" %>" > [del]
@@ -771,10 +771,10 @@ function setNull(field){
 		</td>	   
 %	       }
 	   <td align="left"> 
-%               $ui->textField(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 2em;\"", linkPage=>"view.html");
+%               $ui->text_field(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 2em;\"", linkPage=>"view.html");
 	   </td>
 	   <td align="left"> 
-%               $ui->textField(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"");
+%               $ui->text_field(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"");
 	   </td>
 %	       if ( ! $editints ){	 
                  <td align="left"><% $dm->convert_ifspeed($if->speed) %></td>
@@ -791,11 +791,11 @@ function setNull(field){
 	        </td>
 %              }
 	   <td align="left">
-%           $ui->selectLookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
+%           $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
 %                             edit=>$editints, linkPage=>"cable_horizontal.html");
 	   </td>
 	   <td align="left"> 
-%               $ui->textField(object=>$if, column=>"description", edit=>$editints);
+%               $ui->text_field(object=>$if, column=>"description", edit=>$editints);
 	   </td>
 
 <!-- UpLink Connections Field -->
@@ -914,13 +914,13 @@ if ( $peersort eq "ip" ){
 	   <td align="left"><% $peer->bgppeeraddr %></td>
 	   <td align="left"><% $peer->bgppeerid %></td>
 	   <td align="left">
-%#           $ui->textField(object=>$peer->entity, column=>"name", edit=>$editbgp, linkPage=>"view.html");
+%#           $ui->text_field(object=>$peer->entity, column=>"name", edit=>$editbgp, linkPage=>"view.html");
 	     <a href="view.html?table=Entity&id=<% $peer->entity->id %>"><% $peer->entity->name %></a>
 	   </td>
 	   <td align="left"><% $peer->entity->asname %></td>
 	   <td align="left"><% $peer->entity->asnumber %></td>
 	   <td align="left">
-%	      $ui->radioGroupBoolean(object=>$peer, column=>"monitored", edit=>$editbgp);
+%	      $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp);
 	   </td>
           </tr>
 %        }	   

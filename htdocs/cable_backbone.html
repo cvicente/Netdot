@@ -222,7 +222,7 @@ function suggestName()
             <tr align="left" valign="top">
                 <td>Name: </td>
                 <td class="formtablec2">
-%               $ui->textField(object=>$o, table=>"BackboneCable", column=>"name", edit=>$editBackbone); 
+%               $ui->text_field(object=>$o, table=>"BackboneCable", column=>"name", edit=>$editBackbone); 
 %               if ($editBackbone) {                
                     &nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name" value="Suggest Name" onClick="suggestName();">
 %               }
@@ -232,21 +232,21 @@ function suggestName()
             <tr align="left" valign="top">
                 <td>Cable Type: </td>
                 <td class="formtablec2">
-%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"type", lookup=>"CableType", edit=>$editBackbone);
+%               $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"type", lookup=>"CableType", edit=>$editBackbone);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Owner: </td>
                 <td class="formtablec2">
-%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"owner", lookup=>"Entity", edit=>$editBackbone);
+%               $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"owner", lookup=>"Entity", edit=>$editBackbone);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
                 <td class="formtablec2">
-%               $ui->textField(object=>$o, table=>"BackboneCable", column=>"installdate", default=>$ui->date(),
+%               $ui->text_field(object=>$o, table=>"BackboneCable", column=>"installdate", default=>$ui->date(),
 %                              edit=>$editBackbone);
                 </td>
             </tr>
@@ -259,7 +259,7 @@ function suggestName()
                 <td>Start Closet: </td>
                 <td class="formtablec2">
 %               if ($editBackbone) {
-%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"start_closet", lookup=>"Closet", 
+%               $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"start_closet", lookup=>"Closet", 
 %                                 edit=>$editBackbone);
 %               } else {
                 <a href="closet.html?id=<% $o->start_closet %>"><% $o->start_closet->name %></a> 
@@ -271,7 +271,7 @@ function suggestName()
                 <td>End Closet: </td>
                 <td class="formtablec2">
 %               if ($editBackbone) {
-%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"end_closet", lookup=>"Closet", 
+%               $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"end_closet", lookup=>"Closet", 
 %                                 edit=>$editBackbone);
 %               } else {
                 <a href="closet.html?id=<% $o->end_closet %>"><% $o->end_closet->name %></a>
@@ -282,7 +282,7 @@ function suggestName()
             <tr align="left" valign="top">
                 <td>Length: </td>
                 <td class="formtablec2">
-%               $ui->textField(object=>$o, table=>"BackboneCable", column=>"length", edit=>$editBackbone);                
+%               $ui->text_field(object=>$o, table=>"BackboneCable", column=>"length", edit=>$editBackbone);                
                 </td>
             </tr>
 
@@ -305,7 +305,7 @@ function suggestName()
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           $ui->textArea(object=>$o, table=>"BackboneCable", column=>"info",
+%           $ui->text_area(object=>$o, table=>"BackboneCable", column=>"info",
 %                         edit=>$editBackbone, htmlExtra=>"rows='3' cols='80'");
             </td>
             <td>&nbsp;</td>
@@ -462,14 +462,14 @@ function editSelected(id)
         <td align="left">
 %       if ($editStrand) {
             <input type="checkbox" name="<% "CableStrand__" . $st->id . "__delete" %>">[del]
-%           $ui->textField(object=>$st, table=>"CableStrand", column=>"name", edit=>$editStrand);            
+%           $ui->text_field(object=>$st, table=>"CableStrand", column=>"name", edit=>$editStrand);            
 %       } else {
             <a href="cable_strand.html?id=<% $st->id %>"><% $st->name %></a>
 %       }
         </td>
 
         <td align="left">
-%           $ui->selectLookup(object=>$st, column=>"status", lookup=>"StrandStatus", edit=>$editStrand);
+%           $ui->select_lookup(object=>$st, column=>"status", lookup=>"StrandStatus", edit=>$editStrand);
         </td>
 
         <td align="left">

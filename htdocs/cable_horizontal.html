@@ -185,7 +185,7 @@ my @sites = Site->retrieve_all();
             <tr align="left" valign="top">
                 <td align="left">Cable Type: </td>
                 <td align="left" class="formtablec2">
-%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"type",
+%               $ui->select_lookup(object=>$o, table=>"HorizontalCable", column=>"type",
 %                                 lookup=>"CableType", edit=>$editCable);
                 </td>
             </tr>
@@ -193,7 +193,7 @@ my @sites = Site->retrieve_all();
             <tr align="left" valign="top">
                 <td align="left">Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
                 <td align="left" class="formtablec2">
-%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"installdate", default=>$ui->date(),
+%               $ui->text_field(object=>$o, table=>"HorizontalCable", column=>"installdate", default=>$ui->date(),
 %                              edit=>$editCable);                
                 </td>
             </tr>
@@ -201,7 +201,7 @@ my @sites = Site->retrieve_all();
             <tr align="left" valign="top">
                 <td align="left">Tested on <font size="-1">(yyyy-mm-dd)</font>: </td>
                 <td align="left" class="formtablec2">
-%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"datetested", 
+%               $ui->text_field(object=>$o, table=>"HorizontalCable", column=>"datetested", 
 %                              edit=>$editCable);
                 </td>
             </tr>
@@ -210,7 +210,7 @@ my @sites = Site->retrieve_all();
             <tr align="left" valign="top">
                 <td align="left">Test Passed: </td>
                 <td align="left" class="formtablec2">
-%               $ui->radioGroupBoolean(object=>$o, table=>"HorizontalCable", 
+%               $ui->radio_group_boolean(object=>$o, table=>"HorizontalCable", 
 %                                      column=>"testpassed", edit=>$editCable);
                 </td>
             </tr>
@@ -223,7 +223,7 @@ my @sites = Site->retrieve_all();
                 <td align="left">Closet: </td>
                 <td align="left" class="formtablec2">
 %               if ($editCable) {
-%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", 
+%               $ui->select_lookup(object=>$o, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", 
 %                                 edit=>$editCable, where=>{site=>($site ? $site->id : "")});
                     &nbsp;<select name="closet_srch" onChange="closetSearchList.doIt();">
                     <option value="">Lookup by Site</option>
@@ -243,7 +243,7 @@ my @sites = Site->retrieve_all();
                 <td align="left">Room: </td>
                 <td align="left" class="formtablec2">
 %               if ($editCable) {
-%                   $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"room", lookup=>"Room",
+%                   $ui->select_lookup(object=>$o, table=>"HorizontalCable", column=>"room", lookup=>"Room",
 %                                     edit=>$editCable, where=>{id=>($o ? $o->room : "")});
                     &nbsp;<select name="room_site_srch" onChange="siteFloorLookup.doIt();">
                     <option value="">Lookup by Site</option>
@@ -264,7 +264,7 @@ my @sites = Site->retrieve_all();
             <tr align="left" valign="top">
                 <td align="left">Account: </td>
                 <td align="left" class="formtablec2">
-%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"account", 
+%               $ui->text_field(object=>$o, table=>"HorizontalCable", column=>"account", 
 %                              edit=>$editCable);
                 </td>
             </tr>
@@ -272,7 +272,7 @@ my @sites = Site->retrieve_all();
             <tr align="left" valign="top">
                 <td align="left">Contact List: </td>
                 <td align="left">
-%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"contactlist", 
+%               $ui->select_lookup(object=>$o, table=>"HorizontalCable", column=>"contactlist", 
 %                                 lookup=>"ContactList", edit=>$editCable);
                 </td>
             </tr>
@@ -286,7 +286,7 @@ my @sites = Site->retrieve_all();
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           $ui->textArea(object=>$o, table=>"HorizontalCable", column=>"info",
+%           $ui->text_area(object=>$o, table=>"HorizontalCable", column=>"info",
 %                         edit=>$editCable, htmlExtra=>"rows='3' cols='80'");
             </td>
             <td>&nbsp;</td>
@@ -396,7 +396,7 @@ my @sites = Site->retrieve_all();
         <td align="left">
 %       if ($editInt) {
             <input type="checkbox" name="<% "Interface__" . $int->id . "__delete" %>">[del]
-%           $ui->textField(object=>$int, table=>"Interface", column=>"name", 
+%           $ui->text_field(object=>$int, table=>"Interface", column=>"name", 
 %                          edit=>($edit eq "intinfo"));
 %       } else {
             <a href="interface.html?id=<% $int->id %>"><% $int->name %></a>
@@ -404,18 +404,18 @@ my @sites = Site->retrieve_all();
         </td>
 
         <td align="left">
-%           $ui->textField(object=>$int, table=>"Interface", column=>"number", 
+%           $ui->text_field(object=>$int, table=>"Interface", column=>"number", 
 %                          edit=>$editInt);        
         </td>
 
         <td align="left">
-%           $ui->textField(object=>$int, table=>"Interface", column=>"type", 
+%           $ui->text_field(object=>$int, table=>"Interface", column=>"type", 
 %                          edit=>$editInt);         
         </td>
 
         <td align="left">
 %       if ($editInt) {        
-%           $ui->selectLookup(object=>$int, table=>"Interface", column=>"device", 
+%           $ui->select_lookup(object=>$int, table=>"Interface", column=>"device", 
 %                             lookup=>"Device", edit=>$editInt);
 %       } else {
             <a href="device.html?id=<% $int->device %>"><% $int->device->name->name %></a>

@@ -108,14 +108,14 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
             <tr align="left" valign="top">
                 <td align="left">Circuit ID: </td>
                 <td align="left" class="formtablec2">
-%               $ui->textField(object=>$o, table=>"Circuit", column=>"cid", edit=>$editCircuit);
+%               $ui->text_field(object=>$o, table=>"Circuit", column=>"cid", edit=>$editCircuit);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Vendor: </td>
                 <td align="left" class="formtablec2">
-%               $ui->selectLookup(object=>$o, table=>"Circuit", column=>"vendor", lookup=>"Entity", edit=>$editCircuit);
+%               $ui->select_lookup(object=>$o, table=>"Circuit", column=>"vendor", lookup=>"Entity", edit=>$editCircuit);
                 </td>
             </tr>
 
@@ -123,7 +123,7 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
                 <td align="left">Near Interface: </td>
                 <td align="left" class="formtablec2">
 %               if ($editCircuit) {
-%                   $ui->selectLookup(object=>$o, table=>"Circuit", column=>"nearend", lookup=>"Interface",
+%                   $ui->select_lookup(object=>$o, table=>"Circuit", column=>"nearend", lookup=>"Interface",
 %                                     edit=>$editCircuit);
 %               } else {
                     <a href="interface.html?id=<% $o->nearend %>"><% $o->nearend->name %></a>
@@ -135,7 +135,7 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
                 <td align="left">Far Interface: </td>
                 <td align="left" class="formtablec2">
 %               if ($editCircuit) {
-%                   $ui->selectLookup(object=>$o, table=>"Circuit", column=>"farend", lookup=>"Interface",
+%                   $ui->select_lookup(object=>$o, table=>"Circuit", column=>"farend", lookup=>"Interface",
 %                                     edit=>$editCircuit);
 %               } else {
                     <a href="interface.html?id=<% $o->farend %>"><% $o->farend->name %></a>
@@ -146,7 +146,7 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
             <tr align="left" valign="top">
                 <td align="left">Circuit Type: </td>
                 <td align="left" class="formtablec2">
-%                   $ui->selectLookup(object=>$o, table=>"Circuit", column=>"type", lookup=>"CircuitType",
+%                   $ui->select_lookup(object=>$o, table=>"Circuit", column=>"type", lookup=>"CircuitType",
 %                                     edit=>$editCircuit);
                 </td>
             </tr>            
@@ -158,28 +158,28 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
             <tr align="left" valign="top">
                 <td align="left">Speed: </td>
                 <td align="left" class="formtablec2">
-%               $ui->textField(object=>$o, table=>"Circuit", column=>"speed", edit=>$editCircuit);
+%               $ui->text_field(object=>$o, table=>"Circuit", column=>"speed", edit=>$editCircuit);
                 </td>
             </tr>
             
             <tr align="left" valign="top">
                 <td align="left">DLCI: </td>
                 <td align="left" class="formtablec2">
-%               $ui->textField(object=>$o, table=>"Circuit", column=>"dlci", edit=>$editCircuit);
+%               $ui->text_field(object=>$o, table=>"Circuit", column=>"dlci", edit=>$editCircuit);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Install Date: </td>
                 <td align="left" class="formtablec2">
-%               $ui->textField(object=>$o, table=>"Circuit", column=>"installdate", default=>$ui->date(), edit=>$editCircuit);
+%               $ui->text_field(object=>$o, table=>"Circuit", column=>"installdate", default=>$ui->date(), edit=>$editCircuit);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Connection ID: </td>
                 <td align="left" class="formtablec2">
-%               $ui->selectLookup(object=>$o, table=>"Circuit", column=>"connectionid", lookup=>"Connection",
+%               $ui->select_lookup(object=>$o, table=>"Circuit", column=>"connectionid", lookup=>"Connection",
 %                                 edit=>$editCircuit);
                 </td>
             </tr>
@@ -187,7 +187,7 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
             <tr align="left" valign="top">
                 <td align="left">Status: </td>
                 <td align="left" class="formtablec2">
-%               $ui->selectLookup(object=>$o, table=>"Circuit", column=>"status", lookup=>"CircuitStatus",
+%               $ui->select_lookup(object=>$o, table=>"Circuit", column=>"status", lookup=>"CircuitStatus",
 %                                 edit=>$editCircuit);
                 </td>
             </tr>
@@ -201,7 +201,7 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           $ui->textArea(object=>$o, table=>"Circuit", column=>"info",
+%           $ui->text_area(object=>$o, table=>"Circuit", column=>"info",
 %                         edit=>$editCircuit, htmlExtra=>"rows='3' cols='80'");
             </td>
             <td>&nbsp;</td>

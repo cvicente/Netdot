@@ -186,20 +186,20 @@ if(defined($ARGS{_action})) {
         <td align="left">
 %       if ($edit eq "cableinfo") {
             <input type="checkbox" name="<% "HorizontalCable__" . $cable->id . "__delete" %>">[del]
-%           $ui->textField(object=>$cable, table=>"HorizontalCable", column=>"jackid", edit=>($edit eq "cableinfo"));            
+%           $ui->text_field(object=>$cable, table=>"HorizontalCable", column=>"jackid", edit=>($edit eq "cableinfo"));            
 %       } else {
             <a href="cable_horizontal.html?id=<% $cable->id %>"><% $cable->jackid %></a>
 %       }
         </td>
         
         <td align="left">
-%           $ui->selectLookup(object=>$cable, table=>"HorizontalCable", column=>"type", lookup=>"CableType", 
+%           $ui->select_lookup(object=>$cable, table=>"HorizontalCable", column=>"type", lookup=>"CableType", 
 %                             edit=>($edit eq "cableinfo"));
          </td>
 
         <td align="left">
 %           if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$cable, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", 
+%           $ui->select_lookup(object=>$cable, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", 
 %                             edit=>($edit eq "cableinfo"));
 %           } else {
             <a href="closet.html?id=<% $cable->closet %>"><% $cable->closet->name %></a>
@@ -207,7 +207,7 @@ if(defined($ARGS{_action})) {
          </td>
         
         <td align="left">
-%           $ui->textField(object=>$cable, table=>"HorizontalCable", column=>"room", edit=>($edit eq "cableinfo"));
+%           $ui->text_field(object=>$cable, table=>"HorizontalCable", column=>"room", edit=>($edit eq "cableinfo"));
         </td>
     </tr>
 %   }
@@ -390,7 +390,7 @@ elsif ($start_id) {
         </td>
         
         <td align="left">
-%           $ui->selectLookup(object=>$cable, column=>"type", lookup=>"CableType", edit=>($edit eq "cableinfo"));
+%           $ui->select_lookup(object=>$cable, column=>"type", lookup=>"CableType", edit=>($edit eq "cableinfo"));
         </td>
 
 %       if ($edit ne "cableinfo") {
@@ -401,7 +401,7 @@ elsif ($start_id) {
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$cable, column=>"start_closet", lookup=>"Closet", 
+%           $ui->select_lookup(object=>$cable, column=>"start_closet", lookup=>"Closet", 
 %                             edit=>($edit eq "cableinfo"));
 %       } else {
             <a href="closet.html?id=<% $cable->start_closet %>"><% $cable->start_closet->name %></a>
@@ -416,7 +416,7 @@ elsif ($start_id) {
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$cable, column=>"end_closet", lookup=>"Closet", 
+%           $ui->select_lookup(object=>$cable, column=>"end_closet", lookup=>"Closet", 
 %                             edit=>($edit eq "cableinfo"));
 %       } else {
             <a href="closet.html?id=<% $cable->end_closet %>"><% $cable->end_closet->name %></a>
@@ -426,7 +426,7 @@ elsif ($start_id) {
         <td align="left"><% scalar($cable->strands) %></td>
 
         <td align="left">
-%           $ui->selectLookup(object=>$cable, column=>"owner", lookup=>"Entity", edit=>($edit eq "cableinfo"));
+%           $ui->select_lookup(object=>$cable, column=>"owner", lookup=>"Entity", edit=>($edit eq "cableinfo"));
         </td>
     </tr>
 %   }
@@ -461,7 +461,7 @@ elsif ($start_id) {
             }
         }
         
-        my $r = $ui->selectQuery(table=>"Closet", terms=>\@terms, $MAX_SELECTION);
+        my $r = $ui->select_query(table=>"Closet", terms=>\@terms, $MAX_SELECTION);
         @closets = map { $r->{$_} } keys(%$r);
     
     } else {
@@ -536,19 +536,19 @@ elsif ($start_id) {
         <td align="left">
 %       if ($edit eq "cableinfo") {
             <input type="checkbox" name="<% "Closet__" . $closet->id . "__delete" %>">[del]
-%           $ui->textField(object=>$closet, table=>"Closet", column=>"name", edit=>($edit eq "cableinfo"));            
+%           $ui->text_field(object=>$closet, table=>"Closet", column=>"name", edit=>($edit eq "cableinfo"));            
 %       } else {
             <a href="closet.html?id=<% $closet->id %>"><% $closet->name %></a>
 %       }
         </td>
 
         <td align="left">
-%           $ui->textField(object=>$closet, table=>"Closet", column=>"number", edit=>($edit eq "cableinfo"));
+%           $ui->text_field(object=>$closet, table=>"Closet", column=>"number", edit=>($edit eq "cableinfo"));
         </td>        
         
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$closet, table=>"Closet", column=>"floor", lookup=>"Floor", 
+%           $ui->select_lookup(object=>$closet, table=>"Closet", column=>"floor", lookup=>"Floor", 
 %                             edit=>($edit eq "cableinfo"));
 %       } else {
             <a href="floor.html?id=<% $closet->floor %>"><% $closet->floor->level %></a>
@@ -661,14 +661,14 @@ if ($edit eq "cableinfo") {
         <td align="left">
 %       if ($edit eq "cableinfo") {
             <input type="checkbox" name="<% "CableStrand__" . $strand->id . "__delete" %>">[del]
-%           $ui->textField(object=>$strand, table=>"CableStrand", column=>"name", edit=>($edit eq "cableinfo"));            
+%           $ui->text_field(object=>$strand, table=>"CableStrand", column=>"name", edit=>($edit eq "cableinfo"));            
 %       } else {
             <a href="cable_strand.html?id=<% $strand->id %>"><% $strand->name %></a>
 %       }
         </td>
 
         <td align="left">
-%           $ui->selectLookup(object=>$strand, table=>"CableStrand", column=>"status", lookup=>"StrandStatus",
+%           $ui->select_lookup(object=>$strand, table=>"CableStrand", column=>"status", lookup=>"StrandStatus",
 %                             edit=>($edit eq "cableinfo"));
          </td>
         <td align="left">
@@ -857,7 +857,7 @@ if ($ARGS{circuit_srch}) {
         <td align="left">
 %       if ($edit eq "cableinfo") {
             <input type="checkbox" name="<% "Circuit__" . $circuit->id . "__delete" %>">[del]
-%           $ui->textField(object=>$circuit, table=>"Circuit", column=>"cid", edit=>($edit eq "cableinfo"));
+%           $ui->text_field(object=>$circuit, table=>"Circuit", column=>"cid", edit=>($edit eq "cableinfo"));
 %       } else {
             <a href="circuit.html?id=<% $circuit->id %>"><% $circuit->cid %></a>
 %       }
@@ -865,7 +865,7 @@ if ($ARGS{circuit_srch}) {
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$circuit, table=>"Circuit", column=>"nearend", lookup=>"Interface",
+%           $ui->select_lookup(object=>$circuit, table=>"Circuit", column=>"nearend", lookup=>"Interface",
 %                             edit=>($edit eq "cableinfo"));
 %       } else {
             <a href="interface.html?id=<% $circuit->nearend->id %>"><% $circuit->nearend->name %></a>
@@ -874,14 +874,14 @@ if ($ARGS{circuit_srch}) {
         
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$circuit, table=>"Circuit", column=>"farend", lookup=>"Interface",
+%           $ui->select_lookup(object=>$circuit, table=>"Circuit", column=>"farend", lookup=>"Interface",
 %                             edit=>($edit eq "cableinfo"));
 %       } else {
             <a href="interface.html?id=<% $circuit->farend->id %>"><% $circuit->farend->name %></a>
 %       }
         </td>
         <td align="left">
-%           $ui->selectLookup(object=>$circuit, table=>"Circuit", column=>"type", lookup=>"CircuitType",
+%           $ui->select_lookup(object=>$circuit, table=>"Circuit", column=>"type", lookup=>"CircuitType",
 %                             edit=>($edit eq "cableinfo"));
         </td>
     </tr>
