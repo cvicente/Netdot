@@ -1,4 +1,9 @@
 <%perl>
+##################################################
+#
+# BEGIN PRE PROCESSING
+#
+##################################################
 
 ##################################################
 # clean out old state files
@@ -47,6 +52,14 @@ if( defined( $args{sid} ) ) {
 }
 
 ##################################################
+if( $DEBUG ) {
+  print "ARGS: ";
+  printf "<pre>%s</pre>\n", Dumper( \%ARGS );
+  print "SESSION: ";
+  printf "<pre>%s</pre>\n", Dumper( $session );
+}
+
+##################################################
 # if Cancel, delete state
 if( $args{cancel} eq "Cancel" ) {
   undef( $TBL );
@@ -76,6 +89,13 @@ if( exists( $args{submit} )
   }
 }
 
+if( exists( $args{submit} ) ) {
+  $session->{foo} = "bar";
+}
+if( exists( $args{confirm} ) ) {
+  $session->{foo} = "bar2";
+}
+
 ##################################################
 # get back some history of where user has clicked
 if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
@@ -84,7 +104,11 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
   #   form submit page), we need to be sure we go back to the proper
   #   table/object page and do not create empty objects in the DB.
   if( $args{confirm} && ! exists( $session->{tables}{ $args{create} } ) ) {
+      print "deleting Confirm\n";
     delete( $args{confirm} );
+    ##############################################
+    # get sessionpath and look for table not in session{tables}
+    # push that table onto sessionpath
     my ( $x, %z );
     map { $z{$_} = 1 } split( /;/, $session->{path} );
     foreach my $y ( keys %{ $session->{tables} } ) {
@@ -92,9 +116,10 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
         $x = $y;
       }
     }
-    ( length( $session->{path} ) > 1 ) ?
-      ( $session->{path} .= ";$x" ) : ( $session->{path} = "$x" );
+    $gui->pushsessionpath( $session, $x );
   }
+  ################################################
+  # if not a submit, pop last table from sessionpath
   if( ! exists( $args{submit} ) ) {
     my $tmp = $gui->popsessionpath( $session );
     if( defined( $tmp ) && length( $tmp ) > 0 ) {
@@ -106,24 +131,14 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
 ##################################################
 # get id and object now that TBL is set finally
 if( exists( $args{id} ) ) {
-  if( $NEW ) {
-    $TBLID = "$TBL:$args{id}";
-  } else {
+  if( ! $NEW ) {
     $ID = $ARGS{id};
   }
-} elsif( exists( $args{tblid} ) ) {
-  $TBLID = $args{tblid};
-  my($tbl, $id) = split( /:/, $args{tblid} );
-  if( $tbl eq $TBL ) {
-    $ID = $id;
-  }
+} elsif( exists( $session->{tables}{$TBL}{id} ) ) {
+  $ID = $session->{tables}{$TBL}{id}
 }
 if( $ID ) {
-  if( $args{create} ) {
-    $OBJ = $args{create}->retrieve($ID);
-  } else {
-    $OBJ = $TBL->retrieve($ID);
-  }
+  $OBJ = $TBL->retrieve($ID);
 }
 
 ##################################################
@@ -132,12 +147,16 @@ if( $args{confirm} eq "Confirm" ) {
   my( $T, $msg, $r );
   $T = $args{create};
   if( $ID ) {  # we're updating an object
+    print "Performing $T update\n";
     $r = $gui->update( object => $OBJ, state => \%{ $session->{tables}{$T} } );
     $msg = "Unable to edit $T" if( ! $r );
   } else {
+    print "Performing $T insert\n";
     $r = $gui->insert( table => $T, state => \%{ $session->{tables}{$T} } );
     $msg = "Unable to create $T" if( ! $r );
   }
+  print "$T r: $r \n";
+  print $gui->error, "\n";
   if( ! $r ) {
     die "$msg : $r : $ID: ", $gui->error;
   }
@@ -172,6 +191,12 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
   }
 }
 </%perl>
+% ################################################
+% #
+% # END PRE PROCESSING
+% # BEGIN HTML
+% #
+% ################################################
 
 % ####################################################################
 % if( $DEBUG ) {
@@ -180,7 +205,7 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
     PREV : <% $PREV %> <br>
     ARGS :
 %   printf "<pre>%s</pre>\n", Dumper( \%ARGS );
-    <br> session: 
+    SESSION: 
 %   printf "<pre>%s</pre>\n", Dumper( $session );
     <hr>
 % }
@@ -237,9 +262,7 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
       <input type="hidden" name="create" value="<% $TBL %>">
 %     if( $ID ) {
       <input type="hidden" name="id" value="<% $ID %>">
-%     } elsif( $TBLID ) {
-      <input type="hidden" name="tblid" value="<% $TBLID %>">
-%     }
+%     } 
       <input name="confirm" value="Confirm" type="submit">
       <input name="cancel" value="Cancel" type="submit">
       </form>
@@ -300,7 +323,6 @@ $TBL => undef
 $PREV => undef
 $ID => undef
 $OBJ => undef
-$TBLID => undef
 $sid => undef
 $nv => undef
 $TMP => "/home/netdot/public_html/tmp"
@@ -334,15 +356,27 @@ edit.html
 
     - null 
     new page to create any table
+
     - table is set
     present page to create that table
+
+    - table and id are set
+    present page to edit particular instance of that table
+
     - user clicked New on a table page
     present page to create object for New; keep state for previous 
     table page
+    push PREV table name onto sessionpath
+
     - cancel
-    user clicks on cancel; should clear all state
+    user clicks on cancel; clear all state
+
     - submit
     if this is the last table, goto confirm page; otherwise, go to 
     last edited table
+
+    - confirm
+    user clicked on confirm; submit changes to DB; pop table from 
+    sessionpath for table to go back to.
     
 </%doc>
