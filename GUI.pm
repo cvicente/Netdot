@@ -35,6 +35,14 @@ sub getmeta{
 }
 
 ######################################################################
+# Get a Meta object for a table
+######################################################################
+sub gettables{
+    my $self = shift;
+    return map {$_->name} Meta->retrieve_all;
+}
+
+######################################################################
 # Get a table's has_a relationships
 ######################################################################
 sub getlinksto{
@@ -252,6 +260,9 @@ sub rmsessions {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.13  2003/07/11 00:48:28  netdot
+#  Added gettables method
+#
 #  Revision 1.12  2003/07/09 23:37:11  netdot
 #  Changed getinputtag so it accepts either an object or a class
 #
@@ -315,6 +326,10 @@ Creates a new GUI object (basic constructor)
 When passed a table name, it searches the "Meta" table and returns the object associated
 with such table.  This object then gives access to the table's metadata.
 Its mostly meant to be called from other methods in this class.
+
+=head2 gettables
+
+Returns a list of table names
 
 =head2 getlinksto
 
