@@ -212,6 +212,7 @@ if ( $args{action} eq "discover" ){
        }
        if ( exists ($devips{$ip}{mac}) ){
           $devtmp{physaddr} = $devips{$ip}{mac};
+	  $devtmp{physaddr} =~ s/^0x//;
        }
     }
     
@@ -319,8 +320,10 @@ if ( $args{action} eq "discover" ){
       <tr><td>
         <font size="-1">
 %       while (<OUTPUT>){
-%         if (/insert|remove|error/i){
+%         if (/error/i){
             <font color = "#FF0000"><% $_ %></font><br>
+%	  }elsif (/insert|remov/i){
+            <strong><% $_ %></strong><br>
 %	  }else{
             <% $_ %><br>
 %	  }

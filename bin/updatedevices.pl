@@ -11,7 +11,7 @@ use Data::Dumper;
 
 my $help = 0;
 my $DEBUG = 0;
-my %problemHubs = ( 
+my %problemDevs = ( 
                      '1.3.6.1.4.1.11.2.3.7.8.2.5' => 1,
                    );
 my $TEST = 0;
@@ -69,7 +69,7 @@ if (defined $host){
 my @ifrsv = NvIfReserved->retrieve_all();
 
 foreach my $device ( @devices ) {
-  my %ifs;
+  my (%ifs, %devips);
   print "Checking device ", $device->name, " \n" if( $DEBUG );
   map { $ifs{ $_->id } = 1 } $device->interfaces();
   my $comstr = $device->community || Netviewer->community;
@@ -131,48 +131,48 @@ foreach my $device ( @devices ) {
       $iftmp{device} = $device->id;
       $iftmp{name} = $newif;
       foreach my $dbname ( keys %ifnames ) {
-	if( $ifnames{$dbname} eq "descr" ) {
-	    if( $dev{interface}{$newif}{$ifnames{$dbname}} ne "-" 
-		&& $dev{interface}{$newif}{$ifnames{$dbname}} ne "not assigned" ) {
-		$iftmp{$dbname} = $dev{interface}{$newif}{$ifnames{$dbname}};
-	    }
-	} else {
-	  $iftmp{$dbname} = $dev{interface}{$newif}{$ifnames{$dbname}};
-	}
+	  if( $ifnames{$dbname} eq "descr" ) {
+	      if( $dev{interface}{$newif}{$ifnames{$dbname}} ne "-" 
+		  && $dev{interface}{$newif}{$ifnames{$dbname}} ne "not assigned" ) {
+		  $iftmp{$dbname} = $dev{interface}{$newif}{$ifnames{$dbname}};
+	      }
+	  } else {
+	      $iftmp{$dbname} = $dev{interface}{$newif}{$ifnames{$dbname}};
+	  }
       }
       $iftmp{physaddr} =~ s/^0x//;
       ############################################
       # does this ifIndex already exist in the DB?
       if( $if = (Interface->search( device => $device->id, number => $dev{interface}{$newif}{instance}))[0] ) {
-	print "Interface device ", $device->name, ":$newif exists; updating\n"
-	  if( $DEBUG );
-	delete( $ifs{ $if->id } );
-
-	if( ! $TEST ) {
-	   unless( $gui->update( object => $if, state => \%iftmp ) ) {
-	      next;
-	   }
-	}
-
-      } else {
-	$iftmp{managed} = 0;
-	$iftmp{speed} ||= 0; #can't be null
-	print "Interface device ", $device->name, ":$newif doesn't exist; ",
-	  "inserting\n" if( $DEBUG );
-
-	if( ! $TEST ) {
-	   unless( my $ifid = $gui->insert( table => "Interface", 
-					    state => \%iftmp ) ) {
-	      print "Error inserting Interface\n" if ($DEBUG);
-	      next;
-	   }else{
-	      unless( $if = Interface->retrieve($ifid) ) {
-		 print "Couldn't retrieve Interface id $ifid\n" if ($DEBUG);
-		 next;
+	  print "Interface device ", $device->name, ":$newif exists; updating\n"
+	      if( $DEBUG );
+	  delete( $ifs{ $if->id } );
+	  
+	  if( ! $TEST ) {
+	      unless( $gui->update( object => $if, state => \%iftmp ) ) {
+		  next;
 	      }
-	   }
-	}
-
+	  }
+	  
+      } else {
+	  $iftmp{managed} = 0;
+	  $iftmp{speed} ||= 0; #can't be null
+	  print "Interface device ", $device->name, ":$newif doesn't exist; ",
+	  "inserting\n" if( $DEBUG );
+	  
+	  if( ! $TEST ) {
+	      unless( my $ifid = $gui->insert( table => "Interface", 
+					       state => \%iftmp ) ) {
+		  print "Error inserting Interface\n" if ($DEBUG);
+		  next;
+	      }else{
+		  unless( $if = Interface->retrieve($ifid) ) {
+		      print "Couldn't retrieve Interface id $ifid\n" if ($DEBUG);
+		      next;
+		  }
+	      }
+	  }
+	  
       }
       ################################################################
       # Update IPs
@@ -182,7 +182,7 @@ foreach my $device ( @devices ) {
 	  foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
 	      my( $ipobj, $maskobj, $subnet, $ipdbobj, %iptmp );
 	      $iptmp{mask} = $dev{interface}{$newif}{ipAdEntIfIndex}{$newip};
-
+	      
 	      unless ($ipobj = new NetAddr::IP ($newip, $iptmp{mask})){
 		  print "Error: Could not create ip object: $newip<br>\n" if ($DEBUG);
 		  next;
@@ -191,6 +191,7 @@ foreach my $device ( @devices ) {
 		  print "Skipping loopback address: $newip\n" if ($DEBUG);
 		  next;
 	      }
+	      $devips{$newip}{mac} = $dev{interface}{$newif}{ifPhysAddress};
 	      
 	      ########################################
 	      # does this subnet already exist?
@@ -243,7 +244,11 @@ foreach my $device ( @devices ) {
     # every time they reboot.  For that reason we do those manually
     # (don't add or remove their ports here)
     
-    unless ( exists($problemHubs{$dev{sysObjectID}} )){
+    if ( exists($problemDevs{$dev{sysObjectID}} )){
+	print "Will not create/remove ports for device ID: $dev{sysObjectID}\n" if ($DEBUG);
+    }
+    
+    unless ( exists($problemDevs{$dev{sysObjectID}} )){
 	
 	foreach my $newport ( keys %{ $dev{hubPorts} } ) {
 	    ############################################
@@ -279,13 +284,13 @@ foreach my $device ( @devices ) {
 	    }
 	    
 	} # end foreach my $newport
-
+	
     }
     
     ##############################################
     # remove each interface that no longer exists
     
-    unless ( exists($problemHubs{$dev{sysObjectID}} )){
+    unless ( exists($problemDevs{$dev{sysObjectID}} )){
 	
 	foreach my $nonif ( keys %ifs ) {
 	    my $ifobj = Interface->retrieve($nonif);
@@ -301,21 +306,43 @@ foreach my $device ( @devices ) {
     ##############################################
     # remove each ip address  that no longer exists
     foreach my $nonip ( keys %dbips ) {
-      my $ipobj = Ip->retrieve($nonip);
-      print "Device ", $device->name, " Ip Address ", $ipobj->address,
+	my $ipobj = Ip->retrieve($nonip);
+	print "Device ", $device->name, " Ip Address ", $ipobj->address,
 	" doesn't exist; removing\n" if( $DEBUG );
-      
-      if( ! $TEST ) {
-	 unless( $gui->remove( table => "Ip", id => $nonip ) ) {
-	    next;
-	 }
-      }
-
+	
+	if( ! $TEST ) {
+	    unless( $gui->remove( table => "Ip", id => $nonip ) ) {
+		next;
+	    }
+	}
+	
     }
-  } else {
+    ##################################################################
+    # If device has only one IP, assign some values
+    # 
+    
+    if ( (scalar(keys %devips)) == 1 ){
+	my $ip = (keys (%devips))[0];
+	if ( exists ($devips{$ip}{subnet}) ){
+	    $devtmp{entity} = $devips{$ip}{subnet}->entity->id;
+	}
+	if ( exists ($devips{$ip}{mac}) ){
+	    $devtmp{physaddr} = $devips{$ip}{mac};
+	    $devtmp{physaddr} =~ s/^0x//;
+	}
+    }
+    ################################################################
+    # Update device if any changes
+    
+    unless ( $gui->update( object => $device, state => \%devtmp ) ){
+	my $guierr = $gui->error;
+	die "Error: $guierr"; 
+    }
+    
+} else {
     print "Unable to access device ", $device->name, "\n" if( $DEBUG );
     warn "Unable to access device ", $device->name, "\n";
-  }
+}
 }
 
 
