@@ -2,7 +2,7 @@
 RELEASE=0.1
 PKG=Netdot
 DST = unstable
-ETC = ins.sample.data netdot.relationships netdot.schema
+ETC = netdot.schema
 DOC = TODO ChangeLog MILESTONES README
 BIN = initacls.mysql initacls.Pg setup-class-dbi mason.pl initdb ins.sample.data insert-metadata updatenodes.pl
 HTML = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html table.html banner style.css footer2 node.html error.html
@@ -22,9 +22,9 @@ help:
 	@echo "make test"
 
 unstable: DST = unstable
-unstable: dir bin html lib doc make
+unstable: dir bin etc html lib doc make
 stable: DST = stable
-stable: dir bin html lib doc make
+stable: dir bin etc html lib doc make
 test: DST = /home/netdot/public_html
 test: testing nvtest
 
