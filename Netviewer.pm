@@ -2450,14 +2450,17 @@ sub _get_sysinfo {
   my %res = $self->get_snmp_values( type => $type, dev => $dev, 
 				    oids => \@oids, session => $session ) ;
 
-  my $sysloc =  $res{$oids[4]};
+  my $sysloc =  $res{$oids[3]};
   $sysloc =~ tr/\n// ;
-  $sysloc =~ s/\s*$//g ;
+  $sysloc =~ s/\s+/ /g ;
+  my $sysdescr = $res{$oids[0]};
+  $sysdescr =~ tr/\n// ;
+  $sysdescr =~ s/\s+/ /g;
 
   # Not sure if these are needed.....
-  #    $targets{$type}{$dev}{ "sysDescr" } = $res{ $oids[0] };
+  $targets{$type}{$dev}{"sysDescr"} = $sysdescr;
   $targets{$type}{$dev}{"sysObjectID"} = $res{ $oids[1] };
-  $targets{$type}{$dev}{"sysName"} = $res{ $oids[3] };
+  $targets{$type}{$dev}{"sysName"} = $res{ $oids[2] };
   $targets{$type}{$dev}{"sysLocation"} = $sysloc ;
   $targets{$type}{$dev}{"sysUpTime"} = $self->get_sysUpTime( $type, $dev ) ;
 }
@@ -3340,6 +3343,9 @@ sub _sysUpTime {
 
 ##########################################################################
 # $Log: Netviewer.pm,v $
+# Revision 1.5  2003/06/12 00:51:39  netdot
+# changes to get_sysinfo
+#
 # Revision 1.4  2003/06/11 22:44:10  netdot
 # more work to migrate
 #
