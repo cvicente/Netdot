@@ -285,3 +285,25 @@ sub resolve_name {
 
     return @addresses;
 }
+
+=head2 resolve_ip - Resolve ip (v4 or v6) adress to name
+
+=cut 
+
+sub resolve_ip {
+    my ($self, $ip) = @_;
+    my $name;
+    my $v4 = '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})';
+    if ( $ip =~ /$v4/ ){
+	unless ($name = gethostbyaddr(inet_aton($ip), AF_INET)){
+	$self->error("Can't resolve $ip");
+	    return 0;
+	}
+    }else{
+	# TODO: add v6 here (maybe using Socket6 module)
+	return 0;
+    }
+    # Strip off our own domain if necessary
+    $name =~ s/\.$self->{config}->{'DEFAULT_DNSDOMAIN'}//i;
+    return $name;
+}

@@ -241,16 +241,33 @@ sub update {
 	$rr = $device->name;
 	$host = $device->name->name;
     }else{
-	my $msg = sprintf ("Name %s not in DB. Adding DNS entry.", $host);
-	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => $msg );
-	$self->output($msg);
+	# Check if hostname is an ip address (v4 or v6)
+	if ( $host =~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/ ||
+	     $host =~ /:/){
+	    # It is, so look it up
+	    my $name;
+	    if ( $name = $self->{dns}->resolve_ip($host) ){
+		my $msg = sprintf("Name associated with %s: %s", $host, $name );
+		$self->debug( loglevel => 'LOG_DEBUG',
+			      message  => $msg
+			      );	    
+		# Use this name instead
+		$host = $name;
+	    }else{
+		my $msg = sprintf("%s", $self->{dns}->error);
+		$self->debug( loglevel => 'LOG_ERR',
+			      message  => $msg
+			      );	    
+		$self->error($msg);	
+	    }
+	}
 	if ($rr = $self->{dns}->insert_rr(name        => $host, 
 					  contactlist => $devtmp{contactlist})){
 	    $self->debug( loglevel => 'LOG_NOTICE',
-			  message  => "Inserted name %s into DB",
+			  message  => "Inserted DNS name %s into DB",
 			  args => [ $host ], 
 			  );	    
+	    $self->output($msg);
 	    $devtmp{name} = $rr;
 	}else{
 	    my $msg = sprintf("Could not insert DNS entry %s: %s", $host, $self->{dns}->error);
@@ -262,9 +279,14 @@ sub update {
 	}
     }
     # We'll use these later when adding A records for each address
-    my %nameips;
+    my %hostnameips;
     if (my @addrs = $self->{dns}->resolve_name($rr->name)){
-	map { $nameips{$_} = "" } @addrs;
+	map { $hostnameips{$_} = "" } @addrs;
+	
+	my $msg = sprintf("Addresses associated with hostname: %s", (join ", ", keys %hostnameips) );
+	$self->debug( loglevel => 'LOG_DEBUG',
+		      message  => $msg
+		      );	    
     }else{
 	my $msg = sprintf("%s", $self->{dns}->error);
 	$self->debug( loglevel => 'LOG_NOTICE',
@@ -732,27 +754,32 @@ sub update {
 		# Create A records for each ip address discovered
 		# 
 		unless ( $ipobj->arecords ){
-		    my $msg = sprintf("Creating DNS A record for %s", 
-				      $newip);
-		    $self->debug(loglevel => 'LOG_ERR',
-				 message  => $msg );
-		    $self->output($msg);
 		    
 		    ################################################
-		    # Is this is the only ip for this device,
-		    # or is this the 'main' ip address ?
+		    # Is this the only ip in this device,
+		    # or is this the address associated with the
+		    # hostname?
+		    
+		    my $numips = 0;
+		    map { map { $numips++ } keys %{ $dev{interface}{$_}{ips} } } keys %{ $dev{interface} };
 
-		    if ( scalar ( keys %{ $dev{interface}{$newif}{ips} } ) == 1 ||
-			 exists $nameips{$ipobj->address} ){
+		    if ( $numips == 1 || exists $hostnameips{$ipobj->address} ){
+
 			# We should already have an RR created
 			# Create the A record to link that RR with this ipobj
 			if ( $device->name ){
 			    unless ($self->{dns}->insert_a(rr          => $device->name, 
 							   ip          => $ipobj,
 							   contactlist => $device->contactlist)){
-				my $msg = sprintf("Could not insert DNS entry for %s: %s", 
+				my $msg = sprintf("Could not insert DNS A record for %s: %s", 
 						  $ipobj->address, $self->{dns}->error);
 				$self->debug(loglevel => 'LOG_ERR',
+					     message  => $msg );
+				$self->output($msg);
+			    }else{
+				my $msg = sprintf("Created DNS A record for %s: %s", 
+						  $newip, $device->name->name);
+				$self->debug(loglevel => 'LOG_NOTICE',
 					     message  => $msg );
 				$self->output($msg);
 			    }
@@ -768,20 +795,29 @@ sub update {
 			# Keep record
 			$name2int{$name} = $ipobj->interface->name; 
 			# Append device name
-			$name .= "." . $device->name->name ;
+			# Remove any possible prefixes added
+			# e.g. loopback0.devicename -> devicename
+			my $suffix = $device->name->name;
+			$suffix =~ s/^.*\.(.*)/$1/;
+			$name .= "." . $suffix ;
 			unless ($self->{dns}->insert_a(name        => $name,
 						       ip          => $ipobj,
 						       contactlist => $device->contactlist
 						       )){
-			    my $msg = sprintf("Could not insert DNS entry for %s: %s", 
+			    my $msg = sprintf("Could not insert DNS A record for %s: %s", 
 					      $ipobj->address, $self->{dns}->error);
 			    $self->debug(loglevel => 'LOG_ERR',
 					 message  => $msg );
 			    $self->output($msg);
+			}else{
+			    my $msg = sprintf("Created DNS A record for %s: %s", 
+					      $newip, $name);
+			    $self->debug(loglevel => 'LOG_NOTICE',
+					 message  => $msg );
+			    $self->output($msg);
 			}
-			
 		    }
-		}
+		} # unless ipobj->arecords
 	    } # foreach newip
 	} #if ips found 
     } #foreach $newif
@@ -902,11 +938,6 @@ sub update {
 	    foreach my $ifid ( @{ $ifvlans{$vid}{$vname} } ){
 		my $if = Interface->retrieve($ifid);
 		if( ! exists $dbvlans{$ifid} ){
-		    my $msg = sprintf("Interface %s,%s should be part of vlan %s. Creating join.", 
-				      $if->number, $if->name, $vo->vid);
-		    $self->debug( loglevel => 'LOG_DEBUG',
-				  message  => $msg,
-				  );
 		    my %jtmp = (interface => $if, vlan => $vo);
 		    unless ( my $j = $self->{ui}->insert(table => "InterfaceVlan", state => \%jtmp) ){
 			my $msg = sprintf("Could not insert InterfaceVlan join %s:%s: %s", 
@@ -1859,9 +1890,7 @@ sub _canonicalize_int_name {
 
     my %ABBR = % {$self->{config}->{IF_DNS_ABBR} };
     foreach my $ab (keys %ABBR){
-	if ($name =~ /$ab/){
-	    $name =~ s/$ab/$ABBR{$ab}/i;
-	}
+	$name =~ s/$ab/$ABBR{$ab}/i;
     }
     $name =~ s/\/|\.|\s+/-/g;
     return lc( $name );

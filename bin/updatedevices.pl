@@ -115,10 +115,10 @@ if ($host){
 	    printf ("Device %s was set to not auto-update. Skipping \n", $host) if $VERBOSE;
 	    next;
 	}
+	# Use hostname, or else try any of its IPs
 	if (defined ($device->name->name)){
 	    $host = $device->name->name;
 	}else{
-	    # Get any of its IPs
 	    foreach my $if ($device->interfaces){
 		if (my $ip = ($if->ips)[0]){
 		    $host = $ip->address;
