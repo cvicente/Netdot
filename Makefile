@@ -65,6 +65,7 @@ dir:
 	mkdir -p $(DST)/etc
 	mkdir -p $(DST)/htdocs
 	mkdir -p $(DST)/lib
+	mkdir -p $(DST)/contrib
 
 
 ######################################################################
