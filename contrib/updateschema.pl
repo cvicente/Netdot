@@ -16,6 +16,7 @@ sub DEFAULT_DBHOST   { "localhost" };
 sub DEFAULT_DBUSER   { "root" };
 sub DEFAULT_DBPASS   { "netdot_pass" };
 sub DEFAULT_DATA     { "contrib/updateschema.data" };
+sub DEFAULT_DBHOME   { "/usr" };
 
 set_defaults();
 my $USAGE = <<EOF;
@@ -28,6 +29,7 @@ usage: $0 [options]
           -u <user> name of user to connect as (default: $self{dbuser})
           -p <pass> password of connecting user (default: $self{dbpass})
           -f <file> location of updateschema.data file
+          -x <prefix> path to mysql installation (default: $self{dbhome})
 
           Meant to be run from top directory of source tree.
 
@@ -49,6 +51,7 @@ sub set_defaults {
 	    dbuser => DEFAULT_DBUSER,
 	    dbpass => DEFAULT_DBPASS,
 	    data => DEFAULT_DATA,
+	    dbhome => DEFAULT_DBHOME,
 	    help => 0,
 	    debug => 0 );
 }
@@ -60,6 +63,7 @@ sub setup {
 			   "h" => \$self{help},
 			   "help" => \$self{help},
 			   "f=s" => \$self{data},
+			   "x=s" => \$self{dbhome},
 			   "db=s" => \$self{dbdriver},
 			   "n=s" => \$self{dbname},
 			   "d=s" => \$self{dbhost},
@@ -68,6 +72,18 @@ sub setup {
   if( $self{help} ) {
     print $USAGE;
     exit 0;
+  }
+  ################################################
+  # now make sure we have what will be needed later
+  foreach my $cmd ( ("Makefile", "bin/insert-metadata", "bin/setup-class-dbi") ) {
+    print $cmd, "\n";
+    system ( "pwd" );
+    if( ! -e $cmd ) {
+      die "Error: missing required file $cmd\n";
+    }
+    if( ! -r $cmd ) {
+      die "Error: can't read required file $cmd\n";
+    }
   }
   ################################################
   # keep password off screen
@@ -159,22 +175,9 @@ sub processdata {
 
 ##################################################
 sub cleanup {
-  foreach my $cmd ( ( "insert-metadata", "setup-class-dbi" ) ) {
-    if( -f "bin/$cmd" && -r "bin/$cmd" ) {
-      print "Running $cmd .... \n";
-      my $result = system( "bin/$cmd" );
-      if( $result ) {
-	warn "Error running: $cmd\nReturned $result\n";
-      }
-    } else {
-      warn "Unable to run $cmd; you will need to do this manually\n";
-    }
-  }
-  if( -f "bin/DBI.pm" ) {
-    ;
-  }
-  print <<EOF;
-
+  if( ! -d "bin" || ! -e "bin/Makefile" 
+      || ! -e "bin/insert-metadata" || ! -e "bin/setup-class-dbi" ) {
+    print <<EOF;
 File $self{data} has been processed.
 You will need to run:
     insert-metadata
@@ -185,4 +188,9 @@ These scripts can be found in the source directory (PREFIX/bin/).
 You will also have to restart httpd.
 
 EOF
+  } else {
+    system( "cd bin && make insert.metadata DB_HOME=$self{dbhome} && cd .." );
+    system( "cd bin && make setup.class.dbi DB_HOME=$self{dbhome} && cd .." );
+    print "Be sure to restart httpd after DBI.pm has been installed.\n";
+  }
 }
