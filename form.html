@@ -42,6 +42,9 @@ if( $args{table} ) {
     <table cellpadding="3" cellspacing="1" border="0" bgcolor="#CCCCCC">
     <tr>
     <input type="hidden" name="table" value="<% $args{table} %>">
+%   if( $args{id} ) {
+    <input type="hidden" name="id" value="<% $args{id} %>">
+%   }
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %     next if( $c eq 'id' );
 %     next if( $c eq 'disabled' && ! $args{showdisabled} );
@@ -113,6 +116,9 @@ Arguments:
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.7  2003/05/15 21:34:47  netdot
+#  added hidden input field for id (if it is defined)
+#
 #  Revision 1.6  2003/05/14 17:52:19  netdot
 #  changes to support session -- ability to put values in boxes when the
 #  object doesn't exist
