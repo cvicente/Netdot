@@ -16,22 +16,22 @@ if( $args{table} ) {
   if( defined( $args{id} ) ) {
     $obj = $args{table}->retrieve($args{id}) ;
   }
-  my $M = (Meta->search( name => $args{table} ))[0];
-  if( defined( $M ) ) {
+  my $META = (Meta->search( name => $args{table} ))[0];
+  if( defined( $META ) ) {
     my $i = 1;
     undef( %order );
-    if( defined( $M->columnorder ) ) {
-      map { $order{$_} = $i++; } split( /,/, $M->columnorder );
+    if( defined( $META->columnorder ) ) {
+      map { $order{$_} = $i++; } split( /,/, $META->columnorder );
     } else {
       $order{"id"} = $i++;
-      foreach ( sort { $a cmp $b } $M->name->columns() ) {
+      foreach ( sort { $a cmp $b } $META->name->columns() ) {
         next if( $_ eq "id" );
         $order{$_} = $i++;
       }
     }
     undef( %linksto );
     map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
-        split( /,/, $M->linksto );
+        split( /,/, $META->linksto );
   }
 }
 </%perl>
@@ -69,6 +69,9 @@ if( $args{table} ) {
 %       if( ! defined( $ft ) ) {
           No <% linksto{$c} %> in Meta table
 %       } elsif( defined( $obj ) && $obj->$c == 0 ) {
+          -
+%	} elsif( defined( $obj ) 
+%                && ! defined( $linksto{$c}->retrieve( int( $obj->$c ) ) ) ) {
           -
 %       } else {
 %         my $lbl = $ft->label;
@@ -119,6 +122,9 @@ Arguments:
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.10  2003/05/23 19:15:32  netdot
+#  little cleanup and catch for bad pointer (linksto non-existent row)
+#
 #  Revision 1.9  2003/05/22 20:21:56  netdot
 #  added markers for when looking at html source
 #
