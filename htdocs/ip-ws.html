@@ -79,15 +79,15 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	}
 </%perl>      
 %   my $num = scalar(@list);
-    Query <b><em><% $search %></em></b> returned: <b><% $num %> matches</b>
+    Query <strong><em><% $search %></em></strong> returned: <strong><% $num %> matches</strong>
 
 %      if ( $num ){
         <& ipblock_list.mhtml, objects => \@list  &>
 %      }elsif ( $ipm->error ){
-          <p><b><% $ipm->error %></b>
+          <p><strong><% $ipm->error %></strong>
 %      }
 %   }else{
-       <p><b>No search criteria</b>   
+       <p><strong>No search criteria</strong>   
 %   }
 <%perl>
 
@@ -106,7 +106,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	    $o = Ipblock->retrieve($id);
 	}
     }else{
-	printf ("<p><b>Error: %s</b><br>", $ui->error);
+	printf ("<p><strong>Error: %s</strong><br>", $ui->error);
     }
 
 #######################################################################################
@@ -117,7 +117,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     unless ($allocate =~ /\//){
 </%perl>
 
-     <p><b>Error: New block must have prefix length</b><br>   
+     <p><strong>Error: New block must have prefix length</strong><br>   
 
 <%perl>
      $m->abort;
@@ -127,7 +127,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     unless( $newblock = $ipm->insertblock(address     => $address, 
 					  prefix      => $prefix, 
 					  statusname  => "Container")){
-	print "<b>Error: ", $ipm->error, "</b><br>";
+	print "<strong>Error: ", $ipm->error, "</strong><br>";
     }
     if ($newblock)
     {
@@ -144,7 +144,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     $length =~ s/\///;
     my $newblock;
     unless ( $newblock = $ipm->auto_allocate($parent, $length, $strategy) ){
-	print "<b>Error: ", $ipm->error, "</b><br>";
+	print "<strong>Error: ", $ipm->error, "</strong><br>";
     }else {
 </%perl>
 %     # Present new block and ask for confirmation
@@ -158,10 +158,16 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
         <input type="submit" name="submit" value="Yes" >
         <input type="submit" name="submit" value="No" >
       </form>
-%      # Do not continue with object display
-%      $view = 0;
-%   }
 <%perl>    
+   #  Do not continue with object display
+      $view = 0;
+   }
+
+#######################################################################################
+# Confirm Auto-Allocate
+#
+#######################################################################################
+
 }elsif ( $_action eq "CONFIRM_AUTOALLOCATE" && $submit eq "Yes"){
     undef $o;
     unless ( $o = Ipblock->retrieve($newblock) ){
@@ -181,6 +187,29 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 #
 #######################################################################################
 }elsif ( defined($_action ) && ($_action eq "DELETE") ){
+
+</%perl>
+
+  <form action="ip-ws.html">
+    <input type="hidden" name="_action" value="CONFIRM_DELETE">
+    <input type="hidden" name="id" value="<% $id %>">
+    <p>Are you sure you want to <strong>delete <% $o->address %>/<% $o->prefix %></strong> ?<br>
+    <p>
+    <input type="submit" name="submit" value="Yes" >
+    <input type="submit" name="submit" value="No" >
+  </form>
+
+
+<%perl>
+
+# Do not continue with object display
+  $view = 0;
+
+#######################################################################################
+# Confirm Delete
+#
+#######################################################################################
+}elsif ( defined($_action ) && ($_action eq "CONFIRM_DELETE") ){
   
     my ($parentid, $address, $prefix, $version) = ($o->parent->id, $o->address, $o->prefix, $o->version);
     # Remove from Database
@@ -196,7 +225,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     
 </%perl>
 
-    <p>Block <b><% $address %>/<% $prefix %></b> has been removed<br>
+    <p>Block <strong><% $address %>/<% $prefix %></strong> has been removed<br>
 
 <%perl>
 #    Show parent block
@@ -252,9 +281,9 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
          <table width="100%" border="0">
            <tr>
 	     <td class="formtablec1">Address: </td>
-	     <td class="formtablec2"><b>
+	     <td class="formtablec2"><strong>
 %            $ui->text_field(object=>$o, column=>"address", edit=>$edit_ip, htmlExtra =>"style='width: 15em'"); print "/"; print $o->prefix;
-             </b></td>
+             </strong></td>
 	   </tr>
            <tr>
              <td class="formtablec1">Status: </td>
@@ -272,7 +301,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %		    }
 		    </select>
 %                 }else{
-	            <b><% $sn %></b>
+	            <strong><% $sn %></strong>
 %                 }
 %	       }
 	     </td> 
@@ -360,7 +389,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %	     if (defined($o->parent) && int($o->parent)){
 		 <a href="ip-ws.html?id=<% $o->parent->id %>"><% $o->parent->address %>/<% $o->parent->prefix %></a>
 %	     }else{
-	         <b><font size="-1">(root block)</font></b>
+	         <strong><font size="-1">(root block)</font></strong>
 %	     }
 	     </td>
 	   </tr>
@@ -452,10 +481,10 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
         <table width="100%" border="0">
            <tr>
 	     <td class="formtablec1">Address: </td>
-	     <td class="formtablec2"><b>
+	     <td class="formtablec2"><strong>
 %# Kind of weird, but only way to get the "/" in the middle with no spaces
 %              $ui->text_field(object=>$o, column=>"address", edit=>$edit_block, htmlExtra =>"style='width: 15em'"); print "/"; $ui->text_field(object=>$o, column=>"prefix", edit=>$edit_block, htmlExtra =>"style='width: 2em'");
-             </b></td>
+             </strong></td>
 	   </tr>
 	   <tr>
              <td class="formtablec1">Status: </td>
@@ -473,7 +502,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %		    }
 		    </select>
 %                 }else{
-	            <b><% $sn %></b>
+	            <strong><% $sn %></strong>
 %                 }
 %	       }
 	     </td> 
@@ -535,7 +564,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %	     if (defined($o->parent) && int($o->parent)){
 		 <a href="ip-ws.html?id=<% $o->parent->id %>"><% $o->parent->address %>/<% $o->parent->prefix %></a>
 %	     }else{
-	         <b><font size="-1">(root block)</font></b>
+	         <strong><font size="-1">(root block)</font></strong>
 %	     }
 	     </td>
 	   </tr>
