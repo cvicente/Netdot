@@ -4,15 +4,11 @@
 ###############################################################################
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
-if ($val =~ /\w+/)
-{
-    if ($val =~ /\w+\s+\w+/)
-    {
+if ($val =~ /\w+/) {
+    if ($val =~ /\w+\s+\w+/) {
         # if there's more than one word
         @terms = split /\s+/, $val;
-    }
-    else
-    {
+    } else {
         $val =~ s/\s+//;
         push @terms, $val;
     }
@@ -34,29 +30,25 @@ my %stored = ();
 my @backbones = ();
 
 # get backbone cable for each closet
-foreach my $closet (@closets)
-{
+foreach my $closet (@closets) {
     my $c_id = $closet->id;
     map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$c_id),
                                    BackboneCable->search(end_closet=>$c_id));
 }
 
 # and now go through all of our backbones and add sites to our list.
-foreach my $backbone (@backbones)
-{
+foreach my $backbone (@backbones) {
     my $start_site = $backbone->start_closet->floor->site;
     my $end_site = $backbone->end_closet->floor->site;
 
     if ($start_site->id != $site_id &&
-        !exists($stored{$start_site}))
-    {
+        !exists($stored{$start_site})) {
         push(@results, $start_site);
         $stored{$start_site} = 1;
     }
 
     if ($end_site->id != $site_id &&
-        !exists($stored{$end_site}))
-    {
+        !exists($stored{$end_site})) {
         push(@results, $end_site);
         $stored{$end_site} = 1;
     }
@@ -64,20 +56,15 @@ foreach my $backbone (@backbones)
 
 printf("var listdata = new Array();\n");
 
-if (scalar(@results) < $MAX_RESULTS)
-{
+if (scalar(@results) < $MAX_RESULTS) {
     @results = sort { $a->name cmp $b->name } @results;
 
     printf("listdata.push(new Option(\"No Matches\", \"\"));\n") unless (scalar(@results));
     
-    foreach my $end_site (@results)
-    {
+    foreach my $end_site (@results) {
         printf("listdata.push(new Option(\"%s\", \"%s\"));\n", $end_site->name, $end_site->id);
     }
-}
-
-else
-{
+} else {
     printf("listdata.push(new Option(\"Too Many Results\", \"\"));\n")
 }
 

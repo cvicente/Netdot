@@ -4,15 +4,11 @@
 ###############################################################################
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
-if ($val =~ /\w+/)
-{
-    if ($val =~ /\w+\s+\w+/)
-    {
+if ($val =~ /\w+/) {
+    if ($val =~ /\w+\s+\w+/) {
         # if there's more than one word
         @terms = split /\s+/, $val;
-    }
-    else
-    {
+    } else {
         $val =~ s/\s+//;
         push @terms, $val;
     }
@@ -28,27 +24,23 @@ if ($val =~ /\w+/)
 <%perl>
 my $lblField = ($ui->getlabels($table))[0];
 my @results;
-foreach my $term (@terms)
-{
+foreach my $term (@terms) {
    push(@results, $table->search($search_field=>$term)); 
 }
 
 printf("var listdata = new Array();\n");
 
-if (scalar(@results) < $MAX_RESULTS)
-{
+if (scalar(@results) < $MAX_RESULTS) {
     @results = sort { $a->$lblField cmp $b->$lblField } @results;
 
     printf("listdata.push(new Option(\"No Matches\", \"\"));\n") unless (scalar(@results));
 
-    foreach my $res (@results)
-    {
+    foreach my $res (@results) {
         printf("listdata.push(new Option(\"%s\", \"%s\"));\n", $res->$lblField, $res->id);
     }
 }
 
-else
-{
+else {
     printf("listdata.push(new Option(\"Too Many Results\", \"\"));\n")
 }
 

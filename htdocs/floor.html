@@ -31,45 +31,6 @@ if (defined($ARGS{_action}))
         $site = $o->site;
     }
 }
-
-if (defined($ARGS{_action}) && defined($ARGS{__plan}) && $ARGS{__plan} ne "")
-{
-    my %mimeTypes = ("jpg"=>"image/jpeg", "jpeg"=>"image/jpeg", "gif"=>"image/gif",
-                     "png"=>"image/png", "pdf"=>"application/pdf");
-    my $fh = $ARGS{__plan};
-    my $extension = $1 if ($fh =~ /\.(\w+)$/);
-    die("Extension \"$extension\" could not be found.\n") if (!exists($mimeTypes{$extension}));
-
-    my $mimetype = $mimeTypes{$extension};
-    my $plan = $o->plan;
-    my $data;
-    while (<$fh>)
-    {
-        $data .= $_;
-    }
-    
-    my %tmp;
-    $tmp{bindata} = $data;
-    $tmp{filename} = $fh;
-    $tmp{filetype} = $mimetype;
-    $tmp{filesize} = -s $fh;
-    
-    if (int($plan) ne 0)
-    {
-        # changed floor plan
-        die("Error: " . $ui->error) if (!($ui->update(object=>$plan, state=>\%tmp)))
-    }
-
-    else
-    {
-        # new floor plan 
-        my $ret = $ui->insert(table=>"BinFile", state=>\%tmp);
-        die("Error: " . $ui->error) if (!$ret);
-
-        # now try and update our Floor...
-        die("Error: " . $ui->error) if (!($ui->update(object=>$o, state=>{plan=>$ret})));
-    }
-}
 # end insertion/update code
 # -----------------------------------------------------------------------------
 </%perl>
@@ -112,22 +73,6 @@ if (defined($ARGS{_action}) && defined($ARGS{__plan}) && $ARGS{__plan} ne "")
                 </td>
             </tr>
 
-            <tr align="left" valign="top">
-                <td align="left">Floor Plan: </td>
-                <td align="left">
-%               if ($editFloor) {
-                    <input type="file" name="__plan" size="30" value="">
-%                   if ($o && int($o->plan) ne 0) {
-                    <br><I>Currently <a href="display_bin.html?id=<% $o->plan->id %>">&quot;<% $o->plan->filename %>&quot;</a> (<% $o->plan->filesize %> bytes)</I>
-%                   }            
-%               }
-%               elsif ($o && int($o->plan) ne 0) {
-                <P ALIGN="center">
-                <A HREF="display_bin.html?id=<% $o->plan %>"><% $o->plan->filename %></A>
-                </P>
-%           }                
-                </td>
-            </tr>
             </table>
             </td>
             
