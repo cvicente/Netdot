@@ -11,11 +11,11 @@ if( $arg{table} ) {
   if( defined( $obj ) ) {
     my $i = 1;
     undef( %order );
-    if( $obj->columnOrder ) {
+    if( defined( $obj->columnOrder ) ) {
       map { $order{$_} = $i++; } split( /,/, $obj->columnOrder );
     } else {
       $order{"id"} = $i++;
-      foreach ( $obj->name->columns() ) {
+      foreach ( sort { $a cmp $b } $obj->name->columns() ) {
         next if( $_ eq "id" );
         $order{$_} = $i++;
       }
@@ -69,6 +69,9 @@ my( %arg, %order, %linksto, %linksfrom, $obj );
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.2  2003/04/23 17:39:50  netdot
+# now sorting alphabetically if columnOrder not defined.  otherwise, looks good.
+#
 # Revision 1.1  2003/04/23 17:15:52  netdot
 # Initial revision
 #
