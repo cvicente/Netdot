@@ -67,7 +67,7 @@ if( $args{table} ) {
 %    if( $VIEW eq "row" ) {
      <tr class="rowtitle2">
 %       foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-           <th><% $o %></th>
+           <th><% $o %>&nbsp</th>
 %       }
          <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
      </tr>
@@ -91,7 +91,7 @@ if( $args{table} ) {
 %       if( $VIEW eq "column" ) {
           <tr>
              <td align="RIGHT" valign="TOP" WIDTH="100" class="column1" bgcolor="#DDDDDD">
-                <b><% $c %></b>: 
+                <b><% $c %>&nbsp</b>: 
              </td>
 %       }
         <td align="LEFT" valign="TOP" class="column2">
@@ -100,9 +100,9 @@ if( $args{table} ) {
 %             if( ! defined( $ft ) ) {
                  No such object <% $linksto{$c} %>
 %             } elsif( $o->$c == 0 ) {
-                 -
+                 &nbsp -
 %             } elsif( ! defined( $linksto{$c}->retrieve( int( $o->$c ) ) ) ) {
-                 -
+                 &nbsp -
 %             } else {
 %                my $obj = $linksto{$c}->retrieve( int( $o->$c ) );
 %                my $lbl = $gui->getobjlabel( $obj, ", " );
@@ -114,10 +114,10 @@ if( $args{table} ) {
 %                   } else {
                       <% $lbl %>
 %                   }
-	            </a>
-                    </strong>
+	            </a> 
+                    </strong> &nbsp
 %                } else {
-                    <% $lbl %>
+                    <% $lbl %> &nbsp
 %                }
 %            }
 %          } else {
@@ -130,9 +130,9 @@ if( $args{table} ) {
                     <% $o->$c %>
 %                }
                  </a>
-                 </strong>
+                 </strong> &nbsp
 %             } else {
-                 <% $o->$c %>
+                 <% $o->$c %> &nbsp
 %             }
 %          } # else fi
         </td>
@@ -197,6 +197,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.31  2003/07/16 23:15:59  netdot
+# massaged formatting -miyake
+#
 # Revision 1.30  2003/07/16 21:09:30  netdot
 # add css tags to tr tags -maiy[3~[3~
 #
