@@ -59,10 +59,11 @@ dist:
 
 ######################################################################
 dir: 
-	mkdir -p $(DST)/lib
 	mkdir -p $(DST)/bin
-	mkdir -p $(DST)/htdocs
 	mkdir -p $(DST)/doc
+	mkdir -p $(DST)/etc
+	mkdir -p $(DST)/htdocs
+	mkdir -p $(DST)/lib
 
 
 ######################################################################
