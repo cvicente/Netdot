@@ -1,0 +1,20 @@
+<%doc>
+
+Works as a wrapper for the different sections
+
+</%doc>
+<%attr>
+title   => "Network Documentation Tool"
+section => "Main"
+</%attr>
+
+<%init>
+my $title   = $m->base_comp->attr('title')   || "Network Documentation Tool";
+my $section = $m->base_comp->attr('section') || "Main";
+my $user    = SiteControl::AccessController::getCurrentUser($r);
+</%init>
+
+<& header.mhtml, title => $title, section => $section, user =>$user &>
+<& section1.mhtml &>
+% $m->call_next(user => $user);
+<& footer.mhtml &>
