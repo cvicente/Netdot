@@ -3,39 +3,152 @@ unless ( $ARGS{table} && $ARGS{id} ){
    print "<strong>Missing required parameters 'table' and/or 'id'</strong>";
    exit;
 }
+$table = $ARGS{table};
+$id = $ARGS{id};
+$obj = $table->retrieve($id);
+
+unless ( $obj ){
+   print "<strong>Nonexistent record: $id</strong>";
+   exit;
+}
+
+my $META = (Meta->search( name => $table ))[0];
+if( defined( $META ) ) {
+  my $i = 1;
+  undef( %order );
+  if( defined( $META->columnorder ) ) {
+    map { $order{$_} = $i++; } split( /,/, $META->columnorder );
+  } else {
+    $order{"id"} = $i++;
+    foreach ( sort { $a cmp $b } $META->name->columns() ) {
+      next if( $_ eq "id" );
+      $order{$_} = $i++;
+    }
+  }
+  undef( %linksto );
+  map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
+      split( /,/, $META->linksto );
+}
 </%perl>
+
+%if ( !$ARGS{res} ){ # show the form
+<& header, title => " Edit $table Details" &>
+
+<table border="0" width="95%" align="center">
+<tr><td align="center">
+<p><br>
+<form action="update.html" method="POST">
+
+<input type="hidden" name="table" value="<% $table %>">
+<input type="hidden" name="id" value="<% $id %>">
+
+<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+  <tr bgcolor="#FFFFFF"> 
+     <td colspan="3" align="center"><strong><% $table %></strong></td>
+  </tr>
+  <tr>
+%   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%     next if( $c eq 'id' );
+% ################################################
+%     if( ! exists( $linksto{$c} ) ) { # local field
+        <tr>
+          <td align="right" bgcolor="#DDDDDD"><% $c %>:</td>
+%	  if ( $c eq 'info' ){
+	     <td colspan="2">
+	        <textarea name="<% $c %>" rows="10" cols="38">
+	           <% $obj->$c %>
+		</textarea>
+             </td>
+%	  }else{
+             <td colspan="2"><input type="text" size="40" name="<% $c %>" value="<% $obj->$c %>"></td>
+%	  }
+	  
+        </tr>
+% ################################################
+%     } else {  # field is a foreign key
+        <tr>
+        <td align="right" bgcolor="#DDDDDD"><% $c %>:</td>
+%       my $ft = (Meta->search( name => $linksto{$c} ))[0];
+%       if( ! defined( $ft ) ) {
+          <td>No <% linksto{$c} %> in Meta table</td>
+%       } else {
+%         my $lbl = $ft->label;
+          <td>
+          <select name="<% $c %>">
+%         foreach my $fkobj ( $linksto{$c}->retrieve_all ) {
+%           if( ! defined( $linksto{$c}->retrieve( int( $obj->$c ) ) ) ) {
+              <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>	       
+%	    }elsif( $fkobj->id == $obj->$c->id )  {
+              <option value="<% $fkobj->id %>" selected><% $fkobj->$lbl %></option>
+%           }else {
+              <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
+%           }
+%         } # for
+          <option value="0">[null]</option>
+          </select>
+          </td>
+	  <td>
+	    [<a href="create.html?table=<% $linksto{$c} %>" target="_blank">new</a>]
+	  </td>
+%       } # else
+        </td>
+        </tr>
+%     } # else
+%   } # for
+  </tr>
+  <tr>
+    <td colspan="3" bgcolor="#FFFFFF" align="center">
+      <input name="res" value="1" type="hidden">
+      <input name="submit" value="Update" type="submit">
+      <input name="cancel" value="Cancel" type="submit">
+    </td>
+  </tr>
+</table>
+<p><br>
+
+</form>
+
+</td></tr>
+</table>
+
+<p><br>
+<& footer &>
+
+%} else { # parse form and update fields
+
 %if ( $ARGS{cancel} eq 'Cancel' ){
-    <& expview.html, table => $ARGS{table}, id => $ARGS{id} &>
+    <& view.html, table => $table, id => $id &>
 %   exit;
 %}
 <%perl>
-$table = $ARGS{table};
-my $obj = $table->retrieve($ARGS{id});
+# Get fields to update
+$obj = $table->retrieve($id);
 foreach my $j (keys %ARGS){
-	next if ($j eq 'submit' || $j eq 'table' || $j eq 'id');
-	$arg{$j} = $ARGS{$j};	
+	next if ($j eq 'submit' || $j eq 'table' || $j eq 'id' || $j eq 'res');
+	$fields{$j} = $ARGS{$j};	
 }
 
 # Check that we have at least one column parameter
-unless (scalar keys(%arg)){
-   print "<strong>Missing update parameters</strong>";
+unless (scalar keys(%fields)){
+   print "<strong>Missing field/value pairs to update</strong>";
    exit;
 }
-foreach my $col (keys %arg){
-   if ($arg{$col} ne $obj->$col){
-      $obj->set($col, $arg{$col});
-      $upd{$col} = $arg{$col};
+foreach my $col (keys %fields){
+   if ($fields{$col} ne $obj->$col){
+      $obj->set($col, $fields{$col});
+      $upd{$col} = $fields{$col};
    }
 }
 $obj->update;
 </%perl>
 
-<& expview.html, table => $ARGS{table}, id => $ARGS{id} &>
+<& view.html, table => $table, id => $id &>
+
+%}
 
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-use Data::Dumper;
-my( %arg, %linksto, %linksfrom, $table, $mi, %order, %upd);
+my( %fields, %linksto, %linksfrom, %order, $table, $id, $obj, %upd);
            
 </%init>
