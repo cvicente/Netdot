@@ -4,7 +4,7 @@ PKG=Netdot
 DST = unstable
 ETC = ins.sample.data netdot.relationships netdot.schema
 BIN = initacls.mysql initacls.Pg setup-class-dbi.pl mason.pl initdb
-HTML = search.html form.html sortresults.html expview.html update.html delete.html search_obj.html 
+HTML = create.html search.html form.html sortresults.html expview.html update.html delete.html search_obj.html 
 
 
 ######################################################################
@@ -32,6 +32,7 @@ test: testing
 # following is for testing files on tiroloco
 testing: $(HTML)
 	cp $? $(DST)/htdocs
+
 
 
 ######################################################################
