@@ -4,7 +4,7 @@ PKG=Netdot
 DST = unstable
 ETC = ins.sample.data netdot.relationships netdot.schema
 BIN = initacls.mysql initacls.Pg setup-class-dbi.pl mason.pl initdb
-HTML = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html
+HTML = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html table.html
 
 
 ######################################################################
