@@ -120,11 +120,17 @@ __PACKAGE__->columns(All => qw /id FirstName LastName Position Department Addres
 __PACKAGE__->has_a(Address => 'Address');
 __PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'Person');
 
+
+######################################################################
+# be sure to return 1
 1;
 
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.2  2003/04/08 17:47:45  netdot
+#  just checking in....
+#
 #  Revision 1.1  2003/04/08 17:35:24  netdot
 #  Initial revision
 #
