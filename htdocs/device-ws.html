@@ -472,12 +472,49 @@ if ( defined($search) && $search =~ /\w+/ ){
 %	}
 %	if (scalar @ips){
          <tr>
-	   <td align="center">IP</td>
-	   <td align="center">Subnet</td>
-	   <td align="center">Interface</td>
+	   <td align="center"><a href="device-ws.html?id=<% $id %>&ipsort=ip">IP</a></td>
+	   <td align="center"><a href="device-ws.html?id=<% $id %>&ipsort=subnet">Subnet</a></td>
+	   <td align="center"><a href="device-ws.html?id=<% $id %>&ipsort=interface">Interface</a></td>
          </tr>
 %	}
-%	foreach my $ip (@ips){	   
+<%perl>	
+       my @sortedips;
+       if ($ipsort eq "ip" || !defined($ipsort) ){
+          #
+          # Sort by IP address
+          #
+          @sortedips = map { $_->[0] }
+		sort {	$a->[1] cmp $b->[1]
+		        ||
+			$a->[2] <=> $b->[2] 
+			||	
+			$a->[3]	<=> $b->[3]
+			||
+			$a->[4] <=> $b->[4] }
+		map { [ $_, (split /\./, $_->address ) ] } @ips;
+	}elsif ($ipsort eq "subnet"){
+          #
+          # Sort by Subnet
+          #
+          @sortedips = map { $_->[0] }
+		sort {	$a->[1] cmp $b->[1]
+		        ||
+			$a->[2] <=> $b->[2] 
+			||	
+			$a->[3]	<=> $b->[3]
+			||
+			$a->[4] <=> $b->[4] }
+		map { [ $_, (split /\./, $_->subnet->address ) ] } @ips;
+	}elsif ($ipsort eq "interface"){
+          #
+          # Sort by Interface
+          #
+          @sortedips = map { $_->[0] }
+		sort {	$a->[1] cmp $b->[1] }
+		map { [ $_, $_->interface->name ] } @ips;
+	}		
+</%perl>	
+%	foreach my $ip (@sortedips){	   
 %	 $ci = ($ci + 1) % 2;
 	 <tr bgcolor="<% $colors{$ci} %>">
 	   <td align="left">
@@ -966,6 +1003,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 $id     => undef
 $search => undef
 $edit   => undef
+$ipsort => undef
 </%args>
 
 <%init>
