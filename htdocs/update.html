@@ -138,7 +138,7 @@ unless (scalar keys(%fields)){
 %         $obj->update;
 %   };
 %   if ($@){
-      <& error.html, caller => "update.html", error => $@ &>
+      <& error, caller => "update.html", error => $@ &>
 %     exit;
 %   }
   
@@ -147,13 +147,9 @@ unless (scalar keys(%fields)){
 %}
 
 <%init>
-use lib "/home/netdot/public_html/lib";
-use Netdot::DBI;
-use Netdot::GUI;
 my ( %linksto, %linksfrom, %order, %inputtypes,
     $table, $id, $obj, %fields );
 my $gui = Netdot::GUI->new();
-
 
 </%init>
 

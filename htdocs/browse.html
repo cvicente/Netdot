@@ -12,7 +12,7 @@ foreach my $j ( keys %ARGS ) {
 %   @t = $gui->gettables();
     <p>
     <blockquote>
-    <& table.html, width => $WIDTH, link => "browse.html", title => "Please select an object to browse:" &>
+    <& table, width => $WIDTH, link => "browse.html", title => "Please select an object to browse:" &>
     </blockquote>
 % } else {
 %   my $TBL = $args{table};
@@ -22,7 +22,7 @@ foreach my $j ( keys %ARGS ) {
     <table cellpadding="0" border="0" width="100%" bgcolor="#CCCCCC" class="tablebackground">
     <tr class="tabletitle">
     <td>&nbsp<strong><% $TBL %></strong>
-    <& sortresults.html, table => $TBL, object => \@r &>
+    <& sortresults, table => $TBL, object => \@r &>
     </td>
     </tr>
     </table>
@@ -38,9 +38,6 @@ $gui => Netdot::GUI->new()
 %args => undef
 </%args>
 <%init>
-use lib "/home/netdot/public_html/lib";
-use Netdot::DBI;
-use Netdot::GUI;
 
 </%init>
 
@@ -68,7 +65,7 @@ use Netdot::GUI;
 #  added blockquotes
 #
 #  Revision 1.4  2003/05/30 22:57:11  netdot
-#  replaced opening page with component from table.html
+#  replaced opening page with component from table
 #
 #  Revision 1.3  2003/05/29 23:26:15  netdot
 #  basic functionality there....

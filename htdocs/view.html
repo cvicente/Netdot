@@ -207,7 +207,7 @@ my $h_meta = $gui->getmeta($h_table);
 %	    unless( defined($fkobj = $linksto{$c}->retrieve($obj->$c->id) )){
 %	       next;
 %           }
-            <& sortresults.html, table => $linksto{$c}, object => [$fkobj], view => "row"   &>
+            <& sortresults, table => $linksto{$c}, object => [$fkobj], view => "row"   &>
 	 </td>
 %      }
      </tr>
@@ -229,7 +229,7 @@ my $h_meta = $gui->getmeta($h_table);
                  <td align="left" class="rowtitle1"><strong><% $i %></strong></td>
 	       <tr>
 	         <td colspan="2">
-	             <& sortresults.html, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
+	             <& sortresults, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
 	         </td>
 	       </tr>
 	    </table>
@@ -244,7 +244,7 @@ my $h_meta = $gui->getmeta($h_table);
 %  if ( $view eq 'history' ){
 %   my $id_f = lc("$table" . "_id");
 %   my @h_objs = $h_table->search($id_f => "$obj->id");
-    <& sortresults.html, table => $h_table, object => \@h_objs , view => "row" &>
+    <& sortresults, table => $h_table, object => \@h_objs , view => "row" &>
 %  } 
 
 <!-- End Display history objects -->
@@ -255,11 +255,7 @@ my $h_meta = $gui->getmeta($h_table);
 <p><br>
 <& footer &>
 <%init>
-use lib "/home/netdot/public_html/lib";
-use Netdot::DBI;
-use Netdot::GUI;
 my( %arg, %linksto, %linksfrom, $id, $obj, $prevobj, $table, $view, %order, %ftables);
-
 my $gui = Netdot::GUI->new();
              
 </%init>
@@ -340,7 +336,7 @@ my $gui = Netdot::GUI->new();
 #  *** empty log message ***
 #
 #  Revision 1.8  2003/05/14 16:28:02  netdot
-#  added id arg to call to form.html
+#  added id arg to call to form
 #
 #  Revision 1.7  2003/05/14 16:27:34  netdot
 #  initial checkin

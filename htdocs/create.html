@@ -115,7 +115,7 @@ if( $args{confirm} eq "Confirm" ) {
   $session->{created}{$T} = $id;
 }
 ##################################################
-# create %state to pass to form.html
+# create %state to pass to form
 if( defined( $TBL ) ) {
   my $meta = $gui->getmeta( $TBL );
   my %lt = $gui->getlinksto( $TBL );
@@ -193,7 +193,7 @@ if( defined( $TBL ) ) {
 %   } elsif( ! $TBL || $args{cancel} ) {
       <p>
       <blockquote>
-      <& table.html, width => $WIDTH, link => "create.html", title => "Please select an object to create:" &>
+      <& table, width => $WIDTH, link => "create.html", title => "Please select an object to create:" &>
       </blockquote>
 %   } else {
       <br>
@@ -206,7 +206,7 @@ if( defined( $TBL ) ) {
         <a href="node.html">Auto Discover Node</a><br>
         <p>
 %     }
-      <& form.html, table => $TBL, showdisabled => '0', session => \%state &>
+      <& form, table => $TBL, showdisabled => '0', session => \%state &>
       <table cellpadding="3" cellspacing="1" border="0">
       <tr align="LEFT">
       <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
@@ -244,10 +244,6 @@ $gui => Netdot::GUI->new()
 
 </%args>
 <%init>
-use lib "/home/netdot/public_html/lib";
-use Netdot::DBI;
-use Netdot::GUI;
-use Data::Dumper;
 my %state;
 undef( %state );
 
@@ -327,10 +323,10 @@ create.html
 #  <%args>
 #
 #  Revision 1.12  2003/05/30 22:58:12  netdot
-#  set table width to 2 (for table.html)
+#  set table width to 2 (for table)
 #
 #  Revision 1.11  2003/05/30 21:43:04  netdot
-#  opening page now using table.html to display initial list of tables to
+#  opening page now using table to display initial list of tables to
 #  create
 #
 #  Revision 1.10  2003/05/29 00:04:41  netdot
@@ -346,7 +342,7 @@ create.html
 #
 #  Revision 1.7  2003/05/23 23:45:38  netdot
 #  lots of changes.  in a nutshell, create stuff now works -- actually
-#  creates data.  it also passes state to form.html to fill in some
+#  creates data.  it also passes state to form to fill in some
 #  details where necessary.  there is a problem if a user does:
 #
 #    - user hits confirm on one page
@@ -359,7 +355,7 @@ create.html
 #  have most of the driving functionality in place -- so links take you
 #  where you're supposed to go with the requisite state.  also displaying
 #  the linksto stuff instead of the integer.  still need to pass state
-#  (if it exists) to form.html.  after that, it is a matter of doing the
+#  (if it exists) to form.  after that, it is a matter of doing the
 #  actual inserts! -sf
 #
 #  Revision 1.5  2003/05/13 23:36:15  netdot

@@ -13,7 +13,7 @@ foreach my $j (keys %ARGS){
 <table align="center" border="0" width="95%">
    <tr>
       <td>
-         <& table.html, width => 3, link => "search_obj.html", title => "Please select a table to search:" &>
+         <& table, width => 3, link => "search_obj.html", title => "Please select a table to search:" &>
       </td>
    </tr>
 </table>
@@ -103,7 +103,7 @@ foreach my $j (keys %ARGS){
 <table align="center" border="0" width="95%">
    <tr>
       <td>
-             <& sortresults.html, table => "$table", object => \@objs &>
+             <& sortresults, table => "$table", object => \@objs &>
        </td>
    </tr>
 </table>
@@ -118,9 +118,6 @@ foreach my $j (keys %ARGS){
 <& footer &>
 
 <%init>
-use lib "/home/netdot/public_html/lib";
-use Netdot::DBI;
-use Netdot::GUI;
 my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order );
 my $gui = Netdot::GUI->new();
            
