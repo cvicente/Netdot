@@ -37,7 +37,7 @@ if( $arg{table} ) {
       <th><% $o %></th>
 %   }
     </tr>
-%   foreach my $o ( @{ $arg{object} } ) {
+%   foreach my $o ( sort { $a->id <=> $b->id } @{ $arg{object} } ) {
       <tr>
 %     foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
         <td align="CENTER" valign="TOP" bgcolor="#FFFFFF">
@@ -83,6 +83,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.9  2003/05/14 23:48:28  netdot
+# sort results on display (id in increasing order)
+#
 # Revision 1.8  2003/05/07 19:08:52  netdot
 # fixed problem around line 52 ( $o->$c->id => $o->$c ).  this should
 # resolve the strange problem of 'id' not defined'.  also got rid of the
