@@ -3,6 +3,7 @@ RELEASE=0.1
 PKG=Netdot
 DST = unstable
 ETC = ins.sample.data netdot.relationships netdot.schema
+DOC = TODO ChangeLog MILESTONES
 BIN = initacls.mysql initacls.Pg setup-class-dbi.pl mason.pl initdb
 HTML = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html table.html banner
 
