@@ -1,47 +1,107 @@
-
-
-
 <%perl>
-# expect name of Table & object that require sorting
-undef( %args );
+my $l = new Apache::Sesssion::Lock::File;;
+$l->clean( $DIR, 3600 );  # remove files older than 1 hr
 foreach my $j ( keys %ARGS ) {
-  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+  if( $ARGS{$j} eq "New" ) {
+    $tbl = $j;
+    next;
+  }
+  next if( $ARGS{$j} !~ /\w+/ );
   $args{$j} = $ARGS{$j};
 }
-if( $args{table} ) {
-  undef( $obj );
-  $obj = (Meta->search( name => $args{table} ))[0];
-  if( defined( $obj ) ) {
-    my $i = 1;
-    undef( %order );
-    if( defined( $obj->columnOrder ) ) {
-      map { $order{$_} = $i++; } split( /,/, $obj->columnOrder );
-    } else {
-      $order{"id"} = $i++;
-      foreach ( sort { $a cmp $b } $obj->name->columns() ) {
-        next if( $_ eq "id" );
-        $order{$_} = $i++;
-      }
-    }
-    undef( %linksto );
-    map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
-        split( /,/, $obj->linksTo );
-    undef( %linksfrom );
-    map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k } 
-        split( /,/, $obj->linksFrom );
+unless( defined( $tbl ) ) {
+  $tbl = $args{table};
+}
+if( defined( $args{sid} ) ) {
+  $sid = $args{sid};
+}
+if( $tbl ) {
+  tie %session, 'Apache::Session::File', 
+    $sid, { Directory => $DIR, LockDirectory => $DIR };
+  $sid = $session{_session_id};
+}
+my %rev = reverse %ARGS;
+if( $args{submit} || $rev{New} ) {
+#  foreach my $arg ( keys %args ) {
+#    next if( $arg eq "submit" || $arg eq "sid" || $arg eq "table" );
+#    $session{tables}{$tbl}{$arg} = $args{$arg};
+#  }
+  if( ! defined( $args{submit} ) ) {
+    defined( $session{path} ) ?
+      ( $session{path} .= ";$args{table}" ) 
+      : ( $session{path} = "$args{table}" );
   }
 }
-if( $args{id} ) {
-  $obj = $args{table}->retrieve( $args{id} );
+if( $args{submit} ) {
+  my @tbls = split( /;/, $session{path} );
+  $tbl = pop @tbls;
+  $session{path} = join( ';', @tbls );
 }
 </%perl>
 
+% ####################################################################
+<p>
+<& header, title =>"$tbl Create" &>
+
+%   print Dumper( %session );
+
+% if( $args{"submit"} eq "Submit" && ! defined( $tbl ) ) {
+    <p>do something -- like submit these changes
+    <ul>
+%   foreach my $a ( keys %args ) {
+      <li><% $a %> : <% $args{$a} %>
+%   }
+    </ul>
+%   tied(%session)->delete;
+% } elsif( ! $tbl || $args{submit} eq "Cancel" ) {
+%   tied(%session)->delete;
+%   my @t = Meta->retrieve_all();
+    <p>Please select an object to create:<br>
+    <ul>
+%   foreach my $t ( sort { $a->name cmp $b->name } @t ) {
+%     next if( $t->name eq "Meta" );
+      <li><a href="create.html?table=<% $t->name %>"><% $t->name %></a>
+%   }
+    </ul>
+% } else {
+    <form action="create.html" method="POST">
+    <input type="hidden" name="sid" value="<% $sid %>">
+    <& form.html, table => $tbl, showdisabled => '0' &>
+    <table cellpadding="3" cellspacing="1" border="0">
+    <tr align="LEFT">
+    <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
+    <input name="submit" value="Submit" type="submit">
+    </td>
+    <td>
+    <input name="submit" value="Cancel" type="submit">
+    </td>
+    </tr>
+    </table>
+    </form>
+% } # if/else table
+
+%   print Dumper( %session );
+
+<& footer &>
+% ####################################################################
 
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Data::Dumper;
-my( %args, %order, %linksto, %linksfrom, $obj );
+use Apache::Session::File;
+use Apache::Sesssion::Lock::File;
+my( %args, %order, %linksto, %linksfrom, $obj, %session, $tbl, $id, $sid );
+my $DIR = "/home/netdot/public_html/tmp";
+undef( %args );
+undef( %order );
+undef( %linksto );
+undef( %linksfrom );
+undef( %session );
+undef( $obj );
+undef( $tbl );
+undef( $id );
+undef( $sid );
 
 </%init>
 
@@ -50,6 +110,13 @@ mason file
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.2  2003/05/09 00:01:58  netdot
+#  lots of changes, so not sure where to start.  can generally drive
+#  through the interface (click on links and they take you places);
+#  keeping some state; have a cancel button to kill some state; need to
+#  add history links (links to the previous table you were editing if
+#  creating a chain of tables; need confirm screen
+#
 #  Revision 1.1  2003/05/02 17:11:30  netdot
 #  Initial revision
 #
