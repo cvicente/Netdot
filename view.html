@@ -10,7 +10,11 @@ unless ( $arg{table} && $arg{id} ){
 }
 $table = $arg{table};
 $obj = $table->retrieve($arg{id});
-
+if ( $arg{view} ) {
+  $view = $arg{view};
+}else{
+  $view = 'all';
+}
 unless ( $obj ){
    print "<strong>Nonexistent record: $arg{id}</strong>";
    exit;
@@ -35,42 +39,100 @@ if( defined( $mi->columnorder ) ) {
       $order{$_} = $i++;
    }
 }
+
+# List all the has_many objects for this object
+foreach my $i (keys %linksfrom){
+  my ($j, $rtbl, @tmp, @robjs, @jobjs, $col);
+  map { $j = $_ } keys %{ $linksfrom{$i} };
+  my $meta = ( Meta->search(name => $j) )[0];
+  unless ( scalar(@tmp = $obj->$i) ){
+    next;
+  }
+  # Do some magic if table is a join table
+  if ( defined($meta) && ($meta->mainobject == 0) ){
+     @jobjs = @tmp;  # these are the join table objects
+     my $jclass = ref($jobjs[0]);  #name of the join table class
+     # Pick the fk column of the other table
+     map { $col = $_  if ($_ ne $linksfrom{$i}{$j} && $_ ne 'id'); } $jclass->columns();
+     map { push @robjs, $_->$col } @jobjs;
+     $rtbl = ref($robjs[0]); 
+  } else{
+     @robjs = @tmp;
+     $rtbl = $j;
+  }
+
+  $ftables{$i}{rtbl} = $rtbl;  
+  $ftables{$i}{ffield} = $linksfrom{$i}{$j};
+  $ftables{$i}{robjs} = \@robjs;
+
+}
+
 </%perl>
 
 
 <& header, title=>" $table Details" &>
 
-<table align="center" border="0" width="95%">
-<tr><td>
+<table align="top" border="0" width="97%">
+<tr><td colspan="2">
+  <table width="100%">
+  <tr>
+  <td valign="center" align="left" width="15%" >
+      <form action="view.html" method="POST">
+      <input type="hidden" name="table" value="<% $table %>">
+%        my (@objl, $p);
+%        my $numrec =  scalar(@objl = map { $_->id } $table->retrieve_all);
+%        for (my $i=0; $i < $numrec; $i++) { if ($objl[$i] == $obj->id) { $p = $i; last; }  };
+         record <input type="text" size="3" name="id" value="<% $obj->id %>"> of <% $numrec %> 
+      </form>
+  </td>
+  <td valign="top" align="left">
+      [<a href="view.html?table=<% $table %>&id=<% $objl[0] %>">|&lt;</a>]
+      &nbsp;&nbsp;[<a href="view.html?table=<% $table %>&id=<% (($objl[$p-1]) != 0) ? ($objl[$p-1]): $numrec %>">&lt;&lt;</a>]
+      &nbsp;&nbsp; [<a href="view.html?table=<% $table %>&id=<% $objl[($p+1)%($numrec)] %>">&gt;&gt;</a>] 
+      &nbsp;&nbsp;[<a href="view.html?table=<% $table %>&id=<% $objl[$numrec-1] %>">&gt;|</a>]
+  </td>
+  </tr>
+  </table>
 <p><br>
-<table align="left" cellpadding="3" cellspacing="1" border="0">
-<tr> 
-   <form action="expview.html" method="POST">
-   <input type="hidden" name="table" value="<% $table %>">
-   <td bgcolor="FFFFFF" colspan="2">
-%     my (@objl, $p);
-%     my $numrec =  scalar(@objl = map { $_->id } $table->retrieve_all);
-%     for (my $i=0; $i < $numrec; $i++) { if ($objl[$i] == $obj->id) { $p = $i; last; }  };
-      [<a href="expview.html?table=<% $table %>&id=<% $objl[0] %>">|&lt;</a>]
-      &nbsp;&nbsp;[<a href="expview.html?table=<% $table %>&id=<% (($objl[$p-1]) != 0) ? ($objl[$p-1]): $numrec %>">&lt;&lt;</a>]
-      &nbsp;&nbsp; [<a href="expview.html?table=<% $table %>&id=<% $objl[($p+1)%($numrec)] %>">&gt;&gt;</a>] 
-      &nbsp;&nbsp;[<a href="expview.html?table=<% $table %>&id=<% $objl[$numrec-1] %>">&gt;|</a>] 
-      &nbsp;&nbsp; record <input type="text" size="3" name="id" value="<% $obj->id %>"> of <% $numrec %> 
-   </td>
-   </form>
-</tr>
-</table>
+</td></tr>
 
-<p><br><br>
-<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
-<tr bgcolor="#FFFFFF"> 
-<td align="center"><strong><% $table %></strong></td>
-<td align="right" colspan="2" >
-      [<a href="update.html?table=<% $table %>&id=<% $obj %>">edit</a>]
-&nbsp;[<a href="delete.html?table=<% $table %>&id=<% $obj %>">delete</a>]
-</td>
-</tr>
+<tr>
+  <td align="left" valign="top" width="15%">
+   <table border="0" cellspacing="0" bgcolor="#CCCCCC" width="100%">
+    <tr><td>
+     <font size="-1">
+      <table border="0" cellspacing="0" cellpadding="1" bgcolor="#FFFFFF" width="100%">
+        <tr><td colspan="2" bgcolor="#DDDDDD"><strong>View</strong></td></tr>
+	<tr><td colspan="2"><font color="#FF0000">-</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">all</td></tr>
+	<tr><td colspan="2"><font color="#FF0000">-</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $table %>"><% lc($table) %></a></td></tr>
+%	foreach my $i (keys %ftables){
+           <tr><td colspan="2"><font color="#FF0000">-</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>"><% $i %></a></td></tr>	   
+%	}
+	<tr><td>&nbsp;</td></tr>
+        <tr><td colspan="2" bgcolor="#DDDDDD"><strong>Actions</strong></td></tr>
+	<tr><td colspan="2"><font color="#FF0000">-</font> <a href="update.html?table=<% $table %>&id=<% $obj %>">edit</a></td></tr>
+        <tr><td colspan="2"><font color="#FF0000">-</font> <a href="delete.html?table=<% $table %>&id=<% $obj %>">delete</a></td></tr>
+%	if (scalar keys %ftables){
+	  <tr><td colspan="2"><font color="#FF0000">-</font> add to this <% $table %>:</td></tr>
+%	     foreach my $i (keys %ftables){
+	       <tr>
+		<td>&nbsp;&nbsp;</td>
+	        <td><font color="#FF0000">-</font> <a href="create.html?table=<% $ftables{$i}{rtbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>"><% $i %></a></td>
+	       </tr>
+%	     }
+%      }
+      </table>
+     </font>
+    </td></tr>
+   </table>
+  </td>
+  <td align="left" valign="top">
 
+%if ($view eq 'all' || $view eq "$table"){
+    <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+      <tr bgcolor="#FFFFFF"> 
+      <td align="center" colspan="2"><strong><% $table %></strong></td>
+      </tr>
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %      next if ($c eq 'id' || $c eq 'aliases');
        <tr> 
@@ -88,52 +150,28 @@ if( defined( $mi->columnorder ) ) {
 %      }
      </tr>
 %   }
-</tr>
-<tr> 
-</tr>
-</table>
-<%perl>
-# List all the has_many objects for this object
-foreach my $i (keys %linksfrom){
-  my ($j, $rtbl, @tmp, @robjs, @jobjs, $col);
-  map { $j = $_ } keys %{ $linksfrom{$i} };
-  my $meta = ( Meta->search(name => $j) )[0];
-  unless ( scalar(@tmp = $obj->$i) ){
-    push @links, qq (<a href="create.html?table=$j&$linksfrom{$i}{$j}=$obj">$i</a>);
-    next;
-  }
-  # Do some magic if table is a join table
-  if ( defined($meta) && ($meta->mainobject == 0) ){
-     @jobjs = @tmp;  # these are the join table objects
-     my $jclass = ref($jobjs[0]);  #name of the join table class
-     # Pick the fk column of the other table
-     map { $col = $_  if ($_ ne $linksfrom{$i}{$j} && $_ ne 'id'); } $jclass->columns();
-     map { push @robjs, $_->$col } @jobjs;
-     $rtbl = ref($robjs[0]); 
-  } else{
-     @robjs = @tmp;
-     $rtbl = $j;
-  }
+     </tr>
+     </table>
+%}
 
-</%perl>
+%  foreach my $i (keys %ftables){
+%     if ( ($view eq 'all' || $view eq $i ) && $view ne "$table"){
            <p>
            <table cellpadding="0" border="0"  bgcolor="#CCCCCC">
 	      <tr>
                 <td align="left"><strong><% $i %></strong></td>
-	           <td align="right">[<a href="create.html?table=<% $rtbl %>&<% $linksfrom{$i}{$j} %>=<% $obj %>">add</a>]</td>
 	      <tr>
 	        <td colspan="2">
-	           <& sortresults.html, table => $rtbl, object => \@robjs, view => "expanded" &>
+	           <& sortresults.html, table => $ftables{$i}{rtbl}, object => $ftables{$i}{robjs}, view => "expanded" &>
 	        </td>
 	      </tr>
 	   </table>
+%     }
+%  } 
 
-%}
-%printf ( "<p><br>Add %s to this $table", (join ', ', @links) ) if ( scalar(@links) );
 
 </td></tr>
 </table>
-
 
 <p><br>
 <& footer &>
@@ -141,7 +179,7 @@ foreach my $i (keys %linksfrom){
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 
-my( %arg, %linksto, %linksfrom, $obj, $table, $mi, %order, @links);
+my( %arg, %linksto, %linksfrom, $obj, $table, $view, $mi, %order, @addlinks, %ftables);
                
 </%init>
 
@@ -149,6 +187,9 @@ my( %arg, %linksto, %linksfrom, $obj, $table, $mi, %order, @links);
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.12  2003/06/03 01:38:34  netdot
+#  Changed layout to include a side menu, among other fixes
+#
 #  Revision 1.11  2003/05/30 00:18:06  netdot
 #  Added browse buttons and many other things.
 #  Changing name to view.html
