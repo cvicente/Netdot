@@ -22,209 +22,280 @@ if( $args{cancel} ) {
 if ( $args{action} eq "discover" ){
 
  if( exists( $args{insert} ) ) {
-  my %dev = %{ $session->{device} };
-  
-  if( Device->search( name => "$args{device}" ) 
-      || Device->search( physaddr => $dev{dot1dBaseBridgeAddress} ) ) {
-    ; # do nothing
-  } else {
-    my( %devtmp, $newdevice );
+
+    my %dev = %{$session->{device}};
+
+    if (!RR->search(name => "$args{device}"))
+    {
+    my (%devtmp, $newdevice, %rrtmp);
     my @ifrsv = NvIfReserved->retrieve_all();
-    $devtmp{name} = $args{device};
+
+    $rrtmp{name} = $args{device};
     $devtmp{community} = $comstr;
+    
+    my %dev = %{$session->{device}};
+
     $devtmp{sysdescription} = $dev{sysDescr};
-    if( length( $dev{dot1dBaseBridgeAddress} ) > 0 
-        && $dev{dot1dBaseBridgeAddress} ne "noSuchObject" ) {
-      # Remove the '0x' from the MAC address
-      $dev{dot1dBaseBridgeAddress} =~ s/^0x//;
-      $devtmp{physaddr} = $dev{dot1dBaseBridgeAddress};
-    }
-    if( length( $dev{entPhysicalSerialNum} ) > 0 
-        && $dev{entPhysicalSerialNum} ne "noSuchObject" ) {
-      $devtmp{serialnumber} = $dev{entPhysicalSerialNum};
-    }
-    ################################################################
-    # Try to guess some values
+    if (length($dev{dot1dBaseBridgeAddress}) > 0 && $dev{dot1dBaseBridgeAddress} ne "noSuchObject")
+    {
+        $dev{dot1dBaseBridgeAddress} =~ s/^0x//;
+        my $physaddr = undef;
+        if ($physaddr = (PhysAddr->search(address=>$dev{dot1dBaseBridgeAddress}))[0])
+        {
+            # XXX: If MAC already exists perhaps this should blow up.
+            $devtmp{physaddr} = $physaddr;
+        }
+        else
+        {
+            unless ($physaddr = $ui->insert(table=>"PhysAddr", state=>{address=>$dev{dot1dBaseBridgeAddress}}))
+            {
+                die("Error: " . $ui->error());
+            }
 
-    my $typeid;
-    if ($devtmp{name} =~ /hub/){
-      $typeid = (DeviceType->search(name => "Hub"))[0];     
-      $devtmp{type} = $typeid;
-    }elsif ($devtmp{name} =~ /switch/ || $devtmp{name} =~ /backbone/){
-      $typeid = (DeviceType->search(name => "Switch"))[0];     
-      $devtmp{type} = $typeid;
-    }elsif ($devtmp{name} =~ /-gw/ || $devtmp{name} =~ /router/ ){
-      $typeid = (DeviceType->search(name => "Router"))[0];     
-      $devtmp{type} = $typeid;
-    }elsif ($devtmp{name} =~ /-ap/){
-      $typeid = (DeviceType->search(name => "Access Point"))[0];     
-      $devtmp{type} = $typeid;
-    }else{
-      $devtmp{type} = 0;
+            $devtmp{physaddr} = $physaddr;
+        }
     }
 
-    ###############################################
-    # Try to assign Product based on SysObjectID
-    if( my $prod = (Product->search( sysobjectid => $dev{sysObjectID} ))[0] ) {
-	$devtmp{productname} = $prod->id;
-    }else{
-       $devtmp{productname} = "0"; 
+    if (length($dev{entPhysicalSerialNum}) > 0 && $dev{entPhysicalSerialNum} ne "noSuchObject")
+    {
+        $devtmp{serialnumber} = $dev{entPhysicalSerialNum};
+    }
+
+    # attempt to determine device type
+    # -------------------------------------------------------------------------
+    if ($rrtmp{name} =~ /hub/)
+    {
+        $devtmp{type} = (DeviceType->search(name=>"Hub"))[0]->id;
+    }
+    elsif ($rrtmp{name} =~ /switch/ || $rrtmp{name} =~ /backbone/)
+    {
+        $devtmp{type} = (DeviceType->search(name=>"Switch"))[0]->id;
+    }
+    elsif ($rrtmp{name} =~ /-gw/ || $rrtmp{name} =~ /router/)
+    {
+        $devtmp{type} = (DeviceType->search(name=>"Router"))[0]->id;
+    }
+    elsif ($rrtmp{name} =~ /-ap/)
+    {
+        $devtmp{type} = (DeviceType->search(name=>"Access Point"))[0]->id;
+    }
+    elsif ($rrtmp{name} =~ /shaper/)
+    {
+        $devtmp{type} = (DeviceType->search(name=>"Packet Shaper"))[0]->id;
+    }
+    elsif ($rrtmp{name} =~ /-sgw/)
+    {
+        $devtmp{type} = (DeviceType->search(name=>"Wireless Gateway"))[0]->id;
+    }
+    else
+    {
+        $devtmp{type} = 0;
+    }
+
+    # and product
+    # -------------------------------------------------------------------------
+    if (my $prod = (Product->search(sysobjectid=>$dev{sysObjectID}))[0])
+    {
+	    $devtmp{productname} = $prod->id;
+    }
+
+    else
+    {
+        $devtmp{productname} = 0;
+    }
+
+    # create the RR
+    # -------------------------------------------------------------------------
+    $rrtmp{name} = $args{device};
+    $rrtmp{origin} = "0";
+    $rrtmp{type} = (RRType->search(name=>"A"))[0]->id;
+    $rrtmp{active} = 1;
+    $rrtmp{zone} = 0;
+    $rrtmp{data} = "0";
+
+    my $rr_id;
+    unless ($rr_id = $ui->insert(table=>"RR", state=>\%rrtmp))
+    {
+        die("Error: " . $ui->error());
     }
     
-    $devtmp{component_type} = "0"; 
-    $devtmp{part_of} = "0"; 
-    $devtmp{site} = "0"; 
-    $devtmp{contactlist} = "0"; 
-    $devtmp{person} = "0"; 
-    $devtmp{entity} = "0"; 
-    $devtmp{managed} = "1"; 
-
-    ################################################################
-    # Create the Device
-
-    unless ($newdevice = $ui->insert(table => 'Device', state => \%devtmp )){
-       my $uierr = $ui->error;
-       die "Error: $uierr"; 
+    
+    # create the Device
+    # -------------------------------------------------------------------------
+    $devtmp{name} = $rr_id;
+    $devtmp{part_of} = 0;
+    $devtmp{site} = 0;
+    $devtmp{contactlist} = 0;
+    $devtmp{person} = 0;
+    $devtmp{entity} = 0;
+    $devtmp{managed} = 1;
+    unless ($newdevice = $ui->insert(table=>"Device", state=>\%devtmp))
+    {
+        my $uierr = $ui->error;
+        die("Error: $uierr");
     }
+    
     $inserted = $newdevice;
     my %iftmp;
-    foreach my $int ( keys %{ $dev{interface} } ) {
-      my $skip = 0;
-      foreach my $rsv ( @ifrsv ) {
-        my $n = $rsv->name;
-        $skip = 1 if( $int =~ /$n/ );
-      }
-      next if( $skip );
-      next if( Interface->search
-                 ( device => $newdevice,
-                   number => $dev{interface}{$int}{instance} ) );
 
-      $iftmp{device} = $newdevice;
-      $iftmp{name} = $int;
-      $iftmp{managed} = "0";
-      foreach my $dbname ( keys %ifnames ) {
-	if( $ifnames{$dbname} eq "descr" ) {
-	  if( $dev{interface}{$int}{$ifnames{$dbname}} ne "-" ) {
-	    $iftmp{$dbname} = $dev{interface}{$int}{$ifnames{$dbname}};
-	  }
-	} elsif ($dbname eq "physaddr"){
-	    $dev{interface}{$int}{$ifnames{$dbname}} =~ s/^0x//;
-	    $iftmp{$dbname} = $dev{interface}{$int}{$ifnames{$dbname}};
-	}else {
-	  $iftmp{$dbname} = $dev{interface}{$int}{$ifnames{$dbname}};
-	}
-      }
+    #print("<PRE>", Dumper(keys(%{$dev{interface}})), "</PRE>\n");
+    
+    foreach my $int (keys(%{$dev{interface}}))
+    {
+        my $skip = 0;
+        foreach my $rsv (@ifrsv)
+        {
+            my $n = $rsv->name;
+            $skip = 1 if($int =~ /$n/);
+        }
+        next if($skip);
+        next if(Interface->search(device=>$newdevice, 
+                                  number=>$dev{interface}{$int}{instance}));
+        
+        $iftmp{device} = $newdevice;
+        $iftmp{name} = $int;
+        $iftmp{managed} = 0;
+        foreach my $dbname (keys(%ifnames))
+        {
+            if($ifnames{$dbname} eq "descr")
+            {
+                if($dev{interface}{$int}{$ifnames{$dbname}} ne "-")
+                {
+                    $iftmp{$dbname} = $dev{interface}{$int}{$ifnames{$dbname}};
+                }
+            } 
+            elsif ($dbname eq "physaddr")
+            {
+                # create the PhysAddr record, if necessary, and assign
+                # the appropriate id to this interface.
+                $dev{interface}{$int}{$ifnames{"physaddr"}} =~ s/^0x//;
+                my $physaddr = undef;
+                if ($dev{interface}{$int}{$ifnames{"physaddr"}})
+                {
+                    if ($physaddr = (PhysAddr->search("address"=>$dev{interface}{$int}{$ifnames{"physaddr"}}))[0])
+                    {
+                        $iftmp{"physaddr"} = $physaddr->id;
+                    }
+                    else
+                    {
+                        unless ($physaddr = $ui->insert(table=>"PhysAddr", state=>{"address"=>$dev{interface}{$int}{$ifnames{"physaddr"}}}))
+                        {
+                            die("Error: " . $ui->error());
+                        }
 
-      ################################################################
-      # Create Interface
-      
-      my $if;
-      unless ($if = $ui->insert(table => 'Interface', state => \%iftmp)){
-         my $uierr = $ui->error;
-         die "Error: $uierr"; 
-      }
-      if( exists( $dev{interface}{$int}{ipAdEntIfIndex} ) ) {
-         my @ips = keys %{ $dev{interface}{$int}{ipAdEntIfIndex} };
-
-         foreach my $ip ( @ips ) {
-            my( $ipobj, $maskobj, $subnet, %iptmp, %nettmp );
-
-            $iptmp{mask} = $dev{interface}{$int}{ipAdEntIfIndex}{$ip};
-
-	    unless ($ipobj = new NetAddr::IP ($ip, $iptmp{mask})){
-	       print "Could not create IP object: $ip<br>\n" if ($DEBUG);
-	       next;
-	    }
-	    if ($ip =~ /127\.0\.0\./){
-	       print "Skipping loopback address: $ip<br>\n" if ($DEBUG);
-	       next;
-	    }
-	    $iptmp{interface} = $if;
-            $iptmp{address} = $ip;
-	    $devips{$ip}{mac} = $dev{interface}{$int}{ifPhysAddress};
-
-	    if( $subnet = (Subnet->search( address => $ipobj->network->addr, prefix => $ipobj->masklen ) )[0] ) {
-	      print "Subnet ",$ipobj->network, " exists<br>\n" if( $DEBUG );
-              $iptmp{subnet} = $subnet->id;
-	      $devips{$ip}{subnet} = $subnet;
-	    } else {
-	      print "Subnet ",$ipobj->network, " does not exist<br>\n" if( $DEBUG );
-	      #$nettmp{address} = $ipobj->network->addr;
-	      #$nettmp{entity} = 0;
-	      #eval { $subnet = Subnet->create( \%nettmp ); }
-              #  or die "Unable to create Subnet $ipobj->network: $@<br>\n";
-              $iptmp{subnet} = 0;
- 	    }
-
-	    ################################################################
-	    # Create IP
-
-	    my $newip;
-	    if( Ip->search( address => $ip ) ) {
-              ;  # We should say something here
-            } else {
-	      unless ( $newip = $ui->insert(table => 'Ip', state => \%iptmp)){
-	        my $err = $ui->error;
-	        die "Error: $err"; 
-	      }
+                        $iftmp{"physaddr"} = $physaddr;
+                    }
+                }
             }
-         }
-      }
+
+            else
+            {
+                $iftmp{$dbname} = $dev{interface}{$int}{$ifnames{$dbname}};
+            }
+        }
+        
+        # Create Interface
+        # ---------------------------------------------------------------------
+        my $if;
+        unless ($if = $ui->insert(table=>"Interface", state=>\%iftmp))
+        {
+            die "Error: " . $ui->error();
+        }
+        
+        if (exists($dev{interface}{$int}{ipAdEntIfIndex}))
+        {
+            my @ips = keys(%{$dev{interface}{$int}{ipAdEntIfIndex}});
+            foreach my $ip (@ips)
+            {
+                printf("<PRE>%s</PRE>\n", $ip);
+            }
+            
+            #XXX This has changed dramatically...
+            #foreach my $ip (@ips)
+            #{
+            #    my($ipobj, $maskobj, $subnet, %iptmp, %nettmp);
+            #    $iptmp{mask} = $dev{interface}{$int}{ipAdEntIfIndex}{$ip};
+            #    unless ($ipobj = new NetAddr::IP($ip, $iptmp{mask}))
+            #    {
+            #        print "Could not create IP object: $ip<br>\n" if ($DEBUG);
+            #        next;
+            #    }
+	        #    if ($ip =~ /127\.0\.0\./)
+            #    {
+            #        print "Skipping loopback address: $ip<br>\n" if ($DEBUG);
+	        #        next;
+            #    }
+            #    $iptmp{interface} = $if;
+            #    $iptmp{address} = $ip;
+            #    $devips{$ip}{mac} = $dev{interface}{$int}{ifPhysAddress};
+                #if ($subnet = (Subnet->search(address=>$ipobj->network->addr, prefix=>$ipobj->masklen))[0])
+                #{
+                #    print "Subnet ",$ipobj->network," exists<br>\n" if ($DEBUG);
+                #    $iptmp{subnet} = $subnet->id;
+                #    $devips{$ip}{subnet} = $subnet;
+                #}
+                #else 
+                #{
+                #    print "Subnet ",$ipobj->network, " does not exist<br>\n" if ($DEBUG);
+                    #$nettmp{address} = $ipobj->network->addr;
+                    #$nettmp{entity} = 0;
+                    #eval { $subnet = Subnet->create( \%nettmp ); }
+                    #  or die "Unable to create Subnet $ipobj->network: $@<br>\n";
+                #    $iptmp{subnet} = 0;
+                #}
+                
+                # Create IP
+                # -------------------------------------------------------------
+                #my $newip;
+                #if (Ip->search(address=>$ip))
+                #{
+                #    ;  # We should say something here
+                #} 
+                #else
+                #{
+                #    unless ($newip = $ui->insert(table=>"Ip", state=>\%iptmp))
+                #    {
+                #        my $err = $ui->error;
+                #        die "Error: $err";
+                #    }
+                #}
+            #}
+        }
     }
-    ################################################################
+
     # Add Hub ports
     # 
     # Hack for HP-ICF-OID::hpAdvStkEnetSHAgent (et al).
     # These hubs assign a random value for the port group number
     # every time they reboot.  For that reason we do those manually
     # (don't add their ports here)
-    
-    unless ( exists ($ignoredHubs{$dev{sysObjectID}}) ){
-
-      my %porttmp;
-      foreach my $port ( keys %{ $dev{hubPorts} } ) {
-        next if( Interface->search
-                 ( device => $newdevice,
-                   number => $dev{hubPorts}{$port}{instance} ) );
-
-        $porttmp{device} = $newdevice;
-        $porttmp{number} = $dev{hubPorts}{$port}{instance};
-        $porttmp{name} = $port;
-        $porttmp{managed} = "0";
-        # Create Interface (port)
-        my $if;
-        unless ($if = $ui->insert(table => 'Interface', state => \%porttmp)){
-         my $uierr = $ui->error;
-         die "Error: $uierr"; 
+    unless (exists ($ignoredHubs{$dev{sysObjectID}}))
+    {
+        my %porttmp;
+        foreach my $port (keys(%{$dev{hubPorts}}))
+        {
+            next if (Interface->search(device=>$newdevice, number=>$dev{hubPorts}{$port}{instance}));
+            $porttmp{device} = $newdevice;
+            $porttmp{number} = $dev{hubPorts}{$port}{instance};
+            $porttmp{name} = $port;
+            $porttmp{managed} = "0";
+            # Create Interface (port)
+            my $if;
+            unless ($if = $ui->insert(table=>"Interface", state=>\%porttmp))
+            {
+                die("Error: " . $ui->error());
+            }
         }
-      }
     }
-    
-    ##################################################################
-    # If device has only one IP, assign some values
-    # 
 
-    print "%devips is <pre>", Dumper(%devips), "</pre>\n" if ($DEBUG);
-    if ( (scalar(keys %devips)) == 1 ){
-       my $ip = (keys (%devips))[0];
-       if ( exists ($devips{$ip}{subnet}) ){
-          $devtmp{entity} = $devips{$ip}{subnet}->entity->id;
-       }
-       if ( exists ($devips{$ip}{mac}) && ! exists ($devtmp{physaddr}) ){
-          $devtmp{physaddr} = $devips{$ip}{mac};
-	  $devtmp{physaddr} =~ s/^0x//;
-       }
-    }
-    
-    ################################################################
-    # Update device if any changes
+    print("<PRE>", Dumper(%iftmp), "</PRE>\n") if ($DEBUG);
 
-    my $dev = Device->retrieve($newdevice);
-    unless ( $ui->update( object => $dev, state => \%devtmp ) ){
-      my $uierr = $ui->error;
-      die "Error: $uierr"; 
-    }
-    $ui->rmsession( $session );
+    #my $dev = Device->retrieve($newdevice);
+    #unless ( $ui->update( object => $dev, state => \%devtmp ) ){
+    #  my $uierr = $ui->error;
+    #  die "Error: $uierr"; 
+    #}
+    #$ui->rmsession( $session );
   }
  }
 </%perl>
@@ -341,7 +412,7 @@ if ( $args{action} eq "discover" ){
 <%args>
 $PREFIX => "/usr/local/netdot"
 $comstr => undef
-$DEBUG => 0
+$DEBUG => 1
 $TMP => "$PREFIX/tmp"
 $session => undef
 $inserted => 0

@@ -317,7 +317,7 @@ if ($editStrand)
             <a href="cable_backbone.html?id=<% $id %>&strand_sort=direction#cable_strand">Direction</a>
         </td>
         <td align="center">
-            <a href="cable_backbone.html?id=<% $id %>&strand_sort=parent#cable_strand">Parent Strand</a>
+            <a href="cable_backbone.html?id=<% $id %>&strand_sort=parent#cable_strand">Spliced with</a>
         </td>
     </tr>
 
@@ -328,7 +328,7 @@ if ($editStrand)
     {
         # sort by name
         # -----------------------------------------------------------
-        @sorted_strands = sort { uc($a->name) cmp uc($b->name) } @strands;
+        @sorted_strands = sort { (split(/\./o, $a->name, 2))[1] <=> (split(/\./o, $b->name, 2))[1] } @strands;
     }
 
     elsif ($strand_sort eq "status")
@@ -349,7 +349,7 @@ if ($editStrand)
     {
         # sort by parent
         # -----------------------------------------------------------
-        @sorted_strands = sort { uc($a->parent->name) cmp uc($b->parent->name) } @strands;
+        @sorted_strands = sort { (split(/\./o, $a->parent->name, 2))[1] <=> (split(/\./o, $b->parent->name, 2))[1] } @strands;
     }
     </%perl>
 
