@@ -243,11 +243,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
   VALUES (
 	  'Device', 
 	  'name', 
-	  'name,aliases,type,sysdescription,physaddr,sw_version,oobname,oobnumber,entity,contactlist,user,managed,community,component_type,serialnumber,productname,part_of,inventorynumber,maint_covered,site,room,rack,dateinstalled,info', 
+	  'name,aliases,type,sysdescription,physaddr,sw_version,oobname,oobnumber,entity,contactlist,person,managed,community,component_type,serialnumber,productname,part_of,inventorynumber,maint_covered,site,room,rack,dateinstalled,info', 
 	  'name,type,productname', 
-	  'name:Name,aliases:Aliases,type:Type,sysdescription:System Description,physaddr:Physical (MAC) Address,sw_version:Software Version,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,user:User,managed:Managed?,community:SNMP Community,component_type:Type of Component,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,site:Location,room:Room,rack:Rack,dateinstalled:Installed on,info:Comments',
+	  'name:Name,aliases:Aliases,type:Type,sysdescription:System Description,physaddr:Physical (MAC) Address,sw_version:Software Version,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,managed:Managed?,community:SNMP Community,component_type:Type of Component,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,site:Location,room:Room,rack:Rack,dateinstalled:Installed on,info:Comments',
 	  '',
-	  'type:DeviceType,entity:Entity,contactlist:ContactList,user:Person,component_type:ComponentType,productname:Product,part_of:Device,site:Site', 
+	  'type:DeviceType,entity:Entity,contactlist:ContactList,person:Person,component_type:ComponentType,productname:Product,part_of:Device,site:Site', 
 	  'interfaces:Interface:device,parts:Device:part_of', 
 	  '0', 
 	  'A network device');
@@ -255,11 +255,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Device_history', 
 	  'modified', 
-	  'name,aliases,type,sysdescription,physaddr,sw_version,oobname,oobnumber,entity,contactlist,user,managed,community,component_type,serialnumber,productname,part_of,inventorynumber,maint_covered,site,room,rack,dateinstalled,info,modified,modifier', 
+	  'name,aliases,type,sysdescription,physaddr,sw_version,oobname,oobnumber,entity,contactlist,person,managed,community,component_type,serialnumber,productname,part_of,inventorynumber,maint_covered,site,room,rack,dateinstalled,info,modified,modifier', 
 	  'modified,modifier,name,type', 
-	  'name:Name,aliases:Aliases,type:Type,sysdescription:System Description,physaddr:Physical (MAC) Address,sw_version:Software Version,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,user:User,managed:Managed?,community:SNMP Community,component_type:Type of Component,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,site:Location,room:Room,rack:Rack,dateinstalled:Installed on,info:Comments,modified:Modified on,modifier:Modified by',
+	  'name:Name,aliases:Aliases,type:Type,sysdescription:System Description,physaddr:Physical (MAC) Address,sw_version:Software Version,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,managed:Managed?,community:SNMP Community,component_type:Type of Component,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,site:Location,room:Room,rack:Rack,dateinstalled:Installed on,info:Comments,modified:Modified on,modifier:Modified by',
 	  '',
-	  'type:DeviceType,entity:Entity,contactlist:ContactList,user:Person,component_type:ComponentType,productname:Product,part_of:Device,site:Site', 
+	  'type:DeviceType,entity:Entity,contactlist:ContactList,person:Person,component_type:ComponentType,productname:Product,part_of:Device,site:Site', 
 	  '', 
 	  '0', 
 	  '');
@@ -434,7 +434,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	    'lastname:Last Name,firstname:First Name,aliases:Aliases,position:Position,entity:Employer,location:Location,email:Email,office:Work Phone,cell:Cell Phone,home:Home Phone,pager:Pager,emailpager:Email Pager,fax:Fax,info:Comments',
 	    '',
 	    'entity:Entity,location:Site', 
-	    'roles:Contact:person,devices:Device:user:{on_delete=>"set-null"}', 
+	    'roles:Contact:person,devices:Device:person:{on_delete=>"set-null"}', 
 	    '0', 
 	    'Information about an individual');
 

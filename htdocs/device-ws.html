@@ -659,22 +659,22 @@ if ( defined($search) && $search =~ /\w+/ ){
         <tr>
 	   <td align="left">User: </td>
 	     <td align="left"> 
-%	         my $lbl = $gui->getobjlabel($o->user, ", ");
+%	         my $lbl = $gui->getobjlabel($o->person, ", ");
 %	      	 if ($edit eq "mgmtinfo"){	 
-		    <select name="Device__<% $id %>__user">
+		    <select name="Device__<% $id %>__person">
 %		       my $lblfield = ( $gui->getlabels("Person") )[0];	 
-		       <option value="<% $o->user->id %>" SELECTED> <% $lbl %> </option>
+		       <option value="<% $o->person->id %>" SELECTED> <% $lbl %> </option>
 %		       my @fo = Person->retrieve_all();
 %		       @fo= sort { $a->$lblfield cmp $b->$lblfield } @fo; 
 %		       foreach my $fo ( @fo ){
-%		          next if ($fo->id == $o->user->id);
+%		          next if ($fo->id == $o->person->id);
 %			  my $folbl = $gui->getobjlabel($fo, ", ");
   		          <option value="<% $fo->id %>"> <% $folbl %> </option>		          
 %		       }
 		       <option value="0"> [null] </option>
 		    </select>
 %	         }else{
-		    <b><a href="view.html?table=Person&id=<% $o->user->id %>"><% $lbl %></a></b> 
+		    <b><a href="view.html?table=Person&id=<% $o->person->id %>"><% $lbl %></a></b> 
 %		 }
 	     </td>
 	</tr>
