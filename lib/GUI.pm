@@ -272,7 +272,7 @@ sub getsession {
 sub pushsessionpath {
   my( $self, $session, $table ) = @_;
   if( defined( $session->{path} ) 
-      && length( $session->{path} ) > 0 && $session{path} ne ";" ) {
+      && length( $session->{path} ) > 0 && $session->{path} ne ";" ) {
     $session->{path} .= ";$table";
   } else {
     $session->{path} = "$table";
