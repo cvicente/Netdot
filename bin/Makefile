@@ -75,7 +75,7 @@ DB_NETDOT_PASS =  netdot_pass
 ################################################################
 # End of tweakable section
 ################################################################
-install: files
+install: setup.class.dbi files
 
 installdb: initialize.$(DB_TYPE) insert.metadata insert.sample.data setup.class.dbi 
 
