@@ -26,7 +26,7 @@ unstable: dir etc make
 stable: DST = stable
 stable: dir etc make
 test: DST = /home/netdot/public_html
-test: testing
+test: testing nvtest
 
 
 ######################################################################
