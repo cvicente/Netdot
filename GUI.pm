@@ -202,7 +202,6 @@ sub createstate {
   my( $sid, %session );
   tie %session, 'Apache::Session::File', 
     $sid, { Directory => $dir, LockDirectory => $dir };
-  $sid = $session{_session_id};
   return %session ;
 }
 
@@ -235,6 +234,9 @@ sub rmstate {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.7  2003/07/01 04:53:20  netdot
+#  *** empty log message ***
+#
 #  Revision 1.6  2003/07/01 04:48:42  netdot
 #  initial merge of functions for state across web pages
 #
