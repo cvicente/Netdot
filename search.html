@@ -60,7 +60,7 @@ foreach my $j ( keys %ARGS ) {
 %   if( scalar( keys %results ) < 1 || ! %results ) {
       No matching records were found.
 %   } else {
-%     foreach my $tbl ( keys %results ) {
+%     foreach my $tbl ( sort { $a cmp $b } keys %results ) {
 %       next if( $tbl eq "Meta" );
 %       my @objs;
 %       map { push @objs, $results{$tbl}{$_} } keys %{ $results{$tbl} };
@@ -92,6 +92,9 @@ undef( %results );
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.11  2003/05/14 23:48:50  netdot
+# sort output of tables on display
+#
 # Revision 1.10  2003/05/14 23:44:07  netdot
 # put value="blah" in the search box to echo back a person's search
 # query.  otherwise, split the search query on whitespace and search on
