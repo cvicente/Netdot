@@ -83,105 +83,28 @@ if ( defined($search) && $search =~ /\w+/ ){
 
 }elsif( defined($ARGS{submit}) ){
 
-  # Define control field names
-  my %control = ( 
-                 'id'     => '',
-                 'submit' => '',
-                 'edit'   => '',
-		 'save'   => '',
-		 'show'   => '',
-  );
-  
-  print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-
-  # Ignore empty and control fields
-  # for saving purposes
-  # / _srch/ elements are added for javascript only
-  # we don't need them here
-
-  foreach my $j (keys %ARGS){
-     next if ( exists ($control{$j}) );
-     next if ($j =~ /_srch/ );
-     next if ($j eq "s2name" );
-     # "/^_/" is added to search field names 
-     # to avoid using reserved words in javascript
-     # chop it off
-     my $k = $j;
-     $k =~ s/^_//;
-     $arg{$k} = $ARGS{$j};	   
-  }
-  print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $DEBUG;
-	 
-  # Check that we have at least one parameter
-  unless (scalar keys(%arg)){
-    die "Error: Missing name/value pairs";
-  }
-
-  # Store objects, fields and values in a hash
-  my %objs;
-  foreach my $item (keys %arg){
-     my ($table, $id, $field) = split /__/, $item;
-     $objs{$table}{$id}{$field} = $arg{$item};
-  }
-  print "objs is <pre>", Dumper{%objs}, "</pre><br>" if $DEBUG;
-  print "Content Length: $ENV{'CONTENT_LENGTH'}" if $DEBUG; 
-
-  # Now do the actual updating
-  # First check for "action" fieldnames
-  # Actions (like delete) take precedence over value updates
-
-  foreach my $table ( keys %objs ){
-    foreach my $id ( keys %{ $objs{$table} } ){
-      my $act = 0;
-      foreach my $field ( keys %{ $objs{$table}{$id} } ){
-	   if ( $field eq "delete" && $objs{$table}{$id}{$field} eq "on" ){
-	      # Remove object from DB
-	      if (! ($ui->remove(table => "$table", id => "$id")) ){
-	          my $err = $ui->error;
-		  die "Error: $err";
-	      }
-	      # Set the 'action' flag
-	      $act = 1;
-	      last;
-	   }elsif($field eq "new"){
-	      my %state;
-	      # This is a little hack
-	      if ($table eq "InterfaceDep" && $objs{$table}{$id}{$field} ne "0"){
-	         $state{child} = $id;
-		 $state{parent} = $objs{$table}{$id}{$field};
-	      }
-	      if ( scalar(keys %state) ){
-	         if (!($ui->insert(table => $table, state => \%state)) ){
-      	            my $err = $ui->error;
-		    die "Error: $err"; 
-	         }
-	      }
-	      $act = 1;
-	      last;
-	   }
-      }
-      # Now update the thing
-      if (!$act){ #only if no other actions were performed
-         my $o;
-         if (! ($o = $table->retrieve($id)) ){
-            die "Couldn't retrieve id $id from table $table";
-         }
-         if (! ($ui->update(object => $o, state => \%{ $objs{$table}{$id} } ))){
-            my $err = $ui->error;
-	    die "Error: $err";
-         }
-      }
+# code for inserting/updating
+# -----------------------------------------------------------------------------
+    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+    
+    if (!$ui->form_to_db(%ARGS))
+    {
+	my $err = $ui->error();
+	die("Error: $err\n");
     }
-  }  
-  # Do this to 'flush' the values associated with the object
-  # before redisplaying
-  $o = undef;
-  if ($id){
-     $o = Device->retrieve($id);
-     $name = $o->name;
-   }
-}
+    
+    # Do this to 'flush' the values associated with the object
+    # before redisplaying
+    $o = undef;
+    if ($id)
+    {
+	$o = Device->retrieve($id);
+	$name = $o->name;
+    }
+# end insertion/update code
+# -----------------------------------------------------------------------------
 
+}
 </%perl>
 
 %if (!defined($search)){
@@ -811,9 +734,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 %		 }
 	   </td>
 	   <td align="left"> 
-%	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="6" name="<% "Interface__" . $if->id . "__room" %>" value="<% $if->jack->room %>">
-%	         }elsif(defined($if->jack)){
+%	         if(defined($if->jack)){
 		    <% $if->jack->room %>
 %		 }else{
 		   -
@@ -821,9 +742,42 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   </td>
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="9" name="<% "Interface__" . $if->id . "__jackid" %>" value="<% $if->jack->jackid %>">
+%		    my $count = HorizontalCable->count_all;
+%                   if (defined($if->jack)){
+%		      if ( $count <= $maxselect ){			      
+%		         my @alljacks = HorizontalCable->retrieve_all;
+%		         @alljacks = sort { $a->jackid <=> $b->jackid } @alljacks; 
+   		         <select name="<% "Interface__" . $if->id ."__jack" %>">
+		           <option value="$if->jack->id" selected><% $if->jack->jackid %> </option> 
+%		            foreach my $jack ( @alljacks ) {
+%                             next if ($jack->id == $if->jack->id);  
+		              <option value="<% $jack->id %>"><% $jack->jackid %></option>
+%			    }
+		           <option value="0">[null]</option> 
+		         </select>
+%		      }else{  #too many instances.  Offer a keyword search
+%		         my $srchf = '_' . $if->id . 'jack_srch';  #name of the form input tag
+		         <input type="text" name="<% $srchf %>" value="Keywords">
+		         &nbsp;<input type="button" name="" value="List" 
+		         onClick="sendquery(<% '_Interface__' . $if->id . '__jack' %>, <% $srchf . '.value' %>, 'HorizontalCable')" >
+		         <br><select name="<% '_Interface__' . $if->id . '__jack' %>">
+		            <option value="<% $if->jack->id %>" selected><% $if->jack->jackid %></option>
+			    <option value="0">[null]</option>
+		         </select>
+%		      }
+%                   }else{  # No jacks assigned yet.  Offer a keyword search
+%		       my $srchf = '_' . $if->id . 'jack_srch';  #name of the form input tag
+		       <input type="text" name="<% $srchf %>" value="Keywords">
+		       &nbsp;<input type="button" name="" value="List" 
+		       onClick="sendquery(<% '_Interface__' . $if->id . '__jack' %>, <% $srchf . '.value' %>, 'HorizontalCable')" >
+		       <br><select name="<% '_Interface__' . $if->id . '__jack' %>">
+			  <option value="0">[null]</option>
+		       </select>
+%                   } 
+
+
 %	         }elsif(defined($if->jack)){
-		    <% $if->jack->jackid %>
+		    <a href="view.html?table=HorizontalCable&id=<% $if->jack->id %>"><% $if->jack->jackid %></a>
 %		 }else{
 		    -
 %		 }
@@ -857,8 +811,8 @@ if ( defined($search) && $search =~ /\w+/ ){
 %		       my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
 		       <input type="text" name="<% $srchf %>" value="Keywords">
 		       &nbsp;<input type="button" name="" value="List" 
-		       onClick="sendquery(<% '_InterfaceDep__' . $par->id . '__parent' %>, <% $srchf . '.value' %>, 'Interface')" >
-		       <br><select name="<% '_InterfaceDep__' . $par->id . '__parent' %>">
+		       onClick="sendquery(<% "_InterfaceDep__" . $par->id . "__parent" %>, <% $srchf . '.value' %>, 'Interface')" >
+		       <br><select name="<% "_InterfaceDep__" . $par->id . "__parent" %>">
 		          <option value="<% $par->parent->id %>" selected><% $lbl %></option>
 			  <option value="0">[null]</option>
 		       </select>
@@ -870,7 +824,6 @@ if ( defined($search) && $search =~ /\w+/ ){
 %	     } #foreach my $par
 %	   }else{ # No parents exist
 %	      if ($edit eq "intinfo"){	 
-%	       if (scalar($if->ips)){ #only interfaces with ip addresses (might change later)
 %	        my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
 		<input type="text" name="<% $srchf %>" value="Keywords">
 	        &nbsp;<input type="button" name="" value="List" 
@@ -878,8 +831,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	        <br><select name="<% "_InterfaceDep__" . $if->id ."__new" %>">
 	 	  <option value="0">[null]</option>
 	        </select>	      
-%	       }
-%	      }
+%	     }
 %	   }
 
 	   </td>

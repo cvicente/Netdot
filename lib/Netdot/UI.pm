@@ -348,7 +348,7 @@ sub update {
   my $change = 0;
   $self->_clear_error();
   foreach my $col ( keys %state ) {
-    if( $state{$col} ne $obj->$col ) {
+    if( $state{$col} ne int($obj->$col) ) {
       $change = 1;
       eval { $obj->set( $col, $state{$col} ); };
       if( $@ ) {
