@@ -71,14 +71,15 @@ if( exists( $args{insert} ) ) {
             my $decmask = unpack('N', (pack ('C*', split (/\./, $iptmp{mask}))));
             my $net = inet_ntoa(pack('N',$decip & $decmask));
 	    if( $subnet = (Subnet->search( address => $net ) )[0] ) {
-              ;
+              $iptmp{subnet} = $subnet->id;
 	    } else {
 	      $nettmp{address} = $net;
 	      $nettmp{entity} = 0;
-	      eval { $subnet = Subnet->create( \%nettmp ); }
-                or die "Unable to create Subnet $net: $@\n";
+	      #eval { $subnet = Subnet->create( \%nettmp ); }
+              #  or die "Unable to create Subnet $net: $@\n";
+              $iptmp{subnet} = 0;
  	    }
-	    $iptmp{subnet} = $subnet->id;
+	    # 
 	    if( Ip->search( address => $ip ) ) {
               ;
             } else {
@@ -179,6 +180,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.23  2003/07/16 22:37:18  netdot
+#  disabling chunk of subnet code for later work
+#
 #  Revision 1.22  2003/07/15 19:08:30  netdot
 #  fixed code for skipping interfaces
 #
