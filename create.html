@@ -10,7 +10,7 @@ foreach my $j ( keys %ARGS ) {
     $TBL = $j;
     next;
   }
-  next if( $ARGS{$j} !~ /\w+/ );
+  next if( $ARGS{$j} !~ /\w+/ || $j !~ /\w+/ );
   $args{$j} = $ARGS{$j};
 }
 ##################################################
@@ -62,6 +62,7 @@ if( exists( $args{submit} )
   foreach my $arg ( keys %args ) {
     next if( $arg eq "submit" || $arg eq "sid" 
              || $arg eq "table" || $arg eq "commit" );
+    next if( length( $arg ) < 1 || ! defined( $args{$arg} ) );
     $session->{tables}{$PREV}{$arg} = $args{$arg};
   }
   if( ! defined( $args{submit} ) ) {
@@ -227,19 +228,19 @@ if( defined( $TBL ) ) {
 % ####################################################################
 <%args>
 
-$gui => Netdot::GUI->new()
+$DEBUG => 0
 $TBL => undef
 $PREV => undef
 $id => undef
 $sid => undef
-$DEBUG => 1
 $nv => undef
 $DIR => "/home/netdot/public_html/tmp"
 $AGE => 3600
 $WIDTH => 2
 $session => undef
+$gui => Netdot::GUI->new()
 %args => undef
-%state => undef
+
 %order => undef
 %linksto => undef
 
@@ -249,8 +250,8 @@ use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::GUI;
 use Data::Dumper;
-
-#my %state;
+#%state => undef
+my %state;
 
 </%init>
 
@@ -283,6 +284,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.22  2003/07/03 22:39:31  netdot
+#  still cleaning up from state/session changes
+#
 #  Revision 1.21  2003/07/02 23:51:15  netdot
 #  more work to convert to new GUI and state code; still untested
 #
