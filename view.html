@@ -51,7 +51,7 @@ if ($table !~ /_history/){
   $ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
   my $mj = ( Meta->search(name => $j) )[0]; #get meta info for other table
   # If foreign table is a join table, try to hide it
-  if ( defined($mj) && ($mj->mainobject == 0) ){
+  if ( defined($mj) && ($mj->isjoin) ){
      undef( %jlinksto );
      # Get has_a entries 
      map { my($a, $b) = split( /:/, $_ ); $jlinksto{$a} = $b }
@@ -218,6 +218,9 @@ my( %arg, %linksto, %linksfrom, $obj, $table, $lbl, $view, $mi, %order, @addlink
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.14  2003/06/10 17:48:36  netdot
+#  *** empty log message ***
+#
 #  Revision 1.13  2003/06/09 23:02:43  netdot
 #  Added logic for viewing an object's history (separate table model)
 #
