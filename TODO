@@ -1,4 +1,4 @@
-$Header: /tmp/netdot/src/RCS/TODO,v 1.6 2003/05/28 21:15:52 netdot Exp $
+$Header: /tmp/netdot/src/RCS/TODO,v 1.7 2003/06/03 18:12:04 netdot Exp $
 ======================================================================
 
  * Insert Meta information into the database
@@ -27,10 +27,12 @@ $Header: /tmp/netdot/src/RCS/TODO,v 1.6 2003/05/28 21:15:52 netdot Exp $
      specify which table to search
 
  * update
-   status: UNKNOWN
+   status: ADVANCED.  Basic updates work.
+   Current problem is updating fields that need a foreign object to be created first.
 
  * browse
-   status: UNKNOWN
+   status: MOSTLY DONE.  Now the expanded view includes buttons to go forward and backwards, 
+   first and last, and to specific records within a table.  Feedback pending.
 
  * create
    status: TESTING
@@ -38,7 +40,24 @@ $Header: /tmp/netdot/src/RCS/TODO,v 1.6 2003/05/28 21:15:52 netdot Exp $
    all of the functionaltiy is there.  Does actual insertions and
    navigation is correct.
 
+ * delete
+   status: STARTED
+   Problem: We need to somehow specify whether items with has_many relationships should
+   be restricted from deletion or if they should be deleted along with all their dependent
+   items.  Ideally, this should be specified at installation time and at the middleware layer.
+   Users shouldn't be given these options.
+
+ * Access control
+   status: PENDING
+   Need to design mechanisms for controlling access to the application, and eventually, 
+   access to specific functionalities.
+
+ * Discovery of Nodes
+   status: PENDING
+   Information about Nodes and Interfaces should be fetched and updated via SNMP.
+
  * history table
+   status: PENDING
    We need to track changes in the database.  Some sort of history
    table(s) could accomplish.  Essentially, this would be something
    similar to RCS
