@@ -15,6 +15,10 @@ usage:
 	@echo "     DB_TYPE, DB_HOME, DB_DBA, DB_HOST, "
 	@echo "     DB_NETDOT_USER, DB_NETDOT_PASS "
 	@echo "Again, please see bin/Makefile for details.  Change at your own risk!"
+	@echo 
+	@echo "After running make install, you may also want to:"
+	@echo "   make dropdb" 
+	@echo "   make installdb"
 
 #
 # You really don't want to muck with anything below.  
@@ -32,7 +36,7 @@ install: tests dir doc htdocs lib
 	@echo
 	@echo "Netdot is installed. "
 	@echo "Please read the available documentation before proceeding"
-	@echo "And thank you for using Netdot!"
+	@echo "Be sure to check whether you need to run 'make dropdb' or 'make installdb'
 	@echo 
 
 tests:
@@ -73,7 +77,9 @@ lib:
 	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR="$@/Netdot"
 
 dropdb: 
+	@echo "WARNING:  This will erase all data in the database!"
 	cd bin ; make dropdb FMOD=$(FMOD) 
 
 installdb: 
+	@echo "Preparing to create netdot database"
 	cd bin ; make install FMOD=$(FMOD) 
