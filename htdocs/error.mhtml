@@ -1,5 +1,4 @@
 
-
 <p>
  <table class="formtablebg">
    <tr>
@@ -14,20 +13,20 @@ If you believe this is a bug, please copy the above message and send it to
 <a href="mailto:<% $ui->{'ADMINEMAIL'} %>"><% $ui->{'ADMINEMAIL'} %></a>
 <p>
 
-<& footer &>
+<& footer.mhtml &>
 
 <%perl>
 $m->abort;
 </%perl>
 
 <%args>
-$caller
 $error
 $user => $ENV{REMOTE_USER}
 </%args>
 
 <%init>
 my $ui = Netdot::UI->new();
+my $caller = $m->caller->name;
 </%init>
 
 <%doc>

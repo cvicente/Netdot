@@ -1,35 +1,27 @@
-<%perl>
-foreach my $j ( keys %ARGS ) {
-  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
-  $args{$j} = $ARGS{$j};
-}
-</%perl>
-
-% if( ! exists( $args{table} ) ) {
+% if( ! defined( $table ) ) {
 %   my( @t );
 %   @t = $ui->gettables();
     <& index.html, title => "Browse", s2name => $s2name &>
-    <& table, width => $WIDTH, link => "browse.html", title => "Please select an object to browse:" &>
+    <& table.mhtml, width => $WIDTH, link => "browse.html", title => "Please select a table to browse:" &>
 % } else {
-%   my $TBL = $args{table};
-%   my @r = $TBL->retrieve_all();
-    <& index.html, title => "Browse: $args{table}", s2name => $s2name &>
+%   my @r = $table->retrieve_all();
+    <& index.html, title => "Browse: $table", s2name => $s2name &>
     <table cellpadding="0" border="0" width="95%" class="tablebackground">
     <tr class="tabletitle">
-    <td>&nbsp<strong><% $TBL %></strong>
-    <& sortresults.mhtml, table => $TBL, object => \@r &>
+    <td>&nbsp<strong><% $table %></strong>
+    <& sortresults.mhtml, table => $table, object => \@r &>
     </td>
     </tr>
     </table>
 % }
 
-<& footer &>
+<& footer.mhtml &>
 
 <%args>
 $MAX => 20
 $WIDTH => 2
 $s2name => "Generic"
-%args => undef
+$table => undef
 </%args>
 
 <%init>

@@ -39,15 +39,13 @@
    <td>
     <table border="0" cellpadding="0" cellspacing="0" width="100%" class="tablebackground">
      <tr >
-%     my @t = $ui->gettables;
+%     my @t = map { $_ unless ($ui->isjointable($t) || $t eq "Meta") } sort $ui->gettables;
       <td>
             <form action="search_obj.html" method="POST">
             <b>Search</b>:  
             <select name="table">
-%           foreach my $t ( sort { $a cmp $b } @t ) {
-%              next if( $t eq "Meta" || $t =~ /_history/ );
-%              next if $ui->isjointable($t);
-            <option><% $t %></option>
+%           foreach my $t (@t) {
+              <option><% $t %></option>
 %           }
             </select>
             <input name="submit" value="Go" type="submit">
@@ -57,10 +55,8 @@
             <form action="edit.html" method="POST">
             <b>Add New</b>:  
             <select name="table">
-%           foreach my $t ( sort { $a cmp $b } @t ) {
-%              next if( $t eq "Meta" || $t =~ /_history/ );
-%              next if $ui->isjointable($t);
-            <option><% $t %></option>
+%           foreach my $t (@t) {
+              <option><% $t %></option>
 %           }
             </select>
             <input name="submit" value="Go" type="submit">
@@ -70,10 +66,8 @@
             <form action="browse.html" method="POST">
             <b>Browse</b>:  
             <select name="table">
-%           foreach my $t ( sort { $a cmp $b } @t ) {
-%              next if( $t eq "Meta" || $t =~ /_history/ );
-%              next if $ui->isjointable($t);
-            <option><% $t %></option>
+%           foreach my $t (@t) {
+              <option><% $t %></option>
 %           }
             </select>
             <input name="submit" value="Go" type="submit">

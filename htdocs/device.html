@@ -15,7 +15,7 @@ if ( $action eq "discover" ){
 	$o = $dm->discover(host => $host, comstr => $comstr);
     }
     unless ($o){
-	$m->comp('error.mhtml', caller => "device.html", error => $dm->error);
+	$m->comp('error.mhtml', error => $dm->error);
     }
     for my $ver (qw (4 6)){
 	unless( $ipm->build_tree($ver) ){
@@ -35,7 +35,7 @@ if ( $action eq "discover" ){
 <%perl>
     }
 }else{
-    $m->comp('error.mhtml', caller => "device.html", error => "Unknown action: $action");
+    $m->comp('error.mhtml', error => "Unknown action: $action");
 #    $m->abort;
 }
 unless (defined ($name = $o->name->name)){
@@ -45,7 +45,7 @@ unless (defined ($name = $o->name->name)){
  <p>
  Go to <a href="device-ws.html?id=<% $o->id %>"><% $name %></a>
 
-<& footer &>
+<& footer.mhtml &>
 
 <%args>
 $action

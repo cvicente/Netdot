@@ -1,76 +1,58 @@
+<& index.html, title => " Delete: $table object" , s2name => $s2name  &>
+
 <%perl>
-unless ( $ARGS{table} && $ARGS{id} ){
-   print "<strong>Missing required parameters 'table' and/or 'id'</strong>";
-   exit;
-}
-$table = $ARGS{table};
-$obj = $table->retrieve($ARGS{id});
 
-
-unless ( $obj ){
-   print "<strong>Nonexistent record: $ARGS{id}</strong>";
-   exit;
-}
-
-%linksto = $ui->getlinksto($table);
-%linksfrom = $ui->getlinksfrom($table);
-%order = $ui->getcolumnorder($table);
+unless( $obj = $table->retrieve($id) ){
+  $m->comp('error.mhtml', error => "$table id $id does not exist");
+} 
 
 </%perl>
 
-<& header, title => "Delete $table object"  &>
-<br>
-<center>
-<& section1 &>
-
-%if ( !exists( $ARGS{submit} ) ){
-
-% my $labelstr = $ui->getobjlabel($obj, ", ");
+%if ( ! $submit  ){
+% my $lbl = $ui->getobjlabel($obj, ", ");
 
 <table align="center" valign="top" border="0" width="95%">
 <tr><td>
 
-<p>
-<p>Are you sure you want to delete <% $table %> <strong><% $labelstr %></strong>?
+<p>Are you sure you want to delete <% $table %> <strong><% $lbl %></strong>?
 
 <form method="POST" action="delete.html">
-
 <input type="hidden" name="table" value="<% $table %>">
 <input type="hidden" name="id" value="<% $obj->id %>">
 <input type="hidden" name="confirm" value="1">
 <p>
 <input name="submit" value="Proceed" type="submit">
 <input name="submit" value="Cancel" type="submit">
-
 </form>
 
 <p><br>
 </td></tr>
 </table>
-<& footer &>
+<& footer.mhtml &>
 
-
-%}elsif ($ARGS{confirm} && $ARGS{submit} eq "Proceed"){
-
-% my $labelstr = $ui->getobjlabel($obj, ", ");
+%}elsif ($confirm && $submit eq "Proceed"){
 
 <table align="center" valign="top" border="0" width="95%">
 <tr><td>
 
-%# Delete the object
-%  my $lbl = $ui->getobjlabel($obj, ", ");
-%  eval {
-%      $obj->delete;
-%      };
-% if ($@){
-  <& error.mhtml, caller => "delete.html", error => "$@" &>
-% } else{
+<%perl>
+# Delete the object
+  my $lbl = $ui->getobjlabel($obj, ", ");
+  eval {
+      $obj->delete;
+      };
+ if ($@){
+  $m->comp('error.mhtml', error => "$@");
+ } else{
+</%perl>
+
 <strong><% "$table $lbl" %></strong> deleted.
+
 %}
 
 </td></tr>
 </table>
-<& footer &>
+<& footer.mhtml &>
 
 %}elsif ($ARGS{submit} eq "Cancel"){
    <& view.html, table => $table, id => $obj->id &>
@@ -78,14 +60,14 @@ unless ( $obj ){
 %}
 
 <%args>
-
+$table
+$id
+$s2name  => undef
+$submit  => undef
+$confirm => undef
 </%args>
 
 <%init>
-use lib "/home/netdot/public_html/lib"; 
-use Netdot::DBI;
-use Netdot::UI;
 my $ui = Netdot::UI->new();
-my( %linksto, %linksfrom, $table, $obj, $mi, %order);
-           
+my $obj;
 </%init>
