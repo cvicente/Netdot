@@ -31,9 +31,21 @@ foreach my $j ( keys %ARGS ) {
     <%perl>
     foreach my $meta ( Meta->retrieve_all() ) {
       my $tbl = $meta->name;
+      undef( %linksto );
+      map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
+        split( /,/, $meta->linksto );
       foreach my $col ( $tbl->columns() ) {
-        map { $results{$tbl}{$_->id} = $_ } 
-          $tbl->search_like( $col => $arg{q} );
+        if( $linksto{$col} ) {
+          foreach my $fc ( $linksto{$col}->columns() ) {
+	    foreach my $hit ( $linksto{$col}->search_like( $fc => $arg{q} ) ) {
+              map { $results{$tbl}{$_->id} = $_ } 
+	        $tbl->search_like( $col => $hit );
+	    }
+          }
+        } else {
+          map { $results{$tbl}{$_->id} = $_ } 
+            $tbl->search_like( $col => $arg{q} );
+        }
       }
     }
     </%perl>
@@ -64,7 +76,7 @@ foreach my $j ( keys %ARGS ) {
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Data::Dumper;
-use vars qw( %results );
+use vars qw( %results %linksto );
 undef( %results );
               
 </%init>
@@ -73,6 +85,11 @@ undef( %results );
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.9  2003/05/14 23:32:49  netdot
+# added ability to search linksto/has_a relationships.  so, if a node is
+# in the computing center (ie. Site=ComputingCenter), a search for
+# 'computing center' will yield the Site and the Node.
+#
 # Revision 1.8  2003/05/14 16:38:49  netdot
 # remove DBI stuff; now just use Meta table.
 #
