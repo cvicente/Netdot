@@ -11,30 +11,46 @@ $nv = Netdot::Netviewer->new();
 </%perl>
 
 <& header, title => "Node" &>
-
+<blockquote>
 <form action="node.html" method="POST">
 <input type="text" name="node" size="30" value="<% $args{node} %>">
-<input type="text" name="community" size="30" value="<% $args{community} %>">
-<input name="submit" value="Submit" type="submit">
+<input name="submit" value="Discover" type="submit">
 </form>
+</blockquote>
 
 % # print Dumper( %ARGS );
 % if( exists( $args{node} ) ) {
+%  my %reserved;
+%  foreach my $if ( NvIfReserved->retrieve_all() ) {
+%    $reserved{$if->name} = 1;
+%  }
   <p>node:  <% $args{node} %>
 %   $nv->build_config( "device", $args{node} );
 %   my( %node ) = $nv->get_targets();
-  <p>Do you wish to insert: <br>
-  <ul>
+  <p>Inserting:
+  <ul><blockquote>
      <li>node <% $args{node} %>
      <li>sysDescr:  <% $node{"device"}{$args{node}}{sysDescr} %>
      <li>sysLocation: <% $node{"device"}{$args{node}}{sysLocation} %>
+     <li>dot1dBaseBridgeAddress: <% $node{"device"}{$args{node}}{dot1dBaseBridgeAddress} %>
 %   foreach my $if ( keys %{ $node{"device"}{$args{node}}{interface} } ) {
-     <li>interface: <% $if %>
-   }
+%     my $z = 0;
+%     foreach my $rsv ( keys %reserved ) {
+%       $z = 1 if( $if =~ /$rsv/ );
+%     }
+%     next if( $z );
+      <blockquote>
+      <li>interface: <% $if %>
+      <li>ifDescr: <% $if %>
+      <li>ifPhysAddress: <% $node{device}{$args{node}}{interface}{$if}{ifPhysAddress} %>
+      <li>ifIndex: <% $node{device}{$args{node}}{interface}{$if}{instance} %>
+      <li>ifType: <% $node{device}{$args{node}}{interface}{$if}{ifType} %>
+      <li>ifAlias: <% $node{device}{$args{node}}{interface}{$if}{descr} %>
+      <li>ifSpeed: <% $node{device}{$args{node}}{interface}{$if}{ifSpeed} %>
+      <li>ifAdminStatus: <% $node{device}{$args{node}}{interface}{$if}{ifAdminStatus} %>
+      </blockquote>
+%   }
   </ul>     
-% #    <pre><code>
-% #  print $nv->string_config( "device", $args{node} );
-% #    </code></pre>
 % }
 
 <& footer &>
@@ -53,6 +69,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.4  2003/06/12 23:50:06  netdot
+#  more work -- probably moving to create.html
+#
 #  Revision 1.3  2003/06/12 00:52:58  netdot
 #  *** empty log message ***
 #
