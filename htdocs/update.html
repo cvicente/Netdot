@@ -15,7 +15,16 @@ unless ( $obj ){
 %linksto = $gui->getlinksto($table);
 %linksfrom = $gui->getlinksfrom($table);
 %order = $gui->getcolumnorder($table);
-
+##################################################
+# get state back if sid defined
+#   otherwise create state if necessary
+if( defined( $ARGS{sid} ) ) {
+  $sid = $ARGS{sid};
+  $session = $gui->getsession( $TMP, $sid );
+} elsif( $table ) {  
+  $session = $gui->mksession( $TMP );
+  $sid = $session->{_session_id};
+}
 </%perl>
 
 %if ( !$ARGS{res} ){ # show the form
@@ -27,6 +36,7 @@ unless ( $obj ){
 <p><br>
 <form action="update.html" method="POST">
 
+<input type="hidden" name="sid" value="<% $sid %>">
 <input type="hidden" name="table" value="<% $table %>">
 <input type="hidden" name="id" value="<% $id %>">
 
