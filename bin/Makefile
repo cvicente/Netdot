@@ -5,7 +5,7 @@
 PERL    =  `which perl`
 PREFIX  =  `cat ../.prefix`
 
-FILES = mason.pl updatenodes.pl
+FILES = mason.pl updatedevices.pl
 
 #################################################################
 # Database setup
