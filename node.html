@@ -38,7 +38,7 @@ if( exists( $args{insert} ) ) {
     $tmp{contactlist} = "0"; # same
     $tmp{user} = "0"; # same
     eval { $newnode = Node->create( \%tmp ); }
-      or die "Unable to create node $args{node}: $@\n";
+      or die "Unable to create node $args{node}: $@ \n";
     $inserted = $newnode->id;
     foreach my $int ( keys %{ $node{interface} } ) {
       my $skip = 0;
@@ -140,6 +140,7 @@ if( exists( $args{insert} ) ) {
     <form>
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="node" value="<% $args{node} %>">
+    <input type="hidden" name="comstr" value="<% $comstr %>">
     <table cellpadding="3" cellspacing="1" border="0">
     <tr align="LEFT">
     <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
@@ -151,12 +152,18 @@ if( exists( $args{insert} ) ) {
     </tr>
     </table>
     </form>
-%         printf "<pre>%s</pre>\n", Dumper( \%node );
+%         printf "<pre>%s</pre>\n", Dumper( \%node ) if( $DEBUG );
 %         print "<code><pre>", $nv->string_config( "device", $args{node} ), "</pre></code>\n";
 %       } else {
+%         if( exists( $args{sid} ) && defined( $session ) ) {
+%           $gui->rmsession( $session );
+%         }
     <p>Failed to get details.
 %       }
 %     } else {
+%       if( exists( $args{sid} ) && defined( $session ) ) {
+%         $gui->rmsession( $session );
+%       }
     <p>Failed to build information.
 %     }
 %   }
@@ -164,6 +171,7 @@ if( exists( $args{insert} ) ) {
 % }
 <%args>
 $comstr => "public"
+$DEBUG => 0
 $DIR => "/home/netdot/public_html/tmp"
 $nv => Netdot::Netviewer->new()
 $gui => Netdot::GUI->new()
@@ -187,6 +195,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.28  2003/07/17 06:08:04  netdot
+#  making sure comstr is used and propagated
+#
 #  Revision 1.27  2003/07/17 05:34:36  netdot
 #  use $comstr in build_config!
 #
