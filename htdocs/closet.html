@@ -86,7 +86,7 @@ LIST_MANAGER.addList(floorSearchList);
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0">
     <td align="left">
-        Closet for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=HORIZONTAL"><% $site->name %></a>&nbsp;&nbsp;&nbsp;
+        Closet for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=CLOSETS"><% $site->name %></a>&nbsp;&nbsp;&nbsp;
     </td>
  </tr>
 </table>
@@ -265,18 +265,208 @@ LIST_MANAGER.addList(floorSearchList);
 </table>
 <!-- End Closet Table -->
 
+
+<!-- Begin BackboneCable Table -->
+% if (defined($o)) {
+
+<%perl>
+my @sites;
+if ($editBackbones)
+{
+    @sites = Site->retrieve_all();
+    @sites = sort { $a->name cmp $b->name } @sites;
+}
+</%perl>
+
+<A NAME="backbones"></A>
+<table border="0" width="95%" align="center"  class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="center">
+    <%perl>
+    my @bbones;
+    map { push (@bbones, $_) } ($o->backbones_start, $o->backbones_end);
+    </%perl>
+%	if (scalar(@bbones)) {
+    
+    <form name="bbone_form" action="closet.html" method="POST">
+    <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="_action" value="UPDATE">
+    <input type="hidden" name="s2name" value="<% $s2name %>">
+
+    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+    <tr class="formtabletitle">
+     <td colspan="2">
+      <table width="100%" border="0">
+       <tr>
+         <td width="10%" align="left">&nbsp;</td>
+         <th width="80%" align="center">Backbone Cable(s)</th>
+%	 if ($editBackbones) {	 
+            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+%	 } else {
+            <td width="10%" align="right">
+                <a href="cable_backbone.html?id=NEW">[new]</a> | <a href="closet.html?id=<% $id %>&edit=bbinfo#backbones">[edit]</a>
+            </td>
+%	 }
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      <table border="0" width="90%">
+    <tr>
+        <td align="center">
+            <a href="closet.html?id=<% $id %>&bb_sort=name#backbones">Name</a>
+        </td>
+        <td align="center">
+            <a href="closet.html?id=<% $id %>&bb_sort=type#backbones">Type</a>
+        </td>
+        <td align="center">
+            <a href="closet.html?id=<% $id %>&bb_sort=start_closet#backbones">Start Closet</a>
+        </td>
+        <td align="center">
+            <a href="closet.html?id=<% $id %>&bb_sort=end_closet#backbones">End Closet</a>
+        </td>
+        <td align="center">
+            <a href="closet.html?id=<% $id %>&bb_sort=owner#backbones">Owner</a>
+        </td>
+    </tr>
+
+    <%perl>
+    $bb_sort = "name" if (!defined($bb_sort) || $bb_sort eq "");
+    my @sorted_bbones;
+    if ($bb_sort eq "name")
+    {
+        @sorted_bbones = sort { $a->name cmp $b->name } @bbones;
+    }
+    elsif ($bb_sort eq "start_closet")
+    {
+        @sorted_bbones = sort { $a->start_closet->name cmp $b->start_closet->name } @bbones;
+    }
+    elsif ($bb_sort eq "end_closet")
+    {
+        @sorted_bbones = sort { $a->end_closet->name cmp $b->end_closet->name } @bbones;
+    }
+    elsif ($bb_sort eq "owner")
+    {
+        @sorted_bbones = sort { $a->owner->name cmp $b->owner->name } @bbones;
+    }
+    else
+    {
+        @sorted_bbones = sort { $a->$bb_sort cmp $b->$bb_sort } @bbones;
+    }
+    </%perl>
+
+%   my $i = 0;
+%   foreach my $bb (@sorted_bbones) {
+%   $i = ($i + 1) % 2;
+    <tr align="left" class="<% $cssitem{$i} %>">
+        <td align="left">
+%       if ($editBackbones) {
+            <input type="checkbox" name="<% "BackboneCable__" . $bb->id . "__delete" %>">[del]
+%           $ui->textField(object=>$bb, table=>"BackboneCable", column=>"name",
+%                          edit=>$editBackbones);
+%       } else {
+            <a href="cable_backbone.html?id=<% $bb->id %>"><% $bb->name %></a>
+%       }
+        </td>
+        
+        <td align="left">
+%           $ui->selectLookup(object=>$bb, table=>"BackboneCable", column=>"type", 
+%                             lookup=>"CableType", edit=>$editBackbones);
+        </td>
+
+        <td align="left">
+%       if (!$editBackbones) {
+            <a href="closet.html?id=<% $bb->start_closet %>"><% $bb->start_closet->name %></a>
+%       } else {
+            <script language="JavaScript">
+            <!--
+            var startClosetList_<% $bb->id %> = new DynamicList("bbone_form", "BackboneCable__<% $bb->id %>__start_closet", "site", "Closet", "start_site_list<% $bb->id %>_srch");
+            LIST_MANAGER.addList(startClosetList_<% $bb->id %>);
+            -->
+            </script>
+            <SELECT NAME="start_site_list<% $bb->id %>_srch" onChange="startClosetList_<% $bb->id %>.doIt();">
+            <OPTION VALUE="">Lookup by Site</OPTION>
+            <%perl>
+            foreach my $s (@sites)
+            {
+                printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $s->id, $s->name);
+            }
+            </%perl>
+            </SELECT> &nbsp;
+            
+%           $ui->selectLookup(object=>$bb, table=>"BackboneCable", column=>"start_closet", 
+%                             lookup=>"Closet", where=>{site=>($bb ? $bb->start_closet->site : "")}, 
+%                             edit=>$editBackbones);
+%       }
+        </td>
+
+        <td align="left">
+%       if (!$editBackbones) {
+            <a href="closet.html?id=<% $bb->end_closet %>"><% $bb->end_closet->name %></a>
+%       } else {
+            <script language="JavaScript">
+            <!--
+            var endClosetList_<% $bb->id %> = new DynamicList("bbone_form", "BackboneCable__<% $bb->id %>__end_closet", "site", "Closet", "end_site_list<% $bb->id %>_srch");
+            LIST_MANAGER.addList(endClosetList_<% $bb->id %>);
+            -->
+            </script>
+            <SELECT NAME="end_site_list<% $bb->id %>_srch" onChange="endClosetList_<% $bb->id %>.doIt();">
+            <OPTION VALUE="">Lookup by Site</OPTION>
+            <%perl>
+            foreach my $s (@sites)
+            {
+                printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $s->id, $s->name);
+            }
+            </%perl>
+            </SELECT> &nbsp;
+
+%           $ui->selectLookup(object=>$bb, table=>"BackboneCable", column=>"end_closet", 
+%                             lookup=>"Closet", where=>{site=>($bb ? $bb->end_closet->site : "")},
+%                             edit=>$editBackbones);
+%       }
+        </td>
+
+        <td align="left">
+%           $ui->selectLookup(object=>$bb, table=>"BackboneCable", column=>"owner", 
+%                             lookup=>"Entity", edit=>$editBackbones);
+        </td>
+    </tr>
+%   }
+    <tr align="left" valign="top">
+        <td align="left" colspan="4">
+
+        </td>
+    </tr>
+
+    </table>
+    </td>
+    </tr>
+    </table>
+    </form>
+%  }    
+</td>
+</tr>
+</table>
+% }
+<!-- End BackboneCable Table -->
+
 <%args>
 $id => undef;
 $edit => undef;
+$bb_sort => undef;
 $s2name => "Plant";
 </%args>
 
 <%init>
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
+my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
 my $site = undef;
 my $editCloset = 0;
+my $editBackbones = 0;
 
 if ($id && $id ne "NEW") 
 {
@@ -285,4 +475,5 @@ if ($id && $id ne "NEW")
 }
 
 $editCloset = 1 if ($id eq "NEW" || $edit eq "closetinfo");
+$editBackbones = 1 if ($edit eq "bbinfo");
 </%init>

@@ -342,7 +342,7 @@ if ($editStrand)
     {
         # sort by direction
         # -----------------------------------------------------------
-        @sorted_strands = sort { uc($a->direction) cmp uc($b->direction) } @strands;
+        @sorted_strands = sort { int($a->direction) <=> int($b->direction) } @strands;
     }
 
     elsif ($strand_sort eq "parent")
@@ -371,7 +371,13 @@ if ($editStrand)
         </td>
 
         <td align="left">
-%           $ui->textField(object=>$st, table=>"CableStrand", column=>"direction", edit=>$editStrand);        
+%          if ($editStrand) {
+%              my $dir_name = "CableStrand__" . $st->id . "__direction";
+               <input type="radio" name="<% $dir_name %>" value="0" <% ($st && int($st->direction) == 0 ? "CHECKED" : "") %>>TX &nbsp;&nbsp;&nbsp; 
+               <input type="radio" name="<% $dir_name %>" value="1" <% ($st && int($st->direction) == 1 ? "CHECKED" : "") %>>RX
+%          } elsif (defined($st)) {
+               <% (int($st->direction) == 1 ? "RX" : "TX") %>
+%          }
         </td>
         
         <td align="left">

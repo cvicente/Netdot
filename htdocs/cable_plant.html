@@ -28,12 +28,12 @@ if(defined($ARGS{_action}))
 # -----------------------------------------------------------------------------
 </%perl>     
 
-% if ($o && $page_type eq "HORIZONTAL") {
+% if ($o) {
 <!-- Header Table -->
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
     <td align="left">
-    <% ucfirst(lc($page_type)) %> Cable for Site: <a href="view.html?table=Site&id=<% $id %>"><% $o->name %></a>&nbsp;&nbsp; 
+    <% ucfirst(lc($page_type)) %> for Site: <a href="view.html?table=Site&id=<% $id %>"><% $o->name %></a>&nbsp;&nbsp; 
     <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&cable_sort=<% $cable_sort %>">[refresh]</a>
     </td>
  </tr>
@@ -563,9 +563,13 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
     # -------------------------------------------------------------------------
     $cable_sort = "name" if (!defined($cable_sort) || $cable_sort eq "");
     my @sorted_strands;
-    if ($cable_sort eq "name" || $cable_sort eq "direction")
+    if ($cable_sort eq "name")
     {
-        @sorted_strands = sort { $a->$cable_sort cmp $b->$cable_sort } @strands;
+        @sorted_strands = sort { $a->name cmp $b->name } @strands;
+    }
+    elsif ($cable_sort eq "direction")
+    {
+        @sorted_strands = sort { int($a->direction) <=> int($b->direction) } @strands;
     }
     elsif ($cable_sort eq "status")
     {
@@ -596,7 +600,15 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
 %                             edit=>($edit eq "cableinfo"));
          </td>
         <td align="left">
-%           $ui->textField(object=>$strand, table=>"CableStrand", column=>"direction", edit=>($edit eq "cableinfo"));
+%           if ($edit eq "cableinfo") {
+%               my $dir_name = "CableStrand__" . $strand->id . "__direction";
+                <input type="radio" name="<% $dir_name %>" value="0" <% ($strand && int($strand->direction) == 0 ? "CHECKED" : "") %>>TX &nbsp;&nbsp;&nbsp; 
+                <input type="radio" name="<% $dir_name %>" value="1" <% ($strand && int($strand->direction) == 1 ? "CHECKED" : "") %>>RX
+%           } elsif (defined($strand)) {
+                <% (int($strand->direction) == 1 ? "RX" : "TX") %>
+%           }
+        
+%           #$ui->textField(object=>$strand, table=>"CableStrand", column=>"direction", edit=>($edit eq "cableinfo"));
         </td>                
     </tr>
 %   }
@@ -609,6 +621,17 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
 %}
 % #############################################################################
 % # END CABLE STRAND CODE
+% #############################################################################
+%
+%
+% #############################################################################
+% # BEGIN CIRCUIT CODE
+% #############################################################################
+% elsif (uc($page_type) eq "CIRCUITS") {
+% $m->abort();
+%}
+% #############################################################################
+% # END CIRCUIT CODE
 % #############################################################################
 %
 % else {

@@ -44,15 +44,21 @@ my @sites = Site->retrieve_all();
 %       }
 
 %       if ($page eq "CLOSETS") {
-           [Closets] |  
+           [Closets] | 
 %       } else {
            <a href="index.html?s2name=Plant&page=CLOSETS">[Closets]</a> | 
 %       }
 
 %       if ($page eq "STRANDS") {
-            [Cable Strands] 
+            [Cable Strands] | 
 %       } else {
             <a href="index.html?s2name=Plant&page=STRANDS">[Cable Strands]</a>
+%       }
+
+%       if ($page eq "CIRCUITS") {
+            [Circuits]
+%       } else {
+            <a href="index.html?s2name=Plant&page=CIRCUITS">[Circuits]</a>
 %       }
         <br><hr>
     </td>
@@ -163,17 +169,13 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
             </select>
             </td>
 
-            <td width="100" align="left">Room:<br>
+            <td width="160" align="left">
 %           # Because both the room list and the closet list can affect the jack list, we explicitly tell the jacklist to look
 %           # at this list.
-            <select name="room_id" onChange="jackList.setParent('room_id'); jackList.setDBField('room'); jackList.doIt();">
-            </select>
-            </td>
-
-            <td width="100" align="left">Closet:<br>
+            Room: <select name="room_id" onChange="jackList.setParent('room_id'); jackList.setDBField('room'); jackList.doIt();">
+            </select><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>- or -</i><br>
 %           # Like above, make sure the jacklist uses our closet selection instead of the room selection.            
-            <select name="closet_id" onChange="jackList.setParent('closet_id'); jackList.setDBField('closet'); jackList.doIt();">
-            </select>
+            Closet: <select name="closet_id" onChange="jackList.setParent('closet_id'); jackList.setDBField('closet'); jackList.doIt();"></select>
             </td>
 
             <td width="180" align="left">Jack:<br>
@@ -183,7 +185,7 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
             <td>&nbsp;</td>
         </tr>
 
-        <tr align="left" valign="top"><td colspan="5">&nbsp;</td></tr>
+        <tr align="left" valign="top"><td colspan="5"><hr></td></tr>
 
         <tr align="left" valign="top">
             <td align="left" colspan="5">
@@ -242,12 +244,12 @@ LIST_MANAGER.addList(floorList, closetList);
             
             <td width="100" align="left">Closet:<br>
             <select name="closet_id" style="width: 120px;">
-            </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (closet_id.value) { location.href = ('closet.html?id=' + closet_id.value); return true; }">
+            </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (closet_id.value && closet_id.value != -1) { location.href = ('closet.html?id=' + closet_id.value); } else if (document.cable_form.id.value) { location.href = ('cable_plant.html?id=' + document.cable_form.id.value + '&page_type=CLOSETS'); } return true;">
             </td>
             <td>&nbsp;</td>
         </tr>
 
-        <tr align="left" valign="top"><td colspan="5">&nbsp;</td></tr>
+        <tr align="left" valign="top"><td colspan="5"><hr></td></tr>
 
         <tr align="left" valign="top">
             <td align="left" colspan="5">
@@ -288,7 +290,7 @@ LIST_MANAGER.addList(floorList, closetList);
             </td>
         </tr>
 
-        <tr align="left" valign="top"><td colspan="5">&nbsp;</td></tr>
+        <tr align="left" valign="top"><td colspan="5"><hr></td></tr>
 
         <tr align="left" valign="top">
             <td align="left">
@@ -297,9 +299,39 @@ LIST_MANAGER.addList(floorList, closetList);
 	        &nbsp;<input type="button" name="" value="Lookup Strand" 
             onClick="sendquery(<% 'strand_lookup' %>, <% $srchf . '.value' %>, 'CableStrand', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
             Lookup Results: <select name="strand_lookup" width="10" style="width: 200px;">
-            </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (strand_lookup.value) { location.href = ('cable_strand.html?id=' + strand_lookup.value); return true; }"> &nbsp;&nbsp;
+            </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (strand_lookup.value) { alert('strand_lookup.value = ' + strand_lookup.value); location.href = ('cable_strand.html?id=' + strand_lookup.value); return true; }"> &nbsp;&nbsp;
             </td>
         </tr>
+    </table>
+    </form>
+</td>
+</tr>
+
+% } elsif ($page eq "CIRCUITS") {
+
+<tr class="rowtitle0">
+    <td>
+        <b>Circuits</b> &nbsp;&nbsp;<a href="#" onClick="hideOptions('circuit_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
+        <a href="circuit.html?id=NEW">[new]</a>
+    </td>
+</tr>
+<tr class="rowtitle0" id="circuit_options">
+    <td>
+    <form name="cable_form" action="cable_plant.html" method="GET">
+    <input type="hidden" name="page_type" value="CIRCUITS">
+    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
+        <tr align="left" valign="top">
+            <td align="left">
+%           my $circuit_srch = 'circuit_srch';  # name of the form input tag
+	        <input type="text" name="<% $circuit_srch %>" value="By Circuit Name" onFocus="if (this.value == 'By Circuit Name') { this.value = ''; } return true;">
+	        &nbsp;<input type="button" name="" value="Lookup Circuit" 
+            onClick="sendquery(<% 'circuit_id_srch' %>, <% $circuit_srch . '.value' %>, 'Circuit', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
+            Lookup Results: <select name="circuit_id_srch" width="10" style="width: 200px;">
+            </select><input type="submit" name="circuit_submit" value="Browse by Circuit">
+            </td>
+        </tr>
+
+        <tr align="left" valign="top"><td colspan="5"><hr></td></tr>
     </table>
     </form>
 </td>

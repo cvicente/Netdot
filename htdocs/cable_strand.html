@@ -182,7 +182,13 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>Direction: </td>
                 <td>
-%               $ui->textField(object=>$o, table=>"CableStrand", column=>"direction", edit=>$editStrand);
+%               if ($editStrand) {
+%                   my $dir_name = "CableStrand__" . $id . "__direction";
+                    <input type="radio" name="<% $dir_name %>" value="0" <% ($o && int($o->direction) == 0 ? "CHECKED" : "") %>>TX &nbsp;&nbsp;&nbsp; 
+                    <input type="radio" name="<% $dir_name %>" value="1" <% ($o && int($o->direction) == 1 ? "CHECKED" : "") %>>RX
+%               } elsif (defined($o)) {
+                    <% (int($o->direction) == 1 ? "RX" : "TX") %>
+%               }
                 </td>
             </tr>
 
