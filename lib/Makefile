@@ -1,7 +1,7 @@
 #
 # makefile for htdocs
 
-FILES = `ls`
+FILES = GUI.pm Netviewer.pm nv.categories nv.ifTypes
 
 all:
 	@echo
