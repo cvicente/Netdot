@@ -11,13 +11,10 @@ foreach my $j ( keys %ARGS ) {
 <BR>
 <CENTER>
    <!-- MAIN BODY BINDING TABLE -->
-   <TABLE BORDER="1"  CELLSPACING="1" CELLPADDING="3" WIDTH="95%" CLASS="tablebackground">
+   <TABLE BORDER="0"  CELLSPACING="1" CELLPADDING="3" WIDTH="95%" CLASS="tablebackground">
       <TR class="rowtitle0" bgcolor="#CCCCCC">
-         <TD>
+         <TD COLSPAN="2">
             <B>General Search</B>
-         </TD>
-         <TD>
-            <B>Node Discovery</B>
          </TD>
       <TR>
          <TD>
@@ -35,24 +32,12 @@ foreach my $j ( keys %ARGS ) {
                   </form>
               </TABLE>
            </TD>
-           <TD>
-              <!-- NODE DISCOVERY SUBMISSION TABLE -->
-	      <TABLE BORDER="0" CELLPADDING="2" CELLSPACING="3" CLASS="tablebackground">
-                 <TR ROWSPAN=2>
-		    <TD>&nbsp &nbsp </TD>
-                    <TD><form action="node.html" method="post">
-                       <input type="text" name="node" size="20" value=""> 
-                       <input name="discover" value="discover" type="submit">
- 	            </TD>
-                    </form>
-               </TABLE>
-            </TD>
           <TR class="rowtitle0" bgcolor="#CCCCCC">
               <TD>
-                 <B>Object Search</B>
+                 <B>Specific Search</B>
               </TD>
               <TD>
-                 <B>Object Browse</B>
+                 <B>Browse</B>
               </TD>
 	  <TR>
               <TD>
@@ -86,7 +71,7 @@ foreach my $j ( keys %ARGS ) {
             	    <TD></TD>
 	    	    <TD align="left" valign="top"><LI><A HREF="search_obj.html?table=Contact"><B>Contact</B></A></TD>
             	    <TD></TD>
-            	    <TD align="left" valign="top"><LI><A HREF="search_obj.html?table=Node"><B>Node</B></A></TD>
+            	    <TD align="left" valign="top"><LI><A HREF="search_obj.html?table=Device"><B>Device</B></A></TD>
 	            <TD></TD>
             	    <TD align="left" valign="top"><LI><A HREF="search_obj.html"><B>More</A> . . .</B></TD>
         	    <TD></TD>
@@ -124,7 +109,7 @@ foreach my $j ( keys %ARGS ) {
             	    <TD></TD>
 	    	    <TD align="left" valign="top"><LI><A HREF="browse.html?table=Contact"><B>Contact</B></A></TD>
             	    <TD></TD>
-            	    <TD align="left" valign="top"><LI><A HREF="browse.html?table=Node"><B>Node</B></A></TD>
+            	    <TD align="left" valign="top"><LI><A HREF="browse.html?table=Device"><B>Device</B></A></TD>
 	            <TD></TD>
             	    <TD align="left" valign="top"><LI><A HREF="browse.html"><B>More</A> . . .</B></TD>
         	    <TD></TD>
@@ -134,10 +119,10 @@ foreach my $j ( keys %ARGS ) {
 	</TABLE>
 <BR>
       <CENTER>
-      <TABLE BORDER="1" CELLSPACING="1" CELLPADDING="3" WIDTH="95%" class="tablebackground" bgcolor="whitesmoke">
+      <TABLE BORDER="0" CELLSPACING="1" CELLPADDING="3" WIDTH="95%" class="tablebackground" bgcolor="whitesmoke">
       <TR class="rowtitle0" bgcolor="#CCCCCC">
          <TD COLSPAN="2">
-            <B>Object Creation</B>
+            <B>Insert</B>
          </TD>
          <form action="create.html">
       <TR>
@@ -154,32 +139,40 @@ foreach my $j ( keys %ARGS ) {
 %           }
             </select>
             <input name="submit" value="Go" type="submit">
+            </form>
             </TABLE>
           </TD>
+           <TD>
+              <!-- NODE DISCOVERY SUBMISSION TABLE -->
+	      <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0" CLASS="tablebackground">
+	        <TR><TD WIDTH="15">&nbsp &nbsp </TD>
+	        <TR><TD><B>Device</B>:</TD>
+                <TD><form action="device.html" method="post">
+                <input type="text" name="device" size="20" value=""> 
+              <input name="discover" value="discover" type="submit">
+ 	      </TD>
+              </form>
+               </TABLE>
+            </TD>
        </TABLE>
        </form>
 <BR>
-           <CENTER>
-           <TABLE BORDER="1"  CELLSPACING="1" CELLPADDING="3" WIDTH="95%" class="tablebackground" bgcolor="whitesmoke">
-           <TR class="rowtitle0" bgcolor="#CCCCCC"><TD COLSPAN="2"><B>Object Updates</B></TD>
+           <TABLE BORDER="0"  CELLSPACING="1" CELLPADDING="3" WIDTH="95%" class="tablebackground" bgcolor="whitesmoke">
+           <TR class="rowtitle0" bgcolor="#CCCCCC"><TD COLSPAN="2"><B>Contrib Section</B></TD>
            <TR><TD>
                <TABLE BORDER="0" CELLSPACING="0" CELLPADDING="0" CLASS="tablebackground">
-               <TR><TD WIDTH=15>&nbsp &nbsp <TD>  
-               Updates are done by <A HREF="search_obj.html">searching</A> for a specific entry or going to the 
-               specific entry using the <A HREF="browse.html">browse</A> function. Once you have found the
-  	       desired entry there will be a "edit" link to the right of the object name.  Clicking on the "edit" link 
-               will allow you to make modifications to the entry as needed.
-               </TD></TABLE>
+	       <TR><TD WIDTH="15">&nbsp &nbsp </TD><TD>
+	       <TR><TD WIDTH="15">&nbsp &nbsp <TD>
+	       </TABLE>
            </TD></TABLE>
-           </CENTER>
         </TD>
    </TABLE>
 </CENTER>
 
+
 <& footer2 &>
 
 <%init>
-use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::GUI;
 my $gui = Netdot::GUI->new();

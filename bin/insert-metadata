@@ -87,21 +87,28 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
   VALUES ('Contact_history', 'modified', 'person,contacttype,contactlist,info,modified,modifier', 'modified,modifier,contacttype,person', 'contactlist:ContactList,contacttype:ContactType,person:Person', '', '0', '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('ContactList', 'name', 'name,info', 'name,info', '', 'contacts:Contact:contactlist,entities:Entity:contactlist:{on_delete=>"set-null"},nodes:Node:contactlist:{on_delete=>"set-null"},sites:Site:contactlist:{on_delete=>"set-null"}', '0', 'A list of contacts');
+  VALUES ('ContactList', 'name', 'name,info', 'name,info', '', 'contacts:Contact:contactlist,entities:Entity:contactlist:{on_delete=>"set-null"},devices:Device:contactlist:{on_delete=>"set-null"},sites:Site:contactlist:{on_delete=>"set-null"}', '0', 'A list of contacts');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description) 
   VALUES ('ContactType', 'name', 'name,info', 'name', '', 'contacts:Contact:contacttype:{on_delete=>"restrict"}', '0', 'Type of contact');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('Device', 'serialnumber,productname', 'serialnumber,productname,type,part_of,inventorynumber,maint_covered,site,room,rack,dateinstalled,info', 'serialnumber,productname,type', 'productname:Product,part_of:Device,site:Site,type:DeviceType', 'nodes:Node:device:{on_delete=>"set-null"},parts:Device:part_of', '0', 'A network device or component');
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('Device_history', 'modified', 'serialnumber,productname,type,part_of,inventorynumber,maint_covered,site,room,rack,dateinstalled,info,modified,modifier', 'modified,modifier,serialnumber,productname,type', 'productname:Product,part_of:Device,site:Site,type:DeviceType', '', '0', '');
+  VALUES ('Device', 'name', 'name,aliases,type,sysdescription,physaddr,sw_version,oobname,oobnumber,entity,contactlist,user,managed,community,component_type,serialnumber,productname,part_of,inventorynumber,maint_covered,site,room,rack,dateinstalled,info', 'name,type,productname', 'type:DeviceType,entity:Entity,contactlist:ContactList,user:Person,component_type:ComponentType,productname:Product,part_of:Device,site:Site', 'interfaces:Interface:device,services:DeviceService:device,parts:Device:part_of', '0', 'A network device');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('DeviceType', 'name', 'name,info', 'name', '', 'devices:Device:type:{on_delete=>"restrict"}', '0', 'Types of devices');
+  VALUES ('Device_history', 'modified', 'name,aliases,type,sysdescription,physaddr,sw_version,oobname,oobnumber,entity,contactlist,user,managed,community,component_type,serialnumber,productname,part_of,inventorynumber,maint_covered,site,room,rack,dateinstalled,info,modified,modifier', 'modified,modifier,name,type', 'type:DeviceType,entity:Entity,contactlist:ContactList,user:Person,component_type:ComponentType,productname:Product,part_of:Device,site:Site', '', '0', '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('Entity', 'name', 'name,aliases,type,availability,contactlist,acctnumber,maint_contract,autsys,bgppeerip,info', 'name,type', 'contactlist:ContactList,availability:Availability,type:EntityType', 'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,subnets:Subnet:entity:{on_delete=>"set-null"},cables:Cable:owner:{on_delete=>"set-null"},nodes:Node:entity:{on_delete=>"set-null"},persons:Person:department', '0', 'An organization related to the network in some way');
+  VALUES ('ComponentType', 'name', 'name,info', 'name', '', 'devices:Device:component_type:{on_delete=>"restrict"}', '0', 'Types of Components');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
+  VALUES ('DeviceService', 'device,service', 'device,service', 'device,service', 'device:Device,service:Service', '', '1', 'A relationship linking a host with a running Internet service');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
+  VALUES ('DeviceType', 'name', 'name,info', 'name', '', 'devices:Device:type:{on_delete=>"restrict"}', '0', 'Types of network devices');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
+  VALUES ('Entity', 'name', 'name,aliases,type,availability,contactlist,acctnumber,maint_contract,autsys,bgppeerip,info', 'name,type', 'contactlist:ContactList,availability:Availability,type:EntityType', 'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,subnets:Subnet:entity:{on_delete=>"set-null"},cables:Cable:owner:{on_delete=>"set-null"},devices:Device:entity:{on_delete=>"set-null"},persons:Person:entity', '0', 'An organization related to the network in some way');
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('Entity_history', 'modified', 'name,aliases,type,availability,contactlist,acctnumber,maint_contract,autsys,bgppeerip,info,modified,modifier', 'modified,modifier,name,type', 'contactlist:ContactList,availability:Availability,type:EntityType', '', '0', '');
 
@@ -112,9 +119,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
   VALUES ('EntityType', 'name', 'name,info', 'name', '', 'entities:Entity:type:{on_delete=>"restrict"}', '0', 'Types of Entities');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('Interface', 'ifdescr,node', 'ifindex,ifdescr,node,ifalias,iftype,ifspeed,ifadminstatus,physaddr,info,managed', 'ifindex,ifdescr,node,ifalias', 'node:Node', 'ips:Ip:interface,parents:InterfaceDep:child,children:InterfaceDep:parent,nearcircuits:Circuit:nearend:{on_delete=>"set-null"},farcircuits:Circuit:farend:{on_delete=>"set-null"}', '0', 'An interface associated with a node');
+  VALUES ('Interface', 'ifdescr,device', 'ifindex,ifdescr,device,ifalias,iftype,ifspeed,ifadminstatus,physaddr,info,managed', 'ifindex,ifdescr,device,ifalias', 'device:Device', 'ips:Ip:interface,parents:InterfaceDep:child,children:InterfaceDep:parent,nearcircuits:Circuit:nearend:{on_delete=>"set-null"},farcircuits:Circuit:farend:{on_delete=>"set-null"}', '0', 'An interface associated with a device');
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('Interface_history', 'modified', 'ifdescr,node,ifalias,ifindex,iftype,ifspeed,ifadminstatus,physaddr,info,managed,modified,modifier', 'modified,modifier,ifdescr,node,ifalias', 'node:Node', '', '0', '');
+  VALUES ('Interface_history', 'modified', 'ifdescr,device,ifalias,ifindex,iftype,ifspeed,ifadminstatus,physaddr,info,managed,modified,modifier', 'modified,modifier,ifdescr,device,ifalias', 'device:Device', '', '0', '');
 
 INSERT INTO Meta (name, label, columnorder, linksto, linksfrom, isjoin, description)
   VALUES ('InterfaceDep', 'parent,child', 'parent,child', 'parent:Interface,child:Interface', '', '1', 'Dependency relationship between two interfaces. Provides a basis for topology information');
@@ -134,24 +141,13 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('Name_history', 'modified', 'name,ip,modified,modifier', 'modified,modifier,name,ip', 'ip:Ip', '', '0', '');
 
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('Node', 'name', 'name,aliases,type,device,sysdescription,physaddr,sw_version,oobname,oobnumber,entity,contactlist,user,managed,community,info', 'name,type,device', 'device:Device,type:NodeType,entity:Entity,contactlist:ContactList,user:Person', 'interfaces:Interface:node,services:NodeService:node', '0', 'A network element');
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('Node_history', 'modified', 'name,aliases,type,device,sysdescription,physaddr,sw_version,oobname,oobnumber,entity,contactlist,user,managed,community,info,modified,modifier', 'modified,modifier,name,type,device', 'device:Device,type:NodeType,entity:Entity,contactlist:ContactList,user:Person', '', '0', '');
-
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('NodeService', 'node,service', 'node,service', 'node,service', 'node:Node,service:Service', '', '1', 'A relationship linking a host with a running Internet service');
-
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('NodeType', 'name', 'name,info', 'name', '', 'nodes:Node:type:{on_delete=>"restrict"}', '0', 'Types of network devices');
-
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description) 
-  VALUES ('Person', 'lastname,firstname', 'lastname,firstname,aliases,position,department,address,email,office,cell,home,pager,emailpager,fax,availability,info', 'lastname,firstname,office,department', 'department:Entity,address:Address,availability:Availability', 'roles:Contact:person,nodes:Node:user:{on_delete=>"set-null"}', '0', 'Information about an individual');
+  VALUES ('Person', 'lastname,firstname', 'lastname,firstname,aliases,position,entity,address,email,office,cell,home,pager,emailpager,fax,availability,info', 'lastname,firstname,office,entity', 'entity:Entity,address:Address,availability:Availability', 'roles:Contact:person,devices:Device:user:{on_delete=>"set-null"}', '0', 'Information about an individual');
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description) 
-  VALUES ('Person_history', 'modified', 'lastname,firstname,aliases,position,department,address,email,office,cell,home,pager,emailpager,fax,availability,info,modified,modifier', 'modified,modifier,lastname,firstname,position,department', 'department:Entity,address:Address,availability:Availability', '', '0', '');
+  VALUES ('Person_history', 'modified', 'lastname,firstname,aliases,position,entity,address,email,office,cell,home,pager,emailpager,fax,availability,info,modified,modifier', 'modified,modifier,lastname,firstname,position,entity', 'entity:Entity,address:Address,availability:Availability', '', '0', '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('Service', 'name', 'name,info', 'name', '', 'nodes:NodeService:service', '0', 'An Internet service running on a host');
+  VALUES ('Service', 'name', 'name,info', 'name', '', 'devices:DeviceService:service', '0', 'An Internet service running on a host');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('Site', 'name', 'name,aliases,address,availability,contactlist,info', 'name,address', 'address:Address,availability:Availability,contactlist:ContactList', 'nearconnections:Connection:nearend,farconnections:Connection:farend,entities:EntitySite:site:{on_delete=>"set-null"},devices:Device:site:{on_delete=>"set-null"}', '0', 'A Physical location');

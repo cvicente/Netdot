@@ -7,7 +7,7 @@ foreach my $j ( keys %ARGS ) {
 if( exists( $args{comstr} ) ) {
   $comstr = $args{comstr};
 }
-if( $args{node} && ! $args{sid} ) {
+if( $args{device} && ! $args{sid} ) {
   $session = $gui->mksession( $TMP );
 }
 if( $args{sid} ) {
@@ -19,34 +19,34 @@ if( $args{cancel} ) {
 
 
 if( exists( $args{insert} ) ) {
-  my %node = %{ $session->{node} };
+  my %device = %{ $session->{device} };
   
   # Remove the '0x' from the MAC address
-  $node{dot1dBaseBridgeAddress} =~ s/^0x//;
+  $device{dot1dBaseBridgeAddress} =~ s/^0x//;
   
-  if( Node->search( name => "$args{node}" ) 
-      || Node->search( physaddr => $node{dot1dBaseBridgeAddress} ) ) {
+  if( Device->search( name => "$args{device}" ) 
+      || Device->search( physaddr => $device{dot1dBaseBridgeAddress} ) ) {
     ; # do nothing
   } else {
-    my( %tmp, $newnode );
+    my( %tmp, $newdevice );
     my @ifrsv = NvIfReserved->retrieve_all();
-    $tmp{name} = $args{node};
+    $tmp{name} = $args{device};
     $tmp{community} = $comstr;
-    $tmp{sysdescription} = $node{sysDescr};
-    if( $node{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
+    $tmp{sysdescription} = $device{sysDescr};
+    if( $device{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
       ;
     } else {
-      $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
+      $tmp{physaddr} = $device{dot1dBaseBridgeAddress};
     }
     $tmp{type} = "0";   # maybe tmp; can't be null
-    $tmp{device} = "0"; # same
     $tmp{contactlist} = "0"; # same
     $tmp{user} = "0"; # same
     $tmp{entity} = "0"; # same
-    eval { $newnode = Node->create( \%tmp ); }
-      or die "Unable to create node $args{node}: $@ \n";
-    $inserted = $newnode->id;
-    foreach my $int ( keys %{ $node{interface} } ) {
+    $tmp{managed} = "1"; # same
+    eval { $newdevice = Device->create( \%tmp ); }
+      or die "Unable to create device $args{device}: $@ \n";
+    $inserted = $newdevice->id;
+    foreach my $int ( keys %{ $device{interface} } ) {
       my $skip = 0;
       foreach my $rsv ( @ifrsv ) {
         my $n = $rsv->name;
@@ -54,34 +54,34 @@ if( exists( $args{insert} ) ) {
       }
       next if( $skip );
       next if( Interface->search
-                 ( node => $newnode->id,
-                   ifindex => $node{interface}{$int}{instance} ) );
+                 ( device => $newdevice->id,
+                   ifindex => $device{interface}{$int}{instance} ) );
       undef( %tmp );
-      $tmp{node} = $newnode->id;
+      $tmp{device} = $newdevice->id;
       $tmp{ifdescr} = $int;
-      $tmp{managed} = "0";
+      $tmp{managed} = "1";
       foreach my $dbname ( keys %ifnames ) {
 	if( $ifnames{$dbname} eq "descr" ) {
-	  if( $node{interface}{$int}{$ifnames{$dbname}} ne "-" ) {
-	    $tmp{$dbname} = $node{interface}{$int}{$ifnames{$dbname}};
+	  if( $device{interface}{$int}{$ifnames{$dbname}} ne "-" ) {
+	    $tmp{$dbname} = $device{interface}{$int}{$ifnames{$dbname}};
 	  }
 	} elsif ($dbname eq "physaddr"){
-	    $node{interface}{$int}{$ifnames{$dbname}} =~ s/^0x//;
-	    $tmp{$dbname} = $node{interface}{$int}{$ifnames{$dbname}};
+	    $device{interface}{$int}{$ifnames{$dbname}} =~ s/^0x//;
+	    $tmp{$dbname} = $device{interface}{$int}{$ifnames{$dbname}};
 	}else {
-	  $tmp{$dbname} = $node{interface}{$int}{$ifnames{$dbname}};
+	  $tmp{$dbname} = $device{interface}{$int}{$ifnames{$dbname}};
 	}
       }
       my $if;
       eval { $if = Interface->create( \%tmp ); }
         or die "Unable to create Interface $int: $@\n";
       undef( %tmp );
-      if( exists( $node{interface}{$int}{ipAdEntIfIndex} ) ) {
-         foreach my $ip ( keys %{ $node{interface}{$int}{ipAdEntIfIndex} } ) {
+      if( exists( $device{interface}{$int}{ipAdEntIfIndex} ) ) {
+         foreach my $ip ( keys %{ $device{interface}{$int}{ipAdEntIfIndex} } ) {
             my( $subnet, %iptmp, %nettmp );
 	    $iptmp{interface} = $if->id;
             $iptmp{address} = $ip;
-            $iptmp{mask} = $node{interface}{$int}{ipAdEntIfIndex}{$ip};
+            $iptmp{mask} = $device{interface}{$int}{ipAdEntIfIndex}{$ip};
             $tmp{subnet} = 0;
             my $decip = unpack('N', (pack ('C*', split (/\./, $ip))));
             my $decmask = unpack('N', (pack ('C*', split (/\./, $iptmp{mask}))));
@@ -110,19 +110,19 @@ if( exists( $args{insert} ) ) {
 }
 </%perl>
 % if( $inserted ) {
-  <& view.html, table => "Node", id => $inserted &>
+  <& view.html, table => "Device", id => $inserted &>
 % } else {
-<& header, title => "Node" &>
-<!-- node.html -->
+<& header, title => "Device" &>
+<!-- device.html -->
 <br>
 <blockquote>
-<form action="node.html" method="POST">
+<form action="device.html" method="POST">
 <table>
 <tr>
-<td ALIGN="LEFT">Node</td><td ALIGN="LEFT">Community</td>
+<td ALIGN="LEFT">Device</td><td ALIGN="LEFT">Community</td>
 </tr>
 <tr>
-<td><input type="text" name="node" size="30" value="<% $args{node} %>"></td>
+<td><input type="text" name="device" size="30" value="<% $args{device} %>"></td>
 <td><input type="text" name="comstr" size="30" value="<% $comstr %>"></td>
 </tr>
 </table>
@@ -133,22 +133,22 @@ if( exists( $args{insert} ) ) {
 %     ;
 %   } elsif( exists( $args{insert} ) ) {
 <hr>
-%     # check to see if node already exists in Node table
-%     my %node = %{ $session->{node} };
-%     if( Node->search( name => "$args{node}" )
-%         || Node->search( physaddr => $node{dot1dBaseBridgeAddress} ) ) {
-        <p>Node <% $args{node} %> already exists in Node table.
+%     # check to see if device already exists in Device table
+%     my %device = %{ $session->{device} };
+%     if( Device->search( name => "$args{device}" )
+%         || Device->search( physaddr => $device{dot1dBaseBridgeAddress} ) ) {
+        <p>Device <% $args{device} %> already exists in Device table.
 %     }
-%   } elsif( exists( $args{node} ) ) {
+%   } elsif( exists( $args{device} ) ) {
 <hr>
-<p><% $args{node} %>
-%     $nv->build_config( "device", $args{node}, $comstr );
-%     if( my( %node ) = $nv->get_device( "device", $args{node}, $comstr ) ) {
-%       if( keys %{ $node{interface} } ) {
-%         $session->{node} = \%node;
+<p><% $args{device} %>
+%     $nv->build_config( "device", $args{device}, $comstr );
+%     if( my( %device ) = $nv->get_device( "device", $args{device}, $comstr ) ) {
+%       if( keys %{ $device{interface} } ) {
+%         $session->{device} = \%device;
     <form>
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
-    <input type="hidden" name="node" value="<% $args{node} %>">
+    <input type="hidden" name="device" value="<% $args{device} %>">
     <input type="hidden" name="comstr" value="<% $comstr %>">
     <table cellpadding="3" cellspacing="1" border="0">
     <tr align="LEFT">
@@ -161,8 +161,8 @@ if( exists( $args{insert} ) ) {
     </tr>
     </table>
     </form>
-%         printf "<pre>%s</pre>\n", Dumper( \%node ) if( $DEBUG );
-%         print "<code><pre>", $nv->string_config( "device", $args{node} ), "</pre></code>\n";
+%         printf "<pre>%s</pre>\n", Dumper( \%device ) if( $DEBUG );
+%         print "<code><pre>", $nv->string_config( "device", $args{device} ), "</pre></code>\n";
 %       } else {
 %         if( exists( $args{sid} ) && defined( $session ) ) {
 %           $gui->rmsession( $session );
@@ -196,7 +196,7 @@ use Socket;
 </%init>
 <%doc>
 
-Node discovery & updates
+Device discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $

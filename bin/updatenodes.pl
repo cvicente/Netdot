@@ -17,18 +17,18 @@ my %ifnames = ( physaddr => "ifPhysAddress",
 		ifspeed => "ifSpeed",
 		ifadminstatus => "ifAdminStatus" );
 my $usage = <<EOF;
-usage: $0 -n|--node <host> -h|--help -v|--verbose
+usage: $0 -n|--device <host> -h|--help -v|--verbose
 
-    -n  <host>: update given node only.  Skipping this will update all nodes in DB.
+    -n  <host>: update given device only.  Skipping this will update all devices in DB.
     -h        : print help (this message)
     -v        : be verbose
 EOF
 
-my ($node, $host, @nodes);
+my ($device, $host, @devices);
 
 # handle cmdline args
 my $result = GetOptions( "n=s" => \$host,
-			 "node=s" => \$host,
+			 "device=s" => \$host,
 			 "h" => \$help,
 			 "help" => \$help,
 			 "v" => \$DEBUG,
@@ -44,38 +44,38 @@ if( $help ) {
 my $nv = Netdot::Netviewer->new( foreground => '0', loglevel => 'LOG_ERR' );
 
 if (defined $host){
-    if ($node = (Node->search(name => $host))[0]){
-	push @nodes, $node;
+    if ($device = (Device->search(name => $host))[0]){
+	push @devices, $device;
     }else{
 	die "$host not found on db\n";
     }
 }else{
-    print "Fetching current list of nodes....\n" if( $DEBUG );
-    @nodes = Node->retrieve_all();
+    print "Fetching current list of devices....\n" if( $DEBUG );
+    @devices = Device->retrieve_all();
 }
 
 my @ifrsv = NvIfReserved->retrieve_all();
 
-foreach my $node ( @nodes ) {
+foreach my $device ( @devices ) {
   my %ifs;
-  print "Checking node ", $node->name, " \n" if( $DEBUG );
-  map { $ifs{ $_->id } = 1 } $node->interfaces();
-  my $comstr = $node->community || Netviewer->community;
-  $nv->build_config( "device", $node->name, $comstr );
+  print "Checking device ", $device->name, " \n" if( $DEBUG );
+  map { $ifs{ $_->id } = 1 } $device->interfaces();
+  my $comstr = $device->community || Netviewer->community;
+  $nv->build_config( "device", $device->name, $comstr );
   ################################################
   # get information from the device
-  if( my( %dev ) = $nv->get_device( "device", $node->name ) ) {
-    print "Have node ", $node->name, " information\n" if( $DEBUG );
+  if( my( %dev ) = $nv->get_device( "device", $device->name ) ) {
+    print "Have device ", $device->name, " information\n" if( $DEBUG );
     if( $dev{sysUpTime} < 0 ) {
-      printf "Node %s has sysUpTime value of %d; skipping\n", 
-	$node->name, $dev{sysUpTime} if( $DEBUG );
+      printf "Device %s has sysUpTime value of %d; skipping\n", 
+	$device->name, $dev{sysUpTime} if( $DEBUG );
       next;
     }
     my %ntmp;
     $ntmp{sysdescription} = $dev{sysDescr};
     $ntmp{physaddr} = $dev{dot1dBaseBridgeAddress};
     $ntmp{physaddr} =~ s/^0x//; 
-    unless( update( object => $node, state => \%ntmp ) ) {
+    unless( update( object => $device, state => \%ntmp ) ) {
       next;
     }
     ##############################################
@@ -92,7 +92,7 @@ foreach my $node ( @nodes ) {
       ############################################
       # set up IF state data
       my( %iftmp, %iptmp, $if );
-      $iftmp{node} = $node->id;
+      $iftmp{device} = $device->id;
       $iftmp{ifdescr} = $newif;
       foreach my $dbname ( keys %ifnames ) {
 	if( $ifnames{$dbname} eq "descr" ) {
@@ -106,8 +106,8 @@ foreach my $node ( @nodes ) {
       $iftmp{physaddr} =~ s/^0x//;
       ############################################
       # does this ifIndex already exist in the DB?
-      if( $if = (Interface->search( node => $node->id, ifindex => $dev{interface}{$newif}{instance}))[0] ) {
-	print "Interface node ", $node->name, ":$newif exists; updating\n"
+      if( $if = (Interface->search( device => $device->id, ifindex => $dev{interface}{$newif}{instance}))[0] ) {
+	print "Interface device ", $device->name, ":$newif exists; updating\n"
 	  if( $DEBUG );
 	delete( $ifs{ $if->id } );
 	unless( update( object => $if, state => \%iftmp ) ) {
@@ -115,7 +115,7 @@ foreach my $node ( @nodes ) {
 	}
       } else {
 	$iftmp{managed} = 0;
-	print "Interface node ", $node->name, ":$newif doesn't exist; ",
+	print "Interface device ", $device->name, ":$newif doesn't exist; ",
 	  "inserting\n" if( $DEBUG );
 	unless( $if = insert( object => "Interface", state => \%iftmp ) ) {
 	  next;
@@ -168,17 +168,17 @@ foreach my $node ( @nodes ) {
 
       # hubs are somewhat tricky.  Don't delete their ports.
       my $intobj = Interface->retrieve($nonif);
-      next if ($intobj->node->type->name eq "Hub");
+      next if ($intobj->device->type->name eq "Hub");
   
-      print "Node ", $node->name, " Interface ifIndex", $intobj->ifindex,
+      print "Device ", $device->name, " Interface ifIndex", $intobj->ifindex,
 	"doesn't exist; removing\n" if( $DEBUG );
       unless( remove( object => "Interface", id => $nonif ) ) {
 	next;
       }
     }
   } else {
-    print "Unable to access node ", $node->name, "\n" if( $DEBUG );
-    warn "Unable to access node ", $node->name, "\n";
+    print "Unable to access device ", $device->name, "\n" if( $DEBUG );
+    warn "Unable to access device ", $device->name, "\n";
   }
 }
 
