@@ -13,7 +13,41 @@ if( $args{sid} ) {
 if( $args{cancel} ) {
   $gui->rmsession( $session );
 }
+if( exists( $args{insert} ) ) {
+  my %node = %{ $session->{node} };
+  if( Node->search( name => "$args{node}" ) ) {
+    ; # do nothing
+  } else {
+    my %tmp;
+    $tmp{name} = $args{node};
+    $tmp{sysdescription} = $node{sysDescr};
+    $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
+    $tmp{type} = "0";   # maybe tmp; can't be null
+    $tmp{device} = "0"; # same
+    Node->create( \%tmp );
+    my $nodeid = (Node->search( name => "$args{node}" ))[0];
+    foreach my $int ( keys %{ $node{interface} } ) {
+      undef( %tmp );
+      $tmp{node} = $nodeid;
+      $tmp{ifdescr} = $int;
+      $tmp{physaddr} = $node{interface}{$int}{ifPhysAddress};
+      $tmp{ifIndex} = $node{interface}{$int}{instance};
+      $tmp{iftype} = $node{interface}{$int}{ifType};
+      $tmp{ifalias} = $node{interface}{$int}{descr} 
+        unless( $node{descr} eq "-" );
+      $tmp{ifspeed} = $node{interface}{$int}{ifSpeed};
+      $tmp{ifadminstatus} = $node{interface}{$int}{ifAdminStatus};
+      $tmp{managed} = "0";
+      Interface->create( \%tmp );
+    }
+    $inserted = $nodeid;
+    $gui->rmsession( $session );
+  }
+}
 </%perl>
+% if( $inserted ) {
+  <& view.html, table => "Node", id => $inserted &>
+% } else {
 <& header, title => "Node" &>
 <!-- node.html -->
 <br>
@@ -23,23 +57,23 @@ if( $args{cancel} ) {
 <input name="submit" value="Discover" type="submit">
 </form>
 </blockquote>
-% if( exists( $args{insert} ) ) {
-%   %node = %{ $session->{node} };
-%   print Dumper( %node );
-% }
-% if( exists( $args{node} ) ) {
-  <hr>
-  <p><% $args{node} %>
-%   $nv->build_config( "device", $args{node} );
-%   if( my( %node ) = $nv->get_device( "device", $args{node} ) ) {
-
-%  $session = $gui->mksession( $DIR );
-% print Dumper( $session );
-
-%     if( keys %node ) {
-%       $session->{node} = \%node;
+%   if( exists( $args{insert} ) ) {
+<hr>
+%     # check to see if node already exists in Node table
+%     if( Node->search( name => "$args{node}" ) ) {
+        <p>Node <% $args{node} %> already exists in Node table.
+%     }
+%   } elsif( exists( $args{node} ) ) {
+<hr>
+<p><% $args{node} %>
+%     $nv->build_config( "device", $args{node} );
+%     if( my( %node ) = $nv->get_device( "device", $args{node} ) ) {
+%       if( keys %node ) {
+%         $session = $gui->mksession( $DIR );
+%         $session->{node} = \%node;
     <form>
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
+    <input type="hidden" name="node" value="<% $args{node} %>">
     <table cellpadding="3" cellspacing="1" border="0">
     <tr align="LEFT">
     <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
@@ -51,12 +85,13 @@ if( $args{cancel} ) {
     </tr>
     </table>
     </form>
-%       print "<code><pre>", $nv->string_config( "device", $args{node} ), "</pre></code>\n";
+%         print "<code><pre>", $nv->string_config( "device", $args{node} ), "</pre></code>\n";
+%       } else {
+    <p>Failed to get config.
+%       }
 %     } else {
-        <p>Failed to get config.
+    <p>Failed to build config.
 %     }
-%   } else {
-      <p>Failed to build config.
 %   }
 % }
 <& footer &>
@@ -65,7 +100,7 @@ $DIR => "/home/netdot/public_html/tmp"
 $nv => Netdot::Netviewer->new()
 $gui => Netdot::GUI->new()
 $session => undef
-
+$inserted => 0
 </%args>
 
 <%init>
@@ -75,8 +110,6 @@ use Netdot::Netviewer;
 use Netdot::GUI;
 use Data::Dumper;
 
-my %node;
-#%node => undef
 </%init>
 <%doc>
 
@@ -84,6 +117,10 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.9  2003/07/03 21:18:16  netdot
+#  state and insertion stuff works; still need to fix some stuff
+#  (eg. when device does not respond)
+#
 #  Revision 1.8  2003/07/03 00:38:39  netdot
 #  blah
 #
