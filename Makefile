@@ -2,6 +2,8 @@
 # Netdot Makefile
 #
 PREFIX = /usr/local/httpd/htdocs/netdot
+APACHEUSER = apache
+APACHEGROUP = apache
 usage:
 	@echo 
 	@echo "usage: make install PREFIX=<destination>"
@@ -10,6 +12,11 @@ usage:
 	@echo "modify the PREFIX value in the Makefile. "
 	@echo "It currently defaults to $(PREFIX)"
 	@echo 
+	@echo "Assuming UID and GID of apache process are: "
+	@echo "   APACHEUSER = $(APACHEUSER) "
+	@echo "   APACHEGROUP = $(APACHEGROUP) "
+	@echo "Please adjust as necessary."
+	@echo
 	@echo "For the defaults used in database installation, please see"
 	@echo "bin/Makefile.  In particular, these variables may be of interest:"
 	@echo "     DB_TYPE, DB_HOME, DB_DBA, DB_HOST, "
@@ -66,9 +73,11 @@ dir:
 	       mkdir -m $(DMOD) -p $(PREFIX)/$$dir ; \
 	    fi ; \
 	done
+	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/htdocs/masondata
+	chmod 0750 $(PREFIX)/htdocs/masondata
 
 htdocs:
-	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
+	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@ 
 
 doc:
 	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
