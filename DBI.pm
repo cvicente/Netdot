@@ -63,10 +63,10 @@ package Vendor;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table('Vendor');
-__PACKAGE__->columns(All => qw/id Name Contactpool AcctNumber Address Info/);
+__PACKAGE__->columns(All => qw/id Name ContactPool AcctNumber Address Info/);
 
 __PACKAGE__->has_a(Address => 'Address');
-__PACKAGE__->has_a(Contactpool => 'ContactPool');
+__PACKAGE__->has_a(ContactPool => 'ContactPool');
 __PACKAGE__->has_many('circuits', 'Circuit' => 'Vendor');
 __PACKAGE__->has_many('models', 'Model' => 'Vendor');
 
@@ -101,6 +101,8 @@ __PACKAGE__->table('Site');
 __PACKAGE__->columns(All => qw/id Name Availability Address ContactPool Info /);
 
 __PACKAGE__->has_a(Address => 'Address');
+__PACKAGE__->has_a(Availability => 'Availability');
+__PACKAGE__->has_a(ContactPool => 'ContactPool');
 __PACKAGE__->has_many('startcircuits', 'Circuit' => 'StartSite');
 __PACKAGE__->has_many('endcircuits', 'Circuit' => 'EndSite');
 __PACKAGE__->has_many('startconnections', 'Connection' => 'StartSite');
@@ -129,6 +131,7 @@ __PACKAGE__->columns(All => qw /id Name Hours Address ContactPool Info/ );
 
 __PACKAGE__->has_a(Address => 'Address');
 __PACKAGE__->has_a(Hours => 'Availability');
+__PACKAGE__->has_a(ContactPool => 'ContactPool');
 
 
 ######################################################################
@@ -163,7 +166,7 @@ use base 'Netdot::DBI';
 __PACKAGE__->table('ContactInfo');
 __PACKAGE__->columns(All => qw /id ContactType ContactPool Person Email Office Home Cell Pager EmailPager Fax Info /);
 
-__PACKAGE__->has_a(ContactType => 'ContactPool');
+__PACKAGE__->has_a(ContactPool => 'ContactPool');
 __PACKAGE__->has_a(ContactType => 'ContactType');
 __PACKAGE__->has_a(Person => 'Person');
 
@@ -186,6 +189,7 @@ __PACKAGE__->table('Person');
 __PACKAGE__->columns(All => qw /id FirstName LastName Position Department Address Availability Info /);
 
 __PACKAGE__->has_a(Address => 'Address');
+__PACKAGE__->has_a(Availability => 'Availability');
 __PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'Person');
 
 
@@ -196,6 +200,9 @@ __PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'Person');
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.6  2003/04/10 16:41:54  netdot
+#  fleshing out has_a relationships for existing classes.
+#
 #  Revision 1.5  2003/04/10 00:37:15  netdot
 #  fleshing out definitions of each class.
 #
