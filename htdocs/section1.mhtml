@@ -13,14 +13,10 @@ $user
 %
 <%init>
 my %caller_args = $m->caller_args(-1);
-
-if (exists($caller_args{page})){
-    $user->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
-}
-my $page = $user->getAttribute("MANAGEMENT_PAGE");
+my $page = "";
 </%init>
 %
-%
+% print "page: '", $page, "'\n<br>";
 <div id="navbar">
     <ul id=navigation>
         <li>
@@ -29,6 +25,10 @@ my $page = $user->getAttribute("MANAGEMENT_PAGE");
         <li>
 %
 % if( $section eq "Management" ) {
+%     if (exists($caller_args{page})){
+%         $user->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
+%     }
+%     $page = $user->getAttribute("MANAGEMENT_PAGE");
             <span>Management</span>
             <ul id="subnavigation">
 %
@@ -57,6 +57,10 @@ my $page = $user->getAttribute("MANAGEMENT_PAGE");
         <li>
 %
 % if( $section eq "Operations" ) {
+%     if (exists($caller_args{page})){
+%         $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args{page});
+%     }
+%     $page = $user->getAttribute("OPERATIONS_PAGE");
             <span>Operations</span>
             <ul id="subnavigation">
 %
