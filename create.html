@@ -199,15 +199,10 @@ if( defined( $TBL ) ) {
 
 % } elsif( ! $TBL || $args{cancel} ) {
 
-%   my @t = Meta->retrieve_all();
-
-    <p>Please select an object to create:<br>
-    <ul>
-%   foreach my $t ( sort { $a->name cmp $b->name } @t ) {
-%     next if( $t->name eq "Meta" );
-      <li><a href="create.html?table=<% $t->name %>"><% $t->name %></a>
-%   }
-    </ul>
+    <p>
+    <blockquote>
+    <& table.html, width => 3, link => "create.html", title => "Please select an object to create:" &>
+    </blockquote>
 
 % } else {
     <form action="create.html" method="POST">
@@ -285,6 +280,10 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.11  2003/05/30 21:43:04  netdot
+#  opening page now using table.html to display initial list of tables to
+#  create
+#
 #  Revision 1.10  2003/05/29 00:04:41  netdot
 #  forgot to note: fixed the bug where a reload after a confirm will go
 #  to the wrong page and insert empty data.
