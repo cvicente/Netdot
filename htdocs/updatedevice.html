@@ -1,4 +1,6 @@
 <& index.html, title => "Device Discovery: $host ", s2name => $s2name  &>
+<table align="center" valign="top" cellpadding="0" cellspacing="0" border="0" width="95%" class="tablebackground">
+<tr><td>
 <%perl>
     if ( $action eq "discover" ){
 
@@ -16,12 +18,13 @@
     $argv{host} = $host;
     $session->{argv} = \%argv;
 </%perl>
-    <p>
-    <table class="formtablebg">
-      <tr>
-        <td colspan="2" class="formtabletitle"><pre><% $dm->output %></pre></td>
-        <td>&nbsp;</td>
+    <table class="formtablebg" cellpadding="0" cellspacing="0" width="100%">
+      <tr class="rowtitle0">
+        <td colspan="2" align="center">
+	  <pre><% $dm->output %></pre>
+	</td>
       </tr>
+      <tr><td>&nbsp;</td></tr>
       <tr>
         <td class="formtablec1">Description:</td>
         <td class="formtablec2"><strong><% $dev->{sysdescription} %></strong></td>
@@ -34,18 +37,13 @@
         <td class="formtablec1">Contact:</td>
         <td class="formtablec2"><strong><% $dev->{syscontact} %></strong></td>
       </tr>
-    </table>
-    <p>
-    <table class="formtablebg">
+      <tr><td>&nbsp;</td></tr>
       <form action="updatedevice.html" method="POST">
       <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
       <input type="hidden" name="host" value="<% $host %>">
       <input type="hidden" name="action" value="update">
-      <tr>
-        <td align="center">Continue to update database?</td>
-      </tr>
-      <tr>
-        <td align="center">
+      <tr class="rowtitle0">
+        <td colspan="2" align="center">
          <input name="insert" value="Update" type="submit">&nbsp;
          <input name="cancel" value="Cancel" type="submit">
         </td>
@@ -70,22 +68,27 @@
         unless ($o->name && ($name = $o->name->name)){
             $name = "device"
             }
-        if ($dm->output){
 </%perl>
           <p>
-          <table class="formtablebg">
+          <table class="formtablebg" cellpadding="0" cellspacing="0" width="100%">
+
+%      if ($dm->output){
 	  <tr>
           <td>
           <pre><% $dm->output %></pre>
           </td>
 	  </tr>
-          </table>
+
 %      }
-       <p>
-       Go to <a href="device.html?id=<% $o->id %>"><% $name %></a>
+	  <tr>
+          <td>
+	    Go to <a href="device.html?id=<% $o->id %>"><% $name %></a>
+          </td>
+	  </tr>
+          </table>
 %  }elsif ( $cancel ){
           <p>
-          <table class="formtablebg">
+          <table class="formtablebg" cellpadding="0" cellspacing="0" width="100%">
 	  <tr>
           <td>Discovery of <% $host %> cancelled.
           </td>
@@ -99,6 +102,8 @@
 }
 </%perl>
 
+<td></tr>
+</table>
 <& footer.mhtml &>
 
 <%args>
@@ -115,8 +120,7 @@ $cancel     => undef
 
 <%init>
 my $DEBUG = 0;
-my $PREFIX = "/usr/local/netdot";
-my $TMP    = "$PREFIX/tmp";
+my $TMP;
 my $ADDSUBNETS = 1;
 
 my $ui = Netdot::UI->new();

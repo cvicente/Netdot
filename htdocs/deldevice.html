@@ -1,0 +1,57 @@
+% if (! $submit ){
+<& index.html, title => "Delete Device: $name ", s2name => $s2name  &>
+<table align="center" valign="top" border="0" width="95%" class="formtablebg">
+<tr><td>
+
+<table>
+<form action="delete.html" method="POST">
+   <input type="hidden" name="s2name" value="Management">
+<tr><td>
+   Going to delete device <% $name %>
+   <input type="hidden" name="Device__<% $id %>" value="on">
+   <br>
+% if ($o->name){
+    Delete DNS records
+	<input type="checkbox" name="RR__<% $o->name->id %>" CHECKED>
+% }
+   <p><br>
+    <input type="submit" name="submit" value="Delete">
+    <input type="submit" name="submit" value="Cancel">
+</form>
+</td></tr>
+</table>    
+
+%}elsif ( $submit eq "Cancel" ){
+
+	Deletion of <% $name %> cancelled.
+%}
+
+</td></tr>
+</table>
+<& footer.mhtml &>
+
+
+<%args>
+$id
+$submit    => undef
+$s2name    => "Management"
+</%args>
+
+<%init>
+my $o;
+my $name;
+my $DEBUG = 0;
+
+printf ("<pre>%s</pre>", Dumper(%ARGS)) if $DEBUG;
+
+if ($id){
+   $o = Device->retrieve($id);
+   $name = ($o->name && $o->name->name) ? $o->name->name : "Name N/A!";
+}
+
+</%init>
+
+<%doc>
+   Manage Device deletions.  Ask about deleting Resource Records as well.
+</%doc>
+

@@ -1,73 +1,98 @@
 <& index.html, title => " Delete: $table object" , s2name => $s2name  &>
 
-<%perl>
-
-unless( $obj = $table->retrieve($id) ){
-  $m->comp('error.mhtml', error => "$table id $id does not exist");
-} 
-
-</%perl>
-
-%if ( ! $submit  ){
-% my $lbl = $ui->getobjlabel($obj, ", ");
-
-<table align="center" valign="top" border="0" width="95%">
+<table align="center" valign="top" border="0" width="95%" class="formtablebg">
 <tr><td>
 
-<p>Are you sure you want to delete <% $table %> <strong><% $lbl %></strong>?
+%if ( $submit eq "Delete"  ){
+<p>Are you sure you want to delete the following objects?
+     <table>
+<%perl>
+    unless($session = $ui->mksession( $TMP )){
+	$m->comp('error.mhtml', error => $ui->error);
+    }
+    # Accept single-delete queries with only table and id
+    if ( $table && $id ){
+	my $key = $table . "__" . $id;
+	$ARGS{$key} = "1";
+    }
+    foreach my $arg (sort keys %ARGS){
+	next unless $arg =~ /__/;
+	my ($table, $id) = split /__/, $arg;
+	my $obj;
+	eval {
+	    $obj = $table->retrieve($id) 
+	    };
+	if ($@){
+	    $m->comp('error.mhtml', error => "Error retrieving $table id $id: $@");
+	}
+	my $lbl = $ui->getobjlabel($obj, ", ");
+</%perl>
+       <tr>
+	   <td>&nbsp;</td>
+	   <td><% $table %> <% $lbl %></td>
+       </tr>
+       
+%      push @objs, [$table, $obj, $lbl];
+%   }
+%   $session->{objects} = \@objs;
 
-<form method="POST" action="delete.html">
-<input type="hidden" name="table" value="<% $table %>">
-<input type="hidden" name="id" value="<% $obj->id %>">
-<input type="hidden" name="confirm" value="1">
-<p>
-<input name="submit" value="Proceed" type="submit">
-<input name="submit" value="Cancel" type="submit">
-</form>
+    </table>
+    <form method="POST" action="delete.html">
+    <input type="hidden" name="s2name" value="Management">
+    <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
+    <input name="submit" value="Confirm" type="submit">
+    <input name="submit" value="Cancel" type="submit">
+    </form>
+<%perl>
 
+}elsif ($submit eq "Confirm"){
+    unless($session = $ui->getsession( $TMP, $sid )){
+	$m->comp('error.mhtml', error => $ui->error);
+    }
+    @objs = @{ $session->{objects} };
+    foreach my $r (@objs){
+	my ($table, $obj, $lbl) = @$r;
+	# Delete the object
+	eval {
+	    $obj->delete;
+	};
+	if ($@){
+	    $m->comp('error.mhtml', error => "$@");
+	} else{
+</%perl>
+           <strong><% $table %> <% $lbl %></strong> deleted.<br>
+%       }
+%    }
+%}elsif ($submit eq "Cancel"){
 <p><br>
-</td></tr>
-</table>
-<& footer.mhtml &>
-
-%}elsif ($confirm && $submit eq "Proceed"){
-
-<table align="center" valign="top" border="0" width="95%">
-<tr><td>
-
-<%perl>
-# Delete the object
-  my $lbl = $ui->getobjlabel($obj, ", ");
-  eval {
-      $obj->delete;
-      };
- if ($@){
-  $m->comp('error.mhtml', error => "$@");
- } else{
-</%perl>
-
-<strong><% "$table $lbl" %></strong> deleted.
-
+    Deletion cancelled
+%   $ui->rmsession( $session );
 %}
 
 </td></tr>
 </table>
 <& footer.mhtml &>
-
-%}elsif ($ARGS{submit} eq "Cancel"){
-   <& view.html, table => $table, id => $obj->id &>
-%  exit;
-%}
 
 <%args>
-$table
-$id
+$table   => undef
+$id      => undef
 $s2name  => undef
-$submit  => undef
-$confirm => undef
+$submit  => "Delete"
+$sid     => undef
 </%args>
 
 <%init>
 my $ui = Netdot::UI->new();
-my $obj;
+my $session;
+my @objs;
+my $TMP;
+my $DEBUG = 0;
+my @objects;
+
+print Dumper(%ARGS) if $DEBUG;
+
 </%init>
+
+<%doc>
+    Delete one or more objects
+</%doc>

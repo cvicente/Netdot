@@ -76,9 +76,9 @@ foreach my $o (@$list){
 # -----------------------------------------------------------------------------
   if (defined ($ARGS{intaddnum}) &&  $ARGS{intaddnum} > 0){
      my %tmpint;
-     $tmpint{device} = $id;
+     $tmpint{device}    = $id;
      $tmpint{monitored} = 0;
-     $tmpint{number} = 1000;
+     $tmpint{number}    = 1000;
      my $i;
      for ($i = 0; $i < $ARGS{intaddnum}; $i++){
         $tmpint{number}++;
@@ -101,21 +101,20 @@ foreach my $o (@$list){
     $o = undef;
     if ($id){
 	$o = Device->retrieve($id);
-	$name = (defined($o->name->name)) ? $o->name->name : "N/A";
+	$name = ($o->name && $o->name->name) ? $o->name->name : "Name N/A!";
     }
 }
-</%perl>
 
-%if (!defined($search)){
+if ( !defined($search) ){
+</%perl>
 <!-- Header Table -->
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
     <td align="left">
-    Device: <b><% $o->name->name %></b>&nbsp;&nbsp; 
-    <a href="device.html?id=<% $id %>"> [refresh]</a>
-    <a href="delete.html?table=Device&id=<% $id %>"> [delete]</a>
+     Device: <b><% $name %></b>&nbsp;&nbsp; 
+    <a href="device.html?id=<% $id %>"> [refresh]</a>&nbsp;
+    <a href="deldevice.html?id=<% $id %>"> [delete]</a>&nbsp;
     </td>
-
  </tr>
 </table>
 <!-- Margins Table -->
@@ -159,7 +158,7 @@ foreach my $o (@$list){
 %		   }
 %		 }
 %		 else{ 
-		   No name!
+		   Name N/A!
 %		 }
 	      </td>
 	    </tr>
@@ -684,7 +683,7 @@ my $name;
 
 if ($id){
    $o = Device->retrieve($id);
-   $name = $o->name->name;
+   $name = ($o->name && $o->name->name) ? $o->name->name : "Name N/A!";
 }else{
    $name = "Search"
 }
