@@ -31,23 +31,25 @@ if( defined( $mi->columnorder ) ) {
    }
 }
 </%perl>
-<p>
-<& header, title=>" $table Details" &>
+
 
 %#  Display-only option
 %if( !$arg{edit} ) {
 
+<& header, title=>" $table Details" &>
+
 % # First show values that are not foreign keys
-<p> 
+<p><br> 
 <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
 <tr> 
-<td align="center" colspan="2" bgcolor="#FFFFFF"><strong><% $table %></strong></td>
+<td align="left" bgcolor="#FFFFFF"><strong><% $table %></strong></td>
+<td align="right" colspan="2" bgcolor="#FFFFFF"><a href="expview.html?table=<% $table %>&id=<% $obj %>&edit=1">edit</a>
+&nbsp;<a href="delete.html?table=<% $table %>&id=<% $obj %>&edit=1">delete</a>
+</td>
 </tr>
-<tr> 
-<td bgcolor="#DDDDDD">id:</td><td><strong><% $obj->id %></strong></td>
-</tr>
+
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%      next if ($c eq 'id');
+%      next if ($c eq 'id' || $c eq 'aliases');
        <tr> 
        <td bgcolor="#DDDDDD"><% $c %>:</td>
 %      if (!exists($linksto{$c}) ){
@@ -70,9 +72,6 @@ if( defined( $mi->columnorder ) ) {
 %   }
 </tr>
 <tr> 
-<td align="center" colspan="2" bgcolor="#FFFFFF"><a href="expview.html?table=<% $table %>&id=<% $obj %>&edit=1">edit</a>
-&nbsp;<a href="delete.html?table=<% $table %>&id=<% $obj %>&edit=1">delete</a>
-</td>
 </tr>
 </table>
 
@@ -107,15 +106,19 @@ if( defined( $mi->columnorder ) ) {
 
 %} else {     # option edit
 
+<& header, title=>" Edit $table Details" &>
+<p><br>
    <form action="update.html" method="POST">
-      <& form.html, table => $table, id => $arg{id}, showdisabled => '0' &>
-      <p><br><input name="submit" value="Update" type="submit">
+      <& form.html, table => $table, id => $arg{id} &>
+      <p><br>
+      <input name="submit" value="Update" type="submit">
+      <input name="cancel" value="Cancel" type="submit">
    </form>
 
 %} #endif ($arg{edit})
-<p><br>
-<& footer &>
 
+<p>
+<& footer &>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
@@ -128,6 +131,12 @@ my( %arg, %linksto, %linksfrom, $obj, $table, $mi, %order);
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.10  2003/05/23 01:10:11  netdot
+#  Took out the object id from the display
+#  Added a cancel button in edit option.
+#  Ignores 'aliases' fields at display time
+#  Hides join tables when referring to has_many objects
+#
 #  Revision 1.9  2003/05/21 17:59:48  netdot
 #  *** empty log message ***
 #
