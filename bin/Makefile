@@ -5,6 +5,8 @@
 PERL    =  `which perl`
 PREFIX  =  `cat ../.prefix`
 
+FILES = mason.pl updatenodes.pl
+
 #################################################################
 # Database setup
 #################################################################
@@ -74,7 +76,7 @@ DB_NETDOT_PASS =  netdot_pass
 # End of tweakable section
 ################################################################
 
-install: initialize.$(DB_TYPE) insert.metadata insert.sample.data setup.class.dbi
+install: initialize.$(DB_TYPE) insert.metadata insert.sample.data setup.class.dbi files
 
 initialize.Pg: createdb genschema initdb.dba acls
 
@@ -108,5 +110,11 @@ insert.sample.data:
 setup.class.dbi:
 	$(PERL) setup-class-dbi '$(DB_TYPE)' '$(DB_DATABASE)' '$(DB_NETDOT_USER)' '$(DB_NETDOT_PASS)'  
 	install -m $(FMOD) DBI.pm $(PREFIX)/lib/Netdot/DBI.pm
+
+files:
+	for file in $(FILES); do \
+	    install -m $(FMOD) $$file $(PREFIX)/bin ; \
+	done
+
 
 

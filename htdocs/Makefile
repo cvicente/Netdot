@@ -1,9 +1,10 @@
 #
 # makefile for htdocs
 
-FILES = `ls`
+FILES = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html table.html banner style.css footer2 node.html error.html
+IMG = img/title.jpg
 
-all:
+all:  images
 	@echo
 	@echo "Preparing and installing $(DIR) files..."
 	for file in $(FILES); do \
@@ -13,4 +14,13 @@ all:
 	    rm -f $$file.tmp ; \
 	done
 	@echo "Done."
+
+images:
+	@echo
+	@echo "Installing image files...."
+	for img in $(FILES); do \
+	    install -m $(FMOD) $$img $(PREFIX)/$(DIR)/img/$$img ; \
+	done
+	@echo "Done."
+
 

@@ -28,7 +28,7 @@ DMOD = 0775
 FMOD = 0644
 XMOD = 0744
 PERL = `which perl`
-DIR = bin doc htdocs lib/Netdot
+DIR = bin doc htdocs/img lib/Netdot
 
 .PHONY: tests bin doc htdocs lib
 

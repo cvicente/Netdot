@@ -1,7 +1,7 @@
 #
 # makefile for doc
 
-FILES = `ls`
+FILES = ChangeLog INSTALL MILESTONES README TODO
 
 all:
 	@echo
