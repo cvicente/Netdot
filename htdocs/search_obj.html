@@ -1,8 +1,10 @@
 <%perl>
+# Ignore empty fields
 foreach my $j (keys %ARGS){
-	next if ($ARGS{$j} !~ /\w+/ || $j eq 'submit');
+	next if ($ARGS{$j} !~ /\w+/);
 	$arg{$j} = $ARGS{$j};	
 }
+print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
 </%perl>
 
 %if(! $arg{table} ){ # offer a list of tables to select
@@ -30,15 +32,40 @@ foreach my $j (keys %ARGS){
    %order = $gui->getcolumnorder($table);
    
    if ( !$arg{res} ){ # show the fill-out form
-</%perl>
 
-<& header, title=>"Advanced Search: $table" &>
+</%perl>
+<script language="javascript">
+// Call the search CGI in new window
+// CGI will create a hidden form
+// then copy the matched objects in our <select> option list
+// Args: 
+//   * field: the column name we're searching
+//   * val:   the search criteria
+//   * tablename
+   var wind;
+   function sendquery(field, val, tablename){
+      var url = "select_query.html?table="+tablename+"&crit="+val+"&field="+field.name;
+      wind = window.open(url, "tmp", "width=1,height=1");
+   }
+   function getlist(field){
+      var len = wind.document.forms[0].length;
+      document.netdotform[field].options.length = 0;     
+      for (var i = 0; i < len; i++){
+        document.netdotform[field].options[i] = new Option();
+        document.netdotform[field].options[i].value = wind.document.forms[0].elements[i].name;
+        document.netdotform[field].options[i].text  = wind.document.forms[0].elements[i].value;
+      } 
+      wind.close();
+   }
+</script>
+
+<& header, title=>"Advanced $table Search" &>
 <p><br>
 
 <table align="center" border="0" width="95%">
    <tr>
       <td align="center">
-           <form action="search_obj.html" method="POST">
+           <form name="netdotform" action="search_obj.html" method="POST">
 	      <input type="hidden" name="table" value="<% $table %>">
 	      <input type="hidden" name="res" value="1">
 	      <p>
@@ -47,37 +74,36 @@ foreach my $j (keys %ARGS){
 	           <td colspan="2" align="center">Specify one or more of the following:</td>
 	       </tr>
 %	      foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%	         next if ($c eq 'disabled');
 %		 if (!exists($linksto{$c}) ){  # The column is 'local'
                     <tr> 
 		       <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $c %>:</strong></td>
-	  		 <td class="formtablec2"><input type="text" name="<% $c %>" size="40" value=""></td>
+	  		 <td class="formtablec2"><% $gui->getinputtag($c, $table) %></td>
 		    </tr>
 %		 }else {  # The column is a foreign key. Provide a list to select.
                    <tr>
 		      <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $c %>:</strong></td>
 		      <td class="formtablec2">
 %			   # Check for amount of objects in table before retrieving all
-%			   my $it = $linksto{$c}->retrieve_all;
-%			   my $count = 0;
-%			   my ($fkobj, @fkobjs);
-%			   while (($fkobj = $it->next) && $count <= 50){
-%			      push @fkobjs, $fkobj;
-%			      $count++;
-%			   }
-%			   if ( $count <= 50 ){			      
-   			      <select name="<% $c %>">
-			      <option></option> 
+%			   my $count = $linksto{$c}->count_all;
+%			   if ( $count <= $maxselect ){			      
+%			      my @fkobjs = $linksto{$c}->retrieve_all;
 %			      my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];	 
 %			      @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } @fkobjs; 
+   			      <select name="<% $c %>">
+			      <option></option> 
 %			      foreach my $fkobj ( @fkobjs ) {
 			        <option value="<% $fkobj->id %>"><% $gui->getobjlabel($fkobj, ", ") %></option>
 %			      }
+			      </select>
 %			   }else{
-                               <input type="text" name="<% $c %>" size="40" value="">
+%			      my $srchf = $c . '_srch';  #name of the form input tag
+			      <input type="text" name="<% $srchf %>" value="Keywords">
+			      &nbsp;<input type="button" name="" value="List" 
+			         onClick="sendquery(<% '_' . $c  %>, <% $srchf . '.value' %>, <% "\'" . $linksto{$c} . "\'" %>)" >
+			      <br><select name="<% '_' . $c %>"> 
+			      </select>
 %			   }
 
-			 </select>
 		      </td>
 		   </tr>        
 %               }
@@ -99,12 +125,26 @@ foreach my $j (keys %ARGS){
 %   } else { # Process input and search
 <%perl>
          foreach my $j (keys %arg){
-            next if ($arg{$j} eq '' || $j eq 'submit' || $j eq 'table' || $j eq 'res');
-            $sarg{$j} = $arg{$j};
-            if (! exists( $linksto{$j} )){  # The column is 'local'
-               $sarg{$j} = "%" . $sarg{$j} . "%";  # Add wildcards
+
+	    # Ignore fields that don't belong to the table
+	    # /_srch/ elements are added for javascript only
+	    # we don't need them here
+
+            next if ($arg{$j} eq '' || $j eq 'submit' || $j eq 'table' 
+	             || $j eq 'res' || $j =~ /_srch/ );
+		     
+	    # "/^_/" is added to avoid using reserved words in javascript
+	    # chop it off
+	    my $k = $j;
+	    $k =~ s/^_//;
+            $sarg{$k} = $arg{$j};	   
+	    
+            if (! exists( $linksto{$k} )){  # The column is 'local'
+               $sarg{$k} = "%" . $sarg{$k} . "%";  # Add wildcards
             }
          }
+	 print "sarg is  <pre>", Dumper(%sarg), "</pre><br>" if $debug;
+	 
          # Check that we have at least one parameter
          unless (scalar keys(%sarg)){
             print "<strong>Missing search criteria</strong>";
@@ -112,11 +152,11 @@ foreach my $j (keys %ARGS){
          }
          my @objs = $table->search_like(\%sarg);
 </%perl>
-        <& header, title => "Search Results: $table"  &>
+        <& header, title => "Search Results for $table"  &>
 <table align="center" border="0" width="95%">
    <tr>
       <td>
-             Total matches: <strong><% scalar (@objs) %></strong>
+         Total matches: <strong><% scalar (@objs) %></strong>
       </td>
    </tr>
    <tr>
@@ -136,7 +176,28 @@ foreach my $j (keys %ARGS){
 <& footer &>
 
 <%init>
-my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order );
+my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order, $debug );
 my $gui = Netdot::GUI->new();
+my $maxselect = 100;
+$debug = 0;
            
 </%init>
+
+<%doc>
+
+Performs advanced searches in specific tables.
+User is allowed to specify values for one or more fields.
+Fields that are foreign keys are shown as a drop-down list of possible values.
+If the foreign table has more than $maxselect objects, the user will be 
+presented with a text box to fill in with keywords.  A javascript
+script will then call another CGI which will return a set of matched 
+objects.  These will be copied to the list of <options>
+
+Arguments:
+   table - The name of the table to search
+   res   - A flag to distinguish between showing the form or 
+           showing the results
+   args  - The rest are the table's fields to be passed to the 
+           search_like method. 
+
+</%doc>

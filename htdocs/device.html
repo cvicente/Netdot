@@ -135,9 +135,10 @@ if( exists( $args{insert} ) ) {
 <hr>
 %     # check to see if device already exists in Device table
 %     my %device = %{ $session->{device} };
-%     if( Device->search( name => "$args{device}" )
-%         || Device->search( physaddr => $device{dot1dBaseBridgeAddress} ) ) {
-        <p>Device <% $args{device} %> already exists in Device table.
+%     my $id;
+%     if( ($id = (Device->search( name => "$args{device}" ))[0])
+%         || ($id = (Device->search( physaddr => $device{dot1dBaseBridgeAddress}))[0] ) ) {
+        <p>Device <a href="view.html?table=Device&id=<% $id %>"><% $args{device} %></a> already exists in Device table.
 %     }
 %   } elsif( exists( $args{device} ) ) {
 <hr>

@@ -225,12 +225,15 @@ sub getinputtag {
     }
     my $sqltype = $self->getsqltype($class, $col);
     if ($sqltype =~ /bool/){
-	if ($value == 1){
-	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\" checked> yes<br>";
-	    $tag .= "<input type=\"radio\" name=\"$col\" value=\"0\"> no";
-	}else{
-	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\"> yes<br>";
-	    $tag .= "<input type=\"radio\" name=\"$col\" value=\"0\" checked> no";
+	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\" checked> yes";
+	    $tag .= " <input type=\"radio\" name=\"$col\" value=\"0\"> no";
+	}elsif ($value eq ""){
+	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\"> yes";
+	    $tag .= " <input type=\"radio\" name=\"$col\" value=\"0\"> no";
+	    $tag .= " <input type=\"radio\" name=\"$col\" value=\"\" checked> n/a";
+	}elsif ($value == 0){
+	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\"> yes";
+	    $tag .= " <input type=\"radio\" name=\"$col\" value=\"0\" checked> no";
 	}
     }elsif ($sqltype eq "date"){
 	$tag = "<input type=\"text\" name=\"$col\" size=\"15\" value=\"$value\"> (yyyy-mm-dd)";
