@@ -951,33 +951,33 @@ sub get_dev_info {
     ################################################################
     # Device's global vars
 
-    if (defined $nv{sysObjectID}){
+    if ( $self->is_valid($nv{sysObjectID}) ){
 	$dev{sysobjectid} = $nv{sysObjectID};
 	$dev{sysobjectid} =~ s/^\.(.*)/$1/;  #Remove unwanted first dot
 	$dev{enterprise} = $dev{sysobjectid};
 	$dev{enterprise} =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
 
     }
-    if ( exists ($nv{sysName}) && length ($nv{sysName}) > 0 ){
+    if ( $self->is_valid($nv{sysName}) ){
 	$dev{sysname} = $nv{sysName};
     }
-    if ( exists ($nv{sysDescr}) && length ($nv{sysDescr}) > 0 ){
+    if ( $self->is_valid($nv{sysDescr}) ){
 	$dev{sysdescription} = $nv{sysDescr};
     }
-    if ( exists ($nv{sysContact}) && length ($nv{sysContact}) > 0 ){
+    if ( $self->is_valid($nv{sysContact}) ){
 	$dev{syscontact} = $nv{sysContact};
     }
-    if ( exists ($nv{sysLocation}) && length ($nv{sysLocation}) > 0 ){
+    if ( $self->is_valid($nv{sysLocation}) ){
 	$dev{syslocation} = $nv{sysLocation};
     }
-    if ( exists ($nv{ipForwarding}) && $nv{ipForwarding} == 1 ){
+    if ( $self->is_valid($nv{ipForwarding}) && $nv{ipForwarding} == 1 ){
 	$dev{router} = 1;
     }
-    if( exists ($nv{dot1dBaseBridgeAddress}) && length($nv{dot1dBaseBridgeAddress}) > 0  ) {
+    if( $self->is_valid($nv{dot1dBaseBridgeAddress})  ) {
 	# Canonicalize address
 	$dev{physaddr} = $self->_readablehex($nv{dot1dBaseBridgeAddress});
     }
-    if( exists ($nv{entPhysicalSerialNum}) && length($nv{entPhysicalSerialNum}) > 0  ) {
+    if( $self->is_valid($nv{entPhysicalSerialNum}) ) {
 	$dev{serialnumber} = $nv{entPhysicalSerialNum};
     }
 
@@ -1058,8 +1058,7 @@ sub get_dev_info {
 		$dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$iffields{$dbname}};
 	    }
 	}
-	if (exists ($nv{interface}{$newif}{ifPhysAddress}) && 
-	    length($nv{interface}{$newif}{ifPhysAddress}) > 0 ){
+	if ( $self->is_valid($nv{interface}{$newif}{ifPhysAddress}) ){
 	    $dev{interface}{$newif}{physaddr} = $self->_readablehex($nv{interface}{$newif}{ifPhysAddress});
 	}
 	################################################################
@@ -1067,19 +1066,19 @@ sub get_dev_info {
 	my $dupval;
 	################################################################
 	# Standard MIB
-	if (defined($nv{interface}{$newif}{ifMauType})){
+	if ($self->is_valid($nv{interface}{$newif}{ifMauType})){
 	    $dupval = $nv{interface}{$newif}{ifMauType};
 	    $dupval =~ s/^\.(.*)/$1/;
 	    $dev{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "unknown";
 	    ################################################################
 	    # Other Standard (used by some HP)	    
-	}elsif(defined($nv{interface}{$newif}{ifSpecific})){
+	}elsif($self->is_valid($nv{interface}{$newif}{ifSpecific})){
 	    $dupval = $nv{interface}{$newif}{ifSpecific};
 	    $dupval =~ s/^\.(.*)/$1/;
 	    $nv{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "unknown";
 	    ################################################################
 	    # Catalyst
-	}elsif(defined($nv{interface}{$newif}{portDuplex})){
+	}elsif($self->is_valid($nv{interface}{$newif}{portDuplex})){
 	    $dupval = $nv{interface}{$newif}{portDuplex};
 	    $nv{interface}{$newif}{duplex} = (exists ($CatDuplex{$dupval})) ? $CatDuplex{$dupval} : "unknown";
 	}
@@ -1096,23 +1095,23 @@ sub get_dev_info {
 	my ($vid, $vname);
 	################################################################
 	# Standard MIB
-	if( defined( $nv{interface}{$newif}{dot1qPvid} ) ) {
+	if( $self->is_valid( $nv{interface}{$newif}{dot1qPvid} ) ) {
 	    $vid = $nv{interface}{$newif}{dot1qPvid};
-	    $vname = ( defined($nv{interface}{$newif}{dot1qVlanStaticName}) ) ? 
+	    $vname = ( $self->is_valid($nv{interface}{$newif}{dot1qVlanStaticName}) ) ? 
 		$nv{interface}{$newif}{dot1qVlanStaticName} : $vid;
 	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
 	    ################################################################
 	    # HP
-	}elsif( defined( $nv{interface}{$newif}{hpVlanMemberIndex} ) ){
+	}elsif( $self->is_valid( $nv{interface}{$newif}{hpVlanMemberIndex} ) ){
 	    $vid = $nv{interface}{$newif}{hpVlanMemberIndex};
-	    $vname = ( defined($nv{interface}{$newif}{hpVlanIdentName}) ) ?
+	    $vname = ( $self->is_valid($nv{interface}{$newif}{hpVlanIdentName}) ) ?
 		$nv{interface}{$newif}{hpVlanIdentName} : $vid;
 	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
 	    ################################################################
 	    # Cisco
-	}elsif( defined( $nv{interface}{$newif}{vmVlan} )){
+	}elsif( $self->is_valid( $nv{interface}{$newif}{vmVlan} )){
 	    $vid = $nv{interface}{$newif}{vmVlan};
-	    $vname = ( defined($nv{cviRoutedVlan}{$vid.0}{name}) ) ? 
+	    $vname = ( $self->is_valid($nv{cviRoutedVlan}{$vid.0}{name}) ) ? 
 		$nv{cviRoutedVlan}{$vid.0}{name} : $vid;
 	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
 	}
@@ -1131,4 +1130,27 @@ sub get_dev_info {
     } #unless badhubs
     
     return \%dev;
+}
+
+#####################################################################
+# is_valid
+# 
+# Check validity of value returned by SNMP
+#
+# Required Args:
+#   value
+#
+# Optional args:
+#  
+# Returns:
+#   rue if valid, false otherwise
+#####################################################################
+
+sub is_valid {
+    my ($self, $v) = @_;
+    
+    if ( defined($v) && (length($v) > 0) && ($v !~ /nosuch/i) ){
+	return 1;
+    }
+    return 0;
 }

@@ -169,7 +169,7 @@ if( $args{confirm} eq "Confirm" ) {
   }
   if( ! $r ) {
     my $err = $ui->error;
-    die "Error: $err";
+    $m->comp('error.mhtml', error => $err);
   }
   delete( $session->{tables}{ $args{create} } );
   if( length( $session->{path} ) < 1 && ! defined( $TBL ) ) {

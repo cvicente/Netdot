@@ -311,19 +311,30 @@ sub getinputtag {
 sub mksession {
   my( $self, $dir ) = @_;
   my( $sid, %session );
-  tie %session, 'Apache::Session::File', 
-    $sid, { Directory => $dir, LockDirectory => $dir };
+  eval {
+      tie %session, 'Apache::Session::File', 
+      $sid, { Directory => $dir, LockDirectory => $dir };
+  };
+  if ($@) {
+      $self->error(sprintf("Could not create session: %s", $@));
+      return 0;
+  }
   return \%session ;
 }
-
 ######################################################################
 # fetch state for a session across web pages
 ######################################################################
 sub getsession {
   my( $self, $dir, $sid ) = @_;
   my %session;
-  tie %session, 'Apache::Session::File', 
-    $sid, { Directory => $dir, LockDirectory => $dir };
+  eval {
+      tie %session, 'Apache::Session::File', 
+      $sid, { Directory => $dir, LockDirectory => $dir };
+  };
+  if ($@) {
+      $self->error(sprintf("Could not retrieve session id %s:, %s", $sid, $@));
+      return 0;
+  }
   return \%session;
 }
 

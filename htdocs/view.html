@@ -1,50 +1,5 @@
 <& index.html, title => " View: $table: $labelstr" , s2name => $s2name  &>
 
-<%perl>
-
-%linksto = $ui->getlinksto($table);
-%linksfrom = $ui->getlinksfrom($table);
-%order = $ui->getcolumnorder($table);
-%tags = $ui->getcolumntags($table);
-
-if ($table !~ /_history/){
- # List all the has_many objects for this object
- undef (%ftables);
- foreach my $i (keys %linksfrom){
-  my ($j, @tmp, %jlinksto, $col);
-  @tmp = $obj->$i;  
-  map { $j = $_ } keys %{ $linksfrom{$i} };
-  $ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
-#  my $mj = ( Meta->search(name => $j) )[0]; #get meta info for other table
-### If foreign table is a join table, try to hide it
-### THIS MUST CHANGE TO USE THE MAPPING FEATURE FROM CLASS::DBI INSTEAD
-  if ( $ui->isjointable($j) ){
-     undef( %jlinksto );
-     # Get has_a entries 
-#     map { my($a, $b) = split( /:/, $_ ); $jlinksto{$a} = $b }
-#        split( /,/, $mj->linksto );
-     %jlinksto = $ui->getlinksto($j);
-     # Column in join table that points to third table
-     map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
-     map { push @{ $ftables{$i}{robjs} }, $_->$col } @tmp;
-     $ftables{$i}{dtbl} = $jlinksto{$col};  # table to display
-     $ftables{$i}{ctbl} = $j;               # table to pass to create.html
-  }else{  # table is not a join table
-     @{$ftables{$i}{robjs}} = @tmp;
-     $ftables{$i}{dtbl} = $j;
-     $ftables{$i}{ctbl} = $j; 
-  }
-  if (!scalar(@tmp)){
-     $ftables{$i}{robjs} = 0;
-  }
- }
-}
-
-my $h_table = "$table" . "_history";
-my $h_meta = $ui->getmeta($h_table);
-
-</%perl>
-
 <table valign="top" border="0" height="100%" width="95%">
 <tr height="1"><td colspan="2">
   <table width="100%" border="0" cellpadding="0" cellspacing="0">
@@ -146,10 +101,10 @@ my $h_meta = $ui->getmeta($h_table);
                <td align="center" width="50%"><strong><% $table %></strong></td>
                <td align="right" width="30%"> 
 %	          if ($table !~ /_history/){
-	             [<a href="edit.html?table=<% $table %>&id=<% $obj %>">edit</a>] 
+	             <a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
 %	          }
 %	          if ($table eq "Device"){
-	             [<a href="device.html?id=<% $obj %>">edit all</a>] 
+	             <a href="device.html?id=<% $obj %>">[edit all]</a>
 %		  }
 	          [<a href="delete.html?table=<% $table %>&id=<% $obj %>">delete</a>]
 %	          if ($table !~ /_history/){
@@ -252,9 +207,8 @@ foreach	my $j (keys %ARGS){
 	next if ($ARGS{$j} !~ /\w+/ || $j eq 'submit');
 	$arg{$j} = $ARGS{$j};	
 }	
-
 unless ( $arg{table} && ($arg{id} || $arg{pos}) ){
-   die "Missing required parameters 'table' and/or 'id'";
+   $m->comp('error.mhtml', "Missing required parameters 'table' and/or 'id'");
 }
 $table = $arg{table};
 
@@ -271,12 +225,53 @@ if ( $arg{view} ) {
   $view = 'all';
 }
 unless ( $obj ){
-   die "Nonexistent record: $id";
+   $m->comp('error.mhtml', "Nonexistent record: $id");
 }
 $labelstr = $ui->getobjlabel($obj, ", ");
+
+%linksto = $ui->getlinksto($table);
+%linksfrom = $ui->getlinksfrom($table);
+%order = $ui->getcolumnorder($table);
+%tags = $ui->getcolumntags($table);
+
+if ($table !~ /_history/){
+ # List all the has_many objects for this object
+ undef (%ftables);
+ foreach my $i (keys %linksfrom){
+  my ($j, @tmp, %jlinksto, $col);
+  @tmp = $obj->$i;  
+  map { $j = $_ } keys %{ $linksfrom{$i} };
+  $ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
+#  my $mj = ( Meta->search(name => $j) )[0]; #get meta info for other table
+### If foreign table is a join table, try to hide it
+### THIS MUST CHANGE TO USE THE MAPPING FEATURE FROM CLASS::DBI INSTEAD
+  if ( $ui->isjointable($j) ){
+     undef( %jlinksto );
+     # Get has_a entries 
+#     map { my($a, $b) = split( /:/, $_ ); $jlinksto{$a} = $b }
+#        split( /,/, $mj->linksto );
+     %jlinksto = $ui->getlinksto($j);
+     # Column in join table that points to third table
+     map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
+     map { push @{ $ftables{$i}{robjs} }, $_->$col } @tmp;
+     $ftables{$i}{dtbl} = $jlinksto{$col};  # table to display
+     $ftables{$i}{ctbl} = $j;               # table to pass to create.html
+  }else{  # table is not a join table
+     @{$ftables{$i}{robjs}} = @tmp;
+     $ftables{$i}{dtbl} = $j;
+     $ftables{$i}{ctbl} = $j; 
+  }
+  if (!scalar(@tmp)){
+     $ftables{$i}{robjs} = 0;
+  }
+ }
+}
+
+my $h_table = "$table" . "_history";
+my $h_meta = $ui->getmeta($h_table);
 
 </%init>
 
 <%doc>
-
+  Generic object view
 </%doc>

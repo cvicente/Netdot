@@ -14,14 +14,12 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	my ($addr, $prefix, $ipb, @list);
 	if ($search =~ /\//){
 	    ($addr, $prefix) = split /\//, $search;
-	    $ipb = $ipm->searchblock($addr, $prefix);
+	    if ($ipb = $ipm->searchblock($addr, $prefix)){
+		push @list, $ipb;
+	    }
 	}else{
-	    $ipb = $ipm->searchblock($search);
+	    @list = $ipm->searchblocks($search);
 	}
-	if (defined ($ipb)){
-	    push @list, $ipb;
-	}
-
 </%perl>      
 
 %      if (my $num = scalar(@list)){
@@ -54,11 +52,8 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 ##  Pass %ARGS to a validation function first 
 ##  (enforce some rules)
   
-    if (!$ui->form_to_db(%ARGS))
-	
-    {
-	my $err = $ui->error();
-	die("Error: $err\n");
+    if (!$ui->form_to_db(%ARGS)){
+	$m->comp('error.mhtml', error => $ui->error);
     }
     
     # Do this to 'flush' the values associated with the object
@@ -88,14 +83,12 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 					  prefix  => $prefix, 
 					  status  => "Allocated",
 					  manual  => 1 )){
-	my $err = $ipm->error();
-	die ("Error: $err\n");
+	$m->comp('error.mhtml', error => $ipm->error);
     }
     # 
     # Rebuild tree
     unless ( $ipm->build_tree($newblock->version) ){
-       my $err = $ipm->error();
-       die ("Error: $err\n");    
+       $m->comp('error.mhtml', error => $ipm->error);    
     }
     if ($newblock)
     {
@@ -111,15 +104,13 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     # Chop "/" if any
     $length =~ s/\///;
     my $newblock;
-    unless( $newblock = $ipm->auto_allocate($parent, $length)){
-      my $err = $ipm->error();
-      die ("Error: $err\n");
+    unless( $newblock = $ipm->auto_allocate($parent, $length) ){
+      $m->comp('error.mhtml', error => $ipm->error);
     }
     # 
     # Rebuild tree
     unless ( $ipm->build_tree($newblock->version) ){
-       my $err = $ipm->error();
-       die ("Error: $err\n");    
+       $m->comp('error.mhtml', error => $ipm->error);    
     }
     if ($newblock)
     {
@@ -133,18 +124,16 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 #######################################################################################
 }elsif ( defined($_action ) && ($_action eq "DELETE") ){
   
-    my ($parentaddress, $address, $prefix, $version) = ($o->parent->address, $o->address, $o->prefix, $o->version);
+    my ($parentid, $address, $prefix, $version) = ($o->parent->id, $o->address, $o->prefix, $o->version);
     # Remove from Database
     #
-    unless ($ipm->removeblock($address)){
-	my $err = $ui->error();
-	die ("Error: $err\n");
+    unless ($ipm->removeblock(address => $address, prefix => $prefix)){
+	$m->comp('error.mhtml', error => $ipm->error);
     }
     # 
     # Rebuild tree
     unless ( $ipm->build_tree($version) ){
-	my $err = $ipm->error();
-	die ("Error: $err\n");    
+	$m->comp('error.mhtml', error => $ipm->error);    
     }
     
 </%perl>
@@ -154,10 +143,14 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 <%perl>
 #    Show parent block
 #    after block has been deleted
-    if ($parentaddress)
-    {
-	$o = $ipm->searchblock($parentaddress);
-       $id = $o->id;
+    if ($parentid){
+	$id = $parentid;
+	eval {
+	$o = Ipblock->retrieve($id)
+	};
+	if ( $@ ){
+	    $m->comp('error.mhtml', error => $@);
+	}
     }
 </%perl>
 
@@ -168,7 +161,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %#
 %#######################################################################################
 
-%if ( defined($id) ){
+%if ( $id ){
 <!-- Header Table -->
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
 </table>
@@ -489,7 +482,12 @@ my $ci = 0;
 my %arg;
 my $title;
 if ($id){
-    $o = Ipblock->retrieve($id);
+    eval {
+	$o = Ipblock->retrieve($id)
+    };
+    if ( $@ ){
+	$m->comp('error.mhtml', error => $@);
+    }
     $title = $o->address . "/" . $o->prefix;
 }else{
     $title = "Search";

@@ -72,21 +72,40 @@ sub sortblocksbyparent {
 
 #####################################################################
 # Search IP Block
-# Arguments: address and (optional) prefix
+# Arguments: address and prefix
 # Returns: Ipblock object
 #####################################################################
 sub searchblock {
     my ($self, $address, $prefix) = @_;
     my $ip;
     unless ($ip = NetAddr::IP->new($address, $prefix)){
-	$self->error("Invaild address: $address");
+	$self->error(sprintf("Invaild address: %s/%s", $address, $prefix));
 	return 0;
     }
     if ( my $ipb = (Ipblock->search( {address => ($ip->numeric)[0], 
-				      prefix  => $ip->masklen} ))[0] ){
+				      prefix  => $ip->masklen} 
+				     ))[0] ){
 	return $ipb;
     }
-    $self->error(sprintf("%s/%s not found", $ip->addr, $ip->prefix));
+    $self->error(sprintf("%s/%s not found", $ip->addr, $ip->masklen));
+    return 0;
+}
+#####################################################################
+# Search IP Blocks
+# Arguments: address
+# Returns: List of Ipblock objects
+#####################################################################
+sub searchblocks {
+    my ($self, $address) = @_;
+    my $ip;
+    unless ($ip = NetAddr::IP->new($address)){
+	$self->error("Invaild address: $address");
+	return 0;
+    }
+    if ( my @ipb = Ipblock->search( address => ($ip->numeric)[0] ) ){
+	return @ipb;
+    }
+    $self->error(sprintf("%s not found", $ip->addr));
     return 0;
 }
 
@@ -177,17 +196,16 @@ sub insertblock {
 	return 0;		
     }
     my $ui = Netdot::UI->new();
-    my %state = ( address  => $ip->addr, 
-		  prefix   => $ip->masklen,
-		  version  => $ip->version,
+    my %state = ( address   => $ip->addr, 
+		  prefix    => $ip->masklen,
+		  version   => $ip->version,
 		  status    => $status,
 		  interface => $args{interface},
 		  );
    
     $state{last_seen} = $ui->timestamp if (! $args{manual} );
 		  
-    my $r;		  
-    if ( $r = $ui->insert( table => "Ipblock", state => \%state)){
+    if ( my $r = $ui->insert( table => "Ipblock", state => \%state)){
 	return (my $o = Ipblock->retrieve($r)) ;
     }else{
 	$self->error($ui->error);
@@ -256,11 +274,11 @@ sub updateblock {
 sub removeblock {
     my ($self, %args) = @_;
     my $ipb;
-    unless ( exists($args{address}) ){
-	$self->error("Missing required args");
+    unless ( exists($args{address}) && exists($args{prefix}) ){
+	$self->error("removeblock: Missing required args");
 	return 0;	
     }
-    unless ($ipb = $self->searchblock($args{address})){
+    unless ($ipb = $self->searchblock($args{address}, $args{prefix})){
 	return 0;
     }
     my $ui = Netdot::UI->new();
@@ -272,16 +290,18 @@ sub removeblock {
 }
 
 ######################################################################
-## Auto-Allocate Block
-## Arguments: parent block and a prefix length, return best-choice 
-##          allocation
+## Auto-Allocate Block (best allocation)
+## Arguments: parent block and a prefix length, 
 ## Returns: New Ipblock object
 ######################################################################
 sub auto_allocate {
     my ($self, $parentid, $length) = @_;
     my $parent;
-    unless ($parent = Ipblock->retrieve($parentid)){
-	$self->error("Nonexistent Ipblock object: $parentid");
+    eval {
+	$parent = Ipblock->retrieve($parentid)
+	};
+    if ($@){
+	$self->error("Cannot retrieve $parentid: $@");
 	return 0;
     }    
     unless ($parent->status->name eq "Allocated"){
@@ -289,7 +309,7 @@ sub auto_allocate {
 	return 0;
     }    
     if ($parent->prefix > $length){
-	$self->error("New block's prefix must be longer than parent's");
+	$self->error("New block's prefix length must be higher than parent's");
 	return 0;
     }    
     if (my $ip = NetAddr::IP->new($parent->address, $parent->prefix)){
@@ -306,14 +326,14 @@ sub auto_allocate {
 		    return $ipblock;
 		}
 	    }else{
-		my $status = (IpblockStatus->search(name => "Allocated"))[0];
 		my $newblock = $self->insertblock(address => $subnet->addr, 
 						  prefix  => $subnet->masklen, 
-						  status  => $status );
+						  status  => "Allocated",
+						  manual  => 1);
 		return $newblock;
 	    }
 	}
-	$self->error("auto_allocate: No blocks available with specified criteria");
+	$self->error("auto_allocate: No blocks of size $length available");
 	return 0;
     }
 }
