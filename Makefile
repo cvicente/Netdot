@@ -89,7 +89,9 @@ lib: $(LIB)
 ######################################################################
 make:
 	cp -f Makefile.db $(DST)/bin/Makefile
+	cp -f Makefile.htdocs $(DST)/htdocs/Makefile
 	cp -f Makefile.dist $(DST)/Makefile
+
 
 
 
