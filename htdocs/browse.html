@@ -5,11 +5,10 @@ foreach my $j ( keys %ARGS ) {
 }
 </%perl>
 
-<& header, title => "Browse" &>
-
 % if( ! exists( $args{table} ) ) {
 %   my( @t );
 %   @t = $gui->gettables();
+    <& header, title => "Browse" &>
     <p>
     <blockquote>
     <& table, width => $WIDTH, link => "browse.html", title => "Please select an object to browse:" &>
@@ -17,6 +16,7 @@ foreach my $j ( keys %ARGS ) {
 % } else {
 %   my $TBL = $args{table};
 %   my @r = $TBL->retrieve_all();
+    <& header, title => "Browse: $args{table}" &>
     <p>
     <blockquote>
     <table cellpadding="0" border="0" width="100%" bgcolor="#CCCCCC" class="tablebackground">
