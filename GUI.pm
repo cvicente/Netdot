@@ -172,6 +172,12 @@ sub getinputtag {
 #Be sure to return 1
 1;
 
+######################################################################
+#  $Log: GUI.pm,v $
+#  Revision 1.3  2003/06/13 18:15:34  netdot
+#  added log section
+#
+
 __DATA__
 
 =head1 NAME
