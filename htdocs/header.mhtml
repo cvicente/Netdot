@@ -1,29 +1,30 @@
 <%doc>
+  $Id$
   
   Options for header:
 
   $title <string>
-         If title set to empty string, header acts as banner for opening page
 
 </%doc>
-
+%
+%
 <%args>
-
 $title => undef
-
+$s2name => undef
 </%args>
-
+%
+%
 <%init>
-my $ui = Netdot::UI->new();
 my $currentUser = SiteControl::AccessController::getCurrentUser($r);
-
+if( ! defined( $s2name ) ) {
+    $s2name = "Main";
+}
 </%init>
-
+%
+%
 <html>
 <head>
-  <link rel=StyleSheet href="style.css" type="text/css" />
-  <link rel="alternate stylesheet" title="Gray" href="style-gray.css" type="text/css" />
-%
+  <link rel=StyleSheet href="new-style.css" type="text/css" />
 %
 % if( $title ) {
    <title>Netdot : <% $title %></title>
@@ -31,23 +32,29 @@ my $currentUser = SiteControl::AccessController::getCurrentUser($r);
    <title>Netdot: NETwork DOcumentation Tool</title>
 % }
 %
-%
 </head>
+
 <script language="JavaScript" src="dynamic_list.js" />
-<body>
+
+<body id="<% $s2name %>">
 
 <div id="header">
-   <div id="logo">
-      <a href="index.html"><img src="img/spacer" alt=""/></a>
-   </div>
-   <div id="headerinfo">
-      <form action="search.html" method="post">
-         <label for="q"><b>Search</b>:</label>
-         <input type="text" name="q" size="10" value="">
-      </form>
-% if( $currentUser) {
-      <% $currentUser->getUsername() %>
+    <img class="headleft" SRC="img/title.jpg" 
+        alt="Netdot: Network Documentation Tool" />
+    <span class="headright">
+    <form action="search.html" method="post">
+        <label for="q"><b>search</b>:</label>
+        <input type="text" name="q" size="13" value="">
+    </form>
+        <br />
+%
+% if( $currentUser ) {
+        <B>user</B>: <% $currentUser->getUsername() %> &nbsp;
 % }
-      [<a href="logout.html">logout</a>]
-   </div>
+%
+        [<a href="logout.html">logout</a>]
+    </span>
+    <hr />
+    <span class="headleft">netdot.uoregon.edu</span>
+    <span class="headright">Thu Mar 10 09:58:49 2005</span>
 </div>
