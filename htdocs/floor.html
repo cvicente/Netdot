@@ -5,18 +5,14 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}))
-{
+if (defined($ARGS{_action})) {
     my %update_info = ();
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-    if (!(%update_info = $ui->form_to_db(%ARGS)))
-    {
-        my $err = $ui->error();
-        die("Error: $err\n");
+    if (!(%update_info = $ui->form_to_db(%ARGS))) {
+        $m->comp("error.mhtml", $ui->error());
 	}
 
-    if ($update_info{Floor}{key})
-    {
+    if ($update_info{Floor}{key}) {
         $id = $update_info{Floor}{key};
         $editFloor = 0;
     }
@@ -25,8 +21,7 @@ if (defined($ARGS{_action}))
     # before redisplaying
     $o = undef;
     $site = undef;
-    if ($id && $id ne "NEW")
-    {
+    if ($id && $id ne "NEW") {
         $o = Floor->retrieve($id);
         $site = $o->site;
     }
@@ -120,8 +115,7 @@ my $o = undef;
 my $site = undef;
 my $editFloor = 0;
 
-if ($id && $id ne "NEW") 
-{
+if ($id && $id ne "NEW") {
    $o = Floor->retrieve($id);
    $site = $o->site;
 }

@@ -5,22 +5,18 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}) && ($ARGS{_action} eq "UPDATE" || $ARGS{_action} eq "STRAND_UPDATE"))
-{
+if (defined($ARGS{_action}) && ($ARGS{_action} eq "UPDATE" || $ARGS{_action} eq "STRAND_UPDATE")) {
     my %update_info = ();
     
     print "inserting/updating, ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
-    if (!(%update_info = $ui->form_to_db(%ARGS)))
-    {
-        my $err = $ui->error();
-        die("Error: $err\n");
+    if (!(%update_info = $ui->form_to_db(%ARGS))) {
+        $m->comp("error.mhtml", $ui->error());
 	}
 
     # Ignore id changes for anything but BackboneCable.
     # (i.e., we do not care about CableStrand id update).
-    if ($update_info{BackboneCable}{key})
-    {
+    if ($update_info{BackboneCable}{key}) {
         $id = $update_info{BackboneCable}{key};
     }
 
@@ -29,8 +25,7 @@ if (defined($ARGS{_action}) && ($ARGS{_action} eq "UPDATE" || $ARGS{_action} eq 
     # Do this to 'flush' the values associated with the object
     # before redisplaying
     $o = undef;
-    if ($id && $id ne "NEW")
-    {
+    if ($id && $id ne "NEW") {
         $o = BackboneCable->retrieve($id);
         $start_site = $o->start_closet->floor->site; 
         $end_site = $o->end_closet->floor->site;
@@ -43,92 +38,72 @@ if (defined($ARGS{_action}) && ($ARGS{_action} eq "UPDATE" || $ARGS{_action} eq 
 }
 
 # insert N number of strands...
-elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS")
-{
-    die ($cable_manager->error()) if (!($cable_manager->insertstrands($o, $ARGS{number_strands})));
+elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS") {
+    $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->insertstrands($o, $ARGS{number_strands})));
 }
 
 # splice cables by a range of strands
-elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_SPLICE_RANGE")
-{
-    die("range1, range2, or backbone not specified!") if (!$ARGS{__range1} || !$ARGS{__range2} || !$ARGS{__splice_bb_end});
+elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_SPLICE_RANGE") {
+    $m->comp("error.mhtml", "range1, range2, or backbone not specified.") if (!$ARGS{__range1} || !$ARGS{__range2} || !$ARGS{__splice_bb_end});
 
     my ($start_low, $start_high) = split(/\-/o, $ARGS{__range1});
     my ($end_low, $end_high) = split(/\-/o, $ARGS{__range2});
     my $bb_end = BackboneCable->retrieve($ARGS{__splice_bb_end});
 
-    if (($start_high - $start_low) != $end_high - $end_low)
-    {
-        die("Mismatch between ranges...\n");
+    if (($start_high - $start_low) != $end_high - $end_low) {
+        $m->comp("error.mhtml", "Mismatch between ranges.");
     }
 
     # build up arrays of strands we care about.
     my (@start_strands, @end_strands);
-    for (my $i = $start_low; $i <= $start_high; ++$i)
-    {
+    for (my $i = $start_low; $i <= $start_high; ++$i) {
         push(@start_strands, CableStrand->search(cable=>$id, number=>$i));
     }
 
-    for (my $i = $end_low; $i <= $end_high; ++$i)
-    {
+    for (my $i = $end_low; $i <= $end_high; ++$i) {
         push(@end_strands, CableStrand->search(cable=>$bb_end->id, number=>$i));
     }
 
-    if (scalar(@start_strands) != scalar(@end_strands))
-    {
-        die("Mismatch betwen start_strands and end_strands length...\n");
+    if (scalar(@start_strands) != scalar(@end_strands)) {
+        $m->comp("error.mhtml", "Mismatch between start strand and end strand length.");
     }
 
     # first delete all splices associated with our starting strands
-    die($cable_manager->error()) if (!($cable_manager->deletesplices(@start_strands)));
+    $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->deletesplices(@start_strands)));
     
     # and now lets add our splices...
-    for (my $i = 0, my $len = scalar(@start_strands); $i < $len; ++$i)
-    {
-        # the indexes are coordinated in start_strands and end_strands
-        die ("Error " . $ui->error()) if (!($ui->insert(table=>"Splice", 
-                                                        state=>{strand1=>$start_strands[$i]->id, strand2=>$end_strands[$i]->id})));
-        die ("Error " . $ui->error()) if (!($ui->insert(table=>"Splice",
-                                                        state=>{strand1=>$end_strands[$i]->id, strand2=>$start_strands[$i]->id})));
+    for (my $i = 0, my $len = scalar(@start_strands); $i < $len; ++$i) {
+        $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->insertsplice($start_strands[$i], $end_strands[$i])));
     }
 }
 
 
 # special case for updating splices
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}) && $ARGS{_action} eq "STRAND_UPDATE")
-{
+if (defined($ARGS{_action}) && $ARGS{_action} eq "STRAND_UPDATE") {
     my @splices = ("__splice1_", "__splice2_");
     my @strands = ();
 
     # user can by either be operating on a subset of strands...
-    if ($ARGS{__edit_list})
-    {
-        foreach my $l (split(/,/o, $ARGS{__edit_list}))
-        {
+    if ($ARGS{__edit_list}) {
+        foreach my $l (split(/,/o, $ARGS{__edit_list})) {
             push(@strands, CableStrand->retrieve($l));
         }
     }
     # ...or all strands for this cable.
-    else
-    {
+    else {
         @strands = $o->strands;
     }
 
     
     # first delete all splices for these strands
-    die($cable_manager->error()) if (!($cable_manager->deletesplices(@strands)));
+    $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->deletesplices(@strands)));
     
     # then work through the post data and recreate splices as needed.
-    foreach my $strand (@strands)
-    {
-        foreach my $sp (@splices)
-        {
+    foreach my $strand (@strands) {
+        foreach my $sp (@splices) {
             next if (!defined($ARGS{$sp . $strand->id}) || $ARGS{$sp . $strand->id} eq "");
-            die ("Error " . $ui->error()) if (!($ui->insert(table=>"Splice", 
-                                                        state=>{strand1=>$strand->id, strand2=>$ARGS{$sp . $strand->id}})));
-            die ("Error " . $ui->error()) if (!($ui->insert(table=>"Splice",
-                                                        state=>{strand1=>$ARGS{$sp . $strand->id}, strand2=>$strand->id})));
+            $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->insertsplice($strand, CableStrand->retrieve($ARGS{$sp . $strand->id}))));
         }
     }
 }
@@ -275,6 +250,16 @@ function suggestName()
 %               $ui->textField(object=>$o, table=>"BackboneCable", column=>"length", edit=>$editBackbone);                
                 </td>
             </tr>
+
+%           if (defined($o)) {            
+            <tr align="left" valign="top">
+                <td># of Strands: </td>
+                <td class="formtablec2">
+                <% scalar($o->strands) %>
+                </td>
+            </tr>
+%           }            
+
             </table>
             </td>
             <td>&nbsp;</td>
@@ -303,13 +288,10 @@ function suggestName()
 <!-- Begin Cable Strand Cable -->
 <%perl>
 my @backbones = ();
-
-if ($editStrand)
-{
+if ($editStrand) {
     # we need to grab all backbones for start and end sites of this strand.
     my ($start_site, $end_site) = ($o->start_closet->floor->site, $o->end_closet->floor->site);
-    foreach my $closet (($start_site->closets, $end_site->closets))
-    {
+    foreach my $closet (($start_site->closets, $end_site->closets)) {
         map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$closet),
                                        BackboneCable->search(end_closet=>$closet));
     }
@@ -388,16 +370,12 @@ function editSelected(id)
     <table border="0" width="90%">
     <%perl>
     my @strands;
-    if ($ARGS{edit_list})
-    {
+    if ($ARGS{edit_list}) {
         # if the user has selected specific rows, only display those selected.
-        foreach my $l (split(/,/o, $ARGS{edit_list}))
-        {
+        foreach my $l (split(/,/o, $ARGS{edit_list})) {
             push(@strands, CableStrand->retrieve($l));
         }
-    }
-    else
-    {
+    } else {
         map { push (@strands, $_) } $o->strands;
     }
     </%perl>
@@ -427,24 +405,16 @@ function editSelected(id)
     </tr>
 
     <%perl>
-
     my @sorted_strands;
-    if ($strand_sort eq "name" || !$strand_sort)
-    {
+    if ($strand_sort eq "name" || !$strand_sort) {
         # sort by name
         # -----------------------------------------------------------
         @sorted_strands = sort { (split(/\./o, $a->name, 2))[1] <=> (split(/\./o, $b->name, 2))[1] } @strands;
-    }
-
-    elsif ($strand_sort eq "status")
-    {
+    } elsif ($strand_sort eq "status") {
         # sort by status
         # -----------------------------------------------------------
         @sorted_strands = sort { uc($a->status->name) cmp uc($b->status->name) } @strands;
-    }
-
-    elsif ($strand_sort eq "direction")
-    {
+    } elsif ($strand_sort eq "direction") {
         # sort by direction
         # -----------------------------------------------------------
         @sorted_strands = sort { int($a->direction) <=> int($b->direction) } @strands;
@@ -588,8 +558,7 @@ function editSelected(id)
     my @bbones = ();
     # we need to grab all backbones for start and end sites of this strand.
     my ($start_site, $end_site) = ($o->start_closet->floor->site, $o->end_closet->floor->site);
-    foreach my $closet (($start_site->closets, $end_site->closets))
-    {
+    foreach my $closet (($start_site->closets, $end_site->closets)) {
         map { push (@bbones, $_) } (BackboneCable->search(start_closet=>$closet),
                                     BackboneCable->search(end_closet=>$closet));
     }
@@ -608,8 +577,7 @@ function editSelected(id)
             <OPTION VALUE="">Backbone...</OPTION>
             <%perl>
             my %stored = ();
-            foreach my $bb (sort { $a->name cmp $b->name } @bbones)
-            {
+            foreach my $bb (sort { $a->name cmp $b->name } @bbones) {
                 next if ($bb->id eq $id || exists($stored{$bb}));
                 $stored{$bb} = 1;
                 printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
@@ -645,8 +613,7 @@ my $editStrand = 0;
 my ($o, $start_site, $end_site) = (undef, undef, undef);
 my ($start_site_id, $end_site_id) = (0, 0);
 
-if ($id && $id ne "NEW") 
-{
+if ($id && $id ne "NEW") {
     $o = BackboneCable->retrieve($id);
     $start_site = $o->start_closet->floor->site; 
     $end_site = $o->end_closet->floor->site;

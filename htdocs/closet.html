@@ -5,18 +5,14 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}))
-{
+if (defined($ARGS{_action})) {
     my %update_info = ();
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-    if (!(%update_info = $ui->form_to_db(%ARGS)))
-    {
-        my $err = $ui->error();
-        die("Error: $err\n");
+    if (!(%update_info = $ui->form_to_db(%ARGS))) {
+        $m->comp("error.mhtml", $ui->error());
 	}
 
-    if ($update_info{Closet}{key})
-    {
+    if ($update_info{Closet}{key}) {
         $id = $update_info{Closet}{key};
         $editCloset = 0;
     }
@@ -25,8 +21,7 @@ if (defined($ARGS{_action}))
     # before redisplaying
     $o = undef;
     $site = undef;
-    if ($id && $id ne "NEW")
-    {
+    if ($id && $id ne "NEW") {
         $o = Closet->retrieve($id);
         $site = $o->floor->site || $o->site;
     }
@@ -264,8 +259,7 @@ LIST_MANAGER.addList(floorSearchList);
 <!-- Begin BackboneCable Table -->
 <%perl>
 my @sites;
-if ($editBackbones)
-{
+if ($editBackbones) {
     @sites = Site->retrieve_all();
     @sites = sort { $a->name cmp $b->name } @sites;
 }
@@ -331,21 +325,13 @@ if ($editBackbones)
     if ($bb_sort eq "name")
     {
         @sorted_bbones = sort { $a->name cmp $b->name } @bbones;
-    }
-    elsif ($bb_sort eq "start_closet")
-    {
+    } elsif ($bb_sort eq "start_closet") {
         @sorted_bbones = sort { $a->start_closet->name cmp $b->start_closet->name } @bbones;
-    }
-    elsif ($bb_sort eq "end_closet")
-    {
+    } elsif ($bb_sort eq "end_closet") {
         @sorted_bbones = sort { $a->end_closet->name cmp $b->end_closet->name } @bbones;
-    }
-    elsif ($bb_sort eq "owner")
-    {
+    } elsif ($bb_sort eq "owner") {
         @sorted_bbones = sort { $a->owner->name cmp $b->owner->name } @bbones;
-    }
-    else
-    {
+    } else {
         @sorted_bbones = sort { $a->$bb_sort cmp $b->$bb_sort } @bbones;
     }
     </%perl>
@@ -498,20 +484,13 @@ if ($editBackbones)
     <%perl>
     $cable_sort = "jackid" if (!defined($cable_sort) || $cable_sort eq "");
     my @sorted_cables;
-    if ($cable_sort eq "jackid")
-    {
+    if ($cable_sort eq "jackid") {
         @sorted_cables = sort { $a->jackid cmp $b->jackid } @cables;
-    }
-    elsif ($cable_sort eq "type")
-    {
+    } elsif ($cable_sort eq "type") {
         @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
-    }
-    elsif ($cable_sort eq "room")
-    {
+    } elsif ($cable_sort eq "room") {
         @sorted_cables = sort { $a->room->name cmp $b->room->name } @cables;
-    }
-    else
-    {
+    } else {
         @sorted_cables = sort { $a->$cable_sort cmp $b->$cable_sort } @cables;
     }
     </%perl>
@@ -578,8 +557,7 @@ my $editCloset = 0;
 my $editBackbones = 0;
 my $editHorizontal = 0;
 
-if ($id && $id ne "NEW") 
-{
+if ($id && $id ne "NEW")  {
    $o = Closet->retrieve($id);
    $site = $o->floor->site || $o->site;
 }

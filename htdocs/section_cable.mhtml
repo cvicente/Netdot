@@ -153,8 +153,7 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
             <select name="id" onChange="floorList.doIt();">
             <option value="">-- Make your selection --</option>
             <%perl>
-            foreach my $site (@sites)
-            {
+            foreach my $site (@sites) {
                 printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
             }
             </%perl>
@@ -227,8 +226,7 @@ LIST_MANAGER.addList(floorList, closetList);
             <select name="id" onChange="floorList.doIt();">
             <option value="">-- Make your selection --</option>
             <%perl>
-            foreach my $site (@sites)
-            {
+            foreach my $site (@sites) {
                 printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
             }
             </%perl>
@@ -311,8 +309,7 @@ LIST_MANAGER.addList(floorList, closetList);
         <select name="start_id">
         <option value="">-- Make your selection --</option>
         <%perl>
-        foreach my $site (@sites)
-        {
+        foreach my $site (@sites) {
             printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
         }
         </%perl>
@@ -321,8 +318,7 @@ LIST_MANAGER.addList(floorList, closetList);
         <select name="end_id">
         <option value="">-- Make your selection --</option>
         <%perl>
-        foreach my $site (@sites)
-        {
+        foreach my $site (@sites) {
             printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
         }
         </%perl>
@@ -346,8 +342,7 @@ LIST_MANAGER.addList(floorList, closetList);
 my $currentUser = SiteControl::AccessController::getCurrentUser($r);
 my %caller_args = $m->caller_args(-1);
 
-if (exists($caller_args{page}))
-{
+if (exists($caller_args{page})) {
     $currentUser->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args{page});
 }
 

@@ -7,18 +7,14 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE" || $ARGS{_action} eq "NEW")
-{
+if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE" || $ARGS{_action} eq "NEW") {
     my %update_info = ();
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-    if (!(%update_info = $ui->form_to_db(%ARGS)))
-    {
-        my $err = $ui->error();
-        die("Error: $err\n");
+    if (!(%update_info = $ui->form_to_db(%ARGS))) {
+        $m->comp("error.mhtml", $ui->error());
 	}
 
-    if ($update_info{HorizontalCable}{key})
-    {
+    if ($update_info{HorizontalCable}{key}) {
         $id = $update_info{HorizontalCable}{key};
     }
 
@@ -26,30 +22,23 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE" || $ARGS{_action} eq "
     # before redisplaying
     $o = undef;
     $site = undef;
-    if ($id && $id ne "NEW")
-    {
+    if ($id && $id ne "NEW") {
         $o = HorizontalCable->retrieve($id);
         $site = $o->closet->site;
         
         $editCable = 0;
         $editInt = 0;
     }
-}
-
-elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_INTERFACE")
-{
+} elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_INTERFACE") {
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
     my @interfaces;
-    if (UNIVERSAL::isa($ARGS{interfaces}, "ARRAY"))
-    {
+    if (UNIVERSAL::isa($ARGS{interfaces}, "ARRAY")) {
         @interfaces = @{$ARGS{interfaces}};
-    }
-    else
-    {
+    } else {
         push(@interfaces, $ARGS{interfaces});
     }
 
-    die($cable_manager->error()) if (!($cable_manager->insertinterfaces($o, @interfaces)));
+    $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->insertinterfaces($o, @interfaces)));
 }
 
 # end insertion/update code
@@ -209,8 +198,7 @@ my @sites = Site->retrieve_all();
                     &nbsp;<select name="closet_srch" onChange="closetSearchList.doIt();">
                     <option value="">Lookup by Site</option>
                     <%perl>
-                    foreach my $s (@sites)
-                    {
+                    foreach my $s (@sites) {
                         printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
                     }
                     </%perl>
@@ -230,8 +218,7 @@ my @sites = Site->retrieve_all();
                     &nbsp;<select name="room_site_srch" onChange="siteFloorLookup.doIt();">
                     <option value="">Lookup by Site</option>
                     <%perl>
-                    foreach my $s (@sites)
-                    {
+                    foreach my $s (@sites) {
                         printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
                     }
                     </%perl>
@@ -362,12 +349,9 @@ my @sites = Site->retrieve_all();
     <%perl>
     $int_sort = "name" if (!defined($int_sort) || $int_sort eq "");
     my @sorted_ints;
-    if ($int_sort eq "device")
-    {
+    if ($int_sort eq "device") {
         @sorted_ints = sort { $a->device->name cmp $b->device->name } @ints;
-    }
-    else
-    {
+    } else {
         @sorted_ints = sort { $a->$int_sort cmp $b->$int_sort } @ints;
     }
     </%perl>
@@ -442,8 +426,7 @@ my $site = undef;
 my $editCable = 0;
 my $editInt = 0;
 
-if ($id && $id ne "NEW") 
-{
+if ($id && $id ne "NEW") {
    $o = HorizontalCable->retrieve($id);
    $site = $o->closet->site;
 }

@@ -5,19 +5,15 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}))
-{
+if (defined($ARGS{_action})) {
     print "ARGS is <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
     
     my %update_info = ();
-    if (!(%update_info = $ui->form_to_db(%ARGS)))
-    {
-        my $err = $ui->error();
-        die("Error: $err\n");
+    if (!(%update_info = $ui->form_to_db(%ARGS))) {
+        $m->comp("error.mhtml", $ui->error());
 	}
 
-    if ($update_info{CableStrand}{key})
-    {
+    if ($update_info{CableStrand}{key}) {
         $id = $update_info{CableStrand}{key};
         $editStrand = 0;
     }
@@ -28,17 +24,15 @@ if (defined($ARGS{_action}))
     $o = CableStrand->retrieve($id) if ($id && $id ne "NEW");
 
     # Special case for splices, store in many to many table...
-    if (defined($ARGS{__splice1}) || defined($ARGS{__splice2}))
-    {
+    if (defined($ARGS{__splice1}) || defined($ARGS{__splice2})) {
         # first delete all splices for this cable strand.
-        die($cable_manager->error()) if (!($cable_manager->deletesplices($o)));
+        $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->deletesplices($o)));
         
         # and now add back any splices...
         my @splices = ("__splice1", "__splice2");
-        foreach my $sp (@splices)
-        {
+        foreach my $sp (@splices) {
             next if (!defined($ARGS{$sp}) || $ARGS{$sp} eq "");
-            die($cable_manager->error()) if (!($cable_manager->insertsplice($o, CableStrand->retrieve($ARGS{$sp}))));
+            $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->insertsplice($o, CableStrand->retrieve($ARGS{$sp}))));
         }
     }
 }
@@ -303,8 +297,7 @@ my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
 my $editStrand = 0;
 
-if ($id && $id ne "NEW") 
-{
+if ($id && $id ne "NEW")  {
     $o = CableStrand->retrieve($id);
     $backbone_id = $o->cable;
 }

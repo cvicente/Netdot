@@ -5,18 +5,14 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT")
-{
+if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
     my %update_info = ();
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-    if (!(%update_info = $ui->form_to_db(%ARGS)))
-    {
-        my $err = $ui->error();
-        die("Error: $err\n");
+    if (!(%update_info = $ui->form_to_db(%ARGS))) {
+        $m->comp("error.mhtml", $ui->error());
 	}
 
-    if ($update_info{Circuit}{key})
-    {
+    if ($update_info{Circuit}{key}) {
         $id = $update_info{Circuit}{key};
         $editCircuit = 0;
     }
@@ -24,14 +20,10 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT")
     # Do this to 'flush' the values associated with the object
     # before redisplaying
     $o = undef;
-    if ($id && $id ne "NEW")
-    {
+    if ($id && $id ne "NEW") {
         $o = Circuit->retrieve($id);
     }
-}
-
-elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{sequence_list})
-{
+} elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{sequence_list}) {
     my @sequences;
     if (UNIVERSAL::isa($ARGS{sequence_list}, "ARRAY")) {
         @sequences = @{$ARGS{sequence_list}};
@@ -250,8 +242,7 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{seque
         <select name="start_id" style="width: 225px">
         <option value="">-- Make your selection --</option>
         <%perl>
-        foreach my $site (@sites)
-        {
+        foreach my $site (@sites) {
             printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
         }
         </%perl>
@@ -260,8 +251,7 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{seque
         <select name="end_id" style="width: 225px;">
         <option value="">-- Make your selection --</option>
         <%perl>
-        foreach my $site (@sites)
-        {
+        foreach my $site (@sites) {
             printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
         }
         </%perl>

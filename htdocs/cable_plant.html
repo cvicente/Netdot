@@ -5,21 +5,17 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if(defined($ARGS{_action}))
-{
+if(defined($ARGS{_action})) {
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
-    if (!$ui->form_to_db(%ARGS))
-    {
-        my $err = $ui->error();
-        die("Error: $err\n");
+    if (!$ui->form_to_db(%ARGS)) {
+        $m->comp("error.mhtml", $ui->error());
 	}
     
     # Do this to 'flush' the values associated with the object
     # before redisplaying
     $o = undef;
-    if ($id)
-    {
+    if ($id) {
         $o = Site->retrieve($id);
         $name = $o->name;
     }
@@ -129,21 +125,14 @@ if(defined($ARGS{_action}))
     # -------------------------------------------------------------------------
     $cable_sort = "jackid" if (!defined($cable_sort) || $cable_sort eq "");
     my @sorted_cables;
-    if ($cable_sort eq "jackid" || $cable_sort eq "room")
-    {
+    if ($cable_sort eq "jackid" || $cable_sort eq "room") {
         @sorted_cables = sort { $a->$cable_sort cmp $b->$cable_sort } @cables;
-    }
-    elsif ($cable_sort eq "type")
-    {
+    } elsif ($cable_sort eq "type") {
         @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
-    }
-    elsif ($cable_sort eq "closet")
-    {
+    } elsif ($cable_sort eq "closet") {
         @sorted_cables = sort { $a->closet->name cmp $b->closet->name } @cables;
-    }
-    else
-    {
-        die("ERROR: Unknown value for cable_sort: \"$cable_sort\"\n");
+    } else {
+        $m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
     }
     # -------------------------------------------------------------------------
 </%perl>
@@ -201,19 +190,16 @@ my @cables = ();
 my $header_descr = "";
 
 # if we are searching by backbone name...
-if ($backbone_srch && !defined($submit_site)) 
-{
+if ($backbone_srch && !defined($submit_site)) {
     @cables = BackboneCable->search_like(name=>$backbone_srch);
 }
 
 # searching by site name
-elsif ($site_srch && !defined($submit_site)) 
-{
+elsif ($site_srch && !defined($submit_site)) {
     my @sites = Site->search_like(name=>$site_srch);
     my @closets = ();
     map { push (@closets, $_->closets) } @sites;
-    foreach my $closet (@closets)
-    {
+    foreach my $closet (@closets) {
         my $c_id = $closet->id;
         map { push (@cables, $_) } (BackboneCable->search(start_closet=>$c_id),
                                     BackboneCable->search(end_closet=>$c_id));
@@ -221,8 +207,7 @@ elsif ($site_srch && !defined($submit_site))
 }
 
 # user selected a start and end point
-elsif ($start_id && $end_id)
-{
+elsif ($start_id && $end_id) {
     # need to get all closets for both start and end and find all 
     # BackboneCable's that have a match for either start_closet or end_closet.
     my ($s1, $s2, @closets, %found);
@@ -233,10 +218,8 @@ elsif ($start_id && $end_id)
 
     # and finally all BackboneCables that either start or end
     # at one of these closets..
-    foreach my $closet (@closets)
-    {
-        foreach my $c1 (@closets)
-        {
+    foreach my $closet (@closets) {
+        foreach my $c1 (@closets) {
             my $c_id = $closet->id;
             my $c1_id = $c1->id;
             next if ($c_id == $c1_id);
@@ -249,14 +232,12 @@ elsif ($start_id && $end_id)
     $header_descr = sprintf("connected to <a href=\"view.html?table=Site&id=%d\">%s</a>, <a href=\"view.html?table=Site&id=%d\">%s</a>", $s1->id, $s1->name, $s2->id, $s2->name);
 }
 
-elsif ($start_id)
-{
+elsif ($start_id) {
     my (@start_closets, $start_site);
     $start_site = Site->retrieve($start_id) if ($start_id);
     @start_closets = $start_site->closets if ($start_site);
     
-    foreach my $start_c (@start_closets)
-    {
+    foreach my $start_c (@start_closets) {
         my @cab = BackboneCable->search(start_closet=>$start_c->id);
         push (@cables, @cab);
     }
@@ -318,6 +299,8 @@ elsif ($start_id)
             <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=end_closet&page_type=<% $page_type %>">End Closet</a>
         </td>
         <td align="left">
+            <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=strand_count&page_type=<% $page_type %>"># of Strands</a>
+        <td align="left">
             <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=owner&page_type=<% $page_type %>">Owner</a>
         </td>
     </tr>
@@ -325,37 +308,24 @@ elsif ($start_id)
     <%perl>
     $cable_sort = "name" if (!defined($cable_sort) || $cable_sort eq "");
     my @sorted_cables;
-    if ($cable_sort eq "name")
-    {
+    if ($cable_sort eq "name") {
         @sorted_cables = sort { $a->$cable_sort cmp $b->$cable_sort } @cables;
-    }
-    elsif ($cable_sort eq "type")
-    {
+    } elsif ($cable_sort eq "type") {
         @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
-    }
-    elsif ($cable_sort eq "start_closet")
-    {
+    } elsif ($cable_sort eq "start_closet") {
         @sorted_cables = sort { $a->start_closet->name cmp $b->start_closet->name } @cables;
-    }
-    elsif ($cable_sort eq "end_closet")
-    {
+    } elsif ($cable_sort eq "end_closet") {
         @sorted_cables = sort { $a->end_closet->name cmp $b->end_closet->name } @cables;
-    }
-    elsif ($cable_sort eq "owner")
-    {
+    } elsif ($cable_sort eq "owner") {
         @sorted_cables = sort { $a->owner->name cmp $b->owner->name } @cables;
-    }
-    elsif ($cable_sort eq "start_building")
-    {
+    } elsif ($cable_sort eq "strand_count") {
+        @sorted_cables = sort { scalar($a->strands) <=> scalar($b->strands) } @cables;
+    } elsif ($cable_sort eq "start_building") {
         @sorted_cables = sort { $a->start_closet->site->name cmp $b->start_closet->site->name } @cables;
-    }
-    elsif ($cable_sort eq "end_building")
-    {
+    } elsif ($cable_sort eq "end_building") {
         @sorted_cables = sort { $a->end_closet->site->name cmp $b->end_closet->site->name } @cables;
-    }
-    else
-    {
-        die("ERROR: Unknown value for cable_sort: \"$cable_sort\"\n")
+    } else {
+        $m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
     }
     </%perl>
 
@@ -411,6 +381,8 @@ elsif ($start_id)
             <a href="closet.html?id=<% $cable->end_closet %>"><% $cable->end_closet->name %></a>
 %       }
         </td>
+
+        <td align="left"><% scalar($cable->strands) %></td>
 
         <td align="left">
 %           $ui->selectLookup(object=>$cable, column=>"owner", lookup=>"Entity", edit=>($edit eq "cableinfo"));
@@ -489,23 +461,17 @@ elsif ($start_id)
     # -------------------------------------------------------------------------
     $cable_sort = "name" if (!defined($cable_sort) || $cable_sort eq "");
     my @sorted_closets;
-    if ($cable_sort eq "name" || $cable_sort eq "number")
-    {
+    if ($cable_sort eq "name" || $cable_sort eq "number") {
         @sorted_closets = sort { $a->$cable_sort cmp $b->$cable_sort } @closets;
-    }
-    elsif ($cable_sort eq "floor")
-    {
+    } elsif ($cable_sort eq "floor") {
         @sorted_closets = sort { $a->floor->level cmp $b->floor->level } @closets;
-    }
-    else
-    {
-        die("ERROR: Unknown value for cable_sort: \"$cable_sort\"\n");
+    } else {
+        $m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
     }
     # -------------------------------------------------------------------------
 </%perl>
 %   my $i = 0;
-%   foreach my $closet (@sorted_closets) 
-%   {
+%   foreach my $closet (@sorted_closets) {
 %   $i = ($i + 1) % 2;
 %   my $site = $closet->floor->site || $closet->site;
     <tr align="left" class="<% $cssitem{$i} %>">
@@ -589,12 +555,10 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
 <%perl>
 my @backbones = ();
 
-if ($edit eq "cableinfo")
-{
+if ($edit eq "cableinfo") {
     # we need to grab all backbones for start and end sites of this strand.
     my ($start_site, $end_site) = ($backbone->start_closet->floor->site, $backbone->end_closet->floor->site);
-    foreach my $closet (($start_site->closets, $end_site->closets))
-    {
+    foreach my $closet (($start_site->closets, $end_site->closets)) {
         map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$closet),
                                        BackboneCable->search(end_closet=>$closet));
     }
@@ -621,27 +585,19 @@ if ($edit eq "cableinfo")
     # -------------------------------------------------------------------------
     $cable_sort = "name" if (!defined($cable_sort) || $cable_sort eq "");
     my @sorted_strands;
-    if ($cable_sort eq "name")
-    {
+    if ($cable_sort eq "name") {
         @sorted_strands = sort { (split(/\./o, $a->name, 2))[1] <=> (split(/\./o, $b->name, 2))[1] } @strands;
-    }
-    elsif ($cable_sort eq "direction")
-    {
+    } elsif ($cable_sort eq "direction") {
         @sorted_strands = sort { int($a->direction) <=> int($b->direction) } @strands;
-    }
-    elsif ($cable_sort eq "status")
-    {
+    } elsif ($cable_sort eq "status") {
         @sorted_strands = sort { $a->status->name cmp $b->status->name } @strands;
-    }
-    else
-    {
-        die("ERROR: Unknown value for cable_sort: \"$cable_sort\"\n");
+    } else {
+        $m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
     }
     # -------------------------------------------------------------------------
 </%perl>
 %   my $i = 0;
-%   foreach my $strand (@sorted_strands)
-%   {
+%   foreach my $strand (@sorted_strands) {
 %   $i = ($i + 1) % 2;
     <tr align="left" class="<% $cssitem{$i} %>">
         <td align="left">
@@ -765,15 +721,12 @@ if ($edit eq "cableinfo")
 <%perl>
 my @circuits = ();
 # if we are searching by backbone name...
-if ($ARGS{circuit_srch}) 
-{
+if ($ARGS{circuit_srch}) {
     @circuits = Circuit->search_like(cid=>"%". $ARGS{circuit_srch} . "%");
-}
-elsif ($ARGS{submit_site} && $start_id && $end_id)
-{
-    foreach my $c (Circuit->retrieve_all())
-    {
-        push (@circuits, $c) if ($c->nearend->device->site->id eq $start_id || $c->farend->device->site->id eq $end_id);
+} elsif ($ARGS{submit_site} && $start_id && $end_id) {
+    foreach my $c (Circuit->retrieve_all()) {
+        push (@circuits, $c) if (($c->nearend->device && $c->nearend->device->site->id eq $start_id) && 
+                                 ($c->farend->device && $c->farend->device->site->id eq $end_id));
     }
 }
 </%perl>
@@ -795,7 +748,7 @@ elsif ($ARGS{submit_site} && $start_id && $end_id)
 %	 } else {
             <td width="20%" align="right">
                 <a href="circuit.html?id=NEW">[new]</a> &nbsp;||&nbsp; 
-                <a href="cable_plant.html?circuit_srch=<% $ARGS{circuit_srch} %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+                <a href="cable_plant.html?circuit_srch=<% $ARGS{circuit_srch} %>&submit_site=<% $ARGS{submit_site} %>&start_id=<% $start_id %>&end_id=<% $end_id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
             </td>
 %	 }
        </tr>
@@ -828,27 +781,19 @@ elsif ($ARGS{submit_site} && $start_id && $end_id)
     # -------------------------------------------------------------------------
     $cable_sort = "cid" if (!defined($cable_sort) || $cable_sort eq "");
     my @sorted_circuits;
-    if ($cable_sort eq "cid")
-    {
+    if ($cable_sort eq "cid") {
         @sorted_circuits = sort { $a->cid cmp $b->cid } @circuits;
-    }
-    elsif ($cable_sort eq "nearend" || $cable_sort eq "farend")
-    {
+    } elsif ($cable_sort eq "nearend" || $cable_sort eq "farend") {
         @sorted_circuits = sort { $a->$cable_sort->name cmp $b->$cable_sort->name } @circuits;
-    }
-    elsif ($cable_sort eq "type")
-    {
+    } elsif ($cable_sort eq "type") {
         @sorted_circuits = sort { $a->type->name cmp $b->type->name } @circuits;
-    }
-    else
-    {
-        die("ERROR: Unknown value for cable_sort: \"$cable_sort\"\n");
+    } else {
+        $m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
     }
     # -------------------------------------------------------------------------
 </%perl>
 %   my $i = 0;
-%   foreach my $circuit (@sorted_circuits)
-%   {
+%   foreach my $circuit (@sorted_circuits) {
 %   $i = ($i + 1) % 2;
     <tr align="left" class="<% $cssitem{$i} %>">
         <td align="left">
@@ -894,7 +839,7 @@ elsif ($ARGS{submit_site} && $start_id && $end_id)
 % #############################################################################
 %
 % else {
-%   die("Error: Unknown type \"$page_type\"\n");
+%   $m->comp("error.mhtml", "Unknown page type \"$page_type\"");
 %}
 
 % if ($edit) {	 
@@ -930,14 +875,10 @@ my $name;
 $end_id = 0 if ($end_id == -1);
 $start_id = 0 if ($start_id == -1);
 
-if ($id) 
-{
+if ($id) {
    $o = Site->retrieve($id);
    $name = $o->name;
-} 
-
-else 
-{
+} else {
    $name = "Search"
 }
 
