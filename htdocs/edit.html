@@ -7,7 +7,7 @@
 
 ##################################################
 # clean out old state files
-$gui->rmsessions( $TMP, $AGE );
+$ui->rmsessions( $TMP, $AGE );
 
 ##################################################
 # grab arguments to this script
@@ -57,9 +57,9 @@ unless( defined( $PREV ) ) {
 #   otherwise create state if necessary
 if( defined( $args{sid} ) ) {
   $sid = $args{sid};
-  $session = $gui->getsession( $TMP, $sid );
+  $session = $ui->getsession( $TMP, $sid );
 } elsif( $args{table} ) {  
-  $session = $gui->mksession( $TMP );
+  $session = $ui->mksession( $TMP );
   $sid = $session->{_session_id};
 }
 
@@ -79,10 +79,10 @@ if( $args{cancel} eq "Cancel" ) {
     delete( $args{create} );
   } else {
     if( ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) {
-      $gui->rmsession( $session );
+      $ui->rmsession( $session );
       $TBL = $PREV;
     } else {
-      $TBL = $gui->popsessionpath( $session );
+      $TBL = $ui->popsessionpath( $session );
     }
   }
 }
@@ -98,7 +98,7 @@ if( exists( $args{submit} )
     $session->{tables}{$PREV}{$arg} = $args{$arg};
   }
   if( ! defined( $args{submit} ) ) {
-    $gui->pushsessionpath( $session, $args{table} );
+    $ui->pushsessionpath( $session, $args{table} );
   }
 }
 
@@ -128,12 +128,12 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
         $x = $y;
       }
     }
-    $gui->pushsessionpath( $session, $x );
+    $ui->pushsessionpath( $session, $x );
   }
   ################################################
   # if not a submit, pop last table from sessionpath
   if( ! exists( $args{submit} ) ) {
-    my $tmp = $gui->popsessionpath( $session );
+    my $tmp = $ui->popsessionpath( $session );
     if( defined( $tmp ) && length( $tmp ) > 0 ) {
       $TBL = $tmp;
     }
@@ -163,18 +163,18 @@ if( $args{confirm} eq "Confirm" ) {
   my( $T, $r );
   $T = $args{create};
   if( $OBJ && ( ! $TBL || $T eq $TBL ) ) {  # we're updating an object
-    $r = $gui->update( object => $OBJ, state => \%{ $session->{tables}{$T} } );
+    $r = $ui->update( object => $OBJ, state => \%{ $session->{tables}{$T} } );
   } else {
-    $r = $gui->insert( table => $T, state => \%{ $session->{tables}{$T} } );
+    $r = $ui->insert( table => $T, state => \%{ $session->{tables}{$T} } );
   }
   if( ! $r ) {
-    my $err = $gui->error;
+    my $err = $ui->error;
     die "Error: $err";
   }
   delete( $session->{tables}{ $args{create} } );
   if( length( $session->{path} ) < 1 && ! defined( $TBL ) ) {
     if( defined( $session ) ) {
-      $gui->rmsession( $session );
+      $ui->rmsession( $session );
     }
   }
   $session->{created}{$T} = $r;
@@ -192,8 +192,8 @@ if( $args{confirm} eq "Confirm" ) {
 # create %state to pass to form
 # only if ID not set since we want form component to fill that in
 if( defined( $TBL ) && ! defined( $ID ) ) {
-  my $meta = $gui->getmeta( $TBL );
-  my %lt = $gui->getlinksto( $TBL );
+  my $meta = $ui->getmeta( $TBL );
+  my %lt = $ui->getlinksto( $TBL );
   foreach my $c ( split( /,/, $meta->columnorder ) ) {
     if( $args{$c} ) {
       $state{$c} = $args{$c};
@@ -245,7 +245,7 @@ $sid => undef
 $TMP => "$PREFIX/tmp"
 $AGE => 86400
 $session => undef
-$gui => Netdot::GUI->new()
+$ui => Netdot::UI->new()
 %args => undef
 %order => undef
 %linksto => undef
@@ -307,7 +307,7 @@ edit.html
     $AGE  - maximum age of said files
     $WIDTH - number of columns to be displayed in default state
     $session - object holding state
-    $gui  - instantiation of Netdot::GUI
+    $ui  - instantiation of Netdot::UI
     %args - parts of %ARGS I want 
     %order - hash of column -> rank to list tables in
     %linksto - hash of column -> Table listings of current table

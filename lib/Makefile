@@ -1,9 +1,22 @@
 #
-# makefile for htdocs
+# makefile for lib
 
-FILES = GUI.pm Netviewer.pm nv.categories nv.ifTypes
+NDIR = Netdot
 
-all:
+FILES = Netdot.pm $(NDIR)/UI.pm $(NDIR)/DefaultConfig.pm $(NDIR)/SiteConfig.pm $(NDIR)/Netviewer.pm $(NDIR)/nv.categories $(NDIR)/nv.ifTypes
+
+all: dir files
+
+dir:
+	for dir in $(NDIR); do \
+	    if test -d $(PREFIX)/$(DIR)/$$dir; then \
+	       echo "Skipping dir $(PREFIX)/$(DIR)/$$dir; already exists"; \
+	    else \
+	       mkdir -m $(DMOD) -p $(PREFIX)/$(DIR)/$$dir ; \
+	    fi ; \
+	done
+
+files:
 	@echo
 	@echo "Preparing and installing $(DIR) files..."
 	for file in $(FILES); do \
@@ -13,5 +26,4 @@ all:
 	    rm -f $$file.tmp ; \
         done
 	@echo "Done."
-
 

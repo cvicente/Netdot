@@ -7,26 +7,20 @@ foreach my $j ( keys %ARGS ) {
 
 % if( ! exists( $args{table} ) ) {
 %   my( @t );
-%   @t = $gui->gettables();
-    <& header, title => "Browse" &>
-    <p>
-    <blockquote>
+%   @t = $ui->gettables();
+    <& index.html, title => "Browse", s2name => $s2name &>
     <& table, width => $WIDTH, link => "browse.html", title => "Please select an object to browse:" &>
-    </blockquote>
 % } else {
 %   my $TBL = $args{table};
 %   my @r = $TBL->retrieve_all();
-    <& header, title => "Browse: $args{table}" &>
-    <p>
-    <blockquote>
-    <table cellpadding="0" border="0" width="100%" bgcolor="#CCCCCC" class="tablebackground">
+    <& index.html, title => "Browse: $args{table}", s2name => $s2name &>
+    <table cellpadding="0" border="0" width="95%" class="tablebackground">
     <tr class="tabletitle">
     <td>&nbsp<strong><% $TBL %></strong>
     <& sortresults, table => $TBL, object => \@r &>
     </td>
     </tr>
     </table>
-    </blockquote>
 % }
 
 <& footer &>
@@ -34,47 +28,14 @@ foreach my $j ( keys %ARGS ) {
 <%args>
 $MAX => 20
 $WIDTH => 2
-$gui => Netdot::GUI->new()
+$s2name => "Generic"
 %args => undef
 </%args>
+
 <%init>
+my $ui = Netdot::UI->new();
 
 </%init>
 
 <%doc>
-
-
-######################################################################
-#  $Log: browse.html,v $
-#  Revision 1.10  2003/07/16 17:57:24  netdot
-#  massaged format added width=100% to table -miyake
-#
-#  Revision 1.9  2003/07/12 20:43:25  netdot
-#  update to use GUI
-#
-#  Revision 1.8  2003/07/12 20:42:23  netdot
-#  using gettables in GUI
-#
-#  Revision 1.7  2003/07/08 21:01:21  netdot
-#  Added css tags -miyake
-#
-#  Revision 1.6  2003/06/17 23:23:49  netdot
-#  *** empty log message ***
-#
-#  Revision 1.5  2003/06/03 20:39:35  netdot
-#  added blockquotes
-#
-#  Revision 1.4  2003/05/30 22:57:11  netdot
-#  replaced opening page with component from table
-#
-#  Revision 1.3  2003/05/29 23:26:15  netdot
-#  basic functionality there....
-#
-#  Revision 1.2  2003/05/29 22:26:27  netdot
-#  put in inital <%init> section
-#
-#  Revision 1.1  2003/05/29 22:24:24  netdot
-#  Initial revision
-#
-
 </%doc>

@@ -1,0 +1,129 @@
+<!-- 2nd level Section  -->
+<table border="0"  cellspacing="0" cellpadding="3" width="95%" class="tablebackground">
+  <tr>
+    <td><br></td>
+  </tr>
+% if ($name eq "Main" || $name eq ""){    
+  <tr class="rowtitle0" >
+    <td><b>Main Section (Home)</b></td>
+  </tr>
+  <tr class="rowtitle2" >
+   <td>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" class="tablebackground">
+     <tr>
+       <td>Objects related to <% $user %>:
+       </td>
+     </tr>
+   </table>
+   </td>
+  </tr>
+% }elsif ($name eq "Management"){
+  <tr class="rowtitle0" >
+    <td><b>Management</b></td>
+  </tr>
+  <tr class="rowtitle2" >
+   <td>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" class="tablebackground">
+     <tr >
+      <td>
+            <form action="device-ws.html" method="POST">
+            Device <input type="text" name="search" size="20" value=""> 
+            <input name="submit" value="search" type="submit">
+            </form>
+      </td>
+      <td>
+            <form action="ip-ws.html" method="POST">
+            Ip <input type="text" name="search" size="20" value=""> 
+            <input name="submit" value="search" type="submit">
+            </form>
+      </td>
+      <td>
+            <form action="mac-ws.html" method="POST">
+            MAC <input type="text" name="search" size="20" value=""> 
+            <input name="submit" value="search" type="submit">
+            </form>
+      </td>
+     </tr>
+   </table>
+   </td>
+  </tr>
+% }elsif ($name eq "Services"){
+% }elsif ($name eq "NOC"){
+% }elsif ($name eq "Plant"){
+% }elsif ($name eq "Generic"){
+
+  <tr class="rowtitle0" >
+    <td><b>Generic Database Operations</b></td>
+  </tr>
+  <tr class="rowtitle2" >
+    <td><font size="-1"><b>Note:</b> These functions do not perform any validation checking. They are intended to provide a direct access to the database.<br>
+	<b>Do not edit anything here</b> unless you know what you are doing.<br></font></td>
+  </tr>
+  <tr class="rowtitle2" >
+    <td><br></td>
+  </tr>
+  <tr class="rowtitle2" >
+   <td>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" class="tablebackground">
+     <tr >
+%     my @t = $ui->gettables;
+      <td>
+            <form action="search_obj.html" method="POST">
+            <b>Search</b>:  
+            <select name="table">
+%           foreach my $t ( sort { $a cmp $b } @t ) {
+%              next if( $t eq "Meta" || $t =~ /_history/ );
+%              next if $ui->isjointable($t);
+            <option><% $t %></option>
+%           }
+            </select>
+            <input name="submit" value="Go" type="submit">
+            </form>
+      </td>
+      <td>
+            <form action="edit.html" method="POST">
+            <b>Add New</b>:  
+            <select name="table">
+%           foreach my $t ( sort { $a cmp $b } @t ) {
+%              next if( $t eq "Meta" || $t =~ /_history/ );
+%              next if $ui->isjointable($t);
+            <option><% $t %></option>
+%           }
+            </select>
+            <input name="submit" value="Go" type="submit">
+            </form>
+      </td>
+      <td>
+            <form action="browse.html" method="POST">
+            <b>Browse</b>:  
+            <select name="table">
+%           foreach my $t ( sort { $a cmp $b } @t ) {
+%              next if( $t eq "Meta" || $t =~ /_history/ );
+%              next if $ui->isjointable($t);
+            <option><% $t %></option>
+%           }
+            </select>
+            <input name="submit" value="Go" type="submit">
+            </form>
+      </td>
+     </tr>
+   </table>
+   </td>
+  </tr>
+
+% }elsif ($name eq "Help"){
+% }else{
+% }
+
+ <tr>
+   <td><br></td>
+ </tr>
+
+</table>
+<%args>
+$name => undef
+$user => $ENV{REMOTE_USER}
+</%args>
+<%init>
+my $ui = Netdot::UI->new();
+</%init>

@@ -1,16 +1,7 @@
-<%perl>
-# Ignore empty fields
-foreach my $j (keys %ARGS){
-	next if ($ARGS{$j} !~ /\w+/);
-	$arg{$j} = $ARGS{$j};	
-}
-print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
-</%perl>
 
 %if(! $arg{table} ){ # offer a list of tables to select
 
-<& header, title=>"Advanced Search" &>
-<p><br>
+<& index.html, title => "Advanced Search", s2name => $s2name &>
 
 <table align="center" border="0" width="95%">
    <tr>
@@ -27,10 +18,10 @@ print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
    
    # Get some Meta info
 
-   %linksto = $gui->getlinksto($table);
-   %linksfrom = $gui->getlinksfrom($table);
-   %order = $gui->getcolumnorder($table);
-   %tags = $gui->getcolumntags($table);
+   %linksto = $ui->getlinksto($table);
+   %linksfrom = $ui->getlinksfrom($table);
+   %order = $ui->getcolumnorder($table);
+   %tags = $ui->getcolumntags($table);
    
    if ( !$arg{res} ){ # show the fill-out form
 
@@ -38,48 +29,47 @@ print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
 <script language="javascript" src="select.js">
 </script>
 
-<& header, title=>"Advanced $table Search" &>
-<p><br>
+<& index.html, title=>"Advanced $table Search" , s2name => $s2name &>
 
-<table align="center" border="0" width="95%">
+<table align="center" border="0" width="95%" class="tablebackground">
    <tr>
       <td align="center">
            <form name="netdotform" action="search_obj.html" method="POST">
 	      <input type="hidden" name="table" value="<% $table %>">
 	      <input type="hidden" name="res" value="1">
 	      <p>
-	      <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC" class="formtablebg">
-	       <tr bgcolor="#FFFFFF"> 
-	           <td colspan="2" align="center">Specify one or more of the following:</td>
+	      <table width="100%"  cellpadding="3" cellspacing="1" border="0" class="formtablebg">
+	       <tr class="rowtitle0"> 
+	           <td colspan="2" align="center"><b>Specify one or more of the following as search criteria:</b></td>
 	       </tr>
 %	      foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %		 if ( !exists($linksto{$c}) ){  # The column is 'local'
                     <tr> 
 %		       if ( exists($tags{$c}) ){
-		          <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
+		          <td class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
 %		       }else{
-		          <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $c %>:</strong></td>
+		          <td class="formtablec1"><strong><% $c %>:</strong></td>
 %		       }
-	  		 <td class="formtablec2"><% $gui->getinputtag($c, $table) %></td>
+	  		 <td class="formtablec2"><% $ui->getinputtag($c, $table) %></td>
 		    </tr>
 %		 }else {  # The column is a foreign key. Provide a list to select.
                    <tr>
 %		       if ( exists($tags{$c}) ){
-		          <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
+		          <td class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
 %		       }else{
-		          <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $c %>:</strong></td>
+		          <td class="formtablec1"><strong><% $c %>:</strong></td>
 %		       }
 		      <td class="formtablec2">
 %			   # Check for amount of objects in table before retrieving all
 %			   my $count = $linksto{$c}->count_all;
 %			   if ( $count <= $maxselect ){			      
 %			      my @fkobjs = $linksto{$c}->retrieve_all;
-%			      my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];	 
+%			      my $lblfield = ( $ui->getlabels($linksto{$c}) )[0];	 
 %			      @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } @fkobjs; 
    			      <select name="<% $c %>">
 			      <option></option> 
 %			      foreach my $fkobj ( @fkobjs ) {
-			        <option value="<% $fkobj->id %>"><% $gui->getobjlabel($fkobj, ", ") %></option>
+			        <option value="<% $fkobj->id %>"><% $ui->getobjlabel($fkobj, ", ") %></option>
 %			      }
 			      </select>
 %			   }else{
@@ -96,8 +86,8 @@ print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
 %               }
 %            }
                     </tr>
-                    <tr>
-                       <td bgcolor="#FFFFFF" align="center" colspan="2">
+                    <tr class="rowtitle0" >
+                       <td align="center" colspan="2">
 	                 <input name="submit" value="Search" type="submit">
 	                 <input type="reset">
 	               </td>
@@ -139,7 +129,7 @@ print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
          }
          my @objs = $table->search_like(\%sarg);
 </%perl>
-        <& header, title => "Search Results for $table"  &>
+        <& index.html, title => "Search Results for $table", s2name => "$s2name"  &>
 <table align="center" border="0" width="95%">
    <tr>
       <td>
@@ -162,11 +152,22 @@ print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
 
 <& footer &>
 
+<%args>
+$s2name => "Generic"
+</%args>
+
 <%init>
 my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order, %tags, $debug );
-my $gui = Netdot::GUI->new();
+my $ui = Netdot::UI->new();
 my $maxselect = 100;
 $debug = 0;
+
+# Ignore empty fields
+foreach my $j (keys %ARGS){
+	next if ($ARGS{$j} !~ /\w+/);
+	$arg{$j} = $ARGS{$j};	
+}
+print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
            
 </%init>
 

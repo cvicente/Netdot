@@ -32,20 +32,10 @@ use base 'Class::DBI';
 
 Netdot::DBI->set_db('Main', 'dbi:$DB_TYPE:$DB_DATABASE', '$DB_NETDOT_USER', '$DB_NETDOT_PASS');
 
-sub VERSION { "0.3" }
+sub VERSION { "0.5" }
 
 /;
 
-## For reference...
-## see http://groups.kasei.com/mail/arc/cdbi-talk/2003-10/msg00012.html
-#sub stringify_self {
-#  my $self = shift;
-#  # fail if there are undefined primary keys
-#  return undef unless $self;
-#  my @cols = $self->columns('Stringify');
-#  @cols = $self->primary_columns unless @cols;
-#  return join "/", $self->get(@cols);
-#}
 
 ## No interpolation from now on (q//)
 
@@ -164,59 +154,3 @@ print "\n#Be sure to return 1\n";
 print "1;\n";
 
 close (OUT);
-
-######################################################################
-#  $Log: setup-class-dbi,v $
-#  Revision 1.17  2003/07/15 22:43:58  netdot
-#  Added some parameters
-#
-#  Revision 1.16  2003/07/15 21:24:31  netdot
-#  changed base dir to working dir.
-#
-#  Revision 1.15  2003/07/10 21:48:01  netdot
-#  *** empty log message ***
-#
-#  Revision 1.14  2003/07/10 17:47:09  netdot
-#  Added a longer error line
-#
-#  Revision 1.13  2003/07/09 19:12:27  netdot
-#  Fixed the before_update trigger to store previous values
-#  instead of new values.  cv
-#
-#  Revision 1.12  2003/06/24 17:46:18  netdot
-#  Wrote override methods has_many, delete, _cascade_delete, _cascade_set_null...
-#  to support the on_delete behavior for has_many relationships.
-#
-#  Added trigger at before_update to copy current values in history table
-#
-#  Revision 1.11  2003/06/17 23:19:30  netdot
-#  - removed set-to-null trigger and defined an empty cascade_delete
-#  - Added method historize
-#
-#  Revision 1.10  2003/06/10 17:44:18  netdot
-#  Reading table list directly from db, instead of Meta table.
-#
-#  Revision 1.9  2003/06/10 17:31:37  netdot
-#  *** empty log message ***
-#
-#  Revision 1.8  2003/05/05 01:47:32  cvicente
-#  Fixed typo
-#
-#  Revision 1.7  2003/05/02 21:56:54  netdot
-#  Added the last two lines
-#
-#  Revision 1.6  2003/05/02 18:49:44  netdot
-#  - changed references to 'linksFrom' and 'linksTo' to lowercase
-#
-#  Revision 1.5  2003/04/23 00:36:13  netdot
-#  Updated to reflect change of column names in Meta table.
-#
-#  Revision 1.4  2003/04/18 02:57:11  netdot
-#  Fixed typos, etc.
-#
-#  Revision 1.3  2003/04/18 02:29:26  netdot
-#  Rewrote most of it
-#
-#  Revision 1.2  2003/04/08 17:57:36  netdot
-#  initial checkin
-#

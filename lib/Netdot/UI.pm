@@ -1,32 +1,35 @@
-package Netdot::GUI;
+package Netdot::UI;
 
 use lib "/home/netdot/public_html/lib";
 use Apache::Session::File;
 use Apache::Session::Lock::File;
+
+use base qw( Netdot );
 use Netdot::DBI;
 use strict;
-
-use vars qw ( @ISA @EXPORT @EXPORT_OK ) ;
-@ISA = qw( Exporter ) ;
-
-sub BEGIN { }
-sub END { }
-sub DESTROY { }
-
-use Exporter;
 
 #Be sure to return 1
 1;
 
+
 ######################################################################
 # Constructor
 ######################################################################
-sub new {
-    my $class = shift;
-    my $self  = { '_error' => undef };
-    bless($self, $class);
-    return $self;
-} 
+#sub new {
+#    my $class = shift;
+#    my $self  = { '_error' => undef };
+#    bless($self, $class);
+#    return $self;
+#}
+
+sub new { 
+    my $proto = shift;
+    my $class = ref( $proto ) || $proto;
+    my $self = {};
+    bless $self, $class;
+    wantarray ? ( $self, '' ) : $self; 
+}
+ 
 
 #####################################################################
 # return error message
@@ -401,47 +404,6 @@ sub remove {
 }
 
 
-######################################################################
-#  $Log: GUI.pm,v $
-#  Revision 1.15  2003/07/14 20:19:29  netdot
-#  *** empty log message ***
-#
-#  Revision 1.14  2003/07/11 21:00:43  netdot
-#  Modified getinputtag to accept a value when passed a table name
-#
-#  Revision 1.13  2003/07/11 00:48:28  netdot
-#  Added gettables method
-#
-#  Revision 1.12  2003/07/09 23:37:11  netdot
-#  Changed getinputtag so it accepts either an object or a class
-#
-#  Revision 1.11  2003/07/02 23:23:44  netdot
-#  more changes to state code.  should work now.
-#
-#  Revision 1.10  2003/07/01 17:17:53  netdot
-#  more tweaking of state code
-#
-#  Revision 1.9  2003/07/01 17:04:54  netdot
-#  added documentation
-#
-#  Revision 1.8  2003/07/01 05:09:48  netdot
-#  renaming state functions
-#
-#  Revision 1.7  2003/07/01 04:53:20  netdot
-#  *** empty log message ***
-#
-#  Revision 1.6  2003/07/01 04:48:42  netdot
-#  initial merge of functions for state across web pages
-#
-#  Revision 1.5  2003/06/21 01:27:42  netdot
-#  Fixed a bug in getobjlabel (too many parameters in the recursive call)
-#
-#  Revision 1.4  2003/06/13 18:23:49  netdot
-#  added getcolumnorderbrief -sf
-#
-#  Revision 1.3  2003/06/13 18:15:34  netdot
-#  added log section
-#
 
 __DATA__
 

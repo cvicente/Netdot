@@ -15,23 +15,22 @@ if( $args{table} ) {
   if( defined( $args{id} ) ) {
     $obj = $args{table}->retrieve($args{id}) ;
   }
-  $META = $gui->getmeta( $args{table} );
+  $META = $ui->getmeta( $args{table} );
   if( defined( $META ) ) {
     my $i = 1;
-    %order = $gui->getcolumnorder( $args{table} );
-    %linksto = $gui->getlinksto( $args{table} );
-    %tags = $gui->getcolumntags( $args{table} );
+    %order = $ui->getcolumnorder( $args{table} );
+    %linksto = $ui->getlinksto( $args{table} );
+    %tags = $ui->getcolumntags( $args{table} );
   }
 }
 </%perl>
 
-<script language="javascript" src="select.js">
-</script>
+<script language="javascript" src="select.js"></script>
 
 % ####################################################################
 <!-- begin form --> 
 % if( defined( $args{table} ) ) {
-    <table cellpadding="3" cellspacing="1" border="0" bgcolor="#CCCCCC" class="formtablebg">
+    <table width="95% cellpadding="3" cellspacing="1" border="0" class="formtablebg">
     <tr>
     <input type="hidden" name="table" value="<% $args{table} %>">
 %   if( $args{id} ) {
@@ -44,33 +43,33 @@ if( $args{table} ) {
 %     if( ! exists( $linksto{$c} ) ) { # local field
         <tr>
 %       if ( exists($tags{$c}) ){
-           <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
+           <td class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
 %	}else{
-           <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
+           <td class="formtablec1"><strong><% $c %>:</strong></td>
 %	}
 %       if( defined( $args{id} ) ) {
-	    <td colspan="2"><% $gui->getinputtag($c, $obj) %></td>
+	    <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $obj) %></td>
 %       } elsif( exists( $session{$c} ) ) {
-	    <td colspan="2"><% $gui->getinputtag($c, $linksto{$c}, $session{$c}) %></td>
+	    <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $linksto{$c}, $session{$c}) %></td>
 %       } else {
-	    <td colspan="2"><% $gui->getinputtag($c, $args{table}) %></td>
+	    <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $args{table}) %></td>
 %       }
         </tr>
 % ################################################
 %     } else {  # The column is a foreign key. Provide a list to select.
         <tr>
 %       if ( exists($tags{$c}) ){
-           <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
+           <td class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
 %	}else{
-           <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
+           <td class="formtablec1"><strong><% $c %>:</strong></td>
 %	}
-	<td>
+	<td class="formtablec2">
 %       my $flag = 1;
 %	# Check for amount of objects in table before retrieving all
 %	my $count = $linksto{$c}->count_all;
 %	if ( $count <= $maxselect ){			      
 %	   my @fkobjs = $linksto{$c}->retrieve_all;
-%	   my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];	 
+%	   my $lblfield = ( $ui->getlabels($linksto{$c}) )[0];	 
 %	   @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } @fkobjs; 
    	   <select name="<% $c %>">
 %          if( defined( $obj ) 
@@ -82,7 +81,7 @@ if( $args{table} ) {
               <option value="0">[null]</option>
 %          }
 %	   foreach my $fkobj ( @fkobjs ) {
-%             my $lbl = $gui->getobjlabel( $fkobj, ", " );
+%             my $lbl = $ui->getobjlabel( $fkobj, ", " );
 %             if( ( defined( $obj ) && $flag && $fkobj->id == $obj->$c->id ) 
 %             	|| ( $fkobj->id == $session{$c} ) ) {
             	<option value="<% $fkobj->id %>" selected><% $lbl %></option>
@@ -99,12 +98,12 @@ if( $args{table} ) {
 	   <br><select name="<% '_' . $c %>"> 
 %             if( defined( $obj ) && $flag && $obj->$c->id ) {
 %		if (my $fkobj = $linksto{$c}->retrieve( $obj->$c->id )){
-%                 my $lbl = $gui->getobjlabel( $fkobj, ", " );
+%                 my $lbl = $ui->getobjlabel( $fkobj, ", " );
             	  <option value="<% $fkobj->id %>" selected><% $lbl %></option>
 %		}
 %             }elsif ( exists $session{$c} ){
 %		if (my $fkobj = $linksto{$c}->retrieve( $session{$c} ) ){
-%                  my $lbl = $gui->getobjlabel( $fkobj, ", " );
+%                  my $lbl = $ui->getobjlabel( $fkobj, ", " );
             	   <option value="<% $fkobj->id %>" selected><% $lbl %></option>
 %		}
 %	      }    
@@ -114,8 +113,8 @@ if( $args{table} ) {
 
         </td>
 
-	<td>
-        <input name="T_<% $linksto{$c} %>" value="New" type="submit">
+	<td class="formtablec2">
+          <input name="T_<% $linksto{$c} %>" value="New" type="submit">
         </td>
 
         </tr>
@@ -136,7 +135,7 @@ if( $args{table} ) {
 $obj => undef
 %session => undef
 $META => undef
-$gui => Netdot::GUI->new()
+$ui => Netdot::UI->new()
 $DEBUG => 0
 </%args>
 

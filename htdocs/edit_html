@@ -49,15 +49,14 @@ Okay, we're still working.  Let's insert a header
 
 </%doc>
 %   if( $args{submit} eq "Submit" ) {
-      <& header, title => "Confirm: $TBL" &>
+      <& index.html, title => "Confirm: $TBL", s2name => "$s2name" &>
 %   } elsif( $OBJ ) {
-%     my $labelstr = $gui->getobjlabel($OBJ, ", ");
-      <& header, title => "Edit: $TBL: $labelstr" &>
+%     my $labelstr = $ui->getobjlabel($OBJ, ", ");
+      <& index.html, title => "Edit: $TBL: $labelstr", s2name => "$s2name"  &>
 %   } else {
-      <& header, title => "Create: $TBL" &>
+      <& index.html, title => "Create: $TBL", s2name => "$s2name"  &>
 %   }
     <!-- begin edit -->
-    <p>
 % ####################################################################
 <%doc>
 
@@ -67,9 +66,9 @@ the submission.
 </%doc>
 %   if( $args{"submit"} eq "Submit" ) {
       <p>Please confirm the following:
-%     my $obj = $gui->getmeta( $TBL );
-%     my %linksto = $gui->getlinksto( $TBL );
-%     my %tags = $gui->getcolumntags( $TBL );
+%     my $obj = $ui->getmeta( $TBL );
+%     my %linksto = $ui->getlinksto( $TBL );
+%     my %tags = $ui->getcolumntags( $TBL );
       <p><blockquote><strong><% $TBL %></strong><ul>
 %     foreach my $C ( split( /,/, $obj->columnorder() ) ) {
         <li>
@@ -82,7 +81,7 @@ the submission.
           -
 %       } else {
 %         if( $linksto{$C} ) {
-%           my $ft = $gui->getmeta( $linksto{$C} );
+%           my $ft = $ui->getmeta( $linksto{$C} );
 %           if( ! defined( $ft ) ) {
               No such object <% $linksto{$C} %>
 %           } elsif( $session->{tables}{$TBL}{$C} == 0 ) {
@@ -92,7 +91,7 @@ the submission.
               -
 %           } else {
 %             my $o = $linksto{$C}->retrieve( $session->{tables}{$TBL}{$C} );
-%             my $lbl = $gui->getobjlabel( $o, ", " );
+%             my $lbl = $ui->getobjlabel( $o, ", " );
               <% $lbl %>
 %           }
 %         } else {
@@ -129,14 +128,12 @@ available tables.
 Present a form for user to modify various values.
 
 </%doc>
-      <br>
-      <blockquote>
       <form name="netdotform" action="edit.html" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
 %     ############################################
 %     # special clause for node
-%     if( $TBL eq "Node" ) {
-        <a href="node.html">Auto Discover Node</a><br>
+%     if( $TBL eq "Device" ) {
+        <a href="device.html">Auto Discover Device</a><br>
         <p>
 %     }
 %     ############################################
@@ -148,18 +145,15 @@ Present a form for user to modify various values.
 %       }
       <& form, table => $TBL, showdisabled => '0', session => \%state &>
 %     }
-      <table cellpadding="3" cellspacing="1" border="0">
-      <tr align="LEFT">
-      <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
-      <input name="submit" value="Submit" type="submit">
-      </td>
-      <td>
-      <input name="cancel" value="Cancel" type="submit">
-      </td>
-      </tr>
+      <table width="95%" cellpadding="3" cellspacing="1" border="0" class="tablebackground">
+       <tr class="rowtitle0" >
+        <td align="CENTER">
+           <input name="submit" value="Submit" type="submit">
+           <input name="cancel" value="Cancel" type="submit">
+         </td>
+       </tr>
       </table>
       </form>
-      </blockquote>
 %   } # if/else table
     <p>
     <!-- end edit -->
@@ -174,7 +168,8 @@ $NEW => undef
 $sid => undef
 $WIDTH => 2
 $session => undef
-$gui => Netdot::GUI->new()
+$ui => Netdot::UI->new()
 %args => undef
 %state => undef
+$s2name => "Generic"
 </%args>

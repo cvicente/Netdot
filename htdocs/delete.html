@@ -11,16 +11,16 @@ unless ( $obj ){
    exit;
 }
 
-%linksto = $gui->getlinksto($table);
-%linksfrom = $gui->getlinksfrom($table);
-%order = $gui->getcolumnorder($table);
+%linksto = $ui->getlinksto($table);
+%linksfrom = $ui->getlinksfrom($table);
+%order = $ui->getcolumnorder($table);
 
 </%perl>
 
 
 %if ( !exists( $ARGS{submit} ) ){
 
-% my $labelstr = $gui->getobjlabel($obj, ", ");
+% my $labelstr = $ui->getobjlabel($obj, ", ");
 <& header, title=>" Delete: $table: $labelstr" &>
 
 <table align="center" valign="top" border="0" width="95%">
@@ -48,14 +48,14 @@ unless ( $obj ){
 
 %}elsif ($ARGS{confirm} && $ARGS{submit} eq "Proceed"){
 
-% my $labelstr = $gui->getobjlabel($obj, ", ");
+% my $labelstr = $ui->getobjlabel($obj, ", ");
 <& header, title=>" Delete: $table: $labelstr" &>
 
 <table align="center" valign="top" border="0" width="95%">
 <tr><td>
 
 %# Delete the object
-%  my $lbl = $gui->getobjlabel($obj, ", ");
+%  my $lbl = $ui->getobjlabel($obj, ", ");
 %  eval {
 %      $obj->delete;
 %      };
@@ -79,7 +79,7 @@ unless ( $obj ){
 use lib "/home/netdot/public_html/lib"; 
 use Netdot::DBI;
 use Netdot::GUI;
-my $gui = Netdot::GUI->new();
+my $ui = Netdot::UI->new();
 my( %linksto, %linksfrom, $table, $obj, $mi, %order);
            
 </%init>
