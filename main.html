@@ -144,8 +144,7 @@ foreach my $j ( keys %ARGS ) {
 %        my @t = $gui->gettables;
 %        foreach my $t ( sort { $a cmp $b } @t ) {
 %           next if( $t eq "Meta" || $t =~ /_history/ );
-%           $mi = $gui->getmeta($t);
-%           next if (defined($mi) &&  $mi->isjoin);
+%           next if $gui->isjointable($t);
            <option><% $t %></option>
 %        }
          </select>
@@ -180,7 +179,7 @@ use Netdot::DBI;
 use Netdot::GUI;
 my $gui = Netdot::GUI->new();
 use Data::Dumper;
-use vars qw( %results %linksto $mi $page);
+use vars qw( %results %linksto $page);
 undef( %results );              
 </%init>
 
