@@ -3,7 +3,7 @@
 use lib "/usr/local/netdot/lib";
 use Getopt::Long;
 use strict;
-use Socket;
+use NetAddr::IP;
 use Netdot::DBI;
 use Netdot::GUI;
 use Netdot::Netviewer;
@@ -11,7 +11,11 @@ use Data::Dumper;
 
 my $help = 0;
 my $DEBUG = 0;
+my %problemHubs = ( 
+                     '1.3.6.1.4.1.11.2.3.7.8.2.5' => 1,
+                   );
 my $TEST = 0;
+
 
 my %ifnames = ( physaddr => "ifPhysAddress",
 		number => "instance",
@@ -19,6 +23,8 @@ my %ifnames = ( physaddr => "ifPhysAddress",
 		description => "descr",
 		speed => "ifSpeed",
 		status => "ifAdminStatus" );
+
+
 my $usage = <<EOF;
 usage: $0 -d|--device <host> -h|--help -v|--verbose
 
@@ -78,22 +84,31 @@ foreach my $device ( @devices ) {
 	$device->name, $dev{sysUpTime} if( $DEBUG );
 	next;
     }
-    my %ntmp;
-    $ntmp{sysdescription} = $dev{sysDescr};
+    my %devtmp;
+    $devtmp{sysdescription} = $dev{sysDescr};
+
+    ###############################################
+    # Try to assign Product based on SysObjectID
+    if( my $prod = (Product->search( sysobjectid => $dev{sysObjectID} ))[0] ) {
+	print "System ID matches ", $prod->name, "\n";
+	$devtmp{productname} = $prod->id;
+    }else{
+	print "No Products found with System ID ", $dev{sysObjectID}, "\n";
+    }
 
     if( length( $dev{dot1dBaseBridgeAddress} ) > 0 
-        && $device{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
+        && $dev{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
       # Remove the '0x' from the MAC address
-      $ntmp{physaddr} = $dev{dot1dBaseBridgeAddress};
-      $ntmp{physaddr} =~ s/^0x//; 
+      $devtmp{physaddr} = $dev{dot1dBaseBridgeAddress};
+      $devtmp{physaddr} =~ s/^0x//; 
     }
     if( length( $dev{entPhysicalSerialNum} ) > 0 
         && $dev{entPhysicalSerialNum} ne "noSuchObject" ) {
-      $ntmp{serialnumber} = $dev{entPhysicalSerialNum};
+      $devtmp{serialnumber} = $dev{entPhysicalSerialNum};
     }
 
     if( ! $TEST ) {
-       unless( $gui->update( object => $device, state => \%ntmp ) ) {
+       unless( $gui->update( object => $device, state => \%devtmp ) ) {
 	  next;
        }
     }
@@ -112,7 +127,7 @@ foreach my $device ( @devices ) {
       next if( $skip );
       ############################################
       # set up IF state data
-      my( %iftmp, %iptmp, $if );
+      my( %iftmp, $if );
       $iftmp{device} = $device->id;
       $iftmp{name} = $newif;
       foreach my $dbname ( keys %ifnames ) {
@@ -140,7 +155,7 @@ foreach my $device ( @devices ) {
 	}
 
       } else {
-	$iftmp{managed} = 1;  #can't be null
+	$iftmp{managed} = 0;
 	$iftmp{speed} ||= 0; #can't be null
 	print "Interface device ", $device->name, ":$newif doesn't exist; ",
 	  "inserting\n" if( $DEBUG );
@@ -159,85 +174,135 @@ foreach my $device ( @devices ) {
 	}
 
       }
+      ################################################################
+      # Update IPs
+      
       if( exists( $dev{interface}{$newif}{ipAdEntIfIndex} ) ) {
 	  map { $dbips{ $_->id } = 1 } $if->ips();
-	foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
-	  ## ignore loopback IPs
-	  next if ($newip =~ /127\.0\.0\.1/);
-	  my( $ipobj, $subnet );
-	  my $net = calc_subnet
-	    ( $newip, $dev{interface}{$newif}{ipAdEntIfIndex}{$newip} );
-	  ########################################
-	  # does this subnet already exist?
-	  if( $subnet = (Subnet->search( address => $net ) )[0] ) {
-	    print "Subnet $net exists \n" if( $DEBUG );
-	    $iptmp{subnet} = $subnet->id;
-	  } else {
-	    my %tmp;
-	    $tmp{address} = $net;
-	    $tmp{entity} = 0;
-	    $iptmp{subnet} = 0;
-	    #print "Subnet $net doesn't exist; inserting\n" if( $DEBUG );
-	    #unless( $subnet = insert( object => "Subnet", state => \%tmp ) ){
-	    #  next;
-	    #}
-	  }
-	  $iptmp{interface} = $if->id;
-	  $iptmp{address} = $newip;
-	  $iptmp{mask} = $dev{interface}{$newif}{ipAdEntIfIndex}{$newip};
-	  ########################################
-	  # does this ip already exist in the DB?
-	  if( $ipobj = (Ip->search( address => $newip ))[0] ) {
-	    print "Interface $newif IP $newip exists; updating\n" if($DEBUG);
+	  foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
+	      my %iptmp;
 
-	    if( ! $TEST ) {
-	       unless( $gui->update( object => $ipobj, state => \%iptmp ) ) {
+	      my( $ipobj, $maskobj, $subnet, $ipdbobj );
+	      $iptmp{mask} = $dev{interface}{$newif}{ipAdEntIfIndex}{$newip};
+
+	      unless ($ipobj = new NetAddr::IP ($newip, $iptmp{mask})){
+		  print "Could not create ip object: $newip<br>\n" if ($DEBUG);
 		  next;
-	       }
-	    }
-
-	    delete( $dbips{ $ipobj } );
-	  } else {
-	    print "Interface $newif IP $newip doesn't exist; inserting\n" if($DEBUG);
-
-	    if( ! $TEST ) {
-	       if( my $ipid  = $gui->insert( table => "Ip", 
-					      state => \%iptmp ) ){
-		  $ipobj = Ip->retrieve($ipid);
-	       } else {
+	      }
+	      if ($newip =~ /127\.0\.0\./){
+		  print "Skipping loopback address: $newip\n" if ($DEBUG);
 		  next;
-	       }
-	    }
-
-	  }
-	} # for
+	      }
+	      
+	      ########################################
+	      # does this subnet already exist?
+	      if( $subnet = (Subnet->search( address => $ipobj->network->addr, prefix => $ipobj->masklen ) )[0] ) {
+		  print "Subnet ",$ipobj->network, " exists\n" if( $DEBUG );
+		  $iptmp{subnet} = $subnet->id;
+	      } else {
+		  my %iptmp;
+		  print "Subnet ",$ipobj->network, " does not exist\n" if( $DEBUG );
+		  $iptmp{address} = $ipobj->addr;
+		  $iptmp{entity} = 0;
+		  $iptmp{subnet} = 0;
+		  #print "Subnet $ipobj->addr doesn't exist; inserting\n" if( $DEBUG );
+		  #unless( $subnet = insert( object => "Subnet", state => \%tmp ) ){
+		  #  next;
+		  #}
+	      }
+	      $iptmp{interface} = $if->id;
+	      $iptmp{address} = $newip;
+	      ########################################
+	      # does this ip already exist in the DB?
+	      if( $ipdbobj = (Ip->search( address => $newip ))[0] ) {
+		  print "Interface $newif IP $newip exists; updating\n" if($DEBUG);
+		  if( ! $TEST ) {
+		      unless( $gui->update( object => $ipdbobj, state => \%iptmp ) ) {
+			  next;
+		      }
+		  }
+		  delete( $dbips{ $ipdbobj } );
+	      } else {
+		  print "Interface $newif IP $newip doesn't exist; inserting\n" if($DEBUG);
+		  if( ! $TEST ) {
+		      if ( my $ipid  = $gui->insert( table => "Ip", state => \%iptmp ) ){
+			  $ipdbobj = Ip->retrieve($ipid);
+		      }else{
+			  next;
+		      }
+		  }
+	      }
+	  } # for
       }
+  }
+    ##############################################
+    # for each hubport just discovered...
+    
+    # 
+    # Hack for HP-ICF-OID::hpAdvStkEnetSHAgent
+    # These hubs assign a random value for the port group number
+    # every time they reboot.  For that reason we do those manually
+    # (don't add or remove their ports here)
+    
+    unless ( exists($problemHubs{$dev{sysObjectID}} )){
+	
+	foreach my $newport ( keys %{ $dev{hubPorts} } ) {
+	    ############################################
+	    # set up IF state data
+	    my (%porttmp, $if);
+	    $porttmp{device} = $device->id;
+	    $porttmp{name} = $newport;
+	    $porttmp{number} = $newport;
+	    
+	    ############################################
+	    # does this ifIndex already exist in the DB?
+	    if( $if = (Interface->search( device => $device->id, number => $newport ))[0] ) {
+		print "Interface device ", $device->name, ":$newport exists; updating\n"
+		    if( $DEBUG );
+		delete( $ifs{ $if->id } );
+		unless( $gui->update( object => $if, state => \%porttmp ) ) {
+		    next;
+		}
+	    } else {
+		$porttmp{managed} = 0;
+		$porttmp{speed} ||= 0; #can't be null
+		print "Interface device ", $device->name, ":$newport doesn't exist; ",
+		"inserting\n" if( $DEBUG );
+		unless ( my $ifid = $gui->insert( table => "Interface", state => \%porttmp ) ) {
+		    print "Error inserting Interface\n" if ($DEBUG);
+		    next;
+		}else{
+		    unless ( $if = Interface->retrieve($ifid) ) {
+			print "Couldn't retrieve Interface id $ifid\n" if ($DEBUG);
+			next;
+		    }
+		}
+	    }
+	    
+	} # end foreach my $newport
+
     }
+    
     ##############################################
     # remove each interface that no longer exists
-    foreach my $nonif ( keys %ifs ) {
-
-      # hubs are somewhat tricky.  Don't delete their ports.
-      my $intobj = Interface->retrieve($nonif);
-      next if ($intobj->device->type->name eq "Hub");
-  
-      print "Device ", $device->name, " Interface number", $intobj->number,
-	" doesn't exist; removing\n" if( $DEBUG );
-
-      if( ! $TEST ) {
-	 unless( $gui->remove( table => "Interface", id => $nonif ) ) {
-	    next;
-	 }
-      }
-
+    
+    unless ( exists($problemHubs{$dev{sysObjectID}} )){
+	
+	foreach my $nonif ( keys %ifs ) {
+	    my $ifobj = Interface->retrieve($nonif);
+	    print "Device ", $device->name, " Interface number ", $ifobj->number,
+	    " doesn't exist; removing\n" if( $DEBUG );
+	    if( ! $TEST ) {
+		unless( $gui->remove( table => "Interface", id => $nonif ) ) {
+		    next;
+		}
+	    }
+	}
     }
     ##############################################
     # remove each ip address  that no longer exists
     foreach my $nonip ( keys %dbips ) {
-
-      # hubs are somewhat tricky.  Don't delete their ports.
       my $ipobj = Ip->retrieve($nonip);
-  
       print "Device ", $device->name, " Ip Address ", $ipobj->address,
 	" doesn't exist; removing\n" if( $DEBUG );
       
@@ -255,14 +320,6 @@ foreach my $device ( @devices ) {
 }
 
 
-
-######################################################################
-sub calc_subnet {
-  my( $ip, $mask ) = @_;
-  my $decip = unpack('N', (pack ('C*', split (/\./, $ip))));
-  my $decmask = unpack('N', (pack ('C*', split (/\./, $mask))));
-  return inet_ntoa(pack('N',$decip & $decmask));
-}
 
 ######################################################################
 #  $Log: updatenodes.pl,v $
