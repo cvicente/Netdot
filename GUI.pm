@@ -197,7 +197,7 @@ sub getinputtag {
 ######################################################################
 # create state for a session across web pages
 ######################################################################
-sub mkstate {
+sub mksession {
   my( $self, $dir ) = @_;
   my( $sid, %session );
   tie %session, 'Apache::Session::File', 
@@ -208,7 +208,7 @@ sub mkstate {
 ######################################################################
 # fetch state for a session across web pages
 ######################################################################
-sub getstate {
+sub getsession {
   my( $self, $dir, $sid ) = @_;
   my %session;
   tie %session, 'Apache::Session::File', 
@@ -219,7 +219,7 @@ sub getstate {
 ######################################################################
 # clean out old state
 ######################################################################
-sub rmstate {
+sub rmsessions {
   my( $self, $dir, $age ) = @_;
   my $locker = new Apache::Session::Lock::File ;
   if( $locker->clean( $dir, $age ) ) {
@@ -234,6 +234,9 @@ sub rmstate {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.10  2003/07/01 17:17:53  netdot
+#  more tweaking of state code
+#
 #  Revision 1.9  2003/07/01 17:04:54  netdot
 #  added documentation
 #
@@ -340,31 +343,31 @@ Given a table and a column name, returns the SQL type as defined in the schema
 Given column name and object, builds an HTML <input> tag based on the sql type of the 
 field and other parameters
 
-=head2 mkstate - create state for a session across multiple pages
+=head2 mksession - create state for a session across multiple pages
 
   $dir = "/tmp";  # location for locks & state files
-  %session = $gui->mkstate( $dir );
+  %session = $gui->mksession( $dir );
 
 Creates a state session that can be used to store data across multiple 
 web pages for a given session.  Returns a hash to store said data in.
 Requires an argument specifying what directory to use when storing data 
 (and the relevant lock files).  The session-id is $session{_session_id}.
 
-=head2 getstate - fetch state for a session across multiple pages
+=head2 getsession - fetch state for a session across multiple pages
 
   $dir = "/tmp";  # location for locks & state files
   $sessionid = $args{sid};  # session-id must be handed off to new pages
-  %session = $gui->getstate( $dir, $sessionid );
+  %session = $gui->getsession( $dir, $sessionid );
 
 Fetches a state session and its accompanying data.  Returns a hash.  
 Requires two arguments:  the working directory and the session-id (as 
 described above).  
 
-=head2 rmstate - clear out old state
+=head2 rmsessions - clear out old state
 
   $dir = "/tmp";
   $age = 3600;   # age is in seconds
-  $gui->rmstate( $dir, $age );
+  $gui->rmsessions( $dir, $age );
 
 Removes state older than $age (the supplied argument) from the 
 directory $dir.  Returns 1 for success and 0 for failure.  Remember, age 
