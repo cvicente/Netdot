@@ -5,9 +5,6 @@ foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
   $arg{$j} = $ARGS{$j};
 }
-if( ! exists( $arg{"view"} ) ) {
-  $arg{view} = "expanded";
-}
 if( $arg{table} ) {
   undef( $obj );
   $obj = (Meta->search( name => $arg{table} ))[0];
@@ -46,22 +43,16 @@ if( $arg{table} ) {
         <td align="CENTER" valign="TOP" bgcolor="#FFFFFF">
 %       if( $c eq "id" ) {
           <strong>
-%         if( $arg{view} eq "expanded" ) {
-            <a href="expview.html?table=<% $arg{table} %>&id=<% $o->id %>"><% $o->id %></a>
-%         } elsif( $arg{view} eq "table" ) {
-            <a href="tblview.html?table=<% $arg{table} %>&id=<% $o->id %>"><% $o->id %></a>
-%         } else {
-            <a href="expview.html?table=<% $arg{table} %>&id=<% $o->id %>"><% $o->id %></a>
-%         }
+          <a href="<% $PAGE %>?table=<% $arg{table} %>&id=<% $o->id %>"><% $o->id %></a>
           </strong>
 %       } elsif( exists( $linksto{$c} ) ) {
-%         my $t = (Meta->search( name => $linksto{$c} ))[0];
-%         if( ! defined( $t ) ) {
+%         my $ft = (Meta->search( name => $linksto{$c} ))[0];
+%         if( ! defined( $ft ) ) {
             No such object <% $linksto{$c} %>
-%         } elsif( $o->$c->id == 0 ) {
+%         } elsif( $o->$c == 0 ) {
 	    -
 %         } else {
-%           my $lbl = $t->label;
+%           my $lbl = $ft->label;
             <% $o->$c->$lbl %>
 %         }
 %       } else {
@@ -81,7 +72,7 @@ use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Data::Dumper;
 my( %arg, %order, %linksto, %linksfrom, $obj );
-
+my $PAGE = "expview.html";
 
 </%init>
 <%doc>
@@ -89,10 +80,16 @@ Supported arguments:
 
   table  - name of a table in the database
   object - reference to a list of objects in that table for displaying in html
-  view   - table | expanded
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.8  2003/05/07 19:08:52  netdot
+# fixed problem around line 52 ( $o->$c->id => $o->$c ).  this should
+# resolve the strange problem of 'id' not defined'.  also got rid of the
+# 'view' stuff (table or expanded).  there is a variable defined with
+# the name of the url.  renamed a couple variables out of concern they
+# might be in Mason's namespace.
+#
 # Revision 1.7  2003/05/02 18:53:25  netdot
 # Changed references to linksto, linksfrom and columnorderbrief
 #
