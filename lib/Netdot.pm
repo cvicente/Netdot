@@ -477,6 +477,7 @@ sub getobjstate {
 	$self->error("$@");
 	return undef;
     }
+    return %bak;
 }
 
 
@@ -504,7 +505,7 @@ sub update {
     # In some cases, user might want to discard changes later,
     # so we give the option to disable commits.
     # We will update the DB by default
-    my $commit = $argv{commit} || 1;
+    my $commit = (defined $argv{commit}) ? $argv{commit} : 1;
 
     foreach my $col ( keys %state ) {
 	my $v = ( ref($obj->$col) ) ? $obj->$col->id : $obj->$col;
