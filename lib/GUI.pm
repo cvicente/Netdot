@@ -267,6 +267,16 @@ sub getsession {
 }
 
 ######################################################################
+# set session path (so you know what tables have been visited
+######################################################################
+sub setsessionpath {
+  my( $self, $session, $table ) = @_;
+  defined( $session->{path} ) ?
+    ( $session->{path} .= ";$table" ) : ( $session->{path} = "$table" );
+  return 1;
+}
+
+######################################################################
 # remove specific session
 ######################################################################
 sub rmsession {
