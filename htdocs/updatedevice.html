@@ -17,6 +17,32 @@
     $argv{dev} = $dev;
     $argv{host} = $host;
     $session->{argv} = \%argv;
+
+    # Try to guess the Entity based on the ip address
+LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
+	foreach my $ip ( keys %{ $dev->{interface}->{$int}->{ips} } ){ 
+	    my $mask = $dev->{interface}->{$int}->{ips}->{$ip};
+	    if ( my $subnetaddr = $ipm->getsubnetaddr($ip, $mask) ){
+		if ( my $subnet = $ipm->searchblock($subnetaddr) ){
+		    if ( (my $ent = $subnet->entity) != 0 ){
+			$guessed_ent = $ent->id;
+			if ( (my $cl = $ent->contactlist) != 0 ){
+			    $guessed_cl = $cl->id;
+			}
+			last LOOP;  #just grab the first one
+		    }
+		}
+	    }
+	}
+    }
+    # Try to guess site based on SNMP location
+    if ( my $loc = $dev->{syslocation} ){
+	my $loc = "%" . $loc . "%";
+	if ( my $site = Site->search_like( name => $loc ) ){
+	    $guessed_site = $site;
+	}
+    }
+
 </%perl>
     <form action="updatedevice.html" method="POST">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
@@ -42,13 +68,17 @@
         <td colspan="2" align="center"><strong> Please provide the following:</strong></td>
       </tr>
       <tr>
-        <td class="formtablec1">Entity:</td>
+        <td class="formtablec1">Group:</td>
         <td class="formtablec2">
            <select name="entity">
 %	   my @allents = Entity->retrieve_all; 
 %          @allents = sort { $a->name cmp $b->name } @allents;
 %          foreach my $ent (@allents){
-	         <option value="<% $ent->id %>"><% $ent->name %></option>
+%                if ( $guessed_ent && $ent->id == $guessed_ent ){
+	           <option value="<% $ent->id %>" SELECTED><% $ent->name %></option>		    
+%		 }else{
+	           <option value="<% $ent->id %>"><% $ent->name %></option>
+%		 }
 %	   }	
    	   <option value="0">[null]</option>
 	   </select>
@@ -61,7 +91,11 @@
 %	   my @allsites = Site->retrieve_all; 
 %          @allsites = sort { $a->name cmp $b->name } @allsites;
 %          foreach my $site (@allsites){
-	         <option value="<% $site->id %>"><% $site->name %></option>
+%                if ( $guessed_site && $site->id == $guessed_site ){
+	           <option value="<% $site->id %>" SELECTED><% $site->name %></option>
+%	         }else{
+	           <option value="<% $site->id %>"><% $site->name %></option>
+%		 }
 %	   }	
    	   <option value="0">[null]</option>
 	   </select>
@@ -74,7 +108,11 @@
 %	   my @allcls = ContactList->retrieve_all; 
 %          @allcls = sort { $a->name cmp $b->name } @allcls;
 %          foreach my $cl (@allcls){
-	         <option value="<% $cl->id %>"><% $cl->name %></option>
+%                if ( $guessed_cl && $cl->id == $guessed_cl ){
+	           <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
+%		 }else{
+	           <option value="<% $cl->id %>"><% $cl->name %></option>
+%		 }
 %	   }	
    	   <option value="0">[null]</option>
 	   </select>
@@ -175,6 +213,9 @@ my $o;
 my $name;
 my %argv;
 my $session;
+my $guessed_ent;
+my $guessed_site;
+my $guessed_cl;
 
 print Dumper(%ARGS) if $DEBUG;
 

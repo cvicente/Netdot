@@ -87,13 +87,15 @@ cviRoutedVlan {
 }
 general {
    vars {
+      dot1dBaseBridgeAddress ;
+      entPhysicalDescr ;
+      entPhysicalMfgName ;
+      entPhysicalSerialNum ;
       sysDescr ;
       sysObjectID ;
       sysContact ;
       sysName ;
       sysLocation ;
-      entPhysicalSerialNum ;
-      dot1dBaseBridgeAddress ;
       ipForwarding ;
   }
 }
@@ -121,9 +123,9 @@ interface {
       $hpVlanMemberIndex.inst ;
       $vmVlan.inst ;
       $ifSpecific.inst ;
+      $dot3StatsDuplexStatus.inst ;
 #################################################
 #     This syntax not supported by Netviewer yet
-#
 #      $ifMauType.inst.1 ;
 #      $ifMauDefaultType.inst.1 ;
 #      $hpVlanIdentName.$hpVlanDot1QID=$hpVlanMemberIndex.inst ;
@@ -132,7 +134,7 @@ interface {
    cftype avg:max ;
    collect yes ;
    descr $ifAlias.inst ;
-   highcounter yes ;
+   highcounter no ;
    interval 5 ;
    key value ;
    map $ifDescr ;
@@ -152,7 +154,7 @@ interfaceCatalyst {
    cftype avg:max ;
    collect yes ;
    descr $portName.$portIfIndex=$ifIndex.inst ;
-   highcounter yes ;
+   highcounter no ;
    interval 5 ;
    key value ;
    map $ifName ;
@@ -410,6 +412,10 @@ vars {
       oid 1.3.6.1.2.1.17.7.1.4.3.1.1 ;
       type STRING ;
    }
+   dot3StatsDuplexStatus  {
+      oid .1.3.6.1.2.1.10.7.2.1.19 ;
+      type INTEGER ;
+   }
    dsx1IfIndex {
       oid 1.3.6.1.2.1.10.18.6.1.2 ;
       type INTEGER ;
@@ -506,8 +512,16 @@ vars {
       oid 1.3.6.1.2.1.10.30.5.1.1 ;
       type INTEGER ;
    }
+   entPhysicalDescr {
+      oid .1.3.6.1.2.1.47.1.1.1.1.2.1 ;
+      type STRING ;
+   }
    entPhysicalSerialNum {
       oid 1.3.6.1.2.1.47.1.1.1.1.11.1 ;
+      type STRING ;
+   }
+   entPhysicalMfgName {
+      oid .1.3.6.1.2.1.47.1.1.1.1.12.1 ;
       type STRING ;
    }
    esPointValueIntHum1 {
@@ -696,6 +710,10 @@ vars {
    }
    ifMauIfIndex {
       oid .1.3.6.1.2.1.26.2.1.1.1 ;
+      type INTEGER ;
+   }
+   ifMauIndex {
+      oid .1.3.6.1.2.1.26.2.1.1.2;
       type INTEGER ;
    }
    ifMauDefaultType {

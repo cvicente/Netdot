@@ -168,7 +168,8 @@ sub issubnet {
 Arguments: 
   $address: ipv4 or ipv6 address
   $prefix:  dotted-quad netmask or prefix length
-Returns: 0 (is address) or 1 (is subnet)
+Returns: 
+  subnet address
 
 =cut
 

@@ -1,6 +1,19 @@
 <& index.html, title => "Device Worksheet: $name ", s2name => $s2name  &>
 <script language="javascript" src="select.js"></script>
 
+<script language="javascript">
+<!--
+/* 
+ * Show only interfaces belonging to selected VLAN
+ * 
+*/
+function showVlan(){
+    var name = document.showvlans.showvlan.value;
+    window.location = "device.html?id=<% $id %>&showvlan="+name;
+}
+-->
+</script>
+
 % print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 % if ( defined($search) && $search =~ /\w+/ ){
 %   my $list;
@@ -112,12 +125,20 @@ if ( !defined($search) ){
      Device: <b><% $name %></b>&nbsp;&nbsp;
     </td>
     <td valign="top" align="left">
-    <form>
+    <form name="showvlans">
     VLAN view 
-    <select>
-       <option value="all" SELECTED>all</option>     
+    <select name="showvlan" onchange="showVlan()">
+%      if ( $showvlan eq 'all' ){
+	 <option value="all" SELECTED>all</option>
+%      }else{
+	 <option value="all">all</option>
+%      }
 %      foreach my $vid ( sort keys %vlans ){
+%        if ( $showvlan eq $vid ){
+            <option value="<% $vid %>" SELECTED><% $vid %></option>     
+%        }else{
           <option value="<% $vid %>"><% $vid %></option>     
+%        }
 %      }
     </select>
     </form>
@@ -315,12 +336,12 @@ if ( !defined($search) ){
 		    <input type="text" size="15" name="<% "Ipblock__" . $ip->id . "__address" %>" value="<% $ip->address %>">
 		    <br>
 %	         }else{
-		    <a href="view.html?table=Ipblock&id=<% $ip->id %>"><% $ip->address %></a><br>
+		    <a href="ip-ws.html?id=<% $ip->id %>"><% $ip->address %></a><br>
 %		 }
 	   </td>
 	   <td align="left">
 %	     if ( int($ip->parent) != 0  ){
-	       <a href="view.html?table=Ipblock&id=<% $ip->parent->id %>"><% $ip->parent->address %>/<% $ip->parent->prefix %></a><br>
+	       <a href="ip-ws.html?id=<% $ip->parent->id %>"><% $ip->parent->address %>/<% $ip->parent->prefix %></a><br>
 %            }
 	   </td>
 	   <td align="left"><% $ip->interface->name %></td>
@@ -556,8 +577,8 @@ if ( !defined($search) ){
 	   <td valign="top" align="left"><strong>VLAN</strong></td>
 	   <td valign="top" align="left"><strong>Jack</strong></td>
 	   <td valign="top" align="left"><strong>Descr.</strong></td>
-	   <td valign="top" align="left"><strong>Upstream<br>Conn.</strong></td>
-	   <td valign="top" align="left"><strong>Downstream<br>Conn.</strong></td>
+	   <td valign="top" align="left"><strong>Uplink<br>Conn.</strong></td>
+	   <td valign="top" align="left"><strong>Downlink<br>Conn.</strong></td>
         </tr>
 
 %	#####################################
@@ -579,6 +600,7 @@ if ( !defined($search) ){
 %			         $a->[1] <=> $b->[1] } @tmp;
 			  
 %       foreach my $if (map { $_->[2] } @ordered_ifs){
+%         next if ( ! exists $ifvlans{$if}{$showvlan} && $showvlan ne "all");
 %	  $ci = ($ci + 1) % 2;
 	  <tr class="<% $cssitem{$ci} %>">
 %	       if ($editints){	 
@@ -593,7 +615,7 @@ if ( !defined($search) ){
 %               $ui->textField(object=>$if, column=>"name", edit=>$editints);
 	   </td>
 	   <td align="left"> 
-               <% ( exists $speed{$if->speed} ) ? $speed{$if->speed} : $if->speed %>
+               <% $if->speed %>
 	   </td>
 	   <td align="left"> 
                <% $if->oper_duplex %>/<% $if->admin_duplex %>
@@ -608,7 +630,6 @@ if ( !defined($search) ){
 %		   push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $v, $v );
 %		 }
 %		 print join ', ', @links;
-
 %	      }
 	   </td>
 	   <td align="left">
@@ -618,7 +639,8 @@ if ( !defined($search) ){
 	   <td align="left"> 
 %               $ui->textField(object=>$if, column=>"description", edit=>$editints);
 	   </td>
-<!-- Upstream Connections Field -->
+
+<!-- UpLink Connections Field -->
 	   <td align="left">
 %	   my @parents = $if->parents;
 %	   if (scalar(@parents)){
@@ -649,7 +671,7 @@ if ( !defined($search) ){
 		       <input type="checkbox" name=<% "InterfaceDep__" . $par->id . "__delete" %> >[del]
 %		    }
 %	         }else{
-		    <% $lbl %><br>
+		    <a href="device.html?id=<% $par->parent->device->id %>"><% $lbl %></a><br>
 %		 }
 %	     } #foreach my $par
 %	   }else{ # No parents exist
@@ -658,14 +680,16 @@ if ( !defined($search) ){
 		<input type="text" name="<% $srchf %>" value="Keywords">
 	        &nbsp;<input type="button" name="" value="List" 
 	        onClick="sendquery(<% "_InterfaceDep__" . $if->id ."__new" %>, <% $srchf . '.value' %>, 'Interface')" >
-	        <br><select name="<% "_InterfaceDep__" . $if->id ."__new" %>">
+	        <br>
+		<select name="<% "_InterfaceDep__" . $if->id ."__new" %>">
 	 	  <option value="0">[null]</option>
 	        </select>	      
 %	     }
 %	   }
 	   </td>
+<!-- End UpLink Connections Field -->
 
-<!-- Downstream Connections Field -->
+<!-- DownLink Connections Field -->
 	   <td align="left">
 %	   my @children = $if->children;
 %	   if (scalar(@children)){
@@ -696,22 +720,24 @@ if ( !defined($search) ){
 		       <input type="checkbox" name=<% "InterfaceDep__" . $ch->id . "__delete" %> >[del]
 %		    }
 %	         }else{
-		    <% $lbl %><br>
+		    <a href="device.html?id=<% $ch->child->device->id %>"><% $lbl %></a><br>
 %		 }
 %	     } #foreach my $ch
 %	   }else{ # No children exist
 %	      if ($editints){	 
-%	        my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
+%	        my $srchf = '_' . $if->id . 'child_srch';  #name of the form input tag
 		<input type="text" name="<% $srchf %>" value="Keywords">
 	        &nbsp;<input type="button" name="" value="List" 
 	        onClick="sendquery(<% "_InterfaceDep__" . $if->id ."__new" %>, <% $srchf . '.value' %>, 'Interface')" >
-	        <br><select name="<% "_InterfaceDep__" . $if->id ."__new" %>">
+	        <br>
+		<select name="<% "_InterfaceDep__" . $if->id ."__new" %>">
 	 	  <option value="0">[null]</option>
 	        </select>	      
 %	     }
 %	   }
 
 	   </td>
+<!-- End DownLink Connections Field -->
 	  </tr>
 %       } #foreach
      <tr>
@@ -755,6 +781,7 @@ $editints => undef
 $ipsort   => undef
 $s2name   => "Management"
 $user     => $ENV{REMOTE_USER}
+$showvlan => "all"
 </%args>
 
 <%init>
@@ -787,12 +814,6 @@ if ($id){
 }else{
    $name = "Search"
 }
-
-my %speed = (10000000     => "10 Mbps",
-	     100000000    => "100 Mbps",
-	     1000000000   => "1 Gbps",
-	     10000000000  => "10 Gbps",
-	     );
 
 </%init>
 

@@ -218,36 +218,33 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %                $ui->selectLookup(object=>$o, column=>"status", lookup=>"IpblockStatus", edit=>"$editIP");
 	     </td> 
 	   </tr>
-%          if (scalar($o->resourcerecords)){	   
+%          if (scalar($o->arecords)){	   
            <tr>
 	     <td colspan="2">
 	       <table width="100%" cellspacing="2">
 	        <tr>
-                 <td class="formtabletitle">DNS record</td>
+                 <td class="formtabletitle">DNS A record</td>
                  <td class="formtabletitle">Zone</td>
-                 <td class="formtabletitle">Type</td>
 	        </tr>
-%		 foreach my $rrip ($o->resourcerecords){
+%		 foreach my $ar ($o->arecords){
 		  <tr>
 	            <td class="formtablec2">
 %	      	    if ($edit eq "ipinfo"){	 
-                       <input type="text" name="RR__<% $rrip->rr->id %>__name" value="<% $rrip->rr->name %>">  
+                       <input type="text" name="RR__<% $ar->rr->id %>__name" value="<% $ar->rr->name %>">  
 %                   }else{
-		      <a href="view.html?table=RR&id=<% $rrip->rr->id %>">
-		      <% $rrip->rr->name %></td></a>
+		      <a href="view.html?table=RR&id=<% $ar->rr->id %>">
+		      <% $ar->rr->name %></td></a>
 %                   }
                     </td>
 	            <td class="formtablec2">
-		      <a href="view.html?table=Zone&id=<% $rrip->rr->zone->id %>">
-		      <% $rrip->rr->zone->mname %></td></a>
-	            <td class="formtablec2">
-		      <% $rrip->rr->type->name %></td>
+		      <a href="view.html?table=Zone&id=<% $ar->rr->zone->id %>">
+		      <% $ar->rr->zone->mname %></td></a>
                   </tr>
 %		 } 
 	      </table>
 	    </td>
 	   </tr>
-%        } #enidf resourcerecords
+%        } #enidf 
 %          if (scalar($o->services)){	   
            <tr>
 	     <td colspan="2">

@@ -298,41 +298,38 @@ sub update {
 	    unless ( $t = (EntityType->search(name => "Manufacturer"))[0] ){
 		$t = 0; 
 	    }
-	    my %enttmp = ( name => $oid,
-			   oid  => $oid,
-			   type => $t,
-			   );
+	    my $entname = $dev{manufacturer} || $oid;
 	    if ( ($ent = $self->{ui}->insert(table => 'Entity', 
-					     state => { name => $oid,
+					     state => { name => $entname,
 							oid  => $oid,
 							type => $t }) ) ){
-		my $msg = sprintf("Created Entity with Enterprise OID: %s.  Please set name, etc.", $oid);
+		my $msg = sprintf("Created Entity: %s. ", $entname);
 		$self->debug( loglevel => 'LOG_NOTICE',
 			      message  => $msg );		
 	    }else{
 		$self->debug( loglevel => 'LOG_ERR',
-			      message  => "Could not create new Entity with oid: %s: %s",
-			      args     => [$oid, $self->{ui}->error],
+			      message  => "Could not create new Entity: %s: %s",
+			      args     => [$entname, $self->{ui}->error],
 			      );
 		$ent = 0;
 	    }
 	}
-	my %prodtmp = ( name         => $dev{sysobjectid},
-			description  => $dev{sysdescription},
+	my %prodtmp = ( name         => $dev{productname} || $dev{sysobjectid},
+			description  => $dev{productname} || $dev{sysdescription},
 			sysobjectid  => $dev{sysobjectid},
 			type         => 0,
 			manufacturer => $ent,
 			);
 	my $newprodid;
 	if ( ($newprodid = $self->{ui}->insert(table => 'Product', state => \%prodtmp)) ){
-	    my $msg = sprintf("Created product with SysID: %s.  Please set name, type, etc.", $dev{sysobjectid});
+	    my $msg = sprintf("Created product: %s.  Please type, etc.", $prodtmp{name});
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg );		
 	    $devtmp{productname} = $newprodid;
 	}else{
 	    $self->debug( loglevel => 'LOG_ERR',
-			  message  => "Could not create new Product with SysID: %s: %s",
-			  args     => [$dev{sysobjectid}, $self->{ui}->error],
+			  message  => "Could not create new Product: %s: %s",
+			  args     => [$prodtmp{name}, $self->{ui}->error],
 			  );		
 	    $devtmp{productname} = 0;
 	}
@@ -464,7 +461,7 @@ sub update {
 	my( %iftmp, $if );
 	$iftmp{device} = $device->id;
 
-	my %iffields = ( number           => "",
+	my %IFFIELDS = ( number           => "",
 			 name             => "",
 			 type             => "",
 			 description      => "",
@@ -475,7 +472,7 @@ sub update {
 			 oper_duplex      => "");
 	
 	foreach my $field ( keys %{ $dev{interface}{$newif} } ){
-	    if (exists $iffields{$field}){
+	    if (exists $IFFIELDS{$field}){
 		$iftmp{$field} = $dev{interface}{$newif}{$field};
 	    }
 	}
@@ -590,7 +587,7 @@ sub update {
 	    #
 	    map { $dbips{$_->address} = $_->id } $if->ips();
 
-	    foreach my $newip( keys %{ $dev{interface}{$newif}{ips}}){
+	    foreach my $newip ( keys %{ $dev{interface}{$newif}{ips} } ){
 		my( $ipobj, $maskobj, $subnet, $ipdbobj );
 		my $version = ($newip =~ /:/) ? 6 : 4;
 		my $prefix = ($version == 6) ? 128 : 32;
@@ -646,9 +643,9 @@ sub update {
 		    #
 		    # Create a new Ip
 		    unless( $ipobj = $self->{ipm}->insertblock(address   => $newip, 
-								 prefix    => $prefix, 
-								 status    => "Assigned",
-								 interface => $if)){
+							       prefix    => $prefix, 
+							       status    => "Assigned",
+							       interface => $if)){
 			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
@@ -932,17 +929,6 @@ sub update {
 	}
 	
     }
-    ################################################################
-    # Update device if any changes since creation
-    
-    unless ( $self->{ui}->update( object => $device, state => \%devtmp ) ){
-	my $msg = sprintf("Could not update Device %s: %s", 
-			  $host, $self->{ui}->error);
-	$self->debug(loglevel => 'LOG_ERR',
-		     message  => $msg,
-		     );
-	$self->output($msg);
-    }
 
     my $msg = sprintf("Discovery of %s completed\n\n", $host);
     $self->debug( loglevel => 'LOG_NOTICE',
@@ -1017,40 +1003,90 @@ sub get_dev_info {
 	# Canonicalize address
 	$dev{physaddr} = $self->_readablehex($nv{dot1dBaseBridgeAddress});
     }
+    if( $self->_is_valid($nv{entPhysicalDescr}) ) {
+	$dev{productname} = $nv{entPhysicalDescr};
+    }
+    if( $self->_is_valid($nv{entPhysicalMfgName}) ) {
+	$dev{manufacturer} = $nv{entPhysicalMfgName};
+    }
     if( $self->_is_valid($nv{entPhysicalSerialNum}) ) {
 	$dev{serialnumber} = $nv{entPhysicalSerialNum};
     }
 
     ################################################################
     # Interface stuff
+    
+    my %SPEED_MAP = ('56000'       => '56 kbps',
+		     '64000'       => '64 kbps',
+		     '1500000'     => '1.5 Mbps',
+		     '1536000'     => 'T1',      
+		     '1544000'     => 'T1',
+		     '2000000'     => '2.0 Mbps',
+		     '2048000'     => '2.048 Mbps',
+		     '3072000'     => 'Dual T1',
+		     '3088000'     => 'Dual T1',   
+		     '4000000'     => '4.0 Mbps',
+		     '10000000'    => '10 Mbps',
+		     '11000000'    => '11 Mbps',
+		     '20000000'    => '20 Mbps',
+		     '16000000'    => '16 Mbps',
+		     '16777216'    => '16 Mbps',
+		     '44210000'    => 'T3',
+		     '44736000'    => 'T3',
+		     '45000000'    => '45 Mbps',
+		     '45045000'    => 'DS3',
+		     '46359642'    => 'DS3',
+		     '64000000'    => '64 Mbps',
+		     '100000000'   => '100 Mbps',
+		     '149760000'   => 'ATM on OC-3',
+		     '155000000'   => 'OC-3',
+		     '155519000'   => 'OC-3',
+		     '155520000'   => 'OC-3',
+		     '400000000'   => '400 Mbps',
+		     '599040000'   => 'ATM on OC-12', 
+		     '622000000'   => 'OC-12',
+		     '622080000'   => 'OC-12',
+		     '1000000000'  => '1 Gbps',
+		     '10000000000' => '10 Gbps',
+		     );
 
     ################################################################
     # MAU-MIB's ifMauType to half/full translations
-    my %Mau2Duplex = ( '1.3.6.1.2.1.26.4.10' => "half",
-		       '1.3.6.1.2.1.26.4.11' => "full",
-		       '1.3.6.1.2.1.26.4.12' => "half",
-		       '1.3.6.1.2.1.26.4.13' => "full",
-		       '1.3.6.1.2.1.26.4.15' => "half",
-		       '1.3.6.1.2.1.26.4.16' => "full",
-		       '1.3.6.1.2.1.26.4.17' => "half",
-		       '1.3.6.1.2.1.26.4.18' => "full",
-		       '1.3.6.1.2.1.26.4.19' => "half",
-		       '1.3.6.1.2.1.26.4.20' => "full",
-		       '1.3.6.1.2.1.26.4.21' => "half",
-		       '1.3.6.1.2.1.26.4.22' => "full",
-		       '1.3.6.1.2.1.26.4.23' => "half",
-		       '1.3.6.1.2.1.26.4.24' => "full",
-		       '1.3.6.1.2.1.26.4.25' => "half",
-		       '1.3.6.1.2.1.26.4.26' => "full",
-		       '1.3.6.1.2.1.26.4.27' => "half",
-		       '1.3.6.1.2.1.26.4.28' => "full",
-		       '1.3.6.1.2.1.26.4.29' => "half",
-		       '1.3.6.1.2.1.26.4.30' => "full",
+
+    my %MAU2DUPLEX = ( '.1.3.6.1.2.1.26.4.10' => "half",
+		       '.1.3.6.1.2.1.26.4.11' => "full",
+		       '.1.3.6.1.2.1.26.4.12' => "half",
+		       '.1.3.6.1.2.1.26.4.13' => "full",
+		       '.1.3.6.1.2.1.26.4.15' => "half",
+		       '.1.3.6.1.2.1.26.4.16' => "full",
+		       '.1.3.6.1.2.1.26.4.17' => "half",
+		       '.1.3.6.1.2.1.26.4.18' => "full",
+		       '.1.3.6.1.2.1.26.4.19' => "half",
+		       '.1.3.6.1.2.1.26.4.20' => "full",
+		       '.1.3.6.1.2.1.26.4.21' => "half",
+		       '.1.3.6.1.2.1.26.4.22' => "full",
+		       '.1.3.6.1.2.1.26.4.23' => "half",
+		       '.1.3.6.1.2.1.26.4.24' => "full",
+		       '.1.3.6.1.2.1.26.4.25' => "half",
+		       '.1.3.6.1.2.1.26.4.26' => "full",
+		       '.1.3.6.1.2.1.26.4.27' => "half",
+		       '.1.3.6.1.2.1.26.4.28' => "full",
+		       '.1.3.6.1.2.1.26.4.29' => "half",
+		       '.1.3.6.1.2.1.26.4.30' => "full",
 		       );
     
     ################################################################
+    # Map dot3StatsDuplexStatus
+
+    my %DOT3DUPLEX = ( 1 => "unknown",
+		       2 => "half",
+		       3 => "full",
+		       );
+
+    ################################################################
     # Catalyst's portDuplex to half/full translations
-    my %CatDuplex = ( 1 => "half",
+
+    my %CATDUPLEX = ( 1 => "half",
 		      2 => "full",
 		      3 => "auto",  #(*)
 		      4 => "auto",
@@ -1066,16 +1102,14 @@ sub get_dev_info {
     
     ##############################################
     # Netdot to Netviewer field name translations
-    # (values that are stored directly)
 
-    my %iffields = ( number            => "instance",
+    my %IFFIELDS = ( number            => "instance",
 		     name              => "name",
 		     type              => "ifType",
 		     description       => "descr",
 		     speed             => "ifSpeed",
 		     admin_status      => "ifAdminStatus",
 		     oper_status       => "ifOperStatus" );
-
 
     ##############################################
     # for each interface discovered...
@@ -1089,22 +1123,30 @@ sub get_dev_info {
 	}
 	next if( $skip );
 
-	foreach my $dbname ( keys %iffields ) {
-	    # NV changes admin but not oper
+	foreach my $dbname ( keys %IFFIELDS ) {
 	    if( $dbname eq "oper_status" ) {
-		if( $nv{interface}{$newif}{$iffields{$dbname}} eq "1" ){
+		# NV changes admin but not oper
+		if( $nv{interface}{$newif}{$IFFIELDS{$dbname}} eq "1" ){
 		    $dev{interface}{$newif}{$dbname} = "up";
-		}elsif( $nv{interface}{$newif}{$iffields{$dbname}} eq "2" ){
+		}elsif( $nv{interface}{$newif}{$IFFIELDS{$dbname}} eq "2" ){
 		    $dev{interface}{$newif}{$dbname} = "down";
 		}
-	    # Ignore these descriptions
+	    }elsif( $dbname eq "speed" ) {
+		# Translate speed to something more readable
+		my $speed = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
+		if ( exists $SPEED_MAP{$speed} ){
+		    $dev{interface}{$newif}{$dbname} = $SPEED_MAP{$speed};
+		}else{
+		    $dev{interface}{$newif}{$dbname} = $speed;
+		}
 	    }elsif( $dbname eq "description" ) {
-		if( $nv{interface}{$newif}{$iffields{$dbname}} ne "-" &&
-		    $nv{interface}{$newif}{$iffields{$dbname}} ne "not assigned" ) {
-		    $dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$iffields{$dbname}};
+		# Ignore these descriptions
+		if ( $nv{interface}{$newif}{$IFFIELDS{$dbname}} ne "-" &&
+		    $nv{interface}{$newif}{$IFFIELDS{$dbname}} ne "not assigned" ) {
+		    $dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
 		}
 	    }else {
-		$dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$iffields{$dbname}};
+		$dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
 	    }
 	}
 	if ( $self->_is_valid($nv{interface}{$newif}{ifPhysAddress}) ){
@@ -1112,35 +1154,47 @@ sub get_dev_info {
 	}
 	################################################################
 	# Set Oper Duplex mode
-	my $opdupval;
+	my ($opdupval, $opdup);
 	################################################################
-	# Standard MIB
-	if ($self->_is_valid($nv{interface}{$newif}{ifMauType})){
-	    $opdupval = $nv{interface}{$newif}{ifMauType};
-	    $opdupval =~ s/^\.(.*)/$1/;
-	    $dev{interface}{$newif}{oper_duplex} = (exists ($Mau2Duplex{$opdupval})) ? $Mau2Duplex{$opdupval} : "";
+	if( $self->_is_valid($nv{interface}{$newif}{ifMauType}) ){
 	    ################################################################
-	    # Other Standard (used by some HP)	    
-	}elsif($self->_is_valid($nv{interface}{$newif}{ifSpecific})){
+	    # ifMauType
+	    $opdupval = $nv{interface}{$newif}{ifMauType};
+	    $opdup = $MAU2DUPLEX{$opdupval} || "";
+
+	}
+	if( $self->_is_valid($nv{interface}{$newif}{ifSpecific}) && !($opdup) ){
+	    ################################################################
+	    # ifSpecific
 	    $opdupval = $nv{interface}{$newif}{ifSpecific};
-	    $opdupval =~ s/^\.(.*)/$1/;
-	    $dev{interface}{$newif}{oper_duplex} = (exists ($Mau2Duplex{$opdupval})) ? $Mau2Duplex{$opdupval} : "";
+	    $opdup = $MAU2DUPLEX{$opdupval} || "";
+
+	}
+	if( $self->_is_valid($nv{interface}{$newif}{dot3StatsDuplexStatus}) && !($opdup) ){
+	    ################################################################
+	    # dot3Stats
+	    $opdupval = $nv{interface}{$newif}{dot3StatsDuplexStatus};
+	    $opdup = $DOT3DUPLEX{$opdupval} || "";
+
+	}
+	if( $self->_is_valid($nv{interface}{$newif}{portDuplex}) && !($opdup) ){
 	    ################################################################
 	    # Catalyst
-	}elsif($self->_is_valid($nv{interface}{$newif}{portDuplex})){
 	    $opdupval = $nv{interface}{$newif}{portDuplex};
-	    $dev{interface}{$newif}{oper_duplex} = (exists ($CatDuplex{$opdupval})) ? $CatDuplex{$opdupval} : "";
+	    $opdup = $CATDUPLEX{$opdupval} || "";
 	}
+	$dev{interface}{$newif}{oper_duplex} = $opdup || "[na]" ;  	    
+
 	################################################################
 	# Set Admin Duplex mode
-	my $admindupval;
+	my ($admindupval, $admindup);
 	################################################################
 	# Standard MIB
 	if ($self->_is_valid($nv{interface}{$newif}{ifMauDefaultType})){
 	    $admindupval = $nv{interface}{$newif}{ifMauDefaultType};
-	    $admindupval =~ s/^\.(.*)/$1/;
-	    $dev{interface}{$newif}{admin_duplex} = (exists ($Mau2Duplex{$admindupval})) ? $Mau2Duplex{$admindupval} : "";
+	    $admindup= $MAU2DUPLEX{$admindupval} || 0;
 	}
+	$dev{interface}{$newif}{admin_duplex} = $admindup || "[na]";
 
 	####################################################################
 	# IP addresses and masks 
@@ -1181,9 +1235,9 @@ sub get_dev_info {
     if ( ! exists($self->{badhubs}->{$nv{sysObjectID}} )){
 	foreach my $newport ( keys %{ $nv{hubPorts} } ) {
 	    
-	    $dev{interface}{$newport}{name} = $newport;
+	    $dev{interface}{$newport}{name}   = $newport;
 	    $dev{interface}{$newport}{number} = $newport;
-	    $dev{interface}{$newport}{speed} = 10000000; #most likely
+	    $dev{interface}{$newport}{speed}  = "10 Mbps"; #most likely
 	    
 	} #foreach newport
     } #unless badhubs
@@ -1230,7 +1284,7 @@ sub _canonize_int_name {
     my ($self, $name) = @_;
 
     # This should go in the config file 
-    my %abbr = ('Ethernet'        => 'e-',
+    my %ABBR = ('Ethernet'        => 'e-',
 		'FastEthernet'    => 'fe-',
 		'GigabitEthernet' => 'ge-',
 		'Serial'          => 'ser-',
@@ -1239,9 +1293,9 @@ sub _canonize_int_name {
 		'Loopback'        => 'lo-',
 		);
 
-    foreach my $ab (keys %abbr){
+    foreach my $ab (keys %ABBR){
 	if ($name =~ /$ab/){
-	    $name =~ s/$ab/$abbr{$ab}/i;
+	    $name =~ s/$ab/$ABBR{$ab}/i;
 	}
     }
     $name =~ s/\/|\./-/g;
