@@ -1,0 +1,125 @@
+<%perl>
+if ($crit =~ /\w+/){
+  if ($crit =~ /\s+/){  #If there's more than one word
+     @terms = split /\s+/, $crit;
+  }else{
+     push @terms, $crit;    
+  }
+  print "terms are: ",  join ', ', @terms, "<br>" if $debug;
+}
+</%perl>
+
+<body bgcolor="#FFFFFF" onLoad="opener.getlist(<% "\'" . $field . "\'" %>)">
+<srong>Loading...</strong>
+
+<%perl>
+my %linksto = $gui->getlinksto($table);
+my @labels = $gui->getlabels($table);
+print "labels are: ", join ', ', @labels, "<br>" if $debug;
+foreach my $c (@labels){
+	if (! $linksto{$c} ){ # column is local
+	  foreach my $term (@terms){
+	    print "Searching  $term in $c <br>" if $debug;
+	      my $it = $table->search_like( $c => "%" . $term . "%" );
+	      while (my $obj = $it->next){
+	         if (exists $un{$obj}){ # store intersected elements
+	           $int{$obj} = $obj;
+		   print "$obj added to intersection<br>" if $debug;
+	         }
+	         $un{$obj} = $obj;
+		 print "$obj added to union<br>" if $debug;
+	    }	
+          }
+	}else{ # column is a foreign key.
+	    my $rtable = $linksto{$c};
+	    print "rtable is ", $rtable, "<br>" if $debug;
+	    my %rlinksto = $gui->getlinksto($rtable);
+	    my @rlabels = $gui->getlabels($rtable);
+	    print "labels are: ", join ', ', @rlabels, "<br>" if $debug;
+	    foreach my $term (@terms){
+	      foreach my $rc (@rlabels){
+	       if (! $rlinksto{$rc} ){ # is local
+	          print "Searching $term in $rc <br>" if $debug;
+		  my $rit = $rtable->search_like( $rc => "%" . $term . "%" );
+		  while (my $ro = $rit->next){
+		     my $it2 = $table->search($c => $ro);
+		     while (my $obj = $it2->next){
+	       	       if (exists $un{$obj}){ # store intersected elements
+		           $int{$obj} = $obj;
+			   print "$obj added to intersection<br>" if $debug;
+		       }
+		       $un{$obj} = $obj;
+		       print "$obj added to union<br>" if $debug;
+		     } 
+		  }	
+	       }# that's it. Just go down one level
+	      }
+	    }
+	}
+} 
+
+if (scalar (keys %int)){
+     $ret = \%int;
+     print "return set is the intersection<br>" if $debug;
+     if (scalar (keys %int) >= $max){
+        $toomany = 1;
+     }
+}else { #no intersected elements, use union
+    $ret = \%un;
+     print "return set is the union<br>" if $debug;
+     if (scalar (keys %un) >= $max){
+        $toomany = 1;
+     }
+}
+</%perl>
+<form>
+
+%if (scalar (keys %$ret) ){
+%    my $count = 0;
+     <input type="hidden" name="" value="">
+%    foreach my $o (keys %$ret){
+%       my $lbl = $gui->getobjlabel($ret->{$o}, ", ");
+        <input type="hidden" name="<% $ret->{$o}->id %>" value="<% $lbl %>">
+%       last if ($count++) == $max;
+%    }
+%    if ($toomany){
+       <input type="hidden" name="" value="More than <% $max %> matches.  Refine search">
+%    }
+%}else{
+       <input type="hidden" name="" value="No matches">
+%}
+</form>
+
+</body>
+
+
+
+<%init>
+my ( %un, %int, $ret, $gui, $max, @terms, $toomany, $debug );
+$gui = Netdot::GUI->new();
+$max = 100;
+$toomany = 0;
+$debug = 0;
+</%init>
+
+<%args>
+$table => $ARGS{table};
+$field => $ARGS{field};
+$crit => $ARGS{crit};
+</%args>
+
+<%doc>
+
+Performs a search of keywords in the foreign table's 'label' fields.
+If the label is composed of fields that are foreign keys as well, 
+the search will go down one level. 
+If there's more than one keyword, returned values will be the intersection set
+of the results.
+
+Arguments:
+- table:  Foreign key table to search.
+- field:  Name of the original field for which we're searching foreign values
+          Needed by the caller
+- crit:   Criteria.  A string with one or more keywords to search
+
+</%doc>
