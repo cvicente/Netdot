@@ -1,0 +1,149 @@
+# Rename Device_Type -> Component_Type 
+
+ALTER TABLE DeviceType RENAME AS ComponentType; 
+
+# Rename NodeType -> DeviceType 
+
+ALTER TABLE NodeType RENAME AS DeviceType; 
+
+# Move fields from Device to Node 
+
+ALTER TABLE Node DROP COLUMN device; 
+ALTER TABLE Node ADD COLUMN component_type integer after community; 
+ALTER TABLE Node ADD COLUMN serialnumber varchar(64) after component_type; 
+ALTER TABLE Node ADD COLUMN productname integer after serialnumber; 
+ALTER TABLE Node ADD COLUMN part_of integer after productname; 
+ALTER TABLE Node ADD COLUMN inventorynumber varchar(64) after part_of; 
+ALTER TABLE Node ADD COLUMN maint_covered tinyint after inventorynumber;
+ALTER TABLE Node ADD COLUMN site integer after maint_covered; 
+ALTER TABLE Node ADD COLUMN room varchar(64) after site; 
+ALTER TABLE Node ADD COLUMN rack varchar(32) after room; 
+ALTER TABLE Node ADD COLUMN dateinstalled date after rack; 
+
+# Move fields from Device_history to Node_history 
+
+ALTER TABLE Node_history CHANGE COLUMN node_id device_id integer; 
+ALTER TABLE Node_history DROP COLUMN device; 
+ALTER TABLE Node_history ADD COLUMN component_type integer after community; 
+ALTER TABLE Node_history ADD COLUMN serialnumber varchar(64) after component_type; 
+ALTER TABLE Node_history ADD COLUMN productname integer after serialnumber; 
+ALTER TABLE Node_history ADD COLUMN part_of integer after productname; 
+ALTER TABLE Node_history ADD COLUMN inventorynumber varchar(64) after part_of; 
+ALTER TABLE Node_history ADD COLUMN maint_covered tinyint after inventorynumber; 
+ALTER TABLE Node_history ADD COLUMN site integer after maint_covered; 
+ALTER TABLE Node_history ADD COLUMN room varchar(64) after site; 
+ALTER TABLE Node_history ADD COLUMN rack varchar(32) after room; 
+ALTER TABLE Node_history ADD COLUMN dateinstalled date after rack; 
+
+# Delete Device Table 
+
+DROP TABLE Device; 
+
+# Delete Device_history Table 
+
+DROP TABLE Device_history; 
+
+# Rename Node -> Device 
+
+ALTER TABLE Node RENAME AS Device; 
+
+# Rename Node -> Device 
+
+ALTER TABLE Node_history RENAME AS Device_history; 
+
+# Build new indexes for Device 
+
+ALTER TABLE Device DROP INDEX Node1;
+ALTER TABLE Device DROP INDEX Node2;
+ALTER TABLE Device ADD UNIQUE INDEX name_idx (name);
+ALTER TABLE Device ADD UNIQUE INDEX serial_product_idx (serialnumber,productname);
+ALTER TABLE Device ADD INDEX type_idx (type); 
+ALTER TABLE Device ADD INDEX serialnumber_idx (serialnumber); 
+ALTER TABLE Device ADD INDEX physaddr_idx (physaddr); 
+ALTER TABLE Device ADD INDEX entity_idx (entity); 
+ALTER TABLE Device ADD INDEX inventorynumber_idx (inventorynumber); 
+
+# Rename NodeService -> DeviceService 
+
+ALTER TABLE NodeService RENAME AS DeviceService; 
+
+# Rename DeviceService.node -> DeviceService.device 
+
+ALTER TABLE DeviceService CHANGE COLUMN node device integer; 
+
+# Rename Interface.node -> Interface.device 
+
+ALTER TABLE Interface CHANGE COLUMN node device integer; 
+
+# Rename Interface_history.node -> Interface_history.device 
+
+ALTER TABLE Interface_history CHANGE COLUMN node device integer; 
+
+# Rename Person.department -> Person.entity
+
+ALTER TABLE Person CHANGE COLUMN department entity integer;
+
+# Change info fields from varchar to longblob
+
+ALTER TABLE Address CHANGE COLUMN info info longblob;
+ALTER TABLE Address_history CHANGE COLUMN info info longblob;
+ALTER TABLE Availability CHANGE COLUMN info info longblob;
+ALTER TABLE Cable CHANGE COLUMN info info longblob;
+ALTER TABLE Cable_history CHANGE COLUMN info info longblob;
+ALTER TABLE CableStrand CHANGE COLUMN info info longblob;
+ALTER TABLE CableStrand_history CHANGE COLUMN info info longblob;
+ALTER TABLE CableType CHANGE COLUMN info info longblob;
+ALTER TABLE Circuit CHANGE COLUMN info info longblob;
+ALTER TABLE Circuit_history CHANGE COLUMN info info longblob;
+ALTER TABLE CircuitStatus CHANGE COLUMN info info longblob;
+ALTER TABLE CircuitType CHANGE COLUMN info info longblob;
+ALTER TABLE Connection CHANGE COLUMN info info longblob;
+ALTER TABLE Connection_history CHANGE COLUMN info info longblob;
+ALTER TABLE Contact CHANGE COLUMN info info longblob;
+ALTER TABLE Contact_history CHANGE COLUMN info info longblob;
+ALTER TABLE ContactList CHANGE COLUMN info info longblob;
+ALTER TABLE ContactType CHANGE COLUMN info info longblob;
+ALTER TABLE Device CHANGE COLUMN info info longblob;
+ALTER TABLE Device_history CHANGE COLUMN info info longblob;
+ALTER TABLE ComponentType CHANGE COLUMN info info longblob;
+ALTER TABLE Entity CHANGE COLUMN info info longblob;
+ALTER TABLE Entity_history CHANGE COLUMN info info longblob;
+ALTER TABLE EntityType CHANGE COLUMN info info longblob;
+ALTER TABLE Interface CHANGE COLUMN info info longblob;
+ALTER TABLE Interface_history CHANGE COLUMN info info longblob;
+ALTER TABLE DeviceType CHANGE COLUMN info info longblob;
+ALTER TABLE Person CHANGE COLUMN info info longblob;
+ALTER TABLE Person_history CHANGE COLUMN info info longblob;
+ALTER TABLE Product CHANGE COLUMN info info longblob;
+ALTER TABLE Product_history CHANGE COLUMN info info longblob;
+ALTER TABLE Service CHANGE COLUMN info info longblob;
+ALTER TABLE Site CHANGE COLUMN info info longblob;
+ALTER TABLE Site_history CHANGE COLUMN info info longblob;
+ALTER TABLE Subnet CHANGE COLUMN info info longblob;
+ALTER TABLE Subnet_history CHANGE COLUMN info info longblob;
+
+# Avoid the "blah is not a FK of blah" error:
+# !!!!CAREFUL: Assuming you don't have any of these set!!!!
+
+UPDATE Device set component_type='0';
+UPDATE Device set product_name='0';
+UPDATE Device set part_of='0';
+UPDATE Device set site='0';
+UPDATE Device set maint_covered='1';
+
+# Add 'Standalone' to ComponentType
+INSERT INTO ComponentType (name) VALUES ('Standalone');
+
+# Clear Meta table:
+delete from Meta;
+
+# Update Meta stuff:
+
+# # cd PATH/netdot/trunk
+# # cp bin/insert-metadata  /usr/local/src/netdot-0.1.2/bin/
+# # cp etc/netdot.schema  /usr/local/src/netdot-0.1.2/etc/
+# # cd /usr/local/src/netdot-0.1.2/bin
+# # ./insert-metadata
+# # ./setup-class-dbi
+# # cp DBI.pm /usr/local/netdot/lib/Netdot/
+# # service httpd restart
