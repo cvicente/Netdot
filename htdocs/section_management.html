@@ -26,75 +26,75 @@ my $page = $user->getAttribute("MANAGEMENT_PAGE");
 
 </%init>
 %
-<div id="sectiontools">
+    <div id="sectiontools">
 %
 % if ($page eq "DEVICE" || $page eq "") {
 %
-    <p>
-    <fieldset>
-        <legend>Find Devices</legend>
-        <form action="device.html" method="POST">
-            <p>
-            <label for="search">Name:</label>
-            <input type="text" name="search" class="txt" value=""> 
-            <input name="submit" value="search" class="btn" type="submit">
-            </p>
-        </form>
-        <form action="ip-ws.html" method="POST">
-            <p>
-            <label for="search">IP:</label>
-            <input type="text" name="search" class="txt" value=""> 
-            <input name="submit" value="search" class="btn" type="submit">
-            <input type="hidden" name="_action" value="SEARCH">
-            </p>
-        </form> 
-        <form action="mac-ws.html" method="POST">
-            <p>
-            <label for="search">MAC:</label>
-            <input type="text" name="search" class="txt" value=""> 
-            <input name="submit" value="search" class="btn" type="submit">
-            </p>
-        </form>
-    </fieldset>
-    </p>
-    <p>
-    <fieldset>
-        <legend>Discover/Update a Device</legend>
-        <form action="updatedevice.html" method="POST">
-            <p>
-            <label for="host">Name:</label>
-            <input type="text" name="host" class="txt" value="">
-            </p>
-            <p>
-            <label for="comstr">Community:</label>
-            <input type="text" name="comstr" class="txt" value="<% $ui->{config}->{'DEFAULT_SNMPCOMMUNITY'} %>">
-            <input type="hidden" name="action" value="discover">
-            <input type="submit" name="submit" class="btn" value="discover">
-            </p>
-        </form>
-    </fieldset>
-    </p>
-    <p>
-    <fieldset>
-        <legend>Manually Add a Device</legend>
-	<form action="device.html" method="POST">
-            <p>
-            <label for="newhost">Name:</label>
-            <input type="text" name="newhost" class="txt" value="">
-            </p>
-            <p>
-            <label for="newip">IP:</label>
-            <input type="text" name="newip" class="txt" value="">
-            <input type="hidden" name="deviceadd" value="add">
-            <input type="submit" name="submit" class="btn" value="add">
-            </p>
-        </form>
-    </fieldset>
-    </p>
+        <p>
+        <fieldset>
+            <legend>Find Devices</legend>
+            <form action="device.html" method="POST">
+                <p>
+                <label for="search">Name:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="search" class="btn" type="submit">
+                </p>
+            </form>
+            <form action="ip-ws.html" method="POST">
+                <p>
+                <label for="search">IP:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="search" class="btn" type="submit">
+                <input type="hidden" name="_action" value="SEARCH">
+                </p>
+            </form> 
+            <form action="mac-ws.html" method="POST">
+                <p>
+                <label for="search">MAC:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="search" class="btn" type="submit">
+                </p>
+            </form>
+        </fieldset>
+        </p>
+        <p>
+        <fieldset>
+            <legend>Discover/Update a Device</legend>
+            <form action="updatedevice.html" method="POST">
+                <p>
+                <label for="host">Name:</label>
+                <input type="text" name="host" class="txt" value="">
+                </p>
+                <p>
+                <label for="comstr">Community:</label>
+                <input type="text" name="comstr" class="txt" value="<% $ui->{config}->{'DEFAULT_SNMPCOMMUNITY'} %>">
+                <input type="hidden" name="action" value="discover">
+                <input type="submit" name="submit" class="btn" value="discover">
+                </p>
+            </form>
+        </fieldset>
+        </p>
+        <p>
+        <fieldset>
+            <legend>Manually Add a Device</legend>
+        	<form action="device.html" method="POST">
+                <p>
+                <label for="newhost">Name:</label>
+                <input type="text" name="newhost" class="txt" value="">
+                </p>
+                <p>
+                <label for="newip">IP:</label>
+                <input type="text" name="newip" class="txt" value="">
+                <input type="hidden" name="deviceadd" value="add">
+                <input type="submit" name="submit" class="btn" value="add">
+                </p>
+            </form>
+        </fieldset>
+        </p>
 %
 % } elsif ($page eq "ADDRESS") {
 %
-    <p>
+        <p>
         <fieldset>
             <legend>Block Selection</legend>
                 <form action="ip-ws.html" method="POST">
@@ -113,35 +113,35 @@ my $page = $user->getAttribute("MANAGEMENT_PAGE");
                 <input type="hidden" name="_action" value="VIEW">
             </form>
         </fieldset>
-    </p>
-    <p>
+        </p>
+        <p>
         <fieldset>
             <legend>Search</legend>
             <form action="ip-ws.html" method="POST">
                 <p>
-                    <label for="Find">IP[/prefix]</label>
-                    <input type="text" name="search" class="txt" value=""> 
-                    <input name="submit" value="Find" class="btn" type="submit">
-                    <input type="hidden" name="_action" value="SEARCH">
+                <label for="Find">IP[/prefix]</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="Find" class="btn" type="submit">
+                <input type="hidden" name="_action" value="SEARCH">
                 </p>
             </form>
         </fieldset>
-    </p>
-    <p>
+        </p>
+        <p>
         <fieldset>
             <legend>Allocate</legend>
             <form action="ip-ws.html" method="POST">
                 <p>
-                    <label for="allocate">New IP/prefix</label>
-                    <input type="text" name="allocate" class="txt" value=""> 
-                    <input name="submit" value="Allocate" class="btn" type="submit">
-                    <input type="hidden" name="_action" value="ALLOCATE">
+                <label for="allocate">New IP/prefix</label>
+                <input type="text" name="allocate" class="txt" value=""> 
+                <input name="submit" value="Allocate" class="btn" type="submit">
+                <input type="hidden" name="_action" value="ALLOCATE">
                 </p>
             </form>
         </fieldset>
-    </p>
+        </p>
 %}
-</div>
+    </div>
 
 % if ( $m->fetch_next ){
 %  $m->call_next;
