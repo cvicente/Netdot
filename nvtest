@@ -2,12 +2,20 @@
 
 use lib "/home/netdot/public_html/lib";
 use Netdot::Netviewer;
+use Data::Dumper;
 
-$nv = Netdot::Netviewer->new;
+$nv = Netdot::Netviewer->new( foreground => 1 );
+$nv->build_config( "device", "uonet5-loopback.uoregon.edu" );
+%targets = $nv->get_targets();
+
+
+print Dumper( %targets );
+print "exiting....\n";
+exit;
 
 __DATA__
 
-# $Header: /tmp/netdot/src/RCS/nvtest,v 1.1 2003/06/11 15:44:30 netdot Exp $
+# $Header: /tmp/netdot/src/RCS/nvtest,v 1.2 2003/06/11 22:43:31 netdot Exp $
 
    --------------
    |Netviewer   | general config
@@ -35,6 +43,30 @@ INSERT INTO Netviewer (name,value) VALUES ('carlimit', '5000000');
 INSERT INTO Netviewer (name,value) VALUES ('vlanspeed', '1000000000');
 INSERT INTO Netviewer (name,value) VALUES ('logfacility', 'LOG_DAEMON');
 INSERT INTO Netviewer (name,value) VALUES ('loglevel', 'LOG_NOTICE');
+
+   ---------------
+   |NvIfReserved | list of reserved interfaces
+   |-------------|
+   | id          |
+   | name        |
+   ---------------
+
+'NvIfReserved' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+}
+
+INSERT INTO NvIfReserved (name) VALUES ( 'pimd' );
+INSERT INTO NvIfReserved (name) VALUES ( 'vt-' );
+INSERT INTO NvIfReserved (name) VALUES ( 'tap' );
+INSERT INTO NvIfReserved (name) VALUES ( 'pe-' );
+INSERT INTO NvIfReserved (name) VALUES ( 'pd-' );
+INSERT INTO NvIfReserved (name) VALUES ( 'dsc' );
 
    ---------------
    |NvCategory   | categories of info (bgpPeer, interface, etc.)
