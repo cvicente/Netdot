@@ -1,20 +1,44 @@
 <%perl>
 my %args;
 foreach my $j ( keys %ARGS ) {
-  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+  next if( $ARGS{$j} !~ /\w+/ );
   $args{$j} = $ARGS{$j};
 }
 </%perl>
+<& header, title => "Node" &>
 <!-- node.html -->
+<br>
+<blockquote>
+<form action="node.html" method="POST">
+<input type="text" name="node" size="30" value="<% $args{node} %>">
+<input name="submit" value="Discover" type="submit">
+</form>
+</blockquote>
+% if( exists( $args{submit} ) ) {
+%   ;
+% }
 % if( exists( $args{node} ) ) {
-  <& header, title => "Node" &>
+  <hr>
   <p><% $args{node} %>
 %   $nv->build_config( "device", $args{node} );
 %   if( my( %node ) = $nv->get_device( "device", $args{node} ) ) {
 %     if( %node ) {
 %       my $f = \%node;
-
-% #      <& create.html, discover => \%node &>
+%       %session = $gui->mkstate( $DIR );
+%       $session{node} = \%node;
+    <form>
+    <input type="hidden" name="sid" value="<% $session{_session_id} %>">
+    <table cellpadding="3" cellspacing="1" border="0">
+    <tr align="LEFT">
+    <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
+    <input name="submit" value="Submit" type="submit">
+    </td>
+    <td>
+    <input name="cancel" value="Cancel" type="submit">
+    </td>
+    </tr>
+    </table>
+    </form>
 %       print "<code><pre>", $nv->string_config( "device", $args{node} ), "</pre></code>\n";
 %     } else {
         <p>Failed to get config.
@@ -22,25 +46,19 @@ foreach my $j ( keys %ARGS ) {
 %   } else {
       <p>Failed to build config.
 %   }
-% } else {
-  <& header, title => "Node" &>
-  <br>
-  <blockquote>
-  <form action="node.html" method="POST">
-  <input type="text" name="node" size="30" value="">
-  <input name="submit" value="Discover" type="submit">
-  </form>
-  </blockquote>
-  <& footer &>
 % }
-
+<& footer &>
 <%args>
+$DIR => "/home/netdot/public_html/tmp"
 $nv => Netdot::Netviewer->new();
+$gui => Netdot::GUI->new();
+%session => undef
 </%args>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::Netviewer;
+use Netdot::GUI;
 use Data::Dumper;
 
 
@@ -51,6 +69,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.7  2003/07/01 05:27:40  netdot
+#  work to introduce state for final push
+#
 #  Revision 1.6  2003/06/17 23:23:58  netdot
 #  *** empty log message ***
 #
