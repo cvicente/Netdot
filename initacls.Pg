@@ -1,0 +1,59 @@
+#!/usr/bin/perl
+#
+# initacls.Pg
+#
+# Generate the ACLs for PostgreSQL
+# We don't have wildcards like in MySQL ;-(
+# so we have to look in the schema file first
+#
+
+use strict;
+
+my ($DB_HOME, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWORD, $DB_DATABASE, 
+    $DB_NETDOT_PASS, $DB_NETDOT_HOST, $DB_NETDOT_USER ) = @ARGV;
+
+my $schema = "etc/schema.Pg";
+my $BINDIR="$DB_HOME/bin";
+my $TMP = "etc/.tmp";
+my $ACLS = "
+drop user $DB_NETDOT_USER;
+create user $DB_NETDOT_USER with password '$DB_NETDOT_PASS' NOCREATEDB NOCREATEUSER;
+";
+
+print "Now building ACL's for postgres\n";
+
+open (SCHEMA, $schema)
+    or die "Couldn't open $schema: $!\n";
+
+open (TMP, ">$TMP")
+    or die "Can't open $TMP: $!\n";
+
+
+while (<SCHEMA>){
+    if (/CREATE TABLE (\w+) \(/){
+        $ACLS .= "grant select, insert, update, delete on $1 to $DB_NETDOT_USER;\n";
+        $ACLS .= "grant select, insert, update, delete on $1_id_seq to $DB_NETDOT_USER;\n";
+    }
+}
+
+print TMP "$ACLS";
+
+print "Enter the postgres administrator's database password to create a new user for NetDoT";
+
+if ($DB_PORT != ""){
+    $DB_PORT = "-p $DB_PORT";
+}
+if ($DB_HOST != "" ){
+    $DB_HOST = "-h $DB_HOST";
+}
+
+system("psql $DB_HOST $DB_PORT -d $DB_DATABASE -f $TMP -U $DB_DBA");
+
+close(TMP);
+system ("rm -f $TMP");
+
+######################################################################
+#  $Log: initacls.Pg,v $
+#  Revision 1.1  2003/04/08 17:52:53  netdot
+#  Initial revision
+#
