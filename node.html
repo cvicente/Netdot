@@ -26,6 +26,7 @@ if( exists( $args{insert} ) ) {
     $tmp{device} = "0"; # same
     Node->create( \%tmp );
     my $nodeid = (Node->search( name => "$args{node}" ))[0];
+    $inserted = $nodeid->id;
     foreach my $int ( keys %{ $node{interface} } ) {
       undef( %tmp );
       $tmp{node} = $nodeid;
@@ -40,7 +41,6 @@ if( exists( $args{insert} ) ) {
       $tmp{managed} = "0";
       Interface->create( \%tmp );
     }
-    $inserted = $nodeid;
     $gui->rmsession( $session );
   }
 }
@@ -117,6 +117,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.10  2003/07/03 21:31:33  netdot
+#  fix so that call to view.html works
+#
 #  Revision 1.9  2003/07/03 21:18:16  netdot
 #  state and insertion stuff works; still need to fix some stuff
 #  (eg. when device does not respond)
