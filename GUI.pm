@@ -13,12 +13,6 @@ sub DESTROY { }
 
 use Exporter;
 
-@EXPORT = qw ( %inputtypes );
-
-%inputtypes = ( varchar   => "text",
-		bool      => "checkbox",
-		integer   => "text",
-		timestamp => "text" );
 
 ######################################################################
 # Constructor
@@ -138,6 +132,43 @@ sub getobjlabel {
     return join "$delim", @ret ;
 }
 
+######################################################################
+# Get the defined SQL type for a field
+######################################################################
+sub getsqltype {
+    my ($self, $table, $col) = @_;
+    my %coltypes = $self->getcolumntypes($table);
+    return $coltypes{$col};   
+}
+
+######################################################################
+# Build input tag based on SQL type and other options
+######################################################################
+sub getinputtag {
+    my ($self, $col, $obj) = @_;
+    my $tag = "";
+    my $value = $obj->$col;
+    if ($col eq "info"){
+	return "<textarea name=\"$col\" rows=\"10\" cols=\"38\">$value</textarea>\n";
+    }
+    my $table = ref($obj);
+    my $sqltype = $self->getsqltype($table,$col);
+    if ($sqltype =~ /bool/){
+	if ($value == 1){
+	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\" checked> yes<br>";
+	    $tag .= "<input type=\"radio\" name=\"$col\" value=\"0\"> no";
+	}else{
+	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\"> yes<br>";
+	    $tag .= "<input type=\"radio\" name=\"$col\" value=\"0\" checked> no";
+	}
+    }elsif ($sqltype eq "date"){
+	$tag = "<input type=\"text\" name=\"$col\" size=\"27\" value=\"$value\"> (YYYY-MM-DD)";
+    }else{
+	$tag = "<input type=\"text\" name=\"$col\" size=\"40\" value=\"$value\">";
+    }
+    return $tag;
+}
+
 #Be sure to return 1
 1;
 
@@ -209,3 +240,12 @@ the specified object.  They're also used as a meaningful instance identifier.
 Returns an object's label string, composed from the list of labels and the values of those labels
 for this object, which might reside in more than one table.  Accepts an object reference and a delimiter.  
 Returns a string.
+
+=head2 getsqltype
+
+Given a table and a column name, returns the SQL type as defined in the schema
+
+=head2 getinputtag
+ 
+Given column name and object, builds an HTML <input> tag based on the sql type of the 
+field and other parameters
