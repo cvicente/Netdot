@@ -324,14 +324,14 @@ Netdot::GUI - Group of user interface functions for the Network Documentation To
 
 =head1 SYNOPSIS
 
-use Netdot::DBI
+  use Netdot::DBI
 
-$gui = Netdot::DBI->new();  
+  $gui = Netdot::DBI->new();  
 
-$mi = $gui->getmeta($table);
-%linksto = $gui->getlinksto($table);
-%linksfrom = $gui->getlinksfrom($table);
-%order = $gui->getcolumnorder($table);
+  $mi = $gui->getmeta($table);
+  %linksto = $gui->getlinksto($table);
+  %linksfrom = $gui->getlinksfrom($table);
+  %order = $gui->getcolumnorder($table);
 
 =head1 DESCRIPTION
 
@@ -341,9 +341,13 @@ Netdot::GUI groups common methods and variables related to Netdot's user interfa
 
 =head2 new
 
+  $gui = Netdot::DBI->new();
+
 Creates a new GUI object (basic constructor)
 
 =head2 getmeta
+
+  $mi = $gui->getmeta( $table );
 
 When passed a table name, it searches the "Meta" table and returns the object associated
 with such table.  This object then gives access to the table's metadata.
@@ -351,9 +355,13 @@ Its mostly meant to be called from other methods in this class.
 
 =head2 gettables
 
+  @tables = $gui->gettables();
+
 Returns a list of table names
 
 =head2 getlinksto
+
+  %linksto = $gui->getlinksto($table);
 
 When passed a table name, returns a hash containing the table's one-to-many relationships, 
 being this talble the "one" side (has_a definitions in Class::DBI).  
@@ -361,6 +369,8 @@ The hash's keys are the names of the local fields, and the values are the names 
 that these fields reference.
 
 =head2 getlinksfrom
+
+  %linksfrom = $gui->getlinksfrom($table);
 
 When passwd a table name, returns a hash of hashes containing the table's one-to-many relationships,
 being this table the "many" side (equivalent to has_many definitions in Class::DBI).
@@ -370,10 +380,14 @@ reference this table's primary key.
 
 =head2 getcolumnorder
 
+  %order = $gui->getcolumnorder($table);
+
 Accepts a table name and returns its column names, ordered in the same order they're supposed to be 
 displayed. It returns a hash with column names as keys and their positions and values.
 
 =head2 getcolumnorderbrief
+
+  %orderbrief = $gui->getcolumnorderbrief($table);
 
 Similar to getcolumnorder().  Accepts a table name and returns the brief 
 listing for that table.  The method returns a hash with column names as keys
@@ -381,15 +395,22 @@ and their positions as values.
 
 =head2 getcolumntypes
 
+  %coltypes = $gui->getcolumntypes($table);
+
 Accepts a table and returns a hash containing the SQL types for the table's columns.  The hash's
 keys are the column names and the values their type.
 
 =head2 getlabels
 
+  @lbls = $gui->getlabels($table);
+
 Returns a table's list of labels.  Labels are one or more columns used as hyperlinks to retrieve 
 the specified object.  They're also used as a meaningful instance identifier.
 
 =head2 getobjlabel
+
+  $lbl = $gui->getobjlabel( $obj );
+  $lbl = $gui->getobjlabel( $obj, ", " );
 
 Returns an object's label string, composed from the list of labels and the values of those labels
 for this object, which might reside in more than one table.  Accepts an object reference and a delimiter.  
@@ -397,10 +418,16 @@ Returns a string.
 
 =head2 getsqltype
 
+  $type = $gui->getsqltype( $table, $col );
+
 Given a table and a column name, returns the SQL type as defined in the schema
 
 =head2 getinputtag
- 
+
+  $inputtag = $gui->getinputtag( $col, $obj );
+  $inputtag = $gui->getinputtag( $col, $table );
+  $inputtag = $gui->getinputtag( $col, $table, $arg );
+
 Accepts column name and object (or table name) and builds an HTML <input> tag based on the SQL type of the 
 field and other parameters.  When specifying a table name, the caller has the option to pass
 a value to be displayed in the tag.
