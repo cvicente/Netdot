@@ -31,6 +31,7 @@ if( exists( $args{insert} ) ) {
       ;
     } else {
       $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
+      $tmp{physaddr} =~ s/^0x//;
     }
     $tmp{type} = "0";   # maybe tmp; can't be null
     $tmp{device} = "0"; # same
@@ -186,6 +187,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.26  2003/07/17 02:41:12  netdot
+#  Removed the 0x from physaddr
+#
 #  Revision 1.25  2003/07/17 02:24:00  netdot
 #  Set user and contactlist to '0' --cv
 #
