@@ -1,6 +1,5 @@
 <%perl>
 # expect name of Table & objects that require sorting
-undef( %args );
 foreach my $j ( keys %ARGS ) {
   # next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
   $args{$j} = $ARGS{$j};
@@ -16,7 +15,7 @@ if( $args{table} ) {
   if( defined( $args{id} ) ) {
     $obj = $args{table}->retrieve($args{id}) ;
   }
-  my $META = (Meta->search( name => $args{table} ))[0];
+  $META = (Meta->search( name => $args{table} ))[0];
   if( defined( $META ) ) {
     my $i = 1;
     undef( %order );
@@ -108,8 +107,18 @@ if( $args{table} ) {
 <!-- end form --> 
 
 % ####################################################################
+<%args>
 
+%args => undef
+%order => undef
+%orderbrief => undef
+%linksto => undef
+%linksfrom => undef
+$obj => undef
+%session => undef
+$META => undef
 
+</%args>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
@@ -129,6 +138,9 @@ Arguments:
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.15  2003/06/13 18:42:17  netdot
+#  using <%args> format
+#
 #  Revision 1.14  2003/06/04 18:03:47  netdot
 #  added debugging mechanism
 #
