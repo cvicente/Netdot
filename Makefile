@@ -76,6 +76,8 @@ dir:
 	done
 	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/htdocs/masondata
 	chmod 0750 $(PREFIX)/htdocs/masondata
+	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/tmp
+	chmod 750 $(PREFIX)/tmp
 
 htdocs:
 	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@ 
