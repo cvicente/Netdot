@@ -23,9 +23,18 @@ $nv = Netdot::Netviewer->new();
   <p>node:  <% $args{node} %>
 %   $nv->build_config( "device", $args{node} );
 %   my( %node ) = $nv->get_targets();
-    <pre><code>
-%   print $nv->string_config( "device", $args{node} );
-    </code></pre>
+  <p>Do you wish to insert: <br>
+  <ul>
+     <li>node <% $args{node} %>
+     <li>sysDescr:  <% $node{"device"}{$args{node}}{sysDescr} %>
+     <li>sysLocation: <% $node{"device"}{$args{node}}{sysLocation} %>
+%   foreach my $if ( keys %{ $node{"device"}{$args{node}}{interface} } ) {
+     <li>interface: <% $if %>
+   }
+  </ul>     
+% #    <pre><code>
+% #  print $nv->string_config( "device", $args{node} );
+% #    </code></pre>
 % }
 
 <& footer &>
@@ -44,6 +53,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.3  2003/06/12 00:52:58  netdot
+#  *** empty log message ***
+#
 #  Revision 1.2  2003/06/11 22:43:55  netdot
 #  working on integrating netviewer & netdot
 #
