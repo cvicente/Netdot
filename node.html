@@ -27,7 +27,11 @@ if( exists( $args{insert} ) ) {
     $tmp{name} = $args{node};
     $tmp{community} = $comstr;
     $tmp{sysdescription} = $node{sysDescr};
-    $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
+    if( $node{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
+      ;
+    } else {
+      $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
+    }
     $tmp{type} = "0";   # maybe tmp; can't be null
     $tmp{device} = "0"; # same
     eval { $newnode = Node->create( \%tmp ); }
@@ -128,8 +132,7 @@ if( exists( $args{insert} ) ) {
 <p><% $args{node} %>
 %     $nv->build_config( "device", $args{node} );
 %     if( my( %node ) = $nv->get_device( "device", $args{node}, $comstr ) ) {
-%       if( keys %node ) {
-% #        $session = $gui->mksession( $DIR );
+%       if( keys %{ $node{interface} } ) {
 %         $session->{node} = \%node;
     <form>
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
@@ -145,12 +148,13 @@ if( exists( $args{insert} ) ) {
     </tr>
     </table>
     </form>
+%         printf "<pre>%s</pre>\n", Dumper( \%node );
 %         print "<code><pre>", $nv->string_config( "device", $args{node} ), "</pre></code>\n";
 %       } else {
-    <p>Failed to get config.
+    <p>Failed to get details.
 %       }
 %     } else {
-    <p>Failed to build config.
+    <p>Failed to build information.
 %     }
 %   }
 <& footer &>
@@ -180,6 +184,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.24  2003/07/17 00:03:53  netdot
+#  *** empty log message ***
+#
 #  Revision 1.23  2003/07/16 22:37:18  netdot
 #  disabling chunk of subnet code for later work
 #
