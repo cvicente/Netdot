@@ -5,8 +5,8 @@ DST = unstable
 ETC = ins.sample.data netdot.relationships netdot.schema
 DOC = TODO ChangeLog MILESTONES
 BIN = initacls.mysql initacls.Pg setup-class-dbi.pl mason.pl initdb
-HTML = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html table.html banner style.css footer2
-
+HTML = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html table.html banner style.css footer2 node.html
+NETVIEWER = Netviewer.pm nv.categories nv.ifTypes
 
 ######################################################################
 help:
@@ -41,8 +41,7 @@ testing:
 .PHONY: nvtest
 nvtest: DST = /home/netdot/public_html
 nvtest: 
-	cp -f Netviewer.pm $(DST)/lib/Netdot
-	cp node.html $(DST)/htdocs
+	cp -f $(NETVIEWER) $(DST)/lib/Netdot
 
 
 
