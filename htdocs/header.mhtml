@@ -1,0 +1,53 @@
+<%doc>
+  
+  Options for header:
+
+  $title <string>
+         If title set to empty string, header acts as banner for opening page
+
+</%doc>
+%
+%
+<%args>
+$title => undef
+</%args>
+%
+%
+<%init>
+my $ui = Netdot::UI->new();
+my $currentUser = SiteControl::AccessController::getCurrentUser($r);
+</%init>
+%
+%
+<html>
+<head>
+  <link rel=StyleSheet href="style.css" type="text/css" />
+  <link rel="alternate stylesheet" title="Gray" href="style-gray.css" type="text/css" />
+%
+%
+% if( $title ) {
+   <title>Netdot : <% $title %></title>
+% } else {
+   <title>Netdot: NETwork DOcumentation Tool</title>
+% }
+%
+%
+</head>
+<script language="JavaScript" src="dynamic_list.js" />
+<body>
+
+<div id="header">
+   <div id="logo">
+      <a href="/"><img src="spacer" alt=""/></a>
+   </div>
+   <div id="headerinfo">
+      <form action="search.html" method="post">
+         <label for="q"><b>Search</b>:</label>
+         <input type="text" name="q" size="10" value="">
+      </form>
+% if( $currentUser) {
+      <% $currentUser->getUsername() %>
+% }
+      [<a href="logout.html">logout</a>]
+   </div>
+</div>
