@@ -100,12 +100,12 @@ initdb.user:
 	$(PERL) initdb '$(DB_TYPE)' '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_NETDOT_USER)' '$(DB_DATABASE)' insert
 
 insert.metadata:
-	./insert-metadata
+	$(PERL) insert-metadata $(DB_HOME) $(DB_DATABASE) $(DB_DBA)
 
 insert.sample.data:
-	./ins.sample.data
+	$(PERL) ins.sample.data $(DB_HOME) $(DB_DATABASE) $(DB_DBA)
 
 setup.class.dbi:
-	./setup-class-dbi
+	$(PERL) setup-class-dbi $(DB_TYPE) $(DB_DATABASE) $(DB_NETDOT_USER) $(DB_NETDOT_PASS)  
 	install -m $(FMOD) DBI.pm $(PREFIX)/lib/Netdot/DBI.pm
 
