@@ -1,0 +1,54 @@
+# $Header: /tmp/netdot/src/RCS/nv.ifTypes,v 1.1 2003/06/12 17:46:31 netdot Exp $
+#
+# simple translation table of ifType numbers to names
+#
+1    other
+2    regular1822 
+3    hdh1822
+6    ethernetCsmacd 
+7    iso88023Cmsacd
+14   hyperchannel 
+15   fddi
+16   lapb
+17   sdlc
+18   ds1
+19   e1
+20   basicISDN
+21   primaryISDN
+22   propPointtoPointSerial
+23   ppp
+24   softwareLoopback 
+28   slip      
+30   ds3
+32   frameRelay   
+33   rs232 
+39   sonet      
+44   frameRelayService 
+45   v35      
+46   hssi
+48   modem       
+50   sonetPath
+51   sonetVT 
+53   propVirtual
+131  tunnel
+171  pos
+
+ifdata
+# don't mess with this!!!
+# not all interfaces can gather the same kind of information
+# this creates a map from ifType to types of information that can be 
+# gathered.  Be sure ifTypes has the needed definitions.  If it isn't
+# found, default is used.
+
+# new setup
+ ethernetCsmacd	          Octets, UcastPkts, Errors, Discards, NUcastPkts
+ ds3			  Octets, UcastPkts, Errors, Discards
+ frameRelay		  Octets, UcastPkts
+ hssi			  Octets, UcastPkts, Errors, Discards
+ tunnel		          Octets, UcastPkts
+ propVirtual		  Octets, UcastPkts, NUcastPkts
+ ppp			  Octets, UcastPkts, Errors, Discards
+ other			  Octets, UcastPkts, Errors, Discards
+ propPointtoPointSerial   Octets, UcastPkts, Errors, Discards
+ pos			  Octets, UcastPkts, Errors, Discards
+ default		  Octets, UcastPkts, Errors, Discards
