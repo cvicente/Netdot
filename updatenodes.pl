@@ -19,10 +19,8 @@ my $nv = Netdot::Netviewer->new( foreground => 0 );
 my @nodes = Node->retrieve_all();
 foreach my $node ( @nodes ) {
   my %ifs;
-  print "!!!!!!!! node ", $node->name, "\n" if( $DEBUG );
   map { $ifs{ $_->id } = 1 } Node->interfaces();
   $nv->build_config( "device", $node->name );
-  print "have config....\n";
   ################################################
   # get information from the device
   if( my( %dev ) = $nv->get_device( "device", $node->name ) ) {
@@ -102,11 +100,13 @@ sub update {
   foreach my $col ( keys %state ) {
     if( $state{$col} ne $obj->$col ) {
       $change = 1;
-      $obj->set( $col, $state{$col} );
+      eval { $obj->set( $col, $state{$col} ); }
+	or die "Unable to set $col to $state{$col}: $@ \n";
     }
   }
   if( $change ) {
-    $obj->update;
+    eval { $obj->update; } 
+      or die "Unable to update: $@\n";
   }
 }
 
@@ -116,7 +116,10 @@ sub insert {
   my( %argv ) = @_;
   my($obj) = $argv{object};
   my(%state) = %{ $argv{state} };
-  return $obj->create( \%state );
+  my($ret);
+  eval { $ret = $obj->create( \%state ); }
+    or die "Unable to insert into $obj: $@\n";
+  return $ret;
 }
 
 
@@ -124,7 +127,8 @@ sub insert {
 sub remove {
   my(%argv) = @_;
   my($obj) = $argv{object};
-  $obj->delete;
+  eval { $obj->delete; }
+    or die "Unable to delete: $@ \n";
 }
 
 
@@ -138,6 +142,9 @@ sub calc_subnet {
 
 ######################################################################
 #  $Log: updatenodes.pl,v $
+#  Revision 1.5  2003/07/11 15:28:11  netdot
+#  added series of eval statements
+#
 #  Revision 1.4  2003/07/11 00:03:23  netdot
 #  more work fleshing out algorithm
 #
