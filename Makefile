@@ -36,7 +36,9 @@ usage:
 DMOD = 0775
 FMOD = 0644
 XMOD = 0744
-DIR = bin doc htdocs/img htdocs/masondata tmp lib etc
+# If mason ever decides to use different directories in it's data_dir there will
+# be trouble.
+DIR = bin doc htdocs/img htdocs/masondata/obj htdocs/masondata/cache tmp lib etc
 
 .PHONY: tests bin doc htdocs lib etc
 
@@ -77,7 +79,7 @@ dir:
 	       mkdir -m $(DMOD) -p $(PREFIX)/$$dir ; \
 	    fi ; \
 	done
-	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/htdocs/masondata
+	chown -R $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/htdocs/masondata
 	chmod 0750 $(PREFIX)/htdocs/masondata
 	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/tmp
 	chmod 750 $(PREFIX)/tmp
