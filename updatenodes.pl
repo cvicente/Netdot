@@ -7,23 +7,42 @@ use Netdot::DBI;
 use Netdot::Netviewer;
 use Data::Dumper;
 
-my $DEBUG = 1;
+my $DEBUG = 0;
 my %ifnames = ( physaddr => "ifPhysAddress",
 		ifindex => "instance",
 		iftype => "ifType",
 		ifalias => "descr",
 		ifspeed => "ifSpeed",
 		ifadminstatus => "ifAdminStatus" );
+my $usage = 
+"usage: $0 [-h|-v]
+       -h  print help (this message)
+       -v  be verbose \n";
+
+if( @ARGV ) {
+  if( $ARGV[0] =~ /^-h$/o || $ARGV[0] =~ /^--help$/o ) {
+    print $usage; 
+    exit;
+  } elsif( $ARGV[0] eq "-v" ) {
+    $DEBUG = 1;
+  } else {
+    die $usage;
+  }
+}
 
 my $nv = Netdot::Netviewer->new( foreground => 0 );
 my @nodes = Node->retrieve_all();
+
+print "Fetching current list of nodes....\n" if( $DEBUG );
 foreach my $node ( @nodes ) {
   my %ifs;
+  print "Checking node ", $node->name, " \n" if( $DEBUG );
   map { $ifs{ $_->id } = 1 } Node->interfaces();
   $nv->build_config( "device", $node->name );
   ################################################
   # get information from the device
   if( my( %dev ) = $nv->get_device( "device", $node->name ) ) {
+    print "Have node ", $node->name, " information\n" if( $DEBUG );
     ##############################################
     # for each interface just discovered...
     foreach my $newif ( keys %{ $dev{interface} } ) {
@@ -44,10 +63,14 @@ foreach my $node ( @nodes ) {
       ############################################
       # does this ifIndex already exist in the DB?
       if( $if = (Interface->search( node => $node->id, ifindex => $dev{interface}{$newif}{instance}))[0] ) {
+	print "Interface node ", $node->name, ":$newif exists; updating\n"
+	  if( $DEBUG );
 	update( object => \$if, state => \%iftmp ); 
 	delete( $ifs{ $if->id } );
       } else {
 	$iftmp{managed} = 0;
+	print "Interface node ", $node->name, ":$newif doesn't exist; ",
+	  "inserting\n" if( $DEBUG );
 	$if = insert( object => "Interface", state => \%iftmp );
       }
       if( exists( $dev{interface}{$newif}{ipAdEntIfIndex} ) ) {
@@ -58,10 +81,13 @@ foreach my $node ( @nodes ) {
 	  ########################################
 	  # does this subnet already exist?
 	  if( $subnet = (Subnet->search( address => $net ) )[0] ) {
+	    print "Subnet $net exists \n" if( $DEBUG );
 	    ; # do nothing
 	  } else {
 	    my %tmp;
 	    $tmp{address} = $net;
+	    $tmp{entity} = 0;
+	    print "Subnet $net doesn't exist; inserting\n" if( $DEBUG );
 	    $subnet = insert( object => "Subnet", state => \%tmp );
 	  }
 	  $iptmp{interface} = $if->id;
@@ -71,9 +97,11 @@ foreach my $node ( @nodes ) {
 	  ########################################
 	  # does this ip already exist in the DB?
 	  if( $ip = (Ip->search( address => $newip ))[0] ) {
-	    print "have ip $ip; would go to update\n";
+	    print "Interface $newif IP $newip exists; updating\n" if($DEBUG);
 	    update( object => \$ip, state => \%iptmp );
 	  } else {
+	    print "Interface $newif IP $newip doesn't exist; inserting\n" 
+	      if($DEBUG);
 	    $ip = insert( object => "Ip", state => \%iptmp );
 	  }
 	} # for
@@ -82,9 +110,12 @@ foreach my $node ( @nodes ) {
     ##############################################
     # remove each interface that no longer exists
     foreach my $nonif ( keys %ifs ) {
-      print "id $nonif \n";
+      print "Node ", $node->name, " Interface ifIndex $nonif ",
+	"doesn't exist; removing\n" if( $DEBUG );
+      remove( object => "Interface", id => $nonif );
     }
   } else {
+    print "Unable to access node ", $node->name, "\n" if( $DEBUG );
     warn "Unable to access node ", $node->name, "\n";
   }
 }
@@ -127,7 +158,9 @@ sub insert {
 sub remove {
   my(%argv) = @_;
   my($obj) = $argv{object};
-  eval { $obj->delete; }
+  my($id) = $argv{id};
+  my $o = $obj->retrieve( $id );
+  eval { $o->delete; }
     or die "Unable to delete: $@ \n";
 }
 
@@ -142,6 +175,9 @@ sub calc_subnet {
 
 ######################################################################
 #  $Log: updatenodes.pl,v $
+#  Revision 1.6  2003/07/11 21:15:22  netdot
+#  looks near final; added code to delete stuff
+#
 #  Revision 1.5  2003/07/11 15:28:11  netdot
 #  added series of eval statements
 #
