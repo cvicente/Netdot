@@ -37,23 +37,25 @@ foreach my $j ( keys %ARGS ) {
       }
     }
     </%perl>
-    <table cellpadding="0" border="0" align="center" width="100%" bgcolor="#CCCCCC">
-    <tr>
+
 %   if( ! %results ) {
-      <td>No matching records were found.</td>
+      No matching records were found.
 %   } else {
 %     foreach my $tbl ( keys %results ) {
 %       next if( $tbl eq "Meta" );
 %       my @objs;
 %       map { push @objs, $results{$tbl}{$_} } keys %{ $results{$tbl} };
+        <p>
+        <table cellpadding="0" border="0"  bgcolor="#CCCCCC">
 	<tr>
         <td><strong><% $tbl %></strong>
         <& sortresults.html, table => $tbl, object => \@objs, view => "expanded" &>
+        </td></tr>
+        </table>
 
 %     } # end foreach tbl
 %   } # end else
-    </tr>
-    </table>
+
 % }
 
 <& footer &>
@@ -77,6 +79,9 @@ my $dbh = DBI->connect( "dbi:mysql:netdot", "netdot_user", "netdot_pass" )
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.6  2003/05/01 00:55:48  netdot
+# more changes to make layout prettier
+#
 # Revision 1.5  2003/05/01 00:12:40  netdot
 # supporting view argument in sortresults.html
 #
