@@ -6,15 +6,18 @@ Interface for viewing/updating information relevant for a
 given customer.
 
 </%doc>
-
+%
+%
 <%args>
 $user
 </%args>
-
+%
+%
 <%attr>
 title   => 'Operations' 
 section => 'Operations'
 </%attr>
+%
 %
 <%init>
 my %caller_args = $m->caller_args(-1);
@@ -26,32 +29,20 @@ my $page = $user->getAttribute("NOC_PAGE");
 </%init>
 %
 %
-<br>
+<p>
 %
-% # links to sub NOC functions go here (if any)
-% 
 % # now supply search box and action to noc.html
-    <table border="0" width="100%" class="tablebackground">
-        <tr>
-            <td>
-                <table border="0"width="100%" class="formtablebg">
-                    <tr class="formtabletitle">
-                        <th>Insert Meaningful Text Here</th>
-                    </tr>
-                    <tr>
-	                <td>
-                            <form action="operations.html" method="POST">
-		            Name: 
-                            <input type="text" name="search" size="20" value="">
-		            <input name="submit" value="search" type="submit">
-                            </form>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-
+<fieldset>
+    <legend>Operations Information</legend>
+    <p>
+        <form action="operations.html" method="POST">
+            <label for="search">Keyword(s)</a>
+            <input type="text" name="search" size="20" value="">
+            <input name="submit" value="search" type="submit">
+        </form>
+    </p>
+</fieldset>
+%
 % if ( $m->fetch_next ){
 %  $m->call_next;
 % }
