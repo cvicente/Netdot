@@ -1,0 +1,79 @@
+% # section_cable.inc.mas
+% #
+% # Cable Plant
+% #
+% #############################################################################
+
+% my @sites = Site->retrieve_all({"order_by"=>"name"});
+
+<tr class="rowtitle0">
+    <td><b>Cable Plant</b></td>
+</tr>
+<tr class="rowtitle2">
+    <td>
+    <h4>Horizontal Cable</h4>
+    <blockquote>
+    <form name="netdotform" action="cable_plant.html" method="GET">
+    <input type="hidden" name="page_type" value="HORIZONTAL">
+    <table border="0" cellpadding="2" cellspacing="0" width="100%" class="tablebackground">
+        <tr align="left" valign="top">
+            <td width="350" align="left">Site:<BR>
+            <!--
+                XXX: This select list population stuff is broken at the moment. Need to rework/rethink
+                     sendquery() functionality, or perhaps this will need to be customized for this form as
+                     it is getting a little specific - populating both floor and jack lists. Anyway, I'm 
+                     waiting for schema to settle down before implementing dynamic select list functionality.
+            -->
+            <select name="id" onChange="return false;">
+            <option value="">-- Make your selection --</option>
+            <%perl>
+            foreach my $site (@sites)
+            {
+                printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+            }
+            </%perl>
+            </select> &nbsp;<input name="submit" value="Browse Site" type="submit">
+            </td>
+
+            <td width="100" align="left">Floor:<br>
+            <select name="floor">
+            </select>
+            </td>
+            
+            <td width="180" align="left">Jack:<br>
+            <select name="jackid" width="10" onChange="if (this.value) { location.href = ('cable_horizontal.html?&id=' + this.value); }" style="width: 100px;">
+            </select>
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+    </table>
+    </form>
+</td>
+</tr>
+<tr class="rowtitle2">
+    <td>
+    <h4>Backbone Cable</h4>
+    <blockquote>
+    <form name="backbone_form" action="cable_plant.html" method="POST">
+    <input type="hidden" name="page_type" value="BACKBONE">
+    <table border="0" cellpadding="2" cellspacing="0" width="100%" class="tablebackground">
+        <tr>
+            <td width="200">Site:<br>
+            <select name="id">
+            <option value="">-- Make your selection --</option>
+            <%perl>
+            foreach my $site (@sites)
+            {
+                printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+            }
+            </%perl>
+            </select> &nbsp;<input name="submit" value="Browse Site" type="submit">
+            </td>
+        </tr>
+    </table>
+    </form>
+    </blockquote>
+    </td>
+</tr>
+
+% #############################################################################

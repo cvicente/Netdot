@@ -403,6 +403,151 @@ sub remove {
   }
 }
 
+###############################################################################
+# form_to_db
+#
+# Generalized code for making updates to the DB. Ripped from existing code in
+# device-ws.html with minor tweaks, etc. Expected format for passed in form 
+# data is:
+#
+#   TableName__<primary key>__ColumnName => Value
+#
+#   If primary key is "NEW", a new row will be inserted.
+#
+# Returns a hash with update details on success, false on failure and error 
+# should be set.
+###############################################################################
+sub form_to_db
+{
+    my %arg = ();
+    my %form_to_db_info = ();
+    my($self, %argv) = @_;
+    #Define control field names, to be ignored when parsing form data.
+    my %control = ( 
+                 'id'     => '',
+                 'submit' => '',
+                 'edit'   => '',
+                 'save'   => '',
+                 'show'   => '',
+                 '_action'=> '',
+                 'page_type'  => ''
+    );
+
+    # Ignore empty and control fields
+    # for saving purposes
+    # / _srch/ elements are added for javascript only
+    # we don't need them here
+    foreach my $j (keys %argv)
+    {
+        next if ( exists($control{$j}));
+        next if ($j =~ /_srch/);
+        next if ($j eq "s2name");
+        
+        my $k = $j;
+        $k =~ s/^_//;
+        $arg{$k} = $argv{$j};
+    }
+
+    # Check that we have at least one parameter
+    unless (scalar keys(%arg))
+    {
+        $self->{"_error"} = "Error: Missing name/value pairs.";
+        return 0;
+    }
+    
+    # Store objects, fields and values in a hash
+    my %objs;
+    foreach my $item (keys %arg)
+    {
+        my ($table, $id, $field) = split /__/, $item;
+        $objs{$table}{$id}{$field} = $arg{$item};
+    }
+  
+    # Now do the actual updating
+    # First check for "action" fieldnames
+    # Actions (like delete) take precedence over value updates
+    foreach my $table (keys %objs)
+    {
+        foreach my $id (keys %{ $objs{$table} })
+        {
+            my $act = 0;
+            foreach my $field (keys %{ $objs{$table}{$id} })
+            {
+                if ($field eq "delete" && $objs{$table}{$id}{$field} eq "on")
+                {
+                    # Remove object from DB
+                    if (!$self->remove(table => "$table", id => "$id"))
+                    {
+                        return 0; # error should already be set.
+                    }
+                    
+                    # Set the 'action' flag
+                    $act = 1;
+                    last;
+                }
+                
+                elsif ($field eq "new")
+                {
+                    my %state;
+                    # This is a little hack
+                    if ($table eq "InterfaceDep" && $objs{$table}{$id}{$field} ne "0")
+                    {
+                        $state{child} = $id;
+                        $state{parent} = $objs{$table}{$id}{$field};
+                    }
+                    
+                    if (scalar(keys %state))
+                    {
+	                    if (!$self->insert(table => $table, state => \%state))
+                        {
+                            return 0; # error should already be set.
+                        }
+                    }
+                    
+                    $act = 1;
+                    last;
+                }
+            }
+
+            # If our id is new we want to insert a new row in the DB.
+            if ($id eq "NEW")
+            {
+                my $newid = undef;
+                if (!($newid = $self->insert(table => $table, state => \%{ $objs{$table}{$id} })))
+                {
+                    return 0; # error should be set.
+                }
+
+                $form_to_db_info{$table}{action} = "insert";
+                $form_to_db_info{$table}{key} = $newid;
+                $act = 1;
+            }
+            
+
+            # Now update the thing
+            if (!$act) # only if no other actions were performed
+            {
+                my $o;
+                if (!($o = $table->retrieve($id)))
+                {
+                    $self->{"_error"} = "Couldn't retrieve id $id from table $table";
+                    return 0;
+                }
+
+                if (!($self->update(object => $o, state => \%{ $objs{$table}{$id} })))
+                {
+                    return 0; # error should already be set.
+                }
+
+                $form_to_db_info{$table}{action} = "update";
+                $form_to_db_info{$table}{key} = $id;
+            }
+        }
+    }
+
+    return %form_to_db_info;
+}
+
 
 
 __DATA__

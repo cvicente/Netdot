@@ -1,0 +1,369 @@
+<& index.html, title => "Cable Plant: $name", s2name => $s2name  &>
+
+<%perl>
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+# code for inserting/updating
+# -----------------------------------------------------------------------------
+if(defined($ARGS{_action}))
+{
+    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+    if (!$ui->form_to_db(%ARGS))
+    {
+        my $err = $ui->error();
+        die("Error: $err\n");
+	}
+    
+    # Do this to 'flush' the values associated with the object
+    # before redisplaying
+    $o = undef;
+    if ($id)
+    {
+        $o = Site->retrieve($id);
+        $name = $o->name;
+    }
+}  
+# end insertion/update code
+# -----------------------------------------------------------------------------
+</%perl>     
+
+<!-- Header Table -->
+<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+ <tr class="rowtitle0" >
+    <td align="left">
+    <% ucfirst(lc($page_type)) %> Cable for Site: <a href="site.html?id=<% $id %>"><% $o->name %></a>&nbsp;&nbsp; 
+    <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&cable_sort=<% $cable_sort %>">[refresh]</a>
+    </td>
+ </tr>
+</table>
+
+<!-- Margins Table -->
+<table border="0" width="95%" align="center"  class="tablebackground">
+ <tr>
+   <td valign="top" width="50%" align="center">
+
+% if ($edit) {	 
+   <form name="netdotform" action="cable_plant.html" method="POST">
+    <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="page_type" value="<% $page_type %>">
+    <input type="hidden" name="_action" value="<% $id ? "UPDATE" : "NEW" %>">
+    <input type="hidden" name="s2name" value="<% $s2name %>">
+% }
+
+% #############################################################################
+% # BEGIN HORIZONTAL CABLE CODE
+% #############################################################################
+% if (uc($page_type) eq "HORIZONTAL") {
+  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+   <tr class="formtabletitle" >
+     <td colspan="5">
+      <table width="100%" border="0">
+       <tr>
+         <td width="10%" align="left">&nbsp;</td>
+         <th width="70%" align="center">Horizontal Cable</th>
+%	 if ($edit eq "cableinfo"){	 
+            <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
+%	 } else {
+            <td width="20%" align="right">
+                <a href="cable_horizontal.html?id=NEW&site_id=<% $id %>">[new]</a> &nbsp;||&nbsp; 
+                <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+            </td>
+%	 }
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      <table border="0" width="100%">
+    <%perl>
+    my @cables;
+    map { push (@cables, $_) } $o->horizontalcables;
+    </%perl>
+
+    <tr><td align="left" colspan="5"><% scalar(@cables) %> row(s) returned.</td></tr>
+
+%	if (scalar(@cables)) {
+    <tr>
+        <td align="center">
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=jackid&page_type=<% $page_type %>">Jack</a>
+        </td>
+        <td align="center">
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=type&page_type=<% $page_type %>">Type</a>
+        </td>
+        <td align="center">
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=floor&page_type=<% $page_type %>">Floor</a>
+        </td>
+        <td align="center">
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=room&page_type=<% $page_type %>">Room</a>
+        </td>
+        <td align="center">
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=closet&page_type=<% $page_type %>">Closet</a>
+        </td>
+    </tr>
+
+    <%perl>
+    $cable_sort = "jackid" if (!defined($cable_sort) || $cable_sort eq "");
+    
+    my @sorted_cables;
+    if ($cable_sort eq "jackid" || $cable_sort eq "floor" || $cable_sort eq "room" || $cable_sort eq "closet")
+    {
+        @sorted_cables = sort { $a->$cable_sort cmp $b->$cable_sort } @cables;
+    }
+    elsif ($cable_sort eq "type")
+    {
+       @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
+    }
+    else
+    {
+        die("ERROR: Unknown value for cable_sort: \"$cable_sort\"\n");
+    }
+    </%perl>
+
+%   my $i = 0;
+%   foreach my $cable (@sorted_cables) {
+%   $i = ($i + 1) % 2;
+    <tr align="left" class="<% $cssitem{$i} %>">
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+            <input type="checkbox" name="<% "HorizontalCable__" . $cable->id . "__delete" %>">[del]
+            <input type="text" name="HorizontalCable__<% $cable->id %>__jackid" value="<% $cable->jackid %>">
+%       } else {
+            <a href="cable_horizontal.html?id=<% $cable->id %>"><% $cable->jackid %></a>
+%       }
+        </td>
+        
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+%           $form_manager->selectLookup(object=>$cable, column=>"type", lookup=>"CableType");
+%       } else {
+            <% $cable->type ? $cable->type->name : "" %>
+%       }
+         </td>
+        
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+            <input type="text" name="HorizontalCable__<% $cable->id %>__floor" value="<% $cable->floor %>">
+%       } else {
+            <% $cable->floor %>
+%       }
+        </td>
+        
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+            <input type="text" name="HorizontalCable__<% $cable->id %>__room" value="<% $cable->room %>">
+%       } else {
+            <% $cable->room %>
+%       }            
+        </td>
+        
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+            <input type="text" name="HorizontalCable__<% $cable->id %>__closet" value="<% $cable->closet %>">
+%       } else {            
+            <% $cable->closet %>
+%       }            
+        </td>
+    </tr>
+%   }
+%}
+    </table>
+    </td>
+    </tr>
+</table>
+%} 
+% #############################################################################
+% # END HORIZONTAL CABLE CODE
+% #############################################################################
+%
+%
+% #############################################################################
+% # BEGIN BACKBONE CABLE CODE
+% #############################################################################
+% elsif (uc($page_type) eq "BACKBONE") {
+  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+   <tr class="formtabletitle" >
+     <td colspan="5">
+      <table width="100%" border="0">
+       <tr>
+         <td width="10%" align="left">&nbsp;</td>
+         <th width="70%" align="center">Backbone Cable</th>
+%	 if ($edit eq "cableinfo"){	 
+            <td width="20%" align="right"><input name="submit" value="save" type="submit"></td>
+%	 } else {
+            <td width="20%" align="right">
+                <a href="cable_backbone.html?id=NEW">[new]</a> &nbsp;||&nbsp; 
+                <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+            </td>
+%	 }
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      <table border="0" width="100%">
+    <%perl>
+    my @cables;
+    my $siteid = $o->id;
+    my @sites = (BackboneCable->search(startsite=>$id), 
+                 BackboneCable->search(endsite=>$id));
+                 
+    map { push (@cables, $_) } @sites;
+
+    printf("cables returned: %s\n", scalar(@cables)) if $DEBUG;
+    </%perl>
+
+    <tr><td align="left" colspan="5"><% scalar(@cables) %> row(s) returned.</td></tr>
+
+%	if (scalar(@cables)) {
+    <tr>
+        <td align="center">
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=name&page_type=<% $page_type %>">Name</a>
+        </td>
+        <td align="center">
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=type&page_type=<% $page_type %>">Type</a>
+         </td>
+        <td align="center">
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=startsite&page_type=<% $page_type %>">Start Site</a>
+        </td>
+        <td align="center">
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=endsite&page_type=<% $page_type %>">End Site</a>
+        </td>
+        <td align="center">
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=owner&page_type=<% $page_type %>">Owner</a>
+        </td>
+    </tr>
+
+    <%perl>
+    $cable_sort = "name" if (!defined($cable_sort) || $cable_sort eq "");
+    my @sorted_cables;
+    if ($cable_sort eq "name")
+    {
+        @sorted_cables = sort { $a->$cable_sort cmp $b->$cable_sort } @cables;
+    }
+    elsif ($cable_sort eq "type")
+    {
+        @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
+    }
+    elsif ($cable_sort eq "startsite")
+    {
+        @sorted_cables = sort { $a->startsite->name cmp $b->startsite->name } @cables;
+    }
+    elsif ($cable_sort eq "endsite")
+    {
+        @sorted_cables = sort { $a->endsite->name cmp $b->endsite->name } @cables;
+    }
+    elsif ($cable_sort eq "owner")
+    {
+        @sorted_cables = sort { $a->owner->name cmp $b->owner->name } @cables;
+    }
+    else
+    {
+        die("ERROR: Unknown value for cable_sort: \"$cable_sort\"\n")
+    }
+    </%perl>
+
+%   my $i = 0;
+%   foreach my $cable (@sorted_cables) {
+%   $i = ($i + 1) % 2;
+    <tr align="left" class="<% $cssitem{$i} %>">
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+            <input type="checkbox" name="<% "BackboneCable__" . $cable->id . "__delete" %>">[del]
+            <input type="text" name="BackboneCable__<% $cable->id %>__name" value="<% $cable->name %>">
+%       } else {
+            <a href="cable_backbone.html?id=<% $cable->id %>"><% $cable->name %></a>
+%       }
+        </td>
+        
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+%           $form_manager->selectLookup(object=>$cable, column=>"type", lookup=>"CableType");
+%       } else {
+            <% $cable->type ? $cable->type->name : "" %>
+%       }
+        </td>
+
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+%           $form_manager->selectLookup(object=>$cable, column=>"startsite", lookup=>"Site");
+%       } else {
+            <% $cable->startsite ? $cable->startsite->name : "" %>
+%       }
+        </td>
+
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+%           $form_manager->selectLookup(object=>$cable, column=>"endsite", lookup=>"Site");
+%       } else {
+            <% $cable->endsite ? $cable->endsite->name : "" %>
+%       }
+        </td>
+
+        <td align="left">
+%       if ($edit eq "cableinfo") {
+%           $form_manager->selectLookup(object=>$cable, column=>"owner", lookup=>"Entity");
+%       } else {
+            <% $cable->owner ? $cable->owner->name : "" %>
+%       }
+        </td>
+    </tr>
+%   }
+%}
+    </table>
+    </td>
+    </tr>
+</table>
+
+%}
+% #############################################################################
+% # END BACKBONE CABLE CODE
+% #############################################################################
+% else {
+%   die("Error: Unknown type \"$page_type\"\n");
+%}
+
+% if ($edit) {	 
+    </form>
+% }
+
+ </td></tr>
+</table>
+<!-- End Margins Table -->
+
+<%args>
+$id => undef;
+$cable_sort => undef;
+$edit => undef;
+$page_type => undef;
+$s2name => "Plant";
+</%args>
+
+<%init>
+use Netdot::FormManager;
+
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $form_manager = Netdot::FormManager->new();
+my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
+my $maxselect = 100;
+my $o = undef;
+my $name;
+
+if ($id) 
+{
+   $o = Site->retrieve($id);
+   $name = $o->name;
+} 
+
+else 
+{
+   $name = "Search"
+}
+</%init>
+
+<%doc>
+Cable management stuff...
+</%doc>

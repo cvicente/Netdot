@@ -1,0 +1,311 @@
+<& index.html, title => "Cable Plant: Backbone", s2name => $s2name  &>
+
+<script language="javascript" src="select.js"></script>
+
+<%perl>
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+# code for inserting/updating
+# -----------------------------------------------------------------------------
+if (defined($ARGS{_action}))
+{
+    my %update_info = ();
+    
+    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+    if (!(%update_info = $ui->form_to_db(%ARGS)))
+    {
+        my $err = $ui->error();
+        die("Error: $err\n");
+	}
+
+    # Ignore id changes for anything but BackboneCable.
+    # (i.e., we do not care about CableStrand id update).
+    if ($update_info{BackboneCable}{key})
+    {
+        $id = $update_info{BackboneCable}{key};
+    }
+    
+    # Do this to 'flush' the values associated with the object
+    # before redisplaying
+    $o = undef;
+    if ($id && $id ne "NEW")
+    {
+        $o = BackboneCable->retrieve($id);
+    }
+}  
+# end insertion/update code
+# -----------------------------------------------------------------------------
+</%perl>     
+
+% # interface...
+% # ---------------------------------------------------------------------------
+<!-- Header Table -->
+% if (defined($o)) {
+<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+ <tr class="rowtitle0" >
+    <td align="left">
+        Start:
+        <% $o->startsite ? "<a href=\"cable_plant.html?id=" . $o->startsite->id . "&page_type=BACKBONE\">" . $o->startsite->name . "</a>" 
+                         : "<i>undefined</i>" %>
+        &nbsp;&nbsp;
+        End:
+        <% $o->endsite ? "<a href=\"cable_plant.html?id=" . $o->endsite->id . "&page_type=BACKBONE\">" . $o->endsite->name . "</a>" 
+                         : "<i>undefined</i>" %>
+    </td>
+ </tr>
+</table>
+%}
+<!-- End Header Table -->
+
+<!-- Begin Backbone Cable Table -->
+<table border="0" width="95%" align="center"  class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="center">
+        <form name="netdotform" action="cable_backbone.html" method="POST">
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
+        <input type="hidden" name="s2name" value="<% $s2name %>">
+        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+        <tr class="formtabletitle">
+            <td colspan="3" align="left">Backbone Cable</td>
+        </tr>
+        <tr align="left" valign="top">
+            <td width="40%">
+            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <tr align="left" valign="top">
+                <td>Name: </td>
+                <td><input type="text" name="BackboneCable__<% $id %>__name" value="<% $o ? $o->name : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Cable Type: </td>
+                <td>
+%               $form_manager->selectLookup(object=>$o, table=>"BackboneCable", column=>"type", lookup=>"CableType");
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Owner: </td>
+                <td>
+%               $form_manager->selectLookup(object=>$o, table=>"BackboneCable", column=>"owner", lookup=>"Entity");
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
+                <td><input type="text" name="BackboneCable__<% $id %>__installdate" value="<% $o ? $o->installdate : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Number of Strands:</td>
+                <td><input type="text" name="BackboneCable__<% $id %>__numberofstrands" value="<% $o ? $o->numberofstrands : "" %>"></td>
+            </tr>
+            </table>
+            </td>
+            
+            <td width="40%">
+            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <tr align="left" valign="top">
+                <td>Start Site: </td>
+                <td>
+%               $form_manager->selectLookup(object=>$o, table=>"BackboneCable", column=>"startsite", lookup=>"Site");
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Start Room: </td>
+                <td><input type="text" name="BackboneCable__<% $id %>__startroom" value="<% $o ? $o->startroom : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>End Site: </td>
+                <td>
+%               $form_manager->selectLookup(object=>$o, table=>"BackboneCable", column=>"endsite", lookup=>"Site");
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>End Room: </td>
+                <td><input type="text" name="BackboneCable__<% $id %>__endroom" value="<% $o ? $o->endroom : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Length: </td>
+                <td><input type="text" name="BackboneCable__<% $id %>__length" value="<% $o ? $o->length : "" %>"></td>
+            </tr>
+            </table>
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr><td colspan="3">&nbsp;<br></td></tr>
+
+        <tr align="left" valign="top">
+            <td colspan="2">
+            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
+            <textarea name="BackboneCable__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr><td colspan="3">&nbsp;<p></td></tr>
+
+        <tr align="left" valign="top">
+            <td align="center"><input name="submit" value="save" type="submit"></td>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+
+        </table>
+        </form>
+    </td>
+    </tr>
+</table>
+<!-- End Backbone Cable Table -->
+
+
+<!-- Begin Cable Strand Cable -->
+% if (defined($o)) {
+<A NAME="cable_strand"></A>
+<table border="0" width="95%" align="center"  class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="center">
+     <form name="netdotform" action="cable_backbone.html" method="POST">
+     <input type="hidden" name="id" value="<% $id %>">
+     <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
+     <input type="hidden" name="s2name" value="<% $s2name %>">
+
+    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+    <tr class="formtabletitle">
+     <td colspan="2">
+      <table width="100%" border="0">
+       <tr>
+         <td width="10%" align="left">&nbsp;</td>
+         <th width="80%" align="center">Cable Strands</th>
+%	 if ($edit eq "strandinfo") {	 
+            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+%	 } else {
+            <td width="10%" align="right">
+                <a href="cable_strand.html?id=NEW">[new]</a> &nbsp;||&nbsp;
+                <a href="cable_backbone.html?id=<% $id %>&edit=strandinfo#cable_strand">[edit]</a>
+            </td>
+%	 }
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      <table border="0" width="90%">
+    <%perl>
+    my @strands;
+    map { push (@strands, $_) } $o->strands;
+    </%perl>
+
+%	if (scalar(@strands)) {
+    <tr>
+        <td align="center">
+            <a href="cable_backbone.html?id=<% $id %>&strand_sort=name#cable_strand">Name</a>
+        </td>
+        <td align="center">
+            <a href="cable_backbone.html?id=<% $id %>&strand_sort=status#cable_strand">Status</a>
+        </td>
+        <td align="center">
+            <a href="cable_backbone.html?id=<% $id %>&strand_sort=direction#cable_strand">Direction</a>
+        </td>
+    </tr>
+
+    <%perl>
+
+    my @sorted_strands;
+    if ($strand_sort eq "name" || !$strand_sort)
+    {
+        # sort by name
+        # -----------------------------------------------------------
+        @sorted_strands = sort { uc($a->name) cmp uc($b->name) } @strands;
+    }
+
+    elsif ($strand_sort eq "status")
+    {
+        # sort by status
+        # -----------------------------------------------------------
+        @sorted_strands = sort { uc($a->status->name) cmp uc($b->status->name) } @strands;
+    }
+
+    elsif ($strand_sort eq "direction")
+    {
+        # sort by direction
+        # -----------------------------------------------------------
+        @sorted_strands = sort { uc($a->direction) cmp uc($b->direction) } @strands;
+    }
+    </%perl>
+
+%   my $i = 0;
+%   foreach my $st (@sorted_strands) {
+%   $i = ($i + 1) % 2;
+    <tr align="left" class="<% $cssitem{$i} %>">
+        <td align="left">
+%       if ($edit eq "strandinfo") {
+            <input type="checkbox" name="<% "CableStrand__" . $st->id . "__delete" %>">[del]
+            <input type="text" name="CableStrand__<% $st->id %>__name" value="<% $st->name %>">
+%       } else {
+            <a href="cable_strand.html?id=<% $st->id %>"><% $st->name %></a>
+%       }
+        </td>
+
+        <td align="left">
+%       if ($edit eq "strandinfo") {
+%           $form_manager->selectLookup(object=>$st, column=>"status", lookup=>"StrandStatus");
+%       } else {
+            <% $st->status ? $st->status->name : "" %>
+%       }
+        </td>
+
+        <td align="left">
+%       if ($edit eq "strandinfo") {
+            <input type="text" name="CableStrand__<% $st->id %>__direction" value="<% $st->direction %>">
+%       } else {
+            <% $st->direction %>
+%       }
+        </td>
+    </tr>
+%   }
+%}
+    </table>
+    </td>
+    </tr>
+    </table>
+    </form>
+</td>
+</tr>
+</table>
+% }
+<!-- End Cable Strand Table -->
+
+
+
+<%args>
+$id => undef;
+$strand_sort => undef;
+$edit => undef;
+$s2name => "Plant";
+</%args>
+
+<%init>
+use Netdot::FormManager;
+
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $form_manager = Netdot::FormManager->new();
+my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
+my $o = undef;
+
+if ($id && $id ne "NEW") 
+{
+   $o = BackboneCable->retrieve($id);
+}
+</%init>
+
+<%doc>
+Cable management stuff...
+</%doc>

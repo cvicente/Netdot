@@ -1,0 +1,312 @@
+<& index.html, title => "Cable Plant: Horizontal", s2name => $s2name  &>
+
+<script language="javascript" src="select.js"></script>
+
+<%perl>
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+# code for inserting/updating
+# -----------------------------------------------------------------------------
+if (defined($ARGS{_action}))
+{
+    my %update_info = ();
+    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+    if (!(%update_info = $ui->form_to_db(%ARGS)))
+    {
+        my $err = $ui->error();
+        die("Error: $err\n");
+	}
+
+    if ($update_info{HorizontalCable}{key})
+    {
+        $id = $update_info{HorizontalCable}{key};
+    }
+
+    # Do this to 'flush' the values associated with the object
+    # before redisplaying
+    $o = undef;
+    $site = undef;
+    if ($id && $id ne "NEW")
+    {
+        $o = HorizontalCable->retrieve($id);
+        $site = $o->site;
+    }
+}  
+# end insertion/update code
+# -----------------------------------------------------------------------------
+</%perl>     
+
+% # interface...
+% # ---------------------------------------------------------------------------
+<!-- Header Table -->
+<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+ <tr class="rowtitle0" >
+    <td align="left">
+        Horizontal Cable for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=HORIZONTAL"><% $site->name %></a>&nbsp;&nbsp; 
+    </td>
+ </tr>
+</table>
+
+<!-- Horizontal Cable Table -->
+<table border="0" width="95%" align="center"  class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="center">
+        <form name="netdotform" action="cable_horizontal.html" method="POST">
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
+        <input type="hidden" name="s2name" value="<% $s2name %>">
+        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+        <tr class="formtabletitle">
+            <td colspan="3" align="left">Horizonal Cable</td>
+        </tr>
+        <tr align="left" valign="top">
+            <td width="40%">
+            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <tr align="left" valign="top">
+                <td>Jack ID: </td>
+                <td><input type="text" name="HorizontalCable__<% $id %>__jackid" value="<% $o ? $o->jackid : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Cable Type: </td>
+                <td>
+%               $form_manager->selectLookup(object=>$o, table=>"HorizontalCable", column=>"type", lookup=>"CableType");
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
+                <td><input type="text" name="HorizontalCable__<% $id %>__installdate" value="<% $o ? $o->installdate : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Tested on <font size="-1">(yyyy-mm-dd)</font>: </td>
+                <td><input type="text" name="HorizontalCable__<% $id %>__datetested" value="<% $o ? $o->datetested : "" %>"></td>
+            </tr>
+
+            
+            <tr align="left" valign="top">
+                <td>Test Passed: </td>
+                <td>
+%               $form_manager->radioGroupBoolean(object=>$o, table=>"HorizontalCable", column=>"testpassed");
+                </td>
+            </tr>
+            </table>
+            </td>
+            
+            <td width="40%">
+            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <tr align="left" valign="top">
+                <td>Site: </td>
+                <td>
+%               $form_manager->selectLookup(object=>$o, table=>"HorizontalCable", column=>"site", lookup=>"Site");
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Floor: </td>
+                <td><input type="text" name="HorizontalCable__<% $id %>__floor" value="<% $o ? $o->floor : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Room: </td>
+                <td><input type="text" name="HorizontalCable__<% $id %>__room" value="<% $o ? $o->room : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Closet: </td>
+                <td><input type="text" name="HorizontalCable__<% $id %>__closet" value="<% $o ? $o->closet : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Account: </td>
+                <td><input type="text" name="HorizontalCable__<% $id %>__account" value="<% $o ? $o->account : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Contact List: </td>
+                <td>
+%               $form_manager->selectLookup(object=>$o, table=>"HorizontalCable", column=>"contactlist", lookup=>"ContactList");
+                </td>
+            </tr>
+            </table>
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr><td colspan="3">&nbsp;<br></td></tr>
+
+        <tr align="left" valign="top">
+            <td colspan="2">
+            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
+            <textarea name="HorizontalCable__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr><td colspan="3">&nbsp;<p></td></tr>
+
+        <tr align="left" valign="top">
+            <td align="center"><input name="submit" value="save" type="submit"></td>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+
+        </table>
+        </form>
+    </td>
+    </tr>
+</table>
+<!-- End Horizontal Cable Table -->
+
+<!-- Interface Table -->
+% if (defined($o)) {
+<A NAME="interface"></A>
+<table border="0" width="95%" align="center"  class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="center">
+     <form name="netdotform" action="cable_horizontal.html" method="POST">
+     <input type="hidden" name="id" value="<% $id %>">
+     <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
+     <input type="hidden" name="s2name" value="<% $s2name %>">
+
+    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+    <tr class="formtabletitle">
+     <td colspan="2">
+      <table width="100%" border="0">
+       <tr>
+         <td width="10%" align="left">&nbsp;</td>
+         <th width="80%" align="center">Interfaces</th>
+%	 if ($edit eq "intinfo") {	 
+            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+%	 } else {
+            <td width="10%" align="right">
+                <a href="interface.html?id=NEW">[new]</a> &nbsp;||&nbsp;
+                <a href="cable_horizontal.html?id=<% $id %>&edit=intinfo#interface">[edit]</a>
+            </td>
+%	 }
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      <table border="0" width="90%">
+    <%perl>
+    my @ints;
+    map { push (@ints, $_) } $o->interfaces;
+    </%perl>
+
+%	if (scalar(@ints)) {
+    <tr>
+        <td align="center">
+            <a href="cable_horizontal.html?id=<% $id %>&int_sort=name#interface">Name</a>
+        </td>
+        <td align="center">
+            <a href="cable_horizontal.html?id=<% $id %>&int_sort=number#interface">Number</a>
+        </td>
+        <td align="center">
+            <a href="cable_horizontal.html?id=<% $id %>&int_sort=type#interface">Type</a>
+        </td>
+        <td align="center">
+            <a href="cable_horizontal.html?id=<% $id %>&int_sort=device#interface">Device</a>
+        </td>
+    </tr>
+
+    <%perl>
+    $int_sort = "name" if (!defined($int_sort) || $int_sort eq "");
+    my @sorted_ints;
+    if ($int_sort eq "device")
+    {
+        @sorted_ints = sort { $a->device->name cmp $b->device->name } @ints;
+    }
+    else
+    {
+        @sorted_ints = sort { $a->$int_sort cmp $b->$int_sort } @ints;
+    }
+    </%perl>
+
+%   my $i = 0;
+%   foreach my $int (@sorted_ints) {
+%   $i = ($i + 1) % 2;
+    <tr align="left" class="<% $cssitem{$i} %>">
+        <td align="left">
+%       if ($edit eq "intinfo") {
+            <input type="checkbox" name="<% "Interface__" . $int->id . "__delete" %>">[del]
+            <input type="text" name="Interface__<% $int->id %>__name" value="<% $int->name %>">
+%       } else {
+            <a href="interface.html?id=<% $int->id %>"><% $int->name %></a>
+%       }
+        </td>
+
+        <td align="left">
+%       if ($edit eq "intinfo") {
+            <input type="text" name="Interface__<% $int->id %>__number" value="<% $int->number %>">
+%       } else {
+            <% $int->number %>
+%       }
+        </td>
+
+        <td align="left">
+%       if ($edit eq "intinfo") {
+            <input type="text" name="Interface__<% $int->id %>__type" value="<% $int->type %>">
+%       } else {
+            <% $int->type %>
+%       }
+        </td>
+
+        <td align="left">
+%       if ($edit eq "intinfo") {
+%           $form_manager->selectLookup(object=>$int, table=>"Interface", column=>"device", lookup=>"Device");
+%       } else {
+            <% $int->device ? $int->device->name : "" %>
+%       }
+        </td>
+    </tr>
+%   }
+%}
+    </table>
+    </td>
+    </tr>
+    </table>
+    </form>
+</td>
+</tr>
+</table>
+% }
+<!-- End Interface Table -->
+
+
+
+<%args>
+$id => undef;
+$edit => undef;
+$int_sort => undef;
+$site_id => undef;
+$s2name => "Plant";
+</%args>
+
+<%init>
+use Netdot::FormManager;
+
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $form_manager = Netdot::FormManager->new();
+my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
+my $o = undef;
+my $site = undef;
+
+if ($id && $id ne "NEW") 
+{
+   $o = HorizontalCable->retrieve($id);
+   $site = $o->site;
+}
+
+if (!defined($site) && $site_id)
+{
+    $site = Site->retrieve($site_id);
+}
+</%init>
+
+<%doc>
+Cable management stuff...
+</%doc>

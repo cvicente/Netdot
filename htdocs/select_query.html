@@ -1,6 +1,6 @@
 <%perl>
 
-print "<pre> ", Dumper(%ARGS), "</pre><br>";
+print "<pre> ", Dumper(%ARGS), "</pre><br>" if $debug;
 
 if ($crit =~ /\w+/){
   if ($crit =~ /\w+\s+\w+/){  #If there's more than one word
@@ -14,7 +14,7 @@ if ($crit =~ /\w+/){
 </%perl>
 
 <body bgcolor="#FFFFFF" onLoad="opener.getlist(<% "\'" . $field . "\'" %>)">
-<srong>Loading...</strong>
+<strong>Loading...</strong>
 
 <%perl>
 my %linksto = $gui->getlinksto($table);
@@ -98,14 +98,11 @@ if (scalar (keys %int)){
        <input type="hidden" name="0" value="No matches">
 %}
 </form>
-
 </body>
-
-
 
 <%init>
 my ( %un, %int, $ret, $gui, $max, @terms, $toomany, $debug );
-$gui = Netdot::GUI->new();
+$gui = Netdot::UI->new();
 $max = 100;
 $toomany = 0;
 $debug = 0;
