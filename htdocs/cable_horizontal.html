@@ -63,13 +63,58 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_INTERFACE")
 # -----------------------------------------------------------------------------
 </%perl>
 
+% if ($editCable) {
+
 <script language="JavaScript">
 <!--
 var closetSearchList = new DynamicList("horizform", "HorizontalCable__<% $id %>__closet", "site", "Closet", "closet_srch");
-LIST_MANAGER.addList(closetSearchList);
+
+/* Code for looking up a room. User selects a site and is presented with:
+*     - a list of all floors for that site.
+*     - a list of all rooms for that site.
+* The user can select a floor and narrow the selection to rooms on that floor.
+*/
+var roomFloorLookup = new DynamicList("horizform", "HorizontalCable__<% $id %>__room", "floor", "Room", "room_floor_srch");
+var siteFloorLookup = new DynamicList("horizform", "room_floor_srch", "site", "Floor", "room_site_srch", roomFloorLookup);
+
+LIST_MANAGER.addList(closetSearchList, roomFloorLookup, siteFloorLookup);
+
+// createJackID()
+// Attempts to generate a JackID based on Site, Closet, and a user supplied
+// jack number. Format for a jack id is: <building name><closet><jack number>
+// ----------------------------------------------------------------------------
+function createJackID()
+{
+    var closet_id = document.horizform.HorizontalCable__<% $id %>__closet.value;
+    var jack_no = document.horizform.__jackno.value;
+    if (!jack_no)
+    {
+        alert("You must specify a Jack Number in order to create a new Jack ID.");
+        return false;
+    }
+
+    if (!closet_id || closet_id == -1)
+    {
+        alert("You must specify a Closet in order to create a new Jack ID.");
+        return false;
+    }
+
+    var url = "suggest_jackid.html?closet=";
+    url += closet_id + "&jackno=" + jack_no;
+    url += "&name=HorizontalCable__<% $id %>__jackid";
+
+    var wind = window.open(url, "tmp_<% $id %>", "width=1,height=1");
+    wind.blur();
+}
 -->
 </script>
 
+% }
+
+<%perl>
+my @sites = Site->retrieve_all();
+@sites = sort { $a->name cmp $b->name } @sites;
+</%perl>
 
 % # interface...
 % # ---------------------------------------------------------------------------
@@ -89,6 +134,7 @@ LIST_MANAGER.addList(closetSearchList);
     <td valign="top" width="50%" align="center">
         <form name="horizform" action="cable_horizontal.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="HorizontalCable__<% $id %>__jackid" value="<% $o ? $o->jackid : "" %>">
         <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
         <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
@@ -106,11 +152,24 @@ LIST_MANAGER.addList(closetSearchList);
             <tr align="left" valign="top">
                 <td align="left">Jack ID: </td>
                 <td align="left">
-%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"jackid", 
-%                              edit=>$editCable);
+%           if ($editCable) {
+                <input type="text" name="__jackid" value="<% $o ? $o->jackid : "" %>" onChange="document.horizform.HorizontalCable__<% $id %>__jackid.value = this.value" DISABLED>
+%           } else {
+                <% $o->jackid %>
+%           }
                 </td>
             </tr>
 
+%           if ($editCable) {
+            <tr align="left" valign="top">
+                <td align="left">Jack Number: </td>
+                <td align="left">
+                <input type="text" value="" name="__jackno">
+                <input type="button" value="Create Jack ID" name="createjack" onClick="return createJackID();"> 
+                </td>
+            </tr>
+%           }
+            
             <tr align="left" valign="top">
                 <td align="left">Cable Type: </td>
                 <td align="left">
@@ -157,8 +216,6 @@ LIST_MANAGER.addList(closetSearchList);
                     &nbsp;<select name="closet_srch" onChange="closetSearchList.doIt();" style="width: 150px;">
                     <option value="">Lookup by Site</option>
                     <%perl>
-                    my @sites = Site->retrieve_all();
-                    @sites = sort { $a->name cmp $b->name } @sites;
                     foreach my $s (@sites)
                     {
                         printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
@@ -174,8 +231,23 @@ LIST_MANAGER.addList(closetSearchList);
             <tr align="left" valign="top">
                 <td align="left">Room: </td>
                 <td align="left">
-%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"room", 
-%                              edit=>$editCable);                
+%               if ($editCable) {
+%                   $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"room", lookup=>"Room",
+%                                     edit=>$editCable, where=>{id=>($o ? $o->room : "")});
+                    &nbsp;<select name="room_site_srch" onChange="siteFloorLookup.doIt();" style="width: 150px;">
+                    <option value="">Lookup by Site</option>
+                    <%perl>
+                    foreach my $s (@sites)
+                    {
+                        printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
+                    }
+                    </%perl>
+                    </select>
+                    &nbsp;&nbsp;Floor:<select name="room_floor_srch" onChange="roomFloorLookup.doIt();"></select>
+%               } else {
+                    <a href="view.html?table=Room&id=<% $o->room %>"><% $o->room->name %></a>
+%               }
+                </%perl>
                 </td>
             </tr>
 
@@ -183,7 +255,7 @@ LIST_MANAGER.addList(closetSearchList);
                 <td align="left">Account: </td>
                 <td align="left">
 %               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"account", 
-%                              edit=>$editCable);                
+%                              edit=>$editCable);
                 </td>
             </tr>
 
@@ -358,7 +430,6 @@ LIST_MANAGER.addList(closetSearchList);
 </table>
 % }
 <!-- End Interface Table -->
-
 
 
 <%args>

@@ -125,9 +125,10 @@ LIST_MANAGER.addList(siteListLookup);
 <!--
 var jackList = new DynamicList("cable_form", "jack_id", "closet", "HorizontalCable", "closet_id");
 var closetList = new DynamicList("cable_form", "closet_id", "floor", "Closet", "floor_id", jackList);
-var floorList = new DynamicList("cable_form", "floor_id", "site", "Floor", "id", closetList);
+var roomList = new DynamicList("cable_form", "room_id", "floor", "Room", "floor_id");
+var floorList = new DynamicList("cable_form", "floor_id", "site", "Floor", "id", roomList, closetList);
 
-LIST_MANAGER.addList(jackList, closetList, floorList);
+LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
 -->
 </script>
 
@@ -157,15 +158,24 @@ LIST_MANAGER.addList(jackList, closetList, floorList);
             </td>
 
             <td width="100" align="left">Floor:<br>
-            <select name="floor_id" onChange="closetList.doIt();">
+%           # When selecting by floor, default to populating our jack list based upon the closet lists contents            
+            <select name="floor_id" onChange="roomList.doIt(); jackList.setParent('closet_id'); jackList.setDBField('closet'); closetList.doIt();">
             </select>
             </td>
-            
+
+            <td width="100" align="left">Room:<br>
+%           # Because both the room list and the closet list can affect the jack list, we explicitly tell the jacklist to look
+%           # at this list.
+            <select name="room_id" onChange="jackList.setParent('room_id'); jackList.setDBField('room'); jackList.doIt();">
+            </select>
+            </td>
+
             <td width="100" align="left">Closet:<br>
-            <select name="closet_id" onChange="jackList.doIt();">
+%           # Like above, make sure the jacklist uses our closet selection instead of the room selection.            
+            <select name="closet_id" onChange="jackList.setParent('closet_id'); jackList.setDBField('closet'); jackList.doIt();">
             </select>
             </td>
-            
+
             <td width="180" align="left">Jack:<br>
             <select name="jack_id" width="10" style="width: 100px;">
             </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (jack_id.value) { location.href = ('cable_horizontal.html?id=' + jack_id.value); return true; }">

@@ -110,7 +110,7 @@ DynamicList.prototype.getListForm = function()
 }
 
 /* setQueryURL()
- *
+ * ----------------------------------------------------------------------------
  * The default query URL (dynamic_list_query.html) will work for most
  * purposes. However, occasionally you will have to use a customized
  * query to generate your results. You can define your own query URL here.
@@ -127,13 +127,45 @@ DynamicList.prototype.setQueryURL = function(url)
 }
 
 /* getQueryURL()
- *
+ * ----------------------------------------------------------------------------
 */
 DynamicList.prototype.getQueryURL = function()
 {
     return this.m_queryURL;
 }
 
+/* setParent()
+ * ----------------------------------------------------------------------------
+*/
+DynamicList.prototype.setParent = function(parent)
+{
+    this.m_parent = parent;
+}
+
+/* getParent()
+ * ----------------------------------------------------------------------------
+*/
+DynamicList.prototype.getParent = function()
+{
+    return this.m_parent;
+}
+
+/* setDBField()
+ * ----------------------------------------------------------------------------
+*/
+DynamicList.prototype.setDBField = function(db_field)
+{
+    this.m_dbField = db_field;
+}
+
+/* getDBField()
+ * ----------------------------------------------------------------------------
+*/
+DynamicList.prototype.getDBField = function()
+{
+    return this.m_dbField;
+}
+ 
 /* getName()
  * ----------------------------------------------------------------------------
 */

@@ -1,0 +1,34 @@
+<html>
+<body>
+<script language="JavaScript">
+<!--
+<%perl>
+my ($closet, $site);
+
+$closet = Closet->retrieve($closet_id);
+$site = $closet->site || $closet->floor->site;
+
+my $jackid = sprintf("%s%s%s", $site->number,
+                               ($closet->name =~ /^(\w+)\s+(?:Closet|closet)/ ? $1 : $closet->name),
+                               $jack_no);
+
+printf("opener.document.horizform.__jackid.value = \"%s\";\n", $jackid);
+printf("opener.document.horizform.%s.value = \"%s\";\n", $name, $jackid);
+printf("window.close();\n");
+</%perl>
+-->
+</script>
+</body>
+</html>
+
+<%args>
+$closet_id => $ARGS{"closet"};
+$jack_no => $ARGS{"jackno"};
+$name => $ARGS{"name"}; # name of hbiddfield to update
+</%args>
+
+<%doc>
+Generates a Jack ID based upon Building, Closet, and a user supplied jack number.
+
+The format for a Jack ID is: <building><closet><jack number>
+</%doc>

@@ -574,14 +574,14 @@ my $schema = {
     'testpassed', 'bool', '', '', '', '',
     'installdate', 'date', 'NULL', '', '', '',
     'length', 'varchar', 'NULL', '32', '', '',
-    'closet', 'integer', '', '', '', '', 
-    'room', 'varchar', '', '64', '', '',
+    'closet', 'integer', '', '', '', '',
+    'room', 'integer', '', '', '', '',
     'account', 'varchar', 'NULL', '32', '', '',
     'contactlist', 'integer', 'NULL', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
-  'unique' => [ ['jackid', 'closet', 'room'] ],
+  'unique' => [ ['jackid', 'closet', 'room' ] ],
   'index' => [ ['account'] ],
 },
 
@@ -842,6 +842,17 @@ my $schema = {
   'primary_key' => 'id',
   'unique' => [ ],
   'index' => [ ['product_id'] ],
+},
+
+'Room' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'floor', 'integer', '', '', '',
+   ],
+   'primary_key' => 'id',
+   'unique' => [ ['name', 'floor'] ],
+   'index' => [ [ 'name' ] ] ,
 },
 
 'RR' => {

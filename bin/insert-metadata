@@ -424,9 +424,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'level:Level,plan:Plan,site:Site,info:Comments',
 	  '',
 	  'site:Site,plan:BinFile',
-	  'entries:FWTableEntry:fwtable,closets:Closet:floor', 
+	  'closets:Closet:floor,rooms:Room:floor', 
 	  '0', 
-	  'Bridge Forwarding Table');
+	  'Floor Table');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('FWTable', 
@@ -455,12 +455,12 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('HorizontalCable', 
-	  'jackid,closet', 
+	  'jackid,closet,room', 
 	  'jackid,type,datetested,testpassed,installdate,length,closet,room,account,contactlist,info', 
 	  'jackid,closet,room', 
 	  'jackid:Jack ID,type:Type,datetested:Date Tested,testpassed:Passed Test?,installdate:Date Installed,closet:Closet,room:Room,account:Account,contaclist:Contact List,info:Comments',
 	  '',
-	  'type:CableType,closet:Closet,contactlist:ContactList', 
+	  'type:CableType,closet:Closet,contactlist:ContactList,room:Room', 
 	  'interfaces:Interface:jack:{on_delete=>"set-null"}', 
 	  '0', 
 	  'Horizontal Cable');
@@ -597,6 +597,19 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '', 
 	  '0', 
 	  '');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('Room',
+      'name',
+      'name,floor',
+      'name,floor',
+      'name:Name,floor:Floor',
+      '',
+      'floor:Floor',
+      'jacks:HorizontalCable:room',
+      '0',
+      'Room');
+      
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
     VALUES ('RR', 
