@@ -30,66 +30,8 @@ unless ( $obj ){
 <input type="hidden" name="table" value="<% $table %>">
 <input type="hidden" name="id" value="<% $id %>">
 
-<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC" class="formtablebg">
-  <tr bgcolor="#FFFFFF"> 
-     <td colspan="3" align="center"><strong><% $table %></strong></td>
-  </tr>
-  <tr>
-%   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%     next if( $c eq 'id' );
-% ################################################
-%     if( ! exists( $linksto{$c} ) ) { # local field
-        <tr>
-          <td align="right" bgcolor="#DDDDDD" class="formtablec1"><% $c %>:</td>
-	  <td colspan="2" class="formtablec2">
-	  <% $gui->getinputtag($c, $obj) %>	        
-	  </td>
-        </tr>
-% ################################################
-%     } else {  # field is a foreign key
-        <tr>
-        <td align="right" bgcolor="#DDDDDD" class="formtablec1"><% $c %>:</td>
-          <td class="formtablec2">
-          <select name="<% $c %>">
-%	  unless ( ref($obj->$c) ){
-%	     die "$c is not a FK of $table";
-%	  }
-%         my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];	  
-%	  my @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } $linksto{$c}->retrieve_all; 
-%         if( !$obj-$c || !defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) {
-%	     foreach my $fkobj (@fkobjs){
-%	        my $lbl = $gui->getobjlabel($fkobj, ", ");
-                <option value="<% $fkobj->id %>"><% $lbl %></option>  
-%	     }
-	     <option value="0" selected>[null]</option>
-%	  }else{
-%	     foreach my $fkobj (@fkobjs){
-%	        my $lbl = $gui->getobjlabel($fkobj, ", ");
-%	        if( $fkobj->id == $obj->$c->id )  {
-                   <option value="<% $fkobj->id %>" selected><% $lbl %></option>
-%	        }else{
-                   <option value="<% $fkobj->id %>"><% $lbl %></option>	     
-%	        }
-%	     }
-%	  }
-          </select>
-          </td>
-	  <td>
-	    [<a href="create.html?table=<% $linksto{$c} %>" target="_blank">new</a>]*
-	  </td>
-        </td>
-        </tr>
-%     } # else
-%   } # for
-  </tr>
-  <tr>
-    <td colspan="3" bgcolor="#FFFFFF" align="center">
-      <input name="res" value="1" type="hidden">
-      <input name="submit" value="Update" type="submit">
-      <input name="cancel" value="Cancel" type="submit">
-    </td>
-  </tr>
-</table>
+<& form, table => $table, showdisabled => '0', id => $id &>
+
 <p><br>
 
 </form>

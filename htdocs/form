@@ -56,34 +56,36 @@ if( $args{table} ) {
 %     } else {
         <tr>
         <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
-%       if( defined( $obj ) && $obj->$c == 0 ) {
-          -
-%	} elsif( defined( $obj ) 
-%                && ! defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) {
-          -
+	<td>
+        <select name="<% $c %>">
+%       my $flag = 1;
+%       if( defined( $obj ) 
+%           && ( $obj->$c == 0 
+%              || ! defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) ) {
+            <option value="0" selected>[null]</option>
+%           $flag = 0;
 %       } else {
-          <td>
-          <select name="<% $c %>">
-%	  my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];
-%         foreach my $fkobj ( sort { $a->$lblfield cmp $b->$lblfield }  $linksto{$c}->retrieve_all ) {
-%           my $lbl = $gui->getobjlabel( $fkobj, ", " );
-%           if( ( defined( $obj ) && $fkobj->id == $obj->$c->id ) 
-%               || ( $fkobj->id == $session{$c} ) ) {
-              <option value="<% $fkobj->id %>" selected><% $lbl %></option>
-%           } else {
-              <option value="<% $fkobj->id %>"><% $lbl %></option>
-%           }
-%         } # for
-          <option value="0">[null]</option>
-          </select>
-          </td>
-	  <td>
-% #	  <form action="<% $PAGE %>" method="POST">
-	  <input name="_<% $linksto{$c} %>" value="New" type="submit">
-% #          </form>
-	  </td>
-%       } # else
+            <option value="0">[null]</option>
+%       }
+%       my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];
+%       foreach my $fkobj ( sort { $a->$lblfield cmp $b->$lblfield }  $linksto{$c}->retrieve_all ) {
+%         my $lbl = $gui->getobjlabel( $fkobj, ", " );
+%         if( ( defined( $obj ) && $flag && $fkobj->id == $obj->$c->id ) 
+%             || ( $fkobj->id == $session{$c} ) ) {
+            <option value="<% $fkobj->id %>" selected><% $lbl %></option>
+%         } else {
+            <option value="<% $fkobj->id %>"><% $lbl %></option>
+%         }
+%       } # for
+        </select>
         </td>
+
+	<td>
+        <form action="<% $PAGE %>" method="POST">
+          <input name="_<% $linksto{$c} %>" value="New" type="submit">
+        </form>
+        </td>
+
         </tr>
 %     } # else
 %   } # for
