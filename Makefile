@@ -42,6 +42,7 @@ testing:
 nvtest: DST = /home/netdot/public_html
 nvtest: 
 	cp -f Netviewer.pm $(DST)/lib/Netdot
+	cp node.html $(DST)/htdocs
 
 
 
