@@ -31,8 +31,9 @@ test: testing
 
 ######################################################################
 # following is for testing files on tiroloco
-testing: $(HTML)
-	cp $? $(DST)/htdocs
+testing:
+	cp $(HTML) $(DST)/htdocs
+	cp -f $(DOC) $(DST)/doc
 
 
 
