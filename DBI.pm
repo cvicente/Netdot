@@ -144,10 +144,10 @@ package Interface;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Interface' );
-__PACKAGE__->columns( All => qw/id nodeId hostName ip physAddr ifIndex ifType ifDescr ifSpeed ifStatus info/ );
+__PACKAGE__->columns( All => qw/id nodeId hostName physAddr ifIndex ifType ifDescr ifSpeed ifStatus info/ );
 
 __PACKAGE__->has_a( nodeID => 'Node' );
-__PACKAGE__->has_a( ip => 'Ip' );
+__PACKAGE__->has_many( 'ips', 'Ip' => 'interface' );
 __PACKAGE__->has_many( 'parentinterfacedeps', 'InterfaceDep' => 'parent');
 __PACKAGE__->has_many( 'childinterfacedeps', 'InterfaceDep' => 'child');
 
@@ -168,9 +168,9 @@ package Ip;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Ip' );
-__PACKAGE__->columns( All => qw/id address mask/ );
+__PACKAGE__->columns( All => qw/id interface address mask/ );
 
-__PACKAGE__->has_many( 'interfaces', 'Interface' => 'ip' );
+__PACKAGE__->has_a( 'interface' => 'Interface' );
 
 
 ######################################################################
@@ -314,6 +314,10 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.11  2003/04/10 23:53:20  netdot
+#  reflected change in netdot.schema.  Ip has_a Interface; Interface
+#  has_many Ip.
+#
 #  Revision 1.10  2003/04/10 23:28:27  netdot
 #  added the rest of the classes and completed the relationships between
 #  all of them
