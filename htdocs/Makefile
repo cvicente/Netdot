@@ -9,6 +9,7 @@ all:  images
 	@echo "Preparing and installing $(DIR) files..."
 	for file in $(FILES); do \
 	    sed -e "s|^use lib .*\$$|use lib \"$(PREFIX)/lib\"; |" \
+		-e "s|^\$$PREFIX => .*|\$$PREFIX => \"$(PREFIX)\"|" \
 	        -e "s|^.TMP *=> *.*\$$|\$$TMP => \"$(PREFIX)/tmp\" |" \
 	        $$file > $$file.tmp ; \
 	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \

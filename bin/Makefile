@@ -116,6 +116,7 @@ setup.class.dbi:
 files:
 	for file in $(FILES); do \
 	    sed -e 's|YOUR-PREFIX|$(PREFIX)|g' \
+		-e 's|^#!.*perl|#!$(PERL)|' \
 		-e "s|use lib[ \t]*[^\$$]netdot.*|use lib \"$(PREFIX)/lib\"; |" \
 		$$file > $$file.tmp ; \
 	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
