@@ -1,19 +1,7 @@
 <& index.html, title => "Device Discovery: $host ", s2name => $s2name  &>
 <%perl>
 if ( $action eq "discover" ){
-    if ($device = $dns->getdevbyname($host)){
-	$o = $dm->discover(device => $device, host => $host, comstr => $device->community);
-    }elsif($dns->getrrbyname($host)){
-	$o = $dm->discover(host => $host, comstr => $comstr);
-    }elsif(my $ip = $ipm->searchblock($host)){
-	if ( $device = $ip->interface->device ){
-	    $o = $dm->discover(device => $device, host => $host, comstr => $device->community);
-	}else{
-	    $o = $dm->discover(host => $host, comstr => $comstr);
-	}
-    }else{
-	$o = $dm->discover(host => $host, comstr => $comstr);
-    }
+    $o = $dm->discover(host => $host, comstr => $comstr, addsubnets => 1);
     unless ($o){
 	$m->comp('error.mhtml', error => $dm->error);
     }

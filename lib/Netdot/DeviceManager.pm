@@ -33,6 +33,9 @@ sub new {
 						retries     => $self->{'DEFAULT_SNMPRETRIES'},
 						timeout     => $self->{'DEFAULT_SNMPTIMEOUT'},
 						);
+    $self->{ui}  = Netdot::UI->new();
+    $self->{ipm} = Netdot::IPManager->new();
+    $self->{dns} = Netdot::DNSManager->new();
 
     wantarray ? ( $self, '' ) : $self; 
 }
@@ -80,8 +83,6 @@ sub _readablehex {
 sub discover {
     my ($self, %argv) = @_;
     my (%dev, $device, $dvn, %ifs, %dbifdeps, %badhubs, $host, $comstr);
-    my $ui = Netdot::UI->new();
-    my $ipm = Netdot::IPManager->new();
     $self->error(undef);
     $self->_clear_output();
 
@@ -89,52 +90,32 @@ sub discover {
 		 message => "Arguments are: %s" ,
 		 args => [ join ', ', map {"$_ = $argv{$_}"} keys %argv ]);
     
-    unless (exists $argv{host} ){
+    unless ( $host = $argv{host} ){
 	$self->error( sprintf("Argument 'host' is required") );
 	$self->debug(loglevel => 'LOG_ERR',
 		      message => $self->error);
 	return 0;
     }
 
-    $host = $argv{host};
-    $comstr = $argv{comstr} || "public";
-    $device = $argv{device} || undef;
+    if ($device = $self->{dns}->getdevbyname($host)){
+	$self->output(sprintf("Device %s exists in DB.  Will try to update", $host));
+	$comstr = $device->community
+    }elsif($self->{dns}->getrrbyname($host)){
+	$self->output(sprintf("Name %s exists but Device not in DB.  Will try to create", $host));
+    }elsif(my $ip = $self->{ipm}->searchblock($host)){
+	if ( $device = $ip->interface->device ){
+	    $self->output(sprintf("Device with address %s exists in DB. Will try to update", $ip->address));
+	    $comstr = $device->community;
+	}else{
+	    $self->output(sprintf("Address %s exists but Device not in DB.  Will try to create", $host));
+	}
+    }else{
+	$self->output(sprintf("Device %s not in DB.  Will try to create", $host));
+    }
 
-    # MAU-MIB's ifMauType to half/full translations
-    my %Mau2Duplex = ( '13.6.1.2.1.26.4.10' => "half",
-		       '1.3.6.1.2.1.26.4.11' => "full",
-		       '1.3.6.1.2.1.26.4.12' => "half",
-		       '1.3.6.1.2.1.26.4.13' => "full",
-		       '1.3.6.1.2.1.26.4.15' => "half",
-		       '1.3.6.1.2.1.26.4.16' => "full",
-		       '1.3.6.1.2.1.26.4.17' => "half",
-		       '1.3.6.1.2.1.26.4.18' => "full",
-		       '1.3.6.1.2.1.26.4.19' => "half",
-		       '1.3.6.1.2.1.26.4.20' => "full",
-		       '1.3.6.1.2.1.26.4.21' => "half",
-		       '1.3.6.1.2.1.26.4.22' => "full",
-		       '1.3.6.1.2.1.26.4.23' => "half",
-		       '1.3.6.1.2.1.26.4.24' => "full",
-		       '1.3.6.1.2.1.26.4.25' => "half",
-		       '1.3.6.1.2.1.26.4.26' => "full",
-		       '1.3.6.1.2.1.26.4.27' => "half",
-		       '1.3.6.1.2.1.26.4.28' => "full",
-		       '1.3.6.1.2.1.26.4.29' => "half",
-		       '1.3.6.1.2.1.26.4.30' => "full",
-		       );
-    
-    # Catalyst's portDuplex to half/full translations
-    my %CatDuplex = ( 1 => "half",
-		      2 => "full",
-		      3 => "auto",  #(*)
-		      4 => "auto",
-		      );
+    $comstr ||= $argv{comstr};
 
-# (*) MIB says "disagree", but we can assume it was auto and the other 
-# end wasn't
-
-    
-    if ( defined ($device) ){
+    if ( $device ){
 	################################################     
 	# Keep a hash of stored Interfaces for this Device
 	map { $ifs{ $_->id } = $_ } $device->interfaces();
@@ -196,13 +177,13 @@ sub discover {
     $devtmp{sysdescription} = $dev{sysDescr};
     $devtmp{community} = $comstr;
     
-    ###############################################
+    ##############################################
     # Make sure name is in DNS
 
-    my $dm = Netdot::DNSManager->new();
+
     my $zone = $self->{'DEFAULT_DNSDOMAIN'};
     my $rr;
-    if ( $rr = $dm->getrrbyname($host) ) {
+    if ( $rr = $self->{dns}->getrrbyname($host) ) {
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => "Name %s exists in DB. Pointing to it.", 
 		      args => [$host]);
@@ -212,7 +193,7 @@ sub discover {
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg );
 	$self->output($msg);
-	unless ($dm->getzonebyname($zone)){
+	unless ($self->{dns}->getzonebyname($zone)){
 	    my $msg = sprintf("Zone %s does not exist in DNS. Creating", $host);
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg );
@@ -223,13 +204,13 @@ sub discover {
 				    $self->{'DEFAULT_DNSRETRY'}, 
 				    $self->{'DEFAULT_DNSEXPIRE'}, 
 				    $self->{'DEFAULT_DNSMINIMUM'} ] );	    	 
-	    unless ($dm->insertzone(mname => $zone)){
+	    unless ($self->{dns}->insertzone(mname => $zone)){
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => "Could not insert Zone %s to DB: %s",
-			      args => [$zone, $dm->error]);	    
+			      args => [$zone, $self->{dns}->error]);	    
 	    }
 	}
-	if ($rr = $dm->insertrr(name => $host,
+	if ($rr = $self->{dns}->insertrr(name => $host,
 				type => "A",
 				zone => $zone,
 				)){
@@ -239,7 +220,7 @@ sub discover {
 			  );	    
 	    $devtmp{name} = $rr;
 	}else{
-	    my $msg = sprintf("Could not insert DNS entry %s: %s", $host, $dm->error);
+	    my $msg = sprintf("Could not insert DNS entry %s: %s", $host, $self->{dns}->error);
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => $msg
 			  );	    
@@ -287,7 +268,7 @@ sub discover {
 			   oid  => $oid,
 			   type => $t,
 			   );
-	    if ( ($ent = $ui->insert(table => 'Entity', 
+	    if ( ($ent = $self->{ui}->insert(table => 'Entity', 
 				     state => { name => $oid,
 						oid  => $oid,
 						type => $t })
@@ -298,7 +279,7 @@ sub discover {
 	    }else{
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => "Could not create new Entity with oid: %s: %s",
-			      args => [$oid, $ui->error],
+			      args => [$oid, $self->{ui}->error],
 			      );
 		$ent = 0;
 	    }
@@ -310,7 +291,7 @@ sub discover {
 			manufacturer => $ent,
 			);
 	my $newprodid;
-	if ( ($newprodid = $ui->insert(table => 'Product', state => \%prodtmp)) ){
+	if ( ($newprodid = $self->{ui}->insert(table => 'Product', state => \%prodtmp)) ){
 	    my $msg = sprintf("Created product with SysID: %s.  Please set name, type, etc.", $dev{sysObjectID});
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg );		
@@ -318,7 +299,7 @@ sub discover {
 	}else{
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => "Could not create new Product with SysID: %s: %s",
-			  args => [$dev{sysObjectID}, $ui->error],
+			  args => [$dev{sysObjectID}, $self->{ui}->error],
 			  );		
 	    $devtmp{productname} = 0;
 	}
@@ -332,7 +313,7 @@ sub discover {
 	
 	# Look it up
 	if (my $phy = (PhysAddr->search(address => $braddr))[0] ){
-	    if ( ! defined ($device) ){
+	    if ( ! $device ){
 		if ( my $otherdev = (Device->search(physaddr => $phy->id))[0] ){
 		    #
 		    # Another device exists that has that address
@@ -351,8 +332,8 @@ sub discover {
 		# Just point to it from this Device
 		#
 		$devtmp{physaddr} = $phy->id;
-		$ui->update( object => $phy, 
-			     state => {last_seen => $ui->timestamp },
+		$self->{ui}->update( object => $phy, 
+			     state => {last_seen => $self->{ui}->timestamp },
 			     );
 	    }
 	    $self->debug( loglevel => 'LOG_INFO',
@@ -364,13 +345,13 @@ sub discover {
 	    #
 	}else{
 	    my %phaddrtmp = ( address => $braddr,
-			      last_seen => $ui->timestamp,
+			      last_seen => $self->{ui}->timestamp,
 			      );
 	    my $newphaddr;
-	    if ( ! ($newphaddr = $ui->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
+	    if ( ! ($newphaddr = $self->{ui}->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => "Could not create new PhysAddr: %s: %s",
-			      args => [$phaddrtmp{address}, $ui->error],
+			      args => [$phaddrtmp{address}, $self->{ui}->error],
 			      );
 		$devtmp{physaddr} = 0;
 	    }else{
@@ -392,7 +373,7 @@ sub discover {
     if( length( $dev{entPhysicalSerialNum} ) > 0 
 	&& $dev{entPhysicalSerialNum} ne "noSuchObject" ) {
 	
-	if ( ! defined ($device) ){
+	if ( ! $device ){
 	    if ( my $otherdev = (Device->search(serialnumber => $dev{entPhysicalSerialNum}))[0] ){
 		
 		$self->error( sprintf("S/N %s belongs to existing device %s. Aborting.", 
@@ -412,10 +393,10 @@ sub discover {
     ###############################################
     # Update/Add Device
     
-    if ( defined ($device) ){
-	$devtmp{lastupdated} = $ui->date;
-	unless( $ui->update( object => $device, state => \%devtmp ) ) {
-	    $self->error( sprintf("Error updating device %s: %s", $host, $ui->error) ); 
+    if ( $device ){
+	$devtmp{lastupdated} = $self->{ui}->date;
+	unless( $self->{ui}->update( object => $device, state => \%devtmp ) ) {
+	    $self->error( sprintf("Error updating device %s: %s", $host, $self->{ui}->error) ); 
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => $self->error,
 			  );
@@ -429,11 +410,10 @@ sub discover {
 	$devtmp{canautoupdate} = 1;
 	$devtmp{customer_managed} = 0;
 	$devtmp{natted} = 0;
-
-	$devtmp{dateinstalled} = $ui->date;
+	$devtmp{dateinstalled} = $self->{ui}->date;
 	my $newdevid;
-	unless( $newdevid = $ui->insert( table => 'Device', state => \%devtmp ) ) {
-	    $self->error( sprintf("Error creating device %s: %s", $host, $ui->error) ); 
+	unless( $newdevid = $self->{ui}->insert( table => 'Device', state => \%devtmp ) ) {
+	    $self->error( sprintf("Error creating device %s: %s", $host, $self->{ui}->error) ); 
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => $self->error,
 			  );
@@ -443,8 +423,40 @@ sub discover {
     }
     ##############################################
     # Begin work on interfaces
+  
+    my (%dbips, %newips, %dbvlans, %ifvlans);
+    # MAU-MIB's ifMauType to half/full translations
+    my %Mau2Duplex = ( '13.6.1.2.1.26.4.10' => "half",
+		       '1.3.6.1.2.1.26.4.11' => "full",
+		       '1.3.6.1.2.1.26.4.12' => "half",
+		       '1.3.6.1.2.1.26.4.13' => "full",
+		       '1.3.6.1.2.1.26.4.15' => "half",
+		       '1.3.6.1.2.1.26.4.16' => "full",
+		       '1.3.6.1.2.1.26.4.17' => "half",
+		       '1.3.6.1.2.1.26.4.18' => "full",
+		       '1.3.6.1.2.1.26.4.19' => "half",
+		       '1.3.6.1.2.1.26.4.20' => "full",
+		       '1.3.6.1.2.1.26.4.21' => "half",
+		       '1.3.6.1.2.1.26.4.22' => "full",
+		       '1.3.6.1.2.1.26.4.23' => "half",
+		       '1.3.6.1.2.1.26.4.24' => "full",
+		       '1.3.6.1.2.1.26.4.25' => "half",
+		       '1.3.6.1.2.1.26.4.26' => "full",
+		       '1.3.6.1.2.1.26.4.27' => "half",
+		       '1.3.6.1.2.1.26.4.28' => "full",
+		       '1.3.6.1.2.1.26.4.29' => "half",
+		       '1.3.6.1.2.1.26.4.30' => "full",
+		       );
     
-    my (%dbips, %newips, %dbvlans, %ifvlans, %ipversions);
+    # Catalyst's portDuplex to half/full translations
+    my %CatDuplex = ( 1 => "half",
+		      2 => "full",
+		      3 => "auto",  #(*)
+		      4 => "auto",
+		      );
+
+# (*) MIB says "disagree", but we can assume it was auto and the other 
+# end wasn't
     
     my @ifrsv = split /\s+/, $self->{'IFRESERVED'};
     
@@ -500,8 +512,8 @@ sub discover {
 		# Just point to it from this Interface
 		#
 		$iftmp{physaddr} = $phy->id;
-		$ui->update( object => $phy, 
-			     state => {last_seen => $ui->timestamp} );
+		$self->{ui}->update( object => $phy, 
+			     state => {last_seen => $self->{ui}->timestamp} );
 		$self->debug( loglevel => 'LOG_INFO',
 			      message  => "Interface %s,%s has existing PhysAddr %s",
 			      args => [$iftmp{number}, $iftmp{name}, $addr],
@@ -511,13 +523,13 @@ sub discover {
 		#
 	    }else{
 		my %phaddrtmp = ( address => $addr,
-				  last_seen => $ui->timestamp,
+				  last_seen => $self->{ui}->timestamp,
 				  );
 		my $newphaddr;
-		if ( ! ($newphaddr = $ui->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
+		if ( ! ($newphaddr = $self->{ui}->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => "Could not create new PhysAddr %s for Interface %s,%s: %s",
-				  args => [$phaddrtmp{address}, $iftmp{number}, $iftmp{name}, $ui->error],
+				  args => [$phaddrtmp{address}, $iftmp{number}, $iftmp{name}, $self->{ui}->error],
 				  );
 		    $iftmp{physaddr} = 0;
 		}else{
@@ -558,9 +570,9 @@ sub discover {
 				      number => $iftmp{number}))[0] ) {
 	    delete( $ifs{ $if->id } );
 	    
-	    unless( $ui->update( object => $if, state => \%iftmp ) ) {
+	    unless( $self->{ui}->update( object => $if, state => \%iftmp ) ) {
 		my $msg = sprintf("Could not update Interface %s,%s: .", 
-				  $iftmp{number}, $iftmp{name}, $ui->error);
+				  $iftmp{number}, $iftmp{name}, $self->{ui}->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
 			      );
@@ -576,9 +588,9 @@ sub discover {
 			  message  => $msg,
 			  );
 	    $self->output($msg);
-	    if ( ! (my $ifid = $ui->insert( table => 'Interface', 
+	    if ( ! (my $ifid = $self->{ui}->insert( table => 'Interface', 
 					    state => \%iftmp )) ) {
-		$msg = sprintf("Error inserting Interface %s,%s: %s", $iftmp{number}, $iftmp{name}, $ui->error);
+		$msg = sprintf("Error inserting Interface %s,%s: %s", $iftmp{number}, $iftmp{name}, $self->{ui}->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
 			      );
@@ -641,7 +653,6 @@ sub discover {
 	    foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
 		my( $ipobj, $maskobj, $subnet, $ipdbobj );
 		my $version = ($newip =~ /:/) ? 6 : 4;
-		$ipversions{$version} = 1;
 		my $prefix = ($version == 6) ? 128 : 32;
 		# 
 		# Keep all new ips in a hash
@@ -657,19 +668,19 @@ sub discover {
 		    my $ifid = $dbips{$newip};
 		    delete( $dbips{$newip} );
 		    
-		    unless( $ipm->updateblock(id        => $ifid, 
+		    unless( $self->{ipm}->updateblock(id        => $ifid, 
 					      address   => $newip, 
 					      prefix    => $prefix,
 					      status    => "Assigned",
 					      interface => $if )){
-			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $ipm->error);
+			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
 			$self->output($msg);
 			next;
 		    }
 
-		}elsif ( my $dbip = $ipm->searchblock($newip) ){
+		}elsif ( my $dbip = $self->{ipm}->searchblock($newip) ){
 		    # IP exists but not linked to this interface
 		    # update
 		    my $msg = sprintf("IP %s/%s exists but not linked to %s. Updating", 
@@ -677,12 +688,12 @@ sub discover {
 		    $self->debug( loglevel => 'LOG_NOTICE',
 				  message  => $msg );
 		    $self->output($msg);
-		    unless( $ipm->updateblock(id        => $dbip->id, 
+		    unless( $self->{ipm}->updateblock(id        => $dbip->id, 
 					      address   => $newip, 
 					      prefix    => $prefix,
 					      status    => "Assigned",
 					      interface => $if )){
-			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $ipm->error);
+			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
 			$self->output($msg);
@@ -695,11 +706,11 @@ sub discover {
 		    $self->output($msg);
 		    #
 		    # Create a new Ip
-		    unless( $ipm->insertblock(address   => $newip, 
+		    unless( $self->{ipm}->insertblock(address   => $newip, 
 					      prefix    => $prefix, 
 					      status    => "Assigned",
 					      interface => $if)){
-			my $msg = sprintf("Could not insert IP %s: %s", $newip, $ipm->error);
+			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
 			$self->output($msg);
@@ -717,16 +728,16 @@ sub discover {
 
 		if ( $dev{ipForwarding} == 1 && $argv{addsubnets}){
 		    my $newmask = $dev{interface}{$newif}{ipAdEntIfIndex}{$newip};
-		    my $subnetaddr = $ipm->getsubnetaddr($newip, $newmask);
-		    if ( ! ($ipm->searchblock($subnetaddr, $newmask)) ){
+		    my $subnetaddr = $self->{ipm}->getsubnetaddr($newip, $newmask);
+		    if ( ! ($self->{ipm}->searchblock($subnetaddr, $newmask)) ){
 			my $msg = sprintf("Subnet %s/%s doesn't exist.  Inserting", $subnetaddr, $newmask);
 			$self->debug( loglevel => 'LOG_NOTICE',
 				      message  => $msg );
 			$self->output($msg);
-			unless( $ipm->insertblock(address => $subnetaddr, 
+			unless( $self->{ipm}->insertblock(address => $subnetaddr, 
 						  prefix  => $newmask, 
 						  status  => "Assigned") ){
-			    my $err = $ipm->error();
+			    my $err = $self->{ipm}->error();
 			    my $msg = sprintf("Could not insert Subnet %s/%s: %s", 
 					      $subnetaddr, $newmask, $err);
 			    $self->debug(loglevel => 'LOG_ERR',
@@ -770,9 +781,9 @@ sub discover {
 	    # does this Interface already exist in the DB?
 	    if( $if = (Interface->search( device => $device->id, number => $newport ))[0] ) {
 		delete( $ifs{ $if->id } );
-		unless( $ui->update( object => $if, state => \%porttmp ) ) {
+		unless( $self->{ui}->update( object => $if, state => \%porttmp ) ) {
 		    my $msg = sprintf("Could not update Interface %s: %s", 
-				      $newport, $ui->error);
+				      $newport, $self->{ui}->error);
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => $msg,
 				  );
@@ -787,8 +798,8 @@ sub discover {
 			      message  => $msg,
 			      );
 		$self->output($msg);
-		unless ( my $ifid = $ui->insert( table => 'Interface', state => \%porttmp ) ) {
-		    my $msg = sprintf("Error inserting Interface %s: %s", $newport, $ui->error);
+		unless ( my $ifid = $self->{ui}->insert( table => 'Interface', state => \%porttmp ) ) {
+		    my $msg = sprintf("Error inserting Interface %s: %s", $newport, $self->{ui}->error);
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => $msg,
 				  );
@@ -838,9 +849,9 @@ sub discover {
 				$role = "child"; 
 				$rel = "parent"; 
 			    }
-			    unless ( $ui->update(object => $ifdep, state => {$role => $newif} )){
+			    unless ( $self->{ui}->update(object => $ifdep, state => {$role => $newif} )){
 				my $msg = sprintf("Could not update Dependency for %s: %s", 
-						  $nonif, $ui->error);
+						  $nonif, $self->{ui}->error);
 				$self->debug( loglevel => 'LOG_ERR',
 					      message  => $msg,
 					      );
@@ -873,9 +884,9 @@ sub discover {
 			  message  => $msg,
 			  );
 	    $self->output($msg);
-	    unless( $ui->remove( table => "Interface", id => $nonif ) ) {
+	    unless( $self->{ui}->remove( table => "Interface", id => $nonif ) ) {
 		my $msg = sprintf("Could not remove Interface %s,%s: %s", 
-				  $ifobj->number, $ifobj->name, $ui->error);
+				  $ifobj->number, $ifobj->name, $self->{ui}->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
 			      );
@@ -898,9 +909,9 @@ sub discover {
 		#create
 		my %votmp = ( vid         => $vid,
 			      description => $vname );
-		if ( ! (my $vobjid = $ui->insert (table => "Vlan", state => \%votmp)) ) {
+		if ( ! (my $vobjid = $self->{ui}->insert (table => "Vlan", state => \%votmp)) ) {
 		    my $msg = sprintf("Could not insert Vlan %s: %s", 
-				      $vo->description, $ui->error);
+				      $vo->description, $self->{ui}->error);
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => $msg,
 				  );
@@ -925,9 +936,9 @@ sub discover {
 				  message  => $msg,
 				  );
 		    my %jtmp = (interface => $if, vlan => $vo);
-		    unless ( my $j = $ui->insert(table => "InterfaceVlan", state => \%jtmp) ){
+		    unless ( my $j = $self->{ui}->insert(table => "InterfaceVlan", state => \%jtmp) ){
 			my $msg = sprintf("Could not insert InterfaceVlan join %s:%s: %s", 
-					  $if->name, $vo->vid, $ui->error);
+					  $if->name, $vo->vid, $self->{ui}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg,
 				      );
@@ -963,9 +974,9 @@ sub discover {
 			  message  => $msg,
 			  );
 	    $self->output($msg);		
-	    unless( $ipm->removeblock( address => $nonip ) ) {
+	    unless( $self->{ipm}->removeblock( address => $nonip ) ) {
 		my $msg = sprintf("Could not remove IP %s: %s", 
-				  $nonip, $ipm->error);
+				  $nonip, $self->{ipm}->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
 			      );
@@ -986,9 +997,9 @@ sub discover {
 		      message  => $msg,
 		      );
 	$self->output($msg);		
-	unless( $ui->remove( table => 'InterfaceVlan', id => $nonvlan ) ) {
+	unless( $self->{ui}->remove( table => 'InterfaceVlan', id => $nonvlan ) ) {
 	    my $msg = sprintf("Could not remove InterfaceVlan %s: %s", 
-			      $j->id, $ui->error);
+			      $j->id, $self->{ui}->error);
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => $msg,
 			  );
@@ -1004,9 +1015,9 @@ sub discover {
     
 	unless ($device->entity){
 	    my $ipaddr = (keys(%newips))[0];
-	    if ( my $ipobj = $ipm->searchblock($ipaddr) ){
+	    if ( my $ipobj = $self->{ipm}->searchblock($ipaddr) ){
 		if ((my $subnet = $ipobj->parent) != 0 ){
-		    if ( defined ($subnet->entity) ){
+		    if ( $subnet->entity != 0 ){
 			$devtmp{entity} = $subnet->entity->id;
 			my $msg = sprintf("Assigning subnet's entity \'%s\' to %s", 
 					  $subnet->entity->name, $host);
@@ -1021,9 +1032,9 @@ sub discover {
     ################################################################
     # Update device if any changes since creation
     
-    unless ( $ui->update( object => $device, state => \%devtmp ) ){
+    unless ( $self->{ui}->update( object => $device, state => \%devtmp ) ){
 	my $msg = sprintf("Could not update Device %s: %s", 
-			  $host, $ui->error);
+			  $host, $self->{ui}->error);
 	$self->debug(loglevel => 'LOG_ERR',
 		     message  => $msg,
 		     );

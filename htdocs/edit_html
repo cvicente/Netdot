@@ -1,34 +1,3 @@
-<%perl>
-foreach my $j ( keys %ARGS ) {
-  if( $j eq "args" ) {
-    %args = %{ $ARGS{$j} };
-    next;
-  }
-  if( $j eq "state" ) {
-    %state = %{ $ARGS{$j} };
-    next;
-  }
-  if( $j eq "id" ) {
-    $ID = $ARGS{id};
-  }
-  if( $j eq "table" ) {
-    $TBL = $ARGS{table};
-  }
-  if( $j eq "obj" ) {
-    $OBJ = $ARGS{obj};
-  }
-  if( $j eq "new" ) {
-    $NEW = $ARGS{new};
-  }
-  if( $j eq "sid" ) {
-    $sid = $ARGS{sid};
-  }
-  if( $j eq "session" ) {
-    $session = $ARGS{session};
-  }
-}
-</%perl>
-% ####################################################################
 <%doc>
 
 This block catches the case where we've confirmed a submission and now
@@ -49,12 +18,15 @@ Okay, we're still working.  Let's insert a header
 
 </%doc>
 %   if( $args{submit} eq "Submit" ) {
-      <& index.html, title => "Confirm: $TBL", s2name => "$s2name" &>
+%     $title = "Confirm: $TBL";
+      <& index.html, title => $title, s2name => "$s2name" &>
 %   } elsif( $OBJ ) {
 %     my $labelstr = $ui->getobjlabel($OBJ, ", ");
-      <& index.html, title => "Edit: $TBL: $labelstr", s2name => "$s2name"  &>
+%     $title = "Edit: $TBL: $labelstr";
+      <& index.html, title => $title, s2name => "$s2name"  &>
 %   } else {
-      <& index.html, title => "Create: $TBL", s2name => "$s2name"  &>
+%     $title = "Create: $TBL";
+      <& index.html, title => $title, s2name => "$s2name"  &>
 %   }
     <!-- begin edit -->
 % ####################################################################
@@ -128,6 +100,11 @@ available tables.
 Present a form for user to modify various values.
 
 </%doc>
+      <table width="95%" cellpadding="3" cellspacing="1" border="0" class="tablebackground">
+       <tr class="rowtitle0" >
+        <td align="CENTER"><strong><% $title %></strong></td>
+       </tr>
+       <tr><td>
       <form name="netdotform" action="edit.html" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
 %     if( $ID && ! $NEW ) {
@@ -136,9 +113,9 @@ Present a form for user to modify various values.
 %       if( $ID ) {
       <input type="hidden" name="id" value="<% $ID %>">
 %       }
-      <& form.mhtml, table => $TBL, showdisabled => '0', session => \%state &>
+      <& form.mhtml, title => $title, table => $TBL, showdisabled => '0', session => \%state &>
 %     }
-      <table width="95%" cellpadding="3" cellspacing="1" border="0" class="tablebackground">
+       </td></tr>
        <tr class="rowtitle0" >
         <td align="CENTER">
            <input name="submit" value="Submit" type="submit">
@@ -166,3 +143,36 @@ $ui => Netdot::UI->new()
 %state => undef
 $s2name => "Generic"
 </%args>
+
+<%init>
+my $title;
+foreach my $j ( keys %ARGS ) {
+  if( $j eq "args" ) {
+    %args = %{ $ARGS{$j} };
+    next;
+  }
+  if( $j eq "state" ) {
+    %state = %{ $ARGS{$j} };
+    next;
+  }
+  if( $j eq "id" ) {
+    $ID = $ARGS{id};
+  }
+  if( $j eq "table" ) {
+    $TBL = $ARGS{table};
+  }
+  if( $j eq "obj" ) {
+    $OBJ = $ARGS{obj};
+  }
+  if( $j eq "new" ) {
+    $NEW = $ARGS{new};
+  }
+  if( $j eq "sid" ) {
+    $sid = $ARGS{sid};
+  }
+  if( $j eq "session" ) {
+    $session = $ARGS{session};
+  }
+}
+
+</%init>

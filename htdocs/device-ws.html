@@ -59,8 +59,7 @@
      for ($i = 0; $i < $ARGS{intaddnum}; $i++){
         $tmpint{number}++;
      	if (!($ui->insert(table => "Interface", state => \%tmpint)) ){
-	   my $err = $ui->error;
-	   die "Error: $err"; 
+	   $m->comp('error.mhtml', error => $ui->error);
 	}
      }
   }
@@ -70,8 +69,7 @@
 # -----------------------------------------------------------------------------
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
     if (!$ui->form_to_db(%ARGS)){
-	my $err = $ui->error();
-	die("Error: $err\n");
+	$m->comp('error.mhtml', error => $ui->error);
     }
     
     # Do this to 'flush' the values associated with the object
@@ -79,7 +77,7 @@
     $o = undef;
     if ($id){
 	$o = Device->retrieve($id);
-	$name = $o->name;
+	$name = $o->name->name;
     }
 }
 </%perl>
@@ -277,15 +275,15 @@
 	 <tr class="<% $cssitem{$ci} %>">
 	   <td align="left">
 %	      	 if ($editips){	 
-		    <input type="checkbox" name="<% "Ip__" . $ip->id . "__delete" %>" >[del]
-		    <input type="text" size="15" name="<% "Ip__" . $ip->id . "__address" %>" value="<% $ip->address %>">
+		    <input type="checkbox" name="<% "Ipblock__" . $ip->id . "__delete" %>" >[del]
+		    <input type="text" size="15" name="<% "Ipblock__" . $ip->id . "__address" %>" value="<% $ip->address %>">
 		    <br>
 %	         }else{
 		    <a href="view.html?table=Ipblock&id=<% $ip->id %>"><% $ip->address %></a><br>
 %		 }
 	   </td>
 	   <td align="left">
-%	     if ( $ip->parent  ){
+%	     if ( $ip->parent != 0  ){
 	       <a href="view.html?table=Ipblock&id=<% $ip->parent->id %>"><% $ip->parent->address %>/<% $ip->parent->prefix %></a><br>
 %            }
 	   </td>
@@ -341,7 +339,7 @@
         <tr>
 	   <td class="formtablec1">Room: </td>
 	     <td class="formtablec2"> 
-%               $ui->textField(object=>$o, column=>"room", edit=>$editloc);
+%               $ui->selectLookup(object=>$o, column=>"room", lookup=>"Room", edit=>$editloc, makeLink=>1);
 	</tr>
         <tr>
 	   <td class="formtablec1">Rack: </td>
@@ -498,7 +496,6 @@
 	   <td align="left">Number</td>
 	   <td align="left">Name</td>
 	   <td align="left">Vlan</td>
-	   <td align="left">Room</td>
 	   <td align="left">Jack</td>
 	   <td align="left">Description</td>
 	   <td align="left">Parents</td>
@@ -548,18 +545,9 @@
 
 %	      }
 	   </td>
-	   <td align="left"> 
-%	         if(defined($if->jack)){
-		    <% $if->jack->room %>
-%		 }
-	   </td>
 	   <td align="left">
-%       if ($editints) {       
 %           $ui->selectLookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
-%                             edit=>$editints);
-%	    } elsif(defined($if->jack)) {
-            <a href="cable_horizontal.html?id=<% $if->jack->id %>"><% $if->jack->jackid %></a>
-%       }
+%                             edit=>$editints, makeLink=>1);
 	   </td>
 	   <td align="left"> 
 %               $ui->textField(object=>$if, column=>"description", edit=>$editints);

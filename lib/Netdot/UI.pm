@@ -501,16 +501,16 @@ sub form_to_db
     my($self, %argv) = @_;
     #Define control field names, to be ignored when parsing form data.
     my %control = ( 
-                 'id'     => '',
-                 'jack_id' => '',
-                 'start_id' => '',
-                 'end_id' => '',
-                 'submit' => '',
-                 'edit'   => '',
-                 'save'   => '',
-                 'show'   => '',
-                 '_action'=> '',
-                 'page_type'  => ''
+                 'id'        => '',
+                 'jack_id'   => '',
+                 'start_id'  => '',
+                 'end_id'    => '',
+                 'submit'    => '',
+                 'edit'      => '',
+                 'save'      => '',
+                 'show'      => '',
+                 '_action'   => '',
+                 'page_type' => ''
     );
 
     # Ignore empty and control fields
@@ -562,6 +562,8 @@ sub form_to_db
                         return 0; # error should already be set.
                     }
                     
+		    $form_to_db_info{$table}{action} = "delete";
+		    $form_to_db_info{$table}{key} = $id;
                     # Set the 'action' flag
                     $act = 1;
                     last;
@@ -577,14 +579,16 @@ sub form_to_db
                         $state{parent} = $objs{$table}{$id}{$field};
                     }
                     
+		    my $newid;
                     if (scalar(keys %state))
                     {
-	                    if (!$self->insert(table => $table, state => \%state))
+	                    if (! ($newid = $self->insert(table => $table, state => \%state)) )
                         {
                             return 0; # error should already be set.
                         }
                     }
-                    
+		    $form_to_db_info{$table}{action} = "insert";
+		    $form_to_db_info{$table}{key} = $newid;
                     $act = 1;
                     last;
                 }
@@ -593,8 +597,8 @@ sub form_to_db
             # If our id is new we want to insert a new row in the DB.
             if ($id eq "NEW")
             {
-                my $newid = undef;
-                if (!($newid = $self->insert(table => $table, state => \%{ $objs{$table}{$id} })))
+                my $newid;
+                if (! ($newid = $self->insert(table => $table, state => \%{ $objs{$table}{$id} })) )
                 {
                     return 0; # error should be set.
                 }

@@ -63,29 +63,11 @@ if ($debug){
 }
 my $ipm = Netdot::IPManager->new();
 my $dns = Netdot::DNSManager->new();
+my $success = 0;
 
 if ($host){
-    my $r;
-    if ($device = $dns->getdevbyname($host)){
-	printf ("Device %s exists in DB.  Will try to update\n", $host) if $verbose;
-	$r = &discover(device => $device, host => $host, comstr => $device->community);
-    }elsif($dns->getrrbyname($host)){
-	printf ("Name %s exists but Device not in DB.  Will try to create\n", $host) if $verbose;
-	$r = &discover(host => $host, comstr => $comstr);
-    }elsif(my $ip = $ipm->searchblock($host)){
-	if ( $device = $ip->interface->device ){
-	    printf ("Device with address %s exists in DB. Will try to update\n", $ip->address) if $verbose;
-	    $r = &discover(device => $device, host => $host, comstr => $device->community);
-	}else{
-	    printf ("Address %s exists but Device not in DB.  Will try to create\n", $host) if $verbose;
-	    $r = &discover(host => $host, comstr => $comstr);
-	}
-    }else{
-	printf ("Device %s not in DB.  Will try to create\n", $host) if $verbose;
-	$r = &discover(host => $host, comstr => $comstr);
-    }
-    if ($r){
-	&build_ip_tree;
+    if (my $r = &discover(host => $host, comstr => $comstr)){
+	$success = 1;
     }
 }elsif($subnet){
     my $net = NetAddr::IP->new($subnet);
@@ -94,30 +76,26 @@ if ($host){
     for (my $nip = $net+1; $nip < $nip->broadcast; $nip++){
 	if(my $ip = $ipm->searchblock($nip->addr)){
 	    if ( defined ($device = $ip->interface->device) ){
+		# Make sure we don't query the same device more than once
+		# (routers have many ips)
 		if (exists $devices{$device}){
 		    printf ("%s already queried.  Skipping\n", $ip->address);
 		    next;
 		}
+		$devices{$device} = 1;
 		unless ( $device->canautoupdate ){
 		    printf ("Device %s was set to not auto-update. Skipping \n", $nip->addr) if $verbose;
 		    next;
 		}
-		printf ("Device %s exists in DB. Will try to update\n", $ip->address) if $verbose;
-		&discover(device => $device, host => $ip->address, comstr => $device->community);
-	    }else{
-		printf ("Address %s exists but Device not in DB.  Will try to create\n", $ip->address) if $verbose;
-		&discover(host => $ip->address, comstr => $device->community);
 	    }
-	}else{
-	    printf ("Device %s not in DB.  Will try to create\n", $nip->addr) if $verbose;
-	    &discover(host => $nip->addr, comstr => $comstr);
+	    if (my $r = &discover(host => $ip->address)){
+		$success = 1;
+	    }
 	}
-	# Make sure we don't query the same device more than once
-	# (routers have many ips)
-	$devices{$device} = 1;
+	if (my $r = &discover(host => $nip->addr, comstr => $comstr)){
+	    $success = 1;
+	}
     }
-    &build_ip_tree;
- 
 }elsif($db){
     printf ("Going to update all devices currently in the DB\n") if $verbose;
     my @devices = Device->retrieve_all;
@@ -138,13 +116,16 @@ if ($host){
 	    }
 	}
 	printf ("Updating %s\n", $host);
-	&discover(device => $device, host => $host, comstr => $device->community);
+	if (my $r = &discover(host => $host)){
+	    $success = 1;
+	}
     }
-    &build_ip_tree;
 }else{
     print $usage;
     die "Error: You need to specify one of -H, -s or -d\n";
 }
+
+&build_ip_tree if $success;
 
 sub discover {
     my (%argv) = @_;
