@@ -103,7 +103,11 @@ if( $args{table} ) {
 %                if( $flag ) {
                     <strong>
                     <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
-                    <% $lbl %>
+%                   if( length( $lbl ) < 1 ) {
+                      N/A
+%                   } else {
+                      <% $lbl %>
+%                   }
 	            </a>
                     </strong>
 %                } else {
@@ -114,7 +118,11 @@ if( $args{table} ) {
 %             if( $flag ) {
                  <strong>
                  <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
-                 <% $o->$c %>
+%                if( length( $o->$c ) < 1 ) {
+                    N/A
+%                } else {
+                    <% $o->$c %>
+%                }
                  </a>
                  </strong>
 %             } else {
@@ -182,6 +190,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.29  2003/07/15 23:48:12  netdot
+# fix if LBL field is empty -- be sure to print something
+#
 # Revision 1.28  2003/07/15 23:34:34  netdot
 # massaged formatting -miyake
 #
