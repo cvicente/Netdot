@@ -89,9 +89,9 @@ lib: $(LIB)
 ######################################################################
 make:
 	cp -f Makefile.db $(DST)/bin/Makefile
-	cp -f Makefile.htdocs $(DST)/htdocs/Makefile
-	cp -f Makefile.doc $(DST)/doc/Makefile
-	cp -f Makefile.lib $(DST)/lib/Makefile
+	sed -e "s|FILES = .*|FILES = $(HTML)|" Makefile.htdocs > $(DST)/htdocs/Makefile
+	sed -e "s|FILES = .*|FILES = $(DOC)|" Makefile.doc $(DST)/doc/Makefile
+	sed -e "s|FILES = .*|FILES = $(LIB)|" Makefile.lib $(DST)/lib/Makefile
 	cp -f Makefile.dist $(DST)/Makefile
 
 
