@@ -39,7 +39,8 @@ foreach my $node ( @nodes ) {
   my %ifs;
   print "Checking node ", $node->name, " \n" if( $DEBUG );
   map { $ifs{ $_->id } = 1 } $node->interfaces();
-  $nv->build_config( "device", $node->name );
+  my $comstr = $node->community || Netviewer->community;
+  $nv->build_config( "device", $node->name, $comstr );
   ################################################
   # get information from the device
   if( my( %dev ) = $nv->get_device( "device", $node->name ) ) {
@@ -57,7 +58,8 @@ foreach my $node ( @nodes ) {
       # check whether should skip IF
       my $skip = 0;
       foreach my $rsv ( @ifrsv ) {
-        $skip = 1 if( $rsv =~ /$newif/ );
+        my $n = $rsv->name;
+        $skip = 1 if( $newif =~ /$n/ );
       }
       next if( $skip );
       ############################################
@@ -217,6 +219,9 @@ sub calc_subnet {
 
 ######################################################################
 #  $Log: updatenodes.pl,v $
+#  Revision 1.10  2003/07/15 19:11:50  netdot
+#  fix for skip interfaces and community string
+#
 #  Revision 1.9  2003/07/15 16:26:09  netdot
 #  series of fixes to make consistent with node.html and more graceful
 #  with errors.
