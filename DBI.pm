@@ -20,6 +20,8 @@ __PACKAGE__->
 	      }
 	     );
 
+######################################################################
+# be sure to add all the tables/packages in database to this function
 sub tables {
   return ( "Address", "Availability", "Circuit", "CircuitType",
 	   "Connection", "ContactInfo", "ContactPool", "ContactType",
@@ -165,7 +167,7 @@ package InterfaceDep;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'InterfaceDep' );
-__PACKAGE__->columns( All => /id parent child/ );
+__PACKAGE__->columns( All => qw/id parent child/ );
 
 __PACKAGE__->has_a( parent => 'Interface' );
 __PACKAGE__->has_a( child => 'Interface' );
@@ -247,7 +249,7 @@ __PACKAGE__->columns( All => qw/id name autSys ip address contactPool info/ );
 
 __PACKAGE__->has_a( ip => 'Ip' );
 __PACKAGE__->has_a( address => 'Address' );
-__PACKAGE__->has_a( contact_pool => 'ContactPool' );
+__PACKAGE__->has_a( contactPool => 'ContactPool' );
 
 
 
@@ -322,6 +324,9 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.14  2003/04/15 21:13:48  netdot
+#  fixed another bug in Peer package -- forgot 'qw'.
+#
 #  Revision 1.13  2003/04/15 21:02:08  netdot
 #  added tables() to base class.  I need a way to discover all the tables
 #  in the database -- don't see a way to do that in Class::DBI.  Fixed
