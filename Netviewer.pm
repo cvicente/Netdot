@@ -2343,7 +2343,7 @@ sub build_config {
 #	 $version, $comstr, $timeout, $retries, $skipped,
 #	 @frstuff, @oids, %data ) ;
   $self->debug( loglevel => "LOG_INFO",
-		message => "build_config: handling $type:$device" ) ;
+		message => "build_config: handling $type:$device:$comstr" ) ;
   my %targets = %{ $self->{targets} } if( $self->{targets} ) ;
   $skipped = 0 ;
   unless( exists( $targets{$type}{$device} ) ) {
@@ -3361,6 +3361,9 @@ sub _sysUpTime {
 
 ##########################################################################
 # $Log: Netviewer.pm,v $
+# Revision 1.10  2003/07/17 06:08:23  netdot
+# adding comstr to debug output
+#
 # Revision 1.9  2003/07/14 23:05:31  netdot
 # allow option to supply community string to build_config
 #
