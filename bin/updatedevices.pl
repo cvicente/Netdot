@@ -180,13 +180,11 @@ foreach my $device ( @devices ) {
       if( exists( $dev{interface}{$newif}{ipAdEntIfIndex} ) ) {
 	  map { $dbips{ $_->id } = 1 } $if->ips();
 	  foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
-	      my %iptmp;
-
-	      my( $ipobj, $maskobj, $subnet, $ipdbobj );
+	      my( $ipobj, $maskobj, $subnet, $ipdbobj, %iptmp );
 	      $iptmp{mask} = $dev{interface}{$newif}{ipAdEntIfIndex}{$newip};
 
 	      unless ($ipobj = new NetAddr::IP ($newip, $iptmp{mask})){
-		  print "Could not create ip object: $newip<br>\n" if ($DEBUG);
+		  print "Error: Could not create ip object: $newip<br>\n" if ($DEBUG);
 		  next;
 	      }
 	      if ($newip =~ /127\.0\.0\./){
@@ -200,18 +198,17 @@ foreach my $device ( @devices ) {
 		  print "Subnet ",$ipobj->network, " exists\n" if( $DEBUG );
 		  $iptmp{subnet} = $subnet->id;
 	      } else {
-		  my %iptmp;
+		  #my %nettmp;
 		  print "Subnet ",$ipobj->network, " does not exist\n" if( $DEBUG );
-		  $iptmp{address} = $ipobj->addr;
-		  $iptmp{entity} = 0;
 		  $iptmp{subnet} = 0;
+		  #$nettmp{entity} = 0;
 		  #print "Subnet $ipobj->addr doesn't exist; inserting\n" if( $DEBUG );
-		  #unless( $subnet = insert( object => "Subnet", state => \%tmp ) ){
+		  #unless( $subnet = insert( object => "Subnet", state => \%nettmp ) ){
 		  #  next;
 		  #}
 	      }
 	      $iptmp{interface} = $if->id;
-	      $iptmp{address} = $newip;
+	      $iptmp{address} = $ipobj->addr;
 	      ########################################
 	      # does this ip already exist in the DB?
 	      if( $ipdbobj = (Ip->search( address => $newip ))[0] ) {
@@ -228,6 +225,8 @@ foreach my $device ( @devices ) {
 		      if ( my $ipid  = $gui->insert( table => "Ip", state => \%iptmp ) ){
 			  $ipdbobj = Ip->retrieve($ipid);
 		      }else{
+			  my $guierr = $gui->error;
+			  print "Error: $guierr\n";
 			  next;
 		      }
 		  }
