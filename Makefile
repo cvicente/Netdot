@@ -1,13 +1,14 @@
 
 # Netdot Makefile
 #
+PERL = /usr/bin/perl
 PREFIX = /usr/local/netdot
 NVPREFIX = /usr/local/netviewer
 APACHEUSER = apache
 APACHEGROUP = apache
 usage:
 	@echo 
-	@echo "usage: make install PREFIX=<destination>"
+	@echo "usage: make install [ PREFIX=<destination> ]"
 	@echo 
 	@echo "You can either specify the PREFIX on the command line or "
 	@echo "modify the PREFIX value in the Makefile. "
@@ -35,7 +36,6 @@ usage:
 DMOD = 0775
 FMOD = 0644
 XMOD = 0744
-PERL = `which perl`
 DIR = bin doc htdocs/img htdocs/masondata tmp lib etc
 
 .PHONY: tests bin doc htdocs lib etc

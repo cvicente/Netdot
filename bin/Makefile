@@ -2,7 +2,7 @@
 # NetDoT Makefile
 #
 
-PERL    =  `which perl`
+PERL    =  /usr/bin/perl
 PREFIX  =  `cat ../.prefix`
 FMOD = 0644
 

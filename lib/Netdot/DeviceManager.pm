@@ -40,9 +40,10 @@ use strict;
 =head2 new - Create a new DeviceManager object
  
     $dm = Netdot::DeviceManager->new(logfacility   => $logfacility,
-				     snmpcommunity => $comstr,
-				     snmpretries   => $retries,
-				     snmptimeout   => $timeout,
+				     snmpversion   => $version,
+				     community     => $comstr,
+				     retries       => $retries,
+				     timeout       => $timeout,
 				     );
 
 =cut
@@ -52,12 +53,13 @@ sub new {
     my $class = ref( $proto ) || $proto;
     my $self = {};
     bless $self, $class;
-    $self->{'_snmpversion'}   = $argv{'logfacility'} || $self->{'DEFAULT_SNMPVERSION'},
-    $self->{'_snmpcommunity'} = $argv{'logfacility'} || $self->{'DEFAULT_SNMPCOMMUNITY'},
-    $self->{'_snmpretries'}   = $argv{'logfacility'} || $self->{'DEFAULT_SNMPRETRIES'},
-    $self->{'_snmptimeout'}   = $argv{'logfacility'} || $self->{'DEFAULT_SNMPTIMEOUT'},
 
     $self = $self->SUPER::new( %argv );
+
+    $self->{'_snmpversion'}   = $argv{'snmpversion'}   || $self->{'DEFAULT_SNMPVERSION'};
+    $self->{'_snmpcommunity'} = $argv{'community'}     || $self->{'DEFAULT_SNMPCOMMUNITY'};
+    $self->{'_snmpretries'}   = $argv{'retries'}       || $self->{'DEFAULT_SNMPRETRIES'};
+    $self->{'_snmptimeout'}   = $argv{'timeout'}       || $self->{'DEFAULT_SNMPTIMEOUT'};
 
     $self->{nv} = NetViewer::RRD::SNMP::NV->new(aliases     => "PREFIX/etc/categories",
 						snmpversion => $self->{'_snmpversion'},
@@ -236,6 +238,7 @@ sub update {
 		      message  => $msg);
 	$self->output($msg);
 	$devtmp{name} = $device->name;
+	$rr = $device->name;
     }else{
 	my $msg = sprintf ("Name %s not in DB. Adding DNS entry.", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
@@ -1235,9 +1238,13 @@ sub get_dev_info {
     if ( ! exists($self->{badhubs}->{$nv{sysObjectID}} )){
 	foreach my $newport ( keys %{ $nv{hubPorts} } ) {
 	    
-	    $dev{interface}{$newport}{name}   = $newport;
-	    $dev{interface}{$newport}{number} = $newport;
-	    $dev{interface}{$newport}{speed}  = "10 Mbps"; #most likely
+	    $dev{interface}{$newport}{name}         = $newport;
+	    $dev{interface}{$newport}{number}       = $newport;
+	    $dev{interface}{$newport}{speed}        = "10 Mbps"; #most likely
+	    $dev{interface}{$newport}{oper_duplex}  = "[na]";
+	    $dev{interface}{$newport}{admin_duplex} = "[na]";
+	    $dev{interface}{$newport}{oper_status}  = "[na]";
+	    $dev{interface}{$newport}{admin_status} = "[na]";
 	    
 	} #foreach newport
     } #unless badhubs

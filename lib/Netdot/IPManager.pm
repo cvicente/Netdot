@@ -79,7 +79,7 @@ sub sortblocksbyaddr {
 
 =head2 sortblocksbyparent
 
- Sort IPblock objects by parent's ip address
+ Sort IPblock objects by parents ip address
  Arguments: arrayref of Ipblock objects
  Returns: sorted arrayref
 
@@ -136,14 +136,15 @@ sub searchblockslike {
     my @ipb;
     my $it = Ipblock->retrieve_all;
     while (my $ipb = $it->next){
-	$_ = $ipb->address . $ipb->prefix;
+	$_ = $ipb->address . '/' . $ipb->prefix;
 	push @ipb, $ipb if (/$string/);
 	if (scalar (@ipb) > $self->{'MAXBLOCKS'}){
 	    $self->error("Too many entries. Please refine search");
 	    return;
 	}
     }
-    return ( @ipb ) ? @ipb : "";
+    wantarray ? ( @ipb ) : $ipb[0]; 
+
 }
 
 =head2 issubnet - Is Ipblock a subnet?

@@ -24,9 +24,9 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 	    my $mask = $dev->{interface}->{$int}->{ips}->{$ip};
 	    if ( my $subnetaddr = $ipm->getsubnetaddr($ip, $mask) ){
 		if ( my $subnet = $ipm->searchblock($subnetaddr) ){
-		    if ( (my $ent = $subnet->entity) != 0 ){
+		    if ( my $ent = $subnet->entity ){
 			$guessed_ent = $ent->id;
-			if ( (my $cl = $ent->contactlist) != 0 ){
+			if ( my $cl = $ent->contactlist ){
 			    $guessed_cl = $cl->id;
 			}
 			last LOOP;  #just grab the first one
