@@ -5,9 +5,11 @@ Supported arguments:
   object - reference to a list of objects in that table for displaying in html
   view   - [row|column]
   sort   - column to sort by
+  page   - page to link to with results (default is view.html)
 </%doc>
 <%args>
 
+%args => undef
 %order => undef
 %tags => undef
 %linksto => undef
@@ -18,12 +20,11 @@ $SORT => undef
 $META => undef
 $LBL => undef
 $PAGE => "view.html"
+$gui => Netdot::GUI->new()
 $VIEW => "column"
 
 </%args>
 <%init>
-my $ui = Netdot::UI->new();
-my %args = undef;
 
 </%init>
 <%perl>
@@ -38,9 +39,12 @@ if( exists( $args{view} ) ) {
     $VIEW = $args{view};
   }
 }
+if( exists( $args{page} ) ) {
+  $PAGE = $args{page};
+}
 if( $args{table} ) {
   undef( $META );
-  $META = $ui->getmeta( $args{table} );
+  $META = $gui->getmeta( $args{table} );
   if( defined( $META ) ) {
     my $i = 1;
     my @tmp;
@@ -55,19 +59,19 @@ if( $args{table} ) {
     }
     ##############################################
     # get the label for this table (as defined in Meta)
-    $LBL = ($ui->getlabels( $args{table} ))[0];
+    $LBL = ($gui->getlabels( $args{table} ))[0];
     if( ! defined( $SORT ) ) {
       $SORT = $LBL;
     }
     ##############################################
     # get linksto info
-    %linksto = $ui->getlinksto( $args{table} );
+    %linksto = $gui->getlinksto( $args{table} );
     ##############################################
     # define order
-    %order = $ui->getcolumnorderbrief( $args{table} );
+    %order = $gui->getcolumnorderbrief( $args{table} );
     ##############################################
     # Get tags
-    %tags = $ui->getcolumntags( $args{table} );
+    %tags = $gui->getcolumntags( $args{table} );
     ##############################################
     # remove id and aliases (if present)
     if( exists( $order{id} ) ) {
@@ -103,7 +107,7 @@ Begin the table for this instance of sortresults
 % } elsif( $VIEW eq "column" ) {
 %   ($cellspc, $cellpad) = ( 0, 1 );
 % }
-  <TABLE BORDER="0" CELLSPACING="<% $cellspc %>" CELLPADDING="<% $cellpad %>" width="100%" class="tablebackground">
+  <TABLE BORDER="0" CELLSPACING="<% $cellspc %>" CELLPADDING="<% $cellpad %>" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
 %    if( $VIEW eq "row" ) {
 % ####################################################################
 <%doc>
@@ -119,11 +123,11 @@ Otherwise, print an empty row.
       <TH><% $c %></TH>
 %	   }
 %       }
-%###    <TD width="1" class="delimiter"></TD>
+%###    <TD width="1" class="delimiter" bgcolor="#DDDDDD"></TD>
     </TR>
 %    } else {
     <TR>
-      <TD width="1" colspan="2" class="delimiter"></TD>
+      <TD width="1" colspan="2" class="delimiter" bgcolor="#DDDDDD"></TD>
     </TR>
 %    }
 % ####################################################################
@@ -160,7 +164,7 @@ If a COLUMN view, start a row with the column name.
 %
 %       if( $VIEW eq "column" ) {
     <TR>
-      <TD align="RIGHT" valign="TOP" WIDTH="18%" class="column1">
+      <TD align="RIGHT" valign="TOP" WIDTH="18%" class="column1" bgcolor="#DDDDDD">
 %	   if ( exists($tags{$c}) ){
       <b><% $tags{$c} %></b>:&nbsp;
 %	   } else {
@@ -175,12 +179,12 @@ If it's a link to another column....
 </%doc>
 % ####################################################################
 %          if ( exists($linksto{$c}) ) {
-%             my $ft = $ui->getmeta( $linksto{$c} );
+%             my $ft = $gui->getmeta( $linksto{$c} );
 %             if( ! defined( $ft ) ) {
 %             ##########################
 %             # foreign table does not exist
       No such object <% $linksto{$c} %>
-%             } elsif( ! $o->$c  ) {
+%             } elsif( $o->$c == 0 ) {
 %             ##########################
 %             # it's a pointing to zero, so it's nada
       &nbsp -
@@ -190,7 +194,7 @@ If it's a link to another column....
       &nbsp -
 %             } else {
 %                my $obj = $linksto{$c}->retrieve( int( $o->$c ) );
-%                my $lbl = $ui->getobjlabel( $obj, ", " );
+%                my $lbl = $gui->getobjlabel( $obj, ", " );
 %                if( $flag ) {
       &nbsp;
 %                #######################
@@ -281,4 +285,108 @@ If this is a COLUMN or ROW view....
 
 <%doc>
 
+######################################################################
+# $Log: sortresults,v $
+# Revision 1.31  2003/07/16 23:15:59  netdot
+# massaged formatting -miyake
+#
+# Revision 1.30  2003/07/16 21:09:30  netdot
+# add css tags to tr tags -maiy[3~[3~
+#
+# Revision 1.29  2003/07/15 23:48:12  netdot
+# fix if LBL field is empty -- be sure to print something
+#
+# Revision 1.28  2003/07/15 23:34:34  netdot
+# massaged formatting -miyake
+#
+# Revision 1.27  2003/07/14 20:35:10  netdot
+# Added css tags and massaged formatting -miyake
+#
+# Revision 1.26  2003/07/12 21:28:33  netdot
+# fixed bug where I fix LBL to be first item in list
+#
+# Revision 1.25  2003/07/12 21:17:49  netdot
+# added check to sort to be sure column exists
+#
+# Revision 1.24  2003/07/11 21:30:06  netdot
+# added different sorting mechanism
+#
+# Revision 1.23  2003/07/11 18:46:58  netdot
+# Added css and massaged visual formatting.
+#
+# Revision 1.22  2003/07/10 23:54:40  netdot
+# added css references and massaged formatting
+#
+# Revision 1.21  2003/06/27 21:04:27  netdot
+# more layout fixes
+#
+# Revision 1.20  2003/06/27 18:40:31  netdot
+# back to columnorderbrief
+#
+# Revision 1.19  2003/06/27 18:03:50  netdot
+# removed Data::Dumper
+#
+# Revision 1.18  2003/06/27 18:03:36  netdot
+# cleaned up how VIEW is defined; fixed problem with how label is
+# fetched for foreign keys; other minor stuff
+#
+# Revision 1.17  2003/06/26 22:55:08  netdot
+# merging in option to view as a row or as a column
+#
+# Revision 1.16  2003/06/17 22:17:14  netdot
+# made no real changes -miyake
+#
+# Revision 1.15  2003/06/13 18:39:30  netdot
+# merged efforts from sortresults2.html
+#
+# Revision 1.14  2003/06/13 18:34:43  netdot
+# now using GUI.pm
+#
+# Revision 1.13  2003/06/13 18:07:14  netdot
+# moving to <%args>
+#
+# Revision 1.12  2003/06/02 22:17:32  netdot
+# change PAGE to PAGE=view.html
+#
+# Revision 1.11  2003/05/23 19:06:57  netdot
+# changed obj to META
+#
+# Revision 1.10  2003/05/23 19:05:45  netdot
+# major overhaul.  work mostly intended to remove 'id' from display.
+# also makes sure that label is first thing displayed.  otherwise, added
+# some landmarks and cleaned up the process of displaying each row
+#
+# Revision 1.9  2003/05/14 23:48:28  netdot
+# sort results on display (id in increasing order)
+#
+# Revision 1.8  2003/05/07 19:08:52  netdot
+# fixed problem around line 52 ( $o->$c->id => $o->$c ).  this should
+# resolve the strange problem of 'id' not defined'.  also got rid of the
+# 'view' stuff (table or expanded).  there is a variable defined with
+# the name of the url.  renamed a couple variables out of concern they
+# might be in Mason's namespace.
+#
+# Revision 1.7  2003/05/02 18:53:25  netdot
+# Changed references to linksto, linksfrom and columnorderbrief
+#
+# Revision 1.6  2003/05/01 00:50:03  netdot
+# handling case of foreign key == 0
+#
+# Revision 1.5  2003/05/01 00:38:32  netdot
+# added check for when foreign key is 0.  needs testing
+#
+# Revision 1.4  2003/04/30 23:54:54  netdot
+# integrated some changes carlos had made to a different copy of this
+# file.  basically, there is some error checking now.
+#
+# Revision 1.3  2003/04/30 23:30:37  netdot
+# if a foreign key, display label instead of the id.
+#
+# Revision 1.2  2003/04/23 17:39:50  netdot
+# now sorting alphabetically if columnOrder not defined.  otherwise, looks good.
+#
+# Revision 1.1  2003/04/23 17:15:52  netdot
+# Initial revision
+#
+#
 </%doc>

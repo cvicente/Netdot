@@ -1,0 +1,48 @@
+<%doc>
+Interface for viewing/updating information relevant for a
+given customer.
+</%doc>
+%
+%
+<%args>
+$id     => undef
+$search => undef
+$edit   => undef
+$ipsort => undef
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+my $gui = Netdot::GUI->new();
+my %colors = ( 0 => "#EEEEDD", 1 => "#E6E6DC" );
+my $maxselect = 100;
+my $obj = undef;
+my $ci = 0;
+my %arg;
+my $name;
+
+if($id){
+   $obj = Entity->retrieve($id);
+   $name = $obj->name;
+}else{
+   $name = "Search"
+}
+if( $ARGS{q} ) {
+  $search = $ARGS{q};
+}
+</%init>
+%
+<& header, title => "NOC Information: $name "  &>
+%
+% if( ! defined( $obj ) ) {
+%    if( defined( $search ) ) {
+<& search.mhtml, q => $search, page => "noc.html", table => "Entity" &>
+%    } else {
+<& search.mhtml, page => "noc.html", table => "Entity" &>
+%    }
+% } else {
+
+<p>Display information about <% $name %>
+
+% }

@@ -192,7 +192,7 @@ my $h_meta = $ui->getmeta($h_table);
 %	    unless( defined($fkobj = $linksto{$c}->retrieve($obj->$c->id) )){
 %	       next;
 %           }
-            <& sortresults, table => $linksto{$c}, object => [$fkobj], view => "row"   &>
+            <& sortresults.mhtml, table => $linksto{$c}, object => [$fkobj], view => "row"   &>
 	 </td>
 %      }
      </tr>
@@ -214,7 +214,7 @@ my $h_meta = $ui->getmeta($h_table);
                  <td align="left" class="rowtitle0"><strong><% $i %></strong></td>
 	       <tr>
 	         <td colspan="2">
-	             <& sortresults, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
+	             <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
 	         </td>
 	       </tr>
 	    </table>
@@ -229,7 +229,7 @@ my $h_meta = $ui->getmeta($h_table);
 %  if ( $view eq 'history' ){
 %   my $id_f = lc("$table" . "_id");
 %   my @h_objs = $h_table->search($id_f => "$obj->id");
-    <& sortresults, table => $h_table, object => \@h_objs , view => "row" &>
+    <& sortresults.mhtml, table => $h_table, object => \@h_objs , view => "row" &>
 %  } 
 
 <!-- End Display history objects -->
