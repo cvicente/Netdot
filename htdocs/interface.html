@@ -1,0 +1,198 @@
+<& index.html, title => "Cable Plant: Interface", s2name => $s2name  &>
+
+<%perl>
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+# code for inserting/updating
+# -----------------------------------------------------------------------------
+if (defined($ARGS{_action}))
+{
+    print "ARGS is <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+    
+    my %update_info = ();
+    if (!(%update_info = $ui->form_to_db(%ARGS)))
+    {
+        my $err = $ui->error();
+        die("Error: $err\n");
+	}
+
+    if ($update_info{Interface}{key})
+    {
+        $id = $update_info{Interface}{key};
+    }
+    
+    # Do this to 'flush' the values associated with the object
+    # before redisplaying
+    $o = undef;
+    if ($id && $id ne "NEW")
+    {
+        $o = Interface->retrieve($id);
+    }
+}  
+# end insertion/update code
+# -----------------------------------------------------------------------------
+</%perl>
+
+<script language="JavaScript">
+<!--
+var jackSearchList = new DynamicList("netdotform", "Interface__<% $id %>__jack", "jackid", "HorizontalCable", "jack_srch");
+LIST_MANAGER.addList(jackSearchList);
+-->
+</script>
+
+<!-- Header Table -->
+% if (defined($o)) {
+<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+ <tr class="rowtitle0" >
+    <td align="left">
+        Interface for Horizontal Cable <a href="cable_horizontal.html?id=<% $o->jack %>"><% $o->jack->jackid %></a>
+    </td>
+ </tr>
+</table>
+%}
+<!-- End Header Table -->
+
+<!-- Begin Interface Table -->
+<table border="0" width="95%" align="center"  class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="center">
+        <form name="netdotform" action="interface.html" method="POST">
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="_action" value="1">
+        <input type="hidden" name="s2name" value="<% $s2name %>">
+        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+        <tr class="formtabletitle">
+            <td colspan="3" align="left">Interface</td>
+        </tr>
+        <tr align="left" valign="top">
+            <td width="40%">
+            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <tr align="left" valign="top">
+                <td>Number: </td>
+                <td><input type="text" name="Interface__<% $id %>__number" value="<% $o ? $o->number : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Name: </td>
+                <td><input type="text" name="Interface__<% $id %>__name" value="<% $o ? $o->name : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Device: </td>
+                <td>
+%               $ui->selectLookup(object=>$o, table=>"Interface", column=>"device", lookup=>"Device");
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Physical Address: </td>
+                <td>
+%               $ui->selectLookup(object=>$o, table=>"Interface", column=>"physaddr", lookup=>"PhysAddr");
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Type: </td>
+                <td><input type="text" name="Interface__<% $id %>__type" value="<% $o ? $o->type : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Description: </td>
+                <td><input type="text" name="Interface__<% $id %>__description" value="<% $o ? $o->description : "" %>"></td>
+            </tr>
+            </table>
+            </td>
+
+            <td width="40%">
+            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <tr align="left" valign="top">
+                <td>Speed: </td>
+                <td><input type="text" name="Interface__<% $id %>__speed" value="<% $o ? $o->speed : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Duplex: </td>
+                <td><input type="text" name="Interface__<% $id %>__duplex" value="<% $o ? $o->duplex : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Status: </td>
+                <td><input type="text" name="Interface__<% $id %>__status" value="<% $o ? $o->status : "" %>"></td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Is Managed: </td>
+                <td>
+%                   $ui->radioGroupBoolean(object=>$o, table=>"Interface", column=>"managed");
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Jack: </td>
+                <td>
+%               $ui->selectLookup(object=>$o, table=>"Interface", column=>"jack", lookup=>"HorizontalCable");
+                &nbsp;<select name="jack_srch" onChange="jackSearchList.doIt();" style="width: 150px;">
+                <option value="">Lookup by Site</option>
+                <%perl>
+                my @sites = Site->retrieve_all({"order_by"=>"name"});
+                foreach my $s (@sites)
+                {
+                    printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
+                }
+                </%perl>
+                </select>
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Contact List: </td>
+                <td>
+%               $ui->selectLookup(object=>$o, table=>"Interface", column=>"contactlist", lookup=>"ContactList");
+                </td>
+            </tr>
+            
+            </table>
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr><td colspan="3">&nbsp;<br></td></tr>
+
+        <tr align="left" valign="top">
+            <td colspan="2">
+            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
+            <textarea name="Interface__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr><td colspan="3">&nbsp;<p></td></tr>
+
+        <tr align="left" valign="top">
+            <td align="center"><input name="submit" value="save" type="submit"></td>
+            <td colspan="2">&nbsp;</td>
+        </tr>
+
+        </table>
+        </form>
+    </td>
+    </tr>
+</table>
+<!-- End Interface Table -->
+
+<%args>
+$id => undef;
+$edit => undef;
+$s2name => "Plant";
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $o = undef;
+
+if ($id && $id ne "NEW") 
+{
+   $o = Interface->retrieve($id);
+}
+</%init>

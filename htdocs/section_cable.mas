@@ -42,12 +42,12 @@ LIST_MANAGER.addList(jackList, closetList, floorList);
 
             <td width="100" align="left">Floor:<br>
             <select name="floor_id" onChange="closetList.doIt();">
-            </select> &nbsp;<input name="submit_floor" value="By Floor" type="submit">
+            </select> &nbsp;<!--<input name="submit_floor" value="By Floor" type="submit">-->
             </td>
             
             <td width="100" align="left">Closet:<br>
             <select name="closet_id" onChange="jackList.doIt();">
-            </select> &nbsp;<input name="submit_closet" value="By Closet" type="submit">
+            </select> &nbsp;<!--<input name="submit_closet" value="By Closet" type="submit">-->
             </td>
             
             <td width="180" align="left">Jack:<br>
@@ -67,9 +67,9 @@ LIST_MANAGER.addList(jackList, closetList, floorList);
     <form name="backbone_form" action="cable_plant.html" method="POST">
     <input type="hidden" name="page_type" value="BACKBONE">
     <table border="0" cellpadding="2" cellspacing="0" width="100%" class="tablebackground">
-        <tr>
-            <td width=350">Site:<br>
-            <select name="id">
+        <tr align="left" valign="top">
+            <td width="375" align="left">Start:
+            <select name="start_id">
             <option value="">-- Make your selection --</option>
             <%perl>
             foreach my $site (@sites)
@@ -77,8 +77,22 @@ LIST_MANAGER.addList(jackList, closetList, floorList);
                 printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
             }
             </%perl>
-            </select> &nbsp;<input name="submit_site" value="Browse Site" type="submit">&nbsp;&nbsp;&nbsp;
-            <input name="search" size="20"> &nbsp;<input type="submit" name="submit_search" value="Search">
+            </select><br>
+            End:&nbsp;
+            <select name="end_id">
+            <option value="">-- Make your selection --</option>
+            <%perl>
+            foreach my $site (@sites)
+            {
+                printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+            }
+            </%perl>
+            </select>
+            <input name="submit_site" value="Go!" type="submit"> &nbsp;&nbsp;&nbsp;
+            </td>
+            <td align="left">
+            <input name="backbone_srch" size="15"> &nbsp;<input type="submit" name="submit_backbone_search" value="Search Backbone Name"> <br>
+            <input name="site_srch" size="15"> &nbsp;<input type="submit" name="submit_site_search" value="Search Site Name">
             </td>
         </tr>
     </table>

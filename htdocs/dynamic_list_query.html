@@ -39,18 +39,18 @@ if (scalar(@results) < $MAX_RESULTS)
 {
     @results = sort { $a->$lblField cmp $b->$lblField } @results;
 
-    printf("listdata.push(new Array(\"\", \"No Matches\"));\n") unless (scalar(@results));
+    printf("listdata.push(new Option(\"No Matches\", \"\"));\n") unless (scalar(@results));
 
     foreach my $res (@results)
     {
-        printf("listdata.push(new Array(\"%s\", \"%s\"));\n", $res->id, $res->$lblField);
+        printf("listdata.push(new Option(\"%s\", \"%s\"));\n", $res->$lblField, $res->id);
     }
 
 }
 
 else
 {
-    printf("listdata.push(new Array(\"\", \"Too Many Results\"));\n");
+    printf("listdata.push(new Option(\"Too Many Results\", \"\"));\n")
 }
 
 printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);
@@ -64,7 +64,7 @@ printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);
 my ($ui, @terms, $DEBUG, $MAX_RESULTS);
 $ui = Netdot::UI->new();
 $DEBUG = 1;
-$MAX_RESULTS = 1000;
+$MAX_RESULTS = 2000;
 </%init>
 
 <%args>

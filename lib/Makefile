@@ -3,7 +3,7 @@
 
 NDIR = Netdot
 
-FILES = Netdot.pm $(NDIR)/UI.pm $(NDIR)/DefaultConfig.pm $(NDIR)/SiteConfig.pm $(NDIR)/Netviewer.pm $(NDIR)/nv.categories $(NDIR)/nv.ifTypes
+FILES = Netdot.pm $(NDIR)/UI.pm $(NDIR)/DefaultConfig.pm $(NDIR)/SiteConfig.pm $(NDIR)/Netviewer.pm $(NDIR)/nv.categories $(NDIR)/nv.ifTypes $(NDIR)/NetdotPermissionFactory.pm
 
 all: dir files
 

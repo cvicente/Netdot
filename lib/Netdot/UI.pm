@@ -425,6 +425,9 @@ sub form_to_db
     #Define control field names, to be ignored when parsing form data.
     my %control = ( 
                  'id'     => '',
+                 'jack_id' => '',
+                 'start_id' => '',
+                 'end_id' => '',
                  'submit' => '',
                  'edit'   => '',
                  'save'   => '',

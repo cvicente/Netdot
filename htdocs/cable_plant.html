@@ -1,4 +1,4 @@
-<& index.html, title => "Cable Plant: $name", s2name => $s2name  &>
+<& index.html, title => "Cable Plant: $name", s2name => $s2name &>
 
 <%perl>
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -28,6 +28,7 @@ if(defined($ARGS{_action}))
 # -----------------------------------------------------------------------------
 </%perl>     
 
+% if ($o && $page_type eq "HORIZONTAL") {
 <!-- Header Table -->
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
@@ -38,6 +39,7 @@ if(defined($ARGS{_action}))
  </tr>
 </table>
 <!-- End Header Table -->
+% }
 
 <!-- Margins Table -->
 <table border="0" width="95%" align="center"  class="tablebackground">
@@ -47,6 +49,10 @@ if(defined($ARGS{_action}))
 % if ($edit) {
    <form name="netdotform" action="cable_plant.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="start_id" value="<% $start_id %>">
+    <input type="hidden" name="end_id" value="<% $end_id %>">
+    <input type="hidden" name="backbone_srch" value="<% $backbone_srch %>">
+    <input type="hidden" name="site_srch" value="<% $site_srch %>">
     <input type="hidden" name="page_type" value="<% $page_type %>">
     <input type="hidden" name="_action" value="<% $id ? "UPDATE" : "NEW" %>">
     <input type="hidden" name="s2name" value="<% $s2name %>">
@@ -142,6 +148,7 @@ if(defined($ARGS{_action}))
 %   foreach my $cable (@sorted_cables) 
 %   {
 %   $i = ($i + 1) % 2;
+%   my $site = $cable->closet->floor->site || $cable->closet->site;
     <tr align="left" class="<% $cssitem{$i} %>">
         <td align="left">
 %       if ($edit eq "cableinfo") {
@@ -162,7 +169,7 @@ if(defined($ARGS{_action}))
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$cable, column=>"closet", lookup=>"Closet");
+%           $ui->selectLookup(object=>$cable, column=>"closet", lookup=>"Closet", where=>{site=>$site->id});
 %       } else {
             <% $cable->closet ? $cable->closet->name : "" %>
 %       }
@@ -192,7 +199,91 @@ if(defined($ARGS{_action}))
 % # BEGIN BACKBONE CABLE CODE
 % #############################################################################
 % elsif (uc($page_type) eq "BACKBONE") {
-  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+<%perl>
+my @cables = ();
+
+# if we are searching by backbone name...
+if ($backbone_srch && !defined($submit_site)) 
+{
+    @cables = BackboneCable->search_like(name=>$backbone_srch);
+}
+
+# searching by site name
+elsif ($site_srch && !defined($submit_site)) 
+{
+    my @sites = Site->search_like(name=>$site_srch);
+    my @closets = ();
+    map { push (@closets, $_->closets) } @sites;
+    foreach my $closet (@closets)
+    {
+        my $c_id = $closet->id;
+        map { push (@cables, $_) } (BackboneCable->search(start_closet=>$c_id),
+                                    BackboneCable->search(end_closet=>$c_id));
+    }
+
+} 
+
+# trying to browse by start site, end site, or both.
+elsif ($start_id || $end_id)
+{
+    my (@start_closets, @end_closets, $start_site, $end_site);
+    $start_site = Site->retrieve($start_id) if ($start_id);
+    @start_closets = $start_site->closets if ($start_site);
+    $end_site = Site->retrieve($end_id) if ($end_id);
+    @end_closets = $end_site->closets if ($end_site);
+
+    # checking for start and end
+    # -------------------------------------------------------------------------
+    if (scalar(@start_closets) && scalar(@end_closets))
+    {
+        foreach my $start_c (@start_closets)
+        {
+            my @cab = BackboneCable->search(start_closet=>$start_c->id);
+            foreach my $cab (@cab)
+            {
+                foreach my $end_c (@end_closets)
+                {
+                    if ($cab->end_closet eq $end_c->id)
+                    {
+                        push(@cables, @cab);
+                        last;
+                    }
+                }
+            }
+        }
+    }
+
+    # checking for start
+    # -------------------------------------------------------------------------
+    elsif (scalar(@start_closets))
+    {
+        foreach my $start_c (@start_closets)
+        {
+            my @cab = BackboneCable->search(start_closet=>$start_c->id);
+            push (@cables, @cab);
+        }
+    }
+    
+    # checking for end
+    # -------------------------------------------------------------------------
+    elsif (scalar(@end_closets))
+    {
+        foreach my $end_c (@end_closets)
+        {
+            my @cab = BackboneCable->search(end_closet=>$end_c->id);
+            push (@cables, @cab);
+        }
+    }
+    
+    printf("cables returned: %s\n", scalar(@cables)) if $DEBUG;
+}
+</%perl>
+
+%   if (scalar(@cables) > $MAX_SELECTION) {
+        <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+%   } else {
+
+ <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
    <tr class="formtabletitle" >
      <td colspan="5">
       <table width="100%" border="0">
@@ -204,7 +295,7 @@ if(defined($ARGS{_action}))
 %	 } else {
             <td width="20%" align="right">
                 <a href="cable_backbone.html?id=NEW">[new]</a> &nbsp;||&nbsp; 
-                <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+                <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
             </td>
 %	 }
        </tr>
@@ -214,55 +305,24 @@ if(defined($ARGS{_action}))
    <tr>
      <td>
       <table border="0" width="100%">
-    <%perl>
-    my (@c1, @closets, @cables, @floors, %s);
-    
-    @floors = Floor->search(site=>$id); # all floors for site ...
-
-    print "floors: <pre>", Dumper(@floors), "</pre><br>" if $DEBUG;
-    
-    # ... and all closets for floor
-    foreach my $floor (@floors)
-    {
-        map { push (@c1, $_) } $floor->closets;
-    }
-
-    # Because we are storing both a floor (which has the site), and the
-    # site in our Closet table we need to check both places.
-    @closets = grep(!$s{$_}++, (@c1, Closet->search(site=>$id)));
-
-    print "closets: <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
-
-    # and finally all BackboneCables that either start or end
-    # at one of these closets..
-    foreach my $closet (@closets)
-    {
-        my $c_id = $closet->id;
-        map { push (@cables, $_) } (BackboneCable->search(start_closet=>$c_id),
-                                    BackboneCable->search(end_closet=>$c_id));
-    }
-    
-    printf("cables returned: %s\n", scalar(@cables)) if $DEBUG;
-    </%perl>
-
     <tr><td align="left" colspan="5"><% scalar(@cables) %> row(s) returned.</td></tr>
 
 %	if (scalar(@cables)) {
     <tr>
         <td align="center">
-            <a href="cable_plant.html?id=<% $id %>&cable_sort=name&page_type=<% $page_type %>">Name</a>
+            <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=name&page_type=<% $page_type %>">Name</a>
         </td>
         <td align="center">
-            <a href="cable_plant.html?id=<% $id %>&cable_sort=type&page_type=<% $page_type %>">Type</a>
+            <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=type&page_type=<% $page_type %>">Type</a>
          </td>
         <td align="center">
-            <a href="cable_plant.html?id=<% $id %>&cable_sort=start_closet&page_type=<% $page_type %>">Start Closet</a>
+            <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=start_closet&page_type=<% $page_type %>">Start Closet</a>
         </td>
         <td align="center">
-            <a href="cable_plant.html?id=<% $id %>&cable_sort=end_closet&page_type=<% $page_type %>">End Closet</a>
+            <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=end_closet&page_type=<% $page_type %>">End Closet</a>
         </td>
         <td align="center">
-            <a href="cable_plant.html?id=<% $id %>&cable_sort=owner&page_type=<% $page_type %>">Owner</a>
+            <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&cable_sort=owner&page_type=<% $page_type %>">Owner</a>
         </td>
     </tr>
 
@@ -298,6 +358,12 @@ if(defined($ARGS{_action}))
 %   my $i = 0;
 %   foreach my $cable (@sorted_cables) {
 %   $i = ($i + 1) % 2;
+%   
+%   my $start_site = $cable->start_closet->floor->site;
+%   my $end_site = $cable->end_closet->floor->site;
+%   my $start_site_id = $start_site->id if ($start_site);
+%   my $end_site_id = $end_site->id if ($end_site);
+    
     <tr align="left" class="<% $cssitem{$i} %>">
         <td align="left">
 %       if ($edit eq "cableinfo") {
@@ -318,7 +384,7 @@ if(defined($ARGS{_action}))
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$cable, column=>"start_closet", lookup=>"Closet");
+%           $ui->selectLookup(object=>$cable, column=>"start_closet", lookup=>"Closet", where=>{site=>$start_site_id});
 %       } else {
             <% $cable->start_closet ? $cable->start_closet->name : "" %>
 %       }
@@ -326,7 +392,7 @@ if(defined($ARGS{_action}))
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$cable, column=>"end_closet", lookup=>"Closet");
+%           $ui->selectLookup(object=>$cable, column=>"end_closet", lookup=>"Closet", where=>{site=>$end_site_id});
 %       } else {
             <% $cable->end_closet ? $cable->end_closet->name : "" %>
 %       }
@@ -346,7 +412,7 @@ if(defined($ARGS{_action}))
     </td>
     </tr>
 </table>
-
+% }
 %}
 % #############################################################################
 % # END BACKBONE CABLE CODE
@@ -365,18 +431,22 @@ if(defined($ARGS{_action}))
 
 <%args>
 $id => undef;
+$start_id => undef;
+$end_id => undef;
 $cable_sort => undef;
 $edit => undef;
 $page_type => undef;
+$submit_site => undef;
+$backbone_srch => undef;
+$site_srch => undef;
 $s2name => "Plant";
 </%args>
 
 <%init>
 my $DEBUG = 0;
-my $MAX_SELECTION = 100;
+my $MAX_SELECTION = 150;
 my $ui = Netdot::UI->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
-my $maxselect = 100;
 my $o = undef;
 my $name;
 
@@ -390,6 +460,9 @@ else
 {
    $name = "Search"
 }
+
+$backbone_srch = "%" . $backbone_srch . "%" if ($backbone_srch);
+$site_srch = "%" . $site_srch . "%" if ($site_srch);
 </%init>
 
 <%doc>

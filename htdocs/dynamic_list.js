@@ -63,30 +63,26 @@ DynamicList.prototype.doIt = function()
 */
 DynamicList.prototype.populate = function(data)
 {
+    this.m_wind.close();
+
     var doc_form = this.getListForm();
-    var control = doc_form[this.m_self];
-    var i = 0;
-    var j = 0;
-    control.options.length = 0;
+    var options = doc_form[this.m_self].options;
+    var i = 0, j = 0;
+    options.length = 0;
+    options.length = data.length;
 
     if (data.length > 1)
     {
-        control.options[0] = new Option();
-        control.options[0].value = -1;
-        control.options[0].text = "----------";
-        control.options[0].selected = true;
+        options[0] = new Option();
+        options[0].value = -1;
+        options[0].text = "----------";
+        options[0].selected = true;
         j = 1;
     }
-    
-    for (; i < data.length; ++i, ++j)
-    {
-        control.options[j] = new Option();
-        control.options[j].value = data[i][0];
-        control.options[j].text  = data[i][1];
-    }
-    
-    this.m_wind.close();
 
+    for (; i < data.length; ++i, ++j)
+        options[j] = data[i];
+    
     // process any dependencies
     for (i = 0; i < this.m_deps.length; ++i)
         if (this.m_deps[i])

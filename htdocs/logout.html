@@ -1,0 +1,21 @@
+<& header, title=>"Logout" &>
+
+% if($success) {
+      <P>You have been logged out.</P>
+% } else {
+      <P>Attempt to log out failed. You were not logged in.</P>
+% }
+
+<B>Click <A HREF="/netdot/login.html">here</A> to log in.</B>
+
+<& footer &>
+
+<%init>
+my $user = SiteControl::AccessController::getCurrentUser($r);
+my $success = 0;
+
+if(defined($user) && $user->isa("SiteControl::User")) {
+   $user->logout($r);
+   $success = 1;
+}
+</%init>
