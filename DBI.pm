@@ -129,6 +129,29 @@ __PACKAGE__->has_a(ContactPool => 'ContactPool');
 
 
 ######################################################################
+package Interface;
+use base 'Netdot::DBI';
+
+__PACKAGE__->table('Interface');
+__PACKAGE__->columns(All => qw/id NodeId HostName PhysAddr ifIndex ifType ifDescr ifSpeed ifStatus Info/ );
+
+__PACKAGE__->has_a(NodeID => 'Node');
+__PACKAGE__->has_many( 'interfacedeps', 'InterfaceDep' => 'parent');
+__PACKAGE__->has_many( 'interfacedeps', 'InterfaceDep' => 'child');
+
+
+######################################################################
+package InterfaceDep;
+use base 'Netdot::DBI';
+
+__PACKAGE__->table('InterfaceDep');
+__PACKAGE__->columns(All => /id parent child/ );
+
+__PACKAGE__->has_a(parent => 'Interface');
+__PACKAGE__->has_a(child => 'Interface');
+
+
+######################################################################
 package JnCustomerSite;
 use base 'Netdot::DBI';
 
@@ -199,6 +222,9 @@ __PACKAGE__->has_many('models', 'Model' => 'Vendor');
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.8  2003/04/10 21:41:36  netdot
+#  added a few more classes
+#
 #  Revision 1.7  2003/04/10 16:45:18  netdot
 #  no changes on this rev; just sorting packages in alphabetical listing
 #
