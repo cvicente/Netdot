@@ -548,14 +548,16 @@ if ( !defined($search) ){
 %	   if ($editints){	 
 	      <td align="center">[del]</td>
 %	   }
-	   <td align="left"><strong>Number</strong></td>
-	   <td align="left"><strong>Name</strong></td>
-	   <td align="left"><strong>VLAN</strong></td>
-	   <td align="left"><strong>Duplex</strong></td>
-	   <td align="left"><strong>Jack</strong></td>
-	   <td align="left"><strong>Description</strong></td>
-	   <td align="left"><strong>Upstream<br>Connections</strong></td>
-	   <td align="left"><strong>Downstream<br>Connections</strong></td>
+	   <td valign="top" align="left"><strong>No.</strong></td>
+	   <td valign="top" align="left"><strong>Name</strong></td>
+	   <td valign="top" align="left"><strong>Speed</strong></td>
+	   <td valign="top" align="left"><strong>Duplex</strong><br>[oper/admin]</td>
+	   <td valign="top" align="left"><strong>Status</strong><br>[oper/admin]</td>
+	   <td valign="top" align="left"><strong>VLAN</strong></td>
+	   <td valign="top" align="left"><strong>Jack</strong></td>
+	   <td valign="top" align="left"><strong>Descr.</strong></td>
+	   <td valign="top" align="left"><strong>Upstream<br>Conn.</strong></td>
+	   <td valign="top" align="left"><strong>Downstream<br>Conn.</strong></td>
         </tr>
 
 %	#####################################
@@ -591,6 +593,15 @@ if ( !defined($search) ){
 %               $ui->textField(object=>$if, column=>"name", edit=>$editints);
 	   </td>
 	   <td align="left"> 
+               <% ( exists $speed{$if->speed} ) ? $speed{$if->speed} : $if->speed %>
+	   </td>
+	   <td align="left"> 
+               <% $if->oper_duplex %>/<% $if->admin_duplex %>
+	   </td>
+	   <td align="left"> 
+               <% $if->oper_status %>/<% $if->admin_status %>
+	   </td>
+	   <td align="left"> 
 %	      if (exists $ifvlans{$if}){
 %	         my @links;
 %	         foreach my $v ( keys %{$ifvlans{$if}} ){
@@ -599,9 +610,6 @@ if ( !defined($search) ){
 %		 print join ', ', @links;
 
 %	      }
-	   </td>
-	   <td align="left"> 
-%               $ui->textField(object=>$if, column=>"duplex", edit=>$editints);
 	   </td>
 	   <td align="left">
 %           $ui->selectLookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
@@ -780,7 +788,11 @@ if ($id){
    $name = "Search"
 }
 
-
+my %speed = (10000000     => "10 Mbps",
+	     100000000    => "100 Mbps",
+	     1000000000   => "1 Gbps",
+	     10000000000  => "10 Gbps",
+	     );
 
 </%init>
 

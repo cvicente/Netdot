@@ -166,14 +166,14 @@ sub update {
 	return 0;
     }
     my $device = $argv{device} || "";
+    $argv{entity}              ||= 0;
+    $argv{site}                ||= 0;
+    $argv{contactlist}         ||= 0;
 
     my %devtmp;
     $devtmp{sysdescription} = $dev{sysdescription} || "";
     $devtmp{community}      = $comstr;
-    $devtmp{entity}         = $device->entity      || $argv{entity}        || 0;
-    $devtmp{site}           = $device->site        || $argv{site}          || 0;
-    $devtmp{contactlist}    = $device->contactlist || $argv{contactlist}   || 0;
-    
+
     my %ifs;
     my %dbifdeps;
     
@@ -209,7 +209,17 @@ sub update {
 		}
 	    }
 	}
+
+	$devtmp{entity}      = $device->entity;
+	$devtmp{site}        = $device->site;
+	$devtmp{contactlist} = $device->contactlist;
+
+    }else{
+	$devtmp{entity}      = $argv{entity};
+	$devtmp{site}        = $argv{site};
+	$devtmp{contactlist} = $argv{contactlist};
     }
+
     ##############################################
     # Make sure name is in DNS
 
@@ -454,13 +464,15 @@ sub update {
 	my( %iftmp, $if );
 	$iftmp{device} = $device->id;
 
-	my %iffields = ( number      => "",
-			 name        => "",
-			 type        => "",
-			 description => "",
-			 speed       => "",
-			 status      => "",
-			 duplex      => "");
+	my %iffields = ( number           => "",
+			 name             => "",
+			 type             => "",
+			 description      => "",
+			 speed            => "",
+			 admin_status     => "",
+			 oper_status      => "",
+			 admin_duplex     => "",
+			 oper_duplex      => "");
 	
 	foreach my $field ( keys %{ $dev{interface}{$newif} } ){
 	    if (exists $iffields{$field}){
@@ -596,10 +608,10 @@ sub update {
 		    delete( $dbips{$newip} );
 		    
 		    unless( $ipobj = $self->{ipm}->updateblock(id        => $ipid, 
-								address   => $newip, 
-								prefix    => $prefix,
-								status    => "Assigned",
-								interface => $if )){
+							       address   => $newip, 
+							       prefix    => $prefix,
+							       status    => "Assigned",
+							       interface => $if )){
 			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
@@ -1056,12 +1068,14 @@ sub get_dev_info {
     # Netdot to Netviewer field name translations
     # (values that are stored directly)
 
-    my %iffields = ( number      => "instance",
-		     name        => "name",
-		     type        => "ifType",
-		     description => "descr",
-		     speed       => "ifSpeed",
-		     status      => "ifAdminStatus" );
+    my %iffields = ( number            => "instance",
+		     name              => "name",
+		     type              => "ifType",
+		     description       => "descr",
+		     speed             => "ifSpeed",
+		     admin_status      => "ifAdminStatus",
+		     oper_status       => "ifOperStatus" );
+
 
     ##############################################
     # for each interface discovered...
@@ -1076,8 +1090,15 @@ sub get_dev_info {
 	next if( $skip );
 
 	foreach my $dbname ( keys %iffields ) {
+	    # NV changes admin but not oper
+	    if( $dbname eq "oper_status" ) {
+		if( $nv{interface}{$newif}{$iffields{$dbname}} eq "1" ){
+		    $dev{interface}{$newif}{$dbname} = "up";
+		}elsif( $nv{interface}{$newif}{$iffields{$dbname}} eq "2" ){
+		    $dev{interface}{$newif}{$dbname} = "down";
+		}
 	    # Ignore these descriptions
-	    if( $dbname eq "description" ) {
+	    }elsif( $dbname eq "description" ) {
 		if( $nv{interface}{$newif}{$iffields{$dbname}} ne "-" &&
 		    $nv{interface}{$newif}{$iffields{$dbname}} ne "not assigned" ) {
 		    $dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$iffields{$dbname}};
@@ -1090,25 +1111,35 @@ sub get_dev_info {
 	    $dev{interface}{$newif}{physaddr} = $self->_readablehex($nv{interface}{$newif}{ifPhysAddress});
 	}
 	################################################################
-	# Set Duplex mode
-	my $dupval;
+	# Set Oper Duplex mode
+	my $opdupval;
 	################################################################
 	# Standard MIB
 	if ($self->_is_valid($nv{interface}{$newif}{ifMauType})){
-	    $dupval = $nv{interface}{$newif}{ifMauType};
-	    $dupval =~ s/^\.(.*)/$1/;
-	    $dev{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "";
+	    $opdupval = $nv{interface}{$newif}{ifMauType};
+	    $opdupval =~ s/^\.(.*)/$1/;
+	    $dev{interface}{$newif}{oper_duplex} = (exists ($Mau2Duplex{$opdupval})) ? $Mau2Duplex{$opdupval} : "";
 	    ################################################################
 	    # Other Standard (used by some HP)	    
 	}elsif($self->_is_valid($nv{interface}{$newif}{ifSpecific})){
-	    $dupval = $nv{interface}{$newif}{ifSpecific};
-	    $dupval =~ s/^\.(.*)/$1/;
-	    $dev{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "";
+	    $opdupval = $nv{interface}{$newif}{ifSpecific};
+	    $opdupval =~ s/^\.(.*)/$1/;
+	    $dev{interface}{$newif}{oper_duplex} = (exists ($Mau2Duplex{$opdupval})) ? $Mau2Duplex{$opdupval} : "";
 	    ################################################################
 	    # Catalyst
 	}elsif($self->_is_valid($nv{interface}{$newif}{portDuplex})){
-	    $dupval = $nv{interface}{$newif}{portDuplex};
-	    $dev{interface}{$newif}{duplex} = (exists ($CatDuplex{$dupval})) ? $CatDuplex{$dupval} : "";
+	    $opdupval = $nv{interface}{$newif}{portDuplex};
+	    $dev{interface}{$newif}{oper_duplex} = (exists ($CatDuplex{$opdupval})) ? $CatDuplex{$opdupval} : "";
+	}
+	################################################################
+	# Set Admin Duplex mode
+	my $admindupval;
+	################################################################
+	# Standard MIB
+	if ($self->_is_valid($nv{interface}{$newif}{ifMauDefaultType})){
+	    $admindupval = $nv{interface}{$newif}{ifMauDefaultType};
+	    $admindupval =~ s/^\.(.*)/$1/;
+	    $dev{interface}{$newif}{admin_duplex} = (exists ($Mau2Duplex{$admindupval})) ? $Mau2Duplex{$admindupval} : "";
 	}
 
 	####################################################################

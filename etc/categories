@@ -113,6 +113,7 @@ interface {
    alias IF ;
    aux {
       $ifAdminStatus.inst ;
+      $ifOperStatus.inst ;
       $ifSpeed.inst ;
       $ifType.inst ;
       $ifPhysAddress.inst ;
@@ -120,10 +121,13 @@ interface {
       $hpVlanMemberIndex.inst ;
       $vmVlan.inst ;
       $ifSpecific.inst ;
+#################################################
+#     This syntax not supported by Netviewer yet
+#
 #      $ifMauType.inst.1 ;
+#      $ifMauDefaultType.inst.1 ;
 #      $hpVlanIdentName.$hpVlanDot1QID=$hpVlanMemberIndex.inst ;
 #      $dot1qVlanStaticName.$dot1qPvid=$dot1qPvid.inst ;
-#      $portDuplex.$portIfIndex=$ifIndex.inst ;
    }
    cftype avg:max ;
    collect yes ;
@@ -132,7 +136,7 @@ interface {
    interval 5 ;
    key value ;
    map $ifDescr ;
-   test "{ $ifType.inst != 24 && $ifType.inst != 18 && ! ( $portIfIndex.$portIfIndex=$ifIndex.inst && $ipForwarding == 2 )  }" ;
+#   test "{ $ifType.inst != 24 && $ifType.inst != 18 && ! ( $portIfIndex.$portIfIndex=$ifIndex.inst && $ipForwarding == 2 )  }" ;
    vars {
       ifInDiscards ;
    }
@@ -143,6 +147,7 @@ interfaceCatalyst {
       $ifAdminStatus.inst ;
       $ifSpeed.inst ;
       $ifType.inst ;
+#      $portDuplex.$portIfIndex=$ifIndex.inst ;
    }
    cftype avg:max ;
    collect yes ;
@@ -151,7 +156,7 @@ interfaceCatalyst {
    interval 5 ;
    key value ;
    map $ifName ;
-   test "{ $ifType.inst != 24 && $ifType.inst != 18 &&  $portIfIndex.$portIfIndex=$ifIndex.inst && $ipForwarding == 2  }" ;
+#   test "{ $ifType.inst != 24 && $ifType.inst != 18 &&  $portIfIndex.$portIfIndex=$ifIndex.inst && $ipForwarding == 2  }" ;
    vars {
       ifInDiscards ;
    }
@@ -589,6 +594,10 @@ vars {
       oid 1.3.6.1.2.1.2.2.1.7 ;
       type INTEGER ;
    }
+   ifOperStatus {
+      oid 1.3.6.1.2.1.2.2.1.8 ;
+      type INTEGER ;
+   }
    ifAlias {
       oid 1.3.6.1.2.1.31.1.1.1.18 ;
       type STRING ;
@@ -680,6 +689,18 @@ vars {
    ifSpeed {
       oid 1.3.6.1.2.1.2.2.1.5 ;
       type GAUGE ;
+   }
+   ifMauAutoNegAdminStatus {
+      oid .1.3.6.1.2.1.26.5.1.1.1 ;
+      type INTEGER ;
+   }
+   ifMauIfIndex {
+      oid .1.3.6.1.2.1.26.2.1.1.1 ;
+      type INTEGER ;
+   }
+   ifMauDefaultType {
+      oid .1.3.6.1.2.1.26.2.1.1.11 ;
+      type STRING ;
    }
    ifMauType {
       oid .1.3.6.1.2.1.26.2.1.1.3 ;
