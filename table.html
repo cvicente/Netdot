@@ -1,11 +1,68 @@
+<%perl>
+foreach my $j ( keys %ARGS ) {
+  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+  $args{$j} = $ARGS{$j};
+}
+$WIDTH = $args{width} if( exists( $args{width} ) );
+$LINK  = $args{link}  if( exists( $args{link} ) );
+$TITLE = $args{title} if( exists( $args{title} ) );
+map { push @tbls, $_ unless( $_->name eq "Meta" ) } 
+  sort { $a->name cmp $b->name } Meta->retrieve_all();
+</%perl>
 
+<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<tr>
+<td>
+   <table border="1" cellspacing="0" cellpadding="0" width="90%">
+   <tr><td colspan="3" bgcolor="#6ab1f0"><b><% $TITLE %></b></td></tr>
+   <tr><td bgcolor="WHITESMOKE">
+       <table border="0" cellspacing="3" cellpadding="1" width="100%">
+       <tr>
+% my $j = 0;
+% for (my($i)=0; $i < scalar( @tbls ); $i++ ) {
+%   if( $i % $WIDTH == 0 && $i != 0 ) { 
+       </tr>
+       <tr>
+%   }
+       <td><a href="<% $LINK %>?table=<% $tbls[$j]->name %>" style="text-decoration:none"><% $tbls[$j]->name %></a></td>
+%   $j += int( scalar( @tbls ) / $WIDTH );
+%   if( $j >= scalar( @tbls ) ) {
+%     $j -= ( scalar( @tbls ) - 1 );
+%   } 
+% }
+       </tr>
+       </table>
+   </tr>
+   </table>
+</td>
+</tr>   
+</table>
+
+<%init>
+use lib "/home/netdot/public_html/lib";
+use Netdot::DBI;
+my( %args, $WIDTH, $LINK, $TITLE, @tbls );
+$WIDTH = 3;
+$LINK = "browse.html";
+undef( @tbls );
+
+</%init>
 
 <%doc>
 
-simple component to display all objects in a pretty table.
+Simple component to display all objects in a pretty table.
+
+Arguments:  
+
+    width  -  width of the table (# of columns) (default = 3)
+    link   -  page to go to for HREFs
+    title  -  title of the table
 
 ######################################################################
 #  $Log: table.html,v $
+#  Revision 1.2  2003/05/30 21:41:08  netdot
+#  looks like requisite functionality is there
+#
 #  Revision 1.1  2003/05/30 21:26:36  netdot
 #  Initial revision
 #
