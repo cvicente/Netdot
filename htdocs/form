@@ -24,6 +24,9 @@ if( $args{table} ) {
 }
 </%perl>
 
+<script language="javascript" src="select.js">
+</script>
+
 % ####################################################################
 <!-- begin form --> 
 % if( defined( $args{table} ) ) {
@@ -49,31 +52,55 @@ if( $args{table} ) {
 %       }
         </tr>
 % ################################################
-%     } else {
+%     } else {  # The column is a foreign key. Provide a list to select.
         <tr>
         <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
 	<td>
-        <select name="<% $c %>">
 %       my $flag = 1;
-%       if( defined( $obj ) 
-%           && ( $obj->$c == 0 
+%	# Check for amount of objects in table before retrieving all
+%	my $count = $linksto{$c}->count_all;
+%	if ( $count <= $maxselect ){			      
+%	   my @fkobjs = $linksto{$c}->retrieve_all;
+%	   my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];	 
+%	   @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } @fkobjs; 
+   	   <select name="<% $c %>">
+%          if( defined( $obj ) 
+%            && ( $obj->$c == 0 
 %              || ! defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) ) {
-            <option value="0" selected>[null]</option>
-%           $flag = 0;
-%       } else {
-            <option value="0">[null]</option>
-%       }
-%       my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];
-%       foreach my $fkobj ( sort { $a->$lblfield cmp $b->$lblfield }  $linksto{$c}->retrieve_all ) {
-%         my $lbl = $gui->getobjlabel( $fkobj, ", " );
-%         if( ( defined( $obj ) && $flag && $fkobj->id == $obj->$c->id ) 
-%             || ( $fkobj->id == $session{$c} ) ) {
-            <option value="<% $fkobj->id %>" selected><% $lbl %></option>
-%         } else {
-            <option value="<% $fkobj->id %>"><% $lbl %></option>
-%         }
-%       } # for
-        </select>
+              <option value="0" selected>[null]</option>
+%             $flag = 0;
+%          } else {
+              <option value="0">[null]</option>
+%          }
+%	   foreach my $fkobj ( @fkobjs ) {
+%             my $lbl = $gui->getobjlabel( $fkobj, ", " );
+%             if( ( defined( $obj ) && $flag && $fkobj->id == $obj->$c->id ) 
+%             	|| ( $fkobj->id == $session{$c} ) ) {
+            	<option value="<% $fkobj->id %>" selected><% $lbl %></option>
+%             } else {
+            	<option value="<% $fkobj->id %>"><% $lbl %></option>
+%             }
+%	   } #foreach
+	   </select>
+%	}else{ #we have too many 
+%	   my $srchf = $c . '_srch';  #name of the form input tag
+	   <input type="text" name="<% $srchf %>" value="Keywords">
+	   &nbsp;<input type="button" name="" value="List" 
+	   onClick="sendquery(<% '_' . $c  %>, <% $srchf . '.value' %>, <% "\'" . $linksto{$c} . "\'" %>)" >
+	   <br><select name="<% '_' . $c %>"> 
+%             if( defined( $obj ) && $flag && $obj->$c->id ) {
+%		my $fkobj = $linksto{$c}->retrieve( $obj->$c->id );
+%               my $lbl = $gui->getobjlabel( $fkobj, ", " );
+            	<option value="<% $fkobj->id %>" selected><% $lbl %></option>
+%             }elsif ( exists $session{$c} ){
+%		my $fkobj = $linksto{$c}->retrieve( $session{$c} );
+%               my $lbl = $gui->getobjlabel( $fkobj, ", " );
+            	<option value="<% $fkobj->id %>" selected><% $lbl %></option>		
+%	      }    
+              <option value="0">[null]</option>
+	   </select>
+%	}
+
         </td>
 
 	<td>
@@ -102,7 +129,7 @@ $DEBUG => 0
 </%args>
 
 <%init>
-
+my $maxselect = 100;
 </%init>
 <%doc>
 

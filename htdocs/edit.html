@@ -26,7 +26,18 @@ foreach my $j ( keys %ARGS ) {
     next;
   }
   next if( $j !~ /\w+/ );
-  $args{$j} = $ARGS{$j};
+
+# Ignore fields that don't belong to the table
+# /_srch/ elements are added for javascript only
+# we don't need them here
+
+  next if ($j =~ /_srch/ );
+   
+# "/^_/" is added to avoid using reserved words in javascript
+# chop it off
+  my $k = $j;
+  $k =~ s/^_//;
+  $args{$k} = $ARGS{$j};	   
 }
 
 ##################################################
@@ -64,7 +75,7 @@ if( $DEBUG && 0 ) {
 if( $args{cancel} eq "Cancel" ) {
   if( $args{create} ) {
     $TBL = $args{create};
-    delete( $args{create};
+    delete( $args{create} );
   } else {
     if( ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) {
       $gui->rmsession( $session );
@@ -223,7 +234,7 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
 
 % ####################################################################
 <%args>
-$DEBUG => 1
+$DEBUG => 0
 $NEW => 0
 $TBL => undef
 $PREV => undef
