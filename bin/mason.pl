@@ -15,23 +15,30 @@ use strict;
 #
 # List of modules that you want to use within components.
 { 
-  package HTML::Mason::Commands;
-  use Data::Dumper;
+    package HTML::Mason::Commands;
+    use Data::Dumper;
+    use lib "YOUR-PREFIX/lib";
+    use Netdot::DBI;
+    use Netdot::GUI;
 }
 # Create ApacheHandler object at startup.
 my $ah =
-  HTML::Mason::ApacheHandler->new (
-    args_method => "CGI",
-    comp_root   => "/home/netdot/public_html/htdocs",
-    data_dir    => "/home/netdot/public_html/htdocs/masondata",
-    error_mode  => 'output',
-  );
+    HTML::Mason::ApacheHandler->new (
+				     args_method => "CGI",
+				     comp_root   => "YOUR-PREFIX/htdocs",
+				     data_dir    => "YOUR-PREFIX/htdocs/masondata",
+				     error_mode  => 'output',
+				     );
 #
 sub handler
 {
-  my ($r) = @_;
-  my $status = $ah->handle_request($r);
-  return $status;
+    my ($r) = @_;
+
+    # We don't need to handle non-text items
+    return -1 if $r->content_type && $r->content_type !~ m|^text/|i;
+
+    my $status = $ah->handle_request($r);
+    return $status;
 }
 #
 1;

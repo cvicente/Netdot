@@ -175,6 +175,18 @@ sub getsqltype {
 }
 
 ######################################################################
+# Check if table is a join table
+######################################################################
+sub isjointable {
+    my ($self, $table) = @_;
+    my $mi;
+    if ( defined($mi = $self->getmeta($table)) ){
+        return $mi->isjoin;
+    }
+    return undef;
+}
+
+######################################################################
 # Build input tag based on SQL type and other options
 ######################################################################
 sub getinputtag {

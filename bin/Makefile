@@ -32,7 +32,7 @@ DB_HOME = /usr
 # For Pg, you probably want 'postgres' 
 
 DB_DBA          =  root
-DB_DBA_PASSWORD =       
+DB_DBA_PASSWORD =  
  
 #
 # Set this to the Fully Qualified Domain Name of your database server.
@@ -83,7 +83,7 @@ initialize.Pg: createdb genschema initdb.dba acls
 initialize.mysql: createdb acls initdb.user
 
 acls:
-	./initacls.$(DB_TYPE) '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DBA_PASSWORD)' '$(DB_DATABASE)'\
+	$(PERL) initacls.$(DB_TYPE) '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DBA_PASSWORD)' '$(DB_DATABASE)'\
 		'$(DB_NETDOT_PASS)' '$(DB_NETDOT_HOST)' '$(DB_NETDOT_USER)' 
 
 genschema:
