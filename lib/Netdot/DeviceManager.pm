@@ -1198,43 +1198,6 @@ sub get_dev_info {
 	$dev{serialnumber} = $nv{entPhysicalSerialNum};
     }
 
-    ################################################################
-    # Interface stuff
-    
-    my %SPEED_MAP = ('56000'       => '56 kbps',
-		     '64000'       => '64 kbps',
-		     '1500000'     => '1.5 Mbps',
-		     '1536000'     => 'T1',      
-		     '1544000'     => 'T1',
-		     '2000000'     => '2.0 Mbps',
-		     '2048000'     => '2.048 Mbps',
-		     '3072000'     => 'Dual T1',
-		     '3088000'     => 'Dual T1',   
-		     '4000000'     => '4.0 Mbps',
-		     '10000000'    => '10 Mbps',
-		     '11000000'    => '11 Mbps',
-		     '20000000'    => '20 Mbps',
-		     '16000000'    => '16 Mbps',
-		     '16777216'    => '16 Mbps',
-		     '44210000'    => 'T3',
-		     '44736000'    => 'T3',
-		     '45000000'    => '45 Mbps',
-		     '45045000'    => 'DS3',
-		     '46359642'    => 'DS3',
-		     '54000000'    => '54 Mbps',
-		     '64000000'    => '64 Mbps',
-		     '100000000'   => '100 Mbps',
-		     '149760000'   => 'ATM on OC-3',
-		     '155000000'   => 'OC-3',
-		     '155519000'   => 'OC-3',
-		     '155520000'   => 'OC-3',
-		     '400000000'   => '400 Mbps',
-		     '599040000'   => 'ATM on OC-12', 
-		     '622000000'   => 'OC-12',
-		     '622080000'   => 'OC-12',
-		     '1000000000'  => '1 Gbps',
-		     '10000000000' => '10 Gbps',
-		     );
 
     ################################################################
     # Interface status (oper/admin)
@@ -1325,14 +1288,6 @@ sub get_dev_info {
 		    # Netviewer changes it in some cases.
 		    # Just use the value
 		    $dev{interface}{$newif}{$dbname} = $val;	    
-		}
-	    }elsif( $dbname eq "speed" ) {
-		# Translate speed to something more readable
-		my $speed = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
-		if ( exists $SPEED_MAP{$speed} ){
-		    $dev{interface}{$newif}{$dbname} = $SPEED_MAP{$speed};
-		}else{
-		    $dev{interface}{$newif}{$dbname} = "na";
 		}
 	    }elsif( $dbname eq "description" ) {
 		# Ignore these descriptions
@@ -1558,11 +1513,311 @@ sub add_interfaces {
     return 1;
 }
 
+=head2 interfaces_by_number - Retrieve interfaces from a Device and sort by number.  
+                              Handles the case of port numbers with dots (hubs)
+
+Arguments:  Device object
+Returns:    Sorted array of interface objects or undef if error.
+
+=cut
+
+sub interfaces_by_number {
+    my ( $self, $o ) = @_;
+    my @ifs;
+    unless ( @ifs = $o->interfaces() ){
+	return ;
+    }
+    # Add a fake '.0' after numbers with no dots, and then
+    # split in two and sort first part and then second part
+    # (i.e: 1.10 goes after 1.2)
+    my @tmp;
+    foreach my $if ( @ifs ) {
+	my $num = $if->number;
+	if ($num !~ /\./ ){
+	    $num .= '.0';
+	}
+	push @tmp, [(split /\./, $num), $if];
+    }	
+    @ifs = map { $_->[2] } sort { $a->[0] <=> $b->[0] || $a->[1] <=> $b->[1] } @tmp;
+
+    return unless scalar @ifs;
+    return @ifs;
+}
+
+=head2 interfaces_by_name - Retrieve interfaces from a Device and sort by name.  
+
+
+Arguments:  Device object
+Returns:    Sorted array of interface objects or undef if error.
+
+=cut
+
+sub interfaces_by_name {
+    my ( $self, $o ) = @_;
+    my @ifs;
+    my $id = $o->id;
+    Interface->set_sql(ifs => qq{
+	SELECT *
+	    FROM Interface
+	    WHERE device = $id
+	    ORDER BY name
+	});
+    eval {
+	@ifs = Interface->search_ifs();
+    };
+    if ($@){
+	$self->error("$@");
+	return;
+    }
+    return unless scalar @ifs;
+    return @ifs;
+}
+
+=head2 interfaces_by_speed - Retrieve interfaces from a Device and sort by speed.  
+
+Arguments:  Device object
+Returns:    Sorted array of interface objects or undef if error.
+
+=cut
+
+sub interfaces_by_speed {
+    my ( $self, $o ) = @_;
+    my @ifs;
+    my $id = $o->id;
+    Interface->set_sql(ifs => qq{
+	SELECT *
+	    FROM Interface
+	    WHERE device = $id
+	    ORDER BY speed
+	});
+    eval {
+	@ifs = Interface->search_ifs();
+    };
+    if ($@){
+	$self->error("$@");
+	return;
+    }
+    return unless scalar @ifs;
+    return @ifs;
+}
+
+=head2 interfaces_by_vlan - Retrieve interfaces from a Device and sort by vlan ID
+
+Arguments:  Device object
+Returns:    Sorted array of interface objects or undef if error.
+
+Note: If the interface has/belongs to more than one vlan, sort function will only
+use one of the values.
+
+=cut
+
+sub interfaces_by_vlan {
+    my ( $self, $o ) = @_;
+    my @ifs;
+    unless ( @ifs = $o->interfaces() ){
+	return ;
+    }
+    my @tmp = map { [ ($_->vlans) ? ($_->vlans)[0]->vlan->vid : 0, $_] } @ifs;
+	
+    @ifs = map { $_->[1] } sort { $a->[0] <=> $b->[0] } @tmp;
+
+    return unless scalar @ifs;
+    return @ifs;
+}
+
+=head2 interfaces_by_descr - Retrieve interfaces from a Device and sort by description
+
+Arguments:  Device object
+Returns:    Sorted array of interface objects or undef if error.
+
+=cut
+
+sub interfaces_by_descr {
+    my ( $self, $o ) = @_;
+    my @ifs;
+    my $id = $o->id;
+    Interface->set_sql(ifs => qq{
+	SELECT *
+	    FROM Interface
+	    WHERE device = $id
+	    ORDER BY description
+	});
+    eval {
+	@ifs = Interface->search_ifs();
+    };
+    if ($@){
+	$self->error("$@");
+	return;
+    }
+    return unless scalar @ifs;
+    return @ifs;
+}
+
+=head2 interfaces_by_jack - Retrieve interfaces from a Device and sort by Jack id
+
+Arguments:  Device object
+Returns:    Sorted array of interface objects or undef if error.
+
+=cut
+
+sub interfaces_by_jack {
+    my ( $self, $o ) = @_;
+    my @ifs;
+    unless ( @ifs = $o->interfaces() ){
+	return ;
+    }
+    my @tmp = map { [ ($_->jack) ? $_->jack->jackid : 0, $_] } @ifs;
+	
+    @ifs = map { $_->[1] } sort { $a->[0] cmp $b->[0] } @tmp;
+
+    return unless scalar @ifs;
+    return @ifs;
+}
+
+=head2 bgppeers_by_ip - Retrieve BGP peers and sort by remote IP
+
+Arguments:  Device object
+Returns:    Sorted array of BGPPeering objects or undef if error.
+
+=cut
+
+sub bgppeers_by_ip {
+    my ( $self, $o ) = @_;
+    my @peers;
+    unless ( @peers = $o->bgppeers() ){
+	return ;
+    }
+
+    ##############################################
+    # To do: 
+    # Factor out the sub inside the sort function
+
+    @peers = map { $_->[1] } 
+    sort ( { pack("C4"=>$a->[0] =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/) 
+		 cmp pack("C4"=>$b->[0] =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/); }  
+	   map { [$_->bgppeeraddr, $_] } @peers );
+
+    return unless scalar @peers;
+    return @peers;
+}
+
+=head2 bgppeers_by_id - Retrieve BGP peers and sort by BGP ID
+
+Arguments:  Device object
+Returns:    Sorted array of BGPPeering objects or undef if error.
+
+=cut
+
+sub bgppeers_by_id {
+    my ( $self, $o ) = @_;
+    my @peers;
+    my $id = $o->id;
+    unless ( @peers = $o->bgppeers() ){
+	return ;
+    }
+    ##############################################
+    # To do: 
+    # Factor out the sub inside the sort function
+
+    @peers = map { $_->[1] } 
+    sort ( { pack("C4"=>$a->[0] =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/) 
+		 cmp pack("C4"=>$b->[0] =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/); }  
+	   map { [$_->bgppeerid, $_] } @peers );
+    
+    return unless scalar @peers;
+    return @peers;
+}
+
+=head2 bgppeers_by_entity - Retrieve BGP peers and sort by Entity name, AS number or AS Name
+
+Arguments:  Device object, Entity table field
+Returns:    Sorted array of BGPPeering objects or undef if error.
+
+=cut
+
+sub bgppeers_by_entity {
+    my ( $self, $o, $field ) = @_;
+    $field ||= "name";
+    unless ( $field eq "name" || $field eq "asnumber" || $field eq "asname" ){
+	$self->error("Invalid Entity field: $field");
+	return;
+    }
+    my $sortsub = ($field eq "asnumber") ? sub{$a->entity->$field <=> $b->entity->$field} : sub{$a->entity->$field cmp $b->entity->$field};
+    my @peers;
+    unless ( @peers = $o->bgppeers() ){
+	return ;
+    }
+    @peers = sort $sortsub @peers;
+    return unless scalar @peers;
+    return @peers;
+}
+
+
+=head2 convert_ifspeed - Convert ifSpeed to something more readable
+
+
+Arguments:  ifSpeed value (integer)
+Returns:    Human readable speed string or n/a
+
+=cut
+
+sub convert_ifspeed {
+    my ($self, $speed) = @_;
+    
+    my %SPEED_MAP = ('56000'       => '56 kbps',
+		     '64000'       => '64 kbps',
+		     '1500000'     => '1.5 Mbps',
+		     '1536000'     => 'T1',      
+		     '1544000'     => 'T1',
+		     '2000000'     => '2.0 Mbps',
+		     '2048000'     => '2.048 Mbps',
+		     '3072000'     => 'Dual T1',
+		     '3088000'     => 'Dual T1',   
+		     '4000000'     => '4.0 Mbps',
+		     '10000000'    => '10 Mbps',
+		     '11000000'    => '11 Mbps',
+		     '20000000'    => '20 Mbps',
+		     '16000000'    => '16 Mbps',
+		     '16777216'    => '16 Mbps',
+		     '44210000'    => 'T3',
+		     '44736000'    => 'T3',
+		     '45000000'    => '45 Mbps',
+		     '45045000'    => 'DS3',
+		     '46359642'    => 'DS3',
+		     '54000000'    => '54 Mbps',
+		     '64000000'    => '64 Mbps',
+		     '100000000'   => '100 Mbps',
+		     '149760000'   => 'ATM on OC-3',
+		     '155000000'   => 'OC-3',
+		     '155519000'   => 'OC-3',
+		     '155520000'   => 'OC-3',
+		     '400000000'   => '400 Mbps',
+		     '599040000'   => 'ATM on OC-12', 
+		     '622000000'   => 'OC-12',
+		     '622080000'   => 'OC-12',
+		     '1000000000'  => '1 Gbps',
+		     '10000000000' => '10 Gbps',
+		     );
+    if ( exists $SPEED_MAP{$speed} ){
+	return $SPEED_MAP{$speed};
+    }else{
+	return "n/a";
+    }
+}
 
 #####################################################################
 # Private methods
 #####################################################################
 
+#####################################################################
+# Compare Quad IP addresses
+# 
+# Assumes ddd.ddd.ddd.ddd format. "borrowed" from
+# http://www.sysarch.com/perl/sort_paper.html
+#####################################################################
+#sub _compare_ip($self){
+#    pack("C4"=>$a =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/) cmp pack("C4"=>$b =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/);
+#}
 
 #####################################################################
 # _is_valid

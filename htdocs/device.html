@@ -18,6 +18,8 @@ $editips   => undef
 $editints  => undef
 $editbgp   => undef
 $ipsort    => "Ipblock.address"
+$ifsort    => "number"
+$peersort  => "ip"
 $s2name    => "Management"
 $user      => $ENV{REMOTE_USER}
 $showvlan  => "all"
@@ -152,7 +154,7 @@ function setNull(field){
 <div class="margins">
 
 % if ( $search ){
-<table border="0" align="center" class="tablebackground">
+<table border="0" width="100%" align="center" class="tablebackground">
  <tr class="rowtitle0" >
     <td valign="top" align="left">
        <b><% scalar(@$list) %> results for <i><% $search %></i></b>
@@ -726,41 +728,40 @@ function setNull(field){
       <table border="0" width="100%">
         <tr>
 %	   if ( $editints ){	 
-	     <td valign="top" align="center"><strong>[del]</strong></td>
+	     <th valign="top" align="center">[del]</th>
 %	   }
-	   <td valign="top" align="left"><strong>No.</strong></td>
-	   <td valign="top" align="left"><strong>Name</strong></td>
+	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=number">No.</a></th>
+	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=name">Name</a></th>
 %	   if ( ! $editints ){	 
-	     <td valign="top" align="left"><strong>Speed</strong></td>
-	     <td valign="top" align="left"><strong>Duplex</strong><br>[oper/admin]</td>
-	     <td valign="top" align="left"><strong>Status</strong><br>[oper/admin]</td>
-	     <td valign="top" align="left"><strong>VLAN</strong></td>
+	     <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=speed">Speed</a></th>
+	     <th valign="top" align="left">Duplex<br>[oper/admin]</th>
+	     <th valign="top" align="left">Status<br>[oper/admin]</th>
+	     <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=vlan">VLAN</a></th>
 %	   }
-	   <td valign="top" align="left"><strong>Jack</strong></td>
-	   <td valign="top" align="left"><strong>Descr.</strong></td>
-	   <td valign="top" align="left"><strong>Uplink</strong></td>
-	   <td valign="top" align="left"><strong>Downlink</strong></td>
+	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=jack">Jack</a></th>
+	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=descr">Descr.</a></th>
+	   <th valign="top" align="left">Uplink</th>
+	   <th valign="top" align="left">Downlink</th>
        </tr>
 
-%	#####################################
-%	# Sort numerically by port number
-%	#
-%	# Hub ports have dots, so add a fake '.0' after numbers with no dots, and then
-%	# split in two and sort first part and then second part
-%	# (i.e: 1.10 goes after 1.2)
-%	my @tmp;
-%	foreach my $if ($o->interfaces) {
-%	   my $num = $if->number;
-%	   if ($num !~ /\./ ){
-%	      $num .= '.0';
-%	   }
-%	   push @tmp, [(split /\./, $num), $if];
-%	}	
-%	my @ordered_ifs = sort { $a->[0] <=> $b->[0] 
-%	                                  ||
-%			         $a->[1] <=> $b->[1] } @tmp;
+<%perl>
+	my @ifs;
+       if ( $ifsort eq "number" ){
+	  @ifs = $dm->interfaces_by_number( $o );
+	}elsif ( $ifsort eq "name"){
+	  @ifs = $dm->interfaces_by_name ( $o );
+	}elsif ( $ifsort eq "speed"){
+	  @ifs = $dm->interfaces_by_speed ( $o );
+	}elsif ( $ifsort eq "vlan"){
+	  @ifs = $dm->interfaces_by_vlan ( $o );
+	}elsif ( $ifsort eq "jack"){
+	  @ifs = $dm->interfaces_by_jack ( $o );
+	}elsif ( $ifsort eq "descr"){
+	  @ifs = $dm->interfaces_by_descr ( $o );
+	}
+</%perl>
 			  
-%       foreach my $if (map { $_->[2] } @ordered_ifs){
+%       foreach my $if ( @ifs ){
 %         next if ( ! exists $ifvlans{$if}{$showvlan} && $showvlan ne "all");
 %	  $ci = ($ci + 1) % 2;
        <tr class="<% $cssitem{$ci} %>">
@@ -776,7 +777,7 @@ function setNull(field){
 %               $ui->textField(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"");
 	   </td>
 %	       if ( ! $editints ){	 
-                 <td align="left"><% $if->speed %></td>
+                 <td align="left"><% $dm->convert_ifspeed($if->speed) %></td>
 		 <td align="left"><% $if->oper_duplex %>/<% $if->admin_duplex %></td>
 		 <td align="left"><% $if->oper_status %>/<% $if->admin_status %></td>
 		 <td align="left"> 
@@ -860,7 +861,23 @@ function setNull(field){
 
 % if ( $view eq "BGP" || $view eq "All" ){
 
-% my @peers = sort { $a->entity->name cmp $b->entity->name } $o->bgppeers() ;
+
+<%perl>
+    my @peers;
+if ( $peersort eq "ip" ){
+    @peers = $dm->bgppeers_by_ip( $o );
+}elsif ( $peersort eq "id"){
+    @peers = $dm->bgppeers_by_id( $o );
+}elsif ( $peersort eq "entity"){
+    @peers = $dm->bgppeers_by_entity( $o, "name" );
+}elsif ( $peersort eq "asname"){
+    @peers = $dm->bgppeers_by_entity( $o, "asname" );
+}elsif ( $peersort eq "asnumber"){
+    @peers = $dm->bgppeers_by_entity( $o, "asnumber" );
+} 
+</%perl>
+
+
 
 %   if ( scalar @peers ){
 <!-- BGP Peers Table -->
@@ -885,11 +902,11 @@ function setNull(field){
       <table border="0" width="100%">
 %	if (scalar @peers){
          <tr>
-	   <th align="left">Remote IP</th>
-	   <th align="left">ID</th>
-	   <th align="left">Entity</th>
-	   <th align="left">AS Name</th>
-	   <th align="left">AS Number</th>
+	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&peersort=ip">Remote IP</a></th>
+	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&peersort=id">ID</a></th>
+	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&peersort=entity">Entity</a></th>
+	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&peersort=asname">AS Name</a></th>
+	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&peersort=asnumber">AS Number</a></th>
 	   <th align="left">Monitored?</th>
          </tr>
 %	 foreach my $peer (@peers){
