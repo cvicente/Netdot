@@ -6,8 +6,10 @@ Supported arguments:
   page   - page to link to with results (default is view.html)
   displaybox - whether to always display search box (1 or 0)
 </%doc>
-%
+
+
 <%args>
+
 $search => undef
 @tables => undef
 %linksto => undef
@@ -15,8 +17,9 @@ $search => undef
 $page => "view.html"
 $alwaysdisplaybox => 0
 $gui => Netdot::GUI->new()
+
 </%args>
-%
+
 <%init>
 if( exists( $ARGS{q} ) ) {
    $search = $ARGS{q};
@@ -40,7 +43,7 @@ if( exists( $ARGS{displaybox} ) ) {
 <!-- begin search.mhtml -->
 % if( ! $search || $alwaysdisplaybox ) {
 <form>
-<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC" class="searchbox">
+<table cellpadding="3" cellspacing="1" border="0" class="searchbox">
   <tr>
   <td><input type="text" name="q" size="25" value="<% $ARGS{q} %>"></td>
   <td><input name="submit" value="Submit" type="submit"></td>

@@ -16,7 +16,6 @@ use lib "PREFIX/lib";
 
 use base qw( Netdot );
 use NetAddr::IP;
-use Data::Dumper;
 use strict;
 
 #Be sure to return 1
@@ -216,8 +215,8 @@ sub getsubnetaddr {
 
 Required Arguments: 
     address       ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
-    prefix        dotted-quad mask or prefix length
 Optional Arguments:
+    prefix        dotted-quad mask or prefix length (default is /32 or /128)
     status        id of IpblockStatus - or - 
     statusname    name of IpblockStatus
     interface     id of Interface where IP was found
@@ -233,10 +232,11 @@ sub insertblock {
     my ($self, %args) = @_;
     my $stobj;
     my $statusid;
-    unless ( exists($args{address}) && exists($args{prefix}) ){
-	$self->error("Missing required args 'address and/or 'prefix' ");
+    unless ( exists($args{address}) ){
+	$self->error("Missing required arg 'address' ");
 	return 0;	
     }
+    $args{prefix}        ||= undef;
     $args{statusname}    ||= "Container";
     $args{interface}     ||= 0; 
     $args{monitored}     ||= 0; 
@@ -259,7 +259,7 @@ sub insertblock {
     }elsif ( ( ($ip->version == 4 && $ip->masklen != 32) ||
 	       ($ip->version == 6 && $ip->masklen != 128) ) && 
 	     $ip->network->broadcast == $ip ) {
-	$self->error("Address is broadcast: $args{address}/$args{prefix}");
+	$self->error("Address is broadcast: ", $ip->addr, "/", $ip->masklen);
 	return 0;	
     }
     # Determine Status.  It can be either a name
@@ -507,12 +507,6 @@ sub _validateblock {
 	    }
 	}
     }elsif ( $args{statusname} eq "Container" ){
-	foreach my $ch ( $ipblock->children ){
-	    if ( $self->isaddress($ch) && $ch->status->name eq "Static" ){
-		$self->error("Container Blocks should not contain static addresses");
-		return 0;
-	    }
-	}
 	if ( $args{dhcp_enabled} ){
 		$self->error("Can't enable DHCP in Container blocks");
 		return 0;	    
@@ -585,11 +579,26 @@ sub removeblock {
 	}
 	$id = $ipb->id;
     }
+    # Retrieve object
+    my $o;
+    unless ( $o = Ipblock->retrieve($id) ){
+	$self->error("Ipblock id $id does not exist");
+	return 0
+    }
+    my $version = $o->version;
+
     my $ui = Netdot::UI->new();
     unless ($ui->remove(table => 'Ipblock', id => $id)){
 	$self->error(sprintf("removeblock: %s", $ui->error));
 	return 0;
     }
+    # 
+    # Rebuild tree
+    unless ( $self->build_tree($version) ){
+	return 0;
+	# Error should be set
+    }
+
     return 1;
 }
 
@@ -776,14 +785,14 @@ sub build_tree {
 	$parents{$id} = $last_p if ($parent != $last_p);
     }
     undef $sth;
-    my $sth = $self->{dbh}->prepare("UPDATE Ipblock SET parent = ? WHERE id = ?");
+    $sth = $self->{dbh}->prepare("UPDATE Ipblock SET parent = ? WHERE id = ?");
     foreach (keys %parents){
 	$sth->execute($parents{$_}, $_);
     }
     return 1;
 }
 
-=head2 subnet_num_addr - Return the number of useable addresses in a subnet
+=head2 subnet_num_addr - Return the number of usable addresses in a subnet
 
 Arguments:
     Ipblock object

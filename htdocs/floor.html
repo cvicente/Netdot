@@ -1,3 +1,29 @@
+<%doc>
+
+Floor interface
+
+</%doc>
+
+<%args>
+$id     => undef;
+$edit   => undef;
+$s2name => "Plant";
+</%args>
+
+<%init>
+my $DEBUG     = 0;
+my $ui        = Netdot::UI->new();
+my $o         = undef;
+my $site      = undef;
+my $editFloor = 0;
+
+if ($id && $id ne "NEW") {
+   $o = Floor->retrieve($id);
+   $site = $o->site;
+}
+
+$editFloor = 1 if ($id eq "NEW" || $edit eq "floorinfo");
+</%init>
 <& index.html, title => "Cable Plant: Floor", s2name => $s2name  &>
 
 <%perl>
@@ -101,24 +127,3 @@ if (defined($ARGS{_action})) {
     </tr>
 </table>
 <!-- End Floor Table -->
-
-<%args>
-$id => undef;
-$edit => undef;
-$s2name => "Plant";
-</%args>
-
-<%init>
-my $DEBUG = 0;
-my $ui = Netdot::UI->new();
-my $o = undef;
-my $site = undef;
-my $editFloor = 0;
-
-if ($id && $id ne "NEW") {
-   $o = Floor->retrieve($id);
-   $site = $o->site;
-}
-
-$editFloor = 1 if ($id eq "NEW" || $edit eq "floorinfo");
-</%init>

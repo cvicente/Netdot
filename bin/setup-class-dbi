@@ -10,8 +10,8 @@
 use strict;
 use DBI;
 
-my $DB_TYPE = $ARGV[0] || "mysql";
-my $DB_DATABASE = $ARGV[1] || "netdot";
+my $DB_TYPE = $ARGV[0]        || "mysql";
+my $DB_DATABASE = $ARGV[1]    || "netdot";
 my $DB_NETDOT_USER = $ARGV[2] || "netdot_user";
 my $DB_NETDOT_PASS = $ARGV[3] || "netdot_pass";
 
@@ -58,8 +58,6 @@ sub ip2int {
     $self->_attribute_store( address => $val );
 }
 
-
-##########################################
 ##########################################
 ## Convert from integer to IP address
 ##########################################
@@ -67,7 +65,11 @@ sub int2ip {
     my $self = shift;
     my ($address, $bin, $val);
     $address = $self->address;
-    return if ($address =~ /\D+/ );  #(*)
+# This is a hack to solve a (possible) bug in Class::DBI 0.96
+# that causes the select trigger to be called twice, thus
+# returning a bad result.
+    return if ($address =~ /\D+/ );
+
     if ($self->version == 4){
 	$bin = ip_inttobin($address, 4);
 	$val = ip_bintoip($bin, 4);
@@ -82,50 +84,43 @@ sub int2ip {
     $self->_attribute_store( address => $val );    
 }
 
-# (*) This is a hack to solve a (possible) bug in Class::DBI 0.96
-# that causes the select trigger to be called twice, thus
-# returning a bad result.
+#################################################
+# Copy stored object in history table.
+# We use DBI directly to avoid CDBI returning
+# the object in memory
+################################################
+sub historize {
+    my $self = shift;
+    my $table = $self->table;
+    my $h_table = "$table" . "_history";
+    return unless eval { $h_table->table }; #history table might not exist
+    my (%current_data, $new_h_obj);
+    my $dbh = Netdot::DBI->db_Main();
+    my $col_list = join ",", $table->columns;
+    my $id = $self->id;
+    my @vals = $dbh->selectrow_array("SELECT $col_list FROM $table WHERE id = $id");
+    my $i = 0;
+    map { $current_data{$_} = $vals[$i++] } $table->columns;
+    delete $current_data{id}; # Our id is different
+    my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
+	$wday, $yday, $isdst) = localtime;
+    my $datetime = sprintf("%04d\/%02d\/%02d %02d:%02d:%02d",
+			   $year+1900, $month+1, $day_of_month, $hours, $minutes, $seconds);
+    my $oid = lc("$table" . "_id");
+    $current_data{$oid} = $self->id;
+    $current_data{modified} = $datetime;
+    my $user = $ENV{REMOTE_USER} || "unknown";
+    $current_data{modifier} = $user;
+    eval { $new_h_obj = $h_table->create(\%current_data) };
+    if ( $@ ){
+	$self->_croak( $@ );
+    }
+}
 
 Ipblock->add_trigger( deflate_for_create => \&ip2int );
 Ipblock->add_trigger( deflate_for_update => \&ip2int );
 Ipblock->add_trigger( select => \&int2ip );
-
-##########################################
-## Insert object in history table
-##########################################
-    
-__PACKAGE__->
-  add_trigger( 
-	      before_update=>
-	       sub {
-		   my $self = shift;
-		   my $class = ref ($self);
-		   my (%current_data, $new_h_obj, $oid);
-		   my $user = $ENV{REMOTE_USER} || "unknown";
-		   my $dbobj = ( $class->retrieve_from_sql(qq{
-		       id = "$self->id"
-		   }) )[0];
-		   foreach my $col ($self->columns){
-		       next if ($col eq 'id');
-		       $current_data{$col} = $dbobj->$col;
-		   }
-		   my $table = ref($self);
-		   my $h_table = "$table" . "_history";
-		   $oid = lc("$table" . "_id");
-		   return unless eval { ## h_table might not exist
-		       $new_h_obj = $h_table->create(\%current_data);
-		       1;
-		   };
-		   $new_h_obj->set($oid, $self->id);
-		   $new_h_obj->set("modifier", $user);
-		   my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
-		       $wday, $yday, $isdst) = localtime;
-		   my $datetime = sprintf("%04d\/%02d\/%02d %02d:%02d:%02d",
-					  $year+1900, $month+1, $day_of_month, $hours, $minutes, $seconds);
-		   $new_h_obj->set("modified", $datetime);
-		   $new_h_obj->update;
-	       }
-	     );
+__PACKAGE__->add_trigger( before_update => \&historize );
 
 
 ^;

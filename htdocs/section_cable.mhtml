@@ -1,8 +1,19 @@
-% # section_cable.mhtml
-% #
-% # Cable Plant
-% #
-% #############################################################################
+<%doc>
+    section_cable.mhtml
+    Cable Plant
+</%doc>
+
+
+<%init>
+my $currentUser = SiteControl::AccessController::getCurrentUser($r);
+my %caller_args = $m->caller_args(-1);
+
+if (exists($caller_args{page})) {
+    $currentUser->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args{page});
+}
+
+my $page = $currentUser->getAttribute("CABLE_PLANT_PAGE");
+</%init>
 
 <script language="JavaScript" src="select.js"></script>
 
@@ -348,16 +359,5 @@ LIST_MANAGER.addList(floorList, closetList);
     </td>
 </tr>
 % }
-
-<%init>
-my $currentUser = SiteControl::AccessController::getCurrentUser($r);
-my %caller_args = $m->caller_args(-1);
-
-if (exists($caller_args{page})) {
-    $currentUser->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args{page});
-}
-
-my $page = $currentUser->getAttribute("CABLE_PLANT_PAGE");
-</%init>
 
 % #############################################################################

@@ -25,7 +25,7 @@ my $usage = <<EOF;
 EOF
     
 my ($host, $subnet, $dm);
-my $comstr ||= "public";
+my $comstr = "public";
 my $DB = 0;
 my $ADDSUBNETS = 0;
 my $HELP = 0;

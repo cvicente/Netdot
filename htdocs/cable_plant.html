@@ -1,3 +1,44 @@
+
+<%doc>
+Cable management stuff...
+</%doc>
+
+<%args>
+$id => undef;
+$start_id => undef;
+$end_id => undef;
+$cable_sort => undef;
+$edit => undef;
+$page_type => undef;
+$submit_site => undef;
+$backbone_srch => undef;
+$backbone_id_srch => undef;
+$site_srch => undef;
+$s2name => "Plant";
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $MAX_SELECTION = 500;
+my $ui = Netdot::UI->new();
+my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
+my $o = undef;
+my $name;
+
+$end_id = 0 if ($end_id == -1);
+$start_id = 0 if ($start_id == -1);
+
+if ($id) {
+   $o = Site->retrieve($id);
+   $name = $o->name;
+} else {
+   $name = "Search"
+}
+
+$backbone_srch = "%" . $backbone_srch . "%" if ($backbone_srch);
+$site_srch = "%" . $site_srch . "%" if ($site_srch);
+</%init>
+
 <& index.html, title => "Cable Plant: $name", s2name => $s2name &>
 
 <%perl>
@@ -866,43 +907,3 @@ if ($ARGS{circuit_srch}) {
  </td></tr>
 </table>
 <!-- End Margins Table -->
-
-<%args>
-$id => undef;
-$start_id => undef;
-$end_id => undef;
-$cable_sort => undef;
-$edit => undef;
-$page_type => undef;
-$submit_site => undef;
-$backbone_srch => undef;
-$backbone_id_srch => undef;
-$site_srch => undef;
-$s2name => "Plant";
-</%args>
-
-<%init>
-my $DEBUG = 0;
-my $MAX_SELECTION = 500;
-my $ui = Netdot::UI->new();
-my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
-my $o = undef;
-my $name;
-
-$end_id = 0 if ($end_id == -1);
-$start_id = 0 if ($start_id == -1);
-
-if ($id) {
-   $o = Site->retrieve($id);
-   $name = $o->name;
-} else {
-   $name = "Search"
-}
-
-$backbone_srch = "%" . $backbone_srch . "%" if ($backbone_srch);
-$site_srch = "%" . $site_srch . "%" if ($site_srch);
-</%init>
-
-<%doc>
-Cable management stuff...
-</%doc>

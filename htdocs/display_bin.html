@@ -1,16 +1,3 @@
-<%perl>
-my $binFile = BinFile->retrieve($id);
-if ($binFile)
-{
-    $r->content_type($binFile->filetype);
-    print($binFile->bindata);
-}
-</%perl>
-
-<%args>
-$id => $ARGS{id};
-</%args>
-
 <%doc>
 Used for displaying binary content. For example, to display an image
 you can:
@@ -21,3 +8,17 @@ you can:
 This currently assumes "filetype" in the database represents the
 objects mime type.
 </%doc>
+
+<%args>
+$id => $ARGS{id};
+</%args>
+
+
+<%perl>
+my $binFile = BinFile->retrieve($id);
+if ($binFile) {
+    $r->content_type($binFile->filetype);
+    print($binFile->bindata);
+}
+</%perl>
+

@@ -9,10 +9,18 @@ Arguments:
     - table_view: if set, output is in a table format.
 </%doc>
 
-<%perl>
-my %used = ();
+<%args>
+$strands => undef;
+$table_view => undef;
+</%args>
+
+<%init>
+my %cssitem = ( 0 => "formtablec1", 1 => "formtablec2" );
+my $cable_manager = Netdot::CablePlantManager->new();
+my %used      = ();
 my %sequences = ();
-</%perl>
+
+</%init>
 
 % if ($table_view) {
 <table border="0" width="95%" align="center" class="tablebackground">
@@ -70,13 +78,3 @@ my %sequences = ();
     printf("%s\n", join(" ----- ", @links));
 </%perl>
 % }
-
-<%args>
-$strands => undef;
-$table_view => undef;
-</%args>
-
-<%init>
-my %cssitem = (0=>"formtablec1", 1=>"formtablec2");
-my $cable_manager = Netdot::CablePlantManager->new();
-</%init>

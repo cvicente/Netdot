@@ -1,3 +1,50 @@
+<%doc>
+-- IP Worksheet --
+Interface for IP blocks (both addresses and subnets)
+
+</%doc>
+
+<%args>
+$id        => undef
+$search    => undef
+$_action   => undef
+$delete    => undef
+$allocate  => undef
+$parent    => undef
+$length    => undef
+$strategy  => undef
+$edit      => undef
+$submit    => undef
+$s2name    => "Management"
+$user      => $ENV{REMOTE_USER}
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $ipm = Netdot::IPManager->new();
+my $o;
+my $ci = 0;
+my %arg;
+my $title;
+if ($id){
+    unless( $o = Ipblock->retrieve($id) ){
+	$m->comp('error.mhtml', error => "Could not retrieve Ipblock id: $id");
+    }else{
+	$title = $o->address . "/" . $o->prefix;
+    }
+}else{
+    $title = "Search";
+}
+
+my $edit_ip    = 0;
+my $edit_block = 0;
+$edit_ip       = 1 if ($edit eq "ipinfo");
+$edit_block    = 1 if ($edit eq "blockinfo");
+
+
+</%init>
+
 <& index.html, title => "IP Worksheet: $title", s2name => $s2name  &>
 
 <table width="95%" border="0" cellspacing="0" cellpadding="0" class="tablebackground"> 
@@ -38,7 +85,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     Query <b><em><% $search %></em></b> returned: <b><% $num %> matches</b>
 
 %      if ( $num ){
-        <& sortresults.mhtml, table => "Ipblock", object => \@list, view => "row", sort => 0, page => "ip-ws.html" &>
+        <& ipblock_list.mhtml, objects => \@list  &>
 %      }elsif ( $ipm->error ){
           <p><b><% $ipm->error %></b>
 %      }
@@ -312,15 +359,24 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	     </td>
 	  </tr>
            <tr>
-             <td class="formtablec1">Configured in Interface: </td>
+             <td class="formtablec1">Interface: </td>
 	     <td class="formtablec2"> 
-%	     if (defined($o->interface) && int($o->interface) != 0){
-		 <a href="view.html?table=Interface&id=<% $o->interface->id %>"><% $ui->getobjlabel($o->interface, ", ") %></a> 
+%	     if ( $o->interface && $o->interface->id ){
+		 <a href="view.html?table=Interface&id=<% $o->interface->id %>"><% $o->interface->name %></a> 
+%	     }
+	     </td>
+	   </tr>
+           <tr>
+             <td class="formtablec1">Device: </td>
+	     <td class="formtablec2"> 
+%	     if ( $o->interface && $o->interface->device ){
+		 <a href="device.html?id=<% $o->interface->device->id %>"><% $ui->getobjlabel($o->interface->device, ", ") %></a> 
 %	     }
 	     </td>
 	   </tr>
            <tr>
 	     <td colspan="2">
+%	     if ( $o->arpentries ){
 	       <table width="100%" cellspacing="2">
 	        <tr>
                  <td class="formtabletitle">ARP-cached by</td>
@@ -339,6 +395,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
                   </tr>
 %		 } 
 	      </table>
+%	    }
 	    </td>
 	   </tr>
          </table>
@@ -545,7 +602,7 @@ if (scalar( @children = $ipm->getchildren($o->id) )){
    </tr>
    <tr>
      <td colspan="2">
-      <& sortresults.mhtml, table => "Ipblock", object => \@children, view => "row", sort => 0, page => "ip-ws.html" &>
+      <& ipblock_list.mhtml, objects => \@children &>
       </td>
    </tr>
    </table>
@@ -564,50 +621,3 @@ if (scalar( @children = $ipm->getchildren($o->id) )){
 </table>
 
 <& footer.mhtml &>
-
-<%args>
-$id        => undef
-$search    => undef
-$_action   => undef
-$delete    => undef
-$allocate  => undef
-$parent    => undef
-$length    => undef
-$strategy  => undef
-$edit      => undef
-$submit    => undef
-$s2name    => "Management"
-$user      => $ENV{REMOTE_USER}
-</%args>
-
-<%init>
-my $DEBUG = 0;
-my $ui = Netdot::UI->new();
-my $ipm = Netdot::IPManager->new();
-my $o;
-my $ci = 0;
-my %arg;
-my $title;
-if ($id){
-    unless( $o = Ipblock->retrieve($id) ){
-	$m->comp('error.mhtml', error => "Could not retrieve Ipblock id: $id");
-    }else{
-	$title = $o->address . "/" . $o->prefix;
-    }
-}else{
-    $title = "Search";
-}
-
-my $edit_ip = 0;
-my $edit_block = 0;
-$edit_ip = 1 if ($edit eq "ipinfo");
-$edit_block = 1 if ($edit eq "blockinfo");
-
-
-</%init>
-
-<%doc>
--- IP Worksheet --
-Work with IP blocks (both addresses and subnets)
-
-</%doc>

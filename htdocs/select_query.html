@@ -1,3 +1,36 @@
+<%doc>
+
+Calls UI::selectQuery to perform a recursive search for keywords
+in a table's label fields
+Creates a dummy form with results, which are then copied by select.js
+into the working webpage.
+
+Arguments:
+- table:  Foreign key table to search.
+- field:  Name of the original field for which we're searching foreign values
+          Needed by the caller
+- crit:   Criteria.  A string with one or more keywords to search
+
+- form_name: optional form name for original caller. If not specified assumes
+             form name is "netdotform".
+
+</%doc>
+
+<%args>
+$table     => $ARGS{table};
+$field     => $ARGS{field};
+$crit      => $ARGS{crit};
+$form_name => $ARGS{form_name};
+</%args>
+
+<%init>
+my ( $r, $max, @terms, $debug );
+my $ui = Netdot::UI->new();
+$max = 100;
+$debug = 0;
+
+</%init>
+
 <%perl>
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $debug;
 
@@ -37,34 +70,3 @@ if ($crit =~ /\w+/){
 </form>
 </body>
 
-<%init>
-my ( $r, $max, @terms, $debug );
-my $ui = Netdot::UI->new();
-$max = 100;
-$debug = 0;
-</%init>
-
-<%args>
-$table     => $ARGS{table};
-$field     => $ARGS{field};
-$crit      => $ARGS{crit};
-$form_name => $ARGS{form_name};
-</%args>
-
-<%doc>
-
-Calls UI::selectQuery to perform a recursive search for keywords
-in a table's label fields
-Creates a dummy form with results, which are then copied by select.js
-into the working webpage.
-
-Arguments:
-- table:  Foreign key table to search.
-- field:  Name of the original field for which we're searching foreign values
-          Needed by the caller
-- crit:   Criteria.  A string with one or more keywords to search
-
-- form_name: optional form name for original caller. If not specified assumes
-             form name is "netdotform".
-
-</%doc>

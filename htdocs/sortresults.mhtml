@@ -30,6 +30,32 @@ my $LBL;
 my $ui = Netdot::UI->new();
 my %cssitem = ( 0 => "formtablec1", 1 => "formtablec2" );
 my $ci = 1;
+
+# Determine table name if not passed to us
+#
+unless ( $table ){
+    if ( my $fo = $object->[0] ){
+	$table = $fo->table;
+    }else{
+	print "No elements";
+    }
+}
+
+# Some tables have a specific view page. 
+# Point to those when appropriate
+
+my %viewpage = ( BinFile => "display_bin.html",
+		 Ipblock => "ip-ws.html",
+		 Device  => "device.html",
+		);
+
+foreach my $tname ( keys %viewpage ){
+    if ($table eq $tname){
+	$page = $viewpage{$tname};
+	last;
+    }
+}
+
 </%init>
 
 <%perl>
@@ -39,15 +65,14 @@ if( $view ) {
       $m->comp('error.mhtml', error => "Invalid value for view: $view");
   }
 }
-if( $table ) {
-  $META = $ui->getmeta( $table );
-  if( defined( $META ) ) {
+$META = $ui->getmeta( $table );
+if( defined( $META ) ) {
     my $i = 1;
     my @tmp;
     ##############################################
     # get the label for this table (as defined in Meta)
     $LBL = ($ui->getlabels( $table ))[0];
-
+    
     ##############################################
     # If sort arg
     if( defined( $sort ) ) {
@@ -61,15 +86,15 @@ if( $table ) {
 		@sorted = sort { $a->$sort cmp $b->$sort } @{ $object };
 	    }
 	}
-    ##############################################
-    # If no sort arg, sort by actual label
-    # 
+	##############################################
+	# If no sort arg, sort by actual label
+	# 
     }else{
 	my @labels = $ui->getlabelarr( $table );
 	@sorted = map  { $_->[0] }
 	sort { $a->[1] cmp $b->[1] }
 	map { [$_ , $ui->getlabelvalue($_, \@labels)] } @{ $object };
-	    
+	
     }
     ##############################################
     # get linksto info
@@ -83,23 +108,22 @@ if( $table ) {
     ##############################################
     # remove id and aliases (if present)
     if( exists( $order{id} ) ) {
-      delete( $order{id} );
+	delete( $order{id} );
     }
     if( exists( $order{aliases} ) ) {
-      delete( $order{aliases} );
+	delete( $order{aliases} );
     }
     ##############################################
     # munge so that label is first 
     if( defined( $LBL ) && length( $LBL ) > 0 ) {
-      unless( $order{$LBL} == 1 ) {
-        my $j = $order{$LBL};
-        my %rev = reverse %order;
-        my $k = $rev{1} ;
-        $order{$k} = $j;
-        $order{$LBL} = 1;
-      }
+	unless( $order{$LBL} == 1 ) {
+	    my $j = $order{$LBL};
+	    my %rev = reverse %order;
+	    my $k = $rev{1} ;
+	    $order{$k} = $j;
+	    $order{$LBL} = 1;
+	}
     }
-  }
 }
 </%perl>
 %

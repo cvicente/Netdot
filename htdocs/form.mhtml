@@ -1,18 +1,64 @@
+<%doc>
+
+Given a table (an optionally an id), build a form with corresponding
+fields.  Can be called from within other components for editing/adding
+objects to the database.
+
+Arguments:  
+  table         -  name of table (REQUIRED)
+  id            -  id (row) from the above table  (OPTIONAL)
+  session       -  ref to a hash with values to insert (if object ! exist)
+  title         -  a title string to show in first line of form
+
+</%doc>
+
+<%args>
+
+$table   => undef
+$id      => undef
+%session => undef
+$title   => undef
+
+</%args>
+
+<%init>
+
+my $maxselect = 100;
+my $ui        = Netdot::UI->new();
+my $DEBUG     = 0;
+
+unless ( $table  ) {
+    $m->comp("error.mhtml", error => "Missing required arguments");
+}
+my $obj;
+if ( $id ){
+    unless ( $obj = $table->retrieve($id) ){
+	$m->comp("error.mhtml", error => "Could not retrieve $table id $id");	
+    }
+}
+my $META;
+unless ( $META = $ui->getmeta( $table ) ) {
+    $m->comp("error.mhtml", error => "Could not determine meta info table");
+}
+my %order   = $ui->getcolumnorder( $table );
+my %linksto = $ui->getlinksto( $table );
+my %tags    = $ui->getcolumntags( $table );
+
+</%init>
 
 <script language="javascript" src="select.js"></script>
 
 % ####################################################################
 <!-- begin form --> 
-% if( defined( $args{table} ) ) {
-    <table width="100% cellpadding="3" cellspacing="0" border="0" class="formtablebg">
+% if( defined( $table ) ) {
+    <table width="100%" cellpadding="3" cellspacing="0" border="0" class="formtablebg">
     <tr>
-    <input type="hidden" name="table" value="<% $args{table} %>">
-%   if( $args{id} ) {
-    <input type="hidden" name="id" value="<% $args{id} %>">
+    <input type="hidden" name="table" value="<% $table %>">
+%   if( $id ) {
+    <input type="hidden" name="id" value="<% $id %>">
 %   }
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %     next if( $c eq 'id' );
-%     next if( $c eq 'disabled' && ! $args{showdisabled} );
 % ################################################
 %     if( ! exists( $linksto{$c} ) ) { # local field
         <tr>
@@ -21,12 +67,12 @@
 %	}else{
            <td class="formtablec1"><strong><% $c %>:</strong></td>
 %	}
-%       if( defined( $args{id} ) ) {
+%       if( defined( $id ) ) {
 	    <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $obj) %></td>
 %       } elsif( exists( $session{$c} ) ) {
 	    <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $linksto{$c}, $session{$c}) %></td>
 %       } else {
-	    <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $args{table}) %></td>
+	    <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $table) %></td>
 %       }
         </tr>
 % ################################################
@@ -43,26 +89,31 @@
 %	my $count = $linksto{$c}->count_all;
 %	if ( $count <= $maxselect ){			      
 %	   my @fkobjs = $linksto{$c}->retrieve_all;
-%	   my $lblfield = ( $ui->getlabels($linksto{$c}) )[0];	 
-%	   @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } @fkobjs; 
+
    	   <select name="<% $c %>">
-%          if( defined( $obj ) 
-%            && ( ! $obj->$c 
+%          if( defined( $obj ) && ( ! $obj->$c 
 %              || ! defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) ) {
               <option value="0" selected>[null]</option>
 %             $flag = 0;
 %          } else {
               <option value="0">[null]</option>
 %          }
-%	   foreach my $fkobj ( @fkobjs ) {
-%             my $lbl = $ui->getobjlabel( $fkobj, ", " );
-%             if( ( defined( $obj ) && $flag && $fkobj->id == $obj->$c->id ) 
-%             	|| ( $fkobj->id == $session{$c} ) ) {
-            	<option value="<% $fkobj->id %>" selected><% $lbl %></option>
+% ##################################################
+% # Order by label value
+%         my @lbls = $ui->getlabelarr( $linksto{$c} );
+%         my @fk;
+%         map  { push @fk, [$_->[0], $_->[1]] }
+%         sort { $a->[0] cmp $b->[0] }
+%         map  { [$ui->getlabelvalue($_, \@lbls, ", "), $_->id] } @fkobjs;
+%         foreach my $r ( @fk ){
+%             my ($lbl, $id) = ($r->[0], $r->[1]);
+%             if( ( defined( $obj ) && $flag && $id == $obj->$c->id ) 
+%             	|| ( $id == $session{$c} ) ) {
+            	<option value="<% $id %>" selected><% $lbl %></option>
 %             } else {
-            	<option value="<% $fkobj->id %>"><% $lbl %></option>
+            	<option value="<% $id %>"><% $lbl %></option>
 %             }
-%	   } #foreach
+%	   } #end foreach
 	   </select>
 %	}else{ #we have too many 
 %	   my $srchf = $c . '_srch';  #name of the form input tag
@@ -98,57 +149,3 @@
     </table>
 % } # if
 <!-- end form --> 
-
-% ####################################################################
-<%args>
-%args => undef
-%order => undef
-%orderbrief => undef
-%linksto => undef
-%tags => undef
-$obj => undef
-%session => undef
-$META => undef
-$ui => Netdot::UI->new()
-$DEBUG => 0
-</%args>
-
-<%init>
-my $maxselect = 100;
-
-# expect name of Table & objects that require sorting
-foreach my $j ( keys %ARGS ) {
-  # next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
-  $args{$j} = $ARGS{$j};
-}
-if( exists( $args{session} ) ) {
-  %session = %{ $args{session} };
-}
-unless( defined( $args{showdisabled} ) ) {
-  $args{showdisabled} = 0;
-}
-undef $obj;
-if( $args{table} ) {
-  if( defined( $args{id} ) ) {
-    $obj = $args{table}->retrieve($args{id}) ;
-  }
-  $META = $ui->getmeta( $args{table} );
-  if( defined( $META ) ) {
-    my $i = 1;
-    %order = $ui->getcolumnorder( $args{table} );
-    %linksto = $ui->getlinksto( $args{table} );
-    %tags = $ui->getcolumntags( $args{table} );
-  }
-}
-</%init>
-
-<%doc>
-
-Arguments:  
-  table         -  name of table (REQUIRED)
-  id            -  id (row) from the above table  (OPTIONAL)
-  showdisabled  -  1|0  whether to show disabled columns
-  session       -  ref to a hash with values to insert (if object ! exist)
-  title         -  a title string to show in first line of form
-
-</%doc>

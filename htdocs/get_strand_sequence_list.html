@@ -10,6 +10,22 @@ Arguments;
 
 </%doc>
 
+<%args>
+$start_id => $ARGS{"start"};
+$end_id => $ARGS{"end"};
+$field_name => $ARGS{"field_name"};
+$form_name => $ARGS{"form_name"};
+</%args>
+
+
+<%init>
+my ($ui, @terms, $DEBUG, $MAX_RESULTS);
+$ui = Netdot::UI->new();
+my $cable_manager = Netdot::CablePlantManager->new();
+$DEBUG = 0;
+$MAX_RESULTS = 1000;
+</%init>
+
 % print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 <html>
@@ -42,18 +58,3 @@ printf("window.close();\n") if (!$DEBUG);
 </script>
 </body>
 </html>
-
-<%init>
-my ($ui, @terms, $DEBUG, $MAX_RESULTS);
-$ui = Netdot::UI->new();
-my $cable_manager = Netdot::CablePlantManager->new();
-$DEBUG = 0;
-$MAX_RESULTS = 1000;
-</%init>
-
-<%args>
-$start_id => $ARGS{"start"};
-$end_id => $ARGS{"end"};
-$field_name => $ARGS{"field_name"};
-$form_name => $ARGS{"form_name"};
-</%args>

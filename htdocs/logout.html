@@ -1,3 +1,13 @@
+<%init>
+my $user = SiteControl::AccessController::getCurrentUser($r);
+my $success = 0;
+
+if(defined($user) && $user->isa("SiteControl::User")) {
+   $user->logout($r);
+   $success = 1;
+}
+</%init>
+
 <& header, title=>"Logout" &>
 
 % if($success) {
@@ -10,12 +20,3 @@
 
 <& footer.mhtml &>
 
-<%init>
-my $user = SiteControl::AccessController::getCurrentUser($r);
-my $success = 0;
-
-if(defined($user) && $user->isa("SiteControl::User")) {
-   $user->logout($r);
-   $success = 1;
-}
-</%init>

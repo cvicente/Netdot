@@ -1,9 +1,59 @@
+
+<%args>
+$ID         => undef
+$TBL        => undef
+$OBJ        => undef
+$NEW        => undef
+$sid        => undef
+$WIDTH      => 2
+$session    => undef
+$ui         => Netdot::UI->new()
+%args       => undef
+%state      => undef
+$s2name     => "Generic"
+$showheader => 1
+</%args>
+
+<%init>
+my $title;
+foreach my $j ( keys %ARGS ) {
+  if( $j eq "args" ) {
+    %args = %{ $ARGS{$j} };
+    next;
+  }
+  if( $j eq "state" ) {
+    %state = %{ $ARGS{$j} };
+    next;
+  }
+  if( $j eq "id" ) {
+    $ID = $ARGS{id};
+  }
+  if( $j eq "table" ) {
+    $TBL = $ARGS{table};
+  }
+  if( $j eq "obj" ) {
+    $OBJ = $ARGS{obj};
+  }
+  if( $j eq "new" ) {
+    $NEW = $ARGS{new};
+  }
+  if( $j eq "sid" ) {
+    $sid = $ARGS{sid};
+  }
+  if( $j eq "session" ) {
+    $session = $ARGS{session};
+  }
+}
+
+</%init>
+
 <%doc>
 
-This block catches the case where we've confirmed a submission and now
+This block catches the case where we have confirmed a submission and now
 want to go to the page to view it
 
 </%doc>
+
 % if( $args{cancel} && $TBL && $ID
 %     && $args{table} eq $TBL
 %     && ( ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) ){
@@ -162,51 +212,3 @@ Present a form for user to modify various values.
        <& footer.mhtml  &>
 %    }
 % }
-
-<%args>
-$ID         => undef
-$TBL        => undef
-$OBJ        => undef
-$NEW        => undef
-$sid        => undef
-$WIDTH      => 2
-$session    => undef
-$ui         => Netdot::UI->new()
-%args       => undef
-%state      => undef
-$s2name     => "Generic"
-$showheader => 1
-</%args>
-
-<%init>
-my $title;
-foreach my $j ( keys %ARGS ) {
-  if( $j eq "args" ) {
-    %args = %{ $ARGS{$j} };
-    next;
-  }
-  if( $j eq "state" ) {
-    %state = %{ $ARGS{$j} };
-    next;
-  }
-  if( $j eq "id" ) {
-    $ID = $ARGS{id};
-  }
-  if( $j eq "table" ) {
-    $TBL = $ARGS{table};
-  }
-  if( $j eq "obj" ) {
-    $OBJ = $ARGS{obj};
-  }
-  if( $j eq "new" ) {
-    $NEW = $ARGS{new};
-  }
-  if( $j eq "sid" ) {
-    $sid = $ARGS{sid};
-  }
-  if( $j eq "session" ) {
-    $session = $ARGS{session};
-  }
-}
-
-</%init>

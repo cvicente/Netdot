@@ -1,3 +1,40 @@
+<%doc>
+
+Cable management stuff...
+
+</%doc>
+
+<%args>
+
+$id          => undef;
+$strand_sort => undef;
+$edit        => undef;
+$s2name      => "Plant";
+
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $cable_manager = Netdot::CablePlantManager->new();
+my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
+my $editBackbone = 0;
+my $editStrand = 0;
+my ($o, $start_site, $end_site) = (undef, undef, undef);
+my ($start_site_id, $end_site_id) = (0, 0);
+
+if ($id && $id ne "NEW") {
+    $o = BackboneCable->retrieve($id);
+    $start_site = $o->start_closet->floor->site; 
+    $end_site = $o->end_closet->floor->site;
+    $start_site_id = $start_site->id if ($start_site);
+    $end_site_id = $end_site->id if ($end_site);
+}
+
+$editBackbone = 1 if ($id eq "NEW" || $edit eq "cableinfo");
+$editStrand = 1 if ($edit eq "strandinfo");
+</%init>
+
 <& index.html, title => "Cable Plant: Backbone", s2name => $s2name  &>
 
 <%perl>
@@ -593,37 +630,3 @@ function editSelected(id)
 </table>
 % }
 <!-- End Cable Strand Table -->
-
-
-<%args>
-$id => undef;
-$strand_sort => undef;
-$edit => undef;
-$s2name => "Plant";
-</%args>
-
-<%init>
-my $DEBUG = 0;
-my $ui = Netdot::UI->new();
-my $cable_manager = Netdot::CablePlantManager->new();
-my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
-my $editBackbone = 0;
-my $editStrand = 0;
-my ($o, $start_site, $end_site) = (undef, undef, undef);
-my ($start_site_id, $end_site_id) = (0, 0);
-
-if ($id && $id ne "NEW") {
-    $o = BackboneCable->retrieve($id);
-    $start_site = $o->start_closet->floor->site; 
-    $end_site = $o->end_closet->floor->site;
-    $start_site_id = $start_site->id if ($start_site);
-    $end_site_id = $end_site->id if ($end_site);
-}
-
-$editBackbone = 1 if ($id eq "NEW" || $edit eq "cableinfo");
-$editStrand = 1 if ($edit eq "strandinfo");
-</%init>
-
-<%doc>
-Cable management stuff...
-</%doc>

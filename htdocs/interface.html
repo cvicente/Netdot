@@ -1,3 +1,23 @@
+<%args>
+$id => undef;
+$edit => undef;
+$s2name => "Plant";
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $o = undef;
+my $isEditing = 0;
+
+if ($id && $id ne "NEW") 
+{
+   $o = Interface->retrieve($id);
+}
+
+$isEditing = 1 if ($id eq "NEW" || $edit eq "intinfo");
+</%init>
+
 <& index.html, title => "Cable Plant: Interface", s2name => $s2name  &>
 
 <%perl>
@@ -191,23 +211,3 @@ if (defined($ARGS{_action}))
     </tr>
 </table>
 <!-- End Interface Table -->
-
-<%args>
-$id => undef;
-$edit => undef;
-$s2name => "Plant";
-</%args>
-
-<%init>
-my $DEBUG = 0;
-my $ui = Netdot::UI->new();
-my $o = undef;
-my $isEditing = 0;
-
-if ($id && $id ne "NEW") 
-{
-   $o = Interface->retrieve($id);
-}
-
-$isEditing = 1 if ($id eq "NEW" || $edit eq "intinfo");
-</%init>

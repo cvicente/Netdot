@@ -1,3 +1,20 @@
+<%doc>
+
+(Slightly more) user-friendly error messages
+
+</%doc>
+
+
+<%args>
+$error
+$user => $ENV{REMOTE_USER}
+</%args>
+
+<%init>
+my $ui = Netdot::UI->new();
+my $caller = $m->caller->name;
+</%init>
+
 <table align="center" valign="top" border="0" width="95%" class="formtablebg">
 <tr><td>
 
@@ -18,21 +35,7 @@ If you believe this is a bug, please copy the above message and send it to
 <& footer.mhtml &>
 
 <%perl>
+# Abort execution of the caller
 $m->abort;
+
 </%perl>
-
-<%args>
-$error
-$user => $ENV{REMOTE_USER}
-</%args>
-
-<%init>
-my $ui = Netdot::UI->new();
-my $caller = $m->caller->name;
-</%init>
-
-<%doc>
-
-User-friendly error messages
-
-</%doc>

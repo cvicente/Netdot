@@ -1,3 +1,35 @@
+<%doc>
+
+Cable management stuff...
+
+</%doc>
+
+<%args>
+$id       => undef;
+$edit     => undef;
+$int_sort => undef;
+$s2name   => "Plant";
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $cable_manager = Netdot::CablePlantManager->new();
+my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
+my $o = undef;
+my $site = undef;
+my $editCable = 0;
+my $editInt = 0;
+
+if ($id && $id ne "NEW") {
+   $o = HorizontalCable->retrieve($id);
+   $site = $o->closet->site;
+}
+
+$editCable = 1 if ($id eq "NEW" || $edit eq "cableinfo");
+$editInt   = 1 if ($edit eq "intinfo");
+</%init>
+
 <& index.html, title => "Cable Plant: Horizontal", s2name => $s2name &>
 
 <script language="JavaScript" src="select.js"></script>
@@ -410,34 +442,3 @@ my @sites = Site->retrieve_all();
 </table>
 % }
 <!-- End Interface Table -->
-
-
-<%args>
-$id => undef;
-$edit => undef;
-$int_sort => undef;
-$s2name => "Plant";
-</%args>
-
-<%init>
-my $DEBUG = 0;
-my $ui = Netdot::UI->new();
-my $cable_manager = Netdot::CablePlantManager->new();
-my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
-my $o = undef;
-my $site = undef;
-my $editCable = 0;
-my $editInt = 0;
-
-if ($id && $id ne "NEW") {
-   $o = HorizontalCable->retrieve($id);
-   $site = $o->closet->site;
-}
-
-$editCable = 1 if ($id eq "NEW" || $edit eq "cableinfo");
-$editInt = 1 if ($edit eq "intinfo");
-</%init>
-
-<%doc>
-Cable management stuff...
-</%doc>

@@ -277,14 +277,11 @@ sub insert_zone {
 sub resolve_name {
     my ($self, $name) = @_;
     my @addresses;
-    eval {
-	@addresses = gethostbyname($name);
-	@addresses = map { inet_ntoa($_) } @addresses[4 .. $#addresses];
-    };
-    if ($@){
-	$self->error("Can't resolve $name: $@");
+    unless ( @addresses = gethostbyname($name) ){
+	$self->error("Can't resolve $name");
 	return;
     }
+    @addresses = map { inet_ntoa($_) } @addresses[4 .. $#addresses];
 
     return @addresses;
 }

@@ -1,3 +1,34 @@
+<%doc>
+
+Circuit Interface
+
+</%doc>
+
+<%args>
+
+$id => undef;
+$edit => undef;
+$strand_sort => undef;
+$s2name => "Plant";
+
+</%args>
+
+<%init>
+
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $cable_manager = Netdot::CablePlantManager->new();
+my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
+my $o = undef;
+my $editCircuit = 0;
+my $editStrand = 0;
+
+$o = Circuit->retrieve($id) if ($id && $id ne "NEW");
+$editCircuit = 1 if ($id eq "NEW" || $edit eq "circuitinfo");
+$editStrand = 1 if ($edit eq "strandinfo");
+
+</%init>
+
 <& index.html, title => "Cable Plant: Circuit", s2name => $s2name  &>
 
 <%perl>
@@ -283,25 +314,3 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 </tr>
 </table>
 <!-- End Cable Strand Table -->
-
-
-<%args>
-$id => undef;
-$edit => undef;
-$strand_sort => undef;
-$s2name => "Plant";
-</%args>
-
-<%init>
-my $DEBUG = 0;
-my $ui = Netdot::UI->new();
-my $cable_manager = Netdot::CablePlantManager->new();
-my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
-my $o = undef;
-my $editCircuit = 0;
-my $editStrand = 0;
-
-$o = Circuit->retrieve($id) if ($id && $id ne "NEW");
-$editCircuit = 1 if ($id eq "NEW" || $edit eq "circuitinfo");
-$editStrand = 1 if ($edit eq "strandinfo");
-</%init>

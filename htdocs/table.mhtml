@@ -1,3 +1,29 @@
+<%doc>
+
+Simple component to display all tables in a pretty table.
+
+Arguments:  
+
+    width  -  width of the table (# of columns) (default = 2)
+    link   -  page to go to for HREFs
+    title  -  title of the table
+
+</%doc>
+
+<%args>
+$width => 2
+$link => "browse.html"
+$title => undef
+</%args>
+
+<%init>
+my @tbls;
+my $max;
+my $j = 0;
+my $ui = Netdot::UI->new();
+
+</%init>
+
 <%perl>
 map { push @tbls, $_ } sort { $a cmp $b } $ui->gettables;
 $max = scalar( @tbls );
@@ -27,29 +53,3 @@ $max = scalar( @tbls );
    </table>
 </td></tr>
 </table>
-
-<%args>
-$width => 2
-$link => "browse.html"
-$title => undef
-</%args>
-
-<%init>
-my @tbls;
-my $max;
-my $j = 0;
-my $ui = Netdot::UI->new();
-
-</%init>
-
-<%doc>
-
-Simple component to display all tables in a pretty table.
-
-Arguments:  
-
-    width  -  width of the table (# of columns) (default = 2)
-    link   -  page to go to for HREFs
-    title  -  title of the table
-
-</%doc>

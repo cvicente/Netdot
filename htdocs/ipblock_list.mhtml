@@ -1,0 +1,95 @@
+<%doc>
+    Show a list of IP blocks with relevant info.
+    The hybrid character of IPblock objects (blocks and individual addresses) makes it necessary to
+    display different info in each case.
+    
+    We expect an arrayref of Ipblock objects
+    The array is supposed to be sorted.
+    This is because objects are stored in decimal in the DB
+    so it makes more sense to have the DB order them at 
+    retrieval time.  After that, objects are "inflated" to
+    a string, which is harder to sort.
+</%doc>
+
+<%args>
+$objects => undef
+
+</%args>
+
+<%init>
+my $ipm = Netdot::IPManager->new();
+my $ui = Netdot::UI->new();
+my %cssitem = ( 0 => "formtablec1", 1 => "formtablec2" );
+my $ci = 0;
+</%init>
+
+<table border="0" width="100%" cellspacing="0" cellpadding="1" class="tablebackground">
+
+%if ( $ipm->isaddress($objects->[0]) ){
+% # We're dealing with addresses
+    <tr class="rowtitle0">
+    <th>Address</th>
+    <th>Status</th>
+    <th>Name</th>
+    <th>Last Seen</th>
+    </tr>
+%  foreach my $o ( @{ $objects } ) {
+%   $ci = ($ci + 1) % 2;
+    <tr class="<% $cssitem{$ci} %>">
+	<td align="left">
+	  <a href="ip-ws.html?id=<% $o->id %>"><% $o->address %></a>
+	</td>   
+	<td align="left">
+	  <% $o->status->name %>
+	</td>   
+	<td align="left">
+%	if ( my $rraddr = ($o->arecords)[0] ){
+%          my $name = $rraddr->rr;
+	   <% $ui->getobjlabel( $name, "," ) %>
+%	}
+	</td>   
+	<td align="left">
+	  <% $o->last_seen %>
+	</td>   
+    </tr>
+    <tr height="1" class="delimiter">
+	<td colspan="5" height="1"></td>
+    </tr>
+%  }   
+
+    
+%}else{
+% # Objects are blocks
+ <table border="0" width="100%" cellspacing="0" cellpadding="1" class="tablebackground">
+    <tr class="rowtitle0">
+    <td>Address/Prefix</td>
+    <td>Status</td>
+    <td>Entity</td>
+    <td>Description</td>
+    </tr>
+
+%  foreach my $o ( @{ $objects } ) {
+%   $ci = ($ci + 1) % 2;
+    <tr class="<% $cssitem{$ci} %>">
+	<td align="left">
+	  <a href="ip-ws.html?id=<% $o->id %>"><% $o->address %>/<% $o->prefix %></a>
+	</td>   
+	<td align="left">
+	  <% $o->status->name %>
+	</td>   
+	<td align="left">
+	  <% $o->entity->name %>
+	</td>   
+	<td align="left">
+	  <% $o->description %>
+	</td>   
+    </tr>
+    <tr height="1" class="delimiter">
+	<td colspan="5" height="1"></td>
+    </tr>
+%    }   
+
+%}
+
+</table>
+

@@ -1,4 +1,21 @@
-% if( ! defined( $table ) ) {
+<%doc>
+Generic Browse function
+
+</%doc>
+
+<%args>
+$s2name => "Generic"
+$table  => undef
+</%args>
+
+<%init>
+my $ui = Netdot::UI->new();
+my $MAX    = 20;
+my $WIDTH  = 2;
+
+</%init>
+
+% if ( ! $table ) {
 %   my( @t );
 %   @t = $ui->gettables();
     <& index.html, title => "Browse", s2name => $s2name &>
@@ -16,18 +33,3 @@
 % }
 
 <& footer.mhtml &>
-
-<%args>
-$MAX => 20
-$WIDTH => 2
-$s2name => "Generic"
-$table => undef
-</%args>
-
-<%init>
-my $ui = Netdot::UI->new();
-
-</%init>
-
-<%doc>
-</%doc>

@@ -1,7 +1,7 @@
 #
 # makefile for htdocs
 
-FILES = index.html browse.html edit.html search.html view.html delete.html search_obj.html form.mhtml sortresults.mhtml header footer.mhtml table.mhtml style.css style-gray.css style-blue.css style-uo.css updatedevice.html device.html deldevice.html ip-ws.html error.mhtml custom edit.mhtml select.js select_query.html section1.mhtml section2.mhtml section_management.mhtml section_cable.mhtml section_reports.mhtml cable_plant.html cable_backbone.html cable_horizontal.html cable_strand.html dynamic_list.js dynamic_list_query.html display_bin.html closet.html interface.html login.html logout.html backbone_list_query.html suggest_backbonename.html floor.html suggest_jackid.html circuit.html get_strand_sequence_list.html strand_backbone_list_query.html display_sequence.mhtml room_site_query.html addservice.html
+FILES = index.html browse.html edit.html search.html view.html delete.html search_obj.html form.mhtml sortresults.mhtml header footer.mhtml table.mhtml style.css style-gray.css style-blue.css style-uo.css updatedevice.html device.html deldevice.html ip-ws.html error.mhtml custom edit.mhtml select.js select_query.html section1.mhtml section2.mhtml section_management.mhtml section_cable.mhtml section_reports.mhtml cable_plant.html cable_backbone.html cable_horizontal.html cable_strand.html dynamic_list.js dynamic_list_query.html display_bin.html closet.html interface.html login.html logout.html backbone_list_query.html suggest_backbonename.html floor.html suggest_jackid.html circuit.html get_strand_sequence_list.html strand_backbone_list_query.html display_sequence.mhtml room_site_query.html addservice.html addlink.html ipblock_list.mhtml
 
 IMG = title.jpg
 

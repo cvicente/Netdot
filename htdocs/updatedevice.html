@@ -1,3 +1,54 @@
+<%doc>
+
+Web interface for device discovery and updates
+
+</%doc>
+
+<%args>
+$action
+$host
+$comstr      => "public"
+$id          => undef
+$s2name      => "Management"
+$sid         => undef
+$insert      => undef
+$cancel      => undef
+$entity      => undef
+$site        => undef
+$contactlist => undef
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $TMP;
+my $ADDSUBNETS = 1;
+
+my $ui = Netdot::UI->new();
+my $dm = Netdot::DeviceManager->new();
+my $ipm = Netdot::IPManager->new();
+my $dns = Netdot::DNSManager->new();
+my $o;
+my $name;
+my %argv;
+my $session;
+my $guessed_ent;
+my $guessed_site;
+my $guessed_cl;
+
+print Dumper(%ARGS) if $DEBUG;
+
+if( $action eq "discover" && ! $sid ) {
+  $session = $ui->mksession( $TMP );
+}
+if( $sid ) {
+  $session = $ui->getsession( $TMP, $sid );
+}
+if( $cancel ) {
+  $ui->rmsession( $session );
+}
+
+</%init>
+
 <& index.html, title => "Device Discovery: $host ", s2name => $s2name  &>
 <script language="javascript">
 <!--
@@ -200,10 +251,11 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
               </td>
 	    </tr>
 %      }
+            <tr><td><br></td></tr>
 	    <tr>
               <td align="left">&nbsp;</td>
               <td align="left">
-	        Go to <a href="device.html?id=<% $o->id %>"><% $name %></a>
+	        <b><a href="device.html?id=<% $o->id %>">[Go to <% $name %>]</a></b>
               </td>
 	    </tr>
           </table>
@@ -227,53 +279,3 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 </table>
 <& footer.mhtml &>
 
-<%args>
-$action
-$host
-$comstr      => "public"
-$id          => undef
-$s2name      => "Management"
-$sid         => undef
-$insert      => undef
-$cancel      => undef
-$entity      => undef
-$site        => undef
-$contactlist => undef
-</%args>
-
-<%init>
-my $DEBUG = 0;
-my $TMP;
-my $ADDSUBNETS = 1;
-
-my $ui = Netdot::UI->new();
-my $dm = Netdot::DeviceManager->new();
-my $ipm = Netdot::IPManager->new();
-my $dns = Netdot::DNSManager->new();
-my $o;
-my $name;
-my %argv;
-my $session;
-my $guessed_ent;
-my $guessed_site;
-my $guessed_cl;
-
-print Dumper(%ARGS) if $DEBUG;
-
-if( $action eq "discover" && ! $sid ) {
-  $session = $ui->mksession( $TMP );
-}
-if( $sid ) {
-  $session = $ui->getsession( $TMP, $sid );
-}
-if( $cancel ) {
-  $ui->rmsession( $session );
-}
-
-</%init>
-
-<%doc>
-
-Web interface for device discovery and updates
-
-</%doc>

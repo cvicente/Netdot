@@ -1,3 +1,27 @@
+<%doc>
+    Delete one or more objects
+</%doc>
+
+<%args>
+$table   => undef
+$id      => undef
+$s2name  => "Management"
+$submit  => "Delete"
+$sid     => undef
+</%args>
+
+<%init>
+my $ui = Netdot::UI->new();
+my $session;
+my @objs;
+my $TMP;
+my $DEBUG = 0;
+my @objects;
+
+print Dumper(%ARGS) if $DEBUG;
+
+</%init>
+
 <& index.html, title => " Delete: $table object" , s2name => $s2name  &>
 
 <table align="center" valign="top" border="0" width="95%" class="formtablebg">
@@ -66,33 +90,11 @@
 %}elsif ($submit eq "Cancel"){
 <p><br>
     Deletion cancelled
-%   $ui->rmsession( $session );
+%    if ( $session ){
+%      $ui->rmsession( $session );
+%    }
 %}
 
 </td></tr>
 </table>
 <& footer.mhtml &>
-
-<%args>
-$table   => undef
-$id      => undef
-$s2name  => "Management"
-$submit  => "Delete"
-$sid     => undef
-</%args>
-
-<%init>
-my $ui = Netdot::UI->new();
-my $session;
-my @objs;
-my $TMP;
-my $DEBUG = 0;
-my @objects;
-
-print Dumper(%ARGS) if $DEBUG;
-
-</%init>
-
-<%doc>
-    Delete one or more objects
-</%doc>

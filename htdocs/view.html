@@ -1,3 +1,79 @@
+<%doc>
+
+  Generic object view
+  Uses metadata to display all fields with their values
+  and lists of each group of 'has_many' related objects
+
+  Required Arguments:
+    table name and either id or position
+
+</%doc>
+
+<%args>
+$s2name  => "Generic"
+$table   => undef
+$id      => undef
+$pos     => undef
+$view    => "all"
+</%args>
+
+<%init>
+my($obj, $prevobj );
+my $ui = Netdot::UI->new();           
+my %ftables;
+
+unless ( $table && ( $id || $pos ) ){
+   $m->comp('error.mhtml', "Missing required parameters 'table' and/or 'id'");
+}
+if ( $pos ){
+    my @objl = map { $_->id } $table->retrieve_all;
+    $id = $objl[$pos - 1];
+}
+unless ( $obj = $table->retrieve($id) ){
+   $m->comp('error.mhtml', "Nonexistent record: $id");
+}
+
+my $labelstr = $ui->getobjlabel($obj, ", ");
+my %linksto = $ui->getlinksto($table);
+my %linksfrom = $ui->getlinksfrom($table);
+my %order = $ui->getcolumnorder($table);
+my %tags = $ui->getcolumntags($table);
+
+if ($table !~ /_history/){
+    # List all the has_many objects for this object
+    #
+    foreach my $i (keys %linksfrom){
+	my ($j, @tmp, %jlinksto, $col);
+	@tmp = $obj->$i;  
+	map { $j = $_ } keys %{ $linksfrom{$i} };
+	$ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
+	# If foreign table is a join table, try to hide it
+	# THIS MAYBE SHOULD CHANGE TO USE THE MAPPING FEATURE FROM CLASS::DBI INSTEAD
+	if ( $ui->isjointable($j) ){
+	    undef( %jlinksto );
+	    # Get has_a entries 
+	    %jlinksto = $ui->getlinksto($j);
+	    # Column in join table that points to third table
+	    map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
+	    map { push @{ $ftables{$i}{robjs} }, $_->$col } @tmp;
+	    $ftables{$i}{dtbl} = $jlinksto{$col};  # table to display
+	    $ftables{$i}{ctbl} = $j;               # table to pass to create.html
+	}else{  # table is not a join table
+	    @{$ftables{$i}{robjs}} = @tmp;
+	    $ftables{$i}{dtbl} = $j;
+	    $ftables{$i}{ctbl} = $j; 
+	}
+	if (!scalar(@tmp)){
+	    $ftables{$i}{robjs} = 0;
+	}
+    }
+}
+
+my $h_table = $ui->gethistorytable($obj);
+my $h_meta = $ui->getmeta($h_table);
+
+</%init>
+
 <& index.html, title => " View: $table: $labelstr" , s2name => $s2name  &>
 
 <table valign="top" border="0" height="100%" width="95%">
@@ -30,7 +106,6 @@
 % if ($table !~ /_history/){
    <table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%" class="tablebackground">
    <tr><td valign="top">
-     <font size="-1">
       <table border="0" cellspacing="0" cellpadding="1" width="100%" class="tablebackground">
         <tr class="rowtitle0">
            <td class="rowtitle0">
@@ -39,12 +114,12 @@
         </tr>
 	<tr class="tablebackground">
            <td>
-              <font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">all
+              <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">all
            </td>
         </tr>
 	<tr class="tablebackground">
            <td>
-              <font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $table %>"><% lc($table) %></a>
+              <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $table %>"><% lc($table) %></a>
            </td>
         </tr>
 
@@ -52,7 +127,7 @@
 %           if ($ftables{$i}{robjs}){
               <tr class="tablebackground">
                  <td colspan="2">
-                    <font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>"><% $i %></a>
+                    <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>"><% $i %></a>
                  </td>
               </tr>
 %	   }  
@@ -60,27 +135,26 @@
 %	  if ( defined($h_meta) ){  # only if there's a history table.
    	     <tr class="tablebackground">
                 <td>
-                   <font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a>
+                   <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a>
                 </td>
              </tr>
 %	  }
 %	  if (scalar keys %ftables){
             <tr class="rowtitle0">
-               <td bgcolor="#DDDDDD" class="rowtitle0">
+               <td class="rowtitle0">
                   <strong>Add to this <% $table %>:</strong>
                </td>
             </tr>
 %	    foreach my $i (keys %ftables){
 	       <tr class="tablebackground">
 	          <td>
-                     <font color="#FF0000">&gt;</font> <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>"><% $i %></a>
+                     <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>"><% $i %></a>
                   </td>
 	       </tr>
 %	      }
 %         }  
       <!-- JKM -->
       </table>
-     </font>
     </td></tr>
    </table>
 % }
@@ -92,7 +166,7 @@
 <!-- Display main object values -->
 
 %if ($view eq 'all' || $view eq "$table"){
-   <table border="0" cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC" width="100%" class="tablebackground">
+   <table border="0" cellpadding="0" cellspacing="0" border="0" width="100%" class="tablebackground">
       <tr>
          <td colspan="3">
             <table border="0" cellspacing="0" cellpadding="1" width="100%" class="tablebackground">
@@ -122,9 +196,9 @@
 %      next if ($c eq 'id' || $c eq 'aliases');
        <tr> 
 %       if ( exists($tags{$c}) ){
-          <td width="20%" align="right" valign="middle" bgcolor="#DDDDDD" class="column1"><% $tags{$c} %>:&nbsp;</td>
+          <td width="20%" class="column1"><% $tags{$c} %>:&nbsp;</td>
 %       }else{
-          <td width="20%" align="right" valign="bottom" bgcolor="#DDDDDD" class="column1"><% $c %>:&nbsp;</td>
+          <td width="20%" class="column1"><% $c %>:&nbsp;</td>
 %       }
        <td class="delimiter" width="1"><BR></td>
 %      if (!exists($linksto{$c}) ){  ## Column is local
@@ -184,9 +258,8 @@
 <!-- Display history objects associated with this object-->
 
 %  if ( $view eq 'history' ){
-%   my $id_f = lc("$table" . "_id");
-%   my @h_objs = $h_table->search($id_f => "$obj->id");
-    <& sortresults.mhtml, table => $h_table, object => \@h_objs , view => "row" &>
+%   my @ho = $ui->gethistoryobjs($obj);
+    <& sortresults.mhtml, object => \@ho , view => "row" &>
 %  } 
 
 <!-- End Display history objects -->
@@ -197,83 +270,3 @@
 <p><br>
 <& footer.mhtml &>
 
-<%args>
-$s2name  => "Generic"
-
-</%args>
-<%init>
-my( %arg, %linksto, %linksfrom, $id, $obj, $prevobj, $table, $view, %order, %tags, %ftables, $labelstr);
-my $ui = Netdot::UI->new();           
-
-foreach	my $j (keys %ARGS){
-	next if ($ARGS{$j} !~ /\w+/ || $j eq 'submit');
-	$arg{$j} = $ARGS{$j};	
-}	
-unless ( $arg{table} && ($arg{id} || $arg{pos}) ){
-   $m->comp('error.mhtml', "Missing required parameters 'table' and/or 'id'");
-}
-$table = $arg{table};
-
-if ($arg{pos}){
-    my @objl = map { $_->id } $table->retrieve_all;
-    $id = $objl[$arg{pos} - 1];
-}else{
-    $id = $arg{id};
-}
-$obj = $table->retrieve($id);
-if ( $arg{view} ) {
-  $view = $arg{view};
-}else{
-  $view = 'all';
-}
-unless ( $obj ){
-   $m->comp('error.mhtml', "Nonexistent record: $id");
-}
-$labelstr = $ui->getobjlabel($obj, ", ");
-
-%linksto = $ui->getlinksto($table);
-%linksfrom = $ui->getlinksfrom($table);
-%order = $ui->getcolumnorder($table);
-%tags = $ui->getcolumntags($table);
-
-if ($table !~ /_history/){
- # List all the has_many objects for this object
- undef (%ftables);
- foreach my $i (keys %linksfrom){
-  my ($j, @tmp, %jlinksto, $col);
-  @tmp = $obj->$i;  
-  map { $j = $_ } keys %{ $linksfrom{$i} };
-  $ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
-#  my $mj = ( Meta->search(name => $j) )[0]; #get meta info for other table
-### If foreign table is a join table, try to hide it
-### THIS MUST CHANGE TO USE THE MAPPING FEATURE FROM CLASS::DBI INSTEAD
-  if ( $ui->isjointable($j) ){
-     undef( %jlinksto );
-     # Get has_a entries 
-#     map { my($a, $b) = split( /:/, $_ ); $jlinksto{$a} = $b }
-#        split( /,/, $mj->linksto );
-     %jlinksto = $ui->getlinksto($j);
-     # Column in join table that points to third table
-     map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
-     map { push @{ $ftables{$i}{robjs} }, $_->$col } @tmp;
-     $ftables{$i}{dtbl} = $jlinksto{$col};  # table to display
-     $ftables{$i}{ctbl} = $j;               # table to pass to create.html
-  }else{  # table is not a join table
-     @{$ftables{$i}{robjs}} = @tmp;
-     $ftables{$i}{dtbl} = $j;
-     $ftables{$i}{ctbl} = $j; 
-  }
-  if (!scalar(@tmp)){
-     $ftables{$i}{robjs} = 0;
-  }
- }
-}
-
-my $h_table = "$table" . "_history";
-my $h_meta = $ui->getmeta($h_table);
-
-</%init>
-
-<%doc>
-  Generic object view
-</%doc>

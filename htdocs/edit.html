@@ -1,3 +1,95 @@
+<%doc>
+edit.html
+
+  Arguments:
+
+    table -- name of table to create/edit
+    id    -- row in a specific table if editing
+    sid   -- session id (used for keeping state while creating objects)
+    cancel - cancels all existing state and returns to null state
+    submit - 
+    (column names from any/all tables)
+
+  Possible states:
+
+    - null 
+    new page to create any table
+
+    - table is set
+    present page to create that table
+
+    - table and id are set
+    present page to edit particular instance of that table
+
+    - user clicked New on a table page
+    present page to create object for New; keep state for previous 
+    table page
+    push PREV table name onto sessionpath
+
+    - cancel
+    user clicks on cancel; clear all state
+
+    - submit
+    Table has been submitted to be added/updated; go to Confirm page.
+
+    - confirm
+    User has confirmed instance to be submitted; submit changes to DB;
+    pop table from sessionpath for table to go back to (if necessary).
+
+  Variables:
+
+    $PREV - name of previously viewed/edited table
+    $TBL  - name of current table
+    $ID   - integer for specific row in table $TBL
+            Used to determine when we are editing a table
+    $OBJ  - the object instantiation of $ID in $TBL
+    $sid  - session id; cookie to get back state as we go through several 
+            web pages.  Peformed using Apache::Session::File
+    $TMP  - where Apache::Session::File should store its lock and state files
+    $AGE  - maximum age of said files
+    $WIDTH - number of columns to be displayed in default state
+    $session - object holding state
+    $ui  - instantiation of Netdot::UI
+    %args - parts of %ARGS I want 
+    %order - hash of column -> rank to list tables in
+    %linksto - hash of column -> Table listings of current table
+               which columns point to other tables
+    
+    $DEBUG - whether to show debug information
+</%doc>
+
+<%args>
+$TBL         => undef
+$PREV        => undef
+$ID          => undef
+$OBJ         => undef
+$sid         => undef
+
+$AGE         => 86400
+$session     => undef
+$ui          => Netdot::UI->new()
+%args        => undef
+%order       => undef
+%linksto     => undef
+$showheader  => 1
+</%args>
+
+<%init>
+my %state;
+undef( %state );
+my $TMP;
+my $DEBUG = 0;
+my $NEW = 0;
+my %reservedargs = (submit     => '',
+		    sid        => '',
+		    commit     => '',
+		    table      => '',
+		    showheader => '',
+		   );
+
+</%init>
+
+
 <%perl>
 ##################################################
 #
@@ -232,93 +324,3 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
 
 
 % ####################################################################
-<%args>
-$TBL         => undef
-$PREV        => undef
-$ID          => undef
-$OBJ         => undef
-$sid         => undef
-
-$AGE         => 86400
-$session     => undef
-$ui          => Netdot::UI->new()
-%args        => undef
-%order       => undef
-%linksto     => undef
-$showheader  => 1
-</%args>
-
-<%init>
-my %state;
-undef( %state );
-my $TMP;
-my $DEBUG = 0;
-my $NEW = 0;
-my %reservedargs = (submit     => '',
-		    sid        => '',
-		    commit     => '',
-		    table      => '',
-		    showheader => '',
-		   );
-
-</%init>
-
-<%doc>
-edit.html
-
-  Arguments:
-
-    table -- name of table to create/edit
-    id    -- row in a specific table if editing
-    sid   -- session id (used for keeping state while creating objects)
-    cancel - cancels all existing state and returns to null state
-    submit - 
-    (column names from any/all tables)
-
-  Possible states:
-
-    - null 
-    new page to create any table
-
-    - table is set
-    present page to create that table
-
-    - table and id are set
-    present page to edit particular instance of that table
-
-    - user clicked New on a table page
-    present page to create object for New; keep state for previous 
-    table page
-    push PREV table name onto sessionpath
-
-    - cancel
-    user clicks on cancel; clear all state
-
-    - submit
-    Table has been submitted to be added/updated; go to Confirm page.
-
-    - confirm
-    User has confirmed instance to be submitted; submit changes to DB;
-    pop table from sessionpath for table to go back to (if necessary).
-
-  Variables:
-
-    $PREV - name of previously viewed/edited table
-    $TBL  - name of current table
-    $ID   - integer for specific row in table $TBL
-            Used to determine when we are editing a table
-    $OBJ  - the object instantiation of $ID in $TBL
-    $sid  - session id; cookie to get back state as we go through several 
-            web pages.  Peformed using Apache::Session::File
-    $TMP  - where Apache::Session::File should store its lock and state files
-    $AGE  - maximum age of said files
-    $WIDTH - number of columns to be displayed in default state
-    $session - object holding state
-    $ui  - instantiation of Netdot::UI
-    %args - parts of %ARGS I want 
-    %order - hash of column -> rank to list tables in
-    %linksto - hash of column -> Table listings of current table
-               which columns point to other tables
-    
-    $DEBUG - whether to show debug information
-</%doc>

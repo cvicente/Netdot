@@ -1,7 +1,24 @@
-<%perl>
+<%doc>
 ###############################################################################
 # A customized version of the generic dynamic_list_query.html
 ###############################################################################
+
+</%doc>
+
+<%args>
+$table
+$field
+$val
+$search_field
+$caller
+</%args>
+
+<%init>
+my ($ui, @terms, $DEBUG, $MAX_RESULTS);
+$ui          = Netdot::UI->new();
+$DEBUG       = 0;
+$MAX_RESULTS = 2000;
+
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 if ($val =~ /\w+/) {
@@ -15,13 +32,7 @@ if ($val =~ /\w+/) {
     
     print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
 }
-</%perl>
 
-<html>
-<body>
-<script language="JavaScript">
-<!--
-<%perl>
 my $site_id = $terms[0] if (scalar(@terms));
 my $site = Site->retrieve($site_id);
 my @closets = $site->closets;
@@ -29,6 +40,13 @@ my @results = ();
 my %stored = ();
 my @backbones = ();
 
+</%init>
+
+<html>
+<body>
+<script language="JavaScript">
+<!--
+<%perl>
 # get backbone cable for each closet
 foreach my $closet (@closets) {
     my $c_id = $closet->id;
@@ -74,18 +92,3 @@ printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);
 </script>
 </body>
 </html>
-
-<%init>
-my ($ui, @terms, $DEBUG, $MAX_RESULTS);
-$ui = Netdot::UI->new();
-$DEBUG = 0;
-$MAX_RESULTS = 2000;
-</%init>
-
-<%args>
-$table => $ARGS{table};
-$field => $ARGS{field};
-$val => $ARGS{crit};
-$search_field => $ARGS{search_field};
-$caller => $ARGS{self};
-</%args>

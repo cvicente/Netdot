@@ -1,3 +1,42 @@
+<%doc>
+
+Performs advanced searches in specific tables.
+User is allowed to specify values for one or more fields.
+Fields that are foreign keys are shown as a drop-down list of possible values.
+If the foreign table has more than $maxselect objects, the user will be 
+presented with a text box to fill in with keywords.  A javascript
+script will then call another CGI which will return a set of matched 
+objects.  These will be copied to the list of <options>
+
+Arguments:
+   table - The name of the table to search
+   res   - A flag to distinguish between showing the form or 
+           showing the results
+   args  - The rest are the table's fields to be passed to the 
+           search_like method. 
+
+</%doc>
+
+<%args>
+$s2name => "Generic"
+
+</%args>
+
+<%init>
+my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order, %tags, $debug );
+my $ui = Netdot::UI->new();
+my $maxselect = 100;
+$debug = 0;
+
+# Ignore empty fields
+foreach my $j (keys %ARGS){
+	next if ($ARGS{$j} !~ /\w+/);
+	$arg{$j} = $ARGS{$j};	
+}
+print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
+           
+</%init>
+
 
 %if(! $arg{table} ){ # offer a list of tables to select
 
@@ -124,7 +163,7 @@
 	 
          # Check that we have at least one parameter
          unless (scalar keys(%sarg)){
-	    $m->comp('error.html', error => "Missing Search Criteria");	    
+	    $m->comp('error.mhtml', error => "Missing Search Criteria");	    
          }
          my @objs = $table->search_like(\%sarg);
 </%perl>
@@ -150,41 +189,3 @@
 %} 
 
 <& footer.mhtml &>
-
-<%args>
-$s2name => "Generic"
-</%args>
-
-<%init>
-my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order, %tags, $debug );
-my $ui = Netdot::UI->new();
-my $maxselect = 100;
-$debug = 0;
-
-# Ignore empty fields
-foreach my $j (keys %ARGS){
-	next if ($ARGS{$j} !~ /\w+/);
-	$arg{$j} = $ARGS{$j};	
-}
-print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
-           
-</%init>
-
-<%doc>
-
-Performs advanced searches in specific tables.
-User is allowed to specify values for one or more fields.
-Fields that are foreign keys are shown as a drop-down list of possible values.
-If the foreign table has more than $maxselect objects, the user will be 
-presented with a text box to fill in with keywords.  A javascript
-script will then call another CGI which will return a set of matched 
-objects.  These will be copied to the list of <options>
-
-Arguments:
-   table - The name of the table to search
-   res   - A flag to distinguish between showing the form or 
-           showing the results
-   args  - The rest are the table's fields to be passed to the 
-           search_like method. 
-
-</%doc>

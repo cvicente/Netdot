@@ -53,7 +53,7 @@ sub new {
     my $class = ref( $proto ) || $proto;
     my $self = {};
     bless $self, $class;
-
+    
     $self = $self->SUPER::new( %argv );
 
     $self->{'_snmpversion'}   = $argv{'snmpversion'}   || $self->{config}->{'DEFAULT_SNMPVERSION'};
@@ -84,9 +84,9 @@ sub new {
     print $dm->output();
 
 =cut
-
+   
 sub output {
-    my $self = shift;
+	my $self = shift;
     if (@_){ 
 	$self->{'_output'} .= shift;
 	$self->{'_output'} .= "\n";
@@ -137,17 +137,21 @@ sub find_dev {
     return ($comstr, $device);
 }
 
-=head2 update - Insert/Update Device in Database
+=head2 update - Insert new Device/Update Device in Database
 
  This method can be called from Netdot s web components or 
  from independent scripts.  Should be able to update existing 
  devices or create new ones
 
- Required Args:
-   host:  name or ip address of host to query
- Optional args:
-   device: Existing 'Device' object 
-   comstr: SNMP community string (default "public")
+  Required Args:
+    host:   Name or ip address of host
+    dev:    Hashref of device information
+  Optional Args:
+    comstr: SNMP community string (default "public")
+    device: Existing 'Device' object 
+  Returns:
+    Device object
+
 
 =cut
 
@@ -160,9 +164,7 @@ sub update {
 		 message => "Arguments are: %s" ,
 		 args => [ join ', ', map {"$_ = $argv{$_}"} keys %argv ]);
     
-    unless ( ($host   =    $argv{host})   &&
-	     ($comstr =    $argv{comstr}) && 
-	     (%dev    =  %{$argv{dev}}) ){
+    unless ( ($host = $argv{host}) && (%dev = %{$argv{dev}}) ){
 	$self->error( sprintf("Missing required arguments") );
 	$self->debug(loglevel => 'LOG_ERR',
 		     message => $self->error);
@@ -175,7 +177,7 @@ sub update {
 
     my %devtmp;
     $devtmp{sysdescription} = $dev{sysdescription} || "";
-    $devtmp{community}      = $comstr;
+    $devtmp{community}      = $argv{comstr} || "";
 
     my %ifs;
     my %dbifdeps;
@@ -232,7 +234,6 @@ sub update {
 	my $msg = sprintf("Name %s exists in DB. Pointing to it", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg);
-	$self->output($msg);
 	$devtmp{name} = $rr;
     }elsif($device && $device->name && $device->name->name){
 	my $msg = sprintf("Device %s exists in DB as %s. Keeping existing name", $host, $device->name->name);
@@ -267,7 +268,7 @@ sub update {
     if (my @addrs = $self->{dns}->resolve_name($rr->name)){
 	map { $nameips{$_} = "" } @addrs;
     }else{
-	my $msg = sprintf("Could resolve name %s: %s", $rr->name, $self->{dns}->error);
+	my $msg = sprintf("%s", $self->{dns}->error);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg
 		      );	    
@@ -277,18 +278,21 @@ sub update {
     # Try to assign Product based on SysObjectID
 
     if( my $prod = (Product->search( sysobjectid => $dev{sysobjectid} ))[0] ) {
-	$self->debug( loglevel => 'LOG_INFO',
-		      message  => "SysID matches %s", 
-		      args     => [$prod->name]);
+	my $msg = sprintf("SysID matches existing %s", $prod->name);
+	$self->debug( loglevel => 'LOG_INFO',message  => $msg );
+	$self->output($msg);
 	$devtmp{productname} = $prod->id;
-    }else{
-	$self->debug( loglevel => 'LOG_INFO',
-		      message  => "New product with SysID %s.  Adding to DB",
-		      args     => [$dev{sysobjectid}]);
-	
+
+    }elsif ( $dev{sysobjectid} ){
 	###############################################
 	# Create a new product entry
+	my $msg = sprintf("New product with SysID %s.  Adding to DB", $dev{sysobjectid});
+	$self->debug( loglevel => 'LOG_INFO', message  => $msg );
+	$self->output( $msg );	
 	
+	###############################################
+	# Check if Manufacturer Entity exists or can be added
+
 	my $oid = $dev{enterprise};
 	my $ent;
 	if($ent = (Entity->search( oid => $oid ))[0] ) {
@@ -330,6 +334,7 @@ sub update {
 	    my $msg = sprintf("Created product: %s.  Please set type, etc.", $prodtmp{name});
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg );		
+	    $self->output($msg);
 	    $devtmp{productname} = $newprodid;
 	}else{
 	    $self->debug( loglevel => 'LOG_ERR',
@@ -551,7 +556,8 @@ sub update {
 	    $self->output($msg);
 	    if ( ! (my $ifid = $self->{ui}->insert( table => 'Interface', 
 					    state => \%iftmp )) ) {
-		$msg = sprintf("Error inserting Interface %s,%s: %s", $iftmp{number}, $iftmp{name}, $self->{ui}->error);
+		$msg = sprintf("Error inserting Interface %s,%s: %s", 
+			       $iftmp{number}, $iftmp{name}, $self->{ui}->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
 			      );
@@ -592,7 +598,7 @@ sub update {
 	    map { $dbips{$_->address} = $_->id } $if->ips();
 
 	    foreach my $newip ( sort keys %{ $dev{interface}{$newif}{ips} } ){
-		my( $ipobj, $maskobj, $subnet, $ipdbobj );
+		my( $maskobj, $subnet, $ipdbobj );
 		my $version = ($newip =~ /:/) ? 6 : 4;
 		my $prefix = ($version == 6) ? 128 : 32;
 
@@ -601,33 +607,35 @@ sub update {
 		# and addsubnets flag is on
 
 		if ( $dev{router} && $argv{addsubnets}){
-		    my $newmask = $dev{interface}{$newif}{ips}{$newip};
-		    my $subnetaddr = $self->{ipm}->getsubnetaddr($newip, $newmask);
-		    if ( ! ($self->{ipm}->searchblock($subnetaddr, $newmask)) ){
-			my $msg = sprintf("Subnet %s/%s doesn't exist.  Inserting", $subnetaddr, $newmask);
-			$self->debug( loglevel => 'LOG_NOTICE',
-				      message  => $msg );
-			$self->output($msg);
-			unless( $self->{ipm}->insertblock(address     => $subnetaddr, 
-							  prefix      => $newmask, 
-							  statusname  => "Subnet",
-							  ) ){
-			    my $err = $self->{ipm}->error();
-			    my $msg = sprintf("Could not insert Subnet %s/%s: %s", 
-					      $subnetaddr, $newmask, $err);
-			    $self->debug(loglevel => 'LOG_ERR',
-					 message  => $msg );
+		    my $newmask;
+		    if ( $newmask = $dev{interface}{$newif}{ips}{$newip} ){
+			my $subnetaddr = $self->{ipm}->getsubnetaddr($newip, $newmask);
+			if ( ! ($self->{ipm}->searchblock($subnetaddr, $newmask)) ){
+			    my $msg = sprintf("Subnet %s/%s doesn't exist.  Inserting", $subnetaddr, $newmask);
+			    $self->debug( loglevel => 'LOG_NOTICE',
+					  message  => $msg );
 			    $self->output($msg);
+			    unless( $self->{ipm}->insertblock(address     => $subnetaddr, 
+							      prefix      => $newmask, 
+							      statusname  => "Subnet",
+							      ) ){
+				my $err = $self->{ipm}->error();
+				my $msg = sprintf("Could not insert Subnet %s/%s: %s", 
+						  $subnetaddr, $newmask, $err);
+				$self->debug(loglevel => 'LOG_ERR',
+					     message  => $msg );
+				$self->output($msg);
+			    }else{
+				my $msg = sprintf("Created Subnet %s/%s", $subnetaddr, $newmask);
+				$self->debug(loglevel => 'LOG_NOTICE',
+					     message  => $msg );
+				$self->output($msg);
+			    }
 			}else{
-			    my $msg = sprintf("Created Subnet %s/%s", $subnetaddr, $newmask);
-			    $self->debug(loglevel => 'LOG_NOTICE',
-					 message  => $msg );
-			    $self->output($msg);
+			    my $msg = sprintf("Subnet %s/%s already exists", $subnetaddr, $newmask);
+			    $self->debug( loglevel => 'LOG_DEBUG',
+					  message  => $msg );
 			}
-		    }else{
-			my $msg = sprintf("Subnet %s/%s already exists", $subnetaddr, $newmask);
-			$self->debug( loglevel => 'LOG_DEBUG',
-				      message  => $msg );
 		    }
 		}
 		# 
@@ -696,24 +704,31 @@ sub update {
 		########################################################
 		# Create A records for each ip address discovered
 		# 
-		unless ($ipobj->arecords){
+		unless ( $ipobj->arecords ){
 		    my $msg = sprintf("Creating DNS entry for %s", 
 				      $ipobj->address);
 		    $self->debug(loglevel => 'LOG_ERR',
 				 message  => $msg );
 		    $self->output($msg);
 		    
-		    if (exists $nameips{$ipobj->address}){
-			# This is the 'main' address
-			# We already have an RR created
-			unless ($self->{dns}->insert_a(rr          => $device->name, 
-						       ip          => $ipobj,
-						       contactlist => $device->contactlist)){
-			    my $msg = sprintf("Could not insert DNS entry for %s: %s", 
-					      $ipobj->address, $self->{dns}->error);
-			    $self->debug(loglevel => 'LOG_ERR',
-					 message  => $msg );
-			    $self->output($msg);
+		    ################################################
+		    # Is this is the only ip for this device,
+		    # or is this the 'main' ip address ?
+
+		    if ( scalar ( keys %{ $dev{interface}{$newif}{ips} } ) == 1 ||
+			 exists $nameips{$ipobj->address} ){
+			# We should already have an RR created
+			# Create the A record to link that RR with this ipobj
+			if ( $device->name ){
+			    unless ($self->{dns}->insert_a(rr          => $device->name, 
+							   ip          => $ipobj,
+							   contactlist => $device->contactlist)){
+				my $msg = sprintf("Could not insert DNS entry for %s: %s", 
+						  $ipobj->address, $self->{dns}->error);
+				$self->debug(loglevel => 'LOG_ERR',
+					     message  => $msg );
+				$self->output($msg);
+			    }
 			}
 		    }else{
 			# Insert necessary records
@@ -748,7 +763,7 @@ sub update {
     # remove each interface that no longer exists
     #
     ## Do not remove manually-added ports for these hubs
-    unless ( exists($self->{badhubs}->{$dev{sysobjectid}} )){
+    unless ( exists $dev{sysobjetctid} && exists($self->{badhubs}->{$dev{sysobjectid}} )){
 	
 	foreach my $nonif ( keys %ifs ) {
 	    my $ifobj = $ifs{$nonif};
@@ -1062,7 +1077,7 @@ sub update {
 
 =head2 get_dev_info - Get SNMP info from Device
  
- Use the SNMP libraries to get a hash with the device s information
+ Use the SNMP libraries to get a hash with the device information
  This should hide all possible underlying SNMP code logic from our
  device insertion/update code
 
@@ -1071,6 +1086,7 @@ sub update {
    comstr: SNMP community string
  Optional args:
   
+
 =cut
 
 sub get_dev_info {
@@ -1129,6 +1145,11 @@ sub get_dev_info {
     }
     if( $self->_is_valid($nv{entPhysicalDescr}) ) {
 	$dev{productname} = $nv{entPhysicalDescr};
+    }elsif( $self->_is_valid($nv{sysDescr}) ){
+	# Try and use the first 4 words of sysDescr as productname
+	# 
+	my @words = split /\s+/, $nv{sysDescr};
+	$dev{productname} = join " ", @words[0..3];
     }
     if( $self->_is_valid($nv{entPhysicalMfgName}) ) {
 	$dev{manufacturer} = $nv{entPhysicalMfgName};
@@ -1409,6 +1430,82 @@ sub get_dev_info {
     return \%dev;
 }
 
+=head2 getdevips  - Get all IP addresses configured in a device
+   
+  Arguments:
+    id of the device
+    sort field
+  Returns:
+    array of Ipblock objects
+
+=cut
+
+sub getdevips {
+    my ($self, $id, $ipsort) = @_;
+    
+    Ipblock->set_sql(allips => qq{
+	SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
+	    FROM Ipblock, Interface, Device
+	    WHERE Interface.id = Ipblock.interface AND
+	    Device.id = Interface.device AND
+	    Device.id = ?
+	    ORDER BY $ipsort
+	});
+    if ( my @ips = Ipblock->search_allips( $id ) ){
+	return @ips;
+    }
+    return;
+}
+
+=head2 add_interfaces - Manually add a number of interfaces to an existing device
+
+The new interfaces will be added with numbers starting after the highest existing 
+interface number
+
+Arguments:
+    Device id
+    Number of interfaces
+Returns:
+    True or False
+
+=cut
+
+sub add_interfaces {
+    my ($self, $id, $num) = @_;
+    unless ( $num > 0 ){
+	$self->error("Invalid number of Interfaces to add: $num");
+	return 0;
+    }
+    # Determine highest numbered interface in this device
+    my $device;
+    unless ( $device =  Device->retrieve($id) ){
+	$self->error("add_interfaces: Could not retrieve Device id $id");
+    }
+    my @ints;
+    my $start;
+    if ( scalar ( @ints = sort { $b->number <=> $a->number } $device->interfaces ) ){
+	$start = int ( $ints[0]->number );
+    }else{
+	$start = 0;
+    }
+    my %tmp = ( device => $id, number => $start);
+    my $i;
+    for ($i = 0; $i < $num; $i++){
+	$tmp{number}++;
+	if (!($self->{ui}->insert(table => "Interface", state => \%tmp)) ){
+	    $self->error(sprintf("add_interfaces: %s", $self->{ui}->error));
+	    return 0;
+	}
+    }
+    return 1;
+}
+
+
+#####################################################################
+# Private methods
+#####################################################################
+
+
 #####################################################################
 # _is_valid
 # 
@@ -1456,4 +1553,3 @@ sub _canonicalize_int_name {
     $name =~ s/\/|\.|\s+/-/g;
     return lc( $name );
 }
-

@@ -1,0 +1,108 @@
+<%doc>
+
+Add a link between two interfaces from device.html
+(Creates a new InterfaceDep object)
+
+</%doc>
+
+<%args>
+$int_id  =>   undef
+$role    =>   undef
+$Add     =>   undef
+$Cancel  =>   undef
+</%args>
+
+<%init>
+my %state;
+my $ui = Netdot::UI->new();
+my $intobj;
+my $intlbl;
+if ( $int_id ){
+    unless ( $intobj = Interface->retrieve($int_id) ){
+	$m->comp("error.mhtml", error => "Can't retrieve Interface id $int_id");	
+    }
+    unless ( $intlbl = $ui->getobjlabel($intobj, ", ") ){
+	$intlbl = $intobj->name;
+    }
+}
+my %reserved = ( Add    => "",
+		 Cancel => "",
+		 search => "",
+		 );
+my $rel_role;
+if ( $role ){
+    if ($role ne "parent" && $role ne "child"){
+	$m->comp("error.mhtml", error => "Invalid role: $role");
+    }
+    $rel_role = ($role eq "parent")? "child" : "parent";
+}
+
+my $newlinkid;
+
+</%init>
+
+<%perl>
+if ( $Add ){
+	foreach my $arg ( keys %ARGS ){
+	next if ( exists $reserved{$arg} );
+	$state{$arg} = $ARGS{$arg};
+    }
+    unless ( $newlinkid = $ui->insert(table => "InterfaceDep", state => \%state) ){
+	$m->comp("error.mhtml", error => $ui->error);
+    }
+</%perl>
+
+    <body class="bodytag" onUnload="opener.location.reload()">
+    <a href="#" onClick="window.close()">[done]</a>
+
+%}elsif ( $Cancel ){
+    <body class="bodytag">
+    Cancelled
+    <br>
+    <a href="#" onClick="window.close()">[done]</a>
+
+%}else{
+
+<html>
+<head>
+    <link rel=StyleSheet href="style.css" type="text/css">
+    <link rel="alternate stylesheet" title="Gray" href="style-gray.css" type="text/css">
+</head>      
+<body class="bodytag">
+
+<script language="javascript" src="select.js"></script>
+
+<table width="100%" cellpadding="0" cellspacing="2" border="0" class="formtablebg">
+  <form name="netdotform" action="addlink.html" method="POST">
+  <input type="hidden" name="<% $role %>" value="<% $int_id %>">
+  <tr class="formtabletitle">
+     <td align="CENTER" colspan="2"><strong>Add Link</strong></td>
+  </tr>
+  <tr>
+    <td class="formtablec1"><strong><% $role %>:</strong></td>
+    <td class="formtablec2"><% $intlbl %></td>
+  </tr>
+  <tr>
+    <td class="formtablec1"><strong><% $rel_role %>:</strong></td>
+    <td class="formtablec2">
+      <input type="text" name="search" value="Keywords">
+      &nbsp;<input type="button" name="" value="List" 
+      onClick="sendquery(<% $rel_role %>, search.value, 'Interface')" >
+    <br>
+    <select name="<% $rel_role %>">
+    </select>	      
+    </td>
+  </tr>
+  <tr class="formtabletitle">
+    <td align="CENTER" colspan="2">
+      <input name="Add" value="Add" type="submit">
+      <input name="Cancel" value="Cancel" type="submit">
+    </td>
+  </tr>
+  </form>
+</table>
+
+% } #else
+ 
+</body>
+</html>

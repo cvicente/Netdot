@@ -1,3 +1,33 @@
+<%doc>
+
+Cable management stuff...
+
+</%doc>
+
+
+<%args>
+$id          => undef;
+$backbone_id => undef;
+$edit        => undef;
+$s2name      => "Plant";
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $cable_manager = Netdot::CablePlantManager->new();
+my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
+my $o = undef;
+my $editStrand = 0;
+
+if ($id && $id ne "NEW")  {
+    $o = CableStrand->retrieve($id);
+    $backbone_id = $o->cable;
+}
+
+$editStrand = 1 if ($id eq "NEW" || $edit eq "strandinfo");
+</%init>
+
 <& index.html, title => "Cable Plant: Cable Strand", s2name => $s2name  &>
 
 <%perl>
@@ -281,30 +311,3 @@ if (defined($ARGS{_action})) {
     </tr>
 </table>
 <!-- End Cable Strand Table -->
-
-<%args>
-$id => undef;
-$backbone_id => undef;
-$edit => undef;
-$s2name => "Plant";
-</%args>
-
-<%init>
-my $DEBUG = 0;
-my $ui = Netdot::UI->new();
-my $cable_manager = Netdot::CablePlantManager->new();
-my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
-my $o = undef;
-my $editStrand = 0;
-
-if ($id && $id ne "NEW")  {
-    $o = CableStrand->retrieve($id);
-    $backbone_id = $o->cable;
-}
-
-$editStrand = 1 if ($id eq "NEW" || $edit eq "strandinfo");
-</%init>
-
-<%doc>
-Cable management stuff...
-</%doc>

@@ -1,7 +1,26 @@
-<%perl>
+<%doc>
 ###############################################################################
 # A customized version of the generic dynamic_list_query.html
 ###############################################################################
+
+</%doc>
+
+<%init>
+my ($ui, @terms, $DEBUG, $MAX_RESULTS);
+$ui = Netdot::UI->new();
+$DEBUG = 0;
+$MAX_RESULTS = 2000;
+</%init>
+
+<%args>
+$table => $ARGS{table};
+$field => $ARGS{field};
+$val => $ARGS{crit};
+$search_field => $ARGS{search_field};
+$caller => $ARGS{self};
+</%args>
+
+<%perl>
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 if ($val =~ /\w+/) {
@@ -57,18 +76,3 @@ printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);
 </script>
 </body>
 </html>
-
-<%init>
-my ($ui, @terms, $DEBUG, $MAX_RESULTS);
-$ui = Netdot::UI->new();
-$DEBUG = 0;
-$MAX_RESULTS = 2000;
-</%init>
-
-<%args>
-$table => $ARGS{table};
-$field => $ARGS{field};
-$val => $ARGS{crit};
-$search_field => $ARGS{search_field};
-$caller => $ARGS{self};
-</%args>

@@ -797,7 +797,7 @@ Expected format for passed in form data is:
 
    TableName__<primary key>__ColumnName => Value
 
-If primary key is "NEW", a new row will be inserted.
+If primary key =~ "NEW", a new row will be inserted.
 
 Returns a hash with update details on success, false on failure and error 
 should be set.
@@ -805,135 +805,120 @@ should be set.
 =cut
 
 sub form_to_db{
-    my %arg = ();
-    my %form_to_db_info = ();
     my($self, %argv) = @_;
-    #Define control field names, to be ignored when parsing form data.
-    my %control = ( 
-                 'id'        => '',
-                 'jack_id'   => '',
-                 'start_id'  => '',
-                 'end_id'    => '',
-                 'submit'    => '',
-                 'edit'      => '',
-                 'save'      => '',
-                 'show'      => '',
-                 '_action'   => '',
-                 'page_type' => '',
-		 'view'      => '',
-    );
+    my %form_to_db_info;
 
-    # Ignore empty and control fields
-    # for saving purposes
-    # / _srch/ elements are added for javascript only
-    # we don't need them here
-    foreach my $j (keys %argv){
-        next if ( exists($control{$j}));
-        next if ($j =~ /_srch/);
-        next if ($j eq "s2name");
-        next if ($j =~ /^__/);
-        
-        my $k = $j;
-        $k =~ s/^_//;
-        $arg{$k} = $argv{$j};
+    # Store objects, fields and values in a hash
+    my %objs;
+    foreach ( keys %argv ){
+	my $item = $_;	
+	# Some table names are preceded with "_" 
+	# to avoid problems in javascript
+	$item =~ s/^_//;
+	if ( $item =~ /^(\w+)__(\w+)__(\w+)$/ ){
+	    $objs{$1}{$2}{$3} = $argv{$_};
+	}
     }
-
-    # Check that we have at least one parameter
-    unless (scalar keys(%arg)){
+# Check that we have at least one parameter
+    unless (scalar keys(%objs)){
         $self->error("Missing name/value pairs.");
         return 0;
     }
     
-    # Store objects, fields and values in a hash
-    my %objs;
-    foreach my $item (keys %arg){
-        my ($table, $id, $field) = split /__/, $item;
-        $objs{$table}{$id}{$field} = $arg{$item};
-    }
-  
-    # Now do the actual updating
-    # First check for "action" fieldnames
-    # Actions (like delete) take precedence over value updates
     foreach my $table (keys %objs){
+	
         foreach my $id (keys %{ $objs{$table} }){
+	    # Actions (like delete) take precedence over value updates
+	    # 
+	    my $act = 0; 
 	    #################################################################
 	    # Some tables require more complex validation
 	    # We pass the data to external functions
-	    if ( $table eq "Ipblock" ) {
-		$objs{$table}{$id}{id} = $id;
-		unless ( $self->{ipm}->updateblock( %{ $objs{$table}{$id} } ) ){
-		    $self->error($self->{ipm}->error);
-		    return 0;
-		}
-		$form_to_db_info{$table}{action} = "update";
-		$form_to_db_info{$table}{key} = $id;
-		return %form_to_db_info;	 
-	    }
-
-            my $act = 0;
-            foreach my $field (keys %{ $objs{$table}{$id} }){
-	        if ($field eq "delete" && $objs{$table}{$id}{$field} eq "on"){
-                    # Remove object from DB
-                    if (!$self->remove(table => "$table", id => "$id")){
-                        return 0; # error should already be set.
-                    }
-                    
-		    $form_to_db_info{$table}{action} = "delete";
-		    $form_to_db_info{$table}{key} = $id;
-                    # Set the 'action' flag
-                    $act = 1;
-                    last;
-		    #################################################################
-                    # Special case
-		}elsif ($table eq "InterfaceDep" && $field =~ /new/ ){
-		    my %state;
-                    if ($field eq "newparent" ){
-                        $state{child} = $id;
-                        $state{parent} = $objs{$table}{$id}{$field};
-		    }elsif ($field eq "newchild"){
-                        $state{parent} = $id;
-                        $state{child} = $objs{$table}{$id}{$field};
-		    }
+	    
+	    if ( $table eq "Ipblock" ){
+		if ( $id =~ /NEW/i ) {
+		    # Creaating a New Ipblock object
 		    my $newid;
-		    if (! ($newid = $self->insert(table => $table, state => \%state)) ){
-			return 0; # error should already be set.
+		    unless ( $newid = $self->{ipm}->insertblock( %{ $objs{$table}{$id} } ) ){
+			$self->error(sprintf("Error inserting new Ipblock: %s", $self->{ipm}->error));
+			return 0;
 		    }
 		    $form_to_db_info{$table}{action} = "insert";
 		    $form_to_db_info{$table}{key} = $newid;
-                    $act = 1;
-                    last;
-		  }
-	    }
-
-            # If our id is new we want to insert a new row in the DB.
-            if ($id eq "NEW"){
-                my $newid;
-                if (! ($newid = $self->insert(table => $table, state => \%{ $objs{$table}{$id} })) ){
-                    return 0; # error should be set.
-                }
-
-                $form_to_db_info{$table}{action} = "insert";
-                $form_to_db_info{$table}{key} = $newid;
-                $act = 1;
-            }
-            # Now update the thing
-            if (!$act){
-		# only if no other actions were performed
-                my $o;
-                if (!($o = $table->retrieve($id))){
-                    $self->error("Couldn't retrieve id $id from table $table");
-                    return 0;
-                }
-                if (!($self->update(object => $o, state => \%{ $objs{$table}{$id} }))){
-                    return 0; # error should already be set.
-                }
-                $form_to_db_info{$table}{action} = "update";
-                $form_to_db_info{$table}{key} = $id;
+		    $act = 1;
+		}else {
+		    foreach my $field (keys %{ $objs{$table}{$id} }){
+			if ( $field eq "delete" ){
+			    # Deleting an Ipblock object
+			    unless ( $self->{ipm}->removeblock( id => $id ) ){
+				$self->error(sprintf("Error deleting Ipblock: %s", $self->{ipm}->error));
+				return 0;
+			    }
+			    $form_to_db_info{$table}{action} = "delete";
+			    $form_to_db_info{$table}{key} = $id;
+			    $act = 1;
+			    last;
+			}
+		    }
+		    if ( ! $act ){
+			# Updating an existing Ipblock object
+			$objs{$table}{$id}{id} = $id;
+			unless ( $self->{ipm}->updateblock( %{ $objs{$table}{$id} } ) ){
+			    $self->error($self->{ipm}->error);
+			    return 0;
+			}
+			$form_to_db_info{$table}{action} = "update";
+			$form_to_db_info{$table}{key} = $id;
+			$act = 1;
+		    }
+		}
+		
+	    }else{
+		foreach my $field (keys %{ $objs{$table}{$id} }){
+		    if ($field eq "delete" && $objs{$table}{$id}{$field} eq "on"){
+			# Remove object from DB
+			if ( ! $self->remove(table => "$table", id => "$id") ){
+			    return 0; # error should already be set.
+			}
+			$form_to_db_info{$table}{action} = "delete";
+			$form_to_db_info{$table}{key} = $id;
+			# Set the 'action' flag
+			$act = 1;
+			last;
+		    }
+		}
+		
+		# If our id is new we want to insert a new row in the DB.
+		# Do a regex to allow sending many NEW groups for the same
+		if ( $id =~ /NEW/i ){
+		    my $newid;
+		    if (! ($newid = $self->insert(table => $table, state => \%{ $objs{$table}{$id} })) ){
+			return 0; # error should be set.
+		    }
+		    
+		    $form_to_db_info{$table}{action} = "insert";
+		    $form_to_db_info{$table}{key} = $newid;
+		    $act = 1;
+		}
+		# Now update the thing
+		if ( ! $act ) {
+		    # only if no other actions were performed
+		    my $o;
+		    unless ( $o = $table->retrieve($id) ){
+			$self->error("Couldn't retrieve id $id from table $table");
+			return 0;
+		    }
+		    unless ( $self->update(object => $o, state => \%{ $objs{$table}{$id} }) ){
+			return 0; # error should already be set.
+		    }
+		    $form_to_db_info{$table}{action} = "update";
+		    $form_to_db_info{$table}{key} = $id;
+		}
 	    }
         }
     }
-
     return %form_to_db_info;
+
 }
 
 =head2 selectLookup
@@ -997,7 +982,7 @@ sub selectLookup($@){
                 if ($o->$column){
                     printf("<OPTION VALUE=\"%s\" SELECTED>%s</OPTION>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
                 }else{
-                    printf("<OPTION VALUE=\"\" SELECTED>-- Make your selection --</OPTION>\n");
+                    printf("<OPTION VALUE=\"\" SELECTED>-- Select --</OPTION>\n");
                 }
             }
             # otherwise a couple of things my have happened:
@@ -1220,4 +1205,52 @@ sub textArea($@){
     }else{
         printf("%s\n", $value);
     }
+}
+
+=head2 gethistorytable - Get the name of the history table for a given object
+
+Arguments:  object
+
+=cut
+
+sub gethistorytable {
+    my ($self, $o) = @_;
+    my $table;
+    unless ( $table = $o->table ){
+        $self->error("Can't get table from object $o");
+        return 0;
+    }
+    # For now, the only trick is appending the "_history" suffix
+    return "$table" . "_history";
+}
+
+=head2 gethistoryobjs - Get a list of history objects for a given object
+
+Arguments:  object
+
+=cut
+
+sub gethistoryobjs {
+    my ($self, $o) = @_;
+    my $table;
+    unless ( $table = $o->table ){
+        $self->error("Can't get table from object $o");
+        return 0;
+    }
+    my $htable;
+    unless ( $htable = $self->gethistorytable($o) ){
+        $self->error("Can't get history table from object $o");
+        return 0;
+    }
+    # History objects have two indexes, one is the necessary
+    # unique index, the other one refers to which normal object
+    # this is the history of
+    # The latter has the table's name plus the "_id" suffix
+
+    my $id_f = lc ("$table" . "_id");
+
+    if ( my @ho = $htable->search($id_f => $o->id) ){
+        return @ho;
+    }
+    return;
 }

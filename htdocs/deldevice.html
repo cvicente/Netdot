@@ -1,49 +1,8 @@
-% if (! $submit ){
-<& index.html, title => "Delete Device: $name ", s2name => $s2name  &>
-<table align="center" valign="top" border="0" width="95%" class="formtablebg">
-<tr><td>
+<%doc>
 
-<table>
-<form action="delete.html" method="POST">
-   <input type="hidden" name="s2name" value="Management">
-<tr><td>
-   Going to delete device <% $name %>
-   <input type="hidden" name="Device__<% $id %>" value="on">
-   <p>
-    Delete DNS records?<p>
-% if ($o->name){
-	<% $o->name->name %>  <input type="checkbox" name="RR__<% $o->name->id %>" CHECKED><br>
-% }
-% if ( my @ints = $o->interfaces ){
-%    foreach my $int (@ints){
-%        if ( my @ips = $int->ips ){
-%	   foreach my $ip ( @ips ){
-%	      if ( my @ras = $ip->arecords ){
-%	         foreach my $ra ( @ras ){
-%                   next if ( $ra->rr->id eq $o->name->id );
-		    <% $ra->rr->name %>  <input type="checkbox" name="RR__<% $ra->rr->id %>" CHECKED><br>
-%		 }
-%	      }	      
-%	   }
-%       }
-%    }
-% }
-   <p><br>
-    <input type="submit" name="submit" value="Delete">
-    <input type="submit" name="submit" value="Cancel">
-</form>
-</td></tr>
-</table>    
+   Manage Device deletions.  Ask about deleting DNS Resource Records as well.
 
-%}elsif ( $submit eq "Cancel" ){
-
-	Deletion of <% $name %> cancelled.
-%}
-
-</td></tr>
-</table>
-<& footer.mhtml &>
-
+</%doc>
 
 <%args>
 $id
@@ -65,7 +24,63 @@ if ($id){
 
 </%init>
 
+% if (! $submit ){
+<& index.html, title => "Delete Device: $name ", s2name => $s2name  &>
+<table align="center" valign="top" border="0" width="95%" class="formtablebg">
+  <tr>
+    <td>
+    <table border="0" class="formtablebg">
+    <form action="delete.html" method="POST">
+    <input type="hidden" name="s2name" value="Management">
+      <tr>
+        <td>
+	Going to delete device <% $name %>
+        <input type="hidden" name="Device__<% $id %>" value="on">
+        <p>
+        Delete DNS records?<p>
+%      if ($o->name){
+
 <%doc>
-   Manage Device deletions.  Ask about deleting Resource Records as well.
+  Delete DNS RR's associated with the device, including all interfaces
 </%doc>
+
+       <table border="0" class="formtablebg">
+       <tr>
+         <td><% $o->name->name %></td>
+         <td> <input type="checkbox" name="RR__<% $o->name->id %>" CHECKED><br></td> 
+       </tr>
+% }
+% if ( my @ints = $o->interfaces ){
+%    foreach my $int (@ints){
+%        if ( my @ips = $int->ips ){
+%	   foreach my $ip ( @ips ){
+%	      if ( my @ras = $ip->arecords ){
+%	         foreach my $ra ( @ras ){
+%                   next if ( $ra->rr->id eq $o->name->id );
+                    <tr>
+		      <td><% $ra->rr->name %></td>
+		      <td><input type="checkbox" name="RR__<% $ra->rr->id %>" CHECKED><br></td>
+		    </tr>
+%		 }
+%	      }	      
+%	   }
+%       }
+%    }
+% }
+      </table>
+
+      <p><br>
+      <input type="submit" name="submit" value="Delete">
+      <input type="submit" name="submit" value="Cancel">
+    </form>
+ 
+   </td>
+  </tr>
+</table>    
+
+%}
+    </td>
+  </tr>
+</table>
+<& footer.mhtml &>
 

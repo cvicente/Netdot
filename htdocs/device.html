@@ -1,4 +1,114 @@
+<%doc>
+
+-- Device Worksheet --
+
+Interface for viewing/updating a particular Device 
+and all its relevant info in one page
+
+</%doc>
+
+<%args>
+$id        => undef
+$search    => undef
+$edit      => undef
+$editgen   => undef
+$editloc   => undef
+$editmgmt  => undef
+$editips   => undef
+$editints  => undef
+$editbgp   => undef
+$ipsort    => "Ipblock.address"
+$s2name    => "Management"
+$user      => $ENV{REMOTE_USER}
+$showvlan  => "all"
+$intadd    => undef
+$submit    => undef
+$view      => "Basics"
+$intaddnum => undef
+$deviceadd => undef
+$newhost   => undef
+$newip     => undef
+</%args>
+
+<%init>
+my $DEBUG      = 0;
+my $ui         = Netdot::UI->new();
+my $dns        = Netdot::DNSManager->new();
+my $ipm        = Netdot::IPManager->new();
+my $dm         = Netdot::DeviceManager->new();
+my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
+my $maxselect  = 100;
+my $o          = undef;
+my $ci         = 0;
+my $name;
+my %ifvlans;
+my %vlans;
+my $list;
+
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+if( defined($search) && $search =~ /\w+/ ){
+    unless ( ($list = $dns->getdevbynamelike($search)) ){
+	$m->comp("index.html", title => "Device Worksheet: $name ", s2name => $s2name);
+	print  "<p><b>No results</b>";
+	$m->comp("footer.mhtml");
+	$m->abort;
+    }
+    my $num = scalar(@$list);
+    if ( $num == 1 ){
+	# Don't offer list.  Just display device
+	$o      = $list->[0];
+	$id     = $o->id;
+	$search = undef;
+    }
+    
+}elsif( defined($search) && $search !~ /\w+/ ){
+    $m->comp("index.html", title => "Device Worksheet: $name ", s2name => $s2name);
+    print "<p><b>No search criteria</b>";   
+    $m->comp("footer.mhtml");    
+    
+}elsif( $intadd ){
+    unless ( $dm->add_interfaces($id, $intaddnum) ){
+	$m->comp('error.mhtml', error => $dm->error);	
+    }
+    
+}elsif( $deviceadd && $newhost && $newip ){
+    # Minimal info to create device manually
+    my %tmp = ( host   => $newhost, 
+	        dev    => { interface => { '1' => {'name'   => "eth0",
+						   'number' => 1,
+						   'ips'    => {$newip} } } } );
+    unless ( $o = $dm->update(%tmp) ){
+	$m->comp('error.mhtml', error => $dm->error);	
+    }
+}elsif( $submit ){
+    # insert/update
+    if ( ! $ui->form_to_db(%ARGS) ){
+	$m->comp('error.mhtml', error => $ui->error);
+    }
+}
+
+if ( $id ){
+    unless ($o = Device->retrieve($id)){
+	$m->comp('error.mhtml', error=>"Could not retrieve Device with id $id");
+    }   
+}elsif ( $o ){
+    unless ( $id = $o->id ){
+	$m->comp('error.mhtml', error=>"Object passed was not a valid Device object");
+    }   
+    print "Got id OK<br>" if $DEBUG;
+}
+if ( $o && $o->name ){
+    $name = ($o->name->name) ? $o->name->name : "Name N/A!";
+}else{
+    $name = "Search";
+}
+
+
+</%init>
+
 <& index.html, title => "Device Worksheet: $name ", s2name => $s2name  &>
+
 <script language="javascript" src="select.js"></script>
 
 <script language="javascript">
@@ -7,36 +117,60 @@
  * Show only interfaces belonging to selected VLAN
  * 
 */
- function showVlan(){
+function showVlan(){
     var name = document.showvlans.showvlan.value;
     window.location = "device.html?id=<% $id %>&view=<% $view %>&showvlan="+name;
- }
- function addService(ip){
-     var url = "addservice.html?ip="+ip;
-     var wind = window.open(url, "Create IP service", "width=400,height=200");
-     
- }
+}
+
+function addService(ip){
+    var url = "addservice.html?ip="+ip;
+    var wind = window.open(url, "Create IP service", "width=400,height=200");
+}
+
+function addLink(int_id, role){
+    var url = "addlink.html?int_id="+int_id+"&role="+role;
+    var wind = window.open(url, "Add Link", "width=600,height=200");     
+}
+
+var closetList = new DynamicList("netdotform", "Device__<% $id %>__closet", "site", "Closet", "Device__<% $id %>__site");
+var roomList = new DynamicList("netdotform", "Device__<% $id %>__room", "floor", "Room", "Device__<% $id %>__site");
+roomList.setQueryURL("room_site_query.html");
+LIST_MANAGER.addList(closetList, roomList);
+
+function setNull(field){
+    if (!field)
+	return;
+    for (var i = 0; i < field.options.length; ++i){
+	if (field.options[i].value == 0 || field.options[i].value == -1){
+	    field.options[i].selected = true;
+	    break;
+	}
+    }
+}
+
 -->
 </script>
 
+<div class="margins">
+
 % if ( $search ){
-<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+<table border="0" align="center" class="tablebackground">
  <tr class="rowtitle0" >
     <td valign="top" align="left">
-       <b><% scalar(@$list) %> results for <i><% $search %></i> </b>
+       <b><% scalar(@$list) %> results for <i><% $search %></i></b>
     </td>
  </tr>
  <tr>
    <td valign="top" width="50%" align="center">
-      <& sortresults.mhtml, table => "Device", object => $list, view => "row", page => "device.html", withdelete => 1 &>
+      <& sortresults.mhtml, object => $list, view => "row", page => "device.html", withdelete => 1 &>
   </td>
-  </tr>
+ </tr>
 </table>
 
 % }else{  # we're not searching
 
 <!-- Header Table -->
-<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+<table border="0" width="100%" cellpadding="1" cellspacing="0" align="center" class="tablebackground">
  <tr class="rowtitle0" >
     <td valign="top" width="50%" align="left">
          Device: <b><% $name %></b>&nbsp;
@@ -54,25 +188,32 @@
 %    }else{
          <a href="device.html?id=<% $id %>&view=Basics">[Basics]</a>
 %    }
-%    if ( $view eq "IP" ){
-	[IP info]
-%    }else{
-	 <a href="device.html?id=<% $id %>&view=IP">[IP info]</a>
-%    }
 %    if ( $view eq "Interfaces" ){
 	[Interfaces]
 %    }else{
 	 <a href="device.html?id=<% $id %>&view=Interfaces">[Interfaces]</a>
 %    }
-%    if ( $view eq "BGP" ){
-	[BGP Peers]
+%    if ( $view eq "IP" ){
+	[IP info]
 %    }else{
+	 <a href="device.html?id=<% $id %>&view=IP">[IP info]</a>
+%    }
+%    if ( $o->bgppeers ){
+%      if ( $view eq "BGP" ){
+	 [BGP Peers]
+%      }else{
 	 <a href="device.html?id=<% $id %>&view=BGP">[BGP Peers]</a>
+%      }
 %    }
 %    if ( $view eq "Topology" ){
-	[BGP Peers]
-%    }else{
+	 [Topology]
+%      }else{
 	 <a href="device.html?id=<% $id %>&view=Topology">[Topology]</a>
+%    }
+%    if ( $view eq "History" ){
+	 [History]
+%      }else{
+	 <a href="device.html?id=<% $id %>&view=History">[History]</a>
 %    }
 %    if ( $view eq "All" ){
 	[All]
@@ -81,34 +222,42 @@
 %    }
     </td>
     <td valign="top" width="50%" align="right">
-%        if ( $view eq "Interfaces" || $view eq "All" ){
-           <form name="showvlans">
-           VLAN view 
-           <select name="showvlan" onchange="showVlan()">
-%          if ( $showvlan eq 'all' ){
-    	      <option value="all" SELECTED>all</option>
-%          }else{
-	      <option value="all">all</option>
-%          }
-%          foreach my $vid ( sort keys %vlans ){
-%            if ( $showvlan eq $vid ){
-               <option value="<% $vid %>" SELECTED><% $vid %></option>     
-%            }else{
-               <option value="<% $vid %>"><% $vid %></option>     
-%            }
-%          }
-           </select>
-           </form>
-%       }
+<%perl>
+ if ( $view eq "Interfaces" || $view eq "All" ){
+    # Build a hash of Interface Vlans
+    foreach my $if ( $o->interfaces ){
+	if (scalar( my @ifv = $if->vlans)){
+	    foreach my $ifv (@ifv){
+		my $vid = $ifv->vlan->vid;
+		$ifvlans{$if}{$vid} = "";
+		$vlans{$vid} = $ifv->vlan->id;
+	    }
+	}
+    }
+</%perl>
+
+    <form name="showvlans">
+    VLAN view 
+    <select name="showvlan" onchange="showVlan()">
+%   if ( $showvlan eq 'all' ){
+       <option value="all" SELECTED>all</option>
+%   }else{
+       <option value="all">all</option>
+%   }
+%   foreach my $vid ( sort keys %vlans ){
+%     if ( $showvlan eq $vid ){
+        <option value="<% $vid %>" SELECTED><% $vid %></option>     
+%     }else{
+        <option value="<% $vid %>"><% $vid %></option>     
+%     }
+%   }
+    </select>
+    </form>
+% }
 
     </td>
  </tr>
 </table>
-
-<!-- Margins Table -->
-<table border="0" width="95%" align="center"  class="tablebackground">
- <tr>
-   <td valign="top" width="50%" align="center">
 
 % if ( $editgen || $editloc || $editmgmt || $editips || $editints || $editbgp ){	 
     <form name="netdotform" action="device.html" method="POST">
@@ -119,48 +268,52 @@
 
 % if ( $view eq "Basics" || $view eq "All" ){
 
+<!-- Division Table -->
+<table border="0" width="100%" align="center">
+  <tr>
+    <td valign="top" width="50%" align="center">
+
 <!-- General Info Table -->
    <table border="0" width="100%" cellpadding="0" cellspacing="2" class="formtablebg">
-   <tr class="formtabletitle" >
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="80%" align="center">General</th>
-%	 if ($editgen){	 
+     <tr class="formtabletitle" >
+       <td colspan="2">
+         <table width="100%" border="0">
+           <tr>
+             <td width="10%" align="left">&nbsp;</td>
+             <th width="80%" align="center">General</th>
+%	     if ($editgen){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
-%	 }else{
+%	    }else{
             <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editgen=1">[edit]</a></td>
-%	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-      <td valign="top" width="50%">
+%	    }
+          </tr>
+        </table>
+       <td>
+     </tr>
+     <tr>
+       <td valign="top" width="50%">
          <table border="0" width="100%">
-	    <tr>
-	      <td class="formtablec1">Name: </td>
-	      <td class="formtablec2"> 
+	   <tr>
+	     <td class="formtablec1">Name: </td>
+	     <td class="formtablec2"> 
 %	         if ($o->name && $o->name->name){
 %	      	   if ($editgen){	 
 		      <input type="text" name="RR__<% $o->name->id %>__name" value="<% $o->name->name %>">  
 %	           }else{
 		      <b><a href="view.html?table=RR&id=<% $o->name->id %>"><% $o->name->name %></a></b>
 %		   }
-%		 }
-%		 else{ 
+%		 }else{ 
 		   Name N/A!
 %		 }
 	      </td>
 	    </tr>
-           <tr>
-             <td class="formtablec1">Type: </td>
-	     <td class="formtablec2"> 
+            <tr>
+              <td class="formtablec1">Type: </td>
+	      <td class="formtablec2"> 
 %	       if (($o->productname) && ($o->productname->type)){	 
     	        <a href="view.html?table=Product&id=<% $o->productname->id %>"><% $o->productname->type->name %></a>
 %	       }
-	     </td> 
+	      </td> 
 	   </tr>
            <tr>
              <td class="formtablec1">S/N: </td>
@@ -216,72 +369,45 @@
 	   </tr>
 	 </table>
       </td>
-  </tr>
-   <tr>
-     <td colspan="2" align="center">Comments:</td>
-   </tr>
-   <tr>
-     <td colspan="2" align="left">
-%               $ui->textArea(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=80");
+    </tr>
+    <tr>
+      <td colspan="2" align="center">Comments:</td>
+    </tr>
+    <tr>
+      <td colspan="2" align="left">
+%       $ui->textArea(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=80");
      </td>
-   </tr>
- </table>
-% if ($editgen){	 
-    </form>
-% }
+    </tr>
+  </table>
 <!-- End General Info Table -->
+% if ($editgen){	 
+   </form>
+% }
 
-</td>
-<td valign="top" align="center">
+  </td>
+  <td valign="top"  width="50%" align="center">
 
 <!-- Location Table -->
-%   if ($editloc) {
-    <script language="JavaScript">
-    <!--
-    var closetList = new DynamicList("netdotform", "Device__<% $id %>__closet", "site", "Closet", "Device__<% $id %>__site");
-    var roomList = new DynamicList("netdotform", "Device__<% $id %>__room", "floor", "Room", "Device__<% $id %>__site");
-    roomList.setQueryURL("room_site_query.html");
-    LIST_MANAGER.addList(closetList, roomList);
-
-    function setNull(field)
-    {
-        if (!field)
-            return;
-
-        for (var i = 0; i < field.options.length; ++i)
-        {
-            if (field.options[i].value == 0 || field.options[i].value == -1)
-            {
-                field.options[i].selected = true;
-                break;
-            }
-        }
-    }
-    -->
-    </script>
-
-%   }
-
   <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle" >
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="80%" align="center">Group/Location</th>
+    <tr class="formtabletitle" >
+      <td>
+        <table width="100%" border="0">
+          <tr>
+            <td width="10%" align="left">&nbsp;</td>
+            <th width="80%" align="center">Group/Location</th>
 %	 if ($editloc){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
             <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editloc=1">[edit]</a></td>
 %	 }
-       </tr>
-      </table>
+         </tr>
+       </table>
      <td>
    </tr>
    <tr>
      <td>
-      <table border="0" width="100%">
-        <tr>
+       <table border="0" width="100%">
+         <tr>
 	   <td class="formtablec1">Entity: </td>
 	   <td class="formtablec2"> 
 %               $ui->selectLookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html");
@@ -290,8 +416,8 @@
 	   <td class="formtablec2">
 %               $ui->selectLookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="closetList.doIt(); roomList.doIt();"');
 	   </td>
-	</tr>
-        <tr>
+	 </tr>
+         <tr>
 	   <td class="formtablec1">Room: </td>
 	   <td class="formtablec2"> 
 %               if ($editloc) {
@@ -315,7 +441,7 @@
 %               my $closet_js = sprintf("onChange=\"setNull(document.netdotform.Device__%d__room);\"", $id);
 %               $ui->selectLookup(object=>$o, column=>"closet", lookup=>"Closet", edit=>$editloc, where=>{site=>($o ? $o->site : "")}, makeLink=>1, linkPage=>"closet.html", htmlExtra=>$closet_js);
 	   </td>
-        <tr>
+         <tr>
 	   <td class="formtablec1">Rack: </td>
 	   <td class="formtablec2"> 
 %               $ui->textField(object=>$o, column=>"rack", edit=>$editloc);
@@ -328,159 +454,164 @@
    </tr>
    </tr>
   </table>
+<!-- End Location Table -->
+
 % if ($editloc){	
     </form>
 % }
 
-<!-- End Location Table -->
 <br>
 <!-- Management Table -->
   <table border="0" width="100%" class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle">
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="80%" align="center">Management</th>
+    <tr class="formtabletitle">
+      <td colspan="2">
+        <table width="100%" border="0">
+          <tr>
+            <td width="10%" align="left">&nbsp;</td>
+            <th width="80%" align="center">Management</th>
 %	 if ($editmgmt){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
             <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editmgmt=1">[edit]</a></td>
 %	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td valign="top" width="50%">
-      <table border="0" width="100%">
-        <tr>
-	   <td class="formtablec1">Contact Group: </td>
-	     <td class="formtablec2"> 
+         </tr>
+       </table>
+      <td>
+    </tr>
+    <tr>
+      <td valign="top" width="50%">
+        <table border="0" width="100%">
+          <tr>
+	    <td class="formtablec1">Contact Group: </td>
+	    <td class="formtablec2"> 
 %               $ui->selectLookup(object=>$o, column=>"contactlist", lookup=>"ContactList", edit=>"$editmgmt", linkPage=>"view.html");
-	     </td>
-	</tr>
-        <tr>
-	   <td class="formtablec1">User: </td>
-	     <td class="formtablec2"> 
+	    </td>
+	  </tr>
+          <tr>
+	    <td class="formtablec1">User: </td>
+	    <td class="formtablec2"> 
 %               $ui->selectLookup(object=>$o, column=>"person", lookup=>"Person", edit=>"$editmgmt", linkPage=>"view.html");
-	     </td>
+	    </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Out-of-band hostname: </td>
-	     <td class="formtablec2">
+	    <td class="formtablec2">
 %               $ui->textField(object=>$o, column=>"oobname", edit=>$editmgmt);
-	     </td>
+	    </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Out-of-band tel: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %               $ui->textField(object=>$o, column=>"oobnumber", edit=>$editmgmt);
-	     </td>
+	   </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">SNMP Community: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %               $ui->textField(object=>$o, column=>"community", edit=>$editmgmt);
-	     </td>
+	   </td>
 	</tr>
        </table>
      </td>
      <td valign="top" width="50%">
-      <table border="0" width="100%">
+       <table border="0" width="100%">
          <tr>
 	   <td class="formtablec1">Monitored?: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %                $ui->radioGroupBoolean(object=>$o, column=>"monitored", edit=>$editmgmt);
-	     </td>
-	</tr>
+	   </td>
+	 </tr>
          <tr>
 	   <td class="formtablec1">Customer-managed?: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %                $ui->radioGroupBoolean(object=>$o, column=>"customer_managed", edit=>$editmgmt);
-	     </td>
-	</tr>
+	   </td>
+	 </tr>
          <tr>
 	   <td class="formtablec1">SNMP-managed?: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %                $ui->radioGroupBoolean(object=>$o, column=>"snmp_managed", edit=>$editmgmt);
-	     </td>
-	</tr>
+	   </td>
+	 </tr>
          <tr>
 	   <td class="formtablec1">Auto-update?: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %                $ui->radioGroupBoolean(object=>$o, column=>"canautoupdate", edit=>$editmgmt);
-	     </td>
-	</tr>
+	   </td>
+	 </tr>
          <tr>
 	   <td class="formtablec1">NATted?: </td>
-	     <td class="formtablec2"> 
+	   <td class="formtablec2"> 
 %                $ui->radioGroupBoolean(object=>$o, column=>"natted", edit=>$editmgmt);
-	     </td>
-	</tr>
-      </td>
-     </tr>
-    </table>
+	   </td>
+	 </tr>
+       </table>
+     </td>
+   </tr>
 %	if (! $editmgmt){	 
-        <tr>
+   <tr>
 	   <td class="formtablec1">Fetch SNMP info and update DB</td>
-	     <td class="formtablec2"><b><a href="updatedevice.html?host=<% $name %>&action=discover">[update]</a></b></td>
-	</tr>
-        <tr>
+	   <td class="formtablec2"><b><a href="updatedevice.html?host=<% $name %>&action=discover">[update]</a></b></td>
+   </tr>
+   <tr>
 	   <td class="formtablec1">Connect via: </td>
 	   <td colspan="2" class="formtablec2" ><a href="http://<% $name %>">[HTTP]</a> <a href="ssh://<% $user %>@<% $name %>">[SSH]</a> <a href="telnet://<% $name %>">[Telnet]</a></td>
-	</tr>
+   </tr>
 %       } 
   </table>
+<!-- End Management Table -->
 
 % if ($editmgmt){	 
     </form>
 % }
 
-<!-- End Management Table -->
+  </td>
+ </tr>
+</table>
+<!-- End Division Table -->
 
 % } 
 
 % if ( $view eq "IP" || $view eq "All" ){
 
-  </td>
- </tr>
- <tr>
-  <td colspan="2">
-<br>
+%  # Get all ip address info
+%  my @ips;
+%  if ( $o && $ipsort ){
+%    @ips = $dm->getdevips( $o->id, $ipsort );
+%  }
+
 <!-- IPs Table -->
 
   <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle" >
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="80%" align="center">IPs</th>
-%	 if ($editips){	 
+    <tr class="formtabletitle" >
+      <td>
+        <table width="100%" border="0">
+          <tr>
+            <td width="10%" align="left">&nbsp;</td>
+            <th width="80%" align="center">IPs</th>
+%	    if ($editips){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
-%	 }else{
+%	    }else{
             <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editips=1">[edit]</a></td>
-%	 }
-       </tr>
-      </table>
-     <td>
+%	    }
+         </tr>
+       </table>
+     </td>
    </tr>
    <tr>
      <td>
-      <table border="0" width="100%">
-%	if (scalar @ips){
+       <table border="0" width="100%">
+%    if (scalar @ips){
          <tr>
-	   <td align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Ipblock.address">Address</a></td>
-	   <td align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Ipblock.parent">Subnet</a></td>
-	   <td align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Interface.name">Interface</a></td>
-	   <td align="left">DNS Name</td>
-	   <td align="left">Monitored?</td>
-	   <td align="left">Services</td>
+	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Ipblock.address">Address</a></th>
+	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Ipblock.parent">Subnet</a></th>
+	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=Interface.name">Interface</a></th>
+	   <th align="left">DNS Name</th>
+	   <th align="left">Monitored?</th>
+	   <th align="left">Services</th>
          </tr>
-%	}
 
-%	foreach my $ip (@ips){	   
+%      foreach my $ip (@ips){	   
 %        next if ( ! exists $ifvlans{$ip->interface}{$showvlan} && 
 %                  $showvlan ne "all" );
 %	 $ci = ($ci + 1) % 2;
@@ -536,57 +667,89 @@
            </td>
 	  </tr>
 %	}# foreach	
-     </table>
+%     }else{ # No ips exist
+%        if ( $editips ){
+%        # Let user add a new IP           
+           <tr>
+	     <th align="left">Interface</th>
+	     <th align="left">Address</th>
+	     <th align="left">Monitored?</th>	     
+           </tr>
+           <tr>
+             <td>
+	     <select name="<% "Ipblock__" . "NEW" . "__interface" %>" >
+	       <option value="0">Select Interface</option>
+%	         foreach my $int ( sort { $a->number <=> $b->number } $o->interfaces ){
+		   <option value="<% $int->id %>"><% $int->name %></option>                        
+%		 }
+	    </select>
+	    </td>
+	    <td>
+	      <input type="text" name="<% "Ipblock__" . "NEW" . "__address" %>" >
+	      <input type="hidden" name="<% "Ipblock__" . "NEW" . "__statusname" %>" value="Static">
+            </td>
+            <td>
+	      Y <input type="radio" name="<% "Ipblock__" . "NEW" . "__monitored" %>" value="1" CHECKED>                 
+	      N <input type="radio" name="<% "Ipblock__" . "NEW" . "__monitored" %>" value="0">
+            </td>
+         </tr>
+%      }else{
+         <tr>
+            <td>Click [edit] to add a new IP</td>
+         </tr>
+%      }  
+%    }
+       </table>
     </td>
    </tr>
   </table>
+<!-- End IPs Table -->
+
 % if ($editips){	 
     </form>
 % }
 
-
-<!-- End IPs Table -->
-    <br>
-
 % } 
+
 % if ( $view eq "Interfaces" || $view eq "All" ){
 
 <!-- Interface Table -->
-
-  <table border="0" width="100%" align="left" class="formtablebg" cellpadding="0" cellspacing="2">
+  <table border="0" width="100%" class="formtablebg" cellpadding="0" cellspacing="2">
    <tr class="formtabletitle"> 
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="80%" align="center">Interfaces</th>
-%	 if ($editints){	 
+     <td>
+       <table width="100%" border="0">
+        <tr>
+          <th width="10%" align="left">&nbsp;</th>
+          <th width="80%" align="center">Interfaces</th>
+%	  if ($editints){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
-%	 }else{
+%	  }else{
             <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editints=1">[edit]</a></td>
-%	 }
+%	  }
        </tr>
       </table>
-     <td>
+     </td>
    </tr>
    <tr>
-     <td>
+    <td>
       <table border="0" width="100%">
         <tr>
-%	   if ($editints){	 
-	      <td align="center">[del]</td>
+%	   if ( $editints ){	 
+	     <td valign="top" align="center"><strong>[del]</strong></td>
 %	   }
 	   <td valign="top" align="left"><strong>No.</strong></td>
 	   <td valign="top" align="left"><strong>Name</strong></td>
-	   <td valign="top" align="left"><strong>Speed</strong></td>
-	   <td valign="top" align="left"><strong>Duplex</strong><br>[oper/admin]</td>
-	   <td valign="top" align="left"><strong>Status</strong><br>[oper/admin]</td>
-	   <td valign="top" align="left"><strong>VLAN</strong></td>
+%	   if ( ! $editints ){	 
+	     <td valign="top" align="left"><strong>Speed</strong></td>
+	     <td valign="top" align="left"><strong>Duplex</strong><br>[oper/admin]</td>
+	     <td valign="top" align="left"><strong>Status</strong><br>[oper/admin]</td>
+	     <td valign="top" align="left"><strong>VLAN</strong></td>
+%	   }
 	   <td valign="top" align="left"><strong>Jack</strong></td>
 	   <td valign="top" align="left"><strong>Descr.</strong></td>
-	   <td valign="top" align="left"><strong>Uplink<br>Connections</strong></td>
-	   <td valign="top" align="left"><strong>Downlink<br>Connections</strong></td>
-        </tr>
+	   <td valign="top" align="left"><strong>Uplink</strong></td>
+	   <td valign="top" align="left"><strong>Downlink</strong></td>
+       </tr>
 
 %	#####################################
 %	# Sort numerically by port number
@@ -609,36 +772,32 @@
 %       foreach my $if (map { $_->[2] } @ordered_ifs){
 %         next if ( ! exists $ifvlans{$if}{$showvlan} && $showvlan ne "all");
 %	  $ci = ($ci + 1) % 2;
-	  <tr class="<% $cssitem{$ci} %>">
-%	       if ($editints){	 
+       <tr class="<% $cssitem{$ci} %>">
+%	       if ( $editints ){	 
 		<td align="left">
 		  <input type="checkbox" name="<% "Interface__" . $if->id . "__delete" %>" >
 		</td>	   
 %	       }
 	   <td align="left"> 
-%               $ui->textField(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 20px;\"", linkPage=>"view.html");
+%               $ui->textField(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 2em;\"", linkPage=>"view.html");
 	   </td>
 	   <td align="left"> 
-%               $ui->textField(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 80px;\"");
+%               $ui->textField(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"");
 	   </td>
-	   <td align="left"> 
-               <% $if->speed %>
-	   </td>
-	   <td align="left"> 
-               <% $if->oper_duplex %>/<% $if->admin_duplex %>
-	   </td>
-	   <td align="left"> 
-               <% $if->oper_status %>/<% $if->admin_status %>
-	   </td>
-	   <td align="left"> 
-%	      if (exists $ifvlans{$if}){
-%	         my @links;
-%	         foreach my $v ( keys %{$ifvlans{$if}} ){
-%		   push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
-%		 }
-%		 print join ', ', @links;
-%	      }
-	   </td>
+%	       if ( ! $editints ){	 
+                 <td align="left"><% $if->speed %></td>
+		 <td align="left"><% $if->oper_duplex %>/<% $if->admin_duplex %></td>
+		 <td align="left"><% $if->oper_status %>/<% $if->admin_status %></td>
+		 <td align="left"> 
+%	           if (exists $ifvlans{$if}){
+%	             my @links;
+%	             foreach my $v ( keys %{$ifvlans{$if}} ){
+%		       push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
+%		     }
+%		     print join ', ', @links;
+%	          }
+	        </td>
+%              }
 	   <td align="left">
 %           $ui->selectLookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
 %                             edit=>$editints, linkPage=>"cable_horizontal.html");
@@ -651,131 +810,69 @@
 	   <td align="left">
 %	   my @parents = $if->parents;
 %	   if (scalar(@parents)){
-%	     foreach my $par (@parents){	   
-%		 my $lbl = $ui->getobjlabel($par->parent, ", ");
-%	      	 if ($editints){	 
-%		 # Check for amount of objects in table before retrieving all
-%		    my $count = Interface->count_all;
-%		    if ( $count <= $maxselect ){			      
-%		       my @allifs = Interface->retrieve_all;
-%		       @allifs = sort { $a->number <=> $b->number } @allifs; 
-   		       <select name="<% "InterfaceDep__" . $par->id ."__parent" %>">
-		         <option value="$par->parent->id" selected><% $lbl %> </option> 
-%		          foreach my $if ( @allifs ) {
-		            <option value="<% $if->id %>"><% $ui->getobjlabel($if, ", ") %></option>
-%			  }
-		         <option></option> 
-		       </select>
-%		    }else{  #too many instances.  Offer a keyword search
-%		       my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
-                       <input type="text" name="<% $srchf %>" value="Keywords">&nbsp;
-		       <input type="button" name="" value="List" 
-		       onClick="sendquery(<% "_InterfaceDep__" . $par->id . "__parent" %>, <% $srchf . '.value' %>, 'Interface')" >
-		       <br><select name="<% "_InterfaceDep__" . $par->id . "__parent" %>">
-		          <option value="<% $par->parent->id %>" selected><% $lbl %></option>
-			  <option value="0">[null]</option>
-		       </select>
-		       <input type="checkbox" name=<% "InterfaceDep__" . $par->id . "__delete" %> >[del]
-%		    }
-%	         }else{
-		    <a href="device.html?id=<% $par->parent->device->id %>"><% $lbl %></a><br>
-%		 }
-%	     } #foreach my $par
-%	   }else{ # No parents exist
-%	      if ($editints){	 
-%	        my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
-		<input type="text" name="<% $srchf %>" value="Keywords">
-	        &nbsp;<input type="button" name="" value="List" 
-	        onClick="sendquery(<% "_InterfaceDep__" . $if->id ."__newparent" %>, <% $srchf . '.value' %>, 'Interface')" >
-	        <br>
-		<select name="<% "_InterfaceDep__" . $if->id ."__newparent" %>">
-%#	 	  <option value="0">[null]</option>
-	        </select>	      
+%	     foreach my $link (@parents){
+%                if ( $editints ){
+		   <input type="checkbox" name="<% "InterfaceDep__" . $link->id . "__delete" %>" > [del]
+%	         }   
+%		 my $lbl = $ui->getobjlabel($link->parent, ", ");
+                 <a href="device.html?id=<% $link->parent->device->id %>"><% $lbl %></a><br>
 %	     }
-%	   }
-	   </td>
+%         }
+%	  if ( $editints ){	 
+            <a href="#" onClick="addLink('<% $if->id %>', 'child')">[add]</a>
+%	  }
+	  </td>
 <!-- End UpLink Connections Field -->
 <!-- DownLink Connections Field -->
 	   <td align="left">
 %	   my @children = $if->children;
 %	   if (scalar(@children)){
-%	     foreach my $ch (@children){	   
-%		 my $lbl = $ui->getobjlabel($ch->child, ", ");
-%	      	 if ($editints){	 
-%		 # Check for amount of objects in table before retrieving all
-%		    my $count = Interface->count_all;
-%		    if ( $count <= $maxselect ){			      
-%		       my @allifs = Interface->retrieve_all;
-%		       @allifs = sort { $a->number <=> $b->number } @allifs; 
-   		       <select name="<% "InterfaceDep__" . $ch->id ."__child" %>">
-		         <option value="$ch->child->id" selected><% $lbl %> </option> 
-%		          foreach my $if ( @allifs ) {
-		            <option value="<% $if->id %>"><% $ui->getobjlabel($if, ", ") %></option>
-%			  }
-		         <option></option> 
-		       </select>
-%		    }else{  #too many instances.  Offer a keyword search
-%		       my $srchf = '_' . $if->id . 'child_srch';  #name of the form input tag
-		       <input type="text" name="<% $srchf %>" value="Keywords">
-		       &nbsp;<input type="button" name="" value="List" 
-		       onClick="sendquery(<% "_InterfaceDep__" . $ch->id . "__child" %>, <% $srchf . '.value' %>, 'Interface')" >
-		       <br><select name="<% "_InterfaceDep__" . $ch->id . "__child" %>">
-		          <option value="<% $ch->child->id %>" selected><% $lbl %></option>
-			  <option value="0">[null]</option>
-		       </select>
-		       <input type="checkbox" name=<% "InterfaceDep__" . $ch->id . "__delete" %> >[del]
-%		    }
-%	         }else{
-		    <a href="device.html?id=<% $ch->child->device->id %>"><% $lbl %></a><br>
-%		 }
-%	     } #foreach my $ch
-%	   }else{ # No children exist
-%	      if ($editints){	 
-%	        my $srchf = '_' . $if->id . 'child_srch';  #name of the form input tag
-		<input type="text" name="<% $srchf %>" value="Keywords">
-	        &nbsp;<input type="button" name="" value="List" 
-	        onClick="sendquery(<% "_InterfaceDep__" . $if->id ."__newchild" %>, <% $srchf . '.value' %>, 'Interface')" >
-	        <br>
-		<select name="<% "_InterfaceDep__" . $if->id ."__newchild" %>">
-%#	 	  <option value="0">[null]</option>
-	        </select>	      
+%	     foreach my $link (@children){
+%                if ( $editints ){
+		   <input type="checkbox" name="<% "InterfaceDep__" . $link->id . "__delete" %>" > [del]
+%	         }   
+%		 my $lbl = $ui->getobjlabel($link->child, ", ");
+                 <a href="device.html?id=<% $link->child->device->id %>"><% $lbl %></a><br>
 %	     }
 %	   }
-
+%	   if ( $editints ){	 
+             <a href="#" onClick="addLink('<% $if->id %>', 'parent')">[add]</a>
+%	   }
 	   </td>
 <!-- End DownLink Connections Field -->
 
-	  </tr>
+	</tr>
 %       } #foreach
 %    if ($editints){	 
-     <tr class="formtabletitle">
+       <tr class="formtabletitle">
             <td colspan="11" width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 	    </form>
 %    }else{
-     <tr>
+       <tr>
 	    <form action="device.html" method="POST">
 	      <td colspan="11" width="100%" align="left">
 	        Manually 
 	        <input type="hidden" name="id" value="<% $id %>">
+	        <input type="hidden" name="view" value="Interfaces">
 	        <input type="submit" name="intadd" value="Add">
 	        <input type="text" name="intaddnum" value="0" size="3"> interfaces
               </td>
 	    </form>
 %    }
-     </tr>
+       </tr>
      </table>
     </td>
-       </tr>
-  </table>
+  </tr>
+ </table>
 <!-- End Interface Table -->
-
 % } 
-% if ( $view eq "BGP" || $view eq "All" ){
 
-<!-- BGP Peers Table -->
+% if ( $view eq "BGP" || $view eq "All" ){
 
 % my @peers = sort { $a->entity->name cmp $b->entity->name } $o->bgppeers() ;
 
+%   if ( scalar @peers ){
+<!-- BGP Peers Table -->
   <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
    <tr class="formtabletitle" >
      <td colspan="2">
@@ -788,9 +885,9 @@
 %	 }else{
             <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editbgp=1">[edit]</a></td>
 %	 }
-       </tr>
-      </table>
-     <td>
+      </tr>
+     </table>
+    <td>
    </tr>
    <tr>
      <td>
@@ -804,10 +901,8 @@
 	   <th align="left">AS Number</th>
 	   <th align="left">Monitored?</th>
          </tr>
-%	}
-
-%	foreach my $peer (@peers){
-         <tr>
+%	 foreach my $peer (@peers){
+          <tr>
 	   <td align="left"><% $peer->bgppeeraddr %></td>
 	   <td align="left"><% $peer->bgppeerid %></td>
 	   <td align="left">
@@ -819,152 +914,49 @@
 	   <td align="left">
 %	      $ui->radioGroupBoolean(object=>$peer, column=>"monitored", edit=>$editbgp);
 	   </td>
-         </tr>
-
-%       }	   
+          </tr>
+%        }	   
+%      }
       </table>
     </td>
    </tr>
  </table>
 <!-- End BGP Peers Table -->
+%   }
 % }  
 
 % if ($editbgp){	 
     </form>
 % }
 
- </td></tr>
-</table>
-<!-- End Margins Table -->
+% if ( $view eq "History" || $view eq "All" ){
+%   my @h_objs = $ui->gethistoryobjs($o);
+
+<!-- History Table -->
+  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+    <tr class="formtabletitle" >
+      <td>
+        <table width="100%" border="0">
+          <tr>
+            <td width="10%" align="left">&nbsp;</td>
+            <th width="80%" align="center">History</th>
+	    <td width="10%" align="right">&nbsp;</td>
+         </tr>
+       </table>
+      <td>
+   </tr>
+   <tr>
+      <td>
+        <& sortresults.mhtml, object => \@h_objs , view => "row" &>
+      </td>
+    </tr>
+  </table
+<!-- End History Table -->
+% }
+
 %} # if !defined search
+
+</div>
 
 <& footer.mhtml &>
 
-<%args>
-$id       => undef
-$search   => undef
-$edit     => undef
-$editgen  => undef
-$editloc  => undef
-$editmgmt => undef
-$editips  => undef
-$editints => undef
-$editbgp  => undef
-$ipsort   => "Ipblock.address"
-$s2name   => "Management"
-$user     => $ENV{REMOTE_USER}
-$showvlan => "all"
-$intadd   => undef
-$submit   => undef
-$view     => "Basics"
-</%args>
-
-<%init>
-my $DEBUG = 0;
-my $ui = Netdot::UI->new();
-my $dns = Netdot::DNSManager->new();
-my $ipm = Netdot::IPManager->new();
-my %cssitem = ( 0 => "formtablec1", 1 => "formtablec2" );
-my $maxselect = 100;
-my $o = undef;
-my $ci = 0;
-my %arg;
-my $name;
-my %ifvlans;
-my %vlans;
-my $list;
-my @ips;
-
-print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
-
-if ( defined($search) && $search =~ /\w+/ ){
-    unless ( ($list = $dns->getdevbynamelike($search)) ){
-	$m->comp("index.html", title => "Device Worksheet: $name ", s2name => $s2name);
-	print  "<p><b>No results</b>";
-	$m->comp("footer.mhtml");
-	$m->abort;
-    }
-    my $num = scalar(@$list);
-    if ( $num == 1 ){
-	# Don't offer list.  Just display device
-	$o = $list->[0];
-	$id = $o->id;
-	$search = undef;
-    }
-
-}elsif ( defined($search) && $search !~ /\w+/ ){
-    $m->comp("index.html", title => "Device Worksheet: $name ", s2name => $s2name);
-    print "<p><b>No search criteria</b>";   
-    $m->comp("footer.mhtml");    
-
-}elsif( $intadd ){
-	# Add a group of interfaces
-	if (defined ($ARGS{intaddnum}) &&  $ARGS{intaddnum} > 0){
-	    my %tmpint;
-	    $tmpint{device}    = $id;
-	    $tmpint{number}    = 1000;
-	    my $i;
-	    for ($i = 0; $i < $ARGS{intaddnum}; $i++){
-		$tmpint{number}++;
-		if (!($ui->insert(table => "Interface", state => \%tmpint)) ){
-		    $m->comp('error.mhtml', error => $ui->error);
-		}
-	    }
-	}
-}elsif( $submit ){
-	# insert/update
-	if (!$ui->form_to_db(%ARGS)){
-	    $m->comp('error.mhtml', error => $ui->error);
-	}
-}
-
-if ($id){
-    unless ($o = Device->retrieve($id)){
-       $m->comp('error.mhtml', error=>"Could not retrieve Device with id $id");
-    }   
-    $name = ($o->name && $o->name->name) ? $o->name->name : "Name N/A!";
-
-    if ( $view eq "Interfaces" || $view eq "All" ){
-	# Build a hash of Interface Vlans
-	foreach my $if ($o->interfaces){
-	    if (scalar( my @ifv = $if->vlans)){
-		foreach my $ifv (@ifv){
-		    my $vid = $ifv->vlan->vid;
-		    $ifvlans{$if}{$vid} = "";
-		$vlans{$vid} = $ifv->vlan->id;
-		}
-	    }
-	}
-    }
-
-    if ( $view eq "IP" || $view eq "All" ){
-	# Get all ip address info
-	Ipblock->set_sql(allips => qq{
-	    SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
-		FROM Ipblock, Interface, Device
-		WHERE Interface.id = Ipblock.interface AND
-		Device.id = Interface.device AND
-		Device.id = ?
-		ORDER BY $ipsort
-	    });
-    
-	eval {
-	    @ips = Ipblock->search_allips($o->id);
-	};
-	if ($@){
-	    $m->comp('error.mhtml', error=>"$@");
-	}
-    }
-}else{
-    $name = "Search";
-}
-
-
-</%init>
-
-<%doc>
--- Device Worksheet --
-Interface for viewing/updating a particular Device 
-and all its relevant info in one page
-
-</%doc>
