@@ -4,6 +4,15 @@ foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ );
   $args{$j} = $ARGS{$j};
 }
+#if( $args{node} && ! $args{sid} ) {
+#  $session = $gui->mksession( $DIR );
+#}
+if( $args{sid} ) {
+  $session = $gui->getsession( $DIR, $args{sid} );
+}
+if( $args{cancel} ) {
+  $gui->rmsession( $session );
+}
 </%perl>
 <& header, title => "Node" &>
 <!-- node.html -->
@@ -14,24 +23,27 @@ foreach my $j ( keys %ARGS ) {
 <input name="submit" value="Discover" type="submit">
 </form>
 </blockquote>
-% if( exists( $args{submit} ) ) {
-%   ;
+% if( exists( $args{insert} ) ) {
+%   %node = %{ $session->{node} };
+%   print Dumper( %node );
 % }
 % if( exists( $args{node} ) ) {
   <hr>
   <p><% $args{node} %>
 %   $nv->build_config( "device", $args{node} );
 %   if( my( %node ) = $nv->get_device( "device", $args{node} ) ) {
-%     if( %node ) {
-%       my $f = \%node;
-%       %session = $gui->mkstate( $DIR );
-%       $session{node} = \%node;
+
+%  $session = $gui->mksession( $DIR );
+% print Dumper( $session );
+
+%     if( keys %node ) {
+%       $session->{node} = \%node;
     <form>
-    <input type="hidden" name="sid" value="<% $session{_session_id} %>">
+    <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <table cellpadding="3" cellspacing="1" border="0">
     <tr align="LEFT">
     <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
-    <input name="submit" value="Submit" type="submit">
+    <input name="insert" value="Submit" type="submit">
     </td>
     <td>
     <input name="cancel" value="Cancel" type="submit">
@@ -50,10 +62,12 @@ foreach my $j ( keys %ARGS ) {
 <& footer &>
 <%args>
 $DIR => "/home/netdot/public_html/tmp"
-$nv => Netdot::Netviewer->new();
-$gui => Netdot::GUI->new();
-%session => undef
+$nv => Netdot::Netviewer->new()
+$gui => Netdot::GUI->new()
+$session => undef
+
 </%args>
+
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
@@ -61,7 +75,8 @@ use Netdot::Netviewer;
 use Netdot::GUI;
 use Data::Dumper;
 
-
+my %node;
+#%node => undef
 </%init>
 <%doc>
 
@@ -69,6 +84,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.8  2003/07/03 00:38:39  netdot
+#  blah
+#
 #  Revision 1.7  2003/07/01 05:27:40  netdot
 #  work to introduce state for final push
 #
