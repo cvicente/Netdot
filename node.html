@@ -4,6 +4,9 @@ foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ );
   $args{$j} = $ARGS{$j};
 }
+if( exists( $args{comstr} ) ) {
+  $comstr = $args{comstr};
+}
 if( $args{node} && ! $args{sid} ) {
   $session = $gui->mksession( $DIR );
 }
@@ -22,6 +25,7 @@ if( exists( $args{insert} ) ) {
     my( %tmp, $newnode );
     my @ifrsv = NvIfReserved->retrieve_all();
     $tmp{name} = $args{node};
+#    $tmp{community} = $comstr;
     $tmp{sysdescription} = $node{sysDescr};
     $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
     $tmp{type} = "0";   # maybe tmp; can't be null
@@ -95,7 +99,15 @@ if( exists( $args{insert} ) ) {
 <br>
 <blockquote>
 <form action="node.html" method="POST">
-<input type="text" name="node" size="30" value="<% $args{node} %>">
+<table>
+<tr>
+<td ALIGN="LEFT">Node</td><td ALIGN="LEFT">Community</td>
+</tr>
+<tr>
+<td><input type="text" name="node" size="30" value="<% $args{node} %>"></td>
+<td><input type="text" name="comstr" size="30" value="<% $comstr %>"></td>
+</tr>
+</table>
 <input name="submit" value="Discover" type="submit">
 </form>
 </blockquote>
@@ -113,7 +125,7 @@ if( exists( $args{insert} ) ) {
 <hr>
 <p><% $args{node} %>
 %     $nv->build_config( "device", $args{node} );
-%     if( my( %node ) = $nv->get_device( "device", $args{node} ) ) {
+%     if( my( %node ) = $nv->get_device( "device", $args{node}, $comstr ) ) {
 %       if( keys %node ) {
 % #        $session = $gui->mksession( $DIR );
 %         $session->{node} = \%node;
@@ -142,6 +154,7 @@ if( exists( $args{insert} ) ) {
 <& footer &>
 % }
 <%args>
+$comstr => "public"
 $DIR => "/home/netdot/public_html/tmp"
 $nv => Netdot::Netviewer->new()
 $gui => Netdot::GUI->new()
@@ -165,6 +178,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.20  2003/07/14 23:35:46  netdot
+#  added code for optional community string
+#
 #  Revision 1.19  2003/07/12 21:13:23  netdot
 #  more updates and checks; interfaces, ips, subnets, etc.
 #
