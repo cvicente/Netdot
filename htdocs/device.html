@@ -6,6 +6,8 @@ foreach my $j ( keys %ARGS ) {
 }
 if( exists( $args{comstr} ) ) {
   $comstr = $args{comstr};
+}else{
+  $comstr = "public";
 }
 if( $args{device} && ! $args{sid} ) {
   $session = $gui->mksession( $TMP );
@@ -17,8 +19,9 @@ if( $args{cancel} ) {
   $gui->rmsession( $session );
 }
 
+if ( $args{action} eq "discover" ){
 
-if( exists( $args{insert} ) ) {
+ if( exists( $args{insert} ) ) {
   my %device = %{ $session->{device} };
   
   if( Device->search( name => "$args{device}" ) 
@@ -126,7 +129,7 @@ if( exists( $args{insert} ) ) {
     }
     $gui->rmsession( $session );
   }
-}
+ }
 </%perl>
 % if( $inserted ) {
   <& view.html, table => "Device", id => $inserted &>
@@ -143,7 +146,12 @@ if( exists( $args{insert} ) ) {
 <tr>
 <td><input type="text" name="device" size="30" value="<% $args{device} %>"></td>
 <td><input type="text" name="comstr" size="30" value="<% $comstr %>"></td>
-</tr>
+<td>
+   <select name="action">
+     <option>discover</option>
+     <option>update</option>
+   </select>
+</td></tr>
 </table>
 <input name="submit" value="Discover" type="submit">
 </form>
@@ -170,6 +178,7 @@ if( exists( $args{insert} ) ) {
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="device" value="<% $args{device} %>">
     <input type="hidden" name="comstr" value="<% $comstr %>">
+    <input type="hidden" name="action" value="discover">
     <table cellpadding="3" cellspacing="1" border="0">
     <tr align="LEFT">
     <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
@@ -196,12 +205,41 @@ if( exists( $args{insert} ) ) {
     <p>Failed to build information.
 %     }
 %   }
-<& footer &>
+    <& footer &>
 % }
+%}elsif ( $args{action} eq "update" ){
+<%perl>
+  my $id;
+  if ( ! ($id = (Device->search(name => "$args{device}"))[0]) ){
+   print "<br><STRONG>Device $args{device} not found on db.  Run discovery instead</STRONG>";
+   return;
+  }else{
+
+    open OUTPUT, "$PREFIX/bin/updatedevices.pl -n $args{device} -v|"
+                or die "can't fork: $!";
+
+</%perl>
+    <table width="90%" align="center">
+      <tr><td>
+        <font size="-1">
+%       while (<OUTPUT>){
+         <% $_ %><br>
+%       }
+        </font>
+        <p>
+        <A HREF="view.html?table=Device&id=<% $id %>">Go to <% $args{device} %></A>
+      </tr></td>
+    </table>
+%  }
+ <& footer &>
+%}
+
+
 <%args>
-$comstr => "public"
+$PREFIX => "/usr/local/netdot"
+$comstr => undef
 $DEBUG => 0
-$TMP => "/home/netdot/public_html/tmp"
+$TMP => "$PREFIX/tmp"
 $nv => Netdot::Netviewer->new()
 $gui => Netdot::GUI->new()
 $session => undef
@@ -212,8 +250,8 @@ $inserted => 0
 <%init>
 use Netdot::Netviewer;
 use Socket;
-
 </%init>
+
 <%doc>
 
 Device discovery & updates

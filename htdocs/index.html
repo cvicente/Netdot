@@ -45,9 +45,9 @@ foreach my $j ( keys %ARGS ) {
                  <TABLE BORDER="0" CELLSPACING="1" CELLPADDING="3" BGCOLOR="WHITESMOKE" class="tablebackground" HEIGHT="100%" WIDTH="100%">
 		 <TR>
         	    <TD></TD>
-		    <TD align="left" valign="top"><LI><A HREF="search_obj.html?table=Device"><B>Device</B></A></TD>		
+		    <TD align="left" valign="top"><LI><A HREF="search_obj.html?table=Device"><B>Circuit</B></A></TD>		
         	    <TD></TD>
-            	    <TD align="left" valign="top"><LI><A HREF="search_obj.html?table=Circuit"><B>Circuit</B></A></TD>
+            	    <TD align="left" valign="top"><LI><A HREF="search_obj.html?table=Circuit"><B>Device</B></A></TD>
         	    <TD></TD>
         	    <TD align="left" valign="top"><LI><A HREF="search_obj.html?table=Entity"><B>Entity</B></A></TD>
         	    <TD></TD>
@@ -107,7 +107,7 @@ foreach my $j ( keys %ARGS ) {
       <TABLE BORDER="0" CELLSPACING="1" CELLPADDING="3" WIDTH="95%" class="tablebackground" bgcolor="whitesmoke">
       <TR class="rowtitle0" bgcolor="#CCCCCC">
          <TD COLSPAN="3">
-            <B>Insert</B>
+            <B>Update</B>
          </TD>
          <form action="edit.html">
       <TR>
@@ -128,27 +128,23 @@ foreach my $j ( keys %ARGS ) {
             </TABLE>
           </TD>
            <TD>
-              <!-- NODE DISCOVERY SUBMISSION TABLE -->
+              <!-- DEVICE DISCOVERY SUBMISSION TABLE -->
 	      <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0" CLASS="tablebackground">
 	        <TR><TD WIDTH="15">&nbsp &nbsp </TD>
-	        <TR><TD><B>Device</B>:</TD>
-                <TD><form action="device.html" method="post">
-                <input type="text" name="device" size="20" value=""> 
-              <input name="discover" value="discover" type="submit">
- 	      </TD>
-              </form>
-               </TABLE>
-            </TD>
-           <TD>
-              <!-- NODE UPDATE SUBMISSION TABLE -->
-	      <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0" CLASS="tablebackground">
-	        <TR><TD WIDTH="15">&nbsp &nbsp </TD>
-	        <TR><TD><B>Device</B>:</TD>
-                <TD><form action="updatedevice.html" method="post">
-                <input type="text" name="device" size="20" value=""> 
-              <input name="update" value="update" type="submit">
- 	      </TD>
-              </form>
+	        <TR>
+		  <TD><B>Device</B>:</TD>
+                  <TD>
+		   <form action="device.html" method="post">
+                    <input type="text" name="device" size="20" value="">
+		    <B>Comm</B>:
+                    <input type="text" name="comstr" size="10" value="public"> 
+		    <select name="action">
+		      <option>discover</option>
+		      <option>update</option>
+		    </select>
+                    <input name="submit" value="Go" type="submit">
+                   </form>
+ 	           </TD>
                </TABLE>
             </TD>
        </TABLE>
