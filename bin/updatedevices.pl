@@ -11,7 +11,7 @@ use Data::Dumper;
 my $help = 0;
 my $DEBUG = 0;
 my %ifnames = ( physaddr => "ifPhysAddress",
-		index => "instance",
+		number => "instance",
 		type => "ifType",
 		description => "descr",
 		speed => "ifSpeed",
@@ -107,7 +107,7 @@ foreach my $device ( @devices ) {
       $iftmp{physaddr} =~ s/^0x//;
       ############################################
       # does this ifIndex already exist in the DB?
-      if( $if = (Interface->search( device => $device->id, index => $dev{interface}{$newif}{instance}))[0] ) {
+      if( $if = (Interface->search( device => $device->id, number => $dev{interface}{$newif}{instance}))[0] ) {
 	print "Interface device ", $device->name, ":$newif exists; updating\n"
 	  if( $DEBUG );
 	delete( $ifs{ $if->id } );
@@ -172,7 +172,7 @@ foreach my $device ( @devices ) {
       my $intobj = Interface->retrieve($nonif);
       next if ($intobj->device->type->name eq "Hub");
   
-      print "Device ", $device->name, " Interface Index", $intobj->index,
+      print "Device ", $device->name, " Interface number", $intobj->number,
 	"doesn't exist; removing\n" if( $DEBUG );
       unless( remove( object => "Interface", id => $nonif ) ) {
 	next;

@@ -74,7 +74,7 @@ if( exists( $args{insert} ) ) {
       next if( $skip );
       next if( Interface->search
                  ( device => $newdevice->id,
-                   index => $device{interface}{$int}{instance} ) );
+                   number => $device{interface}{$int}{instance} ) );
       undef( %tmp );
       $tmp{device} = $newdevice->id;
       $tmp{ifdescr} = $int;
@@ -206,7 +206,7 @@ $nv => Netdot::Netviewer->new()
 $gui => Netdot::GUI->new()
 $session => undef
 $inserted => 0
-%ifnames => ( physaddr => "ifPhysAddress", index => "instance", type => "ifType", description => "descr", speed => "ifSpeed", status => "ifAdminStatus" )
+%ifnames => ( physaddr => "ifPhysAddress", number => "instance", type => "ifType", description => "descr", speed => "ifSpeed", status => "ifAdminStatus" )
 </%args>
 
 <%init>
