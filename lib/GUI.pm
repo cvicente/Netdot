@@ -341,7 +341,7 @@ Netdot::GUI groups common methods and variables related to Netdot's user interfa
 
 =head2 new
 
-  $gui = Netdot::DBI->new();
+  $gui = Netdot::GUI->new();
 
 Creates a new GUI object (basic constructor)
 
