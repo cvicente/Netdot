@@ -61,19 +61,6 @@ if( $args{cancel} eq "Cancel" ) {
   delete( $rev{New} );
 }
 ##################################################
-# if a node discovery, do it now
-if( exists( $args{discover} ) ) {
-  $nv = Netdot::Netviewer->new();
-  foreach my $if ( NvIfReserved->retrieve_all() ) {
-    $IfRsv{$if->name} = 1;
-  }
-  $nv->build_config( "device", $args{discover} );
-  %node = $nv->get_device( "device", $args{discover} );
-  $args{name} = $args{discover};
-  $args{sysdescription} = $node{sysDescr};
-  $args{physaddr} = $node{dot1dBaseBridgeAddress};
-} 
-##################################################
 # fill in the rest of state details -- for Submit or New
 if( exists( $args{submit} ) 
     || exists( $rev{New} ) || exists( $args{discover} ) ) {
@@ -174,7 +161,6 @@ if( defined( $TBL ) ) {
 % ####################################################################
 
 % if( $args{"submit"} eq "Submit" ) {
-
     <p>Please confirm the following:
 %   my $obj = (Meta->search( name => $TBL ))[0];
 %   my %linksto;
@@ -213,27 +199,19 @@ if( defined( $TBL ) ) {
     <input name="confirm" value="Confirm" type="submit">
     <input name="cancel" value="Cancel" type="submit">
     </form>
-
 % } elsif( ! $TBL || $args{cancel} ) {
-
     <p>
     <blockquote>
     <& table.html, width => $WIDTH, link => "create.html", title => "Please select an object to create:" &>
     </blockquote>
-
 % } else {
     <br>
     <blockquote>
     <form action="create.html" method="POST">
     <input type="hidden" name="sid" value="<% $sid %>">
 %   if( $TBL eq "Node" ) {
-    Auto discover a node:<br>
-    <input type="text" name="discover" value="<% $args{discover} %>">
-    <input name="nodediscover" value="Discover" type="submit">
-    <br>
-    <br>
-    <hr>
-    <br>
+    <a href="node.html">Auto Discover Node</a><br>
+    <p>
 %   }
     <& form.html, table => $TBL, showdisabled => '0', session => \%state &>
     <table cellpadding="3" cellspacing="1" border="0">
@@ -312,6 +290,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.16  2003/06/27 21:07:57  netdot
+#  removed most infrastructure for autodiscovery
+#
 #  Revision 1.15  2003/06/17 00:03:20  netdot
 #  *** empty log message ***
 #
