@@ -27,7 +27,7 @@ foreach my $j ( keys %ARGS ) {
 
 % if( %arg ) {
     <table width="100%">
-    <tr><td width="100%" height="5" bgcolor="#000099"> </td></tr>
+    <tr><td width="100%" bgcolor="#000099"> </td></tr>
     </table>
     <%perl>
     foreach my $meta ( Meta->retrieve_all() ) {
@@ -60,21 +60,21 @@ foreach my $j ( keys %ARGS ) {
 %   if( scalar( keys %results ) < 1 || ! %results ) {
       No matching records were found.
 %   } else {
+      <blockquote>
+      <table cellpadding="0" cellspacing="0" border="0">
 %     foreach my $tbl ( sort { $a cmp $b } keys %results ) {
 %       next if( $tbl eq "Meta" );
 %       my @objs;
 %       map { push @objs, $results{$tbl}{$_} } keys %{ $results{$tbl} };
-        <p>
-        <blockquote>
-        <table cellpadding="0" border="0"  bgcolor="#CCCCCC">
 	<tr>
-        <td><strong><% $tbl %></strong>
-        <& sortresults.html, table => $tbl, object => \@objs, view => "expanded" &>
+        <td colspan="2" bgcolor="#6ab1f0"><strong><% $tbl %></strong></td>
+        </tr>
+        <tr><td>
+        <& sortresults2.html, table => $tbl, object => \@objs, view => "expanded" &>
         </td></tr>
-        </table>
-        </blockquote>
-
 %     } # end foreach tbl
+      </table>
+      </blockquote>
 %   } # end else
 % }
 <br>
@@ -94,6 +94,9 @@ undef( %results );
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.14  2003/06/03 22:16:22  netdot
+# a few changes to make work with forked sortresults2.html for testing
+#
 # Revision 1.13  2003/06/03 20:43:25  netdot
 # added blockquotes to space things out
 #
