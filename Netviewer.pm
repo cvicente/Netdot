@@ -2617,13 +2617,12 @@ sub _get_info_map {
 					    type => $type,
 					    dev => $dev, cat => "general",
 					    var => "cHsrpGrpVirtualIpAddr" );
-    %virt = reverse %virt;
     foreach my $r ( keys %res ) {
-      my %res2 = $self->get_snmp_values( type => $type, dev => $dev,
-					 cat => $cat, session => $session,
-					 instance => $r, oids => [ "$oo" ] );
       if( ! exists( $virt{ $res{$r} } ) ) {
-	$ips{ $r }{ $res{$r} } = $res2{"$oo"};
+	my %res2 = $self->get_snmp_values( type => $type, dev => $dev,
+					   cat => $cat, session => $session,
+					   instance => $r, oids => [ "$oo" ] );
+	$ips{ $res{$r} }{ $r } = $res2{"$oo"};
       }
     }
   }
@@ -2939,7 +2938,6 @@ sub _set_info_defaults {
       if( $u =~ /^ifType$/io ) {
 	$v = $ifType{$v} || $v ;
       } elsif( $u =~ /^ipAdEntIfIndex$/io && $cat eq "interface" ) {
-	
 	if( exists( $targets{$type}{$dev}{$cat}{$key}{ipaddress} ) ) {
 	  unless( $v->{ $targets{$type}{$dev}{$cat}{$key}{ipaddress} } ) {
 	    $diff = 1 ;
@@ -3363,6 +3361,9 @@ sub _sysUpTime {
 
 ##########################################################################
 # $Log: Netviewer.pm,v $
+# Revision 1.8  2003/07/08 22:05:02  netdot
+# changes to get ip address/netmask determination to work
+#
 # Revision 1.7  2003/07/03 22:44:05  netdot
 # commenting out skip over loopback and other reserved IFs.
 #
