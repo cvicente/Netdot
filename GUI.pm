@@ -4,7 +4,7 @@ use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use strict;
 
-use vars qw ( @ISA @EXPORT @EXPORT_OK %inputtypes ) ;
+use vars qw ( @ISA @EXPORT @EXPORT_OK ) ;
 @ISA = qw( Exporter ) ;
 
 sub BEGIN { }
@@ -148,7 +148,7 @@ sub getobjlabel {
 	if ( !exists( $linksto{$c} ) ){
 	    push @ret, $obj->$c;
 	}else{
-	    push @ret, &getobjlabel($linksto{$c}, $obj->$c, $delim);
+	    push @ret, $self->getobjlabel($obj->$c, $delim);
 	}
     }
     return join "$delim", @ret ;
@@ -196,6 +196,9 @@ sub getinputtag {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.5  2003/06/21 01:27:42  netdot
+#  Fixed a bug in getobjlabel (too many parameters in the recursive call)
+#
 #  Revision 1.4  2003/06/13 18:23:49  netdot
 #  added getcolumnorderbrief -sf
 #
