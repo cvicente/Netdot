@@ -3,9 +3,9 @@ RELEASE=0.1
 PKG=Netdot
 DST = unstable
 ETC = ins.sample.data netdot.relationships netdot.schema
-DOC = TODO ChangeLog MILESTONES
-BIN = initacls.mysql initacls.Pg setup-class-dbi mason.pl initdb
-HTML = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html table.html banner style.css footer2 node.html
+DOC = TODO ChangeLog MILESTONES README
+BIN = initacls.mysql initacls.Pg setup-class-dbi mason.pl initdb ins.sample.data insert-metadata updatenodes.pl
+HTML = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html table.html banner style.css footer2 node.html error.html
 NETVIEWER = Netviewer.pm nv.categories nv.ifTypes
 LIB = Netviewer.pm nv.categories nv.ifTypes GUI.pm
 
@@ -48,7 +48,7 @@ nvtest:
 
 ######################################################################
 install:
-	@echo "Not here yet...."
+	@echo "Not here...."
 
 
 ######################################################################
@@ -60,13 +60,10 @@ dist:
 
 ######################################################################
 dir: 
-#	mkdir -p $(DST)/src
 	mkdir -p $(DST)/lib
 	mkdir -p $(DST)/bin
-#	mkdir -p $(DST)/etc
-	mkdir -p $(DST)/html
+	mkdir -p $(DST)/htdocs
 	mkdir -p $(DST)/doc
-	mkdir -p $(DST)/contrib
 
 
 ######################################################################
@@ -83,7 +80,7 @@ etc: $(ETC)
 
 ######################################################################
 html: $(HTML)
-	cp -f $? $(DST)/html
+	cp -f $? $(DST)/htdocs
 
 ######################################################################
 lib: $(LIB)
@@ -92,6 +89,7 @@ lib: $(LIB)
 ######################################################################
 make:
 	cp -f Makefile.db $(DST)/bin/Makefile
+	cp -f Makefile.dist $(DST)/Makefile
 
 
 
