@@ -1,31 +1,56 @@
 <%perl>
-my $l = new Apache::Sesssion::Lock::File;;
+my $l = new Apache::Session::Lock::File ;
 $l->clean( $DIR, 3600 );  # remove files older than 1 hr
+my %rev = reverse %ARGS;
 foreach my $j ( keys %ARGS ) {
   if( $ARGS{$j} eq "New" ) {
-    $tbl = $j;
+    $TBL = $j;
     next;
   }
   next if( $ARGS{$j} !~ /\w+/ );
   $args{$j} = $ARGS{$j};
 }
-unless( defined( $tbl ) ) {
-  $tbl = $args{table};
+##################################################
+# defined TBL (if not already) and set previous table was for reference
+if( $TBL && $args{table} ) {
+  $PREV = $args{table}
+} elsif( ! defined( $TBL ) ) {
+  $TBL = $args{table};
 }
+unless( defined( $PREV ) ) {
+  $PREV = $TBL;
+}
+##################################################
+# get state back
 if( defined( $args{sid} ) ) {
   $sid = $args{sid};
 }
-if( $tbl ) {
+if( $TBL ) {
   tie %session, 'Apache::Session::File', 
     $sid, { Directory => $DIR, LockDirectory => $DIR };
   $sid = $session{_session_id};
 }
-my %rev = reverse %ARGS;
+##################################################
+# if Cancel, delete state
+if( $args{submit} eq "Cancel" ) {
+  undef( $TBL );
+  undef( $PREV );
+  if( %session ) {
+    tied(%session)->delete;
+  }
+  delete( $args{sid} );
+  delete( $args{table} );
+  delete( $args{submit} );
+  delete( $ARGS{ $rev{New} } );
+  delete( $rev{New} );
+}
+##################################################
+# fill in the rest of state details
 if( $args{submit} || $rev{New} ) {
-#  foreach my $arg ( keys %args ) {
-#    next if( $arg eq "submit" || $arg eq "sid" || $arg eq "table" );
-#    $session{tables}{$tbl}{$arg} = $args{$arg};
-#  }
+  foreach my $arg ( keys %args ) {
+    next if( $arg eq "submit" || $arg eq "sid" || $arg eq "table" );
+    $session{tables}{$PREV}{$arg} = $args{$arg};
+  }
   if( ! defined( $args{submit} ) ) {
     defined( $session{path} ) ?
       ( $session{path} .= ";$args{table}" ) 
@@ -34,26 +59,28 @@ if( $args{submit} || $rev{New} ) {
 }
 if( $args{submit} ) {
   my @tbls = split( /;/, $session{path} );
-  $tbl = pop @tbls;
+  $TBL = pop @tbls;
   $session{path} = join( ';', @tbls );
 }
 </%perl>
 
 % ####################################################################
 <p>
-<& header, title =>"$tbl Create" &>
+<& header, title =>"$TBL Create" &>
 
-%   print Dumper( %session );
+% if( $args{"submit"} eq "Submit" && ! defined( $TBL ) ) {
 
-% if( $args{"submit"} eq "Submit" && ! defined( $tbl ) ) {
-    <p>do something -- like submit these changes
-    <ul>
-%   foreach my $a ( keys %args ) {
-      <li><% $a %> : <% $args{$a} %>
+    <p>Please confirm the following:
+%   foreach my $T ( keys %{ $session{tables} } ) {
+      <p><blockquote><strong><% $T %></strong><ul>
+%     foreach my $C ( keys %{ $session{tables}{$T} } ) {
+        <li><% $C %> : <% $session{tables}{$T}{$C} %>
+%     }
+      </ul></blockquote>
 %   }
-    </ul>
 %   tied(%session)->delete if( %session );
-% } elsif( ! $tbl || $args{submit} eq "Cancel" ) {
+
+% } elsif( ! $TBL || $args{submit} eq "Cancel" ) {
 %   tied(%session)->delete if( %session );
 %   my @t = Meta->retrieve_all();
     <p>Please select an object to create:<br>
@@ -66,7 +93,7 @@ if( $args{submit} ) {
 % } else {
     <form action="create.html" method="POST">
     <input type="hidden" name="sid" value="<% $sid %>">
-    <& form.html, table => $tbl, showdisabled => '0' &>
+    <& form.html, table => $TBL, showdisabled => '0' &>
     <table cellpadding="3" cellspacing="1" border="0">
     <tr align="LEFT">
     <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
@@ -80,6 +107,7 @@ if( $args{submit} ) {
     </form>
 % } # if/else table
 
+    <hr>
 %   print Dumper( %session );
 
 <& footer &>
@@ -90,8 +118,9 @@ use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Data::Dumper;
 use Apache::Session::File;
-use Apache::Sesssion::Lock::File;
-my( %args, %order, %linksto, %linksfrom, $obj, %session, $tbl, $id, $sid );
+use Apache::Session::Lock::File;
+my( %args, %order, %linksto, %linksfrom );
+my( $obj, %session, $TBL, $PREV, $id, $sid );
 my $DIR = "/home/netdot/public_html/tmp";
 undef( %args );
 undef( %order );
@@ -99,10 +128,10 @@ undef( %linksto );
 undef( %linksfrom );
 undef( %session );
 undef( $obj );
-undef( $tbl );
+undef( $TBL );
+undef( $PREV );
 undef( $id );
 undef( $sid );
-
 </%init>
 
 <%doc>
@@ -110,6 +139,10 @@ mason file
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.4  2003/05/12 23:23:58  netdot
+#  trying to clean up some of the logic and cover the cases of 'submit',
+#  'new', and 'cancel'.  also better document some of the chunks of code.
+#
 #  Revision 1.3  2003/05/12 16:21:12  netdot
 #  *** empty log message ***
 #
