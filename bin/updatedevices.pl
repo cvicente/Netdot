@@ -115,7 +115,7 @@ foreach my $device ( @devices ) {
 	  next;
 	}
       } else {
-	$iftmp{managed} = 0;  #can't be null
+	$iftmp{managed} = 1;  #can't be null
 	$iftmp{speed} ||= 0; #can't be null
 	print "Interface device ", $device->name, ":$newif doesn't exist; ",
 	  "inserting\n" if( $DEBUG );
