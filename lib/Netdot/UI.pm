@@ -567,29 +567,32 @@ modified row's id column for success and 0 for failure.
 =cut 
 
 sub update {
-  my( $self, %argv ) = @_;
-  my($obj) = $argv{object};
-  my(%state) = %{ $argv{state} };
-  my $change = 0;
-
-  foreach my $col ( keys %state ) {
-    if( $state{$col} ne int($obj->$col) ) {
-      $change = 1;
-      eval { $obj->set( $col, $state{$col} ); };
-      if( $@ ) {
-	$self->error("Unable to set $col to $state{$col}: $@");
-	return 0;
-      }
+    my( $self, %argv ) = @_;
+    my($obj) = $argv{object};
+    my(%state) = %{ $argv{state} };
+    my $change = 0;
+    
+    foreach my $col ( keys %state ) {
+	my $v = ( ref($obj->$col) ) ? $obj->$col->id : $obj->$col;
+	eval { 
+	    if( $state{$col} ne $v ) {
+		$change = 1;
+		$obj->set( $col, $state{$col} ); 
+	    };
+	if( $@ ) {
+	    $self->error("Unable to set $col to $state{$col}: $@");
+	    return 0;
+	}
     }
-  }
-  if( $change ) {
-    eval { $obj->update(); };
-    if( $@ ) {
-      $self->error("Unable to update: $@");
-      return 0;
+}
+    if( $change ) {
+	eval { $obj->update(); };
+	if( $@ ) {
+	    $self->error("Unable to update: $@");
+	    return 0;
+	}
     }
-  }
-  return $obj->id;
+    return $obj->id;
 }
 
 =head2 insert - insert row into DB table
@@ -834,7 +837,7 @@ sub form_to_db{
 
 =head2 selectLookup
 
-  $ui->selectLookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", makeLink=>1);
+  $ui->selectLookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", linkPage=>1);
 
 Arguments:
   - object: DBI object, can be null if a table object is included
@@ -843,9 +846,9 @@ Arguments:
   - edit: true if editing, false otherwise.
   - htmlExtra: (optional) extra html you want included in the output. Common
                use would be to include style="width: 150px;" and the like.
-  - makeLink:  (optional) Make the printed value a link
-               to itself via view.html (requires that column value is 
-               defined)
+  - linkPage:  (optional) Make the printed value a link
+               to itself via some page (i.e. view.html) 
+               (requires that column value is defined)
   - maxCount: (optional) maximum number of results to display before giving 
               the user the option of refining their results. Defaults to
               DEFAULT_SELECTMAX in configuration files.
@@ -855,12 +858,12 @@ Arguments:
 
 sub selectLookup($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $lookup, $where, $isEditing, $htmlExtra, $makeLink, $maxCount) = 
+    my ($o, $table, $column, $lookup, $where, $isEditing, $htmlExtra, $linkPage, $maxCount) = 
 	($args{object}, $args{table}, 
 	 $args{column}, $args{lookup},
 	 $args{where}, $args{edit},
-	 $args{htmlExtra}, $args{makeLink},
-     $args{maxCount});
+	 $args{htmlExtra}, $args{linkPage},
+	 $args{maxCount});
     
     $htmlExtra = "" if (!$htmlExtra);
     $maxCount = $args{maxCount} || $self->{"DEFAULT_SELECTMAX"};
@@ -882,8 +885,9 @@ sub selectLookup($@){
         # if the selected objects are within our limits, show the select box.
         if ($count <= $maxCount){
             @fo = $lookup->retrieve_all() if (!$where);
-            my $lblField = ($self->getlabels($lookup))[0];
-            @fo = sort { $a->$lblField cmp $b->$lblField } @fo;
+	    @fo = map  { $_->[0] }
+	    sort { $a->[1] cmp $b->[1] }
+	    map { [$_ , $self->getlabelvalue($_, \@labels)] } @fo;
 
             # if an object was passed we use it to obtain table name, id, etc
             # as well as add an initial element to the selection list.
@@ -932,9 +936,13 @@ sub selectLookup($@){
             printf("</SELECT>\n");
         }
 
-    }elsif ($makeLink && $o->$column){
+    }elsif ($linkPage && $o->$column){
+	if ($linkPage eq "1" || $linkPage eq "view.html"){
 	    my $rtable = $o->$column->table;
-        printf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $rtable, $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+	    printf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $rtable, $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+	}else{
+	    printf("<a href=\"$linkPage?id=%s\"> %s </a>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+	}
     }else{
         printf("%s\n", ($o->$column ? $self->getlabelvalue($o->$column, \@labels) : ""));
     }
@@ -1038,17 +1046,17 @@ sub radioGroupBoolean($@){
    - edit: true if editing, false otherwise.
    - htmlExtra: extra html you want included in the output. Common use
                 would be to include style="width: 150px;" and the like.
-   - makeLink: (optional) Make the printed value a link
-                to itself via view.html (requires that column value is 
-                defined)
+   - linkPage: (optional) Make the printed value a link
+                to itself via some component (i.e. view.html) 
+                (requires that column value is defined)
 
 =cut
 
 sub textField($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $htmlExtra, $makeLink, $default) = ($args{object}, $args{table}, 
+    my ($o, $table, $column, $isEditing, $htmlExtra, $linkPage, $default) = ($args{object}, $args{table}, 
 									     $args{column}, $args{edit}, 
-									     $args{htmlExtra}, $args{makeLink},
+									     $args{htmlExtra}, $args{linkPage},
 									     $args{default});
     
     my $tableName = ($o ? $o->table : $table);
@@ -1064,8 +1072,12 @@ sub textField($@){
     }
     if ($isEditing){
         printf("<INPUT TYPE=\"TEXT\" NAME=\"%s\" VALUE=\"%s\" %s>\n", $name, $value, $htmlExtra);
-    }elsif ( $makeLink && $value){
-	printf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $tableName, $o->id, $value);
+    }elsif ( $linkPage && $value){
+	if ( $linkPage eq "1" || $linkPage eq "view.html" ){
+	    printf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $tableName, $o->id, $value);
+	}else{
+    	    printf("<a href=\"$linkPage.html?id=%s\"> %s </a>\n", $o->id, $value);
+	}
     }else{
         printf("%s\n", $value);
     }

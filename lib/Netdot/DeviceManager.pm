@@ -457,7 +457,7 @@ sub update {
 
     my (%dbips, %newips, %dbvlans, %ifvlans);
 
-    foreach my $newif ( keys %{ $dev{interface} } ) {
+    foreach my $newif ( sort keys %{ $dev{interface} } ) {
 
 	############################################
 	# set up IF state data
@@ -590,7 +590,7 @@ sub update {
 	    #
 	    map { $dbips{$_->address} = $_->id } $if->ips();
 
-	    foreach my $newip ( keys %{ $dev{interface}{$newif}{ips} } ){
+	    foreach my $newip ( sort keys %{ $dev{interface}{$newif}{ips} } ){
 		my( $ipobj, $maskobj, $subnet, $ipdbobj );
 		my $version = ($newip =~ /:/) ? 6 : 4;
 		my $prefix = ($version == 6) ? 128 : 32;
@@ -1039,6 +1039,7 @@ sub get_dev_info {
 		     '45000000'    => '45 Mbps',
 		     '45045000'    => 'DS3',
 		     '46359642'    => 'DS3',
+		     '54000000'    => '54 Mbps',
 		     '64000000'    => '64 Mbps',
 		     '100000000'   => '100 Mbps',
 		     '149760000'   => 'ATM on OC-3',

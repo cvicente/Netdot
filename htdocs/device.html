@@ -14,107 +14,21 @@ function showVlan(){
 -->
 </script>
 
-% if ( defined($search) && $search =~ /\w+/ ){
-%   my $list;
-%   unless ( ($list = $dns->getdevbynamelike($search)) ){
-       <p><b>No results</b>
-%      $m->abort;
-       </td></tr></table>
-%   }
+% if ( $search ){
+<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+ <tr class="rowtitle0" >
+    <td valign="top" align="left">
+       <b><% scalar(@$list) %> results for <i><% $search %></i> </b>
+    </td>
+ </tr>
+ <tr>
+   <td valign="top" width="50%" align="center">
+      <& sortresults.mhtml, table => "Device", object => $list, view => "row", page => "device.html" &>
+  </td>
+  </tr>
+</table>
+% }elsif ( ! $search ){
 
-%   my $num = scalar(@$list);
- <table width="95%" border="0" cellspacing="0" cellpadding="1" class="tablebackground"> 
- <tr><td>
-   Query <b><em><% $search %></em></b> returned: <b><% $num %> match(es)</b>
-   <p>
-   <table border="0" width="100%" cellspacing="0" cellpadding="1" class="tablebackground">
-      <tr class="rowtitle0">
-      <td>Name</td>
-      <td>Type</td>
-      <td>Product</td>
-      </tr>
-<%perl>
-foreach my $o (@$list){
-    my ($name, $type, $product);
-    if ($o->name && $o->name->name){
-	$name = $o->name->name;
-    }else{
-	$name = "N/A";
-    }
-    if ($o->productname){
-	if ($o->productname->type && $o->productname->type->name){
-	    $type = $o->productname->type->name;
-	}else{
-	    $type = "N/A";
-	}
-	if ($o->productname->name){
-	    $product = $o->productname->name;
-	}else{
-	    $product = "N/A"
-	}
-    }else{
-	$type    = "N/A";
-	$product = "N/A";
-    }
-    
-</%perl>
-      <tr>
-	 <td class="column2">
-	    <b><a href="device.html?id=<% $o->id %>"><% $name %></a></b>
-	 </td>   
-	 <td class="column2">
-	    <b><% $type %></b>
-	 </td>   
-	 <td class="column2">
-	    <b><% $product %></b>
-	 </td>   
-      </tr>
-      <tr height="1" class="delimiter">
-        <td colspan="3" height="1"></td>
-      </tr>
-%    }   
-
-   </table>
-%} elsif ( defined($search) && $search !~ /\w+/ ){
-     <p><b>No search criteria</b>   
-%    $m->abort;
-
-<%perl>
-}elsif( $ARGS{intadd} ){
-
-# Add a group of interfaces
-# -----------------------------------------------------------------------------
-  if (defined ($ARGS{intaddnum}) &&  $ARGS{intaddnum} > 0){
-     my %tmpint;
-     $tmpint{device}    = $id;
-     $tmpint{monitored} = 0;
-     $tmpint{number}    = 1000;
-     my $i;
-     for ($i = 0; $i < $ARGS{intaddnum}; $i++){
-        $tmpint{number}++;
-     	if (!($ui->insert(table => "Interface", state => \%tmpint)) ){
-	   $m->comp('error.mhtml', error => $ui->error);
-	}
-     }
-  }
-}elsif( defined($ARGS{submit}) ){
-
-# insert/update
-# -----------------------------------------------------------------------------
-    if (!$ui->form_to_db(%ARGS)){
-	$m->comp('error.mhtml', error => $ui->error);
-    }
-    # Do this to 'flush' the values associated with the object
-    # before redisplaying
-    $o = undef;
-    if ($id){
-	$o = Device->retrieve($id);
-	$name = ($o->name && $o->name->name) ? $o->name->name : "Name N/A!";
-    }
-}
-
-if ( !defined($search) ){
-</%perl>
 <!-- Header Table -->
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
@@ -146,6 +60,7 @@ if ( !defined($search) ){
     </td>
  </tr>
 </table>
+
 <!-- Margins Table -->
 <table border="0" width="95%" align="center"  class="tablebackground">
  <tr>
@@ -208,7 +123,7 @@ if ( !defined($search) ){
            <tr>
              <td class="formtablec1">MAC: </td>
 	     <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", makeLink=>1);
+%               $ui->selectLookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", linkPage=>"view.html");
 	     </td> 
 	   </tr>
            <tr>
@@ -230,7 +145,7 @@ if ( !defined($search) ){
            <tr>
              <td class="formtablec1">Product: </td>
 	     <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"productname", lookup=>"Product", edit=>"$editgen", makeLink=>1);
+%               $ui->selectLookup(object=>$o, column=>"productname", lookup=>"Product", edit=>"$editgen", linkPage=>"view.html");
 	     </td>
 	   </tr>
            <tr>
@@ -290,41 +205,17 @@ if ( !defined($search) ){
    <tr>
      <td>
       <table border="0" width="100%">
-%	my @ips;
-%	foreach my $if ($o->interfaces) {
-%	  my @intips;
-%	  next unless (scalar(@intips = $if->ips));
-%	  map { push @ips, $_} @intips;
-%	}
 %	if (scalar @ips){
          <tr>
-	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=ip">Address</a></td>
-	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=subnet">Subnet</a></td>
-	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=interface">Interface</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Ipblock.address">Address</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Ipblock.parent">Subnet</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Interface.name">Interface</a></td>
 	   <td align="left">DNS Name</td>
 	   <td align="left">Monitored?</td>
          </tr>
 %	}
-<%perl>	
-       my @sortedips;
-       $ipsort ||= "ip";
-       if ($ipsort eq "ip" ){
-          # Sort by IP address
-          #
-	  @sortedips = @{ $ipm->sortblocksbyaddr(\@ips) };
-       }elsif ($ipsort eq "subnet"){
-          # Sort by Subnet
-          #
-	  @sortedips = @{ $ipm->sortblocksbyparent(\@ips) };
-       }elsif ($ipsort eq "interface"){
-          # Sort by Interface
-          #
-          @sortedips = map { $_->[0] }
-		sort {	$a->[1] cmp $b->[1] }
-		map { [ $_, $_->interface->name ] } @ips;
-	}		
-</%perl>	
-%	foreach my $ip (@sortedips){	   
+
+%	foreach my $ip (@ips){	   
 %	 $ci = ($ci + 1) % 2;
 	 <tr class="<% $cssitem{$ci} %>">
 	   <td align="left">
@@ -348,7 +239,7 @@ if ( !defined($search) ){
 %	             if ($editips){	 
   	                <input type="checkbox" name="<% "RR__" . $ar->rr->id . "__delete" %>" >[del]
 %	             }
-%                    $ui->textField(object=> $ar->rr, column=>"name", edit=>$editips, makeLink=>1);
+%                    $ui->textField(object=> $ar->rr, column=>"name", edit=>$editips, linkPage=>"view.html");
 %		  }
 %              }else{
 	          
@@ -396,21 +287,21 @@ if ( !defined($search) ){
         <tr>
 	   <td class="formtablec1">Entity: </td>
 	   <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", makeLink=>1);
+%               $ui->selectLookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html");
 	   </td>
 	   <td class="formtablec1">Site: </td>
 	   <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1);
+%               $ui->selectLookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", linkPage=>"view.html");
 	   </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Room: </td>
 	   <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"room", lookup=>"Room", edit=>$editloc, makeLink=>1);
+%               $ui->selectLookup(object=>$o, column=>"room", lookup=>"Room", edit=>$editloc, linkPage=>"view.html");
 	   </td>
 	   <td class="formtablec1"> <i>- or -</i> Closet: </td>
 	   <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"closet", lookup=>"Closet", edit=>$editloc, makeLink=>1);
+%               $ui->selectLookup(object=>$o, column=>"closet", lookup=>"Closet", edit=>$editloc, linkPage=>"view.html");
 	   </td>
         <tr>
 	   <td class="formtablec1">Rack: </td>
@@ -454,13 +345,13 @@ if ( !defined($search) ){
         <tr>
 	   <td class="formtablec1">Contact Group: </td>
 	     <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"contactlist", lookup=>"ContactList", edit=>"$editmgmt", makeLink=>1);
+%               $ui->selectLookup(object=>$o, column=>"contactlist", lookup=>"ContactList", edit=>"$editmgmt", linkPage=>"view.html");
 	     </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">User: </td>
 	     <td class="formtablec2"> 
-%               $ui->selectLookup(object=>$o, column=>"person", lookup=>"Person", edit=>"$editmgmt", makeLink=>1);
+%               $ui->selectLookup(object=>$o, column=>"person", lookup=>"Person", edit=>"$editmgmt", linkPage=>"view.html");
 	     </td>
 	</tr>
         <tr>
@@ -606,10 +497,10 @@ if ( !defined($search) ){
 		</td>	   
 %	       }
 	   <td align="left"> 
-%               $ui->textField(object=>$if, column=>"number", edit=>$editints, makeLink => 1);
+%               $ui->textField(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 20px;\"", linkPage=>"view.html");
 	   </td>
 	   <td align="left"> 
-%               $ui->textField(object=>$if, column=>"name", edit=>$editints);
+%               $ui->textField(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 80px;\"");
 	   </td>
 	   <td align="left"> 
                <% $if->speed %>
@@ -631,7 +522,7 @@ if ( !defined($search) ){
 	   </td>
 	   <td align="left">
 %           $ui->selectLookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
-%                             edit=>$editints, makeLink=>1);
+%                             edit=>$editints, linkPage=>"cable_horizontal.html");
 	   </td>
 	   <td align="left"> 
 %               $ui->textField(object=>$if, column=>"description", edit=>$editints);
@@ -775,10 +666,12 @@ $editloc  => undef
 $editmgmt => undef
 $editips  => undef
 $editints => undef
-$ipsort   => undef
+$ipsort   => "Ipblock.address"
 $s2name   => "Management"
 $user     => $ENV{REMOTE_USER}
 $showvlan => "all"
+$intadd   => undef
+$submit   => undef
 </%args>
 
 <%init>
@@ -794,25 +687,84 @@ my %arg;
 my $name;
 my %ifvlans;
 my %vlans;
-
-if ($id){
-   $o = Device->retrieve($id);
-   $name = ($o->name && $o->name->name) ? $o->name->name : "Name N/A!";
-   # Build a hash of Interface Vlans
-   foreach my $if ($o->interfaces){
-       if (scalar( my @ifv = $if->vlans)){
-	   foreach my $ifv (@ifv){
-	       my $vid = $ifv->vlan->vid;
-	       $ifvlans{$if}{$vid} = "";
-	       $vlans{$vid} = "";
-	   }
-       }
-   }
-}else{
-   $name = "Search"
-}
+my $list;
+my @ips;
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+if ( defined($search) && $search =~ /\w+/ ){
+    unless ( ($list = $dns->getdevbynamelike($search)) ){
+	$m->comp("index.html", title => "Device Worksheet: $name ", s2name => $s2name);
+	print  "<p><b>No results</b>";
+	$m->comp("footer.mhtml");
+	$m->abort;
+    }
+    my $num = scalar(@$list);
+    if ( $num == 1 ){
+	# Don't offer list.  Just display device
+	$o = $list->[0];
+	$id = $o->id;
+	$search = undef;
+    }
+
+}elsif ( defined($search) && $search !~ /\w+/ ){
+    $m->comp("index.html", title => "Device Worksheet: $name ", s2name => $s2name);
+    print "<p><b>No search criteria</b>";   
+    $m->comp("footer.mhtml");    
+
+}elsif( $intadd ){
+	# Add a group of interfaces
+	if (defined ($ARGS{intaddnum}) &&  $ARGS{intaddnum} > 0){
+	    my %tmpint;
+	    $tmpint{device}    = $id;
+	    $tmpint{monitored} = 0;
+	    $tmpint{number}    = 1000;
+	    my $i;
+	    for ($i = 0; $i < $ARGS{intaddnum}; $i++){
+		$tmpint{number}++;
+		if (!($ui->insert(table => "Interface", state => \%tmpint)) ){
+		    $m->comp('error.mhtml', error => $ui->error);
+		}
+	    }
+	}
+}elsif( $submit ){
+	# insert/update
+	if (!$ui->form_to_db(%ARGS)){
+	    $m->comp('error.mhtml', error => $ui->error);
+	}
+}
+
+if ($id){
+    $o = Device->retrieve($id);
+    $name = ($o->name && $o->name->name) ? $o->name->name : "Name N/A!";
+
+    # Build a hash of Interface Vlans
+    foreach my $if ($o->interfaces){
+	if (scalar( my @ifv = $if->vlans)){
+	    foreach my $ifv (@ifv){
+		my $vid = $ifv->vlan->vid;
+		$ifvlans{$if}{$vid} = "";
+		$vlans{$vid} = "";
+	    }
+	}
+    }
+    
+    Ipblock->set_sql(allips => qq{
+	SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
+	    FROM Ipblock, Interface, Device
+	    WHERE Interface.id = Ipblock.interface AND
+	    Device.id = Interface.device AND
+	    Device.id = ?
+	    ORDER BY $ipsort
+	});
+    
+    
+@ips = Ipblock->search_allips($o->id);
+
+}else{
+    $name = "Search";
+}
+
 
 </%init>
 
