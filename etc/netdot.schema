@@ -1,0 +1,918 @@
+#   column, type, nullability, length, default, database-local
+#
+# Template:
+#
+#'TableName' => {
+# 'columns' => [
+#   'id', 'serial', '', '', '', '',
+# ],
+# 'primary_key' => 'id',
+# 'unique' => [  ],
+# 'index' => [ ['']  ],
+#}
+
+
+my $schema = {
+    
+'Address' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'street1', 'varchar', '', '128', '', '',
+    'street2', 'varchar', 'NULL', '128', '', '',
+    'pobox', 'varchar', 'NULL', '32', '', '',
+    'city', 'varchar', '', '64', '', '',
+    'state', 'varchar', '', '32', '', '',
+    'zip', 'varchar', 'NULL', '16', '', '',
+    'country', 'varchar', 'NULL', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['street1','street2','city'] ],
+  'index' => [ ['street1'] ],
+},
+
+'Address_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'address_id', 'integer', '', '', '', '',
+    'street1', 'varchar', '', '128', '', '',
+    'street2', 'varchar', 'NULL', '128', '', '',
+    'pobox', 'varchar', 'NULL', '32', '', '',
+    'city', 'varchar', '', '64', '', '',
+    'state', 'varchar', '', '32', '', '',
+    'zip', 'varchar', 'NULL', '16', '', '',
+    'country', 'varchar', 'NULL', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ],
+  'index' => [ ['address_id'] ],
+},
+
+'Availability' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name']  ],
+  'index' => [ ['name'] ],
+},
+
+'Cable' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'type', 'integer', '', '', '', '',
+    'owner', 'integer', 'NULL', '', '', '',
+    'installdate', 'date', 'NULL', '', '', '',
+    'startsite', 'integer', '', '', '', '',
+    'startroom', 'varchar', '', '32', '', '',
+    'endsite', 'integer', '', '', '', '',
+    'endroom', 'varchar', '', '32', '', '',
+    'numberofstrands', 'integer', '', '', '', '',
+    'length', 'varchar', 'NULL', '32', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Cable_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'cable_id', 'integer', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'type', 'integer', '', '', '', '',
+    'owner', 'integer', 'NULL', '', '', '',
+    'installdate', 'date', 'NULL', '', '', '',
+    'startsite', 'integer', '', '', '', '',
+    'startroom', 'varchar', '', '32', '', '',
+    'endsite', 'integer', '', '', '', '',
+    'endroom', 'varchar', '', '32', '', '',
+    'numberofstrands', 'integer', '', '', '', '',
+    'length', 'varchar', 'NULL', '32', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ [ ] ],
+  'index' => [ [ 'cable_id' ] ],
+},
+
+'CableStrand' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'cable', 'integer', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'status', 'integer', '', '', '', '',
+    'loss', 'varchar', 'NULL', '32', '', '',
+    'direction', 'varchar', '', '32', '', '',
+    'description', 'varchar', '', '128', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['cable', 'name'] ],
+  'index' => [ ['name'] ],
+},
+
+'CableStrand_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'cablestrand_id', 'integer', '', '', '', '',
+    'cable', 'integer', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'status', 'integer', '', '', '', '',
+    'loss', 'varchar', 'NULL', '32', '', '',
+    'direction', 'varchar', '', '32', '', '',
+    'description', 'varchar', '', '128', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [[]],
+  'index' => [ ['cablestrand_id'] ],
+},
+
+'CableType' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Circuit' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'cid', 'varchar', '', '128', '', '',
+    'vendor', 'integer', 'NULL', '', '', '',
+    'nearend', 'integer', '', '', '', '',
+    'farend', 'integer', '', '', '', '',
+    'type', 'integer', '', '', '', '',
+    'speed', 'varchar', 'NULL', '32', '', '',
+    'dlci', 'varchar', 'NULL', '64', '', '',
+    'installdate', 'date', 'NULL', '', '', '',
+    'connection', 'integer', '', '', '', '',
+    'status', 'integer', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['vendor', 'cid'] ],
+  'index' => [ ['cid'] ],
+},
+
+'Circuit_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'circuit_id', 'integer', '', '', '', '',
+    'cid', 'varchar', '', '128', '', '',
+    'vendor', 'integer', 'NULL', '', '', '',
+    'nearend', 'integer', '', '', '', '',
+    'farend', 'integer', '', '', '', '',
+    'type', 'integer', '', '', '', '',
+    'speed', 'varchar', 'NULL', '32', '', '',
+    'dlci', 'varchar', 'NULL', '64', '', '',
+    'installdate', 'date', 'NULL', '', '', '',
+    'connection', 'integer', '', '', '', '',
+    'status', 'integer', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ],
+  'index' => [ ['circuit_id'] ],
+},
+
+'CircuitStatus' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name'] ],
+},
+
+'CircuitType' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name'] ],
+},
+
+
+'Connection' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+    'entity', 'integer', 'NULL', '', '', '',
+    'nearend', 'integer', '', '', '', '',
+    'farend', 'integer', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name'] ],
+},
+
+'Connection_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'connection_id', 'integer', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+    'entity', 'integer', 'NULL', '', '', '',
+    'nearend', 'integer', '', '', '', '',
+    'farend', 'integer', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ],
+  'index' => [ ['connection_id'] ],
+},
+
+'Contact' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'contacttype', 'integer', '', '', '', '',
+    'contactlist', 'integer', '', '', '', '',
+    'person', 'integer', 'NULL', '', '', '',
+    'email', 'varchar', 'NULL', '64', '', '',
+    'office', 'varchar', 'NULL', '32', '', '',
+    'home', 'varchar', 'NULL', '32', '', '',
+    'cell', 'varchar', 'NULL', '32', '', '',
+    'pager', 'varchar', 'NULL', '32', '', '',
+    'emailpager', 'varchar', 'NULL', '32', '', '',
+    'fax', 'varchar', 'NULL', '32', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [  ],
+  'index' => [ ['contactlist'] ],
+},
+
+'Contact_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'contact_id', 'integer', '', '', '', '',
+    'contacttype', 'integer', '', '', '', '',
+    'contactlist', 'integer', '', '', '', '',
+    'person', 'integer', 'NULL', '', '', '',
+    'email', 'varchar', 'NULL', '64', '', '',
+    'office', 'varchar', 'NULL', '32', '', '',
+    'home', 'varchar', 'NULL', '32', '', '',
+    'cell', 'varchar', 'NULL', '32', '', '',
+    'pager', 'varchar', 'NULL', '32', '', '',
+    'emailpager', 'varchar', 'NULL', '32', '', '',
+    'fax', 'varchar', 'NULL', '32', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [  ],
+  'index' => [ ['contact_id' ] ],
+},
+
+'ContactList' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'ContactType' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Device' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'type', 'integer', '', '', '', '',
+    'serialnumber', 'varchar', '', '64', '', '',
+    'productname', 'integer', 'NULL', '', '', '',
+    'part_of', 'integer', 'NULL', '', '', '',
+    'inventorynumber', 'varchar', 'NULL', '64', '', '',
+    'maint_covered', 'bool', '', '', '', '',
+    'site', 'integer', '', '', '', '',
+    'room', 'varchar', 'NULL', '64', '', '',
+    'rack', 'varchar', 'NULL', '32', '', '',
+    'dateinstalled', 'date', 'NULL', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+],
+  'primary_key' => 'id',
+  'unique' => [ ['serialnumber', 'productname']  ],
+  'index' => [ ['serialnumber'] ],
+},
+
+'Device_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'device_id', 'integer', '', '', '', '',
+    'type', 'integer', '', '', '', '',
+    'serialnumber', 'varchar', '', '64', '', '',
+    'productname', 'integer', '', '', '', '',
+    'part_of', 'integer', 'NULL', '', '', '',
+    'inventorynumber', 'varchar', 'NULL', '64', '', '',
+    'contactlist', 'integer', 'NULL', '', '', '',
+    'maint_covered', 'integer', '', '', '', '',
+    'site', 'integer', '', '', '', '',
+    'room', 'varchar', 'NULL', '64', '', '',
+    'rack', 'varchar', 'NULL', '32', '', '',
+    'dateinstalled', 'date', 'NULL', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+],
+  'primary_key' => 'id',
+  'unique' => [  ],
+  'index' => [ ['device_id'] ],
+},
+
+'DeviceType' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Entity' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'aliases', 'varchar', 'NULL', '255', '', '',
+    'type', 'integer', '', '', '', '',
+    'availability', 'integer', 'NULL', '', '', '',
+    'contactlist', 'integer', 'NULL', '', '', '',
+    'acctnumber', 'varchar', 'NULL', '128', '', '',
+    'maint_contract', 'varchar', 'NULL', '128', '', '',
+    'autsys', 'varchar', 'NULL', '32', '', '',
+    'bgppeerip', 'varchar', 'NULL', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Entity_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'entity_id', 'integer', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'aliases', 'varchar', 'NULL', '255', '', '',
+    'type', 'integer', '', '', '', '',
+    'availability', 'integer', 'NULL', '', '', '',
+    'contactlist', 'integer', 'NULL', '', '', '',
+    'acctnumber', 'varchar', 'NULL', '128', '', '',
+    'maint_contract', 'varchar', 'NULL', '128', '', '',
+    'autsys', 'varchar', 'NULL', '32', '', '',
+    'bgppeerip', 'varchar', 'NULL', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ],
+  'index' => [ ['entity_id'] ],
+},
+
+'EntitySite' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'entity', 'integer', '', '', '', '',
+    'site', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['entity','site'] ],
+  'index' => [ ['entity'], ['site'] ],
+},
+
+'EntityType' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+
+'Interface' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'node', 'integer', '', '', '', '',
+    'ifdescr', 'varchar', 'NULL', '64', '', '', 
+    'physaddr', 'varchar', 'NULL', '64', '', '',
+    'ifindex', 'integer', '', '', '', '',
+    'iftype', 'varchar', 'NULL', '32', '', '',
+    'ifalias', 'varchar', 'NULL', '128', '', '',
+    'ifspeed', 'integer', '', '', '', '', 
+    'ifadminstatus', 'varchar', 'NULL', '16', '', '',
+    'managed', 'bool', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '', 
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['node','ifindex'] ],
+  'index' => [ ['ifindex'], ['ifdescr'], ['physaddr'] ],
+},
+
+'Interface_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'interface_id', 'integer', '', '', '', '',
+    'node', 'integer', '', '', '', '',
+    'ifdescr', 'varchar', 'NULL', '64', '', '', 
+    'physaddr', 'varchar', 'NULL', '64', '', '',
+    'jacknumber', 'varchar', 'NULL', '16', '', '',
+    'ifindex', 'integer', '', '', '', '',
+    'iftype', 'varchar', 'NULL', '32', '', '',
+    'ifalias', 'varchar', 'NULL', '128', '', '',
+    'ifspeed', 'integer', '', '', '', '', 
+    'ifadminstatus', 'varchar', 'NULL', '16', '', '',
+    'managed', 'bool', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '', 
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [  ],
+  'index' => [ ['interface_id'] ],
+},
+
+'InterfaceDep' => {
+ 'columns' => [
+   'id', 'serial', '', '', '', '',
+   'parent', 'integer', '', '', '', '',
+   'child', 'integer', '', '', '', '',
+ ],
+ 'primary_key' => 'id',
+ 'unique' => [ ['parent','child'] ],
+ 'index' => [ ['parent'], ['child']  ],
+},
+
+'Ip' => {
+ 'columns' => [
+   'id', 'serial', '', '', '', '',
+   'interface', 'integer', '', '', '', '',
+   'address', 'varchar', '', '64', '', '',
+   'mask', 'varchar', '', '64', '', '',
+   'subnet', 'integer', '', '', '', '',
+ ],
+ 'primary_key' => 'id',
+ 'unique' => [ ['address', 'mask'] ],
+ 'index' => [ ['address']  ],
+},
+
+'Ip_history' => {
+ 'columns' => [
+   'id', 'serial', '', '', '', '',
+   'ip_id', 'integer', '', '', '', '',
+   'interface', 'integer', '', '', '', '',
+   'address', 'varchar', '', '64', '', '',
+   'mask', 'varchar', '', '64', '', '',
+   'subnet', 'integer', '', '', '', '',
+   'modified', 'timestamp', '', '', '', '',
+   'modifier', 'varchar', 'NULL', '32', '', '',
+],
+ 'primary_key' => 'id',
+ 'unique' => [  ],
+ 'index' => [ ['ip_id']  ],
+},
+
+'Meta' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'columnorder', 'varchar', 'NULL', '255', '', '',
+    'columntypes', 'varchar', 'NULL', '255', '', '',
+    'columnorderbrief', 'varchar', 'NULL', '255', '', '',
+    'label', 'varchar', 'NULL', '255', '', '',
+    'linksto', 'varchar', 'NULL', '255', '', '',
+    'linksfrom', 'varchar', 'NULL', '255', '', '',
+    'isjoin', 'bool', '', '', '', '',
+    'description', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Name' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'ip', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Name_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name_id', 'integer', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'ip', 'integer', '', '', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ],
+  'index' => [ ['name_id'] ],
+},
+
+'Netviewer' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', 'NULL', '128', '', '',
+    'value', 'varchar', 'NULL', '128', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Node' => {
+ 'columns' => [
+   'id', 'serial', '', '', '', '',
+   'name', 'varchar', '', '64', '', '',
+   'aliases', 'varchar', '', '255', '', '',
+   'type', 'integer', '', '', '', '',
+   'device', 'integer', '', '', '', '',
+   'sysdescription', 'varchar', 'NULL', '128', '', '',
+   'physaddr', 'varchar', 'NULL', '64', '', '',
+   'sw_version', 'varchar', 'NULL', '64', '', '',
+   'oobname', 'varchar', 'NULL', '64', '', '',
+   'oobnumber', 'varchar', 'NULL', '32', '', '',
+   'contactlist', 'integer', '', '', '', '',
+   'user', 'integer', '', '', '', '',
+   'managed', 'bool', '', '', '', '',
+   'community', 'varchar', 'NULL', '64', '', '',
+   'info', 'varchar', 'NULL', '255', '', '',
+ ],
+ 'primary_key' => 'id',
+ 'unique' => [ ['name'] ],
+ 'index' => [ ['name'] ],
+},
+
+'Node_history' => {
+ 'columns' => [
+   'id', 'serial', '', '', '', '',
+   'node_id', 'integer', '', '', '', '',
+   'name', 'varchar', '', '64', '', '',
+   'aliases', 'varchar', '', '255', '', '',
+   'type', 'integer', '', '', '', '',
+   'device', 'integer', '', '', '', '',
+   'sysdescription', 'varchar', 'NULL', '128', '', '',
+   'physaddr', 'varchar', 'NULL', '64', '', '',
+   'sw_version', 'varchar', 'NULL', '64', '', '',
+   'contactlist', 'integer', '', '', '', '',
+   'user', 'integer', '', '', '', '',
+   'oobname', 'varchar', 'NULL', '64', '', '',
+   'oobnumber', 'varchar', 'NULL', '32', '', '',
+   'managed', 'bool', '', '', '', '',
+   'community', 'varchar', 'NULL', '64', '', '',
+   'info', 'varchar', 'NULL', '255', '', '',
+   'modified', 'timestamp', '', '', '', '',
+   'modifier', 'varchar', 'NULL', '32', '', '',
+ ],
+ 'primary_key' => 'id',
+ 'unique' => [ [ ] ],
+ 'index' => [ ['node_id'] ],
+},
+
+'NodeService' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'node', 'integer', '', '', '', '',
+    'service', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['node','service'] ],
+  'index' => [ ['node'],['service'] ],
+},
+
+'NodeType' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name'] ],
+},
+
+'NvIfReserved' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Person' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'firstname', 'varchar', '', '64', '', '',
+    'lastname', 'varchar', '', '64', '', '',
+    'aliases', 'varchar', 'NULL', '255', '', '',
+    'position', 'varchar', 'NULL', '64', '', '',
+    'department', 'varchar', 'NULL', '64', '', '',
+    'address', 'integer', 'NULL', '', '', '',
+    'availability', 'integer', 'NULL', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['firstname', 'lastname', 'department'] ],
+  'index' => [ ['firstname'], ['lastname'] ],
+},
+
+'Person_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'person_id', 'integer', '', '', '', '',
+    'firstname', 'varchar', '', '64', '', '',
+    'lastname', 'varchar', '', '64', '', '',
+    'aliases', 'varchar', 'NULL', '255', '', '',
+    'position', 'varchar', 'NULL', '64', '', '',
+    'department', 'varchar', 'NULL', '64', '', '',
+    'address', 'integer', 'NULL', '', '', '',
+    'availability', 'integer', 'NULL', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [  ],
+  'index' => [ ['person_id'] ],
+},
+
+'Product' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'description', 'varchar', '', '128', '', '',
+    'manufacturer', 'integer', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name','manufacturer'] ],
+  'index' => [ ['name']  ],
+},
+
+'Product_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'product_id', 'integer', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'description', 'varchar', '', '128', '', '',
+    'manufacturer', 'integer', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ],
+  'index' => [ ['product_id'] ],
+},
+
+'Service' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Site' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'aliases', 'varchar', '', '255', '', '',
+    'availability', 'integer', '', '', '', '',
+    'address', 'integer', '', '', '', '',
+    'contactlist', 'integer', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+},
+
+'Site_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'site_id', 'integer', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'aliases', 'varchar', '', '255', '', '',
+    'availability', 'integer', '', '', '', '',
+    'address', 'integer', '', '', '', '',
+    'contactlist', 'integer', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [  ],
+  'index' => [ ['site_id']  ],
+},
+
+'StrandStatus' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name'] ],
+},
+
+'Subnet' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'address', 'varchar', 'NULL', '255', '', '',
+    'prefix', 'integer', 'NULL', '255', '', '',
+    'description', 'varchar', 'NULL', '128', '', '',
+    'entity', 'integer', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['address','prefix'] ],
+  'index' => [ ['address'] ],
+},
+
+'Subnet_history' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'subnet_id', 'integer', '', '', '', '',
+    'address', 'varchar', 'NULL', '255', '', '',
+    'prefix', 'integer', 'NULL', '255', '', '',
+    'description', 'varchar', 'NULL', '128', '', '',
+    'entity', 'integer', '', '', '', '',
+    'info', 'varchar', 'NULL', '255', '', '',
+    'modified', 'timestamp', '', '', '', '',
+    'modifier', 'varchar', 'NULL', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ],
+  'index' => [ ['subnet_id'] ],
+},
+
+}
+
+
+######################################################################
+#  $Log: netdot.schema,v $
+#  Revision 1.34  2003/07/16 23:22:13  netdot
+#  Changed contactlist and user from Device to Node -- cv
+#
+#  Revision 1.33  2003/07/16 21:42:07  netdot
+#  Added column 'user' to Device
+#
+#  Revision 1.32  2003/07/16 16:41:11  netdot
+#  Fixed unique value in Node_history
+#
+#  Revision 1.31  2003/07/15 16:26:20  netdot
+#  Re-checked sizes and other details.
+#  Added field "community" in Node
+#  Added field "description" in Subnet
+#
+#  Revision 1.30  2003/06/11 18:08:05  netdot
+#  *** empty log message ***
+#
+#  Revision 1.29  2003/06/11 17:27:42  netdot
+#  added a table for netviewer -- list of reserved interfaces
+#
+#  Revision 1.28  2003/06/11 02:12:41  netdot
+#  Added tables Device and DeviceType (among other fixes)
+#
+#  Revision 1.27  2003/06/09 23:42:32  netdot
+#  added Netviewer table -sf
+#
+#  Revision 1.26  2003/06/09 23:37:29  netdot
+#  Added Address_history (test)
+#
+#  Revision 1.25  2003/05/22 02:29:11  netdot
+#  Added 'aliases' fields to variuos tables
+#  Added 'oobname' and 'oobnumber' to Node
+#
+#  Revision 1.24  2003/05/22 00:19:15  netdot
+#  *** empty log message ***
+#
+#  Revision 1.23  2003/05/05 21:00:15  netdot
+#  changed 'nodeid' to 'node'
+#
+#  Revision 1.22  2003/05/02 17:17:28  netdot
+#  - Changed column names to all lowercase to avoid problems with 'columns' method from Class::DBI
+#  - Added a columnorderbrief to Meta table (for summary views)
+#
+#  Revision 1.21  2003/04/23 23:51:11  netdot
+#  added label to Meta
+#
+#  Revision 1.20  2003/04/23 16:51:40  netdot
+#  changed values in Meta
+#
+#  Revision 1.19  2003/04/22 17:59:36  netdot
+#  changed hasA -> linksTo and hasMany -> linksFrom in Meta because of
+#  problems with Class::DBI
+#
+#  Revision 1.18  2003/04/18 00:48:29  cvicente
+#  Changed column name nodeID to nodeId
+#
+#  Revision 1.17  2003/04/17 23:01:56  netdot
+#  changed table -> name in Meta (table evidently sql reserved)
+#
+#  Revision 1.16  2003/04/17 21:00:27  cvicente
+#  Fixed column type for availability foreign keys in Customer, Site and Person
+#  from varchar to integer
+#
+#  Revision 1.15  2003/04/17 20:37:51  cvicente
+#  Added ifAlias and jackNumber to Interface, among other minor fixes
+#
+#  Revision 1.14  2003/04/16 23:23:48  netdot
+#  fix to Meta -- changed mainObjects to mainObject
+#
+#  Revision 1.13  2003/04/16 23:14:07  netdot
+#  added Meta table for storing meta information
+#
+#  Revision 1.12  2003/04/14 23:32:49  netdot
+#  added disabled column to those classes with has_many relationships
+#
+#  Revision 1.11  2003/04/10 23:46:22  netdot
+#  removed ip from Interface and added interface to Ip.
+#
+#  Revision 1.10  2003/04/10 23:24:11  netdot
+#  changed contactpool to contactPool in Customer;
+#  added status to Circuit;
+#  added ip to Interface;
+#  added availability to Peer.
+#
+#  Revision 1.9  2003/04/10 22:24:05  netdot
+#  changed nodeId to nodeID; still need to add 'disabled'
+#
+#  Revision 1.8  2003/04/10 21:29:06  netdot
+#  changed naming convention for column names (first letter now lowercase)
+#
+#  Revision 1.7  2003/04/10 16:40:26  netdot
+#  more sorting
+#
+#  Revision 1.6  2003/04/10 16:38:54  netdot
+#  no changes; just resorted everything to better find a given table.
+#  sort order is now alphabetical
+#
+#  Revision 1.5  2003/04/10 00:04:07  netdot
+#  changed Hours to Availability in Customer to make consistent with Site
+#  & Person tables.
+#
+#  Revision 1.4  2003/04/09 21:13:44  netdot
+#  added Availability table -- used by a number of other tables
+#
+#  Revision 1.3  2003/04/09 20:55:15  netdot
+#  added Status table so that one can specify the status of a given circuit
+#
+#  Revision 1.2  2003/04/08 20:38:47  netdot
+#  initial revision
+#

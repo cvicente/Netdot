@@ -1,0 +1,127 @@
+<%perl>
+foreach my $j (keys %ARGS){
+	next if ($ARGS{$j} !~ /\w+/ || $j eq 'submit');
+	$arg{$j} = $ARGS{$j};	
+}
+</%perl>
+
+%if(! $arg{table} ){ # offer a list of tables to select
+
+<& header, title=>"Advanced Search" &>
+<p><br>
+
+<table align="center" border="0" width="95%">
+   <tr>
+      <td>
+         <& table.html, width => 3, link => "search_obj.html", title => "Please select a table to search:" &>
+      </td>
+   </tr>
+</table>
+
+<%perl>
+} else {  # we have a table
+
+   $table = $arg{table};
+   
+   # Get some Meta info
+
+   %linksto = $gui->getlinksto($table);
+   %linksfrom = $gui->getlinksfrom($table);
+   %order = $gui->getcolumnorder($table);
+   
+   if ( !$arg{res} ){ # show the fill-out form
+</%perl>
+
+<& header, title=>"Advanced $table Search" &>
+<p><br>
+
+<table align="center" border="0" width="95%">
+   <tr>
+      <td align="center">
+           <form action="search_obj.html" method="POST">
+	      <input type="hidden" name="table" value="<% $table %>">
+	      <input type="hidden" name="res" value="1">
+	      <p>
+	      <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC" class="formtablebg">
+	       <tr bgcolor="#FFFFFF"> 
+	           <td colspan="2" align="center">Specify one or more of the following:</td>
+	       </tr>
+%	      foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%	         next if ($c eq 'disabled');
+%		 if (!exists($linksto{$c}) ){  # The column is 'local'
+                    <tr> 
+		       <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $c %>:</strong></td>
+	  		 <td class="formtablec2"><input type="text" name="<% $c %>" size="40" value=""></td>
+		    </tr>
+%		 }else {  # The column is a foreign key. Provide a list to select.
+                   <tr>
+		      <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $c %>:</strong></td>
+		      <td class="formtablec2">
+			 <select name="<% $c %>">
+			   <option></option> 
+%			   my @fkobjs = $linksto{$c}->retrieve_all; 
+%			   foreach my $fkobj (@fkobjs){
+			       <option value="<% $fkobj->id %>"><% $gui->getobjlabel($fkobj, ", ") %></option>
+%			   }
+			 </select>
+		      </td>
+		   </tr>        
+%               }
+%            }
+                    </tr>
+                    <tr>
+                       <td bgcolor="#FFFFFF" align="center" colspan="2">
+	                 <input name="submit" value="Search" type="submit">
+	                 <input type="reset">
+	               </td>
+                    </tr>
+              </table>
+           </form>
+
+      </td>
+   </tr>
+</table>
+
+%   } else { # Process input and search
+<%perl>
+         foreach my $j (keys %arg){
+            next if ($arg{$j} eq '' || $j eq 'submit' || $j eq 'table' || $j eq 'res');
+            $sarg{$j} = $arg{$j};
+            if (! exists( $linksto{$j} )){  # The column is 'local'
+               $sarg{$j} = "%" . $sarg{$j} . "%";  # Add wildcards
+            }
+         }
+         # Check that we have at least one parameter
+         unless (scalar keys(%sarg)){
+            print "<strong>Missing search criteria</strong>";
+            exit;
+         }
+         my @objs = $table->search_like(\%sarg);
+</%perl>
+        <& header, title => "Search Results for $table"  &>
+
+<table align="center" border="0" width="95%">
+   <tr>
+      <td>
+             <& sortresults.html, table => "$table", object => \@objs &>
+       </td>
+   </tr>
+</table>
+
+<p><br>
+
+%   } # endif !$arg{res}
+
+
+%} 
+
+<& footer &>
+
+<%init>
+use lib "/home/netdot/public_html/lib";
+use Netdot::DBI;
+use Netdot::GUI;
+my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order );
+my $gui = Netdot::GUI->new();
+           
+</%init>

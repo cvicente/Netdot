@@ -1,0 +1,125 @@
+<%perl>
+unless ( $ARGS{table} && $ARGS{id} ){
+   print "<strong>Missing required parameters 'table' and/or 'id'</strong>";
+   exit;
+}
+$table = $ARGS{table};
+$obj = $table->retrieve($ARGS{id});
+
+unless ( $obj ){
+   print "<strong>Nonexistent record: $ARGS{id}</strong>";
+   exit;
+}
+
+%linksto = $gui->getlinksto($table);
+%linksfrom = $gui->getlinksfrom($table);
+%order = $gui->getcolumnorder($table);
+
+</%perl>
+
+
+%if ( !exists( $ARGS{submit} ) ){
+
+% my $labelstr = $gui->getobjlabel($obj, ", ");
+<& header, title=>" Delete: $table: $labelstr" &>
+
+<table align="center" valign="top" border="0" width="95%">
+<tr><td>
+
+<p>
+<p>You are deleting <% $table %> <strong><% $labelstr %></strong>.
+
+<form method="POST" action="delete.html">
+
+
+%if (scalar (keys %linksfrom)){
+%  foreach my $i (keys %linksfrom){
+%     my ($j, @robjs);
+%     map { $j = $_ } keys %{ $linksfrom{$i} };
+%     if ($linksfrom{$i}{on_delete} == "restrict"){
+<p>The following items reference this <% $table %>:
+%        @robjs = $obj->$i();
+%        next unless (scalar(@robjs));
+           <p>
+           <table cellpadding="0" border="0"  bgcolor="#CCCCCC">
+	   <tr>
+            <td><strong><% $i %></strong>
+	      <& sortresults.html, table => $j, object => \@robjs, view => "expanded" &>
+	    </td>
+	   </tr>
+	   </table>
+<p>Deletion will be restricted until there are no more <% $j %> objects referencing this <% $table %>
+%    }
+%  }
+%}
+<p>
+
+<input type="hidden" name="table" value="<% $table %>">
+<input type="hidden" name="id" value="<% $obj->id %>">
+<input type="hidden" name="confirm" value="1">
+<p>
+<input name="submit" value="Proceed" type="submit">
+<input name="submit" value="Cancel" type="submit">
+
+</form>
+
+<p><br>
+</td></tr>
+</table>
+<& footer &>
+
+
+%}elsif ($ARGS{confirm} && $ARGS{submit} eq "Proceed"){
+
+% my $labelstr = $gui->getobjlabel($obj, ", ");
+<& header, title=>" Delete: $table: $labelstr" &>
+
+<table align="center" valign="top" border="0" width="95%">
+<tr><td>
+
+<p>
+<table border="0">
+%# Take care of dependencies
+%  foreach my $i (keys %linksfrom){
+%     my ($j, $rtbl, @robjs);
+%     map { $j = $_ } keys %{ $linksfrom{$i} };
+%     @robjs = $obj->$i();
+%     next unless (scalar(@robjs));
+%     if ($ARGS{$i} eq "nullify"){
+%        foreach my $o (@robjs){
+%	   my $lbl = $gui->getobjlabel($o, ", ");
+%	   $o->set($linksfrom{$i}{$j}, 0);
+%	   $o->update;
+	   <tr><td><% "$j $lbl" %>:</td><td>set <% $linksfrom{$i}{$j} %> to NULL</td></tr>
+%	 }
+%     }elsif ($ARGS{$i} eq "delete"){
+%        foreach my $o (@robjs){
+%	   my $lbl = $gui->getobjlabel($o, ", ");
+%	   $o->delete;
+	   <tr><td><% "$j $lbl" %>:</td><td>deleted</td> 
+%	}
+%     }
+%  }  
+%# Delete the object
+%  my $lbl = $gui->getobjlabel($obj, ", ");
+%  $obj->delete;  
+   <tr><td><strong><% "$table $lbl" %></strong>:</td><td> deleted</td>
+</table>
+
+</td></tr>
+</table>
+<& footer &>
+
+%}elsif ($ARGS{submit} eq "Cancel"){
+   <& view.html, table => $table, id => $obj->id &>
+%  exit;
+%}
+
+<%init>
+use lib "/home/netdot/public_html/lib";
+use Netdot::DBI;
+use Netdot::GUI;
+my $gui = Netdot::GUI->new();
+my( %linksto, %linksfrom, $table, $obj, $mi, %order);
+           
+</%init>
