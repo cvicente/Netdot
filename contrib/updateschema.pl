@@ -76,14 +76,22 @@ sub setup {
   ################################################
   # now make sure we have what will be needed later
   foreach my $cmd ( ("Makefile", "bin/insert-metadata", "bin/setup-class-dbi") ) {
-    print $cmd, "\n";
-    system ( "pwd" );
     if( ! -e $cmd ) {
       die "Error: missing required file $cmd\n";
     }
     if( ! -r $cmd ) {
       die "Error: can't read required file $cmd\n";
     }
+  }
+  ################################################
+  # check for config file
+  if( ! -e $self{data} || ! -r $self{data} ) {
+    die "Error: Can't read data file $self{data}\n";
+  }
+  ################################################
+  # check to make sure $self{dbhome} has a mysql binary
+  if( ! -e "$self{dbhome}/bin/mysql" || ! -x "$self{dbhome}/bin/mysql" ) {
+    die "Error: can't find mysql binary in $self{dbhome}.\n";
   }
   ################################################
   # keep password off screen
