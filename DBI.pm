@@ -202,7 +202,7 @@ package Meta;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Meta' );
-__PACKAGE__->columns(All => qw/id name columnorder hasA hasMany mainObject/);
+__PACKAGE__->columns(All => qw/id name columnOrder hasA hasMany mainObject/);
 
 
 ######################################################################
@@ -324,6 +324,9 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.21  2003/04/18 00:10:39  netdot
+#  columnorder -> columnOrder to reflect change in netdot.schema
+#
 #  Revision 1.20  2003/04/17 23:01:25  netdot
 #  changed table->name in Meta (table is evidently sql reserved)
 #
