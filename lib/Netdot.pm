@@ -22,7 +22,7 @@ Netdot - Network Documentation Tool
 
 sub _read_defaults {
     my $self = shift;
-    my @files = qw( ../etc/Default.conf ../etc/Site.conf);
+    my @files = qw( PREFIX/etc/Default.conf PREFIX/etc/Site.conf);
     foreach my $file (@files){
 	open (IN, $file) 
 	    or die "Netdot.pm: Could not open file $file for reading: $!";

@@ -3,23 +3,16 @@
 
 <script language="javascript" src="select.js"></script>
 
-<%perl>
+% print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+% if ( defined($search) && $search =~ /\w+/ ){
+%   my $list;
+%   unless ( ($list = $dns->getdevbynamelike($search)) ){
+       <p><b>No results</b>
+%      $m->abort;
+       </td></tr></table>
+%   }
 
-print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-
-if ( defined($search) && $search =~ /\w+/ ){
-
- my $query = "%" . $search . "%";
- print "Query is $query " if $DEBUG;
- my @rrs = RR->search_like(name => "$query");
- print "<br>Returned names are ", join " ", map {$_->name} @rrs if $DEBUG;
- my @list = map { Device->search(name => $_ ) } @rrs;
- print "<br>Returned Device ids are ", join " ", map {$_->name} @list if $DEBUG;
- 
-</%perl>     
-  
-
-%  if (my $num = scalar(@list)){
+%   my $num = scalar(@$list);
  <table width="95%" border="0" cellspacing="0" cellpadding="1" class="tablebackground"> 
  <tr><td>
    Query <b><em><% $search %></em></b> returned: <b><% $num %> match(es)</b>
@@ -30,8 +23,7 @@ if ( defined($search) && $search =~ /\w+/ ){
       <td>Type</td>
       <td>Product</td>
       </tr>
-  
-%    foreach my $dev (@list){
+%    foreach my $dev (@$list){
       <tr>
 	 <td class="column2">
 	    <b><a href="device-ws.html?id=<% $dev->id %>"><% $dev->name->name %></a></b>
@@ -49,12 +41,6 @@ if ( defined($search) && $search =~ /\w+/ ){
 %    }   
 
    </table>
-% }else{
-     <p><b>No results</b>
-%    $m->abort;
-</td></tr></table>
-
-% }
 %} elsif ( defined($search) && $search !~ /\w+/ ){
      <p><b>No search criteria</b>   
 %    $m->abort;
@@ -62,8 +48,8 @@ if ( defined($search) && $search =~ /\w+/ ){
 <%perl>
 }elsif( $ARGS{intadd} ){
 
-  # Add a group of interfaces
-
+# Add a group of interfaces
+# -----------------------------------------------------------------------------
   if (defined ($ARGS{intaddnum}) &&  $ARGS{intaddnum} > 0){
      my %tmpint;
      $tmpint{device} = $id;
@@ -77,17 +63,13 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   die "Error: $err"; 
 	}
      }
-    
   }
-
 }elsif( defined($ARGS{submit}) ){
 
-# code for inserting/updating
+# insert/update
 # -----------------------------------------------------------------------------
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-    
-    if (!$ui->form_to_db(%ARGS))
-    {
+    if (!$ui->form_to_db(%ARGS)){
 	my $err = $ui->error();
 	die("Error: $err\n");
     }
@@ -95,14 +77,10 @@ if ( defined($search) && $search =~ /\w+/ ){
     # Do this to 'flush' the values associated with the object
     # before redisplaying
     $o = undef;
-    if ($id)
-    {
+    if ($id){
 	$o = Device->retrieve($id);
 	$name = $o->name;
     }
-# end insertion/update code
-# -----------------------------------------------------------------------------
-
 }
 </%perl>
 
@@ -123,7 +101,7 @@ if ( defined($search) && $search =~ /\w+/ ){
  <tr>
    <td valign="top" width="50%" align="center">
 
-% if ( $edit ){	 
+% if ( $editgen || $editloc || $editmgmt || $editips || $editints ){	 
     <form name="netdotform" action="device-ws.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="s2name" value="<% $s2name %>">
@@ -136,10 +114,10 @@ if ( defined($search) && $search =~ /\w+/ ){
        <tr>
          <td width="10%" align="left">&nbsp;</td>
          <th width="80%" align="center">General</th>
-%	 if ($edit eq "geninfo"){	 
+%	 if ($editgen){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
-            <td width="10%" align="right"><a href="device-ws.html?id=<% $id %>&edit=geninfo">[edit]</a></td>
+            <td width="10%" align="right"><a href="device-ws.html?id=<% $id %>&editgen=1">[edit]</a></td>
 %	 }
        </tr>
       </table>
@@ -147,121 +125,81 @@ if ( defined($search) && $search =~ /\w+/ ){
    </tr>
    <tr>
       <td valign="top" width="50%">
-         <table border="0">
+         <table border="0" width="100%">
 	    <tr>
 	      <td class="formtablec1">Name: </td>
 	      <td class="formtablec2"> 
-%	      	 if ($edit eq "geninfo"){	 
-		    <input type="text" name="RR__<% $o->name->id %>__name" value="<% $o->name->name %>">  
-%	         }else{
-		    <b><% $o->name->name %></b>
+%	         if ($o->name){
+%	      	   if ($editgen){	 
+		      <input type="text" name="RR__<% $o->name->id %>__name" value="<% $o->name->name %>">  
+%	           }else{
+		      <b><a href="view.html?table=RR&id=<% $o->name->id %>"><% $o->name->name %></a></b>
+%		   }
+%		 }
+%		 else{ 
+		   No name!
 %		 }
 	      </td>
 	    </tr>
            <tr>
              <td class="formtablec1">Type: </td>
 	     <td class="formtablec2"> 
-    	        <b><% $o->productname->type->name %> </b>
+%	       if (($o->productname) && ($o->productname->type)){	 
+    	        <a href="view.html?table=Product&id=<% $o->productname->id %>"><% $o->productname->type->name %></a>
+%	       }
 	     </td> 
 	   </tr>
            <tr>
              <td class="formtablec1">S/N: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "geninfo"){	 
-		    <input type="text" name="Device__<% $id %>__serialnumber" value="<% $o->serialnumber %>">  
-%	         }else{
-		    <b><% $o->serialnumber %></b>
-%		 }
-
+%               $ui->textField(object=>$o, column=>"serialnumber", edit=>$editgen);
 	     </td> 
 	   </tr>
            <tr>
              <td class="formtablec1">MAC: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "geninfo"){	 
-		    <input type="text" name="Device__<% $id %>__physaddr" value="<% $o->physaddr %>">  
-%	         }else{
-		    <b><% $o->physaddr->address %> </b>
-%		 }
-
+%               $ui->selectLookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", makeLink=>1);
 	     </td> 
 	   </tr>
            <tr>
-             <td class="formtablec1">Installed on <font size="-1">(yyyy-mm-dd)</font>:</td>
+             <td class="formtablec1">Installed:</td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "geninfo"){	 
-		    <input type="text" name="Device__<% $id %>__dateinstalled" value="<% $o->dateinstalled %>">  
-%	         }else{
-		    <b><% $o->dateinstalled %> </b>
-%		 }	        
+%               $ui->textField(object=>$o, column=>"dateinstalled", edit=>$editgen);
+	     </td> 
+	   </tr>
+           <tr>
+             <td class="formtablec1">Last updated:</td>
+	     <td class="formtablec2"> 
+%               $ui->textField(object=>$o, column=>"lastupdated", edit=>$editgen);
 	     </td> 
 	   </tr>
 	 </table>
       </td>
       <td valign="top" width="50%">
-         <table  border="0">
+         <table  border="0" width="100%">
            <tr>
              <td class="formtablec1">Product: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "geninfo"){	 
-		    <select name="Device__<% $id %>__productname">
-%		       my $lblfield = ( $ui->getlabels("Product") )[0];	 
-		       <option value="<% $o->productname->id %>" SELECTED> <% $o->productname->name %> </option>
-%		       my @fo = Product->retrieve_all();
-%		       @fo = sort { $a->$lblfield cmp $b->$lblfield } @fo; 
-%		       foreach my $fo ( @fo ){
-%		          next if ($fo->id == $o->productname->id);
-  		          <option value="<% $fo->id %>"> <% $fo->name %> </option>		          
-%		       }
-		       <option value="0"> [null] </option>
-		    </select>
-%	         }else{
-		    <b><a href="view.html?table=Product&id=<% $o->productname->id %>"><% $o->productname->name %></a></b> 
-%		 }
-	        
+%               $ui->selectLookup(object=>$o, column=>"productname", lookup=>"Product", edit=>"$editgen", makeLink=>1);
 	     </td>
 	   </tr>
            <tr>
              <td class="formtablec1">Part of: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "geninfo"){	 
-		    <select name="Device__<% $id %>__part_of">
-%		       my $lblfield = ( $ui->getlabels("Device") )[0];	 
-		       <option value="<% $o->part_of->id %>" SELECTED> <% $o->part_of->name %> </option>
-%		       my @fo = Device->retrieve_all();
-%		       @fo = sort { $a->$lblfield cmp $b->$lblfield } @fo; 
-%		       foreach my $fo ( @fo ){
-%		          next if ($fo->id == $o->part_of->id);
-  		          <option value="<% $fo->id %>"> <% $fo->name %> </option>		          
-%		       }
-		       <option value="0"> [null] </option>
-		    </select>
-%	         }else{
-		    <b><% $o->part_of->name %></b> 
-%		 }
-
+%               $ui->selectLookup(object=>$o, column=>"part_of", lookup=>"Device", edit=>"$editgen");
 	     </td>
 	   </tr>
            <tr>
              <td class="formtablec1">Inventory #: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "geninfo"){	 
-		    <input type="text" name="Device__<% $id %>__inventorynumber" value="<% $o->inventorynumber %>">  
-%	         }else{
-		    <b><% $o->inventorynumber %></b>
-%		 }
+%               $ui->textField(object=>$o, column=>"inventorynumber", edit=>$editgen);
 	     </td> 
 	   </tr>
            <tr>
              <td class="formtablec1">System Descr: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "geninfo"){	 
-		    <textarea name="Device__<% $id %>__sysdescription" rows="3" cols="30"><% $o->sysdescription %></textarea>
-%	         }else{
-	            <font size="-1"> <% $o->sysdescription %> </font>
-%		 }
-
-		</td> 
+%               $ui->textField(object=>$o, column=>"sysdescription", edit=>$editgen);
+             </td> 
 	   </tr>
 	 </table>
       </td>
@@ -271,15 +209,11 @@ if ( defined($search) && $search =~ /\w+/ ){
    </tr>
    <tr>
      <td colspan="2" align="left">
-%	      	 if ($edit eq "geninfo"){	 
-		    <textarea name="Device__<% $id %>__info" rows="3" cols="80"><% $o->info %></textarea>
-%	         }else{
-	            <font size="-1"><pre><% $o->info %></pre></font>
-%		 }
+%               $ui->textArea(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=80");
      </td>
    </tr>
  </table>
-% if ($edit eq "geninfo"){	 
+% if ($editgen){	 
     </form>
 % }
 <!-- End General Info Table -->
@@ -294,10 +228,10 @@ if ( defined($search) && $search =~ /\w+/ ){
        <tr>
          <td width="10%" align="left">&nbsp;</td>
          <th width="80%" align="center">IPs</th>
-%	 if ($edit eq "ipinfo"){	 
+%	 if ($editips){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
-            <td width="10%" align="right"><a href="device-ws.html?id=<% $id %>&edit=ipinfo">[edit]</a></td>
+            <td width="10%" align="right"><a href="device-ws.html?id=<% $id %>&editips=1">[edit]</a></td>
 %	 }
        </tr>
       </table>
@@ -321,34 +255,16 @@ if ( defined($search) && $search =~ /\w+/ ){
 %	}
 <%perl>	
        my @sortedips;
-       if ($ipsort eq "ip" || !defined($ipsort) ){
-          #
+       $ipsort ||= "ip";
+       if ($ipsort eq "ip" ){
           # Sort by IP address
           #
-          @sortedips = map { $_->[0] }
-		sort {	$a->[1] cmp $b->[1]
-		        ||
-			$a->[2] <=> $b->[2] 
-			||	
-			$a->[3]	<=> $b->[3]
-			||
-			$a->[4] <=> $b->[4] }
-		map { [ $_, (split /\./, $_->address ) ] } @ips;
-	}elsif ($ipsort eq "subnet"){
-          #
+	  @sortedips = @{ $ipm->sortblocksbyaddr(\@ips) };
+       }elsif ($ipsort eq "subnet"){
           # Sort by Subnet
           #
-          @sortedips = map { $_->[0] }
-		sort {	$a->[1] cmp $b->[1]
-		        ||
-			$a->[2] <=> $b->[2] 
-			||	
-			$a->[3]	<=> $b->[3]
-			||
-			$a->[4] <=> $b->[4] }
-		map { [ $_, (split /\./, $_->subnet->address ) ] } @ips;
-	}elsif ($ipsort eq "interface"){
-          #
+	  @sortedips = @{ $ipm->sortblocksbyparent(\@ips) };
+       }elsif ($ipsort eq "interface"){
           # Sort by Interface
           #
           @sortedips = map { $_->[0] }
@@ -360,31 +276,18 @@ if ( defined($search) && $search =~ /\w+/ ){
 %	 $ci = ($ci + 1) % 2;
 	 <tr class="<% $cssitem{$ci} %>">
 	   <td align="left">
-%	      	 if ($edit eq "ipinfo"){	 
+%	      	 if ($editips){	 
 		    <input type="checkbox" name="<% "Ip__" . $ip->id . "__delete" %>" >[del]
 		    <input type="text" size="15" name="<% "Ip__" . $ip->id . "__address" %>" value="<% $ip->address %>">
 		    <br>
 %	         }else{
-		    <a href="view.html?table=Ip&id=<% $ip->id %>"><% $ip->address %></a><br>
+		    <a href="view.html?table=Ipblock&id=<% $ip->id %>"><% $ip->address %></a><br>
 %		 }
 	   </td>
 	   <td align="left">
-%	      	 if ($edit eq "ipinfo"){	 
-		    <select name="<% "Ip__" . $ip->id . "__subnet" %>">
-%		       my $lblfield = ( $ui->getlabels("Subnet") )[0];	 
-		       <option value="<% $ip->subnet->id %>" SELECTED> <% $ip->subnet->address %>/<% $ip->subnet->prefix %> </option>
-%		       my @fo = Subnet->retrieve_all();
-%		       @fo = sort { $a->$lblfield cmp $b->$lblfield } @fo; 
-%		       foreach my $fo ( @fo ){
-%		          next if ($fo->id == $ip->subnet->id);
-			  <option value="<% $fo->id %>"> <% $fo->address %>/<% $fo->prefix %> </option>
-%		       }
-		       <option value="0"> [null] </option>
-		    </select>
-		    <br>
-%	         }elsif ( int($ip->subnet) ){
-		    <a href="view.html?table=Subnet&id=<% $ip->subnet->id %>"><% $ip->subnet->address %>/<% $ip->subnet->prefix %></a><br>
-%		 }
+%	     if ( $ip->parent  ){
+	       <a href="view.html?table=Ipblock&id=<% $ip->parent->id %>"><% $ip->parent->address %>/<% $ip->parent->prefix %></a><br>
+%            }
 	   </td>
 	   <td align="left"><font size="-1"><% $ip->interface->name %></font></td>
 	  </tr>
@@ -393,7 +296,7 @@ if ( defined($search) && $search =~ /\w+/ ){
     </td>
    </tr>
   </table>
-% if ($edit eq "ipinfo"){	 
+% if ($editips){	 
     </form>
 % }
 
@@ -411,10 +314,10 @@ if ( defined($search) && $search =~ /\w+/ ){
        <tr>
          <td width="10%" align="left">&nbsp;</td>
          <th width="80%" align="center">Group/Location</th>
-%	 if ($edit eq "locinfo"){	 
+%	 if ($editloc){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
-            <td width="10%" align="right"><a href="device-ws.html?id=<% $id %>&edit=locinfo">[edit]</a></td>
+            <td width="10%" align="right"><a href="device-ws.html?id=<% $id %>&editloc=1">[edit]</a></td>
 %	 }
        </tr>
       </table>
@@ -426,61 +329,24 @@ if ( defined($search) && $search =~ /\w+/ ){
         <tr>
 	   <td class="formtablec1">Entity: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "locinfo"){	 
-		    <select name="Device__<% $id %>__entity">
-%		       my $lblfield = ( $ui->getlabels("Entity") )[0];	 
-		       <option value="<% $o->entity->id %>" SELECTED> <% $o->entity->name %> </option>
-%		       my @fo = Entity->retrieve_all();
-%		       @fo= sort { $a->$lblfield cmp $b->$lblfield } @fo; 
-%		       foreach my $fo ( @fo ){
-%		          next if ($fo->id == $o->entity->id);
-  		          <option value="<% $fo->id %>"> <% $fo->name %> </option>		          
-%		       }
-		       <option value="0"> [null] </option>
-		    </select>
-%	         }else{
-		    <b><a href="view.html?table=Entity&id=<% $o->entity->id %>"><% $o->entity->name %></a></b> 
-%		 }
+%               $ui->selectLookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", makeLink=>1);
 	     </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Site: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "locinfo"){	 
-		    <select name="Device__<% $id %>__site">
-%		       my $lblfield = ( $ui->getlabels("Site") )[0];	 
-		       <option value="<% $o->site->id %>" SELECTED> <% $o->site->name %> </option>
-%		       my @fo = Site->retrieve_all();
-%		       @fo= sort { $a->$lblfield cmp $b->$lblfield } @fo; 
-%		       foreach my $fo ( @fo ){
-%		          next if ($fo->id == $o->site->id);
-  		          <option value="<% $fo->id %>"> <% $fo->name %> </option>		          
-%		       }
-		       <option value="0"> [null] </option>
-		    </select>
-%	         }else{
-		    <b><a href="view.html?table=Site&id=<% $o->site->id %>"><% $o->site->name %></a></b> 
-%		 }
+%               $ui->selectLookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1);
 	     </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Room: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "locinfo"){	 
-		    <input type="text" name="Device__<% $id %>__room" value="<% $o->room %>">  
-%	         }else{
-		    <b><% $o->room %></b>
-%		 }
-	     </td>
+%               $ui->textField(object=>$o, column=>"room", edit=>$editmgmt);
 	</tr>
         <tr>
 	   <td class="formtablec1">Rack: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "locinfo"){	 
-		    <input type="text" name="Device__<% $id %>__rack" value="<% $o->rack %>">  
-%	         }else{
-		    <b><% $o->rack %></b>
-%		 }
+%               $ui->textField(object=>$o, column=>"rack", edit=>$editmgmt);
 	     </td>
 	</tr>
       </table>
@@ -488,14 +354,13 @@ if ( defined($search) && $search =~ /\w+/ ){
    </tr>
    </tr>
   </table>
-% if ($edit eq "locinfo"){	 
+% if ($editloc){	 
     </form>
 % }
 
 <!-- End Location Table -->
 <br>
 <!-- Management Table -->
-
   <table border="0" width="100%" class="formtablebg" cellpadding="0" cellspacing="2">
    <tr class="formtabletitle">
      <td colspan="2">
@@ -503,137 +368,98 @@ if ( defined($search) && $search =~ /\w+/ ){
        <tr>
          <td width="10%" align="left">&nbsp;</td>
          <th width="80%" align="center">Management</th>
-%	 if ($edit eq "mgmtinfo"){	 
+%	 if ($editmgmt){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
-            <td width="10%" align="right"><a href="device-ws.html?id=<% $id %>&edit=mgmtinfo">[edit]</a></td>
+            <td width="10%" align="right"><a href="device-ws.html?id=<% $id %>&editmgmt=1">[edit]</a></td>
 %	 }
        </tr>
       </table>
      <td>
    </tr>
    <tr>
-     <td>
-      <table border="0">
+     <td valign="top" width="50%">
+      <table border="0" width="100%">
         <tr>
 	   <td class="formtablec1">Contact Group: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "mgmtinfo"){	 
-		    <select name="Device__<% $id %>__contactlist">
-%		       my $lblfield = ( $ui->getlabels("ContactList") )[0];	 
-		       <option value="<% $o->contactlist->id %>" SELECTED> <% $o->contactlist->name %> </option>
-%		       my @fo = ContactList->retrieve_all();
-%		       @fo= sort { $a->$lblfield cmp $b->$lblfield } @fo; 
-%		       foreach my $fo ( @fo ){
-%		          next if ($fo->id == $o->contactlist->id);
-  		          <option value="<% $fo->id %>"> <% $fo->name %> </option>          
-%		       }
-		       <option value="0"> [null] </option>
-		    </select>
-%	         }else{
-		    <b><a href="view.html?table=ContactList&id=<% $o->contactlist->id %>"><% $o->contactlist->name %></a></b> 
-%		 }
+%               $ui->selectLookup(object=>$o, column=>"contactlist", lookup=>"ContactList", edit=>"$editmgmt", makeLink=>1);
 	     </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">User: </td>
 	     <td class="formtablec2"> 
-%	         my $lbl = $ui->getobjlabel($o->person, ", ");
-%	      	 if ($edit eq "mgmtinfo"){	 
-		    <select name="Device__<% $id %>__person">
-%		       my $lblfield = ( $ui->getlabels("Person") )[0];	 
-		       <option value="<% $o->person->id %>" SELECTED> <% $lbl %> </option>
-%		       my @fo = Person->retrieve_all();
-%		       @fo= sort { $a->$lblfield cmp $b->$lblfield } @fo; 
-%		       foreach my $fo ( @fo ){
-%		          next if ($fo->id == $o->person->id);
-%			  my $folbl = $ui->getobjlabel($fo, ", ");
-  		          <option value="<% $fo->id %>"> <% $folbl %> </option>		          
-%		       }
-		       <option value="0"> [null] </option>
-		    </select>
-%	         }else{
-		    <b><a href="view.html?table=Person&id=<% $o->person->id %>"><% $lbl %></a></b> 
-%		 }
+%               $ui->selectLookup(object=>$o, column=>"person", lookup=>"Person", edit=>"$editmgmt", makeLink=>1);
 	     </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Out-of-band hostname: </td>
-	     <td class="formtablec2"> 
-%	      	 if ($edit eq "mgmtinfo"){	 
-		    <input type="text" name="Device__<% $id %>__oobname" value="<% $o->oobname %>">  
-%	         }else{
-		    <b><% $o->oobname %></b>
-%		 }
+	     <td class="formtablec2">
+%               $ui->textField(object=>$o, column=>"oobname", edit=>$editmgmt);
 	     </td>
 	</tr>
         <tr>
-	   <td class="formtablec1">Out-of-band number: </td>
+	   <td class="formtablec1">Out-of-band tel: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "mgmtinfo"){	 
-		    <input type="text" name="Device__<% $id %>__oobnumber" value="<% $o->oobnumber %>">  
-%	         }else{
-		    <b><% $o->oobnumber %></b>
-%		 }
-	     </td>
-	</tr>
-         <tr>
-	   <td class="formtablec1">Monitored?: </td>
-	     <td class="formtablec2"> 
-%		 my $value = $o->monitored;	 
-%	      	 if ($edit eq "mgmtinfo"){	 
-%		    if ($value == 1){
-		      <input type="radio" name="Device__<% $id %>__monitored" value="1" checked> <b>yes</b>
-		      <input type="radio" name="Device__<% $id %>__monitored" value="0"> <b>no
-%		    }elsif ($value eq ""){
-  		       <input type="radio" name="Device__<% $id %>__monitored" value="1"> <b>yes</b>
-		       <input type="radio" name="Device__<% $id %>__monitored" value="0"> <b>no</b>
-		       <input type="radio" name="Device__<% $id %>__monitored" value="" checked> <b>n/a</b>
-%		    }elsif ($value == 0){
-		       <input type="radio" name="Device__<% $id %>__monitored" value="1"> <b>yes</b>
-		       <input type="radio" name="Device__<% $id %>__monitored" value="0" checked> <b>no</b>
-%		    }
-		 
-%	         }else{
-%		    if ($value == 1){
-		       <b>yes</b>
-%		    }elsif ($value eq ""){ 
-		       <b>n/a</b>
-%		    }elsif ($value == 0){
-		       <b>no</b>
-%		    }
-%		}
+%               $ui->textField(object=>$o, column=>"oobnumber", edit=>$editmgmt);
 	     </td>
 	</tr>
         <tr>
 	   <td class="formtablec1">SNMP Community: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "mgmtinfo"){	 
-		    <input type="text" name="Device__<% $id %>__community" value="<% $o->community %>">  
-%	         }else{
-		    <b><% $o->community %></b>
-%		 }
+%               $ui->textField(object=>$o, column=>"community", edit=>$editmgmt);
 	     </td>
 	</tr>
-%	if ($edit eq "mgmtinfo"){	 
-
-%	}else{
+       </table>
+     </td>
+     <td valign="top" width="50%">
+      <table border="0" width="100%">
+         <tr>
+	   <td class="formtablec1">Monitored?: </td>
+	     <td class="formtablec2"> 
+%                $ui->radioGroupBoolean(object=>$o, column=>"monitored", edit=>$editmgmt);
+	     </td>
+	</tr>
+         <tr>
+	   <td class="formtablec1">Customer-managed?: </td>
+	     <td class="formtablec2"> 
+%                $ui->radioGroupBoolean(object=>$o, column=>"customer_managed", edit=>$editmgmt);
+	     </td>
+	</tr>
+         <tr>
+	   <td class="formtablec1">SNMP-managed?: </td>
+	     <td class="formtablec2"> 
+%                $ui->radioGroupBoolean(object=>$o, column=>"snmp_managed", edit=>$editmgmt);
+	     </td>
+	</tr>
+         <tr>
+	   <td class="formtablec1">Auto-update?: </td>
+	     <td class="formtablec2"> 
+%                $ui->radioGroupBoolean(object=>$o, column=>"canautoupdate", edit=>$editmgmt);
+	     </td>
+	</tr>
+         <tr>
+	   <td class="formtablec1">NATted?: </td>
+	     <td class="formtablec2"> 
+%                $ui->radioGroupBoolean(object=>$o, column=>"natted", edit=>$editmgmt);
+	     </td>
+	</tr>
+      </td>
+     </tr>
+    </table>
+%	if (! $editmgmt){	 
         <tr>
-	   <td class="formtablec1"><b><a href="device.html?device=<% $name %>&action=update">[update]</a></b></td>
-	     <td class="formtablec2">Fetch SNMP info from device and update database</td>
+	   <td class="formtablec1">Fetch SNMP info and update DB</td>
+	     <td class="formtablec2"><b><a href="device.html?device=<% $name %>&action=update">[update]</a></b></td>
 	</tr>
         <tr>
 	   <td class="formtablec1">Connect via: </td>
 	   <td colspan="2" class="formtablec2" ><a href="http://<% $name %>">[HTTP]</a> <a href="ssh://<% $user %>@<% $name %>">[SSH]</a> <a href="telnet://<% $name %>">[Telnet]</a></td>
 	</tr>
-%	} 
-    </table>
-     </td>
-   </tr>
-
-   </tr>
+%       } 
   </table>
-% if ($edit eq "mgmtinfo"){	 
+
+% if ($editmgmt){	 
     </form>
 % }
 
@@ -653,10 +479,10 @@ if ( defined($search) && $search =~ /\w+/ ){
        <tr>
          <td width="10%" align="left">&nbsp;</td>
          <th width="80%" align="center">Interfaces</th>
-%	 if ($edit eq "intinfo"){	 
+%	 if ($editints){	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
-            <td width="10%" align="right"><a href="device-ws.html?id=<% $id %>&edit=intinfo">[edit]</a></td>
+            <td width="10%" align="right"><a href="device-ws.html?id=<% $id %>&editints=1">[edit]</a></td>
 %	 }
        </tr>
       </table>
@@ -666,16 +492,17 @@ if ( defined($search) && $search =~ /\w+/ ){
      <td>
       <table border="0" width="100%">
         <tr>
-%	   if ($edit eq "intinfo"){	 
+%	   if ($editints){	 
 	      <td align="center">[del]</td>
 %	   }
-	   <td align="center">Number</td>
-	   <td align="center">Name</td>
-	   <td align="center">Room</td>
-	   <td align="center">Jack</td>
-	   <td align="center">Description</td>
-	   <td align="center">Parents</td>
-	   <td align="center">Monitored?</td>
+	   <td align="left">Number</td>
+	   <td align="left">Name</td>
+	   <td align="left">Vlan</td>
+	   <td align="left">Room</td>
+	   <td align="left">Jack</td>
+	   <td align="left">Description</td>
+	   <td align="left">Parents</td>
+	   <td align="left">Monitored?</td>
         </tr>
 
 %	#####################################
@@ -696,37 +523,38 @@ if ( defined($search) && $search =~ /\w+/ ){
 %	                                  ||
 %			         $a->[1] <=> $b->[1] } @tmp;
 			  
-%         foreach my $if (map { $_->[2] } @ordered_ifs){
+%       foreach my $if (map { $_->[2] } @ordered_ifs){
 %	  $ci = ($ci + 1) % 2;
 	  <tr class="<% $cssitem{$ci} %>">
-%		 if ($edit eq "intinfo"){	 
-		   <td align="left">
-		    <input type="checkbox" name="<% "Interface__" . $if->id . "__delete" %>" >
-		   </td>	   
-%	         }
+%	       if ($editints){	 
+		<td align="left">
+		  <input type="checkbox" name="<% "Interface__" . $if->id . "__delete" %>" >
+		</td>	   
+%	       }
 	   <td align="left"> 
-%	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="3" name="<% "Interface__" . $if->id . "__number" %>" value="<% $if->number %>">
-%	         }else{
-		    <a href="view.html?table=Interface&id=<% $if->id %>"><% $if->number %></a>
-%		 }
+%               $ui->textField(object=>$if, column=>"number", edit=>$editints, makeLink => 1);
 	   </td>
 	   <td align="left"> 
-%	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="15" name="<% "Interface__" . $if->id . "__name" %>" value="<% $if->name %>">
-%	         }else{
-		    <% $if->name %>
+%               $ui->textField(object=>$if, column=>"name", edit=>$editints);
+	   </td>
+	   <td align="left"> 
+%	      if (scalar( my @ifv = $if->vlans)){
+%	         my @links;
+%	         foreach my $ifv (@ifv){
+%		   my $v = $ifv->vlan;
+%		   push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $v->id, $v->vid );
 %		 }
+%		 print join ', ', @links;
+
+%	      }
 	   </td>
 	   <td align="left"> 
 %	         if(defined($if->jack)){
 		    <% $if->jack->room %>
-%		 }else{
-		   -
 %		 }
 	   </td>
 	   <td align="left"> 
-%	      	 if ($edit eq "intinfo"){	 
+%	      	 if ($editints){	 
 %		    my $count = HorizontalCable->count_all;
 %                   if (defined($if->jack)){
 %		      if ( $count <= $maxselect ){			      
@@ -760,26 +588,19 @@ if ( defined($search) && $search =~ /\w+/ ){
 		       </select>
 %                   } 
 
-
 %	         }elsif(defined($if->jack)){
 		    <a href="view.html?table=HorizontalCable&id=<% $if->jack->id %>"><% $if->jack->jackid %></a>
-%		 }else{
-		    -
 %		 }
 	   </td>
 	   <td align="left"> 
-%	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="40" name="<% "Interface__" . $if->id . "__description" %>" value="<% $if->description %>">
-%	         }else{
-		    <% $if->description %>
-%		 }
+%               $ui->textField(object=>$if, column=>"description", edit=>$editints);
 	   </td>
 	   <td align="left">
 %	   my @parents = $if->parents;
 %	   if (scalar(@parents)){
 %	     foreach my $par (@parents){	   
 %		 my $lbl = $ui->getobjlabel($par->parent, ", ");
-%	      	 if ($edit eq "intinfo"){	 
+%	      	 if ($editints){	 
 %		 # Check for amount of objects in table before retrieving all
 %		    my $count = Interface->count_all;
 %		    if ( $count <= $maxselect ){			      
@@ -808,7 +629,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 %		 }
 %	     } #foreach my $par
 %	   }else{ # No parents exist
-%	      if ($edit eq "intinfo"){	 
+%	      if ($editints){	 
 %	        my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
 		<input type="text" name="<% $srchf %>" value="Keywords">
 	        &nbsp;<input type="button" name="" value="List" 
@@ -821,34 +642,12 @@ if ( defined($search) && $search =~ /\w+/ ){
 
 	   </td>
 	   <td align="left"> 
-%		 my $value = $if->monitored;	 
-%	      	 if ($edit eq "intinfo"){	 
-%		    if ($value == 1){
-		      <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="1" checked> Y
-		      <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="0"> N
-%		    }elsif ($value eq ""){
-  		       <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="1"> Y
-		       <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="0"> N
-		       <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="" checked> n/a
-%		    }elsif ($value == 0){
-		       <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="1"> Y
-		       <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="0" checked> N
-%		    }
-		 
-%	         }else{
-%		    if ($value == 1){
-		       yes
-%		    }elsif ($value eq ""){ 
-		       n/a
-%		    }elsif ($value == 0){
-		       no
-%		    }
-%		}
+%                $ui->radioGroupBoolean(object=>$if, column=>"monitored", edit=>$editints);
 	   </td>
 	  </tr>
 %       } #foreach
      <tr>
-%    if ($edit eq "intinfo"){	 
+%    if ($editints){	 
             <td colspan="8" width="100%" align="right">
 	       <input name="submit" value="save" type="submit">
 	    </td>
@@ -877,17 +676,24 @@ if ( defined($search) && $search =~ /\w+/ ){
 
 
 <%args>
-$id     => undef
-$search => undef
-$edit   => undef
-$ipsort => undef
-$s2name  => "Management"
-$user => $ENV{REMOTE_USER}
+$id       => undef
+$search   => undef
+$edit     => undef
+$editgen  => undef
+$editloc  => undef
+$editmgmt => undef
+$editips  => undef
+$editints => undef
+$ipsort   => undef
+$s2name   => "Management"
+$user     => $ENV{REMOTE_USER}
 </%args>
 
 <%init>
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
+my $dns = Netdot::DNSManager->new();
+my $ipm = Netdot::IPManager->new();
 my %cssitem = ( 0 => "formtablec1", 1 => "formtablec2" );
 my $maxselect = 100;
 my $o = undef;

@@ -20,8 +20,8 @@ files:
 	@echo
 	@echo "Preparing and installing $(DIR) files..."
 	for file in $(FILES); do \
-	    sed -e "s|^use lib \"PREFIX/lib\".*\$$|use lib \"$(PREFIX)/lib\"; |" \
-	    	-e "s|^use lib \"NVPREFIX/lib\".*\$$|use lib \"$(NVPREFIX)/lib\"; |" \
+	    sed -e "s|^use lib \"NVPREFIX/lib\".*\$$|use lib \"$(NVPREFIX)/lib\"; |" \
+	        -e "s|PREFIX|$(PREFIX)|g" \
 	        $$file > $$file.tmp ; \
 	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
 	    rm -f $$file.tmp ; \

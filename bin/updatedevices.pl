@@ -24,7 +24,7 @@ my $usage = <<EOF;
     
 EOF
     
-my ($device, $host, %devices, $subnet, $nd);
+my ($device, $host, %devices, $subnet, $dm);
 my $comstr ||= "public";
 my $db = 0;
 my $addsubnets = 0;
@@ -57,65 +57,69 @@ if ( ($host && $subnet) || ($host && $db) || ($subnet && $db) ){
 
 if ($debug){
   $verbose = 1;
-  $nd = Netdot::DeviceManager->new( loglevel => "LOG_DEBUG", foreground => 1 );
+  $dm = Netdot::DeviceManager->new( loglevel => "LOG_DEBUG", foreground => 1 );
 }else{
-  $nd = Netdot::DeviceManager->new();
+  $dm = Netdot::DeviceManager->new();
 }
 my $ipm = Netdot::IPManager->new();
-my $dm = Netdot::DNSManager->new();
+my $dns = Netdot::DNSManager->new();
 
 if ($host){
-    if ($device = $dm->getdevbyname($host)){
+    my $r;
+    if ($device = $dns->getdevbyname($host)){
 	printf ("Device %s exists in DB.  Will try to update\n", $host) if $verbose;
-	&discover(device => $device, host => $host, comstr => $device->community);
-    }elsif($dm->getrrbyname($host)){
+	$r = &discover(device => $device, host => $host, comstr => $device->community);
+    }elsif($dns->getrrbyname($host)){
 	printf ("Name %s exists but Device not in DB.  Will try to create\n", $host) if $verbose;
-	&discover(host => $host, comstr => $comstr);
-	
+	$r = &discover(host => $host, comstr => $comstr);
     }elsif(my $ip = $ipm->searchblock($host)){
 	if ( $device = $ip->interface->device ){
-	    printf ("Address %s exists in DB. Will try to update\n", $ip->address) if $verbose;
-	    &discover(device => $device, host => $host, comstr => $device->community);
+	    printf ("Device with address %s exists in DB. Will try to update\n", $ip->address) if $verbose;
+	    $r = &discover(device => $device, host => $host, comstr => $device->community);
 	}else{
 	    printf ("Address %s exists but Device not in DB.  Will try to create\n", $host) if $verbose;
-	    &discover(host => $host, comstr => $comstr);
+	    $r = &discover(host => $host, comstr => $comstr);
 	}
     }else{
 	printf ("Device %s not in DB.  Will try to create\n", $host) if $verbose;
-	&discover(host => $host, comstr => $comstr);
+	$r = &discover(host => $host, comstr => $comstr);
     }
-    
+    if ($r){
+	&build_ip_tree;
+    }
 }elsif($subnet){
     my $net = NetAddr::IP->new($subnet);
     # Make sure we work with the network address
     $net = $net->network();
     for (my $nip = $net+1; $nip < $nip->broadcast; $nip++){
-	if(my $ip = $ipm->searchblock($host)){
+	if(my $ip = $ipm->searchblock($nip->addr)){
 	    if ( defined ($device = $ip->interface->device) ){
-		next if exists $devices{$device};
-		unless ( $device->canautoupdate ){
-		    printf ("Device %s was set to not auto-update. Skipping \n", $host) if $verbose;
+		if (exists $devices{$device}){
+		    printf ("%s already queried.  Skipping\n", $ip->address);
 		    next;
 		}
-		printf ("Device %s exists in DB. Will try to update\n", $nip->addr) if $verbose;
+		unless ( $device->canautoupdate ){
+		    printf ("Device %s was set to not auto-update. Skipping \n", $nip->addr) if $verbose;
+		    next;
+		}
+		printf ("Device %s exists in DB. Will try to update\n", $ip->address) if $verbose;
 		&discover(device => $device, host => $ip->address, comstr => $device->community);
 	    }else{
 		printf ("Address %s exists but Device not in DB.  Will try to create\n", $ip->address) if $verbose;
 		&discover(host => $ip->address, comstr => $device->community);
 	    }
 	}else{
-	    printf ("Device %s not in DB.  Will try to create\n", $host) if $verbose;
-	    &discover(host => $host, comstr => );
+	    printf ("Device %s not in DB.  Will try to create\n", $nip->addr) if $verbose;
+	    &discover(host => $nip->addr, comstr => $comstr);
 	}
 	# Make sure we don't query the same device more than once
 	# (routers have many ips)
 	$devices{$device} = 1;
     }
-    
+    &build_ip_tree;
+ 
 }elsif($db){
-    
     printf ("Going to update all devices currently in the DB\n") if $verbose;
-    
     my @devices = Device->retrieve_all;
     foreach my $device ( @devices ) {
 	unless ( $device->canautoupdate ){
@@ -133,22 +137,33 @@ if ($host){
 		}
 	    }
 	}
+	printf ("Updating %s\n", $host);
 	&discover(device => $device, host => $host, comstr => $device->community);
     }
+    &build_ip_tree;
 }else{
     print $usage;
     die "Error: You need to specify one of -H, -s or -d\n";
-    
 }
 
 sub discover {
     my (%argv) = @_;
-
+    my $r;
     $argv{addsubnets} = 1 if $addsubnets;
-    
-    if (  $nd->discover(%argv) ){
-	printf ("%s\n", $nd->output) if ($verbose && ! $debug);
+    if ( $r = $dm->discover(%argv) ){
+	printf ("%s\n", $dm->output) if ($verbose && ! $debug);
     }else{
-	printf("Error: %s\n", $nd->error) if $verbose;
+	printf("Error: %s\n", $dm->error) if $verbose;
+    }
+    return $r;
+}
+
+sub build_ip_tree{
+    for my $ver (qw (4 6)){
+	unless( $ipm->build_tree($ver) ){
+	    printf("Could not rebuild IPv%s space tree!: %s\n", $ver, $ipm->error);
+	}else{
+	    printf("Rebuilt IPv%s space tree\n", $ver);
+	}
     }
 }

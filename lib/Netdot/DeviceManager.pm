@@ -27,10 +27,11 @@ sub new {
 
     $self = $self->SUPER::new( %argv );
 
-    $self->{nv} = NetViewer::RRD::SNMP::NV->new(aliases     => "../etc/categories",
+    $self->{nv} = NetViewer::RRD::SNMP::NV->new(aliases     => "PREFIX/etc/categories",
 						snmpversion => $self->{'DEFAULT_SNMPVERSION'},
-						community   => $self->{'DEFAULT_COMMUNITY'},
-						retries     => $self->{'DEFAULT_RETRIES'},
+						community   => $self->{'DEFAULT_SNMPCOMMUNITY'},
+						retries     => $self->{'DEFAULT_SNMPRETRIES'},
+						timeout     => $self->{'DEFAULT_SNMPTIMEOUT'},
 						);
 
     wantarray ? ( $self, '' ) : $self; 
@@ -75,7 +76,6 @@ sub _readablehex {
 # Optional args:
 #   device: Existing 'Device' object 
 #   comstr: SNMP community string (default "public")
-
 #####################################################################
 sub discover {
     my ($self, %argv) = @_;
@@ -181,7 +181,7 @@ sub discover {
 	return 0;
     }
     if ($dev{sysUpTime} < 0 ) {
-	$self->error( sprintf("Device %s not found; skipping", $host) );
+	$self->error( sprintf("Device %s did not respond", $host) );
 	$self->debug( loglevel => 'LOG_ERR',
 		      message => $self->error);
 	return 0;
@@ -194,6 +194,7 @@ sub discover {
 
     my %devtmp;
     $devtmp{sysdescription} = $dev{sysDescr};
+    $devtmp{community} = $comstr;
     
     ###############################################
     # Make sure name is in DNS
@@ -203,7 +204,7 @@ sub discover {
     my $rr;
     if ( $rr = $dm->getrrbyname($host) ) {
 	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => "Name %s exists in DNS. Pointing to it.", 
+		      message  => "Name %s exists in DB. Pointing to it.", 
 		      args => [$host]);
 	$devtmp{name} = $rr;
     }else{
@@ -336,8 +337,9 @@ sub discover {
 		    #
 		    # Another device exists that has that address
 		    # 
+		    my $name = (defined($otherdev->name->name))? $otherdev->name->name : $otherdev->id;
 		    $self->error( sprintf("PhysAddr %s belongs to existing device %s. Aborting", 
-					  $braddr, $host ) ); 
+					  $braddr, $name ) ); 
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => $self->error,
 				  );
@@ -950,7 +952,6 @@ sub discover {
 	}
     }
     
-    
     ##############################################
     # remove each ip address that no longer exists
     
@@ -974,28 +975,6 @@ sub discover {
 	}
     }
 
-    ########################################################
-    # Rebuild the IP space tree
-    # for each ip version found
-    foreach my $ver (keys %ipversions){
-	my $msg = sprintf("Going to rebuild IPv%s space tree", $ver);
-	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => $msg );
-	$self->output($msg);
-	unless( $ipm->build_tree($ver) ){
-	    my $err = $ipm->error();
-	    my $msg = sprintf("Could not rebuild IPv%s space tree!: %s", $ver, $err);
-	    $self->debug( loglevel => 'LOG_ERR',
-			  message  => $msg );
-	    $self->output( $msg);
-	}else{
-	    my $msg = sprintf("Rebuilt IPv%s space tree", $ver);
-	    $self->debug( loglevel => 'LOG_NOTICE',
-			  message  => $msg );
-	    $self->output($msg);
-	}
-    }
-    
     ##############################################
     # remove each vlan membership that no longer exists
     
@@ -1055,7 +1034,7 @@ sub discover {
     $self->debug( loglevel => 'LOG_NOTICE',
 		  message  => $msg );
     $self->output($msg);
-    
+    return 1;
 }
  
 

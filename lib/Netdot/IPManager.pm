@@ -41,33 +41,32 @@ sub new {
 }
 
 
-
-#####################################################################
-# IP to Integer Converter
-# Arguments: dotted-quad address
-# Returns: Integer
-#####################################################################
-#sub ip2int {
-#    my ($self, $address) = @_;
-#    my $ip = NetAddr::IP->new($address);
-#    unless ($ip){
-#	return 0;
-#    }
-#    return ($ip->numeric)[0];
-#}
-
 #####################################################################
 # Sort IPblock objects by ip address
 # Arguments: arrayref of Ipblock objects
-# Returns: Integer
+# Returns: sorted arrayref
 #####################################################################
-sub sortblocks {
+sub sortblocksbyaddr {
     my ( $self, $objects) = @_;
     @{$objects} = 
 	map  { $_->[0] }
     sort { $a->[1] <=> $b->[1] }
     map  { [$_->[0], $_->[1]->numeric()] }
     map  { [$_, NetAddr::IP->new($_->address)] } @{$objects};
+    return $objects;
+}
+#####################################################################
+# Sort IPblock objects by parent's ip address
+# Arguments: arrayref of Ipblock objects
+# Returns: sorted arrayref
+#####################################################################
+sub sortblocksbyparent {
+    my ( $self, $objects) = @_;
+    @{$objects} = 
+	map  { $_->[0] }
+    sort { $a->[1] <=> $b->[1] }
+    map  { [$_->[0], $_->[1]->numeric()] }
+    map  { [$_, NetAddr::IP->new($_->parent->address)] } @{$objects};
     return $objects;
 }
 
@@ -91,6 +90,20 @@ sub searchblock {
     return 0;
 }
 
+#####################################################################
+# Search IP Blocks that match certain address substring
+# Arguments: (part of) address
+# Returns: Ipblock objects
+#####################################################################
+sub searchblockslike {
+    my ($self, $address, $version) = @_;
+    my @blocks;
+    my $it = Ipblock->retrieve_all;
+    while (my $ipb = $it->next){
+	push @blocks, $ipb if ($ipb->address =~ /$address/);
+    }
+    return (scalar @blocks)? \@blocks : 0;
+}
 #####################################################################
 # Is Ipblock a subnet?
 # Arguments: IPblock object

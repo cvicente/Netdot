@@ -166,14 +166,16 @@ sub getlabels{
 sub getobjlabel {
     my ($self, $obj, $delim) = @_;
     my (%linksto, @ret, @cols);
-    my $table = ref($obj);
+    my $table = $obj->table;
     %linksto = $self->getlinksto($table);
     @cols = $self->getlabels($table);
     foreach my $c (@cols){
-	if ( !exists( $linksto{$c} ) ){
-	    push @ret, $obj->$c;
-	}else{
-	    push @ret, $self->getobjlabel($obj->$c, $delim);
+	if (defined $obj->$c){
+	    if ( !exists( $linksto{$c} ) ){
+		push @ret, $obj->$c;
+	    }else{
+		push @ret, $self->getobjlabel($obj->$c, $delim);
+	    }
 	}
     }
     return join "$delim", @ret ;
@@ -576,6 +578,9 @@ sub form_to_db
 #   - edit: true if editing, false otherwise.
 #   - htmlExtra: extra html you want included in the output. Common use
 #                would be to include style="width: 150px;" and the like.
+#   - makeLink:  (optional) Make the printed value a link
+#                to itself via view.html (requires that column value is 
+#                defined)
 #
 # TODO: Might be nice to use getobjlabel() at some point to display full
 #       information about the object. Performance issues with Class::DBI
@@ -585,20 +590,17 @@ sub form_to_db
 sub selectLookup($@)
 {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $lookup, $where, $isEditing, $htmlExtra) = 
-                                                        ($args{object}, 
-                                                        $args{table}, 
-                                                        $args{column}, 
-                                                        $args{lookup},
-                                                        $args{where},
-                                                        $args{edit},
-                                                        $args{htmlExtra});
+    my ($o, $table, $column, $lookup, $where, $isEditing, $htmlExtra, $makeLink) = 
+	($args{object}, $args{table}, 
+	 $args{column}, $args{lookup},
+	 $args{where}, $args{edit},
+	 $args{htmlExtra}, $args{makeLink});
+    
     $htmlExtra = "" if (!$htmlExtra);
 
     my $lblField = ($self->getlabels($lookup))[0];
     my %linksto = $self->getlinksto($lookup);
     my $rLblField = ($self->getlabels($lblField))[0] if ($linksto{$lblField});
-
 
     if ($isEditing)
     {
@@ -651,12 +653,61 @@ sub selectLookup($@)
 
     }
 
+    elsif ($makeLink && $o->$column)
+    {
+	my $rtable = $o->$column->table;
+        printf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", ($rtable, $o->$column->id, $rLblField ? $o->$column->$lblField->$rLblField : $o->$column->$lblField) );	
+    }
     else
     {
         printf("%s\n", ($o->$column ? ($rLblField ? $o->$column->$lblField->$rLblField : $o->$column->$lblField) : ""));
     }
 }
 
+###############################################################################
+# selectQuery
+#
+# Search keywords in a table's label fields. If label field is a foreign
+# key, recursively search for same keywords in foreign table.
+# If objects exist that match both keys, return those.  Otherwise, return all
+# objects that match either keyword
+#
+# Arguments
+#   table: Name of table to look up
+#   terms: array ref of search terms
+# Returns
+#   hashref of $table objects
+###############################################################################
+sub selectQuery {
+    my ($self, %args) = @_;
+    my ($table, $terms) = ($args{table}, $args{terms});
+    my %in; # intersection
+    my %un; # union
+    my %linksto = $self->getlinksto($table);
+    my @labels = $self->getlabels($table);
+    foreach my $c (@labels){
+	if (! $linksto{$c} ){ # column is local
+	    foreach my $term (@$terms){
+		my $it = $table->search_like( $c => "%" . $term . "%" );
+		while (my $obj = $it->next){
+		    (exists $un{$obj->id})? $in{$obj->id} = $obj : $un{$obj->id} = $obj;
+		}	
+	    }
+	}else{ # column is a foreign key.
+	    my $rtable = $linksto{$c};
+	    # go recursive
+	    if (my $fobjs = $self->selectQuery( table => $rtable, terms => $terms )){
+		foreach my $foid (keys %$fobjs){
+		    my $it = $table->search( $c => $foid );
+		    while (my $obj = $it->next){
+			(exists $un{$obj->id})? $in{$obj->id} = $obj : $un{$obj->id} = $obj;
+		    }
+		}
+	    }
+	}
+    }
+    return (keys %in) ? \%in : \%un;
+}
 
 ###############################################################################
 # radioGroupBoolean
@@ -687,15 +738,16 @@ sub radioGroupBoolean($@)
 
     if ($isEditing)
     {
-        printf("<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"1\" %s>Yes &nbsp;&nbsp;\n", $name, ($value ? "CHECKED" : ""));
-        printf("<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"0\" %s>No\n", $name, (!$value ? "CHECKED" : ""));
+        printf("Y<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"1\" %s>&nbsp;\n", $name, ($value ? "CHECKED" : ""));
+        printf("N<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"0\" %s>\n", $name, (!$value ? "CHECKED" : ""));
     }
 
     else
     {
-        printf("%s\n", ($value ? "Yes" : "No"));
+        printf("%s\n", ($value ? "Y" : "N"));
     }
 }
+
 
 ###############################################################################
 # textField
@@ -711,13 +763,17 @@ sub radioGroupBoolean($@)
 #   - edit: true if editing, false otherwise.
 #   - htmlExtra: extra html you want included in the output. Common use
 #                would be to include style="width: 150px;" and the like.
+#   - makeLink: (optional) Make the printed value a link
+#                to itself via view.html (requires that column value is 
+#                defined)
 ###############################################################################
 sub textField($@)
 {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $default, $isEditing, $htmlExtra) = ($args{object}, $args{table}, 
-                                                                  $args{column}, $args{default},
-                                                                  $args{edit}, $args{htmlExtra});
+    my ($o, $table, $column, $isEditing, $htmlExtra, $makeLink) = ($args{object}, $args{table}, 
+								   $args{column}, $args{edit}, 
+								   $args{htmlExtra}, $args{makeLink},
+								   $args{default});
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : $default);
@@ -729,14 +785,11 @@ sub textField($@)
 	$self->error("Unable to determine table name. Please pass valid object and/or table name.\n") ;
 	return 0;
     }
-
-    if ($isEditing)
-    {
+    if ($isEditing){
         printf("<INPUT TYPE=\"TEXT\" NAME=\"%s\" VALUE=\"%s\" %s>\n", $name, $value, $htmlExtra);
-    }
-
-    else
-    {
+    }elsif ( $makeLink && $value){
+	printf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $tableName, $o->id, $value);
+    }else{
         printf("%s\n", $value);
     }
 }

@@ -20,14 +20,9 @@ sub new {
     my $class = ref( $proto ) || $proto;
     my $self = {};
     bless $self, $class;
-    wantarray ? ( $self, '' ) : $self; 
-
     $self = $self->SUPER::new( %argv );
-
     wantarray ? ( $self, '' ) : $self; 
-
 }
-
 #####################################################################
 # Look for RR by name
 # Args: name
@@ -38,9 +33,58 @@ sub getrrbyname {
     my $rrta = (RRType->search(name => "A"))[0];
     my $rrt4a = (RRType->search(name => "AAAA"))[0];
     my $rr;
-    if ( ($rr = (RR->search(name => $name, type => $rrta))[0])
-	 || ($rr = (RR->search(name => $name, type => $rrt4a))[0]) ){
+    if ( ($rr = (RR->search(name => $name, type => $rrta))[0]) ||
+	 ($rr = (RR->search(name => $name, type => $rrt4a))[0]) ){
 	return $rr;
+    }
+    return 0;
+}
+#####################################################################
+# Look for RR by name.  Allow substrings
+# Args: (part of) name
+# Returns: RR object
+#####################################################################
+sub getrrbynamelike {
+    my ($self, $name) = @_;
+    $name = "%" . $name . "%";
+    my $rrta = (RRType->search(name => "A"))[0];
+    my $rrt4a = (RRType->search(name => "AAAA"))[0];
+    my @rrs;
+    if ( (@rrs = RR->search_like(name => $name, type => $rrta)) ||
+	 (@rrs = RR->search_like(name => $name, type => $rrt4a)) ){
+	return \@rrs;
+    }
+    return 0;
+}
+#####################################################################
+# Lookup Device by DNS name
+# Args: name
+# Returns: Device object
+#####################################################################
+sub getdevbyname {
+    my ($self, $name) = @_;
+    if (my $rr = $self->getrrbyname($name)){
+	if (my $dev = (Device->search(name => $rr->id))[0]){
+	    return $dev;
+	}
+    }
+    return 0;
+}
+#####################################################################
+# Lookup Device by DNS name.  Allow substrings
+# Args: (part of) name
+# Returns: Device object(s)
+#####################################################################
+sub getdevbynamelike {
+    my ($self, $name) = @_;
+    if (my $rrs = $self->getrrbynamelike($name)){
+	my @devs;
+	foreach my $rr (@$rrs){
+	    if (my $dev = (Device->search(name => $rr->id))[0]){
+		push @devs, $dev;
+	    }
+	}
+	return \@devs;
     }
     return 0;
 }
@@ -53,21 +97,6 @@ sub getzonebyname {
     my ($self, $name) = @_;
     if ( my $z = (Zone->search(mname => $name))[0] ){
 	return $z;
-    }
-    return 0;
-}
-
-#####################################################################
-# Lookup Device by DNS name
-# Args: name
-# Returns: Device object
-#####################################################################
-sub getdevbyname {
-    my ($self, $name) = @_;
-    if (my $rr = $self->getrrbyname($name)){
-	if (my $dev = (Device->search(name => $rr->id))[0]){
-	    return $dev;
-	}
     }
     return 0;
 }
@@ -146,10 +175,10 @@ sub insertzone {
     my %state = (mname     => $argv{mname},
 		 rname     => $argv{rname}   || "hostmaster.$argv{mname}",
 		 serial    => $argv{serial}  || $ui->dateserial . "00",
-		 refresh   => $argv{refresh} || $self->{'DEFAULT_REFRESH'},
-                 retry     => $argv{retry}   || $self->{'DEFAULT_RETRY'},
-                 expire    => $argv{expire}  || $self->{'DEFAULT_EXPIRE'},
-                 minimum   => $argv{minimum} || $self->{'DEFAULT_MINIMUM'},
+		 refresh   => $argv{refresh} || $self->{'DEFAULT_DNSREFRESH'},
+                 retry     => $argv{retry}   || $self->{'DEFAULT_DNSRETRY'},
+                 expire    => $argv{expire}  || $self->{'DEFAULT_DNSEXPIRE'},
+                 minimum   => $argv{minimum} || $self->{'DEFAULT_DNSMINIMUM'},
                  active    => $argv{active}  || 1,
 		 );
     if (my $z = $ui->insert(table => "Zone", state => \%state )){
