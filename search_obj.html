@@ -1,5 +1,4 @@
 <%perl>
-my %myargs;
 foreach my $j (keys %ARGS){
 	next if ($ARGS{$j} !~ /\w+/ || $j eq 'submit');
 	$arg{$j} = $ARGS{$j};	
@@ -11,7 +10,7 @@ unless ( $arg{table} ){
 $table = $arg{table};
 
 # Get some Meta info
-$mi = (Meta->search( name => $arg{table} ))[0];
+$mi = (Meta->search( name => $table ))[0];
 undef( %linksto );
 map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
    split( /,/, $mi->linksto );
@@ -73,7 +72,7 @@ if( defined( $mi->columnorder ) ) {
    </tr>
    <tr><td bgcolor="#FFFFFF"align=center colspan=2>
    <input name="submit" value="Search" type="submit">
-   </tr></td>
+   </td></tr>
    </table>
 
 
