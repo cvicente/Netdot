@@ -341,7 +341,7 @@ sub update {
       return 0;
     }
   }
-  return 1;
+  return $obj->id;
 }
 
 #####################################################################
@@ -358,7 +358,7 @@ sub insert {
     $self->{'_error'} = "Unable to insert into $tbl: $@";
     return 0;
   } else {
-    return $ret;
+    return $ret->id;
   }
 }
 
@@ -569,6 +569,18 @@ Requires two arguments:  the working directory and the session-id (as
 described above).  The same warning for mksession() regarding 
 de-referencing the returned object applies.
 
+=head2 pushsessionpath - push table name onto list of table names
+
+  $result = $gui->pushsessionpath( $session, $table );
+
+Pushes the table name $table onto a list of tables that have been visited.
+
+=head2 popsessionpath - pop table name from list of table names
+
+  $table = $gui->popsessionpath( $session );
+
+Pops the last table visited from the stack and returns the name.
+
 =head2 rmsession - remove state for specific session
 
   $gui->rmsession( \%session );
@@ -593,7 +605,8 @@ Updates values for a particular row in a DB table.  Takes two arguments.
 The first argument 'object' is a Netdot::DBI (and consequently Class::DBI
 ) object that represents the table row you wish to update.  The second 
 argument 'state' is a hash reference which is a simple composition 
-of column => value pairs.  Returns 1 for success and 0 for failure.
+of column => value pairs.  Returns positive integer representing the 
+modified row's id column for success and 0 for failure.
 
 =head2 insert - insert row into DB table
 
