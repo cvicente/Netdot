@@ -14,7 +14,6 @@ function showVlan(){
 -->
 </script>
 
-% print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 % if ( defined($search) && $search =~ /\w+/ ){
 %   my $list;
 %   unless ( ($list = $dns->getdevbynamelike($search)) ){
@@ -102,11 +101,9 @@ foreach my $o (@$list){
 
 # insert/update
 # -----------------------------------------------------------------------------
-    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
     if (!$ui->form_to_db(%ARGS)){
 	$m->comp('error.mhtml', error => $ui->error);
     }
-    
     # Do this to 'flush' the values associated with the object
     # before redisplaying
     $o = undef;
@@ -577,8 +574,8 @@ if ( !defined($search) ){
 	   <td valign="top" align="left"><strong>VLAN</strong></td>
 	   <td valign="top" align="left"><strong>Jack</strong></td>
 	   <td valign="top" align="left"><strong>Descr.</strong></td>
-	   <td valign="top" align="left"><strong>Uplink<br>Conn.</strong></td>
-	   <td valign="top" align="left"><strong>Downlink<br>Conn.</strong></td>
+	   <td valign="top" align="left"><strong>Uplink<br>Connections</strong></td>
+	   <td valign="top" align="left"><strong>Downlink<br>Connections</strong></td>
         </tr>
 
 %	#####################################
@@ -661,8 +658,8 @@ if ( !defined($search) ){
 		       </select>
 %		    }else{  #too many instances.  Offer a keyword search
 %		       my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
-		       <input type="text" name="<% $srchf %>" value="Keywords">
-		       &nbsp;<input type="button" name="" value="List" 
+                       <input type="text" name="<% $srchf %>" value="Keywords">&nbsp;
+		       <input type="button" name="" value="List" 
 		       onClick="sendquery(<% "_InterfaceDep__" . $par->id . "__parent" %>, <% $srchf . '.value' %>, 'Interface')" >
 		       <br><select name="<% "_InterfaceDep__" . $par->id . "__parent" %>">
 		          <option value="<% $par->parent->id %>" selected><% $lbl %></option>
@@ -679,16 +676,15 @@ if ( !defined($search) ){
 %	        my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
 		<input type="text" name="<% $srchf %>" value="Keywords">
 	        &nbsp;<input type="button" name="" value="List" 
-	        onClick="sendquery(<% "_InterfaceDep__" . $if->id ."__new" %>, <% $srchf . '.value' %>, 'Interface')" >
+	        onClick="sendquery(<% "_InterfaceDep__" . $if->id ."__newparent" %>, <% $srchf . '.value' %>, 'Interface')" >
 	        <br>
-		<select name="<% "_InterfaceDep__" . $if->id ."__new" %>">
-	 	  <option value="0">[null]</option>
+		<select name="<% "_InterfaceDep__" . $if->id ."__newparent" %>">
+%#	 	  <option value="0">[null]</option>
 	        </select>	      
 %	     }
 %	   }
 	   </td>
 <!-- End UpLink Connections Field -->
-
 <!-- DownLink Connections Field -->
 	   <td align="left">
 %	   my @children = $if->children;
@@ -728,16 +724,17 @@ if ( !defined($search) ){
 %	        my $srchf = '_' . $if->id . 'child_srch';  #name of the form input tag
 		<input type="text" name="<% $srchf %>" value="Keywords">
 	        &nbsp;<input type="button" name="" value="List" 
-	        onClick="sendquery(<% "_InterfaceDep__" . $if->id ."__new" %>, <% $srchf . '.value' %>, 'Interface')" >
+	        onClick="sendquery(<% "_InterfaceDep__" . $if->id ."__newchild" %>, <% $srchf . '.value' %>, 'Interface')" >
 	        <br>
-		<select name="<% "_InterfaceDep__" . $if->id ."__new" %>">
-	 	  <option value="0">[null]</option>
+		<select name="<% "_InterfaceDep__" . $if->id ."__newchild" %>">
+%#	 	  <option value="0">[null]</option>
 	        </select>	      
 %	     }
 %	   }
 
 	   </td>
 <!-- End DownLink Connections Field -->
+
 	  </tr>
 %       } #foreach
      <tr>
@@ -785,7 +782,7 @@ $showvlan => "all"
 </%args>
 
 <%init>
-my $DEBUG = 0;
+my $DEBUG = 1;
 my $ui = Netdot::UI->new();
 my $dns = Netdot::DNSManager->new();
 my $ipm = Netdot::IPManager->new();
@@ -814,6 +811,8 @@ if ($id){
 }else{
    $name = "Search"
 }
+
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 </%init>
 

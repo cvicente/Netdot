@@ -778,25 +778,26 @@ sub form_to_db{
                     # Set the 'action' flag
                     $act = 1;
                     last;
-                }elsif ($field eq "new"){
-                    my %state;
-                    # This is a little hack
-                    if ($table eq "InterfaceDep" && $objs{$table}{$id}{$field} ne "0"){
+		    ######################################################################################
+                    # Special case
+		}elsif ($table eq "InterfaceDep" && $field =~ /new/ ){
+		    my %state;
+                    if ($field eq "newparent" ){
                         $state{child} = $id;
                         $state{parent} = $objs{$table}{$id}{$field};
-                    }
-                    
+		    }elsif ($field eq "newchild"){
+                        $state{parent} = $id;
+                        $state{child} = $objs{$table}{$id}{$field};
+		    }
 		    my $newid;
-                    if (scalar(keys %state)){
-	                    if (! ($newid = $self->insert(table => $table, state => \%state)) ){
-                            return 0; # error should already be set.
-                        }
-                    }
+		    if (! ($newid = $self->insert(table => $table, state => \%state)) ){
+			return 0; # error should already be set.
+		    }
 		    $form_to_db_info{$table}{action} = "insert";
 		    $form_to_db_info{$table}{key} = $newid;
                     $act = 1;
                     last;
-                }
+		  }
 	    }
 
             # If our id is new we want to insert a new row in the DB.

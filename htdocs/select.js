@@ -2,7 +2,7 @@
 // This will create a hidden form
 // then copy the matched objects in our <select> option list
 // Args: 
-//   * field: the column name we're searching
+//   * field: form <select> element name we want to populate with options
 //   * val:   the search criteria
 //   * tablename
    var wind;
