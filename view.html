@@ -4,7 +4,10 @@ foreach	my $j (keys %ARGS){
 	$arg{$j} = $ARGS{$j};	
 }	
 
-die "Missing parameters" unless ( $arg{table} && $arg{id} );
+unless ( $arg{table} && $arg{id} ){
+   print "<strong>Missing required parameters 'table' and/or 'id'</strong>";
+   exit;
+}
 $table = $arg{table};
 $obj = $table->retrieve($arg{id});
 
@@ -77,14 +80,15 @@ if( defined( $mi->columnorder ) ) {
 </tr>
 </table>
 
-%}elsif( $arg{edit} ) {
+%} else {
 
    <form action="update.html" method="POST">
    <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+   <input type="hidden" name="table"><% $table %>
    <tr>
    <td bgcolor="#DDDDDD"><strong>id</strong></td><td><input type="hidden" name="id"><% $obj->id %></input></td>
    </tr>
-%  foreach my $c ($table->columns()){
+%  foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %     next if ($c eq 'id');
 %     if (!exists($linksto{$c}) ){  # The column is 'local'
          <tr> 
