@@ -10,10 +10,6 @@ foreach my $j ( keys %ARGS ) {
     $TBL = $j;
     next;
   }
-  if( $j eq "discover" ) {
-    %node = %{ $args{discover} };
-    next;
-  }
   next if( $ARGS{$j} !~ /\w+/ );
   $args{$j} = $ARGS{$j};
 }
@@ -102,10 +98,11 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
 }
 
 ##################################################
-# if commit, handle here
+# if confirm, handle here
 if( $args{confirm} eq "Confirm" ) {
   my $T = $args{create};
   my $c = $T->create( \%{ $session{tables}{$T} } );
+  print Dumper( %session );
   delete( $session{tables}{ $args{create} } );
   if( length( $session{path} ) < 1 ) {
     tied(%session)->delete if( %session );
@@ -227,23 +224,20 @@ if( defined( $TBL ) ) {
 <%args>
 
 $gui => Netdot::GUI->new()
-%args => undef
-$nv => undef
-$DIR => "/home/netdot/public_html/tmp"
-$AGE => 3600
-$WIDTH => 2
-%order => undef
-%linksto => undef
-%linksfrom => undef
-%session => undef
-%state => undef
 $TBL => undef
 $PREV => undef
 $id => undef
 $sid => undef
-%IfRsv => undef
-%node => undef
 $DEBUG => 1
+$nv => undef
+$DIR => "/home/netdot/public_html/tmp"
+$AGE => 3600
+$WIDTH => 2
+%args => undef
+%state => undef
+%order => undef
+%linksto => undef
+%session => undef
 
 </%args>
 <%init>
@@ -251,6 +245,8 @@ use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::GUI;
 use Data::Dumper;
+
+#my %state;
 
 </%init>
 
@@ -283,6 +279,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.20  2003/07/02 00:06:29  netdot
+#  *** empty log message ***
+#
 #  Revision 1.19  2003/07/01 19:04:23  netdot
 #  *** empty log message ***
 #
