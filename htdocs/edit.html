@@ -25,7 +25,7 @@ foreach my $j ( keys %ARGS ) {
     $NEW = 1;
     next;
   }
-  next if( $ARGS{$j} !~ /\w+/ || $j !~ /\w+/ );
+  next if( $j !~ /\w+/ );
   $args{$j} = $ARGS{$j};
 }
 
@@ -229,7 +229,7 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
 % # Header
 %   if( $args{submit} eq "Submit" ) {
       <& header, title => "Confirm: $TBL" &>
-%   } elsif( $OBJ ) {
+%   } elsif( $OBJ) {
 %     my $labelstr = $gui->getobjlabel($OBJ, ", ");
       <& header, title => "Edit: $TBL: $labelstr" &>
 %   } else {
