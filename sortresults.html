@@ -109,12 +109,21 @@ if( $arg{table} ) {
 <!-- end sortresults -->
 
 % ####################################################################
+<%args>
+
+%arg => undef
+%order => undef
+%linksto => undef
+%linksfrom => undef
+$META => undef
+$LBL => undef
+$PAGE => "view.html"
+
+</%args>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-use Data::Dumper;
-my( %arg, %order, %linksto, %linksfrom, $META, $LBL );
-my $PAGE = "view.html";
+use Netdot::GUI;
 
 </%init>
 <%doc>
@@ -125,6 +134,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.13  2003/06/13 18:07:14  netdot
+# moving to <%args>
+#
 # Revision 1.12  2003/06/02 22:17:32  netdot
 # change PAGE to PAGE=view.html
 #
