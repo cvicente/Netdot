@@ -1,15 +1,15 @@
 <html>
 <head>
-<title>Netdot</title>
+   <LINK REL=StyleSheet HREF="style.css" TYPE="text/css">
+   <title>Netdot : <% $title %></title>
 </head>
-<body style="background-color: #FFFFFF; ">
-
+<body class="bodytag">
 <table border="1" cellspacing="0" cellpadding="0" valign=top width="100%" height="93%">
    <tr height="0"><td valign=top height="0">
-      <table bgcolor="#CCCCCC" cellpadding="0" border="0" align="center" valign="top" width="100%" height="0">
+      <table cellpadding="0" border="0" align="center" valign="top" width="100%" height="0" bgcolor="#CCCCCC" class="headertable">
          <tr>
             <td width="0" height="20" colspan="0" rowspan="0" align="left" valign=middle>
-		<font size="+1" color="000000"><a href="main.html">Netdot</a>: <% $title %></font>
+		<font size="+1" color="000000" class="headerfont"><a href="main.html" class="bannerfont">Netdot</a>: <% $title %></font>
 	    </td>
             <td width="0" height="20" colspan="0" rowspan="0" align="right">
                <table cellpadding="0" cellspacing="0" border="0" bgcolor="CCCCCC">
@@ -18,31 +18,31 @@
      	                <table border="0" cellpadding="0" cellspacing="0">
  	                   <tr>
 			      <td ALIGN=LEFT>
-			         <table BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH=100%>
+			         <table BORDER="0" CELLSPACING="0" CELLPADDING="0" WIDTH="100%" class="utilitytable">
 		                    <tr>
-					<td ALIGN=LEFT>
-					   <font color="000000">user: </font>
+					<td ALIGN="RIGHT">
+					   <font color="000000" class="utilityfont"><B>user:</B></font>
 					</td>
-					   <td ALIGN=CENTER> 
-					      <b><% $user %></b> 
-					   </td>
-					<td ALIGN=CENTER>
-					   [<a HREF="logout.html">logout</a>]
+					<td ALIGN="CENTER">                                             
+					   <font color="000000" class="utilityfont">
+                                           <% $user %>
+                                           </font>
+					</td>
+					<td ALIGN="CENTER">
+					   <font color="000000" class="utilityfont">[<a href="logout.html" class="utilityfont">logout</a>]</font>
 					</td>
 				    </tr>
+			            <tr>
+					<TD ALIGN="RIGHT">
+					   <font color="000000" class="utilityfont"><B>search</B>:
+                                        </TD>
+                                        <TD COLSPAN="2">
+					   <form action="search.html" method="post">
+  				           <input type="text" name="q" size="15" value="">
+   				           </form>
+                                        </TD>
+				    </TR>
 				 </table>
-			      </td>
-			   </tr>
-			   <tr>
-			      <td align=center>
-			         <form action="search.html" method="post">
- 	                            <!--
-                                    <input name="submit" value="search" type="submit">
-  	                            <input type="text" name="q" size="12" value="">
-				    -->
-				    Search
-				    <input type="text" name="q" size="15" value="">
-				 </form>
 			      </td>
 			   </tr>
 	   	        </table>
@@ -52,7 +52,7 @@
 	    </td>
           </tr>
 	  <tr>
-	     <td colspan="2" width="0" height="5" bgcolor="#000099">
+	     <td colspan="2" width="0" height="5" bgcolor="#000099" class="delimiter">
 	     </td>
 	  </tr>
        </table>
@@ -61,5 +61,5 @@
 <!-- header ends header ends header ends -->
 <%args>
 $title 
-$user => "john_doe"
+$user => $ENV{REMOTE_USER}
 </%args>
