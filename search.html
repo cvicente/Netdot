@@ -1,6 +1,6 @@
 <& header, title =>'General Search' &>
 
-<form action="generic-search.html" method="POST">
+<form action="search.html" method="POST">
 
 <%perl>
 my %arg;
@@ -29,8 +29,8 @@ foreach my $j ( keys %ARGS ) {
     <tr><td width="100%" height="5" bgcolor="#000099"> </td></tr>
     </table>
     <%perl>
-    undef %results;  # may be cached copy in memory
-    foreach my $tbl ( $dbh->tables() ) {
+    foreach my $meta ( Meta->retrieve_all() ) {
+      my $tbl = $meta->name;
       foreach my $col ( $tbl->columns() ) {
         map { $results{$tbl}{$_->id} = $_ } 
           $tbl->search_like( $col => $arg{q} );
@@ -64,14 +64,8 @@ foreach my $j ( keys %ARGS ) {
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Data::Dumper;
-use DBI;
-
 use vars qw( %results );
-
-my $dbh = DBI->connect( "dbi:mysql:netdot", "netdot_user", "netdot_pass" )
-	  or die "Can't connect to db: $DBI::errstr\n";
-
-
+undef( %results );
               
 </%init>
 
@@ -79,6 +73,9 @@ my $dbh = DBI->connect( "dbi:mysql:netdot", "netdot_user", "netdot_pass" )
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.8  2003/05/14 16:38:49  netdot
+# remove DBI stuff; now just use Meta table.
+#
 # Revision 1.7  2003/05/01 16:51:20  netdot
 # *** empty log message ***
 #
