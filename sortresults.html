@@ -45,20 +45,15 @@ if( $args{table} ) {
 
 <!-- begin sortresults -->
 % if( defined( $META ) && defined( $args{object} ) ) {
-  <br>
-    <table cellpadding="3" cellspacing="1" border="0" width="100%" bgcolor="#DDDDDD">
-    <tr>
-%   foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-      <th><% $o %></th>
-%   }
-    </tr>
+  <table BORDER="0" CELLSPACING="1" CELPADDING="3" BGCOLOR="whitesmoke" width="100%">
 % ####################################################################
 %   foreach my $o ( sort { $a->id <=> $b->id } @{ $args{object} } ) {
 %     my $flag = 1;
 %     my @order = sort { $order{$a} <=> $order{$b} } keys %order;
-      <tr>
 %     foreach my $c ( @order ) {
-        <td align="CENTER" valign="TOP" bgcolor="#FFFFFF">
+        <tr>
+        <td align="RIGHT" valign="TOP" ><b><% $c %></b>: </td>
+        <td align="LEFT" valign="TOP">
 %       if( exists( $linksto{$c} ) ) {
 %         my $ft = (Meta->search( name => $linksto{$c} ))[0];
 %         if( ! defined( $ft ) ) {
@@ -70,7 +65,6 @@ if( $args{table} ) {
 %         } else {
 %           my $lbl = $ft->label;
 %           if( $flag ) {
-%             $flag = 0;
               <strong>
               <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
               <% $o->$c->$lbl %>
@@ -82,7 +76,6 @@ if( $args{table} ) {
 %         }
 %       } else {
 %         if( $flag ) {
-%           $flag = 0;
             <strong>
             <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
             <% $o->$c %>
@@ -93,7 +86,11 @@ if( $args{table} ) {
 %         }
 %       } # else fi
         </td>
+%       $flag = 0 if( $flag );
+        </tr>
 %     } # for c
+      <tr>
+      <td colspan=2><br></td>
       </tr>
 %   } # for o
 % ####################################################################
@@ -128,6 +125,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.15  2003/06/13 18:39:30  netdot
+# merged efforts from sortresults2.html
+#
 # Revision 1.14  2003/06/13 18:34:43  netdot
 # now using GUI.pm
 #
