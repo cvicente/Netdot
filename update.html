@@ -30,7 +30,7 @@ unless ( $obj ){
 <input type="hidden" name="table" value="<% $table %>">
 <input type="hidden" name="id" value="<% $id %>">
 
-<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC" class="formtablebg">
   <tr bgcolor="#FFFFFF"> 
      <td colspan="3" align="center"><strong><% $table %></strong></td>
   </tr>
@@ -40,16 +40,16 @@ unless ( $obj ){
 % ################################################
 %     if( ! exists( $linksto{$c} ) ) { # local field
         <tr>
-          <td align="right" bgcolor="#DDDDDD"><% $c %>:</td>
-	  <td colspan="2">
+          <td align="right" bgcolor="#DDDDDD" class="formtablec1"><% $c %>:</td>
+	  <td colspan="2" class="formtablec2">
 	  <% $gui->getinputtag($c, $obj) %>	        
 	  </td>
         </tr>
 % ################################################
 %     } else {  # field is a foreign key
         <tr>
-        <td align="right" bgcolor="#DDDDDD"><% $c %>:</td>
-          <td>
+        <td align="right" bgcolor="#DDDDDD" class="formtablec1"><% $c %>:</td>
+          <td class="formtablec2">
           <select name="<% $c %>">
 %	  unless ( ref($obj->$c) ){
 	     <& error.html, caller => "update.html", error => "$c is not a FK in $table!" &>
