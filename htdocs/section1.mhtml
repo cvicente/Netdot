@@ -19,7 +19,13 @@ my $page = "";
 <div id="navbar">
     <ul id=navigation>
         <li>
+%
+% if( $section eq "Main" ) {
+            <span>Main</span>
+% } else {
             <a href="index.html">Main</a>
+% }
+%
         </li>
         <li>
 %
@@ -83,13 +89,87 @@ my $page = "";
 %
         </li>
         <li>
+%
+%
+% if( $section eq "Plant" ) {
+%     if (exists($caller_args{page})){
+%         $user->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args{page});
+%     }
+%     $page = $user->getAttribute("CABLE_PLANT_PAGE");
+%
+            <span>Cable Plant</span>
+            <ul id="subnavigation">
+%
+%     if ($page eq "SITE" || $page eq "") {
+                <li><span>Sites</span></li>
+%     } else {
+                <li><a href="section_cable.html?page=SITE">Sites</a></li>
+%     }
+%     if ($page eq "BACKBONE" || $page eq "") {
+                <li><span>Backbone Cables</span></li>
+%     } else {
+                <li><a href="section_cable.html?page=BACKBONE">Backbone Cables</a></li>
+%     }
+%     if ($page eq "HORIZONTAL") {
+                <li><span>Horizontal Cables</span></li>
+%     } else {
+                <li><a href="section_cable.html?page=HORIZONTAL">Horizontal Cables</a></li>
+%     }
+%     if ($page eq "CLOSETS") {
+                <li><span>Closets</span></li>
+%     } else {
+                <li><a href="section_cable.html?page=CLOSETS">Closets</a></li>
+%     }
+%     if ($page eq "STRANDS") {
+                <li><span>Cable Strands</span></li>
+%     } else {
+                <li><a href="section_cable.html?page=STRANDS">Cable Strands</a></li>
+%     }
+%     if ($page eq "CIRCUITS") {
+                <li><span>Circuits</span></li>
+%     } else {
+                <li><a href="section_cable.html?page=CIRCUITS">Circuits</a></li>
+%     }
+%
+            </ul>
+%
+% } else {
             <a href="section_cable.html">Cable Plant</a>
+% }
+%
         </li>
         <li>
             <a href="section_generic.html">Generic</a>
         </li>
         <li>
+%
+% if( $section eq "Reports" ) {
+%     if (exists($caller_args{page})){
+%         $user->setAttribute($r, "REPORTS_PAGE", $caller_args{page});
+%     }
+%     $page = $user->getAttribute("REPORTS_PAGE");
+            <span>Reports</span>
+            <ul id="subnavigation">
+%
+%     if( $page eq "DEVICE" ) {
+                <li><span>Device Inventory</span></li>
+%     } else {
+                <li><a href="reports_device_inventory.html">Device Inventory</a></li>
+%     }
+%
+%     if( $page eq "CUSTOM" ) {
+                <li><span>Custom Reports</span></li>
+%     } else {
+                <li><a href="reports_custom.html">Custom Reports</a></li>
+%     }
+%
+            </ul>
+%
+%
+% } else {
             <a href="section_reports.html">Reports</a>
+% }
+%
         </li>
         <li>
             <a href="section_help.html">Help</a>

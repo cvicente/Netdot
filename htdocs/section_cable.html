@@ -1,17 +1,19 @@
 <%doc>
     Cable Plant Section
 </%doc>
-
+%
+%
 <%args>
 $user
 </%args>
-
+%
+%
 <%attr>
 title   => 'Cable Plant' 
 section => 'Plant'
 </%attr>
-
-
+%
+%
 <%init>
 my %caller_args = $m->caller_args(-1);
 
@@ -43,46 +45,10 @@ my @sites = Site->retrieve_all();
 @sites = sort { $a->name cmp $b->name } @sites;
 </%perl>
 
-<br>
-%       if ($page eq "SITE" || $page eq "") {
-            [Sites] | 
-%       } else {
-            <a href="section_cable.html?page=SITE">[Sites]</a> |     
-%       }
-
-%       if ($page eq "BACKBONE" || $page eq "") {
-            [Backbone Cables] | 
-%       } else {
-            <a href="section_cable.html?page=BACKBONE">[Backbone Cables]</a> |     
-%       }
-
-%       if ($page eq "HORIZONTAL") {
-            [Horizontal Cables] | 
-%       } else {
-            <a href="section_cable.html?page=HORIZONTAL">[Horizontal Cables]</a> | 
-%       }
-
-%       if ($page eq "CLOSETS") {
-           [Closets] | 
-%       } else {
-           <a href="section_cable.html?page=CLOSETS">[Closets]</a> | 
-%       }
-
-%       if ($page eq "STRANDS") {
-            [Cable Strands] | 
-%       } else {
-            <a href="section_cable.html?page=STRANDS">[Cable Strands]</a> | 
-%       }
-
-%       if ($page eq "CIRCUITS") {
-            [Circuits]
-%       } else {
-            <a href="section_cable.html?page=CIRCUITS">[Circuits]</a>
-%       }
-<br><hr>
+<p>
+<hr>
 
 <table border="0" width="100%" align="center"  class="tablebackground">
-
 
 % if ($page eq "BACKBONE" || $page eq "") {
 

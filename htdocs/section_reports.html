@@ -1,20 +1,21 @@
-
 <%doc>
 
  Reports Section.
 
 </%doc>
-
+%
+%
 <%args>
 $user
 </%args>
-
+%
+%
 <%attr>
 title   => 'Reports' 
 section => 'Reports'
 </%attr>
-
-
+%
+%
 <%init>
 my %caller_args = $m->caller_args(-1);
 
@@ -25,20 +26,7 @@ if (exists($caller_args{page})){
 my $page = $user->getAttribute("REPORTS_PAGE");
 </%init>
 
-<br>
-
-% if ($page eq "DEVICE") {
-    [Device Inventory] | 
-% } else {
-    <a href="reports_device_inventory.html">[Device Inventory]</a> |     
-% }
-
-% if ($page eq "CUSTOM") {
-    [Custom Reports] 
-% } else {
-    <a href="reports_custom.html">[Custom Reports]</a>
-% }
-<br>
+<p>
 
 % if ( $m->fetch_next ){
 %  $m->call_next;
