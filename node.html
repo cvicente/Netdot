@@ -4,9 +4,9 @@ foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ );
   $args{$j} = $ARGS{$j};
 }
-#if( $args{node} && ! $args{sid} ) {
-#  $session = $gui->mksession( $DIR );
-#}
+if( $args{node} && ! $args{sid} ) {
+  $session = $gui->mksession( $DIR );
+}
 if( $args{sid} ) {
   $session = $gui->getsession( $DIR, $args{sid} );
 }
@@ -19,14 +19,15 @@ if( exists( $args{insert} ) ) {
       || Node->search( physaddr => $node{dot1dBaseBridgeAddress} ) ) {
     ; # do nothing
   } else {
-    my %tmp;
+    my( %tmp, $newnode );
     my @ifrsv = NvIfReserved->retrieve_all();
     $tmp{name} = $args{node};
     $tmp{sysdescription} = $node{sysDescr};
     $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
     $tmp{type} = "0";   # maybe tmp; can't be null
     $tmp{device} = "0"; # same
-    my $newnode = Node->create( \%tmp );
+    eval { $newnode = Node->create( \%tmp ); }
+      or die "Unable to create node $args{node}: $@\n";
     $inserted = $newnode->id;
     foreach my $int ( keys %{ $node{interface} } ) {
       my $skip = 0;
@@ -37,15 +38,19 @@ if( exists( $args{insert} ) ) {
       undef( %tmp );
       $tmp{node} = $newnode->id;
       $tmp{ifdescr} = $int;
-      $tmp{physaddr} = $node{interface}{$int}{ifPhysAddress};
-      $tmp{ifIndex} = $node{interface}{$int}{instance};
-      $tmp{iftype} = $node{interface}{$int}{ifType};
-      $tmp{ifalias} = $node{interface}{$int}{descr} 
-        unless( $node{descr} eq "-" );
-      $tmp{ifspeed} = $node{interface}{$int}{ifSpeed};
-      $tmp{ifadminstatus} = $node{interface}{$int}{ifAdminStatus};
       $tmp{managed} = "0";
-      my $if = Interface->create( \%tmp );
+      foreach my $dbname ( keys %ifnames ) {
+	if( $ifnames{$dbname} eq "descr" ) {
+	  if( $node{interface}{$newif}{$ifnames{$dbname}} ne "-" ) {
+	    $tmp{$dbname} = $node{interface}{$int}{$ifnames{$dbname}};
+	  }
+	} else {
+	  $tmp{$dbname} = $node{interface}{$int}{$ifnames{$dbname}};
+	}
+      }
+      my $if;
+      eval { $if = Interface->create( \%tmp ); }
+        or die "Unable to create Interface $int: $@\n";
       if( exists( $node{interface}{$int}{ipAdEntIfIndex} ) ) {
          foreach my $ip ( keys %{ $node{interface}{$int}{ipAdEntIfIndex} } ) {
             undef( %tmp );
@@ -53,7 +58,8 @@ if( exists( $args{insert} ) ) {
             $tmp{address} = $ip;
             $tmp{mask} = $node{interface}{$int}{ipAdEntIfIndex}{$ip};
             $tmp{subnet} = 0;
-            Ip->create( \%tmp );
+            eval { Ip->create( \%tmp ); }
+              or die "Unable to create IP $ip: $@\n";
          }
       }
     }
@@ -73,7 +79,9 @@ if( exists( $args{insert} ) ) {
 <input name="submit" value="Discover" type="submit">
 </form>
 </blockquote>
-%   if( exists( $args{insert} ) ) {
+%   if( exists( $args{cancel} ) ) {
+%     ;
+%   } elsif( exists( $args{insert} ) ) {
 <hr>
 %     # check to see if node already exists in Node table
 %     my %node = %{ $session->{node} };
@@ -87,7 +95,7 @@ if( exists( $args{insert} ) ) {
 %     $nv->build_config( "device", $args{node} );
 %     if( my( %node ) = $nv->get_device( "device", $args{node} ) ) {
 %       if( keys %node ) {
-%         $session = $gui->mksession( $DIR );
+% #        $session = $gui->mksession( $DIR );
 %         $session->{node} = \%node;
     <form>
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
@@ -111,8 +119,8 @@ if( exists( $args{insert} ) ) {
     <p>Failed to build config.
 %     }
 %   }
-% }
 <& footer &>
+% }
 <%args>
 $DIR => "/home/netdot/public_html/tmp"
 $nv => Netdot::Netviewer->new()
@@ -136,6 +144,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.18  2003/07/12 18:34:51  netdot
+#  more fixes; cancel works and added series of eval statements
+#
 #  Revision 1.17  2003/07/11 21:34:38  netdot
 #  *** empty log message ***
 #
