@@ -52,7 +52,7 @@ unless ( $obj ){
           <td class="formtablec2">
           <select name="<% $c %>">
 %	  unless ( ref($obj->$c) ){
-%	     die "$c is not a FK of Node";
+%	     die "$c is not a FK of $table";
 %	  }
 %         my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];	  
 %	  my @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } $linksto{$c}->retrieve_all; 
@@ -94,7 +94,7 @@ unless ( $obj ){
 
 </form>
 <p><font size="-1">(*) After creating the object in the other screen, close it and refresh this page.  The newly created
-object will show in the drop-down manu.</font>
+object will show in the drop-down box.</font>
 
 </td></tr>
 </table>

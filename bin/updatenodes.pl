@@ -24,7 +24,7 @@ my $usage =
 my ($node, $host, @nodes);
 
 # handle cmdline args
-if ( scalar @ARGV != 1 ) {
+if ( scalar @ARGV > 0 ) {
     while (my $arg = shift @ARGV){
         if ( $arg =~ /^-n$/io || $arg =~ /^--node$/io) {
             $host = shift @ARGV;
