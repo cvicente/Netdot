@@ -37,45 +37,42 @@ foreach my $j (keys %ARGS){
 
 <table align="center" border="0" width="95%">
    <tr>
-      <td>
+      <td align="center">
            <form action="search_obj.html" method="POST">
 	      <input type="hidden" name="table" value="<% $table %>">
 	      <input type="hidden" name="res" value="1">
-	      <p>Specify one or more of the following:
 	      <p>
 	      <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+	       <tr bgcolor="#FFFFFF"> 
+	           <td colspan="2" align="center">Specify one or more of the following:</td>
+	       </tr>
 %	      foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %	         next if ($c eq 'disabled');
 %		 if (!exists($linksto{$c}) ){  # The column is 'local'
                     <tr> 
 		       <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-		       <td><input type="text" name="<% $c %>" size="40" value=""></td>
+	  		 <td><input type="text" name="<% $c %>" size="40" value=""></td>
 		    </tr>
 %		 }else {  # The column is a foreign key. Provide a list to select.
                    <tr>
 		      <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
 		      <td>
-%		         my $t = (Meta->search( name => $linksto{$c} ))[0];
-%			 if( ! defined( $t ) ) {
-			    No <% $linksto{$c} %> in Meta table
-%			 } else {
-%			    my $lbl = $t->label;
-			    <select name="<% $c %>">
-			       <option></option> 
-%			       my @fkobjs = $linksto{$c}->retrieve_all; 
-%			       foreach my $fkobj (@fkobjs){
-			          <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
-%			       }
-			    </select>
+			 <select name="<% $c %>">
+			   <option></option> 
+%			   my @fkobjs = $linksto{$c}->retrieve_all; 
+%			   foreach my $fkobj (@fkobjs){
+			       <option value="<% $fkobj->id %>"><% $gui->getobjlabel($fkobj) %></option>
+%			   }
+			 </select>
 		      </td>
 		   </tr>        
-%                        } 
-%                }
-%             }
+%               }
+%            }
                     </tr>
                     <tr>
-                       <td bgcolor="#FFFFFF"align=center colspan=2>
+                       <td bgcolor="#FFFFFF" align="center" colspan="2">
 	                 <input name="submit" value="Search" type="submit">
+	                 <input type="reset">
 	               </td>
                     </tr>
               </table>
