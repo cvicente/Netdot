@@ -2165,8 +2165,8 @@ sub get_snmp_values
 	}
       }
       unless( $type eq "device" ) {
-	print "  HELLO \n";
-	print "$type:$dev:$cat:$inst \n";
+	# print "  HELLO \n";
+	# print "$type:$dev:$cat:$inst \n";
 	return 0 ;
       }
 
