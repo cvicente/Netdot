@@ -25,83 +25,79 @@ if (exists($caller_args{page})){
 my $page = $user->getAttribute("MANAGEMENT_PAGE");
 
 </%init>
-
-
+%
+<div id="sectiontools">
+%
 % if ($page eq "DEVICE" || $page eq "") {
+%
+    <p>
+    <fieldset>
+        <legend>Find Devices</legend>
+        <p>
+        <form action="device.html" method="POST">
+            <p>
+            <label for="search">Name:</label>
+            <input type="text" name="search" class="txt" value=""> 
+            <input name="submit" value="search" class="btn" type="submit">
+            </p>
+        </form>
+        <form action="ip-ws.html" method="POST">
+            <p>
+            <label for="search">IP:</label>
+            <input type="text" name="search" class="txt" value=""> 
+            <input name="submit" value="search" class="btn" type="submit">
+            <input type="hidden" name="_action" value="SEARCH">
+            </p>
+        </form> 
+        <form action="mac-ws.html" method="POST">
+            <p>
+            <label for="search">MAC:</label>
+            <input type="text" name="search" class="txt" value=""> 
+            <input name="submit" value="search" class="btn" type="submit">
+            </p>
+        </form>
+    </fieldset>
+    </p>
+    <p>
+    <fieldset>
 
-<tr class="rowtitle0" >
-    <td>
-    <table border="0" width="100%" class="tablebackground">
-       <tr>
-	  <td valign="top" width="50%">
-	    <table border="0"width="100%" class="formtablebg">
-	      <tr class="formtabletitle"><th colspan="2">Find Devices</th></tr>
-	      <tr>
-	        <td>Name:</td>
-		<td>
-		   <form action="device.html" method="POST">
-		     <input type="text" name="search" size="20" value=""> 
-		     <input name="submit" value="search" type="submit">
-		  </form>
-		</td>
-	      </tr>
-	      <tr>
-	       <td>IP:</td>
-	       <td>
-                 <form action="ip-ws.html" method="POST">
-		   <input type="text" name="search" size="20" value=""> 
-		   <input name="submit" value="search" type="submit">
-		   <input type="hidden" name="_action" value="SEARCH">
-		 </form>
-              </td>
-	     </tr>
-	     <tr>
-	       <td>MAC:</td>
-	       <td>
-		 <form action="mac-ws.html" method="POST">
-	           <input type="text" name="search" size="20" value=""> 
-		   <input name="submit" value="search" type="submit">
-	       </form>
-	       </td>
-	    </tr>
-	  </table>
-         <td valign="top" width="50%">
-	   <table border="0"width="100%" class="formtablebg">
-	   <tr class="formtabletitle"><th colspan="2">Discover/Update a Device</th></tr>
-	   <form action="updatedevice.html" method="POST">
-	    <tr>
-	      <td>Name:
-	        <input type="text" name="host" size="20" value="">
-	        Community: <input type="text" name="comstr" size="10" value="<% $ui->{config}->{'DEFAULT_SNMPCOMMUNITY'} %>">
-	      	<input type="hidden" name="action" value="discover">
-		<input type="submit" name="submit" value="discover">
-	      </td>
-	   </tr>
-	   </form>
-	  </table>
-	   <table border="0"width="100%" class="formtablebg">
-	   <tr class="formtabletitle">
-	     <th colspan="2">
-	       Manually Add a Device
-	     </th>
-	   </tr>
-	   <form action="device.html" method="POST">
-	    <tr>
-	      <td>Name:
-	        <input type="text" name="newhost" size="20" value="">
-	        IP:
-	        <input type="text" name="newip" size="15" value="">
-	      	<input type="hidden" name="deviceadd" value="add">
-		<input type="submit" name="submit" value="add">
-	      </td>
-	    </tr>
-	   </form>
-	  </table>
-	</td>
-      </tr>
-    </table>
-    </td>
-</tr>
+        <legend>Discover/Update a Device</legend>
+        <form action="updatedevice.html" method="POST">
+            <p>
+            <label for="host">Name:</label>
+            <input type="text" name="host" class="txt" value="">
+            </p>
+            <p>
+            <label for="comstr">Community:</label>
+            <input type="text" name="comstr" class="txt" value="<% $ui->{config}->{'DEFAULT_SNMPCOMMUNITY'} %>">
+            <input type="hidden" name="action" value="discover">
+            </p>
+            <p>
+            <input type="submit" name="submit" class="btn" value="discover">
+            </p>
+        </form>
+    </fieldset>
+    </p>
+    <p>
+    <fieldset>
+        <legend>Manually Add a Device</legend>
+	<form action="device.html" method="POST">
+            <p>
+            <label for="newhost">Name:</label>
+            <input type="text" name="newhost" class="txt" value="">
+            </p>
+            <p>
+            <label for="newip">IP:</label>
+            <input type="text" name="newip" class="txt" value="">
+            <input type="hidden" name="deviceadd" value="add">
+            </p>
+            <p>
+            <input type="submit" name="submit" class="btn" value="add">
+            </p>
+        </form>
+    </fieldset>
+    </p>
+
 
 % } elsif ($page eq "ADDRESS") {
 
@@ -147,6 +143,7 @@ my $page = $user->getAttribute("MANAGEMENT_PAGE");
     </td>
 </tr>
 
+</div>
 %}
 % if ( $m->fetch_next ){
 %  $m->call_next;
