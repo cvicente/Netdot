@@ -18,7 +18,8 @@ map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
 </%perl>
 <p>
 <& header, title=>" $table Details" &>
-% # Display-only option
+
+%#  Display-only option
 %if( !$args{edit} ) {
 
 % # First show values that are not foreign keys
@@ -27,12 +28,12 @@ map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
 <tr> 
 <td>id:</td><td><strong><% $obj->id %></strong></td>
 </tr>
-%   foreach my $column ($table->columns()){
-%      next if ($column eq 'id');
-%      if (!exists($linksto{$column}) ){
-<tr> 
-<td><% $column %>:</td><td><strong><% $obj->$column %></strong></td>
-</tr>
+%   foreach my $c ($table->columns()){
+%      next if ($c eq 'id');
+%      if (!exists($linksto{$c}) ){
+          <tr> 
+	  <td><% $c %>:</td><td><strong><% $obj->$c %></strong></td>
+	  </tr>
 %      }
 %   }
 </table>
@@ -42,109 +43,61 @@ map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
    <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
    <tr><td>
    <strong><% $fk %>:</strong>
-%    my $fkobj;
-%    unless( defined($fkobj = $linksto{$fk}->retrieve($obj->$fk->id) )){
-       n/a</td></tr></table> 
-%      next;
-%    }
-     <& sortresults.html, table => $linksto{$fk}, object => [$fkobj]  &>
+%  my $fkobj;
+%  unless( defined($fkobj = $linksto{$fk}->retrieve($obj->$fk->id) )){
+     n/a</td></tr></table> 
+%    next;
+%  }
+   <& sortresults.html, table => $linksto{$fk}, object => [$fkobj]  &>
    </td></tr>
    </table>
-  
 %}
 
 %}elsif( $args{edit} ) {
-<form action="gen_update.html" method="POST">
 
-<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
-<tr>
-<td>Object ID:</td><td><strong><input type="hidden" name="id"><% $obj->id %></input></strong></td>
-</tr>
-<tr>
-<td>CID:</td><td><input type="text" size="40" value="<% $obj->cid %>"</td>
-</tr>
-<tr>
-<td>Part of Connection:</td>
-<td><select name="connection">
-<option value="<% $obj->connection->id %>" selected><% $obj->connection->name %></option>
-%my @connections = Connection->retrieve_all;
-%foreach my $connection (@connections){
-%	next if ($connection->id == $obj->connection->id);
-	<option value="<% $connection->id %>"><% $connection->name %></option>
-%}
-</select></td>
-</tr>
-<tr>
-<td>From:</td>
-<td><select name="startSite">
-<option value="<% $obj->startSite->id %>" selected><% $obj->startSite->name %></option>
-%my @sites = Site->retrieve_all;
-%foreach my $site (@sites){
-%	next if ($site->id == $obj->startSite->id);
-	<option value="<% $site->id %>"><% $site->name %></option>
-%}
-</select></td>
-</tr>
-<tr>
-<td>To:</td>
-<td><select name="endSite">
-<option value="<% $obj->endSite->id %>" selected><% $obj->endSite->name %></option>
-%my @endsites = Site->retrieve_all;
-%foreach my $site (@endsites){
-%	next if ($site->id == $obj->endSite->id);
-	<option value="<% $site->id %>"><% $site->name %></option>
-%}
-</select></td>
-</tr>
-<tr>
-<td>Circuit Type:</td>
-<td><select name="type">
-<option value="<% $obj->type->id %>" selected><% $obj->type->id %></option>
-%my @circuittypes = CircuitType->retrieve_all;
-%foreach my $circuittype (@circuittypes){
-%	next if ($circuittype->id == $obj->type->id);
-	<option value="<% $circuittype->id %>"><% $circuittype->name %></option>
-%}
-</select></td>
-</tr>
-<tr>
-<td>Vendor:</td>
-<td><select name="type">
-<option value="<% $obj->vendor->id %>" selected><% $obj->vendor->name %></option>
-%my @vendors = Vendor->retrieve_all;
-%foreach my $vendor (@vendors){
-%	next if ($vendor->id == $obj->vendor->id);
-	<option value="<% $vendor->id %>"><% $vendor->name %></option>
-%}
-</select></td>
-</tr>
-<tr>
-<td>Speed:</td><td><input type="text" name="speed" value="<% $obj->speed %>"></td>
-</tr>
-<tr>
-<td>Date Installed:</td><td><input type="text" name="installDate" value="<% $obj->installDate %>"></td>
-</tr>
-<tr>
-<td>Status:</td>
-<td><select name="status">
-<option value="<% $obj->status->id %>" selected><% $obj->status->id %></option>
-%my @status = Status->retrieve_all;
-%foreach my $status (@status){
-%	next if ($status->id == $obj->status->id);
-	<option value="<% $status->id %>"><% $status->name %></option>
-%}
-</select></td>
-</tr>
-<tr>
-<td>Extra Info:</td><td><input type="textarea" rows="10" cols="30" name="info" value="<% $obj->info %>"></td>
-</tr>
-<tr>
-<td colspan="2" align="center"><input name="submit" value="Update" type="submit"></td>
-</tr>
-</table>
+   <form action="update.html" method="POST">
+   <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+   <tr>
+   <td bgcolor="#DDDDDD"><strong>id</strong></td><td><input type="hidden" name="id"><% $obj->id %></input></td>
+   </tr>
+%  foreach my $c ($table->columns()){
+%     next if ($c eq 'id');
+%     if (!exists($linksto{$c}) ){  # The column is 'local'
+         <tr> 
+         <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td><td><input type="text" size="40" value="<% $obj->$c %>"</td>
+	 </tr>
+%     } else {  # The column is a foreign key. Provide a list to select.
+         <tr>
+	 <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
+	 <td>
+%         my $t = (Meta->search( name => $linksto{$c} ))[0];
+%         if( ! defined( $t ) ) {
+            No <% $linksto{$c} %> in Meta table
+%         } elsif( $obj->$c->id == 0 ) {
+	    -
+%         } else {
+%           my $lbl = $t->label;
+            <select name="$c">
+	    <option value="<% $obj->$c->id %>" selected><% $obj->$c->$lbl %></option>
+%	    my @fkobjs = $linksto{$c}->retrieve_all; 
+%	    foreach my $fkobj (@fkobjs){
+%	      next if ($fkobj->id == $obj->$c->id);  # exclude current val from list
+              <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
+%           }
+            </select>
+	    </td></tr>        
+%        } 
 
-</form>
-%} #endif (option edit)
+%    }
+%  }
+   </tr>
+   <tr><td bgcolor="#FFFFFF"align=center colspan=2>
+   <input name="submit" value="Update" type="submit">
+   </tr></td>
+   </form>
+   </table>
+
+%} #endif ($args{edit})
 <p><br>
 <& footer &>
 
