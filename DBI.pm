@@ -198,6 +198,14 @@ __PACKAGE__->has_a( site => 'Site' );
 
 
 ######################################################################
+package Meta;
+use base 'Netdot::DBI';
+
+__PACKAGE__->table( 'Meta' );
+__PACKAGE__->columns( All => qw/id table/ );
+
+
+######################################################################
 package Model;
 use base 'Netdot::DBI';
 
@@ -316,6 +324,13 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.17  2003/04/16 22:30:56  netdot
+#  added Meta table for holding meta information.  this should include:
+#    * column sorting
+#    * table relationships
+#    * 'main object'
+#  still needs to be fleshed out....
+#
 #  Revision 1.16  2003/04/15 21:50:01  netdot
 #  couple more bugfixes: another 'qw' forgot in Availability and misnamed
 #  column in Customer (s/hours/availability/)
