@@ -3,16 +3,19 @@
 Interface for IP blocks (both addresses and subnets)
 
 </%doc>
-
+%
+%
 <%flags>
 inherit => 'section_management.html' 
 </%flags>
-
+%
+%
 <%attr>
 title   => 'IP' 
 section => 'Management'
 </%attr>
-
+%
+%
 <%args>
 $id        => undef
 $search    => undef
@@ -26,7 +29,8 @@ $strategy  => undef
 $edit      => undef
 $submit    => undef
 </%args>
-
+%
+%
 <%init>
 my $DEBUG = 0;
 my $o;
@@ -52,7 +56,9 @@ $edit_block    = 1 if ($edit eq "blockinfo");
 my $view       = 1;
 
 </%init>
-
+%
+<div id="sectiondetail">
+%
 <%perl>
 
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -664,4 +670,4 @@ if (scalar( @children = $ipm->getchildren($o->id) )){
 
 
 %}
-
+</div>
