@@ -1,26 +1,38 @@
 <%perl>
-foreach	my $arg (keys %ARGS){
-	next if ($ARGS{$arg} !~ /\w+/ || $arg eq 'submit');
-	$args{$arg} = $ARGS{$arg};	
+foreach	my $j (keys %ARGS){
+	next if ($ARGS{$j} !~ /\w+/ || $j eq 'submit');
+	$arg{$j} = $ARGS{$j};	
 }	
 
-$table = $args{table};
-$obj = $table->retrieve($args{id});
+die "Missing parameters" unless ( $arg{table} && $arg{id} );
+$table = $arg{table};
+$obj = $table->retrieve($arg{id});
 
 # Get some Meta info
-$mi = (Meta->search( name => $args{table} ))[0];
+$mi = (Meta->search( name => $arg{table} ))[0];
 undef( %linksto );
 map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
    split( /,/, $mi->linksto );
 undef( %linksfrom );
 map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
    split( /,/, $mi->linksfrom );
+my $i = 1;
+undef( %order );
+if( defined( $mi->columnorder ) ) {
+   map { $order{$_} = $i++; } split( /,/, $mi->columnorder );
+} else {
+   $order{"id"} = $i++;
+   foreach ( sort { $a cmp $b } $mi->name->columns() ) {
+      next if( $_ eq "id" );
+      $order{$_} = $i++;
+   }
+}
 </%perl>
 <p>
 <& header, title=>" $table Details" &>
 
 %#  Display-only option
-%if( !$args{edit} ) {
+%if( !$arg{edit} ) {
 
 % # First show values that are not foreign keys
 <p> 
@@ -28,35 +40,44 @@ map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
 <tr> 
 <td bgcolor="#DDDDDD">id:</td><td><strong><% $obj->id %></strong></td>
 </tr>
-%   foreach my $c ($table->columns()){
+%   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %      next if ($c eq 'id');
+       <tr> 
+       <td bgcolor="#DDDDDD"><% $c %>:</td>
 %      if (!exists($linksto{$c}) ){
-          <tr> 
-	  <td bgcolor="#DDDDDD"><% $c %>:</td><td><strong><% $obj->$c %></strong></td>
-	  </tr>
+	  <td><strong><% $obj->$c %></strong></td>
+%      }else{
+         <td>
+         <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+         <tr><td>
+%	 my $fkobj;
+%	 unless( defined($fkobj = $linksto{$c}->retrieve($obj->$c->id) )){
+	 - </td></tr></table> 
+%	 next;
+%        }
+         <& sortresults.html, table => $linksto{$c}, object => [$fkobj]  &>
+         </td></tr>
+         </table>
+	 </td>
 %      }
+     </tr>
 %   }
 <tr> 
-<td align="center" colspan="2" bgcolor="#FFFFFF"><a href="expview.html?$table=<% $table %>&obj=<% $obj %>&edit=1">edit</a></td>
+<td bgcolor="#DDDDDD">related:</td>
+<td>
+%foreach my $i (keys %linksfrom){
+%  my $j;
+%  map { $j = $_ } keys %{ $linksfrom{$i} };
+   <a href="search_obj.html?table=<% $j %>&<% $linksfrom{$i}{$j} %>=<% $obj %>"><font size="-1"><% $i %></font></a>&nbsp;
+%}
+</td>
+</tr>
+<tr> 
+<td align="center" colspan="2" bgcolor="#FFFFFF"><a href="expview.html?table=<% $table %>&id=<% $obj %>&edit=1">edit</a></td>
 </tr>
 </table>
 
-%foreach my $fk (keys %linksto){
-   <p>
-   <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
-   <tr><td>
-   <strong><% $fk %>:</strong>
-%  my $fkobj;
-%  unless( defined($fkobj = $linksto{$fk}->retrieve($obj->$fk->id) )){
-     n/a</td></tr></table> 
-%    next;
-%  }
-   <& sortresults.html, table => $linksto{$fk}, object => [$fkobj]  &>
-   </td></tr>
-   </table>
-%}
-
-%}elsif( $args{edit} ) {
+%}elsif( $arg{edit} ) {
 
    <form action="update.html" method="POST">
    <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
@@ -100,7 +121,7 @@ map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
    </form>
    </table>
 
-%} #endif ($args{edit})
+%} #endif ($arg{edit})
 <p><br>
 <& footer &>
 
@@ -108,6 +129,6 @@ map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Data::Dumper;
-my( %args, %linksto, %linksfrom, $obj, $table, $mi );
+my( %arg, %linksto, %linksfrom, $obj, $table, $mi, %order);
                
 </%init>
