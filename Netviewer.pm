@@ -52,8 +52,8 @@ sub DEFAULT_RRDBINDIR   { "/usr/local/rrdtool/bin" }
 sub DEFAULT_GLOBAL      { "$HOME/etc/netviewer.conf" }
 sub DEFAULT_CONF        { "$HOME/etc/collect.conf" }
 sub DEFAULT_STORE       { "$HOME/etc/collect.store" }
-sub DEFAULT_CAT         { "$HOME/etc/categories" }
-sub DEFAULT_TYPES       { "$HOME/etc/ifTypes" }
+sub DEFAULT_CAT         { "$HOME/etc/nv.categories" }
+sub DEFAULT_TYPES       { "$HOME/etc/nv.ifTypes" }
 sub DEFAULT_LOCALE      { "$HOME/etc/locale.conf" }
 sub DEFAULT_COLLECT     { "no" }
 sub DEFAULT_ALWAYSFETCH { "yes" }
@@ -131,6 +131,21 @@ sub get_devices {
     %devices = %{ $t{device} } ;
   }
   return %devices ;
+}
+
+
+######################################################################
+sub get_device {
+  my( $self, $type, $dev ) = @_;
+  if( $self->{targets} ) {
+    my %t = %{ $self->{targets} };
+    if( exists( $t{$type}{$dev} ) ) {
+      my %dev = %{ $t{$type}{$dev} };
+      return %dev;
+    } else {
+      return 0;
+    }
+  }
 }
 
 
@@ -2150,8 +2165,11 @@ sub get_snmp_values
 	}
       }
       unless( $type eq "device" ) {
+	print "  HELLO \n";
+	print "$type:$dev:$cat:$inst \n";
 	return 0 ;
       }
+
     } else {
       $self->{'_error'} = "Error: get_snmp_values: no oids or vars defined" ;
       $self->debug( loglevel => "LOG_ERR",
@@ -2445,7 +2463,8 @@ sub _get_sysinfo {
   my(@oids) = ( $aliases{general}{sysDescr},
 		$aliases{general}{sysObjectID},
 		$aliases{general}{sysName}, 
-		$aliases{general}{sysLocation} );
+		$aliases{general}{sysLocation},
+		$aliases{general}{dot1dBaseBridgeAddress} );
 
   my %res = $self->get_snmp_values( type => $type, dev => $dev, 
 				    oids => \@oids, session => $session ) ;
@@ -2463,6 +2482,7 @@ sub _get_sysinfo {
   $targets{$type}{$dev}{"sysName"} = $res{ $oids[2] };
   $targets{$type}{$dev}{"sysLocation"} = $sysloc ;
   $targets{$type}{$dev}{"sysUpTime"} = $self->get_sysUpTime( $type, $dev ) ;
+  $targets{$type}{$dev}{"dot1dBaseBridgeAddress"} = $res{ $oids[4] };
 }
 
 
@@ -2865,9 +2885,9 @@ sub _grab_aux_info {
       if( $j ) {
 	$o .= ".$inst" ;
       }
-      my %res = $self->get_snmp_values( type => $dev, dev => $dev,
-					cat => $cat, instance => $inst,
-					session => $session, oids => [$o] ) ;
+      my %res = $self->get_snmp_values( type => $type, dev => $dev,
+					cat => $cat, 
+					session => $session, oids => [$o] );
       if( $res{$o} =~ /noSuchObject/io || $res{$o} =~ /noSuchInstance/io
 	  || $res{$o} =~ /^\s*$/o || ! defined( $res{$o} ) ) {
 	; # do nothing
@@ -2934,13 +2954,13 @@ sub _set_info_defaults {
       } elsif( $u =~ /^ccarConfigRate$/io && $cat eq "car" ) {
 	my $max = $v * 2 ;
 	unless( $targets{$type}{$dev}{$cat}{$key}{ccarConfigRate} == $max ) {
-	  $self->tune_DS( type => $type, dev => $dev, 
-			  cat => $cat, inst => $key, max => $max ) ;
+	  ; #$self->tune_DS( type => $type, dev => $dev, 
+	    #		  cat => $cat, inst => $key, max => $max ) ;
 	}
       } elsif( $u =~ /^ifSpeed$/io && $cat eq "interface" ) {
 	unless( $targets{$type}{$dev}{$cat}{$key}{ifSpeed} == $v ) { 
-	  $self->tune_DS( type => $type, dev => $dev, 
-			  cat => $cat, inst => $key, max => $v ) ;
+	  ; # $self->tune_DS( type => $type, dev => $dev, 
+	    #		  cat => $cat, inst => $key, max => $v ) ;
 	}
 	# deal with highcounter crap
 	unless( defined( $targets{$type}{$dev}{$cat}{$key}{highcounter} ) ) {
@@ -3343,6 +3363,9 @@ sub _sysUpTime {
 
 ##########################################################################
 # $Log: Netviewer.pm,v $
+# Revision 1.6  2003/06/12 23:27:23  netdot
+# added get_device; fixed grab_aux_info; other stuff....
+#
 # Revision 1.5  2003/06/12 00:51:39  netdot
 # changes to get_sysinfo
 #
