@@ -1,12 +1,14 @@
 #!/usr/local/bin/perl
 
 use lib "/home/netdot/public_html/lib";
+use Getopt::Long;
 use strict;
 use Socket;
 use Netdot::DBI;
 use Netdot::Netviewer;
 use Data::Dumper; 
 
+my $help = 0;
 my $DEBUG = 0;
 my %ifnames = ( physaddr => "ifPhysAddress",
 		ifindex => "instance",
@@ -14,30 +16,29 @@ my %ifnames = ( physaddr => "ifPhysAddress",
 		ifalias => "descr",
 		ifspeed => "ifSpeed",
 		ifadminstatus => "ifAdminStatus" );
-my $usage = 
-"usage: $0 -n|--node <host> -h|--help -v|--verbose
+my $usage = <<EOF;
+usage: $0 -n|--node <host> -h|--help -v|--verbose
 
     -n  <host>: update given node only.  Skipping this will update all nodes in DB.
     -h        : print help (this message)
-    -v        : be verbose \n";
+    -v        : be verbose
+EOF
 
 my ($node, $host, @nodes);
 
 # handle cmdline args
-if ( scalar @ARGV > 0 ) {
-    while (my $arg = shift @ARGV){
-        if ( $arg =~ /^-n$/io || $arg =~ /^--node$/io) {
-            $host = shift @ARGV;
-        }elsif ( $arg =~ /^-h$/io || $arg =~ /^--help$/io ) {
-            print $usage ;
-            exit;
-        }elsif ( $arg =~ /^-v$/io || $arg =~ /^--verbose$/) {
-            $DEBUG = 1 ;
-        }else {
-            warn "Invalid argument: $arg.\n" ;
-            die $usage ;
-        }
-    }
+my $result = GetOptions( "n=s" => \$host,
+			 "node=s" => \$host,
+			 "h" => \$help,
+			 "help" => \$help,
+			 "v" => \$DEBUG,
+			 "verbose" => \$DEBUG );
+if( ! $result ) {
+  die "Error: Problem with cmdline args\n";
+}
+if( $help ) {
+  print $usage;
+  exit;
 }
     
 my $nv = Netdot::Netviewer->new( foreground => '0', loglevel => 'LOG_ERR' );
