@@ -12,7 +12,6 @@ LIB = Netviewer.pm nv.categories nv.ifTypes GUI.pm
 ######################################################################
 help:
 	@echo "This makefile will help with making a distribution"
-	@echo "In the meantime, it doesn't do much.  :-("
 	@echo ""
 	@echo "make unstable | stable | dist RELEASE=<release-ver>"
 	@echo "RELEASE defaults to $(RELEASE)"
