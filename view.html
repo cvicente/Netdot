@@ -106,47 +106,9 @@ if( defined( $mi->columnorder ) ) {
 %} else {     # option edit
 
    <form action="update.html" method="POST">
-   <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
-   <input type="hidden" name="table" value="<% $table %>">
-   <tr>
-   <td bgcolor="#DDDDDD"><strong>id</strong></td><td><input type="hidden" name="id" value="<% $obj->id %>"><% $obj->id %></td>
-   </tr>
-%  foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%     next if ($c eq 'id');
-%     if (!exists($linksto{$c}) ){  # The column is 'local'
-         <tr> 
-         <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td><td><input type="text" name="<% $c %>" size="40" value="<% $obj->$c %>"</td>
-	 </tr>
-%     } else {  # The column is a foreign key. Provide a list to select.
-         <tr>
-	 <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-	 <td>
-%         my $t = (Meta->search( name => $linksto{$c} ))[0];
-%         if( ! defined( $t ) ) {
-            No <% $linksto{$c} %> in Meta table
-%         } elsif( $obj->$c == 0 ) {
-	    -
-%         } else {
-%           my $lbl = $t->label;
-            <select name="<% $c %>">
-	    <option value="<% $obj->$c->id %>" selected><% $obj->$c->$lbl %></option>
-%	    my @fkobjs = $linksto{$c}->retrieve_all; 
-%	    foreach my $fkobj (@fkobjs){
-%	      next if ($fkobj->id == $obj->$c->id);  # exclude current val from list
-              <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
-%           }
-            </select>
-	    </td></tr>        
-%        } 
-
-%    }
-%  }
-   </tr>
-   <tr><td bgcolor="#FFFFFF"align=center colspan=2>
-   <input name="submit" value="Update" type="submit">
-   </tr></td>
+      <& form.html, table => $table, showdisabled => '0' &>
+      <p><br><input name="submit" value="Update" type="submit">
    </form>
-   </table>
 
 %} #endif ($arg{edit})
 <p><br>
@@ -159,3 +121,13 @@ use Netdot::DBI;
 my( %arg, %linksto, %linksfrom, $obj, $table, $mi, %order);
                
 </%init>
+
+<%doc>
+
+######################################################################
+#  $Log: view.html,v $
+#  Revision 1.7  2003/05/14 16:27:34  netdot
+#  initial checkin
+#
+
+</%doc>
