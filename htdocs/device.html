@@ -271,6 +271,22 @@ function showVlan(){
     var roomList = new DynamicList("netdotform", "Device__<% $id %>__room", "floor", "Room", "Device__<% $id %>__site");
     roomList.setQueryURL("room_site_query.html");
     LIST_MANAGER.addList(closetList, roomList);
+
+
+    function setNull(field)
+    {
+        if (!field)
+            return;
+
+        for (var i = 0; i < field.options.length; ++i)
+        {
+            if (field.options[i].value == 0 || field.options[i].value == -1)
+            {
+                field.options[i].selected = true;
+                break;
+            }
+        }
+    }
     -->
     </script>
 
@@ -309,7 +325,7 @@ function showVlan(){
 	   <td class="formtablec1">Room: </td>
 	   <td class="formtablec2"> 
 %               if ($editloc) {       
-                <select name="Device__<% $id %>__room">
+                <select name="Device__<% $id %>__room" onChange="setNull(document.netdotform.Device__<% $id %>__closet);">
 %               if ($o->room) {
                 <option value="<% $o->room->id %>"><% $o->room->name %></option>
 %               }
@@ -322,7 +338,7 @@ function showVlan(){
 	   <td class="formtablec1"> <i>- or -</i> Closet: </td>
 	   <td class="formtablec2">
 %               if ($editloc) {       
-                <select name="Device__<% $id %>__closet">
+                <select name="Device__<% $id %>__closet" onChange="setNull(document.netdotform.Device__<% $id %>__room);">
 %               if ($o->closet) {
                 <option value="<% $o->closet->id %>"><% $o->closet->name %></option>
 %               }
