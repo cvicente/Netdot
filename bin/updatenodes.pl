@@ -15,26 +15,46 @@ my %ifnames = ( physaddr => "ifPhysAddress",
 		ifspeed => "ifSpeed",
 		ifadminstatus => "ifAdminStatus" );
 my $usage = 
-"usage: $0 [-h|-v]
-       -h  print help (this message)
-       -v  be verbose \n";
+"usage: $0 -n|--node <host> -h|--help -v|--verbose
 
-if( @ARGV ) {
-  if( $ARGV[0] =~ /^-h$/o || $ARGV[0] =~ /^--help$/o ) {
-    print $usage; 
-    exit;
-  } elsif( $ARGV[0] eq "-v" ) {
-    $DEBUG = 1;
-  } else {
-    die $usage;
-  }
+    -n  <host>: update given node only.  Skipping this will update all nodes in DB.
+    -h        : print help (this message)
+    -v        : be verbose \n";
+
+my ($node, $host, @nodes);
+
+# handle cmdline args
+if ( scalar @ARGV != 1 ) {
+    while (my $arg = shift @ARGV){
+        if ( $arg =~ /^-n$/io || $arg =~ /^--node$/io) {
+            $host = shift @ARGV;
+        }elsif ( $arg =~ /^-h$/io || $arg =~ /^--help$/io ) {
+            print $usage ;
+            exit;
+        }elsif ( $arg =~ /^-v$/io || $arg =~ /^--verbose$/) {
+            $DEBUG = 1 ;
+        }else {
+            warn "Invalid argument: $arg.\n" ;
+            die $usage ;
+        }
+    }
+}
+    
+my $nv = Netdot::Netviewer->new( foreground => '0', loglevel => 'LOG_ERR' );
+
+if (defined $host){
+    if ($node = (Node->search(name => $host))[0]){
+	push @nodes, $node;
+    }else{
+	die "$host not found on db\n";
+    }
+}else{
+    print "Fetching current list of nodes....\n" if( $DEBUG );
+    @nodes = Node->retrieve_all();
 }
 
-my $nv = Netdot::Netviewer->new( foreground => '0', loglevel => 'LOG_ERR' );
-my @nodes = Node->retrieve_all();
 my @ifrsv = NvIfReserved->retrieve_all();
 
-print "Fetching current list of nodes....\n" if( $DEBUG );
 foreach my $node ( @nodes ) {
   my %ifs;
   print "Checking node ", $node->name, " \n" if( $DEBUG );
@@ -48,7 +68,8 @@ foreach my $node ( @nodes ) {
     my %ntmp;
     $ntmp{sysdescription} = $dev{sysDescr};
     $ntmp{physaddr} = $dev{dot1dBaseBridgeAddress};
-    unless( update( object => \$node, state => \%ntmp ) ) {
+    $ntmp{physaddr} =~ s/^0x//; 
+    unless( update( object => $node, state => \%ntmp ) ) {
       next;
     }
     ##############################################
@@ -76,13 +97,14 @@ foreach my $node ( @nodes ) {
 	  $iftmp{$dbname} = $dev{interface}{$newif}{$ifnames{$dbname}};
 	}
       }
+      $iftmp{physaddr} =~ s/^0x//;
       ############################################
       # does this ifIndex already exist in the DB?
       if( $if = (Interface->search( node => $node->id, ifindex => $dev{interface}{$newif}{instance}))[0] ) {
 	print "Interface node ", $node->name, ":$newif exists; updating\n"
 	  if( $DEBUG );
 	delete( $ifs{ $if->id } );
-	unless( update( object => \$if, state => \%iftmp ) ) {
+	unless( update( object => $if, state => \%iftmp ) ) {
 	  next;
 	}
       } else {
@@ -95,6 +117,8 @@ foreach my $node ( @nodes ) {
       }
       if( exists( $dev{interface}{$newif}{ipAdEntIfIndex} ) ) {
 	foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
+	  ## ignore loopback IPs
+	  next if ($newip =~ /127\.0\.0\.1/);
 	  my( $ip, $subnet );
 	  my $net = calc_subnet
 	    ( $newip, $dev{interface}{$newif}{ipAdEntIfIndex}{$newip} );
@@ -120,12 +144,11 @@ foreach my $node ( @nodes ) {
 	  # does this ip already exist in the DB?
 	  if( $ip = (Ip->search( address => $newip ))[0] ) {
 	    print "Interface $newif IP $newip exists; updating\n" if($DEBUG);
-	    unless( update( object => \$ip, state => \%iptmp ) ) {
+	    unless( update( object => $ip, state => \%iptmp ) ) {
 	      next;
 	    }
 	  } else {
-	    print "Interface $newif IP $newip doesn't exist; inserting\n" 
-	      if($DEBUG);
+	    print "Interface $newif IP $newip doesn't exist; inserting\n" if($DEBUG);
 	    unless( $ip = insert( object => "Ip", state => \%iptmp ) ){
 	      next;
 	    }
@@ -136,7 +159,12 @@ foreach my $node ( @nodes ) {
     ##############################################
     # remove each interface that no longer exists
     foreach my $nonif ( keys %ifs ) {
-      print "Node ", $node->name, " Interface ifIndex $nonif ",
+
+      # hubs are somewhat tricky.  Don't delete their ports.
+      my $intobj = Interface->retrieve($nonif);
+      next if ($intobj->node->type->name eq "Hub");
+  
+      print "Node ", $node->name, " Interface ifIndex $intobj->ifindex ",
 	"doesn't exist; removing\n" if( $DEBUG );
       unless( remove( object => "Interface", id => $nonif ) ) {
 	next;
@@ -155,7 +183,6 @@ sub update {
   my($obj) = $argv{object};
   my(%state) = %{ $argv{state} };
   my $change = 0;
-  return;
   foreach my $col ( keys %state ) {
     if( $state{$col} ne $obj->$col ) {
       $change = 1;

@@ -95,17 +95,21 @@ foreach my $j (keys %ARGS){
          # Check that we have at least one parameter
          unless (scalar keys(%sarg)){
             print "<strong>Missing search criteria</strong>";
-            exit;
+	    exit;
          }
          my @objs = $table->search_like(\%sarg);
 </%perl>
         <& header, title => "Search Results for $table"  &>
-
 <table align="center" border="0" width="95%">
    <tr>
       <td>
+             Total matches: <strong><% scalar (@objs) %></strong>
+      </td>
+   </tr>
+   <tr>
+      <td>
              <& sortresults, table => "$table", object => \@objs &>
-       </td>
+      </td>
    </tr>
 </table>
 
