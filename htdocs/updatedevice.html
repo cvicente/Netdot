@@ -4,12 +4,20 @@ Web interface for device discovery and updates
 
 </%doc>
 
+<%flags>
+inherit => 'section_management.html' 
+</%flags>
+
+<%attr>
+title   => 'Update Device' 
+section => 'Management'
+</%attr>
+
 <%args>
 $action
 $host
 $comstr      => "public"
 $id          => undef
-$s2name      => "Management"
 $sid         => undef
 $insert      => undef
 $cancel      => undef
@@ -45,7 +53,6 @@ if( $cancel ) {
 
 </%init>
 
-<& index.html, title => "Device Discovery: $host ", s2name => $s2name  &>
 <script language="javascript">
 <!--
    var formfield;
@@ -69,7 +76,7 @@ if( $cancel ) {
    }
 -->
 </script>
-<table align="center" valign="top" cellpadding="0" cellspacing="0" border="0" width="95%" class="tablebackground">
+<table align="center" valign="top" cellpadding="0" cellspacing="0" border="0" width="100%" class="tablebackground">
 <tr><td>
 <%perl>
     if ( $action eq "discover" ){
@@ -273,5 +280,4 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 
 <td></tr>
 </table>
-<& footer.mhtml &>
 

@@ -9,7 +9,6 @@ $WIDTH      => 2
 $session    => undef
 %args       => undef
 %state      => undef
-$s2name     => "Generic"
 $showheader => 1
 </%args>
 
@@ -86,7 +85,9 @@ Okay, we're still working.  Let's insert a header
 %     $title = "Create: $TBL";
 %   }
 % if ( $showheader ){
-    <& index.html, title => $title, s2name => "$s2name" &>
+
+# [Find out how to inherit from its parent section here]
+
 % }else{
     <head>
       <link rel=StyleSheet href="style.css" type="text/css">
@@ -99,12 +100,12 @@ Okay, we're still working.  Let's insert a header
 % ####################################################################
 <%doc>
 
-The user has clicked on submit.  Let's present a page for user to confirm
+The user has clicked on submit.  Present a page for user to confirm
 the submission.
 
 </%doc>
 %   if( $args{"submit"} eq "Submit" ) {
-    <table width="95%" cellpadding="0" cellspacing="0" border="0" class="formtablebg">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="formtablebg">
       <tr class="rowtitle0" >
         <td align="CENTER"><strong><% $title %></strong></td>
       </tr>
@@ -179,7 +180,7 @@ available tables.
 Present a form for user to modify various values.
 
 </%doc>
-      <table width="95%" cellpadding="0" cellspacing="0" border="0" class="tablebackground">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" class="tablebackground">
        <tr class="rowtitle0" >
         <td align="CENTER"><strong><% $title %></strong></td>
        </tr>
@@ -207,7 +208,4 @@ Present a form for user to modify various values.
 %   } # if/else table
     <p>
     <!-- end edit -->
-%    if ( $showheader ){
-       <& footer.mhtml  &>
-%    }
 % }

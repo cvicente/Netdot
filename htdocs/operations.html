@@ -14,10 +14,18 @@ devices, sites, circuits.
 $id     => undef
 $search => undef
 $edit   => undef
-$s2name => "Operations"
 $view   => "Basics"
-$user   => $ENV{REMOTE_USER}
 </%args>
+
+<%flags>
+inherit => 'section_operations.html' 
+
+</%flags>
+
+<%attr>
+title   => 'Operations' 
+section => 'Operations'
+</%attr>
 %
 %
 <%init>
@@ -55,9 +63,7 @@ if( defined( $search ) && $search =~ /\w+/ ) {
 
 } elsif( defined( $search ) && $search !~ /\w+/ ) {
 
-    $m->comp( "index.html", title => "Operations: $name ", s2name => $s2name );
     print "<p><b>No search criteria</b>";
-    $m->comp( "footer.mhtml" );
     $m->abort;
 
 } elsif( defined( $id ) ) {
@@ -117,9 +123,7 @@ if( %results ) {
 
 } else {
 
-    $m->comp("index.html", title => "Operations: $name ", s2name => $s2name);
     print  "<p><b>No results</b>";
-    $m->comp("footer.mhtml");
     $m->abort;
 
 }
@@ -127,11 +131,9 @@ if( %results ) {
 </%init>
 %
 %
-<& index.html, title => "Operations: $name ", s2name => $s2name &>
 %
 <script language="javascript" src="select.js"></script>
 %
-<div id="margins">
 %
 % if( $search ) {
 %
@@ -170,7 +172,5 @@ if( %results ) {
 %
 % }
 %
-</div>
 %
-<& footer.mhtml &>
 

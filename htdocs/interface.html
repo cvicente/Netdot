@@ -1,42 +1,44 @@
 <%args>
 $id     => undef;
 $edit   => undef;
-$s2name => "Plant";
 </%args>
 
+<%flags>
+inherit => 'section_cable.html' 
+</%flags>
+
+<%attr>
+title   => 'Interface' 
+section => 'Plant'
+</%attr>
+
 <%init>
-my $DEBUG = 0;
-my $o = undef;
+my $DEBUG     = 0;
+my $o         = undef;
 my $isEditing = 0;
 
-if ($id && $id ne "NEW") 
-{
+if ($id && $id ne "NEW"){
    $o = Interface->retrieve($id);
 }
 
 $isEditing = 1 if ($id eq "NEW" || $edit eq "intinfo");
 </%init>
 
-<& index.html, title => "Cable Plant: Interface", s2name => $s2name  &>
-
 <%perl>
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}))
-{
+if (defined($ARGS{_action})){
     print "ARGS is <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
     
     my %update_info = ();
-    if (!(%update_info = $ui->form_to_db(%ARGS)))
-    {
+    if (!(%update_info = $ui->form_to_db(%ARGS))){
         my $err = $ui->error();
         die("Error: $err\n");
-	}
+    }
 
-    if ($update_info{Interface}{key})
-    {
+    if ($update_info{Interface}{key}){
         $id = $update_info{Interface}{key};
         $isEditing = 0;
     }
@@ -44,8 +46,7 @@ if (defined($ARGS{_action}))
     # Do this to 'flush' the values associated with the object
     # before redisplaying
     $o = undef;
-    if ($id && $id ne "NEW")
-    {
+    if ($id && $id ne "NEW"){
         $o = Interface->retrieve($id);
     }
 }  
@@ -55,7 +56,7 @@ if (defined($ARGS{_action}))
 
 <!-- Header Table -->
 % if (defined($o) && $o->jack) {
-<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
     <td align="left">
         Interface for Horizontal Cable <a href="cable_horizontal.html?id=<% $o->jack %>"><% $o->jack->jackid %></a>
@@ -66,13 +67,12 @@ if (defined($ARGS{_action}))
 <!-- End Header Table -->
 
 <!-- Begin Interface Table -->
-<table border="0" width="95%" align="center"  class="tablebackground">
+<table border="0" width="100%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
         <form name="netdotform" action="interface.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="1">
-        <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
             <td colspan="2" align="left">Interface</td>

@@ -5,7 +5,6 @@
 <%args>
 $table   => undef
 $id      => undef
-$s2name  => "Management"
 $submit  => "Delete"
 $sid     => undef
 </%args>
@@ -21,9 +20,7 @@ print Dumper(%ARGS) if $DEBUG;
 
 </%init>
 
-<& index.html, title => " Delete: $table object" , s2name => $s2name  &>
-
-<table align="center" valign="top" border="0" width="95%" class="formtablebg">
+<table align="center" valign="top" border="0" width="100%" class="formtablebg">
 <tr><td>
 
 %if ( $submit eq "Delete"  ){
@@ -61,7 +58,6 @@ print Dumper(%ARGS) if $DEBUG;
 
     </table>
     <form method="POST" action="delete.html">
-    <input type="hidden" name="s2name" value="Management">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input name="submit" value="Confirm" type="submit">
     <input name="submit" value="Cancel" type="submit">
@@ -96,4 +92,3 @@ print Dumper(%ARGS) if $DEBUG;
 
 </td></tr>
 </table>
-<& footer.mhtml &>

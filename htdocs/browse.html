@@ -4,9 +4,18 @@ Generic Browse function
 </%doc>
 
 <%args>
-$s2name => "Generic"
 $table  => undef
 </%args>
+
+<%flags>
+inherit => 'section_generic.html' 
+
+</%flags>
+
+<%attr>
+title   => 'Browse' 
+section => 'Generic'
+</%attr>
 
 <%init>
 my $MAX    = 20;
@@ -17,12 +26,10 @@ my $WIDTH  = 2;
 % if ( ! $table ) {
 %   my( @t );
 %   @t = $ui->gettables();
-    <& index.html, title => "Browse", s2name => $s2name &>
     <& table.mhtml, width => $WIDTH, link => "browse.html", title => "Please select a table to browse:" &>
 % } else {
 %   my @r = $table->retrieve_all();
-    <& index.html, title => "Browse: $table", s2name => $s2name &>
-    <table cellpadding="0" border="0" width="95%" class="tablebackground">
+    <table cellpadding="0" border="0" width="100%" class="tablebackground">
     <tr class="tabletitle">
     <td>&nbsp<strong><% $table %></strong>
     <& sortresults.mhtml, table => $table, object => \@r, view => "row", withdelete => 1 &>
@@ -31,4 +38,3 @@ my $WIDTH  = 2;
     </table>
 % }
 
-<& footer.mhtml &>

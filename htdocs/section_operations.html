@@ -6,34 +6,31 @@ Interface for viewing/updating information relevant for a
 given customer.
 
 </%doc>
-%
+
+<%args>
+$user
+</%args>
+
+<%attr>
+title   => 'Operations' 
+section => 'Operations'
+</%attr>
 %
 <%init>
-my $currentUser = SiteControl::AccessController::getCurrentUser($r);
 my %caller_args = $m->caller_args(-1);
 
-if (exists($caller_args{page}))
-{
-    $currentUser->setAttribute($r, "NOC_PAGE", $caller_args{page});
+if (exists($caller_args{page})){
+    $user->setAttribute($r, "NOC_PAGE", $caller_args{page});
 }
-
-my $page = $currentUser->getAttribute("NOC_PAGE");
-my $ipm = Netdot::IPManager->new();
+my $page = $user->getAttribute("NOC_PAGE");
 </%init>
 %
 %
-<tr class="rowtitle0" align="Center">
-    <td align="center">
-        <h3>Operations</h3>
-    </td>
-</tr>
-%
+<br>
 %
 % # links to sub NOC functions go here (if any)
 % 
 % # now supply search box and action to noc.html
-<tr class="rowtitle0">
-    <td>
     <table border="0" width="100%" class="tablebackground">
         <tr>
             <td>
@@ -54,5 +51,7 @@ my $ipm = Netdot::IPManager->new();
             </td>
         </tr>
     </table>
-    </td>
-</tr>
+
+% if ( $m->fetch_next ){
+%  $m->call_next;
+% }

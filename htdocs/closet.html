@@ -9,8 +9,16 @@ $edit       => undef;
 $bb_sort    => undef;
 $cable_sort => undef;
 $pic_sort   => undef;
-$s2name     => "Plant";
 </%args>
+
+<%flags>
+inherit => 'section_cable.html' 
+</%flags>
+
+<%attr>
+title   => 'Closet' 
+section => 'Plant'
+</%attr>
 
 <%init>
 my $DEBUG          = 0;
@@ -27,13 +35,12 @@ if ($id && $id ne "NEW")  {
    $site = $o->floor->site || $o->site;
 }
 
-$editCloset = 1 if ($id eq "NEW" || $edit eq "closetinfo");
-$editPictures = 1 if ($edit eq "closetpictures");
-$editBackbones = 1 if ($edit eq "bbinfo");
+$editCloset     = 1 if ($id eq "NEW" || $edit eq "closetinfo");
+$editPictures   = 1 if ($edit eq "closetpictures");
+$editBackbones  = 1 if ($edit eq "bbinfo");
 $editHorizontal = 1 if ($edit eq "cableinfo");
 </%init>
 
-<& index.html, title => "Cable Plant: Closet", s2name => $s2name  &>
 
 <%perl>
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -97,7 +104,7 @@ LIST_MANAGER.addList(floorSearchList);
 
 % if ($site) {
 <!-- Header Table -->
-<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0">
     <td align="left">
         Closet for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=CLOSETS"><% $site->name %></a>&nbsp;&nbsp;&nbsp;
@@ -107,13 +114,12 @@ LIST_MANAGER.addList(floorSearchList);
 % }
 
 <!-- Closet Table -->
-<table border="0" width="95%" align="center"  class="tablebackground">
+<table border="0" width="100%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
         <form name="closetform" action="closet.html" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="1">
-        <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
             <td colspan="2" align="left">Closet</td>
@@ -312,7 +318,7 @@ LIST_MANAGER.addList(floorSearchList);
 <!-- Begin Closet Pictures -->
 % if (defined($o)) {
 <A NAME="pics"></A>
-<table border="0" width="95%" align="center"  class="tablebackground">
+<table border="0" width="100%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
     <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
@@ -321,7 +327,6 @@ LIST_MANAGER.addList(floorSearchList);
      <form name="cable_strand_form" action="closet.html" method="POST" enctype="multipart/form-data">
      <input type="hidden" name="id" value="<% $id %>">
      <input type="hidden" name="_action" value="UPDATE_PICTURES">
-     <input type="hidden" name="s2name" value="<% $s2name %>">
       <table width="100%" border="0">
        <tr>
          <th width="80%" align="center">Closet Pictures</th>
@@ -429,7 +434,7 @@ LIST_MANAGER.addList(floorSearchList);
 
 
 % if (defined($o)) {
-<table border="0" width="95%" align="center" class="tablebackground">
+<table border="0" width="100%" align="center" class="tablebackground">
 <tr valign="top">
     <td width="50%" valign="top">
 <!-- Begin BackboneCable Table -->
@@ -454,7 +459,6 @@ if ($editBackbones) {
     <form name="bbone_form" action="closet.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="UPDATE">
-    <input type="hidden" name="s2name" value="<% $s2name %>">
 
     <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
     <tr class="formtabletitle">
@@ -622,7 +626,6 @@ if ($editBackbones) {
     <form name="cable_form" action="closet.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="UPDATE">
-    <input type="hidden" name="s2name" value="<% $s2name %>">
 
     <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
     <tr class="formtabletitle">

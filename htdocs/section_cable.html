@@ -1,18 +1,25 @@
 <%doc>
-    section_cable.mhtml
-    Cable Plant
+    Cable Plant Section
 </%doc>
+
+<%args>
+$user
+</%args>
+
+<%attr>
+title   => 'Cable Plant' 
+section => 'Plant'
+</%attr>
 
 
 <%init>
-my $currentUser = SiteControl::AccessController::getCurrentUser($r);
 my %caller_args = $m->caller_args(-1);
 
 if (exists($caller_args{page})) {
-    $currentUser->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args{page});
+    $user->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args{page});
 }
 
-my $page = $currentUser->getAttribute("CABLE_PLANT_PAGE");
+my $page = $user->getAttribute("CABLE_PLANT_PAGE");
 </%init>
 
 <script language="JavaScript" src="select.js"></script>
@@ -36,50 +43,46 @@ my @sites = Site->retrieve_all();
 @sites = sort { $a->name cmp $b->name } @sites;
 </%perl>
 
-<tr class="rowtitle0" align="center">
-    <td align="center"><h3>Cable Plant</h3></td>
-</tr>
-
-<tr class="rowtitle0" align="left">
-    <td align="left">
+<br>
 %       if ($page eq "SITE" || $page eq "") {
             [Sites] | 
 %       } else {
-            <a href="index.html?s2name=Plant&page=SITE">[Sites]</a> |     
+            <a href="section_cable.html?page=SITE">[Sites]</a> |     
 %       }
 
 %       if ($page eq "BACKBONE" || $page eq "") {
             [Backbone Cables] | 
 %       } else {
-            <a href="index.html?s2name=Plant&page=BACKBONE">[Backbone Cables]</a> |     
+            <a href="section_cable.html?page=BACKBONE">[Backbone Cables]</a> |     
 %       }
 
 %       if ($page eq "HORIZONTAL") {
             [Horizontal Cables] | 
 %       } else {
-            <a href="index.html?s2name=Plant&page=HORIZONTAL">[Horizontal Cables]</a> | 
+            <a href="section_cable.html?page=HORIZONTAL">[Horizontal Cables]</a> | 
 %       }
 
 %       if ($page eq "CLOSETS") {
            [Closets] | 
 %       } else {
-           <a href="index.html?s2name=Plant&page=CLOSETS">[Closets]</a> | 
+           <a href="section_cable.html?page=CLOSETS">[Closets]</a> | 
 %       }
 
 %       if ($page eq "STRANDS") {
             [Cable Strands] | 
 %       } else {
-            <a href="index.html?s2name=Plant&page=STRANDS">[Cable Strands]</a> | 
+            <a href="section_cable.html?page=STRANDS">[Cable Strands]</a> | 
 %       }
 
 %       if ($page eq "CIRCUITS") {
             [Circuits]
 %       } else {
-            <a href="index.html?s2name=Plant&page=CIRCUITS">[Circuits]</a>
+            <a href="section_cable.html?page=CIRCUITS">[Circuits]</a>
 %       }
-        <br><hr>
-    </td>
-</tr>
+<br><hr>
+
+<table border="0" width="100%" align="center"  class="tablebackground">
+
 
 % if ($page eq "BACKBONE" || $page eq "") {
 
@@ -367,3 +370,7 @@ LIST_MANAGER.addList(floorList, closetList);
 % }
 
 % #############################################################################
+
+% if ( $m->fetch_next ){
+%  $m->call_next;
+% }

@@ -10,12 +10,21 @@
 </%doc>
 
 <%args>
-$s2name  => "Generic"
 $table   => undef
 $id      => undef
 $pos     => undef
 $view    => "all"
 </%args>
+
+<%flags>
+inherit => 'section_generic.html' 
+
+</%flags>
+
+<%attr>
+title   => 'View Object' 
+section => 'Generic'
+</%attr>
 
 <%init>
 my($obj, $prevobj );
@@ -32,11 +41,11 @@ unless ( $obj = $table->retrieve($id) ){
    $m->comp('error.mhtml', "Nonexistent record: $id");
 }
 
-my $labelstr = $ui->getobjlabel($obj, ", ");
-my %linksto = $ui->getlinksto($table);
+my $labelstr  = $ui->getobjlabel($obj, ", ");
+my %linksto   = $ui->getlinksto($table);
 my %linksfrom = $ui->getlinksfrom($table);
-my %order = $ui->getcolumnorder($table);
-my %tags = $ui->getcolumntags($table);
+my %order     = $ui->getcolumnorder($table);
+my %tags      = $ui->getcolumntags($table);
 
 if ($table !~ /_history/){
     # List all the has_many objects for this object
@@ -73,9 +82,7 @@ my $h_meta = $ui->getmeta($h_table);
 
 </%init>
 
-<& index.html, title => " View: $table: $labelstr" , s2name => $s2name  &>
-
-<table valign="top" border="0" height="100%" width="95%">
+<table valign="top" border="0" height="100%" width="100%">
 <tr height="1"><td colspan="2">
   <table width="100%" border="0" cellpadding="0" cellspacing="0">
   <tr>
@@ -267,5 +274,5 @@ my $h_meta = $ui->getmeta($h_table);
 </table>
 
 <p><br>
-<& footer.mhtml &>
+
 

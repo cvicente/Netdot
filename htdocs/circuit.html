@@ -9,9 +9,16 @@ Circuit Interface
 $id          => undef;
 $edit        => undef;
 $strand_sort => undef;
-$s2name      => "Plant";
-
 </%args>
+
+<%flags>
+inherit => 'section_cable.html' 
+</%flags>
+
+<%attr>
+title   => 'Circuit' 
+section => 'Plant'
+</%attr>
 
 <%init>
 
@@ -21,13 +28,12 @@ my $o           = undef;
 my $editCircuit = 0;
 my $editStrand  = 0;
 
-$o = Circuit->retrieve($id) if ($id && $id ne "NEW");
-$editCircuit = 1 if ($id eq "NEW" || $edit eq "circuitinfo");
-$editStrand = 1 if ($edit eq "strandinfo");
+$o              = Circuit->retrieve($id) if ($id && $id ne "NEW");
+$editCircuit    = 1 if ($id eq "NEW" || $edit eq "circuitinfo");
+$editStrand     = 1 if ($edit eq "strandinfo");
 
 </%init>
 
-<& index.html, title => "Cable Plant: Circuit", s2name => $s2name  &>
 
 <%perl>
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -76,7 +82,7 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 
 % if (defined($o) && $o->connectionid) {
 <!-- Header Table -->
-<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0">
     <td align="left">
         Circuit for Connection: <a href="view.html?table=Connection&id=<% $o->connectionid %>"><% %></a>&nbsp;&nbsp;&nbsp;
@@ -86,13 +92,12 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 % }
 
 <!-- Circuit Table -->
-<table border="0" width="95%" align="center"  class="tablebackground">
+<table border="0" width="100%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
         <form name="netdotform" action="circuit.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="UPDATE_CIRCUIT">
-        <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
             <td colspan="2" align="left">Circuit</td>

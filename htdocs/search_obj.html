@@ -18,9 +18,18 @@ Arguments:
 </%doc>
 
 <%args>
-$s2name => "Generic"
 
 </%args>
+
+<%flags>
+inherit => 'section_generic.html' 
+
+</%flags>
+
+<%attr>
+title   => 'Specific Search' 
+section => 'Generic'
+</%attr>
 
 <%init>
 my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order, %tags, $debug );
@@ -39,9 +48,7 @@ print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
 
 %if(! $arg{table} ){ # offer a list of tables to select
 
-<& index.html, title => "Advanced Search", s2name => $s2name &>
-
-<table align="center" border="0" width="95%">
+<table align="center" border="0" width="100%">
    <tr>
       <td>
          <& table.mhtml, width => 3, link => "search_obj.html", title => "Please select a table to search:" &>
@@ -67,9 +74,7 @@ print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
 <script language="javascript" src="select.js">
 </script>
 
-<& index.html, title=>"Advanced $table Search" , s2name => $s2name &>
-
-<table align="center" border="0" width="95%" class="tablebackground">
+<table align="center" border="0" width="100%" class="tablebackground">
    <tr>
       <td align="center">
            <form name="netdotform" action="search_obj.html" method="POST">
@@ -166,8 +171,7 @@ print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
          }
          my @objs = $table->search_like(\%sarg);
 </%perl>
-        <& index.html, title => "Search Results for $table", s2name => "$s2name"  &>
-<table align="center" border="0" width="95%">
+<table align="center" border="0" width="100%">
    <tr>
       <td>
          Total matches: <strong><% scalar (@objs) %></strong>
@@ -186,5 +190,3 @@ print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
 
 
 %} 
-
-<& footer.mhtml &>

@@ -1,39 +1,42 @@
-
 <%doc>
 
  Network Management Functions
 
 </%doc>
 
+<%args>
+$user
+</%args>
+
+<%attr>
+title   => 'Management' 
+section => 'Management'
+</%attr>
+
 <%init>
-my $currentUser = SiteControl::AccessController::getCurrentUser($r);
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
 my %caller_args = $m->caller_args(-1);
 
-if (exists($caller_args{page}))
-{
-    $currentUser->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
+if (exists($caller_args{page})){
+    $user->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
 }
-
-my $page = $currentUser->getAttribute("MANAGEMENT_PAGE");
+my $page = $user->getAttribute("MANAGEMENT_PAGE");
 
 </%init>
-
-
-<tr class="rowtitle0" align="center">
-    <td align="center"><h3>Management</h3></td>
-</tr>
 
 <tr class="rowtitle0" align="left">
     <td align="left">
 %       if ($page eq "DEVICE" || $page eq "") {
             [Devices] | 
 %       } else {
-            <a href="index.html?s2name=Management&page=DEVICE">[Devices]</a> |     
+            <a href="section_management.html?page=DEVICE">[Devices]</a> |     
 %       }
 %       if ($page eq "ADDRESS") {
            [Address Space] 
 %       } else {
-           <a href="index.html?s2name=Management&page=ADDRESS">[Address Space]</a>
+           <a href="section_management.html?page=ADDRESS">[Address Space]</a>
 %       }
         <br><hr>
     </td>
@@ -160,3 +163,6 @@ my $page = $currentUser->getAttribute("MANAGEMENT_PAGE");
 </tr>
 
 %}
+% if ( $m->fetch_next ){
+%  $m->call_next;
+% }

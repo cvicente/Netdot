@@ -1,43 +1,30 @@
 <%doc>
-  $Id$
-  
-  Options for header:
-
-  $title <string>
+Common header for all pages
 
 </%doc>
-%
-%
+
 <%args>
-$title => undef
-$s2name => undef
+$title
+$section
+$user
 </%args>
-%
-%
+
 <%init>
-my $currentUser = SiteControl::AccessController::getCurrentUser($r);
-if( ! defined( $s2name ) ) {
-    $s2name = "Main";
-}
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 </%init>
-%
-%
+
+
 <html>
 <head>
-  <link rel=StyleSheet href="style.css" type="text/css" />
-%
-% if( $title ) {
-   <title>Netdot : <% $title %></title>
-% } else {
-   <title>Netdot: NETwork DOcumentation Tool</title>
-% }
-%
+  <link rel=StyleSheet href="style.css" type="text/css">
+  <title>Netdot : <% $title %></title>
 </head>
 
-<script language="JavaScript" src="dynamic_list.js" />
+<script language="JavaScript" src="dynamic_list.js">
+</script>
 
-<body id="<% $s2name %>">
-
+<body id="<% $section %>">
 <div id="header">
     <img class="headleft" SRC="img/title.jpg" 
         alt="Netdot: Network Documentation Tool" />
@@ -48,8 +35,8 @@ if( ! defined( $s2name ) ) {
     </form>
         <br />
 %
-% if( $currentUser ) {
-        <B>user</B>: <% $currentUser->getUsername() %> &nbsp;
+% if( $user ) {
+        <B>user</B>: <% $user->getUsername() %> &nbsp;
 % }
 %
         [<a href="logout.html">logout</a>]
@@ -58,3 +45,4 @@ if( ! defined( $s2name ) ) {
     <span class="headleft">netdot.uoregon.edu</span>
     <span class="headright"><% scalar localtime %></span>
 </div>
+<br>

@@ -4,10 +4,18 @@
 
 </%doc>
 
+<%flags>
+inherit => 'section_management.html' 
+</%flags>
+
+<%attr>
+title   => 'Delete Device' 
+section => 'Management'
+</%attr>
+
 <%args>
 $id
 $submit    => undef
-$s2name    => "Management"
 </%args>
 
 <%init>
@@ -25,13 +33,11 @@ if ($id){
 </%init>
 
 % if (! $submit ){
-<& index.html, title => "Delete Device: $name ", s2name => $s2name  &>
-<table align="center" valign="top" border="0" width="95%" class="formtablebg">
+<table align="center" valign="top" border="0" width="100%" class="formtablebg">
   <tr>
     <td>
     <table border="0" class="formtablebg">
     <form action="delete.html" method="POST">
-    <input type="hidden" name="s2name" value="Management">
       <tr>
         <td>
 	Going to delete device <% $name %>
@@ -82,5 +88,4 @@ if ($id){
     </td>
   </tr>
 </table>
-<& footer.mhtml &>
 

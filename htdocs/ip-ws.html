@@ -4,6 +4,15 @@ Interface for IP blocks (both addresses and subnets)
 
 </%doc>
 
+<%flags>
+inherit => 'section_management.html' 
+</%flags>
+
+<%attr>
+title   => 'IP' 
+section => 'Management'
+</%attr>
+
 <%args>
 $id        => undef
 $search    => undef
@@ -16,8 +25,6 @@ $length    => undef
 $strategy  => undef
 $edit      => undef
 $submit    => undef
-$s2name    => "Management"
-$user      => $ENV{REMOTE_USER}
 </%args>
 
 <%init>
@@ -45,10 +52,6 @@ $edit_block    = 1 if ($edit eq "blockinfo");
 my $view       = 1;
 
 </%init>
-
-<& index.html, title => "IP Worksheet: $title", s2name => $s2name  &>
-
-<div class="margins">
 
 <%perl>
 
@@ -218,7 +221,6 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 % if ( $edit ){	 
     <form name="netdotform" action="ip-ws.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
-    <input type="hidden" name="s2name" value="<% $s2name %>">
     <input type="hidden" name="_action" value="UPDATE">
 % }
 % if ( $ipm->isaddress($o) ){  
@@ -551,7 +553,6 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	     <td class="formtablec2"> 
 	     <form name="netdotform" action="ip-ws.html" method="POST">
 	     <input type="hidden" name="id" value="<% $id %>">
-	     <input type="hidden" name="s2name" value="<% $s2name %>">
 	     <input type="hidden" name="_action" value="AUTOALLOCATE">
 	     <input type="hidden" name="parent" value="<% $id %>">
 	     <input type="text" size = "4" name="length" value="<% $o->prefix + 1 %>">
@@ -575,7 +576,6 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	     <td class="formtablec2"> 
 	     <form name="netdotform" action="ip-ws.html" method="POST">
 	     <input type="hidden" name="id" value="<% $id %>">
-	     <input type="hidden" name="s2name" value="<% $s2name %>">
 	     <input type="hidden" name="_action" value="AUTOALLOCATE">
 	     <input type="hidden" name="parent" value="<% $id %>">
 %	     if ($o->version == 4){
@@ -632,6 +632,3 @@ if (scalar( @children = $ipm->getchildren($o->id) )){
 
 %}
 
-</div>
-
-<& footer.mhtml &>

@@ -126,7 +126,7 @@ __PACKAGE__->add_trigger( before_update => \&historize );
 #################################################
 # These are specific SQL queries tailored to
 # some of Netdot's classes' needs
-# The syntax for calling the looks like
+# The syntax for calling them looks like
 #   <Tablename>->search_<key>
 # e.g.  
 #   Ipblock->search_children
@@ -195,7 +195,28 @@ Interface->set_sql(ifsbydescr => qq{
 	WHERE device = ?
 	ORDER BY description
     });
+#
+# Get lists of products
+Product->set_sql(bytype => qq{
+    SELECT p.name, p.id, COUNT(d.id) AS numdevs
+	FROM Device d, Product p, ProductType t
+	WHERE d.productname = p.id AND
+	p.type = t.id AND
+	t.id = ?
+	GROUP BY p.id
+	ORDER BY numdevs DESC
+    });
 
+Product->set_sql(notype => qq{
+    SELECT p.name, p.id, COUNT(d.id) AS numdevs
+	FROM Device d, Product p
+	WHERE d.productname = p.id AND
+	p.type = 0
+	GROUP BY p.id
+	ORDER BY numdevs DESC
+    });
+
+Product->columns(TEMP => qw/numdevs/);
 
 ^;
 

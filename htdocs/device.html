@@ -7,6 +7,15 @@ and all its relevant info in one page
 
 </%doc>
 
+<%flags>
+inherit => 'section_management.html' 
+</%flags>
+
+<%attr>
+title   => 'Device' 
+section => 'Management'
+</%attr>
+
 <%args>
 $id        => undef
 $search    => undef
@@ -20,8 +29,7 @@ $editbgp   => undef
 $ipsort    => "address"
 $ifsort    => "number"
 $peersort  => "ip"
-$s2name    => "Management"
-$user      => $ENV{REMOTE_USER}
+$user      => undef
 $showvlan  => "all"
 $intadd    => undef
 $submit    => undef
@@ -49,9 +57,7 @@ if( defined($search) && $search =~ /\w+/ ){
     # remove spaces
     $search =~ s/\s*//g;
     unless ( ($list = $dns->getdevbynamelike($search)) ){
-	$m->comp("index.html", title => "Device Worksheet: $name ", s2name => $s2name);
 	print  "<p><b>No results</b>";
-	$m->comp("footer.mhtml");
 	$m->abort;
     }
     my $num = scalar(@$list);
@@ -63,9 +69,7 @@ if( defined($search) && $search =~ /\w+/ ){
     }
     
 }elsif( defined($search) && $search !~ /\w+/ ){
-    $m->comp("index.html", title => "Device Worksheet: $name ", s2name => $s2name);
     print "<p><b>No search criteria</b>";   
-    $m->comp("footer.mhtml");    
     
 }elsif( $intadd ){
     unless ( $dm->add_interfaces($id, $intaddnum) ){
@@ -106,8 +110,6 @@ if ( $o && $o->name ){
 
 
 </%init>
-
-<& index.html, title => "Device Worksheet: $name ", s2name => $s2name  &>
 
 <script language="javascript" src="select.js"></script>
 
@@ -150,8 +152,6 @@ function setNull(field){
 
 -->
 </script>
-
-<div class="margins">
 
 % if ( $search ){
 <table border="0" width="100%" align="center" class="tablebackground">
@@ -262,7 +262,6 @@ function setNull(field){
 % if ( $editgen || $editloc || $editmgmt || $editips || $editints || $editbgp ){	 
     <form name="netdotform" action="device.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
-    <input type="hidden" name="s2name" value="<% $s2name %>">
     <input type="hidden" name="view" value="<% $view %>">
 % }
 
@@ -548,7 +547,7 @@ function setNull(field){
    </tr>
    <tr>
 	   <td class="formtablec1">Connect via: </td>
-	   <td colspan="2" class="formtablec2" ><a href="http://<% $name %>">[HTTP]</a> <a href="ssh://<% $user %>@<% $name %>">[SSH]</a> <a href="telnet://<% $name %>">[Telnet]</a></td>
+	   <td colspan="2" class="formtablec2" ><a href="http://<% $name %>">[HTTP]</a> <a href="ssh://<% $user->getUsername() %>@<% $name %>">[SSH]</a> <a href="telnet://<% $name %>">[Telnet]</a></td>
    </tr>
 %       } 
   </table>
@@ -964,7 +963,5 @@ if ( $peersort eq "ip" ){
 
 %} # if !defined search
 
-</div>
 
-<& footer.mhtml &>
 

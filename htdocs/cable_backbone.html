@@ -9,9 +9,16 @@ Cable management stuff...
 $id          => undef;
 $strand_sort => undef;
 $edit        => undef;
-$s2name      => "Plant";
-
 </%args>
+
+<%flags>
+inherit => 'section_cable.html' 
+</%flags>
+
+<%attr>
+title   => 'Backbone Cable' 
+section => 'Plant'
+</%attr>
 
 <%init>
 my $DEBUG = 0;
@@ -32,8 +39,6 @@ if ($id && $id ne "NEW") {
 $editBackbone = 1 if ($id eq "NEW" || $edit eq "cableinfo");
 $editStrand = 1 if ($edit eq "strandinfo");
 </%init>
-
-<& index.html, title => "Cable Plant: Backbone", s2name => $s2name  &>
 
 <%perl>
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -183,7 +188,7 @@ function suggestName()
 % # ---------------------------------------------------------------------------
 <!-- Header Table -->
 % if (defined($o)) {
-<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
     <td align="left">
         Start:
@@ -200,13 +205,12 @@ function suggestName()
 <!-- End Header Table -->
 
 <!-- Begin Backbone Cable Table -->
-<table border="0" width="95%" align="center"  class="tablebackground">
+<table border="0" width="100%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
         <form name="netdotform" action="cable_backbone.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="UPDATE">
-        <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
             <td colspan="2" align="left">Backbone Cable</td>
@@ -369,7 +373,7 @@ function editSelected(id)
 -->
 </script>
 <A NAME="cable_strand"></A>
-<table border="0" width="95%" align="center"  class="tablebackground">
+<table border="0" width="100%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
     <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
@@ -378,7 +382,6 @@ function editSelected(id)
      <form name="cable_strand_form" action="cable_backbone.html" method="POST">
      <input type="hidden" name="id" value="<% $id %>">
      <input type="hidden" name="_action" value="STRAND_UPDATE">
-     <input type="hidden" name="s2name" value="<% $s2name %>">
 %    if ($editStrand && $ARGS{edit_list}) {
      <input type="hidden" name="__edit_list" value="<% $ARGS{edit_list} %>">
 %    }

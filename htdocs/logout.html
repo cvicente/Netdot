@@ -1,14 +1,22 @@
+<%doc>
+
+Log out page
+
+</%doc>
+
+<%flags>
+inherit => undef
+</%flags>
+
 <%init>
-my $user = SiteControl::AccessController::getCurrentUser($r);
 my $success = 0;
 
+my $user    = SiteControl::AccessController::getCurrentUser($r);
 if(defined($user) && $user->isa("SiteControl::User")) {
    $user->logout($r);
    $success = 1;
 }
 </%init>
-
-<& header.mhtml, title=>"Logout" &>
 
 % if($success) {
       <P>You have been logged out.</P>
@@ -18,5 +26,4 @@ if(defined($user) && $user->isa("SiteControl::User")) {
 
 <B>Click <A HREF="login.html">here</A> to log in.</B>
 
-<& footer.mhtml &>
 

@@ -15,8 +15,16 @@ $submit_site      => undef;
 $backbone_srch    => undef;
 $backbone_id_srch => undef;
 $site_srch        => undef;
-$s2name           => "Plant";
 </%args>
+
+<%flags>
+inherit => 'section_cable.html' 
+</%flags>
+
+<%attr>
+title   => 'Cable Plant' 
+section => 'Plant'
+</%attr>
 
 <%init>
 my $DEBUG         = 0;
@@ -39,7 +47,6 @@ $backbone_srch = "%" . $backbone_srch . "%" if ($backbone_srch);
 $site_srch = "%" . $site_srch . "%" if ($site_srch);
 </%init>
 
-<& index.html, title => "Cable Plant: $name", s2name => $s2name &>
 
 <%perl>
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -67,7 +74,7 @@ if(defined($ARGS{_action})) {
 
 % if ($o) {
 <!-- Header Table -->
-<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
     <td align="left">
     <% ucfirst(lc($page_type)) %> for Site: <a href="view.html?table=Site&id=<% $id %>"><% $o->name %></a>&nbsp;&nbsp; 
@@ -79,7 +86,7 @@ if(defined($ARGS{_action})) {
 % }
 
 <!-- Margins Table -->
-<table border="0" width="95%" align="center"  class="tablebackground">
+<table border="0" width="100%" align="center"  class="tablebackground">
  <tr>
    <td valign="top" width="50%" align="center">
 
@@ -94,7 +101,6 @@ if(defined($ARGS{_action})) {
     <input type="hidden" name="site_srch" value="<% $site_srch %>">
     <input type="hidden" name="page_type" value="<% $page_type %>">
     <input type="hidden" name="_action" value="<% $id ? "UPDATE" : "NEW" %>">
-    <input type="hidden" name="s2name" value="<% $s2name %>">
 % }
 
 % #############################################################################
@@ -270,7 +276,7 @@ elsif ($start_id && $end_id) {
         }
     }
 
-    $header_descr = sprintf("connected to <a href=\"view.html?table=Site&id=%d\">%s</a>, <a href=\"view.html?table=Site&id=%d\">%s</a>", $s1->id, $s1->name, $s2->id, $s2->name);
+    $header_descr = sprintf("between <a href=\"view.html?table=Site&id=%d\">%s</a>, <a href=\"view.html?table=Site&id=%d\">%s</a>", $s1->id, $s1->name, $s2->id, $s2->name);
 }
 
 elsif ($start_id) {

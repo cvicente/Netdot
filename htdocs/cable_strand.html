@@ -9,8 +9,16 @@ Cable management stuff...
 $id          => undef;
 $backbone_id => undef;
 $edit        => undef;
-$s2name      => "Plant";
 </%args>
+
+<%flags>
+inherit => 'section_cable.html' 
+</%flags>
+
+<%attr>
+title   => 'Cable Strand' 
+section => 'Plant'
+</%attr>
 
 <%init>
 my $DEBUG      = 0;
@@ -25,8 +33,6 @@ if ($id && $id ne "NEW")  {
 
 $editStrand = 1 if ($id eq "NEW" || $edit eq "strandinfo");
 </%init>
-
-<& index.html, title => "Cable Plant: Cable Strand", s2name => $s2name  &>
 
 <%perl>
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -72,7 +78,7 @@ if (defined($ARGS{_action})) {
 % # ---------------------------------------------------------------------------
 <!-- Header Table -->
 % if (defined($o)) {
-<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
     <td align="left">
         Cable Strand for Backbone: <a href="cable_backbone.html?id=<% $o->cable %>"><% $o->cable->name %></a>
@@ -83,13 +89,12 @@ if (defined($ARGS{_action})) {
 <!-- End Header Table -->
 
 <!-- Begin Cable Strand Table -->
-<table border="0" width="95%" align="center"  class="tablebackground">
+<table border="0" width="100%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
         <form name="netdotform" action="cable_strand.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
-        <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
             <td colspan="2" align="left">Cable Strand</td>
