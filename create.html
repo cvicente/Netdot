@@ -201,7 +201,7 @@ if( defined( $TBL ) ) {
 
     <p>
     <blockquote>
-    <& table.html, width => 3, link => "create.html", title => "Please select an object to create:" &>
+    <& table.html, width => $WIDTH, link => "create.html", title => "Please select an object to create:" &>
     </blockquote>
 
 % } else {
@@ -234,6 +234,7 @@ use Apache::Session::Lock::File;
 my( %args, %order, %linksto, %linksfrom );
 my( $obj, %session, $TBL, $PREV, $id, $sid, %state );
 my $DIR = "/home/netdot/public_html/tmp";
+my $WIDTH = 2;
 undef( %args );
 undef( %order );
 undef( %linksto );
@@ -280,6 +281,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.12  2003/05/30 22:58:12  netdot
+#  set table width to 2 (for table.html)
+#
 #  Revision 1.11  2003/05/30 21:43:04  netdot
 #  opening page now using table.html to display initial list of tables to
 #  create
