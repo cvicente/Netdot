@@ -1,0 +1,43 @@
+######################################################################
+# Procedure for upgrading to rev 491
+# (Merge of Address and Site tables)
+######################################################################
+
+* Get latest rev
+
+# svn update
+
+* Add relevant fields to Site table (mysql client):
+
+ALTER TABLE Site ADD COLUMN street1 varchar(128) after availability;
+ALTER TABLE Site ADD COLUMN street2 varchar(128) after street1;
+ALTER TABLE Site ADD COLUMN pobox varchar(32) after street2;
+ALTER TABLE Site ADD COLUMN city varchar(64) after pobox;
+ALTER TABLE Site ADD COLUMN state varchar(32) after city;
+ALTER TABLE Site ADD COLUMN zip varchar(16) after state;
+ALTER TABLE Site ADD COLUMN country varchar(64) after zip;
+
+* Run conversion script to move Address info into Site table:
+# cd ~netdot
+# trunk/contrib/schema491.script.pl
+
+* Remove unneeded tables and fields:
+  (rename address -> location in Person table)
+ALTER TABLE Site DROP COLUMN address;
+DROP TABLE Address;
+DROP TABLE Address_history;
+ALTER TABLE Person CHANGE COLUMN address location integer;
+ALTER TABLE Person_history CHANGE COLUMN address location integer;
+
+* Install new metadata and generate a new DBI.pm
+
+DELETE FROM Meta;
+
+# cd trunk/bin
+# ./insert-metadata
+# ./setup-class-dbi
+
+* Restart Apache to activate changes:
+
+# service httpd restart
+

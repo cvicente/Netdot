@@ -48,26 +48,6 @@ __PACKAGE__->
 
 
 ######################################################################
-package Address;
-use base 'Netdot::DBI';
-__PACKAGE__->table( 'Address' );
-__PACKAGE__->columns( Primary => qw / id /);
-__PACKAGE__->columns( Essential => qw / street1 street2 city state zip /);
-__PACKAGE__->columns( Others => qw / info country pobox /);
-__PACKAGE__->has_many( 'sites', 'Site' => 'address', {on_delete=>"set-null"} );
-__PACKAGE__->has_many( 'persons', 'Person' => 'address', {on_delete=>"set-null"} );
-
-
-######################################################################
-package Address_history;
-use base 'Netdot::DBI';
-__PACKAGE__->table( 'Address_history' );
-__PACKAGE__->columns( Primary => qw / id /);
-__PACKAGE__->columns( Essential => qw / modified modifier street1 street2 city state zip /);
-__PACKAGE__->columns( Others => qw / info country pobox address_id /);
-
-
-######################################################################
 package Availability;
 use base 'Netdot::DBI';
 __PACKAGE__->table( 'Availability' );
@@ -491,9 +471,9 @@ use base 'Netdot::DBI';
 __PACKAGE__->table( 'Person' );
 __PACKAGE__->columns( Primary => qw / id /);
 __PACKAGE__->columns( Essential => qw / lastname firstname office entity /);
-__PACKAGE__->columns( Others => qw / position email availability fax address cell home info emailpager aliases pager /);
+__PACKAGE__->columns( Others => qw / position email availability fax cell home info location emailpager aliases pager /);
 __PACKAGE__->has_a( entity => 'Entity' );
-__PACKAGE__->has_a( address => 'Address' );
+__PACKAGE__->has_a( location => 'Site' );
 __PACKAGE__->has_many( 'roles', 'Contact' => 'person' );
 __PACKAGE__->has_many( 'devices', 'Device' => 'user', {on_delete=>"set-null"} );
 
@@ -504,9 +484,9 @@ use base 'Netdot::DBI';
 __PACKAGE__->table( 'Person_history' );
 __PACKAGE__->columns( Primary => qw / id /);
 __PACKAGE__->columns( Essential => qw / modified modifier lastname firstname position entity /);
-__PACKAGE__->columns( Others => qw / email availability fax address cell home info person_id emailpager office aliases pager /);
+__PACKAGE__->columns( Others => qw / email availability fax cell home info location person_id emailpager office aliases pager /);
 __PACKAGE__->has_a( entity => 'Entity' );
-__PACKAGE__->has_a( address => 'Address' );
+__PACKAGE__->has_a( location => 'Site' );
 
 
 ######################################################################
@@ -545,15 +525,15 @@ package Site;
 use base 'Netdot::DBI';
 __PACKAGE__->table( 'Site' );
 __PACKAGE__->columns( Primary => qw / id /);
-__PACKAGE__->columns( Essential => qw / name address /);
-__PACKAGE__->columns( Others => qw / availability info contactlist aliases /);
-__PACKAGE__->has_a( address => 'Address' );
+__PACKAGE__->columns( Essential => qw / name street1 city /);
+__PACKAGE__->columns( Others => qw / pobox state availability info country zip contactlist street2 aliases /);
 __PACKAGE__->has_a( availability => 'Availability' );
 __PACKAGE__->has_a( contactlist => 'ContactList' );
 __PACKAGE__->has_many( 'nearconnections', 'Connection' => 'nearend' );
 __PACKAGE__->has_many( 'farconnections', 'Connection' => 'farend' );
 __PACKAGE__->has_many( 'entities', 'EntitySite' => 'site', {on_delete=>"set-null"} );
 __PACKAGE__->has_many( 'devices', 'Device' => 'site', {on_delete=>"set-null"} );
+__PACKAGE__->has_many( 'people', 'Person' => 'location', {on_delete=>"set-null"} );
 
 
 ######################################################################
@@ -561,9 +541,8 @@ package Site_history;
 use base 'Netdot::DBI';
 __PACKAGE__->table( 'Site_history' );
 __PACKAGE__->columns( Primary => qw / id /);
-__PACKAGE__->columns( Essential => qw / modified modifier name address /);
-__PACKAGE__->columns( Others => qw / site_id availability info contactlist aliases /);
-__PACKAGE__->has_a( address => 'Address' );
+__PACKAGE__->columns( Essential => qw / modified modifier name street1 /);
+__PACKAGE__->columns( Others => qw / site_id availability address info contactlist aliases /);
 __PACKAGE__->has_a( availability => 'Availability' );
 __PACKAGE__->has_a( contactlist => 'ContactList' );
 
