@@ -63,6 +63,7 @@ if(defined($ARGS{_action}))
 % # BEGIN HORIZONTAL CABLE CODE
 % #############################################################################
 % if (uc($page_type) eq "HORIZONTAL") {
+%   $m->abort() if (!defined($o));
 %   my (@closets, @cables);
 
     <%perl>
@@ -166,8 +167,12 @@ if(defined($ARGS{_action}))
          </td>
 
         <td align="left">
+%           if ($edit eq "cableinfo") {
 %           $ui->selectLookup(object=>$cable, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", 
 %                             edit=>($edit eq "cableinfo"), where=>{site=>$site->id});
+%           } else {
+            <a href="closet.html?id=<% $cable->closet %>"><% $cable->closet->name %></a>
+%           }
          </td>
         
         <td align="left">
@@ -354,13 +359,21 @@ elsif ($start_id)
         </td>
 
         <td align="left">
+%       if ($edit eq "cableinfo") {
 %           $ui->selectLookup(object=>$cable, column=>"start_closet", lookup=>"Closet", 
 %                             edit=>($edit eq "cableinfo"), where=>{site=>$start_site_id});
+%       } else {
+            <a href="closet.html?id=<% $cable->start_closet %>"><% $cable->start_closet->name %></a>
+%       }
         </td>
 
         <td align="left">
+%       if ($edit eq "cableinfo") {
 %           $ui->selectLookup(object=>$cable, column=>"end_closet", lookup=>"Closet", 
 %                             edit=>($edit eq "cableinfo"), where=>{site=>$end_site_id});
+%       } else {
+            <a href="closet.html?id=<% $cable->end_closet %>"><% $cable->end_closet->name %></a>
+%       }
         </td>
 
         <td align="left">
@@ -384,7 +397,7 @@ elsif ($start_id)
 % # BEGIN CLOSET CODE
 % #############################################################################
 % elsif (uc($page_type) eq "CLOSETS") {
-
+%   $m->abort() if (!defined($o));
 %   my @closets;
 
     <%perl>
@@ -494,10 +507,8 @@ elsif ($start_id)
 % # BEGIN CABLE STRAND CODE
 % #############################################################################
 % elsif (uc($page_type) eq "STRANDS") {
-
+% $m->abort() if (!defined($backbone_id_srch));
 % my $backbone = BackboneCable->retrieve($backbone_id_srch);
-
-
 % my @strands;
 
 <%perl>

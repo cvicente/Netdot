@@ -129,9 +129,9 @@ LIST_MANAGER.addList(floorSearchList);
             <tr align="left" valign="top">
                 <td align="left">Floor: </td>
                 <td align="left">
-%               $ui->selectLookup(object=>$o, table=>"Closet", column=>"floor", lookup=>"Floor", 
-%                                 edit=>$editCloset, where=>{site=>($o ? $o->site : "")});
 %               if ($editCloset) {
+%                   $ui->selectLookup(object=>$o, table=>"Closet", column=>"floor", lookup=>"Floor", 
+%                                     edit=>$editCloset, where=>{site=>($o ? $o->site : "")});
                      &nbsp;<select name="floor_srch" onChange="floorSearchList.doIt();" style="width: 150px;">
                     <option value="">Lookup by Site</option>
                     <%perl>
@@ -143,7 +143,8 @@ LIST_MANAGER.addList(floorSearchList);
                     }
                     </%perl>
                     </select>
-
+%               } else {
+                    <a href="floor.html?id=<% $o->floor %>"><% $o->floor->level %></a>
 %               }
                 </td>
             </tr>

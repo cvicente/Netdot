@@ -1,0 +1,185 @@
+<& index.html, title => "Cable Plant: Floor", s2name => $s2name  &>
+
+<%perl>
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+# code for inserting/updating
+# -----------------------------------------------------------------------------
+if (defined($ARGS{_action}))
+{
+    my %update_info = ();
+    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+    if (!(%update_info = $ui->form_to_db(%ARGS)))
+    {
+        my $err = $ui->error();
+        die("Error: $err\n");
+	}
+
+    if ($update_info{Floor}{key})
+    {
+        $id = $update_info{Floor}{key};
+        $editFloor = 0;
+    }
+
+    # Do this to 'flush' the values associated with the object
+    # before redisplaying
+    $o = undef;
+    $site = undef;
+    if ($id && $id ne "NEW")
+    {
+        $o = Floor->retrieve($id);
+        $site = $o->site;
+    }
+}
+
+if (defined($ARGS{_action}) && defined($ARGS{__plan}) && $ARGS{__plan} ne "")
+{
+    my %mimeTypes = ("jpg"=>"image/jpeg", "jpeg"=>"image/jpeg", "gif"=>"image/gif",
+                     "png"=>"image/png", "pdf"=>"application/pdf");
+    my $fh = $ARGS{__plan};
+    my $extension = $1 if ($fh =~ /\.(\w+)$/);
+    die("Extension \"$extension\" could not be found.\n") if (!exists($mimeTypes{$extension}));
+
+    my $mimetype = $mimeTypes{$extension};
+    my $plan = $o->plan;
+    my $data;
+    while (<$fh>)
+    {
+        $data .= $_;
+    }
+    
+    my %tmp;
+    $tmp{bindata} = $data;
+    $tmp{filename} = $fh;
+    $tmp{filetype} = $mimetype;
+    $tmp{filesize} = -s $fh;
+    
+    if (int($plan) ne 0)
+    {
+        # changed floor plan
+        die("Error: " . $ui->error) if (!($ui->update(object=>$plan, state=>\%tmp)))
+    }
+
+    else
+    {
+        # new floor plan 
+        my $ret = $ui->insert(table=>"BinFile", state=>\%tmp);
+        die("Error: " . $ui->error) if (!$ret);
+
+        # now try and update our Floor...
+        die("Error: " . $ui->error) if (!($ui->update(object=>$o, state=>{plan=>$ret})));
+    }
+}
+# end insertion/update code
+# -----------------------------------------------------------------------------
+</%perl>
+
+% if ($site) {
+<!-- Header Table -->
+<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+ <tr class="rowtitle0">
+    <td align="left">
+        Floor for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=HORIZONTAL"><% $site->name %></a>&nbsp;&nbsp;&nbsp;
+    </td>
+ </tr>
+</table>
+% }
+
+<!-- Floor Table -->
+<table border="0" width="95%" align="center"  class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="center">
+        <form name="floorform" action="floor.html" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="_action" value="1">
+        <input type="hidden" name="s2name" value="<% $s2name %>">
+        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+        <tr class="formtabletitle">
+            <td colspan="2" align="left">Floor</td>
+%           if ($editFloor) {
+            <td align="right"><input name="submit" value="save" type="submit"></td>
+%           } else {
+            <td align="right"><a href="floor.html?id=NEW">[new]</a> || <a href="floor.html?id=<% $id %>&edit=floorinfo">[edit]</a></td>
+%           }
+        </tr>
+        <tr align="left" valign="top">
+            <td width="40%">
+            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <tr align="left" valign="top">
+                <td align="left">Level: </td>
+                <td align="left">                
+%               $ui->textField(object=>$o, table=>"Floor", column=>"level", edit=>$editFloor);
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">Floor Plan: </td>
+                <td align="left">
+%               if ($editFloor) {
+                    <input type="file" name="__plan" size="30" value="">
+%                   if ($o && int($o->plan) ne 0) {
+                    <br><I>Currently <a href="display_bin.html?id=<% $o->plan->id %>">&quot;<% $o->plan->filename %>&quot;</a> (<% $o->plan->filesize %> bytes)</I>
+%                   }            
+%               }
+%               elsif ($o && int($o->plan) ne 0) {
+                <P ALIGN="center">
+                <A HREF="display_bin.html?id=<% $o->plan %>"><% $o->plan->filename %></A>
+                </P>
+%           }                
+                </td>
+            </tr>
+            </table>
+            </td>
+            
+            <td width="40%">
+            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <tr align="left" valign="top">
+                <td align="left">Site: </td>
+                <td align="left">
+%               $ui->selectLookup(object=>$o, table=>"Floor", column=>"site", lookup=>"Site", edit=>$editFloor);
+                </td>
+            </tr>
+            </table>
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr><td colspan="3">&nbsp;<br></td></tr>
+
+        <tr align="left" valign="top">
+            <td colspan="2">
+            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
+%           $ui->textArea(object=>$o, table=>"Floor", column=>"info",
+%                         edit=>$editFloor, htmlExtra=>"rows='3' cols='80'");
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+        <tr><td colspan="3">&nbsp;<br></td></tr>
+        </table>
+        </form>
+    </td>
+    </tr>
+</table>
+<!-- End Floor Table -->
+
+<%args>
+$id => undef;
+$edit => undef;
+$s2name => "Plant";
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $o = undef;
+my $site = undef;
+my $editFloor = 0;
+
+if ($id && $id ne "NEW") 
+{
+   $o = Floor->retrieve($id);
+   $site = $o->site;
+}
+
+$editFloor = 1 if ($id eq "NEW" || $edit eq "floorinfo");
+</%init>
