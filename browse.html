@@ -1,9 +1,40 @@
+<%perl>
+foreach my $j ( keys %ARGS ) {
+  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+  $args{$j} = $ARGS{$j};
+}
+</%perl>
 
+<& header, title => "Browse" &>
+
+% if( ! exists( $args{table} ) ) {
+%   my @t = Meta->retrieve_all();
+    <p>Please select an object to browse: <br>
+    <ul>
+%   foreach my $t ( sort { $a->name cmp $b->name } @t ) {
+%     next if( $t->name eq "Meta" );
+      <li><a href="browse.html?table=<% $t->name %>"><% $t->name %></a>
+%   }
+    </ul>
+% } else {
+%   my $TBL = $args{table};
+%   my @r = $TBL->retrieve_all();
+    <table cellpadding="0" border="0" bgcolor="#CCCCCC">
+    <tr>
+    <td><strong><% $TBL %></strong>
+    <& sortresults.html, table => $TBL, object => \@r &>
+    </td>
+    </tr>
+    </table>
+% }
+
+<& footer &>
 
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-my( %args );
+my( %args, $MAX );
+$MAX = 20;
 
 </%init>
 
@@ -12,6 +43,9 @@ my( %args );
 
 ######################################################################
 #  $Log: browse.html,v $
+#  Revision 1.3  2003/05/29 23:26:15  netdot
+#  basic functionality there....
+#
 #  Revision 1.2  2003/05/29 22:26:27  netdot
 #  put in inital <%init> section
 #
