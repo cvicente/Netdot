@@ -119,15 +119,15 @@ sub insertrr {
     my ($self, %argv) = @_;
     my ($type, $zone);
     if (my $rrid = $self->getrrbyname($argv{name})){
-	$self->error("RR $argv{name} already exists.");
+	$self->error(sprintf("RR %s already exists.", $argv{name}));
 	return 0;
     }
     unless ( $type = (RRType->search(name => $argv{type}))[0] ){
-	$self->error("Unknown RR type");
+	$self->error(sprintf("Unknown RR type: %s", $argv{type}));
 	return 0;
     }
     unless ( $zone = (Zone->search(mname => $argv{zone}))[0] ){
-	$self->error("Unknown DNS Zone");
+	$self->error(sprintf("Unknown DNS Zone: %s", $argv{zone}));
 	return 0;
     }
     my %state = (name        => $argv{name},

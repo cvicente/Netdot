@@ -200,7 +200,7 @@ sub discover {
     # Make sure name is in DNS
 
     my $dm = Netdot::DNSManager->new();
-    my $zone = $self->{'DEFAULT_DOMAIN'};
+    my $zone = $self->{'DEFAULT_DNSDOMAIN'};
     my $rr;
     if ( $rr = $dm->getrrbyname($host) ) {
 	$self->debug( loglevel => 'LOG_NOTICE',
@@ -219,10 +219,10 @@ sub discover {
 	    $self->output($msg);
 	    $self->debug( loglevel => 'LOG_DEBUG',
 			  message => "SOA defaults are: refresh: %s, retry: %s, expire: %s, minimum: %s", 
-			  args => [ $self->{'DEFAULT_REFRESH'}, 
-				    $self->{'DEFAULT_RETRY'}, 
-				    $self->{'DEFAULT_EXPIRE'}, 
-				    $self->{'DEFAULT_MINIMUM'} ] );	    	 
+			  args => [ $self->{'DEFAULT_DNSREFRESH'}, 
+				    $self->{'DEFAULT_DNSRETRY'}, 
+				    $self->{'DEFAULT_DNSEXPIRE'}, 
+				    $self->{'DEFAULT_DNSMINIMUM'} ] );	    	 
 	    unless ($dm->insertzone(mname => $zone)){
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => "Could not insert Zone %s to DB: %s",
