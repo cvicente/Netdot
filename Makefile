@@ -4,9 +4,10 @@ PKG=Netdot
 DST = unstable
 ETC = ins.sample.data netdot.relationships netdot.schema
 DOC = TODO ChangeLog MILESTONES
-BIN = initacls.mysql initacls.Pg setup-class-dbi.pl mason.pl initdb
+BIN = initacls.mysql initacls.Pg setup-class-dbi mason.pl initdb
 HTML = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html table.html banner style.css footer2 node.html
 NETVIEWER = Netviewer.pm nv.categories nv.ifTypes
+LIB = Netviewer.pm nv.categories nv.ifTypes GUI.pm
 
 ######################################################################
 help:
@@ -22,7 +23,7 @@ help:
 	@echo "make test"
 
 unstable: DST = unstable
-unstable: dir etc make
+unstable: dir bin html lib doc make
 stable: DST = stable
 stable: dir etc make
 test: DST = /home/netdot/public_html
@@ -59,10 +60,11 @@ dist:
 
 ######################################################################
 dir: 
-	mkdir -p $(DST)/src
+#	mkdir -p $(DST)/src
+	mkdir -p $(DST)/lib
 	mkdir -p $(DST)/bin
-	mkdir -p $(DST)/etc
-	mkdir -p $(DST)/cgi
+#	mkdir -p $(DST)/etc
+	mkdir -p $(DST)/html
 	mkdir -p $(DST)/doc
 	mkdir -p $(DST)/contrib
 
@@ -71,16 +73,26 @@ dir:
 bin: $(BIN)
 	cp -f $? $(DST)/bin
 
+######################################################################
+doc: $(DOC)
+	cp -f $? $(DST)/doc
 
 ######################################################################
 etc: $(ETC)
 	cp -f $? $(DST)/etc
 
+######################################################################
+html: $(HTML)
+	cp -f $? $(DST)/html
+
+######################################################################
+lib: $(LIB)
+	cp -f $? $(DST)/lib
 
 ######################################################################
 make:
-	cp Makefile.dist $(DST)/Makefile
-	cp initdb $(DST)/initdb
+	cp -f Makefile.db $(DST)/bin/Makefile
+
 
 
 # leave a blank
