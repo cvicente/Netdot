@@ -8,14 +8,13 @@ foreach my $j ( keys %ARGS ) {
 <& header, title => "Browse" &>
 
 % if( ! exists( $args{table} ) ) {
-%   my @t = Meta->retrieve_all();
-    <p>Please select an object to browse: <br>
-    <ul>
-%   foreach my $t ( sort { $a->name cmp $b->name } @t ) {
-%     next if( $t->name eq "Meta" );
-      <li><a href="browse.html?table=<% $t->name %>"><% $t->name %></a>
-%   }
-    </ul>
+%   my( @t );
+%   map { push @t, $_ unless( $_->name eq "Meta" ) } 
+%     sort { $a->name cmp $b->name } Meta->retrieve_all();
+    <p>
+    <blockquote>
+    <& table.html, width => $WIDTH, link => "browse.html", title => "Please select an object to browse:" &>
+    </blockquote>
 % } else {
 %   my $TBL = $args{table};
 %   my @r = $TBL->retrieve_all();
@@ -33,8 +32,9 @@ foreach my $j ( keys %ARGS ) {
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-my( %args, $MAX );
+my( %args, $MAX, $WIDTH );
 $MAX = 20;
+$WIDTH = 2;
 
 </%init>
 
@@ -43,6 +43,9 @@ $MAX = 20;
 
 ######################################################################
 #  $Log: browse.html,v $
+#  Revision 1.4  2003/05/30 22:57:11  netdot
+#  replaced opening page with component from table.html
+#
 #  Revision 1.3  2003/05/29 23:26:15  netdot
 #  basic functionality there....
 #
