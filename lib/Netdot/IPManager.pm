@@ -1,8 +1,10 @@
 package Netdot::IPManager;
 
-use lib "/home/netdot/public_html/lib";
+use lib "PREFIX/lib";
 
+use base qw( Netdot );
 use Netdot::DBI;
+use Netdot::UI;
 use NetAddr::IP;
 use strict;
 
@@ -23,38 +25,24 @@ sub new {
 }
 
 
-#####################################################################
-# return error message
-#####################################################################
-sub error {
-  $_[0]->{'_error'} || '';
-}
-
-#####################################################################
-# clear error - private method
-#####################################################################
-sub _clear_error {
-  $_[0]->{'_error'} = undef;
-}
 
 #####################################################################
 # IP to Integer Converter
-# Accepts: dotted-quad address
+# Arguments: dotted-quad address
 # Returns: Integer
 #####################################################################
-sub ip2int {
-    my ($self, $address) = @_;
-    my $ip = NetAddr::IP->new($address);
-    unless ($ip){
-	$self->{'_error'} = "ip2int: Invalid Address: $address";
-	return undef;
-    }
-    return ($ip->numeric)[0];
-}
+#sub ip2int {
+#    my ($self, $address) = @_;
+#    my $ip = NetAddr::IP->new($address);
+#    unless ($ip){
+#	return 0;
+#    }
+#    return ($ip->numeric)[0];
+#}
 
 #####################################################################
-# Sort arrayref of IPblock objects by ip address
-# Accepts: dotted-quad address
+# Sort IPblock objects by ip address
+# Arguments: arrayref of Ipblock objects
 # Returns: Integer
 #####################################################################
 sub sortblocks {
@@ -69,23 +57,28 @@ sub sortblocks {
 
 #####################################################################
 # Search IP Block
-# Accepts: address and (optional) prefix
+# Arguments: address and (optional) prefix
 # Returns: Ipblock object
 #####################################################################
 sub searchblock {
     my ($self, $address, $prefix) = @_;
-    my ($ipblock, %params);
-    my $intaddr = $self->ip2int($address);
-    $params{address} = $intaddr;
-    $params{prefix} = $prefix if $prefix;
-    return ($ipblock = (Ipblock->search(%params))[0] );
-    return undef;
+    my $ip;
+    unless ($ip = NetAddr::IP->new($address, $prefix)){
+	$self->error("Invaild address: $address");
+	return 0;
+    }
+    if ( my $ipb = (Ipblock->search( {address => ($ip->numeric)[0], 
+				      prefix  => $ip->masklen} ))[0] ){
+	return $ipb;
+    }
+    $self->error(sprintf("%s/%s not found", $ip->addr, $ip->prefix));
+    return 0;
 }
 
 #####################################################################
-# Is subnet?
-# Accepts: IPblock object
-# Returns: 0 or 1
+# Is Ipblock a subnet?
+# Arguments: IPblock object
+# Returns: 0 (is address) or 1 (is subnet)
 #####################################################################
 sub issubnet {
     my ($self, $o) = @_;
@@ -98,55 +91,176 @@ sub issubnet {
 }
 
 #####################################################################
+# Get subnet address
+# Arguments: 
+#  $address: ipv4 or ipv6 address
+#  $prefix:  dotted-quad netmask or prefix length
+# Returns: 0 (is address) or 1 (is subnet)
+#####################################################################
+sub getsubnetaddr {
+    my ($self, $address, $prefix) = @_;
+    my $ip;
+    unless($ip = NetAddr::IP->new($address, $prefix)){
+	$self->error("Invalid IP: $address/$prefix");
+	return 0;	
+    }
+    return $ip->network->addr;
+    
+}
+
+#####################################################################
 # Insert a new block
+# Required Arguments: 
+#   address: ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
+#   prefix:  dotted-quad mask or prefix length
+# Optional Arguments:
+#   status: id of IpblockStatus
+#   interface: id of Interface where IP was found
+#   manual (bool): inserted manually or automatically
 # Returns: New Ipblock object
 #####################################################################
 sub insertblock {
-    my ($self, $address, $prefix, $statusid) = @_;
-    $statusid ||= 0;
-    if ($self->searchblock($address, $prefix)){
-	$self->{'_error'} = "insertblock: Block already exists in db";
+    my ($self, %args) = @_;
+    my $status;
+    unless ( exists($args{address}) && exists($args{prefix}) ){
+	$self->error("Missing required args 'address and/or 'prefix' ");
+	return 0;	
+    }
+    $args{status}    ||= 0;
+    $args{interface} ||= 0; 
+    $args{manual}    ||= 0; 
+    if ($self->searchblock($args{address}, $args{prefix})){
+	$self->error("Block already exists in db");
 	return 0;
     }
     my $ip;
-    unless($ip = NetAddr::IP->new($address, $prefix)){
-	$self->{'_error'} = "Invalid IP: $address/$prefix";
+    unless($ip = NetAddr::IP->new($args{address}, $args{prefix})){
+	$self->error("Invalid IP: $args{address}/$args{prefix}");
 	return 0;	
+    }
+    if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
+	 || $ip eq '::1' ) {
+	$self->error("IP is a loopback: ", $ip->addr, "/", $ip->masklen);
+	return 0;	
+    }
+    unless ($status = (IpblockStatus->search(name => $args{status}))[0]){
+	$self->error("Status $args{status} not known");
+	return 0;		
     }
     my $ui = Netdot::UI->new();
     my %state = ( address  => $ip->addr, 
 		  prefix   => $ip->masklen,
-		  status   => $statusid,
 		  version  => $ip->version,
+		  status    => $status,
+		  interface => $args{interface},
 		  );
-    my $r;
+   
+    $state{last_seen} = $ui->timestamp if (! $args{manual} );
+		  
+    my $r;		  
     if ( $r = $ui->insert( table => "Ipblock", state => \%state)){
-	return $r ;
+	return (my $o = Ipblock->retrieve($r)) ;
     }else{
-	$self->{'_error'} = $ui->error;
+	$self->error($ui->error);
 	return 0;
     }
+}
+#####################################################################
+# Update existing block
+# Arguments: 
+#   id: id of existing Ipblock object
+#   address: ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
+#   prefix:  dotted-quad mask or prefix length
+# Optional Arguments:
+#   status: id of IpblockStatus
+#   interface: id of Interface where IP was found
+# Returns: New Ipblock object
+#####################################################################
+sub updateblock {
+    my ($self, %args) = @_;
+    my ($ipblock, $status);
+    unless ( exists($args{id}) && exists($args{address}) && exists($args{prefix}) ){
+	$self->error("Missing required args");
+	return 0;	
+    }
+    $args{status}    ||= 0;
+    $args{interface} ||= 0; 
+    unless ($ipblock = Ipblock->retrieve($args{id})){
+	$self->error("Ipblock id $args{id} not in db");
+	return 0;
+    }
+    my $ip;
+    unless($ip = NetAddr::IP->new($args{address}, $args{prefix})){
+	$self->error("Invalid IP: $args{address}/$args{prefix}");
+	return 0;	
+    }
+    if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
+	 || $ip eq '::1' ) {
+	$self->error("IP is a loopback: $args{address}");
+	return 0;	
+    }
+    my $ui = Netdot::UI->new();
+    unless ($status = (IpblockStatus->search(name => $args{status}))[0]){
+	$self->error("Status $args{status} not known");
+	return 0;		
+    }
+    my %state = ( address   => $ip->addr, 
+		  prefix    => $ip->masklen,
+		  version   => $ip->version,
+		  status    => $status,
+		  interface => $args{interface},
+		  last_seen => $ui->timestamp,
+		  );
+    unless ( $ui->update( object => $ipblock, state => \%state)){
+	$self->error($ui->error);
+	return 0;
+    }
+    return 1;
+}
+#####################################################################
+# Remove block
+# Arguments: 
+#   address: ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
+#   prefix:  dotted-quad mask or prefix length
+# Returns: true if succeded
+#####################################################################
+sub removeblock {
+    my ($self, %args) = @_;
+    my $ipb;
+    unless ( exists($args{address}) ){
+	$self->error("Missing required args");
+	return 0;	
+    }
+    unless ($ipb = $self->searchblock($args{address})){
+	return 0;
+    }
+    my $ui = Netdot::UI->new();
+    unless ($ui->remove(table => 'Ipblock', id => $ipb->id)){
+	$self->error(sprintf("removeblock: %s", $ui->error));
+	return 0;
+    }
+    return 1;
 }
 
 ######################################################################
 ## Auto-Allocate Block
-## Accepts: parent block and a prefix length, return best-choice 
+## Arguments: parent block and a prefix length, return best-choice 
 ##          allocation
-## Returns: New Ipbloc object
+## Returns: New Ipblock object
 ######################################################################
 sub auto_allocate {
     my ($self, $parentid, $length) = @_;
     my $parent;
     unless ($parent = Ipblock->retrieve($parentid)){
-	$self->{'_error'} = "auto_allocate: Nonexistent Ipblock object: $parentid";
+	$self->error("Nonexistent Ipblock object: $parentid");
 	return 0;
     }    
     unless ($parent->status->name eq "Allocated"){
-	$self->{'_error'} = "auto_allocate: Parent block's status needs to be 'Allocated'";
+	$self->error("Parent block's status needs to be 'Allocated'");
 	return 0;
     }    
     if ($parent->prefix > $length){
-	$self->{'_error'} = "auto_allocate: New block's prefix must be longer than parent's";
+	$self->error("New block's prefix must be longer than parent's");
 	return 0;
     }    
     if (my $ip = NetAddr::IP->new($parent->address, $parent->prefix)){
@@ -164,11 +278,13 @@ sub auto_allocate {
 		}
 	    }else{
 		my $status = (IpblockStatus->search(name => "Allocated"))[0];
-		my $newblock = $self->insertblock($subnet->addr, $subnet->masklen, $status->id);
+		my $newblock = $self->insertblock(address => $subnet->addr, 
+						  prefix  => $subnet->masklen, 
+						  status  => $status );
 		return $newblock;
 	    }
 	}
-	$self->{'_error'} = "auto_allocate: No blocks available with specified criteria";
+	$self->error("auto_allocate: No blocks available with specified criteria");
 	return 0;
     }
 }
@@ -177,19 +293,19 @@ sub auto_allocate {
 ######################################################################
 ## Build Tree
 ## Traverse IP block tree and set dependencies
-## Accepts: IP space version (4/6)
+## Arguments: IP space version (4/6)
 ######################################################################
 sub build_tree { 
     my ($self, $version) = @_;
     unless ($version == 4 || $version == 6){
-	$self->{'_error'} = "build_tree: Invalid IP version: $version";
+	$self->error("Invalid IP version: $version");
 	return 0;
     }
     # Walk all blocks, starting from the longest prefixes
     # 
     my $it = Ipblock->search(version => $version, { order_by=> 'prefix DESC' } ); 
     unless ($it->count){
-	$self->{'_error'} = "build_tree: No version $version blocks found in DB";
+	$self->error("No version $version blocks found in DB");
 	return 0;	
     }
     # Now for each block,
@@ -219,7 +335,7 @@ sub build_tree {
 		}
 	    }
 	    $pr--;
-	}
+	}		    
     }
     return 1;
 }

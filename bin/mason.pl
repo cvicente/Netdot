@@ -29,11 +29,12 @@ use strict;
     package HTML::Mason::Commands;
     use Net::IP;
     use NetAddr::IP;
-    use Time::Piece;
     use Data::Dumper;
     use lib "PREFIX/lib";
     use Netdot::UI;
     use Netdot::IPManager;
+    use Netdot::DeviceManager;
+    use Netdot::DNSManager;
 }
 # Create ApacheHandler object at startup.
 my $ah =

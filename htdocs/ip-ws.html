@@ -14,9 +14,9 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	my ($addr, $prefix, $ipb, @list);
 	if ($search =~ /\//){
 	    ($addr, $prefix) = split /\//, $search;
-	    $ipb = $ipmanager->searchblock($addr, $prefix);
+	    $ipb = $ipm->searchblock($addr, $prefix);
 	}else{
-	    $ipb = $ipmanager->searchblock($search);
+	    $ipb = $ipm->searchblock($search);
 	}
 	if (defined ($ipb)){
 	    push @list, $ipb;
@@ -80,20 +80,21 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
      <p><b>Error: New block must have a prefix</b>   
 
 <%perl>
-    $m->abort;
+     $m->abort;
     }
     my ($address, $prefix) = split /\//, $allocate;
-    my $status = (IpblockStatus->search(name => "Allocated"))[0];
-    my $newid;
-    unless( $newid = $ipmanager->insertblock($address, $prefix, $status->id)){
-      my $err = $ipmanager->error();
-      die ("Error: $err\n");
+    my $newblock;
+    unless( $newblock = $ipm->insertblock(address => $address, 
+					  prefix  => $prefix, 
+					  status  => "Allocated",
+					  manual  => 1 )){
+	my $err = $ipm->error();
+	die ("Error: $err\n");
     }
-    my $newblock = Ipblock->retrieve($newid); 
     # 
     # Rebuild tree
-    unless ( $ipmanager->build_tree($newblock->version) ){
-       my $err = $ipmanager->error();
+    unless ( $ipm->build_tree($newblock->version) ){
+       my $err = $ipm->error();
        die ("Error: $err\n");    
     }
     if ($newblock)
@@ -107,18 +108,17 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 #
 #######################################################################################
 }elsif ( defined($_action) && ($_action eq "AUTOALLOCATE") ){
-    # Chop "/¨ if any
+    # Chop "/" if any
     $length =~ s/\///;
-    my $newid;
-    unless( $newid = $ipmanager->auto_allocate($parent, $length)){
-      my $err = $ipmanager->error();
+    my $newblock;
+    unless( $newblock = $ipm->auto_allocate($parent, $length)){
+      my $err = $ipm->error();
       die ("Error: $err\n");
     }
-    my $newblock = Ipblock->retrieve($newid); 
     # 
     # Rebuild tree
-    unless ( $ipmanager->build_tree($newblock->version) ){
-       my $err = $ipmanager->error();
+    unless ( $ipm->build_tree($newblock->version) ){
+       my $err = $ipm->error();
        die ("Error: $err\n");    
     }
     if ($newblock)
@@ -133,17 +133,17 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 #######################################################################################
 }elsif ( defined($_action ) && ($_action eq "DELETE") ){
   
-    my ($parentid, $address, $prefix, $version) = ($o->parent->id, $o->address, $o->prefix, $o->version);
+    my ($parentaddress, $address, $prefix, $version) = ($o->parent->address, $o->address, $o->prefix, $o->version);
     # Remove from Database
     #
-    unless ($ui->remove(table => "Ipblock", id => $id)){
+    unless ($ipm->removeblock($address)){
 	my $err = $ui->error();
 	die ("Error: $err\n");
     }
     # 
     # Rebuild tree
-    unless ( $ipmanager->build_tree($version) ){
-	my $err = $ipmanager->error();
+    unless ( $ipm->build_tree($version) ){
+	my $err = $ipm->error();
 	die ("Error: $err\n");    
     }
     
@@ -154,9 +154,9 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 <%perl>
 #    Show parent block
 #    after block has been deleted
-    if ($parentid)
+    if ($parentaddress)
     {
-	$o = Ipblock->retrieve($parentid);
+	$o = $ipm->searchblock($parentaddress);
        $id = $o->id;
     }
 </%perl>
@@ -183,7 +183,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     <input type="hidden" name="s2name" value="<% $s2name %>">
     <input type="hidden" name="_action" value="UPDATE">
 % }
-% if ( ! $ipmanager->issubnet($o) ){  
+% if ( ! $ipm->issubnet($o) ){  
 %#######################################################################################
 %# View IP address
 %#######################################################################################
@@ -482,7 +482,7 @@ $user      => $ENV{REMOTE_USER}
 <%init>
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
-my $ipmanager = Netdot::IPManager->new();
+my $ipm = Netdot::IPManager->new();
 my $maxselect = 100;
 my $o;
 my $ci = 0;

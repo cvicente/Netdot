@@ -1,7 +1,8 @@
-#
+
 # Netdot Makefile
 #
 PREFIX = /usr/local/netdot
+NVPREFIX = /usr/local/netviewer
 APACHEUSER = apache
 APACHEGROUP = apache
 usage:
@@ -35,11 +36,11 @@ DMOD = 0775
 FMOD = 0644
 XMOD = 0744
 PERL = `which perl`
-DIR = bin doc htdocs/img htdocs/masondata tmp lib
+DIR = bin doc htdocs/img htdocs/masondata tmp lib etc
 
-.PHONY: tests bin doc htdocs lib
+.PHONY: tests bin doc htdocs lib etc
 
-install: tests dir doc htdocs lib bin
+install: tests dir doc htdocs lib bin etc
 	@echo
 	@echo "Netdot is installed. "
 	@echo "Please read the available documentation before proceeding"
@@ -89,10 +90,13 @@ doc:
 	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
 
 lib:
-	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
+	cd $@ ; make all PREFIX=$(PREFIX) NVPREFIX=$(NVPREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
 
 bin:
 	cd $@; make install PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
+
+etc:
+	cd $@; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
 
 dropdb: 
 	@echo "WARNING:  This will erase all data in the database!"

@@ -1,6 +1,6 @@
 package Netdot::UI;
 
-use lib "/home/netdot/public_html/lib";
+use lib "PREFIX/lib";
 use Apache::Session::File;
 use Apache::Session::Lock::File;
 
@@ -23,20 +23,6 @@ sub new {
     wantarray ? ( $self, '' ) : $self; 
 }
  
-
-#####################################################################
-# return error message
-#####################################################################
-sub error {
-  $_[0]->{'_error'} || '';
-}
-
-#####################################################################
-# clear error - private method
-#####################################################################
-sub _clear_error {
-  $_[0]->{'_error'} = undef;
-}
 
 ######################################################################
 # Get a Meta object for a table
@@ -223,7 +209,7 @@ sub getinputtag {
     my $tag = "";
     if ( $class = ref $proto ){  # $proto is an object
 	if ( defined($value) ){
-	    die "getinputtag: ERROR: Can't supply a value for an existing object\n";
+	    $self->error("getinputtag: Can't supply a value for an existing object\n");
 	}else{
 	    $value = $proto->$col;
 	}
@@ -339,14 +325,13 @@ sub update {
   my($obj) = $argv{object};
   my(%state) = %{ $argv{state} };
   my $change = 0;
-  $self->_clear_error();
 
   foreach my $col ( keys %state ) {
     if( $state{$col} ne int($obj->$col) ) {
       $change = 1;
       eval { $obj->set( $col, $state{$col} ); };
       if( $@ ) {
-	$self->{'_error'} = "Unable to set $col to $state{$col}: $@";
+	$self->error("Unable to set $col to $state{$col}: $@");
 	return 0;
       }
     }
@@ -354,7 +339,7 @@ sub update {
   if( $change ) {
     eval { $obj->update(); };
     if( $@ ) {
-      $self->{'_error'} = "Unable to update: $@";
+      $self->error("Unable to update: $@");
       return 0;
     }
   }
@@ -369,10 +354,9 @@ sub insert {
   my($tbl) = $argv{table};
   my(%state) = %{ $argv{state} };
   my $ret;
-  $self->_clear_error();
   eval { $ret = $tbl->create( \%state ); };
   if( $@ ) {
-    $self->{'_error'} = "Unable to insert into $tbl: $@";
+    $self->error("Unable to insert into $tbl: $@");
     return 0;
   } else {
     return $ret->id;
@@ -386,15 +370,51 @@ sub remove {
   my($self, %argv) = @_;
   my($tbl) = $argv{table};
   my($id) = $argv{id};
-  $self->_clear_error();
-  my($obj) = $tbl->retrieve($id);
-  eval { $obj->delete(); };
+  $self->error(undef);
+  eval { 
+      my($obj) = $tbl->retrieve($id);
+      $obj->delete(); 
+  };
   if( $@ ) {
-    $self->{'_error'} = "Unable to delete: $@";
+    $self->error("Unable to delete: $@");
     return 0;
-  } else {
-    return 1;
   }
+  return 1;
+}
+
+#####################################################################
+# Get timestamp in DB 'datetime' format
+#####################################################################
+sub timestamp {
+    my $self  = shift;
+    my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
+	$wday, $yday, $isdst) = localtime;
+    my $datetime = sprintf("%04d\/%02d\/%02d %02d:%02d:%02d",
+			   $year+1900, $month+1, $day_of_month, $hours, $minutes, $seconds);
+    return $datetime;
+}
+
+#####################################################################
+# Get date in DB 'date' format
+#####################################################################
+sub date {
+    my $self  = shift;
+    my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
+	$wday, $yday, $isdst) = localtime;
+    my $date = sprintf("%04d\/%02d\/%02d",
+			   $year+1900, $month+1, $day_of_month);
+    return $date;
+}
+#####################################################################
+# Get date in 'DNS zone serial' format
+#####################################################################
+sub dateserial {
+    my $self  = shift;
+    my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
+	$wday, $yday, $isdst) = localtime;
+    my $date = sprintf("%04d%02d%02d",
+			   $year+1900, $month+1, $day_of_month);
+    return $date;
 }
 
 ###############################################################################
@@ -449,7 +469,7 @@ sub form_to_db
     # Check that we have at least one parameter
     unless (scalar keys(%arg))
     {
-        $self->{"_error"} = "Error: Missing name/value pairs.";
+        $self->error("Missing name/value pairs.");
         return 0;
     }
     
@@ -528,7 +548,7 @@ sub form_to_db
                 my $o;
                 if (!($o = $table->retrieve($id)))
                 {
-                    $self->{"_error"} = "Couldn't retrieve id $id from table $table";
+                    $self->error("Couldn't retrieve id $id from table $table");
                     return 0;
                 }
 
@@ -615,7 +635,8 @@ sub selectLookup($@)
         #   2) The apocalypse has dawned. No table argument _or_ valid DB object..lets bomb out.
         else
         {
-            die("Error: Unable to determine table name. Please pass valid object and/or table name.\n");
+            $self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
+	    return 0;
         }
 
         foreach my $fo (@fo)
@@ -658,7 +679,11 @@ sub radioGroupBoolean($@)
     my $value = ($o ? $o->$column : "");
     my $name = $tableName . "__" . $id . "__" . $column;
     
-    die("Error: Unable to determine table name. Please pass valid object and/or table name.\n") unless ($o || $table);
+    
+     unless ($o || $table){
+	 $self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
+	 return 0;
+     }
 
     if ($isEditing)
     {
@@ -699,7 +724,10 @@ sub textField($@)
 
     $htmlExtra = "" if (!$htmlExtra);
 
-    die("Error: Unable to determine table name. Please pass valid object and/or table name.\n") unless ($o || $table);
+    unless ($o || $table){
+	$self->error("Unable to determine table name. Please pass valid object and/or table name.\n") ;
+	return 0;
+    }
 
     if ($isEditing)
     {
@@ -740,7 +768,7 @@ sub textArea($@)
     $htmlExtra = "" if (!$htmlExtra);
 
     unless ($o || $table){
-	$self->{'_error'} = "Error: Unable to determine table name. Please pass valid object and/or table name.\n";
+	$self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
 	return 0;
     }
 
@@ -784,13 +812,6 @@ Netdot::GUI groups common methods and variables related to Netdot's user interfa
   $gui = Netdot::GUI->new();
 
 Creates a new GUI object (basic constructor)
-
-=head2 error
-
-  $error = $gui->error();
-
-Returns error message.  If a method returns 0, you can call this method to 
-get the error string.
 
 =head2 getmeta
 

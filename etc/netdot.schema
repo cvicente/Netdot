@@ -337,22 +337,24 @@ my $schema = {
     'id', 'serial', '', '', '', '',
     'name', 'integer', '', '', '', '',
     'aliases', 'varchar', 'NULL', '255', '', '',
-    'type', 'integer', '', '', '', '',
     'sysdescription', 'varchar', 'NULL', '128', '', '',
     'physaddr', 'integer', 'NULL', '', '', '',
     'oobname', 'varchar', 'NULL', '64', '', '',
     'oobnumber', 'varchar', 'NULL', '32', '', '',
-    'entity', 'integer', '', '', '', '',
+    'entity', 'integer', 'NULL', '', '', '',
     'contactlist', 'integer', '', '', '', '',
-    'person', 'integer', '', '', '', '',
-    'managed', 'bool', '', '', '', '',
+    'person', 'integer', 'NULL', '', '', '',
     'community', 'varchar', 'NULL', '64', '', '',
     'serialnumber', 'varchar', 'NULL', '64', '', '',
     'productname', 'integer', 'NULL', '', '', '',
     'part_of', 'integer', 'NULL', '', '', '',
     'inventorynumber', 'varchar', 'NULL', '64', '', '',
     'maint_covered', 'bool', '', '', '', '',
+    'monitored', 'bool', '', '', '', '',
+    'snmp_managed', 'bool', '', '', '', '',
     'canautoupdate', 'bool', '', '', '', '',
+    'customer_managed', 'bool', '', '', '', '',
+    'natted', 'bool', '', '', '', '',
     'site', 'integer', '', '', '', '',
     'room', 'varchar', 'NULL', '64', '', '',
     'rack', 'varchar', 'NULL', '32', '', '',
@@ -362,7 +364,7 @@ my $schema = {
 ],
   'primary_key' => 'id',
   'unique' => [ ['name'] ],
-  'index' => [ ['type'], ['physaddr'], ['entity'] , ['inventorynumber'] ],
+  'index' => [ ['physaddr'], ['entity'] , ['inventorynumber'] ],
 },
 
 
@@ -370,9 +372,8 @@ my $schema = {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'device_id', 'integer', '', '', '', '',
-    'name', 'varchar', '', '64', '', '',
+    'name', 'integer', '', '', '', '',
     'aliases', 'varchar', 'NULL', '255', '', '',
-    'type', 'integer', '', '', '', '',
     'sysdescription', 'varchar', 'NULL', '128', '', '',
     'physaddr', 'integer', 'NULL', '', '', '',
     'oobname', 'varchar', 'NULL', '64', '', '',
@@ -380,19 +381,22 @@ my $schema = {
     'entity', 'integer', '', '', '', '',
     'contactlist', 'integer', '', '', '', '',
     'person', 'integer', '', '', '', '',
-    'managed', 'bool', '', '', '', '',
     'community', 'varchar', 'NULL', '64', '', '',
     'serialnumber', 'varchar', 'NULL', '64', '', '',
     'productname', 'integer', 'NULL', '', '', '',
     'part_of', 'integer', 'NULL', '', '', '',
     'inventorynumber', 'varchar', 'NULL', '64', '', '',
     'maint_covered', 'bool', '', '', '', '',
+    'monitored', 'bool', '', '', '', '',
+    'snmp_managed', 'bool', '', '', '', '',
     'canautoupdate', 'bool', '', '', '', '',
+    'customer_managed', 'bool', '', '', '', '',
+    'natted', 'bool', '', '', '', '',
     'site', 'integer', '', '', '', '',
     'room', 'varchar', 'NULL', '64', '', '',
     'rack', 'varchar', 'NULL', '32', '', '',
+    'lastupdated', 'date', 'NULL', '', '', '',
     'dateinstalled', 'date', 'NULL', '', '', '',
-    'info', 'long varbinary', 'NULL', '', '', '',
     'modified', 'timestamp', '', '', '', '',
     'modifier', 'varchar', 'NULL', '32', '', '',
 ],
@@ -476,11 +480,12 @@ my $schema = {
     'maint_contract', 'varchar', 'NULL', '128', '', '',
     'autsys', 'varchar', 'NULL', '32', '', '',
     'bgppeerip', 'varchar', 'NULL', '64', '', '',
+    'oid', 'varchar', 'NULL', '32', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
   'unique' => [ ['name'] ],
-  'index' => [  ],
+  'index' => [ ['oid'], ['autsys'], ['type'] ],
 },
 
 'Entity_history' => {
@@ -597,7 +602,7 @@ my $schema = {
     'speed', 'integer', '', '', '', '', 
     'duplex', 'varchar', 'NULL', '32', '', '', 
     'status', 'varchar', 'NULL', '16', '', '',
-    'managed', 'bool', '', '', '', '',
+    'monitored', 'bool', '', '', '', '',
     'jack', 'integer', 'NULL', '', '', '',
     'contactlist', 'integer', 'NULL', '', '', '',    
     'info', 'long varbinary', 'NULL', '', '', '', 
@@ -621,7 +626,7 @@ my $schema = {
     'speed', 'integer', '', '', '', '', 
     'duplex', 'varchar', 'NULL', '32', '', '', 
     'status', 'varchar', 'NULL', '16', '', '',
-    'managed', 'bool', '', '', '', '',
+    'monitored', 'bool', '', '', '', '',
     'jack', 'integer', 'NULL', '32', '', '',
     'contactlist', 'integer', 'NULL', '32', '', '',    
     'info', 'long varbinary', 'NULL', '', '', '', 
@@ -703,7 +708,7 @@ my $schema = {
     'id', 'serial', '', '', '', '',
     'ip', 'integer', '', '', '', '',
     'service', 'integer', '', '', '', '',
-    'managed', 'bool', '', '', '', '',
+    'monitored', 'bool', '', '', '', '',
     'contactlist', 'integer', '', '', '', '',
   ],
   'primary_key' => 'id',
@@ -731,27 +736,6 @@ my $schema = {
   'index' => [  ],
 },
 
-
-'Netviewer' => {
-  'columns' => [
-    'id', 'serial', '', '', '', '',
-    'name', 'varchar', 'NULL', '128', '', '',
-    'value', 'varchar', 'NULL', '128', '', '',
-  ],
-  'primary_key' => 'id',
-  'unique' => [ ['name'] ],
-  'index' => [   ],
-},
-
-'NvIfReserved' => {
-  'columns' => [
-    'id', 'serial', '', '', '', '',
-    'name', 'varchar', '', '128', '', '',
-  ],
-  'primary_key' => 'id',
-  'unique' => [ ['name'] ],
-  'index' => [  ],
-},
 
 'Person' => {
   'columns' => [
@@ -817,6 +801,7 @@ my $schema = {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
+    'type', 'integer', '', '', '', '',
     'description', 'varchar', '', '128', '', '',
     'sysobjectid', 'varchar', 'NULL', '128', '', '',
     'manufacturer', 'integer', '', '', '', '',
@@ -832,6 +817,7 @@ my $schema = {
     'id', 'serial', '', '', '', '',
     'product_id', 'integer', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
+    'type', 'integer', '', '', '', '',
     'description', 'varchar', '', '128', '', '',
     'sysobjectid', 'varchar', '', '128', '', '',
     'manufacturer', 'integer', '', '', '', '',
@@ -868,8 +854,8 @@ my $schema = {
     'contactlist', 'integer', '', '', '', '',
   ],
   'primary_key' => 'id',
-  'unique' => [ ['zone','name','type'] ],
-  'index' => [ ['origin'] ],
+  'unique' => [ ['zone','name','type','data',] ],
+  'index' => [ ['origin'], ['name'] ],
 },
 
 'RRIp' => {
@@ -963,8 +949,6 @@ my $schema = {
   'unique' => [ ['name'] ],
   'index' => [  ],
 },
-
-
 
 'SubnetZone' => {
   'columns' => [

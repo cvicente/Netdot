@@ -3,7 +3,7 @@
 
 NDIR = Netdot
 
-FILES = Netdot.pm $(NDIR)/UI.pm $(NDIR)/odHasMany.pm  $(NDIR)/DefaultConfig.pm $(NDIR)/SiteConfig.pm $(NDIR)/Netviewer.pm $(NDIR)/nv.categories $(NDIR)/nv.ifTypes $(NDIR)/NetdotPermissionFactory.pm $(NDIR)/IPManager.pm
+FILES = Netdot.pm Debug.pm $(NDIR)/UI.pm $(NDIR)/odHasMany.pm  $(NDIR)/DefaultConfig.pm $(NDIR)/SiteConfig.pm $(NDIR)/NetdotPermissionFactory.pm $(NDIR)/IPManager.pm $(NDIR)/DeviceManager.pm $(NDIR)/DNSManager.pm
 
 all: dir files
 
@@ -20,7 +20,8 @@ files:
 	@echo
 	@echo "Preparing and installing $(DIR) files..."
 	for file in $(FILES); do \
-	    sed -e "s|^use lib .*\$$|use lib \"$(PREFIX)/lib\"; |" \
+	    sed -e "s|^use lib \"PREFIX/lib\".*\$$|use lib \"$(PREFIX)/lib\"; |" \
+	    	-e "s|^use lib \"NVPREFIX/lib\".*\$$|use lib \"$(NVPREFIX)/lib\"; |" \
 	        $$file > $$file.tmp ; \
 	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
 	    rm -f $$file.tmp ; \

@@ -22,8 +22,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 %  if (my $num = scalar(@list)){
  <table width="95%" border="0" cellspacing="0" cellpadding="1" class="tablebackground"> 
  <tr><td>
-   <p><br>
-   Query <b><em><% $search %></em></b> returned: <b><% $num %> matches</b>
+   Query <b><em><% $search %></em></b> returned: <b><% $num %> match(es)</b>
    <p>
    <table border="0" width="100%" cellspacing="0" cellpadding="1" class="tablebackground">
       <tr class="rowtitle0">
@@ -38,7 +37,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	    <b><a href="device-ws.html?id=<% $dev->id %>"><% $dev->name->name %></a></b>
 	 </td>   
 	 <td class="column2">
-	    <b><% $dev->type->name %></b>
+	    <b><% $dev->productname->type->name %></b>
 	 </td>   
 	 <td class="column2">
 	    <b><% $dev->productname->name %></b>
@@ -68,7 +67,7 @@ if ( defined($search) && $search =~ /\w+/ ){
   if (defined ($ARGS{intaddnum}) &&  $ARGS{intaddnum} > 0){
      my %tmpint;
      $tmpint{device} = $id;
-     $tmpint{managed} = 0;
+     $tmpint{monitored} = 0;
      $tmpint{number} = 1000;
      my $i;
      for ($i = 0; $i < $ARGS{intaddnum}; $i++){
@@ -162,21 +161,7 @@ if ( defined($search) && $search =~ /\w+/ ){
            <tr>
              <td class="formtablec1">Type: </td>
 	     <td class="formtablec2"> 
-%	      	 if ($edit eq "geninfo"){	 
-		    <select name="Device__<% $id %>__type">
-%		     my $lblfield = ( $ui->getlabels("DeviceType") )[0];	 
-		     <option value="<% $o->type->id %>" SELECTED> <% $o->type->name %> </option>
-%		     my @fo = DeviceType->retrieve_all();
-%		     @fo= sort { $a->$lblfield cmp $b->$lblfield } @fo; 
-%		     foreach my $fo (@fo){
-%		        next if ($fo->id == $o->type->id);
-  		        <option value="<% $fo->id %>"> <% $fo->name %> </option>		          
-%		     }
-		     <option value="0"> [null] </option>
-		    </select>
-%	         }else{
-		    <b><% $o->type->name %> </b>
-%		 }
+    	        <b><% $o->productname->type->name %> </b>
 	     </td> 
 	   </tr>
            <tr>
@@ -593,20 +578,20 @@ if ( defined($search) && $search =~ /\w+/ ){
 	     </td>
 	</tr>
          <tr>
-	   <td class="formtablec1">Managed?: </td>
+	   <td class="formtablec1">Monitored?: </td>
 	     <td class="formtablec2"> 
-%		 my $value = $o->managed;	 
+%		 my $value = $o->monitored;	 
 %	      	 if ($edit eq "mgmtinfo"){	 
 %		    if ($value == 1){
-		      <input type="radio" name="Device__<% $id %>__managed" value="1" checked> <b>yes</b>
-		      <input type="radio" name="Device__<% $id %>__managed" value="0"> <b>no
+		      <input type="radio" name="Device__<% $id %>__monitored" value="1" checked> <b>yes</b>
+		      <input type="radio" name="Device__<% $id %>__monitored" value="0"> <b>no
 %		    }elsif ($value eq ""){
-  		       <input type="radio" name="Device__<% $id %>__managed" value="1"> <b>yes</b>
-		       <input type="radio" name="Device__<% $id %>__managed" value="0"> <b>no</b>
-		       <input type="radio" name="Device__<% $id %>__managed" value="" checked> <b>n/a</b>
+  		       <input type="radio" name="Device__<% $id %>__monitored" value="1"> <b>yes</b>
+		       <input type="radio" name="Device__<% $id %>__monitored" value="0"> <b>no</b>
+		       <input type="radio" name="Device__<% $id %>__monitored" value="" checked> <b>n/a</b>
 %		    }elsif ($value == 0){
-		       <input type="radio" name="Device__<% $id %>__managed" value="1"> <b>yes</b>
-		       <input type="radio" name="Device__<% $id %>__managed" value="0" checked> <b>no</b>
+		       <input type="radio" name="Device__<% $id %>__monitored" value="1"> <b>yes</b>
+		       <input type="radio" name="Device__<% $id %>__monitored" value="0" checked> <b>no</b>
 %		    }
 		 
 %	         }else{
@@ -690,7 +675,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   <td align="center">Jack</td>
 	   <td align="center">Description</td>
 	   <td align="center">Parents</td>
-	   <td align="center">Managed?</td>
+	   <td align="center">Monitored?</td>
         </tr>
 
 %	#####################################
@@ -836,18 +821,18 @@ if ( defined($search) && $search =~ /\w+/ ){
 
 	   </td>
 	   <td align="left"> 
-%		 my $value = $if->managed;	 
+%		 my $value = $if->monitored;	 
 %	      	 if ($edit eq "intinfo"){	 
 %		    if ($value == 1){
-		      <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="1" checked> Y
-		      <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="0"> N
+		      <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="1" checked> Y
+		      <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="0"> N
 %		    }elsif ($value eq ""){
-  		       <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="1"> Y
-		       <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="0"> N
-		       <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="" checked> n/a
+  		       <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="1"> Y
+		       <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="0"> N
+		       <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="" checked> n/a
 %		    }elsif ($value == 0){
-		       <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="1"> Y
-		       <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="0" checked> N
+		       <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="1"> Y
+		       <input type="radio" name="<% "Interface__" . $if->id ."__monitored" %>" value="0" checked> N
 %		    }
 		 
 %	         }else{
