@@ -1,0 +1,238 @@
+#!/usr/local/bin/perl
+
+use lib "/home/netdot/public_html/lib";
+use Netdot::Netviewer;
+
+$nv = Netdot::Netviewer->new;
+
+__DATA__
+
+# $Header: /tmp/netdot/src/RCS/nvtest,v 1.1 2003/06/11 15:44:30 netdot Exp $
+
+   --------------
+   |Netviewer   | general config
+   |------------|
+   | id         |
+   | name       |
+   | value      |
+   --------------
+
+'Netviewer' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', 'NULL', '128', '', '',
+    'value', 'varchar', 'NULL', '128', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+}
+
+INSERT INTO Netviewer (name,value) VALUES ('snmpversion', 'SNMPv2c');
+INSERT INTO Netviewer (name,value) VALUES ('community', 'public');
+INSERT INTO Netviewer (name,value) VALUES ('hclimit', '10000000');
+INSERT INTO Netviewer (name,value) VALUES ('carlimit', '5000000');
+INSERT INTO Netviewer (name,value) VALUES ('vlanspeed', '1000000000');
+INSERT INTO Netviewer (name,value) VALUES ('logfacility', 'LOG_DAEMON');
+INSERT INTO Netviewer (name,value) VALUES ('loglevel', 'LOG_NOTICE');
+
+   ---------------
+   |NvCategory   | categories of info (bgpPeer, interface, etc.)
+   ---------------
+   | id          |
+   | name        |
+   | descr       |
+   | interval    |
+   | alias       |
+   | interval    |
+   | discover    | foreign key
+   | append      |
+   | rrdCF       |
+   |             |
+   ---------------
+
+'NvCategory' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+    'descr', 'varchar', 'NULL', '255', '', '',
+    'interval', 'integer', 'NULL', '', '', '',
+    'discover', 'integer', 'NULL', '', '', '',
+    'append', 'varchar', 'NULL', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+}
+
+   -------------
+   |NvDiscover |
+   |-----------|
+   | id        |
+   | type      | {map|instance|table} 
+   | var       | boolean
+   | key       |
+   | size      | 
+   -------------
+
+   -----------------
+   |NvCategorySnmp | join table between category & snmpvar
+   |---------------|
+   | id            |
+   | category      | Foreign key to NvCategory.id
+   | snmp          | Foregin key to NvSnmp.id
+   | auxiliary     | boolean
+   -----------------
+
+'NvCategorySnmp' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'snmp', 'integer', '', '', '', '',
+    'category', 'integer', '', '', '', '',
+    'auxiliary', 'varchar', '', '32', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['test'] ],
+  'index' => [ ['test']  ],
+}
+
+   ------------
+   |NvTest    | test expressions that evaluate to 1 or 0
+   |----------|
+   | id       |
+   | test     |
+   ------------
+
+'NvTest' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'test', 'varchar', '', '255', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['test'] ],
+  'index' => [ ['test']  ],
+}
+
+   -----------------
+   |NvCategoryTest | join table between category and tests
+   |---------------|
+   | id            |
+   | category      | foreign key
+   | test          | foreign key
+   -----------------
+
+'NvCategoryTest' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'test', 'integer', '', '', '', '',
+    'category', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['test'] ],
+  'index' => [ ['test']  ],
+}
+
+   ------------
+   |NvIfType  | map of ifType numbers to name
+   |----------|
+   | id       |
+   | name     |
+   | type     |
+   ------------
+
+'NvIfType' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+    'type', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['test'] ],
+  'index' => [ ['test']  ],
+}
+
+   --------------
+   |NvSnmp      | snmp variable information
+   |------------|
+   | id         |
+   | name       | name of snmp variable
+   | oid        |
+   | type       |
+   --------------
+
+'NvSnmp' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', 'NULL', '128', '', '',
+    'oid', 'varchar', 'NULL', '128', '', '',
+    'type', 'varchar', 'NULL', '128', '', '',
+    'category', 'integer', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [ ['name']  ],
+}
+
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('sysDescr', '1.3.6.1.2.1.1.1.0', 'DisplayString' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('sysObjectID', '1.3.6.1.2.1.1.2.0', 'OID' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('sysUpTime', '1.3.6.1.2.1.1.3.0', 'TimeTicks' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('sysContact', '1.3.6.1.2.1.1.4.0', 'DisplayString' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('sysName', '1.3.6.1.2.1.1.5.0', 'DisplayString' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('sysLocation', '1.3.6.1.2.1.1.6.0', 'DisplayString' );
+
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('ifNumber', '1.3.6.1.2.1.2.1.0', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('ifIndex', '1.3.6.1.2.1.2.2.1.1', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('ifDescr', '1.3.6.1.2.1.2.2.1.2', 'DisplayString' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('ifType', '1.3.6.1.2.1.2.2.1.3', 'IANAifType' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('ifSpeed', '1.3.6.1.2.1.2.2.1.5', 'GAUGE' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('ifAdminStatus', '1.3.6.1.2.1.2.2.1.7', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('ifAlias', '1.3.6.1.2.1.31.1.1.1.18', 'DisplayString' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('ipAdEntIfIndex', '1.3.6.1.2.1.4.20.1.1', 'IpAddress' );
+
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('dsx1LineIndex', '1.3.6.1.2.1.10.18.6.1.1', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('dsx1IfIndex', '1.3.6.1.2.1.10.18.6.1.2', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('dsx3LineIndex', '1.3.6.1.2.1.10.30.5.1.1', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('dsx3IfIndex', '1.3.6.1.2.1.10.30.5.1.2', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('frCircuitIfIndex', '1.3.6.1.2.1.10.32.2.1.1', 'Index' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('cfrExtCircuitSubifIndex', '1.3.6.1.4.1.9.9.49.1.2.2.1.3', 'InterfaceIndex' );
+INSERT INTO NvSnmp (name, oid, type) 
+  VALUES ('cfrExtCircuitIfName', '1.3.6.1.4.1.9.9.49.1.2.2.1.1', 'DisplayString' );
+
+INSERT INTO NvSnmp (name, oid, dstype) 
+  VALUES ('bgpPeerIdentifier', '1.3.6.1.2.1.15.3.1.1', 'IpAddress' );
+INSERT INTO NvSnmp (name, oid, dstype) 
+  VALUES ('bgpPeerState', '1.3.6.1.2.1.15.3.1.2', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, dstype) 
+  VALUES ('bgpPeerAdminStatus', '1.3.6.1.2.1.15.3.1.3', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, dstype) 
+  VALUES ('bgpPeerRemoteAs', '1.3.6.1.2.1.15.3.1.9', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, dstype) 
+  VALUES ('bgpLocalAs', '1.3.6.1.2.1.15.2.0', 'INTEGER' );
+
+INSERT INTO NvSnmp (name, oid, dstype) 
+  VALUES ('ccarConfigType', '1.3.6.1.4.1.9.9.113.1.1.1.1.3', 'RateLimitType' );
+INSERT INTO NvSnmp (name, oid, dstype) 
+  VALUES ('ccarConfigAccIdx', '1.3.6.1.4.1.9.9.113.1.1.1.1.4', 'INTEGER' );
+INSERT INTO NvSnmp (name, oid, dstype) 
+  VALUES ('ccarConfigRate', '1.3.6.1.4.1.9.9.113.1.1.1.1.5', 'INTEGER' );
+
