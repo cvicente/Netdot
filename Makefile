@@ -38,6 +38,7 @@ testing:
 
 ######################################################################
 # netviewer testing
+.PHONY: nvtest
 nvtest: DST = /home/netdot/public_html
 nvtest: 
 	cp -f Netviewer.pm $(DST)/lib/Netdot
