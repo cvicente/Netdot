@@ -148,7 +148,7 @@ use base 'Netdot::DBI';
 __PACKAGE__->table( 'Interface' );
 __PACKAGE__->columns( All => qw/id nodeId hostName physAddr jackNumber ifIndex ifType ifAlias ifDescr ifSpeed ifStatus info disabled/ );
 
-__PACKAGE__->has_a( nodeID => 'Node' );
+__PACKAGE__->has_a( nodeId => 'Node' );
 __PACKAGE__->has_many( 'ips', 'Ip' => 'interface' );
 __PACKAGE__->has_many( 'parentinterfacedeps', 'InterfaceDep' => 'parent');
 __PACKAGE__->has_many( 'childinterfacedeps', 'InterfaceDep' => 'child');
@@ -326,6 +326,9 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.23  2003/04/18 15:29:07  netdot
+#  has_a( nodeID => 'Node' );  ->  has_a( nodeId => 'Node' );
+#
 #  Revision 1.22  2003/04/18 00:46:45  cvicente
 #  Reflected changes from netdot.schema.
 #
