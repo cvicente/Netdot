@@ -1,0 +1,35 @@
+<& banner &>
+
+<%perl>
+my %arg;
+foreach my $j ( keys %ARGS ) {
+  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+  $arg{$j} = $ARGS{$j};
+}
+</%perl>
+
+<UL>
+   <H3><B>SEARCH:</B></H3>
+      <UL>
+	<LI>Search <A HREF="search_obj.html?table=Site&form=1">Sites</A><BR>
+	<LI>Search <A HREF="search_obj.html?table=Circuit&form=1">Circuits</A><BR>
+	<LI>Search <A HREF="search_obj.html?table=Person&form=1">Persons</A><BR>
+	<LI>Advanced <A HREF="search_obj.html">Search</A><BR>
+      </UL>
+
+   <H3><B>CREATE:</B></H3>
+
+   <H3><B>UPDATE:</B></H3>
+</UL>
+
+<& footer2 &>
+
+<%init>
+use lib "/home/netdot/public_html/lib";
+use Netdot::DBI;
+use Data::Dumper;
+use vars qw( %results %linksto );
+undef( %results );
+              
+</%init>
+
