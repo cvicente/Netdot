@@ -1,6 +1,6 @@
-<& header, title =>'Generic Search' &>
+<& header, title =>'General Search' &>
 
-<form action="sf-generic-search.html" method="POST">
+<form action="generic-search.html" method="POST">
 
 <%perl>
 my %arg;
@@ -27,50 +27,34 @@ foreach my $j ( keys %ARGS ) {
 </form>
 
 % if( %arg ) {
-<table width="100%">
-<tr><td width="100%" height="5" bgcolor="#000099"> </td></tr>
-</table>
-<%perl>
-undef %results;  # may be cached copy in memory
-foreach my $tbl ( $dbh->tables() ) {
-  foreach my $col ( $tbl->columns() ) {
-    map { $results{$tbl}{$_->id} = $_ } $tbl->search_like( $col => $arg{q} );
-  }
-}
-</%perl>
-<table cellpadding="0" border="0" align="center" width="100%" bgcolor="#CCCCCC">
-<tr>
+    <table width="100%">
+    <tr><td width="100%" height="5" bgcolor="#000099"> </td></tr>
+    </table>
+    <%perl>
+    undef %results;  # may be cached copy in memory
+    foreach my $tbl ( $dbh->tables() ) {
+      foreach my $col ( $tbl->columns() ) {
+        map { $results{$tbl}{$_->id} = $_ } 
+          $tbl->search_like( $col => $arg{q} );
+      }
+    }
+    </%perl>
+    <table cellpadding="0" border="0" align="center" width="100%" bgcolor="#CCCCCC">
+    <tr>
 %   if( ! %results ) {
-   <td>No matching records were found.</td>
+      <td>No matching records were found.</td>
 %   } else {
 %     foreach my $tbl ( keys %results ) {
 %       next if( $tbl eq "Meta" );
-   <td>
-   <font face="Helvetica, Arial">
-   <table bgcolor="#CCCCCC"  width="100%">
-   <tr bgcolor="#CCCCCC">
-   <td align="CENTER" bgcolor="#FFFFFF" ><font size=-1>table</font></td>
-%       foreach my $col ( $tbl->columns() ) {
-   <td align="CENTER" bgcolor="#FFFFFF"><font size=-1><% $col %></font></td>
-%       }
-%       foreach my $elm ( keys %{ $results{$tbl} } ) {
-   <tr><td align="CENTER" bgcolor="#FFFFFF"><% $tbl %></td>
-%         foreach my $col ( $tbl->columns() ) {
-%           if( defined( $results{$tbl}{$elm}->$col ) ) {
-   <td align="CENTER" bgcolor="#FFFFFF"><% $results{$tbl}{$elm}->$col %></td>
-%           } else {
-   <td align="CENTER" bgcolor="#FFFFFF"> - </td>
-%           }
-%          } # end foreach my col
-   </tr>
-%       } # end foreach elm
-   </table></td></tr>
+%       my @objs;
+%       map { push @objs, $results{$tbl}{$_} } keys %{ $results{$tbl} };
+        <& sortresults.html, table => $tbl, object => \@objs &>
+        </table></td></tr>
 %     } # end foreach tbl
 %   } # end else
-</tr>
-</table>
+    </tr>
+    </table>
 % }
-
 
 <& footer &>
 
@@ -85,17 +69,21 @@ use vars qw( %results );
 my $dbh = DBI->connect( "dbi:mysql:netdot", "netdot_user", "netdot_pass" )
 	  or die "Can't connect to db: $DBI::errstr\n";
 
-# <font size="-1" color="#200767" face="Helvetica, Arial">
+
               
 </%init>
+
 <%doc>
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.3  2003/04/23 17:42:18  netdot
+# now using sortresults.html module for processing presentation
+#
 # Revision 1.2  2003/04/23 17:16:52  netdot
 # nothing for now; just putting this in rcs
 #
 # Revision 1.1  2003/04/23 17:13:08  netdot
 # Initial revision
 #
-<%/doc>
+</%doc>
