@@ -1,7 +1,41 @@
+<%args>
+$nv => undef
+</%args>
+<%perl>
+my %args;
+foreach my $j ( keys %ARGS ) {
+  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+  $args{$j} = $ARGS{$j};
+}
+$nv = Netdot::Netviewer->new();
+</%perl>
+
+<& header, title => "Node" &>
+
+<form action="node.html" method="POST">
+<input type="text" name="node" size="30" value="<% $args{node} %>">
+<input type="text" name="community" size="30" value="<% $args{community} %>">
+<input name="submit" value="Submit" type="submit">
+</form>
+
+% # print Dumper( %ARGS );
+% if( exists( $args{node} ) ) {
+  <p>node:  <% $args{node} %>
+%   $nv->build_config( "device", $args{node} );
+%   my( %node ) = $nv->get_targets();
+    <pre><code>
+%   print $nv->string_config( "device", $args{node} );
+    </code></pre>
+% }
+
+<& footer &>
+
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::Netviewer;
+use Data::Dumper;
+
 
 </%init>
 <%doc>
@@ -10,6 +44,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.2  2003/06/11 22:43:55  netdot
+#  working on integrating netviewer & netdot
+#
 #  Revision 1.1  2003/06/11 16:19:21  netdot
 #  Initial revision
 #
