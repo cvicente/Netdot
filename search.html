@@ -6,9 +6,10 @@
 my %arg;
 foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
-  if( $j eq "q" ) {
-    $ARGS{$j} = "%" . $ARGS{$j} . "%" ; # munge for search_like
-  }
+# don't do this here...DEPRECATED
+#  if( $j eq "q" ) {
+#    $ARGS{$j} = "%" . $ARGS{$j} . "%" ; # munge for search_like
+#  }
   $arg{$j} = $ARGS{$j};
 }
 </%perl>
@@ -18,7 +19,7 @@ foreach my $j ( keys %ARGS ) {
 <form>
 <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
   <tr>
-  <td><input type="text" name="q" size="25"></td>
+  <td><input type="text" name="q" size="25" value="<% $arg{q} %>"></td>
   <td><input name="submit" value="Submit" type="submit"></td>
   </tr>
 </table>
@@ -37,14 +38,20 @@ foreach my $j ( keys %ARGS ) {
       foreach my $col ( $tbl->columns() ) {
         if( $linksto{$col} ) {
           foreach my $fc ( $linksto{$col}->columns() ) {
-	    foreach my $hit ( $linksto{$col}->search_like( $fc => $arg{q} ) ) {
-              map { $results{$tbl}{$_->id} = $_ } 
-	        $tbl->search_like( $col => $hit );
-	    }
+            foreach my $q ( split( /\s+/, $arg{q} ) ) {
+              $q = "%" . $q . "%";
+	      foreach my $hit ( $linksto{$col}->search_like( $fc => $q ) ) {
+                map { $results{$tbl}{$_->id} = $_ } 
+	          $tbl->search_like( $col => $hit );
+	      }
+            }
           }
         } else {
-          map { $results{$tbl}{$_->id} = $_ } 
-            $tbl->search_like( $col => $arg{q} );
+          foreach my $q ( split( /\s+/, $arg{q} ) ) {
+            $q = "%" . $q . "%";
+            map { $results{$tbl}{$_->id} = $_ } 
+              $tbl->search_like( $col => $q );
+          }
         }
       }
     }
@@ -85,6 +92,11 @@ undef( %results );
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.10  2003/05/14 23:44:07  netdot
+# put value="blah" in the search box to echo back a person's search
+# query.  otherwise, split the search query on whitespace and search on
+# each term.
+#
 # Revision 1.9  2003/05/14 23:32:49  netdot
 # added ability to search linksto/has_a relationships.  so, if a node is
 # in the computing center (ie. Site=ComputingCenter), a search for
