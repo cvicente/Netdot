@@ -56,6 +56,7 @@ tests:
 	perl -e 'require HTML::Mason;'
 	perl -e 'require Apache::Session;'
 	perl -e 'require Apache::DBI;'
+	perl -e 'require Net::SNMP;'
 	perl -e 'require DBIx::DBSchema;'
 	perl -e 'require DBIx::DataSource;'
 	if [ `whoami` != root ]; then \
