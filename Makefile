@@ -31,9 +31,7 @@ test: testing
 ######################################################################
 # following is for testing files on tiroloco
 testing: $(HTML)
-	cp search.html $(DST)/htdocs
-	cp sortresults.html $(DST)/htdocs
-	cp form.html $(DST)/htdocs
+	cp $? $(DST)/htdocs
 
 
 ######################################################################
