@@ -555,17 +555,18 @@ sub form_to_db
 sub selectLookup
 {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $lookup, $default) = 
+    my ($o, $table, $column, $lookup, $where, $default) = 
                                               ($args{object}, 
                                               $args{table}, 
                                               $args{column}, 
                                               $args{lookup},
+                                              $args{where},
                                               $args{default});
 
     my $lblField = ($self->getlabels($lookup))[0];
     my %linksto = $self->getlinksto($lookup);
     my $rLblField = ($self->getlabels($lblField))[0] if ($linksto{$lblField});
-    my @fo = $lookup->retrieve_all();
+    my @fo = ($where ? $lookup->search($where) : $lookup->retrieve_all());
     @fo = sort { $a->$lblField cmp $b->$lblField } @fo;
 
     # if an object was passed we use it to obtain table name, id, etc

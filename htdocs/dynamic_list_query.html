@@ -32,15 +32,25 @@ foreach my $term (@terms)
 {
    push(@results, $table->search($search_field=>$term)); 
 }
-@results = sort { $a->$lblField cmp $b->$lblField } @results;
 
-# Write out javascript code.
 printf("var listdata = new Array();\n");
-printf("listdata.push(new Array(\"\", \"No Matches\"));\n") unless (scalar(@results));
 
-foreach my $res (@results)
+if (scalar(@results) < $MAX_RESULTS)
 {
-    printf("listdata.push(new Array(\"%s\", \"%s\"));\n", $res->id, $res->$lblField);
+    @results = sort { $a->$lblField cmp $b->$lblField } @results;
+
+    printf("listdata.push(new Array(\"\", \"No Matches\"));\n") unless (scalar(@results));
+
+    foreach my $res (@results)
+    {
+        printf("listdata.push(new Array(\"%s\", \"%s\"));\n", $res->id, $res->$lblField);
+    }
+
+}
+
+else
+{
+    printf("listdata.push(new Array(\"\", \"Too Many Results\"));\n");
 }
 
 printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);
@@ -51,9 +61,10 @@ printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);
 </html>
 
 <%init>
-my ($ui, @terms, $DEBUG);
+my ($ui, @terms, $DEBUG, $MAX_RESULTS);
 $ui = Netdot::UI->new();
-$DEBUG = 0;
+$DEBUG = 1;
+$MAX_RESULTS = 1000;
 </%init>
 
 <%args>

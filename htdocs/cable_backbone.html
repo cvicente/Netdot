@@ -32,11 +32,24 @@ if (defined($ARGS{_action}))
     if ($id && $id ne "NEW")
     {
         $o = BackboneCable->retrieve($id);
+        $start_site = $o->start_closet->floor->site; 
+        $end_site = $o->end_closet->floor->site;
+        $start_site_id = $start_site->id if ($start_site);
+        $end_site_id = $end_site->id if ($end_site);
+        $edit = undef;
     }
 }  
 # end insertion/update code
 # -----------------------------------------------------------------------------
-</%perl>     
+</%perl>
+
+<script language="JavaScript">
+<!--
+var startClosetSearch = new DynamicList("netdotform", "BackboneCable__<% $id %>__start_closet", "site", "Closet", "start_srch");
+var endClosetSearch = new DynamicList("netdotform", "BackboneCable__<% $id %>__end_closet", "site", "Closet", "end_srch"); 
+LIST_MANAGER.addList(startClosetSearch, endClosetSearch);
+-->
+</script>
 
 % # interface...
 % # ---------------------------------------------------------------------------
@@ -45,8 +58,6 @@ if (defined($ARGS{_action}))
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
     <td align="left">
-%   my $start_site = $o->start_closet->floor->site;
-%   my $end_site = $o->end_closet->floor->site;
         Start:
         <% $start_site ? "<a href=\"cable_plant.html?id=" . $start_site->id . "&page_type=BACKBONE\">" . $start_site->name . "</a>" 
                          : "<i>undefined</i>" %>
@@ -70,33 +81,57 @@ if (defined($ARGS{_action}))
         <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
-            <td colspan="3" align="left">Backbone Cable</td>
+            <td colspan="2" align="left">Backbone Cable</td>
+%           if ($edit eq "cableinfo") {
+            <td align="right"><input name="submit" value="save" type="submit"></td>
+%           } else {
+            <td align="right"><a href="cable_backbone.html?id=NEW">[new]</a> || <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a></td>
+%           }
         </tr>
         <tr align="left" valign="top">
             <td width="40%">
             <table width="100%" border="0" cellspacing="0" cellpadding="2">
             <tr align="left" valign="top">
                 <td>Name: </td>
-                <td><input type="text" name="BackboneCable__<% $id %>__name" value="<% $o ? $o->name : "" %>"></td>
+                <td>
+%               if ($edit eq "cableinfo") {                
+                    <input type="text" name="BackboneCable__<% $id %>__name" value="<% $o ? $o->name : "" %>">
+%               } else {
+                    <% $o->name %>
+%               }
+               </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Cable Type: </td>
                 <td>
-%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"type", lookup=>"CableType");
+%               if ($edit eq "cableinfo") {                 
+%                   $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"type", lookup=>"CableType");
+%               } else {
+                    <% $o->type ? $o->type->name : "" %>
+%               }
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Owner: </td>
                 <td>
-%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"owner", lookup=>"Entity");
+%               if ($edit eq "cableinfo") {
+%                   $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"owner", lookup=>"Entity");
+%               } else {
+                    <% $o->owner ? $o->owner->name : "" %>
+%               }                    
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
-                <td><input type="text" name="BackboneCable__<% $id %>__installdate" value="<% $o ? $o->installdate : "" %>"></td>
+                <td>
+%               if ($edit eq "cableinfo") {
+                    <input type="text" name="BackboneCable__<% $id %>__installdate" value="<% $o ? $o->installdate : "" %>">
+%               } else {
+                    <% $o->installdate %>
+%               }
             </tr>
             </table>
             </td>
@@ -106,20 +141,54 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>Start Closet: </td>
                 <td>
-%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"start_closet", lookup=>"Closet");
+%               my @sites = undef;                
+%               if ($edit eq "cableinfo") {
+%                   $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"start_closet", lookup=>"Closet", where=>{site=>$start_site_id});
+                    &nbsp;<select name="start_srch" onChange="startClosetSearch.doIt();" style="width: 150px;">
+                    <option value="">Lookup by Site</option>
+                    <%perl>
+                    @sites = Site->retrieve_all({"order_by"=>"name"});
+                    foreach my $s (@sites)
+                    {
+                        printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
+                    }
+                    </%perl>
+                    </select>
+%               } else {
+                    <% $o->start_closet ? $o->start_closet->name : "" %> <a href="closet.html?id=<% $o->start_closet->id %>">[details]</a>
+%               }
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>End Closet: </td>
                 <td>
-%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"end_closet", lookup=>"Closet");
+%               if ($edit eq "cableinfo") {
+%                   $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"end_closet", lookup=>"Closet", where=>{site=>$end_site_id});
+                    &nbsp;<select name="end_srch" onChange="endClosetSearch.doIt();" style="width: 150px;">
+                    <option value="">Lookup by Site</option>
+                    <%perl>
+                    foreach my $s (@sites)
+                    {
+                        printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
+                    }
+                    </%perl>
+                    </select>
+%               } else {
+                    <% $o->end_closet ? $o->end_closet->name : "" %> <a href="closet.html?id=<% $o->end_closet->id %>">[details]</a>
+%               }
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Length: </td>
-                <td><input type="text" name="BackboneCable__<% $id %>__length" value="<% $o ? $o->length : "" %>"></td>
+                <td>
+%               if ($edit eq "cableinfo") {
+                    <input type="text" name="BackboneCable__<% $id %>__length" value="<% $o ? $o->length : "" %>"></td>
+%               } else {
+                    <% $o->length %>
+%               }
+                </td>
             </tr>
             </table>
             </td>
@@ -131,18 +200,16 @@ if (defined($ARGS{_action}))
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-            <textarea name="BackboneCable__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
+%           if ($edit eq "cableinfo") {
+               <textarea name="BackboneCable__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
+%           } else {
+                <% $o->info %>
+%           }
             </td>
             <td>&nbsp;</td>
         </tr>
 
         <tr><td colspan="3">&nbsp;<p></td></tr>
-
-        <tr align="left" valign="top">
-            <td align="center"><input name="submit" value="save" type="submit"></td>
-            <td colspan="2">&nbsp;</td>
-        </tr>
-
         </table>
         </form>
     </td>
@@ -270,7 +337,6 @@ if (defined($ARGS{_action}))
 <!-- End Cable Strand Table -->
 
 
-
 <%args>
 $id => undef;
 $strand_sort => undef;
@@ -282,12 +348,20 @@ $s2name => "Plant";
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
-my $o = undef;
+
+my ($o, $start_site, $end_site) = (undef, undef, undef);
+my ($start_site_id, $end_site_id) = (0, 0);
 
 if ($id && $id ne "NEW") 
 {
    $o = BackboneCable->retrieve($id);
+   $start_site = $o->start_closet->floor->site; 
+   $end_site = $o->end_closet->floor->site;
+   $start_site_id = $start_site->id if ($start_site);
+   $end_site_id = $end_site->id if ($end_site);
 }
+
+$edit = "cableinfo" if ($id eq "NEW");
 </%init>
 
 <%doc>

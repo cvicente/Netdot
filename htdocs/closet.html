@@ -1,0 +1,291 @@
+<& index.html, title => "Cable Plant: Closet", s2name => $s2name  &>
+
+<%perl>
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+# code for inserting/updating
+# -----------------------------------------------------------------------------
+if (defined($ARGS{_action}))
+{
+    my %update_info = ();
+    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+    if (!(%update_info = $ui->form_to_db(%ARGS)))
+    {
+        my $err = $ui->error();
+        die("Error: $err\n");
+	}
+
+    if ($update_info{Closet}{key})
+    {
+        $id = $update_info{Closet}{key};
+        $edit = undef;
+    }
+
+    # Do this to 'flush' the values associated with the object
+    # before redisplaying
+    $o = undef;
+    $site = undef;
+    if ($id && $id ne "NEW")
+    {
+        $o = Closet->retrieve($id);
+        $site = $o->floor->site || $o->site;
+    }
+}  
+# end insertion/update code
+# -----------------------------------------------------------------------------
+</%perl>
+
+<script language="JavaScript">
+<!--
+var floorSearchList = new DynamicList("closetform", "Closet__<% $id %>__floor", "site", "Floor", "floor_srch");
+LIST_MANAGER.addList(floorSearchList);
+-->
+</script>
+
+% if ($site) {
+<!-- Header Table -->
+<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
+ <tr class="rowtitle0">
+    <td align="left">
+        Closet for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=HORIZONTAL"><% $site->name %></a>&nbsp;&nbsp;&nbsp;
+    </td>
+ </tr>
+</table>
+% }
+
+<!-- Closet Table -->
+<table border="0" width="95%" align="center"  class="tablebackground">
+    <tr>
+    <td valign="top" width="50%" align="center">
+        <form name="closetform" action="closet.html" method="POST">
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="_action" value="1">
+        <input type="hidden" name="s2name" value="<% $s2name %>">
+        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+        <tr class="formtabletitle">
+            <td colspan="2" align="left">Closet</td>
+%           if ($edit eq "closetinfo") {
+            <td align="right"><input name="submit" value="save" type="submit"></td>
+%           } else {
+            <td align="right"><a href="closet.html?id=NEW">[new]</a> || <a href="closet.html?id=<% $id %>&edit=closetinfo">[edit]</a></td>
+%           }
+        </tr>
+        <tr align="left" valign="top">
+            <td width="40%">
+            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <tr align="left" valign="top">
+                <td align="left">Name: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__name" value="<% $o ? $o->name : "" %>">
+%               } else {
+                    <% $o->name %>
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">Number: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__number" value="<% $o ? $o->number : "" %>">
+%               } else {
+                    <% $o->number %>
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">Floor: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+%                   $ui->selectLookup(object=>$o, table=>"Closet", column=>"floor", lookup=>"Floor", where=>{site=>($o ? $o->site : "")});
+                     &nbsp;<select name="floor_srch" onChange="floorSearchList.doIt();" style="width: 150px;">
+                    <option value="">Lookup by Site</option>
+                    <%perl>
+                    my @sites = Site->retrieve_all({"order_by"=>"name"});
+                    foreach my $s (@sites)
+                    {
+                        printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
+                    }
+                    </%perl>
+                    </select>
+
+%               } else {
+                    <% $o->floor->level %>
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">Dimensions: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+                   <input type="text" name="Closet__<% $id %>__dimensions" value="<% $o ? $o->dimensions : "" %>"> 
+%               } else {
+                    <% $o->dimensions %> 
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">Racks: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__racks" value="<% $o ? $o->racks : "" %>">
+%               } else {
+                    <% $o->racks %> 
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">Outlets: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__outlets" value="<% $o ? $o->outlets : "" %>">
+%               } else {
+                    <% $o->outlets %> 
+%               }
+                </td>
+            </tr>
+            </table>
+            </td>
+            
+            <td width="40%">
+            <table width="100%" border="0" cellspacing="0" cellpadding="2">
+            <tr align="left" valign="top">
+                <td align="left">RU Available: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__ru_avail" value="<% $o ? $o->ru_avail : "" %>">
+%               } else {
+                    <% $o->ru_avail %>
+%               }                    
+                </td>
+            </tr>
+            
+            <tr align="left" valign="top">
+                <td align="left">Patch Panels: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__patch_panels" value="<% $o ? $o->patch_panels : "" %>">
+%               } else {
+                    <% $o->patch_panels %>
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">110 Blocks: </td>
+                <td align="left">
+%               my $block_110 = "110_blocks";
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__110_blocks" value="<% $o ? $o->$block_110 : "" %>">
+%               } else {
+                    <% $o->$block_110 %>
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">66 Blocks: </td>
+                <td align="left">
+%               my $block_66 = "66_blocks";
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__66_blocks" value="<% $o ? $o->$block_66 : "" %>">
+%               } else {
+                    <% $o->$block_66 %>
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">CatV Taps: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__catv_taps" value="<% $o ? $o->catv_taps : "" %>">
+%               } else {
+                    <% $o->catv_taps %>
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">Access Key Type: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__access_key_type" value="<% $o ? $o->access_key_type : "" %>">
+%               } else {
+                    <% $o->access_key_type %>
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">Work Needed: </td>
+                <td align="left">
+%               if ($edit eq "closetinfo") {
+                    <input type="text" name="Closet__<% $id %>__work_needed" value="<% $o ? $o->work_needed : "" %>">
+%               } else {
+                    <% $o->work_needed %>
+%               }
+                </td>
+            </tr> 
+            </table>
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr><td colspan="3">&nbsp;<br></td></tr>
+
+        <tr align="left" valign="top">
+            <td colspan="2">
+            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
+%           if ($edit eq "closetinfo") {
+                <textarea name="Closet__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
+%           } else {
+                <% $o->info %>
+%           }
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr><td colspan="3">&nbsp;<br></td></tr>
+
+%       if ($o && $o->picture != 0) {
+        <tr align="left" valign="top">
+            <td colspan="2"><P ALIGN="center">
+            <A HREF="display_bin.html?id=<% $o->picture %>" TARGET="_new"><IMG SRC="display_bin.html?id=<% $o->picture %>" WIDTH="150"></A>
+            </P>
+            <td>&nbsp;</td>
+        </tr>
+%       }
+        <tr><td colspan="3">&nbsp;<p></td></tr>
+        </table>
+        </form>
+    </td>
+    </tr>
+</table>
+<!-- End Closet Table -->
+
+<%args>
+$id => undef;
+$edit => undef;
+$s2name => "Plant";
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $o = undef;
+my $site = undef;
+
+if ($id && $id ne "NEW") 
+{
+   $o = Closet->retrieve($id);
+   $site = $o->floor->site || $o->site;
+}
+
+$edit = "closetinfo" if ($id eq "NEW");
+</%init>

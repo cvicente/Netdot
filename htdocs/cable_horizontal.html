@@ -28,6 +28,7 @@ if (defined($ARGS{_action}))
     {
         $o = HorizontalCable->retrieve($id);
         $site = $o->closet->site;
+        $edit = undef;
     }
 }  
 # end insertion/update code
@@ -44,15 +45,16 @@ LIST_MANAGER.addList(closetSearchList);
 
 % # interface...
 % # ---------------------------------------------------------------------------
+% if ($site) {
 <!-- Header Table -->
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
- <tr class="rowtitle0" >
+ <tr class="rowtitle0">
     <td align="left">
         Horizontal Cable for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=HORIZONTAL"><% $site->name %></a>&nbsp;&nbsp;&nbsp;
     </td>
  </tr>
 </table>
-
+% }
 <!-- Horizontal Cable Table -->
 <table border="0" width="95%" align="center"  class="tablebackground">
     <tr>
@@ -63,38 +65,69 @@ LIST_MANAGER.addList(closetSearchList);
         <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
-            <td colspan="3" align="left">Horizonal Cable</td>
+            <td colspan="2" align="left">Horizonal Cable</td>
+%           if ($edit eq "cableinfo") {
+            <td align="right"><input name="submit" value="save" type="submit"></td>
+%           } else {
+            <td align="right"><a href="cable_horizontal.html?id=NEW">[new]</a> || <a href="cable_horizontal.html?id=<% $id %>&edit=cableinfo">[edit]</a></td>
+%           }
         </tr>
         <tr align="left" valign="top">
             <td width="40%">
             <table width="100%" border="0" cellspacing="0" cellpadding="2">
             <tr align="left" valign="top">
-                <td>Jack ID: </td>
-                <td><input type="text" name="HorizontalCable__<% $id %>__jackid" value="<% $o ? $o->jackid : "" %>"></td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td>Cable Type: </td>
-                <td>
-%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"type", lookup=>"CableType");
+                <td align="left">Jack ID: </td>
+                <td align="left">
+%               if ($edit eq "cableinfo") {
+                    <input type="text" name="HorizontalCable__<% $id %>__jackid" value="<% $o ? $o->jackid : "" %>">
+%               } else {
+                    <% $o ? $o->jackid : "" %>
+%               }
                 </td>
             </tr>
 
             <tr align="left" valign="top">
-                <td>Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
-                <td><input type="text" name="HorizontalCable__<% $id %>__installdate" value="<% $o ? $o->installdate : "" %>"></td>
+                <td align="left">Cable Type: </td>
+                <td align="left">
+%               if ($edit eq "cableinfo") {
+%                   $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"type", lookup=>"CableType");
+%               } else {
+                    <% $o->type ? $o->type->name : "" %>
+%               }
+                </td>
             </tr>
 
             <tr align="left" valign="top">
-                <td>Tested on <font size="-1">(yyyy-mm-dd)</font>: </td>
-                <td><input type="text" name="HorizontalCable__<% $id %>__datetested" value="<% $o ? $o->datetested : "" %>"></td>
+                <td align="left">Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
+                <td align="left">
+%               if ($edit eq "cableinfo") {
+                    <input type="text" name="HorizontalCable__<% $id %>__installdate" value="<% $o ? $o->installdate : "" %>">
+%               } else {
+                    <% $o->installdate %>
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td align="left">Tested on <font size="-1">(yyyy-mm-dd)</font>: </td>
+                <td align="left">
+%               if ($edit eq "cableinfo") {
+                    <input type="text" name="HorizontalCable__<% $id %>__datetested" value="<% $o ? $o->datetested : "" %>">
+%               } else {
+                    <% $o->datetested %>
+%               }
+                </td>
             </tr>
 
             
             <tr align="left" valign="top">
-                <td>Test Passed: </td>
-                <td>
-%               $ui->radioGroupBoolean(object=>$o, table=>"HorizontalCable", column=>"testpassed");
+                <td align="left">Test Passed: </td>
+                <td align="left">
+%               if ($edit eq "cableinfo") {
+%                   $ui->radioGroupBoolean(object=>$o, table=>"HorizontalCable", column=>"testpassed");
+%               } else {
+                    <% $o->testpassed ? "Yes" : "No" %>
+%               }
                 </td>
             </tr>
             </table>
@@ -103,36 +136,56 @@ LIST_MANAGER.addList(closetSearchList);
             <td width="40%">
             <table width="100%" border="0" cellspacing="0" cellpadding="2">
             <tr align="left" valign="top">
-                <td>Closet: </td>
-                <td>
-%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"closet", lookup=>"Closet");
-                <select name="closet_srch" onChange="closetSearchList.doIt();">
-                <option value="">Lookup closets for site...</option>
-                <%perl>
-                my @sites = Site->retrieve_all({"order_by"=>"name"});
-                foreach my $s (@sites)
-                {
-                    printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
-                }
-                </%perl>
-                </select>
+                <td align="left">Closet: </td>
+                <td align="left">
+%               if ($edit eq "cableinfo") {
+%                   $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", where=>{site=>($site ? $site->id : "")});
+                    &nbsp;<select name="closet_srch" onChange="closetSearchList.doIt();" style="width: 150px;">
+                    <option value="">Lookup by Site</option>
+                    <%perl>
+                    my @sites = Site->retrieve_all({"order_by"=>"name"});
+                    foreach my $s (@sites)
+                    {
+                        printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
+                    }
+                    </%perl>
+                    </select>
+%               } else {
+                    <% $o->closet ? $o->closet->name : "" %> <a href="closet.html?id=<% $o->closet->id %>">[details]</a>
+%               }                    
                 </td>
             </tr>
             
             <tr align="left" valign="top">
-                <td>Room: </td>
-                <td><input type="text" name="HorizontalCable__<% $id %>__room" value="<% $o ? $o->room : "" %>"></td>
+                <td align="left">Room: </td>
+                <td align="left">
+%               if ($edit eq "cableinfo") {
+                    <input type="text" name="HorizontalCable__<% $id %>__room" value="<% $o ? $o->room : "" %>">
+%               } else {
+                    <% $o->room %>
+%               }                    
+                </td>
             </tr>
 
             <tr align="left" valign="top">
-                <td>Account: </td>
-                <td><input type="text" name="HorizontalCable__<% $id %>__account" value="<% $o ? $o->account : "" %>"></td>
+                <td align="left">Account: </td>
+                <td align="left">
+%               if ($edit eq "cableinfo") {                
+                    <input type="text" name="HorizontalCable__<% $id %>__account" value="<% $o ? $o->account : "" %>">
+%               } else {
+                    <% $o->account %>
+%               }
+                </td>
             </tr>
 
             <tr align="left" valign="top">
-                <td>Contact List: </td>
-                <td>
-%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"contactlist", lookup=>"ContactList");
+                <td align="left">Contact List: </td>
+                <td align="left">
+%               if ($edit eq "cableinfo") {
+%                   $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"contactlist", lookup=>"ContactList");
+%               } else {
+                    <% $o->contactlist ? $o->contactlist->name : "" %>
+%               }
                 </td>
             </tr>
             </table>
@@ -145,18 +198,15 @@ LIST_MANAGER.addList(closetSearchList);
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-            <textarea name="HorizontalCable__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
+%           if ($edit eq "cableinfo") {
+                <textarea name="HorizontalCable__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
+%           } else {
+                <% $o->info %>
+%           }
             </td>
             <td>&nbsp;</td>
         </tr>
-
         <tr><td colspan="3">&nbsp;<p></td></tr>
-
-        <tr align="left" valign="top">
-            <td align="center"><input name="submit" value="save" type="submit"></td>
-            <td colspan="2">&nbsp;</td>
-        </tr>
-
         </table>
         </form>
     </td>
@@ -264,7 +314,7 @@ LIST_MANAGER.addList(closetSearchList);
 %       if ($edit eq "intinfo") {
 %           $ui->selectLookup(object=>$int, table=>"Interface", column=>"device", lookup=>"Device");
 %       } else {
-            <% $int->device ? $int->device->name : "" %>
+            <% $int->device->name ? $int->device->name->name : "" %>
 %       }
         </td>
     </tr>
@@ -287,7 +337,6 @@ LIST_MANAGER.addList(closetSearchList);
 $id => undef;
 $edit => undef;
 $int_sort => undef;
-$site_id => undef;
 $s2name => "Plant";
 </%args>
 
@@ -304,10 +353,7 @@ if ($id && $id ne "NEW")
    $site = $o->closet->site;
 }
 
-if (!defined($site) && $site_id)
-{
-    $site = Site->retrieve($site_id);
-}
+$edit = "cableinfo" if ($id eq "NEW");
 </%init>
 
 <%doc>

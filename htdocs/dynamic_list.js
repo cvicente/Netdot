@@ -37,7 +37,7 @@ DynamicList.prototype.doIt = function()
 
     // If our selected index is not set, nothing is selected so
     // we try and grab every potential value from our selection list.
-    if (selectedIdx == -1 || !parent.options[selectedIdx].value)
+    if ((selectedIdx == -1) || (parent.options[selectedIdx].value == -1))
     {
         for (i = 0; i < parent.options.length; ++i)
             values += parent.options[i].value + " ";
@@ -65,14 +65,20 @@ DynamicList.prototype.populate = function(data)
 {
     var doc_form = this.getListForm();
     var control = doc_form[this.m_self];
+    var i = 0;
+    var j = 0;
     control.options.length = 0;
 
-    control.options[0] = new Option();
-    control.options[0].value = null;
-    control.options[0].text = "----------";
-    control.options[0].selected = true;
+    if (data.length > 1)
+    {
+        control.options[0] = new Option();
+        control.options[0].value = -1;
+        control.options[0].text = "----------";
+        control.options[0].selected = true;
+        j = 1;
+    }
     
-    for (var i = 0, j = 1; i < data.length; ++i, ++j)
+    for (; i < data.length; ++i, ++j)
     {
         control.options[j] = new Option();
         control.options[j].value = data[i][0];

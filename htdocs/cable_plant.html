@@ -37,13 +37,14 @@ if(defined($ARGS{_action}))
     </td>
  </tr>
 </table>
+<!-- End Header Table -->
 
 <!-- Margins Table -->
 <table border="0" width="95%" align="center"  class="tablebackground">
  <tr>
    <td valign="top" width="50%" align="center">
 
-% if ($edit) {	 
+% if ($edit) {
    <form name="netdotform" action="cable_plant.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="page_type" value="<% $page_type %>">
@@ -55,6 +56,25 @@ if(defined($ARGS{_action}))
 % # BEGIN HORIZONTAL CABLE CODE
 % #############################################################################
 % if (uc($page_type) eq "HORIZONTAL") {
+%   my (@closets, @cables);
+
+    <%perl>
+    map { push (@closets, $_) } $o->closets;
+
+    print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
+    
+    foreach my $closet (@closets)
+    {
+        map { push(@cables, $_) } $closet->horizontalcables;
+    }
+    print "cables is <pre>", Dumper(@cables), "</pre><br>" if $DEBUG;
+    </%perl>
+
+%   if (scalar(@cables) > $MAX_SELECTION) {
+        <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+%   } else {
+        <% scalar(@cables) %> row(s) returned.
+
   <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
    <tr class="formtabletitle" >
      <td colspan="5">
@@ -77,24 +97,9 @@ if(defined($ARGS{_action}))
    <tr>
      <td>
       <table border="0" width="100%">
-    <%perl>
-    my @closets;
-    my @cables;
-    map { push (@closets, $_) } $o->closets;
+% }      
 
-    print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
-    
-    foreach my $closet (@closets)
-    {
-        map { push(@cables, $_) } $closet->horizontalcables;
-    }
-
-    print "cables is <pre>", Dumper(@cables), "</pre><br>" if $DEBUG;
-    </%perl>
-
-    <tr><td align="left" colspan="5"><% scalar(@cables) %> row(s) returned.</td></tr>
-
-%	if (scalar(@cables)) {
+%	if (scalar(@cables) && scalar(@cables) < $MAX_SELECTION) {
     <tr>
         <td align="center">
             <a href="cable_plant.html?id=<% $id %>&cable_sort=jackid&page_type=<% $page_type %>">Jack</a>
@@ -111,8 +116,9 @@ if(defined($ARGS{_action}))
     </tr>
 
     <%perl>
+    # sort
+    # -------------------------------------------------------------------------
     $cable_sort = "jackid" if (!defined($cable_sort) || $cable_sort eq "");
-    
     my @sorted_cables;
     if ($cable_sort eq "jackid" || $cable_sort eq "room")
     {
@@ -130,10 +136,11 @@ if(defined($ARGS{_action}))
     {
         die("ERROR: Unknown value for cable_sort: \"$cable_sort\"\n");
     }
-    </%perl>
-
+    # -------------------------------------------------------------------------
+</%perl>
 %   my $i = 0;
-%   foreach my $cable (@sorted_cables) {
+%   foreach my $cable (@sorted_cables) 
+%   {
 %   $i = ($i + 1) % 2;
     <tr align="left" class="<% $cssitem{$i} %>">
         <td align="left">
@@ -208,7 +215,7 @@ if(defined($ARGS{_action}))
      <td>
       <table border="0" width="100%">
     <%perl>
-    my (@c1, @c2, @closets, @cables, @floors, %s);
+    my (@c1, @closets, @cables, @floors, %s);
     
     @floors = Floor->search(site=>$id); # all floors for site ...
 
@@ -366,6 +373,7 @@ $s2name => "Plant";
 
 <%init>
 my $DEBUG = 0;
+my $MAX_SELECTION = 100;
 my $ui = Netdot::UI->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $maxselect = 100;

@@ -6,9 +6,9 @@
 
 <script language="JavaScript">
 <!--
-var jackList = new DynamicList("cable_form", "jack", "closet", "HorizontalCable", "closet");
-var closetList = new DynamicList("cable_form", "closet", "floor", "Closet", "floor", jackList);
-var floorList = new DynamicList("cable_form", "floor", "site", "Floor", "id", closetList);
+var jackList = new DynamicList("cable_form", "jack_id", "closet", "HorizontalCable", "closet_id");
+var closetList = new DynamicList("cable_form", "closet_id", "floor", "Closet", "floor_id", jackList);
+var floorList = new DynamicList("cable_form", "floor_id", "site", "Floor", "id", closetList);
 
 LIST_MANAGER.addList(jackList, closetList, floorList);
 -->
@@ -37,22 +37,22 @@ LIST_MANAGER.addList(jackList, closetList, floorList);
                 printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
             }
             </%perl>
-            </select> &nbsp;<input name="submit" value="Browse Site" type="submit">
+            </select> &nbsp;<input name="submit_site" value="Browse by Site" type="submit">
             </td>
 
             <td width="100" align="left">Floor:<br>
-            <select name="floor" onChange="closetList.doIt();">
-            </select>
+            <select name="floor_id" onChange="closetList.doIt();">
+            </select> &nbsp;<input name="submit_floor" value="By Floor" type="submit">
             </td>
             
             <td width="100" align="left">Closet:<br>
-            <select name="closet" onChange="jackList.doIt();">
-            </select>
+            <select name="closet_id" onChange="jackList.doIt();">
+            </select> &nbsp;<input name="submit_closet" value="By Closet" type="submit">
             </td>
             
             <td width="180" align="left">Jack:<br>
-            <select name="jack" width="10" style="width: 100px;">
-            </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (jack.value) { location.href = ('cable_horizontal.html?&id=' + jack.value); }"> 
+            <select name="jack_id" width="10" style="width: 100px;">
+            </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (jack_id.value) { location.href = ('cable_horizontal.html?&id=' + jack_id.value); return true; }"> 
             </td>
             <td>&nbsp;</td>
         </tr>
@@ -68,7 +68,7 @@ LIST_MANAGER.addList(jackList, closetList, floorList);
     <input type="hidden" name="page_type" value="BACKBONE">
     <table border="0" cellpadding="2" cellspacing="0" width="100%" class="tablebackground">
         <tr>
-            <td width="200">Site:<br>
+            <td width=350">Site:<br>
             <select name="id">
             <option value="">-- Make your selection --</option>
             <%perl>
@@ -77,7 +77,8 @@ LIST_MANAGER.addList(jackList, closetList, floorList);
                 printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
             }
             </%perl>
-            </select> &nbsp;<input name="submit" value="Browse Site" type="submit">
+            </select> &nbsp;<input name="submit_site" value="Browse Site" type="submit">&nbsp;&nbsp;&nbsp;
+            <input name="search" size="20"> &nbsp;<input type="submit" name="submit_search" value="Search">
             </td>
         </tr>
     </table>
