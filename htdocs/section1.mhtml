@@ -1,26 +1,83 @@
-<ul id=navigation>
-    <li class="Main">
-        <a href="index.html">Main</a>
-    </li>
-    <li class="Management">
-        <a href="section_management.html">Management</a>
-    </li>
-    <li class="Services">
-        <a href="section_services.html">Services</a>
-    </li>
-    <li class="Operations">
-        <a href="section_operations.html">Operations</a>
-    </li>
-    <li class="Plant">
-        <a href="section_cable.html">Cable Plant</a>
-    </li>
-    <li class="Generic">
-        <a href="section_generic.html">Generic</a>
-    </li>
-    <li class="Reports">
-        <a href="section_reports.html">Reports</a>
-    </li>
-    <li class="Help">
-        <a href="section_help.html">Help</a>
-    </li>
-</ul>
+<%doc>
+
+Common header for all pages
+
+</%doc>
+%
+<%args>
+$title
+$section
+$user
+</%args>
+%
+%
+<%init>
+my %caller_args = $m->caller_args(-1);
+
+if (exists($caller_args{page})){
+    $user->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
+}
+my $page = $user->getAttribute("MANAGEMENT_PAGE");
+</%init>
+%
+%
+<div id="navbar">
+    <ul id=navigation>
+        <li>
+            <a href="index.html">Main</a>
+        </li>
+        <li>
+% if( $section eq "Management" ) {
+            <span>Management</span>
+            <ul id="subnavigation">
+%     if( $page eq "DEVICE" || $page eq "" ) {
+                <li>Devices</li>
+%     } else {
+                <li><a href="section_management.html?page=DEVICE">Devices</a></li>
+%     }
+%     if( $page eq "ADDRESS" ) {
+                <li>Address Space</li>
+%     } else {
+                <li><a href="section_management.html?page=ADDRESS">Address Space</a></li>
+%     }
+            </ul>
+% } else {
+            <a href="section_management.html">Management</a>
+% }
+        </li>
+        <li class="Services">
+            <a href="section_services.html">Services</a>
+        </li>
+        <li>
+% if( $section eq "Operations" ) {
+            <span>Operations</span>
+            <ul id="subnavigation">
+%     if( $page eq "SEARCH" || $page eq "" ) {
+                <li>Search</li>
+%     } else {
+                <li><a href="section_operations.html?page=SEARCH">Search</a></li>
+%     }
+%     if( $page eq "TACTICAL" ) {
+                <li>Tactical</li>
+%     } else {
+                <li><a href="section_operations.html?page=TACTICAL">Tactical</a></li>
+%     }
+            </ul>
+%} else {
+            <a href="section_operations.html">Operations</a>
+% }
+        </li>
+        <li>
+            <a href="section_cable.html">Cable Plant</a>
+        </li>
+        <li>
+            <a href="section_generic.html">Generic</a>
+        </li>
+        <li>
+            <a href="section_reports.html">Reports</a>
+        </li>
+        <li>
+            <a href="section_help.html">Help</a>
+        </li>
+    </ul>
+</div>
