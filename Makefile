@@ -8,6 +8,7 @@ BIN = initacls.mysql initacls.Pg setup-class-dbi mason.pl initdb ins.sample.data
 HTML = create.html search.html form.html sortresults.html view.html update.html delete.html search_obj.html header footer main.html browse.html table.html banner style.css footer2 node.html error.html
 NETVIEWER = Netviewer.pm nv.categories nv.ifTypes
 LIB = Netviewer.pm nv.categories nv.ifTypes GUI.pm
+CONTRIB = ClassDBI.patch ApacheSession.patch
 
 ######################################################################
 help:
@@ -22,9 +23,9 @@ help:
 	@echo "make test"
 
 unstable: DST = unstable
-unstable: dir bin etc html lib doc make
+unstable: dir bin etc html lib doc contrib make
 stable: DST = stable
-stable: dir bin etc html lib doc make
+stable: dir bin etc html lib doc contrib make
 test: DST = /home/netdot/public_html
 test: testing nvtest
 
@@ -85,6 +86,10 @@ html: $(HTML)
 ######################################################################
 lib: $(LIB)
 	cp -f $? $(DST)/lib
+
+######################################################################
+contrib: $(CONTRIB)
+	cp -f $? $(DST)/contrib
 
 ######################################################################
 make:
