@@ -404,7 +404,6 @@ sub insertblock {
 	    $self->debug(loglevel => 'LOG_DEBUG',
 			 message => "insertblock: could not validate: %s/%s: %s" ,
 			 args => [$ip->addr, $ip->masklen, $self->error]);
-
 	    $self->remove( table => "Ipblock", id => $r );
 	    return 0;
 	}
@@ -443,8 +442,6 @@ Returns:
 
 sub updateblock {
     my ($self, %args) = @_;
-    my $stobj;
-    my $statusid;
     unless ( exists $args{id} ){
 	$self->error("Missing required args");
 	return 0;	
@@ -475,6 +472,8 @@ sub updateblock {
     # Determine Status.  It can be either a name
     # or a IpblockStatus id
     # 
+    my $stobj;
+    my $statusid;
     if ( $args{statusname} ){
 	unless ( $stobj = (IpblockStatus->search(name => $args{statusname}))[0] ){
 	    $self->error("Status $args{statusname} not known");
@@ -489,17 +488,6 @@ sub updateblock {
 	$statusid = $args{status};
 	$args{statusname}  = $stobj->name; # use for validation
     }
-    #####################################################################
-    # Now check for rules
-    #####################################################################
-    unless ( $self->_validate(\%args) ){
-	$self->debug(loglevel => 'LOG_DEBUG',
-		     message => "updateblock: could not validate: %s/%s: %s" ,
-		     args => [$ipblock->address, $ipblock->prefix, $self->error]);
-	return 0;
-	# Error should be set
-    }
-
     my %state;
     foreach my $key ( keys %args ){
 	if ( $key eq 'status' || $key eq 'statusname' ){
@@ -510,8 +498,42 @@ sub updateblock {
 	    $state{$key} = $args{$key};
 	}
     }
-    unless ( $self->update( object => $ipblock, state => \%state)){
+    # We might need to discard changes.
+    # Class::DBI's 'discard_changes' method won't work
+    # here.  Probably because object is changed in DB
+    # (and not in memory) when IP tree is rebuilt.
+    my %bak = $self->getobjstate( $ipblock );
+    unless ( $self->update( object=>$ipblock, state=>\%state ) ){
+	$self->error("Error updating Ipblock object: $@");
 	return 0;
+    }
+    # Rebuild tree
+    unless ( $self->build_tree($ip->version) ){
+	return 0;
+	# Error should be set
+    }
+    #####################################################################
+    # Now check for rules
+    # We do it after updating because it makes things much simpler.  
+    # Workarounds welcome.
+    #####################################################################
+    unless ( $self->_validate(\%args) ){
+	$self->debug(loglevel => 'LOG_DEBUG',
+		     message => "updateblock: could not validate: %s/%s: %s" ,
+		     args => [$ipblock->address, $ipblock->prefix, $self->error]);
+	# Go back to where we were
+	unless ( $self->update( object=>$ipblock, state=>\%bak ) ){
+	    $self->error("Error discarding changes: $self->error");
+	    return 0;
+	}
+	# 
+	# Rebuild tree
+	unless ( $self->build_tree($ip->version) ){
+	    return 0;
+	    # Error should be set
+	}
+	return 0;
+	# Error should be set
     }
     return $ipblock;
 }

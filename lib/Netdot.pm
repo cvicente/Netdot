@@ -451,6 +451,34 @@ sub isjointable {
     return undef;
 }
 
+=head2 getobjstate
+
+  %state = $db->getstate( $object );
+
+Get a hash with column/value pairs from a given object.
+Useful if object needs to be restored to a previous
+state.
+
+=cut
+
+sub getobjstate {
+    my ($self, $obj) = @_;
+    my %bak;
+    eval {
+	my $table = $obj->table;
+	my @cols =  $table->columns();
+	my @values = $obj->get(@cols);
+	my $n = 0;
+	foreach my $col (@cols){
+	    $bak{$col} = $values[$n++];
+	}
+    };
+    if ($@){
+	$self->error("$@");
+	return undef;
+    }
+}
+
 
 =head2 update - update a DB table row
 
@@ -460,8 +488,10 @@ Updates values for a particular row in a DB table.  Takes two arguments.
 The first argument 'object' is a Netdot::DBI (and consequently Class::DBI
 ) object that represents the table row you wish to update.  The second 
 argument 'state' is a hash reference which is a simple composition 
-of column => value pairs.  Returns positive integer representing the 
-modified rows id column for success and 0 for failure.
+of column => value pairs.  The third argument 'commit' is a flag that
+will determine if the object changes are sent to the DB.  Default is Yes.
+Returns positive integer representing the modified rows id column 
+for success and 0 for failure.
 
 =cut 
 
@@ -471,7 +501,11 @@ sub update {
     my(%state) = %{ $argv{state} };
     my $change = 0;
     my $table = $obj->table;
-    
+    # In some cases, user might want to discard changes later,
+    # so we give the option to disable commits.
+    # We will update the DB by default
+    my $commit = $argv{commit} || 1;
+
     foreach my $col ( keys %state ) {
 	my $v = ( ref($obj->$col) ) ? $obj->$col->id : $obj->$col;
 	eval { 
@@ -485,11 +519,13 @@ sub update {
 	}
     }
 }
-    if( $change ) {
-	eval { $obj->update(); };
-	if( $@ ) {
-	    $self->error("Unable to update $table $obj: $@");
-	    return 0;
+    if ( $commit ){
+	if( $change ) {
+	    eval { $obj->update(); };
+	    if( $@ ) {
+		$self->error("Unable to update $table $obj: $@");
+		return 0;
+	    }
 	}
     }
     return $obj->id;
