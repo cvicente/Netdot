@@ -4,9 +4,6 @@ foreach my $j ( keys %ARGS ) {
   # next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
   $args{$j} = $ARGS{$j};
 }
-if( exists( $args{page} ) ) {
-  $PAGE = $args{page};
-}
 if( exists( $args{session} ) ) {
   %session = %{ $args{session} };
 }
@@ -80,9 +77,7 @@ if( $args{table} ) {
         </td>
 
 	<td>
-%#        <form action="<% $PAGE %>" method="POST">
-          <input name="_<% $linksto{$c} %>" value="New" type="submit">
-%#        </form>
+        <input name="_<% $linksto{$c} %>" value="New" type="submit">
         </td>
 
         </tr>
@@ -95,7 +90,6 @@ if( $args{table} ) {
 
 % ####################################################################
 <%args>
-
 %args => undef
 %order => undef
 %orderbrief => undef
@@ -105,9 +99,8 @@ $obj => undef
 $META => undef
 $gui => Netdot::GUI->new()
 $DEBUG => 0
-$PAGE => "edit.html"
-
 </%args>
+
 <%init>
 
 </%init>
