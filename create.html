@@ -27,26 +27,28 @@ unless( defined( $PREV ) ) {
 # get state back
 if( defined( $args{sid} ) ) {
   $sid = $args{sid};
-  %session = $gui->getsession( $DIR, $sid );
+  $session = $gui->getsession( $DIR, $sid );
 }
 ##################################################
 # create state if necessary
 if( $args{table} ) {  
-  %session = $gui->mksession( $DIR );
-  $sid = $session{_session_id};
+  $session = $gui->mksession( $DIR );
+  $sid = $session->{_session_id};
 }
 if( $DEBUG ) {
   print "ARGS: ";
   print Dumper( %ARGS );
   print "SESSION: ";
-  print Dumper( %session );
+  print Dumper( $session );
 }
 ##################################################
 # if Cancel, delete state
 if( $args{cancel} eq "Cancel" ) {
   undef( $TBL );
   undef( $PREV );
-  tied(%session)->delete if( %session );
+  if( defined( $session ) ) {
+    $gui->rmsession( $session );
+  }
   delete( $args{sid} );
   delete( $args{table} );
   delete( $args{submit} );
@@ -60,12 +62,12 @@ if( exists( $args{submit} )
   foreach my $arg ( keys %args ) {
     next if( $arg eq "submit" || $arg eq "sid" 
              || $arg eq "table" || $arg eq "commit" );
-    $session{tables}{$PREV}{$arg} = $args{$arg};
+    $session->{tables}{$PREV}{$arg} = $args{$arg};
   }
   if( ! defined( $args{submit} ) ) {
-    defined( $session{path} ) ?
-      ( $session{path} .= ";$args{table}" ) 
-      : ( $session{path} = "$args{table}" );
+    defined( $session->{path} ) ?
+      ( $session->{path} .= ";$args{table}" ) 
+      : ( $session->{path} = "$args{table}" );
   }
 }
 ##################################################
@@ -75,40 +77,42 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
   # if user hits reload after a 'Confirm' (and we're displaying a table
   #   form submit page), we need to be sure we go back to the proper
   #   table/object page and do not create empty objects in the DB.
-  if( $args{confirm} && ! exists( $session{tables}{ $args{create} } ) ) {
+  if( $args{confirm} && ! exists( $session->{tables}{ $args{create} } ) ) {
     delete( $args{confirm} );
     my ( $x, %z );
-    map { $z{$_} = 1 } split( /;/, $session{path} );
-    foreach my $y ( keys %{ $session{tables} } ) {
+    map { $z{$_} = 1 } split( /;/, $session->{path} );
+    foreach my $y ( keys %{ $session->{tables} } ) {
       if( ! exists( $z{$y} ) ) {
         $x = $y;
       }
     }
-    ( length( $session{path} ) > 1 ) ?
-      ( $session{path} .= ";$x" ) : ( $session{path} = "$x" );
+    ( length( $session->{path} ) > 1 ) ?
+      ( $session->{path} .= ";$x" ) : ( $session->{path} = "$x" );
   }
-  my @tbls = split( /;/, $session{path} );
+  my @tbls = split( /;/, $session->{path} );
   if( scalar( @tbls ) > 0 ) {
     if( ! exists( $args{submit} ) ) {
       my $tmp = pop @tbls;
       $TBL = $tmp;
     }
   }
-  $session{path} = join( ';', @tbls );
+  $session->{path} = join( ';', @tbls );
 }
 
 ##################################################
 # if confirm, handle here
 if( $args{confirm} eq "Confirm" ) {
   my $T = $args{create};
-  my $c = $T->create( \%{ $session{tables}{$T} } );
-  print Dumper( %session );
-  delete( $session{tables}{ $args{create} } );
-  if( length( $session{path} ) < 1 ) {
-    tied(%session)->delete if( %session );
+  my $c = $T->create( \%{ $session->{tables}{$T} } );
+#  print Dumper( $session );
+  delete( $session->{tables}{ $args{create} } );
+  if( length( $session->{path} ) < 1 ) {
+    if( defined( $session ) ) {
+      $gui->rmsession( $session );
+    }
   }
   my $id = $c->id;
-  $session{created}{$T} = $id;
+  $session->{created}{$T} = $id;
 }
 ##################################################
 # create %state to pass to form.html
@@ -120,12 +124,12 @@ if( defined( $TBL ) ) {
       $state{$c} = $args{$c};
     }
   }
-  if( exists( $session{tables}{$TBL} ) ) {
-    foreach my $c ( keys %{ $session{tables}{$TBL} } ) {
-      if( $lt{$c} && $session{created}{$lt{$c}} ) {
-        $state{$c} = $session{created}{$lt{$c}};
+  if( exists( $session->{tables}{$TBL} ) ) {
+    foreach my $c ( keys %{ $session->{tables}{$TBL} } ) {
+      if( $lt{$c} && $session->{created}{$lt{$c}} ) {
+        $state{$c} = $session->{created}{$lt{$c}};
       } else {
-        $state{$c} = $session{tables}{$TBL}{$c};
+        $state{$c} = $session->{tables}{$TBL}{$c};
       }
     }
   }
@@ -147,7 +151,7 @@ if( defined( $TBL ) ) {
  ARGS :
 % print Dumper( %ARGS );
  <br> session: 
-% print Dumper( %session );
+% print Dumper( $session );
  <hr>
 % }
 % ####################################################################
@@ -160,25 +164,25 @@ if( defined( $TBL ) ) {
 %   foreach my $C ( split( /,/, $obj->columnorder() ) ) {
       <li>
       <% $C %> :
-%     if( ! exists( $session{tables}{$TBL}{$C} ) ) {
+%     if( ! exists( $session->{tables}{$TBL}{$C} ) ) {
         -
 %     } else {
 %       if( $linksto{$C} ) {
 %         my $ft = $gui->getmeta( $linksto{$C} );
 %         if( ! defined( $ft ) ) {
             No such object <% $linksto{$C} %>
-%         } elsif( $session{tables}{$TBL}{$C} == 0 ) {
+%         } elsif( $session->{tables}{$TBL}{$C} == 0 ) {
             -
 %         } elsif( ! defined( $linksto{$C}->
-%                    retrieve( int( $session{tables}{$TBL}{$C} ) ) ) ) {
+%                    retrieve( int( $session->{tables}{$TBL}{$C} ) ) ) ) {
             -
 %         } else {
 %           my $lbl = $ft->label;
-%           my $o = $linksto{$C}->retrieve( $session{tables}{$TBL}{$C} );
+%           my $o = $linksto{$C}->retrieve( $session->{tables}{$TBL}{$C} );
             <% $o->$lbl %>
 %         }
 %       } else {
-          <% $session{tables}{$TBL}{$C} %>
+          <% $session->{tables}{$TBL}{$C} %>
 %       }
 %     }
 %   }
@@ -233,11 +237,11 @@ $nv => undef
 $DIR => "/home/netdot/public_html/tmp"
 $AGE => 3600
 $WIDTH => 2
+$session => undef
 %args => undef
 %state => undef
 %order => undef
 %linksto => undef
-%session => undef
 
 </%args>
 <%init>
@@ -279,6 +283,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.21  2003/07/02 23:51:15  netdot
+#  more work to convert to new GUI and state code; still untested
+#
 #  Revision 1.20  2003/07/02 00:06:29  netdot
 #  *** empty log message ***
 #
