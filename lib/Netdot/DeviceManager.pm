@@ -26,10 +26,6 @@ use lib "NVPREFIX/lib";
 use NetViewer::RRD::SNMP::NV;
 
 use base qw( Netdot );
-#use Netdot::DBI;
-#use Netdot::UI;
-#use Netdot::IPManager;
-#use Netdot::DNSManager;
 use strict;
 
 #Be sure to return 1
@@ -107,32 +103,32 @@ sub find_dev {
     $self->_clear_output();
 
     if ($device = $self->{dns}->getdevbyname($host)){
-	my $msg = sprintf("Device %s exists in DB.  Will try to update", $host);
+	my $msg = sprintf("Device %s exists in DB.  Will try to update.", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg );
 	$self->output($msg);
 	$comstr = $device->community
     }elsif($self->{dns}->getrrbyname($host)){
-	my $msg = sprintf("Name %s exists but Device not in DB.  Will try to create", $host);
+	my $msg = sprintf("Name %s exists but Device not in DB.  Will try to create.", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg );
 	$self->output($msg);
     }elsif(my $ip = $self->{ipm}->searchblock($host)){
 	if ( $ip->interface && ($device = $ip->interface->device) ){
-	    my $msg = sprintf("Device with address %s exists in DB. Will try to update", $ip->address);
+	    my $msg = sprintf("Device with address %s exists in DB. Will try to update.", $ip->address);
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg );
 	    $self->output($msg);
 	    $comstr = $device->community;
 	}else{
-	    my $msg = sprintf("Address %s exists but Device not in DB.  Will try to create", $host);
+	    my $msg = sprintf("Address %s exists but Device not in DB.  Will try to create.", $host);
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg );
 	    $self->output($msg);
 	    $self->output();
 	}
     }else{
-	$self->output(sprintf("Device %s not in DB.  Will try to create", $host));
+	$self->output(sprintf("Device %s not in DB.  Will try to create.", $host));
     }
     return ($comstr, $device);
 }
@@ -455,7 +451,7 @@ sub update {
     ##############################################
     # for each interface just discovered...
 
-    my (%dbips, %newips, %dbvlans, %ifvlans);
+    my (%dbips, %newips, %dbvlans, %ifvlans, %name2int);
 
     foreach my $newif ( sort keys %{ $dev{interface} } ) {
 
@@ -540,7 +536,6 @@ sub update {
 	    }
 	} else {
 
-	    $iftmp{monitored} = ( exists ($dev{interface}{$newif}{ips}) ) ? 1 : 0;
 	    $iftmp{speed}   ||= 0; #can't be null
 	    
 	    my $msg = sprintf("Interface %s,%s doesn't exist. Inserting", $iftmp{number}, $iftmp{name} );
@@ -631,6 +626,7 @@ sub update {
 							       address   => $newip, 
 							       prefix    => $prefix,
 							       status    => "Assigned",
+							       monitored => 1,
 							       interface => $if )){
 			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
@@ -648,6 +644,7 @@ sub update {
 		    unless( $ipobj = $self->{ipm}->insertblock(address   => $newip, 
 							       prefix    => $prefix, 
 							       status    => "Assigned",
+							       monitored => 1,
 							       interface => $if)){
 			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
@@ -720,7 +717,16 @@ sub update {
 			}
 		    }else{
 			# Insert necessary records
-			my $name = $self->_canonize_int_name($ipobj->interface->name) . "." . $device->name->name ;
+			my $name = $self->_canonize_int_name($ipobj->interface->name);
+			if ( exists $name2int{$name} ){
+			    # Interface has more than one ip
+			    # Append the ip address to the name to make it unique
+			    $name .= "-" . $ipobj->address;
+			}
+			# Keep record
+			$name2int{$name} = $ipobj->interface->name; 
+			# Append device name
+			$name .= "." . $device->name->name ;
 			unless ($self->{dns}->insert_a(name        => $name,
 						       ip          => $ipobj,
 						       contactlist => $device->contactlist

@@ -201,6 +201,7 @@ sub insertblock {
     $args{status}    ||= 0;
     $args{interface} ||= 0; 
     $args{manual}    ||= 0; 
+    $args{monitored} ||= 1; 
     if ($self->searchblock($args{address}, $args{prefix})){
 	$self->error("Block already exists in db");
 	return 0;
@@ -225,6 +226,7 @@ sub insertblock {
 		  version   => $ip->version,
 		  status    => $status,
 		  interface => $args{interface},
+		  monitored => $args{monitored},
 		  );
    
     if (! $args{manual} ){
@@ -286,6 +288,7 @@ sub updateblock {
 		  version   => $ip->version,
 		  status    => $status,
 		  interface => $args{interface},
+		  monitored => $args{monitored},
 		  last_seen => $ui->timestamp,
 		  );
     my $id;

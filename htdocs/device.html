@@ -23,7 +23,7 @@ function showVlan(){
  </tr>
  <tr>
    <td valign="top" width="50%" align="center">
-      <& sortresults.mhtml, table => "Device", object => $list, view => "row", page => "device.html" &>
+      <& sortresults.mhtml, table => "Device", object => $list, view => "row", page => "device.html", withdelete => 1&>
   </td>
   </tr>
 </table>
@@ -182,83 +182,6 @@ function showVlan(){
     </form>
 % }
 <!-- End General Info Table -->
-
-<br>
-<!-- IPs Table -->
-
-  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle" >
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="80%" align="center">IPs</th>
-%	 if ($editips){	 
-            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
-%	 }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&editips=1">[edit]</a></td>
-%	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-      <table border="0" width="100%">
-%	if (scalar @ips){
-         <tr>
-	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Ipblock.address">Address</a></td>
-	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Ipblock.parent">Subnet</a></td>
-	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Interface.name">Interface</a></td>
-	   <td align="left">DNS Name</td>
-	   <td align="left">Monitored?</td>
-         </tr>
-%	}
-
-%	foreach my $ip (@ips){	   
-%	 $ci = ($ci + 1) % 2;
-	 <tr class="<% $cssitem{$ci} %>">
-	   <td align="left">
-%	      	 if ($editips){	 
-		    <input type="checkbox" name="<% "Ipblock__" . $ip->id . "__delete" %>" >[del]
-		    <input type="text" size="15" name="<% "Ipblock__" . $ip->id . "__address" %>" value="<% $ip->address %>">
-		    <br>
-%	         }else{
-		    <a href="ip-ws.html?id=<% $ip->id %>"><% $ip->address %></a><br>
-%		 }
-	   </td>
-	   <td align="left">
-%	     if ( int($ip->parent) != 0  ){
-	       <a href="ip-ws.html?id=<% $ip->parent->id %>"><% $ip->parent->address %>/<% $ip->parent->prefix %></a><br>
-%            }
-	   </td>
-	   <td align="left"><% $ip->interface->name %></td>
-           <td align="left">
-%              if ( $ip->arecords ){
-%                 foreach my $ar ($ip->arecords){
-%	             if ($editips){	 
-  	                <input type="checkbox" name="<% "RR__" . $ar->rr->id . "__delete" %>" >[del]
-%	             }
-%                    $ui->textField(object=> $ar->rr, column=>"name", edit=>$editips, linkPage=>"view.html");
-%		  }
-%              }else{
-	          
-%	       }
-           </td>
-           <td align="left">
-%              $ui->radioGroupBoolean(object=>$ip->interface, column=>"monitored", edit=>$editips);
-           </td>
-	  </tr>
-%	}# foreach	
-     </table>
-    </td>
-   </tr>
-  </table>
-% if ($editips){	 
-    </form>
-% }
-
-<!-- End IPs Table -->
 
 </td>
 <td valign="top" align="center">
@@ -473,7 +396,96 @@ function showVlan(){
  </tr>
  <tr>
   <td colspan="2">
+<br>
+<!-- IPs Table -->
 
+  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
+   <tr class="formtabletitle" >
+     <td colspan="2">
+      <table width="100%" border="0">
+       <tr>
+         <td width="10%" align="left">&nbsp;</td>
+         <th width="80%" align="center">IPs</th>
+%	 if ($editips){	 
+            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+%	 }else{
+            <td width="10%" align="right"><a href="device.html?id=<% $id %>&editips=1">[edit]</a></td>
+%	 }
+       </tr>
+      </table>
+     <td>
+   </tr>
+   <tr>
+     <td>
+      <table border="0" width="100%">
+%	if (scalar @ips){
+         <tr>
+	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Ipblock.address">Address</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Ipblock.parent">Subnet</a></td>
+	   <td align="left"><a href="device.html?id=<% $id %>&ipsort=Interface.name">Interface</a></td>
+	   <td align="left">DNS Name</td>
+	   <td align="left">Monitored?</td>
+	   <td align="left">Services</td>
+         </tr>
+%	}
+
+%	foreach my $ip (@ips){	   
+%        next if ( ! exists $ifvlans{$ip->interface}{$showvlan} && 
+%                  $showvlan ne "all" );
+%	 $ci = ($ci + 1) % 2;
+	 <tr class="<% $cssitem{$ci} %>">
+	   <td align="left">
+%	      	 if ($editips){	 
+		    <input type="checkbox" name="<% "Ipblock__" . $ip->id . "__delete" %>" >[del]
+		    <input type="text" size="15" name="<% "Ipblock__" . $ip->id . "__address" %>" value="<% $ip->address %>">
+		    <br>
+%	         }else{
+		    <a href="ip-ws.html?id=<% $ip->id %>"><% $ip->address %></a><br>
+%		 }
+	   </td>
+	   <td align="left">
+%	     if ( int($ip->parent) != 0  ){
+	       <a href="ip-ws.html?id=<% $ip->parent->id %>"><% $ip->parent->address %>/<% $ip->parent->prefix %></a><br>
+%            }
+	   </td>
+	   <td align="left"><% $ip->interface->name %></td>
+           <td align="left">
+%              if ( $ip->arecords ){
+%                 foreach my $ar ($ip->arecords){
+%	             if ($editips){	 
+  	                <input type="checkbox" name="<% "RR__" . $ar->rr->id . "__delete" %>" >[del]
+%	             }
+%                    $ui->textField(object=> $ar->rr, column=>"name", edit=>$editips, linkPage=>"view.html");
+%		  }
+%              }else{
+	          
+%	       }
+           </td>
+           <td align="left">
+%              $ui->radioGroupBoolean(object=>$ip, column=>"monitored", edit=>$editips);
+           </td>
+           <td align="left">
+%	      if ( scalar ($ip->services) ){
+%	       foreach my $ipsrv ($ip->services){
+%               $ui->selectLookup(object=>$ipsrv, column=>"service", lookup=>"Service", edit=>"$editips", linkPage=>"view.html");
+                <br>
+%	       }
+%            }else{
+%              # No services.  Allow creation.
+%            }
+           </td>
+	  </tr>
+%	}# foreach	
+     </table>
+    </td>
+   </tr>
+  </table>
+% if ($editips){	 
+    </form>
+% }
+
+<!-- End IPs Table -->
+    <br>
 <!-- Interface Table -->
 
   <table border="0" width="100%" align="left" class="formtablebg" cellpadding="0" cellspacing="2">
@@ -557,7 +569,7 @@ function showVlan(){
 %	      if (exists $ifvlans{$if}){
 %	         my @links;
 %	         foreach my $v ( keys %{$ifvlans{$if}} ){
-%		   push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $v, $v );
+%		   push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
 %		 }
 %		 print join ', ', @links;
 %	      }
@@ -759,7 +771,6 @@ if ( defined($search) && $search =~ /\w+/ ){
 	if (defined ($ARGS{intaddnum}) &&  $ARGS{intaddnum} > 0){
 	    my %tmpint;
 	    $tmpint{device}    = $id;
-	    $tmpint{monitored} = 0;
 	    $tmpint{number}    = 1000;
 	    my $i;
 	    for ($i = 0; $i < $ARGS{intaddnum}; $i++){
@@ -788,7 +799,7 @@ if ($id){
 	    foreach my $ifv (@ifv){
 		my $vid = $ifv->vlan->vid;
 		$ifvlans{$if}{$vid} = "";
-		$vlans{$vid} = "";
+		$vlans{$vid} = $ifv->vlan->id;
 	    }
 	}
     }

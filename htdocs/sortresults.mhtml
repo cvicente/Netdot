@@ -9,20 +9,21 @@ Supported arguments:
 </%doc>
 <%args>
 
-%args => undef
-%order => undef
-%tags => undef
-%linksto => undef
-%linksfrom => undef
-$cellspc => 0
-$cellpad => 0
-$SORT => undef
-$META => undef
-$LBL => undef
-$PAGE => "view.html"
-$ui => Netdot::UI->new()
-$VIEW => "column"
-
+%args       => undef
+%order      => undef
+%tags       => undef
+%linksto    => undef
+%linksfrom  => undef
+$cellspc    => 0
+$cellpad    => 0
+$SORT       => undef
+$META       => undef
+$LBL        => undef
+$PAGE       => "view.html"
+$ui         => Netdot::UI->new()
+$VIEW       => "column"
+$table      => undef
+$withdelete => 0
 </%args>
 
 <%init>
@@ -45,9 +46,9 @@ if( exists( $args{view} ) ) {
 if( exists( $args{page} ) ) {
   $PAGE = $args{page};
 }
-if( $args{table} ) {
+if( $table ) {
   undef( $META );
-  $META = $ui->getmeta( $args{table} );
+  $META = $ui->getmeta( $table );
   if( defined( $META ) ) {
     my $i = 1;
     my @tmp;
@@ -55,7 +56,7 @@ if( $args{table} ) {
     # if sort arg; check to make sure column exists & set SORT
     if( exists( $args{sort} ) ) {
       my(%col);
-      map { $col{$_}++ } $args{table}->columns;
+      map { $col{$_}++ } $table->columns;
       if( exists( $col{ $args{sort} } ) ) {
         $SORT = $args{sort};
 	@sorted = sort { $a->$SORT cmp $b->$SORT } @{ $args{object} };
@@ -63,13 +64,13 @@ if( $args{table} ) {
     }
     ##############################################
     # get the label for this table (as defined in Meta)
-    $LBL = ($ui->getlabels( $args{table} ))[0];
+    $LBL = ($ui->getlabels( $table ))[0];
 
     ##############################################
     # If no sort arg, sort by actual label
     # 
     if( ! defined( $SORT ) ) {
-	my @labels = $ui->getlabelarr( $args{table} );
+	my @labels = $ui->getlabelarr( $table );
 	@sorted = map  { $_->[0] }
 	sort { $a->[1] cmp $b->[1] }
 	map { [$_ , $ui->getlabelvalue($_, \@labels)] } @{ $args{object} };
@@ -77,13 +78,13 @@ if( $args{table} ) {
     }
     ##############################################
     # get linksto info
-    %linksto = $ui->getlinksto( $args{table} );
+    %linksto = $ui->getlinksto( $table );
     ##############################################
     # define order
-    %order = $ui->getcolumnorderbrief( $args{table} );
+    %order = $ui->getcolumnorderbrief( $table );
     ##############################################
     # Get tags
-    %tags = $ui->getcolumntags( $args{table} );
+    %tags = $ui->getcolumntags( $table );
     ##############################################
     # remove id and aliases (if present)
     if( exists( $order{id} ) ) {
@@ -119,7 +120,10 @@ Begin the table for this instance of sortresults
 % } elsif( $VIEW eq "column" ) {
 %   ($cellspc, $cellpad) = ( 0, 1 );
 % }
-  <TABLE BORDER="0" CELLSPACING="<% $cellspc %>" CELLPADDING="<% $cellpad %>" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
+  <TABLE BORDER="0" CELLSPACING="<% $cellspc %>" CELLPADDING="<% $cellpad %>" width="100%" class="tablebackground">
+% if ( $withdelete ){
+    <FORM ACTION="delete.html" METHOD="POST">
+% }
 %    if( $VIEW eq "row" ) {
 % ####################################################################
 <%doc>
@@ -135,11 +139,13 @@ Otherwise, print an empty row.
       <TH><% $c %></TH>
 %	   }
 %       }
-%###    <TD width="1" class="delimiter" bgcolor="#DDDDDD"></TD>
+%   if ( $withdelete ){
+      <TH>Delete</TH>
+%   }
     </TR>
 %    } else {
     <TR>
-      <TD width="1" colspan="2" class="delimiter" bgcolor="#DDDDDD"></TD>
+      <TD width="1" colspan="2" class="delimiter"></TD>
     </TR>
 %    }
 % ####################################################################
@@ -176,7 +182,7 @@ If a COLUMN view, start a row with the column name.
 %
 %       if( $VIEW eq "column" ) {
     <TR>
-      <TD align="RIGHT" valign="TOP" WIDTH="18%" class="column1" bgcolor="#DDDDDD">
+      <TD align="RIGHT" valign="TOP" WIDTH="18%" class="column1">
 %	   if ( exists($tags{$c}) ){
       <b><% $tags{$c} %></b>:&nbsp;
 %	   } else {
@@ -212,7 +218,7 @@ If it's a link to another column....
 %                #######################
 %                # if flag is set, make the item a url
       <strong>
-      <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
+      <a href="<% $PAGE %>?table=<% $table %>&id=<% $o->id %>">
 %                   if( length( $lbl ) < 1 ) {
       N/A
 %                   } else {
@@ -236,7 +242,7 @@ It's not a pointer to another column
 %
 %             if( $flag ) {
       <strong>
-      <a href="<% $PAGE %>?table=<% $args{table} %>&id=<% $o->id %>">
+      <a href="<% $PAGE %>?table=<% $table %>&id=<% $o->id %>">
 %                if( length( $o->$c ) < 1 ) {
       N/A
 %                } else {
@@ -260,29 +266,27 @@ Wrap this row up.
 %       }
 %     } # for c
 %
-% ####################################################################
-<%doc>
 
-If this is a COLUMN or ROW view....
-
-</%doc>
-% ####################################################################
 %     if( $VIEW eq "column" ) {
+%        if ( $withdelete ){
+           <TR>
+             <TD align="RIGHT" valign="TOP" WIDTH="18%" class="column1"></TD>
+             <TD align="LEFT" valign="MIDDLE" class="column2">
+               <input type="checkbox" name="<% $table %>__<% $o->id %>">
+             </TD>
+           </TR>
+%     }
     <TR height="1" class="delimiter">
       <TD colspan="2" height="1"></TD>
     </TR>
-    <TR>
-      <TD colspan="2"><br></TD>
-    </TR>
-<!--
-         <tr height="1" class="delimiter">
-            <td colspan="3" height="1"></td>
-         </tr>
--->         
-%     } elsif( $VIEW eq "row" ) {
-%###    <TD width="1" class="delimiter" bgcolor="#DDDDDD"></TD>
-    </TR>
 
+%     } elsif( $VIEW eq "row" ) {
+%         if ( $withdelete ){
+            <TD align="LEFT" valign="MIDDLE" class="column2">
+              <input type="checkbox" name="<% $table %>__<% $o->id %>">
+            </TD>
+%         }
+    </TR>
     <TR class="delimiter" height="1">
       <TD colspan="15"></TD>
 %     }
@@ -290,6 +294,17 @@ If this is a COLUMN or ROW view....
 % ####################################################################
   </TABLE>
 
+% if ( $withdelete ){
+<TABLE>
+  <TR class="rowtitle1">
+    <TD align="CENTER">
+     <input type="submit" name="submit" value="Delete">
+     <input type="submit" name="submit" value="Cancel">
+    </TD>
+  </TR>
+</TABLE>
+  </FORM>
+% }
 <!-- end sortresults -->
 % } # if
 

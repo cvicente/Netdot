@@ -92,8 +92,7 @@ if( $args{cancel} eq "Cancel" ) {
 if( exists( $args{submit} ) 
     || exists( $rev{New} ) || exists( $args{discover} ) ) {
   foreach my $arg ( keys %args ) {
-    next if( $arg eq "submit" || $arg eq "sid" || $arg eq "commit"
-             || $arg eq "table" || $arg eq "commit" );
+    next if ( exists $reservedargs{$arg} );
     next if( length( $arg ) < 1 || ! defined( $args{$arg} ) );
     $session->{tables}{$PREV}{$arg} = $args{$arg};
   }
@@ -229,23 +228,24 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
     <hr>
 % }
 
-<& edit.mhtml, args => \%args, id => $ID, table => $TBL, obj => $OBJ, sid => $sid, session => $session, state => \%state &>
+<& edit.mhtml, args => \%args, id => $ID, table => $TBL, obj => $OBJ, sid => $sid, session => $session, state => \%state, showheader => $showheader &>
 
 
 % ####################################################################
 <%args>
-$TBL => undef
-$PREV => undef
-$ID => undef
-$OBJ => undef
-$sid => undef
+$TBL         => undef
+$PREV        => undef
+$ID          => undef
+$OBJ         => undef
+$sid         => undef
 
-$AGE => 86400
-$session => undef
-$ui => Netdot::UI->new()
-%args => undef
-%order => undef
-%linksto => undef
+$AGE         => 86400
+$session     => undef
+$ui          => Netdot::UI->new()
+%args        => undef
+%order       => undef
+%linksto     => undef
+$showheader  => 1
 </%args>
 
 <%init>
@@ -254,6 +254,13 @@ undef( %state );
 my $TMP;
 my $DEBUG = 0;
 my $NEW = 0;
+my %reservedargs = (submit     => '',
+		    sid        => '',
+		    commit     => '',
+		    table      => '',
+		    showheader => '',
+		   );
+
 </%init>
 
 <%doc>

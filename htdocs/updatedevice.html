@@ -1,9 +1,31 @@
 <& index.html, title => "Device Discovery: $host ", s2name => $s2name  &>
+<script language="javascript">
+<!--
+   var formfield;
+   # Open a window to create the object if user hits 'new'
+   function opencreatewindow(table, field){
+     var wind;
+     formfield = field;
+     var url = "edit.html?table="+table+"&showheader=0";
+     wind = window.open(url, "Create "+table+" object", "width=500,height=500");
+   }
+   # Once the object is created, substitute value in form
+   function setselect(id, label){
+     var form_name = "netdotform";
+     var len = document.forms[form_name].length;
+     document.forms[form_name][formfield].options.length = 0;     
+     for (var i = 0; i < len; i++){
+       document.forms[form_name][formfield].options[i] = new Option();
+       document.forms[form_name][formfield].options[i].value = id;
+       document.forms[form_name][formfield].options[i].text  = label;
+     }
+   }
+-->
+</script>
 <table align="center" valign="top" cellpadding="0" cellspacing="0" border="0" width="95%" class="tablebackground">
 <tr><td>
 <%perl>
     if ( $action eq "discover" ){
-
     # See if device exists
     my ($c, $d) = $dm->find_dev($host);
     $argv{comstr} = (defined($c)) ? $c : $comstr;
@@ -44,11 +66,11 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
     }
 
 </%perl>
-    <form action="updatedevice.html" method="POST">
+    <form name="netdotform" action="updatedevice.html" method="POST">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="host" value="<% $host %>">
     <input type="hidden" name="action" value="update">
-    <table class="formtablebg" cellpadding="0" cellspacing="2" width="100%">
+    <table class="formtablebg" cellpadding="0" cellspacing="2" width="100%" border="0">
       <tr>
         <td>&nbsp;</td>
         <td align="left">
@@ -60,17 +82,20 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
         <td class="formtablec1">Description:</td>
         <td class="formtablec2"><strong><% $dev->{sysdescription} %></strong></td>
       </tr>
+    </table>
 %     unless ($argv{device}){      
+    <table class="formtablebg" cellpadding="0" cellspacing="2" width="100%" border="0">
       <tr>
-        <td colspan="2" align="left"><br></td>
+        <td colspan="3" align="left"><br></td>
       </tr>
       <tr>
-        <td colspan="2" align="center"><strong> Please provide the following:</strong></td>
+        <td colspan="3" align="center"><strong> Please provide the following:</strong></td>
       </tr>
       <tr>
-        <td class="formtablec1">Group:</td>
+        <td class="formtablec1">Entity/Group:</td>
         <td class="formtablec2">
            <select name="entity">
+    	   <option value="0">[null]</option>
 %	   my @allents = Entity->retrieve_all; 
 %          @allents = sort { $a->name cmp $b->name } @allents;
 %          foreach my $ent (@allents){
@@ -80,14 +105,18 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 	           <option value="<% $ent->id %>"><% $ent->name %></option>
 %		 }
 %	   }	
-   	   <option value="0">[null]</option>
 	   </select>
+	   <a href="#" onClick="opencreatewindow('Entity', 'entity')">[new]</a>
+	</td>
+        <td class="formtablec2">
+	  * Entity where this device belongs (Department, Network Segment, etc.)
 	</td>
       </tr>
       <tr>
         <td class="formtablec1">Site:</td>
         <td class="formtablec2">
            <select name="site">
+   	   <option value="0">[null]</option>
 %	   my @allsites = Site->retrieve_all; 
 %          @allsites = sort { $a->name cmp $b->name } @allsites;
 %          foreach my $site (@allsites){
@@ -97,14 +126,18 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 	           <option value="<% $site->id %>"><% $site->name %></option>
 %		 }
 %	   }	
-   	   <option value="0">[null]</option>
 	   </select>
+	   <a href="#" onClick="opencreatewindow('Site', 'site')">[new]</a>
+	</td>
+        <td class="formtablec2">
+	  * Where this device is located.
 	</td>
       </tr>
       <tr>
         <td class="formtablec1">Contact Group:</td>
         <td class="formtablec2">
            <select name="contactlist">
+   	   <option value="0">[null]</option>
 %	   my @allcls = ContactList->retrieve_all; 
 %          @allcls = sort { $a->name cmp $b->name } @allcls;
 %          foreach my $cl (@allcls){
@@ -114,13 +147,17 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 	           <option value="<% $cl->id %>"><% $cl->name %></option>
 %		 }
 %	   }	
-   	   <option value="0">[null]</option>
 	   </select>
+	   <a href="#" onClick="opencreatewindow('ContactList', 'contactlist')">[new]</a>
 	</td>
+        <td class="formtablec2">
+	  * Who should be notified in case of problems/outages.
+	</td>
+      </tr>
 %     }
-      <tr><td colspan="2">&nbsp;</td></tr>
+      <tr><td colspan="3">&nbsp;</td></tr>
       <tr class="rowtitle0">
-        <td colspan="2" align="center">
+        <td colspan="3" align="center">
          <input name="insert" value="Update" type="submit">&nbsp;
          <input name="cancel" value="Cancel" type="submit">
         </td>

@@ -7,27 +7,45 @@ want to go to the page to view it
 % if( $args{cancel} && $TBL && $ID
 %     && $args{table} eq $TBL
 %     && ( ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) ){
-    <& view.html, table => $TBL, id => $ID &>
+      <& view.html, table => $TBL, id => $ID &>
 % } elsif( $args{confirm} eq "Confirm" && ( ! $TBL || $args{cancel} ) ) {
-    <& view.html, table => $args{create}, id => $ID &>
+%    if ( $showheader ){
+      <& view.html, table => $args{create}, id => $ID &>
+%    }else{
+%      my $obj = $args{create}->retrieve($ID);
+%      my $lbl = $ui->getobjlabel($obj);
+       <head>
+         <link rel=StyleSheet href="style.css" type="text/css">
+         <link rel="alternate stylesheet" title="Gray" href="style-gray.css" type="text/css">
+         <title>Netdot : Create Object</title>
+       </head>      
+         <body class="bodytag" onUnload="opener.setselect(<% "\'" . $ID . "\'" %>, <% "\'" . $lbl . "\'" %>)">
+           <a href="#" onClick="window.close()">[done]</a>
+         </body>      
+%    }
 % ####################################################################
 % } else {
 <%doc>
-
 Okay, we're still working.  Let's insert a header
-
 </%doc>
 %   if( $args{submit} eq "Submit" ) {
 %     $title = "Confirm: $TBL";
-      <& index.html, title => $title, s2name => "$s2name" &>
 %   } elsif( $OBJ ) {
 %     my $labelstr = $ui->getobjlabel($OBJ, ", ");
 %     $title = "Edit: $TBL: $labelstr";
-      <& index.html, title => $title, s2name => "$s2name"  &>
 %   } else {
 %     $title = "Create: $TBL";
-      <& index.html, title => $title, s2name => "$s2name"  &>
 %   }
+% if ( $showheader ){
+    <& index.html, title => $title, s2name => "$s2name" &>
+% }else{
+    <head>
+      <link rel=StyleSheet href="style.css" type="text/css">
+      <link rel="alternate stylesheet" title="Gray" href="style-gray.css" type="text/css">
+      <title>Netdot : Create Object</title>
+    </head>      
+      <body class="bodytag">
+% }
     <!-- begin edit -->
 % ####################################################################
 <%doc>
@@ -83,6 +101,7 @@ the submission.
       <form name="netdotform" action="edit.html" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
       <input type="hidden" name="create" value="<% $TBL %>">
+      <input type="hidden" name="showheader" value="<% $showheader %>">
 %     if( $ID ) {
       <input type="hidden" name="id" value="<% $ID %>">
 %     }
@@ -118,6 +137,7 @@ Present a form for user to modify various values.
        <tr><td>
       <form name="netdotform" action="edit.html" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
+      <input type="hidden" name="showheader" value="<% $showheader %>">
 %     if( $ID && ! $NEW ) {
       <& form.mhtml, table => $TBL, showdisabled => '0', id => $ID &>
 %     } else {
@@ -138,21 +158,24 @@ Present a form for user to modify various values.
 %   } # if/else table
     <p>
     <!-- end edit -->
-    <& footer.mhtml  &>
+%    if ( $showheader ){
+       <& footer.mhtml  &>
+%    }
 % }
 
 <%args>
-$ID => undef
-$TBL => undef
-$OBJ => undef
-$NEW => undef
-$sid => undef
-$WIDTH => 2
-$session => undef
-$ui => Netdot::UI->new()
-%args => undef
-%state => undef
-$s2name => "Generic"
+$ID         => undef
+$TBL        => undef
+$OBJ        => undef
+$NEW        => undef
+$sid        => undef
+$WIDTH      => 2
+$session    => undef
+$ui         => Netdot::UI->new()
+%args       => undef
+%state      => undef
+$s2name     => "Generic"
+$showheader => 1
 </%args>
 
 <%init>

@@ -21,6 +21,8 @@
 
 % if ($page eq "DEVICE") {
 
+% my $grandtotal = 0;
+
 <tr class="rowtitle0" >
     <td>
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
@@ -30,6 +32,7 @@
 	  <th valign="top">Count</th>
        </tr>
 %    foreach my $pt (sort { $a->name cmp $b->name } ProductType->retrieve_all){
+%      my $totaldevs = 0;
 %      my @objs = Product->search_bytype($pt);
        <tr class="formtablec2">
 	  <td valign="top" ><strong><% $pt->name %></strong></td>
@@ -37,6 +40,8 @@
 	  <td valign="top"></td>
        </tr>
 %       foreach my $o (@objs){
+%       $totaldevs += $o->numdevs;
+%       $grandtotal += $totaldevs;
        <tr>
 	  <td valign="top"></td>
 	  <td valign="top"><a href="view.html?table=Product&id=<% $o->id %>"><% $o->name %></a></td>
@@ -44,8 +49,17 @@
        </tr>
 
 %       }
+%      # Give total per type
+%       if ($totaldevs){
+          <tr>
+	   <td valign="top"></td>
+	   <td valign="top">Total</td>
+	   <td valign="top"><% $totaldevs %></td>
+          </tr>
+%       }
 %    }
 %# Look for unset types
+%      my $totaldevs = 0;
 %      my @objs = Product->search_notype();
 %      if (scalar @objs){
        <tr>
@@ -54,6 +68,8 @@
 	  <td valign="top"></td>
        </tr>
 %         foreach my $o (@objs){
+%           $totaldevs += $o->numdevs;
+%           $grandtotal += $totaldevs;
             <tr>
 		<td valign="top"></td>
 		<td valign="top"><a href="view.html?table=Product&id=<% $o->id %>"><% $o->name %></a></td>
@@ -61,7 +77,20 @@
             </tr>
 
 %         }
+%         if ($totaldevs){
+            <tr>
+	     <td valign="top"></td>
+	     <td valign="top">Total</td>
+	     <td valign="top"><% $totaldevs %></td>
+            </tr>
+%         }
 %      }
+%# Present total
+       <tr class="formtabletitle">
+	  <td valign="top"></td>
+	  <td valign="top"><strong>Total</strong></td>
+	  <td valign="top"><strong><% $grandtotal %></strong></td>
+       </tr>
 
     </table>
     </td>
