@@ -34,6 +34,8 @@ if( exists( $args{insert} ) ) {
     }
     $tmp{type} = "0";   # maybe tmp; can't be null
     $tmp{device} = "0"; # same
+    $tmp{contactlist} = "0"; # same
+    $tmp{user} = "0"; # same
     eval { $newnode = Node->create( \%tmp ); }
       or die "Unable to create node $args{node}: $@\n";
     $inserted = $newnode->id;
@@ -184,6 +186,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.25  2003/07/17 02:24:00  netdot
+#  Set user and contactlist to '0' --cv
+#
 #  Revision 1.24  2003/07/17 00:03:53  netdot
 #  *** empty log message ***
 #
