@@ -53,7 +53,7 @@ if( $args{table} ) {
 %     } else {
         <tr>
         <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
-%       my $ft = (Meta->search( name => $linksto{$c} ))[0];
+%       my $ft = $gui->getmeta( $linksto{$c} );
 %       if( ! defined( $ft ) ) {
           No <% linksto{$c} %> in Meta table
 %       } elsif( defined( $obj ) && $obj->$c == 0 ) {
@@ -62,15 +62,15 @@ if( $args{table} ) {
 %                && ! defined( $linksto{$c}->retrieve( int( $obj->$c ) ) ) ) {
           -
 %       } else {
-%         my $lbl = $ft->label;
           <td>
           <select name="<% $c %>">
 %         foreach my $fkobj ( $linksto{$c}->retrieve_all ) {
+%           my $lbl = $gui->getobjlabel( $fkobj, ", " );
 %           if( ( defined( $obj ) && $fkobj->id == $obj->$c->id ) 
 %               || ( $fkobj->id == $session{$c} ) ) {
-              <option value="<% $fkobj->id %>" selected><% $fkobj->$lbl %></option>
+              <option value="<% $fkobj->id %>" selected><% $lbl %></option>
 %           } else {
-              <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
+              <option value="<% $fkobj->id %>"><% $lbl %></option>
 %           }
 %         } # for
           <option value="0">[null]</option>
@@ -99,7 +99,6 @@ if( $args{table} ) {
 %order => undef
 %orderbrief => undef
 %linksto => undef
-%linksfrom => undef
 $obj => undef
 %session => undef
 $META => undef
@@ -123,6 +122,9 @@ Arguments:
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.18  2003/06/27 19:08:30  netdot
+#  fixed some problems in the dropdown menu area
+#
 #  Revision 1.17  2003/06/18 17:24:42  netdot
 #  fixed variable declarations
 #
