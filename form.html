@@ -42,6 +42,7 @@ if( $args{table} ) {
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %     next if( $c eq 'id' );
 %     next if( $c eq 'disabled' && ! $args{showdisabled} );
+% ################################################
 %     if( ! exists( $linksto{$c} ) ) { 
         <tr>
         <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
@@ -51,6 +52,7 @@ if( $args{table} ) {
           <td colspan="2"><input type="text" size="40" name="<% $c %>"></td>
 %       }
         </tr>
+% ################################################
 %     } else {
         <tr>
         <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
@@ -105,6 +107,9 @@ Arguments:
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.5  2003/05/14 16:26:52  netdot
+#  added some markers
+#
 #  Revision 1.4  2003/05/09 00:02:28  netdot
 #  removed submit button from this component; probably should be in
 #  calling component
