@@ -9,41 +9,6 @@ body {
 }
 
 
-body#Main li.main, 
-body#Management li.management,
-body#Services li.services, 
-body#Operations li.operations,
-body#Plant li.cableplant, 
-body#Generic li.generic,
-body#Reports li.reports, 
-body#Help li.help {
-    border-bottom: 1px solid #000000;
-    color: #000000;
-    background-color: #e7e6f2;
-}
-
-
-body#Main li.main a:link, 
-body#Main li.main a:visited,
-body#Management li.management a:link, 
-body#Management li.management a:visited,
-body#Services li.services a:link, 
-body#Services li.services a:visited,
-body#Operations li.operations a:link, 
-body#Operations li.operations a:visited,
-body#Plant li.cableplant a:link,
-body#Plant li.cableplant a:visited,
-body#Generic li.generic a:link,
-body#Generic li.generic a:visited,
-body#Reports li.reports a:link, 
-body#Reports li.reports a:visited, 
-body#Help li.help a:link,
-body#Help li.help a:visited {
-    color: #000000;
-    background-color: #e7e6f2;
-}
-
-
 #header {
     height: 5em;
 }
@@ -74,34 +39,109 @@ body#Help li.help a:visited {
 }
 
 
-ul#navigation {
-    list-style-type: none;
-    margin: 0;
-    padding-left: 20px;
-    padding-bottom: 28px;
-    border-bottom: 1px solid #000000;
-    font-size: 1.1em;
+#navbar {
+    position: relative;
+    witdh: 100%;
+    height: 3em;
+    width: 45em; /* required for broken browsers */
 }
-ul#navigation li {
-    float: left;
-    height: 25px;
+#navbar ul#navigation {
+    margin: 0;
+    padding: 0;
+    bottom: -1px;
+    width: 45em;  /* required for broken browsers */
+
+/*  Older stuff:  
+    padding-left: 20px;
+    border-bottom: 1px solid #000000;
+    padding-bottom: 28px; */
+}
+#navbar ul#navigation li {
     display: inline;
+    list-style: none;
+
+/*  Older stuff:
+    height: 25px;
     background-color: #c2bed8;
     color: #000000;
     margin: 2px 2px 0 2px;
-    border: 1px solid #000000;
+    border: 1px solid #000000; */
 }
-ul#navigation a:link, ul#navigation a:visited {
+#navbar ul#navigation a, 
+#navbar ul#navigation span, 
+#navbar ul#navigation a.current {
     display: block;
-    color: #000000;
-    background-color: transparent;
+    float: left;
+    padding: 0px 5px 5px 0px;
+    margin: 1px 2px 0 0;
+    text-align: center;
     text-decoration: none;
-    padding: 4px;
-}
-ul#navigation a:hover {
     color: #000000;
-    background-color: #e7e6f2;
 }
+#navbar ul#navigation span, 
+#navbar ul#navigation a.current, 
+#navbar ul#navigation a.current:hover {
+    border: 1px solid #000000;
+    border-bottom: none;
+/*    background: #e7e6f2; */
+    background: #c2bed8;
+    margin-top: 0;
+}
+#navbar ul#navigation a {
+    background: #e7e6f2;
+    border: 1px solid #aaaaaa;
+    border-bottom: none;
+}
+#navbar ul#navigation a:hover {
+    margin-top: 0;
+    border-color: #665;
+    background: #e7e6f2;
+/*    padding-bottom: 5px; */
+}
+
+
+
+#navbar ul#subnavigation {
+    position: absolute;
+    margin: 0;
+    padding: 0;
+    left: 1px;
+    bottom: -1.5px;
+    width: 50em; /* required for broken browsers */
+    background: #e7e6f2;
+}
+#navbar ul#subnavigation li a,
+#navbar ul#subnavigation li span {
+    width: auto;
+    display: block;
+    float: left;
+    padding: 0 10px 0px 10px;
+    margin: 0;
+    text-align: auto;
+    border: none;
+    border-right: 1px dotted #AAA;
+}
+#navbar ul#subnavigation li a {
+    color: #06c;
+    text-decoration: none;
+}
+#navbar ul#subnavigation li a:hover {
+    background: transparent;
+    padding: 0px 10px;
+    text-decoration: underline;
+    border: none;
+    border-right: 1px dotted #AAAAAA;
+}
+#navbar ul#subnavigation li a:active {
+    color: #000000
+    background: transparent;
+}
+#navbar ul#subnavigation li:last-child a { 
+    border: none; 
+}
+
+
+    
 
 
 #content {
@@ -122,6 +162,13 @@ ul#navigation a:hover {
 /*
 
  Old stuff below
+
+#navbar ul#navigation a:link, #navbar ul#navigation a:visited, #navbar ul#navigation span {
+    display: block;
+    background-color: transparent;
+    text-decoration: none;
+    padding: 4px;
+}
 
 */
 
