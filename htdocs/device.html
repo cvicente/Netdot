@@ -324,29 +324,26 @@ function showVlan(){
         <tr>
 	   <td class="formtablec1">Room: </td>
 	   <td class="formtablec2"> 
-%               if ($editloc) {       
+%               if ($editloc) {
                 <select name="Device__<% $id %>__room" onChange="setNull(document.netdotform.Device__<% $id %>__closet);">
-%               if ($o->room) {
-                <option value="<% $o->room->id %>"><% $o->room->name %></option>
+                <option value="">-- Make your selection --</option>
+%               if (defined($o)) {
+%                   foreach my $floor ($o->site->floors) {
+%                       foreach my $room ($floor->rooms) {
+%                           printf("<option value=\"%d\" %s>%s</option>\n", $room->id, ($o->room && $room->id == $o->room->id ? "SELECTED" : ""), $room->name);
+%                       }
+%                   }
 %               }
                 <option value="0">[null]</option>
                 </select>
 %               } else {
                 <% $o->room ? sprintf("<A HREF=\"view.html?table=Room&id=%d\">%s</A>", $o->room->id, $o->room->name) : "" %>
-%               }       
+%               }
 	   </td>
 	   <td class="formtablec1"> <i>- or -</i> Closet: </td>
 	   <td class="formtablec2">
-%               if ($editloc) {       
-                <select name="Device__<% $id %>__closet" onChange="setNull(document.netdotform.Device__<% $id %>__room);">
-%               if ($o->closet) {
-                <option value="<% $o->closet->id %>"><% $o->closet->name %></option>
-%               }
-                <option value="0">[null]</option>
-                </select>
-%               } else {
-                <% $o->closet ? sprintf("<A HREF=\"closet.html?id=%d\">%s</A>", $o->closet->id, $o->closet->name) : "" %>
-%               }       
+%               my $closet_js = sprintf("onChange=\"setNull(document.netdotform.Device__%d__room);\"", $id);
+%               $ui->selectLookup(object=>$o, column=>"closet", lookup=>"Closet", edit=>$editloc, where=>{site=>($o ? $o->site : "")}, makeLink=>1, linkPage=>"closet.html", htmlExtra=>$closet_js);
 	   </td>
         <tr>
 	   <td class="formtablec1">Rack: </td>
