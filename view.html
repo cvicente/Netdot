@@ -98,7 +98,7 @@ my $h_meta = $gui->getmeta($h_table);
   <!-- Begin left hand menu -->
   <td align="left" valign="top" width="20%">
 % if ($table !~ /_history/){
-   <table border="0" cellspacing="0" bgcolor="#CCCCCC" width="80%" class="tablebackground">
+   <table border="0" cellpadding="0" cellspacing="0" bgcolor="#CCCCCC" width="80%" class="tablebackground">
     <tr><td>
      <font size="-1">
       <table border="0" cellspacing="0" cellpadding="1" bgcolor="#FFFFFF" width="100%" class="tablebackground">
@@ -162,7 +162,7 @@ my $h_meta = $gui->getmeta($h_table);
    <table cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC" width="80%" class="tablebackground">
       <tr>
          <td colspan="2">
-            <table border="0" cellspacing="0" cellpadding="0" width="100%" class="tablebackground">
+            <table border="0" cellspacing="0" cellpadding="1" width="100%" class="tablebackground">
             <tr class="tabletitle">
                <td align="left" width="20%">&nbsp;</td>
                <td align="center" width="60%"><strong><% $table %></strong></td>
@@ -180,7 +180,7 @@ my $h_meta = $gui->getmeta($h_table);
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %      next if ($c eq 'id' || $c eq 'aliases');
        <tr> 
-       <td width="20%" align="right" valign="center" bgcolor="#DDDDDD" class="column1"><% $c %>:</td>
+       <td width="20%" align="right" valign="top" bgcolor="#DDDDDD" class="column1"><% $c %>:</td>
 %      if (!exists($linksto{$c}) ){
 %          if ( $gui->getsqltype($table,$c) =~ /bool/ ){
 %	      if ($obj->$c){
@@ -189,9 +189,9 @@ my $h_meta = $gui->getmeta($h_table);
 	         <td><strong>no</strong></td>
 %	      }
 %	   }else{
-	      <td class="column2a"><strong><% $obj->$c %></strong></td>
+	      <td class="column2"><strong><% $obj->$c %></strong></td>
 %	   }
-%      }else{
+%      } else {
          <td align="left" valign="bottom">
 %	    my $fkobj;
 %	    unless ( $obj->$c && ref($obj->$c) ){
@@ -251,6 +251,9 @@ my $gui = Netdot::GUI->new();
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.24  2003/07/11 17:55:46  netdot
+#  Added more css tags. -miyake
+#
 #  Revision 1.23  2003/07/11 02:19:15  netdot
 #  Added extra checks for foreign objects
 #
