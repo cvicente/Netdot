@@ -48,7 +48,7 @@ foreach my $j ( keys %ARGS ) {
 %       map { push @objs, $results{$tbl}{$_} } keys %{ $results{$tbl} };
 	<tr>
         <td><strong><% $tbl %></strong>
-        <& sortresults.html, table => $tbl, object => \@objs &>
+        <& sortresults.html, table => $tbl, object => \@objs, view => "expanded" &>
 
 %     } # end foreach tbl
 %   } # end else
@@ -77,6 +77,9 @@ my $dbh = DBI->connect( "dbi:mysql:netdot", "netdot_user", "netdot_pass" )
 
 ######################################################################
 # $Log: search.html,v $
+# Revision 1.5  2003/05/01 00:12:40  netdot
+# supporting view argument in sortresults.html
+#
 # Revision 1.4  2003/04/30 23:55:42  netdot
 # reflecting design in expview by carlos.  putting the name of the table
 # on the page to distinguish among tables.
