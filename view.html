@@ -69,10 +69,9 @@ my $h_meta = $gui->getmeta($h_table);
 
 % my $labelstr = $gui->getobjlabel($obj, ", ");
 <& header, title=>" View: $table: $labelstr" &>
-
-<table valign="top" border="0" width="95%">
+<table valign="top" border="0" height="100%" width="95%">
 <tr><td colspan="2">
-  <table width="100%">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0">
   <tr>
   <td valign="center" align="left" width="20%" >
       <form action="view.html" method="POST">
@@ -91,15 +90,15 @@ my $h_meta = $gui->getmeta($h_table);
   </td>
   </tr>
   </table>
-<p><br>
+<!--<p><br>-->
 </td></tr>
 
 <tr>
   <!-- Begin left hand menu -->
   <td align="left" valign="top" width="20%">
 % if ($table !~ /_history/){
-   <table border="0" cellpadding="0" cellspacing="0" bgcolor="#CCCCCC" width="80%" class="tablebackground">
-    <tr><td>
+   <table border="0" cellpadding="0" cellspacing="0" bgcolor="#CCCCCC" height="100%" width="80%" class="rowtitle1">
+   <tr><td valign="top">
      <font size="-1">
       <table border="0" cellspacing="0" cellpadding="1" bgcolor="#FFFFFF" width="100%" class="tablebackground">
         <tr class="rowtitle0">
@@ -148,6 +147,7 @@ my $h_meta = $gui->getmeta($h_table);
 	       </tr>
 %	      }
 %         }  
+      <!-- JKM -->
       </table>
      </font>
     </td></tr>
@@ -159,9 +159,9 @@ my $h_meta = $gui->getmeta($h_table);
   <td width="100%" align="center" valign="top">
 
 %if ($view eq 'all' || $view eq "$table"){
-   <table cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC" width="80%" class="tablebackground">
+   <table border="0" cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC" width="100%" class="tablebackground">
       <tr>
-         <td colspan="2">
+         <td colspan="3">
             <table border="0" cellspacing="0" cellpadding="1" width="100%" class="tablebackground">
             <tr class="tabletitle">
                <td align="left" width="20%">&nbsp;</td>
@@ -176,11 +176,12 @@ my $h_meta = $gui->getmeta($h_table);
             </table>
          </td>
       </tr>
-      <tr><td colspan="2" class="delimiter"></td>
+      <tr><td colspan="3" class="delimiter"></td>
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %      next if ($c eq 'id' || $c eq 'aliases');
        <tr> 
        <td width="20%" align="right" valign="top" bgcolor="#DDDDDD" class="column1"><% $c %>:</td>
+       <td class="delimiter" width="1"><BR></td>
 %      if (!exists($linksto{$c}) ){
 %          if ( $gui->getsqltype($table,$c) =~ /bool/ ){
 %	      if ($obj->$c){
@@ -215,7 +216,7 @@ my $h_meta = $gui->getmeta($h_table);
             <p>
             <table cellpadding="0" border="0"  bgcolor="#CCCCCC" width="80%" class="tablebackground">
 	       <tr>
-                 <td align="left"><strong><% $i %></strong></td>
+                 <td align="left" class="rowtitle1"><strong><% $i %></strong></td>
 	       <tr>
 	         <td colspan="2">
 	             <& sortresults.html, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
@@ -251,6 +252,9 @@ my $gui = Netdot::GUI->new();
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.25  2003/07/14 19:01:19  netdot
+#  added css tags and massaged appearance -miyake
+#
 #  Revision 1.24  2003/07/11 17:55:46  netdot
 #  Added more css tags. -miyake
 #
