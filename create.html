@@ -45,7 +45,7 @@ if( $args{cancel} eq "Cancel" ) {
   undef( $TBL );
   undef( $PREV );
   if( defined( $session ) ) {
-    ; #$gui->rmsession( $session );
+    $gui->rmsession( $session );
   }
   delete( $args{sid} );
   delete( $args{table} );
@@ -103,7 +103,6 @@ if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
 if( $args{confirm} eq "Confirm" ) {
   my $T = $args{create};
   my $c = $T->create( \%{ $session->{tables}{$T} } );
-#  print Dumper( $session );
   delete( $session->{tables}{ $args{create} } );
   if( length( $session->{path} ) < 1 ) {
     if( defined( $session ) ) {
@@ -176,9 +175,9 @@ if( defined( $TBL ) ) {
 %                    retrieve( int( $session->{tables}{$TBL}{$C} ) ) ) ) {
             -
 %         } else {
-%           my $lbl = $ft->label;
 %           my $o = $linksto{$C}->retrieve( $session->{tables}{$TBL}{$C} );
-            <% $o->$lbl %>
+%           my $lbl = $gui->getobjlabel( $o, ", " );
+            <% $lbl %>
 %         }
 %       } else {
           <% $session->{tables}{$TBL}{$C} %>
@@ -226,7 +225,7 @@ if( defined( $TBL ) ) {
 % ####################################################################
 <%args>
 
-$DEBUG => 1
+$DEBUG => 0
 $TBL => undef
 $PREV => undef
 $id => undef
@@ -281,6 +280,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.24  2003/07/08 21:27:40  netdot
+#  state seems to be working along with other updates to calls to GUI.pm
+#
 #  Revision 1.23  2003/07/08 00:44:44  netdot
 #  *** empty log message ***
 #
