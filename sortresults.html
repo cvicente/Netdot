@@ -10,6 +10,9 @@ if( exists( $args{view} ) ) {
     $VIEW = $args{view};
   }
 }
+if( exists( $args{sort} ) ) {
+  $SORT = $args{sort};
+}
 if( $args{table} ) {
   undef( $META );
   $META = $gui->getmeta( $args{table} );
@@ -19,6 +22,9 @@ if( $args{table} ) {
     ##############################################
     # get the label for this table (as defined in Meta)
     $LBL = ($gui->getlabels( $args{table} ))[0];
+    if( ! defined( $SORT ) ) {
+      $SORT = $LBL;
+    }
     ##############################################
     # get linksto info
     %linksto = $gui->getlinksto( $args{table} );
@@ -60,7 +66,7 @@ if( $args{table} ) {
      </tr>
 % }
 % ####################################################################
-% foreach my $o ( sort { $a->id <=> $b->id } @{ $args{object} } ) {
+% foreach my $o ( sort { $a->$SORT cmp $b->$SORT } @{ $args{object} } ) {
 %    my $flag = 1;
 %    if( $VIEW eq "row" ) {
         <tr>
@@ -133,6 +139,7 @@ if( $args{table} ) {
 %order => undef
 %linksto => undef
 %linksfrom => undef
+$SORT => undef
 $META => undef
 $LBL => undef
 $PAGE => "view.html"
@@ -152,9 +159,13 @@ Supported arguments:
   table  - name of a table in the database
   object - reference to a list of objects in that table for displaying in html
   view   - [row|column]
+  sort   - column to sort by
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.24  2003/07/11 21:30:06  netdot
+# added different sorting mechanism
+#
 # Revision 1.23  2003/07/11 18:46:58  netdot
 # Added css and massaged visual formatting.
 #
