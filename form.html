@@ -2,7 +2,7 @@
 # expect name of Table & objects that require sorting
 undef( %args );
 foreach my $j ( keys %ARGS ) {
-  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+  # next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
   $args{$j} = $ARGS{$j};
 }
 if( exists( $args{session} ) ) {
@@ -40,6 +40,9 @@ if( $args{table} ) {
 % ####################################################################
 
 % if( defined( $args{table} ) ) {
+%   if( $DEBUG ) {
+%     print "args: ", Dumper( %args );
+%   }
     <table cellpadding="3" cellspacing="1" border="0" bgcolor="#CCCCCC">
     <tr>
     <input type="hidden" name="table" value="<% $args{table} %>">
@@ -114,6 +117,7 @@ use Data::Dumper;
 my( %args, %order, %orderbrief, %linksto, %linksfrom, $obj, %session );
 undef( %session );
 
+my $DEBUG = 0;
 </%init>
 <%doc>
 
@@ -125,6 +129,9 @@ Arguments:
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.14  2003/06/04 18:03:47  netdot
+#  added debugging mechanism
+#
 #  Revision 1.13  2003/05/28 16:46:47  netdot
 #  last change doesn't seem to work so well.  :-(
 #
