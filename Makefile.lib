@@ -1,0 +1,16 @@
+#
+# makefile for htdocs
+
+FILES = `ls`
+
+all:
+	@echo
+	@echo "Preparing and installing lib files..."
+	for file in $(FILES); do \
+	    sed -e "s|^use lib .*\$|use lib \"$(PREFIX)/lib\"; |" \
+	        $$file > $$file.tmp ; \
+	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
+        done
+	@echo "Done."
+
+
