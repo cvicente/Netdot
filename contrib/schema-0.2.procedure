@@ -263,14 +263,25 @@ ALTER TABLE IpService ADD COLUMN contactlist integer;
 # trunk/contrib/schema496.script.pl
 
 ##############################
-# Changes from rev 496
+# Changes from rev 498
 
 ######################################################################
-# Procedure for upgrading to rev 497
+# Procedure for upgrading to rev 498
 # Modify type of 'columntypes' field in Meta
 ######################################################################
 
 ALTER TABLE Meta CHANGE COLUMN columntypes columntypes longblob;
+
+##############################
+# Changes from rev 498
+
+######################################################################
+# Procedure for upgrading to rev 500
+# Added 'escalation_level' to Contact
+######################################################################
+
+ALTER TABLE Contact ADD COLUMN escalation_level integer after notify_voice;
+ALTER TABLE Contact_history ADD COLUMN escalation_level integer after notify_voice;
 
 ######################################################################
 # After all that....
