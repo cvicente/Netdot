@@ -23,16 +23,40 @@
       <td>Type</td>
       <td>Product</td>
       </tr>
-%    foreach my $dev (@$list){
+<%perl>
+foreach my $o (@$list){
+    my ($name, $type, $product);
+    if ($o->name && $o->name->name){
+	$name = $o->name->name;
+    }else{
+	$name = "N/A";
+    }
+    if ($o->productname){
+	if ($o->productname->type && $o->productname->type->name){
+	    $type = $o->productname->type->name;
+	}else{
+	    $type = "N/A";
+	}
+	if ($o->productname->name){
+	    $product = $o->productname->name;
+	}else{
+	    $product = "N/A"
+	}
+    }else{
+	$type    = "N/A";
+	$product = "N/A";
+    }
+    
+</%perl>
       <tr>
 	 <td class="column2">
-	    <b><a href="device-ws.html?id=<% $dev->id %>"><% $dev->name->name %></a></b>
+	    <b><a href="device-ws.html?id=<% $o->id %>"><% $name %></a></b>
 	 </td>   
 	 <td class="column2">
-	    <b><% $dev->productname->type->name %></b>
+	    <b><% $type %></b>
 	 </td>   
 	 <td class="column2">
-	    <b><% $dev->productname->name %></b>
+	    <b><% $product %></b>
 	 </td>   
       </tr>
       <tr height="1" class="delimiter">
@@ -77,7 +101,7 @@
     $o = undef;
     if ($id){
 	$o = Device->retrieve($id);
-	$name = $o->name->name;
+	$name = (defined($o->name->name)) ? $o->name->name : "N/A";
     }
 }
 </%perl>
@@ -127,7 +151,7 @@
 	    <tr>
 	      <td class="formtablec1">Name: </td>
 	      <td class="formtablec2"> 
-%	         if ($o->name){
+%	         if ($o->name && $o->name->name){
 %	      	   if ($editgen){	 
 		      <input type="text" name="RR__<% $o->name->id %>__name" value="<% $o->name->name %>">  
 %	           }else{

@@ -10,7 +10,6 @@ use Netdot::UI;
 use Netdot::IPManager;
 use Netdot::DNSManager;
 use strict;
-use Data::Dumper;
 
 #Be sure to return 1
 1;
@@ -24,19 +23,27 @@ sub new {
     my $class = ref( $proto ) || $proto;
     my $self = {};
     bless $self, $class;
+    $self->{'_snmpversion'}   = $argv{'logfacility'} || $self->{'DEFAULT_SNMPVERSION'},
+    $self->{'_snmpcommunity'} = $argv{'logfacility'} || $self->{'DEFAULT_SNMPCOMMUNITY'},
+    $self->{'_snmpretries'}   = $argv{'logfacility'} || $self->{'DEFAULT_SNMPRETRIES'},
+    $self->{'_snmptimeout'}   = $argv{'logfacility'} || $self->{'DEFAULT_SNMPTIMEOUT'},
 
     $self = $self->SUPER::new( %argv );
 
     $self->{nv} = NetViewer::RRD::SNMP::NV->new(aliases     => "PREFIX/etc/categories",
-						snmpversion => $self->{'DEFAULT_SNMPVERSION'},
-						community   => $self->{'DEFAULT_SNMPCOMMUNITY'},
-						retries     => $self->{'DEFAULT_SNMPRETRIES'},
-						timeout     => $self->{'DEFAULT_SNMPTIMEOUT'},
+						snmpversion => $self->{'_snmpversion'},
+						community   => $self->{'_snmpcommunity'},
+						retries     => $self->{'_snmpretries'},
+						timeout     => $self->{'_snmptimeout'},
 						);
     $self->{ui}  = Netdot::UI->new();
     $self->{ipm} = Netdot::IPManager->new();
     $self->{dns} = Netdot::DNSManager->new();
-
+    $self->{badhubs} = {};
+    foreach my $oid (split /\s+/, $self->{'BADHUBS'}){
+	$self->{badhubs}->{$oid} = '';
+    }
+    
     wantarray ? ( $self, '' ) : $self; 
 }
 
@@ -69,7 +76,49 @@ sub _readablehex {
 }
 
 #####################################################################
-# Discover device
+# Find Device
+# Performs some lookups in various places to determine
+# if device exists in DB
+#####################################################################
+sub find_dev {
+    my ($self, $host) = @_;
+    my ($device, $comstr);
+    $self->error(undef);
+    $self->_clear_output();
+
+    if ($device = $self->{dns}->getdevbyname($host)){
+	my $msg = sprintf("Device %s exists in DB.  Will try to update", $host);
+	$self->debug( loglevel => 'LOG_NOTICE',
+		      message  => $msg );
+	$self->output($msg);
+	$comstr = $device->community
+    }elsif($self->{dns}->getrrbyname($host)){
+	my $msg = sprintf("Name %s exists but Device not in DB.  Will try to create", $host);
+	$self->debug( loglevel => 'LOG_NOTICE',
+		      message  => $msg );
+	$self->output($msg);
+    }elsif(my $ip = $self->{ipm}->searchblock($host)){
+	if ( $ip->interface && ($device = $ip->interface->device) ){
+	    my $msg = sprintf("Device with address %s exists in DB. Will try to update", $ip->address);
+	    $self->debug( loglevel => 'LOG_NOTICE',
+			  message  => $msg );
+	    $self->output($msg);
+	    $comstr = $device->community;
+	}else{
+	    my $msg = sprintf("Address %s exists but Device not in DB.  Will try to create", $host);
+	    $self->debug( loglevel => 'LOG_NOTICE',
+			  message  => $msg );
+	    $self->output($msg);
+	    $self->output();
+	}
+    }else{
+	$self->output(sprintf("Device %s not in DB.  Will try to create", $host));
+    }
+    return ($comstr, $device);
+}
+
+#####################################################################
+# Update device
 # This method can be called from Netdot's web components or 
 # from independent scripts.  Should be able to update existing 
 # devices or create new ones
@@ -80,9 +129,9 @@ sub _readablehex {
 #   device: Existing 'Device' object 
 #   comstr: SNMP community string (default "public")
 #####################################################################
-sub discover {
+sub update {
     my ($self, %argv) = @_;
-    my (%dev, $device, $dvn, %ifs, %dbifdeps, %badhubs, $host, $comstr);
+    my ($host, $comstr, %dev, $device, $dvn, %ifs, %dbifdeps);
     $self->error(undef);
     $self->_clear_output();
 
@@ -90,31 +139,16 @@ sub discover {
 		 message => "Arguments are: %s" ,
 		 args => [ join ', ', map {"$_ = $argv{$_}"} keys %argv ]);
     
-    unless ( $host = $argv{host} ){
-	$self->error( sprintf("Argument 'host' is required") );
+    unless ( ($host   =    $argv{host})   &&
+	     ($comstr =    $argv{comstr}) && 
+	     (%dev    =  %{$argv{dev}}) ){
+	$self->error( sprintf("Missing required arguments") );
 	$self->debug(loglevel => 'LOG_ERR',
-		      message => $self->error);
+		     message => $self->error);
 	return 0;
     }
-
-    if ($device = $self->{dns}->getdevbyname($host)){
-	$self->output(sprintf("Device %s exists in DB.  Will try to update", $host));
-	$comstr = $device->community
-    }elsif($self->{dns}->getrrbyname($host)){
-	$self->output(sprintf("Name %s exists but Device not in DB.  Will try to create", $host));
-    }elsif(my $ip = $self->{ipm}->searchblock($host)){
-	if ( $device = $ip->interface->device ){
-	    $self->output(sprintf("Device with address %s exists in DB. Will try to update", $ip->address));
-	    $comstr = $device->community;
-	}else{
-	    $self->output(sprintf("Address %s exists but Device not in DB.  Will try to create", $host));
-	}
-    }else{
-	$self->output(sprintf("Device %s not in DB.  Will try to create", $host));
-    }
-
-    $comstr ||= $argv{comstr};
-
+    $device = $argv{device} if exists $argv{device};
+    
     if ( $device ){
 	################################################     
 	# Keep a hash of stored Interfaces for this Device
@@ -147,47 +181,26 @@ sub discover {
 	    }
 	}
     }
-    
-    $self->{nv}->build_config( "device", $host, $comstr );
-    
-    ################################################
-    # get information from the device
-    
-    my %dev;
-    unless( (%dev  = $self->{nv}->get_device( "device", $host )) && exists $dev{sysUpTime} ) {
-	$self->error(sprintf ("Could not reach device %s", $host) );
-	$self->debug(loglevel => 'LOG_ERR',
-		     message => $self->error, 
-		     );
-	return 0;
-    }
-    if ($dev{sysUpTime} < 0 ) {
-	$self->error( sprintf("Device %s did not respond", $host) );
-	$self->debug( loglevel => 'LOG_ERR',
-		      message => $self->error);
-	return 0;
-    }
-    my $msg = sprintf("Contacted Device %s", $host);
-    $self->debug( loglevel => 'LOG_NOTICE',
-		  message => $msg );
-    $self->output($msg);
-    undef($msg);
-
     my %devtmp;
-    $devtmp{sysdescription} = $dev{sysDescr};
+    $devtmp{sysdescription} = $dev{sysdescription};
     $devtmp{community} = $comstr;
-    
     ##############################################
     # Make sure name is in DNS
-
 
     my $zone = $self->{'DEFAULT_DNSDOMAIN'};
     my $rr;
     if ( $rr = $self->{dns}->getrrbyname($host) ) {
+	my $msg = sprintf("Name %s exists in DB. Pointing to it", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => "Name %s exists in DB. Pointing to it.", 
-		      args => [$host]);
+		      message  => $msg);
+	$self->output($msg);
 	$devtmp{name} = $rr;
+    }elsif($device && $device->name && $device->name->name){
+	my $msg = sprintf("Device %s exists in DB as %s. Keeping existing name", $host, $device->name->name);
+	$self->debug( loglevel => 'LOG_NOTICE',
+		      message  => $msg);
+	$self->output($msg);
+	$devtmp{name} = $device->name;
     }else{
 	my $msg = sprintf ("Name %s not in DB. Adding DNS entry.", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
@@ -232,30 +245,25 @@ sub discover {
     ###############################################
     # Try to assign Product based on SysObjectID
 
-    $dev{sysObjectID} =~ s/^\.(.*)/$1/;  #Remove unwanted first dot
-    if( my $prod = (Product->search( sysobjectid => $dev{sysObjectID} ))[0] ) {
+    if( my $prod = (Product->search( sysobjectid => $dev{sysobjectid} ))[0] ) {
 	$self->debug( loglevel => 'LOG_INFO',
 		      message  => "SysID matches %s", 
-		      args => [$prod->name]);
+		      args     => [$prod->name]);
 	$devtmp{productname} = $prod->id;
     }else{
 	$self->debug( loglevel => 'LOG_INFO',
 		      message  => "New product with SysID %s.  Adding to DB",
-		      args => [$dev{sysObjectID}]);
+		      args     => [$dev{sysobjectid}]);
 	
 	###############################################
 	# Create a new product entry
 	
-	# See if matching enterprise exists
-	# Extract enterprise id from sysobjectid
-
-	my $oid = $dev{sysObjectID};
-	$oid =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
+	my $oid = $dev{enterprise};
 	my $ent;
 	if($ent = (Entity->search( oid => $oid ))[0] ) {
 	    $self->debug( loglevel => 'LOG_INFO',
 			  message  => "Manufacturer OID matches %s", 
-			  args => [$ent->name]);
+			  args     => [$ent->name]);
 	}else{
 	    $self->debug( loglevel => 'LOG_INFO',
 			  message  => "Entity with Enterprise OID %s not found. Creating", 
@@ -269,9 +277,9 @@ sub discover {
 			   type => $t,
 			   );
 	    if ( ($ent = $self->{ui}->insert(table => 'Entity', 
-				     state => { name => $oid,
-						oid  => $oid,
-						type => $t })
+					     state => { name => $oid,
+							oid  => $oid,
+							type => $t })
 		  ) ){
 		my $msg = sprintf("Created Entity with Enterprise OID: %s.  Please set name, etc.", $oid);
 		$self->debug( loglevel => 'LOG_NOTICE',
@@ -279,27 +287,27 @@ sub discover {
 	    }else{
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => "Could not create new Entity with oid: %s: %s",
-			      args => [$oid, $self->{ui}->error],
+			      args     => [$oid, $self->{ui}->error],
 			      );
 		$ent = 0;
 	    }
 	}
-	my %prodtmp = ( name => $dev{sysObjectID},
-			description => $dev{sysDescr},
-			sysobjectid => $dev{sysObjectID},
-			type => 0,
+	my %prodtmp = ( name         => $dev{sysobjectid},
+			description  => $dev{sysdescription},
+			sysobjectid  => $dev{sysobjectid},
+			type         => 0,
 			manufacturer => $ent,
 			);
 	my $newprodid;
 	if ( ($newprodid = $self->{ui}->insert(table => 'Product', state => \%prodtmp)) ){
-	    my $msg = sprintf("Created product with SysID: %s.  Please set name, type, etc.", $dev{sysObjectID});
+	    my $msg = sprintf("Created product with SysID: %s.  Please set name, type, etc.", $dev{sysobjectid});
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg );		
 	    $devtmp{productname} = $newprodid;
 	}else{
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => "Could not create new Product with SysID: %s: %s",
-			  args => [$dev{sysObjectID}, $self->{ui}->error],
+			  args     => [$dev{sysobjectid}, $self->{ui}->error],
 			  );		
 	    $devtmp{productname} = 0;
 	}
@@ -307,12 +315,9 @@ sub discover {
     ###############################################
     # Update/add PhsyAddr for Device
     
-    if( length( $dev{dot1dBaseBridgeAddress} ) > 0  ) {
-	# Canonicalize address
-	my $braddr = $self->_readablehex($dev{dot1dBaseBridgeAddress});
-	
+    if( defined $dev{physaddr} ) {
 	# Look it up
-	if (my $phy = (PhysAddr->search(address => $braddr))[0] ){
+	if (my $phy = (PhysAddr->search(address => $dev{physaddr}))[0] ){
 	    if ( ! $device ){
 		if ( my $otherdev = (Device->search(physaddr => $phy->id))[0] ){
 		    #
@@ -320,7 +325,7 @@ sub discover {
 		    # 
 		    my $name = (defined($otherdev->name->name))? $otherdev->name->name : $otherdev->id;
 		    $self->error( sprintf("PhysAddr %s belongs to existing device %s. Aborting", 
-					  $braddr, $name ) ); 
+					  $dev{physaddr}, $name ) ); 
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => $self->error,
 				  );
@@ -333,18 +338,18 @@ sub discover {
 		#
 		$devtmp{physaddr} = $phy->id;
 		$self->{ui}->update( object => $phy, 
-			     state => {last_seen => $self->{ui}->timestamp },
-			     );
+				     state  => {last_seen => $self->{ui}->timestamp },
+				     );
 	    }
 	    $self->debug( loglevel => 'LOG_INFO',
 			  message  => "Pointing to existing %s as base bridge address",
-			  args => [$braddr],
+			  args => [$dev{physaddr}],
 			  );		
 	    #
 	    # address is new.  Add it
 	    #
 	}else{
-	    my %phaddrtmp = ( address => $braddr,
+	    my %phaddrtmp = ( address => $dev{physaddr},
 			      last_seen => $self->{ui}->timestamp,
 			      );
 	    my $newphaddr;
@@ -370,21 +375,20 @@ sub discover {
     ###############################################
     # Serial Number
     
-    if( length( $dev{entPhysicalSerialNum} ) > 0 
-	&& $dev{entPhysicalSerialNum} ne "noSuchObject" ) {
-	
+    if( defined $dev{serialnumber} ) {
+
 	if ( ! $device ){
-	    if ( my $otherdev = (Device->search(serialnumber => $dev{entPhysicalSerialNum}))[0] ){
+	    if ( my $otherdev = (Device->search(serialnumber => $dev{serialnumber}))[0] ){
 		
 		$self->error( sprintf("S/N %s belongs to existing device %s. Aborting.", 
-				      $dev{entPhysicalSerialNum}, $host) ); 
+				      $dev{serialnumber}, $host) ); 
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $self->error,
 			      );
 		return 0;
 	    }
 	}
-	$devtmp{serialnumber} = $dev{entPhysicalSerialNum};
+	$devtmp{serialnumber} = $dev{serialnumber};
     }else{
 	$self->debug( loglevel => 'LOG_INFO',
 		      message  => "Device did not return serial number",
@@ -405,12 +409,12 @@ sub discover {
     }else{
 	# Some Defaults
 	# 
-	$devtmp{monitored} = 1;
-	$devtmp{snmp_managed} = 1;
-	$devtmp{canautoupdate} = 1;
+	$devtmp{monitored}        = 1;
+	$devtmp{snmp_managed}     = 1;
+	$devtmp{canautoupdate}    = 1;
 	$devtmp{customer_managed} = 0;
-	$devtmp{natted} = 0;
-	$devtmp{dateinstalled} = $self->{ui}->date;
+	$devtmp{natted}           = 0;
+	$devtmp{dateinstalled}    = $self->{ui}->date;
 	my $newdevid;
 	unless( $newdevid = $self->{ui}->insert( table => 'Device', state => \%devtmp ) ) {
 	    $self->error( sprintf("Error creating device %s: %s", $host, $self->{ui}->error) ); 
@@ -421,90 +425,37 @@ sub discover {
 	}
 	$device = Device->retrieve($newdevid);
     }
-    ##############################################
-    # Begin work on interfaces
-  
-    my (%dbips, %newips, %dbvlans, %ifvlans);
-    # MAU-MIB's ifMauType to half/full translations
-    my %Mau2Duplex = ( '13.6.1.2.1.26.4.10' => "half",
-		       '1.3.6.1.2.1.26.4.11' => "full",
-		       '1.3.6.1.2.1.26.4.12' => "half",
-		       '1.3.6.1.2.1.26.4.13' => "full",
-		       '1.3.6.1.2.1.26.4.15' => "half",
-		       '1.3.6.1.2.1.26.4.16' => "full",
-		       '1.3.6.1.2.1.26.4.17' => "half",
-		       '1.3.6.1.2.1.26.4.18' => "full",
-		       '1.3.6.1.2.1.26.4.19' => "half",
-		       '1.3.6.1.2.1.26.4.20' => "full",
-		       '1.3.6.1.2.1.26.4.21' => "half",
-		       '1.3.6.1.2.1.26.4.22' => "full",
-		       '1.3.6.1.2.1.26.4.23' => "half",
-		       '1.3.6.1.2.1.26.4.24' => "full",
-		       '1.3.6.1.2.1.26.4.25' => "half",
-		       '1.3.6.1.2.1.26.4.26' => "full",
-		       '1.3.6.1.2.1.26.4.27' => "half",
-		       '1.3.6.1.2.1.26.4.28' => "full",
-		       '1.3.6.1.2.1.26.4.29' => "half",
-		       '1.3.6.1.2.1.26.4.30' => "full",
-		       );
-    
-    # Catalyst's portDuplex to half/full translations
-    my %CatDuplex = ( 1 => "half",
-		      2 => "full",
-		      3 => "auto",  #(*)
-		      4 => "auto",
-		      );
-
-# (*) MIB says "disagree", but we can assume it was auto and the other 
-# end wasn't
-    
-    my @ifrsv = split /\s+/, $self->{'IFRESERVED'};
-    
-    $self->debug( loglevel => 'LOG_DEBUG',
-		  message => "Ignoring Interfaces: %s", 
-		  args => [ join ', ', @ifrsv ] );	    	 
-    
-    ##############################################
-    # Netdot to Netviewer field name translations
-    # (values that are stored directly)
-
-    my %ifnames = ( number      => "instance",
-		    name        => "name",
-		    type        => "ifType",
-		    description => "descr",
-		    speed       => "ifSpeed",
-		    status      => "ifAdminStatus" );
 
     ##############################################
     # for each interface just discovered...
-    
+
+    my (%dbips, %newips, %dbvlans, %ifvlans);
+
     foreach my $newif ( keys %{ $dev{interface} } ) {
-	############################################
-	# check whether should skip IF
-	my $skip = 0;
-	foreach my $n ( @ifrsv ) {
-	    $skip = 1 if( $dev{interface}{$newif}{name} =~ /$n/ );
-	}
-	next if( $skip );
+
 	############################################
 	# set up IF state data
 	my( %iftmp, $if );
 	$iftmp{device} = $device->id;
-	foreach my $dbname ( keys %ifnames ) {
-	    if( $dbname eq "description" ) {
-		if( $dev{interface}{$newif}{$ifnames{$dbname}} ne "-" 
-		    && $dev{interface}{$newif}{$ifnames{$dbname}} ne "not assigned" ) {
-		    $iftmp{$dbname} = $dev{interface}{$newif}{$ifnames{$dbname}};
-		}
-	    }else {
-		$iftmp{$dbname} = $dev{interface}{$newif}{$ifnames{$dbname}};
+
+	my %iffields = ( number      => "",
+			  name        => "",
+			  type        => "",
+			  description => "",
+			  speed       => "",
+			  status      => "" );
+
+	foreach my $field ( keys %{ $dev{interface}{$newif} } ){
+	    if (exists $iffields{$field}){
+		$iftmp{$field} = $dev{interface}{$newif}{$field};
 	    }
 	}
-	$iftmp{monitored} = 1 if exists ($dev{interface}{$newif}{ipAdEntIfIndex});
+
+	$iftmp{monitored} = 1 if exists ($dev{interface}{$newif}{ips});
+
 	###############################################
 	# Update/add PhsyAddr for Interface
-	if (defined ($dev{interface}{$newif}{ifPhysAddress})){
-	    my $addr = $self->_readablehex($dev{interface}{$newif}{ifPhysAddress});
+	if (defined (my $addr = $dev{interface}{$newif}{physaddr})){
 	    # Look it up
 	    if (my $phy = (PhysAddr->search(address => $addr))[0] ){
 		#
@@ -529,7 +480,10 @@ sub discover {
 		if ( ! ($newphaddr = $self->{ui}->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => "Could not create new PhysAddr %s for Interface %s,%s: %s",
-				  args => [$phaddrtmp{address}, $iftmp{number}, $iftmp{name}, $self->{ui}->error],
+				  args     => [$phaddrtmp{address}, 
+					       $iftmp{number}, 
+					       $iftmp{name}, 
+					       $self->{ui}->error],
 				  );
 		    $iftmp{physaddr} = 0;
 		}else{
@@ -541,29 +495,6 @@ sub discover {
 		}
 	    }
 	}
-	################################################################
-	# Set Duplex mode
-	
-	my $dupval;
-	################################################################
-	# Standard
-	if (defined($dev{interface}{$newif}{ifMauType})){
-	    $dupval = $dev{interface}{$newif}{ifMauType};
-	    $dupval =~ s/^\.(.*)/$1/;
-	    $iftmp{duplex} = exists ($Mau2Duplex{$dupval}) ? $Mau2Duplex{$dupval} : "unknown";
-	    ################################################################
-	    # Other Standard (used by some HP)	    
-	}elsif(defined($dev{interface}{$newif}{ifSpecific})){
-	    $dupval = $dev{interface}{$newif}{ifSpecific};
-	    $dupval =~ s/^\.(.*)/$1/;
-	    $iftmp{duplex} = exists ($Mau2Duplex{$dupval}) ? $Mau2Duplex{$dupval} : "unknown";
-	    ################################################################
-	    # Catalyst
-	}elsif(defined($dev{interface}{$newif}{portDuplex})){
-	    $dupval = $dev{interface}{$newif}{portDuplex};
-	    $iftmp{duplex} = exists ($CatDuplex{$dupval}) ? $CatDuplex{$dupval} : "unknown";
-	}
-	
 	############################################
 	# Add/Update interface
 	if ( $if = (Interface->search(device => $device->id, 
@@ -581,7 +512,7 @@ sub discover {
 	    }
 	} else {
 	    $iftmp{monitored} = 0;
-	    $iftmp{speed} ||= 0; #can't be null
+	    $iftmp{speed}   ||= 0; #can't be null
 	    
 	    my $msg = sprintf("Interface %s,%s doesn't exist. Inserting", $iftmp{number}, $iftmp{name} );
 	    $self->debug( loglevel => 'LOG_NOTICE',
@@ -611,31 +542,11 @@ sub discover {
 	# Keep a hash of VLAN membership
 	# We'll Add/Update at the end
 	
-	my ($vid, $vname);
-	################################################################
-	# Standard
-	if( defined( $dev{interface}{$newif}{dot1qPvid} ) ) {
-	    $vid = $dev{interface}{$newif}{dot1qPvid};
-	    $vname = defined($dev{interface}{$newif}{dot1qVlanStaticName}) ? 
-		$dev{interface}{$newif}{dot1qVlanStaticName} : $vid;
-	    push @{$ifvlans{$vid}{$vname}}, $if->id;
-	    
-	    ################################################################
-	    # HP
-	}elsif( defined( $dev{interface}{$newif}{hpVlanMemberIndex} ) ){
-	    
-	    $vid = $dev{interface}{$newif}{hpVlanMemberIndex};
-	    $vname = defined($dev{interface}{$newif}{hpVlanIdentName}) ?
-		$dev{interface}{$newif}{hpVlanIdentName} : $vid;
-	    push @{$ifvlans{$vid}{$vname}}, $if->id;
-
-	    ################################################################
-	    # Cisco
-	}elsif( defined( $dev{interface}{$newif}{vmVlan} )){
-	    $vid = $dev{interface}{$newif}{vmVlan};
-	    $vname = defined($dev{cviRoutedVlan}{$vid.0}{name}) ? 
-		$dev{cviRoutedVlan}{$vid.0}{name} : $vid;
-	    push @{$ifvlans{$vid}{$vname}}, $if->id;
+	if( exists( $dev{interface}{$newif}{vlans} ) ) {
+	    foreach my $vid ( keys %{ $dev{interface}{$newif}{vlans} } ){
+		my $vname = $dev{interface}{$newif}{vlans}{$vid};
+		push @{$ifvlans{$vid}{$vname}}, $if->id;
+	    }
 	}
 	# 
 	# Get all stored VLAN memberships (these are join tables);
@@ -645,19 +556,19 @@ sub discover {
 	################################################################
 	# Add/Update IPs
 	
-	if( exists( $dev{interface}{$newif}{ipAdEntIfIndex} ) && ! $device->natted ) {	    
+	if( exists( $dev{interface}{$newif}{ips} ) && ! $device->natted ) {	    
 	    # Get all stored IPs belonging to this Interface
 	    #
 	    map { $dbips{$_->address} = $_->id } $if->ips();
 
-	    foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
+	    foreach my $newip( keys %{ $dev{interface}{$newif}{ips}}){
 		my( $ipobj, $maskobj, $subnet, $ipdbobj );
 		my $version = ($newip =~ /:/) ? 6 : 4;
 		my $prefix = ($version == 6) ? 128 : 32;
 		# 
 		# Keep all new ips in a hash
 		$newips{$newip} = $if;
-
+		
 		if ( exists ($dbips{$newip}) ){
 		    #
 		    # update
@@ -669,10 +580,10 @@ sub discover {
 		    delete( $dbips{$newip} );
 		    
 		    unless( $self->{ipm}->updateblock(id        => $ifid, 
-					      address   => $newip, 
-					      prefix    => $prefix,
-					      status    => "Assigned",
-					      interface => $if )){
+						      address   => $newip, 
+						      prefix    => $prefix,
+						      status    => "Assigned",
+						      interface => $if )){
 			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
@@ -689,10 +600,10 @@ sub discover {
 				  message  => $msg );
 		    $self->output($msg);
 		    unless( $self->{ipm}->updateblock(id        => $dbip->id, 
-					      address   => $newip, 
-					      prefix    => $prefix,
-					      status    => "Assigned",
-					      interface => $if )){
+						      address   => $newip, 
+						      prefix    => $prefix,
+						      status    => "Assigned",
+						      interface => $if )){
 			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
@@ -707,9 +618,9 @@ sub discover {
 		    #
 		    # Create a new Ip
 		    unless( $self->{ipm}->insertblock(address   => $newip, 
-					      prefix    => $prefix, 
-					      status    => "Assigned",
-					      interface => $if)){
+						      prefix    => $prefix, 
+						      status    => "Assigned",
+						      interface => $if)){
 			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->{ipm}->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
@@ -726,8 +637,8 @@ sub discover {
 		# Create subnet if device is a router (ipForwarding true)
 		# and addsubnets flag is on
 
-		if ( $dev{ipForwarding} == 1 && $argv{addsubnets}){
-		    my $newmask = $dev{interface}{$newif}{ipAdEntIfIndex}{$newip};
+		if ( $dev{router} && $argv{addsubnets}){
+		    my $newmask = $dev{interface}{$newif}{ips}{$newip};
 		    my $subnetaddr = $self->{ipm}->getsubnetaddr($newip, $newmask);
 		    if ( ! ($self->{ipm}->searchblock($subnetaddr, $newmask)) ){
 			my $msg = sprintf("Subnet %s/%s doesn't exist.  Inserting", $subnetaddr, $newmask);
@@ -735,8 +646,8 @@ sub discover {
 				      message  => $msg );
 			$self->output($msg);
 			unless( $self->{ipm}->insertblock(address => $subnetaddr, 
-						  prefix  => $newmask, 
-						  status  => "Assigned") ){
+							  prefix  => $newmask, 
+							  status  => "Assigned") ){
 			    my $err = $self->{ipm}->error();
 			    my $msg = sprintf("Could not insert Subnet %s/%s: %s", 
 					      $subnetaddr, $newmask, $err);
@@ -761,60 +672,10 @@ sub discover {
     } #foreach $newif
     
     ##############################################
-    # for each hubport just discovered...
-    
-    if ( exists($badhubs{$dev{sysObjectID}} )){
-	my $msg = sprintf("Will not create/remove ports for SysID: %s", $dev{sysObjectID} );
-	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => $msg );
-	$self->output( $msg);
-    }else{
-	foreach my $newport ( keys %{ $dev{hubPorts} } ) {
-	    ############################################
-	    # set up IF state data
-	    my (%porttmp, $if);
-	    $porttmp{device} = $device->id;
-	    $porttmp{name} = $newport;
-	    $porttmp{number} = $newport;
-	    
-	    ############################################
-	    # does this Interface already exist in the DB?
-	    if( $if = (Interface->search( device => $device->id, number => $newport ))[0] ) {
-		delete( $ifs{ $if->id } );
-		unless( $self->{ui}->update( object => $if, state => \%porttmp ) ) {
-		    my $msg = sprintf("Could not update Interface %s: %s", 
-				      $newport, $self->{ui}->error);
-		    $self->debug( loglevel => 'LOG_ERR',
-				  message  => $msg,
-				  );
-		    $self->output($msg);
-		    next;
-		}
-	    } else {
-		$porttmp{monitored} = 0;
-		$porttmp{speed} = 10000000;  #most likely for hubs
-		my $msg = sprintf("Interface device %s doesn't exist. Inserting", $newport);
-		$self->debug( loglevel => 'LOG_NOTICE',
-			      message  => $msg,
-			      );
-		$self->output($msg);
-		unless ( my $ifid = $self->{ui}->insert( table => 'Interface', state => \%porttmp ) ) {
-		    my $msg = sprintf("Error inserting Interface %s: %s", $newport, $self->{ui}->error);
-		    $self->debug( loglevel => 'LOG_ERR',
-				  message  => $msg,
-				  );
-		    $self->output($msg);
-		    next;
-		}
-	    }
-	} #foreach newport
-    } #unless badhubs
-    
-    ##############################################
     # remove each interface that no longer exists
     #
-    
-    unless ( exists($badhubs{$dev{sysObjectID}} )){
+    ## Do not remove manually-added ports for these hubs
+    unless ( exists($self->{badhubs}->{$dev{sysobjectid}} )){
 	
 	foreach my $nonif ( keys %ifs ) {
 	    my $ifobj = $ifs{$nonif};
@@ -1013,7 +874,7 @@ sub discover {
     # 
    if ( (scalar(keys %newips)) == 1 ){
     
-	unless ($device->entity){
+	unless ($device->entity != 0){
 	    my $ipaddr = (keys(%newips))[0];
 	    if ( my $ipobj = $self->{ipm}->searchblock($ipaddr) ){
 		if ((my $subnet = $ipobj->parent) != 0 ){
@@ -1041,9 +902,233 @@ sub discover {
 	$self->output($msg);
     }
 
-    my $msg = sprintf("Discovery of %s completed", $host);
+    my $msg = sprintf("Discovery of %s completed\n\n", $host);
     $self->debug( loglevel => 'LOG_NOTICE',
 		  message  => $msg );
     $self->output($msg);
     return $device;
+}
+
+#####################################################################
+# get_dev_info
+# 
+# Use the SNMP libraries to get a hash with the device's information
+# This should hide all possible underlying SNMP code logic from our
+# device insertion/update code
+#
+# Required Args:
+#   host:  name or ip address of host to query
+#   comstr: SNMP community string
+# Optional args:
+#  
+#####################################################################
+sub get_dev_info {
+    my ($self, $host, $comstr) = @_;
+    $self->error(undef);
+    $self->_clear_output();
+
+    $self->{nv}->build_config( "device", $host, $comstr );
+    my (%nv, %dev);
+    unless( (%nv  = $self->{nv}->get_device( "device", $host )) &&
+	    exists $nv{sysUpTime} ) {
+	$self->error(sprintf ("Could not reach device %s", $host) );
+	$self->debug(loglevel => 'LOG_ERR',
+		     message => $self->error, 
+		     );
+	return 0;
+    }
+    if ( $nv{sysUpTime} < 0 ) {
+	$self->error( sprintf("Device %s did not respond", $host) );
+	$self->debug( loglevel => 'LOG_ERR',
+		      message => $self->error);
+	return 0;
+    }
+    my $msg = sprintf("Contacted Device %s", $host);
+    $self->debug( loglevel => 'LOG_NOTICE',
+		  message => $msg );
+    $self->output($msg);
+
+    ################################################################
+    # Device's global vars
+
+    if (defined $nv{sysObjectID}){
+	$dev{sysobjectid} = $nv{sysObjectID};
+	$dev{sysobjectid} =~ s/^\.(.*)/$1/;  #Remove unwanted first dot
+	$dev{enterprise} = $dev{sysobjectid};
+	$dev{enterprise} =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
+
+    }
+    if ( exists ($nv{sysName}) && length ($nv{sysName}) > 0 ){
+	$dev{sysname} = $nv{sysName};
+    }
+    if ( exists ($nv{sysDescr}) && length ($nv{sysDescr}) > 0 ){
+	$dev{sysdescription} = $nv{sysDescr};
+    }
+    if ( exists ($nv{sysContact}) && length ($nv{sysContact}) > 0 ){
+	$dev{syscontact} = $nv{sysContact};
+    }
+    if ( exists ($nv{sysLocation}) && length ($nv{sysLocation}) > 0 ){
+	$dev{syslocation} = $nv{sysLocation};
+    }
+    if ( exists ($nv{ipForwarding}) && $nv{ipForwarding} == 1 ){
+	$dev{router} = 1;
+    }
+    if( exists ($nv{dot1dBaseBridgeAddress}) && length($nv{dot1dBaseBridgeAddress}) > 0  ) {
+	# Canonicalize address
+	$dev{physaddr} = $self->_readablehex($nv{dot1dBaseBridgeAddress});
+    }
+    if( exists ($nv{entPhysicalSerialNum}) && length($nv{entPhysicalSerialNum}) > 0  ) {
+	$dev{serialnumber} = $nv{entPhysicalSerialNum};
+    }
+
+    ################################################################
+    # Interface stuff
+
+    ################################################################
+    # MAU-MIB's ifMauType to half/full translations
+    my %Mau2Duplex = ( '13.6.1.2.1.26.4.10' => "half",
+		       '1.3.6.1.2.1.26.4.11' => "full",
+		       '1.3.6.1.2.1.26.4.12' => "half",
+		       '1.3.6.1.2.1.26.4.13' => "full",
+		       '1.3.6.1.2.1.26.4.15' => "half",
+		       '1.3.6.1.2.1.26.4.16' => "full",
+		       '1.3.6.1.2.1.26.4.17' => "half",
+		       '1.3.6.1.2.1.26.4.18' => "full",
+		       '1.3.6.1.2.1.26.4.19' => "half",
+		       '1.3.6.1.2.1.26.4.20' => "full",
+		       '1.3.6.1.2.1.26.4.21' => "half",
+		       '1.3.6.1.2.1.26.4.22' => "full",
+		       '1.3.6.1.2.1.26.4.23' => "half",
+		       '1.3.6.1.2.1.26.4.24' => "full",
+		       '1.3.6.1.2.1.26.4.25' => "half",
+		       '1.3.6.1.2.1.26.4.26' => "full",
+		       '1.3.6.1.2.1.26.4.27' => "half",
+		       '1.3.6.1.2.1.26.4.28' => "full",
+		       '1.3.6.1.2.1.26.4.29' => "half",
+		       '1.3.6.1.2.1.26.4.30' => "full",
+		       );
+    
+    ################################################################
+    # Catalyst's portDuplex to half/full translations
+    my %CatDuplex = ( 1 => "half",
+		      2 => "full",
+		      3 => "auto",  #(*)
+		      4 => "auto",
+		      );
+    # (*) MIB says "disagree", but we can assume it was auto and the other 
+    # end wasn't
+    
+    my @ifrsv = split /\s+/, $self->{'IFRESERVED'};
+    
+    $self->debug( loglevel => 'LOG_DEBUG',
+		  message => "Ignoring Interfaces: %s", 
+		  args => [ join ', ', @ifrsv ] );	    	 
+    
+    ##############################################
+    # Netdot to Netviewer field name translations
+    # (values that are stored directly)
+
+    my %iffields = ( number      => "instance",
+		     name        => "name",
+		     type        => "ifType",
+		     description => "descr",
+		     speed       => "ifSpeed",
+		     status      => "ifAdminStatus" );
+
+    ##############################################
+    # for each interface discovered...
+    
+    foreach my $newif ( keys %{ $nv{interface} } ) {
+	############################################
+	# check whether should skip IF
+	my $skip = 0;
+	foreach my $n ( @ifrsv ) {
+	    if( $nv{interface}{$newif}{name} =~ /$n/ ) { $skip = 1; last }
+	}
+	next if( $skip );
+
+	foreach my $dbname ( keys %iffields ) {
+	    # Ignore these descriptions
+	    if( $dbname eq "description" ) {
+		if( $nv{interface}{$newif}{$iffields{$dbname}} ne "-" &&
+		    $nv{interface}{$newif}{$iffields{$dbname}} ne "not assigned" ) {
+		    $dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$iffields{$dbname}};
+		}
+	    }else {
+		$dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$iffields{$dbname}};
+	    }
+	}
+	if (exists ($nv{interface}{$newif}{ifPhysAddress}) && 
+	    length($nv{interface}{$newif}{ifPhysAddress}) > 0 ){
+	    $dev{interface}{$newif}{physaddr} = $self->_readablehex($nv{interface}{$newif}{ifPhysAddress});
+	}
+	################################################################
+	# Set Duplex mode
+	my $dupval;
+	################################################################
+	# Standard MIB
+	if (defined($nv{interface}{$newif}{ifMauType})){
+	    $dupval = $nv{interface}{$newif}{ifMauType};
+	    $dupval =~ s/^\.(.*)/$1/;
+	    $dev{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "unknown";
+	    ################################################################
+	    # Other Standard (used by some HP)	    
+	}elsif(defined($nv{interface}{$newif}{ifSpecific})){
+	    $dupval = $nv{interface}{$newif}{ifSpecific};
+	    $dupval =~ s/^\.(.*)/$1/;
+	    $nv{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "unknown";
+	    ################################################################
+	    # Catalyst
+	}elsif(defined($nv{interface}{$newif}{portDuplex})){
+	    $dupval = $nv{interface}{$newif}{portDuplex};
+	    $nv{interface}{$newif}{duplex} = (exists ($CatDuplex{$dupval})) ? $CatDuplex{$dupval} : "unknown";
+	}
+
+	####################################################################
+	# IP addresses and masks 
+	# (mask is the value for each ip address key)
+	foreach my $ip( keys %{ $nv{interface}{$newif}{ipAdEntIfIndex}}){
+	    $dev{interface}{$newif}{ips}{$ip} = $nv{interface}{$newif}{ipAdEntIfIndex}{$ip};
+	}
+
+	################################################################
+	# Vlan info
+	my ($vid, $vname);
+	################################################################
+	# Standard MIB
+	if( defined( $nv{interface}{$newif}{dot1qPvid} ) ) {
+	    $vid = $nv{interface}{$newif}{dot1qPvid};
+	    $vname = ( defined($nv{interface}{$newif}{dot1qVlanStaticName}) ) ? 
+		$nv{interface}{$newif}{dot1qVlanStaticName} : $vid;
+	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
+	    ################################################################
+	    # HP
+	}elsif( defined( $nv{interface}{$newif}{hpVlanMemberIndex} ) ){
+	    $vid = $nv{interface}{$newif}{hpVlanMemberIndex};
+	    $vname = ( defined($nv{interface}{$newif}{hpVlanIdentName}) ) ?
+		$nv{interface}{$newif}{hpVlanIdentName} : $vid;
+	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
+	    ################################################################
+	    # Cisco
+	}elsif( defined( $nv{interface}{$newif}{vmVlan} )){
+	    $vid = $nv{interface}{$newif}{vmVlan};
+	    $vname = ( defined($nv{cviRoutedVlan}{$vid.0}{name}) ) ? 
+		$nv{cviRoutedVlan}{$vid.0}{name} : $vid;
+	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
+	}
+
+    }
+    ##############################################
+    # for each hubport discovered...
+    if ( ! exists($self->{badhubs}->{$nv{sysObjectID}} )){
+	foreach my $newport ( keys %{ $nv{hubPorts} } ) {
+	    
+	    $dev{interface}{$newport}{name} = $newport;
+	    $dev{interface}{$newport}{number} = $newport;
+	    $dev{interface}{$newport}{speed} = 10000000; #most likely
+	    
+	} #foreach newport
+    } #unless badhubs
+    
+    return \%dev;
 }

@@ -55,9 +55,9 @@ sub new {
    $self->{'_foreground'}  = $argv{'foreground'}  || 0,   
    
    $self->{debug} = Debug->new(logfacility => $self->{'_logfacility'}, 
-			       loglevel => $self->{'_loglevel'},	  
-			       logident => $self->{'_logident'},
-			       foreground => $self->{'_foreground'},
+			       loglevel    => $self->{'_loglevel'},	  
+			       logident    => $self->{'_logident'},
+			       foreground  => $self->{'_foreground'},
 			       );
 
    wantarray ? ( $self, '' ) : $self;

@@ -9,13 +9,14 @@ use DBIx::DBSchema;
 
 my ($DB_HOME, $DB_DATABASE, $DB_DBA) = @ARGV;
 
-$DB_HOME ||= "/usr";
+$DB_HOME     ||= "/usr";
 $DB_DATABASE ||= "netdot";
-$DB_DBA ||= "root";
-my $BINDIR = "$DB_HOME/bin";
-my $TMP = "./.tmp";
+$DB_DBA      ||= "root";
 
-my $SCHEMA_DIR = '../etc';
+my $BINDIR     = "$DB_HOME/bin";
+my $TMP        = "./.tmp";
+
+my $SCHEMA_DIR  = '../etc';
 my $SCHEMA_FILE = "$SCHEMA_DIR/netdot.schema";
 
 my $schema_href = do "$SCHEMA_FILE" or die $@ || $!;

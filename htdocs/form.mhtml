@@ -70,7 +70,7 @@
 	   &nbsp;<input type="button" name="" value="List" 
 	   onClick="sendquery(<% '_' . $c  %>, <% $srchf . '.value' %>, <% "\'" . $linksto{$c} . "\'" %>)" >
 	   <br><select name="<% '_' . $c %>"> 
-%             if( defined( $obj ) && $flag && $obj->$c->id ) {
+%             if( defined( $obj ) && defined( $obj->$c ) && $flag && $obj->$c->id ) {
 %		if (my $fkobj = $linksto{$c}->retrieve( $obj->$c->id )){
 %                 my $lbl = $ui->getobjlabel( $fkobj, ", " );
             	  <option value="<% $fkobj->id %>" selected><% $lbl %></option>

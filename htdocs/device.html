@@ -1,58 +1,145 @@
 <& index.html, title => "Device Discovery: $host ", s2name => $s2name  &>
 <%perl>
-if ( $action eq "discover" ){
-    $o = $dm->discover(host => $host, comstr => $comstr, addsubnets => 1);
-    unless ($o){
+    if ( $action eq "discover" ){
+
+    # See if device exists
+    my ($c, $d) = $dm->find_dev($host);
+    $argv{comstr} = (defined($c)) ? $c : $comstr;
+    $argv{device} = (defined($d)) ? $d : "";
+    
+    # Fetch SNMP info
+    my $dev = $dm->get_dev_info($host, $comstr);
+    unless ($dev){
 	$m->comp('error.mhtml', error => $dm->error);
     }
-    for my $ver (qw (4 6)){
-	unless( $ipm->build_tree($ver) ){
-	    printf("Could not rebuild IPv%s space tree!: %s\n", $ver, $ipm->error);
-	}
-    }
-    if ($dm->output){
+    $argv{dev} = $dev;
+    $argv{host} = $host;
+    $session->{argv} = \%argv;
 </%perl>
-       <p>
-       <table class="formtablebg">
-	  <tr>
-	    <td>
-	    <pre><% $dm->output %></pre>
-	    </td>
-	  </tr>
-       </table>
+    <p>
+    <table class="formtablebg">
+      <tr>
+        <td colspan="2" class="formtabletitle"><pre><% $dm->output %></pre></td>
+        <td>&nbsp;</td>
+      </tr>
+      <tr>
+        <td class="formtablec1">Description:</td>
+        <td class="formtablec2"><strong><% $dev->{sysdescription} %></strong></td>
+      </tr>
+      <tr>
+        <td class="formtablec1">Location:</td>
+        <td class="formtablec2"><strong><% $dev->{syslocation} %></strong></td>
+      </tr>
+      <tr>
+        <td class="formtablec1">Contact:</td>
+        <td class="formtablec2"><strong><% $dev->{syscontact} %></strong></td>
+      </tr>
+    </table>
+    <p>
+    <table class="formtablebg">
+      <form action="device.html" method="POST">
+      <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
+      <input type="hidden" name="host" value="<% $host %>">
+      <input type="hidden" name="action" value="update">
+      <tr>
+        <td align="center">Continue to update database?</td>
+      </tr>
+      <tr>
+        <td align="center">
+         <input name="insert" value="Update" type="submit">&nbsp;
+         <input name="cancel" value="Cancel" type="submit">
+        </td>
+      </tr>
+      </form>
+    </table>
 <%perl>
-    }
+}elsif ( $action eq "update" ){
+    if ( $insert ){
+        %argv = %{ $session->{argv} };
+        # Update database
+        $argv{addsubnets} = $ADDSUBNETS;
+        $o = $dm->update(%argv);
+        unless ($o){
+            $m->comp('error.mhtml', error => $dm->error);
+        }
+        for my $ver (qw (4 6)){
+            unless( $ipm->build_tree($ver) ){
+                printf("Could not rebuild IPv%s space tree!: %s\n", $ver, $ipm->error);
+            }
+        }
+        unless ($o->name && ($name = $o->name->name)){
+            $name = "device"
+            }
+        if ($dm->output){
+</%perl>
+          <p>
+          <table class="formtablebg">
+	  <tr>
+          <td>
+          <pre><% $dm->output %></pre>
+          </td>
+	  </tr>
+          </table>
+%      }
+       <p>
+       Go to <a href="device-ws.html?id=<% $o->id %>"><% $name %></a>
+%  }elsif ( $cancel ){
+          <p>
+          <table class="formtablebg">
+	  <tr>
+          <td>Discovery of <% $host %> cancelled.
+          </td>
+	  </tr>
+          </table>
+%  }
+
+<%perl>
 }else{
     $m->comp('error.mhtml', error => "Unknown action: $action");
-#    $m->abort;
-}
-unless (defined ($name = $o->name->name)){
-    $name = "device"
 }
 </%perl>
- <p>
- Go to <a href="device-ws.html?id=<% $o->id %>"><% $name %></a>
 
 <& footer.mhtml &>
 
 <%args>
 $action
 $host
-$comstr   => "public"
-$id       => undef
-$s2name   => "Management"
+$comstr     => "public"
+$id         => undef
+$s2name     => "Management"
+$sid        => undef
+$insert     => undef
+$cancel     => undef
+
 </%args>
 
 <%init>
+my $DEBUG = 0;
+my $PREFIX = "/usr/local/netdot";
+my $TMP    = "$PREFIX/tmp";
+my $ADDSUBNETS = 1;
+
 my $ui = Netdot::UI->new();
 my $dm = Netdot::DeviceManager->new();
 my $ipm = Netdot::IPManager->new();
 my $dns = Netdot::DNSManager->new();
-my $device;
-my $DEBUG = 0;
 my $o;
 my $name;
+my %argv;
+my $session;
+
 print Dumper(%ARGS) if $DEBUG;
+
+if( $action eq "discover" && ! $sid ) {
+  $session = $ui->mksession( $TMP );
+}
+if( $sid ) {
+  $session = $ui->getsession( $TMP, $sid );
+}
+if( $cancel ) {
+  $ui->rmsession( $session );
+}
+
 </%init>
 
 <%doc>

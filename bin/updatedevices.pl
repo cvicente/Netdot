@@ -1,4 +1,12 @@
 #PERL
+# (c-file-style: "gnu")
+# Local Variables:
+# mode: perl
+# tab-width: 8
+# c-basic-offset: 4
+# c-hanging-comment-ender-p: nil
+# indent-tabs-mode: nil
+# End:
 
 use lib "PREFIX/lib";
 use Getopt::Long qw(:config no_ignore_case bundling);
@@ -9,7 +17,7 @@ use Netdot::DNSManager;
 use NetAddr::IP;
 
 my $usage = <<EOF;
- usage: $0 [ -v|--verbose ] [ -c, --community <string> ] [ -a|--add-subnets ]
+ usage: $0 [ -c, --community <string> ] [ -a|--add-subnets ]
            [ -v, --verbose ] [ -g|--debug ]
            -H|--host <hostname|address> | -d|--db-devices |  -s|--subnet <CIDR block>
     
@@ -24,42 +32,42 @@ my $usage = <<EOF;
     
 EOF
     
-my ($device, $host, %devices, $subnet, $dm);
+my ($host, $subnet, $dm);
 my $comstr ||= "public";
-my $db = 0;
-my $addsubnets = 0;
-my $help = 0;
-my $verbose = 0;
-my $debug = 0;
+my $DB = 0;
+my $ADDSUBNETS = 0;
+my $HELP = 0;
+my $VERBOSE = 0;
+my $DEBUG = 0;
 
 # handle cmdline args
 my $result = GetOptions( "H|host=s" => \$host,
 			 "s|subnet=s" => \$subnet,
 			 "c|community:s" => \$comstr,
-			 "d|db-devices" => \$db,
-			 "a|add-subnets" => \$addsubnets,
-			 "h|help" => \$help,
-			 "v|verbose" => \$verbose,
-			 "g|debug" => \$debug );
+			 "d|db-devices" => \$DB,
+			 "a|add-subnets" => \$ADDSUBNETS,
+			 "h|help" => \$HELP,
+			 "v|verbose" => \$VERBOSE,
+			 "g|debug" => \$DEBUG );
 
 if( ! $result ) {
-  print $usage;
-  die "Error: Problem with cmdline args\n";
+    print $usage;
+    die "Error: Problem with cmdline args\n";
 }
-if( $help ) {
-  print $usage;
-  exit;
+if( $HELP ) {
+    print $usage;
+    exit;
 }
-if ( ($host && $subnet) || ($host && $db) || ($subnet && $db) ){
-  print $usage;
-  die "Error: arguments -H, -s and -d are mutually exclusive\n";
+if ( ($host && $subnet) || ($host && $DB) || ($subnet && $DB) ){
+    print $usage;
+    die "Error: arguments -H, -s and -d are mutually exclusive\n";
 }
 
-if ($debug){
-  $verbose = 1;
-  $dm = Netdot::DeviceManager->new( loglevel => "LOG_DEBUG", foreground => 1 );
+if ($DEBUG){
+    $VERBOSE = 1;
+    $dm = Netdot::DeviceManager->new( loglevel => "LOG_DEBUG", foreground => 1 );
 }else{
-  $dm = Netdot::DeviceManager->new();
+    $dm = Netdot::DeviceManager->new();
 }
 my $ipm = Netdot::IPManager->new();
 my $dns = Netdot::DNSManager->new();
@@ -73,35 +81,46 @@ if ($host){
     my $net = NetAddr::IP->new($subnet);
     # Make sure we work with the network address
     $net = $net->network();
+    my %devices;
     for (my $nip = $net+1; $nip < $nip->broadcast; $nip++){
 	if(my $ip = $ipm->searchblock($nip->addr)){
-	    if ( defined ($device = $ip->interface->device) ){
+	    printf ("Address %s found\n", $nip->addr);
+	    if ( ($ip->interface) && (my $device = $ip->interface->device) ){
+		printf ("Device with Address %s found\n", $ip->address) if $DEBUG;
 		# Make sure we don't query the same device more than once
 		# (routers have many ips)
-		if (exists $devices{$device}){
-		    printf ("%s already queried.  Skipping\n", $ip->address);
+		if (exists $devices{$device->id}){
+		    printf ("%s already queried.  Skipping\n", $ip->address) if $DEBUG;
 		    next;
 		}
-		$devices{$device} = 1;
+		$devices{$device->id} = '';
 		unless ( $device->canautoupdate ){
-		    printf ("Device %s was set to not auto-update. Skipping \n", $nip->addr) if $verbose;
+		    printf ("Device %s was set to not auto-update. Skipping \n", $nip->addr) if $VERBOSE;
 		    next;
+		}
+		# Device exists, so don't pass community
+		if (my $r = &discover(host => $ip->address)){
+		    $success = 1;
+		}
+	    }else{
+		printf ("Device with Address %s not found\n", $ip->address) if $DEBUG;
+		if (my $r = &discover(host => $nip->addr, comstr => $comstr)){
+		    $success = 1;
 		}
 	    }
-	    if (my $r = &discover(host => $ip->address)){
+	}else{
+	    printf ("Address %s not found\n", $nip->addr) if $DEBUG;
+	    if (my $r = &discover(host => $nip->addr, comstr => $comstr)){
 		$success = 1;
 	    }
 	}
-	if (my $r = &discover(host => $nip->addr, comstr => $comstr)){
-	    $success = 1;
-	}
     }
-}elsif($db){
-    printf ("Going to update all devices currently in the DB\n") if $verbose;
+}elsif($DB){
+    printf ("Going to update all devices currently in the DB\n") if $VERBOSE;
     my @devices = Device->retrieve_all;
     foreach my $device ( @devices ) {
 	unless ( $device->canautoupdate ){
-	    printf ("Device %s was set to not auto-update. Skipping \n", $host) if $verbose;
+	    printf ("Device %s was set to not auto-update. Skipping \n", $host) if $VERBOSE;
 	    next;
 	}
 	if (defined ($device->name->name)){
@@ -130,11 +149,28 @@ if ($host){
 sub discover {
     my (%argv) = @_;
     my $r;
-    $argv{addsubnets} = 1 if $addsubnets;
-    if ( $r = $dm->discover(%argv) ){
-	printf ("%s\n", $dm->output) if ($verbose && ! $debug);
+    $argv{addsubnets} = 1 if $ADDSUBNETS;
+
+    # See if device exists
+    my ($c, $d) = $dm->find_dev($argv{host});
+    $argv{comstr} = $c if defined($c);
+    $argv{device} = $d if defined($d);
+    printf ("%s\n", $dm->output) if ($VERBOSE && ! $DEBUG);
+
+    # Fetch SNMP info
+    $argv{dev} = $dm->get_dev_info($argv{host}, $argv{comstr});
+    unless ($argv{dev}){
+	printf("Error: %s\n", $dm->error) if $VERBOSE;
+	return 0;
+    }
+    printf ("%s\n", $dm->output) if ($VERBOSE && ! $DEBUG);
+
+    # Update database
+    if ( $r = $dm->update(%argv) ){
+	printf ("%s\n", $dm->output) if ($VERBOSE && ! $DEBUG);
     }else{
-	printf("Error: %s\n", $dm->error) if $verbose;
+	printf("Error: %s\n", $dm->error) if $VERBOSE;
+	return 0;
     }
     return $r;
 }
