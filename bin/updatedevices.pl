@@ -77,9 +77,18 @@ foreach my $device ( @devices ) {
     }
     my %ntmp;
     $ntmp{sysdescription} = $dev{sysDescr};
-    $ntmp{physaddr} = $dev{dot1dBaseBridgeAddress};
-    $ntmp{physaddr} =~ s/^0x//; 
-    $ntmp{serialnumber} = $dev{entPhysicalSerialNum};
+
+    if( length( $dev{dot1dBaseBridgeAddress} ) > 0 
+        && $device{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
+      # Remove the '0x' from the MAC address
+      $ntmp{physaddr} = $dev{dot1dBaseBridgeAddress};
+      $ntmp{physaddr} =~ s/^0x//; 
+    }
+    if( length( $dev{entPhysicalSerialNum} ) > 0 
+        && $dev{entPhysicalSerialNum} ne "noSuchObject" ) {
+      $ntmp{serialnumber} = $dev{entPhysicalSerialNum};
+    }
+
     unless( $gui->update( object => $device, state => \%ntmp ) ) {
       next;
     }
