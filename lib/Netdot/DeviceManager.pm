@@ -263,9 +263,10 @@ sub update {
 	}
 	if ($rr = $self->{dns}->insert_rr(name        => $host, 
 					  contactlist => $devtmp{contactlist})){
+
+	    my $msg = sprintf("Inserted DNS name %s into DB", $host);
 	    $self->debug( loglevel => 'LOG_NOTICE',
-			  message  => "Inserted DNS name %s into DB",
-			  args => [ $host ], 
+			  message  => $msg,
 			  );	    
 	    $self->output($msg);
 	    $devtmp{name} = $rr;
