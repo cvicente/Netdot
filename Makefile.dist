@@ -1,0 +1,67 @@
+#
+# Netdot Makefile
+#
+PREFIX = /usr/local/httpd/htdocs/netdot
+usage:
+	@echo 
+	@echo "usage: make install PREFIX=<destination>"
+	@echo 
+	@echo "You can either specify the PREFIX on the command line or "
+	@echo "modify the PREFIX value in the Makefile. "
+	@echo "It currently defaults to $(PREFIX)"
+	@echo 
+
+#
+# You really don't want to muck with anything below.  
+# You're responsible if you do.
+#
+DMOD = 0775
+FMOD = 0644
+XMOD = 0744
+PERL = `which perl`
+DIR = bin doc htdocs lib
+
+.PHONY: tests bin doc htdocs lib
+
+install: tests dir
+	@echo
+	@echo "Netdot is installed. "
+	@echo "Please read the available documentation before proceeding"
+	@echo "And thank you for using Netdot!"
+	@echo 
+
+tests:
+	@echo
+	@echo "Installation directory: $(PREFIX)"
+	@echo 
+	@echo "Testing for required perl modules...."
+	perl -e 'require Apache::Session;'
+	perl -e 'require Apache::DBI;'
+	perl -e 'require DBIx::DBschema;'
+	perl -e 'require DBIx::DataSource;'
+	if [ `whoami` != root ]; then \
+	   echo "You're not root; this may fail" ; \
+	fi
+
+dir:
+	@echo 
+	@echo "Creating necessary directories..."
+	for dir in $(DIR); do \
+	    if test -d $(PREFIX)/$$dir; then \
+	       echo "Skipping dir $(PREFIX)/$$dir; already exists"; \
+	    else \
+	       mkdir -m $(DMOD) -p $(PREFIX)/$$dir ; \
+	    fi ; \
+	done
+
+htdocs:
+	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD)
+
+doc:
+	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD)
+
+lib:
+	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD)
+
+bin: 
+	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) 
