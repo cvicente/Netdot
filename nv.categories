@@ -1,0 +1,316 @@
+# $Header: /tmp/netdot/src/RCS/nv.categories,v 1.1 2003/06/12 17:40:16 netdot Exp $
+# categories that can be collected.
+
+# A category is defined as a single word at the beginning of a line
+# you can then define snmp variables in each category.  This generally
+# requires the snmp variable name, the OID, and (if necessary) the Data 
+# Source type (eg. GAUGE or COUNTER or ...).  You then have to specify
+# some metadata concerning the category so that NetViewer can gather 
+# information and set everything up (eg RRD files, netviewer
+# configurations) for a category on a given device.  For more
+# information, please see the relevant documentation concerning this
+# file. The following is a reminder of what can be specified:
+#    interval   <minutes>  
+#    rrdCF      [avg|max|min] -- colon separated list of avg, max, and/or min.
+#    descr      [ $<snmpvar> | "<category description>" ]
+#    alias	"<string description>" -- alternative name for category to
+#					  use when creating a filename
+#    aux        $<snmpvar>    -- auxiliary snmp variable(s) to fetch
+#    instance   [ <instance> | null ]  -- category has only one instance
+#    map        $<snmpvar>    -- walk table to discover all category instances
+#    key	[ value | instance | <category name> ]
+#    append     [0-9\.]+      -- append to instance value 
+#    test	{ <expr> }    -- <expr> must evaluate to true or false
+#
+# Remember: 
+#  * String descriptions must be bound by quote marks; eg " ... "
+#  * snmp variable names must be defined in the general category
+#  * snmp variable names must begin with a $; eg. $ifAlias
+#  * you can append '.inst' to a snmp variable to refer to a specific
+#    instance when walking a table (with map) or that stipulated by 
+#    'instance' key. eg. $ifAlias.inst
+#  * map and instance are mutually exclusive.
+#  * map requires that key is defined
+
+
+# general is really a pseudo category.  
+#   put variables here that are used in test expressions in other categories
+#   there's also an assortment of variables here that are used for gathering
+#   information about a device.
+#   since this category isn't collected, it doesn't have the usual 
+#   category metadata
+general
+  sysDescr                1.3.6.1.2.1.1.1.0
+  sysObjectID             1.3.6.1.2.1.1.2.0
+  sysUpTime               1.3.6.1.2.1.1.3.0
+  sysContact              1.3.6.1.2.1.1.4.0
+  sysName                 1.3.6.1.2.1.1.5.0
+  sysLocation             1.3.6.1.2.1.1.6.0
+  ifIndex                 1.3.6.1.2.1.2.2.1.1
+  ifNumber                1.3.6.1.2.1.2.1.0
+  ifDescr                 1.3.6.1.2.1.2.2.1.2
+  ifType                  1.3.6.1.2.1.2.2.1.3
+  ifSpeed                 1.3.6.1.2.1.2.2.1.5
+  ifAdminStatus		  1.3.6.1.2.1.2.2.1.7
+  ifAlias                 1.3.6.1.2.1.31.1.1.1.18
+  ipAdEntAddr             1.3.6.1.2.1.4.20.1.1
+  ipAdEntIfIndex          1.3.6.1.2.1.4.20.1.2
+  ipAdEntNetMask	  1.3.6.1.2.1.4.20.1.3
+  dsx1LineIndex		  1.3.6.1.2.1.10.18.6.1.1
+  dsx1IfIndex		  1.3.6.1.2.1.10.18.6.1.2
+  dsx3LineIndex           1.3.6.1.2.1.10.30.5.1.1
+  dsx3IfIndex             1.3.6.1.2.1.10.30.5.1.2
+  frCircuitIfIndex	  1.3.6.1.2.1.10.32.2.1.1
+  cfrExtCircuitSubifIndex 1.3.6.1.4.1.9.9.49.1.2.2.1.3
+  cfrExtCircuitIfName     1.3.6.1.4.1.9.9.49.1.2.2.1.1
+  bgpPeerIdentifier       1.3.6.1.2.1.15.3.1.1
+  bgpPeerState            1.3.6.1.2.1.15.3.1.2
+  bgpPeerAdminStatus      1.3.6.1.2.1.15.3.1.3
+  bgpPeerRemoteAs         1.3.6.1.2.1.15.3.1.9
+  bgpLocalAs		  1.3.6.1.2.1.15.2.0
+  ccarConfigType          1.3.6.1.4.1.9.9.113.1.1.1.1.3
+  ccarConfigAccIdx        1.3.6.1.4.1.9.9.113.1.1.1.1.4
+  ccarConfigRate          1.3.6.1.4.1.9.9.113.1.1.1.1.5
+  cpmCPUTotal5min_1	  1.3.6.1.4.1.9.9.109.1.1.1.1.5.1
+  cpmCPUTotal5min_2	  1.3.6.1.4.1.9.9.109.1.1.1.1.5.2
+  7200VoltageStVal_1	  1.3.6.1.4.1.9.9.13.1.2.1.3.1
+  7500VoltageStVal_5	  1.3.6.1.4.1.9.9.13.1.2.1.3.5
+  ciscoImageString	  1.3.6.1.4.1.9.9.25.1.1.1.2
+
+
+interface
+  ifInOctets		  1.3.6.1.2.1.2.2.1.10      COUNTER
+  ifOutOctets		  1.3.6.1.2.1.2.2.1.16
+  ifInUcastPkts		  1.3.6.1.2.1.2.2.1.11
+  ifOutUcastPkts	  1.3.6.1.2.1.2.2.1.17
+  ifHCInOctets            1.3.6.1.2.1.31.1.1.1.6
+  ifHCOutOctets		  1.3.6.1.2.1.31.1.1.1.10
+  ifHCInUcastPkts	  1.3.6.1.2.1.31.1.1.1.7
+  ifHCOutUcastPkts	  1.3.6.1.2.1.31.1.1.1.11
+  ifInErrors		  1.3.6.1.2.1.2.2.1.14
+  ifOutErrors		  1.3.6.1.2.1.2.2.1.20
+  ifInDiscards		  1.3.6.1.2.1.2.2.1.13
+  ifOutDiscards		  1.3.6.1.2.1.2.2.1.19
+  ifInNUcastPkts	  1.3.6.1.2.1.2.2.1.12
+  ifOutNUcastPkts	  1.3.6.1.2.1.2.2.1.18
+  rrdCF			  avg:max
+  descr			  $ifAlias.inst
+  map			  $ifDescr
+  key			  value
+  test       		  { $ifType.inst != 81 && $ifType.inst != 102 && $ifType.inst != 103 && $ifType.inst != 104 }
+  interval		  5
+  alias			  "IF"
+  aux			  $ifSpeed.inst
+  aux			  $ifType.inst
+  aux			  $ifAdminStatus.inst
+
+
+frameRelay
+  frCircuitRcvdFECNs	  1.3.6.1.2.1.10.32.2.1.4        COUNTER
+  frCircuitRcvdBECNs	  1.3.6.1.2.1.10.32.2.1.5
+  frCircuitSentFrames	  1.3.6.1.2.1.10.32.2.1.6
+  frCircuitRcvdFrames	  1.3.6.1.2.1.10.32.2.1.8
+  frCircuitSentOctets	  1.3.6.1.2.1.10.32.2.1.7
+  frCircuitRcvdOctets	  1.3.6.1.2.1.10.32.2.1.9
+  cfrCirDropPktsOuts	  1.3.6.1.4.1.9.9.49.1.2.1.1.3
+  cfrCircuitDEins	  1.3.6.1.4.1.9.9.49.1.2.1.1.1
+  cfrCircuitDEouts	  1.3.6.1.4.1.9.9.49.1.2.1.1.2
+  rrdCF			  avg:max
+  descr			  "Frame Relay"
+  map			  $cfrExtCircuitIfName
+  key			  value
+  interval		  5
+  aux			  $cfrExtCircuitSubifIndex.inst
+
+
+car
+  ccarStatSwitchedPkt	   1.3.6.1.4.1.9.9.113.1.2.1.1.1  COUNTER
+  ccarStatSwitchedByt	   1.3.6.1.4.1.9.9.113.1.2.1.1.2
+  ccarStatFilteredPkt	   1.3.6.1.4.1.9.9.113.1.2.1.1.3
+  ccarStatFilteredByt	   1.3.6.1.4.1.9.9.113.1.2.1.1.4
+  ccarStatCurBurst	   1.3.6.1.4.1.9.9.113.1.2.1.1.5  GAUGE
+  ccarConfigRate           1.3.6.1.4.1.9.9.113.1.1.1.1.5 
+  rrdCF			   avg:max
+  descr			   "Committed Access Rate"
+  map			   $ccarConfigAccIdx
+  test			   { $ccarConfigType.inst == 3 }
+  key			   instance
+  interval		   5
+  aux			   $ccarConfigRate.inst
+
+
+bgpPeer
+  bgpPeerInUpdates         1.3.6.1.2.1.15.3.1.10         COUNTER
+  bgpPeerOutUpdates	   1.3.6.1.2.1.15.3.1.11
+  bgpPeerInTotalMsgs	   1.3.6.1.2.1.15.3.1.12
+  bgpPeerOutTotalMsgs	   1.3.6.1.2.1.15.3.1.13
+  bgpPeerFsmEstbTrans	   1.3.6.1.2.1.15.3.1.15
+  bgpPeerInUpdElapTim	   1.3.6.1.2.1.15.3.1.24         GAUGE
+  rrdCF			   avg:max
+  descr			   "BGP Peer"
+  map			   $bgpPeerIdentifier
+  key			   instance
+  test			   { $bgpLocalAs != $bgpPeerRemoteAs.inst }
+  interval		   5
+  aux			   $bgpPeerIdentifier.inst
+  aux			   $bgpPeerRemoteAs.inst
+  aux                      $bgpPeerState.inst
+  aux			   $bgpPeerAdminStatus.inst
+	
+
+
+dsx3
+  dsx3IntervalPESs	   1.3.6.1.2.1.10.30.7.1.3       GAUGE
+  dsx3IntervalPSESs	   1.3.6.1.2.1.10.30.7.1.4
+  dsx3IntervalSEFSs	   1.3.6.1.2.1.10.30.7.1.5
+  dsx3IntervalUASs	   1.3.6.1.2.1.10.30.7.1.6
+  dsx3IntervalLCVs	   1.3.6.1.2.1.10.30.7.1.7
+  dsx3IntervalPCVs	   1.3.6.1.2.1.10.30.7.1.8
+  dsx3IntervalLESs	   1.3.6.1.2.1.10.30.7.1.9
+  dsx3IntervalCCVs	   1.3.6.1.2.1.10.30.7.1.10
+  dsx3IntervalCESs	   1.3.6.1.2.1.10.30.7.1.11
+  dsx3IntervalCSESs	   1.3.6.1.2.1.10.30.7.1.12
+  rrdCF			   max
+  interval		   15
+  map			   $dsx3IfIndex
+  key			   interface
+  descr			   "DS3"
+  append		   .1
+
+
+dsx1
+  dsx1IntervalESs	   1.3.6.1.2.1.10.18.8.1.3     GAUGE
+  dsx1IntervalSESs	   1.3.6.1.2.1.10.18.8.1.4
+  dsx1IntervalSEFSs	   1.3.6.1.2.1.10.18.8.1.5
+  dsx1IntervalUASs	   1.3.6.1.2.1.10.18.8.1.6
+  dsx1IntervalLCVs	   1.3.6.1.2.1.10.18.8.1.12
+  dsx1IntervalPCVs	   1.3.6.1.2.1.10.18.8.1.8
+  dsx1IntervalLESs	   1.3.6.1.2.1.10.18.8.1.9
+  dsx1IntervalCSSs	   1.3.6.1.2.1.10.18.8.1.7
+  dsx1IntervalDMs	   1.3.6.1.2.1.10.18.8.1.11
+  dsx1IntervalBESs	   1.3.6.1.2.1.10.18.8.1.10
+  rrdCF			   max
+  descr			   "DS1"
+  interval		   15
+  map			   $dsx1IfIndex
+  key			   interface
+  append		   .1
+
+
+chassis
+  avgBusy5                 1.3.6.1.4.1.9.2.1.58      GAUGE
+  freeMem		   1.3.6.1.4.1.9.2.1.8
+  bufferElFree		   1.3.6.1.4.1.9.2.1.9
+  rrdCF			   avg:max:min
+  descr			   "Cisco CPU and Chassis"
+  instance		   0
+  interval		   5
+
+
+hpSwitchCpuStat
+  hpSwitchCpuStat	   1.3.6.1.4.1.11.2.14.11.5.1.9.6.1  GAUGE
+  rrdCF			   avg:max:min
+  descr			   "HP Switch CPU Stats"
+  instance		   0
+  interval		   5
+
+
+ciscoCPU
+  cpmCPUTotal5min_1	   1.3.6.1.4.1.9.9.109.1.1.1.1.5.1    GAUGE
+  cpmCPUTotal5min_2	   1.3.6.1.4.1.9.9.109.1.1.1.1.5.2
+  cpmCPUTotal5min_3	   1.3.6.1.4.1.9.9.109.1.1.1.1.5.3
+  cpmCPUTotal5min_4	   1.3.6.1.4.1.9.9.109.1.1.1.1.5.4
+  cpmCPUTotal5min_5	   1.3.6.1.4.1.9.9.109.1.1.1.1.5.5
+  cpmCPUTotal5min_6	   1.3.6.1.4.1.9.9.109.1.1.1.1.5.6
+  cpmCPUTotal5min_7	   1.3.6.1.4.1.9.9.109.1.1.1.1.5.7
+  rrdCF			   avg:max
+  descr			   "Cisco CPU Stats (5 Min)"
+  instance		   null
+  interval		   5
+  exists		   $cpmCPUTotal5min_1
+
+
+cisco7200VoltTemp
+  7200VoltageStVal_1	   1.3.6.1.4.1.9.9.13.1.2.1.3.1     GAUGE
+  7200VoltageStVal_2	   1.3.6.1.4.1.9.9.13.1.2.1.3.2
+  7200VoltageStVal_3	   1.3.6.1.4.1.9.9.13.1.2.1.3.3
+  7200VoltageStVal_4	   1.3.6.1.4.1.9.9.13.1.2.1.3.4
+  7200TempStVal_1	   1.3.6.1.4.1.9.9.13.1.3.1.3.1
+  7200TempStVal_2	   1.3.6.1.4.1.9.9.13.1.3.1.3.2
+  7200TempStVal_3	   1.3.6.1.4.1.9.9.13.1.3.1.3.3
+  7200TempStVal_4	   1.3.6.1.4.1.9.9.13.1.3.1.3.4
+  rrdCF			   avg:max:min
+  descr			   "Cisco 7200 Volt and Temp Stats"
+  instance		   null
+  interval		   5
+  test			   { $7200VoltageStVal_1 && ! $7500VoltageStVal_5 }
+
+
+cisco7500VoltTemp
+  7500VoltageStVal_1       1.3.6.1.4.1.9.9.13.1.2.1.3.1     GAUGE
+  7500VoltageStVal_2	   1.3.6.1.4.1.9.9.13.1.2.1.3.2
+  7500VoltageStVal_3	   1.3.6.1.4.1.9.9.13.1.2.1.3.3
+  7500VoltageStVal_4	   1.3.6.1.4.1.9.9.13.1.2.1.3.4
+  7500VoltageStVal_5	   1.3.6.1.4.1.9.9.13.1.2.1.3.5
+  7500TempStVal_1	   1.3.6.1.4.1.9.9.13.1.3.1.3.1
+  7500TempStVal_2	   1.3.6.1.4.1.9.9.13.1.3.1.3.2
+  7500TempStVal_3	   1.3.6.1.4.1.9.9.13.1.3.1.3.3
+  rrdCF			   avg:max:min
+  descr			   "Cisco 7500 Volt and Temp Stats"
+  instance		   null
+  interval		   5
+  exists		   $7500VoltageStVal_5
+
+apcBattery
+  upsBatteryCapacity	   1.3.6.1.4.1.318.1.1.1.2.2.1
+  upsBatteryTemp	   1.3.6.1.4.1.318.1.1.1.2.2.2
+  upsOutputLoad		   1.3.6.1.4.1.318.1.1.1.4.2.3
+  upsOutputCurrent	   1.3.6.1.4.1.318.1.1.1.4.2.4
+  rrdCF			   avg:max
+  descr			   "APC UPS Stats"
+  interval		   5
+  instance		   0
+
+apcVoltage
+  upsInputLineVolt	   1.3.6.1.4.1.318.1.1.1.3.2.1
+  upsInputLineFreq         1.3.6.1.4.1.318.1.1.1.3.2.4
+  upsOutputLineVolt        1.3.6.1.4.1.318.1.1.1.4.2.1
+  upsOutputLineFreq        1.3.6.1.4.1.318.1.1.1.4.2.2
+  rrdCF			   avg:max
+  descr			   "APC In/Out Voltage Stats"
+  instance		   0
+  interval		   5
+
+juniperChassis
+        jnxOpCPU_FEB               1.3.6.1.4.1.2636.3.1.13.1.8.6.1.0.0     GAUGE
+        jnxOpCPU_FPC_0             1.3.6.1.4.1.2636.3.1.13.1.8.7.1.0.0
+        jnxOpCPU_FPC_1             1.3.6.1.4.1.2636.3.1.13.1.8.7.2.0.0
+        jnxOpCPU_RE                1.3.6.1.4.1.2636.3.1.13.1.8.9.1.0.0
+        jnxOpTemp_FEB              1.3.6.1.4.1.2636.3.1.13.1.7.6.1.0.0
+        jnxOpTemp_FPC_0            1.3.6.1.4.1.2636.3.1.13.1.7.7.1.0.0
+        jnxOpTemp_FPC_1            1.3.6.1.4.1.2636.3.1.13.1.7.7.2.0.0
+        jnxOpTemp_RE               1.3.6.1.4.1.2636.3.1.13.1.7.9.1.0.0
+        jnxOpISR_FEB               1.3.6.1.4.1.2636.3.1.13.1.9.6.1.0.0
+        jnxOpISR_FPC_0             1.3.6.1.4.1.2636.3.1.13.1.9.7.1.0.0
+        jnxOpISR_FPC_1             1.3.6.1.4.1.2636.3.1.13.1.9.7.2.0.0
+        jnxOpISR_RE                1.3.6.1.4.1.2636.3.1.13.1.9.9.1.0.0
+        jnxOpBuffer_FEB            1.3.6.1.4.1.2636.3.1.13.1.11.6.1.0.0
+        jnxOpBuffer_FPC_0          1.3.6.1.4.1.2636.3.1.13.1.11.7.1.0.0
+        jnxOpBuffer_FPC_1          1.3.6.1.4.1.2636.3.1.13.1.11.7.2.0.0
+        jnxOpBuffer_RE             1.3.6.1.4.1.2636.3.1.13.1.11.9.1.0.0
+        jnxOpHeap_FEB              1.3.6.1.4.1.2636.3.1.13.1.12.6.1.0.0
+        jnxOpHeap_FPC_0            1.3.6.1.4.1.2636.3.1.13.1.12.7.1.0.0
+        jnxOpHeap_FPC_1            1.3.6.1.4.1.2636.3.1.13.1.12.7.2.0.0
+        jnxOpHeap_RE               1.3.6.1.4.1.2636.3.1.13.1.12.9.1.0.0
+        rrdCF                      avg:max:min
+        descr                      "Juniper CPU, Temp and Memory Stats"
+        instance                   null
+	interval                   5
+
+CiscoDialup
+        SystemModemsInUse          1.3.6.1.4.1.9.9.47.1.1.6.0   GAUGE
+        SystemModemsAvail          1.3.6.1.4.1.9.9.47.1.1.7.0
+        rrdCF                      avg:max:min
+        descr                      "Cisco TS used & available modems"
+        instance                   null
+	interval		   5
