@@ -52,8 +52,7 @@ unless ( $obj ){
           <td class="formtablec2">
           <select name="<% $c %>">
 %	  unless ( ref($obj->$c) ){
-	     <& error.html, caller => "update.html", error => "$c is not a FK in $table!" &>
-%	     exit;
+%	     die "$c is not a FK of Node";
 %	  }
 %	  my @fkobjs = $linksto{$c}->retrieve_all;
 %         if( !$obj-$c || !defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) {
