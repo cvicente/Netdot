@@ -16,9 +16,9 @@ DBIx::DBSchema
 DBIx::DataSource
 Net::SNMP
 
------------------------------------------------------------------------
+----------------------------------------------------------------------
 PATCHES
------------------------------------------------------------------------
+----------------------------------------------------------------------
 
 Netdot needs the following Perl module files patched to fix bugs
 and have extra functionality:
@@ -26,9 +26,26 @@ and have extra functionality:
 YOUR-@INC-PATH/Class/DBI.pm with contrib/ClassDBI.patch
 YOUR-@INC-PATH/Apache/Session/Lock/File.pm with contrib/ApacheSession.patch
 
------------------------------------------------------------------------
+----------------------------------------------------------------------
+SCHEMA CHANGES
+----------------------------------------------------------------------
+
+If there are schema changes between your current installation and the 
+version you plan to install, it is highly recommended that you:
+
+  * Review README.  If there are changes, it will be documented in 
+    this file.
+  * Back up your existing database.  mysqldump is one option for MySQL 
+    installations.
+  * Review contrib/updateschema.data to see what changes will occur.
+  * Run updateschema.pl with the appropriate options.
+
+updateschema.pl will manage the schema changes for you.  After you run
+this script, you will have to restart httpd.
+
+----------------------------------------------------------------------
 INSTALLING THE PACKAGE
------------------------------------------------------------------------
+----------------------------------------------------------------------
 
 Run these from the main directory and answer any prompts
 you encounter:
@@ -36,9 +53,9 @@ you encounter:
 make install PREFIX=YOUR-PREFIX (i.e: /usr/local/netdot)
 make installdb
 
------------------------------------------------------------------------
+----------------------------------------------------------------------
 APACHE CONFIGURATION
------------------------------------------------------------------------
+----------------------------------------------------------------------
 
 * Add lines similar to these to your httpd.conf,
 
