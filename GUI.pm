@@ -234,6 +234,9 @@ sub rmstate {
 
 ######################################################################
 #  $Log: GUI.pm,v $
+#  Revision 1.9  2003/07/01 17:04:54  netdot
+#  added documentation
+#
 #  Revision 1.8  2003/07/01 05:09:48  netdot
 #  renaming state functions
 #
@@ -336,3 +339,33 @@ Given a table and a column name, returns the SQL type as defined in the schema
  
 Given column name and object, builds an HTML <input> tag based on the sql type of the 
 field and other parameters
+
+=head2 mkstate - create state for a session across multiple pages
+
+  $dir = "/tmp";  # location for locks & state files
+  %session = $gui->mkstate( $dir );
+
+Creates a state session that can be used to store data across multiple 
+web pages for a given session.  Returns a hash to store said data in.
+Requires an argument specifying what directory to use when storing data 
+(and the relevant lock files).  The session-id is $session{_session_id}.
+
+=head2 getstate - fetch state for a session across multiple pages
+
+  $dir = "/tmp";  # location for locks & state files
+  $sessionid = $args{sid};  # session-id must be handed off to new pages
+  %session = $gui->getstate( $dir, $sessionid );
+
+Fetches a state session and its accompanying data.  Returns a hash.  
+Requires two arguments:  the working directory and the session-id (as 
+described above).  
+
+=head2 rmstate - clear out old state
+
+  $dir = "/tmp";
+  $age = 3600;   # age is in seconds
+  $gui->rmstate( $dir, $age );
+
+Removes state older than $age (the supplied argument) from the 
+directory $dir.  Returns 1 for success and 0 for failure.  Remember, age 
+is in seconds.
