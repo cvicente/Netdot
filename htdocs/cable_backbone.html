@@ -135,7 +135,7 @@ function suggestName()
 %           if ($editBackbone) {
             <td align="right"><input name="submit" value="save" type="submit"></td>
 %           } else {
-            <td align="right"><a href="cable_backbone.html?id=NEW">[new]</a> || <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a></td>
+            <td align="right"><a href="cable_backbone.html?id=NEW">[new]</a> || <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a> || <a href="delete.html?table=BackboneCable&id=<% $id %>">[delete]</a></td>
 %           }
         </tr>
         <tr align="left" valign="top">
@@ -253,6 +253,21 @@ function suggestName()
 
 
 <!-- Begin Cable Strand Cable -->
+<%perl>
+my @backbones = ();
+
+if ($editStrand)
+{
+    # we need to grab all backbones for start and end sites of this strand.
+    my ($start_site, $end_site) = ($o->start_closet->floor->site, $o->end_closet->floor->site);
+    foreach my $closet (($start_site->closets, $end_site->closets))
+    {
+        map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$closet),
+                                       BackboneCable->search(end_closet=>$closet));
+    }
+}
+</%perl>
+
 % if (defined($o)) {
 <A NAME="cable_strand"></A>
 <table border="0" width="95%" align="center"  class="tablebackground">
@@ -301,6 +316,9 @@ function suggestName()
         <td align="center">
             <a href="cable_backbone.html?id=<% $id %>&strand_sort=direction#cable_strand">Direction</a>
         </td>
+        <td align="center">
+            <a href="cable_backbone.html?id=<% $id %>&strand_sort=parent#cable_strand">Parent Strand</a>
+        </td>
     </tr>
 
     <%perl>
@@ -326,6 +344,13 @@ function suggestName()
         # -----------------------------------------------------------
         @sorted_strands = sort { uc($a->direction) cmp uc($b->direction) } @strands;
     }
+
+    elsif ($strand_sort eq "parent")
+    {
+        # sort by parent
+        # -----------------------------------------------------------
+        @sorted_strands = sort { uc($a->parent->name) cmp uc($b->parent->name) } @strands;
+    }
     </%perl>
 
 %   my $i = 0;
@@ -347,6 +372,34 @@ function suggestName()
 
         <td align="left">
 %           $ui->textField(object=>$st, table=>"CableStrand", column=>"direction", edit=>$editStrand);        
+        </td>
+        
+        <td align="left">
+%           if (!$editStrand && $st->parent) {
+                <a href="cable_strand.html?id=<% $st->parent->id %>"><% $st->parent->name %></a>
+%           } else {
+                <script language="JavaScript">
+                <!--
+                var backboneList_<% $st->id %> = new DynamicList("cable_strand_form", "CableStrand__<% $st->id %>__parent", "cable", "CableStrand", "backbone_list<% $st->id %>_srch");
+                LIST_MANAGER.addList(backboneList_<% $st->id %>);
+                -->
+                </script>
+
+                <SELECT NAME="backbone_list<% $st->id %>_srch" onChange="backboneList_<% $st->id %>.doIt();">
+                <OPTION VALUE="">Lookup by Backbone</OPTION>
+                <%perl>
+                my %stored = ();
+                foreach my $bb (sort { $a->name cmp $b->name } @backbones)
+                {
+                    next if ($bb->id == $st->cable || exists($stored{$bb}));
+                    $stored{$bb} = 1;
+                    printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+                }
+                </%perl>
+                </SELECT> &nbsp;
+%               $ui->selectLookup(object=>$st, table=>"CableStrand", column=>"parent", lookup=>"CableStrand", edit=>$editStrand,
+%                                 where=>{cable=>$st->parent->cable});
+%           }
         </td>
     </tr>
 %   }
@@ -389,13 +442,10 @@ $s2name => "Plant";
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
-
 my $editBackbone = 0;
 my $editStrand = 0;
-
 my ($o, $start_site, $end_site) = (undef, undef, undef);
 my ($start_site_id, $end_site_id) = (0, 0);
-
 
 if ($id && $id ne "NEW") 
 {

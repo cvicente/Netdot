@@ -41,7 +41,7 @@ if (defined($ARGS{_action}))
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
     <td align="left">
-        Cable Strand for <a href="cable_backbone.html?id=<% $o->cable %>"><% $o->cable->name %></a>
+        Cable Strand for Backbone: <a href="cable_backbone.html?id=<% $o->cable %>"><% $o->cable->name %></a>
     </td>
  </tr>
 </table>
@@ -62,7 +62,7 @@ if (defined($ARGS{_action}))
 %           if ($editStrand) {
             <td align="right"><input name="submit" value="save" type="submit"></td>
 %           } else {
-            <td align="right"><a href="cable_strand.html?id=NEW">[new]</a> || <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a></td>
+            <td align="right"><a href="cable_strand.html?id=NEW">[new]</a> || <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a> || <a href="delete.html?table=CableStrand&id=<% $id %>">[delete]</a></td>
 %           }
         </tr>
 
@@ -95,6 +95,71 @@ if (defined($ARGS{_action}))
 %               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"status", lookup=>"StrandStatus", edit=>$editStrand);
                 </td>
             </tr>
+
+            <tr align="left" valign="top">
+                <td>Parent Strand: </td>
+                <td>
+%               if (!$editStrand && $o->parent) {
+                <a href="cable_strand.html?id=<% $o->parent->id %>"><% $o->parent->name %></a>
+%               } elsif ($editStrand && defined($o)) {
+                <%perl>
+                # first we need to grab all backbones for start and end sites of this strand.
+                my ($start_site, $end_site) = ($o->cable->start_closet->floor->site, $o->cable->end_closet->floor->site);
+                my @backbones = ();
+                
+                foreach my $closet (($start_site->closets, $end_site->closets))
+                {
+                    map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$closet),
+                                                   BackboneCable->search(end_closet=>$closet));
+                }
+                </%perl>
+
+                <script language="JavaScript">
+                <!--
+                var backboneList = new DynamicList("netdotform", "CableStrand__<% $id %>__parent", "cable", "CableStrand", "backbone_list_srch");
+                LIST_MANAGER.addList(backboneList);
+                -->
+                </script>
+
+                <SELECT NAME="backbone_list_srch" onChange="backboneList.doIt();">
+                <OPTION VALUE="">Lookup by Backbone</OPTION>
+                <%perl>
+                my %stored = ();
+                foreach my $bb (sort { $a->name cmp $b->name } @backbones)
+                {
+                    next if ($bb->id == $o->cable || exists($stored{$bb}));
+                    $stored{$bb} = 1;
+                    printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+                }
+                </%perl>
+                </SELECT> &nbsp;                
+%               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"parent", lookup=>"CableStrand", edit=>$editStrand,
+%                                 where=>{cable=>$o->parent->cable});
+%               } else {
+%               my $srchfld = "strand_srch";  # name of the form input tag
+	            <input type="text" name="<% $srchfld %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;" style="width: 100px;">
+	            &nbsp;<input type="button" name="" value="Lookup" onClick="sendquery(<% 'CableStrand__' . $id . '__parent' %>, <% $srchfld . '.value' %>, 'CableStrand')"> &nbsp;
+%               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"parent", lookup=>"CableStrand", edit=>$editStrand,
+%                                 where=>{cable=>0});
+%               }
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Circuit: </td>
+                <td>
+%               if (!$editStrand) {
+                <a href="view.html?table=Circuit&id=<% $o->circuit_id %>"><% $o->circuit_id ? $o->circuit_id->cid : "" %></a>
+%               } else {
+%               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"circuit_id", lookup=>"Circuit", edit=>$editStrand);
+%               if ($editStrand) {
+%                   my $srchfld = "circuit_srch";  # name of the form input tag
+	                <input type="text" name="<% $srchfld %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;" style="width: 100px;">
+	                &nbsp;<input type="button" name="" value="Lookup" onClick="sendquery(<% 'CableStrand__' . $id . '__circuit_id' %>, <% $srchfld . '.value' %>, 'Circuit')">
+%               }                    
+%               }
+                </td>
+            </tr>
             </table>
             </td>
 
@@ -106,6 +171,7 @@ if (defined($ARGS{_action}))
 %               $ui->textField(object=>$o, table=>"CableStrand", column=>"datetested", edit=>$editStrand);
                 </td>
             </tr>
+
             <tr align="left" valign="top">
                 <td>Loss: </td>
                 <td>

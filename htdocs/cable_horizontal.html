@@ -97,7 +97,7 @@ LIST_MANAGER.addList(closetSearchList);
 %           if ($editCable) {
             <td align="right"><input name="submit" value="save" type="submit"></td>
 %           } else {
-            <td align="right"><a href="cable_horizontal.html?id=NEW">[new]</a> || <a href="cable_horizontal.html?id=<% $id %>&edit=cableinfo">[edit]</a></td>
+            <td align="right"><a href="cable_horizontal.html?id=NEW">[new]</a> || <a href="cable_horizontal.html?id=<% $id %>&edit=cableinfo">[edit]</a> || <a href="delete.html?table=HorizontalCable&id=<% $id %>">[delete]</a></td>
 %           }
         </tr>
         <tr align="left" valign="top">
@@ -332,8 +332,12 @@ LIST_MANAGER.addList(closetSearchList);
         </td>
 
         <td align="left">
+%       if ($editInt) {        
 %           $ui->selectLookup(object=>$int, table=>"Interface", column=>"device", 
 %                             lookup=>"Device", edit=>$editInt);
+%       } else {
+            <a href="device-ws.html?id=<% $int->device %>"><% $int->device->name->name %></a>
+%       }
         </td>
     </tr>
 %   }
