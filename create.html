@@ -11,6 +11,10 @@ foreach my $j ( keys %ARGS ) {
     $TBL = $j;
     next;
   }
+  if( $j eq "discover" ) {
+    %node = %{ $args{discover} };
+    next;
+  }
   next if( $ARGS{$j} !~ /\w+/ );
   $args{$j} = $ARGS{$j};
 }
@@ -308,6 +312,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.15  2003/06/17 00:03:20  netdot
+#  *** empty log message ***
+#
 #  Revision 1.14  2003/06/13 20:49:13  netdot
 #  status pending while I deliberate node discovery in create.html
 #
