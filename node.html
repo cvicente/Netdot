@@ -133,7 +133,7 @@ if( exists( $args{insert} ) ) {
 %   } elsif( exists( $args{node} ) ) {
 <hr>
 <p><% $args{node} %>
-%     $nv->build_config( "device", $args{node} );
+%     $nv->build_config( "device", $args{node}, $comstr );
 %     if( my( %node ) = $nv->get_device( "device", $args{node}, $comstr ) ) {
 %       if( keys %{ $node{interface} } ) {
 %         $session->{node} = \%node;
@@ -187,6 +187,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.27  2003/07/17 05:34:36  netdot
+#  use $comstr in build_config!
+#
 #  Revision 1.26  2003/07/17 02:41:12  netdot
 #  Removed the 0x from physaddr
 #
