@@ -1,0 +1,99 @@
+<%perl>
+if ( $Add ){
+    foreach my $arg ( keys %ARGS ){
+	next if ( exists $reserved{$arg} );
+	$state{$arg} = $ARGS{$arg};
+    }
+    unless ( $newsrvid = $ui->insert(table => "IpService", state => \%state) ){
+	$m->comp("error.mhtml", error => $ui->error);
+    }
+</%perl>
+    <body class="bodytag" onUnload="opener.location.reload()">
+    <a href="#" onClick="window.close()">[done]</a>
+
+%}else{
+
+
+<html>
+<head>
+    <link rel=StyleSheet href="style.css" type="text/css">
+    <link rel="alternate stylesheet" title="Gray" href="style-gray.css" type="text/css">
+</head>      
+<body class="bodytag">
+
+<table width="100%" cellpadding="0" cellspacing="2" border="0" class="formtablebg">
+  <form action="addservice.html" method="POST">
+  <input type="hidden" name="ip" value="<% $ip %>">
+  <tr class="formtabletitle">
+     <td align="CENTER" colspan="2"><strong>Add IP Service</strong></td>
+  </tr>
+  <tr>
+    <td class="formtablec1"><strong>IP:</strong></td>
+    <td class="formtablec2"><% $iplbl %></td>
+  </tr>
+  <tr>
+    <td class="formtablec1"><strong>Service:</strong></td>
+    <td class="formtablec2">
+    <select name="service">
+%      foreach my $o ( sort { $a->name cmp $b->name } Service->retrieve_all() ){
+	  <option value="<% $o->id %>"><% $o->name %></option>
+%      }
+    </select>
+    </td>
+  </tr>
+  <tr>
+    <td class="formtablec1"><strong>Monitored:</strong></td>
+    <td class="formtablec2">
+      <input type="checkbox" name="monitored" CHECKED>
+    </td>
+  </tr>
+  <tr>
+    <td class="formtablec1"><strong>Contact Group:</strong></td>
+    <td class="formtablec2">
+    <select name="contactlist">
+%      foreach my $o ( sort { $a->name cmp $b->name } ContactList->retrieve_all() ){
+	  <option value="<% $o->id %>"><% $o->name %></option>
+%      }
+    </select>
+    </td>
+  </tr>
+  <tr class="formtabletitle">
+    <td align="CENTER" colspan="2">
+      <input name="Add" value="Add" type="submit">
+      <input name="Cancel" value="Cancel" type="submit">
+    </td>
+  </tr>
+  </form>
+</table>
+
+% } #else
+ 
+</body>
+</html>
+
+<%args>
+$ip  =>   undef
+$Add =>   undef
+</%args>
+
+<%init>
+my %state;
+my $ui = Netdot::UI->new();
+my $ipobj;
+my $iplbl;
+if ( $ip ){
+    $ipobj = Ipblock->retrieve($ip);
+    $iplbl = $ui->getobjlabel($ipobj, "/");
+}
+my %reserved = ( Add => "",
+		 Cancel => "",
+		);
+
+my $newsrvid;
+
+</%init>
+
+<%doc>
+Add an IP service object from device worksheet
+
+</%doc>

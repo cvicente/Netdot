@@ -7,10 +7,15 @@
  * Show only interfaces belonging to selected VLAN
  * 
 */
-function showVlan(){
+ function showVlan(){
     var name = document.showvlans.showvlan.value;
     window.location = "device.html?id=<% $id %>&showvlan="+name;
-}
+ }
+ function addService(ip){
+     var url = "addservice.html?ip="+ip;
+     var wind = window.open(url, "Create IP service", "width=400,height=200");
+     
+ }
 -->
 </script>
 
@@ -467,11 +472,16 @@ function showVlan(){
            <td align="left">
 %	      if ( scalar ($ip->services) ){
 %	       foreach my $ipsrv ($ip->services){
-%               $ui->selectLookup(object=>$ipsrv, column=>"service", lookup=>"Service", edit=>"$editips", linkPage=>"view.html");
-                <br>
+%#                $ui->selectLookup(object=>$ipsrv, column=>"service", lookup=>"Service", edit=>"$editips", linkPage=>"view.html");       
+                  <a href="view.html?table=IpService&id=<% $ipsrv->id %>"><% $ipsrv->service->name %></a>
+%                if ( $editips ){
+		   <input type="checkbox" name="<% "IpService__" . $ipsrv->id . "__delete" %>" > [del]
+%	         }
+                   <br>
 %	       }
-%            }else{
-%              # No services.  Allow creation.
+%            }
+%            if ( $editips ){
+               <a href="#" onClick="addService('<% $ip->id %>')">[add]</a>
 %            }
            </td>
 	  </tr>
@@ -682,15 +692,14 @@ function showVlan(){
 
 	  </tr>
 %       } #foreach
-     <tr>
 %    if ($editints){	 
-            <td colspan="8" width="100%" align="right">
-	       <input name="submit" value="save" type="submit">
-	    </td>
+     <tr class="formtabletitle">
+            <td colspan="11" width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 	    </form>
 %    }else{
+     <tr>
 	    <form action="device.html" method="POST">
-	      <td colspan="8" width="100%" align="left">
+	      <td colspan="11" width="100%" align="left">
 	        Manually 
 	        <input type="hidden" name="id" value="<% $id %>">
 	        <input type="submit" name="intadd" value="Add">
