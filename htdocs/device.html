@@ -34,7 +34,7 @@ if ( $args{action} eq "discover" ){
     $devtmp{community} = $comstr;
     $devtmp{sysdescription} = $dev{sysDescr};
     if( length( $dev{dot1dBaseBridgeAddress} ) > 0 
-        && $dev{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
+        && $dev{dot1dBaseBridgeAddress} ne "noSuchObject" ) {
       # Remove the '0x' from the MAC address
       $dev{dot1dBaseBridgeAddress} =~ s/^0x//;
       $devtmp{physaddr} = $dev{dot1dBaseBridgeAddress};

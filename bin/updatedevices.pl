@@ -15,6 +15,7 @@ my %problemDevs = (
                      '1.3.6.1.4.1.11.2.3.7.8.2.5' => 1,
                    );
 my $TEST = 0;
+my $SUBNETS = 0; 
 
 
 my %ifnames = ( physaddr => "ifPhysAddress",
@@ -30,6 +31,7 @@ usage: $0 -d|--device <host> -h|--help -v|--verbose
 
     -d, --device <host>  update given device only.  
                          Skipping this will update all devices in DB.
+    -s, --subnets        add subnets to database if they do not exist
     -h, --help           print help (this message)
     -v, --verbose        be verbose
     -t, --test           run through the routines, but do not make changes
@@ -41,6 +43,7 @@ my ($device, $host, @devices);
 # handle cmdline args
 my $result = GetOptions( "d|device=s" => \$host,
 			 "h|help" => \$help,
+			 "s|subnets" => \$SUBNETS,
 			 "v|verbose" => \$DEBUG,
 			 "t|test" => \$TEST );
 if( ! $result ) {
@@ -97,7 +100,7 @@ foreach my $device ( @devices ) {
     }
 
     if( length( $dev{dot1dBaseBridgeAddress} ) > 0 
-        && $dev{dot1dBaseBridgeAddress} eq "noSuchObject" ) {
+        && $dev{dot1dBaseBridgeAddress} ne "noSuchObject" ) {
       # Remove the '0x' from the MAC address
       $devtmp{physaddr} = $dev{dot1dBaseBridgeAddress};
       $devtmp{physaddr} =~ s/^0x//; 
@@ -196,17 +199,21 @@ foreach my $device ( @devices ) {
 	      ########################################
 	      # does this subnet already exist?
 	      if( $subnet = (Subnet->search( address => $ipobj->network->addr, prefix => $ipobj->masklen ) )[0] ) {
-		  print "Subnet ",$ipobj->network, " exists\n" if( $DEBUG );
-		  $iptmp{subnet} = $subnet->id;
+		 print "Subnet ",$ipobj->network, " exists\n" if( $DEBUG );
+		 $iptmp{subnet} = $subnet->id;
 	      } else {
-		  #my %nettmp;
-		  print "Subnet ",$ipobj->network, " does not exist\n" if( $DEBUG );
-		  $iptmp{subnet} = 0;
-		  #$nettmp{entity} = 0;
-		  #print "Subnet $ipobj->addr doesn't exist; inserting\n" if( $DEBUG );
-		  #unless( $subnet = insert( object => "Subnet", state => \%nettmp ) ){
-		  #  next;
-		  #}
+		 print "Subnet ",$ipobj->network, " does not exist\n" if( $DEBUG );
+		 $iptmp{subnet} = 0;
+		 if( $SUBNETS ) {
+		    my %nettmp;
+		    $nettmp{entity} = 0;
+		    $nettmp{address} = $ipobj->network->addr;
+		    $nettmp{prefix} = $ipobj->masklen;
+		    print "Subnet $ipobj->addr doesn't exist; inserting\n" if( $DEBUG );
+		    unless( $subnet = $gui->insert( table => "Subnet", state => \%nettmp ) ){
+		       next;
+		    }
+		 }
 	      }
 	      $iptmp{interface} = $if->id;
 	      $iptmp{address} = $ipobj->addr;
