@@ -1,15 +1,17 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
-use lib "/home/netdot/public_html/lib";
+use lib "/usr/local/netdot/lib";
 use Getopt::Long;
 use strict;
 use Socket;
 use Netdot::DBI;
+use Netdot::GUI;
 use Netdot::Netviewer;
 use Data::Dumper; 
 
 my $help = 0;
 my $DEBUG = 0;
+
 my %ifnames = ( physaddr => "ifPhysAddress",
 		number => "instance",
 		type => "ifType",
@@ -17,9 +19,9 @@ my %ifnames = ( physaddr => "ifPhysAddress",
 		speed => "ifSpeed",
 		status => "ifAdminStatus" );
 my $usage = <<EOF;
-usage: $0 -n|--device <host> -h|--help -v|--verbose
+usage: $0 -d|--device <host> -h|--help -v|--verbose
 
-    -n  <host>: update given device only.  Skipping this will update all devices in DB.
+    -d  <host>: update given device only.  Skipping this will update all devices in DB.
     -h        : print help (this message)
     -v        : be verbose
 EOF
@@ -27,7 +29,7 @@ EOF
 my ($device, $host, @devices);
 
 # handle cmdline args
-my $result = GetOptions( "n=s" => \$host,
+my $result = GetOptions( "d=s" => \$host,
 			 "device=s" => \$host,
 			 "h" => \$help,
 			 "help" => \$help,
@@ -42,6 +44,7 @@ if( $help ) {
 }
     
 my $nv = Netdot::Netviewer->new( foreground => '0', loglevel => 'LOG_ERR' );
+my $gui = Netdot::GUI->new();
 
 if (defined $host){
     if ($device = (Device->search(name => $host))[0]){
@@ -77,7 +80,7 @@ foreach my $device ( @devices ) {
     $ntmp{physaddr} = $dev{dot1dBaseBridgeAddress};
     $ntmp{physaddr} =~ s/^0x//; 
     $ntmp{serialnumber} = $dev{entPhysicalSerialNum};
-    unless( update( object => $device, state => \%ntmp ) ) {
+    unless( $gui->update( object => $device, state => \%ntmp ) ) {
       next;
     }
     ##############################################
@@ -99,9 +102,10 @@ foreach my $device ( @devices ) {
       $iftmp{name} = $newif;
       foreach my $dbname ( keys %ifnames ) {
 	if( $ifnames{$dbname} eq "descr" ) {
-	  if( $dev{interface}{$newif}{$ifnames{$dbname}} ne "-" ) {
-	    $iftmp{$dbname} = $dev{interface}{$newif}{$ifnames{$dbname}};
-	  }
+	    if( $dev{interface}{$newif}{$ifnames{$dbname}} ne "-" 
+		&& $dev{interface}{$newif}{$ifnames{$dbname}} ne "not assigned" ) {
+		$iftmp{$dbname} = $dev{interface}{$newif}{$ifnames{$dbname}};
+	    }
 	} else {
 	  $iftmp{$dbname} = $dev{interface}{$newif}{$ifnames{$dbname}};
 	}
@@ -113,7 +117,7 @@ foreach my $device ( @devices ) {
 	print "Interface device ", $device->name, ":$newif exists; updating\n"
 	  if( $DEBUG );
 	delete( $ifs{ $if->id } );
-	unless( update( object => $if, state => \%iftmp ) ) {
+	unless( $gui->update( object => $if, state => \%iftmp ) ) {
 	  next;
 	}
       } else {
@@ -121,8 +125,14 @@ foreach my $device ( @devices ) {
 	$iftmp{speed} ||= 0; #can't be null
 	print "Interface device ", $device->name, ":$newif doesn't exist; ",
 	  "inserting\n" if( $DEBUG );
-	unless( $if = insert( object => "Interface", state => \%iftmp ) ) {
-	  next;
+	unless ( my $ifid = $gui->insert( table => "Interface", state => \%iftmp ) ) {
+	    print "Error inserting Interface\n" if ($DEBUG);
+	    next;
+	}else{
+	    unless ( $if = Interface->retrieve($ifid) ) {
+		print "Couldn't retrieve Interface id $ifid\n" if ($DEBUG);
+		next;
+	    }
 	}
       }
       if( exists( $dev{interface}{$newif}{ipAdEntIfIndex} ) ) {
@@ -130,7 +140,7 @@ foreach my $device ( @devices ) {
 	foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
 	  ## ignore loopback IPs
 	  next if ($newip =~ /127\.0\.0\.1/);
-	  my( $ip, $subnet );
+	  my( $ipobj, $subnet );
 	  my $net = calc_subnet
 	    ( $newip, $dev{interface}{$newif}{ipAdEntIfIndex}{$newip} );
 	  ########################################
@@ -153,16 +163,18 @@ foreach my $device ( @devices ) {
 	  $iptmp{mask} = $dev{interface}{$newif}{ipAdEntIfIndex}{$newip};
 	  ########################################
 	  # does this ip already exist in the DB?
-	  if( $ip = (Ip->search( address => $newip ))[0] ) {
+	  if( $ipobj = (Ip->search( address => $newip ))[0] ) {
 	    print "Interface $newif IP $newip exists; updating\n" if($DEBUG);
-	    unless( update( object => $ip, state => \%iptmp ) ) {
+	    unless( $gui->update( object => $ipobj, state => \%iptmp ) ) {
 	      next;
 	    }
-	    delete( $dbips{ $ip } );
+	    delete( $dbips{ $ipobj } );
 	  } else {
 	    print "Interface $newif IP $newip doesn't exist; inserting\n" if($DEBUG);
-	    unless( $ip = insert( object => "Ip", state => \%iptmp ) ){
-	      next;
+	    if ( my $ipid  = $gui->insert( table => "Ip", state => \%iptmp ) ){
+		$ipobj = Ip->retrieve($ipid);
+	    }else{
+		next;
 	    }
 	  }
 	} # for
@@ -178,7 +190,7 @@ foreach my $device ( @devices ) {
   
       print "Device ", $device->name, " Interface number", $intobj->number,
 	" doesn't exist; removing\n" if( $DEBUG );
-      unless( remove( object => "Interface", id => $nonif ) ) {
+      unless( $gui->remove( table => "Interface", id => $nonif ) ) {
 	next;
       }
     }
@@ -191,7 +203,7 @@ foreach my $device ( @devices ) {
   
       print "Device ", $device->name, " Ip Address ", $ipobj->address,
 	" doesn't exist; removing\n" if( $DEBUG );
-      unless( remove( object => "Ip", id => $nonip ) ) {
+      unless( $gui->remove( table => "Ip", id => $nonip ) ) {
 	next;
       }
     }
@@ -201,64 +213,6 @@ foreach my $device ( @devices ) {
   }
 }
 
-
-######################################################################
-sub update {
-  my( %argv ) = @_;
-  my($obj) = $argv{object};
-  my(%state) = %{ $argv{state} };
-  my $change = 0;
-  foreach my $col ( keys %state ) {
-    if( $state{$col} ne $obj->$col ) {
-      $change = 1;
-      eval { $obj->set( $col, $state{$col} ); };
-      if( $@ ) {
-	warn "Unable to set $col to $state{$col}: $@ \n";
-	return 0;
-      }
-    }
-  }
-  if( $change ) {
-    eval { $obj->update; };
-    if( $@ ) {
-      warn "Unable to update: $@\n";
-      return 0;
-    }
-  }
-  return 1;
-}
-
-
-######################################################################
-sub insert {
-  my( %argv ) = @_;
-  my($obj) = $argv{object};
-  my(%state) = %{ $argv{state} };
-  my($ret);
-  eval { $ret = $obj->create( \%state ); };
-  if( $@ ) {
-    warn "Unable to insert into $obj: $@\n";
-    return 0;
-  } else {
-    return $ret;
-  }
-}
-
-
-######################################################################
-sub remove {
-  my(%argv) = @_;
-  my($obj) = $argv{object};
-  my($id) = $argv{id};
-  my $o = $obj->retrieve( $id );
-  eval { $o->delete; };
-  if( $@ ) {
-    warn "Unable to delete: $@ \n";
-    return 0;
-  } else {
-    return 1;
-  }
-}
 
 
 ######################################################################

@@ -42,17 +42,18 @@ if ( $args{action} eq "discover" ){
       $tmp{serialnumber} = $device{entPhysicalSerialNum};
     }
     # Try to guess some values
+    my $typeid;
     if ($tmp{name} =~ /hub/){
-      my $typeid = (DeviceType->search(name => "Hub"))[0];     
+      $typeid = (DeviceType->search(name => "Hub"))[0];     
       $tmp{type} = $typeid;
     }elsif ($tmp{name} =~ /switch/ || $tmp{name} =~ /backbone/){
-      my $typeid = (DeviceType->search(name => "Switch"))[0];     
+      $typeid = (DeviceType->search(name => "Switch"))[0];     
       $tmp{type} = $typeid;
     }elsif ($tmp{name} =~ /-gw/ || $tmp{name} =~ /router/ ){
-      my $typeid = (DeviceType->search(name => "Router"))[0];     
+      $typeid = (DeviceType->search(name => "Router"))[0];     
       $tmp{type} = $typeid;
     }elsif ($tmp{name} =~ /-ap/){
-      my $typeid = (DeviceType->search(name => "Access Point"))[0];     
+      $typeid = (DeviceType->search(name => "Access Point"))[0];     
       $tmp{type} = $typeid;
     }else{
       $tmp{type} = 0;
@@ -65,9 +66,13 @@ if ( $args{action} eq "discover" ){
     $tmp{user} = "0"; # same
     $tmp{entity} = "0"; # same
     $tmp{managed} = "1"; # same
-    eval { $newdevice = Device->create( \%tmp ); }
-      or die "Unable to create device $args{device}: $@ \n";
-    $inserted = $newdevice->id;
+
+    # Create the Device
+
+    unless ($newdevice = $gui->insert(table => 'Device', state => \%tmp )){
+        die "Unable to create device $args{device}: $@ \n";
+    }
+    $inserted = $newdevice;
     foreach my $int ( keys %{ $device{interface} } ) {
       my $skip = 0;
       foreach my $rsv ( @ifrsv ) {
@@ -76,10 +81,10 @@ if ( $args{action} eq "discover" ){
       }
       next if( $skip );
       next if( Interface->search
-                 ( device => $newdevice->id,
+                 ( device => $newdevice,
                    number => $device{interface}{$int}{instance} ) );
       undef( %tmp );
-      $tmp{device} = $newdevice->id;
+      $tmp{device} = $newdevice;
       $tmp{name} = $int;
       $tmp{managed} = "1";
       foreach my $dbname ( keys %ifnames ) {
@@ -94,14 +99,18 @@ if ( $args{action} eq "discover" ){
 	  $tmp{$dbname} = $device{interface}{$int}{$ifnames{$dbname}};
 	}
       }
+
+      # Create Interface
+      
       my $if;
-      eval { $if = Interface->create( \%tmp ); }
-        or die "Unable to create Interface $int: $@\n";
+      unless ($if = $gui->insert(table => 'Interface', state => \%tmp)){
+         die "Unable to create Interface $int: $@\n";
+      }
       undef( %tmp );
       if( exists( $device{interface}{$int}{ipAdEntIfIndex} ) ) {
          foreach my $ip ( keys %{ $device{interface}{$int}{ipAdEntIfIndex} } ) {
             my( $subnet, %iptmp, %nettmp );
-	    $iptmp{interface} = $if->id;
+	    $iptmp{interface} = $if;
             $iptmp{address} = $ip;
             $iptmp{mask} = $device{interface}{$int}{ipAdEntIfIndex}{$ip};
             $tmp{subnet} = 0;
@@ -117,12 +126,16 @@ if ( $args{action} eq "discover" ){
               #  or die "Unable to create Subnet $net: $@\n";
               $iptmp{subnet} = 0;
  	    }
-	    # 
+
+	    # Create IP
+
+	    my $newip;
 	    if( Ip->search( address => $ip ) ) {
-              ;
+              ;  # We should say something here
             } else {
-              eval { Ip->create( \%iptmp ); }
-                or die "Unable to create IP $ip: $@\n";
+	      unless ( $newip = $gui->insert(table => 'Ip', state => \%iptmp)){
+	         die "Unable to create IP $ip: $@\n";
+	      }
             }
          }
       }
@@ -215,7 +228,7 @@ if ( $args{action} eq "discover" ){
    return;
   }else{
 
-    open OUTPUT, "$PREFIX/bin/updatedevices.pl -n $args{device} -v|"
+    open OUTPUT, "$PREFIX/bin/updatedevices.pl -d $args{device} -v|"
                 or die "can't fork: $!";
 
 </%perl>
@@ -240,8 +253,6 @@ $PREFIX => "/usr/local/netdot"
 $comstr => undef
 $DEBUG => 0
 $TMP => "$PREFIX/tmp"
-$nv => Netdot::Netviewer->new()
-$gui => Netdot::GUI->new()
 $session => undef
 $inserted => 0
 %ifnames => ( physaddr => "ifPhysAddress", number => "instance", type => "ifType", description => "descr", speed => "ifSpeed", status => "ifAdminStatus" )
@@ -250,6 +261,8 @@ $inserted => 0
 <%init>
 use Netdot::Netviewer;
 use Socket;
+my $gui = Netdot::GUI->new();
+my $nv = Netdot::Netviewer->new();
 </%init>
 
 <%doc>
