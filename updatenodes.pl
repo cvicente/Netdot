@@ -2,8 +2,10 @@
 
 use lib "/home/netdot/public_html/lib";
 use strict;
+use Socket;
 use Netdot::DBI;
 use Netdot::Netviewer;
+use Data::Dumper;
 
 my $DEBUG = 1;
 my %ifnames = ( physaddr => "ifPhysAddress",
@@ -16,11 +18,11 @@ my %ifnames = ( physaddr => "ifPhysAddress",
 my $nv = Netdot::Netviewer->new( foreground => 0 );
 my @nodes = Node->retrieve_all();
 foreach my $node ( @nodes ) {
+  my %ifs;
   print "!!!!!!!! node ", $node->name, "\n" if( $DEBUG );
-  my @ifs = Node->interfaces();
-  $, = " " if( $DEBUG );
-  print @ifs if( $DEBUG );
+  map { $ifs{ $_->id } = 1 } Node->interfaces();
   $nv->build_config( "device", $node->name );
+  print "have config....\n";
   ################################################
   # get information from the device
   if( my( %dev ) = $nv->get_device( "device", $node->name ) ) {
@@ -29,7 +31,7 @@ foreach my $node ( @nodes ) {
     foreach my $newif ( keys %{ $dev{interface} } ) {
       ############################################
       # set up IF state data
-      my( %iftmp, %iptmp );
+      my( %iftmp, %iptmp, $if );
       $iftmp{node} = $node->id;
       $iftmp{ifdescr} = $newif;
       foreach my $dbname ( keys %ifnames ) {
@@ -43,29 +45,46 @@ foreach my $node ( @nodes ) {
       }
       ############################################
       # does this ifIndex already exist in the DB?
-      if( my $if = (Interface->search( ifindex => $dev{interface}{$newif}{ifIndex}))[0] ) {
-	update( obj => \$if, state => \%iftmp );
+      if( $if = (Interface->search( node => $node->id, ifindex => $dev{interface}{$newif}{instance}))[0] ) {
+	update( object => \$if, state => \%iftmp ); 
+	delete( $ifs{ $if->id } );
       } else {
-	insert( obj => "Interface", state => \%iptmp );
+	$iftmp{managed} = 0;
+	$if = insert( object => "Interface", state => \%iftmp );
       }
       if( exists( $dev{interface}{$newif}{ipAdEntIfIndex} ) ) {
 	foreach my $newip( keys %{ $dev{interface}{$newif}{ipAdEntIfIndex}}){
+	  my( $ip, $subnet );
+	  my $net = calc_subnet
+	    ( $newip, $dev{interface}{$newif}{ipAdEntIfIndex}{$newip} );
+	  ########################################
+	  # does this subnet already exist?
+	  if( $subnet = (Subnet->search( address => $net ) )[0] ) {
+	    ; # do nothing
+	  } else {
+	    my %tmp;
+	    $tmp{address} = $net;
+	    $subnet = insert( object => "Subnet", state => \%tmp );
+	  }
 	  $iptmp{interface} = $if->id;
+	  $iptmp{subnet} = $subnet->id;
 	  $iptmp{address} = $newip;
 	  $iptmp{mask} = $dev{interface}{$newif}{ipAdEntIfIndex}{$newip};
 	  ########################################
 	  # does this ip already exist in the DB?
-	  if( my $ip = (Ip->search( address => $newip ))[0] ) {
-	    update( obj => \$ip, state => \%iptmp );
+	  if( $ip = (Ip->search( address => $newip ))[0] ) {
+	    print "have ip $ip; would go to update\n";
+	    update( object => \$ip, state => \%iptmp );
 	  } else {
-	    insert( obj => "Ip", state => \%iptmp );
-	}
+	    $ip = insert( object => "Ip", state => \%iptmp );
+	  }
+	} # for
       }
     }
     ##############################################
     # remove each interface that no longer exists
-    foreach my $nonif ( @ifs ) {
-      ;
+    foreach my $nonif ( keys %ifs ) {
+      print "id $nonif \n";
     }
   } else {
     warn "Unable to access node ", $node->name, "\n";
@@ -77,8 +96,9 @@ foreach my $node ( @nodes ) {
 sub update {
   my( %argv ) = @_;
   my($obj) = $argv{object};
-  my($state) = %{ $argv{state} };
+  my(%state) = %{ $argv{state} };
   my $change = 0;
+  return;
   foreach my $col ( keys %state ) {
     if( $state{$col} ne $obj->$col ) {
       $change = 1;
@@ -95,18 +115,32 @@ sub update {
 sub insert {
   my( %argv ) = @_;
   my($obj) = $argv{object};
-  my($state) = %{ $argv{state} };
-  $obj->create( \%state );
+  my(%state) = %{ $argv{state} };
+  return $obj->create( \%state );
 }
 
 
 ######################################################################
 sub remove {
-  ;
+  my(%argv) = @_;
+  my($obj) = $argv{object};
+  $obj->delete;
+}
+
+
+######################################################################
+sub calc_subnet {
+  my( $ip, $mask ) = @_;
+  my $decip = unpack('N', (pack ('C*', split (/\./, $ip))));
+  my $decmask = unpack('N', (pack ('C*', split (/\./, $mask))));
+  return inet_ntoa(pack('N',$decip & $decmask));
 }
 
 ######################################################################
 #  $Log: updatenodes.pl,v $
+#  Revision 1.4  2003/07/11 00:03:23  netdot
+#  more work fleshing out algorithm
+#
 #  Revision 1.3  2003/07/10 20:54:10  netdot
 #  more work to complete this.  still fleshing algorithm out.
 #
@@ -130,3 +164,5 @@ __DATA__
           remove from Interfaces
       end
   end
+
+
