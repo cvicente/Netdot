@@ -1,60 +1,39 @@
-<%args>
-$nv => undef
-</%args>
 <%perl>
 my %args;
 foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
   $args{$j} = $ARGS{$j};
 }
-$nv = Netdot::Netviewer->new();
 </%perl>
-
-<& header, title => "Node" &>
-<blockquote>
-<form action="node.html" method="POST">
-<input type="text" name="node" size="30" value="<% $args{node} %>">
-<input name="submit" value="Discover" type="submit">
-</form>
-</blockquote>
-
-% # print Dumper( %ARGS );
 % if( exists( $args{node} ) ) {
-%  my %reserved;
-%  foreach my $if ( NvIfReserved->retrieve_all() ) {
-%    $reserved{$if->name} = 1;
-%  }
-  <p>node:  <% $args{node} %>
+  <& header, title => "Node" &>
+  <p><% $args{node} %>
 %   $nv->build_config( "device", $args{node} );
-%   my( %node ) = $nv->get_targets();
-  <p>Inserting:
-  <ul><blockquote>
-     <li>node <% $args{node} %>
-     <li>sysDescr:  <% $node{"device"}{$args{node}}{sysDescr} %>
-     <li>sysLocation: <% $node{"device"}{$args{node}}{sysLocation} %>
-     <li>dot1dBaseBridgeAddress: <% $node{"device"}{$args{node}}{dot1dBaseBridgeAddress} %>
-%   foreach my $if ( keys %{ $node{"device"}{$args{node}}{interface} } ) {
-%     my $z = 0;
-%     foreach my $rsv ( keys %reserved ) {
-%       $z = 1 if( $if =~ /$rsv/ );
+%   if( my( %node ) = $nv->get_device( "device", $args{node} ) ) {
+%     if( %node ) {
+% #      <& test2.html, discover => \%node &>
+%       print string_config( "device", $args{node} );
+%     } else {
+        <p>Failed to get config.
 %     }
-%     next if( $z );
-      <blockquote>
-      <li>interface: <% $if %>
-      <li>ifDescr: <% $if %>
-      <li>ifPhysAddress: <% $node{device}{$args{node}}{interface}{$if}{ifPhysAddress} %>
-      <li>ifIndex: <% $node{device}{$args{node}}{interface}{$if}{instance} %>
-      <li>ifType: <% $node{device}{$args{node}}{interface}{$if}{ifType} %>
-      <li>ifAlias: <% $node{device}{$args{node}}{interface}{$if}{descr} %>
-      <li>ifSpeed: <% $node{device}{$args{node}}{interface}{$if}{ifSpeed} %>
-      <li>ifAdminStatus: <% $node{device}{$args{node}}{interface}{$if}{ifAdminStatus} %>
-      </blockquote>
+%   } else {
+      <p>Failed to build config.
 %   }
-  </ul>     
+% } else {
+  <& header, title => "Node" &>
+  <br>
+  <blockquote>
+  <form action="node.html" method="POST">
+  <input type="text" name="node" size="30" value="">
+  <input name="submit" value="Discover" type="submit">
+  </form>
+  </blockquote>
+  <& footer &>
 % }
 
-<& footer &>
-
+<%args>
+$nv => Netdot::Netviewer->new();
+</%args>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
@@ -69,6 +48,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.5  2003/06/17 00:03:11  netdot
+#  bugger if i know
+#
 #  Revision 1.4  2003/06/12 23:50:06  netdot
 #  more work -- probably moving to create.html
 #
