@@ -36,7 +36,9 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE")
         $end_site = $o->end_closet->floor->site;
         $start_site_id = $start_site->id if ($start_site);
         $end_site_id = $end_site->id if ($end_site);
-        $edit = undef;
+        
+        $editBackbone = 0;
+        $editStrand = 0;
     }
 }
 
@@ -142,11 +144,9 @@ function suggestName()
             <tr align="left" valign="top">
                 <td>Name: </td>
                 <td>
-%               if ($edit eq "cableinfo") {                
-                    <input type="text" name="BackboneCable__<% $id %>__name" value="<% $o ? $o->name : "" %>"> 
+%               $ui->textField(object=>$o, table=>"BackboneCable", column=>"name", edit=>$editBackbone); 
+%               if ($editBackbone) {                
                     &nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name" value="Suggest Name" onClick="suggestName();">
-%               } else {
-                    <% $o->name %>
 %               }
                </td>
             </tr>
@@ -154,33 +154,22 @@ function suggestName()
             <tr align="left" valign="top">
                 <td>Cable Type: </td>
                 <td>
-%               if ($edit eq "cableinfo") {                 
-%                   $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"type", lookup=>"CableType");
-%               } else {
-                    <% $o->type ? $o->type->name : "" %>
-%               }
+%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"type", lookup=>"CableType", edit=>$editBackbone);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Owner: </td>
                 <td>
-%               if ($edit eq "cableinfo") {
-%                   $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"owner", lookup=>"Entity");
-%               } else {
-                    <% $o->owner ? $o->owner->name : "" %>
-%               }                    
+%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"owner", lookup=>"Entity", edit=>$editBackbone);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
                 <td>
-%               if ($edit eq "cableinfo") {
-                    <input type="text" name="BackboneCable__<% $id %>__installdate" value="<% $o ? $o->installdate : "" %>">
-%               } else {
-                    <% $o->installdate %>
-%               }
+%               $ui->textField(object=>$o, table=>"BackboneCable", column=>"installdate", edit=>$editBackbone);
+                </td>
             </tr>
             </table>
             </td>
@@ -190,9 +179,10 @@ function suggestName()
             <tr align="left" valign="top">
                 <td>Start Closet: </td>
                 <td>
-%               my @sites = undef;                
-%               if ($edit eq "cableinfo") {
-%                   $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"start_closet", lookup=>"Closet", where=>{site=>$start_site_id});
+%               my @sites = undef;
+%               if ($editBackbone) {
+%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"start_closet", lookup=>"Closet", 
+%                                 edit=>$editBackbone, where=>{site=>$start_site_id});
                     &nbsp;<select name="start_srch" onChange="startClosetSearch.doIt();" style="width: 150px;">
                     <option value="">Lookup by Site</option>
                     <%perl>
@@ -205,7 +195,7 @@ function suggestName()
                     </%perl>
                     </select>
 %               } else {
-                    <% $o->start_closet ? $o->start_closet->name : "" %> <a href="closet.html?id=<% $o->start_closet->id %>">[details]</a>
+                <a href="closet.html?id=<% $o->start_closet %>"><% $o->start_closet->name %></a> 
 %               }
                 </td>
             </tr>
@@ -213,8 +203,9 @@ function suggestName()
             <tr align="left" valign="top">
                 <td>End Closet: </td>
                 <td>
-%               if ($edit eq "cableinfo") {
-%                   $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"end_closet", lookup=>"Closet", where=>{site=>$end_site_id});
+%               if ($editBackbone) {
+%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"end_closet", lookup=>"Closet", 
+%                                 edit=>$editBackbone, where=>{site=>$end_site_id});
                     &nbsp;<select name="end_srch" onChange="endClosetSearch.doIt();" style="width: 150px;">
                     <option value="">Lookup by Site</option>
                     <%perl>
@@ -225,7 +216,7 @@ function suggestName()
                     </%perl>
                     </select>
 %               } else {
-                    <% $o->end_closet ? $o->end_closet->name : "" %> <a href="closet.html?id=<% $o->end_closet->id %>">[details]</a>
+                <a href="closet.html?id=<% $o->end_closet %>"><% $o->end_closet->name %></a>
 %               }
                 </td>
             </tr>
@@ -233,11 +224,7 @@ function suggestName()
             <tr align="left" valign="top">
                 <td>Length: </td>
                 <td>
-%               if ($edit eq "cableinfo") {
-                    <input type="text" name="BackboneCable__<% $id %>__length" value="<% $o ? $o->length : "" %>"></td>
-%               } else {
-                    <% $o->length %>
-%               }
+%               $ui->textField(object=>$o, table=>"BackboneCable", column=>"length", edit=>$editBackbone);                
                 </td>
             </tr>
             </table>
@@ -250,11 +237,8 @@ function suggestName()
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           if ($edit eq "cableinfo") {
-               <textarea name="BackboneCable__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
-%           } else {
-                <% $o->info %>
-%           }
+%           $ui->textArea(object=>$o, table=>"BackboneCable", column=>"info",
+%                         edit=>$editBackbone, htmlExtra=>"rows='3' cols='80'");
             </td>
             <td>&nbsp;</td>
         </tr>
@@ -285,7 +269,7 @@ function suggestName()
        <tr>
          <td width="10%" align="left">&nbsp;</td>
          <th width="80%" align="center">Cable Strands</th>
-%	 if ($edit eq "strandinfo") {	 
+%	 if ($editStrand) {	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 } else {
             <td width="10%" align="right">
@@ -349,28 +333,20 @@ function suggestName()
 %   $i = ($i + 1) % 2;
     <tr align="left" class="<% $cssitem{$i} %>">
         <td align="left">
-%       if ($edit eq "strandinfo") {
+%       if ($editStrand) {
             <input type="checkbox" name="<% "CableStrand__" . $st->id . "__delete" %>">[del]
-            <input type="text" name="CableStrand__<% $st->id %>__name" value="<% $st->name %>">
+%           $ui->textField(object=>$st, table=>"CableStrand", column=>"name", edit=>$editStrand);            
 %       } else {
             <a href="cable_strand.html?id=<% $st->id %>"><% $st->name %></a>
 %       }
         </td>
 
         <td align="left">
-%       if ($edit eq "strandinfo") {
-%           $ui->selectLookup(object=>$st, column=>"status", lookup=>"StrandStatus");
-%       } else {
-            <% $st->status ? $st->status->name : "" %>
-%       }
+%           $ui->selectLookup(object=>$st, column=>"status", lookup=>"StrandStatus", edit=>$editStrand);
         </td>
 
         <td align="left">
-%       if ($edit eq "strandinfo") {
-            <input type="text" name="CableStrand__<% $st->id %>__direction" value="<% $st->direction %>">
-%       } else {
-            <% $st->direction %>
-%       }
+%           $ui->textField(object=>$st, table=>"CableStrand", column=>"direction", edit=>$editStrand);        
         </td>
     </tr>
 %   }
@@ -414,6 +390,9 @@ my $DEBUG = 0;
 my $ui = Netdot::UI->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 
+my $editBackbone = 0;
+my $editStrand = 0;
+
 my ($o, $start_site, $end_site) = (undef, undef, undef);
 my ($start_site_id, $end_site_id) = (0, 0);
 
@@ -427,7 +406,8 @@ if ($id && $id ne "NEW")
    $end_site_id = $end_site->id if ($end_site);
 }
 
-$edit = "cableinfo" if ($id eq "NEW");
+$editBackbone = 1 if ($id eq "NEW" || $edit eq "cableinfo");
+$editStrand = 1 if ($edit eq "strandinfo");
 </%init>
 
 <%doc>

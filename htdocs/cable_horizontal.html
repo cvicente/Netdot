@@ -30,7 +30,9 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE")
     {
         $o = HorizontalCable->retrieve($id);
         $site = $o->closet->site;
-        $edit = undef;
+        
+        $editCable = 0;
+        $editInt = 0;
     }
 }
 
@@ -96,44 +98,32 @@ LIST_MANAGER.addList(closetSearchList);
             <tr align="left" valign="top">
                 <td align="left">Jack ID: </td>
                 <td align="left">
-%               if ($edit eq "cableinfo") {
-                    <input type="text" name="HorizontalCable__<% $id %>__jackid" value="<% $o ? $o->jackid : "" %>">
-%               } else {
-                    <% $o ? $o->jackid : "" %>
-%               }
+%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"jackid", 
+%                              edit=>$editCable);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Cable Type: </td>
                 <td align="left">
-%               if ($edit eq "cableinfo") {
-%                   $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"type", lookup=>"CableType");
-%               } else {
-                    <% $o->type ? $o->type->name : "" %>
-%               }
+%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"type",
+%                                 lookup=>"CableType", edit=>$editCable);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
                 <td align="left">
-%               if ($edit eq "cableinfo") {
-                    <input type="text" name="HorizontalCable__<% $id %>__installdate" value="<% $o ? $o->installdate : "" %>">
-%               } else {
-                    <% $o->installdate %>
-%               }
+%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"installdate", 
+%                              edit=>$editCable);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Tested on <font size="-1">(yyyy-mm-dd)</font>: </td>
                 <td align="left">
-%               if ($edit eq "cableinfo") {
-                    <input type="text" name="HorizontalCable__<% $id %>__datetested" value="<% $o ? $o->datetested : "" %>">
-%               } else {
-                    <% $o->datetested %>
-%               }
+%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"datetested", 
+%                              edit=>$editCable);
                 </td>
             </tr>
 
@@ -141,11 +131,8 @@ LIST_MANAGER.addList(closetSearchList);
             <tr align="left" valign="top">
                 <td align="left">Test Passed: </td>
                 <td align="left">
-%               if ($edit eq "cableinfo") {
-%                   $ui->radioGroupBoolean(object=>$o, table=>"HorizontalCable", column=>"testpassed");
-%               } else {
-                    <% $o->testpassed ? "Yes" : "No" %>
-%               }
+%               $ui->radioGroupBoolean(object=>$o, table=>"HorizontalCable", 
+%                                      column=>"testpassed", edit=>$editCable);
                 </td>
             </tr>
             </table>
@@ -156,8 +143,9 @@ LIST_MANAGER.addList(closetSearchList);
             <tr align="left" valign="top">
                 <td align="left">Closet: </td>
                 <td align="left">
-%               if ($edit eq "cableinfo") {
-%                   $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", where=>{site=>($site ? $site->id : "")});
+%               if ($editCable) {
+%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", 
+%                                 edit=>$editCable, where=>{site=>($site ? $site->id : "")});
                     &nbsp;<select name="closet_srch" onChange="closetSearchList.doIt();" style="width: 150px;">
                     <option value="">Lookup by Site</option>
                     <%perl>
@@ -170,41 +158,32 @@ LIST_MANAGER.addList(closetSearchList);
                     </%perl>
                     </select>
 %               } else {
-                    <% $o->closet ? $o->closet->name : "" %> <a href="closet.html?id=<% $o->closet->id %>">[details]</a>
-%               }                    
+                <a href="closet.html?id=<% $o->closet %>"><% $o->closet->name %></a>
+%               }
                 </td>
             </tr>
             
             <tr align="left" valign="top">
                 <td align="left">Room: </td>
                 <td align="left">
-%               if ($edit eq "cableinfo") {
-                    <input type="text" name="HorizontalCable__<% $id %>__room" value="<% $o ? $o->room : "" %>">
-%               } else {
-                    <% $o->room %>
-%               }                    
+%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"room", 
+%                              edit=>$editCable);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Account: </td>
                 <td align="left">
-%               if ($edit eq "cableinfo") {                
-                    <input type="text" name="HorizontalCable__<% $id %>__account" value="<% $o ? $o->account : "" %>">
-%               } else {
-                    <% $o->account %>
-%               }
+%               $ui->textField(object=>$o, table=>"HorizontalCable", column=>"account", 
+%                              edit=>$editCable);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Contact List: </td>
                 <td align="left">
-%               if ($edit eq "cableinfo") {
-%                   $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"contactlist", lookup=>"ContactList");
-%               } else {
-                    <% $o->contactlist ? $o->contactlist->name : "" %>
-%               }
+%               $ui->selectLookup(object=>$o, table=>"HorizontalCable", column=>"contactlist", 
+%                                 lookup=>"ContactList", edit=>$editCable);
                 </td>
             </tr>
             </table>
@@ -217,11 +196,8 @@ LIST_MANAGER.addList(closetSearchList);
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           if ($edit eq "cableinfo") {
-                <textarea name="HorizontalCable__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
-%           } else {
-                <% $o->info %>
-%           }
+%           $ui->textArea(object=>$o, table=>"HorizontalCable", column=>"info",
+%                         edit=>$editCable, htmlExtra=>"rows='3' cols='80'");
             </td>
             <td>&nbsp;</td>
         </tr>
@@ -239,6 +215,8 @@ LIST_MANAGER.addList(closetSearchList);
 <table border="0" width="95%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
+
+%   if (!$editCable) {
     
     <form name="netdotform" action="cable_horizontal.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
@@ -259,7 +237,7 @@ LIST_MANAGER.addList(closetSearchList);
     </tr>
     </table>
     </form>
-
+%   }
     
     <form name="int_form" action="cable_horizontal.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
@@ -273,7 +251,7 @@ LIST_MANAGER.addList(closetSearchList);
        <tr>
          <td width="10%" align="left">&nbsp;</td>
          <th width="80%" align="center">Interfaces</th>
-%	 if ($edit eq "intinfo") {	 
+%	 if ($editInt) {	 
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 } else {
             <td width="10%" align="right">
@@ -326,36 +304,28 @@ LIST_MANAGER.addList(closetSearchList);
 %   $i = ($i + 1) % 2;
     <tr align="left" class="<% $cssitem{$i} %>">
         <td align="left">
-%       if ($edit eq "intinfo") {
+%       if ($editInt) {
             <input type="checkbox" name="<% "Interface__" . $int->id . "__delete" %>">[del]
-            <input type="text" name="Interface__<% $int->id %>__name" value="<% $int->name %>">
+%           $ui->textField(object=>$int, table=>"Interface", column=>"name", 
+%                          edit=>($edit eq "intinfo"));
 %       } else {
             <a href="interface.html?id=<% $int->id %>"><% $int->name %></a>
 %       }
         </td>
 
         <td align="left">
-%       if ($edit eq "intinfo") {
-            <input type="text" name="Interface__<% $int->id %>__number" value="<% $int->number %>">
-%       } else {
-            <% $int->number %>
-%       }
+%           $ui->textField(object=>$int, table=>"Interface", column=>"number", 
+%                          edit=>$editInt);        
         </td>
 
         <td align="left">
-%       if ($edit eq "intinfo") {
-            <input type="text" name="Interface__<% $int->id %>__type" value="<% $int->type %>">
-%       } else {
-            <% $int->type %>
-%       }
+%           $ui->textField(object=>$int, table=>"Interface", column=>"type", 
+%                          edit=>$editInt);         
         </td>
 
         <td align="left">
-%       if ($edit eq "intinfo") {
-%           $ui->selectLookup(object=>$int, table=>"Interface", column=>"device", lookup=>"Device");
-%       } else {
-            <% $int->device->name ? $int->device->name->name : "" %>
-%       }
+%           $ui->selectLookup(object=>$int, table=>"Interface", column=>"device", 
+%                             lookup=>"Device", edit=>$editInt);
         </td>
     </tr>
 %   }
@@ -392,6 +362,8 @@ my $ui = Netdot::UI->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
 my $site = undef;
+my $editCable = 0;
+my $editInt = 0;
 
 if ($id && $id ne "NEW") 
 {
@@ -399,7 +371,8 @@ if ($id && $id ne "NEW")
    $site = $o->closet->site;
 }
 
-$edit = "cableinfo" if ($id eq "NEW");
+$editCable = 1 if ($id eq "NEW" || $edit eq "cableinfo");
+$editInt = 1 if ($edit eq "intinfo");
 </%init>
 
 <%doc>

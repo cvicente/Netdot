@@ -19,7 +19,7 @@ if (defined($ARGS{_action}))
     if ($update_info{CableStrand}{key})
     {
         $id = $update_info{CableStrand}{key};
-        $edit = undef;
+        $editStrand = 0;
     }
     
     # Do this to 'flush' the values associated with the object
@@ -59,37 +59,32 @@ if (defined($ARGS{_action}))
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
             <td colspan="2" align="left">Cable Strand</td>
-%           if ($edit eq "strandinfo") {
+%           if ($editStrand) {
             <td align="right"><input name="submit" value="save" type="submit"></td>
 %           } else {
             <td align="right"><a href="cable_strand.html?id=NEW">[new]</a> || <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a></td>
 %           }
         </tr>
 
-        <!--<tr class="formtabletitle">
-            <td colspan="3" align="left">Cable Strand</td>
-        </tr>-->
         <tr align="left" valign="top">
             <td width="40%">
             <table width="100%" border="0" cellspacing="0" cellpadding="2">
             <tr align="left" valign="top">
                 <td>Name: </td>
                 <td>
-%               if ($edit eq "strandinfo") {
-                <input type="text" name="CableStrand__<% $id %>__name" value="<% $o ? $o->name : "" %>">
-%               } else {
-                <% $o->name %>
-%               }                
+%               $ui->textField(object=>$o, table=>"CableStrand", column=>"name", edit=>$editStrand);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Backbone: </td>
                 <td>
-%               if ($edit eq "strandinfo") {
-%               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable");
-%               } else {
-                <% $o->cable->name %>
+%               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable", 
+%                                 where=>{name=>($o ? $o->cable : "")}, edit=>$editStrand);
+%               if ($editStrand) {
+%               my $srchf = "backbone_srch";  # name of the form input tag
+	            <input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;" style="width: 100px;">
+	            &nbsp;<input type="button" name="" value="Lookup" onClick="sendquery(<% 'CableStrand__' . $id . '__cable' %>, <% $srchf . '.value' %>, 'BackboneCable')">
 %               }
                 </td>
             </tr>
@@ -97,11 +92,7 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>Status: </td>
                 <td>
-%               if ($edit eq "strandinfo") {
-%               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"status", lookup=>"StrandStatus");
-%               } else {
-                <% $o->status->name %>
-%               }
+%               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"status", lookup=>"StrandStatus", edit=>$editStrand);
                 </td>
             </tr>
             </table>
@@ -112,43 +103,27 @@ if (defined($ARGS{_action}))
             <tr align="left" valign="top">
                 <td>Tested on: <font size="-1">(yyyy-mm-dd)</font>: </td>
                 <td>
-%               if ($edit eq "strandinfo") {
-                <input type="text" name="CableStrand__<% $id %>__datetested" value="<% $o ? $o->datetested : "" %>">
-%               } else {
-                <% $o->datetested %>
-%               }
+%               $ui->textField(object=>$o, table=>"CableStrand", column=>"datetested", edit=>$editStrand);
                 </td>
             </tr>
             <tr align="left" valign="top">
                 <td>Loss: </td>
                 <td>
-%               if ($edit eq "strandinfo") {
-                <input type="text" name="CableStrand__<% $id %>__loss" value="<% $o ? $o->loss : "" %>">
-%               } else {
-                <% $o->loss %>
-%               }
+%               $ui->textField(object=>$o, table=>"CableStrand", column=>"loss", edit=>$editStrand);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Direction: </td>
                 <td>
-%               if ($edit eq "strandinfo") {
-                <input type="text" name="CableStrand__<% $id %>__direction" value="<% $o ? $o->direction : "" %>">
-%               } else {
-                <% $o->direction %>
-%               }
+%               $ui->textField(object=>$o, table=>"CableStrand", column=>"direction", edit=>$editStrand);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Description: </td>
                 <td>
-%               if ($edit eq "strandinfo") {
-                <input type="text" name="CableStrand__<% $id %>__description" value="<% $o ? $o->description : "" %>">
-%               } else {
-                <% $o->description %>
-%               }
+%               $ui->textField(object=>$o, table=>"CableStrand", column=>"description", edit=>$editStrand);                
                 </td>
             </tr>
             </table>
@@ -161,11 +136,8 @@ if (defined($ARGS{_action}))
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           if ($edit eq "strandinfo") {
-            <textarea name="CableStrand__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
-%           } else {
-            <% $o->info %>
-%           }
+%           $ui->textArea(object=>$o, table=>"CableStrand", column=>"info",
+%                         edit=>$editStrand, htmlExtra=>"rows='3' cols='80'");
             </td>
             <td>&nbsp;</td>
         </tr>
@@ -190,13 +162,14 @@ my $DEBUG = 0;
 my $ui = Netdot::UI->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
+my $editStrand = 0;
 
 if ($id && $id ne "NEW") 
 {
    $o = CableStrand->retrieve($id);
 }
 
-$edit = "strandinfo" if ($id eq "NEW");
+$editStrand = 1 if ($id eq "NEW" || $edit eq "strandinfo");
 </%init>
 
 <%doc>

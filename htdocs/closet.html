@@ -18,7 +18,7 @@ if (defined($ARGS{_action}))
     if ($update_info{Closet}{key})
     {
         $id = $update_info{Closet}{key};
-        $edit = undef;
+        $editCloset = 0;
     }
 
     # Do this to 'flush' the values associated with the object
@@ -30,7 +30,46 @@ if (defined($ARGS{_action}))
         $o = Closet->retrieve($id);
         $site = $o->floor->site || $o->site;
     }
-}  
+}
+
+if (defined($ARGS{_action}) && defined($ARGS{__picture}) && $ARGS{__picture} ne "")
+{
+    my %mimeTypes = ("jpg"=>"image/jpeg", "jpeg"=>"image/jpeg", "gif"=>"image/gif",
+                     "png"=>"image/png");
+    my $fh = $ARGS{__picture};
+    my $extension = $1 if ($fh =~ /\.(\w+)$/);
+    die("Extension \"$extension\" could not be found.\n") if (!exists($mimeTypes{$extension}));
+
+    my $mimetype = $mimeTypes{$extension};
+    my $pic = $o->picture;
+    my $data;
+    while (<$fh>)
+    {
+        $data .= $_;
+    }
+    
+    my %tmp;
+    $tmp{bindata} = $data;
+    $tmp{filename} = $fh;
+    $tmp{filetype} = $mimetype;
+    $tmp{filesize} = -s $fh;
+    
+    if (int($pic) ne 0)
+    {
+        # changed picture...
+        die("Error: " . $ui->error) if (!($ui->update(object=>$pic, state=>\%tmp)))
+    }
+
+    else
+    {
+        # new picture
+        my $ret = $ui->insert(table=>"BinFile", state=>\%tmp);
+        die("Error: " . $ui->error) if (!$ret);
+
+        # now try and update our closet...
+        die("Error: " . $ui->error) if (!($ui->update(object=>$o, state=>{picture=>$ret})));
+    }
+}
 # end insertion/update code
 # -----------------------------------------------------------------------------
 </%perl>
@@ -57,14 +96,14 @@ LIST_MANAGER.addList(floorSearchList);
 <table border="0" width="95%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
-        <form name="closetform" action="closet.html" method="POST">
+        <form name="closetform" action="closet.html" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="1">
         <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
             <td colspan="2" align="left">Closet</td>
-%           if ($edit eq "closetinfo") {
+%           if ($editCloset) {
             <td align="right"><input name="submit" value="save" type="submit"></td>
 %           } else {
             <td align="right"><a href="closet.html?id=NEW">[new]</a> || <a href="closet.html?id=<% $id %>&edit=closetinfo">[edit]</a></td>
@@ -76,30 +115,23 @@ LIST_MANAGER.addList(floorSearchList);
             <tr align="left" valign="top">
                 <td align="left">Name: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__name" value="<% $o ? $o->name : "" %>">
-%               } else {
-                    <% $o->name %>
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"name", edit=>$editCloset);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Number: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__number" value="<% $o ? $o->number : "" %>">
-%               } else {
-                    <% $o->number %>
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"number", edit=>$editCloset);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Floor: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-%                   $ui->selectLookup(object=>$o, table=>"Closet", column=>"floor", lookup=>"Floor", where=>{site=>($o ? $o->site : "")});
+%               $ui->selectLookup(object=>$o, table=>"Closet", column=>"floor", lookup=>"Floor", 
+%                                 edit=>$editCloset, where=>{site=>($o ? $o->site : "")});
+%               if ($editCloset) {
                      &nbsp;<select name="floor_srch" onChange="floorSearchList.doIt();" style="width: 150px;">
                     <option value="">Lookup by Site</option>
                     <%perl>
@@ -112,8 +144,6 @@ LIST_MANAGER.addList(floorSearchList);
                     </%perl>
                     </select>
 
-%               } else {
-                    <% $o->floor->level %>
 %               }
                 </td>
             </tr>
@@ -121,33 +151,21 @@ LIST_MANAGER.addList(floorSearchList);
             <tr align="left" valign="top">
                 <td align="left">Dimensions: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-                   <input type="text" name="Closet__<% $id %>__dimensions" value="<% $o ? $o->dimensions : "" %>"> 
-%               } else {
-                    <% $o->dimensions %> 
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"dimensions", edit=>$editCloset);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Racks: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__racks" value="<% $o ? $o->racks : "" %>">
-%               } else {
-                    <% $o->racks %> 
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"racks", edit=>$editCloset);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Outlets: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__outlets" value="<% $o ? $o->outlets : "" %>">
-%               } else {
-                    <% $o->outlets %> 
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"outlets", edit=>$editCloset);                
                 </td>
             </tr>
             </table>
@@ -158,79 +176,49 @@ LIST_MANAGER.addList(floorSearchList);
             <tr align="left" valign="top">
                 <td align="left">RU Available: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__ru_avail" value="<% $o ? $o->ru_avail : "" %>">
-%               } else {
-                    <% $o->ru_avail %>
-%               }                    
+%               $ui->textField(object=>$o, table=>"Closet", column=>"ru_avail", edit=>$editCloset);                
                 </td>
             </tr>
             
             <tr align="left" valign="top">
                 <td align="left">Patch Panels: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__patch_panels" value="<% $o ? $o->patch_panels : "" %>">
-%               } else {
-                    <% $o->patch_panels %>
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"patch_panels", edit=>$editCloset);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">110 Blocks: </td>
                 <td align="left">
-%               my $block_110 = "110_blocks";
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__110_blocks" value="<% $o ? $o->$block_110 : "" %>">
-%               } else {
-                    <% $o->$block_110 %>
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"110_blocks", edit=>$editCloset);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">66 Blocks: </td>
                 <td align="left">
-%               my $block_66 = "66_blocks";
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__66_blocks" value="<% $o ? $o->$block_66 : "" %>">
-%               } else {
-                    <% $o->$block_66 %>
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"66_blocks", edit=>$editCloset);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">CatV Taps: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__catv_taps" value="<% $o ? $o->catv_taps : "" %>">
-%               } else {
-                    <% $o->catv_taps %>
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"catv_taps", edit=>$editCloset);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Access Key Type: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__access_key_type" value="<% $o ? $o->access_key_type : "" %>">
-%               } else {
-                    <% $o->access_key_type %>
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"access_key_type", edit=>$editCloset);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td align="left">Work Needed: </td>
                 <td align="left">
-%               if ($edit eq "closetinfo") {
-                    <input type="text" name="Closet__<% $id %>__work_needed" value="<% $o ? $o->work_needed : "" %>">
-%               } else {
-                    <% $o->work_needed %>
-%               }
+%               $ui->textField(object=>$o, table=>"Closet", column=>"work_needed", edit=>$editCloset);                
                 </td>
             </tr> 
             </table>
@@ -243,25 +231,31 @@ LIST_MANAGER.addList(floorSearchList);
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           if ($edit eq "closetinfo") {
-                <textarea name="Closet__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
-%           } else {
-                <% $o->info %>
-%           }
+%           $ui->textArea(object=>$o, table=>"Closet", column=>"info",
+%                         edit=>$editCloset, htmlExtra=>"rows='3' cols='80'");
             </td>
             <td>&nbsp;</td>
         </tr>
 
         <tr><td colspan="3">&nbsp;<br></td></tr>
-
-%       if ($o && $o->picture != 0) {
+        
         <tr align="left" valign="top">
-            <td colspan="2"><P ALIGN="center">
+        <td colspan="2">
+%       if ($editCloset) {
+        Image: <input type="file" name="__picture" size="30" value="">
+%           if ($o && int($o->picture) ne 0) {
+            <br><I>Currently &quot;<% $o->picture->filename %>&quot; (<% $o->picture->filesize %> bytes)</I>
+%           }            
+%       }
+%       if ($o && int($o->picture) ne 0) {
+        <!-- image preview etc -->
+            <P ALIGN="center">
             <A HREF="display_bin.html?id=<% $o->picture %>" TARGET="_new"><IMG SRC="display_bin.html?id=<% $o->picture %>" WIDTH="150"></A>
             </P>
-            <td>&nbsp;</td>
-        </tr>
 %       }
+        </td>
+        <td>&nbsp;</td>
+        </tr>
         <tr><td colspan="3">&nbsp;<p></td></tr>
         </table>
         </form>
@@ -281,6 +275,7 @@ my $DEBUG = 0;
 my $ui = Netdot::UI->new();
 my $o = undef;
 my $site = undef;
+my $editCloset = 0;
 
 if ($id && $id ne "NEW") 
 {
@@ -288,5 +283,5 @@ if ($id && $id ne "NEW")
    $site = $o->floor->site || $o->site;
 }
 
-$edit = "closetinfo" if ($id eq "NEW");
+$editCloset = 1 if ($id eq "NEW" || $edit eq "closetinfo");
 </%init>

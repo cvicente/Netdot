@@ -101,35 +101,44 @@ my @sites = Site->retrieve_all();
 
 <tr class="rowtitle0" id="backbone_options">
     <td>
-    <form name="backbone_form" action="cable_plant.html" method="POST">
-    <input type="hidden" name="page_type" value="BACKBONE">
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
 
     <tr align="left" valign="top">
-    <td>Connected from:<br>
-    <select name="start_id" onChange="siteListLookup.doIt();" style="width: 225px">
-    <option value="">-- Make your selection --</option>
-    <%perl>
-    foreach my $site (@sites)
-    {
-        printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-    }
-    </%perl>
-    </select> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>- TO -</B><br>
+    <td>
+    <form name="backbone_form" action="cable_plant.html" method="POST">
+        <input type="hidden" name="page_type" value="BACKBONE">
+        Connected from:<br>
+        <select name="start_id" onChange="siteListLookup.doIt();" style="width: 225px">
+        <option value="">-- Make your selection --</option>
+        <%perl>
+        foreach my $site (@sites)
+        {
+            printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+        }
+        </%perl>
+        </select> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>- TO -</B><br>
    
-    <select name="end_id" style="width: 225px;">
-    </select><br>
-    <input name="submit_site" value="Go!" type="submit"> &nbsp;&nbsp;&nbsp;
+        <select name="end_id" style="width: 225px;">
+        </select><br>
+        <input name="submit_site" value="Go!" type="submit"> &nbsp;&nbsp;&nbsp;
+    </form>
     </td>
     
     <td align="left">
-        <input name="backbone_srch" size="15"> &nbsp;<input type="submit" name="submit_backbone_search" value="Search Backbone Name"> <br>
-        <input name="site_srch" size="15"> &nbsp;<input type="submit" name="submit_site_search" value="Search Site Name"> <br><br>
-        <input type="button" name="new_backbone" value="New Backbone" onClick="location.href = 'cable_backbone.html?id=NEW'; return true;">
+    <form name="backbone_srch" action="cable_plant.html" method="POST">
+        <input type="hidden" name="page_type" value="BACKBONE">  
+        <input name="backbone_srch" size="15"> &nbsp;<input type="submit" name="submit_backbone_search" value="Search Backbone Name">
+    </form>
+    
+    <br>
+    
+    <form name="site_srch" action="cable_plant.html" method="POST">
+        <input type="hidden" name="page_type" value="BACKBONE">  
+        <input name="site_srch" size="15"> &nbsp;<input type="submit" name="submit_site_search" value="Search Site Name">
+    </form>
     </td>
     </tr>
     </table>
-    </form>
     </td>
 </tr>
 

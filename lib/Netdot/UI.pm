@@ -347,6 +347,7 @@ sub update {
   my(%state) = %{ $argv{state} };
   my $change = 0;
   $self->_clear_error();
+
   foreach my $col ( keys %state ) {
     if( $state{$col} ne int($obj->$col) ) {
       $change = 1;
@@ -445,6 +446,7 @@ sub form_to_db
         next if ( exists($control{$j}));
         next if ($j =~ /_srch/);
         next if ($j eq "s2name");
+        next if ($j =~ /^__/);
         
         my $k = $j;
         $k =~ s/^_//;
@@ -551,81 +553,113 @@ sub form_to_db
     return %form_to_db_info;
 }
 
-
 ###############################################################################
 # selectLookup
+#
+# Arguments:
+#   - object: DBI object, can be null if a table object is included
+#   - table: Name of table in DB. (required if object is null)
+#   - column: name of field in DB.
+#   - edit: true if editing, false otherwise.
+#   - htmlExtra: extra html you want included in the output. Common use
+#                would be to include style="width: 150px;" and the like.
+#
+# TODO: Might be nice to use getobjlabel() at some point to display full
+#       information about the object. Performance issues with Class::DBI
+#       probably need to be addressed for this to be considered.
+#
 ###############################################################################
-sub selectLookup
+sub selectLookup($@)
 {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $lookup, $where, $default) = 
-                                              ($args{object}, 
-                                              $args{table}, 
-                                              $args{column}, 
-                                              $args{lookup},
-                                              $args{where},
-                                              $args{default});
+    my ($o, $table, $column, $lookup, $where, $isEditing, $htmlExtra) = 
+                                                        ($args{object}, 
+                                                        $args{table}, 
+                                                        $args{column}, 
+                                                        $args{lookup},
+                                                        $args{where},
+                                                        $args{edit},
+                                                        $args{htmlExtra});
+    $htmlExtra = "" if (!$htmlExtra);
 
     my $lblField = ($self->getlabels($lookup))[0];
     my %linksto = $self->getlinksto($lookup);
     my $rLblField = ($self->getlabels($lblField))[0] if ($linksto{$lblField});
-    my @fo = ($where ? $lookup->search($where) : $lookup->retrieve_all());
-    @fo = sort { $a->$lblField cmp $b->$lblField } @fo;
 
-    # if an object was passed we use it to obtain table name, id, etc
-    # as well as add an initial element to the selection list.
-    if ($o)
+
+    if ($isEditing)
     {
-        printf("<SELECT NAME=\"%s__%s__%s\">\n", $o->table, $o->id, $column);
-        if ($o->$column)
+        my @fo = ($where ? $lookup->search($where) : $lookup->retrieve_all());
+        @fo = sort { $a->$lblField cmp $b->$lblField } @fo;
+
+        # if an object was passed we use it to obtain table name, id, etc
+        # as well as add an initial element to the selection list.
+        if ($o)
         {
-            printf("<OPTION VALUE=\"%s\" SELECTED>%s</OPTION>\n", $o->$column->id,
-                  ($rLblField ? $o->$column->$lblField->$rLblField : $o->$column->$lblField));
+            printf("<SELECT NAME=\"%s__%s__%s\" %s>\n", $o->table, $o->id, $column, $htmlExtra);
+            if ($o->$column)
+            {
+                printf("<OPTION VALUE=\"%s\" SELECTED>%s</OPTION>\n", $o->$column->id,
+                      ($rLblField ? $o->$column->$lblField->$rLblField : $o->$column->$lblField));
+            }
+
+            else
+            {
+                printf("<OPTION VALUE=\"\" SELECTED>-- Make your selection --</OPTION>\n");
+            }
         }
 
-        else
+        # otherwise a couple of things my have happened:
+        #   1) this is a new row in some table, thus we lack an object
+        #      reference and need to create a new one. We rely on the supplied 
+        #      "table" argument to create the fieldname, and do so with the
+        #      id of "NEW" in order to force insertion when the user hits submit.
+        elsif ($table)
         {
+            printf("<SELECT NAME=\"%s__%s__%s\" %s>\n", $table, "NEW", $column, $htmlExtra);
             printf("<OPTION VALUE=\"\" SELECTED>-- Make your selection --</OPTION>\n");
         }
+        #   2) The apocalypse has dawned. No table argument _or_ valid DB object..lets bomb out.
+        else
+        {
+            die("Error: Unable to determine table name. Please pass valid object and/or table name.\n");
+        }
+
+        foreach my $fo (@fo)
+        {
+            next if ($o && $o->$column && ($fo->id == $o->$column->id));
+            printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $fo->id,
+                  ($rLblField ? $fo->$lblField->$rLblField : $fo->$lblField));
+        }
+
+        printf("<OPTION VALUE=\"0\">[null]</OPTION>\n");
+        printf("</SELECT>\n");
+
     }
-    # otherwise a couple of things my have happened:
-    #   1) this is a new row in some table, thus we lack an object
-    #      reference and need to create a new one. We rely on the supplied 
-    #      "table" argument to create the fieldname, and do so with the
-    #      id of "NEW" in order to force insertion when the user hits submit.
-    elsif ($table)
-    {
-        printf("<SELECT NAME=\"%s__%s__%s\">\n", $table, "NEW", $column);
-        printf("<OPTION VALUE=\"\" SELECTED>-- Make your selection --</OPTION>\n");
-    }
-    #   2) The apocalypse has dawned. No table argument _or_ valid DB object..lets bomb out.
+
     else
     {
-        die("Error: Unable to determine table name. Please pass valid object and/or table name.\n");
+        printf("%s\n", ($o->$column ? ($rLblField ? $o->$column->$lblField->$rLblField : $o->$column->$lblField) : ""));
     }
-
-    foreach my $fo (@fo)
-    {
-        next if ($o && $o->$column && ($fo->id == $o->$column->id));
-        printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $fo->id, 
-              ($rLblField ? $fo->$lblField->$rLblField : $fo->$lblField));
-    }
-
-    printf("<OPTION VALUE=\"0\">[null]</OPTION>\n");
-    printf("</SELECT>\n");
 }
 
 
 ###############################################################################
 # radioGroupBoolean
 #
-# Simple yes/no button group.
+# Simple yes/no radio button group. 
 #
+# Arguments:
+#   - object: DBI object, can be null if a table object is included
+#   - table: Name of table in DB. (required if object is null)
+#   - column: name of field in DB.
+#   - edit: true if editing, false otherwise.
 ###############################################################################
-sub radioGroupBoolean
+sub radioGroupBoolean($@)
 {
     my ($self, %args) = @_;
-    my ($o, $table, $column) = ($args{object}, $args{table}, $args{column});
+    my ($o, $table, $column, $isEditing) = ($args{object}, $args{table}, 
+                                            $args{column}, $args{edit});
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
@@ -633,10 +667,97 @@ sub radioGroupBoolean
     
     die("Error: Unable to determine table name. Please pass valid object and/or table name.\n") unless ($o || $table);
 
-    printf("<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"1\" %s>Yes &nbsp;&nbsp;\n", $name, ($value ? "CHECKED" : ""));
-    printf("<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"0\" %s>No\n", $name, (!$value ? "CHECKED" : ""));
+    if ($isEditing)
+    {
+        printf("<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"1\" %s>Yes &nbsp;&nbsp;\n", $name, ($value ? "CHECKED" : ""));
+        printf("<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"0\" %s>No\n", $name, (!$value ? "CHECKED" : ""));
+    }
+
+    else
+    {
+        printf("%s\n", ($value ? "Yes" : "No"));
+    }
 }
 
+###############################################################################
+# textField
+#
+# Text field widget. If "edit" is true then a text field is displayed with
+# the value from the DB (if any).
+#
+# Arguments:
+#   - object: DBI object, can be null if a table object is included
+#   - table: Name of table in DB. (required if object is null)
+#   - column: name of field in DB.
+#   - edit: true if editing, false otherwise.
+#   - htmlExtra: extra html you want included in the output. Common use
+#                would be to include style="width: 150px;" and the like.
+###############################################################################
+sub textField($@)
+{
+    my ($self, %args) = @_;
+    my ($o, $table, $column, $isEditing, $htmlExtra) = ($args{object}, $args{table}, 
+                                                        $args{column}, $args{edit}, 
+                                                        $args{htmlExtra});
+    my $tableName = ($o ? $o->table : $table);
+    my $id = ($o ? $o->id : "NEW");
+    my $value = ($o ? $o->$column : "");
+    my $name = $tableName . "__" . $id . "__" . $column;
+
+    $htmlExtra = "" if (!$htmlExtra);
+
+    die("Error: Unable to determine table name. Please pass valid object and/or table name.\n") unless ($o || $table);
+
+    if ($isEditing)
+    {
+        printf("<INPUT TYPE=\"TEXT\" NAME=\"%s\" VALUE=\"%s\" %s>\n", $name, $value, $htmlExtra);
+    }
+
+    else
+    {
+        printf("%s\n", $value);
+    }
+}
+
+###############################################################################
+# textArea
+#
+# Text area widget. If "edit" is true then a textarea is displayed with
+# the value from the DB (if any).
+#
+# Arguments:
+#   - object: DBI object, can be null if a table object is included
+#   - table: Name of table in DB. (required if object is null)
+#   - column: name of field in DB. 
+#   - edit: true if editing, false otherwise.
+#   - htmlExtra: extra html you want included in the output. Common use
+#                would be to include style="width: 150px;" and the like.
+###############################################################################
+sub textArea($@)
+{
+    my ($self, %args) = @_;
+    my ($o, $table, $column, $isEditing, $htmlExtra) = ($args{object}, $args{table}, 
+                                                        $args{column}, $args{edit}, 
+                                                        $args{htmlExtra});
+    my $tableName = ($o ? $o->table : $table);
+    my $id = ($o ? $o->id : "NEW");
+    my $value = ($o ? $o->$column : "");
+    my $name = $tableName . "__" . $id . "__" . $column;
+
+    $htmlExtra = "" if (!$htmlExtra);
+
+    die("Error: Unable to determine table name. Please pass valid object and/or table name.\n") unless ($o || $table);
+
+    if ($isEditing)
+    {
+        printf("<TEXTAREA NAME=\"%s\" %s>%s</TEXTAREA>\n", $name, $htmlExtra, $value);
+    }
+
+    else
+    {
+        printf("%s\n", $value);
+    }
+}
 
 
 __DATA__
