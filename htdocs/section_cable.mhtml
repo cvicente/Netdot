@@ -1,0 +1,312 @@
+% # section_cable.inc.mas
+% #
+% # Cable Plant
+% #
+% #############################################################################
+
+<script language="JavaScript" src="select.js"></script>
+
+<script language="JavaScript">
+<!--
+/* hideOptions()
+ *
+ * hide backbone/horizontal cable sections.
+*/
+function hideOptions(name)
+{
+    var opt = document.getElementById(name);
+    opt.style.display = (opt.style.display == "none" ? "" : "none");
+}
+-->
+</script>
+
+<%perl>
+my @sites = Site->retrieve_all();
+@sites = sort { $a->name cmp $b->name } @sites;
+</%perl>
+
+<tr class="rowtitle0" align="center">
+    <td align="center"><h3>Cable Plant</h3></td>
+</tr>
+
+<tr class="rowtitle0" align="left">
+    <td align="left">
+%       if ($page eq "BACKBONE" || $page eq "") {
+            [Backbone Cables] | 
+%       } else {
+            <a href="index.html?s2name=Plant&page=BACKBONE">[Backbone Cables]</a> |     
+%       }
+
+%       if ($page eq "HORIZONTAL") {
+            [Horizontal Cables] | 
+%       } else {
+            <a href="index.html?s2name=Plant&page=HORIZONTAL">[Horizontal Cables]</a> | 
+%       }
+
+%       if ($page eq "CLOSETS") {
+           [Closets] |  
+%       } else {
+           <a href="index.html?s2name=Plant&page=CLOSETS">[Closets]</a> | 
+%       }
+
+%       if ($page eq "STRANDS") {
+            [Cable Strands] 
+%       } else {
+            <a href="index.html?s2name=Plant&page=STRANDS">[Cable Strands]</a>
+%       }
+        <br><hr>
+    </td>
+</tr>
+
+% if ($page eq "BACKBONE" || $page eq "") {
+
+<script language="JavaScript">
+<!--
+var siteListLookup = new DynamicList("backbone_form", "end_id", null, null, "start_id");
+siteListLookup.setQueryURL("backbone_list_query.html");
+
+LIST_MANAGER.addList(siteListLookup);
+-->
+</script>
+
+<tr class="rowtitle0">
+    <td>
+        <b>Backbone Cable</b> &nbsp;&nbsp;&nbsp;<a href="#" onClick="hideOptions('backbone_options');">[hide/show]</a>
+        &nbsp;&nbsp;&nbsp; <a href="cable_backbone.html?id=NEW">[new]</a>
+    </td>
+</tr>
+
+<tr class="rowtitle0" id="backbone_options">
+    <td>
+    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
+
+    <tr align="left" valign="top">
+    <td>
+    <form name="backbone_form" action="cable_plant.html" method="POST">
+        <input type="hidden" name="page_type" value="BACKBONE">
+        Connected from:<br>
+        <select name="start_id" onChange="siteListLookup.doIt();" style="width: 225px">
+        <option value="">-- Make your selection --</option>
+        <%perl>
+        foreach my $site (@sites)
+        {
+            printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+        }
+        </%perl>
+        </select> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>- TO -</B><br>
+   
+        <select name="end_id" style="width: 225px;">
+        </select><br>
+        <input name="submit_site" value="Go!" type="submit"> &nbsp;&nbsp;&nbsp;
+    </form>
+    </td>
+    
+    <td align="left">
+    <form name="backbone_srch" action="cable_plant.html" method="POST">
+        <input type="hidden" name="page_type" value="BACKBONE">  
+        <input name="backbone_srch" size="15"> &nbsp;<input type="submit" name="submit_backbone_search" value="Search Backbone Name">
+    </form>
+    
+    <br>
+    
+    <form name="site_srch" action="cable_plant.html" method="POST">
+        <input type="hidden" name="page_type" value="BACKBONE">  
+        <input name="site_srch" size="15"> &nbsp;<input type="submit" name="submit_site_search" value="Search Site Name">
+    </form>
+    </td>
+    </tr>
+    </table>
+    </td>
+</tr>
+
+% } elsif ($page eq "HORIZONTAL") {
+
+<script language="JavaScript">
+<!--
+var jackList = new DynamicList("cable_form", "jack_id", "closet", "HorizontalCable", "closet_id");
+var closetList = new DynamicList("cable_form", "closet_id", "floor", "Closet", "floor_id", jackList);
+var floorList = new DynamicList("cable_form", "floor_id", "site", "Floor", "id", closetList);
+
+LIST_MANAGER.addList(jackList, closetList, floorList);
+-->
+</script>
+
+
+<tr class="rowtitle0">
+    <td>
+        <b>Horizontal Cable</b> &nbsp;&nbsp;<a href="#" onClick="hideOptions('horizontal_options');">[hide/show]</a>
+        &nbsp;&nbsp;&nbsp; <a href="cable_horizontal.html?id=NEW">[new]</a>
+    </td>
+</tr>
+<tr class="rowtitle0" id="horizontal_options">
+    <td>
+    <form name="cable_form" action="cable_plant.html" method="GET">
+    <input type="hidden" name="page_type" value="HORIZONTAL">
+    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
+        <tr align="left" valign="top">
+            <td width="280" align="left">Site:<BR>
+            <select name="id" onChange="floorList.doIt();">
+            <option value="">-- Make your selection --</option>
+            <%perl>
+            foreach my $site (@sites)
+            {
+                printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+            }
+            </%perl>
+            </select> &nbsp;<input name="submit_site" value="Browse by Site" type="submit">
+            </td>
+
+            <td width="100" align="left">Floor:<br>
+            <select name="floor_id" onChange="closetList.doIt();">
+            </select>
+            </td>
+            
+            <td width="100" align="left">Closet:<br>
+            <select name="closet_id" onChange="jackList.doIt();">
+            </select>
+            </td>
+            
+            <td width="180" align="left">Jack:<br>
+            <select name="jack_id" width="10" style="width: 100px;">
+            </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (jack_id.value) { location.href = ('cable_horizontal.html?id=' + jack_id.value); return true; }">
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr align="left" valign="top"><td colspan="5">&nbsp;</td></tr>
+
+        <tr align="left" valign="top">
+            <td align="left" colspan="5">
+%           my $srchf = 'jack_srch';  # name of the form input tag
+	        <input type="text" name="<% $srchf %>" value="By Jack ID(s)" onFocus="if (this.value == 'By Jack ID(s)') { this.value = ''; } return true;">
+	        &nbsp;<input type="button" name="" value="Lookup Jack" 
+            onClick="sendquery(<% 'jack_lookup' %>, <% $srchf . '.value' %>, 'HorizontalCable', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
+            Lookup Results: <select name="jack_lookup" width="10" style="width: 200px;">
+            </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (jack_lookup.value) { location.href = ('cable_horizontal.html?id=' + jack_lookup.value); return true; }"> &nbsp;&nbsp;
+            </td>
+        </tr>
+    </table>
+    </form>
+</td>
+</tr>
+
+% } elsif ($page eq "CLOSETS") {
+
+<script language="JavaScript">
+<!--
+var closetList = new DynamicList("cable_form", "closet_id", "floor", "Closet", "floor_id");
+var floorList = new DynamicList("cable_form", "floor_id", "site", "Floor", "id", closetList);
+
+LIST_MANAGER.addList(floorList, closetList);
+-->
+</script>
+
+<tr class="rowtitle0">
+    <td>
+        <b>Closets</b> &nbsp;&nbsp;<a href="#" onClick="hideOptions('closet_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
+        <a href="closet.html?id=NEW">[new]</a>
+    </td>
+</tr>
+<tr class="rowtitle0" id="closet_options">
+    <td>
+    <form name="cable_form" action="cable_plant.html" method="GET">
+    <input type="hidden" name="page_type" value="CLOSETS">
+    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
+        <tr align="left" valign="top">
+            <td width="280" align="left">Site:<BR>
+            <select name="id" onChange="floorList.doIt();">
+            <option value="">-- Make your selection --</option>
+            <%perl>
+            foreach my $site (@sites)
+            {
+                printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+            }
+            </%perl>
+            </select> &nbsp;<input name="submit_site" value="Browse by Site" type="submit">
+            </td>
+
+            <td width="100" align="left">Floor:<br>
+            <select name="floor_id" onChange="closetList.doIt();">
+            </select>
+            </td>
+            
+            <td width="100" align="left">Closet:<br>
+            <select name="closet_id" style="width: 120px;">
+            </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (closet_id.value) { location.href = ('closet.html?id=' + closet_id.value); return true; }">
+            </td>
+            <td>&nbsp;</td>
+        </tr>
+
+        <tr align="left" valign="top"><td colspan="5">&nbsp;</td></tr>
+
+        <tr align="left" valign="top">
+            <td align="left" colspan="5">
+%           my $srchf = 'closet_srch';  # name of the form input tag
+	        <input type="text" name="<% $srchf %>" value="By Closet Name" onFocus="if (this.value == 'By Closet Name') { this.value = ''; } return true;">
+	        &nbsp;<input type="button" name="" value="Lookup Closet" 
+            onClick="sendquery(<% 'closet_lookup' %>, <% $srchf . '.value' %>, 'Closet', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
+            Lookup Results: <select name="closet_lookup" width="10" style="width: 200px;">
+            </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (closet_lookup.value) { location.href = ('closet.html?id=' + closet_lookup.value); return true; }"> &nbsp;&nbsp;
+            </td>
+        </tr>
+    </table>
+    </form>
+</td>
+</tr>
+
+% } elsif ($page eq "STRANDS") {
+
+<tr class="rowtitle0">
+    <td>
+        <b>Cable Strands</b> &nbsp;&nbsp;<a href="#" onClick="hideOptions('strand_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
+        <a href="cable_strand.html?id=NEW">[new]</a>
+    </td>
+</tr>
+<tr class="rowtitle0" id="strand_options">
+    <td>
+    <form name="cable_form" action="cable_plant.html" method="GET">
+    <input type="hidden" name="page_type" value="STRANDS">
+    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
+        <tr align="left" valign="top">
+            <td align="left">
+%           my $backbone_srch = 'backbone_srch';  # name of the form input tag
+	        <input type="text" name="<% $backbone_srch %>" value="By Backbone" onFocus="if (this.value == 'By Backbone') { this.value = ''; } return true;">
+	        &nbsp;<input type="button" name="" value="Lookup Backbone" 
+            onClick="sendquery(<% 'backbone_id_srch' %>, <% $backbone_srch . '.value' %>, 'BackboneCable', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
+            Lookup Results: <select name="backbone_id_srch" width="10" style="width: 200px;">
+            </select><input type="submit" name="backbone_submit" value="Browse by Backbone">
+            </td>
+        </tr>
+
+        <tr align="left" valign="top"><td colspan="5">&nbsp;</td></tr>
+
+        <tr align="left" valign="top">
+            <td align="left">
+%           my $srchf = 'strand_srch';  # name of the form input tag
+	        <input type="text" name="<% $srchf %>" value="By Strand Name" onFocus="if (this.value == 'By Strand Name') { this.value = ''; } return true;">
+	        &nbsp;<input type="button" name="" value="Lookup Strand" 
+            onClick="sendquery(<% 'strand_lookup' %>, <% $srchf . '.value' %>, 'CableStrand', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
+            Lookup Results: <select name="strand_lookup" width="10" style="width: 200px;">
+            </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (strand_lookup.value) { location.href = ('cable_strand.html?id=' + strand_lookup.value); return true; }"> &nbsp;&nbsp;
+            </td>
+        </tr>
+    </table>
+    </form>
+</td>
+</tr>
+
+% }
+
+<%init>
+my $currentUser = SiteControl::AccessController::getCurrentUser($r);
+my %caller_args = $m->caller_args(-1);
+
+if (exists($caller_args{page}))
+{
+    $currentUser->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args{page});
+}
+
+my $page = $currentUser->getAttribute("CABLE_PLANT_PAGE");
+</%init>
+
+% #############################################################################
