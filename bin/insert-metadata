@@ -51,7 +51,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
   VALUES ( 'Address_history', 'modified', 'street1,street2,pobox,city,state,zip,country,info,modified,modifier', 'modified,modifier,street1,street2,city,state,zip', '', '' , '0', '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description) 
-  VALUES ('Availability', 'name', 'name,info', 'name', '', 'sites:Site:availability:{on_delete=>"set-null"},persons:Person:availability:{on_delete=>"set-null"},entities:Entity:availability:{on_delete=>"set-null"}', '0','Timeframe in which a person or site is available for problem notifications');
+  VALUES ('Availability', 'name', 'name,info', 'name', '', 'sites:Site:availability:{on_delete=>"set-null"},entities:Entity:availability:{on_delete=>"set-null"},notify_emails:Contact:notify_email:{on_delete=>"set-null"},notify_pagers:Contact:notify_pager:{on_delete=>"set-null"},notify_voices:Contact:notify_voice:{on_delete=>"set-null"},', '0','Timeframe in which a person or site is available for problem notifications');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('Cable', 'name', 'name,type,owner,installdate,startsite,startroom,endsite,endroom,numberofstrands,length,info', 'name,startsite,startroom,endsite,endroom', 'type:CableType,owner:Entity,startsite:Site,endsite:Site', 'strands:CableStrand:cable', '0', 'A cable with multiple strands/pairs');
@@ -82,9 +82,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
   VALUES ('Connection_history', 'modified', 'name,entity,nearend,farend,info,modified,modifier', 'modified,modifier,name,entity,nearend,farend', 'nearend:Site,farend:Site,entity:Entity', '', '0', '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description) 
-  VALUES ('Contact', 'person,contacttype', 'person,contacttype,contactlist,info', 'person,contacttype,contactlist', 'contactlist:ContactList,contacttype:ContactType,person:Person', '', '0', 'Contact Information');
+  VALUES ('Contact', 'person,contacttype', 'person,contacttype,contactlist,notify_email,notify_pager,notify_voice,info', 'person,contacttype,contactlist', 'contactlist:ContactList,contacttype:ContactType,person:Person,notify_email:Availability,notify_pager:Availability,notify_voice:Availability', '', '0', 'Contact Information');
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description) 
-  VALUES ('Contact_history', 'modified', 'person,contacttype,contactlist,info,modified,modifier', 'modified,modifier,contacttype,person', 'contactlist:ContactList,contacttype:ContactType,person:Person', '', '0', '');
+  VALUES ('Contact_history', 'modified', 'person,contacttype,contactlist,notify_email,notify_pager,notify_voice,info,modified,modifier', 'modified,modifier,contacttype,person', 'contactlist:ContactList,contacttype:ContactType,person:Person,notify_email:Availability,notify_pager:Availability,notify_voice:Availability', '', '0', '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('ContactList', 'name', 'name,info', 'name,info', '', 'contacts:Contact:contactlist,entities:Entity:contactlist:{on_delete=>"set-null"},devices:Device:contactlist:{on_delete=>"set-null"},sites:Site:contactlist:{on_delete=>"set-null"}', '0', 'A list of contacts');
@@ -142,9 +142,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
   VALUES ('Name_history', 'modified', 'name,ip,modified,modifier', 'modified,modifier,name,ip', 'ip:Ip', '', '0', '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description) 
-  VALUES ('Person', 'lastname,firstname', 'lastname,firstname,aliases,position,entity,address,email,office,cell,home,pager,emailpager,fax,availability,info', 'lastname,firstname,office,entity', 'entity:Entity,address:Address,availability:Availability', 'roles:Contact:person,devices:Device:user:{on_delete=>"set-null"}', '0', 'Information about an individual');
+  VALUES ('Person', 'lastname,firstname', 'lastname,firstname,aliases,position,entity,address,email,office,cell,home,pager,emailpager,fax,info', 'lastname,firstname,office,entity', 'entity:Entity,address:Address', 'roles:Contact:person,devices:Device:user:{on_delete=>"set-null"}', '0', 'Information about an individual');
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description) 
-  VALUES ('Person_history', 'modified', 'lastname,firstname,aliases,position,entity,address,email,office,cell,home,pager,emailpager,fax,availability,info,modified,modifier', 'modified,modifier,lastname,firstname,position,entity', 'entity:Entity,address:Address,availability:Availability', '', '0', '');
+  VALUES ('Person_history', 'modified', 'lastname,firstname,aliases,position,entity,address,email,office,cell,home,pager,emailpager,fax,info,modified,modifier', 'modified,modifier,lastname,firstname,position,entity', 'entity:Entity,address:Address', '', '0', '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('Service', 'name', 'name,info', 'name', '', 'devices:DeviceService:service', '0', 'An Internet service running on a host');
