@@ -36,7 +36,7 @@ usage:
 DMOD = 0775
 FMOD = 0644
 XMOD = 0744
-# If mason ever decides to use different directories in it's data_dir there will
+# If mason ever decides to use different directories in its data_dir there will
 # be trouble.
 DIR = bin doc htdocs/img htdocs/masondata/obj htdocs/masondata/cache tmp lib etc
 
@@ -54,14 +54,16 @@ tests:
 	@echo "Installation directory: $(PREFIX)"
 	@echo 
 	@echo "Testing for required perl modules...."
-	perl -MClass::DBI -e 1
+	perl -M'DBI 1.46' -e 1
+	perl -M'Class::DBI 0.96' -e 1
 	perl -MHTML::Mason -e 1
-	perl -MApache::Session -e 1
+	perl -M'Apache::Session 1.6' -e 1
 	perl -MApache::DBI -e 1
 	perl -MDBIx::DBSchema -e 1
 	perl -MDBIx::DataSource -e 1
-	perl -MNetAddr::IP -e 1
+	perl -MSNMP -e 1
 	perl -MNet::IP -e 1
+	perl -MNetAddr::IP -e 1
 #	perl -MSiteControl::AccessController -e 1
 #	perl -MNetviewer::RRD::SNMP -e 1
 	if [ `whoami` != root ]; then \
