@@ -26,7 +26,7 @@ package Address;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Address' );
-__PACKAGE__->columns( All => qw /id street1 street2 poBox city state zip country info / );
+__PACKAGE__->columns( All => qw /id street1 street2 poBox city state zip country info disabled/ );
 
 __PACKAGE__->has_many( 'vendors', 'Vendor' => 'address');
 __PACKAGE__->has_many( 'sites', 'Site' => 'address');
@@ -40,7 +40,7 @@ package Availability;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Availability' );
-__PACKAGE__->columns( All => /id name info/ );
+__PACKAGE__->columns( All => /id name info disabled/ );
 
 __PACKAGE__->has_many( 'customers', 'Customer' => 'availability');
 __PACKAGE__->has_many( 'sites', 'Site' => 'availability' );
@@ -68,7 +68,7 @@ package CircuitType;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'CircuitType' );
-__PACKAGE__->columns( All => qw/id name info/ );
+__PACKAGE__->columns( All => qw/id name info disabled/ );
 
 __PACKAGE__->has_many( 'circuits', 'Circuit' => 'type' );
 
@@ -78,7 +78,7 @@ package Connection;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Connection' );
-__PACKAGE__->columns( All => qw /id name customer startSite endSite info/ );
+__PACKAGE__->columns( All => qw /id name customer startSite endSite info disabled/ );
 
 __PACKAGE__->has_a( 'startSite' => 'Site' );
 __PACKAGE__->has_a( 'endSite' => 'Site' );
@@ -103,7 +103,7 @@ package ContactPool;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'ContactPool' );
-__PACKAGE__->columns( All => qw /id name info /);
+__PACKAGE__->columns( All => qw /id name info disabled/);
 
 __PACKAGE__->has_many( 'contactinfos', 'ContactInfo' => 'contactPool' );
 __PACKAGE__->has_many( 'customers', 'Customer' => 'contactPool' );
@@ -118,7 +118,7 @@ package ContactType;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'ContactType' );
-__PACKAGE__->columns( All => qw /id name info / );
+__PACKAGE__->columns( All => qw /id name info disabled / );
 
 __PACKAGE__->has_many( 'contactinfos', 'ContactInfo' => 'contactType' );
 
@@ -128,7 +128,7 @@ package Customer;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Customer' );
-__PACKAGE__->columns( All => qw /id name Hours Address ContactPool info/ );
+__PACKAGE__->columns( All => qw /id name Hours Address ContactPool info disabled/ );
 
 __PACKAGE__->has_a( address => 'Address' );
 __PACKAGE__->has_a( contactPool => 'ContactPool' );
@@ -144,7 +144,7 @@ package Interface;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Interface' );
-__PACKAGE__->columns( All => qw/id nodeId hostName physAddr ifIndex ifType ifDescr ifSpeed ifStatus info/ );
+__PACKAGE__->columns( All => qw/id nodeId hostName physAddr ifIndex ifType ifDescr ifSpeed ifStatus info disabled/ );
 
 __PACKAGE__->has_a( nodeID => 'Node' );
 __PACKAGE__->has_many( 'ips', 'Ip' => 'interface' );
@@ -210,7 +210,7 @@ package Node;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Node' );
-__PACKAGE__->columns( All => qw/id name type sysDescription serialNumber site customer room rack dateInstalled sw_version contactPool info/ );
+__PACKAGE__->columns( All => qw/id name type sysDescription serialNumber site customer room rack dateInstalled sw_version contactPool info disabled/ );
 
 __PACKAGE__->has_a( site => 'Site' );
 __PACKAGE__->has_a( customer => 'Customer' );
@@ -225,7 +225,7 @@ package NodeType;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'NodeType' );
-__PACKAGE__->columns( All => qw/id name info/ );
+__PACKAGE__->columns( All => qw/id name info disabled/ );
 
 __PACKAGE__->has_many( 'nodes', 'Node' => 'type' );
 
@@ -248,7 +248,7 @@ package Person;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Person' );
-__PACKAGE__->columns( All => qw /id firstName lastName position department address availability info / );
+__PACKAGE__->columns( All => qw /id firstName lastName position department address availability info disabled / );
 
 __PACKAGE__->has_a( address => 'Address' );
 __PACKAGE__->has_a( availability => 'Availability' );
@@ -260,7 +260,7 @@ package Service;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Service' );
-__PACKAGE__->columns( All => qw/id name/ );
+__PACKAGE__->columns( All => qw/id name disabled/ );
 
 __PACKAGE__->has_many( 'jnnodeservices', 'JnNodeService' => 'service' );
 
@@ -270,7 +270,7 @@ package Site;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Site' );
-__PACKAGE__->columns( All => qw/id name availability address contactPool info /);
+__PACKAGE__->columns( All => qw/id name availability address contactPool info disabled /);
 
 __PACKAGE__->has_a( address => 'Address' );
 __PACKAGE__->has_a( availability => 'Availability' );
@@ -288,7 +288,7 @@ package Status;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Status' );
-__PACKAGE__->columns( All => qw/id name info/ );
+__PACKAGE__->columns( All => qw/id name info disabled/ );
 
 __PACKAGE__->has_many( 'circuits', 'Circuit' => 'status' );
 
@@ -298,7 +298,7 @@ package Vendor;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Vendor' );
-__PACKAGE__->columns( All => qw/id name contactPool acctNumber address info/ );
+__PACKAGE__->columns( All => qw/id name contactPool acctNumber address info disabled/ );
 
 __PACKAGE__->has_a( address => 'Address' );
 __PACKAGE__->has_a( contactPool => 'ContactPool' );
@@ -314,6 +314,9 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.12  2003/04/14 23:32:44  netdot
+#  added disabled column to those classes with has_many relationships
+#
 #  Revision 1.11  2003/04/10 23:53:20  netdot
 #  reflected change in netdot.schema.  Ip has_a Interface; Interface
 #  has_many Ip.
