@@ -10,15 +10,21 @@ if( exists( $args{view} ) ) {
     $VIEW = $args{view};
   }
 }
-if( exists( $args{sort} ) ) {
-  $SORT = $args{sort};
-}
 if( $args{table} ) {
   undef( $META );
   $META = $gui->getmeta( $args{table} );
   if( defined( $META ) ) {
     my $i = 1;
     my @tmp;
+    ##############################################
+    # if sort arg; check to make sure column doesn't exist & set SORT
+    if( exists( $args{sort} ) ) {
+      my(%col);
+      map { $col{$_}++ } $args{table}->columns;
+      if( ! exists( $col{ $args{sort} } ) ) {
+        $SORT = $args{sort};
+      }
+    }
     ##############################################
     # get the label for this table (as defined in Meta)
     $LBL = ($gui->getlabels( $args{table} ))[0];
@@ -163,6 +169,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.25  2003/07/12 21:17:49  netdot
+# added check to sort to be sure column exists
+#
 # Revision 1.24  2003/07/11 21:30:06  netdot
 # added different sorting mechanism
 #
