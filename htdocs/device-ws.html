@@ -256,11 +256,12 @@ if ( defined($search) && $search =~ /\w+/ ){
      <td colspan="2">
       <table width="100%" border="0">
        <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="80%" align="center">General</th>
+         <td width="30%" align="left">&nbsp;</td>
+         <th width="60%" align="center">General</th>
 %	 if ($edit eq "geninfo"){	 
-            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+            <td width="30%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 }else{
+            <td width="5%" align="right"><a href="device-ws.html?id=<% $id %>">[refresh]</a></td>
             <td width="5%" align="right"><a href="device-ws.html?id=<% $id %>&edit=geninfo">[edit]</a></td>
             <td width="5%" align="right"><a href="delete.html?table=Device&id=<% $id %>">[delete]</a></td>
 %	 }
@@ -373,7 +374,7 @@ if ( defined($search) && $search =~ /\w+/ ){
 		       <option value="0"> [null] </option>
 		    </select>
 %	         }else{
-		    <b><% $o->productname->name %></b> 
+		    <b><a href="view.html?table=Product&id=<% $o->productname->id %>"><% $o->productname->name %></a></b> 
 %		 }
 	        
 	     </td>

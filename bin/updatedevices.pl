@@ -326,7 +326,7 @@ foreach my $device ( @devices ) {
 	if ( exists ($devips{$ip}{subnet}) ){
 	    $devtmp{entity} = $devips{$ip}{subnet}->entity->id;
 	}
-	if ( exists ($devips{$ip}{mac}) ){
+	if ( exists ($devips{$ip}{mac}) && ! exists ($devtmp{physaddr}) ){
 	    $devtmp{physaddr} = $devips{$ip}{mac};
 	    $devtmp{physaddr} =~ s/^0x//;
 	}
