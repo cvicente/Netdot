@@ -1,8 +1,7 @@
 <%perl>
 ##################################################
 # clean out old state files
-my $locker = new Apache::Session::Lock::File ;
-$locker->clean( $DIR, 3600 );  # remove files older than 1 hr
+#$gui->rmstate( $DIR, $AGE );
 ##################################################
 # grab arguments to this script
 my %rev = reverse %ARGS;
@@ -32,14 +31,12 @@ unless( defined( $PREV ) ) {
 # get state back
 if( defined( $args{sid} ) ) {
   $sid = $args{sid};
-  tie %session, 'Apache::Session::File', 
-    $sid, { Directory => $DIR, LockDirectory => $DIR };
+  %session = $gui->fetchstate( $DIR, $sid );
 }
 ##################################################
 # create state if necessary
-if( $args{table} ) {
-  tie %session, 'Apache::Session::File', 
-    $sid, { Directory => $DIR, LockDirectory => $DIR };
+if( $args{table} ) {  
+  %session = $gui->createstate( $DIR );
   $sid = $session{_session_id};
 }
 if( $DEBUG ) {
@@ -233,9 +230,11 @@ if( defined( $TBL ) ) {
 % ####################################################################
 <%args>
 
+$gui => Netdot::GUI->new()
 %args => undef
 $nv => undef
 $DIR => "/home/netdot/public_html/tmp"
+$AGE => 3600
 $WIDTH => 2
 %order => undef
 %linksto => undef
@@ -248,16 +247,14 @@ $id => undef
 $sid => undef
 %IfRsv => undef
 %node => undef
-$DEBUG => 0
+$DEBUG => 1
 
 </%args>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-use Netdot::Netviewer;
+use Netdot::GUI;
 use Data::Dumper;
-use Apache::Session::File;
-use Apache::Session::Lock::File;
 
 </%init>
 
@@ -290,6 +287,9 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.17  2003/07/01 05:03:00  netdot
+#  migrating state functionality to GUI.pm
+#
 #  Revision 1.16  2003/06/27 21:07:57  netdot
 #  removed most infrastructure for autodiscovery
 #
