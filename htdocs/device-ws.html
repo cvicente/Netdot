@@ -105,7 +105,7 @@ if ( defined($search) && $search =~ /\w+/ ){
      $tmpint{managed} = 1;
      $tmpint{number} = 1000;
      my $i;
-     for ($i = 0; $i <= $ARGS{intaddnum}; $i++){
+     for ($i = 0; $i < $ARGS{intaddnum}; $i++){
         $tmpint{number}++;
      	if (!($gui->insert(table => "Interface", state => \%tmpint)) ){
 	   my $err = $gui->error;
@@ -464,9 +464,9 @@ if ( defined($search) && $search =~ /\w+/ ){
      <td>
       <table border="0">
 %	my @ips;
-%	foreach my $int ($o->interfaces) {
+%	foreach my $if ($o->interfaces) {
 %	  my @intips;
-%	  next unless (scalar(@intips = $int->ips));
+%	  next unless (scalar(@intips = $if->ips));
 %	  map { push @ips, $_} @intips;
 %	}
 %	if (scalar @ips){
@@ -795,55 +795,69 @@ if ( defined($search) && $search =~ /\w+/ ){
 	   <td align="center">Managed?</td>
         </tr>
 
+%	#####################################
 %	# Sort numerically by port number
-%	foreach my $int ( map { $_->[1] }
-%		          sort { $a->[0] <=> $b->[0] } 
-%			  map { [$_->number, $_] } 
-%			  $o->interfaces) {
+%	#
+%	# Hub ports have dots, so add a fake '.0' after numbers with no dots, and then
+%	# split in two and sort first part and then second part
+%	# (i.e: 1.10 goes after 1.2)
+%	my @tmp;
+%	foreach my $if ($o->interfaces) {
+%	   my $num = $if->number;
+%	   if ($num !~ /\./ ){
+%	      $num .= '.0';
+%	   }
+%	   push @tmp, [(split /\./, $num), $if];
+%	}	
+%	my @ordered_ifs = sort { $a->[0] <=> $b->[0] 
+%	                                  ||
+%			         $a->[1] <=> $b->[1] } @tmp;
+			  
+%         foreach my $if (map { $_->[2] } @ordered_ifs){
 %	  $ci = ($ci + 1) % 2;
 	  <tr bgcolor="<% $colors{$ci} %>">
 %		 if ($edit eq "intinfo"){	 
 		   <td align="left">
-		    <input type="checkbox" name="<% "Interface__" . $int->id . "__delete" %>" >
+		    <input type="checkbox" name="<% "Interface__" . $if->id . "__delete" %>" >
 		   </td>	   
 %	         }
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="3" name="<% "Interface__" . $int->id . "__number" %>" value="<% $int->number %>">
+		    <input type="text" size="3" name="<% "Interface__" . $if->id . "__number" %>" value="<% $if->number %>">
 %	         }else{
-		    <a href="view.html?table=Interface&id=<% $int->id %>"><% $int->number %></a>
+		    <a href="view.html?table=Interface&id=<% $if->id %>"><% $if->number %></a>
 %		 }
 	   </td>
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="15" name="<% "Interface__" . $int->id . "__name" %>" value="<% $int->name %>">
+		    <input type="text" size="15" name="<% "Interface__" . $if->id . "__name" %>" value="<% $if->name %>">
 %	         }else{
-		    <% $int->name %>
+		    <% $if->name %>
 %		 }
 	   </td>
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="6" name="<% "Interface__" . $int->id . "__room" %>" value="<% $int->room %>">
+		    <input type="text" size="6" name="<% "Interface__" . $if->id . "__room" %>" value="<% $if->room %>">
 %	         }else{
-		    <% $int->room %>
+		    <% $if->room %>
 %		 }
 	   </td>
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="9" name="<% "Interface__" . $int->id . "__jack" %>" value="<% $int->jack %>">
+		    <input type="text" size="9" name="<% "Interface__" . $if->id . "__jack" %>" value="<% $if->jack %>">
 %	         }else{
-		    <% $int->jack %>
+		    <% $if->jack %>
 %		 }
 	   </td>
 	   <td align="left"> 
 %	      	 if ($edit eq "intinfo"){	 
-		    <input type="text" size="40" name="<% "Interface__" . $int->id . "__description" %>" value="<% $int->description %>">
+		    <input type="text" size="40" name="<% "Interface__" . $if->id . "__description" %>" value="<% $if->description %>">
 %	         }else{
-		    <% $int->description %>
+		    <% $if->description %>
 %		 }
 	   </td>
 	   <td align="left">
-%	   my @parents = $int->parents;
+%	   my @parents = $if->parents;
 %	   if (scalar(@parents)){
 %	     foreach my $par (@parents){	   
 %		 my $lbl = $gui->getobjlabel($par->parent, ", ");
@@ -851,17 +865,17 @@ if ( defined($search) && $search =~ /\w+/ ){
 %		 # Check for amount of objects in table before retrieving all
 %		    my $count = Interface->count_all;
 %		    if ( $count <= $maxselect ){			      
-%		       my @allints = Interface->retrieve_all;
-%		       @allints = sort { $a->number <=> $b->number } @allints; 
+%		       my @allifs = Interface->retrieve_all;
+%		       @allifs = sort { $a->number <=> $b->number } @allifs; 
    		       <select name="<% "InterfaceDep__" . $par->id ."__parent" %>">
 		         <option value="$par->parent->id" selected><% $lbl %> </option> 
-%		          foreach my $int ( @allints ) {
-		            <option value="<% $int->id %>"><% $gui->getobjlabel($int, ", ") %></option>
+%		          foreach my $if ( @allifs ) {
+		            <option value="<% $if->id %>"><% $gui->getobjlabel($if, ", ") %></option>
 %			  }
 		         <option></option> 
 		       </select>
 %		    }else{  #too many instances.  Offer a keyword search
-%		       my $srchf = '_' . $int->id . 'parent_srch';  #name of the form input tag
+%		       my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
 		       <input type="text" name="<% $srchf %>" value="Keywords">
 		       &nbsp;<input type="button" name="" value="List" 
 		       onClick="sendquery(<% '_InterfaceDep__' . $par->id . '__parent' %>, <% $srchf . '.value' %>, 'Interface')" >
@@ -877,12 +891,12 @@ if ( defined($search) && $search =~ /\w+/ ){
 %	     } #foreach my $par
 %	   }else{ # No parents exist
 %	      if ($edit eq "intinfo"){	 
-%	       if (scalar($int->ips)){ #only interfaces with ip addresses (might change later)
-%	        my $srchf = '_' . $int->id . 'parent_srch';  #name of the form input tag
+%	       if (scalar($if->ips)){ #only interfaces with ip addresses (might change later)
+%	        my $srchf = '_' . $if->id . 'parent_srch';  #name of the form input tag
 		<input type="text" name="<% $srchf %>" value="Keywords">
 	        &nbsp;<input type="button" name="" value="List" 
-	        onClick="sendquery(<% "_InterfaceDep__" . $int->id ."__new" %>, <% $srchf . '.value' %>, 'Interface')" >
-	        <br><select name="<% "_InterfaceDep__" . $int->id ."__new" %>">
+	        onClick="sendquery(<% "_InterfaceDep__" . $if->id ."__new" %>, <% $srchf . '.value' %>, 'Interface')" >
+	        <br><select name="<% "_InterfaceDep__" . $if->id ."__new" %>">
 	 	  <option value="0">[null]</option>
 	        </select>	      
 %	       }
@@ -891,18 +905,18 @@ if ( defined($search) && $search =~ /\w+/ ){
 
 	   </td>
 	   <td align="left"> 
-%		 my $value = $int->managed;	 
+%		 my $value = $if->managed;	 
 %	      	 if ($edit eq "intinfo"){	 
 %		    if ($value == 1){
-		      <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="1" checked> Y
-		      <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="0"> N
+		      <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="1" checked> Y
+		      <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="0"> N
 %		    }elsif ($value eq ""){
-  		       <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="1"> Y
-		       <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="0"> N
-		       <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="" checked> n/a
+  		       <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="1"> Y
+		       <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="0"> N
+		       <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="" checked> n/a
 %		    }elsif ($value == 0){
-		       <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="1"> Y
-		       <input type="radio" name="<% "Interface__" . $int->id ."__managed" %>" value="0" checked> N
+		       <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="1"> Y
+		       <input type="radio" name="<% "Interface__" . $if->id ."__managed" %>" value="0" checked> N
 %		    }
 		 
 %	         }else{

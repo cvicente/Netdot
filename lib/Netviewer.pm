@@ -2470,8 +2470,14 @@ sub _get_sysinfo {
 		$aliases{general}{dot1dBaseBridgeAddress},
 		$aliases{general}{entPhysicalSerialNum} );
 
-  my %res = $self->get_snmp_values( type => $type, dev => $dev, 
-				    oids => \@oids, session => $session ) ;
+  # This is a hack
+  # Hubs don't like requests with multiple oids
+  my %res;
+  foreach my $oid (@oids){
+      my %tmp = $self->get_snmp_values( type => $type, dev => $dev, 
+					oids => [$oid], session => $session ) ;
+      map { $res{$_} = $tmp{$_} } keys %tmp;
+  }
 
   my $sysloc =  $res{$oids[3]};
   $sysloc =~ tr/\n// ;

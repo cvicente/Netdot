@@ -645,12 +645,13 @@ my $schema = {
     'id', 'serial', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
     'description', 'varchar', '', '128', '', '',
+    'sysobjectid', 'varchar', '', '128', '', '',
     'manufacturer', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
   'unique' => [ ['name','manufacturer'] ],
-  'index' => [ ['name']  ],
+  'index' => [ ['name'], ['sysObjectID']  ],
 },
 
 'Product_history' => {
@@ -659,6 +660,7 @@ my $schema = {
     'product_id', 'integer', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
     'description', 'varchar', '', '128', '', '',
+    'sysobjectid', 'varchar', '', '128', '', '',
     'manufacturer', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
     'modified', 'timestamp', '', '', '', '',
