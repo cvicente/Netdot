@@ -11,6 +11,7 @@ use Data::Dumper;
 
 my $help = 0;
 my $DEBUG = 0;
+my $TEST = 0;
 
 my %ifnames = ( physaddr => "ifPhysAddress",
 		number => "instance",
@@ -21,20 +22,21 @@ my %ifnames = ( physaddr => "ifPhysAddress",
 my $usage = <<EOF;
 usage: $0 -d|--device <host> -h|--help -v|--verbose
 
-    -d  <host>: update given device only.  Skipping this will update all devices in DB.
-    -h        : print help (this message)
-    -v        : be verbose
+    -d, --device <host>  update given device only.  
+                         Skipping this will update all devices in DB.
+    -h, --help           print help (this message)
+    -v, --verbose        be verbose
+    -t, --test           run through the routines, but do not make changes
+
 EOF
 
 my ($device, $host, @devices);
 
 # handle cmdline args
-my $result = GetOptions( "d=s" => \$host,
-			 "device=s" => \$host,
-			 "h" => \$help,
-			 "help" => \$help,
-			 "v" => \$DEBUG,
-			 "verbose" => \$DEBUG );
+my $result = GetOptions( "d|device=s" => \$host,
+			 "h|help" => \$help,
+			 "v|verbose" => \$DEBUG,
+			 "t|test" => \$TEST );
 if( ! $result ) {
   die "Error: Problem with cmdline args\n";
 }
@@ -42,9 +44,10 @@ if( $help ) {
   print $usage;
   exit;
 }
-    
+
+my $gui = Netdot::GUI->new();    
 my $nv = Netdot::Netviewer->new( foreground => '0', loglevel => 'LOG_ERR' );
-my $gui = Netdot::GUI->new();
+
 
 if (defined $host){
     if ($device = (Device->search(name => $host))[0]){
@@ -89,9 +92,12 @@ foreach my $device ( @devices ) {
       $ntmp{serialnumber} = $dev{entPhysicalSerialNum};
     }
 
-    unless( $gui->update( object => $device, state => \%ntmp ) ) {
-      next;
+    if( ! $TEST ) {
+       unless( $gui->update( object => $device, state => \%ntmp ) ) {
+	  next;
+       }
     }
+
     ##############################################
     # for each interface just discovered...
     my %dbips;
@@ -126,23 +132,32 @@ foreach my $device ( @devices ) {
 	print "Interface device ", $device->name, ":$newif exists; updating\n"
 	  if( $DEBUG );
 	delete( $ifs{ $if->id } );
-	unless( $gui->update( object => $if, state => \%iftmp ) ) {
-	  next;
+
+	if( ! $TEST ) {
+	   unless( $gui->update( object => $if, state => \%iftmp ) ) {
+	      next;
+	   }
 	}
+
       } else {
 	$iftmp{managed} = 1;  #can't be null
 	$iftmp{speed} ||= 0; #can't be null
 	print "Interface device ", $device->name, ":$newif doesn't exist; ",
 	  "inserting\n" if( $DEBUG );
-	unless ( my $ifid = $gui->insert( table => "Interface", state => \%iftmp ) ) {
-	    print "Error inserting Interface\n" if ($DEBUG);
-	    next;
-	}else{
-	    unless ( $if = Interface->retrieve($ifid) ) {
-		print "Couldn't retrieve Interface id $ifid\n" if ($DEBUG);
-		next;
-	    }
+
+	if( ! $TEST ) {
+	   unless( my $ifid = $gui->insert( table => "Interface", 
+					    state => \%iftmp ) ) {
+	      print "Error inserting Interface\n" if ($DEBUG);
+	      next;
+	   }else{
+	      unless( $if = Interface->retrieve($ifid) ) {
+		 print "Couldn't retrieve Interface id $ifid\n" if ($DEBUG);
+		 next;
+	      }
+	   }
 	}
+
       }
       if( exists( $dev{interface}{$newif}{ipAdEntIfIndex} ) ) {
 	  map { $dbips{ $_->id } = 1 } $if->ips();
@@ -174,17 +189,26 @@ foreach my $device ( @devices ) {
 	  # does this ip already exist in the DB?
 	  if( $ipobj = (Ip->search( address => $newip ))[0] ) {
 	    print "Interface $newif IP $newip exists; updating\n" if($DEBUG);
-	    unless( $gui->update( object => $ipobj, state => \%iptmp ) ) {
-	      next;
+
+	    if( ! $TEST ) {
+	       unless( $gui->update( object => $ipobj, state => \%iptmp ) ) {
+		  next;
+	       }
 	    }
+
 	    delete( $dbips{ $ipobj } );
 	  } else {
 	    print "Interface $newif IP $newip doesn't exist; inserting\n" if($DEBUG);
-	    if ( my $ipid  = $gui->insert( table => "Ip", state => \%iptmp ) ){
-		$ipobj = Ip->retrieve($ipid);
-	    }else{
-		next;
+
+	    if( ! $TEST ) {
+	       if( my $ipid  = $gui->insert( table => "Ip", 
+					      state => \%iptmp ) ){
+		  $ipobj = Ip->retrieve($ipid);
+	       } else {
+		  next;
+	       }
 	    }
+
 	  }
 	} # for
       }
@@ -199,9 +223,13 @@ foreach my $device ( @devices ) {
   
       print "Device ", $device->name, " Interface number", $intobj->number,
 	" doesn't exist; removing\n" if( $DEBUG );
-      unless( $gui->remove( table => "Interface", id => $nonif ) ) {
-	next;
+
+      if( ! $TEST ) {
+	 unless( $gui->remove( table => "Interface", id => $nonif ) ) {
+	    next;
+	 }
       }
+
     }
     ##############################################
     # remove each ip address  that no longer exists
@@ -212,9 +240,13 @@ foreach my $device ( @devices ) {
   
       print "Device ", $device->name, " Ip Address ", $ipobj->address,
 	" doesn't exist; removing\n" if( $DEBUG );
-      unless( $gui->remove( table => "Ip", id => $nonip ) ) {
-	next;
+      
+      if( ! $TEST ) {
+	 unless( $gui->remove( table => "Ip", id => $nonip ) ) {
+	    next;
+	 }
       }
+
     }
   } else {
     print "Unable to access device ", $device->name, "\n" if( $DEBUG );
