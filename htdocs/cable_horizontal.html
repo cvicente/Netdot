@@ -7,7 +7,7 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE")
+if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE" || $ARGS{_action} eq "NEW")
 {
     my %update_info = ();
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -39,10 +39,18 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE")
 elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_INTERFACE")
 {
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-    my @interfaces = @{$ARGS{interfaces}};
+    my @interfaces;
+    if (UNIVERSAL::isa($ARGS{interfaces}, "ARRAY"))
+    {
+        @interfaces = @{$ARGS{interfaces}};
+    }
+    else
+    {
+        push(@interfaces, $ARGS{interfaces});
+    }
+    
     my ($int_obj, %tmp_int);
     $tmp_int{jack} = $id;
-
     foreach my $int (@interfaces)
     {
         $int_obj = Interface->retrieve($int);
@@ -86,7 +94,7 @@ LIST_MANAGER.addList(closetSearchList);
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
             <td colspan="2" align="left">Horizonal Cable</td>
-%           if ($edit eq "cableinfo") {
+%           if ($editCable) {
             <td align="right"><input name="submit" value="save" type="submit"></td>
 %           } else {
             <td align="right"><a href="cable_horizontal.html?id=NEW">[new]</a> || <a href="cable_horizontal.html?id=<% $id %>&edit=cableinfo">[edit]</a></td>
@@ -238,6 +246,12 @@ LIST_MANAGER.addList(closetSearchList);
     </table>
     </form>
 %   }
+
+    <%perl>
+    my @ints;
+    map { push (@ints, $_) } $o->interfaces;
+    </%perl>
+%	if (scalar(@ints)) {
     
     <form name="int_form" action="cable_horizontal.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
@@ -265,12 +279,6 @@ LIST_MANAGER.addList(closetSearchList);
    <tr>
      <td>
       <table border="0" width="90%">
-    <%perl>
-    my @ints;
-    map { push (@ints, $_) } $o->interfaces;
-    </%perl>
-
-%	if (scalar(@ints)) {
     <tr>
         <td align="center">
             <a href="cable_horizontal.html?id=<% $id %>&int_sort=name#interface">Name</a>
@@ -329,7 +337,6 @@ LIST_MANAGER.addList(closetSearchList);
         </td>
     </tr>
 %   }
-%}
     <tr align="left" valign="top">
         <td align="left" colspan="4">
 
@@ -341,6 +348,7 @@ LIST_MANAGER.addList(closetSearchList);
     </tr>
     </table>
     </form>
+%  }    
 </td>
 </tr>
 </table>

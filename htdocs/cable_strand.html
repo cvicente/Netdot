@@ -80,7 +80,7 @@ if (defined($ARGS{_action}))
                 <td>Backbone: </td>
                 <td>
 %               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable", 
-%                                 where=>{name=>($o ? $o->cable : "")}, edit=>$editStrand);
+%                                 where=>{id=>($backbone_id ? $backbone_id : "")}, edit=>$editStrand);
 %               if ($editStrand) {
 %               my $srchf = "backbone_srch";  # name of the form input tag
 	            <input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;" style="width: 100px;">
@@ -153,6 +153,7 @@ if (defined($ARGS{_action}))
 
 <%args>
 $id => undef;
+$backbone_id => undef;
 $edit => undef;
 $s2name => "Plant";
 </%args>
@@ -167,6 +168,7 @@ my $editStrand = 0;
 if ($id && $id ne "NEW") 
 {
    $o = CableStrand->retrieve($id);
+   $backbone_id = $o->cable;
 }
 
 $editStrand = 1 if ($id eq "NEW" || $edit eq "strandinfo");

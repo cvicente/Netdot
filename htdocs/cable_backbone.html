@@ -45,7 +45,7 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE")
 # insert N number of strands...
 elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS")
 {
-    if (defined ($ARGS{number_strands}) &&  $ARGS{number_strands} > 0)
+    if (defined ($ARGS{number_strands}) && $ARGS{number_strands} > 0)
     {
         my $backbone_name = $o->name;
         my @cables = CableStrand->search_like(name=>$backbone_name . "%");
@@ -273,7 +273,7 @@ function suggestName()
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 } else {
             <td width="10%" align="right">
-                <a href="cable_strand.html?id=NEW">[new]</a> &nbsp;||&nbsp;
+                <a href="cable_strand.html?id=NEW&backbone_id=<% $o->id %>">[new]</a> &nbsp;||&nbsp;
                 <a href="cable_backbone.html?id=<% $id %>&edit=strandinfo#cable_strand">[edit]</a>
             </td>
 %	 }
@@ -399,11 +399,11 @@ my ($start_site_id, $end_site_id) = (0, 0);
 
 if ($id && $id ne "NEW") 
 {
-   $o = BackboneCable->retrieve($id);
-   $start_site = $o->start_closet->floor->site; 
-   $end_site = $o->end_closet->floor->site;
-   $start_site_id = $start_site->id if ($start_site);
-   $end_site_id = $end_site->id if ($end_site);
+    $o = BackboneCable->retrieve($id);
+    $start_site = $o->start_closet->floor->site; 
+    $end_site = $o->end_closet->floor->site;
+    $start_site_id = $start_site->id if ($start_site);
+    $end_site_id = $end_site->id if ($end_site);
 }
 
 $editBackbone = 1 if ($id eq "NEW" || $edit eq "cableinfo");
