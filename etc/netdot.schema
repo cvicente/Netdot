@@ -14,6 +14,29 @@
 
 my $schema = {
     
+'ArpCache' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'tstamp', 'timestamp', '', '', '', '',
+    'interface', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['interface', 'tstamp'] ],
+  'index' => [  ],
+},
+
+'ArpCacheEntry' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'ipaddr', 'integer', '', '', '', '',
+    'physaddr', 'integer', '', '', '', '',
+    'arpcache', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['arpcache','ipaddr','physaddr'] ],
+  'index' => [  ],
+},
+
 'Availability' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
@@ -25,7 +48,7 @@ my $schema = {
   'index' => [  ],
 },
 
-'Cable' => {
+'BackboneCable' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
@@ -33,10 +56,10 @@ my $schema = {
     'owner', 'integer', 'NULL', '', '', '',
     'installdate', 'date', 'NULL', '', '', '',
     'startsite', 'integer', '', '', '', '',
-    'startroom', 'varchar', '', '32', '', '',
+    'startroom', 'varchar', 'NULL', '32', '', '',
     'endsite', 'integer', '', '', '', '',
-    'endroom', 'varchar', '', '32', '', '',
-    'numberofstrands', 'integer', '', '', '', '',
+    'endroom', 'varchar', 'NULL', '32', '', '',
+    'numberofstrands', 'integer', 'NULL', '', '', '',
     'length', 'varchar', 'NULL', '32', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
@@ -45,7 +68,7 @@ my $schema = {
   'index' => [  ],
 },
 
-'Cable_history' => {
+'BackboneCable_history' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'cable_id', 'integer', '', '', '', '',
@@ -54,10 +77,10 @@ my $schema = {
     'owner', 'integer', 'NULL', '', '', '',
     'installdate', 'date', 'NULL', '', '', '',
     'startsite', 'integer', '', '', '', '',
-    'startroom', 'varchar', '', '32', '', '',
+    'startroom', 'varchar', 'NULL', '32', '', '',
     'endsite', 'integer', '', '', '', '',
-    'endroom', 'varchar', '', '32', '', '',
-    'numberofstrands', 'integer', '', '', '', '',
+    'endroom', 'varchar', 'NULL', '32', '', '',
+    'numberofstrands', 'integer', 'NULL', '', '', '',
     'length', 'varchar', 'NULL', '32', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
     'modified', 'timestamp', '', '', '', '',
@@ -74,14 +97,15 @@ my $schema = {
     'cable', 'integer', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
     'status', 'integer', '', '', '', '',
+    'datetested', 'date', 'NULL', '', '', '',
     'loss', 'varchar', 'NULL', '32', '', '',
     'direction', 'varchar', '', '32', '', '',
-    'description', 'varchar', '', '128', '', '',
+    'description', 'varchar', 'NULL', '128', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
   'unique' => [ ['cable', 'name'] ],
-  'index' => [ ['name'] ],
+  'index' => [  ],
 },
 
 'CableStrand_history' => {
@@ -91,15 +115,16 @@ my $schema = {
     'cable', 'integer', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
     'status', 'integer', '', '', '', '',
+    'datetested', 'date', 'NULL', '', '', '',
     'loss', 'varchar', 'NULL', '32', '', '',
-    'direction', 'varchar', '', '32', '', '',
-    'description', 'varchar', '', '128', '', '',
+    'direction', 'varchar', 'NULL', '32', '', '',
+    'description', 'varchar', 'NULL', '128', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
     'modified', 'timestamp', '', '', '', '',
     'modifier', 'varchar', 'NULL', '32', '', '',
   ],
   'primary_key' => 'id',
-  'unique' => [[]],
+  'unique' => [ ],
   'index' => [ ['cablestrand_id'] ],
 },
 
@@ -125,13 +150,13 @@ my $schema = {
     'speed', 'varchar', 'NULL', '32', '', '',
     'dlci', 'varchar', 'NULL', '64', '', '',
     'installdate', 'date', 'NULL', '', '', '',
-    'connection', 'integer', '', '', '', '',
+    'connectionid', 'integer', '', '', '', '',
     'status', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
   'unique' => [ ['vendor', 'cid'] ],
-  'index' => [ ['cid'] ],
+  'index' => [  ],
 },
 
 'Circuit_history' => {
@@ -146,7 +171,7 @@ my $schema = {
     'speed', 'varchar', 'NULL', '32', '', '',
     'dlci', 'varchar', 'NULL', '64', '', '',
     'installdate', 'date', 'NULL', '', '', '',
-    'connection', 'integer', '', '', '', '',
+    'connectionid', 'integer', '', '', '', '',
     'status', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
     'modified', 'timestamp', '', '', '', '',
@@ -273,12 +298,11 @@ my $schema = {
 'Device' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
-    'name', 'varchar', '', '64', '', '',
-    'aliases', 'varchar', '', '255', '', '',
+    'name', 'integer', '', '', '', '',
+    'aliases', 'varchar', 'NULL', '255', '', '',
     'type', 'integer', '', '', '', '',
     'sysdescription', 'varchar', 'NULL', '128', '', '',
-    'physaddr', 'varchar', 'NULL', '64', '', '',
-    'sw_version', 'varchar', 'NULL', '64', '', '',
+    'physaddr', 'integer', 'NULL', '', '', '',
     'oobname', 'varchar', 'NULL', '64', '', '',
     'oobnumber', 'varchar', 'NULL', '32', '', '',
     'entity', 'integer', '', '', '', '',
@@ -286,12 +310,12 @@ my $schema = {
     'person', 'integer', '', '', '', '',
     'managed', 'bool', '', '', '', '',
     'community', 'varchar', 'NULL', '64', '', '',
-    'component_type', 'integer', '', '', '', '',
-    'serialnumber', 'varchar', '', '64', '', '',
+    'serialnumber', 'varchar', 'NULL', '64', '', '',
     'productname', 'integer', 'NULL', '', '', '',
     'part_of', 'integer', 'NULL', '', '', '',
     'inventorynumber', 'varchar', 'NULL', '64', '', '',
     'maint_covered', 'bool', '', '', '', '',
+    'canautoupdate', 'bool', '', '', '', '',
     'site', 'integer', '', '', '', '',
     'room', 'varchar', 'NULL', '64', '', '',
     'rack', 'varchar', 'NULL', '32', '', '',
@@ -300,7 +324,7 @@ my $schema = {
 ],
   'primary_key' => 'id',
   'unique' => [ ['name'], ['serialnumber', 'productname']  ],
-  'index' => [ ['type'], ['physaddr'], ['entity'], ['serialnumber'], ['inventorynumber'] ],
+  'index' => [ ['type'], ['physaddr'], ['entity'] , ['inventorynumber'] ],
 },
 
 
@@ -309,11 +333,10 @@ my $schema = {
     'id', 'serial', '', '', '', '',
     'device_id', 'integer', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
-    'aliases', 'varchar', '', '255', '', '',
+    'aliases', 'varchar', 'NULL', '255', '', '',
     'type', 'integer', '', '', '', '',
     'sysdescription', 'varchar', 'NULL', '128', '', '',
-    'physaddr', 'varchar', 'NULL', '64', '', '',
-    'sw_version', 'varchar', 'NULL', '64', '', '',
+    'physaddr', 'integer', 'NULL', '', '', '',
     'oobname', 'varchar', 'NULL', '64', '', '',
     'oobnumber', 'varchar', 'NULL', '32', '', '',
     'entity', 'integer', '', '', '', '',
@@ -321,12 +344,12 @@ my $schema = {
     'person', 'integer', '', '', '', '',
     'managed', 'bool', '', '', '', '',
     'community', 'varchar', 'NULL', '64', '', '',
-    'component_type', 'integer', '', '', '', '',
-    'serialnumber', 'varchar', '', '64', '', '',
-    'productname', 'integer', '', '', '', '',
+    'serialnumber', 'varchar', 'NULL', '64', '', '',
+    'productname', 'integer', 'NULL', '', '', '',
     'part_of', 'integer', 'NULL', '', '', '',
     'inventorynumber', 'varchar', 'NULL', '64', '', '',
-    'maint_covered', 'integer', '', '', '', '',
+    'maint_covered', 'bool', '', '', '', '',
+    'canautoupdate', 'bool', '', '', '', '',
     'site', 'integer', '', '', '', '',
     'room', 'varchar', 'NULL', '64', '', '',
     'rack', 'varchar', 'NULL', '32', '', '',
@@ -351,7 +374,48 @@ my $schema = {
   'index' => [  ],
 },
 
-'ComponentType' => {
+
+'DhcpAttr' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'integer', '', '', '', '',
+    'value', 'varchar', '', '255', '', '',
+    'scope', 'integer', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [  ],
+},
+
+'DhcpAttrName' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '64', '', '',
+    'code', 'integer', 'NULL', '', '', '',
+    'format', 'varchar', 'NULL', '128', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [  ],
+},
+
+'DhcpScope' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'type', 'integer', '', '', '', '',
+    'name', 'integer', 'NULL', '', '', '',
+    'part_of', 'integer', 'NULL', '', '', '',
+    'subnet', 'integer', 'NULL', '', '', '',
+    'service', 'integer', 'NULL', '', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [  ],
+  'index' => [ ['name'] ],
+},
+
+'DhcpScopeType' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
@@ -359,9 +423,8 @@ my $schema = {
   ],
   'primary_key' => 'id',
   'unique' => [ ['name'] ],
-  'index' => [   ],
+  'index' => [  ],
 },
-
 
 'Entity' => {
   'columns' => [
@@ -426,27 +489,73 @@ my $schema = {
   'index' => [  ],
 },
 
+'FWTable' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'tstamp', 'timestamp', '', '', '', '',
+    'deviceip', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['deviceip', 'tstamp'] ],
+  'index' => [  ],
+},
+
+'FWTableEntry' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'interface', 'integer', '', '', '', '',
+    'physaddr', 'integer', '', '', '', '',
+    'fwtable', 'integer', '', '', '', '',
+    'leaf', 'bool', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['fwtable','interface','physaddr'] ],
+  'index' => [  ],
+},
+
+'HorizontalCable' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'jackid', 'varchar', '', '64', '', '',
+    'type', 'integer', '', '', '', '',
+    'datetested', 'date', 'NULL', '', '', '',
+    'testpassed', 'bool', '', '', '', '',
+    'installdate', 'date', 'NULL', '', '', '',
+    'site', 'integer', '', '', '', '',
+    'floor', 'varchar', 'NULL', '64', '', '',
+    'closet', 'varchar', '', '32', '', '', 
+    'room', 'varchar', '', '64', '', '',
+    'account', 'varchar', 'NULL', '32', '', '',
+    'contactlist', 'integer', 'NULL', '', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['jackid', 'site', 'closet', 'room'] ],
+  'index' => [ ],
+},
 
 'Interface' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
-    'device', 'integer', '', '', '', '',
-    'name', 'varchar', 'NULL', '64', '', '', 
-    'physaddr', 'varchar', 'NULL', '64', '', '',
     'number', 'varchar', '', '16', '', '',
+    'name', 'varchar', 'NULL', '64', '', '', 
+    'device', 'integer', '', '', '', '',
+    'physaddr', 'integer', 'NULL', '', '', '',
     'type', 'varchar', 'NULL', '32', '', '',
     'description', 'varchar', 'NULL', '128', '', '',
     'speed', 'integer', '', '', '', '', 
+    'duplex', 'varchar', 'NULL', '32', '', '', 
     'status', 'varchar', 'NULL', '16', '', '',
     'managed', 'bool', '', '', '', '',
-    'room', 'varchar', 'NULL', '32', '', '',
-    'jack', 'varchar', 'NULL', '32', '', '',
+    'jack', 'integer', 'NULL', '', '', '',
+    'contactlist', 'integer', 'NULL', '', '', '',    
     'info', 'long varbinary', 'NULL', '', '', '', 
   ],
   'primary_key' => 'id',
   'unique' => [ ['device','number'] ],
-  'index' => [ ['number'], ['name'], ['physaddr'] ],
+  'index' => [ ['name'], ['physaddr'], ['jack'] ],
 },
+
 
 'Interface_history' => {
   'columns' => [
@@ -454,15 +563,16 @@ my $schema = {
     'interface_id', 'integer', '', '', '', '',
     'device', 'integer', '', '', '', '',
     'name', 'varchar', 'NULL', '64', '', '', 
-    'physaddr', 'varchar', 'NULL', '64', '', '',
-    'number', 'integer', '', '', '', '',
+    'physaddr', 'integer', 'NULL', '', '', '',
+    'number', 'varchar', '', '16', '', '',
     'type', 'varchar', 'NULL', '32', '', '',
     'description', 'varchar', 'NULL', '128', '', '',
     'speed', 'integer', '', '', '', '', 
+    'duplex', 'varchar', 'NULL', '32', '', '', 
     'status', 'varchar', 'NULL', '16', '', '',
     'managed', 'bool', '', '', '', '',
-    'room', 'varchar', 'NULL', '32', '', '',
-    'jack', 'varchar', 'NULL', '32', '', '',
+    'jack', 'integer', 'NULL', '32', '', '',
+    'contactlist', 'integer', 'NULL', '32', '', '',    
     'info', 'long varbinary', 'NULL', '', '', '', 
     'modified', 'timestamp', '', '', '', '',
     'modifier', 'varchar', 'NULL', '32', '', '',
@@ -480,20 +590,36 @@ my $schema = {
  ],
  'primary_key' => 'id',
  'unique' => [ ['parent','child'] ],
- 'index' => [ ['parent'], ['child']  ],
+ 'index' => [  ],
 },
+
+'InterfaceVlan' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'interface', 'integer', '', '', '', '',
+    'vlan', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['interface','vlan'] ],
+  'index' => [ ],
+},
+
 
 'Ip' => {
  'columns' => [
    'id', 'serial', '', '', '', '',
    'interface', 'integer', '', '', '', '',
    'address', 'varchar', '', '64', '', '',
-   'mask', 'varchar', '', '64', '', '',
+   'prefix', 'integer', '', '', '', '',
    'subnet', 'integer', '', '', '', '',
+   'version', 'integer', '', '', '', '',
+   'registered', 'bool', '', '', '', '',
+   'last_seen', 'timestamp', '', '', '', '',
+   'physaddr', 'integer', 'NULL', '', '', '',
  ],
  'primary_key' => 'id',
- 'unique' => [ ['address', 'mask'] ],
- 'index' => [ ['address']  ],
+ 'unique' => [ ['address', 'prefix'] ],
+ 'index' => [ ['last_seen'], ['physaddr'], ['interface'] ],
 },
 
 'Ip_history' => {
@@ -502,8 +628,12 @@ my $schema = {
    'ip_id', 'integer', '', '', '', '',
    'interface', 'integer', '', '', '', '',
    'address', 'varchar', '', '64', '', '',
-   'mask', 'varchar', '', '64', '', '',
+   'prefix', 'integer', '', '', '', '',
    'subnet', 'integer', '', '', '', '',
+   'version', 'integer', '', '', '', '',
+   'registered', 'bool', '', '', '', '',
+   'last_seen', 'timestamp', '', '', '', '',
+   'physaddr', 'integer', '', '', '', '',
    'modified', 'timestamp', '', '', '', '',
    'modifier', 'varchar', 'NULL', '32', '', '',
 ],
@@ -517,11 +647,12 @@ my $schema = {
     'id', 'serial', '', '', '', '',
     'ip', 'integer', '', '', '', '',
     'service', 'integer', '', '', '', '',
+    'managed', 'bool', '', '', '', '',
     'contactlist', 'integer', '', '', '', '',
   ],
   'primary_key' => 'id',
   'unique' => [ ['ip','service'] ],
-  'index' => [ ['ip'],['service'] ],
+  'index' => [  ],
 },
 
 'Meta' => {
@@ -544,30 +675,6 @@ my $schema = {
   'index' => [  ],
 },
 
-'Name' => {
-  'columns' => [
-    'id', 'serial', '', '', '', '',
-    'name', 'varchar', '', '64', '', '',
-    'ip', 'integer', '', '', '', '',
-  ],
-  'primary_key' => 'id',
-  'unique' => [ ['name'] ],
-  'index' => [ ],
-},
-
-'Name_history' => {
-  'columns' => [
-    'id', 'serial', '', '', '', '',
-    'name_id', 'integer', '', '', '', '',
-    'name', 'varchar', '', '64', '', '',
-    'ip', 'integer', '', '', '', '',
-    'modified', 'timestamp', '', '', '', '',
-    'modifier', 'varchar', 'NULL', '32', '', '',
-  ],
-  'primary_key' => 'id',
-  'unique' => [ ],
-  'index' => [ ['name_id'] ],
-},
 
 'Netviewer' => {
   'columns' => [
@@ -579,7 +686,6 @@ my $schema = {
   'unique' => [ ['name'] ],
   'index' => [   ],
 },
-
 
 'NvIfReserved' => {
   'columns' => [
@@ -611,7 +717,7 @@ my $schema = {
   ],
   'primary_key' => 'id',
   'unique' => [ ['firstname', 'lastname', 'entity'] ],
-  'index' => [ ['firstname'], ['lastname'], ['email'] ],
+  'index' => [ ['email'] ],
 },
 
 'Person_history' => {
@@ -640,18 +746,29 @@ my $schema = {
   'index' => [ ['person_id'] ],
 },
 
+'PhysAddr' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'address', 'varchar', '', '128', '', '',
+    'last_seen', 'timestamp', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['address'] ],
+  'index' => [ ['last_seen']  ],
+},
+
 'Product' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
     'description', 'varchar', '', '128', '', '',
-    'sysobjectid', 'varchar', '', '128', '', '',
+    'sysobjectid', 'varchar', 'NULL', '128', '', '',
     'manufacturer', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
   'unique' => [ ['name','manufacturer'] ],
-  'index' => [ ['name'], ['sysObjectID']  ],
+  'index' => [ ['sysobjectid'] ],
 },
 
 'Product_history' => {
@@ -671,6 +788,45 @@ my $schema = {
   'index' => [ ['product_id'] ],
 },
 
+'RR' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'zone', 'integer', '', '', '', '',
+    'origin', 'varchar', '', '128', '', '',
+    'name', 'varchar', '', '128', '', '',
+    'type', 'integer', '', '', '', '',
+    'data', 'varchar', '', '128', '', '',
+    'ttl', 'integer', 'NULL', '', '', '',
+    'active', 'bool', '', '', '', '',
+    'contactlist', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['zone','name','type'] ],
+  'index' => [ ['origin'] ],
+},
+
+'RRType' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '128', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'] ],
+  'index' => [  ],
+},
+
+'RRIp' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'rr', 'integer', '', '', '', '',
+    'ip', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['rr', 'ip'] ],
+  'index' => [  ],
+},
+
 'Service' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
@@ -686,20 +842,21 @@ my $schema = {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'name', 'varchar', '', '64', '', '',
+    'siteid', 'varchar', 'NULL', '64', '', '',
     'aliases', 'varchar', '', '255', '', '',
     'availability', 'integer', '', '', '', '',
     'street1', 'varchar', '', '128', '', '',
     'street2', 'varchar', 'NULL', '128', '', '',
     'pobox', 'varchar', 'NULL', '32', '', '',
     'city', 'varchar', '', '64', '', '',
-    'state', 'varchar', '', '32', '', '',
+    'state', 'varchar', 'NULL', '32', '', '',
     'zip', 'varchar', 'NULL', '16', '', '',
     'country', 'varchar', 'NULL', '64', '', '',
     'contactlist', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
-  'unique' => [ ['name'] ],
+  'unique' => [ ['name'], ['siteid'] ],
   'index' => [ ['street1'] ],
 },
 
@@ -743,23 +900,32 @@ my $schema = {
     'id', 'serial', '', '', '', '',
     'address', 'varchar', 'NULL', '255', '', '',
     'prefix', 'integer', '', '', '', '',
+    'ipversion', 'integer', '', '', '', '',
+    'allocated', 'bool', '', '', '', '',
     'description', 'varchar', 'NULL', '128', '', '',
     'entity', 'integer', '', '', '', '',
+    'delegated', 'bool', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
   'unique' => [ ['address','prefix'] ],
-  'index' => [ ['address'] ],
+  'index' => [ ['entity'] ],
 },
 
 'Subnet_history' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'subnet_id', 'integer', '', '', '', '',
+    'ipversion', 'integer', '', '', '', '',
     'address', 'varchar', 'NULL', '255', '', '',
     'prefix', 'integer', '', '', '', '',
+    'allocated', 'bool', '', '', '', '',
     'description', 'varchar', 'NULL', '128', '', '',
     'entity', 'integer', '', '', '', '',
+    'fw_domain', 'integer', '', '', '', '',
+    'rev_domain', 'integer', '', '', '', '',
+    'dhcp_enabled', 'bool', '', '', '', '',
+    'dhcp_server', 'integer', 'NULL', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
     'modified', 'timestamp', '', '', '', '',
     'modifier', 'varchar', 'NULL', '32', '', '',
@@ -769,118 +935,50 @@ my $schema = {
   'index' => [ ['subnet_id'] ],
 },
 
+'SubnetZone' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'subnet', 'integer', '', '', '', '',
+    'zone', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['subnet', 'zone'] ],
+  'index' => [ ],
+},
+
+'Vlan' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'vid', 'integer', '', '', '', '',
+    'subnet', 'integer', '', '', '', '',
+    'description', 'varchar', 'NULL', '255', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['vid'] ],
+  'index' => [  ],
+},
+
+'Zone' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'mname', 'varchar', '', '128', '', '',
+    'rname', 'varchar', '', '128', '', '',
+    'serial', 'integer', '', '', '', '',
+    'refresh', 'integer', '', '', '', '',
+    'retry', 'integer', '', '', '', '',
+    'expire', 'integer', '', '', '', '',
+    'minimum', 'integer', '', '', '', '',
+    'contactlist', 'integer', '', '', '', '',
+    'active', 'bool', '', '', '', '',
+    'reverse', 'bool', '', '', '', '',
+    'masterserver', 'integer', '', '', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['mname'] ],
+  'index' => [ ],
+},
+
+
 }
-
-
-######################################################################
-#  $Log: netdot.schema,v $
-#  Revision 1.34  2003/07/16 23:22:13  netdot
-#  Changed contactlist and user from Device to Node -- cv
-#
-#  Revision 1.33  2003/07/16 21:42:07  netdot
-#  Added column 'user' to Device
-#
-#  Revision 1.32  2003/07/16 16:41:11  netdot
-#  Fixed unique value in Node_history
-#
-#  Revision 1.31  2003/07/15 16:26:20  netdot
-#  Re-checked sizes and other details.
-#  Added field "community" in Node
-#  Added field "description" in Subnet
-#
-#  Revision 1.30  2003/06/11 18:08:05  netdot
-#  *** empty log message ***
-#
-#  Revision 1.29  2003/06/11 17:27:42  netdot
-#  added a table for netviewer -- list of reserved interfaces
-#
-#  Revision 1.28  2003/06/11 02:12:41  netdot
-#  Added tables Device and DeviceType (among other fixes)
-#
-#  Revision 1.27  2003/06/09 23:42:32  netdot
-#  added Netviewer table -sf
-#
-#  Revision 1.26  2003/06/09 23:37:29  netdot
-#  Added Address_history (test)
-#
-#  Revision 1.25  2003/05/22 02:29:11  netdot
-#  Added 'aliases' fields to variuos tables
-#  Added 'oobname' and 'oobnumber' to Node
-#
-#  Revision 1.24  2003/05/22 00:19:15  netdot
-#  *** empty log message ***
-#
-#  Revision 1.23  2003/05/05 21:00:15  netdot
-#  changed 'nodeid' to 'node'
-#
-#  Revision 1.22  2003/05/02 17:17:28  netdot
-#  - Changed column names to all lowercase to avoid problems with 'columns' method from Class::DBI
-#  - Added a columnorderbrief to Meta table (for summary views)
-#
-#  Revision 1.21  2003/04/23 23:51:11  netdot
-#  added label to Meta
-#
-#  Revision 1.20  2003/04/23 16:51:40  netdot
-#  changed values in Meta
-#
-#  Revision 1.19  2003/04/22 17:59:36  netdot
-#  changed hasA -> linksTo and hasMany -> linksFrom in Meta because of
-#  problems with Class::DBI
-#
-#  Revision 1.18  2003/04/18 00:48:29  cvicente
-#  Changed column name nodeID to nodeId
-#
-#  Revision 1.17  2003/04/17 23:01:56  netdot
-#  changed table -> name in Meta (table evidently sql reserved)
-#
-#  Revision 1.16  2003/04/17 21:00:27  cvicente
-#  Fixed column type for availability foreign keys in Customer, Site and Person
-#  from varchar to integer
-#
-#  Revision 1.15  2003/04/17 20:37:51  cvicente
-#  Added ifAlias and jackNumber to Interface, among other minor fixes
-#
-#  Revision 1.14  2003/04/16 23:23:48  netdot
-#  fix to Meta -- changed mainObjects to mainObject
-#
-#  Revision 1.13  2003/04/16 23:14:07  netdot
-#  added Meta table for storing meta information
-#
-#  Revision 1.12  2003/04/14 23:32:49  netdot
-#  added disabled column to those classes with has_many relationships
-#
-#  Revision 1.11  2003/04/10 23:46:22  netdot
-#  removed ip from Interface and added interface to Ip.
-#
-#  Revision 1.10  2003/04/10 23:24:11  netdot
-#  changed contactpool to contactPool in Customer;
-#  added status to Circuit;
-#  added ip to Interface;
-#  added availability to Peer.
-#
-#  Revision 1.9  2003/04/10 22:24:05  netdot
-#  changed nodeId to nodeID; still need to add 'disabled'
-#
-#  Revision 1.8  2003/04/10 21:29:06  netdot
-#  changed naming convention for column names (first letter now lowercase)
-#
-#  Revision 1.7  2003/04/10 16:40:26  netdot
-#  more sorting
-#
-#  Revision 1.6  2003/04/10 16:38:54  netdot
-#  no changes; just resorted everything to better find a given table.
-#  sort order is now alphabetical
-#
-#  Revision 1.5  2003/04/10 00:04:07  netdot
-#  changed Hours to Availability in Customer to make consistent with Site
-#  & Person tables.
-#
-#  Revision 1.4  2003/04/09 21:13:44  netdot
-#  added Availability table -- used by a number of other tables
-#
-#  Revision 1.3  2003/04/09 20:55:15  netdot
-#  added Status table so that one can specify the status of a given circuit
-#
-#  Revision 1.2  2003/04/08 20:38:47  netdot
-#  initial revision
-#

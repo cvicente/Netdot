@@ -1,4 +1,3 @@
-#!/usr/bin/perl
 #
 # insert sample data
 #
@@ -29,6 +28,8 @@ INSERT INTO CircuitType (name) VALUES ('T1');
 
 INSERT INTO CableType (name) VALUES ('Cat3 UTP');
 INSERT INTO CableType (name) VALUES ('Cat5 UTP');
+INSERT INTO CableType (name) VALUES ('Cat5e UTP');
+INSERT INTO CableType (name) VALUES ('Cat6 UTP');
 INSERT INTO CableType (name) VALUES ('Multimode Fiber');
 INSERT INTO CableType (name) VALUES ('Singlemode Fiber');
 
@@ -57,16 +58,11 @@ INSERT INTO StrandStatus (name) VALUES ('Damaged');
 INSERT INTO DeviceType (name) VALUES ('Access Point');
 INSERT INTO DeviceType (name) VALUES ('Firewall');
 INSERT INTO DeviceType (name) VALUES ('Hub');
-INSERT INTO DeviceType (name) VALUES ('Server');
 INSERT INTO DeviceType (name) VALUES ('IP Phone');
 INSERT INTO DeviceType (name) VALUES ('Router');
+INSERT INTO DeviceType (name) VALUES ('Server');
 INSERT INTO DeviceType (name) VALUES ('Switch');
 INSERT INTO DeviceType (name) VALUES ('Wireless Bridge');
-
-INSERT INTO ComponentType (name) VALUES ('Standalone');
-INSERT INTO ComponentType (name) VALUES ('Chassis');
-INSERT INTO ComponentType (name) VALUES ('Line Card');
-INSERT INTO ComponentType (name) VALUES ('Media Adapter');
 
 INSERT INTO Service (name) VALUES ('BGP');
 INSERT INTO Service (name) VALUES ('DHCPD');
@@ -82,6 +78,7 @@ INSERT INTO ContactType (name) VALUES ('Administrative Contact');
 INSERT INTO ContactType (name) VALUES ('Primary Technical Contact');
 INSERT INTO ContactType (name) VALUES ('Secondary Technical Contact');
 INSERT INTO ContactType (name) VALUES ('Billing Contact');
+INSERT INTO ContactType (name) VALUES ('End User');
 
 INSERT INTO Netviewer (name,value) VALUES ('snmpversion', 'SNMPv1');
 INSERT INTO Netviewer (name,value) VALUES ('community', 'public');
@@ -102,6 +99,73 @@ INSERT INTO NvIfReserved (name) VALUES ( 'dsc' );
 INSERT INTO NvIfReserved (name) VALUES ( 'Async' );
 INSERT INTO NvIfReserved (name) VALUES ( 'rptr' );
 
+# STANDARD DNS RESOURCE RECORD TYPES
+INSERT INTO RRType (name) VALUES ( 'A' );
+INSERT INTO RRType (name) VALUES ( 'AAAA' );
+INSERT INTO RRType (name) VALUES ( 'CNAME' );
+INSERT INTO RRType (name) VALUES ( 'HINFO' );
+INSERT INTO RRType (name) VALUES ( 'MX' );
+INSERT INTO RRType (name) VALUES ( 'NS' );
+INSERT INTO RRType (name) VALUES ( 'PTR' );
+INSERT INTO RRType (name) VALUES ( 'TXT' );
+
+# ISC DHCP SERVER CONFIGURATION SCOPES
+INSERT INTO DhcpScopeType (name) VALUES ('global');
+INSERT INTO DhcpScopeType (name) VALUES ('group');
+INSERT INTO DhcpScopeType (name) VALUES ('shared-network');
+INSERT INTO DhcpScopeType (name) VALUES ('pool');
+INSERT INTO DhcpScopeType (name) VALUES ('subnet');
+INSERT INTO DhcpScopeType (name) VALUES ('class');
+INSERT INTO DhcpScopeType (name) VALUES ('subclass');
+INSERT INTO DhcpScopeType (name) VALUES ('host');
+
+# ISC DHCP SERVER CONFIGURATION PARAMETERS
+INSERT INTO DhcpAttrName (name) VALUES ( 'always-reply-rfc1048');
+INSERT INTO DhcpAttrName (name) VALUES ( 'allow all clients');
+INSERT INTO DhcpAttrName (name) VALUES ( 'allow dynamic bootp client');
+INSERT INTO DhcpAttrName (name) VALUES ( 'authoritative');
+INSERT INTO DhcpAttrName (name) VALUES ( 'boot-unknown-clients');
+INSERT INTO DhcpAttrName (name) VALUES ( 'default-lease-time');
+INSERT INTO DhcpAttrName (name) VALUES ( 'deny all clients');
+INSERT INTO DhcpAttrName (name) VALUES ( 'deny dynamic bootp client');
+INSERT INTO DhcpAttrName (name) VALUES ( 'deny known clients');
+INSERT INTO DhcpAttrName (name) VALUES ( 'deny unknown clients');
+INSERT INTO DhcpAttrName (name) VALUES ( 'ddns-update-style');
+INSERT INTO DhcpAttrName (name) VALUES ( 'dynamic-bootp-lease-length');
+INSERT INTO DhcpAttrName (name) VALUES ( 'dynamic-bootp-lease-cutoff');
+INSERT INTO DhcpAttrName (name) VALUES ( 'get-lease-hostnames');
+INSERT INTO DhcpAttrName (name) VALUES ( 'filename');
+INSERT INTO DhcpAttrName (name) VALUES ( 'fixed-address');
+INSERT INTO DhcpAttrName (name) VALUES ( 'hardware');
+INSERT INTO DhcpAttrName (name) VALUES ( 'lease limit');
+INSERT INTO DhcpAttrName (name) VALUES ( 'log-facility');
+INSERT INTO DhcpAttrName (name) VALUES ( 'match');
+INSERT INTO DhcpAttrName (name) VALUES ( 'match if');
+INSERT INTO DhcpAttrName (name) VALUES ( 'max-lease-time');
+INSERT INTO DhcpAttrName (name) VALUES ( 'min-lease-time');
+INSERT INTO DhcpAttrName (name) VALUES ( 'min-secs');
+INSERT INTO DhcpAttrName (name) VALUES ( 'next-server');
+INSERT INTO DhcpAttrName (name) VALUES ( 'option dhcp-client-identifier');
+INSERT INTO DhcpAttrName (name) VALUES ( 'not authoritative');
+INSERT INTO DhcpAttrName (name) VALUES ( 'permit known clients');
+INSERT INTO DhcpAttrName (name) VALUES ( 'permit unknown clients');
+INSERT INTO DhcpAttrName (name) VALUES ( 'range');
+INSERT INTO DhcpAttrName (name) VALUES ( 'server-identifier');
+INSERT INTO DhcpAttrName (name) VALUES ( 'site-option-space');
+INSERT INTO DhcpAttrName (name) VALUES ( 'use-host-decl-names');
+INSERT INTO DhcpAttrName (name) VALUES ( 'use-lease-addr-for-default-route');
+INSERT INTO DhcpAttrName (name) VALUES ( 'vendor-option-space');
+
+# DHCP STANDARD OPTIONS
+INSERT INTO DhcpAttrName (name) VALUES ( 'option domain-name');
+INSERT INTO DhcpAttrName (name) VALUES ( 'option domain-name-servers');
+INSERT INTO DhcpAttrName (name) VALUES ( 'option subnet-mask');
+INSERT INTO DhcpAttrName (name) VALUES ( 'option netbios-name-servers');
+INSERT INTO DhcpAttrName (name) VALUES ( 'option netbios-node-type');
+INSERT INTO DhcpAttrName (name) VALUES ( 'option broadcast-address');
+INSERT INTO DhcpAttrName (name) VALUES ( 'option routers');
+
+
 END
 close(TMP);
 
@@ -109,96 +173,3 @@ print "Enter the password for the database user $DB_DBA.\n";
 system ("$BINDIR/mysql --user=$DB_DBA $DB_DATABASE -p < $TMP");
 
 system ("rm -f $TMP");
-
-
-######################################################################
-#  $Log: ins.sample.data,v $
-#  Revision 1.29  2003/07/17 21:01:16  netdot
-#  Added some types in NvIfReserved
-#
-#  Revision 1.28  2003/06/12 17:34:55  netdot
-#  mods to Netviewer
-#
-#  Revision 1.27  2003/06/11 17:30:20  netdot
-#  more netviewer related stuff
-#
-#  Revision 1.26  2003/06/11 15:47:07  netdot
-#  more for Netviewer
-#
-#  Revision 1.25  2003/06/11 02:12:18  netdot
-#  Added values for DeviceType
-#
-#  Revision 1.24  2003/06/10 18:16:41  netdot
-#  *** empty log message ***
-#
-#  Revision 1.23  2003/06/10 17:20:36  netdot
-#  Took off sample data and left only values for types, etc.
-#
-#  Revision 1.22  2003/06/10 17:17:45  netdot
-#  *** empty log message ***
-#
-#  Revision 1.21  2003/05/05 21:01:13  netdot
-#  *** empty log message ***
-#
-#  Revision 1.20  2003/05/05 17:09:57  netdot
-#  Added 'status' to columnorderbrief for Circuit
-#
-#  Revision 1.19  2003/05/05 02:15:52  netdot
-#  *** empty log message ***
-#
-#  Revision 1.18  2003/05/05 02:12:57  netdot
-#  *** empty log message ***
-#
-#  Revision 1.17  2003/05/05 02:05:44  netdot
-#  *** empty log message ***
-#
-#  Revision 1.16  2003/05/02 23:48:39  netdot
-#  *** empty log message ***
-#
-#  Revision 1.15  2003/05/02 19:21:31  netdot
-#  Added 'mainobject' values to Meta and fixed typos
-#
-#  Revision 1.14  2003/05/02 18:32:30  netdot
-#  - Changed all column names to lowercase
-#  - Added values for Status
-#
-#  Revision 1.13  2003/04/29 23:32:41  netdot
-#  Fixed some uppercase typos
-#
-#  Revision 1.12  2003/04/29 23:01:45  netdot
-#  Added Meta to Meta again (needed for setup-class-dbi.pl)
-#
-#  Revision 1.11  2003/04/29 17:27:15  netdot
-#  Added columnorder to the rest of entries in Meta
-#
-#  Revision 1.10  2003/04/28 18:29:05  netdot
-#  Added a 'label' value for every instance in Meta (except join tables).
-#  Deleted line that included Meta in Meta (not necessary).
-#
-#  Revision 1.9  2003/04/22 18:02:51  netdot
-#  reflecting changes in netdot.schema & DBI.pm
-#
-#  Revision 1.8  2003/04/21 23:27:19  netdot
-#  uncommented 'rm -f $TMP'
-#
-#  Revision 1.7  2003/04/18 02:24:31  netdot
-#  fixed nodeID
-#
-#  Revision 1.6  2003/04/17 23:07:08  netdot
-#  blah
-#
-#  Revision 1.5  2003/04/17 23:02:36  netdot
-#  change table -> name in Meta statements
-#
-#  Revision 1.4  2003/04/17 22:36:11  netdot
-#  added meta information
-#
-#  Revision 1.3  2003/04/17 00:41:38  netdot
-#  thinking through Meta table
-#
-#  Revision 1.2  2003/04/15 18:49:52  netdot
-#  added some nero entries to flesh things out a bit
-#
-#  Revision 1.1  2003/04/15 18:40:32  netdot
-#  Initial revision
-#

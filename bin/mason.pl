@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#PERL
 #
 # A basic, functional Mason handler.
 #
@@ -18,7 +18,7 @@ use strict;
     package HTML::Mason::Commands;
     use NetAddr::IP;
     use Data::Dumper;
-    use lib "YOUR-PREFIX/lib";
+    use lib "PREFIX/lib";
     use Netdot::DBI;
     use Netdot::GUI;
 }
@@ -26,8 +26,8 @@ use strict;
 my $ah =
     HTML::Mason::ApacheHandler->new (
 				     args_method => "CGI",
-				     comp_root   => "YOUR-PREFIX/htdocs",
-				     data_dir    => "YOUR-PREFIX/htdocs/masondata",
+				     comp_root   => "PREFIX/htdocs",
+				     data_dir    => "PREFIX/htdocs/masondata",
 				     error_mode  => 'output',
 				     );
 #

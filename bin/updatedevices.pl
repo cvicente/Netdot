@@ -1,6 +1,6 @@
-#!/usr/bin/perl
+#PERL
 
-use lib "/usr/local/netdot/lib";
+use lib "PREFIX/lib";
 use Getopt::Long;
 use strict;
 use NetAddr::IP;

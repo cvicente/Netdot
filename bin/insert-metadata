@@ -1,4 +1,3 @@
-#!/usr/bin/perl
 #
 # Meta is a table containing information about the database
 # to help in coding upper layers of the application
@@ -45,6 +44,30 @@ open (TMP, ">$TMP")
 
 print TMP <<END;
 
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('ArpCache', 
+	  'tstamp,interface', 
+	  'tstamp,interface', 
+	  'tstamp,interface', 
+	  'tstamp:Timestamp,interface:Interface',
+	  '',
+	  '', 
+	  'entries:ArpCacheEntry:arpcache', 
+	  '0', 
+	  'Device ARP Cache');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('ArpCacheEntry', 
+	  'ipaddr,physaddr', 
+	  'ipaddr,physaddr,arpcache', 
+	  'ipaddr,physaddr', 
+	  'ipaddr:IP Address,physaddr:Physical Address,arpchache:ARP Cache',
+	  '',
+	  'ipaddr:Ip,physaddr:PhysAddr,arpcache:ArpCache', 
+	  '', 
+	  '0', 
+	  'ARP Cache Entry');
+
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
   VALUES ('Availability', 
 	  'name', 
@@ -55,11 +78,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '', 
 	  'sites:Site:availability:{on_delete=>"set-null"},entities:Entity:availability:{on_delete=>"set-null"},notify_emails:Contact:notify_email:{on_delete=>"set-null"},notify_pagers:Contact:notify_pager:{on_delete=>"set-null"},notify_voices:Contact:notify_voice:{on_delete=>"set-null"},', 
 	  '0',
-	  'Timeframe in which a person or site is available for problem notifications'
+	  'A Time Period'
 	  );
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Cable', 
+  VALUES ('BackboneCable', 
 	  'name', 
 	  'name,type,owner,installdate,startsite,startroom,endsite,endroom,numberofstrands,length,info', 
 	  'name,startsite,startroom,endsite,endroom', 
@@ -68,10 +91,10 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'type:CableType,owner:Entity,startsite:Site,endsite:Site', 
 	  'strands:CableStrand:cable', 
 	  '0', 
-	  'A cable with multiple strands/pairs'
+	  'A Backbone (fiber) cable with multiple strands'
 	  );
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Cable_history', 
+  VALUES ('BackboneCable_history', 
 	  'modified', 
 	  'name,type,owner,installdate,startsite,startroom,endsite,endroom,numberofstrands,length,info,modified,modifier', 
 	  'modified,modifier,name,startsite,endsite', 
@@ -86,11 +109,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('CableStrand', 
 	  'name', 
-	  'name,cable,status,loss,direction,description,info', 
+	  'name,cable,status,datetested,loss,direction,description,info', 
 	  'name,cable,direction,status',
-	  'name:Strand ID,cable:Cable ID,status:Status,loss:Loss,dirction:Direction (Tx/Rx),description:Description,info:Comments',
+	  'name:Strand ID,cable:Cable ID,status:Status,datetested:Date Tested,loss:Loss,direction:Direction (Tx/Rx),description:Description,info:Comments',
 	  '',
-	  'cable:Cable,status:StrandStatus', 
+	  'cable:BackboneCable,status:StrandStatus', 
 	  '', 
 	  '0', 
 	  'A single cable strand/pair'
@@ -100,9 +123,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'modified', 
 	  'cable,name,status,loss,direction,description,info,modified,modifier', 
 	  'modified,modifier,cable,name,direction', 
-	  'name:Strand ID,cable:Cable ID,status:Status,loss:Loss,dirction:Direction (Tx/Rx),description:Description,info:Comments,modified:Modified on,Modifier:Modified by',
+	  'name:Strand ID,cable:Cable ID,status:Status,loss:Loss,direction:Direction (Tx/Rx),description:Description,info:Comments,modified:Modified on,Modifier:Modified by',
 	  '',
-	  'cable:Cable,status:StrandStatus', 
+	  'cable:BackboneCable,status:StrandStatus', 
 	  '', 
 	  '0', 
 	  ''
@@ -116,18 +139,18 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,info:Comments',
 	  '',
 	  '', 
-	  'cables:Cable:type:{on_delete=>"restrict"}', 
+	  'backbonecables:BackboneCable:type:{on_delete=>"restrict"},horizontalcables:HorizontalCable:type:{on_delete=>"restrict"}', 
 	  '0', 
 	  'Types of Cables'
 	  );
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
   VALUES ('Circuit', 
 	  'cid', 
-	  'cid,connection,status,nearend,farend,type,speed,dlci,installdate,vendor,info', 
-	  'cid,connection,nearend,farend,type,vendor,status', 
-	  'cid:Circuit ID,connection:Part of Connection,status:Status,nearend:Near Interface,farend:Far Interface,type:Type,speed:Speed,dlci:DLCI,installdate:Installed on,vendor:Provider,info:Comments',
+	  'cid,connectionid,status,nearend,farend,type,speed,dlci,installdate,vendor,info', 
+	  'cid,connectionid,nearend,farend,type,vendor,status', 
+	  'cid:Circuit ID,connectionid:Part of Connection,status:Status,nearend:Near Interface,farend:Far Interface,type:Type,speed:Speed,dlci:DLCI,installdate:Installed on,vendor:Provider,info:Comments',
 	  '',
-	  'type:CircuitType,nearend:Interface,farend:Interface,connection:Connection,vendor:Entity,status:CircuitStatus', 
+	  'type:CircuitType,nearend:Interface,farend:Interface,connectionid:Connection,vendor:Entity,status:CircuitStatus', 
 	  '', 
 	  '0', 
 	  'A WAN circuit provided by a third party'
@@ -135,11 +158,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
   VALUES ('Circuit_history', 
 	  'modified', 
-	  'cid,connection,status,nearend,farend,type,speed,dlci,installdate,vendor,info,modified,modifier', 
-	  'modified,modifier,cid,connection,nearend,farend,type,vendor,status', 
-	  'cid:Circuit ID,connection:Part of Connection,status:Status,nearend:Near Interface,farend:Far Interface,type:Type,speed:Speed,dlci:DLCI,installdate:Installed on,vendor:Provider,info:Comments,modified:Modified on,modifier:Modified by',
+	  'cid,connectionid,status,nearend,farend,type,speed,dlci,installdate,vendor,info,modified,modifier', 
+	  'modified,modifier,cid,connectionid,nearend,farend,type,vendor,status', 
+	  'cid:Circuit ID,connectionid:Part of Connection,status:Status,nearend:Near Interface,farend:Far Interface,type:Type,speed:Speed,dlci:DLCI,installdate:Installed on,vendor:Provider,info:Comments,modified:Modified on,modifier:Modified by',
 	  '',
-	  'type:CircuitType,nearend:Interface,farend:Interface,connection:Connection,vendor:Entity,status:CircuitStatus', 
+	  'type:CircuitType,nearend:Interface,farend:Interface,connectionid:Connection,vendor:Entity,status:CircuitStatus', 
 	  '', 
 	  '0', 
 	  ''
@@ -177,7 +200,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,entity:Entity,nearend:Origin (Site),farend:Destination (Site),info:Comments',
 	  '',
 	  'nearend:Site,farend:Site,entity:Entity', 
-	  'circuits:Circuit:connection:{on_delete=>"set-null"}', 
+	  'circuits:Circuit:connectionid:{on_delete=>"set-null"}', 
 	  '0', 
 	  'Link between two sites.  A connection can consist of one or more circuits');
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
@@ -223,7 +246,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,info:Comments',
 	  '',
 	  '', 
-	  'contacts:Contact:contactlist,entities:Entity:contactlist:{on_delete=>"set-null"},devices:Device:contactlist:{on_delete=>"set-null"},sites:Site:contactlist:{on_delete=>"set-null"},services:IpService:contactlist:{on_delete=>"set-null"}', 
+	  'contacts:Contact:contactlist,entities:Entity:contactlist:{on_delete=>"set-null"},devices:Device:contactlist:{on_delete=>"set-null"},sites:Site:contactlist:{on_delete=>"set-null"},services:IpService:contactlist:{on_delete=>"set-null"},zones:Zone:contactlist:{on_delete=>"set-null"},interfaces:Interface:contactlist,resourcerecords:RR:contactlist:{on_delete=>"set-null"},outlets:HorizontalCable:contactlist:{on_delete=>"set-null"}', 
 	  '0', 
 	  'A list of contacts');
 
@@ -240,14 +263,13 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'Type of contact');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES (
-	  'Device', 
+  VALUES ('Device', 
 	  'name', 
-	  'name,aliases,type,sysdescription,physaddr,sw_version,oobname,oobnumber,entity,contactlist,person,managed,community,component_type,serialnumber,productname,part_of,inventorynumber,maint_covered,site,room,rack,dateinstalled,info', 
+	  'name,aliases,type,sysdescription,physaddr,oobname,oobnumber,entity,contactlist,person,managed,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,rack,dateinstalled,info', 
 	  'name,type,productname', 
-	  'name:Name,aliases:Aliases,type:Type,sysdescription:System Description,physaddr:Physical (MAC) Address,sw_version:Software Version,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,managed:Managed?,community:SNMP Community,component_type:Type of Component,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,site:Location,room:Room,rack:Rack,dateinstalled:Installed on,info:Comments',
+	  'name:Name,aliases:Aliases,type:Type,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,managed:Managed?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?,site:Building,room:Room,rack:Rack,dateinstalled:Installed on,info:Comments',
 	  '',
-	  'type:DeviceType,entity:Entity,contactlist:ContactList,person:Person,component_type:ComponentType,productname:Product,part_of:Device,site:Site', 
+	  'name:RR,type:DeviceType,entity:Entity,contactlist:ContactList,person:Person,productname:Product,part_of:Device,site:Site,physaddr:PhysAddr', 
 	  'interfaces:Interface:device,parts:Device:part_of', 
 	  '0', 
 	  'A network device');
@@ -255,26 +277,14 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Device_history', 
 	  'modified', 
-	  'name,aliases,type,sysdescription,physaddr,sw_version,oobname,oobnumber,entity,contactlist,person,managed,community,component_type,serialnumber,productname,part_of,inventorynumber,maint_covered,site,room,rack,dateinstalled,info,modified,modifier', 
+	  'name,aliases,type,sysdescription,physaddr,oobname,oobnumber,entity,contactlist,person,managed,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,rack,dateinstalled,info,modified,modifier', 
 	  'modified,modifier,name,type', 
-	  'name:Name,aliases:Aliases,type:Type,sysdescription:System Description,physaddr:Physical (MAC) Address,sw_version:Software Version,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,managed:Managed?,community:SNMP Community,component_type:Type of Component,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,site:Location,room:Room,rack:Rack,dateinstalled:Installed on,info:Comments,modified:Modified on,modifier:Modified by',
+	  'name:Name,aliases:Aliases,type:Type,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,managed:Managed?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?site:Location,room:Room,rack:Rack,dateinstalled:Installed on,info:Comments,modified:Modified on,modifier:Modified by',
 	  '',
-	  'type:DeviceType,entity:Entity,contactlist:ContactList,person:Person,component_type:ComponentType,productname:Product,part_of:Device,site:Site', 
+	  'name:RR,type:DeviceType,entity:Entity,contactlist:ContactList,person:Person,productname:Product,part_of:Device,site:Site,physaddr:PhysAddr', 
 	  '', 
 	  '0', 
 	  '');
-
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('ComponentType', 
-	  'name', 
-	  'name,info', 
-	  'name',
-	  'name:Name,info:Comments',
-	  '',
-	  '', 
-	  'devices:Device:component_type:{on_delete=>"restrict"}', 
-	  '0', 
-	  'Types of Components');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('DeviceType', 
@@ -289,6 +299,54 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'Types of network devices');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('DhcpAttr', 
+	  'name,value', 
+	  'name,value,scope', 
+	  'name,value,scope',
+	  'name:Name,value:Value,scope:Scope',
+	  '',
+	  'name:DhcpAttrName,scope:DhcpScope', 
+	  '', 
+	  '0', 
+	  'A DHCP Attribute or Parameter');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('DhcpAttrName', 
+	  'name', 
+	  'name,code,format,info', 
+	  'name',
+	  'name:Name,code:Code,format:Format,info:Comments',
+	  '',
+	  '', 
+	  'attributes:DhcpAttr:name:{on_delete=>"restrict"}', 
+	  '0', 
+	  'A DHCP Attributes Name');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('DhcpScope', 
+	  'service,type,name', 
+	  'type,name,part_of,subnet,service,info', 
+	  'service,type,name',
+	  'name:Name,part_of:Belongs to,subnet:Subnet,service:DHCP Service,info:Comments',
+	  '',
+	  'type:DhcpScopeType,part_of:DhcpScope,subnet:Subnet,service:IpService', 
+	  'attributes:DhcpAttr:host', 
+	  '0', 
+	  'A DHCP Scope');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('DhcpScopeType', 
+	  'name', 
+	  'name,info', 
+	  'name,',
+	  'name:Name,info:Comments',
+	  '',
+	  '', 
+	  'scopes:DhcpScope:type', 
+	  '0', 
+	  'A DHCP Scope Type');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Entity', 
 	  'name', 
 	  'name,aliases,type,availability,contactlist,acctnumber,maint_contract,autsys,bgppeerip,info', 
@@ -296,9 +354,10 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact Group,acctnumber:Account Number,maint_contract:Maintenance Contract,autys:Autonomous System,bgppeerip:BGP Peer IP,info:Comments',
 	  '',
 	  'contactlist:ContactList,availability:Availability,type:EntityType', 
-	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,subnets:Subnet:entity:{on_delete=>"set-null"},cables:Cable:owner:{on_delete=>"set-null"},devices:Device:entity:{on_delete=>"set-null"},persons:Person:entity', 
+	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,subnets:Subnet:entity:{on_delete=>"set-null"},cables:BackboneCable:owner:{on_delete=>"set-null"},devices:Device:entity:{on_delete=>"set-null"},people:Person:entity', 
 	  '0', 
 	  'An organization related to the network in some way');
+
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Entity_history', 
 	  'modified',
@@ -312,7 +371,13 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('EntitySite', 'entity,site', 'entity,site', 'entity,site', 'entity:Entity,site:Site', '', '1', 'A relationship linking an Entity with a physical Site');
+  VALUES ('EntitySite', 
+	  'entity,site', 
+	  'entity,site', 
+	  'entity,site', 
+	  'entity:Entity,site:Site', 
+	  '', 
+	  '1', 'Entity to Site join table');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('EntityType', 
@@ -327,25 +392,62 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'Types of Entities');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('FWTable', 
+	  'tstamp,deviceip', 
+	  'tstamp,deviceip', 
+	  'tstamp,deviceip', 
+	  'tstamp:Timestamp,deviceip:Device IP',
+	  '',
+	  '', 
+	  'entries:FWTableEntry:fwtable', 
+	  '0', 
+	  'Bridge Forwarding Table');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('FWTableEntry', 
+	  'interface,physaddr', 
+	  'interface,physaddr,fwtable,leaf', 
+	  'interface,physaddr', 
+	  'interface:Interface,physaddr:Physical Address,fwtable: FW Table,leaf:Is Leaf?',
+	  '',
+	  'interface:Interface,physaddr:PhysAddr,fwtable:FWTable', 
+	  '', 
+	  '0', 
+	  'Device Forwarding Table');
+
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('HorizontalCable', 
+	  'jackid', 
+	  'jackid,type,datetested,testpassed,installdate,site,floor,closet,room,account,contactlist,info', 
+	  'jackid,building,floor,closet,room', 
+	  'jackid:Jack ID,type:Type,datetested:Date Tested,testpassed:Passed Test?,installdate:Date Installed,site:Site,floor:Floor,closet:Closet,room:Room,account:Account,contaclist:Contact List,info:Comments',
+	  '',
+	  'type:CableType,site:Site,contactlist:ContactList', 
+	  'interfaces:Interface:jack:{on_delete=>"set-null"}', 
+	  '0', 
+	  'Horizontal Cable');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Interface', 
 	  'number,name,device', 
-	  'number,name,device,room,jack,description,type,speed,status,physaddr,info,managed', 
-	  'number,name,device,room,jack,description', 
-	  'number:Number,name:Name,device:Device,room:Room,jack:Jack,description:Description,type:Type,speed:Speed,status:Status,physaddr:Physical (MAC) Address,info:Comments,managed:Managed?',
+	  'number,name,device,jack,description,type,speed,duplex,status,physaddr,managed,contactlist,info', 
+	  'number,name,device,jack,description', 
+	  'number:Number,name:Name,device:Device,jack:Jack,description:Description,type:Type,speed:Speed,duplex:Duplex,status:Status,physaddr:Physical (MAC) Address,info:Comments,managed:Managed?,contactlist:Contact List',
 	  '',
-	  'device:Device', 
-	  'ips:Ip:interface,parents:InterfaceDep:child,children:InterfaceDep:parent,nearcircuits:Circuit:nearend:{on_delete=>"set-null"},farcircuits:Circuit:farend:{on_delete=>"set-null"}', 
+	  'device:Device,jack:HorizontalCable,physaddr:PhysAddr', 
+	  'ips:Ip:interface,parents:InterfaceDep:child,children:InterfaceDep:parent,nearcircuits:Circuit:nearend:{on_delete=>"set-null"},farcircuits:Circuit:farend:{on_delete=>"set-null"},fwtentries:FWTableEntry:interface', 
 	  '0', 
 	  'An interface associated with a device'
 	  );
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Interface_history', 
 	  'modified', 
-	  'number,name,device,room,jack,description,type,speed,status,physaddr,info,managed,modified,modifier', 
-	  'number,name,device,room,jack,description,modified,modifier',
-	  'number:Number,name:Name,device:Device,room:Room,jack:Jack,description:Description,type:Type,speed:Speed,status:Status,physaddr:Physical (MAC) Address,info:Comments,managed:Managed?,modified:Modified on,modifier:Modified by',
+	  'number,name,device,jack,description,type,speed,duplex,status,physaddr,managed,contactlist,info,modified,modifier', 
+	  'number,name,device,jack,description,modified,modifier',
+	  'number:Number,name:Name,device:Device,jack:Jack,description:Description,type:Type,speed:Speed,duplex:Duplex,status:Status,physaddr:Physical (MAC) Address,info:Comments,managed:Managed?,contactlist:Contact List,modified:Modified on,modifier:Modified by',
 	  '',
-	  'device:Device', 
+	  'device:Device,jack:HorizontalCable,physaddr:PhysAddr', 
 	  '', 
 	  '0', 
 	  '');
@@ -353,78 +455,50 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('InterfaceDep', 'parent,child', 'parent,child', 'parent,child', 'parent:Interface,child:Interface', '', '1', 'Dependency relationship between two interfaces. Provides a basis for topology information');
 
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description) 
+    VALUES ('InterfaceVlan', 
+	    'interface,vlan',
+	    'interface,vlan', 
+	    'interface,vlan', 
+	    'interface:Interface,vlan:Vlan', 
+	    '', 
+	    '1', 
+	    'Interface to VLAN join table');
+
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Ip', 
 	  'address', 
-	  'address,mask,interface,subnet', 
-	  'address,mask,interface',
-	  'address:Address,mask:Netmask,interface:Interface,subnet:Subnet',
+	  'address,prefix,interface,subnet,version,registered,last_seen,physaddr', 
+	  'address,prefix,interface',
+	  'address:Address,prefix:Mask Prefix,interface:Interface,subnet:Subnet,version:Version (4/6),registered:Registered?,last_seen:Last Seen,physaddr:Physical (MAC) Address',
 	  '',
-	  'interface:Interface,subnet:Subnet', 
-	  'names:Name:ip,services:IpService:ip', 
+	  'interface:Interface,subnet:Subnet,physaddr:PhysAddr', 
+	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,resourcerecords:RRIp:ip,vlans:InterfaceVlan:ip', 
 	  '0', 
-	  'An IP Address associated with an Interface');
+	  'An IP (v4 or v6) Address');
+
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Ip_history', 
 	  'modified', 
-	  'address,mask,interface,subnet,modified,modifier', 
-	  'modified,modifier,address,mask,interface', 
-	  'address:Address,mask:Netmask,interface:Interface,subnet:Subnet,modified:Modified on,modifier:Modified by',
+	  'address,prefix,interface,subnet,version,registered,last_seen,physaddr,modified,modifier', 
+	  'modified,modifier,address,prefix,interface', 
+	  'address:Address,prefix:Mask Prefix,interface:Interface,subnet:Subnet,version:Version (4/6),registered:Registered?,last_seen:Last Seen,physaddr:Physical (MAC) Address,modified:Modified on,modifier:Modified by',
 	  '',
-	  'interface:Interface,subnet:Subnet', 
+	  'interface:Interface,subnet:Subnet,physaddr:PhysAddr', 
 	  '', 
 	  '0', 
 	  '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('IpService', 'ip,service', 'ip,service,contactlist', 'ip,service', 'ip:Ip,service:Service,contactlist:ContactList', '', '0', 'A relationship linking an Ip address with a running Internet service');
+  VALUES ('IpService', 
+	  'ip,service', 
+	  'ip,service,managed,contactlist', 
+	  'ip,service', 
+	  'ip:Ip,service:Service,managed:Managed,contactlist:ContactList', 
+	  'attributes:DhcpAttr:server,dhcphosts:DhcpHost:server,dhcpsubnets:Subnet:dhcp_server:{on_delete=>"set-null"}', 
+ 	  '0', 
+	  'A relationship linking an Ip address with a running Internet service');
 
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Product', 
-	  'name', 
-	  'name,description,sysobjectid,manufacturer,info', 
-	  'name,description,manufacturer', 
-	  'name:Name,description:Description,sysobjectid:System ID,manufacturer:Manufacturer,info:Comments',
-	  '',
-	  'manufacturer:Entity', 
-	  'devices:Device:productname:{on_delete=>"restrict"}', 
-	  '0', 
-	  'Product Names');
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Product_history', 
-	  'modified', 
-	  'name,description,manufacturer,info,modified,modifier', 
-	  'modified,modifier,name,description,manufacturer', 
-	  'name:Name,description:Description,manufacturer:Manufacturer,info:Comments,modified:Modified on,modifier:Modified by',
-	  '',
-	  'manufacturer:Entity', 
-	  '', 
-	  '0', 
-	  '');
-
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Name', 
-	  'name', 
-	  'name,ip', 
-	  'name,ip',
-	  'name:Name,ip:Ip Address',
-	  '',
-	  'ip:Ip', 
-	  '', 
-	  '0', 
-	  'A DNS name associated with an IP address');
-
-INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Name_history', 
-	  'modified', 
-	  'name,ip,modified,modifier', 
-	  'modified,modifier,name,ip', 
-	  'name:Name,ip:Ip Address,modified:Modified on,modifier:Modified by',
-	  '',
-	  'ip:Ip', 
-	  '', 
-	  '0', 
-	  '');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
     VALUES ('Person', 
@@ -443,12 +517,84 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'modified', 
 	  'lastname,firstname,aliases,position,entity,location,email,office,cell,home,pager,emailpager,fax,info,modified,modifier', 
 	  'modified,modifier,lastname,firstname,position,entity', 
-	    'lastname:Last Name,firstname:First Name,aliases:Aliases,position:Position,entity:Employer,location:Location,email:Email,office:Work Phone,cell:Cell Phone,home:Home Phone,pager:Pager,emailpager:Email Pager,fax:Fax,info:Comments,modified:Modified on,modifier:Modified by',
+	   'lastname:Last Name,firstname:First Name,aliases:Aliases,position:Position,entity:Employer,location:Location,email:Email,office:Work Phone,cell:Cell Phone,home:Home Phone,pager:Pager,emailpager:Email Pager,fax:Fax,info:Comments,modified:Modified on,modifier:Modified by',
 	  'entity:Entity,location:Site',
 	  '',
 	  '', 
 	  '0', 
 	  '');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('PhysAddr', 
+	    'address', 
+	    'address,last_seen', 
+	    'address,last_seen', 
+	    'address:Address,last_seen:Last Seen',
+	    '',
+	    '', 
+	    'interfaces:Interface:physaddr:{on_delete=>"set-null"},devices:Device:physaddr:{on_delete=>"set-null"},fwtableentries:FWTableEntry:physaddr,registeredips:Ip:physaddr,arpentries:ArpCache:physaddr', 
+	    '0', 
+	    'A physical or MAC address');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('Product', 
+	  'name', 
+	  'name,description,sysobjectid,manufacturer,info', 
+	  'name,description,manufacturer', 
+	  'name:Name,description:Description,sysobjectid:System ID,manufacturer:Manufacturer,info:Comments',
+	  '',
+	  'manufacturer:Entity', 
+	  'devices:Device:productname:{on_delete=>"restrict"}', 
+	  '0', 
+	  'Product Names');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('Product_history', 
+	  'modified', 
+	  'name,description,manufacturer,info,modified,modifier', 
+	  'modified,modifier,name,description,manufacturer', 
+	  'name:Name,description:Description,manufacturer:Manufacturer,info:Comments,modified:Modified on,modifier:Modified by',
+	  '',
+	  'manufacturer:Entity', 
+	  '', 
+	  '0', 
+	  '');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RR', 
+	    'name',
+	    'zone,origin,name,type,data,ttl,active,contactlist', 
+	    'zone,origin,name,type', 
+	    'zone:Zone,origin:Origin,name:Name,type:Type,data:Data,ttl:TTL,active:Active?,contactlist:ContactList', 
+	    '',
+	    'zone:Zone,type:RRType,contactlist:ContactList',
+	    'ips:RRIp:rr', 
+	    '0', 
+	    'DNS Resource Record');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RRType', 
+	    'name',
+	    'name,info', 
+	    'name',
+	    'name:Name,info:Comments', 
+	    '',
+	    '', 
+	    'rrs:RR:type:{on_delete=>"restrict"},', 
+	    '0', 
+	    'Resource Record Type');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+    VALUES ('RRIp', 
+	    'rr,ip',
+	    'rr,ip', 
+	    'rr,ip',
+	    'rr:Resource Record,ip:IP Address', 
+	    '',
+	    'rr:RR,ip:Ip', 
+	    '', 
+	    '1', 
+	    'RR to IP join table');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Service', 
@@ -460,25 +606,26 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '',
 	  'Ips:IpService:service', 
 	  '0', 
-	  'An Internet service running on a host');
+	  'An Internet service');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Site', 
 	  'name', 
-	  'name,aliases,street1,street2,pobox,city,state,zip,country,availability,contactlist,info', 
-	  'name,street1,city', 
-	  'name:Name,aliases:Aliases,street1:Street (1),street2:Street (2),pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact Group,info:Comments',
+	  'name,siteid,aliases,street1,street2,pobox,city,state,zip,country,availability,contactlist,info', 
+	  'name,siteid,street1,city', 
+	  'name:Name,siteid:Site ID,aliases:Aliases,street1:Street (1),street2:Street (2),pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact Group,info:Comments',
 	  '',
 	  'availability:Availability,contactlist:ContactList', 
-	  'nearconnections:Connection:nearend,farconnections:Connection:farend,entities:EntitySite:site:{on_delete=>"set-null"},devices:Device:site:{on_delete=>"set-null"},people:Person:location:{on_delete=>"set-null"}', 
+	  'nearconnections:Connection:nearend,farconnections:Connection:farend,entities:EntitySite:site:{on_delete=>"set-null"},devices:Device:site:{on_delete=>"set-null"},people:Person:location:{on_delete=>"set-null"},horizontalcables:HorizontalCable:site', 
 	  '0', 
 	  'A Physical location');
+
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Site_history', 
 	  'modified', 
-	  'name,aliases,street1,street2,pobox,city,state,zip,country,availability,contactlist,info,modified,modifier', 
-	  'modified,modifier,name,street1', 
-	  'name:Name,aliases:Aliases,street1:Address Line 1,street2:Address Line 2,pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact Group,info:Comments,modified:Modified on,modifier:Modified by',
+	  'name,siteid,aliases,street1,street2,pobox,city,state,zip,country,availability,contactlist,info,modified,modifier', 
+	  'modified,modifier,name,siteid,street1', 
+	  'name:Name,siteid:Site ID,aliases:Aliases,street1:Address Line 1,street2:Address Line 2,pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact Group,info:Comments,modified:Modified on,modifier:Modified by',
 	  '',
 	  'availability:Availability,contactlist:ContactList', 
 	  '', 
@@ -491,26 +638,61 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Subnet', 
 	  'address,prefix', 
-	  'address,prefix,description,entity,info', 
-	  'address,prefix,entity,description', 
-	  'address:Address,prefix:Prefix,description:Description,entity:Assigned to,info:Comments',
+	  'address,prefix,ipversion,allocated,description,entity,delegated,info', 
+	  'address,prefix,allocated,entity,description', 
+	  'address:Address,prefix:Prefix,ipversion:IP Version,allocated:Allocated?,delegated:Delegated?,description:Description,entity:Assigned to,info:Comments',
 	  '',
 	  'entity:Entity', 
-	  'ips:Ip:subnet:{on_delete=>"restrict"}', 
+	  'ips:Ip:subnet:{on_delete=>"restrict"},dhcpentries:DHCPScope:subnet:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
 	  '0', 
-	  'A network subnet');
+	  'An IP network subnet');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Subnet_history', 
 	  'modified', 
-	  'address,prefix,description,entity,info,modified,modifier', 
-	  'modified,modifier,address,prefix,entity,description', 
-	  'address:Address,prefix:Prefix,description:Description,entity:Assigned to,info:Comments,modified:Modified on,modifier:Modified by',
+	  'address,prefix,ipversion,allocated,description,entity,delegated,info,modified,modifier', 
+	  'modified,modifier,address,prefix,allocated,entity,description', 
+	  'address:Address,prefix:Prefix,ipversion:IP Version,allocated:Allocated?,delegated:Delegated?,description:Description,entity:Assigned to,info:Comments,modified:Modified on,modifier:Modified by',
 	  '',
 	  'entity:Entity', 
 	  '', 
 	  '0', 
-	  'A network subnet');
+	  '');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
+  VALUES ('SubnetZone', 
+	  'subnet,zone', 
+	  'subnet,zone,', 
+	  'subnet,zone', 
+	  'subnet:Subnet,zone:Zone', 
+	  '', 
+ 	  '1', 
+	  'IP Subnet to DNS Zone join table');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('Vlan', 
+	  'vid', 
+	  'vid,subnet,description,info', 
+	  'vid',
+	  'vid:VLAN ID,subnet:Subnet,description:Description,info:Comments',
+	  '',
+	  'subnet:Subnet', 
+	  'interfaces:InterfaceVlan:vlan', 
+	  '0', 
+	  'A Virtual LAN');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('Zone', 
+	  'mname', 
+	  'mname,rname,serial,refresh,retry,expire,minimum,contactlist,active,reverse,masterserver,info', 
+	  'mname,masterserver',
+	  'mname:Domain Name,rname:Mail Box,serial:Serial,refresh:Refresh,retry:Retry,expire:Expire,minimum:Minimum,contactlist:Contact List,active:Active?,reverse:Reverse?,masterserver:Master Server,info:Comments',
+	  '',
+	  'contactlist:ContactList,masterserver:IpService', 
+	  'records:RR:zone:{on_delete=>"restrict"},subnets:SubnetZone:zone', 
+	  '0', 
+	  'A DNS Zone');
+
 
 $inserttypes
 

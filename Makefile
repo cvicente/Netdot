@@ -1,7 +1,7 @@
 #
 # Netdot Makefile
 #
-PREFIX = /usr/local/httpd/htdocs/netdot
+PREFIX = /usr/local/netdot
 APACHEUSER = apache
 APACHEGROUP = apache
 usage:
@@ -63,7 +63,7 @@ tests:
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi
-	echo $(PREFIX) > .prefix
+	echo $(PREFIX) > ./.prefix
 
 dir:
 	@echo 
@@ -97,6 +97,7 @@ dropdb:
 	cd bin ; make dropdb FMOD=$(FMOD) 
 
 installdb: 
+	echo $(PREFIX) > ./.prefix
 	@echo "Preparing to create netdot database"
 	cd bin ; make installdb FMOD=$(FMOD) 
 

@@ -190,8 +190,8 @@ __END__
      This mimics what several DBs offer, without the need to define it at the DB level, 
      thus losing DB independence.
     
-     The current (0.96) only option is _no_cascade_delete, which is both limited and 
-     nonoptimal, because foreign keys would keep pointing to nonexistent object ids.
+     The current (0.96) only option is no_cascade_delete, which is both limited and 
+     non-optimal, because foreign keys would keep pointing to nonexistent object ids.
 
 =head1 CURRENT AUTHOR
     

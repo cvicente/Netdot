@@ -76,9 +76,9 @@ DB_NETDOT_PASS =  netdot_pass
 ################################################################
 # End of tweakable section
 ################################################################
-install: setup.class.dbi files
+install: files
 
-installdb: initialize.$(DB_TYPE) insert.metadata insert.sample.data setup.class.dbi 
+installdb: initialize.$(DB_TYPE) insert.metadata insert.defaultdata setup.class.dbi 
 
 initialize.Pg: createdb genschema initdb.dba acls
 
@@ -106,8 +106,8 @@ initdb.user:
 insert.metadata:
 	$(PERL) insert-metadata '$(DB_HOME)' '$(DB_DATABASE)' '$(DB_DBA)'
 
-insert.sample.data:
-	$(PERL) ins.sample.data '$(DB_HOME)' '$(DB_DATABASE)' '$(DB_DBA)'
+insert.defaultdata:
+	$(PERL) insert-defaultdata '$(DB_HOME)' '$(DB_DATABASE)' '$(DB_DBA)'
 
 setup.class.dbi:
 	$(PERL) setup-class-dbi '$(DB_TYPE)' '$(DB_DATABASE)' '$(DB_NETDOT_USER)' '$(DB_NETDOT_PASS)'  
@@ -115,9 +115,8 @@ setup.class.dbi:
 
 files:
 	for file in $(FILES); do \
-	    sed -e 's|YOUR-PREFIX|$(PREFIX)|g' \
-		-e 's|^#!.*perl|#!$(PERL)|' \
-		-e "s|use lib[ \t]*[^\$$]netdot.*|use lib \"$(PREFIX)/lib\"; |" \
+	    sed	-e 's|^#PERL|#!$(PERL)|' \
+		-e "s|PREFIX|$(PREFIX)|" \
 		$$file > $$file.tmp ; \
 	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
 	    rm -rf $$file.tmp ; \
