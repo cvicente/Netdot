@@ -10,11 +10,11 @@ $obj = $table->retrieve($args{id});
 # Get some Meta info
 $mi = (Meta->search( name => $args{table} ))[0];
 undef( %linksto );
-map { my($j, $k) = split( /:/, $_ ); $j = lc($j); $linksto{$j} = $k }
-   split( /,/, $mi->linksTo );
+map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
+   split( /,/, $mi->linksto );
 undef( %linksfrom );
 map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
-   split( /,/, $mi->linksFrom );
+   split( /,/, $mi->linksfrom );
 </%perl>
 <p>
 <& header, title=>" $table Details" &>
@@ -26,16 +26,19 @@ map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
 <p> 
 <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
 <tr> 
-<td>id:</td><td><strong><% $obj->id %></strong></td>
+<td bgcolor="#DDDDDD">id:</td><td><strong><% $obj->id %></strong></td>
 </tr>
 %   foreach my $c ($table->columns()){
 %      next if ($c eq 'id');
 %      if (!exists($linksto{$c}) ){
           <tr> 
-	  <td><% $c %>:</td><td><strong><% $obj->$c %></strong></td>
+	  <td bgcolor="#DDDDDD"><% $c %>:</td><td><strong><% $obj->$c %></strong></td>
 	  </tr>
 %      }
 %   }
+<tr> 
+<td align="center" colspan="2" bgcolor="#FFFFFF"><a href="expview.html?$table=<% $table %>&obj=<% $obj %>&edit=1">edit</a></td>
+</tr>
 </table>
 
 %foreach my $fk (keys %linksto){
