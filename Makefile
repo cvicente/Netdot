@@ -24,7 +24,7 @@ help:
 unstable: DST = unstable
 unstable: dir bin html lib doc make
 stable: DST = stable
-stable: dir etc make
+stable: dir bin html lib doc make
 test: DST = /home/netdot/public_html
 test: testing nvtest
 
