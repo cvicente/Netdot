@@ -1,0 +1,65 @@
+<%perl>
+###############################################################################
+# Based on select_query.html w/ some customization.
+###############################################################################
+print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+if ($val =~ /\w+/)
+{
+    if ($val =~ /\w+\s+\w+/)
+    {
+        # if there's more than one word
+        @terms = split /\s+/, $val;
+    }
+    else
+    {
+        $val =~ s/\s+//;
+        push @terms, $val;
+    }
+    
+    print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
+}
+</%perl>
+
+<html>
+<body>
+<script language="JavaScript">
+<!--
+<%perl>
+my $lblField = ($ui->getlabels($table))[0];
+my @results;
+foreach my $term (@terms)
+{
+   push(@results, $table->search($search_field=>$term)); 
+}
+@results = sort { $a->$lblField cmp $b->$lblField } @results;
+
+# Write out javascript code.
+printf("var listdata = new Array();\n");
+printf("listdata.push(new Array(\"\", \"No Matches\"));\n") unless (scalar(@results));
+
+foreach my $res (@results)
+{
+    printf("listdata.push(new Array(\"%s\", \"%s\"));\n", $res->id, $res->$lblField);
+}
+
+printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);
+</%perl>
+-->
+</script>
+</body>
+</html>
+
+<%init>
+my ($ui, @terms, $DEBUG);
+$ui = Netdot::UI->new();
+$DEBUG = 0;
+</%init>
+
+<%args>
+$table => $ARGS{table};
+$field => $ARGS{field};
+$val => $ARGS{crit};
+$search_field => $ARGS{search_field};
+$caller => $ARGS{self};
+</%args>

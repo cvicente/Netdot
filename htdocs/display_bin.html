@@ -1,0 +1,23 @@
+<%perl>
+my $binFile = BinFile->retrieve($id);
+if ($binFile)
+{
+    $r->content_type($binFile->filetype);
+    print($binFile->bindata);
+}
+</%perl>
+
+<%args>
+$id => $ARGS{id};
+</%args>
+
+<%doc>
+Used for displaying binary content. For example, to display an image
+you can:
+    1) Invoke this page directly with an id to display, or;
+    2) Embed a reference to this page in another page, for example:
+       <IMG SRC="display_bin.html?id=4">
+
+This currently assumes "filetype" in the database represents the
+objects mime type.
+</%doc>

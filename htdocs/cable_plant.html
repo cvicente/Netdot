@@ -78,8 +78,18 @@ if(defined($ARGS{_action}))
      <td>
       <table border="0" width="100%">
     <%perl>
+    my @closets;
     my @cables;
-    map { push (@cables, $_) } $o->horizontalcables;
+    map { push (@closets, $_) } $o->closets;
+
+    print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
+    
+    foreach my $closet (@closets)
+    {
+        map { push(@cables, $_) } $closet->horizontalcables;
+    }
+
+    print "cables is <pre>", Dumper(@cables), "</pre><br>" if $DEBUG;
     </%perl>
 
     <tr><td align="left" colspan="5"><% scalar(@cables) %> row(s) returned.</td></tr>
@@ -93,13 +103,10 @@ if(defined($ARGS{_action}))
             <a href="cable_plant.html?id=<% $id %>&cable_sort=type&page_type=<% $page_type %>">Type</a>
         </td>
         <td align="center">
-            <a href="cable_plant.html?id=<% $id %>&cable_sort=floor&page_type=<% $page_type %>">Floor</a>
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=closet&page_type=<% $page_type %>">Closet</a>
         </td>
         <td align="center">
             <a href="cable_plant.html?id=<% $id %>&cable_sort=room&page_type=<% $page_type %>">Room</a>
-        </td>
-        <td align="center">
-            <a href="cable_plant.html?id=<% $id %>&cable_sort=closet&page_type=<% $page_type %>">Closet</a>
         </td>
     </tr>
 
@@ -107,13 +114,17 @@ if(defined($ARGS{_action}))
     $cable_sort = "jackid" if (!defined($cable_sort) || $cable_sort eq "");
     
     my @sorted_cables;
-    if ($cable_sort eq "jackid" || $cable_sort eq "floor" || $cable_sort eq "room" || $cable_sort eq "closet")
+    if ($cable_sort eq "jackid" || $cable_sort eq "room")
     {
         @sorted_cables = sort { $a->$cable_sort cmp $b->$cable_sort } @cables;
     }
     elsif ($cable_sort eq "type")
     {
-       @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
+        @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
+    }
+    elsif ($cable_sort eq "closet")
+    {
+        @sorted_cables = sort { $a->closet->name cmp $b->closet->name } @cables;
     }
     else
     {
@@ -141,28 +152,20 @@ if(defined($ARGS{_action}))
             <% $cable->type ? $cable->type->name : "" %>
 %       }
          </td>
-        
+
         <td align="left">
 %       if ($edit eq "cableinfo") {
-            <input type="text" name="HorizontalCable__<% $cable->id %>__floor" value="<% $cable->floor %>">
+%           $ui->selectLookup(object=>$cable, column=>"closet", lookup=>"Closet");
 %       } else {
-            <% $cable->floor %>
+            <% $cable->closet ? $cable->closet->name : "" %>
 %       }
-        </td>
+         </td>
         
         <td align="left">
 %       if ($edit eq "cableinfo") {
             <input type="text" name="HorizontalCable__<% $cable->id %>__room" value="<% $cable->room %>">
 %       } else {
             <% $cable->room %>
-%       }            
-        </td>
-        
-        <td align="left">
-%       if ($edit eq "cableinfo") {
-            <input type="text" name="HorizontalCable__<% $cable->id %>__closet" value="<% $cable->closet %>">
-%       } else {            
-            <% $cable->closet %>
 %       }            
         </td>
     </tr>
@@ -205,13 +208,33 @@ if(defined($ARGS{_action}))
      <td>
       <table border="0" width="100%">
     <%perl>
-    my @cables;
-    my $siteid = $o->id;
-    my @sites = (BackboneCable->search(startsite=>$id), 
-                 BackboneCable->search(endsite=>$id));
-                 
-    map { push (@cables, $_) } @sites;
+    my (@c1, @c2, @closets, @cables, @floors, %s);
+    
+    @floors = Floor->search(site=>$id); # all floors for site ...
 
+    print "floors: <pre>", Dumper(@floors), "</pre><br>" if $DEBUG;
+    
+    # ... and all closets for floor
+    foreach my $floor (@floors)
+    {
+        map { push (@c1, $_) } $floor->closets;
+    }
+
+    # Because we are storing both a floor (which has the site), and the
+    # site in our Closet table we need to check both places.
+    @closets = grep(!$s{$_}++, (@c1, Closet->search(site=>$id)));
+
+    print "closets: <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
+
+    # and finally all BackboneCables that either start or end
+    # at one of these closets..
+    foreach my $closet (@closets)
+    {
+        my $c_id = $closet->id;
+        map { push (@cables, $_) } (BackboneCable->search(start_closet=>$c_id),
+                                    BackboneCable->search(end_closet=>$c_id));
+    }
+    
     printf("cables returned: %s\n", scalar(@cables)) if $DEBUG;
     </%perl>
 
@@ -226,10 +249,10 @@ if(defined($ARGS{_action}))
             <a href="cable_plant.html?id=<% $id %>&cable_sort=type&page_type=<% $page_type %>">Type</a>
          </td>
         <td align="center">
-            <a href="cable_plant.html?id=<% $id %>&cable_sort=startsite&page_type=<% $page_type %>">Start Site</a>
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=start_closet&page_type=<% $page_type %>">Start Closet</a>
         </td>
         <td align="center">
-            <a href="cable_plant.html?id=<% $id %>&cable_sort=endsite&page_type=<% $page_type %>">End Site</a>
+            <a href="cable_plant.html?id=<% $id %>&cable_sort=end_closet&page_type=<% $page_type %>">End Closet</a>
         </td>
         <td align="center">
             <a href="cable_plant.html?id=<% $id %>&cable_sort=owner&page_type=<% $page_type %>">Owner</a>
@@ -247,13 +270,13 @@ if(defined($ARGS{_action}))
     {
         @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
     }
-    elsif ($cable_sort eq "startsite")
+    elsif ($cable_sort eq "start_closet")
     {
-        @sorted_cables = sort { $a->startsite->name cmp $b->startsite->name } @cables;
+        @sorted_cables = sort { $a->start_closet->name cmp $b->start_closet->name } @cables;
     }
-    elsif ($cable_sort eq "endsite")
+    elsif ($cable_sort eq "end_closet")
     {
-        @sorted_cables = sort { $a->endsite->name cmp $b->endsite->name } @cables;
+        @sorted_cables = sort { $a->end_closet->name cmp $b->end_closet->name } @cables;
     }
     elsif ($cable_sort eq "owner")
     {
@@ -288,17 +311,17 @@ if(defined($ARGS{_action}))
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$cable, column=>"startsite", lookup=>"Site");
+%           $ui->selectLookup(object=>$cable, column=>"start_closet", lookup=>"Closet");
 %       } else {
-            <% $cable->startsite ? $cable->startsite->name : "" %>
+            <% $cable->start_closet ? $cable->start_closet->name : "" %>
 %       }
         </td>
 
         <td align="left">
 %       if ($edit eq "cableinfo") {
-%           $ui->selectLookup(object=>$cable, column=>"endsite", lookup=>"Site");
+%           $ui->selectLookup(object=>$cable, column=>"end_closet", lookup=>"Closet");
 %       } else {
-            <% $cable->endsite ? $cable->endsite->name : "" %>
+            <% $cable->end_closet ? $cable->end_closet->name : "" %>
 %       }
         </td>
 

@@ -1,7 +1,5 @@
 <& index.html, title => "Cable Plant: Backbone", s2name => $s2name  &>
 
-<script language="javascript" src="select.js"></script>
-
 <%perl>
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
@@ -11,7 +9,7 @@ if (defined($ARGS{_action}))
 {
     my %update_info = ();
     
-    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+    print "inserting/updating, ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
     if (!(%update_info = $ui->form_to_db(%ARGS)))
     {
@@ -25,6 +23,8 @@ if (defined($ARGS{_action}))
     {
         $id = $update_info{BackboneCable}{key};
     }
+
+    print "update info is <pre>", Dumper(%update_info), "</pre><br>" if $DEBUG;
     
     # Do this to 'flush' the values associated with the object
     # before redisplaying
@@ -45,12 +45,14 @@ if (defined($ARGS{_action}))
 <table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
  <tr class="rowtitle0" >
     <td align="left">
+%   my $start_site = $o->start_closet->floor->site;
+%   my $end_site = $o->end_closet->floor->site;
         Start:
-        <% $o->startsite ? "<a href=\"cable_plant.html?id=" . $o->startsite->id . "&page_type=BACKBONE\">" . $o->startsite->name . "</a>" 
+        <% $start_site ? "<a href=\"cable_plant.html?id=" . $start_site->id . "&page_type=BACKBONE\">" . $start_site->name . "</a>" 
                          : "<i>undefined</i>" %>
         &nbsp;&nbsp;
         End:
-        <% $o->endsite ? "<a href=\"cable_plant.html?id=" . $o->endsite->id . "&page_type=BACKBONE\">" . $o->endsite->name . "</a>" 
+        <% $end_site ? "<a href=\"cable_plant.html?id=" . $end_site->id . "&page_type=BACKBONE\">" . $end_site->name . "</a>"
                          : "<i>undefined</i>" %>
     </td>
  </tr>
@@ -96,38 +98,23 @@ if (defined($ARGS{_action}))
                 <td>Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
                 <td><input type="text" name="BackboneCable__<% $id %>__installdate" value="<% $o ? $o->installdate : "" %>"></td>
             </tr>
-
-            <tr align="left" valign="top">
-                <td>Number of Strands:</td>
-                <td><input type="text" name="BackboneCable__<% $id %>__numberofstrands" value="<% $o ? $o->numberofstrands : "" %>"></td>
-            </tr>
             </table>
             </td>
             
             <td width="40%">
             <table width="100%" border="0" cellspacing="0" cellpadding="2">
             <tr align="left" valign="top">
-                <td>Start Site: </td>
+                <td>Start Closet: </td>
                 <td>
-%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"startsite", lookup=>"Site");
+%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"start_closet", lookup=>"Closet");
                 </td>
             </tr>
 
             <tr align="left" valign="top">
-                <td>Start Room: </td>
-                <td><input type="text" name="BackboneCable__<% $id %>__startroom" value="<% $o ? $o->startroom : "" %>"></td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td>End Site: </td>
+                <td>End Closet: </td>
                 <td>
-%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"endsite", lookup=>"Site");
+%               $ui->selectLookup(object=>$o, table=>"BackboneCable", column=>"end_closet", lookup=>"Closet");
                 </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td>End Room: </td>
-                <td><input type="text" name="BackboneCable__<% $id %>__endroom" value="<% $o ? $o->endroom : "" %>"></td>
             </tr>
 
             <tr align="left" valign="top">

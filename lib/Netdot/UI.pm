@@ -551,15 +551,11 @@ sub form_to_db
 
 ###############################################################################
 # selectLookup
-#
-# TODO: Be smarter about handeling cases when lookup object might be foreign
-#       key to some other table. Need to check for a link and use the label
-#       from that table instead.
 ###############################################################################
 sub selectLookup
 {
     my ($self, %args) = @_;
-    my ($object, $table, $column, $lookup, $default) = 
+    my ($o, $table, $column, $lookup, $default) = 
                                               ($args{object}, 
                                               $args{table}, 
                                               $args{column}, 
@@ -567,26 +563,20 @@ sub selectLookup
                                               $args{default});
 
     my $lblField = ($self->getlabels($lookup))[0];
-    
-    #my %linksto = $self->getlinksto($lookup);
-    #if ($linksto{$lblField})
-    #{
-    #    $lookup = $linksto{$lblField};
-    #    $lblField = ($self->getlabels($lookup))[0];
-    #}
-
+    my %linksto = $self->getlinksto($lookup);
+    my $rLblField = ($self->getlabels($lblField))[0] if ($linksto{$lblField});
     my @fo = $lookup->retrieve_all();
     @fo = sort { $a->$lblField cmp $b->$lblField } @fo;
 
     # if an object was passed we use it to obtain table name, id, etc
     # as well as add an initial element to the selection list.
-    if ($object)
+    if ($o)
     {
-        printf("<SELECT NAME=\"%s__%s__%s\">\n", $object->table, $object->id, $column);
-        if ($object->$column)
+        printf("<SELECT NAME=\"%s__%s__%s\">\n", $o->table, $o->id, $column);
+        if ($o->$column)
         {
-            printf("<OPTION VALUE=\"%s\" SELECTED>%s</OPTION>\n", $object->$column->id,
-                                                                  $object->$column->$lblField);
+            printf("<OPTION VALUE=\"%s\" SELECTED>%s</OPTION>\n", $o->$column->id,
+                  ($rLblField ? $o->$column->$lblField->$rLblField : $o->$column->$lblField));
         }
 
         else
@@ -612,8 +602,9 @@ sub selectLookup
 
     foreach my $fo (@fo)
     {
-        next if ($object && $object->$column && ($fo->id == $object->$column->id));
-        printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $fo->id, $fo->name);
+        next if ($o && $o->$column && ($fo->id == $o->$column->id));
+        printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $fo->id, 
+              ($rLblField ? $fo->$lblField->$rLblField : $fo->$lblField));
     }
 
     printf("<OPTION VALUE=\"0\">[null]</OPTION>\n");
@@ -630,13 +621,13 @@ sub selectLookup
 sub radioGroupBoolean
 {
     my ($self, %args) = @_;
-    my ($object, $table, $column) = ($args{object}, $args{table}, $args{column});
-    my $tableName = ($object ? $object->table : $table);
-    my $id = ($object ? $object->id : "NEW");
-    my $value = ($object ? $object->$column : "");
+    my ($o, $table, $column) = ($args{object}, $args{table}, $args{column});
+    my $tableName = ($o ? $o->table : $table);
+    my $id = ($o ? $o->id : "NEW");
+    my $value = ($o ? $o->$column : "");
     my $name = $tableName . "__" . $id . "__" . $column;
     
-    die("Error: Unable to determine table name. Please pass valid object and/or table name.\n") unless ($object || $table);
+    die("Error: Unable to determine table name. Please pass valid object and/or table name.\n") unless ($o || $table);
 
     printf("<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"1\" %s>Yes &nbsp;&nbsp;\n", $name, ($value ? "CHECKED" : ""));
     printf("<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"0\" %s>No\n", $name, (!$value ? "CHECKED" : ""));

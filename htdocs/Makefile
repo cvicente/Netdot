@@ -1,7 +1,7 @@
 #
 # makefile for htdocs
 
-FILES = index.html browse.html edit.html search.html view.html delete.html search_obj.html form sortresults header footer table style.css style-gray.css style-blue.css style-uo.css device.html device-ws.html error custom edit_html select.js select_query.html section1 section2
+FILES = index.html browse.html edit.html search.html view.html delete.html search_obj.html form sortresults header footer table style.css style-gray.css style-blue.css style-uo.css device.html device-ws.html error custom edit_html select.js select_query.html section1 section2 section_cable.mas cable_plant.html cable_backbone.html cable_horizontal.html cable_strand.html dynamic_list.js dynamic_list_query.html display_bin.html
 IMG = title.jpg
 
 all:  images
