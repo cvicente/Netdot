@@ -3,6 +3,12 @@ unless ( $ARGS{table} && $ARGS{id} ){
    print "<strong>Missing required parameters 'table' and/or 'id'</strong>";
    exit;
 }
+</%perl>
+%if ( $ARGS{cancel} eq 'Cancel' ){
+    <& expview.html, table => $ARGS{table}, id => $ARGS{id} &>
+%   exit;
+%}
+<%perl>
 $table = $ARGS{table};
 my $obj = $table->retrieve($ARGS{id});
 foreach my $j (keys %ARGS){
@@ -15,25 +21,6 @@ unless (scalar keys(%arg)){
    print "<strong>Missing update parameters</strong>";
    exit;
 }
-# Get some Meta info
-$mi = (Meta->search( name => $table ))[0];
-undef( %linksto );
-map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
-   split( /,/, $mi->linksto );
-undef( %linksfrom );
-map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
-   split( /,/, $mi->linksfrom );
-my $i = 1;
-undef( %order );
-if( defined( $mi->columnorder ) ) {
-   map { $order{$_} = $i++; } split( /,/, $mi->columnorder );
-} else {
-   $order{"id"} = $i++;
-   foreach ( sort { $a cmp $b } $mi->name->columns() ) {
-      next if( $_ eq "id" );
-      $order{$_} = $i++;
-   }
-}
 foreach my $col (keys %arg){
    if ($arg{$col} ne $obj->$col){
       $obj->set($col, $arg{$col});
@@ -43,44 +30,7 @@ foreach my $col (keys %arg){
 $obj->update;
 </%perl>
 
-<& header, title => "Updated \'$table\' object"  &>
-<p>
-
-<p>Updated object '<% $ARGS{id} %>' of table '<% $table %>' with the following values:
-<p>
-<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
-%foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%   next if (!exists ($upd{$c}));
-%   if (!exists($linksto{$c}) ){  # The column is 'local'
-       <tr> 
-       <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-       <td><% $arg{$c} %></td>
-       </tr>
-%   } else {
-         <tr>
-	 <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-	 <td>
-%         my $t = (Meta->search( name => $linksto{$c} ))[0];
-%         if( ! defined( $t ) ) {
-            No <% $linksto{$c} %> in Meta table
-%         } elsif( $obj->$c->id == 0 ) {
-	    -
-%         } else {
-%           my $lbl = $t->label;
-	    <% $obj->$c->$lbl %>
-	    </td></tr>        
-%        } 
-
-%   }
-
-%}
-</table>
-
-<p><br>
-Return to <a href="expview.html?table=<% $table %>&id=<% $ARGS{id} %>">this <% $table %></a>
-
-<p><br>
-<& footer &>
+<& expview.html, table => $ARGS{table}, id => $ARGS{id} &>
 
 <%init>
 use lib "/home/netdot/public_html/lib";
