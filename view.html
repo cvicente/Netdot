@@ -102,24 +102,50 @@ my $h_meta = $gui->getmeta($h_table);
     <tr><td>
      <font size="-1">
       <table border="0" cellspacing="0" cellpadding="1" bgcolor="#FFFFFF" width="100%" class="tablebackground">
-        <tr class="rowtitle0"><td bgcolor="#DDDDDD" class="rowtitle0"><strong>View</strong></td></tr>
-	<tr class="rowtitle1"><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">all</td></tr>
-	<tr class="rowtitle1"><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $table %>"><% lc($table) %></a></td></tr>
+        <tr class="rowtitle0">
+           <td bgcolor="#DDDDDD" class="rowtitle0">
+              <strong>View</strong>
+           </td>
+        </tr>
+	<tr class="rowtitle1">
+           <td>
+              <font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">all
+           </td>
+        </tr>
+	<tr class="rowtitle1">
+           <td>
+              <font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $table %>"><% lc($table) %></a>
+           </td>
+        </tr>
 
 %	foreach my $i (keys %ftables){
 %           if ($ftables{$i}{robjs}){
-              <tr class="rowtitle1"><td colspan="2"><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>"><% $i %></a></td></tr>
+              <tr class="rowtitle1">
+                 <td colspan="2">
+                    <font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>"><% $i %></a>
+                 </td>
+              </tr>
 %	   }  
 %	}
 %	  if ( defined($h_meta) ){  # only if there's a history table.
-   	     <tr class="rowtitle1"><td><font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a></td></tr>
+   	     <tr class="rowtitle1">
+                <td>
+                   <font color="#FF0000">&gt;</font> <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a>
+                </td>
+             </tr>
 %	  }
 %	  if (scalar keys %ftables){
-            <tr class="rowtitle0"><td bgcolor="#DDDDDD" class="rowtitle0"><strong>Add to this <% $table %>:</strong></td></tr>
-%	      foreach my $i (keys %ftables){
-	        <tr class="rowtitle1">
-	          <td><font color="#FF0000">&gt;</font> <a href="create.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>"><% $i %></a></td>
-	        </tr>
+            <tr class="rowtitle0">
+               <td bgcolor="#DDDDDD" class="rowtitle0">
+                  <strong>Add to this <% $table %>:</strong>
+               </td>
+            </tr>
+%	    foreach my $i (keys %ftables){
+	       <tr class="rowtitle1">
+	          <td>
+                     <font color="#FF0000">&gt;</font> <a href="create.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>"><% $i %></a>
+                  </td>
+	       </tr>
 %	      }
 %         }  
       </table>
@@ -133,23 +159,24 @@ my $h_meta = $gui->getmeta($h_table);
   <td width="100%" align="center" valign="top">
 
 %if ($view eq 'all' || $view eq "$table"){
-    <table cellpadding="1" cellspacing="1" border="0" bgcolor="CCCCCC" width="80%" class="tablebackground">
+   <table cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC" width="80%" class="tablebackground">
       <tr>
-        <td colspan="2">
-         <table border="0" width="100%" class="tabletitle">
-          <tr class="tabletitle">
-           <td align="left" width="20%">&nbsp;</td>
-           <td align="center" width="60%"><strong><% $table %></strong></td>
-           <td align="right" width="20%">
-%	    if ($table !~ /_history/){
-	      [<a href="update.html?table=<% $table %>&id=<% $obj %>">edit</a>] 
-%	    }
-	    [<a href="delete.html?table=<% $table %>&id=<% $obj %>">delete</a>]
-	   </td>
-          </tr>
-         </table>
-        </td>
+         <td colspan="2">
+            <table border="0" cellspacing="0" cellpadding="0" width="100%" class="tablebackground">
+            <tr class="tabletitle">
+               <td align="left" width="20%">&nbsp;</td>
+               <td align="center" width="60%"><strong><% $table %></strong></td>
+               <td align="right" width="20%">
+%	          if ($table !~ /_history/){
+	             [<a href="update.html?table=<% $table %>&id=<% $obj %>">edit</a>] 
+%	          }
+	          [<a href="delete.html?table=<% $table %>&id=<% $obj %>">delete</a>]
+	       </td>
+            </tr>
+            </table>
+         </td>
       </tr>
+      <tr><td colspan="2" class="delimiter"></td>
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %      next if ($c eq 'id' || $c eq 'aliases');
        <tr> 
@@ -162,7 +189,7 @@ my $h_meta = $gui->getmeta($h_table);
 	         <td><strong>no</strong></td>
 %	      }
 %	   }else{
-	      <td class="column2"><strong><% $obj->$c %></strong></td>
+	      <td class="column2a"><strong><% $obj->$c %></strong></td>
 %	   }
 %      }else{
          <td align="left" valign="bottom">
@@ -183,7 +210,7 @@ my $h_meta = $gui->getmeta($h_table);
 %     if ( $ftables{$i}{robjs} ){
 %      if ( ($view eq 'all' || $view eq $i ) && $view ne "$table"){
             <p>
-            <table cellpadding="0" border="0"  bgcolor="#CCCCCC" width="80%">
+            <table cellpadding="0" border="0"  bgcolor="#CCCCCC" width="80%" class="tablebackground">
 	       <tr>
                  <td align="left"><strong><% $i %></strong></td>
 	       <tr>
@@ -221,6 +248,9 @@ my $gui = Netdot::GUI->new();
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.22  2003/07/10 23:22:57  netdot
+#  Added more css tags and massaged formatting -jkm
+#
 #  Revision 1.21  2003/07/10 21:48:45  netdot
 #  Removed some table rows
 #
