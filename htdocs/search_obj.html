@@ -59,8 +59,9 @@ foreach my $j (keys %ARGS){
 		      <td class="formtablec2">
 			 <select name="<% $c %>">
 			   <option></option> 
-%			   my @fkobjs = $linksto{$c}->retrieve_all; 
-%			   foreach my $fkobj (@fkobjs){
+%			   my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];	  
+%			   my @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } $linksto{$c}->retrieve_all; 
+%			   foreach my $fkobj ( @fkobjs ) {
 			       <option value="<% $fkobj->id %>"><% $gui->getobjlabel($fkobj, ", ") %></option>
 %			   }
 			 </select>

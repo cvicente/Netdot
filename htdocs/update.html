@@ -54,7 +54,8 @@ unless ( $obj ){
 %	  unless ( ref($obj->$c) ){
 %	     die "$c is not a FK of Node";
 %	  }
-%	  my @fkobjs = $linksto{$c}->retrieve_all;
+%         my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];	  
+%	  my @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } $linksto{$c}->retrieve_all; 
 %         if( !$obj-$c || !defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) {
 %	     foreach my $fkobj (@fkobjs){
 %	        my $lbl = $gui->getobjlabel($fkobj, ", ");
