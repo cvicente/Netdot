@@ -52,7 +52,7 @@ if( defined( $args{sid} ) ) {
 }
 
 ##################################################
-if( $DEBUG ) {
+if( $DEBUG && 0 ) {
   print "ARGS: ";
   printf "<pre>%s</pre>\n", Dumper( \%ARGS );
   print "SESSION: ";
@@ -138,27 +138,28 @@ if( exists( $args{id} ) ) {
   $ID = $session->{tables}{$TBL}{id}
 }
 if( $ID ) {
-  $OBJ = $TBL->retrieve($ID);
+  if( $TBL ) {
+    $OBJ = $TBL->retrieve($ID); 
+  } elsif( $args{confirm} eq "Confirm" && $args{create} ) {
+    $OBJ = $args{create}->retrieve($ID);
+  }
 }
 
 ##################################################
 # if confirm, handle here
 if( $args{confirm} eq "Confirm" ) {
-  my( $T, $msg, $r );
+  my( $T, $r );
   $T = $args{create};
-  if( $ID ) {  # we're updating an object
-    print "Performing $T update\n";
+  if( $OBJ && ( ! $TBL || $T eq $TBL ) ) {  # we're updating an object
     $r = $gui->update( object => $OBJ, state => \%{ $session->{tables}{$T} } );
-    $msg = "Unable to edit $T" if( ! $r );
   } else {
-    print "Performing $T insert\n";
     $r = $gui->insert( table => $T, state => \%{ $session->{tables}{$T} } );
-    $msg = "Unable to create $T" if( ! $r );
   }
-  print "$T r: $r \n";
-  print $gui->error, "\n";
+#  print "$T : $TBL ; $r : $ID \n";
+#  print $gui->error, "\n";
   if( ! $r ) {
-    die "$msg : $r : $ID: ", $gui->error;
+    my $err = $gui->error;
+    die "Error: $err";
   }
   delete( $session->{tables}{ $args{create} } );
   if( length( $session->{path} ) < 1 && ! defined( $TBL ) ) {
@@ -166,12 +167,20 @@ if( $args{confirm} eq "Confirm" ) {
       $gui->rmsession( $session );
     }
   }
-  $ID = $r;
-  $session->{created}{$T} = $ID;
+  $session->{created}{$T} = $r;
+  ################################################
+  # reset ID and OBJ if appropriate (ie. no more edit/creates left)
+  if( ! $TBL || $args{cancel} ) {
+    $ID = $r;
+    $OBJ = $T->retrieve($ID);
+  } else {
+    undef( $ID );
+  }
 }
 
 ##################################################
 # create %state to pass to form
+# only if ID not set since we want form component to fill that in
 if( defined( $TBL ) && ! defined( $ID ) ) {
   my $meta = $gui->getmeta( $TBL );
   my %lt = $gui->getlinksto( $TBL );
@@ -200,7 +209,7 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
 
 % ####################################################################
 % if( $DEBUG ) {
-    tables : TBL <% $TBL %> ; table <% $args{table} %><br>
+    table : <% $args{table} %> ; TBL : <% $TBL %><br>
     id : <% $ID %><br>
     PREV : <% $PREV %> <br>
     ARGS :
@@ -215,9 +224,10 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
     <& view.html, table => $args{create}, id => $ID &>
 % } else {
 % ################################################
+% # Header
 %   if( $args{submit} eq "Submit" ) {
       <& header, title => "Confirm: $TBL" &>
-%   } elsif( $ID ) {
+%   } elsif( $OBJ ) {
 %     my $labelstr = $gui->getobjlabel($OBJ, ", ");
       <& header, title => "Edit: $TBL: $labelstr" &>
 %   } else {
@@ -226,6 +236,7 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
     <!-- begin edit.html -->
     <p>
 % ####################################################################
+% # Confirm Submission
 %   if( $args{"submit"} eq "Submit" ) {
       <p>Please confirm the following:
 %     my $obj = $gui->getmeta( $TBL );
@@ -262,7 +273,7 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
       <input type="hidden" name="create" value="<% $TBL %>">
 %     if( $ID ) {
       <input type="hidden" name="id" value="<% $ID %>">
-%     } 
+%     }
       <input name="confirm" value="Confirm" type="submit">
       <input name="cancel" value="Cancel" type="submit">
       </form>
@@ -324,7 +335,6 @@ $PREV => undef
 $ID => undef
 $OBJ => undef
 $sid => undef
-$nv => undef
 $TMP => "/home/netdot/public_html/tmp"
 $AGE => 86400
 $WIDTH => 2
@@ -372,11 +382,30 @@ edit.html
     user clicks on cancel; clear all state
 
     - submit
-    if this is the last table, goto confirm page; otherwise, go to 
-    last edited table
+    Table has been submitted to be added/updated; go to Confirm page.
 
     - confirm
-    user clicked on confirm; submit changes to DB; pop table from 
-    sessionpath for table to go back to.
+    User has confirmed instance to be submitted; submit changes to DB;
+    pop table from sessionpath for table to go back to (if necessary).
+
+  Variables:
+
+    $PREV - name of previously viewed/edited table
+    $TBL  - name of current table
+    $ID   - integer for specific row in table $TBL
+            Used to determine when we are editing a table
+    $OBJ  - the object instantiation of $ID in $TBL
+    $sid  - session id; cookie to get back state as we go through several 
+            web pages.  Peformed using Apache::Session::File
+    $TMP  - where Apache::Session::File should store its lock and state files
+    $AGE  - maximum age of said files
+    $WIDTH - number of columns to be displayed in default state
+    $session - object holding state
+    $gui  - instantiation of Netdot::GUI
+    %args - parts of %ARGS I want 
+    %order - hash of column -> rank to list tables in
+    %linksto - hash of column -> Table listings of current table
+               which columns point to other tables
     
+    $DEBUG - whether to show debug information
 </%doc>
