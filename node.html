@@ -26,9 +26,8 @@ if( exists( $args{insert} ) ) {
     $tmp{physaddr} = $node{dot1dBaseBridgeAddress};
     $tmp{type} = "0";   # maybe tmp; can't be null
     $tmp{device} = "0"; # same
-    Node->create( \%tmp );
-    my $nodeid = (Node->search( name => "$args{node}" ))[0];
-    $inserted = $nodeid->id;
+    my $newnode = Node->create( \%tmp );
+    $inserted = $newnode->id;
     foreach my $int ( keys %{ $node{interface} } ) {
       my $skip = 0;
       foreach my $rsv ( @ifrsv ) {
@@ -36,7 +35,7 @@ if( exists( $args{insert} ) ) {
       }
       next if( $skip );
       undef( %tmp );
-      $tmp{node} = $nodeid;
+      $tmp{node} = $newnode->id;
       $tmp{ifdescr} = $int;
       $tmp{physaddr} = $node{interface}{$int}{ifPhysAddress};
       $tmp{ifIndex} = $node{interface}{$int}{instance};
@@ -46,7 +45,16 @@ if( exists( $args{insert} ) ) {
       $tmp{ifspeed} = $node{interface}{$int}{ifSpeed};
       $tmp{ifadminstatus} = $node{interface}{$int}{ifAdminStatus};
       $tmp{managed} = "0";
-      Interface->create( \%tmp );
+      my $i = Interface->create( \%tmp );
+      if( exists( $node{interface}{$int}{ipAdEntIfIndex} ) ) {
+         undef( %tmp );
+         foreach my $ip ( keys %{ $node{interface}{$int}{ipAdEntIfIndex} } ) {
+            $tmp{interface} = $i->id;
+            $tmp{address} = $ip;
+            $tmp{mask} = $node{interface}{$int}{ipAdEntIfIndex}{$ip};
+            my $ip = Ip->create( \%tmp );
+         }
+      }
     }
     $gui->rmsession( $session );
   }
@@ -126,6 +134,9 @@ Node discovery & updates
 
 ######################################################################
 #  $Log: node.html,v $
+#  Revision 1.13  2003/07/08 22:44:01  netdot
+#  added code to insert ip addresses
+#
 #  Revision 1.12  2003/07/03 23:24:04  netdot
 #  *** empty log message ***
 #
