@@ -19,7 +19,7 @@ DMOD = 0775
 FMOD = 0644
 XMOD = 0744
 PERL = `which perl`
-DIR = bin doc htdocs lib
+DIR = bin doc htdocs lib/Netdot
 
 .PHONY: tests bin doc htdocs lib
 
@@ -61,7 +61,7 @@ doc:
 	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
 
 lib:
-	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
+	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR="$@/Netdot"
 
 bin: 
-	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) 
+	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) 

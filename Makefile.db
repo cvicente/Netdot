@@ -2,10 +2,8 @@
 # NetDoT Makefile
 #
 
-PERL                    =       /usr/local/bin/perl
-NETDOT_PATH             =       /usr/local/netdot
-
-
+PERL    =  `which perl`
+PREFIX  =  /usr/local/httpd/htdocs/netdot
 
 #################################################################
 # Database setup
@@ -16,13 +14,13 @@ NETDOT_PATH             =       /usr/local/netdot
 # "mysql" is known to work.
 # "Pg" is known to work
 
-DB_TYPE                 =       mysql
+DB_TYPE =  mysql
 
 # DB_HOME is where the Database's commandline tools live.  $DB_HOME/bin
 # should contain the binaries themselves, e.g. if "which mysql" gives
 # "/usr/local/mysql/bin/mysql", $DB_HOME should be "/usr/local/mysql"
 
-DB_HOME                 = /usr
+DB_HOME = /usr
 
 # Set DB_DBA to the name of a DB user with permission to create new databases 
 # Set DB_DBA_PASSWORD to that user's password (if you don't, you'll be prompted
@@ -31,21 +29,21 @@ DB_HOME                 = /usr
 # For mysql, you probably want 'root'
 # For Pg, you probably want 'postgres' 
 
-DB_DBA                  =       root
-DB_DBA_PASSWORD         =       
+DB_DBA          =  root
+DB_DBA_PASSWORD =       
  
 #
 # Set this to the Fully Qualified Domain Name of your database server.
 # If the database is local, rather than on a remote host, using "localhost" 
 # will greatly enhance performance.
 
-DB_HOST                 =       localhost
+DB_HOST =  localhost
 
 # If you're not running your database server on its default port, 
 # specifiy the port the database server is running on below.
 # It's generally safe to leave this blank 
 
-DB_PORT                 =       
+DB_PORT =       
 
 #
 # Set this to the canonical name of the interface NetDoT will be talking to the 
@@ -55,21 +53,21 @@ DB_PORT                 =
 # to grant those database rights by hand.
 #
 
-DB_NETDOT_HOST              =       localhost
+DB_NETDOT_HOST =  localhost
 
 # set this to the name you want to give to the NetDoT database in 
 # your database server. 
 
-DB_DATABASE             =       netdot
+DB_DATABASE =  netdot
 
 # Set this to the name of the netdot database user
 
-DB_NETDOT_USER              =       netdot_user
+DB_NETDOT_USER =  netdot_user
 
 # Set this to the password used by the NetDoT database user
 # *** Change This Before Installation***
 
-DB_NETDOT_PASS              =       netdot_pass
+DB_NETDOT_PASS =  netdot_pass
 
 
 ################################################################
@@ -109,3 +107,5 @@ insert.sample.data:
 
 setup.class.dbi:
 	./setup-class-dbi
+	install -m $(FMOD) DBI.pm $(PREFIX)/lib/Netdot/DBI.pm
+
