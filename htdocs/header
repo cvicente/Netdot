@@ -21,7 +21,7 @@
 
 </head>
 
-<script language="javascript" src="dynamic_list.js"></script>
+<script language="JavaScript" src="dynamic_list.js"></script>
 
 <body class="bodytag">
 
@@ -65,11 +65,13 @@
                             </td>
                             <td align="center">
                               <font color="000000" class="utilityfont">
-                              <% $user %>
+%                             if ($currentUser) {
+                              <% $currentUser->getUsername() %>
+%                             }
                               </font>
 	                    </td>
 			    <td align="center">
-			      <!-- <font color="000000" class="utilityfont">[<a href="logout.html" class="utilityfont">logout</a>]</font> -->
+			        &nbsp;&nbsp;&nbsp; [<a href="logout.html">logout</a>]
 			    </td>
                           </tr>
                         </table>
@@ -102,9 +104,9 @@
 
 <%args>
 $title => undef
-$user => $ENV{REMOTE_USER}
 </%args>
 
 <%init>
 my $ui = Netdot::UI->new();
+my $currentUser = SiteControl::AccessController::getCurrentUser($r);
 </%init>

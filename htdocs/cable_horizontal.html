@@ -1,11 +1,13 @@
-<& index.html, title => "Cable Plant: Horizontal", s2name => $s2name  &>
+<& index.html, title => "Cable Plant: Horizontal", s2name => $s2name &>
+
+<script language="JavaScript" src="select.js"></script>
 
 <%perl>
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}))
+if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE")
 {
     my %update_info = ();
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -30,7 +32,23 @@ if (defined($ARGS{_action}))
         $site = $o->closet->site;
         $edit = undef;
     }
-}  
+}
+
+elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_INTERFACE")
+{
+    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+    my @interfaces = @{$ARGS{interfaces}};
+    my ($int_obj, %tmp_int);
+    $tmp_int{jack} = $id;
+
+    foreach my $int (@interfaces)
+    {
+        $int_obj = Interface->retrieve($int);
+        $tmp_int{id} = $int;
+        die ("Error: " . $ui->error) if (!($ui->update(object=>$int_obj, state=>\%tmp_int)));
+    }
+}
+
 # end insertion/update code
 # -----------------------------------------------------------------------------
 </%perl>
@@ -132,7 +150,7 @@ LIST_MANAGER.addList(closetSearchList);
             </tr>
             </table>
             </td>
-            
+
             <td width="40%">
             <table width="100%" border="0" cellspacing="0" cellpadding="2">
             <tr align="left" valign="top">
@@ -143,7 +161,8 @@ LIST_MANAGER.addList(closetSearchList);
                     &nbsp;<select name="closet_srch" onChange="closetSearchList.doIt();" style="width: 150px;">
                     <option value="">Lookup by Site</option>
                     <%perl>
-                    my @sites = Site->retrieve_all({"order_by"=>"name"});
+                    my @sites = Site->retrieve_all();
+                    @sites = sort { $a->name cmp $b->name } @sites;
                     foreach my $s (@sites)
                     {
                         printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
@@ -220,10 +239,32 @@ LIST_MANAGER.addList(closetSearchList);
 <table border="0" width="95%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
-     <form name="int_form" action="cable_horizontal.html" method="POST">
-     <input type="hidden" name="id" value="<% $id %>">
-     <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
-     <input type="hidden" name="s2name" value="<% $s2name %>">
+    
+    <form name="netdotform" action="cable_horizontal.html" method="POST">
+    <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="_action" value="ADD_INTERFACE">
+    <input type="hidden" name="s2name" value="<% $s2name %>">
+
+    <table border="0" width="100%" class="formtablebg" cellpadding="0" cellspacing="2">
+    <tr align="left" valign="top">
+    <td>
+%       my $srchf = "interface_srch";  # name of the form input tag
+	    <input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;">
+	    &nbsp;<input type="button" name="" value="Lookup" 
+        onClick="sendquery(<% 'interfaces' %>, <% $srchf . '.value' %>, 'Interface')">
+		&nbsp;&nbsp;<select name="interfaces" multiple size="3">
+            <option value="0">[null]</option>
+        </select> &nbsp;<input type="submit" name="add_interfaces" value="Add Interface(s)">
+    </td>
+    </tr>
+    </table>
+    </form>
+
+    
+    <form name="int_form" action="cable_horizontal.html" method="POST">
+    <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="_action" value="UPDATE">
+    <input type="hidden" name="s2name" value="<% $s2name %>">
 
     <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
     <tr class="formtabletitle">
@@ -236,7 +277,6 @@ LIST_MANAGER.addList(closetSearchList);
             <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
 %	 } else {
             <td width="10%" align="right">
-                <a href="interface.html?id=NEW">[new]</a> &nbsp;||&nbsp;
                 <a href="cable_horizontal.html?id=<% $id %>&edit=intinfo#interface">[edit]</a>
             </td>
 %	 }
@@ -320,6 +360,12 @@ LIST_MANAGER.addList(closetSearchList);
     </tr>
 %   }
 %}
+    <tr align="left" valign="top">
+        <td align="left" colspan="4">
+
+        </td>
+    </tr>
+
     </table>
     </td>
     </tr>

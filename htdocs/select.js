@@ -6,17 +6,24 @@
 //   * val:   the search criteria
 //   * tablename
    var wind;
-   function sendquery(field, val, tablename){
+   function sendquery(field, val, tablename, formname){
       var url = "select_query.html?table="+tablename+"&crit="+val+"&field="+field.name;
+      if (formname)
+        url += "&form_name=" + formname;
+
       wind = window.open(url, "tmp", "width=1,height=1");
    }
-   function getlist(field){
+   function getlist(field, form_name){
       var len = wind.document.forms[0].length;
-      document.netdotform[field].options.length = 0;     
+
+      if (!form_name)
+        form_name = "netdotform";
+
+      document.forms[form_name][field].options.length = 0;     
       for (var i = 0; i < len; i++){
-        document.netdotform[field].options[i] = new Option();
-        document.netdotform[field].options[i].value = wind.document.forms[0].elements[i].name;
-        document.netdotform[field].options[i].text  = wind.document.forms[0].elements[i].value;
+        document.forms[form_name][field].options[i] = new Option();
+        document.forms[form_name][field].options[i].value = wind.document.forms[0].elements[i].name;
+        document.forms[form_name][field].options[i].text  = wind.document.forms[0].elements[i].value;
       } 
       wind.close();
    }

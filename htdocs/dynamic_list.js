@@ -12,8 +12,9 @@ function DynamicList(form, self, db_field, db_table, parent)
     this.m_self = self;
     this.m_dbField = db_field;
     this.m_dbTable = db_table;
-    this.m_wind = null;
     this.m_parent = parent;
+    this.m_wind = null;
+    this.m_queryURL = "dynamic_list_query.html";
 
     // store additional args as dependencies
     this.m_deps = new Array();
@@ -36,7 +37,7 @@ DynamicList.prototype.doIt = function()
     var values = new String();
 
     // If our selected index is not set, nothing is selected so
-    // we try and grab every potential value from our selection list.
+    // we try and grab every potential value from our parent list.
     if ((selectedIdx == -1) || (parent.options[selectedIdx].value == -1))
     {
         for (i = 0; i < parent.options.length; ++i)
@@ -47,7 +48,7 @@ DynamicList.prototype.doIt = function()
 
     // at this point we have a list of values that we seem to care about
     // so we open up a temp window to query the DB. 
-    var url = "dynamic_list_query.html?table=" + this.m_dbTable;
+    var url = this.m_queryURL + "?table=" + this.m_dbTable;
     url += "&val=" + values;
     url += "&search_field=" + this.m_dbField + "&field=" + this.m_self;
     url += "&self=" + this.m_self;
@@ -82,7 +83,7 @@ DynamicList.prototype.populate = function(data)
 
     for (; i < data.length; ++i, ++j)
         options[j] = data[i];
-    
+
     // process any dependencies
     for (i = 0; i < this.m_deps.length; ++i)
         if (this.m_deps[i])
@@ -108,6 +109,31 @@ DynamicList.prototype.getListForm = function()
     }
 }
 
+/* setQueryURL()
+ *
+ * The default query URL (dynamic_list_query.html) will work for most
+ * purposes. However, occasionally you will have to use a customized
+ * query to generate your results. You can define your own query URL here.
+ * Note that the query string will be the same as that passed to
+ * dynamic_list_query.html, it is the results that are customized. Your
+ * custom page must call LIST_CALLBACK(), see dynamic_list_query.html for
+ * an example.
+ *
+*/
+DynamicList.prototype.setQueryURL = function(url)
+{
+    if (url)
+        this.m_queryURL = url;
+}
+
+/* getQueryURL()
+ *
+*/
+DynamicList.prototype.getQueryURL = function()
+{
+    return this.m_queryURL;
+}
+
 /* getName()
  * ----------------------------------------------------------------------------
 */
@@ -127,7 +153,8 @@ DynamicList.prototype.toString = function()
     s += "parent = " + this.m_parent + ", ";
     s += "dependencies = " + this.m_deps + ", ";
     s += "table = " + this.m_dbTable + ", ";
-    s += "column = " + this.m_dbField;
+    s += "column = " + this.m_dbField + ", ";
+    s += "query URL = " + this.m_queryURL;
     
     return s;
 }

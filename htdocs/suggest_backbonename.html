@@ -1,0 +1,37 @@
+<html>
+<body>
+<script language="JavaScript">
+<!--
+<%perl>
+my ($start_closet, $end_closet, $start_site, $end_site);
+
+$start_closet = Closet->retrieve($start);
+$end_closet = Closet->retrieve($end);
+
+$start_site = $start_closet->floor->site;
+$end_site = $end_closet->floor->site;
+
+my $suggestedName = $start_site->number . "/" . $end_site->number;
+my @existing = BackboneCable->search_like(name=>$suggestedName . "%");
+$suggestedName = $suggestedName . "-" . (scalar(@existing) + 1);
+
+printf("opener.document.netdotform.%s.value = \"%s\";\n", $name, $suggestedName);
+
+printf("window.close();\n");
+</%perl>
+-->
+</script>
+</body>
+</html>
+
+<%args>
+$start => $ARGS{"start"};
+$end => $ARGS{"end"};
+$name => $ARGS{"name"};
+</%args>
+
+<%doc>
+Attempts to guess an appropriate backbone name based on start and end closet.
+
+TODO: May need to be more intelligent about suggesting duplicates.
+</%doc>

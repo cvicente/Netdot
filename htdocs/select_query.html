@@ -13,7 +13,7 @@ if ($crit =~ /\w+/){
 }
 </%perl>
 
-<body bgcolor="#FFFFFF" onLoad="opener.getlist(<% "\'" . $field . "\'" %>)">
+<body bgcolor="#FFFFFF" onLoad="opener.getlist(<% "\'" . $field . "\'" %>, <% "\'" . $form_name . "\'" %>)">
 <strong>Loading...</strong>
 
 <%perl>
@@ -112,6 +112,7 @@ $debug = 0;
 $table => $ARGS{table};
 $field => $ARGS{field};
 $crit => $ARGS{crit};
+$form_name => $ARGS{form_name};
 </%args>
 
 <%doc>
@@ -127,5 +128,8 @@ Arguments:
 - field:  Name of the original field for which we're searching foreign values
           Needed by the caller
 - crit:   Criteria.  A string with one or more keywords to search
+
+- form_name: optional form name for original caller. If not specified assumes
+             form name is "netdotform".
 
 </%doc>

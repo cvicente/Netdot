@@ -220,62 +220,46 @@ elsif ($site_srch && !defined($submit_site))
         map { push (@cables, $_) } (BackboneCable->search(start_closet=>$c_id),
                                     BackboneCable->search(end_closet=>$c_id));
     }
+}
 
-} 
-
-# trying to browse by start site, end site, or both.
-elsif ($start_id || $end_id)
+# user selected a start and end point
+elsif ($start_id && $end_id)
 {
-    my (@start_closets, @end_closets, $start_site, $end_site);
+    # need to get all closets for both start and end and find all 
+    # BackboneCable's that have a match for either start_closet or end_closet.
+    my ($s1, $s2, @closets, %found);
+    $s1 = Site->retrieve($start_id);
+    $s2 = Site->retrieve($end_id);
+    @closets = grep(!$found{$_}++, ($s1->closets, $s2->closets));
+    %found = ();
+
+    # and finally all BackboneCables that either start or end
+    # at one of these closets..
+    foreach my $closet (@closets)
+    {
+        foreach my $c1 (@closets)
+        {
+            my $c_id = $closet->id;
+            my $c1_id = $c1->id;
+            next if ($c_id == $c1_id);
+            map { push (@cables, $_) } grep(!$found{$_}++, 
+                                           (BackboneCable->search(start_closet=>$c_id, end_closet=>$c1_id),
+                                            BackboneCable->search(start_closet=>$c1_id, end_closet=>$c_id)));
+        }
+    }
+}
+
+elsif ($start_id)
+{
+    my (@start_closets, $start_site);
     $start_site = Site->retrieve($start_id) if ($start_id);
     @start_closets = $start_site->closets if ($start_site);
-    $end_site = Site->retrieve($end_id) if ($end_id);
-    @end_closets = $end_site->closets if ($end_site);
-
-    # checking for start and end
-    # -------------------------------------------------------------------------
-    if (scalar(@start_closets) && scalar(@end_closets))
-    {
-        foreach my $start_c (@start_closets)
-        {
-            my @cab = BackboneCable->search(start_closet=>$start_c->id);
-            foreach my $cab (@cab)
-            {
-                foreach my $end_c (@end_closets)
-                {
-                    if ($cab->end_closet eq $end_c->id)
-                    {
-                        push(@cables, @cab);
-                        last;
-                    }
-                }
-            }
-        }
-    }
-
-    # checking for start
-    # -------------------------------------------------------------------------
-    elsif (scalar(@start_closets))
-    {
-        foreach my $start_c (@start_closets)
-        {
-            my @cab = BackboneCable->search(start_closet=>$start_c->id);
-            push (@cables, @cab);
-        }
-    }
     
-    # checking for end
-    # -------------------------------------------------------------------------
-    elsif (scalar(@end_closets))
+    foreach my $start_c (@start_closets)
     {
-        foreach my $end_c (@end_closets)
-        {
-            my @cab = BackboneCable->search(end_closet=>$end_c->id);
-            push (@cables, @cab);
-        }
+        my @cab = BackboneCable->search(start_closet=>$start_c->id);
+        push (@cables, @cab);
     }
-    
-    printf("cables returned: %s\n", scalar(@cables)) if $DEBUG;
 }
 </%perl>
 
@@ -449,6 +433,9 @@ my $ui = Netdot::UI->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
 my $name;
+
+$end_id = 0 if ($end_id == -1);
+$start_id = 0 if ($start_id == -1);
 
 if ($id) 
 {

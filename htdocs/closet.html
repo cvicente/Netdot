@@ -103,7 +103,8 @@ LIST_MANAGER.addList(floorSearchList);
                      &nbsp;<select name="floor_srch" onChange="floorSearchList.doIt();" style="width: 150px;">
                     <option value="">Lookup by Site</option>
                     <%perl>
-                    my @sites = Site->retrieve_all({"order_by"=>"name"});
+                    my @sites = Site->retrieve_all();
+                    @sites = sort { $a->name cmp $b->name } @sites;
                     foreach my $s (@sites)
                     {
                         printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);

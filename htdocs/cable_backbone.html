@@ -5,7 +5,7 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}))
+if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE")
 {
     my %update_info = ();
     
@@ -38,7 +38,27 @@ if (defined($ARGS{_action}))
         $end_site_id = $end_site->id if ($end_site);
         $edit = undef;
     }
-}  
+}
+
+# insert N number of strands...
+elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS")
+{
+    if (defined ($ARGS{number_strands}) &&  $ARGS{number_strands} > 0)
+    {
+        my $backbone_name = $o->name;
+        my @cables = CableStrand->search_like(name=>$backbone_name . "%");
+        my $strand_count = scalar(@cables);
+        my %tmp_strands;
+        $tmp_strands{cable} = $id;
+
+        for (my $i = 0; $i < $ARGS{number_strands}; ++$i)
+        {
+            $tmp_strands{name} = $backbone_name . "." . (++$strand_count);
+            die ("Error: " . $ui->error) if (!($ui->insert(table=>"CableStrand", state=>\%tmp_strands)));
+        }
+    }
+}
+
 # end insertion/update code
 # -----------------------------------------------------------------------------
 </%perl>
@@ -48,6 +68,34 @@ if (defined($ARGS{_action}))
 var startClosetSearch = new DynamicList("netdotform", "BackboneCable__<% $id %>__start_closet", "site", "Closet", "start_srch");
 var endClosetSearch = new DynamicList("netdotform", "BackboneCable__<% $id %>__end_closet", "site", "Closet", "end_srch"); 
 LIST_MANAGER.addList(startClosetSearch, endClosetSearch);
+
+/* suggestName()
+ *
+ * Suggests a backbone cable name. This typically takes on the format:
+ * <startsite>/<endsite>-<number>
+ * Not sure if there is a better way to generate this name than post off
+ * to a new window.
+ *
+ * TODO: This should probably have better duplicate checking.
+*/
+function suggestName()
+{
+    var start = document.netdotform.BackboneCable__<% $id %>__start_closet.value;
+    var end = document.netdotform.BackboneCable__<% $id %>__end_closet.value;
+
+    if (!start || !end)
+    {
+        alert("Please specify both a start and end closet.");
+        return;
+    }
+
+    var url = "suggest_backbonename.html?start=";
+    url += start + "&end=" + end;
+    url += "&name=" + "BackboneCable__<% $id %>__name";
+
+    var wind = window.open(url, "tmp", "width=1,height=1");
+    wind.blur();
+}
 -->
 </script>
 
@@ -59,11 +107,11 @@ LIST_MANAGER.addList(startClosetSearch, endClosetSearch);
  <tr class="rowtitle0" >
     <td align="left">
         Start:
-        <% $start_site ? "<a href=\"cable_plant.html?id=" . $start_site->id . "&page_type=BACKBONE\">" . $start_site->name . "</a>" 
+        <% $start_site ? "<a href=\"cable_plant.html?start_id=" . $start_site->id . "&page_type=BACKBONE\">" . $start_site->name . "</a>" 
                          : "<i>undefined</i>" %>
         &nbsp;&nbsp;
         End:
-        <% $end_site ? "<a href=\"cable_plant.html?id=" . $end_site->id . "&page_type=BACKBONE\">" . $end_site->name . "</a>"
+        <% $end_site ? "<a href=\"cable_plant.html?start_id=" . $end_site->id . "&page_type=BACKBONE\">" . $end_site->name . "</a>"
                          : "<i>undefined</i>" %>
     </td>
  </tr>
@@ -77,7 +125,7 @@ LIST_MANAGER.addList(startClosetSearch, endClosetSearch);
     <td valign="top" width="50%" align="center">
         <form name="netdotform" action="cable_backbone.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
-        <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
+        <input type="hidden" name="_action" value="UPDATE">
         <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
@@ -95,7 +143,8 @@ LIST_MANAGER.addList(startClosetSearch, endClosetSearch);
                 <td>Name: </td>
                 <td>
 %               if ($edit eq "cableinfo") {                
-                    <input type="text" name="BackboneCable__<% $id %>__name" value="<% $o ? $o->name : "" %>">
+                    <input type="text" name="BackboneCable__<% $id %>__name" value="<% $o ? $o->name : "" %>"> 
+                    &nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name" value="Suggest Name" onClick="suggestName();">
 %               } else {
                     <% $o->name %>
 %               }
@@ -147,7 +196,8 @@ LIST_MANAGER.addList(startClosetSearch, endClosetSearch);
                     &nbsp;<select name="start_srch" onChange="startClosetSearch.doIt();" style="width: 150px;">
                     <option value="">Lookup by Site</option>
                     <%perl>
-                    @sites = Site->retrieve_all({"order_by"=>"name"});
+                    @sites = Site->retrieve_all();
+                    @sites = sort { $a->name cmp $b->name } @sites;
                     foreach my $s (@sites)
                     {
                         printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
@@ -224,14 +274,13 @@ LIST_MANAGER.addList(startClosetSearch, endClosetSearch);
 <table border="0" width="95%" align="center"  class="tablebackground">
     <tr>
     <td valign="top" width="50%" align="center">
-     <form name="netdotform" action="cable_backbone.html" method="POST">
-     <input type="hidden" name="id" value="<% $id %>">
-     <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
-     <input type="hidden" name="s2name" value="<% $s2name %>">
-
     <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
     <tr class="formtabletitle">
      <td colspan="2">
+     <form name="cable_strand_form" action="cable_backbone.html" method="POST">
+     <input type="hidden" name="id" value="<% $id %>">
+     <input type="hidden" name="_action" value="UPDATE">
+     <input type="hidden" name="s2name" value="<% $s2name %>">
       <table width="100%" border="0">
        <tr>
          <td width="10%" align="left">&nbsp;</td>
@@ -250,7 +299,8 @@ LIST_MANAGER.addList(startClosetSearch, endClosetSearch);
    </tr>
    <tr>
      <td>
-      <table border="0" width="90%">
+      
+    <table border="0" width="90%">
     <%perl>
     my @strands;
     map { push (@strands, $_) } $o->strands;
@@ -330,6 +380,21 @@ LIST_MANAGER.addList(startClosetSearch, endClosetSearch);
     </tr>
     </table>
     </form>
+%	 if ($edit ne "strandinfo") {
+    <form action="cable_backbone.html" method="POST">
+    <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="_action" value="ADD_STRANDS">
+    <table border="0" width="100%">
+        <tr align="left" class="<% $cssitem{0} %>">
+            <td align="left">
+	        Manually 
+	        &nbsp;<input type="submit" name="strand_add" value="Add">&nbsp;
+	        <input type="text" name="number_strands" value="0" size="3"> strands
+            </td>
+        </tr>
+    </table>
+    </form>
+%   }
 </td>
 </tr>
 </table>
@@ -351,6 +416,7 @@ my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 
 my ($o, $start_site, $end_site) = (undef, undef, undef);
 my ($start_site_id, $end_site_id) = (0, 0);
+
 
 if ($id && $id ne "NEW") 
 {

@@ -19,6 +19,7 @@ if (defined($ARGS{_action}))
     if ($update_info{CableStrand}{key})
     {
         $id = $update_info{CableStrand}{key};
+        $edit = undef;
     }
     
     # Do this to 'flush' the values associated with the object
@@ -57,27 +58,50 @@ if (defined($ARGS{_action}))
         <input type="hidden" name="s2name" value="<% $s2name %>">
         <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr class="formtabletitle">
-            <td colspan="3" align="left">Cable Strand</td>
+            <td colspan="2" align="left">Cable Strand</td>
+%           if ($edit eq "strandinfo") {
+            <td align="right"><input name="submit" value="save" type="submit"></td>
+%           } else {
+            <td align="right"><a href="cable_strand.html?id=NEW">[new]</a> || <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a></td>
+%           }
         </tr>
+
+        <!--<tr class="formtabletitle">
+            <td colspan="3" align="left">Cable Strand</td>
+        </tr>-->
         <tr align="left" valign="top">
             <td width="40%">
             <table width="100%" border="0" cellspacing="0" cellpadding="2">
             <tr align="left" valign="top">
                 <td>Name: </td>
-                <td><input type="text" name="CableStrand__<% $id %>__name" value="<% $o ? $o->name : "" %>"></td>
+                <td>
+%               if ($edit eq "strandinfo") {
+                <input type="text" name="CableStrand__<% $id %>__name" value="<% $o ? $o->name : "" %>">
+%               } else {
+                <% $o->name %>
+%               }                
+                </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Backbone: </td>
                 <td>
+%               if ($edit eq "strandinfo") {
 %               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable");
+%               } else {
+                <% $o->cable->name %>
+%               }
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Status: </td>
                 <td>
+%               if ($edit eq "strandinfo") {
 %               $ui->selectLookup(object=>$o, table=>"CableStrand", column=>"status", lookup=>"StrandStatus");
+%               } else {
+                <% $o->status->name %>
+%               }
                 </td>
             </tr>
             </table>
@@ -87,21 +111,45 @@ if (defined($ARGS{_action}))
             <table width="100%" border="0" cellspacing="0" cellpadding="2">
             <tr align="left" valign="top">
                 <td>Tested on: <font size="-1">(yyyy-mm-dd)</font>: </td>
-                <td><input type="text" name="CableStrand__<% $id %>__datetested" value="<% $o ? $o->datetested : "" %>"></td>
+                <td>
+%               if ($edit eq "strandinfo") {
+                <input type="text" name="CableStrand__<% $id %>__datetested" value="<% $o ? $o->datetested : "" %>">
+%               } else {
+                <% $o->datetested %>
+%               }
+                </td>
             </tr>
             <tr align="left" valign="top">
                 <td>Loss: </td>
-                <td><input type="text" name="CableStrand__<% $id %>__loss" value="<% $o ? $o->loss : "" %>"></td>
+                <td>
+%               if ($edit eq "strandinfo") {
+                <input type="text" name="CableStrand__<% $id %>__loss" value="<% $o ? $o->loss : "" %>">
+%               } else {
+                <% $o->loss %>
+%               }
+                </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Direction: </td>
-                <td><input type="text" name="CableStrand__<% $id %>__direction" value="<% $o ? $o->direction : "" %>"></td>
+                <td>
+%               if ($edit eq "strandinfo") {
+                <input type="text" name="CableStrand__<% $id %>__direction" value="<% $o ? $o->direction : "" %>">
+%               } else {
+                <% $o->direction %>
+%               }
+                </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td>Description: </td>
-                <td><input type="text" name="CableStrand__<% $id %>__description" value="<% $o ? $o->description : "" %>"></td>
+                <td>
+%               if ($edit eq "strandinfo") {
+                <input type="text" name="CableStrand__<% $id %>__description" value="<% $o ? $o->description : "" %>">
+%               } else {
+                <% $o->description %>
+%               }
+                </td>
             </tr>
             </table>
             </td>
@@ -113,17 +161,16 @@ if (defined($ARGS{_action}))
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
+%           if ($edit eq "strandinfo") {
             <textarea name="CableStrand__<% $id %>__info" rows="3" cols="80"><% $o ? $o->info : "" %></textarea>
+%           } else {
+            <% $o->info %>
+%           }
             </td>
             <td>&nbsp;</td>
         </tr>
 
         <tr><td colspan="3">&nbsp;<p></td></tr>
-
-        <tr align="left" valign="top">
-            <td align="center"><input name="submit" value="save" type="submit"></td>
-            <td colspan="2">&nbsp;</td>
-        </tr>
 
         </table>
         </form>
@@ -148,6 +195,8 @@ if ($id && $id ne "NEW")
 {
    $o = CableStrand->retrieve($id);
 }
+
+$edit = "strandinfo" if ($id eq "NEW");
 </%init>
 
 <%doc>
