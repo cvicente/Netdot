@@ -93,12 +93,22 @@ foreach my $table (@tables){
     print "__PACKAGE__->table( '$table' );\n";
     my $sth = $dbh->prepare("SELECT * FROM $table");
     $sth->execute;
-    my ($i, @cols);
+    my ($i, %cols, @tmp);
     for ($i = 0; $i < $sth->{NUM_OF_FIELDS}; $i++){
-	push @cols, $sth->{NAME}->[$i];
+	$cols{$sth->{NAME}->[$i]} = '';
     }
-    my $columnlist = join ' ', @cols;
-    print "__PACKAGE__->columns( All => qw /$columnlist/);\n";
+    
+    print "__PACKAGE__->columns( Primary => qw / id /);\n";
+    delete $cols{id};
+    @tmp = split /,/, 
+       $dbh->selectrow_array("SELECT columnorderbrief FROM Meta WHERE name='$table'");
+    delete $cols{$_} foreach (@tmp);
+
+    my $essential = join ' ', @tmp;
+    print "__PACKAGE__->columns( Essential => qw / $essential /);\n" if scalar(@tmp);
+
+    my $others = join ' ', keys %cols;
+    print "__PACKAGE__->columns( Others => qw / $others /);\n" if scalar (keys %cols);
 
     my @hasALn = $dbh->selectrow_array("SELECT linksto FROM Meta WHERE name='$table'");
     my @hasManyLn = $dbh->selectrow_array("SELECT linksfrom FROM Meta WHERE name='$table'");

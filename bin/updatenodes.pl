@@ -170,7 +170,7 @@ foreach my $node ( @nodes ) {
       my $intobj = Interface->retrieve($nonif);
       next if ($intobj->node->type->name eq "Hub");
   
-      print "Node ", $node->name, " Interface ifIndex $intobj->ifindex ",
+      print "Node ", $node->name, " Interface ifIndex", $intobj->ifindex,
 	"doesn't exist; removing\n" if( $DEBUG );
       unless( remove( object => "Interface", id => $nonif ) ) {
 	next;

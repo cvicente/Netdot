@@ -57,13 +57,26 @@ foreach my $j (keys %ARGS){
                    <tr>
 		      <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $c %>:</strong></td>
 		      <td class="formtablec2">
-			 <select name="<% $c %>">
-			   <option></option> 
-%			   my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];	  
-%			   my @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } $linksto{$c}->retrieve_all; 
-%			   foreach my $fkobj ( @fkobjs ) {
-			       <option value="<% $fkobj->id %>"><% $gui->getobjlabel($fkobj, ", ") %></option>
+%			   # Check for amount of objects in table before retrieving all
+%			   my $it = $linksto{$c}->retrieve_all;
+%			   my $count = 0;
+%			   my ($fkobj, @fkobjs);
+%			   while (($fkobj = $it->next) && $count <= 50){
+%			      push @fkobjs, $fkobj;
+%			      $count++;
 %			   }
+%			   if ( $count <= 50 ){			      
+   			      <select name="<% $c %>">
+			      <option></option> 
+%			      my $lblfield = ( $gui->getlabels($linksto{$c}) )[0];	 
+%			      @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } @fkobjs; 
+%			      foreach my $fkobj ( @fkobjs ) {
+			        <option value="<% $fkobj->id %>"><% $gui->getobjlabel($fkobj, ", ") %></option>
+%			      }
+%			   }else{
+                               <input type="text" name="<% $c %>" size="40" value="">
+%			   }
+
 			 </select>
 		      </td>
 		   </tr>        
