@@ -4,18 +4,21 @@ use base 'Class::DBI';
 
 Netdot::DBI->set_db('Main', 'dbi:mysql:netdot', 'netdot_user', 'netdot_pass');
 
-__PACKAGE__->add_trigger(before_delete=>sub{
-    my $self = shift;
-    my $class   = ref($self);
-    my %cascade = %{ $class->__hasa_list || {} };
-    foreach my $remote (keys %cascade) {
-	foreach ($remote->search($cascade{$remote} => $self->id)){
-	    $_->set($cascade{$remote}, 'NULL');
-	    $_->update;
-	}
-    }
-}
-			 );
+#print "sf was here\n";
+__PACKAGE__->
+  add_trigger( before_delete=>
+	       sub {
+		 my $self = shift;
+		 my $class   = ref($self);
+		 my %cascade = %{ $class->__hasa_list || {} };
+		 foreach my $remote (keys %cascade) {
+		   foreach ($remote->search($cascade{$remote} => $self->id)){
+		     $_->set($cascade{$remote}, 'NULL');
+		     $_->update;
+		   }
+		 }
+	       }
+	     );
 
 package Circuit;
 use base 'Netdot::DBI';
@@ -128,6 +131,9 @@ __PACKAGE__->has_many('contactinfos', 'ContactInfo' => 'Person');
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.3  2003/04/08 22:59:51  netdot
+#  testing trigger
+#
 #  Revision 1.2  2003/04/08 17:47:45  netdot
 #  just checking in....
 #
