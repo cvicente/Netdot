@@ -1,9 +1,121 @@
+<%perl>
+# expect name of Table & objects that require sorting
+undef( %args );
+foreach my $j ( keys %ARGS ) {
+  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+  $args{$j} = $ARGS{$j};
+}
+undef $obj;
+if( $args{table} ) {
+  if( defined( $args{id} ) ) {
+    $obj = $args{table}->retrieve($args{id}) ;
+  }
+  my $M = (Meta->search( name => $args{table} ))[0];
+  if( defined( $M ) ) {
+    my $i = 1;
+    undef( %order );
+    if( defined( $M->columnorder ) ) {
+      map { $order{$_} = $i++; } split( /,/, $M->columnorder );
+    } else {
+      $order{"id"} = $i++;
+      foreach ( sort { $a cmp $b } $M->name->columns() ) {
+        next if( $_ eq "id" );
+        $order{$_} = $i++;
+      }
+    }
+    undef( %orderbrief );
+    if( defined( $M->columnorderbrief ) ) {
+      map { $orderbrief{$_} = $i++; } split( /,/, $M->columnorderbrief );
+    } else {
+      $orderbrief{"id"} = $i++;
+      foreach ( sort { $a cmp $b } $M->name->columns() ) {
+        next if( $_ eq "id" );
+        $orderbrief{$_} = $i++;
+      }
+    }
+    undef( %linksto );
+    map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
+        split( /,/, $M->linksto );
+    undef( %linksfrom );
+    map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k } 
+        split( /,/, $M->linksfrom );
+  }
+}
+</%perl>
+% if( defined( $args{table} ) ) {
+    <table cellpadding="3" cellspacing="1" border="0" bgcolor="#CCCCCC">
+    <tr>
+    <input type="hidden" name="table" value="<% $args{table} %>">
+%   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%     next if( $c eq 'id' );
+%     if( ! exists( $linksto{$c} ) ) { 
+        <tr>
+        <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
+%       if( defined( $args{id} ) ) {
+          <td><input type="text" size="40" name="<% $c %>" value="<% $obj->$c %>"></td>
+%       } else {
+          <td><input type="text" size="40" name="<% $c %>"></td>
+%       }
+        </tr>
+%     } else {
+        <tr>
+        <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
+%       my $ft = (Meta->search( name => $linksto{$c} ))[0];
+%       if( ! defined( $ft ) ) {
+          No <% linksto{$c} %> in Meta table
+%       } elsif( defined( $obj ) && $obj->$c->id == 0 ) {
+          -
+%       } else {
+%         my $lbl = $ft->label;
+          <td>
+          <select name="<% $c %>">
+%         foreach my $fkobj ( $linksto{$c}->retrieve_all ) {
+
+%           if( defined( $obj ) && $fkobj->id == $obj->$c->id ) {
+              <option value="<% $fkobj->id %>" selected><% $fkobj->$lbl %></option>
+%           } else {
+              <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
+%           }
+
+%         } # for
+          </select>
+          </td>
+%       } # else
+        </td>
+        </tr>
+%     } # else
+%   } # for
+    </tr>
+    <tr>
+    <td bgcolor="#FFFFFF" align="CENTER" colspan="2">
+    <input name="submit" value="Submit" type="submit">
+    </td>
+    </tr>
+    </table>
+% } # if
 
 
+
+<%init>
+use lib "/home/netdot/public_html/lib";
+use Netdot::DBI;
+use Data::Dumper;
+my( %args, %order, %orderbrief, %linksto, %linksfrom, $obj );
+
+
+</%init>
 <%doc>
+
+Arguments:  
+  table  -  name of table (REQUIRED)
+  id     -  id (row) from the above table  (OPTIONAL)
+  
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.2  2003/05/07 19:13:49  netdot
+#  bugger if i know.  do a diff.
+#
 #  Revision 1.1  2003/05/05 17:59:33  netdot
 #  Initial revision
 #
