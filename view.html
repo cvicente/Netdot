@@ -160,6 +160,8 @@ my $h_meta = $gui->getmeta($h_table);
 
   <td width="100%" align="center" valign="top">
 
+<!-- Display main object values -->
+
 %if ($view eq 'all' || $view eq "$table"){
    <table border="0" cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC" width="100%" class="tablebackground">
       <tr>
@@ -213,6 +215,10 @@ my $h_meta = $gui->getmeta($h_table);
      </tr>
      </table>
 %}
+<!-- End Display main object values -->
+
+
+<!-- Display has_many objects -->
 
 %   foreach my $i (keys %ftables){
 %     if ( $ftables{$i}{robjs} ){
@@ -231,11 +237,17 @@ my $h_meta = $gui->getmeta($h_table);
 %     }
 %    } 
 
+<!-- End Display has_many objects -->
+
+<!-- Display history objects associated with this object-->
+
 %  if ( $view eq 'history' ){
 %   my $id_f = lc("$table" . "_id");
 %   my @h_objs = $h_table->search($id_f => "$obj->id");
     <& sortresults.html, table => $h_table, object => \@h_objs , view => "row" &>
 %  } 
+
+<!-- End Display history objects -->
 
 </td></tr>
 </table>
@@ -246,7 +258,7 @@ my $h_meta = $gui->getmeta($h_table);
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::GUI;
-my( %arg, %linksto, %linksfrom, $id, $obj, $table, $view, %order, %ftables);
+my( %arg, %linksto, %linksfrom, $id, $obj, $prevobj, $table, $view, %order, %ftables);
 
 my $gui = Netdot::GUI->new();
              
@@ -256,6 +268,9 @@ my $gui = Netdot::GUI->new();
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.28  2003/07/16 18:24:39  netdot
+#  Added some comments
+#
 #  Revision 1.27  2003/07/15 23:34:10  netdot
 #  massage formatting -miyake
 #
