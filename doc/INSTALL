@@ -15,17 +15,17 @@ Apache::DBI
 DBIx::DBSchema
 DBIx::DataSource
 Net::SNMP
+Net::IP
 NetAddr::IP
-SiteControl (see http://whizzo.uoregon.edu/public/releases/)
-
+SiteControl (see http://whizzo.uoregon.edu/public/releases/), which needs:
+	Apache::AuthCookie
+	Carp::Assert
+	
 ----------------------------------------------------------------------
 PATCHES
 ----------------------------------------------------------------------
 
-Netdot needs the following Perl module files patched to fix bugs
-and have extra functionality:
-
-YOUR-@INC-PATH/Apache/Session/Lock/File.pm with contrib/ApacheSession.patch
+None at this time.
 
 ----------------------------------------------------------------------
 SCHEMA CHANGES
@@ -48,69 +48,38 @@ this script, you will have to restart httpd.
 INSTALLING THE PACKAGE
 ----------------------------------------------------------------------
 
-Run these from the main directory and answer any prompts
-you encounter:
+From the main directory do:
 
-make install PREFIX=YOUR-PREFIX (i.e: /usr/local/netdot)
-make installdb
+% make install 
+
+where you may want to pass, or change in the make file, one or more of
+
+PREFIX=YOUR-PREFIX (default /usr/local/netdot) 
+APACHEUSER=USER-YOUR-APACHE-RUNS-AS (default apache)
+APACHEGROUP=GROUP-YOUR-APACHE-RUNS-AS (default apache)
+
+
+% make installdb
+
+where you may want to change the values of
+
+DB_NETDOT_USER=(default netdot_user)
+DB_NETDOT_PASS=(default netdot_pass)
+
+in *bin/Makefile*.
 
 ----------------------------------------------------------------------
 APACHE CONFIGURATION
 ----------------------------------------------------------------------
+* Either use the supplied template etc/netdot_apache2_radius.conf, which 
+  relies on Radius for authentication.  (For apache2)
 
-* Add lines similar to these to your httpd.conf,
+  or
 
-<VirtualHost your.ip.address>
-    ServerName YOUR-NETDOT-HOSTNAME
-    DocumentRoot YOUR-PREFIX/htdocs
-
-    # This line for Apache2+mod_perl2 only
-    PerlModule Apache2 Apache::compat
-
-    PerlHandler Apache::DBI
-    PerlRequire YOUR-PREFIX/bin/mason.pl
-
-    ##################################################################
-    # the following section for Apache 1.3.x only
-    ##################################################################
-    <Location />
-        SetHandler perl-script
-        PerlHandler Netdot::Mason
-	AuthType Basic
-	AuthName "NetDoT"
-	AuthUserFile YOUR-PREFIX/htpasswd.users
-	require valid-user
-    </Location>
-
-    <Location /img>
-        SetHandler default-handler	 
-    </Location>
-    ##################################################################
-    # end section
-    ##################################################################
-
-    ##################################################################
-    # the following section for Apache2 only
-    ##################################################################
-    <Directory />
-        AuthType Basic
-        AuthName "UO NetDoT"
-        AuthUserFile /etc/httpd/htpasswd.users
-        require valid-user
-    </Directory>
-
-    <FilesMatch "\.html$">
-        SetHandler perl-script
-        PerlHandler Netdot::Mason
-    </FilesMatch>
-    ##################################################################
-    # end section
-    ##################################################################
-</VirtualHost>
-
-* Create the file YOUR-PREFIX/htpasswd.users 
-  and add username/passwords to authenticate 
-  accesss to the Netdot pages.
+* Use the template etc/netdot_apache12_htpasswd.conf -- which relies on 
+  an htpasswd file for authentication -- and create the file 
+  YOUR-PREFIX/htpasswd.users and add username/passwords to authenticate 
+  accesss to the Netdot pages.  (For apache or apache2)
 
 * Edit mason.pl to your needs.  
   Pay attention to the Apache2-only directives, and also the paths.
