@@ -57,8 +57,19 @@ if( $args{cancel} eq "Cancel" ) {
   delete( $rev{New} );
 }
 ##################################################
+# if a node discovery, do it now
+if( exists( $args{discover} ) ) {
+  $nv = Netdot::Netviewer->new();
+  foreach my $if ( NvIfReserved->retrieve_all() ) {
+    $IfRsv{$if->name} = 1;
+  }
+  $nv->build_config( "device", $args{discover} );
+  %node = $nv->get_device( "device", $args{discover} );
+} 
+##################################################
 # fill in the rest of state details -- for Submit or New
-if( exists( $args{submit} ) || exists( $rev{New} ) ) {
+if( exists( $args{submit} ) 
+    || exists( $rev{New} ) || exists( $args{discover} ) ) {
   foreach my $arg ( keys %args ) {
     next if( $arg eq "submit" || $arg eq "sid" 
              || $arg eq "table" || $arg eq "commit" );
@@ -147,7 +158,6 @@ if( defined( $TBL ) ) {
 % if( $DEBUG ) {
  tables : TBL <% $TBL %> : table <% $args{table} %><br>
  PREV : <% $PREV %> <br>
- flag : <% $FLAG %> <br>
  ARGS :
 % print Dumper( %ARGS );
  <br> session: 
@@ -205,8 +215,20 @@ if( defined( $TBL ) ) {
     </blockquote>
 
 % } else {
+    <br>
+    <blockquote>
     <form action="create.html" method="POST">
     <input type="hidden" name="sid" value="<% $sid %>">
+%   if( $TBL eq "Node" ) {
+    Auto discover a node:<br>
+    <input type="text" name="discover" value="<% $args{discover} %>">
+    <input name="nodediscover" value="Discover" type="submit">
+    <br>
+    <br>
+    <hr>
+    <br>
+%   }
+
     <& form.html, table => $TBL, showdisabled => '0', session => \%state &>
     <table cellpadding="3" cellspacing="1" border="0">
     <tr align="LEFT">
@@ -219,37 +241,40 @@ if( defined( $TBL ) ) {
     </tr>
     </table>
     </form>
+    </blockquote>
 % } # if/else table
 <p>
 <!-- end create.html -->
 <& footer &>
 % ####################################################################
+<%args>
 
+%args => undef
+$nv => undef
+$DIR => "/home/netdot/public_html/tmp"
+$WIDTH => 2
+%order => undef
+%linksto => undef
+%linksfrom => undef
+%session => undef
+%state => undef
+$TBL => undef
+$PREV => undef
+$id => undef
+$sid => undef
+%IfRsv => undef
+%node => undef
+$DEBUG => 1
+
+</%args>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
+use Netdot::Netviewer;
 use Data::Dumper;
 use Apache::Session::File;
 use Apache::Session::Lock::File;
-my( %args, %order, %linksto, %linksfrom );
-my( $obj, %session, $TBL, $PREV, $id, $sid, %state );
-my $DIR = "/home/netdot/public_html/tmp";
-my $WIDTH = 2;
-undef( %args );
-undef( %order );
-undef( %linksto );
-undef( %linksfrom );
-undef( %session );
-undef( %state );
-undef( $obj );
-undef( $TBL );
-undef( $PREV );
-undef( $id );
-undef( $sid );
 
-my $FLAG;
-undef($FLAG);
-my $DEBUG = 0;
 </%init>
 
 <%doc>
@@ -281,6 +306,10 @@ create.html
 
 ######################################################################
 #  $Log: create.html,v $
+#  Revision 1.13  2003/06/12 23:49:47  netdot
+#  integrating node discovery into create; moved variable declarations to
+#  <%args>
+#
 #  Revision 1.12  2003/05/30 22:58:12  netdot
 #  set table width to 2 (for table.html)
 #
