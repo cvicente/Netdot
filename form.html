@@ -5,6 +5,9 @@ foreach my $j ( keys %ARGS ) {
   next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
   $args{$j} = $ARGS{$j};
 }
+unless( defined( $args{showdisabled} ) ) {
+  $args{showdisabled} = 0;
+}
 undef $obj;
 if( $args{table} ) {
   if( defined( $args{id} ) ) {
@@ -23,22 +26,9 @@ if( $args{table} ) {
         $order{$_} = $i++;
       }
     }
-    undef( %orderbrief );
-    if( defined( $M->columnorderbrief ) ) {
-      map { $orderbrief{$_} = $i++; } split( /,/, $M->columnorderbrief );
-    } else {
-      $orderbrief{"id"} = $i++;
-      foreach ( sort { $a cmp $b } $M->name->columns() ) {
-        next if( $_ eq "id" );
-        $orderbrief{$_} = $i++;
-      }
-    }
     undef( %linksto );
     map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
         split( /,/, $M->linksto );
-    undef( %linksfrom );
-    map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k } 
-        split( /,/, $M->linksfrom );
   }
 }
 </%perl>
@@ -48,13 +38,14 @@ if( $args{table} ) {
     <input type="hidden" name="table" value="<% $args{table} %>">
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %     next if( $c eq 'id' );
+%     next if( $c eq 'disabled' && ! $args{showdisabled} );
 %     if( ! exists( $linksto{$c} ) ) { 
         <tr>
         <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
 %       if( defined( $args{id} ) ) {
-          <td><input type="text" size="40" name="<% $c %>" value="<% $obj->$c %>"></td>
+          <td colspan="2"><input type="text" size="40" name="<% $c %>" value="<% $obj->$c %>"></td>
 %       } else {
-          <td><input type="text" size="40" name="<% $c %>"></td>
+          <td colspan="2"><input type="text" size="40" name="<% $c %>"></td>
 %       }
         </tr>
 %     } else {
@@ -76,10 +67,12 @@ if( $args{table} ) {
 %           } else {
               <option value="<% $fkobj->id %>"><% $fkobj->$lbl %></option>
 %           }
-
 %         } # for
           </select>
           </td>
+	  <td>
+	  <input name="<% $linksto{$c} %>" value="New" type="submit">
+	  </td>
 %       } # else
         </td>
         </tr>
@@ -87,7 +80,7 @@ if( $args{table} ) {
 %   } # for
     </tr>
     <tr>
-    <td bgcolor="#FFFFFF" align="CENTER" colspan="2">
+    <td bgcolor="#FFFFFF" align="CENTER" colspan="3">
     <input name="submit" value="Submit" type="submit">
     </td>
     </tr>
@@ -107,12 +100,16 @@ my( %args, %order, %orderbrief, %linksto, %linksfrom, $obj );
 <%doc>
 
 Arguments:  
-  table  -  name of table (REQUIRED)
-  id     -  id (row) from the above table  (OPTIONAL)
-  
+  table         -  name of table (REQUIRED)
+  id            -  id (row) from the above table  (OPTIONAL)
+  showdisabled  -  1|0  whether to show disabled columns
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.3  2003/05/08 22:17:44  netdot
+#  removed some unnecessary code; working towards stabilizing this
+#  component
+#
 #  Revision 1.2  2003/05/07 19:13:49  netdot
 #  bugger if i know.  do a diff.
 #
