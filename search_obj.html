@@ -42,7 +42,7 @@ foreach my $j (keys %ARGS){
 	      <input type="hidden" name="table" value="<% $table %>">
 	      <input type="hidden" name="res" value="1">
 	      <p>
-	      <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+	      <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC" class="formtablebg">
 	       <tr bgcolor="#FFFFFF"> 
 	           <td colspan="2" align="center">Specify one or more of the following:</td>
 	       </tr>
@@ -50,13 +50,13 @@ foreach my $j (keys %ARGS){
 %	         next if ($c eq 'disabled');
 %		 if (!exists($linksto{$c}) ){  # The column is 'local'
                     <tr> 
-		       <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-	  		 <td><input type="text" name="<% $c %>" size="40" value=""></td>
+		       <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $c %>:</strong></td>
+	  		 <td class="formtablec2"><input type="text" name="<% $c %>" size="40" value=""></td>
 		    </tr>
 %		 }else {  # The column is a foreign key. Provide a list to select.
                    <tr>
-		      <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-		      <td>
+		      <td bgcolor="#DDDDDD" class="formtablec1"><strong><% $c %>:</strong></td>
+		      <td class="formtablec2">
 			 <select name="<% $c %>">
 			   <option></option> 
 %			   my @fkobjs = $linksto{$c}->retrieve_all; 
