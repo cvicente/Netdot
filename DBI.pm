@@ -20,6 +20,14 @@ __PACKAGE__->
 	      }
 	     );
 
+sub tables {
+  return ( "Address", "Availability", "Circuit", "CircuitType",
+	   "Connection", "ContactInfo", "ContactPool", "ContactType",
+	   "Customer", "Interface", "InterfaceDep", "Ip", 
+	   "JnNodeService", "JnCustomerSite", "Model", "Node",
+	   "NodeType", "Peer", "Person", "Service", "Site", "Status",
+	   "Vendor" );
+}
 
 ######################################################################
 package Address;
@@ -232,7 +240,7 @@ __PACKAGE__->has_many( 'nodes', 'Node' => 'type' );
 
 ######################################################################
 package Peer;
-use base 'Netdot::Peer';
+use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Peer' );
 __PACKAGE__->columns( All => qw/id name autSys ip address contactPool info/ );
@@ -314,6 +322,11 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.13  2003/04/15 21:02:08  netdot
+#  added tables() to base class.  I need a way to discover all the tables
+#  in the database -- don't see a way to do that in Class::DBI.  Fixed
+#  bug in package Peer.
+#
 #  Revision 1.12  2003/04/14 23:32:44  netdot
 #  added disabled column to those classes with has_many relationships
 #
