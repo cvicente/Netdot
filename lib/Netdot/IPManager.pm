@@ -711,7 +711,7 @@ sub auto_allocate {
 	    }
 	}else{
 	    # Doesn't exist, so go ahead
-	    my $status = ($wantaddress) ? "Static" : "Container";
+	    my $status = ($wantaddress) ? "Static" : "Subnet";
 	    my $newblock;
 	    # Inherit parent's 'dns_delegated' flag
 	    if ( $newblock = 

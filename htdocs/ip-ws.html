@@ -10,6 +10,7 @@ $search    => undef
 $_action   => undef
 $delete    => undef
 $allocate  => undef
+$newblock  => undef
 $parent    => undef
 $length    => undef
 $strategy  => undef
@@ -27,8 +28,8 @@ my $o;
 my $ci = 0;
 my %arg;
 my $title;
-if ($id){
-    unless( $o = Ipblock->retrieve($id) ){
+if ( $id ){
+    unless ( $o = Ipblock->retrieve($id) ){
 	$m->comp('error.mhtml', error => "Could not retrieve Ipblock id: $id");
     }else{
 	$title = $o->address . "/" . $o->prefix;
@@ -41,21 +42,16 @@ my $edit_ip    = 0;
 my $edit_block = 0;
 $edit_ip       = 1 if ($edit eq "ipinfo");
 $edit_block    = 1 if ($edit eq "blockinfo");
-
+# By default, view object after any operation
+# ( some exceptions will override )
+my $view       = 1;
 
 </%init>
 
 <& index.html, title => "IP Worksheet: $title", s2name => $s2name  &>
 
-<table width="95%" border="0" cellspacing="0" cellpadding="0" class="tablebackground"> 
-<tr>
-  <td>
-    <br>
-  </td>
-</tr>
+<div class="margins">
 
-<tr>
-  <td>
 <%perl>
 
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -147,13 +143,37 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     # Strip "/" if any
     $length =~ s/\///;
     my $newblock;
-    unless( $newblock = $ipm->auto_allocate($parent, $length, $strategy) ){
+    unless ( $newblock = $ipm->auto_allocate($parent, $length, $strategy) ){
 	print "<b>Error: ", $ipm->error, "</b><br>";
+    }else {
+</%perl>
+%     # Present new block and ask for confirmation
+      <form action="ip-ws.html">
+        <input type="hidden" name="_action" value="CONFIRM_AUTOALLOCATE">
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="newblock" value="<% $newblock->id %>">
+        <br>
+        Use <strong><% $newblock->address %>/<% $newblock->prefix %></strong> ?
+        <p>
+        <input type="submit" name="submit" value="Yes" >
+        <input type="submit" name="submit" value="No" >
+      </form>
+%      # Do not continue with object display
+%      $view = 0;
+%   }
+<%perl>    
+}elsif ( $_action eq "CONFIRM_AUTOALLOCATE" && $submit eq "Yes"){
+    undef $o;
+    unless ( $o = Ipblock->retrieve($newblock) ){
+	$m->comp('error.mhtml', error => "Could not retrieve Ipblock id: $newblock");
     }
-    if ($newblock){
-	undef $o;
-	$o = $newblock;
-	$id = $newblock->id;
+    # Replace current object with newblock
+    $id = $o->id;
+
+}elsif ( $_action eq "CONFIRM_AUTOALLOCATE" && $submit eq "No"){
+    # Get rid of the new block
+    unless ( $ipm->removeblock( id => $newblock ) ){
+	$m->comp('error.mhtml', error => $ipm->error);	
     }
 
 #######################################################################################
@@ -176,18 +196,15 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     
 </%perl>
 
-    <p>Block <b><% $address %>/<% $prefix %></b> has been removed<br>.
+    <p>Block <b><% $address %>/<% $prefix %></b> has been removed<br>
 
 <%perl>
 #    Show parent block
 #    after block has been deleted
     $id = $parentid;
     if ($id != 0){
-	eval {
-	    $o = Ipblock->retrieve($id)
-	};
-	if ( $@ ){
-	    $m->comp('error.mhtml', error => $@);
+	unless ( $o = Ipblock->retrieve($id) ){
+	    $m->comp('error.mhtml', error => "Can't retrieve Ipblock id $id");
 	}
     }
 </%perl>
@@ -199,7 +216,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %#
 %#######################################################################################
 
-%if ( $id ){
+%if ( $id && $view ){
 % if ( $edit ){	 
     <form name="netdotform" action="ip-ws.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
@@ -617,7 +634,6 @@ if (scalar( @children = $ipm->getchildren($o->id) )){
 
 %}
 
-</td></tr>
-</table>
+</div>
 
 <& footer.mhtml &>
