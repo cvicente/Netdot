@@ -6,27 +6,27 @@ foreach my $j ( keys %ARGS ) {
   $arg{$j} = $ARGS{$j};
 }
 if( $arg{table} ) {
-  undef( $obj );
-  $obj = (Meta->search( name => $arg{table} ))[0];
-  if( defined( $obj ) ) {
+  undef( $META );
+  $META = (Meta->search( name => $arg{table} ))[0];
+  if( defined( $META ) ) {
     my $i = 1;
     my @tmp;
     ##############################################
     # get the label for this table (as defined in Meta)
     undef( $LBL );
-    $LBL = $obj->label;
+    $LBL = $META->label;
     ##############################################
     # get linksto info
     undef( %linksto );
     map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k } 
-        split( /,/, $obj->linksto );
+        split( /,/, $META->linksto );
     ##############################################
     # define order
     undef( %order );
-    if( defined( $obj->columnorderbrief ) ) {
-      @tmp = split( /,/, $obj->columnorderbrief );
+    if( defined( $META->columnorderbrief ) ) {
+      @tmp = split( /,/, $META->columnorderbrief );
     } else {
-      @tmp = sort { $a cmp $b } $obj->name->columns();
+      @tmp = sort { $a cmp $b } $META->name->columns();
     }
     ##############################################
     # remove id and aliases (if present)
@@ -51,7 +51,7 @@ if( $arg{table} ) {
 % ####################################################################
 
 <!-- begin sortresults -->
-% if( defined( $obj ) && defined( $arg{object} ) ) {
+% if( defined( $META ) && defined( $arg{object} ) ) {
   <br>
     <table cellpadding="3" cellspacing="1" border="0" width="100%" bgcolor="#DDDDDD">
     <tr>
@@ -113,7 +113,7 @@ if( $arg{table} ) {
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Data::Dumper;
-my( %arg, %order, %linksto, %linksfrom, $obj, $LBL );
+my( %arg, %order, %linksto, %linksfrom, $META, $LBL );
 my $PAGE = "expview.html";
 
 </%init>
@@ -125,6 +125,9 @@ Supported arguments:
 
 ######################################################################
 # $Log: sortresults.html,v $
+# Revision 1.11  2003/05/23 19:06:57  netdot
+# changed obj to META
+#
 # Revision 1.10  2003/05/23 19:05:45  netdot
 # major overhaul.  work mostly intended to remove 'id' from display.
 # also makes sure that label is first thing displayed.  otherwise, added
