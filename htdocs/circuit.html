@@ -33,22 +33,15 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT")
 elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{sequence_list})
 {
     my @sequences;
-    if (UNIVERSAL::isa($ARGS{sequence_list}, "ARRAY"))
-    {
+    if (UNIVERSAL::isa($ARGS{sequence_list}, "ARRAY")) {
         @sequences = @{$ARGS{sequence_list}};
-    }
-    else
-    {
+    } else {
         push(@sequences, $ARGS{sequence_list});
     }
 
-    foreach my $seq (@sequences)
-    {
-        foreach my $st_id (split(/,/, $seq))
-        {
-            my $st = CableStrand->retrieve($st_id);
-            die("Error: . " . $ui->error()) if (!($ui->update(object=>$st, state=>{circuit_id=>$o->id})))
-        }
+    my $circuit_id = $o->id;
+    foreach my $seq (@sequences) {
+        $cable_manager->assigncircuit($circuit_id, split(/,/o, $seq));
     }
 }
 # end insertion/update code
@@ -199,7 +192,10 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{seque
 
 <!-- Begin Cable Strand Sequence Table -->
 %   if (defined($o)) {
-%   my @strands = $o->strands;
+%   my @strands = ();
+%   foreach my $s ($o->strands) {
+%       push(@strands, $s->id);
+%   }
     <& display_sequence.mhtml, strands=>\@strands, table_view=>1 &>
 %   }
 
@@ -296,6 +292,7 @@ $s2name => "Plant";
 <%init>
 my $DEBUG = 0;
 my $ui = Netdot::UI->new();
+my $cable_manager = Netdot::CablePlantManager->new();
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $o = undef;
 my $editCircuit = 0;
