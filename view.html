@@ -4,19 +4,26 @@ foreach	my $j (keys %ARGS){
 	$arg{$j} = $ARGS{$j};	
 }	
 
-unless ( $arg{table} && $arg{id} ){
+unless ( $arg{table} && ($arg{id} || $arg{pos}) ){
    print "<strong>Missing required parameters 'table' and/or 'id'</strong>";
    exit;
 }
 $table = $arg{table};
-$obj = $table->retrieve($arg{id});
+
+if ($arg{pos}){
+    my @objl = map { $_->id } $table->retrieve_all;
+    $id = $objl[$arg{pos} - 1];
+}else{
+    $id = $arg{id};
+}
+$obj = $table->retrieve($id);
 if ( $arg{view} ) {
   $view = $arg{view};
 }else{
   $view = 'all';
 }
 unless ( $obj ){
-   print "<strong>Nonexistent record: $arg{id}</strong>";
+   print "<strong>Nonexistent record: $id</strong>";
    exit;
 }
 
@@ -72,8 +79,8 @@ my $h_meta = $gui->getmeta($h_table);
       <input type="hidden" name="table" value="<% $table %>">
 %        my (@objl, $p);
 %        my $numrec =  scalar(@objl = map { $_->id } $table->retrieve_all);
-%        for (my $i=0; $i < $numrec; $i++) { if ($objl[$i] == $obj->id) { $p = $i; last; }  };
-         record <input type="text" size="3" name="id" value="<% $p + 1 %>"> of <% $numrec %> 
+%        for (my $i = 0; $i < $numrec; $i++) { if ($objl[$i] == $obj->id) { $p = $i; last; }  };
+         record <input type="text" size="3" name="pos" value="<% $p + 1 %>"> of <% $numrec %> 
       </form>
   </td>
   <td valign="top" align="center" width="80%">
@@ -164,7 +171,7 @@ my $h_meta = $gui->getmeta($h_table);
 %	    unless( defined($obj->$c) && defined($fkobj = $linksto{$c}->retrieve($obj->$c->id) )){
 %	       next;
 %           }
-            <& sortresults.html, table => $linksto{$c}, object => [$fkobj]  &>
+            <& sortresults.html, table => $linksto{$c}, object => [$fkobj], view => "row"   &>
 	 </td>
 %      }
      </tr>
@@ -193,7 +200,7 @@ my $h_meta = $gui->getmeta($h_table);
 %  if ( $view eq 'history' ){
 %   my $id_f = lc("$table" . "_id");
 %   my @h_objs = $h_table->search($id_f => "$obj->id");
-    <& sortresults.html, table => $h_table, object => \@h_objs &>
+    <& sortresults.html, table => $h_table, object => \@h_objs , view => "row" &>
 %  } 
 
 </td></tr>
@@ -205,7 +212,7 @@ my $h_meta = $gui->getmeta($h_table);
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 use Netdot::GUI;
-my( %arg, %linksto, %linksfrom, $obj, $table, $view, %order, %ftables);
+my( %arg, %linksto, %linksfrom, $id, $obj, $table, $view, %order, %ftables);
 
 my $gui = Netdot::GUI->new();
              
@@ -215,6 +222,9 @@ my $gui = Netdot::GUI->new();
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.19  2003/07/07 21:34:01  netdot
+#  Fixed problem with form that calls for a specific record.
+#
 #  Revision 1.18  2003/06/27 15:35:46  netdot
 #  *** empty log message ***
 #
