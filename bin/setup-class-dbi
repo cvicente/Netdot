@@ -1,0 +1,193 @@
+#!/usr/bin/perl
+#
+#
+# generate Netdot::DBI from metadata provided by the DBMS
+# and the Meta table(s)
+# This should make changes in the schema less painful
+#
+
+
+use strict;
+use DBI;
+
+my $DB_TYPE = $ARGV[0] || "mysql";
+my $DB_DATABASE = $ARGV[1] || "netdot";
+my $DB_NETDOT_USER = $ARGV[2] || "netdot_user";
+my $DB_NETDOT_PASS = $ARGV[3] || "netdot_pass";
+
+my $out = "./DBI.pm";
+
+open (OUT, ">$out")
+    or die "Couldn't open $out: $!\n";
+
+select (OUT);  # spit it all out to the output file by default
+
+## In this chunk, we need variable interpolation (qq//)
+my $head = 
+qq /package Netdot::DBI;
+use base 'Class::DBI';
+
+## This file was generated from a script.  Do not edit. ##
+
+Netdot::DBI->set_db('Main', 'dbi:$DB_TYPE:$DB_DATABASE', '$DB_NETDOT_USER', '$DB_NETDOT_PASS');
+
+/;
+
+## No interpolation from now on (q//)
+
+$head .= 
+q /
+##########################################
+## Insert object in history table
+##########################################
+
+
+__PACKAGE__->
+  add_trigger( 
+	      before_update=>
+	       sub {
+		   my $self = shift;
+		   my $class = ref ($self);
+		   my (%current_data, $new_h_obj, $oid);
+		   my $user = $ENV{REMOTE_USER} || "unknown";
+		   my $dbobj = ( $class->retrieve_from_sql(qq{
+		       id = "$self->id"
+		   }) )[0];
+		   foreach my $col ($self->columns){
+		       next if ($col eq 'id');
+		       $current_data{$col} = $dbobj->$col;
+		   }
+		   my $table = ref($self);
+		   my $h_table = "$table" . "_history";
+		   $oid = lc("$table" . "_id");
+		   return unless eval { ## h_table might not exist
+		       $new_h_obj = $h_table->create(\%current_data);
+		       1;
+		   };
+		   $new_h_obj->set($oid, $self->id);
+		   $new_h_obj->set("modifier", $user);
+		   my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
+		       $wday, $yday, $isdst) = localtime;
+		   my $datetime = sprintf("%04d\/%02d\/%02d %02d:%02d:%02d",
+					  $year+1900, $month+1, $day_of_month, $hours, $minutes, $seconds);
+		   $new_h_obj->set("modified", $datetime);
+		   $new_h_obj->update;
+	       }
+	     );
+
+
+/;
+
+print $head;
+
+my $dbh = DBI->connect ("dbi:$DB_TYPE:$DB_DATABASE", "$DB_NETDOT_USER", "$DB_NETDOT_PASS")
+    or die "Can't connect to db: $DBI::errstr\n";
+
+my @tables = $dbh->tables;
+
+foreach my $table (@tables){
+    print ("\n\n######################################################################\n");
+    print "package $table;\n";
+    print "use base 'Netdot::DBI';\n";
+    print "__PACKAGE__->table( '$table' );\n";
+    my $sth = $dbh->prepare("SELECT * FROM $table");
+    $sth->execute;
+    my ($i, @cols);
+    for ($i = 0; $i < $sth->{NUM_OF_FIELDS}; $i++){
+	push @cols, $sth->{NAME}->[$i];
+    }
+    my $columnlist = join ' ', @cols;
+    print "__PACKAGE__->columns( All => qw /$columnlist/);\n";
+
+    my @hasALn = $dbh->selectrow_array("SELECT linksto FROM Meta WHERE name='$table'");
+    my @hasManyLn = $dbh->selectrow_array("SELECT linksfrom FROM Meta WHERE name='$table'");
+
+    foreach my $line (@hasALn){
+	my @items = split /,/, $line;
+	foreach my $item (@items){
+	    my ($col, $tab) = split /:/, $item;
+	    print "__PACKAGE__->has_a( $col => '$tab' );\n";
+	}
+    }
+    foreach my $line (@hasManyLn){
+	my @items = split /,/, $line;
+	    foreach my $item (@items){
+		my @fields = split /:/, $item; 
+		my $numfields = scalar @fields;
+		if ($numfields == 3){
+		    my ($meth, $tab, $col) = split /:/, $item; 
+		    print "__PACKAGE__->has_many( '$meth', '$tab' => '$col' );\n";
+		}elsif ($numfields == 4){
+		    my ($meth, $tab, $col, $args) = split /:/, $item; 
+		    print "__PACKAGE__->has_many( '$meth', '$tab' => '$col', $args );\n";
+		}else{
+		    print STDERR "ERROR!: Incorrect number of fields: $numfields, in linksfrom for table $table\n";
+		    print STDERR "fields are: ", join (', ', @fields), "\n";
+		    print STDERR "$0: exited abnormally\n";
+		    exit;
+		}
+	    }
+    }
+}
+
+
+print "\n#Be sure to return 1\n";
+print "1;\n";
+
+close (OUT);
+
+######################################################################
+#  $Log: setup-class-dbi,v $
+#  Revision 1.17  2003/07/15 22:43:58  netdot
+#  Added some parameters
+#
+#  Revision 1.16  2003/07/15 21:24:31  netdot
+#  changed base dir to working dir.
+#
+#  Revision 1.15  2003/07/10 21:48:01  netdot
+#  *** empty log message ***
+#
+#  Revision 1.14  2003/07/10 17:47:09  netdot
+#  Added a longer error line
+#
+#  Revision 1.13  2003/07/09 19:12:27  netdot
+#  Fixed the before_update trigger to store previous values
+#  instead of new values.  cv
+#
+#  Revision 1.12  2003/06/24 17:46:18  netdot
+#  Wrote override methods has_many, delete, _cascade_delete, _cascade_set_null...
+#  to support the on_delete behavior for has_many relationships.
+#
+#  Added trigger at before_update to copy current values in history table
+#
+#  Revision 1.11  2003/06/17 23:19:30  netdot
+#  - removed set-to-null trigger and defined an empty cascade_delete
+#  - Added method historize
+#
+#  Revision 1.10  2003/06/10 17:44:18  netdot
+#  Reading table list directly from db, instead of Meta table.
+#
+#  Revision 1.9  2003/06/10 17:31:37  netdot
+#  *** empty log message ***
+#
+#  Revision 1.8  2003/05/05 01:47:32  cvicente
+#  Fixed typo
+#
+#  Revision 1.7  2003/05/02 21:56:54  netdot
+#  Added the last two lines
+#
+#  Revision 1.6  2003/05/02 18:49:44  netdot
+#  - changed references to 'linksFrom' and 'linksTo' to lowercase
+#
+#  Revision 1.5  2003/04/23 00:36:13  netdot
+#  Updated to reflect change of column names in Meta table.
+#
+#  Revision 1.4  2003/04/18 02:57:11  netdot
+#  Fixed typos, etc.
+#
+#  Revision 1.3  2003/04/18 02:29:26  netdot
+#  Rewrote most of it
+#
+#  Revision 1.2  2003/04/08 17:57:36  netdot
+#  initial checkin
+#

@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+#
+# initacls.mysql
+#
+
+use strict;
+
+my ($DB_HOME, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWORD, $DB_DATABASE, 
+    $DB_NETDOT_PASS, $DB_NETDOT_HOST, $DB_NETDOT_USER ) = @ARGV;
+
+my $BINDIR = "$DB_HOME/bin";
+my $TMP = "./.tmp";
+
+open (TMP, ">$TMP")
+    or die "Can't open $TMP: $!\n";
+
+print TMP <<END;
+DELETE FROM user WHERE user like '$DB_NETDOT_USER';
+DELETE FROM db where db LIKE '$DB_DATABASE';
+GRANT SELECT,INSERT,CREATE,INDEX,UPDATE,DELETE ON $DB_DATABASE.* TO $DB_NETDOT_USER\@$DB_NETDOT_HOST IDENTIFIED BY '$DB_NETDOT_PASS';
+END
+
+print "Enter the mysql administrator's database password to create a new user for NetDoT\n";
+system ("$BINDIR/mysql --host=$DB_HOST --port=$DB_PORT --user=$DB_DBA -p$DB_DBA_PASSWORD mysql < $TMP");
+
+print "Enter the mysql administrator's database password to nondestructively reload the database\n";
+system ("$BINDIR/mysqladmin --host=$DB_HOST --port=$DB_PORT --user=$DB_DBA -p$DB_DBA_PASSWORD reload");
+
+close(TMP);
+system ("rm -f $TMP");
+
+######################################################################
+#  $Log: initacls.mysql,v $
+#  Revision 1.2  2003/04/08 17:52:26  netdot
+#  initial checkin
+#

@@ -1,0 +1,43 @@
+#!/usr/bin/perl
+#
+# initacls.mysql
+#
+
+use strict;
+
+my $DB_HOME = "/usr";
+my $BINDIR = "$DB_HOME/bin";
+my $TMP = "./.tmp";
+
+open (TMP, ">$TMP")
+    or die "Can't open $TMP: $!\n";
+
+system ("$BINDIR/mysqladmin --user=root flush-tables");
+
+print TMP <<END;
+INSERT INTO CircuitType (Name) VALUES ('T1');
+INSERT INTO CircuitType (Name) VALUES ('DSL');
+INSERT INTO Vendor (Name) VALUES ('AT&T');
+INSERT INTO Vendor (Name) VALUES ('Qwest');
+INSERT INTO Address (Street1, Street2, City, State) VALUES ('2315 McMorran St.', '', 'Eugene', 'OR');
+INSERT INTO Address (Street1, Street2, City, State) VALUES ('1585 E. 13th St.', '', 'Eugene', 'OR');
+INSERT INTO Site (Name, Address, ContactPool) VALUES ('McMorran House', '1', '1'); 
+INSERT INTO Site (Name, Address, ContactPool) VALUES ('Oregon Hall', '2', '0'); 
+INSERT INTO Circuit (CID, Vendor, StartSite, EndSite, Type, InstallDate) 
+VALUES ('72-HCGL-173931', 1, 1, 2, 1, '2003-11-02');
+INSERT INTO ContactPool (Name, Info)
+VALUES ('McMorran', 'Presidents House Contacts');
+INSERT INTO Person (FirstName, LastName, Address)
+VALUES ('Cindy', 'Cords', '1');
+INSERT INTO ContactType (Name) VALUES ('Administrative Contact');
+INSERT INTO ContactInfo (Person, ContactType, ContactPool, Email, Office, Home)
+VALUES ('1', '1', '1', 'ccords\@oregon.uoregon.edu', '6-7803', '686-0434' );
+
+END
+
+system ("$BINDIR/mysql --user=root netdot < $TMP");
+
+close(TMP);
+system ("rm -f $TMP");
+
+

@@ -1,0 +1,11 @@
+--- File.pm	2003-05-13 10:13:43.000000000 -0700
++++ File.pm.dist	2003-05-13 10:12:05.000000000 -0700
+@@ -133,7 +133,7 @@
+     my @files = readdir(DIR);
+     foreach my $file (@files) {
+         if ($file =~ /^Apache-Session.*\.lock$/) {
+-            if ($now - (stat($dir.'/'.$file))[8] >= $time) {
++            if ((stat($dir.'/'.$file))[8] - $now >= $time) {
+                 open(FH, "+>$dir/".$file) || next;
+                 flock(FH, LOCK_EX) || next;
+                 unlink($dir.'/'.$file) || next;

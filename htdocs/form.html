@@ -1,0 +1,190 @@
+<%perl>
+# expect name of Table & objects that require sorting
+foreach my $j ( keys %ARGS ) {
+  # next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
+  $args{$j} = $ARGS{$j};
+}
+if( exists( $args{session} ) ) {
+  %session = %{ $args{session} };
+}
+unless( defined( $args{showdisabled} ) ) {
+  $args{showdisabled} = 0;
+}
+undef $obj;
+if( $args{table} ) {
+  if( defined( $args{id} ) ) {
+    $obj = $args{table}->retrieve($args{id}) ;
+  }
+  $META = $gui->getmeta( $args{table} );
+  if( defined( $META ) ) {
+    my $i = 1;
+    %order = $gui->getcolumnorder( $args{table} );
+    %linksto = $gui->getlinksto( $args{table} );
+  }
+}
+</%perl>
+<!-- begin form --> 
+
+% ####################################################################
+
+% if( defined( $args{table} ) ) {
+    <table cellpadding="3" cellspacing="1" border="0" bgcolor="#CCCCCC" class="formtablebg">
+    <tr>
+    <input type="hidden" name="table" value="<% $args{table} %>">
+%   if( $args{id} ) {
+    <input type="hidden" name="id" value="<% $args{id} %>">
+%   }
+%   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%     next if( $c eq 'id' );
+%     next if( $c eq 'disabled' && ! $args{showdisabled} );
+% ################################################
+%     if( ! exists( $linksto{$c} ) ) { # local field
+        <tr>
+        <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
+%       if( defined( $args{id} ) ) {
+          <td colspan="2"><input type="text" size="40" name="<% $c %>" value="<% $obj->$c %>"></td>
+%       } elsif( exists( $session{$c} ) ) {
+	    <td colspan="2"><% $gui->getinputtag($c, $linksto{$c}, $session{$c}) %></td>
+%       } else {
+	    <td colspan="2"><% $gui->getinputtag($c, $args{table}) %></td>
+%       }
+        </tr>
+% ################################################
+%     } else {
+        <tr>
+        <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
+%       if( defined( $obj ) && $obj->$c == 0 ) {
+          -
+%	} elsif( defined( $obj ) 
+%                && ! defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) {
+          -
+%       } else {
+          <td>
+          <select name="<% $c %>">
+%         foreach my $fkobj ( $linksto{$c}->retrieve_all ) {
+%           my $lbl = $gui->getobjlabel( $fkobj, ", " );
+%           if( ( defined( $obj ) && $fkobj->id == $obj->$c->id ) 
+%               || ( $fkobj->id == $session{$c} ) ) {
+              <option value="<% $fkobj->id %>" selected><% $lbl %></option>
+%           } else {
+              <option value="<% $fkobj->id %>"><% $lbl %></option>
+%           }
+%         } # for
+          <option value="0">[null]</option>
+          </select>
+          </td>
+	  <td>
+% #	  <form action="create.html" method="POST">
+	  <input name="<% $linksto{$c} %>" value="New" type="submit">
+% #       </form>
+	  </td>
+%       } # else
+        </td>
+        </tr>
+%     } # else
+%   } # for
+    </tr>
+    </table>
+% } # if
+
+<!-- end form --> 
+
+% ####################################################################
+<%args>
+
+%args => undef
+%order => undef
+%orderbrief => undef
+%linksto => undef
+$obj => undef
+%session => undef
+$META => undef
+$gui => Netdot::GUI->new()
+$DEBUG => 0
+
+</%args>
+<%init>
+use lib "/home/netdot/public_html/lib";
+use Netdot::DBI;
+use Netdot::GUI;
+
+</%init>
+<%doc>
+
+Arguments:  
+  table         -  name of table (REQUIRED)
+  id            -  id (row) from the above table  (OPTIONAL)
+  showdisabled  -  1|0  whether to show disabled columns
+  session       -  ref to a hash with values to insert (if object ! exist)
+
+######################################################################
+#  $Log: form.html,v $
+#  Revision 1.21  2003/07/16 16:54:03  netdot
+#  added css tags -miyake
+#
+#  Revision 1.20  2003/07/12 03:01:55  cvicente
+#  Minor bug fix
+#
+#  Revision 1.19  2003/07/11 20:57:48  netdot
+#  Using GUI::getinputtag now - cv
+#
+#  Revision 1.18  2003/06/27 19:08:30  netdot
+#  fixed some problems in the dropdown menu area
+#
+#  Revision 1.17  2003/06/18 17:24:42  netdot
+#  fixed variable declarations
+#
+#  Revision 1.16  2003/06/13 20:48:42  netdot
+#  working conversion to use of GUI.pm
+#
+#  Revision 1.15  2003/06/13 18:42:17  netdot
+#  using <%args> format
+#
+#  Revision 1.14  2003/06/04 18:03:47  netdot
+#  added debugging mechanism
+#
+#  Revision 1.13  2003/05/28 16:46:47  netdot
+#  last change doesn't seem to work so well.  :-(
+#
+#  Revision 1.12  2003/05/28 16:13:55  netdot
+#  make New button go to create page.
+#
+#  Revision 1.11  2003/05/23 21:58:16  netdot
+#  added null option
+#
+#  Revision 1.10  2003/05/23 19:15:32  netdot
+#  little cleanup and catch for bad pointer (linksto non-existent row)
+#
+#  Revision 1.9  2003/05/22 20:21:56  netdot
+#  added markers for when looking at html source
+#
+#  Revision 1.8  2003/05/15 21:49:44  netdot
+#  removed same bug that afflicted sortresults.html:
+#   ( $obj->$c->id  =>  $obj->$c ) around line 70
+#
+#  Revision 1.7  2003/05/15 21:34:47  netdot
+#  added hidden input field for id (if it is defined)
+#
+#  Revision 1.6  2003/05/14 17:52:19  netdot
+#  changes to support session -- ability to put values in boxes when the
+#  object doesn't exist
+#
+#  Revision 1.5  2003/05/14 16:26:52  netdot
+#  added some markers
+#
+#  Revision 1.4  2003/05/09 00:02:28  netdot
+#  removed submit button from this component; probably should be in
+#  calling component
+#
+#  Revision 1.3  2003/05/08 22:17:44  netdot
+#  removed some unnecessary code; working towards stabilizing this
+#  component
+#
+#  Revision 1.2  2003/05/07 19:13:49  netdot
+#  bugger if i know.  do a diff.
+#
+#  Revision 1.1  2003/05/05 17:59:33  netdot
+#  Initial revision
+#
+
+</%doc>

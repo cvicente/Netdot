@@ -1,0 +1,87 @@
+#
+# Netdot Makefile
+#
+PREFIX = /usr/local/httpd/htdocs/netdot
+usage:
+	@echo 
+	@echo "usage: make install PREFIX=<destination>"
+	@echo 
+	@echo "You can either specify the PREFIX on the command line or "
+	@echo "modify the PREFIX value in the Makefile. "
+	@echo "It currently defaults to $(PREFIX)"
+	@echo 
+	@echo "For the defaults used in database installation, please see"
+	@echo "bin/Makefile.  In particular, these variables may be of interest:"
+	@echo "     DB_TYPE, DB_HOME, DB_DBA, DB_HOST, "
+	@echo "     DB_NETDOT_USER, DB_NETDOT_PASS "
+	@echo "Again, please see bin/Makefile for details.  Change at your own risk!"
+	@echo 
+	@echo "After running make install, you may also want to:"
+	@echo "   make dropdb" 
+	@echo "   make installdb"
+
+#
+# You really don't want to muck with anything below.  
+# You're responsible if you do.
+#
+DMOD = 0775
+FMOD = 0644
+XMOD = 0744
+PERL = `which perl`
+DIR = bin doc htdocs lib/Netdot
+
+.PHONY: tests bin doc htdocs lib
+
+install: tests dir doc htdocs lib
+	@echo
+	@echo "Netdot is installed. "
+	@echo "Please read the available documentation before proceeding"
+	@echo "Be sure to check whether you need to run 'make dropdb' or 'make installdb'"
+	@echo 
+
+tests:
+	@echo
+	@echo "Installation directory: $(PREFIX)"
+	@echo 
+	@echo "Testing for required perl modules...."
+	perl -e 'require DBI;'
+	perl -e 'require Class::DBI;'
+	perl -e 'require HTML::Mason;'
+	perl -e 'require Apache::Session;'
+	perl -e 'require Apache::DBI;'
+	perl -e 'require DBIx::DBSchema;'
+	perl -e 'require DBIx::DataSource;'
+	if [ `whoami` != root ]; then \
+	   echo "You're not root; this may fail" ; \
+	fi
+	echo $(PREFIX) > .prefix
+
+dir:
+	@echo 
+	@echo "Creating necessary directories..."
+	for dir in $(DIR); do \
+	    if test -d $(PREFIX)/$$dir; then \
+	       echo "Skipping dir $(PREFIX)/$$dir; already exists"; \
+	    else \
+	       mkdir -m $(DMOD) -p $(PREFIX)/$$dir ; \
+	    fi ; \
+	done
+
+htdocs:
+	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
+
+doc:
+	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
+
+lib:
+	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR="$@/Netdot"
+
+dropdb: 
+	@echo "WARNING:  This will erase all data in the database!"
+	cd bin ; make dropdb FMOD=$(FMOD) 
+
+installdb: 
+	@echo "Preparing to create netdot database"
+	cd bin ; make install FMOD=$(FMOD) 
+
+

@@ -1,0 +1,85 @@
+<%perl>
+unless ( $ARGS{table} && $ARGS{id} ){
+   print "<strong>Missing required parameters 'table' and/or 'id'</strong>";
+   exit;
+}
+$table = $ARGS{table};
+$obj = $table->retrieve($ARGS{id});
+
+unless ( $obj ){
+   print "<strong>Nonexistent record: $ARGS{id}</strong>";
+   exit;
+}
+
+%linksto = $gui->getlinksto($table);
+%linksfrom = $gui->getlinksfrom($table);
+%order = $gui->getcolumnorder($table);
+
+</%perl>
+
+
+%if ( !exists( $ARGS{submit} ) ){
+
+% my $labelstr = $gui->getobjlabel($obj, ", ");
+<& header, title=>" Delete: $table: $labelstr" &>
+
+<table align="center" valign="top" border="0" width="95%">
+<tr><td>
+
+<p>
+<p>Are you sure you want to delete <% $table %> <strong><% $labelstr %></strong>?
+
+<form method="POST" action="delete.html">
+
+<input type="hidden" name="table" value="<% $table %>">
+<input type="hidden" name="id" value="<% $obj->id %>">
+<input type="hidden" name="confirm" value="1">
+<p>
+<input name="submit" value="Proceed" type="submit">
+<input name="submit" value="Cancel" type="submit">
+
+</form>
+
+<p><br>
+</td></tr>
+</table>
+<& footer &>
+
+
+%}elsif ($ARGS{confirm} && $ARGS{submit} eq "Proceed"){
+
+% my $labelstr = $gui->getobjlabel($obj, ", ");
+<& header, title=>" Delete: $table: $labelstr" &>
+
+<table align="center" valign="top" border="0" width="95%">
+<tr><td>
+
+%# Delete the object
+%  my $lbl = $gui->getobjlabel($obj, ", ");
+%  eval {
+%      $obj->delete;
+%      };
+% if ($@){
+  <& error.html, caller => "delete.html", error => $@ &>
+  exit;
+% } else{
+<strong><% "$table $lbl" %></strong> deleted.
+%}
+
+</td></tr>
+</table>
+<& footer &>
+
+%}elsif ($ARGS{submit} eq "Cancel"){
+   <& view.html, table => $table, id => $obj->id &>
+%  exit;
+%}
+
+<%init>
+use lib "/home/netdot/public_html/lib";
+use Netdot::DBI;
+use Netdot::GUI;
+my $gui = Netdot::GUI->new();
+my( %linksto, %linksfrom, $table, $obj, $mi, %order);
+           
+</%init>

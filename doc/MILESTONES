@@ -1,0 +1,81 @@
+$Header: /home/netdot/src/RCS/MILESTONES,v 1.4 2003/07/10 23:40:01 netdot Exp $
+======================================================================
+
+Milestone 1
+
+  Scheduled Release Date:  30 June 2003
+  Necessary Functionality:
+
+    * Basic Functionality:
+        - browse
+	- search
+	- view
+	- update
+	- delete (for now, this can mean just setting 'null' pointers)
+	- create
+	- main page
+      Most efforts are on typical documentation needs of networks.
+      Specifically, this includes:
+        - Contacts
+	  Customers, vendors, manufacturers, persons, departments,
+	  etc.
+	- Nodes
+	  Site locations, devices, models, connected circuits,
+	  interfaces, services, etc.
+
+    * Consistent Style and UI Across Pages
+      This includes stylesheets, general presentation, and help pages.
+
+    * Meta Table
+      A table that contains information about the database to help in
+      coding upper layers of application.
+
+    * Access Control
+      For this release, we just need two locks:  one for RONLY
+      permission and one for RW permission.  If needed, we can keep it
+      down to one lock.
+
+    * Node Discovery
+      Some ties to allow information from NetViewer to push
+      information into the database.
+
+    * History & Timestamps
+
+    * netdot.uoregon.edu
+      Since we are referring to this host, we should set it up
+      somewhere as a virtual.
+
+  About 7 days before release, we should freeze current development
+  and focus efforts on testing the impending release.
+
+--------------------------------------------------
+
+Milestone 2
+
+  Scheduled Release Date:  ?
+  Necessary Functionality:
+
+    * Refinements to Access mechanisms
+      This will require some mucking with tables to support users and
+      permissions specific to users/tables
+
+    * More Support for DNS
+      This should include typical DNS records like:  NS, A, A6, PTR, MX,
+      TXT, CNAME, SOA
+
+    * Consistent Style and UI Across Pages
+
+    * Re-examine historical information and whether it is also
+      relational -- particularly if an object has a pointer to another
+      object, then you should point to a particular revision.  An
+      alternative is keeping one table with both historical & current
+      information. 
+
+    * Continue migration of netviewer information from text files to
+      the database.
+
+    *  Modify the Meta table(s) structure so that list data (eg: linksfrom, etc)
+       is stored in separate (foreign) tables.  This would make it easier to provide
+       separate Netdot modules depending on the case (DNS, Cable plant, etc).
+       
+
