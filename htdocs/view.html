@@ -30,6 +30,7 @@ unless ( $obj ){
 %linksto = $gui->getlinksto($table);
 %linksfrom = $gui->getlinksfrom($table);
 %order = $gui->getcolumnorder($table);
+%tags = $gui->getcolumntags($table);
 
 if ($table !~ /_history/){
  # List all the has_many objects for this object
@@ -187,7 +188,11 @@ my $h_meta = $gui->getmeta($h_table);
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %      next if ($c eq 'id' || $c eq 'aliases');
        <tr> 
-       <td width="20%" align="right" valign="bottom" bgcolor="#DDDDDD" class="column1"><% $c %>:</td>
+%       if ( exists($tags{$c}) ){
+          <td width="20%" align="right" valign="bottom" bgcolor="#DDDDDD" class="column1"><% $tags{$c} %>:</td>
+%       }else{
+          <td width="20%" align="right" valign="bottom" bgcolor="#DDDDDD" class="column1"><% $c %>:</td>
+%       }
        <td class="delimiter" width="1"><BR></td>
 %      if (!exists($linksto{$c}) ){  ## Column is local
 %          if ( $gui->getsqltype($table,$c) =~ /bool/ ){
@@ -258,7 +263,7 @@ my $h_meta = $gui->getmeta($h_table);
 <p><br>
 <& footer &>
 <%init>
-my( %arg, %linksto, %linksfrom, $id, $obj, $prevobj, $table, $view, %order, %ftables);
+my( %arg, %linksto, %linksfrom, $id, $obj, $prevobj, $table, $view, %order, %tags, %ftables);
 my $gui = Netdot::GUI->new();
              
 </%init>

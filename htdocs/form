@@ -20,6 +20,7 @@ if( $args{table} ) {
     my $i = 1;
     %order = $gui->getcolumnorder( $args{table} );
     %linksto = $gui->getlinksto( $args{table} );
+    %tags = $gui->getcolumntags( $args{table} );
   }
 }
 </%perl>
@@ -42,7 +43,11 @@ if( $args{table} ) {
 % ################################################
 %     if( ! exists( $linksto{$c} ) ) { # local field
         <tr>
-        <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
+%       if ( exists($tags{$c}) ){
+           <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
+%	}else{
+           <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
+%	}
 %       if( defined( $args{id} ) ) {
 	    <td colspan="2"><% $gui->getinputtag($c, $obj) %></td>
 %       } elsif( exists( $session{$c} ) ) {
@@ -54,7 +59,11 @@ if( $args{table} ) {
 % ################################################
 %     } else {  # The column is a foreign key. Provide a list to select.
         <tr>
-        <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
+%       if ( exists($tags{$c}) ){
+           <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
+%	}else{
+           <td bgcolor="#FFFFFF" class="formtablec1"><strong><% $c %>:</strong></td>
+%	}
 	<td>
 %       my $flag = 1;
 %	# Check for amount of objects in table before retrieving all
@@ -121,6 +130,7 @@ if( $args{table} ) {
 %order => undef
 %orderbrief => undef
 %linksto => undef
+%tags => undef
 $obj => undef
 %session => undef
 $META => undef

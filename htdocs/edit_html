@@ -69,10 +69,15 @@ the submission.
       <p>Please confirm the following:
 %     my $obj = $gui->getmeta( $TBL );
 %     my %linksto = $gui->getlinksto( $TBL );
+%     my %tags = $gui->getcolumntags( $TBL );
       <p><blockquote><strong><% $TBL %></strong><ul>
 %     foreach my $C ( split( /,/, $obj->columnorder() ) ) {
         <li>
-        <% $C %> :
+% 	if ( exists($tags{$C}) ){
+           <% $tags{$C} %> :
+%	}else{
+           <% $C %> :	   
+%	}
 %       if( ! exists( $session->{tables}{$TBL}{$C} ) ) {
           -
 %       } else {

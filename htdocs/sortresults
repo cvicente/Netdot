@@ -38,6 +38,9 @@ if( $args{table} ) {
     # define order
     %order = $gui->getcolumnorderbrief( $args{table} );
     ##############################################
+    # Get tags
+    %tags = $gui->getcolumntags( $args{table} );
+    ##############################################
     # remove id and aliases (if present)
     if( exists( $order{id} ) ) {
       delete( $order{id} );
@@ -63,12 +66,15 @@ if( $args{table} ) {
 
 % if( defined( $META ) && defined( $args{object} ) ) {
 <!-- begin sortresults -->
-%unless ($args{edit}){
      <table BORDER="0" CELLSPACING="0" CELLPADDING="0" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
 %    if( $VIEW eq "row" ) {
      <tr class="rowtitle2">
-%       foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-           <th><% $o %>&nbsp</th>
+%       foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%	   if ( exists($tags{$c}) ){
+               <th><% $tags{$c} %>&nbsp</th>
+%	   }else{
+	       <th><% $c %>&nbsp</th>
+%	   }
 %       }
          <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
      </tr>
@@ -92,11 +98,15 @@ if( $args{table} ) {
 %       if( $VIEW eq "column" ) {
           <tr>
              <td align="RIGHT" valign="TOP" WIDTH="100" class="column1" bgcolor="#DDDDDD">
-                <b><% $c %>&nbsp</b>: 
+%		if ( exists($tags{$c}) ){
+  	           <b><% $tags{$c} %>&nbsp</b>: 
+%		}else{
+		    <b><% $c %>&nbsp</b>: 
+%		}
              </td>
 %       }
         <td align="LEFT" valign="TOP" class="column2">
-%          if( exists( $linksto{$c} ) ) {
+%          if ( exists($linksto{$c}) ) {
 %             my $ft = $gui->getmeta( $linksto{$c} );
 %             if( ! defined( $ft ) ) {
                  No such object <% $linksto{$c} %>
@@ -163,108 +173,10 @@ if( $args{table} ) {
          </tr>
          <tr class="delimiter" height="1"><td colspan="15"></td>
 %     }
-%   } # for o
-% ####################################################################
-    </table>
-%}else{  #$args{edit}
-
-<%perl>
-#
-#    Figure out the right (maxlen) size for each input column
-#
-my %maxsize;
- foreach my $o (  @{ $args{object} } ) {
-    foreach my $c ( keys %order ){
-	if ( exists( $maxsize{$c} ) ){
-	   $maxsize{$c} = length($o->$c) if (length($o->$c) > $maxsize{$c});
-	}else{
-	   $maxsize{$c} = length($o->$c) 
-	}
-    }
-}
-</%perl>
-
-     <table BORDER="0" CELLSPACING="0" CELLPADDING="0" BGCOLOR="whitesmoke" width="100%" class="tablebackground">
-%    if( $VIEW eq "row" ) {
-     <tr class="rowtitle2">
-%       foreach my $o ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-           <th><% $o %>&nbsp</th>
-%       }
-         <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
-     </tr>
-%    } else {
-       <tr><td width="1" colspan="2" class="delimiter" bgcolor="#DDDDDD"></td>
-%    }
-% ####################################################################
-% foreach my $o ( sort { $a->$SORT cmp $b->$SORT } @{ $args{object} } ) {
-%    my $flag = 1;
-%    if( $VIEW eq "row" ) {
-        <tr class="rowtitle3">
-%    }
-
-%    if( $VIEW eq "column" ) {
-        <tr height="1" class="delimiter">
-           <td colspan="3" height="1"></td>
-        </tr>
-%    }
-%    my @order = sort { $order{$a} <=> $order{$b} } keys %order;
-%    foreach my $c ( @order ) {
-%       if( $VIEW eq "column" ) {
-          <tr>
-             <td align="RIGHT" valign="TOP" WIDTH="100" class="column1" bgcolor="#DDDDDD">
-                <b><% $c %>&nbsp</b>: 
-             </td>
-%       }
-        <td align="LEFT" valign="TOP" class="column2">
-%          if( exists( $linksto{$c} ) ) {
-%             my $ft = $gui->getmeta( $linksto{$c} );
-%             if( ! defined( $ft ) ) {
-                 No such object <% $linksto{$c} %>
-%             } elsif( $o->$c == 0 ) {
-                 &nbsp -
-%             } elsif( ! defined( $linksto{$c}->retrieve( int( $o->$c ) ) ) ) {
-                 &nbsp -
-%             } else {
-%                my $obj = $linksto{$c}->retrieve( int( $o->$c ) );
-%                my $lbl = $gui->getobjlabel( $obj, ", " );
-                    <% $lbl %> &nbsp
-%            }
-%          } else {
-	         <input type="text" size="<% $maxsize{$c} + 2 %> name="<% $c %>" value="<% $o->$c %>" >
-%#               <% $gui->getinputtag($c, $o) %>
-%          } # else fi
-        </td>
-%       if ($VIEW eq "column") {
-        <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
-%       }
-%       $flag = 0 if( $flag );          
-%       if( $VIEW eq "column" ) {
-           </tr>
-%       }
-%     } # for c
-%     if( $VIEW eq "column" ) {
-         <tr height="1" class="delimiter">
-            <td colspan="3" height="1"></td>
-         </tr>
-         <tr>
-            <td colspan="3"><br></td>
-         </tr>
-<!--
-         <tr height="1" class="delimiter">
-            <td colspan="3" height="1"></td>
-         </tr>
--->         
-%     }
-%     if( $VIEW eq "row" ) {
-         <td width="1" class="delimiter" bgcolor="#DDDDDD"></td>
-         </tr>
-         <tr class="delimiter" height="1"><td colspan="15"></td>
-%     }
-%   } # for o
+%} # for o
 % ####################################################################
     </table>
 
-%}
 <!-- end sortresults -->
 % } # if
 
@@ -273,6 +185,7 @@ my %maxsize;
 
 %args => undef
 %order => undef
+%tags => undef
 %linksto => undef
 %linksfrom => undef
 $SORT => undef

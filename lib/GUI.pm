@@ -147,6 +147,22 @@ sub getcolumntypes{
     }
     return undef;
 } 
+######################################################################
+# Get a table's column tags
+######################################################################
+sub getcolumntags{
+    my ($self, $table) = @_;
+    my (%tags, $mi);
+    if ( defined($mi = $self->getmeta($table)) ){
+	my $mi = $self->getmeta($table);
+	if( defined( $mi->columntags ) ) {
+	    map { my($j, $k) = split( /:/, $_ ); $tags{$j} = $k }
+	    split( /,/, $mi->columntags );	
+	}
+	return %tags;
+    }
+    return undef;
+} 
 
 ######################################################################
 # Get a table's labels (columns used as instance names)
