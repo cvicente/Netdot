@@ -121,14 +121,14 @@ sub processdata {
     #   lines beginning with '#' are comments
     #   lines beginning with '#%' have shell commands to run
     next if( /^\s*$/o );
-    next if( /^\#[^\%].*/o );
+    next if( /^\#.*/o );
     chomp();
 
-    if( /^\#%/o ) {
+    if( /^\$/o ) {
 
       ############################################
       # this is a command to run
-      my($cmd) = /^\#%(.*)$/;
+      my($cmd) = /^\$(.*)$/;
       if( $self{debug} > 1 ) {
 	print "DEBUG: sys: $cmd\n";
       }
