@@ -2487,7 +2487,7 @@ sub _get_sysinfo {
   $targets{$type}{$dev}{"sysLocation"} = $sysloc ;
   $targets{$type}{$dev}{"sysUpTime"} = $self->get_sysUpTime( $type, $dev ) ;
   $targets{$type}{$dev}{"dot1dBaseBridgeAddress"} = $res{ $oids[4] };
-  $targets{$type}{$dev}{"dot1dBaseBridgeAddress"} = $res{ $oids[5] };
+  $targets{$type}{$dev}{"entPhysicalSerialNum"} = $res{ $oids[5] };
 }
 
 
