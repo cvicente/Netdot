@@ -4,88 +4,127 @@ unless ( $ARGS{table} && $ARGS{id} ){
    exit;
 }
 $table = $ARGS{table};
-my $obj = $table->retrieve($ARGS{id});
-foreach my $j (keys %ARGS){
-	next if ($j eq 'submit' || $j eq 'table' || $j eq 'id');
-	$arg{$j} = $ARGS{$j};	
-}
+$obj = $table->retrieve($ARGS{id});
 
-# Check that we have at least one column parameter
-unless (scalar keys(%arg)){
-   print "<strong>Missing update parameters</strong>";
+unless ( $obj ){
+   print "<strong>Nonexistent record: $ARGS{id}</strong>";
    exit;
 }
-# Get some Meta info
-$mi = (Meta->search( name => $table ))[0];
-undef( %linksto );
-map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
-   split( /,/, $mi->linksto );
-undef( %linksfrom );
-map { my($i, $j, $k) = split( /:/, $_ ); $linksfrom{$i}{$j} = $k }
-   split( /,/, $mi->linksfrom );
-my $i = 1;
-undef( %order );
-if( defined( $mi->columnorder ) ) {
-   map { $order{$_} = $i++; } split( /,/, $mi->columnorder );
-} else {
-   $order{"id"} = $i++;
-   foreach ( sort { $a cmp $b } $mi->name->columns() ) {
-      next if( $_ eq "id" );
-      $order{$_} = $i++;
-   }
-}
-foreach my $col (keys %arg){
-   if ($arg{$col} ne $obj->$col){
-      $obj->set($col, $arg{$col});
-      $upd{$col} = $arg{$col};
-   }
-}
-$obj->update;
+
+%linksto = $gui->getlinksto($table);
+%linksfrom = $gui->getlinksfrom($table);
+%order = $gui->getcolumnorder($table);
+
 </%perl>
 
-<& header, title => "Updated \'$table\' object"  &>
+
+%if ( !exists( $ARGS{submit} ) ){
+
+% my $labelstr = $gui->getobjlabel($obj, ", ");
+<& header, title=>" Delete: $table: $labelstr" &>
+
+<table align="center" valign="top" border="0" width="95%">
+<tr><td>
+
 <p>
+<p>You are deleting <% $table %> <strong><% $labelstr %></strong>.
 
-<p>Updated object '<% $ARGS{id} %>' of table '<% $table %>' with the following values:
-<p>
-<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
-%foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%   next if (!exists ($upd{$c}));
-%   if (!exists($linksto{$c}) ){  # The column is 'local'
-       <tr> 
-       <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-       <td><% $arg{$c} %></td>
-       </tr>
-%   } else {
-         <tr>
-	 <td bgcolor="#DDDDDD"><strong><% $c %>:</strong></td>
-	 <td>
-%         my $t = (Meta->search( name => $linksto{$c} ))[0];
-%         if( ! defined( $t ) ) {
-            No <% $linksto{$c} %> in Meta table
-%         } elsif( $obj->$c->id == 0 ) {
-	    -
-%         } else {
-%           my $lbl = $t->label;
-	    <% $obj->$c->$lbl %>
-	    </td></tr>        
-%        } 
+<form method="POST" action="delete.html">
 
-%   }
+%# List all the has_many objects for this object             
 
+%if (scalar (keys %linksfrom)){
+   <p>This <% $table %>  is referenced by:
+
+%  foreach my $i (keys %linksfrom){
+%     my ($j, @robjs);
+%     map { $j = $_ } keys %{ $linksfrom{$i} };
+%        @robjs = $obj->$i();
+%        next unless (scalar(@robjs));
+           <p>
+           <table cellpadding="0" border="0"  bgcolor="#CCCCCC">
+	   <tr>
+            <td><strong><% $i %></strong>
+	      <& sortresults.html, table => $j, object => \@robjs, view => "expanded" &>
+	    </td>
+	   </tr>
+	   <tr>
+	    <td><input type="radio" name="<% $i %>" value="nullify" checked> Set references to NULL</td>
+	   <tr>
+	   </tr>
+	    <td><input type="radio" name="<% $i %>" value="delete"> Delete these referencing objects</td>
+	   </tr>
+	   </table>
+%  }
 %}
+<p>
+
+<input type="hidden" name="table" value="<% $table %>">
+<input type="hidden" name="id" value="<% $obj->id %>">
+<input type="hidden" name="confirm" value="1">
+<p>
+<input name="submit" value="Proceed" type="submit">
+<input name="submit" value="Cancel" type="submit">
+
+</form>
+
+<p><br>
+</td></tr>
+</table>
+<& footer &>
+
+
+%}elsif ($ARGS{confirm} && $ARGS{submit} eq "Proceed"){
+
+% my $labelstr = $gui->getobjlabel($obj, ", ");
+<& header, title=>" Delete: $table: $labelstr" &>
+
+<table align="center" valign="top" border="0" width="95%">
+<tr><td>
+
+<p>
+<table border="0">
+%# Take care of dependencies
+%  foreach my $i (keys %linksfrom){
+%     my ($j, $rtbl, @robjs);
+%     map { $j = $_ } keys %{ $linksfrom{$i} };
+%     @robjs = $obj->$i();
+%     next unless (scalar(@robjs));
+%     if ($ARGS{$i} eq "nullify"){
+%        foreach my $o (@robjs){
+%	   my $lbl = $gui->getobjlabel($o, ", ");
+%	   $o->set($linksfrom{$i}{$j}, 0);
+%	   $o->update;
+	   <tr><td><% "$j $lbl" %>:</td><td>set <% $linksfrom{$i}{$j} %> to NULL</td></tr>
+%	 }
+%     }elsif ($ARGS{$i} eq "delete"){
+%        foreach my $o (@robjs){
+%	   my $lbl = $gui->getobjlabel($o, ", ");
+%	   $o->delete;
+	   <tr><td><% "$j $lbl" %>:</td><td>deleted</td> 
+%	}
+%     }
+%  }  
+%# Delete the object
+%  my $lbl = $gui->getobjlabel($obj, ", ");
+%  $obj->delete;  
+   <tr><td><strong><% "$table $lbl" %></strong>:</td><td> deleted</td>
 </table>
 
-<p><br>
-Return to <a href="expview.html?table=<% $table %>&id=<% $ARGS{id} %>">this <% $table %></a>
-
-<p><br>
+</td></tr>
+</table>
 <& footer &>
+
+%}elsif ($ARGS{submit} eq "Cancel"){
+   <& view.html, table => $table, id => $obj->id &>
+%  exit;
+%}
 
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
-use Data::Dumper;
-my( %arg, %linksto, %linksfrom, $table, $mi, %order, %upd);
+use Netdot::GUI;
+my $gui = Netdot::GUI->new();
+my( %linksto, %linksfrom, $table, $obj, $mi, %order);
            
 </%init>
