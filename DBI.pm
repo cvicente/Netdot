@@ -42,7 +42,7 @@ package Availability;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Availability' );
-__PACKAGE__->columns( All => /id name info disabled/ );
+__PACKAGE__->columns( All => qw/id name info disabled/ );
 
 __PACKAGE__->has_many( 'customers', 'Customer' => 'availability');
 __PACKAGE__->has_many( 'sites', 'Site' => 'availability' );
@@ -130,11 +130,11 @@ package Customer;
 use base 'Netdot::DBI';
 
 __PACKAGE__->table( 'Customer' );
-__PACKAGE__->columns( All => qw /id name Hours Address ContactPool info disabled/ );
+__PACKAGE__->columns( All => qw/id name availability address contactPool info disabled/ );
 
 __PACKAGE__->has_a( address => 'Address' );
 __PACKAGE__->has_a( contactPool => 'ContactPool' );
-__PACKAGE__->has_a( hours => 'Availability' );
+__PACKAGE__->has_a( availability => 'Availability' );
 __PACKAGE__->has_many( 'customers', 'Customer' => 'customer' );
 __PACKAGE__->has_many( 'jncustomersites', 'JnCustomerSite' => 'customer' );
 __PACKAGE__->has_many( 'nodes', 'Node' => 'customer' );
@@ -316,6 +316,10 @@ __PACKAGE__->has_many( 'models', 'Model' => 'vendor' );
 
 ######################################################################
 #  $Log: DBI.pm,v $
+#  Revision 1.16  2003/04/15 21:50:01  netdot
+#  couple more bugfixes: another 'qw' forgot in Availability and misnamed
+#  column in Customer (s/hours/availability/)
+#
 #  Revision 1.15  2003/04/15 21:36:35  netdot
 #  removed tables() function.  Use DBI::tables() instead.
 #
