@@ -11,6 +11,11 @@ unless ( $arg{table} && $arg{id} ){
 $table = $arg{table};
 $obj = $table->retrieve($arg{id});
 
+unless ( $obj ){
+   print "<strong>Nonexistent record: $arg{id}</strong>";
+   exit;
+}
+
 # Get some Meta info
 $mi = (Meta->search( name => $arg{table} ))[0];
 undef( %linksto );
@@ -33,39 +38,52 @@ if( defined( $mi->columnorder ) ) {
 </%perl>
 
 
-%#  Display-only option
-%if( !$arg{edit} ) {
-
 <& header, title=>" $table Details" &>
 
-% # First show values that are not foreign keys
-<p><br> 
-<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+<table align="center" border="0" width="95%">
+<tr><td>
+<p><br>
+<table align="left" cellpadding="3" cellspacing="1" border="0">
 <tr> 
-<td align="left" bgcolor="#FFFFFF"><strong><% $table %></strong></td>
-<td align="right" colspan="2" bgcolor="#FFFFFF"><a href="expview.html?table=<% $table %>&id=<% $obj %>&edit=1">edit</a>
-&nbsp;<a href="delete.html?table=<% $table %>&id=<% $obj %>&edit=1">delete</a>
+   <form action="expview.html" method="POST">
+   <input type="hidden" name="table" value="<% $table %>">
+   <td bgcolor="FFFFFF" colspan="2">
+%     my (@objl, $p);
+%     my $numrec =  scalar(@objl = map { $_->id } $table->retrieve_all);
+%     for (my $i=0; $i < $numrec; $i++) { if ($objl[$i] == $obj->id) { $p = $i; last; }  };
+      [<a href="expview.html?table=<% $table %>&id=<% $objl[0] %>">|&lt;</a>]
+      &nbsp;&nbsp;[<a href="expview.html?table=<% $table %>&id=<% (($objl[$p-1]) != 0) ? ($objl[$p-1]): $numrec %>">&lt;&lt;</a>]
+      &nbsp;&nbsp; [<a href="expview.html?table=<% $table %>&id=<% $objl[($p+1)%($numrec)] %>">&gt;&gt;</a>] 
+      &nbsp;&nbsp;[<a href="expview.html?table=<% $table %>&id=<% $objl[$numrec-1] %>">&gt;|</a>] 
+      &nbsp;&nbsp; record <input type="text" size="3" name="id" value="<% $obj->id %>"> of <% $numrec %> 
+   </td>
+   </form>
+</tr>
+</table>
+
+<p><br><br>
+<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
+<tr bgcolor="#FFFFFF"> 
+<td align="center"><strong><% $table %></strong></td>
+<td align="right" colspan="2" >
+      [<a href="update.html?table=<% $table %>&id=<% $obj %>">edit</a>]
+&nbsp;[<a href="delete.html?table=<% $table %>&id=<% $obj %>">delete</a>]
 </td>
 </tr>
 
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %      next if ($c eq 'id' || $c eq 'aliases');
        <tr> 
-       <td bgcolor="#DDDDDD"><% $c %>:</td>
+       <td align="right" bgcolor="#DDDDDD"><% $c %>:</td>
 %      if (!exists($linksto{$c}) ){
 	  <td><strong><% $obj->$c %></strong></td>
 %      }else{
          <td>
-         <table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC">
-         <tr><td>
-%	 my $fkobj;
-%	 unless( defined($obj->$c) && defined($fkobj = $linksto{$c}->retrieve($obj->$c->id) )){
-	 - </td></tr></table> 
-%	 next;
-%        }
-         <& sortresults.html, table => $linksto{$c}, object => [$fkobj]  &>
-         </td></tr>
-         </table>
+%	    my $fkobj;
+%	    unless( defined($obj->$c) && defined($fkobj = $linksto{$c}->retrieve($obj->$c->id) )){
+%	       next;
+%           }
+            <& sortresults.html, table => $linksto{$c}, object => [$fkobj]  &>
 	 </td>
 %      }
      </tr>
@@ -74,56 +92,56 @@ if( defined( $mi->columnorder ) ) {
 <tr> 
 </tr>
 </table>
+<%perl>
+# List all the has_many objects for this object
+foreach my $i (keys %linksfrom){
+  my ($j, $rtbl, @tmp, @robjs, @jobjs, $col);
+  map { $j = $_ } keys %{ $linksfrom{$i} };
+  my $meta = ( Meta->search(name => $j) )[0];
+  unless ( scalar(@tmp = $obj->$i) ){
+    push @links, qq (<a href="create.html?table=$j&$linksfrom{$i}{$j}=$obj">$i</a>);
+    next;
+  }
+  # Do some magic if table is a join table
+  if ( defined($meta) && ($meta->mainobject == 0) ){
+     @jobjs = @tmp;  # these are the join table objects
+     my $jclass = ref($jobjs[0]);  #name of the join table class
+     # Pick the fk column of the other table
+     map { $col = $_  if ($_ ne $linksfrom{$i}{$j} && $_ ne 'id'); } $jclass->columns();
+     map { push @robjs, $_->$col } @jobjs;
+     $rtbl = ref($robjs[0]); 
+  } else{
+     @robjs = @tmp;
+     $rtbl = $j;
+  }
 
-%# List all the has_many objects for this object             
-%foreach my $i (keys %linksfrom){
-%  my ($j, $rtbl, @robjs, @jobjs, $col);
-%  map { $j = $_ } keys %{ $linksfrom{$i} };
-%  my $meta = ( Meta->search(name => $j) )[0];
-%  # Do some magic if table is a join table
-%  if ( defined($meta) && ($meta->mainobject == 0) ){
-%     @jobjs = $obj->$i();  # these are the join table objects
-%     next unless (scalar(@jobjs));
-%     my $jclass = ref($jobjs[0]);  #name of the join table class
-%     # Pick the fk column of the other table
-%     map { $col = $_  if ($_ ne $linksfrom{$i}{$j}); } $jclass->columns();
-%     map { push @robjs, $_->$col } @jobjs;
-%     $rtbl = ref($robjs[0]); 
-%  } else{
-%     @robjs = $obj->$i();
-%     next unless (scalar(@robjs));
-%     $rtbl = $j;
-%  }
+</%perl>
            <p>
            <table cellpadding="0" border="0"  bgcolor="#CCCCCC">
-	   <tr>
-           <td><strong><% $i %></strong>
-	   <& sortresults.html, table => $rtbl, object => \@robjs, view => "expanded" &>
-	   </td></tr>
+	      <tr>
+                <td align="left"><strong><% $i %></strong></td>
+	           <td align="right">[<a href="create.html?table=<% $rtbl %>&<% $linksfrom{$i}{$j} %>=<% $obj %>">add</a>]</td>
+	      <tr>
+	        <td colspan="2">
+	           <& sortresults.html, table => $rtbl, object => \@robjs, view => "expanded" &>
+	        </td>
+	      </tr>
 	   </table>
 
 %}
+%printf ( "<p><br>Add %s to this $table", (join ', ', @links) ) if ( scalar(@links) );
 
-%} else {     # option edit
+</td></tr>
+</table>
 
-<& header, title=>" Edit $table Details" &>
+
 <p><br>
-   <form action="update.html" method="POST">
-      <& form.html, table => $table, id => $arg{id} &>
-      <p><br>
-      <input name="submit" value="Update" type="submit">
-      <input name="cancel" value="Cancel" type="submit">
-   </form>
-
-%} #endif ($arg{edit})
-
-<p>
 <& footer &>
 <%init>
 use lib "/home/netdot/public_html/lib";
 use Netdot::DBI;
 
-my( %arg, %linksto, %linksfrom, $obj, $table, $mi, %order);
+my( %arg, %linksto, %linksfrom, $obj, $table, $mi, %order, @links);
                
 </%init>
 
@@ -131,6 +149,10 @@ my( %arg, %linksto, %linksfrom, $obj, $table, $mi, %order);
 
 ######################################################################
 #  $Log: view.html,v $
+#  Revision 1.11  2003/05/30 00:18:06  netdot
+#  Added browse buttons and many other things.
+#  Changing name to view.html
+#
 #  Revision 1.10  2003/05/23 01:10:11  netdot
 #  Took out the object id from the display
 #  Added a cancel button in edit option.
