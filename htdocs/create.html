@@ -71,9 +71,7 @@ if( exists( $args{submit} )
     $session->{tables}{$PREV}{$arg} = $args{$arg};
   }
   if( ! defined( $args{submit} ) ) {
-    defined( $session->{path} ) ?
-      ( $session->{path} .= ";$args{table}" ) 
-      : ( $session->{path} = "$args{table}" );
+    $gui->setsessionpath( $session, $args{table} );
   }
 }
 ##################################################
