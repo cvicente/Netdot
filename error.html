@@ -1,0 +1,24 @@
+<%perl>
+unless ( $ARGS{caller} && $ARGS{error} ){
+   print "<strong>Missing required parameters 'table' and/or 'id'</strong>";
+   exit;
+}
+
+</%perl>
+
+<& header, title=>" ERROR!" &>
+
+<H3><% $ARGS{caller} %> produced the following error:</H3>
+<p>
+<pre><% $ARGS{error} %></pre>
+
+</p>
+<& footer &>
+
+
+<%init>
+</%init>
+
+<%args>
+$user => $ENV{REMOTE_USER}
+</%args>
