@@ -84,36 +84,49 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('BackboneCable', 
 	  'name', 
-	  'name,type,owner,installdate,startsite,startroom,endsite,endroom,numberofstrands,length,info', 
-	  'name,startsite,startroom,endsite,endroom', 
-	  'name:Cable ID,type:Cable Type,owner:Owned by,installdate:Installed on,startsite:Origin (Site),startroom: Origin (Room),endsite:Destination (Site),endroom:Destination (Room),numberofstrands:Number of Strands,length:Length (ft),info:Comments',
+	  'name,type,owner,installdate,start_closet,end_closet,length,info', 
+	  'name,start_closet,end_closet', 
+	  'name:Cable ID,type:Cable Type,owner:Owned by,installdate:Installed on,start_closet:Origin Closet,end_closet:Destination Closet,length:Length (ft),info:Comments',
 	  '',
-	  'type:CableType,owner:Entity,startsite:Site,endsite:Site', 
+	  'type:CableType,owner:Entity,start_closet:Closet,end_closet:Closet', 
 	  'strands:CableStrand:cable', 
 	  '0', 
-	  'A Backbone (fiber) cable with multiple strands'
+	  'A Backbone cable with multiple strands'
 	  );
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('BackboneCable_history', 
 	  'modified', 
-	  'name,type,owner,installdate,startsite,startroom,endsite,endroom,numberofstrands,length,info,modified,modifier', 
-	  'modified,modifier,name,startsite,endsite', 
-	  'name:Cable ID,type:Cable Type,owner:Owned by,installdate:Installed on,startsite:From Site,startroom:From Room,endsite:To Site,endroom:To Room,numberofstrands:Number of Strands,length:Length (ft),info:Comments,modified:Modified on,modifier:Modified by',
+	  'name,type,owner,installdate,start_closet,end_closet,length,infomodified,modifier', 
+	  'modified,modifier,name,start_closet,end_closet', 
+	  'name:Cable ID,type:Cable Type,owner:Owned by,installdate:Installed on,start_closet:Origin Closet,end_closet:Destination Closet,length:Length (ft),info:Commentsmodified:Modified on,modifier:Modified by',
 	  '',
-	  'type:CableType,startsite:Site,endsite:Site', 
+	  'type:CableType,owner:Entity,start_closet:Closet,end_closet:Closet', 
 	  '', 
 	  '0', 
 	  ''
 	  );
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('BinFile', 
+	  'filename', 
+	  'bindata,filename,filesize,filetype,info', 
+	  'filename,filesize,filetype', 
+	  'bindata:Binary Data,filename:File Name,filesize:File Size,filetype:File Type,info:Comments',
+	  '',
+	  '', 
+	  'closets:Closet:picture,floormaps:Floor:map', 
+	  '0', 
+	  'A Binary File'
+	  );
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('CableStrand', 
 	  'name', 
-	  'name,cable,status,datetested,loss,direction,description,info', 
+	  'name,cable,status,datetested,loss,direction,circuit_id,description,parent,info', 
 	  'name,cable,direction,status',
-	  'name:Strand ID,cable:Cable ID,status:Status,datetested:Date Tested,loss:Loss,direction:Direction (Tx/Rx),description:Description,info:Comments',
+	  'name:Strand ID,cable:Cable ID,status:Status,datetested:Date Tested,loss:Loss,direction:Direction (Tx/Rx),circuit_id:Circuit,description:Description,parent:Parent Strand,info:Comments',
 	  '',
-	  'cable:BackboneCable,status:StrandStatus', 
+	  'cable:BackboneCable,status:StrandStatus,parent:CableStrand', 
 	  '', 
 	  '0', 
 	  'A single cable strand/pair'
@@ -121,11 +134,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('CableStrand_history', 
 	  'modified', 
-	  'cable,name,status,loss,direction,description,info,modified,modifier', 
+	  'cable,name,status,loss,direction,circuit_id,description,parent,info,modified,modifier', 
 	  'modified,modifier,cable,name,direction', 
-	  'name:Strand ID,cable:Cable ID,status:Status,loss:Loss,direction:Direction (Tx/Rx),description:Description,info:Comments,modified:Modified on,Modifier:Modified by',
+	  'name:Strand ID,cable:Cable ID,status:Status,datetested:Date Tested,loss:Loss,direction:Direction (Tx/Rx),circuit_id:Circuit,description:Description,parent:Parent Strand,info:Commentsmodified:Modified on,Modifier:Modified by',
 	  '',
-	  'cable:BackboneCable,status:StrandStatus', 
+	  'cable:BackboneCable,status:StrandStatus,parent:CableStrand', 
 	  '', 
 	  '0', 
 	  ''
@@ -191,6 +204,18 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'circuits:Circuit:type:{on_delete=>"restrict"}', 
 	  '0', 
 	  'Types of WAN circuits');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
+  VALUES ('Closet', 
+	  'name', 
+	  'name,number,site,floor,dimensions,racks,outlets,ru_avail,patch_panels,110_blocks,66_blocks,catv_taps,access_key_type,work_needed,picture,info', 
+	  'name,number,site,floor', 
+	  'name:ID,number:Number,site:Site,floor:Floor,dimensions:Dimensions ("),racks:Racks,outlets:Outlets,ru_avail:Rack Units Available,patch_panels:Patch Panels,110_blocks:110 Blocks,66_blocks:66 Blocks,catv_taps:CableTV Taps,access_key_type:Access Key Type,work_needed:Work Needed,picture:Picture,info:Comments',
+	  '',
+	  'site:Site,floor:Floor,picture:BinFile', 
+	  '', 
+	  '0', 
+	  'A Communications Closet');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
   VALUES ('Connection', 
@@ -306,7 +331,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,value:Value,scope:Scope',
 	  '',
 	  'name:DhcpAttrName,scope:DhcpScope', 
-	  '', 
+	  'ipranges:IpRange:dhcp_attr', 
 	  '0', 
 	  'A DHCP Attribute or Parameter');
 
@@ -392,6 +417,18 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'Types of Entities');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
+  VALUES ('Floor', 
+	  'level', 
+	  'level,map,site,info', 
+	  'level,site', 
+	  'level:Level,map:Map,site:Site,info:Comments',
+	  '',
+	  '', 
+	  'entries:FWTableEntry:fwtable', 
+	  '0', 
+	  'Bridge Forwarding Table');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('FWTable', 
 	  'tstamp,deviceip', 
 	  'tstamp,deviceip', 
@@ -419,11 +456,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('HorizontalCable', 
 	  'jackid', 
-	  'jackid,type,datetested,testpassed,installdate,site,floor,closet,room,account,contactlist,info', 
-	  'jackid,site,floor,closet,room', 
-	  'jackid:Jack ID,type:Type,datetested:Date Tested,testpassed:Passed Test?,installdate:Date Installed,site:Site,floor:Floor,closet:Closet,room:Room,account:Account,contaclist:Contact List,info:Comments',
+	  'jackid,type,datetested,testpassed,installdate,length,closet,room,account,contactlist,info', 
+	  'jackid,closet,room', 
+	  'jackid:Jack ID,type:Type,datetested:Date Tested,testpassed:Passed Test?,installdate:Date Installed,closet:Closet,room:Room,account:Account,contaclist:Contact List,info:Comments',
 	  '',
-	  'type:CableType,site:Site,contactlist:ContactList', 
+	  'type:CableType,closet:Closet,contactlist:ContactList', 
 	  'interfaces:Interface:jack:{on_delete=>"set-null"}', 
 	  '0', 
 	  'Horizontal Cable');
@@ -477,8 +514,16 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '0', 
 	  'An IP (v4 or v6) Address');
 
+
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
-  VALUES ('StrandStatus', 'name',  'name', 'name', '', 'strands:CableStrand:status:{on_delete=>"restrict"}', '0', 'Cable strand/pair status');
+  VALUES ('IpRange', 
+	  'start_ip,end_ip', 
+	  'start_ip,end_ip', 
+	  'start_ip,end_ip', 
+	  'start_ip:Ipblock,end_ip:Ipblock,dhcp_attr:DhcpAttr', 
+	  '', 
+ 	  '0', 
+	  'An IP range for DHCP dynamic assignments');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('IpService', 
@@ -623,6 +668,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  '0', 
 	  '');
 
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
+  VALUES ('StrandStatus', 'name',  'name', 'name', '', 'strands:CableStrand:status:{on_delete=>"restrict"}', '0', 'Cable strand/pair status');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('SubnetZone', 

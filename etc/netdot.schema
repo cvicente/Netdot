@@ -48,6 +48,7 @@ my $schema = {
   'index' => [  ],
 },
 
+
 'BackboneCable' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
@@ -55,11 +56,8 @@ my $schema = {
     'type', 'integer', '', '', '', '',
     'owner', 'integer', 'NULL', '', '', '',
     'installdate', 'date', 'NULL', '', '', '',
-    'startsite', 'integer', '', '', '', '',
-    'startroom', 'varchar', 'NULL', '32', '', '',
-    'endsite', 'integer', '', '', '', '',
-    'endroom', 'varchar', 'NULL', '32', '', '',
-    'numberofstrands', 'integer', 'NULL', '', '', '',
+    'start_closet', 'integer', '', '', '', '',
+    'end_closet', 'integer', '', '', '', '',
     'length', 'varchar', 'NULL', '32', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
@@ -76,11 +74,8 @@ my $schema = {
     'type', 'integer', '', '', '', '',
     'owner', 'integer', 'NULL', '', '', '',
     'installdate', 'date', 'NULL', '', '', '',
-    'startsite', 'integer', '', '', '', '',
-    'startroom', 'varchar', 'NULL', '32', '', '',
-    'endsite', 'integer', '', '', '', '',
-    'endroom', 'varchar', 'NULL', '32', '', '',
-    'numberofstrands', 'integer', 'NULL', '', '', '',
+    'start_closet', 'integer', '', '', '', '',
+    'end_closet', 'integer', '', '', '', '',
     'length', 'varchar', 'NULL', '32', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
     'modified', 'timestamp', '', '', '', '',
@@ -89,6 +84,20 @@ my $schema = {
   'primary_key' => 'id',
   'unique' => [ [ ] ],
   'index' => [ [ 'cable_id' ] ],
+},
+
+'BinFile' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'bindata', 'long varbinary', '', '', '', '',
+    'filename', 'varchar', '', '64', '', '',
+    'filesize', 'varchar', '', '64', '', '',
+    'filetype', 'varchar', '', '64', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['filename']  ],
+  'index' => [  ],
 },
 
 'CableStrand' => {
@@ -100,7 +109,9 @@ my $schema = {
     'datetested', 'date', 'NULL', '', '', '',
     'loss', 'varchar', 'NULL', '32', '', '',
     'direction', 'varchar', '', '32', '', '',
+    'circuit_id', 'integer', '', '', '', '',
     'description', 'varchar', 'NULL', '128', '', '',
+    'parent', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
@@ -119,6 +130,8 @@ my $schema = {
     'loss', 'varchar', 'NULL', '32', '', '',
     'direction', 'varchar', 'NULL', '32', '', '',
     'description', 'varchar', 'NULL', '128', '', '',
+    'circuit_id', 'integer', '', '', '', '',
+    'parent', 'integer', '', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
     'modified', 'timestamp', '', '', '', '',
     'modifier', 'varchar', 'NULL', '32', '', '',
@@ -204,6 +217,30 @@ my $schema = {
   'index' => [  ],
 },
 
+'Closet' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'name', 'varchar', '', '32', '', '',
+    'number', 'varchar', '', '32', '', '',
+    'site', 'integer', '', '', '', '',
+    'floor', 'integer', '', '', '', '',
+    'dimensions', 'varchar', 'NULL', '64', '', '',
+    'racks', 'varchar', 'NULL', '128', '', '',
+    'outlets', 'varchar', 'NULL', '128', '', '',
+    'ru_avail', 'varchar', 'NULL', '128', '', '',
+    'patch_panels', 'varchar', 'NULL', '128', '', '',
+    '110_blocks', 'varchar', 'NULL', '128', '', '',
+    '66_blocks', 'varchar', 'NULL', '128', '', '',
+    'catv_taps', 'varchar', 'NULL', '128', '', '',
+    'access_key_type', 'varchar', 'NULL', '128', '', '',
+    'work_needed', 'varchar', 'NULL', '128', '', '',
+    'picture', 'integer', '', '', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['name'], ['site','floor'] ],
+  'index' => [  ],
+},
 
 'Connection' => {
   'columns' => [
@@ -323,7 +360,7 @@ my $schema = {
     'info', 'long varbinary', 'NULL', '', '', '',
 ],
   'primary_key' => 'id',
-  'unique' => [ ['name'], ['serialnumber', 'productname']  ],
+  'unique' => [ ['name'] ],
   'index' => [ ['type'], ['physaddr'], ['entity'] , ['inventorynumber'] ],
 },
 
@@ -489,6 +526,19 @@ my $schema = {
   'index' => [  ],
 },
 
+'Floor' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'level', 'varchar', '', '32', '', '',
+    'map', 'integer', 'NULL', '', '', '',
+    'site', 'integer', '', '', '', '',
+    'info', 'long varbinary', 'NULL', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['level', 'site'] ],
+  'index' => [  ],
+},
+
 'FWTable' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
@@ -513,6 +563,7 @@ my $schema = {
   'index' => [  ],
 },
 
+
 'HorizontalCable' => {
   'columns' => [
     'id', 'serial', '', '', '', '',
@@ -521,17 +572,16 @@ my $schema = {
     'datetested', 'date', 'NULL', '', '', '',
     'testpassed', 'bool', '', '', '', '',
     'installdate', 'date', 'NULL', '', '', '',
-    'site', 'integer', '', '', '', '',
-    'floor', 'varchar', 'NULL', '64', '', '',
-    'closet', 'varchar', '', '32', '', '', 
+    'length', 'varchar', 'NULL', '32', '', '',
+    'closet', 'integer', '', '', '', '', 
     'room', 'varchar', '', '64', '', '',
     'account', 'varchar', 'NULL', '32', '', '',
     'contactlist', 'integer', 'NULL', '', '', '',
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
-  'unique' => [ ['jackid', 'site', 'closet', 'room'] ],
-  'index' => [ ],
+  'unique' => [ ['jackid', 'closet', 'room'] ],
+  'index' => [ ['account'] ],
 },
 
 'Interface' => {
@@ -626,6 +676,18 @@ my $schema = {
  'index' => [ ['last_seen'], ['physaddr'], ['interface'] ],
 },
 
+
+'IpRange' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'start_ip', 'integer', '', '', '', '',
+    'end_ip', 'integer', '', '', '', '',
+    'dhcp_attr', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['start_ip','end_ip'] ],
+  'index' => [ ['dhcp_attr'] ],
+},
 
 'IpService' => {
   'columns' => [
