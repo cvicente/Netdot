@@ -38,28 +38,25 @@ if( $args{table} ) {
 %     next if( $c eq 'id' );
 %     next if( $c eq 'disabled' && ! $args{showdisabled} );
 % ################################################
-%     if( ! exists( $linksto{$c} ) ) { 
+%     if( ! exists( $linksto{$c} ) ) { # local field
         <tr>
         <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
 %       if( defined( $args{id} ) ) {
           <td colspan="2"><input type="text" size="40" name="<% $c %>" value="<% $obj->$c %>"></td>
 %       } elsif( exists( $session{$c} ) ) {
-          <td colspan="2"><input type="text" size="40" name="<% $c %>" value="<% $session{$c} %>"></td>
+	    <td colspan="2"><% $gui->getinputtag($c, $linksto{$c}, $session{$c}) %></td>
 %       } else {
-          <td colspan="2"><input type="text" size="40" name="<% $c %>"></td>
+	    <td colspan="2"><% $gui->getinputtag($c, $linksto{$c}) %></td>
 %       }
         </tr>
 % ################################################
 %     } else {
         <tr>
         <td bgcolor="#FFFFFF"><strong><% $c %>:</strong></td>
-%       my $ft = $gui->getmeta( $linksto{$c} );
-%       if( ! defined( $ft ) ) {
-          No <% linksto{$c} %> in Meta table
-%       } elsif( defined( $obj ) && $obj->$c == 0 ) {
+%       if( defined( $obj ) && $obj->$c == 0 ) {
           -
 %	} elsif( defined( $obj ) 
-%                && ! defined( $linksto{$c}->retrieve( int( $obj->$c ) ) ) ) {
+%                && ! defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) {
           -
 %       } else {
           <td>
@@ -122,6 +119,9 @@ Arguments:
 
 ######################################################################
 #  $Log: form.html,v $
+#  Revision 1.19  2003/07/11 20:57:48  netdot
+#  Using GUI::getinputtag now - cv
+#
 #  Revision 1.18  2003/06/27 19:08:30  netdot
 #  fixed some problems in the dropdown menu area
 #
