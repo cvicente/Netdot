@@ -1,5 +1,17 @@
 package Netdot::IPManager;
 
+=head1 NAME
+
+Netdot::IPManager - IP Address Space Functions for Netdot
+
+=head1 SYNOPSIS
+
+  use Netdot::IPManager
+
+  $ipm = Netdot::IPManager->new();  
+
+=cut
+
 use lib "PREFIX/lib";
 
 use base qw( Netdot );
@@ -11,11 +23,14 @@ use strict;
 #Be sure to return 1
 1;
 
+=head1 METHODS
 
-#####################################################################
-# Constructor
-# 
-#####################################################################
+=head2 new - Create a new IPManager object
+
+  $ipm = Netdot::IPManager->new();  
+
+=cut
+
 sub new { 
     my $proto = shift;
     my $class = ref( $proto ) || $proto;
@@ -36,18 +51,24 @@ sub new {
 	$self->error(sprintf("Can't connect to db: %s\n", $DBI::errstr));
 	return 0;
     }
+    # Max number of blocks returned by search functions
+    $self->{'MAXBLOCKS'} = 200;
 
     wantarray ? ( $self, '' ) : $self; 
 }
 
+=head2 sortblocksbyaddr 
 
-#####################################################################
-# Sort IPblock objects by ip address
-# Arguments: arrayref of Ipblock objects
-# Returns: sorted arrayref
-#####################################################################
+ Sort IPblock objects by ip address
+
+ Arguments: arrayref of Ipblock objects
+ Returns: sorted arrayref
+
+=cut
+
 sub sortblocksbyaddr {
     my ( $self, $objects) = @_;
+    return 0 unless ( @$objects );
     @{$objects} = 
 	map  { $_->[0] }
     sort { $a->[1] <=> $b->[1] }
@@ -55,13 +76,18 @@ sub sortblocksbyaddr {
     map  { [$_, NetAddr::IP->new($_->address)] } @{$objects};
     return $objects;
 }
-#####################################################################
-# Sort IPblock objects by parent's ip address
-# Arguments: arrayref of Ipblock objects
-# Returns: sorted arrayref
-#####################################################################
+
+=head2 sortblocksbyparent
+
+ Sort IPblock objects by parent's ip address
+ Arguments: arrayref of Ipblock objects
+ Returns: sorted arrayref
+
+=cut
+
 sub sortblocksbyparent {
     my ( $self, $objects) = @_;
+    return 0 unless ( @$objects );
     @{$objects} = 
 	map  { $_->[0] }
     sort { $a->[1] <=> $b->[1] }
@@ -70,64 +96,63 @@ sub sortblocksbyparent {
     return $objects;
 }
 
-#####################################################################
-# Search IP Block
-# Arguments: address and prefix
-# Returns: Ipblock object
-#####################################################################
+=head2 searchblock -  Search IP Blocks
+ Arguments: address and (optional) prefix
+ Returns: Ipblock object
+
+=cut
+
 sub searchblock {
     my ($self, $address, $prefix) = @_;
-    my $ip;
+    my ($ip, @ipb);
     unless ($ip = NetAddr::IP->new($address, $prefix)){
-	$self->error(sprintf("Invaild address: %s/%s", $address, $prefix));
-	return 0;
+	$self->error(sprintf("Invalid address: %s/%s", $address, $prefix));
+	return;
     }
-    if ( my $ipb = (Ipblock->search( {address => ($ip->numeric)[0], 
-				      prefix  => $ip->masklen} 
-				     ))[0] ){
-	return $ipb;
+    if ($prefix){
+	@ipb = Ipblock->search( address => ($ip->numeric)[0], 
+				prefix  => $ip->masklen,
+				);
+    }else{
+	@ipb = Ipblock->search( address => ($ip->numeric)[0]);
     }
-    $self->error(sprintf("%s/%s not found", $ip->addr, $ip->masklen));
-    return 0;
-}
-#####################################################################
-# Search IP Blocks
-# Arguments: address
-# Returns: List of Ipblock objects
-#####################################################################
-sub searchblocks {
-    my ($self, $address) = @_;
-    my $ip;
-    unless ($ip = NetAddr::IP->new($address)){
-	$self->error("Invaild address: $address");
-	return 0;
-    }
-    if ( my @ipb = Ipblock->search( address => ($ip->numeric)[0] ) ){
-	return @ipb;
-    }
-    $self->error(sprintf("%s not found", $ip->addr));
-    return 0;
+    if (scalar (@ipb) > $self->{'MAXBLOCKS'}){
+	$self->error("Too many entries. Please refine search");
+	return;
+    }    
+    wantarray ? ( @ipb ) : $ipb[0]; 
+
 }
 
-#####################################################################
-# Search IP Blocks that match certain address substring
-# Arguments: (part of) address
-# Returns: Ipblock objects
-#####################################################################
+=head2 searchblockslike - Search IP Blocks that match certain address substring
+
+ Arguments: (part of) address
+ Returns: Ipblock objects
+
+=cut
+
 sub searchblockslike {
-    my ($self, $address, $version) = @_;
-    my @blocks;
+    my ($self, $string) = @_;
+    my @ipb;
     my $it = Ipblock->retrieve_all;
     while (my $ipb = $it->next){
-	push @blocks, $ipb if ($ipb->address =~ /$address/);
+	$_ = $ipb->address . $ipb->prefix;
+	push @ipb, $ipb if (/$string/);
+	if (scalar (@ipb) > $self->{'MAXBLOCKS'}){
+	    $self->error("Too many entries. Please refine search");
+	    return;
+	}
     }
-    return (scalar @blocks)? \@blocks : 0;
+    return ( @ipb ) ? @ipb : "";
 }
-#####################################################################
-# Is Ipblock a subnet?
-# Arguments: IPblock object
-# Returns: 0 (is address) or 1 (is subnet)
-#####################################################################
+
+=head2 issubnet - Is Ipblock a subnet?
+
+Arguments: Ipblock object
+Returns: 0 (is address) or 1 (is subnet)
+
+=cut
+
 sub issubnet {
     my ($self, $o) = @_;
     if ( ($o->version == 4 && $o->prefix < 32) 
@@ -138,13 +163,15 @@ sub issubnet {
     }
 }
 
-#####################################################################
-# Get subnet address
-# Arguments: 
-#  $address: ipv4 or ipv6 address
-#  $prefix:  dotted-quad netmask or prefix length
-# Returns: 0 (is address) or 1 (is subnet)
-#####################################################################
+=head2 getsubnetaddr - Get subnet address
+
+Arguments: 
+  $address: ipv4 or ipv6 address
+  $prefix:  dotted-quad netmask or prefix length
+Returns: 0 (is address) or 1 (is subnet)
+
+=cut
+
 sub getsubnetaddr {
     my ($self, $address, $prefix) = @_;
     my $ip;
@@ -155,18 +182,19 @@ sub getsubnetaddr {
     return $ip->network->addr;
     
 }
+=head2 insertblock -  Insert a new block
 
-#####################################################################
-# Insert a new block
-# Required Arguments: 
-#   address: ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
-#   prefix:  dotted-quad mask or prefix length
-# Optional Arguments:
-#   status: id of IpblockStatus
-#   interface: id of Interface where IP was found
-#   manual (bool): inserted manually or automatically
-# Returns: New Ipblock object
-#####################################################################
+Required Arguments: 
+   address: ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
+   prefix:  dotted-quad mask or prefix length
+Optional Arguments:
+   status: id of IpblockStatus
+   interface: id of Interface where IP was found
+   manual (bool): inserted manually or automatically
+Returns: New Ipblock object
+
+=cut
+
 sub insertblock {
     my ($self, %args) = @_;
     my $status;
@@ -212,17 +240,20 @@ sub insertblock {
 	return 0;
     }
 }
-#####################################################################
-# Update existing block
-# Arguments: 
-#   id: id of existing Ipblock object
-#   address: ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
-#   prefix:  dotted-quad mask or prefix length
-# Optional Arguments:
-#   status: id of IpblockStatus
-#   interface: id of Interface where IP was found
-# Returns: New Ipblock object
-#####################################################################
+
+=head2 updateblock -  Update existing IP block
+
+ Arguments: 
+   id: id of existing Ipblock object
+   address: ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
+   prefix:  dotted-quad mask or prefix length
+ Optional Arguments:
+   status: id of IpblockStatus
+   interface: id of Interface where IP was found
+ Returns: New Ipblock object
+
+=cut
+
 sub updateblock {
     my ($self, %args) = @_;
     my ($ipblock, $status);
@@ -264,13 +295,16 @@ sub updateblock {
     }
     return 1;
 }
-#####################################################################
-# Remove block
-# Arguments: 
-#   address: ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
-#   prefix:  dotted-quad mask or prefix length
-# Returns: true if succeded
-#####################################################################
+
+=head2 removeblock -  Remove IP block
+
+ Arguments: 
+   address: ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
+   prefix:  dotted-quad mask or prefix length
+ Returns: true if succeded
+
+=cut
+
 sub removeblock {
     my ($self, %args) = @_;
     my $ipb;
@@ -289,11 +323,16 @@ sub removeblock {
     return 1;
 }
 
-######################################################################
-## Auto-Allocate Block (best allocation)
-## Arguments: parent block and a prefix length, 
-## Returns: New Ipblock object
-######################################################################
+=head2 auto_allocate -  Auto-Allocate Block (best possible allocation)
+
+ Arguments: parent block and a prefix length, 
+ Returns: New Ipblock object
+    #
+    # NEEDS MORE WORK.  RIGHT NOW RETURNS FIRST AVAILABLE BLOCK
+    #	
+
+=cut
+
 sub auto_allocate {
     my ($self, $parentid, $length) = @_;
     my $parent;
@@ -319,7 +358,7 @@ sub auto_allocate {
 	    map  { $_->[0] }
 	    sort { $a->[1] <=> $b->[1] }
 	    map  { [$_, ($_->numeric)[0]] } $ip->split($length);
-	
+
 	foreach my $subnet (@subnets){
 	    if (my $ipblock = $self->searchblock($subnet->addr, $subnet->masklen)){
 		if ($ipblock->status->name eq "Allocated"){
@@ -338,14 +377,15 @@ sub auto_allocate {
     }
 }
 
+=head2 buil_tree -  Builds the IPv4 or IPv6 space tree
 
-######################################################################
-## Builds the IPv4 or IPv6 space tree
-## A very fast, simplified digital tree (or trie) that sets
-## the dependencies of ipblock objects.
-## 
-## Arguments: IP space version (4/6)
-######################################################################
+A very fast, simplified digital tree (or trie) that sets
+the dependencies of ipblock objects.
+
+Arguments: IP space version (4/6)
+
+=cut
+
 sub build_tree { 
     my ($self, $version) = @_;
     unless ($version == 4 || $version == 6){

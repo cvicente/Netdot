@@ -1,5 +1,26 @@
 package Netdot::UI;
 
+=head1 NAME
+
+Netdot::UI - Group of user interface functions for the Network Documentation Tool (Netdot)
+
+=head1 DESCRIPTION
+
+Netdot::UI groups common methods and variables related to Netdot's user interface layer
+
+=head1 SYNOPSIS
+
+  use Netdot::UI
+
+  $ui = Netdot::UI->new();  
+
+  $mi = $ui->getmeta($table);
+  %linksto = $ui->getlinksto($table);
+  %linksfrom = $ui->getlinksfrom($table);
+  %order = $ui->getcolumnorder($table);
+
+=cut
+
 use lib "PREFIX/lib";
 use Apache::Session::File;
 use Apache::Session::Lock::File;
@@ -11,10 +32,17 @@ use strict;
 #Be sure to return 1
 1;
 
+=head1 METHODS
 
-######################################################################
-# Constructor
-######################################################################
+
+=head2 new
+
+  $ui = Netdot::UI->new();
+
+Creates a new UI object (basic constructor)
+
+=cut
+
 sub new { 
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
@@ -25,25 +53,45 @@ sub new {
 }
  
 
-######################################################################
-# Get a Meta object for a table
-######################################################################
+=head2 getmeta
+
+  $mi = $ui->getmeta( $table );
+
+When passed a table name, it searches the "Meta" table and returns the object associated
+with such table.  This object then gives access to the table's metadata.
+Ideally meant to be called from other methods in this class.
+
+=cut
+
 sub getmeta{
     my ($self, $table) = @_;
     return (Meta->search( name => $table ))[0];
 }
 
-######################################################################
-# Get a Meta object for a table
-######################################################################
+=head2 gettables
+
+  @tables = $ui->gettables();
+
+Returns a list of table names found in the Meta table
+
+=cut
+
 sub gettables{
     my $self = shift;
     return map {$_->name} Meta->retrieve_all;
 }
 
-######################################################################
-# Get a table's has_a relationships
-######################################################################
+=head2 getlinksto
+
+  %linksto = $ui->getlinksto($table);
+
+When passed a table name, returns a hash containing the table's one-to-many relationships, 
+being this talble the "one" side (has_a definitions in Class::DBI).  
+The hash's keys are the names of the local fields, and the values are the names of the tables 
+that these fields reference.
+
+=cut
+
 sub getlinksto{
     my ($self, $table) = @_;
     my (%linksto, $mi);
@@ -55,9 +103,18 @@ sub getlinksto{
     return undef;
 } 
 
-######################################################################
-# Get a table's has_many relationships
-######################################################################
+=head2 getlinksfrom
+
+  %linksfrom = $ui->getlinksfrom($table);
+
+When passwd a table name, returns a hash of hashes containing the table's one-to-many relationships,
+being this table the "many" side (equivalent to has_many definitions in Class::DBI).
+The keys of the main hash are identifiers for the relationship.  The next hash's keys are names of 
+the tables that reference this table.  The values are the names of the fields in those tables that
+reference this table's primary key.
+
+=cut
+
 sub getlinksfrom{
     my ($self, $table) = @_;
     my (%linksfrom, $mi);
@@ -70,9 +127,15 @@ sub getlinksfrom{
     return undef;
 } 
 
-######################################################################
-# Get a table's columns in the desired display order
-######################################################################
+=head2 getcolumnorder
+
+  %order = $ui->getcolumnorder($table);
+
+Accepts a table name and returns its column names, ordered in the same order they're supposed to be 
+displayed. It returns a hash with column names as keys and their positions and values.
+
+=cut
+
 sub getcolumnorder{
     my ($self, $table) = @_;
     my (%order, $i, $mi);
@@ -92,9 +155,16 @@ sub getcolumnorder{
     return undef;
 } 
 
-######################################################################
-# Get a table's columns in the desired brief display order
-######################################################################
+=head2 getcolumnorderbrief
+
+  %orderbrief = $ui->getcolumnorderbrief($table);
+
+Similar to getcolumnorder().  Accepts a table name and returns the brief 
+listing for that table.  The method returns a hash with column names as keys
+and their positions as values.
+
+=cut
+
 sub getcolumnorderbrief {
   my ($self, $table) = @_;
   my (%order, $i, $mi);
@@ -114,9 +184,15 @@ sub getcolumnorderbrief {
   return undef;
 } 
 
-######################################################################
-# Get a table's column types
-######################################################################
+=head2 getcolumntypes
+
+  %coltypes = $ui->getcolumntypes($table);
+
+Accepts a table and returns a hash containing the SQL types for the table's columns.  The hash's
+keys are the column names and the values their type.
+
+=cut
+
 sub getcolumntypes{
     my ($self, $table) = @_;
     my (%types, $mi);
@@ -130,9 +206,16 @@ sub getcolumntypes{
     }
     return undef;
 } 
-######################################################################
-# Get a table's column tags
-######################################################################
+
+
+=head2 getcolumntags
+
+  %tags = $ui->getcolumtags($table);
+
+Returns a hash contaning the user-friendly display names for a table's columns
+
+=cut
+
 sub getcolumntags{
     my ($self, $table) = @_;
     my (%tags, $mi);
@@ -147,9 +230,15 @@ sub getcolumntags{
     return undef;
 } 
 
-######################################################################
-# Get a table's labels (columns used as instance names)
-######################################################################
+=head2 getlabels
+
+  @lbls = $ui->getlabels($table);
+
+Returns a table's list of labels.  Labels are one or more columns used as hyperlinks to retrieve 
+the specified object.  They're also used as a meaningful instance identifier.
+
+=cut
+
 sub getlabels{
     my ($self, $table) = @_;
     my $mi;
@@ -161,9 +250,18 @@ sub getlabels{
     return undef;
 } 
 
-######################################################################
-# build label string for a specific object
-######################################################################
+=head2 getobjlabel
+
+  $lbl = $ui->getobjlabel( $obj );
+  $lbl = $ui->getobjlabel( $obj, ", " );
+
+Returns an object's label string, composed from the list of labels and the values of those labels
+for this object, which might reside in more than one table.  
+Accepts an object reference and a (optional) delimiter.  
+Returns a string.
+
+=cut
+
 sub getobjlabel {
     my ($self, $obj, $delim) = @_;
     my (%linksto, @ret, @cols);
@@ -182,78 +280,87 @@ sub getobjlabel {
     return join "$delim", @ret ;
 }
 
-######################################################################
-# returns array of labels for table. Each element is a comma delimited
-# string representing the labels from this table to its endpoint.
-######################################################################
-sub getlabelarr($$)
-{
+=head2 getlabelrr
+
+  @lbls = $ui->getlabelrr( $table );
+
+Returns array of labels for table. Each element is a comma delimited
+string representing the labels from this table to its endpoint.
+
+=cut
+
+sub getlabelarr {
+
     my ($self, $table) = @_;
     my %linksto = $self->getlinksto($table);
     my @columns = $self->getlabels($table);
     my @ret = ();
 
-    foreach my $col (@columns)
-    {
-        if (!exists($linksto{$col}))
-        {
+    foreach my $col (@columns){
+        if (!exists($linksto{$col})){
             push(@ret, $col);
-        }
-
-        else
-        {
+        }else{
             my $lblString = $col . ",";
-            foreach my $lbl ($self->getlabelarr($linksto{$col}))
-            {
+            foreach my $lbl ($self->getlabelarr($linksto{$col})){
                 push(@ret, $lblString . $lbl);
             }
         }
     }
-
     return @ret;
 }
-######################################################################
-# returns values for this object based upon label array.
-#
-# Args:
-#   - obj: object to find values for.
-#   - lbls: array of labels generated by getlabelarr().
-#   - delim: (optional) delimiter.
-######################################################################
-sub getlabelvalue($$$)
-{
+
+=head2 getlabelrr
+
+  @lbls = $ui->getlabelvalue( $obj, $lbls, $delim );
+
+Returns values for this object based upon label array.
+Args:
+  - obj: object to find values for.
+  - lbls: array of labels generated by getlabelarr().
+  - delim: (optional) delimiter.
+
+=cut
+
+sub getlabelvalue {
     my ($self, $obj, $lbls, $delim) = @_;
     
     return "" if (!defined($obj) || int($obj) == 0);
     
     $delim = "," if (!$delim);
     my @val = ();
-    foreach my $lblString (@{$lbls})
-    {
+    foreach my $lblString (@{$lbls}){
         my $o = $obj;
-        foreach my $lbl (split(/,/, $lblString))
-        {
+        foreach my $lbl (split(/,/, $lblString)){
             $o = $o->$lbl if (defined($o->$lbl));
         }
-
         push(@val, $o);
     }
-
     return join("$delim", @val) || "";
 }
 
-######################################################################
-# Get the defined SQL type for a field
-######################################################################
+
+=head2 getsqltype
+
+  $type = $ui->getsqltype( $table, $col );
+
+Given a table and a column name, returns the SQL type as defined in the schema
+
+=cut
+
 sub getsqltype {
     my ($self, $table, $col) = @_;
     my %coltypes = $self->getcolumntypes($table);
     return $coltypes{$col};   
 }
 
-######################################################################
-# Check if table is a join table
-######################################################################
+=head2 isjointable
+
+  $flag = $ui->isjointable( $table );
+
+Check if table is a join table
+
+=cut
+
 sub isjointable {
     my ($self, $table) = @_;
     my $mi;
@@ -263,9 +370,18 @@ sub isjointable {
     return undef;
 }
 
-######################################################################
-# Build input tag based on SQL type and other options
-######################################################################
+=head2 getinputtag
+
+  $inputtag = $ui->getinputtag( $col, $obj );
+  $inputtag = $ui->getinputtag( $col, $table );
+  $inputtag = $ui->getinputtag( $col, $table, $arg );
+
+Accepts column name and object (or table name) and builds an HTML <input> tag based on the SQL type of the 
+field and other parameters.  When specifying a table name, the caller has the option to pass
+a value to be displayed in the tag.
+
+=cut
+
 sub getinputtag {
     my ($self, $col, $proto, $value) = @_;
     my $class;
@@ -305,9 +421,20 @@ sub getinputtag {
     return $tag;
 }
 
-######################################################################
-# create state for a session across web pages
-######################################################################
+=head2 mksession - create state for a session across multiple pages
+
+  $dir = "/tmp";  # location for locks & state files
+  $session = $ui->mksession( $dir );
+
+Creates a state session that can be used to store data across multiple 
+web pages for a given session.  Returns a hash reference to store said data
+in.  Requires an argument specifying what directory to use when storing 
+data (and the relevant lock files).  The session-id is 
+$session{_session_id}.  Be aware that you do not want to de-ref the 
+hash reference (otherwise, changes made to the subsequent hash are lost).
+
+=cut
+
 sub mksession {
   my( $self, $dir ) = @_;
   my( $sid, %session );
@@ -321,9 +448,20 @@ sub mksession {
   }
   return \%session ;
 }
-######################################################################
-# fetch state for a session across web pages
-######################################################################
+
+=head2 getsession - fetch state for a session across multiple pages
+
+  $dir = "/tmp";  # location for locks & state files
+  $sessionid = $args{sid};  # session-id must be handed off to new pages
+  %session = $ui->getsession( $dir, $sessionid );
+
+Fetches a state session and its accompanying data.  Returns a hash ref.  
+Requires two arguments:  the working directory and the session-id (as 
+described above).  The same warning for mksession() regarding 
+de-referencing the returned object applies.
+
+=cut
+
 sub getsession {
   my( $self, $dir, $sid ) = @_;
   my %session;
@@ -338,9 +476,14 @@ sub getsession {
   return \%session;
 }
 
-######################################################################
-# push onto session path (so you know what tables have been visited
-######################################################################
+=head2 pushsessionpath - push table name onto list of table names
+
+  $result = $ui->pushsessionpath( $session, $table );
+
+Pushes the table name $table onto a list of tables that have been visited.
+
+=cut
+
 sub pushsessionpath {
   my( $self, $session, $table ) = @_;
   if( defined( $session->{path} ) 
@@ -352,9 +495,14 @@ sub pushsessionpath {
   return 1;
 }
 
-######################################################################
-# pop from session path (so you know what tables have been visited
-######################################################################
+=head2 popsessionpath - pop table name from list of table names
+
+  $table = $ui->popsessionpath( $session );
+
+Pops the last table visited from the stack and returns the name.
+
+=cut
+
 sub popsessionpath {
   my( $self, $session ) = @_;
   my $tbl;
@@ -366,9 +514,14 @@ sub popsessionpath {
   return $tbl;
 }
 
-######################################################################
-# remove specific session
-######################################################################
+=head2 rmsession
+
+  $ui->rmsession( \%session );
+
+Removes specific session associated with the hash %session.
+
+=cut
+
 sub rmsession {
   my( $self, $session ) = @_;
   if( tied(%{ $session })->delete() ) {
@@ -378,9 +531,18 @@ sub rmsession {
   }
 }
 
-######################################################################
-# clean out old state
-######################################################################
+=head2 rmsessions
+
+  $dir = "/tmp";
+  $age = 3600;   # age is in seconds
+  $ui->rmsessions( $dir, $age );
+
+Removes state older than $age (the supplied argument) from the 
+directory $dir.  Returns 1 for success and 0 for failure.  Remember, age 
+is in seconds.
+
+=cut
+
 sub rmsessions {
   my( $self, $dir, $age ) = @_;
   my $locker = new Apache::Session::Lock::File ;
@@ -391,9 +553,19 @@ sub rmsessions {
   }
 }
 
-#####################################################################
-# update row in DB table
-#####################################################################
+=head2 update - update a DB table row
+
+  $result = $ui->update( object => $obj, state => \%state );
+
+Updates values for a particular row in a DB table.  Takes two arguments. 
+The first argument 'object' is a Netdot::DBI (and consequently Class::DBI
+) object that represents the table row you wish to update.  The second 
+argument 'state' is a hash reference which is a simple composition 
+of column => value pairs.  Returns positive integer representing the 
+modified row's id column for success and 0 for failure.
+
+=cut 
+
 sub update {
   my( $self, %argv ) = @_;
   my($obj) = $argv{object};
@@ -420,9 +592,19 @@ sub update {
   return $obj->id;
 }
 
-#####################################################################
-# insert row in DB table
-#####################################################################
+=head2 insert - insert row into DB table
+
+  $result = $ui->insert( table => $tbl, state => \%state );
+
+Inserts row into database.  Method takes two arguments.  The first 
+argument 'table' is the name of the table to add a row to.  The second 
+argument 'state' is a hash reference which is a simple composition 
+of column => value pairs.  If the method succeeds, it returns a positive 
+integer which is the value of the newly inserted row's id column. 
+Otherwise, the method returns 0.
+
+=cut
+
 sub insert {
   my($self, %argv) = @_;
   my($tbl) = $argv{table};
@@ -437,9 +619,18 @@ sub insert {
   }
 }
 
-#####################################################################
-# remove row from table 
-#####################################################################
+=head2 remove - remove row from DB table
+
+  $result = $ui->remove( table => $tbl, id => $id );
+
+Removes row from table $tbl with id $id.  Function takes two arguments.
+The first argument is 'table', which is the name of the table a row will
+be removed from.  The second argument 'id' specifies the value of the id
+column.  Because id is a unique value, this will delete that specific row.
+Returns 1 for success and 0 for failure.
+
+=cut
+
 sub remove {
   my($self, %argv) = @_;
   my($tbl) = $argv{table};
@@ -456,9 +647,14 @@ sub remove {
   return 1;
 }
 
-#####################################################################
-# Get timestamp in DB 'datetime' format
-#####################################################################
+=head2 timestamp
+
+  $lastseen = $ui->timestamp();
+
+Get timestamp in DB 'datetime' format
+
+=cut
+
 sub timestamp {
     my $self  = shift;
     my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
@@ -468,9 +664,14 @@ sub timestamp {
     return $datetime;
 }
 
-#####################################################################
-# Get date in DB 'date' format
-#####################################################################
+=head2 date
+
+  $lastupdated = $ui->date();
+
+Get date in DB 'date' format
+
+=cut
+
 sub date {
     my $self  = shift;
     my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
@@ -479,9 +680,15 @@ sub date {
 			   $year+1900, $month+1, $day_of_month);
     return $date;
 }
-#####################################################################
-# Get date in 'DNS zone serial' format
-#####################################################################
+
+=head2 dateserial
+
+  $serial = $ui->dateserial();
+
+Get date in 'DNS zone serial' format
+
+=cut
+
 sub dateserial {
     my $self  = shift;
     my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
@@ -491,22 +698,23 @@ sub dateserial {
     return $date;
 }
 
-###############################################################################
-# form_to_db
-#
-# Generalized code for making updates to the DB. Ripped from existing code in
-# device-ws.html with minor tweaks, etc. Expected format for passed in form 
-# data is:
-#
-#   TableName__<primary key>__ColumnName => Value
-#
-#   If primary key is "NEW", a new row will be inserted.
-#
-# Returns a hash with update details on success, false on failure and error 
-# should be set.
-###############################################################################
-sub form_to_db
-{
+=head2 form_to_db
+
+  %info = $ui->form_to_db(%ARGS);
+
+Generalized code for updating columns in different tables. 
+Expected format for passed in form data is:
+
+   TableName__<primary key>__ColumnName => Value
+
+If primary key is "NEW", a new row will be inserted.
+
+Returns a hash with update details on success, false on failure and error 
+should be set.
+
+=cut
+
+sub form_to_db{
     my %arg = ();
     my %form_to_db_info = ();
     my($self, %argv) = @_;
@@ -528,8 +736,7 @@ sub form_to_db
     # for saving purposes
     # / _srch/ elements are added for javascript only
     # we don't need them here
-    foreach my $j (keys %argv)
-    {
+    foreach my $j (keys %argv){
         next if ( exists($control{$j}));
         next if ($j =~ /_srch/);
         next if ($j eq "s2name");
@@ -541,16 +748,14 @@ sub form_to_db
     }
 
     # Check that we have at least one parameter
-    unless (scalar keys(%arg))
-    {
+    unless (scalar keys(%arg)){
         $self->error("Missing name/value pairs.");
         return 0;
     }
     
     # Store objects, fields and values in a hash
     my %objs;
-    foreach my $item (keys %arg)
-    {
+    foreach my $item (keys %arg){
         my ($table, $id, $field) = split /__/, $item;
         $objs{$table}{$id}{$field} = $arg{$item};
     }
@@ -558,18 +763,13 @@ sub form_to_db
     # Now do the actual updating
     # First check for "action" fieldnames
     # Actions (like delete) take precedence over value updates
-    foreach my $table (keys %objs)
-    {
-        foreach my $id (keys %{ $objs{$table} })
-        {
+    foreach my $table (keys %objs){
+        foreach my $id (keys %{ $objs{$table} }){
             my $act = 0;
-            foreach my $field (keys %{ $objs{$table}{$id} })
-            {
-                if ($field eq "delete" && $objs{$table}{$id}{$field} eq "on")
-                {
+            foreach my $field (keys %{ $objs{$table}{$id} }){
+                if ($field eq "delete" && $objs{$table}{$id}{$field} eq "on"){
                     # Remove object from DB
-                    if (!$self->remove(table => "$table", id => "$id"))
-                    {
+                    if (!$self->remove(table => "$table", id => "$id")){
                         return 0; # error should already be set.
                     }
                     
@@ -578,23 +778,17 @@ sub form_to_db
                     # Set the 'action' flag
                     $act = 1;
                     last;
-                }
-                
-                elsif ($field eq "new")
-                {
+                }elsif ($field eq "new"){
                     my %state;
                     # This is a little hack
-                    if ($table eq "InterfaceDep" && $objs{$table}{$id}{$field} ne "0")
-                    {
+                    if ($table eq "InterfaceDep" && $objs{$table}{$id}{$field} ne "0"){
                         $state{child} = $id;
                         $state{parent} = $objs{$table}{$id}{$field};
                     }
                     
 		    my $newid;
-                    if (scalar(keys %state))
-                    {
-	                    if (! ($newid = $self->insert(table => $table, state => \%state)) )
-                        {
+                    if (scalar(keys %state)){
+	                    if (! ($newid = $self->insert(table => $table, state => \%state)) ){
                             return 0; # error should already be set.
                         }
                     }
@@ -603,14 +797,12 @@ sub form_to_db
                     $act = 1;
                     last;
                 }
-            }
+	    }
 
             # If our id is new we want to insert a new row in the DB.
-            if ($id eq "NEW")
-            {
+            if ($id eq "NEW"){
                 my $newid;
-                if (! ($newid = $self->insert(table => $table, state => \%{ $objs{$table}{$id} })) )
-                {
+                if (! ($newid = $self->insert(table => $table, state => \%{ $objs{$table}{$id} })) ){
                     return 0; # error should be set.
                 }
 
@@ -618,52 +810,49 @@ sub form_to_db
                 $form_to_db_info{$table}{key} = $newid;
                 $act = 1;
             }
-            
 
             # Now update the thing
-            if (!$act) # only if no other actions were performed
-            {
+            if (!$act){
+		# only if no other actions were performed
                 my $o;
-                if (!($o = $table->retrieve($id)))
-                {
+                if (!($o = $table->retrieve($id))){
                     $self->error("Couldn't retrieve id $id from table $table");
                     return 0;
                 }
-
-                if (!($self->update(object => $o, state => \%{ $objs{$table}{$id} })))
-                {
+                if (!($self->update(object => $o, state => \%{ $objs{$table}{$id} }))){
                     return 0; # error should already be set.
                 }
-
                 $form_to_db_info{$table}{action} = "update";
                 $form_to_db_info{$table}{key} = $id;
-            }
+	    }
         }
     }
 
     return %form_to_db_info;
 }
 
-###############################################################################
-# selectLookup
-#
-# Arguments:
-#   - object: DBI object, can be null if a table object is included
-#   - table: Name of table in DB. (required if object is null)
-#   - column: name of field in DB.
-#   - edit: true if editing, false otherwise.
-#   - htmlExtra: (optional) extra html you want included in the output. Common
-#                use would be to include style="width: 150px;" and the like.
-#   - makeLink:  (optional) Make the printed value a link
-#                to itself via view.html (requires that column value is 
-#                defined)
-#   - maxCount: (optional) maximum number of results to display before giving 
-#               the user the option of refining their results. Defaults to
-#               DEFAULT_SELECTMAX in configuration files.
-#
-###############################################################################
-sub selectLookup($@)
-{
+=head2 selectLookup
+
+  $ui->selectLookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", makeLink=>1);
+
+Arguments:
+  - object: DBI object, can be null if a table object is included
+  - table: Name of table in DB. (required if object is null)
+  - column: name of field in DB.
+  - edit: true if editing, false otherwise.
+  - htmlExtra: (optional) extra html you want included in the output. Common
+               use would be to include style="width: 150px;" and the like.
+  - makeLink:  (optional) Make the printed value a link
+               to itself via view.html (requires that column value is 
+               defined)
+  - maxCount: (optional) maximum number of results to display before giving 
+              the user the option of refining their results. Defaults to
+              DEFAULT_SELECTMAX in configuration files.
+
+
+=cut
+
+sub selectLookup($@){
     my ($self, %args) = @_;
     my ($o, $table, $column, $lookup, $where, $isEditing, $htmlExtra, $makeLink, $maxCount) = 
 	($args{object}, $args{table}, 
@@ -676,76 +865,57 @@ sub selectLookup($@)
     $maxCount = $args{maxCount} || $self->{"DEFAULT_SELECTMAX"};
     my @labels = $self->getlabelarr($lookup);
 
-    if ($isEditing)
-    {
+    if ($isEditing){
         my ($count, @fo);
         my $tableName = ($o ? $o->table : $table);
         my $id = ($o ? $o->id : "NEW");
         my $name = $tableName . "__" . $id . "__" . $column;
         
-        if ($where)
-        {
+        if ($where){
             @fo = $lookup->search($where);
             $count = scalar(@fo);
-        }
-        else
-        {
+        }else {
             $count = $lookup->count_all;
         }
         
         # if the selected objects are within our limits, show the select box.
-        if ($count <= $maxCount)
-        {
+        if ($count <= $maxCount){
             @fo = $lookup->retrieve_all() if (!$where);
             my $lblField = ($self->getlabels($lookup))[0];
             @fo = sort { $a->$lblField cmp $b->$lblField } @fo;
 
             # if an object was passed we use it to obtain table name, id, etc
             # as well as add an initial element to the selection list.
-            if ($o)
-            {
+            if ($o){
                 printf("<SELECT NAME=\"%s\" %s>\n", $name, $htmlExtra);
-                if ($o->$column)
-                {
+                if ($o->$column){
                     printf("<OPTION VALUE=\"%s\" SELECTED>%s</OPTION>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
-                }
-
-                else
-                {
+                }else{
                     printf("<OPTION VALUE=\"\" SELECTED>-- Make your selection --</OPTION>\n");
                 }
             }
-
             # otherwise a couple of things my have happened:
             #   1) this is a new row in some table, thus we lack an object
             #      reference and need to create a new one. We rely on the supplied 
             #      "table" argument to create the fieldname, and do so with the
             #      id of "NEW" in order to force insertion when the user hits submit.
-            elsif ($table)
-            {
+            elsif ($table){
                 printf("<SELECT NAME=\"%s\" %s>\n", $name, $htmlExtra);
                 printf("<OPTION VALUE=\"\" SELECTED>-- Make your selection --</OPTION>\n");
-            }
+            }else{
             #   2) The apocalypse has dawned. No table argument _or_ valid DB object..lets bomb out.
-            else
-            {
                 $self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
                 return 0;
             }
 
-            foreach my $fo (@fo)
-            {
+            foreach my $fo (@fo){
                 next if ($o && $o->$column && ($fo->id == $o->$column->id));
                 printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $fo->id, $self->getlabelvalue($fo, \@labels));
             }
-
             printf("<OPTION VALUE=\"0\">[null]</OPTION>\n");
             printf("</SELECT>\n");
-        }
-
-        # ...otherwise provide tools to narrow the selection to a managable size.
-        else
-        {
+        }else{
+	    # ...otherwise provide tools to narrow the selection to a managable size.
             my $srchf = "_" . $id . "_" . $column . "_srch";
             printf("<INPUT TYPE=\"text\" name=\"%s\" VALUE=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">&nbsp;\n", $srchf);
             printf("<INPUT TYPE=\"button\" name=\"__%s\" value=\"List\" onClick=\"sendquery(%s, %s.value, \'%s\');\"><br>\n", time(), 
@@ -754,41 +924,38 @@ sub selectLookup($@)
                                                                                                                               $lookup);
             printf("<SELECT NAME=\"%s\" %s>\n", $name, $htmlExtra);
             printf("<OPTION VALUE=\"\" SELECTED>-- Make your selection --</OPTION>\n");
-            if ($o && $o->$column)
-            {
+            if ($o && $o->$column){
                 printf("<OPTION VALUE=\"%s\" SELECTED>%s</OPTION>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
             }
             printf("<OPTION VALUE=\"0\">[null]</OPTION>\n");
             printf("</SELECT>\n");
         }
 
-    }
-
-    elsif ($makeLink && $o->$column)
-    {
+    }elsif ($makeLink && $o->$column){
 	    my $rtable = $o->$column->table;
         printf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $rtable, $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
-    }
-    else
-    {
+    }else{
         printf("%s\n", ($o->$column ? $self->getlabelvalue($o->$column, \@labels) : ""));
     }
 }
 
-###############################################################################
-# selectQuery
-#
-# Search keywords in a table's label fields. If label field is a foreign
-# key, recursively search for same keywords in foreign table.
-# If objects exist that match both keys, return those.  Otherwise, return all
-# objects that match either keyword
-#
-# Arguments
-#   table: Name of table to look up
-#   terms: array ref of search terms
-# Returns
-#   hashref of $table objects
-###############################################################################
+=head2 selectQuery
+
+  $r = $ui->selectQuery(table => $table, terms => \@terms, max => $max);
+
+ Search keywords in a table's label fields. If label field is a foreign
+ key, recursively search for same keywords in foreign table.
+ If objects exist that match both keys, return those.  Otherwise, return all
+ objects that match either keyword
+
+ Arguments
+   table: Name of table to look up
+   terms: array ref of search terms
+ Returns
+   hashref of $table objects
+
+=cut
+
 sub selectQuery {
     my ($self, %args) = @_;
     my ($table, $terms) = ($args{table}, $args{terms});
@@ -820,19 +987,21 @@ sub selectQuery {
     return (keys %in) ? \%in : \%un;
 }
 
-###############################################################################
-# radioGroupBoolean
-#
-# Simple yes/no radio button group. 
-#
-# Arguments:
-#   - object: DBI object, can be null if a table object is included
-#   - table: Name of table in DB. (required if object is null)
-#   - column: name of field in DB.
-#   - edit: true if editing, false otherwise.
-###############################################################################
-sub radioGroupBoolean($@)
-{
+=head2 radioGroupBoolean
+
+   $ui->radioGroupBoolean(object=>$o, column=>"monitored", edit=>$editmgmt);
+
+ Simple yes/no radio button group. 
+
+ Arguments:
+   - object: DBI object, can be null if a table object is included
+   - table: Name of table in DB. (required if object is null)
+   - column: name of field in DB.
+   - edit: true if editing, false otherwise.
+
+=cut
+
+sub radioGroupBoolean($@){
     my ($self, %args) = @_;
     my ($o, $table, $column, $isEditing) = ($args{object}, $args{table}, 
                                             $args{column}, $args{edit});
@@ -847,39 +1016,34 @@ sub radioGroupBoolean($@)
 	 return 0;
      }
 
-    if ($isEditing)
-    {
+    if ($isEditing){
         printf("Y<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"1\" %s>&nbsp;\n", $name, ($value ? "CHECKED" : ""));
         printf("N<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"0\" %s>\n", $name, (!$value ? "CHECKED" : ""));
-    }
-
-    else
-    {
+    }else{
         printf("%s\n", ($value ? "Y" : "N"));
     }
 }
 
+=head2 textField
 
-###############################################################################
-# textField
-#
-# Text field widget. If "edit" is true then a text field is displayed with
-# the value from the DB (if any).
-#
-# Arguments:
-#   - object: DBI object, can be null if a table object is included
-#   - table: Name of table in DB. (required if object is null)
-#   - column: name of field in DB.
-#   - default: default value to display if no value is defined in DB.
-#   - edit: true if editing, false otherwise.
-#   - htmlExtra: extra html you want included in the output. Common use
-#                would be to include style="width: 150px;" and the like.
-#   - makeLink: (optional) Make the printed value a link
-#                to itself via view.html (requires that column value is 
-#                defined)
-###############################################################################
-sub textField($@)
-{
+ Text field widget. If "edit" is true then a text field is displayed with
+ the value from the DB (if any).
+
+ Arguments:
+   - object: DBI object, can be null if a table object is included
+   - table: Name of table in DB. (required if object is null)
+   - column: name of field in DB.
+   - default: default value to display if no value is defined in DB.
+   - edit: true if editing, false otherwise.
+   - htmlExtra: extra html you want included in the output. Common use
+                would be to include style="width: 150px;" and the like.
+   - makeLink: (optional) Make the printed value a link
+                to itself via view.html (requires that column value is 
+                defined)
+
+=cut
+
+sub textField($@){
     my ($self, %args) = @_;
     my ($o, $table, $column, $isEditing, $htmlExtra, $makeLink, $default) = ($args{object}, $args{table}, 
 									     $args{column}, $args{edit}, 
@@ -906,22 +1070,21 @@ sub textField($@)
     }
 }
 
-###############################################################################
-# textArea
-#
-# Text area widget. If "edit" is true then a textarea is displayed with
-# the value from the DB (if any).
-#
-# Arguments:
-#   - object: DBI object, can be null if a table object is included
-#   - table: Name of table in DB. (required if object is null)
-#   - column: name of field in DB. 
-#   - edit: true if editing, false otherwise.
-#   - htmlExtra: extra html you want included in the output. Common use
-#                would be to include style="width: 150px;" and the like.
-###############################################################################
-sub textArea($@)
-{
+=head2 textArea
+
+ Text area widget. If "edit" is true then a textarea is displayed with
+ the value from the DB (if any).
+
+ Arguments:
+   - object: DBI object, can be null if a table object is included
+   - table: Name of table in DB. (required if object is null)
+   - column: name of field in DB. 
+   - edit: true if editing, false otherwise.
+   - htmlExtra: extra html you want included in the output. Common use
+                would be to include style="width: 150px;" and the like.
+=cut
+
+sub textArea($@){
     my ($self, %args) = @_;
     my ($o, $table, $column, $isEditing, $htmlExtra) = ($args{object}, $args{table}, 
                                                         $args{column}, $args{edit}, 
@@ -937,214 +1100,10 @@ sub textArea($@)
 	$self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
 	return 0;
     }
-
-    if ($isEditing)
-    {
+    if ($isEditing){
         printf("<TEXTAREA NAME=\"%s\" %s>%s</TEXTAREA>\n", $name, $htmlExtra, $value);
-    }
-
-    else
-    {
+    }else{
         printf("%s\n", $value);
     }
 }
 
-
-__DATA__
-
-=head1 NAME
-
-Netdot::GUI - Group of user interface functions for the Network Documentation Tool (Netdot)
-
-=head1 SYNOPSIS
-
-  use Netdot::DBI
-
-  $gui = Netdot::DBI->new();  
-
-  $mi = $gui->getmeta($table);
-  %linksto = $gui->getlinksto($table);
-  %linksfrom = $gui->getlinksfrom($table);
-  %order = $gui->getcolumnorder($table);
-
-=head1 DESCRIPTION
-
-Netdot::GUI groups common methods and variables related to Netdot's user interface layer
-
-=head1 METHODS
-
-=head2 new
-
-  $gui = Netdot::GUI->new();
-
-Creates a new GUI object (basic constructor)
-
-=head2 getmeta
-
-  $mi = $gui->getmeta( $table );
-
-When passed a table name, it searches the "Meta" table and returns the object associated
-with such table.  This object then gives access to the table's metadata.
-Its mostly meant to be called from other methods in this class.
-
-=head2 gettables
-
-  @tables = $gui->gettables();
-
-Returns a list of table names
-
-=head2 getlinksto
-
-  %linksto = $gui->getlinksto($table);
-
-When passed a table name, returns a hash containing the table's one-to-many relationships, 
-being this talble the "one" side (has_a definitions in Class::DBI).  
-The hash's keys are the names of the local fields, and the values are the names of the tables 
-that these fields reference.
-
-=head2 getlinksfrom
-
-  %linksfrom = $gui->getlinksfrom($table);
-
-When passwd a table name, returns a hash of hashes containing the table's one-to-many relationships,
-being this table the "many" side (equivalent to has_many definitions in Class::DBI).
-The keys of the main hash are identifiers for the relationship.  The next hash's keys are names of 
-the tables that reference this table.  The values are the names of the fields in those tables that
-reference this table's primary key.
-
-=head2 getcolumnorder
-
-  %order = $gui->getcolumnorder($table);
-
-Accepts a table name and returns its column names, ordered in the same order they're supposed to be 
-displayed. It returns a hash with column names as keys and their positions and values.
-
-=head2 getcolumnorderbrief
-
-  %orderbrief = $gui->getcolumnorderbrief($table);
-
-Similar to getcolumnorder().  Accepts a table name and returns the brief 
-listing for that table.  The method returns a hash with column names as keys
-and their positions as values.
-
-=head2 getcolumntypes
-
-  %coltypes = $gui->getcolumntypes($table);
-
-Accepts a table and returns a hash containing the SQL types for the table's columns.  The hash's
-keys are the column names and the values their type.
-
-=head2 getlabels
-
-  @lbls = $gui->getlabels($table);
-
-Returns a table's list of labels.  Labels are one or more columns used as hyperlinks to retrieve 
-the specified object.  They're also used as a meaningful instance identifier.
-
-=head2 getobjlabel
-
-  $lbl = $gui->getobjlabel( $obj );
-  $lbl = $gui->getobjlabel( $obj, ", " );
-
-Returns an object's label string, composed from the list of labels and the values of those labels
-for this object, which might reside in more than one table.  Accepts an object reference and a delimiter.  
-Returns a string.
-
-=head2 getsqltype
-
-  $type = $gui->getsqltype( $table, $col );
-
-Given a table and a column name, returns the SQL type as defined in the schema
-
-=head2 getinputtag
-
-  $inputtag = $gui->getinputtag( $col, $obj );
-  $inputtag = $gui->getinputtag( $col, $table );
-  $inputtag = $gui->getinputtag( $col, $table, $arg );
-
-Accepts column name and object (or table name) and builds an HTML <input> tag based on the SQL type of the 
-field and other parameters.  When specifying a table name, the caller has the option to pass
-a value to be displayed in the tag.
-
-=head2 mksession - create state for a session across multiple pages
-
-  $dir = "/tmp";  # location for locks & state files
-  $session = $gui->mksession( $dir );
-
-Creates a state session that can be used to store data across multiple 
-web pages for a given session.  Returns a hash reference to store said data
-in.  Requires an argument specifying what directory to use when storing 
-data (and the relevant lock files).  The session-id is 
-$session{_session_id}.  Be aware that you do not want to de-ref the 
-hash reference (otherwise, changes made to the subsequent hash are lost).
-
-=head2 getsession - fetch state for a session across multiple pages
-
-  $dir = "/tmp";  # location for locks & state files
-  $sessionid = $args{sid};  # session-id must be handed off to new pages
-  %session = $gui->getsession( $dir, $sessionid );
-
-Fetches a state session and its accompanying data.  Returns a hash ref.  
-Requires two arguments:  the working directory and the session-id (as 
-described above).  The same warning for mksession() regarding 
-de-referencing the returned object applies.
-
-=head2 pushsessionpath - push table name onto list of table names
-
-  $result = $gui->pushsessionpath( $session, $table );
-
-Pushes the table name $table onto a list of tables that have been visited.
-
-=head2 popsessionpath - pop table name from list of table names
-
-  $table = $gui->popsessionpath( $session );
-
-Pops the last table visited from the stack and returns the name.
-
-=head2 rmsession - remove state for specific session
-
-  $gui->rmsession( \%session );
-
-Removes specific session associated with the hash %session.
-
-=head2 rmsessions - clear out old state
-
-  $dir = "/tmp";
-  $age = 3600;   # age is in seconds
-  $gui->rmsessions( $dir, $age );
-
-Removes state older than $age (the supplied argument) from the 
-directory $dir.  Returns 1 for success and 0 for failure.  Remember, age 
-is in seconds.
-
-=head2 update - update a DB table row
-
-  $result = $gui->update( object => $obj, state => \%state );
-
-Updates values for a particular row in a DB table.  Takes two arguments. 
-The first argument 'object' is a Netdot::DBI (and consequently Class::DBI
-) object that represents the table row you wish to update.  The second 
-argument 'state' is a hash reference which is a simple composition 
-of column => value pairs.  Returns positive integer representing the 
-modified row's id column for success and 0 for failure.
-
-=head2 insert - insert row into DB table
-
-  $result = $gui->insert( table => $tbl, state => \%state );
-
-Inserts row into database.  Method takes two arguments.  The first 
-argument 'table' is the name of the table to add a row to.  The second 
-argument 'state' is a hash reference which is a simple composition 
-of column => value pairs.  If the method succeeds, it returns a positive 
-integer which is the value of the newly inserted row's id column. 
-Otherwise, the method returns 0.
-
-=head2 remove - remove row from DB table
-
-  $result = $gui->remove( table => $tbl, id => $id );
-
-Removes row from table $tbl with id $id.  Function takes two arguments.
-The first argument is 'table', which is the name of the table a row will
-be removed from.  The second argument 'id' specifies the value of the id
-column.  Because id is a unique value, this will delete that specific row.
-Returns 1 for success and 0 for failure.

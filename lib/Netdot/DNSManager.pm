@@ -1,5 +1,17 @@
 package Netdot::DNSManager;
 
+=head1 NAME
+
+Netdot::DNSManager - DNS-related Functions for Netdot
+
+=head1 SYNOPSIS
+
+  use Netdot::DNS
+
+  $dns = Netdot::DNS->new();  
+
+=cut
+
 use lib "PREFIX/lib";
 
 use base qw( Netdot );
@@ -10,11 +22,12 @@ use strict;
 #Be sure to return 1
 1;
 
+=head1 METHODS
 
-#####################################################################
-# Constructor
-# 
-#####################################################################
+=head2 new - Create a new DNSManager object
+
+=cut
+
 sub new { 
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
@@ -23,11 +36,14 @@ sub new {
     $self = $self->SUPER::new( %argv );
     wantarray ? ( $self, '' ) : $self; 
 }
-#####################################################################
-# Look for RR by name
-# Args: name
-# Returns: RR object
-#####################################################################
+
+=head2 getrrbyname - Search Resource Records by name
+
+ Args: name
+ Returns: RR object
+
+=cut
+
 sub getrrbyname {
     my ($self, $name) = @_;
     my $rrta = (RRType->search(name => "A"))[0];
@@ -39,11 +55,14 @@ sub getrrbyname {
     }
     return 0;
 }
-#####################################################################
-# Look for RR by name.  Allow substrings
-# Args: (part of) name
-# Returns: RR object
-#####################################################################
+
+=head2 getrrbynamelike - Search RRs by name. Allow substrings
+
+ Args: (part of) name
+ Returns: array of RR objects
+
+=cut
+
 sub getrrbynamelike {
     my ($self, $name) = @_;
     $name = "%" . $name . "%";
@@ -54,13 +73,16 @@ sub getrrbynamelike {
 	 (@rrs = RR->search_like(name => $name, type => $rrt4a)) ){
 	return \@rrs;
     }
-    return 0;
+    return;
 }
-#####################################################################
-# Lookup Device by DNS name
-# Args: name
-# Returns: Device object
-#####################################################################
+
+=head2 getdevbyname - Lookup Device by DNS name
+
+ Args: name
+ Returns: Device object
+
+=cut
+
 sub getdevbyname {
     my ($self, $name) = @_;
     if (my $rr = $self->getrrbyname($name)){
@@ -70,11 +92,14 @@ sub getdevbyname {
     }
     return 0;
 }
-#####################################################################
-# Lookup Device by DNS name.  Allow substrings
-# Args: (part of) name
-# Returns: Device object(s)
-#####################################################################
+
+=head2 getdevbynamelike -  Lookup Device by DNS name.  Allow substrings
+
+ Args: (part of) name
+ Returns: Device object(s)
+
+=cut
+
 sub getdevbynamelike {
     my ($self, $name) = @_;
     if (my $rrs = $self->getrrbynamelike($name)){
@@ -88,11 +113,15 @@ sub getdevbynamelike {
     }
     return 0;
 }
-#####################################################################
-# Lookup Zone by name
-# Args: name
-# Returns: Zone object
-#####################################################################
+
+
+=head2 getzonebyname -  Lookup Zone by name
+
+ Args: name
+ Returns: Zone object
+
+=cut
+
 sub getzonebyname {
     my ($self, $name) = @_;
     if ( my $z = (Zone->search(mname => $name))[0] ){
@@ -101,19 +130,21 @@ sub getzonebyname {
     return 0;
 }
 
-#####################################################################
-# Insert a Resource Record
-# Args: 
-#   name:
-#   type:
-#   zone:
-#   origin:
-#   ttl:
-#   data:
-#   contactlist:
-#   active
-# Returns: RR object
-#####################################################################
+=head2 insertrr - Insert a Resource Record
+ Args: 
+   name:
+   type:
+   zone:
+   origin:
+   ttl:
+   data:
+   contactlist:
+   active
+
+Returns: RR object
+
+=cut
+
 sub insertrr {
 
     my ($self, %argv) = @_;
@@ -148,18 +179,21 @@ sub insertrr {
     return 0;
 }
 
-#####################################################################
-# Insert a DNS Zone (SOA Record)
-# Args: 
-#   mname:   domain name *(required)
-#   rname:   mailbox name
-#   serial:  YYYYMMDD+two digit serial number
-#   refresh: time before the zone should be refreshed
-#   retry:   time before a failed refresh should be retried
-#   expire:  max time before zone no longer authoritative
-#   minimum: default TTL that should be exported with any RR from this zone
-# Returns: Zone object
-#####################################################################
+=head2 insertzone - Insert a DNS Zone (SOA Record)
+
+Args: 
+   mname:   domain name *(required)
+   rname:   mailbox name
+   serial:  YYYYMMDD+two digit serial number
+   refresh: time before the zone should be refreshed
+   retry:   time before a failed refresh should be retried
+   expire:  max time before zone no longer authoritative
+   minimum: default TTL that should be exported with any RR from this zone
+
+Returns: Zone object
+
+=cut
+
 sub insertzone {
     my ($self, %argv) = @_;
     unless (exists $argv{mname}){

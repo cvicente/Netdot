@@ -1,5 +1,8 @@
 <& index.html, title => "IP Worksheet: $title", s2name => $s2name  &>
 
+<table width="95%" border="0" cellspacing="0" cellpadding="0" class="tablebackground"> 
+<tr><td>
+
 <%perl>
 
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -18,27 +21,24 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 		push @list, $ipb;
 	    }
 	}else{
-	    @list = $ipm->searchblocks($search);
+	    @list = $ipm->searchblock($search);
+	}
+	unless ( @list ){
+	    # None were found, so look for substrings
+	    @list = $ipm->searchblockslike($search);
 	}
 </%perl>      
+%   my $num = scalar(@list);
+    Query <b><em><% $search %></em></b> returned: <b><% $num %> matches</b>
 
-%      if (my $num = scalar(@list)){
-         <table width="95%" border="0" cellspacing="0" cellpadding="1" class="tablebackground"> 
-	     <tr><td>
-	     <p><br>
-	     Query <b><em><% $search %></em></b> returned: <b><% $num %> matches</b>
-	     <p>
-	     <& ipblock_list.mhtml, objects => \@list &>
-%      }else{
-            <p><b>No results</b>
-%           $m->abort;
-           </td></tr></table>
-%       }
-%   } else{
-     <p><b>No search criteria</b>   
-%    $m->abort;
-%}
-
+%      if ( $num ){
+          <& ipblock_list.mhtml, objects => \@list &>
+%      }elsif ( $ipm->error ){
+          <p><b><% $ipm->error %></b>
+%      }
+%   }else{
+       <p><b>No search criteria</b>   
+%   }
 <%perl>
 
 #######################################################################################
@@ -143,10 +143,10 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 <%perl>
 #    Show parent block
 #    after block has been deleted
-    if ($parentid){
-	$id = $parentid;
+    $id = $parentid;
+    if ($id != 0){
 	eval {
-	$o = Ipblock->retrieve($id)
+	    $o = Ipblock->retrieve($id)
 	};
 	if ( $@ ){
 	    $m->comp('error.mhtml', error => $@);
@@ -162,14 +162,6 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %#######################################################################################
 
 %if ( $id ){
-<!-- Header Table -->
-<table border="0" width="95%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
-</table>
-<!-- Margins Table -->
-<table border="0" width="95%" align="center"  class="tablebackground">
- <tr>
-   <td valign="top" width="50%" align="center">
-
 % if ( $edit ){	 
     <form name="netdotform" action="ip-ws.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
@@ -182,7 +174,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %#######################################################################################
 
 <!-- IP Info Table -->
-   <table border="0" width="100%" cellpadding="0" cellspacing="2" class="formtablebg">
+   <table border="0" width="100%" cellpadding="0" cellspacing="0" class="formtablebg">
    <tr class="formtabletitle" >
      <td colspan="2">
       <table width="100%" border="0">
@@ -338,7 +330,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %#######################################################################################
 
 <!-- Subnet Info Table -->
-   <table border="0" width="100%" cellpadding="0" cellspacing="2" class="formtablebg">
+   <table border="0" width="100%" cellpadding="0" cellspacing="0" class="formtablebg">
    <tr class="formtabletitle" >
      <td colspan="2">
       <table width="100%" border="0">
@@ -447,11 +439,12 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
     </form>
 % }
 
- </tr>
-</table>
-<!-- End Margins Table -->
 
 %}
+
+</td></tr>
+</table>
+<& footer.mhtml &>
 
 %#######################################################################################
 %# END

@@ -1,5 +1,26 @@
 package Netdot::DeviceManager;
 
+=head1 NAME
+
+Netdot::DeviceManager - Device-related Functions for Netdot
+
+=head1 SYNOPSIS
+
+  use Netdot::DeviceManager
+
+  $dm = Netdot::DeviceManager->new();  
+
+    # See if device exists
+    my ($c, $d) = $dm->find_dev($host);
+    
+    # Fetch SNMP info
+    my $dev = $dm->get_dev_info($host, $comstr);
+    
+    # Update database
+    $o = $dm->update(%argv);
+
+=cut
+
 use lib "PREFIX/lib";
 use lib "NVPREFIX/lib";
 use NetViewer::RRD::SNMP::NV;
@@ -14,10 +35,18 @@ use strict;
 #Be sure to return 1
 1;
 
+=head1 METHODS
 
-######################################################################
-# Constructor
-######################################################################
+=head2 new - Create a new DeviceManager object
+ 
+    $dm = Netdot::DeviceManager->new(logfacility   => $logfacility,
+				     snmpcommunity => $comstr,
+				     snmpretries   => $retries,
+				     snmptimeout   => $timeout,
+				     );
+
+=cut
+
 sub new { 
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
@@ -47,9 +76,13 @@ sub new {
     wantarray ? ( $self, '' ) : $self; 
 }
 
-#####################################################################
-# Store (appended) output for interactive use
-#####################################################################
+=head2 output -  Store and get appended output for interactive use
+    
+    $dm->output("Doing this and that");
+    print $dm->output();
+
+=cut
+
 sub output {
     my $self = shift;
     if (@_){ 
@@ -58,28 +91,13 @@ sub output {
     }
     return $self->{'_output'};
 }
-#####################################################################
-# Clear output buffer
-#####################################################################
-sub _clear_output {
-    my $self = shift;
-    $self->{'_output'} = undef;
-}
 
-#####################################################################
-# Convert hex values returned from SNMP into a readable string
-#####################################################################
-sub _readablehex {
-    my ($self, $v) = @_;
-    my $h = sprintf('%s', unpack('H*', $v));
-    return uc($h);
-}
+=head2 find_dev - Perform some preliminary checks to determine device's existence
 
-#####################################################################
-# Find Device
-# Performs some lookups in various places to determine
-# if device exists in DB
-#####################################################################
+    my ($c, $d) = $dm->find_dev($host);
+
+=cut
+
 sub find_dev {
     my ($self, $host) = @_;
     my ($device, $comstr);
@@ -117,23 +135,23 @@ sub find_dev {
     return ($comstr, $device);
 }
 
-#####################################################################
-# Update device
-# This method can be called from Netdot's web components or 
-# from independent scripts.  Should be able to update existing 
-# devices or create new ones
-#
-# Required Args:
-#   host:  name or ip address of host to query
-# Optional args:
-#   device: Existing 'Device' object 
-#   comstr: SNMP community string (default "public")
-#####################################################################
+=head2 update - Insert/Update Device in Database
+
+ This method can be called from Netdot's web components or 
+ from independent scripts.  Should be able to update existing 
+ devices or create new ones
+
+ Required Args:
+   host:  name or ip address of host to query
+ Optional args:
+   device: Existing 'Device' object 
+   comstr: SNMP community string (default "public")
+
+=cut
+
 sub update {
     my ($self, %argv) = @_;
     my ($host, $comstr, %dev, $device, $dvn, %ifs, %dbifdeps);
-    $self->error(undef);
-    $self->_clear_output();
 
     $self->debug(loglevel => 'LOG_DEBUG',
 		 message => "Arguments are: %s" ,
@@ -439,12 +457,12 @@ sub update {
 	$iftmp{device} = $device->id;
 
 	my %iffields = ( number      => "",
-			  name        => "",
-			  type        => "",
-			  description => "",
-			  speed       => "",
-			  status      => "" );
-
+			 name        => "",
+			 type        => "",
+			 description => "",
+			 speed       => "",
+			 status      => "" );
+	
 	foreach my $field ( keys %{ $dev{interface}{$newif} } ){
 	    if (exists $iffields{$field}){
 		$iftmp{$field} = $dev{interface}{$newif}{$field};
@@ -647,7 +665,8 @@ sub update {
 			$self->output($msg);
 			unless( $self->{ipm}->insertblock(address => $subnetaddr, 
 							  prefix  => $newmask, 
-							  status  => "Assigned") ){
+							  status  => "Assigned",
+							  manual  => 1 ) ){
 			    my $err = $self->{ipm}->error();
 			    my $msg = sprintf("Could not insert Subnet %s/%s: %s", 
 					      $subnetaddr, $newmask, $err);
@@ -756,12 +775,8 @@ sub update {
 	    }
 	}
     }
-
-    
     ##############################################
     # Add/Update VLANs
-    # 
-    
     foreach my $vid (keys %ifvlans){
 	foreach my $vname (keys %{$ifvlans{$vid}}){
 	    my $vo;
@@ -909,23 +924,21 @@ sub update {
     return $device;
 }
 
-#####################################################################
-# get_dev_info
-# 
-# Use the SNMP libraries to get a hash with the device's information
-# This should hide all possible underlying SNMP code logic from our
-# device insertion/update code
-#
-# Required Args:
-#   host:  name or ip address of host to query
-#   comstr: SNMP community string
-# Optional args:
-#  
-#####################################################################
+=head2 get_dev_info - Get SNMP info from Device
+ 
+ Use the SNMP libraries to get a hash with the device's information
+ This should hide all possible underlying SNMP code logic from our
+ device insertion/update code
+
+ Required Args:
+   host:  name or ip address of host to query
+   comstr: SNMP community string
+ Optional args:
+  
+=cut
+
 sub get_dev_info {
     my ($self, $host, $comstr) = @_;
-    $self->error(undef);
-    $self->_clear_output();
 
     $self->{nv}->build_config( "device", $host, $comstr );
     my (%nv, %dev);
@@ -951,33 +964,33 @@ sub get_dev_info {
     ################################################################
     # Device's global vars
 
-    if ( $self->is_valid($nv{sysObjectID}) ){
+    if ( $self->_is_valid($nv{sysObjectID}) ){
 	$dev{sysobjectid} = $nv{sysObjectID};
 	$dev{sysobjectid} =~ s/^\.(.*)/$1/;  #Remove unwanted first dot
 	$dev{enterprise} = $dev{sysobjectid};
 	$dev{enterprise} =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
 
     }
-    if ( $self->is_valid($nv{sysName}) ){
+    if ( $self->_is_valid($nv{sysName}) ){
 	$dev{sysname} = $nv{sysName};
     }
-    if ( $self->is_valid($nv{sysDescr}) ){
+    if ( $self->_is_valid($nv{sysDescr}) ){
 	$dev{sysdescription} = $nv{sysDescr};
     }
-    if ( $self->is_valid($nv{sysContact}) ){
+    if ( $self->_is_valid($nv{sysContact}) ){
 	$dev{syscontact} = $nv{sysContact};
     }
-    if ( $self->is_valid($nv{sysLocation}) ){
+    if ( $self->_is_valid($nv{sysLocation}) ){
 	$dev{syslocation} = $nv{sysLocation};
     }
-    if ( $self->is_valid($nv{ipForwarding}) && $nv{ipForwarding} == 1 ){
+    if ( $self->_is_valid($nv{ipForwarding}) && $nv{ipForwarding} == 1 ){
 	$dev{router} = 1;
     }
-    if( $self->is_valid($nv{dot1dBaseBridgeAddress})  ) {
+    if( $self->_is_valid($nv{dot1dBaseBridgeAddress})  ) {
 	# Canonicalize address
 	$dev{physaddr} = $self->_readablehex($nv{dot1dBaseBridgeAddress});
     }
-    if( $self->is_valid($nv{entPhysicalSerialNum}) ) {
+    if( $self->_is_valid($nv{entPhysicalSerialNum}) ) {
 	$dev{serialnumber} = $nv{entPhysicalSerialNum};
     }
 
@@ -1058,7 +1071,7 @@ sub get_dev_info {
 		$dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$iffields{$dbname}};
 	    }
 	}
-	if ( $self->is_valid($nv{interface}{$newif}{ifPhysAddress}) ){
+	if ( $self->_is_valid($nv{interface}{$newif}{ifPhysAddress}) ){
 	    $dev{interface}{$newif}{physaddr} = $self->_readablehex($nv{interface}{$newif}{ifPhysAddress});
 	}
 	################################################################
@@ -1066,19 +1079,19 @@ sub get_dev_info {
 	my $dupval;
 	################################################################
 	# Standard MIB
-	if ($self->is_valid($nv{interface}{$newif}{ifMauType})){
+	if ($self->_is_valid($nv{interface}{$newif}{ifMauType})){
 	    $dupval = $nv{interface}{$newif}{ifMauType};
 	    $dupval =~ s/^\.(.*)/$1/;
 	    $dev{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "unknown";
 	    ################################################################
 	    # Other Standard (used by some HP)	    
-	}elsif($self->is_valid($nv{interface}{$newif}{ifSpecific})){
+	}elsif($self->_is_valid($nv{interface}{$newif}{ifSpecific})){
 	    $dupval = $nv{interface}{$newif}{ifSpecific};
 	    $dupval =~ s/^\.(.*)/$1/;
 	    $nv{interface}{$newif}{duplex} = (exists ($Mau2Duplex{$dupval})) ? $Mau2Duplex{$dupval} : "unknown";
 	    ################################################################
 	    # Catalyst
-	}elsif($self->is_valid($nv{interface}{$newif}{portDuplex})){
+	}elsif($self->_is_valid($nv{interface}{$newif}{portDuplex})){
 	    $dupval = $nv{interface}{$newif}{portDuplex};
 	    $nv{interface}{$newif}{duplex} = (exists ($CatDuplex{$dupval})) ? $CatDuplex{$dupval} : "unknown";
 	}
@@ -1095,23 +1108,23 @@ sub get_dev_info {
 	my ($vid, $vname);
 	################################################################
 	# Standard MIB
-	if( $self->is_valid( $nv{interface}{$newif}{dot1qPvid} ) ) {
+	if( $self->_is_valid( $nv{interface}{$newif}{dot1qPvid} ) ) {
 	    $vid = $nv{interface}{$newif}{dot1qPvid};
-	    $vname = ( $self->is_valid($nv{interface}{$newif}{dot1qVlanStaticName}) ) ? 
+	    $vname = ( $self->_is_valid($nv{interface}{$newif}{dot1qVlanStaticName}) ) ? 
 		$nv{interface}{$newif}{dot1qVlanStaticName} : $vid;
 	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
 	    ################################################################
 	    # HP
-	}elsif( $self->is_valid( $nv{interface}{$newif}{hpVlanMemberIndex} ) ){
+	}elsif( $self->_is_valid( $nv{interface}{$newif}{hpVlanMemberIndex} ) ){
 	    $vid = $nv{interface}{$newif}{hpVlanMemberIndex};
-	    $vname = ( $self->is_valid($nv{interface}{$newif}{hpVlanIdentName}) ) ?
+	    $vname = ( $self->_is_valid($nv{interface}{$newif}{hpVlanIdentName}) ) ?
 		$nv{interface}{$newif}{hpVlanIdentName} : $vid;
 	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
 	    ################################################################
 	    # Cisco
-	}elsif( $self->is_valid( $nv{interface}{$newif}{vmVlan} )){
+	}elsif( $self->_is_valid( $nv{interface}{$newif}{vmVlan} )){
 	    $vid = $nv{interface}{$newif}{vmVlan};
-	    $vname = ( $self->is_valid($nv{cviRoutedVlan}{$vid.0}{name}) ) ? 
+	    $vname = ( $self->_is_valid($nv{cviRoutedVlan}{$vid.0}{name}) ) ? 
 		$nv{cviRoutedVlan}{$vid.0}{name} : $vid;
 	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
 	}
@@ -1133,20 +1146,12 @@ sub get_dev_info {
 }
 
 #####################################################################
-# is_valid
+# _is_valid
 # 
-# Check validity of value returned by SNMP
-#
-# Required Args:
-#   value
-#
-# Optional args:
-#  
 # Returns:
-#   rue if valid, false otherwise
+#   true if valid, false otherwise
 #####################################################################
-
-sub is_valid {
+sub _is_valid {
     my ($self, $v) = @_;
     
     if ( defined($v) && (length($v) > 0) && ($v !~ /nosuch/i) ){
@@ -1154,3 +1159,26 @@ sub is_valid {
     }
     return 0;
 }
+
+#####################################################################
+# Clear output buffer
+#####################################################################
+sub _clear_output {
+    my $self = shift;
+    $self->{'_output'} = undef;
+}
+
+#####################################################################
+# Convert hex values returned from SNMP into a readable string
+#####################################################################
+sub _readablehex {
+    my ($self, $v) = @_;
+    my $h = sprintf('%s', unpack('H*', $v));
+    return uc($h);
+}
+
+#####################################################################
+# Find Device
+# Performs some lookups in various places to determine
+# if device exists in DB
+#####################################################################
