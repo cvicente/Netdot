@@ -39,7 +39,7 @@ DIR = bin doc htdocs/img htdocs/masondata tmp lib/Netdot
 
 .PHONY: tests bin doc htdocs lib
 
-install: tests dir doc htdocs lib
+install: tests dir doc htdocs lib bin
 	@echo
 	@echo "Netdot is installed. "
 	@echo "Please read the available documentation before proceeding"
@@ -88,12 +88,15 @@ doc:
 lib:
 	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR="$@/Netdot"
 
+bin:
+	cd $@; make install PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
+
 dropdb: 
 	@echo "WARNING:  This will erase all data in the database!"
 	cd bin ; make dropdb FMOD=$(FMOD) 
 
 installdb: 
 	@echo "Preparing to create netdot database"
-	cd bin ; make install FMOD=$(FMOD) 
+	cd bin ; make installdb FMOD=$(FMOD) 
 
 

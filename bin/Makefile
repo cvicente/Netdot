@@ -75,8 +75,9 @@ DB_NETDOT_PASS =  netdot_pass
 ################################################################
 # End of tweakable section
 ################################################################
+install: files
 
-install: initialize.$(DB_TYPE) insert.metadata insert.sample.data setup.class.dbi files
+installdb: initialize.$(DB_TYPE) insert.metadata insert.sample.data setup.class.dbi 
 
 initialize.Pg: createdb genschema initdb.dba acls
 
@@ -113,7 +114,7 @@ setup.class.dbi:
 
 files:
 	for file in $(FILES); do \
-	    install -m $(FMOD) $$file $(PREFIX)/bin ; \
+	    install -m $(FMOD) $$file $(PREFIX)/$(DIR) ; \
 	done
 
 
