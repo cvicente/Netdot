@@ -777,7 +777,9 @@ if ( defined($search) && $search =~ /\w+/ ){
 }
 
 if ($id){
-    $o = Device->retrieve($id);
+    unless ($o = Device->retrieve($id)){
+       $m->comp('error.mhtml', error=>"Could not retrieve Device with id $id");
+    }   
     $name = ($o->name && $o->name->name) ? $o->name->name : "Name N/A!";
 
     # Build a hash of Interface Vlans
@@ -800,8 +802,12 @@ if ($id){
 	    ORDER BY $ipsort
 	});
     
-    
-@ips = Ipblock->search_allips($o->id);
+    eval {
+	@ips = Ipblock->search_allips($o->id);
+    };
+    if ($@){
+	$m->comp('error.mhtml', error=>"$@");
+    }
 
 }else{
     $name = "Search";

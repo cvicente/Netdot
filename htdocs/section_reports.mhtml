@@ -1,0 +1,113 @@
+<tr class="rowtitle0" align="center">
+    <td align="center"><h3>Reports</h3></td>
+</tr>
+
+<tr class="rowtitle0" align="left">
+    <td align="left">
+%       if ($page eq "DEVICE") {
+            [Device Inventory] | 
+%       } else {
+            <a href="index.html?s2name=Reports&page=DEVICE">[Device Inventory]</a> |     
+%       }
+
+%       if ($page eq "CUSTOM") {
+           [Custom Reports] 
+%       } else {
+           <a href="index.html?s2name=Reports&page=CUSTOM">[Custom Reports]</a>
+%       }
+        <br><hr>
+    </td>
+</tr>
+
+% if ($page eq "DEVICE") {
+
+<tr class="rowtitle0" >
+    <td>
+    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
+       <tr class="formtabletitle">
+	  <th valign="top">Type</th>
+	  <th valign="top">Product</th>
+	  <th valign="top">Count</th>
+       </tr>
+%    foreach my $pt (sort { $a->name cmp $b->name } ProductType->retrieve_all){
+%      my @objs = Product->search_bytype($pt);
+       <tr class="formtablec2">
+	  <td valign="top" ><strong><% $pt->name %></strong></td>
+	  <td valign="top"></td>
+	  <td valign="top"></td>
+       </tr>
+%       foreach my $o (@objs){
+       <tr>
+	  <td valign="top"></td>
+	  <td valign="top"><a href="view.html?table=Product&id=<% $o->id %>"><% $o->name %></a></td>
+	  <td valign="top"><% $o->numdevs %></td>
+       </tr>
+
+%       }
+%    }
+%# Look for unset types
+%      my @objs = Product->search_notype();
+%      if (scalar @objs){
+       <tr>
+	  <td valign="top"><strong>Unknown Type</strong></td>
+	  <td valign="top"></td>
+	  <td valign="top"></td>
+       </tr>
+%         foreach my $o (@objs){
+            <tr>
+		<td valign="top"></td>
+		<td valign="top"><a href="view.html?table=Product&id=<% $o->id %>"><% $o->name %></a></td>
+		<td valign="top"><% $o->numdevs %></td>
+            </tr>
+
+%         }
+%      }
+
+    </table>
+    </td>
+</tr>
+
+% } elsif ($page eq "CUSTOM") {
+
+%}
+
+
+<%init>
+my $currentUser = SiteControl::AccessController::getCurrentUser($r);
+my %caller_args = $m->caller_args(-1);
+
+if (exists($caller_args{page}))
+{
+    $currentUser->setAttribute($r, "REPORTS_PAGE", $caller_args{page});
+}
+
+my $page = $currentUser->getAttribute("REPORTS_PAGE");
+
+Product->set_sql(bytype => qq{
+    SELECT p.name, p.id, COUNT(d.id) AS numdevs
+	FROM Device d, Product p, ProductType t
+	WHERE d.productname = p.id AND
+	p.type = t.id AND
+	t.id = ?
+	GROUP BY p.id
+	ORDER BY numdevs DESC
+    });
+
+Product->set_sql(notype => qq{
+    SELECT p.name, p.id, COUNT(d.id) AS numdevs
+	FROM Device d, Product p
+	WHERE d.productname = p.id AND
+	p.type = 0
+	GROUP BY p.id
+	ORDER BY numdevs DESC
+    });
+
+Product->columns(TEMP => qw/numdevs/);
+
+</%init>
+
+<%doc>
+
+ Reports Section.
+
+</%doc>
