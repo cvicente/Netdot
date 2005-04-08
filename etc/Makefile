@@ -2,8 +2,7 @@
 # makefile for lib
 
 
-FILES = Default.conf categories
-
+FILES = Default.conf categories netdot_apache2_radius.conf
 all: files
 
 files:
