@@ -4,18 +4,29 @@ Add a link between two interfaces from device.html
 (Creates a new InterfaceDep object)
 
 </%doc>
-
+%
+%
+<%flags>
+inherit => undef
+</%flags>
+%
+%
 <%args>
 $int_id  =>   undef
 $role    =>   undef
 $Add     =>   undef
 $Cancel  =>   undef
 </%args>
-
+%
+%
 <%init>
+my $DEBUG = 0;
 my %state;
 my $intobj;
 my $intlbl;
+
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
 if ( $int_id ){
     unless ( $intobj = Interface->retrieve($int_id) ){
 	$m->comp("error.mhtml", error => "Can't retrieve Interface id $int_id");	
@@ -39,7 +50,8 @@ if ( $role ){
 my $newlinkid;
 
 </%init>
-
+%
+%
 <%perl>
 if ( $Add ){
 	foreach my $arg ( keys %ARGS ){

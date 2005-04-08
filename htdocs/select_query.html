@@ -15,7 +15,13 @@ Arguments:
              form name is "netdotform".
 
 </%doc>
-
+%
+%
+<%flags>
+inherit => undef
+</%flags>
+%
+%
 <%args>
 $table     => $ARGS{table};
 $field     => $ARGS{field};
@@ -27,12 +33,12 @@ $form_name => $ARGS{form_name};
 my $r;
 my @terms;
 my $max   = 100;
-my $debug = 0;
+my $DEBUG = 0;
 
 </%init>
 
 <%perl>
-print "<pre> ", Dumper(%ARGS), "</pre><br>" if $debug;
+print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 if ($crit =~ /\w+/){
   if ($crit =~ /\w+\s+\w+/){  #If there's more than one word
@@ -41,7 +47,7 @@ if ($crit =~ /\w+/){
      $crit =~ s/\s+//;
      push @terms, $crit;    
   }
-  print "terms are: ",  join ', ', @terms, "<br>" if $debug;
+  print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
 }
 </%perl>
 
