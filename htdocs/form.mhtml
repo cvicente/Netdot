@@ -14,11 +14,11 @@ Arguments:
 
 <%args>
 
-$table   => undef
-$id      => undef
-%session => undef
-$title   => undef
-
+$table        => undef
+$id           => undef
+%session      => undef
+$title        => undef
+$allow_create => 1
 </%args>
 
 <%init>
@@ -136,11 +136,11 @@ my %tags    = $ui->getcolumntags( $table );
 %	}
 
         </td>
-
+%       if ( $allow_create ){
 	<td class="formtablec2">
           <input name="T_<% $linksto{$c} %>" value="New" type="submit">
         </td>
-
+%       }
         </tr>
 %     } # else
 %   } # for

@@ -12,18 +12,18 @@ Arguments:
    table - The name of the table to search
    res   - A flag to distinguish between showing the form or 
            showing the results
-   args  - The rest are the table's fields to be passed to the 
+   ARGS  - The rest are fields to be passed to the 
            search_like method. 
 
 </%doc>
 
 <%args>
-
+$table => undef
+$res   => undef
 </%args>
 
 <%flags>
 inherit => 'section_generic.html' 
-
 </%flags>
 
 <%attr>
@@ -32,144 +32,85 @@ section => 'Generic'
 </%attr>
 
 <%init>
-my( %arg, %sarg, %linksto, %linksfrom, $table, $mi, %order, %tags, $debug );
 my $maxselect = 100;
-$debug = 0;
+my $DEBUG     = 0;
 
-# Ignore empty fields
-foreach my $j (keys %ARGS){
-	next if ($ARGS{$j} !~ /\w+/);
-	$arg{$j} = $ARGS{$j};	
-}
-print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
-           
-</%init>
+print "%ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
+my %reserved = ( 'user'   => '',
+		 'submit' => '',
+		 'table'  => '',
+		 'res'    => '',
+);         
 
-%if(! $arg{table} ){ # offer a list of tables to select
+unless ( $table ){ # offer a list of tables to select
 
-<table align="center" border="0" width="100%">
-   <tr>
-      <td>
-         <& table.mhtml, width => 3, link => "search_obj.html", title => "Please select a table to search:" &>
-      </td>
-   </tr>
-</table>
+  $m->comp( 'table.mhtml', width => 3, link => "search_obj.html", title => "Please select a table to search:");
 
-<%perl>
 } else {  # we have a table
 
-   $table = $arg{table};
-   
    # Get some Meta info
+    my %linksto   = $ui->getlinksto($table);
 
-   %linksto = $ui->getlinksto($table);
-   %linksfrom = $ui->getlinksfrom($table);
-   %order = $ui->getcolumnorder($table);
-   %tags = $ui->getcolumntags($table);
-   
-   if ( !$arg{res} ){ # show the fill-out form
+</%init>
 
-</%perl>
-<script language="javascript" src="select.js">
-</script>
+%if ( ! $res ){ # show the fill-out form
 
-<table align="center" border="0" width="100%" class="tablebackground">
-   <tr>
-      <td align="center">
-           <form name="netdotform" action="search_obj.html" method="POST">
-	      <input type="hidden" name="table" value="<% $table %>">
-	      <input type="hidden" name="res" value="1">
-	      <p>
-	      <table width="100%"  cellpadding="3" cellspacing="1" border="0" class="formtablebg">
-	       <tr class="rowtitle0"> 
-	           <td colspan="2" align="center"><b>Specify one or more of the following as search criteria:</b></td>
-	       </tr>
-%	      foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%		 if ( !exists($linksto{$c}) ){  # The column is 'local'
-                    <tr> 
-%		       if ( exists($tags{$c}) ){
-		          <td class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
-%		       }else{
-		          <td class="formtablec1"><strong><% $c %>:</strong></td>
-%		       }
-	  		 <td class="formtablec2"><% $ui->getinputtag($c, $table) %></td>
-		    </tr>
-%		 }else {  # The column is a foreign key. Provide a list to select.
-                   <tr>
-%		       if ( exists($tags{$c}) ){
-		          <td class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
-%		       }else{
-		          <td class="formtablec1"><strong><% $c %>:</strong></td>
-%		       }
-		      <td class="formtablec2">
-%			   # Check for amount of objects in table before retrieving all
-%			   my $count = $linksto{$c}->count_all;
-%			   if ( $count <= $maxselect ){			      
-%			      my @fkobjs = $linksto{$c}->retrieve_all;
-%			      my $lblfield = ( $ui->getlabels($linksto{$c}) )[0];	 
-%			      @fkobjs = sort { $a->$lblfield cmp $b->$lblfield } @fkobjs; 
-   			      <select name="<% $c %>">
-			      <option></option> 
-%			      foreach my $fkobj ( @fkobjs ) {
-			        <option value="<% $fkobj->id %>"><% $ui->getobjlabel($fkobj, ", ") %></option>
-%			      }
-			      </select>
-%			   }else{
-%			      my $srchf = $c . '_srch';  #name of the form input tag
-			      <input type="text" name="<% $srchf %>" value="Keywords">
-			      &nbsp;<input type="button" name="" value="List" 
-			         onClick="sendquery(<% '_' . $c  %>, <% $srchf . '.value' %>, <% "\'" . $linksto{$c} . "\'" %>)" >
-			      <br><select name="<% '_' . $c %>"> 
-			      </select>
-%			   }
+<script language="javascript" src="select.js"></script>
 
-		      </td>
-		   </tr>        
-%               }
-%            }
-                    </tr>
-                    <tr class="rowtitle0" >
-                       <td align="center" colspan="2">
-	                 <input name="submit" value="Search" type="submit">
-	                 <input type="reset">
-	               </td>
-                    </tr>
-              </table>
-           </form>
+<form name="netdotform" action="search_obj.html" method="POST">
+   <input type="hidden" name="res" value="1">
 
-      </td>
-   </tr>
-</table>
+   <table width="100%"  cellpadding="3" cellspacing="1" border="0" class="formtablebg">
+      <tr class="rowtitle0"> 
+         <td colspan="2" align="center">
+            <strong>Specify one or more of the following as search criteria:</strong>
+	 </td>
+      </tr>
+      <tr>
+         <td>
+            <& form.mhtml, table => $table, allow_create => 0  &>     
+         </td>
+      </tr>
+      <tr class="rowtitle0" >
+         <td align="center" colspan="2">
+	    <input name="submit" value="Search" type="submit">
+	    <input type="reset">
+	 </td>
+      </tr>
+   </table>
+</form>
 
 %   } else { # Process input and search
 <%perl>
-         foreach my $j (keys %arg){
 
-	    # Ignore fields that don't belong to the table
-	    # /_srch/ elements are added for javascript only
-	    # we don't need them here
+my %sarg;
 
-            next if ($arg{$j} eq '' || $j eq 'submit' || $j eq 'table' 
-	             || $j eq 'res' || $j =~ /_srch/ );
-		     
-	    # "/^_/" is added to avoid using reserved words in javascript
-	    # chop it off
-	    my $k = $j;
-	    $k =~ s/^_//;
-            $sarg{$k} = $arg{$j};	   
-	    
-            if (! exists( $linksto{$k} )){  # The column is 'local'
-               $sarg{$k} = "%" . $sarg{$k} . "%";  # Add wildcards
-            }
-         }
-	 print "sarg is  <pre>", Dumper(%sarg), "</pre><br>" if $debug;
-	 
-         # Check that we have at least one parameter
-         unless (scalar keys(%sarg)){
-	    $m->comp('error.mhtml', error => "Missing Search Criteria");	    
-         }
-         my @objs = $table->search_like(\%sarg);
+foreach my $j (keys %ARGS){
+    
+    # Ignore empty, zeroed and reserved fields
+    next unless ( $ARGS{$j} );
+    next if ( exists $reserved{$j} );
+    next if ( $j =~ /_srch/ );
+    
+    # "/^_/" is added to avoid using reserved words in javascript
+    # chop it off
+    my $k = $j;
+    $k =~ s/^_//;
+    $sarg{$k} = $ARGS{$j};	   
+    
+    if (! exists( $linksto{$k} )){  # The column is 'local'
+	$sarg{$k} = "%" . $sarg{$k} . "%";  # Add wildcards
+    }
+}
+print "sarg is  <pre>", Dumper(%sarg), "</pre><br>" if $DEBUG;
+
+# Check that we have at least one parameter
+unless (scalar keys(%sarg)){
+    $m->comp('error.mhtml', error => "Missing Search Criteria");	    
+}
+my @objs = $table->search_like(\%sarg);
+
 </%perl>
 <table align="center" border="0" width="100%">
    <tr>
@@ -186,7 +127,7 @@ print "arg is  <pre>", Dumper(%arg), "</pre><br>" if $debug;
 
 <p><br>
 
-%   } # endif !$arg{res}
+%   } # endif !res
 
 
 %} 
