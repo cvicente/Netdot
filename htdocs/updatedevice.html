@@ -43,13 +43,17 @@ my $guessed_ent;
 my $guessed_site;
 my $guessed_cl;
 
-print Dumper(%ARGS) if $DEBUG;
+print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
 if( $action eq "discover" && ! $sid ) {
-  $session = $ui->mksession( $TMP );
+    unless ( $session = $ui->mksession( $TMP ) ){
+	$m->comp('error.mhtml', error => $ui->error);
+    }
 }
 if( $sid ) {
-  $session = $ui->getsession( $TMP, $sid );
+    unless ( $session = $ui->getsession( $TMP, $sid ) ){
+	$m->comp('error.mhtml', error => $ui->error);
+    }
 }
 if( $cancel ) {
   $ui->rmsession( $session );
@@ -96,6 +100,8 @@ if( $cancel ) {
     unless ($dev){
 	$m->comp('error.mhtml', error => $dm->error);
     }
+    print "<pre>", Dumper($dev), "</pre>" if $DEBUG;
+    
     $argv{dev} = $dev;
     $argv{host} = $host;
     $session->{argv} = \%argv;
@@ -230,14 +236,16 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 <%perl>
 }elsif ( $action eq "update" ){
     if ( $insert ){
-        %argv = %{ $session->{argv} };
+        %argv              = %{ $session->{argv} };
 	$argv{entity}      = $entity      ||  0;
 	$argv{site}        = $site        ||  0;
 	$argv{contactlist} = $contactlist ||  0;
 
+	print "<pre>",  Dumper(%argv), "</pre>" if $DEBUG;
+
         # Update database
         $argv{addsubnets} = $ADDSUBNETS;
-        $o = $dm->update(%argv);
+        $o = $dm->update_device(%argv);
         unless ($o){
             $m->comp('error.mhtml', error => $dm->error);
         }

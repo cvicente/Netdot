@@ -157,7 +157,7 @@ sub discover {
     printf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
 
     # Update database
-    if ( $r = $dm->update(%argv) ){
+    if ( $r = $dm->update_device(%argv) ){
 	printf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
     }else{
 	printf("Error: %s\n", $dm->error) if $VERBOSE;

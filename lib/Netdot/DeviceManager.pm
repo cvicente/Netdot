@@ -17,7 +17,7 @@ Netdot::DeviceManager - Device-related Functions for Netdot
     my $dev = $dm->get_dev_info($host, $comstr);
     
     # Update database
-    $o = $dm->update(%argv);
+    $o = $dm->update_device(%argv);
 
 =cut
 
@@ -132,7 +132,7 @@ sub find_dev {
     return ($comstr, $device);
 }
 
-=head2 update - Insert new Device/Update Device in Database
+=head2 update_device - Insert new Device/Update Device in Database
 
  This method can be called from Netdot s web components or 
  from independent scripts.  Should be able to update existing 
@@ -150,7 +150,7 @@ sub find_dev {
 
 =cut
 
-sub update {
+sub update_device {
     my ($self, %argv) = @_;
     my ($host, $comstr, %dev);
     $self->_clear_output();
