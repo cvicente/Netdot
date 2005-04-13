@@ -110,11 +110,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('BGPPeering', 
 	  'device,entity', 
-	  'device,entity,bgppeerid,bgppeeraddr,monitored', 
+	  'device,entity,bgppeerid,bgppeeraddr,monitored,monitorstatus',
 	  'device,entity,bgppeeraddr', 
-	  'device:Device,entity:Entity,monitor:Monitored?',
+	  'device:Device,entity:Entity,monitor:Monitored?,monitorstatus:Monitored Status',
 	  '', 
-	  'device:Device,entity:Entity', 
+	  'device:Device,entity:Entity,monitorstatus:MonitorStatus', 
 	  '',
 	  '0', 
 	  'A BGP Peering'
@@ -330,11 +330,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Device', 
 	  'name', 
-	  'name,aliases,sysdescription,physaddr,oobname,oobnumber,entity,contactlist,person,monitored,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,closet,rack,lastupdated,dateinstalled,info',
+	  'name,aliases,sysdescription,physaddr,oobname,oobnumber,entity,contactlist,person,monitored,monitorstatus,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,closet,rack,lastupdated,dateinstalled,info',
 	  'name,productname',
-	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,monitored:Monitored?,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?,site:Building,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments',
+	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,monitored:Monitored?,monitorstatus:Monitored Status,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?,site:Building,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments',
 	  '',
-	  'name:RR,entity:Entity,contactlist:ContactList,person:Person,productname:Product,part_of:Device,site:Site,room:Room,closet:Closet,physaddr:PhysAddr', 
+	  'name:RR,entity:Entity,contactlist:ContactList,person:Person,productname:Product,part_of:Device,site:Site,room:Room,closet:Closet,physaddr:PhysAddr,monitorstatus:MonitorStatus', 
 	  'interfaces:Interface:device,parts:Device:part_of,bgppeers:BGPPeering:device', 
 	  '0', 
 	  'A network device');
@@ -342,11 +342,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Device_history', 
 	  'modified', 
-	  'name,aliases,sysdescription,physaddr,oobname,oobnumber,entity,contactlist,person,monitored,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,closet,rack,lastupdated,dateinstalled,info,modified,modifier', 
+	  'name,aliases,sysdescription,physaddr,oobname,oobnumber,entity,contactlist,person,monitored,monitorstatus,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,closet,rack,lastupdated,dateinstalled,info,modified,modifier', 
 	  'modified,modifier,name,productname', 
-	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,monitored:Monitored?,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?site:Location,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments,modified:Modified on,modifier:Modified by',
+	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contact Group,person:User,monitored:Monitored?,monitorstatus:Monitored Status,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?site:Location,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments,modified:Modified on,modifier:Modified by',
 	  '',
-	  'name:RR,entity:Entity,contactlist:ContactList,person:Person,productname:Product,part_of:Device,site:Site,room:Room,physaddr:PhysAddr', 
+	  'name:RR,entity:Entity,contactlist:ContactList,person:Person,productname:Product,part_of:Device,site:Site,room:Room,physaddr:PhysAddr,monitorstatus:MonitorStatus', 
 	  '', 
 	  '0', 
 	  '');
@@ -545,11 +545,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Ipblock', 
 	  'address,prefix', 
-	  'address,prefix,version,parent,interface,status,entity,description,first_seen,last_seen,monitored,dhcp_enabled,dns_delegated,physaddr,info', 
+	  'address,prefix,version,parent,interface,status,entity,description,first_seen,last_seen,monitored,monitorstatus,dhcp_enabled,dns_delegated,physaddr,info', 
 	  'address,prefix,status,entity',
-	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,entity:Used by,description:Description,first_seen:First Seen,last_seen:Last Seen,monitored:Monitored?,dhcp_enabled:Enable DHCP?,dns_delegated:Delegate DNS?,physaddr:MAC Address,info:Info',
+	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,entity:Used by,description:Description,first_seen:First Seen,last_seen:Last Seen,monitored:Monitored?,monitorstatus:Monitored Status,dhcp_enabled:Enable DHCP?,dns_delegated:Delegate DNS?,physaddr:MAC Address,info:Info',
 	  '',
-	  'interface:Interface,parent:Ipblock,status:IpblockStatus,entity:Entity,physaddr:PhysAddr',
+	  'interface:Interface,parent:Ipblock,status:IpblockStatus,entity:Entity,physaddr:PhysAddr,monitorstatus:MonitorStatus',
 	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,arecords:RRADDR:ipblock,ptrrecords:RRPTR:ipblock,children:Ipblock:parent:{on_delete=>"set-null"},dhcpentries:DhcpScope:ipblock:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
 	  '0', 
 	  'An IP (v4 or v6) Address');
@@ -560,9 +560,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom, isjoin, description)
   VALUES ('IpService', 
 	  'ip,service', 
-	  'ip,service,monitored,contactlist', 
+	  'ip,service,monitored,monitorstatus,contactlist', 
 	  'ip,service', 
-	  'ip:Ipblock,service:Service,contactlist:ContactList', 
+	  'ip:Ipblock,service:Service,contactlist:ContactList,monitorstatus:MonitorStatus', 
 	  'dhcpconfigs:DhcpScope:service', 
  	  '0', 
 	  'A relationship linking an Ip address with a running Internet service');
@@ -576,7 +576,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
             'name:Status,info:Comments',
             '',
             '',
-            '',
+            'bgppeers:BGPPeering:monitorstatus:{on_delete=>"restrict"},devices:Device:monitorstatus:{on_delete=>"restrict"},ipblocks:Ipblock:monitorstatus:{on_delete=>"restrict"},ipservices:IpService:monitorstatus:{on_delete=>"restrict"}',
             '0',
             'Status information for what is monitored' );
 
