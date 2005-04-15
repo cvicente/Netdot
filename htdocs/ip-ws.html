@@ -263,27 +263,25 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %#######################################################################################
 
 <!-- IP Info Table -->
-   <table border="0" width="100%" cellpadding="0" cellspacing="0" class="formtablebg">
-   <tr class="formtabletitle" >
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <th width="50%" align="left">Address Info</th>
+<div class="container">
+
+    <div class="containerheadleft">Address Info</div>
+    <div class="containerheadright">
 %	 if ($edit eq "ipinfo"){	 
-            <td width="50%" align="right"><input name="submit" value="save" type="submit"></td>
+            <input name="submit" value="save" type="submit">
 %	 }else{
-            <td width="50%" align="right">
-		<a href="ip-ws.html?id=<% $id %>">[refresh]</a>
-		<a href="ip-ws.html?id=<% $id %>&edit=ipinfo">[edit]</a>
-		<a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
-	    </td>
+            <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
+            <a href="ip-ws.html?id=<% $id %>&edit=ipinfo">[edit]</a>
+            <a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
 %	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-      <td valign="top" width="50%">
+    </div>
+
+    <div class="containerbody">
+      <!-- this is for the two-column layout of the body -->
+      <table width="100%">
+       <tr>
+        <td width="50%" valign="top">
+
          <table width="100%" border="0">
            <tr>
 	     <td class="formtablec1">Address: </td>
@@ -392,9 +390,11 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	   </tr>
 %        } #enidf services
 	 </table>
+
       </td>
       <td valign="top" width="50%">
-         <table  border="0">
+
+         <table border="0" width="100%">
            <tr>
              <td class="formtablec1">Parent Block: </td>
 	     <td class="formtablec2"> 
@@ -458,9 +458,15 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	    </td>
 	   </tr>
          </table>
-       </td>
-     </tr>
-  </table>
+
+
+
+           </td>
+         </tr>
+      </table>
+    </div>
+</div>
+
 <!-- End IP Info Table -->
 
 %} else {     
@@ -469,27 +475,24 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 %#######################################################################################
 
 <!-- Block Info Table -->
-   <table border="0" width="100%" cellpadding="0" cellspacing="0" class="formtablebg">
-   <tr class="formtabletitle" >
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <th width="50%" align="left">Block Info</th>
-%	 if ($edit eq "blockinfo"){	 
-            <td width="50%" align="right"><input name="submit" value="save" type="submit"></td>
-%	 }else{
-            <td width="50%" align="right">
-		<a href="ip-ws.html?id=<% $id %>">[refresh]</a>
-		<a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
-		<a href="ip-ws.html?id=<% $id %>&edit=blockinfo">[edit]</a>
-	    </td>
+<div class="container">
+        <div class="containerheadleft">Block Info</div>
+        <div class="containerheadright">
+%	if ($edit eq "blockinfo"){	 
+            <input name="submit" value="save" type="submit">
+%	}else{
+            <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
+            <a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
+            <a href="ip-ws.html?id=<% $id %>&edit=blockinfo">[edit]</a>
 %       }
-      </tr>
-      </table>
-     <td>
-  </tr>
-  <tr>
-     <td valign="top" width="50%">
+        </div>
+
+    <div class="containerbody">
+    <!-- this is for the two-column layout of the body -->
+    <table width="100%">
+     <tr>
+      <td width="50%" valign="top">
+
         <table width="100%" border="0">
            <tr>
 	     <td class="formtablec1">Address: </td>
@@ -573,8 +576,10 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	  </tr>
 % }
 	</table>
-      </td>
-      <td valign="top" width="50%">
+
+    </td>
+    <td width="50%" valign="top">
+
          <table width="100%" border="0">
 	   <tr>
              <td class="formtablec1">Parent Block: </td>
@@ -595,9 +600,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	     <td class="formtablec2"><% $o->last_seen %></td>
 	  </tr>
 % if ($edit eq "blockinfo"){	 
-         </table>
-      </td>
-    </form>
+    <!--</form>   where did this come from?? -->
 % }elsif ($o->status->name eq "Container"){
            <tr>
              <td class="formtablec1">New subnet of length: / </td>
@@ -618,9 +621,17 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
              <td class="formtablec1">Choose Manually:</td>
              <td class="formtablec2">[view availability]</td>
 	   </tr>
-         </table>
-      </td>
 % }elsif ($o->status->name eq "Subnet"){
+%	 if ($edit eq "ipinfo"){	 
+            <td width="50%" align="right"><input name="submit" value="save" type="submit"></td>
+%	 }else{
+            <td width="50%" align="right">
+		<a href="ip-ws.html?id=<% $id %>">[refresh]</a>
+		<a href="ip-ws.html?id=<% $id %>&edit=ipinfo">[edit]</a>
+		<a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
+	    </td>
+%	 }
+
            <tr>
              <td class="formtablec1">
 	     New address: </td>
@@ -645,12 +656,13 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
              <td class="formtablec1">Choose Manually:</td>
              <td class="formtablec2">[view availability]</td>
 	   </tr>
-         </table>
-      </td>
-% }else{
+% }
         </table>
-      </td>    
-% } 
+
+      </td>
+     </tr>
+    </table>
+    </div>
 
 <%perl>
 # 
@@ -659,27 +671,24 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 my @children;  
 if (scalar( @children = $ipm->getchildren($o->id) )){
 </%perl>
+</div>
 
-   <tr>
-     <td><br></td>
-   </tr>
-   <tr class="formtabletitle" >
-     <th colspan="2" align="left">Children Addresses/Blocks </th>
-   </tr>
-   <tr>
-     <td colspan="2">
-      <& ipblock_list.mhtml, objects => \@children &>
-      </td>
-   </tr>
-   </table>
+      <div class="container">
+          <div class="containerhead">
+             Children Addresses/Blocks
+          </div>
+          <div class="containerbody">
+          <& ipblock_list.mhtml, objects => \@children &>
+          </div>
+       </div>
 
 % }
 <!-- End Block Info Table -->
-%} 
+% } 
 % if ($edit){	 
     </form>
 % }
 
 
-%}
+% }
 </div>
