@@ -65,7 +65,7 @@ tests:
 	perl -MNet::IP -e 1
 	perl -MNetAddr::IP -e 1
 #	perl -MSiteControl::AccessController -e 1
-#	perl -MNetviewer::RRD::SNMP -e 1
+	perl -I/usr/local/netviewer/lib -M'NetViewer::RRD::SNMP 0.29.6' -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi
