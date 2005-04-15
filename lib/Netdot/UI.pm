@@ -566,7 +566,7 @@ sub text_field($@){
 	if ( $linkPage eq "1" || $linkPage eq "view.html" ){
 	    printf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $tableName, $o->id, $value);
 	}else{
-    	    printf("<a href=\"$linkPage.html?id=%s\"> %s </a>\n", $o->id, $value);
+    	    printf("<a href=\"$linkPage?id=%s\"> %s </a>\n", $o->id, $value);
 	}
     }else{
         printf("%s", $value);

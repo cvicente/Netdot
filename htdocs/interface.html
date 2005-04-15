@@ -4,12 +4,12 @@ $edit   => undef;
 </%args>
 
 <%flags>
-inherit => 'section_cable.html' 
+inherit => 'section_management.html' 
 </%flags>
 
 <%attr>
 title   => 'Interface' 
-section => 'Plant'
+section => 'Management'
 </%attr>
 
 <%init>
@@ -54,17 +54,7 @@ if (defined($ARGS{_action})){
 # -----------------------------------------------------------------------------
 </%perl>
 
-<!-- Header Table -->
-% if (defined($o) && $o->jack) {
-<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
- <tr class="rowtitle0" >
-    <td align="left">
-        Interface for Horizontal Cable <a href="cable_horizontal.html?id=<% $o->jack %>"><% $o->jack->jackid %></a>
-    </td>
- </tr>
-</table>
-%}
-<!-- End Header Table -->
+<div id="sectiondetail">
 
 <!-- Begin Interface Table -->
 <table border="0" width="100%" align="center"  class="tablebackground">
@@ -103,13 +93,8 @@ if (defined($ARGS{_action})){
             <tr align="left" valign="top">
                 <td>Device: </td>
                 <td>
-%               $ui->select_lookup(object=>$o, table=>"Interface", column=>"device", lookup=>"Device", 
-%                                 where=>{id=>($o ? $o->device->id : "")}, edit=>$isEditing);
-%               if ($isEditing) {
-%               my $srchf = "device_srch";  # name of the form input tag
-	            &nbsp;<input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;">
-	            &nbsp;<input type="button" name="" value="Lookup" onClick="sendquery(<% 'Interface__' . $id . '__device'  %>, <% $srchf . '.value' %>, 'Device')">
-%               }
+%                   $ui->select_lookup(object=>$o, table=>"Interface", column=>"device", lookup=>"Device", 
+%                                      edit=>$isEditing, linkPage=>"device.html");
                 </td>
             </tr>
 
@@ -117,7 +102,7 @@ if (defined($ARGS{_action})){
                 <td>Physical Address: </td>
                 <td>
 %               $ui->select_lookup(object=>$o, table=>"Interface", column=>"physaddr",
-%                                 lookup=>"PhysAddr", edit=>$isEditing);
+%                                 lookup=>"PhysAddr", edit=>$isEditing, linkPage=>"view.html");
                 </td>
             </tr>
 
@@ -147,23 +132,30 @@ if (defined($ARGS{_action})){
             </tr>
 
             <tr align="left" valign="top">
-                <td>Duplex: </td>
+                <td>Admin Duplex: </td>
                 <td>
-%               $ui->text_field(object=>$o, table=>"Interface", column=>"duplex", edit=>$isEditing);
+%               $ui->text_field(object=>$o, table=>"Interface", column=>"admin_duplex", edit=>0);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
-                <td>Status: </td>
+                <td>Oper Duplex: </td>
                 <td>
-%               $ui->text_field(object=>$o, table=>"Interface", column=>"status", edit=>$isEditing);
+%               $ui->text_field(object=>$o, table=>"Interface", column=>"oper_duplex", edit=>0);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
-                <td>Is Managed: </td>
+                <td>Admin Status: </td>
                 <td>
-%               $ui->radio_group_boolean(object=>$o, table=>"Interface", column=>"managed", edit=>$isEditing);
+%               $ui->text_field(object=>$o, table=>"Interface", column=>"admin_status", edit=>0);
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td>Oper Status: </td>
+                <td>
+%               $ui->text_field(object=>$o, table=>"Interface", column=>"oper_status", edit=>0);
                 </td>
             </tr>
 
@@ -171,12 +163,7 @@ if (defined($ARGS{_action})){
                 <td>Jack: </td>
                 <td>
 %               $ui->select_lookup(object=>$o, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
-%                                 where=>{id=>($o ? $o->jack->id : "")}, edit=>$isEditing);
-%               if ($isEditing) {
-%               my $srchf = "jack_srch";  # name of the form input tag
-	            &nbsp;<input type="text" name="<% $srchf %>" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;">
-	            &nbsp;<input type="button" name="" value="Lookup" onClick="sendquery(<% 'Interface__' . $id . '__jack'  %>, <% $srchf . '.value' %>, 'HorizontalCable')">
-%               }
+%                                  edit=>$isEditing, linkPage=>"cable_horizontal.html");
                 </td>
             </tr>
             <tr align="left" valign="top">
@@ -210,3 +197,5 @@ if (defined($ARGS{_action})){
     </tr>
 </table>
 <!-- End Interface Table -->
+
+</div>
