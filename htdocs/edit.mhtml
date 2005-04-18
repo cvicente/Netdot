@@ -1,3 +1,9 @@
+<%doc>
+
+This block catches the case where we have confirmed a submission and now
+want to go to the page to view it
+
+</%doc>
 
 <%args>
 $ID         => undef
@@ -43,14 +49,14 @@ foreach my $j ( keys %ARGS ) {
   }
 }
 
+my $page;
+if ( $showheader ) {
+    $page = "edit.html";
+}else{
+    $page = "edit-nh.html";
+}
+
 </%init>
-
-<%doc>
-
-This block catches the case where we have confirmed a submission and now
-want to go to the page to view it
-
-</%doc>
 
 % if( $args{cancel} && $TBL && $ID
 %     && $args{table} eq $TBL
@@ -133,7 +139,7 @@ the submission.
       <tr class="rowtitle0" >
       <td align="CENTER">
       </ul></blockquote>
-      <form name="netdotform" action="edit.html" method="POST">
+      <form name="netdotform" action="<% $page %>" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
       <input type="hidden" name="create" value="<% $TBL %>">
       <input type="hidden" name="showheader" value="<% $showheader %>">
@@ -156,7 +162,7 @@ available tables.
 %   } elsif( ! $TBL ) {
       <p>
       <blockquote>
-      <& table.mhtml, width => $WIDTH, link => "edit.html", title => "Please select an object to create:" &>
+      <& table.mhtml, width => $WIDTH, link => "<% $page %>", title => "Please select an object to create:" &>
       </blockquote>
 %   ##############################################
 %   } else {
@@ -170,7 +176,7 @@ Present a form for user to modify various values.
         <td align="CENTER"><strong><% $title %></strong></td>
        </tr>
        <tr><td>
-      <form name="netdotform" action="edit.html" method="POST">
+      <form name="netdotform" action="<% $page %>" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
       <input type="hidden" name="showheader" value="<% $showheader %>">
 %     if( $ID && ! $NEW ) {
