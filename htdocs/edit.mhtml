@@ -1,7 +1,6 @@
 <%doc>
 
-This block catches the case where we have confirmed a submission and now
-want to go to the page to view it
+HTML code for edit.html component
 
 </%doc>
 
@@ -9,7 +8,6 @@ want to go to the page to view it
 $ID         => undef
 $TBL        => undef
 $OBJ        => undef
-$NEW        => undef
 $sid        => undef
 $WIDTH      => 2
 $session    => undef
@@ -19,7 +17,7 @@ $showheader => 1
 </%args>
 
 <%init>
-my $title;
+
 foreach my $j ( keys %ARGS ) {
   if( $j eq "args" ) {
     %args = %{ $ARGS{$j} };
@@ -28,24 +26,6 @@ foreach my $j ( keys %ARGS ) {
   if( $j eq "state" ) {
     %state = %{ $ARGS{$j} };
     next;
-  }
-  if( $j eq "id" ) {
-    $ID = $ARGS{id};
-  }
-  if( $j eq "table" ) {
-    $TBL = $ARGS{table};
-  }
-  if( $j eq "obj" ) {
-    $OBJ = $ARGS{obj};
-  }
-  if( $j eq "new" ) {
-    $NEW = $ARGS{new};
-  }
-  if( $j eq "sid" ) {
-    $sid = $ARGS{sid};
-  }
-  if( $j eq "session" ) {
-    $session = $ARGS{session};
   }
 }
 
@@ -56,7 +36,16 @@ if ( $showheader ) {
     $page = "edit-nh.html";
 }
 
+my $title = $TBL || "Edit";
+
 </%init>
+
+<%doc>
+
+This block catches the case where we have confirmed a submission and now
+want to go to the page to view it
+
+</%doc>
 
 % if( $args{cancel} && $TBL && $ID
 %     && $args{table} eq $TBL
@@ -71,7 +60,6 @@ if ( $showheader ) {
        <head>
          <link rel=StyleSheet href="style.css" type="text/css">
          <link rel="alternate stylesheet" title="Gray" href="style-gray.css" type="text/css">
-         <title>Netdot : Create Object</title>
        </head>      
          <body class="bodytag" onUnload="opener.setselect(<% "\'" . $ID . "\'" %>, <% "\'" . $lbl . "\'" %>)">
            <a href="#" onClick="window.close()">[done]</a>
@@ -95,6 +83,7 @@ The user has clicked on submit.  Present a page for user to confirm
 the submission.
 
 </%doc>
+
 %   if( $args{"submit"} eq "Submit" ) {
     <table width="100%" cellpadding="0" cellspacing="0" border="0" class="formtablebg">
       <tr class="rowtitle0" >
@@ -171,6 +160,7 @@ available tables.
 Present a form for user to modify various values.
 
 </%doc>
+
       <table width="100%" cellpadding="0" cellspacing="0" border="0" class="tablebackground">
        <tr class="rowtitle0" >
         <td align="CENTER"><strong><% $title %></strong></td>
@@ -179,7 +169,7 @@ Present a form for user to modify various values.
       <form name="netdotform" action="<% $page %>" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
       <input type="hidden" name="showheader" value="<% $showheader %>">
-%     if( $ID && ! $NEW ) {
+%     if( $ID ) {
       <& form.mhtml, table => $TBL, id => $ID &>
 %     } else {
 %       if( $ID ) {
