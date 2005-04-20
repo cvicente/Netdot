@@ -139,7 +139,21 @@ my $page = "";
 %
         </li>
         <li>
+%
+% if( $section eq "Generic" ) {
+%     if (exists($caller_args{page})){
+%         $user->setAttribute($r, "GENERIC_PAGE", $caller_args{page});
+%     }
+%     $page = $user->getAttribute("GENERIC_PAGE");
+%
+            <span>Generic</span>
+            <ul id="subnavigation">
+            </ul>
+%
+% } else {          
             <a href="section_generic.html">Generic</a>
+% }
+%
         </li>
         <li>
 %
