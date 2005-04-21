@@ -29,12 +29,10 @@ my $WIDTH  = 2;
     <& table.mhtml, width => $WIDTH, link => "browse.html", title => "Please select a table to browse:" &>
 % } else {
 %   my @r = $table->retrieve_all();
-    <table cellpadding="0" border="0" width="100%" class="tablebackground">
-    <tr class="tabletitle">
-    <td>&nbsp<strong><% $table %></strong>
+
+    <br>
+    <h3><% $table %></h3>
     <& sortresults.mhtml, table => $table, object => \@r, view => "row", withdelete => 1 &>
-    </td>
-    </tr>
-    </table>
+
 % }
 
