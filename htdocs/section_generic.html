@@ -14,6 +14,8 @@ section => 'Generic'
 my @t;
 </%init>
 
+<div id="sectiontools">
+
     <h3>Generic Database Operations</h3>
     <p><b>Note:</b> These functions do not perform any validation
     checking. They are intended to provide direct access to the
@@ -23,37 +25,57 @@ my @t;
 %
 %     map { push @t, $_ unless ($_ =~ /_history/ || $_ eq "Meta") } sort $ui->gettables;
 %
-    <form action="search_obj.html" method="POST">
-        <b>Search</b>:  
-        <select name="table">
+    <p>
+    <fieldset id="small">
+        <legend>Search</legend>
+        <form action="search_obj.html" method="POST">
+            <select name="table">
 %       foreach my $t (@t) {
-            <option><% $t %></option>
+                <option><% $t %></option>
 %       }
-        </select>
-        <input name="submit" value="Go" type="submit">
-    </form>
+            </select>
+            <input name="submit" value="Go" type="submit">
+        </form>
+    </fieldset>
+    </p>
 
-    <form action="edit.html" method="POST">
-        <b>Add New</b>:  
-        <select name="table">
+    <p>
+    <fieldset id="small">
+        <legend>Add</legend>
+        <form action="edit.html" method="POST">
+            <select name="table">
 %       foreach my $t (@t) {
-            <option><% $t %></option>
+                <option><% $t %></option>
 %       }
-        </select>
-        <input name="submit" value="Go" type="submit">
-    </form>
+            </select>
+            <input name="submit" value="Go" type="submit">
+        </form>
+    </fieldset>
+    </p>
 
-    <form action="browse.html" method="POST">
-        <b>Browse</b>:  
-        <select name="table">
+    <p>
+    <fieldset id="small">
+        <legend>Browse</legend>
+        <form action="browse.html" method="POST">
+            <select name="table">
 %       foreach my $t (@t) {
-            <option><% $t %></option>
+                <option><% $t %></option>
 %       }
-        </select>
-        <input name="submit" value="Go" type="submit">
-    </form>
+            </select>
+            <input name="submit" value="Go" type="submit">
+        </form>
+    </fieldset>
+    </p>
+
+
 <br>
+
+</div>
+
+<div id="sectiondata">
 
 % if ( $m->fetch_next ){
 %  $m->call_next;
 % }
+
+</div>
