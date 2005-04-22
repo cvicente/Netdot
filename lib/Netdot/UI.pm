@@ -396,12 +396,14 @@ Arguments:
 
 sub select_lookup($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $lookup, $where, $isEditing, $htmlExtra, $linkPage, $maxCount) = 
+    my ($o, $table, $column, $lookup, $where, $isEditing, $htmlExtra, $linkPage, $maxCount, $returnAsVar) = 
 	($args{object}, $args{table}, 
 	 $args{column}, $args{lookup},
 	 $args{where}, $args{edit},
 	 $args{htmlExtra}, $args{linkPage},
-	 $args{maxCount});
+	 $args{maxCount}, $args{returnAsVar});
+
+    my $output;
     
     $htmlExtra = "" if (!$htmlExtra);
     $maxCount = $args{maxCount} || $self->{config}->{"DEFAULT_SELECTMAX"};
@@ -430,11 +432,11 @@ sub select_lookup($@){
             # if an object was passed we use it to obtain table name, id, etc
             # as well as add an initial element to the selection list.
             if ($o){
-                printf("<SELECT NAME=\"%s\" %s>\n", $name, $htmlExtra);
+                $output .= sprintf("<select name=\"%s\" %s>\n", $name, $htmlExtra);
                 if ($o->$column){
-                    printf("<OPTION VALUE=\"%s\" SELECTED>%s</OPTION>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+                    $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
                 }else{
-                    printf("<OPTION VALUE=\"\" SELECTED>-- Select --</OPTION>\n");
+                    $output .= sprintf("<option value=\"\" selected>-- Select --</option>\n");
                 }
             }
             # otherwise a couple of things my have happened:
@@ -443,8 +445,8 @@ sub select_lookup($@){
             #      "table" argument to create the fieldname, and do so with the
             #      id of "NEW" in order to force insertion when the user hits submit.
             elsif ($table){
-                printf("<SELECT NAME=\"%s\" %s>\n", $name, $htmlExtra);
-                printf("<OPTION VALUE=\"\" SELECTED>-- Make your selection --</OPTION>\n");
+                $output .= sprintf("<select name=\"%s\" %s>\n", $name, $htmlExtra);
+                $output .= sprintf("<option value=\"\" selected>-- Make your selection --</option>\n");
             }else{
             #   2) The apocalypse has dawned. No table argument _or_ valid DB object..lets bomb out.
                 $self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
@@ -453,36 +455,39 @@ sub select_lookup($@){
 
             foreach my $fo (@fo){
                 next if ($o && $o->$column && ($fo->id == $o->$column->id));
-                printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $fo->id, $self->getlabelvalue($fo, \@labels));
+                $output .= sprintf("<option value=\"%s\">%s</option>\n", $fo->id, $self->getlabelvalue($fo, \@labels));
             }
-            printf("<OPTION VALUE=\"0\">[null]</OPTION>\n");
-            printf("</SELECT>\n");
+            $output .= sprintf("<option value=\"0\">[null]</option>\n");
+            $output .= sprintf("</select>\n");
         }else{
 	    # ...otherwise provide tools to narrow the selection to a managable size.
             my $srchf = "_" . $id . "_" . $column . "_srch";
-            printf("<INPUT TYPE=\"text\" name=\"%s\" VALUE=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">&nbsp;\n", $srchf);
-            printf("<INPUT TYPE=\"button\" name=\"__%s\" value=\"List\" onClick=\"sendquery(%s, %s.value, \'%s\');\"><br>\n", time(), 
-                                                                                                                              $name, 
-                                                                                                                              $srchf, 
-                                                                                                                              $lookup);
-            printf("<SELECT NAME=\"%s\" %s>\n", $name, $htmlExtra);
-            printf("<OPTION VALUE=\"\" SELECTED>-- Make your selection --</OPTION>\n");
+            $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">&nbsp;\n", $srchf);
+            $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"sendquery(%s, %s.value, \'%s\');\"><br>\n", time(), $name, $srchf, $lookup);
+            $output .= sprintf("<select name=\"%s\" %s>\n", $name, $htmlExtra);
+            $output .= sprintf("<option value=\"\" selected>-- Make your selection --</option>\n");
             if ($o && $o->$column){
-                printf("<OPTION VALUE=\"%s\" SELECTED>%s</OPTION>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+                $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
             }
-            printf("<OPTION VALUE=\"0\">[null]</OPTION>\n");
-            printf("</SELECT>\n");
+            $output .= sprintf("<option value=\"0\">[null]</option>\n");
+            $output .= sprintf("</select>\n");
         }
 
     }elsif ($linkPage && $o->$column){
 	if ($linkPage eq "1" || $linkPage eq "view.html"){
 	    my $rtable = $o->$column->table;
-	    printf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $rtable, $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $rtable, $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
 	}else{
-	    printf("<a href=\"$linkPage?id=%s\"> %s </a>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+	    $output .= sprintf("<a href=\"$linkPage?id=%s\"> %s </a>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
 	}
     }else{
-        printf("%s\n", ($o->$column ? $self->getlabelvalue($o->$column, \@labels) : ""));
+        $output .= sprintf("%s\n", ($o->$column ? $self->getlabelvalue($o->$column, \@labels) : ""));
+    }
+
+    if ($returnAsVar==1) {
+        return $output;
+    }else{
+        print $output;
     }
 }
 
@@ -502,8 +507,10 @@ sub select_lookup($@){
 
 sub radio_group_boolean($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing) = ($args{object}, $args{table}, 
-                                            $args{column}, $args{edit});
+    my ($o, $table, $column, $isEditing, $returnAsVar) = ($args{object}, $args{table}, 
+                                            $args{column}, $args{edit}, $args{returnAsVar} );
+    my $output;
+
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
@@ -516,10 +523,16 @@ sub radio_group_boolean($@){
      }
 
     if ($isEditing){
-        printf("Y<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"1\" %s>&nbsp;<br>\n", $name, ($value ? "CHECKED" : ""));
-        printf("N<INPUT TYPE=\"RADIO\" NAME=\"%s\" VALUE=\"0\" %s>\n", $name, (!$value ? "CHECKED" : ""));
+        $output .= sprintf("Y<input type=\"radio\" name=\"%s\" value=\"1\" %s>&nbsp;<br>\n", $name, ($value ? "checked" : ""));
+        $output .= sprintf("N<input type=\"radio\" name=\"%s\" value=\"0\" %s>\n", $name, (!$value ? "checked" : ""));
     }else{
-        printf("%s\n", ($value ? "Y" : "N"));
+        $output .= sprintf("%s\n", ($value ? "Y" : "N"));
+    }
+
+    if ($returnAsVar==1) {
+        return $output;
+    }else{
+        print $output;
     }
 }
 
@@ -539,16 +552,19 @@ sub radio_group_boolean($@){
    - linkPage: (optional) Make the printed value a link
                 to itself via some component (i.e. view.html) 
                 (requires that column value is defined)
+   - returnAsVar: default false, true if the sub should return the string instead of outputting
 
 =cut
 
 sub text_field($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $htmlExtra, $linkPage, $default) = ($args{object}, $args{table}, 
+    my ($o, $table, $column, $isEditing, $htmlExtra, $linkPage, $default, $returnAsVar) = ($args{object}, $args{table}, 
 									     $args{column}, $args{edit}, 
 									     $args{htmlExtra}, $args{linkPage},
-									     $args{default});
+									     $args{default}, $args{returnAsVar} );
     
+    my $output;
+
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : $default);
@@ -561,15 +577,21 @@ sub text_field($@){
 	return 0;
     }
     if ($isEditing){
-        printf("<INPUT TYPE=\"TEXT\" NAME=\"%s\" VALUE=\"%s\" %s>\n", $name, $value, $htmlExtra);
+        $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"%s\" %s>\n", $name, $value, $htmlExtra);
     }elsif ( $linkPage && $value){
 	if ( $linkPage eq "1" || $linkPage eq "view.html" ){
-	    printf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $tableName, $o->id, $value);
+	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $tableName, $o->id, $value);
 	}else{
-    	    printf("<a href=\"$linkPage?id=%s\"> %s </a>\n", $o->id, $value);
+    	    $output .= sprintf("<a href=\"$linkPage?id=%s\"> %s </a>\n", $o->id, $value);
 	}
     }else{
-        printf("%s", $value);
+        $output .= sprintf("%s", $value);
+    }
+
+    if ($returnAsVar==1) {
+        return $output;
+    }else{
+        print $output;
     }
 }
 
@@ -590,9 +612,11 @@ sub text_field($@){
 
 sub text_area($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $htmlExtra) = ($args{object}, $args{table}, 
-                                                        $args{column}, $args{edit}, 
-                                                        $args{htmlExtra});
+    my ($o, $table, $column, $isEditing, $htmlExtra, $returnAsVar) = ($args{object}, $args{table}, 
+                                                                      $args{column}, $args{edit}, 
+                                                                      $args{htmlExtra}, $args{returnAsVar} );
+    my $output;
+
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
@@ -605,8 +629,14 @@ sub text_area($@){
 	return 0;
     }
     if ($isEditing){
-        printf("<TEXTAREA NAME=\"%s\" %s>%s</TEXTAREA>\n", $name, $htmlExtra, $value);
+        $output .= sprintf("<textarea name=\"%s\" %s>%s</textarea>\n", $name, $htmlExtra, $value);
     }else{
-        printf("%s\n", $value);
+        $output .= sprintf("%s\n", $value);
+    }
+
+    if ($returnAsVar==1) {
+        return $output;
+    }else{
+        print $output;
     }
 }

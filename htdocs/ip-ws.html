@@ -271,8 +271,8 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
             <input name="submit" value="save" type="submit">
 %	 }else{
             <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
-            <a href="ip-ws.html?id=<% $id %>&edit=ipinfo">[edit]</a>
             <a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
+            <a href="ip-ws.html?id=<% $id %>&edit=ipinfo">[edit]</a>
 %	 }
     </div>
 
@@ -319,7 +319,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
           <tr>
              <td class="formtablec1">Comments: </td>
 	     <td class="formtablec2"> 
-%               $ui->text_area(object=>$o, column=>"info", edit=>$edit_ip, htmlExtra=>"cols=60");
+%               $ui->text_area(object=>$o, column=>"info", edit=>$edit_ip, htmlExtra=>"cols=45");
              </td>
 	  </tr>
 %          if (scalar($o->arecords)){	   
@@ -476,6 +476,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 
 <!-- Block Info Table -->
 <div class="container">
+
         <div class="containerheadleft">Block Info</div>
         <div class="containerheadright">
 %	if ($edit eq "blockinfo"){	 
@@ -493,176 +494,151 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
      <tr>
       <td width="50%" valign="top">
 
-        <table width="100%" border="0">
-           <tr>
-	     <td class="formtablec1">Address: </td>
-	     <td class="formtablec2"><strong>
-%# Kind of weird, but only way to get the "/" in the middle with no spaces
-%              $ui->text_field(object=>$o, column=>"address", edit=>$edit_block, htmlExtra =>"style='width: 15em'"); print "/"; $ui->text_field(object=>$o, column=>"prefix", edit=>$edit_block, htmlExtra =>"style='width: 2em'");
-             </strong></td>
-	   </tr>
-	   <tr>
-             <td class="formtablec1">Status: </td>
-	     <td class="formtablec2">
-%	       my @valid_block_status = qw ( Container Subnet Reserved );
-%	       if ( my $sn = $o->status->name ){
-%	          if ( $edit eq "blockinfo" ){
-                    <select name="Ipblock__<% $o->id %>__statusname">
-%	            foreach my $st ( @valid_block_status ){
-%		      if ( $st eq $sn ){
-  		         <option value="<% $st %>" SELECTED><% $st %></option>
-%		      }else{
-  		         <option value="<% $st %>"><% $st %></option>
-%		      }
-%		    }
-		    </select>
-%                 }else{
-	            <strong><% $sn %></strong>
-%                 }
-%	       }
-	     </td> 
-	   </tr>
-           <tr>
-             <td class="formtablec1">Description: </td>
-	     <td class="formtablec2"> 
-%               $ui->text_field(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 25em'");
-	     </td>
-	  </tr>
-          <tr>
-             <td class="formtablec1">Comments: </td>
-	     <td class="formtablec2"> 
-%               $ui->text_area(object=>$o, column=>"info", edit=>$edit_block, htmlExtra=>"cols=60");
-             </td>
-	  </tr>
-          <tr>
-             <td class="formtablec1">Used by: </td>
-	     <td class="formtablec2"> 
-%	      	 if ($edit eq "blockinfo"){	 
-%                   $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>$edit_block);
-%                }elsif ($o->entity){
-		   <a href="view.html?table=Entity&id=<% $o->entity->id %>"><% $o->entity->name %></a> 
-%                }
-	     </td>
-	  </tr>
-% if ($o->status->name eq "Subnet"){
-          <tr>
-             <td class="formtablec1">Utilization: </td>
 <%perl>
+
+# define headers to print on the left column of the table
+my @field_headers = ( "Address:", "Status:", "Description:", "Comments:", "Used by:" );
+
+# define variables with the content of each cell
+
+    my $address = $ui->text_field(object=>$o, column=>"address", edit=>$edit_block, htmlExtra=>"style='width: 15em'", returnAsVar=>1)."/".$ui->text_field(object=>$o, column=>"prefix", edit=>$edit_block, htmlExtra =>"style='width: 2em'", returnAsVar=>1);
+
+    my $status;
+	       my @valid_block_status = qw ( Container Subnet Reserved );
+	       if ( my $sn = $o->status->name ){
+	          if ( $edit eq "blockinfo" ){
+                    $status .= "<select name=\"Ipblock__".$o->id."__statusname\">";
+	            foreach my $st ( @valid_block_status ){
+		      if ( $st eq $sn ){
+  		         $status .= "<option value=\"".$st."\" SELECTED>".$st."</option>";
+		      }else{
+  		         $status .= "<option value=\"".$st."\">".$st."</option>";
+		      }
+		    }
+		    $status .= "</select>";
+                  }else{
+	            $status .= "<strong>".$sn."</strong>";
+                  }
+	       }
+
+    my $description = $ui->text_field(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 25em'", returnAsVar=>1);
+    my $comments = $ui->text_area(object=>$o, column=>"info", edit=>$edit_block, htmlExtra=>"cols=45", returnAsVar=>1);
+    my $used_by;
+            if ($edit eq "blockinfo"){	 
+                $used_by = $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>$edit_block, returnAsVar=>1);
+            } elsif ($o->entity){
+                $used_by = "<a href=\"view.html?table=Entity&id=".$o->entity->id."\">".$o->entity->name."</a>";
+            }
+    my $delegate_dns = $ui->radio_group_boolean(object=>$o, column=>"dns_delegated", edit=>$edit_block, returnAsVar=>1);
+
+# put the cell data into an array
+my @cell_data = ( $address, $status, $description, $comments, $used_by );
+
+# optionally, add more headers and content
+if ($o->status->name eq "Subnet") {
+    push( @field_headers, "Utilization:" );
+    push( @field_headers, "Enable DHCP:" );
+    push( @field_headers, "Delegate DNS:" );
+
           my $used = (scalar $o->children);
 	  my $total = $ipm->subnet_num_addr($o);
 	  my $avail = $total - $used;
 	  my $u = sprintf("%.1f", $used / $total * 100 );
+
+    push( @cell_data, $used." of ".$total." (".$u."%), Avail: ".$avail );
+    push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"dhcp_enabled", edit=>$edit_block, returnAsVar=>1) );
+    push( @cell_data, $delegate_dns );
+} elsif( $o->status->name eq "Container" ) {
+    push( @field_headers, "Delegate DNS:" );
+
+    push( @cell_data, $delegate_dns );
+}
+
 </%perl>
-	     <td class="formtablec2"><% $used %> of <% $total %> (<% $u %>%), Avail: <% $avail %> </td>
-	  </tr>
-	  <tr>
-             <td class="formtablec1">Enable DHCP: </td>
-             <td class="formtablec2">
-%              $ui->radio_group_boolean(object=>$o, column=>"dhcp_enabled", edit=>$edit_block);
-	     </td>
-	  </tr>
-	  <tr>
-             <td class="formtablec1">Delegate DNS: </td>
-             <td class="formtablec2">
-%              $ui->radio_group_boolean(object=>$o, column=>"dns_delegated", edit=>$edit_block);
-	     </td>
-	  </tr>
-% }elsif ($o->status->name eq "Container"){
-	  <tr>
-             <td class="formtablec1">Delegate DNS: </td>
-             <td class="formtablec2">
-%              $ui->radio_group_boolean(object=>$o, column=>"dns_delegated", edit=>$edit_block);
-	     </td>
-	  </tr>
-% }
-	</table>
+
+%# actually output the table to the browser
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
     </td>
     <td width="50%" valign="top">
 
-         <table width="100%" border="0">
-	   <tr>
-             <td class="formtablec1">Parent Block: </td>
-	     <td class="formtablec2"> 
-%	     if (defined($o->parent) && int($o->parent)){
-		 <a href="ip-ws.html?id=<% $o->parent->id %>"><% $o->parent->address %>/<% $o->parent->prefix %></a>
-%	     }else{
-	         <strong><font size="-1">(root block)</font></strong>
-%	     }
-	     </td>
-	   </tr>
-           <tr>
-             <td class="formtablec1">Created: </td>
-	     <td class="formtablec2"><% $o->first_seen %></td>
-	  </tr>
-           <tr>
-             <td class="formtablec1">Last Updated: </td>
-	     <td class="formtablec2"><% $o->last_seen %></td>
-	  </tr>
-% if ($edit eq "blockinfo"){	 
-    <!--</form>   where did this come from?? -->
-% }elsif ($o->status->name eq "Container"){
-           <tr>
-             <td class="formtablec1">New subnet of length: / </td>
-	     <td class="formtablec2"> 
-	     <form name="netdotform" action="ip-ws.html" method="POST">
-	     <input type="hidden" name="id" value="<% $id %>">
-	     <input type="hidden" name="_action" value="AUTOALLOCATE">
-	     <input type="hidden" name="parent" value="<% $id %>">
-	     <input type="text" size = "4" name="length" value="<% $o->prefix + 1 %>">
-	     <select name="strategy">
-	       <option value="first">First Fit</option>
-	       <option value="last">Last Fit</option>
-	     </select>
-	     <input name="submit" value="Allocate" type="submit">
-	     </td>
-	   </tr>
-	   <tr>
-             <td class="formtablec1">Choose Manually:</td>
-             <td class="formtablec2">[view availability]</td>
-	   </tr>
-% }elsif ($o->status->name eq "Subnet"){
-%	 if ($edit eq "ipinfo"){	 
-            <td width="50%" align="right"><input name="submit" value="save" type="submit"></td>
-%	 }else{
-            <td width="50%" align="right">
-		<a href="ip-ws.html?id=<% $id %>">[refresh]</a>
-		<a href="ip-ws.html?id=<% $id %>&edit=ipinfo">[edit]</a>
-		<a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
-	    </td>
-%	 }
+<%perl>
+@field_headers = ( "Parent Block:", "Created:", "Last Updated:" );
 
-           <tr>
-             <td class="formtablec1">
-	     New address: </td>
-	     <td class="formtablec2"> 
-	     <form name="netdotform" action="ip-ws.html" method="POST">
-	     <input type="hidden" name="id" value="<% $id %>">
-	     <input type="hidden" name="_action" value="AUTOALLOCATE">
-	     <input type="hidden" name="parent" value="<% $id %>">
-%	     if ($o->version == 4){
- 	        <input type="hidden" name="length" value="32">
-%	     }elsif ($o->version == 6){
-	        <input type="hidden" name="length" value="128">
-%	     }
-	     <select name="strategy">
-	       <option value="first">First Fit</option>
-	       <option value="last">Last Fit</option>
+    my $parent_block;
+	     if (defined($o->parent) && int($o->parent)){
+		 $parent_block = "<a href=\"ip-ws.html?id=".$o->parent->id."\">".$o->parent->address."/".$o->parent->prefix."</a>";
+	     }else{
+	         $parent_block = "<strong><font size=\"-1\">(root block)</font></strong>";
+	     }
+
+    my $created = $o->first_seen;
+    my $last_updated = $o->last_seen;
+
+    @cell_data = ( $parent_block, $created, $last_updated );
+
+    if ($edit eq "blockinfo"){
+        # don't show new subnet form
+    }elsif ($o->status->name eq "Container"){
+        push( @field_headers, "New subnet of length: /" );
+        push( @field_headers, "Choose Manually:" );
+        
+        my $new_subnet_form = "
+	     <form name=\"netdotform\" action=\"ip-ws.html\" method=\"POST\">
+	     <input type=\"hidden\" name=\"id\" value=\"".$id."\">
+	     <input type=\"hidden\" name=\"_action\" value=\"AUTOALLOCATE\">
+	     <input type=\"hidden\" name=\"parent\" value=\"".$id."\">
+	     <input type=\"text\" size = \"4\" name=\"length\" value=\"".($o->prefix + 1)."\">
+	     <select name=\"strategy\">
+	       <option value=\"first\">First Fit</option>
+	       <option value=\"last\">Last Fit</option>
 	     </select>
-	     <input name="submit" value="Get" type="submit">
-	     </td>
-	   </tr>
-	   <tr>
-             <td class="formtablec1">Choose Manually:</td>
-             <td class="formtablec2">[view availability]</td>
-	   </tr>
-% }
-        </table>
+	     <input name=\"submit\" value=\"Allocate\" type=\"submit\">
+        ";
+
+        push( @cell_data, $new_subnet_form );
+        push( @cell_data, "[view availablilty]" );
+
+    }elsif ($o->status->name eq "Subnet"){
+        push( @field_headers, "New address:" );
+        push( @field_headers, "Choose Manually:" );
+
+        my $new_address_form = "
+	     <form name=\"netdotform\" action=\"ip-ws.html\" method=\"POST\">
+	     <input type=\"hidden\" name=\"id\" value=\"".$id."\">
+	     <input type=\"hidden\" name=\"_action\" value=\"AUTOALLOCATE\">
+ 	     <input type=\"hidden\" name=\"parent\" value=\"".$id."\">
+             ";
+	     if ($o->version == 4){
+ 	        $new_address_form .= "<input type=\"hidden\" name=\"length\" value=\"32\">";
+	     }elsif ($o->version == 6){
+	        $new_address_form .= "<input type=\"hidden\" name=\"length\" value=\"128\">";
+	     }
+             $new_address_form .= "
+	     <select name=\"strategy\">
+	       <option value=\"first\">First Fit</option>
+	       <option value=\"last\">Last Fit</option>
+	     </select>
+	     <input name=\"submit\" value=\"Get\" type=\"submit\">
+        ";
+
+        push( @cell_data, $new_address_form );
+        push( @cell_data, "[view availability]" );
+
+   }
+</%perl>
+
+%# actually output the table to the browser
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
       </td>
      </tr>
+
     </table>
+    <!-- end two-column layout table -->
     </div>
+
+</div>
 
 <%perl>
 # 
@@ -671,9 +647,9 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 my @children;  
 if (scalar( @children = $ipm->getchildren($o->id) )){
 </%perl>
-</div>
 
-      <div class="container">
+
+       <div class="container">
           <div class="containerhead">
              Children Addresses/Blocks
           </div>

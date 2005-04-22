@@ -1,0 +1,42 @@
+<%doc>
+
+Displays a table for showing attributes of a single record
+
+example data:
+--------------------------------
+| Address     | 128.223.0.0    |
+| Status      | Container      |
+| Description |                |
+| Parent Block| Root block     |
+--------------------------------
+
+Arguments:  
+    field_headers  -  array of captions to show in the left column
+    data           -  array to show in the right column
+
+</%doc>
+
+<%args>
+@field_headers => undef;
+@data          => undef;
+</%args>
+
+<%init>
+my @tbls;
+my $max;
+my $j = 0;
+</%init>
+	
+<%perl>
+map { push @tbls, $_ } sort { $a cmp $b } $ui->gettables;
+$max = scalar( @tbls );
+</%perl>
+
+<table border="0" width="100%">
+% for( my($i) = 0; $i < @field_headers; $i++ ) {
+  <tr>
+    <td class="formtablec1"><% $field_headers[$i] %></td>
+    <td class="formtablec2"><% $data[$i] %></td>
+  </tr>
+% }
+</table>
