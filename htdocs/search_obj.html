@@ -54,31 +54,27 @@ unless ( $table ){ # offer a list of tables to select
 
 </%init>
 
+<br>
+
 %if ( ! $res ){ # show the fill-out form
 
 <script language="javascript" src="select.js"></script>
 
 <form name="netdotform" action="search_obj.html" method="POST">
    <input type="hidden" name="res" value="1">
+   <h3>Specify one or more of the following as search criteria:</h3>
 
-   <table width="100%"  cellpadding="3" cellspacing="1" border="0" class="formtablebg">
-      <tr class="rowtitle0"> 
-         <td colspan="2" align="center">
-            <strong>Specify one or more of the following as search criteria:</strong>
-	 </td>
-      </tr>
-      <tr>
-         <td>
-            <& form.mhtml, table => $table, allow_create => 0  &>     
+   <& form.mhtml, table => $table, allow_create => 0  &>     
+
+   <table>
+      <tr class="rowtitle0">
+         <td class="center">
+             <input name="submit" value="Search" type="submit">
+             <input type="reset">
          </td>
       </tr>
-      <tr class="rowtitle0" >
-         <td align="center" colspan="2">
-	    <input name="submit" value="Search" type="submit">
-	    <input type="reset">
-	 </td>
-      </tr>
    </table>
+
 </form>
 
 %   } else { # Process input and search
@@ -112,20 +108,9 @@ unless (scalar keys(%sarg)){
 my @objs = $table->search_like(\%sarg);
 
 </%perl>
-<table align="center" border="0" width="100%">
-   <tr>
-      <td>
-         Total matches: <strong><% scalar (@objs) %></strong>
-      </td>
-   </tr>
-   <tr>
-      <td>
-         <& sortresults.mhtml, table => "$table", object => \@objs, view => "row", withdelete => 1 &>
-      </td>
-   </tr>
-</table>
-
-<p><br>
+    <h3>Total <% $table %> matches: <% scalar (@objs) %></h3>
+    <& sortresults.mhtml, table => "$table", object => \@objs, view => "row", withdelete => 1 &>
+    <br>
 
 %   } # endif !res
 
