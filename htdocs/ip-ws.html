@@ -84,17 +84,25 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	    @list = $ipm->searchblockslike($search);
 	}
 </%perl>      
-%   my $num = scalar(@list);
-    Query <strong><em><% $search %></em></strong> returned: <strong><% $num %> matches</strong>
 
-%      if ( $num ){
-        <& ipblock_list.mhtml, objects => \@list  &>
-%      }elsif ( $ipm->error ){
-          <p><strong><% $ipm->error %></strong>
-%      }
-%   }else{
-       <p><strong>No search criteria</strong>   
-%   }
+
+       <div class="container">
+          <div class="containerhead">
+%             my $num = scalar(@list);
+              Query <strong><em><% $search %></em></strong> returned: <strong><% $num %> matches</strong>
+          </div>
+          <div class="containerbody">
+%             if ( $num ){
+                  <& ipblock_list.mhtml, objects => \@list  &>
+%             }elsif ( $ipm->error ){
+                  <p><strong><% $ipm->error %></strong>
+%             }
+%             }else{
+                  <p><strong>No search criteria</strong>   
+%             }
+          </div>
+       </div>
+
 <%perl>
 
 #######################################################################################
