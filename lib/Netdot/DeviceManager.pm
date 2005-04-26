@@ -164,7 +164,18 @@ sub update_device {
     my $device = $argv{device} || "";
     $argv{entity}              ||= 0;
     $argv{site}                ||= 0;
-    $argv{contactlist}         ||= 0;
+
+    my $default_contactlist;
+    my $default_contactlist_id;
+    if ( $default_contactlist = (ContactList->search(name=>$self->{config}->{DEFAULT_CONTACTLIST}))[0] ){
+	$default_contactlist_id = $default_contactlist->id;
+    }else{
+	$default_contactlist_id = 0;
+	$self->debug( loglevel => 'LOG_NOTICE',
+		      message  => "Default Conctact List not found: %s",
+		      args     => [$self->{config}->{DEFAULT_CONTACTLIST}] );
+    }
+    $argv{contactlist}         ||= $default_contactlist_id;
 
     my %devtmp;
     $devtmp{sysdescription} = $dev{sysdescription} || "";

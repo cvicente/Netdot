@@ -130,6 +130,15 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 	    $guessed_site = $site;
 	}
     }
+    
+    # Get the default contactlist from config
+    my $default_contactlist;
+    my $default_contactlist_id;
+    if ( $default_contactlist = (ContactList->search(name=>$dm->{config}->{DEFAULT_CONTACTLIST}))[0] ){
+	$default_contactlist_id = $default_contactlist->id;
+    }else{
+	$default_contactlist_id = 0;
+    }
 
 </%perl>
     <form name="netdotform" action="updatedevice.html" method="POST">
@@ -210,7 +219,9 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %	   my @allcls = ContactList->retrieve_all; 
 %          @allcls = sort { $a->name cmp $b->name } @allcls;
 %          foreach my $cl (@allcls){
-%                if ( $guessed_cl && $cl->id == $guessed_cl ){
+%                if ( $default_contactlist_id && $cl->id == $default_contactlist_id){
+	           <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
+%                }elsif ( $guessed_cl && $cl->id == $guessed_cl ){
 	           <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
 %		 }else{
 	           <option value="<% $cl->id %>"><% $cl->name %></option>
