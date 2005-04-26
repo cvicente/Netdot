@@ -79,21 +79,21 @@ if (defined($ARGS{_action})){
             <tr align="left" valign="top">
                 <td class="formtablec1">Number: </td>
                 <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Interface", column=>"number", edit=>$isEditing);
+%               $ui->text_field(object=>$o, column=>"number", edit=>$isEditing);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td class="formtablec1">Name: </td>
                 <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Interface", column=>"name", edit=>$isEditing);                
+%               $ui->text_field(object=>$o, column=>"name", edit=>$isEditing);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td class="formtablec1">Device: </td>
                 <td class="formtablec2">
-%                   $ui->select_lookup(object=>$o, table=>"Interface", column=>"device", lookup=>"Device", 
+%                   $ui->select_lookup(object=>$o, column=>"device", lookup=>"Device", 
 %                                      edit=>$isEditing, linkPage=>"device.html");
                 </td>
             </tr>
@@ -114,8 +114,22 @@ if (defined($ARGS{_action})){
             <tr align="left" valign="top">
                 <td class="formtablec1">Description: </td>
                 <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Interface", column=>"description", edit=>$isEditing);
+%               $ui->text_field(object=>$o, column=>"description", edit=>$isEditing);
                 </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td class="formtablec1">Contact List: </td>
+                <td class="formtablec2">
+%               $ui->select_lookup(object=>$o, column=>"contactlist", 
+%                                 lookup=>"ContactList", edit=>$isEditing);
+                </td>
+            <tr align="left" valign="top">
+                <td class="formtablec1">Jack: </td>
+                <td class="formtablec2">
+%               $ui->select_lookup(object=>$o, column=>"jack", lookup=>"HorizontalCable", 
+%                                  edit=>$isEditing, linkPage=>"cable_horizontal.html");
+                </td>
+            </tr>
             </tr>
             </table>
             </td>
@@ -130,43 +144,46 @@ if (defined($ARGS{_action})){
             <tr align="left" valign="top">
                 <td class="formtablec1">Admin Duplex: </td>
                 <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Interface", column=>"admin_duplex", edit=>0);
+%               $ui->text_field(object=>$o, column=>"admin_duplex", edit=>0);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td class="formtablec1">Oper Duplex: </td>
                 <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Interface", column=>"oper_duplex", edit=>0);
+%               $ui->text_field(object=>$o, column=>"oper_duplex", edit=>0);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td class="formtablec1">Admin Status: </td>
                 <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Interface", column=>"admin_status", edit=>0);
+%               $ui->text_field(object=>$o, column=>"admin_status", edit=>0);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td class="formtablec1">Oper Status: </td>
                 <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Interface", column=>"oper_status", edit=>0);
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td class="formtablec1">Jack: </td>
-                <td class="formtablec2">
-%               $ui->select_lookup(object=>$o, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
-%                                  edit=>$isEditing, linkPage=>"cable_horizontal.html");
+%               $ui->text_field(object=>$o, column=>"oper_status", edit=>0);
                 </td>
             </tr>
             <tr align="left" valign="top">
-                <td class="formtablec1">Contact List: </td>
+                <td class="formtablec1">Monitored?: </td>
                 <td class="formtablec2">
-%               $ui->select_lookup(object=>$o, table=>"Interface", column=>"contactlist", 
-%                                 lookup=>"ContactList", edit=>$isEditing);
+%               $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>$isEditing);
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td class="formtablec1">Monitor Status: </td>
+                <td class="formtablec2">
+%               $ui->select_lookup(object=>$o, column=>"monitorstatus", lookup=>"MonitorStatus", edit=>$isEditing);
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td class="formtablec1">SNMP-managed?: </td>
+                <td class="formtablec2">
+%               $ui->radio_group_boolean(object=>$o, column=>"snmp_managed", edit=>$isEditing);
                 </td>
             </tr>
             
@@ -180,7 +197,7 @@ if (defined($ARGS{_action})){
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           $ui->text_area(object=>$o, table=>"Interface", column=>"info", edit=>$isEditing,
+%           $ui->text_area(object=>$o, column=>"info", edit=>$isEditing,
 %                         htmlExtra=>"rows='3' cols='80'");
             </td>
             <td>&nbsp;</td>

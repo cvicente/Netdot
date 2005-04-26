@@ -586,7 +586,18 @@ sub update_device {
 	    }
 	} else {
 
-	    $iftmp{speed}  ||= 0; #can't be null
+	    $iftmp{speed}          ||= 0; #can't be null
+	    $iftmp{monitored}      ||= $self->{config}->{IF_MONITORED};
+	    $iftmp{snmp_managed}   ||= $self->{config}->{IF_SNMP};
+
+	    my $unknown_status;
+	    my $unknown_status_id;
+	    if ( $unknown_status = (MonitorStatus->search(name=>"Unknown"))[0]){
+		$unknown_status_id = $unknown_status->id;
+	    }else{
+		$unknown_status_id = 0
+	    }
+	    $iftmp{monitorstatus}  ||= $unknown_status_id;
 	    
 	    my $msg = sprintf("Interface %s,%s doesn't exist. Inserting", $iftmp{number}, $iftmp{name} );
 	    $self->debug( loglevel => 'LOG_NOTICE',
@@ -713,7 +724,6 @@ sub update_device {
 				  message  => $msg );
 		    unless( $ipobj = $self->updateblock(id         => $ipobj->id, 
 							statusname => "Static",
-							monitored  => 1,
 							interface  => $if->id )){
 			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',
@@ -731,7 +741,6 @@ sub update_device {
 		    unless( $ipobj = $self->insertblock(address    => $newip, 
 							prefix     => $prefix, 
 							statusname => "Static",
-							monitored  => 1,
 							interface  => $if->id)){
 			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',

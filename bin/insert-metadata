@@ -509,24 +509,24 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Interface', 
-	  'number,name,device', 
-	  'number,name,device,jack,description,type,speed,admin_duplex,oper_duplex,admin_status,oper_status,physaddr,contactlist,info', 
+	  'number,name,device',
+	  'number,name,device,jack,description,type,speed,admin_duplex,oper_duplex,admin_status,oper_status,monitored,monitorstatus,snmp_managed,physaddr,contactlist,info',
 	  'number,name,device,jack,description', 
-	  'number:Number,name:Name,device:Device,jack:Jack,description:Description,type:Type,speed:Speed,admin_duplex:Admin Duplex,oper_duplex:Oper Duplex,admin_status:Admin Status,oper_status:Oper Status,physaddr:Physical (MAC) Address,info:Comments,contactlist:Contact List',
+	  'number:Number,name:Name,device:Device,jack:Jack,description:Description,type:Type,speed:Speed,admin_duplex:Admin Duplex,oper_duplex:Oper Duplex,admin_status:Admin Status,oper_status:Oper Status,monitored:Monitored?,monitorstatus:Monitored Status,snmp_managed:SNMP-Managed?,physaddr:Physical (MAC) Address,info:Comments,contactlist:Contact List',
 	  '',
-	  'device:Device,jack:HorizontalCable,physaddr:PhysAddr,contactlist:ContactList', 
+	  'device:Device,jack:HorizontalCable,physaddr:PhysAddr,contactlist:ContactList,monitorstatus:MonitorStatus', 
 	  'ips:Ipblock:interface,parents:InterfaceDep:child,children:InterfaceDep:parent,nearcircuits:Circuit:nearend:{on_delete=>"set-null"},farcircuits:Circuit:farend:{on_delete=>"set-null"},fwtentries:FWTableEntry:interface,vlans:InterfaceVlan:interface', 
 	  '0', 
 	  'An interface associated with a device'
 	  );
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
-  VALUES ('Interface_history', 
+  VALUES ('Interface_history',
 	  'modified', 
-	  'number,name,device,jack,description,type,speed,admin_duplex,oper_duplex,admin_status,oper_status,physaddr,contactlist,info,modified,modifier', 
+	  'number,name,device,jack,description,type,speed,admin_duplex,oper_duplex,admin_status,oper_status,monitored,monitorstatus,snmp_managed,physaddr,contactlist,info,modified,modifier', 
 	  'number,name,device,jack,description,modified,modifier',
-	  'number:Number,name:Name,device:Device,jack:Jack,description:Description,type:Type,admin_duplex:Admin Duplex,oper_duplex:Oper Duplex,admin_status:Admin Status,oper_status:Oper Status,physaddr:Physical (MAC) Address,info:Comments,contactlist:Contact List,modified:Modified on,modifier:Modified by',
+	  'number:Number,name:Name,device:Device,jack:Jack,description:Description,type:Type,speed:Speed,admin_duplex:Admin Duplex,oper_duplex:Oper Duplex,admin_status:Admin Status,oper_status:Oper Status,monitored:Monitored?,monitorstatus:Monitored Status,snmp_managed:SNMP-Managed?,physaddr:Physical (MAC) Address,info:Comments,contactlist:Contact List',
 	  '',
-	  'device:Device,jack:HorizontalCable,physaddr:PhysAddr', 
+	  'device:Device,jack:HorizontalCable,physaddr:PhysAddr,contactlist:ContactList,monitorstatus:MonitorStatus', 
 	  '', 
 	  '0', 
 	  '');
@@ -547,11 +547,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Ipblock', 
 	  'address,prefix', 
-	  'address,prefix,version,parent,interface,status,entity,description,first_seen,last_seen,monitored,monitorstatus,dhcp_enabled,dns_delegated,physaddr,info', 
+	  'address,prefix,version,parent,interface,status,entity,description,first_seen,last_seen,dhcp_enabled,dns_delegated,physaddr,info', 
 	  'address,prefix,status,entity',
-	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,entity:Used by,description:Description,first_seen:First Seen,last_seen:Last Seen,monitored:Monitored?,monitorstatus:Monitored Status,dhcp_enabled:Enable DHCP?,dns_delegated:Delegate DNS?,physaddr:MAC Address,info:Info',
+	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,entity:Used by,description:Description,first_seen:First Seen,last_seen:Last Seen,dhcp_enabled:Enable DHCP?,dns_delegated:Delegate DNS?,physaddr:MAC Address,info:Info',
 	  '',
-	  'interface:Interface,parent:Ipblock,status:IpblockStatus,entity:Entity,physaddr:PhysAddr,monitorstatus:MonitorStatus',
+	  'interface:Interface,parent:Ipblock,status:IpblockStatus,entity:Entity,physaddr:PhysAddr',
 	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,arecords:RRADDR:ipblock,ptrrecords:RRPTR:ipblock,children:Ipblock:parent:{on_delete=>"set-null"},dhcpentries:DhcpScope:ipblock:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
 	  '0', 
 	  'An IP (v4 or v6) Address');

@@ -368,7 +368,6 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 	       <table width="100%" cellspacing="2">
 	        <tr>
                  <td class="formtabletitle">Service</td>
-                 <td class="formtabletitle">Monitored</td>
                  <td class="formtabletitle">Contact List</td>
 	        </tr>
 %		 foreach my $ipservice ($o->services){
@@ -380,9 +379,6 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
 		      <a href="view.html?table=Service&id=<% $ipservice->service->id %>">
 		      <% $ipservice->service->name %></td></a>
 %		    }
-	            <td class="formtablec2">
-%                     $ui->radio_group_boolean(object=>$ipservice, column=>"monitored", edit=>$edit_ip);
-		    </td>
 	            <td class="formtablec2">
 %	      	    if ($edit eq "ipinfo"){	 
 %                     $ui->select_lookup(object=>$ipservice, column=>"contactlist", lookup=>"ContactList", edit=>$edit_ip);
@@ -429,7 +425,7 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
              <td class="formtablec1">Interface: </td>
 	     <td class="formtablec2"> 
 %	     if ( $o->interface && $o->interface->id ){
-		 <a href="view.html?table=Interface&id=<% $o->interface->id %>"><% $o->interface->name %></a> 
+		 <a href="interface.html?id=<% $o->interface->id %>"><% $o->interface->name %></a> 
 %	     }
 	     </td>
 	   </tr>

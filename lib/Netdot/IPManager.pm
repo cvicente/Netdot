@@ -241,7 +241,6 @@ sub _validate {
     $args->{statusname}    ||= $ipblock->status->name;
     $args->{dhcp_enabled}  ||= $ipblock->dhcp_enabled;
     $args->{dns_delegated} ||= $ipblock->dns_delegated;
-    $args->{monitored}     ||= $ipblock->monitored;
     
     my $pstatus;
     if ( $ipblock->parent && $ipblock->parent->id ){
@@ -302,12 +301,6 @@ sub _validate {
 	    return 0;	    
 	}
     }
-    if ( $args->{monitored} ){
-	unless ( $self->isaddress($ipblock) ){
-	    $self->error("Only addresses can be monitored");
-	    return 0;	    
-	}
-    }
     return 1;
 }
 
@@ -320,7 +313,6 @@ Optional Arguments:
     status        id of IpblockStatus - or - 
     statusname    name of IpblockStatus
     interface     id of Interface where IP was found
-    monitored     whether should be monitored by an NMS
     dhcp_enabled  Include in DHCP config
     dns_delegated Create necessary NS records
 Returns: 
@@ -339,7 +331,6 @@ sub insertblock {
     $args{prefix}        ||= undef;
     $args{statusname}    ||= "Container";
     $args{interface}     ||= 0; 
-    $args{monitored}     ||= 0; 
     $args{dhcp_enabled}  ||= 0; 
     $args{dns_delegated} ||= 0; 
     
@@ -379,7 +370,6 @@ sub insertblock {
 		  version       => $ip->version,
 		  status        => $statusid,
 		  interface     => $args{interface},
-		  monitored     => $args{monitored},
 		  dhcp_enabled  => $args{dhcp_enabled},
 		  dns_delegated => $args{dns_delegated},
 		  );
@@ -430,7 +420,6 @@ Optional Arguments:
     status        id or name of IpblockStatus
     statusname     name of IpblockStatus
     interface     id of Interface where IP was found
-    monitored     Whether should be monitored by an NMS
     entity        Who uses the block
     dhcp_enabled  Include in DHCP config
     dns_delegated Create necessary NS records

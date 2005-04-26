@@ -605,7 +605,6 @@ function setNull(field){
 	   <th align="left">Subnet</th>
 	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=interface">Interface</a></th>
 	   <th align="left">DNS Name</th>
-	   <th align="left">Monitored?</th>
 	   <th align="left">Services</th>
          </tr>
 
@@ -644,9 +643,6 @@ function setNull(field){
 %              }else{
 	          
 %	       }
-           </td>
-           <td align="left">
-%              $ui->radio_group_boolean(object=>$ip, column=>"monitored", edit=>$editips);
            </td>
            <td align="left">
 %	      if ( scalar ($ip->services) ){
@@ -739,14 +735,14 @@ function setNull(field){
 	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=name">Name</a></th>
 %	   if ( ! $editints ){	 
 	     <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=speed">Speed</a></th>
-	     <th valign="top" align="left">Duplex<br>[oper/admin]</th>
-	     <th valign="top" align="left">Status<br>[oper/admin]</th>
 	     <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=vlan">VLAN</a></th>
 %	   }
 	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=jack">Jack</a></th>
 	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=descr">Descr.</a></th>
 	   <th valign="top" align="left">Uplink</th>
 	   <th valign="top" align="left">Downlink</th>
+	   <th valign="top" align="left">Monitored?</th>
+	   <th valign="top" align="left">SNMP?</th>
        </tr>
 
 <%perl>
@@ -783,8 +779,6 @@ function setNull(field){
 	   </td>
 %	       if ( ! $editints ){	 
                  <td align="left"><% $dm->convert_ifspeed($if->speed) %></td>
-		 <td align="left"><% $if->oper_duplex %>/<% $if->admin_duplex %></td>
-		 <td align="left"><% $if->oper_status %>/<% $if->admin_status %></td>
 		 <td align="left"> 
 %	           if (exists $ifvlans{$if}){
 %	             my @links;
@@ -837,6 +831,12 @@ function setNull(field){
 %	   }
 	   </td>
 <!-- End DownLink Connections Field -->
+	   <td align="left">
+%	      $ui->radio_group_boolean(object=>$if, column=>"monitored", edit=>$editints);
+	   </td>
+	   <td align="left">
+%	      $ui->radio_group_boolean(object=>$if, column=>"snmp_managed", edit=>$editints);
+	   </td>
 
 	</tr>
 %       } #foreach
