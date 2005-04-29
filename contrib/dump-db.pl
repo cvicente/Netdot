@@ -13,9 +13,11 @@ use strict;
 my %dst = ( 
 	    host1 => {
 		user => 'user1',
+		key  => '/home/user1/.ssh/id_dsa',
 		dir  => '/home/user1/' },
 	    host2 => {
 		user => 'user2',
+		key  => '/home/user2/.ssh/id_dsa',
 		dir  => '/home/user2/' },
 	    );
 
@@ -36,5 +38,5 @@ my $date = sprintf("%04d-%02d-%02d-%02d%02d",
 system ("mysqldump netdot >netdot-$date.sql");
 
 foreach my $host ( keys %dst ){
-    system ("scp netdot-$date.sql $dst{$host}{user}\@$host:$dst{$host}{dir}");
+    system ("scp -i $dst{$host}{key} netdot-$date.sql $dst{$host}{user}\@$host:$dst{$host}{dir}");
 }
