@@ -622,6 +622,7 @@ my $schema = {
   'columns' => [
     'id', 'serial', '', '', '', '',
     'jackid', 'varchar', '', '64', '', '',
+    'faceplateid', 'varchar', '', '64', '', '',
     'type', 'integer', '', '', '', '',
     'datetested', 'date', 'NULL', '', '', '',
     'testpassed', 'bool', '', '', '', '',
@@ -634,8 +635,8 @@ my $schema = {
     'info', 'long varbinary', 'NULL', '', '', '',
   ],
   'primary_key' => 'id',
-  'unique' => [ ['jackid', 'closet', 'room' ] ],
-  'index' => [ ['account'], ['jackid'], ['closet'], ['room'] ],
+  'unique' => [ ['jackid', 'faceplateid', 'closet', 'room' ] ],
+  'index' => [ ['account'] ],
 },
 
 'Interface' => {
