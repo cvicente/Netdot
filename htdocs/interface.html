@@ -75,34 +75,62 @@ if (defined($ARGS{_action})){
 
         <tr align="left" valign="top">
             <td width="40%">
+
+<%perl>
+my (@field_headers, @cell_data);
+
+push( @field_headers, "Number: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"number", edit=>$isEditing, returnAsVar=>1) );
+push( @field_headers, "Name: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"name", edit=>$isEditing, returnAsVar=>1) );
+push( @field_headers, "Device: " );
+push( @cell_data, $ui->select_lookup(object=>$o, column=>"device", 
+			lookup=>"Device", edit=>$isEditing, linkPage=>"device.html", returnAsVar=>1) );
+push( @field_headers, "Physical Address: " );
+push( @cell_data, $ui->select_lookup(object=>$o, table=>"Interface", 
+			column=>"physaddr", lookup=>"PhysAddr", edit=>$isEditing, linkPage=>"view.html", returnAsVar=>1) );
+push( @field_headers, "Type: " );
+push( @cell_data, $o->type );
+push( @field_headers, "Description: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"description", edit=>$isEditing, returnAsVar=>1) );
+push( @field_headers, "Contact List: " );
+push( @cell_data, $ui->select_lookup(object=>$o, column=>"contactlist", 
+			lookup=>"ContactList", edit=>$isEditing, returnAsVar=>1) );
+push( @field_headers, "Jack: " );
+push( @cell_data, $ui->select_lookup(object=>$o, column=>"jack", 
+			lookup=>"HorizontalCable", edit=>$isEditing, linkPage=>"cable_horizontal.html", returnAsVar=>1) );
+</%perl>
+
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
+
+<!-- SNIP
             <table width="100%" border="0" cellspacing="0" cellpadding="2">
             <tr align="left" valign="top">
                 <td class="formtablec1">Number: </td>
                 <td class="formtablec2">
-%               $ui->text_field(object=>$o, column=>"number", edit=>$isEditing);
+%#               $ui->text_field(object=>$o, column=>"number", edit=>$isEditing);
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td class="formtablec1">Name: </td>
                 <td class="formtablec2">
-%               $ui->text_field(object=>$o, column=>"name", edit=>$isEditing);                
+%#               $ui->text_field(object=>$o, column=>"name", edit=>$isEditing);                
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td class="formtablec1">Device: </td>
                 <td class="formtablec2">
-%                   $ui->select_lookup(object=>$o, column=>"device", lookup=>"Device", 
-%                                      edit=>$isEditing, linkPage=>"device.html");
+%#                   $ui->select_lookup(object=>$o, column=>"device", lookup=>"Device", edit=>$isEditing, linkPage=>"device.html");
                 </td>
             </tr>
 
             <tr align="left" valign="top">
                 <td class="formtablec1">Physical Address: </td>
                 <td class="formtablec2">
-%               $ui->select_lookup(object=>$o, table=>"Interface", column=>"physaddr",
-%                                 lookup=>"PhysAddr", edit=>$isEditing, linkPage=>"view.html");
+%#               $ui->select_lookup(object=>$o, table=>"Interface", column=>"physaddr", lookup=>"PhysAddr", edit=>$isEditing, linkPage=>"view.html");
                 </td>
             </tr>
 
@@ -114,27 +142,50 @@ if (defined($ARGS{_action})){
             <tr align="left" valign="top">
                 <td class="formtablec1">Description: </td>
                 <td class="formtablec2">
-%               $ui->text_field(object=>$o, column=>"description", edit=>$isEditing);
+%#               $ui->text_field(object=>$o, column=>"description", edit=>$isEditing);
                 </td>
             </tr>
             <tr align="left" valign="top">
                 <td class="formtablec1">Contact List: </td>
                 <td class="formtablec2">
-%               $ui->select_lookup(object=>$o, column=>"contactlist", 
-%                                 lookup=>"ContactList", edit=>$isEditing);
+%#               $ui->select_lookup(object=>$o, column=>"contactlist", lookup=>"ContactList", edit=>$isEditing);
                 </td>
             <tr align="left" valign="top">
                 <td class="formtablec1">Jack: </td>
                 <td class="formtablec2">
-%               $ui->select_lookup(object=>$o, column=>"jack", lookup=>"HorizontalCable", 
-%                                  edit=>$isEditing, linkPage=>"cable_horizontal.html");
+%#               $ui->select_lookup(object=>$o, column=>"jack", lookup=>"HorizontalCable", edit=>$isEditing, linkPage=>"cable_horizontal.html");
                 </td>
             </tr>
             </tr>
             </table>
+SNIP -->
+
             </td>
 
             <td width="40%">
+<%perl>
+(@field_headers, @cell_data) = ();
+push( @field_headers, "Speed: " );
+push( @cell_data, $dm->convert_ifspeed($o->speed) );
+push( @field_headers, "Admin Duplex: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"admin_duplex", edit=>0, returnAsVar=>1) );
+push( @field_headers, "Oper Duplex: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"oper_duplex", edit=>0, returnAsVar=>1) );
+push( @field_headers, "Admin Status: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"admin_status", edit=>0, returnAsVar=>1) );
+push( @field_headers, "Oper Status: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"oper_status", edit=>0, returnAsVar=>1) );
+push( @field_headers, "Monitored?: " );
+push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>$isEditing, returnAsVar=>1) );
+push( @field_headers, "Monitor Status: " );
+push( @cell_data, $ui->select_lookup(object=>$o, column=>"monitorstatus", lookup=>"MonitorStatus", edit=>$isEditing, returnAsVar=>1) );
+push( @field_headers, "SNMP-managed?: " );
+push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"snmp_managed", edit=>$isEditing, returnAsVar=>1) );
+</%perl>
+
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
+<!-- SNIP
             <table width="100%" border="0" cellspacing="0" cellpadding="2">
             <tr align="left" valign="top">
                 <td class="formtablec1">Speed: </td>
@@ -188,6 +239,8 @@ if (defined($ARGS{_action})){
             </tr>
             
             </table>
+SNIP -->
+
             </td>
             <td>&nbsp;</td>
         </tr>
