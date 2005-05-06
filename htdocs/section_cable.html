@@ -50,10 +50,12 @@ my @sites = Site->retrieve_all();
 <p>
 <hr>
 
-<table border="0" width="100%" align="center"  class="tablebackground">
 
 % if ($page eq "BACKBONE" || $page eq "") {
 
+<div class="containeroutside">
+
+    
 <script language="JavaScript">
 <!--
 var siteListLookup = new DynamicList("backbone_form", "end_id", null, null, "start_id");
@@ -62,15 +64,16 @@ LIST_MANAGER.addList(siteListLookup);
 -->
 </script>
 
-<tr class="rowtitle0">
-    <td>
-        <b>Backbone Cable</b> &nbsp;&nbsp;&nbsp;<a href="#" onClick="hideOptions('backbone_options');">[hide/show]</a>
-        &nbsp;&nbsp;&nbsp; <a href="cable_backbone.html?id=NEW">[new]</a>
-    </td>
-</tr>
+    <div class="containerheadleftoutside">
+        <b>Backbone Cable</b> 
+    </div>
+    <div class="containerheadrightoutside">
+        <a href="#" onClick="hideOptions('backbone_options');">[hide/show]</a>
+        &nbsp; <a href="cable_backbone.html?id=NEW">[new]</a>
+    </div>
+    <div class="containerbodyoutside">
 
-<tr class="rowtitle0" id="backbone_options">
-    <td>
+
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
     <tr align="left" valign="top">
     <td>
@@ -104,14 +107,17 @@ LIST_MANAGER.addList(siteListLookup);
     <form name="site_srch" action="cable_plant.html" method="POST">
         <input type="hidden" name="page_type" value="BACKBONE">  
         Site Name: <input name="site_srch" size="20"> &nbsp;<input type="submit" name="submit_site_search" value="Search">
-    </form>
+   
     </td>
     </tr>
     </table>
-    </td>
-</tr>
+    </form>
+</div>
+</div>
 
 % } elsif ($page eq "HORIZONTAL") {
+
+<div class="containeroutside">
 
 <script language="JavaScript">
 <!--
@@ -125,16 +131,16 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
 </script>
 
 
-<tr class="rowtitle0">
-    <td>
-        <b>Horizontal Cable</b> &nbsp;&nbsp;<a href="#" onClick="hideOptions('horizontal_options');">[hide/show]</a>
-        &nbsp;&nbsp;&nbsp; <a href="cable_horizontal.html?id=NEW">[new]</a>
-    </td>
-</tr>
-<tr class="rowtitle0" id="horizontal_options">
-    <td>
-    <form name="cable_form" action="cable_plant.html" method="GET">
-    <input type="hidden" name="page_type" value="HORIZONTAL">
+	<div class="containerheadleftoutside">
+        <b>Horizontal Cable</b> 
+    </div>
+    <div class="containerheadrightoutside">
+        <a href="#" onClick="hideOptions('horizontal_options');">[hide/show]</a>
+        &nbsp; <a href="cable_horizontal.html?id=NEW">[new]</a>
+    </div>
+	<div class="containerbodyoutside">
+	<form name="cable_form" action="cable_plant.html" method="GET">
+  	<input type="hidden" name="page_type" value="HORIZONTAL">
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
         <tr align="left" valign="top">
             <td width="280" align="left">Site:<BR>
@@ -184,8 +190,8 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
         </tr>
     </table>
     </form>
-</td>
-</tr>
+</div>
+</div>
 
 % } elsif ($page eq "CLOSETS") {
 
@@ -197,18 +203,19 @@ var floorList = new DynamicList("cable_form", "floor_id", "site", "Floor", "id",
 LIST_MANAGER.addList(floorList, closetList);
 -->
 </script>
-
-<tr class="rowtitle0">
-    <td>
-        <b>Closets</b> &nbsp;&nbsp;<a href="#" onClick="hideOptions('closet_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
+<div class="containeroutside">
+	<div class="containerheadleftoutside">
+        <b>Closets</b> 
+    </div>
+    <div class="containerheadrightoutside">
+        <a href="#" onClick="hideOptions('closet_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
         <a href="closet.html?id=NEW">[new]</a>
-    </td>
-</tr>
-<tr class="rowtitle0" id="closet_options">
-    <td>
+    </div>
+<div class="containerbodyoutside">
     <form name="cable_form" action="cable_plant.html" method="GET">
     <input type="hidden" name="page_type" value="CLOSETS">
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
+        
         <tr align="left" valign="top">
             <td width="280" align="left">Site:<BR>
             <select name="id" onChange="floorList.doIt();">
@@ -245,19 +252,19 @@ LIST_MANAGER.addList(floorList, closetList);
         </tr>
     </table>
     </form>
-</td>
-</tr>
+</div>
+</div>
 
 % } elsif ($page eq "STRANDS") {
-
-<tr class="rowtitle0">
-    <td>
-        <b>Cable Strands</b> &nbsp;&nbsp;<a href="#" onClick="hideOptions('strand_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
+<div class="containeroutside">
+	<div class="containerheadleftoutside">
+        <b>Cable Strands</b>
+    </div>
+    <div class="containerheadrightoutside">
+        <a href="#" onClick="hideOptions('strand_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
         <a href="cable_strand.html?id=NEW">[new]</a>
-    </td>
-</tr>
-<tr class="rowtitle0" id="strand_options">
-    <td>
+    </div>
+	<div class="containerbodyoutside">
     <form name="cable_form" action="cable_plant.html" method="GET">
     <input type="hidden" name="page_type" value="STRANDS">
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
@@ -286,22 +293,19 @@ LIST_MANAGER.addList(floorList, closetList);
         </tr>
     </table>
     </form>
-</td>
-</tr>
+</div>
+</div>
 
 % } elsif ($page eq "CIRCUITS") {
-
-<tr class="rowtitle0">
-    <td>
-        <b>Circuits</b> &nbsp;&nbsp;<a href="#" onClick="hideOptions('circuit_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
+<div class="containeroutside">
+	<div class="containerheadleftoutside">
+        <b>Circuits</b> 
+	</div>
+	<div class="containerheadrightoutside">
+        <a href="#" onClick="hideOptions('circuit_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
         <a href="circuit.html?id=NEW">[new]</a>
-    </td>
-</tr>
-<tr class="rowtitle0" id="circuit_options">
-<td>
-    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
-    <tr align="left" valign="top">
-    <td>
+	</div>
+	<div class="containerbodyoutside">
     <form name="circuit_lookup_form" action="cable_plant.html" method="POST">
         <input type="hidden" name="page_type" value="CIRCUITS">
         Circuits connected from:<br>
@@ -333,12 +337,10 @@ LIST_MANAGER.addList(floorList, closetList);
     </td>
     </tr>
     </table>
-    </td>
-</tr>
+</div>
+</div>
 
 % }
-
-</table>
 
 </div>
 
