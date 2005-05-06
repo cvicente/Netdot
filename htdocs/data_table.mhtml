@@ -1,0 +1,45 @@
+<%doc>
+
+Displays a table for showing rows of data 
+
+example data:
+--------------------------------------------------------
+| Address      | Status | Name                         |
+--------------------------------------------------------
+| 128.223.56.5 | Static | vlan56-5.uoregon.edu         |
+| 128.223.56.5 | Static | vlan56-5.uoregon.edu         |
+| 128.223.56.5 | Static | vlan56-5.uoregon.edu         |
+| 128.223.56.5 | Static | vlan56-5.uoregon.edu         |
+--------------------------------------------------------
+
+Arguments:  
+    field_headers  -  array of captions to show on the top row
+    data           -  array of arrays to show in the rows
+
+</%doc>
+
+<%args>
+@field_headers => undef;
+@data          => undef;
+</%args>
+
+
+
+<table border="0" width="100%">
+
+  <tr>
+% foreach (@field_headers) {
+    <td class="formtabletitle"><% $_ %></td>
+% }
+  </tr>
+
+% my $row;
+% foreach $row(@data) {
+  <tr>
+%   foreach (@$row) {
+      <td class="formtablec2"><% $_ %></td>
+%   }
+  </tr>
+% }
+
+</table>
