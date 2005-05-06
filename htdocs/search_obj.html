@@ -60,22 +60,30 @@ unless ( $table ){ # offer a list of tables to select
 
 <script language="javascript" src="select.js"></script>
 
-<form name="netdotform" action="search_obj.html" method="POST">
-   <input type="hidden" name="res" value="1">
-   <h3>Specify one or more of the following as search criteria:</h3>
+<div class="container">
+    <div class="containerhead">
+        Specify one or more of the following as search criteria:
+    </div>
 
-   <& form.mhtml, table => $table, allow_create => 0  &>     
+    <div class="containerbody">
+    <form name="netdotform" action="search_obj.html" method="POST">
+    <input type="hidden" name="res" value="1">
 
-   <table>
+    <& form.mhtml, table => $table, allow_create => 0  &>     
+
+    <table>
       <tr class="rowtitle0">
          <td class="center">
              <input name="submit" value="Search" type="submit">
              <input type="reset">
          </td>
       </tr>
-   </table>
+    </table>
 
-</form>
+    </form>
+
+    </div>
+</div>
 
 %   } else { # Process input and search
 <%perl>
