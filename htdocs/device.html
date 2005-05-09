@@ -453,8 +453,6 @@ push( @cell_data, '&nbsp; ' );
     </form>
 % }
 
-<br>
-
 <!-- Management Table -->
 <div class="container">
     <div class="containerheadleft">
@@ -539,8 +537,7 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 <!-- End Division Table -->
 
 % }
- </div> <!-- close containerbodyoutside --> 
-</div> <!-- close containeroutside -->
+
 % if ( $view eq "IP" || $view eq "All" ){
 
 %  # Get all ip address info
@@ -551,24 +548,18 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 
 <!-- IPs Table -->
 
-  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-    <tr class="formtabletitle" >
-      <td>
-        <table width="100%" border="0">
-          <tr>
-            <td width="10%" align="left">&nbsp;</td>
-            <th width="80%" align="center">IPs</th>
+<div class="container">
+    <div class="containerheadleft">
+        IPs
+    </div>
+    <div class="containerheadright">
 %	    if ($editips){	 
-            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+            <input name="submit" value="save" type="submit">
 %	    }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editips=1">[edit]</a></td>
+            <a href="device.html?id=<% $id %>&view=<% $view %>&editips=1">[edit]</a>
 %	    }
-         </tr>
-       </table>
-     </td>
-   </tr>
-   <tr>
-     <td>
+    </div>
+    <div class="containerbody">
        <table border="0" width="100%">
 %    if (scalar @ips){
          <tr>
@@ -665,9 +656,8 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 %      }  
 %    }
        </table>
-    </td>
-   </tr>
-  </table>
+    </div>
+</div>
 <!-- End IPs Table -->
 
 % if ($editips){	 
@@ -679,24 +669,18 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 % if ( $view eq "Interfaces" || $view eq "All" ){
 
 <!-- Interface Table -->
-  <table border="0" width="100%" class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle"> 
-     <td>
-       <table width="100%" border="0">
-        <tr>
-          <th width="10%" align="left">&nbsp;</th>
-          <th width="80%" align="center">Interfaces</th>
+<div class="container">
+    <div class="containerheadleft">
+        Interfaces
+    </div>
+    <div class="containerheadright">
 %	  if ($editints){	 
-            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+          <input name="submit" value="save" type="submit">
 %	  }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editints=1">[edit]</a></td>
+          <a href="device.html?id=<% $id %>&view=<% $view %>&editints=1">[edit]</a>
 %	  }
-       </tr>
-      </table>
-     </td>
-   </tr>
-   <tr>
-    <td>
+    </div>
+    <div class="containerbody">
       <table border="0" width="100%">
         <tr>
 %	   if ( $editints ){	 
@@ -715,7 +699,6 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 	   <th valign="top" align="left">Monitored?</th>
 	   <th valign="top" align="left">SNMP?</th>
        </tr>
-
 <%perl>
 	my @ifs;
        if ( $ifsort eq "number" ){
@@ -829,9 +812,8 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 %    }
        </tr>
      </table>
-    </td>
-  </tr>
- </table>
+    </div>
+</div>
 <!-- End Interface Table -->
 % } 
 
@@ -857,24 +839,18 @@ if ( $peersort eq "ip" ){
 
 %   if ( scalar @peers ){
 <!-- BGP Peers Table -->
-  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle" >
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="80%" align="center">BGP Peers</th>
-%	 if ($editbgp){	 
-            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
-%	 }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editbgp=1">[edit]</a></td>
-%	 }
-      </tr>
-     </table>
-    <td>
-   </tr>
-   <tr>
-     <td>
+<div class="container">
+    <div class="containerheadleft">
+        BGP Peers
+    </div>
+    <div class="containerheadright">
+%	if ($editbgp){	 
+        <input name="submit" value="save" type="submit">
+%	}else{
+        <a href="device.html?id=<% $id %>&view=<% $view %>&editbgp=1">[edit]</a>
+%	}
+    </div>
+    <div class="containerbody">
       <table border="0" width="100%">
 %	if (scalar @peers){
          <tr>
@@ -902,9 +878,8 @@ if ( $peersort eq "ip" ){
 %        }	   
 %      }
       </table>
-    </td>
-   </tr>
- </table>
+    </div>
+</div>
 <!-- End BGP Peers Table -->
 %   }
 % }  
@@ -917,27 +892,22 @@ if ( $peersort eq "ip" ){
 %   my @h_objs = $ui->gethistoryobjs($o);
 %
 <!-- History Table -->
-  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-    <tr class="formtabletitle" >
-      <td>
-        <table width="100%" border="0">
-          <tr>
-            <td width="10%" align="left">&nbsp;</td>
-            <th width="80%" align="center">History</th>
-	    <td width="10%" align="right">&nbsp;</td>
-         </tr>
-       </table>
-      <td>
-   </tr>
-   <tr>
-      <td>
+<div class="container">
+    <div class="containerhead">
+        History
+    </div>
+    <div class="containerbody">
         <& sortresults.mhtml, object => \@h_objs , view => "row" &>
-      </td>
-    </tr>
-  </table
+    </div>
+</div>
 <!-- End History Table -->
 % }
 %
 %} # if !defined search
 %
+
+ </div> <!-- close containerbodyoutside --> 
+</div> <!-- close containeroutside -->
+
+
 </div>
