@@ -77,36 +77,28 @@ if (defined($ARGS{_action})) {
 % # interface...
 % # ---------------------------------------------------------------------------
 <!-- Header Table -->
-% if (defined($o)) {
-<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
- <tr class="rowtitle0" >
-    <td align="left">
-        Cable Strand for Backbone: <a href="cable_backbone.html?id=<% $o->cable %>"><% $o->cable->name %></a>
-    </td>
- </tr>
-</table>
-%}
-<!-- End Header Table -->
-
-<!-- Begin Cable Strand Table -->
-<table border="0" width="100%" align="center"  class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="center">
+<div class="containeroutside">
+<div class="containerheadleftoutside">
+        Cable Strand:
+% 		if (defined($o)) {
+        <% $o->name %>
+%		}
+</div>
+<div class="containerheadrightoutside">
         <form name="netdotform" action="cable_strand.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
-        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-        <tr class="formtabletitle">
-            <td colspan="2" align="left">Cable Strand</td>
 %           if ($editStrand) {
             <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %           } else {
-            <td align="right"><a href="cable_strand.html?id=NEW">[new]</a> || <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a> || <a href="delete.html?table=CableStrand&id=<% $id %>">[delete]</a></td>
+            <td align="right"><a href="cable_strand.html?id=NEW">[new]</a> &nbsp;&nbsp; <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a> &nbsp;&nbsp;<a href="delete.html?table=CableStrand&id=<% $id %>">[delete]</a></td>
 %           }
-        </tr>
-
+</div>
+<!-- End Header Table -->
+<div class="containerbodyoutside">
+        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr align="left" valign="top">
-            <td width="40%">
+            <td width="50%">
             <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td>Name: </td>
@@ -125,8 +117,12 @@ if (defined($ARGS{_action})) {
             <tr align="left" valign="top">
                 <td>Backbone: </td>
                 <td class="formtablec2">
+%               if (!$editStrand) {
+				<a href="cable_backbone.html?id=<% $o->cable %>"><% $o->cable->name %></a>
+%              	} else {
 %               $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable", 
 %                                 edit=>$editStrand);
+%				}
                 </td>
             </tr>
 
@@ -143,7 +139,7 @@ if (defined($ARGS{_action})) {
 %               if (!$editStrand) {
 %                   my @splices = $o->splices;
 %                   if (scalar(@splices)) {
-                        <a href="cable_strand.html?id=<% $splices[0]->strand2->id %>"><% $splices[0]->strand2->name %></a>
+                        <a href="cable_stranif (!$editStrand) {d.html?id=<% $splices[0]->strand2->id %>"><% $splices[0]->strand2->name %></a>
 %                   }
 %                   if (scalar(@splices) == 2) {
                         , <a href="cable_strand.html?id=<% $splices[1]->strand2->id %>"><% $splices[1]->strand2->name %></a> 
@@ -247,7 +243,7 @@ if (defined($ARGS{_action})) {
             </table>
             </td>
 
-            <td width="40%">
+            <td width="50%">
             <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td>Tested on: <font size="-1">(yyyy-mm-dd)</font>: </td>
@@ -292,7 +288,7 @@ if (defined($ARGS{_action})) {
             </tr>
             </table>
             </td>
-            <td>&nbsp;</td>
+
         </tr>
 
         <tr><td colspan="3">&nbsp;<br></td></tr>
@@ -303,14 +299,10 @@ if (defined($ARGS{_action})) {
 %           $ui->text_area(object=>$o, table=>"CableStrand", column=>"info",
 %                         edit=>$editStrand, htmlExtra=>"rows='3' cols='80'");
             </td>
-            <td>&nbsp;</td>
         </tr>
-
-        <tr><td colspan="3">&nbsp;<p></td></tr>
-
         </table>
         </form>
-    </td>
-    </tr>
-</table>
+</div>
+</div>
+
 <!-- End Cable Strand Table -->
