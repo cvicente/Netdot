@@ -176,17 +176,10 @@ function setNull(field){
 % }else{  # we're not searching
 
 <!-- Header Table -->
-<!--<table border="0" width="100%" cellpadding="1" cellspacing="0" align="center" class="tablebackground">-->
 <div class="containeroutside">
-<!--<tr class="rowtitle0" >-->
   <div class="containerheadleftoutside">
-%#  <td valign="top" width="50%" align="left">
          Device: <b><% $name %></b>&nbsp;<br/>
-%#    </td>
 
-<!--<table border="0" width="100%" cellpadding="1" cellspacing="0" align="center" class="tablebackground">-->
- <!--<tr class="rowtitle0" >
-    <td valign="top" width="50%" align="left">-->
        View: 
 %    if ( $view eq "Basics" ){
 	[Basics]
@@ -225,17 +218,12 @@ function setNull(field){
 %    }else{
 	 <a href="device.html?id=<% $id %>&view=All">[All]</a>
 %    }
-<!--    </td>-->
 </div>
 
 <div class="containerheadrightoutside">
-%#    <td valign="top" width="50%" align="right">
-        <a href="device.html?id=<% $id %>&view=<% $view %>"> [refresh]</a>&nbsp;
+    <a href="device.html?id=<% $id %>&view=<% $view %>"> [refresh]</a>&nbsp;
 	<a href="deldevice.html?id=<% $id %>"> [delete]</a>&nbsp;<br/>
-%#    </td>
 
-<!--</tr>-->
-<!--    <td valign="top" width="50%" align="right">-->
 <%perl>
  if ( $view eq "Interfaces" || $view eq "All" ){
     # Build a hash of Interface Vlans
@@ -270,40 +258,39 @@ function setNull(field){
 % } else {
 <br/><!-- make the left and right heights equal (HACK) -->
 % }
-</div>
-<!--    </td>
- </tr>
-</table> -->
 
-<!-- should be enclosed by something -->
+</div> <!-- close containerheadrightoutside -->
+
+
+
+<div class="containerbodyoutside">
+% if ( $view eq "Basics" || $view eq "All" ){
+
+<!-- Two-column Division Table -->
+<table border="0" width="100%" align="center">
+  <tr>
+    <td valign="top" width="50%" align="center">
+
 % if ( $editgen || $editloc || $editmgmt || $editips || $editints || $editbgp ){	 
     <form name="netdotform" action="device.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="view" value="<% $view %>">
 % }
 
-<div class="containerbodyoutside">
-% if ( $view eq "Basics" || $view eq "All" ){
-
-<!-- Division Table -->
-<table border="0" width="100%" align="center">
-  <tr>
-    <td valign="top" width="50%" align="center">
-
-      <div class="container">
+    <div class="container">
 	<!-- General Info Table -->
-	<div class="containerheadleft"><b>General</b></div>
-	<div class="containerheadright">
+    	<div class="containerheadleft"><b>General</b></div>
+    	<div class="containerheadright">
 %	     if ($editgen){	 
             <input name="submit" value="save" type="submit">
-%	    }else{
-	<a href="device.html?id=<% $id %>&view=<% $view %>&editgen=1">[edit]</a>
-%	    }
-</div>
-   <div class="containerbody">
-     <table border="0" width="100%" cellpadding="0" cellspacing="2" class="formtablebg">
-     <tr>
-       <td valign="top" width="50%">
+%        }else{
+            <a href="device.html?id=<% $id %>&view=<% $view %>&editgen=1">[edit]</a>
+%        }
+        </div>
+        <div class="containerbody">
+         <table width="100%">
+          <tr>
+           <td valign="top" width="50%">
 <%perl>
 my (@field_headers, @cell_data);
 
@@ -354,8 +341,8 @@ push( @cell_data, $ui->text_field(object=>$o, column=>"lastupdated", edit=>$edit
 </%perl>
 
     <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-       </td>
-      <td valign="top" width="50%">
+           </td>
+           <td valign="top" width="50%">
 
 <%perl>
 (@field_headers, @cell_data) = ();
@@ -369,20 +356,20 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
 </%perl>
 
     <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-      </td>
-    </tr>
-    <tr>
-      <td colspan="2" align="center">Comments:</td>
-    </tr>
-    <tr>
-      <td colspan="2" align="left">
+           </td>
+          </tr>
+          <tr>
+           <td colspan="2" align="center">Comments:</td>
+          </tr>
+          <tr>
+           <td colspan="2" align="left">
 %       $ui->text_area(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=60");
-     </td>
-    </tr>
-  </table>
-</div> <!-- containerbody -->
+           </td>
+          </tr>
+         </table>
+       </div> <!-- containerbody -->
+    </div> <!-- container -->
 <!-- End General Info Table -->
-</div> <!-- container -->
 
 % if ($editgen){	 
    </form>
@@ -392,25 +379,21 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
   <td valign="top"  width="50%" align="center">
 
 <!-- Location Table -->
-  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-    <tr class="formtabletitle" >
-      <td>
-        <table width="100%" border="0">
-          <tr>
-            <td width="10%" align="left">&nbsp;</td>
-            <th width="80%" align="center">Group/Location</th>
-%	 if ($editloc){	 
-            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
-%	 }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editloc=1">[edit]</a></td>
-%	 }
-         </tr>
-       </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-
+<div class="container">
+    <div class="containerheadleft">
+        Group/Location
+    </div>
+    <div class="containerheadright">
+%	if ($editloc){	 
+        <input name="submit" value="save" type="submit">
+%	}else{
+        <a href="device.html?id=<% $id %>&view=<% $view %>&editloc=1">[edit]</a>
+%	}
+    </div>
+    <div class="containerbody">
+     <table width="100%">
+      <tr>
+       <td width="50%">
 <%perl>
 (@field_headers, @cell_data) = ();
 
@@ -439,20 +422,8 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"rack", edi
 </%perl>
 
     <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-</td>
-<td>
-<!-- SNIP -->
-<!--        <table border="0" width="100%"> -->
-<!--          <tr> -->
-<!-- 	   <td class="formtablec1">Entity: </td> -->
-<!-- 	   <td class="formtablec2">  -->
-<!-- %               $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html"); -->
-<!-- 	   </td> -->
-<!-- 	   <td class="formtablec1">Site: </td> -->
-<!-- 	   <td class="formtablec2"> -->
-<!-- %               $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="closetList.doIt(); roomList.doIt();"'); -->
-<!-- 	   </td> -->
-
+       </td>
+       <td width="50%">
 <%perl>
 (@field_headers, @cell_data) = ();
 
@@ -471,72 +442,35 @@ push( @cell_data, '&nbsp; ' );
 
     <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
- 	<!-- </tr> <tr> -->
-
-
-
-<!-- 	   <td class="formtablec1">Room: </td> -->
-<!-- 	   <td class="formtablec2">  -->
-<!-- %               if ($editloc) { -->
-<!--                 <select name="Device__<% $id %>__room" onChange="setNull(document.netdotform.Device__<% $id %>__closet);"> -->
-<!--                 <option value="">-- Make your selection --</option> -->
-<!-- %               if (defined($o)) { -->
-<!-- %                   foreach my $floor ($o->site->floors) { -->
-<!-- %                       foreach my $room ($floor->rooms) { -->
-<!-- %                           printf("<option value=\"%d\" %s>%s</option>\n", $room->id, ($o->room && $room->id == $o->room->id ? "SELECTED" : ""), $room->name); -->
-<!-- %                       } -->
-<!-- %                   } -->
-<!-- %               } -->
-<!--                 <option value="0">[null]</option> -->
-<!--                 </select> -->
-<!-- %               } else { -->
-<!--                 <% $o->room ? sprintf("<A HREF=\"view.html?table=Room&id=%d\">%s</A>", $o->room->id, $o->room->name) : "" %> -->
-<!-- %               } -->
-<!-- 	   </td> -->
-<!-- 	   <td class="formtablec1"> <i>- or -</i> Closet: </td> -->
-<!-- 	   <td class="formtablec2"> -->
-<!-- %               my $closet_js = sprintf("onChange=\"setNull(document.netdotform.Device__%d__room);\"", $id); -->
-<!-- %               $ui->select_lookup(object=>$o, column=>"closet", lookup=>"Closet", edit=>$editloc, where=>{site=>($o ? $o->site : "")}, makeLink=>1, linkPage=>"closet.html", htmlExtra=>$closet_js); -->
-<!-- 	   </td> -->
-<!--          <tr> -->
-<!-- 	   <td class="formtablec1">Rack: </td> -->
-<!-- 	   <td class="formtablec2">  -->
-<!-- %               $ui->text_field(object=>$o, column=>"rack", edit=>$editloc); -->
-<!-- 	   </td> -->
-<!-- 	   <td>&nbsp; </td> -->
-<!-- 	   <td>&nbsp; </td> -->
-<!-- 	</tr> -->
-<!--       </table> -->
-<!-- END SNIP -->
-     </td>
-   </tr>
-  </table>
+       </td>
+      </tr>
+     </table>
 <!-- End Location Table -->
+    </div>
+</div>
 
 % if ($editloc){	
     </form>
 % }
 
 <br>
+
 <!-- Management Table -->
-  <table border="0" width="100%" class="formtablebg" cellpadding="0" cellspacing="2">
-    <tr class="formtabletitle">
-      <td colspan="2">
-        <table width="100%" border="0">
-          <tr>
-            <td width="10%" align="left">&nbsp;</td>
-            <th width="80%" align="center">Management</th>
+<div class="container">
+    <div class="containerheadleft">
+        Management
+    </div>
+    <div class="containerheadright">
 %	 if ($editmgmt){	 
-            <td width="10%" align="right"><input name="submit" value="save" type="submit"></td>
+        <input name="submit" value="save" type="submit">
 %	 }else{
-            <td width="10%" align="right"><a href="device.html?id=<% $id %>&view=<% $view %>&editmgmt=1">[edit]</a></td>
+        <a href="device.html?id=<% $id %>&view=<% $view %>&editmgmt=1">[edit]</a>
 %	 }
-         </tr>
-       </table>
-      <td>
-    </tr>
-    <tr>
-      <td valign="top" width="50%">
+    </div>
+    <div class="containerbody">
+     <table width="100%">
+      <tr>
+       <td valign="top" width="50%">
 
 <%perl>
 (@field_headers, @cell_data) = ();
@@ -553,44 +487,8 @@ push( @cell_data, $ui->text_field(object=>$o, column=>"community", edit=>$editmg
 </%perl>
 
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-
-    <!-- SNIP
-        <table border="0" width="100%">
-          <tr>
-	    <td class="formtablec1">Contact Group: </td>
-	    <td class="formtablec2"> 
-%#               $ui->select_lookup(object=>$o, column=>"contactlist", lookup=>"ContactList", edit=>"$editmgmt", linkPage=>"view.html");
-	    </td>
-	  </tr>
-          <tr>
-	    <td class="formtablec1">User: </td>
-	    <td class="formtablec2"> 
-%#               $ui->select_lookup(object=>$o, column=>"person", lookup=>"Person", edit=>"$editmgmt", linkPage=>"view.html");
-	    </td>
-	</tr>
-        <tr>
-	   <td class="formtablec1">Out-of-band hostname: </td>
-	    <td class="formtablec2">
-%#               $ui->text_field(object=>$o, column=>"oobname", edit=>$editmgmt);
-	    </td>
-	</tr>
-        <tr>
-	   <td class="formtablec1">Out-of-band tel: </td>
-	   <td class="formtablec2"> 
-%#               $ui->text_field(object=>$o, column=>"oobnumber", edit=>$editmgmt);
-	   </td>
-	</tr>
-        <tr>
-	   <td class="formtablec1">SNMP Community: </td>
-	   <td class="formtablec2"> 
-%#               $ui->text_field(object=>$o, column=>"community", edit=>$editmgmt);
-	   </td>
-	</tr>
-       </table>
-    SNIP -->
-
-     </td>
-     <td valign="top" width="50%">
+       </td>
+       <td valign="top" width="50%">
 
 <%perl>
 (@field_headers, @cell_data) = ();
@@ -608,45 +506,10 @@ push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"natted", edit=>$
 
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
-    <!-- SNIP
-       <table border="0" width="100%">
-         <tr>
-	   <td class="formtablec1">Monitored?: </td>
-	   <td class="formtablec2"> 
-%#                $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>$editmgmt);
-	   </td>
-	 </tr>
-         <tr>
-	   <td class="formtablec1">Customer-managed?: </td>
-	   <td class="formtablec2"> 
-%#                $ui->radio_group_boolean(object=>$o, column=>"customer_managed", edit=>$editmgmt);
-	   </td>
-	 </tr>
-         <tr>
-	   <td class="formtablec1">SNMP-managed?: </td>
-	   <td class="formtablec2"> 
-%#                $ui->radio_group_boolean(object=>$o, column=>"snmp_managed", edit=>$editmgmt);
-	   </td>
-	 </tr>
-         <tr>
-	   <td class="formtablec1">Auto-update?: </td>
-	   <td class="formtablec2"> 
-%#                $ui->radio_group_boolean(object=>$o, column=>"canautoupdate", edit=>$editmgmt);
-	   </td>
-	 </tr>
-         <tr>
-	   <td class="formtablec1">NATted?: </td>
-	   <td class="formtablec2"> 
-%#                $ui->radio_group_boolean(object=>$o, column=>"natted", edit=>$editmgmt);
-	   </td>
-	 </tr>
-       </table>
-    SNIP -->
-
-     </td>
-   </tr>
+       </td>
+      </tr>
 %	if (! $editmgmt){	 
-   <tr>
+      <tr>
        <td colspan="2">
 <%perl>
 (@field_headers, @cell_data) = ();
@@ -658,21 +521,13 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 
        <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
        </td>
-    </tr>
-
-<!-- SNIP
-	   <td class="formtablec1">Fetch SNMP info and update DB</td>
-	   <td class="formtablec2"><b><a href="updatedevice.html?host=<% $name %>&action=discover">[update]</a></b></td>
-   </tr>
-   <tr>
-	   <td class="formtablec1">Connect via: </td>
-	   <td colspan="2" class="formtablec2" ><a href="http://<% $name %>">[HTTP]</a> <a href="ssh://<% $user->getUsername() %>@<% $name %>">[SSH]</a> <a href="telnet://<% $name %>">[Telnet]</a></td>
-   </tr>
-  SNIP  -->
+      </tr>
 
 %       } 
-  </table>
+     </table>
 <!-- End Management Table -->
+    </div>
+</div>
 
 % if ($editmgmt){	 
     </form>
@@ -684,8 +539,8 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 <!-- End Division Table -->
 
 % }
-</div> <!-- containerbodyoutside? --> 
-</div> <!-- containeroutside? -->
+ </div> <!-- close containerbodyoutside --> 
+</div> <!-- close containeroutside -->
 % if ( $view eq "IP" || $view eq "All" ){
 
 %  # Get all ip address info
