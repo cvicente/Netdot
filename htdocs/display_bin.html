@@ -8,17 +8,24 @@ you can:
 This currently assumes "filetype" in the database represents the
 objects mime type.
 </%doc>
-
+%
 <%args>
-$id => $ARGS{id};
+$id
 </%args>
-
-
+%
+%
+<%flags>
+inherit => undef
+</%flags>
+%
+%
 <%perl>
 my $binFile = BinFile->retrieve($id);
-if ($binFile) {
-    $r->content_type($binFile->filetype);
-    print($binFile->bindata);
+if ( $binFile && $binFile->filetype && $binFile->bindata ) {
+      $r->content_type($binFile->filetype);
+      print $binFile->bindata;
+}else{
+    $m->comp("error.mhtml", error=>"BinFile id $id is not valid");
 }
 </%perl>
 
