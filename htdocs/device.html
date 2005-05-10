@@ -733,7 +733,7 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 	   </td>
 %	       if ( ! $editints ){	 
                  <td align="left"><% $dm->convert_ifspeed($if->speed) %></td>
-		 <td align="left"> 
+       <td align="left"> 
 %	           if (exists $ifvlans{$if}){
 %	             my @links;
 %	             foreach my $v ( keys %{$ifvlans{$if}} ){
@@ -741,7 +741,7 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 %		     }
 %		     print join ', ', @links;
 %	          }
-	        </td>
+       </td>
 %              }
 	   <td align="left">
 %           $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
@@ -756,16 +756,16 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 %	   my @parents = $if->parents;
 %	   if (scalar(@parents)){
 %	     foreach my $link (@parents){
-%                if ( $editints ){
-		   <input type="checkbox" name="<% "InterfaceDep__" . $link->id . "__delete" %>" > [del]
-%	         }   
-%		 my $lbl = $ui->getobjlabel($link->parent, ", ");
-                 <a href="device.html?id=<% $link->parent->device->id %>"><% $lbl %></a><br>
+%          if ( $editints ){
+             <input type="checkbox" name="<% "InterfaceDep__" . $link->id . "__delete" %>" > [del]
+%	       }   
+%          my $lbl = $ui->getobjlabel($link->parent, ", ");
+             <a href="device.html?id=<% $link->parent->device->id %>"><% $lbl %></a><br>
 %	     }
-%         }
-%	  if ( $editints ){	 
+%      }
+%      if ( $editints ){	 
             <a href="#" onClick="addLink('<% $if->id %>', 'child')">[add]</a>
-%	  }
+%      }
 	  </td>
 <!-- End UpLink Connections Field -->
 <!-- DownLink Connections Field -->
@@ -797,7 +797,6 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 %    if ($editints){	 
        <tr class="formtabletitle">
             <td colspan="11" width="10%" align="right"><input name="submit" value="save" type="submit"></td>
-	    </form>
 %    }else{
        <tr>
 	    <form action="device.html" method="POST">
@@ -808,8 +807,8 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 	        <input type="submit" name="intadd" value="Add">
 	        <input type="text" name="intaddnum" value="0" size="3"> interfaces
               </td>
-	    </form>
 %    }
+	    </form>
        </tr>
      </table>
     </div>
