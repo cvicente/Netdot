@@ -96,9 +96,13 @@ push( @cell_data, $ui->text_field(object=>$o, column=>"description", edit=>$isEd
 push( @field_headers, "Contact List: " );
 push( @cell_data, $ui->select_lookup(object=>$o, column=>"contactlist", 
 			lookup=>"ContactList", edit=>$isEditing, returnAsVar=>1) );
-push( @field_headers, "Jack: " );
+push( @field_headers, "Jack (cable): " );
 push( @cell_data, $ui->select_lookup(object=>$o, column=>"jack", 
 			lookup=>"HorizontalCable", edit=>$isEditing, linkPage=>"cable_horizontal.html", returnAsVar=>1) );
+push( @field_headers, "Room: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"room_char", edit=>$isEditing, returnAsVar=>1) );
+push( @field_headers, "Jack: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"jack_char", edit=>$isEditing, returnAsVar=>1) );
 </%perl>
 
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>

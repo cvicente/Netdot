@@ -462,7 +462,7 @@ sub select_lookup($@){
         }else{
 	    # ...otherwise provide tools to narrow the selection to a managable size.
             my $srchf = "_" . $id . "_" . $column . "_srch";
-            $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">&nbsp;\n", $srchf);
+            $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">", $srchf);
             $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"sendquery(%s, %s.value, \'%s\');\"><br>\n", time(), $name, $srchf, $lookup);
             $output .= sprintf("<select name=\"%s\" %s>\n", $name, $htmlExtra);
             $output .= sprintf("<option value=\"\" selected>-- Make your selection --</option>\n");

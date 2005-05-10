@@ -692,7 +692,9 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 	     <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=speed">Speed</a></th>
 	     <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=vlan">VLAN</a></th>
 %	   }
-	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=jack">Jack</a></th>
+	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=jack">Jack(cable)</a></th>
+	   <th valign="top" align="left">Room</th>
+	   <th valign="top" align="left">Jack</th>
 	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=descr">Descr.</a></th>
 	   <th valign="top" align="left">Uplink</th>
 	   <th valign="top" align="left">Downlink</th>
@@ -746,6 +748,12 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 	   <td align="left">
 %           $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
 %                             edit=>$editints, linkPage=>"cable_horizontal.html");
+	   </td>
+	   <td align="left"> 
+%               $ui->text_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"");
+	   </td>
+	   <td align="left"> 
+%               $ui->text_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"");
 	   </td>
 	   <td align="left"> 
 %               $ui->text_field(object=>$if, column=>"description", edit=>$editints);
