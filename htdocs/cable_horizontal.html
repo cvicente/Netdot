@@ -136,35 +136,35 @@ my @sites = Site->retrieve_all();
 
 % # interface...
 % # ---------------------------------------------------------------------------
+
+<div class="containeroutside">
 % if ($site) {
 <!-- Header Table -->
-<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
- <tr class="rowtitle0">
-    <td align="left">
+<div class="containerheadoutside">
         Horizontal Cable for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=HORIZONTAL"><% $site->name %></a>&nbsp;&nbsp;&nbsp;
-    </td>
- </tr>
-</table>
+</div>
 % }
+<div class="containerbodyoutside">
 <!-- Horizontal Cable Table -->
-<table border="0" width="100%" align="center"  class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="center">
+<div class="container">
         <form name="horizform" action="cable_horizontal.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="HorizontalCable__<% $id %>__jackid" value="<% $o ? $o->jackid : "" %>">
         <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
-        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-        <tr class="formtabletitle">
-            <td colspan="2" align="left">Horizonal Cable</td>
+<div class="containerheadleft">
+           Horizonal Cable
+</div>
+<div class="containerheadright">
 %           if ($editCable) {
-            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %           } else {
-            <td align="right"><a href="cable_horizontal.html?id=NEW">[new]</a> || <a href="cable_horizontal.html?id=<% $id %>&edit=cableinfo">[edit]</a> || <a href="delete.html?table=HorizontalCable&id=<% $id %>">[delete]</a></td>
+            <a href="cable_horizontal.html?id=NEW">[new]</a> &nbsp;&nbsp; <a href="cable_horizontal.html?id=<% $id %>&edit=cableinfo">[edit]</a> &nbsp;&nbsp; <a href="delete.html?table=HorizontalCable&id=<% $id %>">[delete]</a>
 %           }
-        </tr>
-        <tr align="left" valign="top">
-            <td width="40%">
+</div>
+<div class="containerbody">
+<table width="100%" border="0" align="center" class="tablebackround">
+		<tr>
+		<td valign="top" width="50%" align="center">
             <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td align="left">Jack ID: </td>
@@ -289,45 +289,34 @@ my @sites = Site->retrieve_all();
             </tr>
             </table>
             </td>
-            <td>&nbsp;</td>
-        </tr>
-
-        <tr><td colspan="3">&nbsp;<br></td></tr>
-
-        <tr align="left" valign="top">
-            <td colspan="2">
+            <tr>
+            <td>
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
 %           $ui->text_area(object=>$o, table=>"HorizontalCable", column=>"info",
 %                         edit=>$editCable, htmlExtra=>"rows='3' cols='80'");
-            </td>
-            <td>&nbsp;</td>
-        </tr>
-        <tr><td colspan="3">&nbsp;<p></td></tr>
+ 			</td>
+ 			</tr>
         </table>
         </form>
-    </td>
-    </tr>
-</table>
+	</div>
+	</div>
 <!-- End Horizontal Cable Table -->
 
 <!-- Interface Table -->
 % if (defined($o)) {
-<A NAME="interface"></A>
-<table border="0" width="100%" align="center"  class="tablebackground">
-    <tr class="formtabletitle">
-    <td>Add Interfaces</td>
-    </tr>
-
-    <tr>
-    <td valign="top" width="50%" align="center">
-
 %   if (!$editCable) {
-    
+	<div class="container">
+	<div class="containerhead">
+	<A NAME="interface"></A>
+    	Add Interfaces
+	</div>
+	<div class="containerbody">
+
     <form name="netdotform" action="cable_horizontal.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="ADD_INTERFACE">
 
-    <table border="0" width="100%" class="formtablebg" cellpadding="0" cellspacing="2">
+    <table border="0" width="50%" class="formtablebg" cellpadding="0" cellspacing="1">
     <tr align="left" valign="top">
     <td>
 %       my $srchf = "interface_srch";  # name of the form input tag
@@ -341,6 +330,10 @@ my @sites = Site->retrieve_all();
     </tr>
     </table>
     </form>
+
+</div>
+</div>
+
 %   }
 
     <%perl>
@@ -348,17 +341,15 @@ my @sites = Site->retrieve_all();
     map { push (@ints, $_) } $o->interfaces;
     </%perl>
 %	if (scalar(@ints)) {
-    
+
+<div class="container">
     <form name="int_form" action="cable_horizontal.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="UPDATE">
-
-    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-    <tr class="formtabletitle">
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <th width="80%" align="center">Interfaces</th>
+<div class="containerheadleft">
+		Interfaces
+</div>
+<div class="containerheadright">
 %	 if ($editInt) {	 
             <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %	 } else {
@@ -366,12 +357,9 @@ my @sites = Site->retrieve_all();
                 <a href="cable_horizontal.html?id=<% $id %>&edit=intinfo#interface">[edit]</a>
             </td>
 %	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
+</div>
+<div class="containerbody">
+		
       <table border="0" width="90%">
     <tr>
         <td align="left">
@@ -431,21 +419,17 @@ my @sites = Site->retrieve_all();
 %       }
         </td>
     </tr>
-%   }
-    <tr align="left" valign="top">
-        <td align="left" colspan="4">
 
-        </td>
-    </tr>
-
-    </table>
-    </td>
-    </tr>
-    </table>
     </form>
+
+%   }
+	</table>
+    </div>
+	</div>
 %  }    
-</td>
-</tr>
-</table>
+
 % }
+
+</div>
+</div>
 <!-- End Interface Table -->
