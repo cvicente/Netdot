@@ -187,10 +187,9 @@ function suggestName()
 % # interface...
 % # ---------------------------------------------------------------------------
 <!-- Header Table -->
+<div class="containeroutside">
+<div class="containerheadoutside">
 % if (defined($o)) {
-<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
- <tr class="rowtitle0" >
-    <td align="left">
         Start:
         <% $start_site ? "<a href=\"cable_plant.html?start_id=" . $start_site->id . "&page_type=BACKBONE\">" . $start_site->name . "</a>" 
                          : "<i>undefined</i>" %>
@@ -198,30 +197,30 @@ function suggestName()
         End:
         <% $end_site ? "<a href=\"cable_plant.html?start_id=" . $end_site->id . "&page_type=BACKBONE\">" . $end_site->name . "</a>"
                          : "<i>undefined</i>" %>
-    </td>
- </tr>
-</table>
 %}
+</div>
 <!-- End Header Table -->
 
 <!-- Begin Backbone Cable Table -->
-<table border="0" width="100%" align="center"  class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="center">
+<div class="containerbodyoutside">
+<div class="container">
         <form name="netdotform" action="cable_backbone.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="UPDATE">
-        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-        <tr class="formtabletitle">
-            <td colspan="2" align="left">Backbone Cable</td>
+<div class="containerheadleft">
+		Backbone Cable
+</div>
+<div class="containerheadright">
 %           if ($editBackbone) {
-            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %           } else {
-            <td align="right"><a href="cable_backbone.html?id=NEW">[new]</a> || <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a> || <a href="delete.html?table=BackboneCable&id=<% $id %>">[delete]</a></td>
+            <a href="cable_backbone.html?id=NEW">[new]</a> &nbsp;&nbsp; <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a> &nbsp;&nbsp; <a href="delete.html?table=BackboneCable&id=<% $id %>">[delete]</a>
 %           }
-        </tr>
+</div>
+<div class="containerbody">
+		<table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
         <tr align="left" valign="top">
-            <td width="40%">
+            <td width="45%">
             <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td>Name: </td>
@@ -257,7 +256,7 @@ function suggestName()
             </table>
             </td>
             
-            <td width="40%">
+            <td width="45%">
             <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td>Start Closet: </td>
@@ -303,9 +302,6 @@ function suggestName()
             </td>
             <td>&nbsp;</td>
         </tr>
-
-        <tr><td colspan="3">&nbsp;<br></td></tr>
-
         <tr align="left" valign="top">
             <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
@@ -314,13 +310,10 @@ function suggestName()
             </td>
             <td>&nbsp;</td>
         </tr>
-
-        <tr><td colspan="3">&nbsp;<p></td></tr>
         </table>
         </form>
-    </td>
-    </tr>
-</table>
+</div>
+</div>
 <!-- End Backbone Cable Table -->
 
 
@@ -372,38 +365,31 @@ function editSelected(id)
 }
 -->
 </script>
+
+<div class="container">
 <A NAME="cable_strand"></A>
-<table border="0" width="100%" align="center"  class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="center">
-    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-    <tr class="formtabletitle">
-     <td colspan="2">
      <form name="cable_strand_form" action="cable_backbone.html" method="POST">
      <input type="hidden" name="id" value="<% $id %>">
      <input type="hidden" name="_action" value="STRAND_UPDATE">
 %    if ($editStrand && $ARGS{edit_list}) {
      <input type="hidden" name="__edit_list" value="<% $ARGS{edit_list} %>">
 %    }
-      <table width="100%" border="0">
-       <tr>
-         <th width="80%" align="center">Cable Strands</th>
+<div class="containerheadleft">
+	Cable Strands
+</div>
+<div class="containerheadright">
 %	 if ($editStrand) {	 
-            <td align="right"><input type="button" name="cancel_st_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
+            <input type="button" name="cancel_st_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %	 } else {
-            <td align="right">
-                <a href="cable_strand.html?id=NEW&backbone_id=<% $o->id %>">[new]</a> &nbsp;||&nbsp;
-                <a href="#" onClick="editSelected(<% $id %>);">[edit]</a> &nbsp;||&nbsp;
+
+                <a href="cable_strand.html?id=NEW&backbone_id=<% $o->id %>">[new]</a> &nbsp;&nbsp;
+                <a href="#" onClick="editSelected(<% $id %>);">[edit]</a> &nbsp;&nbsp;
                 <a href="cable_backbone.html?id=<% $id %>&edit=strandinfo#cable_strand">[edit all]</a>
-            </td>
+           
 %	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-      
+</div>
+<div class="containerbody">
+
     <table border="0" width="90%">
     <%perl>
     my @strands;
@@ -570,11 +556,15 @@ function editSelected(id)
 %   }
 %}
     </table>
-    </td>
-    </tr>
-    </table>
     </form>
+    </div>
+</div>
 %	 if ($edit ne "strandinfo") {
+<div class="container">
+<div class="containerhead">
+Manually Add Strands
+</div>
+<div class="containerbody">
     <form action="cable_backbone.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="ADD_STRANDS">
@@ -588,9 +578,12 @@ function editSelected(id)
         </tr>
     </table>
     </form>
+    </div>
+</div>
 %   }
 
 %	 if ($edit ne "strandinfo") {
+<div class="container">
 <%perl>
     my @bbones = ();
     # we need to grab all backbones for start and end sites of this strand.
@@ -603,6 +596,10 @@ function editSelected(id)
     <form action="cable_backbone.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="ADD_SPLICE_RANGE">
+    <div class="containerhead">
+    Manually Add Splice Range
+    </div>
+    <div class="containerbody">
     <table border="0" width="100%">
         <tr align="left" class="<% $cssitem{0} %>">
             <td align="left">
@@ -626,8 +623,9 @@ function editSelected(id)
     </table>
     </form>
 %   }
-</td>
-</tr>
-</table>
+</div>
+</div>
 % }
+</div>
+</div>
 <!-- End Cable Strand Table -->
