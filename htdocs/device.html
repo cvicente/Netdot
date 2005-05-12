@@ -228,13 +228,13 @@ function setNull(field){
  if ( $view eq "Interfaces" || $view eq "All" ){
     # Build a hash of Interface Vlans
     foreach my $if ( $o->interfaces ){
-	if (scalar( my @ifv = $if->vlans)){
+      if (scalar( my @ifv = $if->vlans)){
 	    foreach my $ifv (@ifv){
 		my $vid = $ifv->vlan->vid;
 		$ifvlans{$if}{$vid} = "";
 		$vlans{$vid} = $ifv->vlan->id;
 	    }
-	}
+      }
     }
 </%perl>
 
@@ -255,27 +255,27 @@ function setNull(field){
 %   }
     </select>
     </form>
+
 % } else {
 <br/><!-- make the left and right heights equal (HACK) -->
 % }
 
 </div> <!-- close containerheadrightoutside -->
 
-
-
 <div class="containerbodyoutside">
+
+% if ( $editgen || $editloc || $editmgmt || $editips || $editints || $editbgp ) {
+    <form name="netdotform" action="device.html" method="POST">
+    <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="view" value="<% $view %>">
+% }
+
 % if ( $view eq "Basics" || $view eq "All" ){
 
 <!-- Two-column Division Table -->
 <table border="0" width="100%" align="center">
   <tr>
     <td valign="top" width="50%" align="center">
-
-% if ( $editgen || $editloc || $editmgmt || $editips || $editints || $editbgp ){	 
-    <form name="netdotform" action="device.html" method="POST">
-    <input type="hidden" name="id" value="<% $id %>">
-    <input type="hidden" name="view" value="<% $view %>">
-% }
 
     <div class="container">
 	<!-- General Info Table -->
@@ -371,9 +371,6 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
     </div> <!-- container -->
 <!-- End General Info Table -->
 
-% if ($editgen){	 
-   </form>
-% }
 
   </td>
   <td valign="top"  width="50%" align="center">
@@ -449,9 +446,6 @@ push( @cell_data, '&nbsp; ' );
     </div>
 </div>
 
-% if ($editloc){	
-    </form>
-% }
 
 <!-- Management Table -->
 <div class="container">
@@ -526,10 +520,6 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 <!-- End Management Table -->
     </div>
 </div>
-
-% if ($editmgmt){	 
-    </form>
-% }
 
   </td>
  </tr>
@@ -659,11 +649,6 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
     </div>
 </div>
 <!-- End IPs Table -->
-
-% if ($editips){	 
-    </form>
-% }
-
 % } 
 
 % if ( $view eq "Interfaces" || $view eq "All" ){
@@ -692,9 +677,7 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 	     <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=speed">Speed</a></th>
 	     <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=vlan">VLAN</a></th>
 %	   }
-	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=jack">Jack(cable)</a></th>
-	   <th valign="top" align="left">Room</th>
-	   <th valign="top" align="left">Jack</th>
+	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=jack">Jack</a></th>
 	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=descr">Descr.</a></th>
 	   <th valign="top" align="left">Uplink</th>
 	   <th valign="top" align="left">Downlink</th>
@@ -750,12 +733,6 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 %                             edit=>$editints, linkPage=>"cable_horizontal.html");
 	   </td>
 	   <td align="left"> 
-%               $ui->text_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"");
-	   </td>
-	   <td align="left"> 
-%               $ui->text_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"");
-	   </td>
-	   <td align="left"> 
 %               $ui->text_field(object=>$if, column=>"description", edit=>$editints);
 	   </td>
 
@@ -805,27 +782,16 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 %    if ($editints){	 
        <tr class="formtabletitle">
             <td colspan="11" width="10%" align="right"><input name="submit" value="save" type="submit"></td>
-%    }else{
-       <tr>
-	    <form action="device.html" method="POST">
-	      <td colspan="11" width="100%" align="left">
-	        Manually 
-	        <input type="hidden" name="id" value="<% $id %>">
-	        <input type="hidden" name="view" value="Interfaces">
-	        <input type="submit" name="intadd" value="Add">
-	        <input type="text" name="intaddnum" value="0" size="3"> interfaces
-              </td>
-%    }
-	    </form>
        </tr>
+%    }
      </table>
     </div>
 </div>
 <!-- End Interface Table -->
 % } 
 
-% if ( $view eq "BGP" || $view eq "All" ){
 
+% if ( $view eq "BGP" || $view eq "All" ){
 
 <%perl>
     my @peers;
@@ -841,8 +807,6 @@ if ( $peersort eq "ip" ){
     @peers = $dm->bgppeers_by_entity( $o, "asnumber" );
 } 
 </%perl>
-
-
 
 %   if ( scalar @peers ){
 <!-- BGP Peers Table -->
@@ -891,9 +855,7 @@ if ( $peersort eq "ip" ){
 %   }
 % }  
 %
-% if ($editbgp){	 
-    </form>
-% }
+%
 %
 % if ( $view eq "History" || $view eq "All" ){
 %   my @h_objs = $ui->gethistoryobjs($o);
@@ -912,6 +874,19 @@ if ( $peersort eq "ip" ){
 %
 %} # if !defined search
 %
+
+</form>
+
+% if ( $view eq "Interfaces" || $view eq "All" ){
+	<form action="device.html" method="POST">
+        Manually 
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="view" value="Interfaces">
+        <input type="submit" name="intadd" value="Add">
+        <input type="text" name="intaddnum" value="0" size="3"> interfaces
+    </form>
+% }
+
 
  </div> <!-- close containerbodyoutside --> 
 </div> <!-- close containeroutside -->
