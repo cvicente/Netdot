@@ -779,16 +779,21 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 
 	</tr>
 %       } #foreach
-%    if ($editints){	 
-       <tr class="formtabletitle">
-            <td colspan="11" width="10%" align="right"><input name="submit" value="save" type="submit"></td>
-       </tr>
-%    }
      </table>
     </div>
 </div>
 <!-- End Interface Table -->
 % } 
+
+% if ( $view eq "Interfaces" || $view eq "All" ){
+	<form action="device.html" method="POST">
+        Manually 
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="view" value="Interfaces">
+        <input type="submit" name="intadd" value="Add">
+        <input type="text" name="intaddnum" value="0" size="3"> interfaces
+    </form>
+% }
 
 
 % if ( $view eq "BGP" || $view eq "All" ){
@@ -876,16 +881,6 @@ if ( $peersort eq "ip" ){
 %
 
 </form>
-
-% if ( $view eq "Interfaces" || $view eq "All" ){
-	<form action="device.html" method="POST">
-        Manually 
-        <input type="hidden" name="id" value="<% $id %>">
-        <input type="hidden" name="view" value="Interfaces">
-        <input type="submit" name="intadd" value="Add">
-        <input type="text" name="intaddnum" value="0" size="3"> interfaces
-    </form>
-% }
 
 
  </div> <!-- close containerbodyoutside --> 
