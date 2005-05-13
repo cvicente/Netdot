@@ -303,7 +303,7 @@ push( @cell_data,
    eval{	
        if ($o->name && $o->name->name){
 	   if ($editgen){	 
-	       '<input type="text" name="RR__'.$o->name->id.'__name" value="'.$o->name->name.">";
+	       '<input type="text" name="RR__'.$o->name->id.'__name" value="' . $o->name->name . '">';
 	   }else{
 	       '<b><a href="view.html?table=RR&id='.$o->name->id.'">'.$o->name->name."</a></b>";
 	   }
@@ -397,22 +397,27 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
 push( @field_headers, "Entity: " );
 push( @cell_data, $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html", returnAsVar=>1) );
 push( @field_headers, "Room: " );
-push( @cell_data, &{sub{ my $s = "";
-         if ($editloc) {
-		   $s .= '<select name="Device__'.$id.'__room" onChange="setNull(document.netdotform.Device__'.$id.'__closet);">';
-		   $s .= '<option value="">-- Make your selection --</option>';
-               if (defined($o)) {
-                   foreach my $floor ($o->site->floors) {
-                       foreach my $room ($floor->rooms) {
-                           $s .= sprintf("<option value=\"%d\" %s>%s</option>\n", $room->id, ($o->room && $room->id == $o->room->id ? "SELECTED" : ""), $room->name);
-                       }
-                   }
-               }
-		   $s .= '<option value="0">[null]</option>';
-		   $s .= '</select>';
-         } else {
-           $s .= $o->room->name;
-         }
+push( @cell_data, &{sub{ 
+    my $s = "";
+    if ($editloc) {
+	$s .= '<select name="Device__'.$id.'__room" onChange="setNull(document.netdotform.Device__'.$id.'__closet);">';
+	$s .= '<option value="">-- Make your selection --</option>';
+	if (defined($o)) {
+	    foreach my $floor ($o->site->floors) {
+		foreach my $room ($floor->rooms) {
+		    $s .= sprintf("<option value=\"%d\" %s>%s</option>\n", $room->id, ($o->room && $room->id == $o->room->id ? "SELECTED" : ""), $room->name);
+		}
+	    }
+	}
+	$s .= '<option value="0">[null]</option>';
+	$s .= '</select>';
+    } else {
+	if (defined($o->room)) {
+	    $s .= $o->room->name; 
+	}else{
+	    $s .= "&nbsp;";
+	}
+    }
 }} );
 push( @field_headers, "Rack: " );
 push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, returnAsVar=>1) );
@@ -528,6 +533,10 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 
 % }
 
+<%perl>
+my (@headers, @rows, @row);
+</%perl>
+
 % if ( $view eq "IP" || $view eq "All" ){
 
 %  # Get all ip address info
@@ -550,102 +559,142 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 %	    }
     </div>
     <div class="containerbody">
-       <table border="0" width="100%">
-%    if (scalar @ips){
-         <tr>
-	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=address">Address</a></th>
-	   <th align="left">Subnet</th>
-	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=interface">Interface</a></th>
-	   <th align="left">DNS Name</th>
-	   <th align="left">Services</th>
-         </tr>
 
-%      foreach my $ip (@ips){	   
-%        next if ( ! exists $ifvlans{$ip->interface}{$showvlan} && 
-%                  $showvlan ne "all" );
-%	 $ci = ($ci + 1) % 2;
-	 <tr class="<% $cssitem{$ci} %>">
-	   <td align="left">
-%	      	 if ($editips){	 
-		    <input type="checkbox" name="<% "Ipblock__" . $ip->id . "__delete" %>" >[del]
-		    <% $ip->address %>
-		    <br>
-%	         }else{
-		    <a href="ip-ws.html?id=<% $ip->id %>"><% $ip->address %></a><br>
-%		 }
-	   </td>
-	   <td align="left">
-%	     if ( int($ip->parent) != 0  ){
-%	     	 if ($editips){	 
-                   <% $ip->parent->address %>/<% $ip->parent->prefix %>
-%                }else{
-	           <a href="ip-ws.html?id=<% $ip->parent->id %>"><% $ip->parent->address %>/<% $ip->parent->prefix %></a><br>
-%                }
-%            }
-	   </td>
-	   <td align="left"><% $ip->interface->name %></td>
-           <td align="left">
-%              if ( $ip->arecords ){
-%                 foreach my $ar ($ip->arecords){
-%	             if ($editips){	 
-  	                <input type="checkbox" name="<% "RR__" . $ar->rr->id . "__delete" %>" >[del]
-%	             }
-%                    $ui->text_field(object=> $ar->rr, column=>"name", edit=>$editips, linkPage=>"view.html");
-%		  }
-%              }else{
-	          
-%	       }
-           </td>
-           <td align="left">
-%	      if ( scalar ($ip->services) ){
-%	       foreach my $ipsrv ($ip->services){
-%#                $ui->select_lookup(object=>$ipsrv, column=>"service", lookup=>"Service", edit=>"$editips", linkPage=>"view.html");       
-                  <a href="view.html?table=IpService&id=<% $ipsrv->id %>"><% $ipsrv->service->name %></a>
-%                if ( $editips ){
-		   <input type="checkbox" name="<% "IpService__" . $ipsrv->id . "__delete" %>" > [del]
-%	         }
-                   <br>
-%	       }
-%            }
-%            if ( $editips ){
-               <a href="#" onClick="addService('<% $ip->id %>')">[add]</a>
-%            }
-           </td>
-	  </tr>
-%	}# foreach	
+%    if (scalar @ips){
+
+<%perl>
+(@headers, @rows, @row) = ();
+
+@headers = (
+'<a href="device.html?id='. $id .'&view='. $view .'&ipsort=address">Address</a>',
+'Subnet',
+'<a href="device.html?id='. $id .'&view='. $view .'&ipsort=interface">Interface</a>',
+'DNS Name',
+'Services',
+);
+
+</%perl>
+
+<%perl>
+foreach my $ip (@ips){	   
+    next if ( ! exists $ifvlans{$ip->interface}{$showvlan} && 
+	      $showvlan ne "all" );
+
+(@row) = ();
+push( @row, 
+&{sub{
+    my $a = "";
+    if ($editips){  
+	$a .= '<input type="checkbox" name="' . "Ipblock__" . $ip->id . "__delete" . '" >[del] ';
+	$a .=  $ip->address ;
+	$a .= '<br>';
+    }else{
+	$a .= '<a href="ip-ws.html?id=' . $ip->id . '">' . $ip->address . '</a><br>';
+    }
+    $a;
+}} );
+push( @row, 
+&{sub{
+    my $a = "";
+    if ( int($ip->parent) != 0  ){
+	if ($editips){  
+	    $a .=  $ip->parent->address . '/' . $ip->parent->prefix ;
+	}else{
+	    $a .= '<a href="ip-ws.html?id=' . $ip->parent->id . '">' . $ip->parent->address . '/' . $ip->parent->prefix . '</a><br>';
+	}
+    }
+    $a;
+}} );
+push( @row, $ip->interface->name  );
+push( @row, 
+&{sub{
+    my $a = "";
+    if ( $ip->arecords ){
+	foreach my $ar ($ip->arecords){
+	    if ($editips){      
+		$a .= '<input type="checkbox" name="' . "RR__" . $ar->rr->id . "__delete" . '" >[del] ';
+	    }
+	    $a .= $ui->text_field(object=> $ar->rr, column=>"name", edit=>$editips, linkPage=>"view.html", returnAsVar=>1);
+	}
+    }else{
+    }
+    $a;
+}} );
+push( @row, 
+&{sub{
+    my $a = "";
+    if ( scalar ($ip->services) ){
+	foreach my $ipsrv ($ip->services){
+#                $a .= $ui->select_lookup(object=>$ipsrv, column=>"service", lookup=>"Service", edit=>"$editips", linkPage=>"view.html", returnAsVar=>1);       
+	    $a .= '<a href="view.html?table=IpService&id=' . $ipsrv->id . '">' . $ipsrv->service->name . '</a>';
+	    if ( $editips ){
+		$a .= '<input type="checkbox" name="' . "IpService__" . $ipsrv->id . "__delete" . '" > [del] ';
+	    }
+	    $a .= '<br>';
+	}
+    }
+    if ( $editips ){
+	$a .= '<a href="#" onClick="addService(' . $ip->id . ')">[add]</a>';
+    }
+    $a;
+}} );
+push( @rows, \@row );
+
+}# foreach	
+</%perl>
+
+<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
 %     }else{ # No ips exist
 %        if ( $editips ){
 %        # Let user add a new IP           
-           <tr>
-	     <th align="left">Interface</th>
-	     <th align="left">Address</th>
-	     <th align="left">Monitored?</th>	     
-           </tr>
-           <tr>
-             <td>
-	     <select name="<% "Ipblock__" . "NEW" . "__interface" %>" >
-	       <option value="0">Select Interface</option>
-%	         foreach my $int ( sort { $a->number <=> $b->number } $o->interfaces ){
-		   <option value="<% $int->id %>"><% $int->name %></option>                        
-%		 }
-	    </select>
-	    </td>
-	    <td>
-	      <input type="text" name="<% "Ipblock__" . "NEW" . "__address" %>" >
-	      <input type="hidden" name="<% "Ipblock__" . "NEW" . "__statusname" %>" value="Static">
-            </td>
-            <td>
-	      Y <input type="radio" name="<% "Ipblock__" . "NEW" . "__monitored" %>" value="1" CHECKED>                 
-	      N <input type="radio" name="<% "Ipblock__" . "NEW" . "__monitored" %>" value="0">
-            </td>
-         </tr>
+
+<%perl>
+(@headers, @rows) = ();
+
+@headers = ( 
+'Interface',
+'Address',
+'Monitored?',
+);
+</%perl>
+
+<%perl>
+(@row) = ();
+push( @row, 
+&{sub{
+    my $ac = "";
+    $ac .= '<select name="' . "Ipblock__" . "NEW" . "__interface" . '" >';
+    $ac .= '<option value="0">Select Interface</option>';
+    foreach my $int ( sort { $a->number <=> $b->number } $o->interfaces ){
+	$ac .= '<option value="' . $int->id . '">' . $int->name . '</option>                        ';
+    }
+    $ac .= '</select>';
+    $ac;
+}} );
+push( @row, 
+&{sub{
+    my $ac = "";
+    $ac .= '<input type="text" name="' . "Ipblock__" . "NEW" . "__address" . '" >';
+    $ac .= '<input type="hidden" name="' . "Ipblock__" . "NEW" . "__statusname" . '" value="Static">';
+    $ac;
+}} );
+push( @row, 
+&{sub{
+    my $ac = "";
+    $ac .= 'Y <input type="radio" name="' . "Ipblock__" . "NEW" . "__monitored" . '" value="1" CHECKED>                 ';
+    $ac .= 'N <input type="radio" name="' . "Ipblock__" . "NEW" . "__monitored" . '" value="0">';
+    $ac;
+}} );
+push( @rows, \@row );
+</%perl>
+
+<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
 %      }else{
-         <tr>
-            <td>Click [edit] to add a new IP</td>
-         </tr>
+            Click [edit] to add a new IP
 %      }  
 %    }
-       </table>
     </div>
 </div>
 <!-- End IPs Table -->
@@ -666,24 +715,33 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 %	  }
     </div>
     <div class="containerbody">
-      <table border="0" width="100%">
-        <tr>
-%	   if ( $editints ){	 
-	     <th valign="top" align="center">[del]</th>
-%	   }
-	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=number">No.</a></th>
-	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=name">Name</a></th>
-%	   if ( ! $editints ){	 
-	     <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=speed">Speed</a></th>
-	     <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=vlan">VLAN</a></th>
-%	   }
-	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=jack">Jack</a></th>
-	   <th valign="top" align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=descr">Descr.</a></th>
-	   <th valign="top" align="left">Uplink</th>
-	   <th valign="top" align="left">Downlink</th>
-	   <th valign="top" align="left">Monitored?</th>
-	   <th valign="top" align="left">SNMP?</th>
-       </tr>
+
+<%perl>
+(@headers, @rows) = ();
+
+if ( $editints ){
+push( @headers, '[del]' );
+}
+
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=number">No.</a>' );
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=name">Name</a>' );
+
+if ( ! $editints ){
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=speed">Speed</a>' );
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=vlan">VLAN</a>' );
+}
+
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>' );
+push( @headers, 'Room' );
+push( @headers, 'Jack' );
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=descr">Descr.</a>' );
+push( @headers, 'Uplink' );
+push( @headers, 'Downlink' );
+push( @headers, 'Monitored?' );
+push( @headers, 'SNMP?' );
+
+</%perl>
+
 <%perl>
 	my @ifs;
        if ( $ifsort eq "number" ){
@@ -703,95 +761,103 @@ push( @cell_data, '<a href="http://'.$name.'">[HTTP]</a> <a href="ssh://'.$user-
 			  
 %       foreach my $if ( @ifs ){
 %         next if ( ! exists $ifvlans{$if}{$showvlan} && $showvlan ne "all");
-%	  $ci = ($ci + 1) % 2;
-       <tr class="<% $cssitem{$ci} %>">
-%	       if ( $editints ){	 
-		<td align="left">
-		  <input type="checkbox" name="<% "Interface__" . $if->id . "__delete" %>" >
-		</td>	   
-%	       }
-	   <td align="left"> 
-%               $ui->text_field(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 2em;\"", linkPage=>"interface.html");
-	   </td>
-	   <td align="left"> 
-%               $ui->text_field(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"");
-	   </td>
-%	       if ( ! $editints ){	 
-                 <td align="left"><% $dm->convert_ifspeed($if->speed) %></td>
-       <td align="left"> 
-%	           if (exists $ifvlans{$if}){
-%	             my @links;
-%	             foreach my $v ( keys %{$ifvlans{$if}} ){
-%		       push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
-%		     }
-%		     print join ', ', @links;
-%	          }
-       </td>
-%              }
-	   <td align="left">
-%           $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
-%                             edit=>$editints, linkPage=>"cable_horizontal.html");
-	   </td>
-	   <td align="left"> 
-%               $ui->text_field(object=>$if, column=>"description", edit=>$editints);
-	   </td>
 
-<!-- UpLink Connections Field -->
-	   <td align="left">
-%	   my @parents = $if->parents;
-%	   if (scalar(@parents)){
-%	     foreach my $link (@parents){
-%          if ( $editints ){
-             <input type="checkbox" name="<% "InterfaceDep__" . $link->id . "__delete" %>" > [del]
-%	       }   
-%          my $lbl = $ui->getobjlabel($link->parent, ", ");
-             <a href="device.html?id=<% $link->parent->device->id %>"><% $lbl %></a><br>
-%	     }
-%      }
-%      if ( $editints ){	 
-            <a href="#" onClick="addLink('<% $if->id %>', 'child')">[add]</a>
-%      }
-	  </td>
-<!-- End UpLink Connections Field -->
-<!-- DownLink Connections Field -->
-	   <td align="left">
-%	   my @children = $if->children;
-%	   if (scalar(@children)){
-%	     foreach my $link (@children){
-%                if ( $editints ){
-		   <input type="checkbox" name="<% "InterfaceDep__" . $link->id . "__delete" %>" > [del]
-%	         }   
-%		 my $lbl = $ui->getobjlabel($link->child, ", ");
-                 <a href="device.html?id=<% $link->child->device->id %>"><% $lbl %></a><br>
-%	     }
-%	   }
-%	   if ( $editints ){	 
-             <a href="#" onClick="addLink('<% $if->id %>', 'parent')">[add]</a>
-%	   }
-	   </td>
-<!-- End DownLink Connections Field -->
-	   <td align="left">
-%	      $ui->radio_group_boolean(object=>$if, column=>"monitored", edit=>$editints);
-	   </td>
-	   <td align="left">
-%	      $ui->radio_group_boolean(object=>$if, column=>"snmp_managed", edit=>$editints);
-	   </td>
+<%perl>
+my (@row) = ();	#Scope got me here.
 
-	</tr>
+if ( $editints ){	 
+push( @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delete" . '" >' );
+}
+
+push( @row, $ui->text_field(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 2em;\"", linkPage=>"interface.html", returnAsVar=>1) );
+push( @row, $ui->text_field(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"", returnAsVar=>1) );
+
+if ( ! $editints ){
+push( @row, $dm->convert_ifspeed($if->speed)  );	# NEEDS RETURNASVAR?
+push( @row, 
+&{sub{
+    my $ac = "";
+    if (exists $ifvlans{$if}){
+        my @links;
+	foreach my $v ( keys %{$ifvlans{$if}} ){
+	    push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
+	}
+	$ac .= join ', ', @links;	# CHECK THIS (was in a print).
+    }
+    $ac;
+}} );
+}
+
+push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
+                             edit=>$editints, linkPage=>"cable_horizontal.html", returnAsVar=>1) );
+push( @row, $ui->text_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"", returnAsVar=>1) );
+push( @row, $ui->text_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"", returnAsVar=>1) );
+push( @row, $ui->text_field(object=>$if, column=>"description", edit=>$editints, returnAsVar=>1) );
+
+#<!-- UpLink Connections Field --> <!-- ADD STUFF IN UPLINK CONNECTION FIELD SECTION -->
+
+push( @row, 
+&{sub{
+    my $ac = "";
+    my @parents = $if->parents;
+    if (scalar(@parents)){
+	foreach my $link (@parents){
+	    if ( $editints ){
+		$ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
+	    }   
+	    my $lbl = $ui->getobjlabel($link->parent, ", ");
+	    $ac .= '<a href="device.html?id=' . $link->parent->device->id . '">' . $lbl . '</a><br>';
+	}
+    }
+    if ( $editints ){  
+	$ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'child\')">[add]</a>';
+    }
+    $ac;
+}} );
+
+#<!-- DownLink Connections Field -->
+
+push( @row, 
+&{sub{
+    my $ac = "";
+    my @children = $if->children;
+    if (scalar(@children)){
+	foreach my $link (@children){
+	    if ( $editints ){
+		$ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
+	    }   
+#                 my $lbl = $ac .= $ui->getobjlabel($link->child, ", ", returnAsVar=>1);
+	    my $lbl = $ui->getobjlabel($link->child, ", ");
+	    $ac .= '<a href="device.html?id=' . $link->child->device->id . '">' . $lbl . '</a><br>';
+	}
+    }
+    if ( $editints ){     
+	$ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'parent\')">[add]</a>';
+    }
+    $ac;
+}} );
+push( @row, $ui->radio_group_boolean(object=>$if, column=>"monitored", edit=>$editints, returnAsVar=>1) );
+push( @row, $ui->radio_group_boolean(object=>$if, column=>"snmp_managed", edit=>$editints, returnAsVar=>1) );
+
+push( @rows, \@row );
+</%perl>
+
 %       } #foreach
-     </table>
+
+<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
     </div>
 </div>
 <!-- End Interface Table -->
 % } 
 
 % if ( $view eq "Interfaces" || $view eq "All" ){
-	<form action="device.html" method="POST">
-        Manually 
-        <input type="hidden" name="id" value="<% $id %>">
-        <input type="hidden" name="view" value="Interfaces">
-        <input type="submit" name="intadd" value="Add">
-        <input type="text" name="intaddnum" value="0" size="3"> interfaces
+    <form action="device.html" method="POST">
+    Manually 
+    <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="view" value="Interfaces">
+    <input type="submit" name="intadd" value="Add">
+    <input type="text" name="intaddnum" value="0" size="3"> interfaces
     </form>
 % }
 
@@ -827,33 +893,34 @@ if ( $peersort eq "ip" ){
 %	}
     </div>
     <div class="containerbody">
-      <table border="0" width="100%">
 %	if (scalar @peers){
-         <tr>
-	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&peersort=ip">Remote IP</a></th>
-	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&peersort=id">ID</a></th>
-	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&peersort=entity">Entity</a></th>
-	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&peersort=asname">AS Name</a></th>
-	   <th align="left"><a href="device.html?id=<% $id %>&view=<% $view %>&peersort=asnumber">AS Number</a></th>
-	   <th align="left">Monitored?</th>
-         </tr>
-%	 foreach my $peer (@peers){
-          <tr>
-	   <td align="left"><% $peer->bgppeeraddr %></td>
-	   <td align="left"><% $peer->bgppeerid %></td>
-	   <td align="left">
-%#           $ui->text_field(object=>$peer->entity, column=>"name", edit=>$editbgp, linkPage=>"view.html");
-	     <a href="view.html?table=Entity&id=<% $peer->entity->id %>"><% $peer->entity->name %></a>
-	   </td>
-	   <td align="left"><% $peer->entity->asname %></td>
-	   <td align="left"><% $peer->entity->asnumber %></td>
-	   <td align="left">
-%	      $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp);
-	   </td>
-          </tr>
-%        }	   
+
+<%perl>
+(@headers, @rows) = ();
+
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=ip">Remote IP</a>' );
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=id">ID</a>' );
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=entity">Entity</a>' );
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=asname">AS Name</a>' );
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=asnumber">AS Number</a>' );
+push( @headers, 'Monitored?' );
+
+foreach my $peer (@peers){
+
+(@row) = ();
+push( @row, $peer->bgppeeraddr  );
+push( @row, $peer->bgppeerid  );
+push( @row, '<a href="view.html?table=Entity&id=' . $peer->entity->id . '">' . $peer->entity->name . '</a>' );
+push( @row, $peer->entity->asname  );
+push( @row, $peer->entity->asnumber  );
+push( @row, $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp, returnAsVar=>1) );
+push( @rows, \@row );
+}
+</%perl>
+
+<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+	   
 %      }
-      </table>
     </div>
 </div>
 <!-- End BGP Peers Table -->
