@@ -32,60 +32,54 @@ if ($id){
 
 </%init>
 
-% if (! $submit ){
-<table align="center" valign="top" border="0" width="100%" class="formtablebg">
-  <tr>
-    <td>
-    <table border="0" class="formtablebg">
-    <form action="delete.html" method="POST">
-      <tr>
-        <td>
-	Going to delete device <% $name %>
-        <input type="hidden" name="Device__<% $id %>" value="on">
-        <p>
-        Delete DNS records?<p>
-%      if ($o->name){
+<div id="sectiondetail">
 
+% if (! $submit ){
+<div class="container">
+    <div class="containerhead">
+    	Going to delete device <% $name %>
+    </div>
+
+    <div class="containerbody">
+
+    <form action="delete.html" method="POST">
+    <input type="hidden" name="Device__<% $id %>" value="on">
+    <p>Delete DNS records?<p>
+    <table border="0" class="formtablebg">
+%   if ($o->name){
 <%doc>
   Delete DNS RR's associated with the device, including all interfaces
 </%doc>
-
-       <table border="0" class="formtablebg">
        <tr>
-         <td><% $o->name->name %></td>
-         <td> <input type="checkbox" name="RR__<% $o->name->id %>" CHECKED><br></td> 
+          <td><% $o->name->name %></td>
+          <td><input type="checkbox" name="RR__<% $o->name->id %>" CHECKED><br></td> 
        </tr>
-% }
-% if ( my @ints = $o->interfaces ){
-%    foreach my $int (@ints){
-%        if ( my @ips = $int->ips ){
-%	   foreach my $ip ( @ips ){
-%	      if ( my @ras = $ip->arecords ){
-%	         foreach my $ra ( @ras ){
-%                   next if ( $ra->rr->id eq $o->name->id );
-                    <tr>
-		      <td><% $ra->rr->name %></td>
-		      <td><input type="checkbox" name="RR__<% $ra->rr->id %>" CHECKED><br></td>
-		    </tr>
-%		 }
-%	      }	      
-%	   }
+%   }
+%   if ( my @ints = $o->interfaces ){
+%     foreach my $int (@ints){
+%       if ( my @ips = $int->ips ){
+%         foreach my $ip ( @ips ){
+%           if ( my @ras = $ip->arecords ){
+%             foreach my $ra ( @ras ){
+%               next if ( $ra->rr->id eq $o->name->id );
+                <tr>
+                  <td><% $ra->rr->name %></td>
+                  <td><input type="checkbox" name="RR__<% $ra->rr->id %>" CHECKED><br></td>
+                </tr>
+%             }
+%           }	      
+%         }
 %       }
-%    }
-% }
-      </table>
-
-      <p><br>
-      <input type="submit" name="submit" value="Delete">
-      <input type="submit" name="submit" value="Cancel">
+%     }
+%   }
+    </table>
+    <br>
+    <input type="submit" name="submit" value="Delete">
+    <input type="submit" name="submit" value="Cancel">
     </form>
- 
-   </td>
-  </tr>
-</table>    
 
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
 %}
-    </td>
-  </tr>
-</table>
 
+</div> <!-- close sectiondetail -->
