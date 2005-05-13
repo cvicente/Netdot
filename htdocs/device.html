@@ -395,11 +395,10 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
 (@field_headers, @cell_data) = ();
 
 push( @field_headers, "Entity: " );
-push( @cell_data,                $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html", returnAsVar=>1) );
+push( @cell_data, $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html", returnAsVar=>1) );
 push( @field_headers, "Room: " );
 push( @cell_data, &{sub{ my $s = "";
-    
-               if ($editloc) {
+         if ($editloc) {
 		   $s .= '<select name="Device__'.$id.'__room" onChange="setNull(document.netdotform.Device__'.$id.'__closet);">';
 		   $s .= '<option value="">-- Make your selection --</option>';
                if (defined($o)) {
@@ -411,11 +410,12 @@ push( @cell_data, &{sub{ my $s = "";
                }
 		   $s .= '<option value="0">[null]</option>';
 		   $s .= '</select>';
-               } else {
-               }
+         } else {
+           $s .= $o->room->name;
+         }
 }} );
 push( @field_headers, "Rack: " );
-push( @cell_data,                $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, returnAsVar=>1) );
+push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, returnAsVar=>1) );
 </%perl>
 
     <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
