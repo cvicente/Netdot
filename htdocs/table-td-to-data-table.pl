@@ -16,10 +16,9 @@
 die "usage: $0 n m <file>\nto convert lines n..m of <file>\n" if ! (scalar(@ARGV) == 3);
 
 my $html = `sed -ne '$ARGV[0],$ARGV[1]p' $ARGV[2]`;
-my $toggle = 1;
 
 print( "<%perl>\n",
-       "(\@field_headers, \@cell_data) = ();\n" 
+       "(\@row) = ();\n" 
        );
 
 
@@ -27,7 +26,7 @@ print( "<%perl>\n",
 # nesting.  Might need to consider table headers and the like.
 while ($html =~ m|<td[^>]*>(.*?)</td>|sg) {	
     #print $1,"\n";
-    if ($toggle) {
+    if (0) {
 	print qq(push( \@field_headers, "$1" );\n);	# Assuming field headers are always simple.
     }else{
 	my @lines = split(/\n/,$1);
@@ -42,8 +41,9 @@ while ($html =~ m|<td[^>]*>(.*?)</td>|sg) {
 		s/^%//;	# Un Mason escape embedded perl lines.
 		s/^(\s*)printf/$1${ac}sprintf/;	# Accumulate prints.
 	    }else{
+		s/\'?<% (.*?) %>\'?/' . $1 . '/g;	# Un Mason escape variables/method calls.
 		s/^(\s*)(.*)\s*$/$1$ac'$2';/;	# Trim whitespace, quote, and accumulate.
-		s/<% (.*?) %>/'.$1.'/g;	# Un Mason escape variables/method calls.
+		s/''( *\.)?|(\. *)?''(;)/$3 if defined $3/eg;	# remove any extra quotes.
 	    }
 	    s/(\$ui->.*?\(.*)\)/$ac$1, returnAsVar=>1\)/;	# The returnAsVar argument needs to get added to all calls to $ui's methods.
 	}
@@ -56,17 +56,20 @@ while ($html =~ m|<td[^>]*>(.*?)</td>|sg) {
 	    $code =~ s/^\s*(.*)\;$/$1/;	# A loan statement shouldn't have a trailing semicolon in a call to push, and doesn't need leading whitespace.
 	}
 
-	print( "push( \@cell_data, ", 
+	print( 'push( @row, ', 
 	       $code,
 	       " );\n"
 	       );
 
     }
-    ($toggle += 1) %= 2;	# Switch between field_headers and cell_data
 }
 
-       
+print( 'push( @rows, \@row );', "\n" );
+
 print( "</%perl>\n",
-       "\n".'<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>'."\n"
+       "\n",
+       #'<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>'."\n"
+       '<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>',
+       "\n"
        );
 	
