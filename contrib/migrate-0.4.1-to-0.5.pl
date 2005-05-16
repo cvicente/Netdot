@@ -141,9 +141,10 @@ while ( my $hr = $lookup->fetchrow_hashref ){
     foreach my $key ( keys %$hr ){
 	$obj{$key} = $hr->{$key};
     }
-    $obj{prefix}  = "32";
-    $obj{version} = "4";
-    $obj{status}  = $statusid;
+    $obj{prefix}      = "32";
+    $obj{version}     = "4";
+    $obj{status}      = $statusid;
+    $obj{first_seen}  = $dm->timestamp;
     
     &insert("Ipblock", \%obj); 
 }
@@ -152,8 +153,14 @@ while ( my $hr = $lookup->fetchrow_hashref ){
 # Subnet
 ######################################################################
 
-unless ( $statusid = (IpblockStatus->search(name=>"Subnet"))[0] ){
+my $sub_status;
+my $cont_status;
+unless ( $sub_status = (IpblockStatus->search(name=>"Subnet"))[0] ){
     print "Error: Can't find id for IpblockStatus Subnet\n";
+    exit;
+}
+unless ( $cont_status = (IpblockStatus->search(name=>"Container"))[0] ){
+    print "Error: Can't find id for IpblockStatus Container\n";
     exit;
 }
 
@@ -168,10 +175,18 @@ LOOP: while ( my $hr = $lookup->fetchrow_hashref ){
     foreach my $key ( keys %$hr ){
 	# Ignore /32 subnets.  Those are probably loopbacks
 	next LOOP if ( $key eq "prefix" and $hr->{$key} == 32 );
+	
+	if ( $key eq "description" ){
+	    if ($hr->{description} =~ /unused/i){
+		$obj{status}  = $cont_status;
+	    }else{
+		$obj{status}  = $sub_status;
+	    }
+	}
 	$obj{$key} = $hr->{$key};
     }
     $obj{version} = "4";
-    $obj{status}  = $statusid;
+    $obj{first_seen}  = $dm->timestamp;
     
     &insert("Ipblock", \%obj); 
 }
