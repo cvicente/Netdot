@@ -163,11 +163,11 @@ $lookup = $dbh1->prepare("
      FROM Subnet
 ");
 $lookup->execute();
-while ( my $hr = $lookup->fetchrow_hashref ){
+LOOP: while ( my $hr = $lookup->fetchrow_hashref ){
     my %obj;
     foreach my $key ( keys %$hr ){
 	# Ignore /32 subnets.  Those are probably loopbacks
-	next if ( $key eq "prefix" and $hr->{$key} == 32 );
+	next LOOP if ( $key eq "prefix" and $hr->{$key} == 32 );
 	$obj{$key} = $hr->{$key};
     }
     $obj{version} = "4";
