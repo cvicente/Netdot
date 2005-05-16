@@ -481,12 +481,12 @@ sub updateblock {
     foreach my $key ( keys %args ){
 	if ( $key eq 'status' || $key eq 'statusname' ){
 	    $state{status} = $statusid;
-	}elsif ( $key eq 'last_seen' ){
-	    $state{last_seen} = $self->timestamp;
 	}else {
 	    $state{$key} = $args{$key};
 	}
     }
+    $state{last_seen} = $self->timestamp;
+
     # We might need to discard changes.
     # Class::DBI's 'discard_changes' method won't work
     # here.  Probably because object is changed in DB
