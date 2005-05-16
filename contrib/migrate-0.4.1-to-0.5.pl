@@ -220,11 +220,20 @@ while ( my $hr = $lookup->fetchrow_hashref ){
 	    if ( ! exists $prod2type{$hr->{productname}} ){
 		$prod2type{$hr->{productname}} = $hr->{type};
 	    }
-	}elsif ( $key eq "physaddr" && $hr->{$key} =~ /[0-9A-F]{12}/ ){
-	    # Insert in new table
-	    my %ph = ( address => $hr->{physaddr} );
-	    my $phid = &insert("PhysAddr", \%ph); 
-	    $obj{physaddr} = $phid;
+	}elsif ( $key eq "physaddr" ){
+	    if ( $hr->{$key} =~ /[0-9A-Fa-f]{12}/ ){
+		# Insert in new table if needed
+		my $id;
+		if ( my $o = (PhysAddr->search(address=>$hr->{physaddr}))[0] ){
+		    $id = $o->id;
+		}else{
+		    my %ph = ( address => uc($hr->{physaddr}) );
+		    $id = &insert("PhysAddr", \%ph); 
+		}
+		$obj{physaddr} = $id;
+	    }else{
+		$obj{physaddr} = 0;		
+	    }
 	}elsif ( $key eq "managed" ){
 	    $obj{monitored}    = $hr->{$key};
 	    $obj{snmp_managed} = $hr->{$key};
