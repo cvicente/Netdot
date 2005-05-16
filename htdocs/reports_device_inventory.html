@@ -16,75 +16,68 @@ section => 'Reports'
 <%init>
 my $DEBUG      = 0;
 my $grandtotal = 0;
+my %t;
+
+foreach my $pt ( sort { $a->name cmp $b->name } ProductType->retrieve_all ){
+    $t{$pt->name}{total} = 0;
+    foreach my $o ( $dm->getproductsbytype($pt) ){
+	$t{$pt->name}{prod}{$o->name}{id}   = $o->id;
+	$t{$pt->name}{prod}{$o->name}{num}  = $o->numdevs;
+	$t{$pt->name}{total}               += $o->numdevs;
+    }
+    $grandtotal += $t{$pt->name}{total};
+}
+# Look for products with no type
+foreach my $o ( $dm->getproductsbytype(0) ){
+    $t{'Unknown Type'}{prod}{$o->name}{id}  = $o->id;
+    $t{'Unknown Type'}{prod}{$o->name}{num} = $o->numdevs;
+    $t{'Unknown Type'}{total}              += $o->numdevs;
+}
+
+# Look for devices with no product set
+
+my $noprod = scalar ( Device->search( productname => 0) );
+$t{'Unknown Type'}{prod}{'Unknown products'}{id}   = 0;
+$t{'Unknown Type'}{prod}{'Unknown products'}{num}  = $noprod;
+$t{'Unknown Type'}{total}                         += $noprod;
+
+$grandtotal += $t{'Unknown Type'}{total};
 
 </%init>
 
-    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
-       <tr class="formtabletitle">
-	  <th valign="top">Type</th>
-	  <th valign="top">Product</th>
-	  <th valign="top">Count</th>
-       </tr>
-%    foreach my $pt (sort { $a->name cmp $b->name } ProductType->retrieve_all){
-%      my $totaldevs = 0;
-%      my @objs = $dm->getproductsbytype($pt);
-       <tr class="formtablec2">
-	  <td valign="top" ><strong><% $pt->name %></strong></td>
-	  <td valign="top"></td>
-	  <td valign="top"></td>
-       </tr>
-%       foreach my $o (@objs){
-%       $totaldevs += $o->numdevs;
-%       $grandtotal += $totaldevs;
+<table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
+   <tr class="formtabletitle">
+     <th valign="top">Type</th>
+     <th valign="top">Product</th>
+     <th valign="top">Count</th>
+   </tr>
+%  foreach my $pt ( sort keys %t ){
+     <tr class="formtablec2">
+	<td valign="top" ><strong><% $pt %></strong></td>
+	<td valign="top"></td>
+	<td align="right" valign="top"><strong><% $t{$pt}{total} %></strong></td>
+     </tr>
+%    foreach my $product ( sort keys %{ $t{$pt}{prod} } ){
        <tr>
-	  <td valign="top"></td>
-	  <td valign="top"><a href="view.html?table=Product&id=<% $o->id %>"><% $o->name %></a></td>
-	  <td valign="top"><% $o->numdevs %></td>
+	 <td valign="top"></td>
+%	 if ( $t{$pt}{prod}{$product}{id} ){
+	   <td valign="top">
+	     <a href="view.html?table=Product&id=<% $t{$pt}{prod}{$product}{id} %>"><% $product %></a>
+	   </td>
+%        }else{
+	   <td valign="top"><% $product %></td>
+%        }
+	 <td align="right" valign="top"><% $t{$pt}{prod}{$product}{num} %></td>
        </tr>
+%     }
+%  }
 
-%       }
-%      # Give total per type
-%       if ($totaldevs){
-          <tr>
-	   <td valign="top"></td>
-	   <td valign="top">Total</td>
-	   <td valign="top"><% $totaldevs %></td>
-          </tr>
-%       }
-%    }
-%# Look for unset types
-%      my $totaldevs = 0;
-%      my @objs = $dm->getproductsbytype(0);
-%      if (scalar @objs){
-       <tr>
-	  <td valign="top"><strong>Unknown Type</strong></td>
-	  <td valign="top"></td>
-	  <td valign="top"></td>
-       </tr>
-%         foreach my $o (@objs){
-%           $totaldevs += $o->numdevs;
-%           $grandtotal += $totaldevs;
-            <tr>
-		<td valign="top"></td>
-		<td valign="top"><a href="view.html?table=Product&id=<% $o->id %>"><% $o->name %></a></td>
-		<td valign="top"><% $o->numdevs %></td>
-            </tr>
-
-%         }
-%         if ($totaldevs){
-            <tr>
-	     <td valign="top"></td>
-	     <td valign="top">Total</td>
-	     <td valign="top"><% $totaldevs %></td>
-            </tr>
-%         }
-%      }
 %# Present total
-       <tr class="formtabletitle">
-	  <td valign="top"></td>
-	  <td valign="top"><strong>Total</strong></td>
-	  <td valign="top"><strong><% $grandtotal %></strong></td>
-       </tr>
+  <tr class="formtabletitle">
+    <td valign="top"></td>
+    <td valign="top"><strong>Total</strong></td>
+    <td align="right" valign="top"><strong><% $grandtotal %></strong></td>
+  </tr>
 
-    </table>
+</table>
 
