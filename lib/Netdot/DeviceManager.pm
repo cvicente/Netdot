@@ -106,7 +106,10 @@ sub find_dev {
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg );
 	$self->output($msg);
-	$comstr = $device->community
+	$comstr = $device->community;
+	$self->debug( loglevel => 'LOG_DEBUG',
+		      message  => "Device has community: %s",
+		      args     => [$comstr] );
     }elsif($self->getrrbyname($host)){
 	my $msg = sprintf("Name %s exists but Device not in DB.  Will try to create.", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
@@ -119,6 +122,9 @@ sub find_dev {
 			  message  => $msg );
 	    $self->output($msg);
 	    $comstr = $device->community;
+	    $self->debug( loglevel => 'LOG_DEBUG',
+			  message  => "Device has community: %s",
+			  args     => [$comstr] );
 	}else{
 	    my $msg = sprintf("Address %s exists but Device not in DB.  Will try to create.", $host);
 	    $self->debug( loglevel => 'LOG_NOTICE',
