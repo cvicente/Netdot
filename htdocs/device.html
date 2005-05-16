@@ -264,7 +264,8 @@ function setNull(field){
 
 <div class="containerbodyoutside">
 
-% if ( $editgen || $editloc || $editmgmt || $editips || $editints || $editbgp ) {
+% if ( $editgen || $editloc || $editmgmt || $editips || $editints || $editbgp 
+%     || $view eq "Interfaces" || $view eq "All" ) {
     <form name="netdotform" action="device.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="view" value="<% $view %>">
@@ -852,13 +853,9 @@ push( @rows, \@row );
 % } 
 
 % if ( $view eq "Interfaces" || $view eq "All" ){
-    <form action="device.html" method="POST">
     Manually 
-    <input type="hidden" name="id" value="<% $id %>">
-    <input type="hidden" name="view" value="Interfaces">
     <input type="submit" name="intadd" value="Add">
     <input type="text" name="intaddnum" value="0" size="3"> interfaces
-    </form>
 % }
 
 
