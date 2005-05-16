@@ -36,10 +36,11 @@ foreach my $o ( $dm->getproductsbytype(0) ){
 
 # Look for devices with no product set
 
-my $noprod = scalar ( Device->search( productname => 0) );
-$t{'Unknown Type'}{prod}{'Unknown products'}{id}   = 0;
-$t{'Unknown Type'}{prod}{'Unknown products'}{num}  = $noprod;
-$t{'Unknown Type'}{total}                         += $noprod;
+if ( my $noprod = scalar ( Device->search( productname => 0) ) ){
+    $t{'Unknown Type'}{prod}{'Unknown products'}{id}   = 0;
+    $t{'Unknown Type'}{prod}{'Unknown products'}{num}  = $noprod;
+    $t{'Unknown Type'}{total}                         += $noprod;
+}
 
 $grandtotal += $t{'Unknown Type'}{total};
 
