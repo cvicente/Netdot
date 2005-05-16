@@ -631,7 +631,7 @@ sub text_area($@){
     if ($isEditing){
         $output .= sprintf("<textarea name=\"%s\" %s>%s</textarea>\n", $name, $htmlExtra, $value);
     }else{
-        $output .= sprintf("%s\n", $value);
+        $output .= sprintf("<pre>%s</pre>\n", $value);
     }
 
     if ($returnAsVar==1) {
