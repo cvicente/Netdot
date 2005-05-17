@@ -20,15 +20,6 @@ my $page = "";
     <ul id="navigation">
         <li>
 %
-% if( $section eq "Main" ) {
-            <span>Main</span>
-% } else {
-            <a href="index.html">Main</a>
-% }
-%
-        </li>
-        <li>
-%
 % if( $section eq "Management" ) {
 %     if (exists($caller_args{page})){
 %         $user->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
@@ -49,15 +40,18 @@ my $page = "";
                 <li><a href="section_management.html?page=ADDRESS">Address Space</a></li>
 %     }
 %
+%     if( $page eq "SERVICES" ) {
+                <li><span>Services</span></li>
+%     } else {
+                <li><a href="section_management.html?page=SERVICES">Services</a></li>
+%     }
+%
             </ul>
 %
 % } else {
             <a href="section_management.html">Management</a>
 % }
 %
-        </li>
-        <li class="Services">
-            <a href="section_services.html">Services</a>
         </li>
         <li>
 %
