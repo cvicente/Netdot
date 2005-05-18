@@ -93,6 +93,7 @@ if ( $Add ){
     #
     #  Add a logical (L3) dependency automagically when adding a L2 dependency
     #
+    my $l3dep = 0;
     if ( my $childint = Interface->retrieve($state{child}) ){
 	if ( my $parentint = Interface->retrieve($state{parent}) ){
 	    if ( scalar (my @childips = ($dm->getdevips($childint->device))) == 1 ){
@@ -104,6 +105,8 @@ if ( $Add ){
 		    unless ( InterfaceDep->search(\%state) ){
 			unless ( $ui->insert(table => "InterfaceDep", state => \%state) ){
 			    $m->comp("error.mhtml", error => $ui->error);
+			}else{
+			    $l3dep = 1;
 			}
 		    }
 		}
@@ -114,7 +117,13 @@ if ( $Add ){
 </%perl>
 
     <body class="bodytag" onUnload="opener.location.reload()">
-    <a href="#" onClick="window.close()">[done]</a>
+%   if ( $l3dep ){
+	Layer 3 dependency added.
+%   }else{
+	Layer 3 dependency could not be determined.  Please add manually.
+%   }
+    
+    <p><a href="#" onClick="window.close()">[done]</a>
 
 %}elsif ( $Cancel ){
     <body class="bodytag">
