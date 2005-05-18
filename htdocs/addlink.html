@@ -24,6 +24,8 @@ my $DEBUG = 0;
 my %state;
 my $intobj;
 my $intlbl;
+# Use a hash to make sure there are no duplicates
+my %subnet_devs;
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
@@ -34,10 +36,33 @@ if ( $int_id ){
     unless ( $intlbl = $ui->getobjlabel($intobj, ", ") ){
 	$intlbl = $intobj->name;
     }
+#
+#   Get a list of Devices in the same subnet(s)
+#
+#   Use a hash to make sure there are no duplicates
+    my %subnets;
+    foreach my $int ( $intobj->device->interfaces ){
+	foreach my $ip ( $int->ips ){
+	    if ( my $subnet = $ip->parent ){
+		$subnets{$subnet->id} = $subnet;
+	    }
+	}
+    }
+    foreach my $subnet ( keys %subnets ){
+	foreach my $ip ( $subnets{$subnet}->children ){
+	    if ( $ip->prefix == 32 || $ip->prefix == 128 ){
+		if ( $ip->interface && $ip->interface->device ){
+		    $subnet_devs{$ip->interface->device->name->name} = "";
+		}
+	    }
+	}
+    }
+
 }
-my %reserved = ( Add    => "",
-		 Cancel => "",
-		 search => "",
+my %reserved = ( Add           => "",
+		 Cancel        => "",
+		 search        => "",
+		 device_search => "",
 		 );
 my $rel_role;
 if ( $role ){
@@ -47,6 +72,10 @@ if ( $role ){
     $rel_role = ($role eq "parent")? "child" : "parent";
 }
 
+my %role_tags = ( 'parent' => "Parent Interface",
+		  'child'  => "Child Interface",
+		  );
+
 my $newlinkid;
 
 </%init>
@@ -54,7 +83,7 @@ my $newlinkid;
 %
 <%perl>
 if ( $Add ){
-	foreach my $arg ( keys %ARGS ){
+    foreach my $arg ( keys %ARGS ){
 	next if ( exists $reserved{$arg} );
 	$state{$arg} = $ARGS{$arg};
     }
@@ -77,7 +106,6 @@ if ( $Add ){
 <html>
 <head>
     <link rel=StyleSheet href="style.css" type="text/css">
-    <link rel="alternate stylesheet" title="Gray" href="style-gray.css" type="text/css">
 </head>      
 <body class="bodytag">
 
@@ -90,12 +118,19 @@ if ( $Add ){
      <td align="CENTER" colspan="2"><strong>Add Link</strong></td>
   </tr>
   <tr>
-    <td class="formtablec1"><strong><% $role %>:</strong></td>
+    <td class="formtablec1"><strong><% $role_tags{$role} %>:</strong></td>
     <td class="formtablec2"><% $intlbl %></td>
   </tr>
   <tr>
-    <td class="formtablec1"><strong><% $rel_role %>:</strong></td>
+    <td class="formtablec1"><strong><% $role_tags{$rel_role} %>:</strong></td>
     <td class="formtablec2">
+      Select Device from list:
+      <select name="device_search" onChange="sendquery(<% $rel_role %>, device_search.value, 'Interface')" >
+%       foreach my $dev ( sort keys %subnet_devs ){
+          <option value="<% $dev %>"><% $dev  %></option>
+%       }
+      </select>
+      <br>Or search:
       <input type="text" name="search" value="Keywords">
       &nbsp;<input type="button" name="" value="List" 
       onClick="sendquery(<% $rel_role %>, search.value, 'Interface')" >

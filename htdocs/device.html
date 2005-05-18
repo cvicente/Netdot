@@ -81,13 +81,19 @@ if( defined($search) && $search =~ /\w+/ ){
     }
     
 }elsif( $deviceadd && $newhost && $newip ){
-    # Minimal info to create device manually
-    my %tmp = ( host   => $newhost, 
-	        dev    => { interface => { '1' => {'name'   => "eth0",
-						   'number' => 1,
-						   'ips'    => {$newip} } } } );
-    unless ( $o = $dm->update_device(%tmp) ){
-	$m->comp('error.mhtml', error => $dm->error);	
+    if ( $dns->getdevbyname($newhost) ){
+	# It's already there
+	print "<p><b>Device $newhost already exists in DB</b>";   
+	$m->abort;
+    }else{
+	# Minimal info to create device manually
+	my %tmp = ( host   => $newhost, 
+		    dev    => { interface => { '1' => {'name'   => "eth0",
+						       'number' => 1,
+						       'ips'    => {$newip} } } } );
+	unless ( $o = $dm->update_device(%tmp) ){
+	    $m->comp('error.mhtml', error => $dm->error);	
+	}
     }
 }elsif( $submit ){
     # insert/update
