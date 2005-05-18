@@ -1,23 +1,17 @@
 /* $Id$ */
 
-/* Color schemes
+/* Color scheme
 
-set1
-    background: #c2bed8;
-    background: #e7e6f2;
+    text:
+        #000000 (default)
+        #006600 (links)
+        #009900 (hover links)
 
-set2
-    background: #9999cc;
-    background: #ccccff;
-    background: #aaaaff;
+    backgrounds/borders:
+        #aaccaa (darkest green)
+        #ddeedd (green)
+        #ffffee (general background)
 
-*/
-
-/*
-body, #content {
-    height: 100%;
-    min-height: 100%;
-}
 */
 
 .empty000000 {
@@ -30,9 +24,18 @@ body {
     background-color: #FFFFFF;
     color: #000000;
     height: 100%;
-    width: 95%;
     font-size: 13px;
     font-family: verdana, arial, sans-serif;
+    margin: 5px;
+}
+
+a {
+    color: #006600;
+    text-decoration: none;
+}
+a:hover {
+    color: #009900;
+    text-decoration: underline;
 }
 
 
@@ -43,7 +46,7 @@ table {
     text-align: left;
 }
 table.tablebackground { 
-    background-color: #e7e6f2; 
+    background-color: #ffffee; 
 }
 
 
@@ -51,13 +54,13 @@ tr {
     text-align: left;
 }
 tr.rowtitle0 {
-    background-color: #c2bed8; 
+    background-color: #aaccaa; 
 }
 tr.rowtitle1 {
-    background-color: #EEEEDD;
+    background-color: #ffffee;
 }
 tr.rowtitle2 { 
-    background-color: #E6E6DC;
+    background-color: #fff6dd;
 }
 tr.rowtitle3 { 
     background-color: #FFFFFF;
@@ -66,7 +69,7 @@ tr.submissionrow {
     background-color: #FFFFFF; 
 }
 tr.formtabletitle { 
-    background-color: #e5dece;
+    background-color: #ddeedd;
 }
 
 
@@ -103,11 +106,11 @@ th {
 }
 #header hr {
     border: none;
-    background-color: #c2bed8; /* for mozilla */
-/*    color: #c2bed8;            /* for ie */
-    margin-top: 2em;
+    background-color: #aaccaa; /* for mozilla */
+/*    color: #aaccaa;            /* for ie */
+    margin-top: 10px;
     clear: both;
-    height: 3px;
+    height: 1px;
     width: 100%;
 }
 #header form {
@@ -124,15 +127,17 @@ th {
 #navbar {
     position: relative;
     witdh: 100%;
-    height: 2.5em;
-    border-bottom: 1px solid #000000; 
+    height: 23px;
+    background: #ddeedd;
+    border-bottom: 1px solid #006600;
+    border-top: 1px solid #006600;
     font-size: 0.9em;
+    margin-bottom: 30px;
 }
 #navbar ul#navigation {
-    margin: 0;
-    padding: 0;
+    margin: 0px;
+    padding: 0px;
     position: absolute;
-    bottom: -1px;
     width: 100%;
 }
 #navbar ul#navigation li {
@@ -144,43 +149,43 @@ th {
 #navbar ul#navigation a.current {
     display: block;
     float: left;
-    padding: 1px 10px 2px 10px;
-    margin: 1px 2px 0px 0px;
+    padding: 2px 10px 3px 10px;
+    margin: 0px 2px 3px 0px;
     text-align: center;
     text-decoration: none;
-    border: 1px solid #777777; 
-    border-bottom: none; 
-    padding-bottom: 5px;
 }
 #navbar ul#navigation span, 
 #navbar ul#navigation a.current, 
 #navbar ul#navigation a.current:hover {
     color: #000000;
-    background: #aaaaff; 
-    border: 1px solid #000000;
-    border-bottom: 1px solid #aaaaff;  
+    background: #aaccaa; 
 }
 #navbar ul#navigation a {
     color: #555555;
-    background: #ccccff;
+    background: #ddeedd;
 }
 #navbar ul#navigation a:hover {
     color: #000000;
     border-color: #000000;
-    background: #aaaaff;
-    padding-bottom: 5px;
+    background: #aaccaa;
+}
+#navbar ul#navigation a:hover,
+#navbar ul#navigation a, 
+#navbar ul#navigation span, 
+#navbar ul#navigation a.current {
+    padding-bottom: 3px;
 }
 
 
 #navbar ul#subnavigation {
     position: absolute;
-    margin: 0;
-    padding: 0;
-    bottom: -1.55em;
-    width: 99.7%;
-    left: 1;
-    background: #aaaaff;
+    margin: 0px;
+    padding: 0px;
+    top: 24px;
+    width: 100%;
+    background: #aaccaa;
     font-size: .95em;
+    border-bottom: 1px solid #000000;
 }
 #navbar ul#subnavigation li a,
 #navbar ul#subnavigation li span {
@@ -188,15 +193,15 @@ th {
     display: block;
     float: left;
     padding: 2px 10px 2px 10px;
-    margin: 0;
+    margin: 0px;
     text-align: auto;
-    background: #aaaaff;
+    background: #aaccaa;
     border: none;
     border-right: 1px dotted #000000;
     font-size: 1em;
 }
 #navbar ul#subnavigation li a {
-    color: #000033;
+    color: #003300;
     text-decoration: underline; 
 }
 #navbar ul#subnavigation li a:hover {
@@ -216,19 +221,24 @@ th {
 }
 
 
+
+
 html>body, html>body #contents {
     height: auto;
 }
 #content {
+    clear: left;
+/*
+    margin-bottom: 3em;
     border-bottom: 1px solid #000000;
     border-left: 1px solid #000000;
     border-right: 1px solid #000000;
     padding: 10px 5px 6px 5px;
-    margin-bottom: 3em;
     height: 100%;
-/*    background-color: #e7e6f2; */
     background-color: #f2f2f2;
-    clear: left;
+    float: left; /* lame css hack... see note at bottom */
+    margin-right: 5px;
+*/
 }
 #content h3 {
     font-size: 1.2em;
@@ -238,37 +248,39 @@ html>body, html>body #contents {
 
 
 #sectiontools {
+/*
     padding: 5px 5px 5px 5px;
     background-color: #f2f2f2;
     margin-bottom: 3em;
+*/
 }
 #sectiontools fieldset {
-    border: 3px solid #e5dece;
-    border-top: 1.2em solid #e5dece;
-    background-color: #eeeedd;
+    border: 2px solid #aaccaa;
+    border-top: 15px solid #aaccaa;
+    background-color: #ffffee;
     margin-left: 0px;
-    margin-top: 10px;
+    margin-bottom: 10px;
     padding: 10px;
-    float: left;
+    float: left; /* lame css hack... see note at bottom */
 }
 #sectiontools fieldset.medium {
-    width: 40%;
+    width: 45%;
 }
 #sectiontools fieldset.small {
     width: auto;
 }
 #sectiontools legend {
     font: bold 0.9em tahoma, verdana, sans-serif;
-    background-color: #e5dece;
+    background-color: #aaccaa; /* this should be whatever border is above under "#sectiontools fieldset" */
 }
 #sectiontools input.txt {
-    color: #00008b;
-    border: 1px inset #00008b;
+    color: #003300;
+    border: 1px inset #006600;
     width: 120px;
 }
 #sectiontools input.btn {
-    color: #00008b;
-    border: 1px outset #00008b;
+    color: #003300;
+    border: 1px outset #006600;
     text-align: right;
 }
 #sectiontools form p {
@@ -284,10 +296,13 @@ html>body, html>body #contents {
 
 
 #sectiondetail {
+    clear: left;
+/*
     padding: 5px 5px 5px 5px;
     background-color: #f2f2f2;
     margin-bottom: 3em;
-    clear: left;
+    float: left;
+*/
 }
 
 
@@ -296,25 +311,25 @@ html>body, html>body #contents {
 
 .container {
     clear: both;
-    background-color: #eeeedd;
-    border: 5px #e5dece solid;
+    background-color: #ffffee;
+    border: 3px #ddeedd solid;
     margin-bottom: 5px;
 }
 
 .containerheadleft {
     float: left;
-    background-color: #e5dece;
+    background-color: #ddeedd;
     font: bold 0.9em tahoma, verdana, sans-serif;
 }
 
 .containerheadright {
     text-align: right;
-    background-color: #e5dece;
+    background-color: #ddeedd;
     font-size: 0.9em;
 }
 
 .containerhead {
-    background-color: #e5dece;
+    background-color: #ddeedd;
     font: bold 0.9em tahoma, verdana, sans-serif;
 }
 
@@ -326,26 +341,27 @@ html>body, html>body #contents {
 
 .containeroutside {
     clear: both;
-    background-color: #eeeedd;
-    border: 5px #e5dece solid;
+    background-color: #ffffee;
+    border: 3px #aaccaa solid;
+    float: left;
 }
 
 .containerheadleftoutside {
     float: left;
-    background-color: #ccccff;
+    background-color: #aaccaa;
     font: 1em tahoma, verdana, sans-serif;
     padding: 2px;
 }
 
 .containerheadrightoutside {
     text-align: right;
-    background-color: #ccccff;
+    background-color: #aaccaa;
     font-size: 0.9em;
     padding: 2px;
 }
 
 .containerheadoutside {
-    background-color: #ccccff;
+    background-color: #cceecc;
     font: bold 0.9em tahoma, verdana, sans-serif;
     paddingL 2px;
 }
@@ -357,19 +373,20 @@ html>body, html>body #contents {
 
 
 
-  .formtablec1	    { background-color: #EEEEDD; text-align: right}
-  .formtablec2	    { background-color: #E6E6DC; text-align: left}
-  .formtabletitle   { background-color: #EEEEDD; text-align: left; font-weight: bold; }
-  .datatabler1      { background-color: #EEEEDD; }	
-  .datatabler2      { background-color: #E6E6DC; }
+  .formtablec1	    { background-color: #ffffee; text-align: right}
+  .formtablec2	    { background-color: #fff6dd; text-align: left}
+  .formtabletitle   { background-color: #ffffee; text-align: left; font-weight: bold; }
+  .datatabler1      { background-color: #ffffee; }
+  .datatabler2      { background-color: #fff6dd; }
 
 
 #footer {
-    width: 99%;
+    width: 100%;
     height: 3em;
-    padding: 5px;
-    border-top: 3px solid #c2bed8;
+    margin-top: 10px;
+    border-top: 1px solid #aaccaa;
     font-size: 70%;
+    clear: both;
 }
 #footer p {
     margin: 0;
@@ -383,23 +400,13 @@ html>body, html>body #contents {
 }
 
 
+
+
+
+
+
+
 /*
-
-
-
- Old stuff below
-
-#navbar ul#navigation a:link, #navbar ul#navigation a:visited, #navbar ul#navigation span {
-    display: block;
-    background-color: transparent;
-    text-decoration: none;
-    padding: 4px;
-}
-
-*/
-
-
-  .bodytag	    { background-color: #FFFFFF; }
           a:link           {text-decoration: none; color:blue}
           a:visited        {text-decoration: none; color:purple}
           a:active         {text-decoration: underline;}
@@ -428,13 +435,14 @@ html>body, html>body #contents {
           a.utilityfont:hover         {text-decoration: underline;}
 	   .utilityfont                { color: BLACK }
 
+*/
 
   .searchbox        { background-color: #CCCCCC; }
 
   .tabletitle       { background-color: #c2bed8; text-align: left}
 
 
-  .formtablebg	    { background-color: #EEEEDD; text-align: left}
+  .formtablebg	    { background-color: #ffffee; text-align: left}
 
   .formtabletl	    { background-color: #6ab1f0; text-align: left}
 
@@ -451,3 +459,11 @@ html>body, html>body #contents {
 
   .red { background-color: red;}
 
+
+/* note on float css hack:
+In Firefox, a div block containing an input tag doesn't stretch
+its width when the input tag is too big for the block.
+The result is the tag explodes out of the containing
+block, messing up the borders and background.
+Note, IE doesn't have this problem.
+*/

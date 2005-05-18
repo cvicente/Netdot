@@ -14,26 +14,22 @@ $user => undef
 my $caller = $m->caller->name;
 </%init>
 
-<table align="center" valign="top" border="0" width="100%" class="formtablebg">
-<tr><td>
+<div id="sectiondetail">
 
- <table width="100%" class="formtablebg">
-   <tr>
-    <td>
-     <strong><% $caller %></strong> produced the following error:
-     <pre><% $error %></pre>
-    </td>
-   </tr>
- </table>
-<p>
-If you believe this is a bug, please copy the above message and send it to 
-<a href="mailto:<% $ui->{config}->{'ADMINEMAIL'} %>"><% $ui->{config}->{'ADMINEMAIL'} %></a>
-<p>
+    <div class="container">
+        <div class="containerhead"><strong><% $caller %></strong> produced the following error:</div>
+        <div class="containerbody">
+            <pre><% $error %></pre>
+            <p>
+                If you believe this is a bug, please copy the above message and send it to 
+                <a href="mailto:<% $ui->{config}->{'ADMINEMAIL'} %>"><% $ui->{config}->{'ADMINEMAIL'} %></a>
+            </p>
+        </div>
+    </div>
 
-</td></tr>
+</div>
 
 <%perl>
 # Abort execution of the caller
 $m->abort;
-
 </%perl>
