@@ -1508,6 +1508,7 @@ sub get_dev_info {
 sub getdevips {
     my ($self, $id, $ipsort) = @_;
     my @ips;
+    $ipsort ||= "address";
     if ( $ipsort eq "address" ){
 	if ( @ips = Ipblock->search_devipsbyaddr( $id ) ){
 	    return @ips;

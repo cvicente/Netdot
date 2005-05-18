@@ -39,19 +39,21 @@ if ( $int_id ){
 #
 #   Get a list of Devices in the same subnet(s)
 #
-#   Use a hash to make sure there are no duplicates
     my %subnets;
-    foreach my $int ( $intobj->device->interfaces ){
-	foreach my $ip ( $int->ips ){
-	    if ( my $subnet = $ip->parent ){
-		$subnets{$subnet->id} = $subnet;
-	    }
+    foreach my $ip ( $dm->getdevips($intobj->device) ){
+	if ( my $subnet = $ip->parent ){
+	    $subnets{$subnet->id} = $subnet;
 	}
     }
+
     foreach my $subnet ( keys %subnets ){
 	foreach my $ip ( $subnets{$subnet}->children ){
 	    if ( $ip->prefix == 32 || $ip->prefix == 128 ){
-		if ( $ip->interface && $ip->interface->device ){
+		if ( $ip->interface && $ip->interface->device 
+		     # Don't include current device
+		     && $ip->interface->device != $intobj->device
+		     && $ip->interface->device->name 
+		     && $ip->interface->device->name->name){
 		    $subnet_devs{$ip->interface->device->name->name} = "";
 		}
 	    }
@@ -76,8 +78,6 @@ my %role_tags = ( 'parent' => "Parent Interface",
 		  'child'  => "Child Interface",
 		  );
 
-my $newlinkid;
-
 </%init>
 %
 %
@@ -87,9 +87,30 @@ if ( $Add ){
 	next if ( exists $reserved{$arg} );
 	$state{$arg} = $ARGS{$arg};
     }
-    unless ( $newlinkid = $ui->insert(table => "InterfaceDep", state => \%state) ){
+    unless ( $ui->insert(table => "InterfaceDep", state => \%state) ){
 	$m->comp("error.mhtml", error => $ui->error);
     }
+    #
+    #  Add a logical (L3) dependency automagically when adding a L2 dependency
+    #
+    if ( my $childint = Interface->retrieve($state{child}) ){
+	if ( my $parentint = Interface->retrieve($state{parent}) ){
+	    if ( scalar (my @childips = ($dm->getdevips($childint->device))) == 1 ){
+		if ( scalar (my @parentips = ($dm->getdevips($parentint->device))) == 1 ){
+		    my %state;
+		    $state{child}  = $childips[0]->interface;
+		    $state{parent} = $parentips[0]->interface;
+		    # Check that it's not already there
+		    unless ( InterfaceDep->search(\%state) ){
+			unless ( $ui->insert(table => "InterfaceDep", state => \%state) ){
+			    $m->comp("error.mhtml", error => $ui->error);
+			}
+		    }
+		}
+	    }
+	}
+    }
+	 
 </%perl>
 
     <body class="bodytag" onUnload="opener.location.reload()">
