@@ -835,7 +835,9 @@ push( @row,
 	    }   
 #                 my $lbl = $ac .= $ui->getobjlabel($link->child, ", ", returnAsVar=>1);
 	    my $lbl = $ui->getobjlabel($link->child, ", ");
-	    $ac .= '<a href="device.html?id=' . $link->child->device->id . '">' . $lbl . '</a><br>';
+	    if ( $link->child->device ){
+		$ac .= '<a href="device.html?id=' . $link->child->device->id . '">' . $lbl . '</a><br>';
+	    }
 	}
     }
     if ( $editints ){     
