@@ -3,7 +3,7 @@
 
 FILES := $(shell ls autohandler dhandler *.{{m,}html,css,js}) 
 
-IMG = title.jpg
+IMG = title.png
 
 all:  images
 	@echo
