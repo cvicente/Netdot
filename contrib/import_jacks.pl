@@ -40,6 +40,7 @@ while ( my $line = <FILE> ){
     chomp($line);
     my ($floor, $room, $jack, $closet, $plate, $comments) = split /\s+/, $line;
     my $site;
+    $floor =~ s/^0+//;   # Remove leading zeroes
     unless ( $plate =~ /^F(\d{3}).*/){
 	print "Error in Plate format?: $plate\n";
 	exit;
@@ -94,7 +95,7 @@ foreach my $sitenum ( keys %t ){
 		# First make sure closet exists
 		my $closetid;
 		my $closet = $t{$sitenum}{$floor}{$room}{$jack}{closet};
-		my %closettmp = (floor=>$floorid, name=>$closet, site=>$siteid);
+		my %closettmp = (name=>$closet, site=>$siteid);
 		unless ( $closetid = (Closet->search(\%closettmp))[0] ){
 		    unless ( $closetid = $ui->insert(table=>"Closet", state => \%closettmp) ){
 			print "Error: ", $ui->error, "\n";
