@@ -5,9 +5,9 @@ TODO: May need to be more intelligent about suggesting duplicates.
 </%doc>
 
 <%args>
-$start => $ARGS{"start"};
-$end => $ARGS{"end"};
-$name => $ARGS{"name"};
+$start
+$end
+$name
 </%args>
 
 <html>
@@ -20,10 +20,27 @@ my ($start_closet, $end_closet, $start_site, $end_site);
 $start_closet = Closet->retrieve($start);
 $end_closet = Closet->retrieve($end);
 
-$start_site = $start_closet->floor->site;
-$end_site = $end_closet->floor->site;
+if ( $start_closet->floor && $start_closet->floor->site ){
+    $start_site = $start_closet->floor->site;
+}elsif ( $start_closet->site ){
+    $start_site = $start_closet->site;    
+}else{
+    $m->comp('error.mhtml', error=>"Could not determine start Site");
+}
+if ( $end_closet->floor && $end_closet->floor->site ){
+    $end_site = $end_closet->floor->site;
+}elsif ( $end_closet->site ){
+    $end_site = $end_closet->site;    
+}else{
+    $m->comp('error.mhtml', error=>"Could not determine end Site");
+}
 
-my $suggestedName = $start_site->number . "/" . $end_site->number;
+my $suggestedName;
+if ($start_site->number &&  $end_site->number){
+    $suggestedName = $start_site->number . "/" . $end_site->number;
+}else{
+    $suggestedName = $start_site->name . "/" . $end_site->name;
+}
 my @existing = BackboneCable->search_like(name=>$suggestedName . "%");
 $suggestedName = $suggestedName . "-" . (scalar(@existing) + 1);
 

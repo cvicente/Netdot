@@ -21,23 +21,32 @@ section => 'Plant'
 </%attr>
 
 <%init>
-my $DEBUG = 0;
+my $DEBUG = 1;
 my %cssitem = (0 => "formtablec1", 1 => "formtablec2");
 my $editBackbone = 0;
 my $editStrand = 0;
-my ($o, $start_site, $end_site) = (undef, undef, undef);
+my ($o, $start_site, $end_site);
 my ($start_site_id, $end_site_id) = (0, 0);
 
 if ($id && $id ne "NEW") {
     $o = BackboneCable->retrieve($id);
-    $start_site = $o->start_closet->floor->site; 
-    $end_site = $o->end_closet->floor->site;
+    
+    if ( $o->start_closet->floor && $o->start_closet->floor->site ){
+	$start_site = $o->start_closet->floor->site;
+    }elsif( $o->start_closet->site ){
+	$start_site = $o->start_closet->site;
+    }
+    if ( $o->end_closet->floor && $o->end_closet->floor->site ){
+	$end_site = $o->end_closet->floor->site;
+    }elsif( $o->end_closet->site ){
+	$end_site = $o->end_closet->site;
+    }
     $start_site_id = $start_site->id if ($start_site);
     $end_site_id = $end_site->id if ($end_site);
 }
 
 $editBackbone = 1 if ($id eq "NEW" || $edit eq "cableinfo");
-$editStrand = 1 if ($edit eq "strandinfo");
+$editStrand   = 1 if ($edit eq "strandinfo");
 </%init>
 
 <%perl>
@@ -46,29 +55,27 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 # code for inserting/updating
 # -----------------------------------------------------------------------------
 if (defined($ARGS{_action}) && ($ARGS{_action} eq "UPDATE" || $ARGS{_action} eq "STRAND_UPDATE")) {
-    my %update_info = ();
-    
     print "inserting/updating, ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
-    if (!(%update_info = $ui->form_to_db(%ARGS))) {
-        $m->comp("error.mhtml", $ui->error());
-	}
-
-    # Ignore id changes for anything but BackboneCable.
-    # (i.e., we do not care about CableStrand id update).
-    if ($update_info{BackboneCable}{key}) {
-        $id = $update_info{BackboneCable}{key};
+    if ( ! $ui->form_to_db(%ARGS) ) {
+        $m->comp("error.mhtml", error => $ui->error);
     }
-
-    print "update info is <pre>", Dumper(%update_info), "</pre><br>" if $DEBUG;
     
     # Do this to 'flush' the values associated with the object
     # before redisplaying
     $o = undef;
     if ($id && $id ne "NEW") {
         $o = BackboneCable->retrieve($id);
-        $start_site = $o->start_closet->floor->site; 
-        $end_site = $o->end_closet->floor->site;
+	if ( $o->start_closet->floor && $o->start_closet->floor->site ){
+	    $start_site = $o->start_closet->floor->site;
+	}elsif( $o->start_closet->site ){
+	    $start_site = $o->start_closet->site;
+	}
+	if ( $o->end_closet->floor && $o->end_closet->floor->site ){
+	    $end_site = $o->end_closet->floor->site;
+	}elsif( $o->end_closet->site ){
+	    $end_site = $o->end_closet->site;
+	}
         $start_site_id = $start_site->id if ($start_site);
         $end_site_id = $end_site->id if ($end_site);
         
@@ -322,7 +329,6 @@ function suggestName()
 my @backbones = ();
 if ($editStrand) {
     # we need to grab all backbones for start and end sites of this strand.
-    my ($start_site, $end_site) = ($o->start_closet->floor->site, $o->end_closet->floor->site);
     foreach my $closet (($start_site->closets, $end_site->closets)) {
         map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$closet),
                                        BackboneCable->search(end_closet=>$closet));
@@ -585,14 +591,16 @@ Manually Add Strands
 %	 if ($edit ne "strandinfo") {
 <div class="container">
 <%perl>
-    my @bbones = ();
-    # we need to grab all backbones for start and end sites of this strand.
-    my ($start_site, $end_site) = ($o->start_closet->floor->site, $o->end_closet->floor->site);
-    foreach my $closet (($start_site->closets, $end_site->closets)) {
-        map { push (@bbones, $_) } (BackboneCable->search(start_closet=>$closet),
-                                    BackboneCable->search(end_closet=>$closet));
-    }
+    
+my @bbones = ();
+
+foreach my $closet (($start_site->closets, $end_site->closets)) {
+    map { push (@bbones, $_) } (BackboneCable->search(start_closet=>$closet),
+				BackboneCable->search(end_closet=>$closet));
+}
+
 </%perl>
+
     <form action="cable_backbone.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="ADD_SPLICE_RANGE">
