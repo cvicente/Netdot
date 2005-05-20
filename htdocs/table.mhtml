@@ -28,27 +28,27 @@ map { push @tbls, $_ } sort { $a cmp $b } $ui->gettables;
 $max = scalar( @tbls );
 </%perl>
 
-<table border="1" cellspacing="0" cellpadding="0" width="100%" class="tablebackground">
-<tr><td colspan="3" bgcolor="#6ab1f0" class="rowtitle0"><b><% $title %></b></td></tr>
-<tr><td>
-  <table border="0" cellspacing="3" cellpadding="1" width="100%" class="tablebackground">
-      <tr>
-% for (my($i)=0; $i < $max; $i++ ) {
-%   if( $i % $width == 0 && $i != 0 ) { 
-       </tr>
-       <tr>
-%   }
-       <td><a href="<% $link %>?table=<% $tbls[$j] %>"><% $tbls[$j] %></a></td>
-%   if( ( ( $i ) % $width ) < ( $max % $width ) ) {
-%     $j += int( $max / $width ) + 1;
-%   } else {
-%     $j += int( $max / $width );
-%   }
-%   if( $j >= $max ) {
-%     $j -= ( $max - 1 );
-%   } 
-% }
-       </tr>
-   </table>
-</td></tr>
-</table>
+<div class="container">
+    <div class="containerhead"><% $title %></div>
+    <div class="containerbody">
+        <table border="0" cellspacing="3" cellpadding="1" width="100%" class="tablebackground">
+        <tr>
+%       for (my($i)=0; $i < $max; $i++ ) {
+%          if( $i % $width == 0 && $i != 0 ) { 
+               </tr>
+               <tr>
+%           }
+            <td><a href="<% $link %>?table=<% $tbls[$j] %>"><% $tbls[$j] %></a></td>
+%           if( ( ( $i ) % $width ) < ( $max % $width ) ) {
+%               $j += int( $max / $width ) + 1;
+%           } else {
+%               $j += int( $max / $width );
+%           }
+%           if( $j >= $max ) {
+%               $j -= ( $max - 1 );
+%           } 
+%       }
+        </tr>
+        </table>
+    </div>
+</div>

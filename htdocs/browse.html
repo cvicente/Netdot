@@ -23,6 +23,8 @@ my $WIDTH  = 2;
 
 </%init>
 
+<div id="sectiondetail">
+
 % if ( ! $table ) {
 %   my( @t );
 %   @t = $ui->gettables();
@@ -30,9 +32,12 @@ my $WIDTH  = 2;
 % } else {
 %   my @r = $table->retrieve_all();
 
-    <br>
-    <h3><% $table %></h3>
+<div class="container">
+    <div class="containerhead"><% $table %></div>
+    <div class="containerbody">
     <& sortresults.mhtml, table => $table, object => \@r, view => "row", withdelete => 1 &>
-
+    </div>
+</div>
 % }
 
+</div>
