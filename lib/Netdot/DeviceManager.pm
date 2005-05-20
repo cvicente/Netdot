@@ -309,97 +309,102 @@ sub update_device {
     ###############################################
     # Try to assign Product based on SysObjectID
 
-    if( my $prod = (Product->search( sysobjectid => $dev{sysobjectid} ))[0] ) {
-	my $msg = sprintf("SysID matches existing %s", $prod->name);
-	$self->debug( loglevel => 'LOG_INFO',message  => $msg );
-	$self->output($msg);
-	$devtmp{productname} = $prod->id;
-
-    }elsif ( $dev{sysobjectid} ){
-	###############################################
-	# Create a new product entry
-	my $msg = sprintf("New product with SysID %s.  Adding to DB", $dev{sysobjectid});
-	$self->debug( loglevel => 'LOG_INFO', message  => $msg );
-	$self->output( $msg );	
-	
-	###############################################
-	# Check if Manufacturer Entity exists or can be added
-
-	my $oid = $dev{enterprise};
-	my $ent;
-	if($ent = (Entity->search( oid => $oid ))[0] ) {
-	    $self->debug( loglevel => 'LOG_INFO',
-			  message  => "Manufacturer OID matches %s", 
-			  args     => [$ent->name]);
+    if( $dev{sysobjectid} ){
+	if ( my $prod = (Product->search( sysobjectid => $dev{sysobjectid} ))[0] ) {
+	    my $msg = sprintf("SysID matches existing %s", $prod->name);
+	    $self->debug( loglevel => 'LOG_INFO',message  => $msg );
+	    $self->output($msg);
+	    $devtmp{productname} = $prod->id;
+	    
 	}else{
-	    $self->debug( loglevel => 'LOG_INFO',
-			  message  => "Entity with Enterprise OID %s not found. Creating", 
-			  args => [$oid]);
-	    my $t;
-	    unless ( $t = (EntityType->search(name => "Manufacturer"))[0] ){
-		$t = 0; 
+	    ###############################################
+	    # Create a new product entry
+	    my $msg = sprintf("New product with SysID %s.  Adding to DB", $dev{sysobjectid});
+	    $self->debug( loglevel => 'LOG_INFO', message  => $msg );
+	    $self->output( $msg );	
+	    
+	    ###############################################
+	    # Check if Manufacturer Entity exists or can be added
+	    
+	    my $oid = $dev{enterprise};
+	    my $ent;
+	    if($ent = (Entity->search( oid => $oid ))[0] ) {
+		$self->debug( loglevel => 'LOG_INFO',
+			      message  => "Manufacturer OID matches %s", 
+			      args     => [$ent->name]);
+	    }else{
+		$self->debug( loglevel => 'LOG_INFO',
+			      message  => "Entity with Enterprise OID %s not found. Creating", 
+			      args => [$oid]);
+		my $t;
+		unless ( $t = (EntityType->search(name => "Manufacturer"))[0] ){
+		    $t = 0; 
+		}
+		my $entname = $dev{manufacturer} || $oid;
+		if ( ($ent = $self->insert(table => 'Entity', 
+					   state => { name => $entname,
+						      oid  => $oid,
+						      type => $t }) ) ){
+		    my $msg = sprintf("Created Entity: %s. ", $entname);
+		    $self->debug( loglevel => 'LOG_NOTICE',
+				  message  => $msg );		
+		}else{
+		    $self->debug( loglevel => 'LOG_ERR',
+				  message  => "Could not create new Entity: %s: %s",
+				  args     => [$entname, $self->error],
+				  );
+		    $ent = 0;
+		}
 	    }
-	    my $entname = $dev{manufacturer} || $oid;
-	    if ( ($ent = $self->insert(table => 'Entity', 
-					     state => { name => $entname,
-							oid  => $oid,
-							type => $t }) ) ){
-		my $msg = sprintf("Created Entity: %s. ", $entname);
+	    ###############################################
+	    # Try to guess product type
+	    # First based on name, then on some key oids
+	    
+	    my $type;
+	    my $typename;
+	    foreach my $str ( keys %{ $self->{config}->{DEV_NAME2TYPE} } ){
+		if ( $host =~ /$str/ ){
+		    $typename = $self->{config}->{DEV_NAME2TYPE}->{$str};
+		}
+	    } 
+	    if ( $typename ){
+		$type = (ProductType->search(name=>$typename))[0];	    
+	    }else{
+		if ( $dev{router} ){
+		    $type = (ProductType->search(name=>"Router"))[0];
+		}elsif ( $dev{hub} ){
+		    $type = (ProductType->search(name=>"Hub"))[0];
+		}elsif ( $dev{dot11} ){
+		    $type = (ProductType->search(name=>"Access Point"))[0];
+		}elsif ( scalar $dev{interface} ){
+		    $type = (ProductType->search(name=>"Switch"))[0];
+		}
+	    }
+	    my %prodtmp = ( name         => $dev{productname} || $dev{sysobjectid},
+			    description  => $dev{productname} || $dev{sysdescription},
+			    sysobjectid  => $dev{sysobjectid},
+			    type         => $type->id,
+			    manufacturer => $ent,
+			    );
+	    my $newprodid;
+	    if ( ($newprodid = $self->insert(table => 'Product', state => \%prodtmp)) ){
+		my $msg = sprintf("Created product: %s.  Guessing type is %s.", $prodtmp{name}, $type->name);
 		$self->debug( loglevel => 'LOG_NOTICE',
 			      message  => $msg );		
+		$self->output($msg);
+		$devtmp{productname} = $newprodid;
 	    }else{
 		$self->debug( loglevel => 'LOG_ERR',
-			      message  => "Could not create new Entity: %s: %s",
-			      args     => [$entname, $self->error],
-			      );
-		$ent = 0;
+			      message  => "Could not create new Product: %s: %s",
+			      args     => [$prodtmp{name}, $self->error],
+			      );		
+		$devtmp{productname} = 0;
 	    }
 	}
-	###############################################
-	# Try to guess product type
-	# First based on name, then on some key oids
-
-	my $type;
-	my $typename;
-	foreach my $str ( keys %{ $self->{config}->{DEV_NAME2TYPE} } ){
-	    if ( $host =~ /$str/ ){
-		$typename = $self->{config}->{DEV_NAME2TYPE}->{$str};
-	    }
-	} 
-        if ( $typename ){
-		$type = (ProductType->search(name=>$typename))[0];	    
-	}else{
-	    if ( $dev{router} ){
-		$type = (ProductType->search(name=>"Router"))[0];
-	    }elsif ( $dev{hub} ){
-		$type = (ProductType->search(name=>"Hub"))[0];
-	    }elsif ( $dev{dot11} ){
-		$type = (ProductType->search(name=>"Access Point"))[0];
-	    }elsif ( scalar $dev{interface} ){
-		$type = (ProductType->search(name=>"Switch"))[0];
-	    }
-	}
-	my %prodtmp = ( name         => $dev{productname} || $dev{sysobjectid},
-			description  => $dev{productname} || $dev{sysdescription},
-			sysobjectid  => $dev{sysobjectid},
-			type         => $type->id,
-			manufacturer => $ent,
-			);
-	my $newprodid;
-	if ( ($newprodid = $self->insert(table => 'Product', state => \%prodtmp)) ){
-	    my $msg = sprintf("Created product: %s.  Guessing type is %s.", $prodtmp{name}, $type->name);
-	    $self->debug( loglevel => 'LOG_NOTICE',
-			  message  => $msg );		
-	    $self->output($msg);
-	    $devtmp{productname} = $newprodid;
-	}else{
-	    $self->debug( loglevel => 'LOG_ERR',
-			  message  => "Could not create new Product: %s: %s",
-			  args     => [$prodtmp{name}, $self->error],
-			  );		
-	    $devtmp{productname} = 0;
-	}
+    }else{
+	$devtmp{productname} = 0;
     }
+
     ###############################################
     # Update/add PhsyAddr for Device
     
