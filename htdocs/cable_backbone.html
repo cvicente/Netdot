@@ -57,9 +57,18 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 if (defined($ARGS{_action}) && ($ARGS{_action} eq "UPDATE" || $ARGS{_action} eq "STRAND_UPDATE")) {
     print "inserting/updating, ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
-    if ( ! $ui->form_to_db(%ARGS) ) {
+    my %update_info;
+    unless ( %update_info = $ui->form_to_db(%ARGS) ) {
         $m->comp("error.mhtml", error => $ui->error);
     }
+
+    # Ignore id changes for anything but BackboneCable.
+    # (i.e., we do not care about CableStrand id update).
+    if (exists $update_info{BackboneCable}{key} ) {
+        $id = $update_info{BackboneCable}{key};
+    }
+
+    print "update info is <pre>", Dumper(%update_info), "</pre><br>" if $DEBUG;
     
     # Do this to 'flush' the values associated with the object
     # before redisplaying

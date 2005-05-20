@@ -274,7 +274,7 @@ sub form_to_db{
 # Check that we have at least one parameter
     unless (scalar keys(%objs)){
         $self->error("Missing name/value pairs.");
-        return 0;
+        return ;
     }
     
     foreach my $table (keys %objs){
@@ -293,7 +293,7 @@ sub form_to_db{
 		    my $newid;
 		    unless ( $newid = $self->{ipm}->insertblock( %{ $objs{$table}{$id} } ) ){
 			$self->error(sprintf("Error inserting new Ipblock: %s", $self->{ipm}->error));
-			return 0;
+			return;
 		    }
 		    $form_to_db_info{$table}{action} = "insert";
 		    $form_to_db_info{$table}{key} = $newid;
@@ -304,7 +304,7 @@ sub form_to_db{
 			    # Deleting an Ipblock object
 			    unless ( $self->{ipm}->removeblock( id => $id ) ){
 				$self->error(sprintf("Error deleting Ipblock: %s", $self->{ipm}->error));
-				return 0;
+				return;
 			    }
 			    $form_to_db_info{$table}{action} = "delete";
 			    $form_to_db_info{$table}{key} = $id;
@@ -317,7 +317,7 @@ sub form_to_db{
 			$objs{$table}{$id}{id} = $id;
 			unless ( $self->{ipm}->updateblock( %{ $objs{$table}{$id} } ) ){
 			    $self->error($self->{ipm}->error);
-			    return 0;
+			    return;
 			}
 			$form_to_db_info{$table}{action} = "update";
 			$form_to_db_info{$table}{key} = $id;
@@ -330,7 +330,7 @@ sub form_to_db{
 		    if ($field eq "delete" && $objs{$table}{$id}{$field} eq "on"){
 			# Remove object from DB
 			if ( ! $self->remove(table => "$table", id => "$id") ){
-			    return 0; # error should already be set.
+			    return; # error should already be set.
 			}
 			$form_to_db_info{$table}{action} = "delete";
 			$form_to_db_info{$table}{key} = $id;
@@ -345,7 +345,7 @@ sub form_to_db{
 		if ( $id =~ /NEW/i ){
 		    my $newid;
 		    if (! ($newid = $self->insert(table => $table, state => \%{ $objs{$table}{$id} })) ){
-			return 0; # error should be set.
+			return; # error should be set.
 		    }
 		    
 		    $form_to_db_info{$table}{action} = "insert";
@@ -358,10 +358,10 @@ sub form_to_db{
 		    my $o;
 		    unless ( $o = $table->retrieve($id) ){
 			$self->error("Couldn't retrieve id $id from table $table");
-			return 0;
+			return;
 		    }
 		    unless ( $self->update(object => $o, state => \%{ $objs{$table}{$id} }) ){
-			return 0; # error should already be set.
+			return; # error should already be set.
 		    }
 		    $form_to_db_info{$table}{action} = "update";
 		    $form_to_db_info{$table}{key} = $id;
