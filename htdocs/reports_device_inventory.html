@@ -29,20 +29,23 @@ foreach my $pt ( sort { $a->name cmp $b->name } ProductType->retrieve_all ){
 }
 # Look for products with no type
 foreach my $o ( $dm->getproductsbytype(0) ){
-    $t{'Unknown Type'}{prod}{$o->name}{id}  = $o->id;
-    $t{'Unknown Type'}{prod}{$o->name}{num} = $o->numdevs;
-    $t{'Unknown Type'}{total}              += $o->numdevs;
+    $t{'Unknown'}{prod}{$o->name}{id}  = $o->id;
+    $t{'Unknown'}{prod}{$o->name}{num} = $o->numdevs;
+    $t{'Unknown'}{total}              += $o->numdevs;
 }
 
 # Look for devices with no product set
 
-if ( my $noprod = scalar ( Device->search( productname => 0) ) ){
-    $t{'Unknown Type'}{prod}{'Unknown products'}{id}   = 0;
-    $t{'Unknown Type'}{prod}{'Unknown products'}{num}  = $noprod;
-    $t{'Unknown Type'}{total}                         += $noprod;
-}
+my @noprod = Device->search( productname => 0 );
 
-$grandtotal += $t{'Unknown Type'}{total};
+if ( my $num = scalar @noprod ){
+    $t{'Unknown'}{prod}{'Unknown'}{id}   = 0;
+    $t{'Unknown'}{prod}{'Unknown'}{num}  = $num;
+    $t{'Unknown'}{total}                += $num;
+}
+if ( exists $t{'Unknown'} ){
+    $grandtotal += $t{'Unknown'}{total};
+}
 
 </%init>
 
@@ -65,8 +68,10 @@ $grandtotal += $t{'Unknown Type'}{total};
 	   <td valign="top">
 	     <a href="view.html?table=Product&id=<% $t{$pt}{prod}{$product}{id} %>"><% $product %></a>
 	   </td>
-%        }else{
-	   <td valign="top"><% $product %></td>
+%        }elsif ( $product eq "Unknown" ){
+	   <td valign="top">
+	     <a href="device.html?search=unknown type"><% $product %></a>
+	   </td>
 %        }
 	 <td align="right" valign="top"><% $t{$pt}{prod}{$product}{num} %></td>
        </tr>

@@ -57,7 +57,12 @@ my $list;
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
-if( defined($search) && $search =~ /\w+/ ){
+if( defined($search) && $search eq "unknown type" ){
+    # The keyword "unknown type" is reserved and returns
+    # devices with not productname set
+    @$list = Device->search( productname => 0 );
+
+}elsif( defined($search) && $search =~ /\w+/ ){
     # remove spaces
     $search =~ s/\s*//g;
     unless ( ($list = $dns->getdevbynamelike($search)) ){
@@ -72,7 +77,8 @@ if( defined($search) && $search =~ /\w+/ ){
 	$search = undef;
     }
     
-}elsif( defined($search) && $search !~ /\w+/ ){
+
+}elsif( defined($search) && $search !~ /\w+/){
     print "<p><b>No search criteria</b>";   
     
 }elsif( $intadd ){
