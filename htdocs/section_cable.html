@@ -22,25 +22,17 @@ if (exists($caller_args{page})) {
 }
 
 my $page = $user->getAttribute("CABLE_PLANT_PAGE");
+
+if (exists($caller_args{tasks})){
+    $user->setAttribute($r, "SHOW_TASKS", $caller_args{tasks});
+}
+my $show_tasks = $user->getAttribute("SHOW_TASKS");
+
 </%init>
 
 
 <div id="sectiontools">
 
-
-<script language="JavaScript">
-<!--
-/* hideOptions()
- *
- * hide backbone/horizontal cable sections.
-*/
-function hideOptions(name)
-{
-    var opt = document.getElementById(name);
-    opt.style.display = (opt.style.display == "none" ? "" : "none");
-}
--->
-</script>
 %
 <%perl>
 my @sites = Site->retrieve_all();
@@ -52,8 +44,6 @@ my @sites = Site->retrieve_all();
 
 % if ($page eq "BACKBONE" || $page eq "") {
 
-<div class="containeroutside">
-
     
 <script language="JavaScript">
 <!--
@@ -63,60 +53,58 @@ LIST_MANAGER.addList(siteListLookup);
 -->
 </script>
 
-    <div class="containerheadleftoutside">
-        <b>Backbone Cable</b> 
+
+<div class="container">
+    <div class="containerheadleft">
+        Backbone Cable
     </div>
-    <div class="containerheadrightoutside">
-        <a href="#" onClick="hideOptions('backbone_options');">[hide/show]</a>
+    <div class="containerheadright">
+        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+        &nbsp;&nbsp;&nbsp;
         &nbsp; <a href="cable_backbone.html?id=NEW">[new]</a>
     </div>
-    <div class="containerbodyoutside">
+    <div class="containerbody" id="backbone_options">
 
-
+% if ($show_tasks eq "show") {
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
-    <tr align="left" valign="top">
-    <td>
-    <form name="backbone_form" action="cable_plant.html" method="POST">
-        <input type="hidden" name="page_type" value="BACKBONE">
-        Connected from:<br>
-        <select name="start_id" onChange="siteListLookup.doIt();">
-        <option value="">-- Make your selection --</option>
-        <%perl>
-        foreach my $site (@sites)
-        {
-            printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-        }
-        </%perl>
-        </select> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>- TO -</B><br>
-   
-        <select name="end_id">
-        </select><br>
-        <input name="submit_site" value="Go!" type="submit"> &nbsp;&nbsp;&nbsp;
-    </form>
-    </td>
-    
-    <td align="left">
-    <form name="backbone_srch" action="cable_plant.html" method="POST">
-        <input type="hidden" name="page_type" value="BACKBONE">  
-        Backbone Name: <input name="backbone_srch" size="20"> &nbsp;<input type="submit" name="submit_backbone_search" value="Search">
-    </form>
-    
-    <br>
-    
-    <form name="site_srch" action="cable_plant.html" method="POST">
-        <input type="hidden" name="page_type" value="BACKBONE">  
-        Site Name: <input name="site_srch" size="20"> &nbsp;<input type="submit" name="submit_site_search" value="Search">
-   
-    </td>
-    </tr>
+        <tr align="left" valign="top">
+            <td>
+                <form name="backbone_form" action="cable_plant.html" method="POST">
+                    <input type="hidden" name="page_type" value="BACKBONE">
+                    Connected from:<br>
+                    <select name="start_id" onChange="siteListLookup.doIt();">
+                        <option value="">-- Make your selection --</option>
+                        <%perl>
+                        foreach my $site (@sites)
+                        {
+                            printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+                        }
+                        </%perl>
+                    </select> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>- TO -</B><br>
+                    <select name="end_id">
+                    </select><br>
+                    <input name="submit_site" value="Go!" type="submit"> &nbsp;&nbsp;&nbsp;
+                </form>
+            </td>
+            <td align="left">
+                <form name="backbone_srch" action="cable_plant.html" method="POST">
+                    <input type="hidden" name="page_type" value="BACKBONE">  
+                    Backbone Name: <input name="backbone_srch" size="20"> &nbsp;<input type="submit" name="submit_backbone_search" value="Search">
+                </form>
+                <br>
+                <form name="site_srch" action="cable_plant.html" method="POST">
+                    <input type="hidden" name="page_type" value="BACKBONE">  
+                    Site Name: <input name="site_srch" size="20"> &nbsp;<input type="submit" name="submit_site_search" value="Search">
+                </form>
+            </td>
+        </tr>
     </table>
-    </form>
-</div>
-</div>
+% } # end show_tasks
+
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
 
 % } elsif ($page eq "HORIZONTAL") {
-
-<div class="containeroutside">
 
 <script language="JavaScript">
 <!--
@@ -129,15 +117,18 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
 -->
 </script>
 
-
-	<div class="containerheadleftoutside">
-        <b>Horizontal Cable</b> 
+<div class="container">
+	<div class="containerheadleft">
+        Horizontal Cable
     </div>
-    <div class="containerheadrightoutside">
-        <a href="#" onClick="hideOptions('horizontal_options');">[hide/show]</a>
+    <div class="containerheadright">
+        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+        &nbsp;&nbsp;&nbsp;
         &nbsp; <a href="cable_horizontal.html?id=NEW">[new]</a>
     </div>
-	<div class="containerbodyoutside">
+
+	<div class="containerbody" id="horizontal_options">
+% if ($show_tasks eq "show") {
 	<form name="cable_form" action="cable_plant.html" method="GET">
   	<input type="hidden" name="page_type" value="HORIZONTAL">
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
@@ -189,8 +180,9 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
         </tr>
     </table>
     </form>
-</div>
-</div>
+% } # end if show_tasks
+    </div> <!-- end containerbody -->
+</div> <!-- end container -->
 
 % } elsif ($page eq "CLOSETS") {
 
@@ -202,15 +194,17 @@ var floorList = new DynamicList("cable_form", "floor_id", "site", "Floor", "id",
 LIST_MANAGER.addList(floorList, closetList);
 -->
 </script>
-<div class="containeroutside">
-	<div class="containerheadleftoutside">
-        <b>Closets</b> 
+<div class="container">
+	<div class="containerheadleft">
+        Closets
     </div>
-    <div class="containerheadrightoutside">
-        <a href="#" onClick="hideOptions('closet_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
-        <a href="closet.html?id=NEW">[new]</a>
+    <div class="containerheadright">
+        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;<a href="closet.html?id=NEW">[new]</a>
     </div>
-<div class="containerbodyoutside">
+<div class="containerbody" id="closet_options">
+% if ($show_tasks eq "show") {
     <form name="cable_form" action="cable_plant.html" method="GET">
     <input type="hidden" name="page_type" value="CLOSETS">
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
@@ -251,19 +245,23 @@ LIST_MANAGER.addList(floorList, closetList);
         </tr>
     </table>
     </form>
-</div>
-</div>
+%   } # end if show_tasks
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
 
 % } elsif ($page eq "STRANDS") {
-<div class="containeroutside">
-	<div class="containerheadleftoutside">
-        <b>Cable Strands</b>
+<div class="container">
+	<div class="containerheadleft">
+        Cable Strands
     </div>
-    <div class="containerheadrightoutside">
-        <a href="#" onClick="hideOptions('strand_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
-        <a href="cable_strand.html?id=NEW">[new]</a>
+    <div class="containerheadright">
+        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;<a href="cable_strand.html?id=NEW">[new]</a>
     </div>
-	<div class="containerbodyoutside">
+
+	<div class="containerbody" id="strand_options">
+%   if ($show_tasks eq "show") {
     <form name="cable_form" action="cable_plant.html" method="GET">
     <input type="hidden" name="page_type" value="STRANDS">
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
@@ -292,19 +290,23 @@ LIST_MANAGER.addList(floorList, closetList);
         </tr>
     </table>
     </form>
-</div>
-</div>
+%   } # end if show_tasks
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
 
 % } elsif ($page eq "CIRCUITS") {
-<div class="containeroutside">
-	<div class="containerheadleftoutside">
-        <b>Circuits</b> 
+<div class="container">
+	<div class="containerheadleft">
+        Circuits
 	</div>
-	<div class="containerheadrightoutside">
-        <a href="#" onClick="hideOptions('circuit_options');">[hide/show]</a> &nbsp;&nbsp;&nbsp;
-        <a href="circuit.html?id=NEW">[new]</a>
+	<div class="containerheadright">
+        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+        &nbsp;&nbsp;&nbsp;
+        &nbsp;<a href="circuit.html?id=NEW">[new]</a>
 	</div>
-	<div class="containerbodyoutside">
+
+	<div class="containerbody" id="circuit_options">
+%   if ($show_tasks eq "show") {
     <form name="circuit_lookup_form" action="cable_plant.html" method="POST">
         <input type="hidden" name="page_type" value="CIRCUITS">
         Circuits connected from:<br>
@@ -336,8 +338,9 @@ LIST_MANAGER.addList(floorList, closetList);
     </td>
     </tr>
     </table>
-</div> <!-- close containerbodyoutside -->
-</div> <!-- close containeroutside -->
+%   } # end if show_tasks
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
 
 % }
 

@@ -24,9 +24,27 @@ if (exists($caller_args{page})){
 }
 my $page = $user->getAttribute("MANAGEMENT_PAGE");
 
+
+if (exists($caller_args{tasks})){
+    $user->setAttribute($r, "SHOW_TASKS", $caller_args{tasks});
+}
+my $show_tasks = $user->getAttribute("SHOW_TASKS");
+
 </%init>
-%
-    <div id="sectiontools">
+
+<div id="sectiontools">
+
+<div class="container">
+    <div class="containerheadleft">
+        Tasks
+    </div>
+    <div class="containerheadright">
+        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a> &nbsp;&nbsp;&nbsp;
+        <a href="circuit.html?id=NEW">[new]</a>
+    </div>
+    <div class="containerbody" id="tasks">
+% if ($show_tasks eq "show") {
+        <table><tr><td>
 %
 % if ($page eq "DEVICE" || $page eq "") {
 %
@@ -141,7 +159,13 @@ my $page = $user->getAttribute("MANAGEMENT_PAGE");
         </fieldset>
         </p>
 %}
-    </div>
+
+        </td></tr></table>
+%} # end if show_tasks
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+
+</div> <!-- close sectiontools -->
 
 % if ( $m->fetch_next ){
 %  $m->call_next;
