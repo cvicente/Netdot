@@ -17,46 +17,42 @@ my $DEBUG = 0;
 my @objects;
 
 print Dumper(%ARGS) if $DEBUG;
-
 </%init>
 
-<table align="center" valign="top" border="0" width="100%" class="formtablebg">
-<tr><td>
+<div id="sectiondetail">
 
-%if ( $submit eq "Delete"  ){
-<p>Are you sure you want to delete the following objects?
-     <table>
+<div class="container">
+    <div class="containerbody">
+
+%if ( $submit eq "Delete" ){
+Are you sure you want to delete the following objects?<br>
 <%perl>
     unless($session = $ui->mksession( $TMP )){
-	$m->comp('error.mhtml', error => $ui->error);
+    	$m->comp('error.mhtml', error => $ui->error);
     }
     # Accept single-delete queries with only table and id
     if ( $table && $id ){
-	my $key = $table . "__" . $id;
-	$ARGS{$key} = "1";
+    	my $key = $table . "__" . $id;
+    	$ARGS{$key} = "1";
     }
     foreach my $arg (sort keys %ARGS){
-	next unless $arg =~ /__/;
-	my ($table, $id) = split /__/, $arg;
-	my $obj;
-	eval {
-	    $obj = $table->retrieve($id) 
-	    };
-	if ($@){
-	    $m->comp('error.mhtml', error => "Error retrieving $table id $id: $@");
-	}
-	my $lbl = $ui->getobjlabel($obj, ", ");
+    	next unless $arg =~ /__/;
+    	my ($table, $id) = split /__/, $arg;
+    	my $obj;
+    	eval {
+    	    $obj = $table->retrieve($id) 
+    	    };
+    	if ($@){
+    	    $m->comp('error.mhtml', error => "Error retrieving $table id $id: $@");
+    	}
+    	my $lbl = $ui->getobjlabel($obj, ", ");
 </%perl>
-       <tr>
-	   <td>&nbsp;</td>
-	   <td><% $table %> <% $lbl %></td>
-       </tr>
-       
+       &nbsp;&nbsp;&nbsp;&nbsp;<% $table %> <% $lbl %><br>
 %      push @objs, [$table, $obj, $lbl];
 %   }
 %   $session->{objects} = \@objs;
 
-    </table>
+    <br>
     <form method="POST" action="delete.html">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input name="submit" value="Confirm" type="submit">
@@ -66,22 +62,22 @@ print Dumper(%ARGS) if $DEBUG;
 
 }elsif ($submit eq "Confirm"){
     unless($session = $ui->getsession( $TMP, $sid )){
-	$m->comp('error.mhtml', error => $ui->error);
+	    $m->comp('error.mhtml', error => $ui->error);
     }
     @objs = @{ $session->{objects} };
     foreach my $r (@objs){
-	my ($table, $obj, $lbl) = @$r;
-	# Delete the object
-	eval {
-	    $obj->delete;
-	};
-	if ($@){
-	    $m->comp('error.mhtml', error => "$@");
-	} else{
+	    my ($table, $obj, $lbl) = @$r;
+	    # Delete the object
+	    eval {
+	        $obj->delete;
+	    };
+	    if ($@){
+	        $m->comp('error.mhtml', error => "$@");
+	    } else{
 </%perl>
-           <strong><% $table %> <% $lbl %></strong> deleted.<br>
+            <strong><% $table %> <% $lbl %></strong> deleted.<br>
 %       }
-%    }
+%   }
 %}elsif ($submit eq "Cancel"){
 <p><br>
     Deletion cancelled
@@ -90,5 +86,7 @@ print Dumper(%ARGS) if $DEBUG;
 %    }
 %}
 
-</td></tr>
-</table>
+</div> <!-- close containerbody -->
+</div> <!-- close container -->
+
+</div> <!-- close sectiondetail -->
