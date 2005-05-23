@@ -4,9 +4,9 @@ Log out page
 
 </%doc>
 
-<%flags>
-inherit => undef
-</%flags>
+<%attr>
+title   => 'Netdot Logout' 
+</%attr>
 
 <%init>
 my $success = 0;
@@ -18,12 +18,22 @@ if(defined($user) && $user->isa("SiteControl::User")) {
 }
 </%init>
 
-% if($success) {
-      <P>You have been logged out.</P>
-% } else {
-      <P>Attempt to log out failed. You were not logged in.</P>
-% }
 
-<B>Click <A HREF="login.html">here</A> to log in.</B>
+<div class="sectiondetail">
 
 
+<div class="container">
+    <div class="containerhead">
+        Logout
+    </div>
+    <div class="containerbody">
+%     if($success) {
+          You have been logged out.
+%     } else {
+          Attempt to log out failed. You were not logged in.
+%     }
+    <p>Click <a href="login.html">here</a> to log in.</p>
+    </div>
+</div>
+
+</div>
