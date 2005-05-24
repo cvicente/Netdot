@@ -313,7 +313,6 @@ sub update_device {
 	if ( my $prod = (Product->search( sysobjectid => $dev{sysobjectid} ))[0] ) {
 	    my $msg = sprintf("SysID matches existing %s", $prod->name);
 	    $self->debug( loglevel => 'LOG_INFO',message  => $msg );
-	    $self->output($msg);
 	    $devtmp{productname} = $prod->id;
 	    
 	}else{
@@ -621,14 +620,9 @@ sub update_device {
 	    }
 	    $iftmp{monitorstatus}  ||= $unknown_status_id;
 	    
-	    my $msg = sprintf("Interface %s,%s doesn't exist. Inserting", $iftmp{number}, $iftmp{name} );
-	    $self->debug( loglevel => 'LOG_NOTICE',
-			  message  => $msg,
-			  );
-	    $self->output($msg);
 	    if ( ! (my $ifid = $self->insert( table => 'Interface', 
 					    state => \%iftmp )) ) {
-		$msg = sprintf("Error inserting Interface %s,%s: %s", 
+		my $msg = sprintf("Error inserting Interface %s,%s: %s", 
 			       $iftmp{number}, $iftmp{name}, $self->error);
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $msg,
@@ -637,12 +631,17 @@ sub update_device {
 		next;
 	    }else{
 		unless( $if = Interface->retrieve($ifid) ) {
-		    $msg = sprintf("Couldn't retrieve Interface id %s", $ifid);
+		    my $msg = sprintf("Couldn't retrieve Interface id %s", $ifid);
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => $msg );
 		    $self->output($msg);
 		    next;
 		}
+		my $msg = sprintf("Inserted Interface %s,%s ", $iftmp{number}, $iftmp{name} );
+		$self->debug( loglevel => 'LOG_NOTICE',
+			      message  => $msg,
+			      );
+		$self->output($msg);
 	    }
 	    
 	}
@@ -684,20 +683,14 @@ sub update_device {
 			my $subnetaddr = $self->getsubnetaddr($newip, $newmask);
 			if ( $subnetaddr ne $newip ){
 			    if ( ! ($self->searchblock($subnetaddr, $newmask)) ){
-				my $msg = sprintf("Subnet %s/%s doesn't exist.  Inserting", $subnetaddr, $newmask);
-				$self->debug( loglevel => 'LOG_NOTICE',
-					      message  => $msg );
-				$self->output($msg);
 				unless( $self->insertblock(address     => $subnetaddr, 
 							   prefix      => $newmask, 
 							   statusname  => "Subnet",
 							   ) ){
-				    my $err = $self->error();
 				    my $msg = sprintf("Could not insert Subnet %s/%s: %s", 
-						      $subnetaddr, $newmask, $err);
+						      $subnetaddr, $newmask, $self->error);
 				    $self->debug(loglevel => 'LOG_ERR',
 						 message  => $msg );
-				    $self->output($msg);
 				}else{
 				    my $msg = sprintf("Created Subnet %s/%s", $subnetaddr, $newmask);
 				    $self->debug(loglevel => 'LOG_NOTICE',
@@ -750,14 +743,9 @@ sub update_device {
 			my $msg = sprintf("Could not update IP %s/%s: %s", $newip, $prefix, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
-			$self->output($msg);
 			next;
 		    }
 		}else {
-		    my $msg = sprintf("IP %s doesn't exist.  Inserting", $newip);
-		    $self->debug( loglevel => 'LOG_NOTICE',
-				  message  => $msg );
-		    $self->output($msg);
 		    #
 		    # Create a new Ip
 		    unless( $ipobj = $self->insertblock(address    => $newip, 
@@ -767,7 +755,6 @@ sub update_device {
 			my $msg = sprintf("Could not insert IP %s: %s", $newip, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
-			$self->output($msg);
 			next;
 		    }else{
 			my $msg = sprintf("Inserted IP %s", $newip);
@@ -1160,7 +1147,6 @@ sub update_device {
     my $msg = sprintf("Discovery of %s completed", $host);
     $self->debug( loglevel => 'LOG_NOTICE',
 		  message  => $msg );
-    $self->output($msg);
     return $device;
 }
 

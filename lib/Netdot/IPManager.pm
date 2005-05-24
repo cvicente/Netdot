@@ -205,7 +205,7 @@ sub _prevalidate {
     }
     if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
 	 || $ip eq '::1' ) {
-	$self->error("IP is a loopback: ", $ip->addr, "/", $ip->masklen);
+	$self->error("IP is a loopback");
 	return 0;	
     }elsif ( ( ($ip->version == 4 && $ip->masklen != 32) ||
 	       ($ip->version == 6 && $ip->masklen != 128) ) && 
@@ -391,10 +391,11 @@ sub insertblock {
 	#####################################################################
 	$args{id} = $r;
 	unless ( $self->_validate(\%args) ){
+	    my $msg = sprintf("insertblock: could not validate: %s/%s: %s", $ip->addr, $ip->masklen, $self->error);
 	    $self->debug(loglevel => 'LOG_DEBUG',
-			 message => "insertblock: could not validate: %s/%s: %s" ,
-			 args => [$ip->addr, $ip->masklen, $self->error]);
+			 message => $msg);
 	    $self->remove( table => "Ipblock", id => $r );
+	    $self->error($msg);
 	    return 0;
 	}
 	my $newblock = Ipblock->retrieve($r);
