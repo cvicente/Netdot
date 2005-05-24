@@ -264,6 +264,8 @@ while ( my $hr = $lookup->fetchrow_hashref ){
     }
     if ( ! defined($obj{monitored})     ) { $obj{monitored}     =  1 };
     if ( ! defined($obj{maint_covered}) ) { $obj{maint_covered} =  0 };
+    if (   defined($obj{community}) )     { $obj{canautoupdate} =  1 };
+    if (   defined($obj{community}) )     { $obj{snmp_managed}  =  1 };
 
     &insert("Device", \%obj); 
 }

@@ -203,20 +203,32 @@ sub update_device {
 	foreach my $ifid (keys %ifs){
 	    my $if = $ifs{$ifid};
 	    foreach my $dep ( $if->parents() ){		
+		unless ( $dep->parent->device ){
+		    $self->debug( loglevel => 'LOG_DEBUG',
+				  message  => "Interface %s,%s has invalid parent %s:%s",
+				  args => [$if->number, $if->name,$dep->parent] );
+		    next;
+		}
 		foreach my $ip ( $if->ips() ){
 		    $dbifdeps{$if->id}{$ip->address} = $dep;
 		    $self->debug( loglevel => 'LOG_DEBUG',
-				  message  => "Interface %s,%s with ip %s had parent %s:%s",
+				  message  => "Interface %s,%s with ip %s has parent %s:%s",
 				  args => [$if->number, $if->name, $ip->address, 
 					   $dep->parent->device->name->name, 
 					   $dep->parent->name] );
 		}
 	    }
 	    foreach my $dep ( $if->children() ){
+		unless ( $dep->child->device ){
+		    $self->debug( loglevel => 'LOG_DEBUG',
+				  message  => "Interface %s,%s has invalid child %s:%s",
+				  args => [$if->number, $if->name,$dep->child] );
+		    next;
+		}
 		foreach my $ip ( $if->ips() ){
 		    $dbifdeps{$if->id}{$ip->address} = $dep;
 		    $self->debug( loglevel => 'LOG_DEBUG',
-				  message  => "Interface %s,%s with ip %s had child %s:%s",
+				  message  => "Interface %s,%s with ip %s has child %s:%s",
 				  args => [$if->number, $if->name, $ip->address, 
 					   $dep->child->device->name->name, 
 					   $dep->child->name] );
@@ -853,7 +865,6 @@ sub update_device {
 		$self->debug( loglevel => 'LOG_NOTICE',
 			      message  => $msg,
 			      );
-		$self->output($msg);
 		my $found = 0;
 		foreach my $oldipaddr (keys %{$dbifdeps{$nonif}} ){
 		    foreach my $newaddr (keys %newips ){
@@ -864,7 +875,6 @@ sub update_device {
 			    $self->debug( loglevel => 'LOG_DEBUG',
 					  message  => $msg,
 					  );
-			    $self->output($msg);
 			    my $ifdep = $dbifdeps{$nonif}{$oldipaddr};
 			    my ($role, $rel);
 			    if ($ifdep->parent->id eq $nonif) {
@@ -888,7 +898,6 @@ sub update_device {
 				$self->debug( loglevel => 'LOG_ERR',
 					      message  => $msg,
 					      );
-				$self->output($msg);
 				
 			    }
 			    $found = 1;
@@ -900,7 +909,6 @@ sub update_device {
 			$self->debug( loglevel => 'LOG_NOTICE',
 				      message  => $msg,
 				      );
-			$self->output($msg);
 		    }
 		}
 	    }
@@ -965,7 +973,6 @@ sub update_device {
 			$self->debug( loglevel => 'LOG_NOTICE',
 				      message  => $msg,
 				      );
-			$self->output($msg);
 		    }
 		}else {
 		    my $msg = sprintf("Interface %s,%s already part of vlan %s", 
@@ -1012,7 +1019,6 @@ sub update_device {
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg,
 		      );
-	$self->output($msg);		
 	unless( $self->remove( table => 'InterfaceVlan', id => $nonvlan ) ) {
 	    my $msg = sprintf("Could not remove InterfaceVlan %s: %s", 
 			      $j->id, $self->error);
