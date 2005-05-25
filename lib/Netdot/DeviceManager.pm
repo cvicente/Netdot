@@ -204,9 +204,10 @@ sub update_device {
 	    my $if = $ifs{$ifid};
 	    foreach my $dep ( $if->parents() ){		
 		unless ( $dep->parent->device ){
-		    $self->debug( loglevel => 'LOG_DEBUG',
-				  message  => "Interface %s,%s has invalid parent %s:%s",
-				  args => [$if->number, $if->name,$dep->parent] );
+		    $self->debug( loglevel => 'LOG_ERR',
+				  message  => "Interface %s,%s has invalid parent %s. Removing.",
+				  args => [$if->number, $if->name, $dep->parent] );
+		    $self->remove(table=>"InterfaceDep", id => $dep->parent);
 		    next;
 		}
 		foreach my $ip ( $if->ips() ){
@@ -220,9 +221,10 @@ sub update_device {
 	    }
 	    foreach my $dep ( $if->children() ){
 		unless ( $dep->child->device ){
-		    $self->debug( loglevel => 'LOG_DEBUG',
-				  message  => "Interface %s,%s has invalid child %s:%s",
+		    $self->debug( loglevel => 'LOG_ERR',
+				  message  => "Interface %s,%s has invalid child %s. Removing.",
 				  args => [$if->number, $if->name,$dep->child] );
+		    $self->remove(table=>"InterfaceDep", id => $dep->child);
 		    next;
 		}
 		foreach my $ip ( $if->ips() ){
