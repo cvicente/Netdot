@@ -749,7 +749,7 @@ push( @headers, 'Jack' );
 push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=descr">Descr.</a>' );
 push( @headers, 'Uplink' );
 push( @headers, 'Downlink' );
-push( @headers, 'Monitored?' );
+push( @headers, 'Mon?' );
 push( @headers, 'SNMP?' );
 
 </%perl>
@@ -782,7 +782,7 @@ push( @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delet
 }
 
 push( @row, $ui->text_field(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 2em;\"", linkPage=>"interface.html", returnAsVar=>1) );
-push( @row, $ui->text_field(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"", returnAsVar=>1) );
+push( @row, $ui->text_field(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", returnAsVar=>1) );
 
 if ( ! $editints ){
 push( @row, $dm->convert_ifspeed($if->speed)  );	# NEEDS RETURNASVAR?
@@ -802,8 +802,8 @@ push( @row,
 
 push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
                              edit=>$editints, linkPage=>"cable_horizontal.html", returnAsVar=>1) );
-push( @row, $ui->text_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"", returnAsVar=>1) );
-push( @row, $ui->text_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 10em;\"", returnAsVar=>1) );
+push( @row, $ui->text_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", returnAsVar=>1) );
+push( @row, $ui->text_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", returnAsVar=>1) );
 push( @row, $ui->text_field(object=>$if, column=>"description", edit=>$editints, returnAsVar=>1) );
 
 #<!-- UpLink Connections Field --> <!-- ADD STUFF IN UPLINK CONNECTION FIELD SECTION -->
