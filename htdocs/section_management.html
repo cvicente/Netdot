@@ -27,10 +27,26 @@ my $page = $user->getAttribute("MANAGEMENT_PAGE");
 
 if (exists($caller_args{tasks})){
     $user->setAttribute($r, "SHOW_TASKS", $caller_args{tasks});
+} else {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
 }
 my $show_tasks = $user->getAttribute("SHOW_TASKS");
 
 </%init>
+
+<%perl>
+sub print_showtaskslink {
+    my $show_tasks = $_[0];
+    my $request_vars = "";
+    my %caller_args = $m->caller_args(-1);
+    while( my($key, $value) = each(%caller_args) ) {
+        if( !($key eq "tasks") ) {
+            $request_vars .= "$key=$value&";
+        }
+    }
+    print "<a href=\"?".$request_vars."tasks=".($show_tasks eq "show"?"hide":"show")."\">[".($show_tasks eq "show"?"hide":"show")."]</a>";
+}
+</%perl>
 
 <div id="sectiontools">
 
@@ -39,7 +55,7 @@ my $show_tasks = $user->getAttribute("SHOW_TASKS");
         Tasks
     </div>
     <div class="containerheadright">
-        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+%       print_showtaskslink($show_tasks);
     </div>
     <div class="containerbody" id="tasks">
 % if ($show_tasks eq "show") {

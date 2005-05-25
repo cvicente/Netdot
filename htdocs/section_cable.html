@@ -25,11 +25,26 @@ my $page = $user->getAttribute("CABLE_PLANT_PAGE");
 
 if (exists($caller_args{tasks})){
     $user->setAttribute($r, "SHOW_TASKS", $caller_args{tasks});
+} else {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
 }
 my $show_tasks = $user->getAttribute("SHOW_TASKS");
 
 </%init>
 
+<%perl>
+sub print_showtaskslink {
+    my $show_tasks = $_[0];
+    my $request_vars = "";
+    my %caller_args = $m->caller_args(-1);
+    while( my($key, $value) = each(%caller_args) ) {
+        if( !($key eq "tasks") ) {
+            $request_vars .= "$key=$value&";
+        }
+    }
+    print "<a href=\"?".$request_vars."tasks=".($show_tasks eq "show"?"hide":"show")."\">[".($show_tasks eq "show"?"hide":"show")."]</a>";
+}
+</%perl>
 
 <div id="sectiontools">
 
@@ -59,7 +74,7 @@ LIST_MANAGER.addList(siteListLookup);
         Backbone Cable
     </div>
     <div class="containerheadright">
-        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+%       print_showtaskslink($show_tasks);
         &nbsp; <a href="cable_backbone.html?id=NEW">[new]</a>
     </div>
     <div class="containerbody" id="backbone_options">
@@ -121,7 +136,7 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
         Horizontal Cable
     </div>
     <div class="containerheadright">
-        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+%       print_showtaskslink($show_tasks);
         &nbsp; <a href="cable_horizontal.html?id=NEW">[new]</a>
     </div>
 
@@ -144,7 +159,10 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
 
             <td width="100" align="left">Floor:<br>
 %           # When selecting by floor, default to populating our jack list based upon the closet lists contents            
-            <select name="floor_id" onChange="roomList.doIt(); jackList.setParent('closet_id'); jackList.setDBField('closet'); closetList.doIt();">
+            <select name="floor_id" onChang} else {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+}
+e="roomList.doIt(); jackList.setParent('closet_id'); jackList.setDBField('closet'); closetList.doIt();">
             </select>
             </td>
 
@@ -197,7 +215,7 @@ LIST_MANAGER.addList(floorList, closetList);
         Closets
     </div>
     <div class="containerheadright">
-        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+%       print_showtaskslink($show_tasks);
         &nbsp;<a href="closet.html?id=NEW">[new]</a>
     </div>
 <div class="containerbody" id="closet_options">
@@ -252,7 +270,7 @@ LIST_MANAGER.addList(floorList, closetList);
         Cable Strands
     </div>
     <div class="containerheadright">
-        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+%       print_showtaskslink($show_tasks);
         &nbsp;<a href="cable_strand.html?id=NEW">[new]</a>
     </div>
 
@@ -296,7 +314,7 @@ LIST_MANAGER.addList(floorList, closetList);
         Circuits
 	</div>
 	<div class="containerheadright">
-        <a href="?tasks=<% ($show_tasks eq "show"?"hide":"show") %>">[<% ($show_tasks eq "show"?"hide":"show") %>]</a>
+%       print_showtaskslink($show_tasks);
         &nbsp;<a href="circuit.html?id=NEW">[new]</a>
 	</div>
 
