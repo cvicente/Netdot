@@ -258,6 +258,8 @@ while ( my $hr = $lookup->fetchrow_hashref ){
 	    }else{
 		$obj{info} = $hr->{$key};
 	    }
+	}elsif ( $key eq "room" ){
+		$obj{room} = 0;
 	}else{
 	    $obj{$key} = $hr->{$key};
 	}

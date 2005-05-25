@@ -64,7 +64,7 @@ foreach my $dt (keys %tree){
     
     foreach my $o (@devices){
 	my $name = $o->name->name if ( $o->name && $o->name->name );
-	print $name, " -- Building:", $o->site->name, "\n";
+	print $name, " -- Building: ", $o->site->name, "\n";
 	print $name, " -- Room:", $ui->getobjlabel($o->room, ", "), "\n" if ( $o->room );
 	print $name, " -- Rack:", $o->rack, "\n" if ( $o->rack );
 	if ( $o->productname ){
