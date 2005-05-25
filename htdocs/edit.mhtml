@@ -151,9 +151,9 @@ available tables.
 %   } elsif( ! $TBL ) {
       <p>
       <blockquote>
-      <& table.mhtml, width => $WIDTH, link => "<% $page %>", title => "Please select an object to create:" &>
+      <& table.mhtml, width => $WIDTH, link => "$page", title => "Please select an object to create:" &>
       </blockquote>
-%   ##############################################
+%   ##################### any validation checking. They are intended to pr#########################
 %   } else {
 <%doc>
 
@@ -161,11 +161,11 @@ Present a form for user to modify various values.
 
 </%doc>
 
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" class="tablebackground">
-       <tr class="rowtitle0" >
-        <td align="CENTER"><strong><% $title %></strong></td>
-       </tr>
-       <tr><td>
+<div class="container">
+    <div class="containerhead">
+        <% $title %>
+    </div>
+    <div class="containerbody">
       <form name="netdotform" action="<% $page %>" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
       <input type="hidden" name="showheader" value="<% $showheader %>">
@@ -177,15 +177,12 @@ Present a form for user to modify various values.
 %       }
       <& form.mhtml, title => $title, table => $TBL, session => \%state &>
 %     }
-       </td></tr>
-       <tr class="rowtitle0" >
-        <td align="CENTER">
-           <input name="submit" value="Submit" type="submit">
-           <input name="cancel" value="Cancel" type="submit">
-         </td>
-       </tr>
-      </table>
+      <br>
+      <input name="submit" value="Submit" type="submit">
+      <input name="cancel" value="Cancel" type="submit">
       </form>
+    </div>
+</div>
 %   } # if/else table
     <p>
     <!-- end edit -->
