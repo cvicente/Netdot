@@ -65,11 +65,6 @@ sub new {
 						retries     => $self->{'_snmpretries'},
 						timeout     => $self->{'_snmptimeout'},
 						);
-    $self->{badhubs} = {};
-    foreach my $oid (split /\s+/, $self->{config}->{'BADHUBS'}){
-	$self->{badhubs}->{$oid} = '';
-    }
-    
     wantarray ? ( $self, '' ) : $self; 
 }
 
@@ -853,7 +848,8 @@ sub update_device {
     # remove each interface that no longer exists
     #
     ## Do not remove manually-added ports for these hubs
-    unless ( exists $dev{sysobjetctid} && exists($self->{badhubs}->{$dev{sysobjectid}} )){
+    unless ( exists $dev{sysobjectid} 
+	     && exists($self->{config}->{IGNOREPORTS}->{$dev{sysobjectid}} )){
 	
 	foreach my $nonif ( keys %ifs ) {
 	    my $ifobj = $ifs{$nonif};
@@ -1435,7 +1431,7 @@ sub get_dev_info {
     # for each hubport discovered...
     if ( scalar ( my @hubports = keys %{ $nv{hubPorts} } ) ){
 	$dev{hub} = 1;
-	if ( ! exists($self->{badhubs}->{$nv{sysObjectID}} )){
+	if ( ! exists($self->{config}->{IGNOREPORTS}->{$dev{sysobjectid}}) ){
 	    foreach my $newport ( @hubports ) {
 		$dev{interface}{$newport}{name}         = $newport;
 		$dev{interface}{$newport}{number}       = $newport;
