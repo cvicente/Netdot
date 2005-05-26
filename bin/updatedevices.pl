@@ -126,7 +126,6 @@ if ($host){
 		}
 	    }
 	}
-	printf ("Updating %s\n", $host) if $VERBOSE;
 	if (my $r = &discover(host => $host)){
 	    $success = 1;
 	}
