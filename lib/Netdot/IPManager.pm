@@ -30,11 +30,12 @@ use strict;
 =cut
 
 sub new { 
-    my $proto = shift;
+    my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
     my $self = {};
     bless $self, $class;
-    $self = $self->SUPER::new();
+    
+    $self = $self->SUPER::new( %argv );
 
     # Some operations require a lot of speed.  We override 
     # Class::DBI to avoid any overhead in certain cases
