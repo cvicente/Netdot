@@ -25,22 +25,22 @@ my $usage = <<EOF;
 EOF
     
 my ($host, $subnet, $dm);
-my $comstr = "public";
-my $DB = 0;
+my $comstr     = "public";
+my $DB         = 0;
 my $ADDSUBNETS = 0;
-my $HELP = 0;
-my $VERBOSE = 0;
-my $DEBUG = 0;
+my $HELP       = 0;
+my $VERBOSE    = 0;
+my $DEBUG      = 0;
 
 # handle cmdline args
-my $result = GetOptions( "H|host=s" => \$host,
-			 "s|subnet=s" => \$subnet,
+my $result = GetOptions( "H|host=s"      => \$host,
+			 "s|subnet=s"    => \$subnet,
 			 "c|community:s" => \$comstr,
-			 "d|db-devices" => \$DB,
+			 "d|db-devices"  => \$DB,
 			 "a|add-subnets" => \$ADDSUBNETS,
-			 "h|help" => \$HELP,
-			 "v|verbose" => \$VERBOSE,
-			 "g|debug" => \$DEBUG );
+			 "h|help"        => \$HELP,
+			 "v|verbose"     => \$VERBOSE,
+			 "g|debug"       => \$DEBUG );
 
 if( ! $result ) {
     print $usage;
@@ -126,7 +126,7 @@ if ($host){
 		}
 	    }
 	}
-	printf ("Updating %s\n", $host);
+	printf ("Updating %s\n", $host) if $VERBOSE;
 	if (my $r = &discover(host => $host)){
 	    $success = 1;
 	}
