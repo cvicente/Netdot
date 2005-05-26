@@ -19,6 +19,7 @@ section => 'Management'
 <%args>
 $action
 $host
+$user
 $comstr      => "public"
 $id          => undef
 $sid         => undef
@@ -42,6 +43,7 @@ my $session;
 my $guessed_ent;
 my $guessed_site;
 my $guessed_cl;
+my $webuser;
 
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
@@ -57,6 +59,10 @@ if( $sid ) {
 }
 if( $cancel ) {
   $ui->rmsession( $session );
+}
+
+if( $user ) {
+    $webuser = $user->getUsername();
 }
 
 </%init>
@@ -251,6 +257,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 	$argv{entity}      = $entity      ||  0;
 	$argv{site}        = $site        ||  0;
 	$argv{contactlist} = $contactlist ||  0;
+	$argv{user}        = $webuser     ||  0;
 
 	print "<pre>",  Dumper(%argv), "</pre>" if $DEBUG;
 

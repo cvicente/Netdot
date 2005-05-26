@@ -145,6 +145,7 @@ sub find_dev {
   Optional Args:
     comstr: SNMP community string (default "public")
     device: Existing 'Device' object 
+    user:   Netdot user calling the method 
   Returns:
     Device object
 
@@ -165,6 +166,7 @@ sub update_device {
     my $device = $argv{device} || "";
     $argv{entity}              ||= 0;
     $argv{site}                ||= 0;
+    $argv{user}                ||= 0;
 
     my $default_contactlist;
     my $default_contactlist_id;
@@ -241,6 +243,9 @@ sub update_device {
 	$devtmp{entity}      = $argv{entity};
 	$devtmp{site}        = $argv{site};
 	$devtmp{contactlist} = $argv{contactlist};
+	if ( $argv{user} ){
+	    $devtmp{info}    = "Added to Netdot by $argv{user}";
+	}
     }
 
     ##############################################
