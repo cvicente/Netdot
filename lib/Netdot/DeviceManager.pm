@@ -479,7 +479,7 @@ sub update_device {
     
     if( defined $dev{serialnumber} ) {
 	if ( my $otherdev = (Device->search(serialnumber => $dev{serialnumber}))[0] ){
-	    if ( defined($device) && $device != $otherdev ){
+	    if ( defined($device) && $device->id != $otherdev->id ){
 		my $othername = (defined $otherdev->name && defined $otherdev->name->name) ? 
 		    $otherdev->name->name : $otherdev->id;
 		$self->error( sprintf("S/N %s belongs to existing device %s. Aborting.", 
@@ -1459,22 +1459,19 @@ sub get_dev_info {
 	    if ( $self->{config}->{DO_WHOISQ} ){
 		my $found = 0;
 		foreach my $host ( keys %{$self->{config}->{WHOISQ}} ){
-		    last if $found;
 		    my @lines = `whois -h $host AS$asn`;
-		    foreach (@lines){
+		    unless ( grep /No.*found/i, @lines ){
 			foreach my $key ( keys %{$self->{config}->{WHOISQ}->{$host}} ){
-			    if (/No entries found/i){
-				last;
-			    }
 			    my $exp = $self->{config}->{WHOISQ}->{$host}->{$key};
-			    if ( /$exp/ ){
-				my (undef, $val) = split /:\s+/, $_; 
+			    if ( my @l = grep /^$exp/, @lines ){
+				my (undef, $val) = split /:\s+/, $l[0]; #first line
 				chomp($val);
 				$dev{bgppeer}{$peer}{$key} = $val;
 				$found = 1;
 			    }
 			}
 		    }
+		    last if $found;
 		}
 		unless ( $found ){
 		    $dev{bgppeer}{$peer}{asname} = "AS $asn";
