@@ -39,10 +39,7 @@ Are you sure you want to delete the following objects?<br>
     	next unless $arg =~ /__/;
     	my ($table, $id) = split /__/, $arg;
     	my $obj;
-    	eval {
-    	    $obj = $table->retrieve($id) 
-    	    };
-    	if ($@){
+	unless ( $obj = $table->retrieve($id) ){
     	    $m->comp('error.mhtml', error => "Error retrieving $table id $id: $@");
     	}
     	my $lbl = $ui->getobjlabel($obj, ", ");
