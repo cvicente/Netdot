@@ -14,7 +14,7 @@ my $ui = Netdot::UI->new();
 
 my $DIR = "/usr/local/netdot/export";
 
-my $DEBUG = 1;
+my $DEBUG = 0;
 
 my %tree = ( 
 	     Switch => {
