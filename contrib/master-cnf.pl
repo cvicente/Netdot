@@ -5,7 +5,6 @@
 # grouped by the building their located in and their subnet
 #
 # 
-use lib "/usr/local/netdot/export";
 use NetdotExport;
 use lib "/usr/local/netdot/lib";
 use Netdot::DBI;
@@ -14,7 +13,7 @@ use strict;
 my $DIR = "/usr/local/netdot/export/netmon";
 my $FILE = "$DIR/master.cnf";
 
-my $DEBUG = 1;
+my $DEBUG = 0;
 
 my %hosts;
 my %entities;
@@ -56,7 +55,7 @@ foreach my $ip ( Ipblock->retrieve_all() ){
 	my $address = $ip->address;
 	if ( $ip->interface->device->productname &&
 	     $ip->interface->device->productname->type){
-	    my $type = $ip->interface->device->productname->type->name;
+	    $type = $ip->interface->device->productname->type->name;
 	    if (exists $types{$type}){
 		$type = $types{$type};
 	    }else{
