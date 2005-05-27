@@ -432,7 +432,7 @@ sub select_lookup($@){
             # if an object was passed we use it to obtain table name, id, etc
             # as well as add an initial element to the selection list.
             if ($o){
-                $output .= sprintf("<select name=\"%s\" %s>\n", $name, $htmlExtra);
+                $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
                 if ($o->$column){
                     $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
                 }else{
@@ -445,7 +445,7 @@ sub select_lookup($@){
             #      "table" argument to create the fieldname, and do so with the
             #      id of "NEW" in order to force insertion when the user hits submit.
             elsif ($table){
-                $output .= sprintf("<select name=\"%s\" %s>\n", $name, $htmlExtra);
+                $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
                 $output .= sprintf("<option value=\"\" selected>-- Make your selection --</option>\n");
             }else{
             #   2) The apocalypse has dawned. No table argument _or_ valid DB object..lets bomb out.
@@ -464,7 +464,7 @@ sub select_lookup($@){
             my $srchf = "_" . $id . "_" . $column . "_srch";
             $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">", $srchf);
             $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"sendquery(%s, %s.value, \'%s\');\"><br>\n", time(), $name, $srchf, $lookup);
-            $output .= sprintf("<select name=\"%s\" %s>\n", $name, $htmlExtra);
+            $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
             $output .= sprintf("<option value=\"\" selected>-- Make your selection --</option>\n");
             if ($o && $o->$column){
                 $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
@@ -472,6 +472,9 @@ sub select_lookup($@){
             $output .= sprintf("<option value=\"0\">[null]</option>\n");
             $output .= sprintf("</select>\n");
         }
+
+        # show link to add new item to this table
+        $output .= sprintf("<a href=\"#\" onClick=\"openinsertwindow('%s', '%s');\">[new]</a>", $lookup, $name);
 
     }elsif ($linkPage && $o->$column){
 	if ($linkPage eq "1" || $linkPage eq "view.html"){
