@@ -18,6 +18,7 @@ $select_id  => undef
 </%args>
 
 <%init>
+my $DEBUG = 0;
 
 foreach my $j ( keys %ARGS ) {
   if( $j eq "args" ) {
@@ -29,6 +30,8 @@ foreach my $j ( keys %ARGS ) {
     next;
   }
 }
+
+print "<pre>", Dumper(%args), "</pre>" if $DEBUG;
 
 my $page;
 if ( $showheader ) {
@@ -66,14 +69,14 @@ want to go to the page to view it
 <script language="javascript" type="text/javascript">
 <!--
 // this code inserts an element into the select box in the
-// calling page's form, and selects the new element.
+// calling page form, and selects the new element.
 function insertOption(text, value) {
   var select_box = opener.document.getElementById('<% $select_id %>');
   var elOptNew = document.createElement('option');
   elOptNew.text = text;
   elOptNew.value = value;
   try {
-    select_box.add(elOptNew, null); // standards compliant; doesn't work in IE
+    select_box.add(elOptNew, null); // standards compliant; does not work in IE
   }
   catch(ex) {
     select_box.add(elOptNew); // IE only

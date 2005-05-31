@@ -65,37 +65,7 @@ if( $user ) {
     $webuser = $user->getUsername();
 }
 
-</%init>
-
-<div id="sectiondetail">
-
-<script language="javascript">
-<!--
-   var formfield;
-// Open a window to create the object if user hits 'new'
-   function opencreatewindow(table, field){
-     var wind;
-     formfield = field;
-     var url = "edit-nh.html?table="+table;
-     wind = window.open(url, "Create "+table+" object", "width=500,height=500");
-   }
-// Once the object is created, substitute value in form
-   function setselect(id, label){
-     var form_name = "netdotform";
-     var len = document.forms[form_name].length;
-     document.forms[form_name][formfield].options.length = 0;     
-     for (var i = 0; i < len; i++){
-       document.forms[form_name][formfield].options[i] = new Option();
-       document.forms[form_name][formfield].options[i].value = id;
-       document.forms[form_name][formfield].options[i].text  = label;
-     }
-   }
--->
-</script>
-<table align="center" valign="top" cellpadding="0" cellspacing="0" border="0" width="100%" class="tablebackground">
-<tr><td>
-<%perl>
-    if ( $action eq "discover" ){
+if ( $action eq "discover" ){
     # See if device exists
     my ($c, $d) = $dm->find_dev($host);
     $argv{comstr} = (defined($c)) ? $c : $comstr;
@@ -111,29 +81,29 @@ if( $user ) {
     $argv{dev} = $dev;
     $argv{host} = $host;
     $session->{argv} = \%argv;
-
+    
     # Try to guess the Entity based on the ip address
 LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
-	foreach my $ip ( keys %{ $dev->{interface}->{$int}->{ips} } ){ 
-	    my $mask = $dev->{interface}->{$int}->{ips}->{$ip};
-	    if ( my $subnetaddr = $ipm->getsubnetaddr($ip, $mask) ){
-		if ( my $subnet = $ipm->searchblock($subnetaddr) ){
-		    if ( my $ent = $subnet->entity ){
-			$guessed_ent = $ent->id;
-			if ( my $cl = $ent->contactlist ){
-			    $guessed_cl = $cl->id;
+            foreach my $ip ( keys %{ $dev->{interface}->{$int}->{ips} } ){ 
+		my $mask = $dev->{interface}->{$int}->{ips}->{$ip};
+		if ( my $subnetaddr = $ipm->getsubnetaddr($ip, $mask) ){
+		    if ( my $subnet = $ipm->searchblock($subnetaddr) ){
+			if ( my $ent = $subnet->entity ){
+			    $guessed_ent = $ent->id;
+			    if ( my $cl = $ent->contactlist ){
+				$guessed_cl = $cl->id;
+			    }
+			    last LOOP;  #just grab the first one
 			}
-			last LOOP;  #just grab the first one
 		    }
 		}
 	    }
 	}
-    }
     # Try to guess site based on SNMP location
     if ( my $loc = $dev->{syslocation} ){
 	my $loc = "%" . $loc . "%";
-	if ( my $site = Site->search_like( name => $loc ) ){
-	    $guessed_site = $site;
+	if ( my $site = (Site->search_like( name => $loc ))[0] ){
+	    $guessed_site = $site->id;
 	}
     }
     
@@ -145,8 +115,13 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
     }else{
 	$default_contactlist_id = 0;
     }
+    
+</%init>
 
-</%perl>
+<div id="sectiondetail">
+
+<table align="center" valign="top" cellpadding="0" cellspacing="0" border="1" width="100%" class="tablebackground">
+<tr><td>
     <form name="netdotform" action="updatedevice.html" method="POST">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="host" value="<% $host %>">
@@ -178,7 +153,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
       <tr>
         <td class="formtablec1">Entity/Group:</td>
         <td class="formtablec2">
-           <select name="entity">
+           <select name="entity" id="entity">
     	   <option value="0">[null]</option>
 %	   my @allents = Entity->retrieve_all; 
 %          @allents = sort { $a->name cmp $b->name } @allents;
@@ -190,7 +165,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %		 }
 %	   }	
 	   </select>
-	   <a href="#" onClick="opencreatewindow('Entity', 'entity')">[new]</a>
+	   <a href="#" onClick="openinsertwindow('Entity', 'entity')">[new]</a>
 	</td>
         <td class="formtablec2">
 	  * Entity where this device belongs (Department, Network Segment, etc.)
@@ -199,7 +174,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
       <tr>
         <td class="formtablec1">Site:</td>
         <td class="formtablec2">
-           <select name="site">
+           <select name="site" id="site">
    	   <option value="0">[null]</option>
 %	   my @allsites = Site->retrieve_all; 
 %          @allsites = sort { $a->name cmp $b->name } @allsites;
@@ -211,7 +186,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %		 }
 %	   }	
 	   </select>
-	   <a href="#" onClick="opencreatewindow('Site', 'site')">[new]</a>
+	   <a href="#" onClick="openinsertwindow('Site', 'site')">[new]</a>
 	</td>
         <td class="formtablec2">
 	  * Where this device is located.
@@ -220,7 +195,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
       <tr>
         <td class="formtablec1">Contact Group:</td>
         <td class="formtablec2">
-           <select name="contactlist">
+           <select name="contactlist" id="contactlist">
    	   <option value="0">[null]</option>
 %	   my @allcls = ContactList->retrieve_all; 
 %          @allcls = sort { $a->name cmp $b->name } @allcls;
@@ -234,7 +209,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %		 }
 %	   }	
 	   </select>
-	   <a href="#" onClick="opencreatewindow('ContactList', 'contactlist')">[new]</a>
+	   <a href="#" onClick="openinsertwindow('ContactList', 'contactlist')">[new]</a>
 	</td>
         <td class="formtablec2">
 	  * Who should be notified in case of problems/outages.
