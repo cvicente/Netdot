@@ -57,30 +57,32 @@ my $list;
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
-if( defined($search) && $search eq "unknown type" ){
-    # The keyword "unknown type" is reserved and returns
-    # devices with not productname set
-    @$list = Device->search( productname => 0 );
-
-}elsif( defined($search) && $search =~ /\w+/ ){
-    # remove spaces
-    $search =~ s/\s*//g;
-    unless ( ($list = $dns->getdevbynamelike($search)) ){
-	print  "<p><b>No results</b>";
+if ( $submit eq "search" ){
+    if ( $search eq "unknown type" ){
+	# The keyword "unknown type" is reserved and returns
+	# devices with not productname set
+	@$list = Device->search( productname => 0 );
+	
+    }elsif( $search ){
+	# remove spaces
+	$search =~ s/\s*//g;
+	unless ( ($list = $dns->getdevbynamelike($search)) ){
+	    print  "<p><b>No results</b>";
+	    $m->abort;
+	}
+	my $num = scalar(@$list);
+	if ( $num == 1 ){
+	    # Don't offer list.  Just display device
+	    $o      = $list->[0];
+	    $id     = $o->id;
+	    $search = undef;
+	}
+	
+    }else{
+	print "<p><b>No search criteria</b>";   
 	$m->abort;
     }
-    my $num = scalar(@$list);
-    if ( $num == 1 ){
-	# Don't offer list.  Just display device
-	$o      = $list->[0];
-	$id     = $o->id;
-	$search = undef;
-    }
-    
-
-}elsif( defined($search) && $search !~ /\w+/){
-    print "<p><b>No search criteria</b>";   
-    
+ 
 }elsif( $intadd ){
     unless ( $dm->add_interfaces($id, $intaddnum) ){
 	$m->comp('error.mhtml', error => $dm->error);	
@@ -116,12 +118,11 @@ if ( $id ){
     unless ( $id = $o->id ){
 	$m->comp('error.mhtml', error=>"Object passed was not a valid Device object");
     }   
-    print "Got id OK<br>" if $DEBUG;
 }
 if ( $o && $o->name ){
     $name = ($o->name->name) ? $o->name->name : "Name N/A!";
 }else{
-    $name = "Search";
+    $m->comp('error.mhtml', error=>"Device undefined or no name set");
 }
 
 
