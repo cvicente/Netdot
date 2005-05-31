@@ -22,29 +22,96 @@ section => 'Operations'
 <%init>
 my %caller_args = $m->caller_args(-1);
 
-if (exists($caller_args{page})){
-    $user->setAttribute($r, "NOC_PAGE", $caller_args{page});
+if( exists( $caller_args{page} ) ) {
+    $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args{page});
 }
-my $page = $user->getAttribute("NOC_PAGE");
+my $page = $user->getAttribute("OPERATIONS_PAGE");
+
+if (exists($caller_args{tasks})){
+    $user->setAttribute($r, "SHOW_TASKS", $caller_args{tasks});
+} else {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+}
+my $show_tasks = $user->getAttribute("SHOW_TASKS");
 </%init>
 %
 %
+<%perl>
+sub print_showtaskslink {
+    my $show_tasks = $_[0];
+    my $request_vars = "";
+    my %caller_args = $m->caller_args(-1);
+    while( my($key, $value) = each(%caller_args) ) {
+        if( !($key eq "tasks") ) {
+            $request_vars .= "$key=$value&";
+        }
+    }
+    print "<a href=\"?".$request_vars."tasks=".($show_tasks eq "show"?"hide":"show")."\">[".($show_tasks eq "show"?"hide":"show")."]</a>";
+}
+</%perl>
+%
+%
+<div id="sectiontools">
+    <div class="container">
+
+        <div class="containerheadleft">
+            Tasks
+        </div>
+        <div class="containerheadright">
+%       print_showtaskslink($show_tasks);
+        </div>
+        <div class="containerbody" id="tasks">
+% if ($show_tasks eq "show") {
+            <table><tr><td>
 %
 % # now supply search box and action to noc.html
-<div id="sectiontools">
-    <p>
-    <fieldset>
-        <legend>Operations Information</legend>
-        <form action="operations.html" method="POST">
-            <p>
-            <label for="search">Keyword(s)</label>
-            <input type="text" name="search" size="20" value="">
-            <input name="submit" value="search" type="submit">
-            </p>
-        </form>
-    </fieldset>
-    </p>
-</div>
+%     if( $page eq "SEARCH" || $page eq "" ) {
+%
+                <p>
+                <fieldset class="medium">
+                    <legend>Operational Information</legend>
+                    <form action="operations.html" method="POST">
+                        <p>
+                        <label for="search">Keyword(s)</label>
+                        <input type="text" name="search" size="20" value="">
+                        <input name="submit" value="search" type="submit">
+                        <input type="hidden" name="_action" value="SEARCH">
+                        </p>
+                    </form>
+                 </fieldset>
+                 </p>
+%
+%     } elsif( $page eq "TACTICAL" ) {
+%
+                <p>
+                <fieldset class="medium">
+                    <legend>Operational Status</legend>
+                    <form action="operations.html" method="POST">
+                        <label for="status">Show status</label>
+                        <select name="status">
+                            <option value="0" ALL>All</option>
+%
+%         my @stats = MonitorStatus->retrieve_all();
+%         foreach my $o ( sort { $a->name cmp $b->name } @stats ) {
+                            <option value="<% $o->id %>"><% $o->name %></option>
+%         }
+%
+                        </select>
+                        <input name="submit" value="Select" type="submit">
+                        <input type="hidden" name="_action" value="STATUS">
+                        </p>
+                    </form>
+                </fieldset>
+                </p>
+%
+%     }
+%
+            </td></tr></table>
+%  }
+%
+        </div>
+    </div>
+</div> <!-- close sectiontools -->
 %
 % if ( $m->fetch_next ){
 %  $m->call_next;
