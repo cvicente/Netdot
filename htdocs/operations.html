@@ -1,7 +1,7 @@
 <%doc>
 $Id$
 
--- NOC/Operations Worksheet -- 
+-- Operations Worksheet -- 
 
 Interface (similar to device worksheet) for viewing/updating
 NOC relevant information.  This includes customer contacts, 
@@ -13,8 +13,11 @@ devices, sites, circuits.
 <%args>
 $id     => undef
 $search => undef
-$edit   => undef
+$_action => undef
+$status => undef
 $view   => "Basics"
+$edit   => undef
+$user => undef
 </%args>
 %
 %
@@ -36,43 +39,79 @@ my $maxselect = 100;
 my $obj       = undef;
 my $ci        = 0;
 my $list;
-my %arg;
 my $name;
-my @tables = qw( Connection Device Entity Person Site  );
-my %results;
-my %entities;
 my $entity;
+my @tables;
+my %arg;
+my %results;
+my %stables;
+my %entities;
+my %caller_args = $m->caller_args(-1);
+
+
+if( exists( $caller_args{page} ) ) {
+    $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args{page});
+}
+my $page = $user->getAttribute("OPERATIONS_PAGE");
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
-if( defined( $search ) && $search =~ /\w+/ ) {
 
-    # walk through a set of tables and search each column
-    foreach my $tbl ( @tables ) {
-        my @columns = ( "name" );
-        if( $tbl eq "Person" ) {
-            @columns = ( "lastname", "firstname", "aliases" );
-        } elsif( $tbl ne "Connection" ) {
-            push @columns, "aliases";
+if( $search ) {
+
+    @tables = qw( Connection Device Entity Person Site  );
+    if( defined( $search ) && $search =~ /\w+/ ) {
+
+        # walk through a set of tables and search each column
+        foreach my $tbl ( @tables ) {
+	    if( $tbl eq "Ipblock" ) {
+                next;
+            }
+            my @columns = $tbl->_essential();
+            if( $tbl eq "Device" || $tbl eq "Entity" 
+                || $tbl eq "Person" || $tbl eq "Site" ) {
+                push @columns, "aliases";
+            }
+            my %linksto = $ui->getlinksto($tbl);
+            foreach my $col ( @columns ) {
+                if( $col eq "id" ) {
+                    next;
+                }
+                if( $linksto{$col} ) {
+		    push @tables, $linksto{$col};
+                } elsif( $col eq "origin" || $col eq "status" ) { 
+                    next;
+                } else {
+		    $stables{$tbl}{$col} = 1;
+                }
+            }
         }
-        foreach my $col ( @columns ) {
-            my $q = "%" . $search . "%";
-            map { $results{$tbl}{$_->id} = $_ } 
-               $tbl->search_like( $col => $q );  
+        foreach my $tbl ( keys %stables ) {
+            foreach my $col ( keys %{ $stables{$tbl} } ) {
+                my $q = "%" . $search . "%";
+                map { 
+                    $results{$tbl}{$_->id} = $_ 
+                } $tbl->search_like( $col => $q );
+            }
         }
+
+    } elsif( defined( $search ) && $search !~ /\w+/ ) {
+
+        print "<p><b>No search criteria</b>";
+        $m->abort;
+
+    } elsif( defined( $id ) && $page eq "INFO" ) {
+
+        $entity = Entity->retrieve($id);
+        if( ! defined( $entity) ) {
+            $m->comp( 'error.mhtml', error => "Could not retrieve Entity with id $id" );
+        }
+
     }
 
-} elsif( defined( $search ) && $search !~ /\w+/ ) {
+} elsif( $status ) {
 
-    print "<p><b>No search criteria</b>";
-    $m->abort;
-
-} elsif( defined( $id ) ) {
-
-    $entity = Entity->retrieve($id);
-    if( ! defined( $entity) ) {
-        $m->comp( 'error.mhtml', error => "Could not retrieve Entity with id $id" );
-    }
+    @tables = qw( BGPPeering Device Interface IpService );
 
 }
 
@@ -100,6 +139,8 @@ if( %results ) {
 	        my $entity = $results{$tbl}{$id};
 		$entities{$entity->name()}{foundby} = $tbl . " " . $name;
 		$entities{$entity->name()}{object} = $entity;
+            } elsif( $tbl eq "RR" ) {
+                ;
             } else {
                 my $entity = $results{$tbl}{$id}->entity();
 		$entities{$entity->name()}{foundby} = $tbl . " " . $name;
@@ -148,7 +189,7 @@ if( %results ) {
  </tr>
 </table>
 %
-% } else {
+% } elsif( $entity ) {
 %
 <table border="0" width="100%" cellpadding="1" cellspacing="0" align="center" class="tablebackground">
     <tr class="rowtitle0" >
@@ -168,6 +209,10 @@ if( %results ) {
     </tr>
 </table>
 %
+% } elsif( $status ) {
+
+
+
 % }
 %
 </div>
