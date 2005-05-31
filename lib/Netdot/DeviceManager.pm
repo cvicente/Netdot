@@ -1621,6 +1621,8 @@ sub interfaces_by_number {
 
 =head2 interfaces_by_name - Retrieve interfaces from a Device and sort by name.  
 
+This method deals with the problem of sorting Interface names that contain numbers.
+Simple alphabetical sorting does not yield useful results.
 
 Arguments:  Device object
 Returns:    Sorted array of interface objects or undef if error.
@@ -1630,16 +1632,26 @@ Returns:    Sorted array of interface objects or undef if error.
 sub interfaces_by_name {
     my ( $self, $o ) = @_;
     my @ifs;
-    my $id = $o->id;
-    eval {
-	@ifs = Interface->search_ifsbyname($id);
-    };
-    if ($@){
-	$self->error("$@");
-	return;
-    }
+    my @ifs = $o->interfaces;
+    
+    # The following was borrowed from Netviewer
+    # and was slightly modified to handle Netdot Interface objects.
+    @ifs = ( map { $_->[0] } sort { 
+	( $a->[1] =~ /^[a-zA-Z].*$/ ? ( lc($a->[1]) cmp lc($b->[1]) ) : ($a->[1] <=> $b->[1] ) )
+	    || $a->[2] <=> $b->[2]
+	    || $a->[3] <=> $b->[3]
+	    || $a->[4] <=> $b->[4]
+	    || $a->[5] <=> $b->[5]
+	    || $a->[6] <=> $b->[6]
+	    || $a->[7] <=> $b->[7]
+	    || $a->[8] <=> $b->[8]
+	    || $a->[0] cmp $b->[0] }  
+	     map{ [ $_, $_->name =~ /^([^\d]+)\d/, 
+		    ( split( /[^\d]+/, $_->name ))[0,1,2,3,4,5,6,7,8] ] } @ifs);
+    
     return unless scalar @ifs;
     return @ifs;
+
 }
 
 =head2 interfaces_by_speed - Retrieve interfaces from a Device and sort by speed.  
