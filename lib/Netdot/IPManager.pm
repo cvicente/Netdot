@@ -245,6 +245,11 @@ sub _validate {
     
     my $pstatus;
     if ( $ipblock->parent && $ipblock->parent->id ){
+	$self->debug(loglevel => 'LOG_DEBUG',
+		     message => "_validate: %s/%s has parent: %s/%s",
+		     args => [$ipblock->address, $ipblock->prefix, 
+			      $ipblock->parent->address, $ipblock->parent->prefix ]);
+	
 	$pstatus = $ipblock->parent->status->name;
 	if ( $self->isaddress($ipblock ) ){
 	    if ($pstatus eq "Reserved" ){
@@ -373,10 +378,10 @@ sub insertblock {
 		  interface     => $args{interface},
 		  dhcp_enabled  => $args{dhcp_enabled},
 		  dns_delegated => $args{dns_delegated},
+		  first_seen    => $self->timestamp,
+		  last_seen     => $self->timestamp,
 		  );
     
-    $state{first_seen} = $self->timestamp;
-    $state{last_seen}  = $self->timestamp;
   
     if ( my $r = $self->insert( table => "Ipblock", state => \%state)){
 	# 
