@@ -70,14 +70,8 @@ unless ( $table ){ # offer a list of tables to select
 
     <& form.mhtml, table => $table, allow_create => 0  &>     
 
-    <table>
-      <tr class="rowtitle0">
-         <td class="center">
-             <input name="submit" value="Search" type="submit">
-             <input type="reset">
-         </td>
-      </tr>
-    </table>
+    <input name="submit" value="Search" type="submit">
+    <input type="reset">
 
     </form>
 
@@ -115,9 +109,16 @@ unless (scalar keys(%sarg)){
 my @objs = $table->search_like(\%sarg);
 
 </%perl>
-    <h3>Total <% $table %> matches: <% scalar (@objs) %></h3>
+
+<div class="container">
+    <div class="containerhead">
+        Total <% $table %> matches: <% scalar (@objs) %>
+    </div>
+
+    <div class="containerbody">
     <& sortresults.mhtml, table => "$table", object => \@objs, view => "row", withdelete => 1 &>
-    <br>
+    </div>
+</div>
 
 %   } # endif !res
 
