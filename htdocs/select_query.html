@@ -64,7 +64,13 @@ if ($crit =~ /\w+/){
 %    }
 %    my @objs = map { $r->{$_} } keys %$r;
 %    my $lblfield = ( $ui->getlabels($table) )[0];
-%    @objs = sort { $a->$lblfield cmp $b->$lblfield } @objs;
+%    my %coltypes = $ui->getcolumntypes($table);
+%    my $type = $coltypes{$lblfield};
+%    if ( $type =~ /int/ || $table eq "Interface" ){  # Ugly hack
+%       @objs = sort { $a->$lblfield <=> $b->$lblfield } @objs;
+%    }else {
+%       @objs = sort { $a->$lblfield cmp $b->$lblfield } @objs;
+%    }
 %    foreach my $o (@objs){
 %       my $lbl = $ui->getobjlabel($o, ", ");
         <input type="hidden" name="<% $o->id %>" value="<% $lbl %>">

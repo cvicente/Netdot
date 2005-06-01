@@ -50,8 +50,7 @@ if ( $int_id ){
 	foreach my $ip ( $subnets{$subnet}->children ){
 	    if ( $ip->prefix == 32 || $ip->prefix == 128 ){
 		if ( $ip->interface && $ip->interface->device 
-		     # Don't include current device
-		     && $ip->interface->device != $intobj->device
+		     && $ip->interface->device->id != $intobj->device->id  # Don't include current device
 		     && $ip->interface->device->name 
 		     && $ip->interface->device->name->name){
 		    $subnet_devs{$ip->interface->device->name->name} = "";
