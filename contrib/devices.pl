@@ -29,6 +29,9 @@ my %tree = (
 	     'Console Server'    => {
 			file => "$DIR/consoles.txt"
 			},
+	     'DSL Modem'    => {
+			file => "$DIR/dsl.txt"
+			},
 	    );
 
 foreach my $dt (keys %tree){
