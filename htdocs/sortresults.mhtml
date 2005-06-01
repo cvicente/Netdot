@@ -13,7 +13,7 @@ $table      => undef
 $object     => undef
 $view       => "column"
 $sort       => undef
-$page       => "view.html"
+$page       => undef
 $withdelete => 0
 %order      => undef
 </%args>
@@ -47,13 +47,15 @@ my %viewpage = ( BinFile => "display_bin.html",
 		 Ipblock => "ip-ws.html",
 		 Device  => "device.html",
 		);
-
-foreach my $tname ( keys %viewpage ){
-    if ($table eq $tname){
-	$page = $viewpage{$tname};
-	last;
+unless ( $page ){
+    foreach my $tname ( keys %viewpage ){
+        if ($table eq $tname){
+	    $page = $viewpage{$tname};
+	    last;
+        }
     }
 }
+$page ||= "view.html";
 
 </%init>
 
