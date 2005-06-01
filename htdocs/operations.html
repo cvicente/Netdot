@@ -12,6 +12,7 @@ devices, sites, circuits.
 %
 <%args>
 $id     => undef
+$table  => undef
 $search => undef
 $_action => undef
 $status => undef
@@ -40,7 +41,6 @@ my $obj       = undef;
 my $ci        = 0;
 my $list;
 my $name;
-my $entity;
 my @tables;
 my %arg;
 my %results;
@@ -48,7 +48,7 @@ my %stables;
 my %entities;
 my %caller_args = $m->caller_args(-1);
 
-
+@{ $list } = ();
 if( exists( $caller_args{page} ) ) {
     $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args{page});
 }
@@ -59,27 +59,18 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 if( $search ) {
 
-    @tables = qw( Connection Device Entity Person Site  );
+    @tables = qw( Connection Device Entity Person Site RR );
     if( defined( $search ) && $search =~ /\w+/ ) {
 
         # walk through a set of tables and search each column
         foreach my $tbl ( @tables ) {
-	    if( $tbl eq "Ipblock" ) {
-                next;
-            }
             my @columns = $tbl->_essential();
-            if( $tbl eq "Device" || $tbl eq "Entity" 
-                || $tbl eq "Person" || $tbl eq "Site" ) {
+            if( $tbl ne "Connection" && $tbl ne "RR" ) {
                 push @columns, "aliases";
             }
             my %linksto = $ui->getlinksto($tbl);
             foreach my $col ( @columns ) {
-                if( $col eq "id" ) {
-                    next;
-                }
-                if( $linksto{$col} ) {
-		    push @tables, $linksto{$col};
-                } elsif( $col eq "origin" || $col eq "status" ) { 
+                if( $col eq "id" || $linksto{$col} ) {
                     next;
                 } else {
 		    $stables{$tbl}{$col} = 1;
@@ -100,11 +91,11 @@ if( $search ) {
         print "<p><b>No search criteria</b>";
         $m->abort;
 
-    } elsif( defined( $id ) && $page eq "INFO" ) {
+    } elsif( defined( $id ) && defined( $table ) ) {
 
-        $entity = Entity->retrieve($id);
-        if( ! defined( $entity) ) {
-            $m->comp( 'error.mhtml', error => "Could not retrieve Entity with id $id" );
+        $obj = $table->retrieve($id);
+        if( ! defined( $obj) ) {
+            $m->comp( 'error.mhtml', error => "Could not retrieve $table with id $id" );
         }
 
     }
@@ -113,6 +104,12 @@ if( $search ) {
 
     @tables = qw( BGPPeering Device Interface IpService );
 
+} elsif( defined( $id ) && defined( $table ) ) {
+
+     $obj = $table->retrieve($id);
+     if( ! defined( $obj) ) {
+         $m->comp( 'error.mhtml', error => "Could not retrieve $table with id $id" );
+     }
 }
 
 if( %results ) {
@@ -121,45 +118,34 @@ if( %results ) {
     # Site must use EntitySite to look up the corresponding Entity
     foreach my $tbl ( keys %results ) {
         foreach my $id ( keys %{ $results{$tbl} } ) {
-            my $name;
-	    if( $tbl eq "Person" ) {
-                $name = $results{$tbl}{$id}->lastname() . ", " 
-		    . $results{$tbl}{$id}->firstname()
-            } else {
-	        $name = $results{$tbl}{$id}->name();
-            }
-            if( $tbl eq "Site" ) {
-	        my $site = ( EntitySite->search( site => $id ) )[0];
-		if( defined( $site ) ) {
-		    my $entity = $site->entity();
-                    $entities{$entity->name()}{foundby} = $tbl . " " . $name;
-		    $entities{$entity->name()}{object} = $entity;
+            if( $tbl eq "RR" ) {
+                my $s = ( Device->search( name => $results{$tbl}{$id} ) )[0];
+                if( $s ) {
+		    $results{"Device"}{$s->id()} = $s;
                 }
-            } elsif( $tbl eq "Entity" ) {
-	        my $entity = $results{$tbl}{$id};
-		$entities{$entity->name()}{foundby} = $tbl . " " . $name;
-		$entities{$entity->name()}{object} = $entity;
-            } elsif( $tbl eq "RR" ) {
-                ;
-            } else {
-                my $entity = $results{$tbl}{$id}->entity();
-		$entities{$entity->name()}{foundby} = $tbl . " " . $name;
-		$entities{$entity->name()}{object} = $entity;
+                delete( $results{$tbl}{$id} );
             }
         }
     }
-    if( %entities && scalar( keys %entities ) == 1 ) {
-        undef( $search );
-	my $e = ( keys %entities )[0];
-        $entity = $entities{$e}{object};
-	$id = $entity->id();
-    } else {
-        foreach my $e ( keys %entities ) {
-            push @{ $list }, $entities{$e}{object};
+    delete( $results{"RR"} );
+    if( %results && scalar( keys %results ) == 1 ) {
+        my $tbl = ( keys %results )[0];
+        if( scalar( keys %{ $results{$tbl} } ) == 1 ) {
+            undef( $search );
+            $obj = ( values %{ $results{$tbl} } )[0];
+	    $table = $tbl;
+            $id = $obj->id();
+        }
+    }
+    if( defined( $search ) ) {
+        foreach my $tbl ( keys %results ) {
+	    map {
+                push @{ $list }, $results{$tbl}{$_}
+            } keys %{ $results{$tbl} };
         }
     }
 
-} elsif( $entity ) {
+} elsif( $obj ) {
 
     ; # do nothing
 
@@ -179,39 +165,53 @@ if( %results ) {
 <table border="0" align="center" class="tablebackground">
  <tr class="rowtitle0" >
     <td valign="top" align="left">
-       <b><% scalar(@$list) %> results for <i><% $search %></i></b>
+       <b><% scalar( @{$list} ) %> results for <i><% $search %></i></b>
     </td>
  </tr>
- <tr>
-   <td valign="top" width="50%" align="center">
-      <& sortresults.mhtml, object => $list, view => "row", page => "operations.html", withdelete => 1 &>
-  </td>
- </tr>
+%    foreach my $tbl ( sort keys %results ) {
+%        my @list = values %{ $results{$tbl} };
+   <tr class="formtabletitle">
+      <td colspan="2">
+      <strong><% $tbl %></strong>
+      </td>
+   </tr>
+   <tr>
+      <td valign="top" width="50%" align="center">
+      <& sortresults.mhtml, table => $tbl, object => \@list, view => "row", page => "operations.html" &>
+      </td>
+   </tr>
+%    }
 </table>
 %
-% } elsif( $entity ) {
+% } elsif( $obj ) {
 %
-<table border="0" width="100%" cellpadding="1" cellspacing="0" align="center" class="tablebackground">
-    <tr class="rowtitle0" >
-        <td valign="top" width="50%" align="left">
-         Entity: <b><% $entity->name %></b>&nbsp;
-         </td>
-    </tr>
-    <tr class="rowtitle0">
-        <td valign="top" width="50%" align="left">
-            View:
+<div class="containeroutside">
+   <div class="containerheadleftoutside">
+%     if( $table eq "Device" ) {
+       <% $table %>: <b><% $obj->name->name %></b>&nbsp;<br/>
+%     } else {
+       <% $table %>: <b><% $obj->name %></b>&nbsp;<br/>
+%     }
+       View:
 %       if( $view eq "Basics" ) {
-            [Basics]
+       [Basics]
 %       } else {
-            <a href="operations.html?id=<% $id %>&view=Basics">[Basics]</a>
+       <a href="operations.html?id=<% $id %>&view=Basics">[Basics]</a>
 %       }
-        </td>
-    </tr>
-</table>
+    </div>
+    <div class="containerheadrightoutside">
+        <a href="device.html?id=<% $id %>&view=<% $view %>"> [refresh]</a>&nbsp;
+	<a href="deldevice.html?id=<% $id %>"> [delete]</a>&nbsp;<br/>
+        <br/>
+    </div>
+    <div class="containerbodyoutside">
+        <% $obj->name %>
+    </div>
+</div>
 %
 % } elsif( $status ) {
 
-
+    print  "<p><b>No yet implemented.</b>";
 
 % }
 %
