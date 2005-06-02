@@ -97,26 +97,26 @@ LIST_MANAGER.addList(closetSearchList, roomFloorLookup, siteFloorLookup);
 
 // createJackID()
 // Attempts to generate a JackID based on Site, Closet, and a user supplied
-// jack number. Format for a jack id is: <building name><closet><jack number>
+// jack number. Format for a jack id is: <building number><closet><jack number>
 // ----------------------------------------------------------------------------
 function createJackID()
 {
-    var closet_id = document.horizform.HorizontalCable__<% $id %>__closet.value;
-    var jack_no = document.horizform.__jackno.value;
-    if (!jack_no)
+    var closetid = document.horizform.HorizontalCable__<% $id %>__closet.value;
+    var jackno = document.horizform.__jackno.value;
+    if (!jackno)
     {
         alert("You must specify a Jack Number in order to create a new Jack ID.");
         return false;
     }
 
-    if (!closet_id || closet_id == -1)
+    if (!closetid || closetid == -1)
     {
         alert("You must specify a Closet in order to create a new Jack ID.");
         return false;
     }
 
-    var url = "suggest_jackid.html?closet=";
-    url += closet_id + "&jackno=" + jack_no;
+    var url = "suggest_jackid.html?closetid=";
+    url += closetid + "&jackno=" + jackno;
     url += "&name=HorizontalCable__<% $id %>__jackid";
 
     var wind = window.open(url, "tmp_<% $id %>", "width=1,height=1");
