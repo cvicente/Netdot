@@ -116,13 +116,13 @@ foreach my $dt (keys %tree){
 		if ( $parentdep->parent->device && $parentdep->parent->device->name 
 		     && $parentdep->parent->device->name->name ){
 		    my $port = $parentdep->parent->number;
-		    $link = $parentdep->parent->device->name->name . ".[$port]";
+		    $link = "uplink: " .  $parentdep->parent->device->name->name . ".[$port]";
 		}
 	    }elsif ( my $childdep = ($p->children)[0] ){
 		if ( $childdep->child->device && $childdep->child->device->name
 		     && $childdep->child->device->name->name ){
 		    my $port = $childdep->child->number;
-		    $link = $childdep->child->device->name->name . ".[$port]";
+		    $link = "downlink: " .  $childdep->child->device->name->name . ".[$port]";
 		}
 	    }
 	    print $name, ", port ", $p->number, ", ", $p->name, ", ", $p->room_char, ", ", $p->jack_char, ", $descr",
