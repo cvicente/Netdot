@@ -409,6 +409,16 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
 
 push( @field_headers, "Entity: " );
 push( @cell_data, $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html", returnAsVar=>1) );
+push( @field_headers, "Site: " );
+push( @cell_data,                $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="closetList.doIt(); roomList.doIt();"', returnAsVar=>1) );
+</%perl>
+
+    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+       </td>
+       <td width="50%">
+<%perl>
+(@field_headers, @cell_data) = ();
+
 push( @field_headers, "Room: " );
 push( @cell_data, &{sub{ 
     my $s = "";
@@ -416,8 +426,8 @@ push( @cell_data, &{sub{
 	$s .= '<select name="Device__'.$id.'__room" onChange="setNull(document.netdotform.Device__'.$id.'__closet);">';
 	$s .= '<option value="">-- Make your selection --</option>';
 	if (defined($o)) {
-	    foreach my $floor ($o->site->floors) {
-		foreach my $room ($floor->rooms) {
+	    foreach my $floor ( $o->site->floors ) {
+		foreach my $room ( sort { $a->name cmp $b->name } $floor->rooms ) {
 		    $s .= sprintf("<option value=\"%d\" %s>%s</option>\n", $room->id, ($o->room && $room->id == $o->room->id ? "SELECTED" : ""), $room->name);
 		}
 	    }
@@ -432,27 +442,15 @@ push( @cell_data, &{sub{
 	}
     }
 }} );
-push( @field_headers, "Rack: " );
-push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, returnAsVar=>1) );
-</%perl>
-
-    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-       </td>
-       <td width="50%">
-<%perl>
-(@field_headers, @cell_data) = ();
-
-push( @field_headers, "Site: " );
-push( @cell_data,                $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="closetList.doIt(); roomList.doIt();"', returnAsVar=>1) );
-push( @field_headers, " <i>- or -</i> Closet: " );
+push( @field_headers, " or Closet: " );
 push( @cell_data, &{sub{
     my $closet_js = sprintf("onChange=\"setNull(document.netdotform.Device__%d__room);\"", $id);
     $ui->select_lookup(object=>$o, column=>"closet", lookup=>"Closet", 
 		       edit=>$editloc, where=>{site=>($o ? $o->site : "")}, 
 		       makeLink=>1, linkPage=>"closet.html", htmlExtra=>$closet_js, returnAsVar=>1)
     }} );
-push( @field_headers, "&nbsp; " );
-push( @cell_data, '&nbsp; ' );
+push( @field_headers, "Rack: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, returnAsVar=>1) );
 </%perl>
 
     <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
