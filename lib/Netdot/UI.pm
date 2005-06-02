@@ -375,21 +375,32 @@ sub form_to_db{
 
 =head2 select_lookup
 
+This method deals with fields that are foreign keys.  When the interface is in "edit" mode, the user
+is presented with a drop-down list of possible values in the foreign table.  If the number of elements
+in the list surpasses maxCount or DEFAULT_SELECTMAX, the user gets a text box where keywords can be
+entered to refine the list.  Also, a [new] button is added at the end to allow the user to create
+a new instance of the foreign table, which will be automatically selected in the drop-down list.
+If not editing, this function only returns the label of the foreign key object.
+
   $ui->select_lookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", linkPage=>1);
 
 Arguments:
-  - object: DBI object, can be null if a table object is included
-  - table: Name of table in DB. (required if object is null)
-  - column: name of field in DB.
-  - edit: true if editing, false otherwise.
-  - htmlExtra: (optional) extra html you want included in the output. Common
-               use would be to include style="width: 150px;" and the like.
-  - linkPage:  (optional) Make the printed value a link
-               to itself via some page (i.e. view.html) 
-               (requires that column value is defined)
-  - maxCount: (optional) maximum number of results to display before giving 
-              the user the option of refining their results. Defaults to
-              DEFAULT_SELECTMAX in configuration files.
+  object:       CDBI object, can be null if a table object is included
+  table:        Name of table in DB. (required if object is null)
+  lookup:       Name of foreign table to look up
+  column:       Name of field in DB.
+  edit:         True if editing, false otherwise.
+  where:        (optional) Key/value pairs to pass to search function in CDBI
+  htmlExtra:    (optional) extra html you want included in the output. Common
+                use would be to include style="width: 150px;" and the like.
+  linkPage:     (optional) Make the printed value a link
+                to itself via some page (i.e. view.html) 
+                (requires that column value is defined)
+  returnAsVar:  (optional) If true, output is returned as a variable.
+                Otherwise, output is printed to STDOUT
+  maxCount:     (optional) maximum number of results to display before giving 
+                the user the option of refining their results. Defaults to
+                DEFAULT_SELECTMAX in configuration files.
 
 
 =cut
