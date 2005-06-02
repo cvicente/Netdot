@@ -17,20 +17,47 @@ my $DIR = "/usr/local/netdot/export";
 my $DEBUG = 0;
 
 my %tree = ( 
-	     Switch => {
-			file => "$DIR/switches.txt"
-			},
-	     Hub    => {
-			file => "$DIR/10baseThubs.txt"
-			},
-	     'Access Point'    => {
+	     'Access Point'     => {
 			file => "$DIR/wireless.txt"
 			},
-	     'Console Server'    => {
+	     'Console Server'   => {
 			file => "$DIR/consoles.txt"
 			},
-	     'DSL Modem'    => {
+	     'DSL Modem'        => {
 			file => "$DIR/dsl.txt"
+			},
+	     'Switch'           => {
+			file => "$DIR/switches.txt"
+			},
+	     'Firewall'         => {
+			file => "$DIR/firewalls.txt"
+			},
+	     'Hub'              => {
+			file => "$DIR/10baseThubs.txt"
+			},
+	     'IP Phone'         => {
+			file => "$DIR/ip-phones.txt"
+			},
+	     'Packet Shaper'    => {
+			file => "$DIR/shapers.txt"
+			},
+	     'Power Distribution Unit'    => {
+			file => "$DIR/pdus.txt"
+			},
+	     'Router'    => {
+			file => "$DIR/routers.txt"
+			},
+	     'Server'           => {
+			file => "$DIR/servers.txt"
+			},
+	     'Wireless Bridge'  => {
+			file => "$DIR/wireless.txt"
+			},
+	     'Wireless Controller'  => {
+			file => "$DIR/wireless.txt"
+			},
+	     'Wireless Gateway'  => {
+			file => "$DIR/wireless.txt"
 			},
 	    );
 
@@ -89,13 +116,13 @@ foreach my $dt (keys %tree){
 		if ( $parentdep->parent->device && $parentdep->parent->device->name 
 		     && $parentdep->parent->device->name->name ){
 		    my $port = $parentdep->parent->number;
-		    $link = $parentdep->parent->device->name->name . ".[$port]";
+		    $link = "uplink: " .  $parentdep->parent->device->name->name . ".[$port]";
 		}
 	    }elsif ( my $childdep = ($p->children)[0] ){
 		if ( $childdep->child->device && $childdep->child->device->name
 		     && $childdep->child->device->name->name ){
 		    my $port = $childdep->child->number;
-		    $link = $childdep->child->device->name->name . ".[$port]";
+		    $link = "downlink: " .  $childdep->child->device->name->name . ".[$port]";
 		}
 	    }
 	    print $name, ", port ", $p->number, ", ", $p->name, ", ", $p->room_char, ", ", $p->jack_char, ", $descr",

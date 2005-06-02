@@ -1,14 +1,15 @@
 <%doc>
 Generates a Jack ID based upon Building, Closet, and a user supplied jack number.
 
-The format for a Jack ID is: <building><closet><jack number>
+The format for a Jack ID is: <building number><closet><jack number>
+i.e.  017B026B
 </%doc>
 
 
 <%args>
-$closet_id => $ARGS{"closet"};
-$jack_no => $ARGS{"jackno"};
-$name => $ARGS{"name"}; # name of hbiddfield to update
+$closetid
+$jackno
+$name
 </%args>
 
 <html>
@@ -18,13 +19,15 @@ $name => $ARGS{"name"}; # name of hbiddfield to update
 <%perl>
 my ($closet, $site);
 
-$closet = Closet->retrieve($closet_id);
+$closet = Closet->retrieve($closetid);
 $site = $closet->site || $closet->floor->site;
+my $jackid;
 
-my $jackid = sprintf("%s%s%s", $site->number,
-                               ($closet->name =~ /^(\w+)\s+(?:Closet|closet)/ ? $1 : $closet->name),
-                               $jack_no);
-
+if ( $site && $closet ){
+    # Make site number three digits.  Pad with leading zeroes if necessary.
+    my $sitenum = sprintf ("%3.3d", $site->number);
+    $jackid = sprintf("%s%s%s", $sitenum, $closet->name, $jackno);
+}
 printf("opener.document.horizform.__jackid.value = \"%s\";\n", $jackid);
 printf("opener.document.horizform.%s.value = \"%s\";\n", $name, $jackid);
 printf("window.close();\n");

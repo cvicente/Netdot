@@ -22,10 +22,10 @@ my $dns = Netdot::DNSManager->new();
 my $ipm = Netdot::IPManager->new();
 
 # The following tables will be ignored:
+
 # Cable, CableStrand, CableStrand_history, CableType, Cable_history
-# ComponentType, Device_history, Entity_history, Interface_history, 
-# Ip_history, Meta, Name, Name_history, Netviewer, NvIfReserved, 
-# Person_history, Product_history, Site_history, StrandStatus, Subnet_history
+# ComponentType, Device_history,  Ip_history, Meta, Name, Name_history, 
+# Netviewer, NvIfReserved, StrandStatus, Subnet_history
 #
 # The following tables are to be moved without changes
 #
@@ -92,6 +92,32 @@ while ( my $hr = $lookup->fetchrow_hashref ){
     }
     &insert("Site", \%obj); 
 }
+######################################################################
+# Site_history
+######################################################################
+
+system ("echo DELETE FROM Site_history| mysql $newdb");
+
+undef $lookup;
+$lookup = $dbh1->prepare("
+     SELECT id, site_id, name, aliases, availability, street1, street2, pobox, city, state
+            zip, country, contactlist, info, modified, modifier
+     FROM Site_history
+");
+$lookup->execute();
+while ( my $hr = $lookup->fetchrow_hashref ){
+    my %obj;
+    foreach my $key ( keys %$hr ){
+	if ( $key eq "name" && $hr->{$key} =~ /\((\w+)\)/ ){
+	    $obj{$key}   = $hr->{$key};
+	    $obj{number} = $1;
+	}else{
+	    $obj{$key}   = $hr->{$key};
+	}
+    }
+    &insert("Site_history", \%obj); 
+}
+
 
 ######################################################################
 # Person
@@ -115,6 +141,29 @@ while ( my $hr = $lookup->fetchrow_hashref ){
 	}
     }
     &insert("Person", \%obj); 
+}
+######################################################################
+# Person_history
+######################################################################
+
+system ("echo DELETE FROM Person_history| mysql $newdb");
+
+undef $lookup;
+$lookup = $dbh1->prepare("
+     SELECT id, person_id, firstname, lastname, aliases, position, entity, location
+            email, office, home, cell, pager, emailpager, fax, info, 
+            modified, modifier
+     FROM Person_history
+");
+$lookup->execute();
+while ( my $hr = $lookup->fetchrow_hashref ){
+    my %obj;
+    foreach my $key ( keys %$hr ){
+	if ( $key ne "availability" ){
+	    $obj{$key} = $hr->{$key};
+	}
+    }
+    &insert("Person_history", \%obj); 
 }
 ######################################################################
 # Ip
@@ -304,6 +353,38 @@ while ( my $hr = $lookup->fetchrow_hashref ){
     &insert("Interface", \%obj); 
 }
 ######################################################################
+# Interface_history
+######################################################################
+system ("echo DELETE FROM Interface_history| mysql $newdb");
+
+undef $lookup;
+$lookup = $dbh1->prepare("
+     SELECT id, interface_id, device, name, physaddr, number, type, description, speed,
+     status, managed, room, jack, info, modified, modifier
+     FROM Interface_history
+");
+
+$lookup->execute();
+
+while ( my $hr = $lookup->fetchrow_hashref ){
+    my %obj;
+    foreach my $key ( keys %$hr ){
+	if ( $key eq "status" ){
+	    $obj{admin_status} = $hr->{$key};
+	}elsif( $key eq "managed" ){
+	    $obj{monitored} = $hr->{$key};
+	    $obj{snmp_managed} = $hr->{$key};
+	}elsif( $key eq "jack" ){
+	    $obj{jack_char} = $hr->{$key};
+	}elsif( $key eq "room" ){
+	    $obj{room_char} = $hr->{$key};
+	}else{
+	    $obj{$key} = $hr->{$key};
+	}
+    }
+    &insert("Interface_history", \%obj); 
+}
+######################################################################
 # Entity
 ######################################################################
 #
@@ -335,6 +416,35 @@ while ( my $hr = $lookup->fetchrow_hashref ){
     &insert("Entity", \%obj); 
 
 }
+######################################################################
+# Entity_history
+######################################################################
+system ("echo DELETE FROM Entity_history| mysql $newdb");
+
+undef $lookup;
+$lookup = $dbh1->prepare("
+     SELECT id, entity_id, name, aliases, type, availability, contactlist,
+     acctnumber, maint_contract, autsys, info, modified, modifier
+     FROM Entity_history
+");
+
+$lookup->execute();
+
+while ( my $hr = $lookup->fetchrow_hashref ){
+    my %obj;
+    foreach my $key ( keys %$hr ){
+	if ( $key eq "autsys" ){
+	    $obj{asname} = $hr->{$key};
+	    if ( $hr->{autsys} =~ /(\d+)/ ){
+		$obj{asnumber} = $1;
+	    }
+	}else{
+	    $obj{$key} = $hr->{$key};
+	}
+    }
+    &insert("Entity_history", \%obj); 
+
+}
 
 ######################################################################
 # Product
@@ -357,6 +467,29 @@ while ( my $hr = $lookup->fetchrow_hashref ){
     $obj{type} = $prod2type{$obj{id}} || 0;
     &insert("Product", \%obj); 
 }
+######################################################################
+# Product_history
+######################################################################
+system ("echo DELETE FROM Product_history| mysql $newdb");
+
+undef $lookup;
+$lookup = $dbh1->prepare("
+     SELECT id, product_id, name, description, sysobjectid, manufacturer, info,
+            modified, modifier
+     FROM Product_history
+");
+
+$lookup->execute();
+
+while ( my $hr = $lookup->fetchrow_hashref ){
+    my %obj;
+    foreach my $key ( keys %$hr ){
+	$obj{$key} = $hr->{$key};
+    }
+    $obj{type} = $prod2type{$obj{id}} || 0;
+    &insert("Product_history", \%obj); 
+}
+
 ######################################################################
 # DeviceType
 ######################################################################
