@@ -531,6 +531,10 @@ sub update_device {
 	$device = Device->retrieve($newdevid);
     }
 
+    # Count the number of IP addresses just discovered
+    my $numips = 0;
+    map { map { $numips++ } keys %{ $dev{interface}{$_}{ips} } } keys %{ $dev{interface} };
+
     ##############################################
     # for each interface just discovered...
 
@@ -786,9 +790,6 @@ sub update_device {
 		    # or is this the address associated with the
 		    # hostname?
 		    
-		    my $numips = 0;
-		    map { map { $numips++ } keys %{ $dev{interface}{$_}{ips} } } keys %{ $dev{interface} };
-
 		    if ( $numips == 1 || exists $hostnameips{$ipobj->address} ){
 
 			# We should already have an RR created
@@ -827,9 +828,9 @@ sub update_device {
 			$suffix =~ s/^.*\.(.*)/$1/;
 			$name .= "." . $suffix ;
 			unless ($self->insert_a(name        => $name,
-						       ip          => $ipobj,
-						       contactlist => $device->contactlist
-						       )){
+						ip          => $ipobj,
+						contactlist => $device->contactlist
+						)){
 			    my $msg = sprintf("%s: Could not insert DNS A record for %s: %s", 
 					      $host, $ipobj->address, $self->error);
 			    $self->debug(loglevel => 'LOG_ERR',
