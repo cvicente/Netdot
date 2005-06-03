@@ -87,7 +87,7 @@ my %state;
 undef( %state );
 my $TMP;
 my $DEBUG = 0;
-my $NEW = 0;
+my $NEW   = 0;
 my %reservedargs = (submit     => '',
 		    sid        => '',
 		    commit     => '',
@@ -180,7 +180,10 @@ if( $args{cancel} eq "Cancel" ) {
     $TBL = $args{create};
     delete( $args{create} );
   } else {
-    if( ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) {
+      if ( ! $session ){
+	  $m->abort;
+      }
+    if( ! $session || ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) {
       $ui->rmsession( $session );
       $TBL = $PREV;
     } else {
