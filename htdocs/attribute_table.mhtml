@@ -19,24 +19,36 @@ Arguments:
 <%args>
 @field_headers => undef;
 @data          => undef;
+$headercolwidth => "";
+$datacolwidth => "";
 </%args>
 
 <%init>
 my @tbls;
 my $max;
 my $j = 0;
+my $headerwidthstr = "";
+my $datawidthstr = "";
 </%init>
 	
 <%perl>
 map { push @tbls, $_ } sort { $a cmp $b } $ui->gettables;
 $max = scalar( @tbls );
+
+if ($headercolwidth ne "") {
+    $headerwidthstr = "width=\"".$headercolwidth."\"";
+}
+if ($datacolwidth ne "") {
+    $datawidthstr = "width=\"".$datacolwidth."\"";
+}
+
 </%perl>
 
 <table border="0" width="100%">
 % for( my($i) = 0; $i < @field_headers; $i++ ) {
   <tr>
-    <td class="formtablec1"><% $field_headers[$i] %></td>
-    <td class="formtablec2"><% $data[$i] %></td>
+    <td <% $headerwidthstr %> class="formtablec1"><% $field_headers[$i] %></td>
+    <td <% $datawidthstr %> class="formtablec2"><% $data[$i] %></td>
   </tr>
 % }
 </table>
