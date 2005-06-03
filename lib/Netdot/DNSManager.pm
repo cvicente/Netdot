@@ -176,7 +176,7 @@ sub insert_rr {
     return 0;
 }
 
-=head2 insert_a - Insert an address (A/AAAA)  Resource Record
+=head2 insert_a_rr - Insert an address (A/AAAA)  Resource Record
 
 Args: 
   rr:          Base resource record (optional, see below)
@@ -194,7 +194,7 @@ Returns: RRADDR object
 
 =cut
 
-sub insert_a{
+sub insert_a_rr{
 
     my ($self, %argv) = @_;
     my ($rr, $ip);
@@ -222,21 +222,6 @@ sub insert_a{
     }
     return 0;
 }
-
-=head2 insert_zone - Insert a DNS Zone (SOA Record)
-
-Args: 
-   mname:   domain name *(required)
-   rname:   mailbox name
-   serial:  YYYYMMDD+two digit serial number
-   refresh: time before the zone should be refreshed
-   retry:   time before a failed refresh should be retried
-   expire:  max time before zone no longer authoritative
-   minimum: default TTL that should be exported with any RR from this zone
-
-Returns: Zone object
-
-=cut
 
 sub insert_zone {
     my ($self, %argv) = @_;

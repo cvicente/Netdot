@@ -531,10 +531,6 @@ sub update_device {
 	$device = Device->retrieve($newdevid);
     }
 
-    # Count the number of IP addresses just discovered
-    my $numips = 0;
-    map { map { $numips++ } keys %{ $dev{interface}{$_}{ips} } } keys %{ $dev{interface} };
-
     ##############################################
     # for each interface just discovered...
 
@@ -780,74 +776,123 @@ sub update_device {
 			$self->output($msg);
 		    }
 		}
-		########################################################
-		# Create A records for each ip address discovered
-		# 
-		unless ( $ipobj->arecords ){
-		    
-		    ################################################
-		    # Is this the only ip in this device,
-		    # or is this the address associated with the
-		    # hostname?
-		    
-		    if ( $numips == 1 || exists $hostnameips{$ipobj->address} ){
-
-			# We should already have an RR created
-			# Create the A record to link that RR with this ipobj
-			if ( $device->name ){
-			    unless ($self->insert_a(rr          => $device->name, 
-						    ip          => $ipobj,
-						    contactlist => $device->contactlist)){
-				my $msg = sprintf("%s: Could not insert DNS A record for %s: %s", 
-						  $host, $ipobj->address, $self->error);
-				$self->debug(loglevel => 'LOG_ERR',
-					     message  => $msg );
-				$self->output($msg);
-			    }else{
-				my $msg = sprintf("Created DNS A record for %s: %s", 
-						  $newip, $device->name->name);
-				$self->debug(loglevel => 'LOG_NOTICE',
-					     message  => $msg );
-				$self->output($msg);
-			    }
-			}
-		    }else{
-			# Insert necessary records
-			my $name = $self->_canonicalize_int_name($ipobj->interface->name);
-			if ( exists $name2int{$name} ){
-			    # Interface has more than one ip
-			    # Append the ip address to the name to make it unique
-			    $name .= "-" . $ipobj->address;
-			}
-			# Keep record
-			$name2int{$name} = $ipobj->interface->name; 
-			# Append device name
-			# Remove any possible prefixes added
-			# e.g. loopback0.devicename -> devicename
-			my $suffix = $device->name->name;
-			$suffix =~ s/^.*\.(.*)/$1/;
-			$name .= "." . $suffix ;
-			unless ($self->insert_a(name        => $name,
-						ip          => $ipobj,
-						contactlist => $device->contactlist
-						)){
-			    my $msg = sprintf("%s: Could not insert DNS A record for %s: %s", 
-					      $host, $ipobj->address, $self->error);
-			    $self->debug(loglevel => 'LOG_ERR',
-					 message  => $msg );
-			    $self->output($msg);
-			}else{
-			    my $msg = sprintf("%s: Created DNS A record for %s: %s", 
-					      $host, $newip, $name);
-			    $self->debug(loglevel => 'LOG_NOTICE',
-					 message  => $msg );
-			    $self->output($msg);
-			}
-		    }
-		} # unless ipobj->arecords
 	    } # foreach newip
 	} #if ips found 
     } #foreach $newif
+
+
+    ########################################################
+    # Create A records for each ip address discovered
+    # 
+    my @devips = $self->getdevips($device);
+
+    # The reason for the reverse order is that most often the lowest
+    # address is a virtual address (such as when a router uses VRRP or HSRP)
+    # For that virtual address, the user might want to manually assign a custom name.
+    # This way, the higher address gets to keep the shorter name (without the 
+    # ip address appended)
+    # Otherwise, this has no adverse effects
+
+    foreach my $ipobj ( reverse @devips ){
+
+	# Determine what DNS name this IP will have
+	my $name = $self->_canonicalize_int_name($ipobj->interface->name);
+	if ( exists $name2int{$name} ){
+	    # Interface has more than one ip
+	    # Append the ip address to the name to make it unique
+	    $name .= "-" . $ipobj->address;
+	}
+	# Keep a list
+	$name2int{$name} = $ipobj->interface->name; 
+	# Append device name
+	# Remove any possible prefixes added
+	# e.g. loopback0.devicename -> devicename
+	my $suffix = $device->name->name;
+	$suffix =~ s/^.*\.(.*)/$1/;
+	$name .= "." . $suffix ;
+	
+	my @arecords = $ipobj->arecords;
+	if ( ! @arecords ){
+	    
+	    ################################################
+	    # Is this the only ip in this device,
+	    # or is this the address associated with the
+	    # hostname?
+	    
+	    if ( (scalar @devips) == 1 || exists $hostnameips{$ipobj->address} ){
+		
+		# We should already have an RR created
+		# Create the A record to link that RR with this ipobj
+		if ( $device->name ){
+		    unless ($self->insert_a_rr(rr          => $device->name, 
+					       ip          => $ipobj,
+					       contactlist => $device->contactlist)){
+			my $msg = sprintf("%s: Could not insert DNS A record for %s: %s", 
+					  $host, $ipobj->address, $self->error);
+			$self->debug(loglevel => 'LOG_ERR',
+				     message  => $msg );
+			$self->output($msg);
+		    }else{
+			my $msg = sprintf("%s: Inserted DNS A record for %s: %s", 
+					  $host, $ipobj->address, $device->name->name);
+			$self->debug(loglevel => 'LOG_NOTICE',
+				     message  => $msg );
+			$self->output($msg);
+		    }
+		}
+	    }else{
+		# Insert necessary records
+		unless ($self->insert_a_rr(name        => $name,
+					   ip          => $ipobj,
+					   contactlist => $device->contactlist
+					   )){
+		    my $msg = sprintf("%s: Could not insert DNS A record for %s: %s", 
+				      $host, $ipobj->address, $self->error);
+		    $self->debug(loglevel => 'LOG_ERR',
+				 message  => $msg );
+		    $self->output($msg);
+		}else{
+		    my $msg = sprintf("%s: Inserted DNS A record for %s: %s", 
+				      $host, $ipobj->address, $name);
+		    $self->debug(loglevel => 'LOG_NOTICE',
+				 message  => $msg );
+		    $self->output($msg);
+		}
+	    }
+	}else{ 
+	    # "A" records exist.  Update names
+	    if ( (scalar @arecords) > 1 ){
+		# There's more than one A record for this IP
+		# To avoid confusion, don't update and log.
+		my $msg = sprintf("%s: IP %s has more than one A record. Will not update name.", 
+				  $host, $ipobj->address);
+		$self->debug(loglevel => 'LOG_WARNING',
+			     message  => $msg );
+		$self->output($msg);
+	    }else{
+		my $rr = $arecords[0]->rr;
+		# We won't update the RR that the device name points to
+		# Also, don't bother if name hasn't changed
+		if ( $rr->id != $device->name->id && $rr->name ne $name ){
+		    unless ( $self->update(object => $rr, state => {name => $name} )){
+			my $msg = sprintf("%s: Could not update RR %s: %s", 
+					  $host, $rr->name, $self->error);
+			$self->debug( loglevel => 'LOG_ERR',
+				      message  => $msg,
+				      );
+			$self->output($msg);
+		    }else{
+			my $msg = sprintf("%s: Updated DNS record for %s: %s", 
+					  $host, $ipobj->address, $name);
+			$self->debug(loglevel => 'LOG_NOTICE',
+				     message  => $msg );
+			$self->output($msg);
+		    }
+		}
+	    }
+	}
+    } #foreach $ipobj
+    
     
     ##############################################
     # remove each interface that no longer exists
