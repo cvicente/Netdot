@@ -57,25 +57,24 @@ if (defined($ARGS{_action})){
 <div id="sectiondetail">
 
 <!-- Begin Interface Table -->
-<table border="0" width="100%" align="center"  class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="center">
-        <form name="netdotform" action="interface.html" method="POST">
-        <input type="hidden" name="id" value="<% $id %>">
-        <input type="hidden" name="_action" value="1">
-        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-        <tr class="formtabletitle">
-            <td colspan="2" align="left">Interface</td>
-%           if ($isEditing) {
-            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%           } else {
-            <td align="right"><a href="interface.html?id=<% $id %>&edit=intinfo">[edit]</a> || <a href="delete.html?table=Interface&id=<% $id %>">[delete]</a></td>
-%           }
-        </tr>
+<form name="netdotform" action="interface.html" method="POST">
+<input type="hidden" name="id" value="<% $id %>">
+<input type="hidden" name="_action" value="1">
 
-        <tr align="left" valign="top">
-            <td width="40%">
+<div class="container">
+    <div class="containerheadleft">Interface</div>
+    <div class="containerheadright">
+%       if ($isEditing) {
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%       } else {
+            <a href="interface.html?id=<% $id %>&edit=intinfo">[edit]</a> || <a href="delete.html?table=Interface&id=<% $id %>">[delete]</a>
+%       }
+    </div>
 
+    <div class="containerbody">
+    <table>
+        <tr>
+            <td width="50%">
 <%perl>
 my (@field_headers, @cell_data);
 
@@ -106,67 +105,8 @@ push( @cell_data, $ui->text_field(object=>$o, column=>"jack_char", edit=>$isEdit
 </%perl>
 
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-
-
-<!-- SNIP
-            <table width="100%" border="0" cellspacing="0" cellpadding="2">
-            <tr align="left" valign="top">
-                <td class="formtablec1">Number: </td>
-                <td class="formtablec2">
-%#               $ui->text_field(object=>$o, column=>"number", edit=>$isEditing);
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td class="formtablec1">Name: </td>
-                <td class="formtablec2">
-%#               $ui->text_field(object=>$o, column=>"name", edit=>$isEditing);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td class="formtablec1">Device: </td>
-                <td class="formtablec2">
-%#                   $ui->select_lookup(object=>$o, column=>"device", lookup=>"Device", edit=>$isEditing, linkPage=>"device.html");
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td class="formtablec1">Physical Address: </td>
-                <td class="formtablec2">
-%#               $ui->select_lookup(object=>$o, table=>"Interface", column=>"physaddr", lookup=>"PhysAddr", edit=>$isEditing, linkPage=>"view.html");
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td class="formtablec1">Type: </td>
-                <td class="formtablec2"><% $o->type %></td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td class="formtablec1">Description: </td>
-                <td class="formtablec2">
-%#               $ui->text_field(object=>$o, column=>"description", edit=>$isEditing);
-                </td>
-            </tr>
-            <tr align="left" valign="top">
-                <td class="formtablec1">Contact List: </td>
-                <td class="formtablec2">
-%#               $ui->select_lookup(object=>$o, column=>"contactlist", lookup=>"ContactList", edit=>$isEditing);
-                </td>
-            <tr align="left" valign="top">
-                <td class="formtablec1">Jack: </td>
-                <td class="formtablec2">
-%#               $ui->select_lookup(object=>$o, column=>"jack", lookup=>"HorizontalCable", edit=>$isEditing, linkPage=>"cable_horizontal.html");
-                </td>
-            </tr>
-            </tr>
-            </table>
-SNIP -->
-
             </td>
-
-            <td width="40%">
+            <td width="50%">
 <%perl>
 (@field_headers, @cell_data) = ();
 push( @field_headers, "Speed: " );
@@ -188,84 +128,21 @@ push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"snmp_managed", e
 </%perl>
 
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-
-<!-- SNIP
-            <table width="100%" border="0" cellspacing="0" cellpadding="2">
-            <tr align="left" valign="top">
-                <td class="formtablec1">Speed: </td>
-                <td class="formtablec2"><% $dm->convert_ifspeed($o->speed) %></td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td class="formtablec1">Admin Duplex: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, column=>"admin_duplex", edit=>0);
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td class="formtablec1">Oper Duplex: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, column=>"oper_duplex", edit=>0);
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td class="formtablec1">Admin Status: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, column=>"admin_status", edit=>0);
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td class="formtablec1">Oper Status: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, column=>"oper_status", edit=>0);
-                </td>
-            </tr>
-            <tr align="left" valign="top">
-                <td class="formtablec1">Monitored?: </td>
-                <td class="formtablec2">
-%               $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>$isEditing);
-                </td>
-            </tr>
-            <tr align="left" valign="top">
-                <td class="formtablec1">Monitor Status: </td>
-                <td class="formtablec2">
-%               $ui->select_lookup(object=>$o, column=>"monitorstatus", lookup=>"MonitorStatus", edit=>$isEditing);
-                </td>
-            </tr>
-            <tr align="left" valign="top">
-                <td class="formtablec1">SNMP-managed?: </td>
-                <td class="formtablec2">
-%               $ui->radio_group_boolean(object=>$o, column=>"snmp_managed", edit=>$isEditing);
-                </td>
-            </tr>
-            
-            </table>
-SNIP -->
-
             </td>
-            <td>&nbsp;</td>
         </tr>
-
-        <tr><td colspan="3">&nbsp;<br></td></tr>
-
-        <tr align="left" valign="top">
+        <tr>
             <td colspan="2">
-            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           $ui->text_area(object=>$o, column=>"info", edit=>$isEditing,
-%                         htmlExtra=>"rows='3' cols='80'");
+                <i>Comments:</i> &nbsp;&nbsp;&nbsp;
+%               $ui->text_area(object=>$o, column=>"info", edit=>$isEditing, htmlExtra=>"rows='3' cols='80'");
             </td>
-            <td>&nbsp;</td>
         </tr>
+    </table>
 
-        <tr><td colspan="3">&nbsp;<p></td></tr>
-        </table>
-        </form>
-    </td>
-    </tr>
-</table>
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+
+</form>
+
 <!-- End Interface Table -->
 
-</div>
+</div> <!-- close sectiondetail -->
