@@ -84,33 +84,31 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 
 % if (defined($o) && $o->connectionid) {
 <!-- Header Table -->
-<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
- <tr class="rowtitle0">
-    <td align="left">
+<div class="containeroutside">
+    <div class="containerheadoutside">
         Circuit for Connection: <a href="view.html?table=Connection&id=<% $o->connectionid %>"><% %></a>&nbsp;&nbsp;&nbsp;
-    </td>
- </tr>
-</table>
+    </div>
+    <div class="containerbodyoutside">
 % }
 
 <!-- Circuit Table -->
-<table border="0" width="100%" align="center"  class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="center">
-        <form name="netdotform" action="circuit.html" method="POST">
-        <input type="hidden" name="id" value="<% $id %>">
-        <input type="hidden" name="_action" value="UPDATE_CIRCUIT">
-        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-        <tr class="formtabletitle">
-            <td colspan="2" align="left">Circuit</td>
-%           if ($editCircuit) {
-            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
+<form name="netdotform" action="circuit.html" method="POST">
+<input type="hidden" name="id" value="<% $id %>">
+<input type="hidden" name="_action" value="UPDATE_CIRCUIT">
+
+<div class="container">
+    <div class="containerheadleft">Circuit</div>
+    <div class="containerheadright">
+%       if ($editCircuit) {
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %           } else {
-            <td align="right"><a href="circuit.html?id=NEW">[new]</a> || <a href="circuit.html?id=<% $id %>&edit=circuitinfo">[edit]</a> || <a href="delete.html?table=Circuit&id=<% $id %>">[delete]</a></td>
+        <a href="circuit.html?id=NEW">[new]</a> || <a href="circuit.html?id=<% $id %>&edit=circuitinfo">[edit]</a> || <a href="delete.html?table=Circuit&id=<% $id %>">[delete]</a>
 %           }
-        </tr>
-        <tr align="left" valign="top">
-            <td width="40%">
+    </div>
+    <div class="containerbody">
+        <table>
+         <tr>
+          <td width="50%">
             <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td align="left">Circuit ID: </td>
@@ -158,9 +156,10 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
                 </td>
             </tr>            
             </table>
-            </td>
-            
-            <td width="40%">
+
+          </td>
+          <td width="50%">
+
             <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td align="left">Speed: </td>
@@ -199,27 +198,20 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
                 </td>
             </tr>
             </table>
-            </td>
-            <td>&nbsp;</td>
-        </tr>
 
-        <tr><td colspan="3">&nbsp;<br></td></tr>
-
-        <tr align="left" valign="top">
-            <td colspan="2">
+          </td>
+         </tr>
+         <tr>
+          <td colspan="2">
             <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           $ui->text_area(object=>$o, table=>"Circuit", column=>"info",
-%                         edit=>$editCircuit, htmlExtra=>"rows='3' cols='80'");
-            </td>
-            <td>&nbsp;</td>
-        </tr>
-
-        <tr><td colspan="3">&nbsp;<br></td></tr>
+%           $ui->text_area(object=>$o, table=>"Circuit", column=>"info", edit=>$editCircuit, htmlExtra=>"rows='3' cols='80'");
+          </td>
+         </tr>
         </table>
-        </form>
-    </td>
-    </tr>
-</table>
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+
+</form>
 <!-- End Circuit Table -->
 
 
@@ -273,51 +265,59 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
     -->
     </script>
 
-    <form name="add_strand_form" action="circuit.html" method="POST">
-    <input type="hidden" name="id" value="<% $id %>">
-    <input type="hidden" name="_action" value="ADD_STRANDS">
-    <table border="0" width="700" align="left">
-        <tr align="left" class="<% $cssitem{0} %>">
-            <td align="center" valign="top" colspan="2"><B>Add Strands</B><hr></td>
-        </tr>
-        <tr align="left" class="<% $cssitem{0} %>">
-            <td align="left" valign="top">
+
+    <div class="container">
+        <div class="containerhead">Add Strands</div>
+        <div class="containerbody">
+
+        <form name="add_strand_form" action="circuit.html" method="POST">
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="_action" value="ADD_STRANDS">
+    
+        <table><tr>
+        <td width="50%" valign="top">
             <%perl>
             my @sites = Site->retrieve_all();
             @sites = sort { $a->name cmp $b->name } @sites;
             </%perl>
-                    <input type="hidden" name="page_type" value="BACKBONE">
-        Backbones connected from:<br>
-        <select name="start_id" style="width: 225px">
-        <option value="">-- Make your selection --</option>
-        <%perl>
-        foreach my $site (@sites) {
-            printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-        }
-        </%perl>
-        </select> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>- TO -</B><br>
+            <input type="hidden" name="page_type" value="BACKBONE">
+            Backbones connected from:<br>
+            <select name="start_id" style="width: 225px">
+                <option value="">-- Make your selection --</option>
+                <%perl>
+                foreach my $site (@sites) {
+                    printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+                }
+                </%perl>
+            </select> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>- TO -</B><br>
    
-        <select name="end_id" style="width: 225px;">
-        <option value="">-- Make your selection --</option>
-        <%perl>
-        foreach my $site (@sites) {
-            printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-        }
-        </%perl>
-        </select>
-        <input type="button" name="get_bb_list" value="Get Strand List" onClick="getStrandList();">
+            <select name="end_id" style="width: 225px;">
+                <option value="">-- Make your selection --</option>
+                <%perl>
+                foreach my $site (@sites) {
+                    printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+                }
+                </%perl>
+            </select>
+            <input type="button" name="get_bb_list" value="Get Strand List" onClick="getStrandList();">
         </td>
-        <td align="left" valign="top">Available Strand Sequence(s):<BR>
-        <select name="sequence_list" style="width: 500px;" multiple size="4"></select>
-	        &nbsp;<input type="submit" name="strand_add" value="Add">&nbsp;
-         </td>
-        </tr>
-    </table>
-    </form>
+        <td width="50%" valign="top">
+            Available Strand Sequence(s):<BR>
+            <select name="sequence_list" style="width: 500px;" multiple size="4"></select>
+    	        &nbsp;<input type="submit" name="strand_add" value="Add">&nbsp;
+        </td>
+        </tr></table>
+    
+        </form>
+
+        </div> <!-- close containerbody -->
+    </div> <!-- close container -->
 %   }
-</td>
-</tr>
-</table>
 <!-- End Cable Strand Table -->
+
+% if (defined($o) && $o->connectionid) {
+    </div> <!-- close containerbodyoutside -->
+</div> <!-- close containeroutside -->
+% }
 
 </div> <!-- close sectiondetail -->
