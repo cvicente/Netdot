@@ -25,10 +25,12 @@ my $page = $user->getAttribute("CABLE_PLANT_PAGE");
 
 if (exists($caller_args{tasks})){
     $user->setAttribute($r, "SHOW_TASKS", $caller_args{tasks});
-} else {
-    $user->setAttribute($r, "SHOW_TASKS", "show");
 }
 my $show_tasks = $user->getAttribute("SHOW_TASKS");
+if ($show_tasks eq "") {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
 
 </%init>
 
