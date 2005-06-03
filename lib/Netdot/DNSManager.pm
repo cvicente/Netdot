@@ -135,6 +135,8 @@ Note:  This object does not contain actual DNS records.
   origin:      optional origin prefix
   contactlist: ContactList object
   active:      If not active, it is somehow reserved
+  auto_update: Whether RR should be updated automatically 
+               when re-discovering devices
     
 Returns: RR object
 
@@ -168,6 +170,7 @@ sub insert_rr {
 		 origin      => $argv{origin}      || "",
 		 contactlist => $argv{contactlist} || 0,
 		 active      => $argv{active}      || 1,
+		 auto_update => $argv{auto_update} || 1,
 		 );
     
     if (my $newrr = $self->insert(table => "RR", state => \%state )){
@@ -176,7 +179,7 @@ sub insert_rr {
     return 0;
 }
 
-=head2 insert_a - Insert an address (A/AAAA)  Resource Record
+=head2 insert_a_rr - Insert an address (A/AAAA)  Resource Record
 
 Args: 
   rr:          Base resource record (optional, see below)
@@ -194,7 +197,7 @@ Returns: RRADDR object
 
 =cut
 
-sub insert_a{
+sub insert_a_rr{
 
     my ($self, %argv) = @_;
     my ($rr, $ip);
@@ -237,6 +240,7 @@ Args:
 Returns: Zone object
 
 =cut
+
 
 sub insert_zone {
     my ($self, %argv) = @_;
