@@ -75,7 +75,7 @@ system ("echo DELETE FROM Site| mysql $newdb");
 
 undef $lookup;
 $lookup = $dbh1->prepare("
-     SELECT id, name, aliases, availability, street1, street2, pobox, city, state
+     SELECT id, name, aliases, availability, street1, street2, pobox, city, state,
             zip, country, contactlist, info
      FROM Site
 ");
@@ -100,7 +100,7 @@ system ("echo DELETE FROM Site_history| mysql $newdb");
 
 undef $lookup;
 $lookup = $dbh1->prepare("
-     SELECT id, site_id, name, aliases, availability, street1, street2, pobox, city, state
+     SELECT id, site_id, name, aliases, availability, street1, street2, pobox, city, state,
             zip, country, contactlist, info, modified, modifier
      FROM Site_history
 ");
@@ -128,7 +128,7 @@ system ("echo DELETE FROM Person| mysql $newdb");
 
 undef $lookup;
 $lookup = $dbh1->prepare("
-     SELECT id, firstname, lastname, aliases, position, entity, location
+     SELECT id, firstname, lastname, aliases, position, entity, location,
             email, office, home, cell, pager, emailpager, fax, info
      FROM Person
 ");
@@ -150,7 +150,7 @@ system ("echo DELETE FROM Person_history| mysql $newdb");
 
 undef $lookup;
 $lookup = $dbh1->prepare("
-     SELECT id, person_id, firstname, lastname, aliases, position, entity, location
+     SELECT id, person_id, firstname, lastname, aliases, position, entity, location,
             email, office, home, cell, pager, emailpager, fax, info, 
             modified, modifier
      FROM Person_history

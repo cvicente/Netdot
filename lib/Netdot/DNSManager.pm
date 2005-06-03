@@ -135,6 +135,8 @@ Note:  This object does not contain actual DNS records.
   origin:      optional origin prefix
   contactlist: ContactList object
   active:      If not active, it is somehow reserved
+  auto_update: Whether RR should be updated automatically 
+               when re-discovering devices
     
 Returns: RR object
 
@@ -168,6 +170,7 @@ sub insert_rr {
 		 origin      => $argv{origin}      || "",
 		 contactlist => $argv{contactlist} || 0,
 		 active      => $argv{active}      || 1,
+		 auto_update => $argv{auto_update} || 1,
 		 );
     
     if (my $newrr = $self->insert(table => "RR", state => \%state )){

@@ -812,7 +812,7 @@ sub update_device {
 	$name .= "." . $suffix ;
 	
 	my @arecords = $ipobj->arecords;
-	if ( ! @arecords ){
+	if ( ! scalar ( @arecords ) ){
 	    
 	    ################################################
 	    # Is this the only ip in this device,
@@ -873,7 +873,9 @@ sub update_device {
 		my $rr = $arecords[0]->rr;
 		# We won't update the RR that the device name points to
 		# Also, don't bother if name hasn't changed
-		if ( $rr->id != $device->name->id && $rr->name ne $name ){
+		if ( $rr->id != $device->name->id 
+		     && $rr->name ne $name
+		     && $rr->auto_update ){
 		    unless ( $self->update(object => $rr, state => {name => $name} )){
 			my $msg = sprintf("%s: Could not update RR %s: %s", 
 					  $host, $rr->name, $self->error);
