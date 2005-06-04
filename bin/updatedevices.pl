@@ -87,7 +87,7 @@ if ($host){
 		}
 		$devices{$device->id} = '';
 		unless ( $device->canautoupdate ){
-		    printf ("Device %s was set to not auto-update. Skipping \n", $nip->addr) if $VERBOSE;
+		    printf ("Device %s was set to not auto-update. Skipping \n", $nip->addr) if $DEBUG;
 		    next;
 		}
 		# Device exists, so don't pass community
