@@ -3,8 +3,8 @@
 # Imports jack data from text file.  
 # Format looks like:
 #
-#Floor   Room No Jack ID Closet  Plate Number    Comments
-#001     101     085A    A       F017A085A       
+#Floor,Room No,Jack ID,Closet,Plate Number,Comments
+#001,100,108A,A,F001A108A,
 #
 # Plate number format means:
 #
@@ -38,7 +38,7 @@ while ( my $line = <FILE> ){
     next if $line =~ /^#/;
     next unless $line =~ /\w+/;
     chomp($line);
-    my ($floor, $room, $jack, $closet, $plate, $comments) = split /\s+/, $line;
+    my ($floor, $room, $jack, $closet, $plate, $comments) = split /,/, $line;
     my $site;
     $floor =~ s/^0+//;   # Remove leading zeroes
     unless ( $plate =~ /^F(\d{3}).*/){
