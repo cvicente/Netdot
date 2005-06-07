@@ -16,8 +16,7 @@ DOCSDIR = /usr/ns/doc
 SYSMONDIR = /usr/ns/doc
 NAGIOSDIR = /usr/local/nagios/etc
 NAGIOSFILES = hosts.cfg apan.cfg
-DOCSFILES = switches.txt 10baseThubs.txt wireless.txt consoles.txt building-contacts.txt netmon/master.cnf circuits.txt
-SYSMONFILES = netmon/sysmon.conf
+DOCSFILES = 10baseThubs.txt consoles.txt building-contacts.txt circuits.txt dsl.txt firewalls.txt ip-phones.txt netmon/master.cnf pdus.txt routers.txt servers.txt shapers.txt switches.txt wireless.txt 
 
 usage:
 	@echo
