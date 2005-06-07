@@ -112,7 +112,7 @@ if ($host){
     my @devices = Device->retrieve_all;
     foreach my $device ( @devices ) {
 	unless ( $device->canautoupdate ){
-	    printf ("Device %s was set to not auto-update. Skipping \n", $host) if $VERBOSE;
+	    printf ("Device %s was set to not auto-update. Skipping \n", $host) if $DEBUG;
 	    next;
 	}
 	# Use hostname, or else try any of its IPs
