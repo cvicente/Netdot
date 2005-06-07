@@ -105,8 +105,10 @@ if ( $Add ){
 			unless ( $ui->insert(table => "InterfaceDep", state => \%state) ){
 			    $m->comp("error.mhtml", error => $ui->error);
 			}else{
-			    $l3dep = 1;
+			    $l3dep = "added";
 			}
+		    }else{
+			$l3dep = "found";
 		    }
 		}
 	    }
@@ -117,9 +119,11 @@ if ( $Add ){
 
     <body class="bodytag" onUnload="opener.location.reload()">
 	Layer 2 dependency added.<br>
-%   if ( $l3dep ){
+%   if ( $l3dep eq "added" ){
 	Layer 3 dependency added.<br>
-%   }else{
+%   }elsif ( $l3dep eq "found" ){
+	Layer 3 dependency already existed.<br>       
+%   }elsif ( ! $l3dep ){
 	Layer 3 dependency could not be determined.  Please add manually.<br>
 %   }
     
