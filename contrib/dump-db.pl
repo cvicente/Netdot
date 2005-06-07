@@ -21,7 +21,8 @@ my %dst = (
 		dir  => '/home/user2/' },
 	    );
 
-my $db   = "netdot";
+my $db       = "netdot";
+my $hostname = "localhost";
 
 ###########################################################
 # End of configuration section
@@ -35,8 +36,8 @@ my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
 my $date = sprintf("%04d-%02d-%02d-%02d%02d",
 		   $year+1900, $month+1, $day_of_month, , $hours, $minutes);
 
-system ("mysqldump netdot >netdot-$date.sql");
+system ("mysqldump $db >$hostname-$date.sql");
 
 foreach my $host ( keys %dst ){
-    system ("scp -i $dst{$host}{key} netdot-$date.sql $dst{$host}{user}\@$host:$dst{$host}{dir}");
+    system ("scp -i $dst{$host}{key} $hostname-$date.sql $dst{$host}{user}\@$host:$dst{$host}{dir}");
 }
