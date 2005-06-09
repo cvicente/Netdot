@@ -66,6 +66,8 @@ if( $user ) {
 }
 
 if ( $action eq "discover" ){
+    # remove spaces
+    $host =~ s/\s*//g;
     # See if device exists
     my ($c, $d) = $dm->find_dev($host);
     $argv{comstr} = (defined($c)) ? $c : $comstr;
