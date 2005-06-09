@@ -37,9 +37,9 @@ foreach my $f (@files){
 	    print $prefix, ": Speed: ", $c->speed, "\n" if ($c->speed);
 	    print $prefix, ": Provider: ", $c->vendor->name, "\n" if ($c->vendor);
 	    print $prefix, ": DLCI: ", $c->dlci, "\n" if ($c->dlci);
-	    print $prefix, ": Near Interface: ", $c->nearend->name, ",", $c->nearend->device->name, "\n" 
+	    print $prefix, ": Near Interface: ", $c->nearend->name, ",", $c->nearend->device->name->name, "\n" 
 	        if ($c->nearend && $c->nearend->device && $c->nearend->device->name);
-	    print $prefix, ": Far Interface: ", $c->farend->name, ",", $c->farend->device->name, "\n" 
+	    print $prefix, ": Far Interface: ", $c->farend->name, ",", $c->farend->device->name->name, "\n" 
 	        if ($c->farend && $c->farend->device && $c->farend->device->name);
 	    if ($c->connectionid){
 		print $prefix, ": Entity: ", $c->connectionid->entity->name, "\n" if ($c->connectionid->entity);
