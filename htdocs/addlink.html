@@ -45,12 +45,11 @@ if ( $int_id ){
 	    $subnets{$subnet->id} = $subnet;
 	}
     }
-
+    
     foreach my $subnet ( keys %subnets ){
 	foreach my $ip ( $subnets{$subnet}->children ){
 	    if ( $ip->prefix == 32 || $ip->prefix == 128 ){
 		if ( $ip->interface && $ip->interface->device 
-		     && $ip->interface->device->id != $intobj->device->id  # Don't include current device
 		     && $ip->interface->device->name 
 		     && $ip->interface->device->name->name){
 		    $subnet_devs{$ip->interface->device->name->name} = "";
@@ -58,7 +57,7 @@ if ( $int_id ){
 	    }
 	}
     }
-
+    
 }
 my %reserved = ( Add           => "",
 		 Cancel        => "",
@@ -86,45 +85,76 @@ if ( $Add ){
 	next if ( exists $reserved{$arg} );
 	$state{$arg} = $ARGS{$arg};
     }
-    unless ( $ui->insert(table => "InterfaceDep", state => \%state) ){
-	$m->comp("error.mhtml", error => $ui->error);
+    my $newdepid;
+    if ( InterfaceDep->search(\%state) ){
+	print "Dependency already exists!";
+	$m->abort;
+    }else{
+	unless ( $newdepid = $ui->insert(table => "InterfaceDep", state => \%state) ){
+	    $m->comp("error.mhtml", error => $ui->error);
+	}
     }
     #
-    #  Add a logical (L3) dependency automagically when adding a L2 dependency
+    #  Add a logical (L3) dependency automagically when adding a L2 dependency.
     #
+    #  If one of the interfaces just linked does not have an ip address, try 
+    #  to add a dependency between the interface in that same device that has it
+    # (assuming it's only one) and another interface in the other device that 
+    #  follows the same rules
+
+    my $newdep = InterfaceDep->retrieve($newdepid);
     my $l3dep = 0;
-    if ( my $childint = Interface->retrieve($state{child}) ){
-	if ( my $parentint = Interface->retrieve($state{parent}) ){
-	    if ( scalar (my @childips = ($dm->getdevips($childint->device))) == 1 ){
-		if ( scalar (my @parentips = ($dm->getdevips($parentint->device))) == 1 ){
-		    my %state;
-		    $state{child}  = $childips[0]->interface;
-		    $state{parent} = $parentips[0]->interface;
-		    # Check that it's not already there
-		    unless ( InterfaceDep->search(\%state) ){
-			unless ( $ui->insert(table => "InterfaceDep", state => \%state) ){
-			    $m->comp("error.mhtml", error => $ui->error);
-			}else{
-			    $l3dep = "added";
-			}
-		    }else{
-			$l3dep = "found";
-		    }
+    if ( (my $childint  = Interface->retrieve($state{child})) 
+	 && (my $parentint = Interface->retrieve($state{parent})) ) {
+
+	if ( $childint->device->id != $parentint->device->id ){
+	
+	    my @childips     = $dm->getdevips($childint->device);
+	    my @parentips    = $dm->getdevips($parentint->device);
+	    my @childintips  = $childint->ips;
+	    my @parentintips = $parentint->ips; 
+	    my %tmp ;
+	    if ( scalar(@childintips) == 1  ){
+		$tmp{child}  = $childintips[0]->interface;
+	    }elsif ( ! @childintips && (scalar(@childips) == 1) ){
+		$tmp{child}  = $childips[0]->interface;
+	    }
+	    if ( scalar(@parentintips) == 1 ){
+		$tmp{parent} = $parentintips[0]->interface;
+	    }elsif ( ! @parentintips && (scalar(@parentips) == 1) ){
+		$tmp{parent} = $parentips[0]->interface;
+	    }
+	    
+	    if ( my $newl3dep = (InterfaceDep->search(\%tmp))[0] ){
+		if ( $newdep->id  == $newl3dep->id ){
+		    $l3dep = "same";
+		}else{
+		    $l3dep = "existed";	    
+		}
+	    }else{
+		unless ( $ui->insert(table => "InterfaceDep", state => \%tmp) ){
+		    $m->comp("error.mhtml", error => $ui->error);
+		}else{
+		    $l3dep = "added";
 		}
 	    }
 	}
     }
-	 
+
+
+    
 </%perl>
 
     <body class="bodytag" onUnload="opener.location.reload()">
 	Layer 2 dependency added.<br>
 %   if ( $l3dep eq "added" ){
 	Layer 3 dependency added.<br>
-%   }elsif ( $l3dep eq "found" ){
+%   }elsif ( $l3dep eq "existed" ){
 	Layer 3 dependency already existed.<br>       
+%   }elsif ( $l3dep eq "same" ){
+	Layer 2 dependency is also Layer 3<br>       
 %   }elsif ( ! $l3dep ){
-	Layer 3 dependency could not be determined.  Please add manually.<br>
+	Layer 3 dependency could not be determined.  Please add manually if necessary.<br>
 %   }
     
     <p><a href="#" onClick="window.close()">[done]</a>
