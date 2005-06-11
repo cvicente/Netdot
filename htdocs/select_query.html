@@ -32,7 +32,7 @@ $form_name => $ARGS{form_name};
 <%init>
 my $r;
 my @terms;
-my $max   = 100;
+my $MAX   = 100;
 my $DEBUG = 0;
 
 </%init>
@@ -41,26 +41,22 @@ my $DEBUG = 0;
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 if ($crit =~ /\w+/){
-  if ($crit =~ /\w+\s+\w+/){  #If there's more than one word
-     @terms = split /\s+/, $crit;
-  }else{
-     $crit =~ s/\s+//;
-     push @terms, $crit;    
-  }
-  print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
+    $crit =~ s/^\s*(.*)\s*$/$1/;
+    @terms = split /\s+/, $crit;
+    print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
 }
 </%perl>
 
 <body bgcolor="#FFFFFF" onLoad="opener.getlist(<% "\'" . $field . "\'" %>, <% "\'" . $form_name . "\'" %>)">
 
-%$r = $ui->select_query(table => $table, terms => \@terms, max => $max);
+%$r = $ui->select_query(table => $table, terms => \@terms, max => $MAX);
 
 <form>
 %if (my $n = scalar (keys %$r) ){
 %    my $count = 0;
      <input type="hidden" name="0" value="">
-%    if ($n >= $max){
-       <input type="hidden" name="" value="More than <% $max %> matches.  Refine search">
+%    if ($n >= $MAX){
+       <input type="hidden" name="" value="More than <% $MAX %> matches.  Refine search">
 %    }
 %    my @objs = map { $r->{$_} } keys %$r;
 %    my $lblfield = ( $ui->getlabels($table) )[0];
@@ -74,7 +70,7 @@ if ($crit =~ /\w+/){
 %    foreach my $o (@objs){
 %       my $lbl = $ui->getobjlabel($o, ", ");
         <input type="hidden" name="<% $o->id %>" value="<% $lbl %>">
-%       last if ($count++) == $max;
+%       last if ($count++) == $MAX;
 %    }
 %}else{
        <input type="hidden" name="0" value="No matches">

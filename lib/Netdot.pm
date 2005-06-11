@@ -727,8 +727,6 @@ sub dateserial {
 
  Search keywords in a tables label fields. If label field is a foreign
  key, recursively search for same keywords in foreign table.
- If objects exist that match both keys, return those.  Otherwise, return all
- objects that match either keyword
 
  Arguments
    table: Name of table to look up
@@ -741,32 +739,43 @@ sub dateserial {
 sub select_query {
     my ($self, %args) = @_;
     my ($table, $terms) = ($args{table}, $args{terms});
-    my %in; # intersection
-    my %un; # union
+    my %found;
     my %linksto = $self->getlinksto($table);
     my @labels = $self->getlabels($table);
-    foreach my $c (@labels){
-	if (! $linksto{$c} ){ # column is local
-	    foreach my $term (@$terms){
+    foreach my $term (@$terms){
+	foreach my $c (@labels){
+	    if (! $linksto{$c} ){ # column is local
 		my $it = $table->search_like( $c => "%" . $term . "%" );
 		while (my $obj = $it->next){
-		    (exists $un{$obj->id})? $in{$obj->id} = $obj : $un{$obj->id} = $obj;
+		    $found{$term}{$obj->id} = $obj;
 		}	
-	    }
-	}else{ # column is a foreign key.
-	    my $rtable = $linksto{$c};
-	    # go recursive
-	    if (my $fobjs = $self->select_query( table => $rtable, terms => $terms )){
-		foreach my $foid (keys %$fobjs){
-		    my $it = $table->search( $c => $foid );
-		    while (my $obj = $it->next){
-			(exists $un{$obj->id})? $in{$obj->id} = $obj : $un{$obj->id} = $obj;
+	    }else{ # column is a foreign key.
+		my $rtable = $linksto{$c};
+		# go recursive
+		if (my $fobjs = $self->select_query( table => $rtable, terms => [$term] )){
+		    foreach my $foid (keys %$fobjs){
+			my $it = $table->search( $c => $foid );
+			while (my $obj = $it->next){
+			    $found{$term}{$obj->id} = $obj;
+			}
 		    }
 		}
 	    }
 	}
     }
-    return (keys %in) ? \%in : \%un;
+    # If more than one keyword, return the intersection.
+    # Otherwise, return all matching objects for the single keyword
+    if ( (scalar @$terms) > 1 ){
+	my (%in, %un);
+	foreach my $term ( keys %found ){
+	    foreach my $id ( keys %{ $found{$term} } ){
+		(exists $un{$id})? $in{$id} = $found{$term}{$id} : $un{$id} = $found{$term}{$id};
+	    }
+	}
+	return \%in;
+    }else{
+	return \%{$found{$terms->[0]}};
+    }
 }
 
 =head2 gethistorytable - Get the name of the history table for a given object
