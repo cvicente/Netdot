@@ -106,33 +106,33 @@ LIST_MANAGER.addList(floorSearchList);
 
 % if ($site) {
 <!-- Header Table -->
-<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
- <tr class="rowtitle0">
-    <td align="left">
+<div class="containeroutside">
+    <div class="containerheadoutside">
         Closet for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=CLOSETS"><% $site->name %></a>&nbsp;&nbsp;&nbsp;
-    </td>
- </tr>
-</table>
+    </div>
+    <div class="containerbodyoutside">
 % }
 
 <!-- Closet Table -->
-<table border="0" width="100%" align="center"  class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="center">
-        <form name="closetform" action="closet.html" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="id" value="<% $id %>">
-        <input type="hidden" name="_action" value="1">
-        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-        <tr class="formtabletitle">
-            <td colspan="2" align="left">Closet</td>
-%           if ($editCloset) {
-            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%           } else {
-            <td align="right"><a href="closet.html?id=NEW">[new]</a> || <a href="closet.html?id=<% $id %>&edit=closetinfo">[edit]</a> || <a href="delete.html?table=Closet&id=<% $id %>">[delete]</a></td>
-%           }
-        </tr>
+<div class="container">
+    <form name="closetform" action="closet.html" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="_action" value="1">
+
+    <div class="containerheadleft">
+        Closet
+    </div>
+    <div class="containerheadright">
+%       if ($editCloset) {
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
+%       } else {
+            <a href="closet.html?id=NEW">[new]</a> || <a href="closet.html?id=<% $id %>&edit=closetinfo">[edit]</a> || <a href="delete.html?table=Closet&id=<% $id %>">[delete]</a></td>
+%       }
+    </div>
+    <div class="containerbody">
+        <table>
         <tr align="left" valign="top">
-            <td width="40%">
+            <td width="50%">
             <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td align="left">Name: </td>
@@ -220,9 +220,10 @@ LIST_MANAGER.addList(floorSearchList);
                 </td>
             </tr>
             </table>
+
             </td>
-            
-            <td width="40%">
+            <td width="50%">
+
             <table width="100%" border="0" cellspacing="2" cellpadding="0">
             <tr align="left" valign="top">
                 <td align="left">RU Available: </td>
@@ -294,11 +295,9 @@ LIST_MANAGER.addList(floorSearchList);
                 </td>
             </tr> 
             </table>
-            </td>
-            <td>&nbsp;</td>
-        </tr>
 
-        <tr><td colspan="3">&nbsp;<br></td></tr>
+            </td>
+        </tr>
 
         <tr align="left" valign="top">
             <td colspan="2">
@@ -308,44 +307,37 @@ LIST_MANAGER.addList(floorSearchList);
             </td>
             <td>&nbsp;</td>
         </tr>
-
-        <tr><td colspan="3">&nbsp;<br></td></tr>
         </table>
-        </form>
-    </td>
-    </tr>
-</table>
+    </div> <!-- close containerbody -->
+    </form>
+</div> <!-- close containerbody -->
 <!-- End Closet Table -->
 
 <!-- Begin Closet Pictures -->
 % if (defined($o)) {
 <A NAME="pics"></A>
-<table border="0" width="100%" align="center"  class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="center">
-    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-    <tr class="formtabletitle">
-     <td colspan="2">
+<div class="container">
      <form name="cable_strand_form" action="closet.html" method="POST" enctype="multipart/form-data">
      <input type="hidden" name="id" value="<% $id %>">
+%   if (!$editPictures) {
+     <input type="hidden" name="_action" value="ADD_PICTURE">
+%   } else {
      <input type="hidden" name="_action" value="UPDATE_PICTURES">
-      <table width="100%" border="0">
-       <tr>
-         <th width="80%" align="center">Closet Pictures</th>
-%	 if ($editPictures) {	 
-            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%	 } else {
-            <td align="right">
-                <a href="closet.html?id=<% $id %>&edit=closetpictures#pics">[edit]</a>
-            </td>
-%	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-      
+%   }
+
+    <div class="containerheadleft">
+        Closet Pictures
+    </div>
+    <div class="containerheadright">
+%   if ($editPictures) {	 
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%   } else {
+        <a href="closet.html?id=<% $id %>&edit=closetpictures#pics">[edit]</a>
+%   }
+    </div>
+
+    <div class="containerbody">
+
     <table border="0" width="90%">
     <%perl>
     my @pictures;
@@ -406,39 +398,27 @@ LIST_MANAGER.addList(floorSearchList);
 %   }
 %}
     </table>
-    </td>
-    </tr>
-    </table>
-    </form>
 
     <br>
 
-%	 if (!$editPictures) {
-    <form action="closet.html" method="POST" enctype="multipart/form-data">
-    <input type="hidden" name="id" value="<% $id %>">
-    <input type="hidden" name="_action" value="ADD_PICTURE">
-    <table border="0" width="100%">
-        <tr align="left" class="<% $cssitem{0} %>">
-            <td align="left">
+%   if (!$editPictures) {
             Add New Picture: &nbsp;<input type="file" name="__picture" size="30" value="">
 	        &nbsp;<input type="submit" name="__picture_add" value="Add">
-            </td>
-        </tr>
-    </table>
-    </form>
 %   }
 
-</td>
-</tr>
-</table>
+    </div> <!-- close containerbody -->
+    </form>
+</div> <!-- close container -->
+
 % }
 <!-- End Closet Picture Table -->
 
 
 % if (defined($o)) {
+<!-- 2-column layout table -->
 <table border="0" width="100%" align="center" class="tablebackground">
 <tr valign="top">
-    <td width="50%" valign="top">
+    <td width="50%" valign="top"> 
 <!-- Begin BackboneCable Table -->
 <%perl>
 my @sites;
@@ -449,41 +429,31 @@ if ($editBackbones) {
 </%perl>
 
 <A NAME="backbones"></A>
-<table border="0" width="100%" align="left"  class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="left">
     <%perl>
     my @bbones;
     map { push (@bbones, $_) } ($o->backbones_start, $o->backbones_end);
     </%perl>
+
 %	if (scalar(@bbones)) {
-    
+<div class="container">
     <form name="bbone_form" action="closet.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="UPDATE">
 
-    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-    <tr class="formtabletitle">
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="70%" align="center">Backbone Cable</th>
-%	 if ($editBackbones) {	 
-            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%	 } else {
-            <td width="20%" align="right">
-                <a href="cable_backbone.html?id=NEW">[new]</a>
-            </td>
-%	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-      <table border="0" width="90%">
-    <tr>
+    <div class="containerheadleft">
+        Backbone Cable
+    </div>
+    <div class="containerheadright">
+%       if ($editBackbones) {	 
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%       } else {
+            <a href="cable_backbone.html?id=NEW">[new]</a>
+%       }
+    </div>
+
+    <div class="containerbody">
+    <table border="0" width="100%">
+      <tr>
         <td align="left">
             <a href="closet.html?id=<% $id %>&bb_sort=name#backbones">Name</a>
         </td>
@@ -499,13 +469,12 @@ if ($editBackbones) {
         <td align="left">
             <a href="closet.html?id=<% $id %>&bb_sort=owner#backbones">Owner</a>
         </td>
-    </tr>
+      </tr>
 
     <%perl>
     $bb_sort = "name" if (!defined($bb_sort) || $bb_sort eq "");
     my @sorted_bbones;
-    if ($bb_sort eq "name")
-    {
+    if ($bb_sort eq "name") {
         @sorted_bbones = sort { $a->name cmp $b->name } @bbones;
     } elsif ($bb_sort eq "start_closet") {
         @sorted_bbones = sort { $a->start_closet->name cmp $b->start_closet->name } @bbones;
@@ -594,63 +563,44 @@ if ($editBackbones) {
 %                             lookup=>"Entity", edit=>$editBackbones);
         </td>
     </tr>
-%   }
-    <tr align="left" valign="top">
-        <td align="left" colspan="4">
-
-        </td>
-    </tr>
-
+%   }   # end foreach my $bb (@sorted_bbones)
     </table>
-    </td>
-    </tr>
-    </table>
+    </div> <!-- close containerbody -->
     </form>
-%  }    
-</td>
-</tr>
-</table>
+</div> <!-- close container -->
+%   }    
 <!-- End BackboneCable Table -->
-    </td>
 
+    </td>   <!-- 2-column layout cells -->
     <td width="50%" align="top">
+
 <!-- Begin  HorizontalCable Table -->
-    <A NAME="horizontal"></A>
-<table border="0" width="100%" align="right" class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="right">
+<A NAME="horizontal"></A>
     <%perl>
     my @cables;
     map { push (@cables, $_) } $o->horizontalcables;
     </%perl>
 %	if (scalar(@cables)) {
-    
+<div class="container">   
     <form name="cable_form" action="closet.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="UPDATE">
 
-    <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-    <tr class="formtabletitle">
-     <td colspan="2">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="70%" align="center">Horizontal Cable</th>
-%	 if ($editHorizontal) {
-            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%	 } else {
-            <td width="20%" align="right">
-                <a href="cable_horizontal.html?id=NEW">[new]</a>
-            </td>
+    <div class="containerheadleft">
+        Horizontal Cable
+    </div>
+    <div class="containerheadright">
+%   if ($editHorizontal) {
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%   } else {
+       <a href="cable_horizontal.html?id=NEW">[new]</a>
 %	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-      <table border="0" width="90%">
-    <tr>
+    </div>
+
+    <div class="containerbody">
+
+    <table border="0" width="90%">
+      <tr>
         <td align="left">
             <a href="closet.html?id=<% $id %>&cable_sort=jackid#horizontal">Jack ID</a>
         </td>
@@ -660,7 +610,7 @@ if ($editBackbones) {
         <td align="left">
             <a href="closet.html?id=<% $id %>&cable_sort=room#horizontal">Room</a>
         </td>
-    </tr>
+      </tr>
 
     <%perl>
     $cable_sort = "jackid" if (!defined($cable_sort) || $cable_sort eq "");
@@ -699,26 +649,23 @@ if ($editBackbones) {
             <a href="view.html?table=Room&id=<% $cable->room %>"><% $cable->room->name %></a>
         </td>
     </tr>
-%   }
-    <tr align="left" valign="top">
-        <td align="left" colspan="4">
-        </td>
-    </tr>
+%   }   # end foreach
     </table>
-    </td>
-    </tr>
-    </table>
+    </div> <!-- close containerbody -->
     </form>
-%  }    
-</td>
-</tr>
-</table>
+</div> <!-- close container -->
+%  }   #  end if scalar cables
 <!-- End HorizontalCable Table -->
-    
-    </td>
-</tr>
-</table>
+
+    </td> <!-- close 2-column layout cell -->
+  </tr>
+</table> 
+<!-- close 2-column layout table -->
+
 % }
+    
+    </div> <!-- close containerbodyoutside -->
+</div> <!-- close containeroutside -->
 
 
 </div> <!-- close sectiondetail -->
