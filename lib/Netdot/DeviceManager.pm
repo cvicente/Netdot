@@ -108,7 +108,7 @@ sub find_dev {
 	my $msg = sprintf("Name %s exists but Device not in DB.  Will try to create.", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg );
-    }elsif(my $ip = $self->searchblock($host)){
+    }elsif(my $ip = $self->searchblocks_addr($host)){
 	if ( $ip->interface && ($device = $ip->interface->device) ){
 	    my $msg = sprintf("Device with address %s exists in DB. Will try to update.", $ip->address);
 	    $self->debug( loglevel => 'LOG_NOTICE',
@@ -693,7 +693,7 @@ sub update_device {
 		    if ( $newmask = $dev{interface}{$newif}{ips}{$newip} ){
 			my $subnetaddr = $self->getsubnetaddr($newip, $newmask);
 			if ( $subnetaddr ne $newip ){
-			    if ( ! ($self->searchblock($subnetaddr, $newmask)) ){
+			    if ( ! ($self->searchblocks_addr($subnetaddr, $newmask)) ){
 				unless( $self->insertblock(address     => $subnetaddr, 
 							   prefix      => $newmask, 
 							   statusname  => "Subnet",
@@ -741,7 +741,7 @@ sub update_device {
 			next;
 		    }
 
-		}elsif ( $ipobj = $self->searchblock($newip) ){
+		}elsif ( $ipobj = $self->searchblocks_addr($newip) ){
 		    # IP exists but not linked to this interface
 		    # update
 		    my $msg = sprintf("%s: IP %s/%s exists but not linked to %s. Updating", 

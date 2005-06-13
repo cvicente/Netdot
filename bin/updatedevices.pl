@@ -75,7 +75,7 @@ if ($host){
     $net = $net->network();
     my %devices;
     for (my $nip = $net+1; $nip < $nip->broadcast; $nip++){
-	if(my $ip = $ipm->searchblock($nip->addr)){
+	if(my $ip = $ipm->searchblocks_addr($nip->addr)){
 	    printf ("Address %s found\n", $nip->addr);
 	    if ( ($ip->interface) && (my $device = $ip->interface->device) ){
 		printf ("Device with Address %s found\n", $ip->address) if $DEBUG;

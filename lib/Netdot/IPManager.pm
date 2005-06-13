@@ -50,13 +50,13 @@ sub new {
 }
 
 
-=head2 searchblock -  Search IP Blocks
+=head2 searchblocks_addr -  Search IP Blocks by address
  Arguments: address and (optional) prefix
- Returns: Ipblock object
+ Returns: array of Ipblock object
 
 =cut
 
-sub searchblock {
+sub searchblocks_addr {
     my ($self, $address, $prefix) = @_;
     my ($ip, @ipb);
     $self->debug(loglevel => 'LOG_DEBUG',
@@ -89,14 +89,14 @@ sub searchblock {
 
 }
 
-=head2 searchblockslike - Search IP Blocks that match certain address substring
+=head2 searchblocks_addr_like - Search IP Blocks that match certain address substring
 
  Arguments: address string or substring
- Returns: Ipblock objects
+ Returns: array of Ipblock objects
 
 =cut
 
-sub searchblockslike {
+sub searchblocks_addr_like {
     my ($self, $string) = @_;
     my @ipb;
     my $it = Ipblock->retrieve_all;
@@ -107,6 +107,39 @@ sub searchblockslike {
 	    $self->error("Too many entries. Please refine search");
 	    return;
 	}
+    }
+    wantarray ? ( @ipb ) : $ipb[0]; 
+
+}
+
+=head2 searchblocks_other - Search IP Blocks by Entity, Site, Description and Comments
+
+ Arguments: string or substring
+ Returns: array of Ipblock objects
+
+=cut
+
+sub searchblocks_other {
+    my ($self, $string) = @_;
+    my $crit = "%" . $string . "%";
+
+    my @sites    = Site->search_like  (name => $crit );
+    my @ents     = Entity->search_like(name => $crit );
+    my %blocks;  # Hash to prevent dups
+    map { $blocks{$_} = $_ } Ipblock->search_like(description => $crit);
+    map { $blocks{$_} = $_ } Ipblock->search_like(info        => $crit);
+
+    map { push @ents, $_->entity } 
+    map { $_->entities } @sites; 
+
+    map { $blocks{$_} = $_ } 
+    map { $_->subnets } @ents;
+    
+    my @ipb = map { $blocks{$_} } keys %blocks;
+
+    if (scalar (@ipb) > $self->{config}->{'MAXSEARCHBLOCKS'}){
+	$self->error("Too many entries. Please refine search");
+	return;
     }
     wantarray ? ( @ipb ) : $ipb[0]; 
 

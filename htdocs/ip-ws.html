@@ -68,21 +68,30 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 #
 #######################################################################################
 
-if ( defined($_action) && ($_action eq "SEARCH") ){
-    if ($search =~ /\w+/ ){
-	my ($addr, $prefix, $ipb, @list);
-	if ($search =~ /\//){
-	    ($addr, $prefix) = split /\//, $search;
-	    if ($ipb = $ipm->searchblock($addr, $prefix)){
-		push @list, $ipb;
+if ( defined($_action) && defined($search) ){
+    my @list;
+    if ( $_action eq "SEARCH_ADDR" ){
+	if ($search =~ /\w+/ ){
+	    my ($addr, $prefix, $ipb);
+	    if ($search =~ /\//){
+		($addr, $prefix) = split /\//, $search;
+		if ($ipb = $ipm->searchblocks_addr($addr, $prefix)){
+		    push @list, $ipb;
+		}
+	    }else{
+		@list = $ipm->searchblocks_addr($search);
 	    }
-	}else{
-	    @list = $ipm->searchblock($search);
+	    unless ( @list ){
+		# None were found, so look for substrings
+		@list = $ipm->searchblocks_addr_like($search);
+	    }
 	}
-	unless ( @list ){
-	    # None were found, so look for substrings
-	    @list = $ipm->searchblockslike($search);
+    }elsif ( $_action eq "SEARCH_OTHER" ){
+	if ($search =~ /\w+/ ){
+	    @list = $ipm->searchblocks_other($search);
 	}
+    }
+
 </%perl>      
 
 
@@ -96,7 +105,6 @@ if ( defined($_action) && ($_action eq "SEARCH") ){
                   <& ipblock_list.mhtml, objects => \@list  &>
 %             }elsif ( $ipm->error ){
                   <p><strong><% $ipm->error %></strong>
-%             }
 %             }else{
                   <p><strong>No search criteria</strong>   
 %             }
