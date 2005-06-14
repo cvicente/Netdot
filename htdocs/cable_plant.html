@@ -78,22 +78,15 @@ if(defined($ARGS{_action})) {
 </%perl>     
 
 % if ($o) {
-<!-- Header Table -->
-<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
- <tr class="rowtitle0" >
-    <td align="left">
-    <% ucfirst(lc($page_type)) %> for Site: <a href="view.html?table=Site&id=<% $id %>"><% $o->name %></a>&nbsp;&nbsp; 
-    <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&cable_sort=<% $cable_sort %>">[refresh]</a>
-    </td>
- </tr>
-</table>
-<!-- End Header Table -->
+<div class="containeroutside">
+    <div class="containerheadleftoutside">
+        <% ucfirst(lc($page_type)) %> for Site: <a href="view.html?table=Site&id=<% $id %>"><% $o->name %></a>&nbsp;&nbsp; 
+    </div>
+    <div class="containerheadrightoutside">
+        <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&cable_sort=<% $cable_sort %>">[refresh]</a>
+    </div>
+    <div class="containerbodyoutside">
 % }
-
-<!-- Margins Table -->
-<table border="0" width="100%" align="center"  class="tablebackground">
- <tr>
-   <td valign="top" width="50%" align="center">
 
 % if ($edit) {
    <form name="netdotform" action="cable_plant.html" method="POST">
@@ -128,33 +121,35 @@ if(defined($ARGS{_action})) {
     </%perl>
 
 %   if (scalar(@cables) > $MAX_SELECTION) {
-        <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+        <div class="container">
+            <div class="containerhead">
+                Horizontal Cable
+            </div>
+            <div class="containerbody">
+                <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+            </div>
+        </div>
 %   } else {
-        <% scalar(@cables) %> row(s) returned.
 
-  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle" >
-     <td colspan="5">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="70%" align="center">Horizontal Cable</th>
-%	 if ($edit eq "cableinfo"){	 
-            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%	 } else {
-            <td width="20%" align="right">
-                <a href="cable_horizontal.html?id=NEW&site_id=<% $id %>">[new]</a> &nbsp;||&nbsp; 
-                <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
-            </td>
-%	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-      <table border="0" width="100%">
-% }      
+<div class="container">
+    <div class="containerheadleft">
+        Horizontal Cable
+    </div>
+    <div class="containerheadright">
+%       if ($edit eq "cableinfo"){	 
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
+%	    } else {
+            <a href="cable_horizontal.html?id=NEW&site_id=<% $id %>">[new]</a> &nbsp; 
+            <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+%       }
+    </div>
+    <div class="containerbody">
+    <table border="0" width="100%">
+%   }
+
+    <tr><td>
+    <% scalar(@cables) %> row(s) returned.
+    </td></tr>
 
 %	if (scalar(@cables) && scalar(@cables) < $MAX_SELECTION) {
     <tr>
@@ -172,7 +167,7 @@ if(defined($ARGS{_action})) {
         </td>
     </tr>
 
-    <%perl>
+<%perl>
     # sort
     # -------------------------------------------------------------------------
     $cable_sort = "jackid" if (!defined($cable_sort) || $cable_sort eq "");
@@ -221,12 +216,12 @@ if(defined($ARGS{_action})) {
 %           $ui->text_field(object=>$cable, table=>"HorizontalCable", column=>"room", edit=>($edit eq "cableinfo"));
         </td>
     </tr>
-%   }
-%}
+%   } # end foreach
+%   } # end if scalar cable < MAX_SELECTION
     </table>
-    </td>
-    </tr>
-</table>
+
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
 %} 
 % #############################################################################
 % # END HORIZONTAL CABLE CODE
@@ -299,31 +294,32 @@ elsif ($start_id) {
 </%perl>
 
 %   if (scalar(@cables) > $MAX_SELECTION) {
-        <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+    <div class="container">
+        <div class="containerhead">
+            Backbone Cable
+        </div>
+        <div class="containerbody">
+            <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+        </div>
+    </div>
 %   } else {
 
- <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle" >
-     <td colspan="5">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="70%" align="center">Backbone Cable <% $header_descr ? $header_descr : "" %></th>
-%	 if ($edit eq "cableinfo"){	 
-            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%	 } else {
-            <td width="20%" align="right">
-                <a href="cable_backbone.html?id=NEW">[new]</a> &nbsp;||&nbsp; 
-                <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
-            </td>
-%	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-      <table border="0" width="100%">
+<div class="container">
+    <div class="containerheadleft">
+        Backbone Cable <% $header_descr ? $header_descr : "" %>
+    </div>
+    <div class="containerheadright">
+%   if ($edit eq "cableinfo"){	 
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%   } else {
+        <a href="cable_backbone.html?id=NEW">[new]</a> &nbsp;
+        <a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+%   }
+    </div>
+
+    <div class="containerbody">
+
+  <table border="0" width="100%">
     <tr><td align="left" colspan="5"><% scalar(@cables) %> row(s) returned.</td></tr>
 
 %	if (scalar(@cables)) {
@@ -442,10 +438,11 @@ elsif ($start_id) {
     </tr>
 %   }
 %}
-    </table>
-    </td>
-    </tr>
-</table>
+  </table>
+
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+
 % }
 %}
 % #############################################################################
@@ -483,34 +480,36 @@ elsif ($start_id) {
     </%perl>
 
 %   if (scalar(@closets) > $MAX_SELECTION) {
-        <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+    <div class="container">
+        <div class="containerhead">
+            Closets
+        </div>
+        <div class="containerbody">
+            <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+        </div>
+    </div>
 %   } else {
-        <% scalar(@closets) %> row(s) returned.
 
+<div class="container">
+    <div class="containerheadleft">
+        Closets
+    </div>
+    <div class="containerheadright">
+%   if ($edit eq "cableinfo"){	 
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%   } else {
+        <a href="closet.html?id=NEW&site_id=<% $id %>">[new]</a> &nbsp;||&nbsp; 
+        <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+%   }
+    </div>
+    <div class="containerbody">
 
-  <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle" >
-     <td colspan="5">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="70%" align="center">Closets</th>
-%	 if ($edit eq "cableinfo"){	 
-            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%	 } else {
-            <td width="20%" align="right">
-                <a href="closet.html?id=NEW&site_id=<% $id %>">[new]</a> &nbsp;||&nbsp; 
-                <a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
-            </td>
-%	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-      <table border="0" width="100%">
+    <table border="0" width="100%">
 % }      
+
+    <tr><td>
+    <% scalar(@closets) %> row(s) returned.
+    </td></tr>
 
 %	if (scalar(@closets) && scalar(@closets) < $MAX_SELECTION) {
     <tr>
@@ -569,9 +568,9 @@ elsif ($start_id) {
 %   }
 %}
     </table>
-    </td>
-    </tr>
-</table>
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+
 %}
 % #############################################################################
 % # END CLOSET CODE
@@ -592,33 +591,35 @@ print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
 </%perl>
 
 % if (scalar(@strands) > $MAX_SELECTION) {
-        <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+    <div class="container">
+        <div class="containerhead">
+            Cable Strands
+        </div>
+        <div class="containerbody">
+            <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+        </div>
+    </div>
 % } else {
-        <% scalar(@strands) %> row(s) returned.
+<div class="container">
+    <div class="containerheadleft">
+        Closets
+    </div>
+    <div class="containerheadright">
+%	if ($edit eq "cableinfo"){	 
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%	} else {
+        <a href="cable_strand.html?id=NEW">[new]</a> &nbsp;
+        <a href="cable_plant.html?backbone_id_srch=<% $backbone_id_srch %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+%   }
+    </div>
+    <div class="containerbody">
 
-<table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle" >
-     <td colspan="5">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="70%" align="center">Cable Strands</th>
-%	 if ($edit eq "cableinfo"){	 
-            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%	 } else {
-            <td width="20%" align="right">
-                <a href="cable_strand.html?id=NEW">[new]</a> &nbsp;||&nbsp; 
-                <a href="cable_plant.html?backbone_id_srch=<% $backbone_id_srch %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
-            </td>
-%	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-      <table border="0" width="100%">
+    <table border="0" width="100%">
 % }      
+
+    <tr><td>
+    <% scalar(@strands) %> row(s) returned.
+    </td></tr>
 
 %	if (scalar(@strands) && scalar(@strands) < $MAX_SELECTION) {
 <%perl>
@@ -768,16 +769,17 @@ if ($edit eq "cableinfo") {
 %           my @strands = ($strand);
             <& display_sequence.mhtml, strands=>\@strands &>
         </td>
+%       }
 
     </tr>
-%   }
-%}
+%   } # end foreach
+%} # end if < MAX_SELECTION
     </table>
-    </td>
-    </tr>
-</table>
 
-%}
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+
+% }
 % #############################################################################
 % # END CABLE STRAND CODE
 % #############################################################################
@@ -786,7 +788,7 @@ if ($edit eq "cableinfo") {
 % #############################################################################
 % # BEGIN CIRCUIT CODE
 % #############################################################################
-% } elsif (uc($page_type) eq "CIRCUITS") {
+% elsif (uc($page_type) eq "CIRCUITS") {
 <%perl>
 my @circuits = ();
 # if we are searching by backbone name...
@@ -801,33 +803,37 @@ if ($ARGS{circuit_srch}) {
 </%perl>
 
 % if (scalar(@circuits) > $MAX_SELECTION) {
-        <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+        <div class="container">
+            <div class="containerhead">
+                Horizontal Cable
+            </div>
+            <div class="containerbody">
+                <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+            </div>
+        </div>
 % } else {
-        <% scalar(@circuits) %> row(s) returned.
 
-<table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-   <tr class="formtabletitle" >
-     <td colspan="5">
-      <table width="100%" border="0">
-       <tr>
-         <td width="10%" align="left">&nbsp;</td>
-         <th width="70%" align="center">Circuits</th>
-%	 if ($edit eq "cableinfo"){	 
-            <td width="20%" align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%	 } else {
-            <td width="20%" align="right">
-                <a href="circuit.html?id=NEW">[new]</a> &nbsp;||&nbsp; 
-                <a href="cable_plant.html?circuit_srch=<% $ARGS{circuit_srch} %>&submit_site=<% $ARGS{submit_site} %>&start_id=<% $start_id %>&end_id=<% $end_id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
-            </td>
-%	 }
-       </tr>
-      </table>
-     <td>
-   </tr>
-   <tr>
-     <td>
-      <table border="0" width="100%">
+<div class="container">
+    <div class="containerheadleft">
+        Circuits
+    </div>
+    <div class="containerheadright">
+%	if ($edit eq "cableinfo"){	 
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%	} else {
+        <a href="circuit.html?id=NEW">[new]</a> &nbsp;
+        <a href="cable_plant.html?circuit_srch=<% $ARGS{circuit_srch} %>&submit_site=<% $ARGS{submit_site} %>&start_id=<% $start_id %>&end_id=<% $end_id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+%   }
+    </div>
+
+    <div class="containerbody">
+
+    <table border="0" width="100%">
 % }      
+
+    <tr><td>
+    <% scalar(@circuits) %> row(s) returned.
+    </td></tr>
 
 %	if (scalar(@circuits) && scalar(@circuits) < $MAX_SELECTION) {
     <tr>
@@ -899,9 +905,9 @@ if ($ARGS{circuit_srch}) {
 %   }
 %}
     </table>
-    </td>
-    </tr>
-</table>
+
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
 %}
 % #############################################################################
 % # END CIRCUIT CODE
@@ -915,7 +921,11 @@ if ($ARGS{circuit_srch}) {
     </form>
 % }
 
- </td></tr>
-</table>
-<!-- End Margins Table -->
-</div>
+
+
+% if ($o) {
+    </div> <!-- close containerbodyoutside -->
+</div> <!-- close containerbody -->
+% }
+
+</div> <!-- close sectiondetail -->
