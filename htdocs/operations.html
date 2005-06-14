@@ -162,26 +162,22 @@ if( %results ) {
 %
 % if( $search ) {
 %
-<table border="0" align="center" class="tablebackground">
- <tr class="rowtitle0" >
-    <td valign="top" align="left">
-       <b><% scalar( @{$list} ) %> results for <i><% $search %></i></b>
-    </td>
- </tr>
-%    foreach my $tbl ( sort keys %results ) {
-%        my @list = values %{ $results{$tbl} };
-   <tr class="formtabletitle">
-      <td colspan="2">
-      <strong><% $tbl %></strong>
-      </td>
-   </tr>
-   <tr>
-      <td valign="top" width="50%" align="center">
-      <& sortresults.mhtml, table => $tbl, object => \@list, view => "row", page => "operations.html" &>
-      </td>
-   </tr>
-%    }
-</table>
+<div class="containeroutside">
+    <div class="containerheadoutside">
+       <% scalar( @{$list} ) %> results for <i><% $search %></i>
+    </div>
+    <div class="containerbodyoutside">
+%   foreach my $tbl ( sort keys %results ) {
+%       my @list = values %{ $results{$tbl} };
+        <div class="container">
+            <div class="containerhead">
+            <% $tbl %>
+            </div>
+            <div class="containerbody">
+                <& sortresults.mhtml, table => $tbl, object => \@list, view => "row", page => "operations.html" &>
+            </div>
+    </div>
+%   }
 %
 % } elsif( $obj ) {
 %
@@ -197,12 +193,18 @@ if( %results ) {
 %       }
     </div>
     <div class="containerheadrightoutside">
-        <a href="device.html?id=<% $id %>&view=<% $view %>"> [refresh]</a>&nbsp;
-	<a href="deldevice.html?id=<% $id %>"> [delete]</a>&nbsp;<br/>
-        <br/>
+%       if( $table eq "Device" ) {
+            <a href="device.html?id=<% $id %>&view=<% $view %>"> [view details]</a>&nbsp;
+       	    <a href="deldevice.html?id=<% $id %>"> [delete]</a>&nbsp;<br/>
+%       } else {
+            <br/>
+%       }
+            <br/>
     </div>
     <div class="containerbodyoutside">
+        <table width="100%"><tr><td>
         <% $lbl %>
+        </td></tr></table>
     </div>
 </div>
 %
