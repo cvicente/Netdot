@@ -8,26 +8,33 @@
 <%args>
 $error
 $user => undef
+$showplainerror => 0
 </%args>
 
 <%init>
 my $caller = $m->caller->name;
 </%init>
 
-<div id="sectiondetail">
+% if( $showplainerror ) {
+    <strong><% $caller %></strong> produced the following error:
+% } else {
+    <div id="sectiondetail">
+        <div class="container">
+            <div class="containerhead"><strong><% $caller %></strong> produced the following error:</div>
+            <div class="containerbody">
+% }
 
-    <div class="container">
-        <div class="containerhead"><strong><% $caller %></strong> produced the following error:</div>
-        <div class="containerbody">
             <pre><% $error %></pre>
             <p>
                 If you believe this is a bug, please copy the above message and send it to 
                 <a href="mailto:<% $ui->{config}->{'ADMINEMAIL'} %>"><% $ui->{config}->{'ADMINEMAIL'} %></a>
             </p>
-        </div>
-    </div>
 
-</div>
+% if( !$showplainerror ) {
+        </div> <!-- close containerbody -->
+    </div> <!-- close container -->
+</div> <!-- close sectiondetail -->
+% }
 
 <%perl>
 # Abort execution of the caller

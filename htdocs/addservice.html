@@ -33,81 +33,93 @@ my %reserved = ( Add    => "",
 my $newsrvid;
 
 </%init>
-%
-%
+
+% my $bodyargs;
+% if ( $Add ){
+%     $bodyargs = 'onUnload="opener.location.reload()"';
+% } else {
+%     $bodyargs = '';
+% }
+
+<html>
+<head>
+    <link rel="stylesheet" href="style.css" type="text/css">
+</head>      
+<body class="bodytag" <% $bodyargs %>>
+
+<div class="container">
+    <div class="containerhead">
+        Add IP Service
+    </div>
+    <div class="containerbody">
+
 <%perl>
 if ( $Add ){
     foreach my $arg ( keys %ARGS ){
-	next if ( exists $reserved{$arg} );
-	$state{$arg} = $ARGS{$arg};
+    	next if ( exists $reserved{$arg} );
+    	$state{$arg} = $ARGS{$arg};
     }
     unless ( $newsrvid = $ui->insert(table => "IpService", state => \%state) ){
-	$m->comp("error.mhtml", error => $ui->error);
+    	$m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
     }  
 </%perl>
-    <body class="bodytag" onUnload="opener.location.reload()">
+    <br>
     <a href="#" onClick="window.close()">[done]</a>
 
 %}elsif ( $Cancel ){
-    <body class="bodytag">
+    <br>
     Cancelled.
     <br>
-    <a href="#" onClick="window.close()">[done]</a>
+    <a href="#" onClick="window.close()">[done]</a><br>
     
 %}else{
-<html>
-<head>
-    <link rel=StyleSheet href="style.css" type="text/css">
-    <link rel="alternate stylesheet" title="Gray" href="style-gray.css" type="text/css">
-</head>      
-<body class="bodytag">
 
-<table width="100%" cellpadding="0" cellspacing="2" border="0" class="formtablebg">
-  <form action="addservice.html" method="POST">
-  <input type="hidden" name="ip" value="<% $ip %>">
-  <tr class="formtabletitle">
-     <td align="CENTER" colspan="2"><strong>Add IP Service</strong></td>
-  </tr>
-  <tr>
-    <td class="formtablec1"><strong>IP:</strong></td>
-    <td class="formtablec2"><% $iplbl %></td>
-  </tr>
-  <tr>
-    <td class="formtablec1"><strong>Service:</strong></td>
-    <td class="formtablec2">
-    <select name="service">
-%      foreach my $o ( sort { $a->name cmp $b->name } Service->retrieve_all() ){
-	  <option value="<% $o->id %>"><% $o->name %></option>
-%      }
-    </select>
-    </td>
-  </tr>
-  <tr>
-    <td class="formtablec1"><strong>Monitored:</strong></td>
-    <td class="formtablec2">
-      <input type="checkbox" name="monitored" CHECKED>
-    </td>
-  </tr>
-  <tr>
-    <td class="formtablec1"><strong>Contact Group:</strong></td>
-    <td class="formtablec2">
-    <select name="contactlist">
-%      foreach my $o ( sort { $a->name cmp $b->name } ContactList->retrieve_all() ){
-	  <option value="<% $o->id %>"><% $o->name %></option>
-%      }
-    </select>
-    </td>
-  </tr>
-  <tr class="formtabletitle">
-    <td align="CENTER" colspan="2">
-      <input name="Add" value="Add" type="submit">
-      <input name="Cancel" value="Cancel" type="submit">
-    </td>
-  </tr>
-  </form>
-</table>
+<form action="addservice.html" method="POST">
+<input type="hidden" name="ip" value="<% $ip %>">
+
+<%perl>
+    my (@field_headers, @cell_data) = ();
+    
+    push( @field_headers, "IP: " );
+    push( @cell_data, $iplbl );
+
+    push( @field_headers, "Service: " );
+    push( @cell_data, 
+&{sub{
+    my $ac = '<select name="service">';
+    foreach my $o ( sort { $a->name cmp $b->name } Service->retrieve_all() ){
+	    $ac .= '<option value="'.$o->id.'">'.$o->name.'</option>';
+    }
+    $ac .= '</select>';
+    $ac;
+    }}  );
+
+    push( @field_headers, "Monitored: " );
+    push( @cell_data, '<input type="checkbox" name="monitored" CHECKED>' );
+
+    push( @field_headers, "Contact Group: " );
+    push( @cell_data, 
+&{sub{
+    my $ac = '<select name="contactlist">';
+    foreach my $o ( sort { $a->name cmp $b->name } ContactList->retrieve_all() ){
+	    $ac .= '<option value="'.$o->id.'">'.$o->name.'</option>';
+    }
+    $ac .= '</select>';
+    $ac;
+    }}  );
+</%perl>
+
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
+    <input name="Add" value="Add" type="submit">
+    <input name="Cancel" value="Cancel" type="submit">
+
+</form>
 
 % } #else
+
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
  
 </body>
 </html>

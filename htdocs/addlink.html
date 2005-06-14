@@ -31,7 +31,7 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 if ( $int_id ){
     unless ( $intobj = Interface->retrieve($int_id) ){
-	$m->comp("error.mhtml", error => "Can't retrieve Interface id $int_id");	
+	$m->comp("error.mhtml", error => "Can't retrieve Interface id $int_id", showplainerror=>1);	
     }
     unless ( $intlbl = $ui->getobjlabel($intobj, ", ") ){
 	$intlbl = $intobj->name;
@@ -67,7 +67,7 @@ my %reserved = ( Add           => "",
 my $rel_role;
 if ( $role ){
     if ($role ne "parent" && $role ne "child"){
-	$m->comp("error.mhtml", error => "Invalid role: $role");
+	$m->comp("error.mhtml", error => "Invalid role: $role", showplainerror=>1);
     }
     $rel_role = ($role eq "parent")? "child" : "parent";
 }
@@ -77,22 +77,42 @@ my %role_tags = ( 'parent' => "Parent Interface",
 		  );
 
 </%init>
-%
-%
+
+% my $bodyargs;
+% if ( $Add ){
+%     $bodyargs = 'onUnload="opener.location.reload()"';
+% } else {
+%     $bodyargs = '';
+% }
+
+<html>
+<head>
+    <link rel=StyleSheet href="style.css" type="text/css">
+</head>      
+<body class="bodytag" <% $bodyargs %>>
+
+<div class="container">
+    <div class="containerhead">
+        Add Link
+    </div>
+    <div class="containerbody">
+
 <%perl>
 if ( $Add ){
     foreach my $arg ( keys %ARGS ){
-	next if ( exists $reserved{$arg} );
-	$state{$arg} = $ARGS{$arg};
+    	next if ( exists $reserved{$arg} );
+    	$state{$arg} = $ARGS{$arg};
     }
     my $newdepid;
     if ( InterfaceDep->search(\%state) ){
-	print "Dependency already exists!";
-	$m->abort;
+    	print "<br>Dependency already exists!<br><br>";
+        print '<a href="#" onClick="window.close()">[close]</a><br>';
+
+    	$m->abort;
     }else{
-	unless ( $newdepid = $ui->insert(table => "InterfaceDep", state => \%state) ){
-	    $m->comp("error.mhtml", error => $ui->error);
-	}
+    	unless ( $newdepid = $ui->insert(table => "InterfaceDep", state => \%state) ){
+    	    $m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
+    	}
     }
     #
     #  Add a logical (L3) dependency automagically when adding a L2 dependency.
@@ -115,37 +135,34 @@ if ( $Add ){
 	    my @parentintips = $parentint->ips; 
 	    my %tmp ;
 	    if ( scalar(@childintips) == 1  ){
-		$tmp{child}  = $childintips[0]->interface;
+    		$tmp{child}  = $childintips[0]->interface;
 	    }elsif ( ! @childintips && (scalar(@childips) == 1) ){
-		$tmp{child}  = $childips[0]->interface;
+    		$tmp{child}  = $childips[0]->interface;
 	    }
 	    if ( scalar(@parentintips) == 1 ){
-		$tmp{parent} = $parentintips[0]->interface;
+    		$tmp{parent} = $parentintips[0]->interface;
 	    }elsif ( ! @parentintips && (scalar(@parentips) == 1) ){
-		$tmp{parent} = $parentips[0]->interface;
+    		$tmp{parent} = $parentips[0]->interface;
 	    }
 	    
 	    if ( my $newl3dep = (InterfaceDep->search(\%tmp))[0] ){
-		if ( $newdep->id  == $newl3dep->id ){
-		    $l3dep = "same";
-		}else{
-		    $l3dep = "existed";	    
-		}
+    		if ( $newdep->id  == $newl3dep->id ){
+    		    $l3dep = "same";
+    		}else{
+    		    $l3dep = "existed";	    
+    		}
 	    }else{
-		unless ( $ui->insert(table => "InterfaceDep", state => \%tmp) ){
-		    $m->comp("error.mhtml", error => $ui->error);
-		}else{
-		    $l3dep = "added";
-		}
+    		unless ( $ui->insert(table => "InterfaceDep", state => \%tmp) ){
+    		    $m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
+        	}else{
+    		    $l3dep = "added";
+    		}
 	    }
 	}
+
     }
-
-
-    
 </%perl>
 
-    <body class="bodytag" onUnload="opener.location.reload()">
 	Layer 2 dependency added.<br>
 %   if ( $l3dep eq "added" ){
 	Layer 3 dependency added.<br>
@@ -160,59 +177,54 @@ if ( $Add ){
     <p><a href="#" onClick="window.close()">[done]</a>
 
 %}elsif ( $Cancel ){
-    <body class="bodytag">
+    <br>
     Cancelled
     <br>
-    <a href="#" onClick="window.close()">[done]</a>
-
+    <a href="#" onClick="window.close()">[done]</a><br>
 %}else{
-
-<html>
-<head>
-    <link rel=StyleSheet href="style.css" type="text/css">
-</head>      
-<body class="bodytag">
 
 <script language="javascript" src="select.js"></script>
 
-<table width="100%" cellpadding="0" cellspacing="2" border="0" class="formtablebg">
-  <form name="netdotform" action="addlink.html" method="POST">
-  <input type="hidden" name="<% $role %>" value="<% $int_id %>">
-  <tr class="formtabletitle">
-     <td align="CENTER" colspan="2"><strong>Add Link</strong></td>
-  </tr>
-  <tr>
-    <td class="formtablec1"><strong><% $role_tags{$role} %>:</strong></td>
-    <td class="formtablec2"><% $intlbl %></td>
-  </tr>
-  <tr>
-    <td class="formtablec1"><strong><% $role_tags{$rel_role} %>:</strong></td>
-    <td class="formtablec2">
-      Select Device from list:
-      <select name="device_search" onChange="sendquery(<% $rel_role %>, device_search.value, 'Interface')" >
-%       foreach my $dev ( sort keys %subnet_devs ){
-          <option value="<% $dev %>"><% $dev  %></option>
-%       }
-      </select>
-      <br>Or search:
-      <input type="text" name="search" value="Keywords" onFocus="if (this.value == 'Keywords') { this.value = ''; } return true;">
-      &nbsp;<input type="button" name="" value="List" 
-      onClick="sendquery(<% $rel_role %>, search.value, 'Interface')" >
-    <br>
-    <select name="<% $rel_role %>">
-    </select>	      
-    </td>
-  </tr>
-  <tr class="formtabletitle">
-    <td align="CENTER" colspan="2">
+<form name="netdotform" action="addlink.html" method="POST">
+<input type="hidden" name="<% $role %>" value="<% $int_id %>">
+
+    <%perl>
+    my (@field_headers, @cell_data) = ();
+    
+    push( @field_headers, $role_tags{$role}.": " );
+    push( @cell_data, $intlbl );
+
+    push( @field_headers, $role_tags{$rel_role}.": ");
+    push( @cell_data, 
+&{sub{
+    my $ac = "Select Device from list:";
+    $ac .= '<select name="device_search" onChange="sendquery('.$rel_role.', device_search.value, \'Interface\')">';
+    foreach my $dev ( sort keys %subnet_devs ){
+        $ac .= '<option value="'.$dev.'">'.$dev.'</option>';
+    }
+    $ac .= '</select>';
+    $ac .= '<br>Or search:';
+    $ac .= '<input type="text" name="search" value="Keywords" onFocus="if(this.value==\'Keywords\') { this.value = \'\'; } return true;">';
+    $ac .= '&nbsp;<input type="button" name="" value="List" onClick="sendquery('.$rel_role.', search.value, \'Interface\')">';
+    $ac .= '<br>';
+    $ac .= '<select name="'.$rel_role.'">';
+    $ac .= '</select>';
+
+    $ac;
+}}      );
+    </%perl>
+
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
       <input name="Add" value="Add" type="submit">
       <input name="Cancel" value="Cancel" type="submit">
-    </td>
-  </tr>
-  </form>
-</table>
 
-% } #else
+</form>
+
+% } # close else
+
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
  
 </body>
 </html>
