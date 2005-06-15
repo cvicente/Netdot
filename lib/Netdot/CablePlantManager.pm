@@ -42,16 +42,6 @@ sub new {
     bless $self, $class;
     $self = $self->SUPER::new( %argv );
 
-    # Some operations require a lot of speed.  We override 
-    # Class::DBI to avoid overhead in certain cases
-    eval {
-	$self->{dbh} = Netdot::DBI->db_Main();
-    };
-    if ( $@ ){
-	$self->error(sprintf("Can't get db handle: %s\n", $@));
-	return 0;
-    }
-    
     wantarray ? ( $self, '' ) : $self; 
 }
 

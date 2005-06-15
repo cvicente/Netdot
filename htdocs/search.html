@@ -6,78 +6,38 @@ Performs a general search in the database, looking into every field of every tab
 
 
 <%args>
+$q
 
 </%args>
 
 <%init>
 
-my %linksto = undef;
-my %results = undef;
+my %linksto;
+my $results = $ui->search_all_netdot($q);
 
 </%init>
+
 
 <!-- begin search -->
 <form action="search.html" method="POST">
 
-<%perl>
-my %arg;
-foreach my $j ( keys %ARGS ) {
-  next if( $ARGS{$j} !~ /\w+/ || $j eq "submit" );
-  $arg{$j} = $ARGS{$j};
-}
-</%perl>
-
-<p><font size=+1>Netdot Search</font>
+<p>Netdot Search
 
 <form>
-<table cellpadding="3" cellspacing="1" border="0" bgcolor="CCCCCC" class="searchbox">
-  <tr>
-  <td><input type="text" name="q" size="25" value="<% $arg{q} %>"></td>
-  <td><input name="submit" value="Submit" type="submit"></td>
-  </tr>
-</table>
+  <input type="text" name="q" size="25" value="<% $q %>">
+  <input name="submit" value="Submit" type="submit">
 </form>
 
-% if( %arg ) {
-    <table width="100%">
-    <tr><td class="delimiter"> </td></tr>
-    </table>
-    <%perl>
-    foreach my $tbl ( $ui->gettables() ) {
-      %linksto = $ui->getlinksto($tbl);
-      foreach my $col ( $tbl->columns() ) {
-        if( $linksto{$col} ) {
-          foreach my $fc ( $linksto{$col}->columns() ) {
-            foreach my $q ( split( /\s+/, $arg{q} ) ) {
-              $q = "%" . $q . "%";
-	      foreach my $hit ( $linksto{$col}->search_like( $fc => $q ) ) {
-                map { $results{$tbl}{$_->id} = $_ } 
-	          $tbl->search_like( $col => $hit );
-	      }
-            }
-          }
-        } else {
-          foreach my $q ( split( /\s+/, $arg{q} ) ) {
-            $q = "%" . $q . "%";
-            map { $results{$tbl}{$_->id} = $_ } 
-              $tbl->search_like( $col => $q );
-          }
-        }
-      }
-    }
-    </%perl>
-
-%   if( scalar( keys %results ) < 1 || ! %results ) {
+%   if( scalar( keys %$results ) < 1 || ! %$results ) {
       No matching records were found.
 %   } else {
       <blockquote>
-      <table cellpadding="0" cellspacing="0" border="0" class="tablebackground">
-%     foreach my $tbl ( sort { $a cmp $b } keys %results ) {
-%       next if( $tbl eq "Meta" );
+      <table cellpadding="4" cellspacing="0" border="0" class="formtablebg">
+%     foreach my $tbl ( sort { $a cmp $b } keys %$results ) {
 %       my @objs;
-%       map { push @objs, $results{$tbl}{$_} } keys %{ $results{$tbl} };
-	<tr>
-        <td colspan="2" bgcolor="#6ab1f0" class="rowtitle0"><strong><% $tbl %></strong></td>
+%       map { push @objs, $results->{$tbl}->{$_} } keys %{ $results->{$tbl} };
+	<tr class="formtabletitle">
+        <td colspan="2" class="rowtitle0"><strong><% $tbl %></strong></td>
         </tr>
         <tr><td>
         <& sortresults.mhtml, table => $tbl, object => \@objs, view => "column" &>
@@ -86,6 +46,6 @@ foreach my $j ( keys %ARGS ) {
       </table>
       </blockquote>
 %   } # end else
-% }
+
 <br>
 <!-- end search -->

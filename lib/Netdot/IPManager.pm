@@ -36,13 +36,7 @@ sub new {
     bless $self, $class;
     
     $self = $self->SUPER::new( %argv );
-
-    # Some operations require a lot of speed.  We override 
-    # Class::DBI to avoid any overhead in certain cases
-    unless ( $self->{dbh} = Netdot::DBI->db_Main() ){
-	$self->error("Can't get db handle\n");
-	return 0;
-    }
+    
     # Max number of blocks returned by search functions
     $self->{config}->{'MAXSEARCHBLOCKS'} = 200;
 

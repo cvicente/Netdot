@@ -65,6 +65,13 @@ sub new {
 			       logident    => $self->{'_logident'},
 			       foreground  => $self->{'_foreground'},
 			       );
+ 
+#  We override Class::DBI to speed things up in certain cases.
+
+   unless ( $self->{dbh} = Netdot::DBI->db_Main() ){
+	$self->error("Can't get db handle\n");
+	return 0;
+    }
 
    wantarray ? ( $self, '' ) : $self;
 
@@ -826,3 +833,37 @@ sub gethistoryobjs {
     return;
 }
 
+=head2 search_all_netdot - 
+
+Arguments:  query string
+Returns:    reference to hash of hashes 
+
+=cut
+
+sub search_all_netdot {
+    my ($self, $q) = @_;
+    my %results;
+    
+    # Ignore these fields when searching
+    my %ign_fields = ('id' => '');
+
+    foreach my $tbl ( $self->gettables() ) {
+	next if $tbl eq "Meta";
+	my %linksto = $self->getlinksto($tbl);
+	my @cols;
+	map { push @cols, $_ unless( exists $ign_fields{$_} || $linksto{$_} ) } $tbl->columns(); 
+	
+	foreach my $q ( split( /\s+/, $q ) ) {
+	    $q = "%" . $q . "%";
+	    my @where;
+	    map { push @where, "$_ LIKE \"$q\"" } @cols;
+	    my $where = join " or ", @where;
+	    next unless $where;
+	    my $st = $self->{dbh}->prepare("SELECT id FROM $tbl WHERE $where;");
+	    $st->execute();
+	    map { $results{$tbl}{$_} = $tbl->retrieve($_) } $st->fetchrow_array();
+	}
+    }
+    (%results) ? return \%results : return;
+    
+}
