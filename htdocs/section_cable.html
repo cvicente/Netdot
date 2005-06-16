@@ -283,8 +283,8 @@ LIST_MANAGER.addList(floorList, closetList);
 %           my $backbone_srch = 'backbone_srch';  # name of the form input tag
 	        <input type="text" name="<% $backbone_srch %>" value="By Backbone" onFocus="if (this.value == 'By Backbone') { this.value = ''; } return true;">
 	        &nbsp;<input type="button" name="" value="Lookup Backbone" 
-            onClick="sendquery(<% 'backbone_id_srch' %>, <% $backbone_srch . '.value' %>, 'BackboneCable', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
-            Lookup Results: <select name="backbone_id_srch">
+            onClick="jsrsSendquery(backbone_id_srch, <% $backbone_srch . '.value' %>, 'BackboneCable', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
+            Lookup Results: <select name="backbone_id_srch" id="backbone_id_srch">
             </select><input type="submit" name="backbone_submit" value="Browse by Backbone">
             </td>
         </tr>
@@ -296,8 +296,8 @@ LIST_MANAGER.addList(floorList, closetList);
 %           my $srchf = 'strand_srch';  # name of the form input tag
 	        <input type="text" name="<% $srchf %>" value="By Strand Name" onFocus="if (this.value == 'By Strand Name') { this.value = ''; } return true;">
 	        &nbsp;<input type="button" name="" value="Lookup Strand" 
-            onClick="sendquery(<% 'strand_lookup' %>, <% $srchf . '.value' %>, 'CableStrand', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
-            Lookup Results: <select name="strand_lookup">
+            onClick="jsrsSendquery(strand_lookup, <% $srchf . '.value' %>, 'CableStrand', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
+            Lookup Results: <select name="strand_lookup" id="strand_lookup">
             </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (strand_lookup.value && strand_lookup.value != 0) { location.href = ('cable_strand.html?id=' + strand_lookup.value); return true; }"> &nbsp;&nbsp;
             </td>
         </tr>

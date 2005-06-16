@@ -1,0 +1,107 @@
+<%doc>
+
+Calls UI::select_query to perform a recursive search for keywords
+in a table's label fields
+
+Arguments:
+- table:  Foreign key table to search.
+- field:  Name of the original field for which we're searching foreign values
+          Needed by the caller
+- crit:   Criteria.  A string with one or more keywords to search
+
+- form_name: optional form name for original caller. If not specified assumes
+             form name is "netdotform".
+
+</%doc>
+%
+%
+<%flags>
+inherit => undef
+</%flags>
+%
+%
+<%args>
+# $table     => $ARGS{table};
+# $field     => $ARGS{field};
+# $crit      => $ARGS{crit};
+# $form_name => $ARGS{form_name};
+</%args>
+
+<%init>
+# use jsrsServer;
+my $DEBUG = 0;
+</%init>
+
+<%perl>
+print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+
+do "jsrsServer.pl";
+jsrsDispatch("keyword_search");
+
+
+sub keyword_search {
+    my $table = shift;
+    my $field = shift;
+    my $crit = shift;
+
+    my $DEBUG = 0;
+ 
+    my $r;
+    my @terms;
+    my $MAX   = 100;
+
+    if ($crit =~ /\w+/){
+        $crit =~ s/^\s*(.*)\s*$/$1/;
+        @terms = split /\s+/, $crit;
+        print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
+    }
+
+
+    my $response = $field."&";
+
+    $r = $ui->select_query(table => $table, terms => \@terms, max => $MAX);
+
+    if (my $n = scalar (keys %$r) ){
+        my $count = 0;
+
+        if ($n >= $MAX){
+            $response .= "0=".URLEncode("More than ".$MAX." matches.  Refine search")."&";
+        }
+        my @objs = map { $r->{$_} } keys %$r;
+        my $lblfield = ( $ui->getlabels($table) )[0];
+        my %coltypes = $ui->getcolumntypes($table);
+        my $type = $coltypes{$lblfield};
+        if ( $type =~ /int/ || $table eq "Interface" ){  # Ugly hack
+           @objs = sort { $a->$lblfield <=> $b->$lblfield } @objs;
+        }else {
+           @objs = sort { $a->$lblfield cmp $b->$lblfield } @objs;
+        }
+        foreach my $o (@objs){
+           my $lbl = $ui->getobjlabel($o, ", ");
+           $response .= $o->id."=".URLEncode($lbl)."&";
+           last if ($count++) == $MAX;
+        }
+    }else{
+        $response .= "0=".URLEncode("No matches");
+    }
+
+    return $response;    
+}
+
+sub URLEncode {
+    my $theURL = $_[0];
+   $theURL =~ s/([\W])/"%" . uc(sprintf("%2.2x",ord($1)))/eg;
+   return $theURL;
+}
+
+sub URLDecode {
+    my $theURL = $_[0];
+    $theURL =~ tr/+/ /;
+    $theURL =~ s/%([a-fA-F0-9]{2,2})/chr(hex($1))/eg;
+    $theURL =~ s/<!--(.|\n)*-->//g;
+    return $theURL;
+}
+
+
+</%perl>
