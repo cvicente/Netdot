@@ -292,9 +292,21 @@ sub _validate {
     }
     if ( $args->{statusname} eq "Subnet" ){
 	foreach my $ch ( $ipblock->children ){
-	    unless ( $self->isaddress($ch) ){
-		$self->error("Subnet blocks can only contain addresses");
+	    unless ( $self->isaddress($ch) || $ch->status->name eq "Container" ){
+		my $err = sprintf("%s %s/%s cannot exist within Subnet %s/%s", 
+				  $ch->status->name, $ch->address, $ch->prefix, 
+				  $ipblock->address, $ipblock->prefix);
+		$self->error($err);
 		return 0;
+	    }
+	    if ( $ch->status->name eq "Container" ){
+		my ($addr, $prefix) = ($ch->address, $ch->prefix);
+		unless ( $self->removeblock( id => $ch->id ) ){
+		    return 0;
+		}
+		$self->debug(loglevel => 'LOG_NOTICE',
+			     message => "_validate: Container %s/%s has been removed",
+			     args => [$addr, $prefix ]);
 	    }
 	}
     }elsif ( $args->{statusname} eq "Container" ){
@@ -532,8 +544,12 @@ sub updateblock {
     }
     # Rebuild tree
     unless ( $self->build_tree($ip->version) ){
+	# Go back to where we were
+	unless ( $self->update( object=>$ipblock, state=>\%bak ) ){
+	    $self->error("Error discarding changes: $self->error");
+	    return 0;
+	}
 	return 0;
-	# Error should be set
     }
     #####################################################################
     # Now check for rules
@@ -767,11 +783,18 @@ sub build_tree {
     my $trie = {};
     my %parents;
     # Override Class::DBI for speed.
-    my $sth = $self->{dbh}->prepare("SELECT id,address,prefix,parent 
+    my $sth;
+    eval {
+	$sth = $self->{dbh}->prepare("SELECT id,address,prefix,parent 
                                      FROM Ipblock 
                                      WHERE version = $version 
                                      ORDER BY prefix");	
-    $sth->execute;
+	$sth->execute;
+    };
+    if ($@){
+	$self->error("$@");
+	return 0;
+    }
     
     while (my ($id,$address,$prefix,$parent) = $sth->fetchrow_array){
 	my $p = $trie;
@@ -795,10 +818,17 @@ sub build_tree {
 	$parents{$id} = $last_p if ($parent != $last_p);
     }
     undef $sth;
-    $sth = $self->{dbh}->prepare("UPDATE Ipblock SET parent = ? WHERE id = ?");
-    foreach (keys %parents){
-	$sth->execute($parents{$_}, $_);
+    eval {
+	$sth = $self->{dbh}->prepare("UPDATE Ipblock SET parent = ? WHERE id = ?");
+	foreach (keys %parents){
+	    $sth->execute($parents{$_}, $_);
+	}
+    };
+    if ($@){
+	$self->error("$@");
+	return 0;
     }
+    
     return 1;
 }
 
