@@ -813,11 +813,13 @@ push( @row,
     my @parents = $if->parents;
     if (scalar(@parents)){
 	foreach my $link (@parents){
-	    if ( $editints ){
-		$ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
-	    }   
-	    my $lbl = $ui->getobjlabel($link->parent, ", ");
-	    $ac .= '<a href="device.html?id=' . $link->parent->device->id . '&view=Interfaces">' . $lbl . '</a><br>';
+	    if ( $link->parent && $link->parent->device ){
+		if ( $editints ){
+		    $ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
+		}   
+		my $lbl = $ui->getobjlabel($link->parent, ", ");
+		$ac .= '<a href="device.html?id=' . $link->parent->device->id . '&view=Interfaces">' . $lbl . '</a><br>';
+	    }
 	}
     }
     if ( $editints ){  
@@ -834,13 +836,14 @@ push( @row,
     my @children = $if->children;
     if (scalar(@children)){
 	foreach my $link (@children){
-	    if ( $editints ){
-		$ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
-	    }   
-#                 my $lbl = $ac .= $ui->getobjlabel($link->child, ", ", returnAsVar=>1);
-	    my $lbl = $ui->getobjlabel($link->child, ", ");
-	    if ( $link->child->device ){
-		$ac .= '<a href="device.html?id=' . $link->child->device->id . '&view=Interfaces">' . $lbl . '</a><br>';
+	    if ( $link->child && $link->child->device ){
+		if ( $editints ){
+		    $ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
+		}   
+		my $lbl = $ui->getobjlabel($link->child, ", ");
+		if ( $link->child->device ){
+		    $ac .= '<a href="device.html?id=' . $link->child->device->id . '&view=Interfaces">' . $lbl . '</a><br>';
+		}
 	    }
 	}
     }

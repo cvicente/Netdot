@@ -103,11 +103,15 @@ if ( $Add ){
     	next if ( exists $reserved{$arg} );
     	$state{$arg} = $ARGS{$arg};
     }
+    unless ( $state{parent} && $state{child} ){
+	print "<br>Invalid parent and/or child!<br><br>";
+        print '<a href="#" onClick="window.close()">[close]</a><br>';
+	$m->abort;
+    }
     my $newdepid;
     if ( InterfaceDep->search(\%state) ){
     	print "<br>Dependency already exists!<br><br>";
         print '<a href="#" onClick="window.close()">[close]</a><br>';
-
     	$m->abort;
     }else{
     	unless ( $newdepid = $ui->insert(table => "InterfaceDep", state => \%state) ){
