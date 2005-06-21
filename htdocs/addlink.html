@@ -149,18 +149,20 @@ if ( $Add ){
     		$tmp{parent} = $parentips[0]->interface;
 	    }
 	    
-	    if ( my $newl3dep = (InterfaceDep->search(\%tmp))[0] ){
-    		if ( $newdep->id  == $newl3dep->id ){
-    		    $l3dep = "same";
-    		}else{
-    		    $l3dep = "existed";	    
-    		}
-	    }else{
-    		unless ( $ui->insert(table => "InterfaceDep", state => \%tmp) ){
-    		    $m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
-        	}else{
-    		    $l3dep = "added";
-    		}
+	    if ( $tmp{parent} && $tmp{child} ){
+		if ( my $newl3dep = (InterfaceDep->search(\%tmp))[0] ){
+		    if ( $newdep->id  == $newl3dep->id ){
+			$l3dep = "same";
+		    }else{
+			$l3dep = "existed";	    
+		    }
+		}else{
+		    unless ( $ui->insert(table => "InterfaceDep", state => \%tmp) ){
+			$m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
+		    }else{
+			$l3dep = "added";
+		    }
+		}
 	    }
 	}
 
