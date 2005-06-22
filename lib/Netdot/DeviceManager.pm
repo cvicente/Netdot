@@ -1568,6 +1568,57 @@ sub getdevips {
     return;
 }
 
+=head2   - Get Device dependencies from DB
+   
+  Arguments:
+
+
+  Returns:
+
+
+=cut
+
+sub get_dev_deps {
+    my ($self, %argv) = @_;
+    my %ret;
+    my $alldevs = $argv{alldevs} || undef;
+
+#    my $mode     = $argv{mode}       || "logical";
+    my $depth    = $argv{depth}      || 1;
+    my $dev      = $argv{device};
+    my $step     = $argv{step}       || 0;
+
+    unless ( $dev ){
+	$self->error("Missing required arguments");
+	return;
+    }
+    unless ( ref $dev ){
+	$self->error("Device parameter is not a valid Device object");
+	return;
+    }
+    return if ( $step == $depth );
+    if ( exists $alldevs->{$dev->id} && $alldevs->{$dev->id} != $step ){
+	$self->error( sprintf("Circular Dependency: %s has been found at different levels", 
+			      $dev->name->name) );
+	return;
+    }
+    $alldevs->{$dev->id} = $step;
+    foreach my $int ( $dev->interfaces ){
+	foreach my $parent ( map { $_->parent } $int->parents ){
+	    next unless ( $parent->device );
+	    $ret{$int->id}{parents}{$parent->id}{device} = $parent->device->id;
+	    my $parentdev = Device->retrieve($parent->device->id);
+	    if ( my %r = $self->get_dev_deps(device=>$parentdev, step=>$step+1, depth=>$depth, 
+					     alldevs=>$alldevs ) ){
+		$ret{$int->id}{parents}{$parent->id}{parents} = \%r;
+	    }
+	}
+	
+    }
+    return %ret if %ret;
+    return;
+}
+
 =head2 getproductsbytype  - Get all products of given type
    
   Arguments:

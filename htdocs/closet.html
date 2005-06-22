@@ -47,27 +47,6 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action})) {
-    my %update_info = ();
-    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-    if (!(%update_info = $ui->form_to_db(%ARGS))) {
-        $m->comp("error.mhtml", $ui->error());
-	}
-
-    if ($update_info{Closet}{key}) {
-        $id = $update_info{Closet}{key};
-        $editCloset = 0;
-    }
-
-    # Do this to 'flush' the values associated with the object
-    # before redisplaying
-    $o = undef;
-    $site = undef;
-    if ($id && $id ne "NEW") {
-        $o = Closet->retrieve($id);
-        $site = $o->floor->site || $o->site;
-    }
-}
 
 if (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS{__picture}) && $ARGS{__picture} ne "") {
     my $ret = $ui->insertbinfile($ARGS{__picture});
@@ -90,7 +69,29 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS{
             $m->comp("error.mhtml", $ui->error()) if (!($ui->updatebinfile($ARGS{$key}, $1)));
         }
     }
+}elsif (defined($ARGS{_action})) {
+    my %update_info = ();
+    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+    if (!(%update_info = $ui->form_to_db(%ARGS))) {
+        $m->comp( "error.mhtml", error=> $ui->error() );
+	}
+
+    if ($update_info{Closet}{key}) {
+        $id = $update_info{Closet}{key};
+        $editCloset = 0;
+    }
+
+    # Do this to 'flush' the values associated with the object
+    # before redisplaying
+    $o = undef;
+    $site = undef;
+    if ($id && $id ne "NEW") {
+        $o = Closet->retrieve($id);
+        $site = $o->floor->site || $o->site;
+    }
 }
+
+
 # end insertion/update code
 # -----------------------------------------------------------------------------
 </%perl>
