@@ -86,7 +86,9 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 <!-- Header Table -->
 <div class="containeroutside">
     <div class="containerheadoutside">
-        Circuit for Connection: <a href="view.html?table=Connection&id=<% $o->connectionid %>"><% %></a>&nbsp;&nbsp;&nbsp;
+%    if ( $o->connectionid ){
+        Circuit for Connection: <a href="view.html?table=Connection&id=<% $o->connectionid %>"><% $o->connectionid->name %></a>
+%    }
     </div>
     <div class="containerbodyoutside">
 % }
@@ -102,102 +104,60 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 %       if ($editCircuit) {
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %           } else {
-        <a href="circuit.html?id=NEW">[new]</a> || <a href="circuit.html?id=<% $id %>&edit=circuitinfo">[edit]</a> || <a href="delete.html?table=Circuit&id=<% $id %>">[delete]</a>
+        <a href="circuit.html?id=NEW">[new]</a>  <a href="circuit.html?id=<% $id %>&edit=circuitinfo">[edit]</a>  <a href="delete.html?table=Circuit&id=<% $id %>">[delete]</a>
 %           }
     </div>
     <div class="containerbody">
         <table>
          <tr>
           <td width="50%">
-            <table width="100%" border="0" cellspacing="2" cellpadding="0">
-            <tr align="left" valign="top">
-                <td align="left">Circuit ID: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Circuit", column=>"cid", edit=>$editCircuit);
-                </td>
-            </tr>
 
-            <tr align="left" valign="top">
-                <td align="left">Vendor: </td>
-                <td align="left" class="formtablec2">
-%               $ui->select_lookup(object=>$o, table=>"Circuit", column=>"vendor", lookup=>"Entity", edit=>$editCircuit);
-                </td>
-            </tr>
+<%perl>
+my (@field_headers, @cell_data);
 
-            <tr align="left" valign="top">
-                <td align="left">Near Interface: </td>
-                <td align="left" class="formtablec2">
-%               if ($editCircuit) {
-%                   $ui->select_lookup(object=>$o, table=>"Circuit", column=>"nearend", lookup=>"Interface",
-%                                     edit=>$editCircuit);
-%               } else {
-                    <a href="interface.html?id=<% $o->nearend %>"><% $o->nearend->name %></a>
-%               }
-                </td>
-            </tr>
+push( @field_headers, "Circuit ID: " );
+push( @cell_data, $ui->text_field(object=>$o, table=>"Circuit", column=>"cid", edit=>$editCircuit, returnAsVar=>1 ) );
 
-            <tr align="left" valign="top">
-                <td align="left">Far Interface: </td>
-                <td align="left" class="formtablec2">
-%               if ($editCircuit) {
-%                   $ui->select_lookup(object=>$o, table=>"Circuit", column=>"farend", lookup=>"Interface",
-%                                     edit=>$editCircuit);
-%               } else {
-                    <a href="interface.html?id=<% $o->farend %>"><% $o->farend->name %></a>
-%               }
-                </td>
-            </tr>
+push( @field_headers, "Vendor: " );
+push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"vendor", lookup=>"Entity", edit=>$editCircuit, linkPage=>"view.html", returnAsVar=>1 ) );
 
-            <tr align="left" valign="top">
-                <td align="left">Circuit Type: </td>
-                <td align="left" class="formtablec2">
-%                   $ui->select_lookup(object=>$o, table=>"Circuit", column=>"type", lookup=>"CircuitType",
-%                                     edit=>$editCircuit);
-                </td>
-            </tr>            
-            </table>
+push( @field_headers, "Near Interface: " );
+push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"nearend", lookup=>"Interface", edit=>$editCircuit, linkPage=>"interface.html", returnAsVar=>1 ) );
+
+push( @field_headers, "Far Interface: " );
+push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"farend", lookup=>"Interface", edit=>$editCircuit, linkPage=>"interface.html", returnAsVar=>1 ) );
+
+push( @field_headers, "Circuit Type: " );
+push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"type", lookup=>"CircuitType", edit=>$editCircuit, returnAsVar=>1 ) );
+
+</%perl>
+
+
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
           </td>
           <td width="50%">
 
-            <table width="100%" border="0" cellspacing="2" cellpadding="0">
-            <tr align="left" valign="top">
-                <td align="left">Speed: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Circuit", column=>"speed", edit=>$editCircuit);
-                </td>
-            </tr>
+<%perl>
+
+(@field_headers, @cell_data) = ();
+
+push( @field_headers, "DLCI: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"dlci", edit=>$editCircuit, returnAsVar=>1 ) );
+
+push( @field_headers, "Speed: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"speed", edit=>$editCircuit, returnAsVar=>1 ) );
+
             
-            <tr align="left" valign="top">
-                <td align="left">DLCI: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Circuit", column=>"dlci", edit=>$editCircuit);
-                </td>
-            </tr>
+push( @field_headers, "Install Date: " );
+push( @cell_data, $ui->text_field(object=>$o, column=>"installdate", default=>$ui->date(), edit=>$editCircuit, returnAsVar=>1 ) );
 
-            <tr align="left" valign="top">
-                <td align="left">Install Date: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Circuit", column=>"installdate", default=>$ui->date(), edit=>$editCircuit);
-                </td>
-            </tr>
+push( @field_headers, "Status: " );
+push( @cell_data, $ui->select_lookup(object=>$o, column=>"status", lookup=>"CircuitStatus", edit=>$editCircuit, returnAsVar=>1 ) );
 
-            <tr align="left" valign="top">
-                <td align="left">Connection ID: </td>
-                <td align="left" class="formtablec2">
-%               $ui->select_lookup(object=>$o, table=>"Circuit", column=>"connectionid", lookup=>"Connection",
-%                                 edit=>$editCircuit);
-                </td>
-            </tr>
+</%perl>
 
-            <tr align="left" valign="top">
-                <td align="left">Status: </td>
-                <td align="left" class="formtablec2">
-%               $ui->select_lookup(object=>$o, table=>"Circuit", column=>"status", lookup=>"CircuitStatus",
-%                                 edit=>$editCircuit);
-                </td>
-            </tr>
-            </table>
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
           </td>
          </tr>

@@ -414,6 +414,15 @@ sub select_lookup($@){
 	 $args{htmlExtra}, $args{linkPage},
 	 $args{maxCount}, $args{returnAsVar});
 
+    unless ( $o || $table ){
+	$self->error("Need to pass object or table name");
+	return 0;
+    }
+    unless ( $lookup && $column ){
+	$self->error("Need to specify table and field to look up");
+	return 0;
+    }
+
     my $output;
     
     $htmlExtra = "" if (!$htmlExtra);
