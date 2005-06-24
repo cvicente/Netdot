@@ -68,24 +68,24 @@ while ( my $dev = $it->next ){
 }
 
 if( @nameless ){
-    print "/nThe following devices have no name defined:\n";
+    print "\nThe following devices have no name defined:\n";
     map { print "  ID: ", $_->id, "\n" } @nameless;
 }
 
 if( @lost ){
     @lost = sort { $a->name->name cmp $b->name->name } @lost;
-    print "/nThe following devices have no Entity defined:\n";
+    print "\nThe following devices have no Entity defined:\n";
     map { print "  ", $_->name->name, "\n" } @lost;
 }
 
 if ( @homeless ){
     @homeless = sort { $a->name->name cmp $b->name->name } @homeless;
-    print "/nThe following devices have no Site defined:\n";
+    print "\nThe following devices have no Site defined:\n";
     map { print "  ", $_->name->name, "\n" } @homeless;
 }
 
 if ( @orphans ){
     @orphans = sort { $a->name->name cmp $b->name->name } @orphans;
-    print "/nThe following devices have no dependencies defined:\n";
+    print "\nThe following devices have no dependencies defined:\n";
     map { print "  ", $_->name->name, "\n" } @orphans;
 }
