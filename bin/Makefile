@@ -6,7 +6,7 @@ PERL    =  /usr/bin/perl
 PREFIX  =  `cat ../.prefix`
 FMOD = 0644
 
-FILES = mason.pl updatedevices.pl
+FILES := $(shell ls *.pl) 
 
 #################################################################
 # Database setup
