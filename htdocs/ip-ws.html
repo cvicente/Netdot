@@ -17,17 +17,18 @@ section => 'Management'
 %
 %
 <%args>
-$id        => undef
-$search    => undef
-$_action   => undef
-$delete    => undef
-$allocate  => undef
-$newblock  => undef
-$parent    => undef
-$length    => undef
-$strategy  => undef
-$edit      => undef
-$submit    => undef
+$id                => undef
+$search            => undef
+$_action           => undef
+$delete            => undef
+$recursivedel      => undef
+$allocate          => undef
+$newblock          => undef
+$parent            => undef
+$length            => undef
+$strategy          => undef
+$edit              => undef
+$submit            => undef
 </%args>
 %
 %
@@ -175,7 +176,7 @@ if ( defined($_action) && defined($search) ){
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="newblock" value="<% $newblock->id %>">
         <br>
-        Use <strong><% $newblock->address %>/<% $newblock->prefix %></strong> ?
+        <strong>Do you want to use <% $newblock->address %>/<% $newblock->prefix %></strong> ?
         <p>
         <input type="submit" name="submit" value="Yes" >
         <input type="submit" name="submit" value="No" >
@@ -215,10 +216,14 @@ if ( defined($_action) && defined($search) ){
   <form action="ip-ws.html">
     <input type="hidden" name="_action" value="CONFIRM_DELETE">
     <input type="hidden" name="id" value="<% $id %>">
+
     <p>Are you sure you want to <strong>delete <% $o->address %>/<% $o->prefix %></strong> ?<br>
+
+    <p>Delete recursively <input type="checkbox" name="recursivedel">
+
     <p>
     <input type="submit" name="submit" value="Yes" >
-    <input type="submit" name="submit" value="No" >
+    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
   </form>
 
 
@@ -236,18 +241,17 @@ if ( defined($_action) && defined($search) ){
     my ($parentid, $address, $prefix, $version) = ($o->parent->id, $o->address, $o->prefix, $o->version);
     # Remove from Database
     #
-    unless ($ipm->removeblock( id => $o->id )){
+    my $rec = ($recursivedel)? 1 : 0;
+    unless ( $ipm->removeblock( id => $o->id, recursive => $rec ) ){
 	$m->comp('error.mhtml', error => $ipm->error);
-    }
-    # 
-    # Rebuild tree
-    unless ( $ipm->build_tree($version) ){
-	$m->comp('error.mhtml', error => $ipm->error);    
     }
     
 </%perl>
-
-    <p>Block <strong><% $address %>/<% $prefix %></strong> has been removed<br>
+%  if ($rec){
+     <p><strong>Block <% $address %>/<% $prefix %> and all its children blocks have been removed</strong> <br>
+%  }else{
+     <p><strong>Block <% $address %>/<% $prefix %> has been removed</strong> <br>
+%  }
 
 <%perl>
 #    Show parent block

@@ -582,9 +582,10 @@ sub updateblock {
 =head2 removeblock -  Remove IP block
 
   Arguments: 
-    id       id of Ipblock object - or -
-    address  ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
-    prefix   dotted-quad mask or prefix length
+    id        id of Ipblock object - or -
+    address   ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
+    prefix    dotted-quad mask or prefix length
+    recursive Remove blocks recursively (default is false)
   Returns:
     True or False
 
@@ -592,39 +593,54 @@ sub updateblock {
 
 sub removeblock {
     my ($self, %args) = @_;
-    my $ipb;
     my $id;
+    my $o;
+    my $rec = $args{recursive} || 0;
+    my $stack = $args{stack}   || 0;
+
     unless ( $args{id} || ( $args{address} && $args{prefix} ) ){
 	$self->error("removeblock: Missing required args");
 	return 0;	
     }
     if ( $args{id} ){
 	$id = $args{id};
+	unless ( $o = Ipblock->retrieve($id) ){
+	    $self->error("removeblock: Ipblock id $id does not exist");
+	    return 0
+	    }
     }else{
-	unless ($ipb = $self->searchblock($args{address}, $args{prefix})){
+	unless ($o = $self->searchblock($args{address}, $args{prefix})){
 	    return 0;
 	}
-	$id = $ipb->id;
-    }
-    # Retrieve object
-    my $o;
-    unless ( $o = Ipblock->retrieve($id) ){
-	$self->error("Ipblock id $id does not exist");
-	return 0
+	$id = $o->id;
     }
     my $version = $o->version;
+
+    if ( $rec ){
+	foreach my $ch ( $o->children ){
+	    unless ( $self->removeblock(id => $ch->id, recursive => 1, stack=>$stack+1) ){
+		return 0;
+	    }
+	}
+    }
+
+    $self->debug(loglevel => 'LOG_DEBUG',
+		 message => "removeblock: removing: %s/%s" ,
+		 args => [$o->address, $o->prefix]);
 
     unless ($self->remove(table => 'Ipblock', id => $id)){
 	$self->error(sprintf("removeblock: %s", $self->error));
 	return 0;
     }
-    # 
-    # Rebuild tree
-    unless ( $self->build_tree($version) ){
-	return 0;
-	# Error should be set
+    # We check if this is the first call in the stack
+    # to avoid rebuilding the tree unnecessarily
+    if ( $stack == 0 ){
+	unless ( $self->build_tree($version) ){
+	    return 0;
+	    # Error should be set
+	}
     }
-
+    
     return 1;
 }
 
