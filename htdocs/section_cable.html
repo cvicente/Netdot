@@ -265,25 +265,22 @@ LIST_MANAGER.addList(floorList, closetList);
 
 % } elsif ($page eq "STRANDS") {
 <div class="container">
-	<div class="containerheadleft">
-        Cable Strands
-    </div>
+    <div class="containerheadleft">Cable Strands</div>
     <div class="containerheadright">
 %       print_showtaskslink($show_tasks);
         &nbsp;<a href="cable_strand.html?id=NEW">[new]</a>
     </div>
 
-	<div class="containerbody" id="strand_options">
+    <div class="containerbody" id="strand_options">
 %   if ($show_tasks eq "show") {
     <form name="cable_form" action="cable_plant.html" method="GET">
     <input type="hidden" name="page_type" value="STRANDS">
     <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
         <tr align="left" valign="top">
             <td align="left">
-%           my $backbone_srch = 'backbone_srch';  # name of the form input tag
-	        <input type="text" name="<% $backbone_srch %>" value="By Backbone" onFocus="if (this.value == 'By Backbone') { this.value = ''; } return true;">
-	        &nbsp;<input type="button" name="" value="Lookup Backbone" 
-            onClick="jsrsSendquery(backbone_id_srch, <% $backbone_srch . '.value' %>, 'BackboneCable', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
+	    <input type="text" name="backbone_srch" value="By Backbone" onFocus="if (this.value == 'By Backbone') { this.value = ''; } return true;">
+	    &nbsp;<input type="button" name="" value="Lookup Backbone" 
+            onClick="jsrsSendquery(backbone_id_srch, backbone_srch.value, 'BackboneCable', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
             Lookup Results: <select name="backbone_id_srch" id="backbone_id_srch">
             </select><input type="submit" name="backbone_submit" value="Browse by Backbone">
             </td>
