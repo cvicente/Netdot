@@ -10,9 +10,8 @@
 </%doc>
 
 <%args>
-$table   => undef
-$id      => undef
-$pos     => undef
+$table
+$id
 $view    => "all"
 </%args>
 
@@ -30,13 +29,6 @@ section => 'Generic'
 my($obj, $prevobj );
 my %ftables;
 
-unless ( $table && ( $id || $pos ) ){
-   $m->comp('error.mhtml', "Missing required parameters 'table' and/or 'id'");
-}
-if ( $pos ){
-    my @objl = map { $_->id } $table->retrieve_all;
-    $id = $objl[$pos - 1];
-}
 unless ( $obj = $table->retrieve($id) ){
    $m->comp('error.mhtml', "Nonexistent record: $id");
 }
@@ -51,28 +43,24 @@ if ($table !~ /_history/){
     # List all the has_many objects for this object
     #
     foreach my $i (keys %linksfrom){
-	my ($j, @tmp, %jlinksto, $col);
-	@tmp = $obj->$i;  
+	my $j;
 	map { $j = $_ } keys %{ $linksfrom{$i} };
 	$ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
 	# If foreign table is a join table, try to hide it
 	# THIS MAYBE SHOULD CHANGE TO USE THE MAPPING FEATURE FROM CLASS::DBI INSTEAD
 	if ( $ui->isjointable($j) ){
-	    undef( %jlinksto );
 	    # Get has_a entries 
-	    %jlinksto = $ui->getlinksto($j);
+	    my %jlinksto = $ui->getlinksto($j);
 	    # Column in join table that points to third table
+	    my $col;
 	    map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
-	    map { push @{ $ftables{$i}{robjs} }, $_->$col } @tmp;
+	    map { push @{ $ftables{$i}{robjs} }, $_->$col } $obj->$i;
 	    $ftables{$i}{dtbl} = $jlinksto{$col};  # table to display
 	    $ftables{$i}{ctbl} = $j;               # table to pass to create.html
 	}else{  # table is not a join table
-	    @{$ftables{$i}{robjs}} = @tmp;
+	    @{$ftables{$i}{robjs}} = $obj->$i;
 	    $ftables{$i}{dtbl} = $j;
 	    $ftables{$i}{ctbl} = $j; 
-	}
-	if (!scalar(@tmp)){
-	    $ftables{$i}{robjs} = 0;
 	}
     }
 }
@@ -84,104 +72,71 @@ my $h_meta = $ui->getmeta($h_table);
 
 <div id="sectiondetail">
 
-<table valign="top" border="0" height="100%" width="100%">
-<tr height="1"><td colspan="2">
-  <table width="100%" border="0" cellpadding="0" cellspacing="0">
-  <tr>
-  <td valign="center" align="left" width="20%" >
-      <form action="view.html" method="POST">
-      <input type="hidden" name="table" value="<% $table %>">
-%        my (@objl, $p);
-%        my $numrec =  scalar(@objl = map { $_->id } $table->retrieve_all);
-%        for (my $i = 0; $i < $numrec; $i++) { if ($objl[$i] == $obj->id) { $p = $i; last; }  };
-         record <input type="text" size="3" name="pos" value="<% $p + 1 %>"> of <% $numrec %> 
-      </form>
-  </td>
-  <td valign="top" align="center" width="80%">
-      [<a href="view.html?table=<% $table %>&id=<% $objl[0] %>&view=<% $view %>">|&lt;</a>]
-      &nbsp;&nbsp;[<a href="view.html?table=<% $table %>&id=<% (($objl[$p-1]) != 0) ? ($objl[$p-1]): $numrec %>&view=<% $view %>">&lt;&lt;</a>]
-      &nbsp;&nbsp; [<a href="view.html?table=<% $table %>&id=<% $objl[($p+1)%($numrec)] %>&view=<% $view %>">&gt;&gt;</a>] 
-      &nbsp;&nbsp;[<a href="view.html?table=<% $table %>&id=<% $objl[$numrec-1] %>&view=<% $view %>">&gt;|</a>]
-  </td>
-  </tr>
-  </table>
-<!--<p><br>-->
-</td></tr>
+%  if ($table !~ /_history/){
+      <div class="container">
+	<div class="containerhead">View</div>
+	   <div class="containerbody">
+%	      if ($view eq "all"){
+		  [all]
+%	      }else{
+		  <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">[all]</a>
+%             }
+%	      if ($view eq $table){
+		  [<% lc($table) %>]
+%	      }else{
+                  <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $table %>">[<% lc($table) %>]</a>
+%             }
+%             foreach my $i (keys %ftables){
+%               if ($view eq $i){
+                   [<% $i %>]
+%               }else{
+                   <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
+%               }   
+%             }
+%             if ( defined($h_meta) ){  # only if there's a history table.
+                 <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">[history]</a>
+%             }
+	   </div>
+	</div>
+      </div>
+%  }
 
-<tr>
-  <!-- Begin left hand menu -->
-  <td align="left" valign="top" width="15%">
-% if ($table !~ /_history/){
-   <table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%" class="tablebackground">
-   <tr><td valign="top">
-      <table border="0" cellspacing="0" cellpadding="1" width="100%" class="tablebackground">
-        <tr class="rowtitle0">
-           <td class="rowtitle0">
-              <strong>View</strong>
-           </td>
-        </tr>
-	<tr class="tablebackground">
-           <td>
-              <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">all
-           </td>
-        </tr>
-	<tr class="tablebackground">
-           <td>
-              <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $table %>"><% lc($table) %></a>
-           </td>
-        </tr>
+  <div class="containeroutside">
 
-%	foreach my $i (keys %ftables){
-%           if ($ftables{$i}{robjs}){
-              <tr class="tablebackground">
-                 <td colspan="2">
-                    <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>"><% $i %></a>
-                 </td>
-              </tr>
-%	   }  
-%	}
-%	  if ( defined($h_meta) ){  # only if there's a history table.
-   	     <tr class="tablebackground">
-                <td>
-                   <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">history</a>
-                </td>
-             </tr>
-%	  }
-%	  if (scalar keys %ftables){
-            <tr class="rowtitle0">
-               <td class="rowtitle0">
-                  <strong>Add to this <% $table %>:</strong>
-               </td>
-            </tr>
-%	    foreach my $i (keys %ftables){
-	       <tr class="tablebackground">
-	          <td>
-                     <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>"><% $i %></a>
-                  </td>
-	       </tr>
-%	      }
-%         }  
-      <!-- JKM -->
-      </table>
-    </td></tr>
-   </table>
-% }
-  </td>
-  <!-- End left hand menu -->
+<%perl>
 
-  <td width="100%" align="center" valign="top">
+if ($view eq 'all' || $view eq "$table"){
+  
+my (@fields, @data);
 
-<!-- Display main object values -->
+    foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+	next if ($c eq 'id' || $c eq 'aliases');
+	
+	if ( exists($tags{$c}) ){
+	    push @fields, $tags{$c};
+	}else{
+	    push @fields, $c;
+	}
 
-%if ($view eq 'all' || $view eq "$table"){
-   <table border="0" cellpadding="0" cellspacing="0" border="0" width="100%" class="tablebackground">
-      <tr>
-         <td colspan="3">
-            <table border="0" cellspacing="0" cellpadding="1" width="100%" class="tablebackground">
-            <tr class="rowtitle0">
-               <td align="left" width="20%">&nbsp;</td>
-               <td align="center" width="50%"><strong><% $table %></strong></td>
-               <td align="right" width="30%"> 
+	if (!exists($linksto{$c}) ){  ## Column is local
+	    if ( $ui->getsqltype($table,$c) =~ /bool/ ){
+		push @data, $ui->radio_group_boolean(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
+		
+	   }elsif ($c eq "info"){
+	       push @data, $ui->text_area(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
+	   }else{
+	       push @data, $ui->text_field(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
+	   }
+
+      } else {  # Column is foreign key
+            push @data, $ui->select_lookup(object=>$obj, column=>$c, lookup=>$linksto{$c}, edit=>0, linkPage=>"view.html", returnAsVar=>1);	     
+      }
+   }
+
+</%perl>
+
+	<div class="containerheadleftoutside"><strong><% $table %></strong></div>
+	<div class="containerheadrightoutside">
 %	          if ($table !~ /_history/){
 	             <a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
 %	          }
@@ -190,54 +145,15 @@ my $h_meta = $ui->getmeta($h_table);
 %		  }elsif ( $table eq "Ipblock" ){
 	             <a href="ip-ws.html?id=<% $obj %>">[custom]</a>
 %                 }
-	          [<a href="delete.html?table=<% $table %>&id=<% $obj %>">delete</a>]
+	          <a href="delete.html?table=<% $table %>&id=<% $obj %>">[delete]</a>
 %	          if ($table !~ /_history/){
-	             [<a href="edit.html?table=<% $table %>">new</a>] 
+	             <a href="edit.html?table=<% $table %>">[new]</a>
 %	          }
-	       </td>
-            </tr>
-            </table>
-         </td>
-      </tr>
-      <tr><td colspan="3" class="delimiter"></td>
-%   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%      next if ($c eq 'id' || $c eq 'aliases');
-       <tr> 
-%       if ( exists($tags{$c}) ){
-          <td width="20%" class="column1"><% $tags{$c} %>:&nbsp;</td>
-%       }else{
-          <td width="20%" class="column1"><% $c %>:&nbsp;</td>
-%       }
-       <td class="delimiter" width="1"><BR></td>
-%      if (!exists($linksto{$c}) ){  ## Column is local
-%          if ( $ui->getsqltype($table,$c) =~ /bool/ ){
-%	      if ($obj->$c){
-	         <td class="column2"><strong>yes</strong></td>
-%	      }else{
-	         <td class="column2"><strong>no</strong></td>
-%	      }
-%	   }elsif ($c eq "info"){
-	      <td class="column2"><pre><% $obj->$c %></pre></td>
-%	   }else{
-	      <td class="column2"><strong><% $obj->$c %></strong></td>
-%	   }
+	</div>
 
-%      } else {  # Column is foreign key
-         <td class="column2" valign="bottom">
-%	    my $fkobj;
-%	    unless ( $obj->$c && ref($obj->$c) ){
-%	       next;
-%	    }
-%	    unless( defined($fkobj = $linksto{$c}->retrieve($obj->$c->id) )){
-%	       next;
-%           }
-            <& sortresults.mhtml, table => $linksto{$c}, object => [$fkobj], view => "row"   &>
-	 </td>
-%      }
-     </tr>
-%   }
-     </tr>
-     </table>
+	<div class="containerbodyoutside">
+	  <& attribute_table.mhtml, field_headers=>\@fields, data=>\@data, headercolwidth=>"20%" &>
+	</div>
 %}
 <!-- End Display main object values -->
 
@@ -245,21 +161,18 @@ my $h_meta = $ui->getmeta($h_table);
 <!-- Display has_many objects -->
 
 %   foreach my $i (keys %ftables){
-%     if ( $ftables{$i}{robjs} ){
-%      if ( ($view eq 'all' || $view eq $i ) && $view ne "$table"){
-            <p>
-            <table cellpadding="0" cellspacing="0" border="0" width="100%" class="tablebackground">
-	       <tr>
-                 <td align="left" class="rowtitle0"><strong><% $i %></strong></td>
-	       <tr>
-	         <td colspan="2">
-	             <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
-	         </td>
-	       </tr>
-	    </table>
-%      }
+%     if ( ($view eq 'all' || $view eq $i ) && $view ne "$table"){
+          <div class="container">
+	    <div class="containerheadleft"><% $i %></div>
+	    <div class="containerheadright">
+	       <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>">[Add]</a>
+	    </div>
+	    <div class="containerbody">
+              <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
+	    </div>
+          </div>
 %     }
-%    } 
+%   } 
 
 <!-- End Display has_many objects -->
 
@@ -272,7 +185,5 @@ my $h_meta = $ui->getmeta($h_table);
 
 <!-- End Display history objects -->
 
-</td></tr>
-</table>
-
+   </div>
 </div>
