@@ -18,8 +18,9 @@ EOF
     
 my $HELP    = 0;
 my $ENTITY  = 0;
-my $SITE    = 0;
 my $DEPS    = 0;
+my $SITE    = 0;
+my $DEBUG   = 0;
 
 # handle cmdline args
 my $result = GetOptions( "e|entity"       => \$ENTITY,
@@ -41,8 +42,8 @@ unless ( $ENTITY || $DEPS || $SITE ){
     die "Error: Must specify either -e, -d or -s\n";
 }
 
-
 my (@nameless, @lost, @orphans, @homeless);
+
 
 my $it = Device->retrieve_all;
 
@@ -52,13 +53,13 @@ while ( my $dev = $it->next ){
 	push @nameless, $dev;
 	next;
     }
-    if ($ENTITY){
-	push @lost, $dev unless ( $dev->entity );
+    if ( $ENTITY ){
+	push @lost, $dev unless ( $dev->entity  && $dev->entity->id );
     }
-    if ($SITE){
-	push @homeless, $dev unless ( $dev->site );
+    if ( $SITE ){
+	push @homeless, $dev unless ( $dev->site && $dev->site->id );
     }
-    if ($DEPS){
+    if ( $DEPS ){
 	my $found = 0;
 	foreach my $int ( $dev->interfaces ){
 	    if ($int->parents || $int->children) { $found = 1; last }
@@ -67,12 +68,14 @@ while ( my $dev = $it->next ){
     }
 }
 
-if( @nameless ){
+
+
+if ( @nameless ){
     print "\nThe following devices have no name defined:\n";
     map { print "  ID: ", $_->id, "\n" } @nameless;
 }
 
-if( @lost ){
+if ( @lost ){
     @lost = sort { $a->name->name cmp $b->name->name } @lost;
     print "\nThe following devices have no Entity defined:\n";
     map { print "  ", $_->name->name, "\n" } @lost;
