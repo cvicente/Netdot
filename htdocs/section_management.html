@@ -132,19 +132,18 @@ sub print_showtaskslink {
         <p>
         <fieldset class="medium">
             <legend>Block Selection</legend>
-                <form action="ip-ws.html" method="POST">
-                <select name="id">
+                <form action="ip-ws.html" method="POST" name="blockSelect">
+                <select name="id" onChange="submit()">
                     <option value="0" SELECTED> -- Select Root -- </option>
-%     my @rbs = $ipm->getrootblocks;
-%     if (scalar @rbs){
-%         foreach my $r ( @rbs ){
-                    <option value="<% $r->id %>"><% $r->address . "/" . $r->prefix %></option>
-%         }
-%     }else{
-                    <option value="0"> - </option>                 
-%     }
+%                   my @rbs = $ipm->getrootblocks;
+%                   if (scalar @rbs){
+%                     foreach my $r ( @rbs ){
+                        <option value="<% $r->id %>"><% $r->address . "/" . $r->prefix %></option>
+%                     }
+%                   }else{
+                        <option value="0"> - </option>
+%                   }
                 </select>
-                <input name="submit" value="Go" type="submit">
                 <input type="hidden" name="_action" value="VIEW">
             </form>
         </fieldset>
