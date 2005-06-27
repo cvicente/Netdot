@@ -1256,6 +1256,13 @@ sub get_dev_info {
 	$dev{enterprise} =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
 
     }
+    if ( exists($self->{config}->{IGNOREDEVS}->{$dev{sysobjectid}} )){
+	$self->error( sprintf("Product id %s is set to be ignored in config file", $dev{sysobjectid}) );
+	$self->debug( loglevel => 'LOG_NOTICE',
+		      message => $msg );
+	return 0;
+    }
+
     if ( $self->_is_valid($nv{sysName}) ){
 	$dev{sysname} = $nv{sysName};
     }
