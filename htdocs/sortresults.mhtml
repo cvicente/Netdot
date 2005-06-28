@@ -1,12 +1,26 @@
 <%doc>
+
+Given a list of objects, sorts by given criteria and prints a page with the essential columns.
+Performs paging by passing the sorted/indexed list to itself, together with the current offset
+
 Supported arguments:
 
-  table  - name of a table in the database
-  object - reference to a list of objects in that table for displaying in html
-  view   - [row|column]
-  sort   - column to sort by
-  page   - page to link to with results (default is view.html)
+  table:      name of a table in the database
+  object:     reference to a list of objects in that table for displaying in html
+  objindex:   sortresults will pass this when calling itself, for paging.
+              reference to a hash whose keys are sorted index numbers and value is the object
+  view:       [row|column]
+  sort:       column to sort by
+  page:       page to link to with results (default is view.html)
+  withdelete: create a form with a check-box per item, which will call delete.html
+
+  # The following are passed to itself in subsequent calls
+  per_page:   Maximum entries displayed per page
+  offset:     Current position
+  total:      Total number of items in list
+  sid:        Session id
 </%doc>
+
 <%args>
 
 $table      => undef
@@ -15,208 +29,254 @@ $view       => "column"
 $sort       => undef
 $page       => undef
 $withdelete => 0
-%order      => undef
+$per_page   => 50;
+$offset     => 0;
+$total      => undef;
+$sid        => undef;
+
 </%args>
 
 <%init>
-my @sorted;
 my %tags;
 my %linksto;
 my %linksfrom;
-my $cellspc = 0;
-my $cellpad = 0;
-my $META;
-my $LBL;
-my %cssitem = ( 0 => "formtablec1", 1 => "formtablec2" );
-my $ci = 1;
+my %order;
+my $cellspc    = 0;
+my $cellpad    = 0;
+my $lbl;
+my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
+my $ci         = 1;
+my $last_item;
+my $session;
+my $TMP;
+my %objindex;
 
-# Determine table name if not passed to us
+my $DEBUG      = 0;
+my $numcols    = 0;
+
+print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
+
+# Things to do on first call
+
+if ( defined ($object) ){
+    unless ( $session = $ui->mksession( $TMP ) ){
+	$m->comp('error.mhtml', error => $ui->error);
+    }
+    # Determine table name if not passed to us
+    #
+    unless ( $table ){
+	if ( my $fo = $object->[0] ){
+	    $table = $fo->table;
+	}else{
+	    print "No elements";
+	}
+    }
+    # Some tables have a specific view page. 
+    # Point to those when appropriate
+    #
+    my %viewpage = ( BinFile => "display_bin.html",
+		     Ipblock => "ip-ws.html",
+		     Device  => "device.html",
+		     );
+    unless ( $page ){
+	foreach my $tname ( keys %viewpage ){
+	    if ($table eq $tname){
+		$page = $viewpage{$tname};
+		last;
+	    }
+	}
+    }
+    $page ||= "view.html";
+    if( $view ) {
+	unless ( $view eq "row" || $view eq "column" ) {
+	    $m->comp('error.mhtml', error => "Invalid value for view: $view");
+	}
+    }
+    if ( $ui->getmeta( $table ) ) {
+	my $i = 0;
+	##############################################
+	# get the label for this table (as defined in Meta)
+	$lbl = ($ui->getlabels( $table ))[0];
+	
+	##############################################
+	# If sort arg
+	if( defined( $sort ) ) {
+	    if ( $sort == 0 || $sort eq "no"){
+		# We're told not to sort
+		map { $objindex{$i++} = $_ } @{ $object };
+	    }else{
+		my(%col);
+		map { $col{$_}++ } $table->columns;
+		if( exists( $col{ $sort } ) ) {
+		    map { $objindex{$i++} = $_ } sort { $a->$sort cmp $b->$sort } @{ $object };
+		}
+	    }
+	    ##############################################
+	    # If no sort arg, sort by actual label
+	    # 
+	}else{
+	    my @labels = $ui->getlabelarr( $table );
+	    map { $objindex{$i++} = $_ } map  { $_->[0] }
+	    sort { $a->[1] cmp $b->[1] }
+	    map { [$_ , $ui->getlabelvalue($_, \@labels)] } @{ $object };
+	    
+	}
+	# Total number of items
+	$total = $i;
+	
+	##############################################
+	# get linksto info
+	%linksto = $ui->getlinksto( $table );
+	##############################################
+	# define order
+	%order   = $ui->getcolumnorderbrief( $table );
+	##############################################
+	# Get tags
+	%tags = $ui->getcolumntags( $table );
+	##############################################
+	# remove id and aliases (if present)
+	if( exists( $order{id} ) ) {
+	    delete( $order{id} );
+	}
+	if( exists( $order{aliases} ) ) {
+	    delete( $order{aliases} );
+	}
+	##############################################
+	# munge so that label is first 
+	if( defined( $lbl ) && length( $lbl ) > 0 ) {
+	    unless( $order{$lbl} == 1 ) {
+		my $j        = $order{$lbl};
+		my %rev      = reverse %order;
+		my $k        = $rev{1} ;
+		$order{$k}   = $j;
+		$order{$lbl} = 1;
+	    }
+	}
+    }
+#########################################################
+# This happens on subsequent calls (paging)
 #
-unless ( $table ){
-    if ( my $fo = $object->[0] ){
-	$table = $fo->table;
-    }else{
-	print "No elements";
+}elsif( $sid ) {
+    unless ( $session = $ui->getsession( $TMP, $sid ) ){
+	$m->comp('error.mhtml', error => $ui->error);
     }
+    %linksto    = %{ $session->{linksto} };    
+    %order      = %{ $session->{order} };    
+    %tags       = %{ $session->{tags} };    
+    %objindex   = %{ $session->{objindex} };    
+    $table      = $session->{table};    
+    $page       = $session->{page};    
+    $view       = $session->{view};    
+    $sort       = $session->{sort};    
+    $withdelete = $session->{withdelete};    
+    $offset     = $session->{offset};    
+    $total      = $session->{total};    
+
+print "<pre>", Dumper($session), "</pre>" if $DEBUG;
+
 }
 
-# Some tables have a specific view page. 
-# Point to those when appropriate
-
-my %viewpage = ( BinFile => "display_bin.html",
-		 Ipblock => "ip-ws.html",
-		 Device  => "device.html",
-		);
-unless ( $page ){
-    foreach my $tname ( keys %viewpage ){
-        if ($table eq $tname){
-	    $page = $viewpage{$tname};
-	    last;
-        }
-    }
-}
-$page ||= "view.html";
+# Calculate last item to show
+$last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
 </%init>
 
-<%perl>
-
-if( $view ) {
-  unless ( $view eq "row" || $view eq "column" ) {
-      $m->comp('error.mhtml', error => "Invalid value for view: $view");
-  }
-}
-$META = $ui->getmeta( $table );
-if( defined( $META ) ) {
-    my $i = 1;
-    my @tmp;
-    ##############################################
-    # get the label for this table (as defined in Meta)
-    $LBL = ($ui->getlabels( $table ))[0];
-    
-    ##############################################
-    # If sort arg
-    if( defined( $sort ) ) {
-	if ( $sort == 0 || $sort eq "no"){
-	    # We're told not to sort
-	    @sorted =  @{ $object };
-	}else{
-	    my(%col);
-	    map { $col{$_}++ } $table->columns;
-	    if( exists( $col{ $sort } ) ) {
-		@sorted = sort { $a->$sort cmp $b->$sort } @{ $object };
-	    }
-	}
-	##############################################
-	# If no sort arg, sort by actual label
-	# 
-    }else{
-	my @labels = $ui->getlabelarr( $table );
-	@sorted = map  { $_->[0] }
-	sort { $a->[1] cmp $b->[1] }
-	map { [$_ , $ui->getlabelvalue($_, \@labels)] } @{ $object };
-	
-    }
-    ##############################################
-    # get linksto info
-    %linksto = $ui->getlinksto( $table );
-    ##############################################
-    # define order
-    %order = $ui->getcolumnorderbrief( $table );
-    ##############################################
-    # Get tags
-    %tags = $ui->getcolumntags( $table );
-    ##############################################
-    # remove id and aliases (if present)
-    if( exists( $order{id} ) ) {
-	delete( $order{id} );
-    }
-    if( exists( $order{aliases} ) ) {
-	delete( $order{aliases} );
-    }
-    ##############################################
-    # munge so that label is first 
-    if( defined( $LBL ) && length( $LBL ) > 0 ) {
-	unless( $order{$LBL} == 1 ) {
-	    my $j = $order{$LBL};
-	    my %rev = reverse %order;
-	    my $k = $rev{1} ;
-	    $order{$k} = $j;
-	    $order{$LBL} = 1;
-	}
-    }
-}
-</%perl>
 %
-% if( defined( $META ) && defined( $object ) ) {
+% if( %objindex ) {
+
 <!-- begin sortresults -->
-% ####################################################################
-<%doc>
-Begin the table for this instance of sortresults
-</%doc>
-% ####################################################################
+% #####################################################################
+% # Begin the table for this instance of sortresults
+% #####################################################################
 % if( $view eq "row" ) {
 %   ($cellspc, $cellpad) = ( 0, 0 );
+%   $numcols = scalar keys %order;
 % } elsif( $view eq "column" ) {
 %   ($cellspc, $cellpad) = ( 0, 1 );
+%   $numcols = 2;
 % }
-  <TABLE CELLSPACING="<% $cellspc %>" CELLPADDING="<% $cellpad %>" class="tablebackground">
+
+  <table border="0" cellspacing="<% $cellspc %>" cellpadding="<% $cellpad %>" class="tablebackground">
 % if ( $withdelete ){
-    <FORM ACTION="delete.html" METHOD="POST">
+    <form action="delete.html" method="POST">
+%   $numcols += 1;
 % }
+% ##################################################################
+% # If the VIEW is a row, print the column headers.  
+% # Otherwise, print an empty row.
+% #####################################################################
 %    if( $view eq "row" ) {
-% ####################################################################
-<%doc>
-If the VIEW is a row, print the column headers.  
-Otherwise, print an empty row.
-</%doc>
-% ####################################################################
-    <TR class="rowtitle2">
+    <tr class="rowtitle2">
 %       foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %	   if( exists( $tags{$c} ) ) {
-      <TH><% $tags{$c} %></TH>
+      <th><% $tags{$c} %></th>
 %	   } else {
-      <TH><% $c %></TH>
+      <th><% $c %></th>
 %	   }
 %       }
-%   if ( $withdelete ){
-      <TH>Delete</TH>
-%   }
-    </TR>
+%       if ( $withdelete ){
+           <th>Delete</th>
+%       }
+    </tr>
 %    } else {
-    <TR>
-      <TD colspan="2" class="delimiter"></TD>
-    </TR>
+    <tr>
+      <td colspan="<% $numcols %>" class="delimiter"></td>
+    </tr>
 %    }
+
 % ####################################################################
-% foreach my $o ( @sorted ) {
+% # Loop around the window of items that we are showing in this page
+% ####################################################################
+
+% my $pos = $offset;
+% while ( $pos < $last_item ) {
+%    my $o;
+%    unless ( $o = $objindex{$pos} ){
+%	$m->comp("error.mhtml", error=>"Object not valid at index $pos");
+%    }
+%    $pos++;
 %    my $flag = 1;
 %    $ci = ($ci + 1) % 2;
+
 % ####################################################################
-<%doc>
-Print relevant delimiters for whether a ROW or COLUMN view
-</%doc>
+% # Print relevant delimiters for whether a ROW or COLUMN view
 % ####################################################################
+
 %
 %    if( $view eq "row" ) {
-      <TR class="<% $cssitem{$ci} %>">
+      <tr class="<% $cssitem{$ci} %>">
 %    } elsif( $view eq "column" ) {
-    <TR height="1" class="delimiter">
-      <TD colspan="2" height="1"></TD>
-    </TR>
+    <tr height="1" class="delimiter">
+      <td colspan="<% $numcols %>" height="1"></td>
+    </tr>
 %    }
 %
 % ####################################################################
-<%doc>
-Get the column order and process each item.
-</%doc>
+% # Get the column order and process each item.
 % ####################################################################
 %    my @order = sort { $order{$a} <=> $order{$b} } keys %order;
 %    foreach my $c ( @order ) {
 %
 % ####################################################################
-<%doc>
-If a COLUMN view, start a row with the column name.
-</%doc>
-% ####################################################################
+% # If a COLUMN view, start a row with the column name.
+% #####################################################################
 %
 %       if( $view eq "column" ) {
-          <TR class="<% $cssitem{$ci} %>">
-%#          <TR>
-           <TD align="RIGHT" valign="TOP" WIDTH="18%">
+          <tr class="<% $cssitem{$ci} %>">
+           <td align="right" valign="top" width="18%">
 %	     if ( exists($tags{$c}) ){
                <b><% $tags{$c} %></b>:&nbsp;
 %	     } else {
                <b><% $c %></b>:&nbsp;
 %	     }
-          </TD>
+          </td>
 %       }
-      <TD align="LEFT" valign="MIDDLE">
-% ####################################################################
-<%doc>
-If it's a link to another column....
-</%doc>
-% ####################################################################
+      <td align="left" valign="middle">
+
+% #####################################################################
+% # If it is a link to another column....
+% #####################################################################
+
 %          if ( exists($linksto{$c}) ) {
 %             my $ft = $ui->getmeta( $linksto{$c} );
 %             if( ! defined( $ft ) ) {
@@ -255,14 +315,11 @@ If it's a link to another column....
 %            }
 %          } else {
 %
-% ####################################################################
-<%doc>
-It's not a pointer to another column
-</%doc>
-% ####################################################################
+% #####################################################################
+% # It s not a pointer to another column
+% #####################################################################
 %
 %             if( $flag ) {
-%#      <strong>
       <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">
 %                if( length( $o->$c ) < 1 ) {
       N/A
@@ -270,57 +327,90 @@ It's not a pointer to another column
       <% $o->$c %>
 %                }
       </a>
-%#      </strong>
 %             } else {
       <% $o->$c %>
 %             }
 %          } # else fi
-      </TD>
-% ####################################################################
-<%doc>
-Wrap this row up.
-</%doc>
-% ####################################################################
+      </td>
+% #####################################################################
+% # Wrap this row up.
+% #####################################################################
 %       $flag = 0 if( $flag );          
 %       if( $view eq "column" ) {
-    </TR>
+    </tr>
 %       }
 %     } # for c
 %
 
 %     if( $view eq "column" ) {
 %        if ( $withdelete ){
-           <TR class="<% $cssitem{$ci} %>">
-             <TD align="RIGHT" valign="TOP" WIDTH="18%">del</TD>
-             <TD align="LEFT" valign="MIDDLE">
+           <tr class="<% $cssitem{$ci} %>">
+             <td align="right" valign="top" width="18%">delete</td>
+             <td align="left" valign="middle">
                <input type="checkbox" name="<% $table %>__<% $o->id %>">
-             </TD>
-           </TR>
+             </td>
+           </tr>
 %     }
-    <TR height="1" class="delimiter">
-      <TD colspan="2" height="1"></TD>
-    </TR>
+    <tr height="1" class="delimiter">
+      <td colspan="<% $numcols %>" height="1"></td>
+    </tr>
 
 %     } elsif( $view eq "row" ) {
 %         if ( $withdelete ){
-            <TD align="LEFT" valign="MIDDLE">
+            <td align="left" valign="middle">
               <input type="checkbox" name="<% $table %>__<% $o->id %>">
-            </TD>
+            </td>
 %         }
-    </TR>
-    <TR class="delimiter" height="1">
-      <TD colspan="15"></TD>
+    </tr>
+    <tr class="delimiter" height="1">
+      <td colspan="<% $numcols %>"></td>
+    </tr>
 %     }
 %} # for o
 % ####################################################################
-  </TABLE>
+
+  </table>
+
+% if ( $total > $per_page ){
+
+    <div class="containerheadright">
+    Results: [<% $offset+1 %>-<% $last_item %>] of <% $total %> 
+
+%   # Make a new session.  We want to be able to go back
+%
+%    undef ($session);
+%    unless ( $session = $ui->mksession( $TMP ) ){
+%      $m->comp('error.mhtml', error => $ui->error);
+%    }
+
+%    $session->{linksto}    = \%linksto;
+%    $session->{order}      = \%order;
+%    $session->{tags}       = \%tags;
+%    $session->{objindex}   = \%objindex;
+%    $session->{table}      = $table;
+%    $session->{page}       = $page;
+%    $session->{view}       = $view;
+%    $session->{sort}       = $sort;
+%    $session->{withdelete} = $withdelete;
+%    $session->{offset}     = $last_item;
+%    $session->{total}      = $total;
+
+%    if ( $sid ){
+        <a href="#" onClick="history.go(-1);">[<<] </a>
+%    }
+     <a href="list.html?sid=<% $session->{_session_id} %>">[>>] </a>
+
+     </div>
+%  }
 
 % if ( $withdelete ){
-     <input type="submit" name="submit" value="Delete">
-     <input type="submit" name="submit" value="Cancel">
-  </FORM>
+    <div class="containerheadright">
+	   <input type="submit" name="submit" value="Delete">
+	   <input type="submit" name="submit" value="Cancel">
+    </div>
+  </form>
 % }
+
 <!-- end sortresults -->
 % } # if
 
-% ####################################################################

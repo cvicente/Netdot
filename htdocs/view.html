@@ -160,16 +160,14 @@ my (@fields, @data);
 
 <!-- Display has_many objects -->
 
-%   foreach my $i (keys %ftables){
+%   foreach my $i (sort keys %ftables){
 %     if ( ($view eq 'all' || $view eq $i ) && $view ne "$table"){
           <div class="container">
 	    <div class="containerheadleft"><% $i %></div>
 	    <div class="containerheadright">
 	       <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>">[Add]</a>
 	    </div>
-	    <div class="containerbody">
               <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
-	    </div>
           </div>
 %     }
 %   } 
