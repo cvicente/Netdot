@@ -13,6 +13,7 @@
 $table
 $id
 $view    => "all"
+$edit    => undef
 </%args>
 
 <%flags>
@@ -46,18 +47,22 @@ if ($table !~ /_history/){
 	my $j;
 	map { $j = $_ } keys %{ $linksfrom{$i} };
 	$ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
-	# If foreign table is a join table, try to hide it
-	# THIS MAYBE SHOULD CHANGE TO USE THE MAPPING FEATURE FROM CLASS::DBI INSTEAD
+
+	# If foreign table is a join table
+
 	if ( $ui->isjointable($j) ){
+	    $ftables{$i}{join} = 1;
 	    # Get has_a entries 
 	    my %jlinksto = $ui->getlinksto($j);
 	    # Column in join table that points to third table
 	    my $col;
 	    map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
 	    map { push @{ $ftables{$i}{robjs} }, $_->$col } $obj->$i;
+	    @{$ftables{$i}{objs}} = $obj->$i;
 	    $ftables{$i}{dtbl} = $jlinksto{$col};  # table to display
 	    $ftables{$i}{ctbl} = $j;               # table to pass to create.html
 	}else{  # table is not a join table
+	    $ftables{$i}{join} = 0;
 	    @{$ftables{$i}{robjs}} = $obj->$i;
 	    $ftables{$i}{dtbl} = $j;
 	    $ftables{$i}{ctbl} = $j; 
@@ -165,9 +170,20 @@ my (@fields, @data);
           <div class="container">
 	    <div class="containerheadleft"><% $i %></div>
 	    <div class="containerheadright">
-	       <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>">[Add]</a>
+%           if ( $edit eq $i ){	    
+               &nbsp;
+%           }else{
+	       <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>">[add]</a>
+%	       if ( $ftables{$i}{join} && $ftables{$i}{objs} ){
+                  <a href="view.html?table=<% $table %>&id=<% $id %>&edit=<% $i %>">[edit]</a>    
+%	       }
+%           }
 	    </div>
-              <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
+%	       if ( $edit eq $i ){
+                 <& sortresults.mhtml, table => $ftables{$i}{ctbl}, object => $ftables{$i}{objs}, view => "row", withdelete => 1 &>
+%	       }else{
+                 <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
+%              }
           </div>
 %     }
 %   } 

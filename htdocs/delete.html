@@ -25,7 +25,9 @@ print Dumper(%ARGS) if $DEBUG;
     <div class="containerbody">
 
 %if ( $submit eq "Delete" ){
-Are you sure you want to delete the following objects?<br>
+   <strong>Are you sure you want to delete the following objects?</strong>
+   <p>
+   <ul>
 <%perl>
     unless($session = $ui->mksession( $TMP )){
     	$m->comp('error.mhtml', error => $ui->error);
@@ -44,16 +46,16 @@ Are you sure you want to delete the following objects?<br>
     	}
     	my $lbl = $ui->getobjlabel($obj, ", ");
 </%perl>
-       &nbsp;&nbsp;&nbsp;&nbsp;<% $table %> <% $lbl %><br>
+       <li><% $table %> <% $lbl %>
 %      push @objs, [$table, $obj, $lbl];
 %   }
 %   $session->{objects} = \@objs;
-
+    </ul>
     <br>
     <form method="POST" action="delete.html">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input name="submit" value="Confirm" type="submit">
-    <input name="submit" value="Cancel" type="submit">
+    <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
     </form>
 <%perl>
 
@@ -72,7 +74,7 @@ Are you sure you want to delete the following objects?<br>
 	        $m->comp('error.mhtml', error => "$@");
 	    } else{
 </%perl>
-            <strong><% $table %> <% $lbl %></strong> deleted.<br>
+            <strong><% $table %> <% $lbl %></strong> deleted.<br><br>
 %       }
 %   }
 %}elsif ($submit eq "Cancel"){

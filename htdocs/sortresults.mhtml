@@ -92,67 +92,70 @@ if ( defined ($object) ){
 	    $m->comp('error.mhtml', error => "Invalid value for view: $view");
 	}
     }
-    if ( $ui->getmeta( $table ) ) {
-	my $i = 0;
-	##############################################
-	# get the label for this table (as defined in Meta)
-	$lbl = ($ui->getlabels( $table ))[0];
-	
-	##############################################
-	# If sort arg
-	if( defined( $sort ) ) {
-	    if ( $sort == 0 || $sort eq "no"){
-		# We're told not to sort
-		map { $objindex{$i++} = $_ } @{ $object };
-	    }else{
-		my(%col);
-		map { $col{$_}++ } $table->columns;
-		if( exists( $col{ $sort } ) ) {
-		    map { $objindex{$i++} = $_ } sort { $a->$sort cmp $b->$sort } @{ $object };
-		}
-	    }
-	    ##############################################
-	    # If no sort arg, sort by actual label
-	    # 
+    unless ( $ui->getmeta( $table ) ) {
+	$m->comp('error.mhtml', error => "Can't fetch meta info for table $table");	
+    }
+    
+    my $i = 0;
+    ##############################################
+    # get the label for this table (as defined in Meta)
+    $lbl = ($ui->getlabels( $table ))[0];
+    
+    ##############################################
+    # If sort arg
+    if( defined( $sort ) ) {
+	if ( $sort == 0 || $sort eq "no"){
+	    # We're told not to sort
+	    map { $objindex{$i++} = $_ } @{ $object };
 	}else{
-	    my @labels = $ui->getlabelarr( $table );
-	    map { $objindex{$i++} = $_ } map  { $_->[0] }
-	    sort { $a->[1] cmp $b->[1] }
-	    map { [$_ , $ui->getlabelvalue($_, \@labels)] } @{ $object };
-	    
-	}
-	# Total number of items
-	$total = $i;
-	
-	##############################################
-	# get linksto info
-	%linksto = $ui->getlinksto( $table );
-	##############################################
-	# define order
-	%order   = $ui->getcolumnorderbrief( $table );
-	##############################################
-	# Get tags
-	%tags = $ui->getcolumntags( $table );
-	##############################################
-	# remove id and aliases (if present)
-	if( exists( $order{id} ) ) {
-	    delete( $order{id} );
-	}
-	if( exists( $order{aliases} ) ) {
-	    delete( $order{aliases} );
-	}
-	##############################################
-	# munge so that label is first 
-	if( defined( $lbl ) && length( $lbl ) > 0 ) {
-	    unless( $order{$lbl} == 1 ) {
-		my $j        = $order{$lbl};
-		my %rev      = reverse %order;
-		my $k        = $rev{1} ;
-		$order{$k}   = $j;
-		$order{$lbl} = 1;
+	    my(%col);
+	    map { $col{$_}++ } $table->columns;
+	    if( exists( $col{ $sort } ) ) {
+		map { $objindex{$i++} = $_ } sort { $a->$sort cmp $b->$sort } @{ $object };
 	    }
+	}
+	##############################################
+	# If no sort arg, sort by actual label
+	# 
+    }else{
+	my @labels = $ui->getlabelarr( $table );
+	map { $objindex{$i++} = $_ } map  { $_->[0] }
+	sort { $a->[1] cmp $b->[1] }
+	map { [$_ , $ui->getlabelvalue($_, \@labels)] } @{ $object };
+	
+    }
+    # Total number of items
+    $total = $i;
+    
+    ##############################################
+    # get linksto info
+    %linksto = $ui->getlinksto( $table );
+    ##############################################
+    # define order
+    %order   = $ui->getcolumnorderbrief( $table );
+    ##############################################
+    # Get tags
+    %tags = $ui->getcolumntags( $table );
+    ##############################################
+    # remove id and aliases (if present)
+    if( exists( $order{id} ) ) {
+	delete( $order{id} );
+    }
+    if( exists( $order{aliases} ) ) {
+	delete( $order{aliases} );
+    }
+    ##############################################
+    # munge so that label is first 
+    if( defined( $lbl ) && length( $lbl ) > 0 ) {
+	unless( $order{$lbl} == 1 ) {
+	    my $j        = $order{$lbl};
+	    my %rev      = reverse %order;
+	    my $k        = $rev{1} ;
+	    $order{$k}   = $j;
+	    $order{$lbl} = 1;
 	}
     }
+    
 #########################################################
 # This happens on subsequent calls (paging)
 #
@@ -406,7 +409,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % if ( $withdelete ){
     <div class="containerheadright">
 	   <input type="submit" name="submit" value="Delete">
-	   <input type="submit" name="submit" value="Cancel">
+	   <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
     </div>
   </form>
 % }
