@@ -531,13 +531,27 @@ sub updateblock {
 	    $state{$key} = $args{$key};
 	}
     }
+    # Check that we actually have something to change
+    my $change = 0;
+    foreach my $key (keys %state){
+	if ($ipblock->$key ne $state{$key}){
+	    $change = 1;
+	    last;
+	}
+    }
+    if ( ! $change ){
+	return $ipblock;
+    }
+
     $state{last_seen} = $self->timestamp;
 
     # We might need to discard changes.
     # Class::DBI's 'discard_changes' method won't work
     # here.  Probably because object is changed in DB
     # (and not in memory) when IP tree is rebuilt.
+
     my %bak = $self->getobjstate( $ipblock );
+
     unless ( $self->update( object=>$ipblock, state=>\%state ) ){
 	$self->error("Error updating Ipblock object: $@");
 	return 0;
