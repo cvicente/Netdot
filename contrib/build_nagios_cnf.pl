@@ -95,7 +95,9 @@ foreach my $ipobj ( Ipblock->retrieve_all ){
 	$group = 'unknown';
     }else {
 	$group = join '_', split /\s+/, $ipobj->interface->device->entity->name;
-	$group =~ s/[\(\),]//g;  #Remove illegal chars for Nagios
+	#Remove illegal chars for Nagios
+	$group =~ s/[\(\),]//g;  
+	$group =~ s/&/and/g;     
     }
     
     # Assign most specific contactlist 
