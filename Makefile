@@ -62,7 +62,6 @@ tests:
 	perl -MDBIx::DBSchema -e 1
 	perl -MDBIx::DataSource -e 1
 	perl -MSNMP -e 1
-	perl -MNet::IP -e 1
 	perl -MNetAddr::IP -e 1
 #	perl -MSiteControl::AccessController -e 1
 	perl -I/usr/local/netviewer/lib -M'NetViewer::RRD::SNMP 0.29.6' -e 1

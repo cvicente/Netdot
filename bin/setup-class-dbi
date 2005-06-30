@@ -26,7 +26,6 @@ select (OUT);  # spit it all out to the output file by default
 my $head = 
 qq ^package Netdot::DBI;
 use base 'Class::DBI';
-use Net::IP qw(:PROC);
 use Netdot::odHasMany;
 
 ## This file was generated from a script.  Do not edit. ##
@@ -40,7 +39,7 @@ sub VERSION { "0.5" }
 ## No interpolation from now on (q//)
 
 $head .= 
-q ^
+q [
 __PACKAGE__->add_relationship_type( has_many => "Class::DBI::Relationship::odHasMany" );
 
   
@@ -71,11 +70,32 @@ sub int2ip {
     return if ($address =~ /\D+/ );
 
     if ($self->version == 4){
-	$bin = ip_inttobin($address, 4);
-	$val = ip_bintoip($bin, 4);
+	$val = (new NetAddr::IP $address)->addr();
     }elsif ($self->version == 6) {
-	$bin = ip_inttobin($address, 6);
-	$val = ip_compress_address(ip_bintoip($bin, 6), 6);
+	# This code adapted from Net::IP::ip_inttobin()
+
+	require Math::BigInt;
+
+	my $dec = new Math::BigInt $address;
+	my @hex = (0..9,'a'..'f');
+	my $ipv6 = "";
+
+	# Set warnings off, use integers only (loathe Math::BigInt)
+	local $^W = 0;
+	use integer;
+	foreach my $i (0..31)	# 32 hex digits in 128 bits
+	{
+	    # There is colon separating every group of 4 hex digits
+	    $ipv6 = ':' . $ipv6 if ($i > 0 and $i % 4 == 0);
+	    # Last hex digit is in low 4 bits
+	    $ipv6 =  $hex[$dec % 16] . $ipv6;
+	    # Chop off low 4 bits
+	    $dec /= 16;
+	}
+	no integer;
+	
+	# Use the compressed version
+	$val = (new NetAddr::IP $ipv6)->short();
     }elsif (defined $self->version){
 	return $self->_croak(sprintf("Invalid IP version:", $self->version));
     }else {
@@ -218,7 +238,7 @@ Product->set_sql(notype => qq{
 
 Product->columns(TEMP => qw/numdevs/);
 
-^;
+];	# End huge q() quote
 
 print $head;
 

@@ -27,7 +27,6 @@ use strict;
 # List of modules that you want to use within components.
 { 
     package HTML::Mason::Commands;
-    use Net::IP;
     use NetAddr::IP;
     use Data::Dumper;
     use lib "PREFIX/lib";
