@@ -172,18 +172,15 @@ function setNull(field){
 </script>
 
 % if ( $search ){
-<table border="0" width="100%" align="center" class="tablebackground">
- <tr class="rowtitle0" >
-    <td valign="top" align="left">
-       <b><% scalar(@$list) %> results for <i><% $search %></i></b>
-    </td>
- </tr>
- <tr>
-   <td valign="top" width="50%" align="center">
+<div class="container">
+  <div class="containerheadleft">
+    <% scalar(@$list) %> results for <i><% $search %></i>
+%# The non breaking space is a hack to make the table header full width
+  </div><div class="containerheadright">&nbsp;</div>
+  <div class="containerbody">
       <& sortresults.mhtml, object => $list, view => "row", page => "device.html", withdelete => 1 &>
-  </td>
- </tr>
-</table>
+  </div>
+</div>
 
 % }else{  # we're not searching
 
@@ -371,17 +368,12 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
     <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
            </td>
           </tr>
-          <tr>
-           <td colspan="2" align="center">Comments:</td>
-          </tr>
-          <tr>
-           <td colspan="2" align="left">
-%       $ui->text_area(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=60");
-           </td>
-          </tr>
-         </table>
-       </div> <!-- containerbody -->
-    </div> <!-- container -->
+	</table>
+	<div class="containerseparator">Comments</div>
+	<% $ui->text_area(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=60", returnAsVar=>1) %>
+	</div>
+   </div> <!-- containerbody -->
+</div> <!-- container -->
 <!-- End General Info Table -->
 
 
