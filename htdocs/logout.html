@@ -8,11 +8,14 @@ Log out page
 title   => 'Netdot Logout' 
 </%attr>
 
-<%init>
-my $success = 0;
+<%args>
+$user
+</%args>
 
-my $user    = SiteControl::AccessController::getCurrentUser($r);
-if(defined($user) && $user->isa("SiteControl::User")) {
+<%init>
+my $success;
+
+if(defined($user) && $user->isa("Apache2::SiteControl::User")) {
    $user->logout($r);
    $success = 1;
 }

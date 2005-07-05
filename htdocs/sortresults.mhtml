@@ -67,8 +67,12 @@ if ( defined ($object) ){
     unless ( $table ){
 	if ( my $fo = $object->[0] ){
 	    $table = $fo->table;
+	    unless ( $ui->getmeta( $table ) ) {
+		$m->comp('error.mhtml', error => "Can't fetch meta info for table $table");	
+	    }
 	}else{
 	    print "No elements";
+	    $m->abort;
 	}
     }
     # Some tables have a specific view page. 
@@ -92,10 +96,7 @@ if ( defined ($object) ){
 	    $m->comp('error.mhtml', error => "Invalid value for view: $view");
 	}
     }
-    unless ( $ui->getmeta( $table ) ) {
-	$m->comp('error.mhtml', error => "Can't fetch meta info for table $table");	
-    }
-    
+
     my $i = 0;
     ##############################################
     # get the label for this table (as defined in Meta)

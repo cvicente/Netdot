@@ -56,14 +56,14 @@ tests:
 	@echo "Testing for required perl modules...."
 	perl -M'DBI 1.46' -e 1
 	perl -M'Class::DBI 0.96' -e 1
-	perl -MHTML::Mason -e 1
+	perl -M'HTML::Mason 1.29' -e 1
 	perl -M'Apache::Session 1.6' -e 1
 	perl -MApache::DBI -e 1
 	perl -MDBIx::DBSchema -e 1
 	perl -MDBIx::DataSource -e 1
 	perl -MSNMP -e 1
 	perl -MNetAddr::IP -e 1
-#	perl -MSiteControl::AccessController -e 1
+	perl -M'Apache2::SiteControl::AccessController 0.48' -e 1
 	perl -I/usr/local/netviewer/lib -M'NetViewer::RRD::SNMP 0.29.6' -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
