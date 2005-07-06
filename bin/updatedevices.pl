@@ -65,6 +65,9 @@ my $ipm = Netdot::IPManager->new();
 my $dns = Netdot::DNSManager->new();
 my $success = 0;
 
+# This will be reflected in the history tables
+$ENV{REMOTE_USER} = "netdot";
+
 if ($host){
     if (my $r = &discover(host => $host, comstr => $comstr)){
 	$success = 1;

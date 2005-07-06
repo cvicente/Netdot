@@ -42,6 +42,9 @@ unless ( $ENTITY || $DEPS || $SITE ){
     die "Error: Must specify either -e, -d or -s\n";
 }
 
+# This will be reflected in the history tables
+$ENV{REMOTE_USER} = "netdot";
+
 my (@nameless, @lost, @orphans, @homeless);
 
 
