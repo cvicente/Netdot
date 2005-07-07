@@ -47,6 +47,9 @@ if ($id && $id ne "NEW") {
 
 $editBackbone = 1 if ($id eq "NEW" || $edit eq "cableinfo");
 $editStrand   = 1 if ($edit eq "strandinfo");
+
+# For table building modules:
+my (@field_headers, @cell_data, @headers, @rows, $i);
 </%init>
 
 <%perl>
@@ -215,125 +218,119 @@ function suggestName()
                          : "<i>undefined</i>" %>
 %}
 </div>
-<!-- End Header Table -->
 
 <!-- Begin Backbone Cable Table -->
 <div class="containerbodyoutside">
-<div class="container">
-        <form name="netdotform" action="cable_backbone.html" method="POST">
-        <input type="hidden" name="id" value="<% $id %>">
-        <input type="hidden" name="_action" value="UPDATE">
-<div class="containerheadleft">
-		Backbone Cable
-</div>
-<div class="containerheadright">
-%           if ($editBackbone) {
-            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
-%           } else {
-            <a href="cable_backbone.html?id=NEW">[new]</a> &nbsp;&nbsp; <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a> &nbsp;&nbsp; <a href="delete.html?table=BackboneCable&id=<% $id %>">[delete]</a>
-%           }
-</div>
-<div class="containerbody">
-		<table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-        <tr align="left" valign="top">
-            <td width="45%">
-            <table width="100%" border="0" cellspacing="2" cellpadding="0">
-            <tr align="left" valign="top">
-                <td>Name: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"BackboneCable", column=>"name", edit=>$editBackbone); 
-%               if ($editBackbone) {                
-                    &nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name" value="Suggest Name" onClick="suggestName();">
-%               }
-               </td>
-            </tr>
+  <div class="container">
+    <form name="netdotform" action="cable_backbone.html" method="POST">
+      <input type="hidden" name="id" value="<% $id %>">
+      <input type="hidden" name="_action" value="UPDATE">
+	<div class="containerheadleft">
+	  Backbone Cable
+	</div>
 
-            <tr align="left" valign="top">
-                <td>Cable Type: </td>
-                <td class="formtablec2">
-%               $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"type", lookup=>"CableType", edit=>$editBackbone);
-                </td>
-            </tr>
+	<div class="containerheadright">
+%         if ($editBackbone) {
+	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);" /> 
+	    &nbsp;&nbsp; 
+	    <input name="submit" value="save" type="submit" />
+%         } else {
+            <a href="cable_backbone.html?id=NEW">[new]</a> 
+	    &nbsp;&nbsp; 
+	    <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a> 
+	    &nbsp;&nbsp; 
+	    <a href="delete.html?table=BackboneCable&id=<% $id %>">[delete]</a>
+%         }
+	</div>
 
-            <tr align="left" valign="top">
-                <td>Owner: </td>
-                <td class="formtablec2">
-%               $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"owner", lookup=>"Entity", edit=>$editBackbone);
-                </td>
-            </tr>
+	<div class="containerbody">
+	  <!-- Table for two column layout -->
+	  <table width="100%"  class="formtablebg">
+	    <tr>
 
-            <tr align="left" valign="top">
-                <td>Installed on <font size="-1">(yyyy-mm-dd)</font>: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"BackboneCable", column=>"installdate", default=>$ui->date(),
-%                              edit=>$editBackbone);
-                </td>
-            </tr>
-            </table>
-            </td>
-            
-            <td width="45%">
-            <table width="100%" border="0" cellspacing="2" cellpadding="0">
-            <tr align="left" valign="top">
-                <td>Start Closet: </td>
-                <td class="formtablec2">
-%               if ($editBackbone) {
-%               $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"start_closet", lookup=>"Closet", 
-%                                 edit=>$editBackbone);
-%               } else {
-                <a href="closet.html?id=<% $o->start_closet %>"><% $o->start_closet->name %></a> 
-%               }
-                </td>
-            </tr>
+	      <!-- Left sub table -->
+	      <td width="50%">
+		<%perl>
+		(@field_headers, @cell_data) = ();
+		push( @field_headers, "Name: " );
+		push( @cell_data, 
+		      &{sub{
+			  my $ac = "";
+			  $ac .= $ui->text_field(object=>$o, table=>"BackboneCable", 
+						 column=>"name", edit=>$editBackbone, returnAsVar=>1); 
+			  if ($editBackbone) {                
+			      $ac .= '&nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name"'
+                                     . 'value="Suggest Name" onClick="suggestName();" />';
+			  }
+			  $ac;
+		      }} );
+		push( @field_headers, "Cable Type: " );
+		push( @cell_data, $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"type", 
+		      lookup=>"CableType", edit=>$editBackbone, returnAsVar=>1) );
+		push( @field_headers, "Owner: " );
+		push( @cell_data, $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"owner", 
+						     lookup=>"Entity", edit=>$editBackbone, returnAsVar=>1) );
+		push( @field_headers, 'Installed on <font size="-1">(yyyy-mm-dd)</font>: ' );
+		push( @cell_data, $ui->text_field(object=>$o, table=>"BackboneCable", column=>"installdate", 
+						  default=>$ui->date(), edit=>$editBackbone, returnAsVar=>1) );
+		</%perl>
 
-            <tr align="left" valign="top">
-                <td>End Closet: </td>
-                <td class="formtablec2">
-%               if ($editBackbone) {
-%               $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"end_closet", lookup=>"Closet", 
-%                                 edit=>$editBackbone);
-%               } else {
-                <a href="closet.html?id=<% $o->end_closet %>"><% $o->end_closet->name %></a>
-%               }
-                </td>
-            </tr>
+		<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+              </td>
 
-            <tr align="left" valign="top">
-                <td>Length: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"BackboneCable", column=>"length", edit=>$editBackbone);                
-                </td>
-            </tr>
+	      <!-- Right sub table -->  
+	      <td width="50%">
+		<%perl>
+		(@field_headers, @cell_data) = ();
+		push( @field_headers, "Start Closet: " );
+		push( @cell_data, 
+		      &{sub{
+			  my $ac = "";
+			  if ($editBackbone) {
+			      $ac .= $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"start_closet", 
+							lookup=>"Closet", edit=>$editBackbone, returnAsVar=>1);
+			  } else {
+			      $ac .= '<a href="closet.html?id='.$o->start_closet.'">'.$o->start_closet->name.'</a> ';
+			  }
+			  $ac;
+		      }} );
+		push( @field_headers, "End Closet: " );
+		push( @cell_data, 
+		      &{sub{
+			  my $ac = "";
+			  if ($editBackbone) {
+			      $ac .= $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"end_closet", 
+							lookup=>"Closet", edit=>$editBackbone, returnAsVar=>1);
+			  } else {
+			      $ac .= '<a href="closet.html?id='.$o->end_closet.'">'.$o->end_closet->name.'</a>';
+			  }
+			  $ac;
+		      }} );
+		push( @field_headers, "Length: " );
+		push( @cell_data, $ui->text_field(object=>$o, table=>"BackboneCable", column=>"length", 
+						  edit=>$editBackbone, returnAsVar=>1) );
 
-%           if (defined($o)) {            
-            <tr align="left" valign="top">
-                <td># of Strands: </td>
-                <td class="formtablec2">
-                <% scalar($o->strands) %>
-                </td>
-            </tr>
-%           }            
+		if (defined($o)) { 
+		    push( @field_headers, "# of Strands: " );
+		    push( @cell_data, ''.scalar($o->strands).'' );
+		}
+		</%perl>
 
-            </table>
-            </td>
-            <td>&nbsp;</td>
-        </tr>
-        <tr align="left" valign="top">
-            <td colspan="2">
-            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           $ui->text_area(object=>$o, table=>"BackboneCable", column=>"info",
-%                         edit=>$editBackbone, htmlExtra=>"rows='3' cols='80'");
-            </td>
-            <td>&nbsp;</td>
-        </tr>
-        </table>
-        </form>
-</div>
-</div>
+		<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+              </td>
+	    </tr>
+	  </table>
+
+	  <div class="containerseparator">Comments</div>
+%         $ui->text_area(object=>$o, table=>"BackboneCable", column=>"info",
+%                        edit=>$editBackbone, htmlExtra=>"rows='3' cols='80'");
+      </form>
+    </div>
+  </div>
 <!-- End Backbone Cable Table -->
 
 
-<!-- Begin Cable Strand Cable -->
+<!-- Begin Cable Strands Table -->
 <%perl>
 my @backbones = ();
 if ($editStrand) {
@@ -394,7 +391,9 @@ function editSelected(id)
 </div>
 <div class="containerheadright">
 %	 if ($editStrand) {	 
-            <input type="button" name="cancel_st_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+            <input type="button" name="cancel_st_button" value="cancel" onClick="history.go(-1);" /> 
+	    &nbsp;&nbsp; 
+	    <input name="submit" value="save" type="submit" />
 %	 } else {
 
                 <a href="cable_strand.html?id=NEW&backbone_id=<% $o->id %>">[new]</a> &nbsp;&nbsp;
@@ -403,9 +402,8 @@ function editSelected(id)
            
 %	 }
 </div>
-<div class="containerbody">
 
-    <table border="0" width="90%">
+<div class="containerbody">
     <%perl>
     my @strands;
     if ($ARGS{edit_list}) {
@@ -418,231 +416,243 @@ function editSelected(id)
     }
     </%perl>
 
-%	if (scalar(@strands)) {
-    <tr>
-        <td align="left">
-            <a href="cable_backbone.html?id=<% $id %>&strand_sort=name#cable_strand">Name</a>
-        </td>
-        <td align="left">
-            <a href="cable_backbone.html?id=<% $id %>&strand_sort=status#cable_strand">Status</a>
-        </td>
-        <td align="left">
-            <a href="cable_backbone.html?id=<% $id %>&strand_sort=direction#cable_strand">Direction</a>
-        </td>
-        <td align="left">
-            Spliced with
-        </td>
-%       if (!$editStrand) {        
-        <td align="left">
-            Part of Sequence
-        </td>
-        <td align="left">
-            <B>Edit?</B>
-        </td>
-%       }
-    </tr>
+%   if (scalar(@strands)) {
 
-    <%perl>
-    my @sorted_strands;
-    if ($strand_sort eq "name" || !$strand_sort) {
-        # sort by name
-        # -----------------------------------------------------------
-        @sorted_strands = sort { (split(/\./o, $a->name, 2))[1] <=> (split(/\./o, $b->name, 2))[1] } @strands;
-    } elsif ($strand_sort eq "status") {
-        # sort by status
-        # -----------------------------------------------------------
-        @sorted_strands = sort { uc($a->status->name) cmp uc($b->status->name) } @strands;
-    } elsif ($strand_sort eq "direction") {
-        # sort by direction
-        # -----------------------------------------------------------
-        @sorted_strands = sort { int($a->direction) <=> int($b->direction) } @strands;
-    }
-    </%perl>
+	<!--  Set up headers -->
+	<%perl>
+	(@headers, @rows) = ();
 
-%   my $i = 0;
-%   foreach my $st (@sorted_strands) {
-%   $i = ($i + 1) % 2;
-    <tr align="left" class="<% $cssitem{$i} %>">
-        <td align="left">
-%       if ($editStrand) {
-            <input type="checkbox" name="<% "CableStrand__" . $st->id . "__delete" %>">[del]
-%           $ui->text_field(object=>$st, table=>"CableStrand", column=>"name", edit=>$editStrand);            
-%       } else {
-            <a href="cable_strand.html?id=<% $st->id %>"><% $st->name %></a>
-%       }
-        </td>
+	@headers = ( 
+		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=name#cable_strand">Name</a>',
+		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=status#cable_strand">Status</a>',
+		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=direction#cable_strand">Direction</a>',
+		     'Spliced with',
+		     );
 
-        <td align="left">
-%           $ui->select_lookup(object=>$st, column=>"status", lookup=>"StrandStatus", edit=>$editStrand);
-        </td>
+	if (!$editStrand) {        
+	    push( @headers, 'Part of Sequence' );
+	    push( @headers, '<B>Edit?</B>' );
+	}
+	</%perl>
 
-        <td align="left">
-%          if ($editStrand) {
-%              my $dir_name = "CableStrand__" . $st->id . "__direction";
-               <input type="radio" name="<% $dir_name %>" value="0" <% ($st && int($st->direction) == 0 ? "CHECKED" : "") %>>TX &nbsp;&nbsp;&nbsp; 
-               <input type="radio" name="<% $dir_name %>" value="1" <% ($st && int($st->direction) == 1 ? "CHECKED" : "") %>>RX
-%          } elsif (defined($st)) {
-               <% (int($st->direction) == 1 ? "RX" : "TX") %>
-%          }
-        </td>
-        <td align="left">
-%           if (!$editStrand) {
-%               my @splices = $st->splices;
-%               if (scalar(@splices)) {
-                    <a href="cable_strand.html?id=<% $splices[0]->strand2->id %>"><% $splices[0]->strand2->name %></a>
-%               }
-%               if (scalar(@splices) == 2) {
-                , <a href="cable_strand.html?id=<% $splices[1]->strand2->id %>"><% $splices[1]->strand2->name %></a> 
-%               }
-%           } else {
-                <script language="JavaScript">
-                <!--
-                function lookupStrands(bb_id, field_name, form_name)
-                {
-                    if (!bb_id)
-                    {
-                        alert("You must select a backbone.");
-                    }
-                    
-                    var url = "strand_backbone_list_query.html?bb_id=";
-                    url += bb_id + "&field_name=" + field_name;
-                    url += "&form_name=" + form_name;
-                    
-                    var wind = window.open(url, "tmp", "width=1,height=1");
-                    wind.blur();
-                }
-                -->
-                </script>
+	<%perl>
+	my @sorted_strands;
+	if ($strand_sort eq "name" || !$strand_sort) {
+	    # sort by name
+	    # -----------------------------------------------------------
+	    @sorted_strands = sort { (split(/\./o, $a->name, 2))[1] <=> (split(/\./o, $b->name, 2))[1] } @strands;
+	} elsif ($strand_sort eq "status") {
+	    # sort by status
+	    # -----------------------------------------------------------
+	    @sorted_strands = sort { uc($a->status->name) cmp uc($b->status->name) } @strands;
+	} elsif ($strand_sort eq "direction") {
+	    # sort by direction
+	    # -----------------------------------------------------------
+	    @sorted_strands = sort { int($a->direction) <=> int($b->direction) } @strands;
+	}
+	</%perl>
 
-                <SELECT NAME="backbone_list_srch1_<% $st->id %>" onChange="lookupStrands(this.value, '__splice1_<% $st->id %>', 'cable_strand_form');">
-                <OPTION VALUE="">Lookup by Backbone</OPTION>
-                <%perl>
-                my @splices = $st->splices;
-                my %stored = ();
-                foreach my $bb (sort { $a->name cmp $b->name } @backbones)
-                {
-                    next if ($bb->id == int($st->cable) || exists($stored{$bb}));
-                    $stored{$bb} = 1;
-                    printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
-                }
-                </%perl>
-                </SELECT> &nbsp; 
-                <select name="__splice1_<% $st->id %>">
-                <option value="">-- Make your selection --</option>
-%               if (scalar(@splices)) {
-                <option value="<% $splices[0]->strand2->id %>" SELECTED><% $splices[0]->strand2->name %></option>
-%               }
-                <option value="">[null]</option>
-                </select>
-                <br>
-                <SELECT NAME="backbone_list_srch2_<% $st->id %>" onChange="lookupStrands(this.value, '__splice2_<% $st->id %>', 'cable_strand_form');">
-                <OPTION VALUE="">Lookup by Backbone</OPTION>
-                <%perl>
-                %stored = ();
-                foreach my $bb (sort { $a->name cmp $b->name } @backbones)
-                {
-                    next if ($bb->id == int($st->cable) || exists($stored{$bb}));
-                    $stored{$bb} = 1;
-                    printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
-                }
-                </%perl>
-                </SELECT> &nbsp; 
-                <select name="__splice2_<% $st->id %>">
-                <option value="">-- Make your selection --</option>
-%               if (scalar(@splices) == 2) {
-                <option value="<% $splices[1]->strand2->id %>" SELECTED><% $splices[1]->strand2->name %></option>
-%               }
-                <option value="">[null]</option>
-                </select>
-%           }
-        </td>
+        <!--  Set up content/rows -->
+	<%perl>
+	$i = 0;
+	foreach my $st (@sorted_strands) {
+	    $i = ($i + 1) % 2;
 
-%       if (!$editStrand) {        
-        <td align="left">
-%           my @strands = ($st->id);
-            <& display_sequence.mhtml, strands=>\@strands &>
-        </td>
-        
-        <td align="left">
-        <input type="checkbox" name="edit_<% $st->id %>" onChange="editCheck(this);">
-        </td>
-%       }
-    </tr>
-%   }
-%}
-    </table>
+	    my @row = ();
+	    push( @row, 
+		  &{sub{
+		      my $ac = "";
+		      if ($editStrand) {
+			  $ac .= '<input type="checkbox" name="' . "CableStrand__" . $st->id . "__delete" . '">[del]';
+			  $ac .= $ui->text_field(object=>$st, table=>"CableStrand", column=>"name", 
+						 edit=>$editStrand, returnAsVar=>1);            
+		      } else {
+			  $ac .= '<a href="cable_strand.html?id=' . $st->id . '">' . $st->name . '</a>';
+		      }
+		      $ac;
+		  }} );
+	    push( @row, $ui->select_lookup(object=>$st, column=>"status", lookup=>"StrandStatus", 
+					   edit=>$editStrand, returnAsVar=>1) );
+	    push( @row, 
+		  &{sub{
+		      my $ac = "";
+		      if ($editStrand) {
+			  my $dir_name = "CableStrand__" . $st->id . "__direction";
+			  $ac .= '<input type="radio" name="' . $dir_name . '" value="0" ' 
+			      . ($st && int($st->direction) == 0 ? "CHECKED" : "") . '>TX &nbsp;&nbsp;&nbsp; ';
+			  $ac .= '<input type="radio" name="' . $dir_name . '" value="1" ' 
+			      . ($st && int($st->direction) == 1 ? "CHECKED" : "") . '>RX';
+		      } elsif (defined($st)) {
+			  $ac .=  (int($st->direction) == 1 ? "RX" : "TX") ;
+		      }
+		      $ac;
+		  }} );
+	    push( @row, 
+		  &{sub{
+		      my $ac = "";
+		      if (!$editStrand) {
+			  my @splices = $st->splices;
+			  if (scalar(@splices)) {
+			      $ac .= '<a href="cable_strand.html?id=' . $splices[0]->strand2->id . '">' 
+				  . $splices[0]->strand2->name . '</a>';
+			  }
+			  if (scalar(@splices) == 2) {
+			      $ac .= ', <a href="cable_strand.html?id=' . $splices[1]->strand2->id . '">' 
+				  . $splices[1]->strand2->name . '</a> ';
+			  }
+		      } else {
+			  $ac .= <<'HERE';
+			  <script language="JavaScript">
+			  <!--
+			  function lookupStrands(bb_id, field_name, form_name)
+			  {
+			      if (!bb_id)
+			      {
+				  alert("You must select a backbone.");
+			      }
+			      var url = "strand_backbone_list_query.html?bb_id=";
+			      url += bb_id + "&field_name=" + field_name;
+			      url += "&form_name=" + form_name;
+			      var wind = window.open(url, "tmp", "width=1,height=1");
+			      wind.blur();
+			  }
+			  -->
+			  </script>
+HERE
+                          $ac .= '<SELECT NAME="backbone_list_srch1_' 
+			  . $st->id . '" onChange="lookupStrands(this.value, \'__splice1_' 
+			  . $st->id . '\', \'cable_strand_form\');">';
+			  $ac .= '<OPTION VALUE="">Lookup by Backbone</OPTION>';
+
+			  my @splices = $st->splices;
+			  my %stored = ();
+			  foreach my $bb (sort { $a->name cmp $b->name } @backbones)
+			  {
+			      next if ($bb->id == int($st->cable) || exists($stored{$bb}));
+			      $stored{$bb} = 1;
+			      $ac .= sprintf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+			  }
+
+			  $ac .= '</SELECT> &nbsp; ';
+			  $ac .= '<select name="__splice1_' . $st->id . '">';
+			  $ac .= '<option value="">-- Make your selection --</option>';
+			  if (scalar(@splices)) {
+			      $ac .= '<option value="' . $splices[0]->strand2->id . '" SELECTED>' 
+				  . $splices[0]->strand2->name . '</option>';
+			  }
+			  $ac .= '<option value="">[null]</option>';
+			  $ac .= '</select>';
+			  $ac .= '<br>';
+
+			  $ac .= '<SELECT NAME="backbone_list_srch2_' . $st->id 
+			      . '" onChange="lookupStrands(this.value, \'__splice2_' . $st->id 
+			      . '\', \'cable_strand_form\');">';
+			  $ac .= '<OPTION VALUE="">Lookup by Backbone</OPTION>';
+
+
+			  %stored = ();
+			  foreach my $bb (sort { $a->name cmp $b->name } @backbones)
+			  {
+			      next if ($bb->id == int($st->cable) || exists($stored{$bb}));
+			      $stored{$bb} = 1;
+			      $ac .= sprintf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+			  }
+
+			  $ac .= '</SELECT> &nbsp; ';
+			  $ac .= '<select name="__splice2_' . $st->id . '">';
+			  $ac .= '<option value="">-- Make your selection --</option>';
+			  if (scalar(@splices) == 2) {
+			      $ac .= '<option value="' . $splices[1]->strand2->id . '" SELECTED>' 
+				  . $splices[1]->strand2->name . '</option>';
+			  }
+			  $ac .= '<option value="">[null]</option>';
+			  $ac .= '</select>';
+		      }
+		      $ac;
+		  }} );
+
+	    # This scomp method is *very* helpful.  It returns as a
+	    # string what the component would have printed.  Like
+	    # sprintf vs printf.
+	    push( @row, $m->scomp('display_sequence.mhtml', strands=>[$st->id]) );
+
+	    push( @row, '<input type="checkbox" name="edit_' . $st->id . '" onChange="editCheck(this);">' );
+
+	    push( @rows, \@row );
+	} # foreach
+	</%perl>
+
+%       # Print the Cable Strands table
+	<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
+%   }	# if scalar strands
+
     </form>
-    </div>
-</div>
-%	 if ($edit ne "strandinfo") {
-<div class="container">
-<div class="containerhead">
-Manually Add Strands
-</div>
-<div class="containerbody">
-    <form action="cable_backbone.html" method="POST">
-    <input type="hidden" name="id" value="<% $id %>">
-    <input type="hidden" name="_action" value="ADD_STRANDS">
-    <table border="0" width="100%">
-        <tr align="left" class="<% $cssitem{0} %>">
-            <td align="left">
-	        Manually 
-	        &nbsp;<input type="submit" name="strand_add" value="Add">&nbsp;
-	        <input type="text" name="number_strands" value="0" size="3"> strands
-            </td>
-        </tr>
-    </table>
-    </form>
-    </div>
-</div>
-%   }
+</div>	<!-- containerbody -->
+</div>  <!-- container -->
+<!-- End Cable Strands Table -->
 
-%	 if ($edit ne "strandinfo") {
-<div class="container">
-<%perl>
+<!-- Manually Add Strands  -->
+%if ($edit ne "strandinfo") {
+  <div class="container">
     
-my @bbones = ();
+    <div class="containerhead">
+      Manually Add Strands
+    </div>
 
-foreach my $closet (($start_site->closets, $end_site->closets)) {
+    <div class="containerbody">
+      <form action="cable_backbone.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>" />
+	<input type="hidden" name="_action" value="ADD_STRANDS" />
+	Manually 
+	&nbsp;<input type="submit" name="strand_add" value="Add" />&nbsp;
+	<input type="text" name="number_strands" value="0" size="3" /> strands
+	
+      </form>
+    </div>
+  </div>
+
+  <!-- Manually Add Splice Range -->
+  <%perl>
+  my @bbones = ();
+
+  foreach my $closet (($start_site->closets, $end_site->closets)) {
     map { push (@bbones, $_) } (BackboneCable->search(start_closet=>$closet),
 				BackboneCable->search(end_closet=>$closet));
-}
+  }
+  </%perl>
 
-</%perl>
-
-    <form action="cable_backbone.html" method="POST">
-    <input type="hidden" name="id" value="<% $id %>">
-    <input type="hidden" name="_action" value="ADD_SPLICE_RANGE">
+  <div class="container">
     <div class="containerhead">
-    Manually Add Splice Range
+      Manually Add Splice Range
     </div>
+    
     <div class="containerbody">
-    <table border="0" width="100%">
-        <tr align="left" class="<% $cssitem{0} %>">
-            <td align="left">
-	        Manually 
-	        &nbsp;<input type="submit" name="splice_add" value="Add Splice Range"> (i.e., strands 1-16)&nbsp; strands &nbsp;
-	        <input type="text" name="__range1" value="" size="4">&nbsp;from this backbone, to strands &nbsp;
-            <input type="text" name="__range2" value="" size="4">&nbsp;from 
-            <SELECT NAME="__splice_bb_end">
-            <OPTION VALUE="">Backbone...</OPTION>
-            <%perl>
-            my %stored = ();
-            foreach my $bb (sort { $a->name cmp $b->name } @bbones) {
-                next if ($bb->id eq $id || exists($stored{$bb}));
-                $stored{$bb} = 1;
-                printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
-            }
-            </%perl>
-            </SELECT>
-            </td>
-        </tr>
-    </table>
-    </form>
-%   }
-</div>
-</div>
-% }
-</div>
-</div>
-<!-- End Cable Strand Table -->
+      <form action="cable_backbone.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>" />
+	<input type="hidden" name="_action" value="ADD_SPLICE_RANGE" />
+	Manually 
+	&nbsp;<input type="submit" name="splice_add" value="Add Splice Range"> (i.e., strands 1-16)&nbsp; strands &nbsp;
+	<input type="text" name="__range1" value="" size="4">&nbsp;from this backbone, to strands &nbsp;
+	<input type="text" name="__range2" value="" size="4">&nbsp;from 
+	<SELECT NAME="__splice_bb_end">
+	  <OPTION VALUE="">Backbone...</OPTION>
+	  
+	  <%perl>
+	  my %stored = ();
+          foreach my $bb (sort { $a->name cmp $b->name } @bbones) {
+	      next if ($bb->id eq $id || exists($stored{$bb}));
+	      $stored{$bb} = 1;
+	      printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+	  }
+	  </%perl>
+
+	</SELECT>
+      </form>
+    </div>
+  </div>
+%}	# if edit ne strandinfo
+%}	# if defined (about 300 lines up !)
+</div>  <!-- containerheadoutside -->
+</div>  <!-- containeroutside -->
+<!-- End Header Table  (starts about line 200 !)-->
