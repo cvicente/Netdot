@@ -6,7 +6,7 @@
 # *         originally adapted from ASP version by
 # *         Brent Ashley [jsrs@megahuge.com]
 # *
-# * The JSRS is distributed under the terms of the GNU 
+# * The JSRS is distributed under the terms of the GNU
 # * Genral Public License terms and conditions for copying,
 # * distribution and modification.
 # *
