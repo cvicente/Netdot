@@ -44,6 +44,9 @@ my $guessed_ent;
 my $guessed_site;
 my $guessed_cl;
 my $webuser;
+my $dev;
+my $default_contactlist;
+my $default_contactlist_id;
 
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
@@ -74,7 +77,7 @@ if ( $action eq "discover" ){
     $argv{device} = (defined($d)) ? $d : "";
     
     # Fetch SNMP info
-    my $dev = $dm->get_dev_info($host, $argv{comstr});
+    $dev = $dm->get_dev_info($host, $argv{comstr});
     unless ($dev){
 	$m->comp('error.mhtml', error => $dm->error);
     }
@@ -110,20 +113,46 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
     }
     
     # Get the default contactlist from config
-    my $default_contactlist;
-    my $default_contactlist_id;
     if ( $default_contactlist = (ContactList->search(name=>$dm->{config}->{DEFAULT_CONTACTLIST}))[0] ){
 	$default_contactlist_id = $default_contactlist->id;
     }else{
 	$default_contactlist_id = 0;
     }
+}elsif ( $action eq "update" ){
+    if ( $insert ){
+        %argv              = %{ $session->{argv} };
+	$argv{entity}      = $entity      ||  0;
+	$argv{site}        = $site        ||  0;
+	$argv{contactlist} = $contactlist ||  0;
+	$argv{user}        = $webuser     ||  0;
+
+	print "<pre>",  Dumper(%argv), "</pre>" if $DEBUG;
+
+        # Update database
+        $argv{addsubnets} = $ADDSUBNETS;
+        $o = $dm->update_device(%argv);
+        unless ($o){
+            $m->comp('error.mhtml', error => $dm->error);
+        }
+        unless ($o->name && ($name = $o->name->name)){
+            $name = "device"
+            }
+    }
+
+}else{
+    $m->comp('error.mhtml', error => "Unknown action: $action");
+}
     
 </%init>
 
 <div id="sectiondetail">
+ <div class="container">
+   <div class="containerhead">
+      Device: <strong><% $host %></strong>
+   </div>
 
-<table align="center" valign="top" cellpadding="0" cellspacing="0" border="0" width="100%" class="tablebackground">
-<tr><td>
+%if ( $action eq "discover" ){
+
     <form name="netdotform" action="updatedevice.html" method="POST">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="host" value="<% $host %>">
@@ -132,9 +161,6 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
       <tr>
         <td colspan="2"><br></td>
       </tr>
-      <tr>
-        <td class="formtablec1">Device:</td>
-        <td class="formtablec2"><strong><% $host %></strong></tr>
       <tr>
         <td class="formtablec1">Description:</td>
         <td class="formtablec2"><strong><% $dev->{sysdescription} %></strong></td>
@@ -223,27 +249,9 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
       </tr>
       </form>
     </table>
-<%perl>
-}elsif ( $action eq "update" ){
-    if ( $insert ){
-        %argv              = %{ $session->{argv} };
-	$argv{entity}      = $entity      ||  0;
-	$argv{site}        = $site        ||  0;
-	$argv{contactlist} = $contactlist ||  0;
-	$argv{user}        = $webuser     ||  0;
 
-	print "<pre>",  Dumper(%argv), "</pre>" if $DEBUG;
+%}elsif ( $action eq "update" ){
 
-        # Update database
-        $argv{addsubnets} = $ADDSUBNETS;
-        $o = $dm->update_device(%argv);
-        unless ($o){
-            $m->comp('error.mhtml', error => $dm->error);
-        }
-        unless ($o->name && ($name = $o->name->name)){
-            $name = "device"
-            }
-</%perl>
           <p>
           <table class="formtablebg" cellpadding="0" cellspacing="0" width="100%">
 
@@ -277,13 +285,5 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
           </table>
 %  }
 
-<%perl>
-}else{
-    $m->comp('error.mhtml', error => "Unknown action: $action");
-}
-</%perl>
-
-<td></tr>
-</table>
-
+ </div>
 </div>

@@ -534,7 +534,7 @@ sub updateblock {
     # Check that we actually have something to change
     my $change = 0;
     foreach my $key (keys %state){
-	if ($ipblock->$key ne $state{$key}){
+	if ( int($ipblock->$key) ne $state{$key} ){
 	    $change = 1;
 	    last;
 	}
