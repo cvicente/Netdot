@@ -344,22 +344,16 @@ if ( defined($_action) && defined($search) ){
 
 
 %   if (scalar($o->arecords)) {
-      <%perl>
-                my @headers = ("DNS A Record", "Zone");
-                my @rows;
-                 foreach my $ar ($o->arecords){
-                   push( @rows, 
-                    [ eval {
-                       if ($edit eq "ipinfo"){	 
-                           qq(<input type="text" name="RR__).$ar->rr->id.qq(__name" value=").$ar->rr->name.qq(">);
-                       }else{
-                           qq(<a href="view.html?table=RR&id=).$ar->rr->id.qq(">).$ar->rr->name."</a>";
-                       }
-                      } ,
-                     qq(<a href="view.html?table=Zone&id=).$ar->rr->zone->id.qq(">).$ar->rr->zone->mname."</a>"
-                   ] );
-                 } 
-      </%perl>
+<%perl>
+    my @headers = ("DNS A Record", "Zone");
+    my @rows;
+    foreach my $ar ($o->arecords){
+	push( @rows, [ $ui->text_field(object=>$ar->rr, column=>"name", edit=>$edit_ip, linkPage=>"view.html", 
+				       returnAsVar=>1, htmlExtra=>"style=\"width: 20em;\"" ),
+		       $ui->select_lookup(object=>$ar->rr, column=>"zone", lookup=>"Zone", 
+					  edit=>$edit_ip, linkPage=>"view.html", returnAsVar=>1 ) ] );
+    } 
+</%perl>
       <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 %   } #endif arecords
 
