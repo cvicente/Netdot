@@ -5,10 +5,12 @@ Notes for Release 0.6
 
 *** If upgrading from 0.5 ***
 
-A bug in the metadata table requires the following procedure to be 
+Changes in the schema and bugs in the metadata table require the following procedure to be 
 performed:
 
 # mysql netdot
+>ALTER TABLE Device ADD COLUMN support_contactlist integer AFTER contactlist;
+>ALTER TABLE Device_history ADD COLUMN support_contactlist integer AFTER contactlist;
 >delete from Meta;
 >\q
 

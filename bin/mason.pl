@@ -3,6 +3,8 @@
 package Netdot::Mason;
 use strict;
 use HTML::Mason::ApacheHandler;
+use CGI;
+use CGI::Cookie;
 
 { 
     package HTML::Mason::Commands;
