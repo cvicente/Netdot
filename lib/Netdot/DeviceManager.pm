@@ -657,19 +657,66 @@ sub update_device {
 	    
 	}
 	################################################################
-	# Keep a hash of VLAN membership
-	# We'll Add/Update at the end
-	
-	if( exists( $dev{interface}{$newif}{vlans} ) ) {
-	    foreach my $vid ( keys %{ $dev{interface}{$newif}{vlans} } ){
-		my $vname = $dev{interface}{$newif}{vlans}{$vid};
-		push @{$ifvlans{$vid}{$vname}}, $if->id;
-	    }
-	}
-	# 
 	# Get all stored VLAN memberships (these are join tables);
 	#
-	map { $dbvlans{$_->interface->id} = $_->id } $if->vlans();
+	map { $dbvlans{$_->id} = '' } $if->vlans();
+
+	##############################################
+	# Add/Update VLANs
+
+	foreach my $vid ( keys %{ $dev{interface}{$newif}{vlans} } ){
+	    my $vname = $dev{interface}{$newif}{vlans}{$vid};
+	    my $vo;
+	    # look it up
+	    unless ($vo = (Vlan->search(vid =>$vid))[0]){
+		#create
+		if ( ! (my $vobjid = $self->insert(table => "Vlan", state => { vid => $vid, description => $vname } ) ) ) {
+		    my $msg = sprintf("%s: Could not insert Vlan %s: %s", 
+				      $host, $vo->description, $self->error);
+		    $self->debug( loglevel => 'LOG_ERR',
+				  message  => $msg,
+				  );
+		    $self->output($msg);
+		    next;
+		}else {
+		    $vo = Vlan->retrieve($vobjid);
+		    my $msg = sprintf("%s: Inserted VLAN %s", $host, $vo->description);
+		    $self->debug( loglevel => 'LOG_NOTICE',
+				  message  => $msg,
+				  );
+		    $self->output($msg);
+		    next;
+		}
+	    }
+
+	    # verify membership
+	    #
+	    my %ivtmp = ( interface => $if->id, vlan => $vo->id );
+	    my $iv;
+	    unless ( $iv = (InterfaceVlan->search(\%ivtmp))[0] ){
+		unless ( $iv = $self->insert(table => "InterfaceVlan", state => \%ivtmp ) ){
+		    my $msg = sprintf("%s: Could not insert InterfaceVlan join %s:%s: %s", 
+				      $host, $if->name, $vo->vid, $self->error);
+		    $self->debug( loglevel => 'LOG_ERR',
+				  message  => $msg,
+				  );
+		    $self->output($msg);
+		}else{
+		    my $msg = sprintf("%s: Assigned Interface %s,%s to VLAN %s", 
+				      $host, $if->number, $if->name, $vo->description);
+		    $self->debug( loglevel => 'LOG_NOTICE',
+				  message  => $msg,
+				  );
+		}
+	    }else {
+		my $msg = sprintf("%s: Interface %s,%s already member of vlan %s", 
+				  $host, $if->number, $if->name, $vo->vid);
+		$self->debug( loglevel => 'LOG_DEBUG',
+			      message  => $msg,
+			      );
+		delete $dbvlans{$iv->id};
+	    }
+	}
 
 	################################################################
 	# Add/Update IPs
@@ -979,64 +1026,6 @@ sub update_device {
 	}
     }
     ##############################################
-    # Add/Update VLANs
-    foreach my $vid (keys %ifvlans){
-	foreach my $vname (keys %{$ifvlans{$vid}}){
-	    my $vo;
-	    # look it up
-	    unless ($vo = (Vlan->search(vid =>$vid))[0]){
-		#create
-		my %votmp = ( vid         => $vid,
-			      description => $vname );
-		if ( ! (my $vobjid = $self->insert (table => "Vlan", state => \%votmp)) ) {
-		    my $msg = sprintf("%s: Could not insert Vlan %s: %s", 
-				      $host, $vo->description, $self->error);
-		    $self->debug( loglevel => 'LOG_ERR',
-				  message  => $msg,
-				  );
-		    $self->output($msg);
-		    next;
-		}else {
-		    $vo = Vlan->retrieve($vobjid);
-		    my $msg = sprintf("%s: Inserted VLAN %s", $host, $vo->description);
-		    $self->debug( loglevel => 'LOG_NOTICE',
-				  message  => $msg,
-				  );
-		    $self->output($msg);
-		}
-	    }
-	    # verify joins
-	    foreach my $ifid ( @{ $ifvlans{$vid}{$vname} } ){
-		my $if = Interface->retrieve($ifid);
-		if( ! exists $dbvlans{$ifid} ){
-		    my %jtmp = (interface => $if, vlan => $vo);
-		    unless ( my $j = $self->insert(table => "InterfaceVlan", state => \%jtmp) ){
-			my $msg = sprintf("%s: Could not insert InterfaceVlan join %s:%s: %s", 
-					  $host, $if->name, $vo->vid, $self->error);
-			$self->debug( loglevel => 'LOG_ERR',
-				      message  => $msg,
-				      );
-			$self->output($msg);
-		    }else{
-			my $msg = sprintf("%s: Assigned Interface %s,%s to VLAN %s", 
-					  $host, $if->number, $if->name, $vo->description);
-			$self->debug( loglevel => 'LOG_NOTICE',
-				      message  => $msg,
-				      );
-		    }
-		}else {
-		    my $msg = sprintf("%s: Interface %s,%s already part of vlan %s", 
-				      $host, $if->number, $if->name, $vo->vid);
-		    $self->debug( loglevel => 'LOG_DEBUG',
-				  message  => $msg,
-				  );
-		    delete $dbvlans{$ifid};
-		}
-	    }
-	}
-    }
-    
-    ##############################################
     # remove each ip address that no longer exists
     
     unless ( $device->natted ){
@@ -1063,22 +1052,21 @@ sub update_device {
     # remove each vlan membership that no longer exists
     
     foreach my $nonvlan ( keys %dbvlans ) {
-	my $j = InterfaceVlan->retrieve($dbvlans{$nonvlan});
+	my $iv = InterfaceVlan->retrieve($nonvlan);
 	my $msg = sprintf("%s: Vlan membership %s:%s no longer exists.  Removing.", 
-			  $host, $j->interface->name, $j->vlan->vid);
+			  $host, $iv->interface->name, $iv->vlan->vid);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg,
 		      );
-	unless( $self->remove( table => 'InterfaceVlan', id => $nonvlan ) ) {
+	unless( $self->remove( table => 'InterfaceVlan', id => $iv->id ) ) {
 	    my $msg = sprintf("%s: Could not remove InterfaceVlan %s: %s", 
-			      $host, $j->id, $self->error);
+			      $host, $iv->id, $self->error);
 	    $self->debug( loglevel => 'LOG_ERR',
 			  message  => $msg,
 			  );
 	    $self->output($msg);
 	    next;
 	}
-	
     }
 
     ###############################################################
