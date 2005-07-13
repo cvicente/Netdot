@@ -18,13 +18,13 @@ section => 'Management'
 %
 <%args>
 $action
-$host
 $user
+$device      => undef
+$host        => undef
 $comstr      => "public"
 $id          => undef
 $sid         => undef
 $insert      => undef
-$cancel      => undef
 $entity      => undef
 $site        => undef
 $contactlist => undef
@@ -60,31 +60,48 @@ if( $sid ) {
 	$m->comp('error.mhtml', error => $ui->error);
     }
 }
-if( $cancel ) {
-  $ui->rmsession( $session );
-}
-
 if( $user ) {
     $webuser = $user->getUsername();
 }
 
 if ( $action eq "discover" ){
-    # remove spaces
-    $host =~ s/\s*//g;
-    # See if device exists
-    my ($c, $d) = $dm->find_dev($host);
-    $argv{comstr} = (defined($c)) ? $c : $comstr;
-    $argv{device} = (defined($d)) ? $d : "";
-    
+    my $target;
+    if ( $device ){
+	my $devobj = Device->retrieve($device);
+	# Try to use existing IP address
+	# Start with the one associated with the name
+	if ( $devobj->name && $devobj->name->arecords ){
+	    my $ar  = ($devobj->name->arecords)[0];
+	    $target = $ar->ipblock->address;
+	}else{
+	    # Or just grab any one
+	    $target = ($dm->getdevips($device))[0]->address;
+	}
+	$argv{comstr} = $devobj->community;
+	$argv{device} = $devobj;
+    }elsif ( $host ){
+	# remove spaces
+	$target = $host;
+	$target =~ s/\s*//g;
+	# See if device exists
+	my ($c, $d)   = $dm->find_dev($target);
+	$argv{comstr} = (defined($c)) ? $c : $comstr;
+	$argv{device} = (defined($d)) ? $d : "";
+    }else{
+	$m->comp('error.mhtml', error => "Discovery needs either device or hostname");
+    }
+    unless ( $target ){
+	$m->comp('error.mhtml', error => "Could not determine target address or hostname");
+    }
     # Fetch SNMP info
-    $dev = $dm->get_dev_info($host, $argv{comstr});
+    $dev = $dm->get_dev_info($target, $argv{comstr});
     unless ($dev){
 	$m->comp('error.mhtml', error => $dm->error);
     }
     print "<pre>", Dumper($dev), "</pre>" if $DEBUG;
     
-    $argv{dev} = $dev;
-    $argv{host} = $host;
+    $argv{dev}       = $dev;
+    $argv{host}      = $target;
     $session->{argv} = \%argv;
     
     # Try to guess the Entity based on the ip address
@@ -244,7 +261,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
       <tr class="rowtitle0">
         <td colspan="3" align="center">
          <input name="insert" value="Update" type="submit">&nbsp;
-         <input name="cancel" value="Cancel" type="submit">
+         <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
         </td>
       </tr>
       </form>
@@ -273,14 +290,6 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
               <td align="left">
 	        <b><a href="device.html?id=<% $o->id %>">[Go to <% $name %>]</a></b>
               </td>
-	    </tr>
-          </table>
-%  }elsif ( $cancel ){
-          <p>
-          <table class="formtablebg" cellpadding="0" cellspacing="0" width="100%">
-	    <tr>
-              <td align="left">&nbsp;</td>
-              <td align="left">Discovery of <% $host %> cancelled.</td>
 	    </tr>
           </table>
 %  }

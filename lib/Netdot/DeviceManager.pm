@@ -258,7 +258,6 @@ sub update_device {
 	my $msg = sprintf("Device %s exists in DB as %s. Keeping existing name", $host, $device->name->name);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg);
-	$self->output($msg);
 	$devtmp{name} = $device->name;
 	$rr = $device->name;
 	$host = $device->name->name;

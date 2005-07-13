@@ -118,19 +118,25 @@ if ($host){
 	    printf ("Device %s was set to not auto-update. Skipping \n", $host) if $VERBOSE;
 	    next;
 	}
-	# Use hostname, or else try any of its IPs
-	if (defined ($device->name->name)){
-	    $host = $device->name->name;
-	}else{
-	    foreach my $if ($device->interfaces){
-		if (my $ip = ($if->ips)[0]){
-		    $host = $ip->address;
-		    last;
-		}
-	    }
+	my $target;
+	# Try to use existing IP address
+	# Start with the one associated with the name
+	if ( $device->name && $device->name->arecords ){
+	    my $ar  = ($device->name->arecords)[0];
+	    $target = $ar->ipblock->address;
+	    # Or just grab any address
+	}elsif ( my @ips = $dm->getdevips($device) ){
+	    $target = $ips[0]->address;
+	    # Or use the name
+	}elsif ( $device->name && $device->name->name ){
+	    $target = $device->name->name;
 	}
-	if (my $r = &discover(host => $host)){
-	    $success = 1;
+	if ( $target ){
+	    if (my $r = &discover(host => $target)){
+		$success = 1;
+	    }
+	}else{
+	    die "Could not determine target address or hostname";
 	}
     }
 }else{
