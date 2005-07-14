@@ -40,38 +40,44 @@ my %linksfrom = $ui->getlinksfrom($table);
 my %order     = $ui->getcolumnorder($table);
 my %tags      = $ui->getcolumntags($table);
 
-if ($table !~ /_history/){
-    # List all the has_many objects for this object
-    #
-    foreach my $i (keys %linksfrom){
-	my $j;
-	map { $j = $_ } keys %{ $linksfrom{$i} };
-	$ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
+my $DEBUG = 0;
 
-	# If foreign table is a join table
+if ( $DEBUG ){
+    print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>';
+    print '%linksto is  <pre>', Dumper(%linksto), '</pre><br>';
+    print '%linksfrom is  <pre>', Dumper(%linksfrom), '</pre><br>';
+    print '%order is  <pre>', Dumper(%order), '</pre><br>';
+    print '%tags is  <pre>', Dumper(%tags), '</pre><br>';
+}
 
-	if ( $ui->isjointable($j) ){
-	    $ftables{$i}{join} = 1;
-	    # Get has_a entries 
-	    my %jlinksto = $ui->getlinksto($j);
-	    # Column in join table that points to third table
-	    my $col;
-	    map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
-	    map { push @{ $ftables{$i}{robjs} }, $_->$col } $obj->$i;
-	    @{$ftables{$i}{objs}} = $obj->$i;
-	    $ftables{$i}{dtbl} = $jlinksto{$col};  # table to display
-	    $ftables{$i}{ctbl} = $j;               # table to pass to create.html
-	}else{  # table is not a join table
-	    $ftables{$i}{join} = 0;
-	    @{$ftables{$i}{robjs}} = $obj->$i;
-	    $ftables{$i}{dtbl} = $j;
-	    $ftables{$i}{ctbl} = $j; 
-	}
+# List all the has_many objects for this object
+#
+foreach my $i (keys %linksfrom){
+    my $j;
+    map { $j = $_ } keys %{ $linksfrom{$i} };
+    $ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
+    
+    # If foreign table is a join table
+    
+    if ( $ui->isjointable($j) ){
+	$ftables{$i}{join} = 1;
+	# Get has_a entries 
+	my %jlinksto = $ui->getlinksto($j);
+	# Column in join table that points to third table
+	my $col;
+	map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
+	map { push @{ $ftables{$i}{robjs} }, $_->$col } $obj->$i;
+	@{$ftables{$i}{objs}} = $obj->$i;
+	$ftables{$i}{dtbl} = $jlinksto{$col};  # table to display
+	$ftables{$i}{ctbl} = $j;               # table to pass to create.html
+    }else{  # table is not a join table
+	$ftables{$i}{join} = 0;
+	@{$ftables{$i}{robjs}} = $obj->$i;
+	$ftables{$i}{dtbl} = $j;
+	$ftables{$i}{ctbl} = $j; 
     }
 }
 
-my $h_table = $ui->gethistorytable($obj);
-my $h_meta = $ui->getmeta($h_table);
 
 </%init>
 
@@ -98,9 +104,7 @@ my $h_meta = $ui->getmeta($h_table);
                    <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
 %               }   
 %             }
-%             if ( defined($h_meta) ){  # only if there's a history table.
-                 <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">[history]</a>
-%             }
+              <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">[history]</a>
 	   </div>
 	</div>
       </div>
@@ -111,9 +115,9 @@ my $h_meta = $ui->getmeta($h_table);
 <%perl>
 
 if ($view eq 'all' || $view eq "$table"){
-  
-my (@fields, @data);
-
+    
+    my (@fields, @data);
+    
     foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 	next if ($c eq 'id' || $c eq 'aliases');
 	
@@ -122,21 +126,21 @@ my (@fields, @data);
 	}else{
 	    push @fields, $c;
 	}
-
-	if (!exists($linksto{$c}) ){  ## Column is local
+	
+	if ( !exists($linksto{$c}) ){  ## Column is local
 	    if ( $ui->getsqltype($table,$c) =~ /bool/ ){
 		push @data, $ui->radio_group_boolean(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
 		
-	   }elsif ($c eq "info"){
-	       push @data, $ui->text_area(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
-	   }else{
-	       push @data, $ui->text_field(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
-	   }
-
-      } else {  # Column is foreign key
-            push @data, $ui->select_lookup(object=>$obj, column=>$c, lookup=>$linksto{$c}, edit=>0, linkPage=>"view.html", returnAsVar=>1);	     
-      }
-   }
+	    }elsif ($c eq "info"){
+		push @data, $ui->text_area(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
+	    }else{
+		push @data, $ui->text_field(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
+	    }
+	    
+	}else {  # Column is foreign key
+	    push @data, $ui->select_lookup(object=>$obj, column=>$c, lookup=>$linksto{$c}, edit=>0, linkPage=>"view.html", returnAsVar=>1);	
+	}
+    }
 
 </%perl>
 

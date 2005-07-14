@@ -496,7 +496,7 @@ sub select_lookup($@){
         # show link to add new item to this table
         $output .= sprintf("<a href=\"#\" onClick=\"openinsertwindow('%s', '%s');\">[new]</a>", $lookup, $name);
 
-    }elsif ($linkPage && $o->$column){
+    }elsif ($linkPage && $o->$column ){
 	if ($linkPage eq "1" || $linkPage eq "view.html"){
 	    my $rtable = $o->$column->table;
 	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $rtable, $o->$column->id, $self->getlabelvalue($o->$column, \@labels));

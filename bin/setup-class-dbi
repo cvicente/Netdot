@@ -262,6 +262,7 @@ foreach my $table (@tables){
     
     print "__PACKAGE__->columns( Primary => qw / id /);\n";
     delete $cols{id};
+    $table =~ s/_history//;
     @tmp = split /,/, 
        $dbh->selectrow_array("SELECT columnorderbrief FROM Meta WHERE name='$table'");
     delete $cols{$_} foreach (@tmp);

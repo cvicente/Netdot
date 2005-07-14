@@ -174,21 +174,24 @@ sub gettables{
   %linksto = $db->getlinksto($table);
 
 When passed a table name, returns a hash containing the tables one-to-many relationships, 
-being this talble the "one" side (has_a definitions in Class::DBI).  
-The hashs keys are the names of the local fields, and the values are the names of the tables 
+being this table the "one" side (has_a definitions in Class::DBI).  
+The hash keys are the names of the local fields, and the values are the names of the tables 
 that these fields reference.
+This info is identical for history tables
 
 =cut
 
 sub getlinksto{
     my ($self, $table) = @_;
+
+    $table =~ s/_history//;
     my (%linksto, $mi);
     if ( defined($mi = $self->getmeta($table)) ){
 	map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
-	   split( /,/, $mi->linksto );
+	split( /,/, $mi->linksto );
 	return  %linksto;
     }
-    return undef;
+    return;
 } 
 
 =head2 getlinksfrom
@@ -200,11 +203,14 @@ being this table the "many" side (equivalent to has_many definitions in Class::D
 The keys of the main hash are identifiers for the relationship.  The next hashs keys are names of 
 the tables that reference this table.  The values are the names of the fields in those tables that
 reference this tables primary key.
+History tables are not referenced by other tables
 
 =cut
 
 sub getlinksfrom{
     my ($self, $table) = @_;
+    
+    return if ( $table =~ /_history/ );
     my (%linksfrom, $mi);
     if ( defined($mi = $self->getmeta($table)) ){
 	map { my($i, $j, $k, $args) = split( /:/, $_ ); 
@@ -212,7 +218,7 @@ sub getlinksfrom{
 	  }  split( /,/, $mi->linksfrom );
 	return %linksfrom;
     }
-    return undef;
+    return;
 } 
 
 =head2 getcolumnorder
@@ -221,11 +227,14 @@ sub getlinksfrom{
 
 Accepts a table name and returns its column names, ordered in the same order theyre supposed to be 
 displayed. It returns a hash with column names as keys and their positions and values.
+History tables have two extra fields at the end
 
 =cut
 
 sub getcolumnorder{
     my ($self, $table) = @_;
+    
+    my $hist = 1 if ( $table =~ s/_history// );
     my (%order, $i, $mi);
     if ( defined($mi = $self->getmeta($table)) ){
 	$i = 1;
@@ -238,26 +247,37 @@ sub getcolumnorder{
 		$order{$_} = $i++;
 	    }
 	}
+	if ( $hist ){
+	    $order{'modified'} = $i++;
+	    $order{'modifier'} = $i++;
+	}
 	return %order;
     }
-    return undef;
+    return;
 } 
 
 =head2 getcolumnorderbrief
 
   %orderbrief = $db->getcolumnorderbrief($table);
 
-Similar to getcolumnorder().  Accepts a table name and returns the brief 
-listing for that table.  The method returns a hash with column names as keys
+Similar to getcolumnorder().  Accepts a table name and returns a brief list of
+fields for that table (the most relevant).  The method returns a hash with column names as keys
 and their positions as values.
+History tables have two extra fields at the beginning
 
 =cut
 
 sub getcolumnorderbrief {
   my ($self, $table) = @_;
+
+  my $hist = 1 if ( $table =~ s/_history// );
   my (%order, $i, $mi);
   if ( defined($mi = $self->getmeta($table)) ){
     $i = 1;
+    if ( $hist ){
+	$order{'modified'} = $i++;
+	$order{'modifier'} = $i++;
+    }
     if( defined( $mi->columnorder ) ) {
       map { $order{$_} = $i++; } split( /,/, $mi->columnorderbrief );
     } else {
@@ -269,7 +289,7 @@ sub getcolumnorderbrief {
     }
     return %order;
   }
-  return undef;
+  return;
 } 
 
 =head2 getcolumntypes
@@ -283,6 +303,8 @@ keys are the column names and the values their type.
 
 sub getcolumntypes{
     my ($self, $table) = @_;
+    
+    my $hist = 1 if ( $table =~ s/_history// );
     my (%types, $mi);
     if ( defined($mi = $self->getmeta($table)) ){
 	my $mi = $self->getmeta($table);
@@ -290,9 +312,13 @@ sub getcolumntypes{
 	    map { my($j, $k) = split( /:/, $_ ); $types{$j} = $k }
 	    split( /,/, $mi->columntypes );	
 	}
+	if ( $hist ){
+	    $types{modified} = "varchar";
+	    $types{modifier} = "timestamp";
+	}
 	return %types;
     }
-    return undef;
+    return;
 } 
 
 
@@ -306,6 +332,8 @@ Returns a hash contaning the user-friendly display names for a tables columns
 
 sub getcolumntags{
     my ($self, $table) = @_;
+
+    $table =~ s/_history// ;
     my (%tags, $mi);
     if ( defined($mi = $self->getmeta($table)) ){
 	my $mi = $self->getmeta($table);
@@ -315,7 +343,7 @@ sub getcolumntags{
 	}
 	return %tags;
     }
-    return undef;
+    return;
 } 
 
 =head2 getlabels
@@ -335,7 +363,7 @@ sub getlabels{
 	    return split /,/, $mi->label;
 	}
     }
-    return undef;
+    return;
 } 
 
 =head2 getobjlabel
@@ -482,7 +510,7 @@ sub getobjstate {
     };
     if ($@){
 	$self->error("$@");
-	return undef;
+	return;
     }
     return %bak;
 }
@@ -813,24 +841,25 @@ sub gethistoryobjs {
     my $table;
     unless ( $table = $o->table ){
         $self->error("Can't get table from object $o");
-        return 0;
+        return;
     }
-    my $htable;
-    unless ( $htable = $self->gethistorytable($o) ){
-        $self->error("Can't get history table from object $o");
-        return 0;
-    }
+    my $htable = $self->gethistorytable($o);
+
     # History objects have two indexes, one is the necessary
     # unique index, the other one refers to which normal object
     # this is the history of
     # The latter has the table's name plus the "_id" suffix
 
     my $id_f = lc ("$table" . "_id");
-
-    if ( my @ho = $htable->search($id_f => $o->id) ){
-        return @ho;
+    my @ho;
+    eval {
+	@ho = $htable->search($id_f => $o->id);
+    };
+    if ( $@ ){
+	$self->error("Can't retrieve history objects for $table id $o->id: $@");
+	return;
     }
-    return;
+    return @ho;
 }
 
 =head2 search_all_netdot - 
