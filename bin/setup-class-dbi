@@ -262,7 +262,7 @@ foreach my $table (@tables){
     
     print "__PACKAGE__->columns( Primary => qw / id /);\n";
     delete $cols{id};
-    $table =~ s/_history//;
+    my $hist = 1 if ($table =~ s/_history//);
     @tmp = split /,/, 
        $dbh->selectrow_array("SELECT columnorderbrief FROM Meta WHERE name='$table'");
     delete $cols{$_} foreach (@tmp);
@@ -283,7 +283,8 @@ foreach my $table (@tables){
 	    print "__PACKAGE__->has_a( $col => '$tab' );\n";
 	}
     }
-    foreach my $line (@hasManyLn){
+    unless ( $hist ){
+      foreach my $line (@hasManyLn){
 	my @items = split /,/, $line;
 	    foreach my $item (@items){
 		my @fields = split /:/, $item; 
@@ -301,7 +302,8 @@ foreach my $table (@tables){
 		    exit;
 		}
 	    }
-    }
+      }
+   } 
 }
 
 
