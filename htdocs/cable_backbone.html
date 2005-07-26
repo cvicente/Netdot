@@ -49,7 +49,7 @@ $editBackbone = 1 if ($id eq "NEW" || $edit eq "cableinfo");
 $editStrand   = 1 if ($edit eq "strandinfo");
 
 # For table building modules:
-my (@field_headers, @cell_data, @headers, @rows, $i);
+my (@field_headers, @cell_data, @headers, @rows);
 </%init>
 
 <%perl>
@@ -454,10 +454,7 @@ function editSelected(id)
 
         <!--  Set up content/rows -->
 	<%perl>
-	$i = 0;
 	foreach my $st (@sorted_strands) {
-	    $i = ($i + 1) % 2;
-
 	    my @row = ();
 	    push( @row, 
 		  &{sub{
