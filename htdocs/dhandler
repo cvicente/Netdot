@@ -3,6 +3,9 @@ Default Handler for nonexistent pages
 
 </%doc>
 <%init>
+# Otherwise apache (by extension probably) determines the content type
+# which botches the error message if not html.
+$r->content_type('text/html');
 my $arg = $m->dhandler_arg();
 </%init>
 
