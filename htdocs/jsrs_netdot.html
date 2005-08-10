@@ -1,25 +1,14 @@
 <%doc>
 
 Calls UI::select_query to perform a recursive search for keywords
-in a table's label fields
-
-Arguments:
-- table:  Foreign key table to search.
-- field:  Name of the original field for which we're searching foreign values
-          Needed by the caller
-- crit:   Criteria.  A string with one or more keywords to search
-
-- form_name: optional form name for original caller. If not specified assumes
-             form name is "netdotform".
+in a table s label fields
 
 </%doc>
-%
-%
+
+
 <%flags>
 inherit => undef
 </%flags>
-%
-%
 
 <%init>
 my $DEBUG = 0;
@@ -31,8 +20,13 @@ print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 do "jsrsServer.pl";
 jsrsDispatch("keyword_search");
 
-
 sub keyword_search {
+# Arguments:
+# - table:  Foreign key table to search.
+# - field:  Name of the original field for which we're searching foreign values
+#          Needed by the caller
+# - crit:   Criteria.  A string with one or more keywords to search
+
     my $table = shift;
     my $field = shift;
     my $crit = shift;
