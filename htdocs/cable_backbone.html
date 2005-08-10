@@ -252,36 +252,6 @@ function suggestName()
 	      <td width="50%">
 		<%perl>
 		(@field_headers, @cell_data) = ();
-		push( @field_headers, "Name: " );
-		push( @cell_data, 
-		      &{sub{
-			  my $ac = "";
-			  $ac .= $ui->text_field(object=>$o, table=>"BackboneCable", 
-						 column=>"name", edit=>$editBackbone, returnAsVar=>1); 
-			  if ($editBackbone) {                
-			      $ac .= '&nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name"'
-                                     . 'value="Suggest Name" onClick="suggestName();" />';
-			  }
-			  $ac;
-		      }} );
-		push( @field_headers, "Cable Type: " );
-		push( @cell_data, $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"type", 
-		      lookup=>"CableType", edit=>$editBackbone, returnAsVar=>1) );
-		push( @field_headers, "Owner: " );
-		push( @cell_data, $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"owner", 
-						     lookup=>"Entity", edit=>$editBackbone, returnAsVar=>1) );
-		push( @field_headers, 'Installed on <font size="-1">(yyyy-mm-dd)</font>: ' );
-		push( @cell_data, $ui->text_field(object=>$o, table=>"BackboneCable", column=>"installdate", 
-						  default=>$ui->date(), edit=>$editBackbone, returnAsVar=>1) );
-		</%perl>
-
-		<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-              </td>
-
-	      <!-- Right sub table -->  
-	      <td width="50%">
-		<%perl>
-		(@field_headers, @cell_data) = ();
 		push( @field_headers, "Start Closet: " );
 		push( @cell_data, 
 		      &{sub{
@@ -303,6 +273,36 @@ function suggestName()
 							lookup=>"Closet", edit=>$editBackbone, returnAsVar=>1);
 			  } else {
 			      $ac .= '<a href="closet.html?id='.$o->end_closet.'">'.$o->end_closet->name.'</a>';
+			  }
+			  $ac;
+		      }} );
+		push( @field_headers, "Cable Type: " );
+		push( @cell_data, $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"type", 
+		      lookup=>"CableType", edit=>$editBackbone, returnAsVar=>1) );
+		push( @field_headers, "Owner: " );
+		push( @cell_data, $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"owner", 
+						     lookup=>"Entity", edit=>$editBackbone, returnAsVar=>1) );
+		push( @field_headers, 'Installed on <font size="-1">(yyyy-mm-dd)</font>: ' );
+		push( @cell_data, $ui->text_field(object=>$o, table=>"BackboneCable", column=>"installdate", 
+						  default=>$ui->date(), edit=>$editBackbone, returnAsVar=>1) );
+		</%perl>
+
+		<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+              </td>
+
+	      <!-- Right sub table -->  
+	      <td width="50%">
+		<%perl>
+		(@field_headers, @cell_data) = ();
+		push( @field_headers, "Name: " );
+		push( @cell_data, 
+		      &{sub{
+			  my $ac = "";
+			  $ac .= $ui->text_field(object=>$o, table=>"BackboneCable", 
+						 column=>"name", edit=>$editBackbone, returnAsVar=>1); 
+			  if ($editBackbone) {                
+			      $ac .= '&nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name"'
+                                     . 'value="Suggest Name" onClick="suggestName();" />';
 			  }
 			  $ac;
 		      }} );
