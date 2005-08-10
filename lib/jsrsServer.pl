@@ -6,14 +6,13 @@
 # *         originally adapted from ASP version by
 # *         Brent Ashley [jsrs@megahuge.com]
 # *
-# * The JSRS is distributed under the terms of the GNU 
+# * The JSRS is distributed under the terms of the GNU
 # * Genral Public License terms and conditions for copying,
 # * distribution and modification.
 # *
 # **************************************************************
 use URI::Escape;
 use CGI;
-
 
 $jsrsQuery = CGI::new();
 # print "Content-type: text/html\n\n";
@@ -22,6 +21,7 @@ sub jsrsDispatch {
 	my $func = jsrsBuildFunc($validFuncs);
 	if ($func ne ""){
 		$retval = eval($func);
+        print STDERR "jsrsDispatch returns: ".$func."\n";
 		jsrsReturn($retval);
 	}else{
 		jsrsReturnError("function builds as empty string");
@@ -59,7 +59,6 @@ sub jsrsReturnError {
 sub jsrsBuildFunc {
 	my $validFuncs = $_[0];
 	my $func = "";
-
 	if ($jsrsQuery->param("F") ne ""){
 		$func = $jsrsQuery->param("F");
 		# make sure its in the dispatch list
@@ -68,10 +67,8 @@ sub jsrsBuildFunc {
 		}
 		$func = $func . "(";
 		my $i = 0;
-
 		while (length($jsrsQuery->param("P" . $i)) != 0){
 			$parm = $jsrsQuery->param("P" . $i);
-
 			$parm = substr($parm, 1, length($parm)-2);
 			$func = $func . chr(34) . jsrsEvalEscape($parm) . chr(34) . ",";
 			$i = $i + 1;
