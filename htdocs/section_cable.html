@@ -309,47 +309,21 @@ LIST_MANAGER.addList(floorList, closetList);
 
 % } elsif ($page eq "CIRCUITS") {
 <div class="container">
-	<div class="containerheadleft">
-        Circuits
-	</div>
-	<div class="containerheadright">
-%       print_showtaskslink($show_tasks);
-        &nbsp;<a href="circuit.html?id=NEW">[new]</a>
-	</div>
+    <div class="containerheadleft">Circuits</div>
+    <div class="containerheadright">
+%     print_showtaskslink($show_tasks);
+      &nbsp;<a href="circuit.html?id=NEW">[new]</a>
+    </div>
 
-	<div class="containerbody" id="circuit_options">
+    <div class="containerbody" id="circuit_options">
 %   if ($show_tasks eq "show") {
-    <form name="circuit_lookup_form" action="cable_plant.html" method="POST">
-        <input type="hidden" name="page_type" value="CIRCUITS">
-        Circuits connected from:<br>
-        <select name="start_id">
-        <option value="">-- Make your selection --</option>
-        <%perl>
-        foreach my $site (@sites) {
-            printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-        }
-        </%perl>
-        </select> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>- TO -</B><br>
-   
-        <select name="end_id">
-        <option value="">-- Make your selection --</option>
-        <%perl>
-        foreach my $site (@sites) {
-            printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-        }
-        </%perl>
-        </select><br>
-        <input name="submit_site" value="Go!" type="submit"> &nbsp;&nbsp;&nbsp;
-    </form>
-    </td>
-    <td>
-    <form name="circuit_srch_form" action="cable_plant.html" method="POST">
-        <input type="hidden" name="page_type" value="CIRCUITS">  
-        Circuit: <input name="circuit_srch" size="30"> &nbsp;<input type="submit" name="submit_circuit_search" value="Search">
-    </form>
-    </td>
-    </tr>
-    </table>
+      <p>Search Circuits by keywords
+      <br>(Relevant fields include: Circuit ID, Connection name, Near and Far Sites, Entity)
+      <p>
+      <form name="circuit_srch_form" action="circuit.html" method="POST">
+          <input type="hidden" name="_action" value="SEARCH"> 
+          <input type="text" name="search" size="30"> <input type="submit" name="submit_circuit_search" value="Search">
+      </form>
 %   } # end if show_tasks
     </div> <!-- close containerbody -->
 </div> <!-- close container -->

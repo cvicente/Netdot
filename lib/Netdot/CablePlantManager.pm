@@ -368,3 +368,35 @@ sub findendpoint($$) {
 
     return ($st->fetchrow_array())[0] || $tmp_strand;
 }
+
+=head2 search_circuits - Search Circuits by keywords
+
+ Relevant fields include: CID, Connection name, Connection Sites, Connection Entity
+
+ Arguments: string or substring
+ Returns: array of Circuit objects
+
+=cut
+
+sub search_circuits {
+    my ($self, $string) = @_;
+    my $crit = "%" . $string . "%";
+    my (@sites, @conn, @ent);
+    my %c;  # Hash to prevent dups
+
+    map { $c{$_} = $_ } Circuit->search_like(cid => $crit);
+    @sites = Site->search_like(name => $crit);
+    @conn  = Connection->search_like(name => $crit);
+    @ent   = Entity->search_like(name => $crit);
+
+    map { push @conn, $_->farconnections  } @sites;
+    map { push @conn, $_->nearconnections } @sites;
+    map { push @conn, $_->connections     } @ent;
+    map { $c{$_} = $_ } map { $_->circuits } @conn;
+
+    my @c = map { $c{$_} } keys %c;
+
+    wantarray ? ( @c ) : $c[0]; 
+
+}
+

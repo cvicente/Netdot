@@ -9,6 +9,7 @@ Circuit Interface
 $id          => undef;
 $edit        => undef;
 $strand_sort => undef;
+$search      => undef;
 </%args>
 
 <%flags>
@@ -27,67 +28,106 @@ my %cssitem     = (0 => "formtablec1", 1 => "formtablec2");
 my $o           = undef;
 my $editCircuit = 0;
 my $editStrand  = 0;
+my @list;
+
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 $o              = Circuit->retrieve($id) if ($id && $id ne "NEW");
 $editCircuit    = 1 if ($id eq "NEW" || $edit eq "circuitinfo");
 $editStrand     = 1 if ($edit eq "strandinfo");
 
-</%init>
+    
+if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
 
-
-<%perl>
-print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+    if ( $search =~ /\w+/ ){
+	# remove spaces at beginning and end
+	$search =~ s/^\s*(.*)\s*$/$1/;
+	unless ( @list = $cable_manager->search_circuits($search) ){
+	    print  "<p><b>No results</b>";
+	    $m->abort;
+	}
+	my $num = scalar(@list);
+	if ( $num == 1 ){
+	    # Don't offer list.  Just display this circuit
+	    $o      = $list[0];
+	    $id     = $o->id;
+	    $search = undef;
+	}
+    }else{
+	print "<p><b>No search criteria</b>";   
+	$m->abort;
+    }
+}
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
+elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
     my %update_info = ();
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
     if (!(%update_info = $ui->form_to_db(%ARGS))) {
-        $m->comp("error.mhtml", $ui->error());
-	}
-
-    if ($update_info{Circuit}{key}) {
-        $id = $update_info{Circuit}{key};
-        $editCircuit = 0;
+	$m->comp("error.mhtml", $ui->error());
     }
-
+    
+    if ($update_info{Circuit}{key}) {
+	$id = $update_info{Circuit}{key};
+	$editCircuit = 0;
+    }
+    
     # Do this to 'flush' the values associated with the object
     # before redisplaying
     $o = undef;
     if ($id && $id ne "NEW") {
-        $o = Circuit->retrieve($id);
+	$o = Circuit->retrieve($id);
     }
 } elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{sequence_list}) {
     my @sequences;
     if (UNIVERSAL::isa($ARGS{sequence_list}, "ARRAY")) {
-        @sequences = @{$ARGS{sequence_list}};
+	@sequences = @{$ARGS{sequence_list}};
     } else {
-        push(@sequences, $ARGS{sequence_list});
+	push(@sequences, $ARGS{sequence_list});
     }
-
+    
     my $circuit_id = $o->id;
     foreach my $seq (@sequences) {
-        $cable_manager->assigncircuit($circuit_id, split(/,/o, $seq));
+	$cable_manager->assigncircuit($circuit_id, split(/,/o, $seq));
     }
 } elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_SEQUENCES") {
     foreach my $key (keys(%ARGS)) {
-        next if ($key !~ /^__unassign_(\d+)/o);
-        $cable_manager->removecircuit(split(/,/o, $ARGS{"__sequence_" . $1}));
+	next if ($key !~ /^__unassign_(\d+)/o);
+	$cable_manager->removecircuit(split(/,/o, $ARGS{"__sequence_" . $1}));
     }
 }
+
 # end insertion/update code
 # -----------------------------------------------------------------------------
-</%perl>
+    
+</%init>
+
+% if ( $search && @list ){
+
+<div class="container">
+  <div class="containerheadleft">
+    <% scalar(@list) %> results for <i><% $search %></i>
+%# The non breaking space is a hack to make the table header full width
+  </div><div class="containerheadright">&nbsp;</div>
+  <div class="containerbody">
+      <& sortresults.mhtml, object => \@list, view => "row", page => "circuit.html", withdelete => 1 &>
+  </div>
+</div>
+
+% }else{  # we're not searching
+
 
 <div id="sectiondetail">
 
-% if (defined($o) && $o->connectionid) {
+% if ( $o ) {
 <!-- Header Table -->
 <div class="containeroutside">
     <div class="containerheadoutside">
 %    if ( $o->connectionid ){
         Circuit for Connection: <a href="view.html?table=Connection&id=<% $o->connectionid %>"><% $o->connectionid->name %></a>
+%    }else{
+        Circuit ID: <% $o->cid %>
 %    }
     </div>
     <div class="containerbodyoutside">
@@ -102,7 +142,7 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
     <div class="containerheadleft">Circuit</div>
     <div class="containerheadright">
 %       if ($editCircuit) {
-        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+        <input type="button" name="cancel_button" value="Cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="Save" type="submit">
 %           } else {
         <a href="circuit.html?id=NEW">[new]</a>  <a href="circuit.html?id=<% $id %>&edit=circuitinfo">[edit]</a>  <a href="delete.html?table=Circuit&id=<% $id %>">[delete]</a>
 %           }
@@ -118,6 +158,9 @@ my (@field_headers, @cell_data);
 push( @field_headers, "Circuit ID: " );
 push( @cell_data, $ui->text_field(object=>$o, table=>"Circuit", column=>"cid", edit=>$editCircuit, returnAsVar=>1 ) );
 
+push( @field_headers, "Part of Connection: " );
+push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"connectionid", lookup=>"Connection", edit=>$editCircuit, linkPage=>"view.html", returnAsVar=>1 ) );
+
 push( @field_headers, "Vendor: " );
 push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"vendor", lookup=>"Entity", edit=>$editCircuit, linkPage=>"view.html", returnAsVar=>1 ) );
 
@@ -126,9 +169,6 @@ push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"near
 
 push( @field_headers, "Far Interface: " );
 push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"farend", lookup=>"Interface", edit=>$editCircuit, linkPage=>"view.html", returnAsVar=>1 ) );
-
-push( @field_headers, "Circuit Type: " );
-push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"type", lookup=>"CircuitType", edit=>$editCircuit, returnAsVar=>1 ) );
 
 </%perl>
 
@@ -142,18 +182,21 @@ push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"type
 
 (@field_headers, @cell_data) = ();
 
+push( @field_headers, "Circuit Type: " );
+push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"type", lookup=>"CircuitType", edit=>$editCircuit, returnAsVar=>1 ) );
+
 push( @field_headers, "DLCI: " );
-push( @cell_data, $ui->text_field(object=>$o, column=>"dlci", edit=>$editCircuit, returnAsVar=>1 ) );
+push( @cell_data, $ui->text_field(object=>$o, table=>"Circuit", column=>"dlci", edit=>$editCircuit, returnAsVar=>1 ) );
 
 push( @field_headers, "Speed: " );
-push( @cell_data, $ui->text_field(object=>$o, column=>"speed", edit=>$editCircuit, returnAsVar=>1 ) );
+push( @cell_data, $ui->text_field(object=>$o, table=>"Circuit", column=>"speed", edit=>$editCircuit, returnAsVar=>1 ) );
 
             
 push( @field_headers, "Install Date: " );
-push( @cell_data, $ui->text_field(object=>$o, column=>"installdate", default=>$ui->date(), edit=>$editCircuit, returnAsVar=>1 ) );
+push( @cell_data, $ui->text_field(object=>$o, table=>"Circuit", column=>"installdate", default=>$ui->date(), edit=>$editCircuit, returnAsVar=>1 ) );
 
 push( @field_headers, "Status: " );
-push( @cell_data, $ui->select_lookup(object=>$o, column=>"status", lookup=>"CircuitStatus", edit=>$editCircuit, returnAsVar=>1 ) );
+push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"status", lookup=>"CircuitStatus", edit=>$editCircuit, returnAsVar=>1 ) );
 
 </%perl>
 
@@ -281,3 +324,5 @@ push( @cell_data, $ui->select_lookup(object=>$o, column=>"status", lookup=>"Circ
 % }
 
 </div> <!-- close sectiondetail -->
+
+%}
