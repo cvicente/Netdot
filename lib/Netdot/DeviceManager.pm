@@ -419,14 +419,14 @@ sub update_device {
     
     if( defined $dev{physaddr} ) {
 	# Look it up
-	if (my $phy = (PhysAddr->search(address => $dev{physaddr}))[0] ){
-	    if ( ! $device ){
-		if ( my $otherdev = (Device->search(physaddr => $phy->id))[0] ){
-		    #
-		    # Another device exists that has that address
-		    # 
+	if ( my $phy = (PhysAddr->search(address => $dev{physaddr}))[0] ){
+	    if ( my $otherdev = ($phy->devices)[0] ){
+		#
+		# At least another device exists that has that address
+		# 
+		if ( ! $device || ( $device && $device->id != $otherdev->id)  ){
 		    my $name = (defined($otherdev->name->name))? $otherdev->name->name : $otherdev->id;
-		    $self->error( sprintf("%s: PhysAddr %s belongs to existing device %s. Aborting", 
+		    $self->error( sprintf("%s: PhysAddr %s belongs to existing device: %s. Aborting", 
 					  $host, $dev{physaddr}, $name ) ); 
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => $self->error,
@@ -435,7 +435,8 @@ sub update_device {
 		}
 	    }else{
 		#
-		# The address exists (maybe discovered in fw tables/arp cache)
+		# The address exists but it's not the base bridge address of any other device
+		# (maybe discovered in fw tables/arp cache)
 		# Just point to it from this Device
 		#
 		$devtmp{physaddr} = $phy->id;
@@ -481,10 +482,10 @@ sub update_device {
     
     if( defined $dev{serialnumber} ) {
 	if ( my $otherdev = (Device->search(serialnumber => $dev{serialnumber}))[0] ){
-	    if ( defined($device) && $device->id != $otherdev->id ){
+	    if ( ! $device || ($device && $device->id != $otherdev->id) ){
 		my $othername = (defined $otherdev->name && defined $otherdev->name->name) ? 
 		    $otherdev->name->name : $otherdev->id;
-		$self->error( sprintf("%s: S/N %s belongs to existing device %s. Aborting.", 
+		$self->error( sprintf("%s: S/N %s belongs to existing device: %s. Aborting.", 
 				      $host, $dev{serialnumber}, $othername) ); 
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $self->error,
@@ -495,8 +496,14 @@ sub update_device {
 	$devtmp{serialnumber} = $dev{serialnumber};
     }else{
 	$self->debug( loglevel => 'LOG_INFO',
-		      message  => "Device did not return serial number",
-		      );		
+		      message  => "Device did not return serial number" );
+
+	# If device exists in DB, and we have a serial number, remove it.
+	# Most likely it's being replaced with a different unit
+
+	if ( $device && $device->serialnumber ){
+	    $devtmp{serialnumber} = "";
+	}
     }
     ###############################################
     # Update/Add Device
