@@ -67,6 +67,7 @@ if( $user ) {
 if ( $action eq "discover" ){
     my $target;
     if ( $device ){
+	# We got a device id, so we're most likely updating
 	my $devobj = Device->retrieve($device);
 	# Try to use existing IP address
 	# Start with the one associated with the name
@@ -80,15 +81,19 @@ if ( $action eq "discover" ){
 	$argv{comstr} = $devobj->community;
 	$argv{device} = $devobj;
     }elsif ( $host ){
+	# We're not aware of an existing device yet
+	# Probably discovering.
+	#
 	# remove spaces
 	$target = $host;
 	$target =~ s/\s*//g;
 	# See if device exists
-	my ($c, $d)   = $dm->find_dev($target);
-	$argv{comstr} = (defined($c)) ? $c : $comstr;
-	$argv{device} = (defined($d)) ? $d : "";
+	my (undef, $d) = $dm->find_dev($target);
+	# We probably want to use the community that is being passed
+	$argv{comstr} = $comstr;
+	$argv{device} = $d;
     }else{
-	$m->comp('error.mhtml', error => "Discovery needs either device or hostname");
+	$m->comp('error.mhtml', error => "Discovery needs either device id or hostname");
     }
     unless ( $target ){
 	$m->comp('error.mhtml', error => "Could not determine target address or hostname");

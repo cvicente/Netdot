@@ -424,7 +424,7 @@ sub update_device {
 		#
 		# At least another device exists that has that address
 		# 
-		if ( ! $device || ( $device && $device->id != $otherdev->id)  ){
+		if ( ! $device || ( $device && $device->id != $otherdev->id ) ){
 		    my $name = (defined($otherdev->name->name))? $otherdev->name->name : $otherdev->id;
 		    $self->error( sprintf("%s: PhysAddr %s belongs to existing device: %s. Aborting", 
 					  $host, $dev{physaddr}, $name ) ); 
