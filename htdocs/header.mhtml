@@ -18,7 +18,15 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 %
 <html>
 <head>
-  <link rel=StyleSheet href="style.css" type="text/css">
+  <!-- Use the path as set in the Apache conf for the netdot root so
+       the user can change the location with out editing any code.
+       The path needs to be absolute here since the user could pass
+       any url and get redirected to login (although right now the
+       only files not at the root are the images, and possibly a
+       request for /netdot which I think gets translated to /netdot/
+       before AuthCookie takes over anyway).
+  -->
+  <link rel=StyleSheet href="<% $r->dir_config('NetdotPath') %>/style.css" type="text/css">
   <title>Netdot : <% $title %></title>
 </head>
 
@@ -29,7 +37,7 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 <body>
 <div id="header">
-    <img class="headleft" SRC="img/title.png" 
+    <img class="headleft" SRC="<% $r->dir_config('NetdotPath') %>/img/title.png" 
         alt="Netdot: Network Documentation Tool" />
     <span class="headright">
       <form action="search.html" method="post">

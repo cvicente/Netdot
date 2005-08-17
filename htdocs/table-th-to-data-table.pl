@@ -2,6 +2,8 @@
 
 # Nathan Collins Wed May  4 22:38:22 PDT 2005
 
+# This makes the headers array for data-table calls.
+
 # "Enhanced" version of table-array.pl.  Adds support for
 # accumulation.  Not sure how worthwhile this actually is generally,
 # but saves a bit of time when it is needed.  Also, the code it
@@ -28,7 +30,7 @@ print( "<%perl>\n",
 
 # Assume everything is in a table data element and that there is no
 # nesting.  Might need to consider table headers and the like.
-while ($html =~ m{<th[^>]*>((.|\n)*?)</th>|(\%.*)}g) {	# s for . matches \n
+while ($html =~ m{<t(?:h|d)[^>]*>((.|\n)*?)</t(?:h|d)>|(\%.*)}g) {	# s for . matches \n
 
 
 my $match = 1;    

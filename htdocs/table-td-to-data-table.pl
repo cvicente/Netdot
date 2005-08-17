@@ -18,7 +18,7 @@ die "usage: $0 n m <file>\nto convert lines n..m of <file>\n" if ! (scalar(@ARGV
 my $html = `sed -ne '$ARGV[0],$ARGV[1]p' $ARGV[2]`;
 
 print( "<%perl>\n",
-       "(\@row) = ();\n" 
+       "my \@row = ();\n" 
        );
 
 

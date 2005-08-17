@@ -8,15 +8,37 @@ Login Page
 title   => 'Netdot Login' 
 </%attr>
 
+<%init>
+my $message;
+
+# Unless they requested the login page directly while not logged in
+# (in which case prev isn't defined) we tell them why they must login.
+
+if (defined $r->prev) {
+    $message = "You are not authorized: "
+               . $r->prev->subprocess_env('AuthCookieReason')
+               . "<br /><br />";
+} 
+</%init>
+
 <div class="sectiondetail">
 
 <form method="post" action="/NetdotLogin">
-<input type="hidden" name="destination" value="netdot/index.html">
+<!-- 
+Use the path as set in the Apache conf for the netdot root so the user
+can change the location with out editing any code.  The path needs to
+be absolute here since the user could pass any url and get redirected
+to login (although right now the only files not at the root are the
+images, and possibly a request for /netdot which I think gets
+translated to /netdot/ before AuthCookie takes over anyway).
+-->
+<input type="hidden" name="destination" value="<% $r->dir_config('NetdotPath') %>/index.html">
 
 <div id="loginform" align="center">
 
 <div class="container">
     <div class="containerhead">
+        <% $message %>
         Please enter your login and password to authenticate.
     </div>
     <div class="containerbody">

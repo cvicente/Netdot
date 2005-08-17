@@ -82,6 +82,8 @@ dir:
 	       mkdir -m $(DMOD) -p $(PREFIX)/$$dir ; \
 	    fi ; \
 	done
+	@echo "Hacking together mason permissions fix..."
+	touch $(PREFIX)/htdocs/masondata/obj/.__obj_create_marker
 	chown -R $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/htdocs/masondata
 	chmod 0750 $(PREFIX)/htdocs/masondata
 	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/tmp
