@@ -324,11 +324,29 @@ html>body, html>body #contents {
     font: bold 0.9em tahoma, verdana, sans-serif;
 }
 
-/* For partitioning container bodies into sections */
+/* For partitioning container bodies into sections.  See its use for
+comment sections */
 div.containerseparator { 
     background-color: #ddeedd;
     font: bold 0.9em tahoma, verdana, sans-serif;
 }
+
+/* For simple (doesn't work with nested width 100% tables) two column
+layout without tables. Looks a little strange if the window is small.
+*/
+
+/* You *must* follow with cleared content to force the floated
+elements to be considered "in the flow" (i.e. to get any enclosing
+divs to respect the containment and not pull their borders up leaving
+the contained divs floating in space).  Using an empty 
+
+<div style="clear: both"></div> 
+
+works just fine. */
+div.left { float: left; margin: 4px; margin-right: 0px }
+div.right { float: right; margin: 4px; margin-left: 0px }
+/* Put an empty div of this class under any left right pair */
+div.clear { clear: both }
 
 .containerheadright {
     text-align: right;

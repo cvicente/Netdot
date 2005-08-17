@@ -151,7 +151,7 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
         <table>
          <tr>
           <td width="50%">
-
+<div class="left">
 <%perl>
 my (@field_headers, @cell_data);
 
@@ -204,13 +204,9 @@ push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"stat
 
           </td>
          </tr>
-         <tr>
-          <td colspan="2">
-            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
+       </table>
+       <div class="containerseparator">Comments</div>
 %           $ui->text_area(object=>$o, table=>"Circuit", column=>"info", edit=>$editCircuit, htmlExtra=>"rows='3' cols='80'");
-          </td>
-         </tr>
-        </table>
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
 
@@ -276,9 +272,8 @@ push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"stat
         <form name="add_strand_form" action="circuit.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="ADD_STRANDS">
-    
-        <table><tr>
-        <td width="50%" valign="top">
+
+        <div class="left">
             <%perl>
             my @sites = Site->retrieve_all();
             @sites = sort { $a->name cmp $b->name } @sites;
@@ -301,16 +296,15 @@ push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"stat
                     printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
                 }
                 </%perl>
-            </select>
+            </select> <br />
             <input type="button" name="get_bb_list" value="Get Strand List" onClick="getStrandList();">
-        </td>
-        <td width="50%" valign="top">
-            Available Strand Sequence(s):<BR>
+
+        </div>
+        <div class="right">
+            Available Strand Sequence(s):<br />
             <select name="sequence_list" style="width: 500px;" multiple size="4"></select>
-    	        &nbsp;<input type="submit" name="strand_add" value="Add">&nbsp;
-        </td>
-        </tr></table>
-    
+    	        <br />&nbsp;<input type="submit" name="strand_add" value="Add">&nbsp;
+        </div><div class="clear"></div>
         </form>
 
         </div> <!-- close containerbody -->
