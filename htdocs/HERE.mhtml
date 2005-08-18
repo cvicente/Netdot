@@ -1,0 +1,54 @@
+<%doc>
+ 
+=head1 DESCRIPTION
+
+For capuring a chunk of mason *after* processing.  Analogous to
+interpolating HERE documents in shell or perl.
+
+If you pass a scalar reference then the content will be put in there.
+Otherwise the default variable $_ is used.  
+
+=head1 EXAMPLE
+
+If you pass in a scalar reference you can retrieve the wrapped
+contents *after* processing.
+
+	% my $var;
+	<&| "HERE.mhtml", var =>\$var &>
+	% foreach ('a'..'z') { print "$_\n"; }
+	Now I know my abcs
+	</&>
+
+So 
+
+	% some_perl_function($var);
+
+passes the string
+
+	"a
+	b
+	c
+	.
+	.
+	.
+	x
+	y
+	z
+	Now I know my abcs"
+
+to some perl function.
+
+You can also just insert it in some regular mason code:
+
+	<pre><% $var %></pre>
+
+=cut
+</%doc>
+
+
+<%args>
+$var => \$_	# Reference to scalar to put content in.
+</%args>
+
+% $$var = $m->content();
+
