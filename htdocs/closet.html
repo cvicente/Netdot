@@ -39,6 +39,9 @@ $editCloset     = 1 if ($id eq "NEW" || $edit eq "closetinfo");
 $editPictures   = 1 if ($edit eq "closetpictures");
 $editBackbones  = 1 if ($edit eq "bbinfo");
 $editHorizontal = 1 if ($edit eq "cableinfo");
+
+my (@field_headers, @cell_data); # For attribute_table.mhtml calls
+my (@headers, @rows);	# For data_table.mhtml calls.  Aware there need not really be 4 variables.
 </%init>
 
 
@@ -67,7 +70,7 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS{
             # if uploading a new picture in place of another.
             next if ($ARGS{$key} eq "");
             $m->comp("error.mhtml", $ui->error()) if (!($ui->updatebinfile($ARGS{$key}, $1)));
-        }
+        } 
     }
 }elsif (defined($ARGS{_action})) {
     my %update_info = ();
@@ -125,190 +128,99 @@ LIST_MANAGER.addList(floorSearchList);
     </div>
     <div class="containerheadright">
 %       if ($editCloset) {
-            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %       } else {
-            <a href="closet.html?id=NEW">[new]</a> || <a href="closet.html?id=<% $id %>&edit=closetinfo">[edit]</a> || <a href="delete.html?table=Closet&id=<% $id %>">[delete]</a></td>
+            <a href="closet.html?id=NEW">[new]</a> <a href="closet.html?id=<% $id %>&edit=closetinfo">[edit]</a> <a href="delete.html?table=Closet&id=<% $id %>">[delete]</a>
 %       }
     </div>
     <div class="containerbody">
-        <table>
-        <tr align="left" valign="top">
-            <td width="50%">
-            <table width="100%" border="0" cellspacing="2" cellpadding="0">
-            <tr align="left" valign="top">
-                <td align="left">Name: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"name", edit=>$editCloset);
-                </td>
-            </tr>
+        <table> <!-- two column layout table -->
+        <tr>
+	  <td>
+	    <%perl>
+	    (@field_headers, @cell_data) = ();
+	    push( @field_headers, "Name: " );
+	    push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"name", edit=>$editCloset, returnAsVar=>1) );
+	    push( @field_headers, "Number: " );
+	    push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"number", edit=>$editCloset, returnAsVar=>1) );
+	    push( @field_headers, "Floor: " );
+	    </%perl>
 
-            <tr align="left" valign="top">
-                <td align="left">Number: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"number", edit=>$editCloset);                
-                </td>
-            </tr>
+	    <&| "HERE.mhtml" &>  
+%           if ($editCloset) {
+%           $ui->select_lookup(object=>$o, table=>"Closet", column=>"floor", lookup=>"Floor", 
+%           edit=>$editCloset, where=>{site=>($o ? $o->site : "")});
+            &nbsp;<select name="floor_srch" onChange="floorSearchList.doIt();" style="width: 150px;">
+	      <option value="">Lookup by Site</option>
+		<%perl>
+		my @sites = Site->retrieve_all();
+		@sites = sort { $a->name cmp $b->name } @sites;
+		foreach my $s (@sites)
+		{
+		   printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
+		}
+		</%perl>
+	      </select>
+%           } else {
+	      <a href="floor.html?id=<% $o->floor %>"><% $o->floor->level %></a>
+%           }
+	    </&>
+       
+	    <%perl>		    
+	      push( @cell_data, $_ );
+	      push( @field_headers, "Dimensions: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"dimensions", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Racks: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"racks", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Outlets: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"outlets", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Shared With: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"shared_with", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "HVAC Type: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"hvac_type", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Ground Buss: " );
+	      push( @cell_data, $ui->radio_group_boolean(object=>$o, table=>"Closet", column=>"ground_buss", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Asbestos Tiles: " );
+	      push( @cell_data, $ui->radio_group_boolean(object=>$o, table=>"Closet", column=>"asbestos_tiles", edit=>$editCloset, returnAsVar=>1) );
+	    </%perl>
 
-            <tr align="left" valign="top">
-                <td align="left">Floor: </td>
-                <td align="left" class="formtablec2">
-%               if ($editCloset) {
-%                   $ui->select_lookup(object=>$o, table=>"Closet", column=>"floor", lookup=>"Floor", 
-%                                     edit=>$editCloset, where=>{site=>($o ? $o->site : "")});
-                     &nbsp;<select name="floor_srch" onChange="floorSearchList.doIt();" style="width: 150px;">
-                    <option value="">Lookup by Site</option>
-                    <%perl>
-                    my @sites = Site->retrieve_all();
-                    @sites = sort { $a->name cmp $b->name } @sites;
-                    foreach my $s (@sites)
-                    {
-                        printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
-                    }
-                    </%perl>
-                    </select>
-%               } else {
-                    <a href="floor.html?id=<% $o->floor %>"><% $o->floor->level %></a>
-%               }
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Dimensions: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"dimensions", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Racks: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"racks", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Outlets: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"outlets", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Shared With: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"shared_with", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">HVAC Type: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"hvac_type", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Ground Buss: </td>
-                <td align="left" class="formtablec2">
-%               $ui->radio_group_boolean(object=>$o, table=>"Closet", column=>"ground_buss", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Asbestos Tiles: </td>
-                <td align="left" class="formtablec2">
-%               $ui->radio_group_boolean(object=>$o, table=>"Closet", column=>"asbestos_tiles", edit=>$editCloset);                
-                </td>
-            </tr>
-            </table>
-
+	    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+	    
             </td>
-            <td width="50%">
+            <td>
 
-            <table width="100%" border="0" cellspacing="2" cellpadding="0">
-            <tr align="left" valign="top">
-                <td align="left">RU Available: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"ru_avail", edit=>$editCloset);                
-                </td>
-            </tr>
-            
-            <tr align="left" valign="top">
-                <td align="left">Patch Panels: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"patch_panels", edit=>$editCloset);                
-                </td>
-            </tr>
+	      <%perl>
+	      (@field_headers, @cell_data) = ();
+	      push( @field_headers, "RU Available: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"ru_avail", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Patch Panels: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"patch_panels", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "110 Blocks: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"110_blocks", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "66 Blocks: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"66_blocks", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "CatV Taps: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"catv_taps", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Access Key Type: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"access_key_type", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Rack Type: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"rack_type", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Pair Count: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"pair_count", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Converted Patch Panels: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"converted_patch_panels", edit=>$editCloset, returnAsVar=>1) );
+	      push( @field_headers, "Work Needed: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"work_needed", edit=>$editCloset, returnAsVar=>1) );
+	      </%perl>
 
-            <tr align="left" valign="top">
-                <td align="left">110 Blocks: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"110_blocks", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">66 Blocks: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"66_blocks", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">CatV Taps: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"catv_taps", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Access Key Type: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"access_key_type", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Rack Type: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"rack_type", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Pair Count: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"pair_count", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Converted Patch Panels: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"converted_patch_panels", edit=>$editCloset);                
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td align="left">Work Needed: </td>
-                <td align="left" class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"Closet", column=>"work_needed", edit=>$editCloset);                
-                </td>
-            </tr> 
-            </table>
-
+	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+	    
             </td>
         </tr>
-
-        <tr align="left" valign="top">
-            <td colspan="2">
-            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
+      </table>
+      <div class="containerseparator">Comments:</div>
 %           $ui->text_area(object=>$o, table=>"Closet", column=>"info",
 %                         edit=>$editCloset, htmlExtra=>"rows='3' cols='80'");
-            </td>
-            <td>&nbsp;</td>
-        </tr>
-        </table>
     </div> <!-- close containerbody -->
     </form>
 </div> <!-- close containerbody -->
@@ -339,39 +251,33 @@ LIST_MANAGER.addList(floorSearchList);
 
     <div class="containerbody">
 
-    <table border="0" width="90%">
     <%perl>
     my @pictures;
     map { push (@pictures, $_) } $o->pictures;
     </%perl>
 
 %	if (scalar(@pictures)) {
-    <tr>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&pic_sort=filename#pics">File Name</a>
-        </td>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&pic_sort=filesize#pics">Size</a>
-        </td>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&o_sort=filetype#pics">File Type</a>
-        </td>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&strand_sort=info#pics">Comments</a>
-        </td>
-    </tr>
 
+    <%perl>
+    (@headers, @rows) = ();
+
+    push( @headers, '<a href="closet.html?id=' . $id . '&pic_sort=filename#pics">File Name</a>' );
+    push( @headers, '<a href="closet.html?id=' . $id . '&pic_sort=filesize#pics">Size</a>' );
+    push( @headers, '<a href="closet.html?id=' . $id . '&o_sort=filetype#pics">File Type</a>' );
+    push( @headers, '<a href="closet.html?id=' . $id . '&strand_sort=info#pics">Comments</a>' );
+    </%perl>
+    
     <%perl>
     my @sorted_pics;
     $pic_sort = "filename" if (!$pic_sort);
     @sorted_pics = sort { $a->binfile->$pic_sort cmp $b->binfile->$pic_sort } @pictures;
     </%perl>
 
-%   my $i = 0;
-%   foreach my $pic (@sorted_pics) {
-%   $i = ($i + 1) % 2;
-    <tr align="left" class="<% $cssitem{$i} %>">
-        <td align="left">
+    <%perl>
+    foreach my $pic (@sorted_pics) {
+    my @row = ();
+    </%perl>
+    <&| "HERE.mhtml" &>
 %       if ($editPictures) {
             <input type="checkbox" name="<% "__delete_pic_". $pic->id %>">[del]
 %           $ui->text_field(object=>$pic->binfile, table=>"BinFile", column=>"filename", edit=>$editPictures);
@@ -380,25 +286,18 @@ LIST_MANAGER.addList(floorSearchList);
 %       } else {
             <a href="display_bin.html?id=<% $pic->binfile->id %>" TARGET=_new><% $pic->binfile->filename %></a>
 %       }
-        </td>
+    </&>
+    <%perl>push( @row, $_ );
+    push( @row, $pic->binfile ? $pic->binfile->filesize : "" );
+    push( @row, $ui->text_field(object=>$pic->binfile, table=>"BinFile", column=>"filetype", edit=>$editPictures, returnAsVar=>1) );
+    push( @row, $ui->text_area(object=>$pic->binfile, table=>"BinFile", column=>"info", edit=>$editPictures, htmlExtra=>"rows='2' cols='40'", returnAsVar=>1) );
+    push( @rows, \@row );
+    } # foreach
+    </%perl>
 
-        <td align="left">
-            <% $pic->binfile ? $pic->binfile->filesize : "" %>
-        </td>
+    <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
-        <td align="left">
-%           $ui->text_field(object=>$pic->binfile, table=>"BinFile", column=>"filetype", edit=>$editPictures); 
-        </td>
-
-        <td align="left">
-%           $ui->text_area(object=>$pic->binfile, table=>"BinFile", column=>"info",
-%                         edit=>$editPictures, htmlExtra=>"rows='2' cols='40'");
-
-        </td>
-    </tr>
-%   }
 %}
-    </table>
 
     <br>
 
@@ -417,9 +316,9 @@ LIST_MANAGER.addList(floorSearchList);
 
 % if (defined($o)) {
 <!-- 2-column layout table -->
-<table border="0" width="100%" align="center" class="tablebackground">
-<tr valign="top">
-    <td width="50%" valign="top"> 
+<table>
+<tr>
+<td width="50%">
 <!-- Begin BackboneCable Table -->
 <%perl>
 my @sites;
@@ -435,7 +334,7 @@ if ($editBackbones) {
     map { push (@bbones, $_) } ($o->backbones_start, $o->backbones_end);
     </%perl>
 
-%	if (scalar(@bbones)) {
+
 <div class="container">
     <form name="bbone_form" action="closet.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
@@ -451,26 +350,18 @@ if ($editBackbones) {
             <a href="cable_backbone.html?id=NEW">[new]</a>
 %       }
     </div>
-
+%	if (scalar(@bbones)) {
     <div class="containerbody">
-    <table border="0" width="100%">
-      <tr>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&bb_sort=name#backbones">Name</a>
-        </td>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&bb_sort=type#backbones">Type</a>
-        </td>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&bb_sort=start_closet#backbones">Start Closet</a>
-        </td>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&bb_sort=end_closet#backbones">End Closet</a>
-        </td>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&bb_sort=owner#backbones">Owner</a>
-        </td>
-      </tr>
+
+    <%perl>
+    (@headers, @rows) = ();
+    
+    push( @headers, '<a href="closet.html?id=' . $id . '&bb_sort=name#backbones">Name</a>' );
+    push( @headers, '<a href="closet.html?id=' . $id . '&bb_sort=type#backbones">Type</a>' );
+    push( @headers, '<a href="closet.html?id=' . $id . '&bb_sort=start_closet#backbones">Start Closet</a>' );
+    push( @headers, '<a href="closet.html?id=' . $id . '&bb_sort=end_closet#backbones">End Closet</a>' );
+    push( @headers, '<a href="closet.html?id=' . $id . '&bb_sort=owner#backbones">Owner</a>' );
+    </%perl>
 
     <%perl>
     $bb_sort = "name" if (!defined($bb_sort) || $bb_sort eq "");
@@ -488,11 +379,12 @@ if ($editBackbones) {
     }
     </%perl>
 
-%   my $i = 0;
-%   foreach my $bb (@sorted_bbones) {
-%   $i = ($i + 1) % 2;
-    <tr align="left" class="<% $cssitem{$i} %>">
-        <td align="left">
+    <%perl>
+    foreach my $bb (@sorted_bbones) {
+    my @row = ();
+    </%perl>
+
+    <&| "HERE.mhtml" &>
 %       if ($editBackbones) {
             <input type="checkbox" name="<% "BackboneCable__" . $bb->id . "__delete" %>">[del]
 %           $ui->text_field(object=>$bb, table=>"BackboneCable", column=>"name",
@@ -500,14 +392,13 @@ if ($editBackbones) {
 %       } else {
             <a href="cable_backbone.html?id=<% $bb->id %>"><% $bb->name %></a>
 %       }
-        </td>
-        
-        <td align="left">
-%           $ui->select_lookup(object=>$bb, table=>"BackboneCable", column=>"type", 
-%                             lookup=>"CableType", edit=>$editBackbones);
-        </td>
+    </&>
+    <%perl>
+    push( @row, $_ );
+    push( @row, $ui->select_lookup(object=>$bb, table=>"BackboneCable", column=>"type", lookup=>"CableType", edit=>$editBackbones, returnAsVar=>1) );
+    </%perl>
 
-        <td align="left">
+    <&| "HERE.mhtml" &>
 %       if (!$editBackbones) {
             <a href="closet.html?id=<% $bb->start_closet %>"><% $bb->start_closet->name %></a>
 %       } else {
@@ -526,14 +417,16 @@ if ($editBackbones) {
             }
             </%perl>
             </SELECT> &nbsp;
-            
 %           $ui->select_lookup(object=>$bb, table=>"BackboneCable", column=>"start_closet", 
 %                             lookup=>"Closet", where=>{site=>($bb ? $bb->start_closet->site : "")}, 
 %                             edit=>$editBackbones);
 %       }
-        </td>
+    </&>
+    <%perl>
+    push( @row, $_ );
+    </%perl>
 
-        <td align="left">
+    <&| "HERE.mhtml" &>
 %       if (!$editBackbones) {
             <a href="closet.html?id=<% $bb->end_closet %>"><% $bb->end_closet->name %></a>
 %       } else {
@@ -552,28 +445,28 @@ if ($editBackbones) {
             }
             </%perl>
             </SELECT> &nbsp;
-
 %           $ui->select_lookup(object=>$bb, table=>"BackboneCable", column=>"end_closet", 
 %                             lookup=>"Closet", where=>{site=>($bb ? $bb->end_closet->site : "")},
 %                             edit=>$editBackbones);
 %       }
-        </td>
+    </&>
+    <%perl>
+    push( @row, $_ );
+    push( @row, $ui->select_lookup(object=>$bb, table=>"BackboneCable", column=>"owner", lookup=>"Entity", edit=>$editBackbones, returnAsVar=>1) );
+    push( @rows, \@row );
+    } #foreach my $bb (@sorted_bbones)
+    </%perl>
 
-        <td align="left">
-%           $ui->select_lookup(object=>$bb, table=>"BackboneCable", column=>"owner", 
-%                             lookup=>"Entity", edit=>$editBackbones);
-        </td>
-    </tr>
-%   }   # end foreach my $bb (@sorted_bbones)
-    </table>
+    <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
     </div> <!-- close containerbody -->
     </form>
+%   }    #if scalar (@bbones)
 </div> <!-- close container -->
-%   }    
 <!-- End BackboneCable Table -->
 
     </td>   <!-- 2-column layout cells -->
-    <td width="50%" align="top">
+    <td>
 
 <!-- Begin  HorizontalCable Table -->
 <A NAME="horizontal"></A>
@@ -581,7 +474,7 @@ if ($editBackbones) {
     my @cables;
     map { push (@cables, $_) } $o->horizontalcables;
     </%perl>
-%	if (scalar(@cables)) {
+
 <div class="container">   
     <form name="cable_form" action="closet.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
@@ -597,21 +490,8 @@ if ($editBackbones) {
        <a href="cable_horizontal.html?id=NEW">[new]</a>
 %	 }
     </div>
-
+%	if (scalar(@cables)) {
     <div class="containerbody">
-
-    <table border="0" width="90%">
-      <tr>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&cable_sort=jackid#horizontal">Jack ID</a>
-        </td>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&cable_sort=type#horizontal">Type</a>
-        </td>
-        <td align="left">
-            <a href="closet.html?id=<% $id %>&cable_sort=room#horizontal">Room</a>
-        </td>
-      </tr>
 
     <%perl>
     $cable_sort = "jackid" if (!defined($cable_sort) || $cable_sort eq "");
@@ -627,11 +507,18 @@ if ($editBackbones) {
     }
     </%perl>
 
-%   my $i = 0;
-%   foreach my $cable (@sorted_cables) {
-%   $i = ($i + 1) % 2;
-    <tr align="left" class="<% $cssitem{$i} %>">
-        <td align="left">
+    <%perl>
+    (@headers, @rows) = ();
+
+    push( @headers, '<a href="closet.html?id=' . $id . '&cable_sort=jackid#horizontal">Jack ID</a>' );
+    push( @headers, '<a href="closet.html?id=' . $id . '&cable_sort=type#horizontal">Type</a>' );
+    push( @headers, '<a href="closet.html?id=' . $id . '&cable_sort=room#horizontal">Room</a>' );
+
+    foreach my $cable (@sorted_cables) {
+    my @row = ();
+    </%perl>
+
+    <&| "HERE.mhtml" &>
 %       if ($editHorizontal) {
             <input type="checkbox" name="<% "HorizontalCable__" . $cable->id . "__delete" %>">[del]
 %           $ui->text_field(object=>$cable, table=>"HorizontalCable", column=>"jackid",
@@ -639,23 +526,22 @@ if ($editBackbones) {
 %       } else {
             <a href="cable_horizontal.html?id=<% $cable->id %>"><% $cable->jackid %></a>
 %       }
-        </td>
-        
-        <td align="left">
-%           $ui->select_lookup(object=>$cable, table=>"HorizontalCable", column=>"type", 
-%                             lookup=>"CableType", edit=>$editHorizontal);
-        </td>
+    </&>
+    <%perl>
+    push( @row, $_ );
+    push( @row, $ui->select_lookup(object=>$cable, table=>"HorizontalCable", column=>"type", lookup=>"CableType", edit=>$editHorizontal, returnAsVar=>1) );
+    push( @row, '<a href="view.html?table=Room&id=' . $cable->room . '">' . $cable->room->name . '</a>' );
+    push( @rows, \@row );
+    } # foreach my $cable (@sorted_cables)
+    </%perl>
 
-        <td align="left">
-            <a href="view.html?table=Room&id=<% $cable->room %>"><% $cable->room->name %></a>
-        </td>
-    </tr>
-%   }   # end foreach
-    </table>
+    <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
     </div> <!-- close containerbody -->
+%  }   #  end if scalar cables
     </form>
 </div> <!-- close container -->
-%  }   #  end if scalar cables
+
 <!-- End HorizontalCable Table -->
 
     </td> <!-- close 2-column layout cell -->
@@ -667,6 +553,4 @@ if ($editBackbones) {
     
     </div> <!-- close containerbodyoutside -->
 </div> <!-- close containeroutside -->
-
-
 </div> <!-- close sectiondetail -->
