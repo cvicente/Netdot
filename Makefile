@@ -57,7 +57,7 @@ tests:
 	perl -MCGI -e 1
 	perl -M'DBI 1.46' -e 1
 	perl -M'Class::DBI 0.96' -e 1
-	perl -M'HTML::Mason 1.29' -e 1
+	perl -M'HTML::Mason 1.30' -e 1
 	perl -M'Apache::Session 1.6' -e 1
 	perl -MApache::DBI -e 1
 	perl -MURI::Escape -e 1
