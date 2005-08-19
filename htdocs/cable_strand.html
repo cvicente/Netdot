@@ -22,7 +22,6 @@ section => 'Plant'
 
 <%init>
 my $DEBUG      = 0;
-my %cssitem    = (0 => "formtablec1", 1 => "formtablec2");
 my $o          = undef;
 my $editStrand = 0;
 
@@ -32,6 +31,9 @@ if ($id && $id ne "NEW")  {
 }
 
 $editStrand = 1 if ($id eq "NEW" || $edit eq "strandinfo");
+
+# For attribute_table.mhtml
+my (@field_headers, @cell_data);
 </%init>
 
 <%perl>
@@ -44,7 +46,7 @@ if (defined($ARGS{_action})) {
     
     my %update_info = ();
     if (!(%update_info = $ui->form_to_db(%ARGS))) {
-        $m->comp("error.mhtml", $ui->error());
+        $m->comp("error.mhtml", error => $ui->error());
 	}
 
     if ($update_info{CableStrand}{key}) {
@@ -89,53 +91,37 @@ if (defined($ARGS{_action})) {
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
 %           if ($editStrand) {
-            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %           } else {
-            <td align="right"><a href="cable_strand.html?id=NEW">[new]</a> &nbsp;&nbsp; <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a> &nbsp;&nbsp;<a href="delete.html?table=CableStrand&id=<% $id %>">[delete]</a></td>
+            <a href="cable_strand.html?id=NEW">[new]</a> &nbsp;&nbsp; <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a> &nbsp;&nbsp;<a href="delete.html?table=CableStrand&id=<% $id %>">[delete]</a>
 %           }
 </div>
 <!-- End Header Table -->
 <div class="containerbody">
-        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-        <tr align="left" valign="top">
+        <table> <!-- Two column layout table -->
+        <tr>
             <td width="50%">
-            <table width="100%" border="0" cellspacing="2" cellpadding="0">
-            <tr align="left" valign="top">
-                <td>Name: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"CableStrand", column=>"name", edit=>$editStrand);
-                </td>
-            </tr>
 
-            <tr align="left" valign="top">
-                <td>Number: </td>
-                <td class="formtablec2">
-                <% $o ? $o->number : "" %>
-                </td>
-            </tr>
+	      <%perl>
+	      (@field_headers, @cell_data) = ();
+	      push( @field_headers, "Name: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"CableStrand", column=>"name", edit=>$editStrand, returnAsVar=>1) );
+	      push( @field_headers, "Number: " );
+	      push( @cell_data, $o ? $o->number : "" );
+	      push( @field_headers, "Backbone: " );
 
-            <tr align="left" valign="top">
-                <td>Backbone: </td>
-                <td class="formtablec2">
-%               if (!$editStrand) {
-				<a href="cable_backbone.html?id=<% $o->cable %>"><% $o->cable->name %></a>
-%              	} else {
-%               $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable", 
-%                                 edit=>$editStrand);
-%				}
-                </td>
-            </tr>
+	      if (!$editStrand) {
+		  push( @cell_data, '<a href="cable_backbone.html?id='.$o->cable.'">'.$o->cable->name.'</a>' );
+	      } else {
+		  push( @cell_data, $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable", edit=>$editStrand, returnAsVar=>1) );
+	      }
 
-            <tr align="left" valign="top">
-                <td>Status: </td>
-                <td class="formtablec2">
-%               $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"status", lookup=>"StrandStatus", edit=>$editStrand);
-                </td>
-            </tr>
+	      push( @field_headers, "Status: " );
+	      push( @cell_data, $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"status", lookup=>"StrandStatus", edit=>$editStrand, returnAsVar=>1) );
+	      push( @field_headers, "Spliced with: " );
+	      </%perl>
 
-            <tr align="left" valign="top">
-                <td>Spliced with: </td>
-                <td class="formtablec2">
+	      <&| "HERE.mhtml" &>
 %               if (!$editStrand) {
 %                   my @splices = $o->splices;
 %                   if (scalar(@splices)) {
@@ -149,14 +135,12 @@ if (defined($ARGS{_action})) {
                 # first we need to grab all backbones for start and end sites of this strand.
                 my ($start_site, $end_site) = ($o->cable->start_closet->floor->site, $o->cable->end_closet->floor->site);
                 my @backbones = ();
-                
                 foreach my $closet (($start_site->closets, $end_site->closets))
                 {
                     map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$closet),
                                                    BackboneCable->search(end_closet=>$closet));
                 }
                 </%perl>
-
                 <script language="JavaScript">
                 <!--
                 function lookupStrands(bb_id, field_name, form_name)
@@ -165,17 +149,14 @@ if (defined($ARGS{_action})) {
                     {
                         alert("You must select a backbone.");
                     }
-                    
                     var url = "strand_backbone_list_query.html?bb_id=";
                     url += bb_id + "&field_name=" + field_name;
                     url += "&form_name=" + form_name;
-                    
                     var wind = window.open(url, "tmp", "width=1,height=1");
                     wind.blur();
                 }
                 -->
                 </script>
-
                 <SELECT NAME="backbone_list_srch1" onChange="lookupStrands(this.value, '__splice1', 'netdotform');">
                 <OPTION VALUE="">Lookup by Backbone</OPTION>
                 <%perl>
@@ -217,90 +198,63 @@ if (defined($ARGS{_action})) {
                 <option value="">[null]</option>
                 </select>
 %               } 
-                </td>
-            </tr>
+              </&>
+	      <%perl>
+	      push( @cell_data, $_ );
 
-%           if (defined($o) && !$editStrand) {            
-            <tr align="left" valign="top">
-                <td>Part of Sequence:</td>
-                <td class="formtablec2">
-%               my @strands = ($o);
-                <& display_sequence.mhtml, strands=>\@strands &>
-                </td>
-            </tr>
-%           }
+	      if (defined($o) && !$editStrand) {    
+		  push( @field_headers, "Part of Sequence:" );
+		  my @strands = ($o);
+		  push( @cell_data, $m->scomp( "display_sequence.mhtml", strands=>\@strands ) );
+	      }
 
-            <tr align="left" valign="top">
-                <td>Circuit: </td>
-                <td class="formtablec2">
-%               if (!$editStrand) {
-                <a href="circuit.html?id=<% $o->circuit_id %>"><% $o->circuit_id ? $o->circuit_id->cid : "" %></a>
-%               } else {
-%               $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"circuit_id", lookup=>"Circuit", edit=>$editStrand);
-%               }
-                </td>
-            </tr>
-            </table>
+	      push( @field_headers, "Circuit: " );
+	      if (!$editStrand) {
+		  push( @cell_data, '<a href="circuit.html?id='.$o->circuit_id.'">'.$o->circuit_id ? $o->circuit_id->cid : "".'</a>' );
+	      } else {
+		  push( @cell_data, $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"circuit_id", lookup=>"Circuit", edit=>$editStrand, returnAsVar=>1) );
+	      }
+	      </%perl>
+
+	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
             </td>
-
             <td width="50%">
-            <table width="100%" border="0" cellspacing="2" cellpadding="0">
-            <tr align="left" valign="top">
-                <td>Tested on: <font size="-1">(yyyy-mm-dd)</font>: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"CableStrand", column=>"datetested", edit=>$editStrand);
-                </td>
-            </tr>
+           
+	      <%perl>
+	      (@field_headers, @cell_data) = ();
+	      push( @field_headers, 'Tested on: <font size="-1">(yyyy-mm-dd)</font>: ' );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"CableStrand", column=>"datetested", edit=>$editStrand, returnAsVar=>1) );
+	      push( @field_headers, "Fiber Type: " );
+	      push( @cell_data, $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"fiber_type", lookup=>"FiberType", edit=>$editStrand, returnAsVar=>1) );
+	      push( @field_headers, "Loss: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"CableStrand", column=>"loss", edit=>$editStrand, returnAsVar=>1) );
+	      push( @field_headers, "Direction: " );
+	      </%perl>
 
-            <tr align="left" valign="top">
-                <td>Fiber Type: </td>
-                <td class="formtablec2">
-%               $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"fiber_type", lookup=>"FiberType", edit=>$editStrand);
-                </td>
-            </tr>            
-
-            <tr align="left" valign="top">
-                <td>Loss: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"CableStrand", column=>"loss", edit=>$editStrand);
-                </td>
-            </tr>
-
-            <tr align="left" valign="top">
-                <td>Direction: </td>
-                <td class="formtablec2">
+	      <&| "HERE.mhtml" &>
 %               if ($editStrand) {
 %                   my $dir_name = "CableStrand__" . $id . "__direction";
-                    <input type="radio" name="<% $dir_name %>" value="0" <% ($o && int($o->direction) == 0 ? "CHECKED" : "") %>>TX &nbsp;&nbsp;&nbsp; 
-                    <input type="radio" name="<% $dir_name %>" value="1" <% ($o && int($o->direction) == 1 ? "CHECKED" : "") %>>RX
+	            <input type="radio" name="<% $dir_name %>" value="0" <% ($o && int($o->direction) == 0 ? "CHECKED" : "") %>>TX &nbsp;&nbsp;&nbsp; 
+	            <input type="radio" name="<% $dir_name %>" value="1" <% ($o && int($o->direction) == 1 ? "CHECKED" : "") %>>RX
 %               } elsif (defined($o)) {
-                    <% (int($o->direction) == 1 ? "RX" : "TX") %>
+	            <% (int($o->direction) == 1 ? "RX" : "TX") %>
 %               }
-                </td>
-            </tr>
+	      </&>
+	      <%perl>
+	      push( @cell_data, $_ );
+	      push( @field_headers, "Description: " );
+	      push( @cell_data, $ui->text_field(object=>$o, table=>"CableStrand", column=>"description", edit=>$editStrand, returnAsVar=>1) );
+	      </%perl>
 
+	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
-            <tr align="left" valign="top">
-                <td>Description: </td>
-                <td class="formtablec2">
-%               $ui->text_field(object=>$o, table=>"CableStrand", column=>"description", edit=>$editStrand);                
-                </td>
-            </tr>
-            </table>
-            </td>
-
-        </tr>
-
-        <tr><td colspan="3">&nbsp;<br></td></tr>
-
-        <tr align="left" valign="top">
-            <td colspan="2">
-            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
+	    </td>
+	  </tr>
+	</table>
+	<div class="containerseparator">Comments:</div>
 %           $ui->text_area(object=>$o, table=>"CableStrand", column=>"info",
 %                         edit=>$editStrand, htmlExtra=>"rows='3' cols='80'");
-            </td>
-        </tr>
-        </table>
         </form>
 </div>
 </div>
