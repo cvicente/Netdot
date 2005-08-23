@@ -2,74 +2,91 @@
 REQUIREMENTS
 -----------------------------------------------------------------------
 * Perl 5.6.1 or later
-* Apache 1.3.x or 2.x with mod_perl
+
+* Apache2 with mod_perl2
+
 * Netviewer 0.29.6 or later
   A toolset for collecting data from your network devices
-  Available at
-      http://www.nero.net/projects/netviewer/
-* A DBMS (so far, tested with MySQL only)
+  Available at 
+	
+	http://www.nero.net/projects/netviewer/
 
-* Make sure you have the following Perl Modules installed:
+* A DBMS supported by Perl DBI (so far, tested with MySQL only)
 
-CGI
-Class::DBI
-HTML::Mason
-Apache::Session
-Apache::DBI
-URI::Escape
-DBIx::DBSchema
-DBIx::DataSource
-SNMP (from Net-SNMP package, not Net::SNMP)
-Apache2::SiteControl
+* A Radius server (for authentication).  We recommend FreeRadius, 
+  available at:
+	
+	http://www.freeradius.org/
+	
+* The following Perl modules:
+
+	CGI
+	Class::DBI
+	HTML::Mason
+	Apache::Session
+	Apache::DBI
+	URI::Escape
+	DBIx::DBSchema
+	DBIx::DataSource
+	SNMP (from the Net-SNMP package, not Net::SNMP)
+	Apache2::SiteControl
+
+  The easiest way to install Perl modules is using the CPAN
+  (Comprehensive Perl Archive Network):
+
+	% perl -MCPAN -e shell;
+	> install <Module::Name>
 	
 ----------------------------------------------------------------------
 UPGRADING
 ----------------------------------------------------------------------
 
-If there are schema changes between your current installation and the 
-version you plan to install, it is highly recommended that you:
+It is possible that there exist DB schema changes between your current 
+installation and the version you plan to install. It is highly recommended 
+that you:
 
-  * Review README.  If there are changes, it will be documented in 
-    this file.
+  * Review README.  If there are changes and upgrade procedures, they 
+    will be documented in this file.
+
   * Back up your existing database.  mysqldump is one option for MySQL 
-    installations.
+    installations (e.g.):
+
+	% mysqldump netdot >netdot-bak.sql
 
 ----------------------------------------------------------------------
 INSTALLING THE PACKAGE
 ----------------------------------------------------------------------
 
-From the main directory do:
+* From the main directory do:
 
-% make install 
+	% make install [parameters]
 
-where you may want to pass, or change in the makefile, one or more of
+  Possible parameters include:
 
-PREFIX=YOUR-PREFIX (default /usr/local/netdot) 
-APACHEUSER=USER-YOUR-APACHE-RUNS-AS (default apache)
-APACHEGROUP=GROUP-YOUR-APACHE-RUNS-AS (default apache)
+	PREFIX=YOUR-PREFIX (default: /usr/local/netdot) 
+	APACHEUSER=USER-YOUR-APACHE-RUNS-AS (default: apache)
+	APACHEGROUP=GROUP-YOUR-APACHE-RUNS-AS (default: apache)
 
+* Then, you'll be ready to initialize the database:
 
-% make installdb
+	% make installdb
 
-where you may want to change the values of
+  where you may want to change the values of
 
-DB_NETDOT_USER=(default netdot_user)
-DB_NETDOT_PASS=(default netdot_pass)
+	DB_NETDOT_USER=(default: netdot_user)
+	DB_NETDOT_PASS=(default: netdot_pass)
 
-in *bin/Makefile*.
+  in *bin/Makefile*.
 
 ----------------------------------------------------------------------
 APACHE CONFIGURATION
 ----------------------------------------------------------------------
-* Either use the supplied template etc/netdot_apache2_radius.conf, which 
-  relies on Radius for authentication.  (For apache2)
 
-  or
+* Edit the supplied template etc/netdot_apache2_radius.conf copy it to
+  your apache config dir and and include it somewhere in your 
+  Apache config (e.g.):
 
-* Use the template etc/netdot_apache12_htpasswd.conf -- which relies on 
-  an htpasswd file for authentication -- and create the file 
-  YOUR-PREFIX/htpasswd.users and add username/passwords to authenticate 
-  accesss to the Netdot pages.  (For apache or apache2)
+	Include conf/netdot_apache2_radius.conf	
 
-* Edit mason.pl to your needs.  
+* Edit lib/Netdot/Mason.pm to your needs.  
   Pay attention to the Apache2-only directives, and also the paths.
