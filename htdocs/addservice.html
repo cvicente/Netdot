@@ -86,55 +86,6 @@ if ( $Add ){
     
 %}else{
 
-<table width="100%" cellpadding="0" cellspacing="2" border="0" class="formtablebg">
-  <form action="addservice.html" method="POST">
-  <input type="hidden" name="ip" value="<% $ip %>">
-  <tr class="formtabletitle">
-     <td align="CENTER" colspan="2"><strong>Add IP Service</strong></td>
-  </tr>
-  <tr>
-    <td class="formtablec1"><strong>IP:</strong></td>
-    <td class="formtablec2"><% $iplbl %></td>
-  </tr>
-  <tr>
-    <td class="formtablec1"><strong>Service:</strong></td>
-    <td class="formtablec2">
-    <select name="service">
-%      foreach my $o ( sort { $a->name cmp $b->name } Service->retrieve_all() ){
-	  <option value="<% $o->id %>"><% $o->name %></option>
-%      }
-    </select>
-    </td>
-  </tr>
-  <tr>
-    <td class="formtablec1"><strong>Monitored:</strong></td>
-    <td class="formtablec2">
-      <input type="checkbox" name="monitored" CHECKED>
-    </td>
-  </tr>
-  <tr>
-    <td class="formtablec1"><strong>Contact Group:</strong></td>
-    <td class="formtablec2">
-    <select name="contactlist">
-%      foreach my $o ( sort { $a->name cmp $b->name } ContactList->retrieve_all() ){
-%         if ( $cl && ($cl->id == $o->id) ){
-             <option value="<% $o->id %>" SELECTED><% $o->name %></option>
-%         }else{
-	     <option value="<% $o->id %>"><% $o->name %></option>
-%         }
-%      }
-    </select>
-    </td>
-  </tr>
-  <tr class="formtabletitle">
-    <td align="CENTER" colspan="2">
-      <input name="Add" value="Add" type="submit">
-      <input name="Cancel" value="Cancel" type="submit">
-    </td>
-  </tr>
-  </form>
-</table>
-
 <form action="addservice.html" method="POST">
 <input type="hidden" name="ip" value="<% $ip %>">
 
