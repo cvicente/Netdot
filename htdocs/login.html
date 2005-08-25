@@ -23,7 +23,6 @@ if (defined $r->prev) {
 
 <div class="sectiondetail">
 
-<form method="post" action="/NetdotLogin">
 <!-- 
 Use the path as set in the Apache conf for the netdot root so the user
 can change the location with out editing any code.  The path needs to
@@ -32,6 +31,7 @@ to login (although right now the only files not at the root are the
 images, and possibly a request for /netdot which I think gets
 translated to /netdot/ before AuthCookie takes over anyway).
 -->
+<form method="post" action="<% $r->dir_config('NetdotPath') %>/NetdotLogin">
 <input type="hidden" name="destination" value="<% $r->dir_config('NetdotPath') %>/index.html">
 
 <div id="loginform" align="center">
