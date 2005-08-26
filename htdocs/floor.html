@@ -62,73 +62,42 @@ if (defined($ARGS{_action})) {
 # -----------------------------------------------------------------------------
 </%perl>
 
+<div class="containeroutside">
 % if ($site) {
-<!-- Header Table -->
-<table border="0" width="100%" align="center" cellpadding="3" cellspacing="0" class="tablebackground">
- <tr class="rowtitle0">
-    <td align="left">
-        Floor for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=HORIZONTAL"><% $site->name %></a>&nbsp;&nbsp;&nbsp;
-    </td>
- </tr>
-</table>
+   <div class="containerheadoutside">
+      Floor for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=HORIZONTAL"><% $site->name %></a>
+   </div>
 % }
 
-<!-- Floor Table -->
-<table border="0" width="100%" align="center"  class="tablebackground">
-    <tr>
-    <td valign="top" width="50%" align="center">
-        <form name="floorform" action="floor.html" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="id" value="<% $id %>">
-        <input type="hidden" name="_action" value="1">
-        <table border="0" width="100%"  class="formtablebg" cellpadding="0" cellspacing="2">
-        <tr class="formtabletitle">
-            <td colspan="2" align="left">Floor</td>
-%           if ($editFloor) {
-            <td align="right"><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
-%           } else {
-            <td align="right"><a href="floor.html?id=NEW">[new]</a> || <a href="floor.html?id=<% $id %>&edit=floorinfo">[edit]</a> || <a href="delete.html?table=Floor&id=<% $id %>">[delete]</a></td>
-%           }
-        </tr>
-        <tr align="left" valign="top">
-            <td width="40%">
-            <table width="100%" border="0" cellspacing="0" cellpadding="2">
-            <tr align="left" valign="top">
-                <td align="left">Level: </td>
-                <td align="left">                
-%               $ui->text_field(object=>$o, table=>"Floor", column=>"level", edit=>$editFloor);
-                </td>
-            </tr>
+   <div class="container">
+      <div class="containerheadleft">Floor</div>
+      <form name="floorform" action="floor.html" method="POST" enctype="multipart/form-data">
+         <input type="hidden" name="id" value="<% $id %>">
+         <input type="hidden" name="_action" value="1">
 
-            </table>
-            </td>
-            
-            <td width="40%">
-            <table width="100%" border="0" cellspacing="0" cellpadding="2">
-            <tr align="left" valign="top">
-                <td align="left">Site: </td>
-                <td align="left">
-%               $ui->select_lookup(object=>$o, table=>"Floor", column=>"site", lookup=>"Site", edit=>$editFloor);
-                </td>
-            </tr>
-            </table>
-            </td>
-            <td>&nbsp;</td>
-        </tr>
+         <div class="containerheadright">
+% if ($editFloor) {
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> <input name="submit" value="save" type="submit">
+% } else {
+            <a href="floor.html?id=NEW">[new]</a> <a href="floor.html?id=<% $id %>&edit=floorinfo">[edit]</a> <a href="delete.html?table=Floor&id=<% $id %>">[delete]</a>
+% }
+         </div>
 
-        <tr><td colspan="3">&nbsp;<br></td></tr>
+         <div class="containerbody">
+	    <%perl>
+	    my (@field_headers, @cell_data) = ();
 
-        <tr align="left" valign="top">
-            <td colspan="2">
-            <I>Comments:</I> &nbsp;&nbsp;&nbsp;
-%           $ui->text_area(object=>$o, table=>"Floor", column=>"info",
-%                         edit=>$editFloor, htmlExtra=>"rows='3' cols='80'");
-            </td>
-            <td>&nbsp;</td>
-        </tr>
-        <tr><td colspan="3">&nbsp;<br></td></tr>
-        </table>
-        </form>
-    </td>
-    </tr>
-</table>
-<!-- End Floor Table -->
+	    push( @field_headers, "Level: " );
+	    push( @cell_data, $ui->text_field(object=>$o, table=>"Floor", column=>"level",edit=>$editFloor, returnAsVar=>1) );
+	    push( @field_headers, "Site: " );
+	    push( @cell_data, $ui->select_lookup(object=>$o, table=>"Floor", column=>"site", lookup=>"Site", edit=>$editFloor, returnAsVar=>1) );
+	    </%perl>
+	    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
+	    <div class="containerseparator">Comments:</div>
+%           $ui->text_area(object=>$o, table=>"Floor", column=>"info", edit=>$editFloor, htmlExtra=>"rows='3' cols='80'");
+         </div>	      
+
+      </form>
+   </div>
+</div>
