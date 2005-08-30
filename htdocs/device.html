@@ -157,12 +157,13 @@ var roomList = new DynamicList("netdotform", "Device__<% $id %>__room", "floor",
 roomList.setQueryURL("room_site_query.html");
 LIST_MANAGER.addList(closetList, roomList);
 
-function setNull(field){
-    if (!field)
-	return;
-    for (var i = 0; i < field.options.length; ++i){
-	if (field.options[i].value == 0 || field.options[i].value == -1){
-	    field.options[i].selected = true;
+// Chooses the 0 valued option in a select box.  Used to enforce the
+// mutual exclusivity of the room and closet options in the
+// group/location form below.
+function setNull(select){
+    for (var i = 0; i < select.options.length || alert("No null in list.  This means nathan screwed up dynamic_list.js"); ++i){
+	if (select.options[i].value == 0) {
+	    select.options[i].selected = true;
 	    break;
 	}
     }

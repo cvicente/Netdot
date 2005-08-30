@@ -36,16 +36,18 @@ DynamicList.prototype.doIt = function()
     var selectedIdx = parent.selectedIndex;
     var values = new String();
 
-    // If our selected index is not set, nothing is selected so
-    // we try and grab every potential value from our parent list.
-    if ((selectedIdx == -1) || (parent.options[selectedIdx].value == -1))
+    // If our selected index is not set (js uses -1 for the 0 based    
+    // index of the selected element when it isn't defined), nothing is
+    // selected so we try and grab every potential value from our
+    // parent list.
+    if ((selectedIdx == -1) || (!parent.options[selectedIdx].value == -1))
     {
         for (i = 0; i < parent.options.length; ++i)
             values += parent.options[i].value + " ";
     }
     else
         values += parent.options[selectedIdx].value;
-
+			
     // at this point we have a list of values that we seem to care about
     // so we open up a temp window to query the DB. 
     var url = this.m_queryURL + "?table=" + this.m_dbTable;
@@ -69,16 +71,20 @@ DynamicList.prototype.populate = function(data)
     var doc_form = this.getListForm();
     var options = doc_form[this.m_self].options;
     var i = 0, j = 0;
-    options.length = 0;
     options.length = data.length;
 
-    if (data.length > 1)
-    {
-        options[0] = new Option();
-        options[0].value = -1;
-        options[0].text = "----------";
-        options[0].selected = true;
-        j = 1;
+    // If there are any options with values that are non zero we make
+    // a zero valued choice and select it.  This prevents the user
+    // from specifying a non null option without intention.
+    for (var k in data) {
+	if (data[k].value) {	// Some false values might be blank instead of zero.
+            options[0] = new Option();
+	    options[0].value = 0;
+	    options[0].text = "-- Select --";
+	    options[0].selected = true;
+	    j = 1;      // Offset the option index for the next loop.
+            break;	// Make at most one default.
+        }
     }
 
     for (; i < data.length; ++i, ++j)
