@@ -85,39 +85,32 @@ LIST_MANAGER.addList(siteListLookup);
     <div class="containerbody" id="backbone_options">
 
 % if ($show_tasks eq "show") {
-    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
-        <tr align="left" valign="top">
-            <td>
                 <form name="backbone_form" action="cable_plant.html" method="POST">
                     <input type="hidden" name="page_type" value="BACKBONE">
-                    Connected from:<br>
+                    Connected from:
                     <select name="start_id" onChange="siteListLookup.doIt();">
-                        <option value="">-- Make your selection --</option>
+                        <option value="0">-- Select --</option>
                         <%perl>
                         foreach my $site (@sites)
                         {
                             printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
                         }
                         </%perl>
-                    </select> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>- TO -</B><br>
+                    </select> to:
                     <select name="end_id">
-                    </select><br>
-                    <input name="submit_site" value="Go!" type="submit"> &nbsp;&nbsp;&nbsp;
+                    </select>
+                    <input name="submit_site" value="Go!" type="submit">
                 </form>
-            </td>
-            <td align="left">
+
                 <form name="backbone_srch" action="cable_plant.html" method="POST">
                     <input type="hidden" name="page_type" value="BACKBONE">  
                     Backbone Name: <input name="backbone_srch" size="20"> &nbsp;<input type="submit" name="submit_backbone_search" value="Search">
                 </form>
-                <br>
+
                 <form name="site_srch" action="cable_plant.html" method="POST">
                     <input type="hidden" name="page_type" value="BACKBONE">  
                     Site Name: <input name="site_srch" size="20"> &nbsp;<input type="submit" name="submit_site_search" value="Search">
                 </form>
-            </td>
-        </tr>
-    </table>
 % } # end show_tasks
 
     </div> <!-- close containerbody -->
@@ -149,54 +142,41 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
 % if ($show_tasks eq "show") {
 	<form name="cable_form" action="cable_plant.html" method="GET">
   	<input type="hidden" name="page_type" value="HORIZONTAL">
-    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
-        <tr align="left" valign="top">
-            <td width="280" align="left">Site:<BR>
+            Site:
             <select name="id" onChange="floorList.doIt();">
-            <option value="">-- Make your selection --</option>
+            <option value="0">-- Select --</option>
             <%perl>
             foreach my $site (@sites) {
                 printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
             }
             </%perl>
             </select> &nbsp;<input name="submit_site" value="Browse by Site" type="submit">
-            </td>
 
-            <td width="100" align="left">Floor:<br>
+            Floor:
 %           # When selecting by floor, default to populating our jack list based upon the closet lists contents            
             <select name="floor_id" onChange="roomList.doIt(); jackList.setParent('closet_id'); jackList.setDBField('closet'); closetList.doIt();">
             </select>
-            </td>
-
-            <td width="160" align="left">
+            <br />
 %           # Because both the room list and the closet list can affect the jack list, we explicitly tell the jacklist to look
 %           # at this list.
             Room: <select name="room_id" onChange="jackList.setParent('room_id'); jackList.setDBField('room'); jackList.doIt(); document.cable_form.closet_id.options[0].selected = true;">
-            </select><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>- or -</i><br>
+            </select>
 %           # Like above, make sure the jacklist uses our closet selection instead of the room selection.            
-            Closet: <select name="closet_id" onChange="jackList.setParent('closet_id'); jackList.setDBField('closet'); jackList.doIt(); document.cable_form.room_id.options[0].selected = true;"></select>
-            </td>
-
-            <td width="180" align="left">Jack:<br>
+            or closet: <select name="closet_id" onChange="jackList.setParent('closet_id'); jackList.setDBField('closet'); jackList.doIt(); document.cable_form.room_id.options[0].selected = true;"></select>
+            <br />
+	    Jack:
             <select name="jack_id">
             </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (jack_id.value && jack_id.value != -1) { location.href = ('cable_horizontal.html?id=' + jack_id.value); } else if (document.cable_form.id.value) { location.href = ('cable_plant.html?id=' + document.cable_form.id.value + '&page_type=HORIZONTAL'); } return true;">
-            </td>
-            <td>&nbsp;</td>
-        </tr>
 
-        <tr align="left" valign="top"><td colspan="5"><hr></td></tr>
+            <hr>
 
-        <tr align="left" valign="top">
-            <td align="left" colspan="5">
 %           my $srchf = 'jack_srch';  # name of the form input tag
 	        <input type="text" name="<% $srchf %>" value="By Jack ID(s)" onFocus="if (this.value == 'By Jack ID(s)') { this.value = ''; } return true;">
 	        &nbsp;<input type="button" name="" value="Lookup Jack" 
             onClick="sendquery(<% 'jack_lookup' %>, <% $srchf . '.value' %>, 'HorizontalCable', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
             Lookup Results: <select name="jack_lookup">
             </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (jack_lookup.value) { location.href = ('cable_horizontal.html?id=' + jack_lookup.value); return true; }"> &nbsp;&nbsp;
-            </td>
-        </tr>
-    </table>
+
     </form>
 % } # end if show_tasks
     </div> <!-- end containerbody -->
@@ -224,43 +204,30 @@ LIST_MANAGER.addList(floorList, closetList);
 % if ($show_tasks eq "show") {
     <form name="cable_form" action="cable_plant.html" method="GET">
     <input type="hidden" name="page_type" value="CLOSETS">
-    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
-        
-        <tr align="left" valign="top">
-            <td width="280" align="left">Site:<BR>
+            Site:
             <select name="id" onChange="floorList.doIt();">
-            <option value="">-- Make your selection --</option>
+            <option value="0">-- Select --</option>
             <%perl>
             foreach my $site (@sites) {
                 printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
             }
             </%perl>
-            </select> &nbsp;<input name="submit_site" value="Browse by Site" type="submit">
-            </td>
+            </select> <input name="submit_site" value="Browse by Site" type="submit">
 
-            <td width="100" align="left">Floor:<br>
+            Floor:
             <select name="floor_id" onChange="closetList.doIt();">
             </select>
-            </td>
-            
-            <td width="100" align="left">Closet:<br>
+  
+            Closet:
             <select name="closet_id">
             </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (closet_id.value && closet_id.value != -1) { location.href = ('closet.html?id=' + closet_id.value); } else if (document.cable_form.id.value) { location.href = ('cable_plant.html?id=' + document.cable_form.id.value + '&page_type=CLOSETS'); } return true;">
-            </td>
-            <td>&nbsp;</td>
-        </tr>
-    </table>
     </form>
 
     <hr>
 
     <form name="closet_form" action="cable_plant.html" method="POST">
     <input type="hidden" name="page_type" value="CLOSETS">
-    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
-        <tr align="left" valign="top">
-        <td>Closet Name: <input name="closet_srch" size="25"> &nbsp;<input type="submit" name="submit_closet_search" value="Search"></td>
-        </tr>
-    </table>
+        Closet Name: <input name="closet_srch" size="25"> &nbsp;<input type="submit" name="submit_closet_search" value="Search">
     </form>
 %   } # end if show_tasks
     </div> <!-- close containerbody -->
@@ -278,30 +245,20 @@ LIST_MANAGER.addList(floorList, closetList);
 %   if ($show_tasks eq "show") {
     <form name="cable_form" action="cable_plant.html" method="GET">
     <input type="hidden" name="page_type" value="STRANDS">
-    <table border="0" cellpadding="4" cellspacing="0" width="100%" class="formtablebg">
-        <tr align="left" valign="top">
-            <td align="left">
 	    <input type="text" name="backbone_srch" value="By Backbone" onFocus="if (this.value == 'By Backbone') { this.value = ''; } return true;">
 	    &nbsp;<input type="button" name="" value="Lookup Backbone" 
             onClick="jsrsSendquery(backbone_id_srch, backbone_srch.value, 'BackboneCable', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
             Lookup Results: <select name="backbone_id_srch" id="backbone_id_srch">
             </select><input type="submit" name="backbone_submit" value="Browse by Backbone">
-            </td>
-        </tr>
 
-        <tr align="left" valign="top"><td colspan="5"><hr></td></tr>
+            <hr>
 
-        <tr align="left" valign="top">
-            <td align="left">
 %           my $srchf = 'strand_srch';  # name of the form input tag
 	        <input type="text" name="<% $srchf %>" value="By Strand Name" onFocus="if (this.value == 'By Strand Name') { this.value = ''; } return true;">
 	        &nbsp;<input type="button" name="" value="Lookup Strand" 
             onClick="jsrsSendquery(strand_lookup, <% $srchf . '.value' %>, 'CableStrand', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
             Lookup Results: <select name="strand_lookup" id="strand_lookup">
             </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (strand_lookup.value && strand_lookup.value != 0) { location.href = ('cable_strand.html?id=' + strand_lookup.value); return true; }"> &nbsp;&nbsp;
-            </td>
-        </tr>
-    </table>
     </form>
 %   } # end if show_tasks
     </div> <!-- close containerbody -->
@@ -331,7 +288,6 @@ LIST_MANAGER.addList(floorList, closetList);
 % }
 
 </div> <!-- close sectiontools -->
-
 
 % #############################################################################
 %
