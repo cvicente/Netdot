@@ -74,7 +74,7 @@ if ( $action eq "discover" ){
 	if ( $devobj->name && $devobj->name->arecords ){
 	    my $ar  = ($devobj->name->arecords)[0];
 	    $target = $ar->ipblock->address;
-	}else{
+	}elsif ( ($dm->getdevips($device))[0] ) {
 	    # Or just grab any one
 	    $target = ($dm->getdevips($device))[0]->address;
 	}
@@ -175,128 +175,85 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 
 %if ( $action eq "discover" ){
 
+    <& attribute_table.mhtml, field_headers=>["Description"], data=>[ $dev->{sysdescription} ] &>
     <form name="netdotform" action="updatedevice.html" method="POST">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="host" value="<% $host %>">
     <input type="hidden" name="action" value="update">
-    <table class="formtablebg" cellpadding="0" cellspacing="2" width="100%" border="0">
-      <tr>
-        <td colspan="2"><br></td>
-      </tr>
-      <tr>
-        <td class="formtablec1">Description:</td>
-        <td class="formtablec2"><strong><% $dev->{sysdescription} %></strong></td>
-      </tr>
-    </table>
-%     unless ($argv{device}){      
-    <table class="formtablebg" cellpadding="0" cellspacing="2" width="100%" border="0">
-      <tr>
-        <td colspan="3" align="left"><br></td>
-      </tr>
-      <tr>
-        <td colspan="3" align="center"><strong> Please provide the following:</strong></td>
-      </tr>
-      <tr>
-        <td class="formtablec1">Entity/Group:</td>
-        <td class="formtablec2">
+
+%     unless ($argv{device}){
+
+% my (@field_headers, @cell_data) = ();
+
+% push( @field_headers, "Entity/Group:" );
+<&| "HERE.mhtml" &>
            <select name="entity" id="entity">
-    	   <option value="0">[null]</option>
-%	   my @allents = Entity->retrieve_all; 
+           <option value="0">-- Select --</option>
+%          my @allents = Entity->retrieve_all; 
 %          @allents = sort { $a->name cmp $b->name } @allents;
 %          foreach my $ent (@allents){
 %                if ( $guessed_ent && $ent->id == $guessed_ent ){
-	           <option value="<% $ent->id %>" SELECTED><% $ent->name %></option>		    
-%		 }else{
-	           <option value="<% $ent->id %>"><% $ent->name %></option>
-%		 }
-%	   }	
-	   </select>
-	   <a href="#" onClick="openinsertwindow('Entity', 'entity')">[new]</a>
-	</td>
-        <td class="formtablec2">
-	  * Entity where this device belongs (Department, Network Segment, etc.)
-	</td>
-      </tr>
-      <tr>
-        <td class="formtablec1">Site:</td>
-        <td class="formtablec2">
+                   <option value="<% $ent->id %>" SELECTED><% $ent->name %></option>                
+%                }else{
+                   <option value="<% $ent->id %>"><% $ent->name %></option>
+%                }
+%          }
+           </select>
+           <a href="#" onClick="openinsertwindow('Entity', 'entity')">[new]</a>
+</&>
+% push( @cell_data, $_ );
+
+% push( @field_headers, "Site:" );
+<&| "HERE.mhtml" &>
            <select name="site" id="site">
-   	   <option value="0">[null]</option>
-%	   my @allsites = Site->retrieve_all; 
+           <option value="0">-- Select --</option>
+%          my @allsites = Site->retrieve_all; 
 %          @allsites = sort { $a->name cmp $b->name } @allsites;
 %          foreach my $site (@allsites){
 %                if ( $guessed_site && $site->id == $guessed_site ){
-	           <option value="<% $site->id %>" SELECTED><% $site->name %></option>
-%	         }else{
-	           <option value="<% $site->id %>"><% $site->name %></option>
-%		 }
-%	   }	
-	   </select>
-	   <a href="#" onClick="openinsertwindow('Site', 'site')">[new]</a>
-	</td>
-        <td class="formtablec2">
-	  * Where this device is located.
-	</td>
-      </tr>
-      <tr>
-        <td class="formtablec1">Monitoring Contacts:</td>
-        <td class="formtablec2">
+                   <option value="<% $site->id %>" SELECTED><% $site->name %></option>
+%                }else{
+                   <option value="<% $site->id %>"><% $site->name %></option>
+%                }
+%          }
+           </select>
+           <a href="#" onClick="openinsertwindow('Site', 'site')">[new]</a>
+</&>
+% push( @cell_data, $_ );
+
+% push( @field_headers, "Monitoring Contacts:" );
+<&| "HERE.mhtml" &>
            <select name="contactlist" id="contactlist">
-   	   <option value="0">[null]</option>
-%	   my @allcls = ContactList->retrieve_all; 
+           <option value="0">-- Select --</option>
+%          my @allcls = ContactList->retrieve_all; 
 %          @allcls = sort { $a->name cmp $b->name } @allcls;
 %          foreach my $cl (@allcls){
 %                if ( $default_contactlist_id && $cl->id == $default_contactlist_id){
-	           <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
+                   <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
 %                }elsif ( $guessed_cl && $cl->id == $guessed_cl ){
-	           <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
-%		 }else{
-	           <option value="<% $cl->id %>"><% $cl->name %></option>
-%		 }
-%	   }	
-	   </select>
-	   <a href="#" onClick="openinsertwindow('ContactList', 'contactlist')">[new]</a>
-	</td>
-        <td class="formtablec2">
-	  * Who should be notified in case of problems/outages.
-	</td>
-      </tr>
+                   <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
+%                }else{
+                   <option value="<% $cl->id %>"><% $cl->name %></option>
+%                }
+%          }
+           </select>
+           <a href="#" onClick="openinsertwindow('ContactList', 'contactlist')">[new]</a>
+</&>
+% push( @cell_data, $_ );
+
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
 %     }
-      <tr><td colspan="3">&nbsp;</td></tr>
-      <tr class="rowtitle0">
-        <td colspan="3" align="center">
          <input name="insert" value="Update" type="submit">&nbsp;
          <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
-        </td>
-      </tr>
       </form>
-    </table>
 
 %}elsif ( $action eq "update" ){
 
-          <p>
-          <table class="formtablebg" cellpadding="0" cellspacing="0" width="100%">
-
 %      if ($dm->output){
-	    <tr>
-              <td align="left">&nbsp;</td>
-              <td><br></td>
-	    </tr>
-	    <tr>
-              <td align="left">&nbsp;</td>
-              <td align="left">
-                <pre><% $dm->output %></pre>
-              </td>
-	    </tr>
+                <pre><% $dm->output %></pre> <br />
 %      }
-            <tr><td><br></td></tr>
-	    <tr>
-              <td align="left">&nbsp;</td>
-              <td align="left">
 	        <b><a href="device.html?id=<% $o->id %>">[Go to <% $name %>]</a></b>
-              </td>
-	    </tr>
-          </table>
 %  }
 
  </div>
