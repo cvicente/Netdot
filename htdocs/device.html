@@ -396,7 +396,7 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
     <div class="containerbody">
      <table width="100%">
       <tr>
-       <td width="50%">
+       <td>
 <%perl>
 (@field_headers, @cell_data) = ();
 
@@ -404,20 +404,13 @@ push( @field_headers, "Entity: " );
 push( @cell_data, $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html", returnAsVar=>1) );
 push( @field_headers, "Site: " );
 push( @cell_data,                $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="closetList.doIt(); roomList.doIt();"', returnAsVar=>1) );
-</%perl>
-
-    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-       </td>
-       <td width="50%">
-<%perl>
-(@field_headers, @cell_data) = ();
 
 push( @field_headers, "Room: " );
 push( @cell_data, &{sub{ 
     my $s = "";
     if ($editloc) {
 	$s .= '<select name="Device__'.$id.'__room" onChange="setNull(document.netdotform.Device__'.$id.'__closet);">';
-	$s .= '<option value="">-- Make your selection --</option>';
+	$s .= '<option value="0">-- Select --</option>';
 	if (defined($o)) {
 	    foreach my $floor ( $o->site->floors ) {
 		foreach my $room ( sort { $a->name cmp $b->name } $floor->rooms ) {
@@ -425,7 +418,6 @@ push( @cell_data, &{sub{
 		}
 	    }
 	}
-	$s .= '<option value="0">[null]</option>';
 	$s .= '</select>';
     } else {
 	if (defined($o->room)) {

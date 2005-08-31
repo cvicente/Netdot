@@ -456,7 +456,7 @@ sub select_lookup($@){
                 if ($o->$column){
                     $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
                 }else{
-                    $output .= sprintf("<option value=\"\" selected>-- Select --</option>\n");
+                    $output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
                 }
             }
             # otherwise a couple of things my have happened:
@@ -466,7 +466,7 @@ sub select_lookup($@){
             #      id of "NEW" in order to force insertion when the user hits submit.
             elsif ($table){
                 $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
-                $output .= sprintf("<option value=\"\" selected>-- Make your selection --</option>\n");
+                $output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
             }else{
             #   2) The apocalypse has dawned. No table argument _or_ valid DB object..lets bomb out.
                 $self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
@@ -477,7 +477,6 @@ sub select_lookup($@){
                 next if ($o && $o->$column && ($fo->id == $o->$column->id));
                 $output .= sprintf("<option value=\"%s\">%s</option>\n", $fo->id, $self->getlabelvalue($fo, \@labels));
             }
-            $output .= sprintf("<option value=\"0\">[null]</option>\n");
             $output .= sprintf("</select>\n");
         }else{
 	    # ...otherwise provide tools to narrow the selection to a managable size.
@@ -485,11 +484,10 @@ sub select_lookup($@){
             $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">", $srchf);
             $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"jsrsSendquery(%s, %s.value, \'%s\');\">\n", time(), $name, $srchf, $lookup);
             $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
-            $output .= sprintf("<option value=\"\" selected>-- Make your selection --</option>\n");
+            $output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
             if ($o && $o->$column){
                 $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
             }
-            $output .= sprintf("<option value=\"0\">[null]</option>\n");
             $output .= sprintf("</select>\n");
         }
 

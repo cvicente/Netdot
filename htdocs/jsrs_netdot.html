@@ -63,6 +63,13 @@ sub keyword_search {
         }else {
            @objs = sort { $a->$lblfield cmp $b->$lblfield } @objs;
         }
+        # Added this select tag so that the user is able to select
+        # something which will trigger updating of related select
+        # lists.  This is important because if there is only one result then the
+        # user can't trigger a change event, which is needed to trigger the
+        # select update code specified via the onChange event handler
+        # attribute of the selects in question.
+        $response .= "0=-- Select --&";
         foreach my $o (@objs){
            my $lbl = $ui->getobjlabel($o, ", ");
            $response .= $o->id."=".URLEncode($lbl)."&";

@@ -52,7 +52,7 @@ printf("var listdata = new Array();\n");
 if (scalar(@results) < $MAX_RESULTS) {
     @results = sort { $a->$lblField cmp $b->$lblField } @results;
 
-    printf("listdata.push(new Option(\"No Matches\", \"\"));\n") unless (scalar(@results));
+    printf("listdata.push(new Option(\"No Matches\", \"0\"));\n") unless (scalar(@results));
 
     foreach my $res (@results) {
         printf("listdata.push(new Option(\"%s\", \"%s\"));\n", $res->$lblField, $res->id);
@@ -60,7 +60,7 @@ if (scalar(@results) < $MAX_RESULTS) {
 }
 
 else {
-    printf("listdata.push(new Option(\"Too Many Results\", \"\"));\n")
+    printf("listdata.push(new Option(\"Too Many Results.  There doesn't appear to be any code which handles this case so if you are actually reading this you are probably in trouble.\", \"\"));\n")
 }
 
 printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);
