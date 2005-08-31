@@ -31,10 +31,9 @@ to login (although right now the only files not at the root are the
 images, and possibly a request for /netdot which I think gets
 translated to /netdot/ before AuthCookie takes over anyway).
 -->
-<form method="post" action="<% $r->dir_config('NetdotPath') %>/NetdotLogin">
-<input type="hidden" name="destination" value="<% $r->dir_config('NetdotPath') %>/index.html">
 
 <div id="loginform" align="center">
+
 
 <div class="container">
     <div class="containerhead">
@@ -42,24 +41,28 @@ translated to /netdot/ before AuthCookie takes over anyway).
         Please enter your login and password to authenticate.
     </div>
     <div class="containerbody">
-        <table class="logintable">
-            <tr>
-                <td><b>Login:</b></td>
-                <td><input type="text" name="credential_0" size="15"></td>
-            </tr>
-            <tr>
-                <td><b>Password:</b></td>
-                <td><input type="password" name="credential_1" size="15"></td>
-            </tr>
-            <tr>
-                <td colspan="2"><input type="submit" value="Continue"></td>
-            </tr>
-        </table>
-    </div>
+
+      <fieldset class="medium" id="sectiontools" style="border: none">
+	
+	<form method="post" action="<% $r->dir_config('NetdotPath') %>/NetdotLogin">
+	<input type="hidden" name="destination" value="<% $r->dir_config('NetdotPath') %>/index.html" />
+
+	<p>
+	  <label for="credential_0">Login:</label>
+	  <input type="text" name="credential_0" size="15" />
+	</p>
+	<p>
+	  <label for="credential_1">Password:</label>
+	  <input type="password" name="credential_1" size="15" />
+	</p>
+	<p>
+	  <input type="submit" value="Continue" />
+	</p>
+      </form>
+    </fieldset>	
+  </div>
 </div>
 
 </div>
-
-</form>
 
 </div>
