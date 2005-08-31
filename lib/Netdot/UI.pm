@@ -453,10 +453,9 @@ sub select_lookup($@){
             # as well as add an initial element to the selection list.
             if ($o){
                 $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
+		$output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
                 if ($o->$column){
                     $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
-                }else{
-                    $output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
                 }
             }
             # otherwise a couple of things my have happened:
