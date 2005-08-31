@@ -24,6 +24,7 @@ my $DEBUG = 0;
 my %state;
 my $intobj;
 my $intlbl;
+my $restart = 0;
 # Use a hash to make sure there are no duplicates
 my %subnet_devs;
 
@@ -63,7 +64,8 @@ my %reserved = ( Add           => "",
 		 Cancel        => "",
 		 search        => "",
 		 device_search => "",
-		 );
+		 role          => "",
+		 int_id        => "" );
 my $rel_role;
 if ( $role ){
     if ($role ne "parent" && $role ne "child"){
@@ -76,14 +78,14 @@ my %role_tags = ( 'parent' => "Parent Interface",
 		  'child'  => "Child Interface",
 		  );
 
-</%init>
+my $bodyargs;
+if ( $Add ){
+    $bodyargs = 'onUnload="opener.location.reload()"';
+} else {
+    $bodyargs = '';
+}
 
-% my $bodyargs;
-% if ( $Add ){
-%     $bodyargs = 'onUnload="opener.location.reload()"';
-% } else {
-%     $bodyargs = '';
-% }
+</%init>
 
 <html>
 <head>
@@ -103,96 +105,106 @@ if ( $Add ){
     	next if ( exists $reserved{$arg} );
     	$state{$arg} = $ARGS{$arg};
     }
-    unless ( $state{parent} && $state{child} ){
-	print "<br>Invalid parent and/or child!<br><br>";
-        print '<a href="#" onClick="window.close()">[close]</a><br>';
-	$m->abort;
-    }
-    my $newdepid;
-    if ( InterfaceDep->search(\%state) ){
-    	print "<br>Dependency already exists!<br><br>";
-        print '<a href="#" onClick="window.close()">[close]</a><br>';
-    	$m->abort;
-    }else{
-    	unless ( $newdepid = $ui->insert(table => "InterfaceDep", state => \%state) ){
-    	    $m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
-    	}
-    }
-    #
-    #  Add a logical (L3) dependency automagically when adding a L2 dependency.
-    #
-    #  If one of the interfaces just linked does not have an ip address, try 
-    #  to add a dependency between the interface in that same device that has it
-    # (assuming it's only one) and another interface in the other device that 
-    #  follows the same rules
-
-    my $newdep = InterfaceDep->retrieve($newdepid);
-    my $l3dep = 0;
-    if ( (my $childint  = Interface->retrieve($state{child})) 
-	 && (my $parentint = Interface->retrieve($state{parent})) ) {
-
-	if ( $childint->device->id != $parentint->device->id ){
+    if ( $state{parent} && $state{child} ){
+    
+	my $newdepid;
+	if ( InterfaceDep->search(\%state) ){
+	    print "<br>Dependency already exists!<br><br>";
+	    print '<a href="#" onClick="window.close()">[close]</a><br>';
+	    $m->abort;
+	}else{
+	    unless ( $newdepid = $ui->insert(table => "InterfaceDep", state => \%state) ){
+		$m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
+	    }
+	}
+	#
+	#  Add a logical (L3) dependency automagically when adding a L2 dependency.
+	#
+	#  If one of the interfaces just linked does not have an ip address, try 
+	#  to add a dependency between the interface in that same device that has it
+	# (assuming it's only one) and another interface in the other device that 
+	#  follows the same rules
 	
-	    my @childips     = $dm->getdevips($childint->device);
-	    my @parentips    = $dm->getdevips($parentint->device);
-	    my @childintips  = $childint->ips;
-	    my @parentintips = $parentint->ips; 
-	    my %tmp ;
-	    if ( scalar(@childintips) == 1  ){
-    		$tmp{child}  = $childintips[0]->interface;
-	    }elsif ( ! @childintips && (scalar(@childips) == 1) ){
-    		$tmp{child}  = $childips[0]->interface;
-	    }
-	    if ( scalar(@parentintips) == 1 ){
-    		$tmp{parent} = $parentintips[0]->interface;
-	    }elsif ( ! @parentintips && (scalar(@parentips) == 1) ){
-    		$tmp{parent} = $parentips[0]->interface;
-	    }
+	my $newdep = InterfaceDep->retrieve($newdepid);
+	my $l3dep = 0;
+	if ( (my $childint  = Interface->retrieve($state{child})) 
+	     && (my $parentint = Interface->retrieve($state{parent})) ) {
 	    
-	    if ( $tmp{parent} && $tmp{child} ){
-		if ( my $newl3dep = (InterfaceDep->search(\%tmp))[0] ){
-		    if ( $newdep->id  == $newl3dep->id ){
-			$l3dep = "same";
+	    if ( $childint->device->id != $parentint->device->id ){
+		
+		my @childips     = $dm->getdevips($childint->device);
+		my @parentips    = $dm->getdevips($parentint->device);
+		my @childintips  = $childint->ips;
+		my @parentintips = $parentint->ips; 
+		my %tmp ;
+		if ( scalar(@childintips) == 1  ){
+		    $tmp{child}  = $childintips[0]->interface;
+		}elsif ( ! @childintips && (scalar(@childips) == 1) ){
+		    $tmp{child}  = $childips[0]->interface;
+		}
+		if ( scalar(@parentintips) == 1 ){
+		    $tmp{parent} = $parentintips[0]->interface;
+		}elsif ( ! @parentintips && (scalar(@parentips) == 1) ){
+		    $tmp{parent} = $parentips[0]->interface;
+		}
+		
+		if ( $tmp{parent} && $tmp{child} ){
+		    if ( my $newl3dep = (InterfaceDep->search(\%tmp))[0] ){
+			if ( $newdep->id  == $newl3dep->id ){
+			    $l3dep = "same";
+			}else{
+			    $l3dep = "existed";	    
+			}
 		    }else{
-			$l3dep = "existed";	    
-		    }
-		}else{
-		    unless ( $ui->insert(table => "InterfaceDep", state => \%tmp) ){
-			$m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
-		    }else{
-			$l3dep = "added";
+			unless ( $ui->insert(table => "InterfaceDep", state => \%tmp) ){
+			    $m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
+			}else{
+			    $l3dep = "added";
+			}
 		    }
 		}
 	    }
+	    
 	}
+	print "Layer 2 dependency added.<br>";
+	if ( $l3dep eq "added" ){
+	    print "Layer 3 dependency added.<br>";
+	}elsif ( $l3dep eq "existed" ){
+	    print "Layer 3 dependency already existed.<br>";
+	}elsif ( $l3dep eq "same" ){
+	    print "Layer 2 dependency is also Layer 3<br>";
+	}elsif ( ! $l3dep ){
+	    print "Layer 3 dependency could not be determined.  Please add manually if necessary.<br>";
+	}
+    
+	print "<p><a href=\"#\" onClick=\"window.close()\">[done]</a>";
+	$m->abort;
 
+    }else{
+	print "<br><strong>Invalid parent and/or child!</strong><br><br>";
+	$restart = 1;
     }
+    
 </%perl>
 
-	Layer 2 dependency added.<br>
-%   if ( $l3dep eq "added" ){
-	Layer 3 dependency added.<br>
-%   }elsif ( $l3dep eq "existed" ){
-	Layer 3 dependency already existed.<br>       
-%   }elsif ( $l3dep eq "same" ){
-	Layer 2 dependency is also Layer 3<br>       
-%   }elsif ( ! $l3dep ){
-	Layer 3 dependency could not be determined.  Please add manually if necessary.<br>
-%   }
-    
-    <p><a href="#" onClick="window.close()">[done]</a>
 
 %}elsif ( $Cancel ){
     <br>
     Cancelled
     <br>
     <a href="#" onClick="window.close()">[done]</a><br>
-%}else{
+%   $m->abort;
+
+%}
 
 <script language="javascript" src="select.js"></script>
 
 <form name="netdotform" action="addlink.html" method="POST">
-<input type="hidden" name="<% $role %>" value="<% $int_id %>">
+
+     <input type="hidden" name="role" value="<% $role %>">
+     <input type="hidden" name="int_id" value="<% $int_id %>">
+
+     <input type="hidden" name="<% $role %>" value="<% $int_id %>">
 
     <%perl>
     my (@field_headers, @cell_data) = ();
@@ -205,7 +217,7 @@ if ( $Add ){
 &{sub{
     my $ac = "Select Device from list:";
     $ac .= '<select name="device_search" onChange="sendquery('.$rel_role.', device_search.value, \'Interface\')">';
-    $ac .= '<option value="0">Select</option>';
+    $ac .= '<option value="0">-- Select --</option>';
     foreach my $dev ( sort keys %subnet_devs ){
         $ac .= '<option value="'.$dev.'">'.$dev.'</option>';
     }
@@ -228,7 +240,6 @@ if ( $Add ){
 
 </form>
 
-% } # close else
 
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
