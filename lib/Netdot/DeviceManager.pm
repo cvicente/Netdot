@@ -165,17 +165,17 @@ sub update_device {
     $argv{site}                ||= 0;
     $argv{user}                ||= 0;
 
-    my $default_contactlist;
-    my $default_contactlist_id;
-    if ( $default_contactlist = (ContactList->search(name=>$self->{config}->{DEFAULT_CONTACTLIST}))[0] ){
-	$default_contactlist_id = $default_contactlist->id;
+    my $default_cl;
+    my $default_cl_id;
+    if ( $default_cl = (ContactList->search(name=>$self->{config}->{DEFAULT_CONTACTLIST}))[0] ){
+	$default_cl_id = $default_cl->id;
     }else{
-	$default_contactlist_id = 0;
+	$default_cl_id = 0;
 	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => "Default Conctact List not found: %s",
+		      message  => "Default Contact List not found: %s",
 		      args     => [$self->{config}->{DEFAULT_CONTACTLIST}] );
     }
-    $argv{contactlist}         ||= $default_contactlist_id;
+    $argv{contactlist} ||= $default_cl_id;
 
     my %devtmp;
     $devtmp{sysdescription} = $dev{sysdescription} || "";
@@ -232,14 +232,16 @@ sub update_device {
 	    }
 	}
 
-	$devtmp{entity}      = $device->entity;
-	$devtmp{site}        = $device->site;
-	$devtmp{contactlist} = $device->contactlist;
+	$devtmp{entity}       = $device->entity;
+	$devtmp{site}         = $device->site;
+	$devtmp{contactlist}  = $device->contactlist;
+	$devtmp{contactlist2} = $device->contactlist2 if ( $device->contactlist2 != $devtmp{contactlist} );
 
     }else{
-	$devtmp{entity}      = $argv{entity};
-	$devtmp{site}        = $argv{site};
-	$devtmp{contactlist} = $argv{contactlist};
+	$devtmp{entity}       = $argv{entity};
+	$devtmp{site}         = $argv{site};
+	$devtmp{contactlist}  = $argv{contactlist};
+	$devtmp{contactlist2} = $argv{contactlist2} if ( $argv{contactlist2} != $devtmp{contactlist} );
 	if ( $argv{user} ){
 	    $devtmp{info}    = "Added to Netdot by $argv{user}";
 	}

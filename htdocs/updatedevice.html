@@ -45,8 +45,9 @@ my $guessed_site;
 my $guessed_cl;
 my $webuser;
 my $dev;
-my $default_contactlist;
-my $default_contactlist_id;
+my $default_cl;
+
+my @allcls = ContactList->retrieve_all; 
 
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
@@ -116,9 +117,11 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 		if ( my $subnetaddr = $ipm->getsubnetaddr($ip, $mask) ){
 		    if ( my $subnet = $ipm->searchblocks_addr($subnetaddr) ){
 			if ( my $ent = $subnet->entity ){
-			    $guessed_ent = $ent->id;
+			    $guessed_ent = $ent;
 			    if ( my $cl = $ent->contactlist ){
 				$guessed_cl = $cl->id;
+			    }if ( my @entsites = $ent->sites ){
+				$guessed_site = $entsites[0]->site;
 			    }
 			    last LOOP;  #just grab the first one
 			}
@@ -126,20 +129,20 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 		}
 	    }
 	}
-    # Try to guess site based on SNMP location
-    if ( my $loc = $dev->{syslocation} ){
-	my $loc = "%" . $loc . "%";
-	if ( my $site = (Site->search_like( name => $loc ))[0] ){
-	    $guessed_site = $site->id;
+    # If we could not determine it before, 
+    # try to guess site based on SNMP location
+    if ( ! $guessed_site ){
+	if ( my $loc = $dev->{syslocation} ){
+	    my $loc = "%" . $loc . "%";
+	    if ( my $site = (Site->search_like( name => $loc ))[0] ){
+		$guessed_site = $site;
+	    }
 	}
     }
     
     # Get the default contactlist from config
-    if ( $default_contactlist = (ContactList->search(name=>$dm->{config}->{DEFAULT_CONTACTLIST}))[0] ){
-	$default_contactlist_id = $default_contactlist->id;
-    }else{
-	$default_contactlist_id = 0;
-    }
+    $default_cl = (ContactList->search(name=>$dm->{config}->{DEFAULT_CONTACTLIST}))[0];
+    
 }elsif ( $action eq "update" ){
     if ( $insert ){
         %argv              = %{ $session->{argv} };
@@ -192,7 +195,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %          my @allents = Entity->retrieve_all; 
 %          @allents = sort { $a->name cmp $b->name } @allents;
 %          foreach my $ent (@allents){
-%                if ( $guessed_ent && $ent->id == $guessed_ent ){
+%                if ( $guessed_ent && ($ent->id == $guessed_ent->id) ){
                    <option value="<% $ent->id %>" SELECTED><% $ent->name %></option>                
 %                }else{
                    <option value="<% $ent->id %>"><% $ent->name %></option>
@@ -210,7 +213,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %          my @allsites = Site->retrieve_all; 
 %          @allsites = sort { $a->name cmp $b->name } @allsites;
 %          foreach my $site (@allsites){
-%                if ( $guessed_site && $site->id == $guessed_site ){
+%                if ( $guessed_site && ($site->id == $guessed_site->id) ){
                    <option value="<% $site->id %>" SELECTED><% $site->name %></option>
 %                }else{
                    <option value="<% $site->id %>"><% $site->name %></option>
@@ -221,16 +224,13 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 </&>
 % push( @cell_data, $_ );
 
-% push( @field_headers, "Monitoring Contacts:" );
+% push( @field_headers, "Contacts:" );
 <&| "HERE.mhtml" &>
            <select name="contactlist" id="contactlist">
            <option value="0">-- Select --</option>
-%          my @allcls = ContactList->retrieve_all; 
 %          @allcls = sort { $a->name cmp $b->name } @allcls;
 %          foreach my $cl (@allcls){
-%                if ( $default_contactlist_id && $cl->id == $default_contactlist_id){
-                   <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
-%                }elsif ( $guessed_cl && $cl->id == $guessed_cl ){
+%                if ( $default_cl && ($cl->id == $default_cl->id) ){
                    <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
 %                }else{
                    <option value="<% $cl->id %>"><% $cl->name %></option>
@@ -238,6 +238,24 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %          }
            </select>
            <a href="#" onClick="openinsertwindow('ContactList', 'contactlist')">[new]</a>
+</&>
+% push( @cell_data, $_ );
+
+% push( @field_headers, "Secondary Contacts:" );
+<&| "HERE.mhtml" &>
+           <select name="contactlist2" id="contactlist2">
+           <option value="0">-- Select --</option>
+%          @allcls = sort { $a->name cmp $b->name } @allcls;
+%          foreach my $cl (@allcls){
+%                # We don't want to repeat the selection
+%                if ( $guessed_cl && ($cl->id == $guessed_cl) && ($cl->id != $default_cl) ){
+                   <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
+%                }else{
+                   <option value="<% $cl->id %>"><% $cl->name %></option>
+%                }
+%          }
+           </select>
+           <a href="#" onClick="openinsertwindow('ContactList', 'contactlist2')">[new]</a>
 </&>
 % push( @cell_data, $_ );
 
