@@ -377,10 +377,6 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
 </div> <!-- container -->
 <!-- End General Info Table -->
 
-
-  </td>
-  <td valign="top"  width="50%" align="center">
-
 <!-- Location Table -->
 <div class="container">
     <div class="containerheadleft">
@@ -448,6 +444,11 @@ push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, re
 </div>
 
 
+  </td>
+  <td valign="top"  width="50%" align="center">
+
+
+
 <!-- Management Table -->
 <div class="container">
     <div class="containerheadleft">
@@ -461,9 +462,6 @@ push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, re
 %	 }
     </div>
     <div class="containerbody">
-     <table width="100%">
-      <tr>
-       <td valign="top" width="50%">
 
 <%perl>
 (@field_headers, @cell_data) = ();
@@ -479,14 +477,7 @@ push( @field_headers, "Out-of-band tel: " );
 push( @cell_data, $ui->text_field(object=>$o, column=>"oobnumber", edit=>$editmgmt, returnAsVar=>1) );
 push( @field_headers, "SNMP Community: " );
 push( @cell_data, $ui->text_field(object=>$o, column=>"community", edit=>$editmgmt, returnAsVar=>1) );
-</%perl>
 
-<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-       </td>
-       <td valign="top" width="50%">
-
-<%perl>
-(@field_headers, @cell_data) = ();
 push( @field_headers, "Monitored?: " );
 push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>$editmgmt, returnAsVar=>1) );
 push( @field_headers, "Customer-managed?: " );
@@ -497,29 +488,21 @@ push( @field_headers, "Auto-update?: " );
 push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"canautoupdate", edit=>$editmgmt, returnAsVar=>1) );
 push( @field_headers, "NATted?: " );
 push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"natted", edit=>$editmgmt, returnAsVar=>1) );
-</%perl>
 
-<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
-       </td>
-      </tr>
-%	if (! $editmgmt){	 
-      <tr>
-       <td colspan="2">
-<%perl>
-(@field_headers, @cell_data) = ();
+  if (! $editmgmt){	 
+
 push( @field_headers, "Fetch SNMP info and update DB" );
 push( @cell_data, '<b><a href="updatedevice.html?device='.$id.'&action=discover">[update]</a></b>' );
 push( @field_headers, "Connect via: " );
 push( @cell_data, '<a href="http://'.$name.'" target=#>[HTTP]</a> <a href="ssh://'.$user->getUsername().'@'.$name.'">[SSH]</a> <a href="telnet://'.$name.'">[Telnet]</a>' );
+
+}
+
 </%perl>
 
        <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-       </td>
-      </tr>
 
-%       } 
-     </table>
 <!-- End Management Table -->
     </div>
 </div>
