@@ -10,7 +10,9 @@ title   => 'Netdot Login'
 
 <%init>
 my $message;
-
+my $redirect_path;
+my $main_page = $r->dir_config('NetdotPath') . "/index.html";
+my $submit_target = $r->dir_config('NetdotPath') . "/NetdotLogin";
 # Unless they requested the login page directly while not logged in
 # (in which case prev isn't defined) we tell them why they must login.
 
@@ -18,6 +20,7 @@ if (defined $r->prev) {
     $message = "You are not authorized: "
                . $r->prev->subprocess_env('AuthCookieReason')
                . "<br /><br />";
+    $redirect_path = $r->prev->uri . ( $r->prev->args ? "?" . $r->prev->args : "");
 } 
 </%init>
 
@@ -37,15 +40,16 @@ translated to /netdot/ before AuthCookie takes over anyway).
 
 <div class="container">
     <div class="containerhead">
-        <% $message %>
+%#        <% $message %>
+%#        <% $redirect_path %><br /><br />
         Please enter your login and password to authenticate.
     </div>
     <div class="containerbody">
 
       <fieldset class="medium" id="sectiontools" style="border: none">
 	
-	<form method="post" action="<% $r->dir_config('NetdotPath') %>/NetdotLogin">
-	<input type="hidden" name="destination" value="<% $r->dir_config('NetdotPath') %>/index.html" />
+	<form method="post" action="<% $submit_target %>" >
+%#	<input type="hidden" name="destination" value="<% $redirect_path %>" />
 
 	<p>
 	  <label for="credential_0">Login:</label>
@@ -56,7 +60,10 @@ translated to /netdot/ before AuthCookie takes over anyway).
 	  <input type="password" name="credential_1" size="15" />
 	</p>
 	<p>
-	  <input type="submit" value="Continue" />
+%# These can be removed when it is known to be working.
+	  <input type="radio" name="destination" value="<% $redirect_path %>" checked="checked" /> Continue what I was doing <br />
+	  <input type="radio" name="destination" value="<% $main_page %>" /> Go to main page <br />
+          <input type="submit" value="Continue" />
 	</p>
       </form>
     </fieldset>	
