@@ -370,9 +370,6 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
            </td>
           </tr>
 	</table>
-	<div class="containerseparator">Comments</div>
-	<% $ui->text_area(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=60", returnAsVar=>1) %>
-	</div>
    </div> <!-- containerbody -->
 </div> <!-- container -->
 <!-- End General Info Table -->
@@ -390,9 +387,6 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
 %	}
     </div>
     <div class="containerbody">
-     <table width="100%">
-      <tr>
-       <td>
 <%perl>
 (@field_headers, @cell_data) = ();
 
@@ -436,12 +430,12 @@ push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, re
 
     <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
-       </td>
-      </tr>
-     </table>
-<!-- End Location Table -->
+    </div>
+    <div class="containerseparator">Comments</div>
+       <% $ui->text_area(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>"cols=60", returnAsVar=>1) %>
     </div>
 </div>
+<!-- End Location Table -->
 
 
   </td>
@@ -503,9 +497,9 @@ push( @cell_data, '<a href="http://'.$name.'" target=#>[HTTP]</a> <a href="ssh:/
 
        <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
-<!-- End Management Table -->
     </div>
 </div>
+<!-- End Management Table -->
 
   </td>
  </tr>
