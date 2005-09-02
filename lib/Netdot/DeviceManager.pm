@@ -477,7 +477,8 @@ sub update_device {
 	$self->debug( loglevel => 'LOG_INFO',
 		      message  => "%s did not return dot1dBaseBridgeAddress",
 		      args => [$host],
-		      );		
+		      );
+	$devtmp{physaddr} = 0;
     }
     ###############################################
     # Serial Number
