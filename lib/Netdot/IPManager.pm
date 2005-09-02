@@ -255,7 +255,6 @@ These checks are more specific to the way Netdot manages the address space.
     ARGS    - Hash ref of arguments passed to insertblock/updateblock. 
   Returns:
     True or False
-
 =cut
 
 sub _validate {
@@ -691,14 +690,7 @@ sub auto_allocate {
 	$self->error("Cannot retrieve $parentid: $@");
 	return 0;
     }    
-    # NetAddr::IP's split() method takes too long to split a 
-    # /48 into 2^16 /64's (not to blame).
-    # TODO: Write a simpler binary tree method to solve this
 
-    if ($parent->version != 4){
-	$self->error("auto_allocate: Currently, only IPv4 is allowed");
-	return 0;
-    }    
     $self->debug(loglevel => 'LOG_DEBUG',
 		 message => "auto_allocate: parent: %s/%s, len: %s, strategy: %s" ,
 		 args => [$parent->address, $parent->prefix, $length, $strategy]);
@@ -734,21 +726,44 @@ sub auto_allocate {
 		 message => "auto_allocate: parent net: %s, broadcast: %s" ,
 		 args => [$parent_nip->network, $parent_nip->broadcast]);
     
-    # Calculate all sub-blocks of length $length and sort them
-    my $sort;
-    if ($strategy eq "first"){
-	$sort = sub { $a->[1] <=> $b->[1] };
-    }elsif ($strategy eq "last"){
-	$sort = sub { $b->[1] <=> $a->[1] };	    
+    # IPv6 addresses don't fit in ints.
+    use bigint;
+
+    # Given an address 
+
+    # b1...bn/n 
+
+    # where bi is the ith bit, n is the mask length, and v is the
+    # total number of bits (e.g. 128 for IPv6) we want to find a free
+    # block of the form
+
+    # b_1..b_n x_{n+1}..x_m/m
+
+    # where m is $length.  So, we need to try all combinations of bits
+    # x_{n+1}...x_m.  There are 2^(m - n) combinations of m - n bits.
+    # We will iterate over them via addition.  The increment must be
+    # shifted so that it corresponds to the lowest bit in the x bits,
+    # i.e. the bit labled x_m, which the is v - m + 1st bit from from
+    # the right and so corresponds to the number 1 << (v - m).
+    my $increment = 2**($parent_nip->bits - $length);
+    my $min_ip    = $parent_nip;
+    my $total_ips = 2**($length - $parent_nip->masklen);
+    my $max_ip    = $min_ip + ($total_ips - 1)*$increment; # -1 since we start with the first address.
+    my $start_ip  = $min_ip;
+    if ($strategy eq "last") {
+	$start_ip   = $max_ip;
+	$increment *= -1;
     }
-    my @blocks = 
-	map  { $_->[0] }
-    sort $sort
-	map  { [$_, ($_->numeric)[0]] } $parent_nip->split($length);
-    
-    # Return first available valid block.
-    #
-    foreach my $block (@blocks){
+
+    # Will still be painfully slow if we iterate over a bunch of ips,
+    # e.g. if given /n someone allocates an /n+1 and then an /n+k with
+    # the same strategy then the attempt to allocate the /n+k will
+    # iterate over all 2^(k-1) /n+k s which correspond to the /n+1.
+    # To get around this we need to look at the children which exist
+    # before proceding blindly.
+    for ( my $i = 0; $i < $total_ips; ++$i ) {
+	my $block = NetAddr::IP->new ( ($start_ip + $i*$increment)->addr, $length );
+
 	$self->debug(loglevel => 'LOG_DEBUG',
 		     message => "auto_allocate: trying %s/%s" ,
 		     args => [$block->addr, $block->masklen]);
