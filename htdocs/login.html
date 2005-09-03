@@ -21,6 +21,9 @@ if (defined $r->prev) {
                . $r->prev->subprocess_env('AuthCookieReason')
                . "<br /><br />";
     $redirect_path = $r->prev->uri . ( $r->prev->args ? "?" . $r->prev->args : "");
+    # If they really were just loggin in they probably don't want to
+    # continue to login ad nauseum.
+    $redirect_path = $main_page if ($redirect_path =~ /login.html/);
 } 
 </%init>
 
