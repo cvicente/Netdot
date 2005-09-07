@@ -543,7 +543,17 @@ sub update_device {
     ##############################################
     # for each interface just discovered...
 
-    my (%dbips, %newips, %dbvlans, %ifvlans, %name2int);
+    my (%dbips, %newips, %dbvlans, %ifvlans, %name2int, @nonrrs);
+
+    my %IFFIELDS = ( number           => "",
+		     name             => "",
+		     type             => "",
+		     description      => "",
+		     speed            => "",
+		     admin_status     => "",
+		     oper_status      => "",
+		     admin_duplex     => "",
+		     oper_duplex      => "");
 
     foreach my $newif ( sort { $a <=> $b } keys %{ $dev{interface} } ) {
 
@@ -551,16 +561,6 @@ sub update_device {
 	# set up IF state data
 	my( %iftmp, $if );
 	$iftmp{device} = $device->id;
-
-	my %IFFIELDS = ( number           => "",
-			 name             => "",
-			 type             => "",
-			 description      => "",
-			 speed            => "",
-			 admin_status     => "",
-			 oper_status      => "",
-			 admin_duplex     => "",
-			 oper_duplex      => "");
 	
 	foreach my $field ( keys %{ $dev{interface}{$newif} } ){
 	    if (exists $IFFIELDS{$field}){
@@ -868,7 +868,7 @@ sub update_device {
 	$name .= "." . $suffix ;
 	
 	my @arecords = $ipobj->arecords;
-	if ( ! scalar ( @arecords ) ){
+	if ( ! @arecords  ){
 	    
 	    ################################################
 	    # Is this the only ip in this device,
@@ -962,9 +962,13 @@ sub update_device {
 	foreach my $nonif ( keys %ifs ) {
 	    my $ifobj = $ifs{$nonif};
 
+	    # Get RRs before deleting interface
+	    map { push @nonrrs, $_->rr } map { $_->arecords } $ifobj->ips;
+
 	    ############################################################################
 	    # Before removing, try to maintain dependencies finding another
 	    # interface (any) that has one of this interface's ips
+
 	    if (exists $dbifdeps{$nonif}){
 		my $msg = sprintf("%s: Interface %s,%s had dependency. Will try to maintain", 
 				  $host, $ifobj->number, $ifobj->name);
@@ -1036,16 +1040,21 @@ sub update_device {
     }
     ##############################################
     # remove each ip address that no longer exists
-    
     unless ( $device->natted ){
 	foreach my $nonip ( keys %dbips ) {
-	    my $msg = sprintf("%s: IP %s no longer exists.  Removing.", 
+	    my $msg = sprintf("%s: Removing old IP %s", 
 			      $host, $nonip);
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg,
 			  );
 	    $self->output($msg);		
-	    unless( $self->removeblock( id => $dbips{$nonip} ) ) {
+
+	    my $ip = Ipblock->retrieve($dbips{$nonip});
+
+	    # Get RRs before deleting object
+	    map { push @nonrrs, $_->rr } $ip->arecords;
+
+	    unless( $self->removeblock( id => $ip->id ) ) {
 		my $msg = sprintf("%s: Could not remove IP %s: %s", 
 				  $host, $nonip, $self->error);
 		$self->debug( loglevel => 'LOG_ERR',
@@ -1054,6 +1063,27 @@ sub update_device {
 		$self->output($msg);
 		next;
 	    }
+	}
+    }
+
+    ##############################################
+    # remove old Resource Records 
+
+    foreach my $rr ( @nonrrs ){
+	my $msg = sprintf("%s: Removing old RR %s", 
+			  $host, $rr->name);
+	$self->debug( loglevel => 'LOG_NOTICE',
+		      message  => $msg,
+		      );
+	$self->output($msg);		
+	unless( $self->remove( table => "RR",  id => $rr->id ) ) {
+	    my $msg = sprintf("%s: Could not remove RR %s: %s", 
+			      $host, $rr->name, $self->error);
+	    $self->debug( loglevel => 'LOG_ERR',
+			  message  => $msg,
+			  );
+	    $self->output($msg);
+	    next;
 	}
     }
 
