@@ -10,17 +10,21 @@ title   => 'Netdot Login'
 
 <%init>
 my $message;
-my $redirect_path;
 my $main_page = $r->dir_config('NetdotPath') . "/index.html";
+my $redirect_path = $main_page;
 my $submit_target = $r->dir_config('NetdotPath') . "/NetdotLogin";
-# Unless they requested the login page directly while not logged in
-# (in which case prev isn't defined) we tell them why they must login.
 
+# Unless they requested the login page directly while not logged in
+# (in which case prev isn't defined) they will have probably been
+# attempting to do something else.  We try to let them continue doing it.
 if (defined $r->prev) {
-    $message = "You are not authorized: "
-               . $r->prev->subprocess_env('AuthCookieReason')
-               . "<br /><br />";
-    $redirect_path = $r->prev->uri . ( $r->prev->args ? "?" . $r->prev->args : "");
+    #$message = $r->prev->subprocess_env('AuthCookieReason') If they
+    #really were just logging in they probably don't want to continue
+    #to login ad nauseum. Also, logging in to logout page redirects to
+    #index.
+    unless ($r->prev->uri =~ m{/log(in|out).html}) {
+	$redirect_path = $r->prev->uri . ( $r->prev->args ? "?" . $r->prev->args : "");
+    }
 } 
 </%init>
 
@@ -40,8 +44,6 @@ translated to /netdot/ before AuthCookie takes over anyway).
 
 <div class="container">
     <div class="containerhead">
-%#        <% $message %>
-%#        <% $redirect_path %><br /><br />
         Please enter your login and password to authenticate.
     </div>
     <div class="containerbody">
@@ -49,7 +51,7 @@ translated to /netdot/ before AuthCookie takes over anyway).
       <fieldset class="medium" id="sectiontools" style="border: none">
 	
 	<form method="post" action="<% $submit_target %>" >
-%#	<input type="hidden" name="destination" value="<% $redirect_path %>" />
+	<input type="hidden" name="destination" value="<% $redirect_path %>" />
 
 	<p>
 	  <label for="credential_0">Login:</label>
@@ -60,9 +62,6 @@ translated to /netdot/ before AuthCookie takes over anyway).
 	  <input type="password" name="credential_1" size="15" />
 	</p>
 	<p>
-%# These can be removed when it is known to be working.
-	  <input type="radio" name="destination" value="<% $redirect_path %>" checked="checked" /> Continue what I was doing <br />
-	  <input type="radio" name="destination" value="<% $main_page %>" /> Go to main page <br />
           <input type="submit" value="Continue" />
 	</p>
       </form>

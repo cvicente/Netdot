@@ -24,7 +24,23 @@ my $page = "";
 %     if (exists($caller_args{page})){
 %         $user->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
 %     }
-%     $page = $user->getAttribute("MANAGEMENT_PAGE");
+<%perl>
+    eval { $page = $user->getAttribute("MANAGEMENT_PAGE") };
+
+    if ($@) {
+	$m->comp( "error.mhtml", error => <<HERE );
+
+You have just encountered a bug which currently has us stumped.
+Please report in detail what you were doing around the time the error
+occured (e.g. if you were eating lunch what kind of lettuce did you
+have on your sandwhich) and tell us what time netdot says it is right
+now (upper right corner).  Thanks.
+
+The perl error was:
+$@
+HERE
+}
+</%perl>
             <span>Management</span>
             <ul id="subnavigation">
 %
