@@ -548,13 +548,14 @@ sub update {
 	    if( $state{$col} ne $v ) {
 		$change = 1;
 		$obj->set( $col, $state{$col} ); 
-	    };
+	    }
+	};
 	if( $@ ) {
 	    $self->error("Unable to set $col to $state{$col}: $@");
 	    return 0;
 	}
     }
-}
+
     if ( $commit ){
 	if( $change ) {
 	    eval { $obj->update(); };
