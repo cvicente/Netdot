@@ -3,7 +3,7 @@
 
 NDIR = Netdot
 
-FILES = Netdot.pm Debug.pm jsrsServer.pl $(NDIR)/Mason.pm $(NDIR)/UI.pm  $(NDIR)/odHasMany.pm  $(NDIR)/NetdotPermissionFactory.pm $(NDIR)/IPManager.pm $(NDIR)/DeviceManager.pm $(NDIR)/DNSManager.pm $(NDIR)/CablePlantManager.pm
+FILES = Netdot.pm Debug.pm jsrsServer.pl $(NDIR)/Mason.pm $(NDIR)/UI.pm  $(NDIR)/odHasMany.pm  $(NDIR)/NetdotPermissionFactory.pm $(NDIR)/IPManager.pm $(NDIR)/DeviceManager.pm $(NDIR)/DNSManager.pm $(NDIR)/CablePlantManager.pm $(NDIR)/SiteControlLoginWrapper.pm
 
 
 all: dir files
