@@ -27,7 +27,7 @@ use CGI::Cookie;
 # Create ApacheHandler object at startup.
 my $ah =
     HTML::Mason::ApacheHandler->new (
-				     args_method => "CGI",
+				     args_method => "mod_perl",
 				     comp_root   => "/usr/local/netdot/htdocs",
 				     data_dir    => "/usr/local/netdot/htdocs/masondata",
 				     error_mode  => 'output',
