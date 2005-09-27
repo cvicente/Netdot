@@ -81,9 +81,10 @@ if (scalar (@ARGV) != 0){
 
 my (%hosts, %groups, %name2ip, %ip2name, %contacts, %contactlists, %services, %servicegroups);
 
-foreach my $ipobj ( Ipblock->retrieve_all ){
+my $it = Ipblock->retrieve_all;
+
+while ( my $ipobj = $it->next ) {
     
-    # Ignore if set to not monitor
     next unless ( $ipobj->interface->monitored 
 		  && $ipobj->interface->device->monitored );
     
@@ -92,7 +93,10 @@ foreach my $ipobj ( Ipblock->retrieve_all ){
     my $group;
     if ( ! $ipobj->interface->device->entity ){
 	warn "Entity not assigned for ",$ipobj->interface->device->name, "\n";
-	$group = 'unknown';
+	next;
+    }elsif ( ! $ipobj->interface->device->site ){
+	warn "Site not assigned for ",$ipobj->interface->device->name, "\n";
+	next;
     }else {
 	$group = join '_', split /\s+/, $ipobj->interface->device->entity->name;
 	#Remove illegal chars for Nagios
@@ -104,13 +108,23 @@ foreach my $ipobj ( Ipblock->retrieve_all ){
     # Order is: interface, device and then entity
     #
     my $clobj;
-    if ( ($clobj = $ipobj->interface->contactlist) != 0 ||
-	 ($clobj = $ipobj->interface->device->contactlist) != 0 ||
-	 ($clobj = $ipobj->interface->device->entity->contactlist) != 0 ){
+    if( ($clobj = $ipobj->interface->contactlist) != 0 ){
 	$contactlists{$clobj->id}{name} = join '_', split /\s+/, $clobj->name;
-	$hosts{$ipobj->id}{contactlist} = $clobj->id;
-    }else{
-	$hosts{$ipobj->id}{contactlist} = 0;
+	push @{ $hosts{$ipobj->id}{contactlists} }, $clobj->id;
+	
+    }elsif( ($clobj = $ipobj->interface->device->contactlist) != 0 ){
+	$contactlists{$clobj->id}{name} = join '_', split /\s+/, $clobj->name;
+	push @{ $hosts{$ipobj->id}{contactlists} }, $clobj->id;
+	
+	# If device has a second contactlist, add it too
+	if( ($clobj = $ipobj->interface->device->contactlist2) != 0 ){
+	    $contactlists{$clobj->id}{name} = join '_', split /\s+/, $clobj->name;
+	    push @{ $hosts{$ipobj->id}{contactlists} }, $clobj->id;
+	}
+    }elsif( ($clobj = $ipobj->interface->device->entity->contactlist) != 0 ){
+	$contactlists{$clobj->id}{name} = join '_', split /\s+/, $clobj->name;
+	push @{ $hosts{$ipobj->id}{contactlists} }, $clobj->id;
+
     }
     $hosts{$ipobj->id}{group} = $group;
     
@@ -137,17 +151,16 @@ foreach my $ipobj ( Ipblock->retrieve_all ){
 	warn "Service $srvname being added to IP ",$ipobj->address, "\n" if $DEBUG;
 	push  @{ $servicegroups{$srvname}{members} }, $hostname ;
 
-	# Assign most specific contactlist 
-	# Order is: service, interface, device and then entity
+	# If service has a contactlist, use that
+	# if not, use the same one for the associated IP
 	#
 	my $srvclobj;
-	if ( ($srvclobj = $ipsrv->contactlist) != 0 ||
-	     ($srvclobj = $ipsrv->ip->interface->contactlist) != 0 ||
-	     ($srvclobj = $ipsrv->ip->interface->device->contactlist) != 0 ||
-	     ($srvclobj = $ipsrv->ip->interface->device->entity->contactlist) ){
+	if ( ($srvclobj = $ipsrv->contactlist) != 0 ) {
 	    $services{$hostname}{$srvname}{contactlist} = $srvclobj->id;
 	    $contactlists{$srvclobj->id}{name} = join '_', split /\s+/, $srvclobj->name;
 	    warn "Contactlist ",$srvclobj->name, " assigned to service $srvname for IP ",$ipobj->address, "\n" if $DEBUG;
+	}elsif( $hosts{$ipobj->id}{contactlists} ){
+	    $services{$hostname}{$srvname}{contactlist} = ($hosts{$ipobj->id}{contactlists})[0];
 	}else{
 	    $services{$hostname}{$srvname}{contactlist} = 0;
 	    warn "Service $srvname for IP ", $ipobj->address, " has no contactlist defined\n" if $DEBUG;
@@ -234,9 +247,9 @@ foreach my $file (@files){
 		my $ip       = $hosts{$ipid}{ip};
 		my $group    = $hosts{$ipid}{group};
 		my $parents  = $hosts{$ipid}{parents};
-		my $clid     = $hosts{$ipid}{contactlist};
+		my @clids    = @{ $hosts{$ipid}{contactlists} };
 		
-		if ( ! $clid || ! ( keys %{ $contactlists{$clid}{level}} ) ){
+		if ( ! @clids ) {
 
 		    warn "$hostname does not have a valid Contact Group!\n";
 		    print "define host{\n";
@@ -258,25 +271,35 @@ foreach my $file (@files){
 			print "}\n\n";
 		    }
 		}else{
-		    my $clname = $contactlists{$clid}{name} || 'nobody';
-		    my $first  = 1;
-		    my $fn     = $first_notification;
-		    my $ln     = $last_notification;
-		    foreach my $level ( sort keys %{ $contactlists{$clid}{level} } ){
-			if ($first){
+		    my $first   = 1;
+		    my $fn      = $first_notification;
+		    my $ln      = $last_notification;
+		    my %levels;
+		    map { map { $levels{$_} = '' } keys %{ $contactlists{$_}{level} } } @clids;
+
+		    foreach my $level ( sort keys %levels ){
+			my @contact_groups;
+			foreach my $clid ( @clids ){
+			    if( $contactlists{$clid}{level}{$level} ){
+				push @contact_groups, "$contactlists{$clid}{name}" . "-level_$level";
+			    }
+			}
+			my $contact_groups = join ',', @contact_groups;
+
+			if ( $first ){
 			    print "define host{\n";
 			    print "\tuse                    generic-host\n";
 			    print "\thost_name              $hostname\n";
 			    print "\talias                  $group\n";
 			    print "\taddress                $ip\n";
 			    print "\tparents                $parents\n" if ($parents);
-			    print "\tcontact_groups         $clname-level_$level\n";
+			    print "\tcontact_groups         $contact_groups\n";
 			    print "}\n\n";
 			    if ( $ADDTRAPS ){
 				print "define service{\n";
 				print "\tuse                     generic-trap-service\n";
 				print "\thost_name               $hostname\n";
-				print "\tcontact_groups          $clname-level_$level\n";
+				print "\tcontact_groups          $contact_groups\n";
 				print "}\n\n";
 			    }
 			    $first = 0;
@@ -286,7 +309,7 @@ foreach my $file (@files){
 			    print "\tfirst_notification       $fn\n";
 			    print "\tlast_notification        $ln\n";
 			    print "\tnotification_interval    $notification_interval\n";
-			    print "\tcontact_groups           $clname-level_$level\n";
+			    print "\tcontact_groups           $contact_groups\n";
 			    print "}\n\n";
 			    
 			    if ( $ADDTRAPS ){
@@ -296,7 +319,7 @@ foreach my $file (@files){
 				print "\tfirst_notification       $fn\n";
 				print "\tlast_notification        $ln\n";
 				print "\tnotification_interval    $notification_interval\n";
-				print "\tcontact_groups           $clname-level_$level\n";
+				print "\tcontact_groups           $contact_groups\n";
 				print "}\n\n";
 			    }
 			    
