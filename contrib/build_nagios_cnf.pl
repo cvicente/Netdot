@@ -88,14 +88,13 @@ while ( my $ipobj = $it->next ) {
     next unless ( $ipobj->interface->monitored 
 		  && $ipobj->interface->device->monitored );
     
-    $hosts{$ipobj->id}{ip} = $ipobj->address;
-    $hosts{$ipobj->id}{ipobj} = $ipobj;
     my $group;
-    if ( ! $ipobj->interface->device->entity ){
-	warn "Entity not assigned for ",$ipobj->interface->device->name, "\n";
-	next;
-    }elsif ( ! $ipobj->interface->device->site ){
-	warn "Site not assigned for ",$ipobj->interface->device->name, "\n";
+    if ( $ipobj->interface->device->entity == 0 ){
+	if ( $ipobj->interface->device->name && $ipobj->interface->device->name->name ){
+	    warn "Device ",$ipobj->interface->device->name->name, " has no Entity defined. Excluding.\n";
+	}else{
+	    warn "Device id ",$ipobj->interface->device->name->name, " has no Entity defined. Excluding.\n";	    
+	}
 	next;
     }else {
 	$group = join '_', split /\s+/, $ipobj->interface->device->entity->name;
@@ -103,29 +102,33 @@ while ( my $ipobj = $it->next ) {
 	$group =~ s/[\(\),]//g;  
 	$group =~ s/&/and/g;     
     }
+    $hosts{$ipobj->id}{ip}    = $ipobj->address;
+    $hosts{$ipobj->id}{ipobj} = $ipobj;
     
     # Assign most specific contactlist 
     # Order is: interface, device and then entity
-    #
+    # 
     my $clobj;
     if( ($clobj = $ipobj->interface->contactlist) != 0 ){
-	$contactlists{$clobj->id}{name} = join '_', split /\s+/, $clobj->name;
-	push @{ $hosts{$ipobj->id}{contactlists} }, $clobj->id;
-	
+	push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
+
     }elsif( ($clobj = $ipobj->interface->device->contactlist) != 0 ){
-	$contactlists{$clobj->id}{name} = join '_', split /\s+/, $clobj->name;
-	push @{ $hosts{$ipobj->id}{contactlists} }, $clobj->id;
+	push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
 	
 	# If device has a second contactlist, add it too
 	if( ($clobj = $ipobj->interface->device->contactlist2) != 0 ){
-	    $contactlists{$clobj->id}{name} = join '_', split /\s+/, $clobj->name;
-	    push @{ $hosts{$ipobj->id}{contactlists} }, $clobj->id;
+	    push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
 	}
-    }elsif( ($clobj = $ipobj->interface->device->entity->contactlist) != 0 ){
-	$contactlists{$clobj->id}{name} = join '_', split /\s+/, $clobj->name;
-	push @{ $hosts{$ipobj->id}{contactlists} }, $clobj->id;
 
+    }elsif( ($clobj = $ipobj->interface->device->entity->contactlist) != 0 ){
+	push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
     }
+    
+    foreach my $clobj ( @{ $hosts{$ipobj->id}{contactlists} } ){
+	$contactlists{$clobj->id}{name} = join '_', split /\s+/, $clobj->name;
+	$contactlists{$clobj->id}{obj}  = $clobj;
+    }
+
     $hosts{$ipobj->id}{group} = $group;
     
     # For a given IP addres we'll try to get its name directly
@@ -152,17 +155,17 @@ while ( my $ipobj = $it->next ) {
 	push  @{ $servicegroups{$srvname}{members} }, $hostname ;
 
 	# If service has a contactlist, use that
-	# if not, use the same one for the associated IP
+	# if not, use the associated IP's contactlists
 	#
 	my $srvclobj;
 	if ( ($srvclobj = $ipsrv->contactlist) != 0 ) {
-	    $services{$hostname}{$srvname}{contactlist} = $srvclobj->id;
+	    push @{ $services{$hostname}{$srvname}{contactlists} }, $srvclobj;
 	    $contactlists{$srvclobj->id}{name} = join '_', split /\s+/, $srvclobj->name;
+	    $contactlists{$srvclobj->id}{obj}  = $srvclobj;
 	    warn "Contactlist ",$srvclobj->name, " assigned to service $srvname for IP ",$ipobj->address, "\n" if $DEBUG;
 	}elsif( $hosts{$ipobj->id}{contactlists} ){
-	    $services{$hostname}{$srvname}{contactlist} = ($hosts{$ipobj->id}{contactlists})[0];
+	    $services{$hostname}{$srvname}{contactlists} = $hosts{$ipobj->id}{contactlists};
 	}else{
-	    $services{$hostname}{$srvname}{contactlist} = 0;
 	    warn "Service $srvname for IP ", $ipobj->address, " has no contactlist defined\n" if $DEBUG;
 	}
         # Add the SNMP community in case it's needed
@@ -188,11 +191,8 @@ foreach my $ipid ( keys %hosts ){
 # We'll create a contactgroup for each level
 
 foreach my $clid ( keys %contactlists ){
-    my $clobj;
-    unless ( $clobj = ContactList->retrieve($clid) ){
-	warn "Error retrieving ContactList id $clid: $contactlists{$clid}{name}\n";
-	next;
-    }
+    my $clobj = $contactlists{$clid}{obj};
+
     foreach my $contact ( $clobj->contacts ){
 	
 	# Skip if no availability
@@ -223,7 +223,7 @@ foreach my $clid ( keys %contactlists ){
 print Dumper(%groups) if $DEBUG;
 
 # Now build the config files
-foreach my $file (@files){
+foreach my $file ( @files ){
     
     # Open skeleton file for reading
     my $skel_file = "$file.$skel_ext";
@@ -247,11 +247,11 @@ foreach my $file (@files){
 		my $ip       = $hosts{$ipid}{ip};
 		my $group    = $hosts{$ipid}{group};
 		my $parents  = $hosts{$ipid}{parents};
-		my @clids    = @{ $hosts{$ipid}{contactlists} };
+		my @cls      = @{ $hosts{$ipid}{contactlists} } if $hosts{$ipid}{contactlists};
 		
-		if ( ! @clids ) {
+		if ( ! @cls ) {
 
-		    warn "$hostname does not have a valid Contact Group!\n";
+		    warn "Host $hostname (IP id $ipid) does not have a valid Contact Group!\n";
 		    print "define host{\n";
 		    print "\tuse                    generic-host\n";
 		    print "\thost_name              $hostname\n";
@@ -274,14 +274,17 @@ foreach my $file (@files){
 		    my $first   = 1;
 		    my $fn      = $first_notification;
 		    my $ln      = $last_notification;
+
+		    # This will make sure we're looping through the highest level number
 		    my %levels;
-		    map { map { $levels{$_} = '' } keys %{ $contactlists{$_}{level} } } @clids;
+		    map { map { $levels{$_} = '' } keys %{ $contactlists{$_->id}{level} } } @cls;
 
 		    foreach my $level ( sort keys %levels ){
 			my @contact_groups;
-			foreach my $clid ( @clids ){
-			    if( $contactlists{$clid}{level}{$level} ){
-				push @contact_groups, "$contactlists{$clid}{name}" . "-level_$level";
+			foreach my $cl ( @cls ){
+			    # Make sure this contact list has this level defined
+			    if( $contactlists{$cl->id}{level}{$level} ){
+				push @contact_groups, "$contactlists{$cl->id}{name}" . "-level_$level";
 			    }
 			}
 			my $contact_groups = join ',', @contact_groups;
@@ -482,8 +485,10 @@ foreach my $file (@files){
 			    $checkcmd .= "!$services{$hostname}{$srvname}{community}";
 			}
 			
-			my $clid = $services{$hostname}{$srvname}{contactlist};
-			if ( ! $clid ){
+			my @cls = @{ $services{$hostname}{$srvname}{contactlists} }
+			if $services{$hostname}{$srvname}{contactlists};
+			
+			if ( ! @cls ){
 			    
 			    print "define service{\n";
 			    print "\tuse                  generic-service\n";
@@ -494,39 +499,53 @@ foreach my $file (@files){
 			    print "}\n\n";
 			    
 			}else{
-			    my $clname = $contactlists{$clid}{name} || 'nobody';
 			    my $first  = 1;
 			    my $fn     = $first_notification;
 			    my $ln     = $last_notification;
-			    foreach my $level ( sort keys %{ $contactlists{$clid}{level} } ){
-				
-				if ($first){
-				    print "define service{\n";
-				    print "\tuse                  generic-service\n";
-				    print "\thost_name            $hostname\n";
-				    print "\tservice_description  $srvname\n";
-				    print "\tcontact_groups       $clname-level_$level\n";
-				    print "\tcheck_command        $checkcmd\n";
-				    print "}\n\n";
-				    
-				    $first = 0;
-				}else{
-				    
-				    print "define serviceescalation{\n";
-				    print "\thost_name                $hostname\n";
-				    print "\tservice_description      $srvname\n";
-				    print "\tfirst_notification       $fn\n";
-				    print "\tlast_notification        $ln\n";
-				    print "\tnotification_interval    $notification_interval\n";
-				    print "\tcontact_groups           $clname-level_$level\n";
-				    print "}\n\n";
-				    
-				    $fn += $ln - $fn + 1;
-				    $ln += $ln - $fn + 1;
+			    
+			    # This will make sure we're looping through the highest level number
+			    my %levels;
+			    map { map { $levels{$_} = '' } keys %{ $contactlists{$_->id}{level} } } @cls;
+			    
+			    foreach my $level ( sort keys %levels ){
+				my @contact_groups;
+				foreach my $cl ( @cls ){
+				    # Make sure this contact list has this level defined
+				    if( $contactlists{$cl->id}{level}{$level} ){
+					push @contact_groups, "$contactlists{$cl->id}{name}" . "-level_$level";
+				    }
 				}
-			    }	   
-			}
-			
+				my $contact_groups = join ',', @contact_groups;
+				
+				foreach my $level ( sort keys %levels ){
+				    
+				    if ($first){
+					print "define service{\n";
+					print "\tuse                  generic-service\n";
+					print "\thost_name            $hostname\n";
+					print "\tservice_description  $srvname\n";
+					print "\tcontact_groups       $contact_groups\n";
+					print "\tcheck_command        $checkcmd\n";
+					print "}\n\n";
+					
+					$first = 0;
+				    }else{
+					
+					print "define serviceescalation{\n";
+					print "\thost_name                $hostname\n";
+					print "\tservice_description      $srvname\n";
+					print "\tfirst_notification       $fn\n";
+					print "\tlast_notification        $ln\n";
+					print "\tnotification_interval    $notification_interval\n";
+					print "\tcontact_groups           $contact_groups\n";
+					print "}\n\n";
+					
+					$fn += $ln - $fn + 1;
+					$ln += $ln - $fn + 1;
+				    }
+				}	   
+			    }
+			}   
 		    }else{
 			warn "Warning: service check for $srvname not implemented.  Skipping $srvname check for host $hostname.\n";
 		    }
