@@ -545,7 +545,7 @@ sub update {
     foreach my $col ( keys %state ) {
 	my $v = ( ref($obj->$col) ) ? $obj->$col->id : $obj->$col;
 	eval { 
-	    if( $state{$col} ne $v ) {
+	    if( int($state{$col}) ne $v ) {
 		$change = 1;
 		$obj->set( $col, $state{$col} ); 
 	    }
