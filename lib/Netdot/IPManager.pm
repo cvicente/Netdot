@@ -44,9 +44,46 @@ sub new {
 }
 
 
+=head2 _ip2int - Convert IP(v4/v6) address string into its decimal value
+
+ Arguments: address string
+ Returns:   integer (decimal value of IP address)
+
+=cut
+
+sub _ip2int {
+    my ($self, $address) = @_;
+    my $ipobj;
+    unless ( $ipobj = NetAddr::IP->new($address) ){
+	$self->error(sprintf("Invalid IP address: %s", $address));
+	return 0;
+    }
+    return ($ipobj->numeric)[0];
+}
+
+
+=head2 sortblocks - Sort Ipblocks by address
+
+ Arguments: Array of Ipblock objects
+ Returns:   Sorted array of Ipblock objects
+
+=cut
+
+sub sortblocks {
+    my ($self, @blocks) = @_;
+    my %ints;
+    foreach my $ipblock ( @blocks ){
+	my $int = $self->_ip2int($ipblock->address);
+	$ints{$int} = $ipblock;
+    }
+    my @sorted = map { $ints{$_} } sort keys %ints;
+    return @sorted;
+}
+
+
 =head2 searchblocks_addr -  Search IP Blocks by address
  Arguments: address and (optional) prefix
- Returns: array of Ipblock object
+ Returns: array of Ipblock objects
 
 =cut
 
@@ -78,7 +115,8 @@ sub searchblocks_addr {
     if (scalar (@ipb) > $self->{config}->{'MAXSEARCHBLOCKS'}){
 	$self->error("Too many entries. Please refine search");
 	return;
-    }    
+    }
+    @ipb = $self->sortblocks(@ipb);
     wantarray ? ( @ipb ) : $ipb[0]; 
 
 }
@@ -102,6 +140,7 @@ sub searchblocks_addr_like {
 	    return;
 	}
     }
+    @ipb = $self->sortblocks(@ipb);
     wantarray ? ( @ipb ) : $ipb[0]; 
 
 }
@@ -135,6 +174,7 @@ sub searchblocks_other {
 	$self->error("Too many entries. Please refine search");
 	return;
     }
+    @ipb = $self->sortblocks(@ipb);
     wantarray ? ( @ipb ) : $ipb[0]; 
 
 }
@@ -900,3 +940,5 @@ sub subnet_num_addr {
     return $ip->num - 1;
     
 }
+
+
