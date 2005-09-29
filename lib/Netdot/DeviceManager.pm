@@ -1067,23 +1067,27 @@ sub update_device {
     }
 
     ##############################################
-    # remove old Resource Records 
+    # remove old RRs if they no longer have any
+    # addresses associated
 
     foreach my $rr ( @nonrrs ){
-	my $msg = sprintf("%s: Removing old RR %s", 
-			  $host, $rr->name);
-	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => $msg,
-		      );
-	$self->output($msg);		
-	unless( $self->remove( table => "RR",  id => $rr->id ) ) {
-	    my $msg = sprintf("%s: Could not remove RR %s: %s", 
-			      $host, $rr->name, $self->error);
-	    $self->debug( loglevel => 'LOG_ERR',
+	if ( ! $rr->arecords ){
+	    # Assume the name can go
+	    # since it has no addresses associated
+	    my $msg = sprintf("%s: Removing old RR: %s", 
+			      $host, $rr->name );
+	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg,
 			  );
-	    $self->output($msg);
-	    next;
+	    $self->output($msg);		
+	    unless( $self->remove( table => "RR",  id => $rr->id ) ) {
+		my $msg = sprintf("%s: Could not remove RR %s: %s", 
+				  $host, $rr->name, $self->error);
+		$self->debug( loglevel => 'LOG_ERR',
+			      message  => $msg,
+			      );
+		$self->output($msg);
+	    }
 	}
     }
 
