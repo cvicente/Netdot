@@ -161,7 +161,7 @@ sub insert_rr {
 	    # error should be set
 	}
     }
-    if (my $rrid = $self->getrrbyname($argv{name})){
+    if (my $rr = $self->getrrbyname($argv{name})){
 	$self->error(sprintf("Record %s already exists.", $argv{name}));
 	return 0;
     }
@@ -205,14 +205,24 @@ sub insert_a_rr{
 	$self->error("Missing required args");
 	return 0;
     }
-    unless ( $rr = $argv{rr} ){
-	unless ($rr = $self->insert_rr(name        => $argv{name}, 
-				       zone        => $argv{zone},
-				       origin      => $argv{origin},
-				       contactlist => $argv{contactlist},
-				       active      => $argv{active} )){
-	    return 0;
-	    # error should be set
+    if ( ! ($rr = $argv{rr}) ){
+	# The RR was not passed
+	if ( $rr = $self->getrrbyname($argv{name})){
+	    # An RR exists with that name
+	    if ( $rr->arecords ){
+		my $msg = sprintf("RR %s already has A records", $rr->name );
+		$self->error($msg);
+		return 0;		
+	    }
+	}else{
+	    unless ($rr = $self->insert_rr(name        => $argv{name}, 
+					   zone        => $argv{zone},
+					   origin      => $argv{origin},
+					   contactlist => $argv{contactlist},
+					   active      => $argv{active} )){
+		return 0;
+		# error should be set
+	    }
 	}
     }
     my %state = (rr       => $rr,

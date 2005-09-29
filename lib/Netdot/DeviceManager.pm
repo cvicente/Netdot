@@ -543,7 +543,7 @@ sub update_device {
     ##############################################
     # for each interface just discovered...
 
-    my (%dbips, %newips, %dbvlans, %ifvlans, %name2int, @nonrrs);
+    my (%dbips, %newips, %dbvlans, %ifvlans, @nonrrs);
 
     my %IFFIELDS = ( number           => "",
 		     name             => "",
@@ -853,13 +853,13 @@ sub update_device {
 
 	# Determine what DNS name this IP will have
 	my $name = $self->_canonicalize_int_name($ipobj->interface->name);
-	if ( exists $name2int{$name} ){
+	if ( $ipobj->interface->ips > 1 
+	     ||  $self->getrrbyname($name) ){
 	    # Interface has more than one ip
+	    # or somehow this name is already used.
 	    # Append the ip address to the name to make it unique
 	    $name .= "-" . $ipobj->address;
 	}
-	# Keep a list
-	$name2int{$name} = $ipobj->interface->name; 
 	# Append device name
 	# Remove any possible prefixes added
 	# e.g. loopback0.devicename -> devicename
