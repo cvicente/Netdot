@@ -863,7 +863,7 @@ sub gethistoryobjs {
     return @ho;
 }
 
-=head2 search_all_netdot - 
+=head2 search_all_netdot - Search for a string in all fields from all tables, excluding foreign key fields.
 
 Arguments:  query string
 Returns:    reference to hash of hashes 
@@ -876,22 +876,32 @@ sub search_all_netdot {
     
     # Ignore these fields when searching
     my %ign_fields = ('id' => '');
+    # Remove leading and trailing spaces
+    $q =~ s/^\s*(.*)\s*$/$1/;
+    # Add wildcards
+    $q = "%" . $q . "%";
 
     foreach my $tbl ( $self->gettables() ) {
 	next if $tbl eq "Meta";
+	# Will also ignore foreign key fields
 	my %linksto = $self->getlinksto($tbl);
 	my @cols;
 	map { push @cols, $_ unless( exists $ign_fields{$_} || $linksto{$_} ) } $tbl->columns(); 
-	
-	foreach my $q ( split( /\s+/, $q ) ) {
-	    $q = "%" . $q . "%";
-	    my @where;
-	    map { push @where, "$_ LIKE \"$q\"" } @cols;
-	    my $where = join " or ", @where;
-	    next unless $where;
-	    my $st = $self->{dbh}->prepare("SELECT id FROM $tbl WHERE $where;");
+	my @where;
+	map { push @where, "$_ LIKE \"$q\"" } @cols;
+	my $where = join " or ", @where;
+	next unless $where;
+	my $st;
+	eval {
+	    $st = $self->{dbh}->prepare("SELECT id FROM $tbl WHERE $where;");
 	    $st->execute();
-	    map { $results{$tbl}{$_} = $tbl->retrieve($_) } $st->fetchrow_array();
+	};
+	if ( $@ ){
+	    $self->error("Error in search_all_netdot: $@");
+	    return;
+	}
+	while ( my ($id) = $st->fetchrow_array() ){
+	    $results{$tbl}{$id} = $tbl->retrieve($id);
 	}
     }
     (%results) ? return \%results : return;
