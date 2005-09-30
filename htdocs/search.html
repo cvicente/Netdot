@@ -7,45 +7,53 @@ Performs a general search in the database, looking into every field of every tab
 
 <%args>
 $q
-
 </%args>
 
 <%init>
 
 my %linksto;
-my $results = $ui->search_all_netdot($q);
+my $results;
+unless ( $results = $ui->search_all_netdot($q) ){
+    $m->comp("error.mhtml", error => $ui->error);
+}
+my $DEBUG = 0;
+if ( $DEBUG ) {
+    print "<pre>", Dumper($results), "</pre>";
+    $m->abort;
+}
+my $numtbls = scalar keys %$results;
 
 </%init>
 
 
-<!-- begin search -->
-<form action="search.html" method="POST">
+<div class="containeroutside">
 
-<p>Netdot Search
+<div class="containerheadleftoutside">
+  <strong>Netdot General Search</strong>
+  <br>Found matches in <% $numtbls %> tables:
+</div>
+<div class="containerheadrightoutside">
+  <form action="search.html" method="POST">
+    <input type="text" name="q" size="25" value="<% $q %>">
+    <input name="submit" value="Submit" type="submit">
+  </form>
+</div>
 
-<form>
-  <input type="text" name="q" size="25" value="<% $q %>">
-  <input name="submit" value="Submit" type="submit">
-</form>
-
-%   if( scalar( keys %$results ) < 1 || ! %$results ) {
+%   if( $numtbls < 1 || ! %$results ) {
       No matching records were found.
 %   } else {
-      <blockquote>
-      <table cellpadding="4" cellspacing="0" border="0" class="formtablebg">
 %     foreach my $tbl ( sort { $a cmp $b } keys %$results ) {
 %       my @objs;
 %       map { push @objs, $results->{$tbl}->{$_} } keys %{ $results->{$tbl} };
-	<tr class="formtabletitle">
-        <td colspan="2" class="rowtitle0"><strong><% $tbl %></strong></td>
-        </tr>
-        <tr><td>
-        <& sortresults.mhtml, table => $tbl, object => \@objs, view => "column" &>
-        </td></tr>
+        <div class="container">
+	  <div class="containerheadleft"><% $tbl %></div>
+	  <div class="containerheadright">&nbsp;</div>
+	  <div class="containerbodyoutside">
+	    <& sortresults.mhtml, table => $tbl, object => \@objs, view => "row" &>
+	  </div>
+	</div>
+
 %     } # end foreach tbl
-      </table>
-      </blockquote>
 %   } # end else
 
-<br>
-<!-- end search -->
+</div>
