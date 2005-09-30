@@ -70,7 +70,7 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 #######################################################################################
 
 if ( defined($_action) && defined($search) ){
-    $search =~ s/\s*//g;
+    $search =~ s/^\s*(.*)\s*$/$1/g;
     my @list;
     if ( $_action eq "SEARCH_ADDR" ){
 	if ($search =~ /\w+/ ){
