@@ -350,7 +350,22 @@ if ( defined($_action) && defined($search) ){
 <!-- IP Info Table -->
 <div class="container">
 
-    <div class="containerheadleft">Address Info</div>
+% if ( my @parents = $ipm->getparents($o) ){
+%   my @line;
+%   foreach my $par ( reverse @parents ){
+%      push (@line, "<a href=\"ip-ws.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
+%   }
+%   push (@line, $o->address . "/" . $o->prefix);
+    
+    <div class="containerheadleft">
+%     print join ' : ', @line;
+    </div>
+% }else{
+    <div class="containerheadleft">
+	Address: <% $o->address."/".$o->prefix %>
+    </div>
+% }
+
     <div class="containerheadright">
 %	 if ($edit eq "ipinfo"){	 
             <input name="submit" value="save" type="submit">
@@ -456,16 +471,6 @@ if ( defined($_action) && defined($search) ){
     @field_headers = ();
     @cell_data = ();
 
-    push( @field_headers, "Parent Block:" );
-    push( @cell_data, 
-        eval {
-            if (defined($o->parent) && int($o->parent)){
-                qq(<a href="ip-ws.html?id=).$o->parent->id.qq(">).$o->parent->address."/".$o->parent->prefix."</a>";
-            }else{
-                qq(<strong><font size="-1">(root block)</font></strong>);
-            }
-        }  );
-
     push( @field_headers, "First Seen:" );
     push( @cell_data, $ui->text_field(object=>$o, column=>"first_seen", edit=>$edit_ip, htmlExtra =>"style='width: 25em'", returnAsVar=>1) );
 
@@ -528,16 +533,30 @@ if ( defined($_action) && defined($search) ){
 <!-- Block Info Table -->
 <div class="container">
 
-        <div class="containerheadleft">Block Info</div>
-        <div class="containerheadright">
-%	if ($edit eq "blockinfo"){	 
-            <input name="submit" value="save" type="submit">
-%	}else{
-            <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
-            <a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
-            <a href="ip-ws.html?id=<% $id %>&edit=blockinfo">[edit]</a>
-%       }
-        </div>
+% if ( my @parents = $ipm->getparents($o) ){
+%    my @line;
+%   foreach my $par ( reverse @parents ){
+%      push (@line, "<a href=\"ip-ws.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
+%   }
+%   push (@line, $o->address . "/" . $o->prefix);
+    
+    <div class="containerheadleft">
+%      print join ' : ', @line;
+    </div>
+% }else{
+    <div class="containerheadleft">
+	Root Block: <% $o->address."/".$o->prefix %>
+    </div>
+% }
+    <div class="containerheadright">
+%  if ($edit eq "blockinfo"){	 
+    <input name="submit" value="save" type="submit">
+%  }else{
+    <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
+	<a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
+	<a href="ip-ws.html?id=<% $id %>&edit=blockinfo">[edit]</a>
+%  }
+    </div>
 
     <div class="containerbody">
     <!-- this is for the two-column layout of the body -->
@@ -579,6 +598,9 @@ my @cell_data = ( );
     push( @field_headers, "Comments:" );
     push( @cell_data, $ui->text_area(object=>$o, column=>"info", edit=>$edit_block, htmlExtra=>"cols=45", returnAsVar=>1) );
 
+    push( @field_headers, "Owned by:" );
+    push( @cell_data, "" );
+
     push( @field_headers, "Used by:" );
     my $used_by;
             if ($edit eq "blockinfo"){	 
@@ -590,7 +612,25 @@ my @cell_data = ( );
 
     my $delegate_dns = $ui->radio_group_boolean(object=>$o, column=>"dns_delegated", edit=>$edit_block, returnAsVar=>1);
 
-# optionally, add more headers and content
+</%perl>
+
+%# actually output the table to the browser
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
+    </td>
+    <td width="50%" valign="top">
+
+<%perl>
+
+@field_headers = ( );
+@cell_data = ( );
+
+    push( @field_headers, "Created:" );
+    push( @cell_data, $o->first_seen );
+
+    push( @field_headers, "Last Updated:" );
+    push( @cell_data, $o->last_seen );
+
 if ($o->status->name eq "Subnet") {
       my $used = (scalar $o->children);
       my $total = $ipm->subnet_num_addr($o);
@@ -609,32 +649,6 @@ if ($o->status->name eq "Subnet") {
     push( @field_headers, "Delegate DNS:" );
     push( @cell_data, $delegate_dns );
 }
-
-</%perl>
-
-%# actually output the table to the browser
-<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-
-    </td>
-    <td width="50%" valign="top">
-
-<%perl>
-
-@field_headers = ( );
-@cell_data = ( );
-
-    push( @field_headers, "Parent Block" );
-    if (defined($o->parent) && int($o->parent)){
-        push( @cell_data, "<a href=\"ip-ws.html?id=".$o->parent->id."\">".$o->parent->address."/".$o->parent->prefix."</a>" );
-    }else{
-        push( @cell_data, "<strong><font size=\"-1\">(root block)</font></strong>" );
-    }
-
-    push( @field_headers, "Created:" );
-    push( @cell_data, $o->first_seen );
-
-    push( @field_headers, "Last Updated:" );
-    push( @cell_data, $o->last_seen );
 
     if ($edit eq "blockinfo"){
         # don't show new subnet form
