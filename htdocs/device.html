@@ -19,6 +19,11 @@ section => 'Management'
 </%attr>
 %
 %
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
 <%args>
 $id        => undef
 $search    => undef
@@ -44,6 +49,12 @@ $newip     => undef
 </%args>
 %
 %
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
 <%init>
 my $DEBUG      = 0;
 my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
@@ -54,6 +65,7 @@ my $name;
 my %ifvlans;
 my %vlans;
 my $list;
+my $fqdn;
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
@@ -67,7 +79,16 @@ if ( $submit eq "search" ){
 	# remove spaces
 	$search =~ s/\s*//g;
 	unless ( ($list = $dns->getdevbynamelike($search)) ){
-	    print  "<p><b>No results</b>";
+print <<EOF;
+	    <div class="container">
+		<div class="containerhead">
+		  <strong>No results</strong>   
+		</div>
+		<div class="containerbody">
+		  <p><strong><em>$search</em> not found</strong>   
+		</div>
+	    </div>
+EOF
 	    $m->abort;
 	}
 	my $num = scalar(@$list);
@@ -79,7 +100,16 @@ if ( $submit eq "search" ){
 	}
 	
     }else{
-	print "<p><b>No search criteria</b>";   
+print <<EOF;
+    <div class="container">
+	<div class="containerhead">
+	  <strong>No results</strong>   
+	</div>
+	<div class="containerbody">
+	  <p><strong>No search criteria</strong>   
+	</div>
+    </div>
+EOF
 	$m->abort;
     }
  
@@ -121,11 +151,24 @@ if ( $id ){
 }
 if ( $o && $o->name ){
     $name = ($o->name->name) ? $o->name->name : "Name N/A!";
+    $fqdn = $name . "." . $o->name->zone->mname;
+
 }elsif ( ! $search ){
     $m->comp('error.mhtml', error=>"Device undefined or no name set");
 }
 
-
+if ( $view eq "Interfaces" || $view eq "All" ){
+    # Build a hash of Interface Vlans
+    foreach my $if ( $o->interfaces ){
+	if (scalar( my @ifv = $if->vlans)){
+	    foreach my $ifv (@ifv){
+		my $vid = $ifv->vlan->vid;
+		$ifvlans{$if}{$vid} = "";
+		$vlans{$vid} = $ifv->vlan->id;
+	    }
+	}
+    }
+}
 </%init>
 
 <div id="sectiondetail">
@@ -172,6 +215,12 @@ function setNull(select){
 -->
 </script>
 
+%#######################################################################
+%#
+%# Search results section
+%#
+%#######################################################################
+
 % if ( $search ){
 <div class="container">
   <div class="containerheadleft">
@@ -183,103 +232,85 @@ function setNull(select){
   </div>
 </div>
 
+%#######################################################################
+%#
+%# Device view section
+%#
+%#######################################################################
 % }else{  # we're not searching
 
 <!-- Header Table -->
 <div class="containeroutside">
   <div class="containerheadleftoutside">
-         Device: <b><% $name %></b>&nbsp;<br/>
+ 
+ Device: <b><% $name %></b>&nbsp;
+ <a href="http://<% $fqdn %>" target=#>[HTTP]</a> <a href="ssh://<% $user->getUsername() %>@<% $fqdn %>">[SSH]</a> <a href="telnet://<% $fqdn %>">[Telnet]</a>
 
-       View: 
-%    if ( $view eq "Basics" ){
-	[Basics]
-%    }else{
-         <a href="device.html?id=<% $id %>&view=Basics">[Basics]</a>
-%    }
-%    if ( $view eq "Interfaces" ){
-	[Interfaces]
-%    }else{
-	 <a href="device.html?id=<% $id %>&view=Interfaces">[Interfaces]</a>
-%    }
-%    if ( $view eq "IP" ){
-	[IP info]
-%    }else{
-	 <a href="device.html?id=<% $id %>&view=IP">[IP info]</a>
-%    }
-%    if ( $o->bgppeers ){
-%      if ( $view eq "BGP" ){
-	 [BGP Peers]
-%      }else{
-	 <a href="device.html?id=<% $id %>&view=BGP">[BGP Peers]</a>
-%      }
-%    }
-%    if ( $view eq "Topology" ){
-	 [Topology]
-%      }else{
-	 <a href="device.html?id=<% $id %>&view=Topology">[Topology]</a>
-%    }
-%    if ( $view eq "History" ){
-	 [History]
-%      }else{
-	 <a href="device.html?id=<% $id %>&view=History">[History]</a>
-%    }
-%    if ( $view eq "All" ){
-	[All]
-%    }else{
-	 <a href="device.html?id=<% $id %>&view=All">[All]</a>
-%    }
 </div>
 
 <div class="containerheadrightoutside">
-    <a href="device.html?id=<% $id %>&view=<% $view %>"> [refresh]</a>&nbsp;
-	<a href="deldevice.html?id=<% $id %>"> [delete]</a>&nbsp;<br/>
 
-<%perl>
- if ( $view eq "Interfaces" || $view eq "All" ){
-    # Build a hash of Interface Vlans
-    foreach my $if ( $o->interfaces ){
-      if (scalar( my @ifv = $if->vlans)){
-	    foreach my $ifv (@ifv){
-		my $vid = $ifv->vlan->vid;
-		$ifvlans{$if}{$vid} = "";
-		$vlans{$vid} = $ifv->vlan->id;
-	    }
-      }
-    }
-</%perl>
-
-    <form name="showvlans">
-    VLAN view 
-    <select name="showvlan" onchange="showVlan()">
-%   if ( $showvlan eq 'all' ){
-       <option value="all" SELECTED>all</option>
-%   }else{
-       <option value="all">all</option>
-%   }
-%   foreach my $vid ( sort keys %vlans ){
-%     if ( $showvlan eq $vid ){
-        <option value="<% $vid %>" SELECTED><% $vid %></option>     
-%     }else{
-        <option value="<% $vid %>"><% $vid %></option>     
-%     }
-%   }
-    </select>
-    </form>
-
-% } else {
-<br/><!-- make the left and right heights equal (HACK) -->
-% }
+    <a href="device.html?id=<% $id %>&view=<% $view %>">[refresh]</a>
+    <a href="updatedevice.html?device=<% $id %>&action=discover">[snmp-update]</a>
+    <a href="deldevice.html?id=<% $id %>"> [delete]</a>
 
 </div> <!-- close containerheadrightoutside -->
 
+%#######################################################################
+%#
+%# Navigation Bar
+%#
+%#######################################################################
+
+<div id="navbar">
+    <ul id="navigation">
+%     if( $view eq "Basics" ) {
+        <li><span>Basics</span></li>
+%     } else {
+        <li><a href="device.html?id=<% $id %>&view=Basics">Basics</a></li>
+%     }
+%     if( $view eq "Interfaces" ) {
+        <li><span>Interfaces</span></li>
+%     } else {
+        <li><a href="device.html?id=<% $id %>&view=Interfaces">Interfaces</a></li>
+%     }
+%     if( $view eq "IP" ) {
+        <li><span>IP info</span></li>
+%     } else {
+        <li><a href="device.html?id=<% $id %>&view=IP">IP info</a></li>
+%     }
+%     if ( $o->bgppeers ){
+%       if( $view eq "BGP" ) {
+          <li><span>BGP Peers</span></li>
+%       } else {
+          <li><a href="device.html?id=<% $id %>&view=BGP">BGP Peers</a></li>
+%       }
+%     }
+%     if( $view eq "Topology" ) {
+        <li><span>Topology</span></li>
+%     } else {
+        <li><a href="device.html?id=<% $id %>&view=Topology">Topology</a></li>
+%     }
+%     if( $view eq "History" ) {
+        <li><span>History</span></li>
+%     } else {
+        <li><a href="device.html?id=<% $id %>&view=History">History</a></li>
+%     }
+%     if( $view eq "All" ) {
+        <li><span>All</span></li>
+%     } else {
+        <li><a href="device.html?id=<% $id %>&view=All">All</a></li>
+%     }
+    </ul>
+</div>
+
 <div class="containerbodyoutside">
 
-% if ( $editgen || $editloc || $editmgmt || $editips || $editints || $editbgp 
-%     || $view eq "Interfaces" || $view eq "All" ) {
-    <form name="netdotform" action="device.html" method="POST">
-    <input type="hidden" name="id" value="<% $id %>">
-    <input type="hidden" name="view" value="<% $view %>">
-% }
+%#######################################################################
+%#
+%# Basics
+%#
+%#######################################################################
 
 % if ( $view eq "Basics" || $view eq "All" ){
 
@@ -292,11 +323,15 @@ function setNull(select){
 	<!-- General Info Table -->
     	<div class="containerheadleft"><b>General</b></div>
     	<div class="containerheadright">
-%	     if ($editgen){	 
-            <input name="submit" value="save" type="submit">
-%        }else{
+% if ( $editgen || $editloc || $editmgmt ) {
+        <form name="netdotform" action="device.html" method="POST">
+	    <input type="hidden" name="id" value="<% $id %>">
+	    <input type="hidden" name="view" value="<% $view %>">
+	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+	    <input type="submit" name="submit" value="save" >
+% }else{
             <a href="device.html?id=<% $id %>&view=<% $view %>&editgen=1">[edit]</a>
-%        }
+% }
         </div>
         <div class="containerbody">
          <table width="100%">
@@ -384,7 +419,8 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
     </div>
     <div class="containerheadright">
 %	if ($editloc){	 
-        <input name="submit" value="save" type="submit">
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+        <input type="submit" name="submit" value="save">
 %	}else{
         <a href="device.html?id=<% $id %>&view=<% $view %>&editloc=1">[edit]</a>
 %	}
@@ -450,7 +486,8 @@ push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, re
     </div>
     <div class="containerheadright">
 %	 if ($editmgmt){	 
-        <input name="submit" value="save" type="submit">
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+        <input type="submit" name="submit" value="save">
 %	 }else{
         <a href="device.html?id=<% $id %>&view=<% $view %>&editmgmt=1">[edit]</a>
 %	 }
@@ -483,16 +520,6 @@ push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"canautoupdate", 
 push( @field_headers, "NATted?: " );
 push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"natted", edit=>$editmgmt, returnAsVar=>1) );
 
-
-  if (! $editmgmt){	 
-
-push( @field_headers, "Fetch SNMP info and update DB" );
-push( @cell_data, '<b><a href="updatedevice.html?device='.$id.'&action=discover">[update]</a></b>' );
-push( @field_headers, "Connect via: " );
-push( @cell_data, '<a href="http://'.$name.'" target=#>[HTTP]</a> <a href="ssh://'.$user->getUsername().'@'.$name.'">[SSH]</a> <a href="telnet://'.$name.'">[Telnet]</a>' );
-
-}
-
 </%perl>
 
        <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
@@ -506,11 +533,20 @@ push( @cell_data, '<a href="http://'.$name.'" target=#>[HTTP]</a> <a href="ssh:/
 </table>
 <!-- End Division Table -->
 
+%   if ( $editgen || $editloc || $editmgmt ) {
+      </form>
+%   }
 % }
 
 <%perl>
 my (@headers, @rows, @row);
 </%perl>
+
+%#######################################################################
+%#
+%# IP info
+%#
+%#######################################################################
 
 % if ( $view eq "IP" || $view eq "All" ){
 
@@ -527,11 +563,15 @@ my (@headers, @rows, @row);
         IPs
     </div>
     <div class="containerheadright">
-%	    if ($editips){	 
-            <input name="submit" value="save" type="submit">
-%	    }else{
-            <a href="device.html?id=<% $id %>&view=<% $view %>&editips=1">[edit]</a>
-%	    }
+%   if ( $editips ) {
+      <form name="netdotform" action="device.html" method="POST">
+	  <input type="hidden" name="id" value="<% $id %>">
+	  <input type="hidden" name="view" value="<% $view %>">
+	  <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+          <input type="submit" name="submit" value="save">
+%   }else{
+          <a href="device.html?id=<% $id %>&view=<% $view %>&editips=1">[edit]</a>
+%   }
     </div>
     <div class="containerbody">
 
@@ -673,7 +713,17 @@ push( @rows, \@row );
     </div>
 </div>
 <!-- End IPs Table -->
-% } 
+
+%   if ( $editips ) {
+       </form>
+%   }
+% }
+
+%#######################################################################
+%#
+%# Interfaces
+%#
+%#######################################################################
 
 % if ( $view eq "Interfaces" || $view eq "All" ){
 
@@ -683,11 +733,34 @@ push( @rows, \@row );
         Interfaces
     </div>
     <div class="containerheadright">
-%	  if ($editints){	 
-          <input name="submit" value="save" type="submit">
-%	  }else{
-          <a href="device.html?id=<% $id %>&view=<% $view %>&editints=1">[edit]</a>
-%	  }
+
+%   if ($editints){	 
+    <form name="netdotform" action="device.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>">
+	<input type="hidden" name="view" value="<% $view %>">
+	<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+	<input type="submit" name="submit" value="save">
+%   }else{
+
+    <form name="showvlans">
+	VLAN view: <select name="showvlan" onChange="showVlan();">
+%     if ( $showvlan eq 'all' ){
+         <option value="all" SELECTED>all</option>
+%     }else{
+         <option value="all">all</option>
+%     }
+%     foreach my $vid ( sort keys %vlans ){
+%       if ( $showvlan eq $vid ){
+          <option value="<% $vid %>" SELECTED><% $vid %></option>     
+%       }else{
+          <option value="<% $vid %>"><% $vid %></option>     
+%       }
+%     }
+      </select>
+    </form> 
+    <a href="device.html?id=<% $id %>&view=<% $view %>&editints=1">[edit]</a>
+
+%  }
     </div>
     <div class="containerbody">
 
@@ -829,21 +902,35 @@ push( @rows, \@row );
     </div>
     <div class="containerheadright">
 %	  if ( $editints ){	 
-          <input name="submit" value="save" type="submit">
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="save">
 %	  }
     </div>
 </div>
 <!-- End Interface Table -->
 % } 
 
-% if ( $view eq "Interfaces" || $view eq "All" ){
-    Manually 
-    <input type="submit" name="intadd" value="Add">
-    <input type="text" name="intaddnum" value="0" size="3"> interfaces
+% if ( ! $editints && ($view eq "Interfaces" || $view eq "All") ){
+    <form name="netdotform" action="device.html" method="POST">
+      <input type="hidden" name="id" value="<% $id %>">
+      <input type="hidden" name="view" value="<% $view %>">
+      Manually 
+      <input type="submit" name="intadd" value="Add">
+      <input type="text" name="intaddnum" value="0" size="3"> interfaces
+    </form>
 % }
 
+%   if ($editints){	 
+       </form>
+%   }
 
-% if ( $view eq "BGP" || $view eq "All" ){
+%#######################################################################
+%#
+%# BGP Peers
+%#
+%#######################################################################
+
+% if ( $view eq "BGP" || $view eq "All"){
 
 <%perl>
     my @peers;
@@ -867,11 +954,16 @@ if ( $peersort eq "ip" ){
         BGP Peers
     </div>
     <div class="containerheadright">
-%	if ($editbgp){	 
-        <input name="submit" value="save" type="submit">
-%	}else{
+
+% if ( $editbgp ) {
+    <form name="netdotform" action="device.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>">
+	<input type="hidden" name="view" value="<% $view %>">
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+	<input type="submit" name="submit" value="save">
+% }else{
         <a href="device.html?id=<% $id %>&view=<% $view %>&editbgp=1">[edit]</a>
-%	}
+% }
     </div>
     <div class="containerbody">
 %	if (scalar @peers){
@@ -904,11 +996,19 @@ push( @rows, \@row );
 %      }
     </div>
 </div>
+
+%   if ( $editbgp ) {
+      </form>
+%   }
 <!-- End BGP Peers Table -->
 %   }
 % }  
 %
-%
+%#######################################################################
+%#
+%# History
+%#
+%#######################################################################
 %
 % if ( $view eq "History" || $view eq "All" ){
 %   my @h_objs = $ui->gethistoryobjs($o);
@@ -927,9 +1027,6 @@ push( @rows, \@row );
 %
 %} # if !defined search
 %
-
-</form>
-
 
  </div> <!-- close containerbodyoutside --> 
 </div> <!-- close containeroutside -->
