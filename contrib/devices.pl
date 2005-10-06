@@ -125,7 +125,20 @@ foreach my $dt (keys %tree){
 		    $link = "downlink: " .  $childdep->child->device->name->name . ".[$port]";
 		}
 	    }
-	    print $name, ", port ", $p->number, ", ", $p->name, ", ", $p->room_char, ", ", $p->jack_char, ", $descr",
+	    # Try to use actual jack and room object info.  If not, just use device's text ones
+	    my ($jack, $room);
+	    if ( $p->jack != 0 ){
+		$jack = $p->jack->jackid;
+		if ( $p->jack->room ){
+		    $room = $p->jack->room->name;
+		}else{
+		    $room = $p->room_char;
+		}
+	    }else{
+		$jack = $p->jack_char;
+		$room = $p->room_char;
+	    }
+	    print $name, ", port ", $p->number, ", ", $p->name, ", ", $room, ", ", $jack, ", $descr",
 	          ", ", $link, "\n";
 	}
 	print "\n";

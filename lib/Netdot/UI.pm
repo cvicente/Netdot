@@ -543,10 +543,10 @@ sub radio_group_boolean($@){
      }
 
     if ($isEditing){
-        $output .= sprintf("Y<input type=\"radio\" name=\"%s\" value=\"1\" %s>&nbsp;<br>\n", $name, ($value ? "checked" : ""));
-        $output .= sprintf("N<input type=\"radio\" name=\"%s\" value=\"0\" %s>\n", $name, (!$value ? "checked" : ""));
+        $output .= sprintf("Yes<input type=\"radio\" name=\"%s\" value=\"1\" %s>&nbsp;<br>\n", $name, ($value ? "checked" : ""));
+        $output .= sprintf("No<input type=\"radio\" name=\"%s\" value=\"0\" %s>\n", $name, (!$value ? "checked" : ""));
     }else{
-        $output .= sprintf("%s\n", ($value ? "Y" : "N"));
+        $output .= sprintf("%s\n", ($value ? "Yes" : "No"));
     }
 
     if ($returnAsVar==1) {

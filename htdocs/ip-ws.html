@@ -70,10 +70,10 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 #######################################################################################
 
 if ( defined($_action) && defined($search) ){
-    $search =~ s/^\s*(.*)\s*$/$1/g;
-    my @list;
-    if ( $_action eq "SEARCH_ADDR" ){
-	if ($search =~ /\w+/ ){
+    if ($search =~ /\w+/ ){
+	$search =~ s/^\s*(.*)\s*$/$1/g;
+	my @list;
+	if ( $_action eq "SEARCH_ADDR" ){
 	    my ($addr, $prefix, $ipb);
 	    if ($search =~ /\//){
 		($addr, $prefix) = split /\//, $search;
@@ -87,17 +87,13 @@ if ( defined($_action) && defined($search) ){
 		# None were found, so look for substrings
 		@list = $ipm->searchblocks_addr_like($search);
 	    }
-	}
-    }elsif ( $_action eq "SEARCH_OTHER" ){
-	if ($search =~ /\w+/ ){
+	}elsif ( $_action eq "SEARCH_OTHER" ){
 	    @list = $ipm->searchblocks_other($search);
+	}else {
+	    $m->comp('error.mhtml', error => "Unrecognized action parameter: $_action");	
 	}
-    }else {
-	$m->comp('error.mhtml', error => "Unrecognized action parameter: $_action");	
-    }
-
+	
 </%perl>      
-
 
        <div class="container">
           <div class="containerhead">
@@ -109,11 +105,21 @@ if ( defined($_action) && defined($search) ){
                   <& ipblock_list.mhtml, objects => \@list  &>
 %             }elsif ( $ipm->error ){
                   <p><strong><% $ipm->error %></strong>
-%             }else{
-                  <p><strong>No search criteria</strong>   
 %             }
           </div>
        </div>
+
+%   }else{
+       <div class="container">
+         <div class="containerhead">
+           <strong>Error!</strong>   
+         </div>
+         <div class="containerbody">
+            <p><strong>No search criteria</strong>   
+         </div>
+       </div>
+%   }
+
 
 <%perl>
 
@@ -132,31 +138,64 @@ if ( defined($_action) && defined($search) ){
 	    $o = Ipblock->retrieve($id);
 	}
     }else{
-	printf ("<p><strong>Error: %s</strong><br>", $ui->error);
-    }
+</%perl>
+       <div class="container">
+         <div class="containerhead">
+           <strong>Error!</strong>   
+         </div>
+         <div class="containerbody">
+	   <p><strong><% $ui->error %></strong>
+         </div>
+       </div>
+
+<%perl>
+   }
 
 #######################################################################################
 # Allocate
 #
 #######################################################################################
 }elsif ( defined($_action) && ($_action eq "ALLOCATE") ){
-    unless ($allocate =~ /\//){
+    my ($address, $prefix);
+    if ($allocate =~ /\//){
+	($address, $prefix) = split /\//, $allocate;
+    }else{
+	# If not passed,
+	# assign a host prefix automatically
+	if ( $allocate =~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/ ){
+	    ($address, $prefix) = ($allocate, '32');
+	}elsif( $allocate =~ /:/ ){
+	    ($address, $prefix) = ($allocate, '128');
+	}else{
 </%perl>
-
-     <p><strong>Error: New block must have prefix length</strong><br>   
-
+	    <div class="container">
+              <div class="containerhead">
+		<strong>Error!</strong>   
+	      </div>
+	      <div class="containerbody">
+		<p><strong><em><% $allocate %></em> does not look like a valid IP address</strong>
+	      </div>
+   	    </div>
 <%perl>
-     $m->abort;
+            $m->abort;
+	}
     }
-    my ($address, $prefix) = split /\//, $allocate;
     my $newblock; 
     unless( $newblock = $ipm->insertblock(address     => $address, 
 					  prefix      => $prefix, 
 					  statusname  => "Container")){
-	print "<strong>Error: ", $ipm->error, "</strong><br>";
+</%perl>
+	    <div class="container">
+              <div class="containerhead">
+		<strong>Error!</strong>   
+	      </div>
+	      <div class="containerbody">  
+	        <p><strong><% $ipm->error %></strong>
+	      </div>
+   	    </div>
+<%perl>
     }
-    if ($newblock)
-    {
+    if ($newblock){
 	$o = $newblock;
 	$id = $newblock->id;
     }
@@ -170,19 +209,31 @@ if ( defined($_action) && defined($search) ){
     $length =~ s/\///;
     my $newblock;
     unless ( $newblock = $ipm->auto_allocate($parent, $length, $strategy) ){
-	print "<strong>Error: ", $ipm->error, "</strong><br>";
-    }else {
 </%perl>
+    <div class="container">
+      <div class="containerhead">
+        <strong>Error!</strong>   
+      </div>
+      <div class="containerbody">  
+        <p><strong><% $ipm->error %></strong>
+      </div>
+    </div>
+%    }else {
 %     # Present new block and ask for confirmation
       <form action="ip-ws.html">
         <input type="hidden" name="_action" value="CONFIRM_AUTOALLOCATE">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="newblock" value="<% $newblock->id %>">
-        <br>
-        <strong>Do you want to use <% $newblock->address %>/<% $newblock->prefix %></strong> ?
-        <p>
-        <input type="submit" name="submit" value="Yes" >
-        <input type="submit" name="submit" value="No" >
+	<div class="container">
+	  <div class="containerhead">
+            <strong>Confirm</strong>   
+	  </div>
+	  <div class="containerbody">  
+	    <p>Do you want to use <strong><em><% $newblock->address %>/<% $newblock->prefix %></em></strong> ?
+	    <p><input type="submit" name="submit" value="Yes" >
+	    <input type="submit" name="submit" value="No" >
+	  </div>
+	</div>
       </form>
 <%perl>    
    #  Do not continue with object display
@@ -219,14 +270,18 @@ if ( defined($_action) && defined($search) ){
   <form action="ip-ws.html">
     <input type="hidden" name="_action" value="CONFIRM_DELETE">
     <input type="hidden" name="id" value="<% $id %>">
-
-    <p>Are you sure you want to <strong>delete <% $o->address %>/<% $o->prefix %></strong> ?<br>
-
-    <p>Delete recursively <input type="checkbox" name="recursivedel">
-
-    <p>
-    <input type="submit" name="submit" value="Yes" >
-    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+    
+    <div class="container">
+      <div class="containerhead">
+        <strong>Confirm</strong>   
+      </div>
+      <div class="containerbody">  
+        <p>Are you sure you want to delete <strong><em><% $o->address %>/<% $o->prefix %></em></strong> ?
+        <p>Delete children blocks <input type="checkbox" name="recursivedel">
+        <p><input type="submit" name="submit" value="Yes" >
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+      </div>
+    </div>
   </form>
 
 
@@ -250,11 +305,18 @@ if ( defined($_action) && defined($search) ){
     }
     
 </%perl>
-%  if ($rec){
-     <p><strong>Block <% $address %>/<% $prefix %> and all its children blocks have been removed</strong> <br>
-%  }else{
-     <p><strong>Block <% $address %>/<% $prefix %> has been removed</strong> <br>
-%  }
+       <div class="container">
+         <div class="containerhead">
+           <strong>Message</strong>   
+         </div>
+         <div class="containerbody">
+%        if ($rec){
+           <p><strong>Block <em><% $address %>/<% $prefix %></em> and all its children blocks have been deleted</strong> <br>
+%        }else{
+           <p><strong>Block <em><% $address %>/<% $prefix %></em> has been deleted</strong> <br>
+%        }
+         </div>
+       </div>
 
 <%perl>
 #    Show parent block
@@ -288,10 +350,26 @@ if ( defined($_action) && defined($search) ){
 <!-- IP Info Table -->
 <div class="container">
 
-    <div class="containerheadleft">Address Info</div>
+% if ( my @parents = $ipm->getparents($o) ){
+%   my @line;
+%   foreach my $par ( reverse @parents ){
+%      push (@line, "<a href=\"ip-ws.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
+%   }
+%   push (@line, $o->address . "/" . $o->prefix);
+    
+    <div class="containerheadleft">
+%     print join ' : ', @line;
+    </div>
+% }else{
+    <div class="containerheadleft">
+	Address: <% $o->address."/".$o->prefix %>
+    </div>
+% }
+
     <div class="containerheadright">
 %	 if ($edit eq "ipinfo"){	 
-            <input name="submit" value="save" type="submit">
+	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="save">
 %	 }else{
             <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
             <a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
@@ -394,16 +472,6 @@ if ( defined($_action) && defined($search) ){
     @field_headers = ();
     @cell_data = ();
 
-    push( @field_headers, "Parent Block:" );
-    push( @cell_data, 
-        eval {
-            if (defined($o->parent) && int($o->parent)){
-                qq(<a href="ip-ws.html?id=).$o->parent->id.qq(">).$o->parent->address."/".$o->parent->prefix."</a>";
-            }else{
-                qq(<strong><font size="-1">(root block)</font></strong>);
-            }
-        }  );
-
     push( @field_headers, "First Seen:" );
     push( @cell_data, $ui->text_field(object=>$o, column=>"first_seen", edit=>$edit_ip, htmlExtra =>"style='width: 25em'", returnAsVar=>1) );
 
@@ -414,7 +482,7 @@ if ( defined($_action) && defined($search) ){
     push( @cell_data, 
         eval {
             if ( $o->interface && $o->interface->id ){
-                qq(<a href="interface.html?id=).$o->interface->id.qq(">).$o->interface->name."</a>";
+                qq(<a href="view.html?table=Interface&id=).$o->interface->id.qq(">).$o->interface->name."</a>";
             }else{
                 "&nbsp;";
             }
@@ -466,16 +534,31 @@ if ( defined($_action) && defined($search) ){
 <!-- Block Info Table -->
 <div class="container">
 
-        <div class="containerheadleft">Block Info</div>
-        <div class="containerheadright">
-%	if ($edit eq "blockinfo"){	 
-            <input name="submit" value="save" type="submit">
-%	}else{
-            <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
-            <a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
-            <a href="ip-ws.html?id=<% $id %>&edit=blockinfo">[edit]</a>
-%       }
-        </div>
+% if ( my @parents = $ipm->getparents($o) ){
+%    my @line;
+%   foreach my $par ( reverse @parents ){
+%      push (@line, "<a href=\"ip-ws.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
+%   }
+%   push (@line, $o->address . "/" . $o->prefix);
+    
+    <div class="containerheadleft">
+%      print join ' : ', @line;
+    </div>
+% }else{
+    <div class="containerheadleft">
+	Root Block: <% $o->address."/".$o->prefix %>
+    </div>
+% }
+    <div class="containerheadright">
+%  if ($edit eq "blockinfo"){	 
+    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+    <input type="submit" name="submit" value="save">
+%  }else{
+    <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
+	<a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
+	<a href="ip-ws.html?id=<% $id %>&edit=blockinfo">[edit]</a>
+%  }
+    </div>
 
     <div class="containerbody">
     <!-- this is for the two-column layout of the body -->
@@ -517,6 +600,9 @@ my @cell_data = ( );
     push( @field_headers, "Comments:" );
     push( @cell_data, $ui->text_area(object=>$o, column=>"info", edit=>$edit_block, htmlExtra=>"cols=45", returnAsVar=>1) );
 
+    push( @field_headers, "Owned by:" );
+    push( @cell_data, "" );
+
     push( @field_headers, "Used by:" );
     my $used_by;
             if ($edit eq "blockinfo"){	 
@@ -528,7 +614,25 @@ my @cell_data = ( );
 
     my $delegate_dns = $ui->radio_group_boolean(object=>$o, column=>"dns_delegated", edit=>$edit_block, returnAsVar=>1);
 
-# optionally, add more headers and content
+</%perl>
+
+%# actually output the table to the browser
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
+    </td>
+    <td width="50%" valign="top">
+
+<%perl>
+
+@field_headers = ( );
+@cell_data = ( );
+
+    push( @field_headers, "Created:" );
+    push( @cell_data, $o->first_seen );
+
+    push( @field_headers, "Last Updated:" );
+    push( @cell_data, $o->last_seen );
+
 if ($o->status->name eq "Subnet") {
       my $used = (scalar $o->children);
       my $total = $ipm->subnet_num_addr($o);
@@ -547,32 +651,6 @@ if ($o->status->name eq "Subnet") {
     push( @field_headers, "Delegate DNS:" );
     push( @cell_data, $delegate_dns );
 }
-
-</%perl>
-
-%# actually output the table to the browser
-<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-
-    </td>
-    <td width="50%" valign="top">
-
-<%perl>
-
-@field_headers = ( );
-@cell_data = ( );
-
-    push( @field_headers, "Parent Block" );
-    if (defined($o->parent) && int($o->parent)){
-        push( @cell_data, "<a href=\"ip-ws.html?id=".$o->parent->id."\">".$o->parent->address."/".$o->parent->prefix."</a>" );
-    }else{
-        push( @cell_data, "<strong><font size=\"-1\">(root block)</font></strong>" );
-    }
-
-    push( @field_headers, "Created:" );
-    push( @cell_data, $o->first_seen );
-
-    push( @field_headers, "Last Updated:" );
-    push( @cell_data, $o->last_seen );
 
     if ($edit eq "blockinfo"){
         # don't show new subnet form

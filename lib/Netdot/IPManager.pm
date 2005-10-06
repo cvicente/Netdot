@@ -201,6 +201,23 @@ sub getchildren {
     wantarray ? ( @ipb ) : $ipb[0]; 
 }
 
+=head2 getparents - Get parents recursively
+    
+Arguments: Ipblock object
+Returns:   Array of ancestor Ipblock objects, in order
+
+=cut
+
+sub getparents {
+    my ($self, $ipblock, @parents) = @_;
+    my $par;
+    if ( ($par = $ipblock->parent) != 0 ){
+	push @parents, $par;
+	@parents = $self->getparents($par, @parents);
+    }
+    wantarray ? ( @parents ) : $parents[0]; 
+}
+
 =head2 issubnet - Is Ipblock a subnet?
 
 Arguments: Ipblock object

@@ -964,7 +964,7 @@ sub update_device {
 
 	    # Get RRs before deleting interface
 	    map { push @nonrrs, $_->rr } map { $_->arecords } $ifobj->ips;
-
+	    
 	    ############################################################################
 	    # Before removing, try to maintain dependencies finding another
 	    # interface (any) that has one of this interface's ips
@@ -1027,6 +1027,21 @@ sub update_device {
 			  message  => $msg,
 			  );
 	    $self->output($msg);
+
+	    ##################################################
+	    # Notify of orphaned circuits
+	    #
+	    my @circuits;
+	    map { push @circuits, $_ } $ifobj->nearcircuits;
+	    map { push @circuits, $_ } $ifobj->farcircuits;
+
+	    my $msg = sprintf("%s: You might want to revise the followin Circuits: %s", $host, 
+			      (join ', ', map { $_->cid } @circuits) );
+	    $self->debug( loglevel => 'LOG_NOTICE',
+			  message  => $msg,
+			  );
+	    $self->output($msg);
+
 	    unless( $self->remove( table => "Interface", id => $nonif ) ) {
 		my $msg = sprintf("%s: Could not remove Interface %s,%s: %s", 
 				  $host, $ifobj->number, $ifobj->name, $self->error);
@@ -1287,10 +1302,10 @@ sub get_dev_info {
 	$dev{enterprise} =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
 
     }
-    if ( exists($self->{config}->{IGNOREDEVS}->{$dev{sysobjectid}} )){
-	$self->error( sprintf("Product id %s is set to be ignored in config file", $dev{sysobjectid}) );
-	$self->debug( loglevel => 'LOG_NOTICE',
-		      message => $msg );
+    if ( exists($self->{config}->{IGNOREDEVS}->{$dev{sysobjectid}} ) ){
+	my $msg = sprintf("Product id %s is set to be ignored in config file", $dev{sysobjectid});
+	$self->error($msg);
+	$self->debug( loglevel => 'LOG_NOTICE', message => $msg );
 	return 0;
     }
 
@@ -1723,7 +1738,7 @@ sub interfaces_by_name {
     # The following was borrowed from Netviewer
     # and was slightly modified to handle Netdot Interface objects.
     @ifs = ( map { $_->[0] } sort { 
-	( $a->[1] =~ /^[a-zA-Z].*$/ ? ( lc($a->[1]) cmp lc($b->[1]) ) : ($a->[1] <=> $b->[1] ) )
+	       $a->[1] cmp $b->[1]
 	    || $a->[2] <=> $b->[2]
 	    || $a->[3] <=> $b->[3]
 	    || $a->[4] <=> $b->[4]
@@ -1731,7 +1746,7 @@ sub interfaces_by_name {
 	    || $a->[6] <=> $b->[6]
 	    || $a->[7] <=> $b->[7]
 	    || $a->[8] <=> $b->[8]
-	    || $a->[0] cmp $b->[0] }  
+	    || $a->[0]->name cmp $b->[0]->name }  
 	     map{ [ $_, $_->name =~ /^([^\d]+)\d/, 
 		    ( split( /[^\d]+/, $_->name ))[0,1,2,3,4,5,6,7,8] ] } @ifs);
     

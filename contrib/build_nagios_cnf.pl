@@ -87,21 +87,28 @@ while ( my $ipobj = $it->next ) {
     
     next unless ( $ipobj->interface->monitored 
 		  && $ipobj->interface->device->monitored );
-    
+
+    # Determine the group name for this device
+    # order is: subnet entity, subnet description, device entity
     my $group;
-    if ( $ipobj->interface->device->entity == 0 ){
-	if ( $ipobj->interface->device->name && $ipobj->interface->device->name->name ){
-	    warn "Device ",$ipobj->interface->device->name->name, " has no Entity defined. Excluding.\n";
-	}else{
-	    warn "Device id ",$ipobj->interface->device->name->name, " has no Entity defined. Excluding.\n";	    
+    if ( $ipobj->parent != 0 ){
+	if ( $ipobj->parent->entity != 0 ){
+	    $group = $ipobj->parent->entity->name;
+	}elsif ( $ipobj->parent->description ){
+	    $group = $ipobj->parent->description;
 	}
-	next;
-    }else {
-	$group = join '_', split /\s+/, $ipobj->interface->device->entity->name;
-	#Remove illegal chars for Nagios
-	$group =~ s/[\(\),]//g;  
-	$group =~ s/&/and/g;     
+    }elsif ( $ipobj->interface->device->entity != 0 ){
+	$group = $ipobj->interface->device->entity->name;
     }
+    unless ( $group =~ /\w+/ ){
+	printf ("Could not determine group name for %s.  Excluding\n", $ipobj->address);
+	next;
+    }
+    #Remove illegal chars for Nagios
+    $group =~ s/[\(\),]//g;  
+    $group =~ s/^\s*(.)\s*$/$1/;
+    $group =~ s/[\/\s]/_/g;  
+    $group =~ s/&/and/g;     
     $hosts{$ipobj->id}{ip}    = $ipobj->address;
     $hosts{$ipobj->id}{ipobj} = $ipobj;
     
