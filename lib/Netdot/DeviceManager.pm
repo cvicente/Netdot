@@ -964,7 +964,7 @@ sub update_device {
 
 	    # Get RRs before deleting interface
 	    map { push @nonrrs, $_->rr } map { $_->arecords } $ifobj->ips;
-
+	    
 	    ############################################################################
 	    # Before removing, try to maintain dependencies finding another
 	    # interface (any) that has one of this interface's ips
@@ -1027,6 +1027,21 @@ sub update_device {
 			  message  => $msg,
 			  );
 	    $self->output($msg);
+
+	    ##################################################
+	    # Notify of orphaned circuits
+	    #
+	    my @circuits;
+	    map { push @circuits, $_ } $ifobj->nearcircuits;
+	    map { push @circuits, $_ } $ifobj->farcircuits;
+
+	    my $msg = sprintf("%s: You might want to revise the followin Circuits: %s", $host, 
+			      (join ', ', map { $_->cid } @circuits) );
+	    $self->debug( loglevel => 'LOG_NOTICE',
+			  message  => $msg,
+			  );
+	    $self->output($msg);
+
 	    unless( $self->remove( table => "Interface", id => $nonif ) ) {
 		my $msg = sprintf("%s: Could not remove Interface %s,%s: %s", 
 				  $host, $ifobj->number, $ifobj->name, $self->error);
