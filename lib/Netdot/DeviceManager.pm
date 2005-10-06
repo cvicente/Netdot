@@ -1723,7 +1723,7 @@ sub interfaces_by_name {
     # The following was borrowed from Netviewer
     # and was slightly modified to handle Netdot Interface objects.
     @ifs = ( map { $_->[0] } sort { 
-	( $a->[1] =~ /^[a-zA-Z].*$/ ? ( lc($a->[1]) cmp lc($b->[1]) ) : ($a->[1] <=> $b->[1] ) )
+	       $a->[1] cmp $b->[1]
 	    || $a->[2] <=> $b->[2]
 	    || $a->[3] <=> $b->[3]
 	    || $a->[4] <=> $b->[4]
@@ -1731,7 +1731,7 @@ sub interfaces_by_name {
 	    || $a->[6] <=> $b->[6]
 	    || $a->[7] <=> $b->[7]
 	    || $a->[8] <=> $b->[8]
-	    || $a->[0] cmp $b->[0] }  
+	    || $a->[0]->name cmp $b->[0]->name }  
 	     map{ [ $_, $_->name =~ /^([^\d]+)\d/, 
 		    ( split( /[^\d]+/, $_->name ))[0,1,2,3,4,5,6,7,8] ] } @ifs);
     
