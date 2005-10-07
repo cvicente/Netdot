@@ -68,7 +68,13 @@ if ($crit =~ /\w+/){
 %       @objs = sort { $a->$lblfield cmp $b->$lblfield } @objs;
 %    }
 %    foreach my $o (@objs){
-%       my $lbl = $ui->getobjlabel($o, ", ");
+%       my $delim;
+%       if ( $table eq "Ipblock" ){
+%	   $delim = "/";
+%       }else{
+%	   $delim = ", "
+%	}
+%       my $lbl = $ui->getobjlabel($o, $delim);
         <input type="hidden" name="<% $o->id %>" value="<% $lbl %>">
 %       last if ($count++) == $MAX;
 %    }
