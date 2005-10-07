@@ -260,7 +260,8 @@ function suggestName()
 			      $ac .= $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"start_closet", 
 							lookup=>"Closet", edit=>$editBackbone, returnAsVar=>1);
 			  } else {
-			      $ac .= '<a href="closet.html?id='.$o->start_closet.'">'.$o->start_closet->name.'</a> ';
+			      my $lbl = $ui->getobjlabel($o->start_closet, ", ");
+			      $ac .= '<a href="closet.html?id='.$o->start_closet.'">'.$lbl.'</a> ';
 			  }
 			  $ac;
 		      }} );
@@ -272,7 +273,8 @@ function suggestName()
 			      $ac .= $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"end_closet", 
 							lookup=>"Closet", edit=>$editBackbone, returnAsVar=>1);
 			  } else {
-			      $ac .= '<a href="closet.html?id='.$o->end_closet.'">'.$o->end_closet->name.'</a>';
+			      my $lbl = $ui->getobjlabel($o->end_closet, ", ");
+			      $ac .= '<a href="closet.html?id='.$o->end_closet.'">'.$lbl.'</a>';
 			  }
 			  $ac;
 		      }} );
