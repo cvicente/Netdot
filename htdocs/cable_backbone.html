@@ -132,7 +132,7 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_SPLICE_RANGE") {
     
     # and now lets add our splices...
     for (my $i = 0, my $len = scalar(@start_strands); $i < $len; ++$i) {
-        $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->insertsplice($start_strands[$i], $end_strands[$i])));
+        $m->comp("error.mhtml", error => $cable_manager->error() ) if (!($cable_manager->insertsplice($start_strands[$i], $end_strands[$i])));
     }
 }
 
