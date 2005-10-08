@@ -1035,12 +1035,14 @@ sub update_device {
 	    map { push @circuits, $_ } $ifobj->nearcircuits;
 	    map { push @circuits, $_ } $ifobj->farcircuits;
 
-	    my $msg = sprintf("%s: You might want to revise the followin Circuits: %s", $host, 
-			      (join ', ', map { $_->cid } @circuits) );
-	    $self->debug( loglevel => 'LOG_NOTICE',
-			  message  => $msg,
-			  );
-	    $self->output($msg);
+	    if ( @circuits ){
+		my $msg = sprintf("%s: You might want to revise the following circuits: %s", $host, 
+				  (join ', ', map { $_->cid } @circuits) );
+		$self->debug( loglevel => 'LOG_NOTICE',
+			      message  => $msg,
+			      );
+		$self->output($msg);
+	    }
 
 	    unless( $self->remove( table => "Interface", id => $nonif ) ) {
 		my $msg = sprintf("%s: Could not remove Interface %s,%s: %s", 
