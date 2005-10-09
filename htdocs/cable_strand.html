@@ -209,11 +209,9 @@ if (defined($ARGS{_action})) {
 	      }
 
 	      push( @field_headers, "Circuit: " );
-	      if (!$editStrand) {
-		  push( @cell_data, '<a href="circuit.html?id='.$o->circuit_id.'">'.$o->circuit_id ? $o->circuit_id->cid : "".'</a>' );
-	      } else {
-		  push( @cell_data, $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"circuit_id", lookup=>"Circuit", edit=>$editStrand, returnAsVar=>1) );
-	      }
+              push( @cell_data, $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"circuit_id", lookup=>"Circuit", 
+						   edit=>$editStrand, returnAsVar=>1, linkPage => "circuit.html") );
+
 	      </%perl>
 
 	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
