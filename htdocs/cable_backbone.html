@@ -645,7 +645,8 @@ HERE
           foreach my $bb (sort { $a->name cmp $b->name } @bbones) {
 	      next if ($bb->id eq $id || exists($stored{$bb}));
 	      $stored{$bb} = 1;
-	      printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+	      my  $cl_lbl = $ui->getobjlabel($bb->end_closet, ", ");
+	      printf("<OPTION VALUE=\"%s\">%s, %s</OPTION>\n", $bb->id, $bb->name, $cl_lbl);
 	  }
 	  </%perl>
 
