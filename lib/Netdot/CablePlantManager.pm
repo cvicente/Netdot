@@ -135,13 +135,11 @@ sub insertsplice($$$) {
         return 0;
     }
 
-    $self->insert(table=>"Splice", state=>{strand1=>$strand1->id, 
-					   strand2=>$strand2->id});
-
-    $self->insert(table=>"Splice", state=>{strand1=>$strand2->id, 
-					   strand2=>$strand1->id});
-
-    return $self->error() ? 0 : 1;
+    unless ( $self->insert(table=>"Splice", state=>{strand1=>$strand1->id, strand2=>$strand2->id})  
+	||   $self->insert(table=>"Splice", state=>{strand1=>$strand2->id, strand2=>$strand1->id}) ){
+	    return 0;
+	}
+    return 1;
 }
 
 =head2 deletesplices
@@ -163,15 +161,12 @@ sub deletesplices($@) {
         # delete all splices associated with this strand
         foreach my $splice ($strand->splices) {
             # ...which includes deleting its inverse.
-            foreach my $obj (Splice->search(strand1=>$splice->strand2, strand2=>$splice->strand1)) {
-                eval { $obj->delete(); };
-                if ($@) {
-                    $self->error("Unable to delete splice: $@");
-                    return 0;
-                }
+            foreach my $inv (Splice->search(strand1=>$splice->strand2, strand2=>$splice->strand1)) {
+		unless ( $self->remove(table=>"Splice", id=>$inv->id) ){
+		    return 0;
+		}
             }
-            
-            if (!($self->remove(table=>"Splice", id=>$splice->id))) {
+            unless ( $self->remove(table=>"Splice", id=>$splice->id) ){
                 return 0;
             }
         }
