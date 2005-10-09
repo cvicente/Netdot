@@ -570,12 +570,14 @@ HERE
 		      $ac;
 		  }} );
 
-	    # This scomp method is *very* helpful.  It returns as a
-	    # string what the component would have printed.  Like
-	    # sprintf vs printf.
-	    push( @row, $m->scomp('display_sequence.mhtml', strands=>[$st->id]) );
+	    if (!$editStrand) {        
+	      push( @row, '<input type="checkbox" name="edit_' . $st->id . '" onChange="editCheck(this);">' );
 
-	    push( @row, '<input type="checkbox" name="edit_' . $st->id . '" onChange="editCheck(this);">' );
+	      # This scomp method is *very* helpful.  It returns as a
+	      # string what the component would have printed.  Like
+	      # sprintf vs printf.
+	      push( @row, $m->scomp('display_sequence.mhtml', strands=>[$st->id]) );
+	    }
 
 	    push( @rows, \@row );
 	} # foreach
