@@ -70,8 +70,15 @@ sub keyword_search {
         # select update code specified via the onChange event handler
         # attribute of the selects in question.
         $response .= "0=-- Select --&";
+
         foreach my $o (@objs){
-           my $lbl = $ui->getobjlabel($o, ", ");
+	    my $delim;
+	    if ( $table eq "Ipblock" ){
+		$delim = "/";
+	    }else{
+		$delim = ", "
+	    }
+           my $lbl = $ui->getobjlabel($o, $delim);
            $response .= $o->id."=".URLEncode($lbl)."&";
            last if ($count++) == $MAX;
         }

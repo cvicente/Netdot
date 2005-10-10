@@ -165,19 +165,8 @@ sub update_device {
     $argv{site}                ||= 0;
     $argv{user}                ||= 0;
 
-    my $default_cl;
-    my $default_cl_id;
-    if ( $default_cl = (ContactList->search(name=>$self->{config}->{DEFAULT_CONTACTLIST}))[0] ){
-	$default_cl_id = $default_cl->id;
-    }else{
-	$default_cl_id = 0;
-	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => "Default Contact List not found: %s",
-		      args     => [$self->{config}->{DEFAULT_CONTACTLIST}] );
-    }
-    $argv{contactlist} ||= $default_cl_id;
-
     my %devtmp;
+
     $devtmp{sysdescription} = $dev{sysdescription} || "";
     $devtmp{community}      = $argv{comstr}        || "";
 
@@ -232,15 +221,22 @@ sub update_device {
 	    }
 	}
 
-	$devtmp{entity}       = $device->entity;
-	$devtmp{site}         = $device->site;
-	$devtmp{contactlist}  = $device->contactlist;
-	$devtmp{contactlist2} = $device->contactlist2 if ( $device->contactlist2 != $devtmp{contactlist} );
-
     }else{
+	# Device does not exist in DB
 	$devtmp{entity}       = $argv{entity};
 	$devtmp{site}         = $argv{site};
-	$devtmp{contactlist}  = $argv{contactlist};
+	if ( ! $argv{contactlist} ){
+	    my $default_cl;
+	    unless ( $default_cl = (ContactList->search(name=>$self->{config}->{DEFAULT_CONTACTLIST}))[0] ){
+		$self->debug( loglevel => 'LOG_NOTICE',
+			      message  => "Default Contact List not found: %s",
+			      args     => [$self->{config}->{DEFAULT_CONTACTLIST}] );
+	    }
+	    $devtmp{contactlist} = $default_cl->id;
+	}else{
+	    $devtmp{contactlist} = $argv{contactlist};
+	}
+
 	$devtmp{contactlist2} = $argv{contactlist2} if ( $argv{contactlist2} != $devtmp{contactlist} );
 	if ( $argv{user} ){
 	    $devtmp{info}    = "Added to Netdot by $argv{user}";
@@ -1035,12 +1031,14 @@ sub update_device {
 	    map { push @circuits, $_ } $ifobj->nearcircuits;
 	    map { push @circuits, $_ } $ifobj->farcircuits;
 
-	    my $msg = sprintf("%s: You might want to revise the followin Circuits: %s", $host, 
-			      (join ', ', map { $_->cid } @circuits) );
-	    $self->debug( loglevel => 'LOG_NOTICE',
-			  message  => $msg,
-			  );
-	    $self->output($msg);
+	    if ( @circuits ){
+		my $msg = sprintf("%s: You might want to revise the following circuits: %s", $host, 
+				  (join ', ', map { $_->cid } @circuits) );
+		$self->debug( loglevel => 'LOG_NOTICE',
+			      message  => $msg,
+			      );
+		$self->output($msg);
+	    }
 
 	    unless( $self->remove( table => "Interface", id => $nonif ) ) {
 		my $msg = sprintf("%s: Could not remove Interface %s,%s: %s", 

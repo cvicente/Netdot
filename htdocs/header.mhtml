@@ -11,8 +11,9 @@ $user
 </%args>
 %
 <%init>
-my $DEBUG = 0;
+my $DEBUG      = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+my $servername = $ui->{config}->{NETDOTNAME} . "." . $ui->{config}->{DEFAULT_DNSDOMAIN};
 </%init>
 %
 %
@@ -27,7 +28,7 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
        before AuthCookie takes over anyway).
   -->
   <link rel=StyleSheet href="<% $r->dir_config('NetdotPath') %>style.css" type="text/css">
-  <title>Netdot : <% $title %></title>
+  <title>Netdot @ <% $servername %>: <% $title %></title>
 </head>
 
 <script language="JavaScript" src="dynamic_list.js"></script>
@@ -53,6 +54,6 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
         [<a href="logout.html">logout</a>]
     </span>
     <hr />
-    <span class="headleft"><% $ui->{config}->{NETDOTNAME} %>.<% $ui->{config}->{DEFAULT_DNSDOMAIN} %></span>
+    <span class="headleft"><% $servername %></span>
     <span class="headright"><% scalar localtime %></span>
 </div>

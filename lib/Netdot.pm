@@ -781,7 +781,23 @@ sub select_query {
     foreach my $term (@$terms){
 	foreach my $c (@labels){
 	    if (! $linksto{$c} ){ # column is local
-		my $it = $table->search_like( $c => "%" . $term . "%" );
+		my $it;
+		if ( $table eq "Ipblock" && $c eq "address" ){
+		    # Special case.  We have to convert into an integer first
+		    # Also, if user happened to enter a prefix, make it work
+		    my ($address, $prefix);
+		    if ( $term =~ /\/\d+$/ ){
+			($address, $prefix) = split /\//, $term;
+			my $int = $self->ip2int($address);
+			$it = $table->search( 'address' => $int, 'prefix'=> $prefix );
+		    }else{
+			$address = $term;
+			my $int = $self->ip2int($address);
+			$it = $table->search( 'address' => $int );
+		    }
+		}else{
+		    $it = $table->search_like( $c => "%" . $term . "%" );
+		}
 		while (my $obj = $it->next){
 		    $found{$term}{$obj->id} = $obj;
 		}	
@@ -907,3 +923,22 @@ sub search_all_netdot {
     (%results) ? return \%results : return;
     
 }
+
+=head2 _ip2int - Convert IP(v4/v6) address string into its decimal value
+
+ Arguments: address string
+ Returns:   integer (decimal value of IP address)
+
+=cut
+
+sub ip2int {
+    my ($self, $address) = @_;
+    my $ipobj;
+    unless ( $ipobj = NetAddr::IP->new($address) ){
+	$self->error(sprintf("Invalid IP address: %s", $address));
+	return 0;
+    }
+    return ($ipobj->numeric)[0];
+}
+
+

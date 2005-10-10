@@ -19,15 +19,16 @@ section => 'Management'
 <%args>
 $action
 $user
-$device      => undef
-$host        => undef
-$comstr      => "public"
-$id          => undef
-$sid         => undef
-$insert      => undef
-$entity      => undef
-$site        => undef
-$contactlist => undef
+$device       => undef
+$host         => undef
+$comstr       => "public"
+$id           => undef
+$sid          => undef
+$insert       => undef
+$entity       => undef
+$site         => undef
+$contactlist  => undef
+$contactlist2 => undef
 </%args>
 %
 %
@@ -131,11 +132,12 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
     
 }elsif ( $action eq "update" ){
     if ( $insert ){
-        %argv              = %{ $session->{argv} };
-	$argv{entity}      = $entity      ||  0;
-	$argv{site}        = $site        ||  0;
-	$argv{contactlist} = $contactlist ||  0;
-	$argv{user}        = $webuser     ||  0;
+        %argv               = %{ $session->{argv} };
+	$argv{entity}       = $entity       ||  0;
+	$argv{site}         = $site         ||  0;
+	$argv{contactlist}  = $contactlist  ||  0;
+	$argv{contactlist2} = $contactlist2 ||  0;
+	$argv{user}         = $webuser      ||  0;
 
 	print "<pre>",  Dumper(%argv), "</pre>" if $DEBUG;
 
