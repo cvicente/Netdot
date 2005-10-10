@@ -136,7 +136,7 @@ sub insertsplice($$$) {
     }
 
     unless ( $self->insert(table=>"Splice", state=>{strand1=>$strand1->id, strand2=>$strand2->id})  
-	||   $self->insert(table=>"Splice", state=>{strand1=>$strand2->id, strand2=>$strand1->id}) ){
+	&&   $self->insert(table=>"Splice", state=>{strand1=>$strand2->id, strand2=>$strand1->id}) ){
 	    return 0;
 	}
     return 1;
