@@ -127,9 +127,6 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_SPLICE_RANGE") {
         $m->comp("error.mhtml", error => "Mismatch between start strand and end strand length.");
     }
 
-    # first delete all splices associated with our starting strands
-    $m->comp("error.mhtml", error => $cable_manager->error()) if (!($cable_manager->deletesplices(@start_strands)));
-    
     # and now lets add our splices...
     for (my $i = 0, my $len = scalar(@start_strands); $i < $len; ++$i) {
         $m->comp("error.mhtml", error => $cable_manager->error() ) if (!($cable_manager->insertsplice($start_strands[$i], $end_strands[$i])));
