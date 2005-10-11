@@ -188,12 +188,18 @@ Args:
 =cut
 sub assigncircuit($$@) {
     my ($self, $circuit_id, @strands) = @_;
-    my $st = $self->{dbh}->prepare("UPDATE CableStrand SET circuit_id = $circuit_id WHERE id = ?;");
-    foreach my $strand (@strands) {
-        $st->execute($strand);
+    eval{
+	my $st = $self->{dbh}->prepare("UPDATE CableStrand SET circuit_id = $circuit_id WHERE id = ?;");
+	foreach my $strand (@strands) {
+	    $st->execute($strand);
+	}
+	$st->finish();
+    };
+    if ($@){
+	$self->error("$@");
+	return 0;
     }
-
-    $st->finish();
+    return 1;
 }
 
 =head2 removecircuit
@@ -208,12 +214,18 @@ Args:
 =cut
 sub removecircuit($@) {
     my ($self, @strands) = @_;
-    my $st = $self->{dbh}->prepare("UPDATE CableStrand SET circuit_id = 0 WHERE id = ?;");
-    foreach my $strand (@strands) {
-        $st->execute($strand);
+    eval{
+	my $st = $self->{dbh}->prepare("UPDATE CableStrand SET circuit_id = 0 WHERE id = ?;");
+	foreach my $strand (@strands) {
+	    $st->execute($strand);
+	}
+	$st->finish();
+    };
+    if ($@){
+	$self->error("$@");
+	return 0;	
     }
-
-    $st->finish();
+    return 1;
 }
 
 =head2 findsequences
@@ -229,49 +241,55 @@ Args:
 =cut
 sub findsequences($$$) {
     my ($self, $start, $end) = @_;
-    my $st = $self->{dbh}->prepare("SELECT id FROM Closet where site = ?;");
-    $st->execute($start);
-    my $closet_ids = join(",", $st->fetchrow_array());
-    my $bb_st = $self->{dbh}->prepare("SELECT BackboneCable.id FROM BackboneCable WHERE 
+    my %sequences = ();
+    eval{
+	my $st = $self->{dbh}->prepare("SELECT id FROM Closet where site = ?;");
+	$st->execute($start);
+	my $closet_ids = join(",", $st->fetchrow_array());
+	my $bb_st = $self->{dbh}->prepare("SELECT BackboneCable.id FROM BackboneCable WHERE 
                                        start_closet IN ($closet_ids) OR end_closet IN ($closet_ids);");
-
-    my $splice_st = $self->{dbh}->prepare("SELECT CableStrand.id from CableStrand WHERE circuit_id = 0 AND cable = ?;");
-
-    my $site_st1 = $self->{dbh}->prepare("SELECT COUNT(*) FROM CableStrand, BackboneCable, Closet
+	
+	my $splice_st = $self->{dbh}->prepare("SELECT CableStrand.id from CableStrand WHERE circuit_id = 0 AND cable = ?;");
+	
+	my $site_st1 = $self->{dbh}->prepare("SELECT COUNT(*) FROM CableStrand, BackboneCable, Closet
                                          WHERE CableStrand.id = ? AND CableStrand.cable = BackboneCable.id 
                                          AND BackboneCable.end_closet = Closet.id AND Closet.site = ?;");
-    my $site_st2 = $self->{dbh}->prepare("SELECT COUNT(*) FROM CableStrand, BackboneCable, Closet
+	my $site_st2 = $self->{dbh}->prepare("SELECT COUNT(*) FROM CableStrand, BackboneCable, Closet
                                          WHERE CableStrand.id = ? AND CableStrand.cable = BackboneCable.id 
                                          AND BackboneCable.start_closet = Closet.id AND Closet.site = ?;");
-
-    my %sequences = ();
-    my $i = 0;
-    $bb_st->execute();
-    while (my ($id) = $bb_st->fetchrow_array()) {
-        $splice_st->execute($id);
-        while (my ($strand_id) = $splice_st->fetchrow_array()) {
-            my @seq = $self->getsequencepath($strand_id);
-            my $end_strand;
-            if ($seq[0] == $strand_id) {
-                $end_strand = $seq[scalar(@seq) - 1];
-            } elsif ($seq[scalar(@seq) - 1] == $strand_id) {
-                $end_strand = $seq[0];
-            } else {
-                next;
-            }
-
-            if (($site_st1->execute($end_strand, $end) && ($site_st1->fetchrow_array())[0] != 0) ||
-                ($site_st2->execute($end_strand, $end) && ($site_st2->fetchrow_array())[0] != 0)) {
-                $sequences{++$i} = $self->getsequence($end_strand);
-            }
-        }
+	
+	my $i = 0;
+	$bb_st->execute();
+	while (my ($id) = $bb_st->fetchrow_array()) {
+	    $splice_st->execute($id);
+	    while (my ($strand_id) = $splice_st->fetchrow_array()) {
+		my @seq = $self->getsequencepath($strand_id);
+		my $end_strand;
+		if ($seq[0] == $strand_id) {
+		    $end_strand = $seq[scalar(@seq) - 1];
+		} elsif ($seq[scalar(@seq) - 1] == $strand_id) {
+		    $end_strand = $seq[0];
+		} else {
+		    next;
+		}
+		
+		if (($site_st1->execute($end_strand, $end) && ($site_st1->fetchrow_array())[0] != 0) ||
+		    ($site_st2->execute($end_strand, $end) && ($site_st2->fetchrow_array())[0] != 0)) {
+		    $sequences{++$i} = $self->getsequence($end_strand);
+		}
+	    }
+	}
+	
+	$st->finish();
+	$bb_st->finish();
+	$splice_st->finish();
+	$site_st1->finish();
+	$site_st2->finish();
+    };
+    if ($@){
+	$self->error("$@");
+	return;
     }
-
-    $st->finish();
-    $bb_st->finish();
-    $splice_st->finish();
-    $site_st1->finish();
-    $site_st2->finish();
 
     return %sequences;
 }
@@ -288,10 +306,17 @@ Args:
 =cut
 sub getsequence($$) {
     my ($self, $strand) = @_;
-    my $st = $self->{dbh}->prepare("SELECT CableStrand.id, CableStrand.name
+    my $st;
+    eval{
+	$st = $self->{dbh}->prepare("SELECT CableStrand.id, CableStrand.name
                                     FROM CableStrand WHERE CableStrand.id
                                     IN (" . join(",", $self->getsequencepath($strand)) . ");");
-    $st->execute();
+	$st->execute();
+    };
+    if ($@){
+	$self->error("$@");
+	return;
+    }
     return $st->fetchall_arrayref();
 }
 
@@ -309,30 +334,35 @@ Args:
 sub getsequencepath($$) {
     my ($self, $strand) = @_;
     my @ret = ();
-    my $st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ?;");
-    $st->execute($strand);
-    
-    if ($st->rows() == 0) {
-        $self->error("0 rows returned where CableStrand.id = $strand");
-        return 0;
-    } else {
-        $strand = $self->findendpoint($strand) if ($st->rows() > 1);
-        $st->execute($strand);
-        my $tmp_strand = ($st->fetchrow_array())[0];
-        push(@ret, $strand);
-        $st->finish();
-        $st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ? AND strand2 <> ?;");
-        while ($st->execute($tmp_strand, $strand) && $st->rows()) {
-            push(@ret, $tmp_strand);
-            $strand = $tmp_strand;
-            $tmp_strand = ($st->fetchrow_array())[0];
-        }
-        
-        push(@ret, $tmp_strand);
+    eval{
+	my $st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ?;");
+	$st->execute($strand);
+	
+	if ($st->rows() == 0) {
+	    $self->error("0 rows returned where CableStrand.id = $strand");
+	    return 0;
+	} else {
+	    $strand = $self->findendpoint($strand) if ($st->rows() > 1);
+	    $st->execute($strand);
+	    my $tmp_strand = ($st->fetchrow_array())[0];
+	    push(@ret, $strand);
+	    $st->finish();
+	    $st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ? AND strand2 <> ?;");
+	    while ($st->execute($tmp_strand, $strand) && $st->rows()) {
+		push(@ret, $tmp_strand);
+		$strand = $tmp_strand;
+		$tmp_strand = ($st->fetchrow_array())[0];
+	    }
+	    
+	    push(@ret, $tmp_strand);
+	}
+	
+	$st->finish();
+    };
+    if ($@){
+	$self->error("$@");
+	return;
     }
-
-    $st->finish();
-
     return @ret;
 }
 
@@ -350,17 +380,24 @@ Args:
 =cut
 sub findendpoint($$) {
     my ($self, $strand) = @_;
-    my $st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ?;");
-    return $strand if ($st->execute($strand) && $st->rows() == 1);
-
-    my $tmp_strand = ($st->fetchrow_array())[0];
-    $st->finish();
-    $st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ? AND strand2 <> ?;");
-    while ($st->execute($tmp_strand, $strand) && $st->rows() > 1) {
-        $strand = $tmp_strand;
-        $tmp_strand = ($st->fetchrow_array())[0];
+    my ($st, $tmp_strand);
+    eval{
+	$st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ?;");
+	return $strand if ($st->execute($strand) && $st->rows() == 1);
+	
+	$tmp_strand = ($st->fetchrow_array())[0];
+	$st->finish();
+	$st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ? AND strand2 <> ?;");
+	while ($st->execute($tmp_strand, $strand) && $st->rows() > 1) {
+	    $strand = $tmp_strand;
+	    $tmp_strand = ($st->fetchrow_array())[0];
+	}
+    };
+    if ($@){
+	$self->error("$@");
+	return;
     }
-
+    
     return ($st->fetchrow_array())[0] || $tmp_strand;
 }
 

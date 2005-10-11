@@ -36,10 +36,12 @@ my %sequences = ();
 %       ++$i;
 %       my @links = ();
 %       my @ids = ();
-%       foreach my $row (@{$cable_manager->getsequence($st)}) {
-%           $found{@$row[0]} = 1;
-%           push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", @$row[0], @$row[1]));
-%           push(@ids, @$row[0]);
+%       if ( my $seq = $cable_manager->getsequence($st) ){
+%           foreach my $row ( @$seq ) {
+%               $found{@$row[0]} = 1;
+%               push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", @$row[0], @$row[1]));
+%               push(@ids, @$row[0]);
+%           }
 %       }
         <tr align="left" class="<% $cssitem{$j} %>">
             <td align="left">
@@ -57,9 +59,11 @@ my %sequences = ();
 <%perl>
     my @links = ();
     foreach my $st (@{$strands}) {
-        foreach my $row (@{$cable_manager->getsequence($st)}) {
-            push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", @$row[0], @$row[1]));
-        }
+	if ( my $seq = $cable_manager->getsequence($st) ){
+	    foreach my $row (@$seq) {
+		push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", @$row[0], @$row[1]));
+	    }
+	}
     }
 
     printf("%s\n", join(" ----- ", @links));
