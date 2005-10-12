@@ -10,8 +10,8 @@
 use strict;
 use DBI;
 
-my $DB_TYPE = $ARGV[0]        || "mysql";
-my $DB_DATABASE = $ARGV[1]    || "netdot";
+my $DB_TYPE        = $ARGV[0] || "mysql";
+my $DB_DATABASE    = $ARGV[1] || "netdot";
 my $DB_NETDOT_USER = $ARGV[2] || "netdot_user";
 my $DB_NETDOT_PASS = $ARGV[3] || "netdot_pass";
 
@@ -138,9 +138,50 @@ sub historize {
     }
 }
 
+################################################################
+# validate_phys_addr - Perform validation of MAC address strings
+# 
+# String must look like "DEADDEADBEEF".
+# Assumes that "000000000000", "111111111111" ... "FFFFFFFFFF" 
+# are invalid.
+#
+# Arguments: address string
+# Returns:   True if valid, False if invalid
+#
+################################################################
+sub validate_phys_addr {
+    my ($self, $addr) = @_;
+    if ( $addr !~ /^[0-9A-F]{12}$/ ||
+	 # Assume the all-equal-bits address is invalid
+	 ($addr =~ /^([0-9A-F]{1})/ && $addr =~ /$1{12}/)  ){
+	return 0;
+    }
+    return 1;
+}
+
+#################################################
+# Canonicalize MAC addresses before inserting.
+# Search methods will also need to convert to
+# this format prior to searching.
+################################################
+sub canonicalize_phys_addr {
+    my $self = shift;
+    my $address = ($self->_attrs('address'))[0];
+    $address =~ s/[:\.\-]//g;
+    $address = uc($address);
+    unless ($self->validate_phys_addr($address)){
+	$self->_croak("Invalid Address: $address");	
+    }
+    $self->_attribute_store( address => $address );
+}
+
 Ipblock->add_trigger( deflate_for_create => \&ip2int );
 Ipblock->add_trigger( deflate_for_update => \&ip2int );
 Ipblock->add_trigger( select => \&int2ip );
+
+PhysAddr->add_trigger( deflate_for_create => \&canonicalize_phys_addr );
+PhysAddr->add_trigger( deflate_for_update => \&canonicalize_phys_addr );
+
 __PACKAGE__->add_trigger( before_update => \&historize );
 
 

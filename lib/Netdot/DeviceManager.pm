@@ -1084,7 +1084,7 @@ sub update_device {
     # addresses associated
 
     foreach my $rr ( @nonrrs ){
-	if ( ! $rr->arecords ){
+	if ( (! $rr->arecords) && ($rr->id != $device->name->id) ){
 	    # Assume the name can go
 	    # since it has no addresses associated
 	    my $msg = sprintf("%s: Removing old RR: %s", 
@@ -1329,9 +1329,16 @@ sub get_dev_info {
     if ( $self->_is_valid($nv{dot11StationID}) ){
 	$dev{dot11} = 1;
     }
+    # Check if base bridge address is valid
     if( $self->_is_valid($nv{dot1dBaseBridgeAddress})  ) {
-	# Canonicalize address
-	$dev{physaddr} = $self->_readablehex($nv{dot1dBaseBridgeAddress});
+	my $addr = $self->_readablehex($nv{dot1dBaseBridgeAddress});
+	if ( $self->validate_phys_addr($addr) ){
+	    $dev{physaddr} = $addr;
+	}else{
+	    my $msg = sprintf("%s is not a valid address", $addr);
+	    $self->error($msg);
+	    $self->debug( loglevel => 'LOG_DEBUG', message => $msg );
+	}
     }
     if( $self->_is_valid($nv{entPhysicalDescr}) ) {
 	$dev{productname} = $nv{entPhysicalDescr};
@@ -1450,8 +1457,15 @@ sub get_dev_info {
 	    }
 	}
 	if ( $self->_is_valid($nv{interface}{$newif}{ifPhysAddress}) ){
-	    $dev{interface}{$newif}{physaddr} = $self->_readablehex($nv{interface}{$newif}{ifPhysAddress});
-	}
+	    my $addr = $self->_readablehex($nv{interface}{$newif}{ifPhysAddress});
+	    if ( $self->validate_phys_addr($addr) ){
+		$dev{interface}{$newif}{physaddr} = $addr;
+	    }else{
+		my $msg = sprintf("%s is not a valid address", $addr);
+		$self->error($msg);
+		$self->debug( loglevel => 'LOG_DEBUG', message => $msg );
+	    }
+	}	
 	################################################################
 	# Set Oper Duplex mode
 	my ($opdupval, $opdup);
@@ -2015,8 +2029,7 @@ sub _clear_output {
 #####################################################################
 sub _readablehex {
     my ($self, $v) = @_;
-    my $h = sprintf('%s', unpack('H*', $v));
-    return uc($h);
+    return uc( sprintf('%s', unpack('H*', $v)) );
 }
 
 #####################################################################
