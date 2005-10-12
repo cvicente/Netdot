@@ -870,7 +870,7 @@ sub gethistoryobjs {
     my $id_f = lc ("$table" . "_id");
     my @ho;
     eval {
-	@ho = $htable->search($id_f => $o->id);
+	@ho = $htable->search($id_f => $o->id, {order_by => 'modified DESC'});
     };
     if ( $@ ){
 	$self->error("Can't retrieve history objects for $table id $o->id: $@");

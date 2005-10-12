@@ -234,30 +234,6 @@ Ipblock->set_sql(devipsbyint => qq{
 	ORDER BY Interface.name
     });
 
-# Get all the interfaces from a Device
-#
-# By name
-Interface->set_sql(ifsbyname => qq{
-    SELECT *
-	FROM Interface
-	WHERE device = ?
-	ORDER BY name
-    });
-# By speed
-Interface->set_sql(ifsbyspeed => qq{
-    SELECT *
-	FROM Interface
-	WHERE device = ?
-	ORDER BY speed
-    });
-# By Description
-Interface->set_sql(ifsbydescr => qq{
-    SELECT *
-	FROM Interface
-	WHERE device = ?
-	ORDER BY description
-    });
-#
 # Get lists of products
 Product->set_sql(bytype => qq{
     SELECT p.name, p.id, COUNT(d.id) AS numdevs
