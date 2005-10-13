@@ -194,25 +194,6 @@ __PACKAGE__->add_trigger( before_update => \&historize );
 #   Ipblock->search_children
 ################################################
 
-# We want the DB to sort the addresses
-# while in decimal
-Ipblock->set_sql(children => qq{
-    SELECT Ipblock.id, Ipblock.address, Ipblock.parent
-	FROM Ipblock
-	WHERE Ipblock.parent = ?
-	ORDER BY Ipblock.address
-    });
-   
-# Easy way to retrieve a limited list of root blocks
-#
-Ipblock->set_sql(roots => qq{
-    SELECT Ipblock.id, Ipblock.prefix, Ipblock.parent
-	FROM Ipblock
-	WHERE Ipblock.parent = 0
-	ORDER BY Ipblock.prefix
-	LIMIT 10
-});
-
 # Short way to retrieve all the ip addresses from a device
 # 
 # Apparently one can't bind the "ORDER BY" parameter :-(

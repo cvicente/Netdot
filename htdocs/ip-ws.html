@@ -19,7 +19,7 @@ section => 'Management'
 <%args>
 $id                => undef
 $search            => undef
-$_action           => undef
+$_action           => 'SHOW_ROOTS'
 $delete            => undef
 $recursivedel      => undef
 $allocate          => undef
@@ -29,6 +29,7 @@ $length            => undef
 $strategy          => undef
 $edit              => undef
 $submit            => undef
+$rootversion       => 4 
 </%args>
 %
 %
@@ -37,6 +38,8 @@ my $DEBUG = 0;
 my $o;
 my $ci = 0;
 my $title;
+my @list;
+
 if ( $id ){
     unless ( $o = Ipblock->retrieve($id) ){
 	$m->comp('error.mhtml', error => "Could not retrieve Ipblock id: $id");
@@ -69,10 +72,9 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 #
 #######################################################################################
 
-if ( defined($_action) && defined($search) ){
+if ( defined($search) ){
     if ($search =~ /\w+/ ){
 	$search =~ s/^\s*(.*)\s*$/$1/g;
-	my @list;
 	if ( $_action eq "SEARCH_ADDR" ){
 	    my ($addr, $prefix, $ipb);
 	    if ($search =~ /\//){
@@ -92,24 +94,9 @@ if ( defined($_action) && defined($search) ){
 	}else {
 	    $m->comp('error.mhtml', error => "Unrecognized action parameter: $_action");	
 	}
-	
+    }else{
 </%perl>      
 
-       <div class="container">
-          <div class="containerhead">
-%             my $num = scalar(@list);
-              Query <strong><em><% $search %></em></strong> returned: <strong><% $num %> matches</strong>
-          </div>
-          <div class="containerbody">
-%             if ( $num ){
-                  <& ipblock_list.mhtml, objects => \@list  &>
-%             }elsif ( $ipm->error ){
-                  <p><strong><% $ipm->error %></strong>
-%             }
-          </div>
-       </div>
-
-%   }else{
        <div class="container">
          <div class="containerhead">
            <strong>Error!</strong>   
@@ -120,15 +107,63 @@ if ( defined($_action) && defined($search) ){
        </div>
 %   }
 
+       <div class="container">
+          <div class="containerhead">
+              Query <em><% $search %></em> returned: <% scalar(@list) %> matches
+          </div>
+          <div class="containerbody">
+%         if ( @list ){
+              <& ipblock_list.mhtml, objects => \@list  &>
+%         }elsif ( $ipm->error ){
+              <p><strong><% $ipm->error %></strong>
+%         }
+          </div>
+       </div>
+
+<%perl>
+
+#######################################################################################
+# Get Root Blocks
+#
+#######################################################################################
+}elsif( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
+    
+    @list = $ipm->getrootblocks($rootversion);
+    
+</%perl>
+       <div class="container">
+          <div class="containerheadleft">Root Blocks: (<% scalar(@list) %>)</div>
+          <div class="containerheadright">
+	    <form name="netdotform" action="ip-ws.html" method="POST">
+	      <input type="hidden" name="_action" value="SHOW_ROOTS">
+	      Version: <select name="rootversion" onChange="submit();">
+%	      foreach my $version ('4', '6', 'all'){
+%	        if ($version eq $rootversion){
+		    <option value="<% $version %>" SELECTED><% $version %></option>
+%		}else{
+		    <option value="<% $version %>"><% $version %></option>
+%		}
+%	      }
+              </select>
+            </form>
+	  </div>
+          <div class="containerbody">
+%             if ( @list ){
+                  <& ipblock_list.mhtml, objects => \@list, type => "block"  &>
+%             }elsif ( $ipm->error ){
+                  <p><strong><% $ipm->error %></strong>
+%             }
+          </div>
+       </div>
 
 <%perl>
 
 #######################################################################################
 # Update
 # 
-#######################################################################################\
+#######################################################################################
 
-}elsif( defined($_action) && ($_action eq "UPDATE")){
+}elsif( $_action eq "UPDATE" ){
 
     if ( $ui->form_to_db(%ARGS) ){
 	# Do this to 'flush' the values associated with the object
@@ -155,7 +190,7 @@ if ( defined($_action) && defined($search) ){
 # Allocate
 #
 #######################################################################################
-}elsif ( defined($_action) && ($_action eq "ALLOCATE") ){
+}elsif ( $_action eq "ALLOCATE" ){
     my ($address, $prefix);
     if ($allocate =~ /\//){
 	($address, $prefix) = split /\//, $allocate;
@@ -204,7 +239,7 @@ if ( defined($_action) && defined($search) ){
 # Auto-Allocate
 #
 #######################################################################################
-}elsif ( defined($_action) && ($_action eq "AUTOALLOCATE") ){
+}elsif ( $_action eq "AUTOALLOCATE" ){
     # Strip "/" if any
     $length =~ s/\///;
     my $newblock;
@@ -263,7 +298,7 @@ if ( defined($_action) && defined($search) ){
 # Delete
 #
 #######################################################################################
-}elsif ( defined($_action ) && ($_action eq "DELETE") ){
+}elsif ( $_action eq "DELETE" ){
 
 </%perl>
 
@@ -294,7 +329,7 @@ if ( defined($_action) && defined($search) ){
 # Confirm Delete
 #
 #######################################################################################
-}elsif ( defined($_action ) && ($_action eq "CONFIRM_DELETE") ){
+}elsif ( $_action eq "CONFIRM_DELETE" ){
   
     my ($parentid, $address, $prefix, $version) = ($o->parent->id, $o->address, $o->prefix, $o->version);
     # Remove from Database
@@ -327,36 +362,44 @@ if ( defined($_action) && defined($search) ){
 	    $m->comp('error.mhtml', error => "Can't retrieve Ipblock id $id");
 	}
     }
+
+}
+
+#######################################################################################
+# View
+#
+#######################################################################################
+
+if ( $id && $view ){
+    if ( $edit ){	 
 </%perl>
 
-%}
-
-%#######################################################################################
-%# View
-%#
-%#######################################################################################
-
-%if ( $id && $view ){
-% if ( $edit ){	 
     <form name="netdotform" action="ip-ws.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="UPDATE">
-% }
-% if ( $ipm->isaddress($o) ){  
-%#######################################################################################
-%# View IP address
-%#######################################################################################
 
-<!-- IP Info Table -->
-<div class="container">
+%    }
 
-% if ( my @parents = $ipm->getparents($o) ){
-%   my @line;
-%   foreach my $par ( reverse @parents ){
-%      push (@line, "<a href=\"ip-ws.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
-%   }
-%   push (@line, $o->address . "/" . $o->prefix);
-    
+<%perl>
+my @line;
+if ( my @parents = $ipm->getparents($o) ){
+    foreach my $par ( reverse @parents ){
+	push (@line, "<a href=\"ip-ws.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
+    }
+    push (@line, $o->address . "/" . $o->prefix);
+}    
+ 
+if ( $ipm->isaddress($o) ){  
+#######################################################################################
+# View IP address
+#######################################################################################
+
+</%perl>
+
+ <!-- IP Info Table -->
+ <div class="container">
+
+% if ( @line ){
     <div class="containerheadleft">
 %     print join ' : ', @line;
     </div>
@@ -534,13 +577,7 @@ if ( defined($_action) && defined($search) ){
 <!-- Block Info Table -->
 <div class="container">
 
-% if ( my @parents = $ipm->getparents($o) ){
-%    my @line;
-%   foreach my $par ( reverse @parents ){
-%      push (@line, "<a href=\"ip-ws.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
-%   }
-%   push (@line, $o->address . "/" . $o->prefix);
-    
+% if ( @line ){
     <div class="containerheadleft">
 %      print join ' : ', @line;
     </div>
@@ -722,7 +759,6 @@ my @children;
 if (scalar( @children = $ipm->getchildren($o->id) )){
 </%perl>
 
-
        <div class="container">
           <div class="containerhead">
              Children Addresses/Blocks
@@ -738,7 +774,6 @@ if (scalar( @children = $ipm->getchildren($o->id) )){
 % if ($edit){	 
     </form>
 % }
-
 
 % }
 </div>

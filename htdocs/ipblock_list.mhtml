@@ -9,21 +9,34 @@
     so it makes more sense to have the DB order them at 
     retrieval time.  After that, objects are "inflated" to
     a string, which is harder to sort.
+
+    
 </%doc>
 
 <%args>
 $objects => undef
-
+$type    => undef
 </%args>
 
 <%init>
 my %cssitem = ( 0 => "formtablec1", 1 => "formtablec2" );
 my $ci = 0;
 my (@headers, @rows);
+if ( $type ){
+    unless ( $type =~ /^address|block$/ ){
+	$m->comp('error.mhtml', error => "Unknown type: $type");
+    }
+}else{
+    if ( $ipm->isaddress($objects->[0]) ){ # We're dealing with addresses
+	$type = "address";
+    }else{
+	$type = "block";
+    }
+}
 </%init>
 
 <%perl>
-if ( $ipm->isaddress($objects->[0]) ){ # We're dealing with addresses
+if ( $type eq "address" ){
     @headers = ( 'Address', 'Status', 'Name', 'Last Seen' );
 
     foreach my $o ( @{ $objects } ) {
@@ -42,7 +55,7 @@ if ( $ipm->isaddress($objects->[0]) ){ # We're dealing with addresses
 	push( @rows, \@row );
     }
 
-} else { # Objects are blocks
+} elsif( $type eq "block" ) {
     @headers = ( 'Address/Prefix', 'Status', 'Entity', 'Description' );
 
     foreach my $o ( @{ $objects } ) {

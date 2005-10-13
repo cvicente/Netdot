@@ -161,25 +161,34 @@ sub searchblocks_other {
 
 }
 
-=head2 getrootblocks  - Get a limited list of root blocks
+=head2 getrootblocks  - Get a list of root blocks
 
+  Args:     IP version [4|6|all]
   Returns:  Array of Ipblock objects, ordered by prefix length
     
 =cut
 
 sub getrootblocks {
-    my ($self) = @_;
-    my @ipb = Ipblock->search_roots();
+    my ($self, $version) = @_;
+    my @ipb;
+    if ( $version =~ /^4|6$/ ){
+	@ipb = Ipblock->search(version => $version, parent => 0, {order_by => 'address'});
+    }elsif ( $version eq "all" ){
+	@ipb = Ipblock->search(parent => 0, {order_by => 'address'});
+    }else{
+	$self->error("Unknown version: $version");
+	return;
+    }
     wantarray ? ( @ipb ) : $ipb[0]; 
 }
 
-=head2 getchildren - Get a block s children
+=head2 getchildren - Get all blocks that are children of this block in the IP tree
     
 =cut
     
 sub getchildren {
     my ($self, $id) = @_;
-    my @ipb = Ipblock->search_children($id);
+    my @ipb = Ipblock->search(parent => $id, {order_by => 'address'});
     wantarray ? ( @ipb ) : $ipb[0]; 
 }
 

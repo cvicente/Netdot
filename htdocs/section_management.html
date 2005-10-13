@@ -65,7 +65,6 @@ sub print_showtaskslink {
 %
 % if ($page eq "DEVICE" || $page eq "") {
 %
-        <p>
         <fieldset class="medium">
             <legend>Find Devices</legend>
             <form action="device.html" method="POST">
@@ -91,8 +90,6 @@ sub print_showtaskslink {
                 </p>
             </form>
         </fieldset>
-        </p>
-        <p>
         <fieldset class="medium">
             <legend>Discover/Update a Device</legend>
             <form action="updatedevice.html" method="POST">
@@ -108,8 +105,6 @@ sub print_showtaskslink {
                 </p>
             </form>
         </fieldset>
-        </p>
-        <p>
         <fieldset class="medium">
             <legend>Manually Add a Device</legend>
         	<form action="device.html" method="POST">
@@ -125,43 +120,9 @@ sub print_showtaskslink {
                 </p>
             </form>
         </fieldset>
-        </p>
 %
 % } elsif ($page eq "ADDRESS") {
 %
-        <p>
-        <fieldset class="medium">
-            <legend>Block Selection</legend>
-                <form action="ip-ws.html" method="POST" name="blockSelect">
-                <select name="id" onChange="submit()">
-                    <option value="0" SELECTED> -- Select Root -- </option>
-%                   my @rbs = $ipm->getrootblocks;
-%                   if (scalar @rbs){
-%                     foreach my $r ( @rbs ){
-                        <option value="<% $r->id %>"><% $r->address . "/" . $r->prefix %></option>
-%                     }
-%                   }else{
-                        <option value="0"> - </option>
-%                   }
-                </select>
-                <input type="hidden" name="_action" value="VIEW">
-            </form>
-        </fieldset>
-        </p>
-        <p>
-        <fieldset class="medium">
-            <legend>Allocate</legend>
-            <form action="ip-ws.html" method="POST">
-                <p>
-                <label for="allocate">New IP[/prefix]:</label>
-                <input type="text" name="allocate" class="txt" value=""> 
-                <input name="submit" value="Allocate" class="btn" type="submit">
-                <input type="hidden" name="_action" value="ALLOCATE">
-                </p>
-            </form>
-        </fieldset>
-        </p>
-        <p>
         <fieldset class="medium">
             <legend>Search</legend>
             <form action="ip-ws.html" method="POST">
@@ -181,7 +142,18 @@ sub print_showtaskslink {
                 </p>
             </form>
         </fieldset>
-        </p>
+        <fieldset class="medium">
+            <legend>Add</legend>
+            <form action="ip-ws.html" method="POST">
+                <p>
+                <label for="allocate">New IP[/prefix]:</label>
+                <input type="text" name="allocate" class="txt" value=""> 
+                <input name="submit" value="Add" class="btn" type="submit">
+                <input type="hidden" name="_action" value="ALLOCATE">
+                </p>
+            </form>
+        </fieldset>
+
 %}
 
         </td></tr></table>
@@ -193,4 +165,6 @@ sub print_showtaskslink {
 
 % if ( $m->fetch_next ){
 %  $m->call_next;
-% }
+% }elsif ( $page eq "ADDRESS" ){
+%  $m->comp('ip-ws.html', _action => "SHOW_ROOTS", rootversion => 'all');
+%}
