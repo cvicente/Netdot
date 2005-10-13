@@ -260,10 +260,12 @@ sub _prevalidate {
 	$self->error("Address arg is required");
 	return 0;		
     }
-    unless( $ip = NetAddr::IP->new($address, $prefix) ){
+    if ( !($ip = NetAddr::IP->new($address, $prefix)) ||
+	 $ip->numeric == 0 ){
 	$self->error("Invalid IP: $address/$prefix");
 	return 0;	
     }
+
     # Make sure that what we're inserting is the base address
     # of the block, and not an address within the block
     unless( $ip->network == $ip ){
@@ -273,11 +275,6 @@ sub _prevalidate {
     if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
 	 || $ip eq '::1' ) {
 	$self->error("IP is a loopback");
-	return 0;	
-    }elsif ( ( ($ip->version == 4 && $ip->masklen != 32) ||
-	       ($ip->version == 6 && $ip->masklen != 128) ) && 
-	     $ip->network->broadcast == $ip ) {
-	$self->error("Address is broadcast: ", $ip->addr, "/", $ip->masklen);
 	return 0;	
     }
     return $ip;
@@ -310,19 +307,35 @@ sub _validate {
     $args->{dhcp_enabled}  ||= $ipblock->dhcp_enabled;
     $args->{dns_delegated} ||= $ipblock->dns_delegated;
     
-    my $pstatus;
-    if ( $ipblock->parent && $ipblock->parent->id ){
+    my ($pstatus, $parent);
+    if ( ($parent = $ipblock->parent) && $parent->id ){
 	$self->debug(loglevel => 'LOG_DEBUG',
 		     message => "_validate: %s/%s has parent: %s/%s",
 		     args => [$ipblock->address, $ipblock->prefix, 
-			      $ipblock->parent->address, $ipblock->parent->prefix ]);
+			      $parent->address, $parent->prefix ]);
 	
-	$pstatus = $ipblock->parent->status->name;
+	$pstatus = $parent->status->name;
 	if ( $self->isaddress($ipblock ) ){
 	    if ($pstatus eq "Reserved" ){
 		$self->error("Address allocations not allowed under Reserved blocks");
 		return 0;	    
 	    }
+	    my ($ip, $pip);
+	    if ( ($ip = NetAddr::IP->new($ipblock->address, $ipblock->prefix)) &&
+		 ($pip = NetAddr::IP->new($parent->address, $parent->prefix))  ){ 
+		if ( $pip->network->broadcast->addr == $ip->addr ) {
+		    my $msg = sprintf("Address is broadcast for %s/%s: ",$parent->address, $parent->prefix);
+		    $self->debug(loglevel => 'LOG_NOTICE', message => $msg);
+		    $self->error($msg);
+		    return 0;	
+		}
+	    }else{
+		$self->debug(loglevel => 'LOG_NOTICE',
+			     message => "_validate: %s/%s or %s/%s not valid?",
+			     args => [$ipblock->address, $ipblock->prefix,
+				      $parent->address, $parent->prefix]);
+	    }
+	    
 	}else{
 	    if ($pstatus ne "Container" ){
 		$self->error("Block allocations only allowed under Container blocks");
