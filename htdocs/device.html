@@ -791,20 +791,8 @@ push( @headers, 'SNMP?' );
 </%perl>
 
 <%perl>
-	my @ifs;
-       if ( $ifsort eq "number" ){
-	  @ifs = $dm->interfaces_by_number( $o );
-	}elsif ( $ifsort eq "name"){
-	  @ifs = $dm->interfaces_by_name ( $o );
-	}elsif ( $ifsort eq "speed"){
-	  @ifs = $dm->interfaces_by_speed ( $o );
-	}elsif ( $ifsort eq "vlan"){
-	  @ifs = $dm->interfaces_by_vlan ( $o );
-	}elsif ( $ifsort eq "jack"){
-	  @ifs = $dm->interfaces_by_jack ( $o );
-	}elsif ( $ifsort eq "descr"){
-	  @ifs = $dm->interfaces_by_descr ( $o );
-	}
+    my @ifs;
+    @ifs = $dm->get_interfaces( $o, $ifsort );
 </%perl>
 			  
 %       foreach my $if ( @ifs ){

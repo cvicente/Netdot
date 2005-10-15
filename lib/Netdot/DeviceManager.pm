@@ -1084,7 +1084,7 @@ sub update_device {
     # addresses associated
 
     foreach my $rr ( @nonrrs ){
-	if ( ! $rr->arecords ){
+	if ( (! $rr->arecords) && ($rr->id != $device->name->id) ){
 	    # Assume the name can go
 	    # since it has no addresses associated
 	    my $msg = sprintf("%s: Removing old RR: %s", 
@@ -1329,9 +1329,16 @@ sub get_dev_info {
     if ( $self->_is_valid($nv{dot11StationID}) ){
 	$dev{dot11} = 1;
     }
+    # Check if base bridge address is valid
     if( $self->_is_valid($nv{dot1dBaseBridgeAddress})  ) {
-	# Canonicalize address
-	$dev{physaddr} = $self->_readablehex($nv{dot1dBaseBridgeAddress});
+	my $addr = $self->_readablehex($nv{dot1dBaseBridgeAddress});
+	if ( $self->validate_phys_addr($addr) ){
+	    $dev{physaddr} = $addr;
+	}else{
+	    my $msg = sprintf("%s is not a valid address", $addr);
+	    $self->error($msg);
+	    $self->debug( loglevel => 'LOG_DEBUG', message => $msg );
+	}
     }
     if( $self->_is_valid($nv{entPhysicalDescr}) ) {
 	$dev{productname} = $nv{entPhysicalDescr};
@@ -1450,8 +1457,15 @@ sub get_dev_info {
 	    }
 	}
 	if ( $self->_is_valid($nv{interface}{$newif}{ifPhysAddress}) ){
-	    $dev{interface}{$newif}{physaddr} = $self->_readablehex($nv{interface}{$newif}{ifPhysAddress});
-	}
+	    my $addr = $self->_readablehex($nv{interface}{$newif}{ifPhysAddress});
+	    if ( $self->validate_phys_addr($addr) ){
+		$dev{interface}{$newif}{physaddr} = $addr;
+	    }else{
+		my $msg = sprintf("%s is not a valid address", $addr);
+		$self->error($msg);
+		$self->debug( loglevel => 'LOG_DEBUG', message => $msg );
+	    }
+	}	
 	################################################################
 	# Set Oper Duplex mode
 	my ($opdupval, $opdup);
@@ -1687,7 +1701,7 @@ sub add_interfaces {
     return 1;
 }
 
-=head2 interfaces_by_number - Retrieve interfaces from a Device and sort by number.  
+=head2 ints_by_number - Retrieve interfaces from a Device and sort by number.  
                               Handles the case of port numbers with dots (hubs)
 
 Arguments:  Device object
@@ -1695,7 +1709,7 @@ Returns:    Sorted array of interface objects or undef if error.
 
 =cut
 
-sub interfaces_by_number {
+sub ints_by_number {
     my ( $self, $o ) = @_;
     my @ifs;
     unless ( @ifs = $o->interfaces() ){
@@ -1718,7 +1732,7 @@ sub interfaces_by_number {
     return @ifs;
 }
 
-=head2 interfaces_by_name - Retrieve interfaces from a Device and sort by name.  
+=head2 ints_by_name - Retrieve interfaces from a Device and sort by name.  
 
 This method deals with the problem of sorting Interface names that contain numbers.
 Simple alphabetical sorting does not yield useful results.
@@ -1728,7 +1742,7 @@ Returns:    Sorted array of interface objects or undef if error.
 
 =cut
 
-sub interfaces_by_name {
+sub ints_by_name {
     my ( $self, $o ) = @_;
     my @ifs;
     my @ifs = $o->interfaces;
@@ -1753,24 +1767,18 @@ sub interfaces_by_name {
 
 }
 
-=head2 interfaces_by_speed - Retrieve interfaces from a Device and sort by speed.  
+=head2 ints_by_speed - Retrieve interfaces from a Device and sort by speed.  
 
 Arguments:  Device object
 Returns:    Sorted array of interface objects or undef if error.
 
 =cut
 
-sub interfaces_by_speed {
+sub ints_by_speed {
     my ( $self, $o ) = @_;
-    my @ifs;
     my $id = $o->id;
-    eval {
-	@ifs = Interface->search_ifsbyspeed($id);
-    };
-    if ($@){
-	$self->error("$@");
-	return;
-    }
+    my @ifs = Interface->search( device => $id, {order_by => 'speed'});
+
     return unless scalar @ifs;
     return @ifs;
 }
@@ -1785,7 +1793,7 @@ use one of the values.
 
 =cut
 
-sub interfaces_by_vlan {
+sub ints_by_vlan {
     my ( $self, $o ) = @_;
     my @ifs;
     unless ( @ifs = $o->interfaces() ){
@@ -1806,17 +1814,11 @@ Returns:    Sorted array of interface objects or undef if error.
 
 =cut
 
-sub interfaces_by_descr {
+sub ints_by_descr {
     my ( $self, $o ) = @_;
-    my @ifs;
     my $id = $o->id;
-    eval {
-	@ifs = Interface->search_ifsbydescr($id);
-    };
-    if ($@){
-	$self->error("$@");
-	return;
-    }
+    my @ifs = Interface->search( device => $id, {order_by => 'description'});
+
     return unless scalar @ifs;
     return @ifs;
 }
@@ -1828,7 +1830,7 @@ Returns:    Sorted array of interface objects or undef if error.
 
 =cut
 
-sub interfaces_by_jack {
+sub ints_by_jack {
     my ( $self, $o ) = @_;
     my @ifs;
     unless ( @ifs = $o->interfaces() ){
@@ -1837,6 +1839,44 @@ sub interfaces_by_jack {
     my @tmp = map { [ ($_->jack) ? $_->jack->jackid : 0, $_] } @ifs;
 	
     @ifs = map { $_->[1] } sort { $a->[0] cmp $b->[0] } @tmp;
+
+    return unless scalar @ifs;
+    return @ifs;
+}
+
+=head2 interfaces_by_jack - Wrapper function to retrieve interfaces from a Device
+
+Will call different methods depending on the sort field specified
+
+Arguments:  Device object, sort field: [number|name|speed|vlan|jack|descr]
+Returns:    Sorted array of interface objects or undef if error.
+
+=cut
+
+sub get_interfaces {
+    my ( $self, $o, $sortby ) = @_;
+    unless ( ref($o) eq "Device" ){
+	self->error("get_interfaces: First parameter must be a Device object");
+	return 0;
+    }
+    my @ifs;
+
+    if ( $sortby eq "number" ){
+	@ifs = $self->ints_by_number($o);
+    }elsif ( $sortby eq "name" ){
+	@ifs = $self->ints_by_name($o);
+    }elsif( $sortby eq "speed" ){
+	@ifs = $self->ints_by_speed($o);
+    }elsif( $sortby eq "vlan" ){
+	@ifs = $self->ints_by_vlan($o);
+    }elsif( $sortby eq "jack" ){
+	@ifs = $self->ints_by_jack($o);
+    }elsif( $sortby eq "descr"){
+	@ifs = $self->ints_by_descr($o);
+    }else{
+	$self->error("get_interfaces: Unknown sort field: $sortby");
+	return 0;
+    }
 
     return unless scalar @ifs;
     return @ifs;
@@ -2015,8 +2055,7 @@ sub _clear_output {
 #####################################################################
 sub _readablehex {
     my ($self, $v) = @_;
-    my $h = sprintf('%s', unpack('H*', $v));
-    return uc($h);
+    return uc( sprintf('%s', unpack('H*', $v)) );
 }
 
 #####################################################################

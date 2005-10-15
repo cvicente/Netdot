@@ -2,7 +2,7 @@ package Netdot;
 
 use lib "PREFIX/lib";
 use Debug;
-use Netdot::DBI;
+use base qw (Netdot::DBI );
 
 #Be sure to return 1
 1;
@@ -870,7 +870,7 @@ sub gethistoryobjs {
     my $id_f = lc ("$table" . "_id");
     my @ho;
     eval {
-	@ho = $htable->search($id_f => $o->id);
+	@ho = $htable->search($id_f => $o->id, {order_by => 'modified DESC'});
     };
     if ( $@ ){
 	$self->error("Can't retrieve history objects for $table id $o->id: $@");
@@ -924,7 +924,7 @@ sub search_all_netdot {
     
 }
 
-=head2 _ip2int - Convert IP(v4/v6) address string into its decimal value
+=head2 ip2int - Convert IP(v4/v6) address string into its decimal value
 
  Arguments: address string
  Returns:   integer (decimal value of IP address)
@@ -940,5 +940,4 @@ sub ip2int {
     }
     return ($ipobj->numeric)[0];
 }
-
 

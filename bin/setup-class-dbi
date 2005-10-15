@@ -10,8 +10,8 @@
 use strict;
 use DBI;
 
-my $DB_TYPE = $ARGV[0]        || "mysql";
-my $DB_DATABASE = $ARGV[1]    || "netdot";
+my $DB_TYPE        = $ARGV[0] || "mysql";
+my $DB_DATABASE    = $ARGV[1] || "netdot";
 my $DB_NETDOT_USER = $ARGV[2] || "netdot_user";
 my $DB_NETDOT_PASS = $ARGV[3] || "netdot_pass";
 
@@ -138,9 +138,50 @@ sub historize {
     }
 }
 
+################################################################
+# validate_phys_addr - Perform validation of MAC address strings
+# 
+# String must look like "DEADDEADBEEF".
+# Assumes that "000000000000", "111111111111" ... "FFFFFFFFFF" 
+# are invalid.
+#
+# Arguments: address string
+# Returns:   True if valid, False if invalid
+#
+################################################################
+sub validate_phys_addr {
+    my ($self, $addr) = @_;
+    if ( $addr !~ /^[0-9A-F]{12}$/ ||
+	 # Assume the all-equal-bits address is invalid
+	 ($addr =~ /^([0-9A-F]{1})/ && $addr =~ /$1{12}/)  ){
+	return 0;
+    }
+    return 1;
+}
+
+#################################################
+# Canonicalize MAC addresses before inserting.
+# Search methods will also need to convert to
+# this format prior to searching.
+################################################
+sub canonicalize_phys_addr {
+    my $self = shift;
+    my $address = ($self->_attrs('address'))[0];
+    $address =~ s/[:\.\-]//g;
+    $address = uc($address);
+    unless ($self->validate_phys_addr($address)){
+	$self->_croak("Invalid Address: $address");	
+    }
+    $self->_attribute_store( address => $address );
+}
+
 Ipblock->add_trigger( deflate_for_create => \&ip2int );
 Ipblock->add_trigger( deflate_for_update => \&ip2int );
 Ipblock->add_trigger( select => \&int2ip );
+
+PhysAddr->add_trigger( deflate_for_create => \&canonicalize_phys_addr );
+PhysAddr->add_trigger( deflate_for_update => \&canonicalize_phys_addr );
+
 __PACKAGE__->add_trigger( before_update => \&historize );
 
 
@@ -152,25 +193,6 @@ __PACKAGE__->add_trigger( before_update => \&historize );
 # e.g.  
 #   Ipblock->search_children
 ################################################
-
-# We want the DB to sort the addresses
-# while in decimal
-Ipblock->set_sql(children => qq{
-    SELECT Ipblock.id, Ipblock.address, Ipblock.parent
-	FROM Ipblock
-	WHERE Ipblock.parent = ?
-	ORDER BY Ipblock.address
-    });
-   
-# Easy way to retrieve a limited list of root blocks
-#
-Ipblock->set_sql(roots => qq{
-    SELECT Ipblock.id, Ipblock.prefix, Ipblock.parent
-	FROM Ipblock
-	WHERE Ipblock.parent = 0
-	ORDER BY Ipblock.prefix
-	LIMIT 10
-});
 
 # Short way to retrieve all the ip addresses from a device
 # 
@@ -193,30 +215,6 @@ Ipblock->set_sql(devipsbyint => qq{
 	ORDER BY Interface.name
     });
 
-# Get all the interfaces from a Device
-#
-# By name
-Interface->set_sql(ifsbyname => qq{
-    SELECT *
-	FROM Interface
-	WHERE device = ?
-	ORDER BY name
-    });
-# By speed
-Interface->set_sql(ifsbyspeed => qq{
-    SELECT *
-	FROM Interface
-	WHERE device = ?
-	ORDER BY speed
-    });
-# By Description
-Interface->set_sql(ifsbydescr => qq{
-    SELECT *
-	FROM Interface
-	WHERE device = ?
-	ORDER BY description
-    });
-#
 # Get lists of products
 Product->set_sql(bytype => qq{
     SELECT p.name, p.id, COUNT(d.id) AS numdevs
