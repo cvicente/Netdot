@@ -39,6 +39,7 @@ my $o;
 my $ci = 0;
 my $title;
 my @list;
+my $covering_block;
 
 if ( $id ){
     unless ( $o = Ipblock->retrieve($id) ){
@@ -73,30 +74,8 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 #######################################################################################
 
 if ( defined($search) ){
-    if ($search =~ /\w+/ ){
-	$search =~ s/^\s*(.*)\s*$/$1/g;
-	if ( $_action eq "SEARCH_ADDR" ){
-	    my ($addr, $prefix, $ipb);
-	    if ($search =~ /\//){
-		($addr, $prefix) = split /\//, $search;
-		if ($ipb = $ipm->searchblocks_addr($addr, $prefix)){
-		    push @list, $ipb;
-		}
-	    }else{
-		@list = $ipm->searchblocks_addr($search);
-	    }
-	    unless ( @list ){
-		# None were found, so look for substrings
-		@list = $ipm->searchblocks_addr_like($search);
-	    }
-	}elsif ( $_action eq "SEARCH_OTHER" ){
-	    @list = $ipm->searchblocks_other($search);
-	}else {
-	    $m->comp('error.mhtml', error => "Unrecognized action parameter: $_action");	
-	}
-    }else{
-</%perl>      
-
+    if ($search eq "" ){
+</%perl>
        <div class="container">
          <div class="containerhead">
            <strong>Error!</strong>   
@@ -105,9 +84,32 @@ if ( defined($search) ){
             <p><strong>No search criteria</strong>   
          </div>
        </div>
-%   }
+<%perl>
+   }else{
+	$search =~ s/^\s*(.*)\s*$/$1/g;
+	if ( $_action eq "SEARCH_ADDR" ){
+	    # Make sure we start with a clean error buffer
+	    $ipm->error("");
+	    if ($search =~ /\//){
+		my ($addr, $prefix) = split /\//, $search;
+		if ( !(@list = $ipm->searchblocks_addr($addr, $prefix)) && !$ipm->error ){
+		    $covering_block = $ipm->get_covering_block($addr, $prefix);
+		}
+	    }else{
+		if ( !(@list = $ipm->searchblocks_addr($search)) && !$ipm->error ){
+		    $covering_block = $ipm->get_covering_block($search);
+		}
+	    }
+	}elsif ( $_action eq "SEARCH_REGEX" ){
+	    @list = $ipm->searchblocks_regex($search);
+	}elsif ( $_action eq "SEARCH_OTHER" ){
+	    @list = $ipm->searchblocks_other($search);
+	}else {
+	    $m->comp('error.mhtml', error => "Unrecognized action parameter: $_action");	
+	}
 
-       <div class="container">
+</%perl>      
+	<div class="container">
           <div class="containerhead">
               Query <em><% $search %></em> returned: <% scalar(@list) %> matches
           </div>
@@ -120,10 +122,21 @@ if ( defined($search) ){
           </div>
        </div>
 
+%      if ( $covering_block ){
+         <p>
+         <div class="container">
+           <div class="containerhead">Closest Covering Block:</div>
+           <div class="containerbody">
+              <& ipblock_list.mhtml, objects =>[$covering_block] &>
+           </div>
+         </div>
+%      }
+
+%   }
 <%perl>
 
 #######################################################################################
-# Get Root Blocks
+# Show Root Blocks
 #
 #######################################################################################
 }elsif( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){

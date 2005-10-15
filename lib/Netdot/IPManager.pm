@@ -75,8 +75,9 @@ sub searchblocks_addr {
     $self->debug(loglevel => 'LOG_DEBUG',
 		 message => "searchblock: args: %s, %s" ,
 		 args => [$address, $prefix]);
-    unless ($ip = NetAddr::IP->new($address, $prefix)){
-	$self->error(sprintf("Invalid address: %s/%s", $address, $prefix));
+    unless ( $ip = $self->_prevalidate($address, $prefix) ){
+	my $msg = sprintf("%s", $self->error);
+	$self->error($msg);
 	return;
     }
     $self->debug(loglevel => 'LOG_DEBUG',
@@ -103,14 +104,15 @@ sub searchblocks_addr {
 
 }
 
-=head2 searchblocks_addr_like - Search IP Blocks that match certain address substring
+=head2 searchblocks_regex - Search IP Blocks that match the specified regular expression
 
- Arguments: address string or substring
- Returns: array of Ipblock objects
+
+ Arguments: address regular expression
+ Returns:   array of Ipblock objects
 
 =cut
 
-sub searchblocks_addr_like {
+sub searchblocks_regex {
     my ($self, $string) = @_;
     my @ipb;
     my $it = Ipblock->retrieve_all;
@@ -160,6 +162,75 @@ sub searchblocks_other {
     wantarray ? ( @ipb ) : $ipb[0]; 
 
 }
+
+=head2 get_covering_block - Get the closest available block that contains a given block
+
+When a block is searched and not found, it is useful to show the closest existing block
+that would contain it.  The fastest way to do it is inserting it, building the IP tree,
+retrieving the parent, and then removing it.
+
+ Arguments: IP address and prefix 
+ Returns:   Ipblock object or 0 if not found
+
+=cut
+
+sub get_covering_block {
+    my ($self, $address, $prefix) = @_;
+    my ($ip, $parent);
+    unless ( $ip = $self->_prevalidate($address, $prefix) ){
+	my $msg = sprintf("%s", $self->error);
+	$self->error($msg);
+	return 0;
+    }
+    if ( Ipblock->search(address => ($ip->numeric)[0], prefix => $ip->masklen) ){
+	my $msg = sprintf("Block %s/%s exists in db.  Using wrong method!", $ip->addr, $ip->masklen);
+	$self->error($msg);
+	return 0;
+    }
+    my %state = ( address       => $ip->addr, 
+		  prefix        => $ip->masklen,
+		  version       => $ip->version );
+    
+    if ( my $r = $self->insert( table => "Ipblock", state => \%state) ){
+	$self->debug(loglevel => 'LOG_DEBUG',
+		     message  => "get_covering_block: Temporarily inserted %s/%s",
+		     args     => [$ip->addr, $ip->masklen]);
+
+	return 0 unless ( $self->build_tree($ip->version) );
+
+	my $ipblock = Ipblock->retrieve($r);
+	if ( ($parent = $ipblock->parent) != 0 ){
+	    $self->debug(loglevel => 'LOG_DEBUG',
+			 message  => "get_covering_block: Found parent %s/%s",
+			 args     => [$parent->address, $parent->prefix]);
+	}else{
+	    $self->debug(loglevel => 'LOG_DEBUG',
+			 message  => "get_covering_block: Found no parent for %s/%s",
+			 args     => [$ipblock->address, $ipblock->prefix]);
+	    # Have to explicitly set to zero because Class::DBI returns
+	    # an empty (though non-null) object
+	    $parent = 0;
+	}
+	unless ( $self->remove( table => "Ipblock", id => $r ) ){
+	    my $msg = sprintf("get_covering_block: Could not remove %s/%s: %s!", $ip->addr, $ip->masklen);
+	    $self->error($msg);
+	    return 0;
+	}
+	$self->debug(loglevel => 'LOG_DEBUG',
+		     message  => "get_covering_block: Removed %s/%s",
+		     args     => [$ip->addr, $ip->masklen]);
+
+	return 0 unless ( $self->build_tree($ip->version) );
+	return $parent;
+    }else{
+	my $msg = sprintf("get_covering_block: Could not insert %s/%s: %s!", 
+			  $ip->addr, $ip->masklen, $self->error);
+	$self->error($msg);
+	return 0;
+    }
+    return 0;
+}
+
 
 =head2 getrootblocks  - Get a list of root blocks
 
@@ -266,12 +337,18 @@ sub _prevalidate {
     my ($self, $address, $prefix) = @_;
     my $ip;
     unless ( $address ){
-	$self->error("Address arg is required");
+	$self->error("_prevaliate: Address arg is required");
+	return 0;		
+    }
+    unless ( $address =~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/ ||
+	     $address =~ /:/){
+	$self->error("Invalid IP: $address");
 	return 0;		
     }
     if ( !($ip = NetAddr::IP->new($address, $prefix)) ||
 	 $ip->numeric == 0 ){
-	$self->error("Invalid IP: $address/$prefix");
+	my $str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
+	$self->error(sprintf("Invalid IP: %s ", $str));
 	return 0;	
     }
 
@@ -332,7 +409,7 @@ sub _validate {
 	    my ($ip, $pip);
 	    if ( ($ip = NetAddr::IP->new($ipblock->address, $ipblock->prefix)) &&
 		 ($pip = NetAddr::IP->new($parent->address, $parent->prefix))  ){ 
-		if ( $pip->network->broadcast->addr == $ip->addr ) {
+		if ( $pip->network->broadcast->addr eq $ip->addr ) {
 		    my $msg = sprintf("Address is broadcast for %s/%s: ",$parent->address, $parent->prefix);
 		    $self->debug(loglevel => 'LOG_NOTICE', message => $msg);
 		    $self->error($msg);
@@ -419,6 +496,7 @@ Optional Arguments:
     prefix        dotted-quad mask or prefix length (default is /32 or /128)
     status        id of IpblockStatus - or - 
     statusname    name of IpblockStatus
+    entity        Who uses the block
     interface     id of Interface where IP was found
     dhcp_enabled  Include in DHCP config
     dns_delegated Create necessary NS records
@@ -440,6 +518,7 @@ sub insertblock {
     $args{interface}     ||= 0; 
     $args{dhcp_enabled}  ||= 0; 
     $args{dns_delegated} ||= 0; 
+    $args{entity}        ||= 0; 
     
     # $ip is a NetAddr::IP object;
     my $ip;
@@ -479,6 +558,7 @@ sub insertblock {
 		  interface     => $args{interface},
 		  dhcp_enabled  => $args{dhcp_enabled},
 		  dns_delegated => $args{dns_delegated},
+		  entity        => $args{entity},
 		  first_seen    => $self->timestamp,
 		  last_seen     => $self->timestamp,
 		  );
@@ -507,10 +587,22 @@ sub insertblock {
 	}
 	my $newblock = Ipblock->retrieve($r);
 
+	# Inherit some of parent's values if it's not an address
+	if ( !$self->isaddress($newblock) && ($newblock->parent != 0) ){
+	    my %state = ( dns_delegated => $newblock->parent->dns_delegated, 
+			  entity        => $newblock->parent->entity );
+	    unless ( $self->update( object=> $newblock, state => \%state ) ){
+		$self->debug(loglevel => 'LOG_ERR',
+			     message => "insertblock: could not inherit parent values!");
+	    }
+	}
 	$self->debug(loglevel => 'LOG_DEBUG',
 		     message => "insertblock: inserted %s/%s" ,
 		     args => [$newblock->address, $newblock->prefix]);
-
+	# This is a funny hack to avoid the address being shown in numeric.
+	# Maybe a Class::DBI issue?  
+	undef $newblock;
+	$newblock = Ipblock->retrieve($r);
 	return $newblock;
     }else{
 	return 0;
@@ -741,15 +833,15 @@ Arguments:
 sub auto_allocate {
     my ($self, $parentid, $length, $strategy) = @_;
     my $parent;
-    my $wantaddress;
+    my $wantaddress = 0;
     $strategy ||= "first";
 
-    unless ( $strategy eq "first" || $strategy eq "last" ){
+    unless ( $strategy =~ /^first|last$/ ){
 	$self->error("strategy must be either 'first' or 'last'");	
 	return 0;
     }
     unless ( $parent = Ipblock->retrieve($parentid) ){
-	$self->error("Cannot retrieve $parentid: $@");
+	$self->error("Cannot retrieve Ipblock id $parentid: $@");
 	return 0;
     }    
     # NetAddr::IP's split() method takes too long to split a 
@@ -831,13 +923,11 @@ sub auto_allocate {
 	    # Doesn't exist, so go ahead
 	    my $status = ($wantaddress) ? "Static" : "Subnet";
 	    my $newblock;
-	    # Inherit parent's 'dns_delegated' flag
-	    if ( $newblock = 
-		 $self->insertblock(address       => $block->addr, 
-				    prefix        => $block->masklen,
-				    statusname    => $status,
-				    dns_delegated => $parent->dns_delegated,
-				    ) ){
+	    my %state = (address       => $block->addr, 
+			 prefix        => $block->masklen,
+			 statusname    => $status);
+
+	    if ( $newblock = $self->insertblock(%state) ){
 		
 		$self->debug(loglevel => 'LOG_NOTICE',
 			     message => "auto_allocate: returned %s/%s" ,
