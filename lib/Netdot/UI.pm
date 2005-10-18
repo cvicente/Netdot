@@ -22,8 +22,7 @@ use lib "PREFIX/lib";
 use Apache::Session::File;
 use Apache::Session::Lock::File;
 
-#use base qw( Netdot );
-use base qw( Netdot::IPManager );
+use base qw( Netdot );
 use strict;
 
 #Be sure to return 1
