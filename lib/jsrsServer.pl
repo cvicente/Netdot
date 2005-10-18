@@ -21,7 +21,6 @@ sub jsrsDispatch {
 	my $func = jsrsBuildFunc($validFuncs);
 	if ($func ne ""){
 		$retval = eval($func);
-        print STDERR "jsrsDispatch returns: ".$func."\n";
 		jsrsReturn($retval);
 	}else{
 		jsrsReturnError("function builds as empty string");

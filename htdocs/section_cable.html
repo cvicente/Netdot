@@ -38,6 +38,7 @@ if ($show_tasks eq "") {
 </%init>
 
 <%perl>
+
 sub print_showtaskslink {
     my $show_tasks = $_[0];
     my $request_vars = "";
@@ -64,16 +65,6 @@ my @sites = Site->retrieve_all();
 
 % if ($page eq "BACKBONE" || $page eq "") {
 
-    
-<script language="JavaScript">
-<!--
-var siteListLookup = new DynamicList("backbone_form", "end_id", null, null, "start_id");
-siteListLookup.setQueryURL("backbone_list_query.html");
-LIST_MANAGER.addList(siteListLookup);
--->
-</script>
-
-
 <div class="container">
     <div class="containerheadleft">
         Backbone Cable
@@ -88,7 +79,7 @@ LIST_MANAGER.addList(siteListLookup);
                 <form name="backbone_form" action="cable_plant.html" method="POST">
                     <input type="hidden" name="page_type" value="BACKBONE">
                     Connected from:
-                    <select name="start_id" onChange="siteListLookup.doIt();">
+                    <select name="start_id" id="start_id" onChange="jsrsSendqueryBB(end_id, start_id.value)">
                         <option value="0">-- Select --</option>
                         <%perl>
                         foreach my $site (@sites)
@@ -97,7 +88,7 @@ LIST_MANAGER.addList(siteListLookup);
                         }
                         </%perl>
                     </select> to:
-                    <select name="end_id">
+                    <select name="end_id" id="end_id">
                     </select>
                     <input name="submit_site" value="Go!" type="submit">
                 </form>
@@ -118,16 +109,6 @@ LIST_MANAGER.addList(siteListLookup);
 
 % } elsif ($page eq "HORIZONTAL") {
 
-<script language="JavaScript">
-<!--
-var jackList = new DynamicList("cable_form", "jack_id", "closet", "HorizontalCable", "closet_id");
-var closetList = new DynamicList("cable_form", "closet_id", "floor", "Closet", "floor_id", jackList);
-var roomList = new DynamicList("cable_form", "room_id", "floor", "Room", "floor_id");
-var floorList = new DynamicList("cable_form", "floor_id", "site", "Floor", "id", roomList, closetList);
-
-LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
--->
-</script>
 
 <div class="container">
 	<div class="containerheadleft">
@@ -143,7 +124,8 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
 	<form name="cable_form" action="cable_plant.html" method="GET">
   	<input type="hidden" name="page_type" value="HORIZONTAL">
             Site:
-            <select name="id" onChange="floorList.doIt();">
+            <select name="id" id="site_id" onChange="jsrsSendqueryTB(floor_id, site_id.value, 'Floor', 'site')">
+                    <!-- name and id of this select field are different. see note below, in CLOSETS section  -->
             <option value="0">-- Select --</option>
             <%perl>
             foreach my $site (@sites) {
@@ -155,27 +137,27 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
             <br />
             Floor:
 %           # When selecting by floor, default to populating our jack list based upon the closet lists contents            
-            <select name="floor_id" onChange="roomList.doIt(); jackList.setParent('closet_id'); jackList.setDBField('closet'); closetList.doIt();">
+            <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB(room_id, floor_id.value, 'Room', 'floor'); jsrsSendqueryTB(closet_id, floor_id.value, 'Closet', 'floor');">
             </select>
             <br />
 %           # Because both the room list and the closet list can affect the jack list, we explicitly tell the jacklist to look
 %           # at this list.
-            Room: <select name="room_id" onChange="jackList.setParent('room_id'); jackList.setDBField('room'); jackList.doIt(); document.cable_form.closet_id.options[0].selected = true;">
+            Room: <select name="room_id" id="room_id" onChange="jsrsSendqueryTB(jack_id, room_id.value, 'HorizontalCable', 'room')">
             </select>
 %           # Like above, make sure the jacklist uses our closet selection instead of the room selection.            
-            or closet: <select name="closet_id" onChange="jackList.setParent('closet_id'); jackList.setDBField('closet'); jackList.doIt(); document.cable_form.room_id.options[0].selected = true;"></select>
+            or closet: <select name="closet_id" id="closet_id" onChange="jsrsSendqueryTB(jack_id, closet_id.value, 'HorizontalCable', 'closet')"></select>
             <br />
 	    Jack:
-            <select name="jack_id">
+            <select name="jack_id" id="jack_id">
             </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (jack_id.value && jack_id.value != -1) { location.href = ('cable_horizontal.html?id=' + jack_id.value); } else if (document.cable_form.id.value) { location.href = ('cable_plant.html?id=' + document.cable_form.id.value + '&page_type=HORIZONTAL'); } return true;">
 
             <hr>
 
 %           my $srchf = 'jack_srch';  # name of the form input tag
 	        <input type="text" name="<% $srchf %>" value="By Jack ID(s)" onFocus="if (this.value == 'By Jack ID(s)') { this.value = ''; } return true;">
-	        &nbsp;<input type="button" name="" value="Lookup Jack" 
-            onClick="sendquery(<% 'jack_lookup' %>, <% $srchf . '.value' %>, 'HorizontalCable', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
-            Lookup Results: <select name="jack_lookup">
+    	        &nbsp;<input type="button" name="" value="Lookup Jack" 
+            onClick="jsrsSendquery(<% 'jack_lookup' %>, <% $srchf . '.value' %>, 'HorizontalCable')"> &nbsp;&nbsp;&nbsp; 
+            Lookup Results: <select name="jack_lookup" id="jack_lookup">
             </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (jack_lookup.value) { location.href = ('cable_horizontal.html?id=' + jack_lookup.value); return true; }"> &nbsp;&nbsp;
 
     </form>
@@ -185,14 +167,7 @@ LIST_MANAGER.addList(jackList, closetList, roomList, floorList);
 
 % } elsif ($page eq "CLOSETS") {
 
-<script language="JavaScript">
-<!--
-var closetList = new DynamicList("cable_form", "closet_id", "floor", "Closet", "floor_id");
-var floorList = new DynamicList("cable_form", "floor_id", "site", "Floor", "id", closetList);
 
-LIST_MANAGER.addList(floorList, closetList);
--->
-</script>
 <div class="container">
 	<div class="containerheadleft">
         Closets
@@ -206,7 +181,11 @@ LIST_MANAGER.addList(floorList, closetList);
     <form name="cable_form" action="cable_plant.html" method="GET">
     <input type="hidden" name="page_type" value="CLOSETS">
             Site:
-            <select name="id" onChange="floorList.doIt();">
+            <select name="id" id="site_id" onChange="jsrsSendqueryTB(floor_id, site_id.value, 'Floor', 'site')">
+                    <!-- name and id of this select field are different. name is for form submitting, because
+                         cable_plant.html needs the site id named "id". id is for the javascript queries. when
+                         it was named "id", id.value returned an undefined value. not quite sure why this is, maybe
+                         javascript doens't allow fields to be named "id"?  -->
             <option value="0">-- Select --</option>
             <%perl>
             foreach my $site (@sites) {
@@ -214,13 +193,15 @@ LIST_MANAGER.addList(floorList, closetList);
             }
             </%perl>
             </select> <input name="submit_site" value="Browse by Site" type="submit">
+            <br>
 
             Floor:
-            <select name="floor_id" onChange="closetList.doIt();">
+            <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB(closet_id, floor_id.value, 'Closet', 'floor');">
             </select>
-  
+            <br>
+
             Closet:
-            <select name="closet_id">
+            <select name="closet_id" id="closet_id">
             </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (closet_id.value && closet_id.value != -1) { location.href = ('closet.html?id=' + closet_id.value); } else if (document.cable_form.id.value) { location.href = ('cable_plant.html?id=' + document.cable_form.id.value + '&page_type=CLOSETS'); } return true;">
     </form>
 

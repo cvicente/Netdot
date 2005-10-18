@@ -13,11 +13,31 @@ $caller => $ARGS{self};
 </%args>
 
 <%init>
-my @terms;
 my $DEBUG       = 0;
-my $MAX_RESULTS = 2000;
 
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+</%init>
+
+<%perl>
+
+do "jsrsServer.pl";
+jsrsDispatch("backbone_search");
+
+
+sub backbone_search {
+# Arguments:
+# - field:  Form element to add the results into
+# - crit:   Criteria.  A string with one or more keywords to search
+
+my $field = shift;
+my $crit = shift;
+my $val = $crit;
+
+
+my @terms;
+my $MAX_RESULTS = 2000;
+
 
 if ($val =~ /\w+/) {
     if ($val =~ /\w+\s+\w+/) {
@@ -28,7 +48,7 @@ if ($val =~ /\w+/) {
         push @terms, $val;
     }
     
-    print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
+    #print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
 }
 
 my $site_id   = $terms[0] if (scalar(@terms));
@@ -41,13 +61,9 @@ my @results;
 my %stored;
 my @backbones;
 
-</%init>
 
-<html>
-<body>
-<script language="JavaScript">
-<!--
-<%perl>
+
+
 # get backbone cable for each closet
 foreach my $closet (@closets) {
     my $c_id = $closet->id;
@@ -82,23 +98,43 @@ foreach my $backbone (@backbones) {
     }
 }
 
-printf("var listdata = new Array();\n");
+# printf("var listdata = new Array();\n");
+
+my $response = $field."&";
 
 if (scalar(@results) < $MAX_RESULTS) {
     @results = sort { $a->name cmp $b->name } @results;
 
-    printf("listdata.push(new Option(\"No Matches\", \"\"));\n") unless (scalar(@results));
+    #printf("listdata.push(new Option(\"No Matches\", \"\"));\n") unless (scalar(@results));
+    $response .= "0=".URLEncode("No matches") unless (scalar(@results));
     
     foreach my $end_site (@results) {
-        printf("listdata.push(new Option(\"%s\", \"%s\"));\n", $end_site->name, $end_site->id);
+        $response .= $end_site->id."=".URLEncode($end_site->name)."&";
+        #printf("listdata.push(new Option(\"%s\", \"%s\"));\n", $end_site->name, $end_site->id);
     }
 } else {
-    printf("listdata.push(new Option(\"Too Many Results\", \"\"));\n")
+    $response .= "0=".URLEncode("Too Many Results");
+    #printf("listdata.push(new Option(\"Too Many Results\", \"\"));\n")
 }
 
-printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);
+#printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);      
+    return $response;    
+
+}
+
+
+sub URLEncode {
+    my $theURL = $_[0];
+   $theURL =~ s/([\W])/"%" . uc(sprintf("%2.2x",ord($1)))/eg;
+   return $theURL;
+}
+
+sub URLDecode {
+    my $theURL = $_[0];
+    $theURL =~ tr/+/ /;
+    $theURL =~ s/%([a-fA-F0-9]{2,2})/chr(hex($1))/eg;
+    $theURL =~ s/<!--(.|\n)*-->//g;
+    return $theURL;
+}
+
 </%perl>
--->
-</script>
-</body>
-</html>

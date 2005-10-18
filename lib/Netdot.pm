@@ -15,7 +15,7 @@ Netdot - Network Documentation Tool
 
 =head1 SYNOPSIS
 
-Netdot.pm contains a series of functions commonly used throughout Netdot's classes, 
+Netdot.pm contains a series of functions commonly used throughout Netdot s classes, 
 hence the idea of grouping them in this parent class, inheritable by every other class.
 
 =head1 METHODS
@@ -757,6 +757,58 @@ sub dateserial {
     return $date;
 }
 
+
+=head2 single_table_search
+
+  $r = $db->single_table_search(table => $table, field => $field, keyword => $keyword, max => $max);
+
+ Search the 'field' field in 'table' for rows matching 'keyword'.
+
+ Arguments
+   table: Name of table to search in
+   field: field name of the table that will be searched
+   keyword: search for this value in field
+   max: maximum rows to return
+ Returns
+   hashref of $table objects
+
+=cut
+
+sub single_table_search {
+    my ($self, %args) = @_;
+    my ($table, $field, $keyword, $max) = ($args{table}, $args{field}, $args{keyword}, $args{max});
+    my %found;
+
+	my $it;
+	if ( $table eq "Ipblock" && $field eq "address" ){
+	    # Special case.  We have to convert into an integer first
+	    # Also, if user happened to enter a prefix, make it work
+	    my ($address, $prefix);
+	    if ( $keyword =~ /\/\d+$/ ){
+   			($address, $prefix) = split /\//, $keyword;
+   			my $int = $self->ip2int($address);
+   			$it = $table->search( 'address' => $int, 'prefix'=> $prefix );
+	    }else{
+   			$address = $keyword;
+   			my $int = $self->ip2int($address);
+   			$it = $table->search( 'address' => $int );
+	    }
+	}else{
+	    $it = $table->search( $field => $keyword );
+	}
+
+	while (my $obj = $it->next){
+	    $found{$obj->id} = $obj;
+	}	
+
+    # Return all matching objects for the keyword
+	return \%found;
+}
+
+
+
+
+
 =head2 select_query
 
   $r = $db->select_query(table => $table, terms => \@terms, max => $max);
@@ -870,7 +922,7 @@ sub gethistoryobjs {
     my $id_f = lc ("$table" . "_id");
     my @ho;
     eval {
-	@ho = $htable->search($id_f => $o->id, {order_by => 'modified DESC'});
+       @ho = $htable->search($id_f => $o->id, {order_by => 'modified DESC'});
     };
     if ( $@ ){
 	$self->error("Can't retrieve history objects for $table id $o->id: $@");
@@ -940,4 +992,5 @@ sub ip2int {
     }
     return ($ipobj->numeric)[0];
 }
+
 

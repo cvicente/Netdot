@@ -31,7 +31,17 @@
 // functions for new jsrs method
 
     function jsrsSendquery(field, val, tablename) {
+        //alert( "Field: "+field.name+"; val:"+val+"; tablename: "+tablename );
         jsrsExecute( "jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, field.name, val) );
+    }
+
+    function jsrsSendqueryTB(form_field, val, tablename, column) {
+        //alert( "Field (Column): "+column+"; val:"+val+"; tablename: "+tablename+" form_field: "+form_field.name );
+        jsrsExecute( "jsrs_singletable.html", jsrsParseresults, "keyword_search", Array(tablename, column, val, form_field.name) );
+    }
+
+    function jsrsSendqueryBB(field, val) {
+        jsrsExecute( "backbone_list_query.html", jsrsParseresults, "backbone_search", Array(field.name, val) );
     }
 
     function jsrsParseresults( returnstring ) {
@@ -54,6 +64,7 @@
             }
         }
     }
+
 
     function explode(item,delimiter) { 
         tempArray=new Array(1); 

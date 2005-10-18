@@ -1,7 +1,7 @@
 <%doc>
 
-Calls UI::select_query to perform a recursive search for keywords
-in a table s label fields
+Calls UI::single_table_search to perform a NOT RECURSIVE search for keywords
+in a table's specified label field
 
 </%doc>
 
@@ -15,44 +15,37 @@ my $DEBUG = 0;
 </%init>
 
 <%perl>
-print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 do "jsrsServer.pl";
 jsrsDispatch("keyword_search");
 
 sub keyword_search {
 # Arguments:
-# - table:  Foreign key table to search.
-# - field:  Name of the original field for which we're searching foreign values
-#          Needed by the caller
-# - crit:   Criteria.  A string with one or more keywords to search
+# - table:  Table to search.
+# - field:  Name of the field for which we're searching foreign values
+# - keyword:   keyword to search for in the "field" field of "table"
+# - form_field: Name of the form field to add the results into
 
     my $table = shift;
     my $field = shift;
-    my $crit = shift;
+    my $keyword = shift;
+    my $form_field = shift;
 
     my $DEBUG = 0;
- 
+
     my $r;
-    my @terms;
     my $MAX   = 100;
 
-    if ($crit =~ /\w+/){
-        $crit =~ s/^\s*(.*)\s*$/$1/;
-        @terms = split /\s+/, $crit;
-        print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
-    }
+    my $response = $form_field."&";
 
-
-    my $response = $field."&";
-
-    $r = $ui->select_query(table => $table, terms => \@terms, max => $MAX);
+    $r = $ui->single_table_search(table => $table, field => $field, keyword => $keyword, max => $MAX);
 
     if (my $n = scalar (keys %$r) ){
         my $count = 0;
 
         if ($n >= $MAX){
-            $response .= "0=".URLEncode("More than ".$MAX." matches.  Refine search")."&";
+            $response .= "0=".URLEncode("More than ".$MAX." matches. Refine search")."&";
         }
         my @objs = map { $r->{$_} } keys %$r;
         my $lblfield = ( $ui->getlabels($table) )[0];
@@ -72,12 +65,12 @@ sub keyword_search {
         $response .= "0=-- Select --&";
 
         foreach my $o (@objs){
-	    my $delim;
-	    if ( $table eq "Ipblock" ){
-		$delim = "/";
-	    }else{
-		$delim = ", "
-	    }
+            my $delim;
+            if ( $table eq "Ipblock" ){
+                $delim = "/";
+            }else{
+                $delim = ", "
+            }
            my $lbl = $ui->getobjlabel($o, $delim);
            $response .= $o->id."=".URLEncode($lbl)."&";
            last if ($count++) == $MAX;
@@ -86,7 +79,7 @@ sub keyword_search {
         $response .= "0=".URLEncode("No matches");
     }
 
-    return $response;    
+    return $response;
 }
 
 sub URLEncode {
