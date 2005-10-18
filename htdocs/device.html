@@ -31,6 +31,7 @@ $edit      => undef
 $editgen   => undef
 $editloc   => undef
 $editmgmt  => undef
+$editsnmp  => undef
 $editips   => undef
 $editints  => undef
 $editbgp   => undef
@@ -251,7 +252,9 @@ function setNull(select){
 <div class="containerheadrightoutside">
 
     <a href="device.html?id=<% $id %>&view=<% $view %>">[refresh]</a>
-    <a href="updatedevice.html?device=<% $id %>&action=discover">[snmp-update]</a>
+%    if ( $o->snmp_managed ){
+	<a href="updatedevice.html?device=<% $id %>&action=discover">[snmp-update]</a>
+%    }
     <a href="deldevice.html?id=<% $id %>"> [delete]</a>
 
 </div> <!-- close containerheadrightoutside -->
@@ -319,14 +322,16 @@ function setNull(select){
   <tr>
     <td valign="top" width="50%" align="center">
 
+% if ($editgen || $editloc || $editmgmt || $editsnmp) {
+        <form name="netdotform" action="device.html" method="POST">
+	    <input type="hidden" name="id" value="<% $id %>">
+	    <input type="hidden" name="view" value="<% $view %>">
+% }
     <div class="container">
 	<!-- General Info Table -->
     	<div class="containerheadleft"><b>General</b></div>
     	<div class="containerheadright">
 % if ( $editgen || $editloc || $editmgmt ) {
-        <form name="netdotform" action="device.html" method="POST">
-	    <input type="hidden" name="id" value="<% $id %>">
-	    <input type="hidden" name="view" value="<% $view %>">
 	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 	    <input type="submit" name="submit" value="save" >
 % }else{
@@ -506,17 +511,11 @@ push( @field_headers, "Out-of-band hostname: " );
 push( @cell_data, $ui->text_field(object=>$o, column=>"oobname", edit=>$editmgmt, returnAsVar=>1) );
 push( @field_headers, "Out-of-band tel: " );
 push( @cell_data, $ui->text_field(object=>$o, column=>"oobnumber", edit=>$editmgmt, returnAsVar=>1) );
-push( @field_headers, "SNMP Community: " );
-push( @cell_data, $ui->text_field(object=>$o, column=>"community", edit=>$editmgmt, returnAsVar=>1) );
 
 push( @field_headers, "Monitored?: " );
 push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>$editmgmt, returnAsVar=>1) );
 push( @field_headers, "Customer-managed?: " );
 push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"customer_managed", edit=>$editmgmt, returnAsVar=>1) );
-push( @field_headers, "SNMP-managed?: " );
-push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"snmp_managed", edit=>$editmgmt, returnAsVar=>1) );
-push( @field_headers, "Auto-update?: " );
-push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"canautoupdate", edit=>$editmgmt, returnAsVar=>1) );
 push( @field_headers, "NATted?: " );
 push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"natted", edit=>$editmgmt, returnAsVar=>1) );
 
@@ -528,12 +527,46 @@ push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"natted", edit=>$
 </div>
 <!-- End Management Table -->
 
+<!-- SNMP Table -->
+<div class="container">
+    <div class="containerheadleft">
+        SNMP
+    </div>
+    <div class="containerheadright">
+%	 if ($editsnmp){	 
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+        <input type="submit" name="submit" value="save">
+%	 }else{
+        <a href="device.html?id=<% $id %>&view=<% $view %>&editsnmp=1">[edit]</a>
+%	 }
+    </div>
+    <div class="containerbody">
+<%perl>
+
+(@field_headers, @cell_data) = ();
+push( @field_headers, "SNMP-managed?: " );
+push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"snmp_managed", edit=>$editsnmp, returnAsVar=>1) );
+if ( $editsnmp || $o->snmp_managed ){
+    push( @field_headers, "SNMP Community: " );
+    push( @cell_data, $ui->text_field(object=>$o, column=>"community", edit=>$editsnmp, returnAsVar=>1) );
+    push( @field_headers, "Auto-update?: " );
+    push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"canautoupdate", edit=>$editsnmp, returnAsVar=>1) );
+}
+</%perl>
+
+       <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
+    </div>
+</div>
+<!-- End SNMP Table -->
+
+
   </td>
  </tr>
 </table>
 <!-- End Division Table -->
 
-%   if ( $editgen || $editloc || $editmgmt ) {
+%   if ( $editgen || $editloc || $editmgmt || $editsnmp ) {
       </form>
 %   }
 % }

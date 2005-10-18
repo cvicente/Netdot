@@ -388,7 +388,7 @@ sub update_device {
 		}
 	    }
 	    my %prodtmp = ( name         => $dev{productname} || $dev{sysobjectid},
-			    description  => $dev{productname} || $dev{sysdescription},
+			    description  => $dev{productname} || "",
 			    sysobjectid  => $dev{sysobjectid},
 			    type         => $type->id,
 			    manufacturer => $ent,
@@ -1342,11 +1342,6 @@ sub get_dev_info {
     }
     if( $self->_is_valid($nv{entPhysicalDescr}) ) {
 	$dev{productname} = $nv{entPhysicalDescr};
-    }elsif( $self->_is_valid($nv{sysDescr}) ){
-	# Try and use the first 4 words of sysDescr as productname
-	# 
-	my @words = split /\s+/, $nv{sysDescr};
-	$dev{productname} = join " ", @words[0..3];
     }
     if( $self->_is_valid($nv{entPhysicalMfgName}) ) {
 	$dev{manufacturer} = $nv{entPhysicalMfgName};
