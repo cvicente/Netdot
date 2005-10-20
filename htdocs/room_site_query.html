@@ -7,20 +7,33 @@
 
 <%init>
 my ($ui, @terms, $DEBUG, $MAX_RESULTS);
-$DEBUG = 0;
-$MAX_RESULTS = 2000;
+print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 </%init>
 
 <%args>
-$table => $ARGS{table};
 $field => $ARGS{field};
-$val => $ARGS{crit};
-$search_field => $ARGS{search_field};
-$caller => $ARGS{self};
+$val => $ARGS{val};
 </%args>
 
 <%perl>
-print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+
+
+do "jsrsServer.pl";
+jsrsDispatch("room_site_search");
+
+
+sub room_site_search {
+# Arguments:
+# - field:  Form element to add the results into
+# - val:   Criteria.  The ID of the site to query for rooms
+
+my $field = shift;
+my $val = shift;
+
+my @terms;
+my $DEBUG = 0;
+my $MAX_RESULTS = 2000;
 
 if ($val =~ /\w+/) {
     if ($val =~ /\w+\s+\w+/) {
@@ -33,45 +46,36 @@ if ($val =~ /\w+/) {
     
     print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
 }
-</%perl>
 
-<html>
-<body>
-<script language="JavaScript">
-<!--
-<%perl>
+
 my @results = ();
 my $site_id = $terms[0];
 my $site;
 
 if ( $site = Site->retrieve($site_id) ){
-    
     foreach my $floor ($site->floors) {
-	foreach my $room ($floor->rooms) {
-	    push (@results, $room);
-	}
+       	foreach my $room ($floor->rooms) {
+       	    push (@results, $room);
+        }
     }
 }
 
-printf("var listdata = new Array();\n");
+my $response = $field."&";
 
 if (scalar(@results) < $MAX_RESULTS) {
     @results = sort { $a->name cmp $b->name } @results;
 
-    printf("listdata.push(new Option(\"No Matches\", \"\"));\n") unless (scalar(@results));
-    
+    $response .= "0=".URLEncode("No matches") unless (scalar(@results));
+
+    $response .= "0=-- Select --&";
     foreach my $room (@results) {
-        printf("listdata.push(new Option(\"%s\", \"%s\"));\n", $room->name, $room->id);
+        $response .= $room->id."=".URLEncode($room->name)."&";
     }
 } else {
-    printf("listdata.push(new Option(\"Too Many Results\", \"\"));\n")
+    $response .= "0=".URLEncode("Too Many Results");
 }
 
-printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);
-
+    return $response;    
+}
 
 </%perl>
--->
-</script>
-</body>
-</html>

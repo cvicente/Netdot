@@ -36,15 +36,21 @@
     }
 
     function jsrsSendqueryTB(form_field, val, tablename, column) {
-        //alert( "Field (Column): "+column+"; val:"+val+"; tablename: "+tablename+" form_field: "+form_field.name );
+        //alert( "Field (Column): "+column+"; val:"+val+"; tablename: "+tablename+"; form_field: "+form_field.name );
         jsrsExecute( "jsrs_singletable.html", jsrsParseresults, "keyword_search", Array(tablename, column, val, form_field.name) );
     }
 
-    function jsrsSendqueryBB(field, val) {
-        jsrsExecute( "backbone_list_query.html", jsrsParseresults, "backbone_search", Array(field.name, val) );
+    function jsrsSendqueryRM(form_field, val) {
+        //alert( "Form field: "+form_field.name+"; val:"+val );
+        jsrsExecute( "room_site_query.html", jsrsParseresults, "room_site_search", Array(form_field.name, val) );
+    }
+
+    function jsrsSendqueryBB(form_field, val) {
+        jsrsExecute( "backbone_list_query.html", jsrsParseresults, "backbone_search", Array(form_field.name, val) );
     }
 
     function jsrsParseresults( returnstring ) {
+        //alert(returnstring);
         var data = explode(returnstring, "&");
         var form_elt;
         var thelist;

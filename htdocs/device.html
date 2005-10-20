@@ -437,13 +437,13 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
 push( @field_headers, "Entity: " );
 push( @cell_data, $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html", returnAsVar=>1) );
 push( @field_headers, "Site: " );
-push( @cell_data,                $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="closetList.doIt(); roomList.doIt();"', returnAsVar=>1) );
+push( @cell_data,                $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="jsrsSendqueryRM(Device__'.$id.'__room, Device__'.$id.'__site.value); jsrsSendqueryTB(Device__'.$id.'__closet, Device__'.$id.'__site.value, \'Closet\', \'site\');"', returnAsVar=>1) );
 
 push( @field_headers, "Room: " );
 push( @cell_data, &{sub{ 
     my $s = "";
     if ($editloc) {
-	$s .= '<select name="Device__'.$id.'__room" onChange="setNull(document.netdotform.Device__'.$id.'__closet);">';
+	$s .= '<select name="Device__'.$id.'__room" id="Device__'.$id.'__room" onChange="setNull(document.netdotform.Device__'.$id.'__closet);">';
 	$s .= '<option value="0">-- Select --</option>';
 	if (defined($o)) {
 	    foreach my $floor ( $o->site->floors ) {

@@ -105,26 +105,21 @@ my $response = $field."&";
 if (scalar(@results) < $MAX_RESULTS) {
     @results = sort { $a->name cmp $b->name } @results;
 
-    #printf("listdata.push(new Option(\"No Matches\", \"\"));\n") unless (scalar(@results));
     $response .= "0=".URLEncode("No matches") unless (scalar(@results));
     
     foreach my $end_site (@results) {
         $response .= $end_site->id."=".URLEncode($end_site->name)."&";
-        #printf("listdata.push(new Option(\"%s\", \"%s\"));\n", $end_site->name, $end_site->id);
     }
 } else {
     $response .= "0=".URLEncode("Too Many Results");
-    #printf("listdata.push(new Option(\"Too Many Results\", \"\"));\n")
 }
 
-#printf("opener.LIST_CALLBACK(\'%s\', listdata);\n", $caller);      
     return $response;    
-
 }
 
 
 sub URLEncode {
-    my $theURL = $_[0];
+   my $theURL = $_[0];
    $theURL =~ s/([\W])/"%" . uc(sprintf("%2.2x",ord($1)))/eg;
    return $theURL;
 }
