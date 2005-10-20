@@ -1,16 +1,17 @@
 
 #######################################################################
-Notes for Release 0.6
+Notes for Release 0.7
 #######################################################################
 
-*** If upgrading from 0.5 ***
+*** If upgrading from 0.6 ***
 
-Changes in the schema and bugs in the metadata table require the following procedure to be 
+Changes in the schema require the following procedure to be 
 performed:
 
 # mysql netdot
->ALTER TABLE Device ADD COLUMN contactlist2 integer AFTER contactlist;
->ALTER TABLE Device_history ADD COLUMN contactlist2 integer AFTER contactlist;
+>ALTER TABLE Ipblock CHANGE COLUMN entity used_by integer;
+>ALTER TABLE Ipblock ADD COLUMN owner integer AFTER status;
+
 >delete from Meta;
 >\q
 
@@ -21,8 +22,5 @@ From the source dir:
 # perl setup-class-dbi
 # cp DBI.pm /usr/local/netdot/lib/Netdot/
 
-Changes in the apache setup require that you update your netdot apache
-configuration to the new version in etc/netdot_apache2_radius.conf.
 
-# restart apache
-
+Restart Apache

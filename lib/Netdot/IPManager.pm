@@ -150,7 +150,7 @@ sub searchblocks_other {
     map { $_->entities } @sites; 
 
     map { $blocks{$_} = $_ } 
-    map { $_->subnets } @ents;
+    map { $_->used_blocks, $_->own_blocks } @ents;
     
     my @ipb = map { $blocks{$_} } keys %blocks;
 
@@ -272,10 +272,12 @@ Returns:   Array of ancestor Ipblock objects, in order
 
 sub getparents {
     my ($self, $ipblock, @parents) = @_;
-    my $par;
-    if ( ($par = $ipblock->parent) != 0 ){
-	push @parents, $par;
-	@parents = $self->getparents($par, @parents);
+    if ( ref($ipblock) ne "Ipblock" ){
+	$self->error("getparents: first argument must be Ipblock object");
+    }
+    if ( int($ipblock->parent) != 0 ){
+	push @parents, $ipblock->parent;
+	@parents = $self->getparents($ipblock->parent, @parents);
     }
     wantarray ? ( @parents ) : $parents[0]; 
 }
@@ -495,7 +497,8 @@ Optional Arguments:
     prefix        dotted-quad mask or prefix length (default is /32 or /128)
     status        id of IpblockStatus - or - 
     statusname    name of IpblockStatus
-    entity        Who uses the block
+    owner         Who owns the block (Entity)
+    used_by       Who uses the block (Entity)
     interface     id of Interface where IP was found
     dhcp_enabled  Include in DHCP config
     dns_delegated Create necessary NS records
@@ -517,7 +520,8 @@ sub insertblock {
     $args{interface}     ||= 0; 
     $args{dhcp_enabled}  ||= 0; 
     $args{dns_delegated} ||= 0; 
-    $args{entity}        ||= 0; 
+    $args{owner}         ||= 0; 
+    $args{used_by}       ||= 0; 
     
     # $ip is a NetAddr::IP object;
     my $ip;
@@ -557,7 +561,8 @@ sub insertblock {
 		  interface     => $args{interface},
 		  dhcp_enabled  => $args{dhcp_enabled},
 		  dns_delegated => $args{dns_delegated},
-		  entity        => $args{entity},
+		  owner         => $args{owner},
+		  used_by       => $args{used_by},
 		  first_seen    => $self->timestamp,
 		  last_seen     => $self->timestamp,
 		  );
@@ -589,7 +594,7 @@ sub insertblock {
 	# Inherit some of parent's values if it's not an address
 	if ( !$self->isaddress($newblock) && ($newblock->parent != 0) ){
 	    my %state = ( dns_delegated => $newblock->parent->dns_delegated, 
-			  entity        => $newblock->parent->entity );
+			  owner         => $newblock->parent->owner );
 	    unless ( $self->update( object=> $newblock, state => \%state ) ){
 		$self->debug(loglevel => 'LOG_ERR',
 			     message => "insertblock: could not inherit parent values!");
@@ -619,9 +624,10 @@ Optional Arguments:
     status        id or name of IpblockStatus
     statusname     name of IpblockStatus
     interface     id of Interface where IP was found
-    entity        Who uses the block
+    owner         Who owns the block (Entity)
+    used_by       Who uses the block (Entity)
     dhcp_enabled  Include in DHCP config
-    dns_delegated Create necessary NS records
+    dns_delegated 
 Returns: 
     Updated Ipblock object
     False if error
@@ -808,6 +814,47 @@ sub removeblock {
 	}
     }
     
+    return 1;
+}
+
+=head2 update_recursive - Recursively update selected Ipblock fields
+
+Modify certain fields of an Ipblock and (optionally) all its descendants.
+Note: Passed fields must not be subject to validation, require that
+the address space tree be rebuilt or be specific to one block
+
+Arguments: 
+  o:       Ipblock object
+  args:    hashref of Ipblock fields and values  
+  rec:     (recursive flag) 1 or 0
+
+Returns:
+    True if successful, False if error
+
+=cut
+
+sub update_recursive {
+    my ($self, $o, $args, $rec) = @_;
+    unless ( ($o && ref($o) eq "Ipblock") && ($args && ref($args) eq "HASH") ){
+	$self->error("update_recursive: Missing or invalid arguments");
+	return 0;
+    }
+    map { 
+	if ( /address|prefix|version|interface|status|physaddr/ ){
+	    $self->error("update_recursive: $_ is not a valid argument");
+	    return 0;
+	}
+    }  keys %$args;
+    unless ( $self->update(object=>$o, state=>$args) ){
+	return 0;
+    }
+    if ( $rec ){
+	foreach my $ch ( $o->children ){
+	    unless ( $self->update_recursive($ch, $args, $rec) ){
+		return 0;
+	    }
+	}
+    }
     return 1;
 }
 

@@ -1,0 +1,122 @@
+<%doc>
+
+In a separate window, allow user to modify one of the fields in Ipblock recursively (or not)
+Uses the 'update_recursive()' method from IPManager.  Some restrictions apply regarding
+which fields can be updated in a recursive way.
+
+</%doc>
+%
+%
+<%flags>
+inherit => undef 
+</%flags>
+%
+%
+%
+<%args>
+$id
+$field
+$recursive => 0
+$submit    => undef
+$cancel    => undef
+</%args>
+%
+%
+<%init>
+my $bodyargs;
+my %state;
+my %reserved = (submit    => "", cancel    => "");
+my $msg;
+my (@field_headers, @cell_data) = ();
+    
+my %linksto  =  $ui->getlinksto("Ipblock");
+my %tags     =  $ui->getcolumntags("Ipblock");
+my $fieldtag =  $tags{$field};
+my $sqltype  =  $ui->getsqltype("Ipblock", $field);
+
+my $o        = Ipblock->retrieve($id);
+
+if ( $submit ){
+    foreach my $arg ( keys %ARGS ){
+	next if ( exists $reserved{$arg} );
+	if ($arg =~ /^(\w+)__(\w+)__(\w+)$/){
+	    $state{$3} = $ARGS{$arg};
+	}
+    }
+    if ( $ipm->update_recursive($o, \%state, $recursive) ){
+	$msg    = "OK.";
+	if ( $recursive ){
+	    $msg .= " All blocks updated successfully";
+	}
+	$bodyargs = 'onUnload="opener.location.reload()"';
+    }else{
+	$msg    = sprintf("Error! %s", $ipm->error);
+    }
+}else{
+    push( @field_headers, "$fieldtag:" );
+    if ( exists $linksto{$field}  ){
+	# We know the field is a foreign key, so we'll use select_lookup()
+	my $v = $ui->select_lookup(object=>$o, column=>$field, lookup=>"Entity", edit=>1, returnAsVar=>1);
+	push( @cell_data, $v );
+	
+    }elsif ( $sqltype =~ /bool/ ){
+	push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"$field", edit=>1) );
+    }else{
+	push( @cell_data, $ui->text_field(object=>$o, column=>"$field", edit=>1) );
+    }
+
+    push( @field_headers, "Options:" );
+    if ( $recursive ){
+	push( @cell_data, 'Recursively <input type="checkbox" name="recursive" CHECKED>' );
+    }else{
+	push( @cell_data, 'Recursively <input type="checkbox" name="recursive">' );
+    }
+}
+</%init>
+
+<html>
+<head>
+    <link rel="stylesheet" href="style.css" type="text/css">
+    <title>Edit IP block Recursively</title>
+</head> 
+<script language="JavaScript" src="select.js"></script>
+<script language="JavaScript" src="insertentry.js"></script>
+<script language="JavaScript" src="jsrsClient.js"></script>
+
+<body class="bodytag" <% $bodyargs %>>
+
+<div class="container">
+
+%if ( $submit ){
+  <div class="containerhead">
+      <strong>Message</strong>   
+  </div>
+
+  <div class="containerbody">
+      <% $msg %>
+      <p><a href="#" onClick="window.close()">[close]</a><br>
+    
+%}else{
+
+  <div class="containerhead">Edit <% $fieldtag %></div>
+
+  <div class="containerbody">
+    <form action="ip-rec.html" method="POST">
+      <input type="hidden" name="id" value="<% $id %>">
+      <input type="hidden" name="field" value="<% $field %>">
+
+    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+    <p>
+    <center>
+    <input type="submit" name="submit" value="Submit">
+    <input type="button" value="Cancel" onClick="window.close()">
+    </center>
+   </form>
+
+% } #else
+
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+ 
+</body>
+</html>

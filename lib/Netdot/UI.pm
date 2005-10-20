@@ -23,6 +23,7 @@ use Apache::Session::File;
 use Apache::Session::Lock::File;
 
 use base qw( Netdot );
+use Netdot::IPManager;
 use strict;
 
 #Be sure to return 1

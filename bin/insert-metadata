@@ -339,7 +339,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact Group,acctnumber:Account Number,maint_contract:Maintenance Contract,asname:AS Name,asnumber:AS Number,oid:Enterprise OID,info:Comments',
 	  '',
 	  'contactlist:ContactList,availability:Availability,type:EntityType', 
-	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,subnets:Ipblock:entity:{on_delete=>"set-null"},cables:BackboneCable:owner:{on_delete=>"set-null"},devices:Device:entity:{on_delete=>"set-null"},people:Person:entity,bgppeers:BGPPeering:entity', 
+	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,own_blocks:Ipblock:owner:{on_delete=>"set-null"},used_blocks:Ipblock:used_by:{on_delete=>"set-null"},cables:BackboneCable:owner:{on_delete=>"set-null"},devices:Device:entity:{on_delete=>"set-null"},people:Person:entity,bgppeers:BGPPeering:entity', 
 	  '0', 
 	  'An organization related to the network in some way');
 
@@ -454,11 +454,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, linksto, linksfrom
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Ipblock', 
 	  'address,prefix', 
-	  'address,prefix,version,parent,interface,status,entity,description,first_seen,last_seen,dhcp_enabled,dns_delegated,physaddr,info', 
-	  'address,prefix,status,entity',
-	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,entity:Used by,description:Description,first_seen:First Seen,last_seen:Last Seen,dhcp_enabled:Enable DHCP?,dns_delegated:Delegate DNS?,physaddr:MAC Address,info:Info',
+	  'address,prefix,version,parent,interface,status,owner,used_by,description,first_seen,last_seen,dhcp_enabled,dns_delegated,physaddr,info', 
+	  'address,prefix,status,used_by',
+	  'address:Address,prefix:Prefix Length,version:Version(4/6),parent:Parent,interface:Interface,status:Status,owner:Owner,used_by:Used by,description:Description,first_seen:First Seen,last_seen:Last Seen,dhcp_enabled:Enable DHCP?,dns_delegated:Delegate DNS?,physaddr:MAC Address,info:Info',
 	  '',
-	  'interface:Interface,parent:Ipblock,status:IpblockStatus,entity:Entity,physaddr:PhysAddr',
+	  'interface:Interface,parent:Ipblock,status:IpblockStatus,owner:Entity,used_by:Entity,physaddr:PhysAddr',
 	  'services:IpService:ip,fwtables:FWTable:deviceip,arpentries:ArpCacheEntry:ipaddr,arecords:RRADDR:ipblock,ptrrecords:RRPTR:ipblock,children:Ipblock:parent:{on_delete=>"set-null"},dhcpentries:DhcpScope:ipblock:{on_delete=>"restrict"},vlans:Vlan:subnet:{on_delete=>"restrict"},zones:SubnetZone:subnet', 
 	  '0', 
 	  'An IP (v4 or v6) Address');
