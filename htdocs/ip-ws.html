@@ -601,15 +601,15 @@ if ( $ipm->isaddress($o) ){
 <!-- Block Info Table -->
 <div class="container">
 
-% if ( @line ){
     <div class="containerheadleft">
-%      print join ' : ', @line;
+      <a href="ip-ws.html?_action=SHOW_ROOTS&rootversion=all">[*]</a>: 
+%     if ( @line ){
+%        print join ' : ', @line;
+%     }else{
+         <% $o->address."/".$o->prefix %>
+%     }
     </div>
-% }else{
-    <div class="containerheadleft">
-	Root Block: <% $o->address."/".$o->prefix %>
-    </div>
-% }
+
     <div class="containerheadright">
 %  if ($edit eq "blockinfo"){	 
     <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
