@@ -660,3 +660,53 @@ sub text_area($@){
         print $output;
     }
 }
+
+
+=head2 percent_bar
+
+ Generates a graphical representation of a percentage as a progress bar.
+ Can pass arguments in as either a straight percentage, or as a fraction.
+
+ Arguments:
+    - percent: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
+    or
+    - numerator
+    - denominator (0 in the denominator means 0%)
+
+ Returns a string with HTML, does not output to the browser.
+
+=cut
+
+sub percent_bar($@) {
+    my ($self, %args) = @_;
+    my ($percent, $numerator, $denominator) = ($args{percent}, $args{numerator}, $args{denominator});
+    my $width;
+    my $output;
+
+    if ($percent) {
+        if ($percent <= 0) {
+            $width = 0;
+        } else {
+            $width = int($percent);
+            if ($width < 1 ) {
+                $width = 1;
+            }
+        }
+    } else {
+        if ($numerator <= 0 || $denominator <= 0) {
+            $width = 0;
+        } else {
+            $width = int($numerator/$denominator*100);
+            if ($width < 1 ) {
+                $width = 1;
+            }
+        }
+    }
+
+    $output .= '<div class="progress_bar">';
+    $output .= '<div class="progress_used" style="width:'.$width.'%">';
+    $output .= '</div></div>';
+
+    return $output;
+}
+

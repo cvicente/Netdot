@@ -702,7 +702,9 @@ if ($o->status->name eq "Subnet") {
       my $u = sprintf("%.1f", $used / $total * 100 );
 
     push( @field_headers, "Utilization:" );
-    push( @cell_data, $used." of ".$total." (".$u."%), Avail: ".$avail );
+    push( @cell_data, ($ui->percent_bar(numerator=>$used, denominator=>$total)).$used." of ".$total." (".$u."%), Avail: ".$avail );
+    #push( @cell_data, $used." of ".$total );
+    #push( @cell_data, $used." of ".$total." (".$u."%), Avail: ".$avail );
 
     push( @field_headers, "Enable DHCP:" );
     push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"dhcp_enabled", edit=>$edit_block, returnAsVar=>1) );
