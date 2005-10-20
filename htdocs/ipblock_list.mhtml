@@ -63,12 +63,21 @@ if ( $type eq "address" ){
 	push( @row, '<a href="ip-ws.html?id=' . $o->id . '">' . $o->address . '/' . $o->prefix . '</a>' );
 	push( @row, $o->status->name  );
 	if ( $o->status->name eq "Subnet"){
-	    push( @row, $ui->percent_bar(percent => ((scalar $o->children)/($ipm->subnet_num_addr($o))*100) ) );
+	    push( @row, $ui->percent_bar(percent => ((scalar $o->children)/($ipm->subnet_num_addr($o))*100), shade=>1 ) );
 	}else{
 	    push ( @row, "" );
 	}
-	push( @row, $o->owner->name  ) if ($o->owner != 0);
-	push( @row, $o->used_by->name  ) if ($o->used_by != 0);
+    if ($o->owner != 0) {
+    	push( @row, $o->owner->name );
+    } else {
+        push( @row, "" );
+    }
+    if ($o->used_by != 0) {
+    	push( @row, $o->used_by->name  ) if ($o->used_by != 0);
+    } else {
+        push( @row, "" );
+    }
+
 	push( @row, $o->description  );
 	push( @rows, \@row );
     }

@@ -672,6 +672,8 @@ sub text_area($@){
     or
     - numerator
     - denominator (0 in the denominator means 0%)
+    
+    - shade: 1/0 whether to shade the bar darker when % is closer to 100
 
  Returns a string with HTML, does not output to the browser.
 
@@ -679,7 +681,7 @@ sub text_area($@){
 
 sub percent_bar($@) {
     my ($self, %args) = @_;
-    my ($percent, $numerator, $denominator) = ($args{percent}, $args{numerator}, $args{denominator});
+    my ($percent, $numerator, $denominator, $shade) = ($args{percent}, $args{numerator}, $args{denominator}, $args{shade});
     my $width;
     my $output;
 
@@ -703,10 +705,52 @@ sub percent_bar($@) {
         }
     }
 
+    my $bkg;
+    if( $shade ) {
+        $bkg = "background-color:#".$self->color_mix(color1=>"77cc77", color2=>"005500", blend=>$width/100);
+    } else {
+        $bkg = "";
+    }
+
     $output .= '<div class="progress_bar">';
-    $output .= '<div class="progress_used" style="width:'.$width.'%">';
+    $output .= '<div class="progress_used" style="width:'.$width.'%;'.$bkg.'">';
     $output .= '</div></div>';
 
     return $output;
+}
+
+=head2 color_mix
+
+ Mixes two hex colors by the amount specified.
+
+ Arguments:
+    - color1: should be a string like "ff00cc" 
+    - color2: same
+    - blend:  0 means all of color1, 1 means all of color2, 0.5 averages the two
+
+ Returns a hex string like "99aacc"
+
+=cut
+
+sub color_mix {
+    my ($self, %args) = @_;
+    my ($color1, $color2, $blend) = ($args{color1}, $args{color2}, $args{blend});
+
+    my $r1 = hex substr($color1,0,2);
+    my $g1 = hex substr($color1,2,2);
+    my $b1 = hex substr($color1,4,2);
+    my $r2 = hex substr($color2,0,2);
+    my $g2 = hex substr($color2,2,2);
+    my $b2 = hex substr($color2,4,2);
+
+    my $r3 = $r1 + ($r2-$r1)*$blend;
+    my $g3 = $g1 + ($g2-$g1)*$blend;
+    my $b3 = $b1 + ($b2-$b1)*$blend;
+
+    $r3 = unpack("H2", pack("I", $r3));
+    $g3 = unpack("H2", pack("I", $g3));
+    $b3 = unpack("H2", pack("I", $b3));
+    
+    return $r3.$g3.$b3;
 }
 
