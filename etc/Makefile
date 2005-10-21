@@ -9,7 +9,10 @@ files:
 	@echo
 	@echo "Preparing and installing $(DIR) files..."
 	for file in $(FILES); do \
-	    install -m $(FMOD) $$file $(PREFIX)/$(DIR)/$$file ; \
+	    sed -e "s|PREFIX|$(PREFIX)|g" \
+	        $$file > $$file.tmp ; \
+	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
+	    rm -f $$file.tmp ; \
         done
 	@echo "Done."
 
