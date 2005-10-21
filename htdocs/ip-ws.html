@@ -413,25 +413,25 @@ if ( my @parents = $ipm->getparents($o) ){
     push (@line, $o->address . "/" . $o->prefix);
 }    
  
-if ( $ipm->isaddress($o) ){  
-#######################################################################################
-# View IP address
-#######################################################################################
-
 </%perl>
 
- <!-- IP Info Table -->
  <div class="container">
 
-% if ( @line ){
     <div class="containerheadleft">
-%     print join ' : ', @line;
+      <a href="ip-ws.html?_action=SHOW_ROOTS&rootversion=all">[*]</a>: 
+%     if ( @line ){
+%        print join ' : ', @line;
+%     }else{
+         <% $o->address."/".$o->prefix %>
+%     }
     </div>
-% }else{
-    <div class="containerheadleft">
-	Address: <% $o->address."/".$o->prefix %>
-    </div>
-% }
+
+% if ( $ipm->isaddress($o) ){  
+
+%#######################################################################################
+%# View IP address
+%#######################################################################################
+
 
     <div class="containerheadright">
 %	 if ($edit eq "ipinfo"){	 
@@ -591,24 +591,11 @@ if ( $ipm->isaddress($o) ){
     </div>
 </div>
 
-<!-- End IP Info Table -->
 
 %} else {     
 %#######################################################################################
 %# View Block
 %#######################################################################################
-
-<!-- Block Info Table -->
-<div class="container">
-
-    <div class="containerheadleft">
-      <a href="ip-ws.html?_action=SHOW_ROOTS&rootversion=all">[*]</a>: 
-%     if ( @line ){
-%        print join ' : ', @line;
-%     }else{
-         <% $o->address."/".$o->prefix %>
-%     }
-    </div>
 
     <div class="containerheadright">
 %  if ($edit eq "blockinfo"){	 
