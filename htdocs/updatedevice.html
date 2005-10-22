@@ -103,7 +103,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 		my $mask = $dev->{interface}->{$int}->{ips}->{$ip};
 		if ( my $subnetaddr = $ipm->getsubnetaddr($ip, $mask) ){
 		    if ( my $subnet = $ipm->searchblocks_addr($subnetaddr) ){
-			if ( my $ent = $subnet->entity ){
+			if ( my $ent = $subnet->used_by ){
 			    $guessed_ent = $ent;
 			    if ( my $cl = $ent->contactlist ){
 				$guessed_cl = $cl->id;
