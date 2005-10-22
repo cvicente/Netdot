@@ -24,9 +24,10 @@ select (OUT);  # spit it all out to the output file by default
 
 ## In this chunk, we need variable interpolation (qq//)
 my $head = 
-qq ^package Netdot::DBI;
+qq [
+package Netdot::DBI;
 use base 'Class::DBI';
-use Netdot::odHasMany;
+use Netdot::Nullify;
 use NetAddr::IP;
 
 ## This file was generated from a script.  Do not edit. ##
@@ -35,14 +36,12 @@ Netdot::DBI->set_db('Main', 'dbi:$DB_TYPE:$DB_DATABASE', '$DB_NETDOT_USER', '$DB
 
 sub VERSION { "0.5" }
 
-^;
+];
 
 ## No interpolation from now on (q//)
 
 $head .= 
 q [
-__PACKAGE__->add_relationship_type( has_many => "Class::DBI::Relationship::odHasMany" );
-
   
 ##########################################
 ## Convert from IP address to integer
@@ -293,6 +292,7 @@ foreach my $table (@tables){
 		    print "__PACKAGE__->has_many( '$meth', '$tab' => '$col' );\n";
 		}elsif ($numfields == 4){
 		    my ($meth, $tab, $col, $args) = split /:/, $item; 
+		    $args =~ s/cascade=>"Nullify"/cascade=>"Class::DBI::Cascade::Nullify"/;
 		    print "__PACKAGE__->has_many( '$meth', '$tab' => '$col', $args );\n";
 		}else{
 		    print STDERR "ERROR!: Incorrect number of fields: $numfields, in linksfrom for table $table\n";

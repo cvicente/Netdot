@@ -55,7 +55,7 @@ tests:
 	@echo 
 	@echo "Testing for required perl modules...."
 	perl -MCGI -e 1
-	perl -M'Class::DBI 0.96' -e 1
+	perl -M'Class::DBI 3.0.10' -e 1
 	perl -MApache2::Request -e 1
 	perl -M'HTML::Mason 1.31' -e 1
 	perl -M'Apache::Session 1.6' -e 1
