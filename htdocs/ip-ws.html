@@ -30,6 +30,7 @@ $strategy          => undef
 $edit              => undef
 $submit            => undef
 $rootversion       => 4 
+$view_availability => 0
 </%args>
 %
 %
@@ -762,7 +763,7 @@ if ($o->status->name eq "Subnet") {
         push( @cell_data, $new_address_form );
 
         push( @field_headers, "Choose Manually:" );
-        push( @cell_data, "[view availability]" );
+        push( @cell_data, '<a href="ip-ws.html?id='.$id.'&view_availability=1">[view availability]</a>' );
 
    }
 </%perl>
@@ -779,14 +780,23 @@ if ($o->status->name eq "Subnet") {
 
 </div>
 
-<%perl>
-# 
-# Get children
-#
-my @children;  
-if (scalar( @children = $ipm->getchildren($o->id) )){
-</%perl>
-
+% if( $view_availability == 1 ) {
+%     if( $o->status->name eq "Subnet" ) {
+       <div class="container">
+          <div class="containerhead">
+             Choose an Address
+          </div>
+          <div class="containerbody">
+          <& subnet.mhtml, network => $o &>
+          </div>
+       </div>
+%     }
+% } else {
+%   # 
+%   # Get children
+%   #
+%   my @children;  
+%   if (scalar( @children = $ipm->getchildren($o->id) )){
        <div class="container">
           <div class="containerhead">
              Children Addresses/Blocks
@@ -795,8 +805,9 @@ if (scalar( @children = $ipm->getchildren($o->id) )){
           <& ipblock_list.mhtml, objects => \@children &>
           </div>
        </div>
-
+%   }
 % }
+
 <!-- End Block Info Table -->
 % } 
 % if ($edit){	 

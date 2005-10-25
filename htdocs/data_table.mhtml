@@ -15,14 +15,16 @@ example data:
 Arguments:  
     field_headers  -  array of captions to show on the top row
     data           -  array of arrays to show in the rows
-
+    subclass       -  use class "datatabler1_subclass" in the stylesheet
 </%doc>
 
 <%args>
 @field_headers => undef;
 @data          => undef;
+$subclass      => "";
 </%args>
 
+% if( $subclass ) { $subclass = '_'.$subclass; }
 
 
 <table border="0" width="100%">
@@ -39,7 +41,7 @@ Arguments:
 % ($toggle %= 2) += 1;
   <tr>
 %   foreach (@$row) {
-      <td class="datatabler<% $toggle %>"><% $_ %></td>
+      <td class="datatabler<% $toggle.$subclass %>"><% $_ %></td>
 %   }
   </tr>
 % }

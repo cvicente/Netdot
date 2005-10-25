@@ -1,0 +1,88 @@
+<%doc>
+    Show a list of all addresses within a subnet.
+
+</%doc>
+
+<%args>
+$network => undef
+</%args>
+
+<%init>
+</%init>
+
+<%perl>
+
+    my %used;
+
+    my @children;  
+    if (scalar( @children = $ipm->getchildren($network->id) )){
+        foreach my $o ( @children ) {
+            my $name;
+        	if ( my $rraddr = ($o->arecords)[0] ){
+        	    $name = $ui->getobjlabel( $rraddr->rr, "," , returnAsVar=>1 );
+        	}
+            $used{ $o->address } = $name;
+        }
+    }    
+
+    my $net = NetAddr::IP->new($network->address . "/" . $network->prefix);
+    my $mask = $net->masklen;
+
+    my @headers = ( );
+    my @rows;
+    my $cols;
+
+    $net = $net->network();  # start printing from the first address, in case $net was not at the start of the subnet
+
+    if( $mask > 29 ) {
+        # if there are 8 or less addresses in the subnet, show only that many columns
+        $cols = $net->num()+1;
+    } elsif( $mask > 23 ) {
+        # if there are 16-512 addresses, show them in 8 columns, and show the entire IPv4 address
+        $cols = 8;
+    } else {
+        # if there are more than 512 addresses, show 16 columns, and don't show the insignificant octets
+        $cols = 16;
+    }
+
+    for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
+        my @row = ();
+
+        for( my $j=0; $j<$cols; $j++ ) {
+            my $ipaddr = $net->addr;
+
+            # this code hides the insignificant octets from the ip address based on the subnet
+            if( $mask <= 7 ) {
+                $ipaddr = $ipaddr;
+            } elsif( $mask <= 15 ) {
+                $ipaddr = substr($ipaddr, index($ipaddr,".")+1);
+            } elsif( $mask <= 23 ) {
+                $ipaddr = substr($ipaddr, index($ipaddr,".",index($ipaddr,".")+1)+1);
+            } elsif( $mask < 23 ) {
+                $ipaddr = substr($ipaddr, index($ipaddr,".",index($ipaddr,".",index($ipaddr,".")+1)+1)+1);
+            }
+
+
+            if( $net == $net->network || $net == $net->broadcast ) {
+                # don't allow selection of network or broadcast addresses
+                $ipaddr = '<span class="ipaddr_disabled">'.$ipaddr.'</span>';
+ 
+            } elsif( defined $used{ $net->addr } ) {
+                # show used addresses in red, with no link tag, show dns name on mouseover
+                $ipaddr = '<span class="ipaddr_used" title="'.$used{ $net->addr }.'">'.$ipaddr.'</span>';    
+
+            } else {
+                # link this address to the "Add" section in ip-ws.html
+                $ipaddr = '<a href="ip-ws.html?allocate='.$net->addr().'%2F32&_action=ALLOCATE">'.$ipaddr.'</a>';
+            }
+
+            push( @row, $ipaddr );
+            $net++;                      # increment the IP address
+        }
+
+        push( @rows, \@row );
+    }
+
+</%perl>
+
+<& data_table.mhtml, field_headers=>\@headers, data=>\@rows, subclass=>"ipb" &>
