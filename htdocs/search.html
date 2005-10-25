@@ -13,7 +13,7 @@ $q
 
 my %linksto;
 my $results;
-unless ( $results = $ui->search_all_netdot($q) ){
+if ( ($results = $ui->search_all_netdot($q)) < 0 ){
     $m->comp("error.mhtml", error => $ui->error);
 }
 my $DEBUG = 0;
@@ -30,7 +30,9 @@ my $numtbls = scalar keys %$results;
 
 <div class="containerheadleftoutside">
   <strong>Netdot General Search</strong>
-  <br>Found matches in <% $numtbls %> tables:
+% if ( $numtbls ){
+    <br>Found matches in <% $numtbls %> tables:
+% }
 </div>
 <div class="containerheadrightoutside">
   <form action="search.html" method="POST">
@@ -40,7 +42,9 @@ my $numtbls = scalar keys %$results;
 </div>
 
 %   if( $numtbls < 1 || ! %$results ) {
-      No matching records were found.
+      <div class="container">
+         No matching records were found.
+      </div>
 %   } else {
 %     foreach my $tbl ( sort { $a cmp $b } keys %$results ) {
 %       my @objs;

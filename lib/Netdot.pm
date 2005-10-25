@@ -882,7 +882,7 @@ sub gethistoryobjs {
 =head2 search_all_netdot - Search for a string in all fields from all tables, excluding foreign key fields.
 
 Arguments:  query string
-Returns:    reference to hash of hashes 
+Returns:    reference to hash of hashes or -1 if error
 
 =cut
 
@@ -913,14 +913,14 @@ sub search_all_netdot {
 	    $st->execute();
 	};
 	if ( $@ ){
-	    $self->error("Error in search_all_netdot: $@");
-	    return;
+	    $self->error("search_all_netdot: $@");
+	    return -1;
 	}
 	while ( my ($id) = $st->fetchrow_array() ){
 	    $results{$tbl}{$id} = $tbl->retrieve($id);
 	}
     }
-    (%results) ? return \%results : return;
+    return \%results;
     
 }
 
@@ -940,4 +940,3 @@ sub ip2int {
     }
     return ($ipobj->numeric)[0];
 }
-
