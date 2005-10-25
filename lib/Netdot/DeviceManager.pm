@@ -626,7 +626,12 @@ sub update_device {
 	if ( $if = (Interface->search(device => $device->id, 
 				      number => $iftmp{number}))[0] ) {
 	    delete( $ifs{ $if->id } );
-	    
+
+	    # Check if description can be overwritten
+	    if ( ! $if->overwrite_descr ){
+		delete $iftmp{description};
+	    }
+	    # Update
 	    unless( $self->update( object => $if, state => \%iftmp ) ) {
 		my $msg = sprintf("%s: Could not update Interface %s,%s: ", 
 				  $host, $iftmp{number}, $iftmp{name}, $self->error);
@@ -637,19 +642,16 @@ sub update_device {
 		next;
 	    }
 	} else {
-
-	    $iftmp{speed}          ||= 0; #can't be null
-	    $iftmp{monitored}      ||= $self->{config}->{IF_MONITORED};
-	    $iftmp{snmp_managed}   ||= $self->{config}->{IF_SNMP};
-
-	    my $unknown_status;
-	    my $unknown_status_id;
-	    if ( $unknown_status = (MonitorStatus->search(name=>"Unknown"))[0]){
-		$unknown_status_id = $unknown_status->id;
-	    }else{
-		$unknown_status_id = 0
-	    }
-	    $iftmp{monitorstatus}  ||= $unknown_status_id;
+	    # Interface does not exist.  Add it.
+	    
+	    # Set some defaults
+	    $iftmp{speed}           ||= 0; #can't be null
+	    $iftmp{monitored}       ||= $self->{config}->{IF_MONITORED};
+	    $iftmp{snmp_managed}    ||= $self->{config}->{IF_SNMP};
+	    $iftmp{overwrite_descr} ||= $self->{config}->{IF_OVERWRITE_DESCR};
+	    
+	    my $unkn = (MonitorStatus->search(name=>"Unknown"))[0];
+	    $iftmp{monitorstatus} = ( $unkn ) ? $unkn->id : 0;
 	    
 	    if ( ! (my $ifid = $self->insert( table => 'Interface', 
 					      state => \%iftmp )) ) {
@@ -1464,12 +1466,6 @@ sub get_dev_info {
 		    # Netviewer changes it in some cases.
 		    # Just use the value
 		    $dev{interface}{$newif}{$dbname} = $val;	    
-		}
-	    }elsif( $dbname eq "description" ) {
-		# Ignore these descriptions
-		if ( $nv{interface}{$newif}{$IFFIELDS{$dbname}} ne "-" &&
-		    $nv{interface}{$newif}{$IFFIELDS{$dbname}} ne "not assigned" ) {
-		    $dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
 		}
 	    }else {
 		$dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
