@@ -14,8 +14,8 @@ inherit => 'section_management.html'
 %
 %
 <%attr>
-title   => 'Device' 
-section => 'Management'
+title        => 'Device' 
+section      => 'Management'
 </%attr>
 %
 %
@@ -49,6 +49,7 @@ $deviceadd  => undef
 $newhost    => undef
 $newip      => undef
 </%args>
+%
 %
 %
 %#######################################################################
@@ -88,8 +89,16 @@ print <<EOF;
 		</div>
 		<div class="containerbody">
 		  <p><strong><em>$search</em> not found</strong>   
+		  <form action="device.html" method="POST">
+		    <p>
+		    <label for="search">Device Name:</label>
+		    <input type="text" name="search" class="txt" value="$search"> 
+		    <input name="submit" value="search" class="btn" type="submit">
+		    </p>
+		  </form>
 		</div>
-	    </div>
+	     </div>
+
 EOF
 	    $m->abort;
 	}

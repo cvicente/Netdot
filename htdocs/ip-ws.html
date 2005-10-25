@@ -40,7 +40,10 @@ my $ci = 0;
 my $title;
 my @list;
 my $covering_block;
-
+my %S_LBL = ( 'SEARCH_ADDR'  => 'IP[/prefix]',
+	      'SEARCH_REGEX' => 'IP regex',
+              'SEARCH_OTHER' => 'Entity/Site/Descr'
+	      );
 if ( $id ){
     unless ( $o = Ipblock->retrieve($id) ){
 	$m->comp('error.mhtml', error => "Could not retrieve Ipblock id: $id");
@@ -96,11 +99,11 @@ if ( defined($search) ){
          </div>
        </div>
 <%perl>
-   }else{
+    }else{
+        # Make sure we start with a clean error buffer
+        $ipm->error("");
 	$search =~ s/^\s*(.*)\s*$/$1/g;
 	if ( $_action eq "SEARCH_ADDR" ){
-	    # Make sure we start with a clean error buffer
-	    $ipm->error("");
 	    if ($search =~ /\//){
 		my ($addr, $prefix) = split /\//, $search;
 		if ( !(@list = $ipm->searchblocks_addr($addr, $prefix)) && !$ipm->error ){
@@ -127,8 +130,18 @@ if ( defined($search) ){
           <div class="containerbody">
 %         if ( @list ){
               <& ipblock_list.mhtml, objects => \@list  &>
-%         }elsif ( $ipm->error ){
-              <p><strong><% $ipm->error %></strong>
+%         }else{
+%             if ( $ipm->error ){
+                 <p><strong><% $ipm->error %></strong>
+%             }
+	      <form action="ip-ws.html" method="POST">
+                <p>
+                <label for="search"><% $S_LBL{$_action} %>:</label>
+                <input type="text" name="search" class="txt" value="<% $search %>"> 
+                <input name="submit" value="search" class="btn" type="submit">
+                <input type="hidden" name="_action" value="<% $_action %>">
+                </p>
+              </form> 
 %         }
           </div>
        </div>
