@@ -13,6 +13,7 @@ $network => undef
 <%perl>
 
     my %used;
+    my %status;
 
     my @children;  
     if (scalar( @children = $ipm->getchildren($network->id) )){
@@ -22,6 +23,7 @@ $network => undef
         	    $name = $ui->getobjlabel( $rraddr->rr, "," , returnAsVar=>1 );
         	}
             $used{ $o->address } = $name;
+            $status{ $o->address } = $o->status->name;
         }
     }    
 
@@ -65,15 +67,36 @@ $network => undef
 
             if( $net == $net->network || $net == $net->broadcast ) {
                 # don't allow selection of network or broadcast addresses
-                $ipaddr = '<span class="ipaddr_disabled">'.$ipaddr.'</span>';
- 
+                if( $net == $net->network ) {
+                    $ipaddr = '<div class="ipaddr_disabled" title="Network">'.$ipaddr.'</div>';
+                } else {
+                    $ipaddr = '<div class="ipaddr_disabled" title="Broadcast">'.$ipaddr.'</div>';
+                }
             } elsif( defined $used{ $net->addr } ) {
-                # show used addresses in red, with no link tag, show dns name on mouseover
-                $ipaddr = '<span class="ipaddr_used" title="'.$used{ $net->addr }.'">'.$ipaddr.'</span>';    
+                my $divclass;
+                my $divtitle;
 
+                if( $status{$net->addr} eq "Static" ) {
+                    # show used addresses in red, with no link tag, show dns name on mouseover
+                    $divclass = "ipaddr_static";
+                    $divtitle = $used{ $net->addr };
+
+                } elsif( $status{$net->addr} eq "Dynamic" ) {
+                    # show dynamic addresses in orange, don't link
+                    $divclass = "ipaddr_dynamic";
+                    $divtitle = "Dynamic address";
+
+                } elsif( $status{$net->addr} eq "Reserved" ) {
+                    # show reserved addresses in grey, don't link
+                    $divclass = "ipaddr_reserved";
+                    $divtitle = "Reserved address";
+
+                }
+
+                $ipaddr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$ipaddr.'</div>';
             } else {
                 # link this address to the "Add" section in ip-ws.html
-                $ipaddr = '<a href="ip-ws.html?allocate='.$net->addr().'%2F32&_action=ALLOCATE">'.$ipaddr.'</a>';
+                $ipaddr = '<div class="ipaddr_available"><a href="ip-ws.html?allocate='.$net->addr().'%2F32&_action=ALLOCATE">'.$ipaddr.'</a></div>';
             }
 
             push( @row, $ipaddr );
