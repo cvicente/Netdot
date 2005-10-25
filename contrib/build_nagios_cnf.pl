@@ -89,11 +89,11 @@ while ( my $ipobj = $it->next ) {
 		  && $ipobj->interface->device->monitored );
 
     # Determine the group name for this device
-    # order is: subnet entity, subnet description, device entity
+    # order is: subnet used_by entity, subnet description, device entity
     my $group;
     if ( $ipobj->parent != 0 ){
-	if ( $ipobj->parent->entity != 0 ){
-	    $group = $ipobj->parent->entity->name;
+	if ( $ipobj->parent->used_by != 0 ){
+	    $group = $ipobj->parent->used_by->name;
 	}elsif ( $ipobj->parent->description ){
 	    $group = $ipobj->parent->description;
 	}
