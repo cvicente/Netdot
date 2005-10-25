@@ -505,6 +505,22 @@ sub update_device {
 	}
     }
     ###############################################
+    # Basic BGP info
+    if( defined $dev{bgplocalas} ){
+	$self->debug( loglevel => 'LOG_DEBUG',
+		      message  => "BGP Local AS is %s", 
+		      args     => [$dev{bgplocalas}] );
+	
+	$devtmp{bgplocalas} = $dev{bgplocalas};
+    }
+    if( defined $dev{bgpid} ){
+	$self->debug( loglevel => 'LOG_DEBUG',
+		      message  => "BGP ID is %s", 
+		      args     => [$dev{id}] );
+	
+	$devtmp{bgpid} = $dev{bgpid};
+    }
+    ###############################################
     # Update/Add Device
     
     if ( $device ){
@@ -1325,6 +1341,14 @@ sub get_dev_info {
 	$dev{router} = 1;
     }
     ################################################################
+    # BGP?
+    if ( $self->_is_valid($nv{bgpLocalAs}) ){
+	$dev{bgplocalas} = $nv{bgpLocalAs};
+    }
+    if ( $self->_is_valid($nv{bgpIdentifier}) ){
+	$dev{bgpid} = $nv{bgpIdentifier};
+    }
+    ################################################################
     # Is it an access point?
     if ( $self->_is_valid($nv{dot11StationID}) ){
 	$dev{dot11} = 1;
@@ -1839,7 +1863,7 @@ sub ints_by_jack {
     return @ifs;
 }
 
-=head2 interfaces_by_jack - Wrapper function to retrieve interfaces from a Device
+=head2 get_interfaces - Wrapper function to retrieve interfaces from a Device
 
 Will call different methods depending on the sort field specified
 
@@ -1877,82 +1901,127 @@ sub get_interfaces {
     return @ifs;
 }
 
-=head2 bgppeers_by_ip - Retrieve BGP peers and sort by remote IP
+=head2 bgppeers_by_ip - Sort by remote IP
 
-Arguments:  Device object
+Arguments:  Array ref of BGPPeering objects
 Returns:    Sorted array of BGPPeering objects or undef if error.
 
 =cut
 
 sub bgppeers_by_ip {
-    my ( $self, $o ) = @_;
-    my @peers;
-    unless ( @peers = $o->bgppeers() ){
-	return ;
-    }
+    my ( $self, $peers ) = @_;
 
-    ##############################################
-    # To do: 
-    # Factor out the sub inside the sort function
-
-    @peers = map { $_->[1] } 
+    my @peers = map { $_->[1] } 
     sort ( { pack("C4"=>$a->[0] =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/) 
 		 cmp pack("C4"=>$b->[0] =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/); }  
-	   map { [$_->bgppeeraddr, $_] } @peers );
-
-    return unless scalar @peers;
-    return @peers;
+	   map { [$_->bgppeeraddr, $_] } @$peers );
+ 
+    wantarray ? ( @peers ) : $peers[0]; 
 }
 
-=head2 bgppeers_by_id - Retrieve BGP peers and sort by BGP ID
+=head2 bgppeers_by_id - Sort by BGP ID
 
-Arguments:  Device object
+Arguments:  Array ref of BGPPeering objects
 Returns:    Sorted array of BGPPeering objects or undef if error.
 
 =cut
 
 sub bgppeers_by_id {
-    my ( $self, $o ) = @_;
-    my @peers;
-    my $id = $o->id;
-    unless ( @peers = $o->bgppeers() ){
-	return ;
-    }
-    ##############################################
-    # To do: 
-    # Factor out the sub inside the sort function
+    my ( $self, $peers ) = @_;
 
-    @peers = map { $_->[1] } 
+    my @peers = map { $_->[1] } 
     sort ( { pack("C4"=>$a->[0] =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/) 
 		 cmp pack("C4"=>$b->[0] =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/); }  
-	   map { [$_->bgppeerid, $_] } @peers );
+	   map { [$_->bgppeerid, $_] } @$peers );
     
-    return unless scalar @peers;
-    return @peers;
+    wantarray ? ( @peers ) : $peers[0]; 
 }
 
-=head2 bgppeers_by_entity - Retrieve BGP peers and sort by Entity name, AS number or AS Name
+=head2 bgppeers_by_entity - Sort by Entity name, AS number or AS Name
 
-Arguments:  Device object, Entity table field
+Arguments:  
+    Array ref of BGPPeering objects, 
+    Entity table field to sort by [name|asnumber|asname]
 Returns:    Sorted array of BGPPeering objects or undef if error.
 
 =cut
 
 sub bgppeers_by_entity {
-    my ( $self, $o, $field ) = @_;
-    $field ||= "name";
-    unless ( $field eq "name" || $field eq "asnumber" || $field eq "asname" ){
-	$self->error("Invalid Entity field: $field");
+    my ( $self, $peers, $sort ) = @_;
+    $sort ||= "name";
+    unless ( $sort =~ /name|asnumber|asname/ ){
+	$self->error("Invalid Entity field: $sort");
 	return;
     }
-    my $sortsub = ($field eq "asnumber") ? sub{$a->entity->$field <=> $b->entity->$field} : sub{$a->entity->$field cmp $b->entity->$field};
-    my @peers;
-    unless ( @peers = $o->bgppeers() ){
-	return ;
+    my $sortsub = ($sort eq "asnumber") ? sub{$a->entity->$sort <=> $b->entity->$sort} : sub{$a->entity->$sort cmp $b->entity->$sort};
+    my @peers = sort $sortsub @$peers;
+    
+    wantarray ? ( @peers ) : $peers[0]; 
+
+}
+
+
+=head2 get_bgp_peers - Retrieve BGP peers that match certain criteria and sort them
+
+    my @localpeers = $dm->get_bgpeers(device=>$o, type=>1, sort=>"name");
+
+Arguments:  (Hash ref)
+  device:   Device object (required)
+  entity:   Return peers whose entity name matches 'entity'
+  id:       Return peers whose ID matches 'id'
+  ip:       Return peers whose Remote IP  matches 'ip'
+  as:       Return peers whose AS matches 'as'
+  type      Return peers of type [internal|external|all]
+  sort:     [entity|asnumber|asname|id|ip]
+  
+Returns:    Sorted array of BGPPeering objects, undef if none found or if error.
+
+=cut
+
+sub get_bgp_peers {
+    my ( $self, %args ) = @_;
+    unless ( $args{device} || ref($args{device}) ne "Device" ){
+	$self->error("get_bgp_peers: Device object required");
+	return;
     }
-    @peers = sort $sortsub @peers;
-    return unless scalar @peers;
-    return @peers;
+    my $o = $args{device};
+    $args{type} ||= "all";
+    $args{sort} ||= "entity";
+    my @peers;
+    if ( $args{entity} ){
+	@peers = grep { $_->entity->name eq $args{entity} } $o->bgppeers;
+    }elsif ( $args{id} ){
+	@peers = grep { $_->bgppeerid eq $args{id} } $o->bgppeers;	
+    }elsif ( $args{ip} ){
+	@peers = grep { $_->bgppeeraddr eq $args{id} } $o->bgppeers;	
+    }elsif ( $args{as} ){
+	@peers = grep { $_->asnumber eq $args{as} } $o->bgppeers;	
+    }elsif ( $args{type} ){
+	if ( $args{type} eq "internal" ){
+	    @peers = grep { $_->entity->asnumber == $o->bgplocalas } $o->bgppeers;
+	}elsif ( $args{type} eq "external" ){
+	    @peers = grep { $_->entity->asnumber != $o->bgplocalas } $o->bgppeers;
+	}elsif ( $args{type} eq "all" ){
+	    @peers = $o->bgppeers;
+	}else{
+	    $self->error("get_bgp_peers: Invalid type: $args{type}");
+	    return;
+	}
+    }elsif ( ! $args{sort} ){
+	$self->error("get_bgp_peers: Missing or invalid search criteria");
+	return;
+    }
+    if ( $args{sort} =~ /entity|asnumber|asname/ ){
+	$args{sort} =~ s/entity/name/;
+	return $self->bgppeers_by_entity(\@peers, $args{sort});
+    }elsif( $args{sort} eq "ip" ){
+	return $self->bgppeers_by_ip(\@peers);
+    }elsif( $args{sort} eq "id" ){
+	return $self->bgppeers_by_id(\@peers);
+    }else{
+	$self->error("get_bgp_peers: Invalid sort argument: $args{sort}");
+	return;
+    }
 }
 
 

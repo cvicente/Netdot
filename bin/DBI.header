@@ -1,0 +1,204 @@
+package Netdot::DBI;
+
+use base 'Class::DBI';
+use Netdot::Nullify;
+use NetAddr::IP;
+
+## This file was generated from a script.  Do not edit. ##
+
+<INSERT SET_DB LINE>
+
+sub VERSION { "0.7" }
+
+##########################################
+## Convert from IP address to integer
+##########################################
+sub ip2int {
+    my $self = shift;
+    my $ipobj;
+    my $address = ($self->_attrs('address'))[0];
+    unless ( $ipobj = NetAddr::IP->new($address) ){
+	return $self->_croak(sprintf("Invalid IP address: %s", $address));
+    }
+    my $val = ($ipobj->numeric)[0];
+    $self->_attribute_store( address => $val );
+}
+
+##########################################
+## Convert from integer to IP address
+##########################################
+sub int2ip {
+    my $self = shift;
+    my ($address, $bin, $val);
+    $address = $self->address;
+# This is a hack to solve a (possible) bug in Class::DBI 0.96
+# that causes the select trigger to be called twice, thus
+# returning a bad result.
+    return if ($address =~ /\D+/ );
+
+    if ($self->version == 4){
+	$val = (new NetAddr::IP $address)->addr();
+    }elsif ($self->version == 6) {
+	# This code adapted from Net::IP::ip_inttobin()
+
+	require Math::BigInt;
+
+	my $dec = new Math::BigInt $address;
+	my @hex = (0..9,'a'..'f');
+	my $ipv6 = "";
+
+	# Set warnings off, use integers only (loathe Math::BigInt)
+	local $^W = 0;
+	use integer;
+	foreach my $i (0..31)	# 32 hex digits in 128 bits
+	{
+	    # There is colon separating every group of 4 hex digits
+	    $ipv6 = ':' . $ipv6 if ($i > 0 and $i % 4 == 0);
+	    # Last hex digit is in low 4 bits
+	    $ipv6 =  $hex[$dec % 16] . $ipv6;
+	    # Chop off low 4 bits
+	    $dec /= 16;
+	}
+	no integer;
+	
+	# Use the compressed version
+	$val = (new NetAddr::IP $ipv6)->short();
+    }elsif (defined $self->version){
+	return $self->_croak(sprintf("Invalid IP version:", $self->version));
+    }else {
+	return $self->_croak(sprintf("Ipblock id %s (%s) has no version", $self->id, $address ));
+    }
+    $self->_attribute_store( address => $val );    
+}
+
+#################################################
+# Copy stored object in history table.
+# We use DBI directly to avoid CDBI returning
+# the object in memory
+################################################
+sub historize {
+    my $self = shift;
+    my $table = $self->table;
+    my $h_table = "$table" . "_history";
+    return unless eval { $h_table->table }; #history table might not exist
+    my (%current_data, $new_h_obj);
+    my $dbh = Netdot::DBI->db_Main();
+    my $col_list = join ",", $table->columns;
+    my $id = $self->id;
+    my @vals = $dbh->selectrow_array("SELECT $col_list FROM $table WHERE id = $id");
+    my $i = 0;
+    map { $current_data{$_} = $vals[$i++] } $table->columns;
+    delete $current_data{id}; # Our id is different
+    my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
+	$wday, $yday, $isdst) = localtime;
+    my $datetime = sprintf("%04d\/%02d\/%02d %02d:%02d:%02d",
+			   $year+1900, $month+1, $day_of_month, $hours, $minutes, $seconds);
+    my $oid = lc("$table" . "_id");
+    $current_data{$oid} = $self->id;
+    $current_data{modified} = $datetime;
+    my $user = $ENV{REMOTE_USER} || "unknown";
+    $current_data{modifier} = $user;
+    eval { $new_h_obj = $h_table->create(\%current_data) };
+    if ( $@ ){
+	$self->_croak( $@ );
+    }
+}
+
+################################################################
+# validate_phys_addr - Perform validation of MAC address strings
+# 
+# String must look like "DEADDEADBEEF".
+# Assumes that "000000000000", "111111111111" ... "FFFFFFFFFF" 
+# are invalid.
+#
+# Arguments: address string
+# Returns:   True if valid, False if invalid
+#
+################################################################
+sub validate_phys_addr {
+    my ($self, $addr) = @_;
+    if ( $addr !~ /^[0-9A-F]{12}$/ ||
+	 # Assume the all-equal-bits address is invalid
+	 ($addr =~ /^([0-9A-F]{1})/ && $addr =~ /$1{12}/)  ){
+	return 0;
+    }
+    return 1;
+}
+
+#################################################
+# Canonicalize MAC addresses before inserting.
+# Search methods will also need to convert to
+# this format prior to searching.
+################################################
+sub canonicalize_phys_addr {
+    my $self = shift;
+    my $address = ($self->_attrs('address'))[0];
+    $address =~ s/[:\.\-]//g;
+    $address = uc($address);
+    unless ($self->validate_phys_addr($address)){
+	$self->_croak("Invalid Address: $address");	
+    }
+    $self->_attribute_store( address => $address );
+}
+
+Ipblock->add_trigger( deflate_for_create => \&ip2int );
+Ipblock->add_trigger( deflate_for_update => \&ip2int );
+Ipblock->add_trigger( select => \&int2ip );
+
+PhysAddr->add_trigger( deflate_for_create => \&canonicalize_phys_addr );
+PhysAddr->add_trigger( deflate_for_update => \&canonicalize_phys_addr );
+
+__PACKAGE__->add_trigger( before_update => \&historize );
+
+
+#################################################
+# These are specific SQL queries tailored to
+# some of Netdot's classes' needs
+# The syntax for calling them looks like
+#   <Tablename>->search_<key>
+# e.g.  
+#   Ipblock->search_children
+################################################
+
+# Short way to retrieve all the ip addresses from a device
+# 
+# Apparently one can't bind the "ORDER BY" parameter :-(
+#
+Ipblock->set_sql(devipsbyaddr => qq{
+    SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
+	FROM Ipblock, Interface, Device
+	WHERE Interface.id = Ipblock.interface AND
+	Device.id = Interface.device AND
+	Device.id = ?
+	ORDER BY Ipblock.address
+    });
+Ipblock->set_sql(devipsbyint => qq{
+    SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
+	FROM Ipblock, Interface, Device
+	WHERE Interface.id = Ipblock.interface AND
+	Device.id = Interface.device AND
+	Device.id = ?
+	ORDER BY Interface.name
+    });
+
+# Get lists of products
+Product->set_sql(bytype => qq{
+    SELECT p.name, p.id, COUNT(d.id) AS numdevs
+	FROM Device d, Product p, ProductType t
+	WHERE d.productname = p.id AND
+	p.type = t.id AND
+	t.id = ?
+	GROUP BY p.id
+	ORDER BY numdevs DESC
+    });
+
+Product->set_sql(notype => qq{
+    SELECT p.name, p.id, COUNT(d.id) AS numdevs
+	FROM Device d, Product p
+	WHERE d.productname = p.id AND
+	p.type = 0
+	GROUP BY p.id
+	ORDER BY numdevs DESC
+    });
+
+Product->columns(TEMP => qw/numdevs/);

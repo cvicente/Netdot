@@ -543,9 +543,14 @@ sub update {
     my $commit = (defined $argv{commit}) ? $argv{commit} : 1;
 
     foreach my $col ( keys %state ) {
-	my $v = ( ref($obj->$col) ) ? $obj->$col->id : $obj->$col;
+	# Comparisons are very picky about overloaded arguments,
+	# so we check if either the column or the value to be set
+	# are actually Class::DBI objects and if they are, we
+	# use the corresponding id
+	my $c = ( ref($obj->$col) )   ? $obj->$col->id   : $obj->$col;
+	my $v = ( ref($state{$col}) ) ? $state{$col}->id : $state{$col};
 	eval { 
-	    if( $state{$col} ne $v ) {
+	    if( $c ne $v ) {
 		$change = 1;
 		$obj->set( $col, $state{$col} ); 
 	    }

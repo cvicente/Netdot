@@ -25,28 +25,29 @@ section => 'Management'
 %#
 %#######################################################################
 <%args>
-$id        => undef
-$search    => undef
-$edit      => undef
-$editgen   => undef
-$editloc   => undef
-$editmgmt  => undef
-$editsnmp  => undef
-$editips   => undef
-$editints  => undef
-$editbgp   => undef
-$ipsort    => "address"
-$ifsort    => "number"
-$peersort  => "ip"
-$user      => undef
-$showvlan  => "all"
-$intadd    => undef
-$submit    => undef
-$view      => "Basics"
-$intaddnum => undef
-$deviceadd => undef
-$newhost   => undef
-$newip     => undef
+$id         => undef
+$search     => undef
+$edit       => undef
+$editgen    => undef
+$editloc    => undef
+$editmgmt   => undef
+$editsnmp   => undef
+$editips    => undef
+$editints   => undef
+$editdevbgp => undef
+$editbgp    => undef
+$ipsort     => "address"
+$ifsort     => "number"
+$peersort   => "ip"
+$user       => undef
+$showvlan   => "all"
+$intadd     => undef
+$submit     => undef
+$view       => "Basics"
+$intaddnum  => undef
+$deviceadd  => undef
+$newhost    => undef
+$newip      => undef
 </%args>
 %
 %
@@ -953,22 +954,58 @@ push( @rows, \@row );
 
 % if ( $view eq "BGP" || $view eq "All"){
 
+% my (@field_headers, @cell_data);
+% push( @field_headers, "BGP ID: " );
+% push( @cell_data, $ui->text_field(object=>$o, column=>"bgpid", edit=>$editdevbgp, returnAsVar=>1) );
+% push( @field_headers, "BGP Local AS: " );
+% push( @cell_data, $ui->text_field(object=>$o, column=>"bgplocalas", edit=>$editdevbgp, returnAsVar=>1) );
+
+<!-- Two-column Division Table -->
+<table border="0" width="100%" align="center">
+  <tr>
+    <td valign="top" width="50%" align="center">
+
+        <div class="container">
+          <div class="containerheadleft">Device BGP Info</div>
+          <div class="containerheadright">
+%         if ( $editdevbgp ) {
+            <form name="netdotform" action="device.html" method="POST">
+	      <input type="hidden" name="id" value="<% $id %>">
+	      <input type="hidden" name="view" value="<% $view %>">
+	      <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+	      <input type="submit" name="submit" value="save">
+%         }else{
+              <a href="device.html?id=<% $id %>&view=<% $view %>&editdevbgp=1">[edit]</a>
+%         }
+          </div>
+          <div class="containerbody">
+             <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+%         if ( $editdevbgp ) {
+             </form>
+%         }
+          </div>
+        </div>
+    </td>
+    <td></td>
+  </tr>
+</table>
+<!-- End Two-column Division Table -->
+
 <%perl>
-    my @peers;
-if ( $peersort eq "ip" ){
-    @peers = $dm->bgppeers_by_ip( $o );
-}elsif ( $peersort eq "id"){
-    @peers = $dm->bgppeers_by_id( $o );
-}elsif ( $peersort eq "entity"){
-    @peers = $dm->bgppeers_by_entity( $o, "name" );
-}elsif ( $peersort eq "asname"){
-    @peers = $dm->bgppeers_by_entity( $o, "asname" );
-}elsif ( $peersort eq "asnumber"){
-    @peers = $dm->bgppeers_by_entity( $o, "asnumber" );
-} 
+    $dm->error("");
+    my @ipeers = $dm->get_bgp_peers(device=>$o, type=>"internal", sort=>$peersort);
+    if ( $dm->error ){
+	$m->comp('error.mhtml', error=> $dm->error);
+    }
+    $dm->error("");
+    my @epeers = $dm->get_bgp_peers(device=>$o, type=>"external", sort=>$peersort);
+    if ( $dm->error ){
+	$m->comp('error.mhtml', error=>$dm->error);
+    }
 </%perl>
 
-%   if ( scalar @peers ){
+%   if ( @ipeers || @epeers ){
+
 <!-- BGP Peers Table -->
 <div class="container">
     <div class="containerheadleft">
@@ -976,20 +1013,20 @@ if ( $peersort eq "ip" ){
     </div>
     <div class="containerheadright">
 
-% if ( $editbgp ) {
-    <form name="netdotform" action="device.html" method="POST">
+%     if ( $editbgp ) {
+      <form name="netdotform" action="device.html" method="POST">
 	<input type="hidden" name="id" value="<% $id %>">
 	<input type="hidden" name="view" value="<% $view %>">
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 	<input type="submit" name="submit" value="save">
-% }else{
+%     }else{
         <a href="device.html?id=<% $id %>&view=<% $view %>&editbgp=1">[edit]</a>
-% }
+%     }
     </div>
     <div class="containerbody">
-%	if (scalar @peers){
 
 <%perl>
+
 (@headers, @rows) = ();
 
 push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=ip">Remote IP</a>' );
@@ -999,31 +1036,50 @@ push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort
 push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=asnumber">AS Number</a>' );
 push( @headers, 'Monitored?' );
 
-foreach my $peer (@peers){
-
-my (@row) = ();
-push( @row, $peer->bgppeeraddr  );
-push( @row, $peer->bgppeerid  );
-push( @row, '<a href="view.html?table=Entity&id=' . $peer->entity->id . '">' . $peer->entity->name . '</a>' );
-push( @row, $peer->entity->asname  );
-push( @row, $peer->entity->asnumber  );
-push( @row, $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp, returnAsVar=>1) );
-push( @rows, \@row );
+if ( @epeers ){
+    push @rows, ["<strong>External (eBGP)</strong>", "", "", "", "", ""];
+    
+    foreach my $peer (@epeers){
+	my (@row) = ();
+	push( @row, $peer->bgppeeraddr  );
+	push( @row, $peer->bgppeerid  );
+	push( @row, '<a href="view.html?table=Entity&id=' . $peer->entity->id . '">' . $peer->entity->name . '</a>' );
+	push( @row, $peer->entity->asname  );
+	push( @row, $peer->entity->asnumber  );
+	push( @row, $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp, returnAsVar=>1) );
+	push( @rows, \@row );
+    }
+    push @rows, ["&nbsp;", "", "", "", "", ""];
+}
+if ( @ipeers ){
+    push @rows, ["<strong>Internal (iBGP)</strong>", "", "", "", "", ""];
+    
+    foreach my $peer (@ipeers){
+	my (@row) = ();
+	push( @row, $peer->bgppeeraddr  );
+	push( @row, $peer->bgppeerid  );
+	push( @row, '<a href="view.html?table=Entity&id=' . $peer->entity->id . '">' . $peer->entity->name . '</a>' );
+	push( @row, $peer->entity->asname  );
+	push( @row, $peer->entity->asnumber  );
+	push( @row, $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp, returnAsVar=>1) );
+	push( @rows, \@row );
+    }
 }
 </%perl>
-
+    
 <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
-	   
-%      }
-    </div>
-</div>
 
 %   if ( $editbgp ) {
       </form>
 %   }
 <!-- End BGP Peers Table -->
-%   }
-% }  
+    </div>
+</div>
+	   
+%    }
+
+% }
+
 %
 %#######################################################################
 %#

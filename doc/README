@@ -11,7 +11,10 @@ performed:
 # mysql netdot
 >ALTER TABLE Ipblock CHANGE COLUMN entity used_by integer;
 >ALTER TABLE Ipblock ADD COLUMN owner integer AFTER status;
-
+>ALTER TABLE Device ADD COLUMN bgplocalas integer AFTER physaddr;
+>ALTER TABLE Device ADD COLUMN bgpid varchar(64) AFTER bgplocalas;
+>ALTER TABLE Device_history ADD COLUMN bgplocalas integer AFTER physaddr;
+>ALTER TABLE Device_history ADD COLUMN bgpid varchar(64) AFTER bgplocalas;
 >delete from Meta;
 >\q
 
