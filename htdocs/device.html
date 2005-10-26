@@ -764,11 +764,167 @@ push( @rows, \@row );
 
 %#######################################################################
 %#
-%# Interfaces
+%# Interfaces section
 %#
 %#######################################################################
 
-% if ( $view eq "Interfaces" || $view eq "All" ){
+
+
+<%perl>
+
+if ( $view eq "Interfaces" || $view eq "All" ){
+    my @ifs;
+    @ifs = $dm->get_interfaces( $o, $ifsort );
+    #
+    # Store values in a hash first.  Thay way we can quicly verify if 
+    # at least one of the interfaces has that field set to some value 
+    # and decide whether to add that column or not
+    # 
+    my %intinfo;
+    foreach ( @ifs ){ 
+      $intinfo{jack}{$_->id}              = $_->jack        if( $_->jack != 0 );
+      $intinfo{room_char}{$_->id}         = $_->room_char   if( $_->room_char );
+      $intinfo{jack_char}{$_->id}         = $_->jack_char   if( $_->jack_char );
+      $intinfo{description}{$_->id}       = $_->description if( $_->description );
+      @{ $intinfo{children}{$_->id} }     = $_->children    if( $_->children );
+      @{ $intinfo{parents}{$_->id} }      = $_->parents     if( $_->parents );
+    } 
+
+    (@headers, @rows) = ();
+    
+    if ( $editints ){
+      push( @headers, '[del]' );
+    }
+    
+    push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=number">No.</a>' );
+    push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=name">Name</a>' );
+    
+    if ( ! $editints ){
+      push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=speed">Speed</a>' );
+      push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=vlan">VLAN</a>' );
+    }
+    push( @headers, 'Mon?' );
+    push( @headers, 'SNMP?' );
+    
+    if ( exists $intinfo{jack} || $editints ){
+      push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>' );
+    }
+    if ( exists $intinfo{room_char} || $editints ){
+      push( @headers, 'Room' );
+    }
+    if ( exists $intinfo{jack_char} || $editints ){
+      push( @headers, 'Jack' );
+    }
+    if ( exists $intinfo{description} || $editints ){
+      push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=descr">Descr.</a>' );
+    }
+    if ( exists $intinfo{parents} || $editints ){
+      push( @headers, 'Uplink' );
+    }
+    if ( exists $intinfo{children} || $editints ){
+      push( @headers, 'Downlink' );
+    }
+    
+
+    foreach my $if ( @ifs ){
+      next if ( ! exists $ifvlans{$if}{$showvlan} && $showvlan ne "all");
+      
+      my (@row) = ();	
+      
+      if ( $editints ){	 
+	push( @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delete" . '" >' );
+      }
+      
+      push( @row, $ui->text_field(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 2em;\"", 
+				  linkPage=>"view.html", returnAsVar=>1) );
+      push( @row, $ui->text_field(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", 
+				  returnAsVar=>1) );
+      
+      if ( ! $editints ){
+	push( @row, $dm->convert_ifspeed($if->speed)  );
+	push( @row, 
+	      &{sub{
+		  my $ac = "";
+		  if (exists $ifvlans{$if}){
+		    my @links;
+		    foreach my $v ( keys %{$ifvlans{$if}} ){
+		      push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
+		    }
+		    $ac .= join ', ', @links;	# CHECK THIS (was in a print).
+		  }
+		  $ac;
+		}} );
+      }
+      
+      push( @row, $ui->radio_group_boolean(object=>$if, column=>"monitored", edit=>$editints, returnAsVar=>1) );
+      push( @row, $ui->radio_group_boolean(object=>$if, column=>"snmp_managed", edit=>$editints, returnAsVar=>1) );
+      
+      if ( exists $intinfo{jack} || $editints ){
+	push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
+				       edit=>$editints, linkPage=>"cable_horizontal.html", returnAsVar=>1) );
+      }
+      if ( exists $intinfo{room_char} || $editints ){
+	push( @row, $ui->text_field(object=>$if, column=>"room_char", edit=>$editints, 
+				    htmlExtra =>"style=\"width: 4em;\"", returnAsVar=>1) );
+      }
+      if ( exists $intinfo{jack_char} || $editints ){
+	push( @row, $ui->text_field(object=>$if, column=>"jack_char", edit=>$editints, 
+				    htmlExtra =>"style=\"width: 7em;\"", returnAsVar=>1) );
+      }
+      if ( exists $intinfo{description} || $editints ){
+	push( @row, $ui->text_field(object=>$if, column=>"description", edit=>$editints, returnAsVar=>1) );
+      }
+      
+      if ( exists $intinfo{parents} || $editints ){
+	push( @row, 
+	      &{sub{
+		  my $ac = "";
+		  if (exists $intinfo{parents}{$if->id}){
+		    foreach my $link ( @{ $intinfo{parents}{$if->id} } ){
+		      if ( $link->parent && $link->parent->device ){
+			if ( $editints ){
+			  $ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
+			}   
+			my $lbl = $ui->getobjlabel($link->parent, ", ");
+			$ac .= '<a href="device.html?id=' . $link->parent->device->id . '&view=Interfaces">' . $lbl . '</a><br>';
+		      }
+		    }
+		  }
+		  if ( $editints ){  
+		    $ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'child\')">[add]</a>';
+		  }
+		  $ac;
+		}} );
+      }
+      
+      if ( exists $intinfo{children} || $editints ){
+	push( @row, 
+	      &{sub{
+		  my $ac = "";
+		  if (exists $intinfo{children}{$if->id}){
+		    foreach my $link ( @{ $intinfo{children}{$if->id} } ){
+		      if ( $link->child && $link->child->device ){
+			if ( $editints ){
+			  $ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
+			}   
+			my $lbl = $ui->getobjlabel($link->child, ", ");
+			if ( $link->child->device ){
+			  $ac .= '<a href="device.html?id=' . $link->child->device->id . '&view=Interfaces">' . $lbl . '</a><br>';
+			}
+		      }
+		    }
+		  }
+		  if ( $editints ){     
+		    $ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'parent\')">[add]</a>';
+		  }
+		  $ac;
+		}} );
+      }
+      push( @rows, \@row );
+      
+    } #foreach
+    
+</%perl>
 
 <!-- Interface Table -->
 <div class="container">
@@ -778,158 +934,34 @@ push( @rows, \@row );
     <div class="containerheadright">
 
 %   if ($editints){	 
-    <form name="netdotform" action="device.html" method="POST">
-	<input type="hidden" name="id" value="<% $id %>">
-	<input type="hidden" name="view" value="<% $view %>">
-	<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-	<input type="submit" name="submit" value="save">
+        <form name="netdotform" action="device.html" method="POST">
+	    <input type="hidden" name="id" value="<% $id %>">
+	    <input type="hidden" name="view" value="<% $view %>">
+	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+	    <input type="submit" name="submit" value="save">
 %   }else{
 
-    <form name="showvlans">
+        <form name="showvlans">
 	VLAN view: <select name="showvlan" onChange="showVlan();">
-%     if ( $showvlan eq 'all' ){
-         <option value="all" SELECTED>all</option>
-%     }else{
-         <option value="all">all</option>
-%     }
-%     foreach my $vid ( sort keys %vlans ){
-%       if ( $showvlan eq $vid ){
-          <option value="<% $vid %>" SELECTED><% $vid %></option>     
+%       if ( $showvlan eq 'all' ){
+            <option value="all" SELECTED>all</option>
 %       }else{
-          <option value="<% $vid %>"><% $vid %></option>     
+            <option value="all">all</option>
 %       }
-%     }
-      </select>
-    </form> 
-    <a href="device.html?id=<% $id %>&view=<% $view %>&editints=1">[edit]</a>
-
+%       foreach my $vid ( sort keys %vlans ){
+%           if ( $showvlan eq $vid ){
+                <option value="<% $vid %>" SELECTED><% $vid %></option>     
+%           }else{
+                <option value="<% $vid %>"><% $vid %></option>     
+%           }
+%       }
+        </select>
+        </form> 
+        <a href="device.html?id=<% $id %>&view=<% $view %>&editints=1">[edit]</a>
 %  }
     </div>
     <div class="containerbody">
-
-<%perl>
-(@headers, @rows) = ();
-
-if ( $editints ){
-push( @headers, '[del]' );
-}
-
-push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=number">No.</a>' );
-push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=name">Name</a>' );
-
-if ( ! $editints ){
-push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=speed">Speed</a>' );
-push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=vlan">VLAN</a>' );
-}
-
-push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>' );
-push( @headers, 'Room' );
-push( @headers, 'Jack' );
-push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=descr">Descr.</a>' );
-push( @headers, 'Uplink' );
-push( @headers, 'Downlink' );
-push( @headers, 'Mon?' );
-push( @headers, 'SNMP?' );
-
-</%perl>
-
-<%perl>
-    my @ifs;
-    @ifs = $dm->get_interfaces( $o, $ifsort );
-</%perl>
-			  
-%       foreach my $if ( @ifs ){
-%         next if ( ! exists $ifvlans{$if}{$showvlan} && $showvlan ne "all");
-
-<%perl>
-my (@row) = ();	#Scope got me here.
-
-if ( $editints ){	 
-push( @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delete" . '" >' );
-}
-
-push( @row, $ui->text_field(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 2em;\"", linkPage=>"view.html", returnAsVar=>1) );
-push( @row, $ui->text_field(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", returnAsVar=>1) );
-
-if ( ! $editints ){
-push( @row, $dm->convert_ifspeed($if->speed)  );	# NEEDS RETURNASVAR?
-push( @row, 
-&{sub{
-    my $ac = "";
-    if (exists $ifvlans{$if}){
-        my @links;
-	foreach my $v ( keys %{$ifvlans{$if}} ){
-	    push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
-	}
-	$ac .= join ', ', @links;	# CHECK THIS (was in a print).
-    }
-    $ac;
-}} );
-}
-
-push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
-                             edit=>$editints, linkPage=>"cable_horizontal.html", returnAsVar=>1) );
-push( @row, $ui->text_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", returnAsVar=>1) );
-push( @row, $ui->text_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", returnAsVar=>1) );
-push( @row, $ui->text_field(object=>$if, column=>"description", edit=>$editints, returnAsVar=>1) );
-
-#<!-- UpLink Connections Field --> <!-- ADD STUFF IN UPLINK CONNECTION FIELD SECTION -->
-
-push( @row, 
-&{sub{
-    my $ac = "";
-    my @parents = $if->parents;
-    if (scalar(@parents)){
-	foreach my $link (@parents){
-	    if ( $link->parent && $link->parent->device ){
-		if ( $editints ){
-		    $ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
-		}   
-		my $lbl = $ui->getobjlabel($link->parent, ", ");
-		$ac .= '<a href="device.html?id=' . $link->parent->device->id . '&view=Interfaces">' . $lbl . '</a><br>';
-	    }
-	}
-    }
-    if ( $editints ){  
-	$ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'child\')">[add]</a>';
-    }
-    $ac;
-}} );
-
-#<!-- DownLink Connections Field -->
-
-push( @row, 
-&{sub{
-    my $ac = "";
-    my @children = $if->children;
-    if (scalar(@children)){
-	foreach my $link (@children){
-	    if ( $link->child && $link->child->device ){
-		if ( $editints ){
-		    $ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
-		}   
-		my $lbl = $ui->getobjlabel($link->child, ", ");
-		if ( $link->child->device ){
-		    $ac .= '<a href="device.html?id=' . $link->child->device->id . '&view=Interfaces">' . $lbl . '</a><br>';
-		}
-	    }
-	}
-    }
-    if ( $editints ){     
-	$ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'parent\')">[add]</a>';
-    }
-    $ac;
-}} );
-push( @row, $ui->radio_group_boolean(object=>$if, column=>"monitored", edit=>$editints, returnAsVar=>1) );
-push( @row, $ui->radio_group_boolean(object=>$if, column=>"snmp_managed", edit=>$editints, returnAsVar=>1) );
-
-push( @rows, \@row );
-</%perl>
-
-%       } #foreach
-
-<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
-
+        <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
     </div>
     <div class="containerheadright">
 %	  if ( $editints ){	 
@@ -939,7 +971,6 @@ push( @rows, \@row );
     </div>
 </div>
 <!-- End Interface Table -->
-% } 
 
 % if ( ! $editints && ($view eq "Interfaces" || $view eq "All") ){
     <form name="netdotform" action="device.html" method="POST">
@@ -951,9 +982,11 @@ push( @rows, \@row );
     </form>
 % }
 
-%   if ($editints){	 
+%   if ($editints){
        </form>
 %   }
+% } # if view eq "Interfaces"
+
 
 %#######################################################################
 %#
