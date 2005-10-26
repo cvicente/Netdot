@@ -41,10 +41,7 @@ my $ci = 0;
 my $title;
 my @list;
 my $covering_block;
-my %S_LBL = ( 'SEARCH_ADDR'  => 'IP[/prefix]',
-	      'SEARCH_REGEX' => 'IP regex',
-              'SEARCH_OTHER' => 'Entity/Site/Descr'
-	      );
+
 if ( $id ){
     unless ( $o = Ipblock->retrieve($id) ){
 	$m->comp('error.mhtml', error => "Could not retrieve Ipblock id: $id");
@@ -100,11 +97,11 @@ if ( defined($search) ){
          </div>
        </div>
 <%perl>
-    }else{
-        # Make sure we start with a clean error buffer
-        $ipm->error("");
+   }else{
 	$search =~ s/^\s*(.*)\s*$/$1/g;
 	if ( $_action eq "SEARCH_ADDR" ){
+	    # Make sure we start with a clean error buffer
+	    $ipm->error("");
 	    if ($search =~ /\//){
 		my ($addr, $prefix) = split /\//, $search;
 		if ( !(@list = $ipm->searchblocks_addr($addr, $prefix)) && !$ipm->error ){
@@ -131,18 +128,8 @@ if ( defined($search) ){
           <div class="containerbody">
 %         if ( @list ){
               <& ipblock_list.mhtml, objects => \@list  &>
-%         }else{
-%             if ( $ipm->error ){
-                 <p><strong><% $ipm->error %></strong>
-%             }
-	      <form action="ip-ws.html" method="POST">
-                <p>
-                <label for="search"><% $S_LBL{$_action} %>:</label>
-                <input type="text" name="search" class="txt" value="<% $search %>"> 
-                <input name="submit" value="search" class="btn" type="submit">
-                <input type="hidden" name="_action" value="<% $_action %>">
-                </p>
-              </form> 
+%         }elsif ( $ipm->error ){
+              <p><strong><% $ipm->error %></strong>
 %         }
           </div>
        </div>
@@ -403,7 +390,7 @@ if ( defined($search) ){
 
 }
 
-#######################################################################################
+########################################################################if( $view_availability == 1 ) {###############
 # View
 #
 #######################################################################################
@@ -422,9 +409,14 @@ if ( $id && $view ){
 my @line;
 if ( my @parents = $ipm->getparents($o) ){
     foreach my $par ( reverse @parents ){
-	push (@line, "<a href=\"ip-ws.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
+	   push (@line, "<a href=\"ip-ws.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
     }
-    push (@line, $o->address . "/" . $o->prefix);
+    if( $view_availability == 1 ) {
+	    push (@line, "<a href=\"ip-ws.html?id=" . $o->id . "\">" . $o->address . "/" . $o->prefix . "</a>");
+        push (@line, "Addresses");
+    } else {
+        push (@line, $o->address . "/" . $o->prefix);
+    }
 }    
  
 </%perl>
