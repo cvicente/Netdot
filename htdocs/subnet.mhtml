@@ -26,7 +26,15 @@ $network => undef
         	    $name = $ui->getobjlabel( $rraddr->rr, "," , returnAsVar=>1 );
         	}
             if( $o->status->name eq "Container" || $o->status->name eq "Reserved" ) {
-                $names{ $o->address } = $o->description;
+                if( $o->description ) {
+                    $names{ $o->address } = $o->description;
+                } else {
+                    if( $o->status->name eq "Container" ) {
+                        $names{ $o->address } = "Container";
+                    } else {
+                        $names{ $o->address } = "Reserved Address";
+                    }
+                }
                 $containers{ $o->address } = $o->id;
             } else {
                 $names{ $o->address } = $name;
