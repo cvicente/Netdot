@@ -41,6 +41,10 @@ my $ci = 0;
 my $title;
 my @list;
 my $covering_block;
+my %S_LBL = ( 'SEARCH_ADDR'  => 'IP[/prefix]',
+	          'SEARCH_REGEX' => 'IP regex',
+              'SEARCH_OTHER' => 'Entity/Site/Descr'
+	      );
 
 if ( $id ){
     unless ( $o = Ipblock->retrieve($id) ){
@@ -98,6 +102,8 @@ if ( defined($search) ){
        </div>
 <%perl>
    }else{
+    # Make sure we start with a clean error buffer
+    $ipm->error("");
 	$search =~ s/^\s*(.*)\s*$/$1/g;
 	if ( $_action eq "SEARCH_ADDR" ){
 	    # Make sure we start with a clean error buffer
