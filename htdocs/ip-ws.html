@@ -57,6 +57,7 @@ if ( $id ){
 
 my $edit_ip    = 0;
 my $edit_block = 0;
+my $add_ip = 0;
 $edit_ip       = 1 if ($edit eq "ipinfo");
 $edit_block    = 1 if ($edit eq "blockinfo");
 
@@ -203,26 +204,43 @@ if ( defined($search) ){
 
 }elsif( $_action eq "UPDATE" ){
 
-    if ( $ui->form_to_db(%ARGS) ){
-	# Do this to 'flush' the values associated with the object
-	# before redisplaying
-	$o = undef;
-	if ($id){
-	    $o = Ipblock->retrieve($id);
-	}
-    }else{
-</%perl>
-       <div class="container">
-         <div class="containerhead">
-           <strong>Error!</strong>   
-         </div>
-         <div class="containerbody">
-	   <p><strong><% $ui->error %></strong>
-         </div>
-       </div>
+    if ($submit eq "cancel") {
+        # Get rid of the new block
+        unless ( $ipm->removeblock( id => $id ) ){
+        	$m->comp('error.mhtml', error => $ipm->error);	
+        }
+        
+        # reset all request variables to make this look like a view request
+        $view = 1;
+        $edit = 0;
+        $id = $parent;
+        if ($id != 0){
+        	unless ( $o = Ipblock->retrieve($id) ){
+        	    $m->comp('error.mhtml', error => "Can't retrieve Ipblock id $id");
+        	}
+        }
 
-<%perl>
-   }
+    } else {
+        if ( $ui->form_to_db(%ARGS) ){
+        	# Do this to 'flush' the values associated with the object
+        	# before redisplaying
+        	$o = undef;
+            if ($id){
+        	    $o = Ipblock->retrieve($id);
+        	}
+        }else{
+        </%perl>
+           <div class="container">
+             <div class="containerhead">
+               <strong>Error!</strong>   
+             </div>
+             <div class="containerbody">
+    	   <p><strong><% $ui->error %></strong>
+             </div>
+           </div>
+        <%perl>
+       }
+    }
 
 #######################################################################################
 # Allocate
@@ -269,8 +287,11 @@ if ( defined($search) ){
 <%perl>
     }
     if ($newblock){
-	$o = $newblock;
-	$id = $newblock->id;
+    	$o = $newblock;
+    	$id = $newblock->id;
+        $edit_ip = 1;
+        $edit = "ipinfo";
+        $add_ip = 1;
     }
 
 #######################################################################################
@@ -419,6 +440,7 @@ if ( $id && $view ){
 %    }
 
 <%perl>
+
 my @line;
 if ( my @parents = $ipm->getparents($o) ){
     foreach my $par ( reverse @parents ){
@@ -454,8 +476,14 @@ if ( my @parents = $ipm->getparents($o) ){
 
     <div class="containerheadright">
 %	 if ($edit eq "ipinfo"){	 
-	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-            <input type="submit" name="submit" value="save">
+%        if ($add_ip) {
+    	    <input type="submit" name="submit" value="cancel">
+%           my @parents = $ipm->getparents($o);
+            <input type="hidden" name="parent" value="<% $parents[0] %>">
+%        } else {
+    	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+%        }
+         <input type="submit" name="submit" value="save">
 %	 }else{
             <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
             <a href="ip-ws.html?id=<% $id %>&edit=ipinfo">[edit]</a>
@@ -788,10 +816,16 @@ if ($o->status->name eq "Subnet") {
 % if( $view_availability == 1 ) {  
 %     if( $o->status->name eq "Subnet" ) {  
        <div class="container">  
-          <div class="containerhead">  
+          <div class="containerheadleft"> 
              Choose an Address  
           </div>  
-          <div class="containerbody">  
+          <div class="containerheadright">
+            <span class="ipaddr_available">Available</span>
+            <span class="ipaddr_dynamic">Dynamic</span>
+            <span class="ipaddr_static">Static</span>
+            <span class="ipaddr_reserved">Reserved</span>
+          </div>
+          <div class="containerbody" id="ipaddresstable">  
           <& subnet.mhtml, network => $o &>  
           </div>  
        </div>  

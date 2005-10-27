@@ -15,7 +15,7 @@ $network => undef
     my %used;
     my %names;
     my %status;
-    my %containers;
+    my %iplinks;
 
     my @children;  
     if (scalar( @children = $ipm->getchildren($network->id) )){
@@ -35,11 +35,11 @@ $network => undef
                         $names{ $o->address } = "Reserved Address";
                     }
                 }
-                $containers{ $o->address } = $o->id;
             } else {
                 $names{ $o->address } = $name;
             }
             $status{ $o->address } = $o->status->name;
+            $iplinks{ $o->address } = $o->id;
         }
     }    
 
@@ -96,6 +96,8 @@ $network => undef
                 my $divclass;
                 my $divtitle;
 
+                $ipaddr = '<a href="ip-ws.html?id='.$iplinks{ $net->addr }.'" class="ipaddr">'.$ipaddr.'</a>';
+
                 if( $status{$net->addr} eq "Static" ) {
                     # show used addresses in red, with no link tag, show dns name on mouseover
                     $divclass = "ipaddr_static";
@@ -115,13 +117,13 @@ $network => undef
                     # link to detail page for containers
                     $divclass = "ipaddr_container";
                     $divtitle = $names{ $net->addr } if exists $names{ $net->addr };
-                    $ipaddr = '<a href="ip-ws.html?id='.$containers{ $net->addr }.'">'.$ipaddr.'</a>';
+
                 }
 
                 $ipaddr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$ipaddr.'</div>';
             } else {
                 # link this address to the "Add" section in ip-ws.html
-                $ipaddr = '<div class="ipaddr_available"><a href="ip-ws.html?allocate='.$net->addr().'%2F32&_action=ALLOCATE">'.$ipaddr.'</a></div>';
+                $ipaddr = '<div class="ipaddr_available"><a href="ip-ws.html?allocate='.$net->addr().'%2F32&_action=ALLOCATE" class="ipaddr">'.$ipaddr.'</a></div>';
             }
 
             push( @row, $ipaddr );
@@ -132,14 +134,5 @@ $network => undef
     }
 
 </%perl>
-
-<div style="margin-top:8px;margin-left:5px;">
-    <span class="ipaddr_reserved">Reserved</span>
-    <span class="ipaddr_static">Static</span>
-    <span class="ipaddr_dynamic">Dynamic</span>
-    <span class="ipaddr_available">Available</span>
-</div>
-
-    <hr>
 
 <& data_table.mhtml, field_headers=>\@headers, data=>\@rows, subclass=>"ipb" &>
