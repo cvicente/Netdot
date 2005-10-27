@@ -21,23 +21,37 @@ $network => undef
     if (scalar( @children = $ipm->getchildren($network->id) )){
         foreach my $o ( @children ) {
             $used{ $o->address } = 1;
-            my $name;
+            my $dnsname;
         	if ( my $rraddr = ($o->arecords)[0] ){
-        	    $name = $ui->getobjlabel( $rraddr->rr, "," , returnAsVar=>1 );
+        	    $dnsname = $ui->getobjlabel( $rraddr->rr, "," , returnAsVar=>1 );
         	}
-            if( $o->status->name eq "Container" || $o->status->name eq "Reserved" ) {
+
+            $names{ $o->address } = $o->status->name;  # default to show status first
+
+            if( $o->status->name eq "Container" ) {
                 if( $o->description ) {
                     $names{ $o->address } = $o->description;
-                } else {
-                    if( $o->status->name eq "Container" ) {
-                        $names{ $o->address } = "Container";
-                    } else {
-                        $names{ $o->address } = "Reserved Address";
-                    }
                 }
-            } else {
-                $names{ $o->address } = $name;
+            } elsif( $o->status->name eq "Reserved" ) {
+                if( $o->description ) {
+                    $names{ $o->address } = $o->description;
+                }
+            } elsif( $o->status->name eq "Subnet" ) {
+                if( $o->description ) {
+                    $names{ $o->address } = $o->description;
+                }
+            } elsif( $o->status->name eq "Static" ) {
+                if( $dnsname ne "" ) {
+                    $names{ $o->address } = $dnsname;
+                } elsif( $ui->getobjlabel($o->interface->device, ", ") ne "" ) {
+                    $names{ $o->address } = $ui->getobjlabel($o->interface->device, ", ");
+                }
+            } elsif( $o->status->name eq "Dynamic" ) {
+                if( $o->description ) {
+                    $names{ $o->address } = $o->description;
+                }
             }
+
             $status{ $o->address } = $o->status->name;
             $iplinks{ $o->address } = $o->id;
         }
@@ -106,12 +120,12 @@ $network => undef
                 } elsif( $status{$net->addr} eq "Dynamic" ) {
                     # show dynamic addresses in orange, don't link
                     $divclass = "ipaddr_dynamic";
-                    $divtitle = "Dynamic address";
+                    $divtitle = $names{ $net->addr } if exists $names{ $net->addr };
 
                 } elsif( $status{$net->addr} eq "Reserved" ) {
                     # show reserved addresses in grey, don't link
                     $divclass = "ipaddr_reserved";
-                    $divtitle = "Reserved address";
+                    $divtitle = $names{ $net->addr } if exists $names{ $net->addr };
 
                 } elsif( $status{$net->addr} eq "Container" ) {
                     # link to detail page for containers

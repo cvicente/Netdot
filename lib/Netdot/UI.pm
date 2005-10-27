@@ -705,8 +705,10 @@ sub percent_bar($@) {
     } else {
         if ($numerator <= 0 || $denominator <= 0) {
             $width = 0;
+            $percent = 0;
         } else {
             $width = int($numerator/$denominator*100);
+            $percent = $numerator/$denominator*100;
             if ($width < 1 ) {
                 $width = 1;
             }
@@ -720,7 +722,7 @@ sub percent_bar($@) {
         $bkg = "";
     }
 
-    $output .= '<div class="progress_bar">';
+    $output .= '<div class="progress_bar" title="'.(int($percent*10)/10).'%">';
     $output .= '<div class="progress_used" style="width:'.$width.'%;'.$bkg.'">';
     $output .= '</div></div>';
 
