@@ -782,14 +782,14 @@ if ( $view eq "Interfaces" || $view eq "All" ){
     # 
     my %intinfo;
     foreach ( @ifs ){ 
-      $intinfo{jack}{$_->id}              = $_->jack        if( $_->jack != 0 );
+      $intinfo{jack}{$_->id}              = $_->jack        if( int($_->jack) != 0 );
       $intinfo{room_char}{$_->id}         = $_->room_char   if( $_->room_char );
       $intinfo{jack_char}{$_->id}         = $_->jack_char   if( $_->jack_char );
       $intinfo{description}{$_->id}       = $_->description if( $_->description );
       @{ $intinfo{children}{$_->id} }     = $_->children    if( $_->children );
       @{ $intinfo{parents}{$_->id} }      = $_->parents     if( $_->parents );
     } 
-
+    my @closet_jacks;
     (@headers, @rows) = ();
     
     if ( $editints ){
@@ -808,6 +808,7 @@ if ( $view eq "Interfaces" || $view eq "All" ){
     
     if ( exists $intinfo{jack} || $editints ){
       push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>' );
+      @closet_jacks = ( int($o->closet) != 0 ) ? $o->closet->horizontalcables : "";
     }
     if ( exists $intinfo{room_char} || $editints ){
       push( @headers, 'Room' );
@@ -861,7 +862,8 @@ if ( $view eq "Interfaces" || $view eq "All" ){
       
       if ( exists $intinfo{jack} || $editints ){
 	push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
-				       edit=>$editints, linkPage=>"cable_horizontal.html", returnAsVar=>1) );
+				       defaults=>\@closet_jacks, edit=>$editints, linkPage=>"cable_horizontal.html", 
+				       returnAsVar=>1) );
       }
       if ( exists $intinfo{room_char} || $editints ){
 	push( @row, $ui->text_field(object=>$if, column=>"room_char", edit=>$editints, 

@@ -1467,6 +1467,11 @@ sub get_dev_info {
 		    # Just use the value
 		    $dev{interface}{$newif}{$dbname} = $val;	    
 		}
+	    }elsif( $dbname eq "description" ){
+		# Netviewer converts empty values into "-"
+		# Ignore those
+		next if ( $nv{interface}{$newif}{$IFFIELDS{$dbname}} eq "-" );
+		$dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
 	    }else {
 		$dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
 	    }

@@ -391,6 +391,7 @@ Arguments:
   column:       Name of field in DB.
   edit:         True if editing, false otherwise.
   where:        (optional) Key/value pairs to pass to search function in CDBI
+  defaults:     (optional) array of objects to be shown in the drop-down list by default
   htmlExtra:    (optional) extra html you want included in the output. Common
                 use would be to include style="width: 150px;" and the like.
   linkPage:     (optional) Make the printed value a link
@@ -407,13 +408,15 @@ Arguments:
 
 sub select_lookup($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $lookup, $where, $isEditing, $htmlExtra, $linkPage, $maxCount, $returnAsVar) = 
+    my ($o, $table, $column, $lookup, $where, $defaults, $isEditing, $htmlExtra, $linkPage, $maxCount, $returnAsVar) = 
 	($args{object}, $args{table}, 
 	 $args{column}, $args{lookup},
-	 $args{where}, $args{edit},
+	 $args{where}, $args{defaults}, $args{edit},
 	 $args{htmlExtra}, $args{linkPage},
 	 $args{maxCount}, $args{returnAsVar});
 
+    my @defaults = @$defaults if $defaults;
+    
     unless ( $o || $table ){
 	$self->error("Need to pass object or table name");
 	return 0;
@@ -435,16 +438,21 @@ sub select_lookup($@){
         my $id = ($o ? $o->id : "NEW");
         my $name = $tableName . "__" . $id . "__" . $column;
         
-        if ($where){
+        if (@defaults){
+            @fo = @defaults;
+            $count = scalar(@fo);
+        }elsif ($where){
             @fo = $lookup->search($where);
             $count = scalar(@fo);
         }else {
             $count = $lookup->count_all;
         }
         
-        # if the selected objects are within our limits, show the select box.
-        if ($count <= $maxCount){
-            @fo = $lookup->retrieve_all() if (!$where);
+        # if the selected objects are within our limits,
+	# or if we've been passed a specific default list, 
+	# show the select box.
+        if ($count <= $maxCount || @defaults){
+            @fo = $lookup->retrieve_all() if (!$where && !@defaults);
 	    @fo = map  { $_->[0] }
 	    sort { $a->[1] cmp $b->[1] }
 	    map { [$_ , $self->getlabelvalue($_, \@labels)] } @fo;
