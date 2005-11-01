@@ -15,18 +15,19 @@ Netdot - Network Documentation Tool
 
 =head1 SYNOPSIS
 
-Netdot.pm contains a series of functions commonly used throughout Netdot s classes, 
+Netdot.pm contains a series of functions commonly used throughout Netdot s classes,
 hence the idea of grouping them in this parent class, inheritable by every other class.
 
 =head1 METHODS
+
 =cut
-    
+
 ######################################################################
 # We have two config files.  First one contains defaults
 # and second one is site-specific (and optional)
 # Values are stored in this base class under the 'config' key
 ######################################################################
-    
+
 sub _read_defaults {
     my $self = shift;
     my @files = qw( PREFIX/etc/Default.conf);
@@ -57,15 +58,15 @@ sub new {
 
    $self->{'_logfacility'} = $argv{'logfacility'} || $self->{config}->{'DEFAULT_LOGFACILITY'},
    $self->{'_loglevel'}    = $argv{'loglevel'}    || $self->{config}->{'DEFAULT_LOGLEVEL'},
-   $self->{'_logident'}    = $argv{'logident'}    || $self->{config}->{'DEFAULT_SYSLOGIDENT'},   
-   $self->{'_foreground'}  = $argv{'foreground'}  || 0,   
-   
-   $self->{debug} = Debug->new(logfacility => $self->{'_logfacility'}, 
-			       loglevel    => $self->{'_loglevel'},	  
+   $self->{'_logident'}    = $argv{'logident'}    || $self->{config}->{'DEFAULT_SYSLOGIDENT'},
+   $self->{'_foreground'}  = $argv{'foreground'}  || 0,
+
+   $self->{debug} = Debug->new(logfacility => $self->{'_logfacility'},
+			       loglevel    => $self->{'_loglevel'},
 			       logident    => $self->{'_logident'},
 			       foreground  => $self->{'_foreground'},
 			       );
- 
+
 #  We override Class::DBI to speed things up in certain cases.
 
    unless ( $self->{dbh} = Netdot::DBI->db_Main() ){
@@ -119,11 +120,11 @@ sub debug {
 
 
 =head2 error - set/return an error message.
-    
+
     $netdot->error("Run for your lives!");
 
 or
-    
+
     print $netdot->error . "\n";
 
 =cut
@@ -146,7 +147,7 @@ sub error {
   $mi = $db->getmeta( $table );
 
 When passed a table name, it searches the "Meta" table and returns the object associated
-with such table.  This object then gives access to the tables metadata. 
+with such table.  This object then gives access to the tables metadata.
 Ideally meant to be called from other methods in this class.
 
 =cut
@@ -169,13 +170,27 @@ sub gettables{
     return map {$_->name} Meta->retrieve_all;
 }
 
+=head2 understanding get links methods
+
+The following two methods, getlinksto and getlinksfrom, have names corresponding to the following diagram:
+
+ +------+   ``this has linksto that'' +------+
+ |      | ``that has linksfrom this'' |      |
+ | this |---------------------------->| that |
+ |      |                             |      |
+ +------+ Many                    One +------+
+
+Keep the arrow head (-->) in mind, otherwise the names would be ambiguous.  The actual data are specified in bin/insert-metadata, which is well commented.
+
+=cut
+
 =head2 getlinksto
 
   %linksto = $db->getlinksto($table);
 
-When passed a table name, returns a hash containing the tables one-to-many relationships, 
-being this table the "one" side (has_a definitions in Class::DBI).  
-The hash keys are the names of the local fields, and the values are the names of the tables 
+When passed a table name, returns a hash containing the tables one-to-many relationships
+s.t. this table is on the "many" side (has_a definitions in Class::DBI).
+The hash keys are the names of the local fields, and the values are the names of the tables
 that these fields reference.
 This info is identical for history tables
 
@@ -192,15 +207,15 @@ sub getlinksto{
 	return  %linksto;
     }
     return;
-} 
+}
 
 =head2 getlinksfrom
 
   %linksfrom = $db->getlinksfrom($table);
 
-When passwd a table name, returns a hash of hashes containing the tables one-to-many relationships,
-being this table the "many" side (equivalent to has_many definitions in Class::DBI).
-The keys of the main hash are identifiers for the relationship.  The next hashs keys are names of 
+When passed a table name, returns a hash of hashes containing the tables one-to-many relationships
+s.t. this table is on the "one" side (equivalent to has_many definitions in Class::DBI).
+The keys of the main hash are identifiers for the relationship.  The nested hashs keys are names of
 the tables that reference this table.  The values are the names of the fields in those tables that
 reference this tables primary key.
 History tables are not referenced by other tables
@@ -209,23 +224,23 @@ History tables are not referenced by other tables
 
 sub getlinksfrom{
     my ($self, $table) = @_;
-    
+
     return if ( $table =~ /_history/ );
     my (%linksfrom, $mi);
     if ( defined($mi = $self->getmeta($table)) ){
-	map { my($i, $j, $k, $args) = split( /:/, $_ ); 
-	      $linksfrom{$i}{$j} = $k; 
+	map { my($i, $j, $k, $args) = split( /:/, $_ );
+	      $linksfrom{$i}{$j} = $k;
 	  }  split( /,/, $mi->linksfrom );
 	return %linksfrom;
     }
     return;
-} 
+}
 
 =head2 getcolumnorder
 
   %order = $db->getcolumnorder($table);
 
-Accepts a table name and returns its column names, ordered in the same order theyre supposed to be 
+Accepts a table name and returns its column names, ordered in the same order theyre supposed to be
 displayed. It returns a hash with column names as keys and their positions and values.
 History tables have two extra fields at the end
 
@@ -233,7 +248,7 @@ History tables have two extra fields at the end
 
 sub getcolumnorder{
     my ($self, $table) = @_;
-    
+
     my $hist = 1 if ( $table =~ s/_history// );
     my (%order, $i, $mi);
     if ( defined($mi = $self->getmeta($table)) ){
@@ -254,7 +269,7 @@ sub getcolumnorder{
 	return %order;
     }
     return;
-} 
+}
 
 =head2 getcolumnorderbrief
 
@@ -290,7 +305,7 @@ sub getcolumnorderbrief {
     return %order;
   }
   return;
-} 
+}
 
 =head2 getcolumntypes
 
@@ -303,14 +318,14 @@ keys are the column names and the values their type.
 
 sub getcolumntypes{
     my ($self, $table) = @_;
-    
+
     my $hist = 1 if ( $table =~ s/_history// );
     my (%types, $mi);
     if ( defined($mi = $self->getmeta($table)) ){
 	my $mi = $self->getmeta($table);
 	if( defined( $mi->columntypes ) ) {
 	    map { my($j, $k) = split( /:/, $_ ); $types{$j} = $k }
-	    split( /,/, $mi->columntypes );	
+	    split( /,/, $mi->columntypes );
 	}
 	if ( $hist ){
 	    $types{modified} = "varchar";
@@ -319,7 +334,7 @@ sub getcolumntypes{
 	return %types;
     }
     return;
-} 
+}
 
 
 =head2 getcolumntags
@@ -339,18 +354,18 @@ sub getcolumntags{
 	my $mi = $self->getmeta($table);
 	if( defined( $mi->columntags ) ) {
 	    map { my($j, $k) = split( /:/, $_ ); $tags{$j} = $k }
-	    split( /,/, $mi->columntags );	
+	    split( /,/, $mi->columntags );
 	}
 	return %tags;
     }
     return;
-} 
+}
 
 =head2 getlabels
 
   @lbls = $db->getlabels($table);
 
-Returns a tables list of labels.  Labels are one or more columns used as hyperlinks to retrieve 
+Returns a tables list of labels.  Labels are one or more columns used as hyperlinks to retrieve
 the specified object.  Theyre also used as a meaningful instance identifier.
 
 =cut
@@ -364,7 +379,7 @@ sub getlabels{
 	}
     }
     return;
-} 
+}
 
 =head2 getobjlabel
 
@@ -372,8 +387,8 @@ sub getlabels{
   $lbl = $db->getobjlabel( $obj, ", " );
 
 Returns an objects label string, composed from the list of labels and the values of those labels
-for this object, which might reside in more than one table.  
-Accepts an object reference and a (optional) delimiter.  
+for this object, which might reside in more than one table.
+Accepts an object reference and a (optional) delimiter.
 Returns a string.
 
 =cut
@@ -439,9 +454,9 @@ Args:
 
 sub getlabelvalue {
     my ($self, $obj, $lbls, $delim) = @_;
-    
+
     return "" if (!defined($obj) || int($obj) == 0);
-    
+
     $delim = "," if (!$delim);
     my @val = ();
     foreach my $lblString (@{$lbls}){
@@ -466,7 +481,7 @@ Given a table and a column name, returns the SQL type as defined in the schema
 sub getsqltype {
     my ($self, $table, $col) = @_;
     my %coltypes = $self->getcolumntypes($table);
-    return $coltypes{$col};   
+    return $coltypes{$col};
 }
 
 =head2 isjointable
@@ -520,16 +535,16 @@ sub getobjstate {
 
   $result = $db->update( object => $obj, state => \%state );
 
-Updates values for a particular row in a DB table.  Takes two arguments. 
+Updates values for a particular row in a DB table.  Takes two arguments.
 The first argument 'object' is a Netdot::DBI (and consequently Class::DBI
-) object that represents the table row you wish to update.  The second 
-argument 'state' is a hash reference which is a simple composition 
+) object that represents the table row you wish to update.  The second
+argument 'state' is a hash reference which is a simple composition
 of column => value pairs.  The third argument 'commit' is a flag that
 will determine if the object changes are sent to the DB.  Default is Yes.
-Returns positive integer representing the modified rows id column 
+Returns positive integer representing the modified rows id column
 for success and 0 for failure.
 
-=cut 
+=cut
 
 sub update {
     my( $self, %argv ) = @_;
@@ -549,10 +564,10 @@ sub update {
 	# use the corresponding id
 	my $c = ( ref($obj->$col) )   ? $obj->$col->id   : $obj->$col;
 	my $v = ( ref($state{$col}) ) ? $state{$col}->id : $state{$col};
-	eval { 
+	eval {
 	    if( $c ne $v ) {
 		$change = 1;
-		$obj->set( $col, $state{$col} ); 
+		$obj->set( $col, $state{$col} );
 	    }
 	};
 	if( $@ ) {
@@ -577,11 +592,11 @@ sub update {
 
   $result = $db->insert( table => $tbl, state => \%state );
 
-Inserts row into database.  Method takes two arguments.  The first 
-argument 'table' is the name of the table to add a row to.  The second 
-argument 'state' is a hash reference which is a simple composition 
-of column => value pairs.  If the method succeeds, it returns a positive 
-integer which is the value of the newly inserted rows id column. 
+Inserts row into database.  Method takes two arguments.  The first
+argument 'table' is the name of the table to add a row to.  The second
+argument 'state' is a hash reference which is a simple composition
+of column => value pairs.  If the method succeeds, it returns a positive
+integer which is the value of the newly inserted rows id column.
 Otherwise, the method returns 0.
 
 =cut
@@ -617,9 +632,9 @@ sub remove {
   my($tbl) = $argv{table};
   my($id) = $argv{id};
   $self->error(undef);
-  eval { 
+  eval {
       my($obj) = $tbl->retrieve($id);
-      $obj->delete(); 
+      $obj->delete();
   };
   if( $@ ) {
     $self->error("Unable to delete: $@");
@@ -644,7 +659,7 @@ sub insertbinfile {
     my ($self, $fh, $filetype) = @_;
     my $extension = $1 if ($fh =~ /\.(\w+)$/);
     my %mimeTypes = ("jpg"=>"image/jpeg", "jpeg"=>"image/jpeg", "gif"=>"image/gif",
-                     "png"=>"image/png", "bmp"=>"image/bmp", "tiff"=>"image/tiff", 
+                     "png"=>"image/png", "bmp"=>"image/bmp", "tiff"=>"image/tiff",
                      "tif"=>"image/tiff", "pdf"=>"application/pdf");
 
     if (!exists($mimeTypes{lc($extension)})) {
@@ -657,13 +672,13 @@ sub insertbinfile {
     while (<$fh>) {
         $data .= $_;
     }
-    
+
     my %tmp;
     $tmp{bindata} = $data;
     $tmp{filename} = $fh;
     $tmp{filetype} = $mimetype;
     $tmp{filesize} = -s $fh;
-    
+
     return $self->insert(table=>"BinFile", state=>\%tmp);
 }
 
@@ -682,7 +697,7 @@ sub updatebinfile {
     my ($self, $fh, $id) = @_;
     my $extension = $1 if ($fh =~ /\.(\w+)$/);
     my %mimeTypes = ("jpg"=>"image/jpeg", "jpeg"=>"image/jpeg", "gif"=>"image/gif",
-                     "png"=>"image/png", "bmp"=>"image/bmp", "tiff"=>"image/tiff", 
+                     "png"=>"image/png", "bmp"=>"image/bmp", "tiff"=>"image/tiff",
                      "tif"=>"image/tiff", "pdf"=>"application/pdf");
 
     if (!exists($mimeTypes{lc($extension)})) {
@@ -701,7 +716,7 @@ sub updatebinfile {
     while (<$fh>) {
         $data .= $_;
     }
-    
+
     my %tmp;
     $tmp{bindata} = $data;
     $tmp{filename} = $fh;
@@ -804,7 +819,7 @@ sub single_table_search {
 
 	while (my $obj = $it->next){
 	    $found{$obj->id} = $obj;
-	}	
+	}
 
     # Return all matching objects for the keyword
 	return \%found;
@@ -857,7 +872,7 @@ sub select_query {
 		}
 		while (my $obj = $it->next){
 		    $found{$term}{$obj->id} = $obj;
-		}	
+		}
 	    }else{ # column is a foreign key.
 		my $rtable = $linksto{$c};
 		# go recursive
@@ -946,7 +961,7 @@ Returns:    reference to hash of hashes or -1 if error
 sub search_all_netdot {
     my ($self, $q) = @_;
     my %results;
-    
+
     # Ignore these fields when searching
     my %ign_fields = ('id' => '');
     # Remove leading and trailing spaces
@@ -959,7 +974,7 @@ sub search_all_netdot {
 	# Will also ignore foreign key fields
 	my %linksto = $self->getlinksto($tbl);
 	my @cols;
-	map { push @cols, $_ unless( exists $ign_fields{$_} || $linksto{$_} ) } $tbl->columns(); 
+	map { push @cols, $_ unless( exists $ign_fields{$_} || $linksto{$_} ) } $tbl->columns();
 	my @where;
 	map { push @where, "$_ LIKE \"$q\"" } @cols;
 	my $where = join " or ", @where;
@@ -978,7 +993,7 @@ sub search_all_netdot {
 	}
     }
     return \%results;
-    
+
 }
 
 =head2 ip2int - Convert IP(v4/v6) address string into its decimal value
