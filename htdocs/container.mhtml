@@ -28,7 +28,7 @@ $dividefreespace => 'max'
                       #       2  = span                             (32)
                       #       3  = full address (for calculations)  (128.223.112.0/28)
     my $mask = $network->prefix;
-    my $network_addr = new NetAddr::IP->new($network->address,$network->prefix); # the address of the start of the subnet
+    my $network_addr = NetAddr::IP->new($network->address,$network->prefix); # the address of the start of the subnet
 
     my $minrowsize = $mask;
     my $maxrowsize;
@@ -124,7 +124,7 @@ $dividefreespace => 'max'
                 }
             }
 
-            my $ip = new NetAddr::IP->new($o->address, $o->prefix);     # this ip address
+            my $ip = NetAddr::IP->new($o->address, $o->prefix);     # this ip address
 
             my $ipaddr = shorten_ip($ip, $mask);
 
@@ -161,8 +161,8 @@ $dividefreespace => 'max'
     ## Fill any empty space in the container with links to add a subnet there
     ######################################################################
 
-    my $start_address = new NetAddr::IP->new($network->address.'/'.$network->prefix);
-    my $end_address = new NetAddr::IP->new($start_address->broadcast);
+    my $start_address = NetAddr::IP->new($network->address.'/'.$network->prefix);
+    my $end_address = NetAddr::IP->new($start_address->broadcast);
 
     # check for empty space prior to any existing blocks
     if( @start_addrs > 0 ) {  # only check if there's actually stuff there
@@ -211,7 +211,7 @@ sub fill_space {
             for( my $i=0; $i<$numnewblocks; $i++ ) {
                 # make new subnet with $dvhosts /32's inside
                 my $newsubnet = subnetmask($dvhosts);
-                my $newaddress = new NetAddr::IP->new($newbaseaddr+($i*$dvhosts), $newsubnet);
+                my $newaddress = NetAddr::IP->new($newbaseaddr+($i*$dvhosts), $newsubnet);
 
                 my $start = $newaddress->numeric - $network_addr->numeric;
                 my @tmp = ();
