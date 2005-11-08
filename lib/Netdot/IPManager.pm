@@ -592,7 +592,7 @@ sub insertblock {
 	my $newblock = Ipblock->retrieve($r);
 
 	# Inherit some of parent's values if it's not an address
-	if ( !$self->isaddress($newblock) && ($newblock->parent != 0) ){
+	if ( !$self->isaddress($newblock) && (int($newblock->parent) != 0) ){
 	    my %state = ( dns_delegated => $newblock->parent->dns_delegated, 
 			  owner         => $newblock->parent->owner );
 	    unless ( $self->update( object=> $newblock, state => \%state ) ){

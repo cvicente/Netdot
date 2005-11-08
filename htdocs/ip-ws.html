@@ -31,6 +31,8 @@ $edit              => undef
 $submit            => undef
 $rootversion       => 4 
 $view_availability => 0
+$rowsize           => 22
+$dividefreespace   => 'max'
 </%args>
 %
 %
@@ -58,6 +60,7 @@ if ( $id ){
 my $edit_ip    = 0;
 my $edit_block = 0;
 my $add_ip = 0;
+my $add_block = 0;
 $edit_ip       = 1 if ($edit eq "ipinfo");
 $edit_block    = 1 if ($edit eq "blockinfo");
 
@@ -289,9 +292,16 @@ if ( defined($search) ){
     if ($newblock){
     	$o = $newblock;
     	$id = $newblock->id;
-        $edit_ip = 1;
-        $edit = "ipinfo";
-        $add_ip = 1;
+
+        if( $ipm->isaddress($o) ) {
+            $edit_ip = 1;
+            $edit = "ipinfo";
+            $add_ip = 1;
+        } else {
+            $edit_block = 1;
+            $edit = "blockinfo";
+            $add_block = 1;
+        }
     }
 
 #######################################################################################
@@ -646,7 +656,13 @@ if ( my @parents = $ipm->getparents($o) ){
 
     <div class="containerheadright">
 %  if ($edit eq "blockinfo"){	 
-    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+%        if ($add_ip) {
+    	    <input type="submit" name="submit" value="cancel">
+%           my @parents = $ipm->getparents($o);
+            <input type="hidden" name="parent" value="<% $parents[0] %>">
+%        } else {
+    	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+%        }
     <input type="submit" name="submit" value="save">
 %  }else{
     <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
@@ -771,7 +787,7 @@ if ($o->status->name eq "Subnet") {
         push( @cell_data, $new_subnet_form );
 
         push( @field_headers, "Choose Manually:" );
-        push( @cell_data, "[view availablilty]" );
+        push( @cell_data, '<a href="ip-ws.html?id='.$id.'&view_availability=1">[view availablilty]</a>' );
 
     }elsif ($o->status->name eq "Subnet"){
         push( @field_headers, "New address:" );
@@ -820,6 +836,7 @@ if ($o->status->name eq "Subnet") {
              Choose an Address  
           </div>  
           <div class="containerheadright">
+            Legend:
             <span class="ipaddr_available">Available</span>
             <span class="ipaddr_dynamic">Dynamic</span>
             <span class="ipaddr_static">Static</span>
@@ -827,6 +844,23 @@ if ($o->status->name eq "Subnet") {
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& subnet.mhtml, network => $o &>  
+          </div>  
+       </div>  
+%     }  
+%     if( $o->status->name eq "Container" ) {  
+       <div class="container">  
+          <div class="containerheadleft"> 
+             Usage for <% $o->address.'/'.$o->prefix %>  
+          </div>  
+          <div class="containerheadright">
+            Legend:
+            <span class="ipaddr_available">Available</span>
+            <span class="ipaddr_dynamic">Dynamic</span>
+            <span class="ipaddr_static">Static</span>
+            <span class="ipaddr_reserved">Reserved</span>
+          </div>
+          <div class="containerbody" id="ipaddresstable">  
+          <& container.mhtml, network => $o, rowsize => $rowsize, dividefreespace => $dividefreespace &>  
           </div>  
        </div>  
 %     }  
