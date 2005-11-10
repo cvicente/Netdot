@@ -146,9 +146,11 @@ EOF
     }
 }elsif( $submit ){
     # insert/update
-    if ( ! $ui->form_to_db(%ARGS) ){
+    my %ret = $ui->form_to_db(%ARGS);
+    if ( ! %ret ){
 	$m->comp('error.mhtml', error => $ui->error);
     }
+    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;
 }
 
 if ( $id ){
@@ -430,7 +432,7 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
 <!-- Location Table -->
 <div class="container">
     <div class="containerheadleft">
-        Group/Location
+        Location/Contacts
     </div>
     <div class="containerheadright">
 %	if ($editloc){	 
@@ -444,8 +446,12 @@ push( @cell_data,                $ui->text_field(object=>$o, column=>"sysdescrip
 <%perl>
 (@field_headers, @cell_data) = ();
 
-push( @field_headers, "Entity: " );
-push( @cell_data, $ui->select_lookup(object=>$o, column=>"entity", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html", returnAsVar=>1) );
+push( @field_headers, "Used by (Entity): " );
+push( @cell_data, $ui->select_lookup(object=>$o, column=>"used_by", lookup=>"Entity", edit=>"$editloc", linkPage=>"view.html", returnAsVar=>1) );
+if ( (int($o->person) != 0) || $editloc ){
+    push( @field_headers, "End User: " );
+    push( @cell_data, $ui->select_lookup(object=>$o, column=>"person", lookup=>"Person", edit=>"$editloc", linkPage=>"view.html", returnAsVar=>1) );
+}
 push( @field_headers, "Site: " );
 push( @cell_data,                $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site", edit=>"$editloc", makeLink=>1, linkPage=>"view.html", htmlExtra=>'onChange="jsrsSendqueryRM(Device__'.$id.'__room, Device__'.$id.'__site.value); jsrsSendqueryTB(Device__'.$id.'__closet, Device__'.$id.'__site.value, \'Closet\', \'site\');"', returnAsVar=>1) );
 
@@ -480,6 +486,14 @@ push( @cell_data, &{sub{
     }} );
 push( @field_headers, "Rack: " );
 push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, returnAsVar=>1) );
+
+my @devcontacts = $o->contacts;
+push( @field_headers, "Contacts: " );
+push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_table=>"DeviceContacts", 
+				       this_field=>"device", other_table=>"ContactList", 
+				       other_field=>"contactlist", isEditing=>$editloc, action=>"delete", 
+				       makeLink=>1, returnAsVar=>1 ) );
+      
 </%perl>
 
     <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
@@ -511,12 +525,6 @@ push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, re
 
 <%perl>
 (@field_headers, @cell_data) = ();
-push( @field_headers, "Contacts: " );
-push( @cell_data, $ui->select_lookup(object=>$o, column=>"contactlist", lookup=>"ContactList", edit=>"$editmgmt", linkPage=>"view.html", returnAsVar=>1) );
-push( @field_headers, "Secondary Contacts: " );
-push( @cell_data, $ui->select_lookup(object=>$o, column=>"contactlist2", lookup=>"ContactList", edit=>"$editmgmt", linkPage=>"view.html", returnAsVar=>1) );
-push( @field_headers, "User: " );
-push( @cell_data, $ui->select_lookup(object=>$o, column=>"person", lookup=>"Person", edit=>"$editmgmt", linkPage=>"view.html", returnAsVar=>1) );
 push( @field_headers, "Out-of-band hostname: " );
 push( @cell_data, $ui->text_field(object=>$o, column=>"oobname", edit=>$editmgmt, returnAsVar=>1) );
 push( @field_headers, "Out-of-band tel: " );

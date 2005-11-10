@@ -78,7 +78,12 @@ DB_NETDOT_PASS =  netdot_pass
 ################################################################
 install: files
 
-installdb: initialize.$(DB_TYPE) insert.metadata insert.defaultdata setup.class.dbi 
+installdb: initialize.$(DB_TYPE) installdefault installmeta
+
+updatedb: update installmeta
+
+update:
+	$(PERL) updatedb '$(DB_TYPE)' '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DATABASE)'
 
 initialize.Pg: createdb genschema initdb.dba acls
 
@@ -103,15 +108,38 @@ initdb.dba:
 initdb.user:
 	$(PERL) initdb '$(DB_TYPE)' '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_NETDOT_USER)' '$(DB_DATABASE)' insert
 
+installdefault: insert.defaultdata 
+
+installmeta: insert.metadata setup.class.dbi 
+
 insert.metadata:
+	@echo 
+	@echo "Inserting Metadata..."
+	@echo
 	$(PERL) insert-metadata '$(DB_HOME)' '$(DB_DATABASE)' '$(DB_DBA)'
+	@echo 
+	@echo "Metadata inserted successfully"
+	@echo
 
 insert.defaultdata:
+	@echo 
+	@echo "Inserting Default Data..."
+	@echo
 	$(PERL) insert-defaultdata '$(DB_HOME)' '$(DB_DATABASE)' '$(DB_DBA)'
+	@echo 
+	@echo "Default Data inserted successfully"
+	@echo
 
 setup.class.dbi:
+	@echo 
+	@echo "Setting up Class::DBI..."
+	@echo
 	$(PERL) setup-class-dbi '$(DB_TYPE)' '$(DB_DATABASE)' '$(DB_NETDOT_USER)' '$(DB_NETDOT_PASS)'  
 	install -m $(FMOD) DBI.pm $(PREFIX)/lib/Netdot/DBI.pm
+	@echo 
+	@echo "Class::DBI set up successfully"
+	@echo "You will need to restart Apache"
+	@echo
 
 files:
 	for file in $(FILES); do \

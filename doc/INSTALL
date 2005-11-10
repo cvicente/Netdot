@@ -38,23 +38,7 @@ REQUIREMENTS
 	> install <Module::Name>
 	
 ----------------------------------------------------------------------
-UPGRADING
-----------------------------------------------------------------------
-
-It is possible that there exist DB schema changes between your current 
-installation and the version you plan to install. It is highly recommended 
-that you:
-
-  * Review README.  If there are changes and upgrade procedures, they 
-    will be documented in this file.
-
-  * Back up your existing database.  mysqldump is one option for MySQL 
-    installations (e.g.):
-
-	% mysqldump netdot >netdot-bak.sql
-
-----------------------------------------------------------------------
-INSTALLING THE PACKAGE
+INSTALLING THE PACKAGE FOR THE FIRST TIME
 ----------------------------------------------------------------------
 
 * From the main directory do:
@@ -77,6 +61,27 @@ INSTALLING THE PACKAGE
 	DB_NETDOT_PASS=(default: netdot_pass)
 
   in *bin/Makefile*.
+
+----------------------------------------------------------------------
+UPGRADING
+----------------------------------------------------------------------
+
+It is possible that there exist DB schema changes between your current 
+installation and the version you plan to install. It is highly recommended 
+that you back up your existing database.  mysqldump is one option for MySQL 
+    installations (e.g.):
+
+	% mysqldump netdot >netdot-bak.sql
+
+After you have made backups of your database, from the main directory, do:
+
+	% make upgrade [parameters]
+
+This will modify the schema for you and will try to adapt your current data
+to the new structures.
+
+[parameters] are the same ones you used when you first installed
+(explained above)
 
 ----------------------------------------------------------------------
 APACHE CONFIGURATION

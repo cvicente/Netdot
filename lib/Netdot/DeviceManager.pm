@@ -161,7 +161,7 @@ sub update_device {
 	return 0;
     }
     my $device = $argv{device} || "";
-    $argv{entity}              ||= 0;
+    $argv{used_by}             ||= 0;
     $argv{site}                ||= 0;
     $argv{user}                ||= 0;
 
@@ -170,6 +170,7 @@ sub update_device {
     $devtmp{sysdescription} = $dev{sysdescription} || "";
     $devtmp{community}      = $argv{comstr}        || "";
 
+    my @cls;
     my %ifs;
     my %dbifdeps;
     my %bgppeers;
@@ -223,24 +224,34 @@ sub update_device {
 
     }else{
 	# Device does not exist in DB
-	$devtmp{entity}       = $argv{entity};
+	$devtmp{used_by}      = $argv{used_by};
 	$devtmp{site}         = $argv{site};
-	if ( ! $argv{contactlist} ){
-	    my $default_cl;
-	    unless ( $default_cl = (ContactList->search(name=>$self->{config}->{DEFAULT_CONTACTLIST}))[0] ){
-		$self->debug( loglevel => 'LOG_NOTICE',
-			      message  => "Default Contact List not found: %s",
-			      args     => [$self->{config}->{DEFAULT_CONTACTLIST}] );
-	    }
-	    $devtmp{contactlist} = $default_cl->id;
-	}else{
-	    $devtmp{contactlist} = $argv{contactlist};
-	}
 
-	$devtmp{contactlist2} = $argv{contactlist2} if ( $argv{contactlist2} != $devtmp{contactlist} );
 	if ( $argv{user} ){
 	    $devtmp{info}    = "Added to Netdot by $argv{user}";
 	}
+	
+	if ( ! $argv{contacts} ){
+	    my $default_cl;
+	    unless ( $default_cl = (ContactList->search(name=>$self->{config}->{DEFAULT_CONTACTLIST}))[0] ){
+		$self->debug( loglevel => 'LOG_ERR',
+			      message  => "%s: Default Contact List not found: %s",
+			      args     => [$host, $self->{config}->{DEFAULT_CONTACTLIST}] );
+	    }
+	    push @cls, $default_cl;
+	}else{
+	    if (!ref($argv{contacts})){
+		# Only one was selected, so it is a scalar
+		push @cls, $argv{contacts};
+	    }elsif( ref($argv{contacts}) eq "ARRAY" ){
+		@cls = @{ $argv{contacts} };
+	    }else{
+		$self->debug( loglevel => 'LOG_ERR',
+			      message  => "%s: A contacts arg was passed, but was not valid: %s",
+			      args     => [$host, $argv{contacts}] );
+	    }
+	}
+	
     }
 
     ##############################################
@@ -280,8 +291,7 @@ sub update_device {
 		$self->error($msg);	
 	    }
 	}
-	if ($rr = $self->insert_rr(name        => $host, 
-				   contactlist => $devtmp{contactlist})){
+	if ($rr = $self->insert_rr(name => $host)){
 
 	    my $msg = sprintf("Inserted DNS name %s into DB", $host);
 	    $self->debug( loglevel => 'LOG_NOTICE',
@@ -303,7 +313,7 @@ sub update_device {
     if (my @addrs = $self->resolve_name($rr->name)){
 	map { $hostnameips{$_} = "" } @addrs;
 	
-	my $msg = sprintf("Addresses associated with hostname: %s", (join ", ", keys %hostnameips) );
+	my $msg = sprintf("%s: Addresses associated with hostname: %s", $host, (join ", ", keys %hostnameips) );
 	$self->debug( loglevel => 'LOG_DEBUG',
 		      message  => $msg
 		      );	    
@@ -495,7 +505,8 @@ sub update_device {
 	$devtmp{serialnumber} = $dev{serialnumber};
     }else{
 	$self->debug( loglevel => 'LOG_INFO',
-		      message  => "Device did not return serial number" );
+		      message  => "%s: Did not return serial number",
+		      args     => [$host]);
 
 	# If device exists in DB, and we have a serial number, remove it.
 	# Most likely it's being replaced with a different unit
@@ -521,7 +532,10 @@ sub update_device {
 	$devtmp{bgpid} = $dev{bgpid};
     }
     ###############################################
+    #
     # Update/Add Device
+    #
+    ###############################################
     
     if ( $device ){
 	$devtmp{lastupdated} = $self->timestamp;
@@ -545,18 +559,40 @@ sub update_device {
 	unless( $newdevid = $self->insert( table => 'Device', state => \%devtmp ) ) {
 	    $self->error( sprintf("%s: Error creating: %s", $host, $self->error) ); 
 	    $self->debug( loglevel => 'LOG_ERR',
-			  message  => $self->error,
-			  );
+			  message  => $self->error );
 	    return 0;
 	}
+	$self->debug( loglevel => 'LOG_DEBUG', 
+		      message  =>  "%s: Created Device id %s",
+		      args     => [$host, $newdevid] );
+
 	$device = Device->retrieve($newdevid);
     }
-
+    
     ##############################################
+    # Assign contact lists
+    
+    foreach my $cl ( @cls ){
+	my $dcid;
+	unless ( $dcid = $self->insert(table=>"DeviceContacts", 
+				       state=>{device=>$device->id, contactlist=>$cl} ) ){
+	    $self->error( sprintf("%s: Error creating DeviceContact: %s", $host, $self->error) ); 
+	    $self->debug( loglevel => 'LOG_ERR', message  => $self->error );
+	    return 0;
+	}
+	$self->debug( loglevel => 'LOG_DEBUG', 
+		      message  =>  "%s: Created DeviceContact id %s",
+		      args     => [$host, $dcid] );
+    }
+		     
+    ##############################################
+    #
     # for each interface just discovered...
-
+    #
+    ##############################################
+    
     my (%dbips, %newips, %dbvlans, %ifvlans, @nonrrs);
-
+    
     my %IFFIELDS = ( number           => "",
 		     name             => "",
 		     type             => "",
@@ -852,8 +888,11 @@ sub update_device {
 
 
     ########################################################
+    #
     # Create A records for each ip address discovered
-    # 
+    #
+    ########################################################
+ 
     my @devips = $self->getdevips($device);
 
     # The reason for the reverse order is that most often the lowest
@@ -894,9 +933,8 @@ sub update_device {
 		# We should already have an RR created
 		# Create the A record to link that RR with this ipobj
 		if ( $device->name ){
-		    unless ($self->insert_a_rr(rr          => $device->name, 
-					       ip          => $ipobj,
-					       contactlist => $device->contactlist)){
+		    unless ($self->insert_a_rr(rr => $device->name, 
+					       ip => $ipobj)){
 			my $msg = sprintf("%s: Could not insert DNS A record for %s: %s", 
 					  $host, $ipobj->address, $self->error);
 			$self->debug(loglevel => 'LOG_ERR',
@@ -912,10 +950,8 @@ sub update_device {
 		}
 	    }else{
 		# Insert necessary records
-		unless ($self->insert_a_rr(name        => $name,
-					   ip          => $ipobj,
-					   contactlist => $device->contactlist
-					   )){
+		unless ($self->insert_a_rr(name => $name,
+					   ip   => $ipobj)){
 		    my $msg = sprintf("%s: Could not insert DNS A record for %s: %s", 
 				      $host, $ipobj->address, $self->error);
 		    $self->debug(loglevel => 'LOG_ERR',
@@ -967,8 +1003,11 @@ sub update_device {
     
     
     ##############################################
+    #
     # remove each interface that no longer exists
     #
+    ##############################################
+
     ## Do not remove manually-added ports for these hubs
     unless ( exists $dev{sysobjectid} 
 	     && exists($self->{config}->{IGNOREPORTS}->{$dev{sysobjectid}} )){
@@ -1069,8 +1108,12 @@ sub update_device {
 	    }
 	}
     }
+
     ##############################################
+    #
     # remove each ip address that no longer exists
+    #
+    ##############################################
     unless ( $device->natted ){
 	foreach my $nonip ( keys %dbips ) {
 	    my $msg = sprintf("%s: Removing old IP %s", 
@@ -1098,9 +1141,12 @@ sub update_device {
     }
 
     ##############################################
+    #
     # remove old RRs if they no longer have any
     # addresses associated
-
+    #
+    ##############################################
+    
     foreach my $rr ( @nonrrs ){
 	if ( (! $rr->arecords) && ($rr->id != $device->name->id) ){
 	    # Assume the name can go
@@ -1123,7 +1169,10 @@ sub update_device {
     }
 
     ##############################################
+    #
     # remove each vlan membership that no longer exists
+    #
+    ##############################################
     
     foreach my $nonvlan ( keys %dbvlans ) {
 	my $iv = InterfaceVlan->retrieve($nonvlan);

@@ -377,9 +377,7 @@ my $schema = {
     'bgpid', 'varchar', 'NULL', '64', '', '',
     'oobname', 'varchar', 'NULL', '64', '', '',
     'oobnumber', 'varchar', 'NULL', '32', '', '',
-    'entity', 'integer', 'NULL', '', '', '',
-    'contactlist', 'integer', '', '', '', '',
-    'contactlist2', 'integer', '', '', '', '',
+    'used_by', 'integer', 'NULL', '', '', '',
     'person', 'integer', 'NULL', '', '', '',
     'community', 'varchar', 'NULL', '64', '', '',
     'serialnumber', 'varchar', 'NULL', '64', '', '',
@@ -419,9 +417,7 @@ my $schema = {
     'bgpid', 'varchar', 'NULL', '64', '', '',
     'oobname', 'varchar', 'NULL', '64', '', '',
     'oobnumber', 'varchar', 'NULL', '32', '', '',
-    'entity', 'integer', 'NULL', '', '', '',
-    'contactlist', 'integer', '', '', '', '',
-    'contactlist2', 'integer', '', '', '', '',
+    'used_by', 'integer', 'NULL', '', '', '',
     'person', 'integer', 'NULL', '', '', '',
     'community', 'varchar', 'NULL', '64', '', '',
     'serialnumber', 'varchar', 'NULL', '64', '', '',
@@ -450,6 +446,17 @@ my $schema = {
   'index' => [ ['device_id'] ],
 },
 
+
+'DeviceContacts' => {
+  'columns' => [
+    'id', 'serial', '', '', '', '',
+    'device', 'integer', '', '', '', '',
+    'contactlist', 'integer', '', '', '', '',
+  ],
+  'primary_key' => 'id',
+  'unique' => [ ['device','contactlist'] ],
+  'index' => [ ],
+},
 
 'DhcpAttr' => {
   'columns' => [

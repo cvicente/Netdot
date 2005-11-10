@@ -67,8 +67,9 @@ if (defined($ARGS{_action}) && ($ARGS{_action} eq "UPDATE" || $ARGS{_action} eq 
 
     # Ignore id changes for anything but BackboneCable.
     # (i.e., we do not care about CableStrand id update).
-    if (exists $update_info{BackboneCable}{key} ) {
-        $id = $update_info{BackboneCable}{key};
+
+    if (exists $update_info{BackboneCable}{id} ) {
+        $id = (keys %{$update_info{BackboneCable}{id}})[0];
     }
 
     print "update info is <pre>", Dumper(%update_info), "</pre><br>" if $DEBUG;

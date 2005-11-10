@@ -280,7 +280,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'person,contacttype', 
 	  'person,contacttype,contactlist,notify_email,notify_pager,notify_voice,escalation_level,info', 
 	  'person,contacttype,contactlist', 
-	  'person:Person,contacttype:Type of Contact,contactlist:Contact Group,notify_email:Email Notifications,notify_pager:Pager Notifications,notify_voice:Voice Notifications,escalation_level:Escalation Level,info:Comments',
+	  'person:Person,contacttype:Type of Contact,contactlist:Contact List,notify_email:Email Notifications,notify_pager:Pager Notifications,notify_voice:Voice Notifications,escalation_level:Escalation Level,info:Comments',
 	  '',
 	  'contactlist:ContactList,contacttype:ContactType,person:Person,notify_email:Availability,notify_pager:Availability,notify_voice:Availability', 
 	  '', 
@@ -295,7 +295,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,info:Comments',
 	  '',
 	  '', 
-	  'contacts:Contact:contactlist,entities:Entity:contactlist:{cascade=>"Nullify"},devices:Device:contactlist:{cascade=>"Nullify"},sites:Site:contactlist:{cascade=>"Nullify"},services:IpService:contactlist:{cascade=>"Nullify"},zones:Zone:contactlist:{cascade=>"Nullify"},interfaces:Interface:contactlist,resourcerecords:RR:contactlist:{cascade=>"Nullify"},outlets:HorizontalCable:contactlist:{cascade=>"Nullify"}', 
+	  'contacts:Contact:contactlist,entities:Entity:contactlist:{cascade=>"Nullify"},devices:DeviceContacts:contactlist,sites:Site:contactlist:{cascade=>"Nullify"},services:IpService:contactlist:{cascade=>"Nullify"},zones:Zone:contactlist:{cascade=>"Nullify"},interfaces:Interface:contactlist,resourcerecords:RR:contactlist:{cascade=>"Nullify"},outlets:HorizontalCable:contactlist:{cascade=>"Nullify"}', 
 	  '0', 
 	  'A list of contacts');
 
@@ -314,14 +314,24 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Device', 
 	  'name', 
-	  'name,aliases,sysdescription,physaddr,bgplocalas,bgpid,oobname,oobnumber,entity,contactlist,contactlist2,person,monitored,monitorstatus,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,closet,rack,lastupdated,dateinstalled,info',
+	  'name,aliases,sysdescription,physaddr,bgplocalas,bgpid,oobname,oobnumber,used_by,person,monitored,monitorstatus,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,closet,rack,lastupdated,dateinstalled,info',
 	  'name,productname',
-	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,bgplocalas:BGP Local AS,bgpid:BGP ID,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,entity:Belongs to (Entity),contactlist:Contacts,contactlist2:Secondary Contacts,person:User,monitored:Monitored?,monitorstatus:Monitored Status,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?,site:Building,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments',
+	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:Physical (MAC) Address,bgplocalas:BGP Local AS,bgpid:BGP ID,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,used_by:Used by,person:User,monitored:Monitored?,monitorstatus:Monitored Status,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:Serial Number,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?,site:Building,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments',
 	  '',
-	  'name:RR,entity:Entity,contactlist:ContactList,contactlist2:ContactList,person:Person,productname:Product,part_of:Device,site:Site,room:Room,closet:Closet,physaddr:PhysAddr,monitorstatus:MonitorStatus', 
-	  'interfaces:Interface:device,parts:Device:part_of,bgppeers:BGPPeering:device', 
+	  'name:RR,used_by:Entity,person:Person,productname:Product,part_of:Device,site:Site,room:Room,closet:Closet,physaddr:PhysAddr,monitorstatus:MonitorStatus', 
+	  'interfaces:Interface:device,parts:Device:part_of,bgppeers:BGPPeering:device,contacts:DeviceContacts:device', 
 	  '0', 
 	  'A network device');
+
+INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, linksto, linksfrom, isjoin, description)
+  VALUES ('DeviceContacts', 
+	  'contactlist', 
+	  'device,contactlist', 
+	  'device,contactlist',
+	  'device:Device,contactlist:Contact List',
+	  'device:Device,contactlist:ContactList', 
+	  '', 
+	  '1', 'Device to Contactlist join table');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('DhcpAttr', 
@@ -376,10 +386,10 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name', 
 	  'name,aliases,type,availability,contactlist,acctnumber,maint_contract,asname,asnumber,oid,info', 
 	  'name,type', 
-	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact Group,acctnumber:Account Number,maint_contract:Maintenance Contract,asname:AS Name,asnumber:AS Number,oid:Enterprise OID,info:Comments',
+	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact List,acctnumber:Account Number,maint_contract:Maintenance Contract,asname:AS Name,asnumber:AS Number,oid:Enterprise OID,info:Comments',
 	  '',
 	  'contactlist:ContactList,availability:Availability,type:EntityType', 
-	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,own_blocks:Ipblock:owner:{cascade=>"Nullify"},used_blocks:Ipblock:used_by:{cascade=>"Nullify"},cables:BackboneCable:owner:{cascade=>"Nullify"},devices:Device:entity:{cascade=>"Nullify"},people:Person:entity,bgppeers:BGPPeering:entity', 
+	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,own_blocks:Ipblock:owner:{cascade=>"Nullify"},used_blocks:Ipblock:used_by:{cascade=>"Nullify"},cables:BackboneCable:owner:{cascade=>"Nullify"},devices:Device:used_by:{cascade=>"Nullify"},people:Person:entity,bgppeers:BGPPeering:entity', 
 	  '0', 
 	  'An organization related to the network in some way');
 
@@ -727,7 +737,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name', 
 	  'name,number,aliases,street1,street2,pobox,city,state,zip,country,availability,contactlist,info', 
 	  'name,number,street1,city', 
-	  'name:Name,number:Site ID,aliases:Aliases,street1:Street (1),street2:Street (2),pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact Group,info:Comments',
+	  'name:Name,number:Site ID,aliases:Aliases,street1:Street (1),street2:Street (2),pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact List,info:Comments',
 	  '',
 	  'availability:Availability,contactlist:ContactList', 
 	  'nearconnections:Connection:nearend,farconnections:Connection:farend,entities:EntitySite:site,devices:Device:site:{cascade=>"Nullify"},people:Person:location:{cascade=>"Nullify"},floors:Floor:site,closets:Closet:site', 

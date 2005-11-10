@@ -14,7 +14,6 @@ $session    => undef
 %args       => undef
 %state      => undef
 $showheader => 1
-$select_id  => undef
 </%args>
 
 <%init>
@@ -40,9 +39,10 @@ if ( $showheader ) {
     $page = "edit-nh.html";
 }
 
-my $title = $TBL || "Edit";
+my $select_id = $args{select_id};
+my $selected  = $args{selected};
 
-$select_id = $args{select_id};
+my $title = $TBL || "Edit";
 
 </%init>
 
@@ -62,16 +62,17 @@ want to go to the page to view it
       <& view.html, table => $args{create}, id => $ID &>
 %    }else{
 %      my $obj = $args{create}->retrieve($ID);
-%      my $lbl = $ui->getobjlabel($obj);
+%      my $lbl = $ui->getobjlabel($obj, ", ");
        <head>
          <link rel="stylesheet" href="style.css" type="text/css">
 
 <script language="javascript" type="text/javascript">
 <!--
 // this code inserts an element into the select box in the
-// calling page form, and selects the new element.
-function insertOption(text, value) {
-  var select_box = opener.document.getElementById('<% $select_id %>');
+// calling page form, and selects the new element if needed
+//
+function insertOption(id, text, value, sel) {
+  var select_box = opener.document.getElementById(id);
   var elOptNew = document.createElement('option');
   elOptNew.text = text;
   elOptNew.value = value;
@@ -81,14 +82,16 @@ function insertOption(text, value) {
   catch(ex) {
     select_box.add(elOptNew); // IE only
   }
-  select_box.selectedIndex = select_box.length-1;
+  if (sel == 1){
+      select_box.selectedIndex = select_box.length-1;
+  }
 }
 
 //-->
 </script>
 
        </head>      
-         <body onLoad="insertOption('<% $lbl %>', <% $ID %>);window.close();">
+         <body onLoad="insertOption('<% $select_id %>', '<% $lbl %>', '<% $ID %>', '<% $selected %>'); window.close();">
            <a href="#" onClick="window.close()">[done]</a>
          </body>      
 %    }
@@ -163,6 +166,7 @@ the submission.
       <input type="hidden" name="create" value="<% $TBL %>">
       <input type="hidden" name="showheader" value="<% $showheader %>">
       <input type="hidden" name="select_id" value="<% $select_id %>">
+      <input type="hidden" name="selected" value="<% $selected %>">
 %     if( $ID ) {
       <input type="hidden" name="id" value="<% $ID %>">
 %     }
@@ -201,6 +205,7 @@ Present a form for user to modify various values.
       <input type="hidden" name="sid" value="<% $sid %>">
       <input type="hidden" name="showheader" value="<% $showheader %>">
       <input type="hidden" name="select_id" value="<% $select_id %>">
+      <input type="hidden" name="selected" value="<% $selected %>">
 %     if( $ID ) {
       <& form.mhtml, table => $TBL, id => $ID &>
 %     } else {

@@ -49,6 +49,16 @@ install: tests dir doc htdocs lib bin etc
 	@echo "Be sure to check whether you need to run 'make dropdb' or 'make installdb'"
 	@echo 
 
+upgrade: tests dir doc htdocs lib bin etc updatedb
+	@echo
+	@echo "Netdot has been upgraded. "
+	@echo 
+
+updatedb:
+	@echo
+	@echo "Upgrading schema and data..."
+	cd bin ; make updatedb FMOD=$(FMOD) 
+
 tests:
 	@echo
 	@echo "Installation directory: $(PREFIX)"
@@ -66,7 +76,7 @@ tests:
 	perl -MSNMP -e 1
 	perl -MNetAddr::IP -e 1
 	perl -M'Apache2::SiteControl 1.0' -e 1
-	perl -I/usr/local/netviewer/lib -M'NetViewer::RRD::SNMP 0.29.6' -e 1
+	perl -I$(NVPREFIX)/lib -M'NetViewer::RRD::SNMP 0.29.6' -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi

@@ -245,11 +245,28 @@ sub rmsessions {
   %info = $ui->form_to_db(%ARGS);
 
 Generalized code for updating columns in different tables. 
-Expected format for passed in form data is:
+ARGS is a hash with the following format:
 
-   TableName__<primary key>__ColumnName => Value
+  Update Column1 in object with id <id> from table <Table>
+    <Table>__<id>__<Column1> => <Value>
 
-If primary key =~ "NEW", a new row will be inserted.
+  Delete a single object with id <id> from table <Table>
+    <Table>__<id>__DELETE => null
+
+  Delete a list of objects from the same table
+  (useful when using <select multiple>)
+    <Table>___LIST__DELETE => [ <id1>, <id2>, <id3> ]
+
+  Insert new object with columns 1,2,3 set to the specified values
+    <Table>__NEW1__<Column1> => <Value1>
+    <Table>__NEW1__<Column2> => <Value2>
+    <Table>__NEW1__<Column3> => <Value3>
+    
+  Insert another new object with columns 1,2,3 set to the specified value
+    <Table>__NEW2__<Column1> => <Value1>
+    <Table>__NEW2__<Column2> => <Value2>
+    <Table>__NEW2__<Column3> => <Value3>
+    
 
 Returns a hash with update details on success, false on failure and error 
 should be set.
@@ -258,9 +275,9 @@ should be set.
 
 sub form_to_db{
     my($self, %argv) = @_;
-    my %form_to_db_info;
+    my %ret;
 
-    # Store objects, fields and values in a hash
+    # Store objects, fields and values in a 3-level hash
     my %objs;
     foreach ( keys %argv ){
 	my $item = $_;	
@@ -276,38 +293,33 @@ sub form_to_db{
         $self->error("Missing name/value pairs.");
         return ;
     }
-    
     foreach my $table (keys %objs){
-	
-        foreach my $id (keys %{ $objs{$table} }){
-	    # Actions (like delete) take precedence over value updates
-	    # 
-	    my $act = 0; 
-	    #################################################################
-	    # Some tables require more complex validation
-	    # We pass the data to external functions
-	    
-	    if ( $table eq "Ipblock" ){
+	#################################################################
+	# Some tables require more complex validation
+	# We pass the data to external functions
+	if ( $table eq "Ipblock" ){
+	    foreach my $id (keys %{ $objs{$table} }){
+		# Actions (like delete) take precedence over value updates
+		my $act = 0; 
+		
 		if ( $id =~ /NEW/i ) {
-		    # Creaating a New Ipblock object
+		    # Creating a New Ipblock object
 		    my $newid;
 		    unless ( $newid = $self->{ipm}->insertblock( %{ $objs{$table}{$id} } ) ){
 			$self->error(sprintf("Error inserting new Ipblock: %s", $self->{ipm}->error));
 			return;
 		    }
-		    $form_to_db_info{$table}{action} = "insert";
-		    $form_to_db_info{$table}{key} = $newid;
+		    $ret{$table}{id}{$newid}{action} = "INSERTED";
 		    $act = 1;
 		}else {
 		    foreach my $field (keys %{ $objs{$table}{$id} }){
-			if ( $field eq "delete" ){
+			if ( $field =~ /DELETE/i ){
 			    # Deleting an Ipblock object
 			    unless ( $self->{ipm}->removeblock( id => $id ) ){
 				$self->error(sprintf("Error deleting Ipblock: %s", $self->{ipm}->error));
 				return;
 			    }
-			    $form_to_db_info{$table}{action} = "delete";
-			    $form_to_db_info{$table}{key} = $id;
+			    $ret{$table}{id}{$id}{action} = "DELETED";
 			    $act = 1;
 			    last;
 			}
@@ -319,59 +331,76 @@ sub form_to_db{
 			    $self->error($self->{ipm}->error);
 			    return;
 			}
-			$form_to_db_info{$table}{action} = "update";
-			$form_to_db_info{$table}{key} = $id;
+			$ret{$table}{id}{$id}{action} = "UPDATED";
 			$act = 1;
 		    }
 		}
-		
-	    }else{
-		foreach my $field (keys %{ $objs{$table}{$id} }){
-		    if ($field eq "delete" && $objs{$table}{$id}{$field} eq "on"){
-			# Remove object from DB
-			if ( ! $self->remove(table => "$table", id => "$id") ){
-			    return; # error should already be set.
-			}
-			$form_to_db_info{$table}{action} = "delete";
-			$form_to_db_info{$table}{key} = $id;
-			# Set the 'action' flag
-			$act = 1;
-			last;
-		    }
-		}
-		
-		# If our id is new we want to insert a new row in the DB.
-		# Do a regex to allow sending many NEW groups for the same
+	    }
+	    
+	}else{
+	    #################################################################
+	    # All other tables
+	    my %todelete; #avoid dups
+
+	    foreach my $id (keys %{ $objs{$table} }){
+		my $act = 0; 
+
+		# If our id is 'NEW' we want to insert a new row in the DB.
+		# Do a regex to allow sending many NEW groups for the same table
 		if ( $id =~ /NEW/i ){
 		    my $newid;
 		    if (! ($newid = $self->insert(table => $table, state => \%{ $objs{$table}{$id} })) ){
 			return; # error should be set.
 		    }
-		    
-		    $form_to_db_info{$table}{action} = "insert";
-		    $form_to_db_info{$table}{key} = $newid;
+		    $ret{$table}{id}{$newid}{action} = "INSERTED";
 		    $act = 1;
-		}
-		# Now update the thing
-		if ( ! $act ) {
-		    # only if no other actions were performed
-		    my $o;
-		    unless ( $o = $table->retrieve($id) ){
-			$self->error("Couldn't retrieve id $id from table $table");
-			return;
+		}else{
+		    foreach my $field ( keys %{ $objs{$table}{$id} } ){
+			my $val = $objs{$table}{$id}{$field};
+			if ( $field =~ /DELETE/i ){
+			    if ( $id =~ /LIST/i ){
+				# This comes from a <select multiple>
+				if ( ! ref($val) ){
+				    $todelete{$val} = '';
+				}elsif( ref($val) eq "ARRAY" ){
+				    map { $todelete{$_} = '' } @$val;
+				}
+			    }elsif ( $id =~ /\d+/ ){
+				# Single object to be deleted
+				$todelete{$id} = '';
+			    }
+			    $act = 1;
+			}
 		    }
-		    unless ( $self->update(object => $o, state => \%{ $objs{$table}{$id} }) ){
-			return; # error should already be set.
+		    # Now update this object
+		    if ( ! $act ) {
+			my $o;
+			unless ( $o = $table->retrieve($id) ){
+			    $self->error("Couldn't retrieve id $id from table $table");
+			    return;
+			}
+			unless ( $self->update(object => $o, state => \%{ $objs{$table}{$id} }) ){
+			    return; # error should already be set.
+			}
+			$ret{$table}{id}{$id}{action} = "UPDATED";
+			$ret{$table}{id}{$id}{columns} = \%{ $objs{$table}{$id} };
 		    }
-		    $form_to_db_info{$table}{action} = "update";
-		    $form_to_db_info{$table}{key} = $id;
 		}
 	    }
-        }
+	    
+	    # Delete marked objects (do this once per table)
+	    foreach my $del ( keys %todelete ){
+		unless ( $self->remove( table=>$table, id => $del ) ){
+		    # error should be set
+		    return;
+		}
+		$ret{$table}{id}{$del}{action} = "DELETED";
+	    }
+	}
     }
-    return %form_to_db_info;
-
+    return %ret;
 }
+
 
 =head2 select_lookup
 
@@ -481,6 +510,7 @@ sub select_lookup($@){
             }
 
             foreach my $fo (@fo){
+		next unless (ref($fo) && int($fo) != 0 );
                 next if ($o && $o->$column && ($fo->id == $o->$column->id));
                 $output .= sprintf("<option value=\"%s\">%s</option>\n", $fo->id, $self->getlabelvalue($fo, \@labels));
             }
@@ -499,7 +529,7 @@ sub select_lookup($@){
         }
 
         # show link to add new item to this table
-        $output .= sprintf("<a href=\"#\" onClick=\"openinsertwindow('%s', '%s');\">[new]</a>", $lookup, $name);
+        $output .= sprintf("<a href=\"#\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1');\">[new]</a>", $lookup, $name);
 
     }elsif ($linkPage && $o->$column ){
 	if ($linkPage eq "1" || $linkPage eq "view.html"){
@@ -518,6 +548,108 @@ sub select_lookup($@){
         print $output;
     }
 }
+
+=head2 select_multiple
+
+Meant to be used with Many-to-Many relationships.
+When editing, creates a <select> form input with the MULTIPLE flag to allow user to select more than one object.
+It also presents a [add] button to allow user to insert another join.
+The idea is to present the objects form the 'other' table but act on the join table objects.
+
+The following diagram might help in understanding the method
+
+  this                 join                other
+ +------+             +------+            +------+  
+ |      |             |      |            |      |
+ |      |<------------|t    o|----------->|      |
+ |      |             |      |            |      |
+ +------+ Many    One +------+One    Many +------+
+
+
+
+Arguments:
+
+object:       Object from which the relationships are viewed (from this table)
+joins:        Array ref of join table objects
+join_table:   Name of the join table
+this_field:   Field in the join table that points to this table
+other_table:  Name of the other table (required)
+other_field:  Field in the join table that points to the other table
+isEditing:    Whether to create the form input tags or just present the object
+action:       What selecting the objects will eventually do.  
+              Valid actions are: "delete"
+makeLink:     If true, will show the object as a link via "linkPage"
+linkPage:     Page to pass the object to for viewing
+returnAsVar:  Whether to print to STDOUT or return a scalar.
+
+=cut
+
+sub select_multiple {
+    my ($self, %args) = @_;
+    my ($o, $joins, $join_table, $this_field, $other_table, 
+	$other_field, $isEditing, $action, $makeLink, $linkPage, $returnAsVar ) = 
+	    ($args{object}, $args{joins}, $args{join_table}, $args{this_field}, $args{other_table}, 
+	     $args{other_field}, $args{isEditing}, $args{action}, $args{makeLink}, $args{linkPage}, $args{returnAsVar});
+
+    $linkPage ||= "view.html";
+    $action   ||= "delete";
+
+    my @joins;
+    if ( $joins ){
+	unless ( ref($joins) eq "ARRAY" ){
+	    $self->error("joins parameter must be an arrayref");
+	    return 0;
+	}
+	@joins = @{$joins};
+    }
+    unless ( $join_table ) {
+	$self->error("Must provide join table name");
+	return 0;
+    }
+ 
+    # See UI::form_to_db()
+    my $select_name;
+    if ( $action eq "delete" ){
+	$select_name  =  $join_table . "__LIST__DELETE";
+    } else{ # Have yet to think of other actions
+	$self->error("action $action not valid");
+	return 0;
+    }
+    my $output;
+
+    if ( $isEditing  ){
+	$output .= "<select name=\"$select_name\" id=\"$select_name\" MULTIPLE>\n";
+	foreach my $join ( @joins ){
+	    my $other  = $join->$other_field;
+	    my $lbl = $self->getobjlabel($other);
+	    $output .= "<option value=" . $join->id . ">$lbl</option>\n";
+	}
+	$output .= "</select>";
+	$output .= "<a href=\"#\" onClick=\"openinsertwindow('table=$join_table&$this_field=";
+	$output .= $o->id;
+	$output .= "&select_id=$select_name&selected=0')\">[add]</a>";
+	if ( @joins ){
+	    $output .= '<br>(*) Selecting will delete';
+	}
+
+    }else{ 
+	foreach my $join ( @joins ){
+	    my $other  = $join->$other_field;
+	    my $lbl = $self->getobjlabel($other);
+	    if ( $makeLink ){
+		$output .= "<a href=\"$linkPage.html?table=$other_table&id=" . $other->id . "\">$lbl</a><br>";
+	    }else{
+		$output .= "$lbl<br>";
+	    }
+	}
+    }
+    if ($returnAsVar==1) {
+        return $output;
+    }else{
+        print $output;
+    }
+}
+
 
 =head2 radio_group_boolean
 

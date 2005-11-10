@@ -25,13 +25,17 @@ $comstr       => "public"
 $id           => undef
 $sid          => undef
 $insert       => undef
-$entity       => undef
+$used_by       => undef
 $site         => undef
-$contactlist  => undef
-$contactlist2 => undef
+$contacts     => undef
 </%args>
 %
 %
+%######################################################################
+%#
+%# Initialization
+%# 
+%######################################################################
 <%init>
 my $DEBUG = 0;
 my $TMP = $ui->{config}->{TMP};
@@ -76,7 +80,7 @@ if ( $action eq "discover" ){
     }elsif ( $host ){
 	$host =~ s/\s*//g;
 	# We're not aware of an existing device yet
-	# Probably discovering.
+	# Probably discovering for the first time.
 
 	# See if device exists
 	my (undef, $d) = $dm->find_dev($host);
@@ -133,11 +137,10 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 }elsif ( $action eq "update" ){
     if ( $insert ){
         %argv               = %{ $session->{argv} };
-	$argv{entity}       = $entity       ||  0;
-	$argv{site}         = $site         ||  0;
-	$argv{contactlist}  = $contactlist  ||  0;
-	$argv{contactlist2} = $contactlist2 ||  0;
-	$argv{user}         = $webuser      ||  0;
+	$argv{used_by}      = $used_by        ||  0;
+	$argv{site}         = $site           ||  0;
+	$argv{contacts}     = $contacts       ||  "";
+	$argv{user}         = $webuser        ||  0;
 
 	print "<pre>",  Dumper(%argv), "</pre>" if $DEBUG;
 
@@ -158,6 +161,12 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
     
 </%init>
 
+%######################################################################
+%#
+%# User Interface
+%# 
+%######################################################################
+
 <div id="sectiondetail">
  <div class="container">
    <div class="containerhead">
@@ -176,9 +185,9 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 
 % my (@field_headers, @cell_data) = ();
 
-% push( @field_headers, "Entity/Group:" );
+% push( @field_headers, "Used by:" );
 <&| "HERE.mhtml" &>
-           <select name="entity" id="entity">
+           <select name="used_by" id="used_by">
            <option value="0">-- Select --</option>
 %          my @allents = Entity->retrieve_all; 
 %          @allents = sort { $a->name cmp $b->name } @allents;
@@ -190,7 +199,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %                }
 %          }
            </select>
-           <a href="#" onClick="openinsertwindow('Entity', 'entity')">[new]</a>
+           <a href="#" onClick="openinsertwindow('table=Entity&select_id=used_by')">[new]</a>
 </&>
 % push( @cell_data, $_ );
 
@@ -208,14 +217,14 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %                }
 %          }
            </select>
-           <a href="#" onClick="openinsertwindow('Site', 'site')">[new]</a>
+           <a href="#" onClick="openinsertwindow('table=Site&select_id=site')">[new]</a>
 </&>
 % push( @cell_data, $_ );
 
 % push( @field_headers, "Contacts:" );
 <&| "HERE.mhtml" &>
-           <select name="contactlist" id="contactlist">
-           <option value="0">-- Select --</option>
+           <select name="contacts" id="contacts" size="6" MULTIPLE>
+           <option value="">-- Select --</option>
 %          @allcls = sort { $a->name cmp $b->name } @allcls;
 %          foreach my $cl (@allcls){
 %                if ( $default_cl && ($cl->id == $default_cl->id) ){
@@ -225,27 +234,10 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %                }
 %          }
            </select>
-           <a href="#" onClick="openinsertwindow('ContactList', 'contactlist')">[new]</a>
+	       Select all that apply
 </&>
 % push( @cell_data, $_ );
 
-% push( @field_headers, "Secondary Contacts:" );
-<&| "HERE.mhtml" &>
-           <select name="contactlist2" id="contactlist2">
-           <option value="0">-- Select --</option>
-%          @allcls = sort { $a->name cmp $b->name } @allcls;
-%          foreach my $cl (@allcls){
-%                # We don't want to repeat the selection
-%                if ( $guessed_cl && ($cl->id == $guessed_cl) && ($cl->id != $default_cl) ){
-                   <option value="<% $cl->id %>" SELECTED><% $cl->name %></option>
-%                }else{
-                   <option value="<% $cl->id %>"><% $cl->name %></option>
-%                }
-%          }
-           </select>
-           <a href="#" onClick="openinsertwindow('ContactList', 'contactlist2')">[new]</a>
-</&>
-% push( @cell_data, $_ );
 
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
