@@ -637,7 +637,7 @@ sub select_multiple {
 	    my $other  = $join->$other_field;
 	    my $lbl = $self->getobjlabel($other);
 	    if ( $makeLink ){
-		$output .= "<a href=\"$linkPage.html?table=$other_table&id=" . $other->id . "\">$lbl</a><br>";
+		$output .= "<a href=\"$linkPage?table=$other_table&id=" . $other->id . "\">$lbl</a><br>";
 	    }else{
 		$output .= "$lbl<br>";
 	    }
