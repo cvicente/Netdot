@@ -1012,3 +1012,38 @@ sub ip2int {
     }
     return ($ipobj->numeric)[0];
 }
+
+
+
+=head2 within
+    Checks is a value is between two other values
+    Arguments:
+        - val: value youre interested in
+        - beg: start of range to check
+        - end: end of range to check
+    Returns true/false whether val is between beg and end, inclusive
+=cut
+sub within {
+    my ($self, $val, $beg, $end) = @_;
+    return( $beg <= $val && $val <= $end );
+}
+
+=head2 powerof2lo
+    Returns the next lowest power of 2 from x
+    note: hard-coded to work for 32-bit integers
+    Arguments:
+        - x: an integer
+    Returns a power of 2
+=cut
+sub powerof2lo {
+    my ($self, $x) = @_;
+    $x++;
+    $x |= $x >> 1;
+    $x |= $x >> 2;
+    $x |= $x >> 4;
+    $x |= $x >> 8;
+    $x |= $x >> 16;
+    $x--;
+    return 2**((log($x)/log(2))-1) + 1;
+}
+

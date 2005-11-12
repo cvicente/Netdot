@@ -1,6 +1,5 @@
 <%doc>
-    Show a list of all addresses within a container.
-
+    Show a visual representation of the address space of the given container.
 </%doc>
 
 <%args>
@@ -9,11 +8,7 @@ $rowsize         => 22
 $dividefreespace => 'max'
 </%args>
 
-<%init>
-</%init>
-
 <%perl>
-
     my %used;
     my %names;
     my %iplinks;
@@ -35,34 +30,32 @@ $dividefreespace => 'max'
 
     # set the visual size of the table on the screen:
     my $numcols = 128;             # should remain fixed at 128
-    my $table_width = 960;         # at some point I'd like to set this dynamically based on a variable that javascript returns
-                                   # This number is only a guideline really, the actual width of the table gets
+    my $table_width = 960;         # at some point I'd like to set this dynamically based on a variable that javascript returns.
+                                   # This number is really only a guideline, the actual width of the table is set by:
                                    # int($table_width/($numcols+1)) * $numcols
     my $cell_width = int($table_width/($numcols+1));  # cell width in pixels
 
     $rowsize = int($rowsize);      # don't allow floating point numbers to be entered. that would be bad
 
     # there should never be more /32's in the row than there are in the subnet
-    $rowsize = max($rowsize, $mask);
-
-    my $scale = numhosts($rowsize) / $numcols;     # number of /32's per table cell (should be a power of 2)
+    $rowsize = ($rowsize>$mask?$rowsize:$mask);
+    
+    my $scale = $ipm->numhosts($rowsize) / $numcols;     # number of /32's per table cell (should be a power of 2)
 
     # limit $scale so that we never have one cell be smaller than a /32
     if( $scale < 1 ) { 
         $scale = 1;
-        $rowsize = subnetmask($numcols*$scale);
+        $rowsize = $ipm->subnetmask($numcols*$scale);
     }
 
-    $maxrowsize = subnetmask($numcols);
-
-    #print "You want one row to be a /$rowsize. I'll set the scale to $scale. There will be $scale /32's per cell, so each cell will be a /".subnetmask($scale)."<br>";
+    $maxrowsize = $ipm->subnetmask($numcols);
 
     # if we're dividing the free space into smaller blocks, set the scale, rowsize, max and minrowsize appropriately
     if( $dividefreespace ne 'max' ) {
-        if( $dividefreespace > subnetmask($scale) ) {
-            $scale = numhosts($dividefreespace);
+        if( $dividefreespace > $ipm->subnetmask($scale) ) {
+            $scale = $ipm->numhosts($dividefreespace);
             #$scale = max($scale, 2);
-            $rowsize = subnetmask($scale * $numcols);
+            $rowsize = $ipm->subnetmask($scale * $numcols);
             $minrowsize = $rowsize;
         }
     }
@@ -82,10 +75,10 @@ $dividefreespace => 'max'
                 $minsubnet = $o->prefix;
             }
         }
-        if( $minsubnet > subnetmask($scale) ) {
-            $minrowsize = subnetmask(numhosts($minsubnet)*$numcols);
+        if( $minsubnet > $ipm->subnetmask($scale) ) {
+            $minrowsize = $ipm->subnetmask($ipm->numhosts($minsubnet)*$numcols);
             $rowsize = $minrowsize;
-            $scale = numhosts($rowsize) / $numcols;
+            $scale = $ipm->numhosts($rowsize) / $numcols;
             #print "But! There are some /$minsubnet blocks in this list!<br>";
             #print "I'm going to change the scale to $scale, so now, one row is a /$rowsize. There are $scale /32's per cell, so each cell is a /".(32 - (log($scale)/log(2)))."<br>";
         }
@@ -126,7 +119,7 @@ $dividefreespace => 'max'
 
             my $ip = NetAddr::IP->new($o->address, $o->prefix);     # this ip address
 
-            my $ipaddr = shorten_ip($ip, $mask);
+            my $ipaddr = $ipm->shorten_ip(ipaddr=>$ip, mask=>$mask);
 
             my $start = $ip->numeric - $network_addr->numeric;  # offset of this ip address from the start of the subnet
 
@@ -148,7 +141,6 @@ $dividefreespace => 'max'
     }    
     ######################################################################
 
-
     # we just read all the data out of the database, and stored data into:
     # @start_cells  = cell numbers to start cells on
     # @end_cells    = cell numbers to end cells on
@@ -168,74 +160,41 @@ $dividefreespace => 'max'
     if( @start_addrs > 0 ) {  # only check if there's actually stuff there
         my $diff = $start_addrs[0]->numeric - $start_address->numeric;
         my $newbaseaddr = $start_address->numeric;
-        fill_space($diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
+        fill_space($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
     }
 
     # check for empty space inside any existing blocks
     for( my $i=0; $i<@start_addrs-1; $i++ ) {
         my $diff = $start_addrs[$i+1]->numeric - $end_addrs[$i]->numeric - 1;
         my $newbaseaddr = $end_addrs[$i]->numeric + 1;
-        fill_space($diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
+        fill_space($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
     }
 
     # check for empty space after any existing blocks
     if( @end_addrs > 0 ) {  # only check if there's actually stuff there
         my $diff = $end_address->numeric - $end_addrs[@end_addrs-1]->numeric;
         my $newbaseaddr = $end_addrs[@end_addrs-1]->numeric + 1;
-        fill_space($diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
+        fill_space($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
     }
 
-sub fill_space {
-    my ($diff, $newbaseaddr, $numcols, $scale, $dividefreespace, $names, $cell_info, $start_cells, $end_cells, $network_addr) = @_;
+    sub fill_space {
+        my ($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, $names, $cell_info, $start_cells, $end_cells, $network_addr) = @_;
 
         if( $diff > 0 ) {
             # we've got room for $diff hosts. how to break this up?
-            my $dv = $dividefreespace;
-            my $dvhosts;
-            my $numnewblocks;
-
-            if( $dv eq 'max' ) { 
-                $dv = subnetmask($diff);
+            my $subnetsize;
+            if( $dividefreespace eq "max" ) {
+                # what is the biggest subnet that can fit into $diff hosts?
+                $subnetsize = $ui->powerof2lo($diff);
+            } else {
+                $subnetsize = $ipm->numhosts($dividefreespace);
             }
-
-            $dvhosts = numhosts($dv);
-            if( $diff >= $dvhosts ) {     
-                # there is enough room to divide the space by $dv
-                $numnewblocks = $diff / $dvhosts;
-            } else {  
-                # the user wants to break up this space into a chunk bigger than it. don't let that happen
-                $dvhosts = $diff;        
-                $numnewblocks = 1;       
-            }
-
-            for( my $i=0; $i<$numnewblocks; $i++ ) {
-                # make new subnet with $dvhosts /32's inside
-                my $newsubnet = subnetmask($dvhosts);
-                my $newaddress = NetAddr::IP->new($newbaseaddr+($i*$dvhosts), $newsubnet);
-
-                my $start = $newaddress->numeric - $network_addr->numeric;
-                my @tmp = ();
-                $tmp[0] = shorten_ip($newaddress->cidr, $network_addr->masklen);     # shortened version of ip address to display in table cell
-                $tmp[1] = "New";                    # status of block
-                $tmp[2] = (($start + numhosts($newaddress->masklen))/$scale - 1) - ($start/$scale) + 1; #   = end-start+1  (number of columns to span)
-                $tmp[3] = $newaddress->cidr;                 # full version of the ip address, used for calculations
-
-                my $start_pos = $start / $scale;
-                my $end_pos   = ($start + numhosts($newsubnet))/$scale - 1;
-
-                my $newblock_cols = $end_pos - $start_pos;
-
-                $cell_info->[$start_pos] = \@tmp;
-
-                push(@$start_cells, $start_pos);
-                push(@$end_cells, $end_pos);  # end position
-
-                $names->{ $newaddress->cidr } = "Click to Create";
-            }
+            # this starts dividespace going with the initial value of subnetsize. it will look for as many subnetsize subnets it can
+            #   find, and when it runs out of room, searches for subnets of size subnetsize/2.
+            $dividespace->($dividespace, $newbaseaddr, $newbaseaddr+$diff, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, \$network_addr);
         }
-}
+    }
     ######################################################################
-
 
 
     ######################################################################
@@ -255,7 +214,7 @@ sub fill_space {
     print '<tr>';
         print '<td>&nbsp;</td>';
         print '<td colspan="'.($numcols/2-1).'" class="small">';
-            print 'Divide empty space into subnets with maximum size ';
+            print 'Divide free space into subnets with maximum size ';
             print '<select name="rowsize" class="small">';
             my $link = 'ip-ws.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace=max';
             print '<option onclick="parent.location=\''.$link.'\'" value="max"'.($dividefreespace eq 'max'?' selected':'').'>MAX</option>';
@@ -303,8 +262,8 @@ sub fill_space {
             my $span = $cell_info[$start][2];
 
             if( 
-                within( $start, $cell, $cell+$numcols-1 )  # find all starting cells in this row: range [cell, cell+63]
-                || within( $cell, $start, $end ) ) {       # is cell in the middle of this start-end block?
+                $ui->within( $start, $cell, $cell+$numcols-1 )  # find all starting cells in this row: range [cell, cell+63]
+                || $ui->within( $cell, $start, $end ) ) {       # is cell in the middle of this start-end block?
 
                 my $divclass;
                 my $divtitle;
@@ -340,18 +299,12 @@ sub fill_space {
                     $link = 'ip-ws.html?id='.$iplinks{ $cell_info[$start][3] };
                 }
 
-                print '<td width="'.($span*($cell_width+1)).'" colspan="'.limit($span,$numcols).'" class="containertable_cell">';
+                print '<td width="'.($span*($cell_width+1)).'" colspan="'.($span>$numcols?$numcols:$span).'" class="containertable_cell">';
                 print '<div class="'.$divclass.'" title="'.$divtitle.'" onclick="parent.location=\''.$link.'\'" style="cursor:hand;">';
                     print '<img src="img/clear.gif" width="1" height="10">';
                 print '</div>';
                 print '</td>';
                 print "\n";
-
-                #print "A cell on $cell with these properties:<br>";
-                #print "Caption: ".$cell_info[$start][0]."<br>";
-                #print "Status: ".$cell_info[$start][1]."<br>";
-                #print "Span: ".limit($cell_info[$start][2],$numcols)."<br>";
-                #print "<br>";
             }
         }
 
@@ -362,71 +315,60 @@ sub fill_space {
     print "\n<br>";
     ######################################################################
 
+</%perl>
+<%once>
 
+# define anonymous subroutine to be able to do a recursive call inside a mason component
+my $dividespace = sub {
+    my ($dividespace, $start, $end, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, $network_addr) = @_;
 
+    # find first multiple of $subnetsize that starts after $start
+    #    no ceil function built in to perl. int function chops off decimals, NOT the same as floor
+    #    ceil function is int($x-(int($x)+1))+int($x)+1
+    my $x = $start/$subnetsize;
+    $x = int($x-(int($x)+1))+int($x)+1;
+    my $blockstart = int($subnetsize * $x);   # either the previous operation or this multiplication was 
+                                              #   making $blockstart into a float, which created problems when
+                                              #   checking for equality before the recursive calls
 
+    if( $blockstart + $subnetsize <= $end ) {
+        # actually add the subnet to the list now. starts on $blockstart, network mask is $ipm->subnetmask($subnetsize)
+                my $newsubnet = $ipm->subnetmask($subnetsize);
+                my $newaddress = NetAddr::IP->new($blockstart, $newsubnet);
 
-sub in_array() {
-    my $val = shift(@_);
-    foreach my $elem(@_) {
-        if($val == $elem) {
-            return 1;
+                my $start_ad = $newaddress->numeric - $$network_addr->numeric;
+                my @tmp = ();
+                $tmp[0] = $ipm->shorten_ip(ipaddr=>$newaddress->cidr, mask=>$$network_addr->masklen);     # shortened version of ip address to display in table cell
+                $tmp[1] = "New";                    # status of block
+                $tmp[2] = (($start_ad + $ipm->numhosts($newaddress->masklen))/$scale - 1) - ($start_ad/$scale) + 1; #   = end-start+1  (number of columns to span)
+                $tmp[3] = $newaddress->cidr;                 # full version of the ip address, used for calculations
+
+                my $start_pos = $start_ad / $scale;
+                my $end_pos   = ($start_ad + $ipm->numhosts($newsubnet))/$scale - 1;
+
+                $cell_info->[$start_pos] = \@tmp;
+                $names->{ $newaddress->cidr } = "Click to Create";
+
+                push(@$start_cells, $start_pos);
+                push(@$end_cells, $end_pos); 
+
+        # these if statements prevent the function from checking for empty space in a space where the start and end are the same address
+        if( $start != $blockstart ) {
+            #print STDERR "    dividespace 1: start: ".NetAddr::IP->new($start,$ipm->subnetmask($subnetsize))."; end: ".NetAddr::IP->new($blockstart,$ipm->subnetmask($subnetsize))."; subnetsize: $subnetsize\n";
+            $dividespace->($dividespace, $start, $blockstart, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, $network_addr);
+        }
+        if( $blockstart+$subnetsize != $end ) {
+            #print STDERR "    dividespace 2: start: ".NetAddr::IP->new($blockstart+$subnetsize,$ipm->subnetmask($subnetsize))."; end: ".NetAddr::IP->new($end,$ipm->subnetmask($subnetsize))."; subnetsize: $subnetsize\n";
+            $dividespace->($dividespace, $blockstart+$subnetsize, $end, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, $network_addr);
+        }
+    } else { 
+        if( $subnetsize/2 >= 1 && $start != $end ) {
+            #print STDERR "    dividespace 0: start: ".NetAddr::IP->new($start,$ipm->subnetmask($subnetsize/2))."; end: ".NetAddr::IP->new($end,$ipm->subnetmask($subnetsize/2))."; subnetsize: ".($subnetsize/2)."\n";
+            $dividespace->($dividespace, $start, $end, $subnetsize/2, $scale, $names, $cell_info, $start_cells, $end_cells, $network_addr); 
+        } else {
+            return;
         }
     }
-    return 0;
-}
+};
 
-sub within {
-    my $val = shift(@_);
-    my $beg = shift(@_);
-    my $end = shift(@_);
-
-    return( $beg <= $val && $val <= $end );
-}
-
-sub limit {
-    # returns the smaller of a and b
-    my $a = shift(@_);
-    my $b = shift(@_);
-    return( $a>$b ? $b : $a );
-}
-
-sub max {
-    my $a = shift(@_);
-    my $b = shift(@_);
-    return( $a>$b ? $a : $b );
-}
-
-sub numhosts {
-    my $x = shift(@_);
-    return 2**(32-$x);
-}
-
-sub subnetmask {
-    my $x = shift(@_);
-    return 32 - (log($x)/log(2));
-}
-
-sub shorten_ip {
-    my $ipaddr = shift(@_);
-    my $mask   = shift(@_);
-
-    # this code hides the insignificant (unchanging) octets from the ip address based on the subnet
-    if( $mask <= 7 ) {
-        # no insignificant octets (128.223.112.0)
-        $ipaddr = $ipaddr;
-    } elsif( $mask <= 15 ) {
-        # first octet is insignificant (a.223.112.0)
-        $ipaddr = substr($ipaddr, index($ipaddr,".")+1);
-    } elsif( $mask <= 23 ) {
-        # second octet is insignificant (a.a.112.0)
-        $ipaddr = substr($ipaddr, index($ipaddr,".",index($ipaddr,".")+1)+1);
-    } else {
-        # mask is 24 or bigger, show the entire ip address (would be a.a.a.0, show 128.223.112.0)
-        $ipaddr = $ipaddr;
-    }
-
-    return $ipaddr;
-}
-
-</%perl>
+</%once>

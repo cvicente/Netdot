@@ -1100,3 +1100,63 @@ sub subnet_num_addr {
 }
 
 
+
+=head2 shorten_ip
+ 
+ Hides the unimportant octets from an ip address, based on the subnet
+
+ Arguments:
+    - ipaddr: a string with the ip address (i.e. 128.223.112.34)
+    - mask:   the network mask (i.e. 16)
+
+ Returns a string with just the important parts of the ip address (i.e. 112.34)
+
+=cut
+
+sub shorten_ip {
+    my ($self, %args) = @_;
+    my ($ipaddr, $mask) = ($args{ipaddr}, $args{mask});
+
+    # this code hides the insignificant (unchanging) octets from the ip address based on the subnet
+    if( $mask <= 7 ) {
+        # no insignificant octets (128.223.112.0)
+        $ipaddr = $ipaddr;
+    } elsif( $mask <= 15 ) {
+        # first octet is insignificant (a.223.112.0)
+        $ipaddr = substr($ipaddr, index($ipaddr,".")+1);
+    } elsif( $mask <= 23 ) {
+        # second octet is insignificant (a.a.112.0)
+        $ipaddr = substr($ipaddr, index($ipaddr,".",index($ipaddr,".")+1)+1);
+    } else {
+        # mask is 24 or bigger, show the entire ip address (would be a.a.a.0, show 128.223.112.0)
+        $ipaddr = $ipaddr;
+    }
+
+    return $ipaddr;
+}
+
+=head2 numhosts
+    Returns the number of hosts (/32s) in a subnet. (incl. network and broadcast addresses)
+    Arguments:
+        - x: the mask length (i.e. 24)
+    Returns a power of 2       
+=cut
+sub numhosts {
+    ## include the network and broadcast address in this count.
+    ## will return a power of 2.
+    my ($self, $x) = @_;
+    return 2**(32-$x);
+}
+
+=head2 subnetmask
+    Calculates the mask length of a subnet that can hold $x hosts
+    Arguments:
+        - x: expects an integer power of 2
+    Returns an integer, 0-32
+=cut
+sub subnetmask {
+    ## expects as a parameter an integer power of 2
+    my ($self, $x) = @_;
+    return 32 - (log($x)/log(2));
+}
+
