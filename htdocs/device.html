@@ -618,10 +618,11 @@ my (@headers, @rows, @row);
       <form name="netdotform" action="device.html" method="POST">
 	  <input type="hidden" name="id" value="<% $id %>">
 	  <input type="hidden" name="view" value="<% $view %>">
+	  <input type="hidden" name="ipsort" value="<% $ipsort %>">
 	  <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
           <input type="submit" name="submit" value="save">
 %   }else{
-          <a href="device.html?id=<% $id %>&view=<% $view %>&editips=1">[edit]</a>
+          <a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=<% $ipsort %>&editips=1">[edit]</a>
 %   }
     </div>
     <div class="containerbody">
@@ -944,11 +945,12 @@ if ( $view eq "Interfaces" || $view eq "All" ){
     <div class="containerheadright">
 
 %   if ($editints){	 
-        <form name="netdotform" action="device.html" method="POST">
-	    <input type="hidden" name="id" value="<% $id %>">
-	    <input type="hidden" name="view" value="<% $view %>">
-	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-	    <input type="submit" name="submit" value="save">
+    <form name="netdotform" action="device.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>">
+	<input type="hidden" name="view" value="<% $view %>">
+	<input type="hidden" name="ifsort" value="<% $ifsort %>">
+	<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+	<input type="submit" name="submit" value="save">
 %   }else{
 
         <form name="showvlans">
@@ -965,10 +967,10 @@ if ( $view eq "Interfaces" || $view eq "All" ){
                 <option value="<% $vid %>"><% $vid %></option>     
 %           }
 %       }
-        </select>
+         </select>
         </form> 
-        <a href="device.html?id=<% $id %>&view=<% $view %>&editints=1">[edit]</a>
-%  }
+    <a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=<% $ifsort %>&editints=1">[edit]</a>
+
     </div>
     <div class="containerbody">
         <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
