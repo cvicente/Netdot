@@ -177,6 +177,13 @@ $dividefreespace => 'max'
         fill_space($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
     }
 
+    # container is completely empty, fill all space
+    if( @start_addrs == 0 && @end_addrs == 0 ) {
+        my $diff = $end_address->numeric - $start_address->numeric + 1;
+        my $newbaseaddr = $start_address->numeric;
+        fill_space($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
+    }
+
     sub fill_space {
         my ($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, $names, $cell_info, $start_cells, $end_cells, $network_addr) = @_;
 
@@ -218,7 +225,7 @@ $dividefreespace => 'max'
             print '<select name="rowsize" class="small">';
             my $link = 'ip-ws.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace=max';
             print '<option onclick="parent.location=\''.$link.'\'" value="max"'.($dividefreespace eq 'max'?' selected':'').'>MAX</option>';
-            for( my $i=$mask; $i<=31; $i++ ) {
+            for( my $i=$mask; $i<=30; $i++ ) {
                 my $link = 'ip-ws.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace='.$i;
                 print '<option onclick="parent.location=\''.$link.'\'" value="'.$i.'"'.($dividefreespace==$i?' selected':'').'>/'.$i.'</option>';
             }
@@ -237,12 +244,12 @@ $dividefreespace => 'max'
 
     # print empty row first for aligning cells and their colspans
     print "<tr>\n";
-    print '<td style="text-align:right;" width="50" class="containertable_cell"><img src="img/clear.gif" width="1" height="3"></td>';
+    print '<td style="text-align:right;" width="50" class="containertable_cell"><img src="img/clear.gif" width="1" height="1"></td>';
     for( my $i=0; $i<$numcols; $i++ ) {
         print '<td width="'.($cell_width).'" class="containertable_cell">';
-                print '<div class="ipaddr_reserved">';
-                print '<img src="img/clear.gif" width="1" height="3">';
-                print '</div>';
+                #print '<div class="ipaddr_reserved">';
+                print '<img src="img/clear.gif" width="1" height="1">';
+                #print '</div>';
         print "</td>\n";
     }
     print "</tr>\n";
