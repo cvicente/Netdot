@@ -60,16 +60,10 @@ if ( $int_id ){
     }
     
 }
-my %reserved = ( Add           => "",
-		 Cancel        => "",
-		 search        => "",
-		 device_search => "",
-		 role          => "",
-		 int_id        => "" );
 my $rel_role;
 if ( $role ){
     if ($role ne "parent" && $role ne "child"){
-	$m->comp("error.mhtml", error => "Invalid role: $role", showplainerror=>1);
+	   $m->comp("error.mhtml", error => "Invalid role: $role", showplainerror=>1);
     }
     $rel_role = ($role eq "parent")? "child" : "parent";
 }
@@ -100,11 +94,11 @@ if ( $Add ){
     <div class="containerbody">
 
 <%perl>
+
 if ( $Add ){
-    foreach my $arg ( keys %ARGS ){
-    	next if ( exists $reserved{$arg} );
-    	$state{$arg} = $ARGS{$arg};
-    }
+    $state{parent} = $ARGS{parent};
+    $state{child} = $ARGS{child};
+
     if ( $state{parent} && $state{child} ){
     
 	my $newdepid;
