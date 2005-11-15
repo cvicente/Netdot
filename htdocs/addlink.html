@@ -89,7 +89,7 @@ if ( $Add ){
 
 <html>
 <head>
-    <link rel=StyleSheet href="style.css" type="text/css">
+    <link rel="stylesheet" href="style.css" type="text/css">
 </head>      
 <body class="bodytag" <% $bodyargs %>>
 
@@ -198,6 +198,26 @@ if ( $Add ){
 %}
 
 <script language="javascript" src="select.js"></script>
+<script language="javascript" src="jsrsClient.js"></script>
+<script language="javascript">
+<!--
+    function performSearch(field) {
+        dvs = document.getElementById('device_search');
+        txs = document.getElementById('text_search');
+
+        if( dvs.value == 0 ) { 
+            search_criteria='';
+        } else {
+            search_criteria = dvs.value + ' ';
+        }
+        if( txs.value != 'Keywords' ) { 
+            search_criteria += txs.value; 
+        }
+
+        jsrsSendquery(field, search_criteria, 'Interface');
+    }
+//-->
+</script>
 
 <form name="netdotform" action="addlink.html" method="POST">
 
@@ -216,17 +236,17 @@ if ( $Add ){
     push( @cell_data, 
 &{sub{
     my $ac = "Select Device from list:";
-    $ac .= '<select name="device_search" onChange="sendquery('.$rel_role.', device_search.value, \'Interface\')">';
+    $ac .= '<select name="device_search" id="device_search" onChange="performSearch('.$rel_role.');">';
     $ac .= '<option value="0">-- Select --</option>';
     foreach my $dev ( sort keys %subnet_devs ){
         $ac .= '<option value="'.$dev.'">'.$dev.'</option>';
     }
     $ac .= '</select>';
     $ac .= '<br>Or search:';
-    $ac .= '<input type="text" name="search" value="Keywords" onFocus="if(this.value==\'Keywords\') { this.value = \'\'; } return true;">';
-    $ac .= '&nbsp;<input type="button" name="" value="List" onClick="sendquery('.$rel_role.', search.value, \'Interface\')">';
+    $ac .= '<input type="text" name="text_search" id="text_search" value="Keywords" onFocus="if(this.value==\'Keywords\') { this.value = \'\'; } return true;">';
+    $ac .= '&nbsp;<input type="button" name="" value="List" onClick="performSearch('.$rel_role.')">';
     $ac .= '<br>';
-    $ac .= '<select name="'.$rel_role.'">';
+    $ac .= '<select name="'.$rel_role.'" id="'.$rel_role.'">';
     $ac .= '</select>';
 
     $ac;
