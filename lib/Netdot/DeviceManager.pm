@@ -191,7 +191,7 @@ sub update_device {
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => "%s: Interface %s,%s has invalid parent %s. Removing.",
 				  args => [$host, $if->number, $if->name, $dep->parent] );
-		    $self->remove(table=>"InterfaceDep", id => $dep->parent);
+		    $self->remove(table=>"InterfaceDep", id => $dep);
 		    next;
 		}
 		foreach my $ip ( $if->ips() ){
@@ -208,7 +208,7 @@ sub update_device {
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => "%s: Interface %s,%s has invalid child %s. Removing.",
 				  args => [$host, $if->number, $if->name,$dep->child] );
-		    $self->remove(table=>"InterfaceDep", id => $dep->child);
+		    $self->remove(table=>"InterfaceDep", id => $dep);
 		    next;
 		}
 		foreach my $ip ( $if->ips() ){
