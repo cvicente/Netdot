@@ -1628,6 +1628,28 @@ sub getdevips {
     return;
 }
 
+=head2 getdevsubnets  - Get all the subnets in which a given device has any addresses
+   
+  Arguments:
+    id of the device
+  Returns:
+    hash of Ipblock objects, keyed by id
+
+=cut
+
+sub getdevsubnets {
+    my ($self, $id) = @_;
+    my %subnets;
+    foreach my $ip ( $self->getdevips($id) ){
+	my $subnet;
+	if ( ($subnet = $ip->parent) && 
+	     $subnet->status->name eq "Subnet"){
+	    $subnets{$subnet->id} = $subnet;
+	}
+    }
+    return %subnets;
+}
+
 =head2 getproductsbytype  - Get all products of given type
    
   Arguments:
