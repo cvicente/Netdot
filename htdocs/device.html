@@ -803,17 +803,17 @@ push( @rows, \@row );
 (@headers, @rows) = ();
 
 if ( $editints ){
-push( @headers, '[del]' );
+    push( @headers, '[del]' );
 }
 
 push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=number">No.</a>' );
 push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=name">Name</a>' );
 
 if ( ! $editints ){
-push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=speed">Speed</a>' );
-push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=vlan">VLAN</a>' );
+    push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=speed">Speed</a>' );
 }
 
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=vlan">VLAN</a>' );
 push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>' );
 push( @headers, 'Room' );
 push( @headers, 'Jack' );
@@ -845,6 +845,8 @@ push( @row, $ui->text_field(object=>$if, column=>"name", edit=>$editints, htmlEx
 
 if ( ! $editints ){
 push( @row, $dm->convert_ifspeed($if->speed)  );	# NEEDS RETURNASVAR?
+}
+
 push( @row, 
 &{sub{
     my $ac = "";
@@ -857,7 +859,7 @@ push( @row,
     }
     $ac;
 }} );
-}
+
 
 push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
                              edit=>$editints, linkPage=>"cable_horizontal.html", returnAsVar=>1) );

@@ -190,7 +190,7 @@ sub update_device {
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => "%s: Interface %s,%s has invalid parent %s. Removing.",
 				  args => [$host, $if->number, $if->name, $dep->parent] );
-		    $self->remove(table=>"InterfaceDep", id => $dep->parent);
+		    $self->remove(table=>"InterfaceDep", id => $dep);
 		    next;
 		}
 		foreach my $ip ( $if->ips() ){
@@ -207,7 +207,7 @@ sub update_device {
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => "%s: Interface %s,%s has invalid child %s. Removing.",
 				  args => [$host, $if->number, $if->name,$dep->child] );
-		    $self->remove(table=>"InterfaceDep", id => $dep->child);
+		    $self->remove(table=>"InterfaceDep", id => $dep);
 		    next;
 		}
 		foreach my $ip ( $if->ips() ){
@@ -1626,6 +1626,28 @@ sub getdevips {
 	return;
     }
     return;
+}
+
+=head2 getdevsubnets  - Get all the subnets in which a given device has any addresses
+   
+  Arguments:
+    id of the device
+  Returns:
+    hash of Ipblock objects, keyed by id
+
+=cut
+
+sub getdevsubnets {
+    my ($self, $id) = @_;
+    my %subnets;
+    foreach my $ip ( $self->getdevips($id) ){
+	my $subnet;
+	if ( ($subnet = $ip->parent) && 
+	     $subnet->status->name eq "Subnet"){
+	    $subnets{$subnet->id} = $subnet;
+	}
+    }
+    return %subnets;
 }
 
 =head2 getproductsbytype  - Get all products of given type

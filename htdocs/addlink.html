@@ -24,7 +24,6 @@ my $DEBUG = 0;
 my %state;
 my $intobj;
 my $intlbl;
-my $restart = 0;
 # Use a hash to make sure there are no duplicates
 my %subnet_devs;
 
@@ -40,12 +39,7 @@ if ( $int_id ){
 #
 #   Get a list of Devices in the same subnet(s)
 #
-    my %subnets;
-    foreach my $ip ( $dm->getdevips($intobj->device) ){
-	if ( my $subnet = $ip->parent ){
-	    $subnets{$subnet->id} = $subnet;
-	}
-    }
+    my %subnets = $dm->getdevsubnets($intobj->device);
     
     foreach my $subnet ( keys %subnets ){
 	foreach my $ip ( $subnets{$subnet}->children ){
@@ -60,16 +54,10 @@ if ( $int_id ){
     }
     
 }
-my %reserved = ( Add           => "",
-		 Cancel        => "",
-		 search        => "",
-		 device_search => "",
-		 role          => "",
-		 int_id        => "" );
 my $rel_role;
 if ( $role ){
     if ($role ne "parent" && $role ne "child"){
-	$m->comp("error.mhtml", error => "Invalid role: $role", showplainerror=>1);
+	   $m->comp("error.mhtml", error => "Invalid role: $role", showplainerror=>1);
     }
     $rel_role = ($role eq "parent")? "child" : "parent";
 }
@@ -89,7 +77,7 @@ if ( $Add ){
 
 <html>
 <head>
-    <link rel=StyleSheet href="style.css" type="text/css">
+    <link rel="stylesheet" href="style.css" type="text/css">
 </head>      
 <body class="bodytag" <% $bodyargs %>>
 
@@ -100,13 +88,12 @@ if ( $Add ){
     <div class="containerbody">
 
 <%perl>
+
 if ( $Add ){
-    foreach my $arg ( keys %ARGS ){
-    	next if ( exists $reserved{$arg} );
-    	$state{$arg} = $ARGS{$arg};
-    }
+    $state{parent} = $ARGS{parent};
+    $state{child} = $ARGS{child};
+
     if ( $state{parent} && $state{child} ){
-    
 	my $newdepid;
 	if ( InterfaceDep->search(\%state) ){
 	    print "<br>Dependency already exists!<br><br>";
@@ -117,72 +104,63 @@ if ( $Add ){
 		$m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
 	    }
 	}
+	print "Layer 2 dependency added.<br>";
+
 	#
-	#  Add a logical (L3) dependency automagically when adding a L2 dependency.
+	#  Add L3 dependencies if possible.
 	#
-	#  If one of the interfaces just linked does not have an ip address, try 
-	#  to add a dependency between the interface in that same device that has it
-	# (assuming it's only one) and another interface in the other device that 
-	#  follows the same rules
 	
-	my $newdep = InterfaceDep->retrieve($newdepid);
-	my $l3dep = 0;
 	if ( (my $childint  = Interface->retrieve($state{child})) 
 	     && (my $parentint = Interface->retrieve($state{parent})) ) {
-	    
 	    if ( $childint->device->id != $parentint->device->id ){
+		my $childdev  = $childint->device;
+		my $parentdev = $parentint->device;
+		my @childips  = $dm->getdevips($childdev);
+		my @parentips = $dm->getdevips($parentdev);
 		
-		my @childips     = $dm->getdevips($childint->device);
-		my @parentips    = $dm->getdevips($parentint->device);
-		my @childintips  = $childint->ips;
-		my @parentintips = $parentint->ips; 
-		my %tmp ;
-		if ( scalar(@childintips) == 1  ){
-		    $tmp{child}  = $childintips[0]->interface;
-		}elsif ( ! @childintips && (scalar(@childips) == 1) ){
-		    $tmp{child}  = $childips[0]->interface;
-		}
-		if ( scalar(@parentintips) == 1 ){
-		    $tmp{parent} = $parentintips[0]->interface;
-		}elsif ( ! @parentintips && (scalar(@parentips) == 1) ){
-		    $tmp{parent} = $parentips[0]->interface;
-		}
-		
-		if ( $tmp{parent} && $tmp{child} ){
-		    if ( my $newl3dep = (InterfaceDep->search(\%tmp))[0] ){
-			if ( $newdep->id  == $newl3dep->id ){
-			    $l3dep = "same";
-			}else{
-			    $l3dep = "existed";	    
-			}
-		    }else{
-			unless ( $ui->insert(table => "InterfaceDep", state => \%tmp) ){
-			    $m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
-			}else{
-			    $l3dep = "added";
+		my @newlinks;
+		foreach my $chip ( @childips ){
+		    foreach my $parip ( @parentips ){
+			if ( int($chip->parent) && int($parip->parent) &&
+			     int($chip->parent) == int($parip->parent) ){
+			    
+			    push @newlinks, { child  => $chip->interface, 
+					      parent => $parip->interface };
+			    last;
 			}
 		    }
 		}
+		my @l3deps;
+		foreach my $state ( @newlinks ){
+		    if (! InterfaceDep->search($state) ){
+			unless ( $ui->insert(table => "InterfaceDep", state => $state) ){
+			    $m->comp("error.mhtml", error => $ui->error, showplainerror=>1);
+			}
+			push @l3deps, sprintf( "%s:%s <=> %s:%s", 
+					       $state->{parent}->device->name->name, $state->{parent}->name , 
+					       $state->{child}->device->name->name, $state->{child}->name );
+
+		    }
+		}
+		if ( @l3deps ){
+		    print "<br>Also added the following Layer 3 dependencies:<br>";
+		    foreach  ( @l3deps ){
+			print "$_<br>";
+		    }
+		}
+		
+	    }else{
+		# parent and child devices are the same
 	    }
-	    
+	}else{
+	    # Could not retrieve childint or parentint
 	}
-	print "Layer 2 dependency added.<br>";
-	if ( $l3dep eq "added" ){
-	    print "Layer 3 dependency added.<br>";
-	}elsif ( $l3dep eq "existed" ){
-	    print "Layer 3 dependency already existed.<br>";
-	}elsif ( $l3dep eq "same" ){
-	    print "Layer 2 dependency is also Layer 3<br>";
-	}elsif ( ! $l3dep ){
-	    print "Layer 3 dependency could not be determined.  Please add manually if necessary.<br>";
-	}
-    
+	
 	print "<p><a href=\"#\" onClick=\"window.close()\">[done]</a>";
 	$m->abort;
 
     }else{
 	print "<br><strong>Invalid parent and/or child!</strong><br><br>";
-	$restart = 1;
     }
     
 </%perl>
@@ -198,6 +176,26 @@ if ( $Add ){
 %}
 
 <script language="javascript" src="select.js"></script>
+<script language="javascript" src="jsrsClient.js"></script>
+<script language="javascript">
+<!--
+    function performSearch(field) {
+        dvs = document.getElementById('device_search');
+        txs = document.getElementById('text_search');
+
+        if( dvs.value == 0 ) { 
+            search_criteria='';
+        } else {
+            search_criteria = dvs.value + ' ';
+        }
+        if( txs.value != 'Keywords' ) { 
+            search_criteria += txs.value; 
+        }
+
+        jsrsSendquery(field, search_criteria, 'Interface');
+    }
+//-->
+</script>
 
 <form name="netdotform" action="addlink.html" method="POST">
 
@@ -216,17 +214,17 @@ if ( $Add ){
     push( @cell_data, 
 &{sub{
     my $ac = "Select Device from list:";
-    $ac .= '<select name="device_search" onChange="sendquery('.$rel_role.', device_search.value, \'Interface\')">';
+    $ac .= '<select name="device_search" id="device_search" onChange="performSearch('.$rel_role.');">';
     $ac .= '<option value="0">-- Select --</option>';
     foreach my $dev ( sort keys %subnet_devs ){
         $ac .= '<option value="'.$dev.'">'.$dev.'</option>';
     }
     $ac .= '</select>';
     $ac .= '<br>Or search:';
-    $ac .= '<input type="text" name="search" value="Keywords" onFocus="if(this.value==\'Keywords\') { this.value = \'\'; } return true;">';
-    $ac .= '&nbsp;<input type="button" name="" value="List" onClick="sendquery('.$rel_role.', search.value, \'Interface\')">';
+    $ac .= '<input type="text" name="text_search" id="text_search" value="Keywords" onFocus="if(this.value==\'Keywords\') { this.value = \'\'; } return true;">';
+    $ac .= '&nbsp;<input type="button" name="" value="List" onClick="performSearch('.$rel_role.')">';
     $ac .= '<br>';
-    $ac .= '<select name="'.$rel_role.'">';
+    $ac .= '<select name="'.$rel_role.'" id="'.$rel_role.'">';
     $ac .= '</select>';
 
     $ac;
