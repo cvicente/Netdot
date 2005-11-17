@@ -1047,19 +1047,3 @@ sub powerof2lo {
     return 2**((log($x)/log(2))-1) + 1;
 }
 
-
-
-=head2 address_usage
-    Recurses through a container and counts the number of addresses
-    that are used. (Static, Dynamic or Reserved)
-    Arguments: 
-        - o: a container object
-    Returns an integer
-=cut
-sub address_usage {
-
-
-}
-
-
-
