@@ -812,16 +812,13 @@ sub text_area($@){
     or
     - numerator
     - denominator (0 in the denominator means 0%)
-    
-    - shade: 1/0 whether to shade the bar darker when % is closer to 100
 
  Returns a string with HTML, does not output to the browser.
 
 =cut
-
-sub percent_bar($@) {
+sub percent_bar {
     my ($self, %args) = @_;
-    my ($percent, $numerator, $denominator, $shade) = ($args{percent}, $args{numerator}, $args{denominator}, $args{shade});
+    my ($percent, $numerator, $denominator) = ($args{percent}, $args{numerator}, $args{denominator});
     my $width;
     my $output;
 
@@ -847,19 +844,94 @@ sub percent_bar($@) {
         }
     }
 
-    my $bkg;
-    if( $shade ) {
-        $bkg = "background-color:#".$self->color_mix(color1=>"77cc77", color2=>"005500", blend=>$width/100);
-    } else {
-        $bkg = "";
-    }
-
     $output .= '<div class="progress_bar" title="'.(int($percent*10)/10).'%">';
-    $output .= '<div class="progress_used" style="width:'.$width.'%;'.$bkg.'">';
+    $output .= '<div class="progress_used" style="width:'.$width.'%">';
     $output .= '</div></div>';
 
     return $output;
 }
+
+
+=head2 percent_bar2
+
+ Generates a graphical representation of two percentages as a progress bar.
+ Can pass arguments in as either a straight percentage, or as a fraction.
+
+ Arguments:
+    - percent1: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
+    - percent2: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
+    or
+    - numerator1
+    - denominator2 (0 in the denominator means 0%)
+    - numerator1
+    - denominator2 (0 in the denominator means 0%)
+    
+ Returns a string with HTML, does not output to the browser.
+
+=cut
+sub percent_bar2 {
+    my ($self, %args) = @_;
+    my ($percent1, $numerator1, $denominator1, $title1) = ($args{percent1}, $args{numerator1}, $args{denominator1}, $args{title1});
+    my ($percent2, $numerator2, $denominator2, $title2) = ($args{percent2}, $args{numerator2}, $args{denominator2}, $args{title2});
+    my $width1;
+    my $width2;
+    my $output;
+
+    if ($percent1) {
+        if ($percent1 <= 0) {
+            $width1 = 0;
+        } else {
+            $width1 = int($percent1);
+            if ($width1 < 1 ) {
+                $width1 = 1;
+            }
+        }
+    } else {
+        if ($numerator1 <= 0 || $denominator1 <= 0) {
+            $width1 = 0;
+            $percent1 = 0;
+        } else {
+            $width1 = int($numerator1/$denominator1*100);
+            $percent1 = $numerator1/$denominator1*100;
+            if ($width1 < 1 ) {
+                $width1 = 1;
+            }
+        }
+    }
+    if ($percent2) {
+        if ($percent2 <= 0) {
+            $width2 = 0;
+        } else {
+            $width2 = int($percent2);
+            if ($width2 < 1 ) {
+                $width2 = 1;
+            }
+        }
+    } else {
+        if ($numerator2 <= 0 || $denominator2 <= 0) {
+            $width2 = 0;
+            $percent2 = 0;
+        } else {
+            $width2 = int($numerator2/$denominator2*100);
+            $percent2 = $numerator2/$denominator2*100;
+            if ($width2 < 1 ) {
+                $width2 = 1;
+            }
+        }
+    }
+
+    $title1 .= (int($percent1*10)/10);
+    $title2 .= (int($percent2*10)/10);
+
+    $output .= '<div class="progress_bar2">';
+    $output .= '<div class="progress_used2_n" style="width:'.$width1.'%" title="'.$title1.'%"></div>';
+    $output .= '<div class="progress_used2_s" style="width:'.$width2.'%" title="'.$title2.'%"></div>';
+    $output .= '</div>';
+
+    return $output;
+}
+
+
 
 =head2 color_mix
 

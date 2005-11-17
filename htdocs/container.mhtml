@@ -105,16 +105,6 @@ $dividefreespace => 'max'
                 if( $o->description ) {
                     $names{ $o->address.'/'.$o->prefix } = $o->description;
                 }
-            } elsif( $o->status->name eq "Static" ) {
-                if( $dnsname ne "" ) {
-                    $names{ $o->address.'/'.$o->prefix } = $dnsname;
-                } elsif( $ui->getobjlabel($o->interface->device, ", ") ne "" ) {
-                    $names{ $o->address.'/'.$o->prefix } = $ui->getobjlabel($o->interface->device, ", ");
-                }
-            } elsif( $o->status->name eq "Dynamic" ) {
-                if( $o->description ) {
-                    $names{ $o->address.'/'.$o->prefix } = $o->description;
-                }
             }
 
             my $ip = NetAddr::IP->new($o->address, $o->prefix);     # this ip address
@@ -274,13 +264,9 @@ $dividefreespace => 'max'
 
                 my $divclass;
                 my $divtitle;
-                if( $cell_info[$start][1] eq "Static" || $cell_info[$start][1] eq "Subnet" ) {
+                if( $cell_info[$start][1] eq "Subnet" ) {
                     # show used addresses in red, with no link tag, show dns name on mouseover
                     $divclass = "ipaddr_static";
-
-                } elsif( $cell_info[$start][1] eq "Dynamic" ) {
-                    # show dynamic addresses in orange, don't link
-                    $divclass = "ipaddr_dynamic";
 
                 } elsif( $cell_info[$start][1] eq "Reserved" ) {
                     # show reserved addresses in grey

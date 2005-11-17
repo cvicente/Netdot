@@ -43,8 +43,8 @@ $network => undef
             } elsif( $o->status->name eq "Static" ) {
                 if( $dnsname ne "" ) {
                     $names{ $o->address } = $dnsname;
-                } elsif( $ui->getobjlabel($o->interface->device, ", ") ne "" ) {
-                    $names{ $o->address } = $ui->getobjlabel($o->interface->device, ", ");
+                } elsif( $ui->getobjlabel($ui, $o->interface->device, ", ") ne "" ) {
+                    $names{ $o->address } = $ui->getobjlabel($ui, $o->interface->device, ", ");
                 }
             } elsif( $o->status->name eq "Dynamic" ) {
                 if( $o->description ) {

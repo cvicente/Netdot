@@ -1084,20 +1084,84 @@ Returns:
     Integer
 
 =cut
-
-
 sub subnet_num_addr {
     my ($self, $o) = @_;
-    my $ip;
-    unless ($ip = NetAddr::IP->new($o->address, $o->prefix)){
-	$self->error(sprintf("Invalid address: %s/%s", $o->address, $o->prefix));
-	return;
+
+    if ( $o->version == 4 ) {
+        return $self->numhosts($o->prefix) - 2;
+    } elsif ( $o->version == 6 ) {
+        return $self->numhosts_v6($o->prefix) - 2;
     }
-    # For some reason, NetAddr::IP counts the network address
-    # 
-    return $ip->num - 1;
-    
 }
+
+
+=head2 address_usage
+    Returns the number of hosts in a given container
+
+    Arguments
+        - $o: Ipblock object
+=cut
+sub address_usage {
+    use bigint;
+    my ($self, $o) = @_;
+
+    my $container = new NetAddr::IP($o->address, $o->prefix);
+    my $start = $container->network();
+    my $end = $container->broadcast();
+
+    my $count = 0;
+
+    my $q = $self->{dbh}->prepare("SELECT id, address, prefix, version FROM Ipblock");
+    $q->execute();
+
+    while ( my ($id, $address, $prefix, $version) = $q->fetchrow_array() ) {
+        if( $start->numeric() <= $address && $address <= $end->numeric() ) {
+            if( ( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 ) ) {
+                $count++;
+            }
+        }
+    }
+
+    return $count;
+}
+
+
+=head2 subnet_usage
+    Returns the number of used subnets in a given container
+
+    Arguments
+        - $o: Ipblock object
+=cut
+sub subnet_usage {
+    use bigint;
+
+    my ($self, $o) = @_;
+
+    my $container = new NetAddr::IP($o->address, $o->prefix);
+    my $start = $container->network();
+    my $end = $container->broadcast();
+
+    my $count = 0;
+
+    my $q = $self->{dbh}->prepare("SELECT Ipblock.id, address, version, prefix, name AS status FROM Ipblock, IpblockStatus WHERE Ipblock.status=IpblockStatus.id");
+    $q->execute();
+
+    while ( my ($id, $address, $version, $prefix, $status) = $q->fetchrow_array() ) {
+        if ( $start->numeric() <= $address && $address <= $end->numeric() ) {
+            if( !(( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 )) && ($status eq 'Reserved' || $status eq 'Subnet') ) {
+                # must not be a host, and must be "reserved" or "subnet" to count towards usage
+                if ( $version == 4 ) {
+                    $count += $self->numhosts($prefix);
+                } elsif ( $version == 6 ) {
+                    $count += $self->numhosts_v6($prefix);
+                }
+            }
+        }
+    }
+
+    return $count;
+}
+
 
 
 
@@ -1148,6 +1212,15 @@ sub numhosts {
     return 2**(32-$x);
 }
 
+=head2 numhosts_v6
+    IPv6 version of numhosts
+=cut
+sub numhosts_v6 {
+    my ($self, $x) = @_;
+    return 2**(128-$x);
+}
+
+
 =head2 subnetmask
     Calculates the mask length of a subnet that can hold $x hosts
     Arguments:
@@ -1159,4 +1232,13 @@ sub subnetmask {
     my ($self, $x) = @_;
     return 32 - (log($x)/log(2));
 }
+
+=head2 subnetmask_v6
+    IPv6 version of subnetmask
+=cut
+sub subnetmask_v6 {
+    my ($self, $x) = @_;
+    return 128 - (log($x)/log(2));
+}
+
 

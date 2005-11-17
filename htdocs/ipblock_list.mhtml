@@ -62,10 +62,18 @@ if ( $type eq "address" ){
 	my @row = ();
 	push( @row, '<a href="ip-ws.html?id=' . $o->id . '">' . $o->address . '/' . $o->prefix . '</a>' );
 	push( @row, $o->status->name  );
-	if ( $o->status->name eq "Subnet"){
-	    push( @row, $ui->percent_bar(percent => ((scalar $o->children)/($ipm->subnet_num_addr($o))*100), shade=>1 ) );
-	}else{
-	    push ( @row, "" );
+	if ( $o->status->name eq "Subnet") {
+	    push( @row, $ui->percent_bar(percent => ((scalar $o->children)/($ipm->subnet_num_addr($o))*100) ) );
+	} elsif ($o->status->name eq "Container") {
+
+      my $total = new Math::BigInt($ipm->subnet_num_addr($o));
+      my $used1 = new Math::BigInt($ipm->address_usage($o));
+      my $used2 = new Math::BigInt($ipm->subnet_usage($o));
+
+      my $percent1 = ($used1*100/$total);
+      my $percent2 = ($used2*100/$total);
+
+      push( @row, $ui->percent_bar2( title1=>"Address Usage: ", title2=>"Subnet Usage: ", percent1=>$percent1, percent2=>$percent2 ) );
 	}
     if (int($o->owner) != 0) {
     	push( @row, $o->owner->name );

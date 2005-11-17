@@ -37,6 +37,8 @@ $dividefreespace   => 'max'
 %
 %
 <%init>
+use integer;
+
 my $DEBUG = 0;
 my $o;
 my $ci = 0;
@@ -745,16 +747,56 @@ my @cell_data = ( );
 
     my $delegate_dns = $ui->radio_group_boolean(object=>$o, column=>"dns_delegated", edit=>$edit_block, returnAsVar=>1);
 
+use Math::BigInt;
 if ($o->status->name eq "Subnet") {
-      my $used = (scalar $o->children);
-      my $total = $ipm->subnet_num_addr($o);
+      my $used = new Math::BigInt(scalar $o->children);
+      my $total = new Math::BigInt($ipm->subnet_num_addr($o));
       my $avail = $total - $used;
-      my $u = sprintf("%.1f", $used / $total * 100 );
+      my $percent = $used * 100 / $total;
+
+    my $available_text;
+    if ($o->version == 4) {
+        $available_text = "Used: ".$used." of ".$total." (".sprintf("%.1f", $percent )."%)&nbsp;&nbsp; Available: ".$avail;
+    } else {
+        my $used_text;
+        if ($total <= 65536) {
+            $used_text = $used." of ".$total." (".$percent."%)";
+        } else {
+            if ($used <= 65536) {
+                $used_text = $used;
+            } else {
+                if ($percent == 0) {
+                    if ($used > 0 ) {
+                        $used_text = "<1%";
+                    } else {
+                        $used_text = $percent."%";
+                    }
+                }
+            }
+        }
+        my $avail_text;
+        if ($total <= 65536) {
+            $avail_text = $avail;
+        } else {
+            if ($avail <= 65536) {
+                $avail_text = $avail;
+            } else {
+                if ($percent == 0) {
+                    if ($used > 0 ) {
+                        $avail_text = ">99%";
+                    } else {
+                        $avail_text = ($avail*100/$total)."%";
+                    }
+                }
+            }
+        }
+
+        $available_text = "Used: ".$used_text.", Available: ".$avail_text;
+    }
 
     push( @field_headers, "Utilization:" );
-    push( @cell_data, ($ui->percent_bar(numerator=>$used, denominator=>$total)).$used." of ".$total." (".$u."%), Avail: ".$avail );
-    #push( @cell_data, $used." of ".$total );
-    #push( @cell_data, $used." of ".$total." (".$u."%), Avail: ".$avail );
+    push( @cell_data, ($ui->percent_bar(percent=>$percent))
+        .'<div class="small">'.$available_text.'</div>' );
 
     push( @field_headers, "Enable DHCP:" );
     push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"dhcp_enabled", edit=>$edit_block, returnAsVar=>1) );
@@ -763,6 +805,35 @@ if ($o->status->name eq "Subnet") {
     push( @cell_data, $delegate_dns );
 
 } elsif( $o->status->name eq "Container" ) {
+      my $total = new Math::BigInt($ipm->subnet_num_addr($o));
+      my $used1 = new Math::BigInt($ipm->address_usage($o));
+      my $avail1 = $total - $used1;
+      my $title1;
+      if( $o->version == 4 ) {
+          $title1 = sprintf("%d of %d: ",$used1,$total);
+      }
+      my $used2 = new Math::BigInt($ipm->subnet_usage($o));
+      my $avail2 = $total - $used2;
+
+      my $percent1 = $used1*100/$total;
+      my $percent2 = $used2*100/$total;
+
+    my $available_text;
+    if ( $o->version == 4 ) {
+        $available_text = 'Available: '.($total-$used1).' addresses, '.(($total-$used2)*100/$total).'% subnet';
+    } else {
+        my $numaddresses;
+        if( $total - $used1 <= 65536 ) {
+            $numaddresses = $total - $used1;
+        } else {
+            $numaddresses = (($total-$used1)*100/$total).'%';
+        }
+        $available_text = 'Available: '.$numaddresses.' addresses, '.(($total-$used2)*100/$total).'% subnet';
+    }
+    push( @field_headers, "Utilization:" );
+    push( @cell_data, ($ui->percent_bar2(percent1=>$percent1, title1=>$title1, percent2=>$percent2))
+        .'<div class="small">'.$available_text.'</div>' );
+
     push( @field_headers, "DNS delegated?:" );
     push( @cell_data, $delegate_dns );
 }
@@ -787,7 +858,11 @@ if ($o->status->name eq "Subnet") {
         push( @cell_data, $new_subnet_form );
 
         push( @field_headers, "Choose Manually:" );
-        push( @cell_data, '<a href="ip-ws.html?id='.$id.'&view_availability=1">[view availablilty]</a>' );
+        if( $o->version == 4 ) {
+            push( @cell_data, '<a href="ip-ws.html?id='.$id.'&view_availability=1">[view availablilty]</a>' );
+        } else {
+            push( @cell_data, '<div title="Not yet supported for IPv6 addresses">[view availablilty]</div>' );
+        }
 
     }elsif ($o->status->name eq "Subnet"){
         push( @field_headers, "New address:" );
