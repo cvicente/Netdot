@@ -1,0 +1,32 @@
+<%doc>
+  Graph the database to avoid insanity.  The graph can be regenerated
+  whenever you like, e.g. after a schema change or if you don't like
+  the colors (they are random).
+</%doc>
+
+<%args>
+  $regenerate_graph => "false"
+</%args>
+
+<%init>
+my $message;
+if ($regenerate_graph eq "true") {
+  #use lib "/usr/local/netdot/lib";
+  use Netdot;
+  use GraphVizClassDBI;
+  # Remove the history tables.  NETDOT_PATH is defined in Default.conf.
+  my @tables = grep { $_ !~ /_history$/ } 
+    GraphVizClassDBI::get_tables("@{[$ui->{config}->{NETDOT_PATH}]}/lib/Netdot/DBI.pm", "'Netdot::DBI'");
+  GraphVizClassDBI::make_graph(@tables)->as_gif("@{[$ui->{config}->{NETDOT_PATH}]}/htdocs/img/graphs/schema-graph.jpg");
+  $message = " (Updated the graph as requested)";
+}
+</%init>
+<div class="container">
+  <div class="containerheadleft">Netdot Schema <% $message %></div>
+  <div class="containerheadright">
+    <a href="database-graph.html?regenerate_graph=true">[Regenerate Graph]</a>
+  </div>
+  <div class="containerbody">
+  <img src="img/graphs/schema-graph.jpg" />
+  </div>
+</div>

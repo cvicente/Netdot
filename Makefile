@@ -38,7 +38,7 @@ FMOD = 0644
 XMOD = 0744
 # If mason ever decides to use different directories in its data_dir there will
 # be trouble.
-DIR = bin doc htdocs/img htdocs/masondata/obj htdocs/masondata/cache tmp lib etc
+DIR = bin doc htdocs/img htdocs/img/graphs htdocs/masondata/obj htdocs/masondata/cache tmp lib etc
 
 .PHONY: tests bin doc htdocs lib etc
 
@@ -98,6 +98,9 @@ dir:
 	chmod 0750 $(PREFIX)/htdocs/masondata
 	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/tmp
 	chmod 750 $(PREFIX)/tmp
+# Graphs can be updated dynamically so apache needs +w
+	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/htdocs/img/graphs
+	chmod 0750 $(PREFIX)/htdocs/img/graphs
 
 htdocs:
 	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@ 
