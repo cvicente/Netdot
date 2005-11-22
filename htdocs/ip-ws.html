@@ -752,46 +752,31 @@ if ($o->status->name eq "Subnet") {
       my $used = new Math::BigInt(scalar $o->children);
       my $total = new Math::BigInt($ipm->subnet_num_addr($o));
       my $avail = $total - $used;
-      my $percent = $used * 100 / $total;
+      my $avail_percent = $ui->friendly_percent(value=>$avail,total=>$total);
+      my $used_percent  = $ui->friendly_percent(value=>$used,total=>$total);
+      my $percent = ($used*100)/$total;
 
     my $available_text;
     if ($o->version == 4) {
-        $available_text = "Used: ".$used." of ".$total." (".sprintf("%.1f", $percent )."%)&nbsp;&nbsp; Available: ".$avail;
+        $available_text = "Used: ".$used." of ".$total." &nbsp;&nbsp; Available: ".$avail." ".$avail_percent."(%)";
     } else {
         my $used_text;
-        if ($total <= 65536) {
-            $used_text = $used." of ".$total." (".$percent."%)";
-        } else {
-            if ($used <= 65536) {
-                $used_text = $used;
-            } else {
-                if ($percent == 0) {
-                    if ($used > 0 ) {
-                        $used_text = "<1%";
-                    } else {
-                        $used_text = $percent."%";
-                    }
-                }
+        if ($used <= 65536) {
+            $used_text = 'Used: '.$used;
+            if ($total <= 65536) {
+                $used_text .= ' of '.$total;
             }
+            $used_text .= ' &nbsp;&nbsp; ';
         }
-        my $avail_text;
-        if ($total <= 65536) {
-            $avail_text = $avail;
-        } else {
-            if ($avail <= 65536) {
-                $avail_text = $avail;
-            } else {
-                if ($percent == 0) {
-                    if ($used > 0 ) {
-                        $avail_text = ">99%";
-                    } else {
-                        $avail_text = ($avail*100/$total)."%";
-                    }
-                }
-            }
+        my $avail_text = 'Available: ';
+        if ($avail <= 65536) {
+            $avail_text .= $avail.' &nbsp;(';
         }
-
-        $available_text = "Used: ".$used_text.", Available: ".$avail_text;
+        $avail_text .= $ui->friendly_percent(value=>$avail,total=>$total);
+        if ($avail <= 65536) {
+            $avail_text .= ')';
+        }
+        $available_text = $used_text.$avail_text;
     }
 
     push( @field_headers, "Utilization:" );
@@ -806,33 +791,43 @@ if ($o->status->name eq "Subnet") {
 
 } elsif( $o->status->name eq "Container" ) {
       my $total = new Math::BigInt($ipm->subnet_num_addr($o));
-      my $used1 = new Math::BigInt($ipm->address_usage($o));
-      my $avail1 = $total - $used1;
-      my $title1;
-      if( $o->version == 4 ) {
-          $title1 = sprintf("%d of %d: ",$used1,$total);
-      }
-      my $used2 = new Math::BigInt($ipm->subnet_usage($o));
-      my $avail2 = $total - $used2;
 
-      my $percent1 = $used1*100/$total;
-      my $percent2 = $used2*100/$total;
+      my $used_a = new Math::BigInt($ipm->address_usage($o));
+      my $avail_a = $total - $used_a;
+      my $used_s = new Math::BigInt($ipm->subnet_usage($o));
+      my $avail_s = $total - $used_s;
 
-    my $available_text;
+      my $address_percent = $used_a*100/$total;
+      my $subnet_percent = $used_s*100/$total;
+
+    my $address_text;
+    my $subnet_text;
+
+    $subnet_text = 'Available: '.($ui->friendly_percent(value=>$avail_s,total=>$total));
+
     if ( $o->version == 4 ) {
-        $available_text = 'Available: '.($total-$used1).' addresses, '.(($total-$used2)*100/$total).'% subnet';
+        $address_text = 'Used: '.$used_a.' of '.$total.' &nbsp;&nbsp; Available: '.$avail_a.' ('.(100-$address_percent).'%)';
     } else {
-        my $numaddresses;
-        if( $total - $used1 <= 65536 ) {
-            $numaddresses = $total - $used1;
+        if( $used_a <= 65536 ) {
+            $address_text .= 'Used: '.$used_a;
+            if( $total <= 65536 ) {
+                $address_text .= ' of '.$total;
+            }
+            $address_text .= ' &nbsp;&nbsp; Available: ';
+            if( $total <= 65536 ) {
+                $address_text .= $avail_a;
+            }
+            $address_text .= ' '.$ui->friendly_percent(value=>$avail_a,total=>$total);
         } else {
-            $numaddresses = (($total-$used1)*100/$total).'%';
+            $address_text .= 'Available: '.$avail_a.' ('.(100-$address_percent).'%)';
         }
-        $available_text = 'Available: '.$numaddresses.' addresses, '.(($total-$used2)*100/$total).'% subnet';
     }
-    push( @field_headers, "Utilization:" );
-    push( @cell_data, ($ui->percent_bar2(percent1=>$percent1, title1=>$title1, percent2=>$percent2))
-        .'<div class="small">'.$available_text.'</div>' );
+
+    push( @field_headers, "Address Utilization:" );
+    push( @cell_data, $ui->percent_bar(percent=>$address_percent).'<div class="small">'.$address_text.'</div>' );
+
+    push( @field_headers, "Subnet Utilization:" );
+    push( @cell_data, $ui->percent_bar(percent=>$subnet_percent).'<div class="small">'.$subnet_text.'</div>' );
 
     push( @field_headers, "DNS delegated?:" );
     push( @cell_data, $delegate_dns );
@@ -887,7 +882,11 @@ if ($o->status->name eq "Subnet") {
         push( @cell_data, $new_address_form );
 
         push( @field_headers, "Choose Manually:" );
-        push( @cell_data, '<a href="ip-ws.html?id='.$id.'&view_availability=1">[view availability]</a>' );
+        if( $o->version == 4 ) {
+            push( @cell_data, '<a href="ip-ws.html?id='.$id.'&view_availability=1">[view availablilty]</a>' );
+        } else {
+            push( @cell_data, '<div title="Not yet supported for IPv6 addresses">[view availablilty]</div>' );
+        }
 
    }
 </%perl>

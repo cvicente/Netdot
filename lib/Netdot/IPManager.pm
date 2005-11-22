@@ -1172,7 +1172,8 @@ sub subnet_num_addr {
 
 
 =head2 address_usage
-    Returns the number of hosts in a given container
+    Returns the number of hosts in a given container.
+    Note: Supports IPv6 addresses.
 
     Arguments
         - $o: Ipblock object
@@ -1187,14 +1188,12 @@ sub address_usage {
 
     my $count = 0;
 
-    my $q = $self->{dbh}->prepare("SELECT id, address, prefix, version FROM Ipblock");
+    my $q = $self->{dbh}->prepare("SELECT id, address, prefix, version FROM Ipblock WHERE '".$start->numeric()."' <= address AND address <= '".$end->numeric()."'");
     $q->execute();
 
     while ( my ($id, $address, $prefix, $version) = $q->fetchrow_array() ) {
-        if( $start->numeric() <= $address && $address <= $end->numeric() ) {
-            if( ( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 ) ) {
-                $count++;
-            }
+        if( ( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 ) ) {
+            $count++;
         }
     }
 
@@ -1203,7 +1202,8 @@ sub address_usage {
 
 
 =head2 subnet_usage
-    Returns the number of used subnets in a given container
+    Returns the number of hosts covered by subnets in a given container.
+    Note: Supports IPv6 addresses.
 
     Arguments
         - $o: Ipblock object
@@ -1217,20 +1217,21 @@ sub subnet_usage {
     my $start = $container->network();
     my $end = $container->broadcast();
 
-    my $count = 0;
+    my $count = new Math::BigInt(0);
 
-    my $q = $self->{dbh}->prepare("SELECT Ipblock.id, address, version, prefix, name AS status FROM Ipblock, IpblockStatus WHERE Ipblock.status=IpblockStatus.id");
+    my $q = $self->{dbh}->prepare("SELECT Ipblock.id, address, version, prefix, name AS status ".
+        "FROM Ipblock, IpblockStatus ".
+        "WHERE Ipblock.status=IpblockStatus.id".
+        " AND ".$start->numeric()." <= address AND address <= ".$end->numeric());
     $q->execute();
 
     while ( my ($id, $address, $version, $prefix, $status) = $q->fetchrow_array() ) {
-        if ( $start->numeric() <= $address && $address <= $end->numeric() ) {
-            if( !(( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 )) && ($status eq 'Reserved' || $status eq 'Subnet') ) {
-                # must not be a host, and must be "reserved" or "subnet" to count towards usage
-                if ( $version == 4 ) {
-                    $count += $self->numhosts($prefix);
-                } elsif ( $version == 6 ) {
-                    $count += $self->numhosts_v6($prefix);
-                }
+        if( !(( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 )) && ($status eq 'Reserved' || $status eq 'Subnet') ) {
+            # must not be a host, and must be "reserved" or "subnet" to count towards usage
+            if ( $version == 4 ) {
+                $count += $self->numhosts($prefix);
+            } elsif ( $version == 6 ) {
+                $count += $self->numhosts_v6($prefix);
             }
         }
     }
@@ -1251,6 +1252,7 @@ sub subnet_usage {
 
  Returns a string with just the important parts of the ip address (i.e. 112.34)
 
+ Note: No support for IPv6 yet.
 =cut
 
 sub shorten_ip {
@@ -1292,6 +1294,7 @@ sub numhosts {
     IPv6 version of numhosts
 =cut
 sub numhosts_v6 {
+    use bigint;
     my ($self, $x) = @_;
     return 2**(128-$x);
 }

@@ -968,3 +968,37 @@ sub color_mix {
     return $r3.$g3.$b3;
 }
 
+
+=head2 friendly_percent
+
+ Returns a string representation of the integer percentage of a/b
+
+ Arguments:
+    - value: the numerator.
+    - total: the denominator.
+
+ If value/total < 0.01, returns a string "<1%" instead of the "0%" which
+ would otherwise show up. Similarly, with 99%.
+
+=cut
+sub friendly_percent {
+    my ($self, %args) = @_;
+    my ($value, $total) = ($args{value}, $args{total});
+    my $string;
+
+    if ($value == 0) {
+        return "0%";
+    } elsif ($value == $total) {
+        return "100%";
+    } else {
+        my $p = int(($value*100) / $total);
+
+        if ($p < 1) {
+            return "<1%";
+        } elsif ($p >= 99) {
+            return ">99%";
+        } else {
+            return $p."%";
+        }
+    }   
+}
