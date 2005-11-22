@@ -37,60 +37,65 @@ my $dbh = DBI->connect ("dbi:$DB_TYPE:$DB_DATABASE", "$DB_NETDOT_USER", "$DB_NET
 my @tables = $dbh->tables;
 map { $_ =~ s/\`//g } @tables;
 
+my $sth2 = $dbh->prepare(" SELECT columnorderbrief,linksto,linksfrom 
+                           FROM Meta 
+                           WHERE name = ? ");
+
 foreach my $table (@tables){
     print ("\n\n######################################################################\n");
     print "package $table;\n";
     print "use base 'Netdot::DBI';\n";
     print "__PACKAGE__->table( '$table' );\n";
-    my $sth = $dbh->prepare("SELECT * FROM $table");
-    $sth->execute;
-    my ($i, %cols, @tmp);
-    for ($i = 0; $i < $sth->{NUM_OF_FIELDS}; $i++){
-	$cols{$sth->{NAME}->[$i]} = '';
+    # Get the names of the columns from the database
+    # This has to be 'prepared' here since DBI won't accept 
+    # the table name as a  parameter.
+    # The id = 0 criteria makes sure we don't waste time retrieving
+    # any records
+    my $sth1 = $dbh->prepare("SELECT * FROM $table WHERE id = 0");
+    $sth1->execute();
+    my ($i, %cols, @essential);
+    for ($i = 0; $i < $sth1->{NUM_OF_FIELDS}; $i++){
+	$cols{$sth1->{NAME}->[$i]} = '';
     }
-    
     print "__PACKAGE__->columns( Primary => qw / id /);\n";
     delete $cols{id};
     my $hist = 1 if ($table =~ s/_history//);
-    @tmp = split /,/, 
-    $dbh->selectrow_array("SELECT columnorderbrief FROM Meta WHERE name='$table'");
-    delete $cols{$_} foreach (@tmp);
+
+    $sth2->execute($table);
+    my $hr = $sth2->fetchrow_hashref();
+    @essential = split /,/, $hr->{columnorderbrief};
+	
+    delete $cols{$_} foreach (@essential);
     
-    my $essential = join ' ', @tmp;
-    print "__PACKAGE__->columns( Essential => qw / $essential /);\n" if scalar(@tmp);
+    my $essential = join ' ', @essential;
+    print "__PACKAGE__->columns( Essential => qw / $essential /);\n" if scalar(@essential);
     
     my $others = join ' ', keys %cols;
     print "__PACKAGE__->columns( Others => qw / $others /);\n" if scalar (keys %cols);
 
-    my @hasALn = $dbh->selectrow_array("SELECT linksto FROM Meta WHERE name='$table'");
-    my @hasManyLn = $dbh->selectrow_array("SELECT linksfrom FROM Meta WHERE name='$table'");
+    my @hasAs    = split /,/, $hr->{linksto};
+    my @hasManys = split /,/, $hr->{linksfrom};
     
-    foreach my $line (@hasALn){
-	my @items = split /,/, $line;
-	foreach my $item (@items){
-	    my ($col, $tab) = split /:/, $item;
-	    print "__PACKAGE__->has_a( $col => '$tab' );\n";
-	}
+    foreach my $item (@hasAs){
+	my ($col, $tab) = split /:/, $item;
+	print "__PACKAGE__->has_a( $col => '$tab' );\n";
     }
     unless ( $hist ){
-	foreach my $line (@hasManyLn){
-	    my @items = split /,/, $line;
-	    foreach my $item (@items){
-		my @fields = split /:/, $item; 
-		my $numfields = scalar @fields;
-		if ($numfields == 3){
-		    my ($meth, $tab, $col) = split /:/, $item; 
-		    print "__PACKAGE__->has_many( '$meth', '$tab' => '$col' );\n";
-		}elsif ($numfields == 4){
-		    my ($meth, $tab, $col, $args) = split /:/, $item; 
-		    $args =~ s/cascade=>"Nullify"/cascade=>"Class::DBI::Cascade::Nullify"/;
-		    print "__PACKAGE__->has_many( '$meth', '$tab' => '$col', $args );\n";
-		}else{
-		    print STDERR "ERROR!: Incorrect number of fields: $numfields, in linksfrom for table $table\n";
-		    print STDERR "fields are: ", join (', ', @fields), "\n";
-		    print STDERR "$0: exited abnormally\n";
-		    exit;
-		}
+	foreach my $item (@hasManys){
+	    my @fields = split /:/, $item; 
+	    my $numfields = scalar @fields;
+	    if ($numfields == 3){
+		my ($meth, $tab, $col) = split /:/, $item; 
+		print "__PACKAGE__->has_many( '$meth', '$tab' => '$col' );\n";
+	    }elsif ($numfields == 4){
+		my ($meth, $tab, $col, $args) = split /:/, $item; 
+		$args =~ s/cascade=>"Nullify"/cascade=>"Class::DBI::Cascade::Nullify"/;
+		print "__PACKAGE__->has_many( '$meth', '$tab' => '$col', $args );\n";
+	    }else{
+		print STDERR "ERROR!: Incorrect number of fields: $numfields, in linksfrom for table $table\n";
+		print STDERR "fields are: ", join (', ', @fields), "\n";
+		print STDERR "$0: exited abnormally\n";
+		exit;
 	    }
 	}
     } 
