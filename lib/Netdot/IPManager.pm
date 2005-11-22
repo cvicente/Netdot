@@ -1010,30 +1010,93 @@ sub auto_allocate {
 
 =head2 build_tree -  Builds the IPv4 or IPv6 space tree
 
-A very fast, simplified digital tree (or trie) that sets
-the dependencies of ipblock objects.
+A very fast, simplified digital tree (or trie) that establishes
+the hierarchy of Ipblock objects.  
 
-Arguments: IP space version (4/6)
+Background: 
+A trie structure is based on a radix tree using a radix of two.  
+This is commonly used in routing engines, which need to quickly find the best 
+match for a given address against a list of prefixes.
+The term "Trie" is derived from the word "retrieval".
+For more information on digital trees, see:
+   * Algorithms in C, Robert Sedgewick
+
+How it works:
+A digital tree is built by performing a binary comparison on each bit of 
+the number (in this case, the IP address) sequentially, starting from the 
+most significant bit.  
+
+Example:
+Given these two IP addresses:
+                 bit 31                                0
+                     |                                 |
+   10.0.0.0/8      : 00001010.00000000.00000000.00000000/8
+   10.128.0.0/32   : 00001010.10000000.00000000.00000000/32
+
+Starting with the first address:
+
+bit     tree position
+-------------------------------------------------------------------
+31             0
+30           0
+29         0
+28       0
+27         1
+26       0
+25         1
+24       0    <-- Prefix position (size - prefix).  Stop and save object id
+
+
+Continuing with the second address:
+
+bit     tree position
+-------------------------------------------------------------------
+31             0
+30           0
+29         0
+28       0
+27         1
+26       0
+25         1
+24       0    <-- Object found.  Save id as possible parent
+23          1  
+22     0
+
+...continued until bit 0
+
+Since there are no more objects to process, it is determined
+that the "parent" of the second adddress is the first address.
+
+Arguments: IP version (4/6)
 
 =cut
 
-sub build_tree { 
-    use bigint;
+sub build_tree {
     my ($self, $version) = @_;
-    unless ($version == 4 || $version == 6){
+    my $size;           #Number of bits in the address
+    if ( $version == 4 ){
+	$size = 32;
+    }elsif ( $version == 6 ){
+	use bigint; 	# IPv6 numbers are larger than what a normal integer can hold
+	$size = 128;
+    }else{
 	$self->error("Invalid IP version: $version");
 	return 0;
     }
-    my $size = ($version == 4)? 32 : 128;
-    my $trie = {};
-    my %parents;
-    # Override Class::DBI for speed.
+    
+    my $trie = {};      # Empty hashref.  Will store the binary tree
+    my %parents;        # Associate Ipblock objects with their parents
+
+    # Retrieve all the Ipblock objects of given version.
+    # Order them by prefix to make sure that bigger blocks (smallest prefix) are
+    # inserted first in the tree
+    # We override Class::DBI for speed.
     my $sth;
     eval {
 	$sth = $self->{dbh}->prepare("SELECT id,address,prefix,parent 
-                                     FROM Ipblock 
-                                     WHERE version = $version 
-                                     ORDER BY prefix");	
+                                      FROM Ipblock 
+                                      WHERE version = $version 
+                                      ORDER BY prefix");	
 	$sth->execute;
     };
     if ($@){
@@ -1042,27 +1105,38 @@ sub build_tree {
     }
     
     while (my ($id,$address,$prefix,$parent) = $sth->fetchrow_array){
-	my $p = $trie;
-	my $bit = $size;
-	my $last_p;
+	my $p = $trie;      # pointer that starts at the root
+	my $bit = $size;    # bit position.  Start at the most significant bit
+	my $last_p;         # Last possible parent found
 	while ($bit > $size - $prefix){
 	    $bit--;
 	    $last_p = $p->{id} if defined $p->{id};
 	    #
-	    # If we reach a subnet leaf, all /32s (or /128s) below it
-	    # don't need to be inserted.  Purpose is to find parents
+	    # If we reach a leaf, all /32s (or /128s) below it
+	    # don't need to be inserted in the tree.  
+	    # Our purpose is to find parents as quickly as possible
 	    last if (defined $last_p && $prefix == $size && !(keys %$p));
-
-	    my $r = ($address & 2**$bit)/2**$bit;
+	    
+	    # bit comparison.
+	    # It returns 1 or 0
+	    my $r = ($address & 2**$bit)/2**$bit; 
+ 
+	    # Insert the node if it does not exist
 	    if (! exists $p->{$r} ){
 		$p->{$r} = {};	
 	    }
+	    # Walk one step down the tree
 	    $p = $p->{$r};
+	    
+	    # Store the id of the object if we have reached 
+	    # its prefix position (the rest of the bits are not significant)
 	    $p->{id} = $id if ($bit == $size - $prefix);
 	}    
 	# Parent is the last valid node known
+	# (do not save unless it has changed)
 	$parents{$id} = $last_p if ($parent != $last_p);
     }
+    # Reflect changes in db
     undef $sth;
     eval {
 	$sth = $self->{dbh}->prepare("UPDATE Ipblock SET parent = ? WHERE id = ?");
