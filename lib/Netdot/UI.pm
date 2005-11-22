@@ -1002,3 +1002,28 @@ sub friendly_percent {
         }
     }   
 }
+
+=head2 format_size
+
+  Turns "1048576" into "1mb". Allows user to specify maximum unit to show.
+
+  Arguments:
+    $bytes - integer value
+    $max_unit - how many divisions by 1024 to allow at most. (i.e. 3 would show $bytes in gigabytes)
+
+=cut
+sub format_size {
+    my ($self, $bytes, $max_unit) = @_;
+    my $size_index = 0;
+    my @sizes = ('b', 'kb', 'mb', 'gb', 'tb', 'pb', 'eb');
+
+    if( $max_unit == 0 ) { $max_unit = 2; }
+    if( $max_unit > @sizes ) { $max_unit = @sizes; }
+
+    while( $bytes > 1024 && $size_index < $max_unit ) {
+        $bytes = $bytes / 1024;
+        $size_index++;
+    }
+
+    return sprintf("%.0f",$bytes).' '.($sizes[$size_index]);
+}

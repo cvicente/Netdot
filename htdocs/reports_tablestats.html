@@ -1,0 +1,116 @@
+<%doc>
+Table Information
+
+</%doc>
+
+<%flags>
+inherit => 'section_reports.html' 
+
+</%flags>
+
+<%attr>
+title   => 'Table Information' 
+section => 'Reports'
+</%attr>
+
+<%init>
+my $DEBUG      = 0;
+my $netdot;
+</%init>
+
+<%perl>
+
+$netdot = new Netdot();
+
+my (@headers, @rows) = ();
+@headers = ( 'Table', 'Rows', 'Data Length', 'Index Length', 'Max Data Length', 'Data Free', 'Create Time', 'Update Time', 'Comment' );
+
+my $q = $netdot->{dbh}->prepare("SHOW TABLE STATUS");
+$q->execute();
+
+my $data_sum;
+my $index_sum;
+my $data_data_sum;
+my $data_index_sum;
+my $history_data_sum;
+my $history_index_sum;
+
+while ( my ($name, $engine, $version, $row_format, $rows, $avg_row_len, $data_len, $max_data_len, 
+            $index_len, $data_free, $auto_increment, $create_time, $update_time, $check_time, $collation,
+            $checksum, $create_options, $comment) = $q->fetchrow_array() ) {
+    my @row = ();
+    push( @row, $name );
+    push( @row, $rows );
+    push( @row, $ui->format_size($data_len) );
+    push( @row, $ui->format_size($index_len) );
+    push( @row, $ui->format_size($max_data_len) );
+    push( @row, $ui->format_size($data_free) );
+    push( @row, $create_time );
+    push( @row, $update_time );
+    push( @row, $comment );
+    push( @rows, \@row );
+
+    $data_sum += $data_len;
+    $index_sum += $index_len;
+
+    if( substr($name, -8) eq "_history" ) {
+        $history_data_sum += $data_len;
+        $history_index_sum += $index_len;
+    } else {
+        $data_data_sum += $data_len;
+        $data_index_sum += $index_len;
+    }
+
+}
+
+{
+my @row = ();
+push( @row, "<b>Total Size:</b>" );
+push( @row, "&nbsp;" );
+push( @row, "<b>".$ui->format_size($data_sum)."</b>" );
+push( @row, "<b>".$ui->format_size($index_sum)."</b>" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @rows, \@row );
+}
+
+{
+my @row = ();
+push( @row, "Size of Data:" );
+push( @row, "&nbsp;" );
+push( @row, $ui->format_size($data_data_sum) );
+push( @row, $ui->format_size($data_index_sum) );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @rows, \@row );
+}
+
+{
+my @row = ();
+push( @row, "Size of History:" );
+push( @row, "&nbsp;" );
+push( @row, $ui->format_size($history_data_sum) );
+push( @row, $ui->format_size($history_index_sum) );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
+push( @rows, \@row );
+}
+
+</%perl>
+
+<div class="container">
+<div class="containerhead">
+    Table Information
+</div>
+<div class="containerbody">
+<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+</div>

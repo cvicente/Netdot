@@ -49,12 +49,20 @@ if ( exists $t{'Unknown'} ){
 
 </%init>
 
-<div class="containerseparator">A total of <% $grandtotal %> devices in the inventory:</div>
+<div class="container">
+<div class="containerhead">Device Inventory</div>
+<div class="containerbody">
 
 <%perl>
 my (@headers, @rows) = ();
 
 @headers = ( 'Type', 'Product', 'Count', );
+
+    my @row = ();
+    push( @row, "Total Devices in Inventory:" );
+    push( @row, "&nbsp;" );
+    push( @row, $grandtotal );
+    push( @rows, \@row );
 
 foreach my $pt ( sort keys %t ){
     my @row = ();
@@ -78,3 +86,6 @@ foreach my $pt ( sort keys %t ){
 }
 </%perl>
 <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
+</div>
+</div>
