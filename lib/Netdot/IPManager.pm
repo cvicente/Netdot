@@ -1018,6 +1018,7 @@ Arguments: IP space version (4/6)
 =cut
 
 sub build_tree { 
+    use bigint;
     my ($self, $version) = @_;
     unless ($version == 4 || $version == 6){
 	$self->error("Invalid IP version: $version");
@@ -1051,6 +1052,7 @@ sub build_tree {
 	    # If we reach a subnet leaf, all /32s (or /128s) below it
 	    # don't need to be inserted.  Purpose is to find parents
 	    last if (defined $last_p && $prefix == $size && !(keys %$p));
+
 	    my $r = ($address & 2**$bit)/2**$bit;
 	    if (! exists $p->{$r} ){
 		$p->{$r} = {};	
