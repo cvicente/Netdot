@@ -73,14 +73,26 @@ my $fqdn;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 if ( $submit eq "search" ){
-    if ( $search eq "unknown type" ){
-	# The keyword "unknown type" is reserved and returns
-	# devices with not productname set
-	@$list = Device->search( productname => 0 );
+    # Advanced search.  User is passing
+    # key/value pairs
+    if ( $search =~ /\w+:\w+/){
+	my @pairs = split /,/, $search;
+	my %parms;
+	foreach ( @pairs ){
+	    my ($key, $value) = split /:/, $_;
+	    if ( $key eq "ProductType" ){
+		# Special case
+		@$list = $dm->getdevsbytype($value);
+		last;
+	    }else{
+		$parms{$key} = $value;
+	    }
+	}
+	@$list = Device->search(\%parms) if ( ! $list );
 	
+	# Default is to search device names
     }elsif( $search ){
-	# remove spaces
-	$search =~ s/\s*//g;
+	$search =~ s/\s*//g;    	# remove spaces
 	unless ( ($list = $dns->getdevbynamelike($search)) ){
 print <<EOF;
 	    <div class="container">

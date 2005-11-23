@@ -1727,6 +1727,27 @@ sub getproductsbytype {
     return;
 }
 
+=head2 getdevsbytype  - Get all devices of given type
+   
+  Arguments:
+    id of ProductType
+    if id is 0, return products with no type set
+  Returns:
+    array of Device objects
+
+=cut
+
+sub getdevsbytype {
+    my ($self, $id) = @_;
+    my @objs;
+    if ( $id ){
+	if ( @objs = Device->search_bytype( $id ) ){
+	    return @objs;
+	}
+    }
+    return;
+}
+
 =head2 add_interfaces - Manually add a number of interfaces to an existing device
 
 The new interfaces will be added with numbers starting after the highest existing 

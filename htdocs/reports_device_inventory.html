@@ -20,7 +20,9 @@ my %t;
 
 foreach my $pt ( sort { $a->name cmp $b->name } ProductType->retrieve_all ){
     $t{$pt->name}{total} = 0;
-    foreach my $o ( $dm->getproductsbytype($pt) ){
+    $t{$pt->name}{id}    = $pt->id;
+    my @prods            = $dm->getproductsbytype($pt);
+    foreach my $o ( @prods ){
 	$t{$pt->name}{prod}{$o->name}{id}   = $o->id;
 	$t{$pt->name}{prod}{$o->name}{num}  = $o->numdevs;
 	$t{$pt->name}{total}               += $o->numdevs;
@@ -66,7 +68,7 @@ my (@headers, @rows) = ();
 
 foreach my $pt ( sort keys %t ){
     my @row = ();
-    push( @row, '<strong>' . $pt . '</strong>' );
+    push( @row, "<strong><a href=\"device.html?submit=search&search=ProductType:$t{$pt}{id}\">" . $pt . "</a></strong>" );
     push( @row, "" );
     push( @row, '<strong>' . $t{$pt}{total} . '</strong>' );
     push( @rows, \@row );
@@ -77,7 +79,7 @@ foreach my $pt ( sort keys %t ){
 	if ( $t{$pt}{prod}{$product}{id} ){
 	    push( @row, '<a href="view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
 	}elsif ( $product eq "Unknown" ){
-	    push( @row, '<a href="device.html?submit=search&search=unknown type">' . $product . '</a>' );
+	    push( @row, '<a href="device.html?submit=search&search=productname:0">' . $product . '</a>' );
 	}
 	push( @row, $t{$pt}{prod}{$product}{num}  );
 	push( @rows, \@row );

@@ -202,3 +202,14 @@ Product->set_sql(notype => qq{
     });
 
 Product->columns(TEMP => qw/numdevs/);
+
+# Get devices by type
+Device->set_sql(bytype => qq{
+    SELECT d.id
+	FROM Device d, Product p, ProductType t, RR rr
+	WHERE d.productname = p.id AND
+	p.type = t.id AND
+	rr.id = d.name AND
+	t.id = ?
+	ORDER BY rr.name
+    });
