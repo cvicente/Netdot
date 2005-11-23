@@ -83,7 +83,7 @@ sub setup{
     # Put APAN's stuff in a separate file
     if ( $self{rtt} ){
 	push @{ $self{files_arr} }, 'apan';
-
+    }
   
     # Map Netdot's service names to Nagios' plugin names
     # Make sure you have all these checks defined in your Nagios config
@@ -135,8 +135,8 @@ sub gather_data{
 	# order is: subnet entity, subnet description, device entity
 	my $group;
 	if ( int($ipobj->parent) != 0 ){
-	    if ( int($ipobj->parent->entity) != 0 ){
-		$group = $ipobj->parent->entity->name;
+	    if ( int($ipobj->parent->used_by) != 0 ){
+		$group = $ipobj->parent->used_by->name;
 	    }elsif ( $ipobj->parent->description ){
 		$group = $ipobj->parent->description;
 	    }
@@ -162,14 +162,12 @@ sub gather_data{
 	if( ($clobj = $ipobj->interface->contactlist) != 0 ){
 	    push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
 	    
-	}elsif( ($clobj = $ipobj->interface->device->contactlist) != 0 ){
-	    push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
-	    
-	    # If device has a second contactlist, add it too
-	    if( ($clobj = $ipobj->interface->device->contactlist2) != 0 ){
-		push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
+	    # Devices can have many contactlists
+	    # This gets me DeviceContacts objects (join table)
+	}elsif(  (my @dcs = $ipobj->interface->device->contacts) ){
+	    foreach my $dc ( @dcs ){
+		push @{ $hosts{$ipobj->id}{contactlists} }, $dc->contactlist;
 	    }
-	    
 	}elsif( ($clobj = $ipobj->interface->device->entity->contactlist) != 0 ){
 	    push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
 	}
@@ -337,7 +335,7 @@ sub build_configs{
 				print "}\n\n";
 				if ( $self{traps} ){
 				    print "define service{\n";
-				    print "\tuse                     generic-trap-service\n";
+				    print "\tuse                     generic-trap\n";
 				    print "\thost_name               $hostname\n";
 				    print "\tcontact_groups          $contact_groups\n";
 				    print "}\n\n";
@@ -382,24 +380,18 @@ sub build_configs{
 			if ( $self{addtraps} ){
 			    # Define a TRAP service for every host
 			    print "define service{\n";
-			    print "\tuse                    generic-trap-service\n";
+			    print "\tuse                    generic-trap\n";
 			    print "\thost_name              $hostname\n";
 			    print "\tcontact_groups         nobody\n";
-			    print "\tnotification_options   c\n";
 			    print "}\n\n";
 			}
 		    }
-
+		    
 		    if ( $self{rtt} ){
 			# Define RTT (Round Trip Time) as a service
 			print "define service{\n";
 			print "\thost_name              $hostname\n";
-			print "\tservice_description    RTT\n";
-			print "\tcheck_command          apan!ping!2000.0,60%!5000.0,100%\n";
-			print "\tname                   RTT\n";
-			print "\tuse                    generic-ping\n";
-			print "\tnormal_check_interval  5\n";
-			print "\tcontact_groups         nobody\n";
+			print "\tuse                    generic-RTT\n";
 			print "}\n\n";
 			
 			print "define serviceextinfo{\n";
@@ -417,8 +409,6 @@ sub build_configs{
 			print "define service{\n";
 			print "\tuse                    generic-ping\n";
 			print "\thost_name              $hostname\n";
-			print "\tcontact_groups         nobody\n";
-			print "\tnotification_options   c\n";
 			print "}\n\n";
 		    }
 		    
@@ -609,8 +599,7 @@ sub build_configs{
 			    print "\tcontact_groups       nobody\n";
 			    print "\tcheck_command        $checkcmd\n";
 			    print "}\n\n";
-			}				
-			
+			}
 		    }
 		}
 		

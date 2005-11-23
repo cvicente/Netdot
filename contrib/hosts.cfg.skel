@@ -8,35 +8,36 @@
 #
 
 define host{
-	name				generic-host	; The name of this host template - referenced in other host definitions, used for template recursion/resolution
-	notifications_enabled		1	; Host notifications are enabled
-	event_handler_enabled		1	; Host event handler is enabled
-	flap_detection_enabled		1	; Flap detection is enabled
-	process_perf_data		1	; Process performance data
-	retain_status_information	1	; Retain status information across program restarts
-	retain_nonstatus_information	1	; Retain non-status information across program restarts
+	name				generic-host
+	notifications_enabled		1
+	event_handler_enabled		1
+	flap_detection_enabled		1
+	process_perf_data		1
+	retain_status_information	1
+	retain_nonstatus_information	1
 	check_command			check-host-alive
 	max_check_attempts		5
 	notification_interval		60
 	notification_period		24x7
 	notification_options		d,r
-	register			0	; DONT REGISTER THIS DEFINITION - ITS NOT A REAL HOST, JUST A TEMPLATE!
+	contact_groups                  nobody
+	register			0
 	}
 
 
 define service{
-	name				generic-service	; The 'name' of this service template, referenced in other service definitions
-	active_checks_enabled		1	; Active service checks are enabled
-	passive_checks_enabled		1	; Passive service checks are enabled/accepted
-	parallelize_check		1	; Active service checks should be parallelized (disabling this can lead to major performance problems)
-	obsess_over_service		1	; We should obsess over this service (if necessary)
-	check_freshness			0	; Default is to NOT check service 'freshness'
-	notifications_enabled		1	; Service notifications are enabled
-	event_handler_enabled		1	; Service event handler is enabled
-	flap_detection_enabled		1	; Flap detection is enabled
-	process_perf_data		1	; Process performance data
-	retain_status_information	1	; Retain status information across program restarts
-	retain_nonstatus_information	1	; Retain non-status information across program restarts
+	name				generic-service
+	active_checks_enabled		1
+	passive_checks_enabled		1
+	parallelize_check		1
+	obsess_over_service		1
+	check_freshness			0
+	notifications_enabled		1
+	event_handler_enabled		1
+	flap_detection_enabled		1
+	process_perf_data		1
+	retain_status_information	1
+	retain_nonstatus_information	1
 	is_volatile			0
 	check_period			24x7
 	max_check_attempts		5
@@ -57,28 +58,37 @@ define service{
 	max_check_attempts		5
 	normal_check_interval		5
 	notification_options		n       ; Don't notify for service PING.  Leave that to the host check
+	contact_groups                  nobody
 	register			0	
 }
 
+define service{
+        name                            generic-RTT
+        service_description             RTT
+        check_command                   apan!ping!2000.0,60%!5000.0,100%
+        use                             generic-ping
+        normal_check_interval           5
+        contact_groups                  nobody
+	register			0	
+}
 
 define service{
-	name				generic-trap-service	; The 'name' of this service template, referenced in other service definitions
+	name				generic-trap
 	active_checks_enabled		0	
 	service_description 		TRAP 		
 	is_volatile 			1 
-	check_command 			check-host-alive;  Used to reset the status to OK when 'Schedule an immediate check of this service' 
-							;  is selected.
+	check_command 			check-host-alive;
 	max_check_attempts 		1
 	normal_check_interval 		1
 	retry_check_interval 		1
 	passive_checks_enabled 		1
 	check_period 			none 	
-	notification_interval 		31536000 ; Set to a very high number to prevent you from getting pages of previously received traps 
-						 ;  (1 year - restart Nagios at least once a year! - do not set to 0!).
+	notification_interval 		31536000
 	notification_period 		24x7
-	notification_options 		c,r
+	notification_options 		c
 	notifications_enabled 		1
 	flap_detection_enabled		0
+	contact_groups                  nobody
 	register			0	
 }
 
