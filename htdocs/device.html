@@ -829,7 +829,7 @@ if ( $view eq "Interfaces" || $view eq "All" ){
     
     if ( exists $intinfo{jack} || $editints ){
       push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>' );
-      @closet_jacks = ( int($o->closet) != 0 ) ? $o->closet->horizontalcables : "";
+      @closet_jacks = $o->closet->horizontalcables if ( int($o->closet) != 0 );
     }
     if ( exists $intinfo{room_char} || $editints ){
       push( @headers, 'Room' );
@@ -881,10 +881,16 @@ if ( $view eq "Interfaces" || $view eq "All" ){
       push( @row, $ui->radio_group_boolean(object=>$if, column=>"monitored", edit=>$editints, returnAsVar=>1) );
       push( @row, $ui->radio_group_boolean(object=>$if, column=>"snmp_managed", edit=>$editints, returnAsVar=>1) );
       
-      if ( exists $intinfo{jack} || $editints ){
-	push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
-				       defaults=>\@closet_jacks, edit=>$editints, linkPage=>"cable_horizontal.html", 
-				       returnAsVar=>1) );
+    if ( exists $intinfo{jack} || $editints ){
+        if ( @closet_jacks ){
+	    push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
+					   defaults=>\@closet_jacks, edit=>$editints, linkPage=>"cable_horizontal.html", 
+					   returnAsVar=>1) );
+        }else{
+	    push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
+					   edit=>$editints, linkPage=>"cable_horizontal.html", 
+					   returnAsVar=>1) );
+	}
       }
       if ( exists $intinfo{room_char} || $editints ){
 	push( @row, $ui->text_field(object=>$if, column=>"room_char", edit=>$editints, 
