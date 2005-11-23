@@ -19,20 +19,28 @@ $Cancel =>   undef
 %
 %
 <%init>
+my $DEBUG = 0;
 my %state;
 my $ipobj;
 my $iplbl;
 my $cl;
 my $dev;
+
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
 if ( $ip ){
     unless ( $ipobj = Ipblock->retrieve($ip) ){
 	$m->comp("error.mhtml", error => "Could not retrieve Ipblock id $ip");
     }
     $iplbl = $ui->getobjlabel($ipobj, "/");
     if ( $ipobj->interface && ( $dev = $ipobj->interface->device ) ){
-	$cl = $dev->contactlist;
+	if ( my @dcs = $dev->contacts ){
+	    # Grab the first one
+	    $cl = $dcs[0]->contactlist;
+	}
     }
 }
+
 my %reserved = ( Add    => "",
 		 Cancel => "",
 		);
@@ -109,12 +117,16 @@ if ( $Add ){
     push( @field_headers, "Monitored: " );
     push( @cell_data, '<input type="checkbox" name="monitored" CHECKED>' );
 
-    push( @field_headers, "Contact Group: " );
+    push( @field_headers, "Contact List: " );
     push( @cell_data, 
 &{sub{
     my $ac = '<select name="contactlist">';
     foreach my $o ( sort { $a->name cmp $b->name } ContactList->retrieve_all() ){
+	if ( $cl->id == $o->id ){
+	    $ac .= '<option value="'.$o->id.'" SELECTED>'.$o->name.'</option>';
+	}else{
 	    $ac .= '<option value="'.$o->id.'">'.$o->name.'</option>';
+	}
     }
     $ac .= '</select>';
     $ac;
@@ -128,7 +140,7 @@ if ( $Add ){
 
 </form>
 
-% } #else
+%} #else
 
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
