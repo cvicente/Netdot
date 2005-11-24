@@ -20,12 +20,10 @@ my $netdot;
 
 <%perl>
 
-$netdot = new Netdot();
-
 my (@headers, @rows) = ();
 @headers = ( 'Table', 'Rows', 'Data Length', 'Index Length', 'Max Data Length', 'Data Free', 'Create Time', 'Update Time', 'Comment' );
 
-my $q = $netdot->{dbh}->prepare("SHOW TABLE STATUS");
+my $q = $ui->{dbh}->prepare("SHOW TABLE STATUS");
 $q->execute();
 
 my $data_sum;

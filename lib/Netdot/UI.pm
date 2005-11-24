@@ -1020,7 +1020,7 @@ sub friendly_percent {
 sub format_size {
     my ($self, $bytes, $max_unit) = @_;
     my $size_index = 0;
-    my @sizes = ('b', 'kb', 'mb', 'gb', 'tb', 'pb', 'eb');
+    my @sizes = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB');
 
     if( $max_unit == 0 ) { $max_unit = 2; }
     if( $max_unit > @sizes ) { $max_unit = @sizes; }
