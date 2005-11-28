@@ -757,23 +757,21 @@ if ($o->status->name eq "Subnet") {
       my $percent = ($used*100)/$total;
 
     my $available_text;
-    if ($o->version == 4) {
-        $available_text = "Used: ".$used." of ".$total." &nbsp;&nbsp; Available: ".$avail." ".$avail_percent."(%)";
-    } else {
+    {
         my $used_text;
-        if ($used <= 65536) {
+        if ($used <= $ui->{config}->{SHOW_COUNT_THRESHOLD}) {
             $used_text = 'Used: '.$used;
-            if ($total <= 65536) {
+            if ($total <= $ui->{config}->{SHOW_COUNT_THRESHOLD}) {
                 $used_text .= ' of '.$total;
             }
-            $used_text .= ' &nbsp;&nbsp; ';
+            $used_text .= ' &nbsp;&nbsp;';
         }
         my $avail_text = 'Available: ';
-        if ($avail <= 65536) {
+        if ($avail <= $ui->{config}->{SHOW_COUNT_THRESHOLD}) {
             $avail_text .= $avail.' &nbsp;(';
         }
         $avail_text .= $ui->friendly_percent(value=>$avail,total=>$total);
-        if ($avail <= 65536) {
+        if ($avail <= $ui->{config}->{SHOW_COUNT_THRESHOLD}) {
             $avail_text .= ')';
         }
         $available_text = $used_text.$avail_text;
@@ -805,23 +803,26 @@ if ($o->status->name eq "Subnet") {
 
     $subnet_text = 'Available: '.($ui->friendly_percent(value=>$avail_s,total=>$total));
 
-    if ( $o->version == 4 ) {
-        $address_text = 'Used: '.$used_a.' of '.$total.' &nbsp;&nbsp; Available: '.$avail_a.' ('.(100-$address_percent).'%)';
-    } else {
-        if( $used_a <= 65536 ) {
+        if( $used_a <= $ui->{config}->{SHOW_COUNT_THRESHOLD} ) {
             $address_text .= 'Used: '.$used_a;
-            if( $total <= 65536 ) {
+            if( $total <= $ui->{config}->{SHOW_COUNT_THRESHOLD} ) {
                 $address_text .= ' of '.$total;
             }
             $address_text .= ' &nbsp;&nbsp; Available: ';
-            if( $total <= 65536 ) {
-                $address_text .= $avail_a;
+            if( $total <= $ui->{config}->{SHOW_COUNT_THRESHOLD} ) {
+                $address_text .= $avail_a.' &nbsp;(';
             }
-            $address_text .= ' '.$ui->friendly_percent(value=>$avail_a,total=>$total);
+            $address_text .= $ui->friendly_percent(value=>$avail_a,total=>$total);
+            if ($total <= $ui->{config}->{SHOW_COUNT_THRESHOLD}) {
+                $address_text .= ')';
+            }
         } else {
-            $address_text .= 'Available: '.$avail_a.' ('.(100-$address_percent).'%)';
+            if( $avail_a <= $ui->{config}->{SHOW_COUNT_THRESHOLD} ) {
+                $address_text .= 'Available: '.$avail_a.' ('.(100-$address_percent).'%)';
+            } else {
+                $address_text .= 'Available: '.(100-$address_percent).'%';
+            }
         }
-    }
 
     push( @field_headers, "Address Utilization:" );
     push( @cell_data, $ui->percent_bar(percent=>$address_percent).'<div class="small">'.$address_text.'</div>' );
