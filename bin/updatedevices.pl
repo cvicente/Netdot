@@ -10,8 +10,9 @@ use NetAddr::IP;
 
 my $usage = <<EOF;
  usage: $0 [ -c, --community <string> ] [ -a|--add-subnets ]
-           [ -v, --verbose ] [ -g|--debug ]
+           [ -v, --verbose ] [ -g|--debug ] [ -e|--email ]
            -H|--host <hostname|address> | -d|--db-devices |  -s|--subnet <CIDR block>
+           
     
     -H, --host <hostname|address>  update given host only.
     -s, --subnet <CIDR block>      specify a v4/v6 subnet to discover
@@ -21,6 +22,8 @@ my $usage = <<EOF;
     -h, --help                     print help (this message)
     -v, --verbose                  be verbose
     -g, --debug                    set syslog level to LOG_DEBUG and print to STDERR
+    -m, --send_mail                Send output via e-mail instead of to STDOUT
+                                   (Note: debugging output will be sent to STDERR always)
     
 EOF
     
@@ -31,6 +34,9 @@ my $ADDSUBNETS = 0;
 my $HELP       = 0;
 my $VERBOSE    = 0;
 my $DEBUG      = 0;
+my $EMAIL      = 0;
+
+use vars qw ( $output );
 
 # handle cmdline args
 my $result = GetOptions( "H|host=s"      => \$host,
@@ -40,7 +46,8 @@ my $result = GetOptions( "H|host=s"      => \$host,
 			 "a|add-subnets" => \$ADDSUBNETS,
 			 "h|help"        => \$HELP,
 			 "v|verbose"     => \$VERBOSE,
-			 "g|debug"       => \$DEBUG );
+			 "g|debug"       => \$DEBUG,
+			 "m|send_mail"   => \$EMAIL);
 
 if( ! $result ) {
     print $usage;
@@ -61,6 +68,7 @@ if ($DEBUG){
 }else{
     $dm = Netdot::DeviceManager->new();
 }
+
 my $ipm = Netdot::IPManager->new();
 my $dns = Netdot::DNSManager->new();
 my $success = 0;
@@ -79,18 +87,18 @@ if ($host){
     my %devices;
     for (my $nip = $net+1; $nip < $nip->broadcast; $nip++){
 	if(my $ip = $ipm->searchblocks_addr($nip->addr)){
-	    printf ("Address %s found\n", $nip->addr);
+	    $output .= sprintf ("Address %s found\n", $nip->addr);
 	    if ( ($ip->interface) && (my $device = $ip->interface->device) ){
-		printf ("Device with Address %s found\n", $ip->address) if $DEBUG;
+		$output .= sprintf ("Device with Address %s found\n", $ip->address) if $DEBUG;
 		# Make sure we don't query the same device more than once
 		# (routers have many ips)
 		if (exists $devices{$device->id}){
-		    printf ("%s already queried.  Skipping\n", $ip->address) if $DEBUG;
+		    $output .= sprintf ("%s already queried.  Skipping\n", $ip->address) if $DEBUG;
 		    next;
 		}
 		$devices{$device->id} = '';
 		unless ( $device->canautoupdate ){
-		    printf ("Device %s was set to not auto-update. Skipping \n", $nip->addr) if $DEBUG;
+		    $output .= sprintf ("Device %s was set to not auto-update. Skipping \n", $nip->addr) if $DEBUG;
 		    next;
 		}
 		# Device exists, so don't pass community
@@ -98,24 +106,24 @@ if ($host){
 		    $success = 1;
 		}
 	    }else{
-		printf ("Device with Address %s not found\n", $ip->address) if $DEBUG;
+		$output .= sprintf ("Device with Address %s not found\n", $ip->address) if $DEBUG;
 		if (my $r = &discover(host => $nip->addr, comstr => $comstr)){
 		    $success = 1;
 		}
 	    }
 	}else{
-	    printf ("Address %s not found\n", $nip->addr) if $DEBUG;
+	    $output .= sprintf ("Address %s not found\n", $nip->addr) if $DEBUG;
 	    if (my $r = &discover(host => $nip->addr, comstr => $comstr)){
 		$success = 1;
 	    }
 	}
     }
 }elsif($DB){
-    printf ("Going to update all devices currently in the DB\n") if $VERBOSE;
+    $output .= sprintf ("Going to update all devices currently in the DB\n") if $VERBOSE;
     my @devices = Device->retrieve_all;
     foreach my $device ( @devices ) {
 	unless ( $device->canautoupdate ){
-	    printf ("Device %s was set to not auto-update. Skipping \n", $host) if $VERBOSE;
+	    $output .= sprintf ("Device %s was set to not auto-update. Skipping \n", $host) if $VERBOSE;
 	    next;
 	}
 	my $target;
@@ -144,6 +152,13 @@ if ($host){
     die "Error: You need to specify one of -H, -s or -d\n";
 }
 
+if ($EMAIL && $output){
+    if ( ! $dm->send_mail(subject=>"Netdot Device Updates", body=>$output) ){
+	die "Problem sending mail: ", $dm->error;
+    }
+}else{
+    print STDOUT $output;
+}
 
 sub discover {
     my (%argv) = @_;
@@ -154,21 +169,21 @@ sub discover {
     my ($c, $d) = $dm->find_dev($argv{host});
     $argv{comstr} = $c if defined($c);
     $argv{device} = $d if defined($d);
-    printf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
+    $output .= sprintf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
 
     # Fetch SNMP info
     $argv{dev} = $dm->get_dev_info($argv{host}, $argv{comstr});
     unless ($argv{dev}){
-	printf("Error: %s\n", $dm->error) if $VERBOSE;
+	$output .= sprintf("Error: %s\n", $dm->error) if $VERBOSE;
 	return 0;
     }
-    printf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
+    $output .= sprintf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
 
     # Update database
     if ( $r = $dm->update_device(%argv) ){
-	printf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
+	$output .= sprintf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
     }else{
-	printf("Error: %s\n", $dm->error) if $VERBOSE;
+	$output .= sprintf("Error: %s\n", $dm->error) if $VERBOSE;
 	return 0;
     }
     return $r;

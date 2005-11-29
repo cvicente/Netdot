@@ -3,7 +3,7 @@
 use lib "PREFIX/lib";
 use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
-use Netdot::DBI;
+use Netdot::UI;
 
 my $usage = <<EOF;
  usage: $0  -n|--name | -e|--entity |  -d|--dependencies | -s|--site
@@ -13,6 +13,7 @@ my $usage = <<EOF;
     -d, --dependencies             report devices with no dependencies
     -s, --site                     report devices with no site
     -h, --help                     print help (this message)
+    -m, --send_mail                                    
     
 EOF
     
@@ -21,12 +22,14 @@ my $ENTITY  = 0;
 my $DEPS    = 0;
 my $SITE    = 0;
 my $DEBUG   = 0;
+my $EMAIL   = 0;
 
 # handle cmdline args
 my $result = GetOptions( "e|entity"       => \$ENTITY,
 			 "d|dependencies" => \$DEPS,
 			 "s|site"         => \$SITE,
 			 "h|help"         => \$HELP,
+			 "m|send_mail"    => \$EMAIL,
 			 );
 
 if( ! $result ) {
@@ -45,8 +48,9 @@ unless ( $ENTITY || $DEPS || $SITE ){
 # This will be reflected in the history tables
 $ENV{REMOTE_USER} = "netdot";
 
-my (@nameless, @lost, @orphans, @homeless);
+my (@nameless, @lost, @orphans, @homeless, $output);
 
+my $ui = Netdot::UI->new();
 
 my $it = Device->retrieve_all;
 
@@ -57,7 +61,7 @@ while ( my $dev = $it->next ){
 	next;
     }
     if ( $ENTITY ){
-	push @lost, $dev unless ( $dev->entity  && $dev->entity->id );
+	push @lost, $dev unless ( $dev->used_by  && $dev->used_by->id );
     }
     if ( $SITE ){
 	push @homeless, $dev unless ( $dev->site && $dev->site->id );
@@ -74,24 +78,32 @@ while ( my $dev = $it->next ){
 
 
 if ( @nameless ){
-    print "\nThe following devices have no name defined:\n";
-    map { print "  ID: ", $_->id, "\n" } @nameless;
+    $output .= sprintf("\nThe following devices have no name defined:\n");
+    map { $output.= sprintf(" ID: %s\n", $_->id) } @nameless;
 }
 
 if ( @lost ){
     @lost = sort { $a->name->name cmp $b->name->name } @lost;
-    print "\nThe following devices have no Entity defined:\n";
-    map { print "  ", $_->name->name, "\n" } @lost;
+    $output .= sprintf("\nThe following devices have no Entity defined:\n");
+    map { $output .= sprintf("  %s\n", $_->name->name) } @lost;
 }
 
 if ( @homeless ){
     @homeless = sort { $a->name->name cmp $b->name->name } @homeless;
-    print "\nThe following devices have no Site defined:\n";
-    map { print "  ", $_->name->name, "\n" } @homeless;
+    $output .= sprintf("\nThe following devices have no Site defined:\n");
+    map { $output = sprintf("  %s\n", $_->name->name) } @homeless;
 }
 
 if ( @orphans ){
     @orphans = sort { $a->name->name cmp $b->name->name } @orphans;
-    print "\nThe following devices have no dependencies defined:\n";
-    map { print "  ", $_->name->name, "\n" } @orphans;
+    $output .= sprintf("\nThe following devices have no dependencies defined:\n");
+    map { $output .= sprintf(" %s\n", $_->name->name) } @orphans;
+}
+
+if ( $EMAIL && $output ){
+    if ( ! $ui->send_mail(subject=>"Netdot Device Validation", body=>$output) ){
+	die "Problem sending mail: ", $ui->error;
+    }
+}else{
+    print STDOUT $output;
 }
