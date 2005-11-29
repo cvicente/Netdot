@@ -172,7 +172,6 @@ sub update_device {
 
     my @cls;
     my %ifs;
-    my %dbifdeps;
     my %bgppeers;
 
     if ( $device ){
@@ -180,44 +179,26 @@ sub update_device {
 	# Keep a hash of stored Interfaces for this Device
 	map { $ifs{ $_->id } = $_ } $device->interfaces();
 	
-	# 
-	# Get all stored interface dependencies, associate with ip
-	# 
-
+	#
+	# Remove invalid dependencies
 	foreach my $ifid (keys %ifs){
 	    my $if = $ifs{$ifid};
 	    foreach my $dep ( $if->parents() ){		
 		unless ( $dep->parent->device ){
-		    $self->debug( loglevel => 'LOG_ERR',
+		    $self->debug( loglevel => 'LOG_NOTICE',
 				  message  => "%s: Interface %s,%s has invalid parent %s. Removing.",
 				  args => [$host, $if->number, $if->name, $dep->parent] );
 		    $self->remove(table=>"InterfaceDep", id => $dep);
 		    next;
 		}
-		foreach my $ip ( $if->ips() ){
-		    $dbifdeps{$if->id}{$ip->address} = $dep;
-		    $self->debug( loglevel => 'LOG_DEBUG',
-				  message  => "%s: Interface %s,%s with ip %s has parent %s:%s",
-				  args => [$host, $if->number, $if->name, $ip->address, 
-					   $dep->parent->device->name->name, 
-					   $dep->parent->name] );
-		}
 	    }
 	    foreach my $dep ( $if->children() ){
 		unless ( $dep->child->device ){
-		    $self->debug( loglevel => 'LOG_ERR',
+		    $self->debug( loglevel => 'LOG_NOTICE',
 				  message  => "%s: Interface %s,%s has invalid child %s. Removing.",
 				  args => [$host, $if->number, $if->name,$dep->child] );
 		    $self->remove(table=>"InterfaceDep", id => $dep);
 		    next;
-		}
-		foreach my $ip ( $if->ips() ){
-		    $dbifdeps{$if->id}{$ip->address} = $dep;
-		    $self->debug( loglevel => 'LOG_DEBUG',
-				  message  => "%s: Interface %s,%s with ip %s has child %s:%s",
-				  args => [$host, $if->number, $if->name, $ip->address, 
-					   $dep->child->device->name->name, 
-					   $dep->child->name] );
 		}
 	    }
 	}
@@ -1018,64 +999,8 @@ sub update_device {
 	    # Get RRs before deleting interface
 	    map { push @nonrrs, $_->rr } map { $_->arecords } $ifobj->ips;
 	    
-	    ############################################################################
-	    # Before removing, try to maintain dependencies finding another
-	    # interface (any) that has one of this interface's ips
-
-	    if (exists $dbifdeps{$nonif}){
-		my $msg = sprintf("%s: Interface %s,%s had dependency. Will try to maintain", 
-				  $host, $ifobj->number, $ifobj->name);
-		$self->debug( loglevel => 'LOG_NOTICE',
-			      message  => $msg,
-			      );
-		my $found = 0;
-		foreach my $oldipaddr (keys %{$dbifdeps{$nonif}} ){
-		    foreach my $newaddr (keys %newips ){
-			if (exists ($newips{$oldipaddr}) ){
-			    my $newif = $newips{$oldipaddr};
-			    my $msg = sprintf("%s: IP address %s is now on %s,%s.", 
-					      $host, $oldipaddr, $newif->number, $newif->name);
-			    $self->debug( loglevel => 'LOG_DEBUG',
-					  message  => $msg,
-					  );
-			    my $ifdep = $dbifdeps{$nonif}{$oldipaddr};
-			    my ($role, $rel);
-			    if ($ifdep->parent->id eq $nonif) {
-				$role = "parent"; 
-				$rel = "child" ; 
-			    }else{
-				$role = "child"; 
-				$rel = "parent"; 
-			    }
-			    unless ( $self->update(object => $ifdep, state => {$role => $newif} )){
-				my $msg = sprintf("%s: Could not update Dependency for %s: %s", 
-						  $host, $nonif, $self->error);
-				$self->debug( loglevel => 'LOG_ERR',
-					      message  => $msg,
-					      );
-				$self->output($msg);
-			    }else{
-				my $msg = sprintf("%s: %s,%s is now %s of %s", 
-						  $host, $newif->number, $newif->name, $role, 
-						  $ifdep->$rel->number, $ifdep->$rel->name);
-				$self->debug( loglevel => 'LOG_ERR',
-					      message  => $msg,
-					      );
-				
-			    }
-			    $found = 1;
-			    last;
-			}
-		    }
-		    if (! $found ){
-			my $msg = sprintf("%s: Found no interfaces with one of %s's addresses", $host, $nonif);
-			$self->debug( loglevel => 'LOG_NOTICE',
-				      message  => $msg,
-				      );
-		    }
-		}
-	    }
-	    my $msg = sprintf("%s: Interface %s,%s no longer exists.  Removing.", $host, $ifobj->number, $ifobj->name);
+	    my $msg = sprintf("%s: Interface %s,%s no longer exists.  Removing.", 
+			      $host, $ifobj->number, $ifobj->name);
 	    $self->debug( loglevel => 'LOG_NOTICE',
 			  message  => $msg,
 			  );
