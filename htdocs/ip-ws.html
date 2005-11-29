@@ -718,7 +718,9 @@ my @cell_data = ( );
 				   linkPage=>"view.html", returnAsVar=>1);
     # For some fields, we will provide a way to update the values recursively in all 
     # descendant blocks.
-    $owner .= " <input type=\"button\" value=\"edit\" onClick=\"edit_recursive(" . $o->id . ",\'owner\', \'1\')\">";
+    if ( ! $edit_block ){
+       $owner .= '<a href="#" onClick="edit_recursive(' . $o->id . ',\'owner\', \'1\')">[edit]</a>';
+    }
     push( @cell_data, $owner );
     
     push( @field_headers, "Used by:" );

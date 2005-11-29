@@ -527,6 +527,7 @@ sub select_lookup($@){
                 $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", 
 				   $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
             }
+	    $output .= sprintf("<option value=\"0\">[null]</option>\n");
             $output .= sprintf("</select>\n");
         }
 
