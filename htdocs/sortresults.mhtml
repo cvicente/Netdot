@@ -13,6 +13,7 @@ Supported arguments:
   sort:       column to sort by
   page:       page to link to with results (default is view.html)
   withdelete: create a form with a check-box per item, which will call delete.html
+  withedit:   add the ability to show form fields to edit selected fields in the table
 
   # The following are passed to itself in subsequent calls
   per_page:   Maximum entries displayed per page
@@ -29,6 +30,7 @@ $view       => "column"
 $sort       => undef
 $page       => undef
 $withdelete => 0
+$withedit   => 0
 $per_page   => 50;
 $offset     => 0;
 $total      => undef;
@@ -161,15 +163,16 @@ if ( defined ($object) ){
     unless ( $session = $ui->getsession( $TMP, $sid ) ){
 	$m->comp('error.mhtml', error => $ui->error);
     }
-    %linksto    = %{ $session->{linksto} };    
-    %order      = %{ $session->{order} };    
-    %tags       = %{ $session->{tags} };    
-    %objindex   = %{ $session->{objindex} };    
-    $table      = $session->{table};    
-    $page       = $session->{page};    
-    $view       = $session->{view};    
-    $sort       = $session->{sort};    
-    $withdelete = $session->{withdelete};    
+    %linksto    = %{ $session->{linksto} };
+    %order      = %{ $session->{order} };
+    %tags       = %{ $session->{tags} };
+    %objindex   = %{ $session->{objindex} };
+    $table      = $session->{table};
+    $page       = $session->{page};
+    $view       = $session->{view};
+    $sort       = $session->{sort};
+    $withdelete = $session->{withdelete};
+    $withedit   = $session->{withedit};
     $offset     = $session->{offset};    
     $total      = $session->{total};    
 
@@ -197,11 +200,46 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %   $numcols = 2;
 % }
 
-  <table border="0" cellspacing="<% $cellspc %>" cellpadding="<% $cellpad %>" class="tablebackground">
+% if ( $withedit ) {
+  <div class="container" style="margin:3px;display:none" id="fieldchoices_<% $table %>">
+    <div class="containerheadleft">Choose fields to edit</div>
+    <div class="containerheadright"><a href="javascript:toggleLayer('fieldchoices_<% $table %>')">[hide]</a></div>
+    <div class="containerbody">
+
+%   my %order        = $ui->getcolumnorder( $table );
+%   my %orderbrief   = $ui->getcolumnorderbrief( $table );
+%   my %tags         = $ui->getcolumntags( $table );
+%
+%   my @cells;
+%
+%   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%     next if( $c eq 'id' );
+%       my $caption;
+%       if ( exists($tags{$c}) ){
+%           $caption = $tags{$c};
+%	    }else{
+%           $caption = $c;
+%	    }
+%       my $html = '<input type="checkbox" name="tablefields[]" value="'.$c.'">'.$caption;
+%
+%       push(@cells, $html);
+%
+%   }
+    <& wrapping_table.mhtml, data => \@cells, cols => 5  &>     
+
+    <div align="right">
+        <input type="submit" value="Edit">
+    </div>
+
+    </div>
+  </div>
+% }
+
 % if ( $withdelete ){
-    <form action="delete.html" method="POST">
+  <form action="delete.html" method="POST">
 %   $numcols += 1;
 % }
+  <table border="0" cellspacing="<% $cellspc %>" cellpadding="<% $cellpad %>" class="tablebackground">
 % ##################################################################
 % # If the VIEW is a row, print the column headers.  
 % # Otherwise, print an empty row.
@@ -217,6 +255,9 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %       }
 %       if ( $withdelete ){
            <th>Delete</th>
+%       }
+%       if ( $withedit ){
+           <th align="right"><a href="javascript:toggleLayer('fieldchoices_<% $table %>');">Edit</a></th>
 %       }
     </tr>
 %    } else {
@@ -359,8 +400,11 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %     } elsif( $view eq "row" ) {
 %         if ( $withdelete ){
             <td align="left" valign="middle">
-              <input type="checkbox" name="<% $table %>__<% $o->id %>">
+                <input type="checkbox" name="<% $table %>__<% $o->id %>">
             </td>
+%         }
+%         if ( $withedit ){
+            <td align="left" valign="middle">&nbsp;</td>
 %         }
     </tr>
     <tr class="delimiter" height="1">
@@ -393,6 +437,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %    $session->{view}       = $view;
 %    $session->{sort}       = $sort;
 %    $session->{withdelete} = $withdelete;
+%    $session->{withedit}   = $withedit;
 %    $session->{offset}     = $last_item;
 %    $session->{total}      = $total;
 
