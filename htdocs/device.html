@@ -840,12 +840,8 @@ if ( $view eq "Interfaces" || $view eq "All" ){
     if ( exists $intinfo{description} || $editints ){
       push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=descr">Descr.</a>' );
     }
-    if ( !$editints ){
-      push( @headers, 'Uplink' );
-    }
-    if ( !$editints ){
-      push( @headers, 'Downlink' );
-    }
+    push( @headers, 'Uplink' );
+    push( @headers, 'Downlink' );
     
 
     foreach my $if ( @ifs ){
@@ -904,7 +900,6 @@ if ( $view eq "Interfaces" || $view eq "All" ){
 	push( @row, $ui->text_field(object=>$if, column=>"description", edit=>$editints, returnAsVar=>1) );
       }
       
-      if ( !$editints ){
 	push( @row, 
 	      &{sub{
 		  my $ac = "";
@@ -919,12 +914,12 @@ if ( $view eq "Interfaces" || $view eq "All" ){
 		      }
 		    }
 		  }
-		  $ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'child\')">[add]</a>';
+		  if ( !$editints ){
+		      $ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'child\')">[add]</a>';
+		  }
 		  $ac;
 		}} );
-      }
       
-      if ( !$editints ){
 	push( @row, 
 	      &{sub{
 		  my $ac = "";
@@ -941,10 +936,11 @@ if ( $view eq "Interfaces" || $view eq "All" ){
 		      }
 		    }
 		  }
-		  $ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'parent\')">[add]</a>';
+		  if ( !$editints ){
+		      $ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'parent\')">[add]</a>';
+		  }
 		  $ac;
 		}} );
-      }
       push( @rows, \@row );
       
     } #foreach
