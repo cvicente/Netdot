@@ -1,0 +1,52 @@
+<%doc>
+Prints out the contents of an array in a table with $cols columns.
+
+Arguments:  
+    data    -  array of arrays to show in the rows
+    cols    -  number of columns
+
+</%doc>
+
+<%args>
+@data       => undef;
+$cols       => 4;
+</%args>
+
+<%perl>
+
+print '<table border="0" width="100%" cellspacing="0">';
+print "\n";
+
+my $pos = 0;
+foreach (@data) {
+
+  if ($pos % $cols == 0) {
+    print '<tr>';
+    print "\n";
+  }
+
+    print '    <td>'.$_.'</td>';
+    print "\n";
+
+  if ($pos % $cols == $cols-1) {
+    print '</tr>';
+    print "\n";
+  }
+
+  $pos++;
+}
+
+# check for empty cells to fill in case number of items does not divide cols evenly
+if ( $pos % $cols != 0 ) {
+  while ($pos%$cols > 0) {
+    print '<td>&nbsp;</td>';
+    $pos++;
+  }
+  print '</tr>';
+  print "\n";
+}
+
+print '</table>';
+print "\n";
+
+</%perl>
