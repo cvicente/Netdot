@@ -1897,6 +1897,20 @@ sub ints_by_vlan {
     return @ifs;
 }
 
+sub ints_by_jack {
+    my ( $self, $o ) = @_;
+    my @ifs;
+    unless ( @ifs = $o->interfaces() ){
+	return ;
+    }
+    my @tmp = map { [ ($_->jack) ? $_->jack->jackid : 0, $_] } @ifs;
+	
+    @ifs = map { $_->[1] } sort { $a->[0] cmp $b->[0] } @tmp;
+
+    return unless scalar @ifs;
+    return @ifs;
+}
+
 =head2 interfaces_by_descr - Retrieve interfaces from a Device and sort by description
 
 Arguments:  Device object
@@ -1913,6 +1927,38 @@ sub ints_by_descr {
     return @ifs;
 }
 
+=head2 interfaces_by_monitored - Retrieve interfaces from a Device and sort by 'monitored' field
+
+Arguments:  Device object
+Returns:    Sorted array of interface objects or undef if error.
+
+=cut
+
+sub ints_by_monitored {
+    my ( $self, $o ) = @_;
+    my $id = $o->id;
+    my @ifs = Interface->search( device => $id, {order_by => 'monitored DESC'});
+
+    return unless scalar @ifs;
+    return @ifs;
+}
+
+=head2 interfaces_by_snmp - Retrieve interfaces from a Device and sort by 'snmp_managed' field
+
+Arguments:  Device object
+Returns:    Sorted array of interface objects or undef if error.
+
+=cut
+
+sub ints_by_snmp {
+    my ( $self, $o ) = @_;
+    my $id = $o->id;
+    my @ifs = Interface->search( device => $id, {order_by => 'snmp_managed DESC'});
+
+    return unless scalar @ifs;
+    return @ifs;
+}
+
 =head2 interfaces_by_jack - Retrieve interfaces from a Device and sort by Jack id
 
 Arguments:  Device object
@@ -1920,25 +1966,11 @@ Returns:    Sorted array of interface objects or undef if error.
 
 =cut
 
-sub ints_by_jack {
-    my ( $self, $o ) = @_;
-    my @ifs;
-    unless ( @ifs = $o->interfaces() ){
-	return ;
-    }
-    my @tmp = map { [ ($_->jack) ? $_->jack->jackid : 0, $_] } @ifs;
-	
-    @ifs = map { $_->[1] } sort { $a->[0] cmp $b->[0] } @tmp;
-
-    return unless scalar @ifs;
-    return @ifs;
-}
-
 =head2 get_interfaces - Wrapper function to retrieve interfaces from a Device
 
 Will call different methods depending on the sort field specified
 
-Arguments:  Device object, sort field: [number|name|speed|vlan|jack|descr]
+Arguments:  Device object, sort field: [number|name|speed|vlan|jack|descr|monitored|snmp]
 Returns:    Sorted array of interface objects or undef if error.
 
 =cut
@@ -1947,7 +1979,7 @@ sub get_interfaces {
     my ( $self, $o, $sortby ) = @_;
     unless ( ref($o) eq "Device" ){
 	self->error("get_interfaces: First parameter must be a Device object");
-	return 0;
+	return;
     }
     my @ifs;
 
@@ -1963,9 +1995,13 @@ sub get_interfaces {
 	@ifs = $self->ints_by_jack($o);
     }elsif( $sortby eq "descr"){
 	@ifs = $self->ints_by_descr($o);
+    }elsif( $sortby eq "monitored"){
+	@ifs = $self->ints_by_monitored($o);
+    }elsif( $sortby eq "snmp"){
+	@ifs = $self->ints_by_snmp($o);
     }else{
 	$self->error("get_interfaces: Unknown sort field: $sortby");
-	return 0;
+	return;
     }
 
     return unless scalar @ifs;
