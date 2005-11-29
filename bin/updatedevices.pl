@@ -123,7 +123,7 @@ if ($host){
     my @devices = Device->retrieve_all;
     foreach my $device ( @devices ) {
 	unless ( $device->canautoupdate ){
-	    $output .= sprintf ("Device %s was set to not auto-update. Skipping \n", $host) if $VERBOSE;
+	    $output .= sprintf ("Device %s was set to not auto-update. Skipping \n", $host) if $DEBUG;
 	    next;
 	}
 	my $target;
