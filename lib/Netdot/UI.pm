@@ -103,7 +103,7 @@ sub getinputtag {
     }elsif ($sqltype eq "date"){
 	$tag = "<input type=\"text\" name=\"$col\" size=\"15\" value=\"$value\"> (yyyy-mm-dd)";
     }else{
-	$tag = "<input type=\"text\" name=\"$col\" size=\"40\" value=\"$value\">";
+	$tag = "<input type=\"text\" name=\"$col\" style=\"width:100%\" value=\"$value\">";
     }
     return $tag;
 }
@@ -402,6 +402,101 @@ sub form_to_db{
 }
 
 
+=head2 form_field
+
+This method detects the type of form input required for the object, and then calls the appropriate
+method in UI.pm. Either select_lookup, select_multiple, radio_group_boolean, text_field, or text_area.
+If the interface is in "edit" mode, the user will see a form element specific to the type of data
+being viewed, otherwise, the user will see the value of the object in plain text.
+
+Arguments:
+  object:       DBI object, can be null if a table object is included
+  table:        Name of table in DB. (optional, but required if object is null)
+  column:       Name of the field in the database
+  edit:         True if editing, false otherwise
+  default:      Default value to display if none defined in DB
+
+=cut
+sub form_field {
+    my ($self, %args) = @_;
+    my ($o, $table, $column, $edit, $default, $htmlExtra, $linkPage) = ($args{object}, $args{table}, 
+									     $args{column}, $args{edit}, $args{default}, $args{htmlExtra}, $args{linkPage} );
+    my $label; # return value
+    my $value; # return value
+
+    my $tableName = ($o ? $o->table : $table);
+    my $id = ($o ? $o->id : "NEW");
+    my $current = ($o ? $o->$column : $default);
+
+    my %order    = $self->getcolumnorder( $tableName );
+    my %linksto  = $self->getlinksto( $tableName );
+    my %tags     = $self->getcolumntags( $tableName );
+    my %coltypes = $self->getcolumntypes( $tableName );
+
+    ################################################
+    ## column is a local field
+    if ( !exists($linksto{$column}) ) {
+        if ( exists($tags{$column}) ) {
+            $label = $tags{$column};
+        }else{
+            $label = $column;
+        }
+
+        my $type = $coltypes{$column};
+
+        if ($edit) {
+            if ($o) {
+                $value = $self->getinputtag($column, $o, $current);
+            } else {
+                $value = $self->getinputtag($column, $table, $current);
+            }
+
+            if ($type eq "varchar" || $type eq "timestamp") {
+                $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$edit, default=>$default, linkPage=>$linkPage, returnAsVar=>1);
+
+            } elsif ($type eq "long varbinary") {
+                $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$edit, returnAsVar=>1, htmlExtra=>$htmlExtra);
+
+            } elsif ($type eq "bool") {
+                $value = $self->radio_group_boolean(object=>$o, table=>$table, column=>$column, edit=>$edit, returnAsVar=>1);
+
+            } else {
+                $value = "No rule for: $type";
+            }
+
+        } else {
+            if ($type eq "bool") {
+                $value = ($current?"Yes":"No");
+            } else {
+                $value = $current;
+            }
+        }
+    ################################################
+    ## The column is a foreign key. Provide a list to select.
+    } else {
+        if ( exists($tags{$column}) ) {
+            $label = $tags{$column};
+        }else{
+            $label = $column;
+        }
+
+        $value = $self->select_lookup(object=>$o, table=>$tableName, column=>$column,, htmlExtra=>$htmlExtra,
+				     lookup=>$linksto{$column}, edit=>$edit, linkPage=>$linkPage, returnAsVar=>1);
+    }
+
+    ################################################
+    ## Many-to-many relationships
+    #  I haven't thought about how to handle the many-to-many relationships 
+    #  that use select_multiple. I left any calls to select_multiple in the 
+    #  html files alone.
+
+    my %returnhash;
+    $returnhash{'label'} = $label;
+    $returnhash{'value'} = $value;
+    return %returnhash;
+}
+
+
 =head2 select_lookup
 
 This method deals with fields that are foreign keys.  When the interface is in "edit" mode, the user
@@ -689,7 +784,7 @@ sub radio_group_boolean($@){
      }
 
     if ($isEditing){
-        $output .= sprintf("Yes<input type=\"radio\" name=\"%s\" value=\"1\" %s>&nbsp;<br>\n", $name, ($value ? "checked" : ""));
+        $output .= sprintf("Yes<input type=\"radio\" name=\"%s\" value=\"1\" %s>&nbsp;\n", $name, ($value ? "checked" : ""));
         $output .= sprintf("No<input type=\"radio\" name=\"%s\" value=\"0\" %s>\n", $name, (!$value ? "checked" : ""));
     }else{
         $output .= sprintf("%s\n", ($value ? "Yes" : "No"));

@@ -201,9 +201,17 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % }
 
 % if ( $withedit ) {
+  <script language="javascript">
+  <!--
+    function toggleEditLayers(table) {
+        toggleLayer('fieldchoices_'+table);
+    }
+  //-->
+  </script>
+
   <div class="container" style="margin:3px;display:none" id="fieldchoices_<% $table %>">
     <div class="containerheadleft">Choose fields to edit</div>
-    <div class="containerheadright"><a href="javascript:toggleLayer('fieldchoices_<% $table %>')">[hide]</a></div>
+    <div class="containerheadright"><a href="javascript:toggleEditLayers('<% $table %>')">[hide]</a></div>
     <div class="containerbody">
 
 %   my %order        = $ui->getcolumnorder( $table );
@@ -245,25 +253,25 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % # Otherwise, print an empty row.
 % #####################################################################
 %    if( $view eq "row" ) {
-    <tr class="rowtitle2">
-%       foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%	   if( exists( $tags{$c} ) ) {
-      <th><% $tags{$c} %></th>
-%	   } else {
-      <th><% $c %></th>
-%	   }
-%       }
-%       if ( $withdelete ){
+       <tr class="rowtitle2">
+%      foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%        if( exists( $tags{$c} ) ) {
+           <th><% $tags{$c} %></th>
+%        } else {
+           <th><% $c %></th>
+%	     }
+%      }
+%      if ( $withdelete ){
            <th>Delete</th>
-%       }
-%       if ( $withedit ){
-           <th align="right"><a href="javascript:toggleLayer('fieldchoices_<% $table %>');">Edit</a></th>
-%       }
-    </tr>
+%      }
+%      if ( $withedit ){
+           <th align="center"><a href="javascript:toggleEditLayers('<% $table %>');">Edit</a></th>
+%      }
+       </tr>
 %    } else {
-    <tr>
-      <td colspan="<% $numcols %>" class="delimiter"></td>
-    </tr>
+       <tr>
+          <td colspan="<% $numcols %>" class="delimiter"></td>
+       </tr>
 %    }
 
 % ####################################################################
@@ -399,12 +407,14 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
 %     } elsif( $view eq "row" ) {
 %         if ( $withdelete ){
-            <td align="left" valign="middle">
+            <td style="text-align:center" valign="middle" width="50">
                 <input type="checkbox" name="<% $table %>__<% $o->id %>">
             </td>
 %         }
 %         if ( $withedit ){
-            <td align="left" valign="middle">&nbsp;</td>
+            <td style="text-align:center" valign="middle" width="40">
+                <input type="checkbox" name="editboxes_<% $table %>[]" value="<% $o->id %>">
+            </td>
 %         }
     </tr>
     <tr class="delimiter" height="1">

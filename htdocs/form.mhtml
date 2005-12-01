@@ -52,7 +52,7 @@ my %tags    = $ui->getcolumntags( $table );
     <tr>
     <input type="hidden" name="table" value="<% $table %>">
 %   if( $id ) {
-    <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="id" value="<% $id %>">
 %   }
 %   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 %     next if( $c eq 'id' );
@@ -61,15 +61,15 @@ my %tags    = $ui->getcolumntags( $table );
         <tr>
 %       if ( exists($tags{$c}) ){
            <td class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
-%	}else{
+%	      }else{
            <td class="formtablec1"><strong><% $c %>:</strong></td>
-%	}
+%	      }
 %       if( defined( $id ) ) {
-	    <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $obj) %></td>
+	        <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $obj) %></td>
 %       } elsif( exists( $session{$c} ) ) {
-	    <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $linksto{$c}, $session{$c}) %></td>
+	        <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $linksto{$c}, $session{$c}) %></td>
 %       } else {
-	    <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $table) %></td>
+	        <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $table) %></td>
 %       }
         </tr>
 % ################################################
@@ -77,9 +77,9 @@ my %tags    = $ui->getcolumntags( $table );
         <tr>
 %       if ( exists($tags{$c}) ){
            <td class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
-%	}else{
+%	    }else{
            <td class="formtablec1"><strong><% $c %>:</strong></td>
-%	}
+%	    }
 	<td class="formtablec2">
 %       my $flag = 1;
 %	# Check for amount of objects in table before retrieving all
