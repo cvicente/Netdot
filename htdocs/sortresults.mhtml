@@ -200,11 +200,32 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %   $numcols = 2;
 % }
 
+% if ( $withedit || $withdelete ) {
+    <form action="edit-multiple.html" method="post" name="form_<% $table %>">
+    <input type="hidden" name="table" value="<% $table %>">
+% }
+
 % if ( $withedit ) {
   <script language="javascript">
   <!--
     function toggleEditLayers(table) {
         toggleLayer('fieldchoices_'+table);
+    }
+    function docheckboxes_<% $table %>() {
+        // if no checkboxes are selected, select them all
+        var ids = new Array();
+%       my $pos = $offset;
+%       my $i=0;
+%       while ( $pos < $last_item ) {
+%           my $o;
+%           if ( $o = $objindex{$pos} ){
+                ids[<% $i %>] = <% $o->id %>;
+%           }
+%           $pos++; $i++;
+%       }
+        for(i=0; i<ids.length; i++) {
+            document.getElementById('edit_check_'+ids[i]).checked = 1;
+        }
     }
   //-->
   </script>
@@ -228,15 +249,18 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %	    }else{
 %           $caption = $c;
 %	    }
-%       my $html = '<input type="checkbox" name="tablefields[]" value="'.$c.'">'.$caption;
+%       my $selected = "";
+%       if ( exists($orderbrief{$c}) ) {
+%           $selected = " CHECKED";
+%       }
+%       my $html = '<input type="checkbox" name="tablefields[]" value="'.$c.'" '.$selected.'>'.$caption;
 %
 %       push(@cells, $html);
 %
 %   }
     <& wrapping_table.mhtml, data => \@cells, cols => 5  &>     
-
     <div align="right">
-        <input type="submit" value="Edit">
+        <input type="submit" name="submit" value="Go" onclick="docheckboxes_<% $table %>()">
     </div>
 
     </div>
@@ -244,7 +268,6 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % }
 
 % if ( $withdelete ){
-  <form action="delete.html" method="POST">
 %   $numcols += 1;
 % }
   <table border="0" cellspacing="<% $cellspc %>" cellpadding="<% $cellpad %>" class="tablebackground">
@@ -413,7 +436,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %         }
 %         if ( $withedit ){
             <td style="text-align:center" valign="middle" width="40">
-                <input type="checkbox" name="editboxes_<% $table %>[]" value="<% $o->id %>">
+                <input type="checkbox" id="edit_check_<% $o->id %>" name="editids[]" value="<% $o->id %>">
             </td>
 %         }
     </tr>
@@ -464,7 +487,10 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 	   <input type="submit" name="submit" value="Delete">
 	   <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
     </div>
-  </form>
+% }
+
+% if ( $withedit || $withdelete ) {
+    </form>
 % }
 
 <!-- end sortresults -->

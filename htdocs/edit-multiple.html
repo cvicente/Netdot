@@ -1,0 +1,69 @@
+<%args>
+$table   => undef
+$id      => undef
+$submit  => "Delete"
+$sid     => undef
+</%args>
+
+<%perl>
+
+    my %tags = $ui->getcolumntags($table);
+
+    my (@headers, @rows);
+
+    # if only one checkbox is checked, then the html form returns the value of
+    #   the one box NOT as a list but as a scalar. we need to turn it into a list.
+    if (!ref($ARGS{'editids[]'})) {
+        $ARGS{'editids[]'} = [$ARGS{'editids[]'}];
+    }
+    if (!ref($ARGS{'tablefields[]'})) {
+        $ARGS{'tablefields[]'} = [$ARGS{'tablefields[]'}];
+    }
+
+    foreach my $field (@{$ARGS{'tablefields[]'}}) {
+        push(@headers, (exists($tags{$field})?$tags{$field}:$field));
+    }
+    push(@headers, "Delete");
+
+    foreach my $id (@{$ARGS{'editids[]'}}) {
+      	my @row = ();
+        foreach my $field (@{$ARGS{'tablefields[]'}}) {
+            my $obj = $table->retrieve($id);
+            my %tmp = $ui->form_field(object=>$obj, column=>$field, edit=>1);
+            push( @row, $tmp{'value'} );    
+        }
+        push( @row, '<input type="checkbox" name="'.$table.'__'.$id.'">' );
+    	push( @rows, \@row );
+    }
+
+
+        my @row = ();
+        for( my $i=0; $i<(@{$ARGS{'tablefields[]'}})+1; $i++ ) {
+            push( @row, "&nbsp;" );
+        }
+        push( @rows, \@row );
+
+</%perl>
+
+<div class="containeroutside">
+    <div class="containerhead">
+    Editing Records from "<% $table %>"
+    </div>
+    <div class="containerbody">
+
+    <form action="testing.html">
+    <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
+    <div align="right">
+        <input type="submit" name="submit" value="Save Changes" disabled>
+        <input type="submit" name="submit" value="Delete" disabled>
+    </div>
+    </form>
+
+    </div>
+</div>
+<br>
+<br>
+&nbsp;
+
+

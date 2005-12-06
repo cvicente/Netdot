@@ -614,21 +614,25 @@ sub select_lookup($@){
         }else{
 	    # ...otherwise provide tools to narrow the selection to a managable size.
             my $srchf = "_" . $id . "_" . $column . "_srch";
+            $output .= "<nobr>";   # forces the text field and button to be on the same line
             $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">", $srchf);
             $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"jsrsSendquery(%s, %s.value, \'%s\');\">\n", time(), $name, $srchf, $lookup);
+            $output .= "</nobr>";
+            $output .= "<nobr>";   # forces the select box and "new" link to be on the same line
             $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
             $output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
             if ($o && $o->$column){
                 $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", 
 				   $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
             }
-	    $output .= sprintf("<option value=\"0\">[null]</option>\n");
+    	    $output .= sprintf("<option value=\"0\">[null]</option>\n");
             $output .= sprintf("</select>\n");
         }
 
         # show link to add new item to this table
         $output .= sprintf("<a href=\"#\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1');\">[new]</a>", 
 			   $lookup, $name);
+        $output .= "</nobr>";
 
     }elsif ($linkPage && $o->$column ){
 	if ($linkPage eq "1" || $linkPage eq "view.html"){
