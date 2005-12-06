@@ -1,12 +1,34 @@
+<%doc>
+edit-multiple.html
+
+  Arguments:
+    tablefields -- array of fields to edit for this table
+    editids     -- array of ids to edit
+
+  Possible States:
+    * show list of records with editable fields
+        - tablefields[] and editids[] are set
+        - $ARGS{submit} eq "Go"
+
+    * actually save the changes to the database
+        - tablefields[] and form fields are set
+        - $ARGS{submit} eq "Save Changes"
+
+</%doc>
+
 <%args>
 $table   => undef
-$id      => undef
-$submit  => "Delete"
-$sid     => undef
+$submit  => undef
 </%args>
 
 <%perl>
 
+if ($submit eq "Save Changes") {
+
+
+
+
+} elsif ($submit eq "Go") {
     my %tags = $ui->getcolumntags($table);
 
     my (@headers, @rows);
@@ -32,10 +54,9 @@ $sid     => undef
             my %tmp = $ui->form_field(object=>$obj, column=>$field, edit=>1);
             push( @row, $tmp{'value'} );    
         }
-        push( @row, '<input type="checkbox" name="'.$table.'__'.$id.'">' );
+        push( @row, '<input type="checkbox" id="chk_'.$table.'_'.$id.'" name="chk_'.$table.'__'.$id.'" onclick="document.getElementById(\'delete_'.$table.'_\'+'.$id.').checked = document.getElementById(\'chk_'.$table.'_\'+'.$id.').checked">' );
     	push( @rows, \@row );
     }
-
 
         my @row = ();
         for( my $i=0; $i<(@{$ARGS{'tablefields[]'}})+1; $i++ ) {
@@ -43,27 +64,39 @@ $sid     => undef
         }
         push( @rows, \@row );
 
+    </%perl>
+    <div class="containeroutside">
+        <div class="containerhead">
+        Editing Records from "<% $table %>"
+        </div>
+        <div class="containerbody">
+    
+        <form action="edit-multiple.html" method="post">
+        <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+    
+        <div align="right">
+            <input type="submit" name="submit" value="Save Changes" disabled>
+            <input type="button" name="submit" value="Delete" onclick="document.deleteform_<% $table %>.submit()">
+        </div>
+        </form>
+
+        <div style="display:none">
+        <form action="delete.html" method="post" name="deleteform_<% $table %>">
+%       foreach my $id (@{$ARGS{'editids[]'}}) {
+%           print '<input type="checkbox" id="delete_'.$table.'_'.$id.'" name="'.$table.'__'.$id.'">';
+%       }
+        </form>
+        </div>
+    
+        </div>
+    </div>
+    <br>
+    <br>
+    &nbsp;
+    <%perl>
+
+} else {
+    print "This case should never happen.";
+}
+
 </%perl>
-
-<div class="containeroutside">
-    <div class="containerhead">
-    Editing Records from "<% $table %>"
-    </div>
-    <div class="containerbody">
-
-    <form action="testing.html">
-    <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
-
-    <div align="right">
-        <input type="submit" name="submit" value="Save Changes" disabled>
-        <input type="submit" name="submit" value="Delete" disabled>
-    </div>
-    </form>
-
-    </div>
-</div>
-<br>
-<br>
-&nbsp;
-
-

@@ -223,8 +223,14 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %           }
 %           $pos++; $i++;
 %       }
+        var docheckall = 1;
         for(i=0; i<ids.length; i++) {
-            document.getElementById('edit_check_'+ids[i]).checked = 1;
+            docheckall = docheckall & !document.getElementById('edit_check_'+ids[i]).checked;
+        }
+        if( docheckall == 1 ) {
+            for(i=0; i<ids.length; i++) {
+                document.getElementById('edit_check_'+ids[i]).checked = 1;
+            }
         }
     }
   //-->
@@ -431,7 +437,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %     } elsif( $view eq "row" ) {
 %         if ( $withdelete ){
             <td style="text-align:center" valign="middle" width="50">
-                <input type="checkbox" name="<% $table %>__<% $o->id %>">
+                <input type="checkbox" id="chk_<% $table.'_'.$o->id %>" name="<% $table %>__<% $o->id %>" onclick="document.getElementById('delete_<% $table.'_'.$o->id %>').checked = document.getElementById('chk_<% $table.'_'.$o->id %>').checked">
             </td>
 %         }
 %         if ( $withedit ){
@@ -484,7 +490,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
 % if ( $withdelete ){
     <div class="containerheadright">
-	   <input type="submit" name="submit" value="Delete">
+	   <input type="button" name="submit" value="Delete" onclick="document.deleteform_<% $table %>.submit()">
 	   <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
     </div>
 % }
@@ -493,6 +499,20 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
     </form>
 % }
 
+% if ($withdelete) {
+    <div style="display:none">
+    <form action="delete.html" method="post" name="deleteform_<% $table %>">
+%       my $pos = $offset;
+%       while ( $pos < $last_item ) {
+%           my $o;
+%           if ( $o = $objindex{$pos} ){
+%               print '<input type="checkbox" id="delete_'.$table.'_'.$o->id.'" name="'.$table.'__'.$o->id.'">';
+%           }
+%           $pos++;
+%       }
+    </form>
+    </div>
+% }
+
 <!-- end sortresults -->
 % } # if
-
