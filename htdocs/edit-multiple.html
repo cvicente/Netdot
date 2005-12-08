@@ -2,8 +2,10 @@
 edit-multiple.html
 
   Arguments:
+    table       -- name of the table the records are in
     tablefields -- array of fields to edit for this table
     editids     -- array of ids to edit
+    submit      -- used to select which operation to perform
 
   Possible States:
     * show list of records with editable fields
@@ -25,8 +27,48 @@ $submit  => undef
 
 if ($submit eq "Save Changes") {
 
+    my %data;
+    my $TBL;
 
+    # get values from request and build a hash with the following structure:
+    # $data{$id}{$field} = $val;
+    foreach my $j ( keys %ARGS ) {
+        next if ($j !~ /__/ );
+        my ($table, $id, $field) = split("__", $j);
+        my $val = $ARGS{$j};
+    
+        if (exists($data{$id})) {
+            $data{$id}{$field} = $val;
+        } else {
+            my %values;
+            $values{$field} = $val;
+            $data{$id} = \%values;
+        }
+        $TBL = $table;   # note: all $table variables should be the same anyway so this is ok
+    }
 
+    # now loop thru all the $id s in $data and do the update for each row
+    foreach my $id ( keys %data ) {
+        my $OBJ = $TBL->retrieve($id);
+        $r = $ui->update(object => $OBJ, state => $data{$id});
+    }
+
+    </%perl>
+    <div class="container">
+        <div class="containerhead">
+            Changes Saved
+        </div>
+        <div class="containerbody">
+            Your changes to the following records have been saved:<br>
+            <div style="margin-left:30px;">
+%           foreach my $id ( keys %data ) {
+%               my $OBJ = $TBL->retrieve($id);
+                <% $ui->getobjlabel($OBJ, ", ") %><br>
+%           }
+            </div>
+        </div>
+    </div>
+    <%perl>
 
 } elsif ($submit eq "Go") {
     my %tags = $ui->getcolumntags($table);
@@ -75,9 +117,11 @@ if ($submit eq "Save Changes") {
         <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
     
         <div align="right">
-            <input type="submit" name="submit" value="Save Changes" disabled>
+            <input type="submit" name="submit" value="Save Changes">
             <input type="button" name="submit" value="Delete" onclick="document.deleteform_<% $table %>.submit()">
+            <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
         </div>
+        <input type="hidden" name="table" value="<% $table %>">
         </form>
 
         <div style="display:none">
