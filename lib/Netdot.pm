@@ -408,7 +408,8 @@ sub getobjlabel {
 	    }
 	}
     }
-    return join "$delim", @ret ;
+    # Only want non empty fields
+    return join "$delim", grep {$_ ne ""} @ret ;
 }
 
 =head2 getlabelarr
