@@ -208,11 +208,11 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % if ( $withedit ) {
   <script language="javascript">
   <!--
+
     function toggleEditLayers(table) {
         toggleLayer('fieldchoices_'+table);
     }
     function docheckboxes_<% $table %>() {
-        // if no checkboxes are selected, select them all
         var ids = new Array();
 %       my $pos = $offset;
 %       my $i=0;
@@ -223,14 +223,30 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %           }
 %           $pos++; $i++;
 %       }
+        // if no checkboxes are selected, select them all
         var docheckall = 1;
         for(i=0; i<ids.length; i++) {
-            docheckall = docheckall & !document.getElementById('edit_check_'+ids[i]).checked;
+            docheckall = docheckall & !document.getElementById('edit_check_<% $table %>_'+ids[i]).checked;
         }
         if( docheckall == 1 ) {
             for(i=0; i<ids.length; i++) {
-                document.getElementById('edit_check_'+ids[i]).checked = 1;
+                document.getElementById('edit_check_<% $table %>_'+ids[i]).checked = 1;
             }
+        }
+    }
+    function setcheckboxes_<% $table %>(col) {
+        var ids = new Array();
+%       $pos = $offset;
+%       $i=0;
+%       while ( $pos < $last_item ) {
+%           my $o;
+%           if ( $o = $objindex{$pos} ){
+                ids[<% $i %>] = <% $o->id %>;
+%           }
+%           $pos++; $i++;
+%       }
+        for(i=0; i<ids.length; i++) {
+            document.getElementById(col+'_check_<% $table %>_'+ids[i]).checked = document.getElementById('selectall_<% $table %>_'+col).checked;
         }
     }
   //-->
@@ -266,7 +282,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %   }
     <& wrapping_table.mhtml, data => \@cells, cols => 5  &>     
     <div align="right">
-        <input type="submit" name="submit" value="Go" onclick="docheckboxes_<% $table %>()">
+        <input type="submit" name="submit" value="Go" onclick="docheckboxes_<% $table %>('edit')">
     </div>
 
     </div>
@@ -382,7 +398,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %                   if( length( $lbl ) < 1 ) {
       N/A
 %                   } else {
-      <% $lbl %>
+      <% $lbl %>_<% $table %>
 %                   }
       </a> 
 %#      </strong>
@@ -437,12 +453,12 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %     } elsif( $view eq "row" ) {
 %         if ( $withdelete ){
             <td style="text-align:center" valign="middle" width="50">
-                <input type="checkbox" id="chk_<% $table.'_'.$o->id %>" name="<% $table %>__<% $o->id %>" onclick="document.getElementById('delete_<% $table.'_'.$o->id %>').checked = document.getElementById('chk_<% $table.'_'.$o->id %>').checked">
+                <input type="checkbox" id="delete_check_<% $table.'_'.$o->id %>" name="<% $table %>__<% $o->id %>" onclick="document.getElementById('delete_<% $table.'_'.$o->id %>').checked = document.getElementById('chk_<% $table.'_'.$o->id %>').checked">
             </td>
 %         }
 %         if ( $withedit ){
             <td style="text-align:center" valign="middle" width="40">
-                <input type="checkbox" id="edit_check_<% $o->id %>" name="editids[]" value="<% $o->id %>">
+                <input type="checkbox" id="edit_check_<% $table.'_'.$o->id %>" name="editids[]" value="<% $o->id %>">
             </td>
 %         }
     </tr>
@@ -452,6 +468,23 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %     }
 %} # for o
 % ####################################################################
+
+%    if( $view eq "row" ) {
+       <tr class="rowtitle">
+%      for( my $i=0; $i<(keys %order)-1; $i++ ) {
+           <td>&nbsp;</td>
+%      }
+           <td>
+              <div align="right">Select All:</div>
+           </td>
+%      if ( $withdelete ){
+           <th align="center"><input type="checkbox" name="selectall_<% $table %>_delete" id="selectall_<% $table %>_delete" onclick="setcheckboxes_<% $table %>('delete')"></td>
+%      }
+%      if ( $withedit ){
+           <th align="center"><input type="checkbox" name="selectall_<% $table %>_edit" id="selectall_<% $table %>_edit" onclick="setcheckboxes_<% $table %>('edit')"></td>
+%      }
+       </tr>
+%    }
 
   </table>
 

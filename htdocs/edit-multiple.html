@@ -35,8 +35,15 @@ if ($submit eq "Save Changes") {
     foreach my $j ( keys %ARGS ) {
         next if ($j !~ /__/ );
         my ($table, $id, $field) = split("__", $j);
-        my $val = $ARGS{$j};
-    
+        next if ($id eq "NEW");
+        my $val;
+
+        if ($ARGS{'applytoall_'.$field} eq "on") {
+            $val = $ARGS{$table.'__NEW__'.$field};
+        } else {
+            $val = $ARGS{$j};
+        }
+
         if (exists($data{$id})) {
             $data{$id}{$field} = $val;
         } else {
@@ -84,15 +91,17 @@ if ($submit eq "Save Changes") {
         $ARGS{'tablefields[]'} = [$ARGS{'tablefields[]'}];
     }
 
+    push(@headers, "Name");
     foreach my $field (@{$ARGS{'tablefields[]'}}) {
         push(@headers, (exists($tags{$field})?$tags{$field}:$field));
     }
     push(@headers, "Delete");
 
     foreach my $id (@{$ARGS{'editids[]'}}) {
+        my $obj = $table->retrieve($id);
       	my @row = ();
+        push( @row, $ui->getobjlabel($obj,", ") );
         foreach my $field (@{$ARGS{'tablefields[]'}}) {
-            my $obj = $table->retrieve($id);
             my %tmp = $ui->form_field(object=>$obj, column=>$field, edit=>1);
             push( @row, $tmp{'value'} );    
         }
@@ -100,11 +109,32 @@ if ($submit eq "Save Changes") {
     	push( @rows, \@row );
     }
 
-        my @row = ();
-        for( my $i=0; $i<(@{$ARGS{'tablefields[]'}})+1; $i++ ) {
-            push( @row, "&nbsp;" );
-        }
-        push( @rows, \@row );
+    my @emptyrow = ();
+    for( my $i=0; $i<(@{$ARGS{'tablefields[]'}})+2; $i++ ) {
+        push( @emptyrow, "&nbsp;" );
+    }
+    push( @rows, \@emptyrow );
+
+
+    my @row2 = ();
+    push( @row2, 'Apply to All' );
+    foreach my $field (@{$ARGS{'tablefields[]'}}) {
+        push( @row2, '<input type="checkbox" name="applytoall_'.$field.'">' );
+    }
+ 	push( @row2, '&nbsp;' );
+    push( @rows, \@row2 );
+
+    my @row1 = ();
+    push( @row1, '&nbsp;' );
+    foreach my $field (@{$ARGS{'tablefields[]'}}) {
+        my %tmp = $ui->form_field(table=>$table, column=>$field, edit=>1);
+        push( @row1, $tmp{'value'} );    
+    }
+    #push( @row, '<input type="checkbox" id="chk_'.$table.'_NEW" name="chk_'.$table.'__NEW" onclick="document.getElementById(\'delete_'.$table.'_\'+'.$id.').checked = document.getElementById(\'chk_'.$table.'_\'+'.$id.').checked">' );
+ 	push( @row1, '&nbsp;' );
+    push( @rows, \@row1 );
+
+
 
     </%perl>
     <div class="containeroutside">
