@@ -271,18 +271,14 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %	    }else{
 %           $caption = $c;
 %	    }
-%       my $selected = "";
-%       if ( exists($orderbrief{$c}) ) {
-%           $selected = " CHECKED";
-%       }
-%       my $html = '<input type="checkbox" name="tablefields[]" value="'.$c.'" '.$selected.'>'.$caption;
+%       my $html = '<input type="checkbox" name="tablefields[]" value="'.$c.'">'.$caption;
 %
 %       push(@cells, $html);
 %
 %   }
     <& wrapping_table.mhtml, data => \@cells, cols => 5  &>     
     <div align="right">
-        <input type="submit" name="submit" value="Go" onclick="docheckboxes_<% $table %>('edit')">
+        <input type="submit" name="submit" value="Go" onclick="docheckboxes_<% $table %>()">
     </div>
 
     </div>
@@ -398,7 +394,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %                   if( length( $lbl ) < 1 ) {
       N/A
 %                   } else {
-      <% $lbl %>_<% $table %>
+      <% $lbl %>
 %                   }
       </a> 
 %#      </strong>
@@ -469,7 +465,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %} # for o
 % ####################################################################
 
-%    if( $view eq "row" ) {
+%    if( $view eq "row" && ($withdelete || $withedit) ) {
        <tr class="rowtitle">
 %      for( my $i=0; $i<(keys %order)-1; $i++ ) {
            <td>&nbsp;</td>

@@ -48,7 +48,8 @@ sub print_showtaskslink {
             $request_vars .= "$key=$value&";
         }
     }
-    print "<a href=\"?".$request_vars."tasks=".($show_tasks eq "show"?"hide":"show")."\">[".($show_tasks eq "show"?"hide":"show")."]</a>";
+    #print "<a href=\"?".$request_vars."tasks=".($show_tasks eq "show"?"hide":"show")."\">[".($show_tasks eq "show"?"hide":"show")."]</a>";
+    print '<a href="javascript:toggleTasks()" id="tasks_link">['.($show_tasks eq "show"?"hide":"show").']</a>';
 }
 </%perl>
 
@@ -73,9 +74,8 @@ my @sites = Site->retrieve_all();
 %       print_showtaskslink($show_tasks);
         &nbsp; <a href="cable_backbone.html?id=NEW">[new]</a>
     </div>
-    <div class="containerbody" id="backbone_options">
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
-% if ($show_tasks eq "show") {
                 <form name="backbone_form" action="cable_plant.html" method="POST">
                     <input type="hidden" name="page_type" value="BACKBONE">
                     Connected from:
@@ -102,7 +102,6 @@ my @sites = Site->retrieve_all();
                     <input type="hidden" name="page_type" value="BACKBONE">  
                     Site Name: <input name="site_srch" size="20"> &nbsp;<input type="submit" name="submit_site_search" value="Search">
                 </form>
-% } # end show_tasks
 
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
@@ -119,8 +118,7 @@ my @sites = Site->retrieve_all();
         &nbsp; <a href="cable_horizontal.html?id=NEW">[new]</a>
     </div>
 
-	<div class="containerbody" id="horizontal_options">
-% if ($show_tasks eq "show") {
+	<div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 	<form name="cable_form" action="cable_plant.html" method="GET">
   	<input type="hidden" name="page_type" value="HORIZONTAL">
             Site:
@@ -161,7 +159,6 @@ my @sites = Site->retrieve_all();
             </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (jack_lookup.value) { location.href = ('cable_horizontal.html?id=' + jack_lookup.value); return true; }"> &nbsp;&nbsp;
 
     </form>
-% } # end if show_tasks
     </div> <!-- end containerbody -->
 </div> <!-- end container -->
 
@@ -176,8 +173,7 @@ my @sites = Site->retrieve_all();
 %       print_showtaskslink($show_tasks);
         &nbsp;<a href="closet.html?id=NEW">[new]</a>
     </div>
-<div class="containerbody" id="closet_options">
-% if ($show_tasks eq "show") {
+<div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
     <form name="cable_form" action="cable_plant.html" method="GET">
     <input type="hidden" name="page_type" value="CLOSETS">
             Site:
@@ -211,7 +207,6 @@ my @sites = Site->retrieve_all();
     <input type="hidden" name="page_type" value="CLOSETS">
         Closet Name: <input name="closet_srch" size="25"> &nbsp;<input type="submit" name="submit_closet_search" value="Search">
     </form>
-%   } # end if show_tasks
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
 
@@ -223,8 +218,7 @@ my @sites = Site->retrieve_all();
         &nbsp;<a href="cable_strand.html?id=NEW">[new]</a>
     </div>
 
-    <div class="containerbody" id="strand_options">
-%   if ($show_tasks eq "show") {
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
     <form name="cable_form" action="cable_plant.html" method="GET">
     <input type="hidden" name="page_type" value="STRANDS">
 	    <input type="text" name="backbone_srch" value="By Backbone" onFocus="if (this.value == 'By Backbone') { this.value = ''; } return true;">
@@ -242,7 +236,6 @@ my @sites = Site->retrieve_all();
             Lookup Results: <select name="strand_lookup" id="strand_lookup">
             </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (strand_lookup.value && strand_lookup.value != 0) { location.href = ('cable_strand.html?id=' + strand_lookup.value); return true; }"> &nbsp;&nbsp;
     </form>
-%   } # end if show_tasks
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
 
@@ -254,8 +247,7 @@ my @sites = Site->retrieve_all();
       &nbsp;<a href="circuit.html?id=NEW">[new]</a>
     </div>
 
-    <div class="containerbody" id="circuit_options">
-%   if ($show_tasks eq "show") {
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
       <p>Search Circuits by keywords
       <br>(Relevant fields include: Circuit ID, Connection name, Near and Far Sites, Entity)
       <p>
@@ -263,7 +255,6 @@ my @sites = Site->retrieve_all();
           <input type="hidden" name="_action" value="SEARCH"> 
           <input type="text" name="search" size="30"> <input type="submit" name="submit_circuit_search" value="Search">
       </form>
-%   } # end if show_tasks
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
 

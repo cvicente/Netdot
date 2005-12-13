@@ -81,6 +81,7 @@ if ($submit eq "Save Changes") {
     my %tags = $ui->getcolumntags($table);
 
     my (@headers, @rows);
+    my $showbuttons;
 
     # if only one checkbox is checked, then the html form returns the value of
     #   the one box NOT as a list but as a scalar. we need to turn it into a list.
@@ -90,6 +91,8 @@ if ($submit eq "Save Changes") {
     if (!ref($ARGS{'tablefields[]'})) {
         $ARGS{'tablefields[]'} = [$ARGS{'tablefields[]'}];
     }
+
+    if ( defined( @{$ARGS{'tablefields[]'}}[0] ) ) {
 
     push(@headers, "Name");
     foreach my $field (@{$ARGS{'tablefields[]'}}) {
@@ -115,7 +118,6 @@ if ($submit eq "Save Changes") {
     }
     push( @rows, \@emptyrow );
 
-
     my @row2 = ();
     push( @row2, 'Apply to All' );
     foreach my $field (@{$ARGS{'tablefields[]'}}) {
@@ -134,6 +136,14 @@ if ($submit eq "Save Changes") {
  	push( @row1, '&nbsp;' );
     push( @rows, \@row1 );
 
+        $showbuttons = 1;
+    } else {
+        push( @headers, "Error" );
+        my @row;
+        push( @row, 'Go back and choose at least 1 field to edit' );
+        push( @rows, \@row );
+        $showbuttons = 0;
+    }
 
 
     </%perl>
@@ -147,8 +157,10 @@ if ($submit eq "Save Changes") {
         <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
     
         <div align="right">
+            <%perl> if( $showbuttons ) { </%perl>
             <input type="submit" name="submit" value="Save Changes">
             <input type="button" name="submit" value="Delete" onclick="document.deleteform_<% $table %>.submit()">
+            <%perl> } </%perl>
             <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
         </div>
         <input type="hidden" name="table" value="<% $table %>">
