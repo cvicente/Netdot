@@ -42,17 +42,23 @@ sub getparents{
     # Get InterfaceDep objects
     my @depobjs = $intobj->parents;
     # Get the parent interfaces
+    printf ("Looking for valid parents for %s.%s\n", 
+	    $intobj->name, $intobj->device->name->name) if $DEBUG;
     foreach my $parent ( map { $_->parent } @depobjs ){
+	next unless ( $parent && ref($parent) eq "Interface" );
 	# Check if it has any ips (and is managed)
 	if ( (my $ip = ($parent->ips)[0]) 
 	     && $parent->monitored 
 	     && $parent->device->monitored ){
+	    printf ("Adding %s.%s as parent of %s.%s\n", 
+		    $parent->name, $parent->device->name->name,
+		    $intobj->name, $intobj->device->name->name) if $DEBUG;
 	    push @parents, $ip;
 	}else{
-	    print "Recursively seeking valid parents for ", $parent->name, ".", $parent->device->name, "\n" if $DEBUG;
-	    foreach my $grparent ( map {$_->parent} $parent->parents ){
-		print "Getting parents for ", $grparent->name, ".",  $grparent->device->name, "\n" if $DEBUG;
-		push @parents, &getparents($grparent);
+	    printf ("%s.%s is not a valid parent\n", 
+		    $parent->name, $parent->device->name->name) if $DEBUG;
+	    if ( my @grparents = &getparents($parent) ){
+		push @parents, @grparents;
 	    }
 	}
     }
