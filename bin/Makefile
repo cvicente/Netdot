@@ -15,7 +15,6 @@ FILES := $(shell ls *.pl)
 #
 # DB_TYPE defines what sort of database NetDoT trys to talk to
 # "mysql" is known to work.
-# "Pg" is known to work
 
 DB_TYPE =  mysql
 
@@ -30,7 +29,6 @@ DB_HOME = /usr
 # later)
 
 # For mysql, you probably want 'root'
-# For Pg, you probably want 'postgres' 
 
 DB_DBA          =  root
 DB_DBA_PASSWORD =  
@@ -138,7 +136,6 @@ setup.class.dbi:
 	install -m $(FMOD) DBI.pm $(PREFIX)/lib/Netdot/DBI.pm
 	@echo 
 	@echo "Class::DBI set up successfully"
-	@echo "You will need to restart Apache"
 	@echo
 
 files:

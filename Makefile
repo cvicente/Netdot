@@ -8,26 +8,31 @@ APACHEUSER = apache
 APACHEGROUP = apache
 usage:
 	@echo 
-	@echo "usage: make install [ PREFIX=<destination> ]"
+	@echo "usage: make install|installdb|upgrade [ PARAMETER=value ]"
 	@echo 
-	@echo "You can either specify the PREFIX on the command line or "
-	@echo "modify the PREFIX value in the Makefile. "
-	@echo "It currently defaults to $(PREFIX)"
+	@echo "You can either specify parameter values on the command"
+	@echo "line or you can modify them in the Makefile."
 	@echo 
-	@echo "Assuming UID and GID of apache process are: "
-	@echo "   APACHEUSER = $(APACHEUSER) "
-	@echo "   APACHEGROUP = $(APACHEGROUP) "
-	@echo "Please adjust as necessary."
+	@echo "Current defaults are:"
+	@echo 
+	@echo "   PERL          = $(PERL) "
+	@echo "   PREFIX        = $(PREFIX) "
+	@echo "   NVPREFIX      = $(NVPREFIX) "
+	@echo "   APACHEUSER    = $(APACHEUSER) "
+	@echo "   APACHEGROUP   = $(APACHEGROUP) "
+	@echo 
+	@echo "For the defaults used in database installation/upgrade, please see "	
+	@echo "bin/Makefile.  In particular, these variables may be of interest: "
+	@echo 
+	@echo "   DB_TYPE "
+	@echo "   DB_HOME "
+	@echo "   DB_DBA "
+	@echo "   DB_HOST "
+	@echo "   DB_NETDOT_USER "
+	@echo "   DB_NETDOT_PASS "
 	@echo
-	@echo "For the defaults used in database installation, please see"
-	@echo "bin/Makefile.  In particular, these variables may be of interest:"
-	@echo "     DB_TYPE, DB_HOME, DB_DBA, DB_HOST, "
-	@echo "     DB_NETDOT_USER, DB_NETDOT_PASS "
-	@echo "Again, please see bin/Makefile for details.  Change at your own risk!"
-	@echo 
-	@echo "After running make install, you may also want to:"
-	@echo "   make dropdb" 
-	@echo "   make installdb"
+	@echo "Please adjust as necessary, but at your own risk!"
+	@echo
 
 #
 # You really don't want to muck with anything below.  
@@ -45,13 +50,14 @@ DIR = bin doc htdocs/img htdocs/img/graphs htdocs/masondata/obj htdocs/masondata
 install: tests dir doc htdocs lib bin etc
 	@echo
 	@echo "Netdot is installed. "
-	@echo "Please read the available documentation before proceeding"
-	@echo "Be sure to check whether you need to run 'make dropdb' or 'make installdb'"
-	@echo 
+	@echo "Please read the available documentation before proceeding."
+	@echo "If you are installing Netdot for the first time, you need to"
+	@echo "  'make installdb'"
 
 upgrade: tests dir doc htdocs lib bin etc updatedb
 	@echo
 	@echo "Netdot has been upgraded. "
+	@echo "You will need to restart Apache"
 	@echo 
 
 updatedb:
