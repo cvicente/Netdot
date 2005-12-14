@@ -10,7 +10,7 @@ use NetAddr::IP;
 
 my $usage = <<EOF;
  usage: $0 [ -c, --community <string> ] [ -a|--add-subnets ]
-           [ -v, --verbose ] [ -g|--debug ] [ -e|--email ]
+           [ -v, --verbose ] [ -g|--debug ] [ -m|--send_mail ]
            -H|--host <hostname|address> | -d|--db-devices |  -s|--subnet <CIDR block>
            
     

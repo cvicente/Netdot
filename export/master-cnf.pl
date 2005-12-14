@@ -6,7 +6,7 @@
 #
 # 
 use NetdotExport;
-use lib "/usr/local/netdot/lib";
+use lib "PREFIX/lib";
 use Netdot::DBI;
 use strict;
 

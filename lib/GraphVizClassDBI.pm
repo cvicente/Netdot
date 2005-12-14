@@ -1,7 +1,7 @@
 package GraphVizClassDBI;
 
 # These libs are already loaded when run from within netdot
-#use lib "/usr/local/netdot/lib";
+#use lib "PREFIX/lib";
 #use Netdot;
 use GraphViz;
 use Data::Dumper;

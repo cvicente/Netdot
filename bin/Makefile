@@ -139,6 +139,8 @@ setup.class.dbi:
 	@echo
 
 files:
+	@echo
+	@echo "Preparing and installing $(DIR) files..."
 	for file in $(FILES); do \
 	    sed	-e 's|^#PERL|#!$(PERL)|' \
 		-e "s|PREFIX|$(PREFIX)|" \

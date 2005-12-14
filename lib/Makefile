@@ -8,6 +8,7 @@ FILES = Netdot.pm Debug.pm jsrsServer.pl $(NDIR)/Mason.pm $(NDIR)/UI.pm  $(NDIR)
 
 all: dir files
 
+# This section creates the lib/Netdot subdir
 dir:
 	for dir in $(NDIR); do \
 	    if test -d $(PREFIX)/$(DIR)/$$dir; then \

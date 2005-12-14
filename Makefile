@@ -43,11 +43,11 @@ FMOD = 0644
 XMOD = 0744
 # If mason ever decides to use different directories in its data_dir there will
 # be trouble.
-DIR = bin doc htdocs/img htdocs/img/graphs htdocs/masondata/obj htdocs/masondata/cache tmp lib etc
+DIR = bin doc htdocs/img htdocs/img/graphs htdocs/masondata/obj htdocs/masondata/cache tmp lib etc import export
 
 .PHONY: tests bin doc htdocs lib etc
 
-install: tests dir doc htdocs lib bin etc
+install: tests dir doc htdocs lib bin etc _import _export
 	@echo
 	@echo "Netdot is installed. "
 	@echo "Please read the available documentation before proceeding."
@@ -109,10 +109,10 @@ dir:
 	chmod 0750 $(PREFIX)/htdocs/img/graphs
 
 htdocs:
-	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@ 
+	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@ 
 
 doc:
-	cd $@ ;  make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
+	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
 
 lib:
 	cd $@ ; make all PREFIX=$(PREFIX) NVPREFIX=$(NVPREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
@@ -122,6 +122,13 @@ bin:
 
 etc:
 	cd $@; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
+
+_import:
+	@echo "Going into $@..."
+	cd import ; make install PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=import
+
+_export:
+	cd export ; make install PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=export
 
 dropdb: 
 	@echo "WARNING:  This will erase all data in the database!"

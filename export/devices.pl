@@ -6,7 +6,7 @@
 # 
 #
 use strict;
-use lib "/usr/local/netdot/lib";
+use lib "PREFIX/lib";
 use Netdot::UI;
 use Data::Dumper;
 
