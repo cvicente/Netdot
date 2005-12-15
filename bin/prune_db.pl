@@ -74,7 +74,7 @@ map { $_ =~ s/\_history//g } @tables;
 
 
 # date NUM_MONTHS ago
-my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime (time-($NUM_MONTHS*24*60*60));
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime (time-($NUM_MONTHS*30*24*60*60)); # 30 days/month
 $year += 1900; $mon += 1;
 printf("NUM_MONTHS ago was : %d/%d\n", $year, $mon) if $DEBUG;
 my $sqldate = sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year,$mon,$mday,$hour,$min,$sec);
