@@ -138,7 +138,7 @@ Note:  This object does not contain actual DNS records.
   auto_update: Whether RR should be updated automatically 
                when re-discovering devices
     
-Returns: RR object
+ Returns: RR object
 
 =cut
 
@@ -181,19 +181,19 @@ sub insert_rr {
 
 =head2 insert_a_rr - Insert an address (A/AAAA)  Resource Record
 
-Args: 
+ Args: 
   rr:          Base resource record (optional, see below)
   ip:          Ipblock object (required)
   ttl:         Time To Live (optional)
   
-If 'rr' not suplied:
+ If 'rr' not suplied:
   name:        Unique record identifier (required)
   zone:        SOA record
   origin:      optional origin prefix
   contactlist: ContactList object
   active:      If not active, it is somehow reserved
 
-Returns: RRADDR object
+ Returns: RRADDR object
 
 =cut
 
@@ -238,7 +238,7 @@ sub insert_a_rr{
 
 =head2 insert_zone - Insert a DNS Zone (SOA Record)
 
-Args: 
+ Args: 
    mname:   domain name *(required)
    rname:   mailbox name
    serial:  YYYYMMDD+two digit serial number
@@ -247,7 +247,7 @@ Args:
    expire:  max time before zone no longer authoritative
    minimum: default TTL that should be exported with any RR from this zone
 
-Returns: Zone object
+ Returns: Zone object
 
 =cut
 

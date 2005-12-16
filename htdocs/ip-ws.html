@@ -513,8 +513,10 @@ if ( my @parents = $ipm->getparents($o) ){
        my @field_headers;
        my @cell_data;
 
-       push( @field_headers, "Address:" );
-       push( @cell_data, "<strong>".$ui->text_field(object=>$o, column=>"address", edit=>$edit_ip, htmlExtra=>"style='width: 15em'", returnAsVar=>1)."/".$o->prefix."</strong>" );
+       # Address:
+       my %addr_tmp = $ui->form_field(object=>$o, column=>"address", edit=>$edit_ip, htmlExtra=>"style='width: 15em'");
+       push( @field_headers, $addr_tmp{'label'} );
+       push( @cell_data, $addr_tmp{'value'}."/32" );
 
        push( @field_headers, "Status:" );
             my $status;
@@ -536,11 +538,10 @@ if ( my @parents = $ipm->getparents($o) ){
             }
        push( @cell_data, $status );
 
-       push( @field_headers, "Description:" );
-       push( @cell_data, $ui->text_field(object=>$o, column=>"description", edit=>$edit_ip, htmlExtra=>"style='width: 25em'", returnAsVar=>1) );
-
-       push( @field_headers, "Comments:" );
-       push( @cell_data, $ui->text_area(object=>$o, column=>"info", edit=>$edit_ip, htmlExtra=>"cols=45", returnAsVar=>1) );
+       {
+       my @fields = ('description','info');
+       $ui->add_to_fields(o=>$o, edit=>$edit_ip, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+       }
 
        if (!scalar($o->arecords)) {
            push( @field_headers, "&nbsp;" );
@@ -552,14 +553,15 @@ if ( my @parents = $ipm->getparents($o) ){
 
 %   if (scalar($o->arecords)) {
 <%perl>
-    my @headers = ("DNS A Record", "Zone");
     my @rows;
+        my %tmp1;
+        my %tmp2;
     foreach my $ar ($o->arecords){
-	push( @rows, [ $ui->text_field(object=>$ar->rr, column=>"name", edit=>$edit_ip, linkPage=>"view.html", 
-				       returnAsVar=>1, htmlExtra=>"style=\"width: 20em;\"" ),
-		       $ui->select_lookup(object=>$ar->rr, column=>"zone", lookup=>"Zone", 
-					  edit=>$edit_ip, linkPage=>"view.html", returnAsVar=>1 ) ] );
+        %tmp1 = $ui->form_field(object=>$ar->rr, column=>"name", edit=>$edit_ip, linkPage=>"view.html", returnAsVar=>1, htmlExtra=>"style=\"width: 20em;\"" );
+        %tmp2 = $ui->form_field(object=>$ar->rr, column=>"zone", lookup=>"Zone", edit=>$edit_ip, linkPage=>"view.html", returnAsVar=>1 );
+    	push( @rows, [ $tmp1{'value'}, $tmp2{'value'} ] );
     } 
+    my @headers = ($tmp1{'label'},$tmp2{'label'});
 </%perl>
       <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 %   } #endif arecords
@@ -573,8 +575,8 @@ if ( my @parents = $ipm->getparents($o) ){
                 [ eval {
                     if ($edit eq "ipinfo"){	 
                         $ui->select_lookup(object=>$ipservice, column=>"service", lookup=>"Service", edit=>$edit_ip);
-	            }else{
-		        qq(<a href="view.html?table=Service&id=).$ipservice->service->id.qq(">).$ipservice->service->name."</td></a>";
+	                }else{
+        		        qq(<a href="view.html?table=Service&id=).$ipservice->service->id.qq(">).$ipservice->service->name."</td></a>";
                     }
                   } ,
                   eval {
@@ -598,11 +600,10 @@ if ( my @parents = $ipm->getparents($o) ){
     @field_headers = ();
     @cell_data = ();
 
-    push( @field_headers, "First Seen:" );
-    push( @cell_data, $ui->text_field(object=>$o, column=>"first_seen", edit=>$edit_ip, htmlExtra =>"style='width: 25em'", returnAsVar=>1) );
-
-    push( @field_headers, "Last Seen:" );
-    push( @cell_data, $ui->text_field(object=>$o, column=>"last_seen", edit=>$edit_ip, htmlExtra =>"style='width: 25em'", returnAsVar=>1) );
+    {
+    my @fields = ('first_seen','last_seen');
+    $ui->add_to_fields(o=>$o, edit=>$edit_ip, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+    }
 
     push( @field_headers, "Interface:" );
     push( @cell_data, 
@@ -684,8 +685,11 @@ if ( my @parents = $ipm->getparents($o) ){
 my @field_headers = ( );
 my @cell_data = ( );
 
-    push( @field_headers, "Address:" );
-    push( @cell_data, $ui->text_field(object=>$o, column=>"address", edit=>$edit_block, htmlExtra=>"style='width: 15em'", returnAsVar=>1)."/".$ui->text_field(object=>$o, column=>"prefix", edit=>$edit_block, htmlExtra =>"style='width: 2em'", returnAsVar=>1) );
+    # Address:
+    my %addr_tmp = $ui->form_field(object=>$o, column=>"address", edit=>$edit_block, htmlExtra=>"style='width: 15em'");
+    my %pref_tmp = $ui->form_field(object=>$o, column=>"prefix", edit=>$edit_block, htmlExtra =>"style='width: 2em'");
+    push( @field_headers, $addr_tmp{'label'} );
+    push( @cell_data, $addr_tmp{'value'}."/".$pref_tmp{'value'} );
 
     push( @field_headers, "Status:" );
     my $status;
@@ -707,11 +711,10 @@ my @cell_data = ( );
 	       }
     push( @cell_data, $status );
 
-    push( @field_headers, "Description:" );
-    push( @cell_data, $ui->text_field(object=>$o, column=>"description", edit=>$edit_block, htmlExtra =>"style='width: 25em'", returnAsVar=>1) );
-
-    push( @field_headers, "Comments:" );
-    push( @cell_data, $ui->text_area(object=>$o, column=>"info", edit=>$edit_block, htmlExtra=>"cols=45", returnAsVar=>1) );
+    {
+    my @fields = ('description','info');
+    $ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+    }
 
     push( @field_headers, "Owner:" );
     my $owner = $ui->select_lookup(object=>$o, column=>"owner", lookup=>"Entity", edit=>0, 
@@ -723,10 +726,9 @@ my @cell_data = ( );
     }
     push( @cell_data, $owner );
     
-    push( @field_headers, "Used by:" );
-    my $used_by = $ui->select_lookup(object=>$o, column=>"used_by", lookup=>"Entity", edit=>$edit_block, 
-				     linkPage=>"view.html", returnAsVar=>1);
-    push( @cell_data, $used_by );
+    my %usedby_tmp = $ui->form_field(object=>$o, column=>"used_by", edit=>$edit_block, linkPage=>"view.html");
+    push( @field_headers, $usedby_tmp{'label'} );
+    push( @cell_data, $usedby_tmp{'value'} );
 
 </%perl>
 
@@ -746,8 +748,6 @@ my @cell_data = ( );
 
     push( @field_headers, "Last Updated:" );
     push( @cell_data, $o->last_seen );
-
-    my $delegate_dns = $ui->radio_group_boolean(object=>$o, column=>"dns_delegated", edit=>$edit_block, returnAsVar=>1);
 
 use Math::BigInt;
 if ($o->status->name eq "Subnet") {
@@ -783,11 +783,10 @@ if ($o->status->name eq "Subnet") {
     push( @cell_data, ($ui->percent_bar(percent=>$percent))
         .'<div class="small">'.$available_text.'</div>' );
 
-    push( @field_headers, "Enable DHCP:" );
-    push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"dhcp_enabled", edit=>$edit_block, returnAsVar=>1) );
-
-    push( @field_headers, "DNS delegated?:" );
-    push( @cell_data, $delegate_dns );
+    {
+    my @fields = ('dhcp_enabled','dns_delegated');
+    $ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+    }
 
 } elsif( $o->status->name eq "Container" ) {
       my $total = new Math::BigInt($ipm->subnet_num_addr($o));
@@ -832,8 +831,10 @@ if ($o->status->name eq "Subnet") {
     push( @field_headers, "Space Allocated:" );
     push( @cell_data, $ui->percent_bar(percent=>$subnet_percent).'<div class="small">'.$subnet_text.'</div>' );
 
-    push( @field_headers, "DNS delegated?:" );
-    push( @cell_data, $delegate_dns );
+    {
+    my @fields = ('dns_delegated');
+    $ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+    }
 }
 
     if ($edit eq "blockinfo"){

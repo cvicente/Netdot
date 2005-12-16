@@ -5,7 +5,6 @@ Cable management stuff...
 </%doc>
 
 <%args>
-
 $id          => undef;
 $strand_sort => undef;
 $edit        => undef;
@@ -253,41 +252,8 @@ function suggestName()
 	      <td width="50%">
 		<%perl>
 		(@field_headers, @cell_data) = ();
-		push( @field_headers, "Start Closet: " );
-		push( @cell_data, 
-		      &{sub{
-			  my $ac = "";
-			  if ($editBackbone) {
-			      $ac .= $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"start_closet", 
-							lookup=>"Closet", edit=>$editBackbone, returnAsVar=>1);
-			  } else {
-			      my $lbl = $ui->getobjlabel($o->start_closet, ", ");
-			      $ac .= '<a href="closet.html?id='.$o->start_closet.'">'.$lbl.'</a> ';
-			  }
-			  $ac;
-		      }} );
-		push( @field_headers, "End Closet: " );
-		push( @cell_data, 
-		      &{sub{
-			  my $ac = "";
-			  if ($editBackbone) {
-			      $ac .= $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"end_closet", 
-							lookup=>"Closet", edit=>$editBackbone, returnAsVar=>1);
-			  } else {
-			      my $lbl = $ui->getobjlabel($o->end_closet, ", ");
-			      $ac .= '<a href="closet.html?id='.$o->end_closet.'">'.$lbl.'</a>';
-			  }
-			  $ac;
-		      }} );
-		push( @field_headers, "Cable Type: " );
-		push( @cell_data, $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"type", 
-		      lookup=>"CableType", edit=>$editBackbone, returnAsVar=>1) );
-		push( @field_headers, "Owner: " );
-		push( @cell_data, $ui->select_lookup(object=>$o, table=>"BackboneCable", column=>"owner", 
-						     lookup=>"Entity", edit=>$editBackbone, returnAsVar=>1) );
-		push( @field_headers, 'Installed on <font size="-1">(yyyy-mm-dd)</font>: ' );
-		push( @cell_data, $ui->text_field(object=>$o, table=>"BackboneCable", column=>"installdate", 
-						  default=>$ui->date(), edit=>$editBackbone, returnAsVar=>1) );
+        my @fields = ('start_closet','end_closet','type','owner','installdate');
+        $ui->add_to_fields(o=>$o, edit=>$editBackbone, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 		</%perl>
 
 		<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
@@ -297,21 +263,19 @@ function suggestName()
 	      <td width="50%">
 		<%perl>
 		(@field_headers, @cell_data) = ();
-		push( @field_headers, "Name: " );
-		push( @cell_data, 
-		      &{sub{
-			  my $ac = "";
-			  $ac .= $ui->text_field(object=>$o, table=>"BackboneCable", 
-						 column=>"name", edit=>$editBackbone, returnAsVar=>1); 
+
+        my %tmp = $ui->form_field(object=>$o, column=>"name", edit=>$editBackbone);
+        my $name_tmp = $tmp{value};
 			  if ($editBackbone) {                
-			      $ac .= '&nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name"'
+			      $name_tmp .= '&nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name"'
                                      . 'value="Suggest Name" onClick="suggestName();" />';
 			  }
-			  $ac;
-		      }} );
-		push( @field_headers, "Length: " );
-		push( @cell_data, $ui->text_field(object=>$o, table=>"BackboneCable", column=>"length", 
-						  edit=>$editBackbone, returnAsVar=>1) );
+        push( @field_headers, $tmp{label} );
+        push( @cell_data, $name_tmp );
+
+        %tmp = $ui->form_field(object=>$o, column=>"length", edit=>$editBackbone);
+        push( @field_headers, $tmp{label} );
+        push( @cell_data, $tmp{value} );
 
 		if (defined($o)) { 
 		    push( @field_headers, "# of Strands: " );
@@ -324,9 +288,13 @@ function suggestName()
 	    </tr>
 	  </table>
 
-	  <div class="containerseparator">Comments</div>
-%         $ui->text_area(object=>$o, table=>"BackboneCable", column=>"info",
-%                        edit=>$editBackbone, htmlExtra=>"rows='3' cols='80'");
+       <%perl> {
+         my %tmp;
+         %tmp = $ui->form_field(object=>$o, column=>"info", edit=>$editBackbone, htmlExtra=>'rows="3" cols="80"');
+         print '<div class="containerseparator">'.$tmp{label}.'</div>';
+         print $tmp{value};         
+       } </%perl>
+
       </form>
     </div>
   </div>
@@ -464,15 +432,16 @@ function editSelected(id)
 		      my $ac = "";
 		      if ($editStrand) {
 			  $ac .= '<input type="checkbox" name="' . "CableStrand__" . $st->id . "__delete" . '">[del]';
-			  $ac .= $ui->text_field(object=>$st, table=>"CableStrand", column=>"name", 
-						 edit=>$editStrand, returnAsVar=>1);            
+			  my %tmp = $ui->form_field(object=>$st, column=>"name", edit=>$editStrand);            
+			  $ac .= $tmp{value};
 		      } else {
 			  $ac .= '<a href="cable_strand.html?id=' . $st->id . '">' . $st->name . '</a>';
 		      }
 		      $ac;
 		  }} );
-	    push( @row, $ui->select_lookup(object=>$st, column=>"status", lookup=>"StrandStatus", 
-					   edit=>$editStrand, returnAsVar=>1) );
+        my %tmp = $ui->form_field(object=>$st, column=>"status", edit=>$editStrand);
+	    push( @row, $tmp{value} );
+
 	    push( @row, 
 		  &{sub{
 		      my $ac = "";

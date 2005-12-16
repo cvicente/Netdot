@@ -67,9 +67,11 @@ if (scalar(@results) < $MAX_RESULTS) {
 
     $response .= "0=".URLEncode("No matches") unless (scalar(@results));
 
-    $response .= "0=-- Select --&";
-    foreach my $room (@results) {
-        $response .= $room->id."=".URLEncode($room->name)."&";
+    if (scalar(@results)) {
+        $response .= "0=-- Select --&";
+        foreach my $room (@results) {
+            $response .= $room->id."=".URLEncode($room->name)."&";
+        }
     }
 } else {
     $response .= "0=".URLEncode("Too Many Results");

@@ -196,21 +196,10 @@ my @sites = Site->retrieve_all();
 		      . '<input type="button" value="Create Jack ID" name="createjack" onClick="return createJackID();"> '
 		      );
 		}
-		push( @field_headers, "Faceplate ID:" );
-		push( @cell_data, $ui->text_field(object=>$o, column=>"faceplateid",edit=>$editCable, returnAsVar=>1) );
-		push( @field_headers, "Cable Type: " );
-		push( @cell_data, $ui->select_lookup(object=>$o, table=>"HorizontalCable", column=>"type",
-						     lookup=>"CableType", edit=>$editCable, returnAsVar=>1) );
-		push( @field_headers, 'Installed on <font size="-1">(yyyy-mm-dd)</font>: ' );
-		push( @cell_data, $ui->text_field(object=>$o, table=>"HorizontalCable", column=>"installdate",
-						  default=>$ui->date(), edit=>$editCable, returnAsVar=>1) );
-		push( @field_headers, 'Tested on <font size="-1">(yyyy-mm-dd)</font>: ' );
-		push( @cell_data, $ui->text_field(object=>$o, table=>"HorizontalCable", column=>"datetested",
-						  edit=>$editCable, returnAsVar=>1) );
-		push( @field_headers, "Test Passed: " );
-		push( @cell_data, $ui->radio_group_boolean(object=>$o, table=>"HorizontalCable",
-							   column=>"testpassed", edit=>$editCable, returnAsVar=>1) );
-	      </%perl>
+        my @fields = ('faceplateid','type','installdate','datetested','testpassed');
+        $ui->add_to_fields(o=>$o, edit=>$editCable, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+        </%perl>
 
 	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 	    </td> <!-- End left subtable -->
@@ -255,12 +244,10 @@ my @sites = Site->retrieve_all();
 			}
 			$ac;
 		    }} );
-		push( @field_headers, "Account: " );
-		push( @cell_data, $ui->text_field(object=>$o, table=>"HorizontalCable", column=>"account",
-						  edit=>$editCable, returnAsVar=>1) );
-		push( @field_headers, "Contact List: " );
-		push( @cell_data, $ui->select_lookup(object=>$o, table=>"HorizontalCable", column=>"contactlist",
-						     lookup=>"ContactList", edit=>$editCable, returnAsVar=>1) );
+
+            @fields = ('account','contactlist');
+            $ui->add_to_fields(o=>$o, edit=>$editCable, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+
 	      </%perl>
 
 	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
@@ -356,20 +343,19 @@ my @sites = Site->retrieve_all();
 			      my $ac = "";
 			      if ($editInt) {
 				  $ac .= '<input type="checkbox" name="' . "Interface__" . $int->id . "__delete" . '">[del] ';
-				  $ac .= $ui->text_field(object=>$int, table=>"Interface", column=>"name", edit=>($edit eq "intinfo"), returnAsVar=>1);
+				  $ac .= $ui->form_field(object=>$int, column=>"name", edit=>($edit eq "intinfo"), returnValOnly=>1);
 			      } else {
 				  $ac .= '<a href="view.html?table=Interface&id=' . $int->id . '">' . $int->name . '</a>';
 			      }
 			      $ac;
 			  }} );
-		    push( @row, $ui->text_field(object=>$int, table=>"Interface", column=>"number", edit=>$editInt, returnAsVar=>1) );
-		    push( @row, $ui->text_field(object=>$int, table=>"Interface", column=>"type", edit=>$editInt, returnAsVar=>1) );
+		    push( @row, $ui->form_field(object=>$int, column=>"number", edit=>$editInt, returnValOnly=>1) );
+		    push( @row, $ui->form_field(object=>$int, column=>"type", edit=>$editInt, returnValOnly=>1) );
 		    push( @row, 
 			  &{sub{
 			      my $ac = "";
 			      if ($editInt) {        
-				  $ac .= $ui->select_lookup(object=>$int, table=>"Interface", column=>"device", lookup=>"Device",
-							    edit=>$editInt, returnAsVar=>1);
+				  $ac .= $ui->form_field(object=>$int, column=>"device", edit=>$editInt, returnValOnly=>1);
 			      } else {
 				  $ac .= '<a href="device.html?id=' . $int->device . '">' . $int->device->name->name . '</a>';
 			      }

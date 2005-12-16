@@ -46,8 +46,10 @@ sub new {
 
 =head2 sortblocks - Sort Ipblocks by address
 
- Arguments: Array of Ipblock objects
- Returns:   Sorted array of Ipblock objects
+ Arguments: 
+    Array of Ipblock objects
+ Returns:   
+    Sorted array of Ipblock objects
 
 =cut
 
@@ -64,8 +66,11 @@ sub sortblocks {
 
 
 =head2 searchblocks_addr -  Search IP Blocks by address
- Arguments: address and (optional) prefix
- Returns: array of Ipblock objects
+
+ Arguments: 
+    address and (optional) prefix
+ Returns: 
+    array of Ipblock objects
 
 =cut
 
@@ -106,9 +111,10 @@ sub searchblocks_addr {
 
 =head2 searchblocks_regex - Search IP Blocks that match the specified regular expression
 
-
- Arguments: address regular expression
- Returns:   array of Ipblock objects
+ Arguments: 
+    address regular expression
+ Returns:   
+    array of Ipblock objects
 
 =cut
 
@@ -131,8 +137,10 @@ sub searchblocks_regex {
 
 =head2 searchblocks_other - Search IP Blocks by Entity, Site, Description and Comments
 
- Arguments: string or substring
- Returns: array of Ipblock objects
+ Arguments: 
+    string or substring
+ Returns: 
+    array of Ipblock objects
 
 =cut
 
@@ -169,8 +177,10 @@ When a block is searched and not found, it is useful to show the closest existin
 that would contain it.  The fastest way to do it is inserting it, building the IP tree,
 retrieving the parent, and then removing it.
 
- Arguments: IP address and prefix 
- Returns:   Ipblock object or 0 if not found
+ Arguments: 
+    IP address and prefix 
+ Returns:   
+    Ipblock object or 0 if not found
 
 =cut
 
@@ -232,11 +242,13 @@ sub get_covering_block {
 }
 
 
-=head2 getrootblocks  - Get a list of root blocks
+=head2 getrootblocks - Get a list of root blocks
 
-  Args:     IP version [4|6|all]
-  Returns:  Array of Ipblock objects, ordered by prefix length
-    
+ Arguments:   
+    IP version [4|6|all]
+ Returns:     
+    Array of Ipblock objects, ordered by prefix length
+
 =cut
 
 sub getrootblocks {
@@ -254,9 +266,9 @@ sub getrootblocks {
 }
 
 =head2 getchildren - Get all blocks that are children of this block in the IP tree
-    
+
 =cut
-    
+
 sub getchildren {
     my ($self, $id) = @_;
     my @ipb = Ipblock->search(parent => $id, {order_by => 'address'});
@@ -265,8 +277,10 @@ sub getchildren {
 
 =head2 getparents - Get parents recursively
     
-Arguments: Ipblock object
-Returns:   Array of ancestor Ipblock objects, in order
+ Arguments: 
+    Ipblock object
+ Returns:   
+    Array of ancestor Ipblock objects, in order
 
 =cut
 
@@ -284,8 +298,10 @@ sub getparents {
 
 =head2 issubnet - Is Ipblock a subnet?
 
-Arguments: Ipblock object
-Returns: 0 (is address) or 1 (is subnet)
+ Arguments: 
+    Ipblock object
+ Returns:   
+    0 (is address) or 1 (is subnet)
 
 =cut
 
@@ -304,10 +320,10 @@ sub isaddress {
    my $subnetaddr = $ipm->getsubnetaddr( address => $addr
 					 prefix  => $prefix );
 
-Arguments: 
+ Arguments:
   $address: ipv4 or ipv6 address
   $prefix:  dotted-quad netmask or prefix length
-Returns: 
+ Returns: 
   subnet address
 
 =cut
@@ -379,6 +395,7 @@ These checks are more specific to the way Netdot manages the address space.
     ARGS    - Hash ref of arguments passed to insertblock/updateblock. 
   Returns:
     True or False
+
 =cut
 
 sub _validate {
@@ -491,9 +508,9 @@ sub _validate {
 
 =head2 insertblock -  Insert a new block
 
-Required Arguments: 
+ Required Arguments: 
     address       ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
-Optional Arguments:
+ Optional Arguments:
     prefix        dotted-quad mask or prefix length (default is /32 or /128)
     status        id of IpblockStatus - or - 
     statusname    name of IpblockStatus
@@ -502,7 +519,7 @@ Optional Arguments:
     interface     id of Interface where IP was found
     dhcp_enabled  Include in DHCP config
     dns_delegated Create necessary NS records
-Returns: 
+ Returns: 
     New Ipblock object or 0
 
 =cut
@@ -615,10 +632,9 @@ sub insertblock {
 
 =head2 updateblock -  Update existing IP block
 
-
-Required Arguments: 
+ Required Arguments: 
     id           id of existing Ipblock object
-Optional Arguments:
+ Optional Arguments:
     address       ipv4 or ipv6 address in almost any notation (see NetAddr::IP)
     prefix        dotted-quad mask or prefix length
     status        id or name of IpblockStatus
@@ -628,7 +644,7 @@ Optional Arguments:
     used_by       Who uses the block (Entity)
     dhcp_enabled  Include in DHCP config
     dns_delegated 
-Returns: 
+ Returns: 
     Updated Ipblock object
     False if error
 
@@ -823,12 +839,12 @@ Modify certain fields of an Ipblock and (optionally) all its descendants.
 Note: Passed fields must not be subject to validation, require that
 the address space tree be rebuilt or be specific to one block
 
-Arguments: 
+ Arguments: 
   o:       Ipblock object
   args:    hashref of Ipblock fields and values  
   rec:     (recursive flag) 1 or 0
 
-Returns:
+ Returns:
     True if successful, False if error
 
 =cut
@@ -865,7 +881,7 @@ split the block in sub-blocks of said length and return the first
 available one.  The 'strategy' option will decide whether the 
 block is the first one from the beginning, or from the end.
 
-Arguments: 
+ Arguments: 
   parentid: parent Ipblock id
   length:   prefix length
   strategy: 
@@ -1027,42 +1043,43 @@ the number (in this case, the IP address) sequentially, starting from the
 most significant bit.  
 
 Example:
-Given these two IP addresses:
+
+ Given these two IP addresses:
                  bit 31                                0
                      |                                 |
    10.0.0.0/8      : 00001010.00000000.00000000.00000000/8
    10.128.0.0/32   : 00001010.10000000.00000000.00000000/32
 
-Starting with the first address:
+ Starting with the first address:
 
-bit     tree position
--------------------------------------------------------------------
-31             0
-30           0
-29         0
-28       0
-27         1
-26       0
-25         1
-24       0    <-- Prefix position (size - prefix).  Stop and save object id
+ bit     tree position
+ -------------------------------------------------------------------
+ 31             0
+ 30           0
+ 29         0
+ 28       0
+ 27         1
+ 26       0
+ 25         1
+ 24       0    <-- Prefix position (size - prefix).  Stop and save object id
 
 
-Continuing with the second address:
+ Continuing with the second address:
 
-bit     tree position
--------------------------------------------------------------------
-31             0
-30           0
-29         0
-28       0
-27         1
-26       0
-25         1
-24       0    <-- Object found.  Save id as possible parent
-23          1  
-22     0
+ bit     tree position
+ -------------------------------------------------------------------
+ 31             0
+ 30           0
+ 29         0
+ 28       0
+ 27         1
+ 26       0
+ 25         1
+ 24       0    <-- Object found.  Save id as possible parent
+ 23          1  
+ 22     0
 
-...continued until bit 0
+ ...continued until bit 0
 
 Since there are no more objects to process, it is determined
 that the "parent" of the second adddress is the first address.
@@ -1154,12 +1171,13 @@ sub build_tree {
 
 =head2 subnet_num_addr - Return the number of usable addresses in a subnet
 
-Arguments:
+ Arguments:
     Ipblock object
-Returns:
+ Returns:
     Integer
 
 =cut
+
 sub subnet_num_addr {
     my ($self, $o) = @_;
 
@@ -1172,12 +1190,16 @@ sub subnet_num_addr {
 
 
 =head2 address_usage
-    Returns the number of hosts in a given container.
-    Note: Supports IPv6 addresses.
 
-    Arguments
-        - $o: Ipblock object
+Returns the number of hosts in a given container.
+
+Note: Supports IPv6 addresses.
+
+  Arguments
+    $o: Ipblock object
+
 =cut
+
 sub address_usage {
     use bigint;
     my ($self, $o) = @_;
@@ -1202,12 +1224,15 @@ sub address_usage {
 
 
 =head2 subnet_usage
-    Returns the number of hosts covered by subnets in a given container.
-    Note: Supports IPv6 addresses.
 
-    Arguments
-        - $o: Ipblock object
+Returns the number of hosts covered by subnets in a given container.
+Note: Supports IPv6 addresses.
+
+  Arguments
+    $o: Ipblock object
+
 =cut
+
 sub subnet_usage {
     use bigint;
 
@@ -1243,16 +1268,17 @@ sub subnet_usage {
 
 
 =head2 shorten_ip
- 
- Hides the unimportant octets from an ip address, based on the subnet
+
+Hides the unimportant octets from an ip address, based on the subnet
 
  Arguments:
-    - ipaddr: a string with the ip address (i.e. 128.223.112.34)
-    - mask:   the network mask (i.e. 16)
+   ipaddr: a string with the ip address (i.e. 128.223.112.34)
+   mask:   the network mask (i.e. 16)
 
  Returns a string with just the important parts of the ip address (i.e. 112.34)
 
- Note: No support for IPv6 yet.
+Note: No support for IPv6 yet.
+
 =cut
 
 sub shorten_ip {
@@ -1278,11 +1304,16 @@ sub shorten_ip {
 }
 
 =head2 numhosts
-    Returns the number of hosts (/32s) in a subnet. (incl. network and broadcast addresses)
-    Arguments:
-        - x: the mask length (i.e. 24)
-    Returns a power of 2       
+
+Returns the number of hosts (/32s) in a subnet. (incl. network and broadcast addresses)
+
+  Arguments:
+    x: the mask length (i.e. 24)
+
+  Returns a power of 2       
+
 =cut
+
 sub numhosts {
     ## include the network and broadcast address in this count.
     ## will return a power of 2.
@@ -1291,8 +1322,11 @@ sub numhosts {
 }
 
 =head2 numhosts_v6
-    IPv6 version of numhosts
+
+IPv6 version of numhosts
+
 =cut
+
 sub numhosts_v6 {
     use bigint;
     my ($self, $x) = @_;
@@ -1301,11 +1335,16 @@ sub numhosts_v6 {
 
 
 =head2 subnetmask
-    Calculates the mask length of a subnet that can hold $x hosts
-    Arguments:
-        - x: expects an integer power of 2
-    Returns an integer, 0-32
+
+Calculates the mask length of a subnet that can hold $x hosts
+
+  Arguments:
+    x: expects an integer power of 2
+
+  Returns an integer, 0-32
+
 =cut
+
 sub subnetmask {
     ## expects as a parameter an integer power of 2
     my ($self, $x) = @_;
@@ -1313,8 +1352,11 @@ sub subnetmask {
 }
 
 =head2 subnetmask_v6
+
     IPv6 version of subnetmask
+
 =cut
+
 sub subnetmask_v6 {
     my ($self, $x) = @_;
     return 128 - (log($x)/log(2));

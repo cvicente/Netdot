@@ -185,24 +185,24 @@ if(defined($ARGS{_action})) {
 			    my $ac = "";
 			    if ($edit eq "cableinfo") {
 				$ac .= '<input type="checkbox" name="' . "HorizontalCable__" . $cable->id . "__delete" . '">[del]';
-				$ac .= $ui->text_field(object=>$cable, table=>"HorizontalCable", column=>"jackid", edit=>($edit eq "cableinfo"), returnAsVar=>1);            
+				$ac .= $ui->form_field(object=>$cable, column=>"jackid", edit=>($edit eq "cableinfo"), returnValOnly=>1);
 			    } else {
 				$ac .= '<a href="cable_horizontal.html?id=' . $cable->id . '">' . $cable->jackid . '</a>';
 			    }
 			    $ac;
 			}} );
-		  push( @row, $ui->select_lookup(object=>$cable, table=>"HorizontalCable", column=>"type", lookup=>"CableType", edit=>($edit eq "cableinfo"), returnAsVar=>1) );
+		  push( @row, $ui->form_field(object=>$cable, column=>"type", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
 		  push( @row, 
 			&{sub{
 			    my $ac = "";
 			    if ($edit eq "cableinfo") {
-				$ac .= $ui->select_lookup(object=>$cable, table=>"HorizontalCable", column=>"closet", lookup=>"Closet", edit=>($edit eq "cableinfo"), returnAsVar=>1);
+				$ac .= $ui->form_field(object=>$cable, column=>"closet", edit=>($edit eq "cableinfo"), returnValOnly=>1);
 			    } else {
 				$ac .= '<a href="closet.html?id=' . $cable->closet . '">' . $cable->closet->name . '</a>';
 			    }
 			    $ac;
 			}} );
-		  push( @row, $ui->text_field(object=>$cable, table=>"HorizontalCable", column=>"room", edit=>($edit eq "cableinfo"), returnAsVar=>1) );
+		  push( @row, $ui->form_field(object=>$cable, column=>"room", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
 		  push( @rows, \@row );
 	      }
 	      </%perl>
@@ -380,7 +380,7 @@ if(defined($ARGS{_action})) {
 			      }
 			      $ac;
 			  }} );
-		    push( @row, $ui->select_lookup(object=>$cable, column=>"type", lookup=>"CableType", edit=>($edit eq "cableinfo"), returnAsVar=>1) );
+		    push( @row, $ui->form_field(object=>$cable, column=>"type", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
 		    if ($edit ne "cableinfo") {
 			push( @row, '<a href="view.html?table=Site&id=' . $cable->start_closet->site->id . '">' . $cable->start_closet->site->name . '</a>' );
 		    }
@@ -388,7 +388,7 @@ if(defined($ARGS{_action})) {
 			  &{sub{
 			      my $ac = "";
 			      if ($edit eq "cableinfo") {
-				  $ac .= $ui->select_lookup(object=>$cable, column=>"start_closet", lookup=>"Closet", edit=>($edit eq "cableinfo"), returnAsVar=>1);
+				  $ac .= $ui->form_field(object=>$cable, column=>"start_closet", edit=>($edit eq "cableinfo"), returnValOnly=>1);
 			      } else {
 				  $ac .= '<a href="closet.html?id=' . $cable->start_closet . '">' . $cable->start_closet->name . '</a>';
 			      }
@@ -401,14 +401,14 @@ if(defined($ARGS{_action})) {
 			  &{sub{
 			      my $ac = "";
 			      if ($edit eq "cableinfo") {
-				  $ac .= $ui->select_lookup(object=>$cable, column=>"end_closet", lookup=>"Closet", edit=>($edit eq "cableinfo"), returnAsVar=>1);
+				  $ac .= $ui->form_field(object=>$cable, column=>"end_closet", edit=>($edit eq "cableinfo"), returnValOnly=>1);
 			      } else {
 				  $ac .= '<a href="closet.html?id=' . $cable->end_closet . '">' . $cable->end_closet->name . '</a>';
 			      }
 			      $ac;
 			  }} );
 		    push( @row, scalar($cable->strands)  );
-		    push( @row, $ui->select_lookup(object=>$cable, column=>"owner", lookup=>"Entity", edit=>($edit eq "cableinfo"), returnAsVar=>1) );
+		    push( @row, $ui->form_field(object=>$cable, column=>"owner", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
 		    push( @rows, \@row );
 		}
 		</%perl>
@@ -518,18 +518,18 @@ print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
 			  my $ac = "";
 			  if ($edit eq "cableinfo") {
 			      $ac .= '<input type="checkbox" name="' . "Closet__" . $closet->id . "__delete" . '">[del]';
-			      $ac .= $ui->text_field(object=>$closet, table=>"Closet", column=>"name", edit=>($edit eq "cableinfo"), returnAsVar=>1);            
+			      $ac .= $ui->form_field(object=>$closet, column=>"name", edit=>($edit eq "cableinfo"), returnValOnly=>1);            
 			  } else {
 			      $ac .= '<a href="closet.html?id=' . $closet->id . '">' . $closet->name . '</a>';
 			  }
 			  $ac;
 		      }} );
-		push( @row, $ui->text_field(object=>$closet, table=>"Closet", column=>"number", edit=>($edit eq "cableinfo"), returnAsVar=>1) );
+		push( @row, $ui->form_field(object=>$closet, column=>"number", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
 		push( @row, 
 		      &{sub{
 			  my $ac = "";
 			  if ($edit eq "cableinfo") {
-			      $ac .= $ui->select_lookup(object=>$closet, table=>"Closet", column=>"floor", lookup=>"Floor", edit=>($edit eq "cableinfo"), returnAsVar=>1);
+			      $ac .= $ui->form_field(object=>$closet, column=>"floor", edit=>($edit eq "cableinfo"), returnValOnly=>1);
 			  } else {
 			      $ac .= '<a href="floor.html?id=' . $closet->floor . '">' . $closet->floor->level . '</a>';
 			  }
@@ -642,14 +642,13 @@ print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
 			  my $ac = "";
 			  if ($edit eq "cableinfo") {
 			      $ac .= '<input type="checkbox" name="' . "CableStrand__" . $strand->id . "__delete" . '">[del]';
-			      $ac .= $ui->text_field(object=>$strand, table=>"CableStrand", column=>"name", edit=>($edit eq "cableinfo"), returnAsVar=>1);            
+			      $ac .= $ui->form_field(object=>$strand, column=>"name", edit=>($edit eq "cableinfo"), returnValOnly=>1);            
 			  } else {
 			      $ac .= '<a href="cable_strand.html?id=' . $strand->id . '">' . $strand->name . '</a>';
 			  }
 			  $ac;
 		      }} );
-		push( @row, $ui->select_lookup(object=>$strand, table=>"CableStrand", column=>"status", lookup=>"StrandStatus", 
-					       edit=>($edit eq "cableinfo"), returnAsVar=>1) );
+		push( @row, $ui->form_field(object=>$strand, column=>"status", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
 		push( @row, 
 		      &{sub{
 			  my $ac = "";

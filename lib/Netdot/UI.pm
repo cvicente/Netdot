@@ -409,18 +409,19 @@ method in UI.pm. Either select_lookup, select_multiple, radio_group_boolean, tex
 If the interface is in "edit" mode, the user will see a form element specific to the type of data
 being viewed, otherwise, the user will see the value of the object in plain text.
 
-Arguments:
-  object:       DBI object, can be null if a table object is included
-  table:        Name of table in DB. (optional, but required if object is null)
-  column:       Name of the field in the database
-  edit:         True if editing, false otherwise
-  default:      Default value to display if none defined in DB
+ Arguments:
+  object:        DBI object, can be null if a table object is included
+  table:         Name of table in DB. (optional, but required if object is null)
+  column:        Name of the field in the database
+  edit:          True if editing, false otherwise
+  default:       Default value to display if none defined in DB
+  returnOnlyVal: Return only the form field and no label as a string
 
 =cut
 sub form_field {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $edit, $default, $htmlExtra, $linkPage) = ($args{object}, $args{table}, 
-									     $args{column}, $args{edit}, $args{default}, $args{htmlExtra}, $args{linkPage} );
+    my ($o, $table, $column, $edit, $default, $htmlExtra, $linkPage, $returnValOnly) = ($args{object}, $args{table}, 
+									     $args{column}, $args{edit}, $args{default}, $args{htmlExtra}, $args{linkPage}, $args{returnValOnly} );
     my $label; # return value
     my $value; # return value
 
@@ -444,14 +445,13 @@ sub form_field {
 
         my $type = $coltypes{$column};
 
-        if ($edit) {
             if ($o) {
                 $value = $self->getinputtag($column, $o, $current);
             } else {
                 $value = $self->getinputtag($column, $table, $current);
             }
 
-            if ($type eq "varchar" || $type eq "timestamp") {
+            if ($type eq "varchar" || $type eq "timestamp" || $type eq "integer" || $type eq "numeric" || $type eq "date" ) {
                 $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$edit, default=>$default, linkPage=>$linkPage, returnAsVar=>1);
 
             } elsif ($type eq "long varbinary") {
@@ -464,13 +464,6 @@ sub form_field {
                 $value = "No rule for: $type";
             }
 
-        } else {
-            if ($type eq "bool") {
-                $value = ($current?"Yes":"No");
-            } else {
-                $value = $current;
-            }
-        }
     ################################################
     ## The column is a foreign key. Provide a list to select.
     } else {
@@ -481,7 +474,7 @@ sub form_field {
         }
 
         $value = $self->select_lookup(object=>$o, table=>$tableName, column=>$column,, htmlExtra=>$htmlExtra,
-				     lookup=>$linksto{$column}, edit=>$edit, linkPage=>$linkPage, returnAsVar=>1);
+				     lookup=>$linksto{$column}, edit=>$edit, linkPage=>$linkPage, defaults=>$default, returnAsVar=>1);
     }
 
     ################################################
@@ -490,10 +483,14 @@ sub form_field {
     #  that use select_multiple. I left any calls to select_multiple in the 
     #  html files alone.
 
-    my %returnhash;
-    $returnhash{'label'} = $label;
-    $returnhash{'value'} = $value;
-    return %returnhash;
+    if( $returnValOnly ) {
+        return $value;
+    } else {
+        my %returnhash;
+        $returnhash{'label'} = $label;
+        $returnhash{'value'} = $value;
+        return %returnhash;
+    }
 }
 
 
@@ -508,7 +505,7 @@ If not editing, this function only returns the label of the foreign key object.
 
   $ui->select_lookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", linkPage=>1);
 
-Arguments:
+ Arguments:
   object:       CDBI object, can be null if a table object is included
   table:        Name of table in DB. (required if object is null)
   lookup:       Name of foreign table to look up
@@ -672,20 +669,19 @@ The following diagram might help in understanding the method
 
 
 
-Arguments:
-
-object:       Object from which the relationships are viewed (from this table)
-joins:        Array ref of join table objects
-join_table:   Name of the join table
-this_field:   Field in the join table that points to this table
-other_table:  Name of the other table (required)
-other_field:  Field in the join table that points to the other table
-isEditing:    Whether to create the form input tags or just present the object
-action:       What selecting the objects will eventually do.  
-              Valid actions are: "delete"
-makeLink:     If true, will show the object as a link via "linkPage"
-linkPage:     Page to pass the object to for viewing
-returnAsVar:  Whether to print to STDOUT or return a scalar.
+ Arguments:
+  object:       Object from which the relationships are viewed (from this table)
+  joins:        Array ref of join table objects
+  join_table:   Name of the join table
+  this_field:   Field in the join table that points to this table
+  other_table:  Name of the other table (required)
+  other_field:  Field in the join table that points to the other table
+  isEditing:    Whether to create the form input tags or just present the object
+  action:       What selecting the objects will eventually do.  
+                Valid actions are: "delete"
+  makeLink:     If true, will show the object as a link via "linkPage"
+  linkPage:     Page to pass the object to for viewing
+  returnAsVar:  Whether to print to STDOUT or return a scalar.
 
 =cut
 
@@ -760,7 +756,7 @@ sub select_multiple {
 
    $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>$editmgmt);
 
- Simple yes/no radio button group. 
+Simple yes/no radio button group. 
 
  Arguments:
    - object: DBI object, can be null if a table object is included
@@ -803,21 +799,21 @@ sub radio_group_boolean($@){
 
 =head2 text_field
 
- Text field widget. If "edit" is true then a text field is displayed with
- the value from the DB (if any).
+Text field widget. If "edit" is true then a text field is displayed with
+the value from the DB (if any).
 
  Arguments:
-   - object: DBI object, can be null if a table object is included
-   - table: Name of table in DB. (required if object is null)
-   - column: name of field in DB.
-   - default: default value to display if no value is defined in DB.
-   - edit: true if editing, false otherwise.
-   - htmlExtra: extra html you want included in the output. Common use
-                would be to include style="width: 150px;" and the like.
-   - linkPage: (optional) Make the printed value a link
-                to itself via some component (i.e. view.html) 
-                (requires that column value is defined)
-   - returnAsVar: default false, true if the sub should return the string instead of outputting
+   object: DBI object, can be null if a table object is included
+   table: Name of table in DB. (required if object is null)
+   column: name of field in DB.
+   default: default value to display if no value is defined in DB.
+   edit: true if editing, false otherwise.
+   htmlExtra: extra html you want included in the output. Common use
+              would be to include style="width: 150px;" and the like.
+   linkPage: (optional) Make the printed value a link
+              to itself via some component (i.e. view.html) 
+              (requires that column value is defined)
+   returnAsVar: default false, true if the sub should return the string instead of outputting
 
 =cut
 
@@ -862,16 +858,16 @@ sub text_field($@){
 
 =head2 text_area
 
- Text area widget. If "edit" is true then a textarea is displayed with
- the value from the DB (if any).
+Text area widget. If "edit" is true then a textarea is displayed with
+the value from the DB (if any).
 
  Arguments:
-   - object: DBI object, can be null if a table object is included
-   - table: Name of table in DB. (required if object is null)
-   - column: name of field in DB. 
-   - edit: true if editing, false otherwise.
-   - htmlExtra: extra html you want included in the output. Common use
-     would be to include style="width: 150px;" and the like.
+   object: DBI object, can be null if a table object is included
+   table: Name of table in DB. (required if object is null)
+   column: name of field in DB. 
+   edit: true if editing, false otherwise.
+   htmlExtra: extra html you want included in the output. Common use
+              would be to include style="width: 150px;" and the like.
 
 =cut
 
@@ -909,16 +905,16 @@ sub text_area($@){
 
 =head2 percent_bar
 
- Generates a graphical representation of a percentage as a progress bar.
- Can pass arguments in as either a straight percentage, or as a fraction.
+Generates a graphical representation of a percentage as a progress bar.
+Can pass arguments in as either a straight percentage, or as a fraction.
 
  Arguments:
-    - percent: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
-    or
-    - numerator
-    - denominator (0 in the denominator means 0%)
+   percent: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
+   or
+   numerator
+   denominator (0 in the denominator means 0%)
 
- Returns a string with HTML, does not output to the browser.
+Returns a string with HTML, does not output to the browser.
 
 =cut
 sub percent_bar {
@@ -959,19 +955,19 @@ sub percent_bar {
 
 =head2 percent_bar2
 
- Generates a graphical representation of two percentages as a progress bar.
- Can pass arguments in as either a straight percentage, or as a fraction.
+Generates a graphical representation of two percentages as a progress bar.
+Can pass arguments in as either a straight percentage, or as a fraction.
 
  Arguments:
-    - percent1: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
-    - percent2: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
+   percent1: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
+   percent2: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
     or
-    - numerator1
-    - denominator2 (0 in the denominator means 0%)
-    - numerator1
-    - denominator2 (0 in the denominator means 0%)
+   numerator1
+   denominator2 (0 in the denominator means 0%)
+   numerator1
+   denominator2 (0 in the denominator means 0%)
     
- Returns a string with HTML, does not output to the browser.
+Returns a string with HTML, does not output to the browser.
 
 =cut
 sub percent_bar2 {
@@ -1040,14 +1036,14 @@ sub percent_bar2 {
 
 =head2 color_mix
 
- Mixes two hex colors by the amount specified.
+Mixes two hex colors by the amount specified.
 
  Arguments:
-    - color1: should be a string like "ff00cc" 
-    - color2: same
-    - blend:  0 means all of color1, 1 means all of color2, 0.5 averages the two
+   color1: should be a string like "ff00cc" 
+   color2: same
+   blend:  0 means all of color1, 1 means all of color2, 0.5 averages the two
 
- Returns a hex string like "99aacc"
+Returns a hex string like "99aacc"
 
 =cut
 
@@ -1076,14 +1072,14 @@ sub color_mix {
 
 =head2 friendly_percent
 
- Returns a string representation of the integer percentage of a/b
+Returns a string representation of the integer percentage of a/b
 
  Arguments:
-    - value: the numerator.
-    - total: the denominator.
+   value: the numerator.
+   total: the denominator.
 
- If value/total < 0.01, returns a string "<1%" instead of the "0%" which
- would otherwise show up. Similarly, with 99%.
+If value/total < 0.01, returns a string "<1%" instead of the "0%" which
+would otherwise show up. Similarly, with 99%.
 
 =cut
 sub friendly_percent {
@@ -1110,7 +1106,7 @@ sub friendly_percent {
 
 =head2 format_size
 
-  Turns "1048576" into "1mb". Allows user to specify maximum unit to show.
+Turns "1048576" into "1mb". Allows user to specify maximum unit to show.
 
   Arguments:
     $bytes - integer value
@@ -1132,3 +1128,19 @@ sub format_size {
 
     return sprintf("%.0f",$bytes).' '.($sizes[$size_index]);
 }
+
+sub add_to_fields {
+    my ($self, %args) = @_;
+    my ($o, $edit, $fields, $field_headers, $cell_data) = 
+        ($args{o}, $args{edit}, $args{fields}, $args{field_headers}, $args{cell_data});
+
+    foreach my $field (@{$fields}) {
+        my %tmp;
+        %tmp = $self->form_field(object=>$o, column=>$field, edit=>$edit);
+        push( @{$field_headers}, $tmp{'label'}.":" );
+        push( @{$cell_data}, $tmp{'value'} );
+    }
+
+}
+
+

@@ -401,15 +401,8 @@ push( @cell_data,
 );
 
 {
-# Shorthand version to add fields to this form. I'm not sure if this should be 
-# abstracted one more level since similar code appears 4 or 5 times below.
 my @fields = ('serialnumber','physaddr','dateinstalled','lastupdated');
-foreach my $field (@fields) {
-    my %tmp;
-    %tmp = $ui->form_field(object=>$o, column=>$field, edit=>$editgen);
-    push( @field_headers, $tmp{'label'}.":" );
-    push( @cell_data, $tmp{'value'} );
-}
+$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 
 </%perl>
@@ -423,12 +416,7 @@ foreach my $field (@fields) {
 
 {
 my @fields = ('productname','inventorynumber','sysdescription');
-foreach my $field (@fields) {
-    my %tmp;
-    %tmp = $ui->form_field(object=>$o, column=>$field, edit=>$editgen);
-    push( @field_headers, $tmp{'label'}.":" );
-    push( @cell_data, $tmp{'value'} );
-}
+$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 
 </%perl>
@@ -466,18 +454,17 @@ foreach my $field (@fields) {
 (@field_headers, @cell_data) = ();
 
 {
-my @fields = ('used_by');
+my @fields;
+
+push( @fields, 'used_by' );
 if ( (int($o->person) != 0) || $editloc ){
-    push(@fields, 'person');
+    push( @fields, 'person' );
 }
-push(@fields, 'site');
-foreach my $field (@fields) {
-    my %tmp;
-    %tmp = $ui->form_field(object=>$o, column=>$field, edit=>$editloc);
-    push( @field_headers, $tmp{'label'}.":" );
-    push( @cell_data, $tmp{'value'} );
+push( @fields, 'site' );
+
+$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
-}
+
 
 push( @field_headers, "Room: " );
 push( @cell_data, &{sub{ 
@@ -508,8 +495,11 @@ push( @cell_data, &{sub{
 		       edit=>$editloc, where=>{site=>($o ? $o->site : "")}, 
 		       makeLink=>1, linkPage=>"closet.html", htmlExtra=>$closet_js, returnAsVar=>1)
     }} );
-push( @field_headers, "Rack: " );
-push( @cell_data, $ui->text_field(object=>$o, column=>"rack", edit=>$editloc, returnAsVar=>1) );
+
+{
+my @fields = ('rack');
+$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+}
 
 my @devcontacts = $o->contacts;
 push( @field_headers, "Contacts: " );
@@ -552,12 +542,7 @@ push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_ta
 
 {
 my @fields = ('oobname','oobnumber','monitored','customer_managed','natted');
-foreach my $field (@fields) {
-    my %tmp;
-    %tmp = $ui->form_field(object=>$o, column=>$field, edit=>$editmgmt);
-    push( @field_headers, $tmp{'label'}.":" );
-    push( @cell_data, $tmp{'value'} );
-}
+$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 
 </%perl>
@@ -587,12 +572,7 @@ foreach my $field (@fields) {
 (@field_headers, @cell_data) = ();
 {
 my @fields = ('snmp_managed','community','canautoupdate');
-foreach my $field (@fields) {
-    my %tmp;
-    %tmp = $ui->form_field(object=>$o, column=>$field, edit=>$editsnmp);
-    push( @field_headers, $tmp{'label'}.":" );
-    push( @cell_data, $tmp{'value'} );
-}
+$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 </%perl>
 
@@ -705,7 +685,7 @@ push( @row,
 	    if ($editips){      
 		$a .= '<input type="checkbox" name="' . "RR__" . $ar->rr->id . "__delete" . '" >[del] ';
 	    }
-	    $a .= $ui->text_field(object=> $ar->rr, column=>"name", edit=>$editips, linkPage=>"view.html", returnAsVar=>1);
+        $a .=  $ui->form_field(object=>$ar->rr, column=>"name", edit=>$editips, linkPage=>"view.html", returnValOnly=>1);
 	}
     }else{
     }
@@ -862,17 +842,15 @@ if ( $view eq "Interfaces" || $view eq "All" ){
       my (@row) = ();	
       
       if ( $editints ){	 
-	push( @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delete" . '" >' );
+	    push( @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delete" . '" >' );
       }
       
-      push( @row, $ui->text_field(object=>$if, column=>"number", edit=>$editints, htmlExtra =>"style=\"width: 2em;\"", 
-				  linkPage=>"view.html", returnAsVar=>1) );
-      push( @row, $ui->text_field(object=>$if, column=>"name", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", 
-				  returnAsVar=>1) );
+      push( @row, $ui->form_field(object=>$if, column=>"number", edit=>$editints, htmlExtra=>"style=\"width: 2em;\"", linkPage=>"view.html", returnValOnly=>1) );
+      push( @row, $ui->form_field(object=>$if, column=>"name", edit=>$editints, htmlExtra=>"style=\"width: 7em;\"", linkPage=>"view.html", returnValOnly=>1) );
       
       if ( ! $editints ){
-	push( @row, $dm->convert_ifspeed($if->speed)  );
-	push( @row, 
+        push( @row, $dm->convert_ifspeed($if->speed)  );
+        push( @row, 
 	      &{sub{
 		  my $ac = "";
 		  if (exists $ifvlans{$if}){
@@ -886,30 +864,24 @@ if ( $view eq "Interfaces" || $view eq "All" ){
 		}} );
       }
       
-      push( @row, $ui->radio_group_boolean(object=>$if, column=>"monitored", edit=>$editints, returnAsVar=>1) );
-      push( @row, $ui->radio_group_boolean(object=>$if, column=>"snmp_managed", edit=>$editints, returnAsVar=>1) );
-      
+      push( @row, $ui->form_field(object=>$if, column=>"monitored", edit=>$editints, returnValOnly=>1) );
+      push( @row, $ui->form_field(object=>$if, column=>"snmp_managed", edit=>$editints, returnValOnly=>1) );
+     
     if ( exists $intinfo{jack} || $editints ){
         if ( @closet_jacks ){
-	    push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
-					   defaults=>\@closet_jacks, edit=>$editints, linkPage=>"cable_horizontal.html", 
-					   returnAsVar=>1) );
+          push( @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", default=>\@closet_jacks, linkPage=>"cable_horizontal.html", edit=>$editints, returnValOnly=>1) );
         }else{
-	    push( @row, $ui->select_lookup(object=>$if, table=>"Interface", column=>"jack", lookup=>"HorizontalCable", 
-					   edit=>$editints, linkPage=>"cable_horizontal.html", 
-					   returnAsVar=>1) );
-	}
-      }
+          push( @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", linkPage=>"cable_horizontal.html", edit=>$editints, returnValOnly=>1) );
+        }
+    }
       if ( exists $intinfo{room_char} || $editints ){
-	push( @row, $ui->text_field(object=>$if, column=>"room_char", edit=>$editints, 
-				    htmlExtra =>"style=\"width: 4em;\"", returnAsVar=>1) );
+          push( @row, $ui->form_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", returnValOnly=>1) );
       }
       if ( exists $intinfo{jack_char} || $editints ){
-	push( @row, $ui->text_field(object=>$if, column=>"jack_char", edit=>$editints, 
-				    htmlExtra =>"style=\"width: 7em;\"", returnAsVar=>1) );
+          push( @row, $ui->form_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", returnValOnly=>1) );
       }
       if ( exists $intinfo{description} || $editints ){
-	push( @row, $ui->text_field(object=>$if, column=>"description", edit=>$editints, returnAsVar=>1) );
+          push( @row, $ui->form_field(object=>$if, column=>"description", edit=>$editints, returnValOnly=>1) );
       }
       
 	push( @row, 
