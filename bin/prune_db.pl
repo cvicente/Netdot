@@ -76,7 +76,7 @@ map { $_ =~ s/\_history//g } @tables;
 # date NUM_MONTHS ago
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime (time-($NUM_MONTHS*30*24*60*60)); # 30 days/month
 $year += 1900; $mon += 1;
-printf("NUM_MONTHS ago was : %d/%d\n", $year, $mon) if $DEBUG;
+printf("NUM_MONTHS(%d) ago was : %d/%d\n", $NUM_MONTHS, $year, $mon) if $DEBUG;
 my $sqldate = sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year,$mon,$mday,$hour,$min,$sec);
 
 my $start = time;
@@ -92,10 +92,8 @@ foreach my $table (@tables) {
     my $q = $dbh->prepare("SELECT $table_id_field, COUNT(id) FROM $history_table GROUP BY $table_id_field");
     $q->execute();
     while (my ($table_id, $count) = $q->fetchrow_array()) {
-
-	if ($count > $NUM_HISTORY) {
-	    printf("%s record %s has %s history items\n", 
-		   $history_table, $table_id, $count) if $DEBUG;
+    	if ($count > $NUM_HISTORY) {
+            printf("%s record %s has %s history items\n", $history_table, $table_id, $count) if $DEBUG;
 
             ###################################
             # Deletes history items that are older than NUM_MONTHS.
@@ -104,17 +102,22 @@ foreach my $table (@tables) {
             # than NUM_HISTORY history items.
 
             my $r = $dbh->do("DELETE FROM $history_table WHERE $table_id_field=$table_id AND modified < '$sqldate'");
-	    if ( $r ){
-		if ( $VERBOSE ){
-		    printf("%d rows deleted\n", $r) if $DEBUG;
-		}
-		$total_deleted += $r;
-	    }
-
+            if ( $r ){
+                if ( $VERBOSE ){
+                    printf("%d rows deleted\n", $r) if $DEBUG;
+                }
+                $total_deleted += $r;
+            }
         }
     }
     $output .= sprintf("A total of %d rows deleted from %s\n", 
 		       $total_deleted, $history_table) if (($VERBOSE || $DEBUG) && $total_deleted);    
+
+    if ($total_deleted > 0) {
+        # now optimize the table to free up the space from the deleted records
+        printf("Freeing deleted space in %s\n", $history_table) if $DEBUG;
+        $dbh->do("OPTIMIZE TABLE $history_table");
+    }
 }
 
 my $end = time;
