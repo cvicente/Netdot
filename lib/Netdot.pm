@@ -41,7 +41,9 @@ sub _read_defaults {
 }
 
 =head2 new
-
+    
+  my $netdot = Netdot->new()
+    
 =cut
 
 ######################################################################
@@ -83,12 +85,12 @@ sub new {
 # STUFF for Debug.pm
 ######################################################################
 
-=head2 set_loglevel - set Netdot's loglevel
+=head2 set_loglevel - set Netdot loglevel
 
    $netdot->set_loglevel( "loglevel" );
 
 Debug messages at loglevel $loglevel or above are sent to syslog; they are
-otherwise dropped.  You can use this method to change NetViewer's loglevel.
+otherwise dropped.  You can use this method to change the loglevel.
 The argument is expected in the form "LOG_INFO" or "LOG_EMERG" and so on.  See
 the man page for syslog for further examples.
 
