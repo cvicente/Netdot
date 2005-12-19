@@ -420,8 +420,10 @@ being viewed, otherwise, the user will see the value of the object in plain text
 =cut
 sub form_field {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $edit, $default, $htmlExtra, $linkPage, $returnValOnly) = ($args{object}, $args{table}, 
-									     $args{column}, $args{edit}, $args{default}, $args{htmlExtra}, $args{linkPage}, $args{returnValOnly} );
+    my ($o, $table, $column, $edit, $default, $htmlExtra, $linkPage, $returnValOnly) = 
+	($args{object}, $args{table}, $args{column}, $args{edit}, $args{default}, 
+	 $args{htmlExtra}, $args{linkPage}, $args{returnValOnly} );
+
     my $label; # return value
     my $value; # return value
 
@@ -452,7 +454,8 @@ sub form_field {
             }
 
             if ($type eq "varchar" || $type eq "timestamp" || $type eq "integer" || $type eq "numeric" || $type eq "date" ) {
-                $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$edit, default=>$default, linkPage=>$linkPage, returnAsVar=>1);
+                $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$edit, default=>$default, 
+					   linkPage=>$linkPage, returnAsVar=>1, htmlExtra=>$htmlExtra);
 
             } elsif ($type eq "long varbinary") {
                 $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$edit, returnAsVar=>1, htmlExtra=>$htmlExtra);

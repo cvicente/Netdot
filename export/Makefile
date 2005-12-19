@@ -2,7 +2,7 @@
 # makefile for import/
 #
 
-FILES := $(shell ls *.pl) 
+FILES := $(shell ls *.{pm,pl,skel,inst} )
 
 install:
 	@echo
@@ -14,4 +14,5 @@ install:
 	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
 	    rm -f $$file.tmp ; \
 	done
+	mv $(PREFIX)/$(DIR)/Makefile.inst $(PREFIX)/$(DIR)/Makefile
 	@echo "Done."

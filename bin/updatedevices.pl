@@ -137,7 +137,8 @@ if ($host){
 	    $target = $ips[0]->address;
 	    # Or use the name
 	}elsif ( $device->name && $device->name->name ){
-	    $target = $device->name->name;
+	    # Use FQDN
+	    $target = $device->name->name . "." . $device->name->zone->mname;
 	}
 	if ( $target ){
 	    if (my $r = &discover(host => $target)){
