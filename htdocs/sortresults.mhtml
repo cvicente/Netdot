@@ -56,6 +56,10 @@ my %objindex;
 my $DEBUG      = 0;
 my $numcols    = 0;
 
+# Keep a list of valid tables;
+my %tables;
+map { $tables{$_} = 1 } $ui->gettables;
+
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
 # Things to do on first call
@@ -369,8 +373,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % #####################################################################
 
 %          if ( exists($linksto{$c}) ) {
-%             my $ft = $ui->getmeta( $linksto{$c} );
-%             if( ! defined( $ft ) ) {
+%             if( ! exists($tables{$linksto{$c}}) ) {
 %             ##########################
 %             # foreign table does not exist
       No such object <% $linksto{$c} %>

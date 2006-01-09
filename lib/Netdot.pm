@@ -7,7 +7,6 @@ use base qw (Netdot::DBI );
 #Be sure to return 1
 1;
 
-########################################
 
 =head1 NAME
 
@@ -22,62 +21,43 @@ hence the idea of grouping them in this parent class, inheritable by every other
 
 =cut
 
-######################################################################
-# We have two config files.  First one contains defaults
-# and second one is site-specific (and optional)
-# Values are stored in this base class under the 'config' key
-######################################################################
-
-sub _read_defaults {
-    my $self = shift;
-    my @files = qw( PREFIX/etc/Default.conf);
-    push @files, "PREFIX/etc/Site.conf", if ( -e "PREFIX/etc/Site.conf" );
-    foreach my $file (@files){
-	my $config_href = do $file or die $@ || $!;
-	foreach my $key ( %$config_href ) {
-	    $self->{config}->{$key} = $config_href->{$key};
-	}
-    }
-}
-
-=head2 new
+=head2 new - Class Constructor
     
-  my $netdot = Netdot->new()
+    my $netdot = Netdot->new()
     
 =cut
-
-######################################################################
-# Constructor
-######################################################################
-
 sub new {
-   my ($proto, %argv) = @_;
-   my $class = ref( $proto ) || $proto;
-   my $self = {};
-   bless $self, $class;
-
-   $self->_read_defaults;
-
-   $self->{'_logfacility'} = $argv{'logfacility'} || $self->{config}->{'DEFAULT_LOGFACILITY'},
-   $self->{'_loglevel'}    = $argv{'loglevel'}    || $self->{config}->{'DEFAULT_LOGLEVEL'},
-   $self->{'_logident'}    = $argv{'logident'}    || $self->{config}->{'DEFAULT_SYSLOGIDENT'},
-   $self->{'_foreground'}  = $argv{'foreground'}  || 0,
-
-   $self->{debug} = Debug->new(logfacility => $self->{'_logfacility'},
-			       loglevel    => $self->{'_loglevel'},
-			       logident    => $self->{'_logident'},
-			       foreground  => $self->{'_foreground'},
-			       );
-
+    my ($proto, %argv) = @_;
+    my $class = ref( $proto ) || $proto;
+    my $self = {};
+    bless $self, $class;
+    
+    # Read config files
+    $self->_read_defaults;
+    
+    # Initialize Meta data
+    $self->_read_metadata;
+    
+    $self->{'_logfacility'} = $argv{'logfacility'} || $self->{config}->{'DEFAULT_LOGFACILITY'},
+    $self->{'_loglevel'}    = $argv{'loglevel'}    || $self->{config}->{'DEFAULT_LOGLEVEL'},
+    $self->{'_logident'}    = $argv{'logident'}    || $self->{config}->{'DEFAULT_SYSLOGIDENT'},
+    $self->{'_foreground'}  = $argv{'foreground'}  || 0,
+    
+    $self->{debug} = Debug->new(logfacility => $self->{'_logfacility'},
+				loglevel    => $self->{'_loglevel'},
+				logident    => $self->{'_logident'},
+				foreground  => $self->{'_foreground'},
+				);
+    
 #  We override Class::DBI to speed things up in certain cases.
-
-   unless ( $self->{dbh} = Netdot::DBI->db_Main() ){
+    
+    unless ( $self->{dbh} = Netdot::DBI->db_Main() ){
 	$self->error("Can't get db handle\n");
 	return 0;
     }
-
-   wantarray ? ( $self, '' ) : $self;
-
+    
+    wantarray ? ( $self, '' ) : $self;
+    
 }
 
 
@@ -95,7 +75,6 @@ The argument is expected in the form "LOG_INFO" or "LOG_EMERG" and so on.  See
 the man page for syslog for further examples.
 
 =cut
-
 sub set_loglevel {
   my $self = shift;
   return $self->{debug}->set_loglevel( @_ );
@@ -130,8 +109,6 @@ or
     print $netdot->error . "\n";
 
 =cut
-
-
 sub error {
     my $self = shift;
     if (@_) { $self->{'_error'} = shift }
@@ -144,21 +121,6 @@ sub error {
 ######################################################################
 
 
-=head2 getmeta
-
-  $mi = $db->getmeta( $table );
-
-When passed a table name, it searches the "Meta" table and returns the object associated
-with such table.  This object then gives access to the tables metadata.
-Ideally meant to be called from other methods in this class.
-
-=cut
-
-sub getmeta{
-    my ($self, $table) = @_;
-    return (Meta->search( name => $table ))[0];
-}
-
 =head2 gettables
 
   @tables = $db->gettables();
@@ -166,7 +128,6 @@ sub getmeta{
 Returns a list of table names found in the Meta table
 
 =cut
-
 sub gettables{
     my $self = shift;
     return map {$_->name} Meta->retrieve_all;
@@ -197,18 +158,9 @@ that these fields reference.
 This info is identical for history tables
 
 =cut
-
 sub getlinksto{
     my ($self, $table) = @_;
-
-    $table =~ s/_history//;
-    my (%linksto, $mi);
-    if ( defined($mi = $self->getmeta($table)) ){
-	map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
-	split( /,/, $mi->linksto );
-	return  %linksto;
-    }
-    return;
+    return %{ $self->{meta}->{$table}->{linksto} };
 }
 
 =head2 getlinksfrom
@@ -223,19 +175,9 @@ reference this tables primary key.
 History tables are not referenced by other tables
 
 =cut
-
 sub getlinksfrom{
     my ($self, $table) = @_;
-
-    return if ( $table =~ /_history/ );
-    my (%linksfrom, $mi);
-    if ( defined($mi = $self->getmeta($table)) ){
-	map { my($i, $j, $k, $args) = split( /:/, $_ );
-	      $linksfrom{$i}{$j} = $k;
-	  }  split( /,/, $mi->linksfrom );
-	return %linksfrom;
-    }
-    return;
+    return %{ $self->{meta}->{$table}->{linksfrom} };
 }
 
 =head2 getcolumnorder
@@ -247,30 +189,9 @@ displayed. It returns a hash with column names as keys and their positions and v
 History tables have two extra fields at the end
 
 =cut
-
 sub getcolumnorder{
     my ($self, $table) = @_;
-
-    my $hist = 1 if ( $table =~ s/_history// );
-    my (%order, $i, $mi);
-    if ( defined($mi = $self->getmeta($table)) ){
-	$i = 1;
-	if( defined( $mi->columnorder ) ) {
-	    map { $order{$_} = $i++; } split( /,/, $mi->columnorder );
-	} else {
-	    $order{"id"} = $i++;
-	    foreach ( sort { $a cmp $b } $mi->name->columns() ) {
-		next if( $_ eq "id" );
-		$order{$_} = $i++;
-	    }
-	}
-	if ( $hist ){
-	    $order{'modified'} = $i++;
-	    $order{'modifier'} = $i++;
-	}
-	return %order;
-    }
-    return;
+    return %{ $self->{meta}->{$table}->{columnorder} };
 }
 
 =head2 getcolumnorderbrief
@@ -283,30 +204,9 @@ and their positions as values.
 History tables have two extra fields at the beginning
 
 =cut
-
 sub getcolumnorderbrief {
   my ($self, $table) = @_;
-
-  my $hist = 1 if ( $table =~ s/_history// );
-  my (%order, $i, $mi);
-  if ( defined($mi = $self->getmeta($table)) ){
-    $i = 1;
-    if ( $hist ){
-	$order{'modified'} = $i++;
-	$order{'modifier'} = $i++;
-    }
-    if( defined( $mi->columnorder ) ) {
-      map { $order{$_} = $i++; } split( /,/, $mi->columnorderbrief );
-    } else {
-      $order{"id"} = $i++;
-      foreach ( sort { $a cmp $b } $mi->name->columns() ) {
-	next if( $_ eq "id" );
-	$order{$_} = $i++;
-      }
-    }
-    return %order;
-  }
-  return;
+  return %{ $self->{meta}->{$table}->{columnorderbrief} };
 }
 
 =head2 getcolumntypes
@@ -317,27 +217,10 @@ Accepts a table and returns a hash containing the SQL types for the table's colu
 keys are the column names and the values their type.
 
 =cut
-
 sub getcolumntypes{
     my ($self, $table) = @_;
-
-    my $hist = 1 if ( $table =~ s/_history// );
-    my (%types, $mi);
-    if ( defined($mi = $self->getmeta($table)) ){
-	my $mi = $self->getmeta($table);
-	if( defined( $mi->columntypes ) ) {
-	    map { my($j, $k) = split( /:/, $_ ); $types{$j} = $k }
-	    split( /,/, $mi->columntypes );
-	}
-	if ( $hist ){
-	    $types{modified} = "varchar";
-	    $types{modifier} = "timestamp";
-	}
-	return %types;
-    }
-    return;
+    return %{ $self->{meta}->{$table}->{columntypes} };
 }
-
 
 =head2 getcolumntags
 
@@ -346,21 +229,9 @@ sub getcolumntypes{
 Returns a hash contaning the user-friendly display names for a tables columns
 
 =cut
-
 sub getcolumntags{
     my ($self, $table) = @_;
-
-    $table =~ s/_history// ;
-    my (%tags, $mi);
-    if ( defined($mi = $self->getmeta($table)) ){
-	my $mi = $self->getmeta($table);
-	if( defined( $mi->columntags ) ) {
-	    map { my($j, $k) = split( /:/, $_ ); $tags{$j} = $k }
-	    split( /,/, $mi->columntags );
-	}
-	return %tags;
-    }
-    return;
+    return %{ $self->{meta}->{$table}->{columntags} };
 }
 
 =head2 getlabels
@@ -371,16 +242,21 @@ Returns a tables list of labels.  Labels are one or more columns used as hyperli
 the specified object.  Theyre also used as a meaningful instance identifier.
 
 =cut
-
 sub getlabels{
     my ($self, $table) = @_;
-    my $mi;
-    if ( defined($mi = $self->getmeta($table)) ){
-	if( defined( $mi->label ) ) {
-	    return split /,/, $mi->label;
-	}
-    }
-    return;
+    return @{ $self->{meta}->{$table}->{labels} };
+}
+
+=head2 isjointable
+
+  $flag = $db->isjointable( $table );
+
+Check if table is a join table
+
+=cut
+sub isjointable {
+    my ($self, $table) = @_;
+    return %{ $self->{meta}->{$table}->{isjointable} };
 }
 
 =head2 getobjlabel
@@ -394,7 +270,6 @@ Accepts an object reference and a (optional) delimiter.
 Returns a string.
 
 =cut
-
 sub getobjlabel {
     my ($self, $obj, $delim) = @_;
     my (%linksto, @ret, @cols);
@@ -422,7 +297,6 @@ Returns array of labels for table. Each element is a comma delimited
 string representing the labels from this table to its endpoint.
 
 =cut
-
 sub getlabelarr {
 
     my ($self, $table) = @_;
@@ -454,7 +328,6 @@ Args:
   - delim: (optional) delimiter.
 
 =cut
-
 sub getlabelvalue {
     my ($self, $obj, $lbls, $delim) = @_;
 
@@ -487,23 +360,6 @@ sub getsqltype {
     return $coltypes{$col};
 }
 
-=head2 isjointable
-
-  $flag = $db->isjointable( $table );
-
-Check if table is a join table
-
-=cut
-
-sub isjointable {
-    my ($self, $table) = @_;
-    my $mi;
-    if ( defined($mi = $self->getmeta($table)) ){
-        return $mi->isjoin;
-    }
-    return undef;
-}
-
 =head2 getobjstate
 
   %state = $db->getstate( $object );
@@ -513,7 +369,6 @@ Useful if object needs to be restored to a previous
 state.
 
 =cut
-
 sub getobjstate {
     my ($self, $obj) = @_;
     my %bak;
@@ -548,7 +403,6 @@ Returns positive integer representing the modified rows id column
 for success and 0 for failure.
 
 =cut
-
 sub update {
     my( $self, %argv ) = @_;
     my($obj) = $argv{object};
@@ -603,7 +457,6 @@ integer which is the value of the newly inserted rows id column.
 Otherwise, the method returns 0.
 
 =cut
-
 sub insert {
   my($self, %argv) = @_;
   my($tbl) = $argv{table};
@@ -629,7 +482,6 @@ column.  Because id is a unique value, this will delete that specific row.
 Returns 1 for success and 0 for failure.
 
 =cut
-
 sub remove {
   my($self, %argv) = @_;
   my($tbl) = $argv{table};
@@ -657,7 +509,6 @@ sub remove {
   should be set.
 
 =cut
-
 sub insertbinfile {
     my ($self, $fh, $filetype) = @_;
     my $extension = $1 if ($fh =~ /\.(\w+)$/);
@@ -695,7 +546,6 @@ sub insertbinfile {
   should be set.
 
 =cut
-
 sub updatebinfile {
     my ($self, $fh, $id) = @_;
     my $extension = $1 if ($fh =~ /\.(\w+)$/);
@@ -736,7 +586,6 @@ sub updatebinfile {
 Get timestamp in DB 'datetime' format
 
 =cut
-
 sub timestamp {
     my $self  = shift;
     my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
@@ -753,7 +602,6 @@ sub timestamp {
 Get date in DB 'date' format
 
 =cut
-
 sub date {
     my $self  = shift;
     my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
@@ -770,7 +618,6 @@ sub date {
 Get date in 'DNS zone serial' format
 
 =cut
-
 sub dateserial {
     my $self  = shift;
     my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
@@ -796,7 +643,6 @@ sub dateserial {
    hashref of $table objects
 
 =cut
-
 sub single_table_search {
     my ($self, %args) = @_;
     my ($table, $field, $keyword, $max) = ($args{table}, $args{field}, $args{keyword}, $args{max});
@@ -828,10 +674,6 @@ sub single_table_search {
 	return \%found;
 }
 
-
-
-
-
 =head2 select_query
 
   $r = $db->select_query(table => $table, terms => \@terms, max => $max);
@@ -846,7 +688,6 @@ sub single_table_search {
    hashref of $table objects
 
 =cut
-
 sub select_query {
     my ($self, %args) = @_;
     my ($table, $terms) = ($args{table}, $args{terms});
@@ -910,7 +751,6 @@ sub select_query {
 Arguments:  object
 
 =cut
-
 sub gethistorytable {
     my ($self, $o) = @_;
     my $table;
@@ -927,7 +767,6 @@ sub gethistorytable {
 Arguments:  object
 
 =cut
-
 sub gethistoryobjs {
     my ($self, $o) = @_;
     my $table;
@@ -960,7 +799,6 @@ Arguments:  query string
 Returns:    reference to hash of hashes or -1 if error
 
 =cut
-
 sub search_all_netdot {
     my ($self, $q) = @_;
     my %results;
@@ -1005,7 +843,6 @@ sub search_all_netdot {
  Returns:   integer (decimal value of IP address)
 
 =cut
-
 sub ip2int {
     my ($self, $address) = @_;
     my $ipobj;
@@ -1064,7 +901,6 @@ sub powerof2lo {
     Returns true/false for success/failure
 
 =cut
-
 sub send_mail {
     my ($self, %args) = @_;
     my ($to, $from, $subject, $body) = 	
@@ -1092,4 +928,182 @@ EOF
 close(SENDMAIL);
     return 1;
 
+}
+
+
+######################################################################
+#
+# Private Methods
+#
+######################################################################
+
+######################################################################
+# We have two config files.  First one contains defaults
+# and second one is site-specific (and optional)
+# Values are stored in this base class under the 'config' key
+######################################################################
+sub _read_defaults {
+    my $self = shift;
+    my @files = qw( PREFIX/etc/Default.conf);
+    push @files, "PREFIX/etc/Site.conf", if ( -e "PREFIX/etc/Site.conf" );
+    foreach my $file (@files){
+	my $config_href = do $file or die $@ || $!;
+	foreach my $key ( %$config_href ) {
+	    $self->{config}->{$key} = $config_href->{$key};
+	}
+    }
+}
+
+sub _getmeta{
+    my ($self, $table) = @_;
+    return (Meta->search( name => $table ))[0];
+}
+
+
+sub _read_metadata{
+    my ($self) = @_;
+    foreach my $table ( $self->gettables ){
+	$self->{meta}->{$table}->{linksto}          = $self->_read_linksto($table);
+	$self->{meta}->{$table}->{linksfrom}        = $self->_read_linksfrom($table);
+	$self->{meta}->{$table}->{columnorder}      = $self->_read_columnorder($table);
+	$self->{meta}->{$table}->{columnorderbrief} = $self->_read_columnorderbrief($table);
+	$self->{meta}->{$table}->{columntypes}      = $self->_read_columntypes($table);
+	$self->{meta}->{$table}->{columntags}       = $self->_read_columntags($table);
+	$self->{meta}->{$table}->{labels}           = $self->_read_labels($table);
+	$self->{meta}->{$table}->{isjointable}      = $self->_read_isjointable($table);
+    }
+}
+
+sub _read_linksto{
+    my ($self, $table) = @_;
+    
+    $table =~ s/_history//;
+    my (%linksto, $mi);
+    if ( defined($mi = $self->_getmeta($table)) ){
+	map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
+	split( /,/, $mi->linksto );
+	return \%linksto;
+    }
+    return;
+}
+
+sub _read_linksfrom{
+    my ($self, $table) = @_;
+    
+    return if ( $table =~ /_history/ );
+    my (%linksfrom, $mi);
+    if ( defined($mi = $self->_getmeta($table)) ){
+	map { my($i, $j, $k, $args) = split( /:/, $_ );
+	      $linksfrom{$i}{$j} = $k;
+	  }  split( /,/, $mi->linksfrom );
+	return \%linksfrom;
+    }
+    return;
+}
+
+sub _read_columnorder{
+    my ($self, $table) = @_;
+    
+    my $hist = 1 if ( $table =~ s/_history// );
+    my (%order, $i, $mi);
+    if ( defined($mi = $self->_getmeta($table)) ){
+	$i = 1;
+	if( defined( $mi->columnorder ) ) {
+	    map { $order{$_} = $i++; } split( /,/, $mi->columnorder );
+	} else {
+	    $order{"id"} = $i++;
+	    foreach ( sort { $a cmp $b } $mi->name->columns() ) {
+		next if( $_ eq "id" );
+		$order{$_} = $i++;
+	    }
+	}
+	if ( $hist ){
+	    $order{'modified'} = $i++;
+	    $order{'modifier'} = $i++;
+	}
+	return \%order;
+    }
+    return;
+}
+
+sub _read_columnorderbrief {
+  my ($self, $table) = @_;
+
+  my $hist = 1 if ( $table =~ s/_history// );
+  my (%order, $i, $mi);
+  if ( defined($mi = $self->_getmeta($table)) ){
+    $i = 1;
+    if ( $hist ){
+	$order{'modified'} = $i++;
+	$order{'modifier'} = $i++;
+    }
+    if( defined( $mi->columnorder ) ) {
+      map { $order{$_} = $i++; } split( /,/, $mi->columnorderbrief );
+    } else {
+      $order{"id"} = $i++;
+      foreach ( sort { $a cmp $b } $mi->name->columns() ) {
+	next if( $_ eq "id" );
+	$order{$_} = $i++;
+      }
+    }
+    return \%order;
+  }
+  return;
+}
+
+sub _read_columntypes{
+    my ($self, $table) = @_;
+
+    my $hist = 1 if ( $table =~ s/_history// );
+    my (%types, $mi);
+    if ( defined($mi = $self->_getmeta($table)) ){
+	my $mi = $self->_getmeta($table);
+	if( defined( $mi->columntypes ) ) {
+	    map { my($j, $k) = split( /:/, $_ ); $types{$j} = $k }
+	    split( /,/, $mi->columntypes );
+	}
+	if ( $hist ){
+	    $types{modified} = "varchar";
+	    $types{modifier} = "timestamp";
+	}
+	return \%types;
+    }
+    return;
+}
+
+sub _read_columntags{
+    my ($self, $table) = @_;
+
+    $table =~ s/_history// ;
+    my (%tags, $mi);
+    if ( defined($mi = $self->_getmeta($table)) ){
+	my $mi = $self->_getmeta($table);
+	if( defined( $mi->columntags ) ) {
+	    map { my($j, $k) = split( /:/, $_ ); $tags{$j} = $k }
+	    split( /,/, $mi->columntags );
+	}
+	return \%tags;
+    }
+    return;
+}
+
+sub _read_labels{
+    my ($self, $table) = @_;
+    my $mi;
+    if ( defined($mi = $self->_getmeta($table)) ){
+	if( defined( $mi->label ) ) {
+	    my @labels = split /,/, $mi->label;
+	    return \@labels;
+	}
+    }
+    return;
+}
+
+sub _read_isjointable {
+    my ($self, $table) = @_;
+    my $mi;
+    if ( defined($mi = $self->_getmeta($table)) ){
+        return $mi->isjoin;
+    }
+    return undef;
 }
