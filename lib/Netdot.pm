@@ -856,12 +856,14 @@ sub ip2int {
 
 
 =head2 within
-    Checks is a value is between two other values
+
+    Checks if a value is between two other values
     Arguments:
         - val: value youre interested in
         - beg: start of range to check
         - end: end of range to check
     Returns true/false whether val is between beg and end, inclusive
+
 =cut
 sub within {
     my ($self, $val, $beg, $end) = @_;
@@ -869,11 +871,13 @@ sub within {
 }
 
 =head2 powerof2lo
+
     Returns the next lowest power of 2 from x
     note: hard-coded to work for 32-bit integers
     Arguments:
         - x: an integer
     Returns a power of 2
+
 =cut
 sub powerof2lo {
     my ($self, $x) = @_;

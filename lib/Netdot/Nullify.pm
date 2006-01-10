@@ -4,7 +4,7 @@ package Class::DBI::Cascade::Nullify;
 
 Class::DBI::Cascade::Nullify - Set Foreign keys to null when deleting
 
-=head1 DESCRIPTION
+=head1 SYNOPSIS
 
 This is a Cascading Delete strategy that will set any related
 objects to 'NULL'
