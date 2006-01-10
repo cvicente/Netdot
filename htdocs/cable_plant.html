@@ -699,9 +699,9 @@ print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
 
 HERE
 
-                              $ac .= '<SELECT NAME="backbone_list_srch1_' . $strand->id . '" onChange="lookupStrands(this.value, \'__splice1_' 
+                              $ac .= '<select name="backbone_list_srch1_' . $strand->id . '" onChange="lookupStrands(this.value, \'__splice1_' 
 			          . $strand->id . '\', \'netdotform\');">';
-			      $ac .= '<OPTION VALUE="">Lookup by Backbone</OPTION>';
+			      $ac .= '<option value="">Lookup by Backbone</option>';
 
 
 			      my @splices = $strand->splices;
@@ -710,10 +710,10 @@ HERE
 			      {
 				  next if ($bb->id == int($strand->cable) || exists($stored{$bb}));
 				  $stored{$bb} = 1;
-				  $ac .= sprintf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+				  $ac .= sprintf("<option value=\"%s\">%s</option>\n", $bb->id, $bb->name);
 			      }
 
-			      $ac .= '</SELECT> &nbsp; ';
+			      $ac .= '</select> &nbsp; ';
 			      $ac .= '<select name="__splice1_' . $strand->id . '">';
 			      $ac .= '<option value="">-- Make your selection --</option>';
 			      if (scalar(@splices)) {
@@ -722,19 +722,19 @@ HERE
 			      $ac .= '<option value="">[null]</option>';
 			      $ac .= '</select>';
 			      $ac .= '<br>';
-			      $ac .= '<SELECT NAME="backbone_list_srch2_' . $strand->id . '" onChange="lookupStrands(this.value, \'__splice2_' 
+			      $ac .= '<select name="backbone_list_srch2_' . $strand->id . '" onChange="lookupStrands(this.value, \'__splice2_' 
 				  . $strand->id . '\', \'netdotform\');">';
-			      $ac .= '<OPTION VALUE="">Lookup by Backbone</OPTION>';
+			      $ac .= '<optino value="">Lookup by Backbone</option>';
 
 			      %stored = ();
 			      foreach my $bb (sort { $a->name cmp $b->name } @backbones)
 			      {
 				  next if ($bb->id == int($strand->cable) || exists($stored{$bb}));
 				  $stored{$bb} = 1;
-				  printf("<OPTION VALUE=\"%s\">%s</OPTION>\n", $bb->id, $bb->name);
+				  $ac .= sprintf("<option value=\"%s\">%s</option>\n", $bb->id, $bb->name);
 			      }
 
-			      $ac .= '</SELECT> &nbsp; ';
+			      $ac .= '</select> &nbsp; ';
 			      $ac .= '<select name="__splice2_' . $strand->id . '">';
 			      $ac .= '<option value="">-- Make your selection --</option>';
 			      if (scalar(@splices) == 2) {

@@ -41,104 +41,33 @@ my %tags    = $ui->getcolumntags( $table );
 
 <script language="javascript" src="select.js"></script>
 
-% ####################################################################
-<!-- begin form --> 
-% if( defined( $table ) ) {
-    <table width="100%" cellpadding="3" cellspacing="0" border="0" class="formtablebg">
-    <tr>
-    <input type="hidden" name="table" value="<% $table %>">
-%   if( $id ) {
-        <input type="hidden" name="id" value="<% $id %>">
-%   }
-%   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%     next if( $c eq 'id' );
-% ################################################
-%     if( ! exists( $linksto{$c} ) ) { # local field
-        <tr>
-%       if ( exists($tags{$c}) ){
-           <td class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
-%	      }else{
-           <td class="formtablec1"><strong><% $c %>:</strong></td>
-%	      }
-%       if( defined( $id ) ) {
-	        <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $obj) %></td>
-%       } elsif( exists( $session{$c} ) ) {
-	        <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $linksto{$c}, $session{$c}) %></td>
-%       } else {
-	        <td class="formtablec2" colspan="2"><% $ui->getinputtag($c, $table) %></td>
-%       }
-        </tr>
-% ################################################
-%     } else {  # The column is a foreign key. Provide a list to select.
-        <tr>
-%       if ( exists($tags{$c}) ){
-           <td class="formtablec1"><strong><% $tags{$c} %>:</strong></td>
-%	    }else{
-           <td class="formtablec1"><strong><% $c %>:</strong></td>
-%	    }
-	<td class="formtablec2">
-%       my $flag = 1;
-%	# Check for amount of objects in table before retrieving all
-%	my $count = $linksto{$c}->count_all;
-%	if ( $count <= $maxselect ){			      
-%	   my @fkobjs = $linksto{$c}->retrieve_all;
+<%perl>
 
-   	   <select name="<% $c %>">
-%          if( defined( $obj ) && ( ! $obj->$c 
-%              || ! defined( $linksto{$c}->retrieve( $obj->$c->id ) ) ) ) {
-              <option value="0" selected>[null]</option>
-%             $flag = 0;
-%          } else {
-              <option value="0">[null]</option>
-%          }
-% ##################################################
-% # Order by label value
-%         my @lbls = $ui->getlabelarr( $linksto{$c} );
-%         my @fk;
-%         map  { push @fk, [$_->[0], $_->[1]] }
-%         sort { $a->[0] cmp $b->[0] }
-%         map  { [$ui->getlabelvalue($_, \@lbls, ", "), $_->id] } @fkobjs;
-%         foreach my $r ( @fk ){
-%             my ($lbl, $id) = ($r->[0], $r->[1]);
-%             if( ( defined( $obj ) && $flag && $id == $obj->$c->id ) 
-%             	|| ( $id == $session{$c} ) ) {
-            	<option value="<% $id %>" selected><% $lbl %></option>
-%             } else {
-            	<option value="<% $id %>"><% $lbl %></option>
-%             }
-%	   } #end foreach
-	   </select>
-%	}else{ #we have too many 
-%	   my $srchf = $c . '_srch';  #name of the form input tag
-	   <input type="text" name="<% $srchf %>" value="Keywords">
-	   &nbsp;<input type="button" name="" value="List" 
-	   onClick="sendquery(<% '_' . $c  %>, <% $srchf . '.value' %>, <% "\'" . $linksto{$c} . "\'" %>)" >
-	   <br><select name="<% '_' . $c %>"> 
-%             if( defined( $obj ) && defined( $obj->$c ) && $flag && $obj->$c->id ) {
-%		if (my $fkobj = $linksto{$c}->retrieve( $obj->$c->id )){
-%                 my $lbl = $ui->getobjlabel( $fkobj, ", " );
-            	  <option value="<% $fkobj->id %>" selected><% $lbl %></option>
-%		}
-%             }elsif ( exists $session{$c} ){
-%		if (my $fkobj = $linksto{$c}->retrieve( $session{$c} ) ){
-%                  my $lbl = $ui->getobjlabel( $fkobj, ", " );
-            	   <option value="<% $fkobj->id %>" selected><% $lbl %></option>
-%		}
-%	      }    
-              <option value="0">[null]</option>
-	   </select>
-%	}
+####################################################################
+if( defined( $table ) ) {
+   my (@headers, @data) = ();
+   print '<input type="hidden" name="table" value="'.$table.'">';
+   if( $id ) {
+       print '<input type="hidden" name="id" value="'.$id.'">';
+   }
+   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+       next if( $c eq 'id' );
+       ################################################
+         my %field;
+         if( defined( $id ) ) {
+            %field = $ui->form_field(object=>$obj, column=>$c, edit=>1, shortFieldName=>1);
+         } elsif( exists( $session{$c} ) ) {
+            %field = $ui->form_field(table=>$table, column=>$c, default=>$session{$c}, edit=>1, shortFieldName=>1);
+         } else {
+            %field = $ui->form_field(table=>$table, column=>$c, edit=>1, shortFieldName=>1);
+         }
+         push(@headers, $field{'label'});
+         push(@data, $field{'value'});
+       ################################################
+   } # foreach
 
-        </td>
-%       if ( $allow_create ){
-	<td class="formtablec2">
-          <input name="T_<% $linksto{$c} %>" value="New" type="submit">
-        </td>
-%       }
-        </tr>
-%     } # else
-%   } # for
-    </tr>
-    </table>
-% } # if
-<!-- end form --> 
+   </%perl><& attribute_table.mhtml, field_headers=>\@headers, data=>\@data &><%perl>
+
+} # if defined table
+
+</%perl>

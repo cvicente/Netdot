@@ -297,9 +297,8 @@ if( $args{confirm} eq "Confirm" ) {
 # create %state to pass to form
 # only if ID not set since we want form component to fill that in
 if( defined( $TBL ) && ! defined( $ID ) ) {
-  my $meta = $ui->getmeta( $TBL );
   my %lt = $ui->getlinksto( $TBL );
-  foreach my $c ( split( /,/, $meta->columnorder ) ) {
+  foreach my $c ( split( /,/, $ui->getcolumnorder($TBL) ) ) {
     if( $args{$c} ) {
       $state{$c} = $args{$c};
     }

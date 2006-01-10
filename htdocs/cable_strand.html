@@ -105,7 +105,7 @@ if (defined($ARGS{_action})) {
 	      <%perl>
 	      (@field_headers, @cell_data) = ();
 	      push( @field_headers, "Name: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"CableStrand", column=>"name", edit=>$editStrand, returnAsVar=>1) );
+	      push( @cell_data, $ui->form_field(object=>$o, table=>"CableStrand", column=>"name", edit=>$editStrand, returnValOnly=>1) );
 	      push( @field_headers, "Number: " );
 	      push( @cell_data, $o ? $o->number : "" );
 	      push( @field_headers, "Backbone: " );
@@ -113,11 +113,11 @@ if (defined($ARGS{_action})) {
 	      if (!$editStrand) {
 		  push( @cell_data, '<a href="cable_backbone.html?id='.$o->cable.'">'.$o->cable->name.'</a>' );
 	      } else {
-		  push( @cell_data, $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable", edit=>$editStrand, returnAsVar=>1) );
+		  push( @cell_data, $ui->form_field(object=>$o, table=>"CableStrand", column=>"cable", lookup=>"BackboneCable", edit=>$editStrand, returnValOnly=>1) );
 	      }
 
 	      push( @field_headers, "Status: " );
-	      push( @cell_data, $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"status", lookup=>"StrandStatus", edit=>$editStrand, returnAsVar=>1) );
+	      push( @cell_data, $ui->form_field(object=>$o, table=>"CableStrand", column=>"status", lookup=>"StrandStatus", edit=>$editStrand, returnValOnly=>1) );
 	      push( @field_headers, "Spliced with: " );
 	      </%perl>
 
@@ -125,7 +125,7 @@ if (defined($ARGS{_action})) {
 %               if (!$editStrand) {
 %                   my @splices = $o->splices;
 %                   if (scalar(@splices)) {
-                        <a href="cable_stranif (!$editStrand) {d.html?id=<% $splices[0]->strand2->id %>"><% $splices[0]->strand2->name %></a>
+                        <a href="cable_strand.html?id=<% $splices[0]->strand2->id %>"><% $splices[0]->strand2->name %></a>
 %                   }
 %                   if (scalar(@splices) == 2) {
                         , <a href="cable_strand.html?id=<% $splices[1]->strand2->id %>"><% $splices[1]->strand2->name %></a> 
@@ -209,8 +209,8 @@ if (defined($ARGS{_action})) {
 	      }
 
 	      push( @field_headers, "Circuit: " );
-              push( @cell_data, $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"circuit_id", lookup=>"Circuit", 
-						   edit=>$editStrand, returnAsVar=>1, linkPage => "circuit.html") );
+              push( @cell_data, $ui->form_field(object=>$o, column=>"circuit_id", lookup=>"Circuit", 
+						   edit=>$editStrand, returnValOnly=>1, linkPage => "circuit.html") );
 
 	      </%perl>
 
@@ -222,11 +222,11 @@ if (defined($ARGS{_action})) {
 	      <%perl>
 	      (@field_headers, @cell_data) = ();
 	      push( @field_headers, 'Tested on: <font size="-1">(yyyy-mm-dd)</font>: ' );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"CableStrand", column=>"datetested", edit=>$editStrand, returnAsVar=>1) );
+	      push( @cell_data, $ui->form_field(object=>$o, column=>"datetested", edit=>$editStrand, returnValOnly=>1) );
 	      push( @field_headers, "Fiber Type: " );
-	      push( @cell_data, $ui->select_lookup(object=>$o, table=>"CableStrand", column=>"fiber_type", lookup=>"FiberType", edit=>$editStrand, returnAsVar=>1) );
+	      push( @cell_data, $ui->form_field(object=>$o, column=>"fiber_type", lookup=>"FiberType", edit=>$editStrand, returnValOnly=>1) );
 	      push( @field_headers, "Loss: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"CableStrand", column=>"loss", edit=>$editStrand, returnAsVar=>1) );
+	      push( @cell_data, $ui->form_field(object=>$o, column=>"loss", edit=>$editStrand, returnValOnly=>1) );
 	      push( @field_headers, "Direction: " );
 	      </%perl>
 
@@ -242,7 +242,7 @@ if (defined($ARGS{_action})) {
 	      <%perl>
 	      push( @cell_data, $_ );
 	      push( @field_headers, "Description: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"CableStrand", column=>"description", edit=>$editStrand, returnAsVar=>1) );
+	      push( @cell_data, $ui->form_field(object=>$o, column=>"description", edit=>$editStrand, returnValOnly=>1) );
 	      </%perl>
 
 	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
@@ -251,8 +251,7 @@ if (defined($ARGS{_action})) {
 	  </tr>
 	</table>
 	<div class="containerseparator">Comments:</div>
-%           $ui->text_area(object=>$o, table=>"CableStrand", column=>"info",
-%                         edit=>$editStrand, htmlExtra=>"rows='3' cols='80'");
+        <% $ui->form_field(object=>$o, column=>"info", edit=>$editStrand, htmlExtra=>"rows='3' cols='80'", returnValOnly=>1); %>
         </form>
 </div>
 </div>

@@ -87,16 +87,22 @@ if (defined($ARGS{_action})) {
 	    <%perl>
 	    my (@field_headers, @cell_data) = ();
 
-	    push( @field_headers, "Level: " );
-	    push( @cell_data, $ui->text_field(object=>$o, table=>"Floor", column=>"level",edit=>$editFloor, returnAsVar=>1) );
-	    push( @field_headers, "Site: " );
-	    push( @cell_data, $ui->select_lookup(object=>$o, table=>"Floor", column=>"site", lookup=>"Site", edit=>$editFloor, returnAsVar=>1) );
+        my %tmp;
+        %tmp = $ui->form_field(object=>$o, column=>"level", edit=>$editFloor);
+	    push( @field_headers, $tmp{label} );
+	    push( @cell_data, $tmp{value} );
+
+        %tmp = $ui->form_field(object=>$o, column=>"site", edit=>$editFloor);
+	    push( @field_headers, $tmp{label} );
+	    push( @cell_data, $tmp{value} );
+
 	    </%perl>
 	    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
-	    <div class="containerseparator">Comments:</div>
-%           $ui->text_area(object=>$o, table=>"Floor", column=>"info", edit=>$editFloor, htmlExtra=>"rows='3' cols='80'");
-         </div>	      
+%       %tmp = $ui->form_field(object=>$o, column=>"info", edit=>$editFloor);
+	    <div class="containerseparator"><% $tmp{label} %></div>
+        <% $tmp{value} %>
+        </div>	      
 
       </form>
    </div>

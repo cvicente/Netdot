@@ -416,13 +416,19 @@ being viewed, otherwise, the user will see the value of the object in plain text
   edit:          True if editing, false otherwise
   default:       Default value to display if none defined in DB
   returnOnlyVal: Return only the form field and no label as a string
+  shortFieldName:Set the name of the form field to be just the column name 
+                   instead of $table__$id__$column
+
+ Returns:
+  if returnOnlyVal, the form field as a string
+  else, a hash reference, with two keys, 'label', 'value'
 
 =cut
 sub form_field {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $edit, $default, $htmlExtra, $linkPage, $returnValOnly) = 
+    my ($o, $table, $column, $edit, $default, $htmlExtra, $linkPage, $returnValOnly, $shortFieldName) = 
 	($args{object}, $args{table}, $args{column}, $args{edit}, $args{default}, 
-	 $args{htmlExtra}, $args{linkPage}, $args{returnValOnly} );
+	 $args{htmlExtra}, $args{linkPage}, $args{returnValOnly}, $args{shortFieldName} );
 
     my $label; # return value
     my $value; # return value
@@ -455,13 +461,15 @@ sub form_field {
 
             if ($type eq "varchar" || $type eq "timestamp" || $type eq "integer" || $type eq "numeric" || $type eq "date" ) {
                 $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$edit, default=>$default, 
-					   linkPage=>$linkPage, returnAsVar=>1, htmlExtra=>$htmlExtra);
+					   linkPage=>$linkPage, returnAsVar=>1, htmlExtra=>$htmlExtra, shortFieldName=>$shortFieldName);
 
             } elsif ($type eq "long varbinary") {
-                $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$edit, returnAsVar=>1, htmlExtra=>$htmlExtra);
+                $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$edit, returnAsVar=>1, 
+                        htmlExtra=>$htmlExtra, shortFieldName=>$shortFieldName);
 
             } elsif ($type eq "bool") {
-                $value = $self->radio_group_boolean(object=>$o, table=>$table, column=>$column, edit=>$edit, returnAsVar=>1);
+                $value = $self->radio_group_boolean(object=>$o, table=>$table, column=>$column, edit=>$edit, 
+                        returnAsVar=>1, shortFieldName=>$shortFieldName);
 
             } else {
                 $value = "No rule for: $type";
@@ -476,8 +484,8 @@ sub form_field {
             $label = $column;
         }
 
-        $value = $self->select_lookup(object=>$o, table=>$tableName, column=>$column,, htmlExtra=>$htmlExtra,
-				     lookup=>$linksto{$column}, edit=>$edit, linkPage=>$linkPage, defaults=>$default, returnAsVar=>1);
+        $value = $self->select_lookup(object=>$o, table=>$tableName, column=>$column,, htmlExtra=>$htmlExtra, lookup=>$linksto{$column}, 
+                edit=>$edit, linkPage=>$linkPage, defaults=>$default, returnAsVar=>1, shortFieldName=>$shortFieldName);
     }
 
     ################################################
@@ -515,7 +523,7 @@ If not editing, this function only returns the label of the foreign key object.
   column:       Name of field in DB.
   edit:         True if editing, false otherwise.
   where:        (optional) Key/value pairs to pass to search function in CDBI
-  defaults:     (optional) array of objects to be shown in the drop-down list by default
+  defaults:     (optional) array of objects to be shown in the drop-down list by default, shortFieldName=>$shortFieldName
   htmlExtra:    (optional) extra html you want included in the output. Common
                 use would be to include style="width: 150px;" and the like.
   linkPage:     (optional) Make the printed value a link
@@ -532,12 +540,12 @@ If not editing, this function only returns the label of the foreign key object.
 
 sub select_lookup($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $lookup, $where, $defaults, $isEditing, $htmlExtra, $linkPage, $maxCount, $returnAsVar) = 
+    my ($o, $table, $column, $lookup, $where, $defaults, $isEditing, $htmlExtra, $linkPage, $maxCount, $returnAsVar, $shortFieldName) = 
 	($args{object}, $args{table}, 
 	 $args{column}, $args{lookup},
 	 $args{where}, $args{defaults}, $args{edit},
 	 $args{htmlExtra}, $args{linkPage},
-	 $args{maxCount}, $args{returnAsVar});
+	 $args{maxCount}, $args{returnAsVar}, $args{shortFieldName});
 
     my @defaults = @$defaults if $defaults;
     unless ( $o || $table ){
@@ -559,7 +567,13 @@ sub select_lookup($@){
         my ($count, @fo);
         my $tableName = ($o ? $o->table : $table);
         my $id = ($o ? $o->id : "NEW");
-        my $name = $tableName . "__" . $id . "__" . $column;
+        my $shortFieldName = ($shortFieldName ? 1:0);
+        my $name;
+        if( $shortFieldName ) {
+            $name = $column;
+        } else {
+            $name = $tableName . "__" . $id . "__" . $column;
+        }
         
         if (@defaults){
             @fo = @defaults;
@@ -771,14 +785,20 @@ Simple yes/no radio button group.
 
 sub radio_group_boolean($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $returnAsVar) = ($args{object}, $args{table}, 
-                                            $args{column}, $args{edit}, $args{returnAsVar} );
+    my ($o, $table, $column, $isEditing, $returnAsVar, $shortFieldName) = ($args{object}, $args{table}, 
+                                            $args{column}, $args{edit}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
-    my $name = $tableName . "__" . $id . "__" . $column;
+    my $shortFieldName = ($shortFieldName ? 1:0);
+    my $name;
+    if( $shortFieldName ) {
+        $name = $column;
+    } else {
+        $name = $tableName . "__" . $id . "__" . $column;
+    }
     
     
      unless ($o || $table){
@@ -822,17 +842,23 @@ the value from the DB (if any).
 
 sub text_field($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $htmlExtra, $linkPage, $default, $returnAsVar) = ($args{object}, $args{table}, 
-									     $args{column}, $args{edit}, 
-									     $args{htmlExtra}, $args{linkPage},
-									     $args{default}, $args{returnAsVar} );
-    
+    my ($o, $table, $column, $isEditing, $htmlExtra, $linkPage, $default, $returnAsVar, $shortFieldName) = 
+                   ($args{object}, $args{table}, 
+					$args{column}, $args{edit}, 
+					$args{htmlExtra}, $args{linkPage},
+					$args{default}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : $default);
-    my $name = $tableName . "__" . $id . "__" . $column;
+    my $shortFieldName = ($shortFieldName ? 1:0);
+    my $name;
+    if( $shortFieldName ) {
+        $name = $column;
+    } else {
+        $name = $tableName . "__" . $id . "__" . $column;
+    }
 
     $htmlExtra = "" if (!$htmlExtra);
 
@@ -876,15 +902,21 @@ the value from the DB (if any).
 
 sub text_area($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $htmlExtra, $returnAsVar) = ($args{object}, $args{table}, 
+    my ($o, $table, $column, $isEditing, $htmlExtra, $returnAsVar, $shortFieldName) = ($args{object}, $args{table}, 
                                                                       $args{column}, $args{edit}, 
-                                                                      $args{htmlExtra}, $args{returnAsVar} );
+                                                                      $args{htmlExtra}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
-    my $name = $tableName . "__" . $id . "__" . $column;
+    my $shortFieldName = ($shortFieldName ? 1:0);
+    my $name;
+    if( $shortFieldName ) {
+        $name = $column;
+    } else {
+        $name = $tableName . "__" . $id . "__" . $column;
+    }
 
     $htmlExtra = "" if (!$htmlExtra);
 

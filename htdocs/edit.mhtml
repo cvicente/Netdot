@@ -124,11 +124,11 @@ the submission.
       </tr>
       <tr><td>
       <p>Please confirm the following:
-%     my $obj = $ui->getmeta( $TBL );
 %     my %linksto = $ui->getlinksto( $TBL );
 %     my %tags = $ui->getcolumntags( $TBL );
       <p><blockquote><strong><% $TBL %></strong><ul>
-%     foreach my $C ( split( /,/, $obj->columnorder() ) ) {
+%     my %columns = $ui->getcolumnorder($TBL);
+%     foreach my $C ( keys %columns ) {
         <li>
 % 	if ( exists($tags{$C}) ){
            <% $tags{$C} %> :
@@ -139,8 +139,9 @@ the submission.
           -
 %       } else {
 %         if( $linksto{$C} ) {
-%           my $ft = $ui->getmeta( $linksto{$C} );
-%           if( ! defined( $ft ) ) {
+%           my %tables;
+%           map { $tables{$_} = 1 } $ui->gettables;
+%           if( ! exists( $tables{$linksto{$C}} ) ) {
               No such object <% $linksto{$C} %>
 %           } elsif( $session->{tables}{$TBL}{$C} == 0 ) {
               -
