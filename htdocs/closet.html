@@ -141,88 +141,57 @@ LIST_MANAGER.addList(floorSearchList);
 	  <td>
 	    <%perl>
 	    (@field_headers, @cell_data) = ();
-	    push( @field_headers, "Name: " );
-	    push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"name", edit=>$editCloset, returnAsVar=>1) );
-	    push( @field_headers, "Number: " );
-	    push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"number", edit=>$editCloset, returnAsVar=>1) );
+        {
+           my @fields = ('name','number');
+           $ui->add_to_fields(o=>$o, edit=>$editCloset, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+        }
+
 	    push( @field_headers, "Floor: " );
 	    </%perl>
-
 	    <&| "HERE.mhtml" &>  
-%           if ($editCloset) {
+%       if ($editCloset) {
 %           $ui->select_lookup(object=>$o, table=>"Closet", column=>"floor", lookup=>"Floor", 
 %           edit=>$editCloset, where=>{site=>($o ? $o->site : "")});
-            &nbsp;<select name="floor_srch" onChange="floorSearchList.doIt();" style="width: 150px;">
-	      <option value="">Lookup by Site</option>
-		<%perl>
-		my @sites = Site->retrieve_all();
-		@sites = sort { $a->name cmp $b->name } @sites;
-		foreach my $s (@sites)
-		{
-		   printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
-		}
-		</%perl>
-	      </select>
-%           } else {
-	      <a href="floor.html?id=<% $o->floor %>"><% $o->floor->level %></a>
-%           }
+            &nbsp;
+            <select name="floor_srch" onChange="floorSearchList.doIt();" style="width: 150px;">
+                <option value="">Lookup by Site</option>
+                <%perl>
+                my @sites = Site->retrieve_all();
+                @sites = sort { $a->name cmp $b->name } @sites;
+                foreach my $s (@sites)
+                {
+                    printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
+                }
+                </%perl>
+            </select>
+%       } else {
+	        <a href="floor.html?id=<% $o->floor %>"><% $o->floor->level %></a>
+%       }
 	    </&>
-       
 	    <%perl>		    
-	      push( @cell_data, $_ );
-	      push( @field_headers, "Dimensions: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"dimensions", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Racks: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"racks", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Outlets: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"outlets", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Shared With: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"shared_with", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "HVAC Type: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"hvac_type", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Ground Buss: " );
-	      push( @cell_data, $ui->radio_group_boolean(object=>$o, table=>"Closet", column=>"ground_buss", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Asbestos Tiles: " );
-	      push( @cell_data, $ui->radio_group_boolean(object=>$o, table=>"Closet", column=>"asbestos_tiles", edit=>$editCloset, returnAsVar=>1) );
-	    </%perl>
+	    push( @cell_data, $_ );
 
-	    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+          {my @fields = ('dimensions','racks','outlets','shared_with','hvac_type','ground_buss','asbestos_tiles');
+             $ui->add_to_fields(o=>$o, edit=>$editCloset, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data); }
+          </%perl>
+          <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 	    
             </td>
             <td>
 
-	      <%perl>
+          <%perl>
 	      (@field_headers, @cell_data) = ();
-	      push( @field_headers, "RU Available: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"ru_avail", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Patch Panels: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"patch_panels", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "110 Blocks: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"110_blocks", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "66 Blocks: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"66_blocks", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "CatV Taps: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"catv_taps", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Access Key Type: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"access_key_type", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Rack Type: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"rack_type", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Pair Count: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"pair_count", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Converted Patch Panels: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"converted_patch_panels", edit=>$editCloset, returnAsVar=>1) );
-	      push( @field_headers, "Work Needed: " );
-	      push( @cell_data, $ui->text_field(object=>$o, table=>"Closet", column=>"work_needed", edit=>$editCloset, returnAsVar=>1) );
+          {  my @fields = ('ru_avail','patch_panels','110_blocks','66_blocks','catv_taps','access_key_type','rack_type','pair_count','converted_patch_panels','work_needed');
+             $ui->add_to_fields(o=>$o, edit=>$editCloset, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data); }
 	      </%perl>
-
 	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 	    
             </td>
         </tr>
       </table>
-      <div class="containerseparator">Comments:</div>
-%           $ui->text_area(object=>$o, table=>"Closet", column=>"info",
-%                         edit=>$editCloset, htmlExtra=>"rows='3' cols='80'");
+%      my %comments = $ui->form_field(object=>$o, column=>"info", edit=>$editCloset, htmlExtra=>"rows='3' cols='80'");
+       <div class="containerseparator"><% $comments{label} %></div>
+       <% $comments{value} %>
     </div> <!-- close containerbody -->
     </form>
 </div> <!-- close containerbody -->
@@ -291,8 +260,8 @@ LIST_MANAGER.addList(floorSearchList);
     </&>
     <%perl>push( @row, $_ );
     push( @row, $pic->binfile ? $pic->binfile->filesize : "" );
-    push( @row, $ui->text_field(object=>$pic->binfile, table=>"BinFile", column=>"filetype", edit=>$editPictures, returnAsVar=>1) );
-    push( @row, $ui->text_area(object=>$pic->binfile, table=>"BinFile", column=>"info", edit=>$editPictures, htmlExtra=>"rows='2' cols='40'", returnAsVar=>1) );
+    push( @row, $ui->form_field(object=>$pic->binfile, column=>"filetype", edit=>$editPictures, returnValOnly=>1) );
+    push( @row, $ui->form_field(object=>$pic->binfile, column=>"info", edit=>$editPictures, htmlExtra=>"rows='2' cols='40'", returnValOnly=>1) );
     push( @rows, \@row );
     } # foreach
     </%perl>
@@ -397,7 +366,7 @@ if ($editBackbones) {
     </&>
     <%perl>
     push( @row, $_ );
-    push( @row, $ui->select_lookup(object=>$bb, table=>"BackboneCable", column=>"type", lookup=>"CableType", edit=>$editBackbones, returnAsVar=>1) );
+    push( @row, $ui->form_field(object=>$bb, column=>"type", edit=>$editBackbones, returnValOnly=>1) );
     </%perl>
 
     <&| "HERE.mhtml" &>
@@ -456,7 +425,7 @@ if ($editBackbones) {
     </&>
     <%perl>
     push( @row, $_ );
-    push( @row, $ui->select_lookup(object=>$bb, table=>"BackboneCable", column=>"owner", lookup=>"Entity", edit=>$editBackbones, returnAsVar=>1) );
+    push( @row, $ui->form_field(object=>$bb, column=>"owner", edit=>$editBackbones, returnValOnly=>1) );
     push( @rows, \@row );
     } #foreach my $bb (@sorted_bbones)
     </%perl>
@@ -464,8 +433,8 @@ if ($editBackbones) {
     <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
     </div> <!-- close containerbody -->
-    </form>
 %   }    #if scalar (@bbones)
+    </form>
 </div> <!-- close container -->
 <!-- End BackboneCable Table -->
 
@@ -533,7 +502,7 @@ if ($editBackbones) {
     </&>
     <%perl>
     push( @row, $_ );
-    push( @row, $ui->select_lookup(object=>$cable, table=>"HorizontalCable", column=>"type", lookup=>"CableType", edit=>$editHorizontal, returnAsVar=>1) );
+    push( @row, $ui->form_field(object=>$cable, column=>"type", edit=>$editHorizontal, returnValOnly=>1) );
     push( @row, '<a href="view.html?table=Room&id=' . $cable->room . '">' . $cable->room->name . '</a>' );
     push( @rows, \@row );
     } # foreach my $cable (@sorted_cables)

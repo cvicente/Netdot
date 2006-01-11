@@ -415,12 +415,14 @@ being viewed, otherwise, the user will see the value of the object in plain text
   column:        Name of the field in the database
   edit:          True if editing, false otherwise
   default:       Default value to display if none defined in DB
-  returnOnlyVal: Return only the form field and no label as a string
+  htmlExtra:     String of additional html to add to the form field
+  linkPage:      Make this text a link
+  returnValOnly: Return only the form field and no label as a string
   shortFieldName:Set the name of the form field to be just the column name 
                    instead of $table__$id__$column
 
  Returns:
-  if returnOnlyVal, the form field as a string
+  if returnValOnly, the form field as a string
   else, a hash reference, with two keys, 'label', 'value'
 
 =cut
@@ -587,7 +589,7 @@ sub select_lookup($@){
         
         # if the selected objects are within our limits,
 	# or if we've been passed a specific default list, 
-	# show the select box.
+	# show the select box.search_obj.html
         if ($count <= $maxCount || @defaults){
             @fo = $lookup->retrieve_all() if (!$where && !@defaults);
 	    @fo = map  { $_->[0] }
@@ -1164,14 +1166,38 @@ sub format_size {
     return sprintf("%.0f",$bytes).' '.($sizes[$size_index]);
 }
 
+=head2 add_to_fields
+
+Used as a shortcut for adding data to an attribute table in pages such as device.html.
+Example code:
+
+ my (@field_headers, @cell_data);
+ {
+   my @fields = ('cid','connectionid','vendor','nearend','farend');
+   my @linkpages = ('', 'view.html', 'view.html', 'view.html', 'view.html');
+   $ui->add_to_fields(o=>$o, edit=>$editCircuit, fields=>\@fields, linkpages=>\@linkpages, field_headers=>\@field_headers, cell_data=>\@cell_data);
+ }
+ <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
+  Arguments:
+    $o             - a reference to a DBI object
+    $edit          - true if editing, false otherwise
+    @fields        - reference to an array of column names in the database
+    @linkpages     - reference to an array of the same size as @fields, with optional pages to link to
+    @field_headers - reference to the array to add the names of the columns to
+    @cell_data     - reference to the array to add the form fields to
+
+=cut
 sub add_to_fields {
     my ($self, %args) = @_;
-    my ($o, $edit, $fields, $field_headers, $cell_data) = 
-        ($args{o}, $args{edit}, $args{fields}, $args{field_headers}, $args{cell_data});
+    my ($o, $edit, $fields, $linkpages, $field_headers, $cell_data) = 
+        ($args{o}, $args{edit}, $args{fields}, $args{linkpages}, $args{field_headers}, $args{cell_data});
 
-    foreach my $field (@{$fields}) {
+    for( my $i=0; $i<@{$fields}; $i++ ) {
+        my $field = ${$fields}[$i];
+        my $linkpage = ${$linkpages}[$i];
         my %tmp;
-        %tmp = $self->form_field(object=>$o, column=>$field, edit=>$edit);
+        %tmp = $self->form_field(object=>$o, column=>$field, edit=>$edit, linkPage=>$linkpage);
         push( @{$field_headers}, $tmp{'label'}.":" );
         push( @{$cell_data}, $tmp{'value'} );
     }

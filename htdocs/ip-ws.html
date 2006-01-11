@@ -574,14 +574,14 @@ if ( my @parents = $ipm->getparents($o) ){
               push( @rows,
                 [ eval {
                     if ($edit eq "ipinfo"){	 
-                        $ui->select_lookup(object=>$ipservice, column=>"service", lookup=>"Service", edit=>$edit_ip);
+                        $ui->form_field(object=>$ipservice, column=>"service", edit=>$edit_ip, returnValOnly=>1);
 	                }else{
         		        qq(<a href="view.html?table=Service&id=).$ipservice->service->id.qq(">).$ipservice->service->name."</td></a>";
                     }
                   } ,
                   eval {
                     if ($edit eq "ipinfo"){
-                        $ui->select_lookup(object=>$ipservice, column=>"contactlist", lookup=>"ContactList", edit=>$edit_ip);
+                        $ui->form_field(object=>$ipservice, column=>"contactlist", edit=>$edit_ip, returnValOnly=>1);
                     }elsif ($o->used_by){
                         qq(<a href="view.html?table=ContactList&id=).$ipservice->contactlist.qq(">).$ipservice->contactlist->name."</td></a>";
                     }
@@ -717,8 +717,7 @@ my @cell_data = ( );
     }
 
     push( @field_headers, "Owner:" );
-    my $owner = $ui->select_lookup(object=>$o, column=>"owner", lookup=>"Entity", edit=>0, 
-				   linkPage=>"view.html", returnAsVar=>1);
+    my $owner = $ui->form_field(object=>$o, column=>"owner", edit=>0, linkPage=>"view.html", returnValOnly=>1);
     # For some fields, we will provide a way to update the values recursively in all 
     # descendant blocks.
     if ( ! $edit_block ){

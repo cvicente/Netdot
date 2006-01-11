@@ -54,23 +54,10 @@ if ( $submit ){
     }
 }else{
     push( @field_headers, "$fieldtag:" );
-    if ( exists $linksto{$field}  ){
-	# We know the field is a foreign key, so we'll use select_lookup()
-	my $v = $ui->select_lookup(object=>$o, column=>$field, lookup=>"Entity", edit=>1, returnAsVar=>1);
-	push( @cell_data, $v );
-	
-    }elsif ( $sqltype =~ /bool/ ){
-	push( @cell_data, $ui->radio_group_boolean(object=>$o, column=>"$field", edit=>1) );
-    }else{
-	push( @cell_data, $ui->text_field(object=>$o, column=>"$field", edit=>1) );
-    }
+    push( @cell_data, $ui->form_field(object=>$o, column=>$field, edit=>1, returnValOnly=>1) );
 
     push( @field_headers, "Options:" );
-    if ( $recursive ){
-	push( @cell_data, 'Apply to children blocks <input type="checkbox" name="recursive" CHECKED>' );
-    }else{
-	push( @cell_data, 'Apply to children blocks <input type="checkbox" name="recursive">' );
-    }
+    push( @cell_data, 'Apply to children blocks <input type="checkbox" name="recursive"'.($recursive?' CHECKED':'').'>' );
 }
 </%init>
 

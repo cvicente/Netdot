@@ -120,26 +120,17 @@ if ($view eq 'all' || $view eq "$table"){
     
     foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 	next if ($c eq 'id' || $c eq 'aliases');
+
+        my $linkPage;
+        if( exists($linksto{$c}) ) {
+            $linkPage = 'view.html';
+        }
 	
-	if ( exists($tags{$c}) ){
-	    push @fields, $tags{$c};
-	}else{
-	    push @fields, $c;
-	}
-	
-	if ( !exists($linksto{$c}) ){  ## Column is local
-	    if ( $ui->getsqltype($table,$c) =~ /bool/ ){
-		push @data, $ui->radio_group_boolean(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
-		
-	    }elsif ($c eq "info"){
-		push @data, $ui->text_area(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
-	    }else{
-		push @data, $ui->text_field(object=>$obj, column=>$c, edit=>0, returnAsVar=>1);
-	    }
-	    
-	}else {  # Column is foreign key
-	    push @data, $ui->select_lookup(object=>$obj, column=>$c, lookup=>$linksto{$c}, edit=>0, linkPage=>"view.html", returnAsVar=>1);	
-	}
+        my %tmp;
+        %tmp = $ui->form_field(object=>$obj, column=>$c, edit=>0, linkPage=>$linkPage);
+
+        push( @fields, $tmp{label} );
+        push( @data, $tmp{value} );
     }
 
 </%perl>

@@ -153,24 +153,12 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 <div class="left">
 <%perl>
 my (@field_headers, @cell_data);
-
-push( @field_headers, "Circuit ID: " );
-push( @cell_data, $ui->text_field(object=>$o, table=>"Circuit", column=>"cid", edit=>$editCircuit, returnAsVar=>1 ) );
-
-push( @field_headers, "Part of Connection: " );
-push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"connectionid", lookup=>"Connection", edit=>$editCircuit, linkPage=>"view.html", returnAsVar=>1 ) );
-
-push( @field_headers, "Vendor: " );
-push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"vendor", lookup=>"Entity", edit=>$editCircuit, linkPage=>"view.html", returnAsVar=>1 ) );
-
-push( @field_headers, "Near Interface: " );
-push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"nearend", lookup=>"Interface", edit=>$editCircuit, linkPage=>"view.html", returnAsVar=>1 ) );
-
-push( @field_headers, "Far Interface: " );
-push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"farend", lookup=>"Interface", edit=>$editCircuit, linkPage=>"view.html", returnAsVar=>1 ) );
-
+{
+my @fields = ('cid','connectionid','vendor','nearend','farend');
+my @linkpages = ('', 'view.html', 'view.html', 'view.html', 'view.html');
+$ui->add_to_fields(o=>$o, edit=>$editCircuit, fields=>\@fields, linkpages=>\@linkpages, field_headers=>\@field_headers, cell_data=>\@cell_data);
+}
 </%perl>
-
 
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
@@ -178,25 +166,11 @@ push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"fare
           <td width="50%">
 
 <%perl>
-
 (@field_headers, @cell_data) = ();
-
-push( @field_headers, "Circuit Type: " );
-push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"type", lookup=>"CircuitType", edit=>$editCircuit, returnAsVar=>1 ) );
-
-push( @field_headers, "DLCI: " );
-push( @cell_data, $ui->text_field(object=>$o, table=>"Circuit", column=>"dlci", edit=>$editCircuit, returnAsVar=>1 ) );
-
-push( @field_headers, "Speed: " );
-push( @cell_data, $ui->text_field(object=>$o, table=>"Circuit", column=>"speed", edit=>$editCircuit, returnAsVar=>1 ) );
-
-            
-push( @field_headers, "Install Date: " );
-push( @cell_data, $ui->text_field(object=>$o, table=>"Circuit", column=>"installdate", default=>$ui->date(), edit=>$editCircuit, returnAsVar=>1 ) );
-
-push( @field_headers, "Status: " );
-push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"status", lookup=>"CircuitStatus", edit=>$editCircuit, returnAsVar=>1 ) );
-
+{
+my @fields = ('type','dlci','speed','installdate','status');
+$ui->add_to_fields(o=>$o, edit=>$editCircuit, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+}
 </%perl>
 
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
@@ -204,8 +178,9 @@ push( @cell_data, $ui->select_lookup(object=>$o, table=>"Circuit", column=>"stat
           </td>
          </tr>
        </table>
-       <div class="containerseparator">Comments</div>
-%           $ui->text_area(object=>$o, table=>"Circuit", column=>"info", edit=>$editCircuit, htmlExtra=>"rows='3' cols='80'");
+%      my %comments = $ui->form_field(object=>$o, column=>"info", edit=>$editCircuit, htmlExtra=>"rows='3' cols='80'");
+       <div class="containerseparator"><% $comments{label} %></div>
+       <% $comments{value} %>
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
 
