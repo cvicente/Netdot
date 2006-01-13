@@ -8,6 +8,15 @@ use Netdot::IPManager;
 use Netdot::DNSManager;
 use NetAddr::IP;
 
+my ($host, $subnet, $dm);
+my $comstr          = "public";
+my $DB              = 0;
+my $ADDSUBNETS      = 0;
+my $HELP            = 0;
+my $VERBOSE         = 0;
+my $DEBUG           = 0;
+my $EMAIL           = 0;
+
 my $usage = <<EOF;
  usage: $0 [ -c, --community <string> ] [ -a|--add-subnets ]
            [ -v, --verbose ] [ -g|--debug ] [ -m|--send_mail ]
@@ -18,7 +27,7 @@ my $usage = <<EOF;
     -s, --subnet <CIDR block>      specify a v4/v6 subnet to discover
     -c, --community <string>       SNMP community string (default "public")
     -d, --db-devices               update only DB existing devices
-    -a, --add-subnets              add router-known subnets to database if they do not exist
+    -a, --add-subnets              when discovering routers, add subnets to database if they do not exist
     -h, --help                     print help (this message)
     -v, --verbose                  be verbose
     -g, --debug                    set syslog level to LOG_DEBUG and print to STDERR
@@ -27,27 +36,18 @@ my $usage = <<EOF;
     
 EOF
     
-my ($host, $subnet, $dm);
-my $comstr     = "public";
-my $DB         = 0;
-my $ADDSUBNETS = 0;
-my $HELP       = 0;
-my $VERBOSE    = 0;
-my $DEBUG      = 0;
-my $EMAIL      = 0;
-
 use vars qw ( $output );
 
 # handle cmdline args
-my $result = GetOptions( "H|host=s"      => \$host,
-			 "s|subnet=s"    => \$subnet,
-			 "c|community:s" => \$comstr,
-			 "d|db-devices"  => \$DB,
-			 "a|add-subnets" => \$ADDSUBNETS,
-			 "h|help"        => \$HELP,
-			 "v|verbose"     => \$VERBOSE,
-			 "g|debug"       => \$DEBUG,
-			 "m|send_mail"   => \$EMAIL);
+my $result = GetOptions( "H|host=s"          => \$host,
+			 "s|subnet=s"        => \$subnet,
+			 "c|community:s"     => \$comstr,
+			 "d|db-devices"      => \$DB,
+			 "a|add-subnets"     => \$ADDSUBNETS,
+			 "h|help"            => \$HELP,
+			 "v|verbose"         => \$VERBOSE,
+			 "g|debug"           => \$DEBUG,
+			 "m|send_mail"       => \$EMAIL);
 
 if( ! $result ) {
     print $usage;
@@ -68,7 +68,6 @@ if ($DEBUG){
 }else{
     $dm = Netdot::DeviceManager->new();
 }
-
 my $ipm = Netdot::IPManager->new();
 my $dns = Netdot::DNSManager->new();
 my $success = 0;
@@ -164,7 +163,7 @@ if ($EMAIL && $output){
 sub discover {
     my (%argv) = @_;
     my $r;
-    $argv{addsubnets} = 1 if $ADDSUBNETS;
+    $argv{addsubnets} = $ADDSUBNETS;
 
     # See if device exists
     my ($c, $d) = $dm->find_dev($argv{host});

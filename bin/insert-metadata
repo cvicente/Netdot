@@ -314,11 +314,11 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description)
   VALUES ('Device', 
 	  'name', 
-	  'name,aliases,sysdescription,physaddr,bgplocalas,bgpid,oobname,oobnumber,used_by,person,monitored,monitorstatus,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,closet,rack,lastupdated,dateinstalled,info',
+	  'name,aliases,sysdescription,physaddr,bgplocalas,bgpid,oobname,oobnumber,owner,used_by,person,monitored,monitorstatus,snmp_managed,customer_managed,natted,community,serialnumber,productname,part_of,inventorynumber,maint_covered,canautoupdate,site,room,closet,rack,lastupdated,dateinstalled,info',
 	  'name,productname',
-	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:MAC,bgplocalas:BGP Local AS,bgpid:BGP ID,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,used_by:Used by,person:User,monitored:Monitored?,monitorstatus:Monitored Status,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:S/N,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?,site:Building,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments',
+	  'name:Name,aliases:Aliases,sysdescription:System Description,physaddr:MAC,bgplocalas:BGP Local AS,bgpid:BGP ID,oobname:Out-of-Band Hostname,oobnumber:Out-of-Band Tel Number,owner:Owner,used_by:Used by,person:User,monitored:Monitored?,monitorstatus:Monitored Status,snmp_managed:SNMP Managed?,customer_managed:Managed by Customer?,natted:NATted?,community:SNMP Community,serialnumber:S/N,productname:Product Name,part_of:Part of Device,inventorynumber:Inventory Number,maint_covered:In Maintenance Contract?,canautoupdate:Auto Update?,site:Building,room:Room,closet:Closet,rack:Rack,lastupdated:Last Updated,dateinstalled:First Discovered,info:Comments',
 	  '',
-	  'name:RR,used_by:Entity,person:Person,productname:Product,part_of:Device,site:Site,room:Room,closet:Closet,physaddr:PhysAddr,monitorstatus:MonitorStatus', 
+	  'name:RR,owner:Entity,used_by:Entity,person:Person,productname:Product,part_of:Device,site:Site,room:Room,closet:Closet,physaddr:PhysAddr,monitorstatus:MonitorStatus', 
 	  'interfaces:Interface:device,parts:Device:part_of,bgppeers:BGPPeering:device,contacts:DeviceContacts:device', 
 	  '0', 
 	  'A network device');
@@ -373,7 +373,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
   VALUES ('DhcpScopeType', 
 	  'name', 
 	  'name,info', 
-	  'name,',
+	  'name',
 	  'name:Name,info:Comments',
 	  '',
 	  '', 
@@ -389,7 +389,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact List,acctnumber:Account Number,maint_contract:Maintenance Contract,asname:AS Name,asnumber:AS Number,oid:Enterprise OID,info:Comments',
 	  '',
 	  'contactlist:ContactList,availability:Availability,type:EntityType', 
-	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,own_blocks:Ipblock:owner:{cascade=>"Nullify"},used_blocks:Ipblock:used_by:{cascade=>"Nullify"},cables:BackboneCable:owner:{cascade=>"Nullify"},devices:Device:used_by:{cascade=>"Nullify"},people:Person:entity,bgppeers:BGPPeering:entity', 
+	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,own_blocks:Ipblock:owner:{cascade=>"Nullify"},owned_devices:Device:owner:{cascade=>"Nullify"},used_blocks:Ipblock:used_by:{cascade=>"Nullify"},cables:BackboneCable:owner:{cascade=>"Nullify"},used_devices:Device:used_by:{cascade=>"Nullify"},people:Person:entity,bgppeers:BGPPeering:entity', 
 	  '0', 
 	  'An organization related to the network in some way');
 

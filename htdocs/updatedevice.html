@@ -19,15 +19,18 @@ section => 'Management'
 <%args>
 $action
 $user
-$device       => undef
-$host         => undef
-$comstr       => "public"
-$id           => undef
-$sid          => undef
-$insert       => undef
-$used_by       => undef
-$site         => undef
-$contacts     => undef
+$device          => undef
+$host            => undef
+$comstr          => "public"
+$id              => undef
+$sid             => undef
+$insert          => undef
+$owner           => undef
+$used_by         => undef
+$site            => undef
+$contacts        => undef
+$addsubnets      => undef
+$subnets_inherit => undef
 </%args>
 %
 %
@@ -37,19 +40,19 @@ $contacts     => undef
 %# 
 %######################################################################
 <%init>
-my $DEBUG = 0;
-my $TMP = $ui->{config}->{TMP};
-my $ADDSUBNETS = 1;
+my $DEBUG      = 0;
+my $TMP        = $ui->{config}->{TMP};
 
 my $o;
 my $name;
 my %argv;
 my $session;
-my $guessed_ent;
+my $guessed_user_ent;
 my $guessed_site;
 my $guessed_cl;
 my $webuser;
 my $dev;
+my $default_owner;
 my $default_cl;
 
 my @allcls = ContactList->retrieve_all; 
@@ -102,17 +105,20 @@ if ( $action eq "discover" ){
     $argv{host}      = $host;
     $session->{argv} = \%argv;
     
-    # Try to guess the Entity based on the ip address
-LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
+    # Try to guess the user entity based on the subnet
+    # Note that we're using the first IP address found
+    # So it might not be totally accurate, especially for
+    # routers.
+LOOP:  foreach my $int ( keys %{ $dev->{interface} } ){
             foreach my $ip ( keys %{ $dev->{interface}->{$int}->{ips} } ){ 
 		my $mask = $dev->{interface}->{$int}->{ips}->{$ip};
 		if ( my $subnetaddr = $ipm->getsubnetaddr($ip, $mask) ){
 		    if ( my $subnet = $ipm->searchblocks_addr($subnetaddr) ){
-			if ( my $ent = $subnet->used_by ){
-			    $guessed_ent = $ent;
-			    if ( my $cl = $ent->contactlist ){
+			if ( my $user_ent = $subnet->used_by ){
+			    $guessed_user_ent = $user_ent;
+			    if ( my $cl = $user_ent->contactlist ){
 				$guessed_cl = $cl->id;
-			    }if ( my @entsites = $ent->sites ){
+			    }if ( my @entsites = $user_ent->sites ){
 				$guessed_site = $entsites[0]->site;
 			    }
 			    last LOOP;  #just grab the first one
@@ -121,6 +127,10 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 		}
 	    }
 	}
+
+    # Get the default owner entity from config
+    $default_owner = (Entity->search(name=>$dm->{config}->{DEFAULT_DEV_OWNER}))[0];
+
     # If we could not determine it before, 
     # try to guess site based on SNMP location
     if ( ! $guessed_site ){
@@ -134,19 +144,23 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
     
     # Get the default contactlist from config
     $default_cl = (ContactList->search(name=>$dm->{config}->{DEFAULT_CONTACTLIST}))[0];
-    
+
 }elsif ( $action eq "update" ){
     if ( $insert ){
         %argv               = %{ $session->{argv} };
+	$argv{owner}        = $owner          ||  0;
 	$argv{used_by}      = $used_by        ||  0;
 	$argv{site}         = $site           ||  0;
 	$argv{contacts}     = $contacts       ||  "";
 	$argv{user}         = $webuser        ||  0;
+	# These two can't be 'defaulted' because
+	# we are using checkboxes for user input
+        $argv{addsubnets}      = $addsubnets;
+        $argv{subnets_inherit} = $subnets_inherit;
 
 	print "<pre>",  Dumper(%argv), "</pre>" if $DEBUG;
 
         # Update database
-        $argv{addsubnets} = $ADDSUBNETS;
         $o = $dm->update_device(%argv);
         unless ($o){
             $m->comp('error.mhtml', error => $dm->error);
@@ -186,6 +200,24 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 
 % my (@field_headers, @cell_data) = ();
 
+% push( @field_headers, "Owner:" );
+<&| "HERE.mhtml" &>
+           <select name="owner" id="owner">
+           <option value="0">-- Select --</option>
+%          my @allents = Entity->retrieve_all; 
+%          @allents = sort { $a->name cmp $b->name } @allents;
+%          foreach my $ent (@allents){
+%                if ( $default_owner && ($ent->id == $default_owner->id) ){
+                   <option value="<% $ent->id %>" SELECTED><% $ent->name %></option>                
+%                }else{
+                   <option value="<% $ent->id %>"><% $ent->name %></option>
+%                }
+%          }
+           </select>
+           <a href="#" onClick="openinsertwindow('table=Entity&select_id=owner')">[new]</a>
+</&>
+% push( @cell_data, $_ );
+
 % push( @field_headers, "Used by:" );
 <&| "HERE.mhtml" &>
            <select name="used_by" id="used_by">
@@ -193,7 +225,7 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 %          my @allents = Entity->retrieve_all; 
 %          @allents = sort { $a->name cmp $b->name } @allents;
 %          foreach my $ent (@allents){
-%                if ( $guessed_ent && ($ent->id == $guessed_ent->id) ){
+%                if ( $guessed_user_ent && ($ent->id == $guessed_user_ent->id) ){
                    <option value="<% $ent->id %>" SELECTED><% $ent->name %></option>                
 %                }else{
                    <option value="<% $ent->id %>"><% $ent->name %></option>
@@ -238,6 +270,31 @@ LOOP:   foreach my $int ( keys %{ $dev->{interface} } ){
 	       Select all that apply
 </&>
 % push( @cell_data, $_ );
+
+%################################################################
+%# The following block only applies to routers
+%################################################################
+% if ( $dev->{router} ){
+%    push( @field_headers, "Add new Subnets (if any)?:" );
+<&| "HERE.mhtml" &>
+%    if ( $ui->{config}->{ADDSUBNETS} ){
+	<input type="checkbox" name="addsubnets" checked>
+%    }else{
+	<input type="checkbox" name="addsubnets">
+%    }
+</&>
+%    push( @cell_data, $_ );
+
+%    push( @field_headers, "Should new subnets <br>inherit device owner/user?:" );
+<&| "HERE.mhtml" &>
+%    if ( $ui->{config}->{SUBNET_INHERIT_DEV_INFO} ){
+	<input type="checkbox" name="subnets_inherit" checked>
+%    }else{
+	<input type="checkbox" name="subnets_inherit">
+%    }
+</&>
+%    push( @cell_data, $_ );
+% }
 
 
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>

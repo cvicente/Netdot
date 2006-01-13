@@ -268,7 +268,7 @@ function setNull(select){
 <div class="containeroutside">
   <div class="containerheadleftoutside">
  
- Device: <b><% $name %></b>&nbsp;
+ Device: <b><% $fqdn %></b>&nbsp;
  <a href="http://<% $fqdn %>" target=#>[HTTP]</a> <a href="ssh://<% $user->getUsername() %>@<% $fqdn %>">[SSH]</a> <a href="telnet://<% $fqdn %>">[Telnet]</a>
 
 </div>
@@ -376,11 +376,11 @@ push( @cell_data,
 # Use eval with block.  (had trouble with eval on string (qq{})
 # complaining about not knowing what `o' was.
    eval{	
-       if ($o->name && $o->name->name){
+       if ($name){
 	   if ($editgen){	 
-	       '<input type="text" name="RR__'.$o->name->id.'__name" value="' . $o->name->name . '">';
+	       '<input type="text" name="RR__'.$o->name->id.'__name" value="' . $name . '">';
 	   }else{
-	       '<b><a href="view.html?table=RR&id='.$o->name->id.'">'.$o->name->name."</a></b>";
+	       '<b><a href="view.html?table=RR&id='.$o->name->id.'">'.$name."</a></b>";
        }
        }else{ 
 	   "Name N/A!";
@@ -456,6 +456,7 @@ $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@fie
 {
 my @fields;
 
+push( @fields, 'owner' );
 push( @fields, 'used_by' );
 if ( (int($o->person) != 0) || $editloc ){
     push( @fields, 'person' );

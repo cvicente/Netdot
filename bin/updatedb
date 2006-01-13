@@ -66,14 +66,12 @@ sub dbdisconnect {
 ##################################################
 sub processdata {
     
-    &dbi_do('ALTER TABLE Ipblock CHANGE COLUMN entity used_by integer;',
-	    'ALTER TABLE Ipblock ADD COLUMN owner integer AFTER status;',
-	    'ALTER TABLE Device ADD COLUMN bgplocalas integer AFTER physaddr;',
+    &dbi_do('ALTER TABLE Device ADD COLUMN bgplocalas integer AFTER physaddr;',
 	    'ALTER TABLE Device ADD COLUMN bgpid varchar(64) AFTER bgplocalas;',
 	    'ALTER TABLE Device_history ADD COLUMN bgplocalas integer AFTER physaddr;',
 	    'ALTER TABLE Device_history ADD COLUMN bgpid varchar(64) AFTER bgplocalas;',
-	    'ALTER TABLE Interface ADD COLUMN overwrite_descr tinyint AFTER description;',
-	    'ALTER TABLE Interface_history ADD COLUMN overwrite_descr tinyint AFTER description;',
+	    'ALTER TABLE Device ADD COLUMN owner integer AFTER oobnumber;',
+	    'ALTER TABLE Device_history ADD COLUMN owner integer AFTER oobnumber;',
 	    'ALTER TABLE Device CHANGE COLUMN entity used_by integer;',
 	    'ALTER TABLE Device_history CHANGE COLUMN entity used_by integer;',
 	    'CREATE TABLE DeviceContacts ( 
@@ -82,6 +80,10 @@ sub processdata {
 			       contactlist INT NOT NULL,
 			       PRIMARY KEY (id) );',
 	    'CREATE UNIQUE INDEX DeviceContacts1 ON DeviceContacts (device, contactlist);',
+	    'ALTER TABLE Interface ADD COLUMN overwrite_descr tinyint AFTER description;',
+	    'ALTER TABLE Interface_history ADD COLUMN overwrite_descr tinyint AFTER description;',
+	    'ALTER TABLE Ipblock CHANGE COLUMN entity used_by integer;',
+	    'ALTER TABLE Ipblock ADD COLUMN owner integer AFTER status;',
 	    );
     
     # Migrate Device contacts

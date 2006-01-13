@@ -161,6 +161,7 @@ sub update_device {
 	return 0;
     }
     my $device = $argv{device} || "";
+    $argv{owner}               ||= 0;
     $argv{used_by}             ||= 0;
     $argv{site}                ||= 0;
     $argv{user}                ||= 0;
@@ -205,6 +206,7 @@ sub update_device {
 
     }else{
 	# Device does not exist in DB
+	$devtmp{owner}        = $argv{owner};
 	$devtmp{used_by}      = $argv{used_by};
 	$devtmp{site}         = $argv{site};
 
@@ -781,10 +783,15 @@ sub update_device {
 			my $subnetaddr = $self->getsubnetaddr($newip, $newmask);
 			if ( $subnetaddr ne $newip ){
 			    if ( ! ($self->searchblocks_addr($subnetaddr, $newmask)) ){
-				unless( $self->insertblock(address     => $subnetaddr, 
-							   prefix      => $newmask, 
-							   statusname  => "Subnet",
-							   ) ){
+				my %state = (address     => $subnetaddr, 
+					     prefix      => $newmask, 
+					     statusname  => "Subnet");
+				# Check if subnet should inherit device info
+				if ( $argv{subnets_inherit} ){
+				    $state{owner}   = $device->owner;
+				    $state{used_by} = $device->used_by;
+				}
+				unless( $self->insertblock(%state) ){
 				    my $msg = sprintf("%s: Could not insert Subnet %s/%s: %s", 
 						      $host, $subnetaddr, $newmask, $self->error);
 				    $self->debug(loglevel => 'LOG_ERR',
