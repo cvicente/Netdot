@@ -837,6 +837,22 @@ sub search_all_netdot {
 
 }
 
+=head2 raw_sql - Issue SQL queries directly
+
+    Prints out results from an SQL query
+
+ Arguments: 
+    sql    - SQL query (text)
+    delim  - Column Delimiter
+ Returns:  
+    Reference to an array containing lines of output
+  Example:
+
+    if ( ! ($lines = $ui->raw_sql($sql) ) ){
+	$sql_err = $ui->error;
+    }
+
+=cut
 sub raw_sql {
     my ($self, $sql, $delim) = @_;
     $delim ||= ', ';
@@ -865,7 +881,8 @@ sub raw_sql {
 	if ( $@ ){
 	    $self->error("raw_sql Error: $@");
 	    return;
-	}	
+	}
+	$rows = 0 if ( $rows eq "0E0" );  # See DBI's documentation for 'do'
 	push @lines, "Rows affected: $rows";
     }else{
 	$self->error("raw_sql Error: Only select, delete, update and insert statements accepted");
