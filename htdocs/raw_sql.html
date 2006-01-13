@@ -1,0 +1,61 @@
+<%doc>
+
+ Generic Database Operations Section.
+
+</%doc>
+
+<%args>
+$sql    => undef
+$action => undef
+</%args>
+
+<%attr>
+title   => 'Direct SQL Commands' 
+section => 'Generic'
+</%attr>
+
+<%init>
+my $lines;
+my $sql_err;
+if ( $action eq "DO_SQL" ){
+    if ( ! ($lines = $ui->raw_sql($sql) ) ){
+	$sql_err = $ui->error;
+    }
+}
+</%init>
+
+<div class="container">
+    <div class="containerhead">
+        Direct SQL Commands
+    </div>
+
+    <div class="containerbody">
+
+    <p><b>Be Careful!</b></p>
+
+    <form action="section_generic.html" method="POST">
+      <input type="hidden" name="action" value="DO_SQL">
+      SQL query: <input type="text" size="80" name="sql" value="<% $sql | h %>">
+      <input name="submit" value="Go" type="submit">
+    </form>
+ 
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+
+
+% if ( $action eq "DO_SQL" ){
+    <div class="container">
+        <div class="containerhead">Query Results:</div>
+        <div class="containerbody">
+<%perl>
+    if ( $lines ){
+	foreach my $line ( @$lines ){
+	    print $line, "<br>";
+	}
+    }elsif ( $sql_err ){
+	print $sql_err, "<br>";    
+    }
+</%perl>
+       </div> <!-- close containerbody -->
+    </div> <!-- close container -->
+% }
