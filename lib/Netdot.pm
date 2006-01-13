@@ -837,6 +837,44 @@ sub search_all_netdot {
 
 }
 
+sub raw_sql {
+    my ($self, $sql, $delim) = @_;
+    $delim ||= ', ';
+
+    my $st;
+    my @lines;
+    if ( $sql =~ /select/i ){
+	eval {
+	    $st = $self->{dbh}->prepare( $sql );
+	    $st->execute();
+	};
+	if ( $@ ){
+	    $self->error("raw_sql Error: $@");
+	    return;
+	}
+	my $array_ref = $st->fetchall_arrayref;
+	foreach my $row ( @$array_ref ){
+	    my $line = join $delim, @$row;
+	    push @lines, $line;
+	}
+    }elsif ( $sql =~ /delete|update|insert/i ){
+	my $rows;
+	eval {
+	    $rows= $self->{dbh}->do( $sql );
+	};
+	if ( $@ ){
+	    $self->error("raw_sql Error: $@");
+	    return;
+	}	
+	push @lines, "Rows affected: $rows";
+    }else{
+	$self->error("raw_sql Error: Only select, delete, update and insert statements accepted");
+	return;
+    }
+    return \@lines;
+}
+
+
 =head2 ip2int - Convert IP(v4/v6) address string into its decimal value
 
  Arguments: address string
@@ -852,7 +890,6 @@ sub ip2int {
     }
     return ($ipobj->numeric)[0];
 }
-
 
 
 =head2 within
