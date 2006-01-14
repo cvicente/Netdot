@@ -778,11 +778,14 @@ sub select_multiple {
 Simple yes/no radio button group. 
 
  Arguments:
-   - object: DBI object, can be null if a table object is included
-   - table: Name of table in DB. (required if object is null)
-   - column: name of field in DB.
-   - edit: true if editing, false otherwise.
-
+   Hash containing key/value pairs.  Keys are:
+   - object:         DBI object, can be null if a table object is included
+   - table:          Name of table in DB. (required if object is null)
+   - column:         Name of field in DB.
+   - edit:           True if editing, false otherwise.
+   - returnAsVar:    Whether to return output as a variable or STDOUT
+   - shortFieldName: Whether to set the input tag name as the column name or
+                     the format used by form_to_db()
 =cut
 
 sub radio_group_boolean($@){
@@ -794,19 +797,12 @@ sub radio_group_boolean($@){
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
-    my $shortFieldName = ($shortFieldName ? 1:0);
-    my $name;
-    if( $shortFieldName ) {
-        $name = $column;
-    } else {
-        $name = $tableName . "__" . $id . "__" . $column;
+    my $name = ( $shortFieldName ? $column : $tableName . "__" . $id . "__" . $column );
+
+    unless ($o || $table){
+	$self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
+	return 0;
     }
-    
-    
-     unless ($o || $table){
-	 $self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
-	 return 0;
-     }
 
     if ($isEditing){
         $output .= sprintf("<nobr>Yes<input type=\"radio\" name=\"%s\" value=\"1\" %s></nobr>&nbsp;\n", $name, ($value ? "checked" : ""));
