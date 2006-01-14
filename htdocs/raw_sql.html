@@ -49,11 +49,27 @@ if ( $action eq "DO_SQL" ){
         <div class="containerbody">
 <%perl>
     if ( $lines ){
-	foreach my $line ( @$lines ){
-	    print $line, "<br>";
-	}
+        if( $sql =~ /select/i ) {
+            my @headers;
+            my @rows;
+
+            # return everything between SELECT and FROM in the query, and use them as the headers
+            # if they do "SELECT * FROM", then we have no headers, until I can figure out how to return
+            # the list of column headers from the query.
+            my ($inside) = $sql =~ /^SELECT(.*)FROM/i;         # grab the headers
+
+            # possible characters that can occur as column headers:
+            #   abcxyzABCXYZ0123456789 _()-
+            @headers = $inside =~ /([\w()\.\ \-]+),?/g;        # split headers on the commas
+
+            </%perl><& data_table.mhtml, field_headers=>\@headers, data=>$lines &><%perl>
+        } else {
+        	foreach my $line ( @$lines ){
+        	    print $line, "<br>";
+        	}
+        }
     }elsif ( $sql_err ){
-	print $sql_err, "<br>";    
+        print $sql_err, "<br>";    
     }
 </%perl>
        </div> <!-- close containerbody -->

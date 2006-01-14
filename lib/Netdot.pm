@@ -843,11 +843,10 @@ sub search_all_netdot {
 
  Arguments: 
     sql    - SQL query (text)
-    delim  - Column Delimiter
  Returns:  
     Reference to an array containing lines of output
-  Example:
 
+  Example:
     if ( ! ($lines = $ui->raw_sql($sql) ) ){
 	$sql_err = $ui->error;
     }
@@ -865,13 +864,14 @@ sub raw_sql {
 	    $st->execute();
 	};
 	if ( $@ ){
-	    $self->error("raw_sql Error: $@");
+        # parse out SQL error message from the entire error
+        my ($errormsg) = $@ =~ m{execute[ ]failed:[ ](.*)[ ]at[ ]/usr/share/perl5};
+	    $self->error("SQL Error: $errormsg");
 	    return;
 	}
 	my $array_ref = $st->fetchall_arrayref;
 	foreach my $row ( @$array_ref ){
-	    my $line = join $delim, @$row;
-	    push @lines, $line;
+	    push @lines, $row;
 	}
     }elsif ( $sql =~ /delete|update|insert/i ){
 	my $rows;

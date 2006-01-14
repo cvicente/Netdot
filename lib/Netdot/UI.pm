@@ -589,7 +589,7 @@ sub select_lookup($@){
         
         # if the selected objects are within our limits,
 	# or if we've been passed a specific default list, 
-	# show the select box.search_obj.html
+	# show the select box.
         if ($count <= $maxCount || @defaults){
             @fo = $lookup->retrieve_all() if (!$where && !@defaults);
 	    @fo = map  { $_->[0] }
