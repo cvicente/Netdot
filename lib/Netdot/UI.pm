@@ -57,15 +57,24 @@ sub new {
 }
  
 
-=head2 getinputtag
+=head2 getinputtag - Builds HTML form <input> tag based on the SQL type of the field and other parameters.
+    Possible Input tag types returned are: 
+    - textarea
+    - radio
+    - text
+    - text with date format legend
+    When specifying a table name, the caller has the option to pass a value to be displayed in the tag.
 
-  $inputtag = $ui->getinputtag( $col, $obj );
-  $inputtag = $ui->getinputtag( $col, $table );
-  $inputtag = $ui->getinputtag( $col, $table, $arg );
-
-Accepts column name and object (or table name) and builds an HTML <input> tag based on the SQL type of the 
-field and other parameters.  When specifying a table name, the caller has the option to pass
-a value to be displayed in the tag.
+ Arguments:
+    - $col:    column name 
+    - $proto:  prototype (either an object or a table name)
+    - $value:  default value to be displayed
+  Returns:
+    Input type string
+  Examples:
+    $inputtag = $ui->getinputtag( $col, $obj );
+    $inputtag = $ui->getinputtag( $col, $table );
+    $inputtag = $ui->getinputtag( $col, $table, $arg );
 
 =cut
 
@@ -110,15 +119,20 @@ sub getinputtag {
 
 =head2 mksession - create state for a session across multiple pages
 
-  $dir = "/tmp";  # location for locks & state files
-  $session = $ui->mksession( $dir );
-
-Creates a state session that can be used to store data across multiple 
-web pages for a given session.  Returns a hash reference to store said data
-in.  Requires an argument specifying what directory to use when storing 
-data (and the relevant lock files).  The session-id is 
-$session{_session_id}.  Be aware that you do not want to de-ref the 
-hash reference (otherwise, changes made to the subsequent hash are lost).
+    Creates a state session that can be used to store data across multiple 
+    web pages for a given session.  Returns a hash reference to store said data
+    in.  Requires an argument specifying what directory to use when storing 
+    data (and the relevant lock files).  The session-id is 
+    $session{_session_id}.  Be aware that you do not want to de-ref the 
+    hash reference (otherwise, changes made to the subsequent hash are lost).
+    
+ Arguments:
+    - $dir: directory to use when storing data (and the relevant lock files)
+  Returns:
+    Hash reference
+  Examples:
+    $dir = "/tmp";  # location for locks & state files
+    $session = $ui->mksession( $dir );
 
 =cut
 
@@ -138,14 +152,19 @@ sub mksession {
 
 =head2 getsession - fetch state for a session across multiple pages
 
-  $dir = "/tmp";  # location for locks & state files
-  $sessionid = $args{sid};  # session-id must be handed off to new pages
-  %session = $ui->getsession( $dir, $sessionid );
-
-Fetches a state session and its accompanying data.  Returns a hash ref.  
-Requires two arguments:  the working directory and the session-id (as 
-described above).  The same warning for mksession() regarding 
-de-referencing the returned object applies.
+    Fetches a state session and its accompanying data.  Returns a hash ref.  
+    Requires two arguments:  the working directory and the session-id (as described above).  
+    The same warning for mksession() regarding de-referencing the returned object applies.
+    
+ Arguments:
+    - $dir: directory wheres session files are stored
+    - $sid: Session ID
+  Returns:
+    Hash reference
+  Examples:
+    $dir = "/tmp";  # location for locks & state files
+    $sessionid = $args{sid};  # session-id must be handed off to new pages
+    %session = $ui->getsession( $dir, $sessionid );
 
 =cut
 
@@ -165,12 +184,17 @@ sub getsession {
 
 =head2 pushsessionpath - push table name onto list of table names
 
-  $result = $ui->pushsessionpath( $session, $table );
+    Pushes the table name $table onto a list of tables that have been visited.
 
-Pushes the table name $table onto a list of tables that have been visited.
+ Arguments:
+    - $session:  Reference to a hash containing session data
+    - $table:    Table name
+  Returns:
+    True
+  Examples:
+    $result = $ui->pushsessionpath( $session, $table );
 
 =cut
-
 sub pushsessionpath {
   my( $self, $session, $table ) = @_;
   if( defined( $session->{path} ) 
@@ -184,12 +208,16 @@ sub pushsessionpath {
 
 =head2 popsessionpath - pop table name from list of table names
 
-  $table = $ui->popsessionpath( $session );
+    Pops the last table visited from the stack and returns the name.
 
-Pops the last table visited from the stack and returns the name.
+ Arguments:
+    - $session:  Reference to a hash containing session data
+  Returns:
+    Table name (scalar)
+  Examples:
+    $table = $ui->popsessionpath( $session );
 
 =cut
-
 sub popsessionpath {
   my( $self, $session ) = @_;
   my $tbl;
@@ -203,12 +231,16 @@ sub popsessionpath {
 
 =head2 rmsession
 
-  $ui->rmsession( \%session );
+    Removes specific session associated with the hash %session.
 
-Removes specific session associated with the hash %session.
+ Arguments:
+    - $session:  Reference to a hash containing session data
+  Returns:
+    True on success, False on failure
+  Examples:
+    $ui->rmsession( \%session );
 
 =cut
-
 sub rmsession {
   my( $self, $session ) = @_;
   if( tied(%{ $session })->delete() ) {
@@ -220,16 +252,19 @@ sub rmsession {
 
 =head2 rmsessions
 
-  $dir = "/tmp";
-  $age = 3600;   # age is in seconds
-  $ui->rmsessions( $dir, $age );
-
-Removes state older than $age (the supplied argument) from the 
-directory $dir.  Returns 1 for success and 0 for failure.  Remember, age 
-is in seconds.
+    Removes state older than $age (the supplied argument) from the directory $dir.  
+    
+ Arguments:
+    - $dir: Directory where session files are located
+    - $age: Seconds
+  Returns:
+    True on success, False on failure
+  Examples:
+    $dir = "/tmp";
+    $age = 3600;   # age is in seconds
+    $ui->rmsessions( $dir, $age );
 
 =cut
-
 sub rmsessions {
   my( $self, $dir, $age ) = @_;
   my $locker = new Apache::Session::Lock::File ;
@@ -242,37 +277,39 @@ sub rmsessions {
 
 =head2 form_to_db
 
-  %info = $ui->form_to_db(%ARGS);
-
 Generalized code for updating columns in different tables. 
-ARGS is a hash with the following format:
 
-  Update Column1 in object with id <id> from table <Table>
+  Arguments:
+    Hash with the following format:
+    
+    Update Column1 in object with id <id> from table <Table>
     <Table>__<id>__<Column1> => <Value>
 
-  Delete a single object with id <id> from table <Table>
+    Delete a single object with id <id> from table <Table>
     <Table>__<id>__DELETE => null
 
-  Delete a list of objects from the same table
-  (useful when using <select multiple>)
+    Delete a list of objects from the same table
+    (useful when using <select multiple>)
     <Table>___LIST__DELETE => [ <id1>, <id2>, <id3> ]
-
-  Insert new object with columns 1,2,3 set to the specified values
+    
+    Insert new object with columns 1,2,3 set to the specified values
     <Table>__NEW1__<Column1> => <Value1>
     <Table>__NEW1__<Column2> => <Value2>
     <Table>__NEW1__<Column3> => <Value3>
     
-  Insert another new object with columns 1,2,3 set to the specified value
+    Insert another new object with columns 1,2,3 set to the specified value
     <Table>__NEW2__<Column1> => <Value1>
     <Table>__NEW2__<Column2> => <Value2>
     <Table>__NEW2__<Column3> => <Value3>
-    
 
-Returns a hash with update details on success, false on failure and error 
-should be set.
+  Returns:
+    Returns a hash with update details on success, false on failure and error 
+    should be set.
+  Examples:
+
+    %info = $ui->form_to_db(%ARGS);
 
 =cut
-
 sub form_to_db{
     my($self, %argv) = @_;
     my %ret;
@@ -409,21 +446,24 @@ method in UI.pm. Either select_lookup, select_multiple, radio_group_boolean, tex
 If the interface is in "edit" mode, the user will see a form element specific to the type of data
 being viewed, otherwise, the user will see the value of the object in plain text.
 
- Arguments:
-  object:        DBI object, can be null if a table object is included
-  table:         Name of table in DB. (optional, but required if object is null)
-  column:        Name of the field in the database
-  edit:          True if editing, false otherwise
-  default:       Default value to display if none defined in DB
-  htmlExtra:     String of additional html to add to the form field
-  linkPage:      Make this text a link
-  returnValOnly: Return only the form field and no label as a string
-  shortFieldName:Set the name of the form field to be just the column name 
-                   instead of $table__$id__$column
+  Arguments: 
+    - object:         DBI object, can be null if a table object is included
+    - table:          Name of table in DB. (optional, but required if object is null)
+    - column:         Name of the field in the database
+    - edit:           True if editing, false otherwise
+    - default:        Default value to display if none defined in DB
+    - htmlExtra:      String of additional html to add to the form field
+    - linkPage:       Make this text a link
+    - returnValOnly:  Return only the form field and no label as a string
+    - shortFieldName: Whether to set the input tag name as the column name or
+                      the format used by form_to_db()
+  Returns:
+    if returnValOnly, the form field as a string
+    else, a hash reference, with two keys, 'label', 'value'
 
- Returns:
-  if returnValOnly, the form field as a string
-  else, a hash reference, with two keys, 'label', 'value'
+  Examples:
+
+    %tmp = $ui->form_field(object=>$o, column=>"info", edit=>1, htmlExtra=>'cols="60"');
 
 =cut
 sub form_field {
@@ -431,19 +471,19 @@ sub form_field {
     my ($o, $table, $column, $edit, $default, $htmlExtra, $linkPage, $returnValOnly, $shortFieldName) = 
 	($args{object}, $args{table}, $args{column}, $args{edit}, $args{default}, 
 	 $args{htmlExtra}, $args{linkPage}, $args{returnValOnly}, $args{shortFieldName} );
-
+    
     my $label; # return value
     my $value; # return value
-
+    
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $current = ($o ? $o->$column : $default);
-
+    
     my %order    = $self->getcolumnorder( $tableName );
     my %linksto  = $self->getlinksto( $tableName );
     my %tags     = $self->getcolumntags( $tableName );
     my %coltypes = $self->getcolumntypes( $tableName );
-
+    
     ################################################
     ## column is a local field
     if ( !exists($linksto{$column}) ) {
@@ -452,31 +492,32 @@ sub form_field {
         }else{
             $label = $column;
         }
-
+	
         my $type = $coltypes{$column};
-
-            if ($o) {
-                $value = $self->getinputtag($column, $o, $current);
-            } else {
-                $value = $self->getinputtag($column, $table, $current);
-            }
-
-            if ($type eq "varchar" || $type eq "timestamp" || $type eq "integer" || $type eq "numeric" || $type eq "date" ) {
-                $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$edit, default=>$default, 
-					   linkPage=>$linkPage, returnAsVar=>1, htmlExtra=>$htmlExtra, shortFieldName=>$shortFieldName);
-
-            } elsif ($type eq "long varbinary") {
-                $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$edit, returnAsVar=>1, 
-                        htmlExtra=>$htmlExtra, shortFieldName=>$shortFieldName);
-
-            } elsif ($type eq "bool") {
-                $value = $self->radio_group_boolean(object=>$o, table=>$table, column=>$column, edit=>$edit, 
-                        returnAsVar=>1, shortFieldName=>$shortFieldName);
-
-            } else {
-                $value = "No rule for: $type";
-            }
-
+	
+	if ($o) {
+	    $value = $self->getinputtag($column, $o, $current);
+	} else {
+	    $value = $self->getinputtag($column, $table, $current);
+	}
+	
+	if ($type eq "varchar" || $type eq "timestamp" || $type eq "integer" || $type eq "numeric" || $type eq "date" ) {
+	    $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$edit, default=>$default, 
+				       linkPage=>$linkPage, returnAsVar=>1, htmlExtra=>$htmlExtra, 
+				       shortFieldName=>$shortFieldName);
+	    
+	} elsif ($type eq "long varbinary") {
+	    $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$edit, returnAsVar=>1, 
+				      htmlExtra=>$htmlExtra, shortFieldName=>$shortFieldName);
+	    
+	} elsif ($type eq "bool") {
+	    $value = $self->radio_group_boolean(object=>$o, table=>$table, column=>$column, edit=>$edit, 
+						returnAsVar=>1, shortFieldName=>$shortFieldName);
+	    
+	} else {
+	    $value = "No rule for: $type";
+	}
+	
     ################################################
     ## The column is a foreign key. Provide a list to select.
     } else {
@@ -485,9 +526,10 @@ sub form_field {
         }else{
             $label = $column;
         }
-
-        $value = $self->select_lookup(object=>$o, table=>$tableName, column=>$column,, htmlExtra=>$htmlExtra, lookup=>$linksto{$column}, 
-                edit=>$edit, linkPage=>$linkPage, defaults=>$default, returnAsVar=>1, shortFieldName=>$shortFieldName);
+	
+        $value = $self->select_lookup(object=>$o, table=>$tableName, column=>$column,, htmlExtra=>$htmlExtra, 
+				      lookup=>$linksto{$column}, edit=>$edit, linkPage=>$linkPage, defaults=>$default, 
+				      returnAsVar=>1, shortFieldName=>$shortFieldName);
     }
 
     ################################################
@@ -509,46 +551,53 @@ sub form_field {
 
 =head2 select_lookup
 
-This method deals with fields that are foreign keys.  When the interface is in "edit" mode, the user
-is presented with a drop-down list of possible values in the foreign table.  If the number of elements
-in the list surpasses maxCount or DEFAULT_SELECTMAX, the user gets a text box where keywords can be
-entered to refine the list.  Also, a [new] button is added at the end to allow the user to create
-a new instance of the foreign table, which will be automatically selected in the drop-down list.
-If not editing, this function only returns the label of the foreign key object.
-
-  $ui->select_lookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", linkPage=>1);
+    This method deals with fields that are foreign keys.  When the interface is in "edit" mode, the user
+    is presented with a drop-down list of possible values in the foreign table.  If the number of elements
+    in the list surpasses maxCount or DEFAULT_SELECTMAX, the user gets a text box where keywords can be
+    entered to refine the list.  Also, a [new] button is added at the end to allow the user to create
+    a new instance of the foreign table, which will be automatically selected in the drop-down list.
+    If not editing, this function only returns the label of the foreign key object.
 
  Arguments:
-  object:       CDBI object, can be null if a table object is included
-  table:        Name of table in DB. (required if object is null)
-  lookup:       Name of foreign table to look up
-  column:       Name of field in DB.
-  edit:         True if editing, false otherwise.
-  where:        (optional) Key/value pairs to pass to search function in CDBI
-  defaults:     (optional) array of objects to be shown in the drop-down list by default, shortFieldName=>$shortFieldName
-  htmlExtra:    (optional) extra html you want included in the output. Common
-                use would be to include style="width: 150px;" and the like.
-  linkPage:     (optional) Make the printed value a link
-                to itself via some page (i.e. view.html) 
-                (requires that column value is defined)
-  returnAsVar:  (optional) If true, output is returned as a variable.
-                Otherwise, output is printed to STDOUT
-  maxCount:     (optional) maximum number of results to display before giving 
-                the user the option of refining their results. Defaults to
-                DEFAULT_SELECTMAX in configuration files.
+    Hash of key/value pairs.  Keys are:
+    - object:        CDBI object, can be null if a table object is included
+    - table:          Name of table in DB. (required if object is null)
+    - lookup:         Name of foreign table to look up
+    - column:         Name of field in DB.
+    - edit:           True if editing, false otherwise.
+    - where:         (optional) Key/value pairs to pass to search function in CDBI
+    - defaults:      (optional) array of objects to be shown in the drop-down list by default, 
+    - htmlExtra:     (optional) extra html you want included in the output. Common
+                      use would be to include style="width: 150px;" and the like.
+    - linkPage:      (optional) Make the printed value a link
+                     to itself via some page (i.e. view.html) 
+                     (requires that column value be defined)
+    - returnAsVar:   (optional) If true, output is returned as a variable.
+                     Otherwise, output is printed to STDOUT
+    - maxCount:      (optional) maximum number of results to display before giving 
+                     the user the option of refining their results. Defaults to
+                     DEFAULT_SELECTMAX in configuration files.
+   - shortFieldName: Whether to set the input tag name as the column name or
+                     the format used by form_to_db()
+  Returns:
+    If returnAsVar, returns variable containing HTML code.  Otherwise, prints HTML code to STDOUT
+    or False if failure
+  Examples:
 
+    $ui->select_lookup(object=>$o, column=>"physaddr", lookup=>"PhysAddr", edit=>"$editgen", linkPage=>1);
 
 =cut
 
 sub select_lookup($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $lookup, $where, $defaults, $isEditing, $htmlExtra, $linkPage, $maxCount, $returnAsVar, $shortFieldName) = 
-	($args{object}, $args{table}, 
-	 $args{column}, $args{lookup},
-	 $args{where}, $args{defaults}, $args{edit},
-	 $args{htmlExtra}, $args{linkPage},
-	 $args{maxCount}, $args{returnAsVar}, $args{shortFieldName});
-
+    my ($o, $table, $column, $lookup, $where, $defaults, $isEditing, $htmlExtra, $linkPage, $maxCount, 
+	$returnAsVar, $shortFieldName) = 
+	    ($args{object}, $args{table}, 
+	     $args{column}, $args{lookup},
+	     $args{where}, $args{defaults}, $args{edit},
+	     $args{htmlExtra}, $args{linkPage},
+	     $args{maxCount}, $args{returnAsVar}, $args{shortFieldName});
+    
     my @defaults = @$defaults if $defaults;
     unless ( $o || $table ){
 	$self->error("Need to pass object or table name");
@@ -687,21 +736,29 @@ The following diagram might help in understanding the method
  +------+ Many    One +------+One    Many +------+
 
 
+  Arguments:
+    Hash of key/value pairs.  Keys are:
+    - object:       Object from which the relationships are viewed (from this table)
+    - joins:        Array ref of join table objects
+    - join_table:   Name of the join table
+    - this_field:   Field in the join table that points to this table
+    - other_table:  Name of the other table (required)
+    - other_field:  Field in the join table that points to the other table
+    - isEditing:    Whether to create the form input tags or just present the object
+    - action:       What selecting the objects will eventually do.  
+                    Valid actions are: "delete"
+    - makeLink:     If true, will show the object as a link via "linkPage"
+    - linkPage:     Page to pass the object to for viewing
+    - returnAsVar:  Whether to print to STDOUT or return a scalar.
+  Returns:
+    If returnAsVar, returns variable containing HTML code.  Otherwise, prints HTML code to STDOUT
+    or False if failure
+  Examples:
 
- Arguments:
-  object:       Object from which the relationships are viewed (from this table)
-  joins:        Array ref of join table objects
-  join_table:   Name of the join table
-  this_field:   Field in the join table that points to this table
-  other_table:  Name of the other table (required)
-  other_field:  Field in the join table that points to the other table
-  isEditing:    Whether to create the form input tags or just present the object
-  action:       What selecting the objects will eventually do.  
-                Valid actions are: "delete"
-  makeLink:     If true, will show the object as a link via "linkPage"
-  linkPage:     Page to pass the object to for viewing
-  returnAsVar:  Whether to print to STDOUT or return a scalar.
-
+    $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_table=>"DeviceContacts", 
+			 this_field=>"device", other_table=>"ContactList", 
+			 other_field=>"contactlist", isEditing=>$editloc, action=>"delete", 
+			 makeLink=>1, returnAsVar=>1 ) 
 =cut
 
 sub select_multiple {
@@ -824,40 +881,40 @@ Text field widget. If "edit" is true then a text field is displayed with
 the value from the DB (if any).
 
  Arguments:
-   object: DBI object, can be null if a table object is included
-   table: Name of table in DB. (required if object is null)
-   column: name of field in DB.
-   default: default value to display if no value is defined in DB.
-   edit: true if editing, false otherwise.
-   htmlExtra: extra html you want included in the output. Common use
-              would be to include style="width: 150px;" and the like.
-   linkPage: (optional) Make the printed value a link
-              to itself via some component (i.e. view.html) 
-              (requires that column value is defined)
-   returnAsVar: default false, true if the sub should return the string instead of outputting
+   Hash containing key/value pairs.  Keys are:
+   - object:         DBI object, can be null if a table object is included
+   - table:          Name of table in DB. (required if object is null)
+   - column:         Name of field in DB.
+   - default:        Default value to display if no value is defined in DB.
+   - edit:           True if editing, false otherwise.
+   - htmlExtra:      Extra html you want included in the output. Common use
+                     would be to include style="width: 150px;" and the like.
+   - linkPage:       (optional) Make the printed value a link
+                     to itself via some component (i.e. view.html) 
+                     (requires that column value be defined)
+   - returnAsVar:    default false, true if the sub should return the string instead of outputting
+   - shortFieldName: Whether to set the input tag name as the column name or
+                     the format used by form_to_db()
+  Returns:
+    If returnAsVar, returns variable containing HTML code.  Otherwise, prints HTML code to STDOUT
+    or False if failure    
+  Examples:
+
+    $ui->text_field(object=>$pic->binfile, table=>"BinFile", column=>"filename", edit=>$editPictures);
 
 =cut
 
 sub text_field($@){
     my ($self, %args) = @_;
     my ($o, $table, $column, $isEditing, $htmlExtra, $linkPage, $default, $returnAsVar, $shortFieldName) = 
-                   ($args{object}, $args{table}, 
-					$args{column}, $args{edit}, 
-					$args{htmlExtra}, $args{linkPage},
-					$args{default}, $args{returnAsVar}, $args{shortFieldName} );
+	($args{object}, $args{table}, $args{column}, $args{edit}, $args{htmlExtra}, 
+	 $args{linkPage}, $args{default}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : $default);
-    my $shortFieldName = ($shortFieldName ? 1:0);
-    my $name;
-    if( $shortFieldName ) {
-        $name = $column;
-    } else {
-        $name = $tableName . "__" . $id . "__" . $column;
-    }
-
+    my $name = ( $shortFieldName ? $column : $tableName . "__" . $id . "__" . $column );
     $htmlExtra = "" if (!$htmlExtra);
 
     unless ($o || $table){
@@ -889,33 +946,36 @@ Text area widget. If "edit" is true then a textarea is displayed with
 the value from the DB (if any).
 
  Arguments:
-   object: DBI object, can be null if a table object is included
-   table: Name of table in DB. (required if object is null)
-   column: name of field in DB. 
-   edit: true if editing, false otherwise.
-   htmlExtra: extra html you want included in the output. Common use
-              would be to include style="width: 150px;" and the like.
+   Hash containing key/value pairs.  Keys are:
+    - object:          DBI object, can be null if a table object is included
+    - table:           Name of table in DB. (required if object is null)
+    - column:          Name of field in DB. 
+    - edit:            True if editing, false otherwise.
+    - htmlExtra:       Extra html you want included in the output. Common use
+                       would be to include style="width: 150px;" and the like.
+    - returnAsVar:     Default false, true if the sub should return the string instead of outputting
+    - shortFieldName:  Whether to set the input tag name as the column name or
+                       the format used by form_to_db()
+  Returns:
+    If returnAsVar, returns variable containing HTML code.  Otherwise, prints HTML code to STDOUT
+    or False if failure    
+  Examples:
+    $ui->text_area(object=>$o, table=>"HorizontalCable", column=>"info",
+		   edit=>$editCable, htmlExtra=>"rows='3' cols='80'");
 
 =cut
 
 sub text_area($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $htmlExtra, $returnAsVar, $shortFieldName) = ($args{object}, $args{table}, 
-                                                                      $args{column}, $args{edit}, 
-                                                                      $args{htmlExtra}, $args{returnAsVar}, $args{shortFieldName} );
+    my ($o, $table, $column, $isEditing, $htmlExtra, $returnAsVar, $shortFieldName) = 
+	($args{object}, $args{table}, $args{column}, $args{edit}, $args{htmlExtra}, 
+	 $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
     my $tableName = ($o ? $o->table : $table);
     my $id = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
-    my $shortFieldName = ($shortFieldName ? 1:0);
-    my $name;
-    if( $shortFieldName ) {
-        $name = $column;
-    } else {
-        $name = $tableName . "__" . $id . "__" . $column;
-    }
-
+    my $name = ( $shortFieldName ? $column : $tableName . "__" . $id . "__" . $column );
     $htmlExtra = "" if (!$htmlExtra);
 
     unless ($o || $table){
@@ -946,8 +1006,11 @@ Can pass arguments in as either a straight percentage, or as a fraction.
    or
    numerator
    denominator (0 in the denominator means 0%)
+  Returns: 
+    a string with HTML, does not output to the browser.
+  Examples:
 
-Returns a string with HTML, does not output to the browser.
+    $ui->percent_bar(percent=>$percent)
 
 =cut
 sub percent_bar {
@@ -999,14 +1062,19 @@ Can pass arguments in as either a straight percentage, or as a fraction.
    denominator2 (0 in the denominator means 0%)
    numerator1
    denominator2 (0 in the denominator means 0%)
-    
-Returns a string with HTML, does not output to the browser.
+  Returns: 
+    a string with HTML, does not output to the browser.
+  Examples:
+    $ui->percent_bar2( title1=>"Address Usage: ", title2=>"Subnet Usage: ", 
+		       percent1=>$percent1, percent2=>$percent2 ) 
 
 =cut
 sub percent_bar2 {
     my ($self, %args) = @_;
-    my ($percent1, $numerator1, $denominator1, $title1) = ($args{percent1}, $args{numerator1}, $args{denominator1}, $args{title1});
-    my ($percent2, $numerator2, $denominator2, $title2) = ($args{percent2}, $args{numerator2}, $args{denominator2}, $args{title2});
+    my ($percent1, $numerator1, $denominator1, $title1) = 
+	($args{percent1}, $args{numerator1}, $args{denominator1}, $args{title1});
+    my ($percent2, $numerator2, $denominator2, $title2) = 
+	($args{percent2}, $args{numerator2}, $args{denominator2}, $args{title2});
     my $width1;
     my $width2;
     my $output;
@@ -1072,11 +1140,12 @@ sub percent_bar2 {
 Mixes two hex colors by the amount specified.
 
  Arguments:
-   color1: should be a string like "ff00cc" 
-   color2: same
-   blend:  0 means all of color1, 1 means all of color2, 0.5 averages the two
-
-Returns a hex string like "99aacc"
+   - $color1: should be a string like "ff00cc" 
+   - $color2: same
+   - $blend:  0 means all of color1, 1 means all of color2, 0.5 averages the two
+  Returns:  
+    hex string like "99aacc"
+  Examples:
 
 =cut
 
@@ -1105,14 +1174,17 @@ sub color_mix {
 
 =head2 friendly_percent
 
-Returns a string representation of the integer percentage of a/b
+    Returns a string representation of the integer percentage of a/b
 
  Arguments:
-   value: the numerator.
-   total: the denominator.
-
-If value/total < 0.01, returns a string "<1%" instead of the "0%" which
-would otherwise show up. Similarly, with 99%.
+    Hash of key/value pairs where keys are:
+    - value: the numerator.
+    - total: the denominator.
+  Returns:
+    If value/total < 0.01, returns a string "<1%" instead of the "0%" which
+    would otherwise show up. Similarly, with 99%.
+  Examples:
+    $ui->friendly_percent(value=>$avail,total=>$total)
 
 =cut
 sub friendly_percent {
@@ -1142,8 +1214,12 @@ sub friendly_percent {
 Turns "1048576" into "1mb". Allows user to specify maximum unit to show.
 
   Arguments:
-    $bytes - integer value
-    $max_unit - how many divisions by 1024 to allow at most. (i.e. 3 would show $bytes in gigabytes)
+    $bytes:    integer value
+    $max_unit: how many divisions by 1024 to allow at most. (i.e. 3 would show $bytes in gigabytes)
+  Returns:
+    Formatted string (scalar)
+  Examples:
+    $ui->format_size($data_len)
 
 =cut
 sub format_size {
@@ -1164,31 +1240,36 @@ sub format_size {
 
 =head2 add_to_fields
 
-Used as a shortcut for adding data to an attribute table in pages such as device.html.
-Example code:
-
- my (@field_headers, @cell_data);
- {
-   my @fields = ('cid','connectionid','vendor','nearend','farend');
-   my @linkpages = ('', 'view.html', 'view.html', 'view.html', 'view.html');
-   $ui->add_to_fields(o=>$o, edit=>$editCircuit, fields=>\@fields, linkpages=>\@linkpages, field_headers=>\@field_headers, cell_data=>\@cell_data);
- }
- <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+    Used as a shortcut for adding data to an attribute table in pages such as device.html.
 
   Arguments:
-    $o             - a reference to a DBI object
-    $edit          - true if editing, false otherwise
-    @fields        - reference to an array of column names in the database
-    @linkpages     - reference to an array of the same size as @fields, with optional pages to link to
-    @field_headers - reference to the array to add the names of the columns to
-    @cell_data     - reference to the array to add the form fields to
+    Hash of key/value pairs where keys are:
+    - o:              A reference to a DBI object
+    - edit:           True if editing, false otherwise
+    - fields:         Reference to an array of column names in the database
+    - linkpages:      Reference to an array of the same size as @fields, with optional pages to link to
+    - field_headers:  Reference to the array to add the names of the columns to
+    - cell_data:      Reference to the array to add the form fields to
+  Returns:
+    True
+  Examples:
+    
+    my (@field_headers, @cell_data);
+    {
+     my @fields = ('cid','connectionid','vendor','nearend','farend');
+     my @linkpages = ('', 'view.html', 'view.html', 'view.html', 'view.html');
+     $ui->add_to_fields(o=>$o, edit=>$editCircuit, fields=>\@fields, linkpages=>\@linkpages, 
+			field_headers=>\@field_headers, cell_data=>\@cell_data);
+    }
+    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+    
 
 =cut
 sub add_to_fields {
     my ($self, %args) = @_;
     my ($o, $edit, $fields, $linkpages, $field_headers, $cell_data) = 
         ($args{o}, $args{edit}, $args{fields}, $args{linkpages}, $args{field_headers}, $args{cell_data});
-
+    
     for( my $i=0; $i<@{$fields}; $i++ ) {
         my $field = ${$fields}[$i];
         my $linkpage = ${$linkpages}[$i];
@@ -1197,7 +1278,7 @@ sub add_to_fields {
         push( @{$field_headers}, $tmp{'label'}.":" );
         push( @{$cell_data}, $tmp{'value'} );
     }
-
+    1;
 }
 
 
