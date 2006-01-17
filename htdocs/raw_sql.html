@@ -53,7 +53,8 @@ if ( $action eq "DO_SQL" ){
         my @headers = $result->{headers};
         my @rows    = $result->{rows};
 
-        </%perl><& data_table.mhtml, field_headers=>@headers, data=>@rows &><%perl>
+	$m->comp('data_table.mhtml', field_headers=>@headers, data=>@rows);
+
     }elsif ( $sql_err ){
         print $sql_err, "<br>";    
     }

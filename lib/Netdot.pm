@@ -844,8 +844,14 @@ sub search_all_netdot {
  Arguments: 
     sql    - SQL query (text)
  Returns:  
-    Reference to an array containing lines of output
+    Reference to a hash of arrays. When using SELECT statements, the 
+    keys are:
+     - headers:  array containing column names
+     - rows:     array containing column values
 
+    When using NON-SELECT statements, the keys are:
+     - rows:     array containing one string, which states the number
+                 of rows affected
   Example:
     if ( ! ($result = $ui->raw_sql($sql) ) ){
 	$sql_err = $ui->error;
