@@ -847,17 +847,21 @@ sub search_all_netdot {
     Reference to an array containing lines of output
 
   Example:
-    if ( ! ($lines = $ui->raw_sql($sql) ) ){
+    if ( ! ($result = $ui->raw_sql($sql) ) ){
 	$sql_err = $ui->error;
     }
 
+    my @headers = $result->{headers};
+    my @rows    = $result->{rows};
+
+    <& data_table.mhtml, field_headers=>@headers, data=>@rows &>
+
 =cut
 sub raw_sql {
-    my ($self, $sql, $delim) = @_;
-    $delim ||= ', ';
+    my ($self, $sql) = @_;
 
     my $st;
-    my @lines;
+    my %result;
     if ( $sql =~ /select/i ){
 	eval {
 	    $st = $self->{dbh}->prepare( $sql );
@@ -865,14 +869,14 @@ sub raw_sql {
 	};
 	if ( $@ ){
         # parse out SQL error message from the entire error
-        my ($errormsg) = $@ =~ m{execute[ ]failed:[ ](.*)[ ]at[ ]/usr/share/perl5};
+        my ($errormsg) = $@ =~ m{execute[ ]failed:[ ](.*)[ ]at[ ]/};
 	    $self->error("SQL Error: $errormsg");
 	    return;
 	}
-	my $array_ref = $st->fetchall_arrayref;
-	foreach my $row ( @$array_ref ){
-	    push @lines, $row;
-	}
+
+    $result{headers} = $st->{"NAME_lc"};
+    $result{rows}    = $st->fetchall_arrayref;
+
     }elsif ( $sql =~ /delete|update|insert/i ){
 	my $rows;
 	eval {
@@ -883,12 +887,15 @@ sub raw_sql {
 	    return;
 	}
 	$rows = 0 if ( $rows eq "0E0" );  # See DBI's documentation for 'do'
-	push @lines, "Rows affected: $rows";
+
+    my %line;
+    $line{'Rows Affected'} = $rows;
+	push( @lines, \%line );
     }else{
 	$self->error("raw_sql Error: Only select, delete, update and insert statements accepted");
 	return;
     }
-    return \@lines;
+    return \%result;
 }
 
 

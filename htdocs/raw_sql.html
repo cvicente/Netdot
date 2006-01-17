@@ -15,10 +15,10 @@ section => 'Generic'
 </%attr>
 
 <%init>
-my $lines;
+my $result;
 my $sql_err;
 if ( $action eq "DO_SQL" ){
-    if ( ! ($lines = $ui->raw_sql($sql) ) ){
+    if ( ! ($result = $ui->raw_sql($sql) ) ){
 	$sql_err = $ui->error;
     }
 }
@@ -43,31 +43,18 @@ if ( $action eq "DO_SQL" ){
 </div> <!-- close container -->
 
 
+
 % if ( $action eq "DO_SQL" ){
     <div class="container">
         <div class="containerhead">Query Results:</div>
         <div class="containerbody">
 <%perl>
-    if ( $lines ){
-        if( $sql =~ /select/i ) {
-            my @headers;
-            my @rows;
 
-            # return everything between SELECT and FROM in the query, and use them as the headers
-            # if they do "SELECT * FROM", then we have no headers, until I can figure out how to return
-            # the list of column headers from the query.
-            my ($inside) = $sql =~ /^SELECT(.*)FROM/i;         # grab the headers
+    if ( scalar $result->{rows} ){
+        my @headers = $result->{headers};
+        my @rows    = $result->{rows};
 
-            # possible characters that can occur as column headers:
-            #   abcxyzABCXYZ0123456789 _()-
-            @headers = $inside =~ /([\w()\.\ \-]+),?/g;        # split headers on the commas
-
-            </%perl><& data_table.mhtml, field_headers=>\@headers, data=>$lines &><%perl>
-        } else {
-        	foreach my $line ( @$lines ){
-        	    print $line, "<br>";
-        	}
-        }
+        </%perl><& data_table.mhtml, field_headers=>@headers, data=>@rows &><%perl>
     }elsif ( $sql_err ){
         print $sql_err, "<br>";    
     }
