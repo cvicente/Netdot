@@ -863,37 +863,38 @@ sub raw_sql {
     my $st;
     my %result;
     if ( $sql =~ /select/i ){
-	eval {
-	    $st = $self->{dbh}->prepare( $sql );
-	    $st->execute();
-	};
-	if ( $@ ){
-        # parse out SQL error message from the entire error
-        my ($errormsg) = $@ =~ m{execute[ ]failed:[ ](.*)[ ]at[ ]/};
-	    $self->error("SQL Error: $errormsg");
-	    return;
-	}
+    	eval {
+    	    $st = $self->{dbh}->prepare( $sql );
+    	    $st->execute();
+    	};
+    	if ( $@ ){
+            # parse out SQL error message from the entire error
+            my ($errormsg) = $@ =~ m{execute[ ]failed:[ ](.*)[ ]at[ ]/};
+    	    $self->error("SQL Error: $errormsg");
+    	    return;
+    	}
 
-    $result{headers} = $st->{"NAME_lc"};
-    $result{rows}    = $st->fetchall_arrayref;
+        $result{headers} = $st->{"NAME_lc"};
+        $result{rows}    = $st->fetchall_arrayref;
 
     }elsif ( $sql =~ /delete|update|insert/i ){
-	my $rows;
-	eval {
-	    $rows= $self->{dbh}->do( $sql );
-	};
-	if ( $@ ){
-	    $self->error("raw_sql Error: $@");
-	    return;
-	}
-	$rows = 0 if ( $rows eq "0E0" );  # See DBI's documentation for 'do'
+    	my $rows;
+    	eval {
+    	    $rows = $self->{dbh}->do( $sql );
+    	};
+    	if ( $@ ){
+    	    $self->error("raw_sql Error: $@");
+    	    return;
+    	}
+    	$rows = 0 if ( $rows eq "0E0" );  # See DBI's documentation for 'do'
 
-    my %line;
-    $line{'Rows Affected'} = $rows;
-	push( @lines, \%line );
+        my @info = ('Rows Affected: '.$rows);
+        my @rows;
+        push( @rows, \@info );
+        $result{rows} = \@rows;
     }else{
-	$self->error("raw_sql Error: Only select, delete, update and insert statements accepted");
-	return;
+    	$self->error("raw_sql Error: Only select, delete, update and insert statements accepted");
+    	return;
     }
     return \%result;
 }
