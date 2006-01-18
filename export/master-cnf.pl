@@ -10,7 +10,7 @@ use lib "PREFIX/lib";
 use Netdot::DBI;
 use strict;
 
-my $DIR = "/usr/local/netdot/export/netmon";
+my $DIR = "/usr/local/netdot/export";
 my $FILE = "$DIR/master.cnf";
 
 my $DEBUG = 0;
@@ -73,8 +73,8 @@ foreach my $ip ( Ipblock->retrieve_all() ){
 	    $site = 'unknown';
 	    warn "Can't determine site for Device with ip $address" if $DEBUG;
 	}
-	if ( $ip->interface->device->entity ){
-	    my $e = $ip->interface->device->entity;
+	if ( $ip->interface->device->used_by ){
+	    my $e = $ip->interface->device->used_by;
 	    $entity = $e->name;
 	    $entity = join '_', split /\s+/, $entity;
 	    $entities{$entity}{id} = $e->id;
@@ -129,7 +129,7 @@ foreach my $entity ( sort keys %entities ){
     print "\n";
     
     if ( my $entobj = Entity->retrieve($entities{$entity}{id}) ){
-	foreach my $subnet ($entobj->subnets){
+	foreach my $subnet ($entobj->used_blocks){
 	    print "prefix                 ", $subnet->address, "/", $subnet->prefix, "\n";
 	}
     }
