@@ -31,12 +31,9 @@ sub new {
     my $class = ref( $proto ) || $proto;
     my $self = {};
     bless $self, $class;
-    
+
     # Read config files
     $self->_read_defaults;
-    
-    # Initialize Meta data
-    $self->_read_metadata;
     
     $self->{'_logfacility'} = $argv{'logfacility'} || $self->{config}->{'DEFAULT_LOGFACILITY'},
     $self->{'_loglevel'}    = $argv{'loglevel'}    || $self->{config}->{'DEFAULT_LOGLEVEL'},
@@ -49,12 +46,14 @@ sub new {
 				foreground  => $self->{'_foreground'},
 				);
     
-#  We override Class::DBI to speed things up in certain cases.
-    
+    #  We override Class::DBI to speed things up in certain cases.
     unless ( $self->{dbh} = Netdot::DBI->db_Main() ){
 	$self->error("Can't get db handle\n");
 	return 0;
     }
+
+    # Initialize Meta data
+    $self->_read_metadata;
     
     wantarray ? ( $self, '' ) : $self;
     
@@ -160,6 +159,7 @@ This info is identical for history tables
 =cut
 sub getlinksto{
     my ($self, $table) = @_;
+    $table =~ s/_history//;
     return %{ $self->{meta}->{$table}->{linksto} };
 }
 
@@ -177,6 +177,7 @@ History tables are not referenced by other tables
 =cut
 sub getlinksfrom{
     my ($self, $table) = @_;
+    return if ( $table =~ /_history/ );
     return %{ $self->{meta}->{$table}->{linksfrom} };
 }
 
@@ -205,8 +206,8 @@ History tables have two extra fields at the beginning
 
 =cut
 sub getcolumnorderbrief {
-  my ($self, $table) = @_;
-  return %{ $self->{meta}->{$table}->{columnorderbrief} };
+    my ($self, $table) = @_;
+    return %{ $self->{meta}->{$table}->{columnorderbrief} };
 }
 
 =head2 getcolumntypes
@@ -1033,8 +1034,13 @@ sub _getmeta{
 
 
 sub _read_metadata{
-    my ($self) = @_;
-    foreach my $table ( $self->gettables ){
+    my $self = shift;
+    # We do not use _gettables here because we need the
+    # history tables as well and they're not defined in
+    # Meta
+    foreach my $table ( $self->{dbh}->tables ){
+	$table =~ s/\`//g;
+	next if ($table eq "Meta");
 	$self->{meta}->{$table}->{linksto}          = $self->_read_linksto($table);
 	$self->{meta}->{$table}->{linksfrom}        = $self->_read_linksfrom($table);
 	$self->{meta}->{$table}->{columnorder}      = $self->_read_columnorder($table);
@@ -1048,8 +1054,6 @@ sub _read_metadata{
 
 sub _read_linksto{
     my ($self, $table) = @_;
-    
-    $table =~ s/_history//;
     my (%linksto, $mi);
     if ( defined($mi = $self->_getmeta($table)) ){
 	map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
@@ -1061,8 +1065,6 @@ sub _read_linksto{
 
 sub _read_linksfrom{
     my ($self, $table) = @_;
-    
-    return if ( $table =~ /_history/ );
     my (%linksfrom, $mi);
     if ( defined($mi = $self->_getmeta($table)) ){
 	map { my($i, $j, $k, $args) = split( /:/, $_ );
@@ -1135,8 +1137,8 @@ sub _read_columntypes{
 	    split( /,/, $mi->columntypes );
 	}
 	if ( $hist ){
-	    $types{modified} = "varchar";
-	    $types{modifier} = "timestamp";
+	    $types{modified} = "timestamp";
+	    $types{modifier} = "varchar";
 	}
 	return \%types;
     }
@@ -1145,14 +1147,17 @@ sub _read_columntypes{
 
 sub _read_columntags{
     my ($self, $table) = @_;
-
-    $table =~ s/_history// ;
     my (%tags, $mi);
+
+    my $hist = 1 if ( $table =~ s/_history// );
     if ( defined($mi = $self->_getmeta($table)) ){
-	my $mi = $self->_getmeta($table);
 	if( defined( $mi->columntags ) ) {
 	    map { my($j, $k) = split( /:/, $_ ); $tags{$j} = $k }
 	    split( /,/, $mi->columntags );
+	}
+	if ( $hist ){
+	    $tags{modified} = "Modified";
+	    $tags{modifier} = "Modifier";
 	}
 	return \%tags;
     }
@@ -1162,6 +1167,8 @@ sub _read_columntags{
 sub _read_labels{
     my ($self, $table) = @_;
     my $mi;
+
+    $table =~ s/_history// ;
     if ( defined($mi = $self->_getmeta($table)) ){
 	if( defined( $mi->label ) ) {
 	    my @labels = split /,/, $mi->label;
