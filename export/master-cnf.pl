@@ -10,7 +10,7 @@ use lib "PREFIX/lib";
 use Netdot::DBI;
 use strict;
 
-my $DIR = "/usr/local/netdot/export";
+my $DIR = "PREFIX/export";
 my $FILE = "$DIR/master.cnf";
 
 my $DEBUG = 0;

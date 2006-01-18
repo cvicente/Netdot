@@ -9,7 +9,7 @@ use lib "PREFIX/lib";
 use Netdot::DBI;
 use Data::Dumper;
 
-my $DIR = "/usr/local/netdot/export";
+my $DIR = "PREFIX/export";
 my $DEBUG = 0;
 
 my @files = ( "$DIR/contacts.txt" );
