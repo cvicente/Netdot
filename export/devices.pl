@@ -19,7 +19,7 @@ my $SUFFIX = '-devices.txt';
 foreach my $dt ( ProductType->retrieve_all() ){
     my $filename = $dt->name.$SUFFIX;
     $filename =~ s/\s+/-/g;
-    $filname = lc($filename);
+    $filename = lc($filename);
     open (FILE, ">$filename") 
 	or die "Couldn't open $filename: $!\n";
     select (FILE);
