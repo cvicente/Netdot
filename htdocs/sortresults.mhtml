@@ -6,9 +6,7 @@ Performs paging by passing the sorted/indexed list to itself, together with the 
 Supported arguments:
 
   table:      name of a table in the database
-  object:     reference to a list of objects in that table for displaying in html
-  objindex:   sortresults will pass this when calling itself, for paging.
-              reference to a hash whose keys are sorted index numbers and value is the object
+  object:     referece to a list of objects in that table for displaying in html
   view:       [row|column]
   sort:       column to sort by
   page:       page to link to with results (default is view.html)
@@ -78,6 +76,7 @@ if ( defined ($object) ){
 	    $m->abort;
 	}
     }
+
     # Some tables have a specific view page. 
     # Point to those when appropriate
     #
@@ -140,6 +139,7 @@ if ( defined ($object) ){
     ##############################################
     # Get tags
     %tags = $ui->getcolumntags( $table );
+
     ##############################################
     # remove id and aliases (if present)
     if( exists( $order{id} ) ) {
