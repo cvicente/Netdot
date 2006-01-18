@@ -1,5 +1,5 @@
 #
-# makefile for import/
+# makefile for export/
 #
 
 FILES := $(shell ls *.{pm,pl,skel,inst} )

@@ -2,6 +2,7 @@
 # Generate various text files and copy them to their
 # corresponding locations
 #
+PERL = /usr/bin/perl
 DIR = /usr/local/netdot/export
 DEVICES = $(DIR)/devices.pl
 CONTACTS = $(DIR)/contacts.pl
@@ -16,7 +17,7 @@ DOCSDIR = /usr/ns/doc
 SYSMONDIR = /usr/ns/doc
 NAGIOSDIR = /usr/local/nagios/etc
 NAGIOSFILES = hosts.cfg apan.cfg
-DOCSFILES = 10baseThubs.txt consoles.txt building-contacts.txt circuits.txt dsl.txt firewalls.txt ip-phones.txt netmon/master.cnf pdus.txt routers.txt servers.txt shapers.txt switches.txt wireless.txt 
+DOCSFILES = 10baseThubs.txt consoles.txt building-contacts.txt circuits.txt dsl.txt firewalls.txt ip-phones.txt master.cnf pdus.txt routers.txt servers.txt shapers.txt switches.txt wireless.txt 
 
 usage:
 	@echo
@@ -57,32 +58,32 @@ backup:
 devices:
 	@echo
 	@echo "Generating files about devices";
-	$(DEVICES)
+	$(PERL) $(DEVICES)
 
 contacts:
 	@echo
 	@echo "Generating files about contacts";
-	$(CONTACTS)
+	$(PERL) $(CONTACTS)
 
 master:
 	@echo
 	@echo "Generating master.cnf";
-	$(MASTER)
+	$(PERL) $(MASTER)
 
 circuits:
 	@echo
 	@echo "Generating circuits.txt";
-	$(CIRCUITS)
+	$(PERL) $(CIRCUITS)
 
 nagios:
 	@echo
 	@echo "Generating Nagios configs";
-	$(NAGIOS)
+	$(PERL) $(NAGIOS)
 
 sysmon:
 	@echo
 	@echo "Generating Sysmon config";
-	$(SYSMON)
+	$(PERL) $(SYSMON)
 
 install-docs:
 	@echo
