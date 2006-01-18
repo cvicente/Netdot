@@ -24,7 +24,7 @@ my $root = "cc-ns-bb";
 ########## Input and output files ################
 
 my $DIR = "/usr/local/netdot/export";
-my $OUT = "$DIR/netmon/sysmon.conf";
+my $OUT = "$DIR/sysmon.conf";
 
 ########## End Config Section #####################
 ###################################################
