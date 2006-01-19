@@ -124,7 +124,8 @@ my $end = time;
 $output .= sprintf ("Completed in %d seconds\n", ($end-$start)) if $VERBOSE;
 
 if ($EMAIL){
-    if (! $ui->send_mail(subject=>"Netdot DB Maintenance", body=>$output)){
+    if (! $ui->send_mail(subject=>"Netdot DB Maintenance", 
+			 to=>$ui->{config}->{'ADMINEMAIL'}, body=>$output)){
 	die "Problem sending mail: ", $ui->error;
     }
 }else{
