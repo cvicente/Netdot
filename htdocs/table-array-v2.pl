@@ -47,13 +47,14 @@ while ($html =~ m|<td[^>]*>(.*?)</td>|sg) {
 	    }
 	    s/(\$ui->.*?\(.*)\)/$ac$1, returnAsVar=>1\)/;	# The returnAsVar argument needs to get added to all calls to $ui's methods.
 	}
-
 	
 	my $code = join( "\n", @lines );	
+
         if (@lines > 1) {	# If there are multiple lines there are probably choices and/or accumulation.
 	    $code = qq(\n&{sub{\n    my \$ac = "";\n).$code."\n    \$ac;\n}}";	# The anon sub will return $a.
 	}else{
-	    $code =~ s/^\s*(.*)\;$/$1/;	# A loan statement shouldn't have a trailing semicolon in a call to push, and doesn't need leading whitespace.
+	    $code =~ s/\;\s*$//;	# Remove trailing semicolon.
+	    $code =~ s/^\s*(.*?)\s*$/$1/;	# A loan statement shouldn't have a trailing semicolon in a call to push, and doesn't need leading whitespace.
 	}
 
 	print( "push( \@cell_data, ", 

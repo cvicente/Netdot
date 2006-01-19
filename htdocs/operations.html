@@ -4,7 +4,7 @@ $Id$
 -- Operations Worksheet -- 
 
 Interface (similar to device worksheet) for viewing/updating
-NOC relevant information.  This includes customer contacts, 
+NOC relevant infomation.  This includes customer contacts, 
 devices, sites, circuits.
 
 </%doc>
@@ -19,6 +19,7 @@ $status => undef
 $view   => "Basics"
 $edit   => undef
 $user => undef
+$only_show_available_contacts => 1
 </%args>
 %
 %
@@ -34,18 +35,15 @@ section => 'Operations'
 %
 %
 <%init>
+use lib "/home/nathan/netdot/trunk/htdocs/";
+use Operations;
+
 my $DEBUG     = 0;
-my %cssitem   = ( 0 => "formtablec1", 1 => "formtablec2" );
-my $maxselect = 100;
 my $obj       = undef;
-my $ci        = 0;
 my $list;
-my $name;
 my @tables;
-my %arg;
 my %results;
 my %stables;
-my %entities;
 my %caller_args = $m->caller_args(-1);
 
 @{ $list } = ();
@@ -155,38 +153,52 @@ if( %results ) {
     $m->abort;
 
 }
-
 </%init>
+%
+<%once>
+my $names = 0;
+my $dispatch = sub {
+  # Each $table type will have specific ``call chains''
+  # (e.g. Device->interfaces->nearcircuits->cid is the chain to circuit
+  # ids for a device)
+  my $key = shift;
+  my %table = (
+	       Device      => '.DeviceHandler',
+#	       Interface   => '.InterfaceHandler',
+	       Circuit     => '.CircuitHandler',
+	       Entity      => '.EntityHandler',
+#	       ContactList => '.ContactListHandler',
+	       Site        => '.SiteHandler',
+	       Person      => '.PersonHandler',
+	      );
+  die "Don't know how to dispatch \"$key\"s" unless exists $table{$key};
+  return $table{$key};
+};
+</%once>
+
 %
 <div id="sectiondetail">
 %
 % if( $search ) {
 %
-<div class="containeroutside">
-    <div class="containerheadoutside">
-       <% scalar( @{$list} ) %> results for <i><% $search %></i>
-    </div>
-    <div class="containerbodyoutside">
+<&| .MakeContainerOutside, 
+    lhs => scalar( @{$list} ) . " results for <i>$search</i>" &>
 %   foreach my $tbl ( sort keys %results ) {
 %       my @list = values %{ $results{$tbl} };
-        <div class="container">
-            <div class="containerhead">
-            <% $tbl %>
-            </div>
-            <div class="containerbody">
+            <&| .MakeContainer, lhs => $tbl, &>
                 <& sortresults.mhtml, table => $tbl, object => \@list, view => "row", page => "operations.html", withedit => 1 &>
-            </div>
-    </div>
+	    </&>
 %   }
+</&>
 %
-% } elsif( $obj ) {
+% } elsif( $obj ) { # Displaying a single thing
 %
 % my $lbl = $ui->getobjlabel($obj, ", ");
 <div class="containeroutside">
    <div class="containerheadleftoutside">
-       <% $table %>: <b><% $lbl %></b>&nbsp;<br/>
+       <% $table %>: <b><% $obj->view_link %></b>&nbsp;<br/>
        View:
-%       if( $view eq "Basics" ) {
+%       if( $view eq "Basics" ) { # The default view
        [Basics]
 %       } else {
        <a href="operations.html?id=<% $id %>&view=Basics">[Basics]</a>
@@ -202,7 +214,9 @@ if( %results ) {
             <br/>
     </div>
     <div class="containerbodyoutside">
-        <% $lbl %>
+ 
+%        $m->comp( $dispatch->($table) , obj => $obj, only_show_available_contacts => $only_show_available_contacts); #, dispatch => $dispatch );
+
     </div>
 </div>
 %
@@ -214,3 +228,385 @@ if( %results ) {
 %
 </div>
 
+
+<%def .PersonHandler >
+  <%args>
+    $obj => 0
+    $accumulate_contact_lists => 0
+    $only_show_available_contacts
+  </%args>
+  <%init>
+    my $contact_lists = [map {$_->contactlist} $obj->roles];
+  </%init>
+    <div><b><% $obj->table %>:</b><% $obj->view_link %></div>
+    <div><b>Contact List:</b> <% map {$_->name} @$contact_lists %></div>
+
+<&| .MakeContainer, lhs => "Devices responsible for" &>
+% foreach my $device ($obj->devices) {
+    <& .DeviceHandler, obj => $device,
+       only_show_available_contacts => $only_show_available_contacts, 
+       accumulate_contact_lists => $contact_lists &>
+% }
+</&>
+<&| .MakeContainer, lhs => $obj->location->table &>
+    <& .SiteHandler, obj => $obj->location, 
+       only_show_available_contacts => $only_show_available_contacts, 
+       accumulate_contact_lists => $contact_lists &>
+</&>
+    <&| .MakeContainer, lhs => $obj->entity->table &>
+    <& .EntityHandler, obj => $obj->entity,
+       only_show_available_contacts => $only_show_available_contacts, 
+       accumulate_contact_lists => $contact_lists &>
+    </&>
+<& .DisplayAvailableContacts, contact_lists => $contact_lists,
+   only_show_available_contacts => $only_show_available_contacts, obj => $obj &>
+</%def>
+
+<%def .EntityHandler >
+  <%args>
+    $obj => 0
+    $accumulate_contact_lists => 0
+    $only_show_available_contacts
+  </%args>
+  <%init>
+    my $contact_lists = [$obj->contactlist];
+  </%init>
+    <div><b><% $obj->table %>:</b><% $obj->view_link %></div>
+    <div><b>Contact List:</b> <% map {$_->name} @$contact_lists %></div>
+% if (scalar $obj->sites) {
+<&| .MakeContainer, lhs => "Sites" &>
+% foreach my $site (map {$_->site} $obj->sites) {
+    <& .SiteHandler, obj => $site, 
+       only_show_available_contacts => $only_show_available_contacts, 
+       accumulate_contact_lists => $contact_lists &>
+% }
+</&>
+% }
+% if (scalar $obj->devices) {
+<&| .MakeContainer, lhs => "Devices" &>
+% foreach my $device ($obj->devices) {
+    <& .DeviceHandler, obj => $device, 
+       only_show_available_contacts => $only_show_available_contacts, 
+       accumulate_contact_lists => $contact_lists &>
+% }
+</&>
+% }
+% if (scalar $obj->all_circuits) {
+    <&| .MakeContainer, lhs => "@{[$obj->table]} Circuits" &>
+    <& .DisplayCircuits, obj => $obj,
+       only_show_available_contacts => $only_show_available_contacts, 
+       accumulate_contact_lists => $contact_lists &>
+    </&>
+% }
+% if (ref $accumulate_contact_lists eq "ARRAY") {
+%   @$accumulate_contact_lists = @$contact_lists;
+% } else {
+<& .DisplayAvailableContacts, contact_lists => $contact_lists,
+   only_show_available_contacts => $only_show_available_contacts, obj => $obj &>
+% }
+</%def>
+
+<%def .SiteHandler>
+  <%args>
+    $obj => 0
+    $accumulate_contact_lists => 0
+    $only_show_available_contacts
+  </%args>
+  <%init>
+    #$m->comp('info', table => $obj->contactlist->table, id => $obj->contactlist->id);
+
+# *** Still need the city (and contact list).
+#    my $lhs = $obj->view_link . ':' . $obj->city . " " . $obj->state;
+    my $contact_lists = [$obj->contactlist];
+  </%init>
+    <div><b>Site:</b><% $obj->view_link %></div>
+    <div><b>Contact List:</b> <% map {$_->name} @$contact_lists %></div>
+<&| '.MakeContainer', lhs => "Devices",  &>
+% foreach my $device ($obj->devices) {
+    <& .DeviceHandler, obj => $device, 
+       only_show_available_contacts => $only_show_available_contacts, 
+       accumulate_contact_lists => $contact_lists &>
+% }
+</&>
+% if (ref $accumulate_contact_lists eq "ARRAY") {
+%   @$accumulate_contact_lists = @$contact_lists;
+% } else {
+<& .DisplayAvailableContacts, contact_lists => $contact_lists,
+   only_show_available_contacts => $only_show_available_contacts, obj => $obj &>
+% }
+</%def>
+
+%# When you read calling code the `.' indicates it is a mason
+%# subroutine (as opposed to a module from a file).
+<%def .DeviceHandler>
+  <%doc>
+  </%doc>
+  <%args>
+    $obj => 0
+    # If a list ref is passed for this parameter then, instead of
+    # passing this devices contact lists to .DisplayAvailableContacts,
+    # this devices contact lists will be pushed onto
+    # @$accumulate_contact_lists.  This is used to prevent the same
+    # contact list from being printed multiple times when showing the
+    # operations page for something like a site which may have
+    # multiple devices.
+    $accumulate_contact_lists => 0
+    $only_show_available_contacts
+  </%args>
+  <%init>
+     my @contact_lists = map { $_->contactlist } $obj->contacts;     
+
+     my $lhs = $obj->view_link . ':' . $obj->productname->name . " " . $obj->productname->type->name;
+  </%init>
+
+<&| '.MakeContainer', lhs => $lhs, 
+    rhs => "<b>Contact List(s):</b> @{[map {$_->name } @contact_lists]}" &>
+% if (scalar $obj->all_circuits != 0) {
+   <&| '.MakeContainer', lhs => 'Device Circuits'  &>        
+     <& .DisplayCircuits, obj => $obj &>
+   </&>
+% }
+%# Display out of bound info if there is any.
+% if ($obj->oobname ne "" or $obj->oobnumber ne "") {
+    <&| '.MakeContainer', lhs => 'OOB Info' &>
+	<& 'attribute_table.mhtml', field_headers => ['oobname', 'oobnumber'],
+	data => [$obj->oobname, $obj->oobnumber] &>
+    </&>
+% }
+%# Display uplinks and downlinks.
+<&| '.MakeContainer', lhs => "Interface Links",  &>
+% foreach my $interface ($obj->interfaces) {
+%# Are there any {up,down}links?
+%   if (scalar ($interface->children, $interface->parents)) {
+%#  allen-304-sw1 has multiple uplinks
+    <& data_table.mhtml, field_headers => ['interface', 'uplinks', 'downlinks'],
+    data => 
+	[[
+	 $interface->view_link,
+	 $m->scomp('data_table.mhtml', 
+		   data => [map {[$_->view_link]} $interface->parents]),
+	 $m->scomp('data_table.mhtml', 
+		   data => [map {[$_->view_link]} $interface->children]),
+	 ]]
+    &>
+%   }
+% }
+</&>
+% if (ref $accumulate_contact_lists eq "ARRAY") {
+%	push @$accumulate_contact_lists, @contact_lists;
+% } else {
+    <& .DisplayAvailableContacts, contact_lists => \@contact_lists,
+       obj => $obj, only_show_available_contacts=> $only_show_available_contacts &>
+% } 
+</&>
+</%def>
+
+<%def .DisplayCircuits>
+  <%args>
+    $obj
+  </%args>
+  <%init>
+    # Added in Operations.pm
+    my @circuits = $obj->all_circuits;
+my (@field_headers, @data);
+# This will fail if there aren't any circuits.
+# Not any more.  Was getting table names from first object in @circuits.
+@field_headers = ('Circuit', 'Connection', 'Entity');
+
+foreach my $circuit (@circuits) {
+    push @data, [$circuit->view_link, $circuit->connectionid->view_link, $circuit->vendor->view_link];
+}
+
+$m->comp('data_table.mhtml', field_headers => \@field_headers, data => \@data);
+  </%init>
+</%def>
+
+
+%# Name should just be display contacts now that availability is an option
+<%def .DisplayAvailableContacts>
+
+  <%args>
+    @contact_lists
+    $obj
+    # If true only available contacts are displayed
+    $only_show_available_contacts=> 1
+  </%args>
+  <%init>
+    # Need to ``uniqueify'' the contact lists since there might be
+    # many repeats (most devices at the same site have the same
+    # contact lists).  The below works because keys are unique.
+    @contact_lists = values %{ { map {$_->name => $_} @contact_lists } };
+    my @contacts = map { $_->contacts } @contact_lists;
+    # Will fail if there aren't any contact_sets
+    # Not any more.  Was getting table names from first object in @contacts.
+    my @field_headers = ("Person",
+			 "Contact List",
+			 "Contact Info",);
+    my @data;
+
+    if ($only_show_available_contacts) {
+	@contacts = Operations::contactable_contacts(@contacts); 
+	foreach my $contact_set (@contacts) {
+	    my $contact = $contact_set->{contact};
+	    push @data, [$contact->person->view_link,
+			 $contact->contactlist->view_link,
+			 $m->scomp('.ContactHandler', contact => $contact,
+				   notification_modes => $contact_set->{availabilities})
+			 ];
+	}
+    } else {
+	foreach my $contact (@contacts) {
+	    push @data, [$contact->person->view_link,
+			 $contact->contactlist->view_link,
+			 $m->scomp('.ContactHandler', contact => $contact)
+			 ];
+	}
+    }
+
+    my $current_set_of_contacts = $only_show_available_contacts? 'Available' : 'All';
+    my $other_set_of_contacts = $only_show_available_contacts? 'All' : 'Available';
+  </%init>
+    <&| '.MakeContainer', lhs => "$current_set_of_contacts @{[ $obj->table ]} Contacts", 
+        rhs => "<a href=\"operations.html?id=@{[ $obj->id ]}&table=@{[ $obj->table ]}&only_show_available_contacts=@{[ ! $only_show_available_contacts]}\">[$other_set_of_contacts @{[ $obj->table ]} Contacts]</a>" &>
+
+      <& 'data_table.mhtml', field_headers => \@field_headers, data => \@data &>
+    </&>
+</%def>
+
+<%def .ContactHandler>
+  <%args>
+    $contact
+    # Optionally specify which notification modes to display.  If none
+    # are specified then all are shown.
+    @notification_modes => ()
+  </%args>
+  <%init>
+
+@notification_modes = qw/notify_voice notify_pager notify_email/
+    if (scalar @notification_modes == 0); 
+my $person = $contact->person;
+    
+# For generically processing voice, pager, and email data.
+my $template = {
+    notify_voice => {
+        title => "Phone",
+	fields => [qw/office cell home/],
+    },
+    notify_pager => {
+        title => "Pager",
+	fields => [qw/pager emailpager/],
+    },
+    notify_email => {
+        title => "Email",
+	fields => [qw/email/],
+    },
+};
+
+my (@field_headers, @data);
+foreach my $mode (@notification_modes) {
+    my $values = $template->{$mode};
+
+    push @field_headers, "<b>" . $values->{title} . "</b>";
+    push @data, $contact->$mode->view_link;
+
+    foreach my $type (@{ $values->{fields} }) {
+	my %pair = $ui->form_field(object => $contact->person, column => $type);
+	if ($pair{value} ne "") {
+	    push @field_headers, $pair{label};
+	    push @data, $pair{value};
+	}
+    }
+
+}
+$m->comp('attribute_table.mhtml', field_headers => \@field_headers, 
+	 data => \@data);
+
+  </%init>
+</%def>
+
+%# Could make a meta make container method as these methods are almost
+%# identical.  Also, there is a containerhead(outside)? class which is
+%# more appropriate for the case where no right side is specified.
+
+<%def .MakeContainerOutside >
+    <%args>
+    $lhs
+    $rhs => "&nbsp;"
+    </%args>
+%
+  <div class="containeroutside">
+    <div class="containerheadleftoutside">  <% $lhs %> </div>
+    <div class="containerheadrightoutside"> <% $rhs %> </div>
+    <div class="containerbodyoutside">
+      <% $m->content %>
+    </div>
+  </div>
+</%def>
+
+<%def .MakeContainer >
+  <%args>
+    $lhs
+    $rhs => "&nbsp;"
+  </%args>
+%
+  <div class="container">
+    <div class="containerheadleft">  <% $lhs %> </div>
+    <div class="containerheadright"> <% $rhs %> </div>
+    <div class="containerbody">
+      <% $m->content %>
+    </div>
+  </div>
+</%def>
+
+<%def info>
+  <%args>
+  $table
+  $id
+  </%args>
+  <%init>
+  sub pp {
+    my $obj = shift;
+    my $columns = shift || 'Essential';
+    eval {
+      my $s = $obj->pp($columns);
+      $m->print("<pre>$s</pre>");
+    };
+  }
+
+  use Data::Dumper;
+my $obj = $table->retrieve($id);
+my %has_a = Netdot->getlinksto($table);
+my %has_many = Netdot->getlinksfrom($table);
+my $indent = " "x4;
+
+$m->print("<h3> ID $id, Table $table </h3>");
+pp($obj, "All");
+
+$m->print("<h3> Has A </h3>");
+foreach my $key (keys %{ $obj->meta_info->{has_a} }) {
+  eval{pp($obj->$key);};
+  $m->print("no $key in the obj<br/>")
+    if ($@);
+
+}
+
+$m->print("<h3> Has Many </h3>");
+foreach my $key (keys %{ $obj->meta_info->{has_many} }) {
+  eval {
+    # Same as $obj->$key :)
+    #my $accessor = $obj->meta_info->{has_many}->{$key}->{accessor};
+    #$m->print($key . ": " . $obj->$accessor . "<br/>");
+    $m->print("Has " . $obj->$key . " $key: <br/>");
+    $m->print("<pre>");
+    foreach my $foreign ($obj->$key) {
+      $m->print("$indent" . $foreign->pp . "\n");
+    }
+    $m->print("</pre>");
+  };
+}
+
+
+</%init>
+  <h3> Meta Info Dump </h3>
+  <pre><% Dumper($obj->meta_info()) %></pre>
+</%def>

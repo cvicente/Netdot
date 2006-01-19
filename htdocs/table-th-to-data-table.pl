@@ -39,7 +39,7 @@ my $match = 1;
     }
 
 if ($match == 1) {
-    print( 'push( @headers, ' );
+#    print( 'push( @headers, ' );
 }
 
 $_ = $$match;
@@ -54,11 +54,11 @@ $_ = $$match;
     }
     s/(\$ui->.*?\(.*)\)/$1, returnAsVar=>1\)/;	# The returnAsVar argument needs to get added to all calls to $ui's methods.
 
-    print "$_";
+    print "$_, ";
 if ($match == 1) {
-    print( ' );' );
+#    print( ' );' );
 }
-print "\n";
+#print "\n";
 }
 
        

@@ -138,6 +138,171 @@ sub make_graph {
     return $g;
 }
 
+$DEBUG = 1;
+
+sub make_rooted_graph {
+    my ($root, $max_level, @tables) = @_;
+    
+    my $visited_more_nodes = 0;
+    my %visited = ();
+    my @q = ($root);
+    my $g = GraphViz->new;
+    my $level = 0;
+    do {
+	# ``Can't "last" outside a loop block'' says the perl interpreter
+	return $g if $max_level != 0 and $level >= $max_level;
+	$visited_more_nodes = 0;
+	# Will become the queue for the next round
+	my @new_q = ();
+	while(my $node = pop @q) {
+	    # Avoid repitition
+	    next if $visited{$node};
+	    # Otherwise we visit something new
+	    #$g->add_node($node, cluster => "$level"); # Don't understand what cluster wants as arg yet.
+	    $visited{$node} = $visited_more_nodes = 1;
+
+	    # Making has_a and has_many edges is very similar
+	    my $code = sub {
+		my ($edge_type, $label_prefix) = @_;
+
+		# Edge type is has_a or has_many
+		my $meta = $node->meta_info->{$edge_type};
+		foreach my $has (keys %$meta) {
+		    my $has_node = $meta->{$has}->foreign_class;
+		    # Don't want arrows back to root
+		    next if $has_node eq $root;
+		    # Continue with the has a node in the next round
+		    push @new_q, $has_node;
+
+		    my $label = $meta->{$has}->accessor;
+		    $g->add_edge($node => $has_node, 
+				 label => "[$label_prefix:$label]");
+		}
+	    };
+
+	    # Add all has_a edges
+	    $code->("has_a", "1");
+
+	    # Add all has_many edges
+	    $code->("has_many", "M");
+ 	}
+
+	# Number of edges from root to the nodes in next round is one
+	# larger than in this round
+	++$level;
+
+	# Update the queue
+	@q = @new_q;
+	print "\@q is @q at the end of level $level\n" if $DEBUG;
+
+	# No need to call this method to print a single node so
+	# max_level of 0 means unbounded.
+    } while ($visited_more_nodes);
+
+    return $g;
+}
+
+
+sub make_rooted_tree {
+    my ($root, $max_level, @tables) = @_;
+    
+    my $visited_more_nodes = 0;
+    my %visited = ();
+    my @q = ($root);
+    my $g = GraphViz->new;
+    my $level = 0;
+    do {
+	# ``Can't "last" outside a loop block'' says the perl interpreter
+	return $g if $max_level != 0 and $level >= $max_level;
+	$visited_more_nodes = 0;
+	# Will become the queue for the next round
+	my @new_q = ();
+	my @visited_this_round = ();
+	my %current_round = map {$_ => 1} @q;
+	while(my $node = pop @q) {
+	    # Avoid repitition
+	    next if $visited{$node};
+	    # Otherwise we visit something new
+	    #$g->add_node($node, cluster => "$level"); # Don't understand what cluster wants as arg yet.
+	    #$visited{$node} = $visited_more_nodes = 1;
+	    $visited_more_nodes = 1;
+	    push @visited_this_round, $node;
+
+	    # Making has_a and has_many edges is very similar
+	    my $code = sub {
+		my ($edge_type, $label_prefix) = @_;
+
+		# Edge type is has_a or has_many
+		my $meta = $node->meta_info->{$edge_type};
+		foreach my $has (keys %$meta) {
+		    my $has_node = $meta->{$has}->foreign_class;
+		    # Don't want loops 
+		    next if $visited{$has_node} 
+		    # or edges between nodes at the same depth.  Leave
+		    # this part out to get same depth edge which
+		    # includes self pointing edges.
+		    or $current_round{$has_node};
+
+		    # Continue with the has a node in the next round
+		    push @new_q, $has_node;
+
+		    my $label = $meta->{$has}->accessor;
+		    $g->add_edge($node => $has_node, 
+				 label => "[$label_prefix:$label]",
+				 _edge_properties($edge_type)
+				 );
+		}
+	    };
+
+	    # Add all has_a edges
+	    $code->("has_a", "1");
+
+	    # Add all has_many edges
+	    $code->("has_many", "M");
+ 	}
+
+	# Number of edges from root to the nodes in next round is one
+	# larger than in this round
+	++$level;
+
+	# Uniquify the new q
+	print "new_q before unique: @new_q\n";
+	
+	my %temp = map {$_ => 0 } @new_q;
+	# Perl didn't like keys map <stuff>
+	@new_q = keys %temp;
+	print "new_q after unique: @new_q\n";
+	# Update the queue
+	@q = @new_q;
+	print "\@q is @q at the end of level $level\n" if $DEBUG;
+
+	foreach (@visited_this_round) {
+	    $visited{$_} = 1;
+	}
+
+	# No need to call this method to print a single node so
+	# max_level of 0 means unbounded.
+    } while ($visited_more_nodes);
+
+    return $g;
+}
+
+sub _edge_properties {
+    my ($edge_type) = shift;
+
+    my %styles =     ( has_a => "bold", has_many => "filled" );
+    my %brightness = ( has_a => "1",    has_many => "0.5" );
+
+    my $hue = rand 1;
+    my $color = "$hue,1,$brightness{$edge_type}";
+
+    return (
+	    style => $styles{$edge_type},
+	    fontcolor => $color,
+	    color => $color,
+	    );
+
+}
 
 # Eats ram like crazy while viewing in `display'
 #print "Building png...\n";
