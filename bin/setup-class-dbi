@@ -25,6 +25,9 @@ select (OUT);  # spit it all out to the output file by default
 while (<IN>){
     if (/<INSERT SET_DB LINE>/){
 	print "Netdot::DBI->set_db('Main', 'dbi:$DB_TYPE:$DB_DATABASE', '$DB_NETDOT_USER', '$DB_NETDOT_PASS');\n";
+    }elsif (/<INSERT CONNECT_CACHED LINE>/){
+	printf ("\t\$dbh = DBI->connect_cached\('dbi:%s:%s', '%s', '%s', \$dboptions\);\n", 
+		$DB_TYPE, $DB_DATABASE, $DB_NETDOT_USER, $DB_NETDOT_PASS);
     }else{
 	print $_;
     }
