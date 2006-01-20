@@ -4,7 +4,7 @@
 # Format looks like:
 #
 #Floor,Room No,Jack ID,Closet,Plate Number,Comments
-#001,100,108A,A,F001A108A,
+#001;100;108A;A;F001A108A;
 #
 # Plate number format means:
 #
@@ -13,7 +13,7 @@
 # A    = Closet
 # 085A = Jack ID (first in faceplate)
 
-use lib "PREFIX/lib";
+use lib "PREFIX/lib"; 
 use Netdot::UI;
 use Data::Dumper;
 use strict;
@@ -23,6 +23,10 @@ use strict;
 #
 my $typename = "Cat5 UTP";
 my $type;
+my $njacks   = 0;
+my $nfloors  = 0;
+my $nrooms   = 0;
+my $nclosets = 0;
 
 my $ui = Netdot::UI->new();
 
@@ -30,15 +34,16 @@ my $usage = "
 Usage: $0 <file>\n";
 
 my $file = $ARGV[0] || die $usage;
-open (FILE, $file) || die "Can't open $file\n";
+open (FILE, $file)  || die "Can't open $file\n";
 
 my %t;
 
 while ( my $line = <FILE> ){
-    next if $line =~ /^#/;
+    next if $line =~ /^(#|--)/;
     next unless $line =~ /\w+/;
     chomp($line);
-    my ($floor, $room, $jack, $closet, $plate, $comments) = split /,/, $line;
+    my ($floor, $room, $jack, $closet, $plate, $comments) = split /;/, $line;
+    next if $closet eq "Z"; # Ignore 'Z' closets for now
     my $site;
     $floor =~ s/^0+//;   # Remove leading zeroes
     unless ( $plate =~ /^F(\d{3}).*/){
@@ -47,19 +52,14 @@ while ( my $line = <FILE> ){
     }
     $site = $1;
     my $sitenum = $site;
-    $sitenum =~ s/^0+//;
-    my $siteobj;
-    unless ( $siteobj = (Site->search( number => $sitenum ))[0] ){
-	print "Site not found: $site, $sitenum\n";
-	exit;
-    }
+    $sitenum =~ s/^0+//; # Remove leading zeroes
     # Store everything in a hash
-    $t{$sitenum}{$floor}{$room}{$jack}{closet} = $closet;
-    $t{$sitenum}{$floor}{$room}{$jack}{plate} = $plate;
+    $t{$sitenum}{$floor}{$room}{$jack}{closet}   = $closet;
+    $t{$sitenum}{$floor}{$room}{$jack}{plate}    = $plate;
     $t{$sitenum}{$floor}{$room}{$jack}{comments} = $comments;
 }
 
-#print Dumper(%t);
+#print Dumper(%t); exit;
 
 unless ( $type = (CableType->search(name=>"$typename"))[0] ){
     print "Error determining type $typename\n";
@@ -67,7 +67,11 @@ unless ( $type = (CableType->search(name=>"$typename"))[0] ){
 }
 
 foreach my $sitenum ( keys %t ){
-    my $siteobj = (Site->search( number => $sitenum ))[0];
+    my $siteobj;
+    unless ( $siteobj = (Site->search( number => $sitenum ))[0] ){
+	print "Site not found: $sitenum\n";
+	exit;
+    }
     my $siteid = $siteobj->id;
     foreach my $floor ( keys %{ $t{$sitenum} } ){
 	my $floorid;
@@ -78,6 +82,7 @@ foreach my $sitenum ( keys %t ){
 		exit;
 	    }else{
 		print "Inserting Floor: $floor in site $sitenum \n";
+		$nfloors++;
 	    }
 	}
 	foreach my $room ( keys %{ $t{$sitenum}{$floor} } ){
@@ -89,7 +94,8 @@ foreach my $sitenum ( keys %t ){
 		    exit;
 		}else{
 		    print "Inserting Room: $room in floor $floor in site $sitenum\n";
-		}
+		    $nrooms++;
+;		}
 	    }
 	    foreach my $jack ( keys %{ $t{$sitenum}{$floor}{$room} } ){
 		# First make sure closet exists
@@ -97,11 +103,15 @@ foreach my $sitenum ( keys %t ){
 		my $closet = $t{$sitenum}{$floor}{$room}{$jack}{closet};
 		my %closettmp = (name=>$closet, site=>$siteid);
 		unless ( $closetid = (Closet->search(\%closettmp))[0] ){
+		    # I'll assume the closet is in the same floor as the jack
+		    # This can be corrected later
+		    $closettmp{floor} = $floorid;
 		    unless ( $closetid = $ui->insert(table=>"Closet", state => \%closettmp) ){
 			print "Error: ", $ui->error, "\n";
 			exit;
 		    }else{
 			print "Inserting Closet: $closet in floor $floor in site $sitenum\n";
+			$nclosets++;
 		    }
 		}
 		my $jackobj;
@@ -125,9 +135,11 @@ foreach my $sitenum ( keys %t ){
 			exit;
 		    }else{
 			print "Inserting Jack: $jackid\n";
+			$njacks++;
 		    }
 		}
 	    }
 	}
     }
 }
+    printf ("\nA total of %d floors, %d rooms, %d closets, %d jacks inserted\n", $nfloors, $nrooms, $nclosets, $njacks);
