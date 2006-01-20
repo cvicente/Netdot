@@ -241,7 +241,7 @@ my $dispatch = sub {
     <div><b><% $obj->table %>:</b><% $obj->view_link %></div>
     <div><b>Contact List:</b> <% map {$_->name} @$contact_lists %></div>
 
-<&| .MakeContainer, lhs => "Devices responsible for" &>
+<&| .MakeContainer, lhs => "Devices @{[ $obj->label ]} is responsible for:" &>
 % foreach my $device ($obj->devices) {
     <& .DeviceHandler, obj => $device,
        only_show_available_contacts => $only_show_available_contacts, 
@@ -557,6 +557,8 @@ $m->comp('attribute_table.mhtml', field_headers => \@field_headers,
     </div>
   </div>
 </%def>
+
+%# Debugging
 
 <%def info>
   <%args>
