@@ -18,7 +18,7 @@ sub SKEL_EXT       { "cfg.skel" };
 sub FILES          { "hosts" };
 sub FIRST_NOTIF    { 4 };
 sub LAST_NOTIF     { 6 };
-sub NOTIF_INTERVAL { 60 };
+sub NOTIF_INTERVAL { 0 };
 
 &set_defaults();
 
