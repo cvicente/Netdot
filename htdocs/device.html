@@ -455,15 +455,17 @@ $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@fie
 
 {
 my @fields;
+my @linkpages = ("view.html","view.html","view.html");
 
 push( @fields, 'owner' );
 push( @fields, 'used_by' );
 if ( (int($o->person) != 0) || $editloc ){
     push( @fields, 'person' );
+    push( @linkpages, 'view.html' );
 }
 push( @fields, 'site' );
 
-$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data, linkpages=>\@linkpages);
 }
 
 
