@@ -334,7 +334,7 @@ sub getlabelvalue {
 
     return "" if (!defined($obj) || int($obj) == 0);
 
-    $delim = "," if (!$delim);
+    $delim = ", " if (!$delim);
     my @val = ();
     foreach my $lblString (@{$lbls}){
         my $o = $obj;
