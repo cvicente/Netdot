@@ -74,7 +74,9 @@ if ( $type eq "address" ){
       my $percent2 = ($used2*100/$total);
 
       push( @row, $ui->percent_bar2( title1=>"Address Usage: ", title2=>"Subnet Usage: ", percent1=>$percent1, percent2=>$percent2 ) );
-	}
+	} else {
+        push( @row, "" );
+    }
     if (int($o->owner) != 0) {
     	push( @row, $o->owner->name );
     } else {
