@@ -363,36 +363,30 @@ function setNull(select){
 % }
         </div>
         <div class="containerbody">
-         <table width="100%">
-          <tr>
-           <td valign="top" width="50%">
 <%perl>
 my (@field_headers, @cell_data);
 
-# The two ways I can find to be lazy and not have to retype a temp var
-# name 83 times.  Not sure which is more (or less) efficient.
+# This field is a special case because we want to be able to simply edit the RR name in this
+# same screen , without having to go to the RR record and then edit.
 push( @field_headers, "Name: " );
 push( @cell_data, 
-# Use eval with block.  (had trouble with eval on string (qq{})
-# complaining about not knowing what `o' was.
-   eval{	
-       if ($name){
-	   if ($editgen){	 
-	       '<input type="text" name="RR__'.$o->name->id.'__name" value="' . $name . '">';
-	   }else{
-	       '<b><a href="view.html?table=RR&id='.$o->name->id.'">'.$name."</a></b>";
-       }
-       }else{ 
-	   "Name N/A!";
-       }
-   }
+      &{sub{	
+	  if ($name){
+	      if ($editgen){	 
+		  '<input type="text" name="RR__'.$o->name->id.'__name" value="' . $name . '">';
+	      }else{
+		  '<b><a href="view.html?table=RR&id='.$o->name->id.'">'.$name."</a></b>";
+	      }
+	  }else{ 
+	      "Name N/A!";
+	  }
+      }}
 );
 
+# The type field is also special because it does not belong to the Device table, but to the
+# Product table
 push( @field_headers, "Type: ");
 push( @cell_data, 
-# Use anonymous subroutine with immediate call.  If perl is smart this
-# will not waste mem as there are no references to the sub after this
-# call.
       &{sub{	
 	  if (($o->productname) && ($o->productname->type)){	 
 	      '<a href="view.html?table=Product&id='.$o->productname->id.'">'.$o->productname->type->name."</a>";
@@ -400,37 +394,21 @@ push( @cell_data,
       }}
 );
 
-{
-my @fields = ('serialnumber','physaddr','dateinstalled','lastupdated');
+my @fields = ('serialnumber','physaddr','dateinstalled','lastupdated', 'productname','inventorynumber','sysdescription');
 $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-}
 
 </%perl>
 
-    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-           </td>
-           <td valign="top" width="50%">
+<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, 
+                          width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
 <%perl>
-(@field_headers, @cell_data) = ();
-
-{
-my @fields = ('productname','inventorynumber','sysdescription');
-$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-}
-
+my %tmp;
+%tmp = $ui->form_field(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>'cols="60"');
+print '<div class="containerseparator">'.$tmp{label}.'</div>';
+print $tmp{value};         
 </%perl>
 
-    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-           </td>
-          </tr>
-	</table>
-       <%perl> {
-         my %tmp;
-         %tmp = $ui->form_field(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>'cols="60"');
-         print '<div class="containerseparator">'.$tmp{label}.'</div>';
-         print $tmp{value};         
-       } </%perl>
     </div>
    </div> <!-- containerbody -->
 </div> <!-- container -->
