@@ -1,8 +1,10 @@
 <%doc>
 
-Displays a table for showing attributes of a single record
+Displays a table for showing attribute/value pairs
 
-example data:
+example output:
+
+ headers        data
 --------------------------------
 | Address     | 128.223.0.0    |
 | Status      | Container      |
@@ -13,37 +15,29 @@ example data:
 Arguments:  
     field_headers  -  array of captions to show in the left column
     data           -  array to show in the right column
-
+    width          -  number of (HTML table) columns to display default is 1
+    headercolwidth -  cell width for the header columns
+    datacolwidth   -  cell width for the data columns
 </%doc>
 
 <%args>
-@field_headers => undef;
-@data          => undef;
-$headercolwidth => "";
-$datacolwidth => "";
+@field_headers  => undef;
+@data           => undef;
+$width          => 1
+$headercolwidth => "20%";
+$datacolwidth   => "";
 </%args>
 
 <%init>
-my @tbls;
-my $max;
 my $j = 0;
-my $headerwidthstr = "";
-my $datawidthstr = "";
-</%init>
+my $max = scalar(@field_headers);
 	
-<%perl>
-map { push @tbls, $_ } sort { $a cmp $b } $ui->gettables;
-$max = scalar( @tbls );
+my $headerwidthstr = "width=\"".$headercolwidth."\"" if ($headercolwidth ne "") ;
+my $datawidthstr   = "width=\"".$datacolwidth."\""   if ($datacolwidth   ne "");
 
-if ($headercolwidth ne "") {
-    $headerwidthstr = "width=\"".$headercolwidth."\"";
-}
-if ($datacolwidth ne "") {
-    $datawidthstr = "width=\"".$datacolwidth."\"";
-}
+</%init>
 
-</%perl>
-
+<!--
 <table border="0" width="100%">
 % for( my($i) = 0; $i < @field_headers; $i++ ) {
   <tr>
@@ -51,4 +45,26 @@ if ($datacolwidth ne "") {
     <td <% $datawidthstr %> class="formtablec2"><% $data[$i] %></td>
   </tr>
 % }
+</table>
+-->
+
+<table border="0" width="100%">
+   <tr>
+%  for (my($i)=0; $i < $max; $i++ ) {
+%     if( $i % $width == 0 && $i != 0 ) { 
+         </tr>
+         <tr>
+%     }
+      <td <% $headerwidthstr %> class="formtablec1"><% $field_headers[$i] %></td>
+      <td <% $datawidthstr %> class="formtablec2"><% $data[$i] %></td>
+%     if( ( ( $i ) % $width ) < ( $max % $width ) ) {
+%         $j += int( $max / $width ) + 1;
+%     } else {
+%         $j += int(  $max / $width );
+%     }
+%     if( $j >= $max ) {
+%         $j -= ( $max - 1 );
+%     } 
+%  }
+   </tr>
 </table>
