@@ -8,12 +8,18 @@ Common header for all pages
 $title
 $section
 $user
+$showheader
 </%args>
 %
 <%init>
 my $DEBUG      = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my $servername = $ui->{config}->{NETDOTNAME} . "." . $ui->{config}->{DEFAULT_DNSDOMAIN};
+
+my $hideheader;
+if( !$showheader ) {
+    $hideheader = 'style="display:none"';
+}
 </%init>
 %
 %
@@ -67,7 +73,7 @@ my $servername = $ui->{config}->{NETDOTNAME} . "." . $ui->{config}->{DEFAULT_DNS
 </script>
 
 <body>
-<div id="header">
+<div id="header" <% $hideheader %>>
     <img class="headleft" SRC="<% $r->dir_config('NetdotPath') %>img/title.png" 
         alt="Netdot: Network Documentation Tool" />
     <span class="headright">
