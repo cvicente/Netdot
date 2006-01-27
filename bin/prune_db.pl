@@ -4,7 +4,7 @@
 # prune_db.pl
 #
 
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Netdot::UI;
 use Data::Dumper;
 use Getopt::Long qw(:config no_ignore_case bundling);

@@ -12,7 +12,7 @@ Netdot::IPManager - IP Address Space Functions for Netdot
 
 =cut
 
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 
 use base qw( Netdot );
 use NetAddr::IP;

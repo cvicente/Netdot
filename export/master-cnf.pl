@@ -6,11 +6,11 @@
 #
 # 
 use NetdotExport;
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Netdot::DBI;
 use strict;
 
-my $DIR = "PREFIX/export";
+my $DIR = "<<Make:PREFIX>>/export";
 my $FILE = "$DIR/master.cnf";
 
 my $DEBUG = 0;

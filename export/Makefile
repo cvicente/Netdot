@@ -1,3 +1,5 @@
+include $(ROOT)/etc/utility-Makefile
+
 #
 # makefile for export/
 #
@@ -5,13 +7,5 @@
 FILES := $(shell ls *.{pm,pl,skel,inst} )
 
 install:
-	@echo
-	@echo "Preparing and installing $(DIR) files..."
-	for file in $(FILES); do \
-	    sed -e "s|PREFIX\/|$(PREFIX)\/|" \
-	        $$file > $$file.tmp ; \
-	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
-	    rm -f $$file.tmp ; \
-	done
+	$(substitute)
 	mv $(PREFIX)/$(DIR)/Makefile.inst $(PREFIX)/$(DIR)/Makefile
-	@echo "Done."

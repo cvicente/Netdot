@@ -12,7 +12,7 @@ Netdot::DNSManager - DNS-related Functions for Netdot
 
 =cut
 
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 
 use base qw( Netdot );
 use Socket;

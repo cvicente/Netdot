@@ -140,40 +140,13 @@ LIST_MANAGER.addList(floorSearchList);
         <tr>
 	  <td>
 	    <%perl>
-	    (@field_headers, @cell_data) = ();
-        {
-           my @fields = ('name','number');
-           $ui->add_to_fields(o=>$o, edit=>$editCloset, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-        }
-
-	    push( @field_headers, "Floor: " );
-	    </%perl>
-	    <&| "HERE.mhtml" &>  
-%       if ($editCloset) {
-%           $ui->select_lookup(object=>$o, table=>"Closet", column=>"floor", lookup=>"Floor", 
-%           edit=>$editCloset, where=>{site=>($o ? $o->site : "")});
-            &nbsp;
-            <select name="floor_srch" onChange="floorSearchList.doIt();" style="width: 150px;">
-                <option value="">Lookup by Site</option>
-                <%perl>
-                my @sites = Site->retrieve_all();
-                @sites = sort { $a->name cmp $b->name } @sites;
-                foreach my $s (@sites)
-                {
-                    printf("<option value=\"%s\">%s</option>\n", $s->id, $s->name);
-                }
-                </%perl>
-            </select>
-%       } else {
-	        <a href="floor.html?id=<% $o->floor %>"><% $o->floor->level %></a>
-%       }
-	    </&>
-	    <%perl>		    
-	    push( @cell_data, $_ );
-
-          {my @fields = ('dimensions','racks','outlets','shared_with','hvac_type','ground_buss','asbestos_tiles');
-             $ui->add_to_fields(o=>$o, edit=>$editCloset, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data); }
-          </%perl>
+	      (@field_headers, @cell_data) = ();
+              {my @fields = ('name','number', 'floor','dimensions','racks','outlets','shared_with','hvac_type','ground_buss','asbestos_tiles');
+	       my @linkpages = ('', '', 'view.html', '', '', '', '', '', '', '');
+	       $ui->add_to_fields(o=>$o, edit=>$editCloset, fields=>\@fields, 
+				  field_headers=>\@field_headers, cell_data=>\@cell_data, 
+				  linkpages=>\@linkpages,); }
+            </%perl>
           <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 	    
             </td>

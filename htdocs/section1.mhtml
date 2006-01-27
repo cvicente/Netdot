@@ -8,15 +8,21 @@ Common header for all pages
 $title
 $section
 $user
+$showheader
 </%args>
 %
 %
 <%init>
 my %caller_args = $m->caller_args(-1);
 my $page = "";
+
+my $hideheader;
+if( !$showheader ) {
+    $hideheader = 'style="display:none"';
+}
 </%init>
 %
-<div id="navbar">
+<div id="navbar" <% $hideheader %>>
     <ul id="navigation">
         <li>
 %

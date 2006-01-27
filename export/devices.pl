@@ -6,13 +6,13 @@
 # 
 #
 use strict;
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Netdot::UI;
 use Data::Dumper;
 
 my $ui = Netdot::UI->new();
 
-my $DIR    = "PREFIX/export";
+my $DIR    = "<<Make:PREFIX>>/export";
 my $DEBUG  = 0;
 my $SUFFIX = '-devices.txt';
 

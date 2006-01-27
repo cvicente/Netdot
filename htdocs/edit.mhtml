@@ -33,11 +33,7 @@ foreach my $j ( keys %ARGS ) {
 print "<pre>", Dumper(%args), "</pre>" if $DEBUG;
 
 my $page;
-if ( $showheader ) {
-    $page = "edit.html";
-}else{
-    $page = "edit-nh.html";
-}
+$page = "edit.html";
 
 my $select_id = $args{select_id};
 my $selected  = $args{selected};
@@ -63,49 +59,10 @@ want to go to the page to view it
 %    }else{
 %      my $obj = $args{create}->retrieve($ID);
 %      my $lbl = $ui->getobjlabel($obj, ", ");
-       <head>
-         <link rel="stylesheet" href="style.css" type="text/css">
-
-<script language="javascript" type="text/javascript">
-<!--
-// this code inserts an element into the select box in the
-// calling page form, and selects the new element if needed
-//
-function insertOption(id, text, value, sel) {
-  var select_box = opener.document.getElementById(id);
-  var elOptNew = document.createElement('option');
-  elOptNew.text = text;
-  elOptNew.value = value;
-  try {
-    select_box.add(elOptNew, null); // standards compliant; does not work in IE
-  }
-  catch(ex) {
-    select_box.add(elOptNew); // IE only
-  }
-  if (sel == 1){
-      select_box.selectedIndex = select_box.length-1;
-  }
-}
-
-//-->
-</script>
-
-       </head>      
-         <body onLoad="insertOption('<% $select_id %>', '<% $lbl %>', '<% $ID %>', '<% $selected %>'); window.close();">
-           <a href="#" onClick="window.close()">[done]</a>
-         </body>      
 %    }
 % ####################################################################
 % } else {
-%    if ( !$showheader ){
-    <head>
-      <link rel="stylesheet" href="style.css" type="text/css">
-      <title>Netdot </title>
-    </head>      
-      <body>
-%    }
-    <!-- begin edit -->
-% ####################################################################
+
 <%doc>
 
 The user has clicked on submit.  Present a page for user to confirm
@@ -113,9 +70,7 @@ the submission.
 
 </%doc>
 
-% if ( $showheader ){
     <div id="sectiondetail">
-% }
 
 %   if( $args{"submit"} eq "Submit" ) {
     <table width="100%" cellpadding="0" cellspacing="0" border="0" class="formtablebg">
@@ -165,7 +120,6 @@ the submission.
       <form name="netdotform" action="<% $page %>" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
       <input type="hidden" name="create" value="<% $TBL %>">
-      <input type="hidden" name="showheader" value="<% $showheader %>">
       <input type="hidden" name="select_id" value="<% $select_id %>">
       <input type="hidden" name="selected" value="<% $selected %>">
 %     if( $ID ) {
@@ -204,7 +158,6 @@ Present a form for user to modify various values.
     <div class="containerbody">
       <form name="netdotform" action="<% $page %>" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
-      <input type="hidden" name="showheader" value="<% $showheader %>">
       <input type="hidden" name="select_id" value="<% $select_id %>">
       <input type="hidden" name="selected" value="<% $selected %>">
 %     if( $ID ) {
@@ -213,6 +166,9 @@ Present a form for user to modify various values.
 %       if( $ID ) {
       <input type="hidden" name="id" value="<% $ID %>">
 %       }
+<pre>
+% print Dumper(%state);
+</pre>
       <& form.mhtml, title => $title, table => $TBL, session => \%state &>
 %     }
       <br>

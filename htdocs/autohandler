@@ -4,8 +4,9 @@ Works as a wrapper for the different sections
 
 </%doc>
 <%attr>
-title   => "Network Documentation Tool"
-section => "Main"
+title      => "Network Documentation Tool"
+section    => "Main"
+showheader => 1
 </%attr>
 %
 <%init>
@@ -14,8 +15,12 @@ my $section = $m->base_comp->attr('section') || "Main";
 my $user    = Apache2::SiteControl->getCurrentUser($r);
 </%init>
 %
-<& header.mhtml, title => $title, section => $section, user => $user &>
-<& section1.mhtml, title => $title, section => $section, user => $user &>
+<%args>
+$showheader => $m->base_comp->attr('showheader')
+</%args>
+%
+<& header.mhtml, title => $title, section => $section, user => $user, showheader=>$showheader &>
+<& section1.mhtml, title => $title, section => $section, user => $user, showheader=>$showheader &>
 <div id="content">
 % $m->call_next(user => $user);
 </div> <!-- close content -->

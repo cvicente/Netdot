@@ -12,8 +12,7 @@ Arguments:
 </%doc>
 
 <%args>
-
-$table        => undef
+$table
 $id           => undef
 %session      => undef
 $allow_create => 1
@@ -43,31 +42,26 @@ my %tags    = $ui->getcolumntags( $table );
 
 <%perl>
 
-####################################################################
-if( defined( $table ) ) {
-   my (@headers, @data) = ();
-   print '<input type="hidden" name="table" value="'.$table.'">';
-   if( $id ) {
-       print '<input type="hidden" name="id" value="'.$id.'">';
-   }
-   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-       next if( $c eq 'id' );
-       ################################################
-         my %field;
-         if( defined( $id ) ) {
-            %field = $ui->form_field(object=>$obj, column=>$c, edit=>1, shortFieldName=>1);
-         } elsif( exists( $session{$c} ) ) {
-            %field = $ui->form_field(table=>$table, column=>$c, default=>$session{$c}, edit=>1, shortFieldName=>1);
-         } else {
-            %field = $ui->form_field(table=>$table, column=>$c, edit=>1, shortFieldName=>1);
-         }
-         push(@headers, $field{'label'});
-         push(@data, $field{'value'});
-       ################################################
-   } # foreach
-
-   </%perl><& attribute_table.mhtml, field_headers=>\@headers, data=>\@data &><%perl>
-
-} # if defined table
+my (@headers, @data) = ();
+print "<input type=\"hidden\" name=\"table\" value=\"$table\">";
+if( $id ) {
+    print "<input type=\"hidden\" name=\"id\" value=\"$id\">";
+}
+foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+    next if( $c eq 'id' );
+    my %field;
+    if( defined( $id ) ) {
+	%field = $ui->form_field(object=>$obj, column=>$c, edit=>1, shortFieldName=>1);
+    } elsif( exists( $session{$c} ) ) {
+	%field = $ui->form_field(table=>$table, column=>$c, default=>$session{$c}, edit=>1, shortFieldName=>1);
+    } else {
+	%field = $ui->form_field(table=>$table, column=>$c, edit=>1, shortFieldName=>1);
+    }
+    push(@headers, $field{'label'});
+    push(@data, $field{'value'});
+} # foreach
 
 </%perl>
+    <& attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
+                              width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
+

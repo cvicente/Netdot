@@ -13,7 +13,7 @@
 # A    = Closet
 # 085A = Jack ID (first in faceplate)
 
-use lib "PREFIX/lib"; 
+use lib "<<Make:LIB>>";
 use Netdot::UI;
 use Data::Dumper;
 use strict;
