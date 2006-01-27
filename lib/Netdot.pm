@@ -1,6 +1,6 @@
 package Netdot;
 
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Debug;
 use base qw (Netdot::DBI );
 
@@ -1017,8 +1017,8 @@ close(SENDMAIL);
 ######################################################################
 sub _read_defaults {
     my $self = shift;
-    my @files = qw( PREFIX/etc/Default.conf);
-    push @files, "PREFIX/etc/Site.conf", if ( -e "PREFIX/etc/Site.conf" );
+    my @files = qw( <<Make:PREFIX>>/etc/Default.conf);
+    push @files, "<<Make:PREFIX>>/etc/Site.conf", if ( -e "<<Make:PREFIX>>/etc/Site.conf" );
     foreach my $file (@files){
 	my $config_href = do $file or die $@ || $!;
 	foreach my $key ( %$config_href ) {

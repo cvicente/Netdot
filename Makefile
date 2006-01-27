@@ -1,3 +1,8 @@
+# THIS IS USED BY utility-Makefile.
+# Specify where the toplevel make file was called so that that
+# recursively called makefiles have a point of reference for relative
+# paths.  Is there a built in way to do this?
+export ROOT := $(shell pwd)
 
 # Netdot Makefile
 #

@@ -21,10 +21,10 @@ Netdot::DeviceManager - Device-related Functions for Netdot
 
 =cut
 
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Data::Dumper;
 
-use lib "NVPREFIX/lib";
+use lib "<<Make:NVLIB>>";
 use NetViewer::RRD::SNMP::NV;
 
 use base qw( Netdot::IPManager Netdot::DNSManager );
@@ -59,7 +59,7 @@ sub new {
     $self->{'_snmpretries'}   = $argv{'retries'}       || $self->{config}->{'DEFAULT_SNMPRETRIES'};
     $self->{'_snmptimeout'}   = $argv{'timeout'}       || $self->{config}->{'DEFAULT_SNMPTIMEOUT'};
 
-    $self->{nv} = NetViewer::RRD::SNMP::NV->new(aliases     => "PREFIX/etc/categories",
+    $self->{nv} = NetViewer::RRD::SNMP::NV->new(aliases     => "<<Make:PREFIX>>/etc/categories",
 						snmpversion => $self->{'_snmpversion'},
 						community   => $self->{'_snmpcommunity'},
 						retries     => $self->{'_snmpretries'},

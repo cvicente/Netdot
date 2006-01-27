@@ -5,7 +5,7 @@
 #
 
 use NetdotExport;
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Netdot::DBI;
 use strict;
 
@@ -23,7 +23,7 @@ my $root = "cc-ns-bb";
 
 ########## Input and output files ################
 
-my $DIR = "PREFIX/export";
+my $DIR = "<<Make:PREFIX>>/export";
 my $OUT = "$DIR/sysmon.conf";
 
 ########## End Config Section #####################

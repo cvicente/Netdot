@@ -1,6 +1,6 @@
-#PERL
+#!<<Make:PERL>>
 
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
 use Netdot::DeviceManager;

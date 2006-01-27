@@ -1,0 +1,46 @@
+# Include this make file in other make files.  It includes common
+# functionality that is used in multiple netdot related make files.
+
+# We will include this as
+
+#     include $(ROOT)/etc/utility-Makefile
+
+# where ROOT is defined as the cwd where the top level make file is
+# called.
+
+
+###### SUBSTITUTIONS ######
+
+# Specify the variables you would like replaced here.  The definitions
+# can be specified in a make file or on the command line.
+REPLACEABLES := PREFIX LIB NVPREFIX NVLIB PERL 
+
+# Defaults
+LIB = $(PREFIX)/lib
+NVLIB = $(NVPREFIX)/lib
+
+# Build up a list of sed expressions for the replacements.  Notice
+# that undefined replacements will get flagged when replaced.
+REPLACEMENT_EXPRESSIONS = $(foreach r, $(REPLACEABLES), \
+-e "s|<<Make:$(r)>>|$(if $($(r)),$($(r)),$(r)_WAS_NOT_DEFINED_DURING_MAKE)|g")
+
+# This macro does variable substitution using sed.  It looks for
+# occurances of ``<<Make:NAME>>'' and replaces them with $(NAME),
+# where NAME represents on the names specified above in REPLACEABLES.
+
+# It behaves just like the 6 old functions which occured in various
+# makefiles, that is, it installs all files in $(FILES) in
+# $(PREFIX)/$(DIR) using the permissions $(FMOD).
+
+# You call it just as you expand any other macro, i.e. $(substitute)
+define substitute
+@echo
+@echo "Preparing and installing $(DIR) files..."
+for file in $(FILES); do\
+  sed -r $(REPLACEMENT_EXPRESSIONS) $$file\
+    > $$file.tmp;\
+  install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file;\
+  rm -rf $$file.tmp;\
+done
+@echo "Done."
+endef

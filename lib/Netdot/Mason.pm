@@ -8,7 +8,7 @@ use HTML::Mason::ApacheHandler;
     package HTML::Mason::Commands;
     use NetAddr::IP;
     use Data::Dumper;
-    use lib "PREFIX/lib";
+    use lib "<<Make:LIB>>";
     use Netdot::DBI;
     use Netdot::UI;
     use Netdot::IPManager;
@@ -26,8 +26,8 @@ use HTML::Mason::ApacheHandler;
 my $ah =
     HTML::Mason::ApacheHandler->new (
 				     args_method => "mod_perl",
-				     comp_root   => "PREFIX/htdocs",
-				     data_dir    => "PREFIX/htdocs/masondata",
+				     comp_root   => "<<Make:PREFIX>>/htdocs",
+				     data_dir    => "<<Make:PREFIX>>/htdocs/masondata",
 				     error_mode  => 'output',
 				     );
 sub handler

@@ -2,7 +2,7 @@
 #
 # Imports closet info from csv file
 
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Netdot::UI;
 use Data::Dumper;
 use strict;

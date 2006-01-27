@@ -5,7 +5,7 @@
 #
 
 use NetdotExport;
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Netdot::DBI;
 use strict;
 use Data::Dumper;

@@ -1,3 +1,5 @@
+include $(ROOT)/etc/utility-Makefile
+
 #
 # NetDoT Makefile
 #
@@ -74,7 +76,8 @@ DB_NETDOT_PASS =  netdot_pass
 ################################################################
 # End of tweakable section
 ################################################################
-install: files
+install:
+	$(substitute)
 
 installdb: initialize.$(DB_TYPE) installdefault installmeta
 
@@ -137,17 +140,4 @@ setup.class.dbi:
 	@echo 
 	@echo "Class::DBI set up successfully"
 	@echo
-
-files:
-	@echo
-	@echo "Preparing and installing $(DIR) files..."
-	for file in $(FILES); do \
-	    sed	-e 's|^#PERL|#!$(PERL)|' \
-		-e "s|PREFIX|$(PREFIX)|" \
-		$$file > $$file.tmp ; \
-	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
-	    rm -rf $$file.tmp ; \
-	done
-
-
 

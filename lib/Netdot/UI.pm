@@ -18,7 +18,7 @@ Netdot::UI groups common methods and variables related to Netdot's user interfac
 
 =cut
 
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Apache::Session::File;
 use Apache::Session::Lock::File;
 

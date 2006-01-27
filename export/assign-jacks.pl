@@ -10,7 +10,7 @@
 # 
 # cv
 #
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Netdot::UI;
 use strict;
 

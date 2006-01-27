@@ -1,3 +1,5 @@
+include $(ROOT)/etc/utility-Makefile
+
 #
 # makefile for htdocs
 
@@ -6,16 +8,7 @@ FILES := $(shell ls autohandler dhandler *.{{m,}html,css,js})
 IMG = title.png
 
 all:  images
-	@echo
-	@echo "Preparing and installing $(DIR) files..."
-	for file in $(FILES); do \
-	    sed -e "s|^use lib .*\$$|use lib \"$(PREFIX)/lib\"; |" \
-		-e "s|^my.*\$$PREFIX.*;.*|my \$$PREFIX = \"$(PREFIX)\"; |" \
-	        $$file > $$file.tmp ; \
-	    install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file ; \
-	    rm -f $$file.tmp ; \
-	done
-	@echo "Done."
+	$(substitute)
 
 images:
 	@echo
@@ -25,8 +18,3 @@ images:
 	    install -m $(FMOD) $$img $(PREFIX)/$(DIR)/img/$$img ; \
 	done
 	@echo "Done."
-
-#.PHONY: files
-#files:
-#	echo $(FILES)
-

@@ -16,7 +16,7 @@ Netdot::UI groups common methods and variables related to Netdot's Cable Plant l
 
 =cut
 
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 
 use base qw( Netdot );
 use strict;

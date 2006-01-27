@@ -4,11 +4,11 @@
 #
 #
 use strict;
-use lib "PREFIX/lib";
+use lib "<<Make:LIB>>";
 use Netdot::DBI;
 use Data::Dumper;
 
-my $DIR = "PREFIX/export";
+my $DIR = "<<Make:PREFIX>>/export";
 my $DEBUG = 0;
 
 my @files = ( "$DIR/circuits.txt" );
