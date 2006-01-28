@@ -13,10 +13,11 @@ $WIDTH      => 2
 $session    => undef
 %args       => undef
 %state      => undef
-$showheader => 1
+$showheader
 </%args>
 
 <%init>
+use URI::Escape;
 my $DEBUG = 0;
 
 foreach my $j ( keys %ARGS ) {
@@ -33,7 +34,11 @@ foreach my $j ( keys %ARGS ) {
 print "<pre>", Dumper(%args), "</pre>" if $DEBUG;
 
 my $page;
-$page = "edit.html";
+if( $showheader ) {
+    $page = "edit.html";
+} else {
+    $page = "insertentry.html";
+}
 
 my $select_id = $args{select_id};
 my $selected  = $args{selected};
@@ -59,6 +64,37 @@ want to go to the page to view it
 %    }else{
 %      my $obj = $args{create}->retrieve($ID);
 %      my $lbl = $ui->getobjlabel($obj, ", ");
+
+
+       <script language="javascript" type="text/javascript">  
+ 	  	<!--  
+	  	// this code inserts an element into the select box in the  
+ 	  	// calling page form, and selects the new element if needed  
+ 	  	//  
+ 	  	function insertOption(id, text, value, sel) {  
+ 	  	  var select_box = opener.document.getElementById(id);  
+ 	  	  var elOptNew = document.createElement('option');  
+ 	  	  elOptNew.text = text;  
+ 	  	  elOptNew.value = value;  
+ 	  	  try {  
+ 	  	    select_box.add(elOptNew, null); // standards compliant; does not work in IE  
+ 	  	  }  
+ 	  	  catch(ex) {  
+ 	  	    select_box.add(elOptNew); // IE only  
+ 	  	  }  
+ 	  	  if (sel == 1){  
+ 	  	      select_box.selectedIndex = select_box.length-1;  
+ 	  	  }  
+ 	  	}  
+ 	  	 
+        function addandclose() {
+            insertOption('<% $select_id %>', '<% $lbl %>', '<% $ID %>', '<% $selected %>'); 
+            window.close();
+        }
+
+ 	  	//-->  
+       </script>  
+
 %    }
 % ####################################################################
 % } else {
@@ -112,6 +148,7 @@ the submission.
             <% $session->{tables}{$TBL}{$C} %>
 %         }
 %       }
+        </li>
 %     }
       </td></tr>
       <tr class="rowtitle0" >
@@ -120,8 +157,11 @@ the submission.
       <form name="netdotform" action="<% $page %>" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
       <input type="hidden" name="create" value="<% $TBL %>">
+      <input type="hidden" name="showheader" value="<% $showheader %>"> 
       <input type="hidden" name="select_id" value="<% $select_id %>">
       <input type="hidden" name="selected" value="<% $selected %>">
+%     my $onload_action = uri_escape("addandclose()");
+      <input type="hidden" name="onload" value="<% $onload_action %>">
 %     if( $ID ) {
       <input type="hidden" name="id" value="<% $ID %>">
 %     }
@@ -158,6 +198,7 @@ Present a form for user to modify various values.
     <div class="containerbody">
       <form name="netdotform" action="<% $page %>" method="POST">
       <input type="hidden" name="sid" value="<% $sid %>">
+      <input type="hidden" name="showheader" value="<% $showheader %>"> 
       <input type="hidden" name="select_id" value="<% $select_id %>">
       <input type="hidden" name="selected" value="<% $selected %>">
 %     if( $ID ) {
@@ -166,9 +207,6 @@ Present a form for user to modify various values.
 %       if( $ID ) {
       <input type="hidden" name="id" value="<% $ID %>">
 %       }
-<pre>
-% print Dumper(%state);
-</pre>
       <& form.mhtml, title => $title, table => $TBL, session => \%state &>
 %     }
       <br>

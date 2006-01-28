@@ -9,6 +9,7 @@ $title
 $section
 $user
 $showheader
+$onload
 </%args>
 %
 <%init>
@@ -19,6 +20,10 @@ my $servername = $ui->{config}->{NETDOTNAME} . "." . $ui->{config}->{DEFAULT_DNS
 my $hideheader;
 if( !$showheader ) {
     $hideheader = 'style="display:none"';
+}
+
+if( $onload ) {
+    $onload = ' onload="'.$onload.'"';
 }
 </%init>
 %
@@ -72,7 +77,7 @@ if( !$showheader ) {
     }
 </script>
 
-<body>
+<body<% $onload %>>
 <div id="header" <% $hideheader %>>
     <img class="headleft" SRC="<% $r->dir_config('NetdotPath') %>img/title.png" 
         alt="Netdot: Network Documentation Tool" />
