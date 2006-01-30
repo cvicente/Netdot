@@ -695,7 +695,7 @@ sub select_lookup($@){
         }
 
         # show link to add new item to this table
-        $output .= sprintf("<a href=\"#\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1');\">[new]</a>", 
+        $output .= sprintf("<a class=\"hand\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1');\">[new]</a>", 
 			   $lookup, $name);
         $output .= "</nobr>";
 
@@ -802,9 +802,9 @@ sub select_multiple {
 	    $output .= "<option value=" . $join->id . ">$lbl</option>\n";
 	}
 	$output .= "</select>";
-	$output .= "<a href=\"#\" onClick=\"openinsertwindow('table=$join_table&$this_field=";
+	$output .= "<a onClick=\"openinsertwindow('table=$join_table&$this_field=";
 	$output .= $o->id;
-	$output .= "&select_id=$select_name&selected=0')\">[add]</a>";
+	$output .= "&select_id=$select_name&selected=0')\" class=\"hand\">[add]</a>";
 	if ( @joins ){
 	    $output .= '<br>(*) Selecting will delete';
 	}
