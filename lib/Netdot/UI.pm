@@ -451,7 +451,8 @@ being viewed, otherwise, the user will see the value of the object in plain text
     - table:          Name of table in DB. (optional, but required if object is null)
     - column:         Name of the field in the database
     - edit:           True if editing, false otherwise
-    - default:        Default value to display if none defined in DB
+    - default:        Default value to display if none defined in DB (defined by object)
+    - defaults:       Default values to add to select box
     - htmlExtra:      String of additional html to add to the form field
     - linkPage:       Make this text a link
     - returnValOnly:  Return only the form field and no label as a string
@@ -468,8 +469,8 @@ being viewed, otherwise, the user will see the value of the object in plain text
 =cut
 sub form_field {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $edit, $default, $htmlExtra, $linkPage, $returnValOnly, $shortFieldName) = 
-	($args{object}, $args{table}, $args{column}, $args{edit}, $args{default}, 
+    my ($o, $table, $column, $edit, $default, $defaults, $htmlExtra, $linkPage, $returnValOnly, $shortFieldName) = 
+	($args{object}, $args{table}, $args{column}, $args{edit}, $args{default}, $args{defaults},
 	 $args{htmlExtra}, $args{linkPage}, $args{returnValOnly}, $args{shortFieldName} );
     
     my $label; # return value
@@ -527,9 +528,9 @@ sub form_field {
             $label = $column;
         }
 	
-        $value = $self->select_lookup(object=>$o, table=>$tableName, column=>$column,, htmlExtra=>$htmlExtra, 
-				      lookup=>$linksto{$column}, edit=>$edit, linkPage=>$linkPage, defaults=>$default, 
-				      returnAsVar=>1, shortFieldName=>$shortFieldName);
+        $value = $self->select_lookup(object=>$o, table=>$tableName, column=>$column, htmlExtra=>$htmlExtra, 
+				      lookup=>$linksto{$column}, edit=>$edit, linkPage=>$linkPage, default=>$default, 
+				      defaults=>$defaults, returnAsVar=>1, shortFieldName=>$shortFieldName);
     }
 
     ################################################
@@ -567,6 +568,7 @@ sub form_field {
     - edit:           True if editing, false otherwise.
     - where:         (optional) Key/value pairs to pass to search function in CDBI
     - defaults:      (optional) array of objects to be shown in the drop-down list by default, 
+    - default:       (optional) id of the object in defaults that should be selected by default
     - htmlExtra:     (optional) extra html you want included in the output. Common
                       use would be to include style="width: 150px;" and the like.
     - linkPage:      (optional) Make the printed value a link
@@ -590,11 +592,11 @@ sub form_field {
 
 sub select_lookup($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $lookup, $where, $defaults, $isEditing, $htmlExtra, $linkPage, $maxCount, 
+    my ($o, $table, $column, $lookup, $where, $defaults, $default, $isEditing, $htmlExtra, $linkPage, $maxCount, 
 	$returnAsVar, $shortFieldName) = 
 	    ($args{object}, $args{table}, 
 	     $args{column}, $args{lookup},
-	     $args{where}, $args{defaults}, $args{edit},
+	     $args{where}, $args{defaults}, $args{default}, $args{edit},
 	     $args{htmlExtra}, $args{linkPage},
 	     $args{maxCount}, $args{returnAsVar}, $args{shortFieldName});
     
@@ -614,7 +616,25 @@ sub select_lookup($@){
     $maxCount = $args{maxCount} || $self->{config}->{"DEFAULT_SELECTMAX"};
     my @labels = $self->getlabelarr($lookup);
 
-    if ($isEditing){
+	if( $isEditing && $default ) { 
+		# If there is a default element specified, then we don't actually want a list of choices.
+		# So, don't show a select box, but instead, make a hidden for melement with the id,
+		# and print out the name of the default element. 
+
+        my $tableName = ($o ? $o->table : $table);
+        my $id = ($o ? $o->id : "NEW");
+        my $shortFieldName = ($shortFieldName ? 1:0);
+        my $name;
+        if( $shortFieldName ) {
+            $name = $column;
+        } else {
+            $name = $tableName . "__" . $id . "__" . $column;
+        }
+
+		# should be only 1 element in @defaults
+		$output .= '<input type="hidden" name="'.$name.'" value="'.$default.'">';
+		$output .= $self->getlabelvalue($defaults[0], \@labels);
+	} elsif ($isEditing){
         my ($count, @fo);
         my $tableName = ($o ? $o->table : $table);
         my $id = ($o ? $o->id : "NEW");
@@ -662,7 +682,7 @@ sub select_lookup($@){
             #      id of "NEW" in order to force insertion when the user hits submit.
             elsif ($table){
                 $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
-                $output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
+                $output .= "<option value=\"0\" ".($default?"":"selected").">-- Select --</option>\n";
             }else{
             #   2) The apocalypse has dawned. No table argument _or_ valid DB object..lets bomb out.
                 $self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
@@ -670,9 +690,10 @@ sub select_lookup($@){
             }
 
             foreach my $fo (@fo){
-		next unless (ref($fo) && int($fo) != 0 );
+				next unless (ref($fo) && int($fo) != 0 );
                 next if ($o && $o->$column && ($fo->id == $o->$column->id));
-                $output .= sprintf("<option value=\"%s\">%s</option>\n", $fo->id, $self->getlabelvalue($fo, \@labels));
+				my $selected = ($fo->id == $default?"selected":"");
+                $output .= sprintf("<option value=\"%s\" %s>%s</option>\n", $fo->id, $selected, $self->getlabelvalue($fo, \@labels));
             }
 	    $output .= sprintf("<option value=\"0\">[null]</option>\n");
             $output .= sprintf("</select>\n");
@@ -695,7 +716,7 @@ sub select_lookup($@){
         }
 
         # show link to add new item to this table
-        $output .= sprintf("<a href=\"#\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1');\">[new]</a>", 
+        $output .= sprintf("<a class=\"hand\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1');\">[new]</a>", 
 			   $lookup, $name);
         $output .= "</nobr>";
 
@@ -802,9 +823,9 @@ sub select_multiple {
 	    $output .= "<option value=" . $join->id . ">$lbl</option>\n";
 	}
 	$output .= "</select>";
-	$output .= "<a href=\"#\" onClick=\"openinsertwindow('table=$join_table&$this_field=";
+	$output .= "<a onClick=\"openinsertwindow('table=$join_table&$this_field=";
 	$output .= $o->id;
-	$output .= "&select_id=$select_name&selected=0')\">[add]</a>";
+	$output .= "&select_id=$select_name&selected=0')\" class=\"hand\">[add]</a>";
 	if ( @joins ){
 	    $output .= '<br>(*) Selecting will delete';
 	}

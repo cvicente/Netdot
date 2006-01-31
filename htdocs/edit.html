@@ -298,7 +298,9 @@ if( $args{confirm} eq "Confirm" ) {
 # only if ID not set since we want form component to fill that in
 if( defined( $TBL ) && ! defined( $ID ) ) {
   my %lt = $ui->getlinksto( $TBL );
-  foreach my $c ( split( /,/, $ui->getcolumnorder($TBL) ) ) {
+  my %co = $ui->getcolumnorder($TBL);
+
+  foreach my $c ( keys %co ) {
     if( $args{$c} ) {
       $state{$c} = $args{$c};
     }
@@ -312,6 +314,8 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
       }
     }
   }
+
+print "<br><br>";
 }
 </%perl>
 % ################################################
@@ -330,6 +334,8 @@ if( defined( $TBL ) && ! defined( $ID ) ) {
 %   printf "<pre>%s</pre>\n", Dumper( \%ARGS );
     SESSION: 
 %   printf "<pre>%s</pre>\n", Dumper( $session );
+    STATE: 
+%   printf "<pre>%s</pre>\n", Dumper( %state );
     <hr>
 % }
 
