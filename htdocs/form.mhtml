@@ -49,16 +49,18 @@ if( $id ) {
 }
 foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     next if( $c eq 'id' );
-    my %field;
-    if( defined( $id ) ) {
-	%field = $ui->form_field(object=>$obj, column=>$c, edit=>1, shortFieldName=>1);
-    } elsif( exists( $session{$c} ) ) {
-	%field = $ui->form_field(table=>$table, column=>$c, default=>$session{$c}, edit=>1, shortFieldName=>1);
-    } else {
-	%field = $ui->form_field(table=>$table, column=>$c, edit=>1, shortFieldName=>1);
-    }
+
+	my %field;
+	if( defined( $id ) ) {
+		%field = $ui->form_field(object=>$obj, column=>$c, edit=>1, shortFieldName=>1);
+	} elsif( exists( $session{$c} ) ) {
+		my @defaults = ($linksto{$c}->retrieve($session{$c}));
+		%field = $ui->form_field(table=>$table, column=>$c, defaults=>\@defaults, default=>$session{$c}, edit=>1, shortFieldName=>1);
+	} else {
+		%field = $ui->form_field(table=>$table, column=>$c, edit=>1, shortFieldName=>1);
+	}
     push(@headers, $field{'label'});
-    push(@data, $field{'value'});
+    push(@data,    $field{'value'});
 } # foreach
 
 </%perl>
