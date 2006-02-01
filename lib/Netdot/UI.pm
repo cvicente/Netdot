@@ -512,7 +512,7 @@ sub form_field {
 				      htmlExtra=>$htmlExtra, shortFieldName=>$shortFieldName);
 	    
 	} elsif ($type eq "bool") {
-	    $value = $self->radio_group_boolean(object=>$o, table=>$table, column=>$column, edit=>$edit, 
+	    $value = $self->checkbox_boolean(object=>$o, table=>$table, column=>$column, edit=>$edit, 
 						returnAsVar=>1, shortFieldName=>$shortFieldName);
 	    
 	} else {
@@ -895,6 +895,57 @@ sub radio_group_boolean($@){
         print $output;
     }
 }
+
+=head2 checkbox_boolean
+
+   $ui->checkbox_boolean(object=>$o, column=>"monitored", edit=>$editmgmt);
+
+A yes/no checkbox, which gets around the problem of an unchecked box sending nothing instead of "no".
+A hidden form field is created, which is where the receiving code actually reads the value. When the
+checkbox is checked, it sets the value of the hidden field to 1, and when it is unchecked, it sets the
+value to 0. This way, the actual value of the checkbox is irrelevent.
+
+ Arguments:
+   - object:         DBI object, can be null if a table object is included
+   - table:          Name of table in DB. (required if object is null)
+   - column:         Name of field in DB.
+   - edit:           True if editing, false otherwise.
+   - returnAsVar:    Whether to return output as a variable or STDOUT
+   - shortFieldName: Whether to set the input tag name as the column name or
+                     the format used by form_to_db()
+=cut
+
+sub checkbox_boolean($@){
+    my ($self, %args) = @_;
+    my ($o, $table, $column, $isEditing, $returnAsVar, $shortFieldName) = ($args{object}, $args{table}, 
+                                            $args{column}, $args{edit}, $args{returnAsVar}, $args{shortFieldName} );
+    my $output;
+
+    my $tableName = ($o ? $o->table : $table);
+    my $id = ($o ? $o->id : "NEW");
+    my $value = ($o ? $o->$column : "");
+    my $name = ( $shortFieldName ? $column : $tableName . "__" . $id . "__" . $column );
+	my $chkname = "____".$name."____";  # name to use for the checkbox, which should be ignored when reading the data
+
+    unless ($o || $table){
+	$self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
+	return 0;
+    }
+
+    if ($isEditing){
+		$output .= '<input type="checkbox" onclick="if (this.checked) { this.form[\''.$name.'\'].value=\'1\'; }else{this.form[\''.$name.'\'].value=\'0\'; }" '.($value?"checked=\"checked\"":"").'>';
+		$output .= '<input type="hidden" name="'.$name.'" value="'.$value.'">';
+    }else{
+        $output .= sprintf("%s\n", ($value ? "Yes" : "No"));
+    }
+
+    if ($returnAsVar==1) {
+        return $output;
+    }else{
+        print $output;
+    }
+}
+
 
 =head2 text_field
 
