@@ -315,3 +315,19 @@ sub resolve_ip {
     $name =~ s/\.$self->{config}->{'DEFAULT_DNSDOMAIN'}//i;
     return $name;
 }
+
+=head2 dateserial
+
+  $serial = $db->dateserial();
+
+Get date in 'DNS zone serial' format
+
+=cut
+sub dateserial {
+    my $self  = shift;
+    my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
+	$wday, $yday, $isdst) = localtime;
+    my $date = sprintf("%04d%02d%02d",
+			   $year+1900, $month+1, $day_of_month);
+    return $date;
+}

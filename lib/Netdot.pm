@@ -612,23 +612,6 @@ sub date {
     return $date;
 }
 
-=head2 dateserial
-
-  $serial = $db->dateserial();
-
-Get date in 'DNS zone serial' format
-
-=cut
-sub dateserial {
-    my $self  = shift;
-    my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
-	$wday, $yday, $isdst) = localtime;
-    my $date = sprintf("%04d%02d%02d",
-			   $year+1900, $month+1, $day_of_month);
-    return $date;
-}
-
-
 =head2 single_table_search
 
   $r = $db->single_table_search(table => $table, field => $field, keyword => $keyword, max => $max);
@@ -907,22 +890,149 @@ sub raw_sql {
 }
 
 
-=head2 ip2int - Convert IP(v4/v6) address string into its decimal value
+=head2 do_transaction - Perform an operation 'atomically'.
+    
+    A reference to a subroutine is passed, together with its arguments.
+    If anything fails within the operation, any changes made since the 
+    start are rolled back.  
+    This method has been adapted from an example offered here:
+    http://wiki.class-dbi.com/wiki/Using_transactions
 
- Arguments: address string
- Returns:   integer (decimal value of IP address)
+    Note: Since our calls to Class::DBI operations like insert, update and
+          delete are already wrapped in 'eval' blocks, and hence will not die, 
+          this method needs to check for the status of the error buffer.
+          For this same reason, the call to 'commit' is not done within
+          the same eval block as the main code ref (we would get an 
+          undesired commit).
+
+    Arguments:
+    code - reference to a subroutine
+    args - array of arguments to pass to subroutine
+
+    Returns:
+    results from code ref
+
+    Example(*):
+    
+    $r = $dm->do_transaction( sub{ return $dm->update_device(@_) }, %argv) )
+
+    * Notice the correct way to get a reference to an objects method
+      (See section 4.3.6 - Closures, from "Programming Perl")
 
 =cut
-sub ip2int {
-    my ($self, $address) = @_;
-    my $ipobj;
-    unless ( $ipobj = NetAddr::IP->new($address) ){
-	$self->error(sprintf("Invalid IP address: %s", $address));
-	return 0;
+sub do_transaction {
+    my ($self, $code, @args) = @_;
+
+    # Make sure we start with  an empty error buffer because
+    # we use it to test if the db operations have failed
+    $self->error("");
+
+    my @result = ();
+    my $dbh = $self->{dbh};
+
+    # Localize AutoCommit database handle attribute
+    # and turn off for this block.
+    local $dbh->{AutoCommit};
+
+    eval {
+        @result = $code->(@args);
+    };
+    if ($@ || $self->error) {
+        my $error = $@ || $self->error;
+	if ( $self->db_rollback ) {
+            $self->error("Transaction aborted (rollback "
+			 . "successful): $error\n");
+        }else {
+	    # Now error is set by db_rollback
+            my $rollback_error = $self->error;
+            $self->error("Transaction aborted: $error; "
+			 . "Rollback failed: $rollback_error\n");
+        }
+        $self->clear_object_index;
+        return;
+    }else{ # No errors.  Commit
+	# Error is set by db_commit
+	$self->db_commit || return;
     }
-    return ($ipobj->numeric)[0];
+    wantarray ? @result : $result[0];
+    
+} 
+
+=head2 db_auto_commit - Set the AutoCommit flag in DBI for the current db handle
+
+ Arguments: Flag value to be set (1 or 0)
+ Returns:   Current value of the flag (1 or 0)
+
+=cut
+sub db_auto_commit {
+    my $self = shift;
+    my $dbh = $self->{dbh};
+    if (@_) { $dbh->{AutoCommit} = shift };
+    return $dbh->{AutoCommit};
 }
 
+=head2 db_begin_work - Temporarily set AutoCommit to 0
+
+    This will set DBIs AutoCommit flag to 0 temporarily,
+    until either a commit or a rollback occur.
+
+  Note: This does not actually work as expected (though it would be useful)
+        Probably something to investigate in the mailing lists
+
+  Arguments: None
+  Returns:   True on success, false on error
+
+=cut
+sub db_begin_work {
+    my $self = shift;
+    my $dbh = $self->{dbh};
+    eval {
+	$dbh->begin_work;
+    };
+    if ( $@ ){
+	$self->error("$@\n");
+	return;	
+    }
+    return 1;
+}
+
+=head2 db_commit - Tell database to commit changes
+    
+  Arguments: None
+  Returns:   True on success, false on error
+
+=cut
+sub db_commit {
+    my $self = shift;
+    eval { $self->dbi_commit; };
+    if ( $@ ) {
+	$self->error("Commit failed!: $@\n");
+	return;
+    }
+    return 1;
+}
+
+=head2 db_rollback - Tell database to roll back changes
+
+  Arguments: None
+  Returns:   True on success, false on error
+
+=cut
+sub db_rollback {
+    my $self = shift;
+    eval { $self->dbi_rollback; };
+    if ( $@ ) {
+	$self->error("$@\n");
+	return;
+    }
+    return 1;
+}
+
+
+
+######################################################################
+# Miscellaneous
+######################################################################
 
 =head2 within
 
@@ -1001,89 +1111,6 @@ EOF
 close(SENDMAIL);
     return 1;
 
-}
-
-
-sub do_transaction {
-    my ($self, $code, @args) = @_;
-
-    # Make sure we start with  an empty error buffer because
-    # we use it to test if the db operations have failed
-    $self->error("");
-
-    my @result = ();
-    my $dbh = $self->db_Main;
-
-    # Localize AutoCommit database handle attribute
-    # and turn off for this block.
-    local $dbh->{AutoCommit};
-
-    eval {
-        @result = $code->(@args);
-    };
-    if ($@ || $self->error) {
-        my $error = $@ || $self->error;
-	if ( $self->db_rollback ) {
-            $self->error("Transaction aborted (rollback "
-			 . "successful): $error\n");
-        }else {
-	    # Now error is set by db_rollback
-            my $rollback_error = $self->error;
-            $self->error("Transaction aborted: $error; "
-			 . "Rollback failed: $rollback_error\n");
-        }
-        $self->clear_object_index;
-        return;
-    }else{ # No errors.  Commit
-	# Error is set by db_commit
-	$self->db_commit || return;
-    }
-    wantarray ? @result : $result[0];
-    
-} 
-
-sub db_auto_commit {
-    my ($self, $val) = @_;
-    my $dbh = $self->db_Main;
-    $dbh->{AutoCommit} = $val if (defined($val));
-    return $dbh->{AutoCommit};
-}
-
-#
-# This doesn't actually work as expected (though it'd be nice)
-# Probably something to investigate in the mailing lists
-#
-sub db_begin_work {
-    my $self = shift;
-    my $dbh = $self->db_Main;
-    eval {
-	$dbh->begin_work;
-    };
-    if ( $@ ){
-	$self->error("$@\n");
-	return;	
-    }
-    return 1;
-}
-
-sub db_commit {
-    my $self = shift;
-    eval { $self->dbi_commit; };
-    if ( $@ ) {
-	$self->error("Commit failed!: $@\n");
-	return;
-    }
-    return 1;
-}
-
-sub db_rollback {
-    my $self = shift;
-    eval { $self->dbi_rollback; };
-    if ( $@ ) {
-	$self->error("$@\n");
-	return;
-    }
-    return 1;
 }
 
 

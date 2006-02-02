@@ -44,6 +44,23 @@ sub new {
 }
 
 
+=head2 ip2int - Convert IP(v4/v6) address string into its decimal value
+
+ Arguments: address string
+ Returns:   integer (decimal value of IP address)
+
+=cut
+sub ip2int {
+    my ($self, $address) = @_;
+    my $ipobj;
+    unless ( $ipobj = NetAddr::IP->new($address) ){
+	$self->error(sprintf("Invalid IP address: %s", $address));
+	return 0;
+    }
+    return ($ipobj->numeric)[0];
+}
+
+
 =head2 sortblocks - Sort Ipblocks by address
 
  Arguments: 
