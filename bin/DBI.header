@@ -6,35 +6,33 @@ use NetAddr::IP;
 
 ## This file was generated from a script.  Do not edit. ##
 
-<INSERT SET_DB LINE>
+my $data_source;
+my $user;
+my $password;
+my %attr = ( AutoCommit => 1 );
 
+Netdot::DBI->connection($data_source, $user, $password, \%attr);
 
 #########################################################
 ## Override db_Main to avoid problems between Clas::DBI
 ## and Apache::DBI. See:
 ## http://wiki.class-dbi.com/wiki/Using_with_mod_perl
 #########################################################
-
-# Get Class::DBI's default dbh options
-my $db_options = { __PACKAGE__->_default_attributes };
-
 __PACKAGE__->_remember_handle('Main'); # so dbi_commit works
 
-# override default to avoid using Ima::DBI closure
 sub db_Main {
     my $dbh;
     if ( $ENV{'MOD_PERL'} and !$Apache::ServerStarting ) {
 	$dbh = Apache->request()->pnotes('dbh');
     }
     if ( !$dbh ) {
-	<INSERT CONNECT_CACHED LINE>
+	$dbh = DBI->connect_cached('Main', $data_source, $user, $password, \%attr);
         if ( $ENV{'MOD_PERL'} and !$Apache::ServerStarting ) {
 	    Apache->request()->pnotes( 'dbh', $dbh );
         }
     }
     return $dbh;
 }
-
 
 sub VERSION { "0.7" }
 

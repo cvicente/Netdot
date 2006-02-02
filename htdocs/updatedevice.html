@@ -25,6 +25,8 @@ $comstr          => "public"
 $id              => undef
 $sid             => undef
 $insert          => undef
+$accept          => undef
+$cancel          => undef
 $owner           => undef
 $used_by         => undef
 $site            => undef
@@ -161,15 +163,26 @@ LOOP:  foreach my $int ( keys %{ $dev->{interface} } ){
 	print "<pre>",  Dumper(%argv), "</pre>" if $DEBUG;
 
         # Update database
-        $o = $dm->update_device(%argv);
-        unless ($o){
+	$dm->db_auto_commit(0);
+        unless ($o = $dm->update_device(%argv)){
             $m->comp('error.mhtml', error => $dm->error);
+	    $dm->do_rollback;
         }
-        unless ($o->name && ($name = $o->name->name)){
-            $name = "device"
-            }
+	($o->name && ($name = $o->name->name)) or $name = "device";
     }
 
+}elsif ( $action eq "confirm" ){
+    $id || $m->comp('error.mhtml', error => "Need to pass Device id");
+    ($o = Device->retrieve($id)) || 
+	$m->comp('error.mhtml', error => "Can't retrieve Device id $id");
+    ($o->name && ($name = $o->name->name)) or $name = "device";
+
+    if ( $accept  ){
+	$dm->db_commit || $m->comp('error.mhtml', error => "$dm->error");
+    }elsif( $cancel ){
+	$dm->db_rollback || $m->comp('error.mhtml', error => "$dm->error");
+    }
+    $dm->db_auto_commit(1);	
 }else{
     $m->comp('error.mhtml', error => "Unknown action: $action");
 }
@@ -300,17 +313,27 @@ LOOP:  foreach my $int ( keys %{ $dev->{interface} } ){
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
 %     }
-         <input name="insert" value="Update" type="submit">&nbsp;
+         <input type="submit" name="insert" value="Update">&nbsp;
          <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
       </form>
 
-%}elsif ( $action eq "update" ){
+% }elsif ( $action eq "update" ){
 
 %      if ($dm->output){
                 <pre><% $dm->output %></pre> <br />
 %      }
-	        <b><a href="device.html?id=<% $o->id %>">[Go to <% $name %>]</a></b>
-%  }
+
+    <p>
+    <form name="netdotform" action="updatedevice.html" method="POST">
+        <input type="hidden" name="action" value="confirm">
+        <input type="hidden" name="id" value="<% $o->id %>">
+        <input type="submit" name="accept" value="Accept" >&nbsp;
+        <input type="submit" name="cancel" value="Undo">
+    </form>
+
+% }elsif ( $action eq "confirm" ){
+    <p><b><a href="device.html?id=<% $o->id %>">[Go to <% $name %>]</a></b>
+% }
 
  </div>
 </div>

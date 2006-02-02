@@ -16,6 +16,7 @@ my $HELP            = 0;
 my $VERBOSE         = 0;
 my $DEBUG           = 0;
 my $EMAIL           = 0;
+my $PRETEND         = 0;
 
 my $usage = <<EOF;
  usage: $0 [ -c, --community <string> ] [ -a|--add-subnets ]
@@ -28,6 +29,7 @@ my $usage = <<EOF;
     -c, --community <string>       SNMP community string (default "public")
     -d, --db-devices               update only DB existing devices
     -a, --add-subnets              when discovering routers, add subnets to database if they do not exist
+    -p, --pretend                  do not commit changes to the db
     -h, --help                     print help (this message)
     -v, --verbose                  be verbose
     -g, --debug                    set syslog level to LOG_DEBUG and print to STDERR
@@ -44,6 +46,7 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "c|community:s"     => \$comstr,
 			 "d|db-devices"      => \$DB,
 			 "a|add-subnets"     => \$ADDSUBNETS,
+			 "p|pretend"         => \$PRETEND,
 			 "h|help"            => \$HELP,
 			 "v|verbose"         => \$VERBOSE,
 			 "g|debug"           => \$DEBUG,
@@ -68,8 +71,16 @@ if ($DEBUG){
 }else{
     $dm = Netdot::DeviceManager->new();
 }
+
+if ( $PRETEND ){
+    # Tell the DB to not commit
+    # This should not affect the web interface because it uses a separate
+    # connection
+    $dm->db_auto_commit(0);
+    $output .= "Note: Executing with -p (pretend) flag.  Changes will not be committed to the DB\n";
+}
+
 my $ipm = Netdot::IPManager->new();
-my $dns = Netdot::DNSManager->new();
 my $success = 0;
 
 # This will be reflected in the history tables
@@ -179,12 +190,23 @@ sub discover {
     }
     $output .= sprintf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
 
-    # Update database
-    if ( $r = $dm->update_device(%argv) ){
-	$output .= sprintf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
+    if ( $PRETEND ){
+	if ( $r = $dm->update_device(%argv) ){
+	    $output .= sprintf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
+	    $dm->db_rollback;
+	}else{
+	    $output .= sprintf("Error: %s\n", $dm->error) if $VERBOSE;
+	    $dm->db_rollback;
+	    return 0;
+	}
     }else{
-	$output .= sprintf("Error: %s\n", $dm->error) if $VERBOSE;
-	return 0;
+	# Update device in database (atomically)
+	if ( $r = $dm->do_transaction( sub{ return $dm->update_device(@_) }, %argv) ) {
+	    $output .= sprintf ("%s", $dm->output) if ($VERBOSE && ! $DEBUG);
+	}else{
+	    $output .= sprintf("Error: %s\n", $dm->error) if $VERBOSE;
+	    return 0;
+	}
     }
     return $r;
 }

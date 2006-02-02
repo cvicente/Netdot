@@ -11,7 +11,11 @@ REQUIREMENTS
 	
 	http://www.nero.net/projects/netviewer/
 
-* A DBMS supported by Perl DBI (so far, tested with MySQL only)
+* A DBMS with Transaction support, with a driver for Perl DBI 
+  (See: http://search.cpan.org/search?query=DBD%3A%3A&mode=module)
+
+  Note: So far, tested with MySQL only.  You will need a version 
+	of MySQL with support for the INNODB storage engine.
 
 * A Radius server (for authentication).  We recommend FreeRadius, 
   available at:
@@ -22,6 +26,7 @@ REQUIREMENTS
 
 	CGI
 	Class::DBI
+	DBD::<your-dbms> (The DBI driver for your DBMS. e.g DBD::mysql)
 	HTML::Mason
 	Apache::Session
 	Apache::DBI
@@ -50,6 +55,11 @@ INSTALLING THE PACKAGE FOR THE FIRST TIME
 	PREFIX=YOUR-PREFIX (default: /usr/local/netdot) 
 	APACHEUSER=USER-YOUR-APACHE-RUNS-AS (default: apache)
 	APACHEGROUP=GROUP-YOUR-APACHE-RUNS-AS (default: apache)
+
+* If you are using MySQL, make sure you include the following 
+  line in your config file (e.g. /etc/my.cnf):
+
+	default-storage-engine=innodb
 
 * Then, you'll be ready to initialize the database:
 

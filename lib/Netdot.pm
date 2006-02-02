@@ -463,7 +463,7 @@ sub insert {
   my($tbl) = $argv{table};
   my(%state) = %{ $argv{state} };
   my $ret;
-  eval { $ret = $tbl->create( \%state ); };
+  eval { $ret = $tbl->insert( \%state ); };
   if( $@ ) {
     $self->error("Unable to insert into $tbl: $@");
     return 0;
@@ -1001,6 +1001,89 @@ EOF
 close(SENDMAIL);
     return 1;
 
+}
+
+
+sub do_transaction {
+    my ($self, $code, @args) = @_;
+
+    # Make sure we start with  an empty error buffer because
+    # we use it to test if the db operations have failed
+    $self->error("");
+
+    my @result = ();
+    my $dbh = $self->db_Main;
+
+    # Localize AutoCommit database handle attribute
+    # and turn off for this block.
+    local $dbh->{AutoCommit};
+
+    eval {
+        @result = $code->(@args);
+    };
+    if ($@ || $self->error) {
+        my $error = $@ || $self->error;
+	if ( $self->db_rollback ) {
+            $self->error("Transaction aborted (rollback "
+			 . "successful): $error\n");
+        }else {
+	    # Now error is set by db_rollback
+            my $rollback_error = $self->error;
+            $self->error("Transaction aborted: $error; "
+			 . "Rollback failed: $rollback_error\n");
+        }
+        $self->clear_object_index;
+        return;
+    }else{ # No errors.  Commit
+	# Error is set by db_commit
+	$self->db_commit || return;
+    }
+    wantarray ? @result : $result[0];
+    
+} 
+
+sub db_auto_commit {
+    my ($self, $val) = @_;
+    my $dbh = $self->db_Main;
+    $dbh->{AutoCommit} = $val if (defined($val));
+    return $dbh->{AutoCommit};
+}
+
+#
+# This doesn't actually work as expected (though it'd be nice)
+# Probably something to investigate in the mailing lists
+#
+sub db_begin_work {
+    my $self = shift;
+    my $dbh = $self->db_Main;
+    eval {
+	$dbh->begin_work;
+    };
+    if ( $@ ){
+	$self->error("$@\n");
+	return;	
+    }
+    return 1;
+}
+
+sub db_commit {
+    my $self = shift;
+    eval { $self->dbi_commit; };
+    if ( $@ ) {
+	$self->error("Commit failed!: $@\n");
+	return;
+    }
+    return 1;
+}
+
+sub db_rollback {
+    my $self = shift;
+    eval { $self->dbi_rollback; };
+    if ( $@ ) {
+	$self->error("$@\n");
+	return;
+    }
+    return 1;
 }
 
 
