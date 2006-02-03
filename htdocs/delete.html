@@ -61,29 +61,29 @@ print Dumper(%ARGS) if $DEBUG;
 
 }elsif ($submit eq "Confirm"){
     unless($session = $ui->getsession( $TMP, $sid )){
-	    $m->comp('error.mhtml', error => $ui->error);
+	$m->comp('error.mhtml', error => $ui->error);
     }
     @objs = @{ $session->{objects} };
     foreach my $r (@objs){
-	    my ($table, $obj, $lbl) = @$r;
-	    # Delete the object
-	    eval {
-	        $obj->delete;
-	    };
-	    if ($@){
-	        $m->comp('error.mhtml', error => "$@");
-	    } else{
+	my ($table, $obj, $lbl) = @$r;
+	# Delete the object
+	eval {
+	    $obj->delete;
+	};
+	if ($@){
+	    $m->comp('error.mhtml', error => "$@");
+	} 
+    }
+    $m->redirect("index.html");
+    
+}elsif ($submit eq "Cancel"){
+    print "<p><br>";
+    print "Delete cancelled";
+    if ( $session ){
+	$ui->rmsession( $session );
+    }
+}
 </%perl>
-            <strong><% $table %> <% $lbl %></strong> deleted.<br><br>
-%       }
-%   }
-%}elsif ($submit eq "Cancel"){
-<p><br>
-    Deletion cancelled
-%    if ( $session ){
-%      $ui->rmsession( $session );
-%    }
-%}
 
 </div> <!-- close containerbody -->
 </div> <!-- close container -->
