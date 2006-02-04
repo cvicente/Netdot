@@ -47,31 +47,15 @@ $@
 HERE
 }
 </%perl>
-            <span>Management</span>
+            <a href="section_management.html" class="current">Management</a>
             <ul id="subnavigation">
-%
-%     if( $page eq "DEVICE" || $page eq "" ) {
-                <li><span>Devices</span></li>
-%     } else {
-                <li><a href="section_management.html?page=DEVICE">Devices</a></li>
-%     }
-%
-%     if( $page eq "ADDRESS" ) {
-                <li><span>Address Space</span></li>
-%     } else {
-                <li><a href="section_management.html?page=ADDRESS">Address Space</a></li>
-%     }
-%
-%     if( $page eq "SERVICES" ) {
-                <li><span>Services</span></li>
-%     } else {
-                <li><a href="section_management.html?page=SERVICES">Services</a></li>
-%     }
-%
+                <li><a href="section_management.html?page=DEVICE" <% ($page eq "DEVICE" || $page eq ""?'class="subnav_selected"':'') %>>Devices</a></li>
+                <li><a href="section_management.html?page=ADDRESS" <% ($page eq "ADDRESS"?'class="subnav_selected"':'') %>>Address Space</a></li>
+                <li><a href="section_management.html?page=SERVICES" <% ($page eq "SERVICES"?'class="subnav_selected"':'') %>>Services</a></li>
             </ul>
 %
 % } else {
-            <a href="section_management.html">Management</a>
+      <a href="section_management.html">Management</a>
 % }
 %
         </li>
@@ -82,24 +66,13 @@ HERE
 %         $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args{page});
 %     }
 %     $page = $user->getAttribute("OPERATIONS_PAGE");
-            <span>Operations</span>
+            <a href="section_operations.html" class="current">Operations</a>
             <ul id="subnavigation">
-%
-%     if( $page eq "SEARCH" || $page eq "" ) {
-                <li><span>Search</span></li>
-%     } else {
-                <li><a href="section_operations.html?page=SEARCH">Search</a></li>
-%     }
-%
-%     if( $page eq "TACTICAL" ) {
-                <li><span>Tactical</span></li>
-%     } else {
-                <li><a href="section_operations.html?page=TACTICAL">Tactical</a></li>
-%     }
-%
+                <li><a href="section_operations.html?page=SEARCH" <% ($page eq "SEARCH" || $page eq ""?'class="subnav_selected"':'') %>>Search</a></li>
+                <li><a href="section_operations.html?page=TACTICAL" <% ($page eq "TACTICAL"?'class="subnav_selected"':'') %>>Tactical</a></li>
             </ul>
 %
-%} else {
+% } else {
             <a href="section_operations.html">Operations</a>
 % }
 %
@@ -113,34 +86,13 @@ HERE
 %     }
 %     $page = $user->getAttribute("CABLE_PLANT_PAGE");
 %
-            <span>Cable Plant</span>
+            <a href="section_cable.html" class="current">Cable Plant</a>
             <ul id="subnavigation">
-%
-%     if ($page eq "BACKBONE" || $page eq "") {
-                <li><span>Backbone Cables</span></li>
-%     } else {
-                <li><a href="section_cable.html?page=BACKBONE">Backbone Cables</a></li>
-%     }
-%     if ($page eq "HORIZONTAL") {
-                <li><span>Horizontal Cables</span></li>
-%     } else {
-                <li><a href="section_cable.html?page=HORIZONTAL">Horizontal Cables</a></li>
-%     }
-%     if ($page eq "CLOSETS") {
-                <li><span>Closets</span></li>
-%     } else {
-                <li><a href="section_cable.html?page=CLOSETS">Closets</a></li>
-%     }
-%     if ($page eq "STRANDS") {
-                <li><span>Cable Strands</span></li>
-%     } else {
-                <li><a href="section_cable.html?page=STRANDS">Cable Strands</a></li>
-%     }
-%     if ($page eq "CIRCUITS") {
-                <li><span>Circuits</span></li>
-%     } else {
-                <li><a href="section_cable.html?page=CIRCUITS">Circuits</a></li>
-%     }
+                <li><a href="section_cable.html?page=BACKBONE" <% ($page eq "BACKBONE" || $page eq ""?'class="subnav_selected"':'') %>>Backbone Cables</a></li>
+                <li><a href="section_cable.html?page=HORIZONTAL" <% ($page eq "HORIZONTAL"?'class="subnav_selected"':'') %>>Horizontal Cables</a></li>
+                <li><a href="section_cable.html?page=CLOSETS" <% ($page eq "CLOSETS"?'class="subnav_selected"':'') %>>Closets</a></li>
+                <li><a href="section_cable.html?page=STRANDS" <% ($page eq "STRANDS"?'class="subnav_selected"':'') %>>Cable Strands</a></li>
+                <li><a href="section_cable.html?page=CIRCUITS" <% ($page eq "CIRCUITS"?'class="subnav_selected"':'') %>>Circuits</a></li>
             </ul>
 %
 % } else {
@@ -156,7 +108,7 @@ HERE
 %     }
 %     $page = $user->getAttribute("GENERIC_PAGE");
 %
-            <span>Generic</span>
+            <a href="section_generic.html" class="current">Generic</a>
             <ul id="subnavigation">
             </ul>
 %
@@ -172,27 +124,11 @@ HERE
 %         $user->setAttribute($r, "REPORTS_PAGE", $caller_args{page});
 %     }
 %     $page = $user->getAttribute("REPORTS_PAGE");
-            <span>Reports</span>
+            <a href="section_reports.html" class="current">Reports</a>
             <ul id="subnavigation">
-%
-%     if( $page eq "DEVICE" ) {
-                <li><span>Device Inventory</span></li>
-%     } else {
-                <li><a href="reports_device_inventory.html">Device Inventory</a></li>
-%     }
-%
-%     if( $page eq "CUSTOM" ) {
-                <li><span>Custom Reports</span></li>
-%     } else {
-                <li><a href="reports_custom.html">Custom Reports</a></li>
-%     }
-%
-%     if( $page eq "DATABASE" ) {
-                <li><span>Database Reports</span></li>
-%     } else {
-                <li><a href="reports_database.html">Database Reports</a></li>
-%     }
-%
+                <li><a href="reports_device_inventory.html?page=DEVICE" <% ($page eq "DEVICE"?'class="subnav_selected"':'') %>>Device Inventory</a></li>
+                <li><a href="reports_custom.html?page=CUSTOM" <% ($page eq "CUSTOM"?'class="subnav_selected"':'') %>>Custom Reports</a></li>
+                <li><a href="reports_database.html?page=DATABASE" <% ($page eq "DATABASE"?'class="subnav_selected"':'') %>>Database Reports</a></li>
             </ul>
 %
 %
