@@ -395,8 +395,9 @@ push( @cell_data,
 );
 
 my @fields = ('serialnumber','physaddr','dateinstalled','lastupdated', 'productname','inventorynumber','sysdescription');
-$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-
+my @linkpages = ('', 'view.html', '', '', 'view.html', '', '' );
+$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, 
+		   cell_data=>\@cell_data, linkpages=>\@linkpages);
 </%perl>
 
 <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, 
@@ -433,7 +434,7 @@ print $tmp{value};
 
 {
 my @fields;
-my @linkpages = ("view.html","view.html","view.html");
+@linkpages = ("view.html","view.html","view.html");
 
 push( @fields, 'owner' );
 push( @fields, 'used_by' );
@@ -443,7 +444,8 @@ if ( (int($o->person) != 0) || $editloc ){
 }
 push( @fields, 'site' );
 
-$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data, linkpages=>\@linkpages);
+$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, 
+		   cell_data=>\@cell_data, linkpages=>\@linkpages);
 }
 
 
@@ -456,7 +458,8 @@ push( @cell_data, &{sub{
 	if (defined($o)) {
 	    foreach my $floor ( $o->site->floors ) {
 		foreach my $room ( sort { $a->name cmp $b->name } $floor->rooms ) {
-		    $s .= sprintf("<option value=\"%d\" %s>%s</option>\n", $room->id, ($o->room && $room->id == $o->room->id ? "SELECTED" : ""), $room->name);
+		    $s .= sprintf("<option value=\"%d\" %s>%s</option>\n", 
+				  $room->id, ($o->room && $room->id == $o->room->id ? "SELECTED" : ""), $room->name);
 		}
 	    }
 	}
