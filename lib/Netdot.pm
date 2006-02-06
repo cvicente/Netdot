@@ -941,12 +941,12 @@ sub do_transaction {
         my $error = $@ || $self->error;
 	if ( $self->db_rollback ) {
             $self->error("Transaction aborted (rollback "
-			 . "successful): $error\n");
+			 . "successful): $error");
         }else {
 	    # Now error is set by db_rollback
             my $rollback_error = $self->error;
             $self->error("Transaction aborted: $error; "
-			 . "Rollback failed: $rollback_error\n");
+			 . "Rollback failed: $rollback_error");
         }
         $self->clear_object_index;
         return;
@@ -990,7 +990,7 @@ sub db_begin_work {
 	$dbh->begin_work;
     };
     if ( $@ ){
-	$self->error("$@\n");
+	$self->error("$@");
 	return;	
     }
     return 1;
@@ -1006,7 +1006,7 @@ sub db_commit {
     my $self = shift;
     eval { $self->dbi_commit; };
     if ( $@ ) {
-	$self->error("Commit failed!: $@\n");
+	$self->error("Commit failed!: $@");
 	return;
     }
     return 1;
@@ -1022,7 +1022,7 @@ sub db_rollback {
     my $self = shift;
     eval { $self->dbi_rollback; };
     if ( $@ ) {
-	$self->error("$@\n");
+	$self->error("$@");
 	return;
     }
     return 1;
