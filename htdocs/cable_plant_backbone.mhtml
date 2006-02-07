@@ -1,0 +1,219 @@
+<%args>
+$o                => undef;
+$MAX_SELECTION    => undef;
+$start_id         => undef;
+$end_id           => undef;
+$page_type        => undef;
+$submit_site      => undef;
+$backbone_srch    => undef;
+$backbone_id_srch => undef;
+$edit             => undef;
+$site_srch        => undef;
+$cable_sort       => undef;
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my (@field_headers, @cell_data, @headers, @rows);
+</%init>
+
+<%perl>
+
+	my @cables = ();
+	my $header_descr = "";
+
+	# if we are searching by backbone name...
+	if ($backbone_srch && !defined($submit_site)) {
+	    @cables = BackboneCable->search_like(name=>$backbone_srch);
+	}
+
+	# searching by site name
+	elsif ($site_srch && !defined($submit_site)) {
+	    my @sites = Site->search_like(name=>$site_srch);
+	    my @closets = ();
+	    map { push (@closets, $_->closets) } @sites;
+	    foreach my $closet (@closets) {
+		my $c_id = $closet->id;
+		map { push (@cables, $_) } (BackboneCable->search(start_closet=>$c_id),
+					    BackboneCable->search(end_closet=>$c_id));
+	    }
+	}
+
+	# user selected a start and end point
+	elsif ($start_id && $end_id) {
+	    # need to get all closets for both start and end and find all 
+	    # BackboneCable's that have a match for either start_closet or end_closet.
+	    my ($s1, $s2, @closets, %found);
+	    $s1 = Site->retrieve($start_id);
+	    $s2 = Site->retrieve($end_id);
+	    @closets = grep(!$found{$_}++, ($s1->closets, $s2->closets));
+	    %found = ();
+
+	    # and finally all BackboneCables that either start or end
+	    # at one of these closets..
+	    foreach my $closet (@closets) {
+		foreach my $c1 (@closets) {
+		    my $c_id = $closet->id;
+		    my $c1_id = $c1->id;
+		    next if ($c_id == $c1_id);
+		    map { push (@cables, $_) } grep(!$found{$_}++, 
+						    (BackboneCable->search(start_closet=>$c_id, end_closet=>$c1_id),
+						     BackboneCable->search(start_closet=>$c1_id, end_closet=>$c_id)));
+		}
+	    }
+
+	    $header_descr = sprintf("between <a href=\"view.html?table=Site&id=%d\">%s</a>, <a href=\"view.html?table=Site&id=%d\">%s</a>", $s1->id, $s1->name, $s2->id, $s2->name);
+	}
+
+	elsif ($start_id) {
+	    my (@start_closets, $start_site);
+	    $start_site = Site->retrieve($start_id) if ($start_id);
+	    @start_closets = $start_site->closets if ($start_site);
+	    
+	    foreach my $start_c (@start_closets) {
+		my @cab = BackboneCable->search(start_closet=>$start_c->id);
+		push (@cables, @cab);
+	    }
+
+	    $header_descr = sprintf("connected to <a href=\"view.html?table=Site&id=%d\">%s</a>", $start_site->id, $start_site->name);
+	}
+	</%perl>
+
+        <div class="container">
+%         if (scalar(@cables) > $MAX_SELECTION) {
+
+            <div class="containerhead">
+	      Backbone Cable
+	    </div>
+	    <div class="containerbody">
+	      <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+	    </div>
+
+%         } else {
+
+            <div class="containerheadleft">
+	      Backbone Cable <% $header_descr ? $header_descr : "" %>
+	    </div>
+	    <div class="containerheadright">
+%             if ($edit eq "cableinfo"){	 
+                <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%             } else {
+                <a href="cable_backbone.html?id=NEW">[new]</a> &nbsp;
+		<a href="cable_plant.html?start_id=<% $start_id %>&end_id=<% $end_id %>&site_srch=<% $site_srch %>&backbone_srch=<% $backbone_srch %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+%             }
+            </div>
+
+	    <div class="containerbody">
+	      <% scalar(@cables) %> row(s) returned.
+
+%	      if (scalar(@cables) && scalar(@cables) <= $MAX_SELECTION) {
+
+                <%perl>
+		$cable_sort = "name" if (!defined($cable_sort) || $cable_sort eq "");
+		my @sorted_cables;
+		if ($cable_sort eq "name") {
+		    @sorted_cables = sort { $a->$cable_sort cmp $b->$cable_sort } @cables;
+		} elsif ($cable_sort eq "type") {
+		    @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
+		} elsif ($cable_sort eq "start_closet") {
+		    @sorted_cables = sort { $a->start_closet->name cmp $b->start_closet->name } @cables;
+		} elsif ($cable_sort eq "end_closet") {
+		    @sorted_cables = sort { $a->end_closet->name cmp $b->end_closet->name } @cables;
+		} elsif ($cable_sort eq "owner") {
+		    @sorted_cables = sort { $a->owner->name cmp $b->owner->name } @cables;
+		} elsif ($cable_sort eq "strand_count") {
+		    @sorted_cables = sort { scalar($a->strands) <=> scalar($b->strands) } @cables;
+		} elsif ($cable_sort eq "start_building") {
+		    @sorted_cables = sort { $a->start_closet->site->name cmp $b->start_closet->site->name } @cables;
+		} elsif ($cable_sort eq "end_building") {
+		    @sorted_cables = sort { $a->end_closet->site->name cmp $b->end_closet->site->name } @cables;
+		} else {
+		    $m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
+		}
+		</%perl>
+
+		<%perl>
+		(@headers, @rows) = ();
+
+		push( @headers, '<a href="cable_plant.html?start_id=' . $start_id . '&end_id=' . $end_id . '&site_srch=' . $site_srch 
+		      . '&backbone_srch=' . $backbone_srch . '&cable_sort=name&page_type=' . $page_type . '">Name</a>' );
+		push( @headers, '<a href="cable_plant.html?start_id=' . $start_id . '&end_id=' . $end_id . '&site_srch=' . $site_srch 
+		      . '&backbone_srch=' . $backbone_srch . '&cable_sort=type&page_type=' . $page_type . '">Type</a>' );
+		if ($edit ne "cableinfo") {
+		    push( @headers, '<a href="cable_plant.html?start_id=' . $start_id . '&end_id=' . $end_id . '&site_srch=' . $site_srch 
+			  . '&backbone_srch=' . $backbone_srch . '&cable_sort=start_building&page_type=' . $page_type . '">Start Building</a>' );
+		}
+		push( @headers, '<a href="cable_plant.html?start_id=' . $start_id . '&end_id=' . $end_id . '&site_srch=' . $site_srch 
+		      . '&backbone_srch=' . $backbone_srch . '&cable_sort=start_closet&page_type=' . $page_type . '">Start Closet</a>' );
+		if ($edit ne "cableinfo") {
+		    push( @headers, '<a href="cable_plant.html?start_id=' . $start_id . '&end_id=' . $end_id . '&site_srch=' . $site_srch 
+			  . '&backbone_srch=' . $backbone_srch . '&cable_sort=end_building&page_type=' . $page_type . '">End Building</a>' );
+		}        
+		push( @headers, '<a href="cable_plant.html?start_id=' . $start_id . '&end_id=' . $end_id . '&site_srch=' . $site_srch 
+		      . '&backbone_srch=' . $backbone_srch . '&cable_sort=end_closet&page_type=' . $page_type . '">End Closet</a>' );
+		push( @headers, '<a href="cable_plant.html?start_id=' . $start_id . '&end_id=' . $end_id . '&site_srch=' . $site_srch 
+		      . '&backbone_srch=' . $backbone_srch . '&cable_sort=strand_count&page_type=' . $page_type . '"># of Strands</a>');
+		push( @headers, '<a href="cable_plant.html?start_id=' . $start_id . '&end_id=' . $end_id . '&site_srch=' . $site_srch 
+		      . '&backbone_srch=' . $backbone_srch . '&cable_sort=owner&page_type=' . $page_type . '">Owner</a>' );
+
+		foreach my $cable (@sorted_cables) {
+
+		    my $start_site = $cable->start_closet->floor->site;
+		    my $end_site = $cable->end_closet->floor->site;
+		    my $start_site_id = $start_site->id if ($start_site);
+		    my $end_site_id = $end_site->id if ($end_site);
+
+		    my @row = ();
+		    push( @row, 
+			  &{sub{
+			      my $ac = "";
+			      if ($edit eq "cableinfo") {
+				  $ac .= '<input type="checkbox" name="' . "BackboneCable__" . $cable->id . "__delete" . '">[del]';
+				  $ac .= '<input type="text" name="BackboneCable__' . $cable->id . '__name" value="' . $cable->name . '">';
+			      } else {
+				  $ac .= '<a href="cable_backbone.html?id=' . $cable->id . '">' . $cable->name . '</a>';
+			      }
+			      $ac;
+			  }} );
+		    push( @row, $ui->form_field(object=>$cable, column=>"type", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
+		    if ($edit ne "cableinfo") {
+			push( @row, '<a href="view.html?table=Site&id=' . $cable->start_closet->site->id . '">' . $cable->start_closet->site->name . '</a>' );
+		    }
+		    push( @row, 
+			  &{sub{
+			      my $ac = "";
+			      if ($edit eq "cableinfo") {
+				  $ac .= $ui->form_field(object=>$cable, column=>"start_closet", edit=>($edit eq "cableinfo"), returnValOnly=>1);
+			      } else {
+				  $ac .= '<a href="closet.html?id=' . $cable->start_closet . '">' . $cable->start_closet->name . '</a>';
+			      }
+			      $ac;
+			  }} );
+		    if ($edit ne "cableinfo") {
+			push( @row, '<a href="view.html?table=Site&id=' . $cable->end_closet->site->id . '">' . $cable->end_closet->site->name . '</a>' );
+		    }
+		    push( @row, 
+			  &{sub{
+			      my $ac = "";
+			      if ($edit eq "cableinfo") {
+				  $ac .= $ui->form_field(object=>$cable, column=>"end_closet", edit=>($edit eq "cableinfo"), returnValOnly=>1);
+			      } else {
+				  $ac .= '<a href="closet.html?id=' . $cable->end_closet . '">' . $cable->end_closet->name . '</a>';
+			      }
+			      $ac;
+			  }} );
+		    push( @row, scalar($cable->strands)  );
+		    push( @row, $ui->form_field(object=>$cable, column=>"owner", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
+		    push( @rows, \@row );
+		}
+		</%perl>
+
+		<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+%             }
+
+            </div> <!-- close containerbody -->
+          </div> <!-- close container -->
+
+%       }
+
+</%perl>

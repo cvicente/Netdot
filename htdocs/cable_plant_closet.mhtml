@@ -1,0 +1,120 @@
+<%args>
+$o                => undef;
+$MAX_SELECTION    => undef;
+$edit             => undef;
+$id               => undef;
+$page_type        => undef;
+$cable_sort       => undef;
+$closet_srch      => undef;
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my (@field_headers, @cell_data, @headers, @rows);
+</%init>
+
+    <%perl>
+    my @closets = ();
+	if (defined($closet_srch)) {
+	    my $crit = $closet_srch;
+	    my @terms = ();
+	    if ($crit =~ /\w+/) {
+		if ($crit =~ /\w+\s+\w+/) {
+		    @terms = split(/\s+/, $crit);
+		} else { 
+		    $crit =~ s/\s+//;
+		    push(@terms, $crit);
+		}
+	    }
+	    
+	    my $r = $ui->select_query(table=>"Closet", terms=>\@terms, $MAX_SELECTION);
+	    @closets = map { $r->{$_} } keys(%$r);
+	    
+	} else {
+	    map { push (@closets, $_) } $o->closets;
+	}
+
+print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
+	</%perl>
+
+	<div class="container">
+
+%         if (scalar(@closets) > $MAX_SELECTION) {
+            <div class="containerhead">
+	      Closets
+	    </div>
+	    <div class="containerbody">
+	      <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+	    </div>
+
+%         } else {
+
+            <div class="containerheadleft">
+	      Closets
+	    </div>
+	    <div class="containerheadright">
+%             if ($edit eq "cableinfo"){	 
+                <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%             } else {
+                <a href="closet.html?id=NEW&site_id=<% $id %>">[new]</a> &nbsp;
+		<a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+%             }
+            </div>
+	    <div class="containerbody">
+
+%         }      
+
+          <% scalar(@closets) %> row(s) returned.
+
+%	  if (scalar(@closets) && scalar(@closets) <= $MAX_SELECTION) {
+
+            <%perl>
+	    # sort
+	    # -------------------------------------------------------------------------
+	    $cable_sort = "name" if (!defined($cable_sort) || $cable_sort eq "");
+	    my @sorted_closets;
+	    if ($cable_sort eq "name" || $cable_sort eq "number") {
+		@sorted_closets = sort { $a->$cable_sort cmp $b->$cable_sort } @closets;
+	    } elsif ($cable_sort eq "floor") {
+		@sorted_closets = sort { $a->floor->level cmp $b->floor->level } @closets;
+	    } else {
+		$m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
+	    }
+	    # -------------------------------------------------------------------------
+	    </%perl>
+
+	    <%perl>
+	    (@headers, @rows) = ();
+
+	    push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=name&page_type=' . $page_type . '">Name</a>' );
+	    push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=number&page_type=' . $page_type . '">Number</a>' );
+	    push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=floor&page_type=' . $page_type . '">Floor</a>' );
+
+
+	    foreach my $closet (@sorted_closets) {
+		my $site = $closet->floor->site || $closet->site;
+
+		my @row = ();
+		push( @row, 
+		      &{sub{
+			  my $ac = "";
+			  if ($edit eq "cableinfo") {
+			      $ac .= '<input type="checkbox" name="' . "Closet__" . $closet->id . "__delete" . '">[del]';
+			      $ac .= $ui->form_field(object=>$closet, column=>"name", edit=>($edit eq "cableinfo"), returnValOnly=>1);            
+			  } else {
+			      $ac .= '<a href="closet.html?id=' . $closet->id . '">' . $closet->name . '</a>';
+			  }
+			  $ac;
+		      }} );
+		push( @row, $ui->form_field(object=>$closet, column=>"number", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
+		push( @row, $ui->form_field(object=>$closet, column=>"floor", edit=>($edit eq "cableinfo"), 
+						 linkPage=>1, returnValOnly=>1) );
+		push( @rows, \@row );
+	    }
+	    </%perl>
+
+	    <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
+	  </div> <!-- close containerbody -->
+%         }
+        </div> <!-- close container -->

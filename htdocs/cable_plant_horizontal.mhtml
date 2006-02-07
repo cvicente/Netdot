@@ -1,0 +1,120 @@
+<%args>
+$o                => undef;
+$MAX_SELECTION    => undef;
+$page_type        => undef;
+$cable_sort       => undef;
+$edit             => undef;
+$id               => undef;
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my (@field_headers, @cell_data, @headers, @rows);
+</%init>
+
+<%perl>
+	my (@closets, @cables);
+
+	map { push (@closets, $_) } $o->closets;
+	
+	print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
+	
+	foreach my $closet (@closets)
+	{
+	    map { push(@cables, $_) } $closet->horizontalcables;
+	}
+	print "cables is <pre>", Dumper(@cables), "</pre><br>" if $DEBUG;
+	</%perl>
+
+	<div class="container">
+
+%         if (scalar(@cables) > $MAX_SELECTION) {
+            <div class="containerhead">
+	      Horizontal Cable
+	    </div>
+	    <div class="containerbody">
+	      <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+	    </div>
+%         } else {
+            <div class="containerheadleft">
+	      Horizontal Cable
+	    </div>
+	    <div class="containerheadright">
+%             if ($edit eq "cableinfo"){	 
+                <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
+%	      } else {
+                <a href="cable_horizontal.html?id=NEW&site_id=<% $id %>">[new]</a> &nbsp; 
+		<a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+%             }
+            </div>
+
+%         }
+
+          <div class="containerbody">
+	    <% scalar(@cables) %> row(s) returned.
+
+%	    if (scalar(@cables) && scalar(@cables) <= $MAX_SELECTION) {
+
+              <%perl>
+	      # sort
+	      # -------------------------------------------------------------------------
+	      $cable_sort = "jackid" if (!defined($cable_sort) || $cable_sort eq "");
+	      my @sorted_cables;
+	      if ($cable_sort eq "jackid" || $cable_sort eq "room") {
+		  @sorted_cables = sort { $a->$cable_sort cmp $b->$cable_sort } @cables;
+	      } elsif ($cable_sort eq "type") {
+		  @sorted_cables = sort { $a->type->name cmp $b->type->name } @cables;
+	      } elsif ($cable_sort eq "closet") {
+		  @sorted_cables = sort { $a->closet->name cmp $b->closet->name } @cables;
+	      } else {
+		  $m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
+	      }
+	      # -------------------------------------------------------------------------
+	      </%perl>
+
+	      <%perl>
+	      (@headers, @rows) = ();
+
+	      push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=jackid&page_type=' . $page_type . '">Jack</a>' );
+	      push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=type&page_type=' . $page_type . '">Type</a>' );
+	      push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=closet&page_type=' . $page_type . '">Closet</a>' );
+	      push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=room&page_type=' . $page_type . '">Room</a>' );
+
+	      foreach my $cable (@sorted_cables) {
+		  my $site = $cable->closet->floor->site || $cable->closet->site;
+		  my @row = ();
+		  push( @row, 
+			&{sub{
+			    my $ac = "";
+			    if ($edit eq "cableinfo") {
+				$ac .= '<input type="checkbox" name="' . "HorizontalCable__" . $cable->id . "__delete" . '">[del]';
+				$ac .= $ui->form_field(object=>$cable, column=>"jackid", edit=>($edit eq "cableinfo"), returnValOnly=>1);
+			    } else {
+				$ac .= '<a href="cable_horizontal.html?id=' . $cable->id . '">' . $cable->jackid . '</a>';
+			    }
+			    $ac;
+			}} );
+		  push( @row, $ui->form_field(object=>$cable, column=>"type", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
+		  push( @row, 
+			&{sub{
+			    my $ac = "";
+			    if ($edit eq "cableinfo") {
+				$ac .= $ui->form_field(object=>$cable, column=>"closet", edit=>($edit eq "cableinfo"), returnValOnly=>1);
+			    } else {
+				$ac .= '<a href="closet.html?id=' . $cable->closet . '">' . $cable->closet->name . '</a>';
+			    }
+			    $ac;
+			}} );
+		  push( @row, $ui->form_field(object=>$cable, column=>"room", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
+		  push( @rows, \@row );
+	      }
+	      </%perl>
+
+	      <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
+%           } # end if scalar cable <= MAX_SELECTION
+
+          </div> <!-- close containerbody -->
+        </div> <!-- close container -->
+
+</%perl>

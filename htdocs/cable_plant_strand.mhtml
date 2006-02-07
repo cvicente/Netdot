@@ -1,0 +1,217 @@
+<%args>
+$o                => undef;
+$MAX_SELECTION    => undef;
+$page_type        => undef;
+$cable_sort       => undef;
+$edit             => undef;
+$id               => undef;
+$backbone_id_srch => undef;
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my (@field_headers, @cell_data, @headers, @rows);
+</%init>
+
+<%perl>
+
+   my $backbone = BackboneCable->retrieve($backbone_id_srch);
+   my @strands;
+
+	map { push (@strands, $_) } $backbone->strands;
+        print "Strands is <pre>", Dumper(@strands), "</pre><br>" if $DEBUG;
+	</%perl>
+
+	<div class="container">
+%         if (scalar(@strands) > $MAX_SELECTION) {
+
+            <div class="containerhead">
+	      Cable Strands
+	    </div>
+	    <div class="containerbody">
+	      <b>Over <% $MAX_SELECTION %> rows were returned. Please refine your criteria.</b>
+	    </div>
+%         } else {
+
+            <div class="containerheadleft">
+	      Cable Strands
+	    </div>
+	    <div class="containerheadright">
+%	      if ($edit eq "cableinfo"){	 
+                <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+%	      } else {
+                <a href="cable_strand.html?id=NEW">[new]</a> &nbsp;
+		<a href="cable_plant.html?backbone_id_srch=<% $backbone_id_srch %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
+%             }
+            </div>
+	    <div class="containerbody">
+
+%         }      
+
+          <% scalar(@strands) %> row(s) returned.
+
+%	  if (scalar(@strands) && scalar(@strands) <= $MAX_SELECTION) {
+            <%perl>
+		my @backbones = ();
+
+	    if ($edit eq "cableinfo") {
+		# we need to grab all backbones for start and end sites of this strand.
+		my ($start_site, $end_site) = ($backbone->start_closet->floor->site, $backbone->end_closet->floor->site);
+		foreach my $closet (($start_site->closets, $end_site->closets)) {
+		    map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$closet),
+						   BackboneCable->search(end_closet=>$closet));
+		}
+	    }
+	    </%perl>
+
+	    <%perl>
+	    # sort
+	    # -------------------------------------------------------------------------
+	    $cable_sort = "name" if (!defined($cable_sort) || $cable_sort eq "");
+	    my @sorted_strands;
+	    if ($cable_sort eq "name") {
+		@sorted_strands = sort { (split(/\./o, $a->name, 2))[1] <=> (split(/\./o, $b->name, 2))[1] } @strands;
+	    } elsif ($cable_sort eq "direction") {
+		@sorted_strands = sort { int($a->direction) <=> int($b->direction) } @strands;
+	    } elsif ($cable_sort eq "status") {
+		@sorted_strands = sort { $a->status->name cmp $b->status->name } @strands;
+	    } else {
+		$m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
+	    }
+	    # -------------------------------------------------------------------------
+	    </%perl>
+
+	    <%perl>
+	    (@headers, @rows) = ();
+
+	    push( @headers, '<a href="cable_plant.html?backbone_id_srch=' . $backbone_id_srch . '&cable_sort=name&page_type=' . $page_type . '">Name</a>' );
+	    push( @headers, '<a href="cable_plant.html?backbone_id_srch=' . $backbone_id_srch . '&cable_sort=status&page_type=' . $page_type . '">Status</a>' );
+	    push( @headers, '<a href="cable_plant.html?backbone_id_srch=' . $backbone_id_srch . '&cable_sort=direction&page_type=' . $page_type . '">Direction</a>' );
+	    push( @headers, 'Spliced with' );
+	    if ($edit ne "cableinfo") {
+		push( @headers, 'Part of Sequence' );
+	    }        
+
+	    foreach my $strand (@sorted_strands) {
+		my @row = ();
+		push( @row, 
+		      &{sub{
+			  my $ac = "";
+			  if ($edit eq "cableinfo") {
+			      $ac .= '<input type="checkbox" name="' . "CableStrand__" . $strand->id . "__delete" . '">[del]';
+			      $ac .= $ui->form_field(object=>$strand, column=>"name", edit=>($edit eq "cableinfo"), returnValOnly=>1);            
+			  } else {
+			      $ac .= '<a href="cable_strand.html?id=' . $strand->id . '">' . $strand->name . '</a>';
+			  }
+			  $ac;
+		      }} );
+		push( @row, $ui->form_field(object=>$strand, column=>"status", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
+		push( @row, 
+		      &{sub{
+			  my $ac = "";
+			  if ($edit eq "cableinfo") {
+			      my $dir_name = "CableStrand__" . $strand->id . "__direction";
+			      $ac .= '<input type="radio" name="' . $dir_name . '" value="0" ' 
+				  . ($strand && int($strand->direction) == 0 ? "CHECKED" : "") . '>TX &nbsp;&nbsp;&nbsp; ';
+			      $ac .= '<input type="radio" name="' . $dir_name . '" value="1" ' 
+				  . ($strand && int($strand->direction) == 1 ? "CHECKED" : "") . '>RX';
+			  } elsif (defined($strand)) {
+			      $ac .=  (int($strand->direction) == 1 ? "RX" : "TX") ;
+			  }
+			  $ac;
+		      }} );
+		push( @row, 
+		      # This should probably be turned into an anonymous mason module since the bulk is plain text
+		      &{sub{
+			  my $ac = "";
+			  if ($edit ne "cableinfo") {
+			      my @splices = $strand->splices;
+			      if (scalar(@splices)) {
+				  $ac .= '<a href="cable_strand.html?id=' . $splices[0]->strand2->id . '">' . $splices[0]->strand2->name . '</a>';
+			      }
+			      if (scalar(@splices) == 2) {
+				  $ac .= ', <a href="cable_strand.html?id=' . $splices[1]->strand2->id . '">' . $splices[1]->strand2->name . '</a> ';
+			      }
+			  } else {
+			      $ac .= <<'HERE';
+
+                <script language="JavaScript">
+                <!--
+                function lookupStrands(bb_id, field_name, form_name)
+                {
+                    if (!bb_id)
+                    {
+                        alert("You must select a backbone.");
+                    }
+                    
+                    var url = "strand_backbone_list_query.html?bb_id=";
+                    url += bb_id + "&field_name=" + field_name;
+                    url += "&form_name=" + form_name;
+                    
+                    var wind = window.open(url, "tmp", "width=1,height=1");
+                    wind.blur();
+                }
+                -->
+                </script>
+
+HERE
+
+                              $ac .= '<select name="backbone_list_srch1_' . $strand->id . '" onChange="lookupStrands(this.value, \'__splice1_' 
+			          . $strand->id . '\', \'netdotform\');">';
+			      $ac .= '<option value="">Lookup by Backbone</option>';
+
+
+			      my @splices = $strand->splices;
+			      my %stored = ();
+			      foreach my $bb (sort { $a->name cmp $b->name } @backbones)
+			      {
+				  next if ($bb->id == int($strand->cable) || exists($stored{$bb}));
+				  $stored{$bb} = 1;
+				  $ac .= sprintf("<option value=\"%s\">%s</option>\n", $bb->id, $bb->name);
+			      }
+
+			      $ac .= '</select> &nbsp; ';
+			      $ac .= '<select name="__splice1_' . $strand->id . '">';
+			      $ac .= '<option value="">-- Make your selection --</option>';
+			      if (scalar(@splices)) {
+				  $ac .= '<option value="' . $splices[0]->strand2->id . '" SELECTED>' . $splices[0]->strand2->name . '</option>';
+			      }
+			      $ac .= '<option value="">[null]</option>';
+			      $ac .= '</select>';
+			      $ac .= '<br>';
+			      $ac .= '<select name="backbone_list_srch2_' . $strand->id . '" onChange="lookupStrands(this.value, \'__splice2_' 
+				  . $strand->id . '\', \'netdotform\');">';
+			      $ac .= '<optino value="">Lookup by Backbone</option>';
+
+			      %stored = ();
+			      foreach my $bb (sort { $a->name cmp $b->name } @backbones)
+			      {
+				  next if ($bb->id == int($strand->cable) || exists($stored{$bb}));
+				  $stored{$bb} = 1;
+				  $ac .= sprintf("<option value=\"%s\">%s</option>\n", $bb->id, $bb->name);
+			      }
+
+			      $ac .= '</select> &nbsp; ';
+			      $ac .= '<select name="__splice2_' . $strand->id . '">';
+			      $ac .= '<option value="">-- Make your selection --</option>';
+			      if (scalar(@splices) == 2) {
+				  $ac .= '<option value="' . $splices[1]->strand2->id . '" SELECTED>' . $splices[1]->strand2->name . '</option>';
+			      }
+			      $ac .= '<option value="">[null]</option>';
+			      $ac .= '</select>';
+			  }
+			  $ac;
+		      }} );
+		if ($edit ne "cableinfo") {
+		    push( @row, $m->scomp("display_sequence.mhtml", strands=>[$strand]) );
+		}
+		push( @rows, \@row );
+	    }
+	    </%perl>
+
+	    <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
+%         } # end if <= MAX_SELECTION
+
+          </div> <!-- close containerbody -->
+        </div> <!-- close container -->
