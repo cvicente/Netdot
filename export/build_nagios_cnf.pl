@@ -4,8 +4,8 @@
 #  build Nagios 2.0 configuration
 #
 
-use NetdotExport;
 use lib "<<Make:LIB>>";
+use Netdot::Export;
 use Netdot::DBI;
 use strict;
 use Data::Dumper;

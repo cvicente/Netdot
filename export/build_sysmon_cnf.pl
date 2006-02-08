@@ -4,8 +4,8 @@
 #  build Sysmon configuration
 #
 
-use NetdotExport;
 use lib "<<Make:LIB>>";
+use Netdot::Export;
 use Netdot::DBI;
 use strict;
 
