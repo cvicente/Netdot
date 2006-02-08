@@ -2191,7 +2191,7 @@ sub _canonicalize_int_name {
 
     my %ABBR = % {$self->{config}->{IF_DNS_ABBR} };
     foreach my $ab (keys %ABBR){
-	$name =~ s/$ab/$ABBR{$ab}/i;
+	$name =~ s/^$ab/$ABBR{$ab}/i;
     }
     $name =~ s/\/|\.|\s+/-/g;
     return lc( $name );
