@@ -5,8 +5,8 @@
 # grouped by the building their located in and their subnet
 #
 # 
-use NetdotExport;
 use lib "<<Make:LIB>>";
+use Netdot::Export;
 use Netdot::DBI;
 use strict;
 
