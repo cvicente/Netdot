@@ -1,160 +1,103 @@
-2003-07-10  stephenf  <netdot@tiroloco.uoregon.edu>
+------------------------------------------------------------------------
+r1343 | cvicente | 2006-02-09 10:08:28 -0800 (Thu, 09 Feb 2006) | 5 lines
 
-	* node.html 
-	Mostly in place, just waiting for code to insert subnets (if
-	necessary).  Otherwise, inserts nodes, interfaces, and ip addresses. 
+* Removed check for broadcast addresses while validating new addresses before insertion.
+  A router's looback interface is a valid possibility.
+  (bug fix merged from trunk)
 
-	* create.html
-	Updated to use GUI.pm.  New state code.  Improvements to UI.
-	Minor issue as described below still exists, but this is a low
-	priority.
 
-	* updatenodes.pl
-	Script for cron to run daily and update node, interface, ip, and
-	subnet information.
+------------------------------------------------------------------------
+r1341 | cvicente | 2006-02-08 15:56:42 -0800 (Wed, 08 Feb 2006) | 3 lines
 
-2003-06-03  stephenf  <netdot@tiroloco.uoregon.edu>
+* Merging another minor fix from trunk
 
-	* create.html
-	This file is now functional.  Interface is mostly there.  There
-	are some lingering issues regarding a case where name field is
-	filled on one page, submit is clicked, and the subsequent page has
-	a name field (which is filled in with the value from the last
-	page).  This is a minor issue.  Otherwise, correct state follows
-	navigation. 
 
-	* browse.html
-	Basic functionality is there, with a decent looking initial page. 
+------------------------------------------------------------------------
+r1339 | cvicente | 2006-02-08 15:50:15 -0800 (Wed, 08 Feb 2006) | 3 lines
 
-	* table.html
-	Component that creates an (html) table that displays all the
-	objects (tables) in the database.  Finished.
+* Merging some minor changes from trunk
 
-	* sortresults.html
-	General functionality is there.  Work is needed on the
-	appearance. 
 
-	* search.html 
-	Mostly finished.  Probably have some lingering UI issues.
+------------------------------------------------------------------------
+r1336 | cvicente | 2006-02-08 14:16:09 -0800 (Wed, 08 Feb 2006) | 4 lines
 
-	* form.html
-	Component for creating a <form> </form> section for a specific
-	instance from a given table.  This has problems with update.html -
-	the new buttons don't go to create.html.  Initial test of wrapping
-	New buttons with <form action=create> didn't seem to work too
-	well.  Will need more tests to evaluate this problem.
+* Fixed bug in method that generates DNS names for interfaces
+* Added abbreviation for Vlan interfaces: 'vl-'
 
-2003-04-17  cvicente  <cvicente@tiroloco.uoregon.edu>
 
-	* Added ifAlias and jackNumber to Interface
-	* Other minor fixes in netdot.schema	 
+------------------------------------------------------------------------
+r1335 | cvicente | 2006-02-07 14:39:33 -0800 (Tue, 07 Feb 2006) | 3 lines
 
-2003-04-16  netdot  <netdot@tiroloco.uoregon.edu>
+* Merging bug fix (ticket #271) from trunk 
 
-	* ins.sample.data: thinking through Meta table
 
-	* DBI.pm, netdot.schema:
-	fix to Meta -- changed mainObjects to mainObject
+------------------------------------------------------------------------
+r1331 | cvicente | 2006-02-03 17:40:04 -0800 (Fri, 03 Feb 2006) | 3 lines
 
-	* DBI.pm: added more details to Meta.
+* Merging a bug fix from trunk
 
-	* netdot.schema: added Meta table for storing meta information
 
-	* DBI.pm:
-	added Meta table for holding meta information.  this should include:
-	  * column sorting
-	  * table relationships
-	  * 'main object'
-	still needs to be fleshed out....
+------------------------------------------------------------------------
+r1322 | cvicente | 2006-01-31 14:33:54 -0800 (Tue, 31 Jan 2006) | 3 lines
 
-2003-04-15  netdot  <netdot@tiroloco.uoregon.edu>
+* Merging a few bug fixes from trunk
 
-	* DBI.pm:
-	couple more bugfixes: another 'qw' forgot in Availability and misnamed
-	column in Customer (s/hours/availability/)
 
-	* DBI.pm: removed tables() function.  Use DBI::tables() instead.
+------------------------------------------------------------------------
+r1318 | cvicente | 2006-01-27 16:14:58 -0800 (Fri, 27 Jan 2006) | 3 lines
 
-	* DBI.pm: fixed another bug in Peer package -- forgot 'qw'.
+* Merging one last fix from trunk today
 
-	* DBI.pm:
-	added tables() to base class.  I need a way to discover all the tables
-	in the database -- don't see a way to do that in Class::DBI.  Fixed
-	bug in package Peer.
 
-	* ins.sample.data: added some nero entries to flesh things out a bit
+------------------------------------------------------------------------
+r1317 | cvicente | 2006-01-27 16:06:28 -0800 (Fri, 27 Jan 2006) | 3 lines
 
-	* ins.sample.data: New file.
+* Merging latest fixes from trunk
 
-2003-04-14  netdot  <netdot@tiroloco.uoregon.edu>
 
-	* netdot.schema, DBI.pm:
-	added disabled column to those classes with has_many relationships
+------------------------------------------------------------------------
+r1313 | cvicente | 2006-01-27 14:11:00 -0800 (Fri, 27 Jan 2006) | 3 lines
 
-2003-04-10  netdot  <netdot@tiroloco.uoregon.edu>
+* Merging several bug fixes from trunk into the 0.7 branch
 
-	* DBI.pm:
-	reflected change in netdot.schema.  Ip has_a Interface; Interface
-	has_many Ip.
 
-	* netdot.schema: removed ip from Interface and added interface to Ip.
+------------------------------------------------------------------------
+r1299 | cvicente | 2006-01-24 11:00:53 -0800 (Tue, 24 Jan 2006) | 3 lines
 
-	* DBI.pm:
-	added the rest of the classes and completed the relationships between
-	all of them
+* Merging a couple of fixes from trunk into 0.7 branch
 
-	* netdot.schema: changed contactpool to contactPool in Customer;
-	added status to Circuit;
-	added ip to Interface;
-	added availability to Peer.
 
-	* netdot.schema: changed nodeId to nodeID; still need to add 'disabled'
+------------------------------------------------------------------------
+r1296 | cvicente | 2006-01-20 14:28:34 -0800 (Fri, 20 Jan 2006) | 2 lines
 
-	* DBI.pm: updated column names to new naming convention
+* Merging change in trunk
 
-	* DBI.pm: added a few more classes
+------------------------------------------------------------------------
+r1292 | cvicente | 2006-01-18 17:01:14 -0800 (Wed, 18 Jan 2006) | 3 lines
 
-	* netdot.schema:
-	changed naming convention for column names (first letter now lowercase)
+* Merging latest fixes from Trunk
 
-	* DBI.pm:
-	no changes on this rev; just sorting packages in alphabetical listing
 
-	* DBI.pm: fleshing out has_a relationships for existing classes.
+------------------------------------------------------------------------
+r1287 | cvicente | 2006-01-18 10:27:05 -0800 (Wed, 18 Jan 2006) | 3 lines
 
-	* netdot.schema: more sorting
+* Merging latest fixes from trunk
 
-	* netdot.schema:
-	no changes; just resorted everything to better find a given table.
-	sort order is now alphabetical
 
-2003-04-09  netdot  <netdot@tiroloco.uoregon.edu>
+------------------------------------------------------------------------
+r1283 | cvicente | 2006-01-17 17:02:07 -0800 (Tue, 17 Jan 2006) | 3 lines
 
-	* DBI.pm: fleshing out definitions of each class.
+* Merging latest fixes from trunk
 
-	* netdot.schema:
-	changed Hours to Availability in Customer to make consistent with Site
-	& Person tables.
 
-	* netdot.schema:
-	added Availability table -- used by a number of other tables
+------------------------------------------------------------------------
+r1280 | cvicente | 2006-01-17 16:09:17 -0800 (Tue, 17 Jan 2006) | 3 lines
 
-	* DBI.pm: adding landmarks
+* Merging latest fixes from trunk
 
-	* netdot.schema:
-	added Status table so that one can specify the status of a given circuit
 
-2003-04-08  netdot  <netdot@tiroloco.uoregon.edu>
+------------------------------------------------------------------------
+r1278 | cvicente | 2006-01-17 12:32:58 -0800 (Tue, 17 Jan 2006) | 1 line
 
-	* DBI.pm: testing trigger
-
-	* README: New file.
-
-	* netdot.schema: initial revision
-
-	* netdot.schema: New file.
-
-	* setup-class-dbi.pl: initial checkin
-
-	* setup-class-dbi.pl, initacls.Pg: New file.
-
+Creating a branch for release 0.7
+------------------------------------------------------------------------

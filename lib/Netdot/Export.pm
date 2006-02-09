@@ -5,7 +5,7 @@
 # 
 
 
-package NetdotExport;
+package Netdot::Export;
 
 use strict;
 use Socket;
