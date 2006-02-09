@@ -442,15 +442,8 @@ sub _validate {
 		return 0;	    
 	    }
 	    my ($ip, $pip);
-	    if ( ($ip = NetAddr::IP->new($ipblock->address, $ipblock->prefix)) &&
-		 ($pip = NetAddr::IP->new($parent->address, $parent->prefix))  ){ 
-		if ( $pip->network->broadcast->addr eq $ip->addr ) {
-		    my $msg = sprintf("Address is broadcast for %s/%s: ",$parent->address, $parent->prefix);
-		    $self->debug(loglevel => 'LOG_NOTICE', message => $msg);
-		    $self->error($msg);
-		    return 0;	
-		}
-	    }else{
+	    unless ( ($ip = NetAddr::IP->new($ipblock->address, $ipblock->prefix)) &&
+		     ($pip = NetAddr::IP->new($parent->address, $parent->prefix))  ){ 
 		$self->debug(loglevel => 'LOG_NOTICE',
 			     message => "_validate: %s/%s or %s/%s not valid?",
 			     args => [$ipblock->address, $ipblock->prefix,
