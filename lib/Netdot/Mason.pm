@@ -10,7 +10,7 @@ use CGI::Cookie;
     package HTML::Mason::Commands;
     use NetAddr::IP;
     use Data::Dumper;
-    use lib "/usr/local/netdot/lib";
+    use lib "PREFIX/lib";
     use Netdot::DBI;
     use Netdot::UI;
     use Netdot::IPManager;
@@ -28,8 +28,8 @@ use CGI::Cookie;
 my $ah =
     HTML::Mason::ApacheHandler->new (
 				     args_method => "CGI",
-				     comp_root   => "/usr/local/netdot/htdocs",
-				     data_dir    => "/usr/local/netdot/htdocs/masondata",
+				     comp_root   => "PREFIX/htdocs",
+				     data_dir    => "PREFIX/htdocs/masondata",
 				     error_mode  => 'output',
 				     );
 sub handler

@@ -1,160 +1,707 @@
-2003-07-10  stephenf  <netdot@tiroloco.uoregon.edu>
+------------------------------------------------------------------------
+r1344 | cvicente | 2006-02-09 10:09:00 -0800 (Thu, 09 Feb 2006) | 5 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/IPManager.pm
 
-	* node.html 
-	Mostly in place, just waiting for code to insert subnets (if
-	necessary).  Otherwise, inserts nodes, interfaces, and ip addresses. 
+* Removed check for broadcast addresses while validating new addresses before insertion.
+  A router's looback interface is a valid possibility.
+  (bug fix merged from trunk)
 
-	* create.html
-	Updated to use GUI.pm.  New state code.  Improvements to UI.
-	Minor issue as described below still exists, but this is a low
-	priority.
 
-	* updatenodes.pl
-	Script for cron to run daily and update node, interface, ip, and
-	subnet information.
+------------------------------------------------------------------------
+r1255 | cvicente | 2006-01-09 13:24:32 -0800 (Mon, 09 Jan 2006) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/Mason.pm
 
-2003-06-03  stephenf  <netdot@tiroloco.uoregon.edu>
+* Fix for ticket #244 (netdot-0.6.6 installs incorrectly)
 
-	* create.html
-	This file is now functional.  Interface is mostly there.  There
-	are some lingering issues regarding a case where name field is
-	filled on one page, submit is clicked, and the subsequent page has
-	a name field (which is filled in with the value from the last
-	page).  This is a minor issue.  Otherwise, correct state follows
-	navigation. 
 
-	* browse.html
-	Basic functionality is there, with a decent looking initial page. 
+------------------------------------------------------------------------
+r1240 | cvicente | 2005-12-12 16:41:40 -0800 (Mon, 12 Dec 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/contrib/NetdotExport.pm
 
-	* table.html
-	Component that creates an (html) table that displays all the
-	objects (tables) in the database.  Finished.
+* Merged a bug fix from Trunk
 
-	* sortresults.html
-	General functionality is there.  Work is needed on the
-	appearance. 
 
-	* search.html 
-	Mostly finished.  Probably have some lingering UI issues.
+------------------------------------------------------------------------
+r1212 | cvicente | 2005-11-22 11:11:53 -0800 (Tue, 22 Nov 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/IPManager.pm
 
-	* form.html
-	Component for creating a <form> </form> section for a specific
-	instance from a given table.  This has problems with update.html -
-	the new buttons don't go to create.html.  Initial test of wrapping
-	New buttons with <form action=create> didn't seem to work too
-	well.  Will need more tests to evaluate this problem.
+* Documented build_tree method better
 
-2003-04-17  cvicente  <cvicente@tiroloco.uoregon.edu>
 
-	* Added ifAlias and jackNumber to Interface
-	* Other minor fixes in netdot.schema	 
+------------------------------------------------------------------------
+r1210 | cvicente | 2005-11-21 17:34:13 -0800 (Mon, 21 Nov 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/IPManager.pm
 
-2003-04-16  netdot  <netdot@tiroloco.uoregon.edu>
+- Fix for bug #233 (IPv6 tree not right)
+  Problem was caused by size of IPv6 numbers (need to use 'bigint' module)
 
-	* ins.sample.data: thinking through Meta table
 
-	* DBI.pm, netdot.schema:
-	fix to Meta -- changed mainObjects to mainObject
+------------------------------------------------------------------------
+r1205 | cvicente | 2005-11-16 16:43:02 -0800 (Wed, 16 Nov 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/contrib/build_nagios_cnf.pl
 
-	* DBI.pm: added more details to Meta.
+* In nagios config script, changed the default for notification_interval back to 0.  It is actually more convenient to have Nagios stop notifying after a while.
 
-	* netdot.schema: added Meta table for storing meta information
 
-	* DBI.pm:
-	added Meta table for holding meta information.  this should include:
-	  * column sorting
-	  * table relationships
-	  * 'main object'
-	still needs to be fleshed out....
+------------------------------------------------------------------------
+r1202 | cvicente | 2005-11-15 18:03:39 -0800 (Tue, 15 Nov 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
 
-2003-04-15  netdot  <netdot@tiroloco.uoregon.edu>
+* Fix for ticket #225 (DeviceManager checks for invalid dependencies, but does not remove them)
 
-	* DBI.pm:
-	couple more bugfixes: another 'qw' forgot in Availability and misnamed
-	column in Customer (s/hours/availability/)
 
-	* DBI.pm: removed tables() function.  Use DBI::tables() instead.
 
-	* DBI.pm: fixed another bug in Peer package -- forgot 'qw'.
+------------------------------------------------------------------------
+r1201 | cvicente | 2005-11-15 17:53:27 -0800 (Tue, 15 Nov 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/device.html
 
-	* DBI.pm:
-	added tables() to base class.  I need a way to discover all the tables
-	in the database -- don't see a way to do that in Class::DBI.  Fixed
-	bug in package Peer.
+* Fix for ticket #229
 
-	* ins.sample.data: added some nero entries to flesh things out a bit
 
-	* ins.sample.data: New file.
+------------------------------------------------------------------------
+r1200 | cvicente | 2005-11-15 17:49:35 -0800 (Tue, 15 Nov 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/addlink.html
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
 
-2003-04-14  netdot  <netdot@tiroloco.uoregon.edu>
+* Modified the way L3 dependencies are determined after adding L2 dependencies
+* Merged latest changes from trunk, with fixes for ticket #224
 
-	* netdot.schema, DBI.pm:
-	added disabled column to those classes with has_many relationships
 
-2003-04-10  netdot  <netdot@tiroloco.uoregon.edu>
+------------------------------------------------------------------------
+r1195 | cvicente | 2005-11-14 10:37:08 -0800 (Mon, 14 Nov 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/bin/insert-metadata
 
-	* DBI.pm:
-	reflected change in netdot.schema.  Ip has_a Interface; Interface
-	has_many Ip.
+* Merged latest bug fix from trunk
 
-	* netdot.schema: removed ip from Interface and added interface to Ip.
 
-	* DBI.pm:
-	added the rest of the classes and completed the relationships between
-	all of them
+------------------------------------------------------------------------
+r1191 | cvicente | 2005-11-11 16:52:47 -0800 (Fri, 11 Nov 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/device.html
 
-	* netdot.schema: changed contactpool to contactPool in Customer;
-	added status to Circuit;
-	added ip to Interface;
-	added availability to Peer.
+* Missed a couple of lines
 
-	* netdot.schema: changed nodeId to nodeID; still need to add 'disabled'
 
-	* DBI.pm: updated column names to new naming convention
+------------------------------------------------------------------------
+r1189 | cvicente | 2005-11-11 16:44:19 -0800 (Fri, 11 Nov 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/device.html
 
-	* DBI.pm: added a few more classes
+# Fix fot ticket #221 (When editing interfaces, current sort method should be maintained)
 
-	* netdot.schema:
-	changed naming convention for column names (first letter now lowercase)
 
-	* DBI.pm:
-	no changes on this rev; just sorting packages in alphabetical listing
+------------------------------------------------------------------------
+r1182 | cvicente | 2005-11-07 12:49:11 -0800 (Mon, 07 Nov 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/contrib/build_nagios_cnf.pl
 
-	* DBI.pm: fleshing out has_a relationships for existing classes.
+- Fixed a bug that caused Nagios to crash, caused by Devices having a contact list in which none of the contacts were to be notified
+- Did some cleaning up of the code
 
-	* netdot.schema: more sorting
 
-	* netdot.schema:
-	no changes; just resorted everything to better find a given table.
-	sort order is now alphabetical
+------------------------------------------------------------------------
+r1179 | cvicente | 2005-10-27 09:43:43 -0700 (Thu, 27 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/UI.pm
 
-2003-04-09  netdot  <netdot@tiroloco.uoregon.edu>
+- Added missing 'use' line.  This caused command-line scripts to fail
 
-	* DBI.pm: fleshing out definitions of each class.
 
-	* netdot.schema:
-	changed Hours to Availability in Customer to make consistent with Site
-	& Person tables.
+------------------------------------------------------------------------
+r1167 | cvicente | 2005-10-25 15:17:05 -0700 (Tue, 25 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/search.html
+   M /branches/netdot-0.6/lib/Netdot.pm
 
-	* netdot.schema:
-	added Availability table -- used by a number of other tables
+* Merged fix for ticket #217 from trunk
 
-	* DBI.pm: adding landmarks
 
-	* netdot.schema:
-	added Status table so that one can specify the status of a given circuit
+------------------------------------------------------------------------
+r1146 | cvicente | 2005-10-17 18:16:11 -0700 (Mon, 17 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/UI.pm
 
-2003-04-08  netdot  <netdot@tiroloco.uoregon.edu>
+- Removed old inheritance line
 
-	* DBI.pm: testing trigger
 
-	* README: New file.
+------------------------------------------------------------------------
+r1145 | cvicente | 2005-10-17 16:39:48 -0700 (Mon, 17 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
 
-	* netdot.schema: initial revision
+- Fix for ticket #200 (Product name too specific)
 
-	* netdot.schema: New file.
 
-	* setup-class-dbi.pl: initial checkin
+------------------------------------------------------------------------
+r1144 | cvicente | 2005-10-17 15:56:49 -0700 (Mon, 17 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/device.html
 
-	* setup-class-dbi.pl, initacls.Pg: New file.
+- Fix for ticket #211 (Separate SNMP information to another table on display)
 
+
+------------------------------------------------------------------------
+r1143 | cvicente | 2005-10-17 11:05:15 -0700 (Mon, 17 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/device.html
+
+- Fixed bug #207 (Cancel/Save inconsistency)
+
+
+------------------------------------------------------------------------
+r1140 | cvicente | 2005-10-14 17:01:13 -0700 (Fri, 14 Oct 2005) | 5 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/ip-ws.html
+   M /branches/netdot-0.6/htdocs/section_management.html
+   M /branches/netdot-0.6/lib/Netdot/IPManager.pm
+
+- Fix for Ticket #204 (feature request: "Search/By IP" tool return the covering allocation if specific address is not found)
+- Added box for IP regex searching
+- Modified insertblock method to inherit entity and dns_delegated fields from parent block
+
+
+------------------------------------------------------------------------
+r1139 | cvicente | 2005-10-13 11:59:36 -0700 (Thu, 13 Oct 2005) | 22 lines
+Changed paths:
+   M /branches/netdot-0.6/bin/setup-class-dbi
+   M /branches/netdot-0.6/htdocs/ip-ws.html
+   M /branches/netdot-0.6/htdocs/ipblock_list.mhtml
+   M /branches/netdot-0.6/htdocs/section_management.html
+   M /branches/netdot-0.6/lib/Netdot/IPManager.pm
+
+Fix for ticket #198 (Show root blocks on ip management page)
+
+- Now all root blocks are showed by default when entering the
+  'Address Space' section under Management.
+  User has the option of specifying which version to show (v4|v6|all).
+  List is now ordered by address, instead of prefix.
+- Removed the "Select Root" box from the Address Space section.
+- Cleaned up some methods in IPManager module
+
+#############################
+#IMPORTANT!
+#############################
+These changes require rebuilding Netdot::DBI
+Procedure is:
+
+# cd /PREFIX/bin
+# perl setup-class-dbi
+# cp DBI.pm /PREFIX/lib/Netdot/
+        
+Restart Apache
+
+
+------------------------------------------------------------------------
+r1138 | cvicente | 2005-10-12 17:49:19 -0700 (Wed, 12 Oct 2005) | 6 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/IPManager.pm
+
+- Fix for ticket #203 (IP address validation needed before inserting into tables)
+  Validation code had some holes in its logic.  It also did not include checking
+  for the all-zeroes address: 0.0.0.0
+
+
+
+------------------------------------------------------------------------
+r1137 | cvicente | 2005-10-12 16:40:59 -0700 (Wed, 12 Oct 2005) | 20 lines
+Changed paths:
+   M /branches/netdot-0.6/bin/setup-class-dbi
+   M /branches/netdot-0.6/htdocs/device.html
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+   M /branches/netdot-0.6/lib/Netdot.pm
+
+- Fixed ticket #205 (Show history items in reverse order)
+  Also went ahead and cleaned up some code in the DeviceManager
+  module, related to sorting.
+  
+  #############################
+  #IMPORTANT!
+  #############################
+
+  These changes require rebuilding Netdot::DBI.pm.
+
+  Procedure is:
+
+  # cd /PREFIX/bin
+  # perl setup-class-dbi
+  # cp DBI.pm /PREFIX/lib/Netdot/
+  
+  Restart Apache
+  
+  
+
+------------------------------------------------------------------------
+r1136 | cvicente | 2005-10-12 15:53:49 -0700 (Wed, 12 Oct 2005) | 11 lines
+Changed paths:
+   M /branches/netdot-0.6/bin/setup-class-dbi
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+   M /branches/netdot-0.6/lib/Netdot.pm
+
+- Fix for ticket #202 (bug in discover/add device)
+  Added extra methods to 'canonicalize' and 
+  validate MAC addresses prior to their insertion in the
+  DB.  
+  Validation method is called when querying devices via
+  SNMP, and also by a Class::DBI-level trigger that 
+  occurs before object insertion and update.  This is the
+  best way to ensure that any input (including manual)
+  is checked.
+
+
+------------------------------------------------------------------------
+r1134 | cvicente | 2005-10-11 14:45:51 -0700 (Tue, 11 Oct 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/display_sequence.mhtml
+   M /branches/netdot-0.6/lib/Netdot/CablePlantManager.pm
+
+- Wrapped all DBI code inside eval{} blocks to prevent Netdot
+  from crashing when unexpected errors happen
+
+
+------------------------------------------------------------------------
+r1133 | cvicente | 2005-10-11 11:29:57 -0700 (Tue, 11 Oct 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/cable_backbone.html
+
+- When adding splices, the program was deleting all existing splices for the specified strands, 
+  which included splices that went the opposite way.  This is not the intended behavior.
+
+
+------------------------------------------------------------------------
+r1131 | cvicente | 2005-10-10 16:29:27 -0700 (Mon, 10 Oct 2005) | 5 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/CablePlantManager.pm
+
+- Fixed bug #195 (Spliced strand sequences don't seem right)
+  Splice records work in pairs.  Method was only creating one side
+
+  
+
+------------------------------------------------------------------------
+r1130 | cvicente | 2005-10-10 15:40:18 -0700 (Mon, 10 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/doc/INSTALL
+
+- Fixed ticket #187 (Document the use of the Default.conf and Site.conf files in the INSTALL file)
+
+
+------------------------------------------------------------------------
+r1129 | cvicente | 2005-10-10 09:44:49 -0700 (Mon, 10 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/updatedevice.html
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+
+- Secondary contactlist was not being added when discovering a device
+
+
+------------------------------------------------------------------------
+r1128 | cvicente | 2005-10-09 13:41:01 -0700 (Sun, 09 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/cable_strand.html
+
+- Made the Circuit field a link to the circuit.html page
+
+
+------------------------------------------------------------------------
+r1127 | cvicente | 2005-10-09 12:14:31 -0700 (Sun, 09 Oct 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/cable_backbone.html
+
+- Fixed for ticket #192 (Add backbone Site names in select list for adding a splice range)
+  Now list shows full name of end closet, which contains Site name
+
+
+------------------------------------------------------------------------
+r1126 | cvicente | 2005-10-08 19:03:51 -0700 (Sat, 08 Oct 2005) | 5 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/cable_backbone.html
+   M /branches/netdot-0.6/lib/Netdot/CablePlantManager.pm
+
+- Corrected more incorrect calls to error.mhtml
+- Corrected a column ordering bug introduced in last revision
+- Fixed ticket #189 (Error when adding a splice range)
+
+
+------------------------------------------------------------------------
+r1125 | cvicente | 2005-10-08 17:51:12 -0700 (Sat, 08 Oct 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/cable_backbone.html
+
+- Fix to ticket #193 (Editing CableStrands, there's a check box at the end with no label)
+  Also removed the sequence column, since that's not needed when editing
+
+
+------------------------------------------------------------------------
+r1124 | cvicente | 2005-10-08 15:14:28 -0700 (Sat, 08 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+
+- Added conditional to not display message about orphaned circuits if interface being deleted did not have any
+
+
+------------------------------------------------------------------------
+r1123 | cvicente | 2005-10-07 16:35:24 -0700 (Fri, 07 Oct 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/cable_backbone.html
+
+- Fix for ticket #189 (Error when adding a splice range)
+  Call to error.mhtml was missing parameter name
+
+
+------------------------------------------------------------------------
+r1122 | cvicente | 2005-10-07 16:04:50 -0700 (Fri, 07 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/cable_backbone.html
+
+- Changed example to have the most common number of strands to be spliced (they come in groups of 12)
+
+
+------------------------------------------------------------------------
+r1121 | cvicente | 2005-10-07 15:08:29 -0700 (Fri, 07 Oct 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/cable_backbone.html
+   M /branches/netdot-0.6/htdocs/closet.html
+
+- Fix to ticket #185: In Backbone Cable section, when showing closet names, include building names
+
+
+
+------------------------------------------------------------------------
+r1120 | cvicente | 2005-10-07 11:20:30 -0700 (Fri, 07 Oct 2005) | 9 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/jsrs_netdot.html
+   M /branches/netdot-0.6/htdocs/select_query.html
+   M /branches/netdot-0.6/lib/Netdot/IPManager.pm
+   M /branches/netdot-0.6/lib/Netdot.pm
+
+- Fix to ticket #183  (MIssing parent block when creating a new IP block)
+
+  Now select_query method checks for the special case of searching an Ipblock
+  and converts address string into an integer prior to searching.  It also 
+  accepts a prefix length.
+
+  Label for Ipblock now uses '/' as a delimiter, instead of ','
+
+
+------------------------------------------------------------------------
+r1119 | cvicente | 2005-10-07 10:16:59 -0700 (Fri, 07 Oct 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/header.mhtml
+
+- Added the server name to the HTML title for every window
+  Fix to ticket #184 (Title of the HTML page shown in the browser window)
+
+
+------------------------------------------------------------------------
+r1115 | cvicente | 2005-10-06 14:56:39 -0700 (Thu, 06 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+
+- Ticket #180 (Notify of orphaned circuits when interfaces are deleted) resolved
+
+
+------------------------------------------------------------------------
+r1114 | cvicente | 2005-10-06 14:27:42 -0700 (Thu, 06 Oct 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+
+- Fixed bug #181: "Error sorting interface list by "name" column in the device's interface display"
+- Modified slightly to handle interfaces starting with numbers: 10GigEthernet
+
+
+------------------------------------------------------------------------
+r1113 | cvicente | 2005-10-06 10:29:01 -0700 (Thu, 06 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/ip-ws.html
+
+- Added 'Cancel' buttons
+
+
+------------------------------------------------------------------------
+r1112 | cvicente | 2005-10-06 10:04:21 -0700 (Thu, 06 Oct 2005) | 7 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/device.html
+
+- Improved layout
+   - Moved the 'update' and 'connect via' functions to the header, so they appear in every section
+   - Used CSS format for the navigation bar
+   - Included cancel buttons for every save button
+   - Put error messages within CSS containers
+
+
+------------------------------------------------------------------------
+r1111 | cvicente | 2005-10-05 15:56:58 -0700 (Wed, 05 Oct 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/ip-ws.html
+   M /branches/netdot-0.6/lib/Netdot/IPManager.pm
+
+- Fixed ticket #179: "Relocate fields in ip-ws.html to avoid confusion"
+  Now hierarchical list of blocks is shown in the header of the container
+  
+
+------------------------------------------------------------------------
+r1110 | cvicente | 2005-10-05 11:35:28 -0700 (Wed, 05 Oct 2005) | 6 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/ip-ws.html
+   M /branches/netdot-0.6/htdocs/section_management.html
+
+- Fixed bug #182:
+  "Search for IP address incorrectly displays 'no search criteria' when no matches are found"
+- Improved the layout of messages and errors
+- Changed allocate function to allow user to not enter a prefix and assume it's an end host address
+
+
+------------------------------------------------------------------------
+r1109 | cvicente | 2005-10-05 10:22:27 -0700 (Wed, 05 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/ip-ws.html
+
+- Fixed Call to nonexistent interface.html from In ip-ws.html 
+
+
+------------------------------------------------------------------------
+r1108 | cvicente | 2005-10-05 10:18:27 -0700 (Wed, 05 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/UI.pm
+
+- Replace Y with Yes and N with No
+
+
+------------------------------------------------------------------------
+r1107 | cvicente | 2005-10-04 17:04:56 -0700 (Tue, 04 Oct 2005) | 6 lines
+Changed paths:
+   M /branches/netdot-0.6/contrib/build_nagios_cnf.pl
+
+- Modified so that group names are taken from the corresponding subnet, and then from
+  the Device's Entity if that does not work. 
+  This will solve the problem of router interfaces not having a useful description in
+  notifications
+
+
+------------------------------------------------------------------------
+r1106 | cvicente | 2005-10-04 16:24:32 -0700 (Tue, 04 Oct 2005) | 5 lines
+Changed paths:
+   A /branches/netdot-0.6/contrib/assign-jacks.pl
+
+
+ Added script to assign jack objects to interface objects based on values typed into Interface description and jack fields
+
+
+
+------------------------------------------------------------------------
+r1105 | cvicente | 2005-10-03 14:42:18 -0700 (Mon, 03 Oct 2005) | 5 lines
+Changed paths:
+   M /branches/netdot-0.6/bin/insert-metadata
+   M /branches/netdot-0.6/contrib/devices.pl
+
+- Shortened label string for the HorizontalCable objects (was too long)
+- Exported device text file now tries to use HorizontalCable info first, and then
+  resorts to text from Interface table's jack and room fields
+
+
+------------------------------------------------------------------------
+r1104 | cvicente | 2005-10-03 10:02:35 -0700 (Mon, 03 Oct 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+
+- Fixed small bug in error regarding ignored devices
+
+
+------------------------------------------------------------------------
+r1101 | cvicente | 2005-09-30 14:28:12 -0700 (Fri, 30 Sep 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/ip-ws.html
+
+- Fixed line that removes leading and trailing spaces
+
+
+------------------------------------------------------------------------
+r1099 | cvicente | 2005-09-30 11:57:46 -0700 (Fri, 30 Sep 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/search.html
+   M /branches/netdot-0.6/lib/Netdot.pm
+
+- Fixed some stupid bugs in the method that performs the general search
+- Replaced HTML tables with CSS in search.html
+
+
+------------------------------------------------------------------------
+r1097 | cvicente | 2005-09-30 10:10:07 -0700 (Fri, 30 Sep 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/etc/netdot_apache2_radius.conf
+   M /branches/netdot-0.6/htdocs/device.html
+   M /branches/netdot-0.6/htdocs/header.mhtml
+   M /branches/netdot-0.6/htdocs/login.html
+
+- Merged latest changes from trunk into 0.6
+- Fixed a bug in device.html's layout
+
+
+------------------------------------------------------------------------
+r1094 | cvicente | 2005-09-29 11:31:24 -0700 (Thu, 29 Sep 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/ip-ws.html
+
+- Remove spaces from search string when searching for an IP address
+
+
+------------------------------------------------------------------------
+r1093 | cvicente | 2005-09-29 11:28:26 -0700 (Thu, 29 Sep 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/DNSManager.pm
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+
+- Improved code that inserts and updates RRs and RRADDRs when 
+  discovering devices.  Duplicates are now handled more gracefully
+
+
+------------------------------------------------------------------------
+r1092 | cvicente | 2005-09-29 10:45:49 -0700 (Thu, 29 Sep 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/bin/updatedevices.pl
+
+- Fixed minor bug
+
+
+------------------------------------------------------------------------
+r1089 | cvicente | 2005-09-28 17:03:30 -0700 (Wed, 28 Sep 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/section_cable.html
+
+ - Added a line break to make more readable
+
+
+------------------------------------------------------------------------
+r1088 | cvicente | 2005-09-28 16:34:34 -0700 (Wed, 28 Sep 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+
+- Fixed bug in RR maintenance.  Now code checks to make sure that
+  the RR doesn't have any other A records.
+
+
+------------------------------------------------------------------------
+r1087 | cvicente | 2005-09-28 14:04:41 -0700 (Wed, 28 Sep 2005) | 6 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot.pm
+
+- This conditional caused an error when the left argument was an object (overloaded package).
+  I use the 'int' function to make sure that it is 'stringified' into an integer value (the object's id) 
+  before it is compared.  That seems to fix the condition.
+
+
+
+------------------------------------------------------------------------
+r1085 | cvicente | 2005-09-28 12:26:48 -0700 (Wed, 28 Sep 2005) | 5 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/IPManager.pm
+
+- Added Ipblock sorting methods, for cases when blocks are searched
+  in custom ways that do not utilize the sorting capabilities of
+  the underlying DB
+
+
+------------------------------------------------------------------------
+r1083 | cvicente | 2005-09-27 17:48:16 -0700 (Tue, 27 Sep 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/bin/setup-class-dbi
+   M /branches/netdot-0.6/etc/netdot_apache2_radius.conf
+
+- Forgot one important line that called the LoginWrapper
+- Icreased Netdot version to 0.6
+
+
+------------------------------------------------------------------------
+r1082 | cvicente | 2005-09-27 17:27:01 -0700 (Tue, 27 Sep 2005) | 7 lines
+Changed paths:
+   M /branches/netdot-0.6/Makefile
+   D /branches/netdot-0.6/etc/netdot_apache12_htpasswd.conf.broken
+   D /branches/netdot-0.6/etc/netdot_apache2_htpasswd.conf
+   M /branches/netdot-0.6/etc/netdot_apache2_radius.conf
+   M /branches/netdot-0.6/htdocs/login.html
+   M /branches/netdot-0.6/lib/Makefile
+   M /branches/netdot-0.6/lib/Netdot/Mason.pm
+   D /branches/netdot-0.6/lib/Netdot/SiteControlLoginWrapper.pm
+
+- Removed "remember me" feature from this branch.  Reason is that
+  it requires Apache2::Request, which is still in beta.
+  Besides, this features hasn't been tested enough and an upgrade
+  of production servers is needed.
+  It will remain in the trunk, though.
+
+
+------------------------------------------------------------------------
+r1081 | cvicente | 2005-09-27 15:16:04 -0700 (Tue, 27 Sep 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/bin/setup-class-dbi
+   M /branches/netdot-0.6/contrib/build_nagios_cnf.pl
+
+- Merged latest changes into 0.6 branch
+
+
+------------------------------------------------------------------------
+r1078 | cvicente | 2005-09-26 15:58:36 -0700 (Mon, 26 Sep 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/Makefile
+   M /branches/netdot-0.6/etc/netdot_apache2_radius.conf
+   M /branches/netdot-0.6/lib/Makefile
+   M /branches/netdot-0.6/lib/Netdot/Mason.pm
+
+- Merging latest changes into 0.6 branch
+
+
+------------------------------------------------------------------------
+r1076 | cvicente | 2005-09-26 09:46:38 -0700 (Mon, 26 Sep 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/etc/netdot_apache2_radius.conf
+   M /branches/netdot-0.6/htdocs/login.html
+   A /branches/netdot-0.6/lib/Netdot/SiteControlLoginWrapper.pm (from /trunk/lib/Netdot/SiteControlLoginWrapper.pm:1075)
+   M /branches/netdot-0.6/lib/Netdot.pm
+
+- Merging Nathan's latest changes into 0.6 branch 
+
+
+------------------------------------------------------------------------
+r1073 | cvicente | 2005-09-06 18:00:16 -0700 (Tue, 06 Sep 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/login.html
+   M /branches/netdot-0.6/htdocs/section1.mhtml
+
+- Merging Nathan latest fixes into 0.6 branch
+
+
+------------------------------------------------------------------------
+r1072 | cvicente | 2005-09-06 17:50:54 -0700 (Tue, 06 Sep 2005) | 3 lines
+Changed paths:
+   M /branches/netdot-0.6/htdocs/updatedevice.html
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+
+- Merging latest fixes into 0.6 branch
+
+
+------------------------------------------------------------------------
+r1062 | cvicente | 2005-09-02 13:38:33 -0700 (Fri, 02 Sep 2005) | 4 lines
+Changed paths:
+   M /branches/netdot-0.6/lib/Netdot/DeviceManager.pm
+
+- Make sure that the PhysAddr gets reset if device is updated and new device
+  does not return BaseBridgeAddr
+
+
+------------------------------------------------------------------------
+r1061 | cvicente | 2005-09-02 13:17:50 -0700 (Fri, 02 Sep 2005) | 1 line
+Changed paths:
+   A /branches/netdot-0.6 (from /trunk:1060)
+
+Creating a branch for version 0.6
+------------------------------------------------------------------------
