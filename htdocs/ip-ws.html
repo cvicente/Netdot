@@ -539,14 +539,9 @@ if ( my @parents = $ipm->getparents($o) ){
 
        push( @field_headers, "Interface:" );
        push( @cell_data, 
-       eval {
-	   if ( $o->interface && $o->interface->id ){
-	       qq(<a href="view.html?table=Interface&id=).$o->interface->id.qq(">).$o->interface->name."</a>";
-	   }else{
-	       "&nbsp;";
-	   }
-       }  );
-
+	     $ui->select_lookup(object=>$o, table=>"Ipblock", column=>'interface', lookup=>"Interface",
+				edit=>$edit_ip, returnAsVar=>1, linkPage=>1)
+	     );
     push( @field_headers, "Device:" );
     push( @cell_data, 
         eval {
