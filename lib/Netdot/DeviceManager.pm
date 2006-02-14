@@ -197,14 +197,17 @@ sub update_device {
     my @cls;
     my %ifs;
     my %bgppeers;
+    my %dbips;
 
     if ( $device ){ # Device exists in DB
 
 	################################################     
 	# Keep a hash of stored Interfaces for this Device
 	map { $ifs{ $_->id } = $_ } $device->interfaces();
-	
-	#
+
+	# Get all stored IPs 
+	map { $dbips{$_->address} = $_->id } map { $ifs{$_}->ips() } keys %ifs;
+
 	# Remove invalid dependencies
 	foreach my $ifid (keys %ifs){
 	    my $if = $ifs{$ifid};
@@ -598,7 +601,7 @@ sub update_device {
     #
     ##############################################
     
-    my (%dbips, %newips, %dbvlans, %ifvlans, @nonrrs);
+    my (%newips, %dbvlans, %ifvlans, @nonrrs);
     
     my %IFFIELDS = ( number           => "",
 		     name             => "",
@@ -793,9 +796,6 @@ sub update_device {
 	# Add/Update IPs
 	
 	if( exists( $info->{interface}->{$newif}->{ips} ) && ! $device->natted ) {	    
-	    # Get all stored IPs belonging to this Interface
-	    #
-	    map { $dbips{$_->address} = $_->id } $if->ips();
 
 	    foreach my $newip ( sort keys %{ $info->{interface}->{$newif}->{ips} } ){
 		my( $maskobj, $subnet, $ipdbobj );
