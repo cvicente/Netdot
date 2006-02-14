@@ -33,6 +33,7 @@ $editloc    => undef
 $editmgmt   => undef
 $editsnmp   => undef
 $editips    => undef
+$addips     => undef
 $editints   => undef
 $editdevbgp => undef
 $editbgp    => undef
@@ -602,15 +603,17 @@ my (@headers, @rows, @row);
         IPs
     </div>
     <div class="containerheadright">
-%   if ( $editips ) {
+%   if ( $editips || $addips ) {
       <form name="netdotform" action="device.html" method="POST">
 	  <input type="hidden" name="id" value="<% $id %>">
 	  <input type="hidden" name="view" value="<% $view %>">
 	  <input type="hidden" name="ipsort" value="<% $ipsort %>">
 	  <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
           <input type="submit" name="submit" value="save">
-%   }else{
+%   }
+%   if ( !$editips && !$addips ){
           <a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=<% $ipsort %>&editips=1">[edit]</a>
+          <a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=<% $ipsort %>&addips=1">[add]</a>
 %   }
     </div>
     <div class="containerbody">
@@ -618,145 +621,132 @@ my (@headers, @rows, @row);
 %    if (scalar @ips){
 
 <%perl>
-(@headers, @rows, @row) = ();
+    (@headers, @rows, @row) = ();
 
-@headers = (
-'<a href="device.html?id='. $id .'&view='. $view .'&ipsort=address">Address</a>',
-'Subnet',
-'<a href="device.html?id='. $id .'&view='. $view .'&ipsort=interface">Interface</a>',
-'DNS Name',
-'Services',
-);
+    @headers = ('<a href="device.html?id='. $id .'&view='. $view .'&ipsort=address">Address</a>',
+		'Subnet',
+		'<a href="device.html?id='. $id .'&view='. $view .'&ipsort=interface">Interface</a>',
+		'DNS Name',
+		'Services',
+		);
 
+    foreach my $ip (@ips){	   
+	next if ( ! exists $ifvlans{$ip->interface}{$showvlan} && 
+		  $showvlan ne "all" );
+	my (@row) = ();
+	push( @row, 
+	      &{sub{
+		  my $a = "";
+		  if ($editips){  
+		      $a .= '<input type="checkbox" name="' . "Ipblock__" . $ip->id . "__delete" . '" >[del] ';
+		      $a .=  $ip->address ;
+		      $a .= '<br>';
+		  }else{
+		      $a .= '<a href="ip-ws.html?id=' . $ip->id . '">' . $ip->address . '</a><br>';
+		  }
+		  $a;
+	      }} );
+	push( @row, 
+	      &{sub{
+		  my $a = "";
+		  if ( int($ip->parent) != 0  ){
+		      if ($editips){  
+			  $a .=  $ip->parent->address . '/' . $ip->parent->prefix ;
+		      }else{
+			  $a .= '<a href="ip-ws.html?id=' . $ip->parent->id . '">' . $ip->parent->address . '/' . 
+			      $ip->parent->prefix . '</a><br>';
+		      }
+		  }
+		  $a;
+	      }} );
+	push( @row,
+	      &{sub{
+		  my @ints = $o->interfaces;
+		  $ui->select_lookup(object=>$ip, table=>"Ipblock", column=>'interface', lookup=>"Interface",
+				     defaults=>\@ints, edit=>$editips, returnAsVar=>1, linkPage=>1);
+	      }} );
+	push( @row, 
+	      &{sub{
+		  my $a = "";
+		  if ( $ip->arecords ){
+		      foreach my $ar ($ip->arecords){
+			  if ($editips){      
+			      $a .= '<input type="checkbox" name="' . "RR__" . $ar->rr->id . "__delete" . '" >[del] ';
+			  }
+			  $a .=  $ui->form_field(object=>$ar->rr, column=>"name", edit=>$editips, 
+						 linkPage=>"view.html", returnValOnly=>1);
+		      }
+		  }
+		  $a;
+	      }} );
+	push( @row, 
+	      &{sub{
+		  my $a = "";
+		  if ( scalar ($ip->services) ){
+		      foreach my $ipsrv ($ip->services){
+			  $a .= '<a href="view.html?table=IpService&id=' . $ipsrv->id . '">' . $ipsrv->service->name . '</a>';
+			  if ( $editips ){
+			      $a .= '<input type="checkbox" name="' . "IpService__" . $ipsrv->id . "__delete" . '" > [del] ';
+			  }
+			  $a .= '<br>';
+		      }
+		  }
+		  if ( !$editips ){
+		      $a .= '<a href="#" onClick="addService(' . $ip->id . ')">[add]</a>';
+		  }
+		  $a;
+	      }} );
+	push( @rows, \@row );
+	
+    }# foreach
+	
+	$m->comp('data_table.mhtml', field_headers=>\@headers, data=>\@rows );
+
+} # endif scalar @ips
+
+if ( !$editips ){
+    (@headers, @rows) = ();
+    
+    if ( $addips ){
+	# Let user add a new IP           
+	@headers = ( 'Interface', 'Address' );
+	(@row) = ();
+	push( @row, 
+	      &{sub{
+		  my $ac = "";
+		  $ac .= '<select name="' . "Ipblock__" . "NEW" . "__interface" . '" >';
+		  $ac .= '<option value="0">Select Interface</option>';
+		  foreach my $int ( sort { $a->number <=> $b->number } $o->interfaces ){
+		      $ac .= '<option value="' . $int->id . '">' . $int->name . '</option>';
+		  }
+		  $ac .= '</select>';
+		  $ac;
+	      }} );
+	push( @row, 
+	      &{sub{
+		  my $ac = "";
+		  $ac .= '<input type="text" name="' . "Ipblock__" . "NEW" . "__address" . '" >';
+		  $ac .= '<input type="hidden" name="' . "Ipblock__" . "NEW" . "__statusname" . '" value="Static">';
+		  $ac;
+	      }} );
+	push( @rows, \@row );
+	
+    }
+    
+    $m->comp('data_table.mhtml', field_headers=>\@headers, data=>\@rows );
+    
+}
 </%perl>
-
-<%perl>
-foreach my $ip (@ips){	   
-    next if ( ! exists $ifvlans{$ip->interface}{$showvlan} && 
-	      $showvlan ne "all" );
-
-my (@row) = ();
-push( @row, 
-&{sub{
-    my $a = "";
-    if ($editips){  
-	$a .= '<input type="checkbox" name="' . "Ipblock__" . $ip->id . "__delete" . '" >[del] ';
-	$a .=  $ip->address ;
-	$a .= '<br>';
-    }else{
-	$a .= '<a href="ip-ws.html?id=' . $ip->id . '">' . $ip->address . '</a><br>';
-    }
-    $a;
-}} );
-push( @row, 
-&{sub{
-    my $a = "";
-    if ( int($ip->parent) != 0  ){
-	if ($editips){  
-	    $a .=  $ip->parent->address . '/' . $ip->parent->prefix ;
-	}else{
-	    $a .= '<a href="ip-ws.html?id=' . $ip->parent->id . '">' . $ip->parent->address . '/' . $ip->parent->prefix . '</a><br>';
-	}
-    }
-    $a;
-}} );
-push( @row, $ip->interface->name  );
-push( @row, 
-&{sub{
-    my $a = "";
-    if ( $ip->arecords ){
-	foreach my $ar ($ip->arecords){
-	    if ($editips){      
-		$a .= '<input type="checkbox" name="' . "RR__" . $ar->rr->id . "__delete" . '" >[del] ';
-	    }
-        $a .=  $ui->form_field(object=>$ar->rr, column=>"name", edit=>$editips, linkPage=>"view.html", returnValOnly=>1);
-	}
-    }else{
-    }
-    $a;
-}} );
-push( @row, 
-&{sub{
-    my $a = "";
-    if ( scalar ($ip->services) ){
-	foreach my $ipsrv ($ip->services){
-	    $a .= '<a href="view.html?table=IpService&id=' . $ipsrv->id . '">' . $ipsrv->service->name . '</a>';
-	    if ( $editips ){
-		$a .= '<input type="checkbox" name="' . "IpService__" . $ipsrv->id . "__delete" . '" > [del] ';
-	    }
-	    $a .= '<br>';
-	}
-    }
-    if ( $editips ){
-	$a .= '<a href="#" onClick="addService(' . $ip->id . ')">[add]</a>';
-    }
-    $a;
-}} );
-push( @rows, \@row );
-
-}# foreach	
-</%perl>
-
-<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
-
-%     }else{ # No ips exist
-%        if ( $editips ){
-%        # Let user add a new IP           
-
-<%perl>
-(@headers, @rows) = ();
-
-@headers = ( 
-'Interface',
-'Address',
-'Monitored?',
-);
-</%perl>
-
-<%perl>
-(@row) = ();
-push( @row, 
-&{sub{
-    my $ac = "";
-    $ac .= '<select name="' . "Ipblock__" . "NEW" . "__interface" . '" >';
-    $ac .= '<option value="0">Select Interface</option>';
-    foreach my $int ( sort { $a->number <=> $b->number } $o->interfaces ){
-	$ac .= '<option value="' . $int->id . '">' . $int->name . '</option>                        ';
-    }
-    $ac .= '</select>';
-    $ac;
-}} );
-push( @row, 
-&{sub{
-    my $ac = "";
-    $ac .= '<input type="text" name="' . "Ipblock__" . "NEW" . "__address" . '" >';
-    $ac .= '<input type="hidden" name="' . "Ipblock__" . "NEW" . "__statusname" . '" value="Static">';
-    $ac;
-}} );
-push( @row, 
-&{sub{
-    my $ac = "";
-    $ac .= 'Y <input type="radio" name="' . "Ipblock__" . "NEW" . "__monitored" . '" value="1" CHECKED>                 ';
-    $ac .= 'N <input type="radio" name="' . "Ipblock__" . "NEW" . "__monitored" . '" value="0">';
-    $ac;
-}} );
-push( @rows, \@row );
-</%perl>
-
-<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
-
-%      }else{
-            Click [edit] to add a new IP
-%      }  
-%    }
     </div>
 </div>
 <!-- End IPs Table -->
 
-%   if ( $editips ) {
+%   if ( $editips || $addips ) {
        </form>
 %   }
 % }
+
+
 
 %#######################################################################
 %#
@@ -854,16 +844,20 @@ if ( $view eq "Interfaces" || $view eq "All" ){
      
     if ( exists $intinfo{jack} || $editints ){
         if ( @closet_jacks ){
-          push( @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", default=>\@closet_jacks, linkPage=>"cable_horizontal.html", edit=>$editints, returnValOnly=>1) );
+          push( @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", defaults=>\@closet_jacks, 
+				      linkPage=>"cable_horizontal.html", edit=>$editints, returnValOnly=>1) );
         }else{
-          push( @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", linkPage=>"cable_horizontal.html", edit=>$editints, returnValOnly=>1) );
+          push( @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", linkPage=>"cable_horizontal.html", 
+				      edit=>$editints, returnValOnly=>1) );
         }
     }
       if ( exists $intinfo{room_char} || $editints ){
-          push( @row, $ui->form_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", returnValOnly=>1) );
+          push( @row, $ui->form_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", 
+				      returnValOnly=>1) );
       }
       if ( exists $intinfo{jack_char} || $editints ){
-          push( @row, $ui->form_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", returnValOnly=>1) );
+          push( @row, $ui->form_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", 
+				      returnValOnly=>1) );
       }
       if ( exists $intinfo{description} || $editints ){
           push( @row, $ui->form_field(object=>$if, column=>"description", edit=>$editints, returnValOnly=>1) );
