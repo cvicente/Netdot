@@ -493,7 +493,7 @@ sub remove {
       $obj->delete();
   };
   if( $@ ) {
-    $self->error("Unable to delete: $@");
+    $self->error("Unable to remove table $tbl id $id: $@");
     return 0;
   }
   return 1;

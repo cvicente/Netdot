@@ -37,20 +37,42 @@ sub new {
 }
 
 =head2 getrrbyname - Search Resource Records by name
-
- Args: name
- Returns: RR object
+    
+  Args: Either FQDN or host part of the name
+  Returns: RR object
 
 =cut
-
+#  For example, if given 
+#     dns.cs.uoregon.edu
+#  it will look for a Zone in this order
+#     edu
+#     uoregon.edu
+#     cs.uoregon.edu  <-- found
+#  then, it will look for RR 'dns' within that zone
+#
 sub getrrbyname {
     my ($self, $name) = @_;
-    my $rr;
-    if ( $rr = (RR->search(name => $name))[0] ){
-	return $rr;
+    my ($rr, @words, @sections);
+    if ( $name =~ /\./ ){
+	@words = reverse split /\./, $name;
+	while( my $word = shift @words ){
+	    push @sections, $word;
+	    my $domain = join '.', reverse @sections;
+	    if ( my $zone = (Zone->search(mname=>$domain))[0] ){
+		my $host = join '.', reverse @words;
+		if ( my $rr = (RR->search(zone=>$zone->id, name=>$host))[0] ){
+		    return $rr;
+		}
+	    }
+	}
+    }else{
+	if ( my $rr = (RR->search(name=>$name))[0] ){
+	    return $rr;
+	}
     }
     return 0;
 }
+
 
 =head2 getrrbynamelike - Search RRs by name. Allow substrings
 

@@ -94,18 +94,11 @@ sub sortblocks {
 sub searchblocks_addr {
     my ($self, $address, $prefix) = @_;
     my ($ip, @ipb);
-    $self->debug(loglevel => 'LOG_DEBUG',
-		 message => "searchblock: args: %s, %s" ,
-		 args => [$address, $prefix]);
     unless ( $ip = $self->_prevalidate($address, $prefix) ){
 	my $msg = sprintf("%s", $self->error);
 	$self->error($msg);
 	return;
     }
-    $self->debug(loglevel => 'LOG_DEBUG',
-		 message => "searchblock: NetAddr::IP object: %s, %s" ,
-		 args => [$ip->addr, $ip->masklen]);
-    
     if ($prefix){
 	@ipb = Ipblock->search( address => ($ip->numeric)[0], 
 				prefix  => $ip->masklen,
@@ -113,10 +106,6 @@ sub searchblocks_addr {
     }else{
 	@ipb = Ipblock->search( address => ($ip->numeric)[0] );
     }
-    $self->debug(loglevel => 'LOG_DEBUG',
-		 message => "searchblock: Search returned: %s entries" ,
-		 args => [scalar @ipb]);
-    
     if (scalar (@ipb) > $self->{config}->{'MAXSEARCHBLOCKS'}){
 	$self->error("Too many entries. Please refine search");
 	return;

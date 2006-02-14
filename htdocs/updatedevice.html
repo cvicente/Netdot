@@ -51,7 +51,7 @@ my $guessed_user_ent;
 my $guessed_site;
 my $guessed_cl;
 my $webuser;
-my $dev;
+my $info;
 my $default_owner;
 my $default_cl;
 
@@ -87,95 +87,99 @@ if ( $action eq "discover" ){
 	# Probably discovering for the first time.
 
 	# See if device exists
-	my (undef, $d) = $dm->find_dev($host);
-	# We probably want to use the community that is being passed
-	$argv{comstr} = $comstr;
-	$argv{device} = $d;
+	if ( my $res = $dm->find_dev($host) ){
+	    # We now have device and comstr in $argv
+	    $argv{device} = $res->{device};
+	}else{
+	    # Tell update_device to not look for a device object
+	    $argv{device}  = 'NEW'; 
+	    # Give preference to the community being passed
+	    $argv{comstr} = $comstr;
+	    
+	    # Try to guess the user entity based on the subnet
+	    # Note that we're using the first IP address found
+	    # So it might not be totally accurate, especially for
+	    # routers.
+	  LOOP:  foreach my $int ( keys %{ $info->{interface} } ){
+	      foreach my $ip ( keys %{ $info->{interface}->{$int}->{ips} } ){ 
+		  my $mask = $info->{interface}->{$int}->{ips}->{$ip};
+		  if ( my $subnetaddr = $ipm->getsubnetaddr($ip, $mask) ){
+		      if ( my $subnet = $ipm->searchblocks_addr($subnetaddr) ){
+			  if ( my $user_ent = $subnet->used_by ){
+			      $guessed_user_ent = $user_ent;
+			      if ( my $cl = $user_ent->contactlist ){
+				  $guessed_cl = $cl->id;
+			      }if ( my @entsites = $user_ent->sites ){
+				  $guessed_site = $entsites[0]->site;
+			      }
+			      last LOOP;  #just grab the first one
+			  }
+		      }
+		  }
+	      }
+	  }
+	    
+	    # Get the default owner entity from config
+	    $default_owner = (Entity->search(name=>$dm->{config}->{DEFAULT_DEV_OWNER}))[0];
+	    
+	    # If we could not determine it before, 
+	    # try to guess site based on SNMP location
+	    if ( ! $guessed_site ){
+		if ( my $loc = $info->{syslocation} ){
+		    my $loc = "%" . $loc . "%";
+		    if ( my $site = (Site->search_like( name => $loc ))[0] ){
+			$guessed_site = $site;
+		    }
+		}
+	    }
+	    
+	    # Get the default contactlist from config
+	    $default_cl = (ContactList->search(name=>$dm->{config}->{DEFAULT_CONTACTLIST}))[0];
+	}
     }else{
 	$m->comp('error.mhtml', error => "Discovery needs either device id or hostname");
     }
     # Fetch SNMP info
-    $dev = $dm->get_dev_info($host, $argv{comstr});
-    unless ($dev){
+    $argv{host} = $host;
+    unless ( $info = $dm->get_dev_info(%argv) ){
 	$m->comp('error.mhtml', error => $dm->error);
     }
-    print "<pre>", Dumper($dev), "</pre>" if $DEBUG;
+    print "<pre>", Dumper(%$info), "</pre>" if $DEBUG;
     
-    $argv{dev}       = $dev;
-    $argv{host}      = $host;
+    $argv{info}      = $info;
     $session->{argv} = \%argv;
     
-    # Try to guess the user entity based on the subnet
-    # Note that we're using the first IP address found
-    # So it might not be totally accurate, especially for
-    # routers.
-LOOP:  foreach my $int ( keys %{ $dev->{interface} } ){
-            foreach my $ip ( keys %{ $dev->{interface}->{$int}->{ips} } ){ 
-		my $mask = $dev->{interface}->{$int}->{ips}->{$ip};
-		if ( my $subnetaddr = $ipm->getsubnetaddr($ip, $mask) ){
-		    if ( my $subnet = $ipm->searchblocks_addr($subnetaddr) ){
-			if ( my $user_ent = $subnet->used_by ){
-			    $guessed_user_ent = $user_ent;
-			    if ( my $cl = $user_ent->contactlist ){
-				$guessed_cl = $cl->id;
-			    }if ( my @entsites = $user_ent->sites ){
-				$guessed_site = $entsites[0]->site;
-			    }
-			    last LOOP;  #just grab the first one
-			}
-		    }
-		}
-	    }
-	}
-
-    # Get the default owner entity from config
-    $default_owner = (Entity->search(name=>$dm->{config}->{DEFAULT_DEV_OWNER}))[0];
-
-    # If we could not determine it before, 
-    # try to guess site based on SNMP location
-    if ( ! $guessed_site ){
-	if ( my $loc = $dev->{syslocation} ){
-	    my $loc = "%" . $loc . "%";
-	    if ( my $site = (Site->search_like( name => $loc ))[0] ){
-		$guessed_site = $site;
-	    }
-	}
-    }
-    
-    # Get the default contactlist from config
-    $default_cl = (ContactList->search(name=>$dm->{config}->{DEFAULT_CONTACTLIST}))[0];
-
 }elsif ( $action eq "update" ){
     if ( $insert ){
-        %argv               = %{ $session->{argv} };
-	$argv{owner}        = $owner          ||  0;
-	$argv{used_by}      = $used_by        ||  0;
-	$argv{site}         = $site           ||  0;
-	$argv{contacts}     = $contacts       ||  "";
-	$argv{user}         = $webuser        ||  0;
+        my $argv              = $session->{argv};
+	$argv->{owner}        = $owner          ||  0;
+	$argv->{used_by}      = $used_by        ||  0;
+	$argv->{site}         = $site           ||  0;
+	$argv->{contacts}     = $contacts       ||  "";
+	$argv->{user}         = $webuser        ||  0;
 	# These two can't be 'defaulted' because
 	# we are using checkboxes for user input
-        $argv{addsubnets}      = $addsubnets;
-        $argv{subnets_inherit} = $subnets_inherit;
+        $argv->{addsubnets}      = $addsubnets;
+        $argv->{subnets_inherit} = $subnets_inherit;
 
-	print "<pre>",  Dumper(%argv), "</pre>" if $DEBUG;
+	print "<pre>",  Dumper(%$argv), "</pre>" if $DEBUG;
 
         # Update database
-        $o = $dm->update_device(%argv);
+        $o = $dm->update_device($argv);
         unless ($o){
             $m->comp('error.mhtml', error => $dm->error);
         }
         unless ($o->name && ($name = $o->name->name)){
-            $name = "device"
-            }
+            $name = "device";
+	}
     }
 
 }else{
     $m->comp('error.mhtml', error => "Unknown action: $action");
 }
-    
-</%init>
 
+</%init>
+    
 %######################################################################
 %#
 %# User Interface
@@ -190,15 +194,16 @@ LOOP:  foreach my $int ( keys %{ $dev->{interface} } ){
 
 %if ( $action eq "discover" ){
 
-    <& attribute_table.mhtml, field_headers=>["Description"], data=>[ $dev->{sysdescription} ] &>
+    <& attribute_table.mhtml, field_headers=>["Description"], data=>[ $info->{sysdescription} ] &>
     <form name="netdotform" action="updatedevice.html" method="POST">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="host" value="<% $host %>">
     <input type="hidden" name="action" value="update">
 
-%     unless ($argv{device}){
 
-% my (@field_headers, @cell_data) = ();
+%     if ( ! $argv{device} || scalar($argv{device}) eq 'NEW' ){
+%
+%        my (@field_headers, @cell_data) = ();
 
 % push( @field_headers, "Owner:" );
 <&| "HERE.mhtml" &>
@@ -274,7 +279,7 @@ LOOP:  foreach my $int ( keys %{ $dev->{interface} } ){
 %################################################################
 %# The following block only applies to routers
 %################################################################
-% if ( $dev->{router} ){
+% if ( $info->{router} ){
 %    push( @field_headers, "Add new Subnets (if any)?:" );
 <&| "HERE.mhtml" &>
 %    if ( $ui->{config}->{ADDSUBNETS} ){

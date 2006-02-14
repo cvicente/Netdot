@@ -10,24 +10,16 @@ Netdot::DeviceManager - Device-related Functions for Netdot
 
   $dm = Netdot::DeviceManager->new();  
 
-    # See if device exists
-    my ($c, $d) = $dm->find_dev($host);
-    
-    # Fetch SNMP info
-    my $dev = $dm->get_dev_info($host, $comstr);
-    
-    # Update database
-    $o = $dm->update_device(%argv);
-
 =cut
 
 use lib "<<Make:LIB>>";
 use Data::Dumper;
 
-use lib "<<Make:NVLIB>>";
-use NetViewer::RRD::SNMP::NV;
+use SNMP::Info;
 
-use base qw( Netdot::IPManager Netdot::DNSManager );
+use base qw( Netdot );
+use Netdot::IPManager;
+use Netdot::DNSManager;
 use strict;
 
 #Be sure to return 1
@@ -37,12 +29,10 @@ use strict;
 
 =head2 new - Create a new DeviceManager object
  
-    $dm = Netdot::DeviceManager->new(logfacility   => $logfacility,
-				     snmpversion   => $version,
-				     community     => $comstr,
-				     retries       => $retries,
-				     timeout       => $timeout,
-				     );
+    $dm = Netdot::DeviceManager->new(loglevel      => $loglevel,
+				     logfacility   => $logfacility,
+				     logident      => $logident,
+				     foreground    => $foreground);
 
 =cut
 
@@ -50,21 +40,18 @@ sub new {
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
     my $self = {};
-    bless $self, $class;
+    my %libargs = (logfacility => $argv{'logfacility'},
+		   loglevel    => $argv{'loglevel'},
+		   logident    => $argv{'logident'},
+		   foreground  => $argv{'foreground'});
     
-    $self = $self->SUPER::new( %argv );
+    $self = $class->SUPER::new(%libargs);
+    
+  
+    $self->{'_ipm'} =  Netdot::IPManager->new(%libargs);
+    $self->{'_dns'} =  Netdot::DNSManager->new(%libargs);
 
-    $self->{'_snmpversion'}   = $argv{'snmpversion'}   || $self->{config}->{'DEFAULT_SNMPVERSION'};
-    $self->{'_snmpcommunity'} = $argv{'community'}     || $self->{config}->{'DEFAULT_SNMPCOMMUNITY'};
-    $self->{'_snmpretries'}   = $argv{'retries'}       || $self->{config}->{'DEFAULT_SNMPRETRIES'};
-    $self->{'_snmptimeout'}   = $argv{'timeout'}       || $self->{config}->{'DEFAULT_SNMPTIMEOUT'};
-
-    $self->{nv} = NetViewer::RRD::SNMP::NV->new(aliases     => "<<Make:PREFIX>>/etc/categories",
-						snmpversion => $self->{'_snmpversion'},
-						community   => $self->{'_snmpcommunity'},
-						retries     => $self->{'_snmpretries'},
-						timeout     => $self->{'_snmptimeout'},
-						);
+    bless $self, $class;
     wantarray ? ( $self, '' ) : $self; 
 }
 
@@ -86,48 +73,51 @@ sub output {
 
 =head2 find_dev - Perform some preliminary checks to determine if a device exists
 
-    my ($c, $d) = $dm->find_dev($host);
+  Arguments:
+
+    Hostname or IP address (string)
+
+  Returns:
+
+    If Device is found, returns hash reference with the following keys:
+       device - Device object
+       comstr - Community String
+    If Device is not found, returns undef.
+
+  Example:
+    
+    my $hashref = $dm->find_dev($host);
 
 =cut
 
 sub find_dev {
     my ($self, $host) = @_;
-    my ($device, $comstr);
     $self->error(undef);
-    $self->_clear_output();
+    my %r;
 
-    if ($device = $self->getdevbyname($host)){
-	my $msg = sprintf("Device %s exists in DB.  Will try to update.", $host);
-	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => $msg );
-	$comstr = $device->community;
-	$self->debug( loglevel => 'LOG_DEBUG',
-		      message  => "Device has community: %s",
-		      args     => [$comstr] );
-    }elsif($self->getrrbyname($host)){
-	my $msg = sprintf("Name %s exists but Device not in DB.  Will try to create.", $host);
-	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => $msg );
-    }elsif(my $ip = $self->searchblocks_addr($host)){
-	if ( $ip->interface && ($device = $ip->interface->device) ){
-	    my $msg = sprintf("Device with address %s exists in DB. Will try to update.", $ip->address);
-	    $self->debug( loglevel => 'LOG_NOTICE',
-			  message  => $msg );
-	    $comstr = $device->community;
-	    $self->debug( loglevel => 'LOG_DEBUG',
-			  message  => "Device has community: %s",
-			  args     => [$comstr] );
+    if ($r{device} = $self->{'_dns'}->getdevbyname($host)){
+	my $msg = sprintf("Device %s exists in DB.", $host);
+	$self->debug( loglevel => 'LOG_NOTICE', message  => $msg );
+	$r{comstr} = $r{device}->community;
+    }elsif($self->{'_dns'}->getrrbyname($host)){
+	my $msg = sprintf("Name %s exists but Device not in DB", $host);
+	$self->debug( loglevel => 'LOG_NOTICE', message  => $msg );
+	return;
+    }elsif(my $ip = $self->{'_ipm'}->searchblocks_addr($host)){
+	if ( $ip->interface && ($r{device} = $ip->interface->device) ){
+	    my $msg = sprintf("Device with address %s exists in DB", $ip->address);
+	    $self->debug( loglevel => 'LOG_NOTICE', message  => $msg );
+	    $r{comstr} = $r{device}->community;
 	}else{
-	    my $msg = sprintf("Address %s exists but Device not in DB.  Will try to create.", $host);
-	    $self->debug( loglevel => 'LOG_NOTICE',
-			  message  => $msg );
+	    my $msg = sprintf("Address %s exists but Device not in DB", $host);
+	    $self->debug( loglevel => 'LOG_NOTICE', message  => $msg );
 	}
     }else{
-	my $msg = sprintf("Device %s not in DB.  Will try to create.", $host);
-	$self->debug( loglevel => 'LOG_NOTICE',
-		      message  => $msg );
+	my $msg = sprintf("Device %s not in DB", $host);
+	$self->debug( loglevel => 'LOG_NOTICE', message  => $msg );
+	return;
     }
-    return ($comstr, $device);
+    return \%r;
 }
 
 =head2 update_device - Insert new Device/Update Device in Database
@@ -136,46 +126,80 @@ sub find_dev {
  from independent scripts.  Should be able to update existing 
  devices or create new ones
 
-  Required Args:
-    host:   Name or ip address of host
-    dev:    Hashref of device information
-  Optional Args:
-    comstr: SNMP community string (default "public")
-    device: Existing 'Device' object 
-    user:   Netdot user calling the method 
+  Arguments:
+    Hash ref with following keys
+   (Required):
+     host:       Name or ip address of host
+   (Optional):
+     info:       Hash with Device SNMP information.  
+                 If not passed, this method will try to get it.
+     owner:      Id of Owner Entity
+     used_by:    Id of Entity that is using the device
+     comstr:     SNMP community string (default "public")
+     device:     Existing 'Device' object.  If string 'NEW' is passed, method will
+                 not try to find the device object in the DB.
+     addsubnets: When discovering routers, add subnets to database if they do not exist
+     site:       Id of Site where Device is located
+     user:       Netdot user calling the method 
+
   Returns:
     Device object
 
+  Example:
 
 =cut
 
 sub update_device {
-    my ($self, %argv) = @_;
-    my ($host, $comstr, %dev);
+    my ($self, $argv) = @_;
+    my ($host, $info);
     $self->_clear_output();
 
-    unless ( ($host = $argv{host}) && (%dev = %{$argv{dev}}) ){
-	$self->error( sprintf("Missing required arguments") );
+    unless ( $host = $argv->{host} ){
+	$self->error("Missing required arguments");
 	$self->debug(loglevel => 'LOG_ERR',
 		     message => $self->error);
 	return 0;
     }
-    my $device = $argv{device} || "";
-    $argv{owner}               ||= 0;
-    $argv{used_by}             ||= 0;
-    $argv{site}                ||= 0;
-    $argv{user}                ||= 0;
 
+    my $device    = $argv->{device} if ( $argv->{device} ne 'NEW' ) ;
+    my $comstr    = $argv->{comstr} || "public";
+    
+    if ( ! $device && $argv->{device} ne 'NEW' ){
+	# A device object wasn't passed, so figure out if it exists
+	if ( my $res = $self->find_dev($host) ){
+	    $device = $res->{device};
+	    $comstr = $res->{comstr};
+	}
+    }
+    # Add this field to the Device table
+    my $snmpversion;
+#    if ($device && $device->snmpversion){
+#	$snmpversion = $device->snmpversion;
+#    }else{
+	$snmpversion = $self->{'_snmpversion'};
+#    }
+    unless ( $info = $argv->{info} ){
+	##############################################
+	# Fetch SNMP info from device
+	$info = $self->get_dev_info(host=>$host, comstr=>$comstr, version=>$snmpversion);
+	unless ($info){
+	    # error should be set
+	    $self->debug( loglevel => 'LOG_ERR',
+			  message  => $self->error);
+	    return 0;
+	}
+    }
+
+    # Hash to be passed to insert/update function
     my %devtmp;
-
-    $devtmp{sysdescription} = $dev{sysdescription} || "";
-    $devtmp{community}      = $argv{comstr}        || "";
+    $devtmp{sysdescription} = $info->{sysdescription} || "";
 
     my @cls;
     my %ifs;
     my %bgppeers;
 
-    if ( $device ){
+    if ( $device ){ # Device exists in DB
+
 	################################################     
 	# Keep a hash of stored Interfaces for this Device
 	map { $ifs{ $_->id } = $_ } $device->interfaces();
@@ -189,7 +213,7 @@ sub update_device {
 		    $self->debug( loglevel => 'LOG_NOTICE',
 				  message  => "%s: Interface %s,%s has invalid parent %s. Removing.",
 				  args => [$host, $if->number, $if->name, $dep->parent] );
-		    $self->remove(table=>"InterfaceDep", id => $dep);
+		    $self->remove(table=>"InterfaceDep", id => $dep->id);
 		    next;
 		}
 	    }
@@ -198,23 +222,23 @@ sub update_device {
 		    $self->debug( loglevel => 'LOG_NOTICE',
 				  message  => "%s: Interface %s,%s has invalid child %s. Removing.",
 				  args => [$host, $if->number, $if->name,$dep->child] );
-		    $self->remove(table=>"InterfaceDep", id => $dep);
+		    $self->remove(table=>"InterfaceDep", id => $dep->id);
 		    next;
 		}
 	    }
 	}
 
-    }else{
-	# Device does not exist in DB
-	$devtmp{owner}        = $argv{owner};
-	$devtmp{used_by}      = $argv{used_by};
-	$devtmp{site}         = $argv{site};
+    }else{   # Device does not exist in DB
+	$devtmp{community}      = $comstr;
+	$devtmp{owner}          = $argv->{owner}          || 0;
+	$devtmp{used_by}        = $argv->{used_by}        || 0;
+	$devtmp{site}           = $argv->{site}           || 0;
 
-	if ( $argv{user} ){
-	    $devtmp{info}    = "Added to Netdot by $argv{user}";
+	if ( defined ($argv->{user}) ){
+	    $devtmp{info} = "Added to Netdot by $argv->{user}";
 	}
 	
-	if ( ! $argv{contacts} ){
+	if ( ! $argv->{contacts} ){
 	    my $default_cl;
 	    unless ( $default_cl = (ContactList->search(name=>$self->{config}->{DEFAULT_CONTACTLIST}))[0] ){
 		$self->debug( loglevel => 'LOG_ERR',
@@ -223,15 +247,15 @@ sub update_device {
 	    }
 	    push @cls, $default_cl;
 	}else{
-	    if (!ref($argv{contacts})){
+	    if (!ref($argv->{contacts})){
 		# Only one was selected, so it is a scalar
-		push @cls, $argv{contacts};
-	    }elsif( ref($argv{contacts}) eq "ARRAY" ){
-		@cls = @{ $argv{contacts} };
+		push @cls, $argv->{contacts};
+	    }elsif( ref($argv->{contacts}) eq "ARRAY" ){
+		@cls = @{ $argv->{contacts} };
 	    }else{
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => "%s: A contacts arg was passed, but was not valid: %s",
-			      args     => [$host, $argv{contacts}] );
+			      args     => [$host, $argv->{contacts}] );
 	    }
 	}
 	
@@ -241,7 +265,7 @@ sub update_device {
     # Make sure name is in DNS
 
     my $rr;
-    if ( $rr = $self->getrrbyname($host) ) {
+    if ( $rr = $self->{'_dns'}->getrrbyname($host) ) {
 	my $msg = sprintf("Name %s exists in DB. Pointing to it", $host);
 	$self->debug( loglevel => 'LOG_NOTICE',
 		      message  => $msg);
@@ -274,7 +298,7 @@ sub update_device {
 		$self->error($msg);	
 	    }
 	}
-	if ($rr = $self->insert_rr(name => $host)){
+	if ($rr = $self->{'_dns'}->insert_rr(name => $host)){
 
 	    my $msg = sprintf("Inserted DNS name %s into DB", $host);
 	    $self->debug( loglevel => 'LOG_NOTICE',
@@ -293,7 +317,7 @@ sub update_device {
     }
     # We'll use these later when adding A records for each address
     my %hostnameips;
-    if (my @addrs = $self->resolve_name($rr->name)){
+    if (my @addrs = $self->{'_dns'}->resolve_name($rr->name)){
 	map { $hostnameips{$_} = "" } @addrs;
 	
 	my $msg = sprintf("%s: Addresses associated with hostname: %s", $host, (join ", ", keys %hostnameips) );
@@ -310,8 +334,8 @@ sub update_device {
     ###############################################
     # Try to assign Product based on SysObjectID
 
-    if( $dev{sysobjectid} ){
-	if ( my $prod = (Product->search( sysobjectid => $dev{sysobjectid} ))[0] ) {
+    if( $info->{sysobjectid} ){
+	if ( my $prod = (Product->search( sysobjectid => $info->{sysobjectid} ))[0] ) {
 	    my $msg = sprintf("%s: SysID matches existing %s", $host, $prod->name);
 	    $self->debug( loglevel => 'LOG_INFO',message  => $msg );
 	    $devtmp{productname} = $prod->id;
@@ -319,14 +343,14 @@ sub update_device {
 	}else{
 	    ###############################################
 	    # Create a new product entry
-	    my $msg = sprintf("%s: New product with SysID %s.  Adding to DB", $host, $dev{sysobjectid});
+	    my $msg = sprintf("%s: New product with SysID %s.  Adding to DB", $host, $info->{sysobjectid});
 	    $self->debug( loglevel => 'LOG_INFO', message  => $msg );
 	    $self->output( $msg );	
 	    
 	    ###############################################
 	    # Check if Manufacturer Entity exists or can be added
 	    
-	    my $oid = $dev{enterprise};
+	    my $oid = $info->{enterprise};
 	    my $ent;
 	    if($ent = (Entity->search( oid => $oid ))[0] ) {
 		$self->debug( loglevel => 'LOG_INFO',
@@ -340,7 +364,7 @@ sub update_device {
 		unless ( $t = (EntityType->search(name => "Manufacturer"))[0] ){
 		    $t = 0; 
 		}
-		my $entname = $dev{manufacturer} || $oid;
+		my $entname = $info->{manufacturer} || $oid;
 		if ( ($ent = $self->insert(table => 'Entity', 
 					   state => { name => $entname,
 						      oid  => $oid,
@@ -370,19 +394,19 @@ sub update_device {
 	    if ( $typename ){
 		$type = (ProductType->search(name=>$typename))[0];	    
 	    }else{
-		if ( $dev{router} ){
+		if ( $info->{router} ){
 		    $type = (ProductType->search(name=>"Router"))[0];
-		}elsif ( $dev{hub} ){
+		}elsif ( $info->{hub} ){
 		    $type = (ProductType->search(name=>"Hub"))[0];
-		}elsif ( $dev{dot11} ){
+		}elsif ( $info->{dot11} ){
 		    $type = (ProductType->search(name=>"Access Point"))[0];
-		}elsif ( scalar $dev{interface} ){
+		}elsif ( scalar $info->{interface} ){
 		    $type = (ProductType->search(name=>"Switch"))[0];
 		}
 	    }
-	    my %prodtmp = ( name         => $dev{productname} || $dev{sysobjectid},
-			    description  => $dev{productname} || "",
-			    sysobjectid  => $dev{sysobjectid},
+	    my %prodtmp = ( name         => $info->{productname} || $info->{model},
+			    description  => $info->{productname},
+			    sysobjectid  => $info->{sysobjectid},
 			    type         => $type->id,
 			    manufacturer => $ent,
 			    );
@@ -408,9 +432,9 @@ sub update_device {
     ###############################################
     # Update/add PhsyAddr for Device
     
-    if( defined $dev{physaddr} ) {
+    if( defined $info->{physaddr} ) {
 	# Look it up
-	if ( my $phy = (PhysAddr->search(address => $dev{physaddr}))[0] ){
+	if ( my $phy = (PhysAddr->search(address => $info->{physaddr}))[0] ){
 	    if ( my $otherdev = ($phy->devices)[0] ){
 		#
 		# At least another device exists that has that address
@@ -418,7 +442,7 @@ sub update_device {
 		if ( ! $device || ( $device && $device->id != $otherdev->id ) ){
 		    my $name = (defined($otherdev->name->name))? $otherdev->name->name : $otherdev->id;
 		    $self->error( sprintf("%s: PhysAddr %s belongs to existing device: %s. Aborting", 
-					  $host, $dev{physaddr}, $name ) ); 
+					  $host, $info->{physaddr}, $name ) ); 
 		    $self->debug( loglevel => 'LOG_ERR',
 				  message  => $self->error,
 				  );
@@ -437,15 +461,15 @@ sub update_device {
 	    }
 	    $self->debug( loglevel => 'LOG_INFO',
 			  message  => "%s, Pointing to existing %s as base bridge address",
-			  args => [$host, $dev{physaddr}],
+			  args => [$host, $info->{physaddr}],
 			  );		
 	    #
 	    # address is new.  Add it
 	    #
 	}else{
-	    my %phaddrtmp = ( address => $dev{physaddr},
+	    my %phaddrtmp = ( address    => $info->{physaddr},
 			      first_seen => $self->timestamp,
-			      last_seen => $self->timestamp,
+			      last_seen  => $self->timestamp,
 			      );
 	    my $newphaddr;
 	    if ( ! ($newphaddr = $self->insert(table => 'PhysAddr', state => \%phaddrtmp)) ){
@@ -472,20 +496,20 @@ sub update_device {
     ###############################################
     # Serial Number
     
-    if( defined $dev{serialnumber} ) {
-	if ( my $otherdev = (Device->search(serialnumber => $dev{serialnumber}))[0] ){
+    if( defined $info->{serialnumber} ) {
+	if ( my $otherdev = (Device->search(serialnumber => $info->{serialnumber}))[0] ){
 	    if ( ! $device || ($device && $device->id != $otherdev->id) ){
 		my $othername = (defined $otherdev->name && defined $otherdev->name->name) ? 
 		    $otherdev->name->name : $otherdev->id;
 		$self->error( sprintf("%s: S/N %s belongs to existing device: %s. Aborting.", 
-				      $host, $dev{serialnumber}, $othername) ); 
+				      $host, $info->{serialnumber}, $othername) ); 
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => $self->error,
 			      );
 		return 0;
 	    }
 	}
-	$devtmp{serialnumber} = $dev{serialnumber};
+	$devtmp{serialnumber} = $info->{serialnumber};
     }else{
 	$self->debug( loglevel => 'LOG_INFO',
 		      message  => "%s: Did not return serial number",
@@ -500,19 +524,19 @@ sub update_device {
     }
     ###############################################
     # Basic BGP info
-    if( defined $dev{bgplocalas} ){
+    if( defined $info->{bgplocalas} ){
 	$self->debug( loglevel => 'LOG_DEBUG',
 		      message  => "BGP Local AS is %s", 
-		      args     => [$dev{bgplocalas}] );
+		      args     => [$info->{bgplocalas}] );
 	
-	$devtmp{bgplocalas} = $dev{bgplocalas};
+	$devtmp{bgplocalas} = $info->{bgplocalas};
     }
-    if( defined $dev{bgpid} ){
+    if( defined $info->{bgpid} ){
 	$self->debug( loglevel => 'LOG_DEBUG',
 		      message  => "BGP ID is %s", 
-		      args     => [$dev{id}] );
+		      args     => [$info->{bgpid}] );
 	
-	$devtmp{bgpid} = $dev{bgpid};
+	$devtmp{bgpid} = $info->{bgpid};
     }
     ###############################################
     #
@@ -586,22 +610,28 @@ sub update_device {
 		     admin_duplex     => "",
 		     oper_duplex      => "");
 
-    foreach my $newif ( sort { $a <=> $b } keys %{ $dev{interface} } ) {
+    foreach my $newif ( sort { $a <=> $b } keys %{ $info->{interface} } ) {
 
 	############################################
 	# set up IF state data
 	my( %iftmp, $if );
 	$iftmp{device} = $device->id;
 	
-	foreach my $field ( keys %{ $dev{interface}{$newif} } ){
+	foreach my $field ( keys %{ $info->{interface}->{$newif} } ){
 	    if (exists $IFFIELDS{$field}){
-		$iftmp{$field} = $dev{interface}{$newif}{$field};
+		$iftmp{$field} = $info->{interface}->{$newif}->{$field};
 	    }
 	}
-
 	###############################################
 	# Update/add PhsyAddr for Interface
-	if (defined (my $addr = $dev{interface}{$newif}{physaddr})){
+	if (defined (my $addr = $info->{interface}->{$newif}->{physaddr})){
+	    # Check if it's valid
+	    if ( ! $self->validate_phys_addr($addr) ){
+		my $msg = sprintf("%s: interface %s: %s is not a valid address", 
+				  $host, $iftmp{name}, $addr);
+		$self->error($msg);
+		$self->debug( loglevel => 'LOG_DEBUG', message => $msg );
+	    }	
 	    # Look it up
 	    if (my $phy = (PhysAddr->search(address => $addr))[0] ){
 		#
@@ -642,8 +672,7 @@ sub update_device {
 	}
 	############################################
 	# Add/Update interface
-	if ( $if = (Interface->search(device => $device->id, 
-				      number => $iftmp{number}))[0] ) {
+	if ( $if = (Interface->search(device => $device->id, number => $iftmp{number}))[0] ) {
 	    delete( $ifs{ $if->id } );
 
 	    # Check if description can be overwritten
@@ -706,8 +735,8 @@ sub update_device {
 	##############################################
 	# Add/Update VLANs
 
-	foreach my $vid ( keys %{ $dev{interface}{$newif}{vlans} } ){
-	    my $vname = $dev{interface}{$newif}{vlans}{$vid};
+	foreach my $vid ( keys %{ $info->{interface}->{$newif}->{vlans} } ){
+	    my $vname = $info->{interface}->{$newif}->{vlans}->{$vid};
 	    my $vo;
 	    # look it up
 	    unless ($vo = (Vlan->search(vid =>$vid))[0]){
@@ -763,35 +792,35 @@ sub update_device {
 	################################################################
 	# Add/Update IPs
 	
-	if( exists( $dev{interface}{$newif}{ips} ) && ! $device->natted ) {	    
+	if( exists( $info->{interface}->{$newif}->{ips} ) && ! $device->natted ) {	    
 	    # Get all stored IPs belonging to this Interface
 	    #
 	    map { $dbips{$_->address} = $_->id } $if->ips();
 
-	    foreach my $newip ( sort keys %{ $dev{interface}{$newif}{ips} } ){
+	    foreach my $newip ( sort keys %{ $info->{interface}->{$newif}->{ips} } ){
 		my( $maskobj, $subnet, $ipdbobj );
-		my $version = ($newip =~ /:/) ? 6 : 4;
+		my $version = ($newip =~ /:/) ? 6 : 4; # lame
 		my $prefix = ($version == 6) ? 128 : 32;
 
 		########################################################
 		# Create subnet if device is a router (ipForwarding true)
 		# and addsubnets flag is on
 
-		if ( $dev{router} && $argv{addsubnets}){
+		if ( $info->{router} && $argv->{addsubnets} ){
 		    my $newmask;
-		    if ( $newmask = $dev{interface}{$newif}{ips}{$newip} ){
-			my $subnetaddr = $self->getsubnetaddr($newip, $newmask);
+		    if ( $newmask = $info->{interface}->{$newif}->{ips}->{$newip} ){
+			my $subnetaddr = $self->{'_ipm'}->getsubnetaddr($newip, $newmask);
 			if ( $subnetaddr ne $newip ){
-			    if ( ! ($self->searchblocks_addr($subnetaddr, $newmask)) ){
+			    if ( ! ($self->{'_ipm'}->searchblocks_addr($subnetaddr, $newmask)) ){
 				my %state = (address     => $subnetaddr, 
 					     prefix      => $newmask, 
 					     statusname  => "Subnet");
 				# Check if subnet should inherit device info
-				if ( $argv{subnets_inherit} ){
+				if ( $argv->{subnets_inherit} ){
 				    $state{owner}   = $device->owner;
 				    $state{used_by} = $device->used_by;
 				}
-				unless( $self->insertblock(%state) ){
+				unless( $self->{'_ipm'}->insertblock(%state) ){
 				    my $msg = sprintf("%s: Could not insert Subnet %s/%s: %s", 
 						      $host, $subnetaddr, $newmask, $self->error);
 				    $self->debug(loglevel => 'LOG_ERR',
@@ -825,9 +854,9 @@ sub update_device {
 				  message  => $msg );
 		    delete( $dbips{$newip} );
 		    
-		    unless( $ipobj = $self->updateblock(id           => $ipid, 
-							statusname   => "Static",
-							interface    => $if->id )){
+		    unless( $ipobj = $self->{'_ipm'}->updateblock(id           => $ipid, 
+								  statusname   => "Static",
+								  interface    => $if->id )){
 			my $msg = sprintf("%s: Could not update IP %s/%s: %s", $host, $newip, $prefix, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',
 				      message  => $msg );
@@ -835,16 +864,16 @@ sub update_device {
 			next;
 		    }
 
-		}elsif ( $ipobj = $self->searchblocks_addr($newip) ){
+		}elsif ( $ipobj = $self->{'_ipm'}->searchblocks_addr($newip) ){
 		    # IP exists but not linked to this interface
 		    # update
 		    my $msg = sprintf("%s: IP %s/%s exists but not linked to %s. Updating", 
 				      $host, $newip, $prefix, $if->name);
 		    $self->debug( loglevel => 'LOG_NOTICE',
 				  message  => $msg );
-		    unless( $ipobj = $self->updateblock(id         => $ipobj->id, 
-							statusname => "Static",
-							interface  => $if->id )){
+		    unless( $ipobj = $self->{'_ipm'}->updateblock(id         => $ipobj->id, 
+								  statusname => "Static",
+								  interface  => $if->id )){
 			my $msg = sprintf("%s: Could not update IP %s/%s: %s", 
 					  $host, $newip, $prefix, $self->error);
 			$self->debug( loglevel => 'LOG_ERR',
@@ -854,14 +883,13 @@ sub update_device {
 		}else {
 		    #
 		    # Create a new Ip
-		    unless( $ipobj = $self->insertblock(address    => $newip, 
-							prefix     => $prefix, 
-							statusname => "Static",
-							interface  => $if->id)){
+		    unless( $ipobj = $self->{'_ipm'}->insertblock(address    => $newip, 
+								  prefix     => $prefix, 
+								  statusname => "Static",
+								  interface  => $if->id)){
 			my $msg = sprintf("%s: Could not insert IP %s: %s", 
 					  $host, $newip, $self->error);
-			$self->debug( loglevel => 'LOG_ERR',
-				      message  => $msg );
+			$self->debug( loglevel => 'LOG_ERR', message  => $msg );
 			next;
 		    }else{
 			my $msg = sprintf("%s: Inserted IP %s", $host, $newip);
@@ -895,7 +923,7 @@ sub update_device {
 	# Determine what DNS name this IP will have
 	my $name = $self->_canonicalize_int_name($ipobj->interface->name);
 	if ( $ipobj->interface->ips > 1 
-	     ||  $self->getrrbyname($name) ){
+	     ||  $self->{'_dns'}->getrrbyname($name) ){
 	    # Interface has more than one ip
 	    # or somehow this name is already used.
 	    # Append the ip address to the name to make it unique
@@ -921,8 +949,8 @@ sub update_device {
 		# We should already have an RR created
 		# Create the A record to link that RR with this ipobj
 		if ( $device->name ){
-		    unless ($self->insert_a_rr(rr => $device->name, 
-					       ip => $ipobj)){
+		    unless ($self->{'_dns'}->insert_a_rr(rr => $device->name, 
+							 ip => $ipobj)){
 			my $msg = sprintf("%s: Could not insert DNS A record for %s: %s", 
 					  $host, $ipobj->address, $self->error);
 			$self->debug(loglevel => 'LOG_ERR',
@@ -938,8 +966,8 @@ sub update_device {
 		}
 	    }else{
 		# Insert necessary records
-		unless ($self->insert_a_rr(name => $name,
-					   ip   => $ipobj)){
+		unless ($self->{'_dns'}->insert_a_rr(name => $name,
+						     ip   => $ipobj)){
 		    my $msg = sprintf("%s: Could not insert DNS A record for %s: %s", 
 				      $host, $ipobj->address, $self->error);
 		    $self->debug(loglevel => 'LOG_ERR',
@@ -997,8 +1025,8 @@ sub update_device {
     ##############################################
 
     ## Do not remove manually-added ports for these hubs
-    unless ( exists $dev{sysobjectid} 
-	     && exists($self->{config}->{IGNOREPORTS}->{$dev{sysobjectid}} )){
+    unless ( exists $info->{sysobjectid} 
+	     && exists($self->{config}->{IGNOREPORTS}->{$info->{sysobjectid}} )){
 	
 	foreach my $nonif ( keys %ifs ) {
 	    my $ifobj = $ifs{$nonif};
@@ -1140,7 +1168,7 @@ sub update_device {
 	################################################
 	# For each discovered peer
 	#
-	foreach my $peer ( keys %{$dev{bgppeer}} ){
+	foreach my $peer ( keys %{$info->{bgppeer}} ){
 	    my $p; # bgppeering object
 
 	    # Check if peering exists
@@ -1148,32 +1176,32 @@ sub update_device {
 					       bgppeeraddr => $peer ))[0] ){
 		# Doesn't exist.  
 		# Check if we have some Entity info
-		next unless ( exists ($dev{bgppeer}{$peer}{asname}) ||
-			      exists ($dev{bgppeer}{$peer}{orgname})
+		next unless ( exists ($info->{bgppeer}->{$peer}->{asname}) ||
+			      exists ($info->{bgppeer}->{$peer}->{orgname})
 			      ); 
 		my $ent;
 		# Check if Entity exists
-		unless ( ( $ent = (Entity->search( asnumber => $dev{bgppeer}{$peer}{asnumber}))[0] ) ||  
-			 ( $ent = (Entity->search( asname   => $dev{bgppeer}{$peer}{asname}))  [0] ) ||  
-			 ( $ent = (Entity->search( name     => $dev{bgppeer}{$peer}{orgname})) [0] )
+		unless ( ( $ent = (Entity->search( asnumber => $info->{bgppeer}->{$peer}->{asnumber}))[0] ) ||  
+			 ( $ent = (Entity->search( asname   => $info->{bgppeer}->{$peer}->{asname}))  [0] ) ||  
+			 ( $ent = (Entity->search( name     => $info->{bgppeer}->{$peer}->{orgname})) [0] )
 			 ){
 		    
 		    # Doesn't exist. Create Entity
 		    my $msg = sprintf("%s: Entity %s (%s) not found. Creating", 
-				      $host, $dev{bgppeer}{$peer}{orgname}, $dev{bgppeer}{$peer}{asname});
+				      $host, $info->{bgppeer}->{$peer}->{orgname}, $info->{bgppeer}->{$peer}->{asname});
 		    $self->debug( loglevel => 'LOG_INFO',
 				  message  => $msg );
 		    my $t;
 		    unless ( $t = (EntityType->search(name => "Peer"))[0] ){
 			$t = 0; 
 		    }
-		    my $entname = $dev{bgppeer}{$peer}{orgname} || $dev{bgppeer}{$peer}{asname} ;
-		    $entname .= "($dev{bgppeer}{$peer}{asnumber})";
+		    my $entname = $info->{bgppeer}->{$peer}->{orgname} || $info->{bgppeer}->{$peer}->{asname} ;
+		    $entname .= "($info->{bgppeer}->{$peer}->{asnumber})";
 
 		    if ( my $entid = $self->insert(table => 'Entity', 
 						   state => { name     => $entname,
-							      asname   => $dev{bgppeer}{$peer}{asname},
-							      asnumber => $dev{bgppeer}{$peer}{asnumber},
+							      asname   => $info->{bgppeer}->{$peer}->{asname},
+							      asnumber => $info->{bgppeer}->{$peer}->{asnumber},
 							      type => $t }) ){
 			my $msg = sprintf("%s: Created Peer Entity: %s. ", $host, $entname);
 			$self->debug( loglevel => 'LOG_NOTICE',
@@ -1194,7 +1222,7 @@ sub update_device {
 		if ( $ent ){
 		    my %ptmp = (device      => $device,
 				entity      => $ent,
-				bgppeerid   => $dev{bgppeer}{$peer}{bgppeerid},
+				bgppeerid   => $info->{bgppeer}->{$peer}->{bgppeerid},
 				bgppeeraddr => $peer,
 				monitored     => 1,
 				);
@@ -1245,365 +1273,215 @@ sub update_device {
     # END 
 
     my $msg = sprintf("Discovery of %s completed", $host);
-    $self->debug( loglevel => 'LOG_NOTICE',
-		  message  => $msg );
+    $self->debug( loglevel => 'LOG_NOTICE', message  => $msg );
     return $device;
 }
 
-=head2 get_dev_info - Get SNMP info from Device
- 
- Use the SNMP libraries to get a hash with the device information
- This should hide all possible underlying SNMP code logic from our
- device insertion/update code
-
- Required Args:
-   host:  name or ip address of host to query
-   comstr: SNMP community string
- Optional args:
-  
-
-=cut
-
 sub get_dev_info {
-    my ($self, $host, $comstr) = @_;
+    my ($self, %argv) = @_;
+    my ($host, $comstr, $version, $timeout, $retries) = ($argv{host}, $argv{comstr}, 
+							 $argv{version}, $argv{timeout}, 
+							 $argv{retries});
     $self->_clear_output();
+    
+    my %sinfoargs = ( AutoSpecify => 1,
+		      Debug       => 0,
+		      DestHost    => $host,
+		      Community   => $comstr  || $self->{config}->{'DEFAULT_SNMPCOMMUNITY'},
+		      Version     => $version || $self->{config}->{'DEFAULT_SNMPVERSION'},
+		      timeout     => (defined $timeout) ? $timeout : $self->{config}->{'DEFAULT_SNMPTIMEOUT'},
+		      retries     => (defined $retries) ? $retries : $self->{config}->{'DEFAULT_SNMPRETRIES'},
+		      );
 
-    $self->{nv}->build_config( "device", $host, $comstr );
-    my (%nv, %dev);
-    unless( (%nv  = $self->{nv}->get_device( "device", $host )) &&
-	    exists $nv{sysUpTime} ) {
-	$self->error(sprintf ("Could not reach device %s", $host) );
-	$self->debug(loglevel => 'LOG_ERR',
-		     message => $self->error, 
-		     );
+    my $sinfo;
+    unless ( $sinfo = SNMP::Info->new(%sinfoargs) ){ 
+	$self->error("Can't connect to $host with community $comstr");
+	return 0; 
+    }
+    
+    if ( my $err = $sinfo->error ){
+	$self->error("Error connecting to $host: $err");
 	return 0;
     }
-    if ( $nv{sysUpTime} < 0 ) {
-	$self->error( sprintf("Device %s did not respond", $host) );
-	$self->debug( loglevel => 'LOG_ERR',
-		      message => $self->error);
-	return 0;
-    }
-    my $msg = sprintf("Contacted Device %s", $host);
-    $self->debug( loglevel => 'LOG_NOTICE',
-		  message => $msg );
+    $self->debug(loglevel => 'LOG_NOTICE', message => "Contacted $host" );
 
+    my $class = $sinfo->class();
+    $self->debug(loglevel => 'LOG_DEBUG', message => "$host SNMP::Info class: $class" );
+
+    # I want to do my own munging for certain things
+    my $munge = $sinfo->munge();
+    delete $munge->{'i_speed'}; # I store these as integers in the db.  Munge at display
+    $munge->{'i_mac'} = sub{ return $self->_readablehex(@_) };
+    $munge->{'mac'}   = sub{ return $self->_readablehex(@_) };
+
+    my %dev;
+
+    ################################################################
+    # SNMP::Info methods that return hash refs
+    my @SMETHODS = ( 'e_descr',
+		     'interfaces', 'i_type', 'i_description', 'i_speed', 'i_up', 'i_up_admin', 'i_duplex', 
+		     'ip_index', 'ip_netmask', 'i_mac',
+		     'i_vlan', 'qb_v_name', 'hp_v_name', 'v_name',
+		     'bgp_peers', 'bgp_peer_id', 'bgp_peer_as');
+    my %hashes;
+    foreach my $method ( @SMETHODS ){
+	$hashes{$method} = $sinfo->$method;
+    }
 
     ################################################################
     # Device's global vars
+    $dev{sysobjectid} = $sinfo->id;
+    $dev{sysobjectid} =~ s/^\.(.*)/$1/;  #Remove unwanted first dot
 
-    if ( $self->_is_valid($nv{sysObjectID}) ){
-	$dev{sysobjectid} = $nv{sysObjectID};
-	$dev{sysobjectid} =~ s/^\.(.*)/$1/;  #Remove unwanted first dot
-	$dev{enterprise} = $dev{sysobjectid};
-	$dev{enterprise} =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
-
-    }
     if ( exists($self->{config}->{IGNOREDEVS}->{$dev{sysobjectid}} ) ){
-	my $msg = sprintf("Product id %s is set to be ignored in config file", $dev{sysobjectid});
+	my $msg = sprintf("Product id %s set to be ignored", $dev{sysobjectid});
 	$self->error($msg);
 	$self->debug( loglevel => 'LOG_NOTICE', message => $msg );
 	return 0;
     }
 
-    if ( $self->_is_valid($nv{sysName}) ){
-	$dev{sysname} = $nv{sysName};
+    $dev{enterprise}     = $dev{sysobjectid};
+    $dev{enterprise}     =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
+    $dev{model}          = $sinfo->model();
+    $dev{os}             = $sinfo->os_ver();
+    $dev{physaddr}       = $sinfo->mac();
+    # Check if it's valid
+    if ( ! $self->validate_phys_addr($dev{physaddr}) ){
+	my $msg = sprintf("%s has invalid MAC: %s", $host, $dev{physaddr});
+	$self->debug( loglevel => 'LOG_DEBUG', message => $msg );
+	delete $dev{physaddr};
+    }	
+    $dev{sysname}        = $sinfo->name();
+    $dev{sysdescription} = $sinfo->description();
+    $dev{syscontact}     = $sinfo->contact();
+    $dev{syslocation}    = $sinfo->location();
+    $dev{productname}    = $hashes{'e_descr'}->{1};
+    $dev{manufacturer}   = $sinfo->vendor();
+    $dev{serialnumber}   = $sinfo->serial();
+    $dev{router}         = $sinfo->ipforwarding;
+    if ( $dev{router} ){
+	$dev{bgplocalas} =  $sinfo->bgp_local_as();
+	$dev{bgpid}      =  $sinfo->bgp_id();
     }
-    if ( $self->_is_valid($nv{sysDescr}) ){
-	$dev{sysdescription} = $nv{sysDescr};
-    }
-    if ( $self->_is_valid($nv{sysContact}) ){
-	$dev{syscontact} = $nv{sysContact};
-    }
-    if ( $self->_is_valid($nv{sysLocation}) ){
-	$dev{syslocation} = $nv{sysLocation};
-    }
-    ################################################################
-    # Does it route?
-    if ( $self->_is_valid($nv{ipForwarding}) && $nv{ipForwarding} == 1 ){
-	$dev{router} = 1;
-    }
-    ################################################################
-    # BGP?
-    if ( $self->_is_valid($nv{bgpLocalAs}) ){
-	$dev{bgplocalas} = $nv{bgpLocalAs};
-    }
-    if ( $self->_is_valid($nv{bgpIdentifier}) ){
-	$dev{bgpid} = $nv{bgpIdentifier};
-    }
-    ################################################################
-    # Is it an access point?
-    if ( $self->_is_valid($nv{dot11StationID}) ){
-	$dev{dot11} = 1;
-    }
-    # Check if base bridge address is valid
-    if( $self->_is_valid($nv{dot1dBaseBridgeAddress})  ) {
-	my $addr = $self->_readablehex($nv{dot1dBaseBridgeAddress});
-	if ( $self->validate_phys_addr($addr) ){
-	    $dev{physaddr} = $addr;
-	}else{
-	    my $msg = sprintf("%s is not a valid address", $addr);
-	    $self->error($msg);
-	    $self->debug( loglevel => 'LOG_DEBUG', message => $msg );
-	}
-    }
-    if( $self->_is_valid($nv{entPhysicalDescr}) ) {
-	$dev{productname} = $nv{entPhysicalDescr};
-    }
-    if( $self->_is_valid($nv{entPhysicalMfgName}) ) {
-	$dev{manufacturer} = $nv{entPhysicalMfgName};
-    }
-    if( $self->_is_valid($nv{entPhysicalSerialNum}) ) {
-	$dev{serialnumber} = $nv{entPhysicalSerialNum};
-    }
-
+#    $dev{dot11} = 1 if ();
+    $dev{hub} = 1 if ( $class =~ /Layer1/ );
 
     ################################################################
-    # Interface status (oper/admin)
-
-    my %IFSTATUS = ( '1' => 'up',
-		     '2' => 'down' );
-
-    ################################################################
-    # MAU-MIB's ifMauType to half/full translations
-
-    my %MAU2DUPLEX = ( '.1.3.6.1.2.1.26.4.10' => "half",
-		       '.1.3.6.1.2.1.26.4.11' => "full",
-		       '.1.3.6.1.2.1.26.4.12' => "half",
-		       '.1.3.6.1.2.1.26.4.13' => "full",
-		       '.1.3.6.1.2.1.26.4.15' => "half",
-		       '.1.3.6.1.2.1.26.4.16' => "full",
-		       '.1.3.6.1.2.1.26.4.17' => "half",
-		       '.1.3.6.1.2.1.26.4.18' => "full",
-		       '.1.3.6.1.2.1.26.4.19' => "half",
-		       '.1.3.6.1.2.1.26.4.20' => "full",
-		       '.1.3.6.1.2.1.26.4.21' => "half",
-		       '.1.3.6.1.2.1.26.4.22' => "full",
-		       '.1.3.6.1.2.1.26.4.23' => "half",
-		       '.1.3.6.1.2.1.26.4.24' => "full",
-		       '.1.3.6.1.2.1.26.4.25' => "half",
-		       '.1.3.6.1.2.1.26.4.26' => "full",
-		       '.1.3.6.1.2.1.26.4.27' => "half",
-		       '.1.3.6.1.2.1.26.4.28' => "full",
-		       '.1.3.6.1.2.1.26.4.29' => "half",
-		       '.1.3.6.1.2.1.26.4.30' => "full",
-		       );
+    # Interface stuff
     
-    ################################################################
-    # Map dot3StatsDuplexStatus
-
-    my %DOT3DUPLEX = ( 1 => "na",
-		       2 => "half",
-		       3 => "full",
-		       );
-
-    ################################################################
-    # Catalyst's portDuplex to half/full translations
-
-    my %CATDUPLEX = ( 1 => "half",
-		      2 => "full",
-		      3 => "auto",  #(*)
-		      4 => "auto",
-		      );
-    # (*) MIB says "disagree", but we can assume it was auto and the other 
-    # end wasn't
+    # Netdot Interface field name to SNMP::Info method conversion table
+    my %IFFIELDS = ( name            => "interfaces",
+		     type            => "i_type",
+		     description     => "i_descr",
+		     speed           => "i_speed",
+		     admin_status    => "i_up",
+		     oper_status     => "i_up_admin", 
+		     physaddr        => "i_mac", 
+		     oper_duplex     => "i_duplex",
+		     admin_duplex    => "i_duplex_admin",
+		     );
     
-    my @ifrsv = @{ $self->{config}->{'IFRESERVED'} };
-    
-    $self->debug( loglevel => 'LOG_DEBUG',
-		  message => "Ignoring Interfaces: %s", 
-		  args => [ join ', ', @ifrsv ] );	    	 
-    
-    ##############################################
-    # Netdot to Netviewer field name translations
-
-    my %IFFIELDS = ( number            => "instance",
-		     name              => "name",
-		     type              => "ifType",
-		     description       => "descr",
-		     speed             => "ifSpeed",
-		     admin_status      => "ifAdminStatus",
-		     oper_status       => "ifOperStatus" );
-
-
     ##############################################
     # for each interface discovered...
-    
-    foreach my $newif ( keys %{ $nv{interface} } ) {
-	############################################
-	# check whether should skip IF
-	my $skip = 0;
-	foreach my $n ( @ifrsv ) {
-	    if( $nv{interface}{$newif}{name} =~ /$n/ ) { $skip = 1; last }
-	}
-	next if( $skip );
-
-	foreach my $dbname ( keys %IFFIELDS ) {
-	    if( $dbname =~ /status/ ) {
-		my $val = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
-		if( $val =~ /\d+/ ){
-		    $dev{interface}{$newif}{$dbname} = $IFSTATUS{$val};
-		}else{
-		    # Netviewer changes it in some cases.
-		    # Just use the value
-		    $dev{interface}{$newif}{$dbname} = $val;	    
-		}
-	    }elsif( $dbname eq "description" ){
-		# Netviewer converts empty values into "-"
-		# Ignore those
-		next if ( $nv{interface}{$newif}{$IFFIELDS{$dbname}} eq "-" );
-		$dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
-	    }else {
-		$dev{interface}{$newif}{$dbname} = $nv{interface}{$newif}{$IFFIELDS{$dbname}};
+    foreach my $iid (sort { $a <=> $b } keys %{ $hashes{interfaces} } ){
+	# check whether it should be ignored
+	if ( defined $self->{config}->{IFRESERVED} ){
+	    my $name    = $hashes{interfaces}->{$iid};
+	    my $ignored = $self->{config}->{IFRESERVED};
+	    if ( $name =~ /$ignored/i ){
+		$self->debug( loglevel => 'LOG_DEBUG', 
+			      message  =>  "Ignoring interface %s",
+			      args     => [$name] );
+		next;
 	    }
 	}
-	if ( $self->_is_valid($nv{interface}{$newif}{ifPhysAddress}) ){
-	    my $addr = $self->_readablehex($nv{interface}{$newif}{ifPhysAddress});
-	    if ( $self->validate_phys_addr($addr) ){
-		$dev{interface}{$newif}{physaddr} = $addr;
-	    }else{
-		my $msg = sprintf("%s is not a valid address", $addr);
-		$self->error($msg);
-		$self->debug( loglevel => 'LOG_DEBUG', message => $msg );
-	    }
+	# Store values in our info hash
+	$dev{interface}{$iid}{number} = $iid;
+	foreach my $field ( keys %IFFIELDS ){
+	    $dev{interface}{$iid}{$field} = $hashes{$IFFIELDS{$field}}->{$iid} 
+	    if ( defined($hashes{$IFFIELDS{$field}}->{$iid}) && 
+		 $hashes{$IFFIELDS{$field}}->{$iid} =~ /\w+/ );
+	}
+	# Check if physaddr is valid
+	my $physaddr = $dev{interface}{$iid}{physaddr};
+	if ( ! $self->validate_phys_addr($physaddr) ){
+	    my $msg = sprintf("Int %s has invalid MAC: %s", $iid, $physaddr);
+	    $self->debug( loglevel => 'LOG_DEBUG', message => $msg );
+	    delete $dev{interface}{$iid}{physaddr};
 	}	
-	################################################################
-	# Set Oper Duplex mode
-	my ($opdupval, $opdup);
-	################################################################
-	if( $self->_is_valid($nv{interface}{$newif}{ifMauType}) ){
-	    ################################################################
-	    # ifMauType
-	    $opdupval = $nv{interface}{$newif}{ifMauType};
-	    $opdup = $MAU2DUPLEX{$opdupval} || "";
-
-	}
-	if( $self->_is_valid($nv{interface}{$newif}{ifSpecific}) && !($opdup) ){
-	    ################################################################
-	    # ifSpecific
-	    $opdupval = $nv{interface}{$newif}{ifSpecific};
-	    $opdup = $MAU2DUPLEX{$opdupval} || "";
-
-	}
-	if( $self->_is_valid($nv{interface}{$newif}{dot3StatsDuplexStatus}) && !($opdup) ){
-	    ################################################################
-	    # dot3Stats
-	    $opdupval = $nv{interface}{$newif}{dot3StatsDuplexStatus};
-	    $opdup = $DOT3DUPLEX{$opdupval} || "";
-
-	}
-	if( $self->_is_valid($nv{interface}{$newif}{portDuplex}) && !($opdup) ){
-	    ################################################################
-	    # Catalyst
-	    $opdupval = $nv{interface}{$newif}{portDuplex};
-	    $opdup = $CATDUPLEX{$opdupval} || "";
-	}
-	$dev{interface}{$newif}{oper_duplex} = $opdup || "na" ;  	    
-
-	################################################################
-	# Set Admin Duplex mode
-	my ($admindupval, $admindup);
-	################################################################
-	# Standard MIB
-	if ($self->_is_valid($nv{interface}{$newif}{ifMauDefaultType})){
-	    $admindupval = $nv{interface}{$newif}{ifMauDefaultType};
-	    $admindup= $MAU2DUPLEX{$admindupval} || 0;
-	}
-	$dev{interface}{$newif}{admin_duplex} = $admindup || "na";
-
-	####################################################################
 	# IP addresses and masks 
 	# (mask is the value for each ip address key)
-	foreach my $ip( keys %{ $nv{interface}{$newif}{ipAdEntIfIndex}}){
-	    $dev{interface}{$newif}{ips}{$ip} = $nv{interface}{$newif}{ipAdEntIfIndex}{$ip};
+	foreach my $ip ( keys %{ $hashes{'ip_index'} } ){
+	    $dev{interface}{$iid}{ips}{$ip} = $hashes{'ip_netmask'}->{$ip} 
+	    if ($hashes{'ip_index'}->{$ip} eq $iid);
 	}
-
+  
 	################################################################
 	# Vlan info
 	my ($vid, $vname);
-	################################################################
-	# Standard MIB
-	if( $self->_is_valid( $nv{interface}{$newif}{dot1qPvid} ) ) {
-	    $vid = $nv{interface}{$newif}{dot1qPvid};
-	    $vname = ( $self->_is_valid($nv{interface}{$newif}{dot1qVlanStaticName}) ) ? 
-		$nv{interface}{$newif}{dot1qVlanStaticName} : $vid;
-	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
-	    ################################################################
-	    # HP
-	}elsif( $self->_is_valid( $nv{interface}{$newif}{hpVlanMemberIndex} ) ){
-	    $vid = $nv{interface}{$newif}{hpVlanMemberIndex};
-	    $vname = ( $self->_is_valid($nv{interface}{$newif}{hpVlanIdentName}) ) ?
-		$nv{interface}{$newif}{hpVlanIdentName} : $vid;
-	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
-	    ################################################################
-	    # Cisco
-	}elsif( $self->_is_valid( $nv{interface}{$newif}{vmVlan} )){
-	    $vid = $nv{interface}{$newif}{vmVlan};
-	    $vname = ( $self->_is_valid($nv{cviRoutedVlan}{$vid.0}{name}) ) ? 
-		$nv{cviRoutedVlan}{$vid.0}{name} : $vid;
-	    $dev{interface}{$newif}{vlans}{$vid} = $vname;
-	}
-
-    }
-    ##############################################
-    # for each hubport discovered...
-    if ( scalar ( my @hubports = keys %{ $nv{hubPorts} } ) ){
-	$dev{hub} = 1;
-	if ( ! exists($self->{config}->{IGNOREPORTS}->{$dev{sysobjectid}}) ){
-	    foreach my $newport ( @hubports ) {
-		$dev{interface}{$newport}{name}         = $newport;
-		$dev{interface}{$newport}{number}       = $newport;
-		$dev{interface}{$newport}{speed}        = "10 Mbps"; #most likely
-		$dev{interface}{$newport}{oper_duplex}  = "na";
-		$dev{interface}{$newport}{admin_duplex} = "na";
-		$dev{interface}{$newport}{oper_status}  = "na";
-		$dev{interface}{$newport}{admin_status} = "na";
-	    }
+	# Fix this in SNMP::Info.  Should provide standard method for 
+	# the VLAN name as well (v_name)
+	if ( $vid = $hashes{'i_vlan'}->{$iid} ){
+	    $vname = $hashes{'qb_v_name'}->{$iid} || # Standard MIB
+		$hashes{'hp_v_name'}->{$iid}      || # HP MIB
+		$hashes{'v_name'}->{$iid}         || # Cisco et al.
+		$vid;                                # Just use the ID as name
+	    $dev{interface}{$iid}{vlans}{$vid} = $vname;
 	}
     }
     
     if ( $self->{config}->{ADD_BGP_PEERS} ){
+
 	##############################################
 	# for each BGP Peer discovered...
-	
-	foreach my $peer ( keys %{ $nv{bgpPeer} } ) {
+	my %qcache;  #Cache queries for the same AS
+
+	foreach my $peer ( keys %{ $hashes{'bgp_peers'} } ) {
+	    $dev{bgppeer}{$peer}{bgppeerid} = $hashes{'bgp_peer_id'}->{$peer};
+	    my $asn = $hashes{'bgp_peer_as'}->{$peer};
+	    $dev{bgppeer}{$peer}{asnumber}  = $asn;
+	    $dev{bgppeer}{$peer}{asname}    = "AS $asn";
+	    $dev{bgppeer}{$peer}{orgname}   = "AS $asn";
 	    
-	    $dev{bgppeer}{$peer}{bgppeerid} = $nv{bgpPeer}{$peer}{bgpPeerIdentifier};
-	    my $asn = $nv{bgpPeer}{$peer}{bgpPeerRemoteAs};
-	    $dev{bgppeer}{$peer}{asnumber} = $asn;
-	    
-	    # Query any configured WHOIS servers for more info
-	    #
 	    if ( $self->{config}->{DO_WHOISQ} ){
-		my $found = 0;
-		foreach my $host ( keys %{$self->{config}->{WHOISQ}} ){
-		    my @lines = `whois -h $host AS$asn`;
-		    unless ( grep /No.*found/i, @lines ){
-			foreach my $key ( keys %{$self->{config}->{WHOISQ}->{$host}} ){
-			    my $exp = $self->{config}->{WHOISQ}->{$host}->{$key};
-			    if ( my @l = grep /^$exp/, @lines ){
-				my (undef, $val) = split /:\s+/, $l[0]; #first line
-				chomp($val);
-				$dev{bgppeer}{$peer}{$key} = $val;
-				$found = 1;
+		# Query any configured WHOIS servers for more info about this AS
+		# But first check if ithas been found already
+		if ( exists $qcache{$asn} ){
+		    foreach my $key ( keys %{$qcache{$asn}} ){
+			$dev{bgppeer}{$peer}{$key} = $qcache{$asn}{$key};
+		    }
+		}else{
+		    foreach my $server ( keys %{$self->{config}->{WHOISQ}} ){
+			my $cmd = "whois -h $server AS$asn";
+			$self->debug(loglevel =>'LOG_DEBUG',
+				     message  =>"Querying: $cmd");
+			my @lines = `$cmd`;
+			if ( grep /No.*found/i, @lines ){
+			    $self->debug(loglevel =>'LOG_DEBUG',
+					 message  =>"$server: AS$asn not found");
+			}else{
+			    foreach my $key ( keys %{$self->{config}->{WHOISQ}->{$server}} ){
+				my $exp = $self->{config}->{WHOISQ}->{$server}->{$key};
+				if ( my @l = grep /^$exp/, @lines ){
+				    my (undef, $val) = split /:\s+/, $l[0]; #first line
+				    $val =~ s/\s*$//;
+				    $self->debug(loglevel =>'LOG_DEBUG',
+						 message  =>"$server: Found $exp: $val");
+				    $qcache{$asn}{$key} = $val;
+				    $dev{bgppeer}{$peer}{$key} = $val;
+				}
 			    }
+			    last;
 			}
 		    }
-		    last if $found;
 		}
-		unless ( $found ){
-		    $dev{bgppeer}{$peer}{asname} = "AS $asn";
-		    $dev{bgppeer}{$peer}{orgname} = "AS $asn";		    
-		}
-	    }else{
-		$dev{bgppeer}{$peer}{asname} = "AS $asn";
-		$dev{bgppeer}{$peer}{orgname} = "AS $asn";
 	    }
 	}
     }
     
     return \%dev;
 }
+
 
 =head2 getdevips  - Get all IP addresses configured in a device
    
@@ -1788,7 +1666,6 @@ Returns:    Sorted array of interface objects or undef if error.
 
 sub ints_by_name {
     my ( $self, $o ) = @_;
-    my @ifs;
     my @ifs = $o->interfaces;
     
     # The following was borrowed from Netviewer
@@ -2153,21 +2030,6 @@ sub convert_ifspeed {
 #}
 
 #####################################################################
-# _is_valid
-# 
-# Returns:
-#   true if valid, false otherwise
-#####################################################################
-sub _is_valid {
-    my ($self, $v) = @_;
-    
-    if ( defined($v) && (length($v) > 0) && ($v !~ /nosuch/i) ){
-	return 1;
-    }
-    return 0;
-}
-
-#####################################################################
 # Clear output buffer
 #####################################################################
 sub _clear_output {
@@ -2191,7 +2053,7 @@ sub _canonicalize_int_name {
 
     my %ABBR = % {$self->{config}->{IF_DNS_ABBR} };
     foreach my $ab (keys %ABBR){
-	$name =~ s/$ab/$ABBR{$ab}/i;
+	$name =~ s/^$ab/$ABBR{$ab}/i;
     }
     $name =~ s/\/|\.|\s+/-/g;
     return lc( $name );
