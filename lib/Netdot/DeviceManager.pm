@@ -1358,7 +1358,7 @@ sub get_dev_info {
     $dev{productname}    = $hashes{'e_descr'}->{1};
     $dev{manufacturer}   = $sinfo->vendor();
     $dev{serialnumber}   = $sinfo->serial();
-    $dev{router}         = $sinfo->ipforwarding;
+    $dev{router}         = ($sinfo->ipforwarding eq 'forwarding') ? 1 : 0;
     if ( $dev{router} ){
 	$dev{bgplocalas} =  $sinfo->bgp_local_as();
 	$dev{bgpid}      =  $sinfo->bgp_id();
