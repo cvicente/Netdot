@@ -2,7 +2,7 @@ package Netdot;
 
 use lib "<<Make:LIB>>";
 use Debug;
-use base qw (Netdot::DBI );
+use base qw ( Netdot::DBI );
 
 #Be sure to return 1
 1;
@@ -19,18 +19,17 @@ hence the idea of grouping them in this parent class, inheritable by every other
 
 =head1 METHODS
 
-=cut
 
 =head2 new - Class Constructor
     
-    my $netdot = Netdot->new()
+    my $netdot = Netdot->new();
     
 =cut
 sub new {
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
     my $self = {};
-    bless $self, $class;
+    $self = $class->SUPER::new();
 
     # Read config files
     $self->_read_defaults;
@@ -52,9 +51,8 @@ sub new {
 	return 0;
     }
 
-    # Initialize Meta data
-    $self->_read_metadata;
-    
+    bless $self, $class;
+  
     wantarray ? ( $self, '' ) : $self;
     
 }
@@ -118,248 +116,6 @@ sub error {
 ######################################################################
 # DB-specific stuff
 ######################################################################
-
-
-=head2 gettables
-
-  @tables = $db->gettables();
-
-Returns a list of table names found in the Meta table
-
-=cut
-sub gettables{
-    my $self = shift;
-    return map {$_->name} Meta->retrieve_all;
-}
-
-=head2 understanding get links methods
-
-The following two methods, getlinksto and getlinksfrom, have names corresponding to the following diagram:
-
- +------+   ``this has linksto that'' +------+
- |      | ``that has linksfrom this'' |      |
- | this |---------------------------->| that |
- |      |                             |      |
- +------+ Many                    One +------+
-
-Keep the arrow head (-->) in mind, otherwise the names would be ambiguous.  The actual data are specified in bin/insert-metadata, which is well commented.
-
-=cut
-
-=head2 getlinksto
-
-  %linksto = $db->getlinksto($table);
-
-When passed a table name, returns a hash containing the tables one-to-many relationships
-s.t. this table is on the "many" side (has_a definitions in Class::DBI).
-The hash keys are the names of the local fields, and the values are the names of the tables
-that these fields reference.
-This info is identical for history tables
-
-=cut
-sub getlinksto{
-    my ($self, $table) = @_;
-    $table =~ s/_history//;
-    return %{ $self->{meta}->{$table}->{linksto} };
-}
-
-=head2 getlinksfrom
-
-  %linksfrom = $db->getlinksfrom($table);
-
-When passed a table name, returns a hash of hashes containing the tables one-to-many relationships
-s.t. this table is on the "one" side (equivalent to has_many definitions in Class::DBI).
-The keys of the main hash are identifiers for the relationship.  The nested hashs keys are names of
-the tables that reference this table.  The values are the names of the fields in those tables that
-reference this tables primary key.
-History tables are not referenced by other tables
-
-=cut
-sub getlinksfrom{
-    my ($self, $table) = @_;
-    return if ( $table =~ /_history/ );
-    return %{ $self->{meta}->{$table}->{linksfrom} };
-}
-
-=head2 getcolumnorder
-
-  %order = $db->getcolumnorder($table);
-
-Accepts a table name and returns its column names, ordered in the same order theyre supposed to be
-displayed. It returns a hash with column names as keys and their positions and values.
-History tables have two extra fields at the end
-
-=cut
-sub getcolumnorder{
-    my ($self, $table) = @_;
-    return %{ $self->{meta}->{$table}->{columnorder} };
-}
-
-=head2 getcolumnorderbrief
-
-  %orderbrief = $db->getcolumnorderbrief($table);
-
-Similar to getcolumnorder().  Accepts a table name and returns a brief list of
-fields for that table (the most relevant).  The method returns a hash with column names as keys
-and their positions as values.
-History tables have two extra fields at the beginning
-
-=cut
-sub getcolumnorderbrief {
-    my ($self, $table) = @_;
-    return %{ $self->{meta}->{$table}->{columnorderbrief} };
-}
-
-=head2 getcolumntypes
-
-  %coltypes = $db->getcolumntypes($table);
-
-Accepts a table and returns a hash containing the SQL types for the table's columns.  The hash's
-keys are the column names and the values their type.
-
-=cut
-sub getcolumntypes{
-    my ($self, $table) = @_;
-    return %{ $self->{meta}->{$table}->{columntypes} };
-}
-
-=head2 getcolumntags
-
-  %tags = $db->getcolumntags($table);
-
-Returns a hash contaning the user-friendly display names for a tables columns
-
-=cut
-sub getcolumntags{
-    my ($self, $table) = @_;
-    return %{ $self->{meta}->{$table}->{columntags} };
-}
-
-=head2 getlabels
-
-  @lbls = $db->getlabels($table);
-
-Returns a tables list of labels.  Labels are one or more columns used as hyperlinks to retrieve
-the specified object.  Theyre also used as a meaningful instance identifier.
-
-=cut
-sub getlabels{
-    my ($self, $table) = @_;
-    return @{ $self->{meta}->{$table}->{labels} };
-}
-
-=head2 isjointable
-
-  $flag = $db->isjointable( $table );
-
-Check if table is a join table
-
-=cut
-sub isjointable {
-    my ($self, $table) = @_;
-    return %{ $self->{meta}->{$table}->{isjointable} };
-}
-
-=head2 getobjlabel
-
-  $lbl = $db->getobjlabel( $obj );
-  $lbl = $db->getobjlabel( $obj, ", " );
-
-Returns an objects label string, composed from the list of labels and the values of those labels
-for this object, which might reside in more than one table.
-Accepts an object reference and a (optional) delimiter.
-Returns a string.
-
-=cut
-sub getobjlabel {
-    my ($self, $obj, $delim) = @_;
-    my (%linksto, @ret, @cols);
-    my $table = $obj->table;
-    %linksto = $self->getlinksto($table);
-    @cols = $self->getlabels($table);
-    foreach my $c (@cols){
-	if (defined $obj->$c){
-	    if ( !exists( $linksto{$c} ) ){
-		push @ret, $obj->$c;
-	    }else{
-		push @ret, $self->getobjlabel($obj->$c, $delim);
-	    }
-	}
-    }
-    # Only want non empty fields
-    return join "$delim", grep {$_ ne ""} @ret ;
-}
-
-=head2 getlabelarr
-
-  @lbls = $db->getlabelarr( $table );
-
-Returns array of labels for table. Each element is a comma delimited
-string representing the labels from this table to its endpoint.
-
-=cut
-sub getlabelarr {
-
-    my ($self, $table) = @_;
-    my %linksto = $self->getlinksto($table);
-    my @columns = $self->getlabels($table);
-    my @ret = ();
-
-    foreach my $col (@columns){
-        if (!exists($linksto{$col})){
-            push(@ret, $col);
-        }else{
-            my $lblString = $col . ",";
-            foreach my $lbl ($self->getlabelarr($linksto{$col})){
-                push(@ret, $lblString . $lbl);
-            }
-        }
-    }
-    return @ret;
-}
-
-=head2 getlabelvalue
-
-  $lbl = $db->getlabelvalue( $obj, $lbls, $delim );
-
-Returns actual label for this object based upon label array.
-Args:
-  - obj: object to find values for.
-  - lbls: array of labels generated by getlabelarr().
-  - delim: (optional) delimiter.
-
-=cut
-sub getlabelvalue {
-    my ($self, $obj, $lbls, $delim) = @_;
-
-    return "" if (!defined($obj) || int($obj) == 0);
-
-    $delim = ", " if (!$delim);
-    my @val = ();
-    foreach my $lblString (@{$lbls}){
-        my $o = $obj;
-        foreach my $lbl (split(/,/, $lblString)){
-            $o = $o->$lbl if (defined($o->$lbl));
-        }
-        push(@val, $o);
-    }
-    return join("$delim", @val) || "";
-}
-
-
-=head2 getsqltype
-
-  $type = $db->getsqltype( $table, $col );
-
-Given a table and a column name, returns the SQL type as defined in the schema
-
-=cut
-
-sub getsqltype {
-    my ($self, $table, $col) = @_;
-    my %coltypes = $self->getcolumntypes($table);
-    return $coltypes{$col};
-}
 
 =head2 getobjstate
 
@@ -658,78 +414,6 @@ sub single_table_search {
 	return \%found;
 }
 
-=head2 select_query
-
-  $r = $db->select_query(table => $table, terms => \@terms, max => $max);
-
- Search keywords in a tables label fields. If label field is a foreign
- key, recursively search for same keywords in foreign table.
-
- Arguments
-   table: Name of table to look up
-   terms: array ref of search terms
- Returns
-   hashref of $table objects
-
-=cut
-sub select_query {
-    my ($self, %args) = @_;
-    my ($table, $terms) = ($args{table}, $args{terms});
-    my %found;
-    my %linksto = $self->getlinksto($table);
-    my @labels = $self->getlabels($table);
-    foreach my $term (@$terms){
-	foreach my $c (@labels){
-	    if (! $linksto{$c} ){ # column is local
-		my $it;
-		if ( $table eq "Ipblock" && $c eq "address" ){
-		    # Special case.  We have to convert into an integer first
-		    # Also, if user happened to enter a prefix, make it work
-		    my ($address, $prefix);
-		    if ( $term =~ /\/\d+$/ ){
-			($address, $prefix) = split /\//, $term;
-			my $int = $self->ip2int($address);
-			$it = $table->search( 'address' => $int, 'prefix'=> $prefix );
-		    }else{
-			$address = $term;
-			my $int = $self->ip2int($address);
-			$it = $table->search( 'address' => $int );
-		    }
-		}else{
-		    $it = $table->search_like( $c => "%" . $term . "%" );
-		}
-		while (my $obj = $it->next){
-		    $found{$term}{$obj->id} = $obj;
-		}
-	    }else{ # column is a foreign key.
-		my $rtable = $linksto{$c};
-		# go recursive
-		if (my $fobjs = $self->select_query( table => $rtable, terms => [$term] )){
-		    foreach my $foid (keys %$fobjs){
-			my $it = $table->search( $c => $foid );
-			while (my $obj = $it->next){
-			    $found{$term}{$obj->id} = $obj;
-			}
-		    }
-		}
-	    }
-	}
-    }
-    # If more than one keyword, return the intersection.
-    # Otherwise, return all matching objects for the single keyword
-    if ( (scalar @$terms) > 1 ){
-	my (%in, %un);
-	foreach my $term ( keys %found ){
-	    foreach my $id ( keys %{ $found{$term} } ){
-		(exists $un{$id})? $in{$id} = $found{$term}{$id} : $un{$id} = $found{$term}{$id};
-	    }
-	}
-	return \%in;
-    }else{
-	return \%{$found{$terms->[0]}};
-    }
-}
-
 =head2 gethistorytable - Get the name of the history table for a given object
 
 Arguments:  object
@@ -777,49 +461,6 @@ sub gethistoryobjs {
     return @ho;
 }
 
-=head2 search_all_netdot - Search for a string in all fields from all tables, excluding foreign key fields.
-
-Arguments:  query string
-Returns:    reference to hash of hashes or -1 if error
-
-=cut
-sub search_all_netdot {
-    my ($self, $q) = @_;
-    my %results;
-
-    # Ignore these fields when searching
-    my %ign_fields = ('id' => '');
-    # Remove leading and trailing spaces
-    $q =~ s/^\s*(.*)\s*$/$1/;
-    # Add wildcards
-    $q = "%" . $q . "%";
-
-    foreach my $tbl ( $self->gettables() ) {
-	next if $tbl eq "Meta";
-	# Will also ignore foreign key fields
-	my %linksto = $self->getlinksto($tbl);
-	my @cols;
-	map { push @cols, $_ unless( exists $ign_fields{$_} || $linksto{$_} ) } $tbl->columns();
-	my @where;
-	map { push @where, "$_ LIKE \"$q\"" } @cols;
-	my $where = join " or ", @where;
-	next unless $where;
-	my $st;
-	eval {
-	    $st = $self->{dbh}->prepare("SELECT id FROM $tbl WHERE $where;");
-	    $st->execute();
-	};
-	if ( $@ ){
-	    $self->error("search_all_netdot: $@");
-	    return -1;
-	}
-	while ( my ($id) = $st->fetchrow_array() ){
-	    $results{$tbl}{$id} = $tbl->retrieve($id);
-	}
-    }
-    return \%results;
-
-}
 
 =head2 raw_sql - Issue SQL queries directly
 
@@ -1137,162 +778,3 @@ sub _read_defaults {
     }
 }
 
-sub _getmeta{
-    my ($self, $table) = @_;
-    return (Meta->search( name => $table ))[0];
-}
-
-
-sub _read_metadata{
-    my $self = shift;
-    # We do not use _gettables here because we need the
-    # history tables as well and they're not defined in
-    # Meta
-    foreach my $table ( $self->{dbh}->tables ){
-	$table =~ s/\`//g;
-	next if ($table eq "Meta");
-	$self->{meta}->{$table}->{linksto}          = $self->_read_linksto($table);
-	$self->{meta}->{$table}->{linksfrom}        = $self->_read_linksfrom($table);
-	$self->{meta}->{$table}->{columnorder}      = $self->_read_columnorder($table);
-	$self->{meta}->{$table}->{columnorderbrief} = $self->_read_columnorderbrief($table);
-	$self->{meta}->{$table}->{columntypes}      = $self->_read_columntypes($table);
-	$self->{meta}->{$table}->{columntags}       = $self->_read_columntags($table);
-	$self->{meta}->{$table}->{labels}           = $self->_read_labels($table);
-	$self->{meta}->{$table}->{isjointable}      = $self->_read_isjointable($table);
-    }
-}
-
-sub _read_linksto{
-    my ($self, $table) = @_;
-    my (%linksto, $mi);
-    if ( defined($mi = $self->_getmeta($table)) ){
-	map { my($j, $k) = split( /:/, $_ ); $linksto{$j} = $k }
-	split( /,/, $mi->linksto );
-	return \%linksto;
-    }
-    return;
-}
-
-sub _read_linksfrom{
-    my ($self, $table) = @_;
-    my (%linksfrom, $mi);
-    if ( defined($mi = $self->_getmeta($table)) ){
-	map { my($i, $j, $k, $args) = split( /:/, $_ );
-	      $linksfrom{$i}{$j} = $k;
-	  }  split( /,/, $mi->linksfrom );
-	return \%linksfrom;
-    }
-    return;
-}
-
-sub _read_columnorder{
-    my ($self, $table) = @_;
-    
-    my $hist = 1 if ( $table =~ s/_history// );
-    my (%order, $i, $mi);
-    if ( defined($mi = $self->_getmeta($table)) ){
-	$i = 1;
-	if( defined( $mi->columnorder ) ) {
-	    map { $order{$_} = $i++; } split( /,/, $mi->columnorder );
-	} else {
-	    $order{"id"} = $i++;
-	    foreach ( sort { $a cmp $b } $mi->name->columns() ) {
-		next if( $_ eq "id" );
-		$order{$_} = $i++;
-	    }
-	}
-	if ( $hist ){
-	    $order{'modified'} = $i++;
-	    $order{'modifier'} = $i++;
-	}
-	return \%order;
-    }
-    return;
-}
-
-sub _read_columnorderbrief {
-  my ($self, $table) = @_;
-
-  my $hist = 1 if ( $table =~ s/_history// );
-  my (%order, $i, $mi);
-  if ( defined($mi = $self->_getmeta($table)) ){
-    $i = 1;
-    if ( $hist ){
-	$order{'modified'} = $i++;
-	$order{'modifier'} = $i++;
-    }
-    if( defined( $mi->columnorder ) ) {
-      map { $order{$_} = $i++; } split( /,/, $mi->columnorderbrief );
-    } else {
-      $order{"id"} = $i++;
-      foreach ( sort { $a cmp $b } $mi->name->columns() ) {
-	next if( $_ eq "id" );
-	$order{$_} = $i++;
-      }
-    }
-    return \%order;
-  }
-  return;
-}
-
-sub _read_columntypes{
-    my ($self, $table) = @_;
-
-    my $hist = 1 if ( $table =~ s/_history// );
-    my (%types, $mi);
-    if ( defined($mi = $self->_getmeta($table)) ){
-	my $mi = $self->_getmeta($table);
-	if( defined( $mi->columntypes ) ) {
-	    map { my($j, $k) = split( /:/, $_ ); $types{$j} = $k }
-	    split( /,/, $mi->columntypes );
-	}
-	if ( $hist ){
-	    $types{modified} = "timestamp";
-	    $types{modifier} = "varchar";
-	}
-	return \%types;
-    }
-    return;
-}
-
-sub _read_columntags{
-    my ($self, $table) = @_;
-    my (%tags, $mi);
-
-    my $hist = 1 if ( $table =~ s/_history// );
-    if ( defined($mi = $self->_getmeta($table)) ){
-	if( defined( $mi->columntags ) ) {
-	    map { my($j, $k) = split( /:/, $_ ); $tags{$j} = $k }
-	    split( /,/, $mi->columntags );
-	}
-	if ( $hist ){
-	    $tags{modified} = "Modified";
-	    $tags{modifier} = "Modifier";
-	}
-	return \%tags;
-    }
-    return;
-}
-
-sub _read_labels{
-    my ($self, $table) = @_;
-    my $mi;
-
-    $table =~ s/_history// ;
-    if ( defined($mi = $self->_getmeta($table)) ){
-	if( defined( $mi->label ) ) {
-	    my @labels = split /,/, $mi->label;
-	    return \@labels;
-	}
-    }
-    return;
-}
-
-sub _read_isjointable {
-    my ($self, $table) = @_;
-    my $mi;
-    if ( defined($mi = $self->_getmeta($table)) ){
-        return $mi->isjoin;
-    }
-    return undef;
-}

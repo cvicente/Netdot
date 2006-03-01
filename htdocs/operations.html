@@ -66,7 +66,7 @@ if( $search ) {
             if( $tbl ne "Connection" && $tbl ne "RR" ) {
                 push @columns, "aliases";
             }
-            my %linksto = $ui->getlinksto($tbl);
+            my %linksto = $ui->meta->get_links_to($tbl);
             foreach my $col ( @columns ) {
                 if( $col eq "id" || $linksto{$col} ) {
                     next;
@@ -577,8 +577,6 @@ $m->comp('attribute_table.mhtml', field_headers => \@field_headers,
 
   use Data::Dumper;
 my $obj = $table->retrieve($id);
-my %has_a = Netdot->getlinksto($table);
-my %has_many = Netdot->getlinksfrom($table);
 my $indent = " "x4;
 
 $m->print("<h3> ID $id, Table $table </h3>");

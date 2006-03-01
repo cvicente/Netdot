@@ -29,11 +29,9 @@ my %reserved = (submit    => "", cancel    => "");
 my $msg;
 my (@field_headers, @cell_data) = ();
     
-my %linksto  =  $ui->getlinksto("Ipblock");
-my %tags     =  $ui->getcolumntags("Ipblock");
-my $fieldtag =  $tags{$field};
-my $sqltype  =  $ui->getsqltype("Ipblock", $field);
-
+my %linksto  = $ui->meta->get_links_to("Ipblock");
+my $fieldtag = $ui->meta->get_column_tag("Ipblock", $field);
+my $sqltype  = $ui->meta->get_column_type("Ipblock", $field);
 my $o        = Ipblock->retrieve($id);
 
 if ( $submit ){

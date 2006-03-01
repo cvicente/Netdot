@@ -26,10 +26,10 @@ if( exists( $ARGS{q} ) ) {
 if( exists( $ARGS{table} ) ) {
    @tables = split( /;/, $ARGS{table} );
 } else {
-   @tables = $ui->gettables();
+   @tables = $ui->meta->get_tables();
 }
 if( $tables[0] =~ /^a(ny|ll)$/io ) {
-   @tables = $ui->gettables();
+   @tables = $ui->meta->get_tables();
 }
 if( exists( $ARGS{page} ) ) {
    $page = $ARGS{page};
@@ -57,7 +57,7 @@ if( exists( $ARGS{displaybox} ) ) {
 
 <%perl>
 foreach my $tbl ( @tables ) {
-   %linksto = $ui->getlinksto($tbl);
+   %linksto = $ui->meta->get_links_to($tbl);
    foreach my $col ( $tbl->columns() ) {
       if( $linksto{$col} ) {
          foreach my $fc ( $linksto{$col}->columns() ) {

@@ -79,12 +79,12 @@ DB_NETDOT_PASS =  netdot_pass
 install:
 	$(substitute)
 
-installdb: initialize.$(DB_TYPE) installdefault installmeta
+installdb: initialize.$(DB_TYPE) installdefault setup.class.dbi
 
-updatedb: update installmeta
+updatedb: update setup.class.dbi
 
 update:
-	$(PERL) updatedb '$(DB_TYPE)' '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DATABASE)'
+	$(PERL) updatedb '$(DB_TYPE)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DBA_PASSWORD)' '$(DB_DATABASE)'
 
 initialize.Pg: createdb genschema initdb.dba acls
 
@@ -111,22 +111,11 @@ initdb.user:
 
 installdefault: insert.defaultdata 
 
-installmeta: insert.metadata setup.class.dbi 
-
-insert.metadata:
-	@echo 
-	@echo "Inserting Metadata..."
-	@echo
-	$(PERL) insert-metadata '$(DB_HOME)' '$(DB_DATABASE)' '$(DB_DBA)'
-	@echo 
-	@echo "Metadata inserted successfully"
-	@echo
-
 insert.defaultdata:
 	@echo 
 	@echo "Inserting Default Data..."
 	@echo
-	$(PERL) insert-defaultdata '$(DB_HOME)' '$(DB_DATABASE)' '$(DB_DBA)'
+	$(PERL) insert-defaultdata '$(DB_TYPE)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DATABASE)'
 	@echo 
 	@echo "Default Data inserted successfully"
 	@echo

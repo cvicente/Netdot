@@ -48,9 +48,8 @@ sub keyword_search {
             $response .= "0=".URLEncode("More than ".$MAX." matches. Refine search")."&";
         }
         my @objs = map { $r->{$_} } keys %$r;
-        my $lblfield = ( $ui->getlabels($table) )[0];
-        my %coltypes = $ui->getcolumntypes($table);
-        my $type = $coltypes{$lblfield};
+        my $lblfield = ( $ui->meta->get_labels($table) )[0];
+        my $type = $ui->meta->get_column_types($table, $lblfield);
         if ( $type =~ /int/ || $table eq "Interface" ){  # Ugly hack
            @objs = sort { $a->$lblfield <=> $b->$lblfield } @objs;
         }else {

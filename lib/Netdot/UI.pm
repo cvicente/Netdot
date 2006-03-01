@@ -1,5 +1,7 @@
 package Netdot::UI;
 
+my $ipm;
+
 =head1 NAME
 
 Netdot::UI - Group of user interface functions for the Network Documentation Tool (Netdot)
@@ -24,6 +26,7 @@ use Apache::Session::Lock::File;
 
 use base qw( Netdot );
 use Netdot::IPManager;
+use Netdot::Meta;
 use strict;
 
 #Be sure to return 1
@@ -46,16 +49,27 @@ sub new {
     my $self = {};
     bless $self, $class;
     $self = $self->SUPER::new( %argv );
-
-    # There's only one case where a method from 
-    # IPManager is needed.  It doesn't seem justifiable
-    # to complicate things by inheriting from IPManager here.
-    # Just create an object
-    $self->{ipm} = Netdot::IPManager->new();
-
+    $ipm  = Netdot::IPManager->new();
+    $self->{meta} = Netdot::Meta->new();
     wantarray ? ( $self, '' ) : $self; 
 }
  
+=head2 meta
+    
+    Retrieve Meta object
+
+ Arguments:
+    None
+  Returns:
+    Reference to a Meta object
+  Examples:
+    my %linksto = $ui->meta->get_links_to($table);
+
+=cut
+sub meta{
+    my $self = shift;
+    return $self->{meta};
+}
 
 =head2 getinputtag - Builds HTML form <input> tag based on the SQL type of the field and other parameters.
     Possible Input tag types returned are: 
@@ -96,7 +110,7 @@ sub getinputtag {
     if ($col eq "info"){
 	return "<textarea name=\"$col\" rows=\"10\" cols=\"38\">$value</textarea>\n";
     }
-    my $sqltype = $self->getsqltype($class, $col);
+    my $sqltype = $self->meta->get_column_type($class, $col);
     if ($sqltype =~ /bool/){
 	if ($value == 1){
 	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\" checked> yes";
@@ -342,8 +356,8 @@ sub form_to_db{
 		if ( $id =~ /NEW/i ) {
 		    # Creating a New Ipblock object
 		    my $newid;
-		    unless ( $newid = $self->{ipm}->insertblock( %{ $objs{$table}{$id} } ) ){
-			$self->error(sprintf("Error inserting new Ipblock: %s", $self->{ipm}->error));
+		    unless ( $newid = $ipm->insertblock( %{ $objs{$table}{$id} } ) ){
+			$self->error(sprintf("Error inserting new Ipblock: %s", $ipm->error));
 			return;
 		    }
 		    $ret{$table}{id}{$newid}{action} = "INSERTED";
@@ -352,8 +366,8 @@ sub form_to_db{
 		    foreach my $field (keys %{ $objs{$table}{$id} }){
 			if ( $field =~ /DELETE/i ){
 			    # Deleting an Ipblock object
-			    unless ( $self->{ipm}->removeblock( id => $id ) ){
-				$self->error(sprintf("Error deleting Ipblock: %s", $self->{ipm}->error));
+			    unless ( $ipm->removeblock( id => $id ) ){
+				$self->error(sprintf("Error deleting Ipblock: %s", $ipm->error));
 				return;
 			    }
 			    $ret{$table}{id}{$id}{action} = "DELETED";
@@ -364,8 +378,8 @@ sub form_to_db{
 		    if ( ! $act ){
 			# Updating an existing Ipblock object
 			$objs{$table}{$id}{id} = $id;
-			unless ( $self->{ipm}->updateblock( %{ $objs{$table}{$id} } ) ){
-			    $self->error($self->{ipm}->error);
+			unless ( $ipm->updateblock( %{ $objs{$table}{$id} } ) ){
+			    $self->error($ipm->error);
 			    return;
 			}
 			$ret{$table}{id}{$id}{action} = "UPDATED";
@@ -480,21 +494,13 @@ sub form_field {
     my $id = ($o ? $o->id : "NEW");
     my $current = ($o ? $o->$column : $default);
     
-    my %order    = $self->getcolumnorder( $tableName );
-    my %linksto  = $self->getlinksto( $tableName );
-    my %tags     = $self->getcolumntags( $tableName );
-    my %coltypes = $self->getcolumntypes( $tableName );
+    my %linksto  = $self->meta->get_links_to( $tableName );
     
     ################################################
     ## column is a local field
     if ( !exists($linksto{$column}) ) {
-        if ( exists($tags{$column}) ) {
-            $label = $tags{$column};
-        }else{
-            $label = $column;
-        }
-	
-        my $type = $coltypes{$column};
+	$label = $self->meta->get_column_tag($tableName, $column ) || $column;
+        my $type = $self->meta->get_column_type($tableName, $column);
 	
 	if ($o) {
 	    $value = $self->getinputtag($column, $o, $current);
@@ -522,14 +528,9 @@ sub form_field {
     ################################################
     ## The column is a foreign key. Provide a list to select.
     } else {
-        if ( exists($tags{$column}) ) {
-            $label = $tags{$column};
-        }else{
-            $label = $column;
-        }
-	
+	$label = $self->meta->get_column_tag($tableName, $column ) || $column;
         $value = $self->select_lookup(object=>$o, table=>$tableName, column=>$column, htmlExtra=>$htmlExtra, 
-				      lookup=>$linksto{$column}, edit=>$edit, linkPage=>$linkPage, default=>$default, 
+				      lookup=>$linksto{$column}, edit=>$edit, linkPage=>$linkPage, default=>$default,
 				      defaults=>$defaults, returnAsVar=>1, shortFieldName=>$shortFieldName);
     }
 
@@ -1353,4 +1354,205 @@ sub add_to_fields {
     1;
 }
 
+=head2 getobjlabel
+
+  $lbl = $db->getobjlabel( $obj );
+  $lbl = $db->getobjlabel( $obj, ", " );
+
+Returns an objects label string, composed from the list of labels and the values of those labels
+for this object, which might reside in more than one table.
+Accepts an object reference and a (optional) delimiter.
+Returns a string.
+
+=cut
+sub getobjlabel {
+    my ($self, $obj, $delim) = @_;
+    my (%linksto, @ret, @cols);
+    my $table = $obj->table;
+    %linksto = $self->meta->get_links_to($table);
+    @cols = $self->meta->get_labels($table);
+    foreach my $c (@cols){
+	if (defined $obj->$c){
+	    if ( !exists( $linksto{$c} ) ){
+		push @ret, $obj->$c;
+	    }else{
+		push @ret, $self->getobjlabel($obj->$c, $delim);
+	    }
+	}
+    }
+    # Only want non empty fields
+    return join "$delim", grep {$_ ne ""} @ret ;
+}
+
+=head2 getlabelarr
+
+  @lbls = $db->getlabelarr( $table );
+
+Returns array of labels for table. Each element is a comma delimited
+string representing the labels from this table to its endpoint.
+
+=cut
+sub getlabelarr {
+
+    my ($self, $table) = @_;
+    my %linksto = $self->meta->get_links_to($table);
+    my @columns = $self->meta->get_labels($table);
+    my @ret = ();
+
+    foreach my $col (@columns){
+        if (!exists($linksto{$col})){
+            push(@ret, $col);
+        }else{
+            my $lblString = $col . ",";
+            foreach my $lbl ($self->getlabelarr($linksto{$col})){
+                push(@ret, $lblString . $lbl);
+            }
+        }
+    }
+    return @ret;
+}
+
+=head2 getlabelvalue
+
+  $lbl = $db->getlabelvalue( $obj, $lbls, $delim );
+
+Returns actual label for this object based upon label array.
+Args:
+  - obj: object to find values for.
+  - lbls: array of labels generated by getlabelarr().
+  - delim: (optional) delimiter.
+
+=cut
+sub getlabelvalue {
+    my ($self, $obj, $lbls, $delim) = @_;
+
+    return "" if (!defined($obj) || int($obj) == 0);
+
+    $delim = ", " if (!$delim);
+    my @val = ();
+    foreach my $lblString (@{$lbls}){
+        my $o = $obj;
+        foreach my $lbl (split(/,/, $lblString)){
+            $o = $o->$lbl if (defined($o->$lbl));
+        }
+        push(@val, $o);
+    }
+    return join("$delim", @val) || "";
+}
+
+=head2 select_query
+
+  $r = $db->select_query(table => $table, terms => \@terms, max => $max);
+
+ Search keywords in a tables label fields. If label field is a foreign
+ key, recursively search for same keywords in foreign table.
+
+ Arguments
+   table: Name of table to look up
+   terms: array ref of search terms
+ Returns
+   hashref of $table objects
+
+=cut
+sub select_query {
+    my ($self, %args) = @_;
+    my ($table, $terms) = ($args{table}, $args{terms});
+    my %found;
+    my %linksto = $self->meta->get_links_to($table);
+    my @labels = $self->meta->get_labels($table);
+    foreach my $term (@$terms){
+	foreach my $c (@labels){
+	    if (! $linksto{$c} ){ # column is local
+		my $it;
+		if ( $table eq "Ipblock" && $c eq "address" ){
+		    # Special case.  We have to convert into an integer first
+		    # Also, if user happened to enter a prefix, make it work
+		    my ($address, $prefix);
+		    if ( $term =~ /\/\d+$/ ){
+			($address, $prefix) = split /\//, $term;
+			my $int = $self->ip2int($address);
+			$it = $table->search( 'address' => $int, 'prefix'=> $prefix );
+		    }else{
+			$address = $term;
+			my $int = $self->ip2int($address);
+			$it = $table->search( 'address' => $int );
+		    }
+		}else{
+		    $it = $table->search_like( $c => "%" . $term . "%" );
+		}
+		while (my $obj = $it->next){
+		    $found{$term}{$obj->id} = $obj;
+		}
+	    }else{ # column is a foreign key.
+		my $rtable = $linksto{$c};
+		# go recursive
+		if (my $fobjs = $self->select_query( table => $rtable, terms => [$term] )){
+		    foreach my $foid (keys %$fobjs){
+			my $it = $table->search( $c => $foid );
+			while (my $obj = $it->next){
+			    $found{$term}{$obj->id} = $obj;
+			}
+		    }
+		}
+	    }
+	}
+    }
+    # If more than one keyword, return the intersection.
+    # Otherwise, return all matching objects for the single keyword
+    if ( (scalar @$terms) > 1 ){
+	my (%in, %un);
+	foreach my $term ( keys %found ){
+	    foreach my $id ( keys %{ $found{$term} } ){
+		(exists $un{$id})? $in{$id} = $found{$term}{$id} : $un{$id} = $found{$term}{$id};
+	    }
+	}
+	return \%in;
+    }else{
+	return \%{$found{$terms->[0]}};
+    }
+}
+
+=head2 search_all_netdot - Search for a string in all fields from all tables, excluding foreign key fields.
+
+Arguments:  query string
+Returns:    reference to hash of hashes or -1 if error
+
+=cut
+sub search_all_netdot {
+    my ($self, $q) = @_;
+    my %results;
+
+    # Ignore these fields when searching
+    my %ign_fields = ('id' => '');
+    # Remove leading and trailing spaces
+    $q =~ s/^\s*(.*)\s*$/$1/;
+    # Add wildcards
+    $q = "%" . $q . "%";
+
+    foreach my $tbl ( $self->meta->get_tables() ) {
+	next if $tbl eq "Meta";
+	# Will also ignore foreign key fields
+	my %linksto = $self->meta->get_links_to($tbl);
+	my @cols;
+	map { push @cols, $_ unless( exists $ign_fields{$_} || $linksto{$_} ) } $tbl->columns();
+	my @where;
+	map { push @where, "$_ LIKE \"$q\"" } @cols;
+	my $where = join " or ", @where;
+	next unless $where;
+	my $st;
+	eval {
+	    $st = $self->{dbh}->prepare("SELECT id FROM $tbl WHERE $where;");
+	    $st->execute();
+	};
+	if ( $@ ){
+	    $self->error("search_all_netdot: $@");
+	    return -1;
+	}
+	while ( my ($id) = $st->fetchrow_array() ){
+	    $results{$tbl}{$id} = $tbl->retrieve($id);
+	}
+    }
+    return \%results;
+
+}
 

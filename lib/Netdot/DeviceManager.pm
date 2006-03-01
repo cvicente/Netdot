@@ -243,12 +243,13 @@ sub update_device {
 	
 	if ( ! $argv->{contacts} ){
 	    my $default_cl;
-	    unless ( $default_cl = (ContactList->search(name=>$self->{config}->{DEFAULT_CONTACTLIST}))[0] ){
+	    if ( $default_cl = (ContactList->search(name=>$self->{config}->{DEFAULT_CONTACTLIST}))[0] ){
+		push @cls, $default_cl;
+	    }else{
 		$self->debug( loglevel => 'LOG_ERR',
 			      message  => "%s: Default Contact List not found: %s",
 			      args     => [$host, $self->{config}->{DEFAULT_CONTACTLIST}] );
 	    }
-	    push @cls, $default_cl;
 	}else{
 	    if (!ref($argv->{contacts})){
 		# Only one was selected, so it is a scalar

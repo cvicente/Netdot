@@ -8,16 +8,14 @@ use vars qw($PROMPT $SCHEMA_FILE $SCHEMA_DIR
 use DBI;
 use DBIx::DataSource qw( create_database drop_database );
 
-
 $|=1; #unbuffer output.
 
-$DEBUG=0;
-$PROMPT = 1; 
-$SCHEMA_DIR = '../etc';
-$SCHEMA_FILE = "$SCHEMA_DIR/netdot.schema";
+$DEBUG       = 0;
+$PROMPT      = 1; 
+$SCHEMA_DIR  = '../etc';
+$SCHEMA_FILE = "$SCHEMA_DIR/netdot.meta";
 
 ($DB_TYPE, $DB_HOME, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DATABASE, $ACTION) = @ARGV;
-
 
 if ($DEBUG) {
   print_config_params();
@@ -163,9 +161,15 @@ sub generate_schema_from_hash {
     my (@schema);
     
     require DBIx::DBSchema;    
-    my $schema_href = do "$SCHEMA_FILE" or die $@ || $!;
-    my $schema = DBIx::DBSchema->pretty_read($schema_href);
+    use lib "../lib";
+    use Netdot::Meta;
     
+    my $meta = Netdot::Meta->new(meta_file=>"$SCHEMA_DIR/$SCHEMA_FILE");
+    unless ( $meta ){
+	die $meta->error();
+    }
+    my $schema_href = $meta->schema_hash();
+    my $schema = DBIx::DBSchema->pretty_read($schema_href);
     
     foreach my $statement ( $schema->sql($dsn, $DB_DBA, $DB_DBA_PASSWORD ) ) {
 	print STDERR $statement if $DEBUG;
@@ -192,11 +196,3 @@ sub _yesno {
     $x =~ /^y/i;
 }
 
-######################################################################
-#  $Log: initdb,v $
-#  Revision 1.3  2003/07/16 22:39:45  netdot
-#  Fixed bug in parameters
-#
-#  Revision 1.2  2003/04/08 17:51:19  netdot
-#  initial checkin
-#

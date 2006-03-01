@@ -115,10 +115,10 @@ the submission.
       </tr>
       <tr><td>
       <p>Please confirm the following:
-%     my %linksto = $ui->getlinksto( $TBL );
-%     my %tags = $ui->getcolumntags( $TBL );
+%     my %linksto = $ui->meta->get_links_to( $TBL );
+%     my %tags = $ui->meta->get_column_tags( $TBL );
       <p><blockquote><strong><% $TBL %></strong><ul>
-%     my %columns = $ui->getcolumnorder($TBL);
+%     my %columns = $ui->meta->get_column_order($TBL);
 %     foreach my $C ( keys %columns ) {
         <li>
 % 	if ( exists($tags{$C}) ){
@@ -131,7 +131,7 @@ the submission.
 %       } else {
 %         if( $linksto{$C} ) {
 %           my %tables;
-%           map { $tables{$_} = 1 } $ui->gettables;
+%           map { $tables{$_} = 1 } $ui->meta->get_tables;
 %           if( ! exists( $tables{$linksto{$C}} ) ) {
               No such object <% $linksto{$C} %>
 %           } elsif( $session->{tables}{$TBL}{$C} == 0 ) {

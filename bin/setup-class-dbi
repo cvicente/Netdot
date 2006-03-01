@@ -1,23 +1,25 @@
 #!/usr/bin/perl
 #
 #
-# generate Netdot::DBI from metadata provided by the DBMS
-# and the Meta table(s)
-# This should make changes in the schema less painful
+# generate Netdot::DBI from metadata 
 #
 
 
 use strict;
-use DBI;
+use lib "../lib";
+use Netdot::Meta;
 
 my $DB_TYPE        = $ARGV[0] || "mysql";
 my $DB_DATABASE    = $ARGV[1] || "netdot";
 my $DB_NETDOT_USER = $ARGV[2] || "netdot_user";
 my $DB_NETDOT_PASS = $ARGV[3] || "netdot_pass";
 
-my $IN = "./DBI.header";
-my $OUT = "./DBI.pm";
+my $IN        = "./DBI.header";
+my $OUT       = "./DBI.pm";
+my $META_DIR  = '../etc';
+my $META_FILE = "$META_DIR/netdot.meta";
 
+my $meta = Netdot::Meta->new(meta_file=>$META_FILE);
 
 open (IN, "$IN") or die "Couldn't open $IN: $!\n";
 open (OUT, ">$OUT") or die "Couldn't open $OUT: $!\n";
@@ -31,76 +33,9 @@ while (<IN>){
 }
 close(IN);
 
-my $dbh = DBI->connect ("dbi:$DB_TYPE:$DB_DATABASE", "$DB_NETDOT_USER", "$DB_NETDOT_PASS")
-    or die "Can't connect to db: $DBI::errstr\n";
+my $table_defs = $meta->cdbi_defs();
 
-my @tables = $dbh->tables;
-map { $_ =~ s/\`//g } @tables;
-
-my $sth2 = $dbh->prepare(" SELECT columnorderbrief,linksto,linksfrom 
-                           FROM Meta 
-                           WHERE name = ? ");
-
-foreach my $table (@tables){
-    print ("\n\n######################################################################\n");
-    print "package $table;\n";
-    print "use base 'Netdot::DBI';\n";
-    print "__PACKAGE__->table( '$table' );\n";
-    # Get the names of the columns from the database
-    # This has to be 'prepared' here since DBI won't accept 
-    # the table name as a  parameter.
-    # The id = 0 criteria makes sure we don't waste time retrieving
-    # any records
-    my $sth1 = $dbh->prepare("SELECT * FROM $table WHERE id = 0");
-    $sth1->execute();
-    my ($i, %cols, @essential);
-    for ($i = 0; $i < $sth1->{NUM_OF_FIELDS}; $i++){
-	$cols{$sth1->{NAME}->[$i]} = '';
-    }
-    print "__PACKAGE__->columns( Primary => qw / id /);\n";
-    delete $cols{id};
-    my $hist = 1 if ($table =~ s/_history//);
-
-    $sth2->execute($table);
-    my $hr = $sth2->fetchrow_hashref();
-    @essential = split /,/, $hr->{columnorderbrief};
-	
-    delete $cols{$_} foreach (@essential);
-    
-    my $essential = join ' ', @essential;
-    print "__PACKAGE__->columns( Essential => qw / $essential /);\n" if scalar(@essential);
-    
-    my $others = join ' ', keys %cols;
-    print "__PACKAGE__->columns( Others => qw / $others /);\n" if scalar (keys %cols);
-
-    my @hasAs    = split /,/, $hr->{linksto};
-    my @hasManys = split /,/, $hr->{linksfrom};
-    
-    foreach my $item (@hasAs){
-	my ($col, $tab) = split /:/, $item;
-	print "__PACKAGE__->has_a( $col => '$tab' );\n";
-    }
-    unless ( $hist ){
-	foreach my $item (@hasManys){
-	    my @fields = split /:/, $item; 
-	    my $numfields = scalar @fields;
-	    if ($numfields == 3){
-		my ($meth, $tab, $col) = split /:/, $item; 
-		print "__PACKAGE__->has_many( '$meth', '$tab' => '$col' );\n";
-	    }elsif ($numfields == 4){
-		my ($meth, $tab, $col, $args) = split /:/, $item; 
-		$args =~ s/cascade=>"Nullify"/cascade=>"Class::DBI::Cascade::Nullify"/;
-		print "__PACKAGE__->has_many( '$meth', '$tab' => '$col', $args );\n";
-	    }else{
-		print STDERR "ERROR!: Incorrect number of fields: $numfields, in linksfrom for table $table\n";
-		print STDERR "fields are: ", join (', ', @fields), "\n";
-		print STDERR "$0: exited abnormally\n";
-		exit;
-	    }
-	}
-    } 
-}
-
+print $table_defs;
 
 print "\n#Be sure to return 1\n";
 print "1;\n";

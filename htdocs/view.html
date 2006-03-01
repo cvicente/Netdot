@@ -34,10 +34,10 @@ unless ( $obj = $table->retrieve($id) ){
 }
 
 my $labelstr  = $ui->getobjlabel($obj, ", ");
-my %linksto   = $ui->getlinksto($table);
-my %linksfrom = $ui->getlinksfrom($table);
-my %order     = $ui->getcolumnorder($table);
-my %tags      = $ui->getcolumntags($table);
+my %linksto   = $ui->meta->get_links_to($table);
+my %linksfrom = $ui->meta->get_links_from($table);
+my %order     = $ui->meta->get_column_order($table);
+my %tags      = $ui->meta->get_column_tags($table);
 
 my $DEBUG = 0;
 
@@ -58,10 +58,10 @@ foreach my $i (keys %linksfrom){
     
     # If foreign table is a join table
     
-    if ( $ui->isjointable($j) ){
+    if ( $ui->meta->is_join($j) ){
 	$ftables{$i}{join} = 1;
 	# Get has_a entries 
-	my %jlinksto = $ui->getlinksto($j);
+	my %jlinksto = $ui->meta->get_links_to($j);
 	# Column in join table that points to third table
 	my $col;
 	map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;

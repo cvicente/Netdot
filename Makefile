@@ -83,7 +83,7 @@ tests:
 	perl -MURI::Escape -e 1
 	perl -MDBIx::DBSchema -e 1
 	perl -MDBIx::DataSource -e 1
-	perl -MSNMP -e 1
+	perl -MSNMP::Info -e 1
 	perl -MNetAddr::IP -e 1
 	perl -M'Apache2::SiteControl 1.0' -e 1
 	if [ `whoami` != root ]; then \

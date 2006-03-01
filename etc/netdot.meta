@@ -1,0 +1,5910 @@
+#
+# Netdot Metadata. 
+#
+# Metadata is kept as a Perl hash and contains information necessary to generate the 
+# DB schema (See DBIx::DBSchema), to generate Class::DBI classes, and to help in 
+# minimizing user interface code.
+# 
+# $meta = {
+#'tables' => {
+#  Table1 => {
+#    columns => {
+#      column1 => {  # DB name of this column
+#        default => 'Default Value for this column',
+#        description => 'Column1 blah blah blah',
+#        length => 'SQL length of the column',
+#
+#        # Include this if this column is a foreign key:
+#        linksto => { 
+#          Behavior to take when the object pointed to by this column is deleted
+#          cascade => 'Delete|Fail|Nullify',
+# 
+#          Name of this relationship from the perspective of the object pointed to
+#          by this column.  Class::DBI creates a method with this name to retrieve
+#          the 'has_many' objects
+#          method => 'Method Name',
+#          table => 'Foreign Table Name'
+#        },
+#
+#        nullable => 0,   # can this column be set to null?
+#        tag => undef,    # 
+#        type => 'serial' # SQL type of this column
+#      },
+#    description => 'Table1 blah blah blah', # Description for this table
+#    has_history => 0,  # Should a history table (a clone of this one) be inserted as well?
+#    index => [],       # Columns that should be indexed by the DBMS
+#    isjoin => '0',     # Is this table a join table?
+#
+#    One or more columns to be used as a short identifier 
+#    for each instance of this table:
+#    label => [ 'column1', 'column2'  ],
+#    primary_key => 'id',
+#
+#    Array of arrays of columns that should be marked as unique in the DB.
+#    unique => [ [ 'column1' ] ],
+#
+#    Views contain subsets of columns to be displayed
+#    For example, different views might be chosen depending on the type or object
+#    views => {
+#      all => [ 'column1', 'column2' ], 
+#      brief => [ 'column1' ]
+#    }
+#  },
+#
+#
+# 
+#
+# 
+#
+#
+
+$meta = {
+'tables' => {
+  ArpCache => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      interface => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'arpcaches',
+          table => 'Interface'
+        },
+        nullable => 0,
+        tag => 'Interface',
+        type => 'integer'
+      },
+      tstamp => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Timestamp',
+        type => 'timestamp'
+      }
+    },
+    description => 'Device ARP Cache',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'tstamp',
+      'interface'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'interface',
+        'tstamp'
+      ]
+    ],
+    views => {
+      all => [
+        'tstamp',
+        'interface'
+      ],
+      brief => [
+        'tstamp',
+        'interface'
+      ]
+    }
+  },
+  ArpCacheEntry => {
+    columns => {
+      arpcache => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'entries',
+          table => 'ArpCache'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      ipaddr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'arpentries',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => 'IP Address',
+        type => 'integer'
+      },
+      physaddr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'arpentries',
+          table => 'PhysAddr'
+        },
+        nullable => 0,
+        tag => 'Physical Address',
+        type => 'integer'
+      }
+    },
+    description => 'ARP Cache Entry',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'ipaddr',
+      'physaddr'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'arpcache',
+        'ipaddr',
+        'physaddr'
+      ]
+    ],
+    views => {
+      all => [
+        'ipaddr',
+        'physaddr',
+        'arpcache'
+      ],
+      brief => [
+        'ipaddr',
+        'physaddr',
+        'arpcache'
+      ]
+    }
+  },
+  Availability => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'Time period brief description. e.g. "24x7"',
+        length => '128',
+        nullable => 0,
+        tag => 'Time Period',
+        type => 'varchar'
+      }
+    },
+    description => 'A Time Period',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  BGPPeering => {
+    columns => {
+      bgppeeraddr => {
+        default => '',
+        description => 'BGP Peer Address',
+        length => '64',
+        nullable => 1,
+        tag => 'Peer Adress',
+        type => 'varchar'
+      },
+      bgppeerid => {
+        default => '',
+        description => 'BGP Peer ID',
+        length => '64',
+        nullable => 1,
+        tag => 'Peer ID',
+        type => 'varchar'
+      },
+      device => {
+        default => '',
+        description => 'Device where BGP peering exists (the local device, that is)',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'bgppeers',
+          table => 'Device'
+        },
+        nullable => 0,
+        tag => 'Device',
+        type => 'integer'
+      },
+      entity => {
+        default => '',
+        description => 'Entity with which Peering Exists',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'bgppeers',
+          table => 'Entity'
+        },
+        nullable => 0,
+        tag => 'Entity',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      monitored => {
+        default => '',
+        description => 'Flag that specifies if this peering should be monitored',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'bool'
+      },
+      monitorstatus => {
+        default => '',
+        description => 'Monitoring Status of this Peering',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'bgppeers',
+          table => 'MonitorStatus'
+        },
+        nullable => 0,
+        tag => 'Monitored Status',
+        type => 'integer'
+      }
+    },
+    description => 'A BGP Peering',
+    has_history => 0,
+    index => [
+      [
+        'bgppeerid'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'device',
+      'entity'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'device',
+        'bgppeeraddr'
+      ]
+    ],
+    views => {
+      all => [
+        'device',
+        'entity',
+        'bgppeerid',
+        'bgppeeraddr',
+        'monitored',
+        'monitorstatus'
+      ],
+      brief => [
+        'device',
+        'entity',
+        'bgppeeraddr'
+      ]
+    }
+  },
+  BackboneCable => {
+    columns => {
+      end_closet => {
+        default => '',
+        description => 'Closet where this cable terminates',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'backbones_start',
+          table => 'Closet'
+        },
+        nullable => 0,
+        tag => 'Destination Closet',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      installdate => {
+        default => '',
+        description => 'Date when this Cable was first installed',
+        length => '',
+        nullable => 1,
+        tag => 'Installed on',
+        type => 'date'
+      },
+      length => {
+        default => '',
+        description => 'The physical length of this cable (ft)',
+        length => '32',
+        nullable => 1,
+        tag => 'Length (ft)',
+        type => 'varchar'
+      },
+      name => {
+        default => '',
+        description => 'A name given to this cable.',
+        length => '64',
+        nullable => 0,
+        tag => 'Cable ID',
+        type => 'varchar'
+      },
+      owner => {
+        default => '',
+        description => 'Entity that owns this cable',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'cables',
+          table => 'Entity'
+        },
+        nullable => 1,
+        tag => 'Owned by',
+        type => 'integer'
+      },
+      start_closet => {
+        default => '',
+        description => 'Closet where this cable originates',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'backbones_start',
+          table => 'Closet'
+        },
+        nullable => 0,
+        tag => 'Origin Closet',
+        type => 'integer'
+      },
+      type => {
+        default => '',
+        description => 'The type of cable',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'backbonecables',
+          table => 'CableType'
+        },
+        nullable => 0,
+        tag => 'Cable Type',
+        type => 'integer'
+      }
+    },
+    description => 'A Backbone cable that interconnects two sites.  Backbone cables can have multiple strands.',
+    has_history => 1,
+    index => [
+      [
+        'name'
+      ],
+      [
+        'start_closet'
+      ],
+      [
+        'end_closet'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'type',
+        'owner',
+        'installdate',
+        'start_closet',
+        'end_closet',
+        'length',
+        'info'
+      ],
+      brief => [
+        'name',
+        'start_closet',
+        'end_closet'
+      ]
+    }
+  },
+  BinFile => {
+    columns => {
+      bindata => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Binary Data',
+        type => 'long varbinary'
+      },
+      filename => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Name',
+        type => 'varchar'
+      },
+      filesize => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Size',
+        type => 'varchar'
+      },
+      filetype => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Type',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      }
+    },
+    description => 'A Binary File',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'filename'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'filename'
+      ]
+    ],
+    views => {
+      all => [
+        'bindata',
+        'filename',
+        'filesize',
+        'filetype',
+        'info'
+      ],
+      brief => [
+        'filename',
+        'filesize',
+        'filetype'
+      ]
+    }
+  },
+  CableStrand => {
+    columns => {
+      cable => {
+        default => '',
+        description => 'Cable to which this strand belongs',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'strands',
+          table => 'BackboneCable'
+        },
+        nullable => 0,
+        tag => 'Cable ID',
+        type => 'integer'
+      },
+      circuit_id => {
+        default => '',
+        description => 'ID of the circuit which this strand is a part of',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'strands',
+          table => 'Circuit'
+        },
+        nullable => 0,
+        tag => 'Circuit',
+        type => 'integer'
+      },
+      datetested => {
+        default => '',
+        description => 'Date that this strand was last tested',
+        length => '',
+        nullable => 1,
+        tag => 'Date Tested',
+        type => 'date'
+      },
+      description => {
+        default => '',
+        description => 'A text description of this strand',
+        length => '128',
+        nullable => 1,
+        tag => 'Description',
+        type => 'varchar'
+      },
+      direction => {
+        default => '',
+        description => 'Does this strand transmit or receive?  The reference is determined by the start and end closets.',
+        length => '',
+        nullable => 0,
+        tag => 'Direction (Tx/Rx)',
+        type => 'bool'
+      },
+      fiber_type => {
+        default => '',
+        description => 'The type of fiber that this strand is made of',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'strands',
+          table => 'FiberType'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      loss => {
+        default => '',
+        description => 'Tested loss (dbm)',
+        length => '32',
+        nullable => 1,
+        tag => 'Loss',
+        type => 'varchar'
+      },
+      name => {
+        default => '',
+        description => 'A name for this strand',
+        length => '64',
+        nullable => 0,
+        tag => 'Strand ID',
+        type => 'varchar'
+      },
+      number => {
+        default => '',
+        description => 'The numeric order of this strand',
+        length => '',
+        nullable => 0,
+        tag => 'Number',
+        type => 'integer'
+      },
+      status => {
+        default => '',
+        description => 'Status of this strand',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'strands',
+          table => 'StrandStatus'
+        },
+        nullable => 0,
+        tag => 'Status',
+        type => 'integer'
+      }
+    },
+    description => 'A single cable strand/pair',
+    has_history => 1,
+    index => [
+      [
+        'cable'
+      ],
+      [
+        'name'
+      ],
+      [
+        'number'
+      ],
+      [
+        'circuit_id'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'cable',
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'number',
+        'cable',
+        'status',
+        'datetested',
+        'loss',
+        'direction',
+        'fiber_type',
+        'circuit_id',
+        'description',
+        'info'
+      ],
+      brief => [
+        'name',
+        'cable',
+        'direction',
+        'status'
+      ]
+    }
+  },
+  CableType => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'The name of this cable type',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'Types of Cables',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  Circuit => {
+    columns => {
+      cid => {
+        default => '',
+        description => 'ID of this circuit.',
+        length => '128',
+        nullable => 0,
+        tag => 'Circuit ID',
+        type => 'varchar'
+      },
+      connectionid => {
+        default => '',
+        description => 'Connection to which this circuit belongs',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'circuits',
+          table => 'Connection'
+        },
+        nullable => 0,
+        tag => 'Part of Connection',
+        type => 'integer'
+      },
+      dlci => {
+        default => '',
+        description => 'Data Link Connection Identifier',
+        length => '64',
+        nullable => 1,
+        tag => 'DLCI',
+        type => 'varchar'
+      },
+      farend => {
+        default => '',
+        description => 'The remote (far) interface where this circuit terminates',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'farcircuits',
+          table => 'Interface'
+        },
+        nullable => 0,
+        tag => 'Far Interface',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      installdate => {
+        default => '',
+        description => 'Date when this circuit was installed',
+        length => '',
+        nullable => 1,
+        tag => 'Installed on',
+        type => 'date'
+      },
+      nearend => {
+        default => '',
+        description => 'The local (near) interface where this circuit connects',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'nearcircuits',
+          table => 'Interface'
+        },
+        nullable => 0,
+        tag => 'Near Interface',
+        type => 'integer'
+      },
+      speed => {
+        default => '',
+        description => 'The speed of this circuit (Mbps)',
+        length => '32',
+        nullable => 1,
+        tag => 'Speed',
+        type => 'varchar'
+      },
+      status => {
+        default => '',
+        description => 'Status of this circuit',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'circuits',
+          table => 'CircuitStatus'
+        },
+        nullable => 0,
+        tag => 'Status',
+        type => 'integer'
+      },
+      type => {
+        default => '',
+        description => 'The type of this circuit',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'circuits',
+          table => 'CircuitType'
+        },
+        nullable => 0,
+        tag => 'Type',
+        type => 'integer'
+      },
+      vendor => {
+        default => '',
+        description => 'Who provides this circuit, if it is not internal',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'circuits',
+          table => 'Entity'
+        },
+        nullable => 1,
+        tag => 'Provider',
+        type => 'integer'
+      }
+    },
+    description => 'A circuit can either be a WAN link provided by an external entity, or a set of [spliced] backbone cable strands terminated into two device interfaces',
+    has_history => 1,
+    index => [
+      [
+        'nearend'
+      ],
+      [
+        'farend'
+      ],
+      [
+        'connectionid'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'cid'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'vendor',
+        'cid'
+      ]
+    ],
+    views => {
+      all => [
+        'cid',
+        'connectionid',
+        'status',
+        'nearend',
+        'farend',
+        'type',
+        'speed',
+        'dlci',
+        'installdate',
+        'vendor',
+        'info'
+      ],
+      brief => [
+        'cid',
+        'connectionid',
+        'nearend',
+        'farend',
+        'type',
+        'vendor',
+        'status'
+      ]
+    }
+  },
+  CircuitStatus => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'Circuit Status',
+        length => '128',
+        nullable => 0,
+        tag => 'Status',
+        type => 'varchar'
+      }
+    },
+    description => 'Circuit status',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  CircuitType => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'Circuit Type',
+        length => '128',
+        nullable => 0,
+        tag => 'Type',
+        type => 'varchar'
+      }
+    },
+    description => 'Circuit Type',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  Closet => {
+    columns => {
+      '110_blocks' => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => '110 Blocks',
+        type => 'varchar'
+      },
+      '66_blocks' => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => '66 Blocks',
+        type => 'varchar'
+      },
+      access_key_type => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Access Key Type',
+        type => 'varchar'
+      },
+      asbestos_tiles => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Asbestos Tiles',
+        type => 'bool'
+      },
+      catv_taps => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'CableTV Taps',
+        type => 'varchar'
+      },
+      converted_patch_panels => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Converted Patch Panels',
+        type => 'bool'
+      },
+      dimensions => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 1,
+        tag => 'Dimensions (")',
+        type => 'varchar'
+      },
+      floor => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'closets',
+          table => 'Floor'
+        },
+        nullable => 0,
+        tag => 'Floor',
+        type => 'integer'
+      },
+      ground_buss => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Ground Buss',
+        type => 'bool'
+      },
+      hvac_type => {
+        default => '',
+        description => '',
+        length => '255',
+        nullable => 1,
+        tag => 'HVAC Type',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'An identifier for this Closet within a Site',
+        length => '32',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      number => {
+        default => '',
+        description => 'Equivalent to a Room Number',
+        length => '32',
+        nullable => 0,
+        tag => 'Number',
+        type => 'varchar'
+      },
+      outlets => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Outlets',
+        type => 'varchar'
+      },
+      pair_count => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Pair Count',
+        type => 'varchar'
+      },
+      patch_panels => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Patch Panels',
+        type => 'varchar'
+      },
+      rack_type => {
+        default => '',
+        description => '',
+        length => '255',
+        nullable => 1,
+        tag => 'Rack Type',
+        type => 'varchar'
+      },
+      racks => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Racks',
+        type => 'varchar'
+      },
+      ru_avail => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Rack Units Available',
+        type => 'varchar'
+      },
+      shared_with => {
+        default => '',
+        description => '',
+        length => '255',
+        nullable => 1,
+        tag => 'Shared With',
+        type => 'varchar'
+      },
+      site => {
+        default => '',
+        description => 'Site where this Closet is located',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'closets',
+          table => 'Site'
+        },
+        nullable => 0,
+        tag => 'Site',
+        type => 'integer'
+      },
+      work_needed => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Work Needed',
+        type => 'varchar'
+      }
+    },
+    description => 'A Communications Closet.  A Closet is different from a normal Room in two ways: a) Backbone Cables (inter and intra building) terminate in Closets.  b) Horizontal Cables _start_ in Closets and _end_ in Rooms',
+    has_history => 0,
+    index => [
+      [
+        'name'
+      ],
+      [
+        'site'
+      ],
+      [
+        'number'
+      ],
+      [
+        'floor'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'name',
+      'site'
+    ],
+    primary_key => 'id',
+    unique => [],
+    views => {
+      all => [
+        'name',
+        'number',
+        'site',
+        'floor',
+        'dimensions',
+        'racks',
+        'outlets',
+        'ru_avail',
+        'patch_panels',
+        '110_blocks',
+        '66_blocks',
+        'catv_taps',
+        'access_key_type',
+        'work_needed',
+        'shared_with',
+        'hvac_type',
+        'ground_buss',
+        'asbestos_tiles',
+        'rack_type',
+        'pair_count',
+        'converted_patch_panels',
+        'info'
+      ],
+      brief => [
+        'name',
+        'number',
+        'site',
+        'floor'
+      ]
+    }
+  },
+  ClosetPicture => {
+    columns => {
+      binfile => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'files',
+          table => 'BinFile'
+        },
+        nullable => 0,
+        tag => 'Binary File',
+        type => 'integer'
+      },
+      closet => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'pictures',
+          table => 'Closet'
+        },
+        nullable => 0,
+        tag => 'Closet',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      }
+    },
+    description => 'A Closet Picture',
+    has_history => 0,
+    index => [],
+    isjoin => '1',
+    label => [
+      'closet',
+      'binfile'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'closet',
+        'binfile'
+      ]
+    ],
+    views => {
+      all => [
+        'closet',
+        'binfile'
+      ],
+      brief => [
+        'closet',
+        'binfile'
+      ]
+    }
+  },
+  Connection => {
+    columns => {
+      entity => {
+        default => '',
+        description => 'External Entity which we connect to',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'connections',
+          table => 'Entity'
+        },
+        nullable => 1,
+        tag => 'Entity',
+        type => 'integer'
+      },
+      farend => {
+        default => '',
+        description => 'The remote Site for this Connection',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'nearconnections',
+          table => 'Site'
+        },
+        nullable => 0,
+        tag => 'Destination (Site)',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'A name for this Connection',
+        length => '128',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      nearend => {
+        default => '',
+        description => 'The local Site for this Connection',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'nearconnections',
+          table => 'Site'
+        },
+        nullable => 0,
+        tag => 'Origin (Site)',
+        type => 'integer'
+      }
+    },
+    description => 'A Link between two Sites.  A connection can consist of one or more circuits',
+    has_history => 1,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'entity',
+        'nearend',
+        'farend',
+        'info'
+      ],
+      brief => [
+        'name',
+        'entity',
+        'nearend',
+        'farend'
+      ]
+    }
+  },
+  Contact => {
+    columns => {
+      contactlist => {
+        default => '',
+        description => 'The list or group of Contacts to which this Contact belongs',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'contacts',
+          table => 'ContactList'
+        },
+        nullable => 0,
+        tag => 'Contact List',
+        type => 'integer'
+      },
+      contacttype => {
+        default => '',
+        description => 'The type of this Contact',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'contacts',
+          table => 'ContactType'
+        },
+        nullable => 0,
+        tag => 'Type of Contact',
+        type => 'integer'
+      },
+      escalation_level => {
+        default => '',
+        description => 'This level defines when this contact will be notified when monitoring devices or services.  Notifications usually escalate to a different set of contacts when the problem is not resolved in a certain amount of time.  This logic is implemented by the chosen external monitoring tool, not Netdot.',
+        length => '',
+        nullable => 0,
+        tag => 'Escalation Level',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      notify_email => {
+        default => '',
+        description => 'Set this field to the desired Time Period to receive e-mail notifications when monitoring devices or services',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'page_notifications',
+          table => 'Availability'
+        },
+        nullable => 0,
+        tag => 'Email Notifications',
+        type => 'integer'
+      },
+      notify_pager => {
+        default => '',
+        description => 'Set this field to the desired Time Period to receive pager notifications when monitoring devices or services',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'page_notifications',
+          table => 'Availability'
+        },
+        nullable => 0,
+        tag => 'Pager Notifications',
+        type => 'integer'
+      },
+      notify_voice => {
+        default => '',
+        description => 'Set this field to the desired Time Period to receive voice notifications when monitoring devices or services',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'page_notifications',
+          table => 'Availability'
+        },
+        nullable => 0,
+        tag => 'Voice Notifications',
+        type => 'integer'
+      },
+      person => {
+        default => '',
+        description => 'The actual Person that this contact refers to.  The Person table holds the actual contact information',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'roles',
+          table => 'Person'
+        },
+        nullable => 1,
+        tag => 'Person',
+        type => 'integer'
+      }
+    },
+    description => 'A Contact object is basically a Role of a certain Person.  People can be associated with one or more resources (devices, services, etc) for which they could be contacted.  Each Contact object represents one of these roles.',
+    has_history => 1,
+    index => [
+      [
+        'contactlist'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'person',
+      'contacttype'
+    ],
+    primary_key => 'id',
+    unique => [],
+    views => {
+      all => [
+        'person',
+        'contacttype',
+        'contactlist',
+        'notify_email',
+        'notify_pager',
+        'notify_voice',
+        'escalation_level',
+        'info'
+      ],
+      brief => [
+        'person',
+        'contacttype',
+        'contactlist'
+      ]
+    }
+  },
+  ContactList => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'Name for this group',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'A list of contacts',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name',
+        'info'
+      ]
+    }
+  },
+  ContactType => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'The name for this Contact Type',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'Type of contact',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  Device => {
+    columns => {
+      aliases => {
+        default => '',
+        description => 'Other names by which this Device is known',
+        length => '255',
+        nullable => 1,
+        tag => 'Aliases',
+        type => 'varchar'
+      },
+      bgpid => {
+        default => '',
+        description => 'Border Gateway Protocol ID.  This usually has the form of an IP address',
+        length => '64',
+        nullable => 1,
+        tag => 'BGP ID',
+        type => 'varchar'
+      },
+      bgplocalas => {
+        default => '',
+        description => 'Border Gateway Protocol Local Autonomous System number',
+        length => '',
+        nullable => 1,
+        tag => 'BGP Local AS',
+        type => 'integer'
+      },
+      canautoupdate => {
+        default => '',
+        description => 'If SNMP updates are automated, this value determines whether this Device should be included',
+        length => '',
+        nullable => 0,
+        tag => 'Auto Update?',
+        type => 'bool'
+      },
+      closet => {
+        default => '',
+        description => 'Communications Closet where this Device is installed',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'devices',
+          table => 'Closet'
+        },
+        nullable => 1,
+        tag => 'Closet',
+        type => 'integer'
+      },
+      community => {
+        default => '',
+        description => 'SNMP community',
+        length => '64',
+        nullable => 1,
+        tag => 'SNMP Community',
+        type => 'varchar'
+      },
+      customer_managed => {
+        default => '',
+        description => 'Does the operation of this Device fall into the responsibility of the customer (or "user" Entity)?',
+        length => '',
+        nullable => 0,
+        tag => 'Managed by Customer?',
+        type => 'bool'
+      },
+      dateinstalled => {
+        default => '',
+        description => 'Date that this Device was installed, or first seen in the network',
+        length => '',
+        nullable => 1,
+        tag => 'First Discovered',
+        type => 'timestamp'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      inventorynumber => {
+        default => '',
+        description => 'A number given to this Device by the organization for accounting/inventory purposes',
+        length => '64',
+        nullable => 1,
+        tag => 'Inventory Number',
+        type => 'varchar'
+      },
+      lastupdated => {
+        default => '',
+        description => 'Date that this Device was last updated',
+        length => '',
+        nullable => 1,
+        tag => 'Last Updated',
+        type => 'timestamp'
+      },
+      maint_covered => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'In Maintenance Contract?',
+        type => 'bool'
+      },
+      monitored => {
+        default => '',
+        description => 'Determines if this Device should be included in the configurations for monitoring software',
+        length => '',
+        nullable => 0,
+        tag => 'Monitored?',
+        type => 'bool'
+      },
+      monitorstatus => {
+        default => '',
+        description => 'The monitoring status of this Device.  This values is supposed to be fed back into Netdot by an external process',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'devices',
+          table => 'MonitorStatus'
+        },
+        nullable => 0,
+        tag => 'Monitored Status',
+        type => 'integer'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'devices',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Name',
+        type => 'integer'
+      },
+      natted => {
+        default => '',
+        description => 'Is this Device behind a Network Address Translator?  In that case, SNMP updates will not modify the IP configuration',
+        length => '',
+        nullable => 0,
+        tag => 'NATted?',
+        type => 'bool'
+      },
+      oobname => {
+        default => '',
+        description => 'A name or command used to connect to this Device via an Out of Band connection, such as a Console Server',
+        length => '64',
+        nullable => 1,
+        tag => 'Out-of-Band Hostname',
+        type => 'varchar'
+      },
+      oobnumber => {
+        default => '',
+        description => 'A phone number used to connect to this Device via an Out of Band modem',
+        length => '32',
+        nullable => 1,
+        tag => 'Out-of-Band Tel Number',
+        type => 'varchar'
+      },
+      owner => {
+        default => '',
+        description => 'Entity that owns this Device',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'owned_devices',
+          table => 'Entity'
+        },
+        nullable => 1,
+        tag => 'Owner',
+        type => 'integer'
+      },
+      part_of => {
+        default => '',
+        description => 'Reference to another Device of which this one is a part of',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'parts',
+          table => 'Device'
+        },
+        nullable => 1,
+        tag => 'Part of Device',
+        type => 'integer'
+      },
+      person => {
+        default => '',
+        description => 'A user of this Device.  For example, the end user of an IP Phone',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'devices',
+          table => 'Person'
+        },
+        nullable => 1,
+        tag => 'User',
+        type => 'integer'
+      },
+      physaddr => {
+        default => '',
+        description => 'The base MAC address of this Device.',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'devices',
+          table => 'PhysAddr'
+        },
+        nullable => 1,
+        tag => 'MAC',
+        type => 'integer'
+      },
+      productname => {
+        default => '',
+        description => 'Reference to a Product record.  Products are usually determined via SNMP',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'devices',
+          table => 'Product'
+        },
+        nullable => 1,
+        tag => 'Product Name',
+        type => 'integer'
+      },
+      rack => {
+        default => '',
+        description => 'Rack ID where this Device is physically installed',
+        length => '32',
+        nullable => 1,
+        tag => 'Rack',
+        type => 'varchar'
+      },
+      room => {
+        default => '',
+        description => 'Room where this Device is installed',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'devices',
+          table => 'Room'
+        },
+        nullable => 1,
+        tag => 'Room',
+        type => 'integer'
+      },
+      serialnumber => {
+        default => '',
+        description => 'Serial Number of the Device',
+        length => '64',
+        nullable => 1,
+        tag => 'S/N',
+        type => 'varchar'
+      },
+      site => {
+        default => '',
+        description => 'Site or Building where this Device is located',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'devices',
+          table => 'Site'
+        },
+        nullable => 0,
+        tag => 'Site',
+        type => 'integer'
+      },
+      snmp_managed => {
+        default => '',
+        description => 'Enable or Disable SNMP access to this Device from SNMP management tools which get their configurations from Netdot',
+        length => '',
+        nullable => 0,
+        tag => 'SNMP Managed?',
+        type => 'bool'
+      },
+      sysdescription => {
+        default => '',
+        description => 'Syste Description.  Meant to be populated by SNMP',
+        length => '128',
+        nullable => 1,
+        tag => 'System Description',
+        type => 'varchar'
+      },
+      used_by => {
+        default => '',
+        description => 'Entity that uses this Device',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'owned_devices',
+          table => 'Entity'
+        },
+        nullable => 1,
+        tag => 'Used by',
+        type => 'integer'
+      }
+    },
+    description => 'A network device',
+    has_history => 1,
+    index => [
+      [
+        'physaddr'
+      ],
+      [
+        'used_by'
+      ],
+      [
+        'inventorynumber'
+      ],
+      [
+        'owner'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'aliases',
+        'sysdescription',
+        'physaddr',
+        'bgplocalas',
+        'bgpid',
+        'oobname',
+        'oobnumber',
+        'owner',
+        'used_by',
+        'person',
+        'monitored',
+        'monitorstatus',
+        'snmp_managed',
+        'customer_managed',
+        'natted',
+        'community',
+        'serialnumber',
+        'productname',
+        'part_of',
+        'inventorynumber',
+        'maint_covered',
+        'canautoupdate',
+        'site',
+        'room',
+        'closet',
+        'rack',
+        'lastupdated',
+        'dateinstalled',
+        'info'
+      ],
+      brief => [
+        'name',
+        'productname'
+      ]
+    }
+  },
+  DeviceContacts => {
+    columns => {
+      contactlist => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'devices',
+          table => 'ContactList'
+        },
+        nullable => 0,
+        tag => 'Contact List',
+        type => 'integer'
+      },
+      device => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'contacts',
+          table => 'Device'
+        },
+        nullable => 0,
+        tag => 'Device',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      }
+    },
+    description => 'Device to Contactlist join table',
+    has_history => 0,
+    index => [],
+    isjoin => '1',
+    label => [
+      'contactlist'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'device',
+        'contactlist'
+      ]
+    ],
+    views => {
+      all => [
+        'device',
+        'contactlist'
+      ],
+      brief => [
+        'device',
+        'contactlist'
+      ]
+    }
+  },
+  DhcpAttr => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      name => {
+        default => '',
+        description => 'Name of this attribute',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'attributes',
+          table => 'DhcpAttrName'
+        },
+        nullable => 0,
+        tag => 'Name',
+        type => 'integer'
+      },
+      scope => {
+        default => '',
+        description => 'DHCP scope where this attribute will be applied',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'attributes',
+          table => 'DhcpScope'
+        },
+        nullable => 1,
+        tag => 'Scope',
+        type => 'integer'
+      },
+      value => {
+        default => '',
+        description => 'Value for this attribute',
+        length => '255',
+        nullable => 0,
+        tag => 'Value',
+        type => 'varchar'
+      }
+    },
+    description => 'A DHCP Attribute or Parameter',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name',
+      'value'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'value',
+        'scope'
+      ],
+      brief => [
+        'name',
+        'value',
+        'scope'
+      ]
+    }
+  },
+  DhcpAttrName => {
+    columns => {
+      code => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Code',
+        type => 'integer'
+      },
+      format => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Format',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'A DHCP Attributes Name',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'code',
+        'format',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  DhcpScope => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      ipblock => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'dhcpentries',
+          table => 'Ipblock'
+        },
+        nullable => 1,
+        tag => 'IP Block',
+        type => 'integer'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Name',
+        type => 'integer'
+      },
+      part_of => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'parts',
+          table => 'DhcpScope'
+        },
+        nullable => 1,
+        tag => 'Belongs to',
+        type => 'integer'
+      },
+      service => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'dhcpconfigs',
+          table => 'IpService'
+        },
+        nullable => 1,
+        tag => 'DHCP Service',
+        type => 'integer'
+      },
+      type => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'scopes',
+          table => 'DhcpScopeType'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      }
+    },
+    description => 'A DHCP Scope',
+    has_history => 0,
+    index => [
+      [
+        'name'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'service',
+      'type',
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [],
+    views => {
+      all => [
+        'type',
+        'name',
+        'part_of',
+        'ipblock',
+        'service',
+        'info'
+      ],
+      brief => [
+        'service',
+        'type',
+        'name'
+      ]
+    }
+  },
+  DhcpScopeType => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'A DHCP Scope Type',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  Entity => {
+    columns => {
+      acctnumber => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Account Number',
+        type => 'varchar'
+      },
+      aliases => {
+        default => '',
+        description => 'Other names by which this Entity is known',
+        length => '255',
+        nullable => 1,
+        tag => 'Aliases',
+        type => 'varchar'
+      },
+      asname => {
+        default => '',
+        description => 'The Autonomous System Name of this Peer Entity',
+        length => '32',
+        nullable => 1,
+        tag => 'AS Name',
+        type => 'varchar'
+      },
+      asnumber => {
+        default => '',
+        description => 'The Autonomous System Number of this Peer Entity',
+        length => '',
+        nullable => 1,
+        tag => 'AS Number',
+        type => 'integer'
+      },
+      availability => {
+        default => '',
+        description => 'Time Period at which this Entity is available',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'entities',
+          table => 'Availability'
+        },
+        nullable => 1,
+        tag => 'Availability',
+        type => 'integer'
+      },
+      contactlist => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'entities',
+          table => 'ContactList'
+        },
+        nullable => 1,
+        tag => 'Contact List',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      maint_contract => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Maintenance Contract',
+        type => 'varchar'
+      },
+      name => {
+        default => '',
+        description => 'Name of this Entity',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      oid => {
+        default => '',
+        description => 'The Enterprise Object ID is a unique value assigned to an Entity to use in their SNMP agents',
+        length => '32',
+        nullable => 1,
+        tag => 'Enterprise OID',
+        type => 'varchar'
+      },
+      type => {
+        default => '',
+        description => 'Type of this Entity',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'entities',
+          table => 'EntityType'
+        },
+        nullable => 0,
+        tag => 'Type',
+        type => 'integer'
+      }
+    },
+    description => 'An organization related to the network in some way',
+    has_history => 1,
+    index => [
+      [
+        'oid'
+      ],
+      [
+        'asname'
+      ],
+      [
+        'asnumber'
+      ],
+      [
+        'type'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'aliases',
+        'type',
+        'availability',
+        'contactlist',
+        'acctnumber',
+        'maint_contract',
+        'asname',
+        'asnumber',
+        'oid',
+        'info'
+      ],
+      brief => [
+        'name',
+        'type'
+      ],
+      manufacturer => [
+        'name',
+        'aliases',
+        'type',
+        'contactlist',
+        'oid',
+        'info'
+      ],
+      peer => [
+        'name',
+        'aliases',
+        'type',
+        'availability',
+        'contactlist',
+        'asname',
+        'asnumber',
+        'info'
+      ],
+      provider => [
+        'name',
+        'aliases',
+        'type',
+        'availability',
+        'contactlist',
+        'asname',
+        'asnumber',
+        'info'
+      ],
+    }
+  },
+  EntitySite => {
+    columns => {
+      entity => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'sites',
+          table => 'Entity'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      site => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'entities',
+          table => 'Site'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      }
+    },
+    description => 'Entity to Site join table',
+    has_history => 0,
+    index => [],
+    isjoin => '1',
+    label => [
+      'entity',
+      'site'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'entity',
+        'site'
+      ]
+    ],
+    views => {
+      all => [
+        'entity',
+        'site'
+      ],
+      brief => [
+        'entity',
+        'site'
+      ]
+    }
+  },
+  EntityType => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'Types of Entities',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  FWTable => {
+    columns => {
+      deviceip => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Device IP',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      tstamp => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Timestamp',
+        type => 'timestamp'
+      }
+    },
+    description => 'Bridge Forwarding Table',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'tstamp',
+      'deviceip'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'deviceip',
+        'tstamp'
+      ]
+    ],
+    views => {
+      all => [
+        'tstamp',
+        'deviceip'
+      ],
+      brief => [
+        'tstamp',
+        'deviceip'
+      ]
+    }
+  },
+  FWTableEntry => {
+    columns => {
+      fwtable => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'entries',
+          table => 'FWTable'
+        },
+        nullable => 0,
+        tag => ' FW Table',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      interface => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'fwtentries',
+          table => 'Interface'
+        },
+        nullable => 0,
+        tag => 'Interface',
+        type => 'integer'
+      },
+      leaf => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Is Leaf?',
+        type => 'bool'
+      },
+      physaddr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'fwtableentries',
+          table => 'PhysAddr'
+        },
+        nullable => 0,
+        tag => 'Physical Address',
+        type => 'integer'
+      }
+    },
+    description => 'Device Forwarding Table',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'interface',
+      'physaddr'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'fwtable',
+        'interface',
+        'physaddr'
+      ]
+    ],
+    views => {
+      all => [
+        'interface',
+        'physaddr',
+        'fwtable',
+        'leaf'
+      ],
+      brief => [
+        'interface',
+        'physaddr'
+      ]
+    }
+  },
+  FiberType => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'A name for this Fiber Type',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'Types of Fiber',
+    has_history => 0,
+    index => [
+      [
+        'name'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  Floor => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      level => {
+        default => '',
+        description => '',
+        length => '32',
+        nullable => 0,
+        tag => 'Level',
+        type => 'varchar'
+      },
+      site => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'floors',
+          table => 'Site'
+        },
+        nullable => 0,
+        tag => 'Site',
+        type => 'integer'
+      }
+    },
+    description => 'Floor Table',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'level',
+      'site'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'level',
+        'site'
+      ]
+    ],
+    views => {
+      all => [
+        'level',
+        'site',
+        'info'
+      ],
+      brief => [
+        'level',
+        'site'
+      ]
+    }
+  },
+  FloorPlan => {
+    columns => {
+      binfile => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'files',
+          table => 'BinFile'
+        },
+        nullable => 0,
+        tag => 'Binary File',
+        type => 'integer'
+      },
+      floor => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'plans',
+          table => 'Floor'
+        },
+        nullable => 0,
+        tag => 'Floor',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      }
+    },
+    description => 'Floor Plans',
+    has_history => 0,
+    index => [],
+    isjoin => '1',
+    label => [
+      'floor',
+      'binfile'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'floor',
+        'binfile'
+      ]
+    ],
+    views => {
+      all => [
+        'floor',
+        'binfile'
+      ],
+      brief => [
+        'floor',
+        'binfile'
+      ]
+    }
+  },
+  HorizontalCable => {
+    columns => {
+      account => {
+        default => '',
+        description => 'An internal account number to which the installation of this cable should be billed to',
+        length => '32',
+        nullable => 1,
+        tag => 'Account',
+        type => 'varchar'
+      },
+      closet => {
+        default => '',
+        description => 'The communications closet where this cable originates',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'horizontalcables',
+          table => 'Closet'
+        },
+        nullable => 0,
+        tag => 'Closet',
+        type => 'integer'
+      },
+      contactlist => {
+        default => '',
+        description => 'A group of people that manages this cable',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'outlets',
+          table => 'ContactList'
+        },
+        nullable => 0,
+        tag => 'Contact List',
+        type => 'integer'
+      },
+      datetested => {
+        default => '',
+        description => 'Date this cable was last tested',
+        length => '',
+        nullable => 1,
+        tag => 'Date Tested',
+        type => 'date'
+      },
+      faceplateid => {
+        default => '',
+        description => 'ID of the faceplate where this cable is terminated',
+        length => '64',
+        nullable => 0,
+        tag => 'Faceplate ID',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      installdate => {
+        default => '',
+        description => 'Date this cable was installed',
+        length => '',
+        nullable => 1,
+        tag => 'Date Installed',
+        type => 'date'
+      },
+      jackid => {
+        default => '',
+        description => 'ID of the Jack where this cable is terminated',
+        length => '64',
+        nullable => 0,
+        tag => 'Jack ID',
+        type => 'varchar'
+      },
+      length => {
+        default => '',
+        description => 'Length of this cable',
+        length => '32',
+        nullable => 1,
+        tag => 'Length',
+        type => 'varchar'
+      },
+      room => {
+        default => '',
+        description => 'Room where this cable terminates',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'jacks',
+          table => 'Room'
+        },
+        nullable => 0,
+        tag => 'Room',
+        type => 'integer'
+      },
+      testpassed => {
+        default => '',
+        description => 'Cable test result (pass/fail)',
+        length => '',
+        nullable => 0,
+        tag => 'Passed Test?',
+        type => 'bool'
+      },
+      type => {
+        default => '',
+        description => 'Type of this cable',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'horizontalcables',
+          table => 'CableType'
+        },
+        nullable => 0,
+        tag => 'Type',
+        type => 'integer'
+      }
+    },
+    description => 'Horizontal Cable',
+    has_history => 0,
+    index => [
+      [
+        'account'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'jackid'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'jackid',
+        'faceplateid',
+        'closet',
+        'room'
+      ]
+    ],
+    views => {
+      all => [
+        'jackid',
+        'faceplateid',
+        'type',
+        'datetested',
+        'testpassed',
+        'installdate',
+        'length',
+        'closet',
+        'room',
+        'account',
+        'contactlist',
+        'info'
+      ],
+      brief => [
+        'jackid',
+        'closet',
+        'room'
+      ]
+    }
+  },
+  Interface => {
+    columns => {
+      admin_duplex => {
+        default => '',
+        description => 'Administrative status of the Duplex setting on this Interface',
+        length => '16',
+        nullable => 1,
+        tag => 'Admin Duplex',
+        type => 'varchar'
+      },
+      admin_status => {
+        default => '',
+        description => 'Administrative status of this Interface',
+        length => '16',
+        nullable => 1,
+        tag => 'Admin Status',
+        type => 'varchar'
+      },
+      contactlist => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'interfaces',
+          table => 'ContactList'
+        },
+        nullable => 0,
+        tag => 'Contact List',
+        type => 'integer'
+      },
+      description => {
+        default => '',
+        description => 'A short description for this Interface.',
+        length => '128',
+        nullable => 1,
+        tag => 'Description',
+        type => 'varchar'
+      },
+      device => {
+        default => '',
+        description => 'Device to which this Interface belongs to',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'interfaces',
+          table => 'Device'
+        },
+        nullable => 0,
+        tag => 'Device',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      jack => {
+        default => '',
+        description => 'Reference to a Jack or Cable where this Interface is connected',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'interfaces',
+          table => 'HorizontalCable'
+        },
+        nullable => 1,
+        tag => 'Jack',
+        type => 'integer'
+      },
+      jack_char => {
+        default => '',
+        description => 'The ID of the Jack where this Interface is connected',
+        length => '32',
+        nullable => 1,
+        tag => 'Jack(char)',
+        type => 'varchar'
+      },
+      monitored => {
+        default => '',
+        description => 'Determine whether this Interface should be included in the configuration of an external monitoring software',
+        length => '',
+        nullable => 0,
+        tag => 'Monitored?',
+        type => 'bool'
+      },
+      monitorstatus => {
+        default => '',
+        description => 'The status of this Interface given by an external monitoring process',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'interfaces',
+          table => 'MonitorStatus'
+        },
+        nullable => 0,
+        tag => 'Monitored Status',
+        type => 'integer'
+      },
+      name => {
+        default => '',
+        description => 'The name of this Interface',
+        length => '64',
+        nullable => 1,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      number => {
+        default => '',
+        description => 'The number of this Interface (corresponds to SNMP ifIndex)',
+        length => '16',
+        nullable => 0,
+        tag => 'Number',
+        type => 'varchar'
+      },
+      oper_duplex => {
+        default => '',
+        description => 'Operational Duplex setting',
+        length => '16',
+        nullable => 1,
+        tag => 'Oper Duplex',
+        type => 'varchar'
+      },
+      oper_status => {
+        default => '',
+        description => 'Operational Status of this Interface',
+        length => '16',
+        nullable => 1,
+        tag => 'Oper Status',
+        type => 'varchar'
+      },
+      overwrite_descr => {
+        default => '',
+        description => 'Determines whether the description for this Interface should be overwritten via SNMP updates',
+        length => '',
+        nullable => 0,
+        tag => 'Overwrite Description?',
+        type => 'bool'
+      },
+      physaddr => {
+        default => '',
+        description => 'MAC address of this Interface',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'interfaces',
+          table => 'PhysAddr'
+        },
+        nullable => 1,
+        tag => 'Physical (MAC) Address',
+        type => 'integer'
+      },
+      room_char => {
+        default => '',
+        description => 'Room number where this Interface is connected',
+        length => '32',
+        nullable => 1,
+        tag => 'Room(char)',
+        type => 'varchar'
+      },
+      snmp_managed => {
+        default => '',
+        description => 'Determines whether this Interface should be included in the collection of SNMP statistics',
+        length => '',
+        nullable => 0,
+        tag => 'SNMP-Managed?',
+        type => 'bool'
+      },
+      speed => {
+        default => '',
+        description => 'Bits Per Second (bps) speed of which this Interface is capable of',
+        length => '',
+        nullable => 1,
+        tag => 'Speed',
+        type => 'integer'
+      },
+      type => {
+        default => '',
+        description => 'Type of Interface',
+        length => '32',
+        nullable => 1,
+        tag => 'Type',
+        type => 'varchar'
+      }
+    },
+    description => 'An interface associated with a device',
+    has_history => 1,
+    index => [
+      [
+        'name'
+      ],
+      [
+        'physaddr'
+      ],
+      [
+        'jack'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'number',
+      'name',
+      'device'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'device',
+        'number'
+      ]
+    ],
+    views => {
+      all => [
+        'number',
+        'name',
+        'device',
+        'jack',
+        'jack_char',
+        'room_char',
+        'description',
+        'overwrite_descr',
+        'type',
+        'speed',
+        'admin_duplex',
+        'oper_duplex',
+        'admin_status',
+        'oper_status',
+        'monitored',
+        'monitorstatus',
+        'snmp_managed',
+        'physaddr',
+        'contactlist',
+        'info'
+      ],
+      brief => [
+        'number',
+        'name',
+        'device',
+        'jack',
+        'description'
+      ]
+    }
+  },
+  InterfaceDep => {
+    columns => {
+      child => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'parents',
+          table => 'Interface'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      parent => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'children',
+          table => 'Interface'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      }
+    },
+    description => 'Dependency relationship between two interfaces. Provides a basis for topology information',
+    has_history => 0,
+    index => [],
+    isjoin => '1',
+    label => [
+      'parent',
+      'child'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'parent',
+        'child'
+      ]
+    ],
+    views => {
+      all => [
+        'parent',
+        'child'
+      ],
+      brief => [
+        'parent',
+        'child'
+      ]
+    }
+  },
+  InterfaceVlan => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      interface => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'vlans',
+          table => 'Interface'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      vlan => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'interfaces',
+          table => 'Vlan'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      }
+    },
+    description => 'Interface to VLAN join table',
+    has_history => 0,
+    index => [],
+    isjoin => '1',
+    label => [
+      'interface',
+      'vlan'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'interface',
+        'vlan'
+      ]
+    ],
+    views => {
+      all => [
+        'interface',
+        'vlan'
+      ],
+      brief => [
+        'interface',
+        'vlan'
+      ]
+    }
+  },
+  IpService => {
+    columns => {
+      contactlist => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'services',
+          table => 'ContactList'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      ip => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'services',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      monitored => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'bool'
+      },
+      monitorstatus => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'ipservices',
+          table => 'MonitorStatus'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      service => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'Ips',
+          table => 'Service'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      }
+    },
+    description => 'A relationship between an IP address and a running Internet service',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'ip',
+      'service'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'ip',
+        'service'
+      ]
+    ],
+    views => {
+      all => [
+        'ip',
+        'service',
+        'monitored',
+        'monitorstatus',
+        'contactlist'
+      ],
+      brief => [
+        'ip',
+        'service'
+      ]
+    }
+  },
+  Ipblock => {
+    columns => {
+      address => {
+        default => '',
+        description => 'IP Address.  This value is stored as an integer in the database',
+        length => '40,0',
+        nullable => 0,
+        tag => 'Address',
+        type => 'numeric'
+      },
+      description => {
+        default => '',
+        description => 'A short description for this IP address or block',
+        length => '128',
+        nullable => 1,
+        tag => 'Description',
+        type => 'varchar'
+      },
+      dhcp_enabled => {
+        default => '',
+        description => 'Whether this address should be offered via DHCP',
+        length => '',
+        nullable => 0,
+        tag => 'Enable DHCP?',
+        type => 'bool'
+      },
+      dns_delegated => {
+        default => '',
+        description => 'Whether this block has been delegated in DNS',
+        length => '',
+        nullable => 0,
+        tag => 'Delegate DNS?',
+        type => 'bool'
+      },
+      first_seen => {
+        default => '',
+        description => 'Date that this address or block was first seen',
+        length => '',
+        nullable => 0,
+        tag => 'First Seen',
+        type => 'timestamp'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Info',
+        type => 'long varbinary'
+      },
+      interface => {
+        default => '',
+        description => 'Device interface where this address is configured',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'ips',
+          table => 'Interface'
+        },
+        nullable => 0,
+        tag => 'Interface',
+        type => 'integer'
+      },
+      last_seen => {
+        default => '',
+        description => 'Last time when this address or block was seen',
+        length => '',
+        nullable => 0,
+        tag => 'Last Seen',
+        type => 'timestamp'
+      },
+      owner => {
+        default => '',
+        description => 'Entity that owns this block',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'used_blocks',
+          table => 'Entity'
+        },
+        nullable => 0,
+        tag => 'Owner',
+        type => 'integer'
+      },
+      parent => {
+        default => '',
+        description => 'Smallest IP block that contains this address or block.',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'children',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => 'Parent',
+        type => 'integer'
+      },
+      physaddr => {
+        default => '',
+        description => 'MAC address associated with this IP address',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'registeredips',
+          table => 'PhysAddr'
+        },
+        nullable => 1,
+        tag => 'MAC Address',
+        type => 'integer'
+      },
+      prefix => {
+        default => '',
+        description => 'Prefix length of this IP block',
+        length => '',
+        nullable => 0,
+        tag => 'Prefix Length',
+        type => 'integer'
+      },
+      status => {
+        default => '',
+        description => 'Status of this IP block',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'ipblocks',
+          table => 'IpblockStatus'
+        },
+        nullable => 0,
+        tag => 'Status',
+        type => 'integer'
+      },
+      used_by => {
+        default => '',
+        description => 'Entity that uses this block',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'used_blocks',
+          table => 'Entity'
+        },
+        nullable => 0,
+        tag => 'Used by',
+        type => 'integer'
+      },
+      version => {
+        default => '',
+        description => 'IP version (4 or 6)',
+        length => '',
+        nullable => 0,
+        tag => 'Version(4/6)',
+        type => 'integer'
+      }
+    },
+    description => 'An IP (v4 or v6) Address',
+    has_history => 0,
+    index => [
+      [
+        'parent'
+      ],
+      [
+        'status'
+      ],
+      [
+        'first_seen'
+      ],
+      [
+        'last_seen'
+      ],
+      [
+        'physaddr'
+      ],
+      [
+        'interface'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'address',
+      'prefix'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'address',
+        'prefix'
+      ]
+    ],
+    views => {
+      all => [
+        'address',
+        'prefix',
+        'version',
+        'parent',
+        'interface',
+        'status',
+        'owner',
+        'used_by',
+        'description',
+        'first_seen',
+        'last_seen',
+        'dhcp_enabled',
+        'dns_delegated',
+        'physaddr',
+        'info'
+      ],
+      brief => [
+        'address',
+        'prefix',
+        'status',
+        'used_by'
+      ]
+    }
+  },
+  IpblockStatus => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => undef,
+        type => 'varchar'
+      }
+    },
+    description => 'IP block status',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  MonitorStatus => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => 'Status',
+        type => 'varchar'
+      }
+    },
+    description => 'Status information for what is monitored',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  Person => {
+    columns => {
+      aliases => {
+        default => '',
+        description => 'Other names by which this Person is known',
+        length => '255',
+        nullable => 1,
+        tag => 'Aliases',
+        type => 'varchar'
+      },
+      cell => {
+        default => '',
+        description => 'Cellular Phone number',
+        length => '32',
+        nullable => 1,
+        tag => 'Cell Phone',
+        type => 'varchar'
+      },
+      email => {
+        default => '',
+        description => 'E-mail address',
+        length => '64',
+        nullable => 1,
+        tag => 'Email',
+        type => 'varchar'
+      },
+      emailpager => {
+        default => '',
+        description => 'Email address used for paging (via a pager gateway)',
+        length => '32',
+        nullable => 1,
+        tag => 'Email Pager',
+        type => 'varchar'
+      },
+      entity => {
+        default => '',
+        description => 'Entity associated with this Person',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'people',
+          table => 'Entity'
+        },
+        nullable => 1,
+        tag => 'Employer',
+        type => 'integer'
+      },
+      fax => {
+        default => '',
+        description => 'Fax number',
+        length => '32',
+        nullable => 1,
+        tag => 'Fax',
+        type => 'varchar'
+      },
+      firstname => {
+        default => '',
+        description => 'First Name',
+        length => '64',
+        nullable => 0,
+        tag => 'First Name',
+        type => 'varchar'
+      },
+      home => {
+        default => '',
+        description => 'Home Telephone Number',
+        length => '32',
+        nullable => 1,
+        tag => 'Home Phone',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      lastname => {
+        default => '',
+        description => 'Last Name',
+        length => '64',
+        nullable => 0,
+        tag => 'Last Name',
+        type => 'varchar'
+      },
+      location => {
+        default => '',
+        description => 'Site where this Person is located.  The Site is used instead of an Address',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'people',
+          table => 'Site'
+        },
+        nullable => 1,
+        tag => 'Location',
+        type => 'integer'
+      },
+      office => {
+        default => '',
+        description => 'Office or Work telephone number',
+        length => '32',
+        nullable => 1,
+        tag => 'Work Phone',
+        type => 'varchar'
+      },
+      pager => {
+        default => '',
+        description => 'Pager number',
+        length => '32',
+        nullable => 1,
+        tag => 'Pager',
+        type => 'varchar'
+      },
+      position => {
+        default => '',
+        description => 'Position within the organization',
+        length => '64',
+        nullable => 1,
+        tag => 'Position',
+        type => 'varchar'
+      }
+    },
+    description => 'Information about an individual',
+    has_history => 1,
+    index => [
+      [
+        'email'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'lastname',
+      'firstname'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'firstname',
+        'lastname',
+        'entity'
+      ]
+    ],
+    views => {
+      all => [
+        'lastname',
+        'firstname',
+        'aliases',
+        'position',
+        'entity',
+        'location',
+        'email',
+        'office',
+        'cell',
+        'home',
+        'pager',
+        'emailpager',
+        'fax',
+        'info'
+      ],
+      brief => [
+        'lastname',
+        'firstname',
+        'office',
+        'entity'
+      ]
+    }
+  },
+  PhysAddr => {
+    columns => {
+      address => {
+        default => 'A 48 bit MAC address in Hexadecimal digits (with no delimiters)',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => 'Address',
+        type => 'varchar'
+      },
+      first_seen => {
+        default => '',
+        description => 'Time when this address was first seen in the network',
+        length => '',
+        nullable => 0,
+        tag => 'First Seen',
+        type => 'timestamp'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      last_seen => {
+        default => '',
+        description => 'Time when this address was last seen in the network',
+        length => '',
+        nullable => 0,
+        tag => 'Last Seen',
+        type => 'timestamp'
+      },
+      static => {
+        default => '',
+        description => 'If this value is set, the address is considered permanent and should not be removed, even if it has not been seen in the networ for a given amount of time',
+        length => '',
+        nullable => 0,
+        tag => 'Static?',
+        type => 'bool'
+      }
+    },
+    description => 'A physical or MAC address',
+    has_history => 0,
+    index => [
+      [
+        'first_seen'
+      ],
+      [
+        'last_seen'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'address'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'address'
+      ]
+    ],
+    views => {
+      all => [
+        'address',
+        'static',
+        'first_seen',
+        'last_seen'
+      ],
+      brief => [
+        'address',
+        'static',
+        'first_seen',
+        'last_seen'
+      ]
+    }
+  },
+  Product => {
+    columns => {
+      description => {
+        default => '',
+        description => 'A short description for this Product',
+        length => '128',
+        nullable => 0,
+        tag => 'Description',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      manufacturer => {
+        default => '',
+        description => 'Reference to an Entity which manufactures this product',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'products',
+          table => 'Entity'
+        },
+        nullable => 0,
+        tag => 'Manufacturer',
+        type => 'integer'
+      },
+      name => {
+        default => '',
+        description => 'Product Name',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      sysobjectid => {
+        default => '',
+        description => 'SNMP Object ID given to this product by its manufacturer',
+        length => '128',
+        nullable => 1,
+        tag => 'System ID',
+        type => 'varchar'
+      },
+      type => {
+        default => '',
+        description => 'Product Type',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'products',
+          table => 'ProductType'
+        },
+        nullable => 0,
+        tag => 'Type',
+        type => 'integer'
+      }
+    },
+    description => 'Product Names',
+    has_history => 1,
+    index => [
+      [
+        'sysobjectid'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name',
+        'manufacturer'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'type',
+        'description',
+        'sysobjectid',
+        'manufacturer',
+        'info'
+      ],
+      brief => [
+        'name',
+        'type',
+        'description',
+        'manufacturer'
+      ]
+    }
+  },
+  ProductType => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'Types of network devices',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  RR => {
+    columns => {
+      active => {
+        default => '',
+        description => 'Should this record be included in the Zone files generated by Netdot?',
+        length => '',
+        nullable => 0,
+        tag => 'Active?',
+        type => 'bool'
+      },
+      auto_update => {
+        default => '',
+        description => 'Determines whether this record can be updated by an automated process.  For example, if a Device Interface changes its name and the change is picked up by an SNMP update',
+        length => '',
+        nullable => 0,
+        tag => 'Auto Update?',
+        type => 'bool'
+      },
+      contactlist => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'resourcerecords',
+          table => 'ContactList'
+        },
+        nullable => 0,
+        tag => "Contact List",
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      name => {
+        default => '',
+        description => 'The identifier for this Record',
+        length => '128',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      origin => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Origin',
+        type => 'varchar'
+      },
+      zone => {
+        default => '',
+        description => 'Zone or Domain to which this record belongs',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'records',
+          table => 'Zone'
+        },
+        nullable => 0,
+        tag => 'Zone',
+        type => 'integer'
+      }
+    },
+    description => 'DNS Resource Record',
+    has_history => 0,
+    index => [
+      [
+        'origin'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'zone',
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'zone',
+        'origin',
+        'active',
+        'auto_update',
+        'contactlist'
+      ],
+      brief => [
+        'name',
+        'zone',
+        'origin'
+      ]
+    }
+  },
+  RRADDR => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      ipblock => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'arecords',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => 'Ipblock',
+        type => 'integer'
+      },
+      rr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'arecords',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Resource Record',
+        type => 'integer'
+      },
+      ttl => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'TTL',
+        type => 'integer'
+      }
+    },
+    description => 'DNS A or AAAA Record',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'ipblock',
+      'rr'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'rr',
+        'ipblock'
+      ]
+    ],
+    views => {
+      all => [
+        'ipblock',
+        'rr',
+        'ttl'
+      ],
+      brief => [
+        'ipblock',
+        'rr'
+      ]
+    }
+  },
+  RRCNAME => {
+    columns => {
+      alias => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => 'Alias',
+        type => 'varchar'
+      },
+      cname => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'aliases',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'CNAME',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      ttl => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'TTL',
+        type => 'integer'
+      }
+    },
+    description => 'DNS CNAME Record',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'alias',
+      'cname'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'alias',
+        'cname'
+      ]
+    ],
+    views => {
+      all => [
+        'alias',
+        'cname',
+        'ttl'
+      ],
+      brief => [
+        'alias',
+        'cname'
+      ]
+    }
+  },
+  RRHINFO => {
+    columns => {
+      cpu => {
+        default => '',
+        description => '',
+        length => '32',
+        nullable => 1,
+        tag => 'CPU',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      os => {
+        default => '',
+        description => '',
+        length => '32',
+        nullable => 1,
+        tag => 'OS',
+        type => 'varchar'
+      },
+      rr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'hinforecords',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Resource Record',
+        type => 'integer'
+      },
+      ttl => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'TTL',
+        type => 'integer'
+      }
+    },
+    description => 'DNS HINFO Record',
+    has_history => 0,
+    index => [
+      [
+        'rr'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'cpu',
+      'os',
+      'rr'
+    ],
+    primary_key => 'id',
+    unique => [],
+    views => {
+      all => [
+        'cpu',
+        'os',
+        'rr',
+        'ttl'
+      ],
+      brief => [
+        'cpu',
+        'os',
+        'rr'
+      ]
+    }
+  },
+  RRMX => {
+    columns => {
+      exchange => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'mxrecords',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Exchange',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      preference => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Preference',
+        type => 'integer'
+      },
+      rr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'mxrecords',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Resource Record',
+        type => 'integer'
+      },
+      ttl => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'TTL',
+        type => 'integer'
+      }
+    },
+    description => 'DNS MX Record',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'preference',
+      'exchange',
+      'rr'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'rr',
+        'exchange'
+      ]
+    ],
+    views => {
+      all => [
+        'preference',
+        'exchange',
+        'rr',
+        'ttl'
+      ],
+      brief => [
+        'preference',
+        'exchange',
+        'rr'
+      ]
+    }
+  },
+  RRNS => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      nsdname => {
+        default => '',
+        description => '',
+        length => '64',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'nsrecords',
+          table => 'RR'
+        },
+        nullable => 1,
+        tag => 'Name Server',
+        type => 'varchar'
+      },
+      rr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'nsrecords',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Resource Record',
+        type => 'integer'
+      },
+      ttl => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'TTL',
+        type => 'integer'
+      }
+    },
+    description => 'DNS NS Record',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'nsdname',
+      'rr'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'rr',
+        'nsdname'
+      ]
+    ],
+    views => {
+      all => [
+        'nsdname',
+        'rr',
+        'ttl'
+      ],
+      brief => [
+        'nsdname',
+        'rr'
+      ]
+    }
+  },
+  RRPTR => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      ipblock => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'ptrrecords',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => 'IP',
+        type => 'integer'
+      },
+      rr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'ptrrecords',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Resource Record',
+        type => 'integer'
+      },
+      ttl => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'TTL',
+        type => 'integer'
+      }
+    },
+    description => 'DNS PTR Record',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'ipblock',
+      'rr'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'rr',
+        'ipblock'
+      ]
+    ],
+    views => {
+      all => [
+        'ipblock',
+        'rr',
+        '',
+        'ttl'
+      ],
+      brief => [
+        'ipblock',
+        'rr'
+      ]
+    }
+  },
+  RRSRV => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      port => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Port',
+        type => 'integer'
+      },
+      priority => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Priority',
+        type => 'integer'
+      },
+      rr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'srvrecords',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Resource Record',
+        type => 'integer'
+      },
+      target => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'srvrecords',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Target',
+        type => 'integer'
+      },
+      ttl => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'TTL',
+        type => 'integer'
+      },
+      weight => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Weight',
+        type => 'integer'
+      }
+    },
+    description => 'DNS SRV Record',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'target',
+      'rr'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'rr',
+        'target'
+      ]
+    ],
+    views => {
+      all => [
+        'rr',
+        'ttl',
+        'priority',
+        'weight',
+        'port',
+        'target'
+      ],
+      brief => [
+        'target',
+        'rr'
+      ]
+    }
+  },
+  RRTXT => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      rr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'txtrecords',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Resource Record',
+        type => 'integer'
+      },
+      ttl => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'TTL',
+        type => 'integer'
+      },
+      txt => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 1,
+        tag => 'Text',
+        type => 'varchar'
+      }
+    },
+    description => 'DNS TXT Record',
+    has_history => 0,
+    index => [
+      [
+        'rr'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'txt',
+      'rr'
+    ],
+    primary_key => 'id',
+    unique => [],
+    views => {
+      all => [
+        'txt',
+        'rr',
+        'ttl'
+      ],
+      brief => [
+        'txt',
+        'rr'
+      ]
+    }
+  },
+  RRType => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      tablename => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'Table',
+        type => 'varchar'
+      }
+    },
+    description => 'Resource Record Types and their tables',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'tablename'
+      ],
+      brief => [
+        'name',
+        'tablename'
+      ]
+    }
+  },
+  Room => {
+    columns => {
+      floor => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'rooms',
+          table => 'Floor'
+        },
+        nullable => 0,
+        tag => 'Floor',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'Room',
+    has_history => 0,
+    index => [
+      [
+        'name'
+      ],
+      [
+        'floor'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name',
+        'floor'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'floor'
+      ],
+      brief => [
+        'name',
+        'floor'
+      ]
+    }
+  },
+  Service => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'An Internet service',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  Site => {
+    columns => {
+      aliases => {
+        default => '',
+        description => 'Alternative names for this site',
+        length => '255',
+        nullable => 0,
+        tag => 'Aliases',
+        type => 'varchar'
+      },
+      availability => {
+        default => '',
+        description => 'Time Period during which people at this Site will be available',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'sites',
+          table => 'Availability'
+        },
+        nullable => 0,
+        tag => 'Availability',
+        type => 'integer'
+      },
+      city => {
+        default => '',
+        description => 'City where this Site is located',
+        length => '64',
+        nullable => 1,
+        tag => 'City',
+        type => 'varchar'
+      },
+      contactlist => {
+        default => '',
+        description => 'List of contacts for this Site',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'sites',
+          table => 'ContactList'
+        },
+        nullable => 0,
+        tag => 'Contact List',
+        type => 'integer'
+      },
+      country => {
+        default => '',
+        description => 'Country where this Site is located',
+        length => '64',
+        nullable => 1,
+        tag => 'Country',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => 'User Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'Name given to this site',
+        length => '64',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      number => {
+        default => '',
+        description => 'A unique identifier for this Site within the organization',
+        length => '64',
+        nullable => 1,
+        tag => 'Site ID',
+        type => 'varchar'
+      },
+      pobox => {
+        default => '',
+        description => 'Post Office Box',
+        length => '32',
+        nullable => 1,
+        tag => 'P.O. Box',
+        type => 'varchar'
+      },
+      state => {
+        default => '',
+        description => 'State where this Site is located',
+        length => '32',
+        nullable => 1,
+        tag => 'State',
+        type => 'varchar'
+      },
+      street1 => {
+        default => '',
+        description => 'Street 1st line',
+        length => '128',
+        nullable => 1,
+        tag => 'Street (1)',
+        type => 'varchar'
+      },
+      street2 => {
+        default => '',
+        description => 'Street 2nd line',
+        length => '128',
+        nullable => 1,
+        tag => 'Street (2)',
+        type => 'varchar'
+      },
+      zip => {
+        default => '',
+        description => 'ZIP/Postal Code',
+        length => '16',
+        nullable => 1,
+        tag => 'Zip/Postal Code',
+        type => 'varchar'
+      }
+    },
+    description => 'A physical location such as a building or data center.',
+    has_history => 1,
+    index => [
+      [
+        'street1'
+      ],
+      [
+        'name'
+      ],
+      [
+        'number'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ],
+      [
+        'number'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'number',
+        'aliases',
+        'street1',
+        'street2',
+        'pobox',
+        'city',
+        'state',
+        'zip',
+        'country',
+        'availability',
+        'contactlist',
+        'info'
+      ],
+      brief => [
+        'name',
+        'number',
+        'street1',
+        'city'
+      ]
+    }
+  },
+  Splice => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => undef,
+        type => 'long varbinary'
+      },
+      strand1 => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'splices',
+          table => 'CableStrand'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      strand2 => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'splices',
+          table => 'CableStrand'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      }
+    },
+    description => 'Cable Splices',
+    has_history => 0,
+    index => [
+      [
+        'strand1'
+      ],
+      [
+        'strand2'
+      ]
+    ],
+    isjoin => '0',
+    label => [
+      'strand1',
+      'strand2'
+    ],
+    primary_key => 'id',
+    unique => [],
+    views => {
+      all => [
+        'strand1',
+        'strand2'
+      ],
+      brief => [
+        'strand1',
+        'strand2'
+      ]
+    }
+  },
+  StrandStatus => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => undef,
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => undef,
+        type => 'varchar'
+      }
+    },
+    description => 'Cable strand/pair status',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
+  SubnetZone => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      subnet => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'zones',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      zone => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'subnets',
+          table => 'Zone'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      }
+    },
+    description => 'IP Subnet to DNS Zone join table',
+    has_history => 0,
+    index => [],
+    isjoin => '1',
+    label => [
+      'subnet',
+      'zone'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'subnet',
+        'zone'
+      ]
+    ],
+    views => {
+      all => [
+        'subnet',
+        'zone'
+      ],
+      brief => [
+        'subnet',
+        'zone'
+      ]
+    }
+  },
+  Vlan => {
+    columns => {
+      description => {
+        default => '',
+        description => '',
+        length => '255',
+        nullable => 1,
+        tag => 'Description',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      subnet => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'vlans',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => 'Subnet',
+        type => 'integer'
+      },
+      vid => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'VLAN ID',
+        type => 'integer'
+      }
+    },
+    description => 'A Virtual LAN',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'vid'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'vid'
+      ]
+    ],
+    views => {
+      all => [
+        'vid',
+        'subnet',
+        'description',
+        'info'
+      ],
+      brief => [
+        'vid'
+      ]
+    }
+  },
+  Zone => {
+    columns => {
+      active => {
+        default => '',
+        description => 'Whether a DNS zone file should be generated for this Zone',
+        length => '',
+        nullable => 0,
+        tag => 'Active?',
+        type => 'bool'
+      },
+      contactlist => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'zones',
+          table => 'ContactList'
+        },
+        nullable => 0,
+        tag => 'Contact List',
+        type => 'integer'
+      },
+      expire => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Expire',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      masterserver => {
+        default => '',
+        description => 'Reference to an IP service.',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'zones',
+          table => 'IpService'
+        },
+        nullable => 0,
+        tag => 'Master Server',
+        type => 'integer'
+      },
+      minimum => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Minimum',
+        type => 'integer'
+      },
+      mname => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => 'Domain Name',
+        type => 'varchar'
+      },
+      refresh => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Refresh',
+        type => 'integer'
+      },
+      retry => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Retry',
+        type => 'integer'
+      },
+      reverse => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Reverse?',
+        type => 'bool'
+      },
+      rname => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => 'Mail Box',
+        type => 'varchar'
+      },
+      serial => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Serial',
+        type => 'integer'
+      }
+    },
+    description => 'A DNS Zone',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'mname'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'mname'
+      ]
+    ],
+    views => {
+      all => [
+        'mname',
+        'rname',
+        'serial',
+        'refresh',
+        'retry',
+        'expire',
+        'minimum',
+        'contactlist',
+        'active',
+        'reverse',
+        'masterserver',
+        'info'
+      ],
+      brief => [
+        'mname',
+        'masterserver'
+      ]
+    }
+  }
+ }
+}

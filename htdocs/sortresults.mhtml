@@ -41,6 +41,7 @@ my %tags;
 my %linksto;
 my %linksfrom;
 my %order;
+my %orderbrief;
 my $cellspc    = 0;
 my $cellpad    = 0;
 my $lbl;
@@ -56,7 +57,7 @@ my $numcols    = 0;
 
 # Keep a list of valid tables;
 my %tables;
-map { $tables{$_} = 1 } $ui->gettables;
+map { $tables{$_} = 1 } $ui->meta->get_tables;
 
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
@@ -82,14 +83,11 @@ if ( defined ($object) ){
     #
     my %viewpage = ( BinFile => "display_bin.html",
 		     Ipblock => "ip-ws.html",
-		     Device  => "device.html",
-		     );
+		     Device  => "device.html"  );
+
     unless ( $page ){
-	foreach my $tname ( keys %viewpage ){
-	    if ($table eq $tname){
-		$page = $viewpage{$tname};
-		last;
-	    }
+	if ( exists $viewpage{$table} ){
+	    $page = $viewpage{$table};
 	}
     }
     $page ||= "view.html";
@@ -102,7 +100,7 @@ if ( defined ($object) ){
     my $i = 0;
     ##############################################
     # get the label for this table (as defined in Meta)
-    $lbl = ($ui->getlabels( $table ))[0];
+    $lbl = ($ui->meta->get_labels( $table ))[0];
     
     ##############################################
     # If sort arg
@@ -132,31 +130,32 @@ if ( defined ($object) ){
     
     ##############################################
     # get linksto info
-    %linksto = $ui->getlinksto( $table );
+    %linksto = $ui->meta->get_links_to( $table );
     ##############################################
     # define order
-    %order   = $ui->getcolumnorderbrief( $table );
+    %order        = $ui->meta->get_column_order( $table );
+    %orderbrief   = $ui->meta->get_column_order_brief( $table );
     ##############################################
     # Get tags
-    %tags = $ui->getcolumntags( $table );
+    %tags = $ui->meta->get_column_tags( $table );
 
     ##############################################
     # remove id and aliases (if present)
-    if( exists( $order{id} ) ) {
-	delete( $order{id} );
+    if( exists( $orderbrief{id} ) ) {
+	delete( $orderbrief{id} );
     }
-    if( exists( $order{aliases} ) ) {
-	delete( $order{aliases} );
+    if( exists( $orderbrief{aliases} ) ) {
+	delete( $orderbrief{aliases} );
     }
     ##############################################
     # munge so that label is first 
     if( defined( $lbl ) && length( $lbl ) > 0 ) {
-	unless( $order{$lbl} == 1 ) {
-	    my $j        = $order{$lbl};
-	    my %rev      = reverse %order;
+	unless( $orderbrief{$lbl} == 1 ) {
+	    my $j        = $orderbrief{$lbl};
+	    my %rev      = reverse %orderbrief;
 	    my $k        = $rev{1} ;
-	    $order{$k}   = $j;
-	    $order{$lbl} = 1;
+	    $orderbrief{$k}   = $j;
+	    $orderbrief{$lbl} = 1;
 	}
     }
     
@@ -169,6 +168,7 @@ if ( defined ($object) ){
     }
     %linksto    = %{ $session->{linksto} };
     %order      = %{ $session->{order} };
+    %orderbrief = %{ $session->{orderbrief} };
     %tags       = %{ $session->{tags} };
     %objindex   = %{ $session->{objindex} };
     $table      = $session->{table};
@@ -198,7 +198,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % #####################################################################
 % if( $view eq "row" ) {
 %   ($cellspc, $cellpad) = ( 0, 0 );
-%   $numcols = scalar keys %order;
+%   $numcols = scalar keys %orderbrief;
 % } elsif( $view eq "column" ) {
 %   ($cellspc, $cellpad) = ( 0, 1 );
 %   $numcols = 2;
@@ -261,25 +261,24 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
     <div class="containerheadright"><a href="javascript:toggleEditLayers('<% $table %>')">[hide]</a></div>
     <div class="containerbody">
 
-%   my %order        = $ui->getcolumnorder( $table );
-%   my %orderbrief   = $ui->getcolumnorderbrief( $table );
-%   my %tags         = $ui->getcolumntags( $table );
-%
-%   my @cells;
-%
-%   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-%     next if( $c eq 'id' );
-%       my $caption;
-%       if ( exists($tags{$c}) ){
-%           $caption = $tags{$c};
-%	    }else{
-%           $caption = $c;
-%	    }
-%       my $html = '<input type="checkbox" name="tablefields[]" value="'.$c.'">'.$caption;
-%
-%       push(@cells, $html);
-%
-%   }
+<%perl>
+   my @cells;
+
+   foreach my $c ( sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief ) {
+       next if( $c eq 'id' );
+       my $caption;
+       if ( exists($tags{$c}) ){
+           $caption = $tags{$c};
+       }else{
+           $caption = $c;
+       }
+       my $html = '<input type="checkbox" name="tablefields[]" value="'.$c.'">'.$caption;
+       
+       push(@cells, $html);
+
+   }
+</%perl>
+
     <& wrapping_table.mhtml, data => \@cells, cols => 5  &>     
     <div align="right">
         <input type="submit" name="submit" value="Go" onclick="docheckboxes_<% $table %>()">
@@ -292,6 +291,8 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % if ( $withdelete ){
 %   $numcols += 1;
 % }
+
+
   <table border="0" cellspacing="<% $cellspc %>" cellpadding="<% $cellpad %>" class="tablebackground">
 % ##################################################################
 % # If the VIEW is a row, print the column headers.  
@@ -299,7 +300,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % #####################################################################
 %    if( $view eq "row" ) {
        <tr class="rowtitle2">
-%      foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%      foreach my $c ( sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief ) {
 %        if( exists( $tags{$c} ) ) {
            <th><% $tags{$c} %></th>
 %        } else {
@@ -349,8 +350,8 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % ####################################################################
 % # Get the column order and process each item.
 % ####################################################################
-%    my @order = sort { $order{$a} <=> $order{$b} } keys %order;
-%    foreach my $c ( @order ) {
+%    my @orderbrief = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
+%    foreach my $c ( @orderbrief ) {
 %
 % ####################################################################
 % # If a COLUMN view, start a row with the column name.
@@ -470,7 +471,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
 %    if( $view eq "row" && ($withdelete || $withedit) ) {
        <tr class="rowtitle">
-%      for( my $i=0; $i<(keys %order)-1; $i++ ) {
+%      for( my $i=0; $i<(keys %orderbrief)-1; $i++ ) {
            <td>&nbsp;</td>
 %      }
            <td>
@@ -501,6 +502,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
 %    $session->{linksto}    = \%linksto;
 %    $session->{order}      = \%order;
+%    $session->{orderbrief} = \%orderbrief;
 %    $session->{tags}       = \%tags;
 %    $session->{objindex}   = \%objindex;
 %    $session->{table}      = $table;

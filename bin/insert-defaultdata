@@ -1,21 +1,16 @@
 #
-# insert sample data
+# insert default data
 #
 
-use strict;
+use vars qw( $dbh $DEBUG $DB_TYPE $DB_HOST $DB_PORT 
+	     $DB_DBA $DB_DATABASE $DB_DBA_PASSWORD);
 
-my ($DB_HOME, $DB_DATABASE, $DB_DBA) = @ARGV;
+use DBUTIL;
 
-$DB_HOME ||= "/usr";
-$DB_DATABASE ||= "netdot";
-$DB_DBA ||= "root";
-my $BINDIR = "$DB_HOME/bin";
-my $TMP = "./.tmp";
+($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWORD, $DB_DATABASE) = @ARGV;
 
-open (TMP, ">$TMP")
-    or die "Can't open $TMP: $!\n";
 
-print TMP <<END;
+my $lines = qq/
 INSERT INTO CircuitType (name) VALUES ('DS3');
 INSERT INTO CircuitType (name) VALUES ('xDSL');
 INSERT INTO CircuitType (name) VALUES ('Ethernet');
@@ -105,7 +100,6 @@ INSERT INTO MonitorStatus (name) VALUES ('Down');
 INSERT INTO MonitorStatus (name) VALUES ('Up');
 INSERT INTO MonitorStatus (name) VALUES ('Unknown');
 
-# DNS RESOURCE RECORD TYPES AND THEIR CORRESPONDING TABLES
 INSERT INTO RRType (name,tablename) VALUES ( 'A', 'RRADDR' );
 INSERT INTO RRType (name,tablename) VALUES ( 'AAAA', 'RRADDR' );
 INSERT INTO RRType (name,tablename) VALUES ( 'CNAME', 'RRCNAME' );
@@ -116,7 +110,6 @@ INSERT INTO RRType (name,tablename) VALUES ( 'PTR', 'RRPTR' );
 INSERT INTO RRType (name,tablename) VALUES ( 'SRV', 'RRSRV' );
 INSERT INTO RRType (name,tablename) VALUES ( 'TXT', 'RRTXT' );
 
-# ISC DHCP SERVER CONFIGURATION SCOPES
 INSERT INTO DhcpScopeType (name) VALUES ('global');
 INSERT INTO DhcpScopeType (name) VALUES ('group');
 INSERT INTO DhcpScopeType (name) VALUES ('shared-network');
@@ -126,7 +119,6 @@ INSERT INTO DhcpScopeType (name) VALUES ('class');
 INSERT INTO DhcpScopeType (name) VALUES ('subclass');
 INSERT INTO DhcpScopeType (name) VALUES ('host');
 
-# ISC DHCP SERVER CONFIGURATION PARAMETERS
 INSERT INTO DhcpAttrName (name) VALUES ('always-reply-rfc1048');
 INSERT INTO DhcpAttrName (name) VALUES ('allow all clients');
 INSERT INTO DhcpAttrName (name) VALUES ('allow dynamic bootp client');
@@ -161,7 +153,6 @@ INSERT INTO DhcpAttrName (name) VALUES ('use-host-decl-names');
 INSERT INTO DhcpAttrName (name) VALUES ('use-lease-addr-for-default-route');
 INSERT INTO DhcpAttrName (name) VALUES ('vendor-option-space');
 
-# DHCP STANDARD OPTIONS
 INSERT INTO DhcpAttrName (name) VALUES ('option domain-name');
 INSERT INTO DhcpAttrName (name) VALUES ('option domain-name-servers');
 INSERT INTO DhcpAttrName (name) VALUES ('option subnet-mask');
@@ -170,11 +161,11 @@ INSERT INTO DhcpAttrName (name) VALUES ('option netbios-node-type');
 INSERT INTO DhcpAttrName (name) VALUES ('option broadcast-address');
 INSERT INTO DhcpAttrName (name) VALUES ('option routers');
 
+/;
 
-END
-close(TMP);
+my @lines = grep /\w+/, split /\n/, $lines;
 
-print "Enter the password for the database user $DB_DBA.\n";
-system ("$BINDIR/mysql --user=$DB_DBA $DB_DATABASE -p < $TMP");
-
-system ("rm -f $TMP");
+if ( my $dbh = &dbconnect($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWORD, $DB_DATABASE) ){
+    &processdata($dbh, \@lines);
+    &dbdisconnect($dbh);
+}

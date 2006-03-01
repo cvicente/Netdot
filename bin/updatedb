@@ -2,86 +2,29 @@
 # Make the necessary modifications to upgrade Netdot's schema and data
 #
 use strict;
-use DBI;
-use Data::Dumper;
-
-use vars qw( $dbh $DEBUG $DB_TYPE $DB_HOME $DB_HOST $DB_PORT 
+use vars qw( $dbh $DEBUG $DB_TYPE $DB_HOST $DB_PORT 
 	     $DB_DBA $DB_DATABASE $DB_DBA_PASSWORD);
 
+use DBUTIL;
 
-($DB_TYPE, $DB_HOME, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DATABASE) = @ARGV;
-
-# Be verbose by default
-$DEBUG = 1;
-
-if( ! dbconnect() ) {
-  die "Failed to connect to DB\n";
-}
-&processdata();
-&dbdisconnect();
+($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWORD, $DB_DATABASE) = @ARGV;
 
 
-##################################################
-sub dbconnect {
-    my $dsn = "dbi:$DB_TYPE:";
+
+if ( my $dbh = &dbconnect($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWORD, $DB_DATABASE) ){
     
-    if (($DB_TYPE eq 'Pg') || ($DB_TYPE eq 'mysql')) {
-	$dsn .= "dbname=$DB_DATABASE";
-	if ($DB_HOST) {
-	    $dsn .= ";host=$DB_HOST";
-	}
-	if ($DB_PORT) {
-	    $dsn .= ";port=$DB_PORT";
-	}
-    }else{
-	print "Unknown DB type: $DB_TYPE\n";
-	return 0;
-    }
-    
-    print "DEBUG: init: $dsn\n" if $DEBUG;
-
-    if( $dbh = DBI->connect( $dsn, $DB_DBA, $DB_DBA_PASSWORD ) ) {
-	print "DEBUG: Connected successfully\n" if $DEBUG;
-	return 1;
-    } else {
-	print "Unable to connect to $DB_TYPE $DB_DATABASE db:" 
-	    . " $DBI::errstr\n"; 
-	return 0;
-    }
-}
-
-
-##################################################
-sub dbdisconnect {
-    if( $dbh->disconnect ) {
-	print "DEBUG: Disconnected successfully\n" if $DEBUG;
-	return 1;
-    } else {
-	warn "Unable to disconnect from DB\n";
-	return 0;
-    }
-}
-
-
-##################################################
-sub processdata {
-
-# Convert Mysql tables from MyISAM to INNODB
+    # Convert Mysql tables from MyISAM to INNODB
     my @lines;
     foreach my $table ( $dbh->tables ){
 	push @lines, "ALTER TABLE $table ENGINE=INNODB";
     }
-    &dbi_do(@lines);
-
-    return 1;
+    
+    # Drop the obsolete Meta table
+    push @lines, "DROP TABLE Meta";
+    
+    &processdata($dbh, \@lines);
+    
+    &dbdisconnect($dbh);
 }
 
-##################################################
-sub dbi_do{
-    while (my $cmd = shift @_ ){
-	$cmd  =~ /^(.*)$/;
-	my $rows;
-	$rows = $dbh->do( $cmd );
-	print "DEBUG: ($cmd): rows affected: $rows\n" if $DEBUG;
-    }
-}
+

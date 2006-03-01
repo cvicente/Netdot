@@ -56,8 +56,7 @@ sub keyword_search {
         }
         my @objs = map { $r->{$_} } keys %$r;
         my $lblfield = ( $ui->getlabels($table) )[0];
-        my %coltypes = $ui->getcolumntypes($table);
-        my $type = $coltypes{$lblfield};
+        my $type = $ui->meta->get_column_type($table, $lblfield);
         if ( $type =~ /int/ || $table eq "Interface" ){  # Ugly hack
            @objs = sort { $a->$lblfield <=> $b->$lblfield } @objs;
         }else {
