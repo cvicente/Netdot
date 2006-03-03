@@ -267,6 +267,11 @@ sub getrootblocks {
 
 =head2 getchildren - Get all blocks that are children of this block in the IP tree
 
+ Arguments: 
+    Ipblock object
+ Returns:   
+    Array of ancestor Ipblock objects, in increasing order
+
 =cut
 
 sub getchildren {
@@ -934,7 +939,7 @@ sub auto_allocate {
     $self->debug(loglevel => 'LOG_DEBUG',
 		 message => "auto_allocate: parent net: %s, broadcast: %s" ,
 		 args => [$parent_nip->network, $parent_nip->broadcast]);
-    
+
     # IPv6 addresses don't fit in ints.
     use bigint;
 
@@ -959,19 +964,73 @@ sub auto_allocate {
     my $total_ips = 2**($length - $parent_nip->masklen);
     my $max_ip    = $min_ip + ($total_ips - 1)*$increment; # -1 since we start with the first address.
     my $start_ip  = $min_ip;
+    # getchildren() returns the children in *ascending* order as Ipblocks
+    my @children = map { NetAddr::IP->new($_->address, $_->prefix) } 
+                       $self->getchildren($parent);
     if ($strategy eq "last") {
 	$start_ip   = $max_ip;
 	$increment *= -1;
+	# Descending order
+	@children   = reverse @children;
     }
 
-    # Will still be painfully slow if we iterate over a bunch of ips,
-    # e.g. if given /n someone allocates an /n+1 and then an /n+k with
-    # the same strategy then the attempt to allocate the /n+k will
-    # iterate over all 2^(k-1) /n+k s which correspond to the /n+1.
-    # To get around this we need to look at the children which exist
-    # before proceding blindly.
-    for ( my $i = 0; $i < $total_ips; ++$i ) {
-	my $block = NetAddr::IP->new ( ($start_ip + $i*$increment)->addr, $length );
+    ### Helpers for the loop ###
+    
+    my $max = sub { $_[0] > $_[1] ? $_[0] : $_[1] };
+    # A NetAddr::IP object
+    my $block;
+    # If $block and $_[0] intersect, then either $_[0] is contained in
+    # $block, in which case we must skip 1 block, or $block is
+    # contained in $_[0], in which case we must skip the the number of
+    # blocks which would fit in $_[0].  Skipping the number of blocks
+    # which would fit in $_[0] works because we start at one end of the
+    # parent subnet and hence any intersection occurs at the end of
+    # $_[0] (which end corresponds to the ``strategy''), i.e., we
+    # never conflict with a sub block in the middle of $_[0].
+    my $number_of_conflicted_blocks = sub {
+	$max->(1, 2**($block->masklen - $_[0]->masklen))
+    };
+    # Two subnets intersect iff one contains the other
+    my $intersects = sub {
+	$_[0]->contains($block) or $block->contains($_[0])
+    };
+    # The iterator variable
+    my $i;	
+    # Handles allocation conflicts in the loop and iterates $i
+    my $process_conflicts_and_iterate = sub {
+	if ( @children ) {
+	    # If there is a conflict it will be with the first child,
+	    # since they are sorted
+	    if ( $intersects->($children[0]) ) {
+		$self->debug(loglevel => 'LOG_DEBUG',
+			     message => "auto_allocate: %s conflicts with %s, skipping %s blocks, next child is %s",
+			     args => [$block, $children[0], $number_of_conflicted_blocks->($children[0]), 
+				      $#children > 0 ? $children[1] : "nil"]);
+		# Once a child has caused a conflict we must discard
+		# it and consider the next child in the future.
+		$i += $number_of_conflicted_blocks->(shift @children);
+		# We already know all the blocks up to $i are
+		# conflicted so we try the next block now.
+		next;
+	    }else{
+		$self->debug(loglevel => 'LOG_DEBUG',
+			     message => "auto_allocate: %s does not conflict with %s",
+			     args => [$block, $children[0]]);
+		$i += 1;
+	    }
+	}
+    };
+
+    # The amount of time this search takes is bounded by the number of
+    # preexisting child blocks to $parent_nip.  Hence it should be
+    # pretty fast, since it probably takes the user about 10,000
+    # (arbitrary guess) times longer to allocate an address/subnet by
+    # clicking buttons in the web interface than it does for us to
+    # skip over that address/subnet in this perl code.
+    for ( $i = 0; $i < $total_ips; ) {
+	$block = NetAddr::IP->new ( ($start_ip + $i*$increment)->addr, $length );
+	
+	$process_conflicts_and_iterate->();
 
 	$self->debug(loglevel => 'LOG_DEBUG',
 		     message => "auto_allocate: trying %s/%s" ,
@@ -989,6 +1048,8 @@ sub auto_allocate {
 					    ))[0] ){
 	    if ( $ipblock->status->name eq "Container" ){
 		return $ipblock;
+	    }else{
+		next;
 	    }
 	}else{
 	    # Doesn't exist, so go ahead
@@ -1015,7 +1076,6 @@ sub auto_allocate {
     $self->error("No /$length blocks available");
     return 0;
 }
-
 
 =head2 build_tree -  Builds the IPv4 or IPv6 space tree
 
