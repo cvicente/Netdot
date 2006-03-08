@@ -29,7 +29,7 @@ sub new {
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
     my $self = {};
-    $self = $class->SUPER::new();
+    bless $self, $class;
 
     # Read config files
     $self->_read_defaults;
@@ -51,7 +51,6 @@ sub new {
 	return 0;
     }
 
-    bless $self, $class;
   
     wantarray ? ( $self, '' ) : $self;
     

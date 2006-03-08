@@ -115,7 +115,7 @@ insert.defaultdata:
 	@echo 
 	@echo "Inserting Default Data..."
 	@echo
-	$(PERL) insert-defaultdata '$(DB_TYPE)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DATABASE)'
+	$(PERL) insert-defaultdata '$(DB_TYPE)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DATABASE)' '$(DB_DBA_PASSWORD)'
 	@echo 
 	@echo "Default Data inserted successfully"
 	@echo
@@ -124,7 +124,7 @@ setup.class.dbi:
 	@echo 
 	@echo "Setting up Class::DBI..."
 	@echo
-	$(PERL) setup-class-dbi '$(DB_TYPE)' '$(DB_DATABASE)' '$(DB_NETDOT_USER)' '$(DB_NETDOT_PASS)'  
+	$(PERL) setup-class-dbi '$(DB_TYPE)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DATABASE)' '$(DB_DBA_PASSWORD)' '$(DB_NETDOT_USER)' '$(DB_NETDOT_PASS)'
 	install -m $(FMOD) DBI.pm $(PREFIX)/lib/Netdot/DBI.pm
 	@echo 
 	@echo "Class::DBI set up successfully"

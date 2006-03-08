@@ -6,13 +6,14 @@
 
 
 use strict;
+use DBUTIL;
 use lib "../lib";
 use Netdot::Meta;
 
-my $DB_TYPE        = $ARGV[0] || "mysql";
-my $DB_DATABASE    = $ARGV[1] || "netdot";
-my $DB_NETDOT_USER = $ARGV[2] || "netdot_user";
-my $DB_NETDOT_PASS = $ARGV[3] || "netdot_pass";
+use vars qw( $dbh $DEBUG $DB_TYPE $DB_HOST $DB_PORT 
+	     $DB_DBA $DB_DATABASE $DB_DBA_PASSWORD $DB_NETDOT_USER $DB_NETDOT_PASS);
+
+($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DATABASE, $DB_DBA_PASSWORD, $DB_NETDOT_USER, $DB_NETDOT_PASS) = @ARGV;
 
 my $IN        = "./DBI.header";
 my $OUT       = "./DBI.pm";
