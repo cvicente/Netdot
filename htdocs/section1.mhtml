@@ -20,21 +20,101 @@ my $hideheader;
 if( !$showheader ) {
     $hideheader = 'style="display:none"';
 }
+
+# This is the stuff that varies in the different sections of the navbar.  The next
+# natural step would be to move this data into the sections themselves
+# (mason attributes or methods).  Notice that section, attribute, page
+# could probably be unified into a single string (upcase to make
+# attribute if upcase is wanted.  append ``section_'' and ``.html'' to
+# page)
+
+# Arrays are used, as opposed to, say, keying on ``section'', because
+# arrays order there entries
+my $section_meta_data = [
+    {   section => 'Management',
+	page => 'section_management.html', 
+	title => 'Management',
+	attribute => 'MANAGEMENT_PAGE',
+	sub_sections => [
+	    { section => 'DEVICE', title => 'Devices' },
+	    { section => 'ADDRESS', title => 'Address Space' },
+	    { section => 'SERVICES', title => 'Services' },
+	]
+    },
+    {   section => 'Operations',
+	page => 'section_operations.html',
+	title => 'Operations',
+	attribute => 'OPERATIONS_PAGE',
+	sub_sections => [
+	    { section => 'SEARCH', title => 'Search' },
+	    { section => 'TACTICAL', title => 'Tactical' },
+	]
+    },
+    {   section => 'Plant',
+	page => 'section_cable.html',
+	title => 'Cable Plant',
+	attribute => 'CABLE_PLANT_PAGE',
+	sub_sections => [
+	    { section => 'BACKBONE', title => 'Backbone Cables' },
+	    { section => 'HORIZONTAL', title => 'Horizontal Cables' },
+	    { section => 'CLOSETS', title => 'Closets' },
+	    { section => 'STRANDS', title => 'Cable Strands' },
+	    { section => 'CIRCUITS', title => 'Circuits' }
+	]
+    },
+    {   section => 'Generic',
+	page => 'section_generic.html',
+	title => 'Generic',
+	attribute => 'GENERIC_PAGE',
+	sub_sections => [],
+    },
+    {   section => 'Reports',
+	page => 'section_reports.html',
+	title => 'Reports',
+	attribute => 'REPORTS_PAGE',
+	sub_sections => [
+	    { section => 'DEVICE', title => 'Device Inventory' },
+	    { section => 'CUSTOM', title => 'Custom Reports' },
+	    { section => 'DATABASE', title => 'Database Reports' },
+	]
+    },
+    {   section => 'Help',
+        page => 'section_help.html',
+        title => 'Help',
+        attribute => 'HELP_PAGE',
+        sub_sections => []
+    },
+];
 </%init>
 %
-<div id="navbar" <% $hideheader %>>
-    <ul id="navigation">
-        <li>
 %
-% if( $section eq "Management" ) {
-%     if (exists($caller_args{page})){
-%         $user->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
-%     }
-<%perl>
-    eval { $page = $user->getAttribute("MANAGEMENT_PAGE") };
-
-    if ($@) {
-	$m->comp( "error.mhtml", error => <<HERE );
+<%def .make_section>
+    <%doc>
+    Makes a section\'s link given the sections meta data
+    </%doc>
+%
+%
+    <%args>
+    $section
+    $current_section
+    $meta_data
+    %caller_args
+    $user
+    </%args>
+%
+%
+    <%init>
+    my $sub_section_html = "";
+    my $class_html = "";
+    my $page = "";
+    if ( $section eq $current_section ) {
+        $class_html = qq(class="current");
+	if ( exists($caller_args{page}) ) {
+	    $user->setAttribute($r, $meta_data->{attribute}, $caller_args{page});
+        }
+	eval { $page = $user->getAttribute($meta_data->{attribute}) };
+	if ($@) {
+	    $m->comp( "error.mhtml", error => <<HERE );
 
 You have just encountered a bug which currently has us stumped.
 Please report in detail what you were doing around the time the error
@@ -42,103 +122,38 @@ occured (e.g. if you were eating lunch what kind of lettuce did you
 have on your sandwhich) and tell us what time netdot says it is right
 now (upper right corner).  Thanks.
 
-The perl error was:
+The perl error was\:
 $@
 HERE
-}
-</%perl>
-            <a href="section_management.html" class="current">Management</a>
-            <ul id="subnavigation">
-                <li><a href="section_management.html?page=DEVICE" <% ($page eq "DEVICE" || $page eq ""?'class="subnav_selected"':'') %>>Devices</a></li>
-                <li><a href="section_management.html?page=ADDRESS" <% ($page eq "ADDRESS"?'class="subnav_selected"':'') %>>Address Space</a></li>
-                <li><a href="section_management.html?page=SERVICES" <% ($page eq "SERVICES"?'class="subnav_selected"':'') %>>Services</a></li>
-            </ul>
-%
-% } else {
-      <a href="section_management.html">Management</a>
-% }
-%
-        </li>
-        <li>
-%
-% if( $section eq "Operations" ) {
-%     if (exists($caller_args{page})){
-%         $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args{page});
-%     }
-%     $page = $user->getAttribute("OPERATIONS_PAGE");
-            <a href="section_operations.html" class="current">Operations</a>
-            <ul id="subnavigation">
-                <li><a href="section_operations.html?page=SEARCH" <% ($page eq "SEARCH" || $page eq ""?'class="subnav_selected"':'') %>>Search</a></li>
-                <li><a href="section_operations.html?page=TACTICAL" <% ($page eq "TACTICAL"?'class="subnav_selected"':'') %>>Tactical</a></li>
-            </ul>
-%
-% } else {
-            <a href="section_operations.html">Operations</a>
-% }
-%
-        </li>
-        <li>
+	}
+        # Build a link for each subsection
+	for my $sub_section (@{ $meta_data->{sub_sections} }) {
+	    my $target = $meta_data->{page};
+	    my $title = $sub_section->{title};
+	    my $class_html = ($page eq $sub_section->{section} || $page eq "") ?
+			     qq(class="subnav_selected") : "";
+	    $sub_section_html .= 
+		qq(<li><a href="$target?page=@{[ $sub_section->{section} ]}" $class_html>$title</a></li>\n)
+	    }
+    }
+    </%init>
 %
 %
-% if( $section eq "Plant" ) {
-%     if (exists($caller_args{page})){
-%         $user->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args{page});
-%     }
-%     $page = $user->getAttribute("CABLE_PLANT_PAGE");
-%
-            <a href="section_cable.html" class="current">Cable Plant</a>
-            <ul id="subnavigation">
-                <li><a href="section_cable.html?page=BACKBONE" <% ($page eq "BACKBONE" || $page eq ""?'class="subnav_selected"':'') %>>Backbone Cables</a></li>
-                <li><a href="section_cable.html?page=HORIZONTAL" <% ($page eq "HORIZONTAL"?'class="subnav_selected"':'') %>>Horizontal Cables</a></li>
-                <li><a href="section_cable.html?page=CLOSETS" <% ($page eq "CLOSETS"?'class="subnav_selected"':'') %>>Closets</a></li>
-                <li><a href="section_cable.html?page=STRANDS" <% ($page eq "STRANDS"?'class="subnav_selected"':'') %>>Cable Strands</a></li>
-                <li><a href="section_cable.html?page=CIRCUITS" <% ($page eq "CIRCUITS"?'class="subnav_selected"':'') %>>Circuits</a></li>
-            </ul>
-%
-% } else {
-            <a href="section_cable.html">Cable Plant</a>
-% }
-%
-        </li>
-        <li>
-%
-% if( $section eq "Generic" ) {
-%     if (exists($caller_args{page})){
-%         $user->setAttribute($r, "GENERIC_PAGE", $caller_args{page});
-%     }
-%     $page = $user->getAttribute("GENERIC_PAGE");
-%
-            <a href="section_generic.html" class="current">Generic</a>
-            <ul id="subnavigation">
-            </ul>
-%
-% } else {          
-            <a href="section_generic.html">Generic</a>
-% }
-%
-        </li>
-        <li>
-%
-% if( $section eq "Reports" ) {
-%     if (exists($caller_args{page})){
-%         $user->setAttribute($r, "REPORTS_PAGE", $caller_args{page});
-%     }
-%     $page = $user->getAttribute("REPORTS_PAGE");
-            <a href="section_reports.html" class="current">Reports</a>
-            <ul id="subnavigation">
-                <li><a href="reports_device_inventory.html?page=DEVICE" <% ($page eq "DEVICE"?'class="subnav_selected"':'') %>>Device Inventory</a></li>
-                <li><a href="reports_custom.html?page=CUSTOM" <% ($page eq "CUSTOM"?'class="subnav_selected"':'') %>>Custom Reports</a></li>
-                <li><a href="reports_database.html?page=DATABASE" <% ($page eq "DATABASE"?'class="subnav_selected"':'') %>>Database Reports</a></li>
-            </ul>
+    <a href="<% $meta_data->{page} %>" <% $class_html %>><% $meta_data->{title} %></a>\
+%   if ($sub_section_html ne "") {
+    <ul id="subnavigation">
+    <% $sub_section_html %>
+    </ul>
+%   }
+</%def>
 %
 %
-% } else {
-            <a href="section_reports.html">Reports</a>
-% }
-%
-        </li>
-        <li>
-            <a href="section_help.html">Help</a>
-        </li>
+<div id="navbar" <% $hideheader %>>
+    <ul id="navigation">
+%   for my $meta_data (@{ $section_meta_data }) { 
+        <& .make_section, current_section => $meta_data->{section},
+	   meta_data => $meta_data,
+           caller_args => \%caller_args, page => $page, %ARGS &>\
+%   }
     </ul>
 </div>
