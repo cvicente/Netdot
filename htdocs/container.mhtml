@@ -148,47 +148,49 @@ $dividefreespace => 'max'
 
     # check for empty space prior to any existing blocks
     if( @start_addrs > 0 ) {  # only check if there's actually stuff there
-        my $diff = $start_addrs[0]->numeric - $start_address->numeric;
+        my $numhosts = $start_addrs[0]->numeric - $start_address->numeric;
         my $newbaseaddr = $start_address->numeric;
-        fill_space($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
+        fill_space($dividespace, $numhosts, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
     }
 
-    # check for empty space inside any existing blocks
+    # check for empty space in between any existing blocks
     for( my $i=0; $i<@start_addrs-1; $i++ ) {
-        my $diff = $start_addrs[$i+1]->numeric - $end_addrs[$i]->numeric - 1;
+        my $numhosts = $start_addrs[$i+1]->numeric - $end_addrs[$i]->numeric - 1;
         my $newbaseaddr = $end_addrs[$i]->numeric + 1;
-        fill_space($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
+        fill_space($dividespace, $numhosts, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
     }
 
     # check for empty space after any existing blocks
     if( @end_addrs > 0 ) {  # only check if there's actually stuff there
-        my $diff = $end_address->numeric - $end_addrs[@end_addrs-1]->numeric;
+        my $numhosts = $end_address->numeric - $end_addrs[@end_addrs-1]->numeric;
         my $newbaseaddr = $end_addrs[@end_addrs-1]->numeric + 1;
-        fill_space($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
+        fill_space($dividespace, $numhosts, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
     }
 
     # container is completely empty, fill all space
+    # (if any of the three above conditions passed, this will not)
     if( @start_addrs == 0 && @end_addrs == 0 ) {
-        my $diff = $end_address->numeric - $start_address->numeric + 1;
+        my $numhosts = $end_address->numeric - $start_address->numeric + 1;
         my $newbaseaddr = $start_address->numeric;
-        fill_space($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
+        fill_space($dividespace, $numhosts, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
     }
 
-    sub fill_space {
-        my ($dividespace, $diff, $newbaseaddr, $numcols, $scale, $dividefreespace, $names, $cell_info, $start_cells, $end_cells, $network_addr) = @_;
 
-        if( $diff > 0 ) {
-            # we've got room for $diff hosts. how to break this up?
+    sub fill_space {
+        my ($dividespace, $numhosts, $newbaseaddr, $numcols, $scale, $dividefreespace, $names, $cell_info, $start_cells, $end_cells, $network_addr) = @_;
+
+        if( $numhosts > 0 ) {
+            # we've got room for $numhosts hosts. how to break this up?
             my $subnetsize;
             if( $dividefreespace eq "max" ) {
-                # what is the biggest subnet that can fit into $diff hosts?
-                $subnetsize = $ui->powerof2lo($diff);
+                # what is the biggest subnet that can fit into $numhosts hosts?
+                $subnetsize = $ui->powerof2lo($numhosts);
             } else {
                 $subnetsize = $ipm->numhosts($dividefreespace);
             }
             # this starts dividespace going with the initial value of subnetsize. it will look for as many subnetsize subnets it can
             #   find, and when it runs out of room, searches for subnets of size subnetsize/2.
-            $dividespace->($dividespace, $newbaseaddr, $newbaseaddr+$diff, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, \$network_addr);
+            $dividespace->($dividespace, $newbaseaddr, $newbaseaddr+$numhosts, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, \$network_addr);
         }
     }
     ######################################################################
@@ -316,10 +318,8 @@ my $dividespace = sub {
     my ($dividespace, $start, $end, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, $network_addr) = @_;
 
     # find first multiple of $subnetsize that starts after $start
-    #    no ceil function built in to perl. int function chops off decimals, NOT the same as floor
-    #    ceil function is int($x-(int($x)+1))+int($x)+1
     my $x = $start/$subnetsize;
-    $x = int($x-(int($x)+1))+int($x)+1;
+    $x = $ui->ceil($x);
     my $blockstart = int($subnetsize * $x);   # either the previous operation or this multiplication was 
                                               #   making $blockstart into a float, which created problems when
                                               #   checking for equality before the recursive calls
