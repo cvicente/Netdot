@@ -25,34 +25,75 @@ $submit  => undef
 
 <%perl>
 
+my @editids = ();
+if( $ARGS{'selectall_'.$table.'_edit'} eq "on" || $ARGS{'selectall_'.$table.'_delete'} eq "on" ) {
+	foreach my $id ( split(/,/, $ARGS{selectall_ids}) ) {
+		push (@editids, $id);
+	}
+} else {
+    # if only one checkbox is checked, then the html form returns the value of
+    #   the one box NOT as a list but as a scalar.
+    if (!ref($ARGS{'editids[]'})) {
+      	push (@editids, $ARGS{'editids[]'});
+    } else {
+        foreach my $t ( @{$ARGS{'editids[]'}} ) {
+        	push (@editids, $t);
+        }
+	}
+}
+
 if ($submit eq "Save Changes") {
 
     my %data;
     my $TBL;
 
-    # get values from request and build a hash with the following structure:
-    # $data{$id}{$field} = $val;
-    foreach my $j ( keys %ARGS ) {
-        next if ($j !~ /__/ );
-        my ($table, $id, $field) = split("__", $j);
-        next if ($id eq "NEW");
-        my $val;
+	if( defined($ARGS{selectall_ids}) ) {
+		foreach my $id ( split(/,/, $ARGS{selectall_ids}) ) {
 
-        if ($ARGS{'applytoall_'.$field} eq "on") {
-            $val = $ARGS{$table.'__NEW__'.$field};
-        } else {
-            $val = $ARGS{$j};
-        }
+		    foreach my $j ( keys %ARGS ) {
+		    	# data comes in as table__id__field = value
+		        next if ($j !~ /__/ );
+		        my ($table, $new, $field) = split("__", $j);
+	
+				my $val = $ARGS{$table.'__NEW__'.$field};
+	
+		        if (exists($data{$id})) {
+		            $data{$id}{$field} = $val;
+		        } else {
+		            my %values;
+		            $values{$field} = $val;
+		            $data{$id} = \%values;
+		        }
+		        $TBL = $table;   # note: all $table variables should be the same anyway so this is ok
+			}
 
-        if (exists($data{$id})) {
-            $data{$id}{$field} = $val;
-        } else {
-            my %values;
-            $values{$field} = $val;
-            $data{$id} = \%values;
-        }
-        $TBL = $table;   # note: all $table variables should be the same anyway so this is ok
-    }
+		}	
+	} else {	
+	    # get values from request and build a hash with the following structure:
+	    # $data{$id}{$field} = $val;
+	    foreach my $j ( keys %ARGS ) {
+	    	# data comes in as table__id__field = value
+	        next if ($j !~ /__/ );
+	        my ($table, $id, $field) = split("__", $j);
+	        next if ($id eq "NEW");
+	        my $val;
+	
+	        if ($ARGS{'applytoall_'.$field} eq "on") {
+	            $val = $ARGS{$table.'__NEW__'.$field};
+	        } else {
+	            $val = $ARGS{$j};
+	        }
+	
+	        if (exists($data{$id})) {
+	            $data{$id}{$field} = $val;
+	        } else {
+	            my %values;
+	            $values{$field} = $val;
+	            $data{$id} = \%values;
+	        }
+	        $TBL = $table;   # note: all $table variables should be the same anyway so this is ok
+	    }
+	}
 
     # now loop thru all the $id s in $data and do the update for each row
     foreach my $id ( keys %data ) {
@@ -81,72 +122,92 @@ if ($submit eq "Save Changes") {
     my %tags = $ui->meta->get_column_tags($table);
 
     my (@headers, @rows);
-    my $showbuttons;
+    my $showeditbuttons;
+    my $showdeletebutton = 1;
 
-    # if only one checkbox is checked, then the html form returns the value of
-    #   the one box NOT as a list but as a scalar. we need to turn it into a list.
-    if (!ref($ARGS{'editids[]'})) {
-        $ARGS{'editids[]'} = [$ARGS{'editids[]'}];
-    }
     if (!ref($ARGS{'tablefields[]'})) {
         $ARGS{'tablefields[]'} = [$ARGS{'tablefields[]'}];
     }
 
     if ( defined( @{$ARGS{'tablefields[]'}}[0] ) ) {
+	
+	    push(@headers, "Name");
+	    foreach my $field (@{$ARGS{'tablefields[]'}}) {
+	        push(@headers, (exists($tags{$field})?$tags{$field}:$field));
+	    }
+	
+		if( $ARGS{'selectall_'.$table.'_edit'} eq "on" ) {
+			my $hid = '<input type="hidden" name="selectall_ids" value="'.$ARGS{selectall_ids}.'">';
+		
+		    my @row1 = ();
+		    push( @row1, 'Apply to all '.@editids.' records'.$hid );
+		    foreach my $field (@{$ARGS{'tablefields[]'}}) {
+		        my %tmp = $ui->form_field(table=>$table, column=>$field, edit=>1);
+		        push( @row1, $tmp{'value'} );    
+		    }
+		    push( @rows, \@row1 );
 
-    push(@headers, "Name");
-    foreach my $field (@{$ARGS{'tablefields[]'}}) {
-        push(@headers, (exists($tags{$field})?$tags{$field}:$field));
-    }
-    push(@headers, "Delete");
+		    my @row2 = ();
+			push( @row2, '<div style="font-size:8pt;">Note: The values you set here will be<br>
+				applied to <b>all</b> '.@editids.' records, even if<br>
+				the value is blank. If you do not want to<br>
+				modify a field, go back and uncheck it.' );
+		    for( my $i=0; $i<(@{$ARGS{'tablefields[]'}}); $i++ ) {
+		        push( @row2, "&nbsp;" );
+		    }
+		    push( @rows, \@row2 );
+		    		
+		} else {
+			push(@headers, "Delete:");
+		
+		    foreach my $id (@editids) {
+		        my $obj = $table->retrieve($id);
+		      	my @row = ();
+		        push( @row, $ui->getobjlabel($obj,", ") );
+		        foreach my $field (@{$ARGS{'tablefields[]'}}) {
+		            my %tmp = $ui->form_field(object=>$obj, column=>$field, edit=>1);
+		            push( @row, $tmp{'value'} );    
+		        }
+		        push( @row, '<input type="checkbox" id="chk_'.$table.'_'.$id.'" name="chk_'.$table.'__'.$id.'" onclick="document.getElementById(\'delete_'.$table.'_\'+'.$id.').checked = document.getElementById(\'chk_'.$table.'_\'+'.$id.').checked">' );
+		    	push( @rows, \@row );
+		    }
+		
+		    my @emptyrow = ();
+		    for( my $i=0; $i<(@{$ARGS{'tablefields[]'}})+2; $i++ ) {
+		        push( @emptyrow, "&nbsp;" );
+		    }
+		    push( @rows, \@emptyrow );
+	
+		    my @row2 = ();
+		    push( @row2, 'Apply to all above' );
+		    foreach my $field (@{$ARGS{'tablefields[]'}}) {
+		        push( @row2, '<input type="checkbox" name="applytoall_'.$field.'">' );
+		    }
+		 	push( @row2, '&nbsp;' );
+		    push( @rows, \@row2 );
+		
+		    my @row1 = ();
+		    push( @row1, '&nbsp;' );
+		    foreach my $field (@{$ARGS{'tablefields[]'}}) {
+		        my %tmp = $ui->form_field(table=>$table, column=>$field, edit=>1);
+		        push( @row1, $tmp{'value'} );    
+		    }
+		 	push( @row1, '&nbsp;' );
+		    push( @rows, \@row1 );
+	
+		}
 
-    foreach my $id (@{$ARGS{'editids[]'}}) {
-        my $obj = $table->retrieve($id);
-      	my @row = ();
-        push( @row, $ui->getobjlabel($obj,", ") );
-        foreach my $field (@{$ARGS{'tablefields[]'}}) {
-            my %tmp = $ui->form_field(object=>$obj, column=>$field, edit=>1);
-            push( @row, $tmp{'value'} );    
-        }
-        push( @row, '<input type="checkbox" id="chk_'.$table.'_'.$id.'" name="chk_'.$table.'__'.$id.'" onclick="document.getElementById(\'delete_'.$table.'_\'+'.$id.').checked = document.getElementById(\'chk_'.$table.'_\'+'.$id.').checked">' );
-    	push( @rows, \@row );
-    }
+	    $showeditbuttons = 1;
+	    $showdeletebutton = 0;
+	} else {
+	    push( @headers, "Error" );
+	    my @row;
+	    push( @row, 'Go back and choose at least 1 field to edit' );
+	    push( @rows, \@row );
+	    $showeditbuttons = 0;
+	}
 
-    my @emptyrow = ();
-    for( my $i=0; $i<(@{$ARGS{'tablefields[]'}})+2; $i++ ) {
-        push( @emptyrow, "&nbsp;" );
-    }
-    push( @rows, \@emptyrow );
-
-    my @row2 = ();
-    push( @row2, 'Apply to All' );
-    foreach my $field (@{$ARGS{'tablefields[]'}}) {
-        push( @row2, '<input type="checkbox" name="applytoall_'.$field.'">' );
-    }
- 	push( @row2, '&nbsp;' );
-    push( @rows, \@row2 );
-
-    my @row1 = ();
-    push( @row1, '&nbsp;' );
-    foreach my $field (@{$ARGS{'tablefields[]'}}) {
-        my %tmp = $ui->form_field(table=>$table, column=>$field, edit=>1);
-        push( @row1, $tmp{'value'} );    
-    }
-    #push( @row, '<input type="checkbox" id="chk_'.$table.'_NEW" name="chk_'.$table.'__NEW" onclick="document.getElementById(\'delete_'.$table.'_\'+'.$id.').checked = document.getElementById(\'chk_'.$table.'_\'+'.$id.').checked">' );
- 	push( @row1, '&nbsp;' );
-    push( @rows, \@row1 );
-
-        $showbuttons = 1;
-    } else {
-        push( @headers, "Error" );
-        my @row;
-        push( @row, 'Go back and choose at least 1 field to edit' );
-        push( @rows, \@row );
-        $showbuttons = 0;
-    }
-
-
-    </%perl>
+</%perl>
     <div class="containeroutside">
         <div class="containerhead">
         Editing Records from "<% $table %>"
@@ -157,9 +218,9 @@ if ($submit eq "Save Changes") {
         <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
     
         <div align="right">
-            <%perl> if( $showbuttons ) { </%perl>
+            <%perl> if( $showeditbuttons ) { </%perl>
             <input type="submit" name="submit" value="Save Changes">
-            <input type="button" name="submit" value="Delete" onclick="document.deleteform_<% $table %>.submit()">
+            <%perl> if( $showdeletebutton ) { </%perl><input type="button" name="submit" value="Delete" onclick="document.deleteform_<% $table %>.submit()"><%perl> } </%perl>
             <%perl> } </%perl>
             <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
         </div>
@@ -168,7 +229,7 @@ if ($submit eq "Save Changes") {
 
         <div style="display:none">
         <form action="delete.html" method="post" name="deleteform_<% $table %>">
-%       foreach my $id (@{$ARGS{'editids[]'}}) {
+%       foreach my $id (@editids) {
 %           print '<input type="checkbox" id="delete_'.$table.'_'.$id.'" name="'.$table.'__'.$id.'">';
 %       }
         </form>

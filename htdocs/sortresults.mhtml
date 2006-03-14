@@ -230,11 +230,11 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
         // if no checkboxes are selected, select them all
         var docheckall = 1;
         for(i=0; i<ids.length; i++) {
-            docheckall = docheckall & !document.getElementById('edit_check_<% $table %>_'+ids[i]).checked;
+//            docheckall = docheckall & !document.getElementById('edit_check_<% $table %>_'+ids[i]).checked;
         }
         if( docheckall == 1 ) {
             for(i=0; i<ids.length; i++) {
-                document.getElementById('edit_check_<% $table %>_'+ids[i]).checked = 1;
+//                document.getElementById('edit_check_<% $table %>_'+ids[i]).checked = 1;
             }
         }
     }
@@ -250,7 +250,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %           $pos++; $i++;
 %       }
         for(i=0; i<ids.length; i++) {
-            document.getElementById(col+'_check_<% $table %>_'+ids[i]).checked = document.getElementById('selectall_<% $table %>_'+col).checked;
+//            document.getElementById(col+'_check_<% $table %>_'+ids[i]).checked = document.getElementById('selectall_<% $table %>_'+col).checked;
         }
     }
   //-->
@@ -264,7 +264,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 <%perl>
    my @cells;
 
-   foreach my $c ( sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief ) {
+   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
        next if( $c eq 'id' );
        my $caption;
        if ( exists($tags{$c}) ){
@@ -470,18 +470,23 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % ####################################################################
 
 %    if( $view eq "row" && ($withdelete || $withedit) ) {
+%       my $selectall_ids;
+%       foreach my $key ( keys %objindex ) {
+%           $selectall_ids .= $objindex{$key}{id}.",";
+%       }
        <tr class="rowtitle">
 %      for( my $i=0; $i<(keys %orderbrief)-1; $i++ ) {
            <td>&nbsp;</td>
 %      }
            <td>
-              <div align="right">Select All:</div>
+              <div align="right">Select All <% $total %> results:</div>
+              <input type="hidden" name="selectall_ids" value="<% $selectall_ids %>">
            </td>
 %      if ( $withdelete ){
-           <th align="center"><input type="checkbox" name="selectall_<% $table %>_delete" id="selectall_<% $table %>_delete" onclick="setcheckboxes_<% $table %>('delete')"></td>
+           <th align="center"><input type="checkbox" name="selectall_<% $table %>_delete" id="selectall_<% $table %>_delete"></td>
 %      }
 %      if ( $withedit ){
-           <th align="center"><input type="checkbox" name="selectall_<% $table %>_edit" id="selectall_<% $table %>_edit" onclick="setcheckboxes_<% $table %>('edit')"></td>
+           <th align="center"><input type="checkbox" name="selectall_<% $table %>_edit" id="selectall_<% $table %>_edit"></td>
 %      }
        </tr>
 %    }
