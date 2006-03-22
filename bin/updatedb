@@ -21,6 +21,9 @@ if ( my $dbh = &dbconnect($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWOR
     
     # Drop the obsolete Meta table
     push @lines, "DROP TABLE Meta";
+
+	# column nsdname should be an integer, not a varchar
+	push @lines, "ALTER TABLE RRNS CHANGE nsdname nsdname int(11) default NULL";
     
     &processdata($dbh, \@lines);
     
