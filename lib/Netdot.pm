@@ -743,6 +743,19 @@ sub floor {
 	return int($x);
 }
 
+=head2 empty_space
+	
+	Returns empty space
+	
+	Arguments:
+		none
+=cut
+sub empty_space {
+	my ($self, $x) = @_;
+	return " ";
+}
+
+
 =head2 send_mail
 
     Sends mail to desired destination.  
