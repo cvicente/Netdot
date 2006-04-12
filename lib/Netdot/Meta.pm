@@ -582,7 +582,7 @@ sub _get_table_attr{
     my $t = $self->_get_tables();
     my $ret;
     if ( ! exists $t->{$table}->{$attr} ){
-	croak "Table $table does not have attribute $attr";
+	croak "Table '$table' does not have attribute '$attr'";
     }
     $ret = $t->{$table}->{$attr};
     return $ret;
