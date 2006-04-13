@@ -1145,11 +1145,12 @@ sub update_device {
 	    my $p; # bgppeering object
 
 	    # Check if peering exists
-	    unless ( $p = (BGPPeering->search( device => $device->id,
+	    unless ( $p = (BGPPeering->search( device      => $device->id,
 					       bgppeeraddr => $peer ))[0] ){
 		# Doesn't exist.  
 		# Check if we have some Entity info
-		next unless ( exists ($dev{bgppeer}{$peer}{asname}) ||
+		next unless ( exists ($dev{bgppeer}{$peer}{asnumber}) ||
+			      exists ($dev{bgppeer}{$peer}{asname}) ||
 			      exists ($dev{bgppeer}{$peer}{orgname})
 			      ); 
 		my $ent;
@@ -1287,9 +1288,12 @@ sub get_dev_info {
     }
     my $msg = sprintf("Contacted Device %s", $host);
     $self->debug( loglevel => 'LOG_NOTICE',
-		  message => $msg );
-
-
+		  message  => $msg );
+    
+    $self->debug(loglevel => 'LOG_DEBUG',
+		 message  => "Netviewer got me this: %s", 
+		 args     => [ join " ", Dumper(%nv) ] );
+    
     ################################################################
     # Device's global vars
 
@@ -1568,9 +1572,22 @@ sub get_dev_info {
 	# for each BGP Peer discovered...
 	
 	foreach my $peer ( keys %{ $nv{bgpPeer} } ) {
+	    my $peerid = $nv{bgpPeer}{$peer}{bgpPeerIdentifier};
+	    unless ( $peerid ){
+		$self->debug( loglevel => 'LOG_DEBUG', 
+			      message  => "Did not get bgpPeerIdentifier for peer %s",
+			      args     => [$peer]);
+		next;
+	    }
 	    
-	    $dev{bgppeer}{$peer}{bgppeerid} = $nv{bgpPeer}{$peer}{bgpPeerIdentifier};
+	    $dev{bgppeer}{$peer}{bgppeerid} = $peerid;
 	    my $asn = $nv{bgpPeer}{$peer}{bgpPeerRemoteAs};
+	    unless ( $asn ){
+		$self->debug( loglevel => 'LOG_DEBUG', 
+			      message  => "Did not get bgpPeerRemoteAs for peer %s",
+			      args     => [$peer]);
+		next;
+	    }
 	    $dev{bgppeer}{$peer}{asnumber} = $asn;
 	    
 	    # Query any configured WHOIS servers for more info
