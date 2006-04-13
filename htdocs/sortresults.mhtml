@@ -491,6 +491,24 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
        </tr>
 %    }
 
+## Last row
+       <tr class="rowtitle">
+%      for( my $i=0; $i<(keys %orderbrief); $i++ ) {
+           <td>&nbsp;</td>
+%      }
+%      if ( $withdelete ){
+           <th>Delete</th>
+%      }else{
+           <th>&nbsp;</th>
+%      }
+%      if ( $withedit ){
+              <th align="right"><a href="javascript:toggleEditLayers('<% $table %>');">Edit</a></th>
+%      }else{
+           <th>&nbsp;</th>
+%      }
+       </tr>
+%   }
+
   </table>
 
 % if ( $total > $per_page ){
