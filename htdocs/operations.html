@@ -46,11 +46,11 @@ my %arg;
 my %results;
 my %stables;
 my %entities;
-my %caller_args = $m->caller_args(-1);
+my $caller_args = $m->caller_args(-1);
 
 @{ $list } = ();
-if( exists( $caller_args{page} ) ) {
-    $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args{page});
+if( exists( $caller_args->{page} ) ) {
+    $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args->{page});
 }
 my $page = $user->getAttribute("OPERATIONS_PAGE");
 
