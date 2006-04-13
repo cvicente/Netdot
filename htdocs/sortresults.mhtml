@@ -41,6 +41,7 @@ my %tags;
 my %linksto;
 my %linksfrom;
 my %order;
+my %orderbrief;
 my $cellspc    = 0;
 my $cellpad    = 0;
 my $lbl;
@@ -135,25 +136,26 @@ if ( defined ($object) ){
     %linksto = $ui->getlinksto( $table );
     ##############################################
     # define order
-    %order   = $ui->getcolumnorderbrief( $table );
+    %order        = $ui->getcolumnorder( $table );
+    %orderbrief   = $ui->getcolumnorderbrief( $table );
     ##############################################
     # Get tags
     %tags = $ui->getcolumntags( $table );
 
     ##############################################
     # remove id and aliases (if present)
-    if( exists( $order{id} ) ) {
-	delete( $order{id} );
+    if( exists( $orderbrief{id} ) ) {
+	delete( $orderbrief{id} );
     }
-    if( exists( $order{aliases} ) ) {
-	delete( $order{aliases} );
+    if( exists( $orderbrief{aliases} ) ) {
+	delete( $orderbrief{aliases} );
     }
     ##############################################
     # munge so that label is first 
     if( defined( $lbl ) && length( $lbl ) > 0 ) {
-	unless( $order{$lbl} == 1 ) {
-	    my $j        = $order{$lbl};
-	    my %rev      = reverse %order;
+	unless( $orderbrief{$lbl} == 1 ) {
+	    my $j        = $orderbrief{$lbl};
+	    my %rev      = reverse %orderbrief;
 	    my $k        = $rev{1} ;
 	    $order{$k}   = $j;
 	    $order{$lbl} = 1;
@@ -169,6 +171,7 @@ if ( defined ($object) ){
     }
     %linksto    = %{ $session->{linksto} };
     %order      = %{ $session->{order} };
+    %orderbrief = %{ $session->{orderbrief} };
     %tags       = %{ $session->{tags} };
     %objindex   = %{ $session->{objindex} };
     $table      = $session->{table};
@@ -198,7 +201,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % #####################################################################
 % if( $view eq "row" ) {
 %   ($cellspc, $cellpad) = ( 0, 0 );
-%   $numcols = scalar keys %order;
+%   $numcols = scalar keys %orderbrief;
 % } elsif( $view eq "column" ) {
 %   ($cellspc, $cellpad) = ( 0, 1 );
 %   $numcols = 2;
@@ -298,7 +301,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % #####################################################################
 %    if( $view eq "row" ) {
        <tr class="rowtitle2">
-%      foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
+%      foreach my $c ( sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief ) {
 %        if( exists( $tags{$c} ) ) {
            <th><% $tags{$c} %></th>
 %        } else {
@@ -348,8 +351,8 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % ####################################################################
 % # Get the column order and process each item.
 % ####################################################################
-%    my @order = sort { $order{$a} <=> $order{$b} } keys %order;
-%    foreach my $c ( @order ) {
+%    my @orderbrief = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
+%    foreach my $c ( @orderbrief ) {
 %
 % ####################################################################
 % # If a COLUMN view, start a row with the column name.
@@ -473,7 +476,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %           $selectall_ids .= $objindex{$key}{id}.",";
 %       }
        <tr class="rowtitle">
-%      for( my $i=0; $i<(keys %order)-1; $i++ ) {
+%      for( my $i=0; $i<(keys %orderbrief)-1; $i++ ) {
            <td>&nbsp;</td>
 %      }
            <td>
@@ -487,7 +490,24 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
            <th align="center"><input type="checkbox" name="selectall_<% $table %>_edit" id="selectall_<% $table %>_edit"></td>
 %      }
        </tr>
-%    }
+
+## Last row
+       <tr class="rowtitle">
+%      for( my $i=0; $i<(keys %orderbrief); $i++ ) {
+           <td>&nbsp;</td>
+%      }
+%      if ( $withdelete ){
+           <th>Delete</th>
+%      }else{
+           <th>&nbsp;</th>
+%      }
+%      if ( $withedit ){
+              <th align="right"><a href="javascript:toggleEditLayers('<% $table %>');">Edit</a></th>
+%      }else{
+           <th>&nbsp;</th>
+%      }
+       </tr>
+%   }
 
   </table>
 
@@ -505,6 +525,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
 %    $session->{linksto}    = \%linksto;
 %    $session->{order}      = \%order;
+%    $session->{orderbrief} = \%orderbrief;
 %    $session->{tags}       = \%tags;
 %    $session->{objindex}   = \%objindex;
 %    $session->{table}      = $table;
