@@ -17,27 +17,26 @@ section => 'Reports'
 %
 %
 <%init>
-my %caller_args = $m->caller_args(-1);
+my $caller_args = $m->caller_args(-1);
 
-if (exists($caller_args{page})){
-    $user->setAttribute($r, "REPORTS_PAGE", $caller_args{page});
+if (exists($caller_args->{page})){
+    $user->setAttribute($r, "REPORTS_PAGE", $caller_args->{page});
 }
-
 my $page = $user->getAttribute("REPORTS_PAGE");
 </%init>
-
+    
 <%perl>
-
-	if ($page eq "DEVICE" || $page eq "") {
-
-		$m->comp('reports_device_inventory.html');
-
-	} elsif ($page eq "CUSTOM") { 
-
+    
+    if ($page eq "DEVICE" || $page eq "") {
+	
+	$m->comp('reports_device_inventory.html');
+	
+    } elsif ($page eq "CUSTOM") { 
+	
 #		$m->comp('reports_device_inventory.html');
-
-	} elsif ($page eq "DATABASE") {
-		</%perl>	
+	
+    } elsif ($page eq "DATABASE") {
+</%perl>	
 		<div class="container">
 		<div class="containerhead">Database Reports</div>
 		<div class="containerbody">
@@ -55,7 +54,7 @@ my $page = $user->getAttribute("REPORTS_PAGE");
 		
 		</div>
 		</div>
-		<%perl>
+<%perl>
 	}
 
 

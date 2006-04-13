@@ -13,7 +13,7 @@ $showheader
 %
 %
 <%init>
-my %caller_args = $m->caller_args(-1);
+my $caller_args = $m->caller_args(-1);
 my $page = "";
 
 my $hideheader;
@@ -25,27 +25,13 @@ if( !$showheader ) {
 <div id="navbar" <% $hideheader %>>
     <ul id="navigation">
         <li>
-%
-% if( $section eq "Management" ) {
-%     if (exists($caller_args{page})){
-%         $user->setAttribute($r, "MANAGEMENT_PAGE", $caller_args{page});
-%     }
 <%perl>
-    eval { $page = $user->getAttribute("MANAGEMENT_PAGE") };
 
-    if ($@) {
-	$m->comp( "error.mhtml", error => <<HERE );
-
-You have just encountered a bug which currently has us stumped.
-Please report in detail what you were doing around the time the error
-occured (e.g. if you were eating lunch what kind of lettuce did you
-have on your sandwhich) and tell us what time netdot says it is right
-now (upper right corner).  Thanks.
-
-The perl error was:
-$@
-HERE
-}
+ if( $section eq "Management" ) {
+     if (exists($caller_args->{page})){
+         $user->setAttribute($r, "MANAGEMENT_PAGE", $caller_args->{page});
+     }
+    $page = $user->getAttribute("MANAGEMENT_PAGE");
 </%perl>
             <span>Management</span>
             <ul id="subnavigation">
@@ -78,8 +64,8 @@ HERE
         <li>
 %
 % if( $section eq "Operations" ) {
-%     if (exists($caller_args{page})){
-%         $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args{page});
+%     if (exists($caller_args->{page})){
+%         $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args->{page});
 %     }
 %     $page = $user->getAttribute("OPERATIONS_PAGE");
             <span>Operations</span>
@@ -108,8 +94,8 @@ HERE
 %
 %
 % if( $section eq "Plant" ) {
-%     if (exists($caller_args{page})){
-%         $user->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args{page});
+%     if (exists($caller_args->{page})){
+%         $user->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args->{page});
 %     }
 %     $page = $user->getAttribute("CABLE_PLANT_PAGE");
 %
@@ -151,8 +137,8 @@ HERE
         <li>
 %
 % if( $section eq "Generic" ) {
-%     if (exists($caller_args{page})){
-%         $user->setAttribute($r, "GENERIC_PAGE", $caller_args{page});
+%     if (exists($caller_args->{page})){
+%         $user->setAttribute($r, "GENERIC_PAGE", $caller_args->{page});
 %     }
 %     $page = $user->getAttribute("GENERIC_PAGE");
 %
@@ -168,29 +154,29 @@ HERE
         <li>
 %
 % if( $section eq "Reports" ) {
-%     if (exists($caller_args{page})){
-%         $user->setAttribute($r, "REPORTS_PAGE", $caller_args{page});
+%     if (exists($caller_args->{page})){
+%         $user->setAttribute($r, "REPORTS_PAGE", $caller_args->{page});
 %     }
 %     $page = $user->getAttribute("REPORTS_PAGE");
             <span>Reports</span>
             <ul id="subnavigation">
 %
-%     if( $page eq "DEVICE" ) {
+%     if( $page eq "DEVICE" or $page eq "" ) {
                 <li><span>Device Inventory</span></li>
 %     } else {
-                <li><a href="reports_device_inventory.html">Device Inventory</a></li>
+                <li><a href="section_reports.html?page=DEVICE">Device Inventory</a></li>
 %     }
 %
 %     if( $page eq "CUSTOM" ) {
                 <li><span>Custom Reports</span></li>
 %     } else {
-                <li><a href="reports_custom.html">Custom Reports</a></li>
+                <li><a href="section_reports.html?page=CUSTOM">Custom Reports</a></li>
 %     }
 %
 %     if( $page eq "DATABASE" ) {
                 <li><span>Database Reports</span></li>
 %     } else {
-                <li><a href="reports_database.html">Database Reports</a></li>
+                <li><a href="section_reports.html?page=DATABASE">Database Reports</a></li>
 %     }
 %
             </ul>
