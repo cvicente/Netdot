@@ -26,8 +26,40 @@ if (exists($caller_args{page})){
 my $page = $user->getAttribute("REPORTS_PAGE");
 </%init>
 
-<p>
+<%perl>
 
-% if ( $m->fetch_next ){
-%  $m->call_next;
-% }
+	if ($page eq "DEVICE" || $page eq "") {
+
+		$m->comp('reports_device_inventory.html');
+
+	} elsif ($page eq "CUSTOM") { 
+
+#		$m->comp('reports_device_inventory.html');
+
+	} elsif ($page eq "DATABASE") {
+		</%perl>	
+		<div class="container">
+		<div class="containerhead">Database Reports</div>
+		<div class="containerbody">
+		
+		    <br>
+		    <a href="reports_tablestats.html">Table Information</a><br>
+		    Shows information about all the tables in the database including size, number of rows, and last update times.<br>
+		
+		    <br>
+		    <a href="database-graph.html">Database Relationships</a><br>
+		    Displays a GraphViz graph of the Netdot database schema.<br>
+		
+		    <br>
+		    <br>
+		
+		</div>
+		</div>
+		<%perl>
+	}
+
+
+ if ( $m->fetch_next ){
+  $m->call_next;
+ }
+</%perl>

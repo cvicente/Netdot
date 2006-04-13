@@ -246,6 +246,8 @@ $dividefreespace => 'max'
     }
     print "</tr>\n";
 
+	my %hover_data; my %hover_class;
+
     for( my $r=0; $r<$numrows; $r++ ) {
         my $cell = $r * $numcols;
 
@@ -287,6 +289,9 @@ $dividefreespace => 'max'
                 $divtitle = '('.$names{ $cell_info[$start][3] }.')' if exists $names{ $cell_info[$start][3] };
                 $divtitle = $cell_info[$start][3].' '.$divtitle;
 
+                my $hover_addr = (NetAddr::IP->new($cell_info[$start][3]))->numeric;
+				my $hover_id = $r.'_'.$c;
+
                 my $link;
                 if( $cell_info[$start][1] eq "New" ) {
                     $link = 'ip-ws.html?allocate='.$cell_info[$start][3].'&_action=ALLOCATE';
@@ -295,11 +300,15 @@ $dividefreespace => 'max'
                 }
 
                 print '<td width="'.($span*($cell_width+1)).'" colspan="'.($span>$numcols?$numcols:$span).'" class="containertable_cell">';
-                print '<div class="'.$divclass.'" title="'.$divtitle.'" onclick="parent.location=\''.$link.'\'" style="cursor:hand;">';
+                print '<div class="'.$divclass.'" title="'.$divtitle.'" id="ip_'.$hover_id.'" onmouseover="ip_hover('.$hover_addr.')" onclick="parent.location=\''.$link.'\'" style="cursor:hand;">';
                     print '<img src="img/clear.gif" width="1" height="10">';
                 print '</div>';
                 print '</td>';
                 print "\n";
+
+				push( @{$hover_data{$hover_addr}}, $hover_id );
+				$hover_class{$hover_addr} = $divclass;
+
             }
         }
 
@@ -308,6 +317,63 @@ $dividefreespace => 'max'
     }
     print '</table>';
     print "\n<br>";
+    
+
+	## print javascript functions for ip block highlighting
+	</%perl>
+	<script type="text/javascript" language="javascript">
+	<!--
+	function getObj(name)
+	{
+	  if (document.getElementById) {
+	  	this.obj = document.getElementById(name);
+		this.style = document.getElementById(name).style;
+	  } else if (document.all) {
+		this.obj = document.all[name];
+		this.style = document.all[name].style;
+	  } else if (document.layers) {
+	   	this.obj = document.layers[name];
+	   	this.style = document.layers[name];
+	  }
+	}
+
+	var last_id = "";  // keeps track of what block was highlighted, to remove flicker
+
+	function ip_hover(addr) {
+		if( addr != last_id ) {
+			if( last_id != "" ) { ip_hoverout(last_id); }
+			for( i=0; i<cellmap['_'+addr]['ids'].length; i++ ) {
+				var elt = new getObj('ip_'+cellmap['_'+addr]['ids'][i]);
+				elt.obj.className = cellmap['_'+addr]['class']+'_hover';
+			}
+		}
+		last_id = addr;
+	}
+	function ip_hoverout(addr) {
+		for( i=0; i<cellmap['_'+addr]['ids'].length; i++ ) {
+			var elt = new getObj('ip_'+cellmap['_'+addr]['ids'][i]);
+			elt.obj.className = cellmap['_'+addr]['class'];
+		}
+	}	
+	<%perl>
+
+	# generate javascript array from %hoverdata
+	print "var cellmap = new Array();\n";
+	while( my ($ip, $addresses) = each(%hover_data) ) {
+		print "cellmap['_$ip'] = new Array();\n";
+		print "cellmap['_$ip']['ids'] = new Array(";
+		foreach my $cell( @$addresses ) {
+			if( $cell != @$addresses[0] ) { print ','; }
+			print "'$cell'";
+		}
+		print ");\n";
+		print "cellmap['_$ip']['class'] = '".$hover_class{$ip}."';\n";
+	}
+
+	</%perl>
+	//-->
+	</script>
+	<%perl>	
     ######################################################################
 
 </%perl>
