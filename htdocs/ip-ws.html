@@ -660,12 +660,15 @@ if ( my @parents = $ipm->getparents($o) ){
 my @field_headers = ( );
 my @cell_data = ( );
 
+################
 # Address:
 my %addr_tmp = $ui->form_field(object=>$o, column=>"address", edit=>$edit_block, htmlExtra=>"style='width: 15em'");
 my %pref_tmp = $ui->form_field(object=>$o, column=>"prefix", edit=>$edit_block, htmlExtra =>"style='width: 2em'");
 push( @field_headers, $addr_tmp{'label'} );
 push( @cell_data, $addr_tmp{'value'}."/".$pref_tmp{'value'} );
 
+################
+# Status:
 push( @field_headers, "Status:" );
 my $status;
 my @valid_block_status = qw ( Container Subnet Reserved );
@@ -686,11 +689,15 @@ if ( my $sn = $o->status->name ){
 }
 push( @cell_data, $status );
 
+################
+# Description, Info
 {
     my @fields = ('description','info');
     $ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 
+################
+# Owner
 my %owner_tmp = $ui->form_field(object=>$o, column=>"owner", edit=>$edit_block, linkPage=>"view.html");
 my $owner = $owner_tmp{value};
 
@@ -701,21 +708,41 @@ if ( ! $edit_block ){
 }
 push( @field_headers, $owner_tmp{label} );
 push( @cell_data, $owner );
-    
+
+################
+# Used by    
 my %usedby_tmp = $ui->form_field(object=>$o, column=>"used_by", edit=>$edit_block, linkPage=>"view.html");
 push( @field_headers, $usedby_tmp{'label'} );
 push( @cell_data, $usedby_tmp{'value'} );
+
+
+################
+# First seen, last seen
+my @fields = ('first_seen','last_seen');
+$ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 
 </%perl>
 
 <%perl>
 
-push( @field_headers, "" );
-push( @cell_data, "" );
 
-my @fields = ('first_seen','last_seen');
-$ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+my $ip = new NetAddr::IP($o->address, $o->prefix);
 
+################
+# Network
+	push( @field_headers, "Network:" );
+	push( @cell_data, ($ip->version == 6?$ip->network->short:$ip->network->addr) );
+	
+################
+# Broadcast
+	push( @field_headers, "Broadcast:" );
+	push( @cell_data, ($ip->version == 6?$ip->broadcast->short:$ip->broadcast->addr) );
+
+################
+# Usable address range
+	push( @field_headers, "Usable Addresses:" );
+	push( @cell_data, ($ip->version == 6 ? $ip->first->short." - ".$ip->last->short : $ip->first->addr." - ".$ip->last->addr) );
+	
 use Math::BigInt;
 if ($o->status->name eq "Subnet") {
       my $used = new Math::BigInt(scalar $o->children);
@@ -746,10 +773,14 @@ if ($o->status->name eq "Subnet") {
         $available_text = $used_text.$avail_text;
     }
 
+################
+# Utilization
     push( @field_headers, "Utilization:" );
     push( @cell_data, ($ui->percent_bar(percent=>$percent))
         .'<div class="small">'.$available_text.'</div>' );
 
+################
+# Enable DHCP? Delegage DNS?
     {
     my @fields = ('dhcp_enabled','dns_delegated');
     $ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
@@ -792,12 +823,18 @@ if ($o->status->name eq "Subnet") {
             }
         }
 
+################
+# Address Utilization
     push( @field_headers, "Address Utilization:" );
     push( @cell_data, $ui->percent_bar(percent=>$address_percent).'<div class="small">'.$address_text.'</div>' );
 
+################
+# Space allocated
     push( @field_headers, "Space Allocated:" );
     push( @cell_data, $ui->percent_bar(percent=>$subnet_percent).'<div class="small">'.$subnet_text.'</div>' );
 
+################
+# Delegate DNS?
     {
     my @fields = ('dns_delegated');
     $ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
