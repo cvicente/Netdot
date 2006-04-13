@@ -20,15 +20,15 @@ section => 'Operations'
 %
 %
 <%init>
-my %caller_args = $m->caller_args(-1);
+my $caller_args = $m->caller_args(-1);
 
-if( exists( $caller_args{page} ) ) {
-    $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args{page});
+if( exists( $caller_args->{page} ) ) {
+    $user->setAttribute($r, "OPERATIONS_PAGE", $caller_args->{page});
 }
 my $page = $user->getAttribute("OPERATIONS_PAGE");
 
-if (exists($caller_args{tasks})){
-    $user->setAttribute($r, "SHOW_TASKS", $caller_args{tasks});
+if (exists($caller_args->{tasks})){
+    $user->setAttribute($r, "SHOW_TASKS", $caller_args->{tasks});
 }
 my $show_tasks = $user->getAttribute("SHOW_TASKS");
 if ($show_tasks eq "") {
@@ -42,8 +42,8 @@ if ($show_tasks eq "") {
 sub print_showtaskslink {
     my $show_tasks = $_[0];
     my $request_vars = "";
-    my %caller_args = $m->caller_args(-1);
-    while( my($key, $value) = each(%caller_args) ) {
+    my $caller_args = $m->caller_args(-1);
+    while( my($key, $value) = each(%$caller_args) ) {
         if( !($key eq "tasks") ) {
             $request_vars .= "$key=$value&";
         }
