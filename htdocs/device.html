@@ -74,9 +74,9 @@ my $fqdn;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 if ( $submit eq "search" ){
-    # Advanced search.  User is passing
-    # key/value pairs
     if ( $search =~ /\w+:\w+/){
+	# Advanced search.  User is passing
+	# key/value pairs
 	my @pairs = split /,/, $search;
 	my %parms;
 	foreach ( @pairs ){
@@ -91,9 +91,8 @@ if ( $submit eq "search" ){
 	}
 	@$list = Device->search(\%parms) if ( ! $list );
 	
-	# Default is to search device names
     }elsif( $search ){
-	$search =~ s/\s*//g;    	# remove spaces
+	# Default is to search device names
 	unless ( ($list = $dns->getdevbynamelike($search)) ){
 print <<EOF;
 	    <div class="container">

@@ -83,7 +83,7 @@ sub getrrbyname {
 
 sub getrrbynamelike {
     my ($self, $name) = @_;
-    $name = "%" . $name . "%";
+    $name = $self->convert_search_keyword($name);
     my @rrs;
     if ( @rrs = RR->search_like(name => $name) ){
 	return \@rrs;

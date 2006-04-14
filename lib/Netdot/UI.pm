@@ -1478,7 +1478,8 @@ sub select_query {
 			$it = $table->search( 'address' => $int );
 		    }
 		}else{
-		    $it = $table->search_like( $c => "%" . $term . "%" );
+		    my $sterm = $self->convert_search_keyword($term);
+		    $it = $table->search_like( $c => $sterm );
 		}
 		while (my $obj = $it->next){
 		    $found{$term}{$obj->id} = $obj;
