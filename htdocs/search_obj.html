@@ -97,7 +97,7 @@ foreach my $j (keys %ARGS){
     $sarg{$k} = $ARGS{$j};	   
     
     if (! exists( $linksto{$k} )){  # The column is 'local'
-	$sarg{$k} = "%" . $sarg{$k} . "%";  # Add wildcards
+	$sarg{$k} = $ui->convert_search_keyword($sarg{$k});
     }
 }
 print "sarg is  <pre>", Dumper(%sarg), "</pre><br>" if $DEBUG;

@@ -263,6 +263,9 @@ function jsrsExecute( rspage, callback, func, parms, visibility ){
   // visibility  - optional boolean to make container visible for debugging
 
   // get context
+
+  //  alert( "jsrsExecute args:  rspage: "+rspage+"; callback:"+callback+"; func: "+func+"; parms: "+parms+"; visibility: "+visibility );
+
   var contextObj = jsrsContextPool[ jsrsGetContextID() ];
   contextObj.callback = callback;
 

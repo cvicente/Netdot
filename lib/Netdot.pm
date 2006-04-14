@@ -692,6 +692,9 @@ sub single_table_search {
 sub select_query {
     my ($self, %args) = @_;
     my ($table, $terms) = ($args{table}, $args{terms});
+    $self->debug(loglevel => 'LOG_DEBUG', 
+		 message  => "select_query: table: %s, terms: %s", 
+		 args     => [$table, (join ", ", @$terms)]);
     my %found;
     my %linksto = $self->getlinksto($table);
     my @labels = $self->getlabels($table);
@@ -713,7 +716,8 @@ sub select_query {
 			$it = $table->search( 'address' => $int );
 		    }
 		}else{
-		    $it = $table->search_like( $c => "%" . $term . "%" );
+		    my $sterm = $self->convert_search_keyword($term);
+		    $it = $table->search_like( $c => $sterm );
 		}
 		while (my $obj = $it->next){
 		    $found{$term}{$obj->id} = $obj;
@@ -744,6 +748,36 @@ sub select_query {
 	return \%in;
     }else{
 	return \%{$found{$terms->[0]}};
+    }
+}
+
+=head2 convert_search_keyword - Transform a search keyword into exact or wildcarded
+
+    Search keywords between quotation marks ('') are interpreted
+    as exact matches.  Otherwise, SQL wildcards are prepended and appended.
+    This is used in various search functions throughout Netdot and gives the
+    user more flexibility when searching objects
+
+  Arguments:
+    keyword
+  Returns:
+    Scalar containing transformed keyword string
+
+=cut
+
+sub convert_search_keyword {
+    my ($self, $keyword) = @_;
+    if ( $keyword =~ /^'(.*)'$/ ){
+	# User wants exact match
+	# Translate wildcards into SQL form
+	$keyword = $1;
+	$keyword =~ s/\*/%/g;
+	return $keyword;
+    }else{
+	# Remove leading and trailing spaces
+	$keyword =~ s/^\s*(.*)\s*$/$1/;
+	# Add wildcards
+	return "%" . $keyword . "%";
     }
 }
 
@@ -806,10 +840,7 @@ sub search_all_netdot {
 
     # Ignore these fields when searching
     my %ign_fields = ('id' => '');
-    # Remove leading and trailing spaces
-    $q =~ s/^\s*(.*)\s*$/$1/;
-    # Add wildcards
-    $q = "%" . $q . "%";
+    $q = $self->convert_search_keyword($term);
 
     foreach my $tbl ( $self->gettables() ) {
 	next if $tbl eq "Meta";
