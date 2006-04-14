@@ -12,15 +12,16 @@ inherit => undef
 %
 %
 <%args>
-$ip     =>   undef
-$Add    =>   undef
-$Cancel =>   undef
+$ip
+$url
+$service =>  undef
+$Add     =>  undef
+$Cancel  =>  undef
 </%args>
 %
 %
 <%init>
 my $DEBUG = 0;
-my %state;
 my $ipobj;
 my $iplbl;
 my $cl;
@@ -41,21 +42,20 @@ if ( $ip ){
     }
 }
 
-my %reserved = ( Add    => "",
-		 Cancel => "",
-		);
-
 my $newsrvid;
 
+# Notice the two actions (replace then reload).
+# This guarantees that we don't reload the page using POST data
+# when the last request was a POST 
+my $bodyargs;
+if ( $Add ){
+    $bodyargs = "onUnload=\"opener.location.replace('$url');opener.location.reload()\"";
+} else {
+    $bodyargs = '';
+}
 
 </%init>
 
-% my $bodyargs;
-% if ( $Add ){
-%     $bodyargs = 'onUnload="opener.location.reload()"';
-% } else {
-%     $bodyargs = '';
-% }
 
 <html>
 <head>
@@ -71,11 +71,12 @@ my $newsrvid;
 
 <%perl>
 if ( $Add ){
-    foreach my $arg ( keys %ARGS ){
-	next if ( exists $reserved{$arg} );
-	$state{$arg} = $ARGS{$arg};
-    }
-    if ( IpService->search( ip=>$state{ip}, service=>$state{service} ) ){
+
+    my %state;
+    $state{ip}      = $ip;
+    $state{service} = $service;
+
+    if ( IpService->search( %state ) ){
 	print ("Service already exists <br>");
     }else {
 	unless ( $newsrvid = $ui->insert(table => "IpService", state => \%state) ){
@@ -96,6 +97,7 @@ if ( $Add ){
 
 <form action="addservice.html" method="POST">
 <input type="hidden" name="ip" value="<% $ip %>">
+<input type="hidden" name="url" value="<% $url %>">
 
 <%perl>
     my (@field_headers, @cell_data) = ();
