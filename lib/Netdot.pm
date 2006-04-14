@@ -257,7 +257,7 @@ Check if table is a join table
 =cut
 sub isjointable {
     my ($self, $table) = @_;
-    return %{ $self->{meta}->{$table}->{isjointable} };
+    return $self->{meta}->{$table}->{isjointable};
 }
 
 =head2 getobjlabel

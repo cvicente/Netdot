@@ -52,13 +52,14 @@ if ( $DEBUG ){
 # List all the has_many objects for this object
 #
 foreach my $i (keys %linksfrom){
-    my $j;
-    map { $j = $_ } keys %{ $linksfrom{$i} };
-    $ftables{$i}{ffield} = $linksfrom{$i}{$j};  #column in the other table that points to this table
-    
-    # If foreign table is a join table
+    # Table that points to us
+    my $j = (keys %{ $linksfrom{$i} })[0];
+
+    #column in the other table that points to this table
+    $ftables{$i}{ffield} = $linksfrom{$i}{$j};  
     
     if ( $ui->isjointable($j) ){
+	# Foreign table is a join table
 	$ftables{$i}{join} = 1;
 	# Get has_a entries 
 	my %jlinksto = $ui->getlinksto($j);
@@ -69,7 +70,8 @@ foreach my $i (keys %linksfrom){
 	@{$ftables{$i}{objs}} = $obj->$i;
 	$ftables{$i}{dtbl} = $jlinksto{$col};  # table to display
 	$ftables{$i}{ctbl} = $j;               # table to pass to create.html
-    }else{  # table is not a join table
+    }else{  
+	# table is not a join table
 	$ftables{$i}{join} = 0;
 	@{$ftables{$i}{robjs}} = $obj->$i;
 	$ftables{$i}{dtbl} = $j;
@@ -77,6 +79,7 @@ foreach my $i (keys %linksfrom){
     }
 }
 
+print '%ftables is  <pre>', Dumper(%ftables), '</pre><br>' if $DEBUG;
 
 </%init>
 
@@ -173,7 +176,7 @@ if ($view eq 'all' || $view eq "$table"){
 %           }
 	    </div>
 %	       if ( $edit eq $i ){
-                 <& sortresults.mhtml, table => $ftables{$i}{ctbl}, object => $ftables{$i}{objs}, view => "row", withdelete => 1, withedit => 1 &>
+                 <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row", withdelete => 1, withedit => 1 &>
 %	       }else{
                  <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
 %              }
