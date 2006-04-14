@@ -195,6 +195,9 @@ if ( $view eq "Interfaces" || $view eq "All" ){
 	}
     }
 }
+
+my $refresh_url = "device.html?id=$id&view=$view";
+
 </%init>
 
 <div id="sectiondetail">
@@ -211,9 +214,10 @@ function showVlan(){
     window.location = "device.html?id=<% $id %>&view=<% $view %>&showvlan="+name;
 }
 
-function addService(ip){
-    var url = "addservice.html?ip="+ip;
-    var wind = window.open(url, "Create IP service", "width=400,height=200");
+function addService(ip, refresh_url){
+    var myuri = escape(refresh_url);
+    var url   = "addservice.html?ip="+ip+"&url="+myuri;
+    var wind  = window.open(url, "Create IP service", "width=400,height=200");
 }
 
 function addLink(int_id, role){
@@ -275,8 +279,7 @@ function setNull(select){
 </div>
 
 <div class="containerheadrightoutside">
-
-    <a href="device.html?id=<% $id %>&view=<% $view %>">[refresh]</a>
+    <a href="<% $refresh_url %>">[refresh]</a>
 %    if ( $o->snmp_managed ){
 	<a href="updatedevice.html?device=<% $id %>&action=discover">[snmp-update]</a>
 %    }
@@ -684,15 +687,15 @@ my (@headers, @rows, @row);
 		  my $a = "";
 		  if ( scalar ($ip->services) ){
 		      foreach my $ipsrv ($ip->services){
-			  $a .= '<a href="view.html?table=IpService&id=' . $ipsrv->id . '">' . $ipsrv->service->name . '</a>';
 			  if ( $editips ){
 			      $a .= '<input type="checkbox" name="' . "IpService__" . $ipsrv->id . "__delete" . '" > [del] ';
 			  }
+			  $a .= '<a href="view.html?table=IpService&id=' . $ipsrv->id . '">' . $ipsrv->service->name . '</a>';
 			  $a .= '<br>';
 		      }
 		  }
 		  if ( !$editips ){
-		      $a .= '<a href="#" onClick="addService(' . $ip->id . ')">[add]</a>';
+		      $a .= "<a href=\"#\" onClick=\"addService($ip, \'$refresh_url\')\">[add]</a>";
 		  }
 		  $a;
 	      }} );
