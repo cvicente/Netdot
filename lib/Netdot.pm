@@ -413,6 +413,36 @@ sub single_table_search {
 	return \%found;
 }
 
+=head2 convert_search_keyword - Transform a search keyword into exact or wildcarded
+
+    Search keywords between quotation marks ('') are interpreted
+    as exact matches.  Otherwise, SQL wildcards are prepended and appended.
+    This is used in various search functions throughout Netdot and gives the
+    user more flexibility when searching objects
+
+  Arguments:
+    keyword
+  Returns:
+    Scalar containing transformed keyword string
+
+=cut
+
+sub convert_search_keyword {
+    my ($self, $keyword) = @_;
+    if ( $keyword =~ /^'(.*)'$/ ){
+	# User wants exact match
+	# Translate wildcards into SQL form
+	$keyword = $1;
+	$keyword =~ s/\*/%/g;
+	return $keyword;
+    }else{
+	# Remove leading and trailing spaces
+	$keyword =~ s/^\s*(.*)\s*$/$1/;
+	# Add wildcards
+	return "%" . $keyword . "%";
+    }
+}
+
 =head2 gethistorytable - Get the name of the history table for a given object
 
 Arguments:  object
