@@ -163,32 +163,6 @@ interface {
       ifInDiscards ;
    }
 }
-interfaceCatalyst {
-   alias IF ;
-   aux {
-      $ifAdminStatus.inst ;
-      $ifOperStatus.inst ;
-      $ifSpeed.inst ;
-      $ifType.inst ;
-      $ifPhysAddress.inst ;
-      $dot1qPvid.inst ;
-      $hpVlanMemberIndex.inst ;
-      $vmVlan.inst ;
-      $ifSpecific.inst ;
-      $dot3StatsDuplexStatus.inst ;
-#      $portDuplex.$portIfIndex=$ifIndex.inst ;
-   }
-   cftype avg:max ;
-   collect yes ;
-   descr $portName.$portIfIndex=$ifIndex.inst ;
-   highcounter no ;
-   interval 5 ;
-   key value ;
-   map $ifName ;
-   vars {
-      ifInDiscards ;
-   }
-}
 vars {
    7200TempStVal_1 {
       oid 1.3.6.1.4.1.9.9.13.1.3.1.3.1 ;
