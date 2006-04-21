@@ -54,16 +54,14 @@ sub new {
     wantarray ? ( $self, '' ) : $self; 
 }
  
-=head2 meta
-    
-    Retrieve Meta object
+=head2 meta -  Retrieve Meta object
 
  Arguments:
     None
   Returns:
     Reference to a Meta object
   Examples:
-    my %linksto = $ui->meta->get_links_to($table);
+    my $meta = $ui->meta();
 
 =cut
 sub meta{
@@ -614,7 +612,7 @@ sub select_lookup($@){
     my $output;
     
     $htmlExtra = "" if (!$htmlExtra);
-    $maxCount = $args{maxCount} || $self->{config}->{"DEFAULT_SELECTMAX"};
+    $maxCount = $args{maxCount} || $self->config->get('DEFAULT_SELECTMAX');
     my @labels = $self->getlabelarr($lookup);
 
 	if( $isEditing && $default ) { 
@@ -1525,10 +1523,8 @@ sub search_all_netdot {
 
     # Ignore these fields when searching
     my %ign_fields = ('id' => '');
-    # Remove leading and trailing spaces
-    $q =~ s/^\s*(.*)\s*$/$1/;
-    # Add wildcards
-    $q = "%" . $q . "%";
+
+    $q = $self->convert_search_keyword($q);
 
     foreach my $tbl ( $self->meta->get_tables() ) {
 	next if $tbl eq "Meta";
