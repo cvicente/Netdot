@@ -54,14 +54,17 @@ sub new {
     wantarray ? ( $self, '' ) : $self; 
 }
  
-=head2 meta -  Retrieve Meta object
+=head2 meta
+    
+    Retrieve Meta object
+
 
  Arguments:
     None
   Returns:
     Reference to a Meta object
   Examples:
-    my $meta = $ui->meta();
+    my %linksto = $ui->meta->get_links_to($table);
 
 =cut
 sub meta{
@@ -612,7 +615,7 @@ sub select_lookup($@){
     my $output;
     
     $htmlExtra = "" if (!$htmlExtra);
-    $maxCount = $args{maxCount} || $self->config->get('DEFAULT_SELECTMAX');
+    $maxCount = $args{maxCount} || $self->{config}->{"DEFAULT_SELECTMAX"};
     my @labels = $self->getlabelarr($lookup);
 
 	if( $isEditing && $default ) { 
