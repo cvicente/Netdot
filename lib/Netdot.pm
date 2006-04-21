@@ -840,7 +840,8 @@ sub search_all_netdot {
 
     # Ignore these fields when searching
     my %ign_fields = ('id' => '');
-    $q = $self->convert_search_keyword($term);
+
+    $q = $self->convert_search_keyword($q);
 
     foreach my $tbl ( $self->gettables() ) {
 	next if $tbl eq "Meta";
