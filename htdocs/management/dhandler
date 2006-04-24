@@ -1,0 +1,13 @@
+<%doc>
+    Calls the requested page in the root, with args as requested.
+</%doc>
+%
+%
+<%init>
+    # returns stuff after "/", but not args (e.g. ?foo=bar&baz=fraz)
+    my $request = $m->dhandler_arg;
+    # [^_] to avoid trashing "section_management.html"
+    $request =~ s/(?:[^_]management)+//g;
+    my $notes = qq (I added a filter block to device.html);
+</%init>
+% $m->comp( "../$request", %ARGS );

@@ -21,12 +21,12 @@ if( !$showheader ) {
     $hideheader = 'style="display:none"';
 }
 
-# This is the stuff that varies in the different sections of the navbar.  The next
-# natural step would be to move this data into the sections themselves
-# (mason attributes or methods).  Notice that section, attribute, page
-# could probably be unified into a single string (upcase to make
-# attribute if upcase is wanted.  append ``section_'' and ``.html'' to
-# page)
+# This is the stuff that varies in the different sections of the
+# navbar.  The next natural step would be to move this data into the
+# sections themselves (mason attributes or methods).  Notice that
+# section, attribute, and page could probably be unified into a single
+# string (use upcase to make attribute upcase if upcase is wanted.
+# append ``section_'' and ``.html'' to page).
 
 # Arrays are used, as opposed to, say, keying on ``section'', because
 # arrays order there entries
@@ -85,6 +85,14 @@ my $section_meta_data = [
         sub_sections => []
     },
 ];
+
+# Here we add the meta_data for the (factored out) management section.
+# It provides its own metadata in a method.  An attribute could have
+# been used, but we might as well keep it flexible (attributes are
+# pretty limited).  If all the meta data was factored out we would
+# build the meta data list here in the order we wanted the sections to
+# appear.
+push @{ $section_meta_data }, $m->comp('/management/autohandler:.section_meta_data');
 </%init>
 %
 %
@@ -128,7 +136,9 @@ HERE
 	}
         # Build a link for each subsection
 	for my $sub_section (@{ $meta_data->{sub_sections} }) {
-	    my $target = $meta_data->{page};
+	    # Need to specify these paths absolutely, since they are
+	    # top level (above the individual subsections). $r->dir_config('NetdotPath') .
+	    my $target = $r->dir_config('NetdotPath') . $meta_data->{page};
 	    my $title = $sub_section->{title};
 	    my $class_html = ($page eq $sub_section->{section} || $page eq "") ?
 			     qq(class="subnav_selected") : "";
@@ -139,7 +149,7 @@ HERE
     </%init>
 %
 %
-    <a href="<% $meta_data->{page} %>" <% $class_html %>><% $meta_data->{title} %></a>\
+    <a href="<% $r->dir_config('NetdotPath') . $meta_data->{page} %>" <% $class_html %>><% $meta_data->{title} %></a>\
 %   if ($sub_section_html ne "") {
     <ul id="subnavigation">
     <% $sub_section_html %>

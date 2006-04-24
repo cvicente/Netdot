@@ -1,0 +1,206 @@
+<%doc>
+
+ Network Management Functions
+
+</%doc>
+
+<%args>
+$user
+</%args>
+
+<%attr>
+title   => 'Management' 
+# This is used by the toplevel autohandler to determine the section.
+# Since attributes aren't inherited (but shouldn't they be ...) we have
+# to also specify this in the dhandler
+section => "Management (1/3rd less fat!)" # $SECTION
+</%attr>
+
+<%shared>
+# Change this when it is all working
+my $PAGE_ATTRIBUTE = "MANAGEMENT_PAGE_DELUXE";
+my $SECTION = "Management (1/3rd less fat!)";
+</%shared>
+
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+my $caller_args = $m->caller_args(-1);
+
+if (exists($caller_args->{page})){
+    $user->setAttribute($r, "$PAGE_ATTRIBUTE", $caller_args->{page});
+}
+my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
+
+
+if (exists($caller_args->{tasks})){
+    $user->setAttribute($r, "SHOW_TASKS", $caller_args->{tasks});
+}
+my $show_tasks = $user->getAttribute("SHOW_TASKS");
+if ($show_tasks eq "") {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
+</%init>
+%
+%
+%# Methods can be called externally.
+<%method .section_meta_data>
+    <%doc>
+        Returns the meta data used to generate this sections header in section1.mhtml
+    </%doc>
+    <%init>
+        return {  
+	    section => $SECTION,
+	    page => 'management/', 
+	    title => 'Management (1/2 the calories!)',
+	    attribute => $PAGE_ATTRIBUTE,
+	    sub_sections => [
+		{ section => 'DEVICE', title => 'Devices' },
+		{ section => 'ADDRESS', title => 'Address Space' },
+		{ section => 'SERVICES', title => 'Services' },
+	    ]
+        };
+
+    </%init>
+</%method>
+				
+<%perl>
+sub print_showtaskslink {
+    my $show_tasks = $_[0];
+    my $request_vars = "";
+    my $caller_args = $m->caller_args(-1);
+    while( my($key, $value) = each(%$caller_args) ) {
+        if( !($key eq "tasks") ) {
+            $request_vars .= "$key=$value&";
+        }
+    }
+    #print '<a href="?'.$request_vars.'tasks='.($show_tasks eq "show"?"hide":"show").'">['.($show_tasks eq "show"?"hide":"show").']</a>';
+    print '<a href="javascript:toggleTasks()" id="tasks_link">['.($show_tasks eq "show"?"hide":"show").']</a>';
+}
+</%perl>
+
+<div id="sectiontools">
+<div class="container">
+    <div class="containerheadleft">
+        Tasks
+    </div>
+    <div class="containerheadright">
+%       print_showtaskslink($show_tasks);
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+        <table><tr><td>
+%
+% if ($page eq "DEVICE" || $page eq "") {
+%
+        <fieldset class="medium">
+            <legend>Find Devices</legend>
+            <form action="device.html" method="POST">
+                <p>
+                <label for="search">Name:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="search" class="btn" type="submit">
+                </p>
+            </form>
+            <form action="ip-ws.html" method="POST">
+                <p>
+                <label for="search">IP:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="search" class="btn" type="submit">
+                <input type="hidden" name="_action" value="SEARCH_ADDR">
+                </p>
+            </form> 
+            <form action="mac-ws.html" method="POST">
+                <p>
+                <label for="search">MAC:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="search" class="btn" type="submit">
+                </p>
+            </form>
+        </fieldset>
+        <fieldset class="medium">
+            <legend>Discover/Update a Device</legend>
+            <form action="updatedevice.html" method="POST">
+                <p>
+                <label for="host">Name:</label>
+                <input type="text" name="host" class="txt" value="">
+                </p>
+                <p>
+                <label for="comstr">Community:</label>
+                <input type="text" name="comstr" class="txt" value="<% $ui->{config}->{'DEFAULT_SNMPCOMMUNITY'} %>">
+                <input type="hidden" name="action" value="discover">
+                <input type="submit" name="submit" class="btn" value="discover">
+                </p>
+            </form>
+        </fieldset>
+        <fieldset class="medium">
+            <legend>Manually Add a Device</legend>
+        	<form action="device.html" method="POST">
+                <p>
+                <label for="newhost">Name:</label>
+                <input type="text" name="newhost" class="txt" value="">
+                </p>
+                <p>
+                <label for="newip">IP:</label>
+                <input type="text" name="newip" class="txt" value="">
+                <input type="hidden" name="deviceadd" value="add">
+                <input type="submit" name="submit" class="btn" value="add">
+                </p>
+            </form>
+        </fieldset>
+%
+% } elsif ($page eq "ADDRESS") {
+%
+        <fieldset class="medium">
+            <legend>Search</legend>
+            <form action="ip-ws.html" method="POST">
+                <p>
+                <label for="Find">IP[/prefix]:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="Find" class="btn" type="submit">
+                <input type="hidden" name="_action" value="SEARCH_ADDR">
+                </p>
+            </form>
+            <form action="ip-ws.html" method="POST">
+                <p>
+                <label for="Find">IP regex:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="Find" class="btn" type="submit">
+                <input type="hidden" name="_action" value="SEARCH_REGEX">
+                </p>
+            </form>
+            <form action="ip-ws.html" method="POST">
+                <p>
+                <label for="Find">By Entity/Site/Descr:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="Find" class="btn" type="submit">
+                <input type="hidden" name="_action" value="SEARCH_OTHER">
+                </p>
+            </form>
+        </fieldset>
+        <fieldset class="medium">
+            <legend>Add</legend>
+            <form action="ip-ws.html" method="POST">
+                <p>
+                <label for="allocate">New IP[/prefix]:</label>
+                <input type="text" name="allocate" class="txt" value=""> 
+                <input name="submit" value="Add" class="btn" type="submit">
+                <input type="hidden" name="_action" value="ALLOCATE">
+                </p>
+            </form>
+        </fieldset>
+
+%}
+
+        </td></tr></table>
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+
+</div> <!-- close sectiontools -->
+
+% if ( $m->fetch_next ){
+%  $m->call_next;
+% }elsif ( $page eq "ADDRESS" ){
+%  $m->comp('/ip-ws.html', _action => "SHOW_ROOTS", rootversion => 'all');
+%}
