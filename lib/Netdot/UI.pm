@@ -25,6 +25,7 @@ use Apache::Session::Lock::File;
 use base qw( Netdot );
 use Netdot::IPManager;
 use strict;
+use Carp;
 
 #Be sure to return 1
 1;
@@ -473,6 +474,9 @@ sub form_field {
 	($args{object}, $args{table}, $args{column}, $args{edit}, $args{default}, $args{defaults},
 	 $args{htmlExtra}, $args{linkPage}, $args{returnValOnly}, $args{shortFieldName} );
     
+    croak ("You need to pass a valid object or a table name") 
+	unless ( ref($o) || $table );
+
     my $label; # return value
     my $value; # return value
     
@@ -480,10 +484,14 @@ sub form_field {
     my $id = ($o ? $o->id : "NEW");
     my $current = ($o ? $o->$column : $default);
     
-    my %order    = $self->getcolumnorder( $tableName );
-    my %linksto  = $self->getlinksto( $tableName );
-    my %tags     = $self->getcolumntags( $tableName );
-    my %coltypes = $self->getcolumntypes( $tableName );
+    my %order    = $self->getcolumnorder( $tableName )
+	or croak "Failed to get column order for $tableName";
+    my %linksto  = $self->getlinksto( $tableName )
+	or croak "Failed to get has_a relationships for $tableName";
+    my %tags     = $self->getcolumntags( $tableName )
+	or croak "Failed to get column tags for $tableName";
+    my %coltypes = $self->getcolumntypes( $tableName )
+	or croak "Failed to get column types for $tableName";
     
     ################################################
     ## column is a local field
@@ -516,7 +524,7 @@ sub form_field {
 						returnAsVar=>1, shortFieldName=>$shortFieldName);
 	    
 	} else {
-	    $value = "No rule for: $type";
+	    croak "Unknown column type $type for column $column in table $tableName";
 	}
 	
     ################################################
@@ -1288,14 +1296,17 @@ sub format_size {
 =cut
 sub add_to_fields {
     my ($self, %args) = @_;
-    my ($o, $edit, $fields, $linkpages, $field_headers, $cell_data) = 
-        ($args{o}, $args{edit}, $args{fields}, $args{linkpages}, $args{field_headers}, $args{cell_data});
+    my ($o, $table, $edit, $fields, $linkpages, $field_headers, $cell_data) = 
+	@args{ 'o', 'table', 'edit', 'fields', 'linkpages', 'field_headers', 'cell_data'};
     
+    croak "You need to pass either a valid object or a table name" 
+	unless ( ref($o) || $table );
+
     for( my $i=0; $i<@{$fields}; $i++ ) {
         my $field = ${$fields}[$i];
         my $linkpage = ${$linkpages}[$i];
         my %tmp;
-        %tmp = $self->form_field(object=>$o, column=>$field, edit=>$edit, linkPage=>$linkpage);
+        %tmp = $self->form_field(object=>$o, table=>$table, column=>$field, edit=>$edit, linkPage=>$linkpage);
         push( @{$field_headers}, $tmp{'label'}.":" );
         push( @{$cell_data}, $tmp{'value'} );
     }
