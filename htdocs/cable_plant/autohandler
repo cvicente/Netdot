@@ -14,6 +14,13 @@ section => 'Plant'
 </%attr>
 %
 %
+<%shared>
+# Change this when it is all working
+my $PAGE_ATTRIBUTE = "CABLE_PLANT_PAGE";
+my $SECTION = "Plant";
+</%shared>
+%
+%
 <%init>
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
@@ -21,10 +28,10 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my $caller_args = $m->caller_args(-1);
 
 if (exists($caller_args->{page})) {
-    $user->setAttribute($r, "CABLE_PLANT_PAGE", $caller_args->{page});
+    $user->setAttribute($r, $PAGE_ATTRIBUTE, $caller_args->{page});
 }
 
-my $page = $user->getAttribute("CABLE_PLANT_PAGE");
+my $page = $user->getAttribute($PAGE_ATTRIBUTE);
 
 if (exists($caller_args->{tasks})){
     $user->setAttribute($r, "SHOW_TASKS", $caller_args->{tasks});
@@ -34,26 +41,28 @@ if ($show_tasks eq "") {
     $user->setAttribute($r, "SHOW_TASKS", "show");
     $show_tasks = "show";
 }
-
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
 </%init>
-
-<%perl>
-
-sub print_showtaskslink {
-    my $show_tasks = $_[0];
-    my $request_vars = "";
-    my $caller_args = $m->caller_args(-1);
-    while( my($key, $value) = each(%$caller_args) ) {
-        if( !($key eq "tasks") ) {
-            $request_vars .= "$key=$value&";
-        }
-    }
-    print '<a href="javascript:toggleTasks()" id="tasks_link">['.($show_tasks eq "show"?"hide":"show").']</a>';
-}
-</%perl>
-
-<div id="sectiontools">
-
+<%method .section_meta_data>
+    <%doc>
+        Returns the meta data used to generate this sections header in section1.mhtml
+    </%doc>
+    <%init>
+        return {  
+	    section => 'Plant',
+	    page => 'cable_plant/',
+	    title => 'Cable Plant',
+	    attribute => 'CABLE_PLANT_PAGE',
+	    sub_sections => [
+		{ section => 'BACKBONE', title => 'Backbone Cables' },
+		{ section => 'HORIZONTAL', title => 'Horizontal Cables' },
+		{ section => 'CLOSETS', title => 'Closets' },
+		{ section => 'STRANDS', title => 'Cable Strands' },
+		{ section => 'CIRCUITS', title => 'Circuits' }
+	    ]
+        };
+    </%init>
+</%method>
 %
 <%perl>
 my @sites = Site->retrieve_all();
