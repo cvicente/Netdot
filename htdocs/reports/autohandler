@@ -16,15 +16,40 @@ section => 'Reports'
 </%attr>
 %
 %
+<%shared>
+my $PAGE_ATTRIBUTE = "REPORTS_PAGE";
+my $SECTION = "Reports";
+</%shared>
+%
+%
 <%init>
 my %caller_args = $m->caller_args(-1);
 
 if (exists($caller_args{page})){
-    $user->setAttribute($r, "REPORTS_PAGE", $caller_args{page});
+    $user->setAttribute($r, "$PAGE_ATTRIBUTE", $caller_args{page});
 }
 
-my $page = $user->getAttribute("REPORTS_PAGE");
+my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 </%init>
+
+<%method .section_meta_data>
+    <%doc>
+        Returns the meta data used to generate this sections header in section1.mhtml
+    </%doc>
+    <%init>
+        return {  
+	    section => $SECTION,
+	    page => 'reports/',
+	    title => 'Reports',
+	    attribute => $PAGE_ATTRIBUTE,
+	    sub_sections => [
+		{ section => 'DEVICE', title => 'Device Inventory' },
+		{ section => 'CUSTOM', title => 'Custom Reports' },
+		{ section => 'DATABASE', title => 'Database Reports' },
+	    ]
+        };
+    </%init>
+</%method>
 
 <%perl>
 

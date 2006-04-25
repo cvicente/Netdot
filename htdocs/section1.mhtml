@@ -31,16 +31,6 @@ if( !$showheader ) {
 # Arrays are used, as opposed to, say, keying on ``section'', because
 # arrays order there entries
 my $section_meta_data = [
-    {   section => 'Reports',
-	page => 'section_reports.html',
-	title => 'Reports',
-	attribute => 'REPORTS_PAGE',
-	sub_sections => [
-	    { section => 'DEVICE', title => 'Device Inventory' },
-	    { section => 'CUSTOM', title => 'Custom Reports' },
-	    { section => 'DATABASE', title => 'Database Reports' },
-	]
-    },
     {   section => 'Help',
         page => 'section_help.html',
         title => 'Help',
@@ -57,7 +47,7 @@ my $section_meta_data = [
 # appear.
 unshift @{ $section_meta_data }, 
     map { $m->comp("/$_/autohandler:.section_meta_data") }
-        ("management", "operations", "cable_plant", "generic");
+        ("management", "operations", "cable_plant", "generic", "reports");
 </%init>
 %
 %
