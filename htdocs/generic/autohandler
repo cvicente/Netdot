@@ -18,6 +18,25 @@ $action => undef
 my @t;
 </%init>
 
+<%shared>
+my $PAGE_ATTRIBUTE = "GENERIC_PAGE";
+my $SECTION = "Generic";
+</%shared>
+
+<%method .section_meta_data>
+    <%doc>
+        Returns the meta data used to generate this sections header in section1.mhtml
+    </%doc>
+    <%init>
+        return {  
+	    section => $SECTION,
+	    page => 'generic/',
+	    title => 'Generic',
+	    attribute => $PAGE_ATTRIBUTE,
+	    sub_sections => [],
+        };
+    </%init>
+</%method>
 <div id="sectiontools">
 
 <div class="container">
@@ -80,7 +99,7 @@ my @t;
     </fieldset>
     </p>
 
-<& raw_sql.html, sql => $sql, action => $action  &>
+<& ../raw_sql.html, sql => $sql, action => $action  &>
 
 </div> <!-- close sectiontools -->
 
