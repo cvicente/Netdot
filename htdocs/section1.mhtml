@@ -31,15 +31,15 @@ if( !$showheader ) {
 # Arrays are used, as opposed to, say, keying on ``section'', because
 # arrays order there entries
 my $section_meta_data = [
-    {   section => 'Operations',
-	page => 'section_operations.html',
-	title => 'Operations',
-	attribute => 'OPERATIONS_PAGE',
-	sub_sections => [
-	    { section => 'SEARCH', title => 'Search' },
-	    { section => 'TACTICAL', title => 'Tactical' },
-	]
-    },
+#     {   section => 'Operations',
+# 	page => 'section_operations.html',
+# 	title => 'Operations',
+# 	attribute => 'OPERATIONS_PAGE',
+# 	sub_sections => [
+# 	    { section => 'SEARCH', title => 'Search' },
+# 	    { section => 'TACTICAL', title => 'Tactical' },
+# 	]
+#     },
     {   section => 'Plant',
 	page => 'section_cable.html',
 	title => 'Cable Plant',
@@ -82,7 +82,9 @@ my $section_meta_data = [
 # pretty limited).  If all the meta data was factored out we would
 # build the meta data list here in the order we wanted the sections to
 # appear.
-unshift @{ $section_meta_data }, $m->comp('/management/autohandler:.section_meta_data');
+unshift @{ $section_meta_data }, 
+    map { $m->comp("/$_/autohandler:.section_meta_data") }
+        ("management", "operations");
 </%init>
 %
 %

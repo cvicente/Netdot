@@ -23,6 +23,13 @@ my $SECTION = "Management";
 </%shared>
 
 <%init>
+# use GenericSectionCode;
+# my $DEBUG = 0;
+# my $caller_args = $m->caller_args(-1);
+# GenericSectionCode::debug_args($DEBUG);
+# my $page = GenericSectionCode::get_page($PAGE_ATTRIBUTE, $caller_args, $user);
+# my $show_tasks = GenericSectionCode::get_show_tasks($caller_args, $user);
+
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
@@ -42,6 +49,7 @@ if ($show_tasks eq "") {
     $user->setAttribute($r, "SHOW_TASKS", "show");
     $show_tasks = "show";
 }
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
 </%init>
 %
 %
@@ -64,22 +72,6 @@ if ($show_tasks eq "") {
         };
     </%init>
 </%method>
-				
-<%perl>
-sub print_showtaskslink {
-    my $show_tasks = $_[0];
-    my $request_vars = "";
-    my $caller_args = $m->caller_args(-1);
-    while( my($key, $value) = each(%$caller_args) ) {
-        if( !($key eq "tasks") ) {
-            $request_vars .= "$key=$value&";
-        }
-    }
-    #print '<a href="?'.$request_vars.'tasks='.($show_tasks eq "show"?"hide":"show").'">['.($show_tasks eq "show"?"hide":"show").']</a>';
-    print '<a href="javascript:toggleTasks()" id="tasks_link">['.($show_tasks eq "show"?"hide":"show").']</a>';
-}
-</%perl>
-
 <div id="sectiontools">
 <div class="container">
     <div class="containerheadleft">
