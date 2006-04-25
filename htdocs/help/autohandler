@@ -1,0 +1,33 @@
+<%doc>
+
+Help Section
+
+</%doc>
+
+<%attr>
+title   => 'Netdot Help' 
+section => 'Help'
+</%attr>
+
+<%shared>
+my $PAGE_ATTRIBUTE = "HELP_PAGE";
+my $SECTION = "Help";
+</%shared>
+
+<%method .section_meta_data>
+    <%doc>
+        Returns the meta data used to generate this sections header in section1.mhtml
+    </%doc>
+    <%init>
+        return {  
+	    section => $SECTION,
+	    page => 'help/',
+	    title => 'Help',
+	    attribute => $PAGE_ATTRIBUTE,
+	    sub_sections => [],
+        };
+    </%init>
+</%method>
+% if ( $m->fetch_next ){
+%  $m->call_next;
+% }

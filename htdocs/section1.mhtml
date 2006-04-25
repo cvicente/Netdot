@@ -22,32 +22,23 @@ if( !$showheader ) {
 }
 
 # This is the stuff that varies in the different sections of the
-# navbar.  The next natural step would be to move this data into the
-# sections themselves (mason attributes or methods).  Notice that
-# section, attribute, and page could probably be unified into a single
-# string (use upcase to make attribute upcase if upcase is wanted.
-# append ``section_'' and ``.html'' to page).
+# navbar.  Notice that section, attribute, and page could probably be
+# unified into a single string (use upcase to make attribute upcase if
+# upcase is wanted.  append ``section_'' and ``.html'' to page).
 
 # Arrays are used, as opposed to, say, keying on ``section'', because
-# arrays order there entries
-my $section_meta_data = [
-    {   section => 'Help',
-        page => 'section_help.html',
-        title => 'Help',
-        attribute => 'HELP_PAGE',
-        sub_sections => []
-    },
-];
+# arrays order their entries.
 
-# Here we add the meta_data for the (factored out) management section.
-# It provides its own metadata in a method.  An attribute could have
-# been used, but we might as well keep it flexible (attributes are
-# pretty limited).  If all the meta data was factored out we would
-# build the meta data list here in the order we wanted the sections to
-# appear.
-unshift @{ $section_meta_data }, 
+# Here we import the meta_data for the sections.  They provide their
+# own metadata in a method.  An attribute could have been used, but we
+# might as well keep it flexible (attributes are pretty limited).  The
+# order we list the sections determines the order they appear in the
+# header.
+
+my $section_meta_data = [ 
     map { $m->comp("/$_/autohandler:.section_meta_data") }
-        ("management", "operations", "cable_plant", "generic", "reports");
+        ("management", "operations", "cable_plant", "generic", "reports", "help")
+];
 </%init>
 %
 %
