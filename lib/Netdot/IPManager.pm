@@ -1167,12 +1167,13 @@ sub build_tree {
     # Order them by prefix to make sure that bigger blocks (smallest prefix) are
     # inserted first in the tree
     # We override Class::DBI for speed.
+    my $dbh = $self->db_Main;
     my $sth;
     eval {
-	$sth = $self->{dbh}->prepare("SELECT id,address,prefix,parent 
-                                      FROM Ipblock 
-                                      WHERE version = $version 
-                                      ORDER BY prefix");	
+	$sth = $dbh->prepare_cached("SELECT id,address,prefix,parent 
+                                     FROM Ipblock 
+                                     WHERE version = $version 
+                                     ORDER BY prefix");	
 	$sth->execute;
     };
     if ($@){
@@ -1215,7 +1216,7 @@ sub build_tree {
     # Reflect changes in db
     undef $sth;
     eval {
-	$sth = $self->{dbh}->prepare("UPDATE Ipblock SET parent = ? WHERE id = ?");
+	$sth = $dbh->prepare_cached("UPDATE Ipblock SET parent = ? WHERE id = ?");
 	foreach (keys %parents){
 	    $sth->execute($parents{$_}, $_);
 	}
@@ -1224,7 +1225,6 @@ sub build_tree {
 	$self->error("$@");
 	return 0;
     }
-    
     return 1;
 }
 
@@ -1266,12 +1266,20 @@ sub address_usage {
     my $container = new NetAddr::IP($o->address, $o->prefix);
     my $start = $container->network();
     my $end = $container->broadcast();
-
     my $count = 0;
-
-    my $q = $self->{dbh}->prepare("SELECT id, address, prefix, version FROM Ipblock WHERE '".$start->numeric()."' <= address AND address <= '".$end->numeric()."'");
-    $q->execute();
-
+    my $q;
+    my $dbh = $self->db_Main;
+    eval {
+	$q = $dbh->prepare_cached("SELECT id, address, prefix, version 
+                                  FROM Ipblock WHERE
+                                  ? <= address AND address <= ?");
+	$q->execute($start->numeric, $end->numeric);
+    };
+    if ($@){
+	$self->error($@);
+	return;
+    }
+    
     while ( my ($id, $address, $prefix, $version) = $q->fetchrow_array() ) {
         if( ( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 ) ) {
             $count++;
@@ -1294,7 +1302,6 @@ Note: Supports IPv6 addresses.
 
 sub subnet_usage {
     use bigint;
-
     my ($self, $o) = @_;
 
     my $container = new NetAddr::IP($o->address, $o->prefix);
@@ -1302,15 +1309,22 @@ sub subnet_usage {
     my $end = $container->broadcast();
 
     my $count = new Math::BigInt(0);
-
-    my $q = $self->{dbh}->prepare("SELECT Ipblock.id, address, version, prefix, name AS status ".
-        "FROM Ipblock, IpblockStatus ".
-        "WHERE Ipblock.status=IpblockStatus.id".
-        " AND ".$start->numeric()." <= address AND address <= ".$end->numeric());
-    $q->execute();
-
+    my $dbh   = $self->db_Main;
+    my $q;
+    eval {
+	$q = $dbh->prepare_cached("SELECT Ipblock.id, address, version, prefix, name AS status
+		  	           FROM Ipblock, IpblockStatus
+				   WHERE Ipblock.status=IpblockStatus.id
+				   AND ? <= address AND address <= ?");
+	$q->execute($start->numeric, $end->numeric);
+    };
+    if ($@){
+	$self->error($@);
+	return;
+    }
     while ( my ($id, $address, $version, $prefix, $status) = $q->fetchrow_array() ) {
-        if( !(( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 )) && ($status eq 'Reserved' || $status eq 'Subnet') ) {
+        if( !(( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 )) && 
+	    ($status eq 'Reserved' || $status eq 'Subnet') ) {
             # must not be a host, and must be "reserved" or "subnet" to count towards usage
             if ( $version == 4 ) {
                 $count += $self->numhosts($prefix);
@@ -1319,7 +1333,6 @@ sub subnet_usage {
             }
         }
     }
-
     return $count;
 }
 

@@ -74,7 +74,7 @@ tests:
 	@echo "Installation directory: $(PREFIX)"
 	@echo 
 	@echo "Testing for required perl modules...."
-	perl -MCGI -e 1
+	perl -M'CGI 3.20' -e 1
 	perl -M'Class::DBI 3.0.10' -e 1
 	perl -MApache2::Request -e 1
 	perl -M'HTML::Mason 1.31' -e 1

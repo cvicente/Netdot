@@ -45,12 +45,6 @@ sub new {
 				foreground  => $self->{'_foreground'},
 				);
     
-    #  We override Class::DBI to speed things up in certain cases.
-    unless ( $self->{dbh} = Netdot::DBI->db_Main() ){
-	$self->error("Can't get db handle\n");
-	return 0;
-    }
-
   
     wantarray ? ( $self, '' ) : $self;
     
@@ -519,12 +513,12 @@ sub gethistoryobjs {
 =cut
 sub raw_sql {
     my ($self, $sql) = @_;
-
+    my $dbh = $self->db_Main;
     my $st;
     my %result;
     if ( $sql =~ /select/i ){
     	eval {
-    	    $st = $self->{dbh}->prepare( $sql );
+    	    $st = $dbh->prepare_cached( $sql );
     	    $st->execute();
     	};
     	if ( $@ ){
@@ -540,7 +534,7 @@ sub raw_sql {
     }elsif ( $sql =~ /delete|update|insert/i ){
     	my $rows;
     	eval {
-    	    $rows = $self->{dbh}->do( $sql );
+    	    $rows = $dbh->do( $sql );
     	};
     	if ( $@ ){
     	    $self->error("raw_sql Error: $@");
@@ -852,4 +846,3 @@ sub _read_defaults {
 	}
     }
 }
-

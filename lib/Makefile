@@ -6,8 +6,7 @@ include $(ROOT)/etc/utility-Makefile
 
 NDIR = Netdot
 
-FILES = Netdot.pm Debug.pm jsrsServer.pl $(NDIR)/Meta.pm $(NDIR)/Mason.pm $(NDIR)/UI.pm  $(NDIR)/Nullify.pm  $(NDIR)/NetdotPermissionFactory.pm $(NDIR)/IPManager.pm $(NDIR)/DeviceManager.pm $(NDIR)/DNSManager.pm $(NDIR)/CablePlantManager.pm $(NDIR)/SiteControlLoginWrapper.pm GraphVizClassDBI.pm Operations.pm
-
+FILES = Netdot.pm Debug.pm jsrsServer.pl $(NDIR)/Mason.pm $(NDIR)/UI.pm  $(NDIR)/Nullify.pm  $(NDIR)/NetdotPermissionFactory.pm $(NDIR)/IPManager.pm $(NDIR)/DeviceManager.pm $(NDIR)/DNSManager.pm $(NDIR)/CablePlantManager.pm $(NDIR)/SiteControlLoginWrapper.pm GraphVizClassDBI.pm $(NDIR)/Export.pm
 
 all: dir
 	$(substitute)

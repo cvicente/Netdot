@@ -63,7 +63,7 @@ sub getparents{
 	}
     }
     return @parents if scalar @parents;
-    return undef;
+    return;
 }
 
 

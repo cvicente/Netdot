@@ -28,6 +28,7 @@ use base qw( Netdot );
 use Netdot::IPManager;
 use Netdot::Meta;
 use strict;
+use Carp;
 
 #Be sure to return 1
 1;
@@ -488,6 +489,9 @@ sub form_field {
 	($args{object}, $args{table}, $args{column}, $args{edit}, $args{default}, $args{defaults},
 	 $args{htmlExtra}, $args{linkPage}, $args{returnValOnly}, $args{shortFieldName} );
     
+    croak ("You need to pass a valid object or a table name") 
+	unless ( ref($o) || $table );
+
     my $label; # return value
     my $value; # return value
     
@@ -523,7 +527,7 @@ sub form_field {
 						returnAsVar=>1, shortFieldName=>$shortFieldName);
 	    
 	} else {
-	    $value = "No rule for: $type";
+	    croak "Unknown column type $type for column $column in table $tableName";
 	}
 	
     ################################################
@@ -1341,14 +1345,17 @@ sub format_size {
 =cut
 sub add_to_fields {
     my ($self, %args) = @_;
-    my ($o, $edit, $fields, $linkpages, $field_headers, $cell_data) = 
-        ($args{o}, $args{edit}, $args{fields}, $args{linkpages}, $args{field_headers}, $args{cell_data});
+    my ($o, $table, $edit, $fields, $linkpages, $field_headers, $cell_data) = 
+	@args{ 'o', 'table', 'edit', 'fields', 'linkpages', 'field_headers', 'cell_data'};
     
+    croak "You need to pass either a valid object or a table name" 
+	unless ( ref($o) || $table );
+
     for( my $i=0; $i<@{$fields}; $i++ ) {
         my $field = ${$fields}[$i];
         my $linkpage = ${$linkpages}[$i];
         my %tmp;
-        %tmp = $self->form_field(object=>$o, column=>$field, edit=>$edit, linkPage=>$linkpage);
+        %tmp = $self->form_field(object=>$o, table=>$table, column=>$field, edit=>$edit, linkPage=>$linkpage);
         push( @{$field_headers}, $tmp{'label'}.":" );
         push( @{$cell_data}, $tmp{'value'} );
     }
@@ -1529,19 +1536,20 @@ sub search_all_netdot {
 
     $q = $self->convert_search_keyword($q);
 
-    foreach my $tbl ( $self->meta->get_tables() ) {
+    foreach my $tbl ( $self->gettables() ) {
 	next if $tbl eq "Meta";
 	# Will also ignore foreign key fields
-	my %linksto = $self->meta->get_links_to($tbl);
+	my %linksto = $self->getlinksto($tbl);
 	my @cols;
 	map { push @cols, $_ unless( exists $ign_fields{$_} || $linksto{$_} ) } $tbl->columns();
 	my @where;
 	map { push @where, "$_ LIKE \"$q\"" } @cols;
 	my $where = join " or ", @where;
 	next unless $where;
+	my $dbh = $self->db_Main;
 	my $st;
 	eval {
-	    $st = $self->{dbh}->prepare("SELECT id FROM $tbl WHERE $where;");
+	    $st = $dbh->prepare_cached("SELECT id FROM $tbl WHERE $where;");
 	    $st->execute();
 	};
 	if ( $@ ){
@@ -1553,6 +1561,4 @@ sub search_all_netdot {
 	}
     }
     return \%results;
-
 }
-
