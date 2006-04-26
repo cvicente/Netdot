@@ -140,8 +140,8 @@ sub gather_data{
 	    }elsif ( $ipobj->parent->description ){
 		$group = $ipobj->parent->description;
 	    }
-	}elsif ( int($ipobj->interface->device->entity) != 0 ){
-	    $group = $ipobj->interface->device->entity->name;
+	}elsif ( int($ipobj->interface->device->used_by) != 0 ){
+	    $group = $ipobj->interface->device->used_by->name;
 	}
 	unless ( $group =~ /\w+/ ){
 	    warn "Could not determine group name for ", $ipobj->address, ". Excluding\n";
@@ -162,13 +162,13 @@ sub gather_data{
 	if( ($clobj = $ipobj->interface->contactlist) != 0 ){
 	    push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
 	    
-	    # Devices can have many contactlists
-	    # This gets me DeviceContacts objects (join table)
+        # Devices can have many contactlists
+	# This gets me DeviceContacts objects (join table)
 	}elsif(  (my @dcs = $ipobj->interface->device->contacts) ){
 	    foreach my $dc ( @dcs ){
 		push @{ $hosts{$ipobj->id}{contactlists} }, $dc->contactlist;
 	    }
-	}elsif( ($clobj = $ipobj->interface->device->entity->contactlist) != 0 ){
+	}elsif( ($clobj = $ipobj->interface->device->used_by->contactlist) != 0 ){
 	    push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
 	}
 	
