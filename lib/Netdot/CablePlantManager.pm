@@ -189,8 +189,9 @@ Args:
 =cut
 sub assigncircuit($$@) {
     my ($self, $circuit_id, @strands) = @_;
+    my $dbh = $self->db_Main;
     eval{
-	my $st = $self->{dbh}->prepare("UPDATE CableStrand SET circuit_id = $circuit_id WHERE id = ?;");
+	my $st = $dbh->prepare_cached("UPDATE CableStrand SET circuit_id = $circuit_id WHERE id = ?;");
 	foreach my $strand (@strands) {
 	    $st->execute($strand);
 	}
@@ -215,8 +216,9 @@ Args:
 =cut
 sub removecircuit($@) {
     my ($self, @strands) = @_;
+    my $dbh = $self->db_Main;
     eval{
-	my $st = $self->{dbh}->prepare("UPDATE CableStrand SET circuit_id = 0 WHERE id = ?;");
+	my $st = $dbh->prepare_cached("UPDATE CableStrand SET circuit_id = 0 WHERE id = ?;");
 	foreach my $strand (@strands) {
 	    $st->execute($strand);
 	}
@@ -243,19 +245,20 @@ Args:
 sub findsequences($$$) {
     my ($self, $start, $end) = @_;
     my %sequences = ();
+    my $dbh = $self->db_Main;
     eval{
-	my $st = $self->{dbh}->prepare("SELECT id FROM Closet where site = ?;");
+	my $st = $dbh->prepare_cached("SELECT id FROM Closet where site = ?;");
 	$st->execute($start);
 	my $closet_ids = join(",", $st->fetchrow_array());
-	my $bb_st = $self->{dbh}->prepare("SELECT BackboneCable.id FROM BackboneCable WHERE 
+	my $bb_st = $dbh->prepare_cached("SELECT BackboneCable.id FROM BackboneCable WHERE 
                                        start_closet IN ($closet_ids) OR end_closet IN ($closet_ids);");
 	
-	my $splice_st = $self->{dbh}->prepare("SELECT CableStrand.id from CableStrand WHERE circuit_id = 0 AND cable = ?;");
+	my $splice_st = $dbh->prepare_cached("SELECT CableStrand.id from CableStrand WHERE circuit_id = 0 AND cable = ?;");
 	
-	my $site_st1 = $self->{dbh}->prepare("SELECT COUNT(*) FROM CableStrand, BackboneCable, Closet
+	my $site_st1 = $dbh->prepare_cached("SELECT COUNT(*) FROM CableStrand, BackboneCable, Closet
                                          WHERE CableStrand.id = ? AND CableStrand.cable = BackboneCable.id 
                                          AND BackboneCable.end_closet = Closet.id AND Closet.site = ?;");
-	my $site_st2 = $self->{dbh}->prepare("SELECT COUNT(*) FROM CableStrand, BackboneCable, Closet
+	my $site_st2 = $dbh->prepare_cached("SELECT COUNT(*) FROM CableStrand, BackboneCable, Closet
                                          WHERE CableStrand.id = ? AND CableStrand.cable = BackboneCable.id 
                                          AND BackboneCable.start_closet = Closet.id AND Closet.site = ?;");
 	
@@ -307,9 +310,10 @@ Args:
 =cut
 sub getsequence($$) {
     my ($self, $strand) = @_;
+    my $dbh = $self->db_Main;
     my $st;
     eval{
-	$st = $self->{dbh}->prepare("SELECT CableStrand.id, CableStrand.name
+	$st = $dbh->prepare_cached("SELECT CableStrand.id, CableStrand.name
                                     FROM CableStrand WHERE CableStrand.id
                                     IN (" . join(",", $self->getsequencepath($strand)) . ");");
 	$st->execute();
@@ -335,8 +339,9 @@ Args:
 sub getsequencepath($$) {
     my ($self, $strand) = @_;
     my @ret = ();
+    my $dbh = $self->db_Main;
     eval{
-	my $st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ?;");
+	my $st = $dbh->prepare_cached("SELECT strand2 FROM Splice WHERE strand1 = ?;");
 	$st->execute($strand);
 	
 	if ($st->rows() == 0) {
@@ -348,7 +353,7 @@ sub getsequencepath($$) {
 	    my $tmp_strand = ($st->fetchrow_array())[0];
 	    push(@ret, $strand);
 	    $st->finish();
-	    $st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ? AND strand2 <> ?;");
+	    $st = $dbh->prepare_cached("SELECT strand2 FROM Splice WHERE strand1 = ? AND strand2 <> ?;");
 	    while ($st->execute($tmp_strand, $strand) && $st->rows()) {
 		push(@ret, $tmp_strand);
 		$strand = $tmp_strand;
@@ -382,13 +387,14 @@ Args:
 sub findendpoint($$) {
     my ($self, $strand) = @_;
     my ($st, $tmp_strand);
+    my $dbh = $self->db_Main;
     eval{
-	$st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ?;");
+	$st = $dbh->prepare_cached("SELECT strand2 FROM Splice WHERE strand1 = ?;");
 	return $strand if ($st->execute($strand) && $st->rows() == 1);
 	
 	$tmp_strand = ($st->fetchrow_array())[0];
 	$st->finish();
-	$st = $self->{dbh}->prepare("SELECT strand2 FROM Splice WHERE strand1 = ? AND strand2 <> ?;");
+	$st = $dbh->prepare_cached("SELECT strand2 FROM Splice WHERE strand1 = ? AND strand2 <> ?;");
 	while ($st->execute($tmp_strand, $strand) && $st->rows() > 1) {
 	    $strand = $tmp_strand;
 	    $tmp_strand = ($st->fetchrow_array())[0];

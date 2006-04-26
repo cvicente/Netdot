@@ -46,12 +46,6 @@ sub new {
 				foreground  => $self->{'_foreground'},
 				);
     
-    #  We override Class::DBI to speed things up in certain cases.
-    unless ( $self->{dbh} = Netdot::DBI->db_Main() ){
-	$self->error("Can't get db handle\n");
-	return 0;
-    }
-
     # Initialize Meta data
     $self->_read_metadata;
     
@@ -853,9 +847,10 @@ sub search_all_netdot {
 	map { push @where, "$_ LIKE \"$q\"" } @cols;
 	my $where = join " or ", @where;
 	next unless $where;
+	my $dbh = $self->db_Main;
 	my $st;
 	eval {
-	    $st = $self->{dbh}->prepare("SELECT id FROM $tbl WHERE $where;");
+	    $st = $dbh->prepare_cached("SELECT id FROM $tbl WHERE $where;");
 	    $st->execute();
 	};
 	if ( $@ ){
@@ -898,12 +893,12 @@ sub search_all_netdot {
 =cut
 sub raw_sql {
     my ($self, $sql) = @_;
-
+    my $dbh = $self->db_Main;
     my $st;
     my %result;
     if ( $sql =~ /select/i ){
     	eval {
-    	    $st = $self->{dbh}->prepare( $sql );
+    	    $st = $dbh->prepare_cached( $sql );
     	    $st->execute();
     	};
     	if ( $@ ){
@@ -919,7 +914,7 @@ sub raw_sql {
     }elsif ( $sql =~ /delete|update|insert/i ){
     	my $rows;
     	eval {
-    	    $rows = $self->{dbh}->do( $sql );
+    	    $rows = $dbh->do( $sql );
     	};
     	if ( $@ ){
     	    $self->error("raw_sql Error: $@");
@@ -1103,7 +1098,8 @@ sub _read_metadata{
     # We do not use _gettables here because we need the
     # history tables as well and they're not defined in
     # Meta
-    foreach my $table ( $self->{dbh}->tables ){
+    my $dbh = $self->db_Main;
+    foreach my $table ( $dbh->tables ){
 	$table =~ s/\`//g;
 	next if ($table eq "Meta");
 	$self->{meta}->{$table}->{linksto}          = $self->_read_linksto($table);
