@@ -42,6 +42,10 @@ if ($show_tasks eq "") {
     $show_tasks = "show";
 }
 *print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+
+my @sites = Site->retrieve_all();
+@sites = sort { $a->name cmp $b->name } @sites;
+
 </%init>
 <%method .section_meta_data>
     <%doc>
@@ -57,21 +61,13 @@ if ($show_tasks eq "") {
 		{ section => 'BACKBONE',   title => 'Backbone Cables' },
 		{ section => 'HORIZONTAL', title => 'Horizontal Cables' },
 		{ section => 'CLOSETS',    title => 'Closets' },
-		{ section => 'STRANDS',    title => 'Cable Strands' },
 		{ section => 'CIRCUITS',   title => 'Circuits' }
 	    ]
         };
     </%init>
 </%method>
-%
-<%perl>
-my @sites = Site->retrieve_all();
-@sites = sort { $a->name cmp $b->name } @sites;
-</%perl>
-%
-<p>
 
-
+<div id="sectiontools">
 % if ($page eq "BACKBONE" || $page eq "") {
 
 <div class="container">
@@ -80,170 +76,209 @@ my @sites = Site->retrieve_all();
     </div>
     <div class="containerheadright">
 %       print_showtaskslink($show_tasks);
-        &nbsp; <a href="cable_backbone.html?id=NEW">[new]</a>
+        <a href="cable_backbone.html?id=NEW">[new]</a>
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
-                <form name="backbone_form" action="cable_plant.html" method="POST">
-                    <input type="hidden" name="page_type" value="BACKBONE">
-                    Connected from:
-                    <select name="start_id" id="start_id" onChange="jsrsSendqueryBB(end_id, start_id.value)">
-                        <option value="0">-- Select --</option>
-                        <%perl>
-                        foreach my $site (@sites)
-                        {
-                            printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-                        }
-                        </%perl>
-                    </select> to:
-                    <select name="end_id" id="end_id">
-                    </select>
-                    <input name="submit_site" value="Go!" type="submit">
-                </form>
-
-                <form name="backbone_srch" action="cable_plant.html" method="POST">
-                    <input type="hidden" name="page_type" value="BACKBONE">  
-                    Backbone Name: <input name="backbone_srch" size="20"> &nbsp;<input type="submit" name="submit_backbone_search" value="Search">
-                </form>
-
-                <form name="site_srch" action="cable_plant.html" method="POST">
-                    <input type="hidden" name="page_type" value="BACKBONE">  
-                    Site Name: <input name="site_srch" size="20"> &nbsp;<input type="submit" name="submit_site_search" value="Search">
-                </form>
+        <table><tr><td>
+        <fieldset class="large">
+            <legend>Find</legend>
+            <form name="backbone_form" action="cable_plant.html" method="POST">
+                <input type="hidden" name="page_type" value="BACKBONE">
+	        <p>
+                <label for="search">Connected from:</label>
+                <select name="start_id" id="start_id" onChange="jsrsSendqueryBB(end_id, start_id.value)">
+                    <option value="0">-- Select --</option>
+                    <%perl>
+                    foreach my $site (@sites){
+                       printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+                    }
+                    </%perl>
+               </select>
+             
+               To: <select name="end_id" id="end_id">
+               </select>
+               <input name="submit_site" value="Go!" type="submit">
+               </p>
+           </form>
+           <form name="backbone_srch" action="cable_plant.html" method="POST">
+               <p>
+               <input type="hidden" name="page_type" value="BACKBONE">
+               <label for="search">Backbone Name: </label>
+               <input name="backbone_srch" size="20">
+               <input type="submit" name="submit_backbone_search" value="Search">
+               </p>
+           </form>
+           <form name="site_srch" action="cable_plant.html" method="POST">
+               <p>
+               <input type="hidden" name="page_type" value="BACKBONE">  
+               <label for="search">Site Name: </label>
+               <input name="site_srch" size="20">
+               <input type="submit" name="submit_site_search" value="Search">
+               </p>
+           </form>
+        </fieldset>
+        </td></tr></table>
 
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
+
 
 % } elsif ($page eq "HORIZONTAL") {
 
 
 <div class="container">
-	<div class="containerheadleft">
+    <div class="containerheadleft">
         Horizontal Cable
     </div>
     <div class="containerheadright">
 %       print_showtaskslink($show_tasks);
-        &nbsp; <a href="edit.html?table=HorizontalCable">[new]</a>
+        <a href="edit.html?table=HorizontalCable">[new]</a>
     </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
-	<div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
-	<form name="cable_form" action="cable_plant.html" method="GET">
-  	<input type="hidden" name="page_type" value="HORIZONTAL">
-            Site:
-            <select name="id" id="site_id" onChange="jsrsSendqueryTB(floor_id, site_id.value, 'Floor', 'site')">
-                    <!-- name and id of this select field are different. see note below, in CLOSETS section  -->
-            <option value="0">-- Select --</option>
-            <%perl>
-            foreach my $site (@sites) {
-                printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-            }
-            </%perl>
-            </select> &nbsp;<input name="submit_site" value="Browse by Site" type="submit">
+        <table><tr><td>
+        <fieldset class="large">
+            <legend>Find</legend>
+	    <form name="cable_form" action="cable_plant.html" method="GET">
+  	        <input type="hidden" name="page_type" value="HORIZONTAL">
+<%doc>
+ Name and id of this select field are different. see note below, in CLOSETS section
+</%doc>
+                <p>
+                <label for="search">Site:</label>
+                <select name="id" id="site_id" onChange="jsrsSendqueryTB(floor_id, site_id.value, 'Floor', 'site')">
+                    <option value="0">-- Select --</option>
+                    <%perl>
+                    foreach my $site (@sites) {
+                        printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+                    }
+                    </%perl>
+                </select>
+                <input name="submit_site" value="Browse by Site" type="submit">
+                </p>
+<%doc>
+ When selecting by floor, default to populating our jack list based upon the closet 
+ lists contents            
+</%doc>
 
-            <br />
-            Floor:
-%           # When selecting by floor, default to populating our jack list based upon the closet lists contents            
-            <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB(room_id, floor_id.value, 'Room', 'floor'); jsrsSendqueryTB(closet_id, floor_id.value, 'Closet', 'floor');">
-            </select>
-            <br />
-%           # Because both the room list and the closet list can affect the jack list, we explicitly tell the jacklist to look
-%           # at this list.
-            Room: <select name="room_id" id="room_id" onChange="jsrsSendqueryTB(jack_id, room_id.value, 'HorizontalCable', 'room')">
-            </select>
-%           # Like above, make sure the jacklist uses our closet selection instead of the room selection.            
-            or closet: <select name="closet_id" id="closet_id" onChange="jsrsSendqueryTB(jack_id, closet_id.value, 'HorizontalCable', 'closet')"></select>
-            <br />
-	    Jack:
-            <select name="jack_id" id="jack_id">
-            </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (jack_id.value && jack_id.value != -1) { location.href = ('view.html?table=HorizontalCable&id=' + jack_id.value); } else if (document.cable_form.id.value) { location.href = ('view.html?table=HorizontalCable&id=' + document.cable_form.id.value); } return true;">
+                <p>
+                <label for="search">Floor:</label>
+                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB(room_id, floor_id.value, 'Room', 'floor'); jsrsSendqueryTB(closet_id, floor_id.value, 'Closet', 'floor');">
+                </select>
+                </p>
 
-            <hr>
+<%doc>
+ Because both the room list and the closet list can affect the jack list, 
+ we explicitly tell the jacklist to look at this list.
+</%doc>
+ 
+                <p>
+                <label for="search">Room: </label>
+                <select name="room_id" id="room_id" onChange="jsrsSendqueryTB(jack_id, room_id.value, 'HorizontalCable', 'room')">
+               </select>
+ 
+<%doc>
+ Like above, make sure the jacklist uses our closet selection instead 
+ of the room selection.            
+</%doc>
 
-%           my $srchf = 'jack_srch';  # name of the form input tag
+                or Closet:
+                <select name="closet_id" id="closet_id" onChange="jsrsSendqueryTB(jack_id, closet_id.value, 'HorizontalCable', 'closet')">
+                </select>
+                </p>
+
+                <p>
+	        <label for="search">Jack:</label>
+                <select name="jack_id" id="jack_id">
+                </select>
+                <input type="button" name="go" value="Go!" onClick="if (jack_id.value && jack_id.value != -1) { location.href = ('view.html?table=HorizontalCable&id=' + jack_id.value); } else if (document.cable_form.id.value) { location.href = ('view.html?table=HorizontalCable&id=' + document.cable_form.id.value); } return true;">
+                </p>
+
+                <hr>
+
+                <p>
+	        <label for="search">Jack ID:</label>
+%               my $srchf = 'jack_srch';  # name of the form input tag
 	        <input type="text" name="<% $srchf %>" value="By Jack ID(s)" onFocus="if (this.value == 'By Jack ID(s)') { this.value = ''; } return true;">
-    	        &nbsp;<input type="button" name="" value="Lookup Jack" 
-            onClick="jsrsSendquery(<% 'jack_lookup' %>, <% $srchf . '.value' %>, 'HorizontalCable')"> &nbsp;&nbsp;&nbsp; 
-            Lookup Results: <select name="jack_lookup" id="jack_lookup">
-            </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (jack_lookup.value) { location.href = ('view.html?table=HorizontalCable&id=' + jack_lookup.value); return true; }"> &nbsp;&nbsp;
+    	        <input type="button" name="" value="Lookup Jack" onClick="jsrsSendquery(<% 'jack_lookup' %>, <% $srchf . '.value' %>, 'HorizontalCable')">
+                </p>
 
-    </form>
+                <p>
+	        <label for="search">Lookup Results:</label>
+                <select name="jack_lookup" id="jack_lookup">
+                </select>
+                <input type="button" name="go_lookup" value="Go!" onClick="if (jack_lookup.value) { location.href = ('view.html?table=HorizontalCable&id=' + jack_lookup.value); return true; }">
+                </p>
+            </form>
+        </fieldset>
+        </td></tr></table>
+
     </div> <!-- end containerbody -->
 </div> <!-- end container -->
 
 % } elsif ($page eq "CLOSETS") {
 
-
 <div class="container">
-	<div class="containerheadleft">
+    <div class="containerheadleft">
         Closets
     </div>
     <div class="containerheadright">
 %       print_showtaskslink($show_tasks);
-        &nbsp;<a href="closet.html?id=NEW">[new]</a>
+        <a href="closet.html?id=NEW">[new]</a>
     </div>
-<div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
-    <form name="cable_form" action="cable_plant.html" method="GET">
-    <input type="hidden" name="page_type" value="CLOSETS">
-            Site:
-            <select name="id" id="site_id" onChange="jsrsSendqueryTB(floor_id, site_id.value, 'Floor', 'site')">
-                    <!-- name and id of this select field are different. name is for form submitting, because
-                         cable_plant.html needs the site id named "id". id is for the javascript queries. when
-                         it was named "id", id.value returned an undefined value. not quite sure why this is, maybe
-                         javascript doens\'t allow fields to be named "id"?  -->
-            <option value="0">-- Select --</option>
-            <%perl>
-            foreach my $site (@sites) {
-                printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-            }
-            </%perl>
-            </select> <input name="submit_site" value="Browse by Site" type="submit">
-            <br>
-
-            Floor:
-            <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB(closet_id, floor_id.value, 'Closet', 'floor');">
-            </select>
-            <br>
-
-            Closet:
-            <select name="closet_id" id="closet_id">
-            </select> &nbsp;<input type="button" name="go" value="Go!" onClick="if (closet_id.value && closet_id.value != -1) { location.href = ('closet.html?id=' + closet_id.value); } else if (document.cable_form.id.value) { location.href = ('cable_plant.html?id=' + document.cable_form.id.value + '&page_type=CLOSETS'); } return true;">
-    </form>
-
-    <hr>
-
-    <form name="closet_form" action="cable_plant.html" method="POST">
-    <input type="hidden" name="page_type" value="CLOSETS">
-        Closet Name: <input name="closet_srch" size="25"> &nbsp;<input type="submit" name="submit_closet_search" value="Search">
-    </form>
-    </div> <!-- close containerbody -->
-</div> <!-- close container -->
-
-% } elsif ($page eq "STRANDS") {
-<div class="container">
-    <div class="containerheadleft">Cable Strands</div>
-    <div class="containerheadright">
-%       print_showtaskslink($show_tasks);
-        &nbsp;<a href="cable_strand.html?id=NEW">[new]</a>
-    </div>
-
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
-    <form name="cable_form" action="cable_plant.html" method="GET">
-    <input type="hidden" name="page_type" value="STRANDS">
-	    <input type="text" name="backbone_srch" value="By Backbone" onFocus="if (this.value == 'By Backbone') { this.value = ''; } return true;">
-	    &nbsp;<input type="button" name="" value="Lookup Backbone" 
-            onClick="jsrsSendquery(backbone_id_srch, backbone_srch.value, 'BackboneCable', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
-            Lookup Results: <select name="backbone_id_srch" id="backbone_id_srch">
-            </select><input type="submit" name="backbone_submit" value="Browse by Backbone">
 
-            <hr>
+    <table><tr><td>
+        <fieldset class="large">
+            <legend>Find</legend>
+            <form name="cable_form" action="cable_plant.html" method="GET">
+                <input type="hidden" name="page_type" value="CLOSETS">
+                <p>
+                <label for="search">Site:</label>
+<%doc>
+ name and id of this select field are different. name is for form submitting, because
+ cable_plant.html needs the site id named "id". id is for the javascript queries. when
+ it was named "id", id.value returned an undefined value. not quite sure why this is, maybe
+ javascript doens\'t allow fields to be named "id"?
+</%doc>
+                <select name="id" id="site_id" onChange="jsrsSendqueryTB(floor_id, site_id.value, 'Floor', 'site')">
+                    <option value="0">-- Select --</option>
+                    <%perl>
+                    foreach my $site (@sites) {
+                        printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+                    }
+                    </%perl>
+                </select> <input name="submit_site" value="Browse by Site" type="submit">
+                </p>
 
-%           my $srchf = 'strand_srch';  # name of the form input tag
-	        <input type="text" name="<% $srchf %>" value="By Strand Name" onFocus="if (this.value == 'By Strand Name') { this.value = ''; } return true;">
-	        &nbsp;<input type="button" name="" value="Lookup Strand" 
-            onClick="jsrsSendquery(strand_lookup, <% $srchf . '.value' %>, 'CableStrand', 'cable_form')"> &nbsp;&nbsp;&nbsp; 
-            Lookup Results: <select name="strand_lookup" id="strand_lookup">
-            </select> &nbsp;<input type="button" name="go_lookup" value="Go!" onClick="if (strand_lookup.value && strand_lookup.value != 0) { location.href = ('cable_strand.html?id=' + strand_lookup.value); return true; }"> &nbsp;&nbsp;
-    </form>
+                <p>
+                <label for="search">Floor:</label>
+                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB(closet_id, floor_id.value, 'Closet', 'floor');">
+                </select>
+                </p>
+
+                <p>
+                <label for="search">Closet:</label>
+                <select name="closet_id" id="closet_id">
+                </select>
+                <input type="button" name="go" value="Go!" onClick="if (closet_id.value && closet_id.value != -1) { location.href = ('closet.html?id=' + closet_id.value); } else if (document.cable_form.id.value) { location.href = ('cable_plant.html?id=' + document.cable_form.id.value + '&page_type=CLOSETS'); } return true;">
+                </p>
+           </form>
+
+           <hr>
+
+           <form name="closet_form" action="cable_plant.html" method="POST">
+               <input type="hidden" name="page_type" value="CLOSETS">
+                <p>
+                <label for="search">Closet Name:</label>
+                <input name="closet_srch" size="25">
+                <input type="submit" name="submit_closet_search" value="Search">
+                </p>
+           </form>
+         </fieldset>
+         </td></tr></table>
+
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
 
