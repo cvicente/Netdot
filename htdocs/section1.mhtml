@@ -106,10 +106,16 @@ HERE
 %
 <div id="navbar" <% $hideheader %>>
     <ul id="navigation">
-%   for my $meta_data (@{ $section_meta_data }) { 
-        <& .make_section, current_section => $meta_data->{section},
-	   meta_data => $meta_data,
-           caller_args => \%caller_args, page => $page, %ARGS &>\
-%   }
+<%perl>
+    for my $meta_data (@{ $section_meta_data }) { 
+	$m->comp('.make_section', 
+		 current_section => $meta_data->{section},
+		 meta_data       => $meta_data,
+		 caller_args     => \%caller_args, 
+		 page            => $page, 
+		 %ARGS
+		 );
+    }
+<%perl>
     </ul>
 </div>
