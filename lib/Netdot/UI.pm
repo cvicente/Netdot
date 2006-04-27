@@ -484,10 +484,9 @@ sub form_field {
     my $id = ($o ? $o->id : "NEW");
     my $current = ($o ? $o->$column : $default);
     
+    my %linksto  = $self->getlinksto( $tableName )
     my %order    = $self->getcolumnorder( $tableName )
 	or croak "Failed to get column order for $tableName";
-    my %linksto  = $self->getlinksto( $tableName )
-	or croak "Failed to get has_a relationships for $tableName";
     my %tags     = $self->getcolumntags( $tableName )
 	or croak "Failed to get column tags for $tableName";
     my %coltypes = $self->getcolumntypes( $tableName )
