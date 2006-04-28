@@ -23,11 +23,6 @@ $only_show_available_contacts => 1
 </%args>
 %
 %
-<%flags>
-inherit => 'section_operations.html' 
-</%flags>
-%
-%
 <%attr>
 title   => 'Operations' 
 section => 'Operations'
@@ -185,7 +180,7 @@ my $dispatch = sub {
 %   foreach my $tbl ( sort keys %results ) {
 %       my @list = values %{ $results{$tbl} };
             <&| .MakeContainer, lhs => $tbl, &>
-                <& sortresults.mhtml, table => $tbl, object => \@list, view => "row", page => "operations.html", withedit => 1 &>
+                <& /sortresults.mhtml, table => $tbl, object => \@list, view => "row", page => "operations.html", withedit => 1 &>
 	    </&>
 %   }
 </&>

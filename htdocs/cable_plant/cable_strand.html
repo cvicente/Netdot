@@ -12,7 +12,7 @@ $edit        => undef;
 </%args>
 
 <%flags>
-inherit => 'section_cable.html' 
+
 </%flags>
 
 <%attr>
@@ -133,8 +133,7 @@ if (defined($ARGS{_action})) {
 %               } elsif ($editStrand && defined($o)) {
                 <%perl>
                 # first we need to grab all backbones for start and end sites of this strand.
-                my $start_site = $o->cable->start_closet->floor->site || $o->cable->start_closet->site;
-		my $end_site   = $o->cable->end_closet->floor->site   || $o->cable->end_closet->site;
+                my ($start_site, $end_site) = ($o->cable->start_closet->floor->site, $o->cable->end_closet->floor->site);
                 my @backbones = ();
                 foreach my $closet (($start_site->closets, $end_site->closets))
                 {
@@ -252,7 +251,7 @@ if (defined($ARGS{_action})) {
 	  </tr>
 	</table>
 	<div class="containerseparator">Comments:</div>
-%         $ui->form_field(object=>$o, column=>"info", edit=>$editStrand, htmlExtra=>"rows='3' cols='80'", returnValOnly=>1); 
+        <% $ui->form_field(object=>$o, column=>"info", edit=>$editStrand, htmlExtra=>"rows='3' cols='80'", returnValOnly=>1) %>
         </form>
 </div>
 </div>

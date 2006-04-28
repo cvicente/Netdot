@@ -46,7 +46,7 @@
     }
 
     function jsrsSendqueryBB(form_field, val) {
-        jsrsExecute( "backbone_list_query.html", jsrsParseresults, "backbone_search", Array(form_field.name, val) );
+        jsrsExecute( "cable_plant/backbone_list_query.html", jsrsParseresults, "backbone_search", Array(form_field.name, val) );
     }
 
     function jsrsParseresults( returnstring ) {

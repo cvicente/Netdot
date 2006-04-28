@@ -11,7 +11,7 @@ $edit        => undef;
 </%args>
 
 <%flags>
-inherit => 'section_cable.html' 
+
 </%flags>
 
 <%attr>
@@ -244,35 +244,56 @@ function suggestName()
 	</div>
 
 	<div class="containerbody">
+	  <!-- Table for two column layout -->
+	  <table width="100%"  class="formtablebg">
+	    <tr>
 
-<%perl>
-(@field_headers, @cell_data) = ();
-my @fields = ('start_closet','end_closet','type','owner','installdate', 'length');
-$ui->add_to_fields(o=>$o, table=>"BackboneCable", edit=>$editBackbone, fields=>\@fields, 
-		   field_headers=>\@field_headers, cell_data=>\@cell_data);
+	      <!-- Left sub table -->
+	      <td width="50%">
+		<%perl>
+		(@field_headers, @cell_data) = ();
+        my @fields = ('start_closet','end_closet','type','owner','installdate');
+        $ui->add_to_fields(o=>$o, edit=>$editBackbone, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+		</%perl>
 
-my %tmp      = $ui->form_field(object=>$o, table=>"BackboneCable", column=>"name", edit=>$editBackbone);
-my $name_tmp = $tmp{value};
-if ($editBackbone) {                
-    $name_tmp .= '&nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name"'
-	. 'value="Suggest Name" onClick="suggestName();" />';
-}
-push( @field_headers, $tmp{label} );
-push( @cell_data, $name_tmp );
+		<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+              </td>
 
-if (defined($o)) { 
-    push( @field_headers, "# of Strands: " );
-    push( @cell_data, ''.scalar($o->strands).'' );
-}
-$m->comp('attribute_table.mhtml', field_headers=>\@field_headers, data=>\@cell_data, width=>2);
-{
-    my %tmp;
-    %tmp = $ui->form_field(object=>$o, table=>"BackboneCable", column=>"info", edit=>$editBackbone, 
-			   htmlExtra=>'rows="3" cols="80"');
-    print '<div class="containerseparator">'.$tmp{label}.'</div>';
-    print $tmp{value};         
-} 
-</%perl>
+	      <!-- Right sub table -->  
+	      <td width="50%">
+		<%perl>
+		(@field_headers, @cell_data) = ();
+
+        my %tmp = $ui->form_field(object=>$o, column=>"name", edit=>$editBackbone);
+        my $name_tmp = $tmp{value};
+			  if ($editBackbone) {                
+			      $name_tmp .= '&nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name"'
+                                     . 'value="Suggest Name" onClick="suggestName();" />';
+			  }
+        push( @field_headers, $tmp{label} );
+        push( @cell_data, $name_tmp );
+
+        %tmp = $ui->form_field(object=>$o, column=>"length", edit=>$editBackbone);
+        push( @field_headers, $tmp{label} );
+        push( @cell_data, $tmp{value} );
+
+		if (defined($o)) { 
+		    push( @field_headers, "# of Strands: " );
+		    push( @cell_data, ''.scalar($o->strands).'' );
+		}
+		</%perl>
+
+		<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+              </td>
+	    </tr>
+	  </table>
+
+       <%perl> {
+         my %tmp;
+         %tmp = $ui->form_field(object=>$o, column=>"info", edit=>$editBackbone, htmlExtra=>'rows="3" cols="80"');
+         print '<div class="containerseparator">'.$tmp{label}.'</div>';
+         print $tmp{value};         
+       } </%perl>
 
       </form>
     </div>

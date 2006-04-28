@@ -38,14 +38,13 @@ if( $onload ) {
        request for /netdot which I think gets translated to /netdot/
        before AuthCookie takes over anyway).
   -->
-  <link rel=StyleSheet href="<% $r->dir_config('NetdotPath') %>style.css" type="text/css">
+  <link rel=StyleSheet href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
   <title>Netdot @ <% $servername %>: <% $title %></title>
 </head>
-
-<script language="JavaScript" src="dynamic_list.js"></script>
-<script language="JavaScript" src="select.js"></script>
-<script language="JavaScript" src="insertentry.js"></script>
-<script language="JavaScript" src="jsrsClient.js"></script>
+% my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
+% for my $script qw( dynamic_list select insertentry jsrsClient ) {
+<script language="JavaScript" src="<% $js_prefix %>/<% $script %>.js"></script>
+% }
 <script language="JavaScript">
     function toggleLayer(whichLayer) {
         if (document.getElementById) {
