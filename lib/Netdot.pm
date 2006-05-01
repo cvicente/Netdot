@@ -508,7 +508,7 @@ sub gethistoryobjs {
     my @headers = $result->{headers};
     my @rows    = $result->{rows};
 
-    <& data_table.mhtml, field_headers=>@headers, data=>@rows &>
+    <& /generic/data_table.mhtml, field_headers=>@headers, data=>@rows &>
 
 =cut
 sub raw_sql {

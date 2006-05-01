@@ -81,9 +81,9 @@ if ( defined ($object) ){
     # Some tables have a specific view page. 
     # Point to those when appropriate
     #
-    my %viewpage = ( BinFile => "display_bin.html",
-		     Ipblock => "ip-ws.html",
-		     Device  => "device.html"  );
+    my %viewpage = ( BinFile => "../generic/display_bin.html",
+		     Ipblock => "../management/ip-ws.html",
+		     Device  => "../management/device.html"  );
 
     unless ( $page ){
 	if ( exists $viewpage{$table} ){
@@ -205,7 +205,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % }
 
 % if ( $withedit || $withdelete ) {
-    <form action="edit-multiple.html" method="post" name="form_<% $table %>">
+    <form action="edit-multiple.html" method="POST" name="form_<% $table %>">
     <input type="hidden" name="table" value="<% $table %>">
 % }
 
@@ -215,43 +215,6 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
     function toggleEditLayers(table) {
         toggleLayer('fieldchoices_'+table);
-    }
-    function docheckboxes_<% $table %>() {
-        var ids = new Array();
-%       my $pos = $offset;
-%       my $i=0;
-%       while ( $pos < $last_item ) {
-%           my $o;
-%           if ( $o = $objindex{$pos} ){
-                ids[<% $i %>] = <% $o->id %>;
-%           }
-%           $pos++; $i++;
-%       }
-        // if no checkboxes are selected, select them all
-        var docheckall = 1;
-        for(i=0; i<ids.length; i++) {
-//            docheckall = docheckall & !document.getElementById('edit_check_<% $table %>_'+ids[i]).checked;
-        }
-        if( docheckall == 1 ) {
-            for(i=0; i<ids.length; i++) {
-//                document.getElementById('edit_check_<% $table %>_'+ids[i]).checked = 1;
-            }
-        }
-    }
-    function setcheckboxes_<% $table %>(col) {
-        var ids = new Array();
-%       $pos = $offset;
-%       $i=0;
-%       while ( $pos < $last_item ) {
-%           my $o;
-%           if ( $o = $objindex{$pos} ){
-                ids[<% $i %>] = <% $o->id %>;
-%           }
-%           $pos++; $i++;
-%       }
-        for(i=0; i<ids.length; i++) {
-//            document.getElementById(col+'_check_<% $table %>_'+ids[i]).checked = document.getElementById('selectall_<% $table %>_'+col).checked;
-        }
     }
   //-->
   </script>
@@ -281,7 +244,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
     <& wrapping_table.mhtml, data => \@cells, cols => 5  &>     
     <div align="right">
-        <input type="submit" name="submit" value="Go" onclick="docheckboxes_<% $table %>()">
+        <input type="submit" name="submit" value="Go">
     </div>
 
     </div>
@@ -453,7 +416,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %     } elsif( $view eq "row" ) {
 %         if ( $withdelete ){
             <td style="text-align:center" valign="middle" width="50">
-                <input type="checkbox" id="delete_check_<% $table.'_'.$o->id %>" name="<% $table %>__<% $o->id %>" onclick="document.getElementById('delete_<% $table.'_'.$o->id %>').checked = document.getElementById('chk_<% $table.'_'.$o->id %>').checked">
+                <input type="checkbox" id="delete_check_<% $table.'_'.$o->id %>" name="<% $table %>__<% $o->id %>" onclick="document.getElementById('delete_<% $table.'_'.$o->id %>').checked = document.getElementById('delete_check_<% $table.'_'.$o->id %>').checked">
             </td>
 %         }
 %         if ( $withedit ){
@@ -539,7 +502,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %    if ( $sid ){
         <a href="#" onClick="history.go(-1);">[<<] </a>
 %    }
-     <a href="list.html?sid=<% $session->{_session_id} %>">[>>] </a>
+     <a href="../generic/list.html?sid=<% $session->{_session_id} %>">[>>] </a>
 
      </div>
 %  }
@@ -557,7 +520,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
 % if ($withdelete) {
     <div style="display:none">
-    <form action="delete.html" method="post" name="deleteform_<% $table %>">
+    <form action="../generic/delete.html" method="POST" name="deleteform_<% $table %>">
 %       my $pos = $offset;
 %       while ( $pos < $last_item ) {
 %           my $o;

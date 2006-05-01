@@ -10,12 +10,18 @@ section => 'Generic'
 </%attr>
 
 <%args>
-$sql    => undef
-$action => undef
+$sql        => undef
+$action     => undef
+$showheader => 1
 </%args>
 
 <%init>
 my @t;
+
+my $hideheader;
+if( !$showheader ) {
+    $hideheader = 'style="display:none"';
+}
 </%init>
 
 <%shared>
@@ -37,7 +43,7 @@ my $SECTION = "Generic";
         };
     </%init>
 </%method>
-<div id="sectiontools">
+<div id="sectiontools" <% $hideheader %>>
 
 <div class="container">
     <div class="containerhead">
@@ -99,7 +105,7 @@ my $SECTION = "Generic";
     </fieldset>
     </p>
 
-<& ../raw_sql.html, sql => $sql, action => $action  &>
+<& /generic/raw_sql.html, sql => $sql, action => $action  &>
 
 </div> <!-- close sectiontools -->
 

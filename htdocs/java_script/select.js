@@ -1,52 +1,21 @@
-// Calls select_query.html in new window
-// This will create a hidden form
-// then copy the matched objects in our <select> option list
-// Args: 
-//   * field: form <select> element name we want to populate with options
-//   * val:   the search criteria
-//   * tablename
-   var wind;
-   function sendquery(field, val, tablename, formname){
-      var url = "select_query.html?table="+tablename+"&crit="+val+"&field="+field.name;
-      if (formname)
-        url += "&form_name=" + formname;
-
-      wind = window.open(url, "tmp", "width=1,height=1");
-   }
-   function getlist(field, form_name){
-      var len = wind.document.forms[0].length;
-
-      if (!form_name)
-        form_name = "netdotform";
-
-      document.forms[form_name][field].options.length = 0;     
-      for (var i = 0; i < len; i++){
-        document.forms[form_name][field].options[i] = new Option();
-        document.forms[form_name][field].options[i].value = wind.document.forms[0].elements[i].name;
-        document.forms[form_name][field].options[i].text  = wind.document.forms[0].elements[i].value;
-      } 
-      wind.close();
-   }
-
 // functions for new jsrs method
 
-    function jsrsSendquery(field, val, tablename) {
-        //alert( "Field: "+field.name+"; val:"+val+"; tablename: "+tablename );
-        jsrsExecute( "jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, field.name, val) );
+    function jsrsSendquery(tablename, form_field, val ) {
+        jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field.name, val) );
     }
 
-    function jsrsSendqueryTB(form_field, val, tablename, column) {
-        //alert( "Field (Column): "+column+"; val:"+val+"; tablename: "+tablename+"; form_field: "+form_field.name );
-        jsrsExecute( "jsrs_singletable.html", jsrsParseresults, "keyword_search", Array(tablename, column, val, form_field.name) );
+    function jsrsSendqueryTB(tablename, form_field, val, column) {
+	// alert( "tablename: "+tablename+"; form_field: "+form_field.name+"; Field (Column): "+column+"; val: "+val );
+        jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field.name, val, column ) );
     }
 
     function jsrsSendqueryRM(form_field, val) {
         //alert( "Form field: "+form_field.name+"; val:"+val );
-        jsrsExecute( "room_site_query.html", jsrsParseresults, "room_site_search", Array(form_field.name, val) );
+        jsrsExecute( "../generic/room_site_query.html", jsrsParseresults, "room_site_search", Array(form_field.name, val) );
     }
 
     function jsrsSendqueryBB(form_field, val) {
-        jsrsExecute( "cable_plant/backbone_list_query.html", jsrsParseresults, "backbone_search", Array(form_field.name, val) );
+        jsrsExecute( "../cable_plant/backbone_list_query.html", jsrsParseresults, "backbone_search", Array(form_field.name, val) );
     }
 
     function jsrsParseresults( returnstring ) {
@@ -86,3 +55,22 @@
         tempArray[Count]=tempString; 
         return tempArray; 
      } 
+
+/*
+	Opens a new browser window for new object insertion
+        using edit.html
+
+	Arguments:
+	  edit_args:   Arguments in GET format to pass to edit.html
+
+	EXAMPLE:
+	<a href="#" onClick="openinsertwindow('table=DeviceContacts&device=<% $o->id %>')">[new]</a>
+
+*/
+   var insertwind;
+   function openinsertwindow(edit_args){
+      var now = new Date();
+      var url = "insertentry.html?showheader=0&"+edit_args;
+      // the idea is to open a window with a unique name so that we don't override the contents of an already open window
+      insertwind = window.open(url, "insertwind"+now.getMinutes()+now.getSeconds(), "width=600,height=400,scrollbars=yes");
+   }

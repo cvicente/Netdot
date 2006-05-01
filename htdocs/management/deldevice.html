@@ -4,10 +4,6 @@
 
 </%doc>
 
-<%flags>
-inherit => 'section_management.html' 
-</%flags>
-
 <%attr>
 title   => 'Delete Device' 
 section => 'Management'
@@ -61,7 +57,7 @@ foreach my $ip ( $dm->getdevips( $o->id ) ){
         <form action="delete.html" method="POST">
         <input type="hidden" name="Device__<% $id %>" value="on">
         <p>Delete DNS records?<p>
-        <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, headercolwidth=>100 &>
+        <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, headercolwidth=>100 &>
         <input type="submit" name="submit" value="Delete">
         <input type="submit" name="submit" value="Cancel">
         </form>

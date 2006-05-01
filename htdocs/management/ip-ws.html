@@ -5,11 +5,6 @@ Interface for IP blocks (both addresses and subnets)
 </%doc>
 %
 %
-<%flags>
-inherit => 'section_management.html' 
-</%flags>
-%
-%
 <%attr>
 title   => 'IP' 
 section => 'Management'
@@ -554,7 +549,7 @@ if ( my @parents = $ipm->getparents($o) ){
 </%perl>
 
 %# actually output the table to the browser
-<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data,
+<& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data,
                           width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
     </div>
 </div>
@@ -577,7 +572,7 @@ if ( my @parents = $ipm->getparents($o) ){
     	push( @rows, [ $tmp1{'value'}, $tmp2{'value'} ] );
     } 
     my @headers = ($tmp1{'label'},$tmp2{'label'});
-    $m->comp('data_table.mhtml', field_headers=>\@headers, data=>\@rows);
+    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
 </%perl>
 </div>
 
@@ -608,7 +603,7 @@ if ( my @parents = $ipm->getparents($o) ){
 		}
                 ]  );
     } 
-    $m->comp('data_table.mhtml', field_headers=>\@headers, data=>\@rows );
+    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows );
 </%perl>
 </div>
 
@@ -626,7 +621,7 @@ if ( my @parents = $ipm->getparents($o) ){
                     ] );
             } 
         </%perl>
-        <& data_table.mhtml, field_headers=>\@field_headers, data=>\@rows &>
+        <& /generic/data_table.mhtml, field_headers=>\@field_headers, data=>\@rows &>
 %     }
 
 
@@ -886,7 +881,7 @@ if ($o->status->name eq "Subnet") {
 </%perl>
 
 %# actually output the table to the browser
-<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data,
+<& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data,
 	                            width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
     </div>

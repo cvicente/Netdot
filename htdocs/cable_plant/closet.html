@@ -39,8 +39,8 @@ $editPictures   = 1 if ($edit eq "closetpictures");
 $editBackbones  = 1 if ($edit eq "bbinfo");
 $editHorizontal = 1 if ($edit eq "cableinfo");
 
-my (@field_headers, @cell_data); # For attribute_table.mhtml calls
-my (@headers, @rows);	# For data_table.mhtml calls.  Aware there need not really be 4 variables.
+my (@field_headers, @cell_data); # For /generic/attribute_table.mhtml calls
+my (@headers, @rows);	# For /generic/data_table.mhtml calls.  Aware there need not really be 4 variables.
 </%init>
 
 
@@ -141,28 +141,32 @@ LIST_MANAGER.addList(floorSearchList);
 	  <td>
 	    <%perl>
 	      (@field_headers, @cell_data) = ();
-              {my @fields = ('name','number', 'floor','dimensions','racks','outlets','shared_with','hvac_type','ground_buss','asbestos_tiles');
+              {my @fields = ('name','number', 'floor','dimensions','racks','outlets','shared_with','hvac_type',
+			     'ground_buss','asbestos_tiles');
 	       my @linkpages = ('', '', 'view.html', '', '', '', '', '', '', '');
-	       $ui->add_to_fields(o=>$o, edit=>$editCloset, fields=>\@fields, 
+	       $ui->add_to_fields(o=>$o, table=>"Closet", edit=>$editCloset, fields=>\@fields, 
 				  field_headers=>\@field_headers, cell_data=>\@cell_data, 
 				  linkpages=>\@linkpages,); }
             </%perl>
-          <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+          <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 	    
             </td>
             <td>
 
           <%perl>
 	      (@field_headers, @cell_data) = ();
-          {  my @fields = ('ru_avail','patch_panels','110_blocks','66_blocks','catv_taps','access_key_type','rack_type','pair_count','converted_patch_panels','work_needed');
-             $ui->add_to_fields(o=>$o, edit=>$editCloset, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data); }
+          {  my @fields = ('ru_avail','patch_panels','110_blocks','66_blocks','catv_taps','access_key_type',
+			   'rack_type','pair_count','converted_patch_panels','work_needed');
+             $ui->add_to_fields(o=>$o, table=>"Closet", edit=>$editCloset, fields=>\@fields, 
+				field_headers=>\@field_headers, cell_data=>\@cell_data); }
 	      </%perl>
-	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+	      <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 	    
             </td>
         </tr>
       </table>
-%      my %comments = $ui->form_field(object=>$o, column=>"info", edit=>$editCloset, htmlExtra=>"rows='3' cols='80'");
+%      my %comments = $ui->form_field(object=>$o, table=>"Closet", column=>"info", edit=>$editCloset, 
+%				      htmlExtra=>"rows='3' cols='80'");
        <div class="containerseparator"><% $comments{label} %></div>
        <% $comments{value} %>
     </div> <!-- close containerbody -->
@@ -221,7 +225,7 @@ LIST_MANAGER.addList(floorSearchList);
     foreach my $pic (@sorted_pics) {
     my @row = ();
     </%perl>
-    <&| "HERE.mhtml" &>
+    <&| "/generic/HERE.mhtml" &>
 %       if ($editPictures) {
             <input type="checkbox" name="<% "__delete_pic_". $pic->id %>">[del]
 %           $ui->text_field(object=>$pic->binfile, table=>"BinFile", column=>"filename", edit=>$editPictures);
@@ -239,7 +243,7 @@ LIST_MANAGER.addList(floorSearchList);
     } # foreach
     </%perl>
 
-    <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+    <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
 %}
 
@@ -328,7 +332,7 @@ if ($editBackbones) {
     my @row = ();
     </%perl>
 
-    <&| "HERE.mhtml" &>
+    <&| "/generic/HERE.mhtml" &>
 %       if ($editBackbones) {
             <input type="checkbox" name="<% "BackboneCable__" . $bb->id . "__delete" %>">[del]
 %           $ui->text_field(object=>$bb, table=>"BackboneCable", column=>"name",
@@ -342,7 +346,7 @@ if ($editBackbones) {
     push( @row, $ui->form_field(object=>$bb, column=>"type", edit=>$editBackbones, returnValOnly=>1) );
     </%perl>
 
-    <&| "HERE.mhtml" &>
+    <&| "/generic/HERE.mhtml" &>
 %       if (!$editBackbones) {
 %           my $lbl = $ui->getobjlabel($bb->start_closet, ", ");          
             <a href="closet.html?id=<% $bb->start_closet %>"><% $lbl %></a>
@@ -371,7 +375,7 @@ if ($editBackbones) {
     push( @row, $_ );
     </%perl>
 
-    <&| "HERE.mhtml" &>
+    <&| "/generic/HERE.mhtml" &>
 %       if (!$editBackbones) {
 %           my $lbl = $ui->getobjlabel($bb->end_closet, ", ");          
             <a href="closet.html?id=<% $bb->end_closet %>"><% $lbl %></a>
@@ -403,7 +407,7 @@ if ($editBackbones) {
     } #foreach my $bb (@sorted_bbones)
     </%perl>
 
-    <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+    <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
     </div> <!-- close containerbody -->
 %   }    #if scalar (@bbones)
@@ -464,7 +468,7 @@ if ($editBackbones) {
     my @row = ();
     </%perl>
 
-    <&| "HERE.mhtml" &>
+    <&| "/generic/HERE.mhtml" &>
 %       if ($editHorizontal) {
             <input type="checkbox" name="<% "HorizontalCable__" . $cable->id . "__delete" %>">[del]
 %           $ui->text_field(object=>$cable, table=>"HorizontalCable", column=>"jackid",
@@ -481,7 +485,7 @@ if ($editBackbones) {
     } # foreach my $cable (@sorted_cables)
     </%perl>
 
-    <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+    <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
     </div> <!-- close containerbody -->
 %  }   #  end if scalar cables

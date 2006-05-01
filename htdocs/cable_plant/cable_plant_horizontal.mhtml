@@ -43,7 +43,7 @@ my (@field_headers, @cell_data, @headers, @rows);
 %             if ($edit eq "cableinfo"){	 
                 <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit"></td>
 %	      } else {
-                <a href="cable_horizontal.html?id=NEW&site_id=<% $id %>">[new]</a> &nbsp; 
+                <a href="view.html?table=HorizontalCable&id=NEW&site_id=<% $id %>">[new]</a> &nbsp; 
 		<a href="cable_plant.html?id=<% $id %>&page_type=<% $page_type %>&edit=cableinfo">[edit]</a>
 %             }
             </div>
@@ -90,7 +90,7 @@ my (@field_headers, @cell_data, @headers, @rows);
 				$ac .= '<input type="checkbox" name="' . "HorizontalCable__" . $cable->id . "__delete" . '">[del]';
 				$ac .= $ui->form_field(object=>$cable, column=>"jackid", edit=>($edit eq "cableinfo"), returnValOnly=>1);
 			    } else {
-				$ac .= '<a href="cable_horizontal.html?id=' . $cable->id . '">' . $cable->jackid . '</a>';
+				$ac .= '<a href="view.html?table=HorizontalCable&id=' . $cable->id . '">' . $cable->jackid . '</a>';
 			    }
 			    $ac;
 			}} );
@@ -110,7 +110,7 @@ my (@field_headers, @cell_data, @headers, @rows);
 	      }
 	      </%perl>
 
-	      <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+	      <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
 %           } # end if scalar cable <= MAX_SELECTION
 

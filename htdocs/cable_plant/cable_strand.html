@@ -32,7 +32,7 @@ if ($id && $id ne "NEW")  {
 
 $editStrand = 1 if ($id eq "NEW" || $edit eq "strandinfo");
 
-# For attribute_table.mhtml
+# For /generic/attribute_table.mhtml
 my (@field_headers, @cell_data);
 </%init>
 
@@ -121,7 +121,7 @@ if (defined($ARGS{_action})) {
 	      push( @field_headers, "Spliced with: " );
 	      </%perl>
 
-	      <&| "HERE.mhtml" &>
+	      <&| "/generic/HERE.mhtml" &>
 %               if (!$editStrand) {
 %                   my @splices = $o->splices;
 %                   if (scalar(@splices)) {
@@ -214,7 +214,7 @@ if (defined($ARGS{_action})) {
 
 	      </%perl>
 
-	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+	      <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
             </td>
             <td width="50%">
@@ -230,7 +230,7 @@ if (defined($ARGS{_action})) {
 	      push( @field_headers, "Direction: " );
 	      </%perl>
 
-	      <&| "HERE.mhtml" &>
+	      <&| "/generic/HERE.mhtml" &>
 %               if ($editStrand) {
 %                   my $dir_name = "CableStrand__" . $id . "__direction";
 	            <input type="radio" name="<% $dir_name %>" value="0" <% ($o && int($o->direction) == 0 ? "CHECKED" : "") %>>TX &nbsp;&nbsp;&nbsp; 
@@ -245,7 +245,7 @@ if (defined($ARGS{_action})) {
 	      push( @cell_data, $ui->form_field(object=>$o, column=>"description", edit=>$editStrand, returnValOnly=>1) );
 	      </%perl>
 
-	      <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+	      <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
 	    </td>
 	  </tr>

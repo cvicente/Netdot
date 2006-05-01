@@ -7,12 +7,6 @@ and all its relevant info in one page
 
 </%doc>
 %
-%
-<%flags>
-inherit => 'section_management.html' 
-</%flags>
-%
-%
 <%attr>
 title        => 'Device' 
 section      => 'Management'
@@ -257,7 +251,7 @@ function setNull(select){
 %# The non breaking space is a hack to make the table header full width
   </div><div class="containerheadright">&nbsp;</div>
   <div class="containerbody">
-      <& sortresults.mhtml, object => $list, view => "row", page => "device.html", withdelete => 1, withedit => 1 &>
+      <& /generic/sortresults.mhtml, object => $list, view => "row", page => "device.html", withdelete => 1, withedit => 1 &>
   </div>
 </div>
 
@@ -403,7 +397,7 @@ $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@fie
 		   cell_data=>\@cell_data, linkpages=>\@linkpages);
 </%perl>
 
-<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, 
+<& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, 
                           width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
 <%perl>
@@ -497,7 +491,7 @@ push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_ta
       
 </%perl>
 
-    <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+    <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
     </div>
 </div>
@@ -534,7 +528,7 @@ $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@fi
 
 </%perl>
 
-       <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+       <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
     </div>
 </div>
@@ -563,7 +557,7 @@ $ui->add_to_fields(o=>$o, edit=>$editsnmp, fields=>\@fields, field_headers=>\@fi
 }
 </%perl>
 
-       <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+       <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
     </div>
 </div>
@@ -702,7 +696,7 @@ my (@headers, @rows, @row);
 	
     }# foreach
 	
-	$m->comp('data_table.mhtml', field_headers=>\@headers, data=>\@rows );
+	$m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows );
 
 } # endif scalar @ips
 
@@ -735,7 +729,7 @@ if ( !$editips ){
 	
     }
     
-    $m->comp('data_table.mhtml', field_headers=>\@headers, data=>\@rows );
+    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows );
     
 }
 </%perl>
@@ -847,7 +841,7 @@ if ( $view eq "Interfaces" || $view eq "All" ){
       if ( exists $intinfo{jack} || $editints ){
 	  if ( @closet_jacks ){
 	      push( @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", defaults=>\@closet_jacks, 
-					  linkPage=>"cable_horizontal.html", edit=>$editints, returnValOnly=>1) );
+					  linkPage=>"view.html", edit=>$editints, returnValOnly=>1) );
 	  }else{
 	      push( @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", linkPage=>"cable_horizontal.html", 
 					  edit=>$editints, returnValOnly=>1) );
@@ -949,7 +943,7 @@ if ( $view eq "Interfaces" || $view eq "All" ){
 
     </div>
     <div class="containerbody">
-        <& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+        <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
     </div>
     <div class="containerheadright">
 %	  if ( $editints ){	 
@@ -1009,7 +1003,7 @@ if ( $view eq "Interfaces" || $view eq "All" ){
 %         }
           </div>
           <div class="containerbody">
-             <& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+             <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 %         if ( $editdevbgp ) {
              </form>
 %         }
@@ -1097,7 +1091,7 @@ if ( @ipeers ){
 }
 </%perl>
     
-<& data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+<& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
 %   if ( $editbgp ) {
       </form>
@@ -1126,7 +1120,7 @@ if ( @ipeers ){
         History
     </div>
     <div class="containerbody">
-        <& sortresults.mhtml, object => \@h_objs , view => "row" &>
+        <& /generic/sortresults.mhtml, object => \@h_objs , view => "row" &>
     </div>
 </div>
 <!-- End History Table -->

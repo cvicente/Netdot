@@ -29,6 +29,7 @@ use Netdot::IPManager;
 use Netdot::Meta;
 use strict;
 use Carp;
+use Data::Dumper;
 
 #Be sure to return 1
 1;
@@ -708,7 +709,7 @@ sub select_lookup($@){
             my $srchf = "_" . $id . "_" . $column . "_srch";
             $output .= "<nobr>";   # forces the text field and button to be on the same line
             $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">", $srchf);
-            $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"jsrsSendquery(%s, %s.value, \'%s\');\">\n", time(), $name, $srchf, $lookup);
+            $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"jsrsSendquery(\'%s\', %s, %s.value);\">\n", time(), $lookup, $name, $srchf );
             $output .= "</nobr>";
             $output .= "<nobr>";   # forces the select box and "new" link to be on the same line
             $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
@@ -1467,7 +1468,7 @@ sub select_query {
     my ($table, $terms) = ($args{table}, $args{terms});
     my %found;
     my %linksto = $self->meta->get_links_to($table);
-    my @labels = $self->meta->get_labels($table);
+    my @labels  = $self->meta->get_labels($table);
     foreach my $term (@$terms){
 	foreach my $c (@labels){
 	    if (! $linksto{$c} ){ # column is local

@@ -1,0 +1,27 @@
+<%doc>
+user_pref.html
+
+Saves the specified attribute in the user object. 
+This is used by asynchronous javascript calls to set user attributes
+without reloading the page.
+
+</%doc>
+
+<%flags>
+inherit => undef
+</%flags>
+
+<%perl>
+
+do "jsrsServer.pl";
+jsrsDispatch("set_value");
+
+sub set_value {
+    my $attr = shift;
+    my $value = shift;
+    my $user = Apache2::SiteControl->getCurrentUser($r);
+
+    $user->setAttribute($r, $attr, $value);
+}
+
+</%perl>

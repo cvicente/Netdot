@@ -5,11 +5,6 @@ Web interface for device discovery and updates
 </%doc>
 %
 %
-<%flags>
-inherit => 'section_management.html' 
-</%flags>
-%
-%
 <%attr>
 title   => 'Update Device' 
 section => 'Management'
@@ -61,12 +56,12 @@ print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
 if( $action eq "discover" && ! $sid ) {
     unless ( $session = $ui->mksession( $TMP ) ){
-	$m->comp('error.mhtml', error => $ui->error);
+	$m->comp('/generic/error.mhtml', error => $ui->error);
     }
 }
 if( $sid ) {
     unless ( $session = $ui->getsession( $TMP, $sid ) ){
-	$m->comp('error.mhtml', error => $ui->error);
+	$m->comp('/generic/error.mhtml', error => $ui->error);
     }
 }
 if( $user ) {
@@ -137,12 +132,12 @@ if ( $action eq "discover" ){
 	    $default_cl = (ContactList->search(name=>$dm->{config}->{DEFAULT_CONTACTLIST}))[0];
 	}
     }else{
-	$m->comp('error.mhtml', error => "Discovery needs either device id or hostname");
+	$m->comp('/generic/error.mhtml', error => "Discovery needs either device id or hostname");
     }
     # Fetch SNMP info
     $argv{host} = $host;
     unless ( $info = $dm->get_dev_info(%argv) ){
-	$m->comp('error.mhtml', error => $dm->error);
+	$m->comp('/generic/error.mhtml', error => $dm->error);
     }
     print "<pre>", Dumper(%$info), "</pre>" if $DEBUG;
     
@@ -167,7 +162,7 @@ if ( $action eq "discover" ){
         # Update database
         $o = $dm->update_device($argv);
         unless ($o){
-            $m->comp('error.mhtml', error => $dm->error);
+            $m->comp('/generic/error.mhtml', error => $dm->error);
         }
         unless ($o->name && ($name = $o->name->name)){
             $name = "device";
@@ -175,7 +170,7 @@ if ( $action eq "discover" ){
     }
 
 }else{
-    $m->comp('error.mhtml', error => "Unknown action: $action");
+    $m->comp('/generic/error.mhtml', error => "Unknown action: $action");
 }
 
 </%init>
@@ -194,7 +189,7 @@ if ( $action eq "discover" ){
 
 %if ( $action eq "discover" ){
 
-    <& attribute_table.mhtml, field_headers=>["Description"], data=>[ $info->{sysdescription} ] &>
+    <& /generic/attribute_table.mhtml, field_headers=>["Description"], data=>[ $info->{sysdescription} ] &>
     <form name="netdotform" action="updatedevice.html" method="POST">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="host" value="<% $host %>">
@@ -206,7 +201,7 @@ if ( $action eq "discover" ){
 %        my (@field_headers, @cell_data) = ();
 
 % push( @field_headers, "Owner:" );
-<&| "HERE.mhtml" &>
+<&| "/generic/HERE.mhtml" &>
            <select name="owner" id="owner">
            <option value="0">-- Select --</option>
 %          my @allents = Entity->retrieve_all; 
@@ -224,7 +219,7 @@ if ( $action eq "discover" ){
 % push( @cell_data, $_ );
 
 % push( @field_headers, "Used by:" );
-<&| "HERE.mhtml" &>
+<&| "/generic/HERE.mhtml" &>
            <select name="used_by" id="used_by">
            <option value="0">-- Select --</option>
 %          my @allents = Entity->retrieve_all; 
@@ -242,7 +237,7 @@ if ( $action eq "discover" ){
 % push( @cell_data, $_ );
 
 % push( @field_headers, "Site:" );
-<&| "HERE.mhtml" &>
+<&| "/generic/HERE.mhtml" &>
            <select name="site" id="site">
            <option value="0">-- Select --</option>
 %          my @allsites = Site->retrieve_all; 
@@ -260,7 +255,7 @@ if ( $action eq "discover" ){
 % push( @cell_data, $_ );
 
 % push( @field_headers, "Contacts:" );
-<&| "HERE.mhtml" &>
+<&| "/generic/HERE.mhtml" &>
            <select name="contacts" id="contacts" size="6" MULTIPLE>
            <option value="">-- Select --</option>
 %          @allcls = sort { $a->name cmp $b->name } @allcls;
@@ -281,7 +276,7 @@ if ( $action eq "discover" ){
 %################################################################
 % if ( $info->{router} ){
 %    push( @field_headers, "Add new Subnets (if any)?:" );
-<&| "HERE.mhtml" &>
+<&| "/generic/HERE.mhtml" &>
 %    if ( $ui->{config}->{ADDSUBNETS} ){
 	<input type="checkbox" name="addsubnets" checked>
 %    }else{
@@ -291,7 +286,7 @@ if ( $action eq "discover" ){
 %    push( @cell_data, $_ );
 
 %    push( @field_headers, "Should new subnets <br>inherit device owner/user?:" );
-<&| "HERE.mhtml" &>
+<&| "/generic/HERE.mhtml" &>
 %    if ( $ui->{config}->{SUBNET_INHERIT_DEV_INFO} ){
 	<input type="checkbox" name="subnets_inherit" checked>
 %    }else{
@@ -302,7 +297,7 @@ if ( $action eq "discover" ){
 % }
 
 
-<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+<& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
 %     }
          <input name="insert" value="Update" type="submit">&nbsp;

@@ -1,5 +1,4 @@
 <%doc>
-$Id$
 
 -- Operations Worksheet -- 
 
@@ -30,7 +29,7 @@ section => 'Operations'
 %
 %
 <%init>
-use Operations;
+use Netdot::Operations;
 
 my $DEBUG     = 0;
 my $obj       = undef;
@@ -180,7 +179,7 @@ my $dispatch = sub {
 %   foreach my $tbl ( sort keys %results ) {
 %       my @list = values %{ $results{$tbl} };
             <&| .MakeContainer, lhs => $tbl, &>
-                <& /sortresults.mhtml, table => $tbl, object => \@list, view => "row", page => "operations.html", withedit => 1 &>
+                <& /generic/sortresults.mhtml, table => $tbl, object => \@list, view => "row", page => "operations.html", withedit => 1 &>
 	    </&>
 %   }
 </&>
@@ -363,7 +362,7 @@ my $dispatch = sub {
 %# Display out of bound info if there is any.
 % if ($obj->oobname ne "" or $obj->oobnumber ne "") {
     <&| '.MakeContainer', lhs => 'OOB Info' &>
-	<& 'attribute_table.mhtml', field_headers => ['oobname', 'oobnumber'],
+	<& '/generic/attribute_table.mhtml', field_headers => ['oobname', 'oobnumber'],
 	data => [$obj->oobname, $obj->oobnumber] &>
     </&>
 % }
@@ -373,13 +372,13 @@ my $dispatch = sub {
 %# Are there any {up,down}links?
 %   if (scalar ($interface->children, $interface->parents)) {
 %#  allen-304-sw1 has multiple uplinks
-    <& data_table.mhtml, field_headers => ['interface', 'uplinks', 'downlinks'],
+    <& /generic/data_table.mhtml, field_headers => ['interface', 'uplinks', 'downlinks'],
     data => 
 	[[
 	 $interface->view_link,
-	 $m->scomp('data_table.mhtml', 
+	 $m->scomp('/generic/data_table.mhtml', 
 		   data => [map {[$_->view_link]} $interface->parents]),
-	 $m->scomp('data_table.mhtml', 
+	 $m->scomp('/generic/data_table.mhtml', 
 		   data => [map {[$_->view_link]} $interface->children]),
 	 ]]
     &>
@@ -411,7 +410,7 @@ foreach my $circuit (@circuits) {
     push @data, [$circuit->view_link, $circuit->connectionid->view_link, $circuit->vendor->view_link];
 }
 
-$m->comp('data_table.mhtml', field_headers => \@field_headers, data => \@data);
+$m->comp('/generic/data_table.mhtml', field_headers => \@field_headers, data => \@data);
   </%init>
 </%def>
 
@@ -439,7 +438,7 @@ $m->comp('data_table.mhtml', field_headers => \@field_headers, data => \@data);
     my @data;
 
     if ($only_show_available_contacts) {
-	@contacts = Operations::contactable_contacts(@contacts); 
+	@contacts = Netdot::Operations::contactable_contacts(@contacts); 
 	foreach my $contact_set (@contacts) {
 	    my $contact = $contact_set->{contact};
 	    push @data, [$contact->person->view_link,
@@ -463,7 +462,7 @@ $m->comp('data_table.mhtml', field_headers => \@field_headers, data => \@data);
     <&| '.MakeContainer', lhs => "$current_set_of_contacts @{[ $obj->table ]} Contacts", 
         rhs => "<a href=\"operations.html?id=@{[ $obj->id ]}&table=@{[ $obj->table ]}&only_show_available_contacts=@{[ ! $only_show_available_contacts]}\">[$other_set_of_contacts @{[ $obj->table ]} Contacts]</a>" &>
 
-      <& 'data_table.mhtml', field_headers => \@field_headers, data => \@data &>
+      <& '/generic/data_table.mhtml', field_headers => \@field_headers, data => \@data &>
     </&>
 </%def>
 
@@ -512,7 +511,7 @@ foreach my $mode (@notification_modes) {
     }
 
 }
-$m->comp('attribute_table.mhtml', field_headers => \@field_headers, 
+$m->comp('/generic/attribute_table.mhtml', field_headers => \@field_headers, 
 	 data => \@data);
 
   </%init>

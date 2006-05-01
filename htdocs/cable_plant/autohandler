@@ -5,12 +5,13 @@
 %
 <%args>
 $user
+$showheader => 1
 </%args>
 %
 %
 <%attr>
-title   => 'Cable Plant' 
-section => 'Plant'
+title       => 'Cable Plant' 
+section     => 'Plant'
 </%attr>
 %
 %
@@ -46,7 +47,12 @@ if ($show_tasks eq "") {
 my @sites = Site->retrieve_all();
 @sites = sort { $a->name cmp $b->name } @sites;
 
+my $hideheader;
+if( !$showheader ) {
+    $hideheader = 'style="display:none"';
+}
 </%init>
+
 <%method .section_meta_data>
     <%doc>
         Returns the meta data used to generate this sections header in section1.mhtml
@@ -67,7 +73,7 @@ my @sites = Site->retrieve_all();
     </%init>
 </%method>
 
-<div id="sectiontools">
+<div id="sectiontools" <% $hideheader %>>
 % if ($page eq "BACKBONE" || $page eq "") {
 
 <div class="container">
@@ -95,8 +101,9 @@ my @sites = Site->retrieve_all();
                     }
                     </%perl>
                </select>
-             
-               To: <select name="end_id" id="end_id">
+               <p>
+               <label for="search">To:</label>
+               <select name="end_id" id="end_id">
                </select>
                <input name="submit_site" value="Go!" type="submit">
                </p>
@@ -147,7 +154,7 @@ my @sites = Site->retrieve_all();
 </%doc>
                 <p>
                 <label for="search">Site:</label>
-                <select name="id" id="site_id" onChange="jsrsSendqueryTB(floor_id, site_id.value, 'Floor', 'site')">
+                <select name="id" id="site_id" onChange="jsrsSendqueryTB('Floor', floor_id, site_id.value, 'site')">
                     <option value="0">-- Select --</option>
                     <%perl>
                     foreach my $site (@sites) {
@@ -164,7 +171,7 @@ my @sites = Site->retrieve_all();
 
                 <p>
                 <label for="search">Floor:</label>
-                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB(room_id, floor_id.value, 'Room', 'floor'); jsrsSendqueryTB(closet_id, floor_id.value, 'Closet', 'floor');">
+                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB('Room', room_id, floor_id.value, 'floor'); jsrsSendqueryTB(closet_id, floor_id.value, 'Closet', 'floor');">
                 </select>
                 </p>
 
@@ -175,7 +182,7 @@ my @sites = Site->retrieve_all();
  
                 <p>
                 <label for="search">Room: </label>
-                <select name="room_id" id="room_id" onChange="jsrsSendqueryTB(jack_id, room_id.value, 'HorizontalCable', 'room')">
+                <select name="room_id" id="room_id" onChange="jsrsSendqueryTB('HorizontalCable', jack_id, room_id.value, 'room')">
                </select>
  
 <%doc>
@@ -184,7 +191,7 @@ my @sites = Site->retrieve_all();
 </%doc>
 
                 or Closet:
-                <select name="closet_id" id="closet_id" onChange="jsrsSendqueryTB(jack_id, closet_id.value, 'HorizontalCable', 'closet')">
+                <select name="closet_id" id="closet_id" onChange="jsrsSendqueryTB('HorizontalCable', jack_id, closet_id.value, 'closet')">
                 </select>
                 </p>
 
@@ -201,7 +208,7 @@ my @sites = Site->retrieve_all();
 	        <label for="search">Jack ID:</label>
 %               my $srchf = 'jack_srch';  # name of the form input tag
 	        <input type="text" name="<% $srchf %>" value="By Jack ID(s)" onFocus="if (this.value == 'By Jack ID(s)') { this.value = ''; } return true;">
-    	        <input type="button" name="" value="Lookup Jack" onClick="jsrsSendquery(<% 'jack_lookup' %>, <% $srchf . '.value' %>, 'HorizontalCable')">
+    	        <input type="button" name="" value="Lookup Jack" onClick="jsrsSendquery('HorizontalCable', <% 'jack_lookup' %>, <% $srchf . '.value' %>)">
                 </p>
 
                 <p>
@@ -242,7 +249,7 @@ my @sites = Site->retrieve_all();
  it was named "id", id.value returned an undefined value. not quite sure why this is, maybe
  javascript doens\'t allow fields to be named "id"?
 </%doc>
-                <select name="id" id="site_id" onChange="jsrsSendqueryTB(floor_id, site_id.value, 'Floor', 'site')">
+                <select name="id" id="site_id" onChange="jsrsSendqueryTB('Floor', floor_id, site_id.value, 'site')">
                     <option value="0">-- Select --</option>
                     <%perl>
                     foreach my $site (@sites) {
@@ -254,7 +261,7 @@ my @sites = Site->retrieve_all();
 
                 <p>
                 <label for="search">Floor:</label>
-                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB(closet_id, floor_id.value, 'Closet', 'floor');">
+                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB('Closet', closet_id, floor_id.value, 'floor');">
                 </select>
                 </p>
 

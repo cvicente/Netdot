@@ -37,7 +37,7 @@ DynamicList.prototype.doIt = function()
     var values = new String();
 
     // If our selected index is not set (js uses -1 for the 0 based    
-    // index of the selected element when it isn't defined), nothing is
+    // index of the selected element when it isn\'t defined), nothing is
     // selected so we try and grab every potential value from our
     // parent list.
     if ((selectedIdx == -1) || (!parent.options[selectedIdx].value == -1))

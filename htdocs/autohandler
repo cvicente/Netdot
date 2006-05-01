@@ -23,11 +23,11 @@ $onload     => ""
 <& header.mhtml,   title => $title, section => $section, user => $user, showheader=>$showheader, onload=>$onload &>
 <& section1.mhtml, title => $title, section => $section, user => $user, showheader=>$showheader &>
 <div id="content">
-% $m->call_next(user => $user);
+% $m->call_next(user => $user, showheader => $showheader);
 </div> <!-- close content -->
 <& footer.mhtml &>
-%
-%
+
+
 <%method .section_dhandler>
     <%doc>
     Defines how section (e.g. /management) dhandlers dhandle.
@@ -35,30 +35,35 @@ $onload     => ""
     in the sections won\'t have to be changed if the way section
     dhandling works changes.
     </%doc>
-    %
+
     <%args>
     # NOTE: You *MUST* pass your %ARGS hash when calling this method,
     # so that the post/get arguments make it to the requested page.
-    $request # The value of $m->dhandler_arg in the dhandler.
+    #
+    # The value of $m->dhandler_arg in the dhandler:
+    $request 
     </%args>
-    %
+
     <%init>
     # The relative path to the directory storing the generic/utility
-    # pages, e.g. device.html.  Currently, these pages are at the site
-    # root along with this autohandler.  The path becomes more
-    # interesting when the utility pages get factored out into a dir
-    # of their own.  It might be better to define this path somewhere
-    # else, since it is more general than this method, and even more
-    # general than this autohandler.
-    my $generic_pages_path = ".";
-    # $m->dhandler_arg returns the path portion after "./", but not
-    # the get/post args (e.g. ?foo=bar&baz=fraz).  The args are passed
-    # along in %ARGS.
-    $m->comp( "$generic_pages_path/$request", %ARGS );
+    # pages, e.g. device.html.  
+
+    my $generic_pages_path = "./generic";
+    my $comp_path = "$generic_pages_path/$request";
+
+    if ( $m->comp_exists($comp_path) ){
+        # $m->dhandler_arg returns the path portion after "./", but not
+        # the get/post args (e.g. ?foo=bar&baz=fraz).  The args are passed
+        # along in %ARGS.
+        $m->comp( $comp_path, %ARGS );
+    }else{
+	$r->content_type('text/html');
+        $m->comp('/generic/error.mhtml', error => "The requested page: \"$request\" does not exist");
+    }
     </%init>
 </%method>
-%
-%
+
+
 <%method .sub_print_showtaskslink>
     <%doc>
     This is just a subroutine that was defined in multiple places.  It

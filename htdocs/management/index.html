@@ -1,5 +1,13 @@
 <%doc>
-    Intentionally empty.  Just triggers the autohandler.  This file
-    could be eliminated by setting up HTML::Mason to handle directory
-    requests, I think.
+  Index page for the management subsection
 </%doc>
+
+<%args>
+$page => undef
+</%args>
+
+<%perl>
+if ( $page eq "ADDRESS" ){
+     $m->comp('/management/ip-ws.html', _action => "SHOW_ROOTS", rootversion => 'all');
+}
+</%perl>

@@ -1,7 +1,17 @@
 <%doc>
 
-Calls UI::single_table_search to perform a NOT RECURSIVE search for keywords
-in a table's specified label field
+Performs searches whose return values are used to fill in objects in HTML pages
+via asynnchronous javascript calls.
+
+When debugging, turn DEBUG flag on and execute directly from browser:
+ 
+* Searching a single field:
+
+     /generic/jsrs_netdot.html?table=Floor&form_field=floor_id&keywords=82&field=site
+
+* Searching label fields recursively:
+
+     /generic/jsrs_netdot.html?table=Site&form_field=site_srch&keywords=computing
 
 </%doc>
 
@@ -10,46 +20,60 @@ in a table's specified label field
 inherit => undef
 </%flags>
 
-<%init>
+<%shared>
 my $DEBUG = 0;
-</%init>
+</%shared>
 
 <%perl>
-print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
-do "jsrsServer.pl";
-jsrsDispatch("keyword_search");
+if ( $DEBUG ){
+    print "<pre> ", Dumper(%ARGS), "</pre><br>";
+    print &keyword_search($ARGS{table}, $ARGS{form_field}, 
+			  $ARGS{keywords}, $ARGS{field});
+}else{
+    do "jsrsServer.pl";
+    jsrsDispatch("keyword_search");
+}
 
 sub keyword_search {
 # Arguments:
-# - table:  Table to search.
-# - field:  Name of the field for which we're searching foreign values
-# - keyword:   keyword to search for in the "field" field of "table"
+# - table:      Table to search.
 # - form_field: Name of the form field to add the results into
+# - keywords:   keywords to search for
+# - field:      Name of the field for which we\'re searching foreign values
+#               if undefined, search will be performed recursively on the 
+#               "label" fields of the table, as defined in metadata
 
-    my $table = shift;
-    my $field = shift;
-    my $keyword = shift;
-    my $form_field = shift;
-
-    my $DEBUG = 0;
+    my ( $table, $form_field, $keywords, $field ) = @_;
 
     my $r;
+    my @terms;
     my $MAX   = 100;
+
+    if ($keywords =~ /\w+/){
+        $keywords =~ s/^\s*(.*)\s*$/$1/;
+        @terms = split /\s+/, $keywords;
+    }
 
     my $response = $form_field."&";
 
-    $r = $ui->single_table_search(table => $table, field => $field, keyword => $keyword, max => $MAX);
+    if ( $field ){
+	$r = $ui->single_table_search(table => $table, field => $field, 
+				      keyword => $terms[0], max => $MAX);
+    }else{
+	$r = $ui->select_query(table => $table, terms => \@terms, max => $MAX);
+    }
+
 
     if (my $n = scalar (keys %$r) ){
         my $count = 0;
 
         if ($n >= $MAX){
-            $response .= "0=".URLEncode("More than ".$MAX." matches. Refine search")."&";
+            $response .= "0=".URLEncode("More than ".$MAX." matches.  Refine search")."&";
         }
         my @objs = map { $r->{$_} } keys %$r;
         my $lblfield = ( $ui->meta->get_labels($table) )[0];
-        my $type = $ui->meta->get_column_types($table, $lblfield);
+        my $type = $ui->meta->get_column_type($table, $lblfield);
         if ( $type =~ /int/ || $table eq "Interface" ){  # Ugly hack
            @objs = sort { $a->$lblfield <=> $b->$lblfield } @objs;
         }else {
@@ -64,12 +88,12 @@ sub keyword_search {
         $response .= "0=-- Select --&";
 
         foreach my $o (@objs){
-            my $delim;
-            if ( $table eq "Ipblock" ){
-                $delim = "/";
-            }else{
-                $delim = ", "
-            }
+	    my $delim;
+	    if ( $table eq "Ipblock" ){
+		$delim = "/";
+	    }else{
+		$delim = ", "
+	    }
            my $lbl = $ui->getobjlabel($o, $delim);
            $response .= $o->id."=".URLEncode($lbl)."&";
            last if ($count++) == $MAX;
@@ -78,7 +102,7 @@ sub keyword_search {
         $response .= "0=".URLEncode("No matches");
     }
 
-    return $response;
+    return $response;    
 }
 
 sub URLEncode {

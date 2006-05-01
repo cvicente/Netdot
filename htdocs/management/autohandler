@@ -6,6 +6,7 @@
 
 <%args>
 $user
+$showheader => 1
 </%args>
 
 <%attr>
@@ -17,19 +18,11 @@ section => "Management" # $SECTION
 </%attr>
 
 <%shared>
-# Change this when it is all working
 my $PAGE_ATTRIBUTE = "MANAGEMENT_PAGE";
 my $SECTION = "Management";
 </%shared>
 
 <%init>
-# use GenericSectionCode;
-# my $DEBUG = 0;
-# my $gsc = GenericSectionCode->new(user => $user, m => $m, 
-# 			   page_attribute => $PAGE_ATTRIBUTE);
-# $gsc->debug_args($DEBUG);
-# my $page = $gsc->get_page();
-# my $show_tasks = $gsc->get_show_tasks();
 
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
@@ -51,6 +44,11 @@ if ($show_tasks eq "") {
     $show_tasks = "show";
 }
 *print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+
+my $hideheader;
+if( !$showheader ) {
+    $hideheader = 'style="display:none"';
+}
 </%init>
 %
 %
@@ -73,7 +71,7 @@ if ($show_tasks eq "") {
         };
     </%init>
 </%method>
-<div id="sectiontools">
+<div id="sectiontools" <% $hideheader %>>
 <div class="container">
     <div class="containerheadleft">
         Tasks
@@ -164,7 +162,7 @@ if ($show_tasks eq "") {
             </form>
             <form action="ip-ws.html" method="POST">
                 <p>
-                <label for="Find">By Entity/Site/Descr:</label>
+                <label for="Find">Other:</label>
                 <input type="text" name="search" class="txt" value=""> 
                 <input name="submit" value="Find" class="btn" type="submit">
                 <input type="hidden" name="_action" value="SEARCH_OTHER">
@@ -191,8 +189,9 @@ if ($show_tasks eq "") {
 
 </div> <!-- close sectiontools -->
 
-% if ( $m->fetch_next ){
-%  $m->call_next;
-% }elsif ( $page eq "ADDRESS" ){
-%  $m->comp('/ip-ws.html', _action => "SHOW_ROOTS", rootversion => 'all');
-%}
+<%perl>
+ if ( my $next = $m->fetch_next ){
+     $m->call_next(page => $page);
+ }
+</%perl>
+

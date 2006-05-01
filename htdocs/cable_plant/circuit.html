@@ -110,7 +110,7 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
     <% scalar(@list) %> results for <i><% $search %></i>
   </div>
   <div class="containerbody">
-      <& sortresults.mhtml, object => \@list, view => "row", page => "circuit.html", withdelete => 1, withedit => 1 &>
+      <& /generic/sortresults.mhtml, object => \@list, view => "row", page => "circuit.html", withdelete => 1, withedit => 1 &>
   </div>
 </div>
 
@@ -157,7 +157,7 @@ my (@field_headers, @cell_data);
     $ui->add_to_fields(o=>$o, table=>"Circuit", edit=>$editCircuit, fields=>\@fields, linkpages=>\@linkpages, 
 		       field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
-$m->comp('attribute_table.mhtml', field_headers=>\@field_headers, data=>\@cell_data, width=>2);
+$m->comp('/generic/attribute_table.mhtml', field_headers=>\@field_headers, data=>\@cell_data, width=>2);
 
 my %comments = $ui->form_field(object=>$o, table=>"Circuit", column=>"info", edit=>$editCircuit, 
 			       htmlExtra=>"rows='3' cols='80'");

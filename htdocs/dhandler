@@ -9,5 +9,8 @@ $r->content_type('text/html');
 my $arg = $m->dhandler_arg();
 </%init>
 
-<br>
-<strong>The requested page does not exist:</strong>  <% $arg %>
+<%perl>
+
+$m->comp('/generic/error.mhtml', error => "The requested page: \"$arg\" does not exist");
+
+</%perl>

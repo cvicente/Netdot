@@ -3,11 +3,6 @@ Device Inventory Report
 
 </%doc>
 
-<%flags>
-inherit => 'section_reports.html' 
-
-</%flags>
-
 <%attr>
 title   => 'Device Inventory' 
 section => 'Reports'
@@ -77,9 +72,9 @@ foreach my $pt ( sort keys %t ){
 	my @row = ();
 	push( @row, "" );
 	if ( $t{$pt}{prod}{$product}{id} ){
-	    push( @row, '<a href="view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
+	    push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
 	}elsif ( $product eq "Unknown" ){
-	    push( @row, '<a href="device.html?submit=search&search=productname:0">' . $product . '</a>' );
+	    push( @row, '<a href="../management/device.html?submit=search&search=productname:0">' . $product . '</a>' );
 	}
 	push( @row, $t{$pt}{prod}{$product}{num}  );
 	push( @rows, \@row );
@@ -87,7 +82,7 @@ foreach my $pt ( sort keys %t ){
 
 }
 </%perl>
-<& /data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+<& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
 </div>
 </div>

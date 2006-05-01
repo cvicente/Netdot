@@ -1,4 +1,4 @@
-package Operations;
+package Netdot::Operations;
 
 use Netdot;
 use Data::Dumper;

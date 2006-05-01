@@ -47,7 +47,7 @@ FMOD = 0644
 XMOD = 0744
 # If mason ever decides to use different directories in its data_dir there will
 # be trouble.
-DIR = bin doc htdocs/img htdocs/img/graphs htdocs/masondata/obj htdocs/masondata/cache tmp lib etc import export
+DIR = bin doc htdocs/cable_plant htdocs/css htdocs/generic htdocs/help htdocs/img htdocs/img/graphs htdocs/java_script htdocs/management htdocs/operations htdocs/reports htdocs/masondata/obj htdocs/masondata/cache tmp lib etc import export
 
 .PHONY: tests bin doc htdocs lib etc
 
@@ -86,6 +86,7 @@ tests:
 	perl -MSNMP::Info -e 1
 	perl -MNetAddr::IP -e 1
 	perl -M'Apache2::SiteControl 1.0' -e 1
+	perl -M'GraphViz 2.02' -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi
