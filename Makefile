@@ -87,7 +87,8 @@ tests:
 	perl -MSNMP -e 1
 	perl -MNetAddr::IP -e 1
 	perl -M'Apache2::SiteControl 1.0' -e 1
-	perl -I$(NVPREFIX)/lib -M'NetViewer::RRD::SNMP 0.29.6' -e 1
+	perl -M'GraphViz 2.02' -e 1
+	perl -I$(NVPREFIX)/lib -M'NetViewer::RRD::SNMP 0.29.13' -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi
