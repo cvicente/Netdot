@@ -7,11 +7,9 @@ Supported arguments:
 
   table:      name of a table in the database
   object:     referece to a list of objects in that table for displaying in html
-  view:       [row|column]
   sort:       column to sort by
   page:       page to link to with results (default is view.html)
-  withdelete: create a form with a check-box per item, which will call delete.html
-  withedit:   add the ability to show form fields to edit selected fields in the table
+  withedit:   add checkboxes to allow user to edit or delete selected objects
 
   # The following are passed to itself in subsequent calls
   per_page:   Maximum entries displayed per page
@@ -24,10 +22,8 @@ Supported arguments:
 
 $table      => undef
 $object     => undef
-$view       => "column"
 $sort       => undef
 $page       => undef
-$withdelete => 0
 $withedit   => 0
 $per_page   => 50;
 $offset     => 0;
@@ -42,8 +38,6 @@ my %linksto;
 my %linksfrom;
 my %order;
 my %orderbrief;
-my $cellspc    = 0;
-my $cellpad    = 0;
 my $lbl;
 my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
 my $ci         = 1;
@@ -51,9 +45,9 @@ my $last_item;
 my $session;
 my $TMP = $ui->{config}->{TMP};
 my %objindex;
+my $numcols;
 
 my $DEBUG      = 0;
-my $numcols    = 0;
 
 # Keep a list of valid tables;
 my %tables;
@@ -61,49 +55,27 @@ map { $tables{$_} = 1 } $ui->meta->get_tables;
 
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
-# Things to do on first call
 
-if ( defined ($object) ){
-    unless ( $session = $ui->mksession( $TMP ) ){
-	$m->comp('error.mhtml', error => $ui->error);
-    }
-    # Determine table name if not passed to us
-    #
-    unless ( $table ){
-	if ( my $fo = $object->[0] ){
-	    $table = $fo->table;
-	}else{
-	    print "No elements";
-	    $m->abort;
-	}
-    }
+#########################################################
+#
+# This happens on first call
+#
+#########################################################
 
-    # Some tables have a specific view page. 
-    # Point to those when appropriate
-    #
-    my %viewpage = ( BinFile => "../generic/display_bin.html",
-		     Ipblock => "../management/ip-ws.html",
-		     Device  => "../management/device.html"  );
+if ( defined($object) && scalar @$object ){
 
-    unless ( $page ){
-	if ( exists $viewpage{$table} ){
-	    $page = $viewpage{$table};
-	}
-    }
-    $page ||= "view.html";
-    if( $view ) {
-	unless ( $view eq "row" || $view eq "column" ) {
-	    $m->comp('error.mhtml', error => "Invalid value for view: $view");
-	}
-    }
-
-    my $i = 0;
     ##############################################
-    # get the label for this table (as defined in Meta)
+    # Determine table name if not passed to us
+    $table = $object->[0]->table 
+	unless $table;
+
+    ##############################################
+    # get the first label field for this table (as defined in metadata)
     $lbl = ($ui->meta->get_labels( $table ))[0];
     
     ##############################################
     # If sort arg
+    my $i = 0;
     if( defined( $sort ) ) {
 	if ( $sort == 0 || $sort eq "no"){
 	    # We're told not to sort
@@ -160,8 +132,10 @@ if ( defined ($object) ){
     }
     
 #########################################################
+#
 # This happens on subsequent calls (paging)
 #
+#########################################################
 }elsif( $sid ) {
     unless ( $session = $ui->getsession( $TMP, $sid ) ){
 	$m->comp('error.mhtml', error => $ui->error);
@@ -173,19 +147,61 @@ if ( defined ($object) ){
     %objindex   = %{ $session->{objindex} };
     $table      = $session->{table};
     $page       = $session->{page};
-    $view       = $session->{view};
     $sort       = $session->{sort};
-    $withdelete = $session->{withdelete};
     $withedit   = $session->{withedit};
     $offset     = $session->{offset};    
     $total      = $session->{total};    
 
-print "<pre>", Dumper($session), "</pre>" if $DEBUG;
+    print "<pre>", Dumper($session), "</pre>" if $DEBUG;
 
 }
+#else{
+#    $m->comp('error.mhtml', error=>"Need to pass either object arrayref or session id");
+#}
+
+#########################################################
+#
+# This happens always
+#
+#########################################################
+
+# Some tables have a specific view page. 
+# Point to those when appropriate
+#
+my %viewpage = ( BinFile => "../generic/display_bin.html",
+		 Closet  => "../cable_plant/closet.html",
+		 Ipblock => "../management/ip-ws.html",
+		 Device  => "../management/device.html"  );
+
+unless ( $page ){
+    if ( exists $viewpage{$table} ){
+	$page = $viewpage{$table};
+    }
+}
+$page ||= "view.html";
 
 # Calculate last item to show
 $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
+
+if ( $total > $per_page ){
+    # Make a session.  We want to be able to go back
+    undef ($session);
+    unless ( $session = $ui->mksession( $TMP ) ){
+	$m->comp('error.mhtml', error => $ui->error);
+    }
+    
+    $session->{linksto}    = \%linksto;
+    $session->{order}      = \%order;
+    $session->{orderbrief} = \%orderbrief;
+    $session->{tags}       = \%tags;
+    $session->{objindex}   = \%objindex;
+    $session->{table}      = $table;
+    $session->{page}       = $page;
+    $session->{sort}       = $sort;
+    $session->{withedit}   = $withedit;
+    $session->{offset}     = $last_item;
+    $session->{total}      = $total;
+}
 
 </%init>
 
@@ -196,342 +212,148 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % #####################################################################
 % # Begin the table for this instance of sortresults
 % #####################################################################
-% if( $view eq "row" ) {
-%   ($cellspc, $cellpad) = ( 0, 0 );
-%   $numcols = scalar keys %orderbrief;
-% } elsif( $view eq "column" ) {
-%   ($cellspc, $cellpad) = ( 0, 1 );
-%   $numcols = 2;
-% }
 
-% if ( $withedit || $withdelete ) {
-    <form action="edit-multiple.html" method="POST" name="form_<% $table %>">
-    <input type="hidden" name="table" value="<% $table %>">
-% }
+%     if ( $withedit ) {
+         <form name="form_<% $table %>" method="POST" >
+         <input type="hidden" name="table" value="<% $table %>">
+%     }
 
-% if ( $withedit ) {
-  <script language="javascript">
-  <!--
+      <table border="0" cellspacing="0" cellpadding="0" class="tablebackground">
 
-    function toggleEditLayers(table) {
-        toggleLayer('fieldchoices_'+table);
-    }
-  //-->
-  </script>
-
-  <div class="container" style="margin:3px;display:none" id="fieldchoices_<% $table %>">
-    <div class="containerheadleft">Choose fields to edit</div>
-    <div class="containerheadright"><a href="javascript:toggleEditLayers('<% $table %>')">[hide]</a></div>
-    <div class="containerbody">
-
-<%perl>
-   my @cells;
-
-   foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-       next if( $c eq 'id' );
-       my $caption;
-       if ( exists($tags{$c}) ){
-           $caption = $tags{$c};
-       }else{
-           $caption = $c;
-       }
-       my $html = '<input type="checkbox" name="tablefields[]" value="'.$c.'">'.$caption;
-       
-       push(@cells, $html);
-
-   }
-</%perl>
-
-    <& wrapping_table.mhtml, data => \@cells, cols => 5  &>     
-    <div align="right">
-        <input type="submit" name="submit" value="Go">
-    </div>
-
-    </div>
-  </div>
-% }
-
-% if ( $withdelete ){
-%   $numcols += 1;
-% }
-
-
-  <table border="0" cellspacing="<% $cellspc %>" cellpadding="<% $cellpad %>" class="tablebackground">
-% ##################################################################
-% # If the VIEW is a row, print the column headers.  
-% # Otherwise, print an empty row.
-% #####################################################################
-%    if( $view eq "row" ) {
-       <tr class="rowtitle2">
-%      foreach my $c ( sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief ) {
-%        if( exists( $tags{$c} ) ) {
-           <th><% $tags{$c} %></th>
-%        } else {
-           <th><% $c %></th>
-%	     }
-%      }
-%      if ( $withdelete ){
-           <th>Delete</th>
-%      }
-%      if ( $withedit ){
-           <th align="center"><a href="javascript:toggleEditLayers('<% $table %>');">Edit</a></th>
-%      }
-       </tr>
-%    } else {
-       <tr>
-          <td colspan="<% $numcols %>" class="delimiter"></td>
-       </tr>
-%    }
-
-% ####################################################################
-% # Loop around the window of items that we are showing in this page
-% ####################################################################
-
-% my $pos = $offset;
-% while ( $pos < $last_item ) {
-%    my $o;
-%    unless ( $o = $objindex{$pos} ){
-%	$m->comp("error.mhtml", error=>"Object not valid at index $pos");
-%    }
-%    $pos++;
-%    my $flag = 1;
-%    $ci = ($ci + 1) % 2;
-
-% ####################################################################
-% # Print relevant delimiters for whether a ROW or COLUMN view
-% ####################################################################
-
-%
-%    if( $view eq "row" ) {
-      <tr class="<% $cssitem{$ci} %>">
-%    } elsif( $view eq "column" ) {
-    <tr height="1" class="delimiter">
-      <td colspan="<% $numcols %>" height="1"></td>
-    </tr>
-%    }
-%
-% ####################################################################
-% # Get the column order and process each item.
-% ####################################################################
-%    my @orderbrief = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
-%    foreach my $c ( @orderbrief ) {
-%
-% ####################################################################
-% # If a COLUMN view, start a row with the column name.
-% #####################################################################
-%
-%       if( $view eq "column" ) {
-          <tr class="<% $cssitem{$ci} %>">
-           <td align="right" valign="top" width="18%">
-%	     if ( exists($tags{$c}) ){
-               <b><% $tags{$c} %></b>:&nbsp;
-%	     } else {
-               <b><% $c %></b>:&nbsp;
-%	     }
-          </td>
-%       }
-      <td align="left" valign="middle">
-
-% #####################################################################
-% # If it is a link to another column....
-% #####################################################################
-
-%          if ( exists($linksto{$c}) ) {
-%             if( ! exists($tables{$linksto{$c}}) ) {
-%             ##########################
-%             # foreign table does not exist
-      No such object <% $linksto{$c} %>
-%             } elsif( int($o->$c) == 0 ) {
-%             ##########################
-%             # it's a pointing to zero, so it's nada
-      &nbsp -
-%             } elsif( ! defined( $linksto{$c}->retrieve( int( $o->$c ) ) ) ) {
-%             ##########################
-%             # the id pointed to does not exist
-      &nbsp -
-%             } else {
-%                my $obj = $linksto{$c}->retrieve( int( $o->$c ) );
-%                my $lbl = $ui->getobjlabel( $obj, ", " );
-%                if( $flag ) {
-      &nbsp;
-%                #######################
-%                # if flag is set, make the item a url
-%#      <strong>
-      <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">
-%                   if( length( $lbl ) < 1 ) {
-      N/A
-%                   } else {
-      <% $lbl %>
-%                   }
-      </a> 
-%#      </strong>
-%                } else {
-%                #######################
-%                # otherwise, just print the instance
-      <% $lbl %>
-%                }
-%            }
+%     #####################################################################
+%     # Header row
+      <tr class="rowtitle2">
+%     foreach my $c ( sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief ) {
+%          $numcols++;
+%          if( exists( $tags{$c} ) ) {
+               <th><% $tags{$c} %></th>
 %          } else {
+               <th><% $c %></th>
+%	   }
+%     }
+%     if ( $withedit ){
+          <th align="center">Select</th>
+%         $numcols++;
+%     }
+      </tr>
+%     ####################################################################
+%     # Loop around the window of items that we are showing in this page
+%     ####################################################################
+
+%     my $pos = $offset;
+%     while ( $pos < $last_item ) {
+%         my $o;
+%         unless ( $o = $objindex{$pos} ){
+%             $m->comp("error.mhtml", error=>"Object not valid at index $pos");
+%         }
+%         $pos++;
+%         my $first_column = 1;
+%         $ci = ($ci + 1) % 2;
+
+          <tr class="<% $cssitem{$ci} %>">
 %
-% #####################################################################
-% # It s not a pointer to another column
-% #####################################################################
+%         ####################################################################
+%         # Get the column order and process each item.
+%         ####################################################################
+%         my @orderbrief = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
 %
-%             if( $flag ) {
-      <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">
-%                if( length( $o->$c ) < 1 ) {
-      N/A
-%                } else {
-      <% $o->$c %>
-%                }
-      </a>
-%             } else {
-      <% $o->$c %>
-%             }
-%          } # else fi
-      </td>
+%         foreach my $c ( @orderbrief ) {
+              <td align="left" valign="middle">
+%             #####################################################################
+%             # If it is a link to another column....
+%             #####################################################################
+%             if ( exists($linksto{$c} ) ) {
+%                 if ( exists($tables{$linksto{$c}}) &&
+%	             ( my $obj = $linksto{$c}->retrieve(int($o->$c)) ) ){
+%                     my $lbl = $ui->getobjlabel( $obj, ", " );
+%                     if( $first_column ) {
+                          &nbsp;
+                          <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">
+%                         if( length( $lbl ) < 1 ) {
+                              N/A
+%                         }else {
+                              <% $lbl %>
+%                         }
+                          </a> 
+%                     } else {
+                         <% $lbl %>
+%                     }
+%                 }else{
+                      &nbsp -
+%                 }
+%            }else{
+%            #####################################################################
+%            # It s not a link to another column
+%            #####################################################################
+%                if( $first_column ) {
+                     <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">
+%                    if( length( $o->$c ) < 1 ) {
+                         N/A
+%                    }else{
+                         <% $o->$c %>
+%                    }
+                     </a>
+%               }else{
+                    <% $o->$c %>
+%               }
+%           } # else fi
+            </td>
 % #####################################################################
 % # Wrap this row up.
 % #####################################################################
-%       $flag = 0 if( $flag );          
-%       if( $view eq "column" ) {
-    </tr>
-%       }
+%           $first_column = 0 if( $first_column );          
 %     } # for c
 %
-
-%     if( $view eq "column" ) {
-%        if ( $withdelete ){
-           <tr class="<% $cssitem{$ci} %>">
-             <td align="right" valign="top" width="18%">delete</td>
-             <td align="left" valign="middle">
-               <input type="checkbox" name="<% $table %>__<% $o->id %>">
-             </td>
-           </tr>
+%     if ( $withedit ){
+          <td style="text-align:center" valign="middle" width="40">
+              <input type="checkbox" name="<% $table %>__<% $o->id %>">
+          </td>
 %     }
-    <tr height="1" class="delimiter">
-      <td colspan="<% $numcols %>" height="1"></td>
-    </tr>
-
-%     } elsif( $view eq "row" ) {
-%         if ( $withdelete ){
-            <td style="text-align:center" valign="middle" width="50">
-                <input type="checkbox" id="delete_check_<% $table.'_'.$o->id %>" name="<% $table %>__<% $o->id %>" onclick="document.getElementById('delete_<% $table.'_'.$o->id %>').checked = document.getElementById('delete_check_<% $table.'_'.$o->id %>').checked">
-            </td>
-%         }
-%         if ( $withedit ){
-            <td style="text-align:center" valign="middle" width="40">
-                <input type="checkbox" id="edit_check_<% $table.'_'.$o->id %>" name="editids[]" value="<% $o->id %>">
-            </td>
-%         }
-    </tr>
-    <tr class="delimiter" height="1">
-      <td colspan="<% $numcols %>"></td>
-    </tr>
-%     }
-%} # for o
+      </tr>
+% } # end while
 % ####################################################################
 
-%    if( $view eq "row" && ($withdelete || $withedit) ) {
-%       my $selectall_ids;
-%       foreach my $key ( keys %objindex ) {
-%           $selectall_ids .= $objindex{$key}{id}.",";
-%       }
-       <tr class="rowtitle">
-%      for( my $i=0; $i<(keys %orderbrief)-1; $i++ ) {
-           <td>&nbsp;</td>
-%      }
-           <td>
-              <div align="right">Select All <% $total %> results:</div>
-              <input type="hidden" name="selectall_ids" value="<% $selectall_ids %>">
-           </td>
-%      if ( $withdelete ){
-           <th align="center"><input type="checkbox" name="selectall_<% $table %>_delete" id="selectall_<% $table %>_delete"></td>
-%      }
-%      if ( $withedit ){
-           <th align="center"><input type="checkbox" name="selectall_<% $table %>_edit" id="selectall_<% $table %>_edit"></td>
-%      }
-       </tr>
-%    }
-
 % ## Last row
-       <tr class="rowtitle">
-%      for( my $i=0; $i<(keys %orderbrief); $i++ ) {
+% if( $withedit ) {
+%     my $selectall_ids = join ', ', map { $objindex{$_}{id} } keys %objindex;
+      <tr class="rowtitle">
+%         for( my $i=0; $i<($numcols-2); $i++ ) {
+              <td>&nbsp;</td>
+%         }
+          <td>
+            <div align="right" valign="middle">Select All <% $total %> results:</div>
+            <input type="hidden" name="selectall_ids" value="<% $selectall_ids %>">
+          </td>
+          <td style="text-align:center" valign="middle" width="40">
+	      <input type="checkbox" name="selectall" id="selectall">
+          </td>
+      </tr>
+% }
+% ## Empty row
+      <tr class="rowtitle">
+%      for( my $i=0; $i<$numcols; $i++ ) {
            <td>&nbsp;</td>
 %      }
-%      if ( $withdelete ){
-           <th>Delete</th>
-%      }else{
-           <th>&nbsp;</th>
-%      }
-%      if ( $withedit ){
-              <th align="right"><a href="javascript:toggleEditLayers('<% $table %>');">Edit</a></th>
-%      }else{
-           <th>&nbsp;</th>
-%      }
-       </tr>
-
+      </tr>
   </table>
 
+  <div class="containerheadright">
 % if ( $total > $per_page ){
-
-    <div class="containerheadright">
-    Results: [<% $offset+1 %>-<% $last_item %>] of <% $total %> 
-
-%   # Make a new session.  We want to be able to go back
-%
-%    undef ($session);
-%    unless ( $session = $ui->mksession( $TMP ) ){
-%      $m->comp('error.mhtml', error => $ui->error);
-%    }
-
-%    $session->{linksto}    = \%linksto;
-%    $session->{order}      = \%order;
-%    $session->{orderbrief} = \%orderbrief;
-%    $session->{tags}       = \%tags;
-%    $session->{objindex}   = \%objindex;
-%    $session->{table}      = $table;
-%    $session->{page}       = $page;
-%    $session->{view}       = $view;
-%    $session->{sort}       = $sort;
-%    $session->{withdelete} = $withdelete;
-%    $session->{withedit}   = $withedit;
-%    $session->{offset}     = $last_item;
-%    $session->{total}      = $total;
-
-%    if ( $sid ){
-        <a href="#" onClick="history.go(-1);">[<<] </a>
-%    }
-     <a href="../generic/list.html?sid=<% $session->{_session_id} %>">[>>] </a>
-
-     </div>
-%  }
-
-% if ( $withdelete ){
-    <div class="containerheadright">
-	   <input type="button" name="submit" value="Delete" onclick="document.deleteform_<% $table %>.submit()">
-	   <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
-    </div>
+      Results: [<% $offset+1 %>-<% $last_item %>] of <% $total %> 
+%     if ( $sid ){
+          <a href="#" onClick="history.go(-1);">[<<] </a>
+%     }
+      <a href="../generic/list.html?sid=<% $session->{_session_id} %>">[>>] </a>
 % }
-
-% if ( $withedit || $withdelete ) {
-    </form>
+% if ( $withedit ){
+      <p>
+      <input type="button" name="Edit" value="Edit" onClick="document.form_<% $table %>.action='edit-multiple.html';document.form_<% $table %>.submit();">
+      <input type="button" name="Delete" value="Delete" onClick="document.form_<% $table %>.action='delete.html';document.form_<% $table %>.submit();">
+      </p>
+      </form>
 % }
+  </div>
 
-% if ($withdelete) {
-    <div style="display:none">
-    <form action="../generic/delete.html" method="POST" name="deleteform_<% $table %>">
-%       my $pos = $offset;
-%       while ( $pos < $last_item ) {
-%           my $o;
-%           if ( $o = $objindex{$pos} ){
-%               print '<input type="checkbox" id="delete_'.$table.'_'.$o->id.'" name="'.$table.'__'.$o->id.'">';
-%           }
-%           $pos++;
-%       }
-    </form>
-    </div>
-% }
 
 <!-- end sortresults -->
-% } # if
+% } # endif %objindex

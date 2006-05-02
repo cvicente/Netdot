@@ -3,10 +3,12 @@
 </%doc>
 
 <%args>
-$table   => undef
-$id      => undef
-$submit  => "Delete"
-$sid     => undef
+$table         => undef
+$id            => undef
+$submit        => "Delete"
+$sid           => undef
+$selectall     => undef
+$selectall_ids => undef
 </%args>
 
 <%init>
@@ -29,22 +31,29 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
    <p>
    <ul>
 <%perl>
-    unless($session = $ui->mksession( $TMP )){
-    	$m->comp('error.mhtml', error => $ui->error);
-    }
-    # Accept single-delete queries with only table and id
-    if ( $table && $id ){
-    	my $key = $table . "__" . $id;
-    	$ARGS{$key} = "1";
-    }
-    foreach my $arg (sort keys %ARGS){
-    	next unless $arg =~ /__/;
-    	my ($table, $id) = split /__/, $arg;
-    	my $obj;
-	unless ( $obj = $table->retrieve($id) ){
-    	    $m->comp('error.mhtml', error => "Error retrieving $table id $id: $@");
-    	}
-    	my $lbl = $ui->getobjlabel($obj, ", ");
+   unless($session = $ui->mksession( $TMP )){
+       $m->comp('error.mhtml', error => $ui->error);
+   }
+   # This means that we were passed a list of ids for a given table
+   if ( $selectall && $selectall_ids && $table ){
+       foreach my $id ( split /,/, $selectall_ids ){
+	   my $key = $table . "__" . $id;
+	   $ARGS{$key} = "";
+       }
+   }
+   # We were passed a single id for a given table
+   elsif ( $table && $id ){
+       my $key = $table . "__" . $id;
+       $ARGS{$key} = "";
+   }
+   foreach my $arg (sort keys %ARGS){
+       next unless $arg =~ /__/;
+       my ($table, $id) = split /__/, $arg;
+       my $obj;
+       unless ( $obj = $table->retrieve($id) ){
+	   $m->comp('error.mhtml', error => "Error retrieving $table id $id: $@");
+       }
+       my $lbl = $ui->getobjlabel($obj, ", ");
 </%perl>
        <li><% $table %> <% $lbl %></li>
 %      push @objs, [$table, $obj, $lbl];

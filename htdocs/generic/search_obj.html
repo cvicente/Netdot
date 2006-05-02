@@ -33,10 +33,11 @@ my $DEBUG     = 0;
 
 print "%ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
-my %reserved = ( 'user'   => '',
-		 'submit' => '',
-		 'table'  => '',
-		 'res'    => '',
+my %reserved = ( 'user'       => '',
+		 'submit'     => '',
+		 'table'      => '',
+		 'res'        => '',
+		 'showheader' => '',
 );         
 
 unless ( $table ){ # offer a list of tables to select
@@ -112,7 +113,7 @@ my @objs = $table->search_like(\%sarg);
     </div>
 
     <div class="containerbody">
-    <& sortresults.mhtml, table => "$table", object => \@objs, view => "row", withdelete => 1, withedit => 1 &>
+    <& sortresults.mhtml, table => "$table", object => \@objs, withedit => 1 &>
     </div>
 </div>
 
