@@ -165,16 +165,17 @@ if ($view eq 'all' || $view eq "$table"){
 %           if ( $edit eq $i ){	    
                &nbsp;
 %           }else{
-	       <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>">[add]</a>
-%	       if ( $ftables{$i}{join} && $ftables{$i}{objs} ){
-                  <a href="view.html?table=<% $table %>&id=<% $id %>&edit=<% $i %>">[edit]</a>    
+%	       if ( (defined($ftables{$i}{objs})  && scalar(@{$ftables{$i}{objs}})) ||
+%		    (defined($ftables{$i}{robjs}) && scalar(@{$ftables{$i}{robjs}})) ){
+                   <a href="view.html?table=<% $table %>&id=<% $id %>&edit=<% $i %>">[edit]</a>
 %	       }
+	       <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>">[add]</a>
 %           }
 	    </div>
 %	       if ( $edit eq $i ){
-                 <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row", withdelete => 1, withedit => 1 &>
+                 <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, withedit => 1 &>
 %	       }else{
-                 <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, view => "row" &>
+                 <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs} &>
 %              }
           </div>
 %     }
