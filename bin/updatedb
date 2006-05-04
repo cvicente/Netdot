@@ -9,8 +9,6 @@ use DBUTIL;
 
 ($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWORD, $DB_DATABASE) = @ARGV;
 
-
-
 if ( my $dbh = &dbconnect($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWORD, $DB_DATABASE) ){
     
     # Convert Mysql tables from MyISAM to INNODB
@@ -20,10 +18,42 @@ if ( my $dbh = &dbconnect($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWOR
     }
     
     # Drop the obsolete Meta table
-    push @lines, "DROP TABLE Meta";
+    push @lines, "
+DROP TABLE Meta";
+    
+    # column nsdname should be an integer, not a varchar
+    push @lines, "
+ALTER TABLE RRNS CHANGE nsdname nsdname int(11) default NULL";
 
-	# column nsdname should be an integer, not a varchar
-	push @lines, "ALTER TABLE RRNS CHANGE nsdname nsdname int(11) default NULL";
+    # Add VLanGroup and modify related stuff
+    push @lines, "
+CREATE TABLE VlanGroup (
+  info LONGBLOB NULL  ,
+  name varchar(128) NOT NULL  ,
+  id INTEGER NOT NULL  AUTO_INCREMENT,
+  description varchar(255) NULL  ,
+  end integer NOT NULL  ,
+  start integer NOT NULL  ,
+  PRIMARY KEY (id)
+);
+CREATE UNIQUE INDEX VlanGroup1 ON VlanGroup (name);
+CREATE TABLE VlanGroup_history (
+  info LONGBLOB NULL  ,
+  name varchar(128) NOT NULL  ,
+  vlangroup_id integer NOT NULL  ,
+  description varchar(255) NULL  ,
+  modifier varchar(32) NULL  ,
+  modified DATETIME NOT NULL  ,
+  end integer NOT NULL  ,
+  id INTEGER NOT NULL  AUTO_INCREMENT,
+  start integer NOT NULL  ,
+  PRIMARY KEY (id)
+);
+CREATE INDEX VlanGroup_history1 ON VlanGroup_history (vlangroup_id);
+ALTER TABLE Vlan DROP COLUMN subnet;
+ALTER TABLE Vlan ADD COLUMN name varchar(255) AFTER vid;
+ALTER TABLE Ipblock ADD COLUMN vlan integer AFTER dhcp_enabled;
+";
     
     &processdata($dbh, \@lines);
     

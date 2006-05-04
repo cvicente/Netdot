@@ -41,7 +41,7 @@ my $title;
 my @list;
 my $covering_block;
 my %S_LBL = ( 'SEARCH_ADDR'  => 'IP[/prefix]',
-	          'SEARCH_REGEX' => 'IP regex',
+	      'SEARCH_REGEX' => 'IP regex',
               'SEARCH_OTHER' => 'Entity/Site/Descr'
 	      );
 if ( $id ){
@@ -685,6 +685,21 @@ if ( my $sn = $o->status->name ){
 push( @cell_data, $status );
 
 ################
+# Created, Modified
+push (@field_headers, "First Created", "Last Modified");
+my %createdtmp = $ui->form_field(object=>$o, column=>'first_seen', edit=>0);
+my %modtmp     = $ui->form_field(object=>$o, column=>'last_seen',  edit=>0);
+push( @cell_data, $createdtmp{'value'}, $modtmp{'value'} );
+
+################
+# Vlan
+if ( $o->status->name eq 'Subnet' ){
+    my %vlan_tmp = $ui->form_field(object=>$o, column=>"vlan", edit=>$edit_block, linkPage=>"view.html");
+    push( @field_headers, $vlan_tmp{'label'} );
+    push( @cell_data, $vlan_tmp{'value'} );
+}
+
+################
 # Description, Info
 {
     my @fields = ('description','info');
@@ -711,11 +726,6 @@ push( @field_headers, $usedby_tmp{'label'} );
 push( @cell_data, $usedby_tmp{'value'} );
 
 
-################
-# First seen, last seen
-my @fields = ('first_seen','last_seen');
-$ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-
 </%perl>
 
 <%perl>
@@ -723,11 +733,6 @@ $ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@
 
 my $ip = new NetAddr::IP($o->address, $o->prefix);
 
-################
-# Network
-	push( @field_headers, "Network:" );
-	push( @cell_data, ($ip->version == 6?$ip->network->short:$ip->network->addr) );
-	
 ################
 # Broadcast
 	push( @field_headers, "Broadcast:" );

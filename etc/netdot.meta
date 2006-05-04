@@ -3882,7 +3882,20 @@ $meta = {
         nullable => 0,
         tag => 'Version(4/6)',
         type => 'integer'
-      }
+      },
+      vlan => {
+        default => '',
+        description => 'VLAN to which this subnet is associated',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'subnets',
+          table => 'Vlan'
+        },
+        nullable => 1,
+        tag => 'Vlan',
+        type => 'integer'
+      },
     },
     description => 'An IP (v4 or v6) Address',
     has_history => 0,
@@ -3925,6 +3938,7 @@ $meta = {
         'version',
         'parent',
         'interface',
+        'vlan',
         'status',
         'owner',
         'used_by',
@@ -5652,7 +5666,7 @@ $meta = {
           table => 'Zone'
         },
         nullable => 0,
-        tag => undef,
+        tag => 'Zone',
         type => 'integer'
       }
     },
@@ -5692,6 +5706,19 @@ $meta = {
         tag => 'Description',
         type => 'varchar'
       },
+      vlangroup => {
+        default => '',
+        description => 'VLAN group to which this VLAN belongs',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'vlans',
+          table => 'VlanGroup'
+        },
+        nullable => 0,
+        tag => 'Group',
+        type => 'integer'
+      },
       id => {
         default => '',
         description => '',
@@ -5708,18 +5735,13 @@ $meta = {
         tag => 'Comments',
         type => 'long varbinary'
       },
-      subnet => {
+      name => {
         default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'vlans',
-          table => 'Ipblock'
-        },
-        nullable => 0,
-        tag => 'Subnet',
-        type => 'integer'
+        description => 'Human-defined Name for this VLAN',
+        length => '255',
+        nullable => 1,
+        tag => 'Name',
+        type => 'varchar'
       },
       vid => {
         default => '',
@@ -5735,23 +5757,105 @@ $meta = {
     index => [],
     isjoin => '0',
     label => [
-      'vid'
+      'vid', 
+      'name'
     ],
     primary_key => 'id',
     unique => [
       [
-        'vid'
+        'vid',
       ]
     ],
     views => {
       all => [
         'vid',
-        'subnet',
+        'name',
+        'vlangroup',
         'description',
         'info'
       ],
       brief => [
-        'vid'
+        'vid',
+        'name'
+      ]
+    }
+  },
+  VlanGroup => {
+    columns => {
+      description => {
+        default => '',
+        description => 'A short description for this VlanGroup',
+        length => '255',
+        nullable => 1,
+        tag => 'Description',
+        type => 'varchar'
+      },
+      end => {
+        default => '',
+        description => 'Last VLAN number',
+        length => '',
+        nullable => 0,
+        tag => 'End',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'serial'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'long varbinary'
+      },
+      name => {
+        default => '',
+        description => 'A name identifying this VLAN group',
+        length => '128',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      start => {
+        default => '',
+        description => 'First VLAN number',
+        length => '',
+        nullable => 0,
+        tag => 'Start',
+        type => 'integer'
+      },
+    },
+    description => 'A Virtual LAN Group',
+    has_history => 1,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name', 
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'start',
+        'end',
+        'description',
+        'info'
+      ],
+      brief => [
+        'name',
+        'start',
+        'end',
       ]
     }
   },
