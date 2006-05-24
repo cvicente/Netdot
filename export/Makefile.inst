@@ -80,8 +80,8 @@ mk.rancid:
 install-docs:
 	@echo
 	@echo "Sending docs to $(DOCSHOST)";
-	for i in $(DOCSDIR)/$(DOCSFILES); do \
-	  scp $(DIR)/$(DOCSDIR)/$$i root@$(DOCSHOST):$(DOCSINSTALLDIR)/$$i ; \
+	cd $(DOCSDIR); for i in $(DOCSFILES); do \
+	  scp $$i root@$(DOCSHOST):$(DOCSINSTALLDIR)/$$i ; \
 	done
 
 install-sysmon:
