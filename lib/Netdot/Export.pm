@@ -15,28 +15,29 @@ use Data::Dumper;
 use vars qw ( @EXPORT @ISA @EXPORT_OK);
 
 @ISA       = qw( Exporter ) ;
-@EXPORT    = qw(getparents resolve);
+@EXPORT    = qw( get_dependencies resolve );
 @EXPORT_OK = qw();
 
 my $DEBUG = 0;
 
-# We'll strip off our own domain from DNS
-# names
-my $domain = ".uoregon.edu";
 
+1;
 
-sub getparents{
+sub get_dependencies{
 ########################################################################
 # Recursively look for valid parents
 # If the parent(s) don't have ip addresses or are not managed,
 # try to keep the tree connected anyways
-# Arguments:  
-#   0: scalar: Interface table object
+# Arguments: 
+#   interface => scalar: Interface table object
+#   recursive => flag. indicates whether recursiveness is wanted
 # Returns:
 #   array of parent ips
 ########################################################################
     
-    my ($intobj) = @_;
+    my (%args) = @_;
+    my $intobj    = $args{interface} || die "Need to pass interface object";
+    my $recursive = (defined $args{recursive}) ? $args{recursive} : 1;
     my @parents;
 
     # Get InterfaceDep objects
@@ -57,13 +58,35 @@ sub getparents{
 	}else{
 	    printf ("%s.%s is not a valid parent\n", 
 		    $parent->name, $parent->device->name->name) if $DEBUG;
-	    if ( my @grparents = &getparents($parent) ){
+	    next unless ( $recursive );
+	    # Go recursive
+	    my @grparents;
+	    if ( @grparents = &get_dependencies(interface=>$parent, recursive=>$recursive) ){
 		push @parents, @grparents;
+	    }else{
+		# Check if Device has other interfaces which have parents
+		foreach my $int ( $parent->device->interfaces ){
+		    next if $int->id == $parent->id;
+		    printf ("Trying %s.%s \n", $parent->device->name->name, $int->name) if $DEBUG;
+		    if ( @grparents = &get_dependencies(interface=>$int, recursive=>0) ){
+			if ( my $ip = ($int->ips)[0] ){
+			    # If this interface itself has an IP address, it should be the parent
+			    printf ("Adding %s.%s as parent of %s.%s\n", 
+				    $int->device->name->name, $int->name,
+				    $intobj->device->name->name, $intobj->name) if $DEBUG;
+			    push @parents, $ip; 
+			    last;
+			}else{
+			    push @parents, @grparents; 
+			    last;
+			}
+		    }
+		}
 	    }
 	}
     }
     return @parents if scalar @parents;
-    return undef;
+    return;
 }
 
 
@@ -86,7 +109,6 @@ sub resolve{
 	    warn "Can't resolve  $par: $!\n";
 	    return 0;
 	}
-	$name =~ s/$domain.*$//i;
 	return $name;
     }else{
 	my $ip;

@@ -133,7 +133,8 @@ if (defined($ARGS{_action})) {
 %               } elsif ($editStrand && defined($o)) {
                 <%perl>
                 # first we need to grab all backbones for start and end sites of this strand.
-                my ($start_site, $end_site) = ($o->cable->start_closet->floor->site, $o->cable->end_closet->floor->site);
+                my $start_site = $o->cable->start_closet->floor->site || $o->cable->start_closet->site;
+		my $end_site   = $o->cable->end_closet->floor->site   || $o->cable->end_closet->site;
                 my @backbones = ();
                 foreach my $closet (($start_site->closets, $end_site->closets))
                 {

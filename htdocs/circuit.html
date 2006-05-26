@@ -147,38 +147,22 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 %           }
     </div>
     <div class="containerbody">
-        <table>
-         <tr>
-          <td width="50%">
+
 <div class="left">
 <%perl>
 my (@field_headers, @cell_data);
 {
-my @fields = ('cid','connectionid','vendor','nearend','farend');
-my @linkpages = ('', 'view.html', 'view.html', 'view.html', 'view.html');
-$ui->add_to_fields(o=>$o, edit=>$editCircuit, fields=>\@fields, linkpages=>\@linkpages, field_headers=>\@field_headers, cell_data=>\@cell_data);
+    my @fields = ('cid','connectionid','vendor','nearend','farend','type','dlci','speed','installdate','status');
+    my @linkpages = ('', 'view.html', 'view.html', 'view.html', 'view.html');
+    $ui->add_to_fields(o=>$o, table=>"Circuit", edit=>$editCircuit, fields=>\@fields, linkpages=>\@linkpages, 
+		       field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
+$m->comp('attribute_table.mhtml', field_headers=>\@field_headers, data=>\@cell_data, width=>2);
+
+my %comments = $ui->form_field(object=>$o, table=>"Circuit", column=>"info", edit=>$editCircuit, 
+			       htmlExtra=>"rows='3' cols='80'");
 </%perl>
 
-<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-
-          </td>
-          <td width="50%">
-
-<%perl>
-(@field_headers, @cell_data) = ();
-{
-my @fields = ('type','dlci','speed','installdate','status');
-$ui->add_to_fields(o=>$o, edit=>$editCircuit, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-}
-</%perl>
-
-<& attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-
-          </td>
-         </tr>
-       </table>
-%      my %comments = $ui->form_field(object=>$o, column=>"info", edit=>$editCircuit, htmlExtra=>"rows='3' cols='80'");
        <div class="containerseparator"><% $comments{label} %></div>
        <% $comments{value} %>
     </div> <!-- close containerbody -->

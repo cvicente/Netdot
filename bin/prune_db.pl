@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
 ###############################################################
 # prune_db.pl
@@ -65,7 +65,7 @@ if( $HELP ) {
 }
 
 # Get DB handle 
-my $dbh = $ui->{dbh};
+my $dbh = $ui->db_Main;
 
 my @tables;
 map { push @tables, $_ if ($_ =~ /_history/ ) } sort $dbh->tables;

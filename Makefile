@@ -75,7 +75,7 @@ tests:
 	@echo "Installation directory: $(PREFIX)"
 	@echo 
 	@echo "Testing for required perl modules...."
-	perl -MCGI -e 1
+	perl -M'CGI 3.20' -e 1
 	perl -M'Class::DBI 3.0.10' -e 1
 	perl -MApache2::Request -e 1
 	perl -M'HTML::Mason 1.31' -e 1
@@ -87,7 +87,8 @@ tests:
 	perl -MSNMP -e 1
 	perl -MNetAddr::IP -e 1
 	perl -M'Apache2::SiteControl 1.0' -e 1
-	perl -I$(NVPREFIX)/lib -M'NetViewer::RRD::SNMP 0.29.6' -e 1
+	perl -M'GraphViz 2.02' -e 1
+	perl -I$(NVPREFIX)/lib -M'NetViewer::RRD::SNMP 0.29.13' -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi

@@ -1,160 +1,65 @@
-2003-07-10  stephenf  <netdot@tiroloco.uoregon.edu>
+------------------------------------------------------------------------
+r1425 | cvicente | 2006-05-24 16:38:14 -0700 (Wed, 24 May 2006) | 1 line
 
-	* node.html 
-	Mostly in place, just waiting for code to insert subnets (if
-	necessary).  Otherwise, inserts nodes, interfaces, and ip addresses. 
+Minor correction
+------------------------------------------------------------------------
+r1424 | cvicente | 2006-05-23 13:28:59 -0700 (Tue, 23 May 2006) | 1 line
 
-	* create.html
-	Updated to use GUI.pm.  New state code.  Improvements to UI.
-	Minor issue as described below still exists, but this is a low
-	priority.
+Added Rancid to the list of export routines.  Standardized, cleaned up and fixed bugs in most export scripts and Makefile
+------------------------------------------------------------------------
+r1419 | cvicente | 2006-05-01 11:36:23 -0700 (Mon, 01 May 2006) | 1 line
 
-	* updatenodes.pl
-	Script for cron to run daily and update node, interface, ip, and
-	subnet information.
+Added GraphViz to the list of requirements
+------------------------------------------------------------------------
+r1418 | cvicente | 2006-05-01 10:32:46 -0700 (Mon, 01 May 2006) | 1 line
 
-2003-06-03  stephenf  <netdot@tiroloco.uoregon.edu>
+Small fix
+------------------------------------------------------------------------
+r1417 | cvicente | 2006-05-01 08:51:39 -0700 (Mon, 01 May 2006) | 1 line
 
-	* create.html
-	This file is now functional.  Interface is mostly there.  There
-	are some lingering issues regarding a case where name field is
-	filled on one page, submit is clicked, and the subsequent page has
-	a name field (which is filled in with the value from the last
-	page).  This is a minor issue.  Otherwise, correct state follows
-	navigation. 
+Small fix
+------------------------------------------------------------------------
+r1413 | cvicente | 2006-04-27 14:18:06 -0700 (Thu, 27 Apr 2006) | 1 line
 
-	* browse.html
-	Basic functionality is there, with a decent looking initial page. 
+Fixed bug in UI.pm.  A table does not necessarily have has_a relationships
+------------------------------------------------------------------------
+r1408 | cvicente | 2006-04-26 13:20:29 -0700 (Wed, 26 Apr 2006) | 1 line
 
-	* table.html
-	Component that creates an (html) table that displays all the
-	objects (tables) in the database.  Finished.
+Moved variables out of export Makefile.  Fixed bugs in Nagios configuration script
+------------------------------------------------------------------------
+r1407 | cvicente | 2006-04-26 11:43:25 -0700 (Wed, 26 Apr 2006) | 1 line
 
-	* sortresults.html
-	General functionality is there.  Work is needed on the
-	appearance. 
+Several bug fixes, mostly related to ticket #137 (MySQL server has gone away)
+------------------------------------------------------------------------
+r1401 | cvicente | 2006-04-25 14:45:19 -0700 (Tue, 25 Apr 2006) | 1 line
 
-	* search.html 
-	Mostly finished.  Probably have some lingering UI issues.
+Fix for ticket #306 (Adding new backbone cable broken)
+------------------------------------------------------------------------
+r1400 | cvicente | 2006-04-25 10:05:02 -0700 (Tue, 25 Apr 2006) | 1 line
 
-	* form.html
-	Component for creating a <form> </form> section for a specific
-	instance from a given table.  This has problems with update.html -
-	the new buttons don't go to create.html.  Initial test of wrapping
-	New buttons with <form action=create> didn't seem to work too
-	well.  Will need more tests to evaluate this problem.
+Enforce use of CGI v 3.20 or later
+------------------------------------------------------------------------
+r1399 | cvicente | 2006-04-24 16:12:26 -0700 (Mon, 24 Apr 2006) | 1 line
 
-2003-04-17  cvicente  <cvicente@tiroloco.uoregon.edu>
+Small bug fix in getparents routine
+------------------------------------------------------------------------
+r1396 | cvicente | 2006-04-23 22:18:36 -0700 (Sun, 23 Apr 2006) | 1 line
 
-	* Added ifAlias and jackNumber to Interface
-	* Other minor fixes in netdot.schema	 
+Fix for ticket 307
+------------------------------------------------------------------------
+r1395 | cvicente | 2006-04-21 15:17:27 -0700 (Fri, 21 Apr 2006) | 1 line
 
-2003-04-16  netdot  <netdot@tiroloco.uoregon.edu>
+Added missing Export.pm to list of files to install
+------------------------------------------------------------------------
+r1393 | cvicente | 2006-04-21 15:03:25 -0700 (Fri, 21 Apr 2006) | 1 line
 
-	* ins.sample.data: thinking through Meta table
+Fixed the sorting of VLANs in drop-down menu
+------------------------------------------------------------------------
+r1392 | cvicente | 2006-04-21 14:39:49 -0700 (Fri, 21 Apr 2006) | 1 line
 
-	* DBI.pm, netdot.schema:
-	fix to Meta -- changed mainObjects to mainObject
+Removed Netviewer category for Cisco Catalyst (not needed)
+------------------------------------------------------------------------
+r1389 | cvicente | 2006-04-21 13:55:36 -0700 (Fri, 21 Apr 2006) | 1 line
 
-	* DBI.pm: added more details to Meta.
-
-	* netdot.schema: added Meta table for storing meta information
-
-	* DBI.pm:
-	added Meta table for holding meta information.  this should include:
-	  * column sorting
-	  * table relationships
-	  * 'main object'
-	still needs to be fleshed out....
-
-2003-04-15  netdot  <netdot@tiroloco.uoregon.edu>
-
-	* DBI.pm:
-	couple more bugfixes: another 'qw' forgot in Availability and misnamed
-	column in Customer (s/hours/availability/)
-
-	* DBI.pm: removed tables() function.  Use DBI::tables() instead.
-
-	* DBI.pm: fixed another bug in Peer package -- forgot 'qw'.
-
-	* DBI.pm:
-	added tables() to base class.  I need a way to discover all the tables
-	in the database -- don't see a way to do that in Class::DBI.  Fixed
-	bug in package Peer.
-
-	* ins.sample.data: added some nero entries to flesh things out a bit
-
-	* ins.sample.data: New file.
-
-2003-04-14  netdot  <netdot@tiroloco.uoregon.edu>
-
-	* netdot.schema, DBI.pm:
-	added disabled column to those classes with has_many relationships
-
-2003-04-10  netdot  <netdot@tiroloco.uoregon.edu>
-
-	* DBI.pm:
-	reflected change in netdot.schema.  Ip has_a Interface; Interface
-	has_many Ip.
-
-	* netdot.schema: removed ip from Interface and added interface to Ip.
-
-	* DBI.pm:
-	added the rest of the classes and completed the relationships between
-	all of them
-
-	* netdot.schema: changed contactpool to contactPool in Customer;
-	added status to Circuit;
-	added ip to Interface;
-	added availability to Peer.
-
-	* netdot.schema: changed nodeId to nodeID; still need to add 'disabled'
-
-	* DBI.pm: updated column names to new naming convention
-
-	* DBI.pm: added a few more classes
-
-	* netdot.schema:
-	changed naming convention for column names (first letter now lowercase)
-
-	* DBI.pm:
-	no changes on this rev; just sorting packages in alphabetical listing
-
-	* DBI.pm: fleshing out has_a relationships for existing classes.
-
-	* netdot.schema: more sorting
-
-	* netdot.schema:
-	no changes; just resorted everything to better find a given table.
-	sort order is now alphabetical
-
-2003-04-09  netdot  <netdot@tiroloco.uoregon.edu>
-
-	* DBI.pm: fleshing out definitions of each class.
-
-	* netdot.schema:
-	changed Hours to Availability in Customer to make consistent with Site
-	& Person tables.
-
-	* netdot.schema:
-	added Availability table -- used by a number of other tables
-
-	* DBI.pm: adding landmarks
-
-	* netdot.schema:
-	added Status table so that one can specify the status of a given circuit
-
-2003-04-08  netdot  <netdot@tiroloco.uoregon.edu>
-
-	* DBI.pm: testing trigger
-
-	* README: New file.
-
-	* netdot.schema: initial revision
-
-	* netdot.schema: New file.
-
-	* setup-class-dbi.pl: initial checkin
-
-	* setup-class-dbi.pl, initacls.Pg: New file.
-
+Fix for ticket #304 (General search hangs)
+------------------------------------------------------------------------
