@@ -84,7 +84,7 @@ installdb: initialize.$(DB_TYPE) installdefault installmeta
 updatedb: update installmeta
 
 update:
-	$(PERL) updatedb '$(DB_TYPE)' '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DATABASE)'
+	$(PERL) updatedb '$(DB_TYPE)' '$(DB_HOME)' '$(DB_HOST)' '$(DB_PORT)' '$(DB_DBA)' '$(DB_DBA_PASSWORD)' '$(DB_DATABASE)'
 
 initialize.Pg: createdb genschema initdb.dba acls
 
