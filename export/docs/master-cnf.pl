@@ -63,19 +63,6 @@ sub setup{
 	die $USAGE;
     }
 
-    %types = (
-	      'Access Point'     => 'access-point', 
-	      'DSL Modem'	 => 'dsl-modem',
-	      'Firewall'         => 'host',
-	      'Hub'		 => 'hub',
-	      'IP Phone'	 => 'host',
-	      'Packet Shaper'	 => 'host',
-	      'Router'           => 'router',
-	      'Server'	         => 'host',
-	      'Switch'	         => 'switch',
-	      'Wireless Bridge'  => 'access-point',
-	      'Wireless Gateway' => 'access-point',
-	      );
 }
 
 ##################################################
@@ -94,14 +81,11 @@ sub gather_data{
 		 $ip->interface->device->productname->type){
 
 		$type = $ip->interface->device->productname->type->name;
-		if (exists $types{$type}){
-		    $type = $types{$type};
-		}else{
-		    $type = "host";
-		}
+		$type =~ s/\s+/-/g;
+		$type = lc($type);
 	    }else{
+		warn "Can't get product info from Device with ip $address" if $self{debug};
 		$type = 'host';
-		warn "Can't figure out type for Device with ip $address" if $self{debug};
 	    }
 	    if ( $ip->interface->device->site ){
 		my $s = $ip->interface->device->site;
@@ -128,7 +112,7 @@ sub gather_data{
 	
 	my $name;
 	unless ( ($name = &resolve($ip->address)) && !exists $name2ip{$name} ){
-	    $name = $ip->interface->device->name 
+	    $name = $ip->interface->device->name->name 
 		. "-" . $ip->interface->name
 		. "-" . $ip->address;
 	    warn "Assigned name $name \n" if $self{debug};
