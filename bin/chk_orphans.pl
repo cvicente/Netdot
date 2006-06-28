@@ -91,7 +91,7 @@ if ( @lost ){
 if ( @homeless ){
     @homeless = sort { $a->name->name cmp $b->name->name } @homeless;
     $output .= sprintf("\nThe following devices have no Site defined:\n");
-    map { $output = sprintf("  %s\n", $_->name->name) } @homeless;
+    map { $output .= sprintf("  %s\n", $_->name->name) } @homeless;
 }
 
 if ( @orphans ){
