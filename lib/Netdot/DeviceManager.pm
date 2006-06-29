@@ -2186,7 +2186,7 @@ sub convert_ifspeed {
 sub _is_valid {
     my ($self, $v) = @_;
     
-    if ( defined($v) && (length($v) > 0) && ($v !~ /nosuch/i) ){
+    if ( defined($v) && (length($v) > 0) && ($v !~ /nosuch|unknown/i) ){
 	return 1;
     }
     return 0;

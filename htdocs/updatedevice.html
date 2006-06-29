@@ -77,8 +77,12 @@ if ( $action eq "discover" ){
     if ( $device ){
 	# We got a device id, so we're most likely updating
 	my $devobj = Device->retrieve($device);
-	# Use FQDN always
-	$host = $devobj->name->name . "." . $devobj->name->zone->mname;
+	# Use FQDN if domain is available
+	if ( $devobj->name->zone && $devobj->name->zone->mname ){
+	    $host = $devobj->name->name . "." . $devobj->name->zone->mname;
+	}else{
+	    $host = $devobj->name->name;
+	}
 	$argv{comstr} = $devobj->community;
 	$argv{device} = $devobj;
     }elsif ( $host ){
