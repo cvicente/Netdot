@@ -176,7 +176,11 @@ if ( $id ){
 }
 if ( $o && $o->name ){
     $name = ($o->name->name) ? $o->name->name : "Name N/A!";
-    $fqdn = $name . "." . $o->name->zone->mname;
+    if ( $o->name->zone && $o->name->zone->mname ){
+	$fqdn = $o->name->name . "." . $o->name->zone->mname;
+    }else{
+	$fqdn = $o->name->name;
+    }
 
 }elsif ( ! $search ){
     $m->comp('error.mhtml', error=>"Device undefined or no name set");

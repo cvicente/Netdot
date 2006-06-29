@@ -364,8 +364,7 @@ sub update_device {
 	    # Try to guess product type
 	    # First based on name, then on some key oids
 	    
-	    my $type;
-	    my $typename;
+	    my ($type, $typename);
 	    foreach my $str ( keys %{ $self->{config}->{DEV_NAME2TYPE} } ){
 		if ( $host =~ /$str/ ){
 		    $typename = $self->{config}->{DEV_NAME2TYPE}->{$str};
@@ -384,15 +383,23 @@ sub update_device {
 		    $type = (ProductType->search(name=>"Switch"))[0];
 		}
 	    }
+	    my ( $typeid, $dbtypename );
+	    if ( ref($type) ){
+		$typeid   = $type->id;
+		$dbtypename = $type->name;
+	    }else{
+		$typeid   = 0;
+		$dbtypename = 'unknown';
+	    }
 	    my %prodtmp = ( name         => $dev{productname} || $dev{sysobjectid},
 			    description  => $dev{productname} || "",
 			    sysobjectid  => $dev{sysobjectid},
-			    type         => $type->id,
+			    type         => $typeid,
 			    manufacturer => $ent,
 			    );
 	    my $newprodid;
 	    if ( ($newprodid = $self->insert(table => 'Product', state => \%prodtmp)) ){
-		my $msg = sprintf("%s: Created product: %s.  Guessing type is %s.", $host, $prodtmp{name}, $type->name);
+		my $msg = sprintf("%s: Created product: %s.  Guessing type is %s.", $host, $prodtmp{name}, $dbtypename);
 		$self->debug( loglevel => 'LOG_NOTICE',
 			      message  => $msg );		
 		$self->output($msg);
@@ -2179,7 +2186,7 @@ sub convert_ifspeed {
 sub _is_valid {
     my ($self, $v) = @_;
     
-    if ( defined($v) && (length($v) > 0) && ($v !~ /nosuch/i) ){
+    if ( defined($v) && (length($v) > 0) && ($v !~ /nosuch|unknown/i) ){
 	return 1;
     }
     return 0;
