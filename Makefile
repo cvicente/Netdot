@@ -48,7 +48,7 @@ FMOD = 0644
 XMOD = 0744
 # If mason ever decides to use different directories in its data_dir there will
 # be trouble.
-DIR = bin doc htdocs/img htdocs/img/graphs htdocs/masondata/obj htdocs/masondata/cache tmp lib etc import export
+DIR = bin doc htdocs/img htdocs/img/graphs htdocs/masondata/obj htdocs/masondata/cache tmp lib etc import export export/nagios export/sysmon export/rancid export/docs
 
 .PHONY: tests bin doc htdocs lib etc
 
