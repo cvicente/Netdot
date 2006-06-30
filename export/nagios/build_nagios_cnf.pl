@@ -46,8 +46,8 @@ sub set_defaults {
 	     first_notif     => 4,
 	     last_notif      => 6,
 	     notif_interval  => 0,
-	     rtt             => 1,
-	     traps           => 1,
+	     rtt             => 0,
+	     traps           => 0,
 	     help            => 0,
 	     debug           => 0, 
 	     );
