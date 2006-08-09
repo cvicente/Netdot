@@ -198,9 +198,12 @@ sub gather_data{
 			}
 
 			# Get name from DNS
-			my $hostname = &resolve($address);
-			$hostname    =~ s/$self{strip_domain}// if $self{strip_domain};
-
+			my $hostname;
+			if ( $hostname = &resolve($address) ){
+  			    $hostname    =~ s/$self{strip_domain}// if $self{strip_domain};
+			}else{
+			    $hostname = $ip->interface->device->name->name;
+			}
 			# Ignore if in exclude file
 			if ( exists $EXCLUDE{$hostname} ){
 			    print "$hostname: was in exclude list\n" if $self{debug};
