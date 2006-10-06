@@ -72,11 +72,15 @@ sub gather_data{
     while ( my $ip = $it->next ){
 	next if $ip->address =~ /^127\.0\.0/;
 	next unless ( $ip->prefix == 32 || $ip->prefix == 128);
+	next unless $ip->interface->monitored;
 	my ($type, $site, $entity);
 	
 	if ( $ip->interface->device ){
-	    my $address = $ip->address;
+	    next unless $ip->interface->device->snmp_managed;
+	    next unless $ip->interface->device->monitored;
 
+	    my $address = $ip->address;
+	    
 	    if ( $ip->interface->device->productname &&
 		 $ip->interface->device->productname->type){
 
@@ -117,10 +121,11 @@ sub gather_data{
 		. "-" . $ip->address;
 	    warn "Assigned name $name \n" if $self{debug};
 	}
-	$name2ip{$name} = $ip->id;
-	$ip2name{$ip->id} = $name;
-	$hosts{$ip->address}{type} = $type;
-	$hosts{$ip->address}{name} = $name;
+	$name2ip{$name}                 = $ip->id;
+	$ip2name{$ip->id}               = $name;
+	$hosts{$ip->address}{type}      = $type;
+	$hosts{$ip->address}{name}      = $name;
+	$hosts{$ip->address}{community} = $ip->interface->device->community;
 	push @{ $entities{$entity}{site}{$site}{hosts} }, $ip->address;
 	
     }
@@ -155,14 +160,14 @@ sub build_configs {
     foreach my $entity ( sort keys %entities ){
 	
 	print "############################################################################################################################\n";
-	print "network               $entity                      NULL\n";
+	print "network              $entity                      NULL\n";
 	print "############################################################################################################################\n";
 	
 	print "\n";
 	
 	if ( my $entobj = Entity->retrieve($entities{$entity}{id}) ){
 	    foreach my $subnet ($entobj->used_blocks){
-		print "prefix                 ", $subnet->address, "/", $subnet->prefix, "\n";
+		print "prefix               ", $subnet->address, "/", $subnet->prefix, "\n";
 	    }
 	}
 	
@@ -173,14 +178,14 @@ sub build_configs {
 	    $~ = "HOSTLIST";
 	    select ($oldhandle);
 	    
-	    print "building               $site\n";
+	    print "building             $site\n";
 	    foreach my $ipadd (sort @{$entities{$entity}{site}{$site}{hosts}} ){
 		
 		# Define a format for the host list
 		
 		format HOSTLIST = 
-@<<<<<<<<<<<<<<<<<<<<<<@<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<@<<<<<<<<<<<<<<<<<<<@<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-$hosts{$ipadd}{type}, $hosts{$ipadd}{name}, $ipadd, $hosts{$ipadd}{parents}
+@<<<<<<<<<<<<<<<<<<<<@<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<@<<<<<<<<<<<<<<<<<@<<<<<<<<<<<<<<<<<@<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+$hosts{$ipadd}{type}, $hosts{$ipadd}{name}, $ipadd, $hosts{$ipadd}{community}, $hosts{$ipadd}{parents}
 .
     write ;
 }
