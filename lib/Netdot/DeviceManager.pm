@@ -1064,6 +1064,7 @@ sub update_device {
 	    $self->output($msg);		
 
 	    my $ip = Ipblock->retrieve($dbips{$nonip});
+	    next unless $ip;
 
 	    # Get RRs before deleting object
 	    map { push @nonrrs, $_->rr } $ip->arecords;
