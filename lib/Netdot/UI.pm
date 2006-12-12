@@ -487,8 +487,8 @@ sub form_field {
     my %linksto  = $self->getlinksto( $tableName );
     my %order    = $self->getcolumnorder( $tableName )
 	or croak "Failed to get column order for $tableName";
-    my %tags     = $self->getcolumntags( $tableName )
-	or croak "Failed to get column tags for $tableName";
+    my %tags     = $self->getcolumntags( $tableName );
+
     my %coltypes = $self->getcolumntypes( $tableName )
 	or croak "Failed to get column types for $tableName";
     
