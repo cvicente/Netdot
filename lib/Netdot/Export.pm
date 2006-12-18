@@ -18,7 +18,7 @@ use vars qw ( @EXPORT @ISA @EXPORT_OK);
 @EXPORT    = qw( get_dependencies resolve );
 @EXPORT_OK = qw();
 
-my $DEBUG = 1;
+my $DEBUG = 0;
 
 
 1;
