@@ -99,6 +99,10 @@ sub build_configs{
 	
 	foreach my $o ( sort { $a->name->name cmp $b->name->name } @devices ){
 	    my $name = $o->name->name;
+	    if ( $o->name->zone ){
+		my $fqdn = $o->name->zone->mname;
+		print $name, " -- FQDN: $fqdn\n" if $fqdn;
+	    }
 	    print $name, " -- Building: ", $o->site->name, "\n";
 	    print $name, " -- Room:", $o->room, "\n" if ( $o->room );
 	    print $name, " -- Rack:", $o->rack, "\n" if ( $o->rack );
