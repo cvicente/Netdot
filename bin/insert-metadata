@@ -207,9 +207,9 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'cid', 
 	  'cid,connectionid,status,nearend,farend,type,speed,dlci,installdate,vendor,info', 
 	  'cid,connectionid,nearend,farend,type,vendor,status', 
-	  'cid:Circuit ID,connectionid:Part of Connection,status:Status,nearend:Near Interface,farend:Far Interface,type:Type,speed:Speed,dlci:DLCI,installdate:Installed on,vendor:Provider,info:Comments',
+	  'cid:Circuit ID,connectionid:Part of NetConnection,status:Status,nearend:Near Interface,farend:Far Interface,type:Type,speed:Speed,dlci:DLCI,installdate:Installed on,vendor:Provider,info:Comments',
 	  '',
-	  'type:CircuitType,nearend:Interface,farend:Interface,connectionid:Connection,vendor:Entity,status:CircuitStatus', 
+	  'type:CircuitType,nearend:Interface,farend:Interface,connectionid:NetConnection,vendor:Entity,status:CircuitStatus', 
 	  'strands:CableStrand:circuit_id', 
 	  '0', 
 	  'A WAN circuit provided by a third party'
@@ -264,7 +264,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'Closet Pictures');
 
 INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, columndescr, linksto, linksfrom, isjoin, description) 
-  VALUES ('Connection', 
+  VALUES ('NetConnection', 
 	  'name', 
 	  'name,entity,nearend,farend,info', 
 	  'name,entity,nearend,farend', 
@@ -389,7 +389,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,aliases:Aliases,type:Type,availability:Availability,contactlist:Contact List,acctnumber:Account Number,maint_contract:Maintenance Contract,asname:AS Name,asnumber:AS Number,oid:Enterprise OID,info:Comments',
 	  '',
 	  'contactlist:ContactList,availability:Availability,type:EntityType', 
-	  'connections:Connection:entity,sites:EntitySite:entity,products:Product:manufacturer,own_blocks:Ipblock:owner:{cascade=>"Nullify"},owned_devices:Device:owner:{cascade=>"Nullify"},used_blocks:Ipblock:used_by:{cascade=>"Nullify"},cables:BackboneCable:owner:{cascade=>"Nullify"},used_devices:Device:used_by:{cascade=>"Nullify"},people:Person:entity,bgppeers:BGPPeering:entity', 
+	  'connections:NetConnection:entity,sites:EntitySite:entity,products:Product:manufacturer,own_blocks:Ipblock:owner:{cascade=>"Nullify"},owned_devices:Device:owner:{cascade=>"Nullify"},used_blocks:Ipblock:used_by:{cascade=>"Nullify"},cables:BackboneCable:owner:{cascade=>"Nullify"},used_devices:Device:used_by:{cascade=>"Nullify"},people:Person:entity,bgppeers:BGPPeering:entity', 
 	  '0', 
 	  'An organization related to the network in some way');
 
@@ -740,7 +740,7 @@ INSERT INTO Meta (name, label, columnorder, columnorderbrief, columntags, column
 	  'name:Name,number:Site ID,aliases:Aliases,street1:Street (1),street2:Street (2),pobox:P.O. Box,city:City,state:State,zip:Zip/Postal Code,country:Country,availability:Availability,contactlist:Contact List,info:Comments',
 	  '',
 	  'availability:Availability,contactlist:ContactList', 
-	  'nearconnections:Connection:nearend,farconnections:Connection:farend,entities:EntitySite:site,devices:Device:site:{cascade=>"Nullify"},people:Person:location:{cascade=>"Nullify"},floors:Floor:site,closets:Closet:site', 
+	  'nearconnections:NetConnection:nearend,farconnections:NetConnection:farend,entities:EntitySite:site,devices:Device:site:{cascade=>"Nullify"},people:Person:location:{cascade=>"Nullify"},floors:Floor:site,closets:Closet:site', 
 	  '0', 
 	  'A Physical location');
 

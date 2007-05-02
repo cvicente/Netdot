@@ -410,7 +410,7 @@ sub findendpoint($$) {
 
 =head2 search_circuits - Search Circuits by keywords
 
- Relevant fields include: CID, Connection name, Connection Sites, Connection Entity
+ Relevant fields include: CID, NetConnection name, NetConnection Sites, NetConnection Entity
 
  Arguments: string or substring
  Returns: array of Circuit objects
@@ -425,7 +425,7 @@ sub search_circuits {
 
     map { $c{$_} = $_ } Circuit->search_like(cid => $crit);
     @sites = Site->search_like(name => $crit);
-    @conn  = Connection->search_like(name => $crit);
+    @conn  = NetConnection->search_like(name => $crit);
     @ent   = Entity->search_like(name => $crit);
 
     map { push @conn, $_->farconnections  } @sites;

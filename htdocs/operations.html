@@ -59,13 +59,13 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 if( $search ) {
 
-    @tables = qw( Connection Device Entity Person Site RR );
+    @tables = qw( NetConnection Device Entity Person Site RR );
     if( defined( $search ) && $search =~ /\w+/ ) {
 
         # walk through a set of tables and search each column
         foreach my $tbl ( @tables ) {
             my @columns = $tbl->_essential();
-            if( $tbl ne "Connection" && $tbl ne "RR" ) {
+            if( $tbl ne "NetConnection" && $tbl ne "RR" ) {
                 push @columns, "aliases";
             }
             my %linksto = $ui->getlinksto($tbl);
@@ -114,7 +114,7 @@ if( $search ) {
 
 if( %results ) {
 
-    # Tables with entity column: Connection Device Person
+    # Tables with entity column: NetConnection Device Person
     # Site must use EntitySite to look up the corresponding Entity
     foreach my $tbl ( keys %results ) {
         foreach my $id ( keys %{ $results{$tbl} } ) {
