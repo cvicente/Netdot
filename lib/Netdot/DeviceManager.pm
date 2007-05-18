@@ -1157,18 +1157,23 @@ sub update_device {
 					       bgppeeraddr => $peer ))[0] ){
 		# Doesn't exist.  
 		# Check if we have some Entity info
-		next unless ( exists ($dev{bgppeer}{$peer}{asnumber}) ||
-			      exists ($dev{bgppeer}{$peer}{asname}) ||
-			      exists ($dev{bgppeer}{$peer}{orgname})
-			      ); 
 		my $ent;
-		# Check if Entity exists
-		unless ( ( $ent = (Entity->search( asnumber => $dev{bgppeer}{$peer}{asnumber}))[0] ) ||  
-			 ( $ent = (Entity->search( asname   => $dev{bgppeer}{$peer}{asname}))  [0] ) ||  
-			 ( $ent = (Entity->search( name     => $dev{bgppeer}{$peer}{orgname})) [0] )
-			 ){
+		if ( $dev{bgppeer}{$peer}{asnumber} ){
+		    $ent = (Entity->search( asnumber => $dev{bgppeer}{$peer}{asnumber}))[0];
 		    
-		    # Doesn't exist. Create Entity
+		}elsif ( $dev{bgppeer}{$peer}{asname} ){
+		    $ent = (Entity->search( asname => $dev{bgppeer}{$peer}{asname}))[0];
+		    
+		}elsif ( $dev{bgppeer}{$peer}{orgname} ){
+		    $ent = (Entity->search( name => $dev{bgppeer}{$peer}{orgname}))[0];
+		}
+		
+		# If we didn't find an entity
+		if ( !defined($ent) && 
+		     defined($dev{bgppeer}{$peer}{orgname}) &&
+		     defined($dev{bgppeer}{$peer}{asname})
+		     ){
+		    # Doesn't exist, but we have some info. Create Entity
 		    my $msg = sprintf("%s: Entity %s (%s) not found. Creating", 
 				      $host, $dev{bgppeer}{$peer}{orgname}, $dev{bgppeer}{$peer}{asname});
 		    $self->debug( loglevel => 'LOG_INFO',
@@ -1179,7 +1184,7 @@ sub update_device {
 		    }
 		    my $entname = $dev{bgppeer}{$peer}{orgname} || $dev{bgppeer}{$peer}{asname} ;
 		    $entname .= "($dev{bgppeer}{$peer}{asnumber})";
-
+		    
 		    if ( my $entid = $self->insert(table => 'Entity', 
 						   state => { name     => $entname,
 							      asname   => $dev{bgppeer}{$peer}{asname},
@@ -1199,28 +1204,32 @@ sub update_device {
 			$ent = 0;
 		    }
 		}
+		$ent ||= 0;
 
 		# Create Peering
-		if ( $ent ){
-		    my %ptmp = (device      => $device,
-				entity      => $ent,
-				bgppeerid   => $dev{bgppeer}{$peer}{bgppeerid},
-				bgppeeraddr => $peer,
-				monitored     => 1,
-				);
-		    if ( ($p = $self->insert(table => 'BGPPeering', 
-					     state => \%ptmp ) ) ){
-			my $msg = sprintf("%s: Created Peering with: %s. ", $host, $ent->name);
-			$self->debug( loglevel => 'LOG_NOTICE',
-				      message  => $msg );
-			$self->output($msg);
-		    }else{
-			my $msg = sprintf("%s: Could not create Peering with : %s: %s",
-					  $host, $ent->name, $self->error );
-			$self->debug( loglevel => 'LOG_ERR',
-				      message  => $msg,
-				      );
-		    }
+		my %ptmp = (device      => $device,
+			    entity      => $ent,
+			    bgppeerid   => $dev{bgppeer}{$peer}{bgppeerid},
+			    bgppeeraddr => $peer,
+			    monitored   => 1,
+			    );
+
+		my $peername = ($ent)? $ent->name : $peer;
+
+		if ( ($p = $self->insert(table => 'BGPPeering', 
+					 state => \%ptmp ) ) ){
+
+
+		    my $msg = sprintf("%s: Created Peering with: %s. ", $host, $peername);
+		    $self->debug( loglevel => 'LOG_NOTICE',
+				  message  => $msg );
+		    $self->output($msg);
+		}else{
+		    my $msg = sprintf("%s: Could not create Peering with : %s: %s",
+				      $host, $peername, $self->error );
+		    $self->debug( loglevel => 'LOG_ERR',
+				  message  => $msg,
+				  );
 		}
 	    }else{
 		# Peering Exists.  Delete from list
@@ -1581,49 +1590,50 @@ sub get_dev_info {
 	
 	foreach my $peer ( keys %{ $nv{bgpPeer} } ) {
 	    my $peerid = $nv{bgpPeer}{$peer}{bgpPeerIdentifier};
-	    unless ( $peerid ){
+	    unless ( defined $peerid ){
 		$self->debug( loglevel => 'LOG_DEBUG', 
 			      message  => "Did not get bgpPeerIdentifier for peer %s",
 			      args     => [$peer]);
-		next;
+		$peerid = "0.0.0.0";
 	    }
 	    
 	    $dev{bgppeer}{$peer}{bgppeerid} = $peerid;
+
 	    my $asn = $nv{bgpPeer}{$peer}{bgpPeerRemoteAs};
-	    unless ( $asn ){
+	    if ( defined $asn ){
+		$dev{bgppeer}{$peer}{asnumber} = $asn;
+		
+		# Query any configured WHOIS servers for more info
+		#
+		if ( $self->{config}->{DO_WHOISQ} ){
+		    my $found = 0;
+		    foreach my $host ( keys %{$self->{config}->{WHOISQ}} ){
+			my @lines = `whois -h $host AS$asn`;
+			unless ( grep /No.*found/i, @lines ){
+			    foreach my $key ( keys %{$self->{config}->{WHOISQ}->{$host}} ){
+				my $exp = $self->{config}->{WHOISQ}->{$host}->{$key};
+				if ( my @l = grep /^$exp/, @lines ){
+				    my (undef, $val) = split /:\s+/, $l[0]; #first line
+				    chomp($val);
+				    $dev{bgppeer}{$peer}{$key} = $val;
+				    $found = 1;
+				}
+			    }
+			}
+			last if $found;
+		    }
+		    unless ( $found ){
+			$dev{bgppeer}{$peer}{asname}  = "AS $asn";
+			$dev{bgppeer}{$peer}{orgname} = "AS $asn";		    
+		    }
+		}else{
+		    $dev{bgppeer}{$peer}{asname}  = "AS $asn";
+		    $dev{bgppeer}{$peer}{orgname} = "AS $asn";
+		}
+	    }else{
 		$self->debug( loglevel => 'LOG_DEBUG', 
 			      message  => "Did not get bgpPeerRemoteAs for peer %s",
 			      args     => [$peer]);
-		next;
-	    }
-	    $dev{bgppeer}{$peer}{asnumber} = $asn;
-	    
-	    # Query any configured WHOIS servers for more info
-	    #
-	    if ( $self->{config}->{DO_WHOISQ} ){
-		my $found = 0;
-		foreach my $host ( keys %{$self->{config}->{WHOISQ}} ){
-		    my @lines = `whois -h $host AS$asn`;
-		    unless ( grep /No.*found/i, @lines ){
-			foreach my $key ( keys %{$self->{config}->{WHOISQ}->{$host}} ){
-			    my $exp = $self->{config}->{WHOISQ}->{$host}->{$key};
-			    if ( my @l = grep /^$exp/, @lines ){
-				my (undef, $val) = split /:\s+/, $l[0]; #first line
-				chomp($val);
-				$dev{bgppeer}{$peer}{$key} = $val;
-				$found = 1;
-			    }
-			}
-		    }
-		    last if $found;
-		}
-		unless ( $found ){
-		    $dev{bgppeer}{$peer}{asname} = "AS $asn";
-		    $dev{bgppeer}{$peer}{orgname} = "AS $asn";		    
-		}
-	    }else{
-		$dev{bgppeer}{$peer}{asname} = "AS $asn";
-		$dev{bgppeer}{$peer}{orgname} = "AS $asn";
 	    }
 	}
     }
