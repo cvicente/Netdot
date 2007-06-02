@@ -1,53 +1,62 @@
 package Netdot::Meta;
 
+use Netdot::Meta::Table;
+
 use strict;
-use Data::Dumper;
 use Carp;
 
-my $meta;
-
-# Suffix for history table names
-my $HIST = '_history';  
 
 # Default location of the file that contains Meta Information
 my $META_FILE = "<<Make:ETC>>/netdot.meta";
+
+# Some private class data and related methods
+{
+    # Cache Meta::Table objects
+    my %_table_cache;
+
+    sub _cache_table {
+	my ($self, $obj) = @_;
+	$_table_cache{$obj->name} = $obj;
+	return 1;
+    }
+    sub _get_cached_table{
+	my ($self, $name) = @_;
+	if ( exists $_table_cache{$name} ){
+	    return $_table_cache{$name} ;
+	}
+    }
+}
 
 #Be sure to return 1
 1;
 
 =head1 NAME
 
-Netdot::Meta - Meta Information Class for Netdot
+Netdot::Meta - Metainformation Class for Netdot
 
 =head1 SYNOPSIS
 
-Netdot::Meta groups all the methods related to Netdot's metadata.
-Metadata is key in writing minimalist/reusable user interface code.
 
 =head1 PUBLIC METHODS
 
 =head2 new - Class Constructor
     
-    my $meta = Netdot::Meta->new(meta_file => "path/to/meta_file");
+    my $metainfo = Netdot::Meta->new(meta_file => "path/to/meta_file");
     
 =cut
 sub new {
     my ($proto, %argv) = @_;
-    my $class = ref( $proto ) || $proto;
-    my $self = {};
-    bless $self, $class;
+    my $class = ref($proto) || $proto;
     my $file = $argv{'meta_file'} || $META_FILE;
-    $meta = $self->_read_metadata($file);
-    unless (ref($meta) eq "HASH"){
-	croak "Error in metadata: file is not a valid hash: $file";
+    my $self = do "$file" or croak "Netdot::Meta::new(): Can't read $file: $@ || $!";
+    unless (ref($self) eq "HASH"){
+	croak "Netdot::Meta::new(): Error in metadata: file is not a valid hash reference: $file";
     }
-    wantarray ? ( $self, '' ) : $self;
-    
+    bless $self, $class;
 }
 
-=head2 get_tables
-
-    Returns an array of table names (including history tables)
+##################################################
+=head2 get_table_names -  Returns an array of table names
     
   Arguments:
     None
@@ -55,486 +64,180 @@ sub new {
     Array containing table names
   Example: 
 
-    @tables = $meta->get_tables();
+    @tables = $meta->get_table_names();
 
 =cut
-sub get_tables{
+sub get_table_names{
     my $self = shift;
-    my @ret;
-    my @tables = keys %{$self->_get_tables()};
-    foreach my $tab ( @tables ) {
-	push @ret, $tab;
-	# Add history tables if any 
-	if ( $self->_get_table_attr($tab, 'has_history') ){
-	    push @ret, $tab . $HIST;
-	}
-    }
-    return @ret;
+    my @names = sort keys %{$self->_get_tables_hash()};
+    return @names;
 }
 
-=head2 understanding get links methods
-
-The following two methods, get_links_to and get_links_from, have names corresponding to the following diagram:
-
- +------+   ``this has links_to that'' +------+
- |      | ``that has links_from this'' |      |
- | this |----------------------------->| that |
- |      |                              |      |
- +------+ Many                     One +------+
-
-Keep the arrow head (-->) in mind, otherwise the names would be ambiguous. 
-
-=cut
-
-=head2 get_links_to
-
-    Get one-to-many relationships for a given table, this table being on the "many" side 
-    (has_a definitions in Class::DBI).
-    This info is identical for history tables
-
-  Arguments:
-    Table name
-  Returns:
-    Hash.  The hash keys are the names of the local fields, and the values are the names of the tables
-    that these fields reference.
-  Example: 
-
-    %linksto = $meta->get_links_to($table);
-
-=cut
-sub get_links_to{
-    my ($self, $table) = @_;
-    croak "Need to pass table name" unless $table;
-    $table =~ s/$HIST//;
-    my %ret;
-    my $lt = $self->_get_column_attrs($table, 'linksto');
-    foreach my $col ( keys %$lt ){
-	$ret{$col} = $lt->{$col}->{table};
-    }
-    return %ret;
-}
-
-=head2 get_links_from
-
-    Get one-to-many relationships for a given table, this table being on the "one" side 
-    (equivalent to has_many definitions in Class::DBI).
-    History tables are not referenced by other tables
+##################################################
+=head2 get_table -  Get new Table object
     
   Arguments:
     Table name
   Returns:
-    Hash.  The keys of the main hash are identifiers for the relationship.  The nested hashs keys are names of
-    the tables that reference this table.  The values are the names of the fields in those tables that
-    reference this tables primary key.
+    New Table object 
   Example: 
+    my $mdevice = $meta->get_table('Device');
+    
+=cut
+sub get_table{
+    my ($self, $name) = @_;
+    my $newtable;
+    if ( $newtable = $self->_get_cached_table($name) ){
+	return $newtable;
+    }else{
+	my $actual_name = $name;
+	my $hf = $self->get_history_suffix();
+	$actual_name =~ s/$hf//;
+	my $info = $self->_get_table_info($actual_name);
+	$info->{name} = $name;
+	$info->{meta} = $self;
+	# Let new table know if it is a history table
+	if ( $name ne $actual_name ){
+	    $info->{is_history}     = 1;
+	    $info->{original_table} = $actual_name;
+	    $info->{has_history}    = 0;
+	}else{
+	    $info->{is_history}     = 0;
+	}
+	$newtable = Netdot::Meta::Table->new($info);
+	$self->_cache_table($newtable);
+    }
+    return $newtable;
+}
 
-    %linksfrom = $meta->get_links_from($table);
+##################################################
+=head2 get_tables - Get a list of all Table objects
+
+  Arguments:
+    with_history - If true, history tables will be included in the array
+  Returns:
+    Array
+  Example: 
+    my @meta_tables = $meta->get_tables;
 
 =cut
-sub get_links_from{
-    my ($self, $table) = @_;
-    croak "Need to pass table name" unless $table;
-    my %ret;
-    return if ( $table =~ /$HIST/ );
-    foreach my $t ( $self->get_tables() ){
-	next if ( $t =~ /$HIST/ );
-	my $lt = $self->_get_column_attrs($t, 'linksto');
-	foreach my $col ( keys %$lt ){
-	    if ($lt->{$col}->{table} eq $table){
-		my $method = $lt->{$col}->{method};
-		$ret{$method}{$t} = $col;
-		
+sub get_tables {
+    my ($self, %argv) = @_;
+    my @tables;
+    push @tables, $self->get_table($_) foreach $self->get_table_names();
+    my @all_tables = @tables;
+    # Add history tables if told to
+    if ( $argv{with_history} ){
+	foreach my $mtable ( @tables ){
+	    if ( !$mtable->is_history
+		 && ( my $hname = $mtable->get_history_table_name() ) ){
+		push @all_tables, $self->get_table($hname);
 	    }
 	}
     }
-    return %ret;
+    return @all_tables;
 }
 
-=head2 get_column_order
-    
-    Provide the position of all columns in a given table, in the order they are 
-    supposed to be displayed
+##################################################
+=head2 cdbi_classes - Produce Class::DBI subclasses
     
   Arguments:
-    Table name
+    base      - Our main Class::DBI subclass (base for other subclasses)
+    namespace - Classes will be defined under this namespace
   Returns:
-    Hash containing column positions, indexed by column name
+    Hashref keyed by Class names, values are Class definitions
   Example: 
-    
-   %order = $meta->get_column_order($table);
-   foreach my $col { sort $order{$a} <=> $order{$b} } keys %order
-     ...
+    my $subclasses = $meta->cdbi_classes(base => "Some::Package");
 
 =cut
-sub get_column_order{
-    my ($self, $table) = @_;
-    croak "Need to pass table name" unless $table;
-    my %ret;
-    my $hist;
-    if ( $table =~ s/$HIST// ){
-	$hist = 1;
-    }
-    my $views = $self->_get_table_attr($table, 'views');
-    if ( ! exists $views->{all} ){
-	return;
-    }
-    my @tmp = @{$views->{all}};
-    if ( $hist ){
-	push @tmp, ('modified', 'modifier');
-    }
-    my $i = 1;
-    map { $ret{$_} = $i++ } @tmp;
-    return %ret;
-}
+sub cdbi_classes{
+    my ($self, %argv) = @_;
+    my %classes;
+    croak "cdbi_classes: Need to pass base class" unless $argv{base};
 
-=head2 get_column_order_brief
-
-    Provide the position of most relevant columns in a given table, in the order they are 
-    supposed to be displayed
-
-  Arguments:
-    Table name
-  Returns:
-    Hash containing column positions, indexed by column name
-  Example: 
-     %orderbrief = $meta->get_column_order_brief($table);
-     foreach my $col { sort $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief
-       ...
-
-
-=cut
-sub get_column_order_brief {
-    my ($self, $table) = @_;
-    croak "Need to pass table name" unless $table;
-    my %ret;
-    my @tmp;
-    if ( $table =~ s/$HIST// ){
-	push @tmp, ('modified', 'modifier');
-    }
-    my $views = $self->_get_table_attr($table, 'views');
-    if ( ! exists $views->{brief} ){
-	return;
-    }
-    push @tmp, @{$views->{brief}};
-    my $i = 1;
-    map { $ret{$_} = $i++ } @tmp;
-    return %ret;
-}
-
-=head2 get_labels
-
-    Get labels for a given table. Labels are one or more columns used as hyperlinks to retrieve
-    the specified object.  They are also used as a meaningful instance identifier.
-
-  Arguments:
-    Table name
-  Returns:
-    Array containing columns included in the label
-  Example: 
-    @lbls = $meta->get_labels($table);
-
-
-=cut
-sub get_labels{
-    my ($self, $table) = @_;
-    croak "Need to pass table name" unless $table;
-    $table =~ s/$HIST// ;
-    my @labels = @{$self->_get_table_attr($table, 'label')};
-    return ( @labels ) ? @labels : undef;
-}
-
-=head2 is_join
-
-    Check if table is a join table
-
-  Arguments:
-    Table name
-  Returns:
-    True or false (1 or 0)
-  Example: 
-  $flag = $meta->is_join( $table );
-
-=cut
-sub is_join {
-    my ($self, $table) = @_;
-    croak "Need to pass table name" unless $table;
-    return $self->_get_table_attr($table, 'isjoin');
-}
-
-=head2 get_column_type
-
-    Given a table and a column name, returns the SQL type as defined in the schema
-
-  Arguments:
-    Table name, Column name
-  Returns:
-    Scalar containing the SQL type of the column
-  Example: 
-    $type = $meta->get_column_type( $table, $col );
-
-
-=cut
-sub get_column_type {
-    my ($self, $table, $col) = @_;
-    croak "Need to pass table and column " unless $table && $col;
-    my $attrs = $self->_get_column_attrs($table, 'type');
-    return ( exists $attrs->{$col} ) ?  $attrs->{$col} :  undef;
-}
-
-=head2 get_column_descr
-
-    Get the description for a given column.
-
-  Arguments:
-    Table name, Column name
-  Returns:
-    Scalar containing description for that column
-  Example: 
-    $descr = $meta->get_column_descr( $table, $col );
-
-
-=cut
-sub get_column_descr {
-    my ($self, $table, $col) = @_;
-    croak "Need to pass table and column " unless $table && $col;
-    my $attrs = $self->_get_column_attrs($table, 'description');
-    return ( exists $attrs->{$col} ) ?  $attrs->{$col} :  undef;
-}
-
-=head2 get_column_length
-
-    Get the DB length for a given column
-
-  Arguments:
-    Table name, Column name
-  Returns:
-    Scalar containing the length for that column
-  Example: 
-    $len = $meta->get_column_length( $table, $col );
-
-
-=cut
-sub get_column_length {
-    my ($self, $table, $col) = @_;
-    croak "Need to pass table and column " unless $table && $col;
-    my $attrs = $self->_get_column_attrs($table, 'length');
-    return ( exists $attrs->{$col} ) ?  $attrs->{$col} :  undef;
-}
-
-=head2 get_column_null
-
-    Get 'nullable' nature for a given column as defined in the DB.
-
-  Arguments:
-    Table name, Column name
-  Returns:
-    True or false.  True meaning that the column can be set to NULL.
-  Example: 
-    $null = $meta->get_column_null( $table, $col );
-
-=cut
-sub get_column_null {
-    my ($self, $table, $col) = @_;
-    croak "Need to pass table and column " unless $table && $col;
-    my $attrs = $self->_get_column_attrs($table, 'nullable');
-    return ( exists $attrs->{$col} ) ?  $attrs->{$col} :  undef;
-}
-
-=head2 get_column_tag
-
-    Get the tag for a given column.
-    A column tag is the user-friendly name for the column displayed in the 
-    user interface.
-
-  Arguments:
-    Table name, Column name
-  Returns:
-    Scalar containing the tag string
-  Example: 
-    $tag = $meta->get_column_tag( $table, $column );
-
-=cut
-sub get_column_tag {
-    my ($self, $table, $col) = @_;
-    croak "Need to pass table and column " unless $table && $col;
-    my $attrs = $self->_get_column_attrs($table, 'tag');
-    return ( exists $attrs->{$col} ) ?  $attrs->{$col} :  undef;
-}
-
-=head2 get_column_tags
-
-    Get tags for all columns in a given table.
-    A column tag is the user-friendly name of the column displayed in the 
-    user interface.
-
-  Arguments:
-    Table name
-  Returns:
-    Hash of column tags indexed by column name.
-  Example: 
-    %tags = $meta->get_column_tags( $table );
-
-=cut
-sub get_column_tags {
-    my ($self, $table) = @_;
-    croak "Need to pass table name" unless $table;
-    my $attrs = $self->_get_column_attrs($table, 'tag');
-    return %{$attrs};
-}
-
-=head2 is_unique
-
-    Get a flag with the 'uniqueness' nature of a column.
-    This is basically used to determine if the column is required when showing a form.
-    Note: We do not use the NULLABLE attribute to determine this because in our case, 
-    columns defined as 'NOT NULL' happen to be set to '0', even if the assigned Perl value 
-    is undef.
-
-  Arguments:
-    Table name, Column name
-  Returns:
-    True or False
-  Example: 
-    $unique = $meta->is_unique( $table, $col );
-
-=cut
-sub is_unique {
-    my ($self, $table, $col) = @_;
-    croak "Need to pass table and column" unless $table && $col;
-    my $unique = $self->get_table_attr($table, 'unique');
-    # The unique attribute is an arrayref of arrayrefs
-    # If the column is contained in any of these, it is 
-    # unique
-    map { return scalar(grep /^$col$/, @$_) } @$unique;
-}
-
-=head2 cdbi_defs
-
-    Use metadata to generate Class::DBI table definitions 
-    (See Class::DBI documentation on CPAN)
-    A few assumptions are made.  For example, the 'essential' list of columns
-    will be the 'brief' list view, which is the set of columns shown when
-    listing multiple objects.
-
-  Arguments:
-    None
-  Returns:
-    Scalar (text) containing CDBI class definitions
-  Example: 
-    my $defs = $meta->cdbi_defs();
-
-=cut
-
-sub cdbi_defs {
-    my $self = shift;
-    my @tables = $self->get_tables();
-    my $ret;
-
-    foreach my $table ( sort @tables ){
-	$ret .= "\n######################################################################\n";
-	$ret .= "package $table;\n";
-	$ret .= "######################################################################\n";
-	$ret .= "use base 'Netdot::DBI';\n";
-	$ret .= "__PACKAGE__->table( '$table' );\n";
+    # Build a Class for each DB table
+    foreach my $table ( $self->get_tables(with_history => 1) ){
+	my ($code, $package);
+	$package = ($argv{namespace}) ? $argv{namespace}."::".$table->name : $table->name;
+	$code .= "package ".$package.";\n";
+	$code .= "use base '$argv{base}';\n";
+	$code .= "__PACKAGE__->table( '".$table->name."' );\n";
 
 	# Set up primary columns
-	$ret .=  "__PACKAGE__->columns( Primary => qw / id /);\n";
-	
+	$code .=  "__PACKAGE__->columns( Primary => qw / id /);\n";
+
 	# Define 'Essential' and 'Others' 
 	my %cols;
-	map { $cols{$_} = 1 } keys %{$self->_get_columns($table)};
-	my %brief = $self->get_column_order_brief($table);
+	map { $cols{$_->name} = '' } $table->get_columns;
+	delete $cols{'id'};
+	my %brief = $table->get_column_order_brief();
 	my @essential = keys %brief;
-	delete $cols{$_} foreach (@essential);
 	my $essential = join ' ', @essential;
-	$ret .= "__PACKAGE__->columns( Essential => qw / $essential /);\n" if scalar(@essential);
+	$code .= "__PACKAGE__->columns( Essential => qw / $essential /);\n" if (@essential);
+	delete $cols{$_} foreach (@essential);
 	my $others = join ' ', keys %cols;
-	$ret .= "__PACKAGE__->columns( Others => qw / $others /);\n" if scalar (keys %cols);
-
+	$code .= "__PACKAGE__->columns( Others => qw / $others /);\n" if (keys %cols);
+	
 	# Set up has_a relationships
-	my %ha = $self->get_links_to($table);
-	foreach my $col ( keys %ha ){
-	    $ret .= "__PACKAGE__->has_a( $col => '$ha{$col}' );\n";
+	foreach my $c ( $table->get_columns() ){
+	    if ( my $ft = $c->links_to() ){
+		$ft = ($argv{namespace}) ? $argv{namespace}."::".$ft : $ft;
+		$code .= "__PACKAGE__->has_a( ".$c->name." => '$ft' );\n";
+	    }
 	}
-
+	
 	# Set up has_many relationships
-	my %hm = $self->get_links_from($table);
+	my %hm = $table->get_links_from();
 	foreach my $rel ( keys %hm ){
 	    my $method = $rel;
-	    my $tab    = ( keys %{$hm{$rel}} )[0];
+	    my $tab;
+	    # A has_many relationship should not point to a history table unless
+	    # it is the 'history_records' method.
+	    foreach my $key ( keys %{$hm{$rel}} ){
+		my $hf = $self->get_history_suffix;
+		next if $key =~ /$hf$/ && $method !~ /history_records/;
+		$tab = $key;
+	    }
+	    croak "cdbi_classes: Can't get has_many table from ", $table->name, ":$method" unless $tab;
 	    my $col    = $hm{$rel}{$tab};
-	    my $casc;
-	    if ( my $l = $self->_get_column_attrs($tab, 'linksto') ){
-		if ( ! exists $l->{$col}->{cascade} ){
-		    return;
-		}
-		    $casc = $l->{$col}->{cascade};
-	    }
+	    my $t      = $self->get_table($tab);
+	    my $c      = $t->get_column($col);
+	    my $l      = $c->links_to_attrs();
+	    my $casc  = $l->{cascade};
+	    croak "cdbi_classes: Missing 'cascade' entry for $tab:$col" unless $casc;
 	    my $arg;
-	    if ( $casc ){
-		if ( $casc eq 'Nullify' ){
-		    $arg = "{cascade=>'Class::DBI::Cascade::Nullify'}";
-		}else{
-		    $arg = "{cascade=>'$casc'}";
-		}
+	    if ( $casc eq 'Nullify' ){
+		$arg = "{cascade=>'Class::DBI::Cascade::Nullify'}";
+	    }elsif ( $casc =~ /^Delete|Fail$/i ){
+		$arg = "{cascade=>'$casc'}";
 	    }else{
-		    $arg = "{cascade=>'Delete'}";
+		croak "cdbi_classes: Unknown cascade behavior $casc";
 	    }
-	    $ret .= "__PACKAGE__->has_many( '$method', '$tab' => '$col', $arg );\n";
+	    $tab = ($argv{namespace}) ? $argv{namespace}."::".$tab : $tab;
+	    $code .= "__PACKAGE__->has_many( '$method', '$tab' => '$col', $arg );\n";
 	}
+	$classes{$package} = $code;
     }
-    return $ret;
+    return \%classes;
 }
 
-=head2 schema_hash
 
-    Use metadata to generate a hash ref containing the DB schema as it is
-    used by DBIx::DBSchema.  This will, in turn, generate the appropriate
-    SQL to create the database in either MySQL, Postgres, etc.
+##################################################
+=head2 get_history_suffix - Get suffix used to name history tables;
     
   Arguments:
     None
   Returns:
-    Hash containing schema information to be passed to DBIx::DBSchema
+    string
   Example: 
-    my $schema = $meta->schema_hash();
 
 =cut
-
-sub schema_hash {
+sub get_history_suffix{
     my $self = shift;
-    my %ret;
-    my @tables = $self->get_tables();
-
-    foreach my $table ( sort @tables ){
-	my $types    = $self->_get_column_attrs($table, 'type');
-	my $nulls    = $self->_get_column_attrs($table, 'nullable');
-	my $lengths  = $self->_get_column_attrs($table, 'length');
-	my $defaults = $self->_get_column_attrs($table, 'default');
-	# Convert nullable flag into NULL or empty string
-	foreach my $c ( keys %$nulls ){
-	    $nulls->{$c} = ( $nulls->{$c} )? "NULL" : "";
-	}
-	# Build the hash
-	if ( $table =~ /$HIST/ ){
-	    my $orig = $table;
-	    $orig =~ s/$HIST//;
-	    $ret{$table}{primary_key} = $self->_get_table_attr($orig, 'primary_key');
-	    $ret{$table}{unique}      = [ [ ] ];
-	    $ret{$table}{index}       = [ [ lc($orig) . "_id" ] ];
-	}else{
-	    $ret{$table}{primary_key} = $self->_get_table_attr($table, 'primary_key');
-	    $ret{$table}{unique}      = $self->_get_table_attr($table, 'unique');
-	    $ret{$table}{index}       = $self->_get_table_attr($table, 'index');
-	}
-	my $cols = $self->_get_columns($table);
-	foreach my $col ( keys %$cols ){
-	    push @{$ret{$table}{columns}}, 
-	    ($col, $types->{$col}, $nulls->{$col}, $lengths->{$col}, $defaults->{$col}, '');
-	}
-    }
-    return  ( keys %ret ) ? \%ret : undef;
+    my $HIST = '_history';
+    return $HIST;
 }
+
 
 ##################################################################
 #
@@ -542,110 +245,36 @@ sub schema_hash {
 #
 ##################################################################
 
-# _read_metadata - Reads Metadata from disk
-#
-# Metadata is stored as a Perl hash in a text file.  This method
-# reads that file and adds the hash as an attribute of an instance
-# of this class.
-#
-
-sub _read_metadata {
-    my ($self, $file) = @_;
-    my $info = {};
-    $info = do "$file" or croak "Can't read $file: $@ || $!";
-    return $info;
-}
-
-# _get_tables
+##################################################
+# _get_tables_hash
 #
 # Returns an hashref of table hashrefs containing metadata
 #
 
-sub _get_tables{
+sub _get_tables_hash{
     my $self = shift;
-    if ( ! exists $meta->{tables} ){
-	croak "Error getting meta tables";
-    }
-    my %ret = %{$meta->{tables}};
+    croak "_get_tables_hash: Error getting table info"
+	if (! exists $self->{tables});
+    my %ret = %{ $self->{tables} };
     return \%ret;
 }
 
-# _get_table_attr
+##################################################
+# _get_table_info
 #
-# Given table name and attribute name, returns a scalar containing the value of 
-# (or reference to) the given attribute for the given table.
-#
-
-sub _get_table_attr{
-    my ($self, $table, $attr) = @_;
-    croak "Need to pass table and attribute" unless $table && $attr;
-    my $t = $self->_get_tables();
-    my $ret;
-    if ( ! exists $t->{$table}->{$attr} ){
-	croak "Table '$table' does not have attribute '$attr'";
-    }
-    $ret = $t->{$table}->{$attr};
-    return $ret;
-}
-
-# _get_columns
-#
-# Returns a hashref of column hashrefs for the given table
+# Returns an hashref containing table metadata
 #
 
-sub _get_columns{
-    my ($self, $table) = @_;
-    croak "Need to pass table name" unless $table;
-    my $hist; 
-    if ( $table =~ s/$HIST// ){
-	$hist = 1;
-    }
-    my %ret = %{$self->_get_table_attr($table, 'columns')};
-    
-    # If it is a history table, we have to add these fields
-    if ( $hist  ){
-	# The field that points to the original object id
-	my $hid    = lc($table) . "_id"; 
-	$ret{$hid} = {default     => '',
-		      description => '',
-		      length      => '',
-		      nullable    => 0,
-		      tag         => '',
-		      type        => 'integer'};
-	
-	$ret{modified} = {default     => '',
-			  description => 'Time this record was last modified',
-			  length      => '',
-			  nullable    => 0,
-			  tag         => 'Modified',
-			  type        => 'timestamp'};
-	
-	$ret{modifier} = {default     => '',
-			  description => 'Netdot user who last modified this record',
-			  length      => '32',
-			  nullable    => 1,
-			  tag         => 'Modifier',
-			  type        => 'varchar'};
-	
-	
-    }
-    return \%ret;
-}
-
-# _get_column_attrs
-#
-# Returns a hashref of a given column attribute for a table, indexed by column name
-
-sub _get_column_attrs{
-    my ($self, $table, $attr) = @_;
-    croak "Need to pass table and attribute" unless $table && $attr;
-    my %ret;
-    my $cols = $self->_get_columns($table);
-    foreach my $col ( keys %$cols ){
-	if ( exists $cols->{$col}->{$attr} ){
-	    $ret{$col} = $cols->{$col}->{$attr};
-	}
-    }
-    return ( keys %ret ) ? \%ret : undef;
+sub _get_table_info{
+    my ($self, $name) = @_;
+    croak "_get_table_info: Need to pass table name"
+	unless $name;
+    my $tables = $self->_get_tables_hash();
+    croak "_get_table_info: Table $name does not exist" 
+	unless exists $tables->{$name};
+    # We need to make a copy of the hash.  Otherwise
+    # unexpected things will happen.
+    my %info = %{ $tables->{$name} };
+    return \%info;
 }
 

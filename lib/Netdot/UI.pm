@@ -1,7 +1,5 @@
 package Netdot::UI;
 
-my $ipm;
-
 =head1 NAME
 
 Netdot::UI - Group of user interface functions for the Network Documentation Tool (Netdot)
@@ -25,18 +23,14 @@ use Apache::Session::File;
 use Apache::Session::Lock::File;
 
 use base qw( Netdot );
-use Netdot::IPManager;
-use Netdot::Meta;
+use Netdot::Model;
 use strict;
-use Carp;
-use Data::Dumper;
 
-#Be sure to return 1
-1;
 
 =head1 METHODS
 
 
+############################################################################
 =head2 new
 
   $ui = Netot::UI->new();
@@ -49,224 +43,82 @@ sub new {
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
     my $self = {};
+    
+    # Create a session wrapper object
     bless $self, $class;
-    $self = $self->SUPER::new( %argv );
-    $ipm  = Netdot::IPManager->new();
-    $self->{meta} = Netdot::Meta->new();
     wantarray ? ( $self, '' ) : $self; 
 }
  
-=head2 meta
+
+#############################################################################
+=head2 mk_session - create state for a session across multiple pages
+    Creates a state session that can be used to store data across multiple 
+    web pages for a given session.  Returns a hash reference to store said data
+    in.  The session-id is $session->{_session_id}.  Be aware that you do not want 
+    to de-ref the hash reference (otherwise, changes made to the subsequent hash are lost).
     
-    Retrieve Meta object
-
-
  Arguments:
     None
   Returns:
-    Reference to a Meta object
-  Examples:
-    my %linksto = $ui->meta->get_links_to($table);
-
-=cut
-sub meta{
-    my $self = shift;
-    return $self->{meta};
-}
-
-=head2 getinputtag - Builds HTML form <input> tag based on the SQL type of the field and other parameters.
-    Possible Input tag types returned are: 
-    - textarea
-    - radio
-    - text
-    - text with date format legend
-    When specifying a table name, the caller has the option to pass a value to be displayed in the tag.
-
- Arguments:
-    - $col:    column name 
-    - $proto:  prototype (either an object or a table name)
-    - $value:  default value to be displayed
-  Returns:
-    Input type string
-  Examples:
-    $inputtag = $ui->getinputtag( $col, $obj );
-    $inputtag = $ui->getinputtag( $col, $table );
-    $inputtag = $ui->getinputtag( $col, $table, $arg );
-
-=cut
-
-sub getinputtag {
-    my ($self, $col, $proto, $value) = @_;
-    my $class;
-    my $tag = "";
-    if ( $class = ref $proto ){  # $proto is an object
-	if ( defined($value) ){
-	    $self->error("getinputtag: Can't supply a value for an existing object\n");
-	}else{
-	    $value = $proto->$col;
-	}
-    }else{                       # $proto is a class
-	$class = $proto;
-	$value ||=  "";
-    }
-    
-    if ($col eq "info"){
-	return "<textarea name=\"$col\" rows=\"10\" cols=\"38\">$value</textarea>\n";
-    }
-    my $sqltype = $self->meta->get_column_type($class, $col);
-    if ($sqltype =~ /bool/){
-	if ($value == 1){
-	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\" checked> yes";
-	    $tag .= " <input type=\"radio\" name=\"$col\" value=\"0\"> no";
-	}elsif ($value eq ""){
-	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\"> yes";
-	    $tag .= " <input type=\"radio\" name=\"$col\" value=\"0\"> no";
-	    $tag .= " <input type=\"radio\" name=\"$col\" value=\"\" checked> n/a";
-	}elsif ($value == 0){
-	    $tag = "<input type=\"radio\" name=\"$col\" value=\"1\"> yes";
-	    $tag .= " <input type=\"radio\" name=\"$col\" value=\"0\" checked> no";
-	}
-    }elsif ($sqltype eq "date"){
-	$tag = "<input type=\"text\" name=\"$col\" size=\"15\" value=\"$value\"> (yyyy-mm-dd)";
-    }else{
-	$tag = "<input type=\"text\" name=\"$col\" style=\"width:100%\" value=\"$value\">";
-    }
-    return $tag;
-}
-
-=head2 mksession - create state for a session across multiple pages
-
-    Creates a state session that can be used to store data across multiple 
-    web pages for a given session.  Returns a hash reference to store said data
-    in.  Requires an argument specifying what directory to use when storing 
-    data (and the relevant lock files).  The session-id is 
-    $session{_session_id}.  Be aware that you do not want to de-ref the 
-    hash reference (otherwise, changes made to the subsequent hash are lost).
-    
- Arguments:
-    - $dir: directory to use when storing data (and the relevant lock files)
-  Returns:
     Hash reference
   Examples:
-    $dir = "/tmp";  # location for locks & state files
-    $session = $ui->mksession( $dir );
+    $session = $ui->mk_session();
 
 =cut
-
-sub mksession {
-  my( $self, $dir ) = @_;
-  my( $sid, %session );
-  eval {
-      tie %session, 'Apache::Session::File', 
-      $sid, { Directory => $dir, LockDirectory => $dir };
-  };
-  if ($@) {
-      $self->error(sprintf("Could not create session: %s", $@));
-      return 0;
-  }
-  return \%session ;
+sub mk_session {
+    my($self) = @_;
+    my (%session, $sid);
+    my $TMP = $self->config->get('TMP');
+    tie %session, 'Apache::Session::File',
+    $sid, { Directory => "$TMP/sessions", LockDirectory => "$TMP/sessions/locks" };
+    
+    return \%session ;
 }
 
-=head2 getsession - fetch state for a session across multiple pages
+#############################################################################
+=head2 get_session - fetch state for a session across multiple pages
 
     Fetches a state session and its accompanying data.  Returns a hash ref.  
     Requires two arguments:  the working directory and the session-id (as described above).  
     The same warning for mksession() regarding de-referencing the returned object applies.
     
- Arguments:
-    - $dir: directory wheres session files are stored
-    - $sid: Session ID
+  Arguments:
+    Session ID
   Returns:
     Hash reference
   Examples:
-    $dir = "/tmp";  # location for locks & state files
-    $sessionid = $args{sid};  # session-id must be handed off to new pages
-    %session = $ui->getsession( $dir, $sessionid );
+    $sid = $args{sid};  # session-id must be handed off to new pages
+    $session = $ui->get_session($sid);
 
 =cut
-
-sub getsession {
-  my( $self, $dir, $sid ) = @_;
-  my %session;
-  eval {
-      tie %session, 'Apache::Session::File', 
-      $sid, { Directory => $dir, LockDirectory => $dir };
-  };
-  if ($@) {
-      $self->error(sprintf("Could not retrieve session id %s:, %s", $sid, $@));
-      return 0;
-  }
-  return \%session;
+sub get_session {
+    my($self, $sid) = @_;
+    my %session;
+    my $TMP = $self->config->get('TMP');
+    tie %session, 'Apache::Session::File', 
+    $sid, { Directory => "$TMP/sessions", LockDirectory => "$TMP/sessions/locks" };
+    return \%session;
 }
 
-=head2 pushsessionpath - push table name onto list of table names
-
-    Pushes the table name $table onto a list of tables that have been visited.
-
- Arguments:
-    - $session:  Reference to a hash containing session data
-    - $table:    Table name
-  Returns:
-    True
-  Examples:
-    $result = $ui->pushsessionpath( $session, $table );
-
-=cut
-sub pushsessionpath {
-  my( $self, $session, $table ) = @_;
-  if( defined( $session->{path} ) 
-      && length( $session->{path} ) > 0 && $session->{path} ne ";" ) {
-    $session->{path} .= ";$table";
-  } else {
-    $session->{path} = "$table";
-  }
-  return 1;
-}
-
-=head2 popsessionpath - pop table name from list of table names
-
-    Pops the last table visited from the stack and returns the name.
-
- Arguments:
-    - $session:  Reference to a hash containing session data
-  Returns:
-    Table name (scalar)
-  Examples:
-    $table = $ui->popsessionpath( $session );
-
-=cut
-sub popsessionpath {
-  my( $self, $session ) = @_;
-  my $tbl;
-  my @tbls = split( /;/, $session->{path} );
-  if( scalar( @tbls ) > 0 ) {
-    $tbl = pop @tbls;
-  }
-  $session->{path} = join( ';', @tbls );
-  return $tbl;
-}
-
-=head2 rmsession
+############################################################################
+=head2 rm_session
 
     Removes specific session associated with the hash %session.
 
  Arguments:
     - $session:  Reference to a hash containing session data
   Returns:
-    True on success, False on failure
+
   Examples:
-    $ui->rmsession( \%session );
+    $ui->rm_session($session);
 
 =cut
-sub rmsession {
+sub rm_session {
   my( $self, $session ) = @_;
-  if( tied(%{ $session })->delete() ) {
-    return 1;
-  } else {
-    return 0;
-  }
+  tied(%{$session})->delete();
 }
 
+############################################################################
 =head2 rmsessions
 
     Removes state older than $age (the supplied argument) from the directory $dir.  
@@ -283,15 +135,13 @@ sub rmsession {
 
 =cut
 sub rmsessions {
-  my( $self, $dir, $age ) = @_;
-  my $locker = new Apache::Session::Lock::File ;
-  if( $locker->clean( $dir, $age ) ) {
-    return 1;
-  } else {
-    return 0;
-  }
+    my( $self, $dir, $age ) = @_;
+    my $locker = new Apache::Session::Lock::File ;
+    $locker->clean( $dir, $age );
 }
 
+
+############################################################################
 =head2 form_to_db
 
 Generalized code for updating columns in different tables. 
@@ -342,127 +192,68 @@ sub form_to_db{
 	    $objs{$1}{$2}{$3} = $argv{$_};
 	}
     }
-# Check that we have at least one parameter
-    unless (scalar keys(%objs)){
-        $self->error("Missing name/value pairs.");
-        return ;
-    }
+    # Check that we have at least one parameter
+    $self->throw_user("Missing name/value pairs.") unless (scalar keys(%objs));
     foreach my $table (keys %objs){
-	#################################################################
-	# Some tables require more complex validation
-	# We pass the data to external functions
-	if ( $table eq "Ipblock" ){
-	    foreach my $id (keys %{ $objs{$table} }){
-		# Actions (like delete) take precedence over value updates
-		my $act = 0; 
-		
-		if ( $id =~ /NEW/i ) {
-		    # Creating a New Ipblock object
-		    my $newid;
-		    unless ( $newid = $ipm->insertblock( %{ $objs{$table}{$id} } ) ){
-			$self->error(sprintf("Error inserting new Ipblock: %s", $ipm->error));
-			return;
-		    }
-		    $ret{$table}{id}{$newid}{action} = "INSERTED";
-		    $act = 1;
-		}else {
-		    foreach my $field (keys %{ $objs{$table}{$id} }){
-			if ( $field =~ /DELETE/i ){
-			    # Deleting an Ipblock object
-			    unless ( $ipm->removeblock( id => $id ) ){
-				$self->error(sprintf("Error deleting Ipblock: %s", $ipm->error));
-				return;
+	my %todelete;
+	
+	foreach my $id (keys %{ $objs{$table} }){
+	    my $act = 0; 
+
+	    # If our id is 'NEW' we want to insert a new row in the DB.
+	    # Do a regex to allow sending many NEW groups for the same table
+	    if ( $id =~ /NEW/i ){
+		my $newid;
+		$newid = $table->insert(\%{ $objs{$table}{$id} });
+		$ret{$table}{id}{$newid}{action} = "INSERTED";
+		$act = 1;
+	    }else{
+		foreach my $field ( keys %{ $objs{$table}{$id} } ){
+		    my $val = $objs{$table}{$id}{$field};
+		    if ( $field =~ /DELETE/i ){
+			if ( $id =~ /LIST/i ){
+			    # This comes from a <select multiple>
+			    if ( ! ref($val) ){
+				$todelete{$val} = '';
+			    }elsif( ref($val) eq "ARRAY" ){
+				map { $todelete{$_} = '' } @$val;
 			    }
-			    $ret{$table}{id}{$id}{action} = "DELETED";
-			    $act = 1;
-			    last;
+			}elsif ( $id =~ /\d+/ ){
+			    # Single object to be deleted
+			    $todelete{$id} = '';
 			}
-		    }
-		    if ( ! $act ){
-			# Updating an existing Ipblock object
-			$objs{$table}{$id}{id} = $id;
-			unless ( $ipm->updateblock( %{ $objs{$table}{$id} } ) ){
-			    $self->error($ipm->error);
-			    return;
-			}
-			$ret{$table}{id}{$id}{action} = "UPDATED";
 			$act = 1;
 		    }
 		}
-	    }
-	    
-	}else{
-	    #################################################################
-	    # All other tables
-	    my %todelete; #avoid dups
-
-	    foreach my $id (keys %{ $objs{$table} }){
-		my $act = 0; 
-
-		# If our id is 'NEW' we want to insert a new row in the DB.
-		# Do a regex to allow sending many NEW groups for the same table
-		if ( $id =~ /NEW/i ){
-		    my $newid;
-		    if (! ($newid = $self->insert(table => $table, state => \%{ $objs{$table}{$id} })) ){
-			return; # error should be set.
-		    }
-		    $ret{$table}{id}{$newid}{action} = "INSERTED";
-		    $act = 1;
-		}else{
-		    foreach my $field ( keys %{ $objs{$table}{$id} } ){
-			my $val = $objs{$table}{$id}{$field};
-			if ( $field =~ /DELETE/i ){
-			    if ( $id =~ /LIST/i ){
-				# This comes from a <select multiple>
-				if ( ! ref($val) ){
-				    $todelete{$val} = '';
-				}elsif( ref($val) eq "ARRAY" ){
-				    map { $todelete{$_} = '' } @$val;
-				}
-			    }elsif ( $id =~ /\d+/ ){
-				# Single object to be deleted
-				$todelete{$id} = '';
-			    }
-			    $act = 1;
-			}
-		    }
-		    # Now update this object
-		    if ( ! $act ) {
-			my $o;
-			unless ( $o = $table->retrieve($id) ){
-			    $self->error("Couldn't retrieve id $id from table $table");
-			    return;
-			}
-			unless ( $self->update(object => $o, state => \%{ $objs{$table}{$id} }) ){
-			    return; # error should already be set.
-			}
-			$ret{$table}{id}{$id}{action} = "UPDATED";
-			$ret{$table}{id}{$id}{columns} = \%{ $objs{$table}{$id} };
-		    }
+		# Now update this object
+		if ( ! $act ) {
+		    my $o = $table->retrieve($id);
+		    $o->update(\%{ $objs{$table}{$id} });
+		    $ret{$table}{id}{$id}{action}  = "UPDATED";
+		    $ret{$table}{id}{$id}{columns} = \%{ $objs{$table}{$id} };
 		}
 	    }
-	    
-	    # Delete marked objects (do this once per table)
-	    foreach my $del ( keys %todelete ){
-		unless ( $self->remove( table=>$table, id => $del ) ){
-		    # error should be set
-		    return;
-		}
-		$ret{$table}{id}{$del}{action} = "DELETED";
-	    }
+	}
+	
+	# Delete marked objects (do this once per table)
+	foreach my $id ( keys %todelete ){
+	    my $o = $table->retrieve($id) || next;
+	    $o->delete();
+	    $ret{$table}{id}{$id}{action} = "DELETED";
 	}
     }
     return %ret;
 }
 
 
-=head2 form_field
+############################################################################
+=head2 form_field - Generate a HTML form field.
 
-This method detects the type of form input required for the object, and then calls the appropriate
-method in UI.pm. Either select_lookup, select_multiple, radio_group_boolean, text_field, or text_area.
-If the interface is in "edit" mode, the user will see a form element specific to the type of data
-being viewed, otherwise, the user will see the value of the object in plain text.
-
+    This method detects the type of form input required for the object, and then calls the appropriate
+    method in UI.pm. Either select_lookup, select_multiple, radio_group_boolean, text_field, or text_area.
+    If the interface is in "edit" mode, the user will see a form element specific to the type of data
+    being viewed, otherwise, the user will see the value of the object in plain text.
+    
   Arguments: 
     - object:         DBI object, can be null if a table object is included
     - table:          Name of table in DB. (optional, but required if object is null)
@@ -475,6 +266,7 @@ being viewed, otherwise, the user will see the value of the object in plain text
     - returnValOnly:  Return only the form field and no label as a string
     - shortFieldName: Whether to set the input tag name as the column name or
                       the format used by form_to_db()
+    - no_help         Do not show [?] help link
   Returns:
     if returnValOnly, the form field as a string
     else, a hash reference, with two keys, 'label', 'value'
@@ -486,58 +278,51 @@ being viewed, otherwise, the user will see the value of the object in plain text
 =cut
 sub form_field {
     my ($self, %args) = @_;
-    my ($o, $table, $column, $edit, $default, $defaults, $htmlExtra, $linkPage, $returnValOnly, $shortFieldName) = 
-	($args{object}, $args{table}, $args{column}, $args{edit}, $args{default}, $args{defaults},
-	 $args{htmlExtra}, $args{linkPage}, $args{returnValOnly}, $args{shortFieldName} );
-    
-    croak ("You need to pass a valid object or a table name") 
-	unless ( ref($o) || $table );
+    my ($o, $column) = @args{'object', 'column'};
 
-    my $label; # return value
-    my $value; # return value
+    $self->throw_fatal("You need to pass a valid object or a table name") 
+	unless ( ref($o) || $args{table} );
+
+    my ($label, $value); # return values
     
-    my $tableName = ($o ? $o->table : $table);
-    my $id = ($o ? $o->id : "NEW");
-    my $current = ($o ? $o->$column : $default);
+    my $table   = ($o ? $o->table   : $args{table});
+    my $id      = ($o ? $o->id      : "NEW");
+    my $current = ($o ? $o->$column : $args{default});
     
-    my %linksto  = $self->meta->get_links_to( $tableName );
     
-    ################################################
-    ## column is a local field
-    if ( !exists($linksto{$column}) ) {
-	$label = $self->meta->get_column_tag($tableName, $column ) || $column;
-        my $type = $self->meta->get_column_type($tableName, $column);
-	
-	if ($o) {
-	    $value = $self->getinputtag($column, $o, $current);
-	} else {
-	    $value = $self->getinputtag($column, $table, $current);
-	}
-	
-	if ($type eq "varchar" || $type eq "timestamp" || $type eq "integer" || $type eq "numeric" || $type eq "date" ) {
-	    $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$edit, default=>$default, 
-				       linkPage=>$linkPage, returnAsVar=>1, htmlExtra=>$htmlExtra, 
-				       shortFieldName=>$shortFieldName);
-	    
-	} elsif ($type eq "long varbinary") {
-	    $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$edit, returnAsVar=>1, 
-				      htmlExtra=>$htmlExtra, shortFieldName=>$shortFieldName);
-	    
-	} elsif ($type eq "bool") {
-	    $value = $self->checkbox_boolean(object=>$o, table=>$table, column=>$column, edit=>$edit, 
-						returnAsVar=>1, shortFieldName=>$shortFieldName);
-	    
-	} else {
-	    croak "Unknown column type $type for column $column in table $tableName";
-	}
-	
+    my $mtable  = $table->meta_data;
+    my $mcol    = $mtable->get_column($column);
+    my $f_table = $mcol->links_to;
+    $label      = $mcol->tag || $column;
+
     ################################################
     ## The column is a foreign key. Provide a list to select.
+    if ( defined $f_table  ){
+        $value = $self->select_lookup(object=>$o, table=>$table, column=>$column, htmlExtra=>$args{htmlExtra}, 
+				      lookup=>$f_table, edit=>$args{edit}, linkPage=>$args{linkPage}, default=>$args{default},
+				      defaults=>$args{defaults}, returnAsVar=>1, shortFieldName=>$args{shortFieldName});
+
+    ################################################
+    ## column is a local field
     } else {
-	$label = $self->meta->get_column_tag($tableName, $column ) || $column;
-        $value = $self->select_lookup(object=>$o, table=>$tableName, column=>$column, htmlExtra=>$htmlExtra, 
-				      lookup=>$linksto{$column}, edit=>$edit, linkPage=>$linkPage, default=>$default,
-				      defaults=>$defaults, returnAsVar=>1, shortFieldName=>$shortFieldName);
+        my $type = $mcol->sql_type;
+	if ( $type =~ /^varchar|timestamp|integer|numeric|date$/ ){
+	    $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
+				       default=>$args{default}, linkPage=>$args{linkPage}, returnAsVar=>1, 
+				       htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
+	    
+	} elsif ( $type eq "long varbinary" ) {
+	    $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
+				      returnAsVar=>1, htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
+	    
+	} elsif ( $type eq "bool" ) {
+	    $value = $self->checkbox_boolean(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
+						returnAsVar=>1, shortFieldName=>$args{shortFieldName});
+	    
+	} else {
+	    $self->throw_fatal("Unknown column type $type for column $column in table $table");
+	}
+	
     }
 
     ################################################
@@ -546,17 +331,56 @@ sub form_field {
     #  that use select_multiple. I left any calls to select_multiple in the 
     #  html files alone.
 
-    if( $returnValOnly ) {
+    if( $args{returnValOnly} ) {
         return $value;
     } else {
         my %returnhash;
-        $returnhash{'label'} = $label;
-        $returnhash{'value'} = $value;
+	unless ( $args{no_help} ){
+	    $label = $self->col_descr_link($table, $column, $label);
+	}
+	if ( $mcol->is_unique && $args{edit} ){  $label .= "<font color=\"red\">*</font>" }
+        $returnhash{label} = $label . ':';
+        $returnhash{value} = $value;
         return %returnhash;
     }
 }
 
+############################################################################
+=head2 table_descr_link - Generate link to display a table\'s description
 
+  Arguments:
+    table name
+    text string for link
+  Returns:
+    HTML link string
+  Examples:
+    print $ui->table_descr_link($table, $text);
+    
+=cut
+sub table_descr_link{
+    my ($self, $table, $text) = @_;
+    return "<a class=\"hand\" onClick=\"window.open('descr.html?table=$table&showheader=0', 'Help', 'width=600,height=200');\">$text</a>";
+}
+
+############################################################################
+=head2 col_descr_link - Generate link to display a column\'s description
+
+  Arguments:
+    table name
+    column name
+    text string for link
+  Returns:
+    HTML link string
+  Examples:
+    print $ui->col_descr_link($table, $col, $text);
+    
+=cut
+sub col_descr_link{
+    my ($self, $table, $column, $text) = @_;
+    return "<a class=\"hand\" onClick=\"window.open('descr.html?table=$table&col=$column&showheader=0', 'Help', 'width=600,height=200');\">$text</a>";
+}
+
+############################################################################
 =head2 select_lookup
 
     This method deals with fields that are foreign keys.  When the interface is in "edit" mode, the user
@@ -597,89 +421,64 @@ sub form_field {
 
 =cut
 
-sub select_lookup($@){
+sub select_lookup{
     my ($self, %args) = @_;
-    my ($o, $table, $column, $lookup, $where, $defaults, $default, $isEditing, $htmlExtra, $linkPage, $maxCount, 
-	$returnAsVar, $shortFieldName) = 
-	    ($args{object}, $args{table}, 
-	     $args{column}, $args{lookup},
-	     $args{where}, $args{defaults}, $args{default}, $args{edit},
-	     $args{htmlExtra}, $args{linkPage},
-	     $args{maxCount}, $args{returnAsVar}, $args{shortFieldName});
-    
-    my @defaults = @$defaults if $defaults;
-    unless ( $o || $table ){
-	$self->error("Need to pass object or table name");
-	return 0;
-    }
-    unless ( $lookup && $column ){
-	$self->error("Need to specify table and field to look up");
-	return 0;
-    }
+    my ($o, $column) = @args{'object', 'column'};
+    $self->throw_fatal("Need to pass object or table name") unless ( $o || $args{table} );
+    my $table  = ($o ? $o->table : $args{table});
+    $self->throw_fatal("Need to specify table and field to look up") unless ( $args{lookup} && $column );
+
+    my @defaults = @{$args{defaults}} if $args{defaults};
 
     my $output;
     
-    $htmlExtra = "" if (!$htmlExtra);
-    $maxCount = $args{maxCount} || $self->{config}->{"DEFAULT_SELECTMAX"};
-    my @labels = $self->getlabelarr($lookup);
+    $args{htmlExtra} = "" if ( !defined $args{htmlExtra} );
+    $args{maxCount} ||= $self->config->get('DEFAULT_SELECTMAX');
 
-	if( $isEditing && $default ) { 
-		# If there is a default element specified, then we don't actually want a list of choices.
-		# So, don't show a select box, but instead, make a hidden for melement with the id,
-		# and print out the name of the default element. 
-
-        my $tableName = ($o ? $o->table : $table);
-        my $id = ($o ? $o->id : "NEW");
-        my $shortFieldName = ($shortFieldName ? 1:0);
-        my $name;
-        if( $shortFieldName ) {
-            $name = $column;
-        } else {
-            $name = $tableName . "__" . $id . "__" . $column;
-        }
-
-		# should be only 1 element in @defaults
-		$output .= '<input type="hidden" name="'.$name.'" value="'.$default.'">';
-		$output .= $self->getlabelvalue($defaults[0], \@labels);
-	} elsif ($isEditing){
+    my $name;
+    my $id = ($o ? $o->id : "NEW");
+    if( $args{shortFieldName} ) {
+	$name = $column;
+    } else {
+	$name = $table . "__" . $id . "__" . $column;
+    }
+    if( $args{edit} && $args{default} ) { 
+	# If there is a default element specified, then we don't actually want a list of choices.
+	# So, don't show a select box, but instead, make a hidden form element with the id,
+	# and print out the name of the default element. 
+	
+	# should be only 1 element in @defaults
+	$output .= '<input type="hidden" name="'.$name.'" value="'.$args{default}.'">';
+	$output .= $defaults[0]->get_label;
+    } elsif( $args{edit} ){
         my ($count, @fo);
-        my $tableName = ($o ? $o->table : $table);
-        my $id = ($o ? $o->id : "NEW");
-        my $shortFieldName = ($shortFieldName ? 1:0);
-        my $name;
-        if( $shortFieldName ) {
-            $name = $column;
-        } else {
-            $name = $tableName . "__" . $id . "__" . $column;
-        }
-        
-        if (@defaults){
+        if ( @defaults ){
             @fo = @defaults;
             $count = scalar(@fo);
-        }elsif ($where){
-            @fo = $lookup->search($where);
+        }elsif ( $args{where} ){
+            @fo = $args{lookup}->search($args{where});
             $count = scalar(@fo);
         }else {
-            $count = $lookup->count_all;
+            $count = $args{lookup}->count_all;
         }
         
         # if the selected objects are within our limits,
 	# or if we've been passed a specific default list, 
 	# show the select box.
-        if ($count <= $maxCount || @defaults){
-            @fo = $lookup->retrieve_all() if (!$where && !@defaults);
+        if ( $count <= $args{maxCount} || @defaults ){
+            @fo = $args{lookup}->retrieve_all() if ( !$args{where} && !@defaults );
 	    @fo = map  { $_->[0] }
 	    sort { $a->[1] cmp $b->[1] }
-	    map { [$_ , $self->getlabelvalue($_, \@labels)] } @fo;
+	    map { [$_ , $_->get_label] } @fo;
 
             # if an object was passed we use it to obtain table name, id, etc
             # as well as add an initial element to the selection list.
-            if ($o){
-                $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
+            if ( $o ){
+                $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
 		$output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
                 if ( int($o->$column) ){
                     $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", 
-				       $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+				       $o->$column->id, $o->$column->get_label);
                 }
             }
             # otherwise a couple of things my have happened:
@@ -687,20 +486,18 @@ sub select_lookup($@){
             #      reference and need to create a new one. We rely on the supplied 
             #      "table" argument to create the fieldname, and do so with the
             #      id of "NEW" in order to force insertion when the user hits submit.
-            elsif ($table){
-                $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
-                $output .= "<option value=\"0\" ".($default?"":"selected").">-- Select --</option>\n";
+            elsif ( $table ){
+                $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
+                $output .= "<option value=\"0\" ".($args{default} ? "" :"selected").">-- Select --</option>\n";
             }else{
-            #   2) The apocalypse has dawned. No table argument _or_ valid DB object..lets bomb out.
-                $self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
-                return 0;
+                $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n");
             }
 
-            foreach my $fo (@fo){
-				next unless (ref($fo) && int($fo) != 0 );
-                next if ($o && $o->$column && ($fo->id == $o->$column->id));
-				my $selected = ($fo->id == $default?"selected":"");
-                $output .= sprintf("<option value=\"%s\" %s>%s</option>\n", $fo->id, $selected, $self->getlabelvalue($fo, \@labels));
+            foreach my $fo ( @fo ){
+		next unless ( ref($fo) && int($fo) != 0 );
+                next if ( $o && $o->$column && ($fo->id == $o->$column->id) );
+		my $selected = ($fo->id == $args{default} ? "selected" : "");
+                $output .= sprintf("<option value=\"%s\" %s>%s</option>\n", $fo->id, $selected, $fo->get_label);
             }
 	    $output .= sprintf("<option value=\"0\">[null]</option>\n");
             $output .= sprintf("</select>\n");
@@ -709,60 +506,61 @@ sub select_lookup($@){
             my $srchf = "_" . $id . "_" . $column . "_srch";
             $output .= "<nobr>";   # forces the text field and button to be on the same line
             $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">", $srchf);
-            $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"jsrsSendquery(\'%s\', %s, %s.value);\">\n", time(), $lookup, $name, $srchf );
+            $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"jsrsSendquery(\'%s\', %s, %s.value);\">\n", time(), $args{lookup}, $name, $srchf );
             $output .= "</nobr>";
             $output .= "<nobr>";   # forces the select box and "new" link to be on the same line
-            $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $htmlExtra);
+            $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
             $output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
-            if ($o && $o->$column){
+            if ( $o && $o->$column ){
                 $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", 
-				   $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+				   $o->$column->id, $o->$column->get_label);
             }
     	    $output .= sprintf("<option value=\"0\">[null]</option>\n");
             $output .= sprintf("</select>\n");
         }
 
         # show link to add new item to this table
-        $output .= sprintf("<a class=\"hand\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1');\">[new]</a>", 
-			   $lookup, $name);
+        $output .= sprintf("<a class=\"hand\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1&dowindow=1');\">[new]</a>", 
+			   $args{lookup}, $name);
         $output .= "</nobr>";
-
-    }elsif ($linkPage && $o->$column ){
-	if ($linkPage eq "1" || $linkPage eq "view.html"){
+	
+    }elsif ( $args{linkPage} && $o->$column ){
+	if ( $args{linkPage} eq "1" || $args{linkPage} eq "view.html" ){
 	    my $rtable = $o->$column->table;
 	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", 
-			       $rtable, $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+			       $rtable, $o->$column->id, $o->$column->get_label);
 	}else{
-	    $output .= sprintf("<a href=\"$linkPage?id=%s\"> %s </a>\n", 
-			       $o->$column->id, $self->getlabelvalue($o->$column, \@labels));
+	    $output .= sprintf("<a href=\"$args{linkPage}?id=%s\"> %s </a>\n", 
+			       $o->$column->id, $o->$column->get_label);
 	}
     }else{
-        $output .= sprintf("%s\n", ($o->$column ? $self->getlabelvalue($o->$column, \@labels) : ""));
+        $output .= sprintf("%s\n", ($o->$column ? $o->$column->get_label : ""));
     }
 
-    if ($returnAsVar==1) {
+    if ( $args{returnAsVar} == 1 ) {
         return $output;
     }else{
         print $output;
     }
 }
 
-=head2 select_multiple
+############################################################################
+=head2 select_multiple - Create <select> form tag with MULTIPLE flag
 
-Meant to be used with Many-to-Many relationships.
-When editing, creates a <select> form input with the MULTIPLE flag to allow user to select more than one object.
-It also presents a [add] button to allow user to insert another join.
-The idea is to present the objects form the 'other' table but act on the join table objects.
+    Meant to be used with Many-to-Many relationships.
+    When editing, creates a <select> form input with the MULTIPLE flag to allow user to select more than one object.
+    It also presents a [add] button to allow user to insert another join.
+    The idea is to present the objects from the 'other' table but act on the join table objects.
+    
+    The following diagram might help in understanding the method
 
-The following diagram might help in understanding the method
-
-  this                 join                other
- +------+             +------+            +------+  
- |      |             |      |            |      |
- |      |<------------|t    o|----------->|      |
- |      |             |      |            |      |
- +------+ Many    One +------+One    Many +------+
-
+    this                 join                other
+    +------+             +------+            +------+  
+    |      |             |      |            |      |
+    |      |<------------|t    o|----------->|      |
+    |      |             |      |            |      |
+    +------+ Many    One +------+One    Many +------+
+    
 
   Arguments:
     Hash of key/value pairs.  Keys are:
@@ -802,14 +600,12 @@ sub select_multiple {
     my @joins;
     if ( $joins ){
 	unless ( ref($joins) eq "ARRAY" ){
-	    $self->error("joins parameter must be an arrayref");
-	    return 0;
+	    $self->throw_fatal("joins parameter must be an arrayref");
 	}
 	@joins = @{$joins};
     }
     unless ( $join_table ) {
-	$self->error("Must provide join table name");
-	return 0;
+	$self->throw_fatal("Must provide join table name");
     }
  
     # See UI::form_to_db()
@@ -817,8 +613,7 @@ sub select_multiple {
     if ( $action eq "delete" ){
 	$select_name  =  $join_table . "__LIST__DELETE";
     } else{ # Have yet to think of other actions
-	$self->error("action $action not valid");
-	return 0;
+	$self->throw_fatal("action $action not valid");
     }
     my $output;
 
@@ -826,7 +621,7 @@ sub select_multiple {
 	$output .= "<select name=\"$select_name\" id=\"$select_name\" MULTIPLE>\n";
 	foreach my $join ( @joins ){
 	    my $other  = $join->$other_field;
-	    my $lbl = $self->getobjlabel($other);
+	    my $lbl = $other->get_label;
 	    $output .= "<option value=" . $join->id . ">$lbl</option>\n";
 	}
 	$output .= "</select>";
@@ -840,7 +635,7 @@ sub select_multiple {
     }else{ 
 	foreach my $join ( @joins ){
 	    my $other  = $join->$other_field;
-	    my $lbl = $self->getobjlabel($other);
+	    my $lbl = $other->get_label;
 	    if ( $makeLink ){
 		$output .= "<a href=\"$linkPage?table=$other_table&id=" . $other->id . "\">$lbl</a><br>";
 	    }else{
@@ -856,11 +651,8 @@ sub select_multiple {
 }
 
 
-=head2 radio_group_boolean
-
-   $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>$editmgmt);
-
-Simple yes/no radio button group. 
+############################################################################
+=head2 radio_group_boolean - Create simple yes/no radio button group. 
 
  Arguments:
    Hash containing key/value pairs.  Keys are:
@@ -871,46 +663,48 @@ Simple yes/no radio button group.
    - returnAsVar:    Whether to return output as a variable or STDOUT
    - shortFieldName: Whether to set the input tag name as the column name or
                      the format used by form_to_db()
+  Returns:
+    String
+  Examples:
+
+    $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>$editmgmt);
+   
 =cut
 
-sub radio_group_boolean($@){
+sub radio_group_boolean{
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $returnAsVar, $shortFieldName) = ($args{object}, $args{table}, 
-                                            $args{column}, $args{edit}, $args{returnAsVar}, $args{shortFieldName} );
+    my ($o, $table, $column) = @args{'object', 'table', 'column'};
     my $output;
 
-    my $tableName = ($o ? $o->table : $table);
-    my $id = ($o ? $o->id : "NEW");
+    my $table = ($o ? $o->table : $table);
+    my $id    = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
-    my $name = ( $shortFieldName ? $column : $tableName . "__" . $id . "__" . $column );
+    my $name  = ( $args{shortFieldName} ? $column : $table . "__" . $id . "__" . $column );
 
-    unless ($o || $table){
-	$self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
-	return 0;
-    }
+    $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
+	unless ( $o || $table );
 
-    if ($isEditing){
+    if ( $args{edit} ){
         $output .= sprintf("<nobr>Yes<input type=\"radio\" name=\"%s\" value=\"1\" %s></nobr>&nbsp;\n", $name, ($value ? "checked" : ""));
         $output .= sprintf("<nobr>No<input type=\"radio\" name=\"%s\" value=\"0\" %s></nobr>\n", $name, (!$value ? "checked" : ""));
     }else{
         $output .= sprintf("%s\n", ($value ? "Yes" : "No"));
     }
 
-    if ($returnAsVar==1) {
+    if ( $args{returnAsVar} == 1 ) {
         return $output;
     }else{
         print $output;
     }
 }
 
+############################################################################
 =head2 checkbox_boolean
 
-   $ui->checkbox_boolean(object=>$o, column=>"monitored", edit=>$editmgmt);
-
-A yes/no checkbox, which gets around the problem of an unchecked box sending nothing instead of "no".
-A hidden form field is created, which is where the receiving code actually reads the value. When the
-checkbox is checked, it sets the value of the hidden field to 1, and when it is unchecked, it sets the
-value to 0. This way, the actual value of the checkbox is irrelevent.
+    A yes/no checkbox, which gets around the problem of an unchecked box sending nothing instead of "no".
+    A hidden form field is created, which is where the receiving code actually reads the value. When the
+    checkbox is checked, it sets the value of the hidden field to 1, and when it is unchecked, it sets the
+    value to 0. This way, the actual value of the checkbox is irrelevant.
 
  Arguments:
    - object:         DBI object, can be null if a table object is included
@@ -920,32 +714,36 @@ value to 0. This way, the actual value of the checkbox is irrelevent.
    - returnAsVar:    Whether to return output as a variable or STDOUT
    - shortFieldName: Whether to set the input tag name as the column name or
                      the format used by form_to_db()
+
+  Examples:
+    
+   $ui->checkbox_boolean(object=>$o, column=>"monitored", edit=>$editmgmt);
+
+
 =cut
 
-sub checkbox_boolean($@){
+sub checkbox_boolean{
     my ($self, %args) = @_;
     my ($o, $table, $column, $isEditing, $returnAsVar, $shortFieldName) = ($args{object}, $args{table}, 
                                             $args{column}, $args{edit}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
-    my $tableName = ($o ? $o->table : $table);
-    my $id = ($o ? $o->id : "NEW");
-    my $value = ($o ? $o->$column : "");
-    my $name = ( $shortFieldName ? $column : $tableName . "__" . $id . "__" . $column );
-	my $chkname = "____".$name."____";  # name to use for the checkbox, which should be ignored when reading the data
+    my $table   = ($o ? $o->table : $table);
+    my $id      = ($o ? $o->id : "NEW");
+    my $value   = ($o ? $o->$column : "");
+    my $name    = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
+    my $chkname = "____".$name."____";  # name to use for the checkbox, which should be ignored when reading the data
 
-    unless ($o || $table){
-	$self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
-	return 0;
-    }
-
+    $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
+	unless ($o || $table);
+    
     if ($isEditing){
-		$output .= '<input type="checkbox" onclick="if (this.checked) { this.form[\''.$name.'\'].value=\'1\'; }else{this.form[\''.$name.'\'].value=\'0\'; }" '.($value?"checked=\"checked\"":"").'>';
-		$output .= '<input type="hidden" name="'.$name.'" value="'.$value.'">';
+	$output .= '<input type="checkbox" onclick="if (this.checked) { this.form[\''.$name.'\'].value=\'1\'; }else{this.form[\''.$name.'\'].value=\'0\'; }" '.($value?"checked=\"checked\"":"").'>';
+	$output .= '<input type="hidden" name="'.$name.'" value="'.$value.'">';
     }else{
         $output .= sprintf("%s\n", ($value ? "Yes" : "No"));
     }
-
+    
     if ($returnAsVar==1) {
         return $output;
     }else{
@@ -954,6 +752,7 @@ sub checkbox_boolean($@){
 }
 
 
+############################################################################
 =head2 text_field
 
 Text field widget. If "edit" is true then a text field is displayed with
@@ -990,21 +789,20 @@ sub text_field($@){
 	 $args{linkPage}, $args{default}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
-    my $tableName = ($o ? $o->table : $table);
-    my $id = ($o ? $o->id : "NEW");
-    my $value = ($o ? $o->$column : $default);
-    my $name = ( $shortFieldName ? $column : $tableName . "__" . $id . "__" . $column );
+    my $table  = ($o ? $o->table : $table);
+    my $id     = ($o ? $o->id : "NEW");
+    my $value  = ($o ? $o->$column : $default);
+    my $name   = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
     $htmlExtra = "" if (!$htmlExtra);
 
-    unless ($o || $table){
-	$self->error("Unable to determine table name. Please pass valid object and/or table name.\n") ;
-	return 0;
-    }
+    $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
+	unless ($o || $table) ;
+
     if ($isEditing){
         $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"%s\" %s>\n", $name, $value, $htmlExtra);
     }elsif ( $linkPage && $value){
 	if ( $linkPage eq "1" || $linkPage eq "view.html" ){
-	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $tableName, $o->id, $value);
+	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $table, $o->id, $value);
 	}else{
     	    $output .= sprintf("<a href=\"$linkPage?id=%s\"> %s </a>\n", $o->id, $value);
 	}
@@ -1019,10 +817,11 @@ sub text_field($@){
     }
 }
 
+############################################################################
 =head2 text_area
-
-Text area widget. If "edit" is true then a textarea is displayed with
-the value from the DB (if any).
+    
+    Text area widget. If "edit" is true then a textarea is displayed with
+    the value from the DB (if any).
 
  Arguments:
    Hash containing key/value pairs.  Keys are:
@@ -1050,23 +849,22 @@ sub text_area($@){
 	($args{object}, $args{table}, $args{column}, $args{edit}, $args{htmlExtra}, 
 	 $args{returnAsVar}, $args{shortFieldName} );
     my $output;
-
-    my $tableName = ($o ? $o->table : $table);
-    my $id = ($o ? $o->id : "NEW");
-    my $value = ($o ? $o->$column : "");
-    my $name = ( $shortFieldName ? $column : $tableName . "__" . $id . "__" . $column );
+    
+    my $table  = ($o ? $o->table : $table);
+    my $id     = ($o ? $o->id : "NEW");
+    my $value  = ($o ? $o->$column : "");
+    my $name   = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
     $htmlExtra = "" if (!$htmlExtra);
 
-    unless ($o || $table){
-	$self->error("Unable to determine table name. Please pass valid object and/or table name.\n");
-	return 0;
-    }
-    if ($isEditing){
+    $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
+	unless ( $o || $table );
+    
+    if ( $isEditing ){
         $output .= sprintf("<textarea name=\"%s\" %s>%s</textarea>\n", $name, $htmlExtra, $value);
     }else{
         $output .= sprintf("<pre>%s</pre>\n", $value);
     }
-
+    
     if ($returnAsVar==1) {
         return $output;
     }else{
@@ -1075,16 +873,17 @@ sub text_area($@){
 }
 
 
+############################################################################
 =head2 percent_bar
 
-Generates a graphical representation of a percentage as a progress bar.
-Can pass arguments in as either a straight percentage, or as a fraction.
+    Generates a graphical representation of a percentage as a progress bar.
+    Can pass arguments in as either a straight percentage, or as a fraction.
 
  Arguments:
    percent: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
-   or
-   numerator
-   denominator (0 in the denominator means 0%)
+    or
+    numerator
+    denominator (0 in the denominator means 0%)
   Returns: 
     a string with HTML, does not output to the browser.
   Examples:
@@ -1097,45 +896,46 @@ sub percent_bar {
     my ($percent, $numerator, $denominator) = ($args{percent}, $args{numerator}, $args{denominator});
     my $width;
     my $output;
-
-    if ($percent) {
+    
+    if ( $percent ) {
         if ($percent <= 0) {
             $width = 0;
-        } else {
+        }else{
             $width = int($percent);
-            if ($width < 1 ) {
+            if ( $width < 1 ) {
                 $width = 1;
             }
         }
-    } else {
-        if ($numerator <= 0 || $denominator <= 0) {
-            $width = 0;
+    }else{
+        if ( $numerator <= 0 || $denominator <= 0 ) {
+            $width   = 0;
             $percent = 0;
-        } else {
-            $width = int($numerator/$denominator*100);
+        }else{
+            $width   = int($numerator/$denominator*100);
             $percent = $numerator/$denominator*100;
             if ($width < 1 ) {
                 $width = 1;
             }
         }
     }
-
+    
     $output .= '<div class="progress_bar" title="'.(int($percent*10)/10).'%">';
     $output .= '<div class="progress_used" style="width:'.$width.'%">';
     $output .= '</div></div>';
-
+    
     return $output;
 }
 
 
+############################################################################
 =head2 percent_bar2
 
-Generates a graphical representation of two percentages as a progress bar.
-Can pass arguments in as either a straight percentage, or as a fraction.
+    Generates a graphical representation of two percentages as a progress bar.
+    Can pass arguments in as either a straight percentage, or as a fraction.
 
  Arguments:
-   percent1: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
-   percent2: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
+  percent1: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
+  percent2: percentage (expressed as a number between 0 and 100) e.g. (100, 45, 23.33, 0)
     or
    numerator1
    denominator2 (0 in the denominator means 0%)
@@ -1144,9 +944,10 @@ Can pass arguments in as either a straight percentage, or as a fraction.
   Returns: 
     a string with HTML, does not output to the browser.
   Examples:
+
     $ui->percent_bar2( title1=>"Address Usage: ", title2=>"Subnet Usage: ", 
 		       percent1=>$percent1, percent2=>$percent2 ) 
-
+    
 =cut
 sub percent_bar2 {
     my ($self, %args) = @_;
@@ -1158,20 +959,20 @@ sub percent_bar2 {
     my $width2;
     my $output;
 
-    if ($percent1) {
-        if ($percent1 <= 0) {
+    if ( $percent1 ) {
+        if ( $percent1 <= 0 ) {
             $width1 = 0;
-        } else {
+        }else{
             $width1 = int($percent1);
             if ($width1 < 1 ) {
                 $width1 = 1;
             }
         }
-    } else {
-        if ($numerator1 <= 0 || $denominator1 <= 0) {
+    }else{
+        if ( $numerator1 <= 0 || $denominator1 <= 0 ){
             $width1 = 0;
             $percent1 = 0;
-        } else {
+        }else{
             $width1 = int($numerator1/$denominator1*100);
             $percent1 = $numerator1/$denominator1*100;
             if ($width1 < 1 ) {
@@ -1179,20 +980,20 @@ sub percent_bar2 {
             }
         }
     }
-    if ($percent2) {
+    if ( $percent2 ) {
         if ($percent2 <= 0) {
             $width2 = 0;
-        } else {
+        }else{
             $width2 = int($percent2);
             if ($width2 < 1 ) {
                 $width2 = 1;
             }
         }
     } else {
-        if ($numerator2 <= 0 || $denominator2 <= 0) {
+        if ( $numerator2 <= 0 || $denominator2 <= 0 ) {
             $width2 = 0;
             $percent2 = 0;
-        } else {
+        }else{
             $width2 = int($numerator2/$denominator2*100);
             $percent2 = $numerator2/$denominator2*100;
             if ($width2 < 1 ) {
@@ -1214,9 +1015,8 @@ sub percent_bar2 {
 
 
 
-=head2 color_mix
-
-Mixes two hex colors by the amount specified.
+############################################################################
+=head2 color_mix - Mix two hex colors by the amount specified.
 
  Arguments:
    - $color1: should be a string like "ff00cc" 
@@ -1225,6 +1025,7 @@ Mixes two hex colors by the amount specified.
   Returns:  
     hex string like "99aacc"
   Examples:
+    my $cm = $ui->color_mix(color1=>'ff00cc', color2=>'cc00ff', blend=>0.5);
 
 =cut
 
@@ -1251,6 +1052,7 @@ sub color_mix {
 }
 
 
+############################################################################
 =head2 friendly_percent
 
     Returns a string representation of the integer percentage of a/b
@@ -1288,9 +1090,10 @@ sub friendly_percent {
     }   
 }
 
+############################################################################
 =head2 format_size
 
-Turns "1048576" into "1mb". Allows user to specify maximum unit to show.
+    Turns "1048576" into "1MB". Allows user to specify maximum unit to show.
 
   Arguments:
     $bytes:    integer value
@@ -1307,9 +1110,9 @@ sub format_size {
     my @sizes = ('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB');
 
     if( $max_unit == 0 ) { $max_unit = 2; }
-    if( $max_unit > @sizes ) { $max_unit = @sizes; }
+    if( $max_unit > scalar @sizes ) { $max_unit = scalar @sizes; }
 
-    while( $bytes > 1024 && $size_index < $max_unit ) {
+    while( $bytes >= 1024 && $size_index < $max_unit ) {
         $bytes = $bytes / 1024;
         $size_index++;
     }
@@ -1317,6 +1120,7 @@ sub format_size {
     return sprintf("%.0f",$bytes).' '.($sizes[$size_index]);
 }
 
+############################################################################
 =head2 add_to_fields
 
     Used as a shortcut for adding data to an attribute table in pages such as device.html.
@@ -1349,157 +1153,56 @@ sub add_to_fields {
     my ($o, $table, $edit, $fields, $linkpages, $field_headers, $cell_data) = 
 	@args{ 'o', 'table', 'edit', 'fields', 'linkpages', 'field_headers', 'cell_data'};
     
-    croak "You need to pass either a valid object or a table name" 
+    $self->throw_fatal("You need to pass either a valid object or a table name")
 	unless ( ref($o) || $table );
-
+    
     for( my $i=0; $i<@{$fields}; $i++ ) {
         my $field = ${$fields}[$i];
         my $linkpage = ${$linkpages}[$i];
         my %tmp;
         %tmp = $self->form_field(object=>$o, table=>$table, column=>$field, edit=>$edit, linkPage=>$linkpage);
-        push( @{$field_headers}, $tmp{'label'}.":" );
-        push( @{$cell_data}, $tmp{'value'} );
+        push( @{$field_headers}, $tmp{label} );
+        push( @{$cell_data}, $tmp{value} );
     }
     1;
 }
 
-=head2 getobjlabel
 
-  $lbl = $db->getobjlabel( $obj );
-  $lbl = $db->getobjlabel( $obj, ", " );
+############################################################################
+=head2 select_query - Search keywords in a tables label fields.
 
-Returns an objects label string, composed from the list of labels and the values of those labels
-for this object, which might reside in more than one table.
-Accepts an object reference and a (optional) delimiter.
-Returns a string.
+    If label field is a foreign key, recursively search for same keywords in foreign table.
 
-=cut
-sub getobjlabel {
-    my ($self, $obj, $delim) = @_;
-    my (%linksto, @ret, @cols);
-    my $table = $obj->table;
-    %linksto = $self->meta->get_links_to($table);
-    @cols = $self->meta->get_labels($table);
-    foreach my $c (@cols){
-	if (defined $obj->$c){
-	    if ( !exists( $linksto{$c} ) ){
-		push @ret, $obj->$c;
-	    }else{
-		push @ret, $self->getobjlabel($obj->$c, $delim);
-	    }
-	}
-    }
-    # Only want non empty fields
-    return join "$delim", grep {$_ ne ""} @ret ;
-}
-
-=head2 getlabelarr
-
-  @lbls = $db->getlabelarr( $table );
-
-Returns array of labels for table. Each element is a comma delimited
-string representing the labels from this table to its endpoint.
-
-=cut
-sub getlabelarr {
-
-    my ($self, $table) = @_;
-    my %linksto = $self->meta->get_links_to($table);
-    my @columns = $self->meta->get_labels($table);
-    my @ret = ();
-
-    foreach my $col (@columns){
-        if (!exists($linksto{$col})){
-            push(@ret, $col);
-        }else{
-            my $lblString = $col . ",";
-            foreach my $lbl ($self->getlabelarr($linksto{$col})){
-                push(@ret, $lblString . $lbl);
-            }
-        }
-    }
-    return @ret;
-}
-
-=head2 getlabelvalue
-
-  $lbl = $db->getlabelvalue( $obj, $lbls, $delim );
-
-Returns actual label for this object based upon label array.
-Args:
-  - obj: object to find values for.
-  - lbls: array of labels generated by getlabelarr().
-  - delim: (optional) delimiter.
-
-=cut
-sub getlabelvalue {
-    my ($self, $obj, $lbls, $delim) = @_;
-
-    return "" if (!defined($obj) || int($obj) == 0);
-
-    $delim = ", " if (!$delim);
-    my @val = ();
-    foreach my $lblString (@{$lbls}){
-        my $o = $obj;
-        foreach my $lbl (split(/,/, $lblString)){
-            $o = $o->$lbl if (defined($o->$lbl));
-        }
-        push(@val, $o);
-    }
-    return join("$delim", @val) || "";
-}
-
-=head2 select_query
-
-  $r = $db->select_query(table => $table, terms => \@terms, max => $max);
-
- Search keywords in a tables label fields. If label field is a foreign
- key, recursively search for same keywords in foreign table.
-
- Arguments
-   table: Name of table to look up
-   terms: array ref of search terms
- Returns
-   hashref of $table objects
+  Arguments:
+   - table   Name of table to look up
+   - terms   array ref of search terms
+  Returns:
+    hashref of $table objects
+  Examples:
+    
+  $r = $ui->select_query(table => $table, terms => \@terms, max => $max);
 
 =cut
 sub select_query {
     my ($self, %args) = @_;
-    my ($table, $terms) = ($args{table}, $args{terms});
+    my ($table, $terms) = @args{'table', 'terms'};
     my %found;
-    my %linksto = $self->meta->get_links_to($table);
-    my @labels  = $self->meta->get_labels($table);
-    foreach my $term (@$terms){
-	foreach my $c (@labels){
-	    if (! $linksto{$c} ){ # column is local
+    my @labels = $table->meta_data->get_labels();
+    foreach my $term ( @$terms ){
+	foreach my $c ( @labels ){
+	    my $f_table = $table->meta_data->get_column($c)->links_to();
+	    if ( !defined $f_table ){ # column is local
 		my $it;
-		if ( $table eq "Ipblock" && $c eq "address" ){
-		    # Special case.  We have to convert into an integer first
-		    # Also, if user happened to enter a prefix, make it work
-		    my ($address, $prefix);
-		    if ( $term =~ /\/\d+$/ ){
-			($address, $prefix) = split /\//, $term;
-			my $int = $self->ip2int($address);
-			$it = $table->search( 'address' => $int, 'prefix'=> $prefix );
-		    }else{
-			$address = $term;
-			my $int = $self->ip2int($address);
-			$it = $table->search( 'address' => $int );
-		    }
-		}else{
-		    my $sterm = $self->convert_search_keyword($term);
-		    $it = $table->search_like( $c => $sterm );
-		}
+		$it = $table->search_like( $c => $term );
 		while (my $obj = $it->next){
 		    $found{$term}{$obj->id} = $obj;
 		}
 	    }else{ # column is a foreign key.
-		my $rtable = $linksto{$c};
 		# go recursive
-		if (my $fobjs = $self->select_query( table => $rtable, terms => [$term] )){
-		    foreach my $foid (keys %$fobjs){
+		if ( my $fobjs = $self->select_query(table=>$f_table, terms=>[$term]) ){
+		    foreach my $foid ( keys %$fobjs ){
 			my $it = $table->search( $c => $foid );
-			while (my $obj = $it->next){
+			while ( my $obj = $it->next ){
 			    $found{$term}{$obj->id} = $obj;
 			}
 		    }
@@ -1522,44 +1225,31 @@ sub select_query {
     }
 }
 
-=head2 search_all_netdot - Search for a string in all fields from all tables, excluding foreign key fields.
+=head1 AUTHORS
 
-Arguments:  query string
-Returns:    reference to hash of hashes or -1 if error
+Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >> with contributions from Nathan Collins and Aaron Parecki.
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2006 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =cut
-sub search_all_netdot {
-    my ($self, $q) = @_;
-    my %results;
 
-    # Ignore these fields when searching
-    my %ign_fields = ('id' => '');
+# Make sure to return 1
+1;
 
-    $q = $self->convert_search_keyword($q);
 
-    foreach my $tbl ( $self->gettables() ) {
-	next if $tbl eq "Meta";
-	# Will also ignore foreign key fields
-	my %linksto = $self->getlinksto($tbl);
-	my @cols;
-	map { push @cols, $_ unless( exists $ign_fields{$_} || $linksto{$_} ) } $tbl->columns();
-	my @where;
-	map { push @where, "$_ LIKE \"$q\"" } @cols;
-	my $where = join " or ", @where;
-	next unless $where;
-	my $dbh = $self->db_Main;
-	my $st;
-	eval {
-	    $st = $dbh->prepare_cached("SELECT id FROM $tbl WHERE $where;");
-	    $st->execute();
-	};
-	if ( $@ ){
-	    $self->error("search_all_netdot: $@");
-	    return -1;
-	}
-	while ( my ($id) = $st->fetchrow_array() ){
-	    $results{$tbl}{$id} = $tbl->retrieve($id);
-	}
-    }
-    return \%results;
-}

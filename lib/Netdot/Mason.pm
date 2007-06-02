@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 package Netdot::Mason;
 use strict;
@@ -6,21 +6,14 @@ use HTML::Mason::ApacheHandler;
 
 { 
     package HTML::Mason::Commands;
-    use NetAddr::IP;
     use Data::Dumper;
     use lib "<<Make:LIB>>";
-    use Netdot::DBI;
     use Netdot::UI;
-    use Netdot::IPManager;
-    use Netdot::DeviceManager;
-    use Netdot::DNSManager;
-    use Netdot::CablePlantManager;
-    use vars qw ( $ui $dm $dns $ipm $cable_manager );
+#    use Netdot::UI::CablePlant;
+    use vars qw ( $ui $dns $cable_manager );
     $ui            = Netdot::UI->new();
-    $dm            = Netdot::DeviceManager->new();
-    $dns           = Netdot::DNSManager->new();
-    $ipm           = Netdot::IPManager->new();
-    $cable_manager = Netdot::CablePlantManager->new();
+#    $cable_manager = Netdot::UI::CablePlant>new();
+    $dns           = Netdot::Util::DNS->new();
 }
 # Create ApacheHandler object at startup.
 my $ah =
