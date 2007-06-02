@@ -1,14 +1,13 @@
 <%doc>
-edit.html
+edit.html - present a form to either insert a new object or update an existing one.
 
   Arguments:
 
     table -- name of table to create/edit
     id    -- row in a specific table if editing
-    sid   -- session id (used for keeping state while creating objects)
     cancel - cancels all existing state and returns to null state
     submit - 
-    (column names from any/all tables)
+    column names from any/all tables
 
   Possible states:
 
@@ -21,41 +20,9 @@ edit.html
     - table and id are set
     present page to edit particular instance of that table
 
-    - user clicked New on a table page
-    present page to create object for New; keep state for previous 
-    table page
-    push PREV table name onto sessionpath
-
-    - cancel
-    user clicks on cancel; clear all state
-
     - submit
-    Table has been submitted to be added/updated; go to Confirm page.
+    Table has been submitted to be added/updated; go to View page.
 
-    - confirm
-    User has confirmed instance to be submitted; submit changes to DB;
-    pop table from sessionpath for table to go back to (if necessary).
-
-  Variables:
-
-    $PREV - name of previously viewed/edited table
-    $TBL  - name of current table
-    $ID   - integer for specific row in table $TBL
-            Used to determine when we are editing a table
-    $OBJ  - the object instantiation of $ID in $TBL
-    $sid  - session id; cookie to get back state as we go through several 
-            web pages.  Peformed using Apache::Session::File
-    $TMP  - where Apache::Session::File should store its lock and state files
-    $AGE  - maximum age of said files
-    $WIDTH - number of columns to be displayed in default state
-    $session - object holding state
-    $ui  - instantiation of Netdot::UI
-    %args - parts of %ARGS I want 
-    %order - hash of column -> rank to list tables in
-    %linksto - hash of column -> Table listings of current table
-               which columns point to other tables
-    
-    $DEBUG - whether to show debug information
 </%doc>
 
 
@@ -65,275 +32,236 @@ section => 'Generic'
 </%attr>
 
 <%args>
-$TBL         => undef
-$PREV        => undef
-$ID          => undef
-$OBJ         => undef
-$sid         => undef
-
-$AGE         => 86400
-$session     => undef
-%args        => undef
-%order       => undef
-%linksto     => undef
+$table       => undef
+$id          => undef
+$submit      => undef
+$cancel      => undef
 $showheader  => 1
+$select_id   => undef
+$selected    => undef
+$dowindow    => undef
 </%args>
 
 <%init>
-my %state;
-undef( %state );
-my $TMP = $ui->{config}->{TMP};
+my %args;
 my $DEBUG = 0;
-my $NEW   = 0;
-my %reservedargs = (submit     => '',
-		    sid        => '',
-		    commit     => '',
-		    table      => '',
-		    showheader => '',
-		    user       => '',
-		    select_id  => '',
-		    selected   => '',
-		   );
+my %reserved = (submit     => '',
+		commit     => '',
+		table      => '',
+		showheader => '',
+		user       => '',
+		select_id  => '',
+		selected   => '',
+		onload     => '',
+		dowindow   => '',
+		request    => '',
+		page       => '',
+		);
+
+my $page;
+if( $showheader ) {
+    $page = 'edit.html';
+} else {
+    $page = 'insertentry.html';
+}
+
+##################################################
+# grab arguments to this script
+foreach my $j ( keys %ARGS ) {
+    ################################################
+    # in case apache makes the value an array, set to last value
+    if( ref( $ARGS{$j} ) eq "ARRAY" ) {
+	my @t = @{ $ARGS{$j} };
+	$ARGS{$j} = $t[$#t];
+    }
+    next if( $j !~ /\w+/ );
+
+  ################################################
+  # Ignore fields that don't belong to the table
+    next if exists $reserved{$j};
+    
+    # /_srch/ elements are added for javascript only
+    # we don't need them here
+    next if ($j =~ /_srch/ );
+    
+    ################################################
+    # "/^_/" is added to avoid using reserved words in javascript
+    # chop it off
+    my $k = $j;
+    $k =~ s/^_//;
+    $args{$k} = $ARGS{$j};	   
+}
+
+
+##################################################
+if( $DEBUG ) {
+    print "ARGS: ";
+    printf "<pre>%s</pre>\n", Dumper( \%ARGS );
+    print "args: ";
+    printf "<pre>%s</pre>\n", Dumper( \%args );
+}
+
+##################################################
+# Start the actual work
+#
+if ( $table ){
+    if ( $id ){
+	my $obj = $table->retrieve($id);
+	if ( $submit eq "Update" ){
+	    eval{
+		$obj->update(\%args);
+	    };
+	    if ( my $e = $@ ){
+		$m->comp('error.mhtml', error=>$e);
+	    }
+	    $m->comp('view.html', table=>$table, id=>$id);
+	    
+	}else{
+	    $m->comp('.show_form', table=>$table, id=>$id, 
+		     showheader=>$showheader, select_id=>$select_id, selected=>$selected,
+		     page=>$page);
+	}
+    }else{
+	if ( $submit eq "Insert" ){
+	    my $new;
+	    eval{
+		$new = $table->insert(\%args);
+	    };
+	    if ( my $e = $@ ){
+		$m->comp('error.mhtml', error=>$e);
+	    }
+	    if ( $dowindow ){
+		$m->comp('.show_inserted', table=>$table, id=>$new->id,
+			 showheader=>$showheader, select_id=>$select_id, selected=>$selected);
+	    }else{
+		$m->comp('view.html', table=>$table, id=>$new->id);
+	    }
+	    
+	}else{
+	    $m->comp('.show_form', table=>$table, 
+		     showheader=>$showheader, select_id=>$select_id, selected=>$selected,
+		     page=>$page, dowindow=>$dowindow);
+	}
+    }
+    
+}else{
+    $m->comp('table.mhtml', width=>2, link=>"$page", title => "Please select an object to create:");
+}
 
 </%init>
 
 
-<%perl>
-##################################################
-#
-# BEGIN PRE PROCESSING
-#
-##################################################
 
-##################################################
-# clean out old state files
-$ui->rmsessions( $TMP, $AGE );
+% ########################################################
+% # BEGIN HTML STUFF
+% ########################################################
 
-##################################################
-# grab arguments to this script
-my %rev = reverse %ARGS;
-foreach my $j ( keys %ARGS ) {
-  ################################################
-  # in case apache makes the value an array, set to last value
-  if( ref( $ARGS{$j} ) eq "ARRAY" ) {
-    my @t = @{ $ARGS{$j} };
-    $ARGS{$j} = $t[$#t];
-  }
-  if( $ARGS{$j} eq "New" ) {
-    $TBL = $j;
-    $TBL =~ s/^T_//;
-    $NEW = 1;
-    next;
-  }
-  next if( $j !~ /\w+/ );
 
-  ################################################
-  # Ignore fields that don't belong to the table
-  # /_srch/ elements are added for javascript only
-  # we don't need them here
-  next if ($j =~ /_srch/ );
+% ########################################################
+% # HTML form wrapper for the form component
+% ########################################################
 
-  ################################################
-  # "/^_/" is added to avoid using reserved words in javascript
-  # chop it off
-  my $k = $j;
-  $k =~ s/^_//;
-  $args{$k} = $ARGS{$j};	   
-}
+<%def .show_form>
+<%args>
+$table
+$id         => undef
+$select_id  => undef
+$selected   => undef
+$showheader => undef
+$page       => undef
+$dowindow   => 0
+</%args>
 
-##################################################
-# define TBL (if not already) and set previous table for reference
-if( $TBL && $args{table} ) {
-  $PREV = $args{table}
-} elsif( ! defined( $TBL ) ) {
-  $TBL = $args{table};
-}
-unless( defined( $PREV ) ) {
-  $PREV = $TBL;
-}
+<%init>
+my $title = "$table " . $ui->table_descr_link($table, "[?]");
+</%init>
 
-##################################################
-# get state back if sid defined
-#   otherwise create state if necessary
-if( defined( $args{sid} ) ) {
-  $sid = $args{sid};
-  $session = $ui->getsession( $TMP, $sid );
-} elsif( $args{table} ) {  
-  $session = $ui->mksession( $TMP );
-  $sid = $session->{_session_id};
-}
+<div class="container">
+    <div class="containerhead">
+        <% $title %>
+    </div>
+    <div class="containerbody">
+      <form name="netdotform" action="<% $page %>" method="POST">
+      <input type="hidden" name="showheader" value="<% $showheader %>"> 
+      <input type="hidden" name="select_id" value="<% $select_id %>">
+      <input type="hidden" name="selected" value="<% $selected %>">
+      <input type="hidden" name="dowindow" value="<% $dowindow %>">
+%     if( $id ) {
+%         $m->comp('form.mhtml', table=>$table, id=>$id);
+      <br>
+      <input name="submit" type="submit" value="Update">
+%     }else{
+%         $m->comp('form.mhtml', table=>$table);
+      <br>
+      <input name="submit" type="submit" value="Insert">
+%     }
+%    if ( $dowindow ){
+	<input name="cancel" value="Cancel" onClick="window.close()" type="button">
+%    }else{
+    	<input name="cancel" value="Cancel" onClick="history.go(-1)" type="button">
+%    }
+      </form>
+    </div>
+</div>
 
-##################################################
-if( $DEBUG && 0 ) {
-  print "ARGS: ";
-  printf "<pre>%s</pre>\n", Dumper( \%ARGS );
-  print "SESSION: ";
-  printf "<pre>%s</pre>\n", Dumper( $session );
-}
-
-##################################################
-# if Cancel, go back to last state
-if( $args{cancel} eq "Cancel" ) {
-  if( $args{create} ) {
-    $TBL = $args{create};
-    delete( $args{create} );
-  } else {
-      if ( ! $session ){
-	  $m->abort;
-      }
-    if( ! $session || ! defined( $session->{path} ) || length( $session->{path} ) < 1 ) {
-      $ui->rmsession( $session );
-      $TBL = $PREV;
-    } else {
-      $TBL = $ui->popsessionpath( $session );
-    }
-  }
-}
-
-##################################################
-# fill in the rest of state details -- for Submit or New
-if( exists( $args{submit} ) 
-    || exists( $rev{New} ) || exists( $args{discover} ) ) {
-  foreach my $arg ( keys %args ) {
-    next if ( exists $reservedargs{$arg} );
-    next if( length( $arg ) < 1 || ! defined( $args{$arg} ) );
-    $session->{tables}{$PREV}{$arg} = $args{$arg};
-  }
-  if( ! defined( $args{submit} ) ) {
-    $ui->pushsessionpath( $session, $args{table} );
-  }
-}
-
-if( exists( $args{submit} ) ) {
-  $session->{foo} = "bar";
-}
-if( exists( $args{confirm} ) ) {
-  $session->{foo} = "bar2";
-}
-
-##################################################
-# get back some history of where user has clicked
-if( exists( $args{submit} ) || exists( $args{confirm} ) ) {
-  ################################################
-  # if user hits reload after a 'Confirm' (and we're displaying a table
-  #   form submit page), we need to be sure we go back to the proper
-  #   table/object page and do not create empty objects in the DB.
-  if( $args{confirm} && ! exists( $session->{tables}{ $args{create} } ) ) {
-    delete( $args{confirm} );
-    ##############################################
-    # get sessionpath and look for table not in session{tables}
-    # push that table onto sessionpath
-    my ( $x, %z );
-    map { $z{$_} = 1 } split( /;/, $session->{path} );
-    foreach my $y ( keys %{ $session->{tables} } ) {
-      if( ! exists( $z{$y} ) ) {
-        $x = $y;
-      }
-    }
-    $ui->pushsessionpath( $session, $x );
-  }
-  ################################################
-  # if not a submit, pop last table from sessionpath
-  if( ! exists( $args{submit} ) ) {
-    my $tmp = $ui->popsessionpath( $session );
-    if( defined( $tmp ) && length( $tmp ) > 0 ) {
-      $TBL = $tmp;
-    }
-  }
-}
-
-##################################################
-# get id and object now that TBL is set finally
-if( exists( $args{id} ) ) {
-  if( ! $NEW ) {
-    $ID = $ARGS{id};
-  }
-} elsif( exists( $session->{tables}{$TBL}{id} ) ) {
-  $ID = $session->{tables}{$TBL}{id}
-}
-if( $ID ) {
-  if( $TBL ) {
-    $OBJ = $TBL->retrieve($ID); 
-  } elsif( $args{confirm} eq "Confirm" && $args{create} ) {
-    $OBJ = $args{create}->retrieve($ID);
-  }
-}
-
-##################################################
-# if confirm, handle here
-if( $args{confirm} eq "Confirm" ) {
-  my( $T, $r );
-  $T = $args{create};
-  if( $OBJ && ( ! $TBL || $T eq $TBL ) ) {  # we're updating an object
-    $r = $ui->update( object => $OBJ, state => \%{ $session->{tables}{$T} } );
-  } else {
-    $r = $ui->insert( table => $T, state => \%{ $session->{tables}{$T} } );
-  }
-  if( ! $r ) {
-    my $err = $ui->error;
-    $m->comp('error.mhtml', error => $err);
-  }
-  delete( $session->{tables}{ $args{create} } );
-  if( length( $session->{path} ) < 1 && ! defined( $TBL ) ) {
-    if( defined( $session ) ) {
-      $ui->rmsession( $session );
-    }
-  }
-  $session->{created}{$T} = $r;
-  ################################################
-  # reset ID and OBJ if appropriate (ie. no more edit/creates left)
-  if( ! $TBL || $args{cancel} ) {
-    $ID = $r;
-    $OBJ = $T->retrieve($ID);
-  } else {
-    undef( $ID );
-  }
-}
-
-##################################################
-# create %state to pass to form
-# only if ID not set since we want form component to fill that in
-if( defined( $TBL ) && ! defined( $ID ) ) {
-  my %lt = $ui->meta->get_links_to( $TBL );
-  my %co = $ui->meta->get_column_order($TBL);
-
-  foreach my $c ( keys %co ) {
-    if( $args{$c} ) {
-      $state{$c} = $args{$c};
-    }
-  }
-  if( exists( $session->{tables}{$TBL} ) ) {
-    foreach my $c ( keys %{ $session->{tables}{$TBL} } ) {
-      if( $lt{$c} && $session->{created}{$lt{$c}} ) {
-        $state{$c} = $session->{created}{$lt{$c}};
-      } else {
-        $state{$c} = $session->{tables}{$TBL}{$c};
-      }
-    }
-  }
-}
-</%perl>
-% ################################################
-% #
-% # END PRE PROCESSING
-% # BEGIN HTML
-% #
-% ################################################
-
-% ####################################################################
-% if( $DEBUG ) {
-    table : <% $args{table} %> ; TBL : <% $TBL %><br>
-    id : <% $ID %><br>
-    PREV : <% $PREV %> <br>
-    ARGS :
-%   printf "<pre>%s</pre>\n", Dumper( \%ARGS );
-    SESSION: 
-%   printf "<pre>%s</pre>\n", Dumper( $session );
-    STATE: 
-%   printf "<pre>%s</pre>\n", Dumper( %state );
-    <hr>
+% if ( $showheader ){
+    </div>
 % }
 
-<& /generic/edit.mhtml, args => \%args, ID => $ID, TBL => $TBL, OBJ => $OBJ, sid => $sid, session => $session, state => \%state, showheader => $showheader &>
+</%def>
 
-% ####################################################################
+
+
+% ########################################################
+% # This subcomponent shows an intermediate window
+% # just after an object has been created in a detached 
+% # window.  The javascript code inserts the new object's
+% # id and label in the caller window's form.
+% ########################################################
+
+<%def .show_inserted>
+<%args>
+$table
+$id
+$select_id  => undef
+$selected   => undef
+$showheader => undef
+</%args>
+<%init>
+use URI::Escape;
+
+my ( $obj, $lbl );
+$obj = $table->retrieve($id);
+$lbl = $obj->get_label;
+
+</%init>
+
+% my $onload_action = uri_escape("addandclose()");
+
+<script language="javascript">
+<!--
+
+    function addandclose() {
+	insertOption('<% $select_id %>', '<% $lbl %>', '<% $id %>', '<% $selected %>'); 
+	window.close();
+    }
+-->
+</script>
+
+<div class="container">
+    <div class="containerhead">
+    OK
+    </div>
+    <div class="containerbody">
+    <br>
+    New <% $table %>: <% $lbl %> inserted.
+    <br>
+    <center>
+    <a class="hand" onClick="<% $onload_action %>">[close]</a>
+    </center>
+    </div>
+</div>
+
+</%def>
+
+

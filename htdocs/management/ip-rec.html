@@ -28,11 +28,16 @@ my %state;
 my %reserved = (submit    => "", cancel    => "");
 my $msg;
 my (@field_headers, @cell_data) = ();
-    
-my %linksto  = $ui->meta->get_links_to("Ipblock");
-my $fieldtag = $ui->meta->get_column_tag("Ipblock", $field);
-my $sqltype  = $ui->meta->get_column_type("Ipblock", $field);
-my $o        = Ipblock->retrieve($id);
+
+my $mtable   = $ui->meta->get_table('Ipblock');    
+my %linksto  = $mtable->get_links_to();
+my $mcol     = $mtable->get_column($field);
+my $fieldtag = $mcol->tag();
+
+my $o;
+unless ( $o = Ipblock->retrieve($id) ){
+    $m->comp('/generic/error.mhtml', error=>"Could not retrieve Ipblock id $id");
+}
 
 if ( $submit ){
     foreach my $arg ( keys %ARGS ){
@@ -41,15 +46,20 @@ if ( $submit ){
 	    $state{$3} = $ARGS{$arg};
 	}
     }
-    if ( $ipm->update_recursive($o, \%state, $recursive) ){
-	$msg    = "OK.";
-	if ( $recursive ){
-	    $msg .= " All blocks updated successfully";
-	}
-	$bodyargs = 'onUnload="opener.location.reload()"';
+    $state{recursive} = $recursive;
+    eval {
+	$o->update(\%state);
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
     }else{
-	$msg    = sprintf("Error! %s", $ipm->error);
+	$msg = "OK.";
+ 	if ( $recursive ){
+ 	    $msg .= " All blocks updated successfully";
+ 	}
+ 	$bodyargs = 'onUnload="opener.location.reload()"';
     }
+
 }else{
     push( @field_headers, "$fieldtag:" );
     push( @cell_data, $ui->form_field(object=>$o, column=>$field, edit=>1, returnValOnly=>1) );
@@ -79,7 +89,7 @@ if ( $submit ){
 
   <div class="containerbody">
       <% $msg %>
-      <p><a href="#" onClick="window.close()">[close]</a><br>
+      <p><a href="#" onClick="window.close();window.opener.location.reload()">[close]</a><br>
     
 %}else{
 

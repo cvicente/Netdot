@@ -1,7 +1,5 @@
 <%doc>
--- IP Worksheet --
 Interface for IP blocks (both addresses and subnets)
-
 </%doc>
 %
 %
@@ -46,7 +44,7 @@ my %S_LBL = ( 'SEARCH_ADDR'  => 'IP[/prefix]',
 	      );
 if ( $id ){
     unless ( $o = Ipblock->retrieve($id) ){
-	$m->comp('error.mhtml', error => "Could not retrieve Ipblock id: $id");
+	$m->comp('/generic/error.mhtml', error => "Could not retrieve Ipblock id: $id");
     }else{
 	$title = $o->address . "/" . $o->prefix;
     }
@@ -101,29 +99,28 @@ if ( defined($search) ){
          </div>
        </div>
 <%perl>
-    }else{
-        # Make sure we start with a clean error buffer
-        $ipm->error("");
-	$search =~ s/^\s*(.*)\s*$/$1/g;
-	if ( $_action eq "SEARCH_ADDR" ){
-	    if ($search =~ /\//){
-		my ($addr, $prefix) = split /\//, $search;
-		if ( !(@list = $ipm->searchblocks_addr($addr, $prefix)) && !$ipm->error ){
-		    $covering_block = $ipm->get_covering_block($addr, $prefix);
-		}
-	    }else{
-		if ( !(@list = $ipm->searchblocks_addr($search)) && !$ipm->error ){
-		    $covering_block = $ipm->get_covering_block($search);
-		}
+}else{
+    # Remove trailing and leading spaces
+    $search =~ s/^\s*(.*)\s*$/$1/g;
+    if ( $_action eq "SEARCH_ADDR" ){
+	# These might throw exceptions
+	eval {
+	    if ( !(@list = Ipblock->search(address=>$search)) ){
+		# Return next existing higher block in the tree if not found
+		$covering_block = Ipblock->get_covering_block(address=>$search);
 	    }
-	}elsif ( $_action eq "SEARCH_REGEX" ){
-	    @list = $ipm->searchblocks_regex($search);
-	}elsif ( $_action eq "SEARCH_OTHER" ){
-	    @list = $ipm->searchblocks_other($search);
-	}else {
-	    $m->comp('error.mhtml', error => "Unrecognized action parameter: $_action");	
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
 	}
 
+    }elsif ( $_action eq "SEARCH_REGEX" ){
+	@list = Ipblock->search_like(address=>$search);
+    }elsif ( $_action eq "SEARCH_OTHER" ){
+	@list = Ipblock->keyword_search($search);
+    }else {
+	$m->comp('/generic/error.mhtml', error => "Unrecognized action parameter: $_action");	
+    }
 </%perl>      
 	<div class="container">
           <div class="containerhead">
@@ -133,10 +130,7 @@ if ( defined($search) ){
 %         if ( @list ){
               <& ipblock_list.mhtml, objects => \@list  &>
 %         }else{
-%             if ( $ipm->error ){
-                 <p><strong><% $ipm->error %></strong>
-%             }
-	      <form action="ip-ws.html" method="POST">
+	      <form action="ip.html" method="POST">
                 <p>
                 <label for="search"><% $S_LBL{$_action} %>:</label>
                 <input type="text" name="search" class="txt" value="<% $search %>"> 
@@ -167,17 +161,17 @@ if ( defined($search) ){
 #######################################################################################
 }elsif( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     
-    @list = $ipm->getrootblocks($rootversion);
+    @list = Ipblock->get_roots($rootversion);
     
 </%perl>
        <div class="container">
           <div class="containerheadleft">Root Blocks: (<% scalar(@list) %>)</div>
           <div class="containerheadright">
-	    <form name="netdotform" action="ip-ws.html" method="POST">
+	    <form name="netdotform" action="ip.html" method="POST">
 	      <input type="hidden" name="_action" value="SHOW_ROOTS">
 	      Version: <select name="rootversion" onChange="submit();">
 %	      foreach my $version ('4', '6', 'all'){
-%	        if ($version eq $rootversion){
+%	        if ( $version eq $rootversion ){
 		    <option value="<% $version %>" SELECTED><% $version %></option>
 %		}else{
 		    <option value="<% $version %>"><% $version %></option>
@@ -189,8 +183,6 @@ if ( defined($search) ){
           <div class="containerbody">
 %             if ( @list ){
                   <& ipblock_list.mhtml, objects => \@list, type => "block"  &>
-%             }elsif ( $ipm->error ){
-                  <p><strong><% $ipm->error %></strong>
 %             }
           </div>
        </div>
@@ -206,39 +198,44 @@ if ( defined($search) ){
 
     if ($submit eq "cancel") {
         # Get rid of the new block
-        unless ( $ipm->removeblock( id => $id ) ){
-        	$m->comp('error.mhtml', error => $ipm->error);	
+        if ( $id != 0 ){
+	    unless ( $o = Ipblock->retrieve($id) ){
+		$m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
+	    }
+	    $o->delete;
         }
-        
+
+	# Show parent block
         # reset all request variables to make this look like a view request
         $view = 1;
         $edit = 0;
         $id = $parent;
-        if ($id != 0){
-        	unless ( $o = Ipblock->retrieve($id) ){
-        	    $m->comp('error.mhtml', error => "Can't retrieve Ipblock id $id");
-        	}
+        if ( $id != 0 ){
+	    unless ( $o = Ipblock->retrieve($id) ){
+		$m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
+	    }
         }
 
     } else {
-        if ( $ui->form_to_db(%ARGS) ){
-        	# Do this to 'flush' the values associated with the object
-        	# before redisplaying
-        	$o = undef;
-            if ($id){
-        	    $o = Ipblock->retrieve($id);
-        	}
+	eval {  $ui->form_to_db(%ARGS)	};
+        if ( my $e = $@  ){
+	    </%perl>
+		<div class="container">
+		  <div class="containerhead">
+		    <strong>Error!</strong>   
+		  </div>
+		  <div class="containerbody">
+		    <p><strong><% $e %></strong>
+		  </div>
+		</div>
+	    <%perl>
         }else{
-        </%perl>
-           <div class="container">
-             <div class="containerhead">
-               <strong>Error!</strong>   
-             </div>
-             <div class="containerbody">
-    	   <p><strong><% $ui->error %></strong>
-             </div>
-           </div>
-        <%perl>
+	    # Do this to 'flush' the values associated with the object
+	    # before redisplaying
+	    $o = undef;
+            if ( $id ){
+		$o = Ipblock->retrieve($id);
+	    }
        }
     }
 
@@ -272,16 +269,19 @@ if ( defined($search) ){
 	}
     }
     my $newblock; 
-    unless( $newblock = $ipm->insertblock(address     => $address, 
-					  prefix      => $prefix, 
-					  statusname  => "Container")){
+    eval {
+	$newblock = Ipblock->insert({address => $address, 
+				    prefix   => $prefix, 
+				    status   => "Container"});
+    };
+    if ( my $e = $@ ){
 </%perl>
 	    <div class="container">
               <div class="containerhead">
 		<strong>Error!</strong>   
 	      </div>
 	      <div class="containerbody">  
-	        <p><strong><% $ipm->error %></strong>
+	        <p><strong><% $e %></strong>
 	      </div>
    	    </div>
 <%perl>
@@ -290,14 +290,14 @@ if ( defined($search) ){
     	$o = $newblock;
     	$id = $newblock->id;
 
-        if( $ipm->isaddress($o) ) {
+        if( $o->is_address ) {
             $edit_ip = 1;
-            $edit = "ipinfo";
-            $add_ip = 1;
+            $edit    = "ipinfo";
+            $add_ip  = 1;
         } else {
             $edit_block = 1;
-            $edit = "blockinfo";
-            $add_block = 1;
+            $edit       = "blockinfo";
+            $add_block  = 1;
         }
     }
 
@@ -309,19 +309,20 @@ if ( defined($search) ){
     # Strip "/" if any
     $length =~ s/\///;
     my $newblock;
-    unless ( $newblock = $ipm->auto_allocate($parent, $length, $strategy) ){
+    eval { $newblock = Ipblock->auto_allocate($parent, $length, $strategy) };
+    if ( my $e = $@ ){
 </%perl>
     <div class="container">
       <div class="containerhead">
         <strong>Error!</strong>   
       </div>
       <div class="containerbody">  
-        <p><strong><% $ipm->error %></strong>
+        <p><strong><% $e %></strong>
       </div>
     </div>
 %    }else {
 %     # Present new block and ask for confirmation
-      <form action="ip-ws.html">
+      <form action="ip.html">
         <input type="hidden" name="_action" value="CONFIRM_AUTOALLOCATE">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="newblock" value="<% $newblock->id %>">
@@ -346,18 +347,20 @@ if ( defined($search) ){
 #
 #######################################################################################
 
-}elsif ( $_action eq "CONFIRM_AUTOALLOCATE" && $submit eq "Yes"){
-    undef $o;
-    unless ( $o = Ipblock->retrieve($newblock) ){
-	$m->comp('error.mhtml', error => "Could not retrieve Ipblock id: $newblock");
-    }
-    # Replace current object with newblock
-    $id = $o->id;
-
-}elsif ( $_action eq "CONFIRM_AUTOALLOCATE" && $submit eq "No"){
-    # Get rid of the new block
-    unless ( $ipm->removeblock( id => $newblock ) ){
-	$m->comp('error.mhtml', error => $ipm->error);	
+}elsif ( $_action eq "CONFIRM_AUTOALLOCATE"){
+    eval {
+	my $o = Ipblock->retrieve($newblock);
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
+    }else{
+	if ( $submit eq 'Yes' ){
+	    # Replace current object with newblock
+	    $id = $o->id;
+	}elsif ( $submit eq 'No' ){
+	    # Get rid of the new block
+	    $o->delete;
+	}
     }
 
 #######################################################################################
@@ -368,7 +371,7 @@ if ( defined($search) ){
 
 </%perl>
 
-  <form action="ip-ws.html">
+  <form action="ip.html">
     <input type="hidden" name="_action" value="CONFIRM_DELETE">
     <input type="hidden" name="id" value="<% $id %>">
     
@@ -401,8 +404,9 @@ if ( defined($search) ){
     # Remove from Database
     #
     my $rec = ($recursivedel)? 1 : 0;
-    unless ( $ipm->removeblock( id => $o->id, recursive => $rec ) ){
-	$m->comp('error.mhtml', error => $ipm->error);
+    eval { $o->delete( recursive => $rec ) };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
     }
     
 </%perl>
@@ -425,7 +429,7 @@ if ( defined($search) ){
     $id = $parentid;
     if ($id != 0){
 	unless ( $o = Ipblock->retrieve($id) ){
-	    $m->comp('error.mhtml', error => "Can't retrieve Ipblock id $id");
+	    $m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
 	}
     }
 
@@ -440,7 +444,7 @@ if ( $id && $view ){
     if ( $edit ){	 
 </%perl>
 
-    <form name="netdotform" action="ip-ws.html" method="POST">
+    <form name="netdotform" action="ip.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
     <input type="hidden" name="_action" value="UPDATE">
 
@@ -449,12 +453,12 @@ if ( $id && $view ){
 <%perl>
 
 my @line;
-if ( my @parents = $ipm->getparents($o) ){
+if ( my @parents = $o->get_ancestors ){
     foreach my $par ( reverse @parents ){
-    	push (@line, "<a href=\"ip-ws.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
+    	push (@line, "<a href=\"ip.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
     }
     if( $view_availability == 1 ) {  
-  	    push (@line, "<a href=\"ip-ws.html?id=" . $o->id . "\">" . $o->address . "/" . $o->prefix . "</a>");  
+  	    push (@line, "<a href=\"ip.html?id=" . $o->id . "\">" . $o->address . "/" . $o->prefix . "</a>");  
         push (@line, "Addresses");  
     } else {  
         push (@line, $o->address . "/" . $o->prefix);  
@@ -466,7 +470,7 @@ if ( my @parents = $ipm->getparents($o) ){
  <div class="container">
 
     <div class="containerheadleft">
-      <a href="ip-ws.html?_action=SHOW_ROOTS&rootversion=all">[*]</a>: 
+      <a href="ip.html?_action=SHOW_ROOTS&rootversion=all">[*]</a>: 
 %     if ( @line ){
 %        print join ' : ', @line;
 %     }else{
@@ -474,7 +478,7 @@ if ( my @parents = $ipm->getparents($o) ){
 %     }
     </div>
 
-% if ( $ipm->isaddress($o) ){  
+% if ( $o->is_address ){  
 
 %#######################################################################################
 %# View IP address
@@ -485,16 +489,16 @@ if ( my @parents = $ipm->getparents($o) ){
 %	 if ($edit eq "ipinfo"){	 
 %        if ($add_ip) {
     	    <input type="submit" name="submit" value="cancel">
-%           my @parents = $ipm->getparents($o);
+%           my @parents = $o->get_ancestors;
             <input type="hidden" name="parent" value="<% $parents[0] %>">
 %        } else {
     	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 %        }
          <input type="submit" name="submit" value="save">
 %	 }else{
-            <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
-            <a href="ip-ws.html?id=<% $id %>&edit=ipinfo">[edit]</a>
-            <a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
+            <a href="ip.html?id=<% $id %>">[refresh]</a>
+            <a href="ip.html?id=<% $id %>&edit=ipinfo">[edit]</a>
+            <a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
 %	 }
     </div>
 
@@ -509,12 +513,12 @@ if ( my @parents = $ipm->getparents($o) ){
        push( @field_headers, $addr_tmp{'label'} );
        push( @cell_data, $addr_tmp{'value'}."/32" );
 
-       push( @field_headers, "Status:" );
+       push( @field_headers, $ui->col_descr_link('Ipblock', 'status', 'Status: ')  );
             my $status;
             my @valid_block_status = qw ( Static Dynamic Reserved );
             if ( my $sn = $o->status->name ){
                 if ( $edit eq "ipinfo" ){
-                   $status = qq(<select name="Ipblock__).$o->id.qq(__statusname">);
+                   $status = qq(<select name="Ipblock__).$o->id.qq(__status">);
                    foreach my $st ( @valid_block_status ){
                       if ( $st eq $sn ){
                          $status .= qq(<option value="$st" SELECTED>$st</option>);
@@ -541,7 +545,7 @@ if ( my @parents = $ipm->getparents($o) ){
     push( @cell_data, 
         eval {
             if ( $o->interface && $o->interface->device ){
-                qq(<a href="device.html?id=).$o->interface->device->id.qq(">).$ui->getobjlabel($o->interface->device, ", ")."</a>";
+                qq(<a href="device.html?id=).$o->interface->device->id.qq(">).$o->interface->device->get_label()."</a>";
             }else{
                 "&nbsp;";
             }
@@ -608,16 +612,17 @@ if ( my @parents = $ipm->getparents($o) ){
 </div>
 
 
-%     if ( $o->arpentries ){
+%     if ( $o->arp_entries ){
         <%perl>
-            my @field_headers = ("ARP-cached by", "With MAC", "On");
+            my @field_headers = ("ARP entries", "Physical Address", "Timestamp");
             my @rows;
-            foreach my $arpentry ($o->arpentries){
+            foreach my $arpentry ($o->arp_entries){
                 push( @rows, 
-                    [ "<a href=\"view.html?table=Interface&id=".$arpentry->arpcache->interface->id."\">".
-                      $ui->getobjlabel($arpentry->arpcache->interface, ", ")."</a>"
+                    [ "<a href=\"view.html?table=Interface&id=".$arpentry->interface->id."\">".
+                      $arpentry->interface->get_label()."</a>"
                      ,
-                      "<a href=\"view.html?table=PhysAddr&id=".$arpentry->physaddr->id."\">".$arpentry->physaddr->address."</a>"
+                      "<a href=\"view.html?table=PhysAddr&id=".$arpentry->physaddr->id."\">".$arpentry->physaddr->address."</a>",
+		      $arpentry->arpcache->tstamp,
                     ] );
             } 
         </%perl>
@@ -635,16 +640,16 @@ if ( my @parents = $ipm->getparents($o) ){
 %  if ($edit eq "blockinfo"){	 
 %        if ($add_ip) {
     	    <input type="submit" name="submit" value="cancel">
-%           my @parents = $ipm->getparents($o);
+%           my @parents = $o->get_ancestors;
             <input type="hidden" name="parent" value="<% $parents[0] %>">
 %        } else {
     	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 %        }
     <input type="submit" name="submit" value="save">
 %  }else{
-    <a href="ip-ws.html?id=<% $id %>">[refresh]</a>
-	<a href="ip-ws.html?id=<% $id %>&edit=blockinfo">[edit]</a>
-	<a href="ip-ws.html?id=<% $id %>&_action=DELETE">[delete]</a>
+    <a href="ip.html?id=<% $id %>">[refresh]</a>
+	<a href="ip.html?id=<% $id %>&edit=blockinfo">[edit]</a>
+	<a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
 %  }
     </div>
 
@@ -664,12 +669,12 @@ push( @cell_data, $addr_tmp{'value'}."/".$pref_tmp{'value'} );
 
 ################
 # Status:
-push( @field_headers, "Status:" );
+push( @field_headers, $ui->col_descr_link('Ipblock', 'status', 'Status: ') );
 my $status;
 my @valid_block_status = qw ( Container Subnet Reserved );
 if ( my $sn = $o->status->name ){
     if ( $edit eq "blockinfo" ){
-	$status .= "<select name=\"Ipblock__".$o->id."__statusname\">";
+	$status .= "<select name=\"Ipblock__".$o->id."__status\">";
 	foreach my $st ( @valid_block_status ){
 	    if ( $st eq $sn ){
 		$status .= "<option value=\"".$st."\" SELECTED>".$st."</option>";
@@ -693,14 +698,15 @@ push( @cell_data, $createdtmp{'value'}, $modtmp{'value'} );
 
 ################
 # Vlan
-if ( $o->status->name eq 'Subnet' ){
-    my %vlan_tmp = $ui->form_field(object=>$o, column=>"vlan", edit=>$edit_block, linkPage=>"view.html");
-    push( @field_headers, $vlan_tmp{'label'} );
-    push( @cell_data, $vlan_tmp{'value'} );
+
+{
+    my %tmp = $ui->form_field(object=>$o, column=>'vlan', edit=>$edit_block, linkPage=>'view.html');
+    push( @field_headers, $tmp{'label'} );
+    push( @cell_data, $tmp{'value'} );
 }
 
 ################
-# Description, Info
+# Description, Info (no link)
 {
     my @fields = ('description','info');
     $ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
@@ -708,11 +714,11 @@ if ( $o->status->name eq 'Subnet' ){
 
 ################
 # Owner
+# For some fields, we will provide a way to update the values recursively in all 
+# descendant blocks.
 my %owner_tmp = $ui->form_field(object=>$o, column=>"owner", edit=>$edit_block, linkPage=>"view.html");
 my $owner = $owner_tmp{value};
 
-# For some fields, we will provide a way to update the values recursively in all 
-# descendant blocks.
 if ( ! $edit_block ){
     $owner .= '<a href="#" onClick="edit_recursive(' . $o->id . ',\'owner\', \'1\')">[edit]</a>';
 }
@@ -725,11 +731,9 @@ my %usedby_tmp = $ui->form_field(object=>$o, column=>"used_by", edit=>$edit_bloc
 push( @field_headers, $usedby_tmp{'label'} );
 push( @cell_data, $usedby_tmp{'value'} );
 
-
 </%perl>
 
 <%perl>
-
 
 my $ip = new NetAddr::IP($o->address, $o->prefix);
 
@@ -746,7 +750,7 @@ my $ip = new NetAddr::IP($o->address, $o->prefix);
 use Math::BigInt;
 if ($o->status->name eq "Subnet") {
       my $used = new Math::BigInt(scalar $o->children);
-      my $total = new Math::BigInt($ipm->subnet_num_addr($o));
+      my $total = new Math::BigInt($o->num_addr);
       my $avail = $total - $used;
       my $avail_percent = $ui->friendly_percent(value=>$avail,total=>$total);
       my $used_percent  = $ui->friendly_percent(value=>$used,total=>$total);
@@ -787,11 +791,11 @@ if ($o->status->name eq "Subnet") {
     }
 
 } elsif( $o->status->name eq "Container" ) {
-      my $total = new Math::BigInt($ipm->subnet_num_addr($o));
+      my $total = new Math::BigInt($o->num_addr);
 
-      my $used_a = new Math::BigInt($ipm->address_usage($o));
+      my $used_a = new Math::BigInt($o->address_usage);
       my $avail_a = $total - $used_a;
-      my $used_s = new Math::BigInt($ipm->subnet_usage($o));
+      my $used_s = new Math::BigInt($o->subnet_usage);
       my $avail_s = $total - $used_s;
 
       my $address_percent = $used_a*100/$total;
@@ -847,7 +851,7 @@ if ($o->status->name eq "Subnet") {
     }elsif ($o->status->name eq "Container"){
         push( @field_headers, "New subnet of length: /" );
         my $new_subnet_form = "
-	     <form name=\"netdotform\" action=\"ip-ws.html\" method=\"POST\">
+	     <form name=\"netdotform\" action=\"ip.html\" method=\"POST\">
 	     <input type=\"hidden\" name=\"id\" value=\"".$id."\">
 	     <input type=\"hidden\" name=\"_action\" value=\"AUTOALLOCATE\">
 	     <input type=\"hidden\" name=\"parent\" value=\"".$id."\">
@@ -863,7 +867,7 @@ if ($o->status->name eq "Subnet") {
     }elsif ($o->status->name eq "Subnet"){
         push( @field_headers, "New address:" );
         my $new_address_form = "
-	     <form name=\"netdotform\" action=\"ip-ws.html\" method=\"POST\">
+	     <form name=\"netdotform\" action=\"ip.html\" method=\"POST\">
 	     <input type=\"hidden\" name=\"id\" value=\"".$id."\">
 	     <input type=\"hidden\" name=\"_action\" value=\"AUTOALLOCATE\">
  	     <input type=\"hidden\" name=\"parent\" value=\"".$id."\">
@@ -906,7 +910,7 @@ if ($o->status->name eq "Subnet") {
             <span class="ipaddr_static">Static</span>
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
-         	<a href="ip-ws.html?id=<% $id %>">[List View]</a>
+         	<a href="ip.html?id=<% $id %>">[List View]</a>
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& subnet.mhtml, network => $o &>  
@@ -925,7 +929,7 @@ if ($o->status->name eq "Subnet") {
             <span class="ipaddr_subnet">Subnet</span>
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
-         	<a href="ip-ws.html?id=<% $id %>">[List View]</a>
+         	<a href="ip.html?id=<% $id %>">[List View]</a>
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& container.mhtml, network => $o, rowsize => $rowsize, dividefreespace => $dividefreespace &>  
@@ -937,7 +941,7 @@ if ($o->status->name eq "Subnet") {
 %   # Get children  
 %   #  
 %   my @children;   
-%   if (scalar( @children = $ipm->getchildren($o->id) )){  
+%   if (scalar( @children = $o->children )){  
 
        <div class="container">
           <div class="containerheadleft">
@@ -946,7 +950,7 @@ if ($o->status->name eq "Subnet") {
           <div class="containerheadright">
              <%perl>
              if( $o->version == 4 ) {
-          	 	print '<a href="ip-ws.html?id='.$id.'&view_availability=1">[Graphical View]</a>';
+          	 	print '<a href="ip.html?id='.$id.'&view_availability=1">[Graphical View]</a>';
           	 } else {
           	 	print '&nbsp;';
           	 }

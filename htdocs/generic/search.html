@@ -13,8 +13,11 @@ $q
 
 my %linksto;
 my $results;
-if ( ($results = $ui->search_all_netdot($q)) < 0 ){
-    $m->comp("error.mhtml", error => $ui->error);
+eval {
+    $results = Netdot::Model->search_all_tables($q);
+};
+if ( my $e = $@ ){
+    $m->comp("/generic/error.mhtml", error=>$e);
 }
 my $DEBUG = 0;
 if ( $DEBUG ) {

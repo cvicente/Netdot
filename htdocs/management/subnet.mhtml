@@ -10,21 +10,22 @@ $network => undef
 <%init>
 </%init>
 
-<%perl>
+    <%perl>
 
     my %used;
-    my %names;
-    my %status;
-    my %iplinks;
+my %names;
+my %status;
+my %iplinks;
 
-    my @children;  
-    if (scalar( @children = $ipm->getchildren($network->id) )){
+my @children; 
+    
+    if ( scalar(@children = $network->children) ){
         foreach my $o ( @children ) {
             $used{ $o->address } = 1;
             my $dnsname;
-        	if ( my $rraddr = ($o->arecords)[0] ){
-        	    $dnsname = $ui->getobjlabel( $rraddr->rr, "," , returnAsVar=>1 );
-        	}
+	    if ( my $rraddr = ($o->arecords)[0] ){
+		$dnsname = $rraddr->get_label;
+	    }
 
             $names{ $o->address } = $o->status->name;  # default to show status first
 
@@ -57,94 +58,94 @@ $network => undef
         }
     }    
 
-    my $net = NetAddr::IP->new($network->address . "/" . $network->prefix);
-    my $mask = $net->masklen;
+my $net = NetAddr::IP->new($network->address . "/" . $network->prefix);
+my $mask = $net->masklen;
 
-    my @headers = ( );
-    my @rows;
-    my $cols;
+my @headers = ( );
+my @rows;
+my $cols;
 
-    $net = $net->network();  # start printing from the first address, in case $net was not at the start of the subnet
+$net = $net->network();  # start printing from the first address, in case $net was not at the start of the subnet
 
-    if( $mask > 29 ) {
-        # if there are 8 or less addresses in the subnet, show only that many columns
-        $cols = $net->num()+1;
-    } elsif( $mask > 23 ) {
-        # if there are 16-512 addresses, show them in 8 columns, and show the entire IPv4 address
-        $cols = 8;
-    } else {
-        # if there are more than 512 addresses, show 16 columns, and don't show the insignificant octets
-        $cols = 16;
+if( $mask > 29 ) {
+    # if there are 8 or less addresses in the subnet, show only that many columns
+    $cols = $net->num()+1;
+} elsif( $mask > 23 ) {
+    # if there are 16-512 addresses, show them in 8 columns, and show the entire IPv4 address
+    $cols = 8;
+} else {
+    # if there are more than 512 addresses, show 16 columns, and don't show the insignificant octets
+    $cols = 16;
+}
+
+for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
+    my @row = ();
+
+    for( my $j=0; $j<$cols; $j++ ) {
+	my $ipaddr = $net->addr;
+
+	# this code hides the insignificant (unchanging) octets from the ip address based on the subnet
+	if( $mask <= 7 ) {
+	    # no insignificant octets
+	    $ipaddr = $ipaddr;
+	} elsif( $mask <= 15 ) {
+	    # first octet is insignificant
+	    $ipaddr = substr($ipaddr, index($ipaddr,".")+1);
+	} elsif( $mask <= 23 ) {
+	    # second octet is insignificant
+	    $ipaddr = substr($ipaddr, index($ipaddr,".",index($ipaddr,".")+1)+1);
+	} else {
+	    # mask is 24 or bigger, show the entire ip address
+	    $ipaddr = $ipaddr;
+	}
+
+
+	if( $net == $net->network || $net == $net->broadcast ) {
+	    # don't allow selection of network or broadcast addresses
+	    if( $net == $net->network ) {
+		$ipaddr = '<div class="ipaddr_disabled" title="Network">'.$ipaddr.'</div>';
+	    } else {
+		$ipaddr = '<div class="ipaddr_disabled" title="Broadcast">'.$ipaddr.'</div>';
+	    }
+	} elsif( defined $used{ $net->addr } ) {
+	    my $divclass;
+	    my $divtitle;
+
+	    if( $status{$net->addr} eq "Static" ) {
+		# show used addresses in red, with no link tag, show dns name on mouseover
+		$divclass = "ipaddr_static";
+		$divtitle = $names{ $net->addr } if exists $names{ $net->addr };
+
+	    } elsif( $status{$net->addr} eq "Dynamic" ) {
+		# show dynamic addresses in orange, don't link
+		$divclass = "ipaddr_dynamic";
+		$divtitle = $names{ $net->addr } if exists $names{ $net->addr };
+
+	    } elsif( $status{$net->addr} eq "Reserved" ) {
+		# show reserved addresses in grey, don't link
+		$divclass = "ipaddr_reserved";
+		$divtitle = $names{ $net->addr } if exists $names{ $net->addr };
+
+	    } elsif( $status{$net->addr} eq "Container" ) {
+		# link to detail page for containers
+		$divclass = "ipaddr_container";
+		$divtitle = $names{ $net->addr } if exists $names{ $net->addr };
+
+	    }
+
+	    $ipaddr = '<a href="ip.html?id='.$iplinks{ $net->addr }.'" class="ipaddr">'.$ipaddr.'</a>';
+	    $ipaddr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$ipaddr.'</div>';
+	} else {
+	    # link this address to the "Add" section in ip.html
+	    $ipaddr = '<div class="ipaddr_available"><a href="ip.html?allocate='.$net->addr().'%2F32&_action=ALLOCATE" class="ipaddr">'.$ipaddr.'</a></div>';
+	}
+
+	push( @row, $ipaddr );
+	$net++;                      # increment the IP address
     }
 
-    for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
-        my @row = ();
-
-        for( my $j=0; $j<$cols; $j++ ) {
-            my $ipaddr = $net->addr;
-
-            # this code hides the insignificant (unchanging) octets from the ip address based on the subnet
-            if( $mask <= 7 ) {
-                # no insignificant octets
-                $ipaddr = $ipaddr;
-            } elsif( $mask <= 15 ) {
-                # first octet is insignificant
-                $ipaddr = substr($ipaddr, index($ipaddr,".")+1);
-            } elsif( $mask <= 23 ) {
-                # second octet is insignificant
-                $ipaddr = substr($ipaddr, index($ipaddr,".",index($ipaddr,".")+1)+1);
-            } else {
-                # mask is 24 or bigger, show the entire ip address
-                $ipaddr = $ipaddr;
-            }
-
-
-            if( $net == $net->network || $net == $net->broadcast ) {
-                # don't allow selection of network or broadcast addresses
-                if( $net == $net->network ) {
-                    $ipaddr = '<div class="ipaddr_disabled" title="Network">'.$ipaddr.'</div>';
-                } else {
-                    $ipaddr = '<div class="ipaddr_disabled" title="Broadcast">'.$ipaddr.'</div>';
-                }
-            } elsif( defined $used{ $net->addr } ) {
-                my $divclass;
-                my $divtitle;
-
-                if( $status{$net->addr} eq "Static" ) {
-                    # show used addresses in red, with no link tag, show dns name on mouseover
-                    $divclass = "ipaddr_static";
-                    $divtitle = $names{ $net->addr } if exists $names{ $net->addr };
-
-                } elsif( $status{$net->addr} eq "Dynamic" ) {
-                    # show dynamic addresses in orange, don't link
-                    $divclass = "ipaddr_dynamic";
-                    $divtitle = $names{ $net->addr } if exists $names{ $net->addr };
-
-                } elsif( $status{$net->addr} eq "Reserved" ) {
-                    # show reserved addresses in grey, don't link
-                    $divclass = "ipaddr_reserved";
-                    $divtitle = $names{ $net->addr } if exists $names{ $net->addr };
-
-                } elsif( $status{$net->addr} eq "Container" ) {
-                    # link to detail page for containers
-                    $divclass = "ipaddr_container";
-                    $divtitle = $names{ $net->addr } if exists $names{ $net->addr };
-
-                }
-
-                $ipaddr = '<a href="ip-ws.html?id='.$iplinks{ $net->addr }.'" class="ipaddr">'.$ipaddr.'</a>';
-                $ipaddr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$ipaddr.'</div>';
-            } else {
-                # link this address to the "Add" section in ip-ws.html
-                $ipaddr = '<div class="ipaddr_available"><a href="ip-ws.html?allocate='.$net->addr().'%2F32&_action=ALLOCATE" class="ipaddr">'.$ipaddr.'</a></div>';
-            }
-
-            push( @row, $ipaddr );
-            $net++;                      # increment the IP address
-        }
-
-        push( @rows, \@row );
-    }
+    push( @rows, \@row );
+}
 
 </%perl>
 

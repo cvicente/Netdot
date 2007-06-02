@@ -33,9 +33,6 @@ $sid        => undef;
 </%args>
 
 <%init>
-my %tags;
-my %linksto;
-my %linksfrom;
 my %order;
 my %orderbrief;
 my $lbl;
@@ -43,15 +40,9 @@ my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
 my $ci         = 1;
 my $last_item;
 my $session;
-my $TMP = $ui->{config}->{TMP};
 my %objindex;
 my $numcols;
-
 my $DEBUG      = 0;
-
-# Keep a list of valid tables;
-my %tables;
-map { $tables{$_} = 1 } $ui->meta->get_tables;
 
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
@@ -69,9 +60,12 @@ if ( defined($object) && scalar @$object ){
     $table = $object->[0]->table 
 	unless $table;
 
+    %order      = $table->meta_data->get_column_order();
+    %orderbrief = $table->meta_data->get_column_order_brief();
+
     ##############################################
     # get the first label field for this table (as defined in metadata)
-    $lbl = ($ui->meta->get_labels( $table ))[0];
+    $lbl = ($table->meta_data->get_labels)[0];
     
     ##############################################
     # If sort arg
@@ -90,27 +84,14 @@ if ( defined($object) && scalar @$object ){
 	##############################################
 	# If no sort arg, sort by actual label
 	# 
-    }else{
-	my @labels = $ui->getlabelarr( $table );
-	map { $objindex{$i++} = $_ } map  { $_->[0] }
-	sort { $a->[1] cmp $b->[1] }
-	map { [$_ , $ui->getlabelvalue($_, \@labels)] } @{ $object };
-	
+    }else{	
+ 	map { $objindex{$i++} = $_ } map  { $_->[0] }
+ 	sort { $a->[1] cmp $b->[1] }
+	map { [$_ , $_->get_label] } @{ $object };
     }
     # Total number of items
     $total = $i;
     
-    ##############################################
-    # get linksto info
-    %linksto = $ui->meta->get_links_to( $table );
-    ##############################################
-    # define order
-    %order        = $ui->meta->get_column_order( $table );
-    %orderbrief   = $ui->meta->get_column_order_brief( $table );
-    ##############################################
-    # Get tags
-    %tags = $ui->meta->get_column_tags( $table );
-
     ##############################################
     # remove id and aliases (if present)
     if( exists( $orderbrief{id} ) ) {
@@ -137,15 +118,12 @@ if ( defined($object) && scalar @$object ){
 #
 #########################################################
 }elsif( $sid ) {
-    unless ( $session = $ui->getsession( $TMP, $sid ) ){
-	$m->comp('error.mhtml', error => $ui->error);
-    }
-    %linksto    = %{ $session->{linksto} };
-    %order      = %{ $session->{order} };
-    %orderbrief = %{ $session->{orderbrief} };
-    %tags       = %{ $session->{tags} };
+    $session = $ui->get_session($sid);
+
     %objindex   = %{ $session->{objindex} };
     $table      = $session->{table};
+    %order      = %{ $session->{order} };
+    %orderbrief = %{ $session->{orderbrief} };
     $page       = $session->{page};
     $sort       = $session->{sort};
     $withedit   = $session->{withedit};
@@ -155,9 +133,6 @@ if ( defined($object) && scalar @$object ){
     print "<pre>", Dumper($session), "</pre>" if $DEBUG;
 
 }
-#else{
-#    $m->comp('error.mhtml', error=>"Need to pass either object arrayref or session id");
-#}
 
 #########################################################
 #
@@ -170,7 +145,7 @@ if ( defined($object) && scalar @$object ){
 #
 my %viewpage = ( BinFile => "../generic/display_bin.html",
 		 Closet  => "../cable_plant/closet.html",
-		 Ipblock => "../management/ip-ws.html",
+		 Ipblock => "../management/ip.html",
 		 Device  => "../management/device.html"  );
 
 unless ( $page ){
@@ -186,16 +161,12 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 if ( $total > $per_page ){
     # Make a session.  We want to be able to go back
     undef ($session);
-    unless ( $session = $ui->mksession( $TMP ) ){
-	$m->comp('error.mhtml', error => $ui->error);
-    }
+    $session = $ui->mk_session();
     
-    $session->{linksto}    = \%linksto;
-    $session->{order}      = \%order;
-    $session->{orderbrief} = \%orderbrief;
-    $session->{tags}       = \%tags;
     $session->{objindex}   = \%objindex;
     $session->{table}      = $table;
+    $session->{order}      = \%order;
+    $session->{orderbrief} = \%orderbrief;
     $session->{page}       = $page;
     $session->{sort}       = $sort;
     $session->{withedit}   = $withedit;
@@ -225,8 +196,9 @@ if ( $total > $per_page ){
       <tr class="rowtitle2">
 %     foreach my $c ( sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief ) {
 %          $numcols++;
-%          if( exists( $tags{$c} ) ) {
-               <th><% $tags{$c} %></th>
+%          my $tag = $table->meta_data->get_column($c)->tag;
+%          if( defined($tag) ) {
+               <th><% $tag %></th>
 %          } else {
                <th><% $c %></th>
 %	   }
@@ -262,10 +234,10 @@ if ( $total > $per_page ){
 %             #####################################################################
 %             # If it is a link to another column....
 %             #####################################################################
-%             if ( exists($linksto{$c} ) ) {
-%                 if ( exists($tables{$linksto{$c}}) &&
-%	             ( my $obj = $linksto{$c}->retrieve(int($o->$c)) ) ){
-%                     my $lbl = $ui->getobjlabel( $obj, ", " );
+%             my $ftable = $table->meta_data->get_column($c)->links_to;
+%             if ( defined $ftable ) {
+%                 if ( int(my $fo = $o->$c) != 0  ) {
+%                     my $lbl = $fo->get_label;
 %                     if( $first_column ) {
                           &nbsp;
                           <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">

@@ -14,9 +14,8 @@ $selectall_ids => undef
 <%init>
 my $session;
 my @objs;
-my $TMP = $ui->{config}->{TMP};
+#my $TMP = Netdot->config->get('TMP');
 my $DEBUG = 0;
-my @objects;
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 </%init>
@@ -31,34 +30,36 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
    <p>
    <ul>
 <%perl>
-   unless($session = $ui->mksession( $TMP )){
-       $m->comp('error.mhtml', error => $ui->error);
+   eval {
+       $session = $ui->mk_session();
+   };
+   if ( my $e = $@ ){
+       $m->comp('error.mhtml', error=>$e);
    }
-   # This means that we were passed a list of ids for a given table
    if ( $selectall && $selectall_ids && $table ){
+       # This means that we were passed a list of ids for a given table
        foreach my $id ( split /,/, $selectall_ids ){
 	   my $key = $table . "__" . $id;
 	   $ARGS{$key} = "";
        }
-   }
-   # We were passed a single id for a given table
-   elsif ( $table && $id ){
+   }elsif ( $table && $id ){
+       # We were passed a single id for a given table
        my $key = $table . "__" . $id;
        $ARGS{$key} = "";
    }
-   foreach my $arg (sort keys %ARGS){
+   foreach my $arg ( sort keys %ARGS ){
        next unless $arg =~ /__/;
        my ($table, $id) = split /__/, $arg;
        my $obj;
        unless ( $obj = $table->retrieve($id) ){
-	   $m->comp('error.mhtml', error => "Error retrieving $table id $id: $@");
+	   $m->comp('error.mhtml', error => "Error retrieving $table id $id");
        }
-       my $lbl = $ui->getobjlabel($obj, ", ");
+       my $lbl = $obj->get_label;
+       print "<li>$table $lbl</li>";
+       push @objs, [$table, $obj->id];
+   }
+   $session->{objects} = \@objs;
 </%perl>
-       <li><% $table %> <% $lbl %></li>
-%      push @objs, [$table, $obj, $lbl];
-%   }
-%   $session->{objects} = \@objs;
     </ul>
     <br>
     <form method="POST" action="delete.html">
@@ -68,33 +69,40 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
     </form>
 <%perl>
 
-}elsif ($submit eq "Confirm"){
-    unless($session = $ui->getsession( $TMP, $sid )){
-	$m->comp('error.mhtml', error => $ui->error);
+
+}elsif ( $submit eq "Confirm" ){
+    eval{
+	$session = $ui->get_session($sid);
+    };
+    if ( my $e = $@ ){
+	$m->comp('error.mhtml', error=>$e);
     }
-    @objs = @{ $session->{objects} };
-    foreach my $r (@objs){
-	my ($table, $obj, $lbl) = @$r;
-	# Delete the object
+    @objs = @{$session->{objects}};
+    foreach my $ref ( @objs ){
+	my ($table, $id) = @$ref;
 	eval {
-	    $obj->delete;
+	    $table->retrieve($id)->delete();
 	};
-	if ($@){
-	    $m->comp('error.mhtml', error => "$@");
+	if ( my $e = $@ ){
+	    $m->comp('error.mhtml', error=>$e);
 	} 
     }
     $m->redirect("index.html");
     
-}elsif ($submit eq "Cancel"){
+}elsif ( $submit eq "Cancel" ){
     print "<p><br>";
     print "Delete cancelled";
     if ( $session ){
-	$ui->rmsession( $session );
+	$ui->rm_session($session);
     }
 }
+
+
 </%perl>
+
 
 </div> <!-- close containerbody -->
 </div> <!-- close container -->
 
 </div> <!-- close sectiondetail -->
+

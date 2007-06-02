@@ -7,7 +7,7 @@
 
 <%args>
 $error
-$user => undef
+$user           => undef
 $showplainerror => 0
 </%args>
 
@@ -20,15 +20,35 @@ my $caller = $m->caller->name;
 % } else {
     <div id="sectiondetail">
         <div class="container">
-            <div class="containerhead"><strong><% $caller %></strong> produced the following error:</div>
+            <div class="containerhead">Error</div>
             <div class="containerbody">
 % }
 
-            <pre><% $error %></pre>
             <p>
-                If you believe this is a bug, please copy the above message and send it to 
-                <a href="mailto:<% $ui->{config}->{'ADMINEMAIL'} %>"><% $ui->{config}->{'ADMINEMAIL'} %></a>
+            <strong><% $caller %></strong> produced the following error:
+            <p>
+            <pre><% $error %></pre>
+%#
+%# Try to customize the error message depending on the nature of the error.
+%#
+%# User errors are likely caused by invalid data input by the user.
+%# We suggest to go back and correct the input
+%# 
+% if ( ref($error) =~ /Netdot::Util::Exception/ && $error->isa_netdot_exception('User') ){
+            <p>
+		Please <a class="hand" onClick="history.go(-1);">go back</a> and try again.
             </p>
+% }
+%# Fatal errors are supposedly caused by bugs in the code, so we want the
+%# user to report it to their netdot administrator, who may submit a bug
+%# report to us.  This may be either a Netdot Fatal exception or a Mason Exception
+% else{
+            <p>
+                This looks like a bug. Please copy the message above and send it to 
+                <a href="mailto:<% Netdot->config->get('ADMINEMAIL') %>"><% Netdot->config->get('ADMINEMAIL') %></a>
+            </p>
+
+% }
 
 % if( !$showplainerror ) {
         </div> <!-- close containerbody -->

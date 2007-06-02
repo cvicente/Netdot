@@ -9,17 +9,25 @@ section    => "Main"
 showheader => 1
 </%attr>
 %
-<%init>
-my $title   = $m->base_comp->attr('title')   || "Network Documentation Tool";
-my $section = $m->base_comp->attr('section') || "Main";
-my $user    = Apache2::SiteControl->getCurrentUser($r);
-</%init>
-%
 <%args>
-$showheader => $m->base_comp->attr('showheader')
 $onload     => ""
+$showheader => undef;
 </%args>
 %
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+my $title      = $m->base_comp->attr('title')   || "Network Documentation Tool";
+my $section    = $m->base_comp->attr('section') || "Main";
+my $user       = Apache2::SiteControl->getCurrentUser($r);
+if ( my $show = $m->base_comp->attr_if_exists('showheader') ){
+    $showheader = defined($showheader) ?  $showheader : $show;
+}
+</%init>
+%
+%
+% print "base comp: ", $m->base_comp->name, "<br>"  if $DEBUG;
+% print "req comp: ", $m->request_comp->name, "<br>"  if $DEBUG;
 <& header.mhtml,   title => $title, section => $section, user => $user, showheader=>$showheader, onload=>$onload &>
 <& section1.mhtml, title => $title, section => $section, user => $user, showheader=>$showheader &>
 <div id="content">

@@ -1,19 +1,24 @@
 <%doc>
-Netdot's homepage
+Netdot homepage
 </%doc>
 
 <%args>
 
 $title  => undef
-
+$user
 </%args>
+<%init>
+my $default_page = 'https://' . $ui->config->get('NETDOTNAME') . $r->dir_config('NetdotPath') . "management/";
+</%init>
 
-<%flags>
-inherit => 'management/autohandler' #'section_management.html' 
-</%flags>
+%#<%flags>
+%#inherit => 'management/autohandler' #'section_management.html' 
+%#</%flags>
 
-<%attr>
-title   => 'Home' 
-section => 'Management'
-</%attr>
+%#<%attr>
+%#title   => 'Home' 
+%#section => 'Management'
+%#</%attr>
+
+% $m->redirect($default_page);
 

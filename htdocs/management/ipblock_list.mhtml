@@ -27,7 +27,7 @@ if ( $type ){
 	$m->comp('error.mhtml', error => "Unknown type: $type");
     }
 }else{
-    if ( $ipm->isaddress($objects->[0]) ){ # We're dealing with addresses
+    if ( ($objects->[0])->is_address ){ # We're dealing with addresses
 	$type = "address";
     }else{
 	$type = "block";
@@ -41,12 +41,12 @@ if ( $type eq "address" ){
 
     foreach my $o ( @{ $objects } ) {
 	my @row = ();
-	push( @row, '<a href="ip-ws.html?id=' . $o->id . '">' . $o->address . '</a>' );
+	push( @row, '<a href="ip.html?id=' . $o->id . '">' . $o->address . '</a>' );
 	push( @row, $o->status->name  );
 
 	if ( my $rraddr = ($o->arecords)[0] ){
 	    my $name = $rraddr->rr;
-	    push( @row, $ui->getobjlabel( $name, "," , returnAsVar=>1) );
+	    push( @row, $name->get_label );
 	} else {
 	    push( @row, "");
 	}
@@ -60,15 +60,15 @@ if ( $type eq "address" ){
 
     foreach my $o ( @{ $objects } ) {
 	my @row = ();
-	push( @row, '<a href="ip-ws.html?id=' . $o->id . '">' . $o->address . '/' . $o->prefix . '</a>' );
+	push( @row, '<a href="ip.html?id=' . $o->id . '">' . $o->address . '/' . $o->prefix . '</a>' );
 	push( @row, $o->status->name  );
 	if ( $o->status->name eq "Subnet") {
-	    push( @row, $ui->percent_bar(percent => ((scalar $o->children)/($ipm->subnet_num_addr($o))*100) ) );
+	    push( @row, $ui->percent_bar(percent => ((scalar $o->children)/($o->num_addr)*100) ) );
 	} elsif ($o->status->name eq "Container") {
 
-      my $total = new Math::BigInt($ipm->subnet_num_addr($o));
-      my $used1 = new Math::BigInt($ipm->address_usage($o));
-      my $used2 = new Math::BigInt($ipm->subnet_usage($o));
+      my $total = new Math::BigInt($o->num_addr);
+      my $used1 = new Math::BigInt($o->address_usage);
+      my $used2 = new Math::BigInt($o->subnet_usage);
 
       my $percent1 = ($used1*100/$total);
       my $percent2 = ($used2*100/$total);

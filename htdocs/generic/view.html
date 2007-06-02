@@ -18,7 +18,6 @@ $edit    => undef
 
 <%attr>
 title   => 'View Object' 
-#section => 'Generic'
 </%attr>
 
 <%init>
@@ -29,36 +28,32 @@ unless ( $obj = $table->retrieve($id) ){
    $m->comp('error.mhtml', error => "Nonexistent record: $id");
 }
 
-my $labelstr  = $ui->getobjlabel($obj, ", ");
-my %linksto   = $ui->meta->get_links_to($table);
-my %linksfrom = $ui->meta->get_links_from($table);
-my %order     = $ui->meta->get_column_order($table);
-my %tags      = $ui->meta->get_column_tags($table);
+my $labelstr  = $obj->get_label;
+my %linksfrom = $table->meta_data->get_links_from;
+my %order     = $table->meta_data->get_column_order;
 
 my $DEBUG = 0;
 
 if ( $DEBUG ){
     print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>';
-    print '%linksto is  <pre>', Dumper(%linksto), '</pre><br>';
     print '%linksfrom is  <pre>', Dumper(%linksfrom), '</pre><br>';
     print '%order is  <pre>', Dumper(%order), '</pre><br>';
-    print '%tags is  <pre>', Dumper(%tags), '</pre><br>';
 }
 
 # List all the has_many objects for this object
 #
-foreach my $i (keys %linksfrom){
+foreach my $i ( keys %linksfrom ){
     # Table that points to us
     my $j = (keys %{ $linksfrom{$i} })[0];
 
     #column in the other table that points to this table
     $ftables{$i}{ffield} = $linksfrom{$i}{$j};  
     
-    if ( $ui->meta->is_join($j) ){
+    if ( $j->meta_data->is_join ){
 	# Foreign table is a join table
 	$ftables{$i}{join} = 1;
 	# Get has_a entries 
-	my %jlinksto = $ui->meta->get_links_to($j);
+	my %jlinksto = $j->meta_data->get_links_to();
 	# Column in join table that points to third table
 	my $col;
 	map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
@@ -81,7 +76,7 @@ print '%ftables is  <pre>', Dumper(%ftables), '</pre><br>' if $DEBUG;
 
 <div id="sectiondetail">
 
-%  if ($table !~ /_history/){
+%  if ( $table !~ /_history/ ){
       <div class="container">
 	<div class="containerhead">View</div>
 	   <div class="containerbody">
@@ -120,7 +115,8 @@ if ($view eq 'all' || $view eq "$table"){
 	next if ($c eq 'id' || $c eq 'aliases');
 
         my $linkPage;
-        if( exists($linksto{$c}) ) {
+	my $ftable = $table->meta_data->get_column($c)->links_to();
+        if( defined $ftable ) {
             $linkPage = 'view.html';
         }
 	
@@ -139,10 +135,10 @@ if ($view eq 'all' || $view eq "$table"){
               <a href="edit.html?table=<% $table %>">[new]</a>
               <a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
 %	      }
-%         if ($table eq "Device"){
-              <a href="device.html?id=<% $obj %>">[custom]</a>
+%         if ( $table eq "Device" ){
+              <a href="../management/device.html?id=<% $obj %>">[custom]</a>
 %         }elsif ( $table eq "Ipblock" ){
-              <a href="ip-ws.html?id=<% $obj %>">[custom]</a>
+              <a href="../management/ip.html?id=<% $obj %>">[custom]</a>
 %         }
           <a href="delete.html?table=<% $table %>&id=<% $obj %>">[delete]</a>
 	</div>
@@ -186,7 +182,7 @@ if ($view eq 'all' || $view eq "$table"){
 <!-- Display history objects associated with this object-->
 
 %  if ( $view eq 'history' ){
-%   my @ho = $ui->gethistoryobjs($obj);
+%   my @ho = $obj->get_history;
     <& sortresults.mhtml, object => \@ho , view => "row" &>
 %  } 
 

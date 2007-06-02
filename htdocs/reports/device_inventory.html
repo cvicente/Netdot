@@ -16,24 +16,24 @@ my %t;
 foreach my $pt ( sort { $a->name cmp $b->name } ProductType->retrieve_all ){
     $t{$pt->name}{total} = 0;
     $t{$pt->name}{id}    = $pt->id;
-    my @prods            = $dm->getproductsbytype($pt);
+    my @prods            = Product->search_by_type($pt);
     foreach my $o ( @prods ){
 	$t{$pt->name}{prod}{$o->name}{id}   = $o->id;
-	$t{$pt->name}{prod}{$o->name}{num}  = $o->numdevs;
-	$t{$pt->name}{total}               += $o->numdevs;
+	$t{$pt->name}{prod}{$o->name}{num}  = $o->{numdevs};
+	$t{$pt->name}{total}               += $o->{numdevs};
     }
     $grandtotal += $t{$pt->name}{total};
 }
 # Look for products with no type
-foreach my $o ( $dm->getproductsbytype(0) ){
+foreach my $o ( Device->search_no_type() ){
     $t{'Unknown'}{prod}{$o->name}{id}  = $o->id;
-    $t{'Unknown'}{prod}{$o->name}{num} = $o->numdevs;
-    $t{'Unknown'}{total}              += $o->numdevs;
+    $t{'Unknown'}{prod}{$o->name}{num} = $o->{numdevs};
+    $t{'Unknown'}{total}              += $o->{numdevs};
 }
 
 # Look for devices with no product set
 
-my @noprod = Device->search( productname => 0 );
+my @noprod = Device->search( product => 0 );
 
 if ( my $num = scalar @noprod ){
     $t{'Unknown'}{prod}{'Unknown'}{id}   = 0;
@@ -63,7 +63,7 @@ my (@headers, @rows) = ();
 
 foreach my $pt ( sort keys %t ){
     my @row = ();
-    push( @row, "<strong><a href=\"device.html?submit=search&search=ProductType:$t{$pt}{id}\">" . $pt . "</a></strong>" );
+    push( @row, "<strong><a href=\"../management/device.html?submit=search&search=ProductType:$t{$pt}{id}\">" . $pt . "</a></strong>" );
     push( @row, "" );
     push( @row, '<strong>' . $t{$pt}{total} . '</strong>' );
     push( @rows, \@row );
@@ -74,7 +74,7 @@ foreach my $pt ( sort keys %t ){
 	if ( $t{$pt}{prod}{$product}{id} ){
 	    push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
 	}elsif ( $product eq "Unknown" ){
-	    push( @row, '<a href="../management/device.html?submit=search&search=productname:0">' . $product . '</a>' );
+	    push( @row, '<a href="../management/device.html?submit=search&search=product:0">' . $product . '</a>' );
 	}
 	push( @row, $t{$pt}{prod}{$product}{num}  );
 	push( @rows, \@row );

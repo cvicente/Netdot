@@ -4,6 +4,10 @@ Help Section
 
 </%doc>
 
+<%args>
+$user
+</%args>
+
 <%attr>
 title   => 'Netdot Help' 
 section => 'Help'
@@ -13,6 +17,16 @@ section => 'Help'
 my $PAGE_ATTRIBUTE = "HELP_PAGE";
 my $SECTION = "Help";
 </%shared>
+
+<%init>
+my %caller_args = $m->caller_args(-1);
+
+if (exists($caller_args{page})){
+    $user->setAttribute($r, "$PAGE_ATTRIBUTE", $caller_args{page});
+}
+
+my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
+</%init>
 
 <%method .section_meta_data>
     <%doc>
@@ -24,10 +38,38 @@ my $SECTION = "Help";
 	    page         => 'help/',
 	    title        => 'Help',
 	    attribute    => $PAGE_ATTRIBUTE,
-	    sub_sections => [],
+	    sub_sections => [		
+	        { section => 'DATABASE', title => 'Database Help' },
+            ],
         };
     </%init>
 </%method>
-% if ( $m->fetch_next ){
-%  $m->call_next;
-% }
+
+<%perl>
+
+if ($page eq "DATABASE") {
+</%perl>	
+	<div class="container">
+	<div class="containerhead">Database Help</div>
+	<div class="containerbody">
+	
+	<br>
+	<a href="database-rels.html">Database Relationships (HTML)</a><br>
+	Displays a HTML table with the Netdot database schema.<br>
+
+	<br>
+	<a href="database-graph.html">Database Relationships (GraphViz)</a><br>
+	Displays a GraphViz graph of the Netdot database schema.<br>
+	
+	<br>
+	<br>
+	
+	</div>
+	</div>
+<%perl>
+    }
+
+ if ( $m->fetch_next ){
+  $m->call_next;
+ }
+</%perl>

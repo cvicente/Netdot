@@ -44,8 +44,8 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 	    attribute    => $PAGE_ATTRIBUTE,
 	    sub_sections => [
 		{ section => 'DEVICE',   title => 'Device Inventory' },
-		{ section => 'CUSTOM',   title => 'Custom Reports' },
 		{ section => 'DATABASE', title => 'Database Reports' },
+		{ section => 'CUSTOM',   title => 'Custom Reports' },
 	    ]
         };
     </%init>
@@ -55,11 +55,8 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 
 if ($page eq "DEVICE") {
 	
-	$m->comp('reports_device_inventory.html');
+	$m->comp('device_inventory.html');
 
-} elsif ($page eq "CUSTOM") { 
-    
-    
 } elsif ($page eq "DATABASE") {
 </%perl>	
 	<div class="container">
@@ -67,20 +64,18 @@ if ($page eq "DEVICE") {
 	<div class="containerbody">
 	
 	<br>
-	<a href="reports_tablestats.html">Table Information</a><br>
+	<a href="mysql_stats.html">Table Information</a><br>
 	Shows information about all the tables in the database including size, number of rows, and last update times.<br>
 	
-	<br>
-	<a href="database-graph.html">Database Relationships</a><br>
-	Displays a GraphViz graph of the Netdot database schema.<br>
-	
-	<br>
 	<br>
 	
 	</div>
 	</div>
 <%perl>
-    }
+} elsif ($page eq "CUSTOM") { 
+    
+    
+  }
 
 
 if ( $m->fetch_next ){

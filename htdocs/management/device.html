@@ -64,6 +64,7 @@ my %ifvlans;
 my %vlans;
 my $list;
 my $fqdn;
+my $whois_url = Netdot->config->get('BGP_AS_WHOIS_URL');
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
@@ -77,7 +78,7 @@ if ( $submit eq "search" ){
 	    my ($key, $value) = split /:/, $_;
 	    if ( $key eq "ProductType" ){
 		# Special case
-		@$list = $dm->getdevsbytype($value);
+		@$list = Device->search_by_type($value);
 		last;
 	    }else{
 		$parms{$key} = $value;
@@ -87,7 +88,11 @@ if ( $submit eq "search" ){
 	
     }elsif( $search ){
 	# Default is to search device names
-	unless ( ($list = $dns->getdevbynamelike($search)) ){
+
+	# Get rid of spaces
+	$search =~ s/\s+//;
+
+	unless ( (@$list = Device->search_like(name=>$search)) ){
 print <<EOF;
 	    <div class="container">
 		<div class="containerhead">
@@ -131,41 +136,49 @@ EOF
     }
  
 }elsif( $intadd ){
-    unless ( $dm->add_interfaces($id, $intaddnum) ){
-	$m->comp('error.mhtml', error => $dm->error);	
+    eval { Device->add_interfaces($id, $intaddnum) };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);	
     }
     
 }elsif( $deviceadd && $newhost && $newip ){
-    if ( $dns->getdevbyname($newhost) ){
+    if ( Device->search(name=>$newhost) ){
 	# It's already there
 	print "<p><b>Device $newhost already exists in DB</b>";   
 	$m->abort;
     }else{
 	# Minimal info to create device manually
-	my %tmp = ( host   => $newhost, 
-		    dev    => { interface => { '1' => {'name'   => "eth0",
-						       'number' => 1,
-						       'ips'    => {$newip} } } } );
-	unless ( $o = $dm->update_device(%tmp) ){
-	    $m->comp('error.mhtml', error => $dm->error);	
+	eval {
+	    $o = Device->discover(host=>$newhost, 
+				  info=> { interface => { '1' => {'name'   => "eth0",
+								  'number' => 1,
+								  'ips'    => {
+								      $newip => { address => $newip } } } } } );
+	    $o->update({snmp_managed=>0, canautoupdate=>0});
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
 	}
     }
 }elsif( $submit ){
     # insert/update
-    my %ret = $ui->form_to_db(%ARGS);
-    if ( ! %ret ){
-	$m->comp('error.mhtml', error => $ui->error);
+    eval {
+	my %ret = $ui->form_to_db(%ARGS);
+	print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
     }
-    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;
+
 }
 
 if ( $id ){
     unless ($o = Device->retrieve($id)){
-	$m->comp('error.mhtml', error=>"Could not retrieve Device with id $id");
+	$m->comp('/generic/error.mhtml', error=>"Could not retrieve Device with id $id");
     }   
 }elsif ( $o ){
     unless ( $id = $o->id ){
-	$m->comp('error.mhtml', error=>"Object passed was not a valid Device object");
+	$m->comp('/generic/error.mhtml', error=>"Object passed was not a valid Device object");
     }   
 }
 if ( $o && $o->name ){
@@ -173,14 +186,14 @@ if ( $o && $o->name ){
     $fqdn = $name . "." . $o->name->zone->mname;
 
 }elsif ( ! $search ){
-    $m->comp('error.mhtml', error=>"Device undefined or no name set");
+    $m->comp('/generic/error.mhtml', error=>"Device undefined or no name set");
 }
 
 if ( $view eq "Interfaces" || $view eq "All" ){
     # Build a hash of Interface Vlans
     foreach my $if ( $o->interfaces ){
-	if (scalar( my @ifv = $if->vlans)){
-	    foreach my $ifv (@ifv){
+	if ( my @ifv = $if->vlans ){
+	    foreach my $ifv ( @ifv ){
 		my $vid = $ifv->vlan->vid;
 		$ifvlans{$if}{$vid} = "";
 		$vlans{$vid} = $ifv->vlan->id;
@@ -194,49 +207,6 @@ my $refresh_url = "device.html?id=$id&view=$view";
 </%init>
 
 <div id="sectiondetail">
-
-
-<script language="javascript">
-<!--
-/* 
- * Show only interfaces belonging to selected VLAN
- * 
-*/
-function showVlan(){
-    var name = document.showvlans.showvlan.value;
-    window.location = "device.html?id=<% $id %>&view=<% $view %>&showvlan="+name;
-}
-
-function addService(ip, refresh_url){
-    var myuri = escape(refresh_url);
-    var url   = "addservice.html?ip="+ip+"&url="+myuri;
-    var wind  = window.open(url, "Create IP service", "width=400,height=200");
-}
-
-function addLink(int_id, role){
-    var url = "addlink.html?int_id="+int_id+"&role="+role;
-    var wind = window.open(url, "Add Link", "width=600,height=200");     
-}
-
-var closetList = new DynamicList("netdotform", "Device__<% $id %>__closet", "site", "Closet", "Device__<% $id %>__site");
-var roomList = new DynamicList("netdotform", "Device__<% $id %>__room", "floor", "Room", "Device__<% $id %>__site");
-roomList.setQueryURL("room_site_query.html");
-LIST_MANAGER.addList(closetList, roomList);
-
-// Chooses the 0 valued option in a select box.  Used to enforce the
-// mutual exclusivity of the room and closet options in the
-// group/location form below.
-function setNull(select){
-    for (var i = 0; i < select.options.length || alert("No null in list.  This means nathan screwed up dynamic_list.js"); ++i){
-	if (select.options[i].value == 0) {
-	    select.options[i].selected = true;
-	    break;
-	}
-    }
-}
-
--->
-</script>
 
 %#######################################################################
 %#
@@ -265,20 +235,17 @@ function setNull(select){
 <!-- Header Table -->
 <div class="containeroutside">
   <div class="containerheadleftoutside">
- 
- Device: <b><% $fqdn %></b>&nbsp;
- <a href="http://<% $fqdn %>" target=#>[HTTP]</a> <a href="ssh://<% $user->getUsername() %>@<% $fqdn %>">[SSH]</a> <a href="telnet://<% $fqdn %>">[Telnet]</a>
+  Device: <b><% $fqdn %></b>&nbsp;
+ <a href="http://<% $fqdn %>" target="#">[HTTP]</a> <a href="ssh://<% $user->getUsername() %>@<% $fqdn %>">[SSH]</a> <a href="telnet://<% $fqdn %>">[Telnet]</a>
+  </div><!-- close containerheadleftoutside -->
 
-</div>
-
-<div class="containerheadrightoutside">
+ <div class="containerheadrightoutside">
     <a href="<% $refresh_url %>">[refresh]</a>
 %    if ( $o->snmp_managed ){
 	<a href="updatedevice.html?device=<% $id %>&action=discover">[snmp-update]</a>
 %    }
-    <a href="deldevice.html?id=<% $id %>"> [delete]</a>
-
-</div> <!-- close containerheadrightoutside -->
+    <a href="delete.html?table=Device&id=<% $id %>"> [delete]</a>
+ </div> <!-- close containerheadrightoutside -->
 
 %#######################################################################
 %#
@@ -328,7 +295,8 @@ function setNull(select){
     </ul>
 </div>
 
-<div class="containerbodyoutside">
+ <div class="containerbodyoutside">
+
 
 %#######################################################################
 %#
@@ -337,7 +305,6 @@ function setNull(select){
 %#######################################################################
 
 % if ( $view eq "Basics" || $view eq "All" ){
-
 <!-- Two-column Division Table -->
 <table border="0" width="100%" align="center">
   <tr>
@@ -363,35 +330,21 @@ function setNull(select){
 <%perl>
 my (@field_headers, @cell_data);
 
-# This field is a special case because we want to be able to simply edit the RR name in this
-# same screen , without having to go to the RR record and then edit.
-push( @field_headers, "Name: " );
-push( @cell_data, 
-      &{sub{	
-	  if ($name){
-	      if ($editgen){	 
-		  '<input type="text" name="RR__'.$o->name->id.'__name" value="' . $name . '">';
-	      }else{
-		  '<b><a href="view.html?table=RR&id='.$o->name->id.'">'.$name."</a></b>";
-	      }
-	  }else{ 
-	      "Name N/A!";
-	  }
-      }}
-);
+$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>['name'], field_headers=>\@field_headers, 
+		   cell_data=>\@cell_data, linkpages=>['view.html']);
 
-# The type field is also special because it does not belong to the Device table, but to the
+# The type field is special because it does not belong to the Device table, but to the
 # Product table
-push( @field_headers, "Type: ");
+push( @field_headers, $ui->col_descr_link('Product', 'type', 'Type:') );
 push( @cell_data, 
       &{sub{	
-	  if (($o->productname) && ($o->productname->type)){	 
-	      '<a href="view.html?table=Product&id='.$o->productname->id.'">'.$o->productname->type->name."</a>";
+	  if (($o->product) && ($o->product->type)){	 
+      '<a href="view.html?table=Product&id='.$o->product->id.'">'.$o->product->type->name."</a>";
 	  }
       }}
 );
 
-my @fields = ('serialnumber','physaddr','dateinstalled','lastupdated', 'productname','inventorynumber','sysdescription');
+my @fields = ('serialnumber','physaddr','date_installed','last_updated', 'product','inventorynumber','sysdescription', 'os', 'layers');
 my @linkpages = ('', 'view.html', '', '', 'view.html', '', '' );
 $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, 
 		   cell_data=>\@cell_data, linkpages=>\@linkpages);
@@ -407,9 +360,9 @@ print '<div class="containerseparator">'.$tmp{label}.'</div>';
 print $tmp{value};         
 </%perl>
 
-    </div>
-   </div> <!-- containerbody -->
-</div> <!-- container -->
+%#    </div>
+      </div> <!-- containerbody -->
+   </div> <!-- container -->
 <!-- End General Info Table -->
 
 <!-- Location Table -->
@@ -430,23 +383,23 @@ print $tmp{value};
 (@field_headers, @cell_data) = ();
 
 {
-my @fields;
-@linkpages = ("view.html","view.html","view.html");
-
-push( @fields, 'owner' );
-push( @fields, 'used_by' );
-if ( (int($o->person) != 0) || $editloc ){
-    push( @fields, 'person' );
-    push( @linkpages, 'view.html' );
+    my @fields;
+    @linkpages = ("view.html","view.html","view.html");
+    
+    push( @fields, 'owner' );
+    push( @fields, 'used_by' );
+    if ( (int($o->person) != 0) || $editloc ){
+	push( @fields, 'person' );
+	push( @linkpages, 'view.html' );
+    }
+    push( @fields, 'site' );
+    
+    $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, 
+		       cell_data=>\@cell_data, linkpages=>\@linkpages);
 }
-push( @fields, 'site' );
-
-$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, 
-		   cell_data=>\@cell_data, linkpages=>\@linkpages);
-}
 
 
-push( @field_headers, "Room: " );
+push( @field_headers, $ui->col_descr_link('Device', 'room', 'Room:')  );
 push( @cell_data, &{sub{ 
     my $s = "";
     if ($editloc) {
@@ -469,7 +422,8 @@ push( @cell_data, &{sub{
 	}
     }
 }} );
-push( @field_headers, " or Closet: " );
+my $closetlink = $ui->col_descr_link('Device', 'closet', 'Closet:');  
+push( @field_headers, " or $closetlink",  );
 push( @cell_data, &{sub{
     my $closet_js = sprintf("onChange=\"setNull(document.netdotform.Device__%d__room);\"", $id);
     $ui->select_lookup(object=>$o, column=>"closet", lookup=>"Closet", 
@@ -483,7 +437,7 @@ $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@fie
 }
 
 my @devcontacts = $o->contacts;
-push( @field_headers, "Contacts: " );
+push( @field_headers, $ui->table_descr_link('DeviceContacts', 'Contacts:') );
 push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_table=>"DeviceContacts", 
 				       this_field=>"device", other_table=>"ContactList", 
 				       other_field=>"contactlist", isEditing=>$editloc, action=>"delete", 
@@ -522,7 +476,7 @@ push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_ta
 (@field_headers, @cell_data) = ();
 
 {
-my @fields = ('oobname','oobnumber','monitored','customer_managed','natted');
+my @fields = ('oobname','oobnumber','monitored','customer_managed', 'monitor_config');
 $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 
@@ -552,8 +506,32 @@ $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@fi
 
 (@field_headers, @cell_data) = ();
 {
-my @fields = ('snmp_managed','community','canautoupdate');
-$ui->add_to_fields(o=>$o, edit=>$editsnmp, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+    my @fields = ('snmp_managed');
+    if ( $o->snmp_managed ){
+	push @fields, ('snmp_version', 'community', 'snmp_bulk', 'canautoupdate', 
+		       'collect_arp', 'last_arp', 'collect_fwt', 'last_fwt');
+    }
+    if ( $o->snmp_version eq "3" ){
+	push @fields, ('snmp_authkey', 'snmp_authprotocol', 'snmp_privkey', 'snmp_privprotocol', 'snmp_securitylevel', 
+		       'snmp_securityname' );
+    }
+    $ui->add_to_fields(o=>$o, edit=>$editsnmp, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+    
+    # Add the snmp_target IP.  We want to show only the device IPs when editing
+    # Do not retrieve all the IPs unless we are indeed editing
+    if ( $o->snmp_managed ){
+	my %tmp;
+	if ( $editsnmp ){
+	    my $ips = $o->get_ips();
+	    %tmp = $ui->form_field(object=>$o, column=>"snmp_target", defaults=>$ips, edit=>$editsnmp);
+	}else{
+	    %tmp = $ui->form_field(object=>$o, column=>"snmp_target", edit=>$editsnmp);	    
+	}
+	push( @field_headers, $tmp{label} );
+	push( @cell_data, $tmp{value} );
+    }
+    
+
 }
 </%perl>
 
@@ -572,11 +550,229 @@ $ui->add_to_fields(o=>$o, edit=>$editsnmp, fields=>\@fields, field_headers=>\@fi
 %   if ( $editgen || $editloc || $editmgmt || $editsnmp ) {
       </form>
 %   }
-% }
+
+
+% } 
+<!-- End Basics Section -->
+
+
+%#######################################################################
+%#
+%# Interfaces section
+%#
+%#######################################################################
+% my (@headers, @rows, @row);
+
+%if ( $view eq "Interfaces" || $view eq "All" ){
+
+<script language="javascript">
+<!--
+/* 
+ * Show only interfaces belonging to selected VLAN
+ * 
+*/
+function showVlan(){
+    var name = document.showvlans.showvlan.value;
+    window.location = "device.html?id=<% $id %>&view=<% $view %>&showvlan="+name;
+}
+
+var closetList = new DynamicList("netdotform", "Device__<% $id %>__closet", "site", "Closet", "Device__<% $id %>__site");
+var roomList = new DynamicList("netdotform", "Device__<% $id %>__room", "floor", "Room", "Device__<% $id %>__site");
+roomList.setQueryURL("room_site_query.html");
+LIST_MANAGER.addList(closetList, roomList);
+
+// Chooses the 0 valued option in a select box.  Used to enforce the
+// mutual exclusivity of the room and closet options in the
+// group/location form below.
+function setNull(select){
+    for (var i = 0; i < select.options.length || alert("No null in list.  This means nathan screwed up dynamic_list.js"); ++i){
+	if (select.options[i].value == 0) {
+	    select.options[i].selected = true;
+	    break;
+	}
+    }
+}
+
+-->
+</script>
 
 <%perl>
-my (@headers, @rows, @row);
+   my $ifs = $o->interfaces_by($ifsort); 
+    #
+    # Store values in a hash first.  Thay way we can quicly verify if 
+    # at least one of the interfaces has that field set to some value 
+    # and decide whether to add that column or not
+    # 
+    my %intinfo;
+    foreach ( @$ifs ){ 
+	foreach my $field ( qw /jack room_char jack_char description neighbor/ ){
+	    $intinfo{$field}{$_->id} = $_->$field if ( defined $_->$field && int($_->$field) != 0 );
+	}
+    } 
+
+    ### Headers
+    my @closet_jacks;
+    (@headers, @rows) = ();
+    
+    if ( $editints ){
+      push @headers, '[del]';
+    }
+    
+    push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=number">Number</a>';
+    push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=name">Name</a>';
+    
+    if ( ! $editints ){
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=speed">Speed</a>';
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=vlan">VLAN</a>';
+    }
+    push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=monitored">Mon?</a>';
+    push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=snmp">SNMP?</a>';
+    
+    if ( exists $intinfo{jack} || $editints ){
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>';
+      @closet_jacks = $o->closet->horizontalcables if ( int($o->closet) != 0 );
+    }
+    if ( exists $intinfo{room_char} || $editints ){
+      push @headers, 'Room';
+    }
+    if ( exists $intinfo{jack_char} || $editints ){
+      push @headers, 'Jack';
+    }
+    if ( exists $intinfo{description} || $editints ){
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=descr">Descr.</a>';
+    }
+    if ( exists $intinfo{neighbor} || $editints ){
+	push @headers, 'Neighbor';
+    }
+    ### Actual data
+    foreach my $if ( @$ifs ){
+      next if ( !exists $ifvlans{$if}{$showvlan} && $showvlan ne "all" );
+      
+      my (@row) = ();	
+      
+      if ( $editints ){	 
+	    push @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delete" . '" >';
+      }
+      
+      push @row, $ui->form_field(object=>$if, column=>"number", edit=>$editints, htmlExtra=>"style=\"width: 2em;\"", 
+				  linkPage=>"view.html", returnValOnly=>1);
+      push @row, $ui->form_field(object=>$if, column=>"name", edit=>$editints, htmlExtra=>"style=\"width: 7em;\"", 
+				  linkPage=>"view.html", returnValOnly=>1);
+      
+      if ( !$editints ){
+        push @row, $if->speed_pretty;
+        push @row, 
+  	       &{sub{
+		  my $ac = "";
+		  if ( exists $ifvlans{$if} ){
+		    my @links;
+		    foreach my $v ( keys %{$ifvlans{$if}} ){
+		      push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
+		    }
+		    $ac .= join ', ', @links;	# CHECK THIS (was in a print).
+		  }
+		  $ac;
+		}};
+     }
+      
+     push @row, $ui->form_field(object=>$if, column=>"monitored", edit=>$editints, returnValOnly=>1);
+     push @row, $ui->form_field(object=>$if, column=>"snmp_managed", edit=>$editints, returnValOnly=>1);
+      
+      if ( exists $intinfo{jack} || $editints ){
+	  if ( @closet_jacks ){
+	      push @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", defaults=>\@closet_jacks, 
+					  linkPage=>"view.html", edit=>$editints, returnValOnly=>1);
+	  }else{
+	      push @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", linkPage=>"cable_horizontal.html", 
+					  edit=>$editints, returnValOnly=>1);
+	  }
+      }
+      if ( exists $intinfo{room_char} || $editints ){
+          push @row, $ui->form_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", 
+				      returnValOnly=>1);
+      }
+      if ( exists $intinfo{jack_char} || $editints ){
+          push @row, $ui->form_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", 
+				      returnValOnly=>1);
+      }
+      if ( exists $intinfo{description} || $editints ){
+          push @row, $ui->form_field(object=>$if, column=>"description", edit=>$editints, returnValOnly=>1);
+      }
+      
+      if ( exists $intinfo{neighbor}{$if->id} ){
+	  push @row, $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, returnValOnly=>1);
+      }
+
+      push @rows, \@row;
+      
+    } #foreach
+    
 </%perl>
+
+<!-- Interface Table -->
+<div class="container">
+    <div class="containerheadleft">
+        Interfaces
+    </div>
+    <div class="containerheadright">
+
+%   if ( $editints ){	 
+    <form name="netdotform" action="device.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>">
+	<input type="hidden" name="view" value="<% $view %>">
+	<input type="hidden" name="ifsort" value="<% $ifsort %>">
+	<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+	<input type="submit" name="submit" value="save">
+%   }else{
+
+        <form name="showvlans">
+	VLAN view: <select name="showvlan" onChange="showVlan();">
+%       if ( $showvlan eq 'all' ){
+            <option value="all" SELECTED>all</option>
+%       }else{
+            <option value="all">all</option>
+%       }
+%       foreach my $vid ( sort { $a <=> $b } keys %vlans ){
+%           if ( $showvlan eq $vid ){
+                <option value="<% $vid %>" SELECTED><% $vid %></option>     
+%           }else{
+                <option value="<% $vid %>"><% $vid %></option>     
+%           }
+%       }
+        </select>
+        </form> 
+        <a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=<% $ifsort %>&editints=1">[edit]</a>
+%  }
+
+    </div>
+    <div class="containerbody">
+        <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+    </div>
+    <div class="containerheadright">
+%	  if ( $editints ){	 
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="save">
+%	  }
+    </div>
+% if ( ! $editints && ($view eq "Interfaces" || $view eq "All") ){
+    <form name="netdotform" action="device.html" method="POST">
+      <input type="hidden" name="id" value="<% $id %>">
+      <input type="hidden" name="view" value="<% $view %>">
+      Manually 
+      <input type="submit" name="intadd" value="Add">
+      <input type="text" name="intaddnum" value="0" size="3"> interfaces
+    </form>
+% }
+
+%   if ($editints){
+       </form>
+%   }
+</div>
+% } # if view eq "Interfaces"
+
+<!-- End Interfaces Section -->
+
+
 
 %#######################################################################
 %#
@@ -587,9 +783,9 @@ my (@headers, @rows, @row);
 % if ( $view eq "IP" || $view eq "All" ){
 
 %  # Get all ip address info
-%  my @ips;
+%  my $ips;
 %  if ( $o && $ipsort ){
-%    @ips = $dm->getdevips( $o->id, $ipsort );
+%    $ips = $o->get_ips(sort_by=>$ipsort);
 %  }
 
 <!-- IPs Table -->
@@ -614,7 +810,7 @@ my (@headers, @rows, @row);
     </div>
     <div class="containerbody">
 
-%    if (scalar @ips){
+%    if (scalar @$ips){
 
 <%perl>
     (@headers, @rows, @row) = ();
@@ -622,11 +818,11 @@ my (@headers, @rows, @row);
     @headers = ('<a href="device.html?id='. $id .'&view='. $view .'&ipsort=address">Address</a>',
 		'Subnet',
 		'<a href="device.html?id='. $id .'&view='. $view .'&ipsort=interface">Interface</a>',
-		'DNS Name',
+		'DNS Name(s)',
 		'Services',
 		);
 
-    foreach my $ip (@ips){	   
+    foreach my $ip ( @$ips ){	   
 	next if ( ! exists $ifvlans{$ip->interface}{$showvlan} && 
 		  $showvlan ne "all" );
 	my (@row) = ();
@@ -638,7 +834,7 @@ my (@headers, @rows, @row);
 		      $a .=  $ip->address ;
 		      $a .= '<br>';
 		  }else{
-		      $a .= '<a href="ip-ws.html?id=' . $ip->id . '">' . $ip->address . '</a><br>';
+		      $a .= '<a href="ip.html?id=' . $ip->id . '">' . $ip->address . '</a><br>';
 		  }
 		  $a;
 	      }} );
@@ -649,7 +845,7 @@ my (@headers, @rows, @row);
 		      if ($editips){  
 			  $a .=  $ip->parent->address . '/' . $ip->parent->prefix ;
 		      }else{
-			  $a .= '<a href="ip-ws.html?id=' . $ip->parent->id . '">' . $ip->parent->address . '/' . 
+			  $a .= '<a href="ip.html?id=' . $ip->parent->id . '">' . $ip->parent->address . '/' . 
 			      $ip->parent->prefix . '</a><br>';
 		      }
 		  }
@@ -665,11 +861,13 @@ my (@headers, @rows, @row);
 	      &{sub{
 		  my $a = "";
 		  if ( $ip->arecords ){
-		      foreach my $ar ($ip->arecords){
-			  if ($editips){      
+		      foreach my $ar ( $ip->arecords ){
+			  # Don't let user delete the RR that the Device name points to
+			  # otherwise a referential integrity error would happen
+			  if ( $editips && ($ar->rr->id != $o->name->id) ){
 			      $a .= '<input type="checkbox" name="' . "RR__" . $ar->rr->id . "__delete" . '" >[del] ';
 			  }
-			  $a .=  $ui->form_field(object=>$ar->rr, column=>"name", edit=>$editips, 
+			  $a .=  $ui->form_field(object=>$ar->rr, column=>"name", edit=>0, 
 						 linkPage=>"view.html", returnValOnly=>1);
 		      }
 		  }
@@ -688,7 +886,7 @@ my (@headers, @rows, @row);
 		      }
 		  }
 		  if ( !$editips ){
-		      $a .= "<a href=\"#\" onClick=\"addService($ip, \'$refresh_url\')\">[add]</a>";
+                      $a .= "<a class=\"hand\" onClick=\"window.open('addservice.html?ip=$ip&url=$refresh_url', 'Create IP service', 'width=400,height=200')\">[add]</a>";
 		  }
 		  $a;
 	      }} );
@@ -733,241 +931,16 @@ if ( !$editips ){
     
 }
 </%perl>
-    </div>
-</div>
-<!-- End IPs Table -->
 
 %   if ( $editips || $addips ) {
        </form>
 %   }
+
 % }
 
-
-
-%#######################################################################
-%#
-%# Interfaces section
-%#
-%#######################################################################
-
-
-
-<%perl>
-
-if ( $view eq "Interfaces" || $view eq "All" ){
-    my @ifs;
-    @ifs = $dm->get_interfaces( $o, $ifsort );
-    #
-    # Store values in a hash first.  Thay way we can quicly verify if 
-    # at least one of the interfaces has that field set to some value 
-    # and decide whether to add that column or not
-    # 
-    my %intinfo;
-    foreach ( @ifs ){ 
-      $intinfo{jack}{$_->id}              = $_->jack        if( int($_->jack) != 0 );
-      $intinfo{room_char}{$_->id}         = $_->room_char   if( $_->room_char );
-      $intinfo{jack_char}{$_->id}         = $_->jack_char   if( $_->jack_char );
-      $intinfo{description}{$_->id}       = $_->description if( $_->description );
-      @{ $intinfo{children}{$_->id} }     = $_->children    if( $_->children );
-      @{ $intinfo{parents}{$_->id} }      = $_->parents     if( $_->parents );
-    } 
-    my @closet_jacks;
-    (@headers, @rows) = ();
-    
-    if ( $editints ){
-      push( @headers, '[del]' );
-    }
-    
-    push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=number">No.</a>' );
-    push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=name">Name</a>' );
-    
-    if ( ! $editints ){
-      push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=speed">Speed</a>' );
-      push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=vlan">VLAN</a>' );
-    }
-    push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=monitored">Mon?</a>' );
-    push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=snmp">SNMP?</a>' );
-    
-    if ( exists $intinfo{jack} || $editints ){
-      push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>' );
-      @closet_jacks = $o->closet->horizontalcables if ( int($o->closet) != 0 );
-    }
-    if ( exists $intinfo{room_char} || $editints ){
-      push( @headers, 'Room' );
-    }
-    if ( exists $intinfo{jack_char} || $editints ){
-      push( @headers, 'Jack' );
-    }
-    if ( exists $intinfo{description} || $editints ){
-      push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=descr">Descr.</a>' );
-    }
-    push( @headers, 'Uplink' );
-    push( @headers, 'Downlink' );
-    
-
-    foreach my $if ( @ifs ){
-      next if ( ! exists $ifvlans{$if}{$showvlan} && $showvlan ne "all");
-      
-      my (@row) = ();	
-      
-      if ( $editints ){	 
-	    push( @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delete" . '" >' );
-      }
-      
-      push( @row, $ui->form_field(object=>$if, column=>"number", edit=>$editints, htmlExtra=>"style=\"width: 2em;\"", 
-				  linkPage=>"view.html", returnValOnly=>1) );
-      push( @row, $ui->form_field(object=>$if, column=>"name", edit=>$editints, htmlExtra=>"style=\"width: 7em;\"", 
-				  linkPage=>"view.html", returnValOnly=>1) );
-      
-      if ( ! $editints ){
-        push( @row, $dm->convert_ifspeed($if->speed)  );
-        push( @row, 
-	      &{sub{
-		  my $ac = "";
-		  if (exists $ifvlans{$if}){
-		    my @links;
-		    foreach my $v ( keys %{$ifvlans{$if}} ){
-		      push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
-		    }
-		    $ac .= join ', ', @links;	# CHECK THIS (was in a print).
-		  }
-		  $ac;
-		}} );
-      }
-      
-      push( @row, $ui->form_field(object=>$if, column=>"monitored", edit=>$editints, returnValOnly=>1) );
-      push( @row, $ui->form_field(object=>$if, column=>"snmp_managed", edit=>$editints, returnValOnly=>1) );
-      
-      if ( exists $intinfo{jack} || $editints ){
-	  if ( @closet_jacks ){
-	      push( @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", defaults=>\@closet_jacks, 
-					  linkPage=>"view.html", edit=>$editints, returnValOnly=>1) );
-	  }else{
-	      push( @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", linkPage=>"cable_horizontal.html", 
-					  edit=>$editints, returnValOnly=>1) );
-	  }
-      }
-      if ( exists $intinfo{room_char} || $editints ){
-          push( @row, $ui->form_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", 
-				      returnValOnly=>1) );
-      }
-      if ( exists $intinfo{jack_char} || $editints ){
-          push( @row, $ui->form_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", 
-				      returnValOnly=>1) );
-      }
-      if ( exists $intinfo{description} || $editints ){
-          push( @row, $ui->form_field(object=>$if, column=>"description", edit=>$editints, returnValOnly=>1) );
-      }
-      
-	push( @row, 
-	      &{sub{
-		  my $ac = "";
-		  if (exists $intinfo{parents}{$if->id}){
-		    foreach my $link ( @{ $intinfo{parents}{$if->id} } ){
-		      if ( $link->parent && $link->parent->device ){
-			if ( $editints ){
-			  $ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
-			}   
-			my $lbl = $ui->getobjlabel($link->parent, ", ");
-			$ac .= '<a href="device.html?id=' . $link->parent->device->id . '&view=Interfaces">' . $lbl . '</a><br>';
-		      }
-		    }
-		  }
-		  if ( !$editints ){
-		      $ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'child\')">[add]</a>';
-		  }
-		  $ac;
-		}} );
-      
-	push( @row, 
-	      &{sub{
-		  my $ac = "";
-		  if (exists $intinfo{children}{$if->id}){
-		    foreach my $link ( @{ $intinfo{children}{$if->id} } ){
-		      if ( $link->child && $link->child->device ){
-			if ( $editints ){
-			  $ac .= '<input type="checkbox" name="' . "InterfaceDep__" . $link->id . "__delete" . '" > [del] ';
-			}   
-			my $lbl = $ui->getobjlabel($link->child, ", ");
-			if ( $link->child->device ){
-			  $ac .= '<a href="device.html?id=' . $link->child->device->id . '&view=Interfaces">' . $lbl . '</a><br>';
-			}
-		      }
-		    }
-		  }
-		  if ( !$editints ){
-		      $ac .= '<a href="#" onClick="addLink(' . $if->id . ', \'parent\')">[add]</a>';
-		  }
-		  $ac;
-		}} );
-      push( @rows, \@row );
-      
-    } #foreach
-    
-</%perl>
-
-<!-- Interface Table -->
-<div class="container">
-    <div class="containerheadleft">
-        Interfaces
-    </div>
-    <div class="containerheadright">
-
-%   if ($editints){	 
-    <form name="netdotform" action="device.html" method="POST">
-	<input type="hidden" name="id" value="<% $id %>">
-	<input type="hidden" name="view" value="<% $view %>">
-	<input type="hidden" name="ifsort" value="<% $ifsort %>">
-	<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-	<input type="submit" name="submit" value="save">
-%   }else{
-
-        <form name="showvlans">
-	VLAN view: <select name="showvlan" onChange="showVlan();">
-%       if ( $showvlan eq 'all' ){
-            <option value="all" SELECTED>all</option>
-%       }else{
-            <option value="all">all</option>
-%       }
-%       foreach my $vid ( sort { $a <=> $b } keys %vlans ){
-%           if ( $showvlan eq $vid ){
-                <option value="<% $vid %>" SELECTED><% $vid %></option>     
-%           }else{
-                <option value="<% $vid %>"><% $vid %></option>     
-%           }
-%       }
-        </select>
-        </form> 
-        <a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=<% $ifsort %>&editints=1">[edit]</a>
-%  }
-
-    </div>
-    <div class="containerbody">
-        <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
-    </div>
-    <div class="containerheadright">
-%	  if ( $editints ){	 
-            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-            <input type="submit" name="submit" value="save">
-%	  }
     </div>
 </div>
-<!-- End Interface Table -->
-
-% if ( ! $editints && ($view eq "Interfaces" || $view eq "All") ){
-    <form name="netdotform" action="device.html" method="POST">
-      <input type="hidden" name="id" value="<% $id %>">
-      <input type="hidden" name="view" value="<% $view %>">
-      Manually 
-      <input type="submit" name="intadd" value="Add">
-      <input type="text" name="intaddnum" value="0" size="3"> interfaces
-    </form>
-% }
-
-%   if ($editints){
-       </form>
-%   }
-% } # if view eq "Interfaces"
+<!-- End IPs Section -->
 
 
 %#######################################################################
@@ -1016,19 +989,11 @@ if ( $view eq "Interfaces" || $view eq "All" ){
 <!-- End Two-column Division Table -->
 
 <%perl>
-    $dm->error("");
-    my @ipeers = $dm->get_bgp_peers(device=>$o, type=>"internal", sort=>$peersort);
-    if ( $dm->error ){
-	$m->comp('error.mhtml', error=> $dm->error);
-    }
-    $dm->error("");
-    my @epeers = $dm->get_bgp_peers(device=>$o, type=>"external", sort=>$peersort);
-    if ( $dm->error ){
-	$m->comp('error.mhtml', error=>$dm->error);
-    }
+    my $ipeers = $o->get_bgp_peers(type=>"internal", sort=>$peersort);
+    my $epeers = $o->get_bgp_peers(type=>"external", sort=>$peersort);
 </%perl>
 
-%   if ( @ipeers || @epeers ){
+%   if ( $ipeers || $epeers ){
 
 <!-- BGP Peers Table -->
 <div class="container">
@@ -1060,31 +1025,47 @@ push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort
 push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=asnumber">AS Number</a>' );
 push( @headers, 'Monitored?' );
 
-if ( @epeers ){
+if ( $epeers ){
     push @rows, ["<strong>External (eBGP)</strong>", "", "", "", "", ""];
     
-    foreach my $peer (@epeers){
+    foreach my $peer ( @$epeers ){
 	my (@row) = ();
-	push( @row, $peer->bgppeeraddr  );
+	push( @row, $ui->form_field(object=>$peer, column=>"bgppeeraddr", 
+				    edit=>$editbgp, linkPage=>"view.html", returnValOnly=>1) );
 	push( @row, $peer->bgppeerid  );
 	push( @row, '<a href="view.html?table=Entity&id=' . $peer->entity->id . '">' . $peer->entity->name . '</a>' );
 	push( @row, $peer->entity->asname  );
-	push( @row, $peer->entity->asnumber  );
+	if ( $whois_url ){
+	    my $asn = $peer->entity->asnumber;
+	    my $url = $whois_url;
+	    $url =~ s/<ASNUMBER>/$asn/;
+	    push( @row, "<a target=\"#\" href=\"$url\">$asn</a>" );
+	}else{
+	    push( @row, $peer->entity->asnumber );
+	}
 	push( @row, $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp, returnAsVar=>1) );
 	push( @rows, \@row );
     }
     push @rows, ["&nbsp;", "", "", "", "", ""];
 }
-if ( @ipeers ){
+if ( $ipeers ){
     push @rows, ["<strong>Internal (iBGP)</strong>", "", "", "", "", ""];
     
-    foreach my $peer (@ipeers){
+    foreach my $peer (@$ipeers){
 	my (@row) = ();
-	push( @row, $peer->bgppeeraddr  );
+	push( @row, $ui->form_field(object=>$peer, column=>"bgppeeraddr", 
+				    edit=>$editbgp, linkPage=>"view.html", returnValOnly=>1) );
 	push( @row, $peer->bgppeerid  );
 	push( @row, '<a href="view.html?table=Entity&id=' . $peer->entity->id . '">' . $peer->entity->name . '</a>' );
 	push( @row, $peer->entity->asname  );
-	push( @row, $peer->entity->asnumber  );
+	if ( $whois_url ){
+	    my $asn = $peer->entity->asnumber;
+	    my $url = $whois_url;
+	    $url =~ s/<ASNUMBER>/$asn/;
+	    push( @row, "<a target=\"#\" href=\"$url\">$asn</a>" );
+	}else{
+	    push( @row, $peer->entity->asnumber );
+	}
 	push( @row, $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp, returnAsVar=>1) );
 	push( @rows, \@row );
     }
@@ -1096,15 +1077,13 @@ if ( @ipeers ){
 %   if ( $editbgp ) {
       </form>
 %   }
-<!-- End BGP Peers Table -->
     </div>
 </div>
-	   
 %    }
-
 % }
+<!-- End BGP Peers Section -->
 
-%
+
 %#######################################################################
 %#
 %# History
@@ -1112,7 +1091,7 @@ if ( @ipeers ){
 %#######################################################################
 %
 % if ( $view eq "History" || $view eq "All" ){
-%   my @h_objs = $ui->gethistoryobjs($o);
+%   my @h_objs = $o->get_history;
 %
 <!-- History Table -->
 <div class="container">
@@ -1123,14 +1102,16 @@ if ( @ipeers ){
         <& /generic/sortresults.mhtml, object => \@h_objs , view => "row" &>
     </div>
 </div>
-<!-- End History Table -->
 % }
 %
-%} # if !defined search
 %
+<!-- End History Section -->
+
+
 
  </div> <!-- close containerbodyoutside --> 
 </div> <!-- close containeroutside -->
 
+%} # if !defined search
 
-</div>
+</div> <!-- close sectiondetail -->

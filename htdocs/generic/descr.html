@@ -1,0 +1,61 @@
+<%doc>
+
+Show Database Table or Column descriptions.  This provides context help.
+
+</%doc>
+%
+%
+%
+<%args>
+$table
+$col => undef;
+</%args>
+%
+<%attr>
+showheader => 0
+title => 'Help'
+</%attr>
+%
+<%init>
+my $DEBUG = 0;
+my @field_headers;
+my @cell_data;
+my $table_help = $ui->table_descr_link($table, $table);
+if ( $col ){
+    my $mcol  = $table->meta_data->get_column($col);
+    my $descr = $mcol->descr();
+    my $tag   = $mcol->tag();
+    @field_headers = ( 'Table:', 'Column Name:', 'Column Label:', 'Description:' ); 
+    @cell_data = ( $table_help, $col, $tag, $descr ); 
+    if ( my $ftname = $mcol->links_to ){
+	push @field_headers, "References:";
+	push @cell_data, $ui->table_descr_link($ftname, $ftname);
+    }
+}else{
+    my $mtable     = $table->meta_data;
+    my $descr      = $mtable->descr();
+    my @cols       = grep !/^id/, $mtable->get_column_names;
+    my @clinks     = map { $ui->col_descr_link($table, $_, $_) } @cols;
+    my $clinks     = join ', ', @clinks;
+    @field_headers = ( 'Table:', 'Description:', 'Columns:' ); 
+    @cell_data     = ( $table, $descr, $clinks ); 
+}
+</%init>
+
+<div class="container">
+    <div class="containerhead"> Help</div>
+    <div class="containerbody">
+
+<p>
+
+<& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, 
+width=>"1", headercolwidth=>"15%", datacolwidth=>"35%" &>
+
+<center>
+<a class="hand" onClick="history.go(-1);">[<<]</a>
+&nbsp;<a class="hand" onClick="window.close();">[close]</a>
+</center>
+
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+ 

@@ -215,10 +215,10 @@ $dividefreespace => 'max'
         print '<td colspan="'.($numcols/2-1).'" class="small">';
             print 'Divide free space into subnets with maximum size ';
             print '<select name="rowsize" class="small">';
-            my $link = 'ip-ws.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace=max';
+            my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace=max';
             print '<option onclick="parent.location=\''.$link.'\'" value="max"'.($dividefreespace eq 'max'?' selected':'').'>MAX</option>';
             for( my $i=$mask; $i<=30; $i++ ) {
-                my $link = 'ip-ws.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace='.$i;
+                my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace='.$i;
                 print '<option onclick="parent.location=\''.$link.'\'" value="'.$i.'"'.($dividefreespace==$i?' selected':'').'>/'.$i.'</option>';
             }
             print '</select>';
@@ -227,7 +227,7 @@ $dividefreespace => 'max'
             print 'Zoom: Set one row equal to ';
             print '<select name="rowsize" class="small">';
             for( my $i=$minrowsize; $i<=$maxrowsize; $i++ ) {
-                my $link = 'ip-ws.html?id='.$network->id.'&view_availability=1&rowsize='.$i.'&dividefreespace='.$dividefreespace;
+                my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$i.'&dividefreespace='.$dividefreespace;
                 print '<option onclick="parent.location=\''.$link.'\'" value="'.$i.'"'.($rowsize==$i?' selected':'').'>/'.$i.'</option>';
             }
             print '</select>';
@@ -294,9 +294,9 @@ $dividefreespace => 'max'
 
                 my $link;
                 if( $cell_info[$start][1] eq "New" ) {
-                    $link = 'ip-ws.html?allocate='.$cell_info[$start][3].'&_action=ALLOCATE';
+                    $link = 'ip.html?allocate='.$cell_info[$start][3].'&_action=ALLOCATE';
                 } else {
-                    $link = 'ip-ws.html?id='.$iplinks{ $cell_info[$start][3] };
+                    $link = 'ip.html?id='.$iplinks{ $cell_info[$start][3] };
                 }
 
                 print '<td width="'.($span*($cell_width+1)).'" colspan="'.($span>$numcols?$numcols:$span).'" class="containertable_cell">';

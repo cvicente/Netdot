@@ -18,8 +18,11 @@ section => 'Generic'
 my $result;
 my $sql_err;
 if ( $action eq "DO_SQL" ){
-    if ( ! ($result = $ui->raw_sql($sql) ) ){
-	$sql_err = $ui->error;
+    eval {
+	$result = Netdot::Model->raw_sql($sql);
+    };
+    if ( my $e = $@ ){
+	$sql_err = $e;
     }
 }
 </%init>
@@ -49,7 +52,7 @@ if ( $action eq "DO_SQL" ){
         <div class="containerhead">Query Results:</div>
         <div class="containerbody">
 <%perl>
-    if ( scalar $result->{rows} ){
+    if ( defined $result && scalar $result->{rows} ){
         my @headers = $result->{headers};
         my @rows    = $result->{rows};
 

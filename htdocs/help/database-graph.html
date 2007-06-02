@@ -1,0 +1,29 @@
+<%doc>
+  Graph the database using GraphViz
+</%doc>
+
+<%args>
+</%args>
+
+<%init>
+use Netdot::Meta::SQLT;
+
+my $sqlt = Netdot::Meta::SQLT->new();
+
+my $netdot_path = Netdot->config->get('NETDOT_PATH');
+my $graph_path  = "img/graphs/schema.png";
+my $out_file    = "$netdot_path/htdocs/" . $graph_path;
+
+$sqlt->graphviz_schema(out_file=>$out_file, output_type=>"png");
+
+my $web_path = $r->dir_config('NetdotPath');
+my $img      = $web_path . $graph_path;
+
+</%init>
+
+<div class="container">
+  <div class="containerheadleft">Netdot Schema</div>
+  <div class="containerbody">
+    <img src="<% $img %>" alt="Database Relationships" />
+  </div>
+</div>

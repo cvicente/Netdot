@@ -7,7 +7,7 @@ objects to the database.
 Arguments:  
   table         -  name of table (REQUIRED)
   id            -  id (row) from the above table  (OPTIONAL)
-  session       -  ref to a hash with values to insert (if object ! exist)
+  session       -  ref to a hash with values to insert (if object does not exist)
 
 </%doc>
 
@@ -24,7 +24,7 @@ my $maxselect = 100;
 my $DEBUG     = 0;
 
 unless ( $table  ) {
-    $m->comp("error.mhtml", error => "Missing required arguments");
+    $m->comp("/generic/error.mhtml", error => "Missing required arguments");
 }
 my $obj;
 if ( $id ){
@@ -32,8 +32,8 @@ if ( $id ){
 	$m->comp("error.mhtml", error => "Could not retrieve $table id $id");	
     }
 }
-my %order   = $ui->meta->get_column_order( $table );
-my %linksto = $ui->meta->get_links_to( $table );
+my %order   = $table->meta_data->get_column_order();
+my %linksto = $table->meta_data->get_links_to();
 
 </%init>
 
@@ -54,9 +54,12 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 		%field = $ui->form_field(object=>$obj, column=>$c, edit=>1, shortFieldName=>1);
 	} elsif( exists( $session{$c} ) ) {
 		my @defaults = ($linksto{$c}->retrieve($session{$c}));
-		%field = $ui->form_field(table=>$table, column=>$c, defaults=>\@defaults, default=>$session{$c}, edit=>1, shortFieldName=>1);
+		%field = $ui->form_field(table=>$table, column=>$c, 
+					 defaults=>\@defaults, default=>$session{$c}, 
+					 edit=>1, shortFieldName=>1);
 	} else {
-		%field = $ui->form_field(table=>$table, column=>$c, edit=>1, shortFieldName=>1);
+		%field = $ui->form_field(table=>$table, column=>$c, 
+					 edit=>1, shortFieldName=>1);
 	}
     push(@headers, $field{'label'});
     push(@data,    $field{'value'});
@@ -64,5 +67,8 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 
 </%perl>
     <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
-                                       width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
+    width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
+<br>
+(<font color="red">*</font>) Indicates field is unique, and therefore, required.  In some cases, combinations of fields are unique.
+<br>
