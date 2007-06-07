@@ -11,20 +11,14 @@ use strict;
 use Data::Dumper;
 use Getopt::Long;
 
-use vars qw( %self $USAGE %hosts %groups %contacts %contactlists %services %servicegroups);
-
-sub CFG_EXT        { "cfg" };
-sub SKEL_EXT       { "cfg.skel" };
-sub FILES          { "hosts" };
-sub FIRST_NOTIF    { 4 };
-sub LAST_NOTIF     { 6 };
-sub NOTIF_INTERVAL { 0 };
+use vars qw( %self $USAGE %hosts %groups %contacts %contactlists %services %servicegroups );
 
 &set_defaults();
 
 my $USAGE = <<EOF;
 usage: $0 [options]
           
+    --dir             <path> Path to configuration file
     --cfg_ext         <extension> Config file extension (default: $self{cfg_ext})
     --skel_ext        <extension> Skeleton file extension (default: $self{skel_ext})
     --files           <file1,file2,...> List of files to process (default: $self{files})
@@ -33,6 +27,7 @@ usage: $0 [options]
     --notif_interval  <min> Notification Interval for escalations (default: $self{notif_interval})
     --rtt             Add Round Trip Time graphs using APAN add-on (default: $self{rtt})
     --traps           Add trap service to all hosts (default: $self{traps})
+    --strip_domain    <domain_name> Strip off domain name from device name
     --debug           Print debugging output
     --help            Display this message
 EOF
@@ -44,23 +39,26 @@ EOF
 
 ##################################################
 sub set_defaults {
-    %self = ( cfg_ext         => CFG_EXT,
-	      skel_ext        => SKEL_EXT,
-	      files           => FILES,
-	      first_notif     => FIRST_NOTIF,
-	      last_notif      => LAST_NOTIF,
-	      notif_interval  => NOTIF_INTERVAL,
-	      rtt             => 1,
-	      traps           => 1,
-	      help            => 0,
-	      debug           => 0, 
-	      );
+    %self = (
+	     cfg_ext         => 'cfg',
+	     skel_ext        => 'cfg.skel',
+	     files           => 'hosts',
+	     first_notif     => 4,
+	     last_notif      => 6,
+	     notif_interval  => 0,
+	     rtt             => 1,
+	     traps           => 1,
+	     help            => 0,
+	     debug           => 0, 
+	     );
 }
 
 ##################################################
 sub setup{
 
-    my $result = GetOptions( "cfg_ext=s"        => \$self{cfg_ext}, 
+    my $result = GetOptions( 
+			     "dir=s"            => \$self{dir},
+			     "cfg_ext=s"        => \$self{cfg_ext}, 
 			     "skel_ext=s"       => \$self{skel_ext}, 
 			     "files=s"          => \$self{files},
 			     "first_notif=i"    => \$self{first_notif},
@@ -68,6 +66,7 @@ sub setup{
 			     "notif_interval=i" => \$self{notif_interval},
 			     "rtt"              => \$self{rtt},
 			     "traps"            => \$self{traps},
+			     "strip_domain=s"   => \$self{strip_domain},
 			     "debug"            => \$self{debug},
 			     "h"                => \$self{help},
 			     "help"             => \$self{help},
@@ -183,8 +182,10 @@ sub gather_data{
 	# from the DNS.  If it's not there, or if it's not unique
 	# the name will be the device name plus the interface name
 	# plus the IP address
-	my $hostname;
-	unless ( ($hostname = &resolve($ipobj->address)) && !exists $name2ip{$hostname} ){
+	my $hostname = &resolve($ipobj->address);
+	$hostname    =~ s/$self{strip_domain}// if $self{strip_domain};
+
+	unless ( $hostname && !exists $name2ip{$hostname} ){
 	    $hostname = $ipobj->interface->device->name->name
 		. "-" . $ipobj->interface->name
 		. "-" . $ipobj->address;
@@ -227,7 +228,7 @@ sub gather_data{
 	my @parentlist;
 	my $ipobj = $hosts{$ipid}{ipobj};
 	if ( my $intobj = $ipobj->interface ){
-	    if ( scalar(@parentlist = &getparents($intobj)) ){
+	    if ( scalar(@parentlist = &get_dependencies(interface=>$intobj)) ){
 		$hosts{$ipid}{parents} = join ',', map { $ip2name{$_} } @parentlist;
 	    }else{
 		$hosts{$ipid}{parents} = undef;
@@ -280,11 +281,11 @@ sub build_configs{
     
     foreach my $file ( @{ $self{files_arr} } ){
 	# Open skeleton file for reading
-	my $skel_file = "$file.$self{skel_ext}";
+	my $skel_file = "$self{dir}/$file.$self{skel_ext}";
 	open (SKEL, "$skel_file") or die "Can't open $skel_file\n";
 	
 	# Open output file for writing
-	my $out_file = "$file.$self{cfg_ext}";
+	my $out_file = "$self{dir}/$file.$self{cfg_ext}";
 	open (OUT, ">$out_file") or die "Can't open $out_file\n";
 	select (OUT);
 	
@@ -525,12 +526,12 @@ sub build_configs{
 		
 		foreach my $hostname ( keys %services ){
 		    foreach my $srvname ( keys %{ $services{$hostname} } ){
-			if (! exists $self{servchecks}->{$srvname}){
+			if (! exists $self{servchecks}{$srvname}){
 			    warn "Warning: service check for $srvname not implemented.";
 			    warn "Skipping $srvname check for host $hostname.\n";
 			    next;
 			}
-			my $checkcmd = $self{servchecks}->{$srvname};
+			my $checkcmd = $self{servchecks}{$srvname};
 			
 			# Add community argument for checks that use SNMP
 			if ( $checkcmd eq "check_bgp"){
