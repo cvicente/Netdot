@@ -2,7 +2,7 @@
 # Netdot Metadata. 
 #
 # Metadata is kept as a Perl hash and contains information necessary to generate the 
-# DB schema (See DBIx::DBSchema), to generate Class::DBI classes, and to help in 
+# DB schema, to generate Class::DBI classes, and to help in 
 # minimizing user interface code.
 # 
 # $meta = {
@@ -28,7 +28,8 @@
 #
 #        nullable => 0,   # can this column be set to null?
 #        tag => undef,    # 
-#        type => 'serial' # SQL type of this column
+#        type => '[bool|date|integer|long varbinary|numeric|varchar]' 
+#	          The SQL data type of this column
 #      },
 #    description => 'Table1 blah blah blah', # Description for this table
 #    has_history => 0,  # Should a history table (a clone of this one) be inserted as well?
@@ -68,16 +69,16 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
-      interface => {
+      device => {
         default => '',
-        description => '',
+        description => 'Device where this Arp Cache was found',
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'arpcaches',
-          table => 'Interface'
+          method => 'arp_caches',
+          table => 'Device'
         },
         nullable => 0,
         tag => 'Interface',
@@ -85,7 +86,7 @@ $meta = {
       },
       tstamp => {
         default => '',
-        description => '',
+        description => 'When this Cache was collected',
         length => '',
         nullable => 0,
         tag => 'Timestamp',
@@ -98,23 +99,23 @@ $meta = {
     isjoin => '0',
     label => [
       'tstamp',
-      'interface'
+      'device'
     ],
     primary_key => 'id',
     unique => [
       [
-        'interface',
+        'device',
         'tstamp'
       ]
     ],
     views => {
       all => [
         'tstamp',
-        'interface'
+        'device'
       ],
       brief => [
         'tstamp',
-        'interface'
+        'device'
       ]
     }
   },
@@ -122,7 +123,7 @@ $meta = {
     columns => {
       arpcache => {
         default => '',
-        description => '',
+        description => 'ARP Cache where this entry belongs',
         length => '',
         linksto => {
           cascade => 'Delete',
@@ -139,24 +140,37 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
-      ipaddr => {
+      interface => {
         default => '',
-        description => '',
+        description => 'Interface',
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'arpentries',
+          method => 'arp_entries',
+          table => 'Interface'
+        },
+        nullable => 0,
+        tag => 'Interface',
+        type => 'integer'
+      },
+      ipaddr => {
+        default => '',
+        description => 'IP address',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'arp_entries',
           table => 'Ipblock'
         },
         nullable => 0,
-        tag => 'IP Address',
+        tag => 'IP',
         type => 'integer'
       },
       physaddr => {
         default => '',
-        description => '',
+        description => 'Physical Address (MAC)',
         length => '',
         linksto => {
           cascade => 'Delete',
@@ -186,6 +200,7 @@ $meta = {
     ],
     views => {
       all => [
+	'interface',
         'ipaddr',
         'physaddr',
         'arpcache'
@@ -205,10 +220,10 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
-        default => '',
+        default => 'NULL',
         description => 'Comments',
         length => '',
         nullable => 1,
@@ -297,7 +312,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       monitored => {
         default => '',
@@ -377,7 +392,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -532,7 +547,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -642,7 +657,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -747,7 +762,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -799,17 +814,17 @@ $meta = {
         tag => 'Circuit ID',
         type => 'varchar'
       },
-      connectionid => {
+      linkid => {
         default => '',
-        description => 'Connection to which this circuit belongs',
+        description => 'Link to which this circuit belongs',
         length => '',
         linksto => {
           cascade => 'Delete',
           method => 'circuits',
-          table => 'Connection'
+          table => 'Link'
         },
         nullable => 0,
-        tag => 'Part of Connection',
+        tag => 'Part of Link',
         type => 'integer'
       },
       dlci => {
@@ -839,7 +854,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -928,7 +943,7 @@ $meta = {
         'farend'
       ],
       [
-        'connectionid'
+        'linkid'
       ]
     ],
     isjoin => '0',
@@ -945,7 +960,7 @@ $meta = {
     views => {
       all => [
         'cid',
-        'connectionid',
+        'linkid',
         'status',
         'nearend',
         'farend',
@@ -958,7 +973,7 @@ $meta = {
       ],
       brief => [
         'cid',
-        'connectionid',
+        'linkid',
         'nearend',
         'farend',
         'type',
@@ -975,7 +990,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -1025,7 +1040,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -1160,7 +1175,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -1354,7 +1369,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       }
     },
     description => 'A Closet Picture',
@@ -1383,7 +1398,7 @@ $meta = {
       ]
     }
   },
-  Connection => {
+  Link => {
     columns => {
       entity => {
         default => '',
@@ -1391,7 +1406,7 @@ $meta = {
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'connections',
+          method => 'links',
           table => 'Entity'
         },
         nullable => 1,
@@ -1400,11 +1415,11 @@ $meta = {
       },
       farend => {
         default => '',
-        description => 'The remote Site for this Connection',
+        description => 'The remote Site for this Link',
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'nearconnections',
+          method => 'farlinks',
           table => 'Site'
         },
         nullable => 0,
@@ -1417,7 +1432,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -1429,7 +1444,7 @@ $meta = {
       },
       name => {
         default => '',
-        description => 'A name for this Connection',
+        description => 'A name for this Link',
         length => '128',
         nullable => 0,
         tag => 'Name',
@@ -1437,11 +1452,11 @@ $meta = {
       },
       nearend => {
         default => '',
-        description => 'The local Site for this Connection',
+        description => 'The local Site for this Link',
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'nearconnections',
+          method => 'nearlinks',
           table => 'Site'
         },
         nullable => 0,
@@ -1449,7 +1464,7 @@ $meta = {
         type => 'integer'
       }
     },
-    description => 'A Link between two Sites.  A connection can consist of one or more circuits',
+    description => 'A Link between two Sites.  A link can consist of one or more circuits',
     has_history => 1,
     index => [],
     isjoin => '0',
@@ -1520,7 +1535,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -1623,7 +1638,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -1674,7 +1689,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -1763,6 +1778,22 @@ $meta = {
         tag => 'Closet',
         type => 'integer'
       },
+      collect_arp => {
+        default => '',
+        description => 'Whether Netdot should collect ARP cache data from this Device.  Notice that this is mostly intended for Routers, though not necessarily',
+        length => '',
+        nullable => 0,
+        tag => 'Collect ARP?',
+        type => 'bool'
+      },
+      collect_fwt => {
+        default => '',
+        description => 'Whether Netdot should collect bridge Forwarding Table (FWT) data from this Device',
+        length => '',
+        nullable => 0,
+        tag => 'Collect FWT?',
+        type => 'bool'
+      },
       community => {
         default => '',
         description => 'SNMP community',
@@ -1779,11 +1810,11 @@ $meta = {
         tag => 'Managed by Customer?',
         type => 'bool'
       },
-      dateinstalled => {
+      date_installed => {
         default => '',
         description => 'Date that this Device was installed, or first seen in the network',
         length => '',
-        nullable => 1,
+        nullable => 0,
         tag => 'First Discovered',
         type => 'timestamp'
       },
@@ -1793,7 +1824,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -1811,11 +1842,35 @@ $meta = {
         tag => 'Inventory Number',
         type => 'varchar'
       },
-      lastupdated => {
+      layers => {
+        default => '',
+        description => 'A binary encoded string where each digit represents a layer of the OSI model served by the device',
+        length => '8',
+        nullable => 1,
+        tag => 'OSI Layers',
+        type => 'varchar'
+      },
+      last_arp => {
+        default => '',
+        description => 'Last time ARP cache data was collected from this Device',
+        length => '',
+        nullable => 0,
+        tag => 'Last ARP',
+        type => 'timestamp'
+      },
+      last_fwt => {
+        default => '',
+        description => 'Last time Forwarding Tables (FWT) were collected from this Device',
+        length => '',
+        nullable => 0,
+        tag => 'Last FWT',
+        type => 'timestamp'
+      },
+      last_updated => {
         default => '',
         description => 'Date that this Device was last updated',
         length => '',
-        nullable => 1,
+        nullable => 0,
         tag => 'Last Updated',
         type => 'timestamp'
       },
@@ -1825,6 +1880,14 @@ $meta = {
         length => '',
         nullable => 0,
         tag => 'In Maintenance Contract?',
+        type => 'bool'
+      },
+      monitor_config => {
+        default => '',
+        description => 'Indicates whether this Device should be included in configuration management tools',
+        length => '',
+        nullable => 0,
+        tag => 'Monitor Config?',
         type => 'bool'
       },
       monitored => {
@@ -1850,7 +1913,7 @@ $meta = {
       },
       name => {
         default => '',
-        description => '',
+        description => 'The Device name is a reference to a DNS Resource Record (RR)',
         length => '',
         linksto => {
           cascade => 'Fail',
@@ -1860,14 +1923,6 @@ $meta = {
         nullable => 0,
         tag => 'Name',
         type => 'integer'
-      },
-      natted => {
-        default => '',
-        description => 'Is this Device behind a Network Address Translator?  In that case, SNMP updates will not modify the IP configuration',
-        length => '',
-        nullable => 0,
-        tag => 'NATted?',
-        type => 'bool'
       },
       oobname => {
         default => '',
@@ -1898,18 +1953,13 @@ $meta = {
         tag => 'Owner',
         type => 'integer'
       },
-      part_of => {
+      os => {
         default => '',
-        description => 'Reference to another Device of which this one is a part of',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'parts',
-          table => 'Device'
-        },
+        description => 'Operating System name and version',
+        length => '128',
         nullable => 1,
-        tag => 'Part of Device',
-        type => 'integer'
+        tag => 'OS',
+        type => 'varchar'
       },
       person => {
         default => '',
@@ -1934,10 +1984,10 @@ $meta = {
           table => 'PhysAddr'
         },
         nullable => 1,
-        tag => 'MAC',
+        tag => 'Base MAC',
         type => 'integer'
       },
-      productname => {
+      product => {
         default => '',
         description => 'Reference to a Product record.  Products are usually determined via SNMP',
         length => '',
@@ -1992,6 +2042,30 @@ $meta = {
         tag => 'Site',
         type => 'integer'
       },
+      snmp_authkey => {
+        default => '',
+        description => 'SNMPv3 Authentication Key',
+        length => '255',
+        nullable => 1,
+        tag => 'AuthKey',
+        type => 'varchar'
+      },
+      snmp_authprotocol => {
+        default => '',
+        description => 'SNMPv3 Authentication Protocol (MD5|SHA)',
+        length => '32',
+        nullable => 1,
+        tag => 'AuthProtocol',
+        type => 'varchar'
+      },
+      snmp_bulk => {
+        default => '',
+        description => 'Enable or Disable SNMP BULK operations for this device',
+        length => '',
+        nullable => 0,
+        tag => 'SNMP Bulk?',
+        type => 'bool'
+      },
       snmp_managed => {
         default => '',
         description => 'Enable or Disable SNMP access to this Device from SNMP management tools which get their configurations from Netdot',
@@ -1999,6 +2073,59 @@ $meta = {
         nullable => 0,
         tag => 'SNMP Managed?',
         type => 'bool'
+      },
+      snmp_privkey => {
+        default => '',
+        description => 'SNMPv3 Privacy Key',
+        length => '255',
+        nullable => 1,
+        tag => 'PrivKey',
+        type => 'varchar'
+      },
+      snmp_privprotocol => {
+        default => '',
+        description => 'SNMPv3 Privacy Protocol (AES|DES)',
+        length => '32',
+        nullable => 1,
+        tag => 'PrivProtocol',
+        type => 'varchar'
+      },
+      snmp_securitylevel => {
+        default => '',
+        description => 'SNMPv3 Security Level (noAuthNoPriv|authNoPriv|authPriv)',
+        length => '32',
+        nullable => 1,
+        tag => 'SecLevel',
+        type => 'varchar'
+      },
+      snmp_securityname => {
+        default => '',
+        description => 'SNMPv3 user name',
+        length => '255',
+        nullable => 1,
+        tag => 'SecName',
+        type => 'varchar'
+      },
+      snmp_target => {
+        default => '',
+        description => 'SNMP target IP address.  Netdot will try to always use this IP address when snmp-querying the device',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'snmp_devices',
+          table => 'Ipblock'
+        },
+        nullable => 1,
+        tag => 'SNMP Target Address',
+        type => 'integer'
+      },
+      snmp_version => {
+        default => '',
+        description => 'Simple Network Management Protocol Version (1|2|3)',
+        length => '',
+        nullable => 1,
+        tag => 'SNMP Version',
+        type => 'integer'
       },
       sysdescription => {
         default => '',
@@ -2022,7 +2149,7 @@ $meta = {
         type => 'integer'
       }
     },
-    description => 'A network device',
+    description => 'A network device.  Particularly, Devices in Netdot are network infrastructure devices that network administrators care about for inventory, monitoring and management purposes.  Not to be confused with end nodes',
     has_history => 1,
     index => [
       [
@@ -2036,6 +2163,9 @@ $meta = {
       ],
       [
         'owner'
+      ],
+      [
+        'os'
       ]
     ],
     isjoin => '0',
@@ -2052,7 +2182,10 @@ $meta = {
       all => [
         'name',
         'aliases',
+        'snmp_target',
         'sysdescription',
+        'layers',
+        'os',
         'physaddr',
         'bgplocalas',
         'bgpid',
@@ -2063,27 +2196,33 @@ $meta = {
         'person',
         'monitored',
         'monitorstatus',
-        'snmp_managed',
         'customer_managed',
-        'natted',
         'community',
         'serialnumber',
-        'productname',
-        'part_of',
+        'product',
         'inventorynumber',
         'maint_covered',
         'canautoupdate',
         'site',
+        'snmp_managed',
+        'snmp_bulk',
+        'snmp_version',
+        'snmp_securityname',
+        'snmp_authkey',
+        'snmp_authprotocol',
+        'snmp_privkey',
+        'snmp_privprotocol',
+        'snmp_securitylevel',
         'room',
         'closet',
         'rack',
-        'lastupdated',
-        'dateinstalled',
+        'last_updated',
+        'date_installed',
         'info'
       ],
       brief => [
         'name',
-        'productname'
+        'product'
       ]
     }
   },
@@ -2121,7 +2260,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       }
     },
     description => 'Device to Contactlist join table',
@@ -2157,7 +2296,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       name => {
         default => '',
@@ -2245,7 +2384,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -2297,7 +2436,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -2407,7 +2546,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -2515,7 +2654,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -2658,7 +2797,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       site => {
         default => '',
@@ -2708,7 +2847,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -2752,12 +2891,17 @@ $meta = {
   },
   FWTable => {
     columns => {
-      deviceip => {
+      device => {
         default => '',
         description => '',
         length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'forwarding_tables',
+          table => 'Device'
+        },
         nullable => 0,
-        tag => 'Device IP',
+        tag => 'Device',
         type => 'integer'
       },
       id => {
@@ -2766,7 +2910,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       tstamp => {
         default => '',
@@ -2777,29 +2921,29 @@ $meta = {
         type => 'timestamp'
       }
     },
-    description => 'Bridge Forwarding Table',
+    description => 'Bridge Forwarding Table.  One of these is created every time a Device is queried.  Entries in these tables contain physical addresses and the ports where they have been seen.',
     has_history => 0,
     index => [],
     isjoin => '0',
     label => [
       'tstamp',
-      'deviceip'
+      'device'
     ],
     primary_key => 'id',
     unique => [
       [
-        'deviceip',
+        'device',
         'tstamp'
       ]
     ],
     views => {
       all => [
         'tstamp',
-        'deviceip'
+        'device'
       ],
       brief => [
         'tstamp',
-        'deviceip'
+        'device'
       ]
     }
   },
@@ -2815,7 +2959,7 @@ $meta = {
           table => 'FWTable'
         },
         nullable => 0,
-        tag => ' FW Table',
+        tag => 'Table',
         type => 'integer'
       },
       id => {
@@ -2824,7 +2968,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       interface => {
         default => '',
@@ -2832,20 +2976,12 @@ $meta = {
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'fwtentries',
+          method => 'fwt_entries',
           table => 'Interface'
         },
         nullable => 0,
         tag => 'Interface',
         type => 'integer'
-      },
-      leaf => {
-        default => '',
-        description => '',
-        length => '',
-        nullable => 0,
-        tag => 'Is Leaf?',
-        type => 'bool'
       },
       physaddr => {
         default => '',
@@ -2853,7 +2989,7 @@ $meta = {
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'fwtableentries',
+          method => 'fwt_entries',
           table => 'PhysAddr'
         },
         nullable => 0,
@@ -2861,7 +2997,7 @@ $meta = {
         type => 'integer'
       }
     },
-    description => 'Device Forwarding Table',
+    description => 'Bridge Forwarding Table entry',
     has_history => 0,
     index => [],
     isjoin => '0',
@@ -2882,7 +3018,6 @@ $meta = {
         'interface',
         'physaddr',
         'fwtable',
-        'leaf'
       ],
       brief => [
         'interface',
@@ -2898,7 +3033,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -2952,7 +3087,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -3045,7 +3180,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       }
     },
     description => 'Floor Plans',
@@ -3132,7 +3267,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -3301,7 +3436,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -3361,10 +3496,23 @@ $meta = {
         tag => 'Name',
         type => 'varchar'
       },
+      neighbor => {
+        default => '',
+        description => 'Another Interface to which this one is physically connected',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'neighbors',
+          table => 'Interface'
+        },
+        nullable => 0,
+        tag => 'Neighbor',
+        type => 'integer'
+      },
       number => {
         default => '',
-        description => 'The number of this Interface (corresponds to SNMP ifIndex)',
-        length => '16',
+        description => 'The number of this Interface (usually corresponds to SNMP ifIndex).  In some cases, this value can be a alphanumeric string.',
+        length => '64',
         nullable => 0,
         tag => 'Number',
         type => 'varchar'
@@ -3485,6 +3633,7 @@ $meta = {
         'monitorstatus',
         'snmp_managed',
         'physaddr',
+	'neighbor',
         'contactlist',
         'info'
       ],
@@ -3497,69 +3646,6 @@ $meta = {
       ]
     }
   },
-  InterfaceDep => {
-    columns => {
-      child => {
-        default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'parents',
-          table => 'Interface'
-        },
-        nullable => 0,
-        tag => undef,
-        type => 'integer'
-      },
-      id => {
-        default => '',
-        description => '',
-        length => '',
-        nullable => 0,
-        tag => undef,
-        type => 'serial'
-      },
-      parent => {
-        default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'children',
-          table => 'Interface'
-        },
-        nullable => 0,
-        tag => undef,
-        type => 'integer'
-      }
-    },
-    description => 'Dependency relationship between two interfaces. Provides a basis for topology information',
-    has_history => 0,
-    index => [],
-    isjoin => '1',
-    label => [
-      'parent',
-      'child'
-    ],
-    primary_key => 'id',
-    unique => [
-      [
-        'parent',
-        'child'
-      ]
-    ],
-    views => {
-      all => [
-        'parent',
-        'child'
-      ],
-      brief => [
-        'parent',
-        'child'
-      ]
-    }
-  },
   InterfaceVlan => {
     columns => {
       id => {
@@ -3568,7 +3654,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       interface => {
         default => '',
@@ -3644,7 +3730,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       ip => {
         default => '',
@@ -3771,7 +3857,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -3801,6 +3887,19 @@ $meta = {
         nullable => 0,
         tag => 'Last Seen',
         type => 'timestamp'
+      },
+      natted_to => {
+        default => '',
+        description => 'Private address to which this public address is natted to.',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'public_addresses',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => 'Natted To',
+        type => 'integer'
       },
       owner => {
         default => '',
@@ -3966,7 +4065,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       name => {
         default => '',
@@ -4007,7 +4106,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -4046,6 +4145,78 @@ $meta = {
       ],
       brief => [
         'name'
+      ]
+    }
+  },
+  L3Dep => {
+    columns => {
+      child => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'parents',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      manual => {
+        default => '',
+        description => 'Indicates that this relationship was set manually and should not be modified by an automated process',
+        length => '',
+        nullable => 0,
+        tag => 'Manual?',
+        type => 'bool'
+      },
+      parent => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'children',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      }
+    },
+    description => 'Layer 3 relationship.  Links two Ipblock objects',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'parent',
+      'child'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'parent',
+        'child'
+      ]
+    ],
+    views => {
+      all => [
+        'parent',
+        'child',
+        'manual',
+      ],
+      brief => [
+        'parent',
+        'child'
       ]
     }
   },
@@ -4126,7 +4297,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -4180,7 +4351,20 @@ $meta = {
         nullable => 1,
         tag => 'Position',
         type => 'varchar'
-      }
+      },
+      room => {
+        default => '',
+        description => 'Room where person is located, if available',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'people',
+          table => 'Room'
+        },
+        nullable => 1,
+        tag => 'Room',
+        type => 'integer'
+      },
     },
     description => 'Information about an individual',
     has_history => 1,
@@ -4230,8 +4414,8 @@ $meta = {
   PhysAddr => {
     columns => {
       address => {
-        default => 'A 48 bit MAC address in Hexadecimal digits (with no delimiters)',
-        description => '',
+        default => '',
+        description => 'A 48 bit MAC address in Hexadecimal digits (with no delimiters)',
         length => '128',
         nullable => 0,
         tag => 'Address',
@@ -4251,7 +4435,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       last_seen => {
         default => '',
@@ -4263,7 +4447,7 @@ $meta = {
       },
       static => {
         default => '',
-        description => 'If this value is set, the address is considered permanent and should not be removed, even if it has not been seen in the networ for a given amount of time',
+        description => 'If this value is set, the address is considered permanent and should not be removed, even if it has not been seen in the network for a given amount of time',
         length => '',
         nullable => 0,
         tag => 'Static?',
@@ -4321,7 +4505,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -4362,7 +4546,7 @@ $meta = {
       },
       type => {
         default => '',
-        description => 'Product Type',
+        description => 'Product Type. Types of network products include routers, switches, hubs, etc.',
         length => '',
         linksto => {
           cascade => 'Fail',
@@ -4417,7 +4601,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -4496,7 +4680,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       name => {
         default => '',
@@ -4537,7 +4721,8 @@ $meta = {
     ],
     isjoin => '0',
     label => [
-      'name'
+      'name',
+      'zone',
     ],
     primary_key => 'id',
     unique => [
@@ -4570,7 +4755,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       ipblock => {
         default => '',
@@ -4663,7 +4848,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       ttl => {
         default => '',
@@ -4717,7 +4902,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       os => {
         default => '',
@@ -4799,7 +4984,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       preference => {
         default => '',
@@ -4869,7 +5054,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       nsdname => {
         default => '',
@@ -4941,7 +5126,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       ipblock => {
         default => '',
@@ -5014,7 +5199,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       port => {
         default => '',
@@ -5113,7 +5298,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       rr => {
         default => '',
@@ -5179,7 +5364,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       name => {
         default => '',
@@ -5243,7 +5428,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       name => {
         default => '',
@@ -5294,7 +5479,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -5394,7 +5579,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -5519,7 +5704,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -5592,7 +5777,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -5641,7 +5826,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       subnet => {
         default => '',
@@ -5711,7 +5896,7 @@ $meta = {
         description => 'VLAN group to which this VLAN belongs',
         length => '',
         linksto => {
-          cascade => 'Delete',
+          cascade => 'Nullify',
           method => 'vlans',
           table => 'VlanGroup'
         },
@@ -5725,7 +5910,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -5804,7 +5989,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
@@ -5896,7 +6081,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
-        type => 'serial'
+        type => 'integer'
       },
       info => {
         default => '',
