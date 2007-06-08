@@ -176,15 +176,15 @@ if ( $action eq "discover" ){
 }elsif ( $action eq "update" ){
 
     # Add a string log appender 
-    # Notice that I intentionally undef the object in order to call DESTROY and make sure the string
-    # is not being used (wasting memory) except when this component is called
+    # Notice that we intentionally "eradicate" the appender and make sure the string
+    # is not being used (wasting memory) except when this component is called.
+    # We look it up before creating it in case this process ended abruptly earlier.
     $logger = Netdot->log->get_logger('Netdot::Model::Device');
     if ( $logstr = Log::Log4perl::appender_by_name('updatedevice.html') ){
-	undef($logstr);
+	Log::Log4perl->eradicate_appender('updatedevice.html');
     }
     $logstr = Netdot::Util::Log->new_appender('String', name=>'updatedevice.html');
     $logger->add_appender($logstr);
-    
     
     if ( $insert ){
 	%argv = %{$session->{argv}};
@@ -379,6 +379,6 @@ if ( $action eq "discover" ){
 
 <%cleanup>
     if ( defined $logstr ){
-	undef($logstr);
+        Log::Log4perl->eradicate_appender('updatedevice.html')
     }
 </%cleanup>
