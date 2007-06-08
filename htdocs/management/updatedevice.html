@@ -194,10 +194,13 @@ if ( $action eq "discover" ){
 	    unless ( $o = Device->retrieve($argv{device}) ){
 		$m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
 	    }
+	    
 	    eval {
-		$o->snmp_update(info         => $argv{info}, 
-				adds_ubnets  => $add_subnets, 
-				subs_inherit => $subs_inherit);
+		Netdot::Model->do_transaction( sub{ 
+		    return $o->snmp_update(info         => $argv{info}, 
+					   adds_ubnets  => $add_subnets, 
+					   subs_inherit => $subs_inherit) 
+		    } );
 	    };
 	    if ( my $e = $@ ){
 		$m->comp('/generic/error.mhtml', error=>$e);

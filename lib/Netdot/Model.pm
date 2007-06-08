@@ -382,16 +382,23 @@ sub do_transaction {
 	$self->dbi_commit;
     };
     if ( my $e = $@ ) {
+        $self->clear_object_index;
 	eval { $self->dbi_rollback; };
 	my $rollback_error = $@;
 	if ( $rollback_error ){
 	    $self->throw_fatal("Transaction aborted: $e; "
 				. "(Rollback failed): $rollback_error\n");
-        }else {
-            $self->throw_user("Transaction aborted " 
-			       . "(Rollback successful): $e\n");
-        }
-        $self->clear_object_index;
+        }else{
+	    if ( ref($error) =~ /Netdot::Util::Exception/  &&
+		 $e->isa_netdot_exception('Fatal') ){
+		# Rethrow
+		$self->throw_fatal("Transaction aborted " 
+				   . "(Rollback successful): $e\n");
+	    }else{
+		$self->throw_user("Transaction aborted " 
+				  . "(Rollback successful): $e\n");
+	    }
+	}
         return;
     }
     wantarray ? @result : $result[0];

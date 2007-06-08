@@ -136,7 +136,8 @@ EOF
     }
  
 }elsif( $intadd ){
-    eval { Device->add_interfaces($id, $intaddnum) };
+    $o = Device->retrieve($id);
+    eval { $o->add_interfaces($intaddnum) };
     if ( my $e = $@ ){
 	$m->comp('/generic/error.mhtml', error=>$e);	
     }
