@@ -1720,11 +1720,11 @@ sub snmp_update {
  	# Get old Interfaces (if any).
  	my ( %oldifs, %oldifsbynumber, %oldifsbyname );
 	
-	# Check if we already have it
-	# Try to solve the problem with devices that change ifIndex:
-
+	##############################################
+	# Try to solve the problem with devices that change ifIndex
+	# We use the name as the most stable key to identify interfaces
 	my %tmpifs;
-	$tmpifs{tmp}++;
+	$tmpifs{tmp}++; # Just so we can start the loop
 	while ( keys %tmpifs ){
 	    delete $tmpifs{tmp};
 
@@ -1741,11 +1741,8 @@ sub snmp_update {
 	    }
 	    
 	    foreach my $newif ( sort keys %{ $info->{interface} } ) {
-		
-		# $newif is also the ifIndex
 		my $newname   = $info->{interface}->{$newif}->{name};
 		my $newnumber = $info->{interface}->{$newif}->{number};
-		
 		my $oldif;
 		if ( defined $newname && ($oldif = $oldifsbyname{$newname}) ){
 		    # Found one with the same name
