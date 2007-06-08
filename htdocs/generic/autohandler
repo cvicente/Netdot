@@ -52,12 +52,9 @@ my $SECTION = "Generic";
 
     <div class="containerbody">
 
-    <p><b>Note:</b> These functions do not perform any validation
-    checking. They are intended to provide direct access to the
-    database.</p>
-    <p><b>Do not edit anything here</b> unless you know what you are doing.</p>
-%
-%     map { push @t, $_ unless ($_ =~ /_history/ || $_ eq "Meta") } sort $ui->meta->get_tables;
+    <p>From the menus below, select the table you want to work with to either search, add or browse records.
+%     push @t, 'Select table';
+%     map { push @t, $_ unless ($_ =~ /_history/) } sort $ui->meta->get_table_names;
 %
 
     </div> <!-- close containerbody -->
@@ -66,13 +63,12 @@ my $SECTION = "Generic";
     <p>
     <fieldset class="small">
         <legend>Search</legend>
-        <form action="search_obj.html" method="POST">
-            <select name="table">
+        <form action="search_obj.html" method="POST" name="search_form">
+            <select name="table" onChange="document.search_form.submit()">
 %       foreach my $t (@t) {
                 <option><% $t %></option>
 %       }
             </select>
-            <input name="submit" value="Go" type="submit">
         </form>
     </fieldset>
     </p>
@@ -80,13 +76,12 @@ my $SECTION = "Generic";
     <p>
     <fieldset class="small">
         <legend>Add</legend>
-        <form action="edit.html" method="POST">
-            <select name="table">
+        <form action="edit.html" method="POST" name="add_form">
+            <select name="table" onChange="document.add_form.submit()">
 %       foreach my $t (@t) {
                 <option><% $t %></option>
 %       }
             </select>
-            <input name="submit" value="Go" type="submit">
         </form>
     </fieldset>
     </p>
@@ -94,13 +89,12 @@ my $SECTION = "Generic";
     <p>
     <fieldset class="small">
         <legend>Browse</legend>
-        <form action="browse.html" method="POST">
-            <select name="table">
+        <form action="browse.html" method="POST" name="browse_form">
+            <select name="table" onChange="document.browse_form.submit()">
 %       foreach my $t (@t) {
                 <option><% $t %></option>
 %       }
             </select>
-            <input name="submit" value="Go" type="submit">
         </form>
     </fieldset>
     </p>
@@ -110,6 +104,6 @@ my $SECTION = "Generic";
 </div> <!-- close sectiontools -->
 
 % if ( $m->fetch_next ){
-%  $m->call_next;
+%  $m->call_next();
 % }
 
