@@ -1,0 +1,115 @@
+# 
+# Generate various text files and copy them to their
+# corresponding locations
+#
+
+# Provide a file where variables are declared 
+include make.vars
+
+
+usage:
+	@echo
+	@echo "usage: (short method):"
+	@echo 
+	@echo "make all"
+	@echo "make install"
+	@echo 
+	@echo "(more specific):"
+	@echo 
+	@echo "make <target>"
+	@echo 
+	@echo "where <target> may be one of:"
+	@echo
+	@echo "docs:           generate all the documentation-related text files"
+	@echo "nagios:         generate Nagios config file(s)"
+	@echo "sysmon:         generate Sysmon config file(s)"
+	@echo ""
+	@echo "install-docs:   copy documentation files in their respective places"
+	@echo "install-nagios: copy nagios config files in appropiate machine and"
+	@echo "                reload the daemon"
+	@echo "install-sysmon: copy sysmon config files in appropiate machine and"
+	@echo "                reload the daemon"
+
+all:	docs nagios sysmon
+
+docs:	devices contacts circuits master
+
+sysmon: mk.sysmon
+
+nagios: mk.nagios
+
+rancid: mk.rancid
+
+install: install-docs install-nagios install-sysmon
+
+devices:
+	@echo
+	@echo "Generating files about devices";
+	$(PERL) $(DEVICES)
+
+contacts:
+	@echo
+	@echo "Generating files about contacts";
+	$(PERL) $(CONTACTS)
+
+master:
+	@echo
+	@echo "Generating master.cnf";
+	$(PERL) $(MASTER)
+
+circuits:
+	@echo
+	@echo "Generating circuits.txt";
+	$(PERL) $(CIRCUITS)
+
+mk.sysmon:
+	@echo
+	@echo "Generating Sysmon config";
+	$(PERL) $(SYSMON)
+
+mk.nagios:
+	@echo
+	@echo "Generating Nagios configs";
+	$(PERL) $(NAGIOS)
+
+mk.rancid:
+	@echo
+	@echo "Generating Rancid configs";
+	$(PERL) $(RANCID)
+
+install-docs:
+	@echo
+	@echo "Sending docs to $(DOCSHOST)";
+	for i in $(DOCSDIR)/$(DOCSFILES); do \
+	  scp $(DIR)/$(DOCSDIR)/$$i root@$(DOCSHOST):$(DOCSINSTALLDIR)/$$i ; \
+	done
+
+install-sysmon:
+	@echo
+	@echo "Sending sysmon config to $(SYSMONHOST)";
+	cd $(SYSMONDIR); for i in $(SYSMONFILES); do \
+	  scp $$i root@$(SYSMONHOST):$(SYSMONINSTALLDIR)/$$i ; \
+	done
+	@echo
+	@echo "Reloading sysmond on $(SYSMONHOST)";
+	ssh -x root@$(SYSMONHOST) /etc/init.d/sysmon restart &
+
+install-nagios:
+	@echo
+	@echo "Sending Nagios config files to $(NAGIOSHOST)"; 
+	cd $(NAGIOSDIR); for i in $(NAGIOSFILES); do \
+	  scp $$i root@$(NAGIOSHOST):$(NAGIOSINTSTALLDIR)/$$i ; \
+	done
+	@echo
+	@echo "Creating RRD files on $(NAGIOSHOST)";
+	ssh -x root@$(NAGIOSHOST) /usr/local/nagios/apan/setup-rrd.pl
+	@echo
+	@echo "Reloading Nagios on $(NAGIOSHOST)";
+	ssh -x root@$(NAGIOSHOST) /etc/init.d/nagios reload &
+
+install-rancid:
+	@echo
+	@echo "Sending RANCID configs to $(RANCIDHOST)";
+	cd $(RANCIDDIR); for i in $(RANCIDFILES); do \
+	  scp $$i root@$(RANCIDHOST):$(RANCIDINSTALLDIR)/$$i ; \
+	done
