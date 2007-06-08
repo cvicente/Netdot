@@ -320,7 +320,7 @@ sub update_ip {
     if ( $ipobj = Ipblock->search(address=>$address)->first ){
 
 	# update
-	$logger->info(sprintf("%s: IP %s/%s exists. Updating", 
+	$logger->debug(sprintf("%s: IP %s/%s exists. Updating", 
 			      $host, $address, $prefix));
 	
 	eval {

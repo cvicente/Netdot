@@ -1222,7 +1222,7 @@ sub arp_update {
     # Measure only db update time
     my $start = time;
 
-    $logger->info("$host: Updating ARP cache");
+    $logger->debug("$host: Updating ARP cache");
     
     # Create ArpCache object
     my $ac = ArpCache->insert({device  => $self,
@@ -1304,7 +1304,7 @@ sub fwt_update {
     # Measure only db update time
     my $start = time;
 
-    $logger->info("$host: Updating Forwarding Table (FWT)");
+    $logger->debug("$host: Updating Forwarding Table (FWT)");
     
     # Create FWTable object
     my $fw = FWTable->insert({device  => $self,
@@ -1543,7 +1543,7 @@ sub update_bgp_peering {
     if ( $p ){
 	# Update in case anything has changed
 	$p->update(\%pstate);
-	$logger->info(sprintf("%s: Updated Peering with: %s. ", $host, $entity->name));
+	$logger->debug(sprintf("%s: Updated Peering with: %s. ", $host, $entity->name));
 	
     }else{
 	# Peering Doesn't exist.  Create.
@@ -2074,7 +2074,8 @@ sub add_interfaces {
     my $start;
     my $ints = $self->ints_by_number;
     if ( defined $ints && scalar @$ints ){
-	$start = int ( $ints->[0]->number );
+ 	my $lastidx = @$ints - 1;
+	$start = int ( $ints->[$lastidx]->number );
     }else{
 	$start = 0;
     }

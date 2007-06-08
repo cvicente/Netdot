@@ -1411,7 +1411,7 @@ sub update_a_records {
 			}else{
 			    # Just update the current name, then
 			    $rr->update(\%rrstate);
-			    $logger->info(sprintf("%s: Updated DNS record for %s: %s", 
+			    $logger->debug(sprintf("%s: Updated DNS record for %s: %s", 
 						  $host, $self->address, $name));
 			}
 		    }
