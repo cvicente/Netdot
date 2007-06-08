@@ -508,11 +508,11 @@ sub get_snmp_info {
 
 	# IP addresses and masks 
 	foreach my $ip ( keys %{ $hashes{'ip_index'} } ){
-	    if ( !Ipblock->validate($ip) ){
-		$logger->debug("Device::get_snmp_info: $name ($ip): Invalid IP: $ip");
-		next;
-	    }	
 	    if ( $hashes{'ip_index'}->{$ip} eq $iid ){
+		if ( !Ipblock->validate($ip) ){
+		    $logger->debug("Device::get_snmp_info: $name ($ip): Invalid IP: $ip");
+		    next;
+		}	
 		$dev{interface}{$ifindex}{ips}{$ip}{address} = $ip;
 		if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
 		    $dev{interface}{$ifindex}{ips}{$ip}{mask} = $mask;
@@ -1759,7 +1759,8 @@ sub snmp_update {
 				      $host, $newnumber, 
 				      $info->{interface}->{$newif}->{name}));
 		
-		my %args = (device      => $self, number=>$newif, 
+		my %args = (device      => $self, 
+			    number      => $newif, 
 			    name        => $info->{interface}->{$newif}->{name},
 			    );
 		# Make sure we can write to the description field when
@@ -1915,7 +1916,7 @@ sub snmp_update {
     }
 
     my $end = time;
-    $logger->info(sprintf("%s: SNMP update completed in %d seconds", 
+    $logger->debug(sprintf("%s: SNMP update completed in %d seconds", 
 			  $host, ($end-$start)));
 
     return $self;

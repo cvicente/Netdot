@@ -1618,7 +1618,7 @@ sub validate {
     eval {
 	$self->_prevalidate($address, $prefix);
     };
-    if ( my $e = @_ ){
+    if ( my $e = $@ ){
 	return 0;
     }
     return 1;

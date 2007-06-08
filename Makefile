@@ -47,7 +47,7 @@ FMOD = 0644
 XMOD = 0744
 # If mason ever decides to use different directories in its data_dir there will
 # be trouble.
-DIR = bin doc htdocs/cable_plant htdocs/css htdocs/generic htdocs/help htdocs/img htdocs/img/graphs htdocs/java_script htdocs/management htdocs/operations htdocs/reports htdocs/masondata/obj htdocs/masondata/cache tmp lib etc import export
+DIR = bin doc htdocs tmp tmp/sessions /tmp/sessions/locks lib etc import export
 
 .PHONY: tests bin doc htdocs lib etc
 
@@ -81,12 +81,14 @@ tests:
 	perl -M'Apache::Session 1.6' -e 1
 	perl -MApache::DBI -e 1
 	perl -MURI::Escape -e 1
-	perl -MDBIx::DBSchema -e 1
 	perl -MDBIx::DataSource -e 1
+	perl -M'GraphViz 2.02' -e 1
+	perl -M'SQL::Translator 0.07' -e 1
 	perl -MSNMP::Info -e 1
 	perl -MNetAddr::IP -e 1
 	perl -M'Apache2::SiteControl 1.0' -e 1
-	perl -M'GraphViz 2.02' -e 1
+	perl -M'Log::Dispatch' -e 1
+	perl -M'Log::Log4perl' -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi
@@ -102,18 +104,12 @@ dir:
 	       mkdir -m $(DMOD) -p $(PREFIX)/$$dir ; \
 	    fi ; \
 	done
-	@echo "Hacking together mason permissions fix..."
-	touch $(PREFIX)/htdocs/masondata/obj/.__obj_create_marker
-	chown -R $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/htdocs/masondata
-	chmod 0750 $(PREFIX)/htdocs/masondata
-	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/tmp
+	chown -R $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/tmp
 	chmod 750 $(PREFIX)/tmp
-# Graphs can be updated dynamically so apache needs +w
-	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/htdocs/img/graphs
-	chmod 0750 $(PREFIX)/htdocs/img/graphs
 
 htdocs:
-	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@ 
+	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) \
+	APACHEUSER=$(APACHEUSER) APACHEGROUP=$(APACHEGROUP) DIR=$@ 
 
 doc:
 	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
@@ -122,7 +118,7 @@ lib:
 	cd $@ ; make all PREFIX=$(PREFIX) NVPREFIX=$(NVPREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
 
 bin:
-	cd $@; make install PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
+	cd $@; make install PREFIX=$(PREFIX) PERL=$(PERL) DIR=$@
 
 etc:
 	cd $@; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
@@ -132,11 +128,16 @@ _import:
 	cd import ; make install PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=import
 
 _export:
+	@echo "Going into $@..."
 	cd export ; make install PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=export
 
 dropdb: 
 	@echo "WARNING:  This will erase all data in the database!"
 	cd bin ; make dropdb FMOD=$(FMOD) 
+
+genschema: 
+	@echo "Generating Database Schema"
+	cd bin ; make genschema FMOD=$(FMOD) 
 
 installdb: 
 	echo $(PREFIX) > ./.prefix

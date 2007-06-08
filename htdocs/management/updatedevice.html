@@ -23,7 +23,7 @@ $owner           => undef
 $used_by         => undef
 $site            => undef
 $contacts        => undef
-$addsubnets      => undef
+$add_subnets     => undef
 $subs_inherit    => undef
 </%args>
 %
@@ -48,11 +48,8 @@ my $webuser;
 my $info;
 my $default_owner;
 my $default_cl;
-
-# Add a string log appender 
-my $logstr = Netdot::Util::Log->new_appender('String', name=>'updatedevice.html');
-my $logger = Netdot->log->get_logger('Netdot::Model::Device');
-$logger->add_appender($logstr);
+my $logger;
+my $logstr;
 
 print "ARGS contains: <pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
@@ -178,6 +175,17 @@ if ( $action eq "discover" ){
     
 }elsif ( $action eq "update" ){
 
+    # Add a string log appender 
+    # Notice that I intentionally undef the object in order to call DESTROY and make sure the string
+    # is not being used (wasting memory) except when this component is called
+    $logger = Netdot->log->get_logger('Netdot::Model::Device');
+    if ( $logstr = Log::Log4perl::appender_by_name('updatedevice.html') ){
+	undef($logstr);
+    }
+    $logstr = Netdot::Util::Log->new_appender('String', name=>'updatedevice.html');
+    $logger->add_appender($logstr);
+    
+    
     if ( $insert ){
 	%argv = %{$session->{argv}};
 	print "argv contains: <pre>",  Dumper(%argv), "</pre>" if $DEBUG;
@@ -188,18 +196,18 @@ if ( $action eq "discover" ){
 	    }
 	    eval {
 		$o->snmp_update(info         => $argv{info}, 
-				addsubnets   => $addsubnets, 
+				adds_ubnets  => $add_subnets, 
 				subs_inherit => $subs_inherit);
 	    };
 	    if ( my $e = $@ ){
 		$m->comp('/generic/error.mhtml', error=>$e);
 	    }
 	}else{
-	    $argv{owner}        = $owner          ||  0;
-	    $argv{used_by}      = $used_by        ||  0;
-	    $argv{site}         = $site           ||  0;
-	    $argv{contacts}     = $contacts       ||  "";
-	    $argv{community}    = $argv{info}->{community};
+	    $argv{owner}      = $owner          ||  0;
+	    $argv{used_by}    = $used_by        ||  0;
+	    $argv{site}       = $site           ||  0;
+	    $argv{contacts}   = $contacts       ||  "";
+	    $argv{community}  = $argv{info}->{community};
 	    eval {
 		$o = Device->insert(\%argv);
 	    };
@@ -257,7 +265,7 @@ if ( $action eq "discover" ){
 %                }
 %          }
            </select>
-           <a href="#" onClick="openinsertwindow('table=Entity&select_id=owner')">[new]</a>
+           <a href="#" onClick="openinsertwindow('table=Entity&select_id=owner&selected=1&dowindow=1')">[new]</a>
 </&>
 % push( @cell_data, $_ );
 
@@ -275,7 +283,7 @@ if ( $action eq "discover" ){
 %                }
 %          }
            </select>
-           <a href="#" onClick="openinsertwindow('table=Entity&select_id=used_by')">[new]</a>
+           <a href="#" onClick="openinsertwindow('table=Entity&select_id=used_by&selected=1&dowindow=1')">[new]</a>
 </&>
 % push( @cell_data, $_ );
 
@@ -321,9 +329,9 @@ if ( $action eq "discover" ){
 %    push( @field_headers, "Add new Subnets (if any)?:" );
 <&| "/generic/HERE.mhtml" &>
 %    if ( $ui->{config}->{ADDSUBNETS} ){
-	<input type="checkbox" name="addsubnets" checked>
+	<input type="checkbox" name="add_subnets" checked>
 %    }else{
-	<input type="checkbox" name="addsubnets">
+	<input type="checkbox" name="add_subnets">
 %    }
 </&>
 %    push( @cell_data, $_ );
@@ -352,7 +360,7 @@ if ( $action eq "discover" ){
 %      # We filter out the log output to get only lines belonging to this device
 %      # This is because some other process might be logging to this same logger
 %      ##########################################################################
-%      my $log    = $logstr->string();
+%      my $log = $logstr->string() ;
 %      my @lines  = split /\n/, $log;
 %      my @output = grep /$fqdn/, @lines;
 %      if ( @output ){
@@ -369,3 +377,8 @@ if ( $action eq "discover" ){
  </div>
 </div>
 
+<%cleanup>
+    if ( defined $logstr ){
+	undef($logstr);
+    }
+</%cleanup>

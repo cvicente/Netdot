@@ -8,6 +8,7 @@
 #
 use lib "<<Make:LIB>>";
 use Netdot::Model::Device;
+use Netdot::Util::Misc;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
 use Log::Log4perl::Level;
@@ -163,6 +164,7 @@ if ( $host ){
 $logger->info(sprintf("Total runtime: %s secs\n", (time - $start)));
 
 if ( $EMAIL ){
-    Netdot::Util::Misc->send_mail(subject=>"Netdot Device Updates", body=>$logstr->string);
+    my $util = Netdot::Util::Misc->new();
+    $util->send_mail(subject=>"Netdot Device Updates", body=>$logstr->string);
 }
 

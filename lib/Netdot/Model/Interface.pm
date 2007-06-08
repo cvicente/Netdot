@@ -3,7 +3,7 @@ package Netdot::Model::Interface;
 use base 'Netdot::Model';
 use warnings;
 use strict;
-use Carp;
+use Data::Dumper;
 
 use strict;
 
@@ -95,7 +95,7 @@ sub delete {
   Arguments:  
     Hash with the following keys:
     info          - Hash ref with SNMP info about interface
-    addsubnets    - Whether to add subnets automatically
+    add_subnets   - Whether to add subnets automatically
     subs_inherit  - Whether subnets should inherit info from the Device
   Returns:    
     
@@ -223,7 +223,7 @@ sub snmp_update {
 	       
 	    $self->update_ip( address      => $address,
 			      mask         => $mask,
-			      addsubnets   => $args{addsubnets},
+			      add_subnets  => $args{add_subnets},
 			      subs_inherit => $args{subs_inherit} );
 	}
     } 
@@ -238,7 +238,7 @@ sub snmp_update {
     Hash with the following keys:
     address      - Dotted quad ip address
     mask         - Dotted quad mask
-    addsubnets   - Flag.  Add subnet if necessary (only for routers)
+    add_subnets  - Flag.  Add subnet if necessary (only for routers)
     subs_inherit - Flag.  Have subnet inherit some Device information
   Returns:
     Updated Ipblock object
@@ -259,26 +259,28 @@ sub update_ip {
     
     my $isrouter = 0;
     if ( $self->device->product && 
-	 $self->device->product->type eq "Router" ){
+	 $self->device->product->type->name eq "Router" ){
 	$isrouter = 1;
     }
     
     # If given a mask, we might have to add subnets and stuff
     if ( my $mask = $args{mask} ){
-	if ( $args{addsubnets} && $isrouter ){
+	if ( $args{add_subnets} && $isrouter ){
 	    # Create a subnet if necessary
+
 	    my ($subnetaddr, $subnetprefix) = Ipblock->get_subnet_addr(address => $address, 
 								       prefix  => $mask );
+	    $logger->debug("Subnet address: $subnetaddr. Subnet prefix: $subnetprefix");
+
 	    if ( $subnetaddr ne $address ){
-		if ( my $subnet = Ipblock->search(address=>$subnetaddr, 
-						  prefix=>$subnetprefix)->first ){
+		if ( my $subnet = Ipblock->search(address => $subnetaddr, 
+						  prefix  => $subnetprefix)->first ){
 		    
 		    $logger->debug(sprintf("%s: Block %s/%s already exists", 
 					   $host, $subnetaddr, $subnetprefix));
 		    
 		    # Make sure that the status is 'Subnet'
-		    $subnet->update({status=>'Subnet'}) 
-			if ( $subnet->status->name ne 'Subnet' );
+		    $subnet->update({status=>'Subnet'}) if ( $subnet->status->name ne 'Subnet' );
 
 		}else{
 		    # Do not bother inserting loopbacks
@@ -287,6 +289,8 @@ sub update_ip {
 			return;
 		    }
 		    
+		    $logger->debug(sprintf("Subnet %s/%s does not exist.  Inserting.", $subnetaddr, $subnetprefix));
+
 		    my %state = ( address     => $subnetaddr, 
 				  prefix      => $subnetprefix, 
 				  status      => "Subnet" );

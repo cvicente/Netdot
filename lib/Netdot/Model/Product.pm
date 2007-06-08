@@ -57,7 +57,7 @@ sub find_or_create {
 	unless defined($sysobjectid);
     
     if ( my $prod = $class->search( sysobjectid => $sysobjectid )->first ) {
-	$logger->info(sprintf("Product::find_or_create: Product known as %s", $prod->name));
+	$logger->debug(sprintf("Product known as %s", $prod->name));
 	return $prod;
     }else{
 	###############################################
@@ -76,12 +76,12 @@ sub find_or_create {
 	    $logger->info(sprintf("Product::find_or_create: Manufacturer OID matches %s", 
 				  $ent->name));
 	}else{
-	    $logger->info(sprintf("Product::find_or_create: Entity with Enterprise OID %s not found. Creating.", 
+	    $logger->info(sprintf("Entity with Enterprise OID %s not found. Creating.", 
 				  $oid));
 	    my $etype   = EntityType->search(name=>"Manufacturer")->first || 0;
 	    my $entname = $manufacturer || $oid;
 	    $ent = Entity->insert({ name => $entname, oid => $oid, type => $etype });
-	    $logger->info("Product::find_or_create: Inserted new Entity: $entname.");
+	    $logger->info("Inserted new Entity: $entname.");
 	}
 	
 	my $ptype;
