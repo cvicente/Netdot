@@ -84,10 +84,21 @@ if ( defined($object) && scalar @$object ){
 	##############################################
 	# If no sort arg, sort by actual label
 	# 
-    }else{	
- 	map { $objindex{$i++} = $_ } map  { $_->[0] }
- 	sort { $a->[1] cmp $b->[1] }
-	map { [$_ , $_->get_label] } @{ $object };
+    }else{
+	# Be smart about sorting numerically or alphabetically
+	my @lbls;
+	my $alpha = 0;
+	foreach my $obj ( @{ $object } ){
+	    my $lbl = $obj->get_label;
+	    $alpha = 1 if ( $lbl =~ /\W+/ );
+	    push @lbls, [$obj , $lbl];
+	}
+	if ( $alpha ){ 
+	    @lbls = sort { $a->[1] cmp $b->[1] } @lbls; 
+	}else{
+	    @lbls = sort { $a->[1] <=> $b->[1] } @lbls; 
+	}
+ 	map { $objindex{$i++} = $_ } map  { $_->[0] } @lbls;
     }
     # Total number of items
     $total = $i;
