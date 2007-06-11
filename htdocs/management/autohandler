@@ -65,6 +65,7 @@ if( !$showheader ) {
 	    attribute    => $PAGE_ATTRIBUTE,
 	    sub_sections => [
 		{ section => 'DEVICE',   title => 'Devices' },
+		{ section => 'VLANS',    title => 'VLANs' },
 		{ section => 'ADDRESS',  title => 'Address Space' },
 		{ section => 'SERVICES', title => 'Services' },
 	    ]
@@ -101,7 +102,7 @@ if( !$showheader ) {
                 <input type="hidden" name="_action" value="SEARCH_ADDR">
                 </p>
             </form> 
-            <form action="mac-ws.html" method="POST">
+            <form action="mac.html" method="POST">
                 <p>
                 <label for="search">MAC:</label>
                 <input type="text" name="search" class="txt" value=""> 
@@ -177,6 +178,40 @@ if( !$showheader ) {
                 <input type="text" name="allocate" class="txt" value=""> 
                 <input name="submit" value="Add" class="btn" type="submit">
                 <input type="hidden" name="_action" value="ALLOCATE">
+                </p>
+            </form>
+        </fieldset>
+
+%
+% } elsif ($page eq "VLANS") {
+%
+        <fieldset class="medium">
+            <legend>Search</legend>
+            <form action="vlan.html" method="POST">
+                <p>
+                <label for="Find">Vlan:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="Find" class="btn" type="submit">
+                <input type="hidden" name="_action" value="SEARCH_VLAN">
+                </p>
+            </form>
+            <form action="vlan.html" method="POST">
+                <p>
+                <label for="Find">Vlan Group:</label>
+                <input type="text" name="search" class="txt" value=""> 
+                <input name="submit" value="Find" class="btn" type="submit">
+                <input type="hidden" name="_action" value="SEARCH_VLANGROUP">
+                </p>
+            </form>
+        </fieldset>
+        <fieldset class="medium">
+            <legend>Add</legend>
+            <form action="vlan.html" method="POST">
+                <p>
+                <label for="allocate">New Vlan Group:</label>
+                <input type="text" name="new" class="txt" value=""> 
+                <input name="submit" value="Add" class="btn" type="submit">
+                <input type="hidden" name="_action" value="INSERT">
                 </p>
             </form>
         </fieldset>
