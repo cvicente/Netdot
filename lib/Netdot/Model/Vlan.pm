@@ -68,15 +68,15 @@ sub update{
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
     
-    # We'll reassign only if vid is changing and if vlangroup is not the same
-    if ( exists $argv->{vid} && $argv->{vid} != $self->vid 
-	 && !exists($argv->{vlangroup}) ){
+    return $self->SUPER::update($argv);
+
+    # We'll reassign only if vid changed and if vlangroup is not the same
+    if ( exists $argv->{vid} && $argv->{vid} != $self->vid ){
 
 	my $group = $self->_find_group($self->vid);
-	$argv->{vlangroup} = $group unless ( $self->vlangroup == $group->id );
+	$self->SUPER::update({vlangroup=>$group}) unless ( $self->vlangroup == $group->id );
     }
 
-    return $self->SUPER::update($argv);
 }
 
 #########################################################################################

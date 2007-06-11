@@ -3,9 +3,6 @@ package Netdot::Model::Interface;
 use base 'Netdot::Model';
 use warnings;
 use strict;
-use Data::Dumper;
-
-use strict;
 
 my $IPV4 = Netdot->get_ipv4_regex();
 my $IPV6 = Netdot->get_ipv6_regex();
@@ -185,7 +182,7 @@ sub snmp_update {
 	    my $vo;
 	    unless ( $vo = Vlan->search(vid => $vid)->first ){
 		# create
-		$vo = Vlan->insert( { vid => $vid, description => $vname } );
+		$vo = Vlan->insert( { vid => $vid, name => $vname } );
 		$logger->info(sprintf("%s: Inserted VLAN %s", $host, $vo->vid));
 	    }
 	    # Now verify membership

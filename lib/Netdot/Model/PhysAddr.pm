@@ -295,7 +295,7 @@ sub canonicalize {
     $address =~ s/[:\.\-]//g;
     $address = uc($address);
     unless ( $self->validate( $address ) ){
-	$self->_croak("Invalid Address: $address");	
+	$self->throw_user("Invalid Address: $address");	
     }
     $self->_attribute_store( address => $address );
 }

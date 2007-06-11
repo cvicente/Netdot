@@ -440,10 +440,11 @@ sub db_auto_commit {
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
-    
     $self->set( %$argv ) if ( $argv );
 
     my @changed_keys;
+    my $id = $self->id;
+    my $class = ref($self);
     my $res;
     if ( @changed_keys = $self->is_changed() ){
 	eval {
@@ -457,7 +458,9 @@ sub update {
 	    }
 	    $self->throw_user($e);
 	}
-
+	# For some reason, we (with some classes) get an empty object after updating (weird)
+	# so we re-read the object from the DB to make sure we have the id value below:
+	$self = $class->retrieve($id);
 	$logger->debug( sub { sprintf("Model::update: Updated table: %s, id: %s, fields: %s", 
 				      $self->table, $self->id, (join ", ", @changed_keys) ) } );
     }

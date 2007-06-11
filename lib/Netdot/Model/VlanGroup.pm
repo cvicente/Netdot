@@ -28,10 +28,8 @@ Netdot Vlan Group Class
 
   Arguments:
     Hash ref with field/value pairs
-
   Returns:
     New VlanGroup object
-
   Examples:
     my $newgroup = VlanGroup->insert({name=>$name, start=>$start, end=>$end});
 
@@ -61,10 +59,8 @@ sub insert{
     
   Arguments:
     None
-
   Returns:
     True if successful
-
   Examples:
     VlanGroup->assign_all();
 
@@ -79,12 +75,6 @@ sub assign_all{
 	return;
     }
 
-    my @vlans = Vlan->retrieve_all();
-    unless ( @vlans ){
-	$logger->warn('VlanGroup::assign_all: No vlans to assign to groups');
-	return;
-    }
-    
     foreach my $group ( @groups ){
 	$group->assign_vlans;
     }
@@ -93,31 +83,43 @@ sub assign_all{
 }
 
 =head1 INSTANCE METHODS
+
 =cut
 ####################################################################################
 =head2 assign_vlans - Traverse the list of vlans and assign them to this group
     
   Arguments:
     None
-
   Returns:
-    List of assigned Vlans
-
+    List of member Vlans
   Examples:
     $group->assign_vlans();
 
 =cut
 sub assign_vlans{
-    my ($self) = @_;
+    my $self = shift;
     $self->isa_object_method('assign_vlans');
 
-    my $vlans = Vlan->retrieve_all();
-    
+    # Get a list of my own vlans and index them by id
+    my %myvlans;
+    map { $myvlans{$_->id} = $_ } $self->vlans;
+
     # Assing vlans to this new group
-    while ( my $vlan = $vlans->next ){
+    foreach my $vlan ( Vlan->retrieve_all ){
 	if ( $vlan->vid >= $self->start && $vlan->vid <= $self->end ){
-	    $vlan->update({vlangroup=>$self->id})
-		unless ( $vlan->vlangroup == $self->id );
+	    unless ( $vlan->vlangroup == $self->id ){
+		$vlan->update({vlangroup=>$self->id});
+		$logger->debug(sprintf("VlanGroup: %s: Vlan %s within my range. Updating.", 
+				       $self->name, $vlan->vid));
+	    }
+		
+	}else{
+	    # Remove from my members if necessary
+	    if ( exists $myvlans{$vlan->id} ){
+		$logger->info(sprintf("VlanGroup %s: Vlan %s no longer within my range. Updating.", 
+				      $vlan->vid, $self->name));
+		$vlan->update({vlangroup=>0});
+	    }
 	}
     }
     return $self->vlans;
@@ -140,21 +142,24 @@ sub assign_vlans{
 sub update{
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
-    
-    $self->throw_user('VlanGroup::update: Argument variable must be hash reference')
-	unless ref($argv) eq 'HASH';
-    
+    my $class = ref($self);
     $self->_validate($argv);
+
     my $oldstart = $self->start;
-    my $oldend   = $self->oldend;
+    my $oldend   = $self->end;
+    my $id = $self->id;
 
-    $self->SUPER::update($argv);
-
-    if ( exists $argv->{start} && $argv->{start} != $oldstart || 
-	 exists $argv->{end} && $argv->{end} != $oldstart ){
-	$self->assign_vlans;
+    my $res = $self->SUPER::update($argv);
+    $self = $class->retrieve($id);
+    
+    # For some reason, we get an empty object after updating (weird)
+    # so we re-read the object from the DB to get the comparisons below to work
+    if ( $self->start != $oldstart || $self->end != $oldend ){
+ 	my $name = $self->name;
+ 	$logger->info("VlanGroup $name: Range changed.  Reassigning VLANs.");
+ 	$self->assign_vlans;
     }
-    return $self;
+    return $res;
 }
 ####################################################################################
 #
@@ -192,7 +197,7 @@ sub _validate {
     # Check range validity
     if ( exists $argv->{start} && exists $argv->{end} ){
 	if ( $argv->{start} >= $argv->{end} ){
-	    $class->throw_user("VlanGroup::_validate: start must be lower than end");
+	    $class->throw_user("Invalid range: start must be lower than end");
 	}
 	
 	while ( my $g = $groups->next ){
@@ -205,7 +210,7 @@ sub _validate {
 	    unless ( ($argv->{start} < $g->start && $argv->{end} < $g->start) ||
 		     ($argv->{start} > $g->end && $argv->{end} > $g->end) ){
 		
-		$class->throw_user(sprintf("VlanGroup::_validate: New range %d - %d overlaps with Group %s",
+		$class->throw_user(sprintf("New range: %d-%d overlaps with Group: %s",
 					   $argv->{start}, $argv->{end}, $g->name));
 	    }
 	}
@@ -213,7 +218,7 @@ sub _validate {
     # No negative values
     if ( (exists $argv->{start} && $argv->{start} < 0) 
 	 || (exists $argv->{end} && $argv->{end} < 0)  ){
-	$class->throw_user("VlanGroup::_validate: Neither start nor end can be negative");
+	$class->throw_user("Invalid range: Neither start nor end can be negative");
     }
 
     return 1;

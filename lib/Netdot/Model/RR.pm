@@ -4,9 +4,6 @@ use base 'Netdot::Model';
 use warnings;
 use strict;
 
-use Data::Dumper;
-use strict;
-
 my $logger = Netdot->log->get_logger('Netdot::Model');
 
 =head1 NAME

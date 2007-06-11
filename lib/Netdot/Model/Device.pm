@@ -3,7 +3,6 @@ package Netdot::Model::Device;
 use base 'Netdot::Model';
 use warnings;
 use strict;
-use Data::Dumper;
 use SNMP::Info;
 use Netdot::Util::DNS;
 use POSIX qw(:signal_h WNOHANG EWOULDBLOCK);
