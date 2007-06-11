@@ -84,6 +84,7 @@ sub isa_netdot_exception {
     return Netdot::Util::Exception->isa_netdot_exception(@_);
 }
 
+sub Dump { return Dumper(@_) };
 
 sub get_ipv4_regex { return $IPV4 }
 
