@@ -136,7 +136,7 @@ if ( $host ){
     $logger->info("Updating single device: $host");
     my $dev;
     if ( $INFO ){
-	$dev = Device->discover(host=>$host, %update_args);
+	$dev = Device->discover(name=>$host, %update_args);
     }
     if ( $FWT ){
 	$dev ||= Device->search(name=>$host)->first;

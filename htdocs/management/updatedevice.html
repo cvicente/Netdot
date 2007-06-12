@@ -212,7 +212,7 @@ if ( $action eq "discover" ){
 	    $argv{contacts}   = $contacts       ||  "";
 	    $argv{community}  = $argv{info}->{community};
 	    eval {
-		$o = Device->insert(\%argv);
+		$o = Device->discover(%argv);
 	    };
 	    if ( my $e = $@ ){
 		$m->comp('/generic/error.mhtml', error=>$e);

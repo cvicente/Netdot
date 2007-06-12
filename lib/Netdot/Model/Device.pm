@@ -237,7 +237,7 @@ sub assign_name {
   Arguments:
     Arrayref with Device fields and values, plus:
     contacts    - ContactList object(s) (array or scalar)
-  
+    info        - SNMP information  
   Returns:
     New Device object
 
@@ -830,7 +830,7 @@ sub snmp_update_block {
 	    # Device does not yet exist in DB
 	    my $ip = $devid;
 	    
-	    $class->discover(info=>$info, host=>$ip, %uargs);
+	    $class->discover(info=>$info, name=>$ip, %uargs);
 	    
 	}else{
 	    # We should have a Device id
@@ -869,7 +869,7 @@ sub snmp_update_block {
     
   Arguments:
     Hash containing the following keys:
-    host          Host name (required)
+    name          Host name (required)
     communities   Arrayref of SNMP communities
     version       SNMP version
     timeout       SNMP timeout
@@ -883,29 +883,29 @@ sub snmp_update_block {
   Returns:
     New or existing Device object
   Examples:
-    Device->discover(host=>$hostname, communities=>["public"]);
-    Device->discover(host=>$hostname, info=>$info);
+    Device->discover(name=>$hostname, communities=>["public"]);
+    Device->discover(name=>$hostname, info=>$info);
 
 =cut
 sub discover {
     my ($class, %argv) = @_;
     $class->isa_class_method('discover');
 
-    my $host = $argv{host} || 
-	$class->throw_fatal("Device::discover: Missing required arguments: host");
+    my $name = $argv{name} || 
+	$class->throw_fatal("Device::discover: Missing required arguments: name");
 
     my $info = $argv{info} if defined $argv{info};
     my $dev;
 
-    if ( $dev = Device->search(name=>$host)->first ){
-	$logger->debug("Device::discover: Device $host already exists in DB");
+    if ( $dev = Device->search(name=>$name)->first ){
+	$logger->debug("Device::discover: Device $name already exists in DB");
 	if ( $info ){
 	    $dev->snmp_update(info=>$info);
 	}else{
 	    $dev->snmp_update();
 	}
     }else{
-	$logger->info("Device $host does not yet exist. Inserting.");
+	$logger->info("Device $name does not yet exist. Inserting.");
 	unless ( $info ){
 	    # Get relevant snmp args
 	    my %snmpargs;
@@ -916,7 +916,7 @@ sub discover {
 	}
 	
 	# Set some values in the new Device based on the SNMP info obtained
-	my %devtmp = (name          => $host,
+	my %devtmp = (name          => $name,
 		      snmp_managed  => 1,
 		      canautoupdate => 1,
 		      community     => $info->{community},
@@ -929,6 +929,12 @@ sub discover {
 	    }
 	    if ( $class->_layer_active($info->{layers}, 3) ){
 		$devtmp{collect_arp} = 1;
+	    }
+	}
+	# Catch any other Device fields passed to us
+	foreach my $field ( $class->meta_data->get_column_names ){
+	    if ( defined $argv{$field} && !defined $devtmp{$field} ){
+		$devtmp{$field} = $argv{$field};
 	    }
 	}
 	# Insert the new Device
