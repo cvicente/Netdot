@@ -21,8 +21,19 @@ title   => 'View Object'
 </%attr>
 
 <%init>
+my $DEBUG = 0;
 my($obj, $prevobj );
 my %ftables;
+
+# Some tables have a specific view page. 
+# Point to those when appropriate
+#
+my %viewpage = ( BinFile => "../generic/display_bin.html",
+		 Closet  => "../cable_plant/closet.html",
+		 Ipblock => "../management/ip.html",
+		 Device  => "../management/device.html"  );
+
+my $page = $viewpage{$table} if ( exists $viewpage{$table} );
 
 unless ( $obj = $table->retrieve($id) ){
    $m->comp('error.mhtml', error => "Nonexistent record: $id");
@@ -31,8 +42,6 @@ unless ( $obj = $table->retrieve($id) ){
 my $labelstr  = $obj->get_label;
 my %linksfrom = $table->meta_data->get_links_from;
 my %order     = $table->meta_data->get_column_order;
-
-my $DEBUG = 0;
 
 if ( $DEBUG ){
     print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>';
@@ -113,16 +122,13 @@ if ($view eq 'all' || $view eq "$table"){
     
     foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 	next if ($c eq 'id' || $c eq 'aliases');
-
         my $linkPage;
 	my $ftable = $table->meta_data->get_column($c)->links_to();
         if( defined $ftable ) {
-            $linkPage = 'view.html';
+	    $linkPage = $viewpage{$ftable} || 'view.html';
         }
-	
         my %tmp;
         %tmp = $ui->form_field(object=>$obj, column=>$c, edit=>0, linkPage=>$linkPage);
-
         push( @fields, $tmp{label} );
         push( @data, $tmp{value} );
     }
@@ -135,10 +141,8 @@ if ($view eq 'all' || $view eq "$table"){
               <a href="edit.html?table=<% $table %>">[new]</a>
               <a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
 %	      }
-%         if ( $table eq "Device" ){
-              <a href="../management/device.html?id=<% $obj %>">[custom]</a>
-%         }elsif ( $table eq "Ipblock" ){
-              <a href="../management/ip.html?id=<% $obj %>">[custom]</a>
+%         if ( defined $page ){
+              <a href="<% $page %>?id=<% $obj %>">[custom]</a>
 %         }
           <a href="delete.html?table=<% $table %>&id=<% $obj %>">[delete]</a>
 	</div>
