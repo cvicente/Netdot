@@ -548,7 +548,7 @@ sub get_snmp_info {
 		if ( $sinfo->cisco_comm_indexing ){
 		    my $hvname = $hashes{'v_name'};
 		    foreach my $key ( keys %$hvname ){
-			if ( $key =~ /^(\d+\.$vid)/ ){
+			if ( $key =~ /^(\d+\.$vid)$/ ){
 			    $vname = $hvname->{$key};
 			    last;
 			}

@@ -175,12 +175,19 @@ sub snmp_update {
 	    my $vid   = $newif->{vlans}->{$newvlan}->{vid} || $newvlan;
 	    my $vname = $newif->{vlans}->{$newvlan}->{vname};
 	    my $vo;
-	    unless ( $vo = Vlan->search(vid => $vid)->first ){
+	    my %vdata;
+	    $vdata{vid}   = $vid;
+	    $vdata{name}  = $vname if defined $vname;
+	    if ( $vo = Vlan->search(vid => $vid)->first ){
+		# update in case named changed
+		# (ignore default vlan 1)
+		if ( $vdata{name} ne $vo->name && $vo->vid ne '1' ){
+		    $vo->update(\%vdata);
+		    $logger->debug(sprintf("%s: VLAN %s name updated: %s", $host, $vo->vid, $vo->name));		
+		}
+	    }else{
 		# create
-		my %args;
-		$args{vid}   = $vid;
-		$args{name}  = $vname if defined $vname;
-		$vo = Vlan->insert(\%args);
+		$vo = Vlan->insert(\%vdata);
 		$logger->info(sprintf("%s: Inserted VLAN %s", $host, $vo->vid));
 	    }
 	    # Now verify membership
@@ -195,7 +202,7 @@ sub snmp_update {
 		# insert
 		$iv = InterfaceVlan->insert( \%ivtmp );
 		$logger->info(sprintf("%s: Assigned Interface %s (%s) to VLAN %s", 
-				      $host, $self->number, $self->name, $vo->description));
+				      $host, $self->number, $self->name, $vo->vid));
 	    }
 	}
 	# Remove each vlan membership that no longer exists
