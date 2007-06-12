@@ -539,14 +539,24 @@ sub get_snmp_info {
 	# Vlan info
 	#
 	my ($vid, $vname);
-	# Fix this in SNMP::Info.  Should provide standard method for 
-	# the VLAN name as well (v_name)
 	if ( $vid = $hashes{'i_vlan'}->{$iid} ){
-	    $vname = $hashes{'qb_v_name'}->{$iid} || # Standard MIB
-		$hashes{'v_name'}->{$ifindex}     || # Cisco
-		$vid;                                # Just use the ID as name
+	    $vname = $hashes{'qb_v_name'}->{$vid}; # Standard MIB
+	    unless ($vname){
+		# We didn't get a vlan name in the standard place
+		# Try Cisco location
+		# SNMP::Info should be doing this for me :-(
+		if ( $sinfo->cisco_comm_indexing ){
+		    my $hvname = $hashes{'v_name'};
+		    foreach my $key ( keys %$hvname ){
+			if ( $key =~ /^(\d+\.$vid)/ ){
+			    $vname = $hvname->{$key};
+			    last;
+			}
+		    }
+		}
+	    }
 	    $dev{interface}{$ifindex}{vlans}{$vid}{vid}   = $vid;
-	    $dev{interface}{$ifindex}{vlans}{$vid}{vname} = $vname;
+	    $dev{interface}{$ifindex}{vlans}{$vid}{vname} = $vname if defined ($vname);
 	}
     }
 
@@ -556,8 +566,6 @@ sub get_snmp_info {
 	$logger->debug("Device::get_snmp_info: Checking for BGPPeers");
 	
 	my %qcache;  # Cache queries for the same AS
-
-
 	my $whois;  # Get the whois program path
 	if ( $self->config->get('DO_WHOISQ') ){
 	    # First Check if we have whois installed

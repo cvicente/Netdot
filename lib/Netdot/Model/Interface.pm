@@ -172,17 +172,15 @@ sub snmp_update {
 	map { $oldvlans{$_->id} = $_ } $self->vlans();
 	
 	foreach my $newvlan ( keys %{ $newif->{vlans} } ){
-	    unless (exists($newif->{vlans}->{$newvlan}->{vid}) && 
-		    exists($newif->{vlans}->{$newvlan}->{vname}) ){
-		$logger->error(sprintf("%s: Incomplete VLAN information for Vlan: %s", $host, $newvlan));
-		next;
-	    }
-	    my $vid   = $newif->{vlans}->{$newvlan}->{vid};
+	    my $vid   = $newif->{vlans}->{$newvlan}->{vid} || $newvlan;
 	    my $vname = $newif->{vlans}->{$newvlan}->{vname};
 	    my $vo;
 	    unless ( $vo = Vlan->search(vid => $vid)->first ){
 		# create
-		$vo = Vlan->insert( { vid => $vid, name => $vname } );
+		my %args;
+		$args{vid}   = $vid;
+		$args{name}  = $vname if defined $vname;
+		$vo = Vlan->insert(\%args);
 		$logger->info(sprintf("%s: Inserted VLAN %s", $host, $vo->vid));
 	    }
 	    # Now verify membership
