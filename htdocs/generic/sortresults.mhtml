@@ -46,7 +46,6 @@ my $DEBUG      = 0;
 
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
-
 #########################################################
 #
 # This happens on first call
@@ -249,18 +248,14 @@ if ( $total > $per_page ){
 %             if ( defined $ftable ) {
 %                 if ( int(my $fo = $o->$c) != 0  ) {
 %                     my $lbl = $fo->get_label;
-%                     if( $first_column ) {
-                          &nbsp;
-                          <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">
-%                         if( length( $lbl ) < 1 ) {
-                              N/A
-%                         }else {
-                              <% $lbl %>
-%                         }
-                          </a> 
-%                     } else {
-                         <% $lbl %>
+                      &nbsp;
+                      <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">
+%                     if( length( $lbl ) < 1 ) {
+                          N/A
+%                     }else {
+                          <% $lbl %>
 %                     }
+                      </a> 
 %                 }else{
                       &nbsp -
 %                 }
