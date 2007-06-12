@@ -42,9 +42,7 @@ $sid           => undef
 my $DEBUG = 0;
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 my $session;
-my $TMP    = $ui->{config}->{TMP};
-my %order  = $ui->meta->get_column_order( $table );
-my %tags   = $ui->meta->get_column_tags($table);
+my %order  = $table->meta_data->get_column_order;
 my %objs;
 </%init>
 
@@ -67,8 +65,11 @@ if ( $submit eq 'Edit' ) {
 
     # Build a session object to store the list of
     # records passed to us
-    unless ( $session = $ui->mksession( $TMP ) ){
-	$m->comp('error.mhtml', error => $ui->error);
+    eval {
+	$session = $ui->mk_session();
+    };
+    if ( my $e = $@ ){
+	$m->comp('error.mhtml', error=>$e);
     }
     $session->{objs} = \%objs;
     
@@ -76,11 +77,8 @@ if ( $submit eq 'Edit' ) {
     foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 	next if( $c eq 'id' );
 	my $caption;
-	if ( exists($tags{$c}) ){
-	    $caption = $tags{$c};
-	}else{
-	    $caption = $c;
-	}
+	my $mcol = $table->meta_data->get_column($c);
+	$caption = $mcol->tag;
 	my $html = '<input type="checkbox" name="tablefields" value="'.$c.'">'.$caption;
 	push(@cells, $html);
     }
@@ -111,8 +109,11 @@ if ( $submit eq 'Edit' ) {
 
 }elsif ( $submit eq 'Go' && $sid ) {
      
-    unless ( $session = $ui->getsession( $TMP, $sid ) ){
-	$m->comp('error.mhtml', error => $ui->error);
+    eval {
+	$session = $ui->get_session($sid);
+    };
+    if ( my $e = $@ ){
+	$m->comp('error.mhtml', error=>$e);
     }
     %objs = %{ $session->{objs} };
     
@@ -130,7 +131,8 @@ if ( $submit eq 'Edit' ) {
 	 
 	 push(@headers, "Name");
 	 foreach my $field ( @tablefields ) {
-	     push(@headers, (exists($tags{$field})?$tags{$field}:$field));
+	     my $mcol = $table->meta_data->get_column($field);
+	     push(@headers, $mcol->tag);
 	 }
 	 
 	 if ( $selectall ) {
@@ -159,7 +161,7 @@ if ( $submit eq 'Edit' ) {
 	     foreach my $id ( keys %{$objs{$table}} ) {
 		 my $obj = $table->retrieve($id);
 		 my @row = ();
-		 push( @row, $ui->getobjlabel($obj,", ") );
+		 push( @row, $obj->get_label );
 		 foreach my $field ( @tablefields ) {
 		     my %tmp = $ui->form_field(object=>$obj, column=>$field, edit=>1);
 		     push( @row, $tmp{'value'} );    
@@ -284,7 +286,7 @@ if ( $submit eq 'Edit' ) {
     foreach my $id ( keys %data ) {
         my $obj = $table->retrieve($id) ||
 	    $m->comp('error.mhtml', error=> "Could not retrieve $table id $id");
-        $r = $ui->update(object => $obj, state => $data{$id});
+	$obj->update($data{$id});
 	push @objs, $obj;
     }
 
@@ -296,8 +298,9 @@ if ( $submit eq 'Edit' ) {
         <div class="containerbody">
             Your changes to the following records have been saved:<br>
             <div style="margin-left:30px;">
-%           foreach my $obj ( @objs ) {
-                <% $ui->getobjlabel($obj, ", ") %><br>
+%           my @lbls = map { $_->get_label } @objs;
+%           foreach my $lbl ( sort @lbls ) {
+                <% $table %> <% $lbl %><br>
 %           }
             </div>
         </div>
