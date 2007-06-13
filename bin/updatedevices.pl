@@ -122,21 +122,23 @@ $logger->warn("Warning: Pretend (-p) flag enabled.  Changes will not be committe
     if ( $PRETEND );
 
 my $start = time;
-printf("Started at %s\n", scalar localtime($start));
-my %update_args = (communities  => $communities, 
-		   version      => $version,
-		   timeout      => $timeout,
-		   retries      => $retries,
-		   pretend      => $PRETEND,
-		   add_subnets  => $ADDSUBNETS,
-		   subs_inherit => $SUBSINHERIT,
-		   bgp_peers    => $BGPPEERS,
-		   );
+$logger->info(sprintf("Started at %s", scalar localtime($start)));
+
+my %uargs = (communities  => $communities, 
+	     version      => $version,
+	     timeout      => $timeout,
+	     retries      => $retries,
+	     pretend      => $PRETEND,
+	     add_subnets  => $ADDSUBNETS,
+	     subs_inherit => $SUBSINHERIT,
+	     bgp_peers    => $BGPPEERS,
+	     );
 if ( $host ){
     $logger->info("Updating single device: $host");
     my $dev;
     if ( $INFO ){
-	$dev = Device->discover(name=>$host, %update_args);
+	$uargs{name} = $host;
+	$dev = Device->discover(%uargs);
     }
     if ( $FWT ){
 	$dev ||= Device->search(name=>$host)->first;
@@ -148,14 +150,15 @@ if ( $host ){
     }
 }elsif ( $block ){
     $logger->info("Updating all devices in block: $block");
-    if ( $INFO ){
-	my $r = Device->snmp_update_block(block=>$block, %update_args);
-    }
+    $uargs{block} = $block;
+    Device->snmp_update_block(%uargs) if ( $INFO );
+    Device->fwt_update_block(%uargs)  if ( $FWT  );
+    Device->arp_update_block(%uargs)  if ( $ARP  );	
 }elsif ( $db ){
     $logger->info("Updating all devices in the DB");
-    if ( $INFO ){
-	my $r = Device->snmp_update_all(%update_args);
-    }
+    Device->snmp_update_all(%uargs) if ( $INFO );
+    Device->fwt_update_all(%uargs)  if ( $FWT  );
+    Device->arp_update_all(%uargs)  if ( $ARP  );
 }else{
     print $USAGE;
     die "Error: You need to specify one of -H, -s or -d\n";

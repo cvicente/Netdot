@@ -11,6 +11,15 @@ REQUIREMENTS
   Note: So far, tested with MySQL only.  You will need a version 
 	of MySQL with support for the INNODB storage engine.
 
+        In MySQL configuration file (e.g. /etc/mysql/my.cnf), 
+        make sure you have:
+
+	   default-storage-engine = INNODB  - or -
+	   default-table-type     = INNODB
+
+	otherwise, your tables might be created as type MyISAM, which
+	will make transactions and dry-runs innefective.
+
 * A Radius server (for authentication).  We recommend FreeRadius, 
   available at:
 	

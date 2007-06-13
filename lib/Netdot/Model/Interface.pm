@@ -181,7 +181,7 @@ sub snmp_update {
 	    if ( $vo = Vlan->search(vid => $vid)->first ){
 		# update in case named changed
 		# (ignore default vlan 1)
-		if ( $vdata{name} ne $vo->name && $vo->vid ne '1' ){
+		if ( defined $vdata{name} && $vdata{name} ne $vo->name && $vo->vid ne "1" ){
 		    $vo->update(\%vdata);
 		    $logger->debug(sprintf("%s: VLAN %s name updated: %s", $host, $vo->vid, $vo->name));		
 		}

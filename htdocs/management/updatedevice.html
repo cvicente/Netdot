@@ -25,6 +25,7 @@ $site            => undef
 $contacts        => undef
 $add_subnets     => undef
 $subs_inherit    => undef
+$pretend         => undef
 </%args>
 %
 %
@@ -35,7 +36,6 @@ $subs_inherit    => undef
 %######################################################################
 <%init>
 my $DEBUG = 0;
-my $TMP   = $ui->config->get('TMP');
 
 my $o;
 my $fqdn;
@@ -186,40 +186,44 @@ if ( $action eq "discover" ){
     $logstr = Netdot::Util::Log->new_appender('String', name=>'updatedevice.html');
     $logger->add_appender($logstr);
     
-    if ( $insert ){
-	%argv = %{$session->{argv}};
-	print "argv contains: <pre>",  Dumper(%argv), "</pre>" if $DEBUG;
-
-	if ( exists $argv{device} ){
-	    unless ( $o = Device->retrieve($argv{device}) ){
-		$m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
-	    }
-	    
+    %argv = %{$session->{argv}};
+    print "argv contains: <pre>",  Dumper(%argv), "</pre>" if $DEBUG;
+    
+    if ( exists $argv{device} ){
+	unless ( $o = Device->retrieve($argv{device}) ){
+	    $m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
+	}
+	my %uargs = (info         => $argv{info}, 
+		     add_subnets  => $add_subnets, 
+		     subs_inherit => $subs_inherit);
+	
+	if ( $pretend ){
+	    $uargs{pretend} = 1;
 	    eval {
-		Netdot::Model->do_transaction( sub{ 
-		    return $o->snmp_update(info         => $argv{info}, 
-					   adds_ubnets  => $add_subnets, 
-					   subs_inherit => $subs_inherit) 
-		    } );
+		$o->snmp_update(%uargs);
 	    };
-	    if ( my $e = $@ ){
-		$m->comp('/generic/error.mhtml', error=>$e);
-	    }
 	}else{
-	    $argv{owner}      = $owner          ||  0;
-	    $argv{used_by}    = $used_by        ||  0;
-	    $argv{site}       = $site           ||  0;
-	    $argv{contacts}   = $contacts       ||  "";
-	    $argv{community}  = $argv{info}->{community};
 	    eval {
-		$o = Device->discover(%argv);
-	    };
+		Netdot::Model->do_transaction( sub{ return $o->snmp_update(\%uargs) } );
+	      };
 	    if ( my $e = $@ ){
 		$m->comp('/generic/error.mhtml', error=>$e);
 	    }
 	}
-	$fqdn = $o->fqdn;
+    }else{
+	$argv{owner}      = $owner          ||  0;
+	$argv{used_by}    = $used_by        ||  0;
+	$argv{site}       = $site           ||  0;
+	$argv{contacts}   = $contacts       ||  "";
+	$argv{community}  = $argv{info}->{community};
+	eval {
+	    $o = Device->discover(%argv);
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
     }
+    $fqdn = $o->fqdn;
 
 }else{
     $m->comp('/generic/error.mhtml', error => "Unknown action: $action");
@@ -249,10 +253,10 @@ if ( $action eq "discover" ){
     <input type="hidden" name="host" value="<% $host %>">
     <input type="hidden" name="action" value="update">
 
+%     my (@field_headers, @cell_data) = ();
 
-%     if ( ! $argv{device} ){
+%     if ( ! $argv{device} ){ # We're inserting a Device for the first time
 %
-%        my (@field_headers, @cell_data) = ();
 
 % push( @field_headers, "Owner:" );
 <&| "/generic/HERE.mhtml" &>
@@ -328,10 +332,10 @@ if ( $action eq "discover" ){
 %################################################################
 %# The following block only applies to routers
 %################################################################
-% if ( $info->{router} ){
+% if ( $info->{type} eq "Router" ){
 %    push( @field_headers, "Add new Subnets (if any)?:" );
 <&| "/generic/HERE.mhtml" &>
-%    if ( $ui->{config}->{ADDSUBNETS} ){
+%    if ( Netdot->config->get('ADDSUBNETS') ){
 	<input type="checkbox" name="add_subnets" checked>
 %    }else{
 	<input type="checkbox" name="add_subnets">
@@ -341,7 +345,7 @@ if ( $action eq "discover" ){
 
 %    push( @field_headers, "Should new subnets <br>inherit device owner/user?:" );
 <&| "/generic/HERE.mhtml" &>
-%    if ( $ui->{config}->{SUBNET_INHERIT_DEV_INFO} ){
+%    if ( Netdot->config->get('SUBNET_INHERIT_DEV_INFO') ){
 	<input type="checkbox" name="subs_inherit" checked>
 %    }else{
 	<input type="checkbox" name="subs_inherit">
@@ -350,12 +354,25 @@ if ( $action eq "discover" ){
 %    push( @cell_data, $_ );
 % }
 
+%     }else{  # We're updating an existing Device
+
+%###################################################################
+%# Ask if changes should not be committed to the DB
+%###################################################################
+%    push( @field_headers, "Dry Run:" );
+<&| "/generic/HERE.mhtml" &>
+	<input type="checkbox" name="pretend">
+</&>
+%    push( @cell_data, $_ );
+
+%    } # endif !$argv{device}
 
 <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
-%     }
-         <input name="insert" value="Update" type="submit">&nbsp;
-         <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
+         <center>
+             <input name="insert" value="Update" type="submit">&nbsp;
+             <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
+         </center>
       </form>
 
 %}elsif ( $action eq "update" ){

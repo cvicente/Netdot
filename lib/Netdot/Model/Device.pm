@@ -329,6 +329,7 @@ sub insert {
      version
      timeout
      retries
+     bgp_peers
   Returns:
     Hash reference containing SNMP information
   Examples:
@@ -562,78 +563,81 @@ sub get_snmp_info {
 
     ##############################################
     # Deal with BGP Peers
-    if ( $self->config->get('ADD_BGP_PEERS') && scalar keys %{$hashes{'bgp_peers'}}){
-	$logger->debug("Device::get_snmp_info: Checking for BGPPeers");
-	
-	my %qcache;  # Cache queries for the same AS
-	my $whois;  # Get the whois program path
-	if ( $self->config->get('DO_WHOISQ') ){
-	    # First Check if we have whois installed
-	    $whois = `which whois`;
-	    if ( $whois =~ /not found/i || $whois !~ /\w+/ ){
-		$whois = undef;
-		$logger->warn("Device::get_snmp_info: Whois queries enabled in config file but whois command not found.");
-	    }else{
-		chomp $whois;
-	    }
-	}
+    # only proceed if we were told to discover peers, either directly or in the config file
+    if ( $args{bgp_peers} || $self->config->get('ADD_BGP_PEERS')) {
 
-	##############################################
-	# for each BGP Peer discovered...
-	foreach my $peer ( keys %{$hashes{'bgp_peers'}} ) {
-	    $dev{bgppeer}{$peer}{address}   = $peer;
-	    unless ( $dev{bgppeer}{$peer}{bgppeerid} = $hashes{'bgp_peer_id'}->{$peer} ){
-		$logger->warn("Could not determine BGP peer id of peer $peer");
+	if ( scalar keys %{$hashes{'bgp_peers'}} ){
+	    $logger->debug("Device::get_snmp_info: Checking for BGPPeers");
+	    
+	    my %qcache;  # Cache queries for the same AS
+	    my $whois;  # Get the whois program path
+	    if ( $self->config->get('DO_WHOISQ') ){
+		# First Check if we have whois installed
+		$whois = `which whois`;
+		if ( $whois =~ /not found/i || $whois !~ /\w+/ ){
+		    $whois = undef;
+		    $logger->warn("Device::get_snmp_info: Whois queries enabled in config file but whois command not found.");
+		}else{
+		    chomp $whois;
+		}
 	    }
-	    my $asn = $hashes{'bgp_peer_as'}->{$peer};
-	    if ( ! $asn ){
-		$logger->warn("Could not determine AS number of peer $peer");
-	    }else{
-		$dev{bgppeer}{$peer}{asnumber}  = $asn;
-		$dev{bgppeer}{$peer}{asname}    = "AS $asn";
-		$dev{bgppeer}{$peer}{orgname}   = "AS $asn";
-		
-		if ( defined $whois ){
-		    # We enabled whois queries in config and we have the whois command
-		    $logger->debug("Device::get_snmp_info: Going to query WHOIS for $peer: (AS $asn)");
+
+	    ##############################################
+	    # for each BGP Peer discovered...
+	    foreach my $peer ( keys %{$hashes{'bgp_peers'}} ) {
+		$dev{bgppeer}{$peer}{address} = $peer;
+		unless ( $dev{bgppeer}{$peer}{bgppeerid} = $hashes{'bgp_peer_id'}->{$peer} ){
+		    $logger->warn("Could not determine BGP peer id of peer $peer");
+		}
+		my $asn = $hashes{'bgp_peer_as'}->{$peer};
+		if ( ! $asn ){
+		    $logger->warn("Could not determine AS number of peer $peer");
+		}else{
+		    $dev{bgppeer}{$peer}{asnumber}  = $asn;
+		    $dev{bgppeer}{$peer}{asname}    = "AS $asn";
+		    $dev{bgppeer}{$peer}{orgname}   = "AS $asn";
 		    
-		    # Query any configured WHOIS servers for more info about this AS
-		    # But first check if it has been found already
-		    if ( exists $qcache{$asn} ){
-			foreach my $key ( keys %{$qcache{$asn}} ){
-			    $dev{bgppeer}{$peer}{$key} = $qcache{$asn}{$key};
-			}
-		    }else{
-			my %servers = %{ $self->config->get('WHOIS_SERVERS') };
-			foreach my $server ( keys %servers ){
-			    my $cmd = "$whois -h $server AS$asn";
-			    $logger->debug("Device::get_snmp_info: Querying: $cmd");
-			    my @lines = `$cmd`;
-			    if ( grep /No.*found/i, @lines ){
-				$logger->debug("Device::get_snmp_info: $server AS$asn not found");
-			    }else{
-				foreach my $key ( keys %{$servers{$server}} ){
-				    my $exp = $servers{$server}->{$key};
-				    if ( my @l = grep /^$exp/, @lines ){
-					my (undef, $val) = split /:\s+/, $l[0]; #first line
-					$val =~ s/\s*$//;
-					$logger->debug("Device::get_snmp_info:: $server: Found $exp: $val");
-					$qcache{$asn}{$key} = $val;
-					$dev{bgppeer}{$peer}{$key} = $val;
+		    if ( defined $whois ){
+			# We enabled whois queries in config and we have the whois command
+			$logger->debug("Device::get_snmp_info: Going to query WHOIS for $peer: (AS $asn)");
+			
+			# Query any configured WHOIS servers for more info about this AS
+			# But first check if it has been found already
+			if ( exists $qcache{$asn} ){
+			    foreach my $key ( keys %{$qcache{$asn}} ){
+				$dev{bgppeer}{$peer}{$key} = $qcache{$asn}{$key};
+			    }
+			}else{
+			    my %servers = %{ $self->config->get('WHOIS_SERVERS') };
+			    foreach my $server ( keys %servers ){
+				my $cmd = "$whois -h $server AS$asn";
+				$logger->debug("Device::get_snmp_info: Querying: $cmd");
+				my @lines = `$cmd`;
+				if ( grep /No.*found/i, @lines ){
+				    $logger->debug("Device::get_snmp_info: $server AS$asn not found");
+				}else{
+				    foreach my $key ( keys %{$servers{$server}} ){
+					my $exp = $servers{$server}->{$key};
+					if ( my @l = grep /^$exp/, @lines ){
+					    my (undef, $val) = split /:\s+/, $l[0]; #first line
+					    $val =~ s/\s*$//;
+					    $logger->debug("Device::get_snmp_info:: $server: Found $exp: $val");
+					    $qcache{$asn}{$key} = $val;
+					    $dev{bgppeer}{$peer}{$key} = $val;
+					}
 				    }
+				    last;
 				}
-				last;
 			    }
 			}
+		    }else{
+			$logger->debug("Device::get_snmp_info: BGPPeer WHOIS queries disabled in config file");
 		    }
-		}else{
-		    $logger->debug("Device::get_snmp_info: BGPPeer WHOIS queries disabled in config file");
 		}
 	    }
 	}
     }else{
-	$logger->debug("Device::get_snmp_info: BGPPeer collection disabled in config file");
-
+	$logger->debug("Device::get_snmp_info: BGP Peer discovery not enabled");
     }
     $logger->debug("Device::get_snmp_info: Finished getting SNMP info from $name ($ip)");
     return \%dev;
@@ -704,14 +708,15 @@ sub snmp_update_all {
 	foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
 	    $uargs{$field} = $argv{$field} if defined ($argv{$field});
 	}
+	$uargs{info} = $info;
 	# Update Device with SNMP info obtained
 	if ( $uargs{pretend} ){
-	    $dev->snmp_update(info=>$info, %uargs);
+	    $dev->snmp_update(%uargs);
 	}else{
 	    # If the transaction fails, catch the exception and log error
 	    # we want to go on, even if this device fails
 	    eval {
-		$class->do_transaction( sub{ return $dev->snmp_update(info=>$info, %uargs)} );
+		$class->do_transaction( sub{ return $dev->snmp_update(%uargs)} );
 	    };
 	    if ( $@ ){
 		# Exception message is being logged already
@@ -823,14 +828,14 @@ sub snmp_update_block {
 	foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
 	    $uargs{$field} = $argv{$field} if defined ($argv{$field});
 	}
-
+	$uargs{info} = $info;
 	my $dev;
 	if ( $devid =~ /$IPV4|$IPV6/ ){
 	    # We gave the IP address as the id
 	    # Device does not yet exist in DB
 	    my $ip = $devid;
 	    
-	    $class->discover(info=>$info, name=>$ip, %uargs);
+	    $class->discover(name=>$ip, %uargs);
 	    
 	}else{
 	    # We should have a Device id
@@ -838,12 +843,12 @@ sub snmp_update_block {
 		or $class->throw_fatal("Device id $devid does not exist!");;
 	    
 	    if ( $uargs{pretend} ){
-		$dev->snmp_update(info=>$info, %uargs);
+		$dev->snmp_update(%uargs);
 	    }else{
 		# If the transaction fails, catch the exception and log error
 		# we want to go on, even if this device fails
 		eval {
-		    $class->do_transaction( sub{ return $dev->snmp_update(info=>$info, %uargs)} );
+		    $class->do_transaction( sub{ return $dev->snmp_update(%uargs)} );
 		};
 		if ( $@ ){
 		    # Exception message is being logged already
@@ -899,17 +904,13 @@ sub discover {
 
     if ( $dev = Device->search(name=>$name)->first ){
 	$logger->debug("Device::discover: Device $name already exists in DB");
-	if ( $info ){
-	    $dev->snmp_update(info=>$info);
-	}else{
-	    $dev->snmp_update();
-	}
     }else{
 	$logger->info("Device $name does not yet exist. Inserting.");
 	unless ( $info ){
 	    # Get relevant snmp args
 	    my %snmpargs;
-	    foreach my $field ( qw(host communities version timeout retries) ){
+	    $snmpargs{host} = $argv{name};
+	    foreach my $field ( qw(communities version timeout retries bgp_peers) ){
 		$snmpargs{$field} = $argv{$field} if defined ($argv{$field});
 	    }
 	    $info = $class->get_snmp_info(%snmpargs);
@@ -939,18 +940,20 @@ sub discover {
 	}
 	# Insert the new Device
 	$dev = $class->insert(\%devtmp);
+    }
+    
+    # Get relevant snmp_update args
+    my %uargs;
+    foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
+	$uargs{$field} = $argv{$field} if defined ($argv{$field});
+    }
+    $uargs{info} = $info;
 
-	# Get relevant snmp_update args
-	my %uargs;
-	foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
-	    $uargs{$field} = $argv{$field} if defined ($argv{$field});
-	}
-	# Update Device with SNMP info obtained
-	if ( $uargs{pretend} ){
-	    $dev->snmp_update(info=>$info, %uargs);
-	}else{
-	    $class->do_transaction( sub{ return $dev->snmp_update(info=>$info, %uargs) } );
-	}
+    # Update Device with SNMP info obtained
+    if ( $uargs{pretend} ){
+	$dev->snmp_update(%uargs);
+    }else{
+	$class->do_transaction( sub{ return $dev->snmp_update(%uargs) } );
     }
     
     return $dev;
@@ -1643,6 +1646,16 @@ sub snmp_update {
     $self->throw_fatal("Invalid or missing SNMP Info") 
 	unless ( $info && (ref($info) eq 'HASH') );
     
+
+    # Pretend works by turning off autocommit in the DB handle and rolling back
+    # all changes at the end
+    if ( $argv{pretend} ){
+	$logger->info("$host: Performing a dry-run");
+	unless ( Netdot::Model->db_auto_commit(0) == 0 ){
+	    $self->throw_fatal("Unable to set AutoCommit off");
+	}
+    }
+    
     # Data that will be passed to the update method
     my %devtmp;
 
@@ -1965,6 +1978,20 @@ sub snmp_update {
     my $end = time;
     $logger->debug(sprintf("%s: SNMP update completed in %d seconds", 
 			  $host, ($end-$start)));
+
+    if ( $argv{pretend} ){
+	$logger->debug("$host: Rolling back changes");
+	eval {
+	    $self->dbi_rollback;
+	};
+	if ( my $e = $@ ){
+	    $self->throw_fatal("Rollback Failed!: $e");
+	}
+	$logger->debug("Turning AutoCommit back on");
+	unless ( Netdot::Model->db_auto_commit(1) == 1 ){
+	    $self->throw_fatal("Unable to set AutoCommit on");
+	}
+    }
 
     return $self;
 }
