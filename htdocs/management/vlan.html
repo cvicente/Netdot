@@ -13,6 +13,10 @@ section => 'Management'
 $id                => undef
 $search            => undef
 $_action           => 'SHOW_GROUPS'
+$name              => undef
+$start             => undef
+$end               => undef
+$edit              => undef
 </%args>
 %
 %
@@ -69,7 +73,27 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 %         }
           </div>
        </div>
-% }
+
+%#######################################################################################
+%# INSERT
+%#
+%#######################################################################################
+%}elsif( $_action eq "INSERT" && !$o ){
+    
+<%perl>
+    if ( $name && $start && $end ){
+	eval {
+	    VlanGroup->insert({name=>$name, start=>$start, end=>$end});
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
+	$_action = 'SHOW_GROUPS';
+    }else{
+	$m->comp('/generic/error.mhtml', error=>"Missing required arguments: 'name', 'start', 'end'");
+    }
+</%perl>    
+%}
 
 %#######################################################################################
 %# Show Groups
@@ -80,11 +104,26 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 %    @list = VlanGroup->retrieve_all;
     
       <div class="container">
+          <div class="containerheadleft">VLAN Groups:</div>
+	  <div class="containerheadright">
+%	  if ( $edit ){
+               &nbsp;
+%	  }else{
+	      <a href="vlan.html?$action=<% $_action %>&edit=1">[edit]</a>
+%	  }
+          </div>
           <div class="containerbody">
 %             if ( @list ){
-                  <& /generic/sortresults.mhtml, object => \@list, page=>'view.html', withedit=>0  &>
+%	          if ( $edit ){
+                      <& /generic/sortresults.mhtml, object => \@list, page=>'view.html', withedit=>1  &>
+%                 }else{
+                      <& /generic/sortresults.mhtml, object => \@list, page=>'view.html', withedit=>0  &>
+%                 }
+%             }else{
+                  No VLAN Groups Defined
 %             }
           </div>
       </div>
 %}
+
 </div> <!-- End sectiondetail -->
