@@ -20,7 +20,8 @@ my $AIRESPACEIF = '(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\.\d';
 
 # Other fixed variables
 my $MAXPROCS    = Netdot->config->get('SNMP_MAX_PROCS');
-my $SOCK_PATH   = Netdot->config->get('SOCK_PATH');
+my $TMP         = Netdot->config->get('TMP');
+my $SOCK_PATH   = "$TMP/netdot_sock";
 
 # Objects we need here
 my $logger      = Netdot->log->get_logger('Netdot::Model::Device');
@@ -38,7 +39,7 @@ Netdot::Model::Device - Network Device Class
 
 
 ############################################################################
-=head2 search - Search for Devices
+=head2 search - Search Devices
 
     Overrides base method to extend functionality:
 
@@ -678,7 +679,7 @@ sub snmp_update_all {
     
     while ( my $dev = $it->next ){
 	unless ( $dev->canautoupdate ){
-	    $logger->debug("%s excluded from auto-updates. Skipping \n", $dev->fqdn);
+	    $logger->debug("%s excluded from auto-updates. Skipping", $dev->fqdn);
 	    next;
 	}
 	$class->_launch_child(server => $server,
@@ -960,101 +961,47 @@ sub discover {
 }
 
 #########################################################################
-=head2 arp_update_all - Update ARP cache for every device in DB
+=head2 arp_update_all - Update ARP cache from every device in DB
     
   Arguments:
     None
   Returns:
     True if successful
-    
   Examples:
     Device->arp_update_all();
 
 =cut
 sub arp_update_all {
-    my ($class, %args) = @_;
+    my ($class) = @_;
     $class->isa_class_method('arp_update_all');
 
-    my $start = time;
-
-    # Create a listening Unix socket to communicate with children
-    my $server = $class->_server_listen();
-    my $sel    = $class->_io_select($server);
-
-    # Get a hash with all interface MACs
-    my $intmacs = PhysAddr->from_interfaces();
-
-    # Clear some counters
-    %MACS_SEEN = ();
-    %IPS_SEEN  = ();
-
-    my $device_count = 0;
-    my $it = $class->retrieve_all();
-    
-    while ( my $dev = $it->next ){
-	unless ( $dev->collect_arp ){
-	    $logger->info(sprintf("%s excluded from ARP collection. Skipping", $dev->fqdn));
-	    next;
-	}
-	unless ( $dev->has_layer(3) ){
-	    $logger->info(sprintf("%s Device not layer3. Skipping", $dev->fqdn));
-	    next;
-	}
-	$class->_launch_child(server => $server,
-			      id     => $dev->id,
-			      code   => sub{ return $dev->_get_arp_from_snmp(intmacs=>$intmacs) });
-    }
-    
-    # Harvest children.  Pass server selector
-    my $data = $class->_harvest_children( select=>$sel );
-    
-    # Now that we have the data, go ahead and update the DB
-    # The data received is an arrayref of hashrefs with client's results
-
-    # The idea here is to pass all cache data to the mac and ip update
-    # methods.  Then tell each device to update their ArpCache tables
-    my (%devs, @caches);
-    foreach my $cdata ( @$data ){
-	my $devid = $cdata->{id};
-	my $cache = $cdata->{data}; 
-	push @caches, $cache;
-	$devs{$devid} = $cache;
-    }
-    if ( @caches ){
-	$class->_update_macs_from_cache(\@caches);
-	$class->_update_ips_from_cache(\@caches);
-    }else{
-	$logger->info("Device::arp_update_all: No ARP cache info to go on.  Quitting.");
-	$class->_server_close($server);
-	return;
-    }
-
-    foreach my $devid ( keys %devs ){
-	$device_count++;
-	my $dev = $class->retrieve($devid)
-	    or $class->throw_fatal("Device id $devid does not exist!");;
-	my $cache = $devs{$devid};
-	
-	# If the transaction fails, catch the exception and log error
-	# we want to go on, even if this device fails
-	eval {
-	    $class->do_transaction( sub{ return $dev->arp_update(no_update_macs => 1, 
-								 no_update_ips  => 1)} );
-	};
-	if ( $@ ){
-	    # Exception message is being logged already
-	    $logger->warn("Device::arp_update_all caught exception but moving on");
-	}
-
-    }
-    
-    my $end = time;
-    $logger->info(sprintf("All ARP caches updated. %d devices, %d unique MACs, %d unique IPs in %d seconds", 
-			  $device_count, scalar keys %MACS_SEEN, scalar keys %IPS_SEEN, ($end-$start) ));
-
-    $class->_server_close($server);
-    return 1;
+    my @alldevs = $class->retrieve_all();
+    $logger->info("Fetching ARP tables from all devices in the database");
+    return $class->_arp_update_mult(list=>\@alldevs);
 }
+
+#########################################################################
+=head2 arp_update_block - Update ARP cache from every device within an IP block
+    
+  Arguments:
+    block - IP block in CIDR notation
+  Returns:
+    True if successful
+  Examples:
+    Device->arp_update_all();
+
+=cut
+sub arp_update_block {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('arp_update_block');
+
+    defined $argv{block} || $class->throw_fatal("Missing required arguments: block");
+    my $devs = $class->get_all_from_block($argv{block});
+
+    $logger->info("Fetching ARP tables from all devices in block $argv{block}");
+    return $class->_arp_update_mult(list=>$devs);
+}
+
 
 #########################################################################
 =head2 fwt_update_all - Update FWT for every device in DB
@@ -1063,94 +1010,72 @@ sub arp_update_all {
     None
   Returns:
     True if successful
-    
   Examples:
     Device->fwt_update_all();
 
 =cut
 sub fwt_update_all {
-    my ($class, %args) = @_;
+    my ($class) = @_;
     $class->isa_class_method('fwt_update_all');
-
-    my $start = time;
-
-    # Create a listening Unix socket to communicate with children
-    my $server = $class->_server_listen();
-    my $sel    = $class->_io_select($server);
-
-    # Get a hash with all interface MACs
-    my $intmacs = PhysAddr->from_interfaces();
-
-    # Clear MAC counter
-    %MACS_SEEN = ();
-
-    my $device_count = 0;
-    my $it = $class->retrieve_all();
     
-    while ( my $dev = $it->next ){
-	unless ( $dev->collect_fwt ){
-	    $logger->info(sprintf("%s excluded from FWT collection. Skipping", $dev->fqdn));
-	    next;
-	}
-	unless ( $dev->has_layer(2) ){
-	    $logger->info(sprintf("%s Device not layer2. Skipping", $dev->fqdn));
-	    next;
-	}
-
-	$class->_launch_child(server => $server,
-			      id     => $dev->id,
-			      code   => sub{ return $dev->_get_fwt_from_snmp(intmacs=>$intmacs) });
-    }
-    
-    # Harvest children.  Pass server selector
-    my $data = $class->_harvest_children( select=>$sel );
-    
-    # Now that we have the data, go ahead and update the DB
-    # The data received is an arrayref of hashrefs with client's results
-
-    # The idea here is to pass all fwt data to the mac methods.  
-    # Then tell each device to update their FWTable tables
-    my (%devs, @caches);
-    foreach my $cdata ( @$data ){
-	my $devid = $cdata->{id};
-	my $cache = $cdata->{data}; 
-	push @caches, $cache;
-	$devs{$devid} = $cache;
-    }
-    if ( @caches ){
-	$class->_update_macs_from_cache(\@caches);
-    }else{
-	$logger->info("Device::arp_update_all: No fwt info to go on.  Quitting.");
-	$class->_server_close($server);
-	return;
-    }
-    
-    foreach my $devid ( keys %devs ){
-	$device_count++;
-	my $dev = $class->retrieve($devid)
-	    or $class->throw_fatal("Device id $devid does not exist!");;
-	my $cache = $devs{$devid};
-
-	
-	# If the transaction fails, catch the exception and log error
-	# we want to go on, even if this device fails
-	eval {
-	    $class->do_transaction( sub{ return $dev->fwt_update(no_update_macs=>1)} );
-	};
-	if ( $@ ){
-	    # Exception message is being logged already
-	    $logger->warn("Device::fwt_update_all caught exception but moving on");
-	}
-
-    }
-    
-    my $end = time;
-    $logger->info(sprintf("All FWTs updated. %d devices, %d unique MACs in %d seconds", 
-			  $device_count, scalar keys %MACS_SEEN, ($end-$start) ));
-
-    $class->_server_close($server);
+    my @alldevs = $class->retrieve_all();
+    $logger->info("Fetching forwarding tables from all devices in the database");
+    return $class->_fwt_update_mult(list=>\@alldevs);
 }
 
+#########################################################################
+=head2 fwt_update_block - Update FWT for all devices within a IP block
+    
+  Only devices already in the DB will be queried.  To include all devices
+  in a given subnet, run snmp_update_block() first.
+    
+  Arguments:
+    block - IP block in CIDR notation
+  Returns:
+    True if successful
+  Examples:
+    Device->fwt_update_block();
+
+=cut
+sub fwt_update_block {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('fwt_update_block');
+
+    defined $argv{block} || $class->throw_fatal("Missing required arguments: block");
+    my $devs = $class->get_all_from_block($argv{block});
+
+    $logger->info("Fetching forwarding tables from all devices in $argv{block}");
+    return $class->_fwt_update_mult(list=>$devs);
+}
+
+#########################################################################
+=head2 get_all_from_block - Retrieve devices with addresses within an IP block
+
+  Arguments:
+    block - IP block in CIDR notation
+  Returns:
+    Array ref of Device objects
+  Examples:
+    my $devs = Device->get_all_from_block('192.168.1.0/24');
+
+=cut
+sub get_all_from_block {
+    my ($class, $block) = @_;
+    $class->isa_class_method('fwt_update_block');
+
+    defined $block || $class->throw_fatal("Missing required arguments: block");
+
+    # Get a list of host addresses for the given block
+    my $hosts = Ipblock->get_host_addrs($block);
+    my %devs;
+    foreach my $ip ( @$hosts ){
+	if ( my $dev = $class->search(name=>$ip)->first ){
+	    $devs{$dev->id} = $dev; #index by id to avoid duplicates
+	}
+    }
+    my @devs = values %devs;
+    return \@devs;
+}
 
 =head1 INSTANCE METHODS
 
@@ -1303,7 +1228,7 @@ sub arp_update {
     $self->update({last_arp=>$self->timestamp});
 
     my $end = time;
-    $logger->info(sprintf("$host: ARP cache updated. %s entries in %d seconds\n", 
+    $logger->info(sprintf("$host: ARP cache updated. %s entries in %d seconds", 
 			  $arp_count, ($end-$start) ));
 
     return 1;
@@ -1382,7 +1307,7 @@ sub fwt_update {
     $self->update({last_fwt=>$self->timestamp});
 
     my $end = time;
-    $logger->info(sprintf("$host: FWT updated. %s entries in %d seconds\n", 
+    $logger->info(sprintf("$host: FWT updated. %s entries in %d seconds", 
 			  scalar @fw_updates, ($end-$start) ));
     
     return 1;
@@ -2895,7 +2820,7 @@ sub _get_arp_from_snmp {
     map { $arp_count+= scalar(keys %{$cache{$_}}) } keys %cache;
 
     my $end = time;
-    $logger->info(sprintf("$host: ARP cache fetched. %s entries in %d seconds\n", 
+    $logger->info(sprintf("$host: ARP cache fetched. %s entries in %d seconds", 
 		  $arp_count, ($end-$start) ));
 
     return \%cache;
@@ -3006,7 +2931,7 @@ sub _get_fwt_from_snmp {
     my $end = time;
     my $fwt_count = 0;
     map { $fwt_count+= scalar keys %{ $fwt{$_} } } keys %fwt;
-    $logger->info(sprintf("$host: FWT fetched. %d entries in %d seconds\n", 
+    $logger->info(sprintf("$host: FWT fetched. %d entries in %d seconds", 
 			  $fwt_count, ($end-$start) ));
     
     return \%fwt;
@@ -3128,7 +3053,7 @@ sub _server_listen {
     unlink $SOCK_PATH;
     my $server = IO::Socket::UNIX->new(Local   => $SOCK_PATH,
 				       Listen  => SOMAXCONN )
-	or $class->throw_fatal("Can't make server socket: $@\n");
+	or $class->throw_fatal("Can't make server socket: $@");
     
     $server->autoflush;
     $server->blocking(0);
@@ -3523,6 +3448,197 @@ sub _get_airespace_ap_info {
 	}
     }
     
+    return 1;
+}
+
+#########################################################################
+# _fwt_update_mult - Update FWT for a given list of devices
+#    
+#   Arguments:
+#     list - array ref of Device objects
+#   Returns:
+#     True if successful
+#   Examples:
+#     Device->fwt_update_mult();
+#
+#
+sub _fwt_update_mult {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('fwt_update_mult');
+
+    my $list = $argv{list} or throw_fatal("Missing required arguments: list");
+
+    my $start = time;
+
+    # Create a listening Unix socket to communicate with children
+    my $server = $class->_server_listen();
+    my $sel    = $class->_io_select($server);
+
+    # Get a hash with all interface MACs
+    my $intmacs = PhysAddr->from_interfaces();
+
+    # Clear MAC counter
+    %MACS_SEEN = ();
+
+    my $device_count = 0;
+    
+    foreach my $dev ( @$list ){
+	unless ( $dev->collect_fwt ){
+	    $logger->info(sprintf("%s excluded from FWT collection. Skipping", $dev->fqdn));
+	    next;
+	}
+	unless ( $dev->has_layer(2) ){
+	    $logger->info(sprintf("%s Device not layer2. Skipping", $dev->fqdn));
+	    next;
+	}
+
+	$class->_launch_child(server => $server,
+			      id     => $dev->id,
+			      code   => sub{ return $dev->_get_fwt_from_snmp(intmacs=>$intmacs) });
+    }
+    
+    # Harvest children.  Pass server selector
+    my $data = $class->_harvest_children( select=>$sel );
+    
+    # Now that we have the data, go ahead and update the DB
+    # The data received is an arrayref of hashrefs with client's results
+
+    # The idea here is to pass all fwt data to the mac methods.  
+    # Then tell each device to update their FWTable tables
+    my (%devs, @caches);
+    foreach my $cdata ( @$data ){
+	my $devid = $cdata->{id};
+	my $cache = $cdata->{data}; 
+	push @caches, $cache;
+	$devs{$devid} = $cache;
+    }
+    if ( @caches ){
+	$class->_update_macs_from_cache(\@caches);
+    }else{
+	$logger->info("Device::fwt_update_mult: No forwarding table info to go on.  Quitting.");
+	$class->_server_close($server);
+	return;
+    }
+    
+    foreach my $devid ( keys %devs ){
+	$device_count++;
+	my $dev = $class->retrieve($devid)
+	    or $class->throw_fatal("Device id $devid does not exist!");;
+	my $cache = $devs{$devid};
+
+	
+	# If the transaction fails, catch the exception and log error
+	# we want to go on, even if this device fails
+	eval {
+	    $class->do_transaction( sub{ return $dev->fwt_update(no_update_macs=>1)} );
+	};
+	if ( $@ ){
+	    # Exception message is being logged already
+	    $logger->warn("Device::fwt_update_mult caught exception but moving on");
+	}
+
+    }
+    
+    my $end = time;
+    $logger->info(sprintf("All FWTs updated. %d devices, %d unique MACs in %d seconds", 
+			  $device_count, scalar keys %MACS_SEEN, ($end-$start) ));
+
+    $class->_server_close($server);
+    return 1;
+}
+
+#########################################################################
+# _arp_update_mult - Update ARP cache from multiple devices
+#    
+#   Arguments:
+#     list - array ref of Device objects
+#   Returns:
+#     True if successful
+#   Examples:
+#     Device->arp_update_mult();
+#
+sub _arp_update_mult {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('arp_update_mult');
+
+    my $list = $argv{list} or $class->throw_fatal("Missing required arguments: list");
+    my $start = time;
+
+    # Create a listening Unix socket to communicate with children
+    my $server = $class->_server_listen();
+    my $sel    = $class->_io_select($server);
+
+    # Get a hash with all interface MACs
+    my $intmacs = PhysAddr->from_interfaces();
+
+    # Clear some counters
+    %MACS_SEEN = ();
+    %IPS_SEEN  = ();
+
+    my $device_count = 0;
+    
+    foreach my $dev ( @$list ){
+	unless ( $dev->collect_arp ){
+	    $logger->info(sprintf("%s excluded from ARP collection. Skipping", $dev->fqdn));
+	    next;
+	}
+	unless ( $dev->has_layer(3) ){
+	    $logger->info(sprintf("%s Device not layer3. Skipping", $dev->fqdn));
+	    next;
+	}
+	$class->_launch_child(server => $server,
+			      id     => $dev->id,
+			      code   => sub{ return $dev->_get_arp_from_snmp(intmacs=>$intmacs) });
+    }
+    
+    # Harvest children.  Pass server selector
+    my $data = $class->_harvest_children( select=>$sel );
+    
+    # Now that we have the data, go ahead and update the DB
+    # The data received is an arrayref of hashrefs with client's results
+
+    # The idea here is to pass all cache data to the mac and ip update
+    # methods.  Then tell each device to update their ArpCache tables
+    my (%devs, @caches);
+    foreach my $cdata ( @$data ){
+	my $devid = $cdata->{id};
+	my $cache = $cdata->{data}; 
+	push @caches, $cache;
+	$devs{$devid} = $cache;
+    }
+    if ( @caches ){
+	$class->_update_macs_from_cache(\@caches);
+	$class->_update_ips_from_cache(\@caches);
+    }else{
+	$logger->info("Device::arp_update_all: No ARP cache info to go on.  Quitting.");
+	$class->_server_close($server);
+	return;
+    }
+
+    foreach my $devid ( keys %devs ){
+	$device_count++;
+	my $dev = $class->retrieve($devid)
+	    or $class->throw_fatal("Device id $devid does not exist!");;
+	my $cache = $devs{$devid};
+	
+	# If the transaction fails, catch the exception and log error
+	# we want to go on, even if this device fails
+	eval {
+	    $class->do_transaction( sub{ return $dev->arp_update(no_update_macs => 1, 
+								 no_update_ips  => 1)} );
+	};
+	if ( $@ ){
+	    # Exception message is being logged already
+	    $logger->warn("Device::arp_update_all caught exception but moving on");
+	}
+
+    }
+    
+    my $end = time;
+    $logger->info(sprintf("All ARP caches updated. %d devices, %d unique MACs, %d unique IPs in %d seconds", 
+			  $device_count, scalar keys %MACS_SEEN, scalar keys %IPS_SEEN, ($end-$start) ));
+
+    $class->_server_close($server);
     return 1;
 }
 
