@@ -1,4 +1,4 @@
-include $(ROOT)/etc/utility-Makefile
+include $(NDROOT)/etc/utility-Makefile
 
 #
 # makefile for import/
