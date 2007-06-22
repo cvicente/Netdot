@@ -66,57 +66,12 @@ sub dbdisconnect {
 ##################################################
 sub processdata {
     
-    &dbi_do('ALTER TABLE Device ADD COLUMN bgplocalas integer AFTER physaddr;',
-	    'ALTER TABLE Device ADD COLUMN bgpid varchar(64) AFTER bgplocalas;',
-	    'ALTER TABLE Device_history ADD COLUMN bgplocalas integer AFTER physaddr;',
-	    'ALTER TABLE Device_history ADD COLUMN bgpid varchar(64) AFTER bgplocalas;',
-	    'ALTER TABLE Device ADD COLUMN owner integer AFTER oobnumber;',
-	    'ALTER TABLE Device_history ADD COLUMN owner integer AFTER oobnumber;',
-	    'ALTER TABLE Device CHANGE COLUMN entity used_by integer;',
-	    'ALTER TABLE Device_history CHANGE COLUMN entity used_by integer;',
-	    'CREATE INDEX Device5 ON Device (owner);',
-	    'CREATE TABLE DeviceContacts ( 
-                               id INT NOT NULL AUTO_INCREMENT,
-			       device INT NOT NULL,
-			       contactlist INT NOT NULL,
-			       PRIMARY KEY (id) );',
-	    'CREATE UNIQUE INDEX DeviceContacts1 ON DeviceContacts (device, contactlist);',
-	    'ALTER TABLE Interface ADD COLUMN overwrite_descr tinyint AFTER description;',
-	    'ALTER TABLE Interface_history ADD COLUMN overwrite_descr tinyint AFTER description;',
-	    'ALTER TABLE Ipblock CHANGE COLUMN entity used_by integer;',
-	    'ALTER TABLE Ipblock ADD COLUMN owner integer AFTER status;',
+    &dbi_do(
+	    'ALTER TABLE Connection RENAME TO NetConnection;',
+	    'ALTER TABLE Connection_history RENAME TO NetConnection_history;',
+	    'DELETE FROM Meta;',
 	    );
     
-    # Migrate Device contacts
-    # 
-    my $devices = $dbh->prepare('SELECT id FROM Device');
-    $devices->execute();
-    
-    while ( my $dev = $devices->fetchrow_hashref ){
-	my $cls = $dbh->prepare("
-                   SELECT contactlist, contactlist2
-                   FROM Device
-                   WHERE id = ?");
-	
-	$cls->execute($dev->{id});
-	while ( my $cl = $cls->fetchrow_hashref ){
-	    if ( $cl->{contactlist} ){
-		&dbi_do("INSERT INTO DeviceContacts (device, contactlist) VALUES ('$dev->{id}', '$cl->{contactlist}')");
-	    }
-	    if ( $cl->{contactlist2} ){
-		&dbi_do("INSERT INTO DeviceContacts (device, contactlist) VALUES ('$dev->{id}', '$cl->{contactlist2}')");
-	    }
-	};
-    };
-    
-    # Remove the old fields
-    &dbi_do('ALTER TABLE Device DROP COLUMN contactlist;',
-	    'ALTER TABLE Device DROP COLUMN contactlist2;',
-	    'ALTER TABLE Device_history DROP COLUMN contactlist;',
-	    'ALTER TABLE Device_history DROP COLUMN contactlist2;',
-	    );
-
-
     return 1;
 }
 
