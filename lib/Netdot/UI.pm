@@ -311,7 +311,7 @@ sub form_field {
 				       default=>$args{default}, linkPage=>$args{linkPage}, returnAsVar=>1, 
 				       htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
 	    
-	} elsif ( $type eq "long varbinary" ) {
+	} elsif ( $type =~ /long varbinary|blob/ ) {
 	    $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 				      returnAsVar=>1, htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
 	    

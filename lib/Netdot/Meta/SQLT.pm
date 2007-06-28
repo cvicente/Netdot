@@ -6,7 +6,7 @@ use Data::Dumper;
 use Carp;
 
 my $t = SQL::Translator->new(no_comments         => 1,
-			     add_drop_table      => 1,
+			     add_drop_table      => 0,
 			     validate            => 1,
 			     );
 

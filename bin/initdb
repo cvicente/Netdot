@@ -150,13 +150,8 @@ sub insert_schema {
 #
 sub create_db {
     print "\nCreating $config{DB_TYPE} database $config{DB_DATABASE}.\n";
-    if ( $config{DB_TYPE} eq "mysql" ){
-	create_database( $dsn, $config{DB_DBA}, $config{DB_DBA_PASSWORD} )
-	    or die $DBIx::DataSource::errstr;
-    }elsif ( $config{DB_TYPE} eq "Pg" ){
-	create_database( $dsn, $config{DB_DBA}, $config{DB_DBA_PASSWORD} )
-	    or die $DBIx::DataSource::errstr;
-    }
+    create_database( $dsn, $config{DB_DBA}, $config{DB_DBA_PASSWORD} )
+	or die $DBIx::DataSource::errstr;
 }
 
 
@@ -196,7 +191,7 @@ sub initacls_Pg {
     my @acl;
 
     push @acl, "
-DROP USER $config{DB_NETDOT_USER};
+DROP USER IF EXISTS $config{DB_NETDOT_USER};
 CREATE USER $config{DB_NETDOT_USER} WITH PASSWORD '$config{DB_NETDOT_PASS}' NOCREATEDB NOCREATEUSER;
 ";
 
@@ -223,7 +218,12 @@ sub insert_default_data{
     if ( -f $file) {
 	open (DEFAULT, "<$file") or die "Can't open $file: $!";
 	foreach (<DEFAULT>) {
-	    push @data, $_ if ( /\w+/ );
+	    next unless ( /\w+/ );
+	    # Pg needs table names within double quotes to preserve case
+	    if ( $config{DB_TYPE} eq 'Pg'){
+		s/INSERT INTO (\w+)/INSERT INTO "$1"/;
+	    }
+	    push @data, $_;
 	}	
     }else{
 	die "Can't find $file";

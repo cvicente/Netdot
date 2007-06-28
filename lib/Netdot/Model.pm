@@ -22,8 +22,12 @@ my $logger = Netdot->log->get_logger("Netdot::Model");
 BEGIN {
     my $db_type  = __PACKAGE__->config->get('DB_TYPE');
     my $database = __PACKAGE__->config->get('DB_DATABASE');
+    my $host     = __PACKAGE__->config->get('DB_HOST');
+    my $port     = __PACKAGE__->config->get('DB_PORT');
 
-    $defaults{dsn}         = "dbi:".$db_type.":".$database;
+    $defaults{dsn}  = "dbi:$db_type:database=$database";
+    $defaults{dsn} .= ";host=$host" if defined ($host); 
+    $defaults{dsn} .= ";port=$port" if defined ($port); 
     $defaults{user}        = __PACKAGE__->config->get('DB_NETDOT_USER');
     $defaults{password}    = __PACKAGE__->config->get('DB_NETDOT_PASS');
     $defaults{dbi_options} = { __PACKAGE__->_default_attributes };
