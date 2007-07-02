@@ -8,34 +8,95 @@ use strict;
 
 =head1 NAME
 
-Netdot:: - 
+Netdot::Module::BinFile
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
-
-    use template;
-
-    my $foo = template->new();
-    ...
-
 =head1 CLASS METHODS
 
-=head2 method1
+#############################################################################
+=head2 insert - Inserts a binary file into the DB.
+
+  Inserts binary object into the BinFile table. If filetype is not
+  specified it will be (hopefully) determined automatically.
 
   Arguments:
-
+    file
+    filetype
   Returns:
-
+    See Class::DBI
   Examples:
-
-=head1 INSTANCE METHODS
-
-=head2 method2
+  $ret = BinFile->insert(file, filetype);
 
 =cut
+sub insert {
+    my ($self, $fh, $filetype) = @_;
+    my $extension = $1 if ($fh =~ /\.(\w+)$/);
+    my %mimeTypes = ("jpg" => "image/jpeg", "jpeg" => "image/jpeg", "gif" => "image/gif",
+                     "png" => "image/png",  "bmp"  => "image/bmp", "tiff" => "image/tiff",
+                     "tif" => "image/tiff", "pdf"  => "application/pdf");
+
+    if (!exists($mimeTypes{lc($extension)})) {
+        $self->error("File type could not be determined: extension \".$extension\" is unknown.");
+        return 0;
+    }
+
+    my $mimetype = $mimeTypes{lc($extension)};
+    my $data;
+    while (<$fh>) {
+        $data .= $_;
+    }
+
+    my %tmp = (bindata  => $data,
+	       filename => $fh,
+	       filetype => $mimetype,
+	       filesize => -s $fh,
+	       );
+
+    return $self->SUPER::insert(\%tmp);
+}
+
+=head1 INSTANCE METHODS
+=cut
+
+#############################################################################
+=head2 update - Updates a binary file in the DB.
+
+  Arguments:
+    file
+  Returns:
+    See Class::DBI
+  Examples:
+    $ret = BinFile->update(file);
+
+=cut
+sub update {
+    my ($self, $fh) = @_;
+    my $extension = $1 if ($fh =~ /\.(\w+)$/);
+    my %mimeTypes = ("jpg"=>"image/jpeg", "jpeg"=>"image/jpeg", "gif"=>"image/gif",
+                     "png"=>"image/png", "bmp"=>"image/bmp", "tiff"=>"image/tiff",
+                     "tif"=>"image/tiff", "pdf"=>"application/pdf");
+
+    if (!exists($mimeTypes{lc($extension)})) {
+        $self->error("File type could not be determined for $fh: extension \".$extension\" is unknown.");
+        return 0;
+    }
+
+    my $mimetype = $mimeTypes{lc($extension)};
+    my $data;
+    while (<$fh>) {
+        $data .= $_;
+    }
+
+    my %tmp;
+    $tmp{bindata} = $data;
+    $tmp{filename} = $fh;
+    $tmp{filetype} = $mimetype;
+    $tmp{filesize} = -s $fh;
+
+    return $self->SUPER::update(\%tmp);
+}
+
 
 =head1 AUTHOR
 
@@ -60,88 +121,5 @@ along with this program; if not, write to the Free Software Foundation,
 Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =cut
-
-
-=head2 insertbinfile - inserts a binary file into the DB.
-
-  $ret = $db->insertbinfile(file, filetype);
-
-  inserts binary object into the BinFile table. If filetype is not
-  specified it will be (hopefully) determined automatically.
-
-  Returns the id of the newly inserted row, or 0 for failure and error
-  should be set.
-
-=cut
-sub insertbinfile {
-    my ($self, $fh, $filetype) = @_;
-    my $extension = $1 if ($fh =~ /\.(\w+)$/);
-    my %mimeTypes = ("jpg"=>"image/jpeg", "jpeg"=>"image/jpeg", "gif"=>"image/gif",
-                     "png"=>"image/png", "bmp"=>"image/bmp", "tiff"=>"image/tiff",
-                     "tif"=>"image/tiff", "pdf"=>"application/pdf");
-
-    if (!exists($mimeTypes{lc($extension)})) {
-        $self->error("File type could not be determined: extension \".$extension\" is unknown.");
-        return 0;
-    }
-
-    my $mimetype = $mimeTypes{lc($extension)};
-    my $data;
-    while (<$fh>) {
-        $data .= $_;
-    }
-
-    my %tmp;
-    $tmp{bindata} = $data;
-    $tmp{filename} = $fh;
-    $tmp{filetype} = $mimetype;
-    $tmp{filesize} = -s $fh;
-
-    return $self->insert(table=>"BinFile", state=>\%tmp);
-}
-
-=head2 updatebinfile - updates a binary file in the DB.
-
-  $ret = $db->updatebinfile(file, binfile_id);
-
-  updates the the binary object with the specified id.
-
-  Returns positive int on success, or 0 for failure and error
-  should be set.
-
-=cut
-sub updatebinfile {
-    my ($self, $fh, $id) = @_;
-    my $extension = $1 if ($fh =~ /\.(\w+)$/);
-    my %mimeTypes = ("jpg"=>"image/jpeg", "jpeg"=>"image/jpeg", "gif"=>"image/gif",
-                     "png"=>"image/png", "bmp"=>"image/bmp", "tiff"=>"image/tiff",
-                     "tif"=>"image/tiff", "pdf"=>"application/pdf");
-
-    if (!exists($mimeTypes{lc($extension)})) {
-        $self->error("File type could not be determined for $fh: extension \".$extension\" is unknown.");
-        return 0;
-    }
-
-    my $obj = BinFile->retrieve($id);
-    if (!defined($obj)) {
-        $self->error("Could not locate row in BinFile with id $id.");
-        return 0;
-    }
-
-    my $mimetype = $mimeTypes{lc($extension)};
-    my $data;
-    while (<$fh>) {
-        $data .= $_;
-    }
-
-    my %tmp;
-    $tmp{bindata} = $data;
-    $tmp{filename} = $fh;
-    $tmp{filetype} = $mimetype;
-    $tmp{filesize} = -s $fh;
-
-    return $self->update(object=>$obj, state=>\%tmp);
-}
-
 
 1;

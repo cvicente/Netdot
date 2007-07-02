@@ -52,7 +52,7 @@ sub fast_insert{
     # Build SQL query
     my $sth;
     eval {
-	$sth = $dbh->prepare_cached("INSERT INTO FWTableEntry 
+	$sth = $dbh->prepare_cached("INSERT INTO fwtableentry 
                                      (fwtable,interface,physaddr)
                                      VALUES (?, ?, ?)
                                     ");	

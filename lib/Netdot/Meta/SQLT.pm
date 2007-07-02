@@ -137,7 +137,9 @@ sub _parser{
     my $schema = $tr->schema;
     my @tables = $self->get_tables(with_history => 1);
     foreach my $mtable ( @tables ) {
-	my $table = $schema->add_table( name => $mtable->name )
+	my $tname = $mtable->name;
+	$tname = lc($tname);
+	my $table = $schema->add_table( name => $tname )
 	    or croak $schema->error;
 
 	# Add Primary key constraint
@@ -151,7 +153,7 @@ sub _parser{
 	    my %field_args = (name              => $mcol->name,
 			      data_type         => $mcol->sql_type,
 			      size              => $mcol->length,
-			      is_nullable       => $mcol->nullable
+			      is_nullable       => $mcol->is_nullable
 			      );
 	    
 	    $field_args{default_value} = $mcol->default 

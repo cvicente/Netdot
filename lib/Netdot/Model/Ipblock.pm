@@ -646,7 +646,7 @@ sub build_tree {
     my $sth;
     eval {
 	$sth = $dbh->prepare_cached("SELECT id,address,prefix,parent 
-                                     FROM Ipblock 
+                                     FROM ipblock 
                                      WHERE version = $version 
                                      ORDER BY prefix");	
 	$sth->execute;
@@ -655,10 +655,11 @@ sub build_tree {
 	$class->throw_fatal($e);
     }
     
-    while ( my ($id,$address,$prefix,$parent) = $sth->fetchrow_array ){
+    while ( my ($id, $address, $prefix, $parent) = $sth->fetchrow_array ){
 	my $p      = $trie;      # pointer that starts at the root
 	my $bit    = $size;      # bit position.  Start at the most significant bit
 	my $last_p = 0;          # Last possible parent found
+	$parent    = 0 if !defined($parent);
 	while ($bit > $size - $prefix){
 	    $bit--;
 	    $last_p = $p->{id} if defined $p->{id};
@@ -690,7 +691,7 @@ sub build_tree {
     # Reflect changes in db
     undef $sth;
     eval {
-	$sth = $dbh->prepare_cached("UPDATE Ipblock SET parent = ? WHERE id = ?");
+	$sth = $dbh->prepare_cached("UPDATE ipblock SET parent = ? WHERE id = ?");
 	foreach (keys %parents){
 	    $sth->execute($parents{$_}, $_);
 	}
@@ -730,7 +731,7 @@ sub address_numeric {
     my $address;
     eval {
 	($address) = $dbh->selectrow_array("SELECT address 
-                                            FROM Ipblock 
+                                            FROM ipblock 
                                             WHERE id = $id");
     };
     if ( my $e = $@ ){
@@ -1220,7 +1221,7 @@ sub address_usage {
     my $dbh = $self->db_Main;
     eval {
 	$q = $dbh->prepare_cached("SELECT id, address, prefix, version 
-                                       FROM Ipblock 
+                                       FROM ipblock 
                                        WHERE ? <= address AND address <= ?");
 	
 	$q->execute(scalar($start->numeric), scalar($end->numeric));
@@ -1265,10 +1266,10 @@ sub subnet_usage {
     my $dbh   = $self->db_Main;
     my $q;
     eval {
-	$q = $dbh->prepare_cached("SELECT Ipblock.id, Ipblock.address, Ipblock.version, 
-                                          Ipblock.prefix, IpblockStatus.name AS status
-		  	           FROM Ipblock, IpblockStatus
-				   WHERE Ipblock.status=IpblockStatus.id
+	$q = $dbh->prepare_cached("SELECT ipblock.id, ipblock.address, ipblock.version, 
+                                          ipblock.prefix, ipblockstatus.name AS status
+		  	           FROM ipblock, ipblockstatus
+				   WHERE ipblock.status=ipblockstatus.id
 				   AND ? <= address AND address <= ?");
 	$q->execute(scalar($start->numeric), scalar($end->numeric));
     };
@@ -1447,7 +1448,7 @@ sub retrieve_all_hashref {
     
     my $dbh = $class->db_Main;
     eval {
-	$sth = $dbh->prepare_cached("SELECT id,address FROM Ipblock");	
+	$sth = $dbh->prepare_cached("SELECT id,address FROM ipblock");	
 	$sth->execute();
 	$ip_aref = $sth->fetchall_arrayref;
     };
@@ -1505,17 +1506,17 @@ sub fast_update{
     # Build SQL queries
     my ($sth1, $sth2, $sth3, $sth4);
     eval {
-	$sth1 = $dbh->prepare_cached("UPDATE Ipblock SET physaddr=?,last_seen=?
+	$sth1 = $dbh->prepare_cached("UPDATE ipblock SET physaddr=?,last_seen=?
                                       WHERE id=?");	
 
-	$sth2 = $dbh->prepare_cached("UPDATE Ipblock SET last_seen=?
+	$sth2 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=?
                                       WHERE id=?");	
 
-	$sth3 = $dbh->prepare_cached("INSERT INTO Ipblock 
+	$sth3 = $dbh->prepare_cached("INSERT INTO ipblock 
                                      (address,prefix,version,status,physaddr,first_seen,last_seen)
                                      VALUES (?, ?, ?, ?, ?, ?, ?)");	
 	
-	$sth4 = $dbh->prepare_cached("INSERT INTO Ipblock 
+	$sth4 = $dbh->prepare_cached("INSERT INTO ipblock 
                                      (address,prefix,version,status,first_seen,last_seen)
                                      VALUES (?, ?, ?, ?, ?, ?, ?)");	
 	
@@ -1886,24 +1887,24 @@ sub _get_status_id {
 #   Ipblock->search_devipsbyaddr($dev)
 
 __PACKAGE__->set_sql(devipsbyaddr => qq{
-    SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
-	FROM Ipblock, Interface, Device
-	WHERE Interface.id = Ipblock.interface AND
-	Device.id = Interface.device AND
-	Device.id = ?
-	ORDER BY Ipblock.address
+    SELECT device.id, interface.id, interface.name, interface.device, ipblock.id, ipblock.interface, ipblock.address
+	FROM ipblock, interface, device
+	WHERE interface.id = ipblock.interface AND
+	device.id = interface.device AND
+	device.id = ?
+	ORDER BY ipblock.address
     });
 
 # usage:
 #   Ipblock->search_devipsbyint($dev)
 
 __PACKAGE__->set_sql(devipsbyint => qq{
-    SELECT Device.id, Interface.id, Interface.name, Interface.device, Ipblock.id, Ipblock.interface, Ipblock.address
-	FROM Ipblock, Interface, Device
-	WHERE Interface.id = Ipblock.interface AND
-	Device.id = Interface.device AND
-	Device.id = ?
-	ORDER BY Interface.name
+    SELECT device.id, interface.id, interface.name, interface.device, ipblock.id, ipblock.interface, ipblock.address
+	FROM ipblock, interface, device
+	WHERE interface.id = ipblock.interface AND
+	device.id = interface.device AND
+	device.id = ?
+	ORDER BY interface.name
     });
 
 

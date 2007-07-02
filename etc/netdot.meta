@@ -404,7 +404,7 @@ $meta = {
       },
       installdate => {
         default => '',
-        description => 'Date when this Cable was first installed',
+        description => 'Date when this Cable was first installed (YYYY-MM-DD)',
         length => '',
         nullable => 1,
         tag => 'Installed on',
@@ -610,13 +610,13 @@ $meta = {
           method => 'strands',
           table => 'Circuit'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Circuit',
         type => 'integer'
       },
       datetested => {
         default => '',
-        description => 'Date that this strand was last tested',
+        description => 'Date that this strand was last tested (YYYY-MM-DD)',
         length => '',
         nullable => 1,
         tag => 'Date Tested',
@@ -632,10 +632,10 @@ $meta = {
       },
       direction => {
         default => '',
-        description => 'Does this strand transmit or receive?  The reference is determined by the start and end closets.',
+        description => 'Does this strand transmit?',
         length => '',
         nullable => 0,
-        tag => 'Direction (Tx/Rx)',
+        tag => 'Transmit?',
         type => 'bool'
       },
       fiber_type => {
@@ -823,7 +823,7 @@ $meta = {
           method => 'circuits',
           table => 'Link'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Part of Link',
         type => 'integer'
       },
@@ -844,7 +844,7 @@ $meta = {
           method => 'farcircuits',
           table => 'Interface'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Far Interface',
         type => 'integer'
       },
@@ -866,7 +866,7 @@ $meta = {
       },
       installdate => {
         default => '',
-        description => 'Date when this circuit was installed',
+        description => 'Date when this circuit was installed (YYYY-MM-DD)',
         length => '',
         nullable => 1,
         tag => 'Installed on',
@@ -881,7 +881,7 @@ $meta = {
           method => 'nearcircuits',
           table => 'Interface'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Near Interface',
         type => 'integer'
       },
@@ -1084,7 +1084,7 @@ $meta = {
   },
   Closet => {
     columns => {
-      '110_blocks' => {
+      ot_blocks => {
         default => '',
         description => '',
         length => '128',
@@ -1092,7 +1092,7 @@ $meta = {
         tag => '110 Blocks',
         type => 'varchar'
       },
-      '66_blocks' => {
+      ss_blocks => {
         default => '',
         description => '',
         length => '128',
@@ -1266,7 +1266,7 @@ $meta = {
           method => 'closets',
           table => 'Site'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Site',
         type => 'integer'
       },
@@ -1313,8 +1313,8 @@ $meta = {
         'outlets',
         'ru_avail',
         'patch_panels',
-        '110_blocks',
-        '66_blocks',
+        'ot_blocks',
+        'ss_blocks',
         'catv_taps',
         'access_key_type',
         'work_needed',
@@ -1814,7 +1814,7 @@ $meta = {
         default => '',
         description => 'Date that this Device was installed, or first seen in the network',
         length => '',
-        nullable => 0,
+        nullable => 1,
         tag => 'First Discovered',
         type => 'timestamp'
       },
@@ -1854,7 +1854,7 @@ $meta = {
         default => '',
         description => 'Last time ARP cache data was collected from this Device',
         length => '',
-        nullable => 0,
+        nullable => 1,
         tag => 'Last ARP',
         type => 'timestamp'
       },
@@ -1862,7 +1862,7 @@ $meta = {
         default => '',
         description => 'Last time Forwarding Tables (FWT) were collected from this Device',
         length => '',
-        nullable => 0,
+        nullable => 1,
         tag => 'Last FWT',
         type => 'timestamp'
       },
@@ -1870,7 +1870,7 @@ $meta = {
         default => '',
         description => 'Date that this Device was last updated',
         length => '',
-        nullable => 0,
+        nullable => 1,
         tag => 'Last Updated',
         type => 'timestamp'
       },
@@ -2038,7 +2038,7 @@ $meta = {
           method => 'devices',
           table => 'Site'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Site',
         type => 'integer'
       },
@@ -3242,13 +3242,13 @@ $meta = {
           method => 'outlets',
           table => 'ContactList'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Contact List',
         type => 'integer'
       },
       datetested => {
         default => '',
-        description => 'Date this cable was last tested',
+        description => 'Date this cable was last tested (YYYY-MM-DD)',
         length => '',
         nullable => 1,
         tag => 'Date Tested',
@@ -3280,7 +3280,7 @@ $meta = {
       },
       installdate => {
         default => '',
-        description => 'Date this cable was installed',
+        description => 'Date this cable was installed (YYYY-MM-DD)',
         length => '',
         nullable => 1,
         tag => 'Date Installed',
@@ -3406,7 +3406,7 @@ $meta = {
           method => 'interfaces',
           table => 'ContactList'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Contact List',
         type => 'integer'
       },
@@ -3506,7 +3506,7 @@ $meta = {
           method => 'neighbors',
           table => 'Interface'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Neighbor',
         type => 'integer'
       },
@@ -3577,7 +3577,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Speed',
-        type => 'integer'
+        type => 'bigint'
       },
       type => {
         default => '',
@@ -3721,7 +3721,7 @@ $meta = {
           method => 'services',
           table => 'ContactList'
         },
-        nullable => 0,
+        nullable => 1,
         tag => undef,
         type => 'integer'
       },
@@ -3898,7 +3898,7 @@ $meta = {
           method => 'public_addresses',
           table => 'Ipblock'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Natted To',
         type => 'integer'
       },
@@ -3911,7 +3911,7 @@ $meta = {
           method => 'used_blocks',
           table => 'Entity'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Owner',
         type => 'integer'
       },
@@ -3924,7 +3924,7 @@ $meta = {
           method => 'children',
           table => 'Ipblock'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Parent',
         type => 'integer'
       },
@@ -3971,7 +3971,7 @@ $meta = {
           method => 'used_blocks',
           table => 'Entity'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Used by',
         type => 'integer'
       },
@@ -4672,7 +4672,7 @@ $meta = {
           method => 'resourcerecords',
           table => 'ContactList'
         },
-        nullable => 0,
+        nullable => 1,
         tag => "Contact List",
         type => 'integer'
       },
@@ -4894,7 +4894,7 @@ $meta = {
         default => '',
         description => '',
         length => '32',
-        nullable => 1,
+        nullable => 0,
         tag => 'CPU',
         type => 'varchar'
       },
@@ -4910,7 +4910,7 @@ $meta = {
         default => '',
         description => '',
         length => '32',
-        nullable => 1,
+        nullable => 0,
         tag => 'OS',
         type => 'varchar'
       },
@@ -5067,7 +5067,7 @@ $meta = {
           method => 'nsrecords',
           table => 'RR'
         },
-        nullable => 1,
+        nullable => 0,
         tag => 'Name Server',
         type => 'integer'
       },
@@ -5542,7 +5542,7 @@ $meta = {
           method => 'sites',
           table => 'Availability'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Availability',
         type => 'integer'
       },
@@ -5563,7 +5563,7 @@ $meta = {
           method => 'sites',
           table => 'ContactList'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Contact List',
         type => 'integer'
       },
@@ -5902,7 +5902,7 @@ $meta = {
           method => 'vlans',
           table => 'VlanGroup'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Group',
         type => 'integer'
       },
@@ -5977,7 +5977,7 @@ $meta = {
         tag => 'Description',
         type => 'varchar'
       },
-      end => {
+      end_vid => {
         default => '',
         description => 'Last VLAN number',
         length => '',
@@ -6009,7 +6009,7 @@ $meta = {
         tag => 'Name',
         type => 'varchar'
       },
-      start => {
+      start_vid => {
         default => '',
         description => 'First VLAN number',
         length => '',
@@ -6034,16 +6034,16 @@ $meta = {
     views => {
       all => [
         'name',
-        'start',
-        'end',
+        'start_vid',
+        'end_vid',
         'description',
         'info'
       ],
       brief => [
         'name',
         'description',
-        'start',
-        'end',
+        'start_vid',
+        'end_vid',
       ]
     }
   },
@@ -6066,7 +6066,7 @@ $meta = {
           method => 'zones',
           table => 'ContactList'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Contact List',
         type => 'integer'
       },
@@ -6103,7 +6103,7 @@ $meta = {
           method => 'zones',
           table => 'IpService'
         },
-        nullable => 0,
+        nullable => 1,
         tag => 'Master Server',
         type => 'integer'
       },

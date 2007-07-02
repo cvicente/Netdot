@@ -94,7 +94,7 @@ sub _find_group{
 	unless defined $vid;
 
     foreach my $group ( VlanGroup->retrieve_all() ){
-	if ( $vid >= $group->start && $vid <= $group->end ){
+	if ( $vid >= $group->start_vid && $vid <= $group->end_vid ){
 	    return $group;
 	}
     }

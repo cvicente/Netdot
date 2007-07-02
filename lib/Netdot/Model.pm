@@ -55,14 +55,14 @@ BEGIN {
 	my $h_table  = $self->meta_data->get_history_table_name();
 	return unless $h_table;  # this object does not have a history table
 	my $dbh      = $self->db_Main();
-	my $col_list = join ",", $table->columns;
+	my $col_list = join ",", $self->columns;
 	my $id       = $self->id;
 	my @vals = $dbh->selectrow_array("SELECT $col_list FROM $table WHERE id = $id");
 	my %current_data;
 	my $i = 0;
-	map { $current_data{$_} = $vals[$i++] } $table->columns;
+	map { $current_data{$_} = $vals[$i++] } $self->columns;
 	delete $current_data{id}; # Our id is different
-	my $oid = lc($table . "_id"); # fk pointing to the real object's id
+	my $oid = $table."_id"; # fk pointing to the real object's id
 	$current_data{$oid}     = $self->id;
 	$current_data{modified} = $self->timestamp;
 	$current_data{modifier} = $ENV{REMOTE_USER} || "unknown";
@@ -170,6 +170,8 @@ sub insert {
 
     $class->throw_fatal("insert needs field/value parameters") 
 	unless ( keys %{$argv} );
+    
+    $class->_adjust_vals($argv);
     my $obj;
     eval {
 	$obj = $class->SUPER::insert($argv);
@@ -177,10 +179,14 @@ sub insert {
     if ( my $e = $@ ){
 	# Class::DBI shows a full stack trace
 	# Try to make it less frightening for the user
-	if ( $e =~ /Duplicate entry '(.*)'/i ){
-	    $e = "$class Insert error:  One or more columns were detected as duplicate.";
-	}elsif ( $e =~ /cannot be null/ ){
-	    $e = "$class Insert error:  One or more columns cannot be null.";
+	if ( $e =~ /Duplicate entry/i ){
+	    $e = "$class Insert error:  One or more fields were detected as duplicate.";
+	}elsif ( $e =~ /cannot be null|not-null constraint/i ){
+	    $e = "$class Insert error:  One or more fields cannot be null.";
+	}elsif ( $e =~ /invalid input syntax/i ){
+	    $e = "$class Insert error: One or more fields have invalid input syntax.";
+	}elsif ( $e =~ /out of range/i ){
+	    $e = "$class Insert error: One or more values are out of valid range.";
 	}
 	$class->throw_user($e);
     }
@@ -271,9 +277,31 @@ sub date {
 
 =cut
 sub meta_data {
-    my $proto = shift;
-    my $class = ref($proto) || $proto;
-    return $class->meta->get_table($class->table);
+    my $self = shift;
+    my $table;
+    $table = $self->short_class();
+    return $self->meta->get_table($table);
+}
+
+############################################################################
+=head2 short_class - Return the short version of a class name.  It can also be called as a Class method.
+    
+  Arguments:
+    None
+  Returns:
+    Short class name
+  Examples:
+    # This returns 'Device' instead of Netdot::Model::Device
+    $class = $dev->short_class();
+=cut
+sub short_class {
+    my $self = shift;
+
+    my $class = ref($self) || $self;
+    if ( $class =~ /::(\w+)$/ ){
+	$class = $1;
+    }
+    return $class;
 }
 
 ############################################################################
@@ -444,7 +472,11 @@ sub db_auto_commit {
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
-    $self->set( %$argv ) if ( $argv );
+    my $class = ref($self);
+    if ( $argv ){
+	$class->_adjust_vals($argv);
+	$self->set( %$argv );
+    }
 
     my @changed_keys;
     my $id = $self->id;
@@ -457,9 +489,14 @@ sub update {
 	if ( my $e = $@ ){
 	    # Class::DBI shows a full stack trace
 	    # Try to make it less frightening for the user
-	    if ( $e =~ /Duplicate entry '(.*)'/i ){
-		$e = "$class Update error:  Duplicate entry: '$1'.";
+	    if ( $e =~ /Duplicate/i ){
+		$e = "$class Update error:  One or more fields are invalid duplicates";
+	    }elsif ( $e =~ /invalid input syntax/i ){
+		$e = "$class Update error: One or more fields have invalid input syntax";
+	    }elsif ( $e =~ /out of range/i ){
+		$e = "$class Update error: One or more values are out of valid range.";
 	    }
+
 	    $self->throw_user($e);
 	}
 	# For some reason, we (with some classes) get an empty object after updating (weird)
@@ -524,8 +561,8 @@ sub get_state {
     $self->isa_object_method('get_state');
 
     my %bak;
-    my $table  = $self->table;
-    my @cols   = $table->columns();
+    my $class  = $self->short_class;
+    my @cols   = $class->columns();
     my @values = $self->get( @cols );
     my $n = 0;
     foreach my $col ( @cols ){
@@ -590,7 +627,7 @@ sub get_history {
     my ($self, $o) = @_;
     $self->isa_object_method('get_history');
 
-    my $table   = $self->table;
+    my $table  = $self->table;
     my $htable = $self->meta_data->get_history_table_name();
 
     # History objects have two indexes, one is the necessary
@@ -651,6 +688,38 @@ sub search_all_tables {
 # Private Methods
 #
 ##################################################################
+
+############################################################################
+# _adjust_vals - Adjust field values before inserting/updating
+# 
+#    Make sure to set integer and bool fields to 0 instead of the empty string.
+#    Ignore the empty string when inserting/updating date fields.
+#
+# Arguments:
+#   hash ref with key/value pairs
+# Returns:
+#   True
+# Examples:
+#
+sub _adjust_vals{
+    my ($self, $args) = @_;
+    $self->isa_class_method('_adjust_vals');
+    foreach my $field ( keys %$args ){
+	my $mcol = $self->meta_data->get_column($field);
+	if ( $args->{$field} eq "" || $args->{$field} =~ /^null$/i){
+	    if ( $mcol->sql_type =~ /integer|bool/i ){
+		$logger->debug( sub { sprintf("Model::_adjust_vals: Setting empty field '%s' type '%s' to 0.", 
+					      $field, $mcol->sql_type) } );
+		$args->{$field} = 0;
+	    }elsif ( $mcol->sql_type =~ /date/i ){
+		$logger->debug( sub { sprintf("Model::_adjust_vals: Removing empty field %s type %s.", 
+					      $field, $mcol->sql_type) } );
+		delete $args->{$field};
+	    }
+	}
+    }
+    return 1;
+}
 
 ##################################################################
 #_convert_search_keyword - Transform a search keyword into exact or wildcarded

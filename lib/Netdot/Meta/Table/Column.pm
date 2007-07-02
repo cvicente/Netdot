@@ -111,7 +111,7 @@ sub default {
 }
 
 ##################################################
-=head2 nullable - Get 'nullable' nature for this column as defined in the DB
+=head2 is_nullable - Get 'nullable' nature for this column as defined in the DB
 
   Arguments:
     None
@@ -121,7 +121,7 @@ sub default {
     $null = $mcol->nullable;
 
 =cut
-sub nullable {
+sub is_nullable {
     my $self = shift;
     return $self->_get_attr('nullable');
 }

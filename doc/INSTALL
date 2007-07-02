@@ -5,20 +5,9 @@ REQUIREMENTS
 
 * Apache2 with mod_perl2
 
-* A DBMS with Transaction and Perl DBI support
-  (See: http://search.cpan.org/search?query=DBD%3A%3A&mode=module)
-
-  Note: So far, tested with MySQL only.  You will need a version 
-	of MySQL with support for the INNODB storage engine.
-
-        In MySQL configuration file (e.g. /etc/mysql/my.cnf), 
-        make sure you have:
-
-	   default-storage-engine = INNODB  - or -
-	   default-table-type     = INNODB
-
-	otherwise, your tables might be created as type MyISAM, which
-	will make transactions and dry-runs innefective.
+* MySQL or PostgreSQL
+  
+  Note: You will need a version of MySQL with support for the INNODB storage engine.
 
 * A Radius server (for authentication).  We recommend FreeRadius, 
   available at:
@@ -53,8 +42,31 @@ REQUIREMENTS
 	> install <Module::Name>
 	
 ----------------------------------------------------------------------
+NETDOT CONFIGURATION
+----------------------------------------------------------------------
+
+Netdot comes with a configuration file that you need to customize
+to your needs.  This file is a Perl hash structure.
+
+* Make a copy of 
+	/YOUR-PREFIX/etc/Default.conf
+  and call it
+	/YOUR-PREFIX/etc/Site.conf
+
+Netdot will first read Default.conf and then Site.conf.  Any 
+changes you make in Site.conf will take effect in the next 
+Apache restart.
+
+The reason for keeping two files is that when an upgrade is performed, 
+the Default.conf can be re-written (to add new variables, etc.), without 
+overwriting your site-specific configuration.
+
+----------------------------------------------------------------------
 INSTALLING THE PACKAGE FOR THE FIRST TIME
 ----------------------------------------------------------------------
+
+* Make sure you have created a etc/Site.conf file with your custom configurations.
+  (see above)
 
 * From the main directory do:
 
@@ -69,7 +81,12 @@ INSTALLING THE PACKAGE FOR THE FIRST TIME
 * If you are using MySQL, make sure you include the following 
   line in your config file (e.g. /etc/my.cnf):
 
-	default-storage-engine=innodb
+	default-storage-engine = innodb     -- or --
+	default-table-type     = innodb
+
+  otherwise, your tables might be created as type MyISAM, which
+  will make transactions and dry-runs innefective.
+
 
 * Then, you'll be ready to initialize the database:
 
@@ -121,23 +138,3 @@ APACHE CONFIGURATION
   install netdot in /usr/local/netdot (i.e. you specified a custom
   PREFIX).
 
-
-----------------------------------------------------------------------
-NETDOT CONFIGURATION
-----------------------------------------------------------------------
-
-Netdot comes with a configuration file that you need to customize
-to your needs.  This file is a Perl hash structure.
-
-* Make a copy of 
-	/YOUR-PREFIX/etc/Default.conf
-  and call it
-	/YOUR-PREFIX/etc/Site.conf
-
-Netdot will first read Default.conf and then Site.conf.  Any 
-changes you make in Site.conf will take effect in the next 
-Apache restart.
-
-The reason for keeping two files is that when an upgrade is performed, 
-the Default.conf can be re-written (to add new variables, etc.), without 
-overwriting your site-specific configuration.

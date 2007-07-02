@@ -404,6 +404,7 @@ sub speed_pretty {
                      '622000000'   => 'OC-12',
                      '622080000'   => 'OC-12',
                      '1000000000'  => '1 Gbps',
+		     '3000000000'  => '3 Gbps',
                      '10000000000' => '10 Gbps',
                      );
     if ( exists $SPEED_MAP{$self->speed} ){

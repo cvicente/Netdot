@@ -201,9 +201,9 @@ CREATE USER $config{DB_NETDOT_USER} WITH PASSWORD '$config{DB_NETDOT_PASS}' NOCR
 	or die "Couldn't open $schema: $!\n";
     
     while (<SCHEMA>){
-	if (/CREATE TABLE (\w+) \(/){
-	    push @acl, "GRANT SELECT, INSERT UPDATE DELETE ON $1 TO $config{DB_NETDOT_USER};\n";
-	    push @acl, "GRANT SELECT, INSERT UPDATE DELETE ON $1_id_seq to $config{DB_NETDOT_USER};\n";
+	if ( /CREATE TABLE "(\w+)"/ ){
+	    push @acl, "GRANT SELECT, INSERT, UPDATE, DELETE ON $1 TO $config{DB_NETDOT_USER};\n";
+	    push @acl, "GRANT SELECT, INSERT, UPDATE, DELETE ON $1_id_seq to $config{DB_NETDOT_USER};\n";
 	}
     }
 
@@ -219,9 +219,10 @@ sub insert_default_data{
 	open (DEFAULT, "<$file") or die "Can't open $file: $!";
 	foreach (<DEFAULT>) {
 	    next unless ( /\w+/ );
-	    # Pg needs table names within double quotes to preserve case
-	    if ( $config{DB_TYPE} eq 'Pg'){
-		s/INSERT INTO (\w+)/INSERT INTO "$1"/;
+	    if ( /INSERT INTO (\w+)/ ){
+		my $t = $1;
+		$t = lc($t);
+		s/INSERT INTO \w+/INSERT INTO $t/;
 	    }
 	    push @data, $_;
 	}	

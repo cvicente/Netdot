@@ -91,10 +91,13 @@ sub search {
 	# So go on.
 
 	# name is either a string or a RR id
-	if ( $argv{name} !~ /^\d+$/ ){
-	    # It's not an id.  Look it up as name
+	if ( $argv{name} =~ /\D+/ ){
+	    # argument has non-digits.  It's not an id.  Look it up as name
 	    if ( my $rr = RR->search(name=>$argv{name})->first ){
-		$argv{name} = $rr;
+		$argv{name} = $rr->id;
+	    }else{
+		# No use searching for a non-digit string in the name field
+		$argv{name} = 0;
 	    }
 	}
     }
@@ -267,6 +270,14 @@ sub insert {
 		  customer_managed => 0,
 		  date_installed   => $class->timestamp,
 		  owner            => $default_owner,
+		  collect_arp      => 0,
+		  collect_fwt      => 0,
+		  canautoupdate    => 0,
+		  maint_covered    => 0,
+		  monitor_config   => 0,
+		  monitorstatus    => 0,
+		  snmp_bulk        => 0,
+		  snmp_managed     => 0,
 		  );
 
     # Add given args (overrides defaults).
@@ -3657,7 +3668,7 @@ sub _oct2hex {
 #
 __PACKAGE__->set_sql(by_type => qq{
     SELECT d.id
-	FROM Device d, Product p, ProductType t, RR rr
+	FROM device d, Product p, ProductType t, RR rr
 	WHERE d.product = p.id AND
 	p.type = t.id AND
 	rr.id = d.name AND
@@ -3667,10 +3678,10 @@ __PACKAGE__->set_sql(by_type => qq{
 
 __PACKAGE__->set_sql(no_type => qq{
     SELECT p.name, p.id, COUNT(d.id) AS numdevs
-        FROM Device d, Product p
+        FROM device d, Product p
         WHERE d.product = p.id AND
         p.type = 0
-        GROUP BY p.id
+        GROUP BY p.name, p.id
         ORDER BY numdevs DESC
     });
 

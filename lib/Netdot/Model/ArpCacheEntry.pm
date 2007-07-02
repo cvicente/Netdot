@@ -54,7 +54,7 @@ sub fast_insert{
     # Build SQL query
     my $sth;
     eval {
-	$sth = $dbh->prepare_cached("INSERT INTO ArpCacheEntry 
+	$sth = $dbh->prepare_cached("INSERT INTO arpcacheentry 
                                      (arpcache,interface,ipaddr,physaddr)
                                      VALUES (?, ?, ?, ?)
                                     ");	
@@ -73,7 +73,7 @@ sub fast_insert{
 			      $db_macs->{$r->{physaddr}},
 			      );
 	    }else{
-		$logger->error(sprintf("Netdot::Model::ArpCacheEntry: Error inserting: Missing MAC: %s or IP: %s", 
+		$logger->error(sprintf("Netdot::Model::arpcacheentry: Error inserting: Missing MAC: %s or IP: %s", 
 				    $r->{physaddr}, $r->{ipaddr}));
 	    }
 	}

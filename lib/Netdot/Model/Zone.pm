@@ -45,6 +45,10 @@ sub search {
     my ($class, %argv) = @_;
     $class->isa_class_method('search');
 
+    if ( exists $argv{id} && $argv{id} =~ /\D+/ ){
+	# No use searching for non-digits in id field
+	$argv{id} = 0;
+    } 
     if ( exists $argv{mname} && $argv{mname} =~ /\./ ){
 	my @sections = split /\./, $argv{mname};
 
@@ -101,6 +105,7 @@ sub insert {
                  expire    => $argv->{expire}  || $class->config->get('DEFAULT_DNSEXPIRE'),
                  minimum   => $argv->{minimum} || $class->config->get('DEFAULT_DNSMINIMUM'),
                  active    => $argv->{active}  || 1,
+		 reverse   => $argv->{reverse} || 0,
 		 );
 
     return $class->SUPER::insert( \%state );

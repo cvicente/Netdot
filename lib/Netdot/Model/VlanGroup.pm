@@ -31,7 +31,7 @@ Netdot Vlan Group Class
   Returns:
     New VlanGroup object
   Examples:
-    my $newgroup = VlanGroup->insert({name=>$name, start=>$start, end=>$end});
+    my $newgroup = VlanGroup->insert({name=>$name, start_vid=>$start, end_vid=>$end});
 
 =cut
 sub insert{
@@ -41,8 +41,8 @@ sub insert{
     $class->throw_user('Vlan::insert: Argument variable must be hash reference')
 	unless ( ref($argv) eq 'HASH' );
 
-    $class->throw_user("Missing one or more required arguments: name, start, end")
-	unless ( exists $argv->{name} && exists $argv->{start} && exists $argv->{end} );
+    $class->throw_user("Missing one or more required arguments: name, start_vid, end_vid")
+	unless ( exists $argv->{name} && exists $argv->{start_vid} && exists $argv->{end_vid} );
     
     $class->_validate($argv);
     
@@ -106,7 +106,7 @@ sub assign_vlans{
 
     # Assing vlans to this new group
     foreach my $vlan ( Vlan->retrieve_all ){
-	if ( $vlan->vid >= $self->start && $vlan->vid <= $self->end ){
+	if ( $vlan->vid >= $self->start_vid && $vlan->vid <= $self->end_vid ){
 	    unless ( $vlan->vlangroup == $self->id ){
 		$vlan->update({vlangroup=>$self->id});
 		$logger->debug(sprintf("VlanGroup: %s: Vlan %s within my range. Updating.", 
@@ -145,8 +145,8 @@ sub update{
     my $class = ref($self);
     $self->_validate($argv);
 
-    my $oldstart = $self->start;
-    my $oldend   = $self->end;
+    my $oldstart = $self->start_vid;
+    my $oldend   = $self->end_vid;
     my $id = $self->id;
 
     my $res = $self->SUPER::update($argv);
@@ -154,7 +154,7 @@ sub update{
     
     # For some reason, we get an empty object after updating (weird)
     # so we re-read the object from the DB to get the comparisons below to work
-    if ( $self->start != $oldstart || $self->end != $oldend ){
+    if ( $self->start_vid != $oldstart || $self->end_vid != $oldend ){
  	my $name = $self->name;
  	$logger->info("VlanGroup $name: Range changed.  Reassigning VLANs.");
  	$self->assign_vlans;
@@ -195,8 +195,8 @@ sub _validate {
     my $groups = VlanGroup->retrieve_all();
 
     # Check range validity
-    if ( exists $argv->{start} && exists $argv->{end} ){
-	if ( $argv->{start} >= $argv->{end} ){
+    if ( exists $argv->{start_vid} && exists $argv->{end_vid} ){
+	if ( $argv->{start_vid} >= $argv->{end_vid} ){
 	    $class->throw_user("Invalid range: start must be lower than end");
 	}
 	
@@ -207,17 +207,17 @@ sub _validate {
 	    }
 	    
 	    # Check that ranges do not overlap
-	    unless ( ($argv->{start} < $g->start && $argv->{end} < $g->start) ||
-		     ($argv->{start} > $g->end && $argv->{end} > $g->end) ){
+	    unless ( ($argv->{start_vid} < $g->start_vid && $argv->{end_vid} < $g->start_vid) ||
+		     ($argv->{start_vid} > $g->end_vid && $argv->{end_vid} > $g->end_vid) ){
 		
 		$class->throw_user(sprintf("New range: %d-%d overlaps with Group: %s",
-					   $argv->{start}, $argv->{end}, $g->name));
+					   $argv->{start_vid}, $argv->{end_vid}, $g->name));
 	    }
 	}
     }
     # No negative values
-    if ( (exists $argv->{start} && $argv->{start} < 0) 
-	 || (exists $argv->{end} && $argv->{end} < 0)  ){
+    if ( (exists $argv->{start_vid} && $argv->{start_vid} < 0) 
+	 || (exists $argv->{end_vid} && $argv->{end_vid} < 0)  ){
 	$class->throw_user("Invalid range: Neither start nor end can be negative");
     }
 

@@ -83,7 +83,7 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 <%perl>
     if ( $name && $start && $end ){
 	eval {
-	    VlanGroup->insert({name=>$name, start=>$start, end=>$end});
+	    VlanGroup->insert({name=>$name, start_vid=>$start, end_vid=>$end});
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);

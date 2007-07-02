@@ -59,7 +59,7 @@ sub insert {
     
     $argv->{first_seen} = $self->timestamp();
     $argv->{last_seen}  = $self->timestamp();
-
+    $argv->{static}     = defined($argv->{static}) ?  $argv->{static} : 0;
     return $self->SUPER::insert( $argv );
 }
 
@@ -89,7 +89,7 @@ sub retrieve_all_hashref {
 
     my $dbh = $class->db_Main;
     eval {
-	$sth = $dbh->prepare_cached("SELECT id,address FROM PhysAddr");	
+	$sth = $dbh->prepare_cached("SELECT id,address FROM physaddr");	
 	$sth->execute();
 	$mac_aref = $sth->fetchall_arrayref;
     };
@@ -144,12 +144,12 @@ sub fast_update {
     # Build SQL queries
     my ($sth1, $sth2);
     eval {
-	$sth1 = $dbh->prepare_cached("UPDATE PhysAddr SET last_seen=?
+	$sth1 = $dbh->prepare_cached("UPDATE physaddr SET last_seen=?
                                      WHERE id=?
                                     ");	
 	
 	
-	$sth2 = $dbh->prepare_cached("INSERT INTO PhysAddr (address, first_seen, last_seen)
+	$sth2 = $dbh->prepare_cached("INSERT INTO physaddr (address, first_seen, last_seen)
                                      VALUES (?, ?, ?)
                                     ");	
     };
@@ -256,7 +256,7 @@ sub from_interfaces {
     my $dbh = $class->db_Main;
     eval {
 	$sth = $dbh->prepare_cached("SELECT p.id,p.address 
-                                     FROM PhysAddr p, Interface i 
+                                     FROM physaddr p, interface i 
                                      WHERE i.physaddr=p.id");	
 	$sth->execute();
 	$mac_aref = $sth->fetchall_arrayref;
@@ -269,7 +269,7 @@ sub from_interfaces {
 	my ($id, $address) = @$row;
 	$int_macs{$address} = $id;
     }
-    $logger->debug("PhysAddr::from_interfaces: ...done");
+    $logger->debug("Physaddr::from_interfaces: ...done");
 
     return \%int_macs;
     

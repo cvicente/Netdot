@@ -132,11 +132,11 @@ sub find_or_create {
 # Get lists of products
 __PACKAGE__->set_sql(by_type => qq{
     SELECT p.name, p.id, COUNT(d.id) AS numdevs
-        FROM Device d, Product p, ProductType t
+        FROM device d, product p, producttype t
         WHERE d.product = p.id AND
         p.type = t.id AND
         t.id = ?
-        GROUP BY p.id
+        GROUP BY p.name, p.id
         ORDER BY numdevs DESC
     });
 

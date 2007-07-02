@@ -161,8 +161,10 @@ sub cdbi_classes{
 	$package = ($argv{namespace}) ? $argv{namespace}."::".$table->name : $table->name;
 	$code .= "package ".$package.";\n";
 	$code .= "use base '$argv{base}';\n";
-	$code .= "__PACKAGE__->table( '".$table->name."' );\n";
-
+	my $tname = $table->name;
+	$tname = lc($tname);
+	$code .= "__PACKAGE__->table( '$tname' );\n";
+	
 	# Set up primary columns
 	$code .=  "__PACKAGE__->columns( Primary => qw / id /);\n";
 

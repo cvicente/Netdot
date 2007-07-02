@@ -198,6 +198,7 @@ sub form_to_db{
 	my %todelete;
 	
 	foreach my $id (keys %{ $objs{$table} }){
+	    
 	    my $act = 0; 
 
 	    # If our id is 'NEW' we want to insert a new row in the DB.
@@ -285,7 +286,7 @@ sub form_field {
 
     my ($label, $value); # return values
     
-    my $table   = ($o ? $o->table   : $args{table});
+    my $table   = ($o ? $o->short_class : $args{table});
     my $id      = ($o ? $o->id      : "NEW");
     my $current = ($o ? $o->$column : $args{default});
     
@@ -338,7 +339,7 @@ sub form_field {
 	unless ( $args{no_help} ){
 	    $label = $self->col_descr_link($table, $column, $label);
 	}
-	if ( $mcol->is_unique && $args{edit} ){  $label .= "<font color=\"red\">*</font>" }
+	if ( $args{edit} && $mcol->is_unique ){  $label .= "<font color=\"red\">*</font>" }
         $returnhash{label} = $label . ':';
         $returnhash{value} = $value;
         return %returnhash;
@@ -425,7 +426,7 @@ sub select_lookup{
     my ($self, %args) = @_;
     my ($o, $column) = @args{'object', 'column'};
     $self->throw_fatal("Need to pass object or table name") unless ( $o || $args{table} );
-    my $table  = ($o ? $o->table : $args{table});
+    my $table  = ($o ? $o->short_class : $args{table});
     $self->throw_fatal("Need to specify table and field to look up") unless ( $args{lookup} && $column );
 
     my @defaults = @{$args{defaults}} if $args{defaults};
@@ -526,7 +527,7 @@ sub select_lookup{
 	
     }elsif ( $args{linkPage} && $o->$column ){
 	if ( $args{linkPage} eq "1" || $args{linkPage} eq "view.html" ){
-	    my $rtable = $o->$column->table;
+	    my $rtable = $o->$column->short_class;
 	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", 
 			       $rtable, $o->$column->id, $o->$column->get_label);
 	}else{
@@ -676,7 +677,7 @@ sub radio_group_boolean{
     my ($o, $table, $column) = @args{'object', 'table', 'column'};
     my $output;
 
-    my $table = ($o ? $o->table : $table);
+    my $table = ($o ? $o->short_class : $table);
     my $id    = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
     my $name  = ( $args{shortFieldName} ? $column : $table . "__" . $id . "__" . $column );
@@ -728,7 +729,7 @@ sub checkbox_boolean{
                                             $args{column}, $args{edit}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
-    my $table   = ($o ? $o->table : $table);
+    my $table   = ($o ? $o->short_class : $table);
     my $id      = ($o ? $o->id : "NEW");
     my $value   = ($o ? $o->$column : "");
     my $name    = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
@@ -789,7 +790,7 @@ sub text_field($@){
 	 $args{linkPage}, $args{default}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
-    my $table  = ($o ? $o->table : $table);
+    my $table  = ($o ? $o->short_class : $table);
     my $id     = ($o ? $o->id : "NEW");
     my $value  = ($o ? $o->$column : $default);
     my $name   = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
@@ -850,7 +851,7 @@ sub text_area($@){
 	 $args{returnAsVar}, $args{shortFieldName} );
     my $output;
     
-    my $table  = ($o ? $o->table : $table);
+    my $table  = ($o ? $o->short_class : $table);
     my $id     = ($o ? $o->id : "NEW");
     my $value  = ($o ? $o->$column : "");
     my $name   = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
