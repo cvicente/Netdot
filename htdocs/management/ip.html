@@ -400,7 +400,8 @@ if ( defined($search) ){
 #######################################################################################
 }elsif ( $_action eq "CONFIRM_DELETE" ){
   
-    my ($parentid, $address, $prefix, $version) = ($o->parent->id, $o->address, $o->prefix, $o->version);
+    my ($address, $prefix, $version) = ($o->address, $o->prefix, $o->version);
+    my $parentid = $o->parent->id if ( $o->parent );
     # Remove from Database
     #
     my $rec = ($recursivedel)? 1 : 0;

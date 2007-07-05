@@ -298,28 +298,22 @@ sub insert {
     $argv->{dns_delegated} ||= 0; 
     $argv->{owner}         ||= 0; 
     $argv->{used_by}       ||= 0; 
+    $argv->{parent}        ||= 0; 
     
     # $ip is a NetAddr::IP object;
     my $ip;
-    
     $ip = $class->_prevalidate($argv->{address}, $argv->{prefix});
+    $argv->{address} = $ip->addr;
+    $argv->{prefix}  = $ip->masklen;
+    $argv->{version} = $ip->version;
     
-    my $statusid = $class->_get_status_id($argv->{status});
+    my $statusid     = $class->_get_status_id($argv->{status});
+    $argv->{status}  = $statusid;
 
-    my %state = ( address       => $ip->addr, 
-		  prefix        => $ip->masklen,
-		  version       => $ip->version,
-		  status        => $statusid,
-		  interface     => $argv->{interface},
-		  dhcp_enabled  => $argv->{dhcp_enabled},
-		  dns_delegated => $argv->{dns_delegated},
-		  owner         => $argv->{owner},
-		  used_by       => $argv->{used_by},
-		  first_seen    => $class->timestamp,
-		  last_seen     => $class->timestamp,
-		  );
-    
-    my $newblock = $class->SUPER::insert(\%state);
+    $argv->{first_seen} = $class->timestamp,
+    $argv->{last_seen}  = $class->timestamp,
+
+    my $newblock = $class->SUPER::insert($argv);
     
     # Rebuild tree
     $class->build_tree($ip->version);
@@ -1801,11 +1795,9 @@ sub _obj_int2ip {
 
     return unless ( $self->id );
 
-    $address = $self->address;
-    # This is a hack to solve a (possible) bug in Class::DBI 0.96
-    # that causes the select trigger to be called twice, thus
-    # returning a bad result.
-    return if ( $address =~ /\D+/ );
+    my $dbh  = $self->db_Main;
+    my $id   = $self->id;
+    $address = ($dbh->selectrow_array("SELECT address FROM ipblock WHERE id = $id"))[0];
 
     if ($self->version == 4){
 	$val = (new NetAddr::IP $address)->addr();
