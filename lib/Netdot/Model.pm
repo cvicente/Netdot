@@ -480,7 +480,6 @@ sub update {
 
     my @changed_keys;
     my $id = $self->id;
-    my $class = ref($self);
     my $res;
     if ( @changed_keys = $self->is_changed() ){
 	eval {

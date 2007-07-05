@@ -20,26 +20,55 @@ Netdot::Model::PhysAddr - Physical Address Class
 =cut
 
 ################################################################
-=head2 update - Update PhysAddr object
+=head2 search - Search PhysAddr objects
 
-    We override the update method for extra functionality
+    Formats address before searching
 
   Arguments: 
-    Hashref with PhysAddr fields
+    Hash ref with PhysAddr fields
   Returns:   
-    Updated PhysAddr object
+    PhysAddr object(s) or undef
   Examples:
-
+    PhysAddr->search(address=>'DEADDEADBEEF');
 =cut
 
-sub update {
-    my ($self, $argv) = @_;
+sub search {
+    my ($self, %argv) = @_;
     
-    $argv->{last_seen} = $self->timestamp()
-	unless exists ( $argv->{last_seen} );
-
-    return $self->SUPER::update( $argv );
+    if ( $argv{address} ){
+	$argv{address} = $self->_format_address($argv{address});
+    }
+    return $self->SUPER::search(%argv);
 }
+
+
+################################################################
+=head2 search_like - Search PhysAddr objects
+
+    Formats address before searching
+
+  Arguments: 
+    Hash ref with PhysAddr fields
+  Returns:   
+    PhysAddr object(s) or undef
+  Examples:
+    PhysAddr->search(address=>'DEADDEADBEEF');
+=cut
+
+sub search_like {
+    my ($self, %argv) = @_;
+    
+    if ( $argv{address} ){
+	if ( $argv{address} =~ /^'(.*)'$/ ){
+	    # User wants exact match 
+	    # do nothing
+	}else{
+	    $argv{address} = $self->_format_address($argv{address});
+	}
+    }
+    return $self->SUPER::search_like(%argv);
+}
+
 
 ################################################################
 =head2 insert - Insert PhysAddr object
@@ -196,6 +225,7 @@ sub fast_update {
 =cut
 sub validate {
     my ($self, $addr) = @_;
+    $self->isa_class_method('validate');
 
     return unless $addr;
 
@@ -276,39 +306,74 @@ sub from_interfaces {
 }
 
 
-#################################################
-=head2 canonicalize - Remove all non-numeric characters from address 
+=head1 INSTANCE METHODS
+=cut
 
-    Called just before inserting.
-    Search methods will also need to convert to this format prior to searching.
+################################################################
+=head2 update - Update PhysAddr object
+
+    We override the update method for extra functionality
 
   Arguments: 
-    physical address object
+    Hashref with PhysAddr fields
   Returns:   
-    True if successful
+    Updated PhysAddr object
   Examples:
 
-=cut    
-sub canonicalize {
+=cut
+sub update {
+    my ($self, $argv) = @_;
+    
+    $argv->{last_seen} = $self->timestamp()
+	unless exists ( $argv->{last_seen} );
+
+    return $self->SUPER::update( $argv );
+}
+
+#################################################
+# Add some triggers
+
+__PACKAGE__->add_trigger( deflate_for_create => \&_canonicalize );
+__PACKAGE__->add_trigger( deflate_for_update => \&_canonicalize );
+
+
+#################################################
+# PRIVATE METHODS
+#################################################
+
+#################################################
+# _canonicalize - Convert MAC address to canonical form
+#
+#    - Formats address
+#    - Calls validate function
+#
+#  Arguments: 
+#    physical address object
+#  Returns:   
+#    True if successful
+#
+sub _canonicalize {
     my $self = shift;
     my $address = ($self->_attrs('address'))[0];
-    $address =~ s/[:\.\-]//g;
-    $address = uc($address);
+    $address = $self->_format_address($address);
     unless ( $self->validate( $address ) ){
 	$self->throw_user("Invalid Address: $address");	
     }
     $self->_attribute_store( address => $address );
 }
 
+
 #################################################
-# Add some triggers
-
-__PACKAGE__->add_trigger( deflate_for_create => \&canonicalize );
-__PACKAGE__->add_trigger( deflate_for_update => \&canonicalize );
-
-
-
-# PRIVATE METHODS
+# _format_address - Format MAC address
+#    - Removes all non-hex characters from address (allows wildcards)
+#    - Converts to all uppercase
+#
+sub _format_address {
+    my ($self, $address) = @_;
+    $address =~ s/[^a-fA-F0-9_\*\?%]//g;
+    $address = uc($address);
+    return $address;
+}
 
 
 =head1 AUTHOR
