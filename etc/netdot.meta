@@ -507,85 +507,6 @@ $meta = {
       ]
     }
   },
-  BinFile => {
-    columns => {
-      bindata => {
-        default => '',
-        description => '',
-        length => '',
-        nullable => 0,
-        tag => 'Binary Data',
-        type => 'blob'
-      },
-      filename => {
-        default => '',
-        description => '',
-        length => '64',
-        nullable => 0,
-        tag => 'File Name',
-        type => 'varchar'
-      },
-      filesize => {
-        default => '',
-        description => '',
-        length => '64',
-        nullable => 0,
-        tag => 'File Size',
-        type => 'varchar'
-      },
-      filetype => {
-        default => '',
-        description => '',
-        length => '64',
-        nullable => 0,
-        tag => 'File Type',
-        type => 'varchar'
-      },
-      id => {
-        default => '',
-        description => '',
-        length => '',
-        nullable => 0,
-        tag => undef,
-        type => 'integer'
-      },
-      info => {
-        default => '',
-        description => '',
-        length => '',
-        nullable => 1,
-        tag => 'Comments',
-        type => 'blob'
-      }
-    },
-    description => 'A Binary File',
-    has_history => 0,
-    index => [],
-    isjoin => '0',
-    label => [
-      'filename'
-    ],
-    primary_key => 'id',
-    unique => [
-      [
-        'filename'
-      ]
-    ],
-    views => {
-      all => [
-        'bindata',
-        'filename',
-        'filesize',
-        'filetype',
-        'info'
-      ],
-      brief => [
-        'filename',
-        'filesize',
-        'filetype'
-      ]
-    }
-  },
   CableStrand => {
     columns => {
       cable => {
@@ -1337,18 +1258,13 @@ $meta = {
   },
   ClosetPicture => {
     columns => {
-      binfile => {
+      bindata => {
         default => '',
         description => '',
         length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'files',
-          table => 'BinFile'
-        },
         nullable => 0,
-        tag => 'Binary File',
-        type => 'integer'
+        tag => 'Binary Data',
+        type => 'longblob'
       },
       closet => {
         default => '',
@@ -1363,6 +1279,30 @@ $meta = {
         tag => 'Closet',
         type => 'integer'
       },
+      filename => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Name',
+        type => 'varchar'
+      },
+      filesize => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Size',
+        type => 'varchar'
+      },
+      filetype => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Type',
+        type => 'varchar'
+      },
       id => {
         default => '',
         description => '',
@@ -1370,31 +1310,43 @@ $meta = {
         nullable => 0,
         tag => undef,
         type => 'integer'
-      }
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
     },
     description => 'A Closet Picture',
     has_history => 0,
     index => [],
-    isjoin => '1',
+    isjoin => '0',
     label => [
       'closet',
-      'binfile'
+      'filename'
     ],
     primary_key => 'id',
     unique => [
       [
         'closet',
-        'binfile'
+        'filename'
       ]
     ],
     views => {
       all => [
         'closet',
-        'binfile'
+        'filename',
+        'filesize',
+        'filetype',
+        'bindata',
+        'info',
       ],
       brief => [
         'closet',
-        'binfile'
+        'filename'
       ]
     }
   },
@@ -3149,18 +3101,37 @@ $meta = {
   },
   FloorPlan => {
     columns => {
-      binfile => {
+      bindata => {
         default => '',
         description => '',
         length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'files',
-          table => 'BinFile'
-        },
         nullable => 0,
-        tag => 'Binary File',
-        type => 'integer'
+        tag => 'Binary Data',
+        type => 'longblob'
+      },
+      filename => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Name',
+        type => 'varchar'
+      },
+      filesize => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Size',
+        type => 'varchar'
+      },
+      filetype => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Type',
+        type => 'varchar'
       },
       floor => {
         default => '',
@@ -3182,12 +3153,20 @@ $meta = {
         nullable => 0,
         tag => undef,
         type => 'integer'
-      }
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
     },
     description => 'Floor Plans',
     has_history => 0,
     index => [],
-    isjoin => '1',
+    isjoin => '0',
     label => [
       'floor',
       'binfile'
@@ -3196,17 +3175,21 @@ $meta = {
     unique => [
       [
         'floor',
-        'binfile'
+        'filename'
       ]
     ],
     views => {
       all => [
         'floor',
-        'binfile'
+        'filename',
+        'filesize',
+        'filetype',
+        'bindata',
+        'info',
       ],
       brief => [
         'floor',
-        'binfile'
+        'filename'
       ]
     }
   },

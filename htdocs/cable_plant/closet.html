@@ -50,47 +50,38 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 # code for inserting/updating
 # -----------------------------------------------------------------------------
 
-if (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS{__picture}) && $ARGS{__picture} ne "") {
-    my $ret = $ui->insertbinfile($ARGS{__picture});
-    $m->comp("error.mhtml", $ui->error()) if (!$ret);
-    $m->comp("error.mhtml", $ui->error()) if (!($ui->insert(table=>"ClosetPicture", state=>{closet=>$id, binfile=>$ret})));
-} elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_PICTURES") {
-    my %deleted = ();
-    foreach my $key (keys(%ARGS)) {
-        if ($key =~ /^__delete_pic_(\d+)/o) {
-            # if deleting a picture
-            my $obj = ClosetPicture->retrieve($1);
-            my $binfileid = $obj->binfile->id;
-            my $objid = $obj->id;
-            $m->comp("error.mhtml", $ui->error()) if (!($ui->remove(table=>"ClosetPicture", id=>$objid)));
-            $m->comp("error.mhtml", $ui->error()) if (!($ui->remove(table=>"BinFile", id=>$binfileid)));
-            $deleted{$1} = 1;
-        } elsif ($key =~ /^__picture_(\d+)/o && !exists($deleted{$1})) {
-            # if uploading a new picture in place of another.
-            next if ($ARGS{$key} eq "");
-            $m->comp("error.mhtml", $ui->error()) if (!($ui->updatebinfile($ARGS{$key}, $1)));
-        } elsif ($key =~ /__(filetype|info)$/) {
-	    # Picture mime-type or comment changed.
-	    $ui->form_to_db($key => $ARGS{$key});
-	}
+if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS{__picture}) && $ARGS{__picture} ne "" ) {
+    eval {
+	use Apache2::Upload;
+	my $bindata;
+	my $upload    = $r->upload("__picture");
+	my $upload_fh = $upload->fh;
+	my $size      = $upload->slurp($bindata);
+	ClosetPicture->insert({closet=>$id, filename=>$ARGS{__picture}, bindata=>$bindata, filesize=>$size});
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
     }
-}elsif (defined($ARGS{_action})) {
+}elsif ( defined($ARGS{_action}) ) {
     my %update_info = ();
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-    if (!(%update_info = $ui->form_to_db(%ARGS))) {
-        $m->comp( "error.mhtml", error=> $ui->error() );
-	}
+    eval{
+	%update_info = $ui->form_to_db(%ARGS);
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }
 
-    if ($update_info{Closet}{id}) {
+    if ( $update_info{Closet}{id} ) {
         $id = (keys %{$update_info{Closet}{id}})[0];
         $editCloset = 0;
     }
 
     # Do this to 'flush' the values associated with the object
     # before redisplaying
-    $o = undef;
+    $o    = undef;
     $site = undef;
-    if ($id && $id ne "NEW") {
+    if ( $id && $id ne "NEW" ){
         $o = Closet->retrieve($id);
         $site = $o->floor->site || $o->site;
     }
@@ -110,7 +101,7 @@ LIST_MANAGER.addList(floorSearchList);
 -->
 </script>
 
-% if ($site) {
+% if ( $site ) {
 <!-- Header Table -->
 <div class="containeroutside">
     <div class="containerheadoutside">
@@ -141,7 +132,7 @@ LIST_MANAGER.addList(floorSearchList);
 	  <td>
 	    <%perl>
 	      (@field_headers, @cell_data) = ();
-              {my @fields = ('name','number', 'floor','dimensions','racks','outlets','shared_with','hvac_type',
+              {my @fields = ('name','number', 'floor','site','dimensions','racks','outlets','shared_with','hvac_type',
 			     'ground_buss','asbestos_tiles');
 	       my @linkpages = ('', '', 'view.html', '', '', '', '', '', '', '');
 	       $ui->add_to_fields(o=>$o, table=>"Closet", edit=>$editCloset, fields=>\@fields, 
@@ -155,7 +146,7 @@ LIST_MANAGER.addList(floorSearchList);
 
           <%perl>
 	      (@field_headers, @cell_data) = ();
-          {  my @fields = ('ru_avail','patch_panels','110_blocks','66_blocks','catv_taps','access_key_type',
+          {  my @fields = ('ru_avail','patch_panels','ot_blocks','ss_blocks','catv_taps','access_key_type',
 			   'rack_type','pair_count','converted_patch_panels','work_needed');
              $ui->add_to_fields(o=>$o, table=>"Closet", edit=>$editCloset, fields=>\@fields, 
 				field_headers=>\@field_headers, cell_data=>\@cell_data); }
@@ -218,7 +209,7 @@ LIST_MANAGER.addList(floorSearchList);
     <%perl>
     my @sorted_pics;
     $pic_sort = "filename" if (!$pic_sort);
-    @sorted_pics = sort { $a->binfile->$pic_sort cmp $b->binfile->$pic_sort } @pictures;
+    @sorted_pics = sort { $a->$pic_sort cmp $b->$pic_sort } @pictures;
     </%perl>
 
     <%perl>
@@ -226,19 +217,18 @@ LIST_MANAGER.addList(floorSearchList);
     my @row = ();
     </%perl>
     <&| "/generic/HERE.mhtml" &>
-%       if ($editPictures) {
-            <input type="checkbox" name="<% "__delete_pic_". $pic->id %>">[del]
-%           $ui->text_field(object=>$pic->binfile, table=>"BinFile", column=>"filename", edit=>$editPictures);
+%       if ( $editPictures ) {
+            <input type="checkbox" name="ClosetPicture__<% $pic->id %>__delete">[del]
+%           $ui->text_field(object=>$pic, table=>"ClosetPicture", column=>"filename", edit=>$editPictures);
             <br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Update Picture: &nbsp;<input type="file" name="__picture_<% $pic->id %>" size="20" value="">
 %       } else {
-            <a href="display_bin.html?id=<% $pic->binfile->id %>" TARGET=_new><% $pic->binfile->filename %></a>
+            <a href="display_bin.html?table=ClosetPicture&id=<% $pic->id %>" TARGET=_new><% $pic->filename %></a>
 %       }
     </&>
     <%perl>push( @row, $_ );
-    push( @row, $pic->binfile ? $pic->binfile->filesize : "" );
-    push( @row, $ui->form_field(object=>$pic->binfile, column=>"filetype", edit=>$editPictures, returnValOnly=>1) );
-    push( @row, $ui->form_field(object=>$pic->binfile, column=>"info", edit=>$editPictures, htmlExtra=>"rows='2' cols='40'", returnValOnly=>1) );
+    push( @row, $pic->filesize );
+    push( @row, $ui->form_field(object=>$pic, column=>"filetype", edit=>$editPictures, returnValOnly=>1) );
+    push( @row, $ui->form_field(object=>$pic, column=>"info", edit=>$editPictures, htmlExtra=>"rows='2' cols='40'", returnValOnly=>1) );
     push( @rows, \@row );
     } # foreach
     </%perl>
