@@ -302,68 +302,6 @@ if ( defined($search) ){
     }
 
 #######################################################################################
-# Auto-Allocate
-#
-#######################################################################################
-}elsif ( $_action eq "AUTOALLOCATE" ){
-    # Strip "/" if any
-    $length =~ s/\///;
-    my $newblock;
-    eval { $newblock = Ipblock->auto_allocate($parent, $length, $strategy) };
-    if ( my $e = $@ ){
-</%perl>
-    <div class="container">
-      <div class="containerhead">
-        <strong>Error!</strong>   
-      </div>
-      <div class="containerbody">  
-        <p><strong><% $e %></strong>
-      </div>
-    </div>
-%    }else {
-%     # Present new block and ask for confirmation
-      <form action="ip.html">
-        <input type="hidden" name="_action" value="CONFIRM_AUTOALLOCATE">
-        <input type="hidden" name="id" value="<% $id %>">
-        <input type="hidden" name="newblock" value="<% $newblock->id %>">
-	<div class="container">
-	  <div class="containerhead">
-            <strong>Confirm</strong>   
-	  </div>
-	  <div class="containerbody">  
-	    <p>Do you want to use <strong><em><% $newblock->address %>/<% $newblock->prefix %></em></strong> ?
-	    <p><input type="submit" name="submit" value="Yes" >
-	    <input type="submit" name="submit" value="No" >
-	  </div>
-	</div>
-      </form>
-<%perl>    
-   #  Do not continue with object display
-      $view = 0;
-   }
-
-#######################################################################################
-# Confirm Auto-Allocate
-#
-#######################################################################################
-
-}elsif ( $_action eq "CONFIRM_AUTOALLOCATE"){
-    eval {
-	my $o = Ipblock->retrieve($newblock);
-    };
-    if ( my $e = $@ ){
-	$m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
-    }else{
-	if ( $submit eq 'Yes' ){
-	    # Replace current object with newblock
-	    $id = $o->id;
-	}elsif ( $submit eq 'No' ){
-	    # Get rid of the new block
-	    $o->delete;
-	}
-    }
-
-#######################################################################################
 # Delete
 #
 #######################################################################################
@@ -846,48 +784,6 @@ if ($o->status->name eq "Subnet") {
     }
 }
 
-    if ($edit eq "blockinfo"){
-        # don't show new subnet form
-
-    }elsif ($o->status->name eq "Container"){
-        push( @field_headers, "New subnet of length: /" );
-        my $new_subnet_form = "
-	     <form name=\"netdotform\" action=\"ip.html\" method=\"POST\">
-	     <input type=\"hidden\" name=\"id\" value=\"".$id."\">
-	     <input type=\"hidden\" name=\"_action\" value=\"AUTOALLOCATE\">
-	     <input type=\"hidden\" name=\"parent\" value=\"".$id."\">
-	     <input type=\"text\" size = \"4\" name=\"length\" value=\"".($o->prefix + 1)."\">
-	     <select name=\"strategy\">
-	       <option value=\"first\">First Fit</option>
-	       <option value=\"last\">Last Fit</option>
-	     </select>
-	     <input name=\"submit\" value=\"Allocate\" type=\"submit\">
-        ";
-        push( @cell_data, $new_subnet_form );
-
-    }elsif ($o->status->name eq "Subnet"){
-        push( @field_headers, "New address:" );
-        my $new_address_form = "
-	     <form name=\"netdotform\" action=\"ip.html\" method=\"POST\">
-	     <input type=\"hidden\" name=\"id\" value=\"".$id."\">
-	     <input type=\"hidden\" name=\"_action\" value=\"AUTOALLOCATE\">
- 	     <input type=\"hidden\" name=\"parent\" value=\"".$id."\">
-             ";
-	     if ($o->version == 4){
- 	        $new_address_form .= "<input type=\"hidden\" name=\"length\" value=\"32\">";
-	     }elsif ($o->version == 6){
-	        $new_address_form .= "<input type=\"hidden\" name=\"length\" value=\"128\">";
-	     }
-             $new_address_form .= "
-	     <select name=\"strategy\">
-	       <option value=\"first\">First Fit</option>
-	       <option value=\"last\">Last Fit</option>
-	     </select>
-	     <input name=\"submit\" value=\"Get\" type=\"submit\">
-             ";
-        push( @cell_data, $new_address_form );
-
-   }
 </%perl>
 
 %# actually output the table to the browser
