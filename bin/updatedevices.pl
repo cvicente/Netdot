@@ -22,6 +22,9 @@ my $commstrs        = join ", ", @$communities if defined $communities;
 my $retries         = Netdot->config->get('DEFAULT_SNMPRETRIES');
 my $timeout         = Netdot->config->get('DEFAULT_SNMPTIMEOUT');
 my $version         = Netdot->config->get('DEFAULT_SNMPVERSION');
+my $from            = Netdot->config->get('ADMINEMAIL');
+my $to              = Netdot->config->get('NOCEMAIL');
+my $subject         = 'Netdot Device Updates';
 
 # Flags
 my ($ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $INFO, $FWT, $ARP, $PRETEND, $HELP, $_DEBUG, $EMAIL, $PRETEND);
@@ -33,7 +36,8 @@ my $USAGE = <<EOF;
  usage: $0 [ optional args ]
            -H, --host <hostname|address> | -d, --db |  -b, --block <address/prefix>
            [-I, --info]  [-F, --fwt]  [-A, --arp]
-           
+           [-m|--send_mail] [-f|--from] | [-t|--to] | [-S|--subject]
+          
     
     -H, --host <hostname|address>  Update given host only.
     -b, --block <address/prefix>   Specify an IP block to discover
@@ -52,6 +56,9 @@ my $USAGE = <<EOF;
     -h, --help                     Print help (this message)
     -g, --debug                    Set syslog level to LOG_DEBUG
     -m, --send_mail                Send logging output via e-mail instead of to STDOUT
+    -f, --from                     e-mail From line (default: $from)
+    -S, --subject                  e-mail Subject line (default: $subject)
+    -t, --to                       e-mail To line (default: $to)
 
 Options override default settings from config file.
     
@@ -74,7 +81,10 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "p|pretend"         => \$PRETEND,
 			 "h|help"            => \$HELP,
 			 "g|debug"           => \$_DEBUG,
-			 "m|send_mail"       => \$EMAIL);
+			 "m|send_mail"       => \$EMAIL,
+			 "f|from:s"          => \$FROM,
+			 "t|to:s"            => \$TO,
+			 "S|subject:s"       => \$SUBJECT);
 
 if ( ! $result ) {
     print $USAGE;
@@ -168,6 +178,9 @@ $logger->info(sprintf("Total runtime: %s secs\n", (time - $start)));
 
 if ( $EMAIL ){
     my $util = Netdot::Util::Misc->new();
-    $util->send_mail(subject=>"Netdot Device Updates", body=>$logstr->string);
+    $util->send_mail(from    => $from,
+		     to      => $to,
+		     subject => $subject, 
+		     body    => $logstr->string);
 }
 

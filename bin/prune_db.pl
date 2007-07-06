@@ -1,16 +1,14 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
 ###############################################################
 # prune_db.pl
 #
 
 use lib "<<Make:LIB>>";
-use Netdot::UI;
-use Data::Dumper;
+use Netdot::Model;
+use Netdot::Util::Misc;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
-
-my $ui = Netdot::UI->new();
 
 my $DEBUG       = 0;
 my $HELP        = 0;
@@ -18,11 +16,15 @@ my $VERBOSE     = 0;
 my $EMAIL       = 0;
 my $NUM_MONTHS  = 12;
 my $NUM_HISTORY = 100;
+my $FROM        = Netdot->config->get('ADMINEMAIL');
+my $TO          = Netdot->config->get('NOCEMAIL');
+my $SUBJECT     = 'Netdot DB Maintenance';
 my $output;
 
 my $usage = <<EOF;
  usage: $0 [ -m|--num_months <number> ] [ -n|--num_history <number> ] 
-           [ -v|--verbose ] [ -g|--debug ] [ -e|--send_mail ]  
+           [ -v|--verbose ] [ -g|--debug ] 
+           [-e|--send_mail] [-f|--from] | [-t|--to] | [-S|--subject]
            
     Deletes old items from the history tables as necessary.
 
@@ -43,6 +45,9 @@ my $usage = <<EOF;
     -v, --verbose                  Print informational output
     -g, --debug                    Print (lots of) debugging output
     -e, --send_mail                Send output via e-mail instead of to STDOUT
+    -f, --from                     e-mail From line (default: $FROM)
+    -S, --subject                  e-mail Subject line (default: $SUBJECT)
+    -t, --to                       e-mail To line (default: $TO)
     
 EOF
     
@@ -50,6 +55,9 @@ EOF
 my $result = GetOptions( "m|num_months=i"  => \$NUM_MONTHS,
 			 "n|num_history=i" => \$NUM_HISTORY,
 			 "e|send_mail"     => \$EMAIL,
+			 "f|from:s"        => \$FROM,
+			 "t|to:s"          => \$TO,
+			 "S|subject:s"     => \$SUBJECT,
 			 "h|help"          => \$HELP,
 			 "v|verbose"       => \$VERBOSE,
 			 "g|debug"         => \$DEBUG,
@@ -65,7 +73,7 @@ if( $HELP ) {
 }
 
 # Get DB handle 
-my $dbh = $ui->{dbh};
+my $dbh = Netdot::Model::db_Main();
 
 my @tables;
 map { push @tables, $_ if ($_ =~ /_history/ ) } sort $dbh->tables;
@@ -123,11 +131,12 @@ foreach my $table (@tables) {
 my $end = time;
 $output .= sprintf ("Completed in %d seconds\n", ($end-$start)) if $VERBOSE;
 
-if ($EMAIL){
-    if (! $ui->send_mail(subject=>"Netdot DB Maintenance", 
-			 to=>$ui->{config}->{'ADMINEMAIL'}, body=>$output)){
-	die "Problem sending mail: ", $ui->error;
-    }
+if ( $EMAIL ){
+    my $misc = Netdot::Util::Misc->new();
+    $misc->send_mail(subject => $SUBJECT, 
+		     to      => $TO,
+		     from    => $FROM,
+		     body    => $output );
 }else{
     print STDOUT $output;
 }

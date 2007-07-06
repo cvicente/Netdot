@@ -1,35 +1,47 @@
 #!<<Make:PERL>>
 
 use lib "<<Make:LIB>>";
+use Netdot::Model;
+use Netdot::Util::Misc;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
-use Netdot::UI;
 
-my $usage = <<EOF;
- usage: $0  -n|--name | -e|--entity |  -d|--dependencies | -s|--site
 
-    
-    -e, --entity                   report devices with no entity
-    -d, --dependencies             report devices with no dependencies
-    -s, --site                     report devices with no site
-    -h, --help                     print help (this message)
-    -m, --send_mail                                    
-    
-EOF
-    
 my $HELP    = 0;
 my $ENTITY  = 0;
 my $DEPS    = 0;
 my $SITE    = 0;
 my $DEBUG   = 0;
 my $EMAIL   = 0;
+my $FROM    = Netdot->config->get('ADMINEMAIL');
+my $TO      = Netdot->config->get('NOCEMAIL');
+my $SUBJECT = 'Netdot Device Validation';
 
+my $usage = <<EOF;
+ usage: $0  -e|--entity | -d|--dependencies | -s|--site
+           [-m|--send_mail] [-f|--from] | [-t|--to] | [-S|--subject]
+
+    
+    -e, --entity                   report devices with no entity
+    -d, --dependencies             report devices with no dependencies
+    -s, --site                     report devices with no site
+    -h, --help                     print help (this message)
+    -m, --send_mail                send output via e-mail
+    -f, --from                     e-mail From line (default: $FROM)
+    -S, --subject                  e-mail Subject line (default: $SUBJECT)
+    -t, --to                       e-mail To line (default: $TO)
+    
+EOF
+    
 # handle cmdline args
 my $result = GetOptions( "e|entity"       => \$ENTITY,
 			 "d|dependencies" => \$DEPS,
 			 "s|site"         => \$SITE,
 			 "h|help"         => \$HELP,
 			 "m|send_mail"    => \$EMAIL,
+			 "f|from:s"       => \$FROM,
+			 "t|to:s"         => \$TO,
+			 "S|subject:s"    => \$SUBJECT,
 			 );
 
 if( ! $result ) {
@@ -50,8 +62,6 @@ $ENV{REMOTE_USER} = "netdot";
 
 my (@nameless, @lost, @orphans, @homeless, $output);
 
-my $ui = Netdot::UI->new();
-
 my $it = Device->retrieve_all;
 
 while ( my $dev = $it->next ){
@@ -69,7 +79,7 @@ while ( my $dev = $it->next ){
     if ( $DEPS ){
 	my $found = 0;
 	foreach my $int ( $dev->interfaces ){
-	    if ($int->parents || $int->children) { $found = 1; last }
+	    if ( $int->neighbor ) { $found = 1; last }
 	}
 	push @orphans, $dev unless $found;
     }
@@ -91,7 +101,7 @@ if ( @lost ){
 if ( @homeless ){
     @homeless = sort { $a->name->name cmp $b->name->name } @homeless;
     $output .= sprintf("\nThe following devices have no Site defined:\n");
-    map { $output = sprintf("  %s\n", $_->name->name) } @homeless;
+    map { $output .= sprintf("  %s\n", $_->name->name) } @homeless;
 }
 
 if ( @orphans ){
@@ -101,9 +111,11 @@ if ( @orphans ){
 }
 
 if ( $EMAIL && $output ){
-    if ( ! $ui->send_mail(subject=>"Netdot Device Validation", body=>$output) ){
-	die "Problem sending mail: ", $ui->error;
-    }
+    my $misc = Netdot::Util::Misc->new();
+    $misc->send_mail(from    => $FROM,
+		     to      => $TO,
+		     subject => $SUBJECT, 
+		     body    => $output);
 }else{
     print STDOUT $output;
 }

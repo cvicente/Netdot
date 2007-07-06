@@ -138,3 +138,54 @@ APACHE CONFIGURATION
   install netdot in /usr/local/netdot (i.e. you specified a custom
   PREFIX).
 
+----------------------------------------------------------------------
+ACTIVATING SCRIPTS
+----------------------------------------------------------------------
+
+Netdot comes with a few scripts that can be run periodically as cron jobs.
+For example:
+ * Devices should be re-discovered via SNMP frequently to maintain an accurate 
+   list of ports, ip addresses, etc.
+
+ * Netdot keeps history records for some objects every time they are updated.
+   With time, old history should be deleted from the database to save disk space.
+
+ * Netdot can generate text documentation that is easy to find via simple
+   grepping commands, for example, information about people, locations, 
+   device port assignments, etc.  This documentation should be kept up to
+   date by exporting it frequently.
+
+ * Configurations for external programs can be generated using Netdot data.
+   Current supported programs include: Nagios, Sysmon and Rancid.
+   
+
+Below is a recommended crontab file.
+
+#################################################################################
+# Sample Crontab file - customize to your needs
+#################################################################################
+
+# Rediscover all devices in the db
+#
+0 0 * * * perl /usr/local/netdot/bin/updatedevices.pl -avdm
+
+#
+# Prune DB of old history items (once a month)
+0 4 1 * * perl /usr/local/netdot/bin/prune_db.pl -v -m 12 -n 100 -e
+
+# Generate text documentation and configuration files for external programs
+# (Nagios, Sysmon, Rancid, etc)
+0 16 * * * cd /usr/local/netdot/export; /usr/bin/make Makefile all 
+5 16 * * * cd /usr/local/netdot/export; /usr/bin/make Makefile install
+
+#
+# Check for orphan devices (devices with no Site, no Entity, no dependencies)
+#
+30 3 * * * perl /usr/local/netdot/bin/chk_orphans.pl -edsm
+
+# Dump the database once a day and copy it to a remote host
+0 6 * * * perl /usr/local/netdot/export/dump-db.pl --db netdot --dbtype mysql --dbpass netdot_pass  --host back
+up-host --user jdoe --dir /home/jdoe/netdot_data --key /home/jdoe/.ssh/id_dsa
+# Keep a few copies locally
+0 7 * * * find /root -name "hostname*" -ctime +5 -exec rm -f '{}' ';'
+
