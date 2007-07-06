@@ -21,11 +21,12 @@ my $DEBUG           = 0;
 my $EMAIL           = 0;
 my $FROM            = $ui->{config}->{'ADMINEMAIL'};
 my $TO              = $ui->{config}->{'NOCEMAIL'};
-my $SUBJECT         = 'Netdot Device Validation';
+my $SUBJECT         = 'Netdot Device Updates';
 
 my $usage = <<EOF;
  usage: $0 [ -c, --community <string> ] [ -a|--add-subnets ]
-           [ -v, --verbose ] [ -g|--debug ] [ -m|--send_mail ]
+           [ -v, --verbose ] [ -g|--debug ]
+           [-m|--send_mail] [-f|--from] | [-t|--to] | [-S|--subject]
            -H|--host <hostname|address> | -d|--db-devices |  -s|--subnet <CIDR block>
            
     
