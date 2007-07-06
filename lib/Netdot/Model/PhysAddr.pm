@@ -354,9 +354,10 @@ __PACKAGE__->add_trigger( deflate_for_update => \&_canonicalize );
 #
 sub _canonicalize {
     my $self = shift;
+    my $class = ref($self) || $self;
     my $address = ($self->_attrs('address'))[0];
     $address = $self->_format_address($address);
-    unless ( $self->validate( $address ) ){
+    unless ( $class->validate( $address ) ){
 	$self->throw_user("Invalid Address: $address");	
     }
     $self->_attribute_store( address => $address );
