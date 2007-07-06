@@ -16,6 +16,9 @@ my $HELP            = 0;
 my $VERBOSE         = 0;
 my $DEBUG           = 0;
 my $EMAIL           = 0;
+my $FROM            = $ui->{config}->{'ADMINEMAIL'};
+my $TO              = $ui->{config}->{'NOCEMAIL'};
+my $SUBJECT         = 'Netdot Device Validation';
 
 my $usage = <<EOF;
  usage: $0 [ -c, --community <string> ] [ -a|--add-subnets ]
@@ -33,6 +36,9 @@ my $usage = <<EOF;
     -g, --debug                    set syslog level to LOG_DEBUG and print to STDERR
     -m, --send_mail                Send output via e-mail instead of to STDOUT
                                    (Note: debugging output will be sent to STDERR always)
+    -f, --from                     e-mail From line (default: $FROM)
+    -S, --subject                  e-mail Subject line (default: $SUBJECT)
+    -t, --to                       e-mail To line (default: $TO)
     
 EOF
     
@@ -47,7 +53,11 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "h|help"            => \$HELP,
 			 "v|verbose"         => \$VERBOSE,
 			 "g|debug"           => \$DEBUG,
-			 "m|send_mail"       => \$EMAIL);
+			 "m|send_mail"       => \$EMAIL
+			 "f|from"            => \$FROM,
+			 "t|to"              => \$TO,
+			 "S|subject"         => \$SUBJECT,
+);
 
 if( ! $result ) {
     print $usage;
@@ -96,7 +106,7 @@ if ($host){
 		    next;
 		}
 		$devices{$device->id} = '';
-		unless ( $device->canautoupdate ){
+		unless ( $device->canautoupdate && $device->snmp-managed){
 		    $output .= sprintf ("Device %s was set to not auto-update. Skipping \n", $nip->addr) if $DEBUG;
 		    next;
 		}
@@ -152,8 +162,11 @@ if ($host){
     die "Error: You need to specify one of -H, -s or -d\n";
 }
 
-if ($EMAIL && $output){
-    if ( ! $dm->send_mail(subject=>"Netdot Device Updates", body=>$output) ){
+if ( $EMAIL && $output ){
+    if ( ! $dm->send_mail(from    => $FROM,
+			  to      => $TO,
+			  subject => $SUBJECT, 
+			  body    => $output) ){
 	die "Problem sending mail: ", $dm->error;
     }
 }else{

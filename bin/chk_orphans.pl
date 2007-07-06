@@ -5,31 +5,41 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
 use Netdot::UI;
 
-my $usage = <<EOF;
- usage: $0  -n|--name | -e|--entity |  -d|--dependencies | -s|--site
-
-    
-    -e, --entity                   report devices with no entity
-    -d, --dependencies             report devices with no dependencies
-    -s, --site                     report devices with no site
-    -h, --help                     print help (this message)
-    -m, --send_mail                                    
-    
-EOF
-    
 my $HELP    = 0;
 my $ENTITY  = 0;
 my $DEPS    = 0;
 my $SITE    = 0;
 my $DEBUG   = 0;
 my $EMAIL   = 0;
+my $FROM    = $ui->{config}->{'ADMINEMAIL'};
+my $TO      = $ui->{config}->{'NOCEMAIL'};
+my $SUBJECT = 'Netdot Device Validation';
 
+my $usage = <<EOF;
+ usage: $0  -e|--entity | -d|--dependencies | -s|--site
+           [-m|--send_mail] [-f|--from] | [-t|--to] | [-S|--subject]
+
+    
+    -e, --entity                   report devices with no entity
+    -d, --dependencies             report devices with no dependencies
+    -s, --site                     report devices with no site
+    -h, --help                     print help (this message)
+    -m, --send_mail                send output via e-mail
+    -f, --from                     e-mail From line (default: $FROM)
+    -S, --subject                  e-mail Subject line (default: $SUBJECT)
+    -t, --to                       e-mail To line (default: $TO)
+    
+EOF
+    
 # handle cmdline args
 my $result = GetOptions( "e|entity"       => \$ENTITY,
 			 "d|dependencies" => \$DEPS,
 			 "s|site"         => \$SITE,
 			 "h|help"         => \$HELP,
 			 "m|send_mail"    => \$EMAIL,
+			 "f|from"         => \$FROM,
+			 "t|to"           => \$TO,
+			 "S|subject"      => \$SUBJECT,
 			 );
 
 if( ! $result ) {
@@ -101,7 +111,10 @@ if ( @orphans ){
 }
 
 if ( $EMAIL && $output ){
-    if ( ! $ui->send_mail(subject=>"Netdot Device Validation", body=>$output) ){
+    if ( ! $ui->send_mail(from    => $FROM,
+			  to      => $TO,
+			  subject => $SUBJECT, 
+			  body    => $output) ){
 	die "Problem sending mail: ", $ui->error;
     }
 }else{

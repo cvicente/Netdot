@@ -6,7 +6,7 @@ include $(NDROOT)/etc/utility-Makefile
 
 PERL    =  /usr/bin/perl
 PREFIX  =  `cat ../.prefix`
-FMOD = 0644
+FMOD = 0755
 
 FILES := $(shell ls *.pl) 
 

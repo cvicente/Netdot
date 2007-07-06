@@ -12,6 +12,8 @@ usage: $0 [options]
          
     --db              Name of the database (e.g. netdot)
     --dbtype          Database Type [mysql|pg]
+    --dbuser          Database user
+    --dbpass          Database password
     --host            Destination host to scp file
     --user            SSH user
     --key             Private SSH key
@@ -24,6 +26,7 @@ my %self;
 
 my $result = GetOptions( "db=s"      => \$self{db},
 			 "dbtype=s"  => \$self{dbtype}, 
+			 "dbuser=s"  => \$self{dbuser}, 
 			 "dbpass=s"  => \$self{dbpass}, 
 			 "host=s"    => \$self{host},
 			 "user=s"    => \$self{user},
@@ -58,7 +61,7 @@ my $file = "$hostname-$date.sql";
 
 ## Dump the database
 if ($self{dbtype} eq 'mysql'){
-    system ("mysqldump -u root -p$self{dbpass} $self{db} >$file");
+    system ("mysqldump -u$self{dbuser} -p$self{dbpass} $self{db} >$file");
 }elsif ($self{dbtype} eq 'pg'){
     die "$self{dbtype} not yet implemented";
 }else{
