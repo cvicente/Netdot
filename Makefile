@@ -52,7 +52,7 @@ DIR = bin doc htdocs/img htdocs/img/graphs htdocs/masondata/obj htdocs/masondata
 
 .PHONY: tests bin doc htdocs lib etc
 
-install: tests dir doc htdocs lib bin etc _import _export
+install: dir doc htdocs lib bin etc _import _export
 	@echo
 	@echo "Netdot is installed. "
 	@echo "Please read the available documentation before proceeding."
@@ -70,7 +70,7 @@ updatedb:
 	@echo "Upgrading schema and data..."
 	cd bin ; make updatedb FMOD=$(FMOD) 
 
-tests:
+testdeps:
 	@echo
 	@echo "Installation directory: $(PREFIX)"
 	@echo 
@@ -124,7 +124,7 @@ lib:
 	cd $@ ; make all PREFIX=$(PREFIX) NVPREFIX=$(NVPREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
 
 bin:
-	cd $@; make install PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
+	cd $@; make install PREFIX=$(PREFIX) PERL=$(PERL) DIR=$@
 
 etc:
 	cd $@; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
