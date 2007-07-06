@@ -82,9 +82,9 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "h|help"            => \$HELP,
 			 "g|debug"           => \$_DEBUG,
 			 "m|send_mail"       => \$EMAIL,
-			 "f|from:s"          => \$FROM,
-			 "t|to:s"            => \$TO,
-			 "S|subject:s"       => \$SUBJECT);
+			 "f|from:s"          => \$from,
+			 "t|to:s"            => \$to,
+			 "S|subject:s"       => \$subject);
 
 if ( ! $result ) {
     print $USAGE;
