@@ -110,7 +110,7 @@ if ($host){
 		    next;
 		}
 		$devices{$device->id} = '';
-		unless ( $device->canautoupdate && $device->snmp-managed){
+		unless ( $device->canautoupdate && $device->snmp_managed ){
 		    $output .= sprintf ("Device %s was set to not auto-update. Skipping \n", $nip->addr) if $DEBUG;
 		    next;
 		}
