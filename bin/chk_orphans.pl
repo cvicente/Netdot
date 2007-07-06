@@ -39,9 +39,9 @@ my $result = GetOptions( "e|entity"       => \$ENTITY,
 			 "s|site"         => \$SITE,
 			 "h|help"         => \$HELP,
 			 "m|send_mail"    => \$EMAIL,
-			 "f|from"         => \$FROM,
-			 "t|to"           => \$TO,
-			 "S|subject"      => \$SUBJECT,
+			 "f|from:s"       => \$FROM,
+			 "t|to:s"         => \$TO,
+			 "S|subject:s"    => \$SUBJECT,
 			 );
 
 if( ! $result ) {
