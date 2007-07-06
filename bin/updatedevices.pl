@@ -57,7 +57,7 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "h|help"            => \$HELP,
 			 "v|verbose"         => \$VERBOSE,
 			 "g|debug"           => \$DEBUG,
-			 "m|send_mail"       => \$EMAIL
+			 "m|send_mail"       => \$EMAIL,
 			 "f|from:s"          => \$FROM,
 			 "t|to:s"            => \$TO,
 			 "S|subject:s"       => \$SUBJECT,
