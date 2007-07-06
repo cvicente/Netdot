@@ -948,6 +948,10 @@ sub discover {
 		      );
 	
 	if ( $info->{layers} ){
+	    # We collect rptrAddrTrackNewLastSrcAddress from hubs
+	    if ( $class->_layer_active($info->{layers}, 1) ){
+		$devtmp{collect_fwt} = 1;
+	    }
 	    if ( $class->_layer_active($info->{layers}, 2) ){
 		$devtmp{collect_fwt} = 1;
 	    }
@@ -1769,13 +1773,13 @@ sub snmp_update {
 		    $if = $oldif;
 		}else{
 		    # Interface does not exist.  Add it.
+		    my $ifname = $info->{interface}->{$newif}->{name} || $newnumber;
 		    $logger->info(sprintf("%s: Interface %s (%s) not found. Inserting.", 
-					  $host, $newnumber, 
-					  $info->{interface}->{$newif}->{name}));
+					  $host, $newnumber, $ifname));
 		    
 		    my %args = (device      => $self, 
 				number      => $newif, 
-				name        => $info->{interface}->{$newif}->{name},
+				name        => $ifname,
 				);
 		    # Make sure we can write to the description field when
 		    # device is airespace - we store the AP name as the int description
