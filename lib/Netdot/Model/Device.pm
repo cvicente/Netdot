@@ -260,8 +260,8 @@ sub insert {
 
 
     # Get the default owner entity from config
-    my $config_owner = Netdot->config->get('DEFAULT_DEV_OWNER');
-    my $default_owner   = Entity->search(name=>$config_owner)->first;
+    my $config_owner  = Netdot->config->get('DEFAULT_DEV_OWNER');
+    my $default_owner = Entity->search(name=>$config_owner)->first;
 
     # Assign defaults
     # These will be overridden by the given arguments
@@ -278,6 +278,7 @@ sub insert {
 		  monitorstatus    => 0,
 		  snmp_bulk        => 0,
 		  snmp_managed     => 0,
+		  snmp_polling     => 0,
 		  );
 
     # Add given args (overrides defaults).
@@ -291,6 +292,16 @@ sub insert {
 	    $devtmp{snmp_managed} = 1;
 	}else{
 	    $devtmp{$key} = $argv->{$key};
+	}
+    }
+    if ( exists $devtmp{snmp_managed} ){
+	if ( !$devtmp{snmp_managed} ){
+	    # Means it's being set to 0 or undef
+	    # Turn off other flags
+	    $devtmp{canautoupdate} = 0;
+	    $devtmp{snmp_polling}  = 0;
+	    $devtmp{collect_arp}   = 0;
+	    $devtmp{collect_fwt}   = 0;
 	}
     }
 
@@ -1407,6 +1418,7 @@ sub fqdn {
     
     We override the update method for extra functionality:
       - Update 'last_updated' field with current timestamp
+      - snmp_managed flag turns off all other snmp access flags
 
   Arguments:
     Hash ref with Device fields
@@ -1423,6 +1435,16 @@ sub update {
     # Update the timestamp
     $argv->{last_updated} = $self->timestamp;
 
+    if ( exists $argv->{snmp_managed} ){
+	if ( !$argv->{snmp_managed} ){
+	    # Means it's being set to 0 or undef
+	    # Turn off other flags
+	    $argv->{canautoupdate} = 0;
+	    $argv->{snmp_polling}  = 0;
+	    $argv->{collect_arp}   = 0;
+	    $argv->{collect_fwt}   = 0;
+	}
+    }
     $self->_validate_args($argv);
     return $self->SUPER::update($argv);
     
@@ -2639,7 +2661,11 @@ sub _get_snmp_session {
 
     if ( $class = ref($self) ){
 	# Being called as an instance method
-	
+
+	# Do not continue unless snmp_managed flag is on
+	$self->throw_user(sprintf("Device %s not SNMP-managed. Aborting.", $self->fqdn))
+	    unless $self->snmp_managed;
+
 	# We might already have a session
 	if ( defined $self->{_snmp_session} ){
 	    $logger->debug("Device::get_snmp_session: Reusing existing session with ", $self->fqdn);

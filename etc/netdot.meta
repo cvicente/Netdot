@@ -2020,10 +2020,18 @@ $meta = {
       },
       snmp_managed => {
         default => '',
-        description => 'Enable or Disable SNMP access to this Device from SNMP management tools which get their configurations from Netdot',
+        description => 'Enable or Disable SNMP operations on this device',
         length => '',
         nullable => 0,
         tag => 'SNMP Managed?',
+        type => 'bool'
+      },
+      snmp_polling => {
+        default => '',
+        description => 'Enable or Disable SNMP polling from management tools which get their configurations from Netdot',
+        length => '',
+        nullable => 0,
+        tag => 'SNMP Polling?',
         type => 'bool'
       },
       snmp_privkey => {
@@ -2157,6 +2165,11 @@ $meta = {
         'canautoupdate',
         'site',
         'snmp_managed',
+        'snmp_polling',
+	'collect_arp',
+	'last_arp',
+	'collect_fwt',
+	'last_fwt',
         'snmp_bulk',
         'snmp_version',
         'snmp_securityname',
