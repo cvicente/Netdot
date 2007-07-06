@@ -421,9 +421,9 @@ sub do_transaction {
 	    $self->throw_fatal("Transaction aborted: $e; "
 				. "(Rollback failed): $rollback_error\n");
         }else{
-	    if ( ref($error) =~ /Netdot::Util::Exception/  &&
+	    # Rethrow
+	    if ( ref($e) =~ /Netdot::Util::Exception/  &&
 		 $e->isa_netdot_exception('User') ){
-		# Rethrow
 		$self->throw_user("Transaction aborted " 
 				   . "(Rollback successful): $e\n");
 	    }else{
