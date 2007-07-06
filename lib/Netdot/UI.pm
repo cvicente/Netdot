@@ -307,7 +307,7 @@ sub form_field {
     ## column is a local field
     } else {
         my $type = $mcol->sql_type;
-	if ( $type =~ /^varchar|timestamp|integer|numeric|date$/ ){
+	if ( $type =~ /^varchar|timestamp|integer|numeric|date|bigint$/ ){
 	    $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 				       default=>$args{default}, linkPage=>$args{linkPage}, returnAsVar=>1, 
 				       htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
