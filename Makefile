@@ -49,16 +49,16 @@ XMOD = 0744
 # be trouble.
 DIR = bin doc htdocs tmp tmp/sessions /tmp/sessions/locks lib etc import export
 
-.PHONY: tests bin doc htdocs lib etc
+.PHONY: bin doc htdocs lib etc
 
-install: tests dir doc htdocs lib bin etc _import _export
+install: dir doc htdocs lib bin etc _import _export
 	@echo
 	@echo "Netdot is installed. "
 	@echo "Please read the available documentation before proceeding."
 	@echo "If you are installing Netdot for the first time, you need to"
 	@echo "  'make installdb'"
 
-upgrade: tests dir doc htdocs lib bin etc updatedb
+upgrade: dir doc htdocs lib bin etc updatedb
 	@echo
 	@echo "Netdot has been upgraded. "
 	@echo "You will need to restart Apache"
@@ -69,7 +69,7 @@ updatedb:
 	@echo "Upgrading schema and data..."
 	cd bin ; make updatedb FMOD=$(FMOD) 
 
-tests:
+testdeps:
 	@echo
 	@echo "Installation directory: $(PREFIX)"
 	@echo 
@@ -92,11 +92,11 @@ tests:
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi
-	echo $(PREFIX) > ./.prefix
 
 dir:
 	@echo 
 	@echo "Creating necessary directories..."
+	echo $(PREFIX) > ./.prefix
 	for dir in $(DIR); do \
 	    if test -d $(PREFIX)/$$dir; then \
 	       echo "Skipping dir $(PREFIX)/$$dir; already exists"; \
