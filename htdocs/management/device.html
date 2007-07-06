@@ -37,9 +37,10 @@ $peersort   => "ip"
 $user       => undef
 $showvlan   => "all"
 $intadd     => undef
+$intaddnum  => undef
+$overwrite_if_descr => undef
 $submit     => undef
 $view       => "Basics"
-$intaddnum  => undef
 $deviceadd  => undef
 $newhost    => undef
 $newip      => undef
@@ -142,6 +143,13 @@ EOF
 	$m->comp('/generic/error.mhtml', error=>$e);	
     }
     
+}elsif( defined $overwrite_if_descr ){
+    $o = Device->retrieve($id);
+    eval { $o->set_overwrite_if_descr($overwrite_if_descr); };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);	
+    }
+
 }elsif( $deviceadd && $newhost && $newip ){
     if ( Device->search(name=>$newhost) ){
 	# It's already there
@@ -761,20 +769,44 @@ function setNull(select){
             <input type="submit" name="submit" value="save">
 %	  }
     </div>
+</div>
+
 % if ( ! $editints && ($view eq "Interfaces" || $view eq "All") ){
-    <form name="netdotform" action="device.html" method="POST">
+<div class="container">
+    <div class="containerheadleft">
+        Options
+    </div>
+    <div class="containerheadright">&nbsp;</div>
+    <div class="containerbody">
+    <p>
+    <form name="add_ints_form" action="device.html" method="POST">
       <input type="hidden" name="id" value="<% $id %>">
       <input type="hidden" name="view" value="<% $view %>">
       Manually 
       <input type="submit" name="intadd" value="Add">
       <input type="text" name="intaddnum" value="0" size="3"> interfaces
     </form>
+    </p>
+    <p>
+    <form name="overwrite_form" action="device.html" method="POST">
+      <input type="hidden" name="id" value="<% $id %>">
+      <input type="hidden" name="view" value="<% $view %>">
+      SNMP Updates Overwrite Descriptions:
+      <select name="overwrite_if_descr">
+          <option value="" selected>--Select--</option>
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+      </select>
+      <input type="submit" name="Set" value="Set">
+    </form>
+    </p>
+    </div>
 % }
+</div>
 
 %   if ($editints){
        </form>
 %   }
-</div>
 % } # if view eq "Interfaces"
 
 <!-- End Interfaces Section -->
