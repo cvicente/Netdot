@@ -2077,7 +2077,7 @@ sub add_interfaces {
     $self->isa_object_method('add_interfaces');
 
     unless ( $num > 0 ){
-	$self->throw_fatal("Invalid number of Interfaces to add: $num");
+	$self->throw_user("Invalid number of Interfaces to add: $num");
     }
     # Determine highest numbered interface in this device
     my @ints;
