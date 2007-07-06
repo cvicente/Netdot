@@ -4,6 +4,8 @@ use lib "<<Make:LIB>>";
 use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
 use Netdot::UI;
+my $ui = Netdot::UI->new();
+
 
 my $HELP    = 0;
 my $ENTITY  = 0;
@@ -59,8 +61,6 @@ unless ( $ENTITY || $DEPS || $SITE ){
 $ENV{REMOTE_USER} = "netdot";
 
 my (@nameless, @lost, @orphans, @homeless, $output);
-
-my $ui = Netdot::UI->new();
 
 my $it = Device->retrieve_all;
 

@@ -7,6 +7,9 @@ use Netdot::DeviceManager;
 use Netdot::IPManager;
 use Netdot::DNSManager;
 use NetAddr::IP;
+use Netdot::UI;
+
+my $ui = Netdot::UI->new();
 
 my ($host, $subnet, $dm);
 my $comstr          = "public";
