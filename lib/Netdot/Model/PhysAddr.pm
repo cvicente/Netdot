@@ -366,12 +366,12 @@ sub _canonicalize {
 
 #################################################
 # _format_address - Format MAC address
-#    - Removes all non-hex characters from address (allows wildcards)
+#    - Removes usual separators
 #    - Converts to all uppercase
 #
 sub _format_address {
     my ($self, $address) = @_;
-    $address =~ s/[^a-fA-F0-9_\*\?%]//g;
+    $address =~ s/[:\-\.]//g;
     $address = uc($address);
     return $address;
 }
