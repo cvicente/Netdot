@@ -653,30 +653,19 @@ sub search_all_tables {
     # Ignore these fields when searching
     my %ign_fields = ('id' => '');
 
-    $q = $self->_convert_search_keyword($q);
-
     foreach my $tbl ( $self->meta->get_table_names() ) {
-	# Will also ignore foreign key fields
+	$lctbl = lc($tbl);
+	# Ignore foreign key fields and booleans
 	my @cols;
 	map { push @cols, $_ 
 		  unless( exists $ign_fields{$_} || 
-			  defined $tbl->meta_data->get_column($_)->links_to ) 
+			  defined $tbl->meta_data->get_column($_)->links_to ||
+			  $tbl->meta_data->get_column($_)->sql_type =~ /bool/
+			  ) 
 	      } $tbl->columns();
-	my @where;
-	map { push @where, "$_ LIKE \"$q\"" } @cols;
-	my $where = join " or ", @where;
-	next unless $where;
-	my $dbh = $self->db_Main;
-	my $st;
-	eval {
-	    $st = $dbh->prepare_cached("SELECT id FROM $tbl WHERE $where;");
-	    $st->execute();
-	};
-	if ( $@ ){
-	    $self->throw_fatal("search_all_tables: $@");
-	}
-	while ( my ($id) = $st->fetchrow_array() ){
-	    $results{$tbl}{$id} = $tbl->retrieve($id);
+	foreach my $col ( @cols ){
+	    my @res = $tbl->search_like($col=>$q);
+	    map { $results{$tbl}{$_->id} = $_ } @res;
 	}
     }
     return \%results;
