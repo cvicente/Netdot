@@ -46,7 +46,7 @@ if ( $id ){
     unless ( $o = Ipblock->retrieve($id) ){
 	$m->comp('/generic/error.mhtml', error => "Could not retrieve Ipblock id: $id");
     }else{
-	$title = $o->address . "/" . $o->prefix;
+	$title = $o->get_label;
     }
 }else{
     $title = "Search";
@@ -318,7 +318,7 @@ if ( defined($search) ){
         <strong>Confirm</strong>   
       </div>
       <div class="containerbody">  
-        <p>Are you sure you want to delete <strong><em><% $o->address %>/<% $o->prefix %></em></strong> ?
+        <p>Are you sure you want to delete <strong><em><% $o->get_label %></em></strong> ?
         <p>Delete children blocks <input type="checkbox" name="recursivedel">
         <p><input type="submit" name="submit" value="Yes" >
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
@@ -394,13 +394,13 @@ if ( $id && $view ){
 my @line;
 if ( my @parents = $o->get_ancestors ){
     foreach my $par ( reverse @parents ){
-    	push (@line, "<a href=\"ip.html?id=" . $par->id . "\">" . $par->address . "/" . $par->prefix . "</a>");
+    	push (@line, "<a href=\"ip.html?id=" . $par->id . "\">" . $par->get_label . "</a>");
     }
     if( $view_availability == 1 ) {  
-  	    push (@line, "<a href=\"ip.html?id=" . $o->id . "\">" . $o->address . "/" . $o->prefix . "</a>");  
+  	    push (@line, "<a href=\"ip.html?id=" . $o->id . "\">" . $o->get_label . "</a>");  
         push (@line, "Addresses");  
     } else {  
-        push (@line, $o->address . "/" . $o->prefix);  
+        push (@line, $o->get_label);  
     }
 }    
  
@@ -413,7 +413,7 @@ if ( my @parents = $o->get_ancestors ){
 %     if ( @line ){
 %        print join ' : ', @line;
 %     }else{
-         <% $o->address."/".$o->prefix %>
+         <% $o->get_label %>
 %     }
     </div>
 
@@ -817,7 +817,7 @@ if ($o->status->name eq "Subnet") {
 %     if( $o->status->name eq "Container" ) {  
        <div class="container">  
           <div class="containerheadleft"> 
-             Usage for <% $o->address.'/'.$o->prefix %>  
+             Usage for <% $o->get_label %>  
           </div>  
           <div class="containerheadright">
             Legend:
