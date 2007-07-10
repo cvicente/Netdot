@@ -144,4 +144,5 @@ installdb:
 	@echo "Preparing to create netdot database"
 	cd bin ; make installdb FMOD=$(FMOD) 
 
-
+oui:
+	cd bin ; make oui

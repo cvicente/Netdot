@@ -4218,6 +4218,56 @@ $meta = {
       ]
     }
   },
+  OUI => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      oui => {
+        default => '',
+        description => 'Organizationally Unique Identifier.  Assigned by the IEEE to Ethernet hardware manufacturers.',
+        length => '6',
+        nullable => 0,
+        tag => 'OUI',
+        type => 'varchar'
+      },
+      vendor => {
+        default => '',
+        description => 'Manufacturer of Ethernet hardware',
+        length => '128',
+        nullable => 0,
+        tag => 'Vendor',
+        type => 'varchar'
+      }
+    },
+    description => 'Organizationally Unique Identifier',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'oui,vendor'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'oui'
+      ]
+    ],
+    views => {
+      all => [
+        'oui',
+        'vendor'
+      ],
+      brief => [
+        'oui,vendor'
+      ]
+    }
+  },
   Person => {
     columns => {
       aliases => {

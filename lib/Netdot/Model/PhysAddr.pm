@@ -3,9 +3,6 @@ package Netdot::Model::PhysAddr;
 use base 'Netdot::Model';
 use warnings;
 use strict;
-use Carp;
-
-use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
@@ -305,6 +302,28 @@ sub from_interfaces {
     
 }
 
+################################################################
+=head2 vendor_count - Count MACs by vendor
+
+  Arguments:
+    none
+  Returns:
+    hash reference keyed by vendor, value is count
+  Examples:
+    my %count = PhysAddr->vendor_count();
+
+=cut
+sub vendor_count{
+    my ($self) = @_;
+    $self->isa_class_method('vendor_count');
+    my %res;
+    my $it = PhysAddr->retrieve_all();
+    while ( my $mac = $it->next ){
+	my $v = $mac->vendor;
+	$res{$v}++ if defined $v;
+    }
+    return \%res;
+}
 
 =head1 INSTANCE METHODS
 =cut
@@ -319,7 +338,7 @@ sub from_interfaces {
   Returns:   
     Updated PhysAddr object
   Examples:
-
+    
 =cut
 sub update {
     my ($self, $argv) = @_;
@@ -328,6 +347,62 @@ sub update {
 	unless exists ( $argv->{last_seen} );
 
     return $self->SUPER::update( $argv );
+}
+
+################################################################
+=head2 colon_address - Return address with octets separated by colons
+
+  Arguments: 
+    None
+  Returns:   
+    String (e.g. 'DE:AD:DE:AD:BE:EF')
+  Examples:
+    print $physaddr->colon_address;
+
+=cut
+sub colon_address {
+    my ($self) = @_;
+    $self->isa_object_method('colon_address');
+    my $addr = $self->address;
+    my @octets  = unpack("A1" x 6, $addr);
+    return join ':', @octets;
+}
+
+################################################################
+=head2 oui - Return Organizationally Unique Identifier for a given PhysAddr object
+
+  Arguments: 
+    None
+  Returns:   
+    String (e.g. '00022F')
+  Examples:
+    print $physaddr->oui;
+
+=cut
+sub oui {
+    my ($self) = @_;
+    $self->isa_object_method('oui');
+    return $self->_oui_from_address($self->address);
+}
+
+################################################################
+=head2 vendor - Return OUI vendor name
+
+  Arguments: 
+    None
+  Returns:   
+    String (e.g. 'Cisco Systems')
+  Examples:
+    print $physaddr->vendor;
+
+=cut
+sub vendor {
+    my ($self) = @_;
+    $self->isa_object_method('vendor');
+    my $ouistr = $self->oui;
+    my $oui = OUI->search(oui=>$ouistr)->first;
+    return $oui->vendor if defined $oui;
+    return "Unknown";
 }
 
 #################################################
@@ -374,6 +449,14 @@ sub _format_address {
     $address =~ s/[:\-\.]//g;
     $address = uc($address);
     return $address;
+}
+
+################################################################
+# Extract first 6 characters from MAC address 
+#
+sub _oui_from_address {
+    my ($self, $addr) = @_;
+    return substr($addr, 0, 6);
 }
 
 

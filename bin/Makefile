@@ -17,7 +17,9 @@ FILES := $(shell ls *.pl)
 install:
 	$(substitute)
 
-installdb:
+installdb: _installdb oui
+
+_installdb:
 	$(PERL) initdb initdb
 
 updatedb:
@@ -26,5 +28,10 @@ updatedb:
 genschema:
 	$(PERL) initdb  generate
 
-dropdb: 
+dropdb:
 	$(PERL) initdb dropdb
+
+oui:
+	rm -f oui.txt
+	wget http://standards.ieee.org/regauth/oui/oui.txt
+	$(PERL) initdb oui

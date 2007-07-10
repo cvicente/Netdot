@@ -50,6 +50,8 @@ if ($config{ACTION} eq 'initdb' ) {
     &drop_db();
 }elsif ($config{ACTION} eq 'generate') {
     &generate_schema_file();
+}elsif ($config{ACTION} eq 'oui') {
+    &insert_oui();
 }else {
     die '$config{ACTION} invalid: '.$config{ACTION} ;
 }
@@ -232,6 +234,44 @@ sub insert_default_data{
     &db_query(\@data);
 }
 
+##################################################
+#
+sub insert_oui{
+    my $oui_file = "oui.txt";
+    unless ( -r $oui_file ){
+        print "  $oui_file not found!\n";
+        die "Please run ''make oui'' to download oui.txt.\n";
+    }
+    my @data;
+    print "Removing old contents of oui table in database.\n";
+    push @data, "DELETE FROM oui WHERE true;";
+    &db_query(\@data);
+
+    my %oui;
+    open (OUI, "<$oui_file") or die "Can't open $oui_file: $!\n";
+    while (my $line = <OUI>){
+        chomp $line;
+        if ($line =~ /^(.{2}-.{2}-.{2})\s+\(hex\)\s+(.*)\s*$/i){
+            $oui{$1}=$2;
+        } 
+    }
+    close (OUI);
+
+    my $oui_count = 0;
+    @data = ();
+    foreach my $oui ( keys %oui ){
+        my $vendor = $oui{$oui};
+	$vendor =~ s/\'/''/g;
+        $oui =~ s/-//g;
+        $oui = uc($oui);
+        print "$oui : $vendor\n" if $config{DEBUG};
+	push @data, "INSERT INTO oui (oui, vendor) VALUES ('$oui', '$vendor');";
+        $oui_count++;
+    }
+    &db_query(\@data);
+    print "Inserted $oui_count entries from oui.txt\n";
+
+}
 ##################################################
 # $query must be an arrayref
 # 
