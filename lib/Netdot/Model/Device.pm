@@ -3698,7 +3698,7 @@ sub _oct2hex {
 #
 __PACKAGE__->set_sql(by_type => qq{
     SELECT d.id
-	FROM device d, Product p, ProductType t, RR rr
+	FROM device d, product p, producttype t, rr
 	WHERE d.product = p.id AND
 	p.type = t.id AND
 	rr.id = d.name AND
@@ -3708,7 +3708,7 @@ __PACKAGE__->set_sql(by_type => qq{
 
 __PACKAGE__->set_sql(no_type => qq{
     SELECT p.name, p.id, COUNT(d.id) AS numdevs
-        FROM device d, Product p
+        FROM device d, product p
         WHERE d.product = p.id AND
         p.type = 0
         GROUP BY p.name, p.id
