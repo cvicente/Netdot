@@ -1,0 +1,54 @@
+<%doc>
+MAC address Report
+
+</%doc>
+
+<%attr>
+title   => 'MAC Address Report' 
+section => 'Reports'
+</%attr>
+<%args>
+$topn => 20;
+</%args>
+<%init>
+my $DEBUG = 0;
+my $total = PhysAddr->count_all;
+my $stats = PhysAddr->vendor_count();
+my %bycount;
+map { $bycount{$stats->{$_}}  = $_ } keys %$stats;
+</%init>
+<%perl>
+my (@headers, @rows) = ();
+
+@headers = ( 'Vendor', 'Count', '%', );
+
+my @row = ();
+push( @row, "Total in Database" );
+push( @row, "<strong>$total</strong>" );
+push( @row, "&nbsp;" );
+push( @rows, \@row );
+
+my $i;
+foreach my $count ( sort { $b <=> $a } keys %bycount ){
+    $i++;
+    my $vendor = $bycount{$count};
+    my @row = ();
+    push( @row, $vendor );
+    push( @row, $count );
+    push( @row, sprintf("%02.2f",$count/$total * 100) );
+    push( @rows, \@row );
+    last if ( $i == $topn );
+}
+</%perl>
+
+<div class="container">
+<div class="containerhead">MAC Addresses by Vendor (top <% $topn %>)</div>
+<div class="containerbody">
+<p>
+<form action="macs_by_vendor.html" method="POST">
+Top <input type="text" size="4" name="topn" value="<% $topn %>"> Vendors <input type="submit" value="Submit" name="submit">
+</form>
+<& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
+</div>
+</div>

@@ -1,0 +1,72 @@
+<%doc>
+Interface for MAC addresses
+</%doc>
+%
+%
+<%attr>
+title   => 'MAC' 
+section => 'Management'
+</%attr>
+%
+%
+<%args>
+$id                => undef
+$search            => undef
+$delete            => undef
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+my $o;
+my @list;
+if ( $id ){
+    unless ( $o = PhysAddr->retrieve($id) ){
+	$m->comp('/generic/error.mhtml', error => "Could not retrieve PhysAddr id: $id");
+    }
+}
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+</%init>
+
+<%doc>
+#######################################################################################
+# Search
+#
+#######################################################################################
+</%doc>
+
+% if ( defined($search) ){
+%     if ($search eq "" ){
+       <div class="container">
+         <div class="containerhead">
+           <strong>Error!</strong>   
+         </div>
+         <div class="containerbody">
+            <p><strong>No search criteria</strong>   
+         </div>
+       </div>
+%     }else{
+%        # Remove trailing and leading spaces
+%        $search =~ s/^\s*(.*)\s*$/$1/g;
+%        @list = PhysAddr->search_like(address=>$search);
+
+	<div class="container">
+          <div class="containerhead">
+              Query <em><% $search %></em> returned: <% scalar(@list) %> matches
+          </div>
+          <div class="containerbody">
+%         if ( @list ){
+              <& /generic/sortresults.mhtml, object => \@list  &>
+%         }else{
+	      <form action="mac.html" method="POST">
+                <p>
+                <label for="search">MAC:</label>
+                <input type="text" name="search" class="txt" value="<% $search %>"> 
+                <input name="submit" value="search" class="btn" type="submit">
+                </p>
+              </form> 
+%         }
+          </div>
+       </div>
+%     }
+% }

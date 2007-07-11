@@ -28,7 +28,6 @@ my %caller_args = $m->caller_args(-1);
 if (exists($caller_args{page})){
     $user->setAttribute($r, "$PAGE_ATTRIBUTE", $caller_args{page});
 }
-
 my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 </%init>
 
@@ -44,6 +43,7 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 	    attribute    => $PAGE_ATTRIBUTE,
 	    sub_sections => [
 		{ section => 'DEVICE',   title => 'Device Inventory' },
+		{ section => 'MACS',     title => 'MAC Addresses' },
 		{ section => 'DATABASE', title => 'Database Reports' },
 		{ section => 'CUSTOM',   title => 'Custom Reports' },
 	    ]
@@ -56,6 +56,10 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 if ($page eq "DEVICE") {
 	
 	$m->comp('device_inventory.html');
+
+} elsif ( $page eq "MACS" && $m->request_comp->name ne "macs_by_vendor.html" ) {
+
+	$m->comp('macs_by_vendor.html');
 
 } elsif ($page eq "DATABASE") {
 </%perl>	
@@ -77,8 +81,9 @@ if ($page eq "DEVICE") {
     
   }
 
-
 if ( $m->fetch_next ){
     $m->call_next;
 }
+
+
 </%perl>
