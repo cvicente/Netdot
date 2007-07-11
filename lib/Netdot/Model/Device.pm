@@ -2919,7 +2919,7 @@ sub _get_fwt_from_snmp {
     # Notably the Catalyst 5k, 6k, and 3500 series
     my $cisco_comm_indexing = $sinfo->cisco_comm_indexing();
     if ( $cisco_comm_indexing ){
-        $logger->info("$host supports Cisco commuinty string indexing. Connecting to each VLAN");
+        $logger->info("$host supports Cisco community string indexing. Connecting to each VLAN");
         my $v_name   = $sinfo->v_name() || {};
         my $i_vlan   = $sinfo->i_vlan() || {};
 	my $sclass   = $sinfo->class();
@@ -3052,13 +3052,6 @@ sub _walk_fwt {
 	    next;
 	}
 	
-	# Check if Port Channel
-	if ( $descr =~ /port.channel/i ) {
-	    $logger->debug("Device::_walk_fwt: Interface $iid ($descr) is a Port Channel Interface. Skipping");
-	    delete $fwt->{$iid};
-	    next;
-	}
-
 	foreach my $mac ( keys %{ $fwt->{$iid} } ){
 
 	    if ( ! PhysAddr->validate($mac) ){
