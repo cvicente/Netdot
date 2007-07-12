@@ -317,10 +317,20 @@ sub vendor_count{
     my ($self) = @_;
     $self->isa_class_method('vendor_count');
     my %res;
-    my $it = PhysAddr->retrieve_all();
-    while ( my $mac = $it->next ){
-	my $v = $mac->vendor;
-	$res{$v}++ if defined $v;
+    my $all_macs = $self->retrieve_all_hashref();
+    my $it = OUI->retrieve_all;
+    my %OUI;
+    while ( my $oui = $it->next ){
+	$OUI{$oui->oui} = $oui->vendor;
+    }
+    foreach my $address ( keys %$all_macs ){
+	my $oui_str = $self->_oui_from_address($address);
+	if ( exists $OUI{$oui_str} ){
+	    my $vendor = $OUI{$oui_str};
+	    $res{$vendor}++;
+	}else{
+	    $res{"Unknown"}++;
+	}
     }
     return \%res;
 }
