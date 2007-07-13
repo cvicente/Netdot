@@ -325,9 +325,14 @@ sub update_ip {
 	$logger->debug(sprintf("%s: IP %s/%s exists. Updating", 
 			      $host, $address, $prefix));
 	
+	# Notice that this is basically to confirm that the IP belongs
+	# to this interface and that the status is set to Static.  
+	# Therefore, it's very unlikely that the object won't pass 
+	# validation, so we skip it to speed things up.
 	eval {
 	    $ipobj->update({ status     => "Static",
 			     interface  => $self,
+			     validate   => 0,
 			 });
 	};
 	if ( my $e = $@ ){

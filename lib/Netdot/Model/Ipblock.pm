@@ -816,7 +816,7 @@ sub is_address {
 
   Arguments:
     hashref of key/value pairs
-  Modified:         :
+  Modified:
     status           object, id or name of IpblockStatus
     validate(flag)   Optionally skip validation step
     recursive(flag)  Update all descendants
@@ -831,9 +831,20 @@ sub update {
     $self->isa_object_method('update');
     my $class = ref($self);
 
-    if ( $argv->{recursive} ){
+    # Extract non-column options from $argv
+    my $validate  = 1;
+    my $recursive = 0;
+    if ( defined $argv->{validate} ){
+	$validate = $argv->{validate};
+	delete $argv->{validate};
+    }
+    if ( defined $argv->{recursive} ){
+	$recursive = $argv->{recursive};
+	delete $argv->{recursive};
+    }
+
+    if ( $recursive ){
 	my %data = %{ $argv };
-	delete $data{recursive};
         map { 
 	    if ( /^address|prefix|version|interface|status|physaddr$/ ){
 		$self->throw_fatal("$_ is not a valid field for a recursive update");
@@ -881,23 +892,17 @@ sub update {
     # method is pretty low level
 
     my %bak  = $self->get_state();
-
     my $result = $self->SUPER::update( \%state );
-    eval {
+
+    # Unly rebuild the tree if address/prefix have changed
+    if ( $self->address ne $bak{address} || $self->prefix ne $bak{prefix} ){
 	$class->build_tree($ip->version);
-    };
-    if ( my $e = $@ ){
-	# Something went wrong.
-	# Go back to where we were
-	$self->SUPER::update( \%bak );
-	$e->rethrow();
     }
 
     # Now check for rules
     # We do it after updating and rebuilding the tree because 
     # it makes things much simpler. Workarounds welcome.
-
-    unless ( exists $argv->{validate} && $argv->{validate} == 0 ){
+    if ( $validate ){
 	# If this fails, We need to roll back the object before bailing out
 	eval { 
 	    $self->_validate($argv) ;
@@ -907,10 +912,8 @@ sub update {
 	    $self->SUPER::update( \%bak );
 	    $e->rethrow();
 	}
+	$class->build_tree($ip->version);
     }
-
-    $class->build_tree($ip->version);
-    
     return $result;
 }
 
@@ -1493,6 +1496,8 @@ sub _prevalidate {
 sub _validate {
     my ($self, $args) = @_;
     $self->isa_object_method('_validate');
+
+    $logger->debug("Ipblock::_validate: Checking validity of " . $self->get_label);
 
     # Make these values what the block is being set to
     # or what it already has
