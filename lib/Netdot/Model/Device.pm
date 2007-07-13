@@ -2670,10 +2670,18 @@ sub _get_snmp_session {
 	$self->throw_user(sprintf("Device %s not SNMP-managed. Aborting.", $self->fqdn))
 	    unless $self->snmp_managed;
 
+	# Fill up communities argument from object if it wasn't passed to us
+	push @{$argv{communities}}, $self->community unless defined $argv{communities};
+
 	# We might already have a session
 	if ( defined $self->{_snmp_session} ){
-	    $logger->debug("Device::get_snmp_session: Reusing existing session with ", $self->fqdn);
-	    return $self->{_snmp_session};
+	    foreach my $comm ( @{$argv{communities}} ){
+		if ( defined $self->{_snmp_session}->{$comm} ){
+		    $logger->debug(sprintf("Device::get_snmp_session: Reusing existing session with %s, community %s", 
+					   $self->fqdn, $comm));
+		    return $self->{_snmp_session}->{$comm};
+		}
+	    }
 	}
 	
 	# We might already have a SNMP::Info class
@@ -2687,11 +2695,11 @@ sub _get_snmp_session {
 		$argv{host} = $self->fqdn;
 	    }
 	}
-	push @{$argv{communities}}, $self->community unless defined $argv{communities};
 	$argv{version}  ||= $self->snmp_version;
 	$argv{bulkwalk} ||= $self->snmp_bulk;
 	
     }
+    
     # If we still don't have any communities, get defaults from config file
     $argv{communities} = $self->config->get('DEFAULT_SNMPCOMMUNITIES')
 	unless defined $argv{communities};
@@ -2732,6 +2740,7 @@ sub _get_snmp_session {
 	}
 	
 	if ( defined $sinfo ){
+	    # Check for errors
 	    if ( my $err = $sinfo->error ){
 		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
 					  $sinfoargs{Version}, $sinfoargs{DestHost}, $sinfoargs{Community}, $err));
@@ -2747,8 +2756,6 @@ sub _get_snmp_session {
 	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s community '%s'", 
 				  $sinfoargs{DestHost}, $sinfoargs{Community}));
     }
-
-    # Check for errors
 
     # Save SNMP::Info class if we are an object
     $logger->debug("Device::get_snmp_session: $argv{host} is: ", $sinfo->class());
@@ -2782,7 +2789,8 @@ sub _get_snmp_session {
 
     if ( $class ){
 	# Save session if object exists
-	$self->{_snmp_session} = $sinfo;
+	# Notice that there can be different sessions depending on the community
+	$self->{_snmp_session}->{$sinfoargs{Community}} = $sinfo;
     }
     return $sinfo;
 }
@@ -2931,7 +2939,7 @@ sub _get_fwt_from_snmp {
             $vlans{$vlan}++;
         }
 	
-        # For each VLAN, connect and then macsuck
+        # For each VLAN, connect and then retrieve forwarding tables
 	# VLAN id comes as 1.142 instead of 142
         foreach my $vid (sort { my $aa=$a; my $bb=$b; $aa =~ s/^\d+\.//;$bb=~ s/^\d+\.//;
                                 # Sort by VLAN id
@@ -2950,10 +2958,10 @@ sub _get_fwt_from_snmp {
 		next;
 	    }
 	    
-            my %args = ('host'      => $host,
-                        'community' => $self->community . '@' . $vlan,
-                        'version'   => $self->snmp_version,
-			'sclass'    => $sclass,
+            my %args = ('host'        => $host,
+                        'communities' => [$self->community . '@' . $vlan],
+                        'version'     => $self->snmp_version,
+			'sclass'      => $sclass,
 			);
             my $vlan_sinfo = $class->_get_snmp_session(%args);
 	    
