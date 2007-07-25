@@ -26,6 +26,15 @@ use base qw( Netdot );
 use Netdot::Model;
 use strict;
 
+# Some tables have a specific view page. 
+#
+my %VIEWPAGE = ( BinFile => "../generic/display_bin.html",
+		 Closet  => "../cable_plant/closet.html",
+		 Site    => "../cable_plant/site.html",
+		 Ipblock => "../management/ip.html",
+		 Device  => "../management/device.html"  
+		 );
+
 
 =head1 METHODS
 
@@ -1224,6 +1233,23 @@ sub select_query {
     }else{
 	return \%{$found{$terms->[0]}};
     }
+}
+
+############################################################################
+=head2 table_view_page - Get custom component for viewing a particular table
+
+  Arguments:
+    Table name
+  Returns:
+    String with component path
+  Examples:
+    my $page = $ui->table_view_page{$table};
+
+=cut
+sub table_view_page {
+    my ($self, $table) = @_;
+    
+    return $VIEWPAGE{$table};
 }
 
 =head1 AUTHORS

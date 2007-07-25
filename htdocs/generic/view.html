@@ -28,12 +28,7 @@ my %ftables;
 # Some tables have a specific view page. 
 # Point to those when appropriate
 #
-my %viewpage = ( BinFile => "../generic/display_bin.html",
-		 Closet  => "../cable_plant/closet.html",
-		 Ipblock => "../management/ip.html",
-		 Device  => "../management/device.html"  );
-
-my $page = $viewpage{$table} if ( exists $viewpage{$table} );
+my $page = $ui->table_view_page($table);
 
 unless ( $obj = $table->retrieve($id) ){
    $m->comp('error.mhtml', error => "Nonexistent record: $id");

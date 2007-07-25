@@ -153,15 +153,8 @@ if ( defined($object) && scalar @$object ){
 # Some tables have a specific view page. 
 # Point to those when appropriate
 #
-my %viewpage = ( BinFile => "../generic/display_bin.html",
-		 Closet  => "../cable_plant/closet.html",
-		 Ipblock => "../management/ip.html",
-		 Device  => "../management/device.html"  );
-
 unless ( $page ){
-    if ( exists $viewpage{$table} ){
-	$page = $viewpage{$table};
-    }
+    $page = $ui->table_view_page($table);
 }
 $page ||= "view.html";
 
