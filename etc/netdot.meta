@@ -5744,6 +5744,100 @@ $meta = {
       ]
     }
   },
+  SitePicture => {
+    columns => {
+      bindata => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Binary Data',
+        type => 'longblob'
+      },
+      site => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'pictures',
+          table => 'Site'
+        },
+        nullable => 0,
+        tag => 'Site',
+        type => 'integer'
+      },
+      filename => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Name',
+        type => 'varchar'
+      },
+      filesize => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Size',
+        type => 'varchar'
+      },
+      filetype => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Type',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+    },
+    description => 'A Site Picture',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'site',
+      'filename'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'site',
+        'filename'
+      ]
+    ],
+    views => {
+      all => [
+        'site',
+        'filename',
+        'filesize',
+        'filetype',
+        'bindata',
+        'info',
+      ],
+      brief => [
+        'site',
+        'filename'
+      ]
+    }
+  },
   Splice => {
     columns => {
       id => {
