@@ -120,7 +120,7 @@ if ($view eq 'all' || $view eq "$table"){
         my $linkPage;
 	my $ftable = $table->meta_data->get_column($c)->links_to();
         if( defined $ftable ) {
-	    $linkPage = $viewpage{$ftable} || 'view.html';
+	    $linkPage = $ui->table_view_page($ftable) || 'view.html';
         }
         my %tmp;
         %tmp = $ui->form_field(object=>$obj, column=>$c, edit=>0, linkPage=>$linkPage);
