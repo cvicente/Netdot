@@ -3264,13 +3264,11 @@ sub _launch_child {
 	      die "Child process $$ killed\n";
 	  };
 
-	  # We don't want a handle here.
-	  # Note:  This is very tight-coupled with the patch applied to 
-	  # Ima::DBI that reopens the connection in child processes
+	  # We don't want a db handle here.
 	  unless ( $dbh->{InactiveDestroy} = 1 ) {
 	      $class->throw_fatal("Cannot set InactiveDestroy: ", $dbh->errstr);
 	  }
-#	  $dbh->disconnect();
+	  $dbh->disconnect();
 
 	  # Run given code
 	  my $data;
