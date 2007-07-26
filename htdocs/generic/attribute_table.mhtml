@@ -32,26 +32,27 @@ $datacolwidth   => "";
 my $DEBUG = 0;
 my $headerwidthstr = "width=\"".$headercolwidth."\"" if ($headercolwidth ne "") ;
 my $datawidthstr   = "width=\"".$datacolwidth."\""   if ($datacolwidth   ne "");
-my $j   = 0;
-my $pos = 0;
-my $max = scalar(@field_headers);
-my $ncells = ( $max % 2 == 0 ) ? $max : $max+1;
-my $inc = int($ncells/$width);
-printf("ncells=%s<br><br> inc=%s<br>", $ncells, $inc) if $DEBUG ;
+my $nfields = scalar(@field_headers);
+my $nrows   = ( $nfields % $width == 0 ) ? $nfields/$width : int($nfields/$width)+1;
+my $pos     = 0;
+my $colwidth = int(100/$width);
 </%init>
 
-<table border="0" width="100%">
-   <tr>
-%  for (my($i)=0; $i < $max; $i++ ) {
-%     if( $i % $width == 0 && $i != 0 ) { 
-%	 $j++;
-%	 $pos = $j;
-         </tr>
-         <tr>
-%     }
-      <td <% $headerwidthstr %> class="formtablec1"><% $field_headers[$pos] %></td>
-      <td <% $datawidthstr %> class="formtablec2"><% $data[$pos] %></td>
-%      $pos += $inc;
-%  }
-   </tr>
-</table>
+
+ <table border="0" width="100%">
+    <tr>
+%    for ( my($w)=1; $w <= $width; $w++ ){
+       <td width="<% $colwidth %>%">
+	<table border="0" width="100%">
+%	    for ( my($r)=1; $r <= $nrows; $r++ ){
+		<tr>
+		    <td <% $headerwidthstr %> class="formtablec1"><% $field_headers[$pos] %></td>
+		    <td <% $datawidthstr %> class="formtablec2"><% $data[$pos] %></td>		    
+		</tr>
+%		$pos++;
+%	    }
+       </td>
+	</table>
+%    }
+    </tr>
+ </table>
