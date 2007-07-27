@@ -64,19 +64,20 @@ if( !$showheader ) {
 	    title        => 'Cable Plant',
 	    attribute    => 'CABLE_PLANT_PAGE',
 	    sub_sections => [
+		{ section => 'SITES',      title => 'Sites' },
+		{ section => 'CLOSETS',    title => 'Closets' },
 		{ section => 'BACKBONE',   title => 'Backbone Cables' },
 		{ section => 'HORIZONTAL', title => 'Horizontal Cables' },
-		{ section => 'CLOSETS',    title => 'Closets' },
 		{ section => 'CIRCUITS',   title => 'Circuits' }
 	    ]
         };
     </%init>
 </%method>
 
-<div id="sectiontools" <% $hideheader %>>
-% if ($page eq "BACKBONE" || $page eq "") {
+% if ( $page eq "BACKBONE" || $page eq "" ) {
 
-<div class="container">
+<div id="sectiontools" <% $hideheader %>>
+ <div class="container">
     <div class="containerheadleft">
         Backbone Cable
     </div>
@@ -128,12 +129,14 @@ if( !$showheader ) {
         </td></tr></table>
 
     </div> <!-- close containerbody -->
-</div> <!-- close container -->
+ </div> <!-- close container -->
+</div> <!-- close sectiontools -->
 
 
-% } elsif ($page eq "HORIZONTAL") {
+% } elsif ( $page eq "HORIZONTAL" ) {
 
 
+<div id="sectiontools" <% $hideheader %>>
 <div class="container">
     <div class="containerheadleft">
         Horizontal Cable
@@ -223,9 +226,15 @@ if( !$showheader ) {
 
     </div> <!-- end containerbody -->
 </div> <!-- end container -->
+</div> <!-- close sectiontools -->
 
-% } elsif ($page eq "CLOSETS") {
+% } elsif ($page eq "SITES" && $m->request_comp->name ne "site_tasks.html") {
 
+% $m->comp('site_tasks.html', %ARGS);
+
+% } elsif ( $page eq "CLOSETS" ) {
+
+<div id="sectiontools" <% $hideheader %>>
 <div class="container">
     <div class="containerheadleft">
         Closets
@@ -288,8 +297,11 @@ if( !$showheader ) {
 
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
+</div> <!-- close sectiontools -->
 
 % } elsif ($page eq "CIRCUITS") {
+
+<div id="sectiontools" <% $hideheader %>>
 <div class="container">
     <div class="containerheadleft">Circuits</div>
     <div class="containerheadright">
@@ -307,10 +319,10 @@ if( !$showheader ) {
       </form>
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
+</div> <!-- close sectiontools -->
 
 % }
 
-</div> <!-- close sectiontools -->
 
 % #############################################################################
 %

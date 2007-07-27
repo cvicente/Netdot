@@ -105,6 +105,23 @@ if( $DEBUG ) {
 # Start the actual work
 #
 if ( $table ){
+
+    # Special cases
+    if ( $table eq 'Picture' && $args{filename} ){
+	eval {
+	    use Apache2::Upload;
+	    my $bindata;
+	    my $upload     = $r->upload("filename");
+	    my $upload_fh  = $upload->fh;
+	    my $size       = $upload->slurp($bindata);
+	    $args{bindata} = $bindata;
+	    delete $args{filetype} unless $args{filetype};
+	};
+	if ( my $e = $@ ){
+	    $m->comp('error.mhtml', error=>$e);
+	}
+    }
+
     if ( $id ){
 	my $obj = $table->retrieve($id);
 	if ( $submit eq "Update" ){
@@ -136,11 +153,11 @@ if ( $table ){
 	    }else{
 		$m->comp('view.html', table=>$table, id=>$new->id);
 	    }
-	    
+
 	}else{
 	    $m->comp('.show_form', table=>$table, 
 		     showheader=>$showheader, select_id=>$select_id, selected=>$selected,
-		     page=>$page, dowindow=>$dowindow);
+		     page=>$page, dowindow=>$dowindow, args=>\%args);
 	}
     }
     
@@ -170,6 +187,7 @@ $selected   => undef
 $showheader => undef
 $page       => undef
 $dowindow   => 0
+%args       => undef
 </%args>
 
 <%init>
@@ -181,7 +199,7 @@ my $title = "$table " . $ui->table_descr_link($table, "[?]");
         <% $title %>
     </div>
     <div class="containerbody">
-      <form name="netdotform" action="<% $page %>" method="POST">
+      <form name="netdotform" action="<% $page %>" method="POST" enctype="multipart/form-data">
       <input type="hidden" name="showheader" value="<% $showheader %>"> 
       <input type="hidden" name="select_id" value="<% $select_id %>">
       <input type="hidden" name="selected" value="<% $selected %>">
@@ -191,7 +209,7 @@ my $title = "$table " . $ui->table_descr_link($table, "[?]");
       <br>
       <input name="submit" type="submit" value="Update">
 %     }else{
-%         $m->comp('form.mhtml', table=>$table);
+%         $m->comp('form.mhtml', table=>$table, session=>\%args);
       <br>
       <input name="submit" type="submit" value="Insert">
 %     }

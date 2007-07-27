@@ -111,23 +111,8 @@ print '%ftables is  <pre>', Dumper(%ftables), '</pre><br>' if $DEBUG;
 
 <%perl>
 
-if ($view eq 'all' || $view eq "$table"){
+if ( $view eq 'all' || $view eq "$table" ){
     
-    my (@fields, @data);
-    
-    foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-	next if ($c eq 'id' || $c eq 'aliases');
-        my $linkPage;
-	my $ftable = $table->meta_data->get_column($c)->links_to();
-        if( defined $ftable ) {
-	    $linkPage = $ui->table_view_page($ftable) || 'view.html';
-        }
-        my %tmp;
-        %tmp = $ui->form_field(object=>$obj, column=>$c, edit=>0, linkPage=>$linkPage);
-        push( @fields, $tmp{label} );
-        push( @data, $tmp{value} );
-    }
-
 </%perl>
 
 	<div class="containerheadleftoutside"><strong><% $table %></strong></div>
@@ -143,8 +128,9 @@ if ($view eq 'all' || $view eq "$table"){
 	</div>
 
 	<div class="containerbodyoutside">
-	  <& attribute_table.mhtml, field_headers=>\@fields, data=>\@data, 
-	                            width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
+
+          <& form.mhtml, table=>$table, id=>$id, edit=>0 &>
+
 	</div>
 %}
 <!-- End Display main object values -->

@@ -1,9 +1,9 @@
 <%doc>
 Used for displaying binary content. For example, to display an image
 you can:
-    1) Invoke this page directly with a table and id to display, or;
+    1) Invoke this page directly with an id to display, or;
     2) Embed a reference to this page in another page, for example:
-       <IMG SRC="display_bin.html?table=ClosetPicture&id=4">
+       <IMG SRC="display_bin.html?id=4">
 
 This currently assumes "filetype" in the database represents the
 objects mime type.
@@ -11,14 +11,13 @@ objects mime type.
 
 <%args>
 $id
-$table
 </%args>
 
 <%init>
-my $binfile = $table->retrieve($id);
-$m->comp("/generic/error.mhtml", error=>"$table id $id could not be retrieved") unless ( $binfile );
-$m->comp("/generic/error.mhtml", error=>"$table id $id has no filetype")        unless ( $binfile->filetype );
-$m->comp("/generic/error.mhtml", error=>"$table id $id has no data")            unless ( $binfile->bindata );
+my $binfile = Picture->retrieve($id);
+$m->comp("/generic/error.mhtml", error=>"Picture id $id could not be retrieved") unless ( $binfile );
+$m->comp("/generic/error.mhtml", error=>"Picture id $id has no filetype")        unless ( $binfile->filetype );
+$m->comp("/generic/error.mhtml", error=>"Picture id $id has no data")            unless ( $binfile->bindata );
 
 $m->clear_buffer; # Do not print headers
 $r->content_type($binfile->filetype);

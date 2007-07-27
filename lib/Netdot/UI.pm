@@ -30,7 +30,6 @@ use strict;
 #
 my %VIEWPAGE = ( BinFile => "../generic/display_bin.html",
 		 Closet  => "../cable_plant/closet.html",
-		 Site    => "../cable_plant/site.html",
 		 Ipblock => "../management/ip.html",
 		 Device  => "../management/device.html"  
 		 );
@@ -316,12 +315,21 @@ sub form_field {
     ## column is a local field
     } else {
         my $type = $mcol->sql_type;
-	if ( $type =~ /^varchar|timestamp|integer|numeric|date|bigint$/ ){
+
+	# Filenames are a special case
+	if ( $table eq "Picture" && $mcol->name eq "filename" ){
+	    if ( $args{edit} ){
+		$value = '<input type="file" name="filename" size="30" value="">';
+	    }elsif ( $o ){
+		$value = $o->filename;    
+	    }
+
+	}elsif ( $type =~ /^varchar|timestamp|integer|numeric|date|bigint$/ ){
 	    $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 				       default=>$args{default}, linkPage=>$args{linkPage}, returnAsVar=>1, 
 				       htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
 	    
-	} elsif ( $type =~ /long varbinary|blob/ ) {
+	} elsif ( $type eq "blob" ) {
 	    $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 				      returnAsVar=>1, htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
 	    
@@ -329,6 +337,11 @@ sub form_field {
 	    $value = $self->checkbox_boolean(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 						returnAsVar=>1, shortFieldName=>$args{shortFieldName});
 	    
+	} elsif ( $table eq "Picture" && $type eq "longblob" ) {
+	    if ( ! $args{edit} ){
+		$value = "<a href=\"display_bin.html?id=$id\"><img width\"150\" height=\"150\" alt=\"$o->filename\"src=\"display_bin.html?id=$id\" ></a>";
+	    }
+
 	} else {
 	    $self->throw_fatal("Unknown column type $type for column $column in table $table");
 	}

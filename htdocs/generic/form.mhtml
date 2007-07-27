@@ -4,24 +4,26 @@ Given a table (an optionally an id), build a form with corresponding
 fields.  Can be called from within other components for editing/adding
 objects to the database.
 
-Arguments:  
-  table         -  name of table (REQUIRED)
-  id            -  id (row) from the above table  (OPTIONAL)
-  session       -  ref to a hash with values to insert (if object does not exist)
 
 </%doc>
 
 <%args>
-$table
-$id           => undef
-%session      => undef
+$table                       #  name of table (REQUIRED)
+$id           => undef       #  id (row) from the above table  (OPTIONAL)
+%session      => undef       #  ref to a hash with values to insert (if object does not exist)
 $allow_create => 1
+$edit         => 1
 </%args>
 
 <%init>
 
 my $maxselect = 100;
 my $DEBUG     = 0;
+
+if ( $DEBUG ){
+    print "ARGS: ";
+    printf "<pre>%s</pre>\n", Dumper( \%ARGS );
+}
 
 unless ( $table  ) {
     $m->comp("/generic/error.mhtml", error => "Missing required arguments");
@@ -47,28 +49,46 @@ if( $id ) {
     print "<input type=\"hidden\" name=\"id\" value=\"$id\">";
 }
 foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-    next if( $c eq 'id' );
+    next if ( $c eq 'id' );
 
-	my %field;
-	if( defined( $id ) ) {
-		%field = $ui->form_field(object=>$obj, column=>$c, edit=>1, shortFieldName=>1);
-	} elsif( exists( $session{$c} ) ) {
-		my @defaults = ($linksto{$c}->retrieve($session{$c}));
-		%field = $ui->form_field(table=>$table, column=>$c, 
-					 defaults=>\@defaults, default=>$session{$c}, 
-					 edit=>1, shortFieldName=>1);
-	} else {
-		%field = $ui->form_field(table=>$table, column=>$c, 
-					 edit=>1, shortFieldName=>1);
+    # These are mutually exclusive.  
+    if ( $table eq "Picture" ){
+	if ( $obj ){
+	    # Use of the int() function prevents value from being true when returned value is an empty (but true) object
+	    next if ( $c eq 'site'   && ( int($obj->floor) || int($obj->closet) ) );
+	    next if ( $c eq 'floor'  && ( int($obj->site)  || int($obj->closet) ) );
+	    next if ( $c eq 'closet' && ( int($obj->floor) || int($obj->site)   ) );
+
+	}else{
+	    next if ( $c eq 'site'   && ( $session{floor} || $session{closet} ) );
+	    next if ( $c eq 'floor'  && ( $session{site}  || $session{closet} ) );
+	    next if ( $c eq 'closet' && ( $session{floor} || $session{site}   ) );
 	}
+    }
+
+    my %field;
+    if ( $obj ) {
+	my $linkPage = $ui->table_view_page($table) || 'view.html';
+	%field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>1, linkPage=>$linkPage);
+
+    } elsif( exists( $session{$c} ) ) {
+	my @defaults = ($linksto{$c}->retrieve($session{$c}));
+	%field = $ui->form_field(table=>$table, column=>$c, 
+				 defaults=>\@defaults, default=>$session{$c}, 
+				 edit=>$edit, shortFieldName=>1);
+    } else {
+	%field = $ui->form_field(table=>$table, column=>$c, 
+				 edit=>$edit, shortFieldName=>1);
+    }
     push(@headers, $field{'label'});
     push(@data,    $field{'value'});
+
 } # foreach
 
 </%perl>
     <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
     width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
-<br>
-(<font color="red">*</font>) Field is required.
-<br>
+% if ( $edit ){
+      <br>(<font color="red">*</font>) Field is required. <br>
+% }

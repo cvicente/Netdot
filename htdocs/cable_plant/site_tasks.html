@@ -1,0 +1,136 @@
+<%doc>
+Site tasks
+
+</%doc>
+
+<%args>
+$user
+$showheader      => 1
+$show_tasks      => undef
+$site_select     => undef
+$submit_search   => undef
+$search_name     => undef
+$search_number   => undef
+
+</%args>
+
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+my $search = "";
+my @results; 
+
+$show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
+if ( $show_tasks eq "" ) {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+
+my @sites = Site->retrieve_all();
+@sites = sort { $a->name cmp $b->name } @sites;
+
+my $hideheader = 'style="display:none"' if ( !$showheader );
+
+</%init>
+
+
+<div id="sectiontools" <% $hideheader %>>
+  <div class="container">
+    <div class="containerheadleft">
+        Sites
+    </div>
+    <div class="containerheadright">
+%       print_showtaskslink($show_tasks);
+        <a href="edit.html?table=Site">[new]</a>
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+
+    <table><tr><td>
+        <fieldset class="medium">
+           <legend>Find</legend>
+           <form name="site_tasks_select_form" action="site_tasks.html" method="POST">
+	        <p>
+                  <label for="search">Sites:</label>
+                  <select name="site_select" onChange="document.site_tasks_select_form.submit();">
+                     <option value="0">-- Select --</option>
+<%perl>
+                    foreach my $site ( @sites ){
+			if ( $site->id eq $site_select ){
+			    printf("<option value=\"%s\" selected>%s</option>\n", $site->id, $site->name);
+			}else{
+			    printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+			}
+                    }
+</%perl>
+                  </select>
+                </p>
+                <hr>
+           </form>
+           <form name="site_tasks_search_form" action="site_tasks.html" method="POST">
+                <p>
+                  <label for="search">Site Name:</label>
+                  <input name="search_name" value="<% $search_name %>" >
+                </p>
+                <p>
+                  <label for="search">Site ID:</label>
+                  <input name="search_number" value="<% $search_number %>" > <input type="submit" name="submit_search" value="Search">
+                </p>
+           </form>
+         </fieldset>
+    </td></tr></table>
+
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+<%perl>
+#######################################################################################
+# Search
+#
+#######################################################################################
+
+if ( $site_select ){
+
+    $m->comp('/generic/view.html', table=>"Site", id=>$site_select);
+
+}elsif ( $submit_search ){
+    my %sargs;
+    if ( $search_name ){
+	$search_name =~ s/^\s*(.*)\s*$/$1/g; # Remove trailing and leading spaces
+	$sargs{name} = $search_name;
+    }
+    if ( $search_number ){
+	$search_number =~ s/^\s*(.*)\s*$/$1/g;
+	$sargs{number} = $search_number;
+    }
+    @results = Site->search_like(%sargs);
+
+    $search = join ' ', %sargs;
+</%perl>
+
+%   if ( $search ){   
+     <div class="container">
+       <div class="containerhead">
+	    Search for <em><% $search %></em> returned: <% scalar(@results) %> matches
+       </div>
+       <div class="containerbody">
+%         if ( @results ){
+              <& /generic/sortresults.mhtml, object =>\@results, withedit=>1&>
+%         }
+       </div>
+     </div>
+
+%   }else{
+     <div class="container">
+       <div class="containerhead">
+         <strong>Error!</strong>   
+       </div>
+       <div class="containerbody">
+         <p><strong>No search criteria</strong>   
+       </div>
+     </div>
+%   }
+
+%}
