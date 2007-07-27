@@ -1,4 +1,4 @@
-package Netdot::Model::ClosetPicture;
+package Netdot::Model::Picture;
 
 use base 'Netdot::Model';
 use warnings;
@@ -17,29 +17,30 @@ my $logger = Netdot->log->get_logger("Netdot::Model");
 
 =head1 NAME
 
-Netdot::Module::ClosetPicture
+Netdot::Module::Picture
 
 =head1 SYNOPSIS
 
 =head1 CLASS METHODS
 
 #############################################################################
-=head2 insert - Inserts a closet picture into the DB.
+=head2 insert - Inserts a picture into the DB.
 
   If filetype is not specified it will be (hopefully) determined automatically.
 
   Arguments:
     Key value pairs
   Returns:
-    New ClosetPicture object
+    New Picture object
   Examples:
-    $newobj = ClosetPicture->insert({closet=>1, filename=>'filename.ext'});
+    $newobj = Picture->insert({filename=>'filename.ext'});
 
 =cut
 sub insert {
     my ($self, $argv) = @_;
-    ( defined $argv->{filename} && defined $argv->{bindata} && defined $argv->{closet} ) || 
-	$self->throw_fatal("Missing required arguments: filename, bindata");
+    ( defined $argv->{filename} && defined $argv->{bindata}  && 
+      (defined $argv->{closet} || defined $argv->{floor} || defined $argv->{site}) ) || 
+	$self->throw_fatal("Missing required arguments: filename, bindata, and one of closet, floor or site");
     
     # Grab extension
     my $extension = $1 if ( $argv->{filename} =~ /\.(\w+)$/ );
