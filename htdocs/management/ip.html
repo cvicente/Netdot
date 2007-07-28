@@ -79,87 +79,11 @@ function edit_recursive(id, field, rec){
 </script>
 
 <%perl>
-
-print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-
-#######################################################################################
-# Search
-#
-#######################################################################################
-
-if ( defined($search) ){
-    if ($search eq "" ){
-</%perl>
-       <div class="container">
-         <div class="containerhead">
-           <strong>Error!</strong>   
-         </div>
-         <div class="containerbody">
-            <p><strong>No search criteria</strong>   
-         </div>
-       </div>
-<%perl>
-}else{
-    # Remove trailing and leading spaces
-    $search =~ s/^\s*(.*)\s*$/$1/g;
-    if ( $_action eq "SEARCH_ADDR" ){
-	# These might throw exceptions
-	eval {
-	    if ( !(@list = Ipblock->search(address=>$search)) ){
-		# Return next existing higher block in the tree if not found
-		$covering_block = Ipblock->get_covering_block(address=>$search);
-	    }
-	};
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);	
-	}
-
-    }elsif ( $_action eq "SEARCH_REGEX" ){
-	@list = Ipblock->search_like(address=>$search);
-    }elsif ( $_action eq "SEARCH_OTHER" ){
-	@list = Ipblock->keyword_search($search);
-    }else {
-	$m->comp('/generic/error.mhtml', error => "Unrecognized action parameter: $_action");	
-    }
-</%perl>      
-	<div class="container">
-          <div class="containerhead">
-              Query <em><% $search %></em> returned: <% scalar(@list) %> matches
-          </div>
-          <div class="containerbody">
-%         if ( @list ){
-              <& ipblock_list.mhtml, objects => \@list  &>
-%         }else{
-	      <form action="ip.html" method="POST">
-                <p>
-                <label for="search"><% $S_LBL{$_action} %>:</label>
-                <input type="text" name="search" class="txt" value="<% $search %>"> 
-                <input name="submit" value="search" class="btn" type="submit">
-                <input type="hidden" name="_action" value="<% $_action %>">
-                </p>
-              </form> 
-%         }
-          </div>
-       </div>
-
-%      if ( $covering_block ){
-         <p>
-         <div class="container">
-           <div class="containerhead">Closest Covering Block:</div>
-           <div class="containerbody">
-              <& ipblock_list.mhtml, objects =>[$covering_block] &>
-           </div>
-         </div>
-%      }
-
-%   }
-<%perl>
-
 #######################################################################################
 # Show Root Blocks
 #
 #######################################################################################
-}elsif( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
+if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     
     @list = Ipblock->get_roots($rootversion);
     
@@ -188,7 +112,6 @@ if ( defined($search) ){
        </div>
 
 <%perl>
-
 #######################################################################################
 # Update
 # 

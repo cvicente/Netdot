@@ -72,8 +72,19 @@ if( !$showheader ) {
         };
     </%init>
 </%method>
+%
+% if ( ($page eq "DEVICE" || $page eq "") && $m->request_comp->name ne "device_tasks.html" ) {
+%
+%     $m->comp('device_tasks.html', user=>$user, showheader=>$showheader);
+%
+% } elsif ( $page eq "ADDRESS" && $m->request_comp->name ne "address_tasks.html" ) {
+%
+%     $m->comp('address_tasks.html', user=>$user, showheader=>$showheader);
+%
+% } elsif ($page eq "VLANS") {
+%
 <div id="sectiontools" <% $hideheader %>>
-<div class="container">
+  <div class="container">
     <div class="containerheadleft">
         Tasks
     </div>
@@ -82,109 +93,6 @@ if( !$showheader ) {
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
-%
-% if ($page eq "DEVICE" || $page eq "") {
-%
-        <fieldset class="medium">
-            <legend>Find Devices</legend>
-            <form action="device.html" method="POST">
-                <p>
-                <label for="search">Name:</label>
-                <input type="text" name="search" class="txt" value=""> 
-                <input name="submit" value="search" class="btn" type="submit">
-                </p>
-            </form>
-            <form action="ip.html" method="POST">
-                <p>
-                <label for="search">IP:</label>
-                <input type="text" name="search" class="txt" value=""> 
-                <input name="submit" value="search" class="btn" type="submit">
-                <input type="hidden" name="_action" value="SEARCH_ADDR">
-                </p>
-            </form> 
-            <form action="mac.html" method="POST">
-                <p>
-                <label for="search">MAC:</label>
-                <input type="text" name="search" class="txt" value=""> 
-                <input name="submit" value="search" class="btn" type="submit">
-                </p>
-            </form>
-        </fieldset>
-        <fieldset class="medium">
-            <legend>Discover/Update a Device</legend>
-            <form action="updatedevice.html" method="POST">
-                <p>
-                <label for="host">Name:</label>
-                <input type="text" name="host" class="txt" value="">
-                </p>
-                <p>
-                <label for="comstr">Community:</label>
-                <input type="text" name="comstr" class="txt" value="<% (Netdot->config->get('DEFAULT_SNMPCOMMUNITIES'))->[0] %>">
-                <input type="hidden" name="action" value="discover">
-                <input type="submit" name="submit" class="btn" value="discover">
-                </p>
-            </form>
-        </fieldset>
-        <fieldset class="medium">
-            <legend>Manually Add a Device</legend>
-        	<form action="device.html" method="POST">
-                <p>
-                <label for="newhost">Name:</label>
-                <input type="text" name="newhost" class="txt" value="">
-                </p>
-                <p>
-                <label for="newip">IP:</label>
-                <input type="text" name="newip" class="txt" value="">
-                <input type="hidden" name="deviceadd" value="add">
-                <input type="submit" name="submit" class="btn" value="add">
-                </p>
-            </form>
-        </fieldset>
-%
-% } elsif ($page eq "ADDRESS") {
-%
-        <fieldset class="medium">
-            <legend>Search</legend>
-            <form action="ip.html" method="POST">
-                <p>
-                <label for="Find">IP[/prefix]:</label>
-                <input type="text" name="search" class="txt" value=""> 
-                <input name="submit" value="Find" class="btn" type="submit">
-                <input type="hidden" name="_action" value="SEARCH_ADDR">
-                </p>
-            </form>
-            <form action="ip.html" method="POST">
-                <p>
-                <label for="Find">IP regex:</label>
-                <input type="text" name="search" class="txt" value=""> 
-                <input name="submit" value="Find" class="btn" type="submit">
-                <input type="hidden" name="_action" value="SEARCH_REGEX">
-                </p>
-            </form>
-            <form action="ip.html" method="POST">
-                <p>
-                <label for="Find">Other:</label>
-                <input type="text" name="search" class="txt" value=""> 
-                <input name="submit" value="Find" class="btn" type="submit">
-                <input type="hidden" name="_action" value="SEARCH_OTHER">
-                </p>
-            </form>
-        </fieldset>
-        <fieldset class="medium">
-            <legend>Add</legend>
-            <form action="ip.html" method="POST">
-                <p>
-                <label for="allocate">New IP[/prefix]:</label>
-                <input type="text" name="allocate" class="txt" value=""> 
-                <input name="submit" value="Add" class="btn" type="submit">
-                <input type="hidden" name="_action" value="ALLOCATE">
-                </p>
-            </form>
-        </fieldset>
-
-%
-% } elsif ($page eq "VLANS") {
-%
         <fieldset class="medium">
             <legend>Search</legend>
             <form action="vlan.html" method="POST">
@@ -220,14 +128,13 @@ if( !$showheader ) {
                 </p>
             </form>
         </fieldset>
+        </td></tr></table>
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
 
 %}
 
-        </td></tr></table>
-    </div> <!-- close containerbody -->
-</div> <!-- close container -->
-
-</div> <!-- close sectiontools -->
 
 <%perl>
  if ( my $next = $m->fetch_next ){

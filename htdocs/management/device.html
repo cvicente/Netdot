@@ -63,80 +63,12 @@ my $ci         = 0;
 my $name;
 my %ifvlans;
 my %vlans;
-my $list;
 my $fqdn;
 my $whois_url = Netdot->config->get('BGP_AS_WHOIS_URL');
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
-if ( $submit eq "search" ){
-    if ( $search =~ /\w+:\w+/){
-	# Advanced search.  User is passing
-	# key/value pairs
-	my @pairs = split /,/, $search;
-	my %parms;
-	foreach ( @pairs ){
-	    my ($key, $value) = split /:/, $_;
-	    if ( $key eq "ProductType" ){
-		# Special case
-		@$list = Device->search_by_type($value);
-		last;
-	    }else{
-		$parms{$key} = $value;
-	    }
-	}
-	@$list = Device->search(\%parms) if ( ! $list );
-	
-    }elsif( $search ){
-	# Default is to search device names
-
-	# Get rid of spaces
-	$search =~ s/\s+//;
-
-	unless ( (@$list = Device->search_like(name=>$search)) ){
-print <<EOF;
-	    <div class="container">
-		<div class="containerhead">
-		  <strong>No results</strong>   
-		</div>
-		<div class="containerbody">
-		  <p><strong><em>$search</em> not found</strong>   
-		  <form action="device.html" method="POST">
-		    <p>
-		    <label for="search">Device Name:</label>
-		    <input type="text" name="search" class="txt" value="$search"> 
-		    <input name="submit" value="search" class="btn" type="submit">
-		    </p>
-		  </form>
-		</div>
-	     </div>
-
-EOF
-	    $m->abort;
-	}
-	my $num = scalar(@$list);
-	if ( $num == 1 ){
-	    # Don't offer list.  Just display device
-	    $o      = $list->[0];
-	    $id     = $o->id;
-	    $search = undef;
-	}
-	
-    }else{
-print <<EOF;
-    <div class="container">
-	<div class="containerhead">
-	  <strong>No results</strong>   
-	</div>
-	<div class="containerbody">
-	  <p><strong>No search criteria</strong>   
-	</div>
-    </div>
-EOF
-	$m->abort;
-    }
- 
-}elsif( $intadd ){
+if( $intadd ){
     $o = Device->retrieve($id);
     eval { $o->add_interfaces($intaddnum) };
     if ( my $e = $@ ){
@@ -217,29 +149,12 @@ my $refresh_url = "device.html?id=$id&view=$view";
 
 <div id="sectiondetail">
 
-%#######################################################################
-%#
-%# Search results section
-%#
-%#######################################################################
-
-% if ( $search ){
-<div class="container">
-  <div class="containerheadleft">
-    <% scalar(@$list) %> results for <i><% $search %></i>
-%# The non breaking space is a hack to make the table header full width
-  </div><div class="containerheadright">&nbsp;</div>
-  <div class="containerbody">
-      <& /generic/sortresults.mhtml, object => $list, page => "device.html", withedit => 1 &>
-  </div>
-</div>
 
 %#######################################################################
 %#
 %# Device view section
 %#
 %#######################################################################
-% }else{  # we're not searching
 
 <!-- Header Table -->
 <div class="containeroutside">
@@ -1147,11 +1062,6 @@ if ( $ipeers ){
 %
 <!-- End History Section -->
 
-
-
- </div> <!-- close containerbodyoutside --> 
-</div> <!-- close containeroutside -->
-
-%} # if !defined search
-
+  </div> <!-- close containerbodyoutside --> 
+ </div> <!-- close containeroutside -->
 </div> <!-- close sectiondetail -->

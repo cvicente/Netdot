@@ -36,16 +36,6 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 </%doc>
 
 % if ( defined($search) ){
-%     if ($search eq "" ){
-       <div class="container">
-         <div class="containerhead">
-           <strong>Error!</strong>   
-         </div>
-         <div class="containerbody">
-            <p><strong>No search criteria</strong>   
-         </div>
-       </div>
-%     }else{
 %        # Remove trailing and leading spaces
 %        $search =~ s/^\s*(.*)\s*$/$1/g;
 %        @list = PhysAddr->search_like(address=>$search);
@@ -68,5 +58,4 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 %         }
           </div>
        </div>
-%     }
 % }
