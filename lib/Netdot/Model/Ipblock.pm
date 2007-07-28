@@ -161,7 +161,7 @@ sub keyword_search {
     map { $_->entities } @sites; 
     # Get the Ipblocks related to those entities
     map { $blocks{$_} = $_ } 
-    map { $_->used_blocks, $_->own_blocks } @ents;
+    map { $_->used_blocks, $_->owned_blocks } @ents;
     my @ipb;
     foreach ( keys %blocks ){
 	push @ipb, $blocks{$_};
