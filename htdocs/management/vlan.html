@@ -11,7 +11,6 @@ section => 'Management'
 %
 <%args>
 $id                => undef
-$search            => undef
 $_action           => 'SHOW_GROUPS'
 $name              => undef
 $start             => undef
@@ -32,55 +31,15 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 <div id="sectiondetail">
 
-%#######################################################################################
-%# Search
-%#
-%#######################################################################################
 
-% if ( defined $search ){
-%    # Remove trailing and leading spaces
-%    $search =~ s/^\s*(.*)\s*$/$1/g;
-
-%    if ( $_action eq "SEARCH_VLAN" ){
-%        my %idx;
-%        map { push @list, $_; $idx{$_->id}++ }  Vlan->search_like(vid=>$search);
-%        map { push @list, $_ && $idx{$_->id}++  unless exists $idx{$_->id} } Vlan->search_like(name=>$search);
-%        map { push @list, $_ && $idx{$_->id}++  unless exists $idx{$_->id} } Vlan->search_like(description=>$search);
-%       
-
-%    }elsif ( $_action eq "SEARCH_VLANGROUP" ) {
-%        my %idx;
-%        map { push @list, $_; $idx{$_->id}++ }  VlanGroup->search_like(name=>$search);
-%        map { push @list, $_ && $idx{$_->id}++  unless exists $idx{$_->id} } VlanGroup->search_like(description=>$search);
-
-%    }
-	 <div class="container">
-           <div class="containerhead">
-              Query <em><% $search %></em> returned: <% scalar(@list) %> matches
-           </div>
-           <div class="containerbody">
-%          if ( @list ){
-               <& /generic/sortresults.mhtml, object=>\@list, page=>'view.html', withedit=>0  &>
-%          }else{
-	       <form action="vlan.html" method="POST">
-                 <p>
-                 <label for="search"><% $_action %>:</label>
-                 <input type="text" name="search" class="txt" value="<% $search %>"> 
-                 <input name="submit" value="search" class="btn" type="submit">
-                 <input type="hidden" name="_action" value="<% $_action %>">
-                 </p>
-               </form> 
-%         }
-          </div>
-       </div>
-
-%#######################################################################################
-%# INSERT
-%#
-%#######################################################################################
-%}elsif( $_action eq "INSERT" && !$o ){
-    
 <%perl>
+
+#######################################################################################
+# INSERT
+#
+#######################################################################################
+if( $_action eq "INSERT" && !$o ){
+    
     if ( $name && $start && $end ){
 	eval {
 	    VlanGroup->insert({name=>$name, start_vid=>$start, end_vid=>$end});
@@ -92,8 +51,8 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
     }else{
 	$m->comp('/generic/error.mhtml', error=>"Missing required arguments: 'name', 'start', 'end'");
     }
+}
 </%perl>    
-%}
 
 %#######################################################################################
 %# Show Groups
@@ -108,9 +67,11 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 	  <div class="containerheadright">
 %	  if ( $edit ){
                &nbsp;
+%	  }elsif ( scalar(@list) ){
+              <a href="vlan.html?$action=<% $_action %>&edit=1">[edit]</a>
 %	  }else{
-	      <a href="vlan.html?$action=<% $_action %>&edit=1">[edit]</a>
-%	  }
+	      &nbsp;
+%         }
           </div>
           <div class="containerbody">
 %             if ( @list ){

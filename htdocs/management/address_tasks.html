@@ -1,0 +1,162 @@
+<%doc>
+
+-- Address tasks --
+
+</%doc>
+%
+<%attr>
+title        => 'Address Tasks' 
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
+<%args>
+$search_address  => undef
+$search_regex    => undef
+$search_other    => undef
+$search          => undef
+$user            => undef
+$submit          => undef
+$show_tasks      => undef
+$showheader      => 1
+</%args>
+%
+%
+%
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+$show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
+if ( $show_tasks eq "" ) {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+my $hideheader = 'style="display:none"' if ( !$showheader );
+
+my $covering_block;
+my @list;
+</%init>
+
+<div id="sectiontools" <% $hideheader %>>
+  <div class="container">
+    <div class="containerheadleft">
+        Tasks
+    </div>
+    <div class="containerheadright">
+%       print_showtaskslink($show_tasks);
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+        <table><tr><td>
+        <fieldset class="medium">
+            <legend>Search</legend>
+            <form action="address_tasks.html" method="POST">
+                <p>
+                <label for="Find">IP[/prefix]:</label>
+                <input type="text" name="search_address" class="txt" value=""> 
+                <input name="submit" value="Search" class="btn" type="submit">
+                </p>
+            </form>
+            <form action="address_tasks.html" method="POST">
+                <p>
+                <label for="Find">IP regex:</label>
+                <input type="text" name="search_regex" class="txt" value=""> 
+                <input name="submit" value="Search" class="btn" type="submit">
+                </p>
+            </form>
+            <form action="address_tasks.html" method="POST">
+                <p>
+                <label for="Find">Other:</label>
+                <input type="text" name="search_other" class="txt" value=""> 
+                <input name="submit" value="Search" class="btn" type="submit">
+                </p>
+            </form>
+        </fieldset>
+        <fieldset class="medium">
+            <legend>Add</legend>
+            <form action="ip.html" method="POST">
+                <p>
+                <label for="allocate">New IP[/prefix]:</label>
+                 <input type="text" name="allocate" class="txt" value=""> 
+                 <input name="submit" value="Add" class="btn" type="submit">
+                 <input type="hidden" name="_action" value="ALLOCATE">
+                </p>
+            </form>
+        </fieldset>
+        </td></tr></table>
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+<%perl>
+
+#######################################################################################
+# Search
+#
+#######################################################################################
+
+if ( $submit ){
+    if ( $search_address ){
+	$search = $search_address;
+	$search =~ s/s+//g;
+	# These might throw exceptions
+	eval {
+	    if ( !(@list = Ipblock->search(address=>$search)) ){
+		# Return next existing higher block in the tree if not found
+		$covering_block = Ipblock->get_covering_block(address=>$search);
+	    }
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
+	}
+	
+    }elsif ( $search_regex ){
+	$search = $search_regex;
+	$search =~ s/s+//g;
+	@list = Ipblock->search_like(address=>$search);
+    }elsif ( $search_other ){
+	$search = $search_other;
+	$search =~ s/s+//g;
+	@list = Ipblock->keyword_search($search);
+    }else {
+	$m->comp('/generic/no_search_criteria.html');
+    }
+    
+}
+</%perl>      
+
+<div class="container">
+  <div class="containerbody">
+% if ( $search ){
+%   if ( @list ){
+      <div class="containerhead">
+        Query <em><% $search %></em> returned: <% scalar(@list) %> matches
+      </div>
+      <& ipblock_list.mhtml, objects => \@list  &>
+%   }else{
+%      $m->comp('/generic/no_search_results.html', search=>$search);
+%   }
+% }
+  </div>
+</div>
+
+% if ( $covering_block ){
+<p>
+<div class="container">
+  <div class="containerhead">Closest Covering Block:</div>
+  <div class="containerbody">
+    <& ipblock_list.mhtml, objects =>[$covering_block] &>
+  </div>
+</div>
+% }

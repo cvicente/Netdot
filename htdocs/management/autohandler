@@ -72,73 +72,25 @@ if( !$showheader ) {
         };
     </%init>
 </%method>
-%
-% if ( ($page eq "DEVICE" || $page eq "") && $m->request_comp->name ne "device_tasks.html" ) {
-%
-%     $m->comp('device_tasks.html', user=>$user, showheader=>$showheader);
-%
-% } elsif ( $page eq "ADDRESS" && $m->request_comp->name ne "address_tasks.html" ) {
-%
-%     $m->comp('address_tasks.html', user=>$user, showheader=>$showheader);
-%
-% } elsif ($page eq "VLANS") {
-%
-<div id="sectiontools" <% $hideheader %>>
-  <div class="container">
-    <div class="containerheadleft">
-        Tasks
-    </div>
-    <div class="containerheadright">
-%       print_showtaskslink($show_tasks);
-    </div>
-    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
-        <table><tr><td>
-        <fieldset class="medium">
-            <legend>Search</legend>
-            <form action="vlan.html" method="POST">
-                <p>
-                <label for="Find">Vlan:</label>
-                <input type="text" name="search" class="txt" value=""> 
-                <input name="submit" value="Find" class="btn" type="submit">
-                <input type="hidden" name="_action" value="SEARCH_VLAN">
-                </p>
-            </form>
-            <form action="vlan.html" method="POST">
-                <p>
-                <label for="Find">Vlan Group:</label>
-                <input type="text" name="search" class="txt" value=""> 
-                <input name="submit" value="Find" class="btn" type="submit">
-                <input type="hidden" name="_action" value="SEARCH_VLANGROUP">
-                </p>
-            </form>
-        </fieldset>
-        <fieldset class="medium">
-            <legend>Add Vlan Group</legend>
-            <form action="vlan.html" method="POST">
-                <p>
-                <label for="new">Name:</label>
-                <input type="text" name="name" class="txt" value="">
-                </p>
-		<p>
-                <label for="new">Start-End:</label>
-                <input type="text" name="start" class="shorttxt" value="">
-                <input type="text" name="end" class="shorttxt" value=""> 
-                <input name="submit" value="Add" class="btn" type="submit">
-                <input type="hidden" name="_action" value="INSERT">
-                </p>
-            </form>
-        </fieldset>
-        </td></tr></table>
-    </div> <!-- close containerbody -->
-  </div> <!-- close container -->
-</div> <!-- close sectiontools -->
-
-%}
-
 
 <%perl>
- if ( my $next = $m->fetch_next ){
+
+if ( ($page eq "DEVICE" || $page eq "") && $m->request_comp->name ne "device_tasks.html" ) {
+
+    $m->comp('device_tasks.html', user=>$user, showheader=>$showheader);
+
+} elsif ( $page eq "ADDRESS" && $m->request_comp->name ne "address_tasks.html" ) {
+
+    $m->comp('address_tasks.html', user=>$user, showheader=>$showheader);
+
+} elsif ($page eq "VLANS" && $m->request_comp->name ne "vlan_tasks.html" ) {
+
+    $m->comp('vlan_tasks.html', user=>$user, showheader=>$showheader);
+
+}
+
+if ( my $next = $m->fetch_next ){
      $m->call_next(page => $page);
- }
+}
 </%perl>
 
