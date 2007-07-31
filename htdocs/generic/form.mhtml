@@ -51,9 +51,19 @@ if( $id ) {
 foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     next if ( $c eq 'id' );
 
-    # These are mutually exclusive.  
     if ( $table eq "Picture" ){
+
+	if ( $edit ){
+	    if ( $c eq 'filename' ){
+		# Add a fake 'upload' field before filename
+		push (@headers, 'Upload:');
+		push (@data, '<input type="file" name="upload" value="">');
+		next unless $obj;  # Do not show filename field unless the object exists
+	    }
+	    next if ( $c =~ /^filesize|filetype|bindata$/ );  # These are not editable
+	}
 	if ( $obj ){
+	    # These are mutually exclusive.  
 	    # Use of the int() function prevents value from being true when returned value is an empty (but true) object
 	    next if ( $c eq 'site'   && ( int($obj->floor) || int($obj->closet) ) );
 	    next if ( $c eq 'floor'  && ( int($obj->site)  || int($obj->closet) ) );

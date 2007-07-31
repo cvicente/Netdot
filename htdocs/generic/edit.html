@@ -107,19 +107,24 @@ if( $DEBUG ) {
 if ( $table ){
 
     # Special cases
-    if ( $table eq 'Picture' && $args{filename} ){
-	eval {
-	    use Apache2::Upload;
-	    my $bindata;
-	    my $upload     = $r->upload("filename");
-	    my $upload_fh  = $upload->fh;
-	    my $size       = $upload->slurp($bindata);
-	    $args{bindata} = $bindata;
-	    delete $args{filetype} unless $args{filetype};
-	};
-	if ( my $e = $@ ){
-	    $m->comp('error.mhtml', error=>$e);
+    if ( $table eq 'Picture' ){
+	if ( $args{upload} ){
+	    eval {
+		use Apache2::Upload;
+		my $bindata;
+		my $upload      = $r->upload("upload");
+		my $upload_fh   = $upload->fh;
+		my $size        = $upload->slurp($bindata);
+		$args{bindata}  = $bindata;
+		$args{filename} = $args{filename} || $upload->filename;
+		delete $args{upload};
+		delete $args{filetype} unless $args{filetype};
+	    };
+	    if ( my $e = $@ ){
+		$m->comp('error.mhtml', error=>$e);
+	    }
 	}
+	delete $args{upload}; # It's a fake column
     }
 
     if ( $id ){

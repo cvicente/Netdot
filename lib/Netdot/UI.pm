@@ -316,15 +316,7 @@ sub form_field {
     } else {
         my $type = $mcol->sql_type;
 
-	# Filenames are a special case
-	if ( $table eq "Picture" && $mcol->name eq "filename" ){
-	    if ( $args{edit} ){
-		$value = '<input type="file" name="filename" size="30" value="">';
-	    }elsif ( $o ){
-		$value = $o->filename;    
-	    }
-
-	}elsif ( $type =~ /^varchar|timestamp|integer|numeric|date|bigint$/ ){
+	if ( $type =~ /^varchar|timestamp|integer|numeric|date|bigint$/ ){
 	    $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 				       default=>$args{default}, linkPage=>$args{linkPage}, returnAsVar=>1, 
 				       htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
