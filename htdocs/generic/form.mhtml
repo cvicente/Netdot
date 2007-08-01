@@ -67,7 +67,12 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     my %field;
     if ( $obj ) {
 	my $linkPage = $ui->table_view_page($table) || 'view.html';
-	%field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>1, linkPage=>$linkPage);
+	if ( $linksto{$c} ){
+	    %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>1, linkPage=>$linkPage);
+	}else{
+	    # Do not create link if column is local
+	    %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>1, linkPage=>0);
+	}
 
     } elsif( exists( $session{$c} ) ) {
 	my @defaults = ($linksto{$c}->retrieve($session{$c}));
