@@ -5556,7 +5556,7 @@ $meta = {
       ]
     }
   },
-  Picture => {
+  ClosetPicture => {
     columns => {
       bindata => {
         default => '',
@@ -5579,6 +5579,86 @@ $meta = {
         tag => 'Closet',
         type => 'integer'
       },
+      filename => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Name',
+        type => 'varchar'
+      },
+      filesize => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Size',
+        type => 'varchar'
+      },
+      filetype => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Type',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+    },
+    description => 'A Closet Picture.  Pictures are stored in the database in binary format.',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'filename'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'filename', 'closet'
+      ]
+    ],
+    views => {
+      all => [
+        'filename',
+        'filesize',
+        'filetype',
+        'bindata',
+        'closet',
+        'info',
+      ],
+      brief => [
+        'filename',
+        'filetype',
+        'info',
+      ]
+    }
+  },
+  FloorPicture => {
+    columns => {
+      bindata => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Picture',
+        type => 'longblob'
+      },
       floor => {
         default => '',
         description => '',
@@ -5591,6 +5671,86 @@ $meta = {
         nullable => 0,
         tag => 'Floor',
         type => 'integer'
+      },
+      filename => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Name',
+        type => 'varchar'
+      },
+      filesize => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Size',
+        type => 'varchar'
+      },
+      filetype => {
+        default => '',
+        description => '',
+        length => '64',
+        nullable => 0,
+        tag => 'File Type',
+        type => 'varchar'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+    },
+    description => 'A Floor Picture.  Pictures are stored in the database in binary format.',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'filename'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'filename', 'floor'
+      ]
+    ],
+    views => {
+      all => [
+        'filename',
+        'filesize',
+        'filetype',
+        'bindata',
+        'floor',
+        'info',
+      ],
+      brief => [
+        'filename',
+        'filetype',
+        'info',
+      ]
+    }
+  },
+  SitePicture => {
+    columns => {
+      bindata => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => 'Picture',
+        type => 'longblob'
       },
       site => {
         default => '',
@@ -5646,7 +5806,7 @@ $meta = {
         type => 'blob'
       },
     },
-    description => 'A Site Picture',
+    description => 'A Site Picture.  Pictures are stored in the database in binary format.',
     has_history => 0,
     index => [],
     isjoin => '0',
@@ -5656,7 +5816,7 @@ $meta = {
     primary_key => 'id',
     unique => [
       [
-        'filename'
+        'filename', 'site'
       ]
     ],
     views => {
@@ -5665,8 +5825,6 @@ $meta = {
         'filesize',
         'filetype',
         'bindata',
-        'closet',
-        'floor',
         'site',
         'info',
       ],

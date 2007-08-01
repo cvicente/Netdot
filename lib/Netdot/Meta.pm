@@ -139,88 +139,89 @@ sub get_tables {
 }
 
 ##################################################
-=head2 cdbi_classes - Produce Class::DBI subclasses
+=head2 cdbi_class - Produce Class::DBI subclass
     
   Arguments:
+    table     - Meta::Table object
     base      - Our main Class::DBI subclass (base for other subclasses)
     namespace - Classes will be defined under this namespace
   Returns:
-    Hashref keyed by Class names, values are Class definitions
+    Array containing: Package name, Class definition
   Example: 
-    my $subclasses = $meta->cdbi_classes(base => "Some::Package");
+    my $subclass = $meta->cdbi_class(table => $table, base => "Some::Package");
 
 =cut
-sub cdbi_classes{
+sub cdbi_class{
     my ($self, %argv) = @_;
     my %classes;
+    croak "cdbi_classes: Need to pass Meta::Table object" unless $argv{table};
     croak "cdbi_classes: Need to pass base class" unless $argv{base};
 
     # Build a Class for each DB table
-    foreach my $table ( $self->get_tables(with_history => 1) ){
-	my ($code, $package);
-	$package = ($argv{namespace}) ? $argv{namespace}."::".$table->name : $table->name;
-	$code .= "package ".$package.";\n";
-	$code .= "use base '$argv{base}';\n";
-	my $tname = $table->name;
-	$tname = lc($tname);
-	$code .= "__PACKAGE__->table( '$tname' );\n";
+    my $table = $argv{table};
+    my ($code, $package);
+    $package = ($argv{namespace}) ? $argv{namespace}."::".$table->name : $table->name;
+    $code .= "package ".$package.";\n";
+    $code .= "use base '$argv{base}';\n";
+    my $tname = $table->name;
+    $tname = lc($tname);
+    $code .= "__PACKAGE__->table( '$tname' );\n";
 	
-	# Set up primary columns
-	$code .=  "__PACKAGE__->columns( Primary => qw / id /);\n";
-
-	# Define 'Essential' and 'Others' 
-	my %cols;
-	map { $cols{$_->name} = '' } $table->get_columns;
-	delete $cols{'id'};
-	my %brief = $table->get_column_order_brief();
-	my @essential = keys %brief;
-	my $essential = join ' ', @essential;
-	$code .= "__PACKAGE__->columns( Essential => qw / $essential /);\n" if (@essential);
-	delete $cols{$_} foreach (@essential);
-	my $others = join ' ', keys %cols;
-	$code .= "__PACKAGE__->columns( Others => qw / $others /);\n" if (keys %cols);
-	
-	# Set up has_a relationships
-	foreach my $c ( $table->get_columns() ){
-	    if ( my $ft = $c->links_to() ){
-		$ft = ($argv{namespace}) ? $argv{namespace}."::".$ft : $ft;
-		$code .= "__PACKAGE__->has_a( ".$c->name." => '$ft' );\n";
-	    }
+    # Set up primary columns
+    $code .=  "__PACKAGE__->columns( Primary => qw / id /);\n";
+    
+    # Define 'Essential' and 'Others' 
+    my %cols;
+    map { $cols{$_->name} = '' } $table->get_columns;
+    delete $cols{'id'};
+    my %brief = $table->get_column_order_brief();
+    my @essential = keys %brief;
+    my $essential = join ' ', @essential;
+    $code .= "__PACKAGE__->columns( Essential => qw / $essential /);\n" if (@essential);
+    delete $cols{$_} foreach (@essential);
+    my $others = join ' ', keys %cols;
+    $code .= "__PACKAGE__->columns( Others => qw / $others /);\n" if (keys %cols);
+    
+    # Set up has_a relationships
+    foreach my $c ( $table->get_columns() ){
+	if ( my $ft = $c->links_to() ){
+	    $ft = ($argv{namespace}) ? $argv{namespace}."::".$ft : $ft;
+	    $code .= "__PACKAGE__->has_a( ".$c->name." => '$ft' );\n";
 	}
-	
-	# Set up has_many relationships
-	my %hm = $table->get_links_from();
-	foreach my $rel ( keys %hm ){
-	    my $method = $rel;
-	    my $tab;
-	    # A has_many relationship should not point to a history table unless
-	    # it is the 'history_records' method.
-	    foreach my $key ( keys %{$hm{$rel}} ){
-		my $hf = $self->get_history_suffix;
-		next if $key =~ /$hf$/ && $method !~ /history_records/;
-		$tab = $key;
-	    }
-	    croak "cdbi_classes: Can't get has_many table from ", $table->name, ":$method" unless $tab;
-	    my $col    = $hm{$rel}{$tab};
-	    my $t      = $self->get_table($tab);
-	    my $c      = $t->get_column($col);
-	    my $l      = $c->links_to_attrs();
-	    my $casc  = $l->{cascade};
-	    croak "cdbi_classes: Missing 'cascade' entry for $tab:$col" unless $casc;
-	    my $arg;
-	    if ( $casc eq 'Nullify' ){
-		$arg = "{cascade=>'Class::DBI::Cascade::Nullify'}";
-	    }elsif ( $casc =~ /^Delete|Fail$/i ){
-		$arg = "{cascade=>'$casc'}";
-	    }else{
-		croak "cdbi_classes: Unknown cascade behavior $casc";
-	    }
-	    $tab = ($argv{namespace}) ? $argv{namespace}."::".$tab : $tab;
-	    $code .= "__PACKAGE__->has_many( '$method', '$tab' => '$col', $arg );\n";
-	}
-	$classes{$package} = $code;
     }
-    return \%classes;
+    
+    # Set up has_many relationships
+    my %hm = $table->get_links_from();
+    foreach my $rel ( keys %hm ){
+	my $method = $rel;
+	my $tab;
+	# A has_many relationship should not point to a history table unless
+	# it is the 'history_records' method.
+	foreach my $key ( keys %{$hm{$rel}} ){
+	    my $hf = $self->get_history_suffix;
+	    next if $key =~ /$hf$/ && $method !~ /history_records/;
+	    $tab = $key;
+	}
+	croak "cdbi_classes: Can't get has_many table from ", $table->name, ":$method" unless $tab;
+	my $col    = $hm{$rel}{$tab};
+	my $t      = $self->get_table($tab);
+	my $c      = $t->get_column($col);
+	my $l      = $c->links_to_attrs();
+	my $casc   = $l->{cascade};
+	croak "cdbi_classes: Missing 'cascade' entry for $tab:$col" unless $casc;
+	my $arg;
+	if ( $casc eq 'Nullify' ){
+	    $arg = "{cascade=>'Class::DBI::Cascade::Nullify'}";
+	}elsif ( $casc =~ /^Delete|Fail$/i ){
+	    $arg = "{cascade=>'$casc'}";
+	}else{
+	    croak "cdbi_classes: Unknown cascade behavior $casc";
+	}
+	$tab = ($argv{namespace}) ? $argv{namespace}."::".$tab : $tab;
+	$code .= "__PACKAGE__->has_many( '$method', '$tab' => '$col', $arg );\n";
+    }
+
+    return ($package, $code);
 }
 
 

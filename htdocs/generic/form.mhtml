@@ -34,6 +34,7 @@ if ( $id ){
 	$m->comp("error.mhtml", error => "Could not retrieve $table id $id");	
     }
 }
+
 my %order   = $table->meta_data->get_column_order();
 my %linksto = $table->meta_data->get_links_to();
 
@@ -51,8 +52,7 @@ if( $id ) {
 foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     next if ( $c eq 'id' );
 
-    if ( $table eq "Picture" ){
-
+    if ( $table =~ /Picture/ ){
 	if ( $edit ){
 	    if ( $c eq 'filename' ){
 		# Add a fake 'upload' field before filename
@@ -61,18 +61,6 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 		next unless $obj;  # Do not show filename field unless the object exists
 	    }
 	    next if ( $c =~ /^filesize|filetype|bindata$/ );  # These are not editable
-	}
-	if ( $obj ){
-	    # These are mutually exclusive.  
-	    # Use of the int() function prevents value from being true when returned value is an empty (but true) object
-	    next if ( $c eq 'site'   && ( int($obj->floor) || int($obj->closet) ) );
-	    next if ( $c eq 'floor'  && ( int($obj->site)  || int($obj->closet) ) );
-	    next if ( $c eq 'closet' && ( int($obj->floor) || int($obj->site)   ) );
-
-	}else{
-	    next if ( $c eq 'site'   && ( $session{floor} || $session{closet} ) );
-	    next if ( $c eq 'floor'  && ( $session{site}  || $session{closet} ) );
-	    next if ( $c eq 'closet' && ( $session{floor} || $session{site}   ) );
 	}
     }
 

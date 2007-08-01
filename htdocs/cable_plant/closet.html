@@ -57,7 +57,7 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS
 	my $upload    = $r->upload("__picture");
 	my $upload_fh = $upload->fh;
 	my $size      = $upload->slurp($bindata);
-	Picture->insert({closet=>$id, filename=>$ARGS{__picture}, bindata=>$bindata, filesize=>$size});
+	ClosetPicture->insert({closet=>$id, filename=>$ARGS{__picture}, bindata=>$bindata, filesize=>$size});
     };
     if ( my $e = $@ ){
 	$m->comp('/generic/error.mhtml', error=>$e);
@@ -211,11 +211,11 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS
     </%perl>
     <&| "/generic/HERE.mhtml" &>
 %       if ( $editPictures ) {
-            <input type="checkbox" name="Picture__<% $pic->id %>__delete">[del]
-%           $ui->text_field(object=>$pic, table=>"Picture", column=>"filename", edit=>$editPictures);
+            <input type="checkbox" name="ClosetPicture__<% $pic->id %>__delete">[del]
+%           $ui->text_field(object=>$pic, table=>"ClosetPicture", column=>"filename", edit=>$editPictures);
             <br>
 %       } else {
-            <a href="display_bin.html?table=Picture&id=<% $pic->id %>" TARGET=_new><% $pic->filename %></a>
+            <a href="display_bin.html?table=ClosetPicture&id=<% $pic->id %>" TARGET=_new><% $pic->filename %></a>
 %       }
     </&>
     <%perl>push( @row, $_ );

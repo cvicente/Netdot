@@ -38,9 +38,8 @@ Netdot::Module::Picture
 =cut
 sub insert {
     my ($self, $argv) = @_;
-    ( defined $argv->{filename} && defined $argv->{bindata}  && 
-      (defined $argv->{closet} || defined $argv->{floor} || defined $argv->{site}) ) || 
-	$self->throw_fatal("Missing required arguments: filename, bindata, and one of closet, floor or site");
+    ( defined $argv->{filename} && defined $argv->{bindata} ) ||
+	$self->throw_fatal("Missing required arguments: filename, bindata");
     
     # Grab extension
     my $extension = $1 if ( $argv->{filename} =~ /\.(\w+)$/ );

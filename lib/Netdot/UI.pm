@@ -329,9 +329,10 @@ sub form_field {
 	    $value = $self->checkbox_boolean(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 						returnAsVar=>1, shortFieldName=>$args{shortFieldName});
 	    
-	} elsif ( $table eq "Picture" && $type eq "longblob" ) {
+	} elsif ( $table =~ /Picture/ && $type eq "longblob" ) {
 	    if ( ! $args{edit} ){
-		$value = "<a href=\"display_bin.html?id=$id\"><img width\"150\" height=\"150\" alt=\"$o->filename\"src=\"display_bin.html?id=$id\" ></a>";
+		my $alt = $o->filename;
+		$value = "<a href=\"display_bin.html?table=$table&id=$id\"><img width\"150\" height=\"150\" alt=\"$alt\"src=\"display_bin.html?table=$table&id=$id\" ></a>";
 	    }
 
 	} else {

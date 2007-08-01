@@ -10,14 +10,15 @@ objects mime type.
 </%doc>
 
 <%args>
+$table
 $id
 </%args>
 
 <%init>
-my $binfile = Picture->retrieve($id);
-$m->comp("/generic/error.mhtml", error=>"Picture id $id could not be retrieved") unless ( $binfile );
-$m->comp("/generic/error.mhtml", error=>"Picture id $id has no filetype")        unless ( $binfile->filetype );
-$m->comp("/generic/error.mhtml", error=>"Picture id $id has no data")            unless ( $binfile->bindata );
+my $binfile = $table->retrieve($id);
+$m->comp("/generic/error.mhtml", error=>"$table id $id could not be retrieved") unless ( $binfile );
+$m->comp("/generic/error.mhtml", error=>"$table id $id has no filetype")        unless ( $binfile->filetype );
+$m->comp("/generic/error.mhtml", error=>"$table id $id has no data")            unless ( $binfile->bindata );
 
 $m->clear_buffer; # Do not print headers
 $r->content_type($binfile->filetype);

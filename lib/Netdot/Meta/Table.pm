@@ -215,26 +215,29 @@ sub get_links_from{
 =head2 get_column_order
     
     Provide the position of all columns in this table, in the order they are 
-    supposed to be displayed
+    supposed to be displayed.  Supports the notion of 'views', which allow
+    you to show different sets of fields, depending on the context.
     
   Arguments:
-    None
+    view  -  Name of view (defaults to 'all')
   Returns:
     Hash containing column positions, indexed by column name
   Example: 
     
-   %order = $mtable->get_column_order();
+   %order = $mtable->get_column_order(view=>'all');
    foreach my $col { sort $order{$a} <=> $order{$b} } keys %order
      ...
 
 =cut
 sub get_column_order{
-    my $self = shift;
+    my ($self, %argv) = @_;
     my $views = $self->_get_attr('views');
-    if ( ! exists $views->{all} ){
+    my $view = $argv{view} || 'all';
+
+    if ( ! exists $views->{$view} ){
 	return;
     }
-    my @tmp = @{$views->{all}};
+    my @tmp = @{$views->{$view}};
     if ( $self->is_history ){
 	push @tmp, ('modified', 'modifier');
     }
