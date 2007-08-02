@@ -2560,19 +2560,14 @@ $meta = {
         tag => 'Enterprise OID',
         type => 'varchar'
       },
-      type => {
+      short_name => {
         default => '',
-        description => 'Type of this Entity',
-        length => '',
-        linksto => {
-          cascade => 'Fail',
-          method => 'entities',
-          table => 'EntityType'
-        },
-        nullable => 0,
-        tag => 'Type',
-        type => 'integer'
-      }
+        description => 'A short name for this Entity',
+        length => '64',
+        nullable => 1,
+        tag => 'Short Name',
+        type => 'varchar'
+      },
     },
     description => 'An organization related to the network in some way',
     has_history => 1,
@@ -2586,9 +2581,6 @@ $meta = {
       [
         'asnumber'
       ],
-      [
-        'type'
-      ]
     ],
     isjoin => '0',
     label => [
@@ -2604,7 +2596,7 @@ $meta = {
       all => [
         'name',
         'aliases',
-        'type',
+        'short_name',
         'availability',
         'contactlist',
         'acctnumber',
@@ -2616,11 +2608,12 @@ $meta = {
       ],
       brief => [
         'name',
-        'type'
+        'short_name',
       ],
       manufacturer => [
         'name',
         'aliases',
+        'short_name',
         'type',
         'contactlist',
         'oid',
@@ -2629,6 +2622,7 @@ $meta = {
       peer => [
         'name',
         'aliases',
+        'short_name',
         'type',
         'availability',
         'contactlist',
@@ -2639,6 +2633,7 @@ $meta = {
       provider => [
         'name',
         'aliases',
+        'short_name',
         'type',
         'availability',
         'contactlist',
@@ -2647,6 +2642,67 @@ $meta = {
         'info'
       ],
     }
+  },
+  EntityRole => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      entity => {
+        default => '',
+        description => 'The Entity that performs this role.',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'roles',
+          table => 'Entity'
+        },
+        nullable => 0,
+        tag => 'Entity',
+        type => 'integer'
+      },
+      type => {
+        default => '',
+        description => 'A type of Entity.',
+        length => '',
+        linksto => {
+          cascade => 'Fail',
+          method => 'roles',
+          table => 'EntityType'
+        },
+        nullable => 0,
+        tag => 'Type',
+        type => 'integer'
+      },
+    },
+    description => 'An Entity might play different roles.  For example, the same Entity can be both a Customer and a Peer.',
+    has_history => 0,
+    index => [ ],
+    isjoin => '1',
+    label => [
+      'entity', 'type'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'entity', 'type'
+      ]
+    ],
+    views => {
+      all => [
+        'entity',
+        'type',
+      ],
+      brief => [
+        'entity',
+        'type',
+      ],
+    },
   },
   EntitySite => {
     columns => {

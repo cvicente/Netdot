@@ -23,21 +23,31 @@ INSERT INTO Availability (name) VALUES ('24x7');
 INSERT INTO Availability (name) VALUES ('Never');
 INSERT INTO Availability (name) VALUES ('8:00-17:00');
 
-INSERT INTO EntityType (name) VALUES ('Branch');
-INSERT INTO EntityType (name) VALUES ('Customer');
-INSERT INTO EntityType (name) VALUES ('Department');
-INSERT INTO EntityType (name) VALUES ('Manufacturer');
-INSERT INTO EntityType (name) VALUES ('Peer');
-INSERT INTO EntityType (name) VALUES ('Provider');
-INSERT INTO EntityType (name) VALUES ('Vendor');
+INSERT INTO EntityType (name, info) VALUES ('Branch', 'Branches of our organization.');
+INSERT INTO EntityType (name, info) VALUES ('Customer', 'Entities that receives products and or services from our organization.');
+INSERT INTO EntityType (name, info) VALUES ('Department', 'Departments.');
+INSERT INTO EntityType (name, info) VALUES ('Manufacturer', 'Companies that manufacture network hardware.');
+INSERT INTO EntityType (name, info) VALUES ('Peer', 'BGP Peers that exchange traffic with us.');
+INSERT INTO EntityType (name, info) VALUES ('Provider', 'Circuit providers.');
+INSERT INTO EntityType (name, info) VALUES ('Vendor', 'Companies that sell hardware or services to us.');
 
-INSERT INTO Entity (name,type) VALUES ('Unknown', 4);
-INSERT INTO Entity (name,type,oid) VALUES ('Cisco Systems', 4, '1.3.6.1.4.1.9');
-INSERT INTO Entity (name,type,oid) VALUES ('Cisco (VPN)', 4, '1.3.6.1.4.1.3076');
-INSERT INTO Entity (name,type,oid) VALUES ('HP', 4, '1.3.6.1.4.1.11');
-INSERT INTO Entity (name,type,oid) VALUES ('Juniper', 4, '1.3.6.1.4.1.2636');
-INSERT INTO Entity (name,type,oid) VALUES ('Avaya', 4, '1.3.6.1.4.1.6889');
-INSERT INTO Entity (name,type,oid) VALUES ('Net-SNMP', 4, '1.3.6.1.4.1.8072'); 
+INSERT INTO Entity (name) VALUES ('Unknown');
+INSERT INTO Entity (name, short_name, oid) VALUES ('Cisco Systems', 'Cisco', '1.3.6.1.4.1.9');
+INSERT INTO Entity (name, short_name, oid) VALUES ('Cisco (VPN)', 'Cisco', '1.3.6.1.4.1.3076');
+INSERT INTO Entity (name, short_name, oid) VALUES ('Hewlett Packard', 'HP', '1.3.6.1.4.1.11');
+INSERT INTO Entity (name, short_name, oid) VALUES ('Juniper Networks', 'Juniper', '1.3.6.1.4.1.2636');
+INSERT INTO Entity (name, short_name, oid) VALUES ('Avaya', 'Avaya', '1.3.6.1.4.1.6889');
+INSERT INTO Entity (name, short_name, oid) VALUES ('Net-SNMP', 'Net-SNMP', '1.3.6.1.4.1.8072'); 
+INSERT INTO Entity (name, short_name, contactlist ) VALUES ('Network Services', 'NS', '1');
+
+INSERT INTO EntityRole (entity,type) VALUES ('1', '4');
+INSERT INTO EntityRole (entity,type) VALUES ('2', '4');
+INSERT INTO EntityRole (entity,type) VALUES ('3', '4');
+INSERT INTO EntityRole (entity,type) VALUES ('4', '4');
+INSERT INTO EntityRole (entity,type) VALUES ('5', '4');
+INSERT INTO EntityRole (entity,type) VALUES ('6', '4');
+INSERT INTO EntityRole (entity,type) VALUES ('7', '4');
+INSERT INTO EntityRole (entity,type) VALUES ('8', '3');
 
 INSERT INTO CircuitStatus (name) VALUES ('Active');
 INSERT INTO CircuitStatus (name) VALUES ('Disabled');
