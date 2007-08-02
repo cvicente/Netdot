@@ -24,8 +24,9 @@ if ( $col ){
     my $mcol  = $table->meta_data->get_column($col);
     my $descr = $mcol->descr();
     my $tag   = $mcol->tag();
-    @field_headers = ( 'Table:', 'Column Name:', 'Column Label:', 'Description:' ); 
-    @cell_data = ( $table_help, $col, $tag, $descr ); 
+    my $type  = $mcol->sql_type();
+    @field_headers = ( 'Table:', 'Column Name:', 'Column Label:', 'Column Type', 'Description:' ); 
+    @cell_data = ( $table_help, $col, $tag, $type, $descr ); 
     if ( my $ftname = $mcol->links_to ){
 	push @field_headers, "References:";
 	push @cell_data, $ui->table_descr_link($ftname, $ftname);
