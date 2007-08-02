@@ -107,19 +107,26 @@ sub update {
     my $nr = defined($argv->{reciprocal}) ? $argv->{reciprocal} : 1;
 
     if ( exists $argv->{neighbor} ){
-	my $nid = int($argv->{neighbor});
-	my $current_neighbor = ( $self->neighbor ) ? $self->neighbor->id : 0;
-	if ( $nid != $current_neighbor ){
-	    if ( $nr ){
-		if ( $nid ){
-		    my $neighbor = $class->retrieve($nid);
-		    $neighbor->update({neighbor=>$self, reciprocal=>0});
-		}else{
-		    # I'm basically removing my current neighbor
-		    # Tell the neighbor to remove me
-		    $self->neighbor->update({neighbor=>0, reciprocal=>0}) if ($self->neighbor);
+	if ( $self->type ne "53" && $self->type ne "propVirtual" ){
+	    my $nid = int($argv->{neighbor});
+	    if ( $nid == $self->id ){
+		$self->throw_user("An interface cannot be a neighbor of itself");
+	    }
+	    my $current_neighbor = ( $self->neighbor ) ? $self->neighbor->id : 0;
+	    if ( $nid != $current_neighbor ){
+		if ( $nr ){
+		    if ( $nid ){
+			my $neighbor = $class->retrieve($nid);
+			$neighbor->update({neighbor=>$self, reciprocal=>0});
+		    }else{
+			# I'm basically removing my current neighbor
+			# Tell the neighbor to remove me
+			$self->neighbor->update({neighbor=>0, reciprocal=>0}) if ($self->neighbor);
+		    }
 		}
 	    }
+	}else{
+	    $self->throw_user("Virtual interfaces cannot have neighbors");
 	}
     }
     delete $argv->{reciprocal};

@@ -30,7 +30,7 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 if ( $int_id ){
     unless ( $intobj = Interface->retrieve($int_id) ){
-	$m->comp("error.mhtml", error => "Can't retrieve Interface id $int_id", showplainerror=>1);
+	$m->comp("/generic/error.mhtml", error => "Can't retrieve Interface id $int_id", showplainerror=>1);
     }
     $device = $intobj->device;
 #
@@ -89,7 +89,7 @@ if ( $Add ){
 	    $intobj->update({neighbor=>$neighbor});
 	};
 	if ( my $e = $@ ){
-	    $m->comp('error.mhtml', error=>$e, showplainerror=>1);
+	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
     }
     print "Neighbor added.<br>";
