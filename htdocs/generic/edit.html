@@ -58,12 +58,6 @@ my %reserved = (submit     => '',
 		page       => '',
 		);
 
-my $page;
-if( $showheader ) {
-    $page = 'edit.html';
-} else {
-    $page = 'insertentry.html';
-}
 
 ##################################################
 # grab arguments to this script
@@ -140,8 +134,7 @@ if ( $table ){
 	    
 	}else{
 	    $m->comp('.show_form', table=>$table, id=>$id, 
-		     showheader=>$showheader, select_id=>$select_id, selected=>$selected,
-		     page=>$page);
+		     showheader=>$showheader, select_id=>$select_id, selected=>$selected);
 	}
     }else{
 	if ( $submit eq "Insert" ){
@@ -162,12 +155,12 @@ if ( $table ){
 	}else{
 	    $m->comp('.show_form', table=>$table, 
 		     showheader=>$showheader, select_id=>$select_id, selected=>$selected,
-		     page=>$page, dowindow=>$dowindow, args=>\%args);
+		     dowindow=>$dowindow, args=>\%args);
 	}
     }
     
 }else{
-    $m->comp('table.mhtml', width=>2, link=>"$page", title => "Please select an object to create:");
+    $m->comp('table.mhtml', width=>2, link=>"edit.html", title => "Please select an object to create:");
 }
 
 </%init>
@@ -190,7 +183,6 @@ $id         => undef
 $select_id  => undef
 $selected   => undef
 $showheader => undef
-$page       => undef
 $dowindow   => 0
 %args       => undef
 </%args>
@@ -199,12 +191,25 @@ $dowindow   => 0
 my $title = "$table " . $ui->table_descr_link($table, "[?]");
 </%init>
 
+%if ( ! $showheader ){
+%	$m->clear_buffer;
+<html>
+  <head>
+      <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
+  </head>      
+% my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
+% for my $script qw( dynamic_list select jsrsClient ) {
+  <script language="JavaScript" src="<% $js_prefix %>/<% $script %>.js"></script>
+% }
+  <body class="bodytag">
+%}
+
 <div class="container">
     <div class="containerhead">
         <% $title %>
     </div>
     <div class="containerbody">
-      <form name="netdotform" action="<% $page %>" method="POST" enctype="multipart/form-data">
+      <form name="netdotform" action="edit.html" method="POST" enctype="multipart/form-data">
       <input type="hidden" name="showheader" value="<% $showheader %>"> 
       <input type="hidden" name="select_id" value="<% $select_id %>">
       <input type="hidden" name="selected" value="<% $selected %>">
@@ -229,6 +234,9 @@ my $title = "$table " . $ui->table_descr_link($table, "[?]");
 
 % if ( $showheader ){
     </div>
+% }else{
+  </body>
+</html>
 % }
 
 </%def>
@@ -261,9 +269,22 @@ $lbl = $obj->get_label;
 
 % my $onload_action = uri_escape("addandclose()");
 
+%if ( ! $showheader ){
+%	$m->clear_buffer;
+<html>
+  <head>
+      <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
+  </head>      
+% my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
+% for my $script qw( dynamic_list select jsrsClient ) {
+  <script language="JavaScript" src="<% $js_prefix %>/<% $script %>.js"></script>
+% }
+  <body class="bodytag">
+
+%}
+
 <script language="javascript">
 <!--
-
     function addandclose() {
 	insertOption('<% $select_id %>', '<% $lbl %>', '<% $id %>', '<% $selected %>'); 
 	window.close();
@@ -284,6 +305,11 @@ $lbl = $obj->get_label;
     </center>
     </div>
 </div>
+
+% if ( ! $showheader ){
+  </body>
+</html>
+% }
 
 </%def>
 

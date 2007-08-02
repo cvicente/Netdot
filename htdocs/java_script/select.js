@@ -72,7 +72,7 @@
    var insertwind;
    function openinsertwindow(edit_args){
       var now = new Date();
-      var url = "insertentry.html?showheader=0&"+edit_args;
+      var url = "edit.html?showheader=0&"+edit_args;
       // the idea is to open a window with a unique name so that we don't override the contents of an already open window
       insertwind = window.open(url, "insertwind"+now.getMinutes()+now.getSeconds(), "width=600,height=400,scrollbars=yes");
    }
