@@ -12,7 +12,6 @@ $col => undef;
 </%args>
 %
 <%attr>
-showheader => 0
 title => 'Help'
 </%attr>
 %
@@ -40,7 +39,16 @@ if ( $col ){
     @field_headers = ( 'Table:', 'Description:', 'Columns:' ); 
     @cell_data     = ( $table, $descr, $clinks ); 
 }
+
+$m->clear_buffer;
+
 </%init>
+
+<html>
+<head>
+    <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
+</head>      
+<body class="bodytag" >
 
 <div class="container">
     <div class="containerhead"> Help</div>
@@ -59,3 +67,5 @@ width=>"1", headercolwidth=>"15%", datacolwidth=>"35%" &>
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
  
+</body>
+</html>
