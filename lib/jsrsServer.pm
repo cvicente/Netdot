@@ -13,6 +13,7 @@
 # **************************************************************
 use URI::Escape;
 use CGI;
+use warnings;
 
 $jsrsQuery = CGI::new();
 # print "Content-type: text/html\n\n";

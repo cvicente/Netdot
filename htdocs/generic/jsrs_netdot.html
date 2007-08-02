@@ -27,15 +27,15 @@ my $DEBUG = 0;
 <%perl>
 
 if ( $DEBUG ){
+    use Data::Dumper;
     print "<pre> ", Dumper(%ARGS), "</pre><br>";
     print &keyword_search($ARGS{table}, $ARGS{form_field}, 
 			  $ARGS{keywords}, $ARGS{field});
 }else{
-    do "jsrsServer.pl";
+    do "jsrsServer.pm";
     jsrsDispatch("keyword_search");
 }
 
-sub keyword_search {
 # Arguments:
 # - table:      Table to search.
 # - form_field: Name of the form field to add the results into
@@ -43,9 +43,8 @@ sub keyword_search {
 # - field:      Name of the field for which we\'re searching foreign values
 #               if undefined, search will be performed recursively on the 
 #               "label" fields of the table, as defined in metadata
-
+sub keyword_search {
     my ( $table, $form_field, $keywords, $field ) = @_;
-
     my $r;
     my @terms;
     my $MAX   = 100;
@@ -58,8 +57,8 @@ sub keyword_search {
     my $response = $form_field."&";
 
     if ( $field ){
-	$r = $ui->single_table_search(table => $table, field => $field, 
-				      keyword => $terms[0], max => $MAX);
+	my @r = $table->search($field=>$terms[0]);
+	map { $r->{$_->id} = $_ } @r;
     }else{
 	$r = $ui->select_query(table => $table, terms => \@terms, max => $MAX);
     }
@@ -72,8 +71,8 @@ sub keyword_search {
             $response .= "0=".URLEncode("More than ".$MAX." matches.  Refine search")."&";
         }
         my @objs = map { $r->{$_} } keys %$r;
-        my $lblfield = ( $ui->meta->get_labels($table) )[0];
-        my $type = $ui->meta->get_column_type($table, $lblfield);
+        my $lblfield = ( $table->meta_data->get_labels )[0];
+	my $type = $table->meta_data->get_column($lblfield)->sql_type;
         if ( $type =~ /int/ || $table eq "Interface" ){  # Ugly hack
            @objs = sort { $a->$lblfield <=> $b->$lblfield } @objs;
         }else {
@@ -87,14 +86,8 @@ sub keyword_search {
         # attribute of the selects in question.
         $response .= "0=-- Select --&";
 
-        foreach my $o (@objs){
-	    my $delim;
-	    if ( $table eq "Ipblock" ){
-		$delim = "/";
-	    }else{
-		$delim = ", "
-	    }
-           my $lbl = $ui->getobjlabel($o, $delim);
+        foreach my $o ( @objs ){
+           my $lbl = $o->get_label();
            $response .= $o->id."=".URLEncode($lbl)."&";
            last if ($count++) == $MAX;
         }

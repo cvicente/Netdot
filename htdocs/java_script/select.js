@@ -1,6 +1,7 @@
 // functions for new jsrs method
 
     function jsrsSendquery(tablename, form_field, val ) {
+	 // alert( "tablename: "+tablename+"; form_field: "+form_field.name+"; val: "+val );
         jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field.name, val) );
     }
 
@@ -15,6 +16,7 @@
     }
 
     function jsrsSendqueryBB(form_field, val) {
+        //alert( "Form field: "+form_field.name+"; val:"+val );
         jsrsExecute( "../cable_plant/backbone_list_query.html", jsrsParseresults, "backbone_search", Array(form_field.name, val) );
     }
 

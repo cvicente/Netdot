@@ -264,7 +264,7 @@ function jsrsExecute( rspage, callback, func, parms, visibility ){
 
   // get context
 
-  //  alert( "jsrsExecute args:  rspage: "+rspage+"; callback:"+callback+"; func: "+func+"; parms: "+parms+"; visibility: "+visibility );
+  // alert( "jsrsExecute args:  rspage: "+rspage+"; callback:"+callback+"; func: "+func+"; parms: "+parms+"; visibility: "+visibility );
 
   var contextObj = jsrsContextPool[ jsrsGetContextID() ];
   contextObj.callback = callback;
