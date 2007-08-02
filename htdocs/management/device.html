@@ -572,9 +572,11 @@ function setNull(select){
     if ( exists $intinfo{description} || $editints ){
       push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=descr">Descr.</a>';
     }
-    if ( exists $intinfo{neighbor} || $editints ){
+    unless ( !exists $intinfo{neighbor} && $editints ){
 	push @headers, 'Neighbor';
     }
+
+
     ### Actual data
     foreach my $if ( @$ifs ){
       next if ( !exists $ifvlans{$if}{$showvlan} && $showvlan ne "all" );
@@ -630,10 +632,16 @@ function setNull(select){
           push @row, $ui->form_field(object=>$if, column=>"description", edit=>$editints, returnValOnly=>1);
       }
       
+      my $ac = "";
       if ( exists $intinfo{neighbor}{$if->id} ){
-	  push @row, $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, returnValOnly=>1);
+	  $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>1, returnValOnly=>1);
+	  $ac .= "<br>";
       }
-
+      if ( !$editints ){
+	  $ac .= "<a class=\"hand\" onClick=\"window.open('addlink.html?int_id=$if&url=$refresh_url', 'Add Neighbor', 'width=600,height=200')\">[add]</a>";
+      }
+      push @row, $ac;
+      
       push @rows, \@row;
       
     } #foreach

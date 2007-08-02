@@ -87,6 +87,46 @@ sub delete {
 }
 
 ############################################################################
+=head2 update - Update Interface
+    
+    We override the update method for extra functionality:
+      - When adding neighbor relationships, make them bi-directional
+  Arguments:
+    Hash ref with Interface fields
+    We add an extra 'reciprocal' flag to avoid infinite loops
+  Returns:
+    Updated Interface object
+  Example:
+    $interface->update( \%data );
+
+=cut
+sub update {
+    my ($self, $argv) = @_;
+    $self->isa_object_method('update');    
+    my $class = ref($self);
+    my $nr = defined($argv->{reciprocal}) ? $argv->{reciprocal} : 1;
+
+    if ( exists $argv->{neighbor} ){
+	my $nid = int($argv->{neighbor});
+	my $current_neighbor = ( $self->neighbor ) ? $self->neighbor->id : 0;
+	if ( $nid != $current_neighbor ){
+	    if ( $nr ){
+		if ( $nid ){
+		    my $neighbor = $class->retrieve($nid);
+		    $neighbor->update({neighbor=>$self, reciprocal=>0});
+		}else{
+		    # I'm basically removing my current neighbor
+		    # Tell the neighbor to remove me
+		    $self->neighbor->update({neighbor=>0, reciprocal=>0}) if ($self->neighbor);
+		}
+	    }
+	}
+    }
+    delete $argv->{reciprocal};
+    return $self->SUPER::update($argv);
+}
+
+############################################################################
 =head2 snmp_update - Update Interface using SNMP info
 
   Arguments:  

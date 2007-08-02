@@ -1,0 +1,167 @@
+<%doc>
+
+Add interface neighbors
+
+</%doc>
+%
+%
+<%flags>
+inherit => undef
+</%flags>
+%
+%
+<%args>
+$int_id   =>   undef
+$neighbor =>  undef
+$Add      =>   undef
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+my %state;
+my $intobj;
+my $device;
+my %devs;
+
+my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
+
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+if ( $int_id ){
+    unless ( $intobj = Interface->retrieve($int_id) ){
+	$m->comp("error.mhtml", error => "Can't retrieve Interface id $int_id", showplainerror=>1);
+    }
+    $device = $intobj->device;
+#
+#   Get a list of Devices in the same subnet(s)
+#
+    my $subnets = $device->get_subnets();
+    
+    foreach my $subnet ( keys %$subnets ){
+	next unless $subnets->{$subnet};
+	foreach my $ip ( $subnets->{$subnet}->children ){
+	    if ( $ip->is_address ){
+		if ( $ip->interface && $ip->interface->device ){
+		    $devs{$ip->interface->device->short_name}++;
+		}
+	    }
+	}
+    }
+    # If we have no devices yet, just get all of them
+    unless ( keys %devs ){
+	map { $devs{$_->short_name}++ } Device->retrieve_all();
+    }
+    
+}
+my $bodyargs;
+if ( $Add ){
+    $bodyargs = 'onUnload="opener.location.reload()"';
+} else {
+    $bodyargs = '';
+}
+
+$m->clear_buffer;
+</%init>
+
+<html>
+<head>
+    <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
+</head>      
+<body class="bodytag" <% $bodyargs %>>
+
+<div class="container">
+    <div class="containerhead">
+        Add Neighbor
+    </div>
+    <div class="containerbody">
+
+<%perl>
+
+if ( $Add ){
+
+    if ( 0 ){
+	print "<br>Dependency already exists!<br><br>";
+	print '<a href="#" onClick="window.close()">[close]</a><br>';
+	$m->abort;
+    }else{
+	eval {
+	    $intobj->update({neighbor=>$neighbor});
+	};
+	if ( my $e = $@ ){
+	    $m->comp('error.mhtml', error=>$e, showplainerror=>1);
+	}
+    }
+    print "Neighbor added.<br>";
+    
+    print "<p><a href=\"#\" onClick=\"window.close()\">[done]</a>";
+    $m->abort;
+</%perl>
+
+%}
+
+
+<script language="javascript" src="<% $js_prefix %>/select.js"></script>
+<script language="javascript" src="<% $js_prefix %>/jsrsClient.js"></script>
+<script language="javascript">
+<!--
+    function performSearch(field) {
+        dvs = document.getElementById('device_search');
+        txs = document.getElementById('text_search');
+
+        if( dvs.value == 0 ) { 
+            search_criteria='';
+        } else {
+            search_criteria = dvs.value + ' ';
+        }
+        if( txs.value != 'Keywords' ) { 
+            search_criteria += txs.value; 
+        }
+
+        jsrsSendquery('Interface', field, search_criteria );
+    }
+//-->
+</script>
+
+<form name="netdotform" action="addlink.html" method="POST">
+     <input type="hidden" name="int_id" value="<% $int_id %>">
+
+<%perl>
+    my (@field_headers, @cell_data) = ();
+    
+    push( @field_headers, "Interface: " );
+    push( @cell_data, $intobj->get_label );
+
+    push( @field_headers, "Neighbor: ");
+    push( @cell_data, 
+&{sub{
+    my $ac = "Select Device from list:";
+    $ac .= '<select name="device_search" id="device_search" onChange="performSearch(neighbor);">';
+    $ac .= '<option value="0">-- Select --</option>';
+    foreach my $dev ( sort keys %devs ){
+        $ac .= '<option value="'.$dev.'">'.$dev.'</option>';
+    }
+    $ac .= '</select>';
+    $ac .= '<br>Or search:';
+    $ac .= '<input type="text" name="text_search" id="text_search" value="Keywords" onFocus="if(this.value==\'Keywords\') { this.value = \'\'; } return true;">';
+    $ac .= '&nbsp;<input type="button" name="" value="List" onClick="performSearch(neighbor);">';
+    $ac .= '<br>';
+    $ac .= '<select name="neighbor" id="neighbor">';
+    $ac .= '</select>';
+
+    $ac;
+}}      );
+</%perl>
+
+<& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+
+      <input name="Add" value="Add" type="submit">
+      <input name="Cancel" value="Cancel" type="submit" onClick="window.close()">
+</form>
+
+
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+ 
+</body>
+</html>
