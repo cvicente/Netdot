@@ -1512,6 +1512,10 @@ sub _validate {
 	if ( $self->is_address() ){
 	    if ( $pstatus eq "Reserved" ){
 		$self->throw_user("Address allocations not allowed under Reserved blocks");
+	    }elsif ( $pstatus eq 'Subnet' ){
+		if ( $self->address_numeric == $parent->address_numeric ){
+		    $self->throw_user("IP cannot have same address as its subnet");
+		}
 	    }
 	}else{
 	    if ( $pstatus ne "Container" ){
