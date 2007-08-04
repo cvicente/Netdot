@@ -16,11 +16,10 @@
 <%args>
 $objects => undef
 $type    => undef
+$edit    => 0
 </%args>
 
 <%init>
-my %cssitem = ( 0 => "formtablec1", 1 => "formtablec2" );
-my $ci = 0;
 my (@headers, @rows);
 if ( $type ){
     unless ( $type =~ /^address|block$/ ){
@@ -37,60 +36,61 @@ if ( $type ){
 
 <%perl>
 if ( $type eq "address" ){
-    @headers = ( 'Address', 'Status', 'Name', 'Last Seen' );
+    if ( $edit ){
+	push @headers, '[del]';
+    }
+    push @headers, ( 'Address', 'Name', 'Status' );
 
     foreach my $o ( @{ $objects } ) {
 	my @row = ();
+	if ( $edit ){	 
+	    push @row, '<input type="checkbox" name="' . "Ipblock__" . $o->id . "__delete" . '" >';
+	}
 	push( @row, '<a href="ip.html?id=' . $o->id . '">' . $o->address . '</a>' );
-	push( @row, $o->status->name  );
 
 	if ( my $rraddr = ($o->arecords)[0] ){
-	    my $name = $rraddr->rr;
-	    push( @row, $name->get_label );
+	    push @row, $ui->form_field(object=>$rraddr, column=>"rr", edit=>$edit, returnValOnly=>1, linkPage=>1);
 	} else {
 	    push( @row, "");
 	}
 
-	push( @row, $o->last_seen  );
+	$ui->add_to_fields(o=>$o, edit=>$edit, fields=>['status', 'used_by', 'description', 'last_seen'], 
+			   cell_data=>\@row, linkpages=>['', 'view.html', '', '']);
+
 	push( @rows, \@row );
     }
 
 } elsif( $type eq "block" ) {
-    @headers = ( 'Address/Prefix', 'Status', 'Utilization', 'Owner', 'Used By', 'Description' );
+    @headers = ( 'Address/Prefix', 'Status', 'Utilization' );
 
     foreach my $o ( @{ $objects } ) {
 	my @row = ();
-	push( @row, '<a href="ip.html?id=' . $o->id . '">' . $o->address . '/' . $o->prefix . '</a>' );
-	push( @row, $o->status->name  );
+	push( @row, '<a href="ip.html?id=' . $o->id . '">' . $o->get_label . '</a>' );
+
+	push @row, $ui->form_field(object=>$o, column=>"status", edit=>$edit, returnValOnly=>1);
+
 	if ( $o->status->name eq "Subnet") {
 	    push( @row, $ui->percent_bar(percent => ((scalar $o->children)/($o->num_addr)*100) ) );
 	} elsif ($o->status->name eq "Container") {
-
-      my $total = new Math::BigInt($o->num_addr);
-      my $used1 = new Math::BigInt($o->address_usage);
-      my $used2 = new Math::BigInt($o->subnet_usage);
-
-      my $percent1 = ($used1*100/$total);
-      my $percent2 = ($used2*100/$total);
-
-      push( @row, $ui->percent_bar2( title1=>"Address Usage: ", title2=>"Subnet Usage: ", percent1=>$percent1, percent2=>$percent2 ) );
+	    
+	    my $total = new Math::BigInt($o->num_addr);
+	    my $used1 = new Math::BigInt($o->address_usage);
+	    my $used2 = new Math::BigInt($o->subnet_usage);
+	    
+	    my $percent1 = ($used1*100/$total);
+	    my $percent2 = ($used2*100/$total);
+	    
+	    push( @row, $ui->percent_bar2( title1=>"Address Usage: ", title2=>"Subnet Usage: ", percent1=>$percent1, percent2=>$percent2 ) );
 	} else {
-        push( @row, "" );
-    }
-    if (int($o->owner) != 0) {
-    	push( @row, $o->owner->name );
-    } else {
-        push( @row, "" );
-    }
-    if (int($o->used_by) != 0) {
-    	push( @row, $o->used_by->name );
-    } else {
-        push( @row, "" );
-    }
+	    push( @row, "" );
+	}
+	$ui->add_to_fields(o=>$o, edit=>$edit, fields=>['owner', 'used_by', 'description'],
+			   cell_data=>\@row, linkpages=>['view.html', 'view.html', '']);
 
-	push( @row, $o->description  );
 	push( @rows, \@row );
     }
 }
+
+
 </%perl>
 <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>

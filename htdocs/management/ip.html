@@ -15,12 +15,18 @@ $search            => undef
 $_action           => 'SHOW_ROOTS'
 $delete            => undef
 $recursivedel      => undef
-$allocate          => undef
+$add_block         => undef
+$add_range_start   => undef
+$add_range_end     => undef
+$add_range_prefix  => undef
+$range_status      => undef
+$range_used_by     => undef
+$range_description => undef
 $newblock          => undef
 $parent            => undef
 $length            => undef
-$strategy          => undef
 $edit              => undef
+$edit_children     => undef
 $submit            => undef
 $rootversion       => 4 
 $view_availability => 0
@@ -38,10 +44,9 @@ my $ci = 0;
 my $title;
 my @list;
 my $covering_block;
-my %S_LBL = ( 'SEARCH_ADDR'  => 'IP[/prefix]',
-	      'SEARCH_REGEX' => 'IP regex',
-              'SEARCH_OTHER' => 'Entity/Site/Descr'
-	      );
+
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
 if ( $id ){
     unless ( $o = Ipblock->retrieve($id) ){
 	$m->comp('/generic/error.mhtml', error => "Could not retrieve Ipblock id: $id");
@@ -54,8 +59,8 @@ if ( $id ){
 
 my $edit_ip    = 0;
 my $edit_block = 0;
-my $add_ip = 0;
-my $add_block = 0;
+my $added_ip   = 0;
+my $added_block  = 0;
 $edit_ip       = 1 if ($edit eq "ipinfo");
 $edit_block    = 1 if ($edit eq "blockinfo");
 
@@ -73,6 +78,17 @@ my $view       = 1;
 function edit_recursive(id, field, rec){
     var url = "ip-rec.html?id="+id+"&field="+field+"&recursive="+rec;
     var wind = window.open(url, 'Edit recursively', "width=600,height=200");
+}
+
+function setCheckbox(formname, name, val) {
+    var form = document.forms[formname];
+    var myfield = form.getElementsByTagName('input');
+    for ( var i = 0; i < myfield.length; i++ ) {
+        if ( name && myfield[i].name != name ) continue;
+        if ( myfield[i].type != 'checkbox' ) continue;
+
+        myfield[i].checked = val;
+    }
 }
 
 -->
@@ -142,16 +158,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     } else {
 	eval {  $ui->form_to_db(%ARGS)	};
         if ( my $e = $@  ){
-	    </%perl>
-		<div class="container">
-		  <div class="containerhead">
-		    <strong>Error!</strong>   
-		  </div>
-		  <div class="containerbody">
-		    <p><strong><% $e %></strong>
-		  </div>
-		</div>
-	    <%perl>
+	    $m->comp('/generic/error.mhtml', error=>$e);
         }else{
 	    # Do this to 'flush' the values associated with the object
 	    # before redisplaying
@@ -163,32 +170,41 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
 
 #######################################################################################
-# Allocate
+# Update Children
+# 
+#######################################################################################
+
+}elsif( $_action eq "UPDATE_CHILDREN" ){
+
+    eval { $ui->form_to_db(%ARGS) };
+    if ( my $e = $@  ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }else{
+	# Do this to 'flush' the values associated with the object
+	# before redisplaying
+	$o = undef;
+	if ( $id ){
+	    $o = Ipblock->retrieve($id);
+	}
+    }
+
+#######################################################################################
+# ADD BLOCK
 #
 #######################################################################################
-}elsif ( $_action eq "ALLOCATE" ){
+}elsif ( $_action eq "ADD_BLOCK" ){
     my ($address, $prefix);
-    if ($allocate =~ /\//){
-	($address, $prefix) = split /\//, $allocate;
+    if ($add_block =~ /\//){
+	($address, $prefix) = split /\//, $add_block;
     }else{
 	# If not passed,
 	# assign a host prefix automatically
-	if ( $allocate =~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/ ){
-	    ($address, $prefix) = ($allocate, '32');
-	}elsif( $allocate =~ /:/ ){
-	    ($address, $prefix) = ($allocate, '128');
+	if ( $add_block =~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/ ){
+	    ($address, $prefix) = ($add_block, '32');
+	}elsif( $add_block =~ /:/ ){
+	    ($address, $prefix) = ($add_block, '128');
 	}else{
-</%perl>
-	    <div class="container">
-              <div class="containerhead">
-		<strong>Error!</strong>   
-	      </div>
-	      <div class="containerbody">
-		<p><strong><em><% $allocate %></em> does not look like a valid IP address</strong>
-	      </div>
-   	    </div>
-<%perl>
-            $m->abort;
+	    $m->comp('/generic/error.mhtml', error=> "$add_block does not look like a valid IP address");
 	}
     }
     my $newblock; 
@@ -198,32 +214,83 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 				    status   => "Container"});
     };
     if ( my $e = $@ ){
-</%perl>
-	    <div class="container">
-              <div class="containerhead">
-		<strong>Error!</strong>   
-	      </div>
-	      <div class="containerbody">  
-	        <p><strong><% $e %></strong>
-	      </div>
-   	    </div>
-<%perl>
+	    $m->comp('/generic/error.mhtml', error=>$e);
     }
     if ($newblock){
     	$o = $newblock;
     	$id = $newblock->id;
 
         if( $o->is_address ) {
-            $edit_ip = 1;
-            $edit    = "ipinfo";
-            $add_ip  = 1;
+            $edit_ip   = 1;
+            $edit      = "ipinfo";
+            $added_ip  = 1;
         } else {
-            $edit_block = 1;
-            $edit       = "blockinfo";
-            $add_block  = 1;
+            $edit_block  = 1;
+            $edit        = "blockinfo";
+            $added_block = 1;
         }
     }
 
+#######################################################################################
+# ADD RANGE
+#
+#######################################################################################
+}elsif ( $_action eq "ADD_RANGE" ){
+    my ($range_start, $range_end);
+
+    if ( $add_range_prefix ){
+	unless ( $add_range_prefix =~ /\// ){
+	    $m->comp('/generic/error.mhtml', error=> "$add_range_prefix does not look like a valid IP prefix.");
+	}
+	
+	my $hosts = Ipblock->get_host_addrs($add_range_prefix);
+	my $last = (scalar @$hosts) - 1;
+	$range_start = $hosts->[0];
+	$range_end   = $hosts->[$last];
+
+    }elsif ( $add_range_start && $add_range_end ){
+	$range_start = $add_range_start;
+	$range_end   = $add_range_end;
+    }else{
+	$m->comp('/generic/error.mhtml', error=>"You need to specify some kind of range!");
+    }
+
+    my $ipstart = NetAddr::IP->new($range_start);
+    my $ipend   = NetAddr::IP->new($range_end);
+
+    my @newips;
+    
+    unless ( $ipstart < $ipend ){
+	$m->comp('/generic/error.mhtml', error=>"Invalid range");
+    }
+    
+    # We want this to happen atomically (all or nothing)
+    eval {
+	Netdot::Model->do_transaction(sub {
+	    for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
+		my $ip = NetAddr::IP->new($i);
+		push @newips, Ipblock->insert({address     => $ip->addr,
+					       status      => $range_status,
+					       used_by     => $range_used_by,
+					       description => $range_description,
+					   });
+	    }
+	});
+      };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }else{
+	$m->comp('.show_message', title=>"Action Message", msg=>"Address Range Added Successfully");
+	
+	# Show parent block
+	my $parent = $newips[0]->parent;
+	$id = $parent->id;
+	if ( $id != 0 ){
+	    $o = Ipblock->retrieve($id) 
+		|| $m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
+	}
+    }
+    
 #######################################################################################
 # Delete
 #
@@ -271,30 +338,20 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	$m->comp('/generic/error.mhtml', error=>$e);
     }
     
-</%perl>
-       <div class="container">
-         <div class="containerhead">
-           <strong>Message</strong>   
-         </div>
-         <div class="containerbody">
-%        if ($rec){
-           <p><strong>Block <em><% $address %>/<% $prefix %></em> and all its children blocks have been deleted</strong> <br>
-%        }else{
-           <p><strong>Block <em><% $address %>/<% $prefix %></em> has been deleted</strong> <br>
-%        }
-         </div>
-       </div>
-
-<%perl>
-#    Show parent block
-#    after block has been deleted
+    if ($rec){
+	$m->comp('.show_message', title=>"Action Message", msg=>"<p><strong>Block <em>$address/$prefix</em> and all its children blocks have been deleted</strong>");
+    }else{
+	$m->comp('.show_message', title=>"Action Message", msg=>"<p><strong>Block <em>$address/$prefix</em> has been deleted</strong>");
+    }
+    
+    # Show parent block
+    # after block has been deleted
     $id = $parentid;
     if ($id != 0){
 	unless ( $o = Ipblock->retrieve($id) ){
 	    $m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
 	}
     }
-
 }
 
 #######################################################################################
@@ -349,7 +406,7 @@ if ( my @parents = $o->get_ancestors ){
 
     <div class="containerheadright">
 %	 if ($edit eq "ipinfo"){	 
-%        if ($add_ip) {
+%        if ($added_ip) {
     	    <input type="submit" name="submit" value="cancel">
 %           my @parents = $o->get_ancestors;
             <input type="hidden" name="parent" value="<% $parents[0] %>">
@@ -500,7 +557,7 @@ if ( my @parents = $o->get_ancestors ){
 
     <div class="containerheadright">
 %  if ($edit eq "blockinfo"){	 
-%        if ($add_ip) {
+%        if ($added_block) {
     	    <input type="submit" name="submit" value="cancel">
 %           my @parents = $o->get_ancestors;
             <input type="hidden" name="parent" value="<% $parents[0] %>">
@@ -714,8 +771,12 @@ if ($o->status->name eq "Subnet") {
 	                            width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
     </div>
-
 </div>
+
+% if ( $edit ){	 
+    </form>
+% }
+
 
 % if( $view_availability == 1 ) {  
 %     if( $o->status->name eq "Subnet" ) {  
@@ -762,32 +823,64 @@ if ($o->status->name eq "Subnet") {
 %   #  
 %   my @children;   
 %   if (scalar( @children = $o->children )){  
-
+%      @children = sort { $a->address_numeric <=> $b->address_numeric } @children;
        <div class="container">
+%      if ( $edit_children ){
+	     <form name="edit_children" id="edit_children" action="ip.html" method="POST">
+%      }
           <div class="containerheadleft">
              Children Addresses/Blocks
           </div>
           <div class="containerheadright">
-             <%perl>
-             if( $o->version == 4 ) {
-          	 	print '<a href="ip.html?id='.$id.'&view_availability=1">[Graphical View]</a>';
-          	 } else {
-          	 	print '&nbsp;';
-          	 }
-          	 </%perl>
+%             if( $o->version == 4 ) {
+%		 if ( $edit_children ){
+			 <input type="hidden" name="id" value="<% $id %>">
+			 <input type="hidden" name="_action" value="UPDATE_CHILDREN">
+			 <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+			 <input type="submit" name="submit" value="save">
+%		 }else{
+%		     print '<a href="ip.html?id='.$id.'&edit_children=1">[edit]</a>&nbsp;';
+%		     print '<a href="ip.html?id='.$id.'&view_availability=1">[Graphical View]</a>';
+%		 }
+%             } else {
+%          	 print '&nbsp;';
+%             }
           </div>
           <div class="containerbody">
-          <& ipblock_list.mhtml, objects => \@children &>
+          <& ipblock_list.mhtml, objects => \@children, edit => $edit_children &>
+%	  if ( $edit_children ){
+                  <input type="button" value="Check All" onclick="setCheckbox('edit_children', '', true);return false;" class="button" />
+                  <input type="button" value="Clear All" onclick="setCheckbox('edit_children', '', false);return false;" class="button" />
+%	  }
           </div>
-       </div>
+
+%    if ( $edit_children ){
+         </form>
+%    }
+     </div>
 
 %   }
 % }
 <!-- End Block Info Table -->
 % } 
-% if ($edit){	 
-    </form>
-% }
 
 % }
 </div>
+
+
+<%def .show_message>
+<%args>
+$title => undef
+$msg   => undef
+</%args>
+
+<div class="container">
+    <div class="containerhead">
+       <strong><% $title %></strong>   
+    </div>
+    <div class="containerbody">
+       <% $msg %><br>
+    </div>
+</div>
+
+</%def>

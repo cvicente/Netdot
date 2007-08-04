@@ -84,13 +84,55 @@ my @list;
             </form>
         </fieldset>
         <fieldset class="medium">
-            <legend>Add</legend>
+            <legend>Add Block</legend>
             <form action="ip.html" method="POST">
                 <p>
-                <label for="allocate">New IP[/prefix]:</label>
-                 <input type="text" name="allocate" class="txt" value=""> 
+                <label for="add_block">IP[/prefix]:</label>
+                 <input type="text" name="add_block" class="txt" value=""> 
                  <input name="submit" value="Add" class="btn" type="submit">
-                 <input type="hidden" name="_action" value="ALLOCATE">
+                 <input type="hidden" name="_action" value="ADD_BLOCK">
+                </p>
+            </form>
+        </fieldset>
+        <fieldset class="medium">
+            <legend>Add Address Range</legend>
+            <form action="ip.html" method="POST">
+                <input type="hidden" name="_action" value="ADD_RANGE">
+                <p>
+                <label for="add_range">Range:</label>
+                <input type="text" name="add_range_start" class="txt" value=""> - <input type="text" name="add_range_end" class="txt" value=""> OR
+                </p>
+                <p>
+                <label for="add_range">IP/prefix:</label>
+                <input type="text" name="add_range_prefix" class="txt" value=""> 
+                </p>
+                <p>
+                <label for="range_used_by">Used By:</label>
+                <select name="range_used_by" id="range_used_by">
+                <option value="0">-- Select --</option>
+%               my @allents = Entity->retrieve_all; 
+%               @allents = sort { $a->name cmp $b->name } @allents;
+%               foreach my $ent ( @allents ){
+                    <option value="<% $ent->id %>"><% $ent->name %></option>                
+%               }
+                </select>
+                <a class="hand" onClick="openinsertwindow('table=Entity&select_id=range_used_by&selected=1&dowindow=1')">[new]</a>
+                </p>
+                <p>
+                <label for="range_status">Status:</label>
+                <select name="range_status" id="range_used_by">
+                <option value="0">-- Select --</option>
+%               my @allstatus = qw( Dynamic Reserved Static ); 
+%               foreach my $status ( @allstatus ){
+                    <option value="<% $status %>"><% $status %></option>                
+%               }
+                </select>
+                <a class="hand" onClick="openinsertwindow('table=Entity&select_id=range_used_by&selected=1&dowindow=1')">[new]</a>
+                </p>
+                <p>
+                <label for="range_status">Description:</label>
+                <input type="text" class="longtxt" name="range_description">
+                <input name="submit" value="Add" class="btn" type="submit">
                 </p>
             </form>
         </fieldset>
