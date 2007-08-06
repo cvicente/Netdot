@@ -1154,8 +1154,8 @@ sub update_a_records {
 	    # We should already have an RR created (via Device::assign_name)
 	    # Create the A record to link that RR with this Ipobject
 	    RRADDR->insert( {rr => $device->name, ipblock => $self} );
-	    $logger->info(sprintf("%s: Inserted DNS A record for %s", 
-				  $host, $self->address));
+	    $logger->info(sprintf("%s: Inserted DNS A record for %s: %s", 
+				  $host, $self->address, $device->name->name));
 	}else{
 	    # This ip is not associated with the Device name.
 	    # Insert and/or assign necessary records
