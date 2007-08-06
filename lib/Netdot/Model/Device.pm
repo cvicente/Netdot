@@ -1498,14 +1498,14 @@ sub update_bgp_peering {
 	my %etmp = ( name     => $entityname,
 		     asname   => $peer->{asname},
 		     asnumber => $peer->{asnumber},
-		     type     => $type );
+		     );
 	
 	# Check if Entity exists
 	#
 	if ( $entity = Entity->search(asnumber => $peer->{asnumber})->first ||
-	     Entity->search(asname => $peer->{asname})->first             ||
+	     Entity->search(asname => $peer->{asname})->first               ||
 	     Entity->search(name   => $peer->{orgname})->first
-	 ){
+	     ){
 	    # Update it
 	    $entity->update( \%etmp );
 	}else{
@@ -1517,7 +1517,19 @@ sub update_bgp_peering {
 	    $entity = Entity->insert( \%etmp );
 	    $logger->info(sprintf("%s: Created Peer Entity %s.", $host, $entityname));
 	}
-	
+
+	# Make sure Entity has role "peer"
+	my %eroletmp = ( entity => $entity, type => $type );
+	my $erole;
+	if ( $erole = EntityRole->search(%eroletmp)->first ){
+	    $logger->debug(sprintf("%s: Entity %s already has 'Peer' role", 
+				   $host, $entityname ));
+	}else{
+	    EntityRole->insert(\%eroletmp);
+	    $logger->info(sprintf("%s: Added 'Peer' role to Entity %s", 
+				   $host, $entityname ));
+	}
+
     }else{
 	$logger->warn( sprintf("%s: Missing peer info. Cannot associate peering %s with an entity", 
 			       $host, $peer->{address}) );
