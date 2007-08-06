@@ -88,9 +88,9 @@ if ( defined($object) && scalar @$object ){
 	my @lbls;
 	my $alpha = 0;
 	foreach my $obj ( @{ $object } ){
-	    my $lbl = $obj->get_label;
-	    $alpha = 1 if ( $lbl =~ /[A-Za-z]+/ );
-	    push @lbls, [$obj , $lbl];
+	    my $lbl = ($obj->meta_data->get_labels)[0];
+	    $alpha = 1 if ( $obj->$lbl =~ /[A-Za-z]+/ );
+	    push @lbls, [$obj , $obj->$lbl];
 	}
 	if ( $alpha ){ 
 	    @lbls = sort { $a->[1] cmp $b->[1] } @lbls; 
