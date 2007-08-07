@@ -535,12 +535,11 @@ function setNull(select){
     # and decide whether to add that column or not
     # 
     my %intinfo;
-    foreach ( @$ifs ){ 
-	foreach my $field ( qw /jack room_char jack_char description neighbor/ ){
-	    $intinfo{$field}{$_->id} = $_->$field if ( defined $_->$field && int($_->$field) != 0 );
+    foreach my $if ( @$ifs ){ 
+	foreach my $field ( qw/jack room_char jack_char description neighbor/ ){
+	    $intinfo{$field}{$if->id} = $if->$field if ( $if->$field );
 	}
     } 
-
     ### Headers
     my @closet_jacks;
     (@headers, @rows) = ();
@@ -602,7 +601,11 @@ function setNull(select){
 		    foreach my $v ( keys %{$ifvlans{$if}} ){
 		      push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
 		    }
-		    $ac .= join ', ', @links;	# CHECK THIS (was in a print).
+		    if ( scalar(@links) <= 3 ){
+			$ac .= join ', ', @links;
+		    }else{
+			$ac .= '>3';
+		    }
 		  }
 		  $ac;
 		}};

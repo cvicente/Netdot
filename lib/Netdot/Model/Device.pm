@@ -414,7 +414,7 @@ sub get_snmp_info {
 		     'interfaces', 'i_name', 'i_type', 'i_index', 'i_alias', 'i_description', 
 		     'i_speed', 'i_up', 'i_up_admin', 'i_duplex', 
 		     'ip_index', 'ip_netmask', 'i_mac',
-		     'i_vlan', 'qb_v_name', 'v_name',
+		     'i_vlan', 'i_vlan_membership', 'qb_v_name', 'v_name',
 		     'bgp_peers', 'bgp_peer_id', 'bgp_peer_as');
     my %hashes;
     foreach my $method ( @SMETHODS ){
@@ -561,11 +561,24 @@ sub get_snmp_info {
 
 	################################################################
 	# Vlan info
-	#
+	# 
 	my ($vid, $vname);
+	# This is the default vlan for this port
 	if ( $vid = $hashes{'i_vlan'}->{$iid} ){
+	    $dev{interface}{$ifindex}{vlans}{$vid}{vid} = $vid;
+	}
+	# These are all the vlans that are enabled on this port.
+	# We might be able to get away with using only this one,
+	# but just in case...
+	if ( my $vm = $hashes{'i_vlan_membership'}->{$iid} ){
+	    foreach my $vid ( @$vm ){
+		$dev{interface}{$ifindex}{vlans}{$vid}{vid} = $vid;
+	    }
+	}
+	# Get VLAN names
+	foreach my $vid ( keys %{$dev{interface}{$ifindex}{vlans}} ){
 	    $vname = $hashes{'qb_v_name'}->{$vid}; # Standard MIB
-	    unless ($vname){
+	    unless ( $vname ){
 		# We didn't get a vlan name in the standard place
 		# Try Cisco location
 		# SNMP::Info should be doing this for me :-(
@@ -579,7 +592,6 @@ sub get_snmp_info {
 		    }
 		}
 	    }
-	    $dev{interface}{$ifindex}{vlans}{$vid}{vid}   = $vid;
 	    $dev{interface}{$ifindex}{vlans}{$vid}{vname} = $vname if defined ($vname);
 	}
     }
