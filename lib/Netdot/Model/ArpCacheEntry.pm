@@ -32,7 +32,7 @@ Arp Cache Entry class
     Array ref containing hash refs with following keys:
     arpcache  - id of ArpCache table record
     interface - id of Interface
-    ipaddr    - string with ip address
+    ipaddr    - ip address in numeric format
     physaddr  - string with mac address
    
   Returns:   
@@ -66,16 +66,21 @@ sub fast_insert{
     # Now walk our list and insert
     eval{
 	foreach my $r ( @$list ){
-	    if ( exists $db_macs->{$r->{physaddr}} && exists $db_ips->{$r->{ipaddr}} ){
-		$sth->execute($r->{arpcache}, 
-			      $r->{interface},
-			      $db_ips->{$r->{ipaddr}},
-			      $db_macs->{$r->{physaddr}},
-			      );
-	    }else{
-		$logger->error(sprintf("Netdot::Model::arpcacheentry: Error inserting: Missing MAC: %s or IP: %s", 
-				    $r->{physaddr}, $r->{ipaddr}));
+	    if ( !exists $db_macs->{$r->{physaddr}} ){
+		$logger->error(sprintf("Netdot::Model::arpcacheentry::fast_insert: Error: MAC: %s not found in database.", 
+				       $r->{physaddr}));
+		next;
 	    }
+	    if ( !exists $db_ips->{$r->{ipaddr}} ){
+		$logger->error(sprintf("Netdot::Model::arpcacheentry::fast_insert: Error: IP: %s not found in database.", 
+				       $r->{ipaddr}));
+		next;
+	    }
+	    $sth->execute($r->{arpcache}, 
+			  $r->{interface},
+			  $db_ips->{$r->{ipaddr}},
+			  $db_macs->{$r->{physaddr}},
+			  );
 	}
     };
     if ( my $e = $@ ){
