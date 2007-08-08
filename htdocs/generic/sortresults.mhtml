@@ -33,9 +33,9 @@ $sid        => undef;
 </%args>
 
 <%init>
-my %order;
 my %orderbrief;
-my $lbl;
+my @orderbrief;
+my $lblf;
 my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
 my $ci         = 1;
 my $last_item;
@@ -59,12 +59,12 @@ if ( defined($object) && scalar @$object ){
     $table = $object->[0]->short_class 
 	unless $table;
 
-    %order      = $table->meta_data->get_column_order();
-    %orderbrief = $table->meta_data->get_column_order_brief();
+    %orderbrief  = $table->meta_data->get_column_order_brief();
+    @orderbrief  = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
 
     ##############################################
     # get the first label field for this table (as defined in metadata)
-    $lbl = ($table->meta_data->get_labels)[0];
+    $lblf = ($table->meta_data->get_labels)[0];
     
     ##############################################
     # If sort arg
@@ -85,12 +85,17 @@ if ( defined($object) && scalar @$object ){
 	# 
     }else{
 	# Be smart about sorting numerically or alphabetically
-	my @lbls;
 	my $alpha = 0;
+	my ($lbl, @lbls);
 	foreach my $obj ( @{ $object } ){
-	    my $lbl = ($obj->meta_data->get_labels)[0];
-	    $alpha = 1 if ( $obj->$lbl =~ /[A-Za-z]+/ );
-	    push @lbls, [$obj , $obj->$lbl];
+	    if ( ref($obj->$lblf) ){
+		# Value of label field is a foreign object
+		$lbl = $obj->$lblf->get_label;
+	    }else{
+		$lbl = $obj->$lblf;
+	    }
+	    $alpha = 1 if ( $lbl =~ /[A-Za-z]+/ );
+	    push @lbls, [$obj , $lbl];
 	}
 	if ( $alpha ){ 
 	    @lbls = sort { $a->[1] cmp $b->[1] } @lbls; 
@@ -112,13 +117,13 @@ if ( defined($object) && scalar @$object ){
     }
     ##############################################
     # munge so that label is first 
-    if( defined( $lbl ) && length( $lbl ) > 0 ) {
-	unless( $orderbrief{$lbl} == 1 ) {
-	    my $j        = $orderbrief{$lbl};
-	    my %rev      = reverse %orderbrief;
-	    my $k        = $rev{1} ;
-	    $orderbrief{$k}   = $j;
-	    $orderbrief{$lbl} = 1;
+    if( defined( $lblf ) && length( $lblf ) > 0 ) {
+	unless( $orderbrief{$lblf} == 1 ) {
+	    my $j              = $orderbrief{$lblf};
+	    my %rev            = reverse %orderbrief;
+	    my $k              = $rev{1} ;
+	    $orderbrief{$k}    = $j;
+	    $orderbrief{$lblf} = 1;
 	}
     }
     
@@ -132,7 +137,6 @@ if ( defined($object) && scalar @$object ){
 
     %objindex   = %{ $session->{objindex} };
     $table      = $session->{table};
-    %order      = %{ $session->{order} };
     %orderbrief = %{ $session->{orderbrief} };
     $page       = $session->{page};
     $sort       = $session->{sort};
@@ -168,7 +172,6 @@ if ( $total > $per_page ){
     
     $session->{objindex}   = \%objindex;
     $session->{table}      = $table;
-    $session->{order}      = \%order;
     $session->{orderbrief} = \%orderbrief;
     $session->{page}       = $page;
     $session->{sort}       = $sort;
@@ -197,7 +200,7 @@ if ( $total > $per_page ){
 %     #####################################################################
 %     # Header row
       <tr class="rowtitle2">
-%     foreach my $c ( sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief ) {
+%     foreach my $c ( @orderbrief ) {
 %          $numcols++;
 %          my $tag = $table->meta_data->get_column($c)->tag;
 %          if( defined($tag) ) {
@@ -230,7 +233,7 @@ if ( $total > $per_page ){
 %         ####################################################################
 %         # Get the column order and process each item.
 %         ####################################################################
-%         my @orderbrief = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
+%         
 %
 %         foreach my $c ( @orderbrief ) {
               <td align="left" valign="middle">
