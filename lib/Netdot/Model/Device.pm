@@ -160,7 +160,7 @@ sub assign_name {
 
     my $rr;
     if ( $rr = RR->search(name=>$host)->first ){
-	$logger->info("Name $host exists in DB");
+	$logger->debug("Name $host exists in DB");
 	return $rr;
     }
     # An RR matching $host does not exist
@@ -799,7 +799,7 @@ sub snmp_update_block {
     # Get a list of host addresses for the given block
     my $hosts = Ipblock->get_host_addrs($argv{block});
 
-    $logger->info("SNMP-discovering all devices in $argv{block}");
+    $logger->debug("SNMP-discovering all devices in $argv{block}");
     my $start = time;
 
     # Create a listening Unix socket to communicate with children
@@ -1014,7 +1014,7 @@ sub arp_update_all {
     $class->isa_class_method('arp_update_all');
 
     my @alldevs = $class->retrieve_all();
-    $logger->info("Fetching ARP tables from all devices in the database");
+    $logger->debug("Fetching ARP tables from all devices in the database");
     return $class->_arp_update_mult(list=>\@alldevs);
 }
 
@@ -1036,7 +1036,7 @@ sub arp_update_block {
     defined $argv{block} || $class->throw_fatal("Missing required arguments: block");
     my $devs = $class->get_all_from_block($argv{block});
 
-    $logger->info("Fetching ARP tables from all devices in block $argv{block}");
+    $logger->debug("Fetching ARP tables from all devices in block $argv{block}");
     return $class->_arp_update_mult(list=>$devs);
 }
 
@@ -1057,7 +1057,7 @@ sub fwt_update_all {
     $class->isa_class_method('fwt_update_all');
     
     my @alldevs = $class->retrieve_all();
-    $logger->info("Fetching forwarding tables from all devices in the database");
+    $logger->debug("Fetching forwarding tables from all devices in the database");
     return $class->_fwt_update_mult(list=>\@alldevs);
 }
 
@@ -1082,7 +1082,7 @@ sub fwt_update_block {
     defined $argv{block} || $class->throw_fatal("Missing required arguments: block");
     my $devs = $class->get_all_from_block($argv{block});
 
-    $logger->info("Fetching forwarding tables from all devices in $argv{block}");
+    $logger->debug("Fetching forwarding tables from all devices in $argv{block}");
     return $class->_fwt_update_mult(list=>$devs);
 }
 
@@ -1213,7 +1213,7 @@ sub arp_update {
     my $timestamp = $self->timestamp;
 
     unless ( $self->collect_arp ){
-	$logger->info("$host excluded from ARP collection. Skipping");
+	$logger->debug("$host excluded from ARP collection. Skipping");
 	return;
     }
 
@@ -1295,7 +1295,7 @@ sub fwt_update {
     my $timestamp = $self->timestamp;
 
     unless ( $self->collect_fwt ){
-	$logger->info("$host excluded from FWT collection. Skipping");
+	$logger->debug("$host excluded from FWT collection. Skipping");
 	return;
     }
 
@@ -2794,7 +2794,7 @@ sub _get_snmp_session {
 	$uargs{community}    = $sinfoargs{Community} if ( $self->community    ne $sinfoargs{Community} );
 	$self->update(\%uargs) if ( keys %uargs );
     }
-    $logger->info(sprintf("SNMPv%d session with host %s, community '%s' established",
+    $logger->debug(sprintf("SNMPv%d session with host %s, community '%s' established",
 			  $sinfoargs{Version}, $sinfoargs{DestHost}, $sinfoargs{Community}) );
 
     # We want to do our own 'munging' for certain things
@@ -2848,7 +2848,7 @@ sub _get_arp_from_snmp {
     my $sinfo = $self->_get_snmp_session();
 
     # Fetch ARP Cache
-    $logger->info("$host: Fetching ARP cache");
+    $logger->debug("$host: Fetching ARP cache");
     my $start      = time;
     my $at_index   = $sinfo->at_index();
     my $at_paddr   = $sinfo->at_paddr();
@@ -2938,7 +2938,7 @@ sub _get_fwt_from_snmp {
     # Notice that we pass the result variable as a parameter since that's the
     # easiest way to append more info later using the same function (see below).
     my %fwt; 
-    $logger->info("$host: Fetching forwarding table");
+    $logger->debug("$host: Fetching forwarding table");
     $self->_walk_fwt(sinfo   => $sinfo,
 		     sints   => $sints,
 		     intmacs => $intmacs,
@@ -2951,7 +2951,7 @@ sub _get_fwt_from_snmp {
     # Notably the Catalyst 5k, 6k, and 3500 series
     my $cisco_comm_indexing = $sinfo->cisco_comm_indexing();
     if ( $cisco_comm_indexing ){
-        $logger->info("$host supports Cisco community string indexing. Connecting to each VLAN");
+        $logger->debug("$host supports Cisco community string indexing. Connecting to each VLAN");
         my $v_name   = $sinfo->v_name() || {};
         my $i_vlan   = $sinfo->i_vlan() || {};
 	my $sclass   = $sinfo->class();
@@ -3548,11 +3548,11 @@ sub _fwt_update_mult {
     
     foreach my $dev ( @$list ){
 	unless ( $dev->collect_fwt ){
-	    $logger->info(sprintf("%s excluded from FWT collection. Skipping", $dev->fqdn));
+	    $logger->debug(sprintf("%s excluded from FWT collection. Skipping", $dev->fqdn));
 	    next;
 	}
 	unless ( $dev->has_layer(2) ){
-	    $logger->info(sprintf("%s Device not layer2. Skipping", $dev->fqdn));
+	    $logger->debug(sprintf("%s Device not layer2. Skipping", $dev->fqdn));
 	    next;
 	}
 
@@ -3579,7 +3579,7 @@ sub _fwt_update_mult {
     if ( @caches ){
 	$class->_update_macs_from_cache(\@caches);
     }else{
-	$logger->info("Device::fwt_update_mult: No forwarding table info to go on.  Quitting.");
+	$logger->warn("Device::fwt_update_mult: No forwarding table info to go on.  Quitting.");
 	$class->_server_close($server);
 	return;
     }
@@ -3643,11 +3643,11 @@ sub _arp_update_mult {
     
     foreach my $dev ( @$list ){
 	unless ( $dev->collect_arp ){
-	    $logger->info(sprintf("%s excluded from ARP collection. Skipping", $dev->fqdn));
+	    $logger->debug(sprintf("%s excluded from ARP collection. Skipping", $dev->fqdn));
 	    next;
 	}
 	unless ( $dev->has_layer(3) ){
-	    $logger->info(sprintf("%s Device not layer3. Skipping", $dev->fqdn));
+	    $logger->debug(sprintf("%s Device not layer3. Skipping", $dev->fqdn));
 	    next;
 	}
 	$class->_launch_child(server => $server,
@@ -3674,7 +3674,7 @@ sub _arp_update_mult {
 	$class->_update_macs_from_cache(\@caches);
 	$class->_update_ips_from_cache(\@caches);
     }else{
-	$logger->info("Device::arp_update_all: No ARP cache info to go on.  Quitting.");
+	$logger->warn("Device::arp_update_all: No ARP cache info to go on.  Quitting.");
 	$class->_server_close($server);
 	return;
     }
