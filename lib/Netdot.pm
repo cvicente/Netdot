@@ -5,7 +5,8 @@ use warnings;
 
 use Netdot::Meta;
 use Netdot::Config;
-use Netdot::Util;
+use Netdot::Util::Log;
+use Netdot::Util::Exception;
 use Carp;
 use Data::Dumper;
 

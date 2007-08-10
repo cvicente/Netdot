@@ -29,31 +29,19 @@ my @children;
 
             $names{ $o->address } = $o->status->name;  # default to show status first
 
-            if( $o->status->name eq "Container" ) {
-                if( $o->description ) {
-                    $names{ $o->address } = $o->description;
-                }
-            } elsif( $o->status->name eq "Reserved" ) {
-                if( $o->description ) {
-                    $names{ $o->address } = $o->description;
-                }
-            } elsif( $o->status->name eq "Subnet" ) {
-                if( $o->description ) {
-                    $names{ $o->address } = $o->description;
-                }
-            } elsif( $o->status->name eq "Static" ) {
+	    if( $o->status->name eq "Static" ) {
                 if( $dnsname ne "" ) {
                     $names{ $o->address } = $dnsname;
-                } elsif( $ui->getobjlabel($o->interface->device, ", ") ne "" ) {
-                    $names{ $o->address } = $ui->getobjlabel($o->interface->device, ", ");
+                } elsif( my $lbl = $o->interface->device->get_label ne "" ) {
+                    $names{ $o->address } = $lbl;
                 }
-            } elsif( $o->status->name eq "Dynamic" ) {
+	    }else{
                 if( $o->description ) {
                     $names{ $o->address } = $o->description;
                 }
-            }
+	    }
 
-            $status{ $o->address } = $o->status->name;
+            $status{ $o->address }  = $o->status->name;
             $iplinks{ $o->address } = $o->id;
         }
     }    
@@ -109,28 +97,26 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 	    }
 	} elsif( defined $used{ $net->addr } ) {
 	    my $divclass;
-	    my $divtitle;
+	    my $divtitle = $names{ $net->addr } if exists $names{ $net->addr };
 
 	    if( $status{$net->addr} eq "Static" ) {
 		# show used addresses in red, with no link tag, show dns name on mouseover
 		$divclass = "ipaddr_static";
-		$divtitle = $names{ $net->addr } if exists $names{ $net->addr };
 
 	    } elsif( $status{$net->addr} eq "Dynamic" ) {
 		# show dynamic addresses in orange, don't link
 		$divclass = "ipaddr_dynamic";
-		$divtitle = $names{ $net->addr } if exists $names{ $net->addr };
 
 	    } elsif( $status{$net->addr} eq "Reserved" ) {
 		# show reserved addresses in grey, don't link
 		$divclass = "ipaddr_reserved";
-		$divtitle = $names{ $net->addr } if exists $names{ $net->addr };
 
 	    } elsif( $status{$net->addr} eq "Container" ) {
 		# link to detail page for containers
 		$divclass = "ipaddr_container";
-		$divtitle = $names{ $net->addr } if exists $names{ $net->addr };
 
+	    }elsif( $status{$net->addr} eq "Discovered" ) {
+		$divclass = "ipaddr_discovered";
 	    }
 
 	    $ipaddr = '<a href="ip.html?id='.$iplinks{ $net->addr }.'" class="ipaddr">'.$ipaddr.'</a>';

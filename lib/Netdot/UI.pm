@@ -692,7 +692,7 @@ sub radio_group_boolean{
     my ($o, $table, $column) = @args{'object', 'table', 'column'};
     my $output;
 
-    my $table = ($o ? $o->short_class : $table);
+    $table = ($o ? $o->short_class : $table);
     my $id    = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
     my $name  = ( $args{shortFieldName} ? $column : $table . "__" . $id . "__" . $column );
@@ -744,7 +744,7 @@ sub checkbox_boolean{
                                             $args{column}, $args{edit}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
-    my $table   = ($o ? $o->short_class : $table);
+    $table   = ($o ? $o->short_class : $table);
     my $id      = ($o ? $o->id : "NEW");
     my $value   = ($o ? $o->$column : "");
     my $name    = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
@@ -805,7 +805,7 @@ sub text_field($@){
 	 $args{linkPage}, $args{default}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
-    my $table  = ($o ? $o->short_class : $table);
+    $table  = ($o ? $o->short_class : $table);
     my $id     = ($o ? $o->id : "NEW");
     my $value  = ($o ? $o->$column : $default);
     my $name   = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
@@ -866,7 +866,7 @@ sub text_area($@){
 	 $args{returnAsVar}, $args{shortFieldName} );
     my $output;
     
-    my $table  = ($o ? $o->short_class : $table);
+    $table  = ($o ? $o->short_class : $table);
     my $id     = ($o ? $o->id : "NEW");
     my $value  = ($o ? $o->$column : "");
     my $name   = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );

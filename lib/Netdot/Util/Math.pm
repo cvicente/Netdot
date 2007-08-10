@@ -1,7 +1,39 @@
 package Netdot::Util::Math;
 
+use base 'Netdot::Util';
+use warnings;
+use strict;
+
+=head1 NAME
+
+Netdot::Util::Math - Various Math utilities
+
+=head1 SYNOPSIS
+
+
+=head1 CLASS METHODS
+=cut
 1;
 
+############################################################################
+=head2 new - Class constructor
+
+  Arguments:
+    None
+  Returns:
+    Netdot::Util::Math object
+  Examples:
+    my $math = Netdot::Util::Math->new();
+=cut
+sub new{
+    my ($proto, %argv) = @_;
+    my $class = ref($proto) || $proto;
+    my $self = {};
+    $self->{_logger} = Netdot->log->get_logger('Netdot::Util');
+    bless $self, $class;
+}
+
+############################################################################
 =head2 within
 
     Checks if a value is between two other values
@@ -17,11 +49,12 @@ sub within {
     return( $beg <= $val && $val <= $end );
 }
 
+############################################################################
 =head2 powerof2lo
 
     Returns the next lowest power of 2 from x
     note: hard-coded to work for 32-bit integers,
-    	so this won't work with ipv6 addresses.
+    	so this won\'t work with ipv6 addresses.
     Arguments:
         - x: an integer
     Returns a power of 2
@@ -39,6 +72,7 @@ sub powerof2lo {
     return $x;
 }
 
+############################################################################
 =head2 ceil
 
 	There is no ceiling function built in to perl. 
@@ -46,7 +80,7 @@ sub powerof2lo {
 	Arguments:
 		- x: a floating point number
 	Returns the smallest integer greater than or equal to x.	
-	(Also works for negative numbers, although we don't 
+	(Also works for negative numbers, although we don\'t 
 	really need that here.)
 
 =cut
@@ -71,3 +105,26 @@ sub floor {
 	return int($x);
 }
 
+=head1 AUTHORS
+
+Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >> with contributions from Nathan Collins and Aaron Parecki.
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2006 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+=cut
