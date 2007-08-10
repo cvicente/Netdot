@@ -531,11 +531,16 @@ if ( my @parents = $o->get_ancestors ){
 </div>
 
 
-%     if ( $o->arp_entries ){
+<div class="container">
+    <div class="containerheadleft">ARP entries</div>
+    <div class="containerheadright">
+	<a href="edit.html?table=IpService&ip=<% $o %>">[add]</a>
+    </div>
+%     if ( my @arp_entries = ArpCacheEntry->search_by_ip($o) ){
         <%perl>
-            my @field_headers = ("ARP entries", "Physical Address", "Timestamp");
+            my @field_headers = ("Interface", "Physical Address", "Timestamp");
             my @rows;
-            foreach my $arpentry ($o->arp_entries){
+            foreach my $arpentry ( @arp_entries ){
                 push( @rows, 
                     [ "<a href=\"view.html?table=Interface&id=".$arpentry->interface->id."\">".
                       $arpentry->interface->get_label()."</a>"
@@ -547,6 +552,7 @@ if ( my @parents = $o->get_ancestors ){
         </%perl>
         <& /generic/data_table.mhtml, field_headers=>\@field_headers, data=>\@rows &>
 %     }
+</div>
 
 
 

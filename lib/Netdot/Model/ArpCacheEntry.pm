@@ -92,8 +92,30 @@ sub fast_insert{
 
 
 =head1 INSTANCE METHODS
+=cut
+
+=head2 search_by_ip - Retrieve all entries corresponding to given IP
+
+    Returns list ordered by ArpCache timestamp.  Relies on SQL for 
+    sorting timestamp values efficiently.
+
+  Arguments: 
+    Ipblock id
+  Returns:   
+    Array of ArpCacheEntry objects
+  Examples:
+    ArpCacheEntry->->search_by_ip($ip->id)
 
 =cut
+
+__PACKAGE__->set_sql(by_ip => qq{
+    SELECT arpcacheentry.id, arpcacheentry.physaddr
+	FROM arpcacheentry, arpcache, ipblock
+	WHERE arpcacheentry.arpcache=arpcache.id AND
+	arpcacheentry.ipaddr=ipblock.id AND
+	ipblock.id = ?
+	ORDER BY arpcache.tstamp DESC
+    });
 
 =head1 AUTHOR
 
