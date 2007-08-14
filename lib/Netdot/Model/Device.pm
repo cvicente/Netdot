@@ -2850,27 +2850,29 @@ sub _get_arp_from_snmp {
     # Fetch ARP Cache
     $logger->debug("$host: Fetching ARP cache");
     my $start      = time;
-    my $at_netaddr = $sinfo->at_netaddr();
-    my $at_index   = $sinfo->at_index();
     my $at_paddr   = $sinfo->at_paddr();
 
     my $arp_count = 0;
-    foreach my $arp ( keys %$at_paddr ){
-        my $ip   = $at_netaddr->{$arp};
-        my $idx  = $at_index->{$arp};
-        my $mac  = $at_paddr->{$arp};
-
+    foreach my $key ( keys %$at_paddr ){
+	my ($ip, $idx, $mac);
+	if ( $key =~ /(\d+)\.($IPV4)/ ){
+	    $idx = $1;
+	    $ip  = $2;
+	    $mac = $at_paddr->{$key};
+	}else{
+	    $logger->debug("Device::_get_arp_from_snmp: $host: Unrecognized hash key: $key");
+	    next;
+	}
         unless ( defined($ip) ){
-	    $logger->debug("Device::_get_arp_from_snmp: $host: IP not defined in at_netaddr->{$arp}");
+	    $logger->debug("Device::_get_arp_from_snmp: $host: IP not defined in hash key: $key");
 	    next;
 	}
 	unless ( defined($idx) ){
-	    $logger->debug("Device::_get_arp_from_snmp: $host: ifIndex not defined in at_index->{$arp}");
+	    $logger->debug("Device::_get_arp_from_snmp: $host: ifIndex not defined in hash key: $key");
 	    next;
 	}
-
 	unless ( defined($mac) ){
-	    $logger->debug("Device::_get_arp_from_snmp: $host: MAC not defined in at_paddr->{$arp}");
+	    $logger->debug("Device::_get_arp_from_snmp: $host: MAC not defined in at_paddr->{$key}");
 	    next;
 	}
 	if ( ! PhysAddr->validate($mac) ){
