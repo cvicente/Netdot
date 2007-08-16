@@ -1,6 +1,5 @@
 <%doc>
 Device Inventory Report
-
 </%doc>
 
 <%attr>
@@ -8,52 +7,50 @@ title   => 'Device Inventory'
 section => 'Reports'
 </%attr>
 
+<%args>
+$report_type => 'product'
+</%args>
+
 <%init>
-my $DEBUG      = 0;
-my $grandtotal = 0;
-my %t;
-
-foreach my $pt ( sort { $a->name cmp $b->name } ProductType->retrieve_all ){
-    $t{$pt->name}{total} = 0;
-    $t{$pt->name}{id}    = $pt->id;
-    my @prods            = Product->search_by_type($pt);
-    foreach my $o ( @prods ){
-	$t{$pt->name}{prod}{$o->name}{id}   = $o->id;
-	$t{$pt->name}{prod}{$o->name}{num}  = $o->{numdevs};
-	$t{$pt->name}{total}               += $o->{numdevs};
-    }
-    $grandtotal += $t{$pt->name}{total};
-}
-# Look for products with no type
-foreach my $o ( Device->search_no_type() ){
-    $t{'Unknown'}{prod}{$o->name}{id}  = $o->id;
-    $t{'Unknown'}{prod}{$o->name}{num} = $o->{numdevs};
-    $t{'Unknown'}{total}              += $o->{numdevs};
-}
-
-# Look for devices with no product set
-
-my @noprod = Device->search( product => 0 );
-
-if ( my $num = scalar @noprod ){
-    $t{'Unknown'}{prod}{'Unknown'}{id}   = 0;
-    $t{'Unknown'}{prod}{'Unknown'}{num}  = $num;
-    $t{'Unknown'}{total}                += $num;
-}
-if ( exists $t{'Unknown'} ){
-    $grandtotal += $t{'Unknown'}{total};
-}
-
+my $DEBUG = 0;
+my (@headers, @rows) = ();
 </%init>
 
-<div class="container">
-<div class="containerhead">Device Inventory</div>
-<div class="containerbody">
-
 <%perl>
-my (@headers, @rows) = ();
+if ( $report_type eq 'product' ){
+    my %t;
+    my $grandtotal = 0;
+    foreach my $pt ( sort { $a->name cmp $b->name } ProductType->retrieve_all ){
+	$t{$pt->name}{total} = 0;
+	$t{$pt->name}{id}    = $pt->id;
+	my @prods            = Product->search_by_type($pt);
+	foreach my $o ( @prods ){
+	    $t{$pt->name}{prod}{$o->name}{id}   = $o->id;
+	    $t{$pt->name}{prod}{$o->name}{num}  = $o->{numdevs};
+	    $t{$pt->name}{total}               += $o->{numdevs};
+	}
+	$grandtotal += $t{$pt->name}{total};
+    }
+    # Look for products with no type
+    foreach my $o ( Device->search_no_type() ){
+	$t{'Unknown'}{prod}{$o->name}{id}  = $o->id;
+	$t{'Unknown'}{prod}{$o->name}{num} = $o->{numdevs};
+	$t{'Unknown'}{total}              += $o->{numdevs};
+    }
+    
+    # Look for devices with no product set
+    my @noprod = Device->search( product => 0 );
+    
+    if ( my $num = scalar @noprod ){
+	$t{'Unknown'}{prod}{'Unknown'}{id}   = 0;
+	$t{'Unknown'}{prod}{'Unknown'}{num}  = $num;
+	$t{'Unknown'}{total}                += $num;
+    }
+    if ( exists $t{'Unknown'} ){
+	$grandtotal += $t{'Unknown'}{total};
+    }
 
-@headers = ( 'Type', 'Product', 'Count', );
+    @headers = ( 'Type', 'Product', 'Count', );
 
     my @row = ();
     push( @row, "Total Devices in Inventory:" );
@@ -61,28 +58,78 @@ my (@headers, @rows) = ();
     push( @row, $grandtotal );
     push( @rows, \@row );
 
-foreach my $pt ( sort keys %t ){
-    my @row = ();
-    push( @row, "<strong><a href=\"../management/device.html?submit=search&search=ProductType:$t{$pt}{id}\">" . $pt . "</a></strong>" );
-    push( @row, "" );
-    push( @row, '<strong>' . $t{$pt}{total} . '</strong>' );
-    push( @rows, \@row );
-
-    foreach my $product ( sort keys %{ $t{$pt}{prod} } ){
+    foreach my $pt ( sort keys %t ){
 	my @row = ();
+	push( @row, "<strong><a href=\"../management/device.html?submit=search&search=ProductType:$t{$pt}{id}\">" . $pt . "</a></strong>" );
 	push( @row, "" );
-	if ( $t{$pt}{prod}{$product}{id} ){
-	    push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
-	}elsif ( $product eq "Unknown" ){
-	    push( @row, '<a href="../management/device.html?submit=search&search=product:0">' . $product . '</a>' );
-	}
-	push( @row, $t{$pt}{prod}{$product}{num}  );
+	push( @row, '<strong>' . $t{$pt}{total} . '</strong>' );
 	push( @rows, \@row );
+
+	foreach my $product ( sort keys %{ $t{$pt}{prod} } ){
+	    my @row = ();
+	    push( @row, "" );
+	    if ( $t{$pt}{prod}{$product}{id} ){
+		push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
+	    }elsif ( $product eq "Unknown" ){
+		push( @row, '<a href="../management/device.html?submit=search&search=product:0">' . $product . '</a>' );
+	    }
+	    push( @row, $t{$pt}{prod}{$product}{num}  );
+	    push( @rows, \@row );
+	}
+
     }
 
+}elsif ( $report_type eq 'os' ){
+    my $it = Device->retrieve_all();
+    my %t;
+    while ( my $dev = $it->next ){
+	my $manuf = ($dev->product && $dev->product->manufacturer) ? $dev->product->manufacturer->id : 'Unknown';
+	my $os    = $dev->os;
+	$t{$manuf}{os}{$os}{total}++ if defined ($os);
+    }
+
+    @headers = ( 'Manufacturer', 'OS', 'Count', );
+    my @row = ();
+    foreach my $m ( keys %t ){
+	my @row = ();
+	my $entity;
+	if ( $m ne 'Unknown' && ($entity = Entity->retrieve($m)) ){
+	    push( @row, "<strong><a href=\"../generic/view.html?table=Entity&id=$m\">" . $entity->name . "</a></strong>" );
+	}else{
+	    push( @row, $m );
+	}
+	push ( @row, " "); push ( @row, " ");
+	push( @rows, \@row );
+	foreach my $os ( keys %{$t{$m}{os}} ){
+	    my @row = ();
+	    push( @row, " " );
+	    push( @row, "<a href=\"../generic/search_obj.html?table=Device&os=$os&res=1\">" . $os . '</a>' );
+	    push( @row, $t{$m}{os}{$os}{total} );
+	    push( @rows, \@row );
+	}
+    }
+}else{
+    $m->comp('/generic/error.mhtml', error=>"Unknown report type: $report_type");
 }
 </%perl>
-<& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
+<div class="container">
+  <div class="containerhead">Device Inventory</div>
+    <div class="containerbody">
+    <p>
+      <form name="report_form" action="device_inventory.html" method="POST">
+         By <select name="report_type" onChange="document.report_form.submit()">
+%        if ( $report_type eq "product" ){
+	       <option value="product" SELECTED>Product</option>
+	       <option value="os">OS</option>
+%        }else{
+	       <option value="product">Product</option>
+	       <option value="os" SELECTED>OS</option>
+%        }
+         </select>
+      </form>
+      <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+    </div>
+  </div>
 </div>
-</div>
+
