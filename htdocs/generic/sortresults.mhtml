@@ -160,7 +160,7 @@ if ( defined($object) && scalar @$object ){
 unless ( $page ){
     $page = $ui->table_view_page($table);
 }
-$page ||= "view.html";
+$page ||= 'view.html';
 
 # Calculate last item to show
 $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
@@ -237,40 +237,35 @@ if ( $total > $per_page ){
 %
 %         foreach my $c ( @orderbrief ) {
               <td align="left" valign="middle">
+%             my $ftable = $table->meta_data->get_column($c)->links_to;
 %             #####################################################################
 %             # If it is a link to another column....
 %             #####################################################################
-%             my $ftable = $table->meta_data->get_column($c)->links_to;
 %             if ( defined $ftable ) {
 %                 if ( int(my $fo = $o->$c) != 0  ) {
 %                     my $lbl = $fo->get_label;
-                      &nbsp;
-                      <a href="<% $page %>?table=<% $ftable %>&id=<% $fo->id %>">
-%                     if( length( $lbl ) < 1 ) {
-                          N/A
-%                     }else {
-                          <% $lbl %>
-%                     }
-                      </a> 
+%                     if( $first_column ) {
+                          &nbsp;
+                          <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>"><% $lbl %></a>
+%                     }else{
+%                         my $fviewpage = $ui->table_view_page($ftable) || 'view.html';
+                          &nbsp;
+                          <a href="<% $fviewpage %>?table=<% $ftable %>&id=<% $fo->id %>"><% $lbl %></a>
+%   		      }
 %                 }else{
-                      &nbsp -
+                         &nbsp -
 %                 }
 %            }else{
 %            #####################################################################
 %            # It s not a link to another column
 %            #####################################################################
 %                if( $first_column ) {
-                     <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>">
-%                    if( length( $o->$c ) < 1 ) {
-                         N/A
-%                    }else{
-                         <% $o->$c %>
-%                    }
-                     </a>
-%               }else{
-                    <% $o->$c %>
-%               }
-%           } # else fi
+                     &nbsp;
+                     <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>"><$o->$c></a>
+%		 }else{
+                     <% $o->$c %>
+%		 }
+%            } # else fi
             </td>
 % #####################################################################
 % # Wrap this row up.
