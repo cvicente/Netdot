@@ -1098,10 +1098,12 @@ sub _read_metadata{
     # We do not use _gettables here because we need the
     # history tables as well and they're not defined in
     # Meta
-    my $dbh = $self->db_Main;
+    my $dbh    = $self->db_Main;
+    my $dbname = $dbh->{Name};
     foreach my $table ( $dbh->tables ){
 	$table =~ s/\`//g;
-	next if ($table eq "Meta");
+        $table =~ s/$dbname\.//g;
+ 	next if ($table eq "Meta");
 	$self->{meta}->{$table}->{linksto}          = $self->_read_linksto($table);
 	$self->{meta}->{$table}->{linksfrom}        = $self->_read_linksfrom($table);
 	$self->{meta}->{$table}->{columnorder}      = $self->_read_columnorder($table);

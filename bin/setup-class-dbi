@@ -39,6 +39,7 @@ my $dbh = DBI->connect ("dbi:$DB_TYPE:$DB_DATABASE", "$DB_NETDOT_USER", "$DB_NET
 
 my @tables = $dbh->tables;
 map { $_ =~ s/\`//g } @tables;
+map { $_ =~ s/$DB_DATABASE\.//g } @tables;
 
 my $sth2 = $dbh->prepare(" SELECT columnorderbrief,linksto,linksfrom 
                            FROM Meta 
