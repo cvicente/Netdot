@@ -159,8 +159,16 @@ LOOP:  foreach my $int ( keys %{ $dev->{interface} } ){
 	$argv{user}         = $webuser        ||  0;
 	# These two can't be 'defaulted' because
 	# we are using checkboxes for user input
-        $argv{addsubnets}      = $addsubnets;
-        $argv{subnets_inherit} = $subnets_inherit;
+	if ( defined $addsubnets ){
+	    $argv{addsubnets} = $addsubnets;
+	}elsif ( !defined $argv{addsubnets} ) {
+	    $argv{addsubnets} = $ui->{config}->{ADDSUBNETS};
+	}
+	if ( defined $subnets_inherit ){
+	    $argv{subnets_inherit} = $subnets_inherit;
+	}elsif( !defined $argv{subnets_inherit} ){
+	    $argv{subnets_inherit} = $ui->{config}->{SUBNET_INHERIT_DEV_INFO};
+	}
 
 	print "<pre>",  Dumper(%argv), "</pre>" if $DEBUG;
 
@@ -170,8 +178,8 @@ LOOP:  foreach my $int ( keys %{ $dev->{interface} } ){
             $m->comp('error.mhtml', error => $dm->error);
         }
         unless ($o->name && ($name = $o->name->name)){
-            $name = "device"
-            }
+            $name = "device";
+	}
     }
 
 }else{
