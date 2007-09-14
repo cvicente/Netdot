@@ -1176,9 +1176,9 @@ sub build_tree {
     }
     
     while (my ($id,$address,$prefix,$parent) = $sth->fetchrow_array){
-	my $p = $trie;      # pointer that starts at the root
-	my $bit = $size;    # bit position.  Start at the most significant bit
-	my $last_p;         # Last possible parent found
+	my $p      = $trie;  # pointer that starts at the root
+	my $bit    = $size;  # bit position.  Start at the most significant bit
+	my $last_p = 0;      # Last possible parent found
 	while ($bit > $size - $prefix){
 	    $bit--;
 	    $last_p = $p->{id} if defined $p->{id};
