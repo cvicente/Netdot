@@ -78,10 +78,11 @@ sub find_or_create {
 	}else{
 	    $logger->info(sprintf("Entity with Enterprise OID %s not found. Creating.", 
 				  $oid));
-	    my $etype   = EntityType->search(name=>"Manufacturer")->first || 0;
 	    my $entname = $manufacturer || $oid;
-	    $ent = Entity->insert({ name => $entname, oid => $oid, type => $etype });
+	    $ent = Entity->insert({ name => $entname, oid => $oid});
 	    $logger->info("Inserted new Entity: $entname.");
+	    my $etype   = EntityType->search(name=>"Manufacturer")->first || 0;
+	    my $erole = EntityRole->insert({entity=>$ent, type=>$etype});
 	}
 	
 	my $ptype;
