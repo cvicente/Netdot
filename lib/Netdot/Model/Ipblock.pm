@@ -390,13 +390,13 @@ sub get_covering_block {
 				   $ip->addr, $ip->masklen));
     }
     
-    # Search for this IP in the tree.  We'll get the node where this block would go.
+    # Search for this IP in the tree.  We should get the parent node
     my $n = $class->_tree_find(version => $ip->version, 
 			       address => $ip->numeric, 
 			       prefix  => $ip->masklen);
-    my $parent = $n->parent;
-    if ( $parent && $parent->data ){
-	return Ipblock->retrieve($parent->data);
+
+    if ( $n && $n->data ){
+	return Ipblock->retrieve($n->data);
     }else{
 	$class->throw_user(sprintf("Block %s/%s: no covering block found!", 
 			  $ip->addr, $ip->masklen));
@@ -1520,8 +1520,7 @@ sub _build_tree_mem {
 				       version => $version,
 				       prefix  => $prefix);
 	
-	$parents{$id} = $node->parent->data 
-	    if ( defined $node->parent );
+	$parents{$id} = $node->data if ( defined $node && $node->data );
     }
     
     return \%parents;
@@ -1529,13 +1528,16 @@ sub _build_tree_mem {
 
 
 ##################################################################
-# 
+#   Be smart about updating the hierarchy.  Individual addresses
+#   are inserted in the current tree to find their parent.
+#   Non-address blocks trigger a full tree rebuild
+#
 #   Arguments:
 #     None
 #   Returns:
 #     True
 #   Examples:
-#    
+#     $newblock->_update_tree();
 #
 sub _update_tree{
     my ($self) = @_;
