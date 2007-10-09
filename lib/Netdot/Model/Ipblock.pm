@@ -20,12 +20,7 @@ Netdot::Ipblock - Manipulate IP Address Space
     
 =cut
 
-
-my $IPV4 = Netdot->get_ipv4_regex();
-my $IPV6 = Netdot->get_ipv6_regex();
-
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
-my $dns    = Netdot::Util::DNS->new();
 
 BEGIN{
     # Load plugin at compile time
@@ -33,9 +28,17 @@ BEGIN{
     eval  "require $ip_name_plugin_class";
     
     sub load_ip_name_plugin{
+	$logger->debug("Loading IP_NAME_PLUGIN: $ip_name_plugin_class");
 	return $ip_name_plugin_class->new();
     }
 }
+
+my $IPV4 = Netdot->get_ipv4_regex();
+my $IPV6 = Netdot->get_ipv6_regex();
+
+my $dns = Netdot::Util::DNS->new();
+
+my $ip_name_plugin = __PACKAGE__->load_ip_name_plugin();
 
 # Save hierarchy at startup
 # The binary tree will reside in memory to speed things up 
@@ -1006,8 +1009,7 @@ sub update_a_records {
     # Determine what DNS name this IP will have.
     # We delegate this logic to an external plugin to
     # give admin more flexibility
-    my $plugin = $self->load_ip_name_plugin();
-    my $name   = $plugin->get_name( $self );
+    my $name = $ip_name_plugin->get_name( $self );
 
     my @arecords = $self->arecords;
 
