@@ -1,16 +1,16 @@
 <%doc>
 A wrapper for sortresults.html used when paging results.
-Argument is a session id (required).  Session must contain all parameters needed by sortresults.
 
 </%doc>
 
 <%args>
-
-$sid
-
+$sid             # Session id
+$offset          # Start position
+$per_page => 50  # Items per page (50 is default)
 </%args>
 
-
-<& sortresults.mhtml, sid => $sid &>
-
-
+<div class="container">
+    <div class="containerbody">
+    <& sortresults.mhtml, sid => $sid, offset => $offset, per_page => $per_page &>
+    </div>
+</div>

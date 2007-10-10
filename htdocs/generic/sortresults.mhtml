@@ -25,10 +25,10 @@ $object     => undef
 $sort       => undef
 $page       => undef
 $withedit   => 0
-$per_page   => 50;
-$offset     => 0;
-$total      => undef;
-$sid        => undef;
+$per_page   => 50
+$offset     => 0
+$total      => undef
+$sid        => undef
 
 </%args>
 
@@ -126,6 +126,19 @@ if ( defined($object) && scalar @$object ){
 	    $orderbrief{$lblf} = 1;
 	}
     }
+
+    if ( $total > $per_page ){
+	# Make a session.  We want to be able to go back
+	$session = $ui->mk_session();
+	
+	$session->{objindex}   = \%objindex;
+	$session->{table}      = $table;
+	$session->{orderbrief} = \@orderbrief;
+	$session->{page}       = $page;
+	$session->{sort}       = $sort;
+	$session->{withedit}   = $withedit;
+	$session->{total}      = $total;
+    }
     
 #########################################################
 #
@@ -134,18 +147,15 @@ if ( defined($object) && scalar @$object ){
 #########################################################
 }elsif( $sid ) {
     $session = $ui->get_session($sid);
+    print "<pre> Session $sid contains:", Dumper($session), "</pre>" if $DEBUG;
 
     %objindex   = %{ $session->{objindex} };
     $table      = $session->{table};
-    %orderbrief = %{ $session->{orderbrief} };
+    @orderbrief = @{ $session->{orderbrief} };
     $page       = $session->{page};
     $sort       = $session->{sort};
     $withedit   = $session->{withedit};
-    $offset     = $session->{offset};    
     $total      = $session->{total};    
-
-    print "<pre>", Dumper($session), "</pre>" if $DEBUG;
-
 }
 
 #########################################################
@@ -165,30 +175,20 @@ $page ||= 'view.html';
 # Calculate last item to show
 $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
-if ( $total > $per_page ){
-    # Make a session.  We want to be able to go back
-    undef ($session);
-    $session = $ui->mk_session();
-    
-    $session->{objindex}   = \%objindex;
-    $session->{table}      = $table;
-    $session->{orderbrief} = \%orderbrief;
-    $session->{page}       = $page;
-    $session->{sort}       = $sort;
-    $session->{withedit}   = $withedit;
-    $session->{offset}     = $last_item;
-    $session->{total}      = $total;
-}
-
 </%init>
 
 %
 % if( %objindex ) {
 
 <!-- begin sortresults -->
+
+
 % #####################################################################
 % # Begin the table for this instance of sortresults
 % #####################################################################
+
+% $numcols = scalar @orderbrief;
+% $numcols++ if $withedit;
 
 %     if ( $withedit ) {
          <form name="form_<% $table %>" method="POST" >
@@ -201,7 +201,6 @@ if ( $total > $per_page ){
 %     # Header row
       <tr class="rowtitle2">
 %     foreach my $c ( @orderbrief ) {
-%          $numcols++;
 %          my $tag = $table->meta_data->get_column($c)->tag;
 %          if( defined($tag) ) {
                <th><% $tag %></th>
@@ -211,7 +210,6 @@ if ( $total > $per_page ){
 %     }
 %     if ( $withedit ){
           <th align="center">Select</th>
-%         $numcols++;
 %     }
       </tr>
 %     ####################################################################
@@ -309,10 +307,13 @@ if ( $total > $per_page ){
   <div class="containerheadright">
 % if ( $total > $per_page ){
       Results: [<% $offset+1 %>-<% $last_item %>] of <% $total %> 
-%     if ( $sid ){
-          <a href="#" onClick="history.go(-1);">[<<] </a>
+%     my $prev_offset = $offset - $per_page; 
+%     if ( $sid && $prev_offset >= 0 ){
+          <a href="../generic/list.html?sid=<% $sid %>&offset=<% $prev_offset %>">[<<] </a>
 %     }
-      <a href="../generic/list.html?sid=<% $session->{_session_id} %>">[>>] </a>
+%     unless ( $last_item == $total ){
+          <a href="../generic/list.html?sid=<% $session->{_session_id} %>&offset=<% $last_item %>">[>>] </a>
+%     }
 % }
 % if ( $withedit ){
       <p>
@@ -322,6 +323,15 @@ if ( $total > $per_page ){
       </p>
       </form>
 % }
+
+% if ( $session ){
+    <form name="form_sortresults" method="POST" action="list.html">
+      <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
+      <input type="hidden" name="offset" value="<% $offset %>">
+      <input type="submit" name="Show" value="Show"> <input type="text" size="3" name="per_page" value="<% $per_page %>"> items per page
+    </form>
+% }
+
   </div>
 
 
