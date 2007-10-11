@@ -126,11 +126,11 @@ sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
     $class->throw_fatal('RR::insert: Missing required parameters: name')
-	unless ( $argv->{name} );
+	unless ( defined $argv->{name} );
 
     # Set default zone if needed
     $argv->{zone} = $class->config->get('DEFAULT_DNSDOMAIN') 
-	unless ( $argv->{zone} );
+	unless ( defined $argv->{zone} );
     
     # Insert zone if necessary;
     my $zone;
