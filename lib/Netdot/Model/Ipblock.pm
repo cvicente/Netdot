@@ -40,15 +40,10 @@ my $dns = Netdot::Util::DNS->new();
 
 my $ip_name_plugin = __PACKAGE__->load_ip_name_plugin();
 
-# Save hierarchy at startup
 # The binary tree will reside in memory to speed things up 
 # when inserting/deleting individual objects
 my $tree4;
 my $tree6;
-
-__PACKAGE__->build_tree('4');
-__PACKAGE__->build_tree('6');
-
 
 =head1 CLASS METHODS
 =cut
@@ -1468,6 +1463,9 @@ sub _build_tree_mem {
     my $tr = Net::IPTrie->new(version=>$version);
     $class->throw_fatal("Error initializing IP Trie") unless defined $tr;
 
+    $logger->debug( sprintf("Ipblock::_build_tree_mem: Building hierarchy for IP space version %d", 
+			    $version) );
+
     # keep tree handy in global vars for faster operations
     # on individual nodes
     $tree4 = $tr if $version == 4;
@@ -1622,9 +1620,19 @@ sub _tree_find{
     $args{prefix} = $argv{prefix} if defined $argv{prefix};
 
     if ( $argv{version} == 4 ){
-	$n = $tree4->find(%args);
+	if ( defined $tree4 ){
+	    $n = $tree4->find(%args);
+	}else{
+	    $class->_build_tree_mem(4);
+	    $n = $tree4->find(%args);
+	}
     }else{
-	$n = $tree6->find(%args);
+	if ( defined $tree6 ){
+	    $n = $tree6->find(%args);
+	}else{
+	    $class->_build_tree_mem(6);
+	    $n = $tree6->find(%args);
+	}
     }
     return $n;
 }
