@@ -423,46 +423,56 @@ sub update_ip {
 sub speed_pretty {
     my ($self) = @_;
     $self->isa_object_method('speed_pretty');
+    my $speed = $self->speed;
 
-    my %SPEED_MAP = ('56000'       => '56 kbps',
-                     '64000'       => '64 kbps',
-                     '1500000'     => '1.5 Mbps',
-                     '1536000'     => 'T1',
+    my %SPEED_MAP = ('1536000'     => 'T1',
                      '1544000'     => 'T1',
-                     '2000000'     => '2.0 Mbps',
-                     '2048000'     => '2.048 Mbps',
                      '3072000'     => 'Dual T1',
                      '3088000'     => 'Dual T1',
-                     '4000000'     => '4.0 Mbps',
-                     '10000000'    => '10 Mbps',
-                     '11000000'    => '11 Mbps',
-                     '20000000'    => '20 Mbps',
-                     '16000000'    => '16 Mbps',
-                     '16777216'    => '16 Mbps',
                      '44210000'    => 'T3',
                      '44736000'    => 'T3',
-                     '45000000'    => '45 Mbps',
                      '45045000'    => 'DS3',
                      '46359642'    => 'DS3',
-                     '54000000'    => '54 Mbps',
-                     '64000000'    => '64 Mbps',
-                     '100000000'   => '100 Mbps',
                      '149760000'   => 'ATM on OC-3',
                      '155000000'   => 'OC-3',
                      '155519000'   => 'OC-3',
                      '155520000'   => 'OC-3',
-                     '400000000'   => '400 Mbps',
                      '599040000'   => 'ATM on OC-12',
                      '622000000'   => 'OC-12',
                      '622080000'   => 'OC-12',
-                     '1000000000'  => '1 Gbps',
-		     '3000000000'  => '3 Gbps',
-                     '10000000000' => '10 Gbps',
                      );
-    if ( exists $SPEED_MAP{$self->speed} ){
-        return $SPEED_MAP{$self->speed};
+
+    if ( exists $SPEED_MAP{$speed} ){
+	return $SPEED_MAP{$speed};
     }else{
-        return $self->speed;
+	# ifHighSpeed (already translated to bps)
+	my $fmt = "%d bps";
+	if ( $speed > 9999999999999 ){
+	    $fmt = "%d Tbps";
+	    $speed /= 1000000000000;
+	} elsif ( $speed > 999999999999 ){
+	    $fmt = "%.1f Tbps";
+	    $speed /= 1000000000000.0;
+	} elsif ( $speed > 9999999999 ){
+	    $fmt = "%d Gbps";
+	    $speed /= 1000000000;
+	} elsif ( $speed > 999999999 ){
+	    $fmt = "%.1f Gbps";
+	    $speed /= 1000000000.0;
+	} elsif ( $speed > 9999999 ){
+	    $fmt = "%d Mbps";
+	    $speed /= 1000000;
+	} elsif ( $speed > 999999 ){
+	    $fmt = "%d Mbps";
+	    $speed /= 1000000.0;
+	} elsif ( $speed > 99999 ){
+	    $fmt = "%d Kbps";
+	    $speed /= 100000;
+	} elsif ( $speed > 9999 ){
+	    $fmt = "%d Kbps";
+	    $speed /= 100000.0;
+	}
+	return sprintf($fmt, $speed);
     }
 }
 

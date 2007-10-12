@@ -2799,16 +2799,17 @@ sub _get_snmp_session {
 
     # We want to do our own 'munging' for certain things
     my $munge = $sinfo->munge();
-    delete $munge->{'i_speed'}; # We store these as integers in the db.  Munge at display
-    $munge->{'i_mac'}             = sub{ return $self->_oct2hex(@_) };
-    $munge->{'fw_mac'}            = sub{ return $self->_oct2hex(@_) };
-    $munge->{'mac'}               = sub{ return $self->_oct2hex(@_) };
-    $munge->{'at_paddr'}          = sub{ return $self->_oct2hex(@_) };
+    delete $munge->{'i_speed'};      # We store these as integers in the db.  Munge at display
+    $munge->{'i_speed_high'}                   = sub{ return $self->_munge_speed_high(@_) };
+    $munge->{'i_mac'}                          = sub{ return $self->_oct2hex(@_) };
+    $munge->{'fw_mac'}                         = sub{ return $self->_oct2hex(@_) };
+    $munge->{'mac'}                            = sub{ return $self->_oct2hex(@_) };
+    $munge->{'at_paddr'}                       = sub{ return $self->_oct2hex(@_) };
     $munge->{'rptrAddrTrackNewLastSrcAddress'} = sub{ return $self->_oct2hex(@_) };
-    $munge->{'airespace_ap_mac'}  = sub{ return $self->_oct2hex(@_) };
-    $munge->{'airespace_bl_mac'}  = sub{ return $self->_oct2hex(@_) };
-    $munge->{'airespace_if_mac'}  = sub{ return $self->_oct2hex(@_) };
-    $munge->{'airespace_sta_mac'} = sub{ return $self->_oct2hex(@_) };
+    $munge->{'airespace_ap_mac'}               = sub{ return $self->_oct2hex(@_) };
+    $munge->{'airespace_bl_mac'}               = sub{ return $self->_oct2hex(@_) };
+    $munge->{'airespace_if_mac'}               = sub{ return $self->_oct2hex(@_) };
+    $munge->{'airespace_sta_mac'}              = sub{ return $self->_oct2hex(@_) };
 
 
     if ( $class ){
@@ -3714,6 +3715,16 @@ sub _arp_update_mult {
 sub _oct2hex {
     my ($self, $v) = @_;
     return uc( sprintf('%s', unpack('H*', $v)) );
+}
+
+#####################################################################
+# ifHighSpeed is an estimate of the interface's current bandwidth in units
+# of 1,000,000 bits per second.  
+# We store interface speed as bps (integer format)
+#
+sub _munge_speed_high {
+    my ($self, $v) = @_;
+    return $v * 1000000;
 }
 
 ############################################################################
