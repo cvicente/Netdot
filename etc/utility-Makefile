@@ -3,9 +3,9 @@
 
 # We will include this as
 
-#     include $(ROOT)/etc/utility-Makefile
+#     include $(SRCROOT)/etc/utility-Makefile
 
-# where ROOT is defined as the cwd where the top level make file is
+# where SRCROOT is defined as the cwd where the top level make file is
 # called.
 
 
@@ -56,4 +56,12 @@ for dir in $(NDIR); do \
     fi ; \
 done
 @echo "Done."
+endef
+
+# For some directories we want to make sure that old files are not
+# left hanging around
+define wipedir
+@echo "Wiping out directory before installing"
+rm -fr $(PREFIX)/$(DIR)
+@echo "done"
 endef

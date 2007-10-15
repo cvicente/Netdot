@@ -1,4 +1,4 @@
-include $(ROOT)/etc/utility-Makefile
+include $(SRCROOT)/etc/utility-Makefile
 
 #
 # makefile for htdocs
@@ -7,18 +7,17 @@ NDIR =  cable_plant css generic help img img/graphs java_script management opera
 
 FILES := `find -name "*" | egrep ".*(handler|\.?html|\.css|\.png|\.js)$$" | sed -e 's/\.\///'`
 
-all: dir
+all: wipedir dir
 	$(substitute)
+
+# Wipe out dir before installing
+wipedir:
+	$(wipedir)
 
 # This section creates the htdocs/ subdirs
 dir:
-	for dir in $(NDIR); do \
-	    if test -d $(PREFIX)/$(DIR)/$$dir; then \
-	       echo "Skipping dir $(PREFIX)/$(DIR)/$$dir; already exists"; \
-	    else \
-	       mkdir -m $(DMOD) -p $(PREFIX)/$(DIR)/$$dir ; \
-	    fi ; \
-	done
+	$(mkdirs)
+
 	@echo "Hacking together mason permissions fix..."
 	touch $(PREFIX)/$(DIR)/masondata/obj/.__obj_create_marker
 	chown -R $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/$(DIR)/masondata

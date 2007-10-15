@@ -2,7 +2,7 @@
 # Specify where the toplevel make file was called so that that
 # recursively called makefiles have a point of reference for relative
 # paths.  Is there a built in way to do this?
-export ROOT := $(shell pwd)
+export SRCROOT := $(shell pwd)
 
 # Netdot Makefile
 #
@@ -21,7 +21,6 @@ usage:
 	@echo 
 	@echo "   PERL          = $(PERL) "
 	@echo "   PREFIX        = $(PREFIX) "
-	@echo "   NVPREFIX      = $(NVPREFIX) "
 	@echo "   APACHEUSER    = $(APACHEUSER) "
 	@echo "   APACHEGROUP   = $(APACHEGROUP) "
 	@echo 
@@ -115,7 +114,7 @@ doc:
 	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
 
 lib:
-	cd $@ ; make all PREFIX=$(PREFIX) NVPREFIX=$(NVPREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
+	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
 
 _mibs:
 	cd mibs ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=mibs

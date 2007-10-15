@@ -1,4 +1,4 @@
-include $(ROOT)/etc/utility-Makefile
+include $(SRCROOT)/etc/utility-Makefile
 
 #
 # makefile for export/
