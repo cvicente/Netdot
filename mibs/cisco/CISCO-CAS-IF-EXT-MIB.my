@@ -1,0 +1,579 @@
+-- *********************************************************************
+-- CISCO-CAS-IF-EXT-MIB.my
+--
+-- This MIB defines the attributes of a Voice Interface of TDM
+-- side in a media gateway.
+--
+-- May 2002, Margaret Hsieh
+--
+-- Copyright (c) 2002 by cisco Systems, Inc.
+-- All rights reserved.
+-- *********************************************************************
+
+CISCO-CAS-IF-EXT-MIB  DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Unsigned32, Integer32
+        FROM SNMPv2-SMI
+    TruthValue 
+        FROM SNMPv2-TC
+    MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF
+    ConfigIterator, BulkConfigResult
+        FROM CISCO-TC
+    ccasVoiceCfgEntry, ccasGrpCfgEntry
+        FROM CISCO-CAS-IF-MIB
+    OwnerString
+        FROM RMON-MIB
+    ciscoMgmt
+        FROM CISCO-SMI
+    CvcCoderTypeRate, CvcFaxTransmitRate 
+        FROM CISCO-VOICE-COMMON-DIAL-CONTROL-MIB
+    CiscoCodecPacketPeriod
+        FROM CISCO-VOICE-AALX-PROFILE-MIB
+    CVoiceTonePlanIndexOrZero,
+    CCallControlProfileIndexOrZero
+        FROM CISCO-MEDIA-GATEWAY-MIB
+    CH248Packages
+        FROM CISCO-MEGACO-EXT-MIB;
+
+ciscoCasIfExtMIB  MODULE-IDENTITY
+    LAST-UPDATED "200304170000Z"
+    ORGANIZATION "Cisco Systems, Inc."
+    CONTACT-INFO
+        "        Cisco Systems
+                 Customer Service
+        Postal: 170 W Tasman Drive
+                San Jose, CA 95134
+                USA
+           Tel: +1 800 553-NETS
+        E-mail: cs-voice-gateway@cisco.com"
+    DESCRIPTION
+        "The MIB module is an extension of CISCO-CAS-IF-MIB.
+         It defines the attributes of a voice interface."
+
+    REVISION "200304170000Z"
+    DESCRIPTION
+        "Initial version of this MIB module"
+    ::= { ciscoMgmt 314 }
+
+ciscoCasIfExtMIBNotifications
+    OBJECT IDENTIFIER ::= { ciscoCasIfExtMIB 0 }
+
+ciscoCasIfExtMIBObjects
+    OBJECT IDENTIFIER ::= { ciscoCasIfExtMIB 1 }
+
+ccasIfExtConfig
+    OBJECT IDENTIFIER ::= { ciscoCasIfExtMIBObjects 1 }
+
+-- *********************************************************************
+-- Cisco Voice Interface Extended Configuration Table.
+--
+-- This table contains objects that pertain to the voice interface
+-- configuration in TDM side of a media gateway.
+--
+-- *********************************************************************
+
+ccasIfExtVoiceCfgTable OBJECT-TYPE
+    SYNTAX        SEQUENCE OF CcasIfExtVoiceCfgEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+        "The voice interface extended table defines the
+         parameters related to the configuration of voice interfaces
+         (DS0 group of DS1).
+
+         This table extends the ccasVoiceCfgTable.
+
+         Each table entry describes an instance of a voice interface
+         configuration (DS0 group of DS1) in a media gateway."
+    ::= { ccasIfExtConfig 1 }
+
+ccasIfExtVoiceCfgEntry OBJECT-TYPE
+    SYNTAX        CcasIfExtVoiceCfgEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+        "Each entry represents a voice interface (DS0 group of
+         DS1) in a media gateway."
+    AUGMENTS  { ccasVoiceCfgEntry }
+    ::= { ccasIfExtVoiceCfgTable 1 }
+
+CcasIfExtVoiceCfgEntry::= SEQUENCE {
+    ccasIfExtVoiceCfgLifNumber          Unsigned32,
+    ccasIfExtVoiceCfgCcntrlProfile      CCallControlProfileIndexOrZero,
+    ccasIfExtVoiceCfgVadEnabled         TruthValue,
+    ccasIfExtVoiceCfgContinuityTone1    Unsigned32,
+    ccasIfExtVoiceCfgContinuityTone2    Unsigned32,
+    ccasIfExtVoiceCfgModemPassThru      INTEGER,
+    ccasIfExtVoiceCfgUpspeedCodec       CvcCoderTypeRate,
+    ccasIfExtVoiceCfgT38MaxFaxTxRate    CvcFaxTransmitRate,
+    ccasIfExtVoiceCfgT38HsPktPeriod     CiscoCodecPacketPeriod,
+    ccasIfExtVoiceCfgT38HsRedundancy    Unsigned32,
+    ccasIfExtVoiceCfgRepetition         ConfigIterator,
+    ccasIfExtVoiceCfgBulkCfgOwner       OwnerString,
+    ccasIfExtVoiceCfgBulkCfgResult      BulkConfigResult,
+    ccasIfExtVoiceCfgVadTimer           Integer32,
+    ccasIfExtVoiceCfgICSEnable          TruthValue,
+    ccasIfExtVoiceCfgICSIntTimer        Integer32,
+    ccasIfExtVoiceCfgTonePlan           CVoiceTonePlanIndexOrZero,
+    ccasIfExtVoiceCfgGwyLinkId          Integer32,
+    ccasIfExtVoiceCfgH248PkgIds         CH248Packages
+}
+
+
+ccasIfExtVoiceCfgLifNumber  OBJECT-TYPE
+    SYNTAX        Unsigned32  (0..255)
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "This object specifies the LIF (Logical InterFace) number
+         associated with this voice interface.
+
+         If this object is set to 0, this interface does not have 
+         an associated LIF."
+    DEFVAL { 0 }
+    ::= { ccasIfExtVoiceCfgEntry 1 }
+
+ccasIfExtVoiceCfgCcntrlProfile OBJECT-TYPE
+    SYNTAX        CCallControlProfileIndexOrZero
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "This object specifies the index of call control profile that
+         is used by this DS0 group.
+         If the value of ccasGrpCfgServiceType is 'mgcp(6)', 
+         this is the index of cxeCallCtrlProfileTable.
+         If the value of ccasGrpCfgServiceType is 'h248(9)',
+         this is the index of cmedxPropertyProfileTable.  
+
+         The value of 0 means the DS0 group is not associated any
+         Profile. The DS0 group is using the default Call
+         Control parameters defined in the media gateway."
+    DEFVAL { 0 }
+    ::= { ccasIfExtVoiceCfgEntry 2 }
+
+ccasIfExtVoiceCfgVadEnabled  OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "The object specifies VAD (Voice Activity Detection)
+         is enabled for the compression DSPs of this interface.
+
+         The value of this object is 'false' if the voice 
+         interface associated DS0 group uses null signaling.
+         (The value of ccasGrpCfgType in ccasGrpCfgTable for the
+         DS0 group is set to nullSignaling(16))."
+    ::= { ccasIfExtVoiceCfgEntry 3 }
+
+ccasIfExtVoiceCfgContinuityTone1 OBJECT-TYPE
+    SYNTAX        Unsigned32 (1..4000)
+    UNITS         "Hz"
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "The object specifies the first frequency tone to be
+         sent between the terminating and the originating gateways
+         in the continuity test."
+    DEFVAL { 2010 }
+    ::= { ccasIfExtVoiceCfgEntry 4 }
+
+ccasIfExtVoiceCfgContinuityTone2 OBJECT-TYPE
+    SYNTAX        Unsigned32 (1..4000)
+    UNITS         "Hz"
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "The object specifies the second frequency tone to be
+         sent between the terminating and the originating gateways
+         in the continuity test."
+    DEFVAL { 1780 }
+    ::= { ccasIfExtVoiceCfgEntry 5 }
+
+ccasIfExtVoiceCfgModemPassThru OBJECT-TYPE
+    SYNTAX         INTEGER {
+                       passThruDisabled (1),
+                       passThruCisco    (2),
+                       passThruNse      (3),
+                       passThruNseAal2  (4),
+                       passThruCa       (5),
+                       passThruTypeE    (6),
+                       system           (7),
+                       passThruNseCa    (8)
+                   }
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "This object specifies the modem pass-through mode:
+
+          (1) passThruDisabled: Modem pass-through is disabled
+          (2) passThruCisco:    Cisco Proprietary PV (Protocol 
+                                Violation) modem protocol used in
+                                modem pass-through. 
+          (3) passThruNse:      Name Signaling Events(NSE) used in
+                                modem pass-through. 
+          (4) passThruNseAal2:  Name Signaling Events(NSE) over AAL2
+                                used in modem pass-through.
+          (5) passThruCa:       Gateway modem pass-through is based
+                                on Call Agent(CA) Control.
+                                (This is a special way used by
+                                 SGCP)
+          (6) passThruTypeE:    FRF.11 Payload Type E packet used in
+                                modem pass-through.
+          (7) system:           System level modem pass-through 
+                                configuration is used for the dial-peer.
+          (8) passThruNseCa:    Name Signaling Events(NSE) over IP 
+                                modem pass-through controlled by 
+                                gateway in MGCP 1.0
+         "
+    DEFVAL { passThruNse }
+    ::= { ccasIfExtVoiceCfgEntry 6 }
+
+ccasIfExtVoiceCfgUpspeedCodec OBJECT-TYPE
+    SYNTAX         CvcCoderTypeRate 
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "This object specifies the CODEC type to use for modem upspeed.
+         Upspeed is to change the transmission rate of the voice 
+         interface to a higher rate of CODEC type."
+    ::= { ccasIfExtVoiceCfgEntry 7 }
+
+ccasIfExtVoiceCfgT38MaxFaxTxRate OBJECT-TYPE
+    SYNTAX         CvcFaxTransmitRate 
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "This object specifies the maximum FAX relay transmission 
+         rate."
+    DEFVAL { fax14400 }
+    ::= { ccasIfExtVoiceCfgEntry 8 }
+
+ccasIfExtVoiceCfgT38HsPktPeriod OBJECT-TYPE
+    SYNTAX         CiscoCodecPacketPeriod 
+    UNITS          "microseconds"
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "This object specifies the period of time for primary high 
+         speed (HS) data packet."
+    DEFVAL { pktPeriod30000us }
+    ::= { ccasIfExtVoiceCfgEntry 9 }
+
+ccasIfExtVoiceCfgT38HsRedundancy OBJECT-TYPE
+    SYNTAX         Unsigned32 (0..2)
+    UNITS          "FAX packets"
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "The object specifies the number of redundant FAX packets 
+         for Internet FAX protocol (IFP) packet transmission. 
+         The value of '0' indicates that no redundant Internet 
+         FAX packets will be transmitted during the T.38 FAX 
+         relay connection."
+    REFERENCE
+        "ITU-T T.38 Procedures for real-time Group 3 facsimile
+         communicating over IP networks"
+    DEFVAL { 0 }
+    ::= { ccasIfExtVoiceCfgEntry 10 }
+
+ccasIfExtVoiceCfgRepetition OBJECT-TYPE
+    SYNTAX         ConfigIterator
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "This object is used to repeatedly apply the writable objects
+         of ccasIfExtVoiceCfgTable specified in the same SNMP PDU 
+         starting from the row specifies by the index of the instance
+         for the number of rows specified in this object.
+
+         The order of operation is iterated through the logical
+         order of the DS0 group. Whether the iteration will be
+         applied across the physical boundary or not is depended
+         on the system implementation."
+    DEFVAL { 1 }
+    ::= { ccasIfExtVoiceCfgEntry 11 }
+
+ccasIfExtVoiceCfgBulkCfgOwner OBJECT-TYPE
+    SYNTAX         OwnerString
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+       "This object is used for error checking of the operation
+        specified in ccasIfExtVoiceCfgRepetition.
+
+        The value of this object is set by the SNMP manager
+        with its own identifier at the same time as issuing the bulk
+        operation by setting ccasIfExtVoiceCfgRepetition.
+        Later on, the SNMP manager should check the value of this
+        object, if it is the same with the SNMP manager name,
+        then the value of ccasIfExtVoiceCfgBulkCfgResult indicates
+        the result of the bulk operation initiated by this SNMP 
+        manager."
+    ::= { ccasIfExtVoiceCfgEntry 12 }
+
+ccasIfExtVoiceCfgBulkCfgResult OBJECT-TYPE
+    SYNTAX         BulkConfigResult
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+       "This object is used for error checking of the operation
+        specified in ccasIfExtVoiceCfgRepetition.
+
+        This object indicates the result of the bulk configuration
+        initiated by the SNMP manager specified in the value of
+        ccasIfExtVoiceCfgBulkCfgOwner."
+    ::= { ccasIfExtVoiceCfgEntry 13 }
+
+ccasIfExtVoiceCfgVadTimer     OBJECT-TYPE    
+    SYNTAX         Integer32(250..65535)
+    UNITS          "milliseconds"
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "This object specifies the hangover time for VAD. 
+
+         Once the voice inactivity is detected, gateway will wait 
+         for this duration before activating silence suppression."
+    DEFVAL { 250 }
+    ::= { ccasIfExtVoiceCfgEntry 14 }
+
+ccasIfExtVoiceCfgICSEnable     OBJECT-TYPE      
+     SYNTAX        TruthValue
+     MAX-ACCESS    read-write
+     STATUS        current
+     DESCRIPTION
+        "This object specifies whether the Idle Channel suppression 
+         (ICS) is enabled for an AAL2 connection."
+     DEFVAL { false }
+    ::= { ccasIfExtVoiceCfgEntry 15 }
+
+ccasIfExtVoiceCfgICSIntTimer    OBJECT-TYPE
+     SYNTAX        Integer32 (0..65535)
+     UNITS         "milliseconds"
+     MAX-ACCESS    read-write
+     STATUS        current
+     DESCRIPTION
+        "This object specifies a timeout value for ICS integration
+         timer. This timer is started once channel idle is detected.
+         When the timer is expired, the gateway will stop transmitting
+         bearer data to network. Instead, the CAS keep-alive packets
+         will be sent."
+     DEFVAL { 5000 }
+    ::= { ccasIfExtVoiceCfgEntry 16 }
+
+ccasIfExtVoiceCfgTonePlan OBJECT-TYPE 
+     SYNTAX         CVoiceTonePlanIndexOrZero 
+     MAX-ACCESS     read-write
+     STATUS         current
+     DESCRIPTION
+         "This object specifies which tone plan the DS0 group is
+          using for playing the tones."
+    ::= { ccasIfExtVoiceCfgEntry 17 }
+
+ccasIfExtVoiceCfgGwyLinkId    OBJECT-TYPE      
+     SYNTAX                   Integer32 (0..2147483647)
+     MAX-ACCESS               read-write
+     STATUS                   current
+     DESCRIPTION
+        "This object specifies the H.248 media gateway link
+         that this DS0 group belongs to.  
+         This object is applicable only if the value of
+         ccasGrpCfgServiceType is 'h248(9)'."
+    ::= { ccasIfExtVoiceCfgEntry 18 }
+
+ccasIfExtVoiceCfgH248PkgIds OBJECT-TYPE      
+     SYNTAX                   CH248Packages
+     MAX-ACCESS               read-write
+     STATUS                   current
+     DESCRIPTION
+        "This object specifies the H.248 packages supported in 
+         this DS0 group.  
+         This object is applicable only if the value of
+         ccasGrpCfgServiceType is 'h248(9)'."
+    ::= { ccasIfExtVoiceCfgEntry 19 }
+
+-- *********************************************************************
+-- Cisco CAS/DS0 Group General Configuration Extended Table
+--
+-- This table contains objects that support bulk provisioning
+--
+-- *********************************************************************
+ccasIfExtDs0GrpCfgTable OBJECT-TYPE
+    SYNTAX        SEQUENCE OF CcasIfExtDs0GrpCfgEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+        "The voice interface extended table defines the
+         parameters related to the configuration of voice interfaces
+         (DS0 group of DS1).
+
+         This table extends the ccasVoiceCfgTable.
+
+         Each table entry describes an instance of a voice interface
+         configuration (DS0 group of DS1) in a media gateway."
+    ::= { ccasIfExtConfig 3 }
+
+ccasIfExtDs0GrpCfgEntry OBJECT-TYPE
+    SYNTAX        CcasIfExtDs0GrpCfgEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+        "Each entry represents a DS0 group interface."
+    AUGMENTS  { ccasGrpCfgEntry }
+    ::= { ccasIfExtDs0GrpCfgTable 1 }
+
+CcasIfExtDs0GrpCfgEntry::= SEQUENCE {
+    ccasIfExtDs0GrpRepetition     ConfigIterator,
+    ccasIfExtDs0GrpRepeatOwner    OwnerString,
+    ccasIfExtDs0GrpRepeatResult   BulkConfigResult
+}
+
+ccasIfExtDs0GrpRepetition OBJECT-TYPE
+    SYNTAX         ConfigIterator
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "This object is used to repeatedly apply the writable objects
+         of ccasIfExtDs0GrpCfgTable specified in the same SNMP PDU
+         starting from the row specifies by the index of the instance
+         for the number of rows specified in this object.
+
+         The repetition operation works differently for different
+         DS0 channel bitmap configuration. When the DS0 channel
+         bitmap is configured to contain a single DS0 channel,
+         the order of operation is iterated through the value of
+         DS0 group and the logical order of DS0 channel; When the DS0
+         channel bitmap is configured to contain more than one DS0
+         channels, the order of operation is iterated through logical
+         order of DS1 channel, and all the iteration operations use
+         the same DS0 channel bitmap configuration.
+
+         The repetition iteration will stop once the value of iterated
+         value reaches its maximum limit. In the case of a single DS0
+         channel configuration, the repetition will stop when either
+         the value of the DS0 group or the DS0 channel has reached its
+         maximum. For multiple DS0 channel configuration, the repetition
+         will stop once the value of DS1 reaches its maximum.
+        "
+    DEFVAL { 1 }
+    ::= { ccasIfExtDs0GrpCfgEntry 1 }
+
+ccasIfExtDs0GrpRepeatOwner OBJECT-TYPE
+    SYNTAX         OwnerString
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+       "This object is used for error checking of the operation
+        specified in ccasIfExtDs0GrpRepetition.
+
+        The value of this object is set by the SNMP manager
+        with its own identifier at the same time as issuing the bulk
+        operation by setting ccasIfExtDs0GrpRepetition.
+        Later on, the SNMP manager should check the value of this
+        object, if it is the same as the SNMP manager name,
+        then the value of ccasIfExtDs0GrpRepeatResult indicates
+        the result of the bulk operation initiated by this SNMP
+        manager."
+    ::= { ccasIfExtDs0GrpCfgEntry 2 }
+
+ccasIfExtDs0GrpRepeatResult OBJECT-TYPE
+    SYNTAX         BulkConfigResult
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+       "This object is used for error checking of the operation
+        specified in ccasIfExtDs0GrpRepetition.
+
+        This object indicates the result of the repetition
+        initiated by the SNMP manager specified in the value of
+        ccasIfExtDs0GrpRepeatOwner.
+       "
+    ::= { ccasIfExtDs0GrpCfgEntry 3 }
+
+
+-- *********************************************************************
+-- Conformance
+-- *********************************************************************
+
+ciscoCasIfExtMIBConformance
+     OBJECT IDENTIFIER ::= { ciscoCasIfExtMIB 2 }
+
+ccasIfExtMIBCompliances
+     OBJECT IDENTIFIER ::= { ciscoCasIfExtMIBConformance 1 }
+
+ccasIfExtMIBGroups
+     OBJECT IDENTIFIER ::= { ciscoCasIfExtMIBConformance 2 }
+
+
+-- *********************************************************************
+-- Conformance and compliance statements
+-- *********************************************************************
+
+ccasIfExtMIBCompliance  MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "The compliance statement for the SNMP entities which implement
+         ciscoCasIfExtMIB."
+    MODULE  -- this module
+    MANDATORY-GROUPS {
+        ccasIfExtVoiceCfgGroup
+    }
+
+    GROUP ccasIfExtBulkGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for gateways
+         that support bulk configuration of the CAS DS0 group
+         and the service shutdown of multiple T1/E1 voice interfaces."
+
+    ::= { ccasIfExtMIBCompliances 1 }
+
+-- *********************************************************************
+-- units of conformance
+-- *********************************************************************
+
+ccasIfExtVoiceCfgGroup  OBJECT-GROUP
+    OBJECTS {
+        ccasIfExtVoiceCfgLifNumber,
+        ccasIfExtVoiceCfgCcntrlProfile,
+        ccasIfExtVoiceCfgVadEnabled,
+        ccasIfExtVoiceCfgContinuityTone1,
+        ccasIfExtVoiceCfgContinuityTone2,
+        ccasIfExtVoiceCfgModemPassThru,
+        ccasIfExtVoiceCfgUpspeedCodec,
+        ccasIfExtVoiceCfgT38MaxFaxTxRate,
+        ccasIfExtVoiceCfgT38HsPktPeriod,
+        ccasIfExtVoiceCfgT38HsRedundancy,
+        ccasIfExtVoiceCfgVadTimer,
+        ccasIfExtVoiceCfgICSEnable,
+        ccasIfExtVoiceCfgICSIntTimer,
+        ccasIfExtVoiceCfgTonePlan,
+        ccasIfExtVoiceCfgGwyLinkId,
+        ccasIfExtVoiceCfgH248PkgIds
+    }
+    STATUS    current
+    DESCRIPTION
+        "This group contains objects that apply to the DS0 group of
+         DS1 configuration in media gateways."
+    ::= { ccasIfExtMIBGroups 1 }
+
+ccasIfExtBulkGroup  OBJECT-GROUP
+    OBJECTS {
+              ccasIfExtVoiceCfgRepetition,
+              ccasIfExtVoiceCfgBulkCfgOwner,
+              ccasIfExtVoiceCfgBulkCfgResult,
+              ccasIfExtDs0GrpRepetition,
+              ccasIfExtDs0GrpRepeatOwner,
+              ccasIfExtDs0GrpRepeatResult
+            }
+
+    STATUS    current
+    DESCRIPTION
+        "This group contains objects that apply to the bulk 
+         configuration for the DS0 group associated voice specific
+         parameters in media gateway."
+    ::= { ccasIfExtMIBGroups 2 }
+
+END
+

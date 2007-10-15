@@ -2730,6 +2730,10 @@ sub _get_snmp_session {
     
     $sclass ||= 'SNMP::Info';
     
+    my @mibdirs;
+    foreach my $md ( @{ $self->config->get('SNMP_MIB_DIRS') } ){
+	push @mibdirs, $self->config->get('NETDOT_PATH')."/".$md;
+    }
     # Set defaults
     my %sinfoargs = ( DestHost      => $argv{host},
 		      Version       => $argv{version} || $self->config->get('DEFAULT_SNMPVERSION'),
@@ -2739,6 +2743,7 @@ sub _get_snmp_session {
 		      Debug         => 0,
 		      BulkWalk      => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
 		      BulkRepeaters => 20,
+		      MibDirs       => \@mibdirs,
 		      );
     
     my ($sinfo, $layers);

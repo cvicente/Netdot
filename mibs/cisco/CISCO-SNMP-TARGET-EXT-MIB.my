@@ -1,0 +1,225 @@
+-- *****************************************************************
+-- CISCO-SNMP-TARGET-EXT-MIB.my
+--
+-- Cisco Extension to SNMP-TARGET-MIB(RFC 2273)
+--
+--  April 2004, Radhika Dharwadkar
+--
+-- Copyright (c) 2004 by cisco Systems, Inc.
+-- All rights reserved.
+--
+-- *****************************************************************
+--
+
+CISCO-SNMP-TARGET-EXT-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE
+                FROM SNMPv2-SMI
+        MODULE-COMPLIANCE, OBJECT-GROUP
+                FROM SNMPv2-CONF
+        InterfaceIndexOrZero
+                FROM IF-MIB
+        ciscoMgmt
+                FROM CISCO-SMI
+	InetAddressType, InetAddress
+                FROM INET-ADDRESS-MIB
+        snmpTargetAddrEntry
+                FROM SNMP-TARGET-MIB;
+
+
+ciscoSnmpTargetExtMIB MODULE-IDENTITY
+        LAST-UPDATED  "200404010000Z"
+        ORGANIZATION  "Cisco Systems, Inc."
+        CONTACT-INFO
+                      "Cisco Systems
+                       Customer Service
+
+               Postal: 170 W. Tasman Drive
+                       San Jose, CA 95134
+                       USA
+
+                  Tel: +1 800 553-NETS
+
+               E-mail: cs-snmp@cisco.com"
+        DESCRIPTION
+                 "This MIB is an extension of the SNMP-TARGET-MIB
+		 specified in RFC2273.
+
+		 This MIB module contains  Cisco-defined  extension
+		 to the snmpTargetAddrTable to represent infomation
+		 required for IPv6 Address. 
+
+		 When Target has Link local or Multicast IPv6 address,
+                 the information of the interface on which the
+                 notification has to be sent is required. This
+                 additional information is provided by this extension
+                 MIB.
+             
+                 This module also contains defination for set of new
+                 variable to hold the address of the host that had
+                 sent an unauthentic SNMP message to agent."
+
+        REVISION     "200404010000Z"
+        DESCRIPTION
+                "Initial version of this MIB module."
+::= { ciscoMgmt 412 }
+
+
+ciscoSnmpTargetExtMIBObjects
+            OBJECT IDENTIFIER ::= { ciscoSnmpTargetExtMIB 1 }
+
+--
+-- Scalar variables
+--
+
+cExtSnmpTargetAuthAddr 
+            OBJECT IDENTIFIER ::= {ciscoSnmpTargetExtMIBObjects 1 }
+
+cExtSnmpTargetAuthInetType OBJECT-TYPE
+    SYNTAX       InetAddressType
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+            "This contains the type of address
+             cExtSnmpTargetAuthInetAddr holds when a host sends an
+             unauthentic SNMP message."
+
+    ::= { cExtSnmpTargetAuthAddr 1 }
+
+
+cExtSnmpTargetAuthInetAddr OBJECT-TYPE
+    SYNTAX       InetAddress
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+            "This contains the address of the host from which
+             snmp-agent has received a SNMP message that is not
+             authentic."
+
+    ::= { cExtSnmpTargetAuthAddr 2 }
+
+
+--
+-- cExtSnmpTargetAddrTable
+--
+
+cExtSnmpTargetAddrTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF CExtSnmpTargetAddrEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+	    "The cExtSnmpTargetAddrTable extends
+	     the SNMP-TARGET-MIB's snmpTargetAddrTable for providing
+             info on the type of interface for Link Local or Multicast
+             IPv6 Target Address."
+    REFERENCE
+	    "RFC2737: Section 4.1"
+    ::= { ciscoSnmpTargetExtMIBObjects 2 }
+
+cExtSnmpTargetAddrEntry OBJECT-TYPE
+    SYNTAX      CExtSnmpTargetAddrEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A cExtSnmpTargetAddrTable entry extends 
+	     snmpTargetAddrTable to provide a new variable
+             to hold the value of interface type.
+
+             A target which has a link local or a multicast
+             address the variable of this table is valid.
+             Entries are removed when the corresponding entry in the
+             snmpTargetAddrTable is removed."
+    AUGMENTS { snmpTargetAddrEntry }
+    ::= { cExtSnmpTargetAddrTable 1 }
+
+CExtSnmpTargetAddrEntry ::=
+     SEQUENCE {
+          cExtSnmpTargetAddrIntIfIndex       InterfaceIndexOrZero
+     }
+
+cExtSnmpTargetAddrIntIfIndex OBJECT-TYPE
+        SYNTAX      InterfaceIndexOrZero
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+                "Holds valid ifIndex value of the interface through
+                which the notifications for the target with
+                Multicast/Link local address specified in the
+                snmpTargetAddrTAddress, is sent.  
+
+                If snmpTargetAddrTAddress doesn't hold a Linklocal or
+                a Multicast target address then the value of this
+                object will be zero.
+
+                For the entries with snmpTargetAddrTAddress having
+                Link Local or Multicast address the
+                snmpTargetAddrStatus cannot be set to valid unless the
+                value for this object holds a valid ifIndex value."
+        ::= { cExtSnmpTargetAddrEntry 1 }
+
+--
+-- Conformance information
+--
+
+ciscoSnmpTargetExtMIBConformance
+        OBJECT IDENTIFIER ::= { ciscoSnmpTargetExtMIB 2 }
+
+ciscoSnmpTargetExtMIBCompliances
+        OBJECT IDENTIFIER ::= { ciscoSnmpTargetExtMIBConformance 1 }
+
+ciscoSnmpTargetExtMIBGroups
+        OBJECT IDENTIFIER ::= { ciscoSnmpTargetExtMIBConformance 2 }
+
+--
+-- compliance statements
+--
+
+ciscoSnmpTargetExtMIBCompliance MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+            "Compliance for IPv6 address supported by
+             snmpTargetAddrTAddress for Link-Local or Multicast and
+             for holding the recent host address that sent an
+             unauthentic SNMP message in cExtSnmpTargetAuthInetAddr
+             and cExtSnmpTargetAuthInetType." 
+    MODULE  -- this module
+    MANDATORY-GROUPS {
+            ciscoSnmpTargetExtMIBGroup
+    }
+    GROUP ciscoSnmpTargetAuthFailureGroup
+    DESCRIPTION
+            "The ciscoSnmpTargetAuthFailureGroup is an optional group
+             containing objects that provide information about the
+             host that has sent a packet which is not authentic."
+
+    ::= { ciscoSnmpTargetExtMIBCompliances 1 }
+
+--
+-- units of conformance
+--
+
+ciscoSnmpTargetAuthFailureGroup OBJECT-GROUP
+    OBJECTS {
+         cExtSnmpTargetAuthInetType,
+         cExtSnmpTargetAuthInetAddr
+    }
+    STATUS  current
+    DESCRIPTION
+            "The collection of objects which gives information about
+             the recent host that has sent a SNMP message to the agent 
+             that is not authentic"
+    ::= { ciscoSnmpTargetExtMIBGroups 1 }
+
+ciscoSnmpTargetExtMIBGroup OBJECT-GROUP
+    OBJECTS {
+         cExtSnmpTargetAddrIntIfIndex
+    }
+    STATUS  current
+    DESCRIPTION
+            "The collection of objects which give information about
+            the interface through which the notifications are sent
+            out for IPv6 Link-local and Multicast Target address."
+    ::= { ciscoSnmpTargetExtMIBGroups 2 }
+
+END

@@ -1,0 +1,412 @@
+-- *********************************************************************
+-- CISCO-IETF-DHCP-SERVER-MIB.my : Cisco-ized version of the Dynamic
+-- Host Configuration Protocol for IPv4 (DHCPv4) Server MIB. 
+-- 
+-- March 2004, Mike Chidzik 
+-- 
+-- Copyright (c) 2004 by cisco Systems, Inc. 
+-- All rights reserved. 
+-- *********************************************************************
+
+-- This MIB module is based on the Internet Draft 
+-- <draft-ieft-dhc-server-mib-10.txt>. In terms of object syntax and 
+-- semantics, the content of this Cisco MIB is the same as 
+-- the corresponding Internet Draft revision. This Cisco MIB was 
+-- created due to the "subject to change" nature of Internet Drafts. 
+-- This Cisco MIB may later be deprecated, and the stable RFC, which
+-- may replace the Internet Draft, may be implemented in its place.
+
+-- Caution.  This MIB is temporary and experimental.  In the future it 
+-- will be removed from products, perhaps with short notice, in favor 
+-- of more standard or generic MIBs.  Application developers should not 
+-- depend on long-term access to this MIB.
+
+-- Note: This MIB is a subset of the objects contained in the 
+-- Internet Draft. The comparison of this MIB and the Internet Draft
+-- is outlined in the below:
+
+-- Internet Draft                  CISCO-IETF-DHCP-SERVER-MIB
+-- ~~~~~~~~~~~~~~                  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- dhcpv4ServerObjects             cDhcpv4SrvObjects
+-- bootpCounterObjects             cBootpCounterObjects
+-- dhcpv4CounterObjects            cDhcpv4CounterObjects -
+--                                  (excluding dhcpv4CountForcedRenews)
+-- dhcpv4ServerSharedNetObjects    not contained
+-- dhcpv4ServerSubnetObjects       not contained
+-- dhcpv4ServerRangeObjects        not contained
+-- dhcpv4ServerClientObjects       not contained
+-- dhcpv4ServerNotifyObjectsGroup  not contained
+
+-- Reasons why some of the objects of the Internet Draft were not 
+-- included in this MIB are listed here:
+--
+--   dhcpv4ServerClientObjects is an 'optional list of addresses' 
+-- as declared in the DESCRIPTION of this OBJECT-TYPE and since this is 
+-- an Internet Draft is subject to more changes it seemed best to 
+-- include/implement this later or wait till the draft becomes 
+-- a standard.
+--
+--   No notifications are being used from this draft at this time. All
+-- of the objects in dhcpv4ServerSharedNetObjects have MAX-ACCESS of
+-- not-accessible. Most of the objects in dhcpv4ServerSubnetObjects
+-- have a MAX-ACCESS of not-accessible. The exception being
+-- dhcpv4ServerSubnetMask and dhcpv4ServerSubnetSharedNetworkName and
+-- they provides limited value to include.
+--
+--   The intent of this MIB is to implement a small useful subset of the
+-- objects of the Internet Draft - the statistics - and to gauge the 
+-- response of the network management users to see the best way to 
+-- extend this MIB.
+
+
+CISCO-IETF-DHCP-SERVER-MIB DEFINITIONS ::= BEGIN 
+ 
+IMPORTS 
+   Counter32, MODULE-IDENTITY, OBJECT-IDENTITY, OBJECT-TYPE
+        FROM SNMPv2-SMI
+
+   SnmpAdminString
+      FROM SNMP-FRAMEWORK-MIB
+ 
+   MODULE-COMPLIANCE, OBJECT-GROUP
+      FROM SNMPv2-CONF 
+
+   ciscoExperiment 
+      FROM CISCO-SMI; 
+
+ciscoIetfDhcpSrvMIB  MODULE-IDENTITY 
+   LAST-UPDATED   "200403011200Z" 
+   ORGANIZATION   "Cisco Systems, Inc." 
+   CONTACT-INFO  
+                "       Cisco Systems
+                        Customer Service
+
+                Postal: 170 W Tasman Drive
+                        San Jose, CA  95134
+                        USA
+
+                   Tel: +1 800 553-NETS
+
+                E-mail: cs-dhcp-mib@cisco.com"
+
+   DESCRIPTION 
+      "The MIB module for entities implementing the server side of 
+      the Bootstrap Protocol (BOOTP) and the Dynamic Host 
+      Configuration protocol (DHCP) for Internet Protocol version 
+      4(IPv4).  This MIB does not include support for Dynamic DNS 
+      (DDNS) updating nor for the DHCP Failover Protocol." 
+
+   REVISION       "200403011200Z" 
+   DESCRIPTION 
+      "Initial version of this MIB module."
+   ::= { ciscoExperiment 102 }
+
+ciscoIetfDhcpv4SrvMIBNotifs   OBJECT IDENTIFIER 
+   ::= { ciscoIetfDhcpSrvMIB 0 } 
+ciscoIetfDhcpv4SrvMIBObjects  OBJECT IDENTIFIER 
+   ::= { ciscoIetfDhcpSrvMIB 1 } 
+ciscoIetfDhcpv4SrvMIBConform  OBJECT IDENTIFIER 
+   ::= { ciscoIetfDhcpSrvMIB 2 } 
+
+cDhcpv4SrvSystem  OBJECT-IDENTITY 
+   STATUS      current 
+   DESCRIPTION 
+      "Group of objects that are related to the overall system." 
+::= { ciscoIetfDhcpv4SrvMIBObjects 1 } 
+ 
+cBootpCounters  OBJECT-IDENTITY 
+   STATUS      current 
+   DESCRIPTION 
+      "Group of objects that count various BOOTP events." 
+::= { ciscoIetfDhcpv4SrvMIBObjects 2 } 
+ 
+cDhcpv4Counters  OBJECT-IDENTITY 
+   STATUS      current 
+   DESCRIPTION 
+      "Group of objects that count various DHCPv4 events." 
+::= { ciscoIetfDhcpv4SrvMIBObjects 3 } 
+
+cDhcpv4SrvConfiguration  OBJECT-IDENTITY 
+   STATUS      current 
+   DESCRIPTION 
+      "Objects that contain pre-configured and dynamic configuration 
+      information." 
+::= { ciscoIetfDhcpv4SrvMIBObjects 4 } 
+
+
+--  cDhcpv4SrvSystemObjects Group 
+ 
+cDhcpv4SrvSystemDescr  OBJECT-TYPE 
+   SYNTAX      SnmpAdminString (SIZE (0..255)) 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "A textual description of the server.  This value should 
+      include the full name and version identification of the 
+      server." 
+   ::= { cDhcpv4SrvSystem 1 } 
+ 
+cDhcpv4SrvSystemObjectID  OBJECT-TYPE 
+   SYNTAX      OBJECT IDENTIFIER 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The vendor's authoritative identification of the network 
+      management subsystem contained in this entity.  This value is 
+      allocated within the SMI enterprise subtree (1.3.6.1.4.1) and 
+      provides an easy and unambiguous means for determining what
+      kind of server is being managed.  For example, if vendor Ohso
+      Soft, Inc. is assigned the subtree 1.3.6.1.4.1.4242, it may
+      assign the identifier 1.3.6.1.4.1.4242.1.1 to its Ursa DHCP
+      Server."
+   ::= { cDhcpv4SrvSystem 2 } 
+ 
+ 
+-- cBootpCounterObjects Group 
+ 
+cBootpCountRequests  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of packets received that contain a Message Type of 
+      1 (BOOTREQUEST) in the first octet and do not contain option 
+      number 53 (DHCP Message Type) in the options." 
+   REFERENCE 
+      "RFC-2131." 
+   ::= { cBootpCounters 1 } 
+ 
+cBootpCountInvalids  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of packets received that do not contain a Message 
+      Type of 1 (BOOTREQUEST) in the first octet or are not valid 
+      BOOTP packets (e.g., too short, invalid field in packet 
+      header)." 
+   ::= { cBootpCounters 2 } 
+ 
+cBootpCountReplies  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of packets sent that contain a Message Type of 2 
+      (BOOTREPLY) in the first octet and do not contain option number 
+      53 (DHCP Message Type) in the options." 
+   REFERENCE 
+      "RFC-2131." 
+   ::= { cBootpCounters 3 } 
+
+cBootpCountDropUnknownClients  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of BOOTP packets dropped due to the server not 
+      recognizing or not providing service to the hardware address 
+      received in the incoming packet." 
+   ::= { cBootpCounters 4 } 
+ 
+cBootpCountDropNotServingSubnet  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of BOOTP packets dropped due to the server not 
+      being configured or not otherwise able to serve addresses on 
+      the subnet from which this message was received." 
+   ::= { cBootpCounters 5 } 
+ 
+ 
+-- DHCP Counters Group
+
+cDhcpv4CountDiscovers  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPDISCOVER (option 53 with value 1) packets 
+      received." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4Counters 1 } 
+ 
+cDhcpv4CountOffers  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPOFFER (option 53 with value 2) packets 
+      sent." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4Counters 2 } 
+
+cDhcpv4CountRequests  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPREQUEST (option 53 with value 3) packets 
+      received." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4Counters 3 } 
+ 
+cDhcpv4CountDeclines  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPDECLINE (option 53 with value 4) packets 
+      received." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4Counters 4 } 
+ 
+cDhcpv4CountAcks  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPACK (option 53 with value 5) packets sent." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4Counters 5 } 
+ 
+cDhcpv4CountNaks  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPNACK (option 53 with value 6) packets sent." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4Counters 6 } 
+ 
+cDhcpv4CountReleases  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPRELEASE (option 53 with value 7) packets 
+      received." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4Counters 7 } 
+ 
+cDhcpv4CountInforms  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPINFORM (option 53 with value 8) packets 
+      received." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4Counters 8 }
+
+cDhcpv4CountInvalids  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCP packets received whose DHCP message type 
+      (i.e., option number 53) is not understood or handled by the 
+      server." 
+   ::= { cDhcpv4Counters 10 } 
+ 
+cDhcpv4CountDropUnknownClient  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCP packets dropped due to the server not 
+      recognizing or not providing service to the client-id and/or 
+      hardware address received in the incoming packet." 
+   ::= { cDhcpv4Counters 11 } 
+ 
+cDhcpv4CountDropNotServingSubnet  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCP packets dropped due to the server not being 
+      configured or not otherwise able to serve addresses on the 
+      subnet from which this message was received." 
+   ::= { cDhcpv4Counters 12 } 
+ 
+ 
+-- Conformance 
+ 
+cDhcpv4SrvCompliances OBJECT IDENTIFIER 
+   ::= { ciscoIetfDhcpv4SrvMIBConform 1 } 
+
+cDhcpv4SrvGroups      OBJECT IDENTIFIER 
+   ::= { ciscoIetfDhcpv4SrvMIBConform 2 } 
+ 
+ 
+-- Compliance groups 
+ 
+cDhcpv4SrvCompliance MODULE-COMPLIANCE 
+   STATUS      current 
+   DESCRIPTION 
+      "This group describes the requirements for conformance to the
+      DHCP Server MIB.  A DHCPv4 server implementation is only
+      required to support IPv4 addresses."
+   MODULE
+   MANDATORY-GROUPS { 
+      cDhcpv4SrvSystemObjects, 
+      cBootpCountersGroup, 
+      cDhcpv4CounterObjects
+   } 
+   ::= { cDhcpv4SrvCompliances 1 } 
+
+ 
+-- Object groups 
+ 
+cDhcpv4SrvSystemObjects OBJECT-GROUP 
+   OBJECTS { 
+      cDhcpv4SrvSystemDescr, 
+      cDhcpv4SrvSystemObjectID 
+   }
+   STATUS      current
+   DESCRIPTION
+      "Objects belonging to the cDhcpv4SrvSystemObjects group."
+   ::= { cDhcpv4SrvGroups 1 }
+ 
+cBootpCountersGroup OBJECT-GROUP 
+   OBJECTS { 
+      cBootpCountRequests, 
+      cBootpCountInvalids, 
+      cBootpCountReplies, 
+      cBootpCountDropUnknownClients, 
+      cBootpCountDropNotServingSubnet 
+   } 
+   STATUS      current 
+   DESCRIPTION 
+      "Objects belonging to the cBootpBountersGroup." 
+   ::= { cDhcpv4SrvGroups 2 } 
+ 
+cDhcpv4CounterObjects OBJECT-GROUP 
+   OBJECTS { 
+      cDhcpv4CountDiscovers, 
+      cDhcpv4CountOffers, 
+      cDhcpv4CountRequests, 
+      cDhcpv4CountDeclines, 
+      cDhcpv4CountAcks, 
+      cDhcpv4CountNaks, 
+      cDhcpv4CountReleases, 
+      cDhcpv4CountInforms, 
+      cDhcpv4CountInvalids, 
+      cDhcpv4CountDropUnknownClient, 
+      cDhcpv4CountDropNotServingSubnet 
+   } 
+   STATUS      current 
+   DESCRIPTION 
+      "Objects belonging to the cDhcpv4CounterObjects group." 
+   ::= { cDhcpv4SrvGroups 3 } 
+ 
+END 

@@ -44,3 +44,16 @@ for file in $(FILES); do\
 done
 @echo "Done."
 endef
+
+# Common routine for creating directories
+define mkdirs
+@echo "Creating necessary directories..."
+for dir in $(NDIR); do \
+    if test -d $(PREFIX)/$(DIR)/$$dir; then \
+       echo "Skipping dir $(PREFIX)/$(DIR)/$$dir; already exists"; \
+    else \
+       mkdir -m $(DMOD) -p $(PREFIX)/$(DIR)/$$dir ; \
+    fi ; \
+done
+@echo "Done."
+endef

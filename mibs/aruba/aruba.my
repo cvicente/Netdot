@@ -1,0 +1,118 @@
+ARUBA-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE,
+       OBJECT-IDENTITY,
+	   enterprises,
+       snmpModules                           FROM SNMPv2-SMI
+       TEXTUAL-CONVENTION                    FROM SNMPv2-TC
+       MODULE-COMPLIANCE, OBJECT-GROUP       FROM SNMPv2-CONF;
+
+
+-- The top node
+
+aruba  OBJECT IDENTIFIER ::= { enterprises 14823 }
+
+-- Node Product will contain all the products from Aruba Networks.
+
+products OBJECT IDENTIFIER ::= { aruba 1}
+
+-- Node arubaEnterpriseMibModules contains all the Enterprise
+-- specific MIBS supported by Aruba Networks products.
+
+arubaEnterpriseMibModules OBJECT IDENTIFIER ::= { aruba 2}
+
+-- Node arubaMgmtGroup defines the objects related to the Aruba Management 
+-- Extensions.
+
+arubaMgmt OBJECT IDENTIFIER ::= { aruba 3}
+
+-- List of all the products.
+
+-- Switch Products
+switchProducts OBJECT IDENTIFIER ::= { products 1}
+
+-- a5000 product , this object is the SYSOID
+
+a5000 OBJECT IDENTIFIER ::= { switchProducts 1}
+
+-- a2400 product , this object is the SYSOID
+
+a2400 OBJECT IDENTIFIER ::= { switchProducts 2}
+
+-- a800 product , this object is the SYSOID
+
+a800 OBJECT IDENTIFIER ::= { switchProducts 3}
+
+-- a6000 product , this object is the SYSOID
+
+a6000 OBJECT IDENTIFIER ::= { switchProducts 4}
+
+-- a2450 product , this object is the SYSOID
+
+a2450 OBJECT IDENTIFIER ::= { switchProducts 5}
+
+-- a850 product , this object is the SYSOID
+
+a850 OBJECT IDENTIFIER ::= { switchProducts 6}
+
+-- a24E product , this object is the SYSOID
+
+a24E OBJECT IDENTIFIER ::= { switchProducts 7}
+
+-- a8E product , this object is the SYSOID
+
+a8E OBJECT IDENTIFIER ::= { switchProducts 8}
+
+-- Access Point Products
+apProducts OBJECT IDENTIFIER ::= { products 2}
+
+-- a50 , this object is the SYSOID
+
+a50 OBJECT IDENTIFIER ::= {apProducts 1}
+
+-- a52 , this object is the SYSOID
+
+a52 OBJECT IDENTIFIER ::= {apProducts 2}
+
+-- a60 , this object is the SYSOID
+
+ap60 OBJECT IDENTIFIER ::= {apProducts 3}
+
+-- a61 , this object is the SYSOID
+
+ap61 OBJECT IDENTIFIER ::= {apProducts 4}
+
+-- a70 , this object is the SYSOID
+
+ap70 OBJECT IDENTIFIER ::= {apProducts 5}
+
+-- walljackAp61, this object is the SYSOID
+
+walljackAp61 OBJECT IDENTIFIER ::= {apProducts 6}
+
+-- a2E, this object is the SYSOID
+
+a2E OBJECT IDENTIFIER ::= {apProducts 7}
+
+-- List of all the Enterprise MIB Modules.
+
+-- common node will contain all the objects which can be shared between
+-- Aruba products.
+
+common	OBJECT IDENTIFIER ::= { arubaEnterpriseMibModules 1 }
+
+-- switch node will contain all the objects for the switch products
+
+switch OBJECT IDENTIFIER ::= { arubaEnterpriseMibModules 2 }
+
+-- Aruba AP will contain all the objects for the Aruba AP.
+arubaAp OBJECT IDENTIFIER ::= { arubaEnterpriseMibModules 3 }
+
+-- Switch Mib Modules.
+wlsxEnterpriseMibModules OBJECT IDENTIFIER ::= { switch 1 }
+
+-- Access Point Mib Modules.
+wlsrEnterpriseMibModules OBJECT IDENTIFIER ::= { arubaAp 1 }
+
+END

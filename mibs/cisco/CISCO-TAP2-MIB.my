@@ -1,0 +1,920 @@
+
+
+-- *****************************************************************
+-- CISCO-TAP2-MIB.my:  Cisco intercept ("tap") MIB
+--
+-- November 2003, Srinivas Dhulipala
+--
+-- Copyright (c) 2003-2004 by Cisco Systems, Inc.
+-- All rights reserved.
+--
+-- *****************************************************************
+--
+
+
+CISCO-TAP2-MIB DEFINITIONS ::= BEGIN
+
+
+IMPORTS
+        Counter32,
+        Integer32,
+        MODULE-IDENTITY,
+        NOTIFICATION-TYPE,
+        OBJECT-TYPE,
+        Unsigned32
+                FROM SNMPv2-SMI
+
+        MODULE-COMPLIANCE,
+        NOTIFICATION-GROUP,
+        OBJECT-GROUP
+                FROM SNMPv2-CONF
+
+        InetAddress,
+        InetAddressType,
+        InetPortNumber
+                FROM INET-ADDRESS-MIB
+
+        DateAndTime,
+        RowStatus,
+        TruthValue,
+        TEXTUAL-CONVENTION
+                FROM SNMPv2-TC
+
+        SnmpAdminString
+                FROM SNMP-FRAMEWORK-MIB
+
+        InterfaceIndexOrZero
+                FROM IF-MIB
+
+        ciscoMgmt
+                FROM CISCO-SMI;
+
+
+ciscoTap2MIB MODULE-IDENTITY
+        LAST-UPDATED  "200403110000Z"
+        ORGANIZATION  "Cisco Systems, Inc."
+        CONTACT-INFO
+                "      Cisco Systems
+                       Customer Service
+
+
+                Postal:170 W. Tasman Drive
+                       San Jose, CA  95134
+                       USA
+
+
+                   Tel:+1 800 553-NETS
+
+
+                E-mail:cs-li@cisco.com"
+        DESCRIPTION
+                "This module manages Cisco's intercept feature.
+                This MIB replaces CISCO-TAP-MIB. This MIB defines
+                a generic stream table that contains fields common to
+                all intercept types. Specific intercept filters are
+                defined in extension MIBs. They are CISCO-IP-TAP-MIB
+                for IP intercepts, CISCO-802-TAP-MIB for IEEE 802
+                intercepts and CISCO-USER-CONNECTION-TAP-MIB for
+                RADIUS-based user connection intercepts."
+
+        REVISION        "200403110000Z"
+        DESCRIPTION
+                "Added a new type to cTap2StreamType for intercepting
+                sessions/flows of Mobile subscribers in wireless CDMA
+                technology. Specific intercept filter is defined in
+                CISCO-CDMA-PDSN-TAP-MIB."
+
+        REVISION        "200401270000Z"
+        DESCRIPTION
+                "Initial version of this MIB module."
+        ::= { ciscoMgmt 399 }
+
+
+ciscoTap2MIBNotifs         OBJECT IDENTIFIER ::= { ciscoTap2MIB 0 }
+ciscoTap2MIBObjects        OBJECT IDENTIFIER ::= { ciscoTap2MIB 1 }
+ciscoTap2MIBConform        OBJECT IDENTIFIER ::= { ciscoTap2MIB 2 }
+
+
+cTap2MediationGroup   OBJECT IDENTIFIER ::= { ciscoTap2MIBObjects 1 }
+cTap2StreamGroup      OBJECT IDENTIFIER ::= { ciscoTap2MIBObjects 2 }
+cTap2DebugGroup       OBJECT IDENTIFIER ::= { ciscoTap2MIBObjects 3 }
+
+
+--
+-- textual convention
+--
+
+Ctap2Dscp ::= TEXTUAL-CONVENTION
+     STATUS     current
+     DESCRIPTION
+        "An integer that is in the range of the DiffServ codepoint
+        values."
+     SYNTAX INTEGER (0..63)
+
+
+-- cTap2MediationNewIndex is defined to allow a network manager
+-- to create a new Mediation Table entry and its corresponding
+-- Stream Table entries without necessarily knowing what other
+-- entries might exist.
+
+
+cTap2MediationNewIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..2147483647)
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+        "This object contains a value which may be used as an index
+        value for a new cTap2MediationEntry. Whenever read, the agent
+        will change the value to a new non-conflicting value.  This is
+        to reduce the probability of errors during creation of new
+        cTap2MediationTable entries."
+     ::= { cTap2MediationGroup 1 }
+
+
+-- The Tap Mediation Table lists the applications, by address and
+-- port number, to which traffic may be intercepted. These may be
+-- on the same or different Mediation Devices.
+
+
+cTap2MediationTable OBJECT-TYPE
+     SYNTAX     SEQUENCE OF CTap2MediationEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     DESCRIPTION
+        "This table lists the Mediation Devices with which the
+        intercepting device communicates. These may be on the same or
+        different Mediation Devices.
+
+
+        This table is written by the Mediation Device, and is always
+        volatile. This is because intercepts may disappear during a
+        restart of the intercepting equipment.
+
+        Entries are added to this table via cTap2MediationStatus in 
+        accordance with the RowStatus convention."
+     ::= { cTap2MediationGroup 2 }
+
+
+cTap2MediationEntry OBJECT-TYPE
+     SYNTAX     CTap2MediationEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     DESCRIPTION
+        "The entry describes a single session maintained with an
+        application on a Mediation Device."
+     INDEX      { cTap2MediationContentId }
+     ::= { cTap2MediationTable 1 }
+
+
+CTap2MediationEntry ::= SEQUENCE {
+        cTap2MediationContentId          Integer32,
+        cTap2MediationDestAddressType    InetAddressType,
+        cTap2MediationDestAddress        InetAddress,
+        cTap2MediationDestPort           InetPortNumber,
+        cTap2MediationSrcInterface       InterfaceIndexOrZero,
+        cTap2MediationRtcpPort           InetPortNumber,
+        cTap2MediationDscp               Ctap2Dscp,
+        cTap2MediationDataType           Integer32,
+        cTap2MediationRetransmitType     Integer32,
+        cTap2MediationTimeout            DateAndTime,
+        cTap2MediationTransport          INTEGER,
+        cTap2MediationNotificationEnable TruthValue,
+        cTap2MediationStatus             RowStatus
+}
+
+
+cTap2MediationContentId OBJECT-TYPE
+     SYNTAX     Integer32 (1..2147483647)
+     MAX-ACCESS not-accessible
+     STATUS     current
+     DESCRIPTION
+        "cTap2MediationContentId is a session identifier, from the
+        intercept application's perspective, and a content identifier
+        from the Mediation Device's perspective. The Mediation Device
+        is responsible for making sure these are unique, although the
+        SNMP RowStatus row creation process will help by not allowing
+        it to create conflicting entries. Before creating a new entry,
+        a value for this variable may be obtained by reading
+        cTap2MediationNewIndex to reduce the probability of a value
+        collision."
+     ::= { cTap2MediationEntry 1 }
+
+
+cTap2MediationDestAddressType OBJECT-TYPE
+     SYNTAX     InetAddressType
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "The type of cTap2MediationDestAddress."
+     ::= { cTap2MediationEntry 2 }
+
+
+cTap2MediationDestAddress OBJECT-TYPE
+     SYNTAX     InetAddress
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "The IP Address of the Mediation Device's network interface
+        to which to direct intercepted traffic."
+     ::= { cTap2MediationEntry 3 }
+
+
+cTap2MediationDestPort OBJECT-TYPE
+     SYNTAX     InetPortNumber
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "The port number on the Mediation Device's network interface
+        to which to direct intercepted traffic."
+     ::= { cTap2MediationEntry 4 }
+
+
+cTap2MediationSrcInterface OBJECT-TYPE
+     SYNTAX     InterfaceIndexOrZero
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "The interface on the intercepting device from which to
+        transmit intercepted data. If zero, any interface may be used
+        according to normal IP practice."
+     ::= { cTap2MediationEntry 5 }
+
+
+cTap2MediationRtcpPort OBJECT-TYPE
+     SYNTAX     InetPortNumber
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+        "The port number on the intercepting device to which the
+        Mediation Devices directs RTCP Receiver Reports and Nacks.
+        This object is only relevant when the value of
+        cTap2MediationTransport is 'rtpNack'.
+
+
+        This port is assigned by the intercepting device, rather than
+        by the Mediation Device or manager application.  The value of
+        this MIB object has no effect before activating the
+        cTap2MediationEntry."
+    ::= { cTap2MediationEntry 6 }
+
+
+cTap2MediationDscp OBJECT-TYPE
+     SYNTAX     Ctap2Dscp
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "The Differentiated Services Code Point the intercepting
+        device applies to the IP packets encapsulating the
+        intercepted traffic."
+     DEFVAL { 34 }        -- by default, AF41, code 100010
+     ::= { cTap2MediationEntry 7 }
+
+
+cTap2MediationDataType OBJECT-TYPE
+     SYNTAX     Integer32 (0..127)
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "If RTP with Ack/Nack resilience is selected as a transport,
+        the mediation process requires an RTP payload type for data
+        transmissions, and a second RTP payload type for
+        retransmissions.  This is the RTP payload type for
+        transmissions.
+
+
+        This object is only effective when the value of
+        cTap2MediationTransport is 'rtpNack'."
+     DEFVAL { 0 }
+     ::= { cTap2MediationEntry 8 }
+
+
+cTap2MediationRetransmitType OBJECT-TYPE
+     SYNTAX     Integer32 (0..127)
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "If RTP with Ack/Nack resilience is selected as a transport,
+        the mediation process requires an RTP payload type for data
+        transmissions, and a second RTP payload type for
+        retransmissions.  This is the RTP payload type for
+        retransmissions.
+
+
+        This object is only effective when the value of
+        cTap2MediationTransport is 'rtpNack'."
+     DEFVAL { 0 }
+     ::= { cTap2MediationEntry 9 }
+
+
+cTap2MediationTimeout OBJECT-TYPE
+     SYNTAX     DateAndTime
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "The time at which this row and all related Stream Table rows
+        should be automatically removed, and the intercept function
+        cease. Since the initiating network manager may be the only
+        device able to manage a specific intercept or know of its
+        existence, this acts as a fail-safe for the failure or removal
+        of the network manager. The object is only effective when the
+        value of cTap2MediationStatus is 'active'."
+     ::= { cTap2MediationEntry 10 }
+
+
+cTap2MediationTransport OBJECT-TYPE
+     SYNTAX     INTEGER {
+                           udp(1),
+                           rtpNack(2),
+                           tcp(3),
+                           sctp(4)
+                }
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "The protocol used in transferring intercepted data to the
+        Mediation Device. The following protocols may be supported:
+                   udp:     PacketCable udp format
+                   rtpNack: RTP with Nack resilience
+                   tcp:     TCP with head of line blocking
+                   sctp:    SCTP with head of line blocking "
+     ::= { cTap2MediationEntry 11 }
+
+
+cTap2MediationNotificationEnable OBJECT-TYPE
+     SYNTAX     TruthValue
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "This variable controls the generation of any notifications or
+        informs by the MIB agent for this table entry."
+     DEFVAL { true }
+     ::= { cTap2MediationEntry 12 }
+
+
+cTap2MediationStatus OBJECT-TYPE
+     SYNTAX     RowStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+       "The status of this conceptual row. This object is used to
+        manage creation, modification and deletion of rows in this
+        table.
+
+
+        cTap2MediationTimeout may be modified at any time (even while
+        the row is active). But when the row is active, the other
+        writable objects may not be modified without setting its value
+        to 'notInService'.
+
+
+        The entry may not be deleted or deactivated by setting its
+        value to 'destroy' or 'notInService' if there is any associated
+        entry in cTap2StreamTable."
+     ::= { cTap2MediationEntry 13 }
+
+
+--
+-- cTap2MediationCapabilities 
+-- 
+
+
+cTap2MediationCapabilities  OBJECT-TYPE
+     SYNTAX     BITS {
+                         ipV4SrcInterface(0),
+                         ipV6SrcInterface(1),
+                         udp(2),
+                         rtpNack(3),
+                         tcp(4),
+                         sctp(5)
+                     }
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+         "This object displays the device capabilities with respect to
+         certain fields in Mediation Device table. This may be dependent
+         on hardware capabilities, software capabilities.
+         The following values may be supported:
+             ipV4SrcInterface:  SNMP ifIndex Value may be used to select
+                                the interface (denoted by
+                                cTap2MediationSrcInterface) on the
+                                intercepting device from which to
+                                transmit intercepted data to an IPv4
+                                address Mediation Device.
+
+
+             ipV6SrcInterface:  SNMP ifIndex Value may be used to select
+                                the interface (denoted by
+                                cTap2MediationSrcInterface) on the
+                                intercepting device from which to
+                                transmit intercepted data to an IPv6
+                                address Mediation Device.
+
+
+             udp:               UDP may be used as transport protocol
+                                (denoted by cTap2MediationTransport) in
+                                transferring intercepted data to the
+                                Mediation Device.
+
+
+             rtcpNack:          RTP with Nack resilience may be used
+                                as transport protocol (denoted by
+                                cTap2MediationTransport) in transferring
+                                intercepted data to the Mediation
+                                Device.
+ 
+             tcp:               TCP may be used as transport protocol
+                                (denoted by cTap2MediationTransport) in
+                                transferring intercepted data to the
+                                Mediation Device.
+
+
+             sctp:              SCTP may be used as transport protocol
+                                (denoted by cTap2MediationTransport) in
+                                transferring intercepted data to the
+                                Mediation Device." 
+     ::= { cTap2MediationGroup 3 }
+
+--
+-- The stream tables
+--
+-- This MIB defines a generic stream table containing fields that are 
+-- common to any kind of filter specification and a type of the 
+-- filter specification. Filter specifications can be for various type
+-- of intercepts (eg. IPv4, IPv6, MAC, VoIP) and each of the filters
+-- is defined in extension MIBs.
+-- 
+
+cTap2StreamTable OBJECT-TYPE
+     SYNTAX       SEQUENCE OF CTap2StreamEntry
+     MAX-ACCESS not-accessible
+     STATUS       current
+     DESCRIPTION
+        "The Intercept Stream Table lists the traffic streams to be 
+        intercepted. The same data stream may be required by multiple 
+        taps, and one might assume that often the intercepted stream 
+        is a small subset of the traffic that could be intercepted.
+
+
+        The Table consists of generic fields that are independent
+        of the type of intercept. It contains type of the specific 
+        filter which is defined in an extension MIB and counters to 
+        account for packets intercepted or dropped by the attached
+        filter specification.
+
+        Note that the Mediation Device must make sure there is 
+        only one type of specific filter created with the same 
+        indices as that of a row in this table, otherwise the 
+        later creations will fail. For example, if there is a 
+        row in this table with index 1.2, there can be a 
+        corresponding row with the same index either in 
+        citapStreamTable, c8tapStreamTable or cuctTapStreamTable,
+        but not all. 
+
+
+        The first index indicates which Mediation Device the
+        intercepted traffic will be diverted to. The second index
+        permits multiple classifiers to be used together. 
+
+        Entries are added to this table via cTap2StreamStatus in
+        accordance with the RowStatus convention."
+     ::= { cTap2StreamGroup 1 }
+
+
+cTap2StreamEntry OBJECT-TYPE
+     SYNTAX     CTap2StreamEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     DESCRIPTION
+        "A stream entry indicates a single data stream to be
+        intercepted to a Mediation Device. Many selected data
+        streams may go to the same application interface, and many
+        application interfaces are supported."
+     INDEX { cTap2MediationContentId, cTap2StreamIndex }
+     ::= { cTap2StreamTable 1 }
+
+
+CTap2StreamEntry ::= SEQUENCE {
+        cTap2StreamIndex                 Integer32,
+        cTap2StreamType                  INTEGER,
+        cTap2StreamInterceptEnable       TruthValue,
+        cTap2StreamInterceptedPackets    Counter32,
+        cTap2StreamInterceptDrops        Counter32,
+        cTap2StreamStatus                RowStatus
+}
+
+
+cTap2StreamIndex OBJECT-TYPE
+     SYNTAX     Integer32 (1..2147483647)
+     MAX-ACCESS not-accessible
+     STATUS     current
+     DESCRIPTION
+        "The index of the stream itself."
+     ::= { cTap2StreamEntry 1 }
+
+cTap2StreamType OBJECT-TYPE
+     SYNTAX     INTEGER {
+                ip(1),
+                mac(2),
+                userConnection(3),
+                msPdsn(4)
+     }
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "Identifies the type of intercept filter associated to this
+        generic stream. The following types of streams are supported:
+               ip:             The specific filter is an IP filter 
+                               with same indices as that of this 
+                               table. The exact filter is a row in 
+                               citapStreamTable of CISCO-IP-TAP-MIB.
+               mac:            The specific filter is a MAC filter
+                               with same indices as that of this table.
+                               The exact filter is a row in 
+                               c8tapStreamTable of CISCO-802-TAP-MIB.
+               userConnecton:  The specific filter is a user connection
+                               filter with same indices as that of 
+                               this table. The exact filter is a row 
+                               in cuctTapStreamTable of 
+                               CISCO-USER-CONNECTION-TAP-MIB.
+               msPdsn:         The specific filter is a Mobile Sub
+                               connection filter with same indices as
+                               that of this table. The exact filter
+                               is a row in ccptapStreamTable of 
+                               CISCO-CDMA-PDSN-TAP-MIB."
+     ::= {cTap2StreamEntry 2 } 
+
+cTap2StreamInterceptEnable OBJECT-TYPE
+     SYNTAX     TruthValue
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+         "If 'true', the tap should intercept matching traffic. The 
+         value for this object should be set to 'true' only after an 
+         additional filter specification has been attached to this 
+         stream."
+     DEFVAL { false }
+     ::= { cTap2StreamEntry 3 }
+
+cTap2StreamInterceptedPackets OBJECT-TYPE
+     SYNTAX     Counter32
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+        "The number of packets matching this data stream specification
+        that have been intercepted."
+     ::= { cTap2StreamEntry 4 }
+
+cTap2StreamInterceptDrops OBJECT-TYPE
+     SYNTAX     Counter32
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+        "The number of packets matching this data stream specification
+        that, having been intercepted, were dropped in the lawful
+        intercept process."
+     ::= { cTap2StreamEntry 5 }
+
+
+cTap2StreamStatus OBJECT-TYPE
+     SYNTAX     RowStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "The status of this conceptual row. This object manages
+        creation, modification, and deletion of rows in this table.
+        cTap2StreamInterceptEnable may be modified any time even the
+        value of this entry rowStatus object is 'active'.  When other
+        rows must be changed, cTap2StreamStatus must be first set to
+        'notInService'."
+     ::= { cTap2StreamEntry 6 }
+
+--
+-- The debug information
+--
+
+cTap2DebugAge OBJECT-TYPE
+     SYNTAX     Integer32 (1..2147483647)
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+        "This object contains the duration in minutes for which an
+        entry in cTap2DebugTable is maintained by the implementing
+        device after which the entry is deleted. The management
+        station also has the option of deleting the entry itself
+        by setting cTap2DebugStatus."
+     ::= { cTap2DebugGroup 1 }
+
+cTap2DebugMaxEntries OBJECT-TYPE
+     SYNTAX     Integer32 (1..2147483647)
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+        "This object contains the maximum number of debug messages
+        maintained by the implementing device at a time. If this 
+        limit is crossed, most recent message will replace the
+        least recent message."
+     ::= { cTap2DebugGroup 2 }
+
+cTap2DebugTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CTap2DebugEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table that contains Lawful Intercept debug messages
+        generated by the implementing device. This table is used 
+        by ciscoTap2MediationDebug and ciscoTap2StreamDebug 
+        notifications.
+
+        An entry in this table contains a debug message which is
+        regarding either a Mediation Device or a intercept stream 
+        created by a Mediation Device. The Mediation device is 
+        identified by cTap2DebugMediationId whose value is
+        that of cTap2MediationContentId of cTapMediationEntry.
+        The stream is identified by cTap2DebugMediationId and
+        cTap2DebugStreamId whose values are that of 
+        cTap2MediationContentId and cTap2StreamIndex of 
+        the corresponding cTap2StreamEntry.
+        
+        Note that cTap2DebugStreamId may be zero for an entry,
+        in which case the debug message is regarding a Medation
+        Device.
+
+        Entries are added to this table via cTap2DebugStatus in
+        accordance with the RowStatus convention."
+    ::= { cTap2DebugGroup 3 }
+
+
+cTap2DebugEntry OBJECT-TYPE
+    SYNTAX      CTap2DebugEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A list of the debug messages."
+    INDEX { cTap2DebugIndex }
+    ::= { cTap2DebugTable 1 }
+
+
+CTap2DebugEntry ::= SEQUENCE {
+        cTap2DebugIndex       Integer32,
+        cTap2DebugMediationId Unsigned32,
+        cTap2DebugStreamId    Unsigned32,
+        cTap2DebugMessage     SnmpAdminString,
+        cTap2DebugStatus      RowStatus
+}  
+
+
+cTap2DebugIndex OBJECT-TYPE
+     SYNTAX        Integer32 (1..2147483647)
+     MAX-ACCESS    not-accessible
+     STATUS        current
+     DESCRIPTION
+        "Index to the debug table."
+     ::= { cTap2DebugEntry 1 }
+
+
+cTap2DebugMediationId OBJECT-TYPE
+     SYNTAX        Unsigned32 
+     MAX-ACCESS    read-only
+     STATUS        current
+     DESCRIPTION
+        "The value of this object is that of cTap2MediationContentId
+        identifying an entry in cTap2MediationTable. Note this object
+        may contain a value for which an entry in cTap2MediationTable
+        does not exist. This happens when creation of an entry in
+        cTap2MediationTable fails and this debug message conveys more
+        detailed information regarding the failure."
+     ::= { cTap2DebugEntry 2 }
+
+cTap2DebugStreamId OBJECT-TYPE
+     SYNTAX        Unsigned32 
+     MAX-ACCESS    read-only
+     STATUS        current
+     DESCRIPTION
+        "The value of this object is that of cTap2StreamIndex of an
+        entry in cTap2StreamTable. This object along with
+        cTap2DebugMediationId identifies an entry in cTap2StreamTable.
+        The value of this object may be zero, in which this debug
+        message is regarding a Mediation Device, but not a particular
+        stream.  Note this object may contain a value for which an 
+        entry in cTap2MediationTable does not exist. This happens 
+        when creation of an entry in cTap2StreamTable fails."
+     ::= { cTap2DebugEntry 3 }
+
+cTap2DebugMessage OBJECT-TYPE
+     SYNTAX       SnmpAdminString
+     MAX-ACCESS   read-only 
+     STATUS       current
+     DESCRIPTION
+        "A text string contains the debug message."
+     ::= { cTap2DebugEntry 4 }
+
+cTap2DebugStatus OBJECT-TYPE
+     SYNTAX     RowStatus
+     MAX-ACCESS read-write
+     STATUS     current
+     DESCRIPTION
+        "The status of this conceptual row. A row in this table is
+        created by the implementing device. A management station cannot
+        modify any of the objects in this row, except deleting the row
+        by setting this object to 'destroy'."
+     ::= { cTap2DebugEntry 5 }
+
+
+-- notifications
+
+
+ciscoTap2MIBActive   NOTIFICATION-TYPE
+     STATUS     current
+     DESCRIPTION
+        "This Notification is sent when an intercepting router or
+        switch is first capable of intercepting a packet corresponding
+        to a configured data stream. The value of the corresponding 
+        cTap2StreamType which identifies the actual intercept stream
+        type is included in this notification.
+
+
+        This notification may be generated in conjunction with the
+        intercept application, which is designed to expect the
+        notification to be sent as reliably as possible, e.g., through
+        the use of a finite number of retransmissions until
+        acknowledged, as and when such mechanisms are available; for
+        example, with SNMPv3, this would be an InformRequest.  Filter
+        installation can take a long period of time, during which call
+        progress may be delayed."
+     ::= { ciscoTap2MIBNotifs 1 }
+
+
+ciscoTap2MediationTimedOut NOTIFICATION-TYPE
+     OBJECTS    { cTap2MediationStatus }
+     STATUS     current
+     DESCRIPTION
+        "When an intercept is autonomously removed by an intercepting
+        device, such as due to the time specified in
+        cTap2MediationTimeout arriving, the device notifies the manager
+        of the action."
+     ::= { ciscoTap2MIBNotifs 2 }
+
+
+ciscoTap2MediationDebug NOTIFICATION-TYPE
+     OBJECTS    { cTap2DebugMediationId, cTap2DebugMessage }
+     STATUS     current
+     DESCRIPTION
+        "When there is intervention needed due to some events related
+        to entries configured in cTap2MediationTable, the device
+        notifies the manager of the event.
+
+
+        This notification may be generated in conjunction with the
+        intercept application, which is designed to expect the
+        notification to be sent as reliably as possible, e.g., through
+        the use of a finite number of retransmissions until
+        acknowledged, as and when such mechanisms are available; for
+        example, with SNMPv3, this would be an InformRequest."
+     ::= { ciscoTap2MIBNotifs 3 }
+
+
+ciscoTap2StreamDebug NOTIFICATION-TYPE
+     OBJECTS    { cTap2DebugMediationId, cTap2DebugStreamId,
+                  cTap2DebugMessage }
+     STATUS     current
+     DESCRIPTION
+        "When there is intervention needed due to some events related
+        to entries configured in cTap2StreamTable, the device
+        notifies the manager of the event.
+
+
+        This notification may be generated in conjunction with the
+        intercept application, which is designed to expect the
+        notification to be sent as reliably as possible, e.g., through
+        the use of a finite number of retransmissions until
+        acknowledged, as and when such mechanisms are available; for
+        example, with SNMPv3, this would be an InformRequest."
+     ::= { ciscoTap2MIBNotifs 4 }
+
+
+ciscoTap2Switchover NOTIFICATION-TYPE
+     STATUS     current
+     DESCRIPTION
+        "This notification is sent when there is a redundant (standby)
+        route processor available on the intercepting device and the
+        current active processor is going down causing standby to
+        takeover. Note that this notification may be sent by the
+        intercepting device only when it had a chance to know before it
+        goes down.
+
+        Mediation device when received this notification should assume 
+        that configured intercepts on the intercepting device no longer
+        exist, when the standby processor takes control. This means that
+        the Mediation device should again configure the intercepts."
+     ::= { ciscoTap2MIBNotifs 5 }
+
+
+-- conformance information
+
+
+ciscoTap2MIBCompliances OBJECT IDENTIFIER ::= { ciscoTap2MIBConform 1 }
+ciscoTap2MIBGroups      OBJECT IDENTIFIER ::= { ciscoTap2MIBConform 2 }
+
+
+-- compliance statement
+
+
+ciscoTap2MIBCompliance MODULE-COMPLIANCE
+     STATUS  current
+     DESCRIPTION
+        "The compliance statement for entities which implement the
+        Cisco Intercept MIB"
+     MODULE        -- this module
+        MANDATORY-GROUPS {
+                ciscoTap2MediationComplianceGroup,
+                ciscoTap2StreamComplianceGroup,
+                ciscoTap2MediationCpbComplianceGroup,
+                ciscoTap2NotificationGroup
+        }
+     ::= { ciscoTap2MIBCompliances 1 }
+
+
+-- units of conformance
+
+ciscoTap2MediationComplianceGroup OBJECT-GROUP
+     OBJECTS {
+        cTap2MediationNewIndex,
+        cTap2MediationDestAddressType,
+        cTap2MediationDestAddress,
+        cTap2MediationDestPort,
+        cTap2MediationSrcInterface,
+        cTap2MediationRtcpPort,
+        cTap2MediationDscp,
+        cTap2MediationDataType,
+        cTap2MediationRetransmitType,
+        cTap2MediationTimeout,
+        cTap2MediationTransport,
+        cTap2MediationNotificationEnable,
+        cTap2MediationStatus
+     }
+     STATUS     current
+     DESCRIPTION
+        "These objects are necessary for description of the data
+        streams directed to a Mediation Device."
+     ::= { ciscoTap2MIBGroups 1 }
+
+
+ciscoTap2StreamComplianceGroup OBJECT-GROUP
+     OBJECTS {
+        cTap2StreamType,
+        cTap2StreamInterceptEnable,
+        cTap2StreamInterceptedPackets,
+        cTap2StreamInterceptDrops,
+        cTap2StreamStatus
+     }
+     STATUS     current
+     DESCRIPTION
+        "These objects are necessary for a description of the packets
+        to select for interception."
+     ::= { ciscoTap2MIBGroups 2 }
+
+
+ciscoTap2NotificationGroup NOTIFICATION-GROUP
+     NOTIFICATIONS {
+         ciscoTap2MIBActive,
+         ciscoTap2MediationTimedOut,
+         ciscoTap2MediationDebug,
+         ciscoTap2StreamDebug,
+         ciscoTap2Switchover
+     }
+     STATUS     current
+     DESCRIPTION
+        "These notifications are used to present status from the
+        intercepting device to the Mediation Device."
+     ::= { ciscoTap2MIBGroups 3 }
+
+
+ciscoTap2MediationCpbComplianceGroup OBJECT-GROUP
+     OBJECTS {
+        cTap2MediationCapabilities
+     }
+     STATUS     current
+     DESCRIPTION
+        "These objects are necessary for a description of the 
+        mediation device to select for Lawful Intercept."
+     ::= { ciscoTap2MIBGroups 4 }
+
+
+ciscoTap2DebugComplianceGroup OBJECT-GROUP
+     OBJECTS {
+        cTap2DebugAge,
+        cTap2DebugMaxEntries,
+        cTap2DebugMediationId,
+        cTap2DebugStreamId,
+        cTap2DebugMessage,
+        cTap2DebugStatus
+     }
+     STATUS     current
+     DESCRIPTION
+        "These objects are necessary for debug information." 
+     ::= { ciscoTap2MIBGroups 5 }
+
+
+END
+ 
+ 

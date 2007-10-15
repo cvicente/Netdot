@@ -1,0 +1,147 @@
+-- *****************************************************************
+-- CISCO-ATM-EXT-MIB.my:  Cisco Enterprise ATM Extension MIB file
+--
+-- June 1997, Li Yan
+--
+-- Copyright (c) 1997-1998 by cisco Systems, Inc.
+-- All rights reserved.
+--
+-- *****************************************************************
+
+CISCO-ATM-EXT-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	MODULE-IDENTITY,
+	OBJECT-TYPE,
+	Counter32
+		FROM SNMPv2-SMI
+	TruthValue
+		FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP
+                      FROM SNMPv2-CONF
+	ciscoMgmt
+		FROM CISCO-SMI
+        aal5VccEntry
+                FROM ATM-MIB;
+
+ciscoAtmExtMIB MODULE-IDENTITY
+	LAST-UPDATED	"9706200000Z"
+	ORGANIZATION	"Cisco Systems, Inc."
+	CONTACT-INFO
+		"	Cisco Systems
+			Customer Service
+
+		Postal:	170 W. Tasman Drive
+			San Jose, CA  95134
+			USA
+
+		   Tel: +1 800 553-NETS
+
+		E-mail: cs-atm@cisco.com"
+	DESCRIPTION
+		"An extension to the Cisco ATM MIB module for managing
+		ATM implementations"
+	REVISION	"9706200000Z"
+	DESCRIPTION
+		"Initial version of this MIB module."
+	::= { ciscoMgmt 88 }
+
+cAal5VccExtMIBObjects OBJECT IDENTIFIER ::= { ciscoAtmExtMIB 1 }
+
+-- This table augments the cAal5VccTable.
+-- It contains additional AAL5 performance statistics of a VCC
+-- at the interface associated with an AAL5 entity in an ATM
+-- host or ATM switch
+
+cAal5VccExtTable    OBJECT-TYPE
+      SYNTAX      SEQUENCE OF CAal5VccExtEntry
+      MAX-ACCESS  not-accessible
+      STATUS      current
+      DESCRIPTION
+      	"This table contains AAL5 VCC performance
+	 parameters beyond that provided by cAal5VccEntry."
+      ::= { cAal5VccExtMIBObjects 1 }
+
+cAal5VccExtEntry OBJECT-TYPE
+	SYNTAX     CAal5VccExtEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+		"This list contains the additinal AAL5 VCC performance
+		parameters beyond that provided by cAal5VccEntry."
+--	AUGMENTS {cAal5VccEntry}
+	AUGMENTS {aal5VccEntry}
+	::= { cAal5VccExtTable 1 }
+
+CAal5VccExtEntry ::= SEQUENCE {
+	cAal5VccExtCompEnabled     		TruthValue,
+	cAal5VccExtVoice	     		TruthValue,
+	cAal5VccExtInF5OamCells           	Counter32,
+	cAal5VccExtOutF5OamCells       		Counter32
+      }
+
+cAal5VccExtCompEnabled	OBJECT-TYPE
+      SYNTAX       TruthValue
+      MAX-ACCESS   read-only
+      STATUS       current
+      DESCRIPTION
+      	"Boolean, if compression enabled for VCC."
+      ::= { cAal5VccExtEntry 1}
+
+cAal5VccExtVoice	OBJECT-TYPE
+      SYNTAX       TruthValue
+      MAX-ACCESS   read-only
+      STATUS       current
+      DESCRIPTION
+      	"Boolean, TRUE if VCC is used to carry voice."
+      ::= { cAal5VccExtEntry 2}
+
+cAal5VccExtInF5OamCells	OBJECT-TYPE
+      SYNTAX       Counter32
+      MAX-ACCESS   read-only
+      STATUS       current
+      DESCRIPTION
+      	"Number of OAM F5 end to end loopback cells received through the
+ VCC."
+      ::= { cAal5VccExtEntry 3}
+
+cAal5VccExtOutF5OamCells	OBJECT-TYPE
+      SYNTAX       Counter32
+      MAX-ACCESS   read-only
+      STATUS       current
+      DESCRIPTION
+      	"Number of OAM F5 end to end loopback cells sent through the VCC."
+      ::= { cAal5VccExtEntry 4}
+
+-- Conformance Information
+
+ciscoAal5ExtMIBConformance OBJECT IDENTIFIER ::= { ciscoAtmExtMIB 3 }
+ciscoAal5ExtMIBCompliances OBJECT IDENTIFIER ::= { ciscoAal5ExtMIBConformance 1 }
+ciscoAal5ExtMIBGroups      OBJECT IDENTIFIER ::= {ciscoAal5ExtMIBConformance 2 }
+
+-- Compliance Statement
+ciscoAal5ExtMIBCompliance MODULE-COMPLIANCE
+	STATUS  current
+        DESCRIPTION
+                "The compliance statement for entities which implement
+                this Cisco AAL5 Extention MIB and support data compression
+		 or voice features."
+        MODULE  -- this module
+                MANDATORY-GROUPS { ciscoAal5ExtMIBGroup }
+        ::= { ciscoAal5ExtMIBCompliances 1 }
+
+-- units of conformance:
+
+ciscoAal5ExtMIBGroup OBJECT-GROUP
+        OBJECTS {
+		cAal5VccExtCompEnabled,
+		cAal5VccExtVoice,
+		cAal5VccExtInF5OamCells,
+		cAal5VccExtOutF5OamCells
+        }
+        STATUS  current
+        DESCRIPTION
+                "A collection of objects providing AAL5 related parameters."
+        ::= { ciscoAal5ExtMIBGroups 1 }
+
+END

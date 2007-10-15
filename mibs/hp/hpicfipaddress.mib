@@ -1,0 +1,363 @@
+HP-ICF-IPCONFIG DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        OBJECT-TYPE, MODULE-IDENTITY
+            FROM SNMPv2-SMI
+        RowStatus
+            FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP
+            FROM SNMPv2-CONF
+        InetAddress, InetAddressType, InetAddressPrefixLength
+            FROM INET-ADDRESS-MIB
+        ifIndex
+            FROM IF-MIB
+        hpicfCommon
+            FROM HP-ICF-OID
+        ipv4InterfaceEntry
+            FROM IP-MIB;
+        
+    hpicfIpConfig MODULE-IDENTITY
+        LAST-UPDATED "200508081600Z"  -- August 08, 2005
+        ORGANIZATION "Hewlett Packard Company,
+                      ProCurve Networking Business"
+        CONTACT-INFO "Hewlett Packard Company
+                      8000 Foothills Blvd.
+                      Roseville, CA 95747"
+        DESCRIPTION  "This MIB module describes objects for basic
+                      IP address configuration and interface configuration
+                      for devices in the HP Integrated Communication Facility
+                      product line."
+
+        REVISION     "200508081600Z"  -- August 08, 2005
+        DESCRIPTION  "Initial version."
+
+        ::= { hpicfCommon 10 }
+
+
+    -- The HP ICF IP configuration group
+
+    hpicfIpConfigObjects        OBJECT IDENTIFIER ::= {hpicfIpConfig 1}
+
+    -- The HP ICF Address group
+
+    hpicfIpAddressObjects        OBJECT IDENTIFIER ::= {hpicfIpConfigObjects 1}
+
+    -- The HP ICF IPV4 interface group
+
+    hpicfIpv4InterfaceObjects    OBJECT IDENTIFIER ::= {hpicfIpConfigObjects 2}
+
+
+    hpicfIpAddressTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfIpAddressEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "This table contains manually configured IPv4 and IPv6 
+                     addresses for each interface. An entry in this table
+                     may not exist in the active state unless all objects
+                     in the entry are consistent. In particular, the value of
+                     hpicfIpAddressPrefixLength."
+        ::= { hpicfIpAddressObjects 1 }
+
+
+    hpicfIpAddressEntry OBJECT-TYPE
+        SYNTAX      HpicfIpAddressEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "An entry in the hpicfIpAddressEntry contains a single 
+                     manually configured IP address."
+        INDEX       { ifIndex,
+                      hpicfIpAddressAddrType,
+                      hpicfIpAddressAddr }
+        ::= { hpicfIpAddressTable 1 }
+
+    HpicfIpAddressEntry ::=
+        SEQUENCE {
+            hpicfIpAddressAddrType          InetAddressType,
+            hpicfIpAddressAddr              InetAddress,
+            hpicfIpAddressPrefixLength      InetAddressPrefixLength,
+            hpicfIpAddressType              INTEGER,
+            hpicfIpAddressRowStatus         RowStatus
+        }
+
+
+    hpicfIpAddressAddrType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Type of IP address"
+        ::= { hpicfIpAddressEntry 1 }
+
+
+    hpicfIpAddressAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The IP address to which this entry's addressing
+                     information pertains.
+                     hpicfIpAddressAddr is always interpreted within the 
+                     context of hpicfIpAddressAddrType."
+        ::= { hpicfIpAddressEntry 2 }
+
+
+    hpicfIpAddressPrefixLength OBJECT-TYPE
+        SYNTAX      InetAddressPrefixLength
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION "The prefix length associated with IP address."
+        ::= { hpicfIpAddressEntry 3 }
+
+
+    hpicfIpAddressType OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        unicast(1),
+                        anycast(2)
+                    }
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION "IP address type. For V4 addresses the value will be 
+                     unicast."
+        DEFVAL { unicast }
+        ::= { hpicfIpAddressEntry 4 }
+
+
+    hpicfIpAddressRowStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION "The status of the IP address entry."
+        ::= { hpicfIpAddressEntry 5 }
+
+
+    -- Switch IP Address Table
+
+    hpicfSwitchIpAddressTable  OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfSwitchIpAddressEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "This read only table contains IPV4 and/or IPV6 addresses
+                     for each interface.
+
+                     These IP Addresses are either manually configured or 
+                     obtained by a dynamic meathod (such as DHCP).
+
+                     This table will hold all manually configured IP Addresses
+                     that exist in hpicfIpAddressTable except for those entries
+                     that are not in active state (hpicfIpAddressRowStatus)."
+        ::= { hpicfIpAddressObjects 2 }
+
+
+    hpicfSwitchIpAddressEntry OBJECT-TYPE
+        SYNTAX      HpicfSwitchIpAddressEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "An entry in the hpicfSwitchIpAddressEntry contains a single 
+                     IP address."
+        INDEX       { ifIndex,
+                      hpicfSwitchIpAddressAddrType,
+                      hpicfSwitchIpAddressAddr }
+        ::= { hpicfSwitchIpAddressTable 1 }
+
+    HpicfSwitchIpAddressEntry ::=
+        SEQUENCE {
+            hpicfSwitchIpAddressAddrType          InetAddressType,
+            hpicfSwitchIpAddressAddr              InetAddress,
+            hpicfSwitchIpAddressPrefixLength      InetAddressPrefixLength,
+            hpicfSwitchIpAddressType              INTEGER
+        }
+
+
+    hpicfSwitchIpAddressAddrType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Type of IP address."
+        ::= { hpicfSwitchIpAddressEntry 1 }
+
+
+    hpicfSwitchIpAddressAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The IP address to which this entry's addressing
+                     information pertains.
+                     hpicfSwitchIpAddressAddr is always interpreted within the
+                     context of hpicfSwitchIpAddressAddrType."
+        ::= { hpicfSwitchIpAddressEntry 2 }
+
+
+    hpicfSwitchIpAddressPrefixLength OBJECT-TYPE
+        SYNTAX      InetAddressPrefixLength
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The prefix length associated with IP address."
+        ::= { hpicfSwitchIpAddressEntry 3 }
+
+
+    hpicfSwitchIpAddressType OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        unicast(1),
+                        anycast(2)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "IP address type. For V4 addresses the value will be 
+                     unicast."
+        ::= { hpicfSwitchIpAddressEntry 4 }
+
+
+    -- V4 Interface Table
+
+    hpicfIpv4InterfaceTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfIpv4InterfaceEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "This table contains per-interface IPV4 configuration
+                     information."
+        ::= { hpicfIpv4InterfaceObjects 1 }
+
+
+    hpicfIpv4InterfaceEntry OBJECT-TYPE
+        SYNTAX      HpicfIpv4InterfaceEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "An entry in the hpicfIpv4InterfaceEntry contains IPV4 
+                     interface specific configuration information. This table
+                     is indexed by ipv4InterfaceIfIndex."
+        AUGMENTS    { ipv4InterfaceEntry }
+        ::= { hpicfIpv4InterfaceTable 1 }
+
+
+    HpicfIpv4InterfaceEntry ::=
+        SEQUENCE {
+            hpicfIpv4InterfaceDhcpEnable         INTEGER,
+            hpicfIpv4InterfaceForwarding         INTEGER,
+            hpicfIpv4InterfaceProxyArp           INTEGER
+        }
+
+
+    hpicfIpv4InterfaceDhcpEnable OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        full(1),
+                        off(2),
+                        inform(3)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Changing this flag to 'full' will clear any existing
+                     IP address configuration for this interface and
+                     will cause the device to use a dynamic method
+                     (e.g. DHCP) to obtain its IP configuration and
+                     other configuration parameter (such as gateway,
+                     time of day, etc...) for this interface.
+
+                     Setting this flag to 'inform' will allow manual IP
+                     address configuration and yet permit other configuration
+                     parameters (such as gateway, time of day, etc...) to
+                     be obtained from a DHCP server.
+
+                     Setting this flag to 'off' will allow manual IP
+                     configuration but disallow any DHCP configuration."
+        DEFVAL { full }
+        ::= { hpicfIpv4InterfaceEntry 1 }
+
+
+    hpicfIpv4InterfaceForwarding OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enabled (1),
+                        disabled(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "This flag indicates whether this interface is forwarding
+                     the datagrams that were not addressed to this interface.
+
+                     Setting this flag to 'enabled' (the default) results 
+                     in forwarding the datagrams that were not addressed to 
+                     this interface.
+
+                     Setting this flag to 'disabled' results in ignoring
+                     datagrams that were not addressed to this entity."
+        DEFVAL { enabled }
+        ::= { hpicfIpv4InterfaceEntry 2 }
+
+
+    hpicfIpv4InterfaceProxyArp OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enabled(1),
+                        disabled(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Enables/disables ARP proxy on the interface. If set
+                     to 'enabled', the switch will respond on ARP request
+                     for IP addresses from other subnets.
+                     If set to disabled (the default), the switch will not
+                     respond on ARP request for IP addresses from other 
+                     subnets."
+        DEFVAL { disabled }
+        ::= { hpicfIpv4InterfaceEntry 3 }
+
+
+
+    -- Conformance information
+
+    hpicfIpConfigConformance OBJECT IDENTIFIER ::= {hpicfIpConfig  2}
+
+    hpicfIpConfigCompliances OBJECT IDENTIFIER ::= {hpicfIpConfigConformance 1}
+    hpicfIpConfigGroups      OBJECT IDENTIFIER ::= {hpicfIpConfigConformance 2}
+
+
+
+    -- compliance statements
+
+
+    hpicfIpConfigCompliance MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "
+                A compliance statement for HP Routing switches with IP 
+                Configuration"
+        MODULE
+        MANDATORY-GROUPS {  hpicfIpAddressTableGroup,
+                            hpicfIpv4InterfaceTableGroup,
+                            hpicfSwitchIpAddressTableGroup }
+
+        OBJECT      hpicfIpv4InterfaceDhcpEnable
+        MIN-ACCESS  read-write
+        DESCRIPTION "An agent is not required to implement inform (3) 
+                     state."
+
+        ::= { hpicfIpConfigCompliances 1 }
+
+
+    hpicfIpAddressTableGroup OBJECT-GROUP
+        OBJECTS { 
+                    hpicfIpAddressPrefixLength,
+                    hpicfIpAddressType,
+                    hpicfIpAddressRowStatus }
+        STATUS      current
+        DESCRIPTION "A Collection of objects allowing configuration of
+                     an IP address for an interface."
+        ::= { hpicfIpConfigGroups 1 }
+
+    hpicfSwitchIpAddressTableGroup OBJECT-GROUP
+        OBJECTS { 
+                    hpicfSwitchIpAddressAddrType,
+                    hpicfSwitchIpAddressAddr}
+        STATUS      current
+        DESCRIPTION "A Collection of objects providing interfaces addressing
+                     information."
+        ::= { hpicfIpConfigGroups 2 }
+
+
+    hpicfIpv4InterfaceTableGroup  OBJECT-GROUP
+        OBJECTS {
+                    hpicfIpv4InterfaceDhcpEnable,
+                    hpicfIpv4InterfaceForwarding,
+                    hpicfIpv4InterfaceProxyArp }
+        STATUS      current
+        DESCRIPTION "A Collection of objects that allows IPV4 interface 
+                     configuration"
+        ::= { hpicfIpConfigGroups 3 }
+
+                               
+END

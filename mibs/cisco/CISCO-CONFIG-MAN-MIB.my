@@ -1,0 +1,432 @@
+-- *****************************************************************
+-- CISCO-CONFIG-MAN-MIB.my:  Configuration Management MIB
+--
+-- April 1995, Bob Stewart
+--
+-- Copyright (c) 1995-1996 by cisco Systems, Inc.
+-- All rights reserved.
+-- 
+-- *****************************************************************
+
+CISCO-CONFIG-MAN-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	MODULE-IDENTITY,
+	OBJECT-TYPE,
+	NOTIFICATION-TYPE,
+	TimeTicks,
+	Integer32,
+	Counter32,
+	IpAddress
+		FROM SNMPv2-SMI
+	MODULE-COMPLIANCE, OBJECT-GROUP
+		FROM SNMPv2-CONF
+	DisplayString,
+	TEXTUAL-CONVENTION
+		FROM SNMPv2-TC
+	ciscoMgmt
+		FROM CISCO-SMI;
+
+
+ciscoConfigManMIB MODULE-IDENTITY
+	LAST-UPDATED	"9511280000Z"
+	ORGANIZATION	"Cisco Systems, Inc."
+	CONTACT-INFO
+		"       Cisco Systems
+			Customer Service
+
+		Postal: 170 W Tasman Drive
+			San Jose, CA  95134
+			USA
+
+		   Tel: +1 800 553-NETS
+
+		E-mail: cs-snmp@cisco.com"
+	DESCRIPTION
+		"Configuration management MIB.
+
+		The MIB represents a model of configuration data that
+		exists in various locations:
+
+		running		in use by the running system
+		terminal	operator's mind or attached hardware
+		local		saved locally in NVRAM or flash
+		remote		saved to some server on the network
+
+		Although some of the system functions that relate here
+		can be used for general file storage and transfer, this
+		MIB intends to include only such operations as clearly
+		relate to configuration.  Its primary emphasis is to
+		track changes and saves of the running configuration.
+
+		As saved data moves further from startup use, such as
+		into different local flash files or onto the network,
+		tracking becomes difficult to impossible, so the MIB's
+		interest and functions are confined in that area."
+	REVISION	"9511280000Z"
+	DESCRIPTION
+		"Initial version of this MIB module."
+	::= { ciscoMgmt 43 }
+
+
+ciscoConfigManMIBObjects OBJECT IDENTIFIER ::= { ciscoConfigManMIB 1 }
+
+ccmHistory		OBJECT IDENTIFIER ::= { ciscoConfigManMIBObjects 1 }
+
+
+-- Textual Conventions
+
+HistoryEventMedium ::= TEXTUAL-CONVENTION
+	STATUS     current
+	DESCRIPTION
+		"The source or destination of a configuration change,
+		save, or copy.
+
+		erase		erasing destination (source only)
+		running		live operational data
+		commandSource	the command source itself
+		startup		what the system will use next reboot
+		local		local NVRAM or flash
+		networkTftp	network host via Trivial File Transfer
+		networkRcp	network host via Remote Copy
+		"
+       	SYNTAX  INTEGER { erase(1), commandSource(2), running(3), 
+			  startup(4), local(5), 
+			  networkTftp(6), networkRcp(7) }
+
+
+-- Configuration History
+
+ccmHistoryRunningLastChanged OBJECT-TYPE
+	SYNTAX     TimeTicks
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The value of sysUpTime when the running configuration
+		was last changed.
+
+		If the value of ccmHistoryRunningLastChanged is greater than
+		ccmHistoryRunningLastSaved, the configuration has been
+		changed but not saved."
+	::= { ccmHistory 1 }
+
+ccmHistoryRunningLastSaved OBJECT-TYPE
+	SYNTAX     TimeTicks
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The value of sysUpTime when the running configuration
+		was last saved (written).
+
+		If the value of ccmHistoryRunningLastChanged is greater than
+		ccmHistoryRunningLastSaved, the configuration has been
+		changed but not saved.
+
+		What constitutes a safe saving of the running
+		configuration is a management policy issue beyond the
+		scope of this MIB.  For some installations, writing the
+		running configuration to a terminal may be a way of
+		capturing and saving it.  Others may use local or
+		remote storage.  Thus ANY write is considered saving
+		for the purposes of the MIB."
+	::= { ccmHistory 2 }
+
+ccmHistoryStartupLastChanged OBJECT-TYPE
+	SYNTAX     TimeTicks
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The value of sysUpTime when the startup configuration
+		was last written to.  In general this is the
+		default configuration used when cold starting the
+		system.  It may have been changed by a save of the
+		running configuration or by a copy from elsewhere."
+	::= { ccmHistory 3 }
+
+ccmHistoryMaxEventEntries OBJECT-TYPE
+	SYNTAX     Integer32 (0..2147483647)
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The maximum number of entries that can be held in
+		ccmHistoryEventTable.
+
+		The recommended value for implementations is 10."
+	::= { ccmHistory 4 }
+
+ccmHistoryEventEntriesBumped OBJECT-TYPE
+	SYNTAX     Counter32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The number of times the oldest entry in ccmHistoryEventTable
+		was deleted to make room for a new entry."
+	::= { ccmHistory 5 }
+
+
+ccmHistoryEventTable OBJECT-TYPE
+	SYNTAX     SEQUENCE OF CcmHistoryEventEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+		"A table of configuration events on this router."
+	::= { ccmHistory 6 }
+
+ccmHistoryEventEntry OBJECT-TYPE
+	SYNTAX     CcmHistoryEventEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+		"Information about a configuration event on this router."
+	INDEX	{ ccmHistoryEventIndex }
+	::= { ccmHistoryEventTable 1 }
+
+CcmHistoryEventEntry ::=
+    SEQUENCE {
+	ccmHistoryEventIndex
+		Integer32,
+	ccmHistoryEventTime
+		TimeTicks,
+	ccmHistoryEventCommandSource
+       		INTEGER,
+	ccmHistoryEventConfigSource
+       		HistoryEventMedium,
+	ccmHistoryEventConfigDestination
+       		HistoryEventMedium,
+	ccmHistoryEventTerminalType
+		INTEGER,
+	ccmHistoryEventTerminalNumber
+		Integer32,
+	ccmHistoryEventTerminalUser
+		DisplayString,
+	ccmHistoryEventTerminalLocation
+		DisplayString,
+	ccmHistoryEventCommandSourceAddress
+		IpAddress,
+	ccmHistoryEventVirtualHostName
+		DisplayString,
+	ccmHistoryEventServerAddress
+		IpAddress,
+	ccmHistoryEventFile
+		DisplayString,
+	ccmHistoryEventRcpUser
+		DisplayString
+    }
+
+ccmHistoryEventIndex OBJECT-TYPE
+	SYNTAX     Integer32 (1..2147483647)
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+		"A monotonically increasing integer for the sole purpose of
+		indexing events.  When it reaches the maximum value, an
+		extremely unlikely event, the agent wraps the value back
+		to 1 and may flush existing entries."
+	::= { ccmHistoryEventEntry 1 }
+
+ccmHistoryEventTime OBJECT-TYPE
+	SYNTAX     TimeTicks
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The value of sysUpTime when the event occurred."
+	::= { ccmHistoryEventEntry 2 }
+
+ccmHistoryEventCommandSource OBJECT-TYPE
+       	SYNTAX  INTEGER { commandLine(1), snmp(2) }
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The source of the command that instigated the event."
+	::= { ccmHistoryEventEntry 3 }
+
+ccmHistoryEventConfigSource OBJECT-TYPE
+       	SYNTAX  HistoryEventMedium
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The configuration data source for the event."
+	::= { ccmHistoryEventEntry 4 }
+
+ccmHistoryEventConfigDestination OBJECT-TYPE
+       	SYNTAX  HistoryEventMedium
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The configuration data destination for the event."
+	::= { ccmHistoryEventEntry 5 }
+
+ccmHistoryEventTerminalType OBJECT-TYPE
+	SYNTAX	INTEGER {
+		notApplicable(1),
+		unknown(2),
+		console(3),
+		terminal(4),
+		virtual(5),
+		auxiliary(6)
+		}						
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"If ccmHistoryEventCommandSource is 'commandLine',
+		the terminal type, otherwise 'notApplicable'."
+	::= { ccmHistoryEventEntry 6 }
+
+ccmHistoryEventTerminalNumber OBJECT-TYPE
+	SYNTAX     Integer32
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"If ccmHistoryEventCommandSource is 'commandLine',
+		the terminal number.  The value is -1 if not available
+		or not applicable."
+	::= { ccmHistoryEventEntry 7 }
+
+ccmHistoryEventTerminalUser OBJECT-TYPE
+-- ??? Check max size.
+	SYNTAX     DisplayString (SIZE (0..64))
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"If ccmHistoryEventCommandSource is 'commandLine',
+		the name of the logged in user.  The length is zero if
+		not available or not applicable."
+	::= { ccmHistoryEventEntry 8 }
+
+ccmHistoryEventTerminalLocation OBJECT-TYPE
+-- ??? Check max size.
+	SYNTAX     DisplayString (SIZE (0..64))
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"If ccmHistoryEventCommandSource is 'commandLine',
+		the hard-wired location of the terminal or the remote host
+		for an incoming connection.  The length is zero if not
+		available or not applicable."
+	::= { ccmHistoryEventEntry 9 }
+
+ccmHistoryEventCommandSourceAddress OBJECT-TYPE
+	SYNTAX     IpAddress
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"If ccmHistoryEventTerminalType is 'virtual', the internet
+		address of the connected system.
+
+		If ccmHistoryEventCommandSource is 'snmp', the internet
+		address of the requester.
+
+		The value is 0.0.0.0 if not available or not applicable."
+	::= { ccmHistoryEventEntry 10 }
+
+ccmHistoryEventVirtualHostName OBJECT-TYPE
+-- ??? Check max size.
+	SYNTAX     DisplayString (SIZE (0..64))
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"If ccmHistoryEventTerminalType is 'virtual', the host
+		name of the connected system.  The length is zero if
+		not available or not applicable."
+	::= { ccmHistoryEventEntry 11 }
+
+ccmHistoryEventServerAddress OBJECT-TYPE
+	SYNTAX     IpAddress
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"If ccmHistoryEventConfigSource or
+		ccmHistoryEventConfigDestination is 'networkTftp' or
+		'networkRcp', the internet address of the storage file
+		server.  The value is 0.0.0.0 if not applicable or not
+		available."
+	::= { ccmHistoryEventEntry 12 }
+
+ccmHistoryEventFile OBJECT-TYPE
+-- ??? Check max size.
+	SYNTAX     DisplayString (SIZE (0..64))
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"If ccmHistoryEventConfigSource or
+		ccmHistoryEventConfigDestination is 'networkTftp' or
+		'networkRcp', the configuration file name at the
+		storage file server.  The length is zero if not
+		available or not applicable."
+	::= { ccmHistoryEventEntry 13 }
+
+ccmHistoryEventRcpUser OBJECT-TYPE
+-- ??? Check max size.
+	SYNTAX     DisplayString (SIZE (0..64))
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"If ccmHistoryEventConfigSource or
+		ccmHistoryEventConfigDestination is 'networkRcp', the
+		remote user name.  The length is zero if not applicable
+		or not available."
+	::= { ccmHistoryEventEntry 14 }
+
+
+-- Notifications
+
+ciscoConfigManMIBNotificationPrefix OBJECT IDENTIFIER ::= { ciscoConfigManMIB 2 }
+ciscoConfigManMIBNotifications OBJECT IDENTIFIER ::= { ciscoConfigManMIBNotificationPrefix 0 }
+
+ciscoConfigManEvent NOTIFICATION-TYPE
+       OBJECTS { ccmHistoryEventCommandSource, 
+		 ccmHistoryEventConfigSource,
+		 ccmHistoryEventConfigDestination }
+       STATUS  current
+       DESCRIPTION
+		"Notification of a configuration management event as
+		recorded in ccmHistoryEventTable."
+	::= { ciscoConfigManMIBNotifications 1 }
+
+	
+-- Conformance
+
+ciscoConfigManMIBConformance OBJECT IDENTIFIER ::= { ciscoConfigManMIB 3 }
+ciscoConfigManMIBCompliances OBJECT IDENTIFIER ::= { ciscoConfigManMIBConformance 1 }
+ciscoConfigManMIBGroups      OBJECT IDENTIFIER ::= { ciscoConfigManMIBConformance 2 }
+
+-- Compliance
+
+ciscoConfigManMIBCompliance MODULE-COMPLIANCE
+	STATUS current
+	DESCRIPTION
+		"The compliance statement for entities which implement
+		the Cisco Configuration Management MIB"
+	MODULE	-- this module
+		MANDATORY-GROUPS { ciscoConfigManHistoryGroup }
+	::= { ciscoConfigManMIBCompliances 1 }
+
+-- Units of Conformance
+
+ciscoConfigManHistoryGroup OBJECT-GROUP
+	OBJECTS {
+		ccmHistoryRunningLastChanged,
+		ccmHistoryRunningLastSaved,
+		ccmHistoryStartupLastChanged,
+		ccmHistoryMaxEventEntries,
+		ccmHistoryEventEntriesBumped,
+		ccmHistoryEventTime,
+       		ccmHistoryEventCommandSource,
+		ccmHistoryEventConfigSource,
+		ccmHistoryEventConfigDestination,
+		ccmHistoryEventTerminalType,
+		ccmHistoryEventTerminalNumber,
+		ccmHistoryEventTerminalUser,
+		ccmHistoryEventTerminalLocation,
+		ccmHistoryEventCommandSourceAddress,
+		ccmHistoryEventVirtualHostName,
+		ccmHistoryEventServerAddress,
+		ccmHistoryEventFile,
+		ccmHistoryEventRcpUser
+	}
+	STATUS current
+	DESCRIPTION
+		"Configuration history."
+	::= { ciscoConfigManMIBGroups 1 }
+
+END

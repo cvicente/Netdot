@@ -1,0 +1,856 @@
+--/* 
+-- * $RCSfile: extreme-base.mib,v $ - ExtremeWare enterprise MIB
+-- *
+-- * Copyright (c) 1997 - 2002 by Extreme Networks Inc.
+-- * 
+-- *	  Extreme Networks
+-- *      http://www.extremenetworks.com
+-- *
+-- *
+-- *
+-- * Extreme Networks modification history
+-- * -------------------------------------
+-- *
+-- * Revision 1.15.2.5  2004/04/30 17:39:13  build-sc
+-- * PD none: merge v720b25::v720b25-br-EWfixes12-3 into pseudo-trunk (v720b26)
+-- *
+-- * Revision 1.15.2.4.14.1  2004/04/26 06:13:33  svallepalli
+-- * PD none: promoting branch-poe-beta_v720b23 to v720b25
+-- *
+-- * Revision 1.15.2.4.10.2  2004/04/16 20:17:29  emar
+-- * PD2-229674701:  PSU failover notification changes.  Sending 2 OIDs, extremePethSlotPSUActive and extremePethSlotMainPseIndex which are referenced by slot in the indices.
+-- *
+-- * Revision 1.15.2.4.10.1  2004/03/22 19:28:55  emar
+-- * PD2-218970601:  mib changes to sync up with LABU's poe mib.  Fix scotty warning message regarding psustatusnotification.  Need to put in a parent for the trap.
+-- *
+-- * Revision 1.15.2.4  2004/03/03 01:43:00  build-sc
+-- * PD none: merge v720b22::v720b22-br-EWfixes9-2-4 into psuedo-trunk (v720b23)
+-- *
+-- * Revision 1.15.2.3.32.1  2004/03/01 00:44:25  build-sc
+-- * PD none: Merge branch-poe_beta_v720b19 to branch-EWfixes9-2_v720b22
+-- *
+-- * Revision 1.15.2.3.16.1  2004/02/13 21:58:45  emar
+-- * PD2-213300901:  PoE mib is now a standard so it is pulled from extreme.mib.
+-- *
+-- * Revision 1.15.2.3  2003/11/22 14:57:33  build-sc
+-- * PD none: merge v720b15::v720b15-br-EWfixes7-2 into 7.2 psuedo-trunk (v720b16)
+-- *
+-- * Revision 1.15.2.2.2.1  2003/11/17 16:47:55  slarribeau
+-- * PD none: promote v720b13-br-EWfixes6-1::v720b13-br-EWfixes6-2
+-- *
+-- * Revision 1.15.2.2  2003/11/17 08:38:35  build-sc
+-- * PD none: When assembling 720b14, merged v720b13::branch-EWfixes6_v720b13
+-- *   insead of v720b13::v720b13-br-EWfixes6-1. Backing out following files:
+-- *     1) cvs update -j 1.76.62.1 -j 1.76 extSh.c
+-- *     2) cvs update -j 1.69.204.2 -j 1.69.204.1 sessions.c
+-- *     3) cvs update -j 1.4.158.1 -j 1.4 trx_utils.c
+-- *     4) cvs update -j 1.3.18.2 -j 1.3.18.1 iqos.c
+-- *     5) cvs update -j 1.24.2.1.2.2 -j 1.24.2.1.2.1 nmc_msg.c
+-- *     6) cvs update -j 1.10.50.1 -j 1.10 snmpTrapEncode.c
+-- *     7) cvs update -j 1.4.158.1 -j 1.4 msmTx.c
+-- *     8) cvs update -j 1.4.240.1 -j 1.4 rasOut.c
+-- *     9) cvs update -j 1.15.8.1 -j 1.15 extreme.mib
+-- *
+-- * Revision 1.15.2.1  2003/11/16 08:28:58  build-sc
+-- * PD none: Merge v720b13::branch_EWfixes6_v720b13 into psuedo-trunk (v720b14)
+-- *
+-- * Revision 1.15.18.1  2003/11/14 15:15:14  pweaver
+-- * PD2-190737201 - change triumph mib so that it uses ifIndex instead of port index.
+-- *
+-- * Revision 1.15  2003/11/03 14:30:53  build-sc
+-- * PD none: Merge v720b10::branch-EWfixes4_v720b10 into trunk (v720b11)
+-- *
+-- * Revision 1.14.32.1  2003/10/29 23:00:42  vgopalan
+-- * PD2-178246201:
+-- *   For CARDTYPE_NG_10GX3 (card with Xenpak module),
+-- *   tenGig has been renamed to tenGx3 so that it is consistent with CLI.
+-- *   Show slot displays 10GX3.
+-- *
+-- * Revision 1.14  2003/10/11 05:21:11  build-sc
+-- * PD none:
+-- *   Merge v720b5::branch-poe-1_v720b5 into trunk (v720b6)
+-- *
+-- * Revision 1.13.6.1  2003/10/06 13:46:03  build-sc
+-- * PD none: promote  branch-poe-1_v711b4 to branch-poe-1_v720b5
+-- *
+-- * Revision 1.13  2003/09/24 13:19:25  build-sc
+-- * PD none: merge v720b1::branch-EW-Features-1_v720b1 into trunk (v720b2)
+-- *
+-- * Revision 1.12.6.1  2003/09/21 08:10:41  build-sc
+-- * PD none: merge v710b30::branch-Triumph-MIB_v710b30 into branch-EW-Features-1_v720b1
+-- *
+-- * Revision 1.9.4.1  2003/09/17 14:18:40  pweaver
+-- * PD none
+-- * Added support for Triumph MIB and trap. Also includes fix for PD 172693901.
+-- *
+-- * Revision 1.12  2003/09/13 02:12:48  build-sc
+-- * PD none: merge v720b0::branch-XENPAK_v720b0 into trunk (v720b1)
+-- *
+-- * Revision 1.11.108.1  2003/09/10 00:01:42  ajoshi
+-- * PD none
+-- *    Initial checkin for the XENPAK branch created off v720b0. For
+-- *    detailed description of all the changes that are going in with
+-- *    this checkin, please check the changes committed to branch
+-- *    branch-XENPAK_v710b40. This is simply progression of that branch
+-- *    to 7.2.0 code-base (The module is going to be released with 7.2.0).
+-- *
+-- * Revision 1.11.46.1  2003/08/28 02:08:34  vgopalan
+-- * PD none
+-- *    Checking in changes for the Xenpak mib.
+-- *    Changes are to extreme mib and smart trap.
+-- *    A new file xenpakmib.c is added.
+-- *
+-- * Revision 1.11.82.3  2003/09/25 23:15:33  emar
+-- * PD none:  More mibs changes from LABU. Modified notification trap to its own object.
+-- *
+-- * Revision 1.11.82.2  2003/09/19 22:25:18  emar
+-- * PD none: More LABU merges.  Add in backup supply support.
+-- *
+-- * Revision 1.11.82.1  2003/09/05 02:59:35  emar
+-- * PD none:  Merge to branch-poe-1_v711b4
+-- *
+-- * Revision 1.11  2003/05/26 18:27:16  rtp-build
+-- * PD none: v710b32::v710b32-br-EWfixes14-2 into trunk (v710b33)
+-- *
+-- * Revision 1.10.4.1  2003/05/21 23:28:24  kfrick
+-- * PD none: merge up from v710b30 to b32 for EWfixes14 branch
+-- *
+-- * Revision 1.10  2003/05/18 02:57:42  rtp-build
+-- * PD none: merge of branch-622MR3_v710b30 to trunk (v710b31)
+-- *
+-- * Revision 1.9.6.1  2003/05/15 00:10:35  kfrick
+-- * PD none: merge up from v710b28 to v710b30
+-- *
+-- * Revision 1.9  2003/05/13 19:51:49  rtp-build
+-- * PD none: merge v710b29::v710b29-br-EWfixes13-2 into trunk (v710b30)
+-- *
+-- * Revision 1.8.18.1  2003/05/08 12:23:42  mtippens
+-- * PD2-138768401
+-- * Need to remove the Triumph cardtype FM-16T from the CLI and MIB because this card's development was put on hold.
+-- *
+-- * Revision 1.8  2003/04/07 17:22:41  rtp-build
+-- * PD none: merge of branch EWfixes9-2 to trunk (v710b26)
+-- *
+-- * Revision 1.7.12.2  2003/04/03 23:47:35  rsharma
+-- * PD2-132722501 :Netlogin/802.1x traps should contain information for CAMPUS /ISP mode
+-- *
+-- * Revision 1.7.12.1  2003/04/02 21:54:16  agidwani
+-- * PD2-128156254: Modify syslog mib to work under EMS. Also move its position in the MIB tree to be under an EXTREME-SERVICES-MIB which LABU is defining
+-- *
+-- * Revision 1.7  2003/03/18 16:24:17  rtp-build
+-- * PD none: merge EWfixes6_v710b20 into trunk (v710b22)
+-- *
+-- * Revision 1.6.14.2  2003/03/12 16:10:28  pweaver
+-- * PD2-125850501
+-- * Updates to match latest versioning spec.
+-- *
+-- * Revision 1.6.14.1  2003/03/07 22:40:45  dcarson
+-- * PD none: promote EWfixes6_v710b16 to _v710b20
+-- *
+-- * Revision 1.6.2.1  2003/03/06 17:57:56  pweaver
+-- * PD2-125850501
+-- * Updates to versioning in file headers, and addition of version string MIB.
+-- *
+-- * Revision 1.6.16.4  2003/09/04 01:30:16  emar
+-- * PD none:  Support the new mib from LABU for poe.
+-- *
+-- * Revision 1.6.16.3  2003/08/05 02:32:15  emar
+-- * PD none: more mib changes.
+-- *
+-- * Revision 1.6.16.2  2003/07/29 22:53:04  emar
+-- * PD none:  support for POE in mibs.
+-- *
+-- * Revision 1.6.16.1  2003/04/01 23:32:09  jwanderer
+-- * PD none: Added support for the FM32P
+-- *
+-- * Revision 1.6  2003/02/24 20:19:46  rtp-build
+-- * PD none: merge EWfixes5_v710b12 into trunk (v710b16)
+-- *
+-- * Revision 1.5.4.1  2003/02/20 19:27:04  pweaver
+-- * PD none
+-- * Support for Merrimac/SuperMSM cardtype and bootroom version in the
+-- * Extreme MIB.
+-- *
+-- * Revision 1.5  2003/02/12 05:50:54  build-sc
+-- * PD none: merge vlanXlate and ESRP failover into trunk (v710b11)
+-- *
+-- * Revision 1.4  2003/02/10 05:54:23  rtp-build
+-- * PD none: merge changes from SR1, Triumph and EWfixes3 into trunk (v710b10)
+-- *
+-- * Revision 1.3  2003/02/06 22:56:36  rtp-build
+-- * PD none: merge 802.1x and SNMPv3 feature into trunk (v710b9)
+-- *
+-- * Revision 1.2.10.4.2.2.2.1  2003/02/10 16:45:30  chudnall
+-- * PD none: promotion of branch-vlan_xlate_v710b7 to v710b10
+-- *
+-- * Revision 1.2.10.4.2.2  2003/02/07 01:48:02  agidwani
+-- * PD none: branch-700SR1-merge_v710b8-802-1x-snmpv3-2 merge conflict resolution again. More netlogin OID fixes
+-- *
+-- * Revision 1.2.10.4.2.1  2003/02/07 00:39:39  agidwani
+-- * PD none: branch-700SR1-merge_v710b8-802-1x-snmpv3-2 merge conflict resolution again. Also fixed wrong OIDs of Netlogin Traps.
+-- *
+-- * Revision 1.2.10.4  2003/02/04 19:04:37  mmroz
+-- * PD None: Duplicate MSM Failover stuff from old file
+-- *
+-- * Revision 1.2.10.3  2003/02/04 17:41:09  dcarson
+-- * PD none: never use dash-dash in an SNMP commit comment
+-- *
+-- * Revision 1.2.10.2  2003/02/04 16:20:12  dcarson
+-- * PD none: promotion of branch-802-1x-snmpv3_v710b6 to _v710b8 (phase one; has compile errors)
+-- *
+-- * Revision 1.1.12.1  2003/01/15 03:53:44  rsharma
+-- * PD2-116204701 : promote 802.1x ,netlogin & snmpv3 merge from v710b0 -> v710b6
+-- *
+-- * Revision 1.1.8.3  2003/01/15 00:10:20  rsharma
+-- * PD2-108469220 : Feature Merge : 802.1x , Adding Netlogin traps
+-- *
+-- * Revision 1.1.8.2  2003/01/14 06:20:14  agidwani
+-- * PD2-109134118: Changes for backward compatibility of traps, checked in as part of merge to EW 7.1
+-- *
+-- * Revision 1.1.8.1  2002/12/03 16:46:55  agidwani
+-- * PD2-109134118: SNMPv3 merge
+-- *
+-- * Revision 1.86  2002/10/18 21:35:18  rtp-build
+-- * PD none: merge branch-EWfixes1_v700b45 into trunk as v700b46
+-- *
+-- * Revision 1.85.36.1  2002/10/17 17:28:09  dcarson
+-- * PD none: promote branch-EWfixes1_v700b43 to b45
+-- *
+-- * Revision 1.85.26.1  2002/10/15 19:51:17  chudnall
+-- * PD2-97119501: Added extremeEsrpNeighborInternalActivePorts to the
+-- *               ExtremeEsrpNeighborEntry row.  This entry was missing and
+-- *               caused the MG-Soft MIB compiler to generate an error.
+-- *
+-- * Revision 1.85  2002/09/23 14:15:57  rtp-build
+-- * PD none: merge branch-SCFixes3_v700b38 into trunk, forming v700b39
+-- *
+-- * Revision 1.84.2.1  2002/09/11 17:35:44  build-sc
+-- * PD none Promote ScAbuFixes to b38
+-- *
+-- * Revision 1.84  2002/09/10 18:58:36  rtp-build
+-- * PD2-87668501: merge branch-PXMFixes2_v700b34 into trunk
+-- *
+-- * Revision 1.82.12.1  2002/08/29 23:36:47  nayak
+-- * PD none: sync with trunck which is at v700b36.
+-- *
+-- * Revision 1.83  2002/08/29 17:15:10  dcarson
+-- * PD2-84458213: merge branch-SCFixes2_v700b34 into trunk to form v700b35
+-- *
+-- * Revision 1.82.6.1.2.1  2002/09/05 18:45:08  agidwani
+-- * PD2-79746413: Deprecated cpuTransmitPriority since it's no longer
+-- * supported in the backend.
+-- *
+-- * Revision 1.82.6.1  2002/08/16 06:21:23  build-sc
+-- * PD none Promote SCFixes2 to b34 for commit
+-- *
+-- * Revision 1.82  2002/08/13 20:11:22  dcarson
+-- * PD2-79739006: merge ABUfixes4 twig into trunk
+-- *
+-- * Revision 1.81  2002/08/13 18:41:32  dcarson
+-- * PD2-79739002: merge 622merge2 into trunk
+-- *
+-- * Revision 1.80.12.1  2002/08/05 22:27:52  build-sc
+-- * PD none: Promote 622Merge2 to b32
+-- *
+-- * Revision 1.80.12.1  2002/08/05 22:27:52  build-sc
+-- * PD none: Promote 622Merge2 to b32
+-- *
+-- * Revision 1.80  2002/07/30 15:17:07  dcarson
+-- * PD2-75097201: merge branch-SCFixes_v700b29 (and predecessor branch-SCfixes_v700b15) into trunk
+-- *
+-- * Revision 1.79.12.2  2002/07/20 09:06:36  build-sc
+-- * Promote SCFixes to b29 for commit
+-- *
+-- * Revision 1.79.12.1  2002/07/20 01:01:54  build-sc
+-- * Promote SCFixes to b29 for commit
+-- *
+-- * Revision 1.79.12.2.4.2  2002/08/05 16:05:33  agidwani
+-- * PD1-60FYY: New Extreme proprietary MAU types for 1 Gig  LX70,  ZX and WDM.
+-- *
+-- * Revision 1.79.12.2.4.1  2002/07/29 16:30:19  agidwani
+-- * PD1-CK081: New object 'extremeImageBooted'
+-- *
+-- * Revision 1.79.12.2  2002/07/20 09:06:36  build-sc
+-- * Promote SCFixes to b29 for commit
+-- *
+-- * Revision 1.79.12.1  2002/07/20 01:01:54  build-sc
+-- * Promote SCFixes to b29 for commit
+-- *
+-- * Revision 1.79  2002/07/15 15:58:47  dcarson
+-- * PD2-71846601: merge 10 gig feature into trunk, including
+-- * branch-Promote10Gig_v700b26, branch-10gig_v700b20.
+-- * branch-10gig_v700b15 and forming v700b27
+-- *
+-- * Revision 1.78.48.1  2002/07/12 23:55:48  build-sc
+-- * Promote 10 gig branch to b26
+-- *
+-- * Revision 1.78.36.1  2002/07/03 01:47:52  emar
+-- * Merge in 10Gig
+-- *
+-- * Revision 1.78  2002/06/12 20:42:16  dcarson
+-- * PD2-63883001: merge branch-PXMfixes_v700b15 into trunk (forming v700b16)
+-- *
+-- * Revision 1.77.2.1  2002/06/11 01:34:30  dcarson
+-- * promote PXM branch from v700b13 to v700b15, including conflicts
+-- *
+-- * Revision 1.77.8.2  2002/07/20 00:47:29  agidwani
+-- * PD2-63843710: Expose vlan l2 stats through SNMP. Since the counters
+-- * are 64 bit, also change RMON alarms to work with 64 bit counters.
+-- * (Only first 32 bits are significant though)
+-- *
+-- * Revision 1.77.8.1  2002/07/16 01:20:03  agidwani
+-- * PD1-DVWAP: New 'macLimit' trap.
+-- *
+-- * Revision 1.77  2002/06/10 17:31:11  dcarson
+-- * PD2-56233001: merge netflow into trunk, forming v700b15
+-- *
+-- * Revision 1.76.2.1  2002/06/07 00:42:31  psubbiah
+-- * Netflow MIB moved: Netflow Merge
+-- *
+-- * Revision 1.76  2002/06/04 21:41:21  dcarson
+-- * PD2-29597701: merge branch-622merge_v700b13 into trunk (forming v700b14)
+-- *
+-- * Revision 1.75.40.1  2002/05/16 22:01:32  tnguyen
+-- * Merge 622 changes up to build 13
+-- *
+-- * Revision 1.75.42.1  2002/05/14 23:04:35  dchou
+-- * Add MIB stuff for PXM
+-- *
+-- * Revision 1.75  2002/04/09 18:19:59  dcarson
+-- * PD 1-DERS9: commit all changes to trunk
+-- *
+-- * Revision 1.74.2.1  2002/04/03 22:19:38  dcarson
+-- * PD 1-DERS9: merge branch-RTP_v700b4 into trunk (via branch-RTP_v700b7)
+-- *
+-- * Revision 1.74  2002/04/02 22:21:39  dcarson
+-- * PD 1-D344B: merge branch-MPLS_v700b5 back into trunk (via
+-- * branch-MPLS_v700b6)
+-- *
+-- * Revision 1.73.12.1  2002/04/01 22:37:40  dcarson
+-- * PD 1-D344B: merge branch-MPLS_v700b5 back into trunk (via
+-- * branch-MPLS_v700b6)
+-- *
+-- * Revision 1.73.8.2  2002/03/22 22:20:29  dschweitzer
+-- * Remove v700b5 merge conflicts
+-- *
+-- * Revision 1.73.8.1  2002/03/22 20:55:17  dcarson
+-- * join branch-MPLS2 to branch-MPLS_v700b5
+-- *
+-- * Revision 1.73  2002/03/21 20:59:13  dcarson
+-- * PD 1-C8KSX: merge ABU_v700b4 into trunk
+-- *
+-- * Revision 1.72.40.2  2002/03/15 17:57:39  vtseng
+-- * Lilac merge
+-- *
+-- * Revision 1.72.40.1  2002/03/12 06:25:58  dcarson
+-- * PD 1-BGKRG: merge branch-ABU_v700b3 to branch-ABU_v700b4
+-- *
+-- * Revision 1.72.38.1  2002/03/11 20:29:41  dwade
+-- * conflict resolution for branch-ABU_v700b3
+-- *
+-- * Revision 1.72.2.2  2002/02/21 00:08:09  dwade
+-- * abu conflict resolution
+-- *
+-- * Revision 1.72.2.1  2002/02/20 00:41:08  dwade
+-- * abu merge conflict check in
+-- *
+-- * Revision 1.72.30.1  2002/03/08 03:55:06  gburgin
+-- * PR none - join branch-MPLS into branch-MPLS2 to get fixes.
+-- *
+-- * Revision 1.72.8.1  2002/03/05 01:57:32  gburgin
+-- * PR none - merge in changes since last merge into ew.
+-- *
+-- * Revision 1.72.44.1  2002/03/29 20:13:33  rhelbaoui
+-- * PR none
+-- * changed extremeProcessorStateChangeTrap from snmpv1 to snmpv2
+-- *
+-- * Revision 1.72.36.1  2002/05/08 22:57:55  psubbiah
+-- * NetFlow MIB now moved as extremeAgent.22 instead of under PoS since it is now implemented for Ethernet Ports also.
+-- *
+-- * Revision 1.72  2002/02/19 18:49:47  dcarson
+-- * PD 1-9UZ8T: merge RTP changes back into trunk
+-- *
+-- * Revision 1.71.4.1  2002/01/31 22:23:42  dcarson
+-- * merge: file without conflicts
+-- *
+-- * Revision 1.71.2.1  2002/01/17 18:32:30  dgrosser
+-- * PD none
+-- * 618->621 NC merge
+-- *
+-- * Revision 1.71.6.8  2002/04/19 18:00:32  dkumar
+-- * Fixed PD1-5LQI3, BGP maximum prefix limit feature.
+-- *
+-- * Revision 1.71.6.7  2002/04/18 20:54:54  agidwani
+-- * PD1-DDMYT: Change OID of 6804 from .29 to .27. The former is used for Summit16i by EpiCenter.
+-- *
+-- * Revision 1.71.6.6  2002/04/05 01:17:11  agidwani
+-- * PD1-DDMYT: Add SNMP support for BD6804(Black Triangle). New OID is extremeProduct.29
+-- *
+-- * Revision 1.71.6.5  2002/03/28 06:01:10  agidwani
+-- * PD1-C8W10: As part of this, decided to change TopologyChange from Timeout to TimeTicks.
+-- * PD1-C8W0J: Made the stpPortIfIndex not-accessible and removed the limit of 64 STP domains as we support a platform dependent number of maximum STP domains  since 6.2.1
+-- *
+-- * Revision 1.71.6.4  2002/03/21 05:51:04  agidwani
+-- * PD1-60FXK: Support for new private STP MIB.
+-- *
+-- * Revision 1.71.6.3  2002/03/07 21:41:13  agidwani
+-- * Added new objects for PD 1-61BMV and 1-60FXQ. Deprecated extremeQosUnconfigure for PD1-7YDFC
+-- *
+-- * Revision 1.71.6.2  2002/03/07 01:56:18  agidwani
+-- * PD1-5E4YT: New MIB object for CPU Tx priority.
+-- * PD13029: Added extremeVlanIfLoopbackModeFlag.
+-- *
+-- * Revision 1.71.6.1  2002/03/06 23:39:04  agidwani
+-- * PD1-7XD2X. Bring qos profile priority names in sync with those of CLI.
+-- *
+-- * Revision 1.71  2002/01/02 23:52:21  agidwani
+-- * PD1-5POED: Deprecated extremeQosRuleTosMask and extremeQosRuleTosMatch since they are not supported.
+-- *
+-- * Revision 1.70  2002/01/02 23:47:28  agidwani
+-- * PD1-7U56D: Added a product ID for the Alpine3802.
+-- *
+-- * Revision 1.69  2001/12/29 00:05:14  vchen
+-- * PD1_6YSQO: Changed Summit48i1U sysName to "Summit48si"
+-- *
+-- * Revision 1.68  2001/12/14 23:22:19  agidwani
+-- * GODZILLA_MERGE_AG: Merged changes to PSU and Fan traps from Godzilla. An extra varbind was added to each of these. Also, a product ID was added for Godzilla.
+-- *
+-- * Revision 1.67  2001/10/09 23:13:13  rsharma
+-- * extremeSystemCommon.24 deprecated .
+-- * extremeCpuTask2Table moved to extremeSystemCommon.29
+-- * Revision 1.4  2001/08/02 21:04:53  dwade
+-- * more brava changes: correct SNMP ID
+-- * Bug 547.  Brava code was executed on non brava chassis
+-- * Revision 1.66  2001/10/03 16:55:17Z  agidwani
+-- * Re-fixed PD1-5AKVQ. The names of the two S24e2's have been changed.
+-- * Revision 1.65  2001/09/10 23:18:36  agidwani
+-- * Fixed PD 1-5BE1P.
+-- * Revision 1.64  2001/09/08 21:02:10  agidwani
+-- * PD1-5AKVQ: It seems that the S24e2 is now two different products, one with GBICs and the other with 1000BaseT. Therefore two oids are needed.
+-- * Revision 1.63  2001/08/29 18:15:05  agidwani
+-- * PR15922: Added new product oids and modified name of extremeV2CoreSC to extremeV2CoreSCTraps.
+-- * Revision 1.62  2001/08/17 23:30:44  psubbiah
+-- * Ported health check trap modifications from 6.1.9.
+-- * Revision 1.61  2001/08/03 21:09:14  agidwani
+-- * Re-checkin of PR14214. Had missed out a few traps during earlier check-in.
+-- * Revision 1.60  2001/07/25 17:41:40  agidwani
+-- * Updated the mib descriptions for PRs 12284 and 15624. Also filled up the descriptions across the whole mib that had been left blank earlier. 
+-- * Revision 1.59  2001/07/19 22:21:58  agidwani
+-- * MIB changes for PRs 12551, 13695 and 15266. Also added some ESRP descriptions that were blank earlier.
+-- * Revision 1.58  2001/07/16 17:25:53  agidwani
+-- * Fixed PR15237. The v2 traps are moved to a MIB of their own. Their OIDs remain the same though. Also extremeCore references are changed to extremeCoreSC. 
+-- * Revision 1.57  2001/07/03 18:22:24  agidwani
+-- * Fixed PR's 15084 and 14214. For the former, added an extra 0 to the v2 trap oid root.
+-- * Revision 1.56  2001/06/15 16:47:28  agidwani
+-- * FIxed PR14152. Deprecated the globalIdentifier related object and table and removed uniqueness check.
+-- * Revision 1.55  2001/06/14 00:51:43  rsharma
+-- * Changing indices for extremeCPUUtilizationTable to not-accessible.
+-- * Revision 1.54  2001/06/11 19:16:31Z  rsharma
+-- * Fixes for PR13148 , Added CPU Utilization Traps.
+-- * Revision 1.53  2001/06/05 22:32:45Z  agidwani
+-- * As a part of PR13230, created a new tree for v2 traps. Also added
+-- * a new object to the extremePowerSupplyTable (PR13549)
+-- * Revision 1.52  2001/05/15 01:47:06Z  ibagchi
+-- * Power Supply Table.
+-- * Revision 1.51  2001/04/21 08:11:51Z  agidwani
+-- * Fixed PR's 12409 and 12914, support for f32fi and a change in the overheat trap
+-- * Revision 1.50  2001/04/10 16:58:50  agidwani
+-- * FIxed PR12695. A new mib variable for "ignore-bpdu"
+-- * Revision 1.49  2001/03/14 00:11:13  agidwani
+-- * PR12212: ICMP should be supported through this MIB
+-- * Revision 1.48  2001/02/28 01:51:47  bhray
+-- * for PR12057 addition of Per Port QoSReport Parms( i.e Avg BW, Peak BW).
+-- * Revision 1.47  2001/02/21 23:44:00  agidwani
+-- * Fixed PRs 11869 and 11933
+-- * Revision 1.46  2001/02/10 01:27:05  agidwani
+-- * PR11883: New Private FDB MIB tables
+-- * Revision 1.45  2001/02/08 23:16:30  agidwani
+-- * PRs 11346 and 11399
+-- * Revision 1.44  2001/01/25 23:55:05  emar
+-- * Added in Alpine WDMi support for snmp.  This is a duplicate fix from
+-- * 6.1.7 (see PR11110).
+-- * Revision 1.43  2001/01/03 21:56:18  agidwani
+-- * PR11271: Merged PR10940 from 6.1.7
+-- * Revision 1.42  2000/11/10 17:28:14  agidwani
+-- * PR10436: Missing space character
+-- * Revision 1.41  2000/10/18 17:55:57  akapoor
+-- * PR #10158 is fixed.
+-- * Some fields are deleted from extremeEsrpNeighborTable
+-- * Revision 1.40  2000/10/02 17:59:28  akapoor
+-- * PR#9971
+-- * Checkin Stuff for Syndesis
+-- * Revision 1.39  2000/08/31 03:18:12  abhatt
+-- * PR9518: Add cli and snmp traps on cpuHealthCheck Failure..
+-- * Revision 1.38  2000/08/27 23:00:07  ibagchi
+-- * Support for FM24i
+-- * Revision 1.37  2000/08/12 00:08:35Z  agidwani
+-- * Added object for CpuId and changed two objects to DisplayString from OCTET STRING. The CpuId can only take a value of 1 for now.
+-- * Revision 1.36  2000/08/02 00:29:51  agidwani
+-- * Interchanged order of extremeCpuTaskMaxUtilization  and extremeCpuTaskUtilization objects
+-- * Revision 1.35  2000/07/25 03:13:31  ibagchi
+-- * Added CPU mib.
+-- * Revision 1.34  2000/04/30 18:57:29Z  my
+-- * PR8572_1: Added WDMi support.
+-- * Revision 1.33  2000/04/28 19:31:07  ibagchi
+-- * Added EDP Neighbor Add/Del traps.
+-- * Revision 1.31  2000/04/07 16:32:09Z  cburton
+-- * PR8289 - SLB failover traps
+-- * Revision 1.30  2000/03/28 06:00:50Z  ibagchi
+-- * Added enum for extremeSlotmoduleInsertedType for Alpine 16.
+-- * Revision 1.29  2000/03/22 03:14:42Z  ibagchi
+-- * Revision 1.28  2000/03/13 02:33:42Z  cburton
+-- * Added extremeSlb MIB variables for SLB external health checker.
+-- * Revision 1.27  2000/03/10 01:53:15Z  ibagchi
+-- * NG Product IDs.
+-- * Revision 1.26  2000/02/24 06:11:14Z  ibagchi
+-- * Update the extremeSlotModuleConfiguredType.
+-- * Revision 1.25  2000/01/20 21:38:48Z  ibagchi
+-- * Revision 1.23  1999/12/08 00:14:39Z  mrathi
+-- * Change text for ge4 and ge6 card types to g4x and g6x
+-- * Revision 1.22  1999/12/06 21:16:45  nforood
+-- * Added card type mapping from the MIB value to EW enum value and
+-- * vice versa
+-- * Revision 1.21  1999/11/18 02:06:25  mrathi
+-- * Updated lots of access-clauses. Added vlanOpaqueTable and vlanStackTable
+-- * Revision 1.19  1999/11/15 02:00:11  abhatt
+-- * Send esrpStateChange traps when state changes
+-- * Revision 1.18  1999/11/13 00:23:57  ibagchi
+-- * Revision 1.17  1999/11/12 04:31:54Z  ibagchi
+-- * Added OIDs for Summi7i and MSM64.
+-- * Revision 1.16  1999/11/12 02:36:58Z  ibagchi
+-- * Updated extremeQosRuleTable. Included RtStats MIB from 5.0.
+-- * Changed the MAX-ACCESS clause from not-accessible to
+-- * read-only so that EEM versions 2.0 and prior don't stop working.
+-- * Revision 1.15  1999/11/02 17:22:05Z  ibagchi
+-- * Changed the index to the EDP mib from vlan id to vlan name.
+-- * Revision 1.14  1999/10/30 02:32:43Z  ibagchi
+-- * Checked in ESRP mib.
+-- * Revision 1.13  1999/10/14 16:42:45Z  ibagchi
+-- * Fixed PR 5973. Added extremeRmonEnable.
+-- * Revision 1.12  1999/10/13 22:17:57Z  ibagchi
+-- * New loadshare table extremePortLoadshare2 added. Coverted
+-- * the mib syntax from SMI v1 to SMI v2.
+-- * Revision 1.11  1999/09/20 22:54:54  ibagchi
+-- * Removed extremePortSummitlink and extremeVCLinkTables for
+-- * 6.0. These tables will not be supported on NG. 
+-- * Revision 1.10  1999/09/14 20:32:13  ibagchi
+-- * Removed additional attributes from the extremeQosProfileTable.
+-- * Need to discuss their mapping in the new hardware. Almost sure
+-- * they will not be implemented for 6.0.
+-- * Revision 1.9  1999/05/19 02:36:16  ibagchi
+-- * Commented out yet unsupported attributes in the extremeQosProfile table.
+-- * Revision 1.10  1999/03/30 21:24:55  ibagchi
+-- * Rewrite smart traps and make it work.
+-- * Revision 1.9  1999/03/06 01:48:41  Asmith
+-- * Added DLCS MIB (but excluded for now)
+-- * Revision 1.8  1999/03/05 02:35:01  Asmith
+-- * FTP MIB merged in with extreme.mib
+-- * Added extreme PBQOS MIB for EW5.0
+-- * Revision 1.7  1998/10/13 02:44:08  Asmith
+-- * Added comment per PR3601/3686; reformat some lines
+-- * Revision 1.6  1998/09/18 17:07:09  mrathi
+-- * minor typo.
+-- * Revision 1.5  1998/09/18 02:57:23  mrathi
+-- * Added vlanIpAddressTable
+-- * Revision 1.4  1998/09/04 19:12:47  mrathi
+-- * Added oid 8 for BlackDiamond
+-- * Revision 1.3  1998/09/02 02:58:30  mrathi
+-- * Revisions
+-- * Revision 1.2  1998/08/28 07:16:18  mrathi
+-- * Updated Andrew's changes from Summit codebase rev 1.24, and add chassisGroup, OpaqueTypes and traps for BD support
+-- * Revision 1.1  1998/07/02 04:30:07  ghanning
+-- * Initial revision
+-- * Revision 1.31  1998/06/23 01:59:38  Asmith
+-- * added Summit24
+-- * Revision 1.30  1998/05/15 18:32:17  asmith
+-- * removed extremeQosDot1pEnabled (PR2264)
+-- * added extremeUnitPaceMode (PR2420)
+-- * removed extremeVlanDot1qStaticEntry (PR2367)
+-- * Revision 1.29  1998/05/11 19:21:50  asmith
+-- * revised descriptions for protocol sensitive stuff (PR2226)
+-- * Revision 1.28  1998/04/17 22:29:15  asmith
+-- * Added summit4fx sysObjectId
+-- * Clarify semantics of VlanProtocol fields
+-- * Revision 1.27  1998/04/15 02:33:04  abhatt
+-- * Included support for DllEncpasType = "none" for VlanProtocoltable
+-- * Revision 1.26  1998/04/07 02:31:28  abhatt
+-- * Included new system objects.
+-- * Revision 1.25  1998/04/04 00:00:09  asmith
+-- * summit6 -> summit48; remove summit5
+-- * Revision 1.24  1998/04/03 23:39:18  abhatt
+-- * Added OperMode to SummitLink Table
+-- * Revision 1.23  1998/03/20 21:53:45  abhatt
+-- * Now support extremePortSummitLinkTable
+-- * Revision 1.22  1998/02/18 21:52:16  abhatt
+-- * Update.
+-- * Revision 1.21  1998/02/18 06:38:11  abhatt
+-- * Added extremeQosByVlanMappingEntry
+-- * Revision 1.20  1998/02/13 00:18:48  abhatt
+-- * Changed extremeSmartTrapPoll's object to read-write
+-- * Revision 1.19  1998/02/08 08:02:48  abhatt
+-- * Included extremeTrapPollInfo objects to flush the Instance Table
+-- * Revision 1.18  1998/02/03 21:27:49  abhatt
+-- * Fix
+-- * Revision 1.16  1998/01/31 02:11:15  abhatt
+-- * changed "changedOid" from read-write to read-only.
+-- * Revision 1.15  1998/01/26 21:22:25  abhatt
+-- * Update
+-- * Revision 1.14  1998/01/22 23:57:46  abhatt
+-- * Latest version
+-- * Revision 1.13  1998/01/21 03:49:28  abhatt
+-- * Update
+-- * Revision 1.11.1.1.1.1  1998/01/21 00:01:21  abhatt
+-- * Revision 1.11.1.1  1998/01/20 18:15:37  abhatt
+-- * Temporary check-in
+-- * Revision 1.11  1998/01/09 23:55:26  asmith
+-- * Added smart trap definitions
+-- * Modifications to virtual chassis link table
+-- * Revision 1.10  1997/12/22 23:03:48  asmith
+-- * added some more general system group objects
+-- * Revision 1.9  1997/12/19 23:25:46  asmith
+-- * first draft of MIB for 2.0 release
+-- * Revision 1.8  1997/10/31 19:44:43  asmith
+-- * added extremeMauType1000BaseSX (PR1765)
+-- * Revision 1.7  1997/09/19 18:08:22  asmith
+-- * Clean up for external release
+-- *
+-- */
+
+
+EXTREME-BASE-MIB DEFINITIONS ::= BEGIN
+
+	IMPORTS
+		enterprises 		FROM RFC1155-SMI
+		TEXTUAL-CONVENTION 	FROM SNMPv2-TC;
+
+
+	--  Organization & Product branches
+    
+        extremenetworks		OBJECT IDENTIFIER ::= { enterprises 1916 }
+
+	extremeAgent            OBJECT IDENTIFIER ::= { extremenetworks 1 }
+	extremeProduct          OBJECT IDENTIFIER ::= { extremenetworks 2 }
+	extremeMisc             OBJECT IDENTIFIER ::= { extremenetworks 3 }
+   	extremeV2Traps	        OBJECT IDENTIFIER ::= { extremenetworks 4 } 
+
+    --
+    -- Extreme Products
+    --    
+    summit1			OBJECT IDENTIFIER ::= { extremeProduct 1 }
+                        -- 8 x 1Gbps
+
+	summit2			OBJECT IDENTIFIER ::= { extremeProduct 2 }
+                        -- 2 x 1Gbps, 16 x 10/100Mbps
+
+	summit3			OBJECT IDENTIFIER ::= { extremeProduct 3 }
+                        -- 1 x 1Gbps, 24 x 10/100Mbps
+
+	summit4			OBJECT IDENTIFIER ::= { extremeProduct 4 }
+                        -- 6 x 1Gbps, 16 x 10/100Mbps UTP
+
+	summit4fx		OBJECT IDENTIFIER ::= { extremeProduct 5 }
+                        -- 6 x 1Gbps, 16 x 10/100Mbps fiber FX
+
+	summit48 		OBJECT IDENTIFIER ::= { extremeProduct 6 }
+                        -- 2 x 1Gbps, 48 x 10/100Mbps
+
+	summit24 		OBJECT IDENTIFIER ::= { extremeProduct 7 }
+                        -- 1 x 1Gbps, 24 x 10/100Mbps
+
+	blackDiamond6800 	     OBJECT IDENTIFIER ::= { extremeProduct 8 }
+                   -- chassis based system with dual msm and 8 switching cards
+
+	blackDiamond6808 	    OBJECT IDENTIFIER ::= { extremeProduct 11 }
+                   -- black diamond with the inferno chipset aka MSM64
+
+	summit7iSX 		OBJECT IDENTIFIER ::= { extremeProduct 12 }
+                        -- 4 x 1Gbps GBIC, 28 x 1Gbps MT-RJ
+
+	summit7iTX 		OBJECT IDENTIFIER ::= { extremeProduct 13 }
+                        -- 4 x 1Gbps GBIC, 28 x 10/100/1000 Base-TX
+
+	summit1iTX 		OBJECT IDENTIFIER ::= { extremeProduct 14 }
+                    -- 2 x 1Gbps MT-RJ, 6 x 10/100/1000 Base-TX inferno chipset
+
+	summit5i 		OBJECT IDENTIFIER ::= { extremeProduct 15 }
+                        -- 4 x 1Gbps GBIC, 12 x 1Gbps MT-RJ inferno chipset
+
+	summit48i 		OBJECT IDENTIFIER ::= { extremeProduct 16 }
+                        -- 2 x 1Gbps GBIC, 48 x 10/100Mbps inferno chipset
+
+	alpine3808 	        OBJECT IDENTIFIER ::= { extremeProduct 17 }
+          -- mini chassis based on the inferno chipset with 8 switching cards
+
+	summit1iSX 		OBJECT IDENTIFIER ::= { extremeProduct 19 }
+                        -- 2 x 1Gbps GBIC, 6 x 1Gbps MT-RJ inferno chipset
+
+	alpine3804 	        OBJECT IDENTIFIER ::= { extremeProduct 20 }
+          -- mini chassis based on the inferno chipset with 4 switching cards
+
+	summit5iLX 		OBJECT IDENTIFIER ::= { extremeProduct 21 }
+                    -- 4 x 1Gbps GBIC, 12 x 10/100/1000 Base-TX inferno chipset
+
+	summit5iTX 		OBJECT IDENTIFIER ::= { extremeProduct 22 }
+                    -- 4 x 1Gbps GBIC, 12 x 10/100/1000 Base-TX inferno chipset
+
+	enetSwitch24Port	OBJECT IDENTIFIER ::= { extremeProduct 23 }
+		    --  24 x 10/100 Mbps  
+
+	blackDiamond6816 	OBJECT IDENTIFIER ::= { extremeProduct 24 }
+                    -- black diamond with 4 msm's and 16 switching cards
+
+	summit24e3 		OBJECT IDENTIFIER ::= { extremeProduct 25 }
+                    -- 2 x 1Gbps GBIC, 24 x 10/100 Base-TX
+
+	alpine3802 	        OBJECT IDENTIFIER ::= { extremeProduct 26 }
+          -- mini chassis based on the inferno chipset with 2-3 switching cards
+
+	blackDiamond6804 	     OBJECT IDENTIFIER ::= { extremeProduct 27 }
+                   -- chassis based system with 2 msm's and 4 switching cards
+
+	summit48si		OBJECT IDENTIFIER ::= { extremeProduct 28 }
+		    -- 2 x 1Gbps GBIC, 48 x 10/100Mbps, 1u
+        	
+	summitPx1		OBJECT IDENTIFIER ::= { extremeProduct 30 }
+		    --	1 x 1Gbps GBIC
+
+	summit24e2TX	OBJECT IDENTIFIER ::= { extremeProduct 40 }
+		    --  2 x 1000Base-T, 24 x 10/100 Base-TX
+
+	summit24e2SX	OBJECT IDENTIFIER ::= { extremeProduct 41 }
+		    --  2 x 1Gbps GBIC, 24 x 10/100 Base-TX
+
+------------------------------------------------------------------------------
+
+--
+-- Assorted OIDs that are pointed to by other MIBs
+--
+          extremeOids
+              OBJECT IDENTIFIER ::= { extremeMisc 1 }
+
+--
+-- OIDs for as-yet-unstandardised 802.3 MAU types
+--     (see MAU MIB for usage)
+--
+          extremeMauType
+              OBJECT IDENTIFIER ::= { extremeOids 1 }
+
+          extremeMauType1000BaseSX OBJECT IDENTIFIER
+              ::= { extremeMauType 1 }
+--                      "X fiber over short-wavelength laser PMD as specified
+--                        in clause 38, duplex mode unknown"
+
+          extremeMauType1000BaseLX OBJECT IDENTIFIER
+              ::= { extremeMauType 2 }
+--                      "X fiber over long-wavelength laser PMD as specified
+--                        in clause 38, duplex mode unknown"
+
+          extremeMauType1000BaseCX OBJECT IDENTIFIER
+              ::= { extremeMauType 3 }
+--                      "X copper over 150-ohm balanced cable PMD as specified
+--                        in clause 39, duplex mode unknown"
+
+          extremeMauType1000BaseSXFD OBJECT IDENTIFIER
+              ::= { extremeMauType 4 }
+--                      "X fiber over short-wavelength laser PMD as specified
+--                        in clause 38, full-duplex mode"
+
+          extremeMauType1000BaseLXFD OBJECT IDENTIFIER
+              ::= { extremeMauType 5 }
+--                      "X fiber over long-wavelength laser PMD as specified
+--                        in clause 38, full-duplex mode"
+
+          extremeMauType1000BaseCXFD OBJECT IDENTIFIER
+              ::= { extremeMauType 6 }
+--                      "X copper over 150-ohm balanced cable PMD as specified
+--                        in clause 39, full-duplex mode"
+
+          extremeMauType1000BaseWDMHD OBJECT IDENTIFIER
+              ::= { extremeMauType 7 }
+--                      "Gigabit WDM, half duplex"
+          extremeMauType1000BaseWDMFD OBJECT IDENTIFIER
+              ::= { extremeMauType 8 }
+--                      "Gigabit WDM, full duplex"
+
+          extremeMauType1000BaseLX70HD OBJECT IDENTIFIER
+              ::= { extremeMauType 9 }
+--                      "Gigabit LX70, half duplex"
+
+          extremeMauType1000BaseLX70FD OBJECT IDENTIFIER
+              ::= { extremeMauType 10 }
+--                      "Gigabit LX70, full duplex"
+
+          extremeMauType1000BaseZXHD OBJECT IDENTIFIER
+              ::= { extremeMauType 11 }
+--                      "Gigabit ZX, half duplex"
+
+          extremeMauType1000BaseZXFD OBJECT IDENTIFIER
+              ::= { extremeMauType 12 }
+--                      "Gigabit ZX, full duplex"
+
+
+-- ===============================================================================
+
+--
+-- Extreme MIB Objects
+--
+        extremeSystem    OBJECT IDENTIFIER ::= { extremeAgent 1 }
+        extremeVlan      OBJECT IDENTIFIER ::= { extremeAgent 2 }
+        extremeQos       OBJECT IDENTIFIER ::= { extremeAgent 3 }
+        extremePort      OBJECT IDENTIFIER ::= { extremeAgent 4 }
+        extremeVC        OBJECT IDENTIFIER ::= { extremeAgent 5 }
+        extremeTrapPoll  OBJECT IDENTIFIER ::= { extremeAgent 6 }
+        extremeQosPolicy OBJECT IDENTIFIER ::= { extremeAgent 7 }
+        extremeDlcs      OBJECT IDENTIFIER ::= { extremeAgent 8 }
+        extremeFileTransfer OBJECT IDENTIFIER ::= { extremeAgent 10 }
+        extremeRtStats OBJECT IDENTIFIER ::= { extremeAgent 11 }
+        extremeEsrp      OBJECT IDENTIFIER ::= { extremeAgent 12 }
+        extremeEdp       OBJECT IDENTIFIER ::= { extremeAgent 13 }
+        extremeSlb       OBJECT IDENTIFIER ::= { extremeAgent 14 }
+        extremeOspf      OBJECT IDENTIFIER ::= { extremeAgent 15 }
+        extremeFdb	     OBJECT IDENTIFIER ::= { extremeAgent 16 }
+        extremeStp       OBJECT IDENTIFIER ::= { extremeAgent 17 }
+	    extremePOSMib    OBJECT IDENTIFIER ::= { extremeAgent 20 }
+	    extremeNPMib     OBJECT IDENTIFIER ::= { extremeAgent 21 }
+	    extremeNetFlow     OBJECT IDENTIFIER ::= { extremeAgent 22 }
+            extremeSnmpv3      OBJECT IDENTIFIER ::= { extremeAgent 23 }
+
+PortList ::= TEXTUAL-CONVENTION
+       STATUS      current
+       DESCRIPTION
+           "Each octet within this value specifies a set of eight
+           ports, with the first octet specifying ports 1 through
+           8, the second octet specifying ports 9 through 16, etc.
+           Within each octet, the most significant bit represents
+           the lowest numbered port, and the least significant bit
+           represents the highest numbered port.  Thus, each port
+           of the bridge is represented by a single bit within the
+           value of this object.  If that bit has a value of '1'
+           then that port is included in the set of ports; the port
+           is not included if its bit has a value of '0'. If the
+           object has a length of 0 then it is taken to refer to all
+           of the ports in a given device."
+       SYNTAX      OCTET STRING
+
+L4Port ::= TEXTUAL-CONVENTION
+        STATUS  current
+        DESCRIPTION
+           "The value of a transport layer (layer-4) port number, in network
+           byte order. A value of 0 indicates all allowed values of this 
+           field i.e. wildcard."
+        SYNTAX  INTEGER (0|1..65535)
+
+ExtremeGenAddr ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+            "The value of an address."
+    SYNTAX      OCTET STRING (SIZE (0..20))
+
+ExtremeDeviceId ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+            "The switch identifier used by Extreme EDP protocol."
+    SYNTAX      OCTET STRING (SIZE (8))
+
+END
+

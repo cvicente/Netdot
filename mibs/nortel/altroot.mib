@@ -1,0 +1,187 @@
+-- COPYRIGHT NOTICE
+-- Copyright (c) Alteon Networks, Inc. 1996, 1997, 1998 
+-- All rights reserved
+-- 
+-- 
+-- HISTORY
+-- $Log: altroot.mib,v $
+-- Revision 1.2  2004/11/02 23:19:29  maxbaker
+-- what was that???
+--
+-- Revision ts90_margozzi/3 2001/08/09 17:51:58 margozzi
+-- 	Added a new SysObjectId for the WebSwitch module.
+-- 	The wsm is basically a 184 converted into a blade for 
+-- 	the 8600 Chassis.
+-- 
+-- Revision ts90_mmargozzi/2 2001/07/11 22:46:49 mmargozzi
+-- 	moved definition of wsm4Traps from wsm4.mib to here. This removes a dependency of the tigon build to a file that is only used for the 8600 build
+-- 
+-- Revision ts90_mmargozzi/1 2001/07/10 21:47:16 mmargozzi
+-- 	Removed references to alteon780. Renamed alteon780 node to chassis-8600.
+-- 
+--
+-- Revision gesb1_mmargozzi/3 2001/03/29 00:50:29 mmargozzi
+-- 	Added in the Volera required entries
+-- 
+-- Revision gesb1_mmargozzi/2 2001/03/22 19:50:42 mmargozzi
+-- 	Added support for AlteonPCC iSD
+-- 
+-- Revision gesb1_mmargozzi/1 2001/03/22 00:15:22 mmargozzi
+-- 	Added support for the 780 switch
+-- 
+-- Revision genie_rekha/4 2001/02/23 18:14:36 rekha
+-- 	Changed 'common' node to 'platform' for ISD platform.
+-- 
+-- Revision genie_rekha/2 2001/02/15 19:23:18 rekha
+-- 	Added SSLOffload MIB registrations.
+-- 
+-- Revision latest_mlin/4 2000/12/28 22:08:55 mlin
+-- 	Removed MIB OIDs for Alteon 714 and 300.
+-- 	Added MIB OIDs to support 1000BT LCM and ISD-PersonalContentDirector.
+-- 
+-- Revision test_smiao/5 1999/10/28 23:04:00 smiao
+-- 	Added Title display, Pre-enabled S/W keys and SNMP ObjId for 
+--      Alteon 184/AD4.
+-- 
+-- Revision latest_mlin/2 1999/06/24 22:06:05 mlin
+-- 	Updated SNMP registrations for GS with latest naming.
+-- 
+-- Revision test_smiao/2 1999/03/30 01:31:40 smiao
+-- 	Implemeted MDA Slot Configuration Table and User-defined Default 
+--      Configurations for MDA Slots Table.
+-- 
+-- Revision 1.1.2.2  1999/02/23  00:14:48  mlin
+-- 	1st checkin to support Entity MIB.
+-- 	[1999/02/23  00:14:19  mlin]
+--
+-- Revision 1.1.2.1  1999/02/07  00:56:47  mlin
+-- 	Restructured MIBs for Genie switches.
+-- 	[1999/02/07  00:56:08  mlin]
+-- 
+-- $EndLog$
+--
+ALTEON-ROOT-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	enterprises 
+		FROM RFC1155-SMI;
+
+
+alteon		OBJECT IDENTIFIER ::= { enterprises 1872 }
+
+-- textual conventions
+
+-- groups in alteon
+
+registration		OBJECT IDENTIFIER ::= { alteon 1 }
+private-mibs		OBJECT IDENTIFIER ::= { alteon 2 }
+
+--This only here because the Volera build requires it. 
+--We want to obsolete it some day.
+personalContentCache   	OBJECT IDENTIFIER ::= { alteon 3 }       
+ics         		OBJECT IDENTIFIER ::= { personalContentCache  1 }
+-- End of Volera hack :-(
+
+switch 		OBJECT IDENTIFIER ::= { private-mibs 1 }
+gs-switch		OBJECT IDENTIFIER ::= { private-mibs 2 }
+isd 	        	OBJECT IDENTIFIER ::= { private-mibs 3 }
+switch-chassis  	OBJECT IDENTIFIER ::= { private-mibs 4 }
+
+chassis-8600     	OBJECT IDENTIFIER ::= { switch-chassis 1 }
+wsm4Traps		OBJECT IDENTIFIER ::= { chassis-8600 2 }
+
+platform        	OBJECT IDENTIFIER ::= { isd 1 }
+sslOffload      	OBJECT IDENTIFIER ::= { isd 2 }
+
+-- Alteon product object identification
+
+-- TS AceSwitch Registration
+
+-- AceSwitch 110 - 8 10/100 UTP and 2 1000 Fiber ports
+aceswitch110 OBJECT IDENTIFIER ::= { registration 1 }
+
+-- AceDirector (110 based) - 8 10/100 UTP ports
+acedirector OBJECT IDENTIFIER ::= { registration 2 }
+
+-- AceSwitch 180 - 8 10/100 UTP or 1000 Fiber, and 1 1000 Fiber ports
+aceswitch180 OBJECT IDENTIFIER ::= { registration 3 }
+
+-- AceDirector 2 (180 based) - 8 10/100 UTP ports
+acedirector2 OBJECT IDENTIFIER ::= { registration 4 }
+
+-- AceSwitch 180e - 8 10/100 UTP or 1000 Fiber, and 1 1000 Fiber ports
+aceswitch180e OBJECT IDENTIFIER ::= { registration 5 }
+
+-- AceDirector 3 - 8 10/100 UTP and 1 1000 Fiber ports
+acedirector3 OBJECT IDENTIFIER ::= { registration 6 }
+
+-- CacheDirector - 8 10/100 UTP ports
+cachedirector OBJECT IDENTIFIER ::= { registration 7 }
+
+-- GS AceSwitch Registration
+gs-switches OBJECT IDENTIFIER ::= { registration 8 }
+
+-- AceSwitch 184 - 8 10/100 UTP or 1000 Fiber, and 1 1000 Fiber ports
+aceswitch184 OBJECT IDENTIFIER ::= { registration 9 }
+
+-- AceDirector 4 - 8 10/100 UTP and 1 1000 Fiber ports
+acedirector4 OBJECT IDENTIFIER ::= { registration 10 }
+
+-- Integrated Service Director Registration
+isd-reg OBJECT IDENTIFIER ::= { registration 11 }
+
+-- Webswitch Module 4 10/100 UTP or 1000 Fiber
+webswitch-module OBJECT IDENTIFIER ::= { registration 12 }
+
+-- GS AceSwitch Registration
+-- Chassis Switches
+chas-switch OBJECT IDENTIFIER ::= { gs-switches 1 }
+
+-- Chassis Switch Registration
+chas-switch-reg OBJECT IDENTIFIER ::= { chas-switch 1 }
+
+-- Alteon 708 - Chassis with max. 64 FE or 16 GE ports
+alteon708 OBJECT IDENTIFIER ::= { chas-switch-reg 1 }
+
+-- skipping chas-switch-reg 2
+
+-- Chassis Switch sub-component Registration
+chas-switch-comp-reg OBJECT IDENTIFIER ::= { chas-switch 2 }
+
+-- AC Power Supply 
+alteonACPowerSupply7xx OBJECT IDENTIFIER ::= { chas-switch-comp-reg 1 }
+
+-- DC Power Supply 
+alteonDCPowerSupply7xx OBJECT IDENTIFIER ::= { chas-switch-comp-reg 2 }
+
+-- Fan Tray with four Fans for Alteon 708
+alteonFan708 OBJECT IDENTIFIER ::= { chas-switch-comp-reg 3 }
+
+-- skipping chas-switch-comp-reg 4
+
+-- Management Processor Module 
+alteonModuleMP OBJECT IDENTIFIER ::= { chas-switch-comp-reg 5 }
+
+-- Switching Fabric Module 
+alteonModuleSF OBJECT IDENTIFIER ::= { chas-switch-comp-reg 6 }
+
+-- MDA Module with 16 10/100 UTP ports
+alteonModuleFE-UTP OBJECT IDENTIFIER ::= { chas-switch-comp-reg 7 }
+
+-- Module with 4 1000SX ports
+alteonModuleGE-SX OBJECT IDENTIFIER ::= { chas-switch-comp-reg 8 }
+
+-- Module with 4 1000BT ports
+alteonModuleGE-UTP OBJECT IDENTIFIER ::= { chas-switch-comp-reg 9 }
+
+
+-- Integrated Service Director Registration
+-- Personal Content Director
+alteonPersonalContentDirector OBJECT IDENTIFIER ::= { isd-reg 1 }
+
+alteonSSLOffload 			OBJECT IDENTIFIER ::= { isd-reg 2 }
+
+-- Personal Content Cache
+alteonPersonalContentCache 	OBJECT IDENTIFIER ::= { isd-reg 3 }
+
+END

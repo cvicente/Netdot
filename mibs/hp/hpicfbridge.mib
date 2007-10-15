@@ -1,0 +1,441 @@
+HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        OBJECT-TYPE, MODULE-IDENTITY
+            FROM SNMPv2-SMI
+        TruthValue
+            FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP
+            FROM SNMPv2-CONF
+        dot1dBasePortEntry
+            FROM BRIDGE-MIB
+        VlanIndex
+            FROM Q-BRIDGE-MIB
+        hpSwitch
+            FROM HP-ICF-OID
+        ConfigStatus
+            FROM HP-ICF-TC
+        hpSwitchStpPortEntry
+            FROM CONFIG-MIB;
+
+    BridgeId ::= TEXTUAL-CONVENTION
+        STATUS       current
+        DESCRIPTION  "The Bridge Identifier as used in the Spanning Tree
+                      Protocol to uniquely identify a bridge."
+        SYNTAX OCTET STRING (SIZE (8))
+
+
+    hpicfBridge MODULE-IDENTITY
+        LAST-UPDATED "200412141933Z"  -- December 14, 2004
+        ORGANIZATION "Hewlett-Packard Company
+                      Network Infrastructure Solutions"
+        CONTACT-INFO "Hewlett-Packard Company
+                      8000 Foothills Blvd.
+                      Roseville, CA 95747"
+        DESCRIPTION  "This MIB module contains HP proprietary
+                      extensions to the standard Bridge MIBs."
+        
+        REVISION     "200412141933Z"  -- December  14, 2004
+        DESCRIPTION  "Added 'hpicfBridgeRstpPortBpduFiltering' MIB object."
+ 
+        REVISION     "200302200000Z"  -- February 20, 2003
+        DESCRIPTION
+                     "Added 'mstpOperation' option to the
+                     'hpicfBridgeRstpForceVersion' MIB object.
+                      Added 'ieee8021s' option to the 
+                      'hpicfBridgeRstpProtocolVersion' MIB object."
+
+        REVISION     "200205231738Z"  -- May 23, 2002
+        DESCRIPTION  "Added conformance information."
+
+        REVISION     "200110032050Z"  -- October 3, 2001
+        DESCRIPTION  "Modified hpicfBridgeRstp MIB to contain
+                      ConfigStatus."
+
+        REVISION     "200011030642Z"  -- November 3, 2000
+        DESCRIPTION  "Initial revision."
+        ::= { hpSwitch 12 }
+
+    hpicfBridgeObjects OBJECT IDENTIFIER ::= { hpicfBridge 1 }
+
+    hpicfBridgeBase OBJECT IDENTIFIER ::= { hpicfBridgeObjects 1 }
+
+-- **********************************************************************
+-- VLAN Objects
+-- **********************************************************************
+
+    hpicfBridgeMaxVlans OBJECT-TYPE
+        SYNTAX      INTEGER (1..4094)
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Defines the number of VLANs that the switch will
+                    support for dynamic use without requiring a reboot."
+        ::= { hpicfBridgeBase 1 }
+
+    hpicfBridgeVlanEnable OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enable(1),
+                        disable(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Administrative status of VLAN support on this
+                    switch."
+        ::= { hpicfBridgeBase 2 }
+
+    hpicfBridgePrimaryVlan OBJECT-TYPE
+        SYNTAX      VlanIndex
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The 802.1Q VLAN ID of the primary VLAN for this
+                    switch."
+        ::= { hpicfBridgeBase 3 }
+
+    hpicfBridgeVlanConfigStatus OBJECT-TYPE
+        SYNTAX      ConfigStatus
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "If one or more variables in this group has been
+                    reconfigured since the last reboot in such a way
+                    as to require a reboot to take effect, the value
+                    of this variable will be set to 'notInService'."
+        ::= { hpicfBridgeBase 4 }
+
+-- **********************************************************************
+-- GVRP Objects
+-- **********************************************************************
+    hpicfBridgeGvrp OBJECT IDENTIFIER ::= { hpicfBridgeObjects 2 }
+
+    hpicfBridgeGvrpPortTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfBridgeGvrpPortEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "A table that contains information about the
+                    GVRP port configurations on this switch."
+        ::= { hpicfBridgeGvrp 1 }
+
+    hpicfBridgeGvrpPortEntry OBJECT-TYPE
+        SYNTAX      HpicfBridgeGvrpPortEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "GVRP information associated with a single port."
+        AUGMENTS    { dot1dBasePortEntry }
+        ::= { hpicfBridgeGvrpPortTable 1 }
+
+    HpicfBridgeGvrpPortEntry ::= 
+        SEQUENCE {
+            hpicfBridgeGvrpRestrictedVlanReg TruthValue
+        }
+
+    hpicfBridgeGvrpRestrictedVlanReg OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Controls GVRP's ability to learn new VLANs on
+                    this port.  When set to 'false', GVRP will accept
+                    JOIN requests for new VLANs on this port.  When
+                    set to 'true', GVRP will only process protocol
+                    packets that concern themselves with known VLANs."
+        ::= { hpicfBridgeGvrpPortEntry 1 }
+
+-- **********************************************************************
+-- Rapid Reconfiguration Spanning Tree Objects
+-- **********************************************************************
+
+    hpicfBridgeRstp OBJECT IDENTIFIER ::= { hpicfBridgeObjects 4 }
+
+    hpicfBridgeRstpForceVersion OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        stpCompatibility(0),
+                        rstpOperation(2),
+                        mstpOperation(3)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Operational mode of Spanning Tree protocol:
+                     - stpCompatibility means protocol operates as STP protocol
+                       on all ports.
+                     - rstpOperation means protocol operates as Rapid 
+                       Reconfiguration on all ports except on those ports where
+                       legacy system has been detected.
+                     - mstpOperation means protocol operates in native MSTP mode,
+                       this option is available only if object
+                       'hpicfBridgeRstpProtocolVersion' is set to 'ieee8021s'."
+        ::= { hpicfBridgeRstp 1 }
+        
+    hpicfBridgeRstpConfigStatus OBJECT-TYPE
+        SYNTAX      ConfigStatus
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The configuration status of this group of objects. If
+                    one or more variables in this group were
+                    reconfigured since last reboot and required reboot to
+                    take effect, the value of this variable will be set to
+                    notInService."
+        ::= { hpicfBridgeRstp 2 }
+
+    hpicfBridgeRstpProtocolVersion OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        ieee8021d(0),
+                        ieee8021w(2),
+                        ieee8021s(3)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The protocol version currently running on switch
+                     - ieee8021d version of STP protocol,
+                     - ieee8021w Rapid Reconfiguration version of STP protocol,
+                     - ieee8021s Multiple STP (MSTP) protocol"
+        ::= { hpicfBridgeRstp 3 }
+
+    hpicfBridgeRstpAdminStatus OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enable(1),
+                        disable(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The operational status of the spanning tree protocol"
+        ::= { hpicfBridgeRstp 4 }
+
+     hpicfBridgeRstpPortTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfBridgeRstpPortEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "A table that contains port-specific information
+                    for the Spanning Tree Protocol."
+        ::= { hpicfBridgeRstp 5 }
+
+    hpicfBridgeRstpPortEntry OBJECT-TYPE
+        SYNTAX      HpicfBridgeRstpPortEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "A list of information maintained by every port
+                    about the Spanning Tree Protocol state for that
+                    port."
+        INDEX       { hpicfBridgeRstpPortIndex }
+        ::= { hpicfBridgeRstpPortTable 1 }
+
+    HpicfBridgeRstpPortEntry ::=
+        SEQUENCE {
+            hpicfBridgeRstpPortIndex                    INTEGER,
+            hpicfBridgeRstpAdminEdgePort                INTEGER,
+            hpicfBridgeRstpOperEdgePort                 INTEGER,
+            hpicfBridgeRstpAdminPointToPointMac         INTEGER,
+            hpicfBridgeRstpOperPointToPointMac          INTEGER,
+            hpicfBridgeRstpPortPathCost                 INTEGER,
+            hpicfBridgeRstpForceBpduMigrationCheck      INTEGER,
+            hpicfBridgeRstpPortBpduFiltering            INTEGER
+        }
+
+    hpicfBridgeRstpPortIndex OBJECT-TYPE
+        SYNTAX      INTEGER (1..65535)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The port number of the port for which this entry
+                    contains Spanning Tree Protocol management
+                    information."
+        REFERENCE
+             "IEEE 802.1w"
+        ::= { hpicfBridgeRstpPortEntry 1 }
+
+    hpicfBridgeRstpAdminEdgePort OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enable(1),
+                        disable(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Indicate that port is connected to LAN segment that don't 
+                     have any bridge connected to it"
+        REFERENCE
+             "IEEE P802.1w Clause 17.3; IEEE P802.1t Clause 18"
+        ::= { hpicfBridgeRstpPortEntry 2 }
+
+    hpicfBridgeRstpOperEdgePort OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enable(1),
+                        disable(2)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "Reflects the value of the operEdgePort parameter, as 
+                     defined by the operation of the Bridge Detection state
+                     machine (Clause 18 of P802.1t). The value of this paramete
+                     is used by a Designated Port in order to determine how 
+                     rapidly it may transition to the Forwarding Port State 
+                     (see 17.23, Port Role Transitions state machine). 
+                     The Bridge Detection state machine sets this parameter to 
+                     the value of adminEdgePort (P802.1t 18.1.3) on 
+                     initialization, and forces its value to FALSE if any BPDUs
+                     are received on the Port."
+        REFERENCE
+             "IEEE P802.1w Clause 17.3; IEEE P802.1t Clause 18"
+        ::= { hpicfBridgeRstpPortEntry 3 }
+
+    hpicfBridgeRstpAdminPointToPointMac OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        forceTrue(1),
+                        forceFalse(2),
+                        auto(3)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "
+        forceTrue: This value indicates that the administrator requires the MAC
+                   to be treated as if it is connected to a point-to-point LAN 
+                   segment, regardless of any indications to the contrary that 
+                   are generated by the MAC entity.
+        forceFalse: This value indicates that the administrator requires the MAC
+                    to be treated as if it is connected to a non-point-to-point
+                    LAN segment, regardless of any indications to the contrary 
+                    that are generated by the MAC entity.
+        auto:   This value indicates that the administrator requires the 
+                point-to-point status of the MAC to be determined in accordance
+                with the specific MAC procedures defined in 6.5."
+        REFERENCE
+             "IEEE P802.1w; IEEE P802.1t"
+        ::= { hpicfBridgeRstpPortEntry 4 }
+
+    hpicfBridgeRstpOperPointToPointMac OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        true(1),
+                        false(2)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "
+        true: This value indicates that the MAC is connected to a 
+              point-to-point LAN segment; i.e., there is at most one other 
+              system attached to the LAN segment.
+        false: This value indicates that the MAC is connected to a 
+               non-point-to-point LAN segment; i.e., there can be more than one
+               other system attached to the LAN segment."
+        REFERENCE
+             "IEEE P802.1w; IEEE P802.1t"
+        ::= { hpicfBridgeRstpPortEntry 5 }
+
+    hpicfBridgeRstpForceBpduMigrationCheck OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enable(1),
+                        disable(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Indicate that port is forced to transmit RST BPDU"
+        REFERENCE
+             "IEEE P802.1w"
+        ::= { hpicfBridgeRstpPortEntry 6 }
+
+    hpicfBridgeRstpPortPathCost OBJECT-TYPE
+        SYNTAX      INTEGER (1..200000000)
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Rapid Reconfiguration Port Path Cost - 32 bit values"
+        REFERENCE
+             "IEEE 802.1w"
+        ::= { hpicfBridgeRstpPortEntry 7 }
+
+    hpicfBridgeRstpPortBpduFiltering OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        true(1),
+                        false(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "This value indicates whether or not BPDUs need
+                    to be filtered on this port. If the value is true the
+                    received BPDUs will be dropped and no BPDUs will be
+                    transmitted on the port. If the value is false the BPDUs
+                    are being processed as usual. The default is false."
+        REFERENCE
+             "IEEE P802.1w"
+        ::= { hpicfBridgeRstpPortEntry 8 }
+
+-- **********************************************************************
+-- Conformance information
+-- **********************************************************************
+
+    hpicfBridgeConformance OBJECT IDENTIFIER ::= { hpicfBridge 2 }
+
+    hpicfBridgeGroups OBJECT IDENTIFIER ::= { hpicfBridgeConformance 1 }
+
+    hpicfBridgeVlanBaseGroup OBJECT-GROUP
+        OBJECTS     { hpicfBridgeMaxVlans,
+                      hpicfBridgeVlanEnable,
+                      hpicfBridgePrimaryVlan,
+                      hpicfBridgeVlanConfigStatus }
+        STATUS      current
+        DESCRIPTION "Basic VLAN configuration information that is not
+                    in the standard 802.1Q Bridge MIB."
+        ::= { hpicfBridgeGroups 1 }
+
+    hpicfBridgeGvrpPortGroup OBJECT-GROUP
+        OBJECTS     { hpicfBridgeGvrpRestrictedVlanReg }
+        STATUS      current
+        DESCRIPTION "GVRP configuration information that is not (yet)
+                    in the standard 802.1Q Bridge MIB.
+
+                    Note that this information is very likely to be added
+                    to a future update of the 802.1Q Bridge MIB, at which
+                    time, support for objects in this group will most
+                    likely be deprecated."
+        ::= { hpicfBridgeGroups 2 }
+
+    hpicfBridgeRstpBaseGroup OBJECT-GROUP
+        OBJECTS     { hpicfBridgeRstpForceVersion,
+                      hpicfBridgeRstpConfigStatus,
+                      hpicfBridgeRstpProtocolVersion,
+                      hpicfBridgeRstpAdminStatus,
+                      hpicfBridgeRstpPortTable }
+        STATUS      obsolete
+        DESCRIPTION "Rapid Spanning Tree Protocol (RSTP) configuration
+                    information that is in neither the standard 802.1w
+                    MIB, nor the standard 802.1d (STP) MIB.
+
+                    Note that as RSTP improves compatibility, some 
+                    objects in this MIB will likely be deprecated."
+        ::= {hpicfBridgeGroups 3 }
+
+-- **********************************************************************
+-- Compliance statements
+-- **********************************************************************
+
+    hpicfBridgeCompliances OBJECT IDENTIFIER ::= { hpicfBridgeConformance 2 }
+
+    hpicfBridgeCompliance MODULE-COMPLIANCE
+        STATUS      deprecated
+        DESCRIPTION "The compliance statement for HP Switches with IEEE
+                    802.1Q VLAN support for bridging objects not found
+                    in the standard Bridge MIBs."
+        MODULE
+            MANDATORY-GROUPS { hpicfBridgeVlanBaseGroup }
+
+            GROUP       hpicfBridgeGvrpPortGroup
+            DESCRIPTION "Support for this group is required for switches
+                        that support GVRP until such time as support for
+                        these objects is added to a standard MIB."
+
+        ::= { hpicfBridgeCompliances 1 }
+
+    hpicfBridgeComplianceRevTwo MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "The compliance statement for HP Switches with IEEE
+                    802.1W Rapid Spanning Tree Protocol support for 
+                    bridging objects not found in the standard Bridge 
+                    MIBs."
+        MODULE
+            MANDATORY-GROUPS { hpicfBridgeVlanBaseGroup }
+
+            GROUP       hpicfBridgeGvrpPortGroup
+            DESCRIPTION "Support for this group is required for switches
+                        that support GVRP until such time as support for
+                        these objects is added to a standard MIB."
+            GROUP       hpicfBridgeRstpBaseGroup
+            DESCRIPTION "Support for this group is required for switches
+                        that implement RSTP until such time as support for
+                        these objects is added to a standard MIB."
+
+        ::= { hpicfBridgeCompliances 2 }
+
+END

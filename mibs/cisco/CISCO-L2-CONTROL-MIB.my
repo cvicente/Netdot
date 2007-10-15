@@ -1,0 +1,532 @@
+-- *****************************************************************
+-- CISCO-L2-CONTROL-MIB
+--
+-- August 2003, Frank Chao
+--              Seth Wang
+-- December 2003, Frank Chao
+--
+-- Copyright (c) 2003 by Cisco Systems, Inc.
+-- All rights reserved.
+-- *****************************************************************
+--
+
+CISCO-L2-CONTROL-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    NOTIFICATION-TYPE,
+    Unsigned32
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP,
+    NOTIFICATION-GROUP
+        FROM SNMPv2-CONF
+    TruthValue,
+    RowStatus,
+    TEXTUAL-CONVENTION
+        FROM SNMPv2-TC
+    ciscoMgmt
+        FROM CISCO-SMI
+    entPhysicalIndex
+        FROM ENTITY-MIB
+    ifIndex
+        FROM IF-MIB;
+
+ciscoL2ControlMIB MODULE-IDENTITY
+        LAST-UPDATED "200312010000Z"
+        ORGANIZATION "Cisco Systems, Inc."
+        CONTACT-INFO
+         "Postal: Cisco Systems, Inc.
+             170 West Tasman Drive
+             San Jose, CA 95134-1706
+             USA
+
+             Tel: +1 408 526 4000
+
+             E-mail: cs-lan-switch-snmp@cisco.com"
+        DESCRIPTION
+            "The CISCO-L2-CONTROL-MIB is used to control some layer 2
+             functions, including MAC limit function and unicast
+             flooding.  This device could be a router or a switch."
+        REVISION "200312010000Z"
+        DESCRIPTION
+            "Initial revision of this MIB module."
+        ::= { ciscoMgmt 313 }
+
+-- L2 control MIB objects.
+
+ciscoL2ControlMIBNotifs
+        OBJECT IDENTIFIER ::= { ciscoL2ControlMIB 0 }
+
+ciscoL2ControlMIBObjects
+        OBJECT IDENTIFIER ::= { ciscoL2ControlMIB 1 }
+
+ciscoL2ControlMIBConformance
+        OBJECT IDENTIFIER ::= { ciscoL2ControlMIB 2 }
+
+--  MAC limit function 
+
+clcMacAddressLimitObjects
+        OBJECT IDENTIFIER ::= { ciscoL2ControlMIBObjects 1 }
+
+-- Unicast flood
+
+clcUnicastFloodObjects
+        OBJECT IDENTIFIER ::= { ciscoL2ControlMIBObjects 2 }
+
+-- TEXTUAL-CONVENTION
+
+MacLimitExceededAction ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+        "The action will be taken by the system when the system detects
+         the current learned number of MAC addresses in the forwarding
+         table has exceeded the limit number of MAC addresses which is
+         configured by the users.
+
+         warning : The violation will only generate the notification
+         and no further action will be taken.
+
+         limit : The notification will be generated as the 'warning'
+         action and also the MAC limit is enforced for the VLAN.
+         It means that the new address will not be learned in the VLAN
+         and the traffic with new addresses will be flooded in the VLAN.
+         The learning will be re-enabled in the VLAN if the number of
+         MAC addresses falls below the limit.
+
+         limitNoFlood : The notification will be generated as the
+         'warning' action and also the MAC limit is enforced for the
+         VLAN but no flooding traffic for unknown unicast MAC address
+         packets.  It means that the new addresses will not be learned
+         in the VLAN and also the traffic with new addresses will not
+         be flooded in the VLAN.  The learning will be re-enabled in
+         the VLAN if the number of MAC addresses falls below the limit.
+
+         shutdown : The notification will be generated as the 'warning'
+         action and the system will move the corresponding VLAN to
+         blocked state, no traffic in the VLAN.  The traffic will be
+         re-enabled in the VLAN if the number of MAC addresses falls
+         below the limit."
+
+    SYNTAX        INTEGER {
+                      warning(1),
+                      limit(2),
+                      limitNoFlood(3),
+                      shutdown(4)
+                  }
+
+-- MAC limit global configuration
+
+clcMacLimitEnable   OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "This object is to enable or disable the limit of number
+         of MAC addresses function globally.
+
+         MAC limit function is to try to control the number of MAC
+         addresses for each VLAN in the forwarding tables for a
+         network device.  It is possible that one VLAN can exhaust
+         all available MAC entries because of Denial-of-Service
+         and cause users' traffic on the other VLANS flooded.  To
+         prevent this situation, the MAC limit for each VLAN is
+         needed.  The major function of this feature is to protect
+         the layer 2 forwarding table."
+    ::= { clcMacAddressLimitObjects 1 }
+
+clcMaxMacLimitDefault   OBJECT-TYPE
+    SYNTAX        Unsigned32 
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "The global default value for limit number of MAC addresses
+         in the system.
+
+         If clcMacLimitEnable is false(2), this object may not be
+         writable."
+    ::= { clcMacAddressLimitObjects 2 }
+
+clcMacLimitExceededActionDefault  OBJECT-TYPE
+    SYNTAX        MacLimitExceededAction
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "The global default action to be taken by the system
+         when the number of VLAN MAC addresses in the forwarding
+         table has exceeded the number of MAC address limit 
+         for the VLAN.
+
+         If clcMacLimitEnable is false(2), this object may not be
+         writable."
+    ::= { clcMacAddressLimitObjects 3 }
+
+clcMacLimitExceedNotifOption  OBJECT-TYPE
+    SYNTAX        INTEGER {
+                      sysLog(1),
+                      snmpNotif(2),
+                      both(3)
+                  }
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "This MIB object provides the choices of generating MAC limit
+         exceeded notification to the users.
+
+         When the system detects the current learned number of MAC
+         addresses in the forwarding table which has exceeded the limit
+         number of MAC addresses, the system will generate the
+         following notifications.
+         
+         syslog(1) : An syslog message will be generated to users.
+
+         snmpNotif(2) : An SNMP notification message will be generated
+         to users.
+
+         both(3) : Both a syslog message and an SNMP notification
+         message will be generated to users.
+
+         If clcMacLimitEnable is false(2), this object may not be
+         writable."
+    ::= { clcMacAddressLimitObjects 4 }
+
+clcMacLimitNotifEnable  OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "The MIB object controls generation of SNMP notification
+         for MAC Limit feature.
+
+         When this object is true(1), generation of
+         clcVlanMacLimitNotif is enabled. When this object is
+         false(2), generation of clcVlanMacLimitNotif is disabled."
+    ::= { clcMacAddressLimitObjects 5 }
+
+
+-- per VLAN information
+
+clcVlanMacLimitTable        OBJECT-TYPE
+    SYNTAX        SEQUENCE OF ClcVlanMacLimitEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+        "The table contains information for Vlan MAC address limit 
+         feature for each VLAN with VLAN MAC limit function enabled 
+         in the system."
+    ::= { clcMacAddressLimitObjects 6 }
+
+clcVlanMacLimitEntry        OBJECT-TYPE
+    SYNTAX        ClcVlanMacLimitEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+        "An entry contains Vlan MAC address limit feature 
+         configuration for the VLAN"
+    INDEX { clcVlanMacLimitIndex }
+    ::= { clcVlanMacLimitTable 1 }
+
+ClcVlanMacLimitEntry ::= SEQUENCE {
+    clcVlanMacLimitIndex          Unsigned32,
+    clcVlanMacLimitGlobalConfig   BITS,
+    clcVlanMaxMacLimit            Unsigned32,
+    clcVlanMacLimitExceededAction MacLimitExceededAction,
+    clcVlanMacLimitStatus         RowStatus
+}
+
+clcVlanMacLimitIndex              OBJECT-TYPE
+    SYNTAX        Unsigned32 (1..4096)
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+        "The VLAN ID for each VLAN's configuration of MAC
+         address limit function in the system."
+    ::= { clcVlanMacLimitEntry 1 }
+
+clcVlanMacLimitGlobalConfig       OBJECT-TYPE
+    SYNTAX        BITS { 
+                          vlanMaxMacLimit(0), 
+                          vlanLimitExceededAction(1) 
+                       }
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "This object indicates whether the configurations for this
+         vlan are based on the corresponding global default 
+         configurations or not. 
+
+         vlanMaxMacLimit(0) : indicates that the value of 
+                 clcVlanMaxMacLimit is based on the value of 
+                 clcMaxMacLimitDefault if this bit is set.
+
+         vlanLimitExceededAction(1) : indicates that the value of
+                 clcVlanMacLimitExceededAction is based on the 
+                 value of clcMacLimitExceededActionDefault if this 
+                 bit is set."
+         
+    ::= { clcVlanMacLimitEntry 2 }
+
+clcVlanMaxMacLimit   OBJECT-TYPE
+    SYNTAX        Unsigned32 
+    MAX-ACCESS    read-create
+    STATUS        current
+    DESCRIPTION
+        "The limit number of MAC addresses for this VLAN. 
+
+         The default value of this object is the value of 
+         clcMaxMacLimitDefault."
+    ::= { clcVlanMacLimitEntry 3 }
+
+clcVlanMacLimitExceededAction  OBJECT-TYPE
+    SYNTAX        MacLimitExceededAction
+    MAX-ACCESS    read-create
+    STATUS        current
+    DESCRIPTION
+        "The action to be taken by the system for this VLAN while the
+         number of MAC addresses has exceeded the value of  
+         clcVlanMaxMacLimit.
+
+         The default value of this MIB object is the value of 
+         clcMacLimitExceededActionDefault."
+    ::= { clcVlanMacLimitEntry 4 }
+
+clcVlanMacLimitStatus    OBJECT-TYPE
+    SYNTAX        RowStatus
+    MAX-ACCESS    read-create
+    STATUS        current
+    DESCRIPTION
+        "This object is a conceptual row entry that allows to add
+         or delete entries to or from the clcVlanMacLimitTable.
+
+         1. When creating an entry in this table 'createAndGo'
+         method is used and the value of this object is set to
+         'active'. Deactivation of an 'active' entry is not
+         allowed.
+
+         2. When deleting an entry in this table 'destroy' method
+         is used."
+    ::= { clcVlanMacLimitEntry 5 }
+
+
+-- The forwarding table usage information 
+
+clcFdbVlanInfoTable     OBJECT-TYPE
+    SYNTAX        SEQUENCE OF ClcFdbVlanInfoEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+         "The table contains VLAN information of forwarding tables in
+         the system.
+
+         If object clcMacLimitEnable is false(2), this table will not
+         be instantiated."
+    ::= { clcMacAddressLimitObjects 7 }
+
+clcFdbVlanInfoEntry        OBJECT-TYPE
+    SYNTAX        ClcFdbVlanInfoEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+        "An entry contains the information of a VLAN in a specific
+         forwarding table.  Each forwarding table will be identified by
+         the entity physical index."
+    INDEX { entPhysicalIndex, clcVlanMacLimitIndex }
+    ::= { clcFdbVlanInfoTable 1 }
+
+ClcFdbVlanInfoEntry ::= SEQUENCE {
+    clcFdbVlanMacUsage              Unsigned32
+}
+
+clcFdbVlanMacUsage   OBJECT-TYPE
+    SYNTAX        Unsigned32
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "The usage of the MAC addresses in the specific forwarding
+         table for this VLAN.  It indicates the number of MAC
+         addresses in this VLAN for a forwarding table."
+    ::= { clcFdbVlanInfoEntry 1 }
+
+-- Unicast Flood Table
+
+clcUnicastFloodTable     OBJECT-TYPE
+    SYNTAX        SEQUENCE OF ClcUnicastFloodEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+        "This table contains information about the unicast flooding
+         on the system. The number of entries is determined by the
+         number of interfaces in the system that can support the
+         unicast flooding feature. Only L2 interfaces can support
+         unicast flooding."
+    ::= { clcUnicastFloodObjects 1 }
+
+clcUnicastFloodEntry     OBJECT-TYPE
+    SYNTAX        ClcUnicastFloodEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+        "An entry contains the information about the unicast flooding
+         for a particular interface."
+    INDEX { ifIndex }
+    ::= { clcUnicastFloodTable 1 }
+
+ClcUnicastFloodEntry ::= SEQUENCE {
+    clcUnicastFloodAdminEnable    TruthValue,
+    clcUnicastFloodOperEnable     TruthValue
+}
+
+clcUnicastFloodAdminEnable    OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "This object indicates whether the configuration of the unicast
+         flooding is  enabled or disabled on a particular interface. If
+         this object is true, then the unicast flooding has been
+         configured to enabled. If this object is false, then the
+         unicast flooding has been configured to disabled."
+    ::= { clcUnicastFloodEntry 1 }
+
+clcUnicastFloodOperEnable    OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "This object indicates the operational status of the unicast
+         flooding on an interface, whether it is enabled or not. If
+         this object is true, then the interface is unicast flooding.
+         If this object is false, then the interface is not unicast
+         flooding."
+    ::= { clcUnicastFloodEntry 2 }
+
+
+-- Notifications objects
+
+clcVlanMacLimitNotif NOTIFICATION-TYPE
+    OBJECTS { clcFdbVlanMacUsage, clcVlanMaxMacLimit }
+    STATUS current
+    DESCRIPTION
+        "Notification is sent when the number of MAC addresses  
+         (the value of clcFdbVlanMacUsage) has crossed the 
+         configured limit of MAC addresses(clcVlanMaxMacLimit)
+         either rising above or falling below it." 
+    ::= { ciscoL2ControlMIBNotifs 1 }
+
+--
+-- Conformance
+--
+
+ciscoL2ControlMIBCompliances  OBJECT IDENTIFIER ::=
+    { ciscoL2ControlMIBConformance 1 }
+
+ciscoL2ControlMIBGroups  OBJECT IDENTIFIER ::=
+    { ciscoL2ControlMIBConformance 2 }
+
+-- Compliance
+
+ciscoL2ControlMIBCompliance MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION
+        "The compliance statement for entities which implement
+         the L2 Control MIB."
+    MODULE  -- this module
+        GROUP    clcMacAddressLimitGroup
+        DESCRIPTION
+            "This is the group to control MAC address limit
+             function. This is group is mandatory only in devices
+             which support MAC address limit control."
+
+        GROUP    clcVlanMacAddressLimitGroup
+        DESCRIPTION
+            "This is the group to control VLAN MAC address limit
+             function. This is group is mandatory only in devices
+             which support VLAN MAC address limit control."
+
+        GROUP    clcVlanMacLimitNotifsGroup
+        DESCRIPTION
+            "The collection of notifications used to indicate that the
+             number of MAC addresses has crossed  the configured limit
+             of MAC addresses either rising above or falling below it.
+             This group is mandatory only in devices which support
+             VLAN MAC address limit control."
+
+        GROUP    clcUnicastFloodGroup
+        DESCRIPTION
+            "This is the group to control unicast flooding. This group
+             is mandatory only in devices which support unicast flood
+             control."
+
+        OBJECT clcMaxMacLimitDefault
+        SYNTAX    Unsigned32 (5..32768)
+        DESCRIPTION
+            "The configurable range for the global default
+             VLAN MAC limit."
+
+        OBJECT clcMacLimitExceededActionDefault
+        SYNTAX    INTEGER {
+                            warning(1),
+                            limit(2),
+                            shutdown(4)
+                  }
+        DESCRIPTION
+            "The option limitNoFlood(3) cannot be applied to
+             this object since this option is not supported
+             in the global default configuration."
+
+        OBJECT clcVlanMaxMacLimit
+        SYNTAX    Unsigned32 (5..32768)
+        DESCRIPTION
+            "The configurable VLAN MAC limit range for a VLAN."
+
+    ::= { ciscoL2ControlMIBCompliances 1 }
+
+-- Units of Conformance
+
+clcMacAddressLimitGroup OBJECT-GROUP
+    OBJECTS {
+        clcMacLimitEnable,
+        clcMaxMacLimitDefault,
+        clcMacLimitExceededActionDefault,
+        clcMacLimitExceedNotifOption,
+        clcMacLimitNotifEnable
+    }
+    STATUS current
+    DESCRIPTION
+        "This is the group to control MAC address limit function."
+    ::= { ciscoL2ControlMIBGroups 1 }
+
+clcVlanMacAddressLimitGroup OBJECT-GROUP
+    OBJECTS {
+        clcVlanMacLimitGlobalConfig,
+        clcVlanMaxMacLimit,
+        clcVlanMacLimitExceededAction,
+        clcVlanMacLimitStatus,
+        clcFdbVlanMacUsage
+    }
+    STATUS current
+    DESCRIPTION
+        "This is the group to control VLAN MAC address limit function."
+    ::= { ciscoL2ControlMIBGroups 2 }
+
+clcVlanMacLimitNotifsGroup NOTIFICATION-GROUP
+    NOTIFICATIONS { clcVlanMacLimitNotif }
+    STATUS        current
+    DESCRIPTION
+        "The collection of notifications used to indicate that the
+         number of MAC addresses has crossed  the configured limit
+         of MAC addresses either rising above or falling below it."
+    ::= { ciscoL2ControlMIBGroups 3 }
+
+clcUnicastFloodGroup OBJECT-GROUP
+    OBJECTS {
+        clcUnicastFloodAdminEnable,
+        clcUnicastFloodOperEnable
+    }
+    STATUS current
+    DESCRIPTION
+        "This is the group to control unicast flooding."
+    ::= { ciscoL2ControlMIBGroups 4 }
+
+END

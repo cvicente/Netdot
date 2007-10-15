@@ -1,0 +1,161 @@
+--/* 
+-- *
+-- * Copyright (c) 1997 - 2002 by Extreme Networks Inc.
+-- * 
+-- *	  Extreme Networks
+-- *      http://www.extremenetworks.com
+-- *
+-- */
+
+-- ===================================================
+--
+-- Extreme Services
+--
+
+EXTREME-SERVICES-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE    FROM SNMPv2-SMI
+        InetAddressType, InetAddress    FROM INET-ADDRESS-MIB
+	IpAddress		        FROM SNMPv2-SMI
+        extremeAgent                    FROM EXTREME-BASE-MIB
+        TruthValue, RowStatus           FROM SNMPv2-TC
+        Integer32                       FROM SNMPv2-SMI;
+
+        
+        extremeServices MODULE-IDENTITY
+                      LAST-UPDATED "0007240000Z"
+                      ORGANIZATION "Extreme Networks, Inc."
+                      CONTACT-INFO "www.extremenetworks.com"
+                DESCRIPTION "Extreme Upper layer services objects"
+        ::= { extremeAgent 26 }
+
+	extremeSyslog OBJECT IDENTIFIER ::= {extremeServices 1} 
+        
+        extremeRemoteSyslogServerTable      OBJECT-TYPE
+            SYNTAX       SEQUENCE OF ExtremeRemoteSyslogServerEntry
+            MAX-ACCESS          not-accessible
+            STATUS              current
+            DESCRIPTION     
+                "This table is used to configure remote syslog 
+		servers and contains information on the same."
+            ::= { extremeSyslog 1 }
+
+        extremeRemoteSyslogServerEntry      OBJECT-TYPE
+            SYNTAX              ExtremeRemoteSyslogServerEntry
+            MAX-ACCESS          not-accessible
+            STATUS              current
+            DESCRIPTION
+                "An entry in the extremeRemoteSyslogServerTable."
+            INDEX { extremeRemoteSyslogServerAddressType, 				     	     
+	    	    extremeRemoteSyslogServerAddress,
+                    extremeRemoteSyslogServerPort, 			                 
+		    extremeRemoteSyslogServerFacility
+                    }
+            ::= { extremeRemoteSyslogServerTable 1 }
+
+        ExtremeRemoteSyslogServerEntry ::= SEQUENCE {
+                extremeRemoteSyslogServerAddressType InetAddressType,
+                extremeRemoteSyslogServerAddress     InetAddress,
+                extremeRemoteSyslogServerPort        INTEGER,
+                extremeRemoteSyslogServerFacility    INTEGER,
+                extremeRemoteSyslogServerSeverity    BITS,
+                extremeRemoteSyslogServerStatus      RowStatus
+        }
+         
+        extremeRemoteSyslogServerAddressType          OBJECT-TYPE
+                SYNTAX                          InetAddressType
+                MAX-ACCESS                      read-only
+                STATUS                          current
+                DESCRIPTION
+                    "The type of address specified in the object 				
+		    'extremeRemoteSyslogServerAddress'.
+                    Currently, only 'ipv4' and 'dns' are supported."
+                DEFVAL { ipv4 }
+            ::= { extremeRemoteSyslogServerEntry 1 }
+
+      extremeRemoteSyslogServerAddress           OBJECT-TYPE
+                SYNTAX                  InetAddress (SIZE (1..255))
+                MAX-ACCESS              read-only
+                STATUS                  current
+                DESCRIPTION
+                    "The address of the remote syslog server. This 
+		    can be a DNS name or an IPv4 address." 
+                    
+            ::= { extremeRemoteSyslogServerEntry 2 }
+
+     extremeRemoteSyslogServerPort                    OBJECT-TYPE
+                SYNTAX                          INTEGER (0..65535)
+                MAX-ACCESS                      read-only
+                STATUS                          current
+                DESCRIPTION
+                    "The UDP port number of the remote syslog server 				
+		    to which syslog messages will
+                    be sent."
+            ::= { extremeRemoteSyslogServerEntry 3 }
+
+      extremeRemoteSyslogServerFacility               OBJECT-TYPE
+                SYNTAX                          INTEGER {
+                                                local0(1),
+                                                local1(2),
+                                                local2(3),
+                                                local3(4),
+                                                local4(5),
+                                                local5(6),
+                                                local6(7),
+                                                local7(8)
+                                                }
+                MAX-ACCESS                      read-only
+                STATUS                          current
+                DESCRIPTION
+                    "The facility which will be sent in all syslog 				
+		    messages to this remote syslog server."
+            ::= { extremeRemoteSyslogServerEntry 4 }
+
+      extremeRemoteSyslogServerSeverity               OBJECT-TYPE
+            SYNTAX  BITS { 
+				critical(0),
+				error(1),
+				warning(2),
+				notice(3),
+				info(4),
+				debug-summary(5),
+				debug-verbose(6),
+				debug-data(7)					
+				}
+            MAX-ACCESS read-create
+            STATUS current
+            DESCRIPTION
+                    "The syslog message severity. All syslog messages of the specified severity for
+                    which the Bits are set, will be sent to this syslog server. When setting this object
+                    in a 'createAndGo' request, all lower bits upto and including the desired bit position
+                    must be set. For example, if bit info(4) needs to be set then bits critical(0), 
+                    error(1), warning(2), notice(3) and info(4) must also be set in the request. 
+                    Consequently, all syslog messages of a given severity and higher will be sent to 
+                    the syslog server. It is not possible to send messages that match only a few selected
+                    non-contiguous severities."
+                DEFVAL { '11111111'B }
+            ::= { extremeRemoteSyslogServerEntry 5 }
+
+      extremeRemoteSyslogServerStatus               OBJECT-TYPE
+                SYNTAX                          RowStatus
+                MAX-ACCESS                      read-create
+                STATUS                          current
+                DESCRIPTION
+                    "The status of the Row as per standard row  				
+		    status conventions. Only 'createAndGo', 'active' and 
+		    'destroy' will be supported. It is not possible
+		    to change the values of the objects of a row 					
+		    once it has been created, except by 'destroy'ing and 
+		    re-creating the row."
+                   
+            ::= { extremeRemoteSyslogServerEntry 6 }
+
+        extremeEnableRemoteSyslog OBJECT-TYPE
+                SYNTAX TruthValue
+        	MAX-ACCESS read-write
+                STATUS current
+                DESCRIPTION
+                "The enable/disable status of remote syslog messages."
+	::= { extremeSyslog 2 }
+
+END

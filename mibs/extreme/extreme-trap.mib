@@ -1,0 +1,203 @@
+--/* 
+-- *
+-- * Copyright (c) 1997 - 2002 by Extreme Networks Inc.
+-- * 
+-- *	  Extreme Networks
+-- *      http://www.extremenetworks.com
+-- *
+-- */
+
+-- ============================================================================
+--
+-- Extreme Traps
+--
+
+EXTREME-TRAP-MIB DEFINITIONS ::= BEGIN
+
+        IMPORTS
+        extremenetworks			FROM EXTREME-BASE-MIB
+		extremeSlotNumber		FROM EXTREME-SYSTEM-MIB
+		extremeSlotModuleConfiguredType	FROM EXTREME-SYSTEM-MIB
+		extremeSlotModuleInsertedType	FROM EXTREME-SYSTEM-MIB
+		extremeSlotModuleState		FROM EXTREME-SYSTEM-MIB
+        extremePowerSupplyNumber, extremeFanNumber
+					 	FROM EXTREME-SYSTEM-MIB	
+		extremeCurrentTemperature	FROM EXTREME-SYSTEM-MIB	
+        extremeEsrpGroup, extremeEsrpState,
+		extremeEsrpNetAddress  FROM EXTREME-ESRP-MIB
+        extremeEsrpActivePorts, extremeEsrpInternalActivePorts
+						FROM EXTREME-ESRP-MIB
+        extremeEsrpTrackedActivePorts, extremeEsrpTrackedIpRoutes
+						FROM EXTREME-ESRP-MIB
+        extremeVlanIfIndex, extremeVlanIfDescr FROM EXTREME-VLAN-MIB
+		extremeEdpPortIfIndex, extremeEdpNeighborId,
+		extremeEdpEntryAge, extremeEdpNeighborVlanName,
+		extremeEdpNeighborVlanIpAddress	       FROM EXTREME-EDP-MIB
+		sysUpTime, sysDescr, ifPhysAddress,
+                ifDescr                                FROM RFC1213-MIB
+                ifAlias                                FROM IF-MIB
+                TRAP-TYPE                              FROM RFC-1215
+                NOTIFICATION-TYPE		       FROM SNMPv2-SMI;
+
+          extremeOverheat TRAP-TYPE
+              ENTERPRISE  extremenetworks
+              VARIABLES   { sysUpTime, sysDescr, extremeCurrentTemperature }
+              DESCRIPTION
+                          "A overheat trap indicates that the on board
+                          tempature sensor has reported a overheat 
+                          condition.  System will shutdown until unit has
+			  suficiently cooled such that operation may begin
+                          again.  A cold start trap will be issued when
+                          the unit has come back on line."
+              ::= 6
+
+          extremeFanfailed TRAP-TYPE
+              ENTERPRISE  extremenetworks
+              VARIABLES   { sysUpTime, sysDescr, extremeFanNumber }
+              DESCRIPTION
+                          "A fan failed trap indicates one or more of the
+                          cooling fans inside the device has failed.  A
+                          fanOK trap will be sent once the fan has attained
+                          normal operation."
+              ::= 7
+
+          extremeFanOK TRAP-TYPE
+              ENTERPRISE  extremenetworks
+              VARIABLES   { sysUpTime, sysDescr, extremeFanNumber }
+              DESCRIPTION
+                          "A fan has transitioned out of a failure state and
+                          is now operating correctly."
+              ::= 8
+
+          extremeInvalidLoginAttempt TRAP-TYPE
+              ENTERPRISE  extremenetworks
+              VARIABLES   { sysUpTime, sysDescr }
+              DESCRIPTION
+                "A user attempted to login to console or by telnet but was
+                 refused access due to incorrect username or password"
+              ::= 9
+
+          extremePowerSupplyFail TRAP-TYPE
+              ENTERPRISE  extremenetworks
+              VARIABLES   { sysUpTime, sysDescr, extremePowerSupplyNumber }
+              DESCRIPTION
+                "One or more sources of power to this agent has failed.
+                 Presumably a redundant power-supply has taken over."
+              ::= 10
+
+          extremePowerSupplyGood TRAP-TYPE
+              ENTERPRISE  extremenetworks
+              VARIABLES   { sysUpTime, sysDescr, extremePowerSupplyNumber }
+              DESCRIPTION
+                 "One or more previously bad sources of power to this agent 
+                 has come back to life without causing an agent restart."
+              ::= 11
+
+          extremeRpsAlarm TRAP-TYPE
+              ENTERPRISE  extremenetworks
+              VARIABLES   { sysUpTime, sysDescr }
+              DESCRIPTION
+                          "Attached Redundant Power Supply device is indicating
+                           an alarm condition."
+              ::= 12
+
+          extremeRpsNoAlarm TRAP-TYPE
+              ENTERPRISE  extremenetworks
+              VARIABLES   { sysUpTime, sysDescr }
+              DESCRIPTION
+                          "Attached Redundant Power Supply device is no longer
+                           indicating an alarm condition."
+              ::= 13
+
+--
+-- SmartTrap definition
+--
+        extremeSmartTrap TRAP-TYPE
+                ENTERPRISE  extremenetworks
+                VARIABLES   { sysUpTime, sysDescr }
+        	DESCRIPTION
+                "Signifies that the value of one of the object identifiers 
+                (or the value of an object below that in the MIB tree) 
+                defined in the extremeSmartTrapRulesTable has changed, 
+                and hence a new entry has been created in the 
+                extremeSmartTrapInstanceTable. Such a trap is sent 
+                at most once every thirty seconds if one or more entry 
+                was created in the last thirty seconds." 
+	::= 14
+
+--
+-- Traps for Black Diamond
+--
+	extremeModuleStateChanged TRAP-TYPE
+		ENTERPRISE  extremenetworks
+		VARIABLES { sysUpTime, extremeSlotNumber, 
+                            extremeSlotModuleConfiguredType, 
+                            extremeSlotModuleInsertedType, 
+                            extremeSlotModuleState }
+		DESCRIPTION
+		"Signifies that the value of the extremeSlotModuleState for 
+		the specified extremeSlotNumber has changed."
+	::= 15
+
+--	extremeModuleOverheat TRAP-TYPE
+--		ENTERPRISE  extremenetworks
+--		VARIABLES {sysUpTime, extremeSlotNumber }
+--		DESCRIPTION
+--		"Signifies that the temperature sensor on the module 
+--		inside this slot has reported an Overheat condition."
+--	::= 16
+
+	extremeEsrpStateChange TRAP-TYPE
+        	ENTERPRISE extremenetworks
+        	VARIABLES {sysUpTime, sysDescr, extremeVlanIfIndex,
+			extremeVlanIfDescr, extremeEsrpGroup, extremeEsrpState,
+			extremeEsrpNetAddress, ifPhysAddress,
+                        extremeEsrpActivePorts, extremeEsrpInternalActivePorts,
+                        extremeEsrpTrackedActivePorts, extremeEsrpTrackedIpRoutes
+                }
+        DESCRIPTION
+        "Signifies Esrp state change"
+        ::= 17
+
+        extremeSlbUnitAdded TRAP-TYPE
+                ENTERPRISE extremenetworks
+                DESCRIPTION
+                "The server load balancer has activated a group of virtual
+                servers that it normally would not activate.  This may be
+                due to the failure of another server load balancer."
+                
+        ::= 18
+
+        extremeSlbUnitRemoved TRAP-TYPE
+                ENTERPRISE extremenetworks
+                DESCRIPTION
+                "The server load balancer has deactivated a group of virtual
+                servers that it normally has active.  This indicates that
+                something is wrong in the server load balancer; for example,
+                its ping check may be failing."
+        ::= 19
+
+	extremeEdpNeighborAdded TRAP-TYPE
+        	ENTERPRISE extremenetworks
+        	VARIABLES {sysUpTime, extremeEdpPortIfIndex,
+			extremeEdpNeighborId, extremeEdpEntryAge,
+			ifAlias, ifDescr
+                }
+        DESCRIPTION
+        "This node discovers a new neighbor through Extreme Discovery
+	 Protocol."
+        ::= 20
+
+	extremeEdpNeighborRemoved TRAP-TYPE
+        	ENTERPRISE extremenetworks
+        	VARIABLES {sysUpTime, extremeEdpPortIfIndex,
+			extremeEdpNeighborId, extremeEdpEntryAge,
+			ifAlias, ifDescr
+                }
+        DESCRIPTION
+        "No EDP updates are received from this neighbor within
+	the configured timeout period and this neighbor entry is aged
+	out by the device."
+        ::= 21
+        
+END

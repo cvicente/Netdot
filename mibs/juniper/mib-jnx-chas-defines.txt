@@ -1,0 +1,1291 @@
+--
+-- Juniper chassis mib definitions:
+-- OIDs used to identify various platforms and chassis components.
+-- 
+-- Copyright (c) 1998-2005, Juniper Networks, Inc.
+-- All rights reserved.
+--
+-- The contents of this document are subject to change without notice.
+--
+
+
+JUNIPER-CHASSIS-DEFINES-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY
+        FROM SNMPv2-SMI
+    jnxProducts, jnxMibs
+        FROM JUNIPER-SMI;
+
+jnxChassisDefines MODULE-IDENTITY
+
+    LAST-UPDATED "200312100000Z" -- Wed Dec 10 00:00:00 2003 UTC
+    ORGANIZATION "Juniper Networks, Inc."
+    CONTACT-INFO
+            "        Juniper Technical Assistance Center
+		     Juniper Networks, Inc.
+		     1194 N. Mathilda Avenue
+		     Sunnyvale, CA 94089
+		     E-mail: support@juniper.net"
+
+    DESCRIPTION
+            "The MIB modules defines OIDs used by chassis mib to
+            identify platform and chassis components." 
+    ::= { jnxMibs 25 }
+
+
+-- 
+-- Products Classification
+--
+jnxClassification       OBJECT IDENTIFIER ::= { jnxProducts       1 }
+jnxClassGeneral   	OBJECT IDENTIFIER ::= { jnxClassification 1 }
+jnxClassContainers	OBJECT IDENTIFIER ::= { jnxClassification 2 }
+jnxClassContents	OBJECT IDENTIFIER ::= { jnxClassification 3 }
+jnxClassStatus		OBJECT IDENTIFIER ::= { jnxClassification 4 }
+		
+--
+-- General Information
+--
+
+-- Product Line
+
+jnxProductLine	        OBJECT IDENTIFIER ::= { jnxClassGeneral    1 }
+  jnxProductLineM40	OBJECT IDENTIFIER ::= { jnxProductLine 1 }
+  jnxProductLineM20 	OBJECT IDENTIFIER ::= { jnxProductLine 2 }
+  jnxProductLineM160 	OBJECT IDENTIFIER ::= { jnxProductLine 3 }
+  jnxProductLineM10 	OBJECT IDENTIFIER ::= { jnxProductLine 4 }
+  jnxProductLineM5 	OBJECT IDENTIFIER ::= { jnxProductLine 5 }
+  jnxProductLineT640 	OBJECT IDENTIFIER ::= { jnxProductLine 6 }
+  jnxProductLineT320 	OBJECT IDENTIFIER ::= { jnxProductLine 7 }
+  jnxProductLineM40e 	OBJECT IDENTIFIER ::= { jnxProductLine 8 }
+
+-- Product Name
+
+jnxProductName 	        OBJECT IDENTIFIER ::= { jnxClassGeneral 2 }
+  jnxProductNameM40	OBJECT IDENTIFIER ::= { jnxProductName 1 }
+  jnxProductNameM20	OBJECT IDENTIFIER ::= { jnxProductName 2 }
+  jnxProductNameM160	OBJECT IDENTIFIER ::= { jnxProductName 3 }
+  jnxProductNameM10	OBJECT IDENTIFIER ::= { jnxProductName 4 }
+  jnxProductNameM5	OBJECT IDENTIFIER ::= { jnxProductName 5 }
+  jnxProductNameT640	OBJECT IDENTIFIER ::= { jnxProductName 6 }
+  jnxProductNameT320	OBJECT IDENTIFIER ::= { jnxProductName 7 }
+  jnxProductNameM40e	OBJECT IDENTIFIER ::= { jnxProductName 8 }
+
+-- Product Model
+
+jnxProductModel         OBJECT IDENTIFIER ::= { jnxClassGeneral 3 }
+  jnxProductModelM40	OBJECT IDENTIFIER ::= { jnxProductModel 1 }
+  jnxProductModelM20	OBJECT IDENTIFIER ::= { jnxProductModel 2 }
+  jnxProductModelM160	OBJECT IDENTIFIER ::= { jnxProductModel 3 }
+  jnxProductModelM10	OBJECT IDENTIFIER ::= { jnxProductModel 4 }
+  jnxProductModelM5	OBJECT IDENTIFIER ::= { jnxProductModel 5 }
+  jnxProductModelT640	OBJECT IDENTIFIER ::= { jnxProductModel 6 }
+  jnxProductModelT320	OBJECT IDENTIFIER ::= { jnxProductModel 7 }
+  jnxProductModelM40e	OBJECT IDENTIFIER ::= { jnxProductModel 8 }
+
+jnxProductVariation     OBJECT IDENTIFIER ::= { jnxClassGeneral 4 }
+  jnxProductVariationM40    OBJECT IDENTIFIER ::= { jnxProductVariation 1  }
+  jnxProductVariationM20    OBJECT IDENTIFIER ::= { jnxProductVariation 2  }
+  jnxProductVariationM160   OBJECT IDENTIFIER ::= { jnxProductVariation 3  }
+  jnxProductVariationM10    OBJECT IDENTIFIER ::= { jnxProductVariation 4  }
+  jnxProductVariationM5     OBJECT IDENTIFIER ::= { jnxProductVariation 5  }
+  jnxProductVariationT640   OBJECT IDENTIFIER ::= { jnxProductVariation 6  }
+  jnxProductVariationT320   OBJECT IDENTIFIER ::= { jnxProductVariation 7  }
+  jnxProductVariationM40e   OBJECT IDENTIFIER ::= { jnxProductVariation 8  }
+
+--
+-- Containers
+--
+
+-- Chassis
+
+jnxChassis 	        OBJECT IDENTIFIER ::= { jnxClassContainers 1 }
+  jnxChassisM40 	OBJECT IDENTIFIER ::= { jnxChassis 1 }
+  jnxChassisM20 	OBJECT IDENTIFIER ::= { jnxChassis 2 }
+  jnxChassisM160	OBJECT IDENTIFIER ::= { jnxChassis 3 }
+  jnxChassisM10 	OBJECT IDENTIFIER ::= { jnxChassis 4 }
+  jnxChassisM5  	OBJECT IDENTIFIER ::= { jnxChassis 5 }
+  jnxChassisT640  	OBJECT IDENTIFIER ::= { jnxChassis 6 }
+  jnxChassisT320  	OBJECT IDENTIFIER ::= { jnxChassis 7 }
+  jnxChassisM40e  	OBJECT IDENTIFIER ::= { jnxChassis 8 }
+
+-- Slot
+
+jnxSlot 	          OBJECT IDENTIFIER ::= { jnxClassContainers 2 }
+  jnxSlotM40	  	  OBJECT IDENTIFIER ::= { jnxSlot 1 }
+    jnxSlotFPC 		  OBJECT IDENTIFIER ::= { jnxSlotM40 1 }
+    jnxSlotSCB 		  OBJECT IDENTIFIER ::= { jnxSlotM40 2 }
+    jnxSlotHostCtlr 	  OBJECT IDENTIFIER ::= { jnxSlotM40 3 }
+    jnxSlotPowerSupply 	  OBJECT IDENTIFIER ::= { jnxSlotM40 4 }
+    jnxSlotCoolingImpeller
+			  OBJECT IDENTIFIER ::= { jnxSlotM40 5 }
+    jnxSlotCoolingFan  	  OBJECT IDENTIFIER ::= { jnxSlotM40 6 }
+    jnxSlotRoutingEngine  OBJECT IDENTIFIER ::= { jnxSlotM40 7 }
+
+  jnxSlotM20	  	  OBJECT IDENTIFIER ::= { jnxSlot 2 }
+    jnxM20SlotFPC	  OBJECT IDENTIFIER ::= { jnxSlotM20 1 }
+			  -- Flexible Port Concentrator slot
+    jnxM20SlotSSB	  OBJECT IDENTIFIER ::= { jnxSlotM20 2 }
+			  -- System Switch Board slot
+    jnxM20SlotRE	  OBJECT IDENTIFIER ::= { jnxSlotM20 3 }
+			  -- Routing Engine slot
+    jnxM20SlotPower	  OBJECT IDENTIFIER ::= { jnxSlotM20 4 }
+    jnxM20SlotFan 	  OBJECT IDENTIFIER ::= { jnxSlotM20 5 }
+    jnxM20SlotFrontPanel  OBJECT IDENTIFIER ::= { jnxSlotM20 6 }
+
+  jnxSlotM160	  	  OBJECT IDENTIFIER ::= { jnxSlot 3 }
+    jnxM160SlotFPC	  OBJECT IDENTIFIER ::= { jnxSlotM160 1 }
+			  -- Flexible Port Concentrator slot
+    jnxM160SlotSFM	  OBJECT IDENTIFIER ::= { jnxSlotM160 2 }
+			  -- Switching and Forwarding Module slot
+    jnxM160SlotHM	  OBJECT IDENTIFIER ::= { jnxSlotM160 3 }
+			  -- Host Module (also called Routing Engine) slot
+    jnxM160SlotPCG	  OBJECT IDENTIFIER ::= { jnxSlotM160 4 }
+			  -- PFE Clock Generator slot
+    jnxM160SlotPower	  OBJECT IDENTIFIER ::= { jnxSlotM160 5 }
+    jnxM160SlotFan 	  OBJECT IDENTIFIER ::= { jnxSlotM160 6 }
+    jnxM160SlotMCS 	  OBJECT IDENTIFIER ::= { jnxSlotM160 7 }
+			  -- Miscellaneous Control System slot
+    jnxM160SlotFPM        OBJECT IDENTIFIER ::= { jnxSlotM160 8 }
+			  -- Front Panel Module
+    jnxM160SlotCIP        OBJECT IDENTIFIER ::= { jnxSlotM160 9 }
+			  -- Connector Interface Panel
+
+  jnxSlotM10	  	  OBJECT IDENTIFIER ::= { jnxSlot 4 }
+    jnxM10SlotFPC	  OBJECT IDENTIFIER ::= { jnxSlotM10 1 }
+			  -- Flexible Port Concentrator slot
+    jnxM10SlotFEB	  OBJECT IDENTIFIER ::= { jnxSlotM10 2 }
+			  -- Forwarding Engine Board slot
+    jnxM10SlotRE	  OBJECT IDENTIFIER ::= { jnxSlotM10 3 }
+			  -- Routing Engine slot
+    jnxM10SlotPower 	  OBJECT IDENTIFIER ::= { jnxSlotM10 4 }
+    jnxM10SlotFan  	  OBJECT IDENTIFIER ::= { jnxSlotM10 5 }
+
+  jnxSlotM5	  	  OBJECT IDENTIFIER ::= { jnxSlot 5 }
+    jnxM5SlotFPC 	  OBJECT IDENTIFIER ::= { jnxSlotM5 1 }
+			  -- Flexible Port Concentrator slot
+    jnxM5SlotFEB	  OBJECT IDENTIFIER ::= { jnxSlotM5 2 }
+			  -- Forwarding Engine Board slot
+    jnxM5SlotRE 	  OBJECT IDENTIFIER ::= { jnxSlotM5 3 }
+			  -- Routing Engine slot
+    jnxM5SlotPower	  OBJECT IDENTIFIER ::= { jnxSlotM5 4 }
+    jnxM5SlotFan   	  OBJECT IDENTIFIER ::= { jnxSlotM5 5 }
+
+  jnxSlotT640	  	  OBJECT IDENTIFIER ::= { jnxSlot 6 }
+    jnxT640SlotFPC	  OBJECT IDENTIFIER ::= { jnxSlotT640 1 }
+			  -- Flexible Port Concentrator slot
+    jnxT640SlotSIB	  OBJECT IDENTIFIER ::= { jnxSlotT640 2 }
+			  -- Switch Interface Board slot
+    jnxT640SlotHM	  OBJECT IDENTIFIER ::= { jnxSlotT640 3 }
+			  -- Host Module (also called Routing Engine) slot
+    jnxT640SlotSCG	  OBJECT IDENTIFIER ::= { jnxSlotT640 4 }
+			  -- SONET Clock Generator slot
+    jnxT640SlotPower	  OBJECT IDENTIFIER ::= { jnxSlotT640 5 }
+    jnxT640SlotFan 	  OBJECT IDENTIFIER ::= { jnxSlotT640 6 }
+    jnxT640SlotCB 	  OBJECT IDENTIFIER ::= { jnxSlotT640 7 }
+			  -- Control Board slot
+    jnxT640SlotFPB        OBJECT IDENTIFIER ::= { jnxSlotT640 8 }
+			  -- Front Panel Board
+    jnxT640SlotCIP        OBJECT IDENTIFIER ::= { jnxSlotT640 9 }
+			  -- Connector Interface Panel
+    jnxT640SlotSPMB       OBJECT IDENTIFIER ::= { jnxSlotT640 10 }
+			  -- Processor Mezzanine Board for SIB
+
+  jnxSlotT320	  	  OBJECT IDENTIFIER ::= { jnxSlot 7 }
+    jnxT320SlotFPC	  OBJECT IDENTIFIER ::= { jnxSlotT320 1 }
+			  -- Flexible Port Concentrator slot
+    jnxT320SlotSIB	  OBJECT IDENTIFIER ::= { jnxSlotT320 2 }
+			  -- Switch Interface Board slot
+    jnxT320SlotHM	  OBJECT IDENTIFIER ::= { jnxSlotT320 3 }
+			  -- Host Module (also called Routing Engine) slot
+    jnxT320SlotSCG	  OBJECT IDENTIFIER ::= { jnxSlotT320 4 }
+			  -- SONET Clock Generator slot
+    jnxT320SlotPower	  OBJECT IDENTIFIER ::= { jnxSlotT320 5 }
+    jnxT320SlotFan 	  OBJECT IDENTIFIER ::= { jnxSlotT320 6 }
+    jnxT320SlotCB 	  OBJECT IDENTIFIER ::= { jnxSlotT320 7 }
+			  -- Control Board slot
+    jnxT320SlotFPB        OBJECT IDENTIFIER ::= { jnxSlotT320 8 }
+			  -- Front Panel Board
+    jnxT320SlotCIP        OBJECT IDENTIFIER ::= { jnxSlotT320 9 }
+			  -- Connector Interface Panel
+    jnxT320SlotSPMB       OBJECT IDENTIFIER ::= { jnxSlotT320 10 }
+			  -- Processor Mezzanine Board for SIB
+
+  jnxSlotM40e	  	  OBJECT IDENTIFIER ::= { jnxSlot 8 }
+    jnxM40eSlotFPC	  OBJECT IDENTIFIER ::= { jnxSlotM40e 1 }
+			  -- Flexible Port Concentrator slot
+    jnxM40eSlotSFM	  OBJECT IDENTIFIER ::= { jnxSlotM40e 2 }
+			  -- Switching and Forwarding Module slot
+    jnxM40eSlotHM	  OBJECT IDENTIFIER ::= { jnxSlotM40e 3 }
+			  -- Host Module (also called Routing Engine) slot
+    jnxM40eSlotPCG	  OBJECT IDENTIFIER ::= { jnxSlotM40e 4 }
+			  -- PFE Clock Generator slot
+    jnxM40eSlotPower	  OBJECT IDENTIFIER ::= { jnxSlotM40e 5 }
+    jnxM40eSlotFan	  OBJECT IDENTIFIER ::= { jnxSlotM40e 6 }
+    jnxM40eSlotMCS	  OBJECT IDENTIFIER ::= { jnxSlotM40e 7 }
+			  -- Miscellaneous Control System slot
+    jnxM40eSlotFPM	  OBJECT IDENTIFIER ::= { jnxSlotM40e 8 }
+			  -- Front Panel Module
+    jnxM40eSlotCIP	  OBJECT IDENTIFIER ::= { jnxSlotM40e 9 }
+			  -- Connector Interface Panel
+
+-- Media Card Space, for holding Port Interface Card (PIC)
+
+jnxMediaCardSpace   OBJECT IDENTIFIER ::= { jnxClassContainers 3 }
+
+  jnxMediaCardSpaceM40	     OBJECT IDENTIFIER ::= { jnxMediaCardSpace 1 }
+    jnxMediaCardSpacePIC     OBJECT IDENTIFIER ::= { jnxMediaCardSpaceM40 1 }
+
+  jnxMediaCardSpaceM20	     OBJECT IDENTIFIER ::= { jnxMediaCardSpace 2 }
+    jnxM20MediaCardSpacePIC  OBJECT IDENTIFIER ::= { jnxMediaCardSpaceM20 1 }
+
+  jnxMediaCardSpaceM160	     OBJECT IDENTIFIER ::= { jnxMediaCardSpace 3 }
+    jnxM160MediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceM160 1 }
+
+  jnxMediaCardSpaceM10       OBJECT IDENTIFIER ::= { jnxMediaCardSpace 4 }
+    jnxM10MediaCardSpacePIC  OBJECT IDENTIFIER ::= { jnxMediaCardSpaceM10 1 }
+
+  jnxMediaCardSpaceM5	     OBJECT IDENTIFIER ::= { jnxMediaCardSpace 5 }
+    jnxM5MediaCardSpacePIC   OBJECT IDENTIFIER ::= { jnxMediaCardSpaceM5 1 }
+
+  jnxMediaCardSpaceT640      OBJECT IDENTIFIER ::= { jnxMediaCardSpace 6 }
+    jnxT640MediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceT640 1 }
+
+  jnxMediaCardSpaceT320      OBJECT IDENTIFIER ::= { jnxMediaCardSpace 7 }
+    jnxT320MediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceT320 1 }
+
+  jnxMediaCardSpaceM40e	     OBJECT IDENTIFIER ::= { jnxMediaCardSpace 8 }
+    jnxM40eMediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceM40e 1 }
+
+
+-- Abstract Submodule Space, for holding other submodules
+
+jnxSubSpace         OBJECT IDENTIFIER ::= { jnxClassContainers 4 }
+
+   jnxSubSpaceM160        OBJECT IDENTIFIER ::= { jnxSubSpace 1 }
+     jnxM160SubSpaceSFM   OBJECT IDENTIFIER ::= { jnxSubSpaceM160 1 }
+
+
+-- 
+-- Contents
+--
+
+-- Backplane/Midplane
+ 
+jnxBackplane 	    OBJECT IDENTIFIER ::= { jnxClassContents 1 }
+  jnxBackplaneM40 	OBJECT IDENTIFIER ::= { jnxBackplane 1 }
+  jnxBackplaneM20 	OBJECT IDENTIFIER ::= { jnxBackplane 2 }
+  jnxMidplaneM160 	OBJECT IDENTIFIER ::= { jnxBackplane 3 }
+  jnxMidplaneM10 	OBJECT IDENTIFIER ::= { jnxBackplane 4 }
+  jnxMidplaneM5  	OBJECT IDENTIFIER ::= { jnxBackplane 5 }
+  jnxMidplaneT640  	OBJECT IDENTIFIER ::= { jnxBackplane 6 }
+  jnxMidplaneT320  	OBJECT IDENTIFIER ::= { jnxBackplane 7 }
+  jnxMidplaneM40e  	OBJECT IDENTIFIER ::= { jnxBackplane 8 }
+			
+-- Modules
+
+jnxModule	    OBJECT IDENTIFIER ::= { jnxClassContents 2 }
+
+  jnxModuleM40		OBJECT IDENTIFIER ::= { jnxModule 1 }
+
+    jnxModuleSCB 	  OBJECT IDENTIFIER ::= { jnxModuleM40 1 }
+
+    jnxModuleFPC	  OBJECT IDENTIFIER ::= { jnxModuleM40 2 }
+      jnxCommonFPC        OBJECT IDENTIFIER ::= { jnxModuleFPC 1 }
+      jnxOc48FPC          OBJECT IDENTIFIER ::= { jnxModuleFPC 2 }
+
+    jnxModuleHostCtlr 	  OBJECT IDENTIFIER ::= { jnxModuleM40 3 }
+      jnxHostCtlrMaxi     OBJECT IDENTIFIER ::= { jnxModuleHostCtlr 1 }
+      jnxHostCtlrMini     OBJECT IDENTIFIER ::= { jnxModuleHostCtlr 2 }
+
+    jnxModulePowerSupply  OBJECT IDENTIFIER ::= { jnxModuleM40 4 }
+      jnxPowerSupplyAC    OBJECT IDENTIFIER ::= { jnxModulePowerSupply 1 }
+      jnxPowerSupplyDC    OBJECT IDENTIFIER ::= { jnxModulePowerSupply 2 }
+
+    jnxModuleCooling  	  OBJECT IDENTIFIER ::= { jnxModuleM40 5 }
+      jnxCoolingImpeller  OBJECT IDENTIFIER ::= { jnxModuleCooling 1 }
+      jnxCoolingFan	  OBJECT IDENTIFIER ::= { jnxModuleCooling 2 }
+
+    jnxModuleFrontPanelDisplay OBJECT IDENTIFIER ::= { jnxModuleM40 6 }
+
+    jnxModuleRoutingEngine     OBJECT IDENTIFIER ::= { jnxModuleM40 7 }
+
+  jnxModuleM20		  OBJECT IDENTIFIER ::= { jnxModule 2 }
+    jnxM20FPC	  	  OBJECT IDENTIFIER ::= { jnxModuleM20 1 }
+			  -- Flexible Port Concentrator
+    jnxM20SSB 	  	  OBJECT IDENTIFIER ::= { jnxModuleM20 2 }
+			  -- System Switch Board
+    jnxM20RE	 	  OBJECT IDENTIFIER ::= { jnxModuleM20 3 }
+			  -- Routing Engine
+    jnxM20Power	          OBJECT IDENTIFIER ::= { jnxModuleM20 4 }
+      jnxM20PowerAC       OBJECT IDENTIFIER ::= { jnxM20Power 1 }
+      jnxM20PowerDC       OBJECT IDENTIFIER ::= { jnxM20Power 2 }
+
+    jnxM20Fan	  	  OBJECT IDENTIFIER ::= { jnxModuleM20 5 }
+    jnxM20FrontPanel  	  OBJECT IDENTIFIER ::= { jnxModuleM20 6 }
+
+  jnxModuleM160		  OBJECT IDENTIFIER ::= { jnxModule 3 }
+    jnxM160FPC	  	  OBJECT IDENTIFIER ::= { jnxModuleM160 1 }
+			  -- Flexible Port Concentrator
+    jnxM160SFM 	  	  OBJECT IDENTIFIER ::= { jnxModuleM160 2 }
+			  -- Switching and Forwarding Module
+    jnxM160HM	 	  OBJECT IDENTIFIER ::= { jnxModuleM160 3 }
+			  -- Host Module (also called Routing Engine)
+    jnxM160PCG		  OBJECT IDENTIFIER ::= { jnxModuleM160 4 }
+			  -- PFE Clock Generator
+    jnxM160Power	  OBJECT IDENTIFIER ::= { jnxModuleM160 5 }
+    jnxM160Fan  	  OBJECT IDENTIFIER ::= { jnxModuleM160 6 }
+    jnxM160MCS  	  OBJECT IDENTIFIER ::= { jnxModuleM160 7 }
+			  -- Miscellaneous Control System
+    jnxM160FPM		  OBJECT IDENTIFIER ::= { jnxModuleM160 8 }
+			  -- Front Panel Module
+    jnxM160CIP		  OBJECT IDENTIFIER ::= { jnxModuleM160 9 }
+			  -- Connector Interface Panel
+
+  jnxModuleM10  	  OBJECT IDENTIFIER ::= { jnxModule 4 }
+    jnxM10FPC		  OBJECT IDENTIFIER ::= { jnxModuleM10 1 }
+			  -- Flexible Port Concentrator
+    jnxM10FEB		  OBJECT IDENTIFIER ::= { jnxModuleM10 2 }
+			  -- Forwarding Engine Board
+    jnxM10RE		  OBJECT IDENTIFIER ::= { jnxModuleM10 3 }
+			  -- Routing Engine
+    jnxM10Power		  OBJECT IDENTIFIER ::= { jnxModuleM10 4 }
+      jnxM10PowerAC       OBJECT IDENTIFIER ::= { jnxM10Power 1 }
+      jnxM10PowerDC       OBJECT IDENTIFIER ::= { jnxM10Power 2 }
+
+    jnxM10Fan    	  OBJECT IDENTIFIER ::= { jnxModuleM10 5 }
+
+  jnxModuleM5		  OBJECT IDENTIFIER ::= { jnxModule 5 }
+    jnxM5FPC		  OBJECT IDENTIFIER ::= { jnxModuleM5 1 }
+			  -- Flexible Port Concentrator
+    jnxM5FEB 		  OBJECT IDENTIFIER ::= { jnxModuleM5 2 }
+			  -- Forwarding Engine Board
+    jnxM5RE	 	  OBJECT IDENTIFIER ::= { jnxModuleM5 3 }
+			  -- Routing Engine
+    jnxM5Power  	  OBJECT IDENTIFIER ::= { jnxModuleM5 4 }
+      jnxM5PowerAC        OBJECT IDENTIFIER ::= { jnxM5Power 1 }
+      jnxM5PowerDC        OBJECT IDENTIFIER ::= { jnxM5Power 2 }
+
+    jnxM5Fan     	  OBJECT IDENTIFIER ::= { jnxModuleM5 5 }
+
+
+  jnxModuleT640	          OBJECT IDENTIFIER ::= { jnxModule 6 }
+    jnxT640FPC  	  OBJECT IDENTIFIER ::= { jnxModuleT640 1 }
+			  -- Flexible Port Concentrator
+    jnxT640SIB  	  OBJECT IDENTIFIER ::= { jnxModuleT640 2 }
+			  -- Swtich Interface Board
+    jnxT640HM 	  	  OBJECT IDENTIFIER ::= { jnxModuleT640 3 }
+			  -- Host Module (also called Routing Engine)
+    jnxT640SCG	  	  OBJECT IDENTIFIER ::= { jnxModuleT640 4 }
+			  -- SONET Clock Generator
+    jnxT640Power	  OBJECT IDENTIFIER ::= { jnxModuleT640 5 }
+    jnxT640Fan  	  OBJECT IDENTIFIER ::= { jnxModuleT640 6 }
+    jnxT640CB  	  	  OBJECT IDENTIFIER ::= { jnxModuleT640 7 }
+			  -- Control Board
+    jnxT640FPB	  	  OBJECT IDENTIFIER ::= { jnxModuleT640 8 }
+			  -- Front Panel Board
+    jnxT640CIP	  	  OBJECT IDENTIFIER ::= { jnxModuleT640 9 }
+			  -- Connector Interface Panel
+    jnxT640SPMB	  	  OBJECT IDENTIFIER ::= { jnxModuleT640 10 }
+			  -- Processor Mezzanine Board for SIB
+
+  jnxModuleT320	          OBJECT IDENTIFIER ::= { jnxModule 7 }
+    jnxT320FPC  	  OBJECT IDENTIFIER ::= { jnxModuleT320 1 }
+			  -- Flexible Port Concentrator
+    jnxT320SIB  	  OBJECT IDENTIFIER ::= { jnxModuleT320 2 }
+			  -- Swtich Interface Board
+    jnxT320HM 	  	  OBJECT IDENTIFIER ::= { jnxModuleT320 3 }
+			  -- Host Module (also called Routing Engine)
+    jnxT320SCG	  	  OBJECT IDENTIFIER ::= { jnxModuleT320 4 }
+			  -- SONET Clock Generator
+    jnxT320Power	  OBJECT IDENTIFIER ::= { jnxModuleT320 5 }
+    jnxT320Fan  	  OBJECT IDENTIFIER ::= { jnxModuleT320 6 }
+    jnxT320CB  	  	  OBJECT IDENTIFIER ::= { jnxModuleT320 7 }
+			  -- Control Board
+    jnxT320FPB	  	  OBJECT IDENTIFIER ::= { jnxModuleT320 8 }
+			  -- Front Panel Board
+    jnxT320CIP	  	  OBJECT IDENTIFIER ::= { jnxModuleT320 9 }
+			  -- Connector Interface Panel
+    jnxT320SPMB	  	  OBJECT IDENTIFIER ::= { jnxModuleT320 10 }
+			  -- Processor Mezzanine Board for SIB
+
+  jnxModuleM40e 	  OBJECT IDENTIFIER ::= { jnxModule 8 }
+    jnxM40eFPC  	  OBJECT IDENTIFIER ::= { jnxModuleM40e 1 }
+			  -- Flexible Port Concentrator
+    jnxM40eSFM  	  OBJECT IDENTIFIER ::= { jnxModuleM40e 2 }
+			  -- Switching and Forwarding Module
+    jnxM40eHM   	  OBJECT IDENTIFIER ::= { jnxModuleM40e 3 }
+			  -- Host Module (also called Routing Engine)
+    jnxM40ePCG  	  OBJECT IDENTIFIER ::= { jnxModuleM40e 4 }
+			  -- PFE Clock Generator
+    jnxM40ePower	  OBJECT IDENTIFIER ::= { jnxModuleM40e 5 }
+    jnxM40eFan  	  OBJECT IDENTIFIER ::= { jnxModuleM40e 6 }
+    jnxM40eMCS  	  OBJECT IDENTIFIER ::= { jnxModuleM40e 7 }
+			  -- Miscellaneous Control System
+    jnxM40eFPM  	  OBJECT IDENTIFIER ::= { jnxModuleM40e 8 }
+			  -- Front Panel Module
+    jnxM40eCIP  	  OBJECT IDENTIFIER ::= { jnxModuleM40e 9 }
+
+
+
+-- Submodules
+
+jnxSubmodule 	          OBJECT IDENTIFIER ::= { jnxClassContents 3 }
+  jnxSubmoduleM40	  OBJECT IDENTIFIER ::= { jnxSubmodule 1 }
+
+--  ::= { jnxSubmoduleM40 1 }		This OID is obsolete.
+
+    jnxM40PIC0		  OBJECT IDENTIFIER ::= { jnxSubmoduleM40 2 }
+			  -- This is the quad-height PIC which takes
+			  -- up the whole FPC slot of the M40.
+
+      jnxM40SonetOc48 	  OBJECT IDENTIFIER ::= { jnxM40PIC0 1 }
+
+    jnxM40PIC		  OBJECT IDENTIFIER ::= { jnxSubmoduleM40 3 }
+			  -- This is the regular PIC of M40.
+
+      jnxM40QuadSonetOc3    OBJECT IDENTIFIER ::= { jnxM40PIC 1 }
+      jnxM40SonetOc12 	    OBJECT IDENTIFIER ::= { jnxM40PIC 2 }
+      jnxM40GigEther 	    OBJECT IDENTIFIER ::= { jnxM40PIC 3 }
+      jnxM40QuadT3 	    OBJECT IDENTIFIER ::= { jnxM40PIC 4 }
+      jnxM40QuadE3 	    OBJECT IDENTIFIER ::= { jnxM40PIC 5 }
+      jnxM40DualAtmOc3 	    OBJECT IDENTIFIER ::= { jnxM40PIC 6 }
+      jnxM40AtmOc12 	    OBJECT IDENTIFIER ::= { jnxM40PIC 7 }
+      jnxM40Tunnel 	    OBJECT IDENTIFIER ::= { jnxM40PIC 8 }
+      jnxM40ChOc12toDs3	    OBJECT IDENTIFIER ::= { jnxM40PIC 9 }
+      jnxM40QuadEther	    OBJECT IDENTIFIER ::= { jnxM40PIC 10 }
+      jnxM40QuadE1          OBJECT IDENTIFIER ::= { jnxM40PIC 11 }
+      jnxM40QuadT1          OBJECT IDENTIFIER ::= { jnxM40PIC 12 }
+      jnxM40SonetOc48Sr     OBJECT IDENTIFIER ::= { jnxM40PIC 13 }
+      jnxM40QuadChT3        OBJECT IDENTIFIER ::= { jnxM40PIC 14 }
+      jnxM40SonetOc48Lr     OBJECT IDENTIFIER ::= { jnxM40PIC 15 }
+      jnxM40QuadAtmE3       OBJECT IDENTIFIER ::= { jnxM40PIC 16 }
+      jnxM40QuadAtmT3       OBJECT IDENTIFIER ::= { jnxM40PIC 17 }
+      jnxM40GigEtherBundle  OBJECT IDENTIFIER ::= { jnxM40PIC 18 }
+      jnxM40Multilink128    OBJECT IDENTIFIER ::= { jnxM40PIC 19 }
+      jnxM40Multilink32     OBJECT IDENTIFIER ::= { jnxM40PIC 20 }
+      jnxM40Multilink4      OBJECT IDENTIFIER ::= { jnxM40PIC 21 }
+      jnxM40ChStm1          OBJECT IDENTIFIER ::= { jnxM40PIC 22 }
+      jnxM40DenseEther12    OBJECT IDENTIFIER ::= { jnxM40PIC 24 }
+			    -- 12-port Fast Ethernet
+      jnxM40DecaChE1        OBJECT IDENTIFIER ::= { jnxM40PIC 25 }
+			    -- 10-port channelized E1
+      jnxM40ChDs3toDs0      OBJECT IDENTIFIER ::= { jnxM40PIC 26 }
+      jnxM40DualChDs3toDs0  OBJECT IDENTIFIER ::= { jnxM40PIC 27 }
+      jnxM40DenseEther8     OBJECT IDENTIFIER ::= { jnxM40PIC 28 }
+			    -- 8-port Fast Ethernet
+      jnxM40Crypto800       OBJECT IDENTIFIER ::= { jnxM40PIC 30 }
+      jnxM40LsMultilink128  OBJECT IDENTIFIER ::= { jnxM40PIC 32 }
+      jnxM40LsMultilink32   OBJECT IDENTIFIER ::= { jnxM40PIC 33 }
+      jnxM40LsMultilink4    OBJECT IDENTIFIER ::= { jnxM40PIC 34 }
+      jnxM40AtmIIOc12 	    OBJECT IDENTIFIER ::= { jnxM40PIC 35 }
+      jnxM40DualAtmIIOc3    OBJECT IDENTIFIER ::= { jnxM40PIC 36 }
+      jnxM40DualQChDS3      OBJECT IDENTIFIER ::= { jnxM40PIC 37 }
+      jnxM40QuadQChT3       OBJECT IDENTIFIER ::= { jnxM40PIC 38 }
+      jnxM40QChOc12         OBJECT IDENTIFIER ::= { jnxM40PIC 39 }
+      jnxM40QChStm1         OBJECT IDENTIFIER ::= { jnxM40PIC 40 }
+      jnxM40DualQChStm1     OBJECT IDENTIFIER ::= { jnxM40PIC 41 }
+      jnxM40DecaQChE1       OBJECT IDENTIFIER ::= { jnxM40PIC 42 }
+      jnxM40DualEIA530      OBJECT IDENTIFIER ::= { jnxM40PIC 43 } 
+      jnxM40DecaQChT1       OBJECT IDENTIFIER ::= { jnxM40PIC 44 }
+
+  jnxSubmoduleM20	    OBJECT IDENTIFIER ::= { jnxSubmodule 2 }
+
+    jnxM20PIC0		    OBJECT IDENTIFIER ::= { jnxSubmoduleM20 1 }
+			    -- This is the quad-height PIC which takes
+			    -- up the whole FPC slot of the M20.
+      jnxM20SonetOc48 	    OBJECT IDENTIFIER ::= { jnxM20PIC0 1 }
+
+    jnxM20PIC		    OBJECT IDENTIFIER ::= { jnxSubmoduleM20 2 }
+			    -- This is the regular PIC of M20.
+
+      jnxM20QuadSonetOc3    OBJECT IDENTIFIER ::= { jnxM20PIC 1 }
+      jnxM20SonetOc12 	    OBJECT IDENTIFIER ::= { jnxM20PIC 2 }
+      jnxM20GigEther 	    OBJECT IDENTIFIER ::= { jnxM20PIC 3 }
+      jnxM20QuadT3 	    OBJECT IDENTIFIER ::= { jnxM20PIC 4 }
+      jnxM20QuadE3 	    OBJECT IDENTIFIER ::= { jnxM20PIC 5 }
+      jnxM20DualAtmOc3 	    OBJECT IDENTIFIER ::= { jnxM20PIC 6 }
+      jnxM20AtmOc12 	    OBJECT IDENTIFIER ::= { jnxM20PIC 7 }
+      jnxM20Tunnel 	    OBJECT IDENTIFIER ::= { jnxM20PIC 8 }
+      jnxM20ChOc12toDs3	    OBJECT IDENTIFIER ::= { jnxM20PIC 9 }
+      jnxM20QuadEther	    OBJECT IDENTIFIER ::= { jnxM20PIC 10 }
+      jnxM20QuadE1          OBJECT IDENTIFIER ::= { jnxM20PIC 11 }
+      jnxM20QuadT1          OBJECT IDENTIFIER ::= { jnxM20PIC 12 }
+      jnxM20SonetOc48Sr     OBJECT IDENTIFIER ::= { jnxM20PIC 13 }
+      jnxM20QuadChT3        OBJECT IDENTIFIER ::= { jnxM20PIC 14 }
+      jnxM20SonetOc48Lr     OBJECT IDENTIFIER ::= { jnxM20PIC 15 }
+      jnxM20QuadAtmE3       OBJECT IDENTIFIER ::= { jnxM20PIC 16 }
+      jnxM20QuadAtmT3       OBJECT IDENTIFIER ::= { jnxM20PIC 17 }
+      jnxM20GigEtherBundle  OBJECT IDENTIFIER ::= { jnxM20PIC 18 }
+      jnxM20Multilink128    OBJECT IDENTIFIER ::= { jnxM20PIC 19 }
+      jnxM20Multilink32     OBJECT IDENTIFIER ::= { jnxM20PIC 20 }
+      jnxM20Multilink4      OBJECT IDENTIFIER ::= { jnxM20PIC 21 }
+      jnxM20ChStm1          OBJECT IDENTIFIER ::= { jnxM20PIC 22 }
+      jnxM20DenseEther12    OBJECT IDENTIFIER ::= { jnxM20PIC 24 }
+			    -- 12-port Fast Ethernet
+      jnxM20DecaChE1        OBJECT IDENTIFIER ::= { jnxM20PIC 25 }
+			    -- 10-port channelized E1
+      jnxM20ChDs3toDs0      OBJECT IDENTIFIER ::= { jnxM20PIC 26 }
+      jnxM20DualChDs3toDs0  OBJECT IDENTIFIER ::= { jnxM20PIC 27 }
+      jnxM20DenseEther8     OBJECT IDENTIFIER ::= { jnxM20PIC 28 }
+			    -- 8-port Fast Ethernet
+      jnxM20Crypto800       OBJECT IDENTIFIER ::= { jnxM20PIC 30 }
+      jnxM20GgsnControl     OBJECT IDENTIFIER ::= { jnxM20PIC 31 }
+      jnxM20GgsnData        OBJECT IDENTIFIER ::= { jnxM20PIC 32 }
+      jnxM20LsMultilink128  OBJECT IDENTIFIER ::= { jnxM20PIC 34 }
+      jnxM20LsMultilink32   OBJECT IDENTIFIER ::= { jnxM20PIC 35 }
+      jnxM20LsMultilink4    OBJECT IDENTIFIER ::= { jnxM20PIC 36 }
+      jnxM20AtmIIOc12 	    OBJECT IDENTIFIER ::= { jnxM20PIC 37 }
+      jnxM20DualAtmIIOc3    OBJECT IDENTIFIER ::= { jnxM20PIC 38 }
+      jnxM20DualQChDS3      OBJECT IDENTIFIER ::= { jnxM20PIC 39 }
+      jnxM20QuadQChT3       OBJECT IDENTIFIER ::= { jnxM20PIC 40 }
+      jnxM20QChOc12         OBJECT IDENTIFIER ::= { jnxM20PIC 41 }
+      jnxM20QChStm1         OBJECT IDENTIFIER ::= { jnxM20PIC 42 }
+      jnxM20DualQChStm1     OBJECT IDENTIFIER ::= { jnxM20PIC 43 }
+      jnxM20DecaQChE1       OBJECT IDENTIFIER ::= { jnxM20PIC 44 }
+      jnxM20DualEIA530      OBJECT IDENTIFIER ::= { jnxM20PIC 45 }
+      jnxM20PassiveMonitor  OBJECT IDENTIFIER ::= { jnxM20PIC 46 }
+      jnxM20DecaQChT1       OBJECT IDENTIFIER ::= { jnxM20PIC 47 }
+  
+  jnxSubmoduleM160	    OBJECT IDENTIFIER ::= { jnxSubmodule 3 }
+
+--  ::= { jnxSubmoduleM160 1 }		This OID is obsolete.
+
+    jnxM160SubSFM  	    OBJECT IDENTIFIER ::= { jnxSubmoduleM160 2 }
+      jnxM160SPP            OBJECT IDENTIFIER ::= { jnxM160SubSFM 1 }
+			    -- Switch Plane Processor
+      jnxM160SPR            OBJECT IDENTIFIER ::= { jnxM160SubSFM 2 }
+			    -- Switch Plane Router
+
+    jnxM160SubFPM	    OBJECT IDENTIFIER ::= { jnxSubmoduleM160 3 }
+      jnxM160FPMCMB         OBJECT IDENTIFIER ::= { jnxM160SubFPM 1 }
+			    -- CMB part of FPM
+      jnxM160FPMDisplay     OBJECT IDENTIFIER ::= { jnxM160SubFPM 2 }
+			    -- Display part of FPM
+
+    jnxM160PIC0	  	    OBJECT IDENTIFIER ::= { jnxSubmoduleM160 4 }
+			    -- This is the quad-height PIC which takes
+			    -- up the whole FPC slot of the M160.
+
+      jnxM160SonetOc192Sr   OBJECT IDENTIFIER ::= { jnxM160PIC0 1 }
+      jnxM160SonetOc192Sr2  OBJECT IDENTIFIER ::= { jnxM160PIC0 2 }
+      jnxM160SonetOc192Lr1  OBJECT IDENTIFIER ::= { jnxM160PIC0 3 }
+
+    jnxM160PIC1	  	    OBJECT IDENTIFIER ::= { jnxSubmoduleM160 5 }
+			    -- This is FPC type 1 of PIC.
+
+      jnxM160QuadSonetOc3   OBJECT IDENTIFIER ::= { jnxM160PIC1 1 }
+      jnxM160SonetOc12 	    OBJECT IDENTIFIER ::= { jnxM160PIC1 2 }
+      jnxM160GigEther 	    OBJECT IDENTIFIER ::= { jnxM160PIC1 3 }
+      jnxM160QuadT3 	    OBJECT IDENTIFIER ::= { jnxM160PIC1 4 }
+      jnxM160QuadE3 	    OBJECT IDENTIFIER ::= { jnxM160PIC1 5 }
+      jnxM160DualAtmOc3	    OBJECT IDENTIFIER ::= { jnxM160PIC1 6 }
+      jnxM160AtmOc12 	    OBJECT IDENTIFIER ::= { jnxM160PIC1 7 }
+      jnxM160ChOc12toDs3    OBJECT IDENTIFIER ::= { jnxM160PIC1 8 }
+      jnxM160QuadEther	    OBJECT IDENTIFIER ::= { jnxM160PIC1 9 }
+      jnxM160QuadE1         OBJECT IDENTIFIER ::= { jnxM160PIC1 10 }
+      jnxM160QuadT1         OBJECT IDENTIFIER ::= { jnxM160PIC1 11 }
+      jnxM160QuadChT3       OBJECT IDENTIFIER ::= { jnxM160PIC1 12 }
+      jnxM160QuadAtmE3      OBJECT IDENTIFIER ::= { jnxM160PIC1 13 }
+      jnxM160QuadAtmT3      OBJECT IDENTIFIER ::= { jnxM160PIC1 14 }
+      jnxM160GigEtherBundle OBJECT IDENTIFIER ::= { jnxM160PIC1 15 }
+      jnxM160ChStm1         OBJECT IDENTIFIER ::= { jnxM160PIC1 16 }
+      jnxM160DecaChE1       OBJECT IDENTIFIER ::= { jnxM160PIC1 17 }
+			    -- 10-port channelized E1
+      jnxM160ChDs3toDs0     OBJECT IDENTIFIER ::= { jnxM160PIC1 18 }
+      jnxM160DualChDs3toDs0 OBJECT IDENTIFIER ::= { jnxM160PIC1 19 }
+      jnxM160DenseEther8    OBJECT IDENTIFIER ::= { jnxM160PIC1 20 }
+			    -- 8-port Fast Ethernet	
+      jnxM160AtmIIOc12 	    OBJECT IDENTIFIER ::= { jnxM160PIC1 23 }
+      jnxM160DualAtmIIOc3   OBJECT IDENTIFIER ::= { jnxM160PIC1 24 }
+      jnxM160DualQChDS3     OBJECT IDENTIFIER ::= { jnxM160PIC1 25 }
+      jnxM160QuadQChT3      OBJECT IDENTIFIER ::= { jnxM160PIC1 26 }
+      jnxM160QChOc12        OBJECT IDENTIFIER ::= { jnxM160PIC1 27 }
+      jnxM160QChStm1        OBJECT IDENTIFIER ::= { jnxM160PIC1 28 }
+      jnxM160DualQChStm1    OBJECT IDENTIFIER ::= { jnxM160PIC1 29 }
+      jnxM160DecaQChE1      OBJECT IDENTIFIER ::= { jnxM160PIC1 30 }
+      jnxM160DualEIA530     OBJECT IDENTIFIER ::= { jnxM160PIC1 31 }
+      jnxM160PassiveMonitor OBJECT IDENTIFIER ::= { jnxM160PIC1 32 }
+      jnxM160DecaQChT1      OBJECT IDENTIFIER ::= { jnxM160PIC1 33 }
+
+
+    jnxM160PIC2	  	    OBJECT IDENTIFIER ::= { jnxSubmoduleM160 6 }
+			    -- This is FPC type 2 of PIC.
+
+      jnxM160SonetOc48Sr    OBJECT IDENTIFIER ::= { jnxM160PIC2 1 }
+      jnxM160Tunnel         OBJECT IDENTIFIER ::= { jnxM160PIC2 2 }
+      jnxM160DualGigEther   OBJECT IDENTIFIER ::= { jnxM160PIC2 3 }
+      jnxM160QuadSonetOc12  OBJECT IDENTIFIER ::= { jnxM160PIC2 4 }
+      jnxM160SonetOc48Lr    OBJECT IDENTIFIER ::= { jnxM160PIC2 5 }
+      jnxM160DenseEther48   OBJECT IDENTIFIER ::= { jnxM160PIC2 6 }
+			    -- 48-port Fast Ethernet	
+      jnxM160QuadGigEther   OBJECT IDENTIFIER ::= { jnxM160PIC2 7 }
+      jnxM160Crypto800      OBJECT IDENTIFIER ::= { jnxM160PIC2 9 }
+      jnxM160QuadOc3        OBJECT IDENTIFIER ::= { jnxM160PIC2 10 }
+      jnxM160DualQHGE       OBJECT IDENTIFIER ::= { jnxM160PIC2 11 }
+      jnxM160DualAtmIIOc12  OBJECT IDENTIFIER ::= { jnxM160PIC2 12 }
+
+
+  jnxSubmoduleM10	    OBJECT IDENTIFIER ::= { jnxSubmodule 4 }
+
+    jnxM10PIC		    OBJECT IDENTIFIER ::= { jnxSubmoduleM10 1 }
+
+      jnxM10QuadSonetOc3    OBJECT IDENTIFIER ::= { jnxM10PIC 1 }
+      jnxM10SonetOc12 	    OBJECT IDENTIFIER ::= { jnxM10PIC 2 }
+      jnxM10GigEther 	    OBJECT IDENTIFIER ::= { jnxM10PIC 3 }
+      jnxM10QuadT3 	    OBJECT IDENTIFIER ::= { jnxM10PIC 4 }
+      jnxM10QuadE3 	    OBJECT IDENTIFIER ::= { jnxM10PIC 5 }
+      jnxM10DualAtmOc3 	    OBJECT IDENTIFIER ::= { jnxM10PIC 6 }
+      jnxM10AtmOc12 	    OBJECT IDENTIFIER ::= { jnxM10PIC 7 }
+      jnxM10Tunnel 	    OBJECT IDENTIFIER ::= { jnxM10PIC 8 }
+      jnxM10ChOc12toDs3	    OBJECT IDENTIFIER ::= { jnxM10PIC 9 }
+      jnxM10QuadEther	    OBJECT IDENTIFIER ::= { jnxM10PIC 10 }
+      jnxM10QuadE1          OBJECT IDENTIFIER ::= { jnxM10PIC 11 }
+      jnxM10QuadT1          OBJECT IDENTIFIER ::= { jnxM10PIC 12 }
+      jnxM10SonetOc48Sr     OBJECT IDENTIFIER ::= { jnxM10PIC 13 }
+      jnxM10QuadChT3        OBJECT IDENTIFIER ::= { jnxM10PIC 14 }
+      jnxM10SonetOc48Lr     OBJECT IDENTIFIER ::= { jnxM10PIC 15 }
+      jnxM10QuadAtmE3       OBJECT IDENTIFIER ::= { jnxM10PIC 16 }
+      jnxM10QuadAtmT3       OBJECT IDENTIFIER ::= { jnxM10PIC 17 }
+      jnxM10GigEtherBundle  OBJECT IDENTIFIER ::= { jnxM10PIC 18 }
+      jnxM10Multilink128    OBJECT IDENTIFIER ::= { jnxM10PIC 19 }
+      jnxM10Multilink32     OBJECT IDENTIFIER ::= { jnxM10PIC 20 }
+      jnxM10Multilink4      OBJECT IDENTIFIER ::= { jnxM10PIC 21 }
+      jnxM10ChStm1          OBJECT IDENTIFIER ::= { jnxM10PIC 22 }
+      jnxM10DualChDs3       OBJECT IDENTIFIER ::= { jnxM10PIC 23 }
+      jnxM10DualDs3         OBJECT IDENTIFIER ::= { jnxM10PIC 24 }
+      jnxM10DualSonetOc3    OBJECT IDENTIFIER ::= { jnxM10PIC 25 }
+      jnxM10DualE3          OBJECT IDENTIFIER ::= { jnxM10PIC 26 }
+      jnxM10DenseEther12
+			    OBJECT IDENTIFIER ::= { jnxM10PIC 28 }
+			    -- 12-port Fast Ethernet
+      jnxM10DecaChE1        OBJECT IDENTIFIER ::= { jnxM10PIC 29 }
+			    -- 10-port channelized E1
+      jnxM10ChDs3toDs0      OBJECT IDENTIFIER ::= { jnxM10PIC 30 }
+      jnxM10DualChDs3toDs0  OBJECT IDENTIFIER ::= { jnxM10PIC 31 }
+      jnxM10DenseEther8     OBJECT IDENTIFIER ::= { jnxM10PIC 32 }
+			    -- 8-port Fast Ethernet
+      jnxM10Crypto800       OBJECT IDENTIFIER ::= { jnxM10PIC 34 }
+      jnxM10LsMultilink128  OBJECT IDENTIFIER ::= { jnxM10PIC 36 }
+      jnxM10LsMultilink32   OBJECT IDENTIFIER ::= { jnxM10PIC 37 }
+      jnxM10LsMultilink4    OBJECT IDENTIFIER ::= { jnxM10PIC 38 }
+      jnxM10AtmIIOc12 	    OBJECT IDENTIFIER ::= { jnxM10PIC 39 }
+      jnxM10DualAtmIIOc3    OBJECT IDENTIFIER ::= { jnxM10PIC 40 }
+      jnxM10DualQChDs3      OBJECT IDENTIFIER ::= { jnxM10PIC 41 }
+      jnxM10QuadQChT3       OBJECT IDENTIFIER ::= { jnxM10PIC 42 }
+      jnxM10QChOc12         OBJECT IDENTIFIER ::= { jnxM10PIC 43 }
+      jnxM10QChStm1         OBJECT IDENTIFIER ::= { jnxM10PIC 44 }
+      jnxM10DualQChStm1     OBJECT IDENTIFIER ::= { jnxM10PIC 45 }
+      jnxM10DecaQChE1       OBJECT IDENTIFIER ::= { jnxM10PIC 46 }
+      jnxM10DualEIA530      OBJECT IDENTIFIER ::= { jnxM10PIC 47 }
+      jnxM10DecaQChT1       OBJECT IDENTIFIER ::= { jnxM10PIC 48 }
+
+
+  jnxSubmoduleM5	OBJECT IDENTIFIER ::= { jnxSubmodule 5 }
+
+    jnxM5PIC		  OBJECT IDENTIFIER ::= { jnxSubmoduleM5 1 }
+
+      jnxM5QuadSonetOc3     OBJECT IDENTIFIER ::= { jnxM5PIC 1 }
+      jnxM5SonetOc12 	    OBJECT IDENTIFIER ::= { jnxM5PIC 2 }
+      jnxM5GigEther 	    OBJECT IDENTIFIER ::= { jnxM5PIC 3 }
+      jnxM5QuadT3 	    OBJECT IDENTIFIER ::= { jnxM5PIC 4 }
+      jnxM5QuadE3 	    OBJECT IDENTIFIER ::= { jnxM5PIC 5 }
+      jnxM5DualAtmOc3 	    OBJECT IDENTIFIER ::= { jnxM5PIC 6 }
+      jnxM5AtmOc12 	    OBJECT IDENTIFIER ::= { jnxM5PIC 7 }
+      jnxM5Tunnel 	    OBJECT IDENTIFIER ::= { jnxM5PIC 8 }
+      jnxM5ChOc12toDs3	    OBJECT IDENTIFIER ::= { jnxM5PIC 9 }
+      jnxM5QuadEther	    OBJECT IDENTIFIER ::= { jnxM5PIC 10 }
+      jnxM5QuadE1           OBJECT IDENTIFIER ::= { jnxM5PIC 11 }
+      jnxM5QuadT1           OBJECT IDENTIFIER ::= { jnxM5PIC 12 }
+      jnxM5QuadChT3         OBJECT IDENTIFIER ::= { jnxM5PIC 14 }
+      jnxM5QuadAtmE3        OBJECT IDENTIFIER ::= { jnxM5PIC 16 }
+      jnxM5QuadAtmT3        OBJECT IDENTIFIER ::= { jnxM5PIC 17 }
+      jnxM5GigEtherBundle   OBJECT IDENTIFIER ::= { jnxM5PIC 18 }
+      jnxM5Multilink128     OBJECT IDENTIFIER ::= { jnxM5PIC 19 }
+      jnxM5Multilink32      OBJECT IDENTIFIER ::= { jnxM5PIC 20 }
+      jnxM5Multilink4       OBJECT IDENTIFIER ::= { jnxM5PIC 21 }
+      jnxM5ChStm1           OBJECT IDENTIFIER ::= { jnxM5PIC 22 }
+      jnxM5DualChDs3        OBJECT IDENTIFIER ::= { jnxM5PIC 23 }
+      jnxM5DualDs3          OBJECT IDENTIFIER ::= { jnxM5PIC 24 }
+      jnxM5DualSonetOc3     OBJECT IDENTIFIER ::= { jnxM5PIC 25 }
+      jnxM5DualE3           OBJECT IDENTIFIER ::= { jnxM5PIC 26 }
+      jnxM5DenseEther12	    OBJECT IDENTIFIER ::= { jnxM5PIC 28 }
+			    -- 12-port Fast Ethernet
+      jnxM5DecaChE1         OBJECT IDENTIFIER ::= { jnxM5PIC 29 }
+			    -- 10-port channelized E1
+      jnxM5ChDs3toDs0       OBJECT IDENTIFIER ::= { jnxM5PIC 30 }
+      jnxM5DualChDs3toDs0   OBJECT IDENTIFIER ::= { jnxM5PIC 31 }
+      jnxM5DenseEther8 	    OBJECT IDENTIFIER ::= { jnxM5PIC 32 }
+			    -- 8-port Fast Ethernet
+      jnxM5Crypto800        OBJECT IDENTIFIER ::= { jnxM5PIC 34 }
+      jnxM5LsMultilink128   OBJECT IDENTIFIER ::= { jnxM5PIC 36 }
+      jnxM5LsMultilink32    OBJECT IDENTIFIER ::= { jnxM5PIC 37 }
+      jnxM5LsMultilink4     OBJECT IDENTIFIER ::= { jnxM5PIC 38 }
+      jnxM5AtmIIOc12 	    OBJECT IDENTIFIER ::= { jnxM5PIC 39 }
+      jnxM5DualAtmIIOc3     OBJECT IDENTIFIER ::= { jnxM5PIC 40 }
+      jnxM5DualQChDs3       OBJECT IDENTIFIER ::= { jnxM5PIC 41 }
+      jnxM5QuadQChT3        OBJECT IDENTIFIER ::= { jnxM5PIC 42 }
+      jnxM5QChOc12          OBJECT IDENTIFIER ::= { jnxM5PIC 43 }
+      jnxM5QChStm1          OBJECT IDENTIFIER ::= { jnxM5PIC 44 }
+      jnxM5DualQChStm1      OBJECT IDENTIFIER ::= { jnxM5PIC 45 }
+      jnxM5DecaQChE1        OBJECT IDENTIFIER ::= { jnxM5PIC 46 }
+      jnxM5DualEIA530       OBJECT IDENTIFIER ::= { jnxM5PIC 47 }
+      jnxM5DecaQChT1        OBJECT IDENTIFIER ::= { jnxM5PIC 48 }
+
+
+  jnxSubmoduleT640	    OBJECT IDENTIFIER ::= { jnxSubmodule 6 }
+
+    jnxT640PIC0  	    OBJECT IDENTIFIER ::= { jnxSubmoduleT640 1 }
+			    -- This is the quad-height PIC which takes
+			    -- up the whole FPC slot of the T640.
+
+    jnxT640PIC1	  	    OBJECT IDENTIFIER ::= { jnxSubmoduleT640 2 }
+			    -- This is FPC type 1 (M40 native) of PIC.
+
+    jnxT640PIC2	  	    OBJECT IDENTIFIER ::= { jnxSubmoduleT640 3 }
+			    -- This is FPC type 2 (M160 native) of PIC.
+      jnxT640DualGigEther   OBJECT IDENTIFIER ::= { jnxT640PIC2 1 }
+      jnxT640QuadGigEther   OBJECT IDENTIFIER ::= { jnxT640PIC2 2 }
+      jnxT640QuadSonetOc12  OBJECT IDENTIFIER ::= { jnxT640PIC2 3 }
+      jnxT640SonetOc48Sr    OBJECT IDENTIFIER ::= { jnxT640PIC2 4 }
+      jnxT640SonetOc48Lr    OBJECT IDENTIFIER ::= { jnxT640PIC2 5 }
+      jnxT640DualAtmIIOc12  OBJECT IDENTIFIER ::= { jnxT640PIC2 6 }
+      jnxT640QuadOc3        OBJECT IDENTIFIER ::= { jnxT640PIC2 7 }
+      jnxT640DualQHGE       OBJECT IDENTIFIER ::= { jnxT640PIC2 8 }
+
+    jnxT640PIC3	  	    OBJECT IDENTIFIER ::= { jnxSubmoduleT640 4 }
+			    -- This is FPC type 3 (T640 native) of PIC.
+      jnxT640SonetOc192Sr2  OBJECT IDENTIFIER ::= { jnxT640PIC3 1 }
+      jnxT640Tunnel         OBJECT IDENTIFIER ::= { jnxT640PIC3 2 }
+      jnxT640QuadSonetOc48  OBJECT IDENTIFIER ::= { jnxT640PIC3 3 }
+      jnxT640SonetOc192Vsr  OBJECT IDENTIFIER ::= { jnxT640PIC3 4 }
+      jnxT640SonetOc192Lr   OBJECT IDENTIFIER ::= { jnxT640PIC3 5 }
+      jnxT640TenGigEther    OBJECT IDENTIFIER ::= { jnxT640PIC3 6 }
+      jnxT640NX1GigEther    OBJECT IDENTIFIER ::= { jnxT640PIC3 7 }
+
+  jnxSubmoduleT320	    OBJECT IDENTIFIER ::= { jnxSubmodule 7 }
+
+    jnxT320PIC0  	    OBJECT IDENTIFIER ::= { jnxSubmoduleT320 1 }
+
+    jnxT320PIC1	  	    OBJECT IDENTIFIER ::= { jnxSubmoduleT320 2 }
+      jnxT320DualAtmIIOc3   OBJECT IDENTIFIER ::= { jnxT320PIC1 1 }
+
+      -- { jnxT320PIC1 2 } is reserved
+
+      jnxT320QuadSonetOc3   OBJECT IDENTIFIER ::= { jnxT320PIC1 3 }
+      jnxT320DualAtmOc3     OBJECT IDENTIFIER ::= { jnxT320PIC1 4 }
+      jnxT320AtmOc12        OBJECT IDENTIFIER ::= { jnxT320PIC1 5 }
+      jnxT320QuadEther      OBJECT IDENTIFIER ::= { jnxT320PIC1 6 }
+      jnxT320SonetOc12      OBJECT IDENTIFIER ::= { jnxT320PIC1 7 }
+      jnxT320AtmIIOc12      OBJECT IDENTIFIER ::= { jnxT320PIC1 8 }
+
+    jnxT320PIC2	  	    OBJECT IDENTIFIER ::= { jnxSubmoduleT320 3 }
+			  -- This is FPC type 2 (M160 native) of PIC.
+
+      jnxT320DualGigEther   OBJECT IDENTIFIER ::= { jnxT320PIC2 1 }
+      jnxT320QuadGigEther   OBJECT IDENTIFIER ::= { jnxT320PIC2 2 }
+      jnxT320QuadSonetOc12  OBJECT IDENTIFIER ::= { jnxT320PIC2 3 }
+      jnxT320SonetOc48Sr    OBJECT IDENTIFIER ::= { jnxT320PIC2 4 }
+      jnxT320SonetOc48Lr    OBJECT IDENTIFIER ::= { jnxT320PIC2 5 }
+      jnxT320DualAtmIIOc12  OBJECT IDENTIFIER ::= { jnxT320PIC2 6 }
+      jnxT320QuadOc3        OBJECT IDENTIFIER ::= { jnxT320PIC2 7 }
+      jnxT320DualQHGE       OBJECT IDENTIFIER ::= { jnxT320PIC2 8 }
+
+    jnxT320PIC3	  	  OBJECT IDENTIFIER ::= { jnxSubmoduleT320 4 }
+			  -- This is FPC type 3 (T320 native) of PIC.
+
+      jnxT320SonetOc192Sr2  OBJECT IDENTIFIER ::= { jnxT320PIC3 1 }
+      jnxT320Tunnel         OBJECT IDENTIFIER ::= { jnxT320PIC3 2 }
+      jnxT320QuadSonetOc48  OBJECT IDENTIFIER ::= { jnxT320PIC3 3 }
+      jnxT320SonetOc192Vsr  OBJECT IDENTIFIER ::= { jnxT320PIC3 4 }
+      jnxT320SonetOc192Lr   OBJECT IDENTIFIER ::= { jnxT320PIC3 5 }
+      jnxT320TenGigEther    OBJECT IDENTIFIER ::= { jnxT320PIC3 6 }
+      jnxT320NX1GigEther    OBJECT IDENTIFIER ::= { jnxT320PIC3 7 }
+
+  jnxSubmoduleM40e          OBJECT IDENTIFIER ::= { jnxSubmodule 8 }
+
+    jnxM40eSubSFM           OBJECT IDENTIFIER ::= { jnxSubmoduleM40e 2 }
+                          
+      jnxM40eSPP            OBJECT IDENTIFIER ::= { jnxM40eSubSFM 1 }
+                            -- Switch Plane Processor
+      jnxM40eSPR            OBJECT IDENTIFIER ::= { jnxM40eSubSFM 2 }
+                            -- Switch Plane Router
+
+    jnxM40eSubFPM           OBJECT IDENTIFIER ::= { jnxSubmoduleM40e 3 }
+      jnxM40eFPMCMB         OBJECT IDENTIFIER ::= { jnxM40eSubFPM 1 }
+                            -- CMB part of FPM
+      jnxM40eFPMDisplay     OBJECT IDENTIFIER ::= { jnxM40eSubFPM 2 }
+                            -- Display part of FPM
+
+    jnxM40ePIC0             OBJECT IDENTIFIER ::= { jnxSubmoduleM40e 4 }
+                            -- This is the quad-height PIC which takes
+                            -- up the whole FPC slot of the M40e.
+
+
+    jnxM40ePIC1             OBJECT IDENTIFIER ::= { jnxSubmoduleM40e 5 }
+                            -- This is FPC type 1 of PIC.
+      jnxM40eQuadSonetOc3   OBJECT IDENTIFIER ::= { jnxM40ePIC1 1 }
+      jnxM40eSonetOc12      OBJECT IDENTIFIER ::= { jnxM40ePIC1 2 }
+      jnxM40eGigEther       OBJECT IDENTIFIER ::= { jnxM40ePIC1 3 }
+      jnxM40eQuadT3         OBJECT IDENTIFIER ::= { jnxM40ePIC1 4 }
+      jnxM40eQuadE3         OBJECT IDENTIFIER ::= { jnxM40ePIC1 5 }
+      jnxM40eDualAtmOc3     OBJECT IDENTIFIER ::= { jnxM40ePIC1 6 }
+      jnxM40eAtmOc12        OBJECT IDENTIFIER ::= { jnxM40ePIC1 7 }
+      jnxM40eChOc12toDs3    OBJECT IDENTIFIER ::= { jnxM40ePIC1 8 }
+      jnxM40eQuadEther      OBJECT IDENTIFIER ::= { jnxM40ePIC1 9 }
+      jnxM40eQuadE1         OBJECT IDENTIFIER ::= { jnxM40ePIC1 10 }
+      jnxM40eQuadT1         OBJECT IDENTIFIER ::= { jnxM40ePIC1 11 }
+      jnxM40eQuadChT3       OBJECT IDENTIFIER ::= { jnxM40ePIC1 12 }
+      jnxM40eQuadAtmE3      OBJECT IDENTIFIER ::= { jnxM40ePIC1 13 }
+      jnxM40eQuadAtmT3      OBJECT IDENTIFIER ::= { jnxM40ePIC1 14 }
+      jnxM40eGigEtherBundle OBJECT IDENTIFIER ::= { jnxM40ePIC1 15 }
+      jnxM40eChStm1         OBJECT IDENTIFIER ::= { jnxM40ePIC1 16 }
+      jnxM40eDecaChE1       OBJECT IDENTIFIER ::= { jnxM40ePIC1 17 }
+                            -- 10-port channelized E1
+      jnxM40eChDs3toDs0     OBJECT IDENTIFIER ::= { jnxM40ePIC1 18 }
+      jnxM40eDualChDs3toDs0 OBJECT IDENTIFIER ::= { jnxM40ePIC1 19 }
+      jnxM40eDenseEther8    OBJECT IDENTIFIER ::= { jnxM40ePIC1 20 }
+                            -- 8-port Fast Ethernet        
+      jnxM40eAtmIIOc12      OBJECT IDENTIFIER ::= { jnxM40ePIC1 23 }
+      jnxM40eDualAtmIIOc3   OBJECT IDENTIFIER ::= { jnxM40ePIC1 24 }
+      jnxM40eDualQChDS3     OBJECT IDENTIFIER ::= { jnxM40ePIC1 25 }
+      jnxM40eQuadQChT3      OBJECT IDENTIFIER ::= { jnxM40ePIC1 26 }
+      jnxM40eLsMultilink128 OBJECT IDENTIFIER ::= { jnxM40ePIC1 27 }
+      jnxM40eLsMultilink32  OBJECT IDENTIFIER ::= { jnxM40ePIC1 28 }
+      jnxM40eLsMultilink4   OBJECT IDENTIFIER ::= { jnxM40ePIC1 29 }
+      jnxM40eQChOc12        OBJECT IDENTIFIER ::= { jnxM40ePIC1 30 }
+      jnxM40eQChStm1        OBJECT IDENTIFIER ::= { jnxM40ePIC1 31 }
+      jnxM40eDualQChStm1    OBJECT IDENTIFIER ::= { jnxM40ePIC1 32 }
+      jnxM40eDecaQChE1      OBJECT IDENTIFIER ::= { jnxM40ePIC1 33 }
+      jnxM40eDualEIA530     OBJECT IDENTIFIER ::= { jnxM40ePIC1 34 }
+      jnxM40ePassiveMonitor OBJECT IDENTIFIER ::= { jnxM40ePIC1 35 }
+      jnxM40eMultilink128   OBJECT IDENTIFIER ::= { jnxM40ePIC1 36 }
+      jnxM40eMultilink32    OBJECT IDENTIFIER ::= { jnxM40ePIC1 37 }
+      jnxM40eMultilink4     OBJECT IDENTIFIER ::= { jnxM40ePIC1 38 }
+      jnxM40eDenseEther12   OBJECT IDENTIFIER ::= { jnxM40ePIC1 39 }
+			    -- 12-port Fast Ethernet
+      jnxM40eDecaQChT1      OBJECT IDENTIFIER ::= { jnxM40ePIC1 40 }
+
+    jnxM40ePIC2           OBJECT IDENTIFIER ::= { jnxSubmoduleM40e 6 }
+                          -- This is FPC type 2 of PIC.
+
+      jnxM40eSonetOc48Sr    OBJECT IDENTIFIER ::= { jnxM40ePIC2 1 }
+      jnxM40eTunnel         OBJECT IDENTIFIER ::= { jnxM40ePIC2 2 }
+      jnxM40eDualGigEther   OBJECT IDENTIFIER ::= { jnxM40ePIC2 3 }
+      jnxM40eQuadSonetOc12  OBJECT IDENTIFIER ::= { jnxM40ePIC2 4 }
+      jnxM40eSonetOc48Lr    OBJECT IDENTIFIER ::= { jnxM40ePIC2 5 }
+      jnxM40eDenseEther48   OBJECT IDENTIFIER ::= { jnxM40ePIC2 6 }
+                            -- 48-port Fast Ethernet        
+      jnxM40eQuadGigEther   OBJECT IDENTIFIER ::= { jnxM40ePIC2 7 }
+      jnxM40eCrypto800      OBJECT IDENTIFIER ::= { jnxM40ePIC2 9 }
+      jnxM40eQuadOc3        OBJECT IDENTIFIER ::= { jnxM40ePIC2 10 }
+      jnxM40eDualQHGE       OBJECT IDENTIFIER ::= { jnxM40ePIC2 11 }
+      jnxM40eDualAtmIIOc12  OBJECT IDENTIFIER ::= { jnxM40ePIC2 12 }
+
+
+-- Miscellaneous Components
+
+jnxMiscComponent    OBJECT IDENTIFIER ::= { jnxClassContents 4 }
+    jnxTempSensor	OBJECT IDENTIFIER ::= { jnxMiscComponent 1 }
+  
+
+-- Status Source
+
+jnxStatusSource	    OBJECT IDENTIFIER ::= { jnxClassStatus 1 }
+  jnxStatusSourceM40	OBJECT IDENTIFIER ::= { jnxStatusSource 1 }
+
+    jnxChassisSlotLED 	  OBJECT IDENTIFIER ::= { jnxStatusSourceM40 1 }
+    jnxChassisAlarmLED 	  OBJECT IDENTIFIER ::= { jnxStatusSourceM40 2 }
+    jnxHostCtlrLED	  OBJECT IDENTIFIER ::= { jnxStatusSourceM40 3 }
+    jnxChassisTempSensor  OBJECT IDENTIFIER ::= { jnxStatusSourceM40 4 }
+    jnxRoutingEngineLED   OBJECT IDENTIFIER ::= { jnxStatusSourceM40 5 }
+
+
+--
+-- M320
+-- 
+  jnxProductLineM320      OBJECT IDENTIFIER ::= { jnxProductLine      9 }
+  jnxProductNameM320      OBJECT IDENTIFIER ::= { jnxProductName      9 }
+  jnxProductModelM320     OBJECT IDENTIFIER ::= { jnxProductModel     9 }
+  jnxProductVariationM320 OBJECT IDENTIFIER ::= { jnxProductVariation 9 }
+  jnxChassisM320          OBJECT IDENTIFIER ::= { jnxChassis          9 }
+
+  jnxSlotM320             OBJECT IDENTIFIER ::= { jnxSlot     9 }
+    jnxM320SlotFPC        OBJECT IDENTIFIER ::= { jnxSlotM320 1 }
+    jnxM320SlotSIB        OBJECT IDENTIFIER ::= { jnxSlotM320 2 }
+    jnxM320SlotHM         OBJECT IDENTIFIER ::= { jnxSlotM320 3 }
+    jnxM320SlotPower      OBJECT IDENTIFIER ::= { jnxSlotM320 4 }
+    jnxM320SlotFan        OBJECT IDENTIFIER ::= { jnxSlotM320 5 }
+    jnxM320SlotCB         OBJECT IDENTIFIER ::= { jnxSlotM320 6 }
+    jnxM320SlotFPB        OBJECT IDENTIFIER ::= { jnxSlotM320 7 }
+    jnxM320SlotCIP        OBJECT IDENTIFIER ::= { jnxSlotM320 8 }
+
+  jnxMediaCardSpaceM320      OBJECT IDENTIFIER ::= { jnxMediaCardSpace     9 }
+    jnxM320MediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceM320 1 }
+
+  jnxMidplaneM320         OBJECT IDENTIFIER ::= { jnxBackplane  9 }
+
+  jnxModuleM320           OBJECT IDENTIFIER ::= { jnxModule     9 }
+    jnxM320FPC            OBJECT IDENTIFIER ::= { jnxModuleM320 1 }
+    jnxM320SIB            OBJECT IDENTIFIER ::= { jnxModuleM320 2 }
+    jnxM320HM             OBJECT IDENTIFIER ::= { jnxModuleM320 3 }
+    jnxM320Power          OBJECT IDENTIFIER ::= { jnxModuleM320 4 }
+    jnxM320Fan            OBJECT IDENTIFIER ::= { jnxModuleM320 5 }
+    jnxM320CB             OBJECT IDENTIFIER ::= { jnxModuleM320 6 }
+    jnxM320FPB            OBJECT IDENTIFIER ::= { jnxModuleM320 7 }
+    jnxM320CIP            OBJECT IDENTIFIER ::= { jnxModuleM320 8 }
+
+
+
+
+--
+-- M7i
+--
+  jnxProductLineM7i      OBJECT IDENTIFIER ::= { jnxProductLine      10 }
+  jnxProductNameM7i      OBJECT IDENTIFIER ::= { jnxProductName      10 }
+  jnxProductModelM7i     OBJECT IDENTIFIER ::= { jnxProductModel     10 }
+  jnxProductVariationM7i OBJECT IDENTIFIER ::= { jnxProductVariation 10 }
+  jnxChassisM7i          OBJECT IDENTIFIER ::= { jnxChassis          10 }
+
+  jnxSlotM7i             OBJECT IDENTIFIER ::= { jnxSlot    10 }
+    jnxM7iSlotFPC        OBJECT IDENTIFIER ::= { jnxSlotM7i 1  }
+    jnxM7iSlotCFEB       OBJECT IDENTIFIER ::= { jnxSlotM7i 2  }
+    jnxM7iSlotRE         OBJECT IDENTIFIER ::= { jnxSlotM7i 3  }
+    jnxM7iSlotPower      OBJECT IDENTIFIER ::= { jnxSlotM7i 4  }
+    jnxM7iSlotFan        OBJECT IDENTIFIER ::= { jnxSlotM7i 5  }
+
+  jnxMediaCardSpaceM7i   OBJECT IDENTIFIER ::= { jnxMediaCardSpace       10 }
+    jnxM7iMediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceM7i 1 }
+
+  jnxMidplaneM7i         OBJECT IDENTIFIER ::= { jnxBackplane 10 }
+
+  jnxModuleM7i           OBJECT IDENTIFIER ::= { jnxModule    10 }
+    jnxM7iFPC            OBJECT IDENTIFIER ::= { jnxModuleM7i 1  }
+    jnxM7iCFEB           OBJECT IDENTIFIER ::= { jnxModuleM7i 2  }
+    jnxM7iRE             OBJECT IDENTIFIER ::= { jnxModuleM7i 3  }
+    jnxM7iPower          OBJECT IDENTIFIER ::= { jnxModuleM7i 4  }
+    jnxM7iPowerAC        OBJECT IDENTIFIER ::= { jnxM7iPower  1  }
+    jnxM7iFan            OBJECT IDENTIFIER ::= { jnxModuleM7i 5  }
+
+  jnxSubmoduleM7i        OBJECT IDENTIFIER ::= { jnxSubmodule    10 }
+    jnxM7iPIC            OBJECT IDENTIFIER ::= { jnxSubmoduleM7i 2  }
+
+
+--
+-- M10i
+-- 
+  jnxProductLineM10i      OBJECT IDENTIFIER ::= { jnxProductLine      11 }
+  jnxProductNameM10i      OBJECT IDENTIFIER ::= { jnxProductName      11 }
+  jnxProductModelM10i     OBJECT IDENTIFIER ::= { jnxProductModel     11 }
+  jnxProductVariationM10i OBJECT IDENTIFIER ::= { jnxProductVariation 11 }
+  jnxChassisM10i          OBJECT IDENTIFIER ::= { jnxChassis          11 }
+
+  jnxSlotM10i             OBJECT IDENTIFIER ::= { jnxSlot           11 }
+    jnxM10iSlotFPC        OBJECT IDENTIFIER ::= { jnxSlotM10i       1  }
+    jnxM10iSlotCFEB       OBJECT IDENTIFIER ::= { jnxSlotM10i       2  }
+    jnxM10iSlotRE         OBJECT IDENTIFIER ::= { jnxSlotM10i       3  }
+    jnxM10iSlotPower      OBJECT IDENTIFIER ::= { jnxSlotM10i       4  }
+    jnxM10iSlotFan        OBJECT IDENTIFIER ::= { jnxSlotM10i       5  }
+    jnxM10iSlotHCM        OBJECT IDENTIFIER ::= { jnxSlotM10i       6  }
+
+  jnxMediaCardSpaceM10i   OBJECT IDENTIFIER    ::= { jnxMediaCardSpace    11 }
+    jnxM10iMediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceM10i 1 }
+
+  jnxMidplaneM10i         OBJECT IDENTIFIER ::= { jnxBackplane  11 }
+
+  jnxModuleM10i           OBJECT IDENTIFIER ::= { jnxModule     11 }
+    jnxM10iFPC            OBJECT IDENTIFIER ::= { jnxModuleM10i 1  }
+    jnxM10iCFEB           OBJECT IDENTIFIER ::= { jnxModuleM10i 2  }
+    jnxM10iRE             OBJECT IDENTIFIER ::= { jnxModuleM10i 3  }
+    jnxM10iPower          OBJECT IDENTIFIER ::= { jnxModuleM10i 4  }
+    jnxM10iPowerAC        OBJECT IDENTIFIER ::= { jnxM10iPower  1  }
+    jnxM10iFan            OBJECT IDENTIFIER ::= { jnxModuleM10i 5  }
+    jnxM10iHCM            OBJECT IDENTIFIER ::= { jnxModuleM10i 6  }
+
+--
+-- J2300
+--
+  jnxProductLineJ2300       OBJECT IDENTIFIER ::= { jnxProductLine      13 }
+  jnxProductNameJ2300       OBJECT IDENTIFIER ::= { jnxProductName      13 }
+  jnxChassisJ2300           OBJECT IDENTIFIER ::= { jnxChassis          13 }
+
+  jnxSlotJ2300              OBJECT IDENTIFIER ::= { jnxSlot    13 }
+    jnxJ2300SlotFPC         OBJECT IDENTIFIER ::= { jnxSlotJ2300  1  }
+    jnxJ2300SlotRE          OBJECT IDENTIFIER ::= { jnxSlotJ2300  2  }
+
+  jnxMediaCardSpaceJ2300    OBJECT IDENTIFIER ::= { jnxMediaCardSpace       13 }
+    jnxJ2300MediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceJ2300  1 }
+
+  jnxMidplaneJ2300         OBJECT IDENTIFIER ::= { jnxBackplane 13 }
+
+  jnxModuleJ2300            OBJECT IDENTIFIER ::= { jnxModule    13 }
+    jnxJ2300FPC             OBJECT IDENTIFIER ::= { jnxModuleJ2300 1  }
+    jnxJ2300RE              OBJECT IDENTIFIER ::= { jnxModuleJ2300 2  }
+
+--
+-- J4300
+--
+  jnxProductLineJ4300       OBJECT IDENTIFIER ::= { jnxProductLine      14 }
+  jnxProductNameJ4300       OBJECT IDENTIFIER ::= { jnxProductName      14 }
+  jnxChassisJ4300           OBJECT IDENTIFIER ::= { jnxChassis          14 }
+
+  jnxSlotJ4300              OBJECT IDENTIFIER ::= { jnxSlot    14 }
+    jnxJ4300SlotFPC         OBJECT IDENTIFIER ::= { jnxSlotJ4300  1  }
+    jnxJ4300SlotRE          OBJECT IDENTIFIER ::= { jnxSlotJ4300  2  }
+
+  jnxMediaCardSpaceJ4300    OBJECT IDENTIFIER ::= { jnxMediaCardSpace       14 }
+    jnxJ4300MediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceJ4300  1 }
+
+  jnxMidplaneJ4300         OBJECT IDENTIFIER ::= { jnxBackplane 14 }
+
+  jnxModuleJ4300            OBJECT IDENTIFIER ::= { jnxModule    14 }
+    jnxJ4300FPC             OBJECT IDENTIFIER ::= { jnxModuleJ4300 1  }
+    jnxJ4300RE              OBJECT IDENTIFIER ::= { jnxModuleJ4300 2  }
+
+--
+-- J6300
+--
+  jnxProductLineJ6300       OBJECT IDENTIFIER ::= { jnxProductLine      15 }
+  jnxProductNameJ6300       OBJECT IDENTIFIER ::= { jnxProductName      15 }
+  jnxChassisJ6300           OBJECT IDENTIFIER ::= { jnxChassis          15 }
+
+  jnxSlotJ6300              OBJECT IDENTIFIER ::= { jnxSlot    15 }
+    jnxJ6300SlotFPC         OBJECT IDENTIFIER ::= { jnxSlotJ6300  1  }
+    jnxJ6300SlotRE          OBJECT IDENTIFIER ::= { jnxSlotJ6300  2  }
+
+  jnxMediaCardSpaceJ6300    OBJECT IDENTIFIER ::= { jnxMediaCardSpace       15 }
+    jnxJ6300MediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceJ6300  1 }
+
+  jnxMidplaneJ6300         OBJECT IDENTIFIER ::= { jnxBackplane 15 }
+
+  jnxModuleJ6300            OBJECT IDENTIFIER ::= { jnxModule    15 }
+    jnxJ6300FPC             OBJECT IDENTIFIER ::= { jnxModuleJ6300 1  }
+    jnxJ6300RE              OBJECT IDENTIFIER ::= { jnxModuleJ6300 2  }
+
+--
+-- IRM
+--
+  jnxProductLineIRM      OBJECT IDENTIFIER ::= { jnxProductLine      16 }
+  jnxProductNameIRM      OBJECT IDENTIFIER ::= { jnxProductName      16 }
+  jnxProductModelIRM     OBJECT IDENTIFIER ::= { jnxProductModel     16 }
+  jnxProductVariationIRM OBJECT IDENTIFIER ::= { jnxProductVariation 16 }
+  jnxChassisIRM          OBJECT IDENTIFIER ::= { jnxChassis          16 }
+
+  jnxSlotIRM             OBJECT IDENTIFIER ::= { jnxSlot    16 }
+    jnxIRMSlotFPC        OBJECT IDENTIFIER ::= { jnxSlotIRM 1  }
+    jnxIRMSlotCFEB       OBJECT IDENTIFIER ::= { jnxSlotIRM 2  }
+    jnxIRMSlotRE         OBJECT IDENTIFIER ::= { jnxSlotIRM 3  }
+    jnxIRMSlotPower      OBJECT IDENTIFIER ::= { jnxSlotIRM 4  }
+
+  jnxMediaCardSpaceIRM   OBJECT IDENTIFIER ::= { jnxMediaCardSpace       16 }
+    jnxIRMMediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceIRM 1 }
+
+  jnxMidplaneIRM         OBJECT IDENTIFIER ::= { jnxBackplane 16 }
+
+  jnxModuleIRM           OBJECT IDENTIFIER ::= { jnxModule    16 }
+    jnxIRMFPC            OBJECT IDENTIFIER ::= { jnxModuleIRM 1  }
+    jnxIRMCFEB           OBJECT IDENTIFIER ::= { jnxModuleIRM 2  }
+    jnxIRMRE             OBJECT IDENTIFIER ::= { jnxModuleIRM 3  }
+    jnxIRMPower          OBJECT IDENTIFIER ::= { jnxModuleIRM 4  }
+    jnxIRMPowerDC        OBJECT IDENTIFIER ::= { jnxIRMPower  1  }
+
+--
+-- TX
+--
+  jnxProductLineTX      OBJECT IDENTIFIER ::= { jnxProductLine      17 }
+  jnxProductNameTX      OBJECT IDENTIFIER ::= { jnxProductName      17 }
+  jnxProductModelTX     OBJECT IDENTIFIER ::= { jnxProductModel     17 }
+  jnxProductVariationTX OBJECT IDENTIFIER ::= { jnxProductVariation 17 }
+  jnxChassisTX          OBJECT IDENTIFIER ::= { jnxChassis          17 }
+  
+  jnxSlotTX             OBJECT IDENTIFIER ::= { jnxSlot    17 }
+    jnxTXSlotSIB        OBJECT IDENTIFIER ::= { jnxSlotTX 1  }
+    jnxTXSlotHM         OBJECT IDENTIFIER ::= { jnxSlotTX 2  }
+    jnxTXSlotPower      OBJECT IDENTIFIER ::= { jnxSlotTX 3  }
+    jnxTXSlotFan        OBJECT IDENTIFIER ::= { jnxSlotTX 4  }
+    jnxTXSlotCB         OBJECT IDENTIFIER ::= { jnxSlotTX 5  }
+    jnxTXSlotFPB        OBJECT IDENTIFIER ::= { jnxSlotTX 6  }
+    jnxTXSlotCIP        OBJECT IDENTIFIER ::= { jnxSlotTX 7  }
+    jnxTXSlotSPMB       OBJECT IDENTIFIER ::= { jnxSlotTX 8  }
+    jnxTXSlotLCC        OBJECT IDENTIFIER ::= { jnxSlotTX 9  }
+  
+  jnxMediaCardSpaceTX      OBJECT IDENTIFIER ::= { jnxMediaCardSpace    17 }
+    jnxTXMediaCardSpacePIC OBJECT IDENTIFIER ::= { jnxMediaCardSpaceTX 1  }
+
+  jnxMidplaneTX         OBJECT IDENTIFIER ::= { jnxBackplane 17 }
+
+  jnxModuleTX           OBJECT IDENTIFIER ::= { jnxModule    17 }
+    jnxTXSIB            OBJECT IDENTIFIER ::= { jnxModuleTX 1  }
+    jnxTXHM             OBJECT IDENTIFIER ::= { jnxModuleTX 2  }
+    jnxTXPower          OBJECT IDENTIFIER ::= { jnxModuleTX 3  }
+    jnxTXFan            OBJECT IDENTIFIER ::= { jnxModuleTX 4  }
+    jnxTXCB             OBJECT IDENTIFIER ::= { jnxModuleTX 5  }
+    jnxTXFPB            OBJECT IDENTIFIER ::= { jnxModuleTX 6  }
+    jnxTXCIP            OBJECT IDENTIFIER ::= { jnxModuleTX 7  }
+    jnxTXSPMB           OBJECT IDENTIFIER ::= { jnxModuleTX 8  }
+    jnxTXLCC            OBJECT IDENTIFIER ::= { jnxModuleTX 9  }
+
+  
+
+--
+-- PLATFORM INDEPENDENT OIDs
+-- 
+-- As of release 6.0, all new Juniper routers will use the following
+-- platform-independent OIDs to identify applicable chassis components.
+-- Platform-specific OIDs will be defined for those components which
+-- are not platform-independent.
+-- 
+-- All existing Juniper routers will continue to identify existing
+-- chassis components with the existing OIDs.  All new components will
+-- be identified with platform-independent OIDs where appropriate.
+--
+
+  jnxModuleGeneric    OBJECT IDENTIFIER ::=   { jnxModule        12 }
+    jnxFPC              OBJECT IDENTIFIER ::= { jnxModuleGeneric 1  }
+    jnxCBD              OBJECT IDENTIFIER ::= { jnxModuleGeneric 2  }
+    jnxHM               OBJECT IDENTIFIER ::= { jnxModuleGeneric 3  }
+    jnxPower            OBJECT IDENTIFIER ::= { jnxModuleGeneric 4  }
+    jnxFan              OBJECT IDENTIFIER ::= { jnxModuleGeneric 5  }
+    jnxFPB              OBJECT IDENTIFIER ::= { jnxModuleGeneric 6  }
+    jnxCIP              OBJECT IDENTIFIER ::= { jnxModuleGeneric 7  }
+
+  jnxPCMCIACard         OBJECT IDENTIFIER ::= { jnxHM             1 }
+  jnxUSBHub             OBJECT IDENTIFIER ::= { jnxHM             2 }
+  jnxRCompactFlash      OBJECT IDENTIFIER ::= { jnxHM             3 }
+
+  jnxSubmoduleGeneric OBJECT IDENTIFIER ::= { jnxSubmodule        12 }
+    jnxPic            OBJECT IDENTIFIER ::= { jnxSubmoduleGeneric 1  }
+      --
+      -- Generic PIC OIDs
+      --
+      jnxPicType3TenGigEther     OBJECT IDENTIFIER ::= { jnxPic 1   }
+      jnxPicChDs3toDs0           OBJECT IDENTIFIER ::= { jnxPic 2   }
+      jnxPicDualChDs3toDs0       OBJECT IDENTIFIER ::= { jnxPic 3   }
+      jnxPicAtmIIOc12            OBJECT IDENTIFIER ::= { jnxPic 4   }
+      jnxPicAtmOc12              OBJECT IDENTIFIER ::= { jnxPic 5   }
+      jnxPicM7iTunnel            OBJECT IDENTIFIER ::= { jnxPic 6   }
+      jnxPicChOc12toDs3          OBJECT IDENTIFIER ::= { jnxPic 7   }
+      jnxPicCrypto800            OBJECT IDENTIFIER ::= { jnxPic 8   }
+      jnxPicType2DualAtmIIOc12   OBJECT IDENTIFIER ::= { jnxPic 9   }
+      jnxPicDualAtmIIOc3         OBJECT IDENTIFIER ::= { jnxPic 10  }
+      jnxPicDualAtmOc3           OBJECT IDENTIFIER ::= { jnxPic 11  }
+      jnxPicDualChDs3            OBJECT IDENTIFIER ::= { jnxPic 12  }
+      jnxPicDualE3               OBJECT IDENTIFIER ::= { jnxPic 13  }
+      jnxPicDualEia530           OBJECT IDENTIFIER ::= { jnxPic 14  }
+      jnxPicDualQChStm1          OBJECT IDENTIFIER ::= { jnxPic 15  }
+      jnxPicDualQChDs3           OBJECT IDENTIFIER ::= { jnxPic 16  }
+      jnxPicType2DualQHGE        OBJECT IDENTIFIER ::= { jnxPic 17  }
+      jnxPicDualSonetOc3         OBJECT IDENTIFIER ::= { jnxPic 18  }
+      jnxPicDualDs3              OBJECT IDENTIFIER ::= { jnxPic 19  }
+      jnxPicType1Tunnel          OBJECT IDENTIFIER ::= { jnxPic 20  }
+      jnxPicGgsnControl          OBJECT IDENTIFIER ::= { jnxPic 21  }
+      jnxPicGgsnData             OBJECT IDENTIFIER ::= { jnxPic 22  }
+      jnxPicType3TenPortGigEther OBJECT IDENTIFIER ::= { jnxPic 23  }
+      jnxPicType3SonetOc192Lr    OBJECT IDENTIFIER ::= { jnxPic 24  }
+      jnxPicType3SonetOc192Sr2   OBJECT IDENTIFIER ::= { jnxPic 25  }
+      jnxPicType3SonetOc192Vsr   OBJECT IDENTIFIER ::= { jnxPic 26  }
+      jnxPicType3QuadSonetOc48   OBJECT IDENTIFIER ::= { jnxPic 27  }
+      jnxPicType3Tunnel          OBJECT IDENTIFIER ::= { jnxPic 28  }
+      jnxPicGigEther             OBJECT IDENTIFIER ::= { jnxPic 29  }
+      jnxPicLsMultilink128       OBJECT IDENTIFIER ::= { jnxPic 30  }
+      jnxPicLsMultilink32        OBJECT IDENTIFIER ::= { jnxPic 31  }
+      jnxPicLsMultilink4         OBJECT IDENTIFIER ::= { jnxPic 32  }
+      jnxPicType2DenseEther48    OBJECT IDENTIFIER ::= { jnxPic 33  }
+      jnxPicType2DualGigEther    OBJECT IDENTIFIER ::= { jnxPic 34  }
+      jnxPicType2SonetOc48Lr     OBJECT IDENTIFIER ::= { jnxPic 35  }
+      jnxPicType2QuadGigEther    OBJECT IDENTIFIER ::= { jnxPic 36  }
+      jnxPicType2QuadSonetOc12   OBJECT IDENTIFIER ::= { jnxPic 37  }
+      jnxPicType2QuadSonetOc3    OBJECT IDENTIFIER ::= { jnxPic 38  }
+      jnxPicType1SonetOc192Sr2   OBJECT IDENTIFIER ::= { jnxPic 39  }
+      jnxPicType1SonetOc192Lr1   OBJECT IDENTIFIER ::= { jnxPic 40  }
+      jnxPicType1SonetOc192Sr    OBJECT IDENTIFIER ::= { jnxPic 41  }
+      jnxPicType1SonetOc192Vsr   OBJECT IDENTIFIER ::= { jnxPic 42  }
+      jnxPicType2SonetOc48Sr     OBJECT IDENTIFIER ::= { jnxPic 43  }
+      jnxPicType2Tunnel          OBJECT IDENTIFIER ::= { jnxPic 44  }
+      jnxPicDecaChE1             OBJECT IDENTIFIER ::= { jnxPic 45  }
+      jnxPicDenseEther12         OBJECT IDENTIFIER ::= { jnxPic 46  }
+      jnxPicDenseEtherFX8        OBJECT IDENTIFIER ::= { jnxPic 48  }
+      jnxPicGigEtherBundle       OBJECT IDENTIFIER ::= { jnxPic 49  }
+      jnxPicSonetOc48Lr          OBJECT IDENTIFIER ::= { jnxPic 50  }
+      jnxPicSonetOc48Sr          OBJECT IDENTIFIER ::= { jnxPic 51  }
+      jnxPicMultilink128         OBJECT IDENTIFIER ::= { jnxPic 52  }
+      jnxPicMultilink32          OBJECT IDENTIFIER ::= { jnxPic 53  }
+      jnxPicMultilink4           OBJECT IDENTIFIER ::= { jnxPic 54  }
+      jnxPicPassiveMonitor       OBJECT IDENTIFIER ::= { jnxPic 55  }
+      jnxPicDecaQChE1            OBJECT IDENTIFIER ::= { jnxPic 56  }
+      jnxPicQChOc12              OBJECT IDENTIFIER ::= { jnxPic 57  }
+      jnxPicQuadAtmE3            OBJECT IDENTIFIER ::= { jnxPic 58  }
+      jnxPicQuadAtmT3            OBJECT IDENTIFIER ::= { jnxPic 59  }
+      jnxPicQuadChT3             OBJECT IDENTIFIER ::= { jnxPic 60  }
+      jnxPicQuadE1               OBJECT IDENTIFIER ::= { jnxPic 61  }
+      jnxPicQuadE3               OBJECT IDENTIFIER ::= { jnxPic 62  }
+      jnxPicQuadEther            OBJECT IDENTIFIER ::= { jnxPic 63  }
+      jnxPicQuadQChT3            OBJECT IDENTIFIER ::= { jnxPic 64  }
+      jnxPicQuadSonetOc3         OBJECT IDENTIFIER ::= { jnxPic 65  }
+      jnxPicQuadT1               OBJECT IDENTIFIER ::= { jnxPic 66  }
+      jnxPicQuadT3               OBJECT IDENTIFIER ::= { jnxPic 67  }
+      jnxPicChStm1               OBJECT IDENTIFIER ::= { jnxPic 68  }
+      jnxPicQChStm1              OBJECT IDENTIFIER ::= { jnxPic 69  }
+      jnxPicSingleQHGE           OBJECT IDENTIFIER ::= { jnxPic 70  }
+      jnxPicSonetOc12            OBJECT IDENTIFIER ::= { jnxPic 71  }
+      jnxPicSonetOc48            OBJECT IDENTIFIER ::= { jnxPic 72  }
+      jnxPicTunnel               OBJECT IDENTIFIER ::= { jnxPic 73  }
+      jnxPicGeneralServices      OBJECT IDENTIFIER ::= { jnxPic 74  }
+      jnxPicPassiveMonitorAsp    OBJECT IDENTIFIER ::= { jnxPic 75  }
+      jnxPicType1TenGigEther     OBJECT IDENTIFIER ::= { jnxPic 76  }
+      jnxPicDualATMIIE3          OBJECT IDENTIFIER ::= { jnxPic 77  }
+      jnxPicQuadATMIIE3          OBJECT IDENTIFIER ::= { jnxPic 78  }
+      jnxPicQuadATMIIT3          OBJECT IDENTIFIER ::= { jnxPic 79  }
+      jnxPicQuadQE3              OBJECT IDENTIFIER ::= { jnxPic 80  }
+      jnxPicType1Oc48SFP         OBJECT IDENTIFIER ::= { jnxPic 81  }
+      jnxPicType2Oc48SFP         OBJECT IDENTIFIER ::= { jnxPic 82  }
+      jnxPicGgsnInspection       OBJECT IDENTIFIER ::= { jnxPic 83  }
+      jnxPicType3QuadSonetOc48SFP OBJECT IDENTIFIER ::= { jnxPic 84  }
+      jnxPicType3TenGigEtherXenpak OBJECT IDENTIFIER ::= { jnxPic 85  }
+      jnxPicIntServices          OBJECT IDENTIFIER ::= { jnxPic 86 }
+      jnxPicDualFicFE            OBJECT IDENTIFIER ::= { jnxPic 87 } 
+                                 -- Fixed interface card 2-port FE
+      jnxPicFicGE                OBJECT IDENTIFIER ::= { jnxPic 88 } 
+                                 -- Fixed interface card GigE
+      jnxPicSingleSGE            OBJECT IDENTIFIER ::= { jnxPic 89 }
+      jnxPicDualSGE              OBJECT IDENTIFIER ::= { jnxPic 90 }
+      jnxPicQuadSGE              OBJECT IDENTIFIER ::= { jnxPic 91 }
+      jnxPicType3SonetOc192Sr1   OBJECT IDENTIFIER ::= { jnxPic 92 }
+      jnxPicAdaptiveServicesII   OBJECT IDENTIFIER ::= { jnxPic 93 }
+      jnxPicJseriesEthT1Combo    OBJECT IDENTIFIER ::= { jnxPic 94 }
+      jnxPicJseriesEthE1Combo    OBJECT IDENTIFIER ::= { jnxPic 95 }
+      jnxPicJseriesEthSerCombo   OBJECT IDENTIFIER ::= { jnxPic 96 }
+      jnxPicJseriesDualEth       OBJECT IDENTIFIER ::= { jnxPic 97 }
+      jnxPicJseriesDualT1        OBJECT IDENTIFIER ::= { jnxPic 98 }
+      jnxPicJseriesDualE1        OBJECT IDENTIFIER ::= { jnxPic 99 }
+      jnxPicJseriesDualSerial    OBJECT IDENTIFIER ::= { jnxPic 100 }
+      jnxPicJseriesT3            OBJECT IDENTIFIER ::= { jnxPic 101 }
+      jnxPicType2AtmIIOc48       OBJECT IDENTIFIER ::= { jnxPic 102 }
+      jnxPicSonetOc768Sr         OBJECT IDENTIFIER ::= { jnxPic 103 }
+      jnxPicQuadSonetOc192XFP    OBJECT IDENTIFIER ::= { jnxPic 104 }
+      jnxPicType4Tunnel          OBJECT IDENTIFIER ::= { jnxPic 105 }
+      jnxPicQChoc3               OBJECT IDENTIFIER ::= { jnxPic 106 }
+                -- Unused jnxPic 107
+      jnxPicType3DWDMTenGigEther OBJECT IDENTIFIER ::= { jnxPic 108 }
+      jnxPicType4QuadOC192       OBJECT IDENTIFIER ::= { jnxPic 109 }
+                -- Unused jnxPic 110
+      jnxPicType1Load            OBJECT IDENTIFIER ::= { jnxPic 111 }
+      jnxPicType2Load            OBJECT IDENTIFIER ::= { jnxPic 112 }
+      jnxPicType3Load            OBJECT IDENTIFIER ::= { jnxPic 113 }
+      jnxPicType4Load            OBJECT IDENTIFIER ::= { jnxPic 114 }
+      jnxPicGgsnControlV1        OBJECT IDENTIFIER ::= { jnxPic 115 }
+      jnxPicGgsnDataV1           OBJECT IDENTIFIER ::= { jnxPic 116 }
+      jnxPicMonitoring3          OBJECT IDENTIFIER ::= { jnxPic 117 }
+      jnxPicGgsnPhoenix          OBJECT IDENTIFIER ::= { jnxPic 118 }
+      jnxPicAdaptiveServicesFips OBJECT IDENTIFIER ::= { jnxPic 119 }
+      jnxPicMonitoring3V1        OBJECT IDENTIFIER ::= { jnxPic 120 }
+      jnxPicGgsnPhoenixV1        OBJECT IDENTIFIER ::= { jnxPic 121 }
+      jnxPicJseriesE3            OBJECT IDENTIFIER ::= { jnxPic 122 }
+      jnxPicLinkServicesII       OBJECT IDENTIFIER ::= { jnxPic 123 }
+      jnxPicDecaQChT1            OBJECT IDENTIFIER ::= { jnxPic 124  }
+      jnxPicType3IQ21X10GE       OBJECT IDENTIFIER ::= { jnxPic 125 }
+      jnxPicType2IQ28X1GE        OBJECT IDENTIFIER ::= { jnxPic 126 }
+      jnxPicType1IQ24X1GE        OBJECT IDENTIFIER ::= { jnxPic 127 }
+
+
+END

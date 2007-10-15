@@ -1,0 +1,1158 @@
+-- ********************************************************************
+-- CISCO-IETF-DHCP-SERVER-EXT-MIB.my : Extension of the Cisco 
+-- version of the Dynamic Host Configuration Protocol for IPv4 (DHCPv4) 
+-- Server MIB. 
+-- 
+-- January 2005, Shobana Sampath
+-- 
+-- Copyright (c) 2005 by Cisco Systems, Inc. 
+-- All rights reserved. 
+-- ********************************************************************
+
+CISCO-IETF-DHCP-SERVER-EXT-MIB DEFINITIONS ::= BEGIN 
+ 
+IMPORTS 
+   Counter32, MODULE-IDENTITY, OBJECT-IDENTITY, OBJECT-TYPE, 
+   Unsigned32, Gauge32
+        FROM SNMPv2-SMI
+
+   TimeStamp, TimeInterval
+        FROM SNMPv2-TC
+
+   MODULE-COMPLIANCE, OBJECT-GROUP
+      FROM SNMPv2-CONF 
+
+   ciscoExperiment 
+      FROM CISCO-SMI; 
+
+ciscoIetfDhcpSrvExtMIB  MODULE-IDENTITY 
+   LAST-UPDATED   "200505041200Z"
+   ORGANIZATION   "Cisco Systems, Inc." 
+   CONTACT-INFO  
+                "       Cisco Systems
+                        Customer Service
+
+                Postal: 170 W Tasman Drive
+                        San Jose, CA  95134
+                        USA
+
+                   Tel: +1 800 553-NETS
+
+                E-mail: cs-dhcp-mib@cisco.com"
+
+   DESCRIPTION 
+      "The MIB module is an extension of the Cisco IETF
+      Dynamic Host Configuration protocol (DHCP) MIB."
+   
+   REVISION        "200505041200Z"
+   DESCRIPTION
+      "Initial version of this MIB module."
+   ::= { ciscoExperiment 122 }
+
+ciscoIetfDhcpv4SrvExtMIBNotifs   OBJECT IDENTIFIER 
+   ::= { ciscoIetfDhcpSrvExtMIB 0 } 
+ciscoIetfDhcpv4SrvExtMIBObjects  OBJECT IDENTIFIER 
+   ::= { ciscoIetfDhcpSrvExtMIB 1 } 
+ciscoIetfDhcpv4SrvExtMIBConform  OBJECT IDENTIFIER 
+   ::= { ciscoIetfDhcpSrvExtMIB 2 } 
+
+cDhcpv4SrvExtSystem  OBJECT-IDENTITY 
+   STATUS      current 
+   DESCRIPTION 
+      "Extension of the group of objects that are related to the 
+       overall system." 
+::= { ciscoIetfDhcpv4SrvExtMIBObjects 1 } 
+
+cDhcpv4ExtCounters  OBJECT-IDENTITY 
+   STATUS      current
+   DESCRIPTION 
+      "Extension of the group of objects that report the total count 
+       of various DHCPv4 events.
+
+       The counters in this group are only reset when the process
+       supporting service is reset.  The reset time is 
+       provided in the cDhcpv4SrvResetTime object."
+::= { ciscoIetfDhcpv4SrvExtMIBObjects 2 } 
+
+cDhcpv4IntervalCounters OBJECT-IDENTITY
+    STATUS     current
+    DESCRIPTION
+        "The objects that report the interval count of various 
+         DHCPv4 events." 
+::= { ciscoIetfDhcpv4SrvExtMIBObjects 3 }       
+
+cDhcpv4FailoverCounters  OBJECT-IDENTITY 
+   STATUS      current 
+   DESCRIPTION 
+      "Group of objects that report the total count of 
+       various failover DHCPv4 events.
+
+       The counters in this group are only reset when the process
+       supporting service is reset. The last reset time is 
+       provided in the cDhcpv4SrvResetTime object."
+::= { ciscoIetfDhcpv4SrvExtMIBObjects 4 }  
+
+
+cDhcpv4FailoverIntervalCounters OBJECT-IDENTITY
+    STATUS     current
+    DESCRIPTION
+      "The objects that report the interval count of various 
+       failover DHCPv4 events." 
+::= { ciscoIetfDhcpv4SrvExtMIBObjects 5 }       
+
+cDhcpv4CfgObjects OBJECT-IDENTITY
+   STATUS      current 
+   DESCRIPTION 
+      "Group of objects that configure the collection of DHCPv4 
+       counter objects."
+    ::= { ciscoIetfDhcpv4SrvExtMIBObjects 6 }
+
+
+-- cDhcpv4SrvExtSystem
+cDhcpv4SrvStartTime  OBJECT-TYPE 
+   SYNTAX      TimeStamp
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The time when the process supporting this server was started."
+   ::= { cDhcpv4SrvExtSystem 1 } 
+
+cDhcpv4SrvResetTime  OBJECT-TYPE 
+   SYNTAX      TimeStamp
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The time when the process supporting this server was last 
+       reinitialized. This indicates the time when a server reload or
+       start was executed. At server startup this time is the same as 
+       cDhcpv4SrvStartTime."
+   ::= { cDhcpv4SrvExtSystem 2 } 
+ 
+-- cDhcpv4ExtCounters
+ 
+ cDhcpv4LeaseQueries  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCPLEASEQUERY packets received."
+   ::= { cDhcpv4ExtCounters 1 } 
+
+cDhcpv4StatisticsResetTime  OBJECT-TYPE 
+   SYNTAX      TimeStamp
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION
+      "The time the server statistics counters were last reinitialized; 
+       the statistics counters are reinitialized by a reset command, 
+       server reload, or server start; note also that any configuration
+       change to reporting interval requires a server reload to take 
+       effect, which will reinitialize the statistics counters. If 
+       statistics are never reset, this time will equal 
+       cDhcpv4SrvResetTime, which may also equal cDhcpv4SrvStartTime, 
+       if the server was never reloaded."
+   ::= { cDhcpv4ExtCounters 2 } 
+
+cDhcpv4PacketsSent  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets sent."
+   ::= { cDhcpv4ExtCounters 3 } 
+
+cDhcpv4PacketsRcvd  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets received."
+   ::= { cDhcpv4ExtCounters 4 } 
+
+cDhcpv4InvalidPackets  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP invalid packets received."
+   ::= { cDhcpv4ExtCounters 5 }
+
+cDhcpv4ResponsesDropped  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of responses dropped due to heavy load on the
+       server."
+   ::= { cDhcpv4ExtCounters 6 } 
+ 
+cDhcpv4DroppedTotal  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped due to server or client
+       configuration."
+   ::= { cDhcpv4ExtCounters 7 } 
+
+cDhcpv4RequestDroppedOthers  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped in request processing due
+       to other reasons."
+   ::= { cDhcpv4ExtCounters 8 } 
+
+cDhcpv4ResponseDroppedOthers  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped in response processing due
+       to other reasons."
+   ::= { cDhcpv4ExtCounters 9 } 
+
+cDhcpv4ExtensionErrors  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped due to extension 
+       processing failure."
+   ::= { cDhcpv4ExtCounters 10 }
+ 
+cDhcpv4ExtensionDrops  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped that an extension 
+       requested."
+   ::= { cDhcpv4ExtCounters 11 } 
+
+cDhcpv4Duplicates  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of duplicate DHCP packets dropped."
+   ::= { cDhcpv4ExtCounters 12 } 
+
+cDhcpv4OverMaxWaiting  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped in request processing 
+       because the server max-waiting-attribute was exceeded."
+   ::= { cDhcpv4ExtCounters 13 } 
+
+cDhcpv4RequestsDroppedOld  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped in request processing
+       because the server drop-old-packets attribute was exceeded."
+   ::= { cDhcpv4ExtCounters 14 } 
+
+cDhcpv4ResponsesDroppedOld  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped in response processing
+       drop-old-packets attribute was exceeded."
+   ::= { cDhcpv4ExtCounters 15 } 
+
+cDhcpv4UnknownScopes  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped because the server
+       could not assign an appropriate scope."
+   ::= { cDhcpv4ExtCounters 16 } 
+
+cDhcpv4Discards  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped because the server
+       could not construct a response."
+   ::= { cDhcpv4ExtCounters 17 } 
+
+cDhcpv4ClientClassFails  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped because the server
+       could not assgin a client-class."
+   ::= { cDhcpv4ExtCounters 18 }
+ 
+cDhcpv4InvalidClients  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped because the server
+       configuration prevented responding to this packet."
+   ::= { cDhcpv4ExtCounters 19 }
+ 
+-- cDhcpv4FailoverCounters
+cDhcpv4FOPacketsRcvd  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total total number of failover packets received."
+   ::= { cDhcpv4FailoverCounters 1 } 
+
+cDhcpv4FOBindingUpdsRcvd  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total total number of failover DHCPBNDUPD packets received."
+   ::= { cDhcpv4FailoverCounters 2 } 
+
+cDhcpv4FOBindingAcksRcvd  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of failover DHCPBNDACK packets received."
+   ::= { cDhcpv4FailoverCounters 3 } 
+
+cDhcpv4FOBindingNaksRcvd  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of failover DHCPBNDNAK packets received."
+   ::= { cDhcpv4FailoverCounters 4 } 
+
+cDhcpv4FOPoolRequestsRcvd  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of failover DHCPPOOLREQ packets received."
+   ::= { cDhcpv4FailoverCounters 5 } 
+
+cDhcpv4FOPollsRcvd  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of failover DHCPPOLL packets received."
+   ::= { cDhcpv4FailoverCounters 6 } 
+
+cDhcpv4FOUpdateRequestsRcvd  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of failover DHCPUPDATEREQ packets received."
+   ::= { cDhcpv4FailoverCounters 7 } 
+
+cDhcpv4FOUpdateDoneRcvd  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of failover DHCPUPDATEDONE packets received."
+   ::= { cDhcpv4FailoverCounters 8 } 
+
+cDhcpv4FOPacketsSent  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of failover packets sent."
+   ::= { cDhcpv4FailoverCounters 9 } 
+
+cDhcpv4FOBindingUpdatesSent  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCPBNDUPD packets sent."
+   ::= { cDhcpv4FailoverCounters 10 } 
+
+cDhcpv4FOBindingAcksSent  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCPBNDACKS packets sent."
+   ::= { cDhcpv4FailoverCounters 11 } 
+
+cDhcpv4FOBindingNaksSent  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCPBNDNAK packets sent."
+   ::= { cDhcpv4FailoverCounters 12 } 
+
+cDhcpv4FOPoolResponsesSent  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCPPOOLRESP packets sent."
+   ::= { cDhcpv4FailoverCounters 13 } 
+
+cDhcpv4FOPollsSent  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCPPOLL packets sent during 
+       reporting interval." 
+   ::= { cDhcpv4FailoverCounters 14 } 
+
+cDhcpv4FOUpdateRequestsSent  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCPUPDATEREQ packets sent during reporting 
+       interval." 
+   ::= { cDhcpv4FailoverCounters 15 } 
+
+cDhcpv4FOUpdateDoneSent  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCPUPDATEDONE packets sent during reporting 
+       interval." 
+   ::= { cDhcpv4FailoverCounters 16 } 
+
+cDhcpv4FOPacketsDropped  OBJECT-TYPE 
+   SYNTAX      Counter32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of failover packets dropped during reporting 
+       interval." 
+   ::= { cDhcpv4FailoverCounters 17 } 
+
+-- cDhcpv4IntervalCounters
+
+cDhcpv4IntDiscovers  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPDISCOVER (option 53 with value 1) packets 
+      received during the reporting interval."
+   REFERENCE
+      "RFC2131; RFC2132, section 9.6."
+   ::= { cDhcpv4IntervalCounters 1 } 
+ 
+cDhcpv4IntOffers  OBJECT-TYPE 
+   SYNTAX      Unsigned32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+
+      "The number of DHCPOFFER (option 53 with value 2) packets 
+      sent during the reporting interval." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4IntervalCounters 2 } 
+
+cDhcpv4IntRequests  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets" 
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPREQUEST (option 53 with value 3) packets 
+      received during the reporting interval." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4IntervalCounters 3 } 
+ 
+cDhcpv4IntDeclines  OBJECT-TYPE 
+   SYNTAX      Unsigned32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPDECLINE (option 53 with value 4) packets 
+      received during the reporting interval." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4IntervalCounters 4 } 
+ 
+cDhcpv4IntAcks  OBJECT-TYPE 
+   SYNTAX      Unsigned32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPACK (option 53 with value 5) packets sent
+       during the reporting interval." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4IntervalCounters 5 } 
+ 
+cDhcpv4IntNaks  OBJECT-TYPE 
+   SYNTAX      Unsigned32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPNACK (option 53 with value 6) packets sent
+       during the reporting interval." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4IntervalCounters 6 } 
+ 
+cDhcpv4IntReleases  OBJECT-TYPE 
+   SYNTAX      Unsigned32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPRELEASE (option 53 with value 7) packets 
+      received during the reporting interval." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4IntervalCounters 7 } 
+
+cDhcpv4IntInforms  OBJECT-TYPE 
+   SYNTAX      Unsigned32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPINFORM (option 53 with value 8) packets 
+      received during the reporting interval." 
+   REFERENCE 
+      "RFC2131; RFC2132, section 9.6." 
+   ::= { cDhcpv4IntervalCounters 8 } 
+
+ cDhcpv4IntLeaseQueries  OBJECT-TYPE 
+   SYNTAX      Unsigned32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCPLEASEQUERY packets received during 
+       the reporting interval." 
+   ::= { cDhcpv4IntervalCounters 9 } 
+ 
+cDhcpv4IntReqBuffersInUse  OBJECT-TYPE 
+   SYNTAX      Gauge32 
+   UNITS       "buffers"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of request buffers in use during the 
+       reporting interval." 
+   ::= { cDhcpv4IntervalCounters 10 } 
+ 
+cDhcpv4IntRespBuffersInUse  OBJECT-TYPE 
+   SYNTAX      Gauge32 
+   UNITS       "buffers"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of response buffers in use at the end of the  
+       reporting interval." 
+   ::= { cDhcpv4IntervalCounters 11 } 
+
+cDhcpv4IntEndTime  OBJECT-TYPE 
+   SYNTAX      TimeStamp
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The time when the server last calculated the sample statistics."
+   ::= { cDhcpv4IntervalCounters 12 } 
+
+
+cDhcpv4IntDeltaTime  OBJECT-TYPE 
+   SYNTAX      TimeInterval
+   UNITS       "milliseconds"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The interval in seconds over which the server last calculated 
+       the sample interval statistics. This is the configured reporting
+       interval and the statistics are reset since the last 
+       cDhcpv4IntEndTime."
+   ::= { cDhcpv4IntervalCounters 13 } 
+
+cDhcpv4IntPacketsSent  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets sent during the reporting 
+       interval."
+   ::= { cDhcpv4IntervalCounters 14 } 
+
+cDhcpv4IntPacketsRcvd  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets received during the 
+       reporting interval."
+   ::= { cDhcpv4IntervalCounters 15 } 
+
+cDhcpv4IntInvalidPackets  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP invalid packets received during the 
+       reporting interval."
+   ::= { cDhcpv4IntervalCounters 16 }
+
+cDhcpv4IntResponsesDropped  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of responses dropped due to heavy load on the
+       server during the reporting interval."
+   ::= { cDhcpv4IntervalCounters 17 } 
+ 
+cDhcpv4IntDroppedTotal  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped due to server or client
+       configuration during the reporting interval."
+   ::= { cDhcpv4IntervalCounters 18 } 
+
+cDhcpv4IntRequestDroppedOthers  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped in request processing due
+       to other reasons during the reporting interval."
+   ::= { cDhcpv4IntervalCounters 19 } 
+
+cDhcpv4IntResponseDroppedOthers  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped in response processing due
+       to other reasons during the reporting interval."
+   ::= { cDhcpv4IntervalCounters 20 } 
+
+cDhcpv4IntExtensionErrors  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped due to extension 
+       processing failure during the reporting interval."
+   ::= { cDhcpv4IntervalCounters 21 }
+ 
+cDhcpv4IntExtensionDrops  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped that an extension 
+       requested during the reporting interval."
+   ::= { cDhcpv4IntervalCounters 22 } 
+
+cDhcpv4IntDuplicates  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of duplicate DHCP packets dropped during the 
+       reporting interval."
+   ::= { cDhcpv4IntervalCounters 23 } 
+
+cDhcpv4IntOverMaxWaiting  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped in request processing 
+       because the server max-waiting-attribute was exceeded during 
+       the reporting interval."
+   ::= { cDhcpv4IntervalCounters 24 } 
+
+cDhcpv4IntRequestsDroppedOld  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped in request processing
+       because the server drop-old-packets attribute was exceeded during 
+       the reporting interval."
+   ::= { cDhcpv4IntervalCounters 25 } 
+
+cDhcpv4IntResponsesDroppedOld  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped in response processing
+       drop-old-packets attribute was exceeded during the reporting 
+       interval."
+   ::= { cDhcpv4IntervalCounters 26 } 
+
+cDhcpv4IntUnknownScopes  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped because the server
+       could not assign an appropriate scope during the reporting 
+       interval."
+   ::= { cDhcpv4IntervalCounters 27 } 
+
+cDhcpv4IntDiscards  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped because the server
+       could not construct a response during the reporting interval."
+   ::= { cDhcpv4IntervalCounters 28 } 
+
+cDhcpv4IntClientClassFails  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped because the server
+       could not assgin a client-class during the reporting interval."
+   ::= { cDhcpv4IntervalCounters 29 }
+ 
+cDhcpv4IntInvalidClients  OBJECT-TYPE 
+   SYNTAX      Counter32 
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The total number of DHCP packets dropped because the server
+       configuration prevented responding to this packet during 
+       the reporting interval."
+   ::= { cDhcpv4IntervalCounters 30 }
+
+
+-- cDhcpv4FailoverIntervalCounters
+cDhcpv4FOIntPacketsRcvd  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of failover packets received during the reporting 
+       interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 1 } 
+
+cDhcpv4FOIntBindingUpdsRcvd  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of failover DHCPBNDUPD packets received during 
+       the reporting interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 2 } 
+
+cDhcpv4FOIntBindingAcksRcvd  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of failover DHCPBNDACK packets received during 
+       the reporting interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 3 } 
+
+cDhcpv4FOIntBindingNaksRcvd  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of failover DHCPBNDNAK packets received during 
+       reporting interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 4 } 
+
+cDhcpv4FOIntPoolRequestsRcvd  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of failover DHCPPOOLREQ packets received during 
+       the reporting interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 5 } 
+
+cDhcpv4FOIntPollsRcvd  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of failover DHCPPOLL packets received during 
+       the reporting interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 6 } 
+
+cDhcpv4FOIntUpdateReqsRcvd  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of failover DHCPUPDATEREQ packets received during 
+       the reporting interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 7 } 
+
+cDhcpv4FOIntUpdateDoneRcvd  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of failover DHCPUPDATEDONE packets received during 
+       the reporting interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 8 } 
+
+cDhcpv4FOIntPacketsSent  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of failover packets sent during the 
+       reporting interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 9 } 
+
+cDhcpv4FOIntBindingUpdsSent  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPBNDUPD packets sent during the reporting 
+       interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 10 } 
+
+cDhcpv4FOIntBindingAcksSent  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPBNDACKS packets sent during the reporting 
+       interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 11 } 
+
+cDhcpv4FOIntBindingNaksSent  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPBNDNAK packets sent during the reporting 
+       interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 12 } 
+
+cDhcpv4FOIntPoolResponsesSent  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPPOOLRESP packets sent during the reporting 
+       interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 13 } 
+
+cDhcpv4FOIntPollsSent  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPPOLL packets sent during the 
+       reporting interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 14 } 
+
+cDhcpv4FOIntUpdateReqsSent  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPUPDATEREQ packets sent during the reporting 
+       interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 15 } 
+
+cDhcpv4FOIntUpdateDoneSent  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of DHCPUPDATEDONE packets sent during the reporting 
+       interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 16 } 
+
+cDhcpv4FOIntPacketsDropped  OBJECT-TYPE 
+   SYNTAX      Unsigned32
+   UNITS       "packets"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The number of failover packets dropped during the reporting 
+       interval." 
+   ::= { cDhcpv4FailoverIntervalCounters 17 } 
+
+cDhcpv4FOIntEndTime  OBJECT-TYPE 
+   SYNTAX      TimeStamp
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The time when the server last calculated the interval 
+       statistics."
+   ::= { cDhcpv4FailoverIntervalCounters 18 } 
+
+
+cDhcpv4FOIntDeltaTime  OBJECT-TYPE 
+   SYNTAX      TimeInterval
+   UNITS       "milliseconds"
+   MAX-ACCESS  read-only 
+   STATUS      current 
+   DESCRIPTION 
+      "The interval in seconds over which the server last calculated 
+       the sample interval statistics. This is the configured reporting 
+       interval and the statistics are reset since the last 
+       cDhcpv4IntEndTime."
+   ::= { cDhcpv4FailoverIntervalCounters 19 } 
+
+
+-- cDhcpv4CfgObjects
+cDhcpv4ConfigIntervalSample OBJECT-TYPE
+   SYNTAX TimeInterval
+   UNITS  "milliseconds"
+   MAX-ACCESS read-write
+   STATUS current
+   DESCRIPTION
+      "Configures the sample time for the various interval counters."
+   ::= { cDhcpv4CfgObjects 1 }     
+
+-- Conformance 
+ 
+cDhcpv4SrvExtCompliances OBJECT IDENTIFIER 
+   ::= { ciscoIetfDhcpv4SrvExtMIBConform 1 } 
+
+cDhcpv4SrvExtGroups      OBJECT IDENTIFIER 
+   ::= { ciscoIetfDhcpv4SrvExtMIBConform 2 } 
+ 
+ 
+-- Compliance groups 
+ 
+cDhcpv4SrvExtCompliance MODULE-COMPLIANCE 
+   STATUS      current 
+   DESCRIPTION 
+      "This group describes the requirements for conformance to the
+      DHCP Server extension MIB.  A DHCPv4 server implementation is 
+      only required to support IPv4 addresses."
+   MODULE
+   MANDATORY-GROUPS { 
+      cDhcpv4SrvExtSystemObjects, 
+      cDhcpv4ExtCountersGroup,
+      cDhcpv4CountersIntervalGroup, 
+      cDhcpv4FOCountersGroup,
+      cDhcpv4FOCountersIntervalGroup }
+   
+   GROUP cDhcpv4CfgObjectsGroup
+   DESCRIPTION
+       "Optional configuration objects for collection of counters."
+ 
+   OBJECT cDhcpv4ConfigIntervalSample     
+   MIN-ACCESS read-only
+   DESCRIPTION
+       "Write access is not required."
+
+   ::= { cDhcpv4SrvExtCompliances 1 } 
+ 
+-- Object groups 
+ 
+cDhcpv4SrvExtSystemObjects OBJECT-GROUP 
+   OBJECTS { 
+      cDhcpv4SrvStartTime,
+      cDhcpv4SrvResetTime  
+   }
+   STATUS      current
+   DESCRIPTION
+      "A collection of objects providing overall system information 
+       for a DHCPv4 server."
+   ::= { cDhcpv4SrvExtGroups 1 }
+ 
+cDhcpv4ExtCountersGroup OBJECT-GROUP 
+   OBJECTS { 
+      cDhcpv4LeaseQueries,
+      cDhcpv4StatisticsResetTime   
+   } 
+   STATUS      current 
+   DESCRIPTION 
+      "A collection of extension objects providing counter values for 
+       a DHCPv4 server."
+   ::= { cDhcpv4SrvExtGroups 2 } 
+
+cDhcpv4CountersIntervalGroup OBJECT-GROUP 
+   OBJECTS { 
+      cDhcpv4IntDiscovers, 
+      cDhcpv4IntOffers, 
+      cDhcpv4IntRequests, 
+      cDhcpv4IntDeclines, 
+      cDhcpv4IntAcks, 
+      cDhcpv4IntNaks, 
+      cDhcpv4IntInforms, 
+      cDhcpv4IntLeaseQueries, 
+      cDhcpv4IntReleases, 
+      cDhcpv4IntRespBuffersInUse,  
+      cDhcpv4IntReqBuffersInUse,
+      cDhcpv4IntEndTime,
+      cDhcpv4IntDeltaTime
+   } 
+   STATUS      current 
+   DESCRIPTION 
+      "A collection of extension objects providing interval counter 
+       values for a DHCPv4 server."
+   ::= { cDhcpv4SrvExtGroups 3 } 
+
+cDhcpv4FOCountersGroup OBJECT-GROUP 
+   OBJECTS { 
+      cDhcpv4FOPacketsRcvd,  
+      cDhcpv4FOBindingUpdsRcvd,
+      cDhcpv4FOBindingAcksRcvd,  
+      cDhcpv4FOBindingNaksRcvd,  
+      cDhcpv4FOPoolRequestsRcvd, 
+      cDhcpv4FOPollsRcvd, 
+      cDhcpv4FOUpdateRequestsRcvd, 
+      cDhcpv4FOUpdateDoneRcvd, 
+      cDhcpv4FOPacketsSent, 
+      cDhcpv4FOBindingUpdatesSent, 
+      cDhcpv4FOBindingAcksSent, 
+      cDhcpv4FOBindingNaksSent, 
+      cDhcpv4FOPoolResponsesSent, 
+      cDhcpv4FOPollsSent, 
+      cDhcpv4FOUpdateRequestsSent, 
+      cDhcpv4FOUpdateDoneSent, 
+      cDhcpv4FOPacketsDropped 
+   }
+   STATUS      current 
+   DESCRIPTION 
+      "A collection of objects providing failover counter values for 
+       a DHCPv4 server."
+   ::= { cDhcpv4SrvExtGroups 4 } 
+
+cDhcpv4FOCountersIntervalGroup OBJECT-GROUP 
+   OBJECTS {
+      cDhcpv4FOIntPacketsRcvd,  
+      cDhcpv4FOIntBindingUpdsRcvd,
+      cDhcpv4FOIntBindingAcksRcvd,  
+      cDhcpv4FOIntBindingNaksRcvd,  
+      cDhcpv4FOIntPoolRequestsRcvd, 
+      cDhcpv4FOIntPollsRcvd, 
+      cDhcpv4FOIntUpdateReqsRcvd, 
+      cDhcpv4FOIntUpdateDoneRcvd, 
+      cDhcpv4FOIntPacketsSent, 
+      cDhcpv4FOIntBindingUpdsSent, 
+      cDhcpv4FOIntBindingAcksSent, 
+      cDhcpv4FOIntBindingNaksSent, 
+      cDhcpv4FOIntPoolResponsesSent, 
+      cDhcpv4FOIntPollsSent, 
+      cDhcpv4FOIntUpdateReqsSent, 
+      cDhcpv4FOIntUpdateDoneSent, 
+      cDhcpv4FOIntPacketsDropped,
+      cDhcpv4FOIntEndTime,
+      cDhcpv4FOIntDeltaTime
+
+   }
+   STATUS      current 
+   DESCRIPTION 
+      "A collection of objects providing failover interval counter 
+       values for a DHCPv4 server."
+   ::= { cDhcpv4SrvExtGroups 5 } 
+
+cDhcpv4CfgObjectsGroup OBJECT-GROUP 
+   OBJECTS {
+      cDhcpv4ConfigIntervalSample 
+   }
+   STATUS      current 
+   DESCRIPTION 
+      "Objects providing interval configuration information for a
+       DHCPv4 server."
+   ::= { cDhcpv4SrvExtGroups 6 } 
+ 
+END 

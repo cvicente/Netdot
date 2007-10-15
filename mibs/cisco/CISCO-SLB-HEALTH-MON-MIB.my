@@ -1,0 +1,1757 @@
+--
+-- *****************************************************************
+-- CISCO-SLB-HEALTH-MON-MIB.my: Server Load-Balancing(SLB) Health 
+--                              Monitoring MIB 
+-- January 2006, Saifullah M.A.
+--
+-- Copyright (c) 2002, 2005, 2006 by cisco Systems, Inc.
+-- All rights reserved.
+-- *****************************************************************
+--
+CISCO-SLB-HEALTH-MON-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY,
+        OBJECT-TYPE,
+        Unsigned32
+                FROM SNMPv2-SMI
+
+        CiscoPort
+                FROM CISCO-TC
+
+        SnmpAdminString
+                FROM SNMP-FRAMEWORK-MIB
+
+        InetAddressType,
+        InetAddress
+                FROM INET-ADDRESS-MIB
+
+        slbEntity,
+        SlbServerString
+                FROM CISCO-SLB-MIB
+
+        SlbUrlString,
+        SlbFunctionNameString,
+        cslbxServerProbes
+                FROM CISCO-SLB-EXT-MIB
+
+        TimeInterval,
+        TEXTUAL-CONVENTION,
+        TruthValue,
+        RowStatus
+                FROM SNMPv2-TC
+
+        MODULE-COMPLIANCE,
+        OBJECT-GROUP
+                FROM SNMPv2-CONF
+
+        ciscoMgmt
+                FROM CISCO-SMI;
+
+ciscoSlbHealthMonMIB MODULE-IDENTITY
+        LAST-UPDATED    "200601180000Z"
+        ORGANIZATION    "Cisco Systems, Inc."
+        CONTACT-INFO
+                "       Cisco Systems
+                        Customer Service
+
+                Postal: 170 W. Tasman Drive
+                        San Jose, CA  95134
+                        USA
+
+                   Tel: +1 800 553-NETS
+
+                E-mail: cs-slb@cisco.com"
+        DESCRIPTION
+                "An extension to the CISCO-SLB-EXT-MIB for SLB
+                health monitoring probes. 
+
+                SLB: Server Load Balancing. Server load balancing
+                provides for the balancing of packets and connections
+                arriving at the SLB device across a number of other
+                devices, such as real servers, firewalls, or caches.
+                A system containing an SLB device typically exhibits
+                higher performance, scalability, and reliability than
+                any of the devices being load balanced.  An SLB device
+                determines how to handle incoming frames and
+                connections according to the contents of incoming data
+                and various configuration options. In determining how
+                to handle incoming data, an SLB device may examine the
+                data at any OSI layer, including Layer 7.
+
+                This MIB includes information on the health monitoring
+                probes that can be used for monitoring the health of
+                real servers. Health checking provides the ability of 
+                the content switch to detect if a server is available 
+                for load balancing. Health probes used for health 
+                checking allow testing various application level 
+                functionality. The active probes are sent at regular 
+                intervals and the lack of a response can lead to a 
+                specific server or and entire group of servers being 
+                declared as not available.
+
+                 Following probes are based on TCP:
+                    http, https, smtp, telnet, ftp, tcp, 
+                    script, ldap, tacacs, sip, echo, finger.
+                 Following probes are based on UDP:
+                    tftp, udp, sip, echo,.
+
+                Acronyms and terms:
+                
+                  SLB    Server Load Balancing
+                  VIP    Virtual Server IP address
+                  NAT    Network Address Translation
+                  SF     Serverfarm
+                  FT     Fault Tolerance
+                  SSL    Secure Sockets Layer
+                  TLS    Transport Layer Security 
+                "	
+
+        REVISION        "200601180000Z"
+        DESCRIPTION
+                "Initial version of this MIB module.
+                      
+                 SlbProbeType  : New enums(value 10-20) added.
+                     
+                - Following tables were originally defined in CISCO-SLB-EXT-MIB
+                    cslbxProbeCfgTable
+                    cslbxDnsProbeIpTable
+                    cslbxProbeHeaderCfgTable
+                    cslbxProbeExpectStatusCfgTable
+                    
+                - Added following objects in cslbxProbeCfgTable
+                    cslbxProbeDescription 
+                    cslbxProbeProtocolType
+                    cslbxProbeRouteMethod
+                    cslbxProbeUserName
+                    cslbxProbePassword
+                    cslbxProbePassCount
+                    cslbxProbePriority
+                    cslbxProbeConnTermination
+                    cslbxProbeSocketReuse
+                    cslbxProbeSendDataType
+                    cslbxProbeSendData
+
+                - defined following tables 
+                    cslbxProbeHTTPCfgTable
+                    cslbxProbeSIPCfgTable
+                    cslbxProbeFTPCfgTable
+                    cslbxProbeTFTPCfgTable
+                    cslbxProbeIMAPCfgTable
+
+                - Added UNITS clause for the following objects
+                    cslbxProbeReceiveTimeout                  
+                    cslbxProbeTcpOpenTimeout."
+
+        ::= { ciscoMgmt 508 }
+
+ciscoSlbHealthMonMIBNotifs  OBJECT IDENTIFIER  ::= { ciscoSlbHealthMonMIB 0}
+ciscoSlbHealthMonMIBObjects OBJECT IDENTIFIER ::= { ciscoSlbHealthMonMIB 1}
+
+ciscoSlbHealthMonMIBConformance OBJECT IDENTIFIER 
+                             ::= { ciscoSlbHealthMonMIB 2 }
+
+SlbProbeType ::= TEXTUAL-CONVENTION
+        STATUS          current
+        DESCRIPTION
+                "The probe type for probing the health of a server.
+                'icmpProbe'     : Probe server by sending ICMP
+                                  echo requests.
+                'tcpProbe'      : Probe server by opening TCP
+                                  connections. TCP probe
+                                  establishes and removes connections.
+                'dnsProbe'      : Probe server by sending DNS
+                                  queries. A DNS probe sends a
+                                  domain name resolve request to the 
+                                  real server and verifies the returned 
+                                  IP address.
+                'httpProbe'     : Probe server by sending HTTP
+                                  requests. An HTTP probe establishes 
+                                  and HTTP connection to a real server 
+                                  and then sends an HTTP request and
+                                  verifies the response.
+                'ftpProbe'      : Probe server by opening FTP
+                                  connections. An FTP probe 
+                                  establishes a connection to 
+                                  the real server and verifies 
+                                  that a greeting from the 
+                                  application was received.
+                'telnetProbe'   : Probe server by opening Telnet
+                                  connections. A Telnet probe 
+                                  establishes a connection to the 
+                                  real server and verifies that a 
+                                  greeting from the application was 
+                                  received.
+                'smtpProbe'     : Probe server by opening SMTP
+                                  connections. An SMTP probe 
+                                  establishes a connection to the 
+                                  real server and verifies that a 
+                                  greeting from the application was 
+                                  received.
+                'scriptedProbe' : Probe server by executable
+                                  script.
+                'undefined'     : New probe type not yet defined.
+                'udpProbe'      : Probe server by opening UDP ports.
+                'httpsProbe'    : Probe server by sending HTTPS
+                                  requests.
+                'ldapProbe'     : Probe server by connecting to LDAP
+                                  server.
+                'popProbe'      : Probe server by initiating 
+                                  POP/POP3 session.
+                'imapProbe'     : Probe server by initiating 
+                                  IMAP session.
+                'radiusProbe'   : Probe server by connecting to 
+                                  RADIUS server.
+                'tacacsProbe'   : Probe server by connecting to 
+                                  TACACS server.
+                'sipProbe'      : Probe server by sending SIP 
+                                  Commands.
+                'tftpProbe'     : Probe server by sending tftp 
+                                  requests.
+                'fingerProbe'   : Probe server by sending the 
+                                  command and waiting for the 
+                                  response.
+                'echoProbe'     : Probe server by sending the 
+                                  data and response back."
+        SYNTAX INTEGER {
+                icmpProbe(1),
+                tcpProbe(2),
+                dnsProbe(3),
+                httpProbe(4),
+                ftpProbe(5),
+                telnetProbe(6),
+                smtpProbe(7),
+                scriptedProbe(8),
+                undefined(9),
+                udpProbe   (10),
+                httpsProbe (11),
+                ldapProbe  (12),
+                popProbe   (13),
+                imapProbe  (14),
+                radiusProbe(15),
+                tacacsProbe(16),
+                sipProbe   (17),
+                tftpProbe  (18),
+                fingerProbe(19),
+                echoProbe  (20)
+        }
+
+
+--  *************************************************************
+--  *                                                           *
+--  * SLB-EXT - Probe Configuration Table                       *
+--  *                                                           *
+--  *************************************************************
+
+cslbxProbeCfgTable                        OBJECT-TYPE
+        SYNTAX          SEQUENCE OF CslbxProbeCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The probing function monitors the health of
+                real servers.  The SLB device actively probes
+                real servers to determine if they are healthy.  
+                This table is for configuring the parameters
+                of probes."
+        ::= { cslbxServerProbes 1 }
+
+cslbxProbeCfgEntry                        OBJECT-TYPE
+        SYNTAX          CslbxProbeCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "This entry provides the basic configuration of a
+                probe of a particular name, served by a particular
+                SLB entity. This entry may be of any probe type."
+        INDEX   {
+                slbEntity, 
+                cslbxProbeName 
+        }
+        ::= { cslbxProbeCfgTable 1 }
+
+CslbxProbeCfgEntry  ::= SEQUENCE {
+        cslbxProbeName                            SlbServerString,
+        cslbxProbeType                            SlbProbeType,
+        cslbxProbeInterval                        TimeInterval,
+        cslbxProbeRetries                         Unsigned32,
+        cslbxProbeFailedInterval                  TimeInterval,
+        cslbxProbeReceiveTimeout                  TimeInterval,
+        cslbxProbeTcpOpenTimeout                  TimeInterval,
+        cslbxProbeAlternateDestAddrType           InetAddressType,
+        cslbxProbeAlternateDestAddr               InetAddress,
+        cslbxProbeDnsDomainName                   SnmpAdminString,
+        cslbxProbeHttpRequestMethod               SnmpAdminString,
+        cslbxProbeHttpRequestUrl                  SlbUrlString,
+        cslbxProbeRowStatus                       RowStatus,
+        cslbxProbeScriptName                      SlbFunctionNameString,
+        cslbxProbeScriptArguments                 SnmpAdminString,
+        cslbxProbePort                            CiscoPort,
+        cslbxProbeDescription                     SnmpAdminString,
+        cslbxProbeRouteMethod                     INTEGER,
+        cslbxProbeProtocolType                    INTEGER,
+        cslbxProbePassCount                       Unsigned32,
+        cslbxProbePriority                        Unsigned32,
+        cslbxProbeUserName                        SnmpAdminString,
+        cslbxProbePassword                        SnmpAdminString,
+        cslbxProbeConnTermination                 INTEGER,
+        cslbxProbeSocketReuse                     TruthValue,
+        cslbxProbeSendDataType                    INTEGER,
+        cslbxProbeSendData                        SnmpAdminString
+
+}
+
+cslbxProbeName                            OBJECT-TYPE
+        SYNTAX          SlbServerString
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The name of the probe."
+        ::= { cslbxProbeCfgEntry 1 }
+
+cslbxProbeType                            OBJECT-TYPE
+        SYNTAX          SlbProbeType
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The type of probe."
+        ::= { cslbxProbeCfgEntry 2 }
+
+cslbxProbeInterval                        OBJECT-TYPE
+        SYNTAX          TimeInterval
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "Time between health checks.  It is from the end of
+                previous check to the beginning of the next check."
+        DEFVAL { 12000 }
+        ::= { cslbxProbeCfgEntry 3 }
+
+cslbxProbeRetries                         OBJECT-TYPE
+        SYNTAX          Unsigned32
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The number of consecutive retries without a successful
+                probe before marking the real server as 'failed'."
+        DEFVAL { 3 }
+        ::= { cslbxProbeCfgEntry 4 }
+
+cslbxProbeFailedInterval                  OBJECT-TYPE
+        SYNTAX          TimeInterval
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "Time before retrying a 'failed' real
+                server to see if it has recovered yet."
+        DEFVAL { 30000 }
+        ::= { cslbxProbeCfgEntry 5 }
+
+cslbxProbeReceiveTimeout                  OBJECT-TYPE
+        SYNTAX          TimeInterval
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "Maximum time to wait for a reply from a real
+                server before considering this probe attempt
+                to have failed."
+        DEFVAL { 1000 }
+        ::= { cslbxProbeCfgEntry 6 }
+
+cslbxProbeTcpOpenTimeout                  OBJECT-TYPE
+        SYNTAX          TimeInterval
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "Maximum time to wait for a TCP SYN/ACK frame
+                from the real server.  This entry is only valid
+                for probes employing TCP, such as SMTP and HTTP
+                probes."
+        DEFVAL { 1000 }
+        ::= { cslbxProbeCfgEntry 7 }
+
+cslbxProbeAlternateDestAddrType           OBJECT-TYPE
+        SYNTAX          InetAddressType
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The type of address stored in
+                cslbxProbeAlternateDestAddr."
+        DEFVAL { ipv4 }
+        ::= { cslbxProbeCfgEntry 8 }
+
+cslbxProbeAlternateDestAddr               OBJECT-TYPE
+        SYNTAX          InetAddress (SIZE (0..20))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The alternative destination IP address to be used with
+                the probing packet.  Probe frames are normally sent to
+                a real server IP address. If the setting is not
+                '0.0.0.0', probe frames are sent to the IP address
+                given by this object.  This entry is only valid with
+                the following probes(cslbxProbeType value):
+                    icmpProbe, tcpProbe, dnsProbe,
+                    httpProbe, ftpProbe, telnetProbe,
+                    smtpProbe udpProbe, httpsProbe,
+                    ldapProbe, popProbe, imapProbe,
+                    radiusProbe, tacacsProbe, sipProbe,
+                    tftpProbe, fingerProbe, echoProbe."
+        DEFVAL { '00000000'H } -- 0.0.0.0
+        ::= { cslbxProbeCfgEntry 9 }
+
+cslbxProbeDnsDomainName                   OBJECT-TYPE
+        SYNTAX          SnmpAdminString
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The domain name string use with the DNS probe. (Only
+                applicable to DNS probes.)"
+        ::= { cslbxProbeCfgEntry 10 }
+
+cslbxProbeHttpRequestMethod               OBJECT-TYPE
+        SYNTAX          SnmpAdminString (SIZE (0..64))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The request method type string to be used in the
+                HTTP probe packets. (Only applicable to HTTP
+                probes.)"
+        REFERENCE
+            "RFC 2616 Hypertext Transfer Protocol -- HTTP/1.1
+             Section 5.1.1."
+        DEFVAL          { "get" }
+        ::= { cslbxProbeCfgEntry 11 }
+
+cslbxProbeHttpRequestUrl                  OBJECT-TYPE
+        SYNTAX          SlbUrlString
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The URI string in the HTTP request of HTTP probe
+                packets. (Only applicable to HTTP probes.)"
+        DEFVAL          { "" }
+        ::= { cslbxProbeCfgEntry 12 }
+
+cslbxProbeRowStatus                       OBJECT-TYPE
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The row status is used by a management station to
+                create or delete the row entry in cslbxProbeCfgTable
+                following the RowStatus textual convention."
+        ::= { cslbxProbeCfgEntry 13 }
+
+cslbxProbeScriptName                      OBJECT-TYPE
+        SYNTAX          SlbFunctionNameString
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The name of the function to be executed. (Only
+                applicable to scriptedProbe type.)"
+        DEFVAL          { ''H }
+        ::= { cslbxProbeCfgEntry 14 }
+
+cslbxProbeScriptArguments                 OBJECT-TYPE
+        SYNTAX          SnmpAdminString
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The argument parameters passed into the executable
+                 script. (Only applicable to scriptedProbe type.)"
+        DEFVAL          { ''H }
+        ::= { cslbxProbeCfgEntry 15 }
+
+cslbxProbePort                            OBJECT-TYPE
+        SYNTAX          CiscoPort
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The port number to be used by the probe.  The value
+                 of zero indicates the probe will use the default
+                 port number. The default port number can be 0 or
+                 the default port of that particular probe. This 
+                 object is not applicable when cslbxProbeType is 
+                 'icmpProbe'."
+        DEFVAL          { 0 }
+        ::= { cslbxProbeCfgEntry 16 }
+
+cslbxProbeDescription OBJECT-TYPE
+    SYNTAX     SnmpAdminString
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+        "This object is used for configuring the
+        description of the probe."
+    DEFVAL { "" }
+    ::= { cslbxProbeCfgEntry 17 }
+
+cslbxProbeRouteMethod OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    other          (1),
+                    transparent    (2),
+                    routingTable   (3)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object specifies whether the probe destined
+        to IP address specified in cslbxProbeAlternateDestAddr
+        be routed using internal routing table or forced to use
+        the known mac-address of the real-server/gateway that 
+        probe is associated with.
+
+        The value 'routingTable' specifies that address be 
+        routed using internal routing table.   
+
+        The value 'transparent' specifies that the 
+        probe destined to cslbxProbeAlternateDestAddr 
+        is routed using the ip address of the real server
+        or gateway this probe is associated with.
+
+        This object is applicable only if
+        cslbxProbeAlternateDestAddr is configured."
+    DEFVAL { transparent }
+    ::= { cslbxProbeCfgEntry 18 }
+
+cslbxProbeProtocolType OBJECT-TYPE
+    SYNTAX INTEGER {
+               other (1),
+               tcp   (2),
+               udp   (3)
+    }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object is used for configuring the 
+        transport layer protocol to send 
+        probe messages. 
+
+        The possible value(s) are :
+         other: values other than mentioned below.
+                This value can not be written.
+         tcp  : TCP is used as transport
+                layer protocol.  
+         udp  : UDP is used as transport
+                layer protocol.  
+                 
+        This object can be set for the entries with
+        following values of cslbxProbeType:
+           sipProbe,
+           echoProbe
+
+        For other probes, this object can not be written
+        and the value of this object is based on the 
+        cslbxProbeType."
+    DEFVAL { tcp }
+    ::= { cslbxProbeCfgEntry 19 }
+
+cslbxProbePassCount OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object specifies the number of successful probe
+        responses that should be received before declaring
+        a failed real server as pass. This object is used in
+        conjunction with 'cslbxProbeFailedInterval'."
+    ::= {  cslbxProbeCfgEntry 20 }
+
+cslbxProbePriority OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..255)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object represents the probe priority.
+        The priority value is in the decreasing order
+        of the actual priority, i.e., lower the value
+        higher the priority.
+        Probes associated with critical services can be
+        configured with highest priority such that the
+        results of these probes can be used to trigger
+        a state change in configuration."
+    DEFVAL { 2 }
+    ::= {  cslbxProbeCfgEntry 21 }
+
+cslbxProbeUserName OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object represents the user name required for
+        authentication.  This object is applicable for 
+        following value of 'cslbxProbeType' :
+            httpprobe, httpsProbe
+            telnetProbe, ftpProbe, ldapProbe,
+            imapProbe, popProbe, 
+            radiusProbe, tacacsProbe."
+    ::= {  cslbxProbeCfgEntry 22 }
+
+cslbxProbePassword OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object represents the password required for
+        authentication. This object is applicable for following
+        value of 'cslbxProbeType' :
+            httpprobe, httpsProbe
+            telnetProbe, ftpProbe, ldapProbe,
+            imapProbe, popProbe, 
+            radiusProbe, tacacsProbe.
+        This object returns zero length octet string when read."
+    ::= {  cslbxProbeCfgEntry 23 }
+
+cslbxProbeConnTermination OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    graceful (1),
+                    forced   (2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object specifies how the connections need to 
+        be terminated.  The possible value(s) are :
+        graceful  : follow graceful handshake for 
+                    terminating connections.
+        forced    : send RST to terminate connections.
+
+        This object is applicable only for TCP based probes."
+    DEFVAL { forced }
+    ::= { cslbxProbeCfgEntry 24 }
+
+cslbxProbeSocketReuse OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object specifies whether to reuse the socket or not
+        for the connection oriented probes. If set to 'true'
+        same socket is re-used for multiple probes.
+        If set to 'false' new socket will be created.
+
+        This object is applicable only for TCP based probes."
+    ::= { cslbxProbeCfgEntry 25 }
+
+cslbxProbeSendDataType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    ascii  (1),
+                    binary (2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object represents the data to be sent
+        for the appropriate probes.
+
+        The possible value(s) are:
+         ascii  : ASCII data
+         binary : binary data.
+
+        This object is used in conjunction with object
+       'cslbxProbeSendData'."
+    DEFVAL { ascii }
+    ::= { cslbxProbeCfgEntry 26 }
+
+cslbxProbeSendData OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object represents the data to be sent
+        for the appropriate probes. This object
+       is applicable for following value(s) of 
+       cslbxProbeType :
+         echoProbe
+         fingerProbe
+         sipProbe 
+         tcpProbe 
+         udpProbe."
+    ::= { cslbxProbeCfgEntry 27 }
+
+
+
+--  *************************************************************
+--  *                                                           *
+--  * SLB-EXT - DNS Probe Expected IP Configuration Table       *
+--  *                                                           *
+--  *************************************************************
+
+cslbxDnsProbeIpTable                      OBJECT-TYPE
+        SYNTAX          SEQUENCE OF CslbxDnsProbeIpEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The probing function monitors the health of
+                real servers.  The SLB device actively probes
+                real servers to determine if they are healthy.  
+                This table is for configuring the parameters
+                of DNS probes. In a DNS probe, resolution of a
+                specific domain name is requested, and the
+                resulting IP address must match one of a list of
+                'expected IP addresses' configured for that
+                probe. This table stores the list of expected IP
+                addresses for each DNS probe."
+        ::= { cslbxServerProbes 2 }
+
+cslbxDnsProbeIpEntry                      OBJECT-TYPE
+        SYNTAX          CslbxDnsProbeIpEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The IP address in this entry is a valid response
+                to a request for resolution of the domain name
+                associated with the DNS probe in this entry."
+        INDEX   {
+                slbEntity, 
+                cslbxDnsProbeIpProbeName,
+                cslbxDnsProbeIpAddressType,
+                cslbxDnsProbeIpAddress
+        }
+        ::= { cslbxDnsProbeIpTable 1 }
+
+CslbxDnsProbeIpEntry  ::= SEQUENCE {
+        cslbxDnsProbeIpProbeName                  SlbServerString,
+        cslbxDnsProbeIpAddressType                InetAddressType,
+        cslbxDnsProbeIpAddress                    InetAddress,
+        cslbxDnsProbeIpRowStatus                  RowStatus
+}
+
+cslbxDnsProbeIpProbeName                  OBJECT-TYPE
+        SYNTAX          SlbServerString
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The name of the DNS probe."
+        ::= { cslbxDnsProbeIpEntry 1 }
+
+cslbxDnsProbeIpAddressType                OBJECT-TYPE
+        SYNTAX          InetAddressType
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The type of address stored in
+                cslbxDnsProbeIpAddress."
+        ::= { cslbxDnsProbeIpEntry 2 }
+
+cslbxDnsProbeIpAddress                    OBJECT-TYPE
+        SYNTAX          InetAddress (SIZE (1..20))
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The IP address that may be expected in response
+                to a DNS probe from a 'healthy' real DNS server."
+        ::= { cslbxDnsProbeIpEntry 3 }
+
+cslbxDnsProbeIpRowStatus                  OBJECT-TYPE   
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The object used by a management station to create
+                or delete the row entry in cslbxDnsProbeIpTable
+                following the RowStatus textual convention."
+        ::= { cslbxDnsProbeIpEntry 4 }
+
+
+--  *************************************************************
+--  *                                                           *
+--  * SLB-EXT - HTTP Probe Header Table                         *
+--  *                                                           *
+--  *************************************************************
+
+cslbxProbeHeaderCfgTable                  OBJECT-TYPE
+        SYNTAX          SEQUENCE OF CslbxProbeHeaderCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The probing function monitors the health of
+                real servers.  The SLB device actively probes
+                real servers to determine if they are healthy.  
+                This table is for configuring the parameters
+                of HTTP probes. In particular, each HTTP probe
+                request may be sent with a number of fixed HTTP
+                headers. This table defines such fixed HTTP
+                headers sent with HTTP probes."
+        ::= { cslbxServerProbes 3 }
+
+cslbxProbeHeaderCfgEntry                  OBJECT-TYPE
+        SYNTAX          CslbxProbeHeaderCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "This entry defines the HTTP header value
+                of a particular HTTP header name sent with a
+                particular HTTP probe, served by a particular SLB
+                entity."
+        INDEX   {
+                slbEntity, 
+                cslbxProbeHeaderProbeName,
+                cslbxProbeHeaderFieldName 
+        }
+        ::= { cslbxProbeHeaderCfgTable 1 }
+
+CslbxProbeHeaderCfgEntry  ::= SEQUENCE {
+        cslbxProbeHeaderProbeName                 SlbServerString,
+        cslbxProbeHeaderFieldName                 SnmpAdminString,
+        cslbxProbeHeaderFieldValue                SnmpAdminString,
+        cslbxProbeHeaderRowStatus                 RowStatus
+}
+
+cslbxProbeHeaderProbeName                 OBJECT-TYPE
+        SYNTAX          SlbServerString
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The name of the HTTP probe."
+        ::= { cslbxProbeHeaderCfgEntry 1 }
+
+cslbxProbeHeaderFieldName                 OBJECT-TYPE
+        SYNTAX          SnmpAdminString (SIZE (1..64))
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "An HTTP header of this name is transmitted in the
+                HTTP request sent by this probe."
+        ::= { cslbxProbeHeaderCfgEntry 2 }
+
+cslbxProbeHeaderFieldValue                OBJECT-TYPE
+        SYNTAX          SnmpAdminString
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The HTTP header value associated with the HTTP header
+                name given by cslbxProbeHeaderFieldName."
+        ::= { cslbxProbeHeaderCfgEntry 3 }
+
+cslbxProbeHeaderRowStatus                 OBJECT-TYPE   
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The object used by a management station to create
+                or delete the row entry in cslbxProbeHeaderTable
+                following the RowStatus textual convention."
+        ::= { cslbxProbeHeaderCfgEntry 4 }
+
+
+--  *************************************************************
+--  *                                                           *
+--  * SLB-EXT - Probe Expect Status Codes Configuration Table   *
+--  *                                                           *
+--  *************************************************************
+
+cslbxProbeExpectStatusCfgTable            OBJECT-TYPE
+        SYNTAX          SEQUENCE OF CslbxProbeExpectStatusCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The probing function monitors the health of
+                real servers.  The SLB device actively probes
+                real servers to determine if they are healthy.  
+                This table is for configuring the expect status
+                codes returned by a server."
+        ::= { cslbxServerProbes 4 }
+
+cslbxProbeExpectStatusCfgEntry            OBJECT-TYPE
+        SYNTAX          CslbxProbeExpectStatusCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "This entry provides the configuration of a range of
+                expect status codes for a particular probe, served by
+                a particular SLB entity."
+        INDEX   {
+                slbEntity, 
+                cslbxProbeExpectStatusProbeName,
+                cslbxProbeExpectStatusMinValue
+        }
+        ::= { cslbxProbeExpectStatusCfgTable 1 }
+
+CslbxProbeExpectStatusCfgEntry  ::= SEQUENCE {
+        cslbxProbeExpectStatusProbeName           SlbServerString,
+        cslbxProbeExpectStatusMinValue            Unsigned32,
+        cslbxProbeExpectStatusMaxValue            Unsigned32,
+        cslbxProbeExpectStatusRowStatus           RowStatus
+}
+
+cslbxProbeExpectStatusProbeName           OBJECT-TYPE
+        SYNTAX          SlbServerString
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The name of the probe."
+        ::= { cslbxProbeExpectStatusCfgEntry 1 }
+
+cslbxProbeExpectStatusMinValue            OBJECT-TYPE
+        SYNTAX          Unsigned32
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+                "The starting value of the expect status code range."
+        ::= { cslbxProbeExpectStatusCfgEntry 2 }
+
+cslbxProbeExpectStatusMaxValue            OBJECT-TYPE
+        SYNTAX          Unsigned32
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The ending value of the expect status code range."
+        ::= { cslbxProbeExpectStatusCfgEntry 3 }
+
+cslbxProbeExpectStatusRowStatus           OBJECT-TYPE   
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+                "The object used by a management station to create
+                or delete the row entry in 
+                cslbxProbeExpectStatusCfgTable following the 
+                RowStatus textual convention."
+        ::= { cslbxProbeExpectStatusCfgEntry 4 }
+
+
+--  *************************************************************
+--  *                                                           *
+--  * HTTP/HTTPS Probe Table                                    *
+--  *                                                           *
+--  *************************************************************
+
+cslbxProbeHTTPCfgTable OBJECT-TYPE
+        SYNTAX          SEQUENCE OF CslbxProbeHTTPCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+            "This table is for configuring attributes
+            applicable to HTTP and HTTPS probes.  
+
+            This table supports configuration of the probe 
+            attributes in addition to the HTTP attributes 
+            configured in cslbxProbeCfgTable.
+
+            Following objects from cslbxProbeCfgTable are applicable 
+            to HTTP/HTTPS probe:
+                cslbxProbeAlternateDestAddrType
+                cslbxProbeAlternateDestAddr
+                cslbxProbeRouteMethod   
+                cslbxProbeHttpRequestMethod
+                cslbxProbeHttpRequestUrl
+                cslbxProbePort
+                cslbxProbeUserName
+                cslbxProbePassword
+                cslbxProbeInterval
+                cslbxProbeRetries
+                cslbxProbeFailedInterval
+                cslbxProbeReceiveTimeout
+                cslbxProbeTcpOpenTimeout
+                cslbxProbeConnTermination
+                cslbxProbePriority
+                cslbxProbePassCount
+
+            An HTTP probe establishes an HTTP connection to
+            a real server and then sends an HTTP request
+            and verifies the response.
+
+            This table is applicable only for the instance
+            value of cslbxProbeType 'httpProbe' or 'httpsProbe'."
+        ::= { cslbxServerProbes 5 }
+
+cslbxProbeHTTPCfgEntry                  OBJECT-TYPE
+        SYNTAX          CslbxProbeHTTPCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+            "An entry in HTTP Probe configuration table.
+
+            An entry is created in the table when 
+            an entry is created in cslbxProbeCfgTable 
+            with cslbxProbeType 'httpProbe' or
+            'httpsProbe'.
+
+            An entry is deleted from this table when
+            corresponding entry (identified  by the indices)
+            is deleted from cslbxProbeCfgTable.
+
+            Following objects are applicable to both
+            HTTP and HTTPS Probes:
+                cslbxProbeHTTPCfgVersion 
+                cslbxProbeHTTPCfgPersistence
+                cslbxProbeHTTPCfgHashValid
+                cslbxProbeHTTPCfgHashName
+            
+            Following objects are applicable only for
+            HTTPS Probes:
+                cslbxProbeHTTPCfgCipherSuite
+                cslbxProbeHTTPCfgSslTlsVersion
+                cslbxProbeHTTPCfgSslSessionReuse.
+            The 'cslbxProbeName' refers to the probe which 
+            is created by adding an entry in 
+           'cslbxProbeCfgTable' with cslbxProbeType
+           'httpProbe' or 'httpsProbe'."
+        INDEX   {
+                slbEntity, 
+                cslbxProbeName 
+        }
+        ::= { cslbxProbeHTTPCfgTable 1 }
+
+CslbxProbeHTTPCfgEntry  ::= SEQUENCE {
+        cslbxProbeHTTPCfgVersion                INTEGER,
+        cslbxProbeHTTPCfgPersistence            TruthValue,
+        cslbxProbeHTTPCfgHashValid              TruthValue,
+        cslbxProbeHTTPCfgHashName               SnmpAdminString,
+        cslbxProbeHTTPCfgCipherSuite            INTEGER,
+        cslbxProbeHTTPCfgSslTlsVersion          INTEGER,
+        cslbxProbeHTTPCfgSslSessionReuse        TruthValue
+}
+
+
+cslbxProbeHTTPCfgVersion OBJECT-TYPE
+    SYNTAX INTEGER {
+               httpOneDotZero (1),
+               httpOneDotOne  (2)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object represents HTTP version for the probe.
+        The 'htpOneDotZero' specifies HTTP 1.0 protocol.
+        The 'htpOneDotOne' specifies HTTP 1.1 protocol."
+    REFERENCE
+        "RFC 1945 - Hypertext Transfer Protocol -  HTTP/1.0
+         RFC 2616 - Hypertext Transfer Protocol -  HTTP/1.1."
+    DEFVAL { httpOneDotOne }
+    ::= { cslbxProbeHTTPCfgEntry 1 }
+
+cslbxProbeHTTPCfgPersistence OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object enables/disables persistence for 
+        HTTP(for both  1.0 and 1.1) probes. 
+
+        The pure HTTP/1.0 requires that a seperate
+        TCP connection to be opened for each downloaded
+        object.  The persistence allows TCP connections
+        to be re-used while requesting multiple objects
+        without incurring a overhead of opening a new 
+        TCP connection."
+    DEFVAL { false }
+    ::= { cslbxProbeHTTPCfgEntry 2 }
+
+cslbxProbeHTTPCfgHashValid OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object enables the hash functionality.
+        If set to 'true', the cslbxProbeHTTPCfgHashName 
+        is used.  If set 'false' the value
+        specified in cslbxProbeHTTPCfgHashName
+        is not used."
+    DEFVAL { false }
+    ::= { cslbxProbeHTTPCfgEntry 3 }
+
+cslbxProbeHTTPCfgHashName OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object specifies the hash value
+        for the probe."
+    ::= { cslbxProbeHTTPCfgEntry 4 }
+
+cslbxProbeHTTPCfgCipherSuite OBJECT-TYPE
+    SYNTAX INTEGER {
+               rsaOther                    (1),
+               rsaAny                      (2),
+               rsaWithRc4128Md5            (3),
+               rsaWithRc4128Sha            (4),
+               rsaWithdesCbcSha            (5),
+               rsaWith3desEdeCbcSha        (6),
+               rsaExportWithRc440Md5       (7),
+               rsaExportWithDes40CbcSha    (8),
+               rsaExport1024WithRc456Md5   (9),
+               rsaExport1024WithDesCbcSha  (10),
+               rsaExport1024WithRc456Sha   (11),
+               rsaWithAes128CbcSha         (12),
+               rsaWithAes256cbcSha         (13)
+    }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object represents SSL Cipher suites to be 
+        used for HTTPS probes.
+
+        The value 'rsa_any' is used for selecting a
+        random cipher.
+        
+        The value 'rsaOther' specifies value other than
+        those defined in the object.  This value can not
+        be written."     
+    REFERENCE
+        "RFC 2246 - TLS Protocol version 1.0."
+    DEFVAL { rsaOther }
+    ::= { cslbxProbeHTTPCfgEntry 5 }
+
+cslbxProbeHTTPCfgSslTlsVersion OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    other          (1),
+                    sslv2          (2),
+                    sslv3          (3),
+                    tlsv1          (4)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object represents the version of
+        the SSL/TLS protocol.
+
+        The possible value(s) are :
+            other         : Version not applicable.
+                            This value can not be set by the user.
+            sslv2         : SSL Version 2.0.
+            sslv3         : SSL Version 3.0.
+            tlsv1         : TLS Version 1.0."
+    REFERENCE
+        "RFC 2246 -  The TLS Protocol Version 1.0."
+    DEFVAL { sslv3 }
+    ::= { cslbxProbeHTTPCfgEntry 6 }
+
+cslbxProbeHTTPCfgSslSessionReuse OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object enables/disables reusing of the SSL 
+        Session ID. If set to 'true', SSL session ID will
+        be reused. If set to 'false', SSL session ID will
+        not be reused.  In SSL, a new session ID is created 
+        every time the client and the SSL module go through a
+        full key exchange and establish a new master secret key. 
+        Enabling this object allows the SSL module to reuse the 
+        master key on subsequent connections with the client, 
+        which can speed up the SSL negotiation process."
+    ::= { cslbxProbeHTTPCfgEntry 7 }
+
+
+--  *************************************************************
+--  *                                                           *
+--  * SIP Probe Table                                           *
+--  *                                                           *
+--  *************************************************************
+
+cslbxProbeSIPCfgTable OBJECT-TYPE
+        SYNTAX          SEQUENCE OF CslbxProbeSIPCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+            "This table is for configuring attributes
+            applicable to SIP probes.  
+
+            The Session Initiation Protocol (SIP) is an ASCII-based,
+            application-layer control protocol that can be used to 
+            establish, maintain, and terminate calls between two 
+            or more endpoints. SIP is an alternative protocol 
+            developed by the Internet Engineering Task Force (IETF)
+            for multimedia conferencing over IP.
+
+            This table supports configuration of the probe 
+            attributes in addition to the attributes configured
+            in cslbxProbeCfgTable.
+
+            Following objects from cslbxProbeCfgTable are applicable 
+            to SIP probe:
+                cslbxProbeAlternateDestAddrType
+                cslbxProbeAlternateDestAddr
+                cslbxProbeRouteMethod   
+                cslbxProbePort
+                cslbxProbeUserName
+                cslbxProbePassword
+                cslbxProbeInterval
+                cslbxProbeRetries
+                cslbxProbeFailedInterval
+                cslbxProbeReceiveTimeout
+                cslbxProbeTcpOpenTimeout
+                cslbxProbeConnTermination
+                cslbxProbeSocketReuse
+                cslbxProbePassCount
+
+            This table is applicable only if the value of
+            cslbxProbeType is 'sipProbe'."
+        ::= { cslbxServerProbes 6 }
+
+cslbxProbeSIPCfgEntry                  OBJECT-TYPE
+        SYNTAX          CslbxProbeSIPCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+            "An entry in SIP Probe configuration table.
+
+            An entry is created in the table when 
+            an entry is created in cslbxProbeCfgTable 
+            with cslbxProbeType 'sipProbe'.
+
+            An entry is deleted from this table when
+            corresponding entry (identified  by the indices)
+            is deleted from cslbxProbeCfgTable.
+
+            The 'cslbxProbeName' refers to the probe which 
+            is created by adding an entry in 
+           'cslbxProbeCfgTable' with cslbxProbeType
+           'sipProbe'."
+        INDEX   {
+                slbEntity, 
+                cslbxProbeName 
+        }
+        ::= { cslbxProbeSIPCfgTable 1 }
+
+CslbxProbeSIPCfgEntry  ::= SEQUENCE {
+        cslbxProbeSIPRegAddress                SnmpAdminString
+}
+
+cslbxProbeSIPRegAddress OBJECT-TYPE
+        SYNTAX          SnmpAdminString (SIZE (0..255))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION
+            "This object represents the Registration address used
+            in SIP protocol.  Users in a SIP network are identified 
+            by unique SIP addresses.  A SIP address is similar to an 
+            e-mail address and is in the format of
+            'sip:userID@gateway.com'.  The userID can be either a
+            user name or an E.164 address.  An E.164 address is a
+            telephone number with a string of decimal digits that 
+            uniquely indicates the public network termination point.
+            The number contains the information necessary to route 
+            the call to this termination point."
+        DEFVAL { "" }
+        ::= { cslbxProbeSIPCfgEntry 1 }
+
+--  *************************************************************
+--  *                                                           *
+--  * FTP Probe Table                                           *
+--  *                                                           *
+--  *************************************************************
+
+cslbxProbeFTPCfgTable OBJECT-TYPE
+        SYNTAX          SEQUENCE OF CslbxProbeFTPCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+            "This table is for configuring attributes
+            applicable to FTP probes.  This table supports
+            configuration of the probe attributes in addition
+            to the FTP attributes configured in cslbxProbeCfgTable.
+
+            Following objects from cslbxProbeCfgTable are applicable 
+            to FTP probe:
+                cslbxProbeAlternateDestAddrType
+                cslbxProbeAlternateDestAddr
+                cslbxProbeRouteMethod   
+                cslbxProbePort
+                cslbxProbeUserName
+                cslbxProbePassword
+                cslbxProbeInterval
+                cslbxProbeRetries
+                cslbxProbeFailedInterval
+                cslbxProbeReceiveTimeout
+                cslbxProbeTcpOpenTimeout
+                cslbxProbeConnTermination
+                cslbxProbeSocketReuse
+                cslbxProbePassCount
+
+            This table is applicable only if the value of
+            cslbxProbeType is 'ftpProbe'."
+        ::= { cslbxServerProbes 7 }
+
+cslbxProbeFTPCfgEntry                  OBJECT-TYPE
+        SYNTAX          CslbxProbeFTPCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+            "An entry in FTP Probe configuration table.
+            Each entry represents the FTP request,
+            File name and File type. 
+
+            An entry is created in the table when 
+            an entry is created in cslbxProbeCfgTable 
+            with cslbxProbeType 'ftpProbe'.
+
+            An entry is deleted from this table when
+            corresponding entry (identified  by the indices)
+            is deleted from cslbxProbeCfgTable.
+
+            The 'cslbxProbeName' refers to the probe which 
+            is created by adding an entry in 
+           'cslbxProbeCfgTable' with cslbxProbeType
+           'ftpProbe'."
+        INDEX   {
+                slbEntity, 
+                cslbxProbeName 
+        }
+        ::= { cslbxProbeFTPCfgTable 1 }
+
+CslbxProbeFTPCfgEntry  ::= SEQUENCE {
+    cslbxProbeFtpRequestMethod    INTEGER,
+    cslbxProbeFtpRequestFileName  SlbUrlString,
+    cslbxProbeFtpRequestFileType  INTEGER
+}
+
+cslbxProbeFtpRequestMethod OBJECT-TYPE
+    SYNTAX          INTEGER {
+                        other (1),
+                        ls    (2),
+                        get   (3),
+                        put   (4)
+                    }
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object identifies the FTP request to be used
+        in FTP probe packets.
+        The possible value(s) are:
+            other : other than the values mentioned below.
+                    This value can not be written.
+            ls   : list files.
+            get  : Get request.
+            put  : Put request."
+        DEFVAL          { get }
+        ::= { cslbxProbeFTPCfgEntry 1 }
+
+cslbxProbeFtpRequestFileName OBJECT-TYPE
+    SYNTAX          SlbUrlString
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The string representing the File Name
+        used in FTP Probe."
+    DEFVAL          { "" }
+    ::= { cslbxProbeFTPCfgEntry 2 }
+
+cslbxProbeFtpRequestFileType                  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    ascii  (1),
+                    binary (2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object specifies the type
+        of the data transferred from/to
+        in case of FTP requests."
+    DEFVAL          { ascii }
+    ::= { cslbxProbeFTPCfgEntry 3 }
+
+
+--  *************************************************************
+--  *                                                           *
+--  * TFTP Probe Table                                          *
+--  *                                                           *
+--  *************************************************************
+
+cslbxProbeTFTPCfgTable OBJECT-TYPE
+        SYNTAX          SEQUENCE OF CslbxProbeTFTPCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+            "This table is for configuring attributes
+            applicable to TFTP probes.  This table supports
+            configuration of the probe attributes in addition
+            to the TFTP attributes configured in cslbxProbeCfgTable.
+
+            Following objects from cslbxProbeCfgTable are applicable 
+            to TFTP probe:
+                cslbxProbeAlternateDestAddrType
+                cslbxProbeAlternateDestAddr
+                cslbxProbePort
+                cslbxProbeInterval
+                cslbxProbeRetries
+                cslbxProbeFailedInterval
+                cslbxProbePassCount
+
+            This table is applicable only if the value of
+            cslbxProbeType is 'tftpProbe'."
+        ::= { cslbxServerProbes 8 }
+
+cslbxProbeTFTPCfgEntry                  OBJECT-TYPE
+        SYNTAX          CslbxProbeTFTPCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+            "An entry in TFTP Probe configuration table.
+            Each entry represents the TFTP probe related
+            parameters.
+
+            An entry is created in the table when 
+            an entry is created in cslbxProbeCfgTable 
+            with cslbxProbeType 'tftpProbe'.
+
+            An entry is deleted from this table when
+            correspnding entry (identified  by the indices)
+            is deleted from cslbxProbeCfgTable.
+
+            The 'cslbxProbeName' refers to the probe which 
+            is created by adding an entry in 
+           'cslbxProbeCfgTable' with cslbxProbeType
+           'tftpProbe'."
+        INDEX   {
+                slbEntity, 
+                cslbxProbeName 
+        }
+        ::= { cslbxProbeTFTPCfgTable 1 }
+
+CslbxProbeTFTPCfgEntry  ::= SEQUENCE {
+    cslbxProbeTftpRequestMethod    INTEGER,
+    cslbxProbeTftpRequestFileName  SlbUrlString,
+    cslbxProbeTftpRequestFileType  INTEGER
+}
+
+cslbxProbeTftpRequestMethod OBJECT-TYPE
+    SYNTAX          INTEGER {
+                        get (1),
+                        put (2)
+                    }
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object identifies the TFTP request to be used
+        in TFTP probe packets.
+        The possible value(s) are:
+            get  : Get request.
+            put  : Put request."
+        DEFVAL          { get }
+        ::= { cslbxProbeTFTPCfgEntry 1 }
+
+cslbxProbeTftpRequestFileName OBJECT-TYPE
+    SYNTAX          SlbUrlString
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The string representing the File Name
+        used in TFTP Probe."
+    DEFVAL          { "" }
+    ::= { cslbxProbeTFTPCfgEntry 2 }
+
+cslbxProbeTftpRequestFileType                  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    ascii  (1),
+                    binary (2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object specifies the type
+        of the data transferred from/to
+        in case of FTP requests."
+    DEFVAL          { ascii }
+    ::= { cslbxProbeTFTPCfgEntry 3 }
+
+
+--  *************************************************************
+--  *                                                           *
+--  * IMAP Probe Table                                          *
+--  *                                                           *
+--  *************************************************************
+
+cslbxProbeIMAPCfgTable OBJECT-TYPE
+        SYNTAX          SEQUENCE OF CslbxProbeIMAPCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+            "This table is for configuring attributes
+            applicable to IMAP probe.
+
+            This table supports configuration of the probe 
+            attributes in addition to the IMAP attributes 
+            configured in cslbxProbeCfgTable.
+
+            Following objects from cslbxProbeCfgTable are applicable 
+            to IMAP probe:
+                cslbxProbeAlternateDestAddrType
+                cslbxProbeAlternateDestAddr
+                cslbxProbeRouteMethod   
+                cslbxProbePort
+                cslbxProbeUserName
+                cslbxProbePassword
+                cslbxProbeInterval
+                cslbxProbeRetries
+                cslbxProbeFailedInterval
+                cslbxProbeReceiveTimeout
+                cslbxProbeConnTermination
+                cslbxProbePriority
+                cslbxProbePassCount
+
+            An IMAP probe initiates a IMAP session and then 
+            attempts to retrieve e-mail from the server and 
+            verifies the response.
+
+            This table is applicable only if the value of
+            cslbxProbeType is 'imapProbe'."
+        ::= { cslbxServerProbes 9 }
+
+cslbxProbeIMAPCfgEntry                  OBJECT-TYPE
+        SYNTAX          CslbxProbeIMAPCfgEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+            "An entry in IMAP Probe configuration table.
+            Each entry represents the IMAP probe related
+            parameters.
+
+            An entry is created in the table when 
+            an entry is created in cslbxProbeCfgTable 
+            with cslbxProbeType 'imapProbe'.
+
+            An entry is deleted from this table when
+            corresponding entry (identified  by the indices)
+            is deleted from cslbxProbeCfgTable.
+
+            The 'cslbxProbeName' refers to the probe which 
+            is created by adding an entry in 
+           'cslbxProbeCfgTable' with cslbxProbeType
+           'imapProbe'."
+        INDEX   {
+                slbEntity, 
+                cslbxProbeName 
+        }
+        ::= { cslbxProbeIMAPCfgTable 1 }
+
+CslbxProbeIMAPCfgEntry  ::= SEQUENCE {
+        cslbxProbeIMAPMailBox               SnmpAdminString,
+        cslbxProbeIMAPMethodName            SnmpAdminString
+}
+
+cslbxProbeIMAPMailBox OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object is used for configuring
+       the IMAP Mailbox value."
+    REFERENCE
+        "RFC 1730 Section 5.1 Mailbox Naming."
+    DEFVAL { "" }
+    ::= {  cslbxProbeIMAPCfgEntry 1 }
+
+cslbxProbeIMAPMethodName OBJECT-TYPE
+    SYNTAX      SnmpAdminString 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object is used for configuring
+       the IMAP method.  The value can be
+       any IMAP method.  Some of the example(s) are:
+           FETCH, NOOP, STAT, RETR"
+    REFERENCE
+        "RFC 1730 Section 6.1 Client commands  - Any State.
+         RFC 1730 Section 6.4 Client commands  - Selected State."
+    DEFVAL { "" }
+    ::= {  cslbxProbeIMAPCfgEntry 2 }
+
+--
+-- Conformance Information
+--
+
+ciscoSlbHealthMonMIBCompliances OBJECT IDENTIFIER
+                             ::= { ciscoSlbHealthMonMIBConformance 1 }
+ciscoSlbHealthMonMIBGroups      OBJECT IDENTIFIER
+                             ::= { ciscoSlbHealthMonMIBConformance 2 }
+
+ciscoSlbHealthMonMIBCompliance MODULE-COMPLIANCE
+        STATUS current
+        DESCRIPTION
+                "The compliance statement for entities which implement
+                the Cisco SLB Health monitoring MIB."
+
+        MODULE -- this module
+
+--      Unconditionally Mandatory Groups 
+
+                MANDATORY-GROUPS {
+                          cslbHealthMonServerProbesGroup,    
+                          cslbHealthMonProbeCfgExtGroup
+                }
+
+--      Optional Groups 
+
+                GROUP   cslbHealthMonHTTPProbesCommmonGroup
+                DESCRIPTION
+                        "This group is mandatory for the systems
+                        which support HTTP probes."
+
+                GROUP   cslbHealthMonHTTPSProbesGroup
+                DESCRIPTION
+                        "This group is mandatory for the systems
+                        which support HTTPS probes."
+
+                GROUP   cslbHealthMonSIPProbesGroup
+                DESCRIPTION
+                        "This group is mandatory for the systems
+                        which support SIP probes."
+
+                GROUP   cslbHealthMonFTPProbesGroup
+                DESCRIPTION
+                        "This group is mandatory for the systems
+                        which support FTP probes."
+
+                GROUP   cslbHealthMonTFTPProbesGroup
+                DESCRIPTION
+                        "This group is mandatory for the systems
+                        which support TFTP probes."
+
+                GROUP cslbHealthMonIMAPProbesGroup 
+                DESCRIPTION
+                        "This group is mandatory for the systems
+                        which support IMAP probes."
+
+                GROUP cslbHealthMonProbeScriptGroup
+                DESCRIPTION
+                        "This group is madatory for the systems
+                        which support scripted probes."
+
+--      Relaxation on IP addressing
+
+                OBJECT  cslbxProbeAlternateDestAddrType
+                DESCRIPTION
+                        "An implementation is only required to support
+                        IPv4 addresses."
+
+                OBJECT  cslbxProbeAlternateDestAddr
+                DESCRIPTION
+                        "An implementation is only required to support
+                        IPv4 addresses."
+        ::= { ciscoSlbHealthMonMIBCompliances 1 }
+
+cslbHealthMonServerProbesGroup  OBJECT-GROUP
+        OBJECTS {
+                cslbxProbeType,
+                cslbxProbeInterval,
+                cslbxProbeRetries,
+                cslbxProbeFailedInterval,
+                cslbxProbeReceiveTimeout,
+                cslbxProbeTcpOpenTimeout,
+                cslbxProbeAlternateDestAddrType,
+                cslbxProbeAlternateDestAddr,
+                cslbxProbeDnsDomainName,
+                cslbxProbeRowStatus,
+                cslbxDnsProbeIpRowStatus,
+                cslbxProbeExpectStatusMaxValue,
+                cslbxProbeExpectStatusRowStatus,
+                cslbxProbePort,
+                cslbxProbeDescription,
+                cslbxProbeProtocolType,
+                cslbxProbeRouteMethod,
+                cslbxProbePriority 
+        }
+        STATUS current
+        DESCRIPTION
+                "The second revision of the collection of SLB server
+                 health probe objects."
+        ::= { ciscoSlbHealthMonMIBGroups 1 }
+
+cslbHealthMonProbeCfgExtGroup  OBJECT-GROUP
+        OBJECTS {
+            cslbxProbeUserName,
+            cslbxProbePassword,
+            cslbxProbePassCount,
+            cslbxProbeConnTermination,
+            cslbxProbeSocketReuse,
+            cslbxProbeSendDataType,
+            cslbxProbeSendData
+        }
+        STATUS current
+        DESCRIPTION
+            "The collection of objects to configure
+            probes in an SLB device."
+        ::= { ciscoSlbHealthMonMIBGroups 2 }
+
+cslbHealthMonSIPProbesGroup  OBJECT-GROUP
+        OBJECTS {
+            cslbxProbeSIPRegAddress
+        }
+        STATUS current
+        DESCRIPTION
+                "A collection of objects providing information
+                specific to SIP Probes."
+        ::= { ciscoSlbHealthMonMIBGroups 3 }
+
+cslbHealthMonFTPProbesGroup  OBJECT-GROUP
+        OBJECTS {
+            cslbxProbeFtpRequestMethod,
+            cslbxProbeFtpRequestFileName,
+            cslbxProbeFtpRequestFileType
+        }
+        STATUS current
+        DESCRIPTION
+                "A collection of objects providing information
+                specific to FTP Probes."
+        ::= { ciscoSlbHealthMonMIBGroups 4 }
+
+cslbHealthMonHTTPProbesCommmonGroup  OBJECT-GROUP
+        OBJECTS {
+            cslbxProbeHttpRequestMethod,
+            cslbxProbeHttpRequestUrl,
+            cslbxProbeHeaderFieldValue,
+            cslbxProbeHeaderRowStatus,
+            cslbxProbeHTTPCfgVersion,
+            cslbxProbeHTTPCfgPersistence,
+            cslbxProbeHTTPCfgHashValid,
+            cslbxProbeHTTPCfgHashName
+        }
+        STATUS current
+        DESCRIPTION
+                "A collection of objects providing information
+                specific to both HTTP and HTTPS Probes."
+        ::= { ciscoSlbHealthMonMIBGroups 5 }
+
+cslbHealthMonHTTPSProbesGroup  OBJECT-GROUP
+        OBJECTS {
+            cslbxProbeHTTPCfgCipherSuite,
+            cslbxProbeHTTPCfgSslTlsVersion,
+            cslbxProbeHTTPCfgSslSessionReuse
+        }
+        STATUS current
+        DESCRIPTION
+		    "A collection of objects providing information
+                specific to HTTPS Probes."
+        ::= { ciscoSlbHealthMonMIBGroups 6 }
+
+cslbHealthMonTFTPProbesGroup  OBJECT-GROUP
+        OBJECTS {
+            cslbxProbeTftpRequestMethod,
+            cslbxProbeTftpRequestFileName,
+            cslbxProbeTftpRequestFileType
+        }
+        STATUS current
+        DESCRIPTION
+                "A collection of objects providing information
+                specific to TFTP Probes."
+        ::= { ciscoSlbHealthMonMIBGroups 7 }
+
+cslbHealthMonIMAPProbesGroup  OBJECT-GROUP
+        OBJECTS {
+            cslbxProbeIMAPMailBox,
+            cslbxProbeIMAPMethodName
+        }
+        STATUS current
+        DESCRIPTION
+                "A collection of objects providing information
+                specific to IMAP Probes."
+        ::= { ciscoSlbHealthMonMIBGroups 8 }
+
+cslbHealthMonProbeScriptGroup  OBJECT-GROUP
+        OBJECTS {
+                cslbxProbeScriptName,
+                cslbxProbeScriptArguments
+        }
+        STATUS current
+        DESCRIPTION
+            "The collection of objects to configure scripted
+            probes in an SLB device."
+        ::= { ciscoSlbHealthMonMIBGroups 9 }
+END
