@@ -201,6 +201,13 @@ my $refresh_url = "device.html?id=$id&view=$view";
           <li><a href="device.html?id=<% $id %>&view=BGP">BGP Peers</a></li>
 %       }
 %     }
+%     if ( $o->stp_enabled ){
+%       if( $view eq "STP" ) {
+          <li><span>Spanning Tree</span></li>
+%       } else {
+          <li><a href="device.html?id=<% $id %>&view=STP">Spanning Tree</a></li>
+%       }
+%     }
 %     if( $view eq "Topology" ) {
         <li><span>Topology</span></li>
 %     } else {
@@ -905,10 +912,10 @@ if ( !$editips ){
        </form>
 %   }
 
-% }
-
     </div>
 </div>
+% }
+
 <!-- End IPs Section -->
 
 
@@ -926,14 +933,9 @@ if ( !$editips ){
 % push( @field_headers, "BGP Local AS: " );
 % push( @cell_data, $ui->form_field(object=>$o, column=>"bgplocalas", edit=>$editdevbgp, returnValOnly=>1) );
 
-<!-- Two-column Division Table -->
-<table border="0" width="100%" align="center">
-  <tr>
-    <td valign="top" width="50%" align="center">
-
-        <div class="container">
-          <div class="containerheadleft">Device BGP Info</div>
-          <div class="containerheadright">
+<div class="container">
+   <div class="containerheadleft">Device BGP Info</div>
+   <div class="containerheadright">
 %         if ( $editdevbgp ) {
             <form name="netdotform" action="device.html" method="POST">
 	      <input type="hidden" name="id" value="<% $id %>">
@@ -943,19 +945,15 @@ if ( !$editips ){
 %         }else{
               <a href="device.html?id=<% $id %>&view=<% $view %>&editdevbgp=1">[edit]</a>
 %         }
-          </div>
-          <div class="containerbody">
+   </div>
+   <div class="containerbody">
              <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 %         if ( $editdevbgp ) {
              </form>
 %         }
-          </div>
-        </div>
-    </td>
-    <td></td>
-  </tr>
-</table>
-<!-- End Two-column Division Table -->
+
+   </div>
+</div>
 
 <%perl>
     my $ipeers = $o->get_bgp_peers(type=>"internal", sort=>$peersort);
@@ -1048,10 +1046,34 @@ if ( $ipeers ){
 %   }
     </div>
 </div>
-%    }
+%  }
+
 % }
 <!-- End BGP Peers Section -->
 
+%#######################################################################
+%#
+%# STP
+%#
+%#######################################################################
+
+% if ( $view eq "STP" || $view eq "All"){
+
+% my (@field_headers, @cell_data);
+% push( @field_headers, "STP Enabled?: " );
+% push( @cell_data, $ui->form_field(object=>$o, column=>"stp_enabled", edit=>0, returnValOnly=>1) );
+% push( @field_headers, "STP Type: " );
+% push( @cell_data, $ui->form_field(object=>$o, column=>"stp_type", edit=>0, returnValOnly=>1) );
+
+<div class="container">
+   <div class="containerheadleft">Spanning Tree Info</div>
+   <div class="containerheadright">&nbsp;</div>
+   <div class="containerbody">
+             <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+   </div>
+</div>
+
+%}
 
 %#######################################################################
 %#

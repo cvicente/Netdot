@@ -442,6 +442,12 @@ sub get_snmp_info {
 	    delete $dev{physaddr};
 	}	
     }
+
+    if ( defined $dev{physaddr} ){
+	# Check Spanning Tree stuff
+	$dev{stp_type} = $sinfo->stp_ver();
+    }
+
     $dev{sysname}        = $sinfo->name();
     $dev{sysdescription} = $sinfo->description();
     $dev{syscontact}     = $sinfo->contact();
@@ -450,7 +456,6 @@ sub get_snmp_info {
     $dev{manufacturer}   = $sinfo->vendor();
     $dev{serialnumber}   = $sinfo->serial();
 
-    
     # Try to guess product type based on name
     if ( my $NAME2TYPE = $self->config->get('DEV_NAME2TYPE') ){
 	foreach my $str ( keys %$NAME2TYPE ){
@@ -1700,6 +1705,14 @@ sub snmp_update {
 	$devtmp{bgpid} = $info->{bgpid};
     }
     
+    # Spanning Tree stuff
+    $devtmp{stp_type}    = $info->{stp_type};
+    $devtmp{stp_enabled} = 1 if ( defined $info->{stp_type} && $info->{stp_type} ne 'unknown' );
+    if ( $devtmp{stp_enabled} ){
+	$logger->debug(sprintf("%s: Spanning Tree is enabled", $host));
+	$logger->debug(sprintf("%s: Spanning Tree type is: %s", $host, $devtmp{stp_type}));
+    }
+
     # Update Device object
     $self->update( \%devtmp );
     
@@ -3682,7 +3695,7 @@ sub _arp_update_mult {
 	$class->_update_macs_from_cache(\@caches);
 	$class->_update_ips_from_cache(\@caches);
     }else{
-	$logger->warn("Device::arp_update_all: No ARP cache info to go on.  Quitting.");
+	$logger->warn("Device::arp_update_mult: No ARP cache info to go on.  Quitting.");
 	$class->_server_close($server);
 	return;
     }
@@ -3701,7 +3714,7 @@ sub _arp_update_mult {
 	};
 	if ( $@ ){
 	    # Exception message is being logged already
-	    $logger->warn("Device::arp_update_all caught exception but moving on");
+	    $logger->warn("Device::arp_update_mult caught exception but moving on");
 	}
 
     }

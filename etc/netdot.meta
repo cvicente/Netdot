@@ -1993,6 +1993,38 @@ $meta = {
         tag => 'SNMP Version',
         type => 'integer'
       },
+      stp_enabled => {
+        default => '',
+        description => 'Whether some version of the Spanning Tree Protocol is enabled on this switch',
+        length => '',
+        nullable => 0,
+        tag => 'STP Enabled?',
+        type => 'bool'
+      },
+      stp_mst_domain => {
+        default => '',
+        description => 'Multiple Spanning Tree (MST) domain',
+        length => '128',
+        nullable => 1,
+        tag => 'MST Domain',
+        type => 'varchar'
+      },
+      stp_mst_rev => {
+        default => '',
+        description => 'Multiple Spanning Tree (MST) revision',
+        length => '',
+        nullable => 1,
+        tag => 'MST Revision',
+        type => 'integer'
+      },
+      stp_type => {
+        default => '',
+        description => 'Spanning Tree Protocol Type (802.1d, MST, PVST, etc)',
+        length => '128',
+        nullable => 1,
+        tag => 'STP Type',
+        type => 'varchar'
+      },
       sysdescription => {
         default => '',
         description => 'Syste Description.  Meant to be populated by SNMP',
@@ -2084,6 +2116,10 @@ $meta = {
         'snmp_privkey',
         'snmp_privprotocol',
         'snmp_securitylevel',
+	'stp_enabled',
+        'stp_type',
+        'stp_mst_domain',
+        'stp_mst_rev',
         'room',
         'closet',
         'rack',
@@ -5617,6 +5653,112 @@ $meta = {
         'number',
         'street1',
         'city'
+      ]
+    }
+  },
+  STPInstance => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      number => {
+        default => '',
+        description => 'STP Instance number',
+        length => '',
+        nullable => 1,
+        tag => 'Number',
+        type => 'integer'
+      },
+      device => {
+        default => '',
+        description => 'Device where this STP instance exists',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'stp_instances',
+          table => 'Device'
+        },
+        nullable => 0,
+        tag => 'Device',
+        type => 'integer'
+      },
+      root_bridge => {
+        default => '',
+        description => 'Root bridge MAC Address',
+        length => '12',
+        nullable => 1,
+        tag => 'Root Bridge',
+        type => 'varchar'
+      },
+      root_bridge_priority => {
+        default => '',
+        description => 'Root bridge priority',
+        length => '',
+        nullable => 1,
+        tag => 'Root Priority',
+        type => 'integer'
+      },
+      root_port => {
+        default => '',
+        description => 'Root port for this STP instance',
+        length => '',
+        nullable => 1,
+        tag => 'Root Port',
+        type => 'integer'
+      },
+      vlan_range => {
+        default => '',
+        description => 'VLAN range for this STP instance',
+        length => '255',
+        nullable => 1,
+        tag => 'VLAN Range',
+        type => 'varchar'
+      },
+      enabled => {
+        default => '',
+        description => 'Whether this particular STP instance is enabled on this device',
+        length => '',
+        nullable => 0,
+        tag => 'Enabled?',
+        type => 'bool'
+      },
+
+    },
+    description => 'Spanning Tree Protocol Instance',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'number',
+      'device'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'device',
+        'number'
+      ]
+    ],
+    views => {
+      all => [
+        'number',
+        'device',
+        'enabled',
+        'root_port',
+        'root_bridge',
+        'root_bridge_priority',
+        'vlan_range',
+      ],
+      brief => [
+        'number',
+        'device',
+        'root_port',
+        'root_bridge',
       ]
     }
   },
