@@ -1552,7 +1552,7 @@ sub _update_tree{
 	
 	# Get parent id
 	my $parent;
-	$parent = $n->parent->data if $n->parent;
+	$parent = $n->parent->data if ( $n && $n->parent );
 	$self->update({parent=>$parent}) if $parent;
 	
     }else{
