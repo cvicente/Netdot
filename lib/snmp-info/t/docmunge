@@ -1,0 +1,35 @@
+#!/usr/bin/perl -i.bak
+#
+# [Re-]write POD to create cross-links between Required MIBs, GLOBALS
+#     and TABLE METHODS sections.
+# This is a horrible jumble of heuristics, but works with
+# all of the existing files. It has only one false positive: HP.pm's
+# mention of an SNMP::Info version number.
+#
+$section = undef;
+$waiting = 0;
+while (<>) {
+	if (eof) {
+		$section = undef;
+		$waiting = 0;
+	}
+	if (/^=head(\d)/) {
+		$sl = $1;
+		if ($sl <= $level) {
+			$section = undef;
+		}
+		if (/(TABLE METHODS|GLOBALS|Required MIBs)/) {
+			$section = $1;
+			$level = $sl;
+			if ($section eq 'TABLE METHODS' || $section eq 'GLOBALS') {
+				$waiting = 1;
+			}
+		}
+		if ($waiting && /imported/i) {
+			$waiting = 0;
+		}
+	} elsif (defined($section) && !$waiting && /^[^=]/ && /SNMP::Info/) {
+		s,(?:L<)?(SNMP::Info[a-zA-Z0-9:]*)(?:/[^>]+)?(?:>)?,L<$1/"$section">,g;
+	}
+	print;
+}

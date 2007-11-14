@@ -1,0 +1,287 @@
+SNMP::Info - Friendly OO-style interface to Network devices using SNMP.
+ChangeLog $Id: ChangeLog,v 1.68 2007/10/09 17:57:23 fenner Exp $
+
+version 1.05
+    + Added support for LLDP in new class LLDP (contributions from Bernhard
+      Augenstein)
+    + Added device specific support for LLDP in L2::HP, L2::Baystack,
+      L3::Enterasys and L3::Foundry
+    + Added support for Enterasys devices as new class L3::Enterasys 
+    + Added support for Dell PowerConnect switches as new class L3::Dell
+    + Added basic support for generic routers running Microsoft Windows OS
+      as new class L3::Microsoft (begemot)
+    + Added basic support for Sun routers as new class L3::Sun (begemot)
+    + Added basic support for Juniper NetScreen devices as new class
+      L3::Netscreen (Kent Hamilton)
+    + Added support for Cyclades terminal servers as new class L1::Cyclades
+    + Added support for Cisco (Airespace) wireless controllers as new class
+      L2::Airespace
+    + Update of L3::Foundry to support all Foundry devices including newer
+      switches.  Depreciate L2::Foundry.
+    + Added generic device type detection using IANA assigned enterpise
+      number extracted from sysObjectID
+    + Added ifDiscards and other missing entries from IF-MIB::ifEntry (Greg King)
+    + Added CGESM devices to L2::C2900 class (Alexander Hartmaier)
+    + Added support for dual speed 10/100 hubs and i_speed() in L1::Bayhub
+    + Added i_ssidlist(), i_ssidbcast(), and i_80211channel() methods to
+      L2::Aruba, Airespace, and L2::NAP222x classes
+    + New class IEEE802dot11 class for generic standards based wireless AP
+      support to include i_ssidlist()and i_80211channel() methods.
+    + L2::Orinoco inherits from new IEEE802dot11 for i_ssidlist()and
+      i_80211channel() support. 
+    + Added new VLAN methods i_pvid(), i_vlan_membership(), set_i_pvid(),
+      set_i_vlan(), set_add_i_vlan_tagged(), set_remove_i_vlan_tagged() to
+      Bridge, CiscoVTP, Extreme, HP, and RapidCity classes.
+    + Added set_i_speed_admin() method to RapidCity class,
+    + Added set_i_duplex_admin() method to RapidCity class,
+    + Added OSPF Neighbor Tables, SF Patch 1577918 to Layer 3 (Andrew Herrick)
+    + Added CiscoConfig class, SF Patch 1555001 (Justin Hunter)
+    + Enable load_ methods for %GLOBALS and MIB Leaf node names.
+    + Enable dynamic methods in AUTOLOAD with MIB Leaf node names for loaded
+      MIBs without definition in %FUNCS or %GLOBALS.  Single instance mib leafs
+      will be treated as a GLOBAL and returna scalar while mib leafs which
+      reside in a table will be treated as a FUNC and return a reference to a
+      hash.
+    + Enable load_ methods for %GLOBALS and MIB Leaf node names.
+    + Add loop detect option and code for getnext table column walks.
+    + Add Layer3::NetSNMP for Net-SNMP-based hosts, part of
+      SF patch 1557529 (Bradley Baetz).
+    + Add EIGRP Neighbor Tables to L3::Cisco SF Patch 1577927 (Andrew Herrick)
+    + Additions to CiscoQOS and CiscoStats (Alexander Hartmaier)
+    + Emulate ENTITY-MIB Physical Table methods for devices which don't
+      have ENTITY-MIB support in Bayhub, Baystack, BayRS, NortelStack, and
+      Passport classes.
+    + Enable use of MIB Leaf node names in SNMP sets.
+    + Add POWER-ETHERNET-MIB and CISCO-POWER-ETHERNET-EXT-MIB support.
+
+    * Fix for bug where an SNMP error in any operation would cause subsequent
+      table get operations to fail while using the same session, originally
+      identified by Nicolai Petri.
+    * Enable single instance partial table fetches (Alexander Hartmaier)
+    * Enable partial table fetches in overriden table methods (Justin Hunter)
+    * Allow partial table fetches with load_ methods.
+    * Fixed vlan trunk port handling bug in L2:HP (Michael Robbert)
+    * Correct bp_port() definition in Bridge class (Reported by Nicolai Petri)
+    * Remove port security definitions from CiscoStack and move into new class
+      CiscoPortSecurity.  Needed to support devices such a L3::C4000 which
+      support CISCO-PORT-SECURITY-MIB, but not CISCO-STACK-MIB.
+      (Reported by Prakash RudraRaju)
+    * Correct port numbering for Nortel 8110, 1100, 1150 in L3:Passport
+      (Reported by David Pinkoski)
+    * Documentation updates
+    * Translate OIDs returned by Entity MIB e_type
+    * Modify inheritance to use Cisco classes before generic classes
+    * Create e_index method in ENTITY-MIB to facilitate emulation methods in
+      other classes as entPhysicalIndex is not-accessible.
+    * Only return MAC from munge_mac() if it actually is a MAC. Fix for
+      netdisco where device would not be inserted in DB due to malformed MAC.
+    * Enable SUPER class calls to find autoloaded methods (Bernhard Augenstein)
+    * Clear attribute cache on sucessful SNMP set.
+    * Improve accuracy of operational and administrative duplex reporting on
+      devices using CiscoStack.
+    * All i_type() methods now use standard IANAifType values.
+    * Report bridge groups (VLANs) in L2::C1900.
+    * Turn on bulkwalk for C6500.  Users with buggy OS versions can turn
+      it off when creating the object.
+
+version 1.04 (07/08/06)
+    +  Added C1130 and C1240 to L2::Aironet (Ralf Gross)
+    +  Added detection for Cisco 2960, 2940, 3400 w/ MetroBase
+    +  Added generic L2::Cisco Class
+    *  Corrected detection for Cisco Supervisor Engine 2 and 32 (IOS).  
+    *  Fixed warnings in CiscoStack
+    *  Updated ProCurve HP device detection for newer firmwares
+
+version 1.03 (04/14/06) - Beta/developer release
+    * Use ipNetToMedia table instead of atTable for ARP
+    * Remove CiscoStack from Layer3::C4000
+    * Fixed bug in MAU class when polling devices without MAU-MIB support 
+
+version 1.01 (04/08/06) - Beta/developer release
+    + Change version numbers to X.XX format.  Odd releases are beta
+      or developer only releases.  Even are official releases.
+
+version 1.0 (04/07/06) - CVS only. No official release
+    + Added Interface FlowControl status to CiscoStack (Nicolai Petri)
+    + Added CiscoImage class (Matthew Tuttle)
+    + Added C1200 and C350 IOS devices to L2::Aironet (Matthew Tuttle)
+    + Added support for Foundry IronWare and gave L3::Foundry CPR
+    + Added support for Foundry EdgeIrons as new class L2::Foundry
+    + Added BulkWalk and BulkRepeaters options to new()
+    + Added DebugSNMP option to new()
+    + Added CISCO-ENTITY-VENDORTYPE-OID-MIB,CISCO-PRODUCTS-MIB,CISCO-STACK-MIB
+      to CiscoStats.pm for model()
+    + Check for bulkwalk_no() method
+    + Added Entity.pm to L3 and L2 classes per N. Petri's suggestion.
+    + Added support for Passport/Accelar 1100 and 1200 series in L3::Passport
+    + Added support for Passport/Accelar 8100 series in L3::Passport
+    + Added support for Passport 1600 series as new class, L3::N1600
+    + Added support for Extreme Alpine and Summit switches as new class
+      L3:Extreme (Mike Hunter and Eric Miller)
+    + Added support for Aruba wireless switches (Eric Miller and Brian Chow)
+    + Added support for Nortel 2700 series (Airespace) wireless switches
+    + Added support for Synoptics hubs as new class L1:S3000
+    + Added Cisco QOS and RTT classes (Alexander Hartmaier)
+    + Added BGP Peer Table to L3 class (Carlos Vicente)
+    + Added ipforwarding status to Info base class (Carlos Vicente)
+    + Added STP port state to Bridge class (Alexander Barthel)
+    + Added L3 support (arpnip) to Baystack class for routing capable switches
+    + Added set_i_duplex_admin() and set_i_speed_admin() to C2900 class
+      (Justin Hunter)
+    + Added set_i_duplex_admin() and set_i_speed_admin() to CiscoStack class
+    + CDP added to Aironet class
+    + Added Juniper class
+    + Added support for Catalyst 4000 and 4500, get admin. duplex
+      and speed properly
+    + Added i_speed_high(), which i_speed() uses if needed to support
+      interfaces >4Gbps
+
+    * More error checking in  _load_attr() around bulkwalk code
+    * Minor warning fix in L3::Aironet::os_ver()
+    * Abstracted remaining Cisco stuff from L3 to L3::Cisco
+    * Removed all Cisco stuff from L2
+    * Expanded Entity.pm to cover the whole ENTITY-MIB and improved docs.
+    * changed all refs to $DEBUG to $self->debug() for reentrant code
+    * [ 1111284 ] Parameters not being set with AutoSpecify - fixed.
+    * Turned off BULKWALK for C1900 and C6500 classes.
+    * Added exception handling for V2 ENDOFMIBVIEW
+    * Fix in SONMP when topology not enabled
+    * Fix in L3::Passport root_ip()
+    * Fix in L3::Passport bp_index() some devices not returning complete index.
+    * Enable set_i_up_admin() in Bayhub
+    * Recognize new Nortel model names in Baystack and Passport classes
+    * Orinoco class should now recognize more models
+    * Cleanup model recognition in Baystack class, recognize more models
+    * Modify Catalyst class to use CISCO-STACK-MIB for brige port index mapping
+      some devices having problems returning complete index from BRIDGE-MIB
+    * Check root ip for reachability before assignment
+    * HP class should recognize more models
+    * Fix in HP class for models not returning full bp_index
+    * [ 1436103 ] L2::Aironet devices weren't getting their model
+      translated properly
+
+verison 0.9 (11/15/04)
+    + ** Added full Nortel/Bay/BayStack support 
+        by new developer Eric Miller.  
+        L2::Bay now depricated.
+    + Added Alteon Ace support (Eric Miller)
+    + Added Nortel Cotivity support (Eric Miller)
+    + Added Nortel BayRS support (Eric Miller)
+    + Added Nortel Centillion support (Eric Miller)
+    + Added Nortel AP 222x support (Eric Miller)
+    + Added Orinco AP support (Eric Miller) 
+    + Added i_lastchange() per suggestion of Nicolai Petri
+    + Added BULKWALK patch by Bradley Baetz - This should
+          greatly speed up requests on SNMPv2c devices.
+    + Added MibDirs option to new() to allow specifying non-system MIB
+      directories.
+
+    * Added C3560s to the C3550 class. Thanks to Nicolai.
+    * Fixed Bug where older Cisco's would append nulls to certain
+      CDP information.  Would come up a 'DBD::Pg parser' error in Netdisco
+    * Changed so a failed _global() call is cached so it won't retry
+      an error over and over again if the same global is used.
+    * Added check in _set() to see if data came from sub or FUNCS/GLOBALS
+      Fails if came from sub.
+
+version 0.8 (03/21/04)
+    + Added Q-BRIDGE-MIB support to SNMP::Info::Bridge
+    + Added Aironet AP4800 to Layer3::Aironet class
+    + Added C3500XL devices to the Layer2::C2900 class
+    + Added Cisco 3750 (37xxstack) to Layer3::C6500 class
+    + Added Cisco Catalyst 4000 to Layer3::C6500 class
+    + Added Cisco Catalyst 2970 to Layer3::C6500 Class
+    * Made Cisco Commuinty string indexing a boolean method for clarification
+    * Added VLAN info for HP devices using Q-BRIDGE-MIB
+    * Fixed warning about uninitialized value in CiscoStats line 92
+    * Added for more serial# checking for L2 and L3
+    * Fixed warning in Layer2::Bay about non numeric port line 199
+    Contributions from Dmitry Sergienko:
+    + Added Cisco Aironet BR500 and AP1200 to L2::Aironet Class
+    * Fixed the Port name alias for Catalyst 2900 devices
+    + Added Support For ZyXEL DSLAMs and Allied Telesys Switches
+
+version 0.7 (08/14/03)
+    * Added Class for Catalyst 6500 Series - Layer3::C6500
+    * Added CiscoVTP support to 3550,2900, and Catalyst classes
+    * Extracted VLAN stuff from Layer2::Catalyst to SNMP::Info::CiscoVTP
+    * Extracted CISCO-STACK-MIB from Layer2::Catalyst to SNMP::Info::CiscoStack
+    * Added 2950's to the Layer2::C2900 class
+    * Added 3548's and 350x's to the Layer3::C3550 class
+    * Broke out 3550's into separate device types (3550-24, 3550-48)
+    * Added T1,dual T1, and T3 , ATM over OC-12 ... to the SPEED_MAP
+    * Fixed speed map -- OC-1 -> OC-3
+    * Fixed Bug where Catalyst Switch running IOS would report CatOS as os()
+
+version 0.6 (06/18/03)
+    * Minor Bug Fix.  SNMP::Info::Layer2::Bay and SNMP::Info::Layer2::C1900
+      didn't return 1 and failed to load on some versions of Perl.
+
+version 0.5 (06/10/03)
+    * Added ability to get paritial tables.  For example to get the
+      IP routing table for 128.114.*  you can do 
+      $ipr = $dev->ipr_dest('128.114');
+    * Added IP Routing Table entries from RFC1213 to SNMP::Info
+    * minor bug fixes
+
+version 0.4 (04/29/03)
+    * BIG CHANGE ! Internal Data structure has changed.  
+    * Added clear_cache() method
+    * Added NO_SUCH support for snmpget (TABLE) calls to get SNMP MIB II data 
+      from SNMP Version 1 devices.
+    * Methods load_all() and all() have changed their return value. Sorry but
+      the API had to change.
+    * New object methods snmp_comm(), snmp_ver(), store(), class(), nosuch()
+      to make it more OO happy.
+    * Globals are now cached
+    * Added new argument 'AutoSpecify' to new() to auto-connect with subclass 
+      detected in device_type()
+    * New method specify() returns a new subclass object
+    * Subclasses are automatically loaded when specify or autospecify is used!
+    * Added methods for Interface statistics (ifInOctets ...)
+    * Added methods for Memory and CPU statistics 
+    * Added SNMP::Info::Entity, moved out of L2-HP
+    * Added SNMP::Info::Layer2::Aironet
+
+version 0.3 (03/06/03)
+    * Fixed HP model() warning
+    * Added error checking for responses of NOSUCHOBJECT and NOSUCHINSTANCE
+      in _global and _load_attr
+    * Added more debugging
+    * Added info and munging for c_capabilities in SNMP::Info::CD
+      Thanks to Martin Lorensen <martin /at- lorensen.dk>
+    * Removed requirement for SNMP in the Makefile.PL and moved it to t/prereq.t
+      so that the Module will install via CPAN without trying to install the old
+      4.2.0 version of SNMP on CPAN.  Will now fail in the test phase. 
+      Thanks again to Martin Lorensen <martin /at- lorensen.dk>
+    * Moved tests from test.pl to t/*
+
+version 0.2 (02/19/03)
+    * Added put_() methods and support for SNMP put commands
+    * Added SNMP::Info::Layer3::C3550 class for Cisco Catalyst 3550
+    * Fixed HP Detection in device_type()
+    * Added Spanning Tree Protocol (STP) methods to SNMP::Info::Bridge
+    * Removed HP Specific MIBS in SNMP::Info::Layer2 and cleaned up model()
+    * Added poke for Bay 450 Switches 
+    * Mapped HP Part Numbers to model numbers J4812A => 2512 in
+      SNMP::Info::Layer2::HP
+     
+version 0.1 (12/30/02)
+    * Initial Release
+    * SubClasses Included:
+        * SNMP::Info::Bridge
+        * SNMP::Info::CDP
+        * SNMP::Info::EtherLike
+        * SNMP::Info::MAU
+        * SNMP::Info::Layer1
+              o SNMP::Info::Layer1::Allied
+              o SNMP::Info::Layer1::Asante 
+        * SNMP::Info::Layer2
+              o SNMP::Info::Layer2::Bay
+              o SNMP::Info::Layer2::C1900
+              o SNMP::Info::Layer2::C2900
+              o SNMP::Info::Layer2::Catalyst
+              o SNMP::Info::Layer2::HP 
+        * SNMP::Info::Layer3
+              o SNMP::Info::Layer3::Aironet
+              o SNMP::Info::Layer3::Foundry
