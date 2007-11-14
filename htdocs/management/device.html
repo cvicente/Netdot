@@ -275,7 +275,7 @@ push( @cell_data,
       }}
 );
 
-my @fields = ('serialnumber','physaddr','date_installed','last_updated', 'product','inventorynumber','sysdescription', 'os', 'layers');
+my @fields = ('serialnumber','date_installed','last_updated', 'product','inventorynumber','sysdescription', 'os', 'layers');
 my @linkpages = ('', 'view.html', '', '', 'view.html', '', '' );
 $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, 
 		   cell_data=>\@cell_data, linkpages=>\@linkpages);
@@ -1060,10 +1060,12 @@ if ( $ipeers ){
 % if ( $view eq "STP" || $view eq "All"){
 
 % my (@field_headers, @cell_data);
-% push( @field_headers, "STP Enabled?: " );
-% push( @cell_data, $ui->form_field(object=>$o, column=>"stp_enabled", edit=>0, returnValOnly=>1) );
-% push( @field_headers, "STP Type: " );
-% push( @cell_data, $ui->form_field(object=>$o, column=>"stp_type", edit=>0, returnValOnly=>1) );
+
+% my @fields = ('physaddr', 'stp_enabled', 'stp_type');
+% my @linkpages = ('view.html', '', '' );
+
+% $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, 
+%	 	     cell_data=>\@cell_data, linkpages=>\@linkpages);
 
 <div class="container">
    <div class="containerheadleft">Spanning Tree Info</div>
