@@ -10,7 +10,7 @@
 -- October  2003, Liwei Lue
 -- November 2003, Edward Pham
 --
--- Copyright (c) 2001,2002,2003, 2004, 2005 by cisco Systems, Inc.
+-- Copyright (c) 2001,2002,2003, 2004, 2005, 2006 by cisco Systems, Inc.
 -- All rights reserved.
 --
 -- *****************************************************************
@@ -22,6 +22,7 @@ IMPORTS
     OBJECT-TYPE, 
     Counter32,
     Counter64,
+    Gauge32,
     Integer32,
     Unsigned32
         FROM SNMPv2-SMI
@@ -55,6 +56,9 @@ IMPORTS
     cseFlowDataEntry
         FROM CISCO-SWITCH-ENGINE-MIB
 
+    CounterBasedGauge64
+        FROM HCNUM-TC
+
     SnmpAdminString
         FROM SNMP-FRAMEWORK-MIB
 
@@ -68,7 +72,7 @@ IMPORTS
 
 
 ciscoCatOSAclQosMIB    MODULE-IDENTITY
-    LAST-UPDATED    "200507260000Z"
+    LAST-UPDATED    "200607150000Z"
     ORGANIZATION    "Cisco Systems Inc. "
     CONTACT-INFO
         "Cisco Systems
@@ -209,6 +213,19 @@ ciscoCatOSAclQosMIB    MODULE-IDENTITY
         interface. If the packet matches an ACE in the ACLs, it is
         either permitted to go through the device or blocked and
         dropped or redirected to another interface."
+    REVISION   "200607150000Z"
+    DESCRIPTION
+        "Add 'include' enumeration value for caqSecurityAction.
+
+         Add caqQosL3StatsRateGroup,
+             caqQosL3StatsPeakGroup,
+             caqAggPolicerOctetsRateGroup,
+             caqAggPolicerPacketsRateGroup,
+             caqAggPolicerOctetsPeakGroup, 
+             caqAggPolicerPacketsPeakGroup,
+             caqQosPortRateGroup,
+             caqQosPortPeakGroup,
+             caqSecurityActionDnldAceGroup."
     REVISION   "200507260000Z"
     DESCRIPTION
         "Add 'matchEapoudp' and 'matchUrlRedirect' enum value
@@ -2078,8 +2095,8 @@ CaqIpxAceEntry ::= SEQUENCE {
     caqIpxAceMatchedAction      Unsigned32, 
     caqIpxAceSrcNet             OCTET STRING, 
     caqIpxAceDestMatchCriteria  BITS,
-    caqIpxAceDestNet            OCTET STRING, 
     caqIpxAceProtocolType       Unsigned32,
+    caqIpxAceDestNet            OCTET STRING, 
     caqIpxAceDestNode           OCTET STRING,
     caqIpxAceDestNetMask        OCTET STRING, 
     caqIpxAceDestNodeMask       OCTET STRING,
@@ -3013,7 +3030,8 @@ CaqSecurityActionEntry   ::= SEQUENCE {
     caqSecurityActionStatus      RowStatus,
     caqSecurityAdjIndex          Unsigned32,
     caqSecurityArpMacAddress     MacAddress,
-    caqSecurityRedirect2kPortList  OCTET STRING
+    caqSecurityRedirect2kPortList  OCTET STRING,
+    caqSecurityDownloadedAceFeature  INTEGER
 }
 
 caqSecurityActionIndex       OBJECT-TYPE
@@ -3034,7 +3052,8 @@ caqSecurityAction            OBJECT-TYPE
                   denyWithLog(5),
                   denyArpInspection(6),
                   denyArpInspWithLog(7),
-                  permitArpInspection(8)
+                  permitArpInspection(8),
+                  include(9)
               }
     MAX-ACCESS  read-create
     STATUS      current
@@ -3068,7 +3087,11 @@ caqSecurityAction            OBJECT-TYPE
         will be blocked, dropped and logged.
 
         If permitArpInspection(8) is specified, the matched ARP
-        traffic will be allowed through the device."
+        traffic will be allowed through the device.
+
+        if include(9) is specified, the matched trafic will be
+        regulated according to the downloaded ACE type denoted
+        by caqSecurityDownloadedAceFeature object."
     ::= { caqSecurityActionEntry 2 }
 
 caqSecurityRedirectPortList      OBJECT-TYPE
@@ -3184,6 +3207,49 @@ caqSecurityRedirect2kPortList      OBJECT-TYPE
         A port number is the value of dot1dBasePort for the port in
         the BRIDGE-MIB (RFC 1493)."
     ::= { caqSecurityActionEntry 8 }
+
+caqSecurityDownloadedAceFeature  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    notApplicable(1), 
+                    dot1x(2),
+                    macAuth(3),
+                    webAuth(4),
+                    eou(5),
+                    ipPhone(6)
+                } 
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Indicates the feature type of the downloaded ACE.
+
+        'notApplicable' indicates that this security action
+        entry is not applied to any downloaded ACE.
+
+        'dot1x' indicates that this security action entry is
+        applied to downloaded ACE for 802.1x feature.
+
+        'macAuth' indicates that this security action entry is
+        applied to downloaded ACE for Mac Authentication
+        Bypass feature.
+
+        'webAuth' indicates that this security action entry is
+        applied to downloaded ACE for Web-Proxy Authentication
+        feature.
+
+        'eou' indicates that this security action entry is
+        applied to downloaded ACE for Extensible Authentication
+        Protocol over UDP (EOU) feature.
+
+        'ipPhone' indicates that this security action entry is
+        applied to downloaded ACE for IP Phone feature. 
+
+        The value of this object is 'notApplicable' whenever the
+        value of caqSecurityAction object in the same row is not
+        'include'. When an entry of this table is created with
+        'include' value specified for caqSecurityAction, 'notApplicable'
+        cannot be used for this object value."
+    DEFVAL { notApplicable } 
+    ::= { caqSecurityActionEntry 9 }
 
 --
 -- caqSecurityAclCaptureIfTable
@@ -3493,7 +3559,9 @@ CaqPortStatsEntry ::= SEQUENCE {
     caqPortStatsDirection       CaqDirection,
     caqPortStatsQueueNumber     CaqQueueNumber, 
     caqPortStatsThresholdNumber CaqThresholdNumber, 
-    caqPortStatsDropPkts        Counter64
+    caqPortStatsDropPkts        Counter64,
+    caqPortStatsDropPktsAveRate     Gauge32,
+    caqPortStatsDropPktsPeakRate  Gauge32
 }
 
 caqPortStatsDirection OBJECT-TYPE
@@ -3533,6 +3601,30 @@ caqPortStatsDropPkts  OBJECT-TYPE
         interface because they exceeded the threshold value configured
         at this queue and threshold of this interface."
     ::= { caqPortStatsEntry 4 }
+
+caqPortStatsDropPktsAveRate OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS      "packets per second"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The five minute linearly-decayed moving average of packets
+        have been received then dropped from the interface because
+        they exceeded the threshold value configured at this queue
+        and threshold of this interface."
+    ::= { caqPortStatsEntry 5 }
+
+caqPortStatsDropPktsPeakRate  OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS      "packets per second"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The peak rate of packets have been received then dropped from
+        the interface because they exceeded the threshold value
+        configured at this queue and threshold of this interface over
+        the past five minutes."
+    ::= { caqPortStatsEntry 6 }
 
 --
 --  The Flow specific Statistics Table
@@ -3593,13 +3685,21 @@ caqAggPolicerStatsEntry OBJECT-TYPE
     ::= { caqAggPolicerStatsTable 1 }
 
 CaqAggPolicerStatsEntry ::= SEQUENCE {
-    caqAggPolicerName             CaqPolicerName,
-    caqAggPolicerPackets          Counter64,
-    caqAggPolicerNRExceedPackets  Counter64,
-    caqAggPolicerERExceedPackets  Counter64,
-    caqAggPolicerOctets           Counter64,
-    caqAggPolicerNRExceedOctets   Counter64,
-    caqAggPolicerERExceedOctets   Counter64
+    caqAggPolicerName                 CaqPolicerName,
+    caqAggPolicerPackets              Counter64,
+    caqAggPolicerNRExceedPackets      Counter64,
+    caqAggPolicerERExceedPackets      Counter64,
+    caqAggPolicerOctets               Counter64,
+    caqAggPolicerNRExceedOctets       Counter64,
+    caqAggPolicerERExceedOctets       Counter64,
+    caqAggPolicerOctetsRate           CounterBasedGauge64, 
+    caqAggPolicerNRExceedOctetsRate   CounterBasedGauge64,
+    caqAggPolicerERExceedOctetsRate   CounterBasedGauge64,
+    caqAggPolicerOctetsPeakRate       CounterBasedGauge64, 
+    caqAggPolicerPacketsRate          CounterBasedGauge64,
+    caqAggPolicerNRExceedPacketsRate  CounterBasedGauge64,
+    caqAggPolicerERExceedPacketsRate  CounterBasedGauge64,
+    caqAggPolicerPacketsPeakRate      CounterBasedGauge64
 }
 
 caqAggPolicerName      OBJECT-TYPE
@@ -3674,6 +3774,183 @@ caqAggPolicerERExceedOctets OBJECT-TYPE
          by the device as indicated by caqFlowPolicerExcessRateSupport
          object."
     ::= { caqAggPolicerStatsEntry 7 }
+
+caqAggPolicerOctetsRate OBJECT-TYPE
+    SYNTAX      CounterBasedGauge64
+    UNITS       "kbps"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+        "Indicates five minute linearly-decayed moving average of
+         octets policed by this aggregate policer.
+         This object is only instantiated if such info is available in
+         the device."
+    ::= { caqAggPolicerStatsEntry 8 }
+
+caqAggPolicerNRExceedOctetsRate OBJECT-TYPE
+    SYNTAX      CounterBasedGauge64
+    UNITS       "kbps"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+        "Indicates five minute linearly-decayed moving average of
+         octets exceeded the normal rate of this aggregate policer.
+         This object is only instantiated if such info is available in
+         the device."
+    ::= { caqAggPolicerStatsEntry 9 }
+
+caqAggPolicerERExceedOctetsRate OBJECT-TYPE
+    SYNTAX      CounterBasedGauge64
+    UNITS       "kbps"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+        "Indicates five minute linearly-decayed moving average of
+         octets exceeded the excess rate of this policer. This object
+         is only instantiated if such info is available in the device
+         and if excess rate is supported by the device as indicated by
+         caqFlowPolicerExcessRateSupport object."
+    ::= { caqAggPolicerStatsEntry 10 }
+
+caqAggPolicerOctetsPeakRate OBJECT-TYPE
+    SYNTAX      CounterBasedGauge64
+    UNITS      "kbps"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+        "Indicates peak rate of octets is policed by this aggregate 
+         policer over the past five minute. This object is only
+         instantiated if such info is available in the device."
+    ::= { caqAggPolicerStatsEntry 11 }
+
+caqAggPolicerPacketsRate OBJECT-TYPE
+    SYNTAX      CounterBasedGauge64
+    UNITS       "packets per second"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+        "Indicates five minute linearly-decayed moving average of
+         packets policed by this aggregate policer.
+         This object is only instantiated if such info is available in
+         the device."
+    ::= { caqAggPolicerStatsEntry 12 }
+
+caqAggPolicerNRExceedPacketsRate OBJECT-TYPE
+    SYNTAX      CounterBasedGauge64
+    UNITS       "packets per second"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+        "Indicates five minute linearly-decayed moving average of
+         packets exceeded the normal rate of this aggregate policer.
+         This object is only instantiated if such info is available in
+         the device."
+    ::= { caqAggPolicerStatsEntry 13 }
+
+caqAggPolicerERExceedPacketsRate OBJECT-TYPE
+    SYNTAX      CounterBasedGauge64
+    UNITS       "packets per second" 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+        "Indicates five minute linearly-decayed moving average of
+         packets exceeded the excess rate of this policer. This object
+         is only instantiated if such info is available in the device
+         and if excess rate is supported by the device as indicated by
+         caqFlowPolicerExcessRateSupport object."
+    ::= { caqAggPolicerStatsEntry 14 }
+
+caqAggPolicerPacketsPeakRate OBJECT-TYPE
+    SYNTAX      CounterBasedGauge64
+     UNITS      "packets per second"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+        "Indicates peak rate of packets is policed by this aggregate 
+         policer over the past five minutes. This object is only
+         instantiated if such info is available in the device."
+    ::= { caqAggPolicerStatsEntry 15 }
+
+caqL3PacketsDropByPolicerAveRate  OBJECT-TYPE
+     SYNTAX     CounterBasedGauge64
+     UNITS      "packets per second"
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+         "Indicates five minute linearly-decayed moving average of 
+          Layer 3 packets dropped due to policing."
+     ::= { caqQosStatsObjects 8 }
+
+caqL3PacketsDropByPolicerPeakRate  OBJECT-TYPE
+     SYNTAX     CounterBasedGauge64
+     UNITS      "packets per second"
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+         "Indicates the peak rate of Layer 3 packets dropped due to
+          policing over the past five minutes."
+     ::= { caqQosStatsObjects 9 }
+
+caqTosChangedIpPacketsAveRate  OBJECT-TYPE
+     SYNTAX     CounterBasedGauge64
+     UNITS      "packets per second"
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+         "Indicates five minute linearly-decayed moving average of
+          IP packets have the Tos value change."
+     ::= { caqQosStatsObjects 10 }
+
+caqTosChangedIpPacketsPeakRate  OBJECT-TYPE
+     SYNTAX     CounterBasedGauge64
+     UNITS      "packets per second"
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+         "Indicates the peak rate of IP packets have the Tos value
+          change over the past five minute."
+     ::= { caqQosStatsObjects 11 }
+
+caqCosChangedIpPacketsAveRate  OBJECT-TYPE
+     SYNTAX     CounterBasedGauge64
+     UNITS      "packets per second"
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+         "Indicates five minute linearly-decayed moving average of
+          IP packets have the Cos value change."
+     ::= { caqQosStatsObjects 12 }
+
+caqCosChangedIpPacketsPeakRate  OBJECT-TYPE
+     SYNTAX     CounterBasedGauge64
+     UNITS      "packets per second"
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+         "Indicates the peak rate of IP packets have the Cos value
+          change over the past five minutes."
+     ::= { caqQosStatsObjects 13 }
+
+caqCosChangedNonIpPacketsAveRate  OBJECT-TYPE
+     SYNTAX     CounterBasedGauge64
+     UNITS      "packets per second"
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+         "Indicates five minute linearly-decayed moving average of
+          non IP packets have the Cos value change."
+     ::= { caqQosStatsObjects 14 }
+
+caqCosChangedNonIpPacketPeakRate  OBJECT-TYPE
+     SYNTAX     CounterBasedGauge64
+     UNITS      "packets per second"
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+         "Indicates the peak rate of non IP packets have the Cos 
+          value change over the past five minutes."
+     ::= { caqQosStatsObjects 15 }
+
 
 --*********************************************************************
 -- Cisco CatOS Acl Qos Extension Group
@@ -5874,4 +6151,108 @@ caqVlanAclHitCountGroup OBJECT-GROUP
         "A collection of objects providing the set of VLANs 
          where ACL hit count feature is enabled." 
     ::= { caqMIBGroups 39 }
+
+caqQosL3StatsRateGroup OBJECT-GROUP
+    OBJECTS {
+      caqL3PacketsDropByPolicerAveRate,       
+      caqTosChangedIpPacketsAveRate,
+      caqCosChangedNonIpPacketsAveRate,
+      caqCosChangedIpPacketsAveRate
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects providing the five minute 
+         linearly-decayed moving average QoS statistics for Layer 3
+         traffic."
+    ::= { caqMIBGroups 40 }
+
+caqQosL3StatsPeakGroup OBJECT-GROUP
+    OBJECTS {
+      caqCosChangedNonIpPacketPeakRate,
+      caqCosChangedIpPacketsPeakRate,
+      caqL3PacketsDropByPolicerPeakRate,
+      caqTosChangedIpPacketsPeakRate      
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects providing the peak rate QoS
+         statistics over past five minute period for Layer 3 traffic." 
+    ::= { caqMIBGroups 41 }
+
+caqAggPolicerOctetsRateGroup OBJECT-GROUP
+    OBJECTS {
+      caqAggPolicerOctetsRate,
+      caqAggPolicerNRExceedOctetsRate,
+      caqAggPolicerERExceedOctetsRate
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects providing the five minute 
+         linearly-decayed octets moving average rate per aggregate
+         policer."
+    ::= { caqMIBGroups 42 }
+
+caqAggPolicerPacketsRateGroup OBJECT-GROUP
+    OBJECTS {
+      caqAggPolicerPacketsRate,
+      caqAggPolicerNRExceedPacketsRate,
+      caqAggPolicerERExceedPacketsRate
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects providing the five minute 
+         linearly-decayed packets moving average rate per aggregate
+         policer."
+    ::= { caqMIBGroups 43 }
+
+caqAggPolicerOctetsPeakGroup OBJECT-GROUP
+    OBJECTS {
+      caqAggPolicerOctetsPeakRate
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects providing the peak rate of octets
+         over past five minute period per aggregate policer." 
+    ::= { caqMIBGroups 44 }
+
+caqAggPolicerPacketsPeakGroup OBJECT-GROUP
+    OBJECTS {
+      caqAggPolicerPacketsPeakRate
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects providing the peak rate of packets
+         over past five minute period per aggregate policer." 
+    ::= { caqMIBGroups 45 }
+
+caqQosPortRateGroup OBJECT-GROUP
+    OBJECTS {
+      caqPortStatsDropPktsAveRate
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of object providing the five minute
+         linearly-decayed packets drop rate per interface." 
+    ::= { caqMIBGroups 46 }
+
+caqQosPortPeakGroup OBJECT-GROUP
+    OBJECTS {
+      caqPortStatsDropPktsPeakRate    
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of object providing the peak rate of packets
+         over past five minute period per interface." 
+    ::= { caqMIBGroups 47 }
+
+caqSecurityActionDnldAceGroup OBJECT-GROUP
+    OBJECTS {
+      caqSecurityDownloadedAceFeature
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of object providing feature type of downloaded
+         ACE." 
+    ::= { caqMIBGroups 48 }
+
 END

@@ -5,6 +5,8 @@
 -- *	  Extreme Networks
 -- *      http://www.extremenetworks.com
 -- *
+-- * extracted from $Extreme_Id: extreme.mib,v 1.24.6.35 2006/01/09 15:15:18 build-sc Exp $
+-- *
 -- */
 
 
@@ -135,7 +137,9 @@ EXTREME-SYSTEM-MIB DEFINITIONS ::= BEGIN
 			extremeFanNumber
 				INTEGER,
 			extremeFanOperational
-				TruthValue
+				TruthValue,
+		        extremeFanEntPhysicalIndex 
+				INTEGER
 		}
 
         extremeFanNumber OBJECT-TYPE
@@ -155,6 +159,13 @@ EXTREME-SYSTEM-MIB DEFINITIONS ::= BEGIN
                 "Operational status of a cooling fan."
 	::= { extremeFanStatusEntry 2 }
 
+        extremeFanEntPhysicalIndex OBJECT-TYPE
+                SYNTAX INTEGER
+        	MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                "The entity index for this fan entity in the entity table."
+	::= { extremeFanStatusEntry 3 }
 
         extremePrimaryPowerOperational OBJECT-TYPE
                 SYNTAX TruthValue
@@ -333,13 +344,17 @@ EXTREME-SYSTEM-MIB DEFINITIONS ::= BEGIN
 				INTEGER,
 			extremePowerSupplyStatus
 				INTEGER,
-            extremePowerSupplyInputVoltage
+                        extremePowerSupplyInputVoltage
+				INTEGER,
+                        extremePowerSupplySerialNumber
+                                DisplayString,
+		        extremePowerSupplyEntPhysicalIndex 
 				INTEGER
 		}
 
         extremePowerSupplyNumber OBJECT-TYPE
                 SYNTAX INTEGER
-        	MAX-ACCESS not-accessible
+        	MAX-ACCESS accessible-for-notify
                 STATUS current
                 DESCRIPTION
                 	"Power supply number."
@@ -353,6 +368,31 @@ EXTREME-SYSTEM-MIB DEFINITIONS ::= BEGIN
                 	"Status of the power supply."
 	::= { extremePowerSupplyEntry 2 }
 
+	extremePowerSupplyInputVoltage OBJECT-TYPE
+		SYNTAX INTEGER { v110 (1), v220 (2), v48DC (3), unknown(4) }
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION
+			"Input voltage of the power supply"
+	::= { extremePowerSupplyEntry 3 }
+
+        extremePowerSupplySerialNumber OBJECT-TYPE
+                SYNTAX DisplayString (SIZE(0..126))
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " The serial number of the power supply unit."
+         ::= { extremePowerSupplyEntry 4 }
+
+        extremePowerSupplyEntPhysicalIndex OBJECT-TYPE
+                SYNTAX INTEGER
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " The entity index for this psu entity in the entity
+                table."
+         ::= { extremePowerSupplyEntry 5 }
+
      extremeCpuAggregateUtilization OBJECT-TYPE
         SYNTAX INTEGER
         MAX-ACCESS read-only
@@ -361,14 +401,6 @@ EXTREME-SYSTEM-MIB DEFINITIONS ::= BEGIN
                   "The aggregate CPU utilization since
 		   the time the start started executing."
 	::= { extremeSystemCommon 28 }
-
-	extremePowerSupplyInputVoltage OBJECT-TYPE
-		SYNTAX INTEGER { v110 (1), v220 (2), v48DC (3), unknown(4) }
-		MAX-ACCESS read-only
-		STATUS current
-		DESCRIPTION
-			"Input voltage of the power supply"
-	::= { extremePowerSupplyEntry 3 }
 
 --
 -- The CPU Task table lists all executing tasks 
@@ -558,7 +590,8 @@ extremeImageTable OBJECT-TYPE
                 extremeBranchRevisionNumber     INTEGER,
                 extremeImageType                INTEGER,
                 extremeImageDescription         DisplayString,
-                extremeImageSecurity            INTEGER
+                extremeImageSecurity            INTEGER,
+                extremePatchVersion             INTEGER
 	}
 
 	extremeImageNumber OBJECT-TYPE
@@ -581,13 +614,17 @@ extremeImageTable OBJECT-TYPE
 		DESCRIPTION
 		"The ExtremeWare Release Major Version."
 		::= { extremeImageEntry 2 }
-                
+
         extremeSubMajorVersion   OBJECT-TYPE
 		SYNTAX  INTEGER
 		MAX-ACCESS  read-only
-		STATUS current
+		STATUS deprecated
 		DESCRIPTION
-		"The ExtremeWare Release Sub-major Version."
+		"The ExtremeWare Release Sub-major Version. This object is
+                 deprecated from extremeware 7.3. The extremeMinorVersion
+                 gets the value of extremeSubMajorVersion and the new
+                 extremePatchVersion gets the value of old extremeMinorVersion
+                 value."
 		::= { extremeImageEntry 3 }
                 
         extremeMinorVersion   OBJECT-TYPE
@@ -661,11 +698,80 @@ extremeImageTable OBJECT-TYPE
                        ssh(2)
                       }
 		MAX-ACCESS  read-only
+		STATUS deprecated
+		DESCRIPTION
+		"Indicates whether image was built with ssh.This object
+                 is deprecated, the ssh capability can be obtained from
+                 the extremeImageSshCapability of the ImageFeatureTable"
+		::= { extremeImageEntry 11 }
+               
+        extremePatchVersion   OBJECT-TYPE
+		SYNTAX  INTEGER
+		MAX-ACCESS  read-only
 		STATUS current
 		DESCRIPTION
-		"Indicates whether image was built with ssh."
-		::= { extremeImageEntry 11 }
+		"The ExtremeWare Release Patch Version."
+		::= { extremeImageEntry 12 }
                 
+extremeImageFeatureTable OBJECT-TYPE
+		SYNTAX  SEQUENCE OF ExtremeImageFeatureEntry
+		MAX-ACCESS  not-accessible
+		STATUS current
+		DESCRIPTION
+		"A table containing information about the software features."
+        ::= { extremeSystemCommon 35 }
+
+	extremeImageFeatureEntry OBJECT-TYPE
+		SYNTAX  ExtremeImageFeatureEntry
+		MAX-ACCESS  not-accessible
+		STATUS current
+		DESCRIPTION
+		"A table entry containing information about software features."
+		INDEX	  { extremeImageFeatureNumber }
+			::= { extremeImageFeatureTable 1 }
+
+	ExtremeImageFeatureEntry ::= SEQUENCE {
+                extremeImageFeatureNumber 		INTEGER,
+                extremeImageSshCapability       INTEGER,
+                extremeImageUAACapability       INTEGER
+	}
+
+        extremeImageFeatureNumber OBJECT-TYPE
+		SYNTAX  INTEGER {
+                       cur(0),
+                       pri(1),
+                       sec(2)
+                }
+		MAX-ACCESS  read-only
+		STATUS current
+		DESCRIPTION
+		"A unique integer identifying the particular software
+                image."
+		::= { extremeImageFeatureEntry 1 }
+
+        extremeImageSshCapability   OBJECT-TYPE
+		SYNTAX  INTEGER {
+                       unknown(0),
+                       nossh(1),
+                       ssh(2)
+                      }
+		MAX-ACCESS  read-only
+		STATUS current
+		DESCRIPTION
+		"Indicates whether image has ssh capability."
+		::= { extremeImageFeatureEntry 2 }
+
+        extremeImageUAACapability   OBJECT-TYPE
+		SYNTAX  INTEGER {
+                       unknown(0),
+                       nouaa(1),
+                       uaa(2)
+                      }
+		MAX-ACCESS  read-only
+		STATUS current
+		DESCRIPTION
+		"Indicates whether image has Wireless(UAA) components."
+		::= { extremeImageFeatureEntry 3 }
 
 ---------------------------------------------------------------------------
 	-- Objects specific to Chassis products
@@ -778,7 +884,8 @@ extremeImageTable OBJECT-TYPE
             p48c(106),
             a3c(107),
             a12c(108),
-	    pxm(200)
+	        pxm(200),
+            s300fixed(201)
 		}
 		MAX-ACCESS  read-write
 		STATUS current
@@ -848,7 +955,8 @@ extremeImageTable OBJECT-TYPE
             a3c(107),
             a12c(108),
 	        pxm(200),
-                msm3(202)
+            s300fixed(201),
+            msm3(202)
 		}
 		MAX-ACCESS  read-only
 		STATUS current
@@ -866,7 +974,16 @@ extremeImageTable OBJECT-TYPE
 			failed(4),
 			operational(5),
                         powerdown(6),
-			unknown(7)
+			unknown(7),
+                        present(8),
+                        poweron(9),
+                        post(10),
+                        downloading(11),
+                        booting(12),
+                        offline(13),
+                        initializing(14),
+                        invalid(100) 
+
 		}
 		MAX-ACCESS  read-only
 		STATUS current
@@ -944,4 +1061,3 @@ extremeImageTable OBJECT-TYPE
 
 
 END
-

@@ -1,0 +1,1532 @@
+-- *****************************************************************
+-- CISCO-CONTENT-SERVICES-MIB.my:  Cisco Content Billing MIB file
+--   
+-- January, 2007 Thamilarasu K
+--   
+-- Copyright (c) 2007 by cisco Systems, Inc.
+-- All rights reserved.
+--   
+-- ****************************************************************
+
+CISCO-CONTENT-SERVICES-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Counter32,
+    Counter64,
+    Gauge32,
+    Integer32,
+    NOTIFICATION-TYPE
+        FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION,
+    TruthValue,
+    RowStatus,
+    TimeInterval,
+    TimeStamp
+        FROM SNMPv2-TC
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP,
+    NOTIFICATION-GROUP
+        FROM SNMPv2-CONF
+    InetAddressType,
+    InetAddress,
+    InetPortNumber
+        FROM INET-ADDRESS-MIB
+    MplsVpnId
+        FROM MPLS-VPN-MIB
+    entPhysicalIndex
+        FROM ENTITY-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
+
+
+ciscoContentServicesMIB MODULE-IDENTITY
+    LAST-UPDATED    "200703210000Z"
+    ORGANIZATION    "Cisco Systems, Inc."
+    CONTACT-INFO
+            "Cisco Systems
+            Customer Service
+
+            Postal: 170 W. Tasman Drive
+            San Jose, CA  95134
+            USA
+
+            tel: +1 800 553-NETS
+
+            E-Mail: cs-csg@cisco.com"
+    DESCRIPTION
+        "Content Service is a capability to examine IP/TCP/UDP headers,
+        payload and enable billing based on the content being provided.
+
+        Abbreviations:
+
+          BMA        Billing Mediation Agent. A BMA is the
+                     server that receives accounting records.
+
+          QuotaMgr   Quota Manager. This is a server that
+                     receives requests and returns 
+                     a billing quota for prepaid billing 
+                     charges.
+
+          VRF        Virtual Routing and Forwarding
+
+          UDB        User Database. The user database is a 
+                     service that translates a client IP 
+                     address into a user identifier."
+    REVISION        "200703210000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 597 }
+
+
+ciscoContentServicesMIBNotifs  OBJECT IDENTIFIER
+    ::= { ciscoContentServicesMIB 0 }
+
+ciscoContentServicesMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoContentServicesMIB 1 }
+
+ciscoContentServicesMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoContentServicesMIB 2 }
+
+ccsConfig  OBJECT IDENTIFIER
+    ::= { ciscoContentServicesMIBObjects 1 }
+
+ccsStats  OBJECT IDENTIFIER
+    ::= { ciscoContentServicesMIBObjects 2 }
+
+ccsNotifConfig  OBJECT IDENTIFIER
+    ::= { ciscoContentServicesMIBObjects 3 }
+
+-- ********************************************************************
+-- *                                                                  *
+-- * Textual Conventions                                              *
+-- *                                                                  *
+-- ********************************************************************
+
+CcsServerPriority ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "This convention applies to  billing mediation agents
+        and quota managers. When multiple servers of the same
+        type are defined, the priority defines the order of
+        activation of the servers. The lowest priority value
+        designates the highest priority."
+    SYNTAX          Integer32 (1..1000 )
+-- *************************************************************
+-- *                                                           *
+-- * Content Billing Global Config Table                       *
+-- *                                                           *
+-- *************************************************************
+
+ccsGlobalCfgTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsGlobalCfgTableEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains configuration information
+        for content billing feature."
+    ::= { ccsConfig 1 }
+
+ccsGlobalCfgTableEntry OBJECT-TYPE
+    SYNTAX          CcsGlobalCfgTableEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each row in this table contains configuration
+        information on content billing feature.
+
+        entPhysicalIndex identifies the entity that
+        that provides the content services."
+    INDEX           { entPhysicalIndex } 
+    ::= { ccsGlobalCfgTable 1 }
+
+CcsGlobalCfgTableEntry ::= SEQUENCE {
+        ccsgcBMALostRecordTimer      TimeInterval,
+        ccsgcQuotaMgrLostRecordTimer TimeInterval
+}
+
+ccsgcBMALostRecordTimer OBJECT-TYPE
+    SYNTAX          TimeInterval
+    UNITS           "seconds"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The time interval for monitoring the lost-record
+        event (ccsBMALostRecordEvent) of a billing
+        mediation agent (BMA). A notification is issued when
+        the BMA record is lost. An interval timer is 
+        started with this value. When the timer expires the
+        lost record count (ccsBMALostRecords) is checked. 
+        If the lost record count has increased since the
+        previous the detection, the timer is restarted to
+        monitor another period. If the lost record count
+        has not increased since the previous detection,
+        a final notification is sent to indicate that the
+        condition has cleared.
+
+        The interval value ranges from 1 to 2147483647."
+    DEFVAL          { 60 } 
+    ::= { ccsGlobalCfgTableEntry 2 }
+
+ccsgcQuotaMgrLostRecordTimer OBJECT-TYPE
+    SYNTAX          TimeInterval
+    UNITS           "seconds"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The time interval for monitoring the lost-record
+        event (ccsQuotaMgrLostRecordEvent) of a quota
+        manager. A notification is issued when quota manager
+        record is lost. An interval timer is 
+        started with this value. When the timer expires the
+        lost record count (ccsQuotaMgrLostRecords) is checked. 
+        If the lost record count has increased since the
+        previous the detection, the timer is restarted to
+        monitor another period. If the lost record count
+        has not increased since the previous detection,
+        a final notification is sent to indicate that the
+        condition has cleared.
+
+        The interval value ranges from 1 to 2147483647."
+    DEFVAL          { 60 } 
+    ::= { ccsGlobalCfgTableEntry 3 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Content Billing Global Stats Table                   *
+-- *                                                           *
+-- *************************************************************
+
+ccsGlobalStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsGlobalStatsTableEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the global statistical information
+        in content billing feature."
+    ::= { ccsStats 1 }
+
+ccsGlobalStatsTableEntry OBJECT-TYPE
+    SYNTAX          CcsGlobalStatsTableEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each row in this table contains statistical information
+        for content billing feature.
+
+        entPhysicalIndex identifies the entity that
+        that provides the content services."
+    INDEX           { entPhysicalIndex } 
+    ::= { ccsGlobalStatsTable 1 }
+
+CcsGlobalStatsTableEntry ::= SEQUENCE {
+        ccsgsUserCurrent               Gauge32,
+        ccsgsUserHighWater             Gauge32,
+        ccsgsUserHighWaterResetTime    TimeStamp,
+        ccsgsSessionCurrent            Gauge32,
+        ccsgsSessionHighWater          Gauge32,
+        ccsgsSessionHighWaterResetTime TimeStamp
+}
+
+ccsgsUserCurrent OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "users"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The total number of users with one or more active
+        sessions on the system." 
+    ::= { ccsGlobalStatsTableEntry 1 }
+
+ccsgsUserHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "users"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The highest number of active users as reported by
+        ccsgsUserCurrent object since the object was reset as
+        indicated by ccsgsUserHighWaterResetTime.  The only
+        write operation allowed is to reset the value to 0." 
+    ::= { ccsGlobalStatsTableEntry 2 }
+
+ccsgsUserHighWaterResetTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the ccsgsUserHighWater object was
+        last reset to 0." 
+    ::= { ccsGlobalStatsTableEntry 3 }
+
+ccsgsSessionCurrent OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "sessions"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The total number of sessions on the system.  A session
+        corresponds to a TCP/UDP flow." 
+    ::= { ccsGlobalStatsTableEntry 4 }
+
+ccsgsSessionHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The highest number of active sessions as reported by the
+        ccsgsSessionCurrent object since object was reset as indicated
+        by ccsgsSessionHighWaterResetTime.  The only write operation
+        allowed is to reset the value to zero." 
+    ::= { ccsGlobalStatsTableEntry 5 }
+
+ccsgsSessionHighWaterResetTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the ccsgsSessionHighWater object was
+        last reset to 0." 
+    ::= { ccsGlobalStatsTableEntry 6 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Content Billing User Database Table                  *
+-- *                                                           *
+-- *************************************************************
+
+ccsUserDbTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsUserDbTableEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Table of User Database Server. Entries are added to
+        this table via ccsUserDbRowStatus in accordance with
+        the RowStatus convention."
+    ::= { ccsStats 2 }
+
+ccsUserDbTableEntry OBJECT-TYPE
+    SYNTAX          CcsUserDbTableEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Entry that defines parameters for a User Database.
+        The User Database is a server that returns a userid
+        given an IP address received in request.
+
+        entPhysicalIndex identifies the entity that
+        that provides the content services."
+    INDEX           {
+                        entPhysicalIndex,
+                        ccsUserDbVrfName,
+                        ccsUserDbIpAddrType,
+                        ccsUserDbIpAddr,
+                        ccsUserDbPort
+                    } 
+    ::= { ccsUserDbTable 1 }
+
+CcsUserDbTableEntry ::= SEQUENCE {
+        ccsUserDbVrfName        MplsVpnId,
+        ccsUserDbIpAddrType     InetAddressType,
+        ccsUserDbIpAddr         InetAddress,
+        ccsUserDbPort           InetPortNumber,
+        ccsUserDbState          INTEGER ,
+        ccsUserDbRequests       Counter32,
+        ccsUserDbHCRequests     Counter64,
+        ccsUserDbUidsReturned   Counter32,
+        ccsUserDbHCUidsReturned Counter64,
+        ccsUserDbReqResent      Counter32,
+        ccsUserDbHCReqResent    Counter64,
+        ccsUserDbReqTimeouts    Counter32,
+        ccsUserDbHCReqTimeouts  Counter64,
+        ccsUserDbReqErrors      Counter32,
+        ccsUserDbHCReqErrors    Counter64,
+        ccsUserDbRowStatus      RowStatus
+}
+
+ccsUserDbVrfName OBJECT-TYPE
+    SYNTAX          MplsVpnId
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Name of the VRF over which communication with
+        User Data Server occurs.  If no VRF is specified,
+        the global routing table is used." 
+    ::= { ccsUserDbTableEntry 1 }
+
+ccsUserDbIpAddrType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Represents the type of the address specified by
+        ccsUserDbIpAddr." 
+    ::= { ccsUserDbTableEntry 2 }
+
+ccsUserDbIpAddr OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The IP address of the user database." 
+    ::= { ccsUserDbTableEntry 3 }
+
+ccsUserDbPort OBJECT-TYPE
+    SYNTAX          InetPortNumber
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The listening UDP port of the user database." 
+    ::= { ccsUserDbTableEntry 4 }
+
+ccsUserDbState OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        reset(1),
+                        active(2),
+                        failed(3)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "State of the user database.
+        'reset'    - State before the database is determined
+                     to be active.
+        'active'   - The database is available and processing
+                     requests.
+        'failed'   - The database has failed and is not  
+                     processing requests." 
+    ::= { ccsUserDbTableEntry 5 }
+
+-- User Database statistics
+ccsUserDbRequests OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of user database requests." 
+    ::= { ccsUserDbTableEntry 6 }
+
+ccsUserDbHCRequests OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of user database requests.
+
+        This object is a 64-bit version of 
+        ccsUserDbRequests." 
+    ::= { ccsUserDbTableEntry 7 }
+
+ccsUserDbUidsReturned OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "returned identifiers"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of user identifiers returned." 
+    ::= { ccsUserDbTableEntry 8 }
+
+ccsUserDbHCUidsReturned OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "returned identifiers"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of user identifiers returned.
+
+        This object is a 64-bit version of 
+        ccsUserDbHCUidsReturned." 
+    ::= { ccsUserDbTableEntry 9 }
+
+ccsUserDbReqResent OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of database requests resent." 
+    ::= { ccsUserDbTableEntry 10 }
+
+ccsUserDbHCReqResent OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of database requests resent.
+
+        This object is a 64-bit version of 
+        ccsUserDbReqResent." 
+    ::= { ccsUserDbTableEntry 11 }
+
+ccsUserDbReqTimeouts OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "timeouts"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of user database requests that have timed out." 
+    ::= { ccsUserDbTableEntry 12 }
+
+ccsUserDbHCReqTimeouts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "timeouts"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of user database requests that have timed out.
+
+        This object is a 64-bit version of 
+        ccsUserDbReqTimeouts." 
+    ::= { ccsUserDbTableEntry 13 }
+
+ccsUserDbReqErrors OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "errors"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of errors returned on user database requests." 
+    ::= { ccsUserDbTableEntry 14 }
+
+ccsUserDbHCReqErrors OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "errors"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of errors returned on user database requests.
+
+        This object is a 64-bit version of 
+        ccsUserDbReqErrors." 
+    ::= { ccsUserDbTableEntry 15 }
+
+ccsUserDbRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used by the manager to create
+        or delete the row entry in the ccsUserDbTable
+        following the RowStatus textual convention.
+
+        This row can be deleted regardless of the
+        value of ccsUserDbState.  If all ccsUserDbTable
+        rows have been deleted, then other mechanisms,
+        such as intercepting RADIUS flows, may be used to
+        associate a user name with an IP address. If
+        this is not possible, then the user name will
+        be absent from generated accounting records." 
+    ::= { ccsUserDbTableEntry 16 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Table of Content billing mediation agents            *
+-- *                                                           *
+-- *************************************************************
+
+ccsBMATable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsBMATableEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A table of billing mediation agents (BMAs).
+        Columnar objects can be modified when the row is 'active'.
+        Rows can be created and destroyed. Entries are added to 
+        this table via ccsBMARowStatus in accordance with the 
+        RowStatus convention.
+
+        Multiple BMAs can be configured for the purposes of 
+        load sharing and redundancy in the event of failure."
+    ::= { ccsStats 3 }
+
+ccsBMATableEntry OBJECT-TYPE
+    SYNTAX          CcsBMATableEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Entry that defines parameters for a mediation agent.
+
+        entPhysicalIndex identifies the entity that
+        that provides the content services."
+    INDEX           {
+                        entPhysicalIndex,
+                        ccsBMAVrfName,
+                        ccsBMAIpAddrType,
+                        ccsBMAIpAddr,
+                        ccsBMAPort
+                    } 
+    ::= { ccsBMATable 1 }
+
+CcsBMATableEntry ::= SEQUENCE {
+        ccsBMAVrfName            MplsVpnId,
+        ccsBMAIpAddrType         InetAddressType,
+        ccsBMAIpAddr             InetAddress,
+        ccsBMAPort               InetPortNumber,
+        ccsBMAPriority           CcsServerPriority,
+        ccsBMAState              INTEGER ,
+        ccsBMALostRecords        Counter32,
+        ccsBMAHCLostRecords      Counter64,
+        ccsBMATotalSent          Counter32,
+        ccsBMAHCTotalSent        Counter64,
+        ccsBMAFailAck            Counter32,
+        ccsBMAHCFailAck          Counter64,
+        ccsBMAOutstanding        Gauge32,
+        ccsBMAHighWater          Gauge32,
+        ccsBMAHighWaterResetTime TimeStamp,
+        ccsBMABadRecord          Counter32,
+        ccsBMAHCBadRecord        Counter64,
+        ccsBMARetransmit         Counter32,
+        ccsBMAHCRetransmit       Counter64,
+        ccsBMARowStatus          RowStatus
+}
+
+ccsBMAVrfName OBJECT-TYPE
+    SYNTAX          MplsVpnId
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Name of the VRF over which communication with
+        Agent occurs.  If no VRF is specified, the
+        global routing table is used." 
+    ::= { ccsBMATableEntry 1 }
+
+ccsBMAIpAddrType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Represents the type of the address specified by
+        ccsBMAIpAddr." 
+    ::= { ccsBMATableEntry 2 }
+
+ccsBMAIpAddr OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The IP address of a BMA." 
+    ::= { ccsBMATableEntry 3 }
+
+ccsBMAPort OBJECT-TYPE
+    SYNTAX          InetPortNumber
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The UDP port of a BMA." 
+    ::= { ccsBMATableEntry 4 }
+
+ccsBMAPriority OBJECT-TYPE
+    SYNTAX          CcsServerPriority
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The activation priority of a BMA. BMAs are activated
+        in highest priority order. If multiple BMAs are active for
+        load sharing, the highest priority BMAs available are 
+        activated. If an active BMA fails, the next highest 
+        priority BMA (in 'standby' state) is activated." 
+    ::= { ccsBMATableEntry 5 }
+
+ccsBMAState OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        standby(1),
+                        failed(2),
+                        active(3),
+                        echowait(4),
+                        nawait(5),
+                        suspended(6)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "States of a billing mediation agent.
+        'standby'   - The server is prepared to become active.
+        'failed'    - The server has failed to respond to requests.
+        'active'    - The server has been activated to receive
+                      requests.
+        'echowait'  - An echo request to this 
+                      billing mediation agent and is waiting 
+                      for a response.
+        'nawait'    - A node-alive request to this 
+                      billing mediation agent and is waiting
+                      for a response.
+        'suspended' - The server has receive a stop request
+                      from the operator." 
+    ::= { ccsBMATableEntry 6 }
+
+ccsBMALostRecords OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of lost records since system initialization
+        or the last time the counter wrapped." 
+    ::= { ccsBMATableEntry 7 }
+
+ccsBMAHCLostRecords OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of lost records since system initialization
+        or the last time the counter wrapped.
+
+        This object is a 64-bit version of 
+        ccsBMALostRecords." 
+    ::= { ccsBMATableEntry 8 }
+
+ccsBMATotalSent OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of records sent to the billing mediation
+        agent." 
+    ::= { ccsBMATableEntry 9 }
+
+ccsBMAHCTotalSent OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of records sent to the billing mediation
+        agent.
+
+        This object is a 64-bit version of 
+        ccsBMATotalSent." 
+    ::= { ccsBMATableEntry 10 }
+
+ccsBMAFailAck OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "acknowledgements"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of acknowledgments received from the
+        billing mediation agent for which there are no
+        outstanding requests." 
+    ::= { ccsBMATableEntry 11 }
+
+ccsBMAHCFailAck OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "acknowledgements"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of acknowledgments received from the
+        billing mediation agent for which there are no
+        outstanding requests.
+
+        This object is a 64-bit version of 
+        ccsBMAFailAck." 
+    ::= { ccsBMATableEntry 12 }
+
+ccsBMAOutstanding OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Current number of messages waiting to be ACKed." 
+    ::= { ccsBMATableEntry 13 }
+
+ccsBMAHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The highest number of messages waiting for ACKs as reported
+        by ccsBMAOutstanding object since object was reset as indicated
+        by ccsBMAHighWaterResetTime.  The only write operation allowed 
+        is to reset the value to 0." 
+    ::= { ccsBMATableEntry 14 }
+
+ccsBMAHighWaterResetTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the ccsBMAHighWater object was
+        last reset to 0." 
+    ::= { ccsBMATableEntry 15 }
+
+ccsBMABadRecord OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of bad records received. These are records
+        in which an error was detected while attempting to
+        decode the contents." 
+    ::= { ccsBMATableEntry 16 }
+
+ccsBMAHCBadRecord OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of bad records received. These are records
+        in which an error was detected while attempting to
+        decode the contents.
+
+        This object is a 64-bit version of 
+        ccsBMABadRecord." 
+    ::= { ccsBMATableEntry 17 }
+
+ccsBMARetransmit OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of messages retransmitted to the billing
+        mediation agent." 
+    ::= { ccsBMATableEntry 18 }
+
+ccsBMAHCRetransmit OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of messages retransmitted to the billing
+        mediation agent.
+
+        This object is a 64-bit version of 
+        ccsBMARetransmit." 
+    ::= { ccsBMATableEntry 19 }
+
+ccsBMARowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used by the manager to create
+        or delete the row entry in the ccsBMATable
+        following the RowStatus textual convention.
+
+        This row can be deleted regardless of the value
+        of ccsBMAState. Requests queued for the deleted
+        BMA are requeued to another BMA." 
+    ::= { ccsBMATableEntry 20 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Table of Content Billing Quota Managers              *
+-- *                                                           *
+-- *************************************************************
+
+ccsQuotaMgrTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsQuotaMgrTableEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Table of quota managers. Columnar objects can
+        be modified when the row is 'active'. Rows can be created
+        and destroyed. Entries are added to this table via 
+        ccsQuotaMgrRowStatus in accordance with the RowStatus
+        convention."
+    ::= { ccsStats 4 }
+
+ccsQuotaMgrTableEntry OBJECT-TYPE
+    SYNTAX          CcsQuotaMgrTableEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Entry that defines parameters for a quota manager.
+
+        entPhysicalIndex identifies the entity that
+        that provides the content services."
+    INDEX           {
+                        entPhysicalIndex,
+                        ccsQuotaMgrVrfName,
+                        ccsQuotaMgrIpAddrType,
+                        ccsQuotaMgrIpAddr,
+                        ccsQuotaMgrPort
+                    } 
+    ::= { ccsQuotaMgrTable 1 }
+
+CcsQuotaMgrTableEntry ::= SEQUENCE {
+        ccsQuotaMgrVrfName            MplsVpnId,
+        ccsQuotaMgrIpAddrType         InetAddressType,
+        ccsQuotaMgrIpAddr             InetAddress,
+        ccsQuotaMgrPort               InetPortNumber,
+        ccsQuotaMgrPriority           CcsServerPriority,
+        ccsQuotaMgrState              INTEGER ,
+        ccsQuotaMgrLostRecords        Counter32,
+        ccsQuotaMgrHCLostRecords      Counter64,
+        ccsQuotaMgrTotalSent          Counter32,
+        ccsQuotaMgrHCTotalSent        Counter64,
+        ccsQuotaMgrFailAck            Counter32,
+        ccsQuotaMgrHCFailAck          Counter64,
+        ccsQuotaMgrOutstanding        Gauge32,
+        ccsQuotaMgrHighWater          Gauge32,
+        ccsQuotaMgrHighWaterResetTime TimeStamp,
+        ccsQuotaMgrBadRecord          Counter32,
+        ccsQuotaMgrHCBadRecord        Counter64,
+        ccsQuotaMgrRetransmit         Counter32,
+        ccsQuotaMgrHCRetransmit       Counter64,
+        ccsQuotaMgrRowStatus          RowStatus
+}
+
+ccsQuotaMgrVrfName OBJECT-TYPE
+    SYNTAX          MplsVpnId
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Name of the VRF over which communication with
+        Quota Server occurs.  If no VRF is specified, the
+        global routing table is used." 
+    ::= { ccsQuotaMgrTableEntry 1 }
+
+ccsQuotaMgrIpAddrType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Represents the type of the address specified by
+        ccsQuotaMgrIpAddr." 
+    ::= { ccsQuotaMgrTableEntry 2 }
+
+ccsQuotaMgrIpAddr OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The IP address of a quota manager." 
+    ::= { ccsQuotaMgrTableEntry 3 }
+
+ccsQuotaMgrPort OBJECT-TYPE
+    SYNTAX          InetPortNumber
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The UDP port of a quota manager." 
+    ::= { ccsQuotaMgrTableEntry 4 }
+
+ccsQuotaMgrPriority OBJECT-TYPE
+    SYNTAX          CcsServerPriority
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The priority of a quota manager." 
+    ::= { ccsQuotaMgrTableEntry 5 }
+
+ccsQuotaMgrState OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        standby(1),
+                        failed(2),
+                        active(3),
+                        echowait(4),
+                        nawait(5),
+                        suspended(6)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "States of a quota manager:
+        'standby'   - The QuotaMgr is prepared to become active.
+        'failed'    - The QuotaMgr has failed to respond to
+                      requests.
+        'active'    - The QuotaMgr has been activated to receive
+                      requests.
+        'echowait'  - An echo request to this QuotaMgr
+                      and is waiting for a response.
+        'nawait'    - A node-alive request to this 
+                      QuotaMgr and is waiting for a response. 
+        'suspended' - The QuotaMgr has receive a stop request
+                      from the operator." 
+    ::= { ccsQuotaMgrTableEntry 6 }
+
+ccsQuotaMgrLostRecords OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of lost records since system initialization
+        or the last time the counter wrapped." 
+    ::= { ccsQuotaMgrTableEntry 7 }
+
+ccsQuotaMgrHCLostRecords OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of lost records since system initialization
+        or the last time the counter wrapped.
+
+         This object is a 64-bit version of 
+        ccsQuotaMgrLostRecords." 
+    ::= { ccsQuotaMgrTableEntry 8 }
+
+ccsQuotaMgrTotalSent OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of records sent to the quota manager." 
+    ::= { ccsQuotaMgrTableEntry 9 }
+
+ccsQuotaMgrHCTotalSent OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of records sent to the quota manager.
+
+        This object is a 64-bit version of 
+        ccsQuotaMgrTotalSent." 
+    ::= { ccsQuotaMgrTableEntry 10 }
+
+ccsQuotaMgrFailAck OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "acknowledgements"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of acknowledgments received from the
+        quota manager for which there are no requests." 
+    ::= { ccsQuotaMgrTableEntry 11 }
+
+ccsQuotaMgrHCFailAck OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "acknowledgements"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of acknowledgments received from the
+        quota manager for which there are no requests.
+
+        This object is a 64-bit version of 
+        ccsQuotaMgrFailAck." 
+    ::= { ccsQuotaMgrTableEntry 12 }
+
+ccsQuotaMgrOutstanding OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Current number of messages waiting to be ACKed." 
+    ::= { ccsQuotaMgrTableEntry 13 }
+
+ccsQuotaMgrHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The highest number of messages waiting for ACKs as reported
+        by ccsQuotaMgrOutstanding object since object was reset as indicated
+        by ccsQuotaMgrHighWaterResetTime.  The only write operation allowed 
+        is to reset the value to 0." 
+    ::= { ccsQuotaMgrTableEntry 14 }
+
+ccsQuotaMgrHighWaterResetTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the ccsgsUserHighWater object was
+        last reset to 0." 
+    ::= { ccsQuotaMgrTableEntry 15 }
+
+ccsQuotaMgrBadRecord OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of bad records received. These are records
+        in which the an error detected while attempting to
+        decode the contents." 
+    ::= { ccsQuotaMgrTableEntry 16 }
+
+ccsQuotaMgrHCBadRecord OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of bad records received. These are records
+        in which the an error detected while attempting to
+        decode the contents.
+
+        This object is a 64-bit version of 
+        ccsQuotaMgrBadRecord." 
+    ::= { ccsQuotaMgrTableEntry 17 }
+
+ccsQuotaMgrRetransmit OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of messages retransmitted to the billing
+        mediation agent." 
+    ::= { ccsQuotaMgrTableEntry 18 }
+
+ccsQuotaMgrHCRetransmit OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of messages retransmitted to the billing
+        mediation agent.
+
+        This object is a 64-bit version of 
+        ccsQuotaMgrRetransmit." 
+    ::= { ccsQuotaMgrTableEntry 19 }
+
+ccsQuotaMgrRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used by the manager to create
+        or delete the row entry in the ccsQuotaMgrTable
+        following the RowStatus textual convention. 
+
+        For the prepaid billing
+        function, at least one QuotaMgr must be available.
+        Therefore, deletion of the last
+        QuotaMgr causes all accounting processing to switch
+        to post-paid billing.
+
+        This row can be deleted regardless of the value
+        of ccsQuotaMgrState. Requests queued for the deleted
+        QuotaMgr are requeued to another QuotaMgr if one is
+        available. If no QuotaMgr is available, processing
+        reverts to post-paid billing." 
+    ::= { ccsQuotaMgrTableEntry 20 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Notifications Config Table                         *
+-- *                                                           *
+-- *************************************************************
+
+ccsNotifCfgTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsNotifCfgTableEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Notification config table."
+    ::= { ccsNotifConfig 1 }
+
+ccsNotifCfgTableEntry OBJECT-TYPE
+    SYNTAX          CcsNotifCfgTableEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Entry that defines the notification objects.
+
+        entPhysicalIndex identifies the entity that
+        that provides the content services."
+    INDEX           { entPhysicalIndex } 
+    ::= { ccsNotifCfgTable 1 }
+
+CcsNotifCfgTableEntry ::= SEQUENCE {
+        ccsBMAStateChangeNotifEnabled          TruthValue,
+        ccsQuotaMgrStateChangeNotifEnabled     TruthValue,
+        ccsUserDbStateChangeNotifEnabled       TruthValue,
+        ccsBMALostRecordEventNotifEnabled      TruthValue,
+        ccsQuotaMgrLostRecordEventNotifEnabled TruthValue
+}
+
+ccsBMAStateChangeNotifEnabled OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object controls the generation of the
+        Billing Mediation Agent state change 
+        notification (ciscoContentServicesBMAStateChange)
+
+        'true'  Indicates that all BMA state change
+                notification is enabled.
+        'false' Indicates that notification is disabled."
+    DEFVAL          { false } 
+    ::= { ccsNotifCfgTableEntry 1 }
+
+ccsQuotaMgrStateChangeNotifEnabled OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object controls the generation of the Quota Manager
+        state change notification (ciscoContentServicesQuotaMgrStateChange)
+
+        'true'  Indicates that all Quota Manager state change
+                notification is enabled.
+        'false' Indicates that notification is disabled."
+    DEFVAL          { false } 
+    ::= { ccsNotifCfgTableEntry 2 }
+
+ccsUserDbStateChangeNotifEnabled OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object controls the generation of the User Database Server
+        state change notification (ciscoContentServicesUserDbStateChange)
+
+        'true'  Indicates that all User DB state change
+                notification is enabled.
+        'false' Indicates that notification is disabled."
+    DEFVAL          { false } 
+    ::= { ccsNotifCfgTableEntry 3 }
+
+ccsBMALostRecordEventNotifEnabled OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object controls the generation of the
+        Billing Mediation Agent Lost Reocrd 
+        notification (ciscoContentServicesBMALostRecordEvent)
+
+        'true'  Indicates that all BMA record lost event
+                notification is enabled.
+        'false' Indicates that notification is disabled."
+    DEFVAL          { false } 
+    ::= { ccsNotifCfgTableEntry 4 }
+
+ccsQuotaMgrLostRecordEventNotifEnabled OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object controls the generation of the
+        Quota Manager Lost Record notification 
+        (ciscoContentServicesQuotaMgrLostRecordEvent)
+
+        'true'  Indicates that all Quota Manager record lost event
+                notification is enabled.
+        'false' Indicates that notification is disabled."
+    DEFVAL          { false } 
+    ::= { ccsNotifCfgTableEntry 5 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Notifications                                        *
+-- *                                                           *
+-- *************************************************************
+
+
+ciscoContentServicesBMAStateChange NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsBMAState,
+                        ccsBMALostRecords,
+                        ccsBMATotalSent,
+                        ccsBMAFailAck,
+                        ccsBMAOutstanding,
+                        ccsBMAHighWater,
+                        ccsBMABadRecord,
+                        ccsBMARetransmit
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is issued when ccsBMAStateChangeNotifEnabled
+        is set to 'true', and the billing mediation agent changes
+        state. There is one exception: No notification is issued
+        for state changes involving 'echowait' because this would
+        cause an excessive number of notifications."
+   ::= { ciscoContentServicesMIBNotifs 1 }
+
+
+ciscoContentServicesQuotaMgrStateChange NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsQuotaMgrState,
+                        ccsQuotaMgrLostRecords,
+                        ccsQuotaMgrTotalSent,
+                        ccsQuotaMgrFailAck,
+                        ccsQuotaMgrOutstanding,
+                        ccsQuotaMgrHighWater,
+                        ccsQuotaMgrBadRecord,
+                        ccsQuotaMgrRetransmit
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is issued when ccsQuotaMgrStateChangeNotifEnabled
+        is set to 'true', and the quota manager changes state. 
+        There is one exception: No notification is issued for 
+        state changes involving 'echowait' because this would 
+        cause an excessive number of notifications."
+   ::= { ciscoContentServicesMIBNotifs 2 }
+
+
+ciscoContentServicesUserDbStateChange NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsUserDbState,
+                        ccsUserDbRequests,
+                        ccsUserDbUidsReturned,
+                        ccsUserDbReqResent,
+                        ccsUserDbReqTimeouts,
+                        ccsUserDbReqErrors
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is issued when ccsUserDbStateChangeNotifEnabled
+        is set to 'true', and the user database changes state."
+   ::= { ciscoContentServicesMIBNotifs 3 }
+
+
+ciscoContentServicesBMALostRecordEvent NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsBMAState,
+                        ccsBMALostRecords,
+                        ccsBMATotalSent,
+                        ccsBMAFailAck,
+                        ccsBMAOutstanding,
+                        ccsBMAHighWater,
+                        ccsBMABadRecord,
+                        ccsBMARetransmit
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is issued when ccsBMAStateChangeNotifEnabled
+        is set to 'true', and accounting records,
+        should be sent to the billing mediation agent, must be
+        discarded.
+
+        Initially, ccsBMALostRecords is set to 0.
+        When a record is discarded, ccsBMALostRecords 
+        is incremented, a period timer is started, and this 
+        notification is issued. The NMS and the agent save 
+        this value. The agent continues to increment 
+        ccsBMALostRecords each time a record is lost.  
+        When the period timer expires, the agent compares
+        the current value of ccsBMALostRecords with
+        the previous (saved) value. If the values are equal
+        this notification is issued again, signalling to the
+        NMS that the condition has been cleared. Otherwise,
+        the timer is restarted to monitor the next period.
+
+        When a record is lost and no period timer is active, 
+        this notification is issued and the above procedure 
+        is repeated."
+   ::= { ciscoContentServicesMIBNotifs 4 }
+
+
+ciscoContentServicesQuotaMgrLostRecordEvent NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsQuotaMgrState,
+                        ccsQuotaMgrLostRecords,
+                        ccsQuotaMgrTotalSent,
+                        ccsQuotaMgrFailAck,
+                        ccsQuotaMgrOutstanding,
+                        ccsQuotaMgrHighWater,
+                        ccsQuotaMgrBadRecord,
+                        ccsQuotaMgrRetransmit
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is issued when ccsQuotaMgrStateChangeNotifEnabled
+        is set to 'true', and request records to be sent to the 
+        quota manager must be discarded. The processing 
+        is the same as described in the description for 
+        ccsBMALostRecordEvent."
+   ::= { ciscoContentServicesMIBNotifs 5 }
+-- *************************************************************
+-- *                                                           *
+-- *      Conformance Information                              *
+-- *                                                           *
+-- *************************************************************
+ciscoContentServicesMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoContentServicesMIBConform 1 }
+
+ciscoContentServicesMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoContentServicesMIBConform 2 }
+
+
+-- compliance statements
+ciscoContentServicesMIBCompliance MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the Cisco Content Services MIB."
+    MODULE  -- this module
+    MANDATORY-GROUPS {
+                        ciscoContentServicesGlobalCfgGroup,
+                        ciscoContentServicesGlobalStatsGroup,
+                        ciscoContentServicesBMAGroup,
+                        ciscoContentServicesQuotaMgrGroup,
+                        ciscoContentServicesUserDbGroup,
+                        ciscoContentServicesNotifEnableGroup,
+                        ciscoContentServicesNotifGroup
+                    }
+
+    OBJECT          ccsBMAHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsQuotaMgrHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsBMAPriority
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsQuotaMgrPriority
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsBMARowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsQuotaMgrRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+    ::= { ciscoContentServicesMIBCompliances 1 }
+
+-- units of conformance
+ciscoContentServicesGlobalCfgGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsgcBMALostRecordTimer,
+                        ccsgcQuotaMgrLostRecordTimer
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Global Config objects."
+    ::= { ciscoContentServicesMIBGroups 1 }
+
+ciscoContentServicesGlobalStatsGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsgsUserCurrent,
+                        ccsgsUserHighWater,
+                        ccsgsUserHighWaterResetTime,
+                        ccsgsSessionCurrent,
+                        ccsgsSessionHighWater,
+                        ccsgsSessionHighWaterResetTime
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Global Statistic objects."
+    ::= { ciscoContentServicesMIBGroups 2 }
+
+ciscoContentServicesUserDbGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsUserDbState,
+                        ccsUserDbRequests,
+                        ccsUserDbHCRequests,
+                        ccsUserDbUidsReturned,
+                        ccsUserDbHCUidsReturned,
+                        ccsUserDbReqResent,
+                        ccsUserDbHCReqResent,
+                        ccsUserDbReqTimeouts,
+                        ccsUserDbHCReqTimeouts,
+                        ccsUserDbReqErrors,
+                        ccsUserDbHCReqErrors,
+                        ccsUserDbRowStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "User Database Statistics."
+    ::= { ciscoContentServicesMIBGroups 3 }
+
+ciscoContentServicesBMAGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsBMAPriority,
+                        ccsBMAState,
+                        ccsBMALostRecords,
+                        ccsBMAHCLostRecords,
+                        ccsBMATotalSent,
+                        ccsBMAHCTotalSent,
+                        ccsBMAFailAck,
+                        ccsBMAHCFailAck,
+                        ccsBMAOutstanding,
+                        ccsBMAHighWater,
+                        ccsBMAHighWaterResetTime,
+                        ccsBMABadRecord,
+                        ccsBMAHCBadRecord,
+                        ccsBMARetransmit,
+                        ccsBMAHCRetransmit,
+                        ccsBMARowStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "BMA Statistics."
+    ::= { ciscoContentServicesMIBGroups 4 }
+
+ciscoContentServicesQuotaMgrGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsQuotaMgrPriority,
+                        ccsQuotaMgrState,
+                        ccsQuotaMgrLostRecords,
+                        ccsQuotaMgrHCLostRecords,
+                        ccsQuotaMgrTotalSent,
+                        ccsQuotaMgrHCTotalSent,
+                        ccsQuotaMgrFailAck,
+                        ccsQuotaMgrHCFailAck,
+                        ccsQuotaMgrOutstanding,
+                        ccsQuotaMgrHighWater,
+                        ccsQuotaMgrHighWaterResetTime,
+                        ccsQuotaMgrBadRecord,
+                        ccsQuotaMgrHCBadRecord,
+                        ccsQuotaMgrRetransmit,
+                        ccsQuotaMgrHCRetransmit,
+                        ccsQuotaMgrRowStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Quota Manager Statistics."
+    ::= { ciscoContentServicesMIBGroups 5 }
+
+ciscoContentServicesNotifEnableGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsBMAStateChangeNotifEnabled,
+                        ccsQuotaMgrStateChangeNotifEnabled,
+                        ccsUserDbStateChangeNotifEnabled,
+                        ccsBMALostRecordEventNotifEnabled,
+                        ccsQuotaMgrLostRecordEventNotifEnabled
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Notifications enable/disable flags."
+    ::= { ciscoContentServicesMIBGroups 7 }
+
+ciscoContentServicesNotifGroup NOTIFICATION-GROUP
+   NOTIFICATIONS    {
+                        ciscoContentServicesBMAStateChange,
+                        ciscoContentServicesQuotaMgrStateChange,
+                        ciscoContentServicesUserDbStateChange,
+                        ciscoContentServicesBMALostRecordEvent,
+                        ciscoContentServicesQuotaMgrLostRecordEvent
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing notifications."
+    ::= { ciscoContentServicesMIBGroups 8 }
+
+END

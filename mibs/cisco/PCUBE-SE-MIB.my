@@ -4,7 +4,7 @@
 -- *
 -- * PCube was acquired by Cisco Systems on August 23, 2004 
 -- *
--- * Copyright (c) May 2006 by Cisco Systems, Inc.
+-- * Copyright (c) 2003-2005, 2006 by cisco Systems, Inc.
 -- * All rights reserved.
 -- * Author: Guy Keinan
 -- *------------------------------------------------------------------
@@ -28,7 +28,7 @@ IMPORTS
         FROM SNMP-FRAMEWORK-MIB;
        
 pcubeSeMIB  MODULE-IDENTITY
-    LAST-UPDATED "200605100000Z"
+    LAST-UPDATED    "200611070000Z" -- Nov 7, 2006
     ORGANIZATION "Cisco Systems, Inc."
     CONTACT-INFO
                  "Cisco Systems
@@ -46,6 +46,18 @@ pcubeSeMIB  MODULE-IDENTITY
         SCE2000 and SE100. This MIB provides configuration and 
         runtime status for chassis, control modules, and line 
         modules on the SCOS systems."
+    REVISION        "200611070000Z" -- Nov 7, 2006
+    DESCRIPTION
+            "- Increased the supported range of global 
+               controllers (globalControllersIndex) 
+               from (1..255) to (1..2147483647)
+             - Improved counter descriptions to reflect the counted 
+               layer for the following byte and bandwidth counters:
+               txQueuesBandwidth
+               txQueuesDroppedBytes
+               globalControllersBandwidth
+               globalControllersDroppedBytes
+            "
     REVISION     "200605100000Z"  -- May 10, 2006
     DESCRIPTION  
             "MIB revised as a part of integration into
@@ -830,7 +842,7 @@ rdrFormatterDestEntry OBJECT-TYPE
      STATUS        current
      DESCRIPTION   
         "A destination table entry."
-     INDEX         {rdrFormatterDestIPAddr, rdrFormatterDestPort }
+     INDEX         { rdrFormatterDestIPAddr, rdrFormatterDestPort }
      ::= { rdrFormatterDestTable 1 }
 
 RdrFormatterDestEntry ::=
@@ -896,11 +908,11 @@ rdrFormatterDestStatus OBJECT-TYPE
     STATUS        current
     DESCRIPTION   
         "In 'redundancy(2)' and in 'simpleLoadBalancing(3)'
-        drFormatterForwardingMode there can be only 
-        ne 'active' destination, which is where the 
-        eports are currently being sent to.
-        n 'multicast(4)' modes all destination will
-        eceive the active(2) status."   
+        rdrFormatterForwardingMode there can be only 
+        one 'active' destination, which is where the 
+        reports are currently being sent to.
+        In 'multicast(4)' modes all destinations will
+        receive the active(2) status."   
     ::= { rdrFormatterDestEntry 4 }
 
 rdrFormatterDestConnectionStatus OBJECT-TYPE
@@ -1567,7 +1579,7 @@ tpInfoEntry OBJECT-TYPE
     STATUS        current
     DESCRIPTION   
         "A tpInfoTable entry."
-    INDEX         {tpModuleIndex, tpIndex }
+    INDEX         { tpModuleIndex, tpIndex }
     ::= { tpInfoTable 1 }
 
 TpInfoEntry ::=
@@ -2151,7 +2163,7 @@ pportLinkIndex OBJECT-TYPE
         "Indicates the linkIndex of the link that this port 
         belongs to. Value of 0 indicates that this port is
         not associated with any link. Value of -1 indicates 
-        that this port is associated to multiple links"
+        that this port is associated to multiple links."
     ::= { pportEntry 9 }
    
 -- objects added at version 2.0
@@ -2261,7 +2273,7 @@ txQueuesBandwidth OBJECT-TYPE
     MAX-ACCESS    read-only
     STATUS        current
     DESCRIPTION   
-        "The bandwidth in kbps configured for this queue."
+        "The bandwidth in L1 kbps configured for this queue."
     ::= { txQueuesEntry 5 }
 
 txQueuesUtilization OBJECT-TYPE
@@ -2311,7 +2323,7 @@ txQueuesDroppedBytes OBJECT-TYPE
     MAX-ACCESS    read-only
     STATUS        current
     DESCRIPTION   
-        "Amount of dropped bytes. This is valid only if the 
+        "Amount of dropped L3 bytes. This is valid only if the 
         system is configured to count dropped bytes per 
         TX queue."
     ::= { txQueuesEntry 10 }
@@ -2376,7 +2388,7 @@ globalControllersPortIndex OBJECT-TYPE
     ::= { globalControllersEntry 2 }
 
 globalControllersIndex OBJECT-TYPE
-    SYNTAX        Integer32 (1..255)
+    SYNTAX        Integer32 (1..2147483647)
     MAX-ACCESS    read-only
     STATUS        current
     DESCRIPTION   
@@ -2398,7 +2410,7 @@ globalControllersBandwidth OBJECT-TYPE
     MAX-ACCESS    read-only
     STATUS        current
     DESCRIPTION   
-        "The bandwidth configured for this controller."
+        "The L1 bandwidth configured for this controller."
     ::= { globalControllersEntry 5 }
 
 globalControllersUtilization OBJECT-TYPE
@@ -2448,7 +2460,7 @@ globalControllersDroppedBytes OBJECT-TYPE
     MAX-ACCESS    read-only
     STATUS        current
     DESCRIPTION   
-        "Amount of dropped bytes. This is valid only if the 
+        "Amount of L3 dropped bytes. This is valid only if the 
         system is configured to count dropped bytes per 
         global controller."
     ::= { globalControllersEntry 10 }
@@ -2492,7 +2504,7 @@ appName OBJECT-TYPE
     MAX-ACCESS    read-only
     STATUS        current
     DESCRIPTION   
-        "The application name"
+        "The application name."
     ::= { appInfoEntry 1 }
         
 appDescription OBJECT-TYPE
@@ -2530,7 +2542,7 @@ appPropertiesEntry OBJECT-TYPE
     STATUS        current
     DESCRIPTION   
         "A appPropertiesTable entry."
-    INDEX         {pmoduleIndex , apIndex}
+    INDEX         { pmoduleIndex , apIndex }
     ::= { appPropertiesTable 1 }
      
 AppPropertiesEntry ::=
@@ -2557,7 +2569,7 @@ apName OBJECT-TYPE
     STATUS        current
     DESCRIPTION   
         "Application property name.
-        Property can be either scalar or array type"
+        Property can be either scalar or array type."
     ::= { appPropertiesEntry 2 }
 
 apType OBJECT-TYPE
@@ -2600,7 +2612,7 @@ appPropertiesValueEntry OBJECT-TYPE
     STATUS        current
     DESCRIPTION   
         "A appPropertiesValueTable entry."
-    INDEX         {pmoduleIndex , apvIndex}
+    INDEX         { pmoduleIndex , apvIndex }
     ::= { appPropertiesValueTable 1 }
      
 AppPropertiesValueEntry ::=
@@ -2630,7 +2642,7 @@ apvPropertyName OBJECT-TYPE
         "A name that uniquely identifies the application
         property. Array type properties may be accessed
         each element at a time in C like format, e.g. x[1],
-        or y[1][2]"
+        or y[1][2]."
     ::= { appPropertiesValueEntry 2 }
 
 apvRowStatus OBJECT-TYPE
@@ -2803,7 +2815,7 @@ spvPropertyName OBJECT-TYPE
     DESCRIPTION   
         "A name that uniquely identifies the subscriber property. 
         Array type properties may be accessed each element 
-        at a time  in C like format, e.g. x[1], or y[1][2]"
+        at a time  in C like format, e.g. x[1], or y[1][2]."
     ::= { subscribersPropertiesValueEntry 3 }
 
 spvRowStatus OBJECT-TYPE
@@ -2864,7 +2876,7 @@ trafficCountersEntry OBJECT-TYPE
     STATUS        current
     DESCRIPTION   
         "Entry containing information about a traffic counter."
-    INDEX         { pmoduleIndex, trafficCounterIndex}
+    INDEX         { pmoduleIndex, trafficCounterIndex }
     ::= { trafficCountersTable 1 }
 
 TrafficCountersEntry ::=
@@ -2931,7 +2943,7 @@ attackTypeEntry OBJECT-TYPE
     DESCRIPTION   
         "Entry containing aggregated information about attacks
         of a given type."
-    INDEX         { pmoduleIndex, attackTypeIndex}
+    INDEX         { pmoduleIndex, attackTypeIndex }
     ::= { attackTypeTable 1 }
 
 AttackTypeEntry ::=
@@ -3102,7 +3114,7 @@ mplsVpnSoftwareCountersEntry    OBJECT-TYPE
     DESCRIPTION   
         "Entry containing information 
         about MPLS VPN auto learn SW counters."
-    INDEX         { pmoduleIndex}
+    INDEX         { pmoduleIndex }
     ::= { mplsVpnSoftwareCountersTable 1 }
 
 MplsVpnSoftwareCountersEntry ::=
@@ -3182,8 +3194,9 @@ pcubeSeEventsGroup NOTIFICATION-GROUP
         mplsVpnTotalHWMappingsThresholdExceededTrap
       }              
     STATUS    deprecated
-    DESCRIPTION "Pcube notifications. Contains deprecated objects."
-    ::= { pcubeSeConformance 3  } 
+    DESCRIPTION 
+    	"Pcube notifications. Contains deprecated objects."
+    ::= { pcubeSeConformance 3 } 
 
 
 pcubeSeEventsGroupRev1 NOTIFICATION-GROUP
@@ -3231,8 +3244,9 @@ pcubeSeEventsGroupRev1 NOTIFICATION-GROUP
         mplsVpnTotalHWMappingsThresholdExceededTrap
       }              
     STATUS    current
-    DESCRIPTION "Pcube notifications."
-    ::= { pcubeSeConformance 4  } 
+    DESCRIPTION 
+    	"Pcube notifications."
+    ::= { pcubeSeConformance 4 } 
 
 
 pcubeSeEvents OBJECT IDENTIFIER ::= { pcubeWorkgroup 0 }
@@ -3625,7 +3639,7 @@ sessionEndedTrap NOTIFICATION-TYPE
         "A sessionEnded notification signifies that the agent
         entity has detected end of a session. 
         The pcubeSeEventGenericString1 is the session 
-        type (telnet/SSH) and client IP address"
+        type (telnet/SSH) and client IP address."
     ::= { pcubeSeEvents 40 }
 
 sessionDeniedAccessTrap NOTIFICATION-TYPE
@@ -3689,7 +3703,7 @@ pullRequestNumber OBJECT-TYPE
         "Used only for traps to signify the number of pull
         requests issued so far for the anonymous subscriber given in
         the pullRequestRetryFailedTrap containing notification.
-        A direct get will always returns 0"
+        A direct get will always returns 0."
     ::= { pcubeSeEvents 46 }
     
 pullRequestRetryFailedTrap NOTIFICATION-TYPE
@@ -3710,7 +3724,7 @@ pullRequestRetryFailedTrap NOTIFICATION-TYPE
     STATUS        current
     DESCRIPTION   
         "Sent when the value of mplsVpnCurrentHWMappings 
-        exceeds the allowed threshold"
+        exceeds the allowed threshold."
     ::= { pcubeSeEvents 48 }
 
 

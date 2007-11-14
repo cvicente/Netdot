@@ -5,8 +5,9 @@
 -- *	  Extreme Networks
 -- *      http://www.extremenetworks.com
 -- *
+-- * extracted from $Extreme_Id: extreme.mib,v 1.24.6.35 2006/01/09 15:15:18 build-sc Exp $
+-- *
 -- */
-
 
 -- ===============================================================================
 
@@ -21,10 +22,13 @@ EXTREME-PORT-MIB DEFINITIONS ::= BEGIN
 		RowStatus               FROM SNMPv2-TC
 		OBJECT-TYPE             FROM SNMPv2-SMI
 		ifIndex                 FROM RFC1213-MIB
+        ClientAuthType          FROM EXTREME-BASE-MIB
                 extremeAgent            FROM EXTREME-BASE-MIB
                 Counter64               FROM SNMPv2-SMI
 		extremeVlanIfIndex	FROM EXTREME-VLAN-MIB
-                Counter32               FROM SNMPv2-SMI 
+                Counter32, TimeTicks    FROM SNMPv2-SMI 
+                IpAddress               FROM SNMPv2-SMI 
+                MacAddress              FROM SNMPv2-TC
                 DisplayString           FROM RFC1213-MIB;
 
         extremePort MODULE-IDENTITY
@@ -293,8 +297,8 @@ EXTREME-PORT-MIB DEFINITIONS ::= BEGIN
 
 	extremePortRateShapePortType OBJECT-TYPE
                 SYNTAX INTEGER {
-			rate-limited(1),
-			loop-back(2)
+			rateLimited(1),
+			loopBack(2)
 		}
                 MAX-ACCESS  read-create
                 STATUS current
@@ -502,7 +506,6 @@ EXTREME-PORT-MIB DEFINITIONS ::= BEGIN
 		::= {extremePortIngressStatsPortTable 1}
 
 	ExtremePortIngressPortStatsEntry ::= SEQUENCE {
---                extremePortIngressStatsPortIndex          INTEGER,
                 extremePortIngressStatsLinkStatus         INTEGER,
                 extremePortIngressStatsPortHighPriBytes   Counter64,
                 extremePortIngressStatsPortLowPriBytes    Counter64,
@@ -511,20 +514,12 @@ EXTREME-PORT-MIB DEFINITIONS ::= BEGIN
         }
 
 
---        extremePortIngressStatsPortIndex  OBJECT-TYPE
---                SYNTAX  INTEGER
---                MAX-ACCESS  read-only  
---                STATUS current
---                DESCRIPTION
---                   "The index of the port being queried."
---                ::= {extremePortIngressPortStatsEntry 1 }
-
         extremePortIngressStatsLinkStatus  OBJECT-TYPE
                 SYNTAX  INTEGER {
 			ready(1),
 			active(2),
                         disabled(3),
-                        not-present(4)
+                        notPresent(4)
 		}
                 MAX-ACCESS  read-only  
                 STATUS current
@@ -597,21 +592,12 @@ EXTREME-PORT-MIB DEFINITIONS ::= BEGIN
 		::= {extremePortIngressStatsQueueTable 1}
 
 	ExtremePortIngressQueueStatsEntry ::= SEQUENCE {
---                extremePortIngressStatsQueuePortIndex      INTEGER,
                 extremePortIngressStatsQueueIndex          INTEGER,
                 extremePortIngressStatsQueueHighPriBytes   Counter64,
                 extremePortIngressStatsQueueLowPriBytes    Counter64,
                 extremePortIngressStatsQueuePercentDropped INTEGER
         }
         
---        extremePortIngressStatsQueuePortIndex  OBJECT-TYPE
---                SYNTAX  INTEGER
---                MAX-ACCESS  read-only  
---                STATUS current
---                DESCRIPTION
---                   "The index of the port being queried."
---                ::= {extremePortIngressQueueStatsEntry 1 }
-
 
         extremePortIngressStatsQueueIndex  OBJECT-TYPE
                 SYNTAX  INTEGER
@@ -671,19 +657,10 @@ EXTREME-PORT-MIB DEFINITIONS ::= BEGIN
 		::= {extremePortEgressRateLimitTable 1}
 
 	ExtremePortEgressRateLimitEntry ::= SEQUENCE {
---                extremePortEgressRateLimitPortIndex          INTEGER,
                 extremePortEgressRateLimitType               INTEGER,
                 extremePortEgressRateLimitValue              INTEGER
         }
         
---        extremePortEgressRateLimitPortIndex  OBJECT-TYPE
---                SYNTAX  INTEGER
---                MAX-ACCESS  read-only  
---                STATUS current
---                DESCRIPTION
---                   "The index of the port being queried."
---                ::= {extremePortEgressRateLimitEntry 1 }
-
         extremePortEgressRateLimitType  OBJECT-TYPE
                 SYNTAX  INTEGER {
 			percentage(1),
@@ -708,6 +685,102 @@ EXTREME-PORT-MIB DEFINITIONS ::= BEGIN
                 DESCRIPTION
                  "The configured egress rate value." 
                 ::= {extremePortEgressRateLimitEntry 2 }
+
+--
+-- Clients connected to the Port
+--
+	extremeWiredClientTable	OBJECT-TYPE
+		SYNTAX	SEQUENCE OF ExtremeWiredClientEntry
+		MAX-ACCESS  not-accessible
+		STATUS current
+		DESCRIPTION
+		    "This table contains the entries for authenticated Clinets."
+		::= { extremePort 10 }
+
+extremeWiredClientEntry OBJECT-TYPE
+        SYNTAX          ExtremeWiredClientEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION
+        "An entry in the extremeWiredClientTable."
+    INDEX {ifIndex, extremeWiredClientID}
+        ::= { extremeWiredClientTable 1 }
+
+ExtremeWiredClientEntry ::= SEQUENCE {
+        extremeWiredClientID                     MacAddress,
+        extremeWiredClientState                  INTEGER,
+        extremeWiredClientVLAN                   INTEGER,
+        extremeWiredClientPriority               INTEGER,
+        extremeWiredClientAuthType               ClientAuthType,
+		extremeWiredClientLastStateChangeTime    TimeTicks,
+        extremeWiredClientIP                     IpAddress}
+
+extremeWiredClientID OBJECT-TYPE
+    SYNTAX MacAddress
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The Unique MAC Address of the station for which this address
+         table entry pertains."
+    ::= { extremeWiredClientEntry 1 }
+
+extremeWiredClientState OBJECT-TYPE
+    SYNTAX INTEGER { authenticated (1),
+                        unauthenticated (2) }
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "This attribute shall indicate the current state of the client. 
+         The attribute is enumerated as follows:
+
+        1 - Authenticated - client is authenticated.
+        2 - Unauthenticated - the client is connect but unauthenticated.
+        "
+    ::= { extremeWiredClientEntry 2 }
+
+extremeWiredClientVLAN OBJECT-TYPE
+    SYNTAX          INTEGER
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This is the per-client VLAN which was pushed over
+         by a RADIUS server or other mechanism."
+    ::= { extremeWiredClientEntry 3 }
+
+extremeWiredClientPriority OBJECT-TYPE
+    SYNTAX          INTEGER
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This is a per-client 802.1p value which was either
+         configured by the RADIUS server or statically through
+         the port configuration table."
+    ::= { extremeWiredClientEntry 4 }
+
+extremeWiredClientAuthType OBJECT-TYPE
+    SYNTAX          ClientAuthType
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This is an indication of what access method was
+         used to authenticated the client."
+    ::= { extremeWiredClientEntry 5 }
+
+extremeWiredClientLastStateChangeTime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This is the sysUpTime of the switch when the clients state changed last"
+    ::= { extremeWiredClientEntry 6 }
+
+extremeWiredClientIP OBJECT-TYPE
+    SYNTAX          IpAddress
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "IP Address of the wired client."
+    ::= { extremeWiredClientEntry 7 }
 
         
 

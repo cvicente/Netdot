@@ -1,3 +1,4 @@
+
 S5-AGENT-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
@@ -10,16 +11,18 @@ IMPORTS
     TimeIntervalSec, IpxAddress
         FROM S5-TCS-MIB
     InterfaceIndex
-        FROM IF-MIB;
+        FROM IF-MIB
+    PortList, VlanId
+        FROM Q-BRIDGE-MIB;
 
 s5AgentMib MODULE-IDENTITY
-       LAST-UPDATED    "200505130000Z"
+       LAST-UPDATED    "200705110000Z"
        ORGANIZATION    "Nortel Networks"
        CONTACT-INFO    "Nortel Networks"
        DESCRIPTION
            "S5000 Agent MIB
 
-            Copyright 1995 - 2005 Nortel Networks, Inc.
+            Copyright 1995 - 2007 Nortel Networks, Inc.
             All rights reserved.
             This Bay Networks SNMP Management Information Base Specification
             (Specification) embodies Bay Networks' confidential and
@@ -30,6 +33,64 @@ s5AgentMib MODULE-IDENTITY
             This Specification is supplied 'AS IS,' and Bay Networks makes
             no warranty, either express or implied, as to the use,
             operation, condition, or performance of the Specification."
+
+       REVISION "200705110000Z" -- 11 May 2007
+       DESCRIPTION "Version 184:  Add objects for timezone acronyms."
+
+       REVISION "200705030000Z" -- 03 May 2007
+       DESCRIPTION "Version 183:  Fix typos in s5AgAsciiConfigScriptTable."
+
+       REVISION "200703050000Z" -- 05 Mar 2007
+       DESCRIPTION "Version 182:  Expanded range of s5AgAsciiConfigScriptSource."
+
+       REVISION "200702270000Z" -- 27 Feb 2007
+       DESCRIPTION "Version 181:  Added s5AgAsciiConfigScriptLastStatusChange."
+
+       REVISION "200702160000Z" -- 16 Feb 2007
+       DESCRIPTION "Version 180:  Added s5AgentAsciiConfig group."
+
+       REVISION "200701080000Z" -- 08 Jan 2007
+       DESCRIPTION "Version 179:  Added s5AgDaylightSavingsEndMinutes,
+                                        s5AgDaylightSavingsEndYear,
+                                        s5AgDaylightSavingsStartMinutes,
+                                        s5AgDaylightSavingsStartYear,
+                                        s5AgDaylightSavingsRecurring.
+                                  Also added enumerations for DHCP to
+                                  s5AgInfoBootMode."
+
+       REVISION "200611070000Z" -- 07 Nov 2006
+       DESCRIPTION "Version 178:  Added s5AgSysVlanConfigControl."
+
+       REVISION "200609190000Z" -- 19 Sep 2006
+       DESCRIPTION "Version 177:  Added objects for flushing MAC address table."
+
+       REVISION "200608280000Z" -- 28 Aug 2006
+       DESCRIPTION "Version 176:  Added s5AgSysAutosaveToNvramEnabled."
+
+       REVISION "200608140000Z" -- 14 Aug 2006
+       DESCRIPTION "Version 175:  Added object for global flow control."
+
+       REVISION "200608070000Z" -- 07 Aug 2006
+       DESCRIPTION "Version 174:  Clarified descriptions."
+
+       REVISION "200604050000Z" -- 05 Apr 2006
+       DESCRIPTION "Version 173:  Added copyConfigToNvram enumeration to s5AgInfoFileAction."
+
+       REVISION "200603220000Z" -- 07 Mar 2006
+       DESCRIPTION "Version 172:  Add s5AgSysSpanningTreeAdminCompatibility and
+                                  s5AgSysSpanningTreeOperCompatibility."
+
+       REVISION "200603070000Z" -- 07 Mar 2006
+       DESCRIPTION "Version 171:  Add support for upload/downloading license files."
+
+       REVISION "200602140000Z" -- 14 Feb 2006
+       DESCRIPTION "Version 170:  Allow more lines in banner table."
+
+       REVISION "200510110000Z" -- 11 Oct 2005
+       DESCRIPTION "Version 169:  Added s5AgSysSpanningTreePortMode."
+
+       REVISION "200509300000Z" -- 09 Sep 2005
+       DESCRIPTION "Version 168:  Add default(3) to s5AgSysAutoUnitReplacementEnabled."
 
        REVISION "200505130000Z" -- 13 May 2005
        DESCRIPTION "Version 167:  Expand range of s5AgSysUsbTargetUnit."
@@ -84,6 +145,7 @@ s5AgentSsl    OBJECT IDENTIFIER ::= { s5Agent 7 }
 -- s5AgentMib OBJECT IDENTIFIER ::= { s5Agent 8 }
 s5AgentDaylightSavings   OBJECT IDENTIFIER ::= { s5Agent 9 }
 s5AgentBootConfig OBJECT IDENTIFIER ::= { s5Agent 10 }
+s5AgentAsciiConfig OBJECT IDENTIFIER ::= { s5Agent 11 }
 
 
 -- SECTION 2: MIB Objects
@@ -238,12 +300,15 @@ s5AgInfoMgmtProtocolCur OBJECT-TYPE
 
 s5AgInfoBootMode OBJECT-TYPE
 	SYNTAX	INTEGER {
-		other(1),
-		local(2),
-		net(3),
-                netWhenNeeded(4),
-                netOrLastAddress(5)
-		}
+                    other(1),
+                    local(2),
+                    net(3),
+                    netWhenNeeded(4),
+                    netOrLastAddress(5),
+                    dhcp(6),
+                    dhcpWhenNeeded(7),
+                    dhcpOrLastAddress(8)
+                }
 	MAX-ACCESS	read-write
 	STATUS	current
 	DESCRIPTION
@@ -252,7 +317,9 @@ s5AgInfoBootMode OBJECT-TYPE
 		net(3), netWhenNeeded(4), or netOrLastAddress(5)
                 means that BOOTP will be used to get the
 		agent's IP address(es), load server address, and
-		configuration file name.  For IPX, a setting of net(3),
+		configuration file name.
+
+                For IPX, a setting of net(3),
 		netWhenNeeded(4), or netOrLastAddress(5) means SAP
                 will be used to get the agent's Novell
 		network number(s), and the configuation filename
@@ -698,13 +765,19 @@ s5AgInfoFileAction OBJECT-TYPE
            dnldFwFromUsb(14),
            upldFwToUsb(15),
            dnldConfigFromUsb(16),
-           upldConfigToUsb(17)
+           upldConfigToUsb(17),
+           dnldLicense(18),
+           upldLicense(19),
+           dnldLicenseFromUsb(20),
+           upldLicenseToUsb(21),
+           copyConfigToNvram(22)
            }
     MAX-ACCESS read-write
     STATUS current
     DESCRIPTION
-        "This object is used to download or upload a config file or
-         an image file.
+        "This object is used to copy a config file or an image file.
+         Typically, the copy is to/from a TFTP server, though other
+         types of sources/destinations are possible.
 
          In read operation, if no action taken since the boot up, it will
          return other(1). Otherwise it will return the latest action such
@@ -712,31 +785,37 @@ s5AgInfoFileAction OBJECT-TYPE
 
          In write operation, the values that can be written are:
 
-            dnldConfig(2) ... download a config file to a device. The new
-                              config file will not take effect until the
-                              next boot cycle of the device.
-            dnldImg(3) ...... download an image to a device.
-            upldConfig(4) ... upload a config file to a server from
-                              a device. The config file contains the current
-                              MIB object values of the device.
-            upldImg(5) ...... upload a image from a device to a server
-            dnldFw(6) ....... download firmware to a device
-            upldFw(7) ....... upload firware from a device to a server
-            dnldImgIfNewer(8) download an image to a device if the image
-                              version is newer than the image stored in
-                              local NV storage
-            dnldImgToDram(9)  download an image to a device, but do not
-                              save it to NVRAM, just keep it in DRAM
-            dnldImgNoReset(10) download an image to a device, but do not
-                              reset the device after the download
-            dnldFwNoReset(11) download firmware to a device, but do not
-                              reset the device after the download
-            dnldImgFromUsb(12) download image from USB port
-            upldImgToUsb(13)  upload image to USB port
-            dnldFwFromUsb(14) download firmware from USB port
-            upldFwToUsb(15)   upload firmware to USB port
-            dnldConfigFromUsb(16) download binary config from USB port
-            upldConfigToUsb(17)   upload binary config to USB port"
+            dnldConfig(2) ........... download a config file to a device.
+                                      The new config file will not take effect
+                                      until the next boot cycle of the device.
+            dnldImg(3) .............. download an image to a device.
+            upldConfig(4) ........... upload a config file to a server from
+                                      a device. The config file contains the
+                                      current MIB object values of the device.
+            upldImg(5) .............. upload a image from a device to a server
+            dnldFw(6) ............... download firmware to a device
+            upldFw(7) ............... upload firware from a device to a server
+            dnldImgIfNewer(8) ....... download an image to a device if the image
+                                      version is newer than the image stored in
+                                      local NV storage
+            dnldImgToDram(9) ........ download an image to a device, but do not
+                                      save it to NVRAM, just keep it in DRAM
+            dnldImgNoReset(10) ...... download an image to a device, but do not
+                                      reset the device after the download
+            dnldFwNoReset(11) ....... download firmware to a device, but do not
+                                      reset the device after the download
+            dnldImgFromUsb(12) ...... download image from USB port
+            upldImgToUsb(13) ........ upload image to USB port
+            dnldFwFromUsb(14) ....... download firmware from USB port
+            upldFwToUsb(15) ......... upload firmware to USB port
+            dnldConfigFromUsb(16) ... download binary config from USB port
+            upldConfigToUsb(17) ..... upload binary config to USB port
+            dnldLicense(18) ......... download license file from TFTP server
+            upldLicense(19) ......... upload license file to TFTP server
+            dnldLicenseFromUsb(20) .. download license file from USB port
+            upldLicenseToUsb(21) .... upload license file to USB port
+            copyConfigToNvram(22) ... copy the current running configuration
+                                      into NVRAM"
     ::= {s5AgentGbl 24}
 
 
@@ -1662,7 +1741,7 @@ s5AgSysTftpServerAddress OBJECT-TYPE
 s5AgSysAsciiConfigFilename OBJECT-TYPE
 	SYNTAX	DisplayString (SIZE (0..128))
 	MAX-ACCESS	read-write
-	STATUS	current
+	STATUS	deprecated
 	DESCRIPTION
             "Name of the ascii configuration file that will be
              downloaded/uploaded either at boot time when the
@@ -1679,7 +1758,7 @@ s5AgSysAsciiConfigAutoDownload OBJECT-TYPE
                       useConfig(3)
                   }
 	MAX-ACCESS	read-write
-	STATUS	current
+	STATUS	deprecated
 	DESCRIPTION
             "Indicates whether an ASCII configuration file should be
              downloaded at boot time.  The file can be downloaded
@@ -1695,7 +1774,7 @@ s5AgSysAsciiConfigAutoDldStatus OBJECT-TYPE
                       failed(3)
                   }
 	MAX-ACCESS	read-only
-	STATUS	current
+	STATUS	deprecated
 	DESCRIPTION
             "Indicates the status of the last automatic ASCII
              configuration file download at boot time.  If no
@@ -1712,7 +1791,7 @@ s5AgSysAsciiConfigManualDownload OBJECT-TYPE
                       downloadFromUsb(5)
                   }
 	MAX-ACCESS	read-write
-	STATUS	current
+	STATUS	deprecated
 	DESCRIPTION
             "Indicates the status of the last manual attempt to
              download an ASCII configuration file.  The value of
@@ -1847,12 +1926,18 @@ s5AgSysSpanningTreeAdminMode OBJECT-TYPE
       ::= { s5AgentSystem 17 }
 
 s5AgSysAutoUnitReplacementEnabled OBJECT-TYPE
-      SYNTAX      TruthValue
+      SYNTAX      INTEGER {
+                              true(1),
+                              false(2),
+                              setToDefault(3)
+                          }
       MAX-ACCESS  read-write
       STATUS      current
       DESCRIPTION
             "This object indicates whether the auto-unit-replacement feature
-             is enabled or disabled."
+             is enabled or disabled.  The value when retrieved will always be
+             true(1) or false(2).  Setting the value to setToDefault(3) will
+             restore the factory-default value."
       DEFVAL { true }
       ::= { s5AgentSystem 18 }
 
@@ -1865,7 +1950,7 @@ s5AgSysAsciiConfigManualUpload OBJECT-TYPE
                       uploadToUsb(5)
                    }
 	MAX-ACCESS read-write
-	STATUS     current
+	STATUS     deprecated
 	DESCRIPTION
             "Indicates the status of the last manual attempt to
              upload an ASCII configuration file.  The value of
@@ -1901,6 +1986,151 @@ s5AgSysUsbTargetUnit OBJECT-TYPE
             "This object indicates the unit number of the USB port to be
              use in file upload/download operations."
       ::= { s5AgentSystem 21 }
+
+s5AgSysSpanningTreePortMode OBJECT-TYPE
+      SYNTAX      INTEGER {
+                              normal(1),
+                              auto(2)
+                          }
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "This object indicates the current spanning-tree port mode."
+      ::= { s5AgentSystem 22 }
+
+s5AgSysLicenseFilename OBJECT-TYPE
+	SYNTAX	DisplayString (SIZE (0..128))
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION
+            "Name of the license file that will be downloaded/uploaded
+             when the s5AgInfoFileAction object is set to dnldLicense(18),
+             upldLicense(19), dlndLicenseFromUsb(20), or upldLicense(21).
+             When not used, the value is a zero length string."
+	::= { s5AgentSystem 23 }
+
+s5AgSysSpanningTreeAdminCompatibility OBJECT-TYPE
+      SYNTAX      BITS {
+                            port802dot1dLearning(0)
+                       }
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "This object controls the compatibility mode for various
+             features.  Note that for some features, the actual operational
+             mode might not change until after a system reset.
+
+             The port802dot1dLearning(0) bit indicates whether the learning
+             mode of a port stays in the Forwarding state, or changes to the
+             Disabled state when the port's operational status goes down.  If
+             the bit is on, it means the port goes to the Disabled state.  If
+             the bit is off, it means the port stays in the Forwarding state."
+      ::= { s5AgentSystem 24 }
+
+s5AgSysSpanningTreeOperCompatibility OBJECT-TYPE
+      SYNTAX      BITS {
+                            port802dot1dLearning(0)
+                       }
+      MAX-ACCESS  read-only
+      STATUS      current
+      DESCRIPTION
+            "This object indicates the operational compatibility mode for
+             various features controlled by the associated object,
+             s5AgSysSpanningTreeAdminCompatibility."
+      ::= { s5AgentSystem 25 }
+
+s5AgSysGlobalFlowControlEnabled OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "This object controls whether flow control for ethernet ports
+             is globally enabled or disabled.  This object is only used
+             on systems for which flow control cannot be enabled/disabled
+             on each port individually."
+      ::= { s5AgentSystem 26 }
+
+s5AgSysAutosaveToNvramEnabled OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "This object controls whether autosaving to NVRAM is enabled.
+             Autosaving normally occurs periodically in a background task
+             if any configuration changes have been made."
+      ::= { s5AgentSystem 27 }
+
+s5AgSysFlushMacAddrTableAll OBJECT-TYPE
+      SYNTAX      INTEGER {
+                      flush(1)
+                  }
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "Setting this object to flush(1) will flush the CDT MAC address
+             table.  On retrieval, its value is always flush(1)."
+      ::= { s5AgentSystem 28 }
+
+s5AgSysFlushMacAddrTableByPortList OBJECT-TYPE
+      SYNTAX      PortList
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "Setting this object will flush the CDT MAC address for all
+             ports specified in the value.  On retrieval, the value is
+             the last value set, or a zero-length octet string if it has
+             never been set."
+      ::= { s5AgentSystem 29 }
+
+s5AgSysFlushMacAddrTableByVlan OBJECT-TYPE
+      SYNTAX      VlanId
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "Setting this object will flush the CDT MAC address table for
+             the specified VLAN.  On retrieval, the value is the last
+             value set, or 1 if it has never been set."
+      ::= { s5AgentSystem 30 }
+
+s5AgSysFlushMacAddrTableByTrunk OBJECT-TYPE
+      SYNTAX      Integer32 (1..64)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "Setting this object will flush the CDT MAC address table for
+             the specified trunk.  On retrieval, the value is the last
+             value set, or 1 if it has never been set."
+      ::= { s5AgentSystem 31 }
+
+s5AgSysFlushMacAddrTableByAddress OBJECT-TYPE
+      SYNTAX      MacAddress
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "Setting this object will flush the specified MAC address
+             from the CDT MAC address table.  On retrieval, its value is
+             the last value set, or 00:00:00:00:00:00 if it has never
+             been set."
+      ::= { s5AgentSystem 32 }
+
+s5AgSysVlanConfigControl OBJECT-TYPE
+      SYNTAX      INTEGER {
+                      automatic(1),
+                      autopvid(2),
+                      flexible(3),
+                      strict(4)
+                  }
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "This object controls the VLAN configuration control mode:
+                 automatic - AutoPVID and automatic change to membership
+                             of port-based VLANs
+                 autopvid -- Automatic change to PVID
+                 flexible -- No restricts or automatic changes
+                 strict ---- AutoPVID and restrictions imposed on adding
+                             port to VLAN and changing tagging"
+      ::= { s5AgentSystem 33 }
 
 --
 -- Custom Banner Group
@@ -1965,7 +2195,7 @@ s5AgCustomBannerType OBJECT-TYPE
       ::= { s5AgCustomBannerEntry 1 }
 
 s5AgCustomBannerId OBJECT-TYPE
-      SYNTAX      INTEGER (1..15)
+      SYNTAX      INTEGER (1..19)
       MAX-ACCESS      not-accessible
       STATUS      current
       DESCRIPTION "Identifies the line of text within a custom banner."
@@ -2165,6 +2395,14 @@ s5AgSntpSyncRetryInterval OBJECT-TYPE
            disabled."
       ::= { s5AgentSntp 13 }
 
+s5AgSntpTimeZoneAcronym OBJECT-TYPE
+      SYNTAX      DisplayString (SIZE(0..7))
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object contains a time zone acronym.  It is not used
+           for any operational purposes, it is only used for display."
+      ::= { s5AgentSntp 14 }
 
 
 --
@@ -2351,6 +2589,66 @@ s5AgDaylightSavingsOffset OBJECT-TYPE
            time begins)."
       ::= { s5AgentDaylightSavings 8 }
 
+s5AgDaylightSavingsStartMinutes OBJECT-TYPE
+      SYNTAX      Integer32 (0..59)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the minutes of the hour indicated by
+           s5AgDaylightSavingsStartHour when Daylight Savings
+           time will start."
+      ::= { s5AgentDaylightSavings 9 }
+
+s5AgDaylightSavingsEndMinutes OBJECT-TYPE
+      SYNTAX      Integer32 (0..59)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the minutes of the hour indicated by
+           s5AgDaylightSavingsEndHour when Daylight Savings
+           time will end."
+      ::= { s5AgentDaylightSavings 10 }
+
+s5AgDaylightSavingsStartYear OBJECT-TYPE
+      SYNTAX      Integer32 (1990..2099)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the year when Daylight Savings time
+           will start.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is false(2)."
+      ::= { s5AgentDaylightSavings 11 }
+
+s5AgDaylightSavingsEndYear OBJECT-TYPE
+      SYNTAX      Integer32 (1990..2099)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the year when Daylight Savings time
+           will end.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is false(2)."
+      ::= { s5AgentDaylightSavings 12 }
+
+s5AgDaylightSavingsRecurring OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies whether the Daylight Savings start
+           and end times are yearly reoccuring times, or a single
+           occurrence on specific dates.  IF the value is true(1),
+           then the values of s5AgDaylightSavingsStartYear and
+           s5AgDaylightSavingsEndYear will be ignored."
+      ::= { s5AgentDaylightSavings 13 }
+
+s5AgDaylightSavingsTimeZoneAcronym OBJECT-TYPE
+      SYNTAX      DisplayString (SIZE(0..7))
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object contains a time zone acronym.  It is not used
+           for any operational purposes, it is only used for display."
+      ::= { s5AgentDaylightSavings 14 }
 
 
 --
@@ -2455,4 +2753,143 @@ s5AgBootCfgBlocksValid OBJECT-TYPE
            contains a valid configuration."
       ::= { s5AgBootCfgBlocksEntry 4 }
 
+
+--
+-- Ascii Configuration Script Group
+--
+
+s5AgAsciiConfigScriptTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF S5AgAsciiConfigScriptEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table of paths to ASCII configuration script files."
+    ::= { s5AgentAsciiConfig 1 }
+
+s5AgAsciiConfigScriptEntry OBJECT-TYPE
+    SYNTAX      S5AgAsciiConfigScriptEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A row in the ASCII configuration file paths table."
+    INDEX { s5AgAsciiConfigScriptIndex }
+    ::= { s5AgAsciiConfigScriptTable 1 }
+
+S5AgAsciiConfigScriptEntry ::= SEQUENCE {
+    s5AgAsciiConfigScriptIndex            Integer32,
+    s5AgAsciiConfigScriptBootPriority     Integer32,
+    s5AgAsciiConfigScriptSource           OCTET STRING,
+    s5AgAsciiConfigScriptManual           INTEGER,
+    s5AgAsciiConfigScriptOperStatus       INTEGER,
+    s5AgAsciiConfigScriptLastStatusChange Integer32
+    }
+
+s5AgAsciiConfigScriptIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..127)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The index of an ASCII confiuration script file path."
+    ::= { s5AgAsciiConfigScriptEntry 1 }
+
+s5AgAsciiConfigScriptBootPriority OBJECT-TYPE
+    SYNTAX      Integer32 (0..127)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "A value between 1-127 indicates the priority with which the entry
+         will be used at bootup. Entries with lower values will be used
+         before entries with higher values. If two entries have equal 
+         priority values, the entry with the lower s5AgAsciiConfigScriptIndex
+         will be used first. 
+         A value of 0 indicates that the entry will not be used at bootup."
+    ::= { s5AgAsciiConfigScriptEntry 2 }
+
+s5AgAsciiConfigScriptSource OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE(0..327))
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The source of the script.  This is an ASCII string similar to
+         a URL, and must be in one of the following formats:
+           - 'bootp://' - the source of the script will be determined using
+                          bootp.
+           - 'usb://<filename>' - the script will be loaded from the usb port
+                          of the switch, if not in stack, or from the usb 
+                          port of the base unit, if in stack.
+           - 'usb://<unit-number>/<filename>' - the script will be loaded
+                          from the usb port of the switch, if not in stack,
+                          or from the usb port of the specified unit,
+                          if in stack. The unit number must be between 1 
+                          and 8.
+           - 'tftp://<ip-address>/<filename>' - the script will be loaded
+                          using TFTP from the specified IP address.
+           - 'tftp://<hostname>/<filename>' - the script will be loaded using
+                          TFTP from the specified host. The hostname must
+                          have at most 64 characters in length.
+
+         In each of the supported formats, the filename must have at most
+         255 characters in length.
+ 
+         If this column is empty, it indicates that the entry is not in use."
+    ::= { s5AgAsciiConfigScriptEntry 3 }
+
+s5AgAsciiConfigScriptManual OBJECT-TYPE
+    SYNTAX      INTEGER {
+                            other(1),
+                            download(2),
+                            upload(3)
+                        }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object is used to manually download and run a script, or to
+         upload the current configuration.  Setting it to download(2) will
+         force the script to be loaded from the source specified in the
+         corresponding instance of s5AgAsciiConfigScriptSource and then run.
+         Setting it to upload(3) will cause the current system configuration
+         to be uploaded to the source specified in the corresponding instance
+         of s5AgAsciiConfigScriptSource.  The value when retrieved is always
+         other(1).
+
+         Note that any Set to this object while the current value of
+         any instance of s5AgAsciiConfigScriptOperStatus is either
+         autoDownloadInProgress(3), manualDownloadInProgress(6), or
+         manualUploadInProgress(9) will result in a resourceUnavailable error."
+    ::= { s5AgAsciiConfigScriptEntry 4 }
+
+s5AgAsciiConfigScriptOperStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                            other(1),
+                            autoDownloadPassed(2),
+                            autoDownloadInProgress(3),
+                            autoDownloadFailed(4),
+                            manualDownloadPassed(5),
+                            manualDownloadInProgress(6),
+                            manualDownloadFailed(7),
+                            manualUploadPassed(8),
+                            manualUploadInProgress(9),
+                            manualUploadFailed(10)
+                        }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the current operational status of this entry.
+         The value will reflect the status of the last operation performed
+         using a particular entry.  If an entry has never been used, the
+         value will be other(1)."
+    ::= { s5AgAsciiConfigScriptEntry 5 }
+
+s5AgAsciiConfigScriptLastStatusChange OBJECT-TYPE
+    SYNTAX      Integer32 (0..2147483647)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of snmpEngineTime at the time of the last status change
+         of this entry, i.e., the last time the value of the corresponding
+         instance of s5AgAsciiConfigScriptOperStatus changed.  If that value
+         is other(1), then the value of this object will be 0."
+    ::= { s5AgAsciiConfigScriptEntry 6 }
+
 END
+

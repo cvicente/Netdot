@@ -8,7 +8,7 @@
 -- Oct     2001, Joline Chen
 -- July    2003, Gaurav Aggarwal
 --
--- Copyright (c) 2001-2003, 2005 by Cisco Systems, Inc.
+-- Copyright (c) 2001-2003, 2005, 2006 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -51,10 +51,13 @@ IMPORTS
         TenthdBmV
                 FROM DOCS-IF-MIB 
         ciscoMgmt
-                FROM CISCO-SMI;
+                FROM CISCO-SMI
+        InetAddress,
+        InetAddressType
+                FROM INET-ADDRESS-MIB;
 
 ciscoDocsExtMIB MODULE-IDENTITY
-        LAST-UPDATED    "200504250000Z"
+        LAST-UPDATED    "200603060000Z"
         ORGANIZATION    "Cisco Systems, Inc."
         CONTACT-INFO
             "        Cisco Systems
@@ -101,6 +104,21 @@ ciscoDocsExtMIB MODULE-IDENTITY
              the total # of modems, # of registered and # of active
              modems on the mac interface as well as each 
              upstream. "
+
+        REVISION        "200603060000Z"
+        DESCRIPTION
+            "Following tables are added.
+
+             cdxCmToCpeTable
+             cdxCpeToCmTable
+
+             These are used for the direct correlation between
+             Cable Modem and Customer Premises Equipment."
+
+        REVISION        "200507010000Z"        
+        DESCRIPTION
+            "Modified the description of cdxCmtsServiceExtEntry.
+             Modified the value of lockingMode from 2 to 3. "
 
         REVISION        "200504250000Z"
         DESCRIPTION
@@ -749,10 +767,10 @@ cdxCmtsServiceExtEntry OBJECT-TYPE
            Quality of Service limits for each Service ID.
            From DOCSIS 1.1 onwards statistics are maintained for each 
            Service Flow(instead of the Service ID) in the DOCS-QOS-MIB 
-           in docsQosServiceFlowStatsTable objects. The objects  
+           in docsQosServiceFlowStatsTable objects. For Cable modems
+           not running in DOCSIS 1.0 mode, the objects  
            cdxIfCmtsServiceOutOctets and cdxIfCmtsServiceOutPackets
-           are applicable only if the Cable modem is running in 
-           DOCSIS 1.0 mode. "
+           will only support primary service flow. "
         REFERENCE
             "Data-Over-Cable Service Interface Specifications
              (DOCSIS) Radio Frequency Interface Specification
@@ -1876,11 +1894,11 @@ cdxCmtsCmDMICLockQos OBJECT-TYPE
          MAX-ACCESS  read-write
          STATUS      current
          DESCRIPTION
-             "If cdxCmtsCmDMICMode is set to lockingMode(2), this object
+             "If cdxCmtsCmDMICMode is set to lockingMode(3), this object
               would contain the restrictive QoS profile number as 
               indicated by docsIfQosProfIndex if set and it will 
               have 0 if not applicable or not defined. In case,
-              cdxCmtsCmDMICMode is set to lockingMode(2) and this
+              cdxCmtsCmDMICMode is set to lockingMode(3) and this
               object is not defined then the CMTS defaults to special
               QoS profile that limits the downstream and upstream 
               service flows to a maximum rate of 10 kbps. However,
@@ -2360,6 +2378,198 @@ cdxCmtsCmStatusDMICUnLock OBJECT-TYPE
          DEFVAL              { false } 
          ::= { cdxCmtsCmStatusDMICEntry 2 }
 
+-- 
+-- Cable Modem to Customer Premises Equipment (CPE) table
+--
+
+cdxCmToCpeTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF CdxCmToCpeEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       DESCRIPTION
+           "This table contains information about CPE connects behind
+            cable modem. It will return IP address and IP address type
+            of each CPE connect to a CM.
+
+            It is not intended to walk the whole table. An application
+            would need to query this table based on the specific indices.
+            Otherwise, it will impact the CMTS performance due to the 
+            huge size of this table.
+
+            The agent creates/destroys/modifies an entry whenever there
+            is a CPE connect to a cable modem or disconnect from a cable
+            modem."
+       ::= { cdxCmtsCmCpeObjects 8 }
+
+cdxCmToCpeEntry OBJECT-TYPE
+        SYNTAX      CdxCmToCpeEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+           "Represents an entry in the table. Each entry is created if
+            there is CPE connects to a cable modem.
+            
+            The indices uniquely identify a CPE. It is never the intent
+            for an application to perform a SNMP Get operation against
+            a table of this nature, rather it is the intent to merely
+            enumberate mappings. 
+
+            An application would determine the CPEs behind all cable
+            modems by performing a SNMP GetNext starting with the
+            variable bindings:
+            - cdxCmToCpeInetAddressType.0
+            - cdxCmToCpeInetAddress.0
+
+            It will return the IP address type and value tuple
+            corresponding to the CPE with lowest IP address behind the
+            cable modem with the lowest MAC address. An application can
+            perform a SNMP GetNext operation with the following variable
+            bindings:
+            - cdxCmToCpeInetAddressType.x.y.z
+            - cdxCmToCpeInetAddress.x.y.z
+            where x is MAC address of cable modem, and y.z is IP address
+            type and value tuple of the reported CPE.
+            An application can repeat this process until it has
+            traversed the entire table.
+
+            If the application only wants to know the CPEs behind a
+            given cable modem, it can perform a SNMP GetNext opertaion
+            with the following:
+            - cdxCmToCpeInetAddressType.x
+            - cdxCmToCpeInetAddress.x
+            where x is MAC address of cable modem."
+        REFERENCE
+            "Data-Over-Cable Service Interface Specifications (DOCSIS)
+             Radio Frequency Interface Specification
+             (SP-RFI-I04-980724.) docsIfCmtsCmStatusTable,
+             docsIfCmtsServiceTable in DOCS-IF-MIB.my."
+        INDEX { cdxCmToCpeCmMacAddress,
+                cdxCmToCpeInetAddressType,
+                cdxCmToCpeInetAddress }
+        ::= { cdxCmToCpeTable 1 }
+
+CdxCmToCpeEntry ::= SEQUENCE {
+            cdxCmToCpeCmMacAddress       MacAddress,
+            cdxCmToCpeInetAddressType    InetAddressType,
+            cdxCmToCpeInetAddress        InetAddress
+        }
+
+cdxCmToCpeCmMacAddress OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "The MAC address that uniquely identifies a cable modem
+             that CPEs connects to."
+        ::= { cdxCmToCpeEntry 1 }
+
+cdxCmToCpeInetAddressType  OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The type of Internet address of the cdxCmToCpeInetAddress."
+        ::= { cdxCmToCpeEntry 2 }
+
+cdxCmToCpeInetAddress  OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the address assigned to this CPE."
+        ::= { cdxCmToCpeEntry 3 }
+
+--
+-- Customer Premises Equipments (CPE) to cable modem table
+--
+
+cdxCpeToCmTable OBJECT-TYPE
+       SYNTAX      SEQUENCE OF CdxCpeToCmEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       DESCRIPTION
+           "This table contains information about cable modems with CPE
+            connects to.
+
+            It is not intended to walk the whole table. An application
+            would need to query this table base on the specific index.
+            Otherwise, it will impact the CMTS performance due to the
+            huge size of this table.
+
+            The agent creates/destroys/modifies an entry whenever there
+            is update for the cable modem that CPE connects to."
+       ::= { cdxCmtsCmCpeObjects 9 }
+
+cdxCpeToCmEntry OBJECT-TYPE
+        SYNTAX      CdxCpeToCmEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+           "An entry in cdxCpeToCmTable. Each entry contains information
+            on the MAC address, IP Address, and status index for the 
+            cable modem with a specific CPE connects to. Each entry is
+            created if there is any cable modem with CPE connects to.
+            Entries are ordered by cdxCpeToCmCpeMacAddress."
+        REFERENCE
+            "Data-Over-Cable Service Interface Specifications (DOCSIS)
+             Radio Frequency Interface Specification
+             (SP-RFI-I04-980724.) docsIfCmtsCmStatusTable,
+             docsIfCmtsServiceTable in DOCS-IF-MIB.my."
+        INDEX { cdxCpeToCmCpeMacAddress }
+        ::= { cdxCpeToCmTable 1 }
+
+CdxCpeToCmEntry ::= SEQUENCE {
+            cdxCpeToCmCpeMacAddress   MacAddress,
+            cdxCpeToCmMacAddress      MacAddress,
+            cdxCpeToCmInetAddressType InetAddressType,
+            cdxCpeToCmInetAddress     InetAddress,
+            cdxCpeToCmStatusIndex     Integer32
+        }
+
+cdxCpeToCmCpeMacAddress OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the MAC address of the CPE."
+        ::= { cdxCpeToCmEntry 1 }
+
+cdxCpeToCmMacAddress OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the MAC address of the cable modem."
+        ::= { cdxCpeToCmEntry 2 }
+
+cdxCpeToCmInetAddressType  OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The type of Internet address of the cdxCpeToCmInetAddress
+             object."
+        ::= { cdxCpeToCmEntry 3 }
+
+cdxCpeToCmInetAddress  OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the address assigned to this cable
+             modem."
+        ::= { cdxCpeToCmEntry 4 }
+
+cdxCpeToCmStatusIndex OBJECT-TYPE
+        SYNTAX      Integer32(1..2147483647)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "An entry in docsIfCmtsCmStatusTable identifying status
+             index of the cable modem which the CPE connects to."
+        REFERENCE
+            "docsIfCmtsCmStatusTable from DOCS-IF-MIB"
+        ::= { cdxCpeToCmEntry 5 }
 
 --
 -- CMTS Upstream Group
@@ -3479,12 +3689,69 @@ cdxCmtsCmCpeGroupRev7 OBJECT-GROUP
         cdxIfCmtsCmStatusOnlineTimesNum,
         cdxIfCmtsCmStatusLastResetTime
         }
-        STATUS    current 
+        STATUS    obsolete -- superseded by cdxCmtsCmCpeGroupRev8 
         DESCRIPTION
             "Group of objects implemented in Cable Modem
              Termination Systems (CMTS) for managing and monitoring
              cable modems or Customer Premises Equipments. "
         ::= { cdxDocsExtGroups 17 }
+
+cdxCmtsCmCpeGroupRev8 OBJECT-GROUP
+        OBJECTS {
+        cdxCmCpeType,
+        cdxCmCpeIpAddress,
+        cdxCmCpeIfIndex,
+        cdxCmCpeCmtsServiceId,
+        cdxCmCpeCmStatusIndex,
+        cdxCmCpeAccessGroup,
+        cdxCmCpeResetNow,
+        cdxCmtsCmStatusValue,
+        cdxIfCmtsCmStatusOnlineTimes,
+        cdxIfCmtsCmStatusPercentOnline,
+        cdxIfCmtsCmStatusMinOnlineTime,
+        cdxIfCmtsCmStatusAvgOnlineTime,
+        cdxIfCmtsCmStatusMaxOnlineTime,
+        cdxIfCmtsCmStatusMinOfflineTime,
+        cdxIfCmtsCmStatusAvgOfflineTime,
+        cdxIfCmtsCmStatusMaxOfflineTime,
+        cdxIfCmtsCmStatusDynSidCount,
+        cdxIfCmtsCmStatusAddlInfo,
+        cdxCmtsCmOnOffTrapEnable,
+        cdxCmtsCmOnOffTrapInterval,
+        cdxCmtsCmDefaultMaxCpes,
+        cdxCmtsCmTotal,
+        cdxCmtsCmActive,
+        cdxCmtsCmRegistered,
+        cdxCmtsCmDMICMode,
+        cdxCmtsCmDMICLockQos,
+        cdxCmtsCmChOverTimeExpiration,
+        cdxCmtsCmChOverMacAddress,
+        cdxCmtsCmChOverDownFrequency,
+        cdxCmtsCmChOverUpChannelId,
+        cdxCmtsCmChOverTrapOnCompletion,
+        cdxCmtsCmChOverOpInitiatedTime,
+        cdxCmtsCmChOverState,
+        cdxCmtsCmChOverRowStatus,
+        cdxCmtsCmMaxCpeNumber,
+        cdxCmtsCmCurrCpeNumber,
+        cdxCmtsCmQosProfile,
+        cdxCmtsCmStatusDMICMode,
+        cdxCmtsCmStatusDMICUnLock,
+        cdxIfCmtsCmStatusOnlineTimesNum,
+        cdxIfCmtsCmStatusLastResetTime,
+        cdxCmToCpeInetAddressType,
+        cdxCmToCpeInetAddress,
+        cdxCpeToCmMacAddress,
+        cdxCpeToCmInetAddressType,
+        cdxCpeToCmInetAddress,
+        cdxCpeToCmStatusIndex
+        }
+        STATUS    current
+        DESCRIPTION
+            "Group of objects implemented in Cable Modem
+             Termination Systems (CMTS) for managing and monitoring
+             cable modems or Customer Premises Equipments. "
+        ::= { cdxDocsExtGroups 18 }
 
 cdxNotifGroupRev1    NOTIFICATION-GROUP
         NOTIFICATIONS {
@@ -3498,7 +3765,8 @@ cdxNotifGroupRev1    NOTIFICATION-GROUP
             "A group of notifications implemented in Cable Modem 
              Termination Systems (CMTS) for managing and monitoring
              cable modems or Customer Premises Equipments. "
-        ::= { cdxDocsExtGroups 18 }
+        ::= { cdxDocsExtGroups 19 }
+
 
 END
 

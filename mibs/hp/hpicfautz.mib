@@ -1,0 +1,131 @@
+HP-AUTZ-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE
+             FROM SNMPv2-SMI
+        OBJECT-GROUP, MODULE-COMPLIANCE
+            FROM SNMPv2-CONF
+        hpSwitch
+            FROM HP-ICF-OID;
+
+    hpSwitchAuthorizationMIB MODULE-IDENTITY
+        LAST-UPDATED "200510050000Z"  -- October 5, 2005
+        ORGANIZATION "Hewlett Packard Company,
+                      Procurve Networking Business"
+        CONTACT-INFO "Hewlett Packard Company
+                      8000 Foothills Blvd.
+                      Roseville, CA 95747"
+        DESCRIPTION  "This MIB module contains the definitions of objects
+                     for managing the user authorization service on HP 
+                     networking devices."
+
+        REVISION     "200510050000Z"  -- October 5, 2005
+        DESCRIPTION  "Initial version."
+
+        ::= { hpSwitch 32 }
+            
+-- **********************************************************************
+-- Authorization MIB Groups
+-- **********************************************************************
+
+    hpSwitchAuthorizationConfig      
+        OBJECT IDENTIFIER ::= { hpSwitchAuthorizationMIB 1 }
+    hpSwitchAuthorizationConformance 
+        OBJECT IDENTIFIER ::= { hpSwitchAuthorizationMIB 2 }
+
+-- **********************************************************************
+-- Start of MIB objects
+-- **********************************************************************
+
+    hpSwitchAutzServiceTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpSwitchAutzServiceEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The (conceptual) table listing the authorization
+                    service types."
+        ::= { hpSwitchAuthorizationConfig 1 }
+
+    hpSwitchAutzServiceEntry OBJECT-TYPE 
+        SYNTAX      HpSwitchAutzServiceEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "An entry (conceptual row) in the hpSwitchAutzServiceTable."
+        INDEX       { hpSwitchAutzServiceType }
+        ::= {hpSwitchAutzServiceTable 1}
+
+    HpSwitchAutzServiceEntry ::=
+        SEQUENCE {
+            hpSwitchAutzServiceType              INTEGER,
+            hpSwitchAutzServicePrimaryMethod     INTEGER,
+            hpSwitchAutzServiceSecondaryMethod   INTEGER
+        }
+
+    hpSwitchAutzServiceType OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        commands(1),
+                        exec(2),
+                        network(3)
+                    }
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Signifies the authorization service type for which
+                    this entry contains configuration information."
+        ::= {hpSwitchAutzServiceEntry 1}
+
+    hpSwitchAutzServicePrimaryMethod OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        local(1),
+                        tacacs(2),
+                        radius(3),
+                        none(4)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Specifies the primary method used for authorization."
+        ::= { hpSwitchAutzServiceEntry 2 }
+
+    hpSwitchAutzServiceSecondaryMethod OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        local(1),
+                        none(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Specifies the secondary (backup) method used for 
+                    authorization."
+        ::= { hpSwitchAutzServiceEntry 3 }
+
+-- **********************************************************************
+-- Conformance Information
+-- **********************************************************************
+
+    hpSwitchAuthorizationMIBCompliances 
+        OBJECT IDENTIFIER ::= { hpSwitchAuthorizationConformance 1}
+
+    hpSwitchAuthorizationMIBGroups
+        OBJECT IDENTIFIER ::= { hpSwitchAuthorizationConformance 2}
+
+-- ......................................................................
+-- Compliance statements
+-- ......................................................................
+
+    hpSwitchAuthorizationMIBCompliance MODULE-COMPLIANCE 
+        STATUS      current
+        DESCRIPTION "The compliance statement for devices implementing the
+                     HP-AUTZ-MIB."
+        MODULE  -- this module
+            MANDATORY-GROUPS { hpSwitchAuthorizationConfigGroup }
+        ::= { hpSwitchAuthorizationMIBCompliances 1 }
+
+-- ......................................................................
+-- Conformance Groups
+-- ......................................................................
+
+    hpSwitchAuthorizationConfigGroup OBJECT-GROUP
+        OBJECTS     { hpSwitchAutzServicePrimaryMethod,
+                      hpSwitchAutzServiceSecondaryMethod
+                    }
+        STATUS      current
+        DESCRIPTION "A collection of objects to support authorization service."
+        ::= { hpSwitchAuthorizationMIBGroups 1 }
+END

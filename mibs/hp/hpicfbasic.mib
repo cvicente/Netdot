@@ -21,7 +21,7 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
             FROM SNMP-TARGET-MIB;
 
     hpicfBasicMib MODULE-IDENTITY
-        LAST-UPDATED "200301090108Z"  -- January 9, 2003
+        LAST-UPDATED "200511170000Z"  -- November 17, 2005
         ORGANIZATION "Hewlett Packard Company,
                      Network Infrastructure Solutions"
         CONTACT-INFO "Hewlett Packard Company
@@ -30,6 +30,11 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
         DESCRIPTION  "This MIB module describes objects for basic
                      management of devices in the HP Integrated
                      Communication Facility product line."
+
+        REVISION     "200511170000Z"  -- November 17, 2005
+        DESCRIPTION  "Added hpicfBasicDNSConfig object group to 
+                      the HP ICF Basic Group.  Updated conformance and 
+                      compliences objects."
 
         REVISION     "200301090108Z"  -- January 9, 2003
         DESCRIPTION  "Changed the default value for 
@@ -76,6 +81,7 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
 
         REVISION     "9501180000Z"  -- April 12, 2004
         DESCRIPTION  "Added the hpicfIpZeroBroadcastEnable object." 
+	
         ::= { hpicfObjectModules 5 }
 
 
@@ -368,16 +374,20 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
     hpicfIpConfigTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpicfIpConfigEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
-        DESCRIPTION "This table contains per-interface IP configuration
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    This table contains per-interface IP configuration
                     information."
         ::= { hpicfBasicIpConfig 1 }
 
     hpicfIpConfigEntry OBJECT-TYPE
         SYNTAX      HpicfIpConfigEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
-        DESCRIPTION "An entry in the hpicfIpConfigTable containing the IP
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    An entry in the hpicfIpConfigTable containing the IP
                     configuration information for a single interface."
         INDEX       { ifIndex }
         ::= { hpicfIpConfigTable 1 }
@@ -390,22 +400,27 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
             hpicfIpConfigPingRouter         TruthValue,
             hpicfIpConfigMtu                Integer32,
             hpicfIpConfigAdminStatus        INTEGER,
-            hpicfIpConfigProxyArp           INTEGER
+            hpicfIpConfigProxyArp           INTEGER,
+            hpicfIpConfigLocalProxyArp      INTEGER
         }
 
     hpicfIpConfigAddress OBJECT-TYPE
         SYNTAX      IpAddress
         MAX-ACCESS  read-write
-        STATUS      current
-        DESCRIPTION "This variable contains the IP address for this
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    This variable contains the IP address for this
                     interface."
         ::= { hpicfIpConfigEntry 1 }
 
     hpicfIpConfigAddrMask OBJECT-TYPE
         SYNTAX      IpAddress
         MAX-ACCESS  read-write
-        STATUS      current
-        DESCRIPTION "This variable contains the IP subnet mask for
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    This variable contains the IP subnet mask for
                     this interface."
         ::= { hpicfIpConfigEntry 2 }
 
@@ -444,8 +459,10 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
     hpicfIpConfigMtu OBJECT-TYPE
         SYNTAX      Integer32 (68..65535)
         MAX-ACCESS  read-write
-        STATUS      current
-        DESCRIPTION "This object is used to configure the largest
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    This object is used to configure the largest
                     datagram that IP will send on this interface.  Note
                     that for some interface types, this value may not
                     be changeable, and this object will be implemented
@@ -462,8 +479,10 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
                         learn(3)
                     }
         MAX-ACCESS  read-write
-        STATUS      current
-        DESCRIPTION "Setting this flag to 'learn' (the default) will
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    Setting this flag to 'learn' (the default) will
                     clear any existing IP address configuration for
                     this interface, and will cause the device to use a
                     dynamic method (e.g. BootP) to obtain its IP
@@ -480,11 +499,28 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
                         disabled(2)
                     }
         MAX-ACCESS  read-write
-        STATUS      current
-        DESCRIPTION "Enables/disables ARP proxy on the interface. If set 
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    Enables/disables ARP proxy on the interface. If set 
                     to enabled(1), the switch will respond on ARP request
                     for IP addresses from other subnets."
         ::= { hpicfIpConfigEntry 7 }
+
+
+    hpicfIpConfigLocalProxyArp OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enabled(1),
+                        disabled(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    Enables/disables local ARP proxy on the interface. If set 
+                    to enabled(1), the switch will respond on ARP request
+                    for IP addresses from local subnets."
+        ::= { hpicfIpConfigEntry 8 }
 
 
     -- IP secondary addresses
@@ -492,16 +528,20 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
     hpicfIpAddrTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpicfIpAddrEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
-        DESCRIPTION "A table that contains the secondary addresses
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    A table that contains the secondary addresses
                     configured for an interface."
         ::= { hpicfBasicIpConfig 2 }
 
     hpicfIpAddrEntry OBJECT-TYPE
         SYNTAX      HpicfIpAddrEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
-        DESCRIPTION "Information about a secondary IP address assigned
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    Information about a secondary IP address assigned
                     to an interface."
         INDEX       { ifIndex,
                       hpicfIpAddrAddr }
@@ -517,15 +557,19 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
     hpicfIpAddrAddr OBJECT-TYPE
         SYNTAX      IpAddress
         MAX-ACCESS  not-accessible
-        STATUS      current
-        DESCRIPTION "The secondary IP address."
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    The secondary IP address."
         ::= { hpicfIpAddrEntry 1 }
 
     hpicfIpAddrMask OBJECT-TYPE
         SYNTAX      IpAddress
         MAX-ACCESS  read-create
-        STATUS      current
-        DESCRIPTION "The subnet mask for the address. If not specified
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    The subnet mask for the address. If not specified
                     at the time of row creation, defaults to the
                     class-based netmask for the address."
         ::= { hpicfIpAddrEntry 2 }
@@ -533,8 +577,10 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
     hpicfIpAddrStatus OBJECT-TYPE
         SYNTAX      RowStatus
         MAX-ACCESS  read-create
-        STATUS      current
-        DESCRIPTION "The status of an IP Address entry."
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED *********
+
+                    The status of an IP Address entry."
         ::= { hpicfIpAddrEntry 3 }
 
 
@@ -819,7 +865,10 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
             hpicfTrapDestTDomain            TDomain,
             hpicfTrapDestTAddress           TAddress,
             hpicfTrapDestFilter             Integer32,
-            hpicfTrapDestStatus             RowStatus
+            hpicfTrapDestStatus             RowStatus,
+	    hpicfTrapDestNotifyType         INTEGER,
+	    hpicfTrapDestRetries            Interger32,
+	    hpicfTrapDestTimeout            TimeInterval
         }
 
     hpicfTrapDestIndex OBJECT-TYPE
@@ -954,6 +1003,46 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
                     specified by hpicfTrapDestProtocol."
         ::= { hpicfTrapDestEntry 7 }
 
+    hpicfTrapDestNotifyType OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        trap(1),
+                        inform(2)
+                    }
+        MAX-ACCESS  read-create
+        STATUS      deprecated
+        DESCRIPTION "*************THIS OBJECT IS DEPRECATED **********
+                    This object is used to indicate what type of
+                    SNMP trap/informs should be used.
+                    When the value of this object is 'trap',
+		    notifications will be sent. When the value of this
+		    object is 'inform', informs will be sent."
+
+        DEFVAL      { trap } 
+        ::= { hpicfTrapDestEntry 8 }
+
+    hpicfTrapDestRetries OBJECT-TYPE
+        SYNTAX      Integer32 (0..255)
+        MAX-ACCESS  read-create
+        STATUS      deprecated
+        DESCRIPTION "*************THIS OBJECT IS DEPRECATED **********
+                    This object is used to indicate what number of
+                    retries to be attempted when a response is not 
+		    received for a generated message."
+
+        DEFVAL      { 3 } 
+        ::= { hpicfTrapDestEntry 9 }
+
+    hpicfTrapDestTimeout OBJECT-TYPE
+        SYNTAX      TimeInterval
+        MAX-ACCESS  read-create
+        STATUS      deprecated
+        DESCRIPTION "*************THIS OBJECT IS DEPRECATED **********
+                    This object is used to indicate what number of
+                    seconds between retries to be attempted when a 
+		    response is not received for a generated message."
+
+        DEFVAL      { 1500 } 
+        ::= { hpicfTrapDestEntry 10 }
 
     -- HP Basic extensions to the Remote Monitoring MIB.
 
@@ -1123,6 +1212,100 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
         DEFVAL      { 1 }   -- SNMP traps only
         ::= { hpicfSnmpTargetAddrLogFilterEntry 1 } 
 
+    -- HP ICF BASIC Domain Name Services Objects 
+
+    hpicfBasicDNSConfig OBJECT IDENTIFIER ::= { hpicfBasic 15}
+
+    hpicfDNSDefaultDomainSuffix OBJECT-TYPE
+        SYNTAX      DisplayString (SIZE (0..255))
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The default domain name (A unique designator on the 
+                     network composed of symbols separated by dots) to 
+                     which resolver appends host names before sending the 
+                     queries to name servers.  An example of a valid 
+                     default domain suffix is 'hp.com'.  The resolver
+                     will not use a default domain suffix if this object 
+                     is set to empty-string (which is the default value.)" 
+        ::= { hpicfBasicDNSConfig 1 }
+
+    hpicfDNSNameServerTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfDNSNameServerEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "A table that contains information about the 
+                    (DNS) Name Server configuration in this 
+                    device."
+        ::= { hpicfBasicDNSConfig 2 }
+
+    hpicfDNSNameServerEntry OBJECT-TYPE
+        SYNTAX      HpicfDNSNameServerEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Information about name server configuration entry
+                     on this resolver device. "
+        INDEX       { hpicfDNSNameServerAddress }
+        ::= { hpicfDNSNameServerTable 1 }
+       
+    HpicfDNSNameServerEntry ::=
+        SEQUENCE {
+            hpicfDNSNameServerAddress     IpAddress,
+            hpicfDNSNameServerEntryStatus RowStatus 
+        }
+
+    hpicfDNSNameServerAddress OBJECT-TYPE
+        SYNTAX      IpAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "IPv4 address of the given name server."
+        ::= { hpicfDNSNameServerEntry 1 }
+
+    hpicfDNSNameServerEntryStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION "The row status of a given name server entry."
+        ::= { hpicfDNSNameServerEntry 2 }
+    -- HP ICF BASIC Banner 
+
+    hpicfBannerStatus OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enabled(1),
+                        disabled(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "When the value of this object is 'enabled(1)', it means
+                    that the banner has been configured and will be displayed
+                    at console or web-ui login. When the value of this object 
+		    is disabled(2), it means the banner has been unconfigured."
+	DEFVAL      { 1 } 	    
+		    
+        ::= { hpicfBasic 13 }
+
+    hpicfBanner     OBJECT IDENTIFIER ::= { hpicfBasic 14}
+
+    hpicfBannerMOTD OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(1..3070)) 
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "An administratively configured message that is displayed 
+                     to the user when logged in to the device through 
+                     either the console or web-ui"
+        ::= { hpicfBanner 1 }
+
+
+   hpicfResetDefault OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        primary(1),
+                        secondary(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The switch boots from 'primary image' or 'secondary image' 
+                    based on this object."
+        ::= { hpicfBasic 16 }
+
 
     -- Conformance information
 
@@ -1130,8 +1313,6 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
 
     hpicfBasicCompliances OBJECT IDENTIFIER ::= { hpicfBasicConformance 1 }
     hpicfBasicGroups      OBJECT IDENTIFIER ::= { hpicfBasicConformance 2 }
-
-
 
     -- compliance statements
 
@@ -1174,7 +1355,6 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
                         other than responses to network management
                         requests (e.g. repeaters and switches)."
 
--- missing.  max 11/02/04
 --            GROUP       hpicfBasicSnmpNotifyLogFilterTable
 --            DESCRIPTION "This group is required for devices that support
 --                         SNMPv3."
@@ -1327,13 +1507,14 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
         ::= { hpicfBasicCompliances 4 }
 
     hpicfBasicCompliance5 MODULE-COMPLIANCE
-        STATUS      current
-        DESCRIPTION "An updated compliance statement for this module."
+        STATUS      deprecated
+        DESCRIPTION  "********* THIS COMPLIANCE IS DEPRECATED *********"
         MODULE
             MANDATORY-GROUPS { hpicfNewBasicGroup,
                                hpicfBasicIpConfigGroup3,
                                hpicfBasicFixedTrapGroup,
-                               hpicfBasicSelfTestNotifyGroup }
+                               hpicfBasicSelfTestNotifyGroup,
+                               hpicfBasicBannerGroup }
 
             GROUP       hpicfBasicIpxConfigGroup
             DESCRIPTION "This group is only required for devices that
@@ -1379,6 +1560,124 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
 
         ::= { hpicfBasicCompliances 5 }
 
+    hpicfBasicCompliance6 MODULE-COMPLIANCE
+        STATUS      deprecated
+        DESCRIPTION "********* THIS COMPLIANCE IS DEPRECATED *********"
+        MODULE
+            MANDATORY-GROUPS { hpicfNewBasicGroup,
+                               hpicfBasicIpConfigGroup3,
+                               hpicfBasicFixedTrapGroup,
+                               hpicfBasicSelfTestNotifyGroup
+                               }
+
+            GROUP       hpicfBasicIpxConfigGroup
+            DESCRIPTION "This group is only required for devices that
+                        support management access over an IPX
+                        protocol stack."
+
+            GROUP       hpicfAnnounceDiscoveryGroup
+            DESCRIPTION "This group is required for devices that use
+                        the mapping announcement feature for topology.
+                        This method is generally only used in devices
+                        that would ordinarily not be originating traffic
+                        other than responses to network management
+                        requests (e.g. repeaters and switches)."
+
+            GROUP       hpicfBasicRmonNVGroup
+            DESCRIPTION "This group is only required for devices that
+                        allow management stations to selectively store
+                        RMON alarms and events in non-volatile memory."
+
+            GROUP       hpicfSnmpTargetAddrLogFilterGroup
+            DESCRIPTION "This group is required for devices that supports
+                         SNMPv3 and log filtering."
+
+            OBJECT      hpicfIpGlobalPingRouter
+            MIN-ACCESS  read-only
+            DESCRIPTION "Write access to this object is only required
+                        in devices that would ordinarily not be
+                        originating traffic other than responses to
+                        network management requests (e.g. repeaters and
+                        switches)."
+
+            OBJECT      hpicfIpConfigMtu
+            MIN-ACCESS  read-only
+            DESCRIPTION "Write access to this object is not required."
+
+            OBJECT      hpicfFixedTrapEventIndex
+            MIN-ACCESS  read-only
+            DESCRIPTION "Write access to this object is not required.
+                        This would allow configuration of the
+                        community name and action to be taken for each
+                        fixed trap, but would not allow changing the
+                        eventIndex that the trap points to."
+
+            GROUP       hpicfBasicDNSConfigGroup
+            DESCRIPTION "This group is only required for devices that
+                        support DNS resolver capability."
+
+        ::= { hpicfBasicCompliances 6 }
+
+    hpicfBasicCompliance7 MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "An updated compliance statement for this module."
+        MODULE
+            MANDATORY-GROUPS { hpicfBasicGroup1,
+                               hpicfBasicIpConfigGroup3,
+                               hpicfBasicFixedTrapGroup,
+                               hpicfBasicSelfTestNotifyGroup
+                               }
+
+            GROUP       hpicfBasicIpxConfigGroup
+            DESCRIPTION "This group is only required for devices that
+                        support management access over an IPX
+                        protocol stack."
+
+            GROUP       hpicfAnnounceDiscoveryGroup
+            DESCRIPTION "This group is required for devices that use
+                        the mapping announcement feature for topology.
+                        This method is generally only used in devices
+                        that would ordinarily not be originating traffic
+                        other than responses to network management
+                        requests (e.g. repeaters and switches)."
+
+            GROUP       hpicfBasicRmonNVGroup
+            DESCRIPTION "This group is only required for devices that
+                        allow management stations to selectively store
+                        RMON alarms and events in non-volatile memory."
+
+            GROUP       hpicfSnmpTargetAddrLogFilterGroup
+            DESCRIPTION "This group is required for devices that supports
+                         SNMPv3 and log filtering."
+
+            OBJECT      hpicfIpGlobalPingRouter
+            MIN-ACCESS  read-only
+            DESCRIPTION "Write access to this object is only required
+                        in devices that would ordinarily not be
+                        originating traffic other than responses to
+                        network management requests (e.g. repeaters and
+                        switches)."
+
+            OBJECT      hpicfIpConfigMtu
+            MIN-ACCESS  read-only
+            DESCRIPTION "Write access to this object is not required."
+
+            OBJECT      hpicfFixedTrapEventIndex
+            MIN-ACCESS  read-only
+            DESCRIPTION "Write access to this object is not required.
+                        This would allow configuration of the
+                        community name and action to be taken for each
+                        fixed trap, but would not allow changing the
+                        eventIndex that the trap points to."
+
+            GROUP       hpicfBasicDNSConfigGroup
+            DESCRIPTION "This group is only required for devices that
+                        support DNS resolver capability."
+
+        ::= { hpicfBasicCompliances 7 }
+
+
+
     -- units of conformance
 
     hpicfBasicGroup OBJECT-GROUP
@@ -1408,9 +1707,12 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
                       hpicfConfigClear,
                       hpicfSelfTestResultCode,
                       hpicfSelfTestResultText,
-                      hpicfSelfTestResultTime }
-        STATUS      current
-        DESCRIPTION "A collection of objects for basic management of
+                      hpicfSelfTestResultTime,
+                      hpicfBannerStatus }
+        STATUS      deprecated
+        DESCRIPTION "********* THIS GROUP IS DEPRECATED *********
+
+                    A collection of objects for basic management of
                     ICF devices."
         ::= { hpicfBasicGroups 3 }
 
@@ -1561,6 +1863,38 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
                     protocol stack in agents that support only a
                     single global default router."
         ::= { hpicfBasicGroups 17 }
+
+    hpicfBasicBannerGroup OBJECT-GROUP
+        OBJECTS     { hpicfBannerMOTD }
+        STATUS      current
+        DESCRIPTION "A group of objects for configuring banners for
+                     display on console and web-ui at login"
+        ::= { hpicfBasicGroups 18 }
+
+    hpicfBasicDNSConfigGroup OBJECT-GROUP
+        OBJECTS     { hpicfDNSDefaultDomainSuffix,
+                      hpicfDNSNameServerEntryStatus
+                    }
+        STATUS      current
+        DESCRIPTION "A collection of objects for configuring the DNS
+                     resolver facility in agents that are capable of
+                     resolving host names to IP addresses."
+        ::= { hpicfBasicGroups 19 }
+
+    hpicfBasicGroup1 OBJECT-GROUP
+        OBJECTS     { hpicfReset,
+                      hpicfSelfTest,
+                      hpicfTelnetEnable,
+                      hpicfConfigClear,
+                      hpicfSelfTestResultCode,
+                      hpicfSelfTestResultText,
+                      hpicfSelfTestResultTime,
+                      hpicfBannerStatus,
+                      hpicfResetDefault }
+        STATUS      current
+        DESCRIPTION "A collection of objects for basic management of
+                    ICF devices."
+        ::= { hpicfBasicGroups 20 }
 
 END
 

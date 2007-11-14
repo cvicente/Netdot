@@ -3,7 +3,7 @@
 --
 -- Dec 1999, Huiyang Yang
 --
--- Copyright (c) 1999, 2000, 2001, 2002, 2004, 2005
+-- Copyright (c) 1999, 2000, 2001, 2002, 2004, 2005, 2006
 -- by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
@@ -29,7 +29,7 @@ IMPORTS
             FROM INET-ADDRESS-MIB;
 
 ciscoGprsAccPtMIB MODULE-IDENTITY
-        LAST-UPDATED    "200511221400Z"
+        LAST-UPDATED    "200608300000Z"
         ORGANIZATION    "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -139,6 +139,32 @@ ciscoGprsAccPtMIB MODULE-IDENTITY
                 [2] GSM 03.03: Digital cellular telecommunication 
                     system (Phase 2+); General Packet Radio Service 
                     (GPRS); Service description; Stage 1."
+        REVISION        "200608300000Z"
+        DESCRIPTION
+                "Deprecated cgprsAccPtImsConfigTable, as IMS is
+                 not supported from GGSN release 5.0 onwards.
+                
+                Added cgprsAccPtPcscfServerGroupName to 
+                cgprsAccPtTable."
+        REVISION        "200605181300Z"
+        DESCRIPTION     
+                "Added cgprsAccPtIpv6Configs to ciscoGprsAccPtConfig.
+
+                Added following objects to cgprsAccPtStatisticsTable:
+                 cgprsAccPtIpv6MsActivatedPdps,
+                 cgprsAccPtIpv6MsSuccActivatedPdps,
+                 cgprsAccPtIpv6NetworkInitDeactPdps,
+                 cgprsAccPtIpv6NetworkInitDeactSuccPdps,
+                 cgprsAccPtIpv6MsActivatedDynPdps,
+                 cgprsAccPtIpv6MsSuccActivatedDynPdps,
+                 cgprsAccPtIpv6MsDeactivatedPdps,
+                 cgprsAccPtIpv6MsSuccDeactivatedPdps,
+                 cgprsAccPtIpv6GgsnDeactivatedPdps,
+                 cgprsAccPtIpv6GgsnSuccDeactivatedPdps,
+                 cgprsAccPtIpv6UpstreamTrafficVolume,
+                 cgprsAccPtIpv6DownstreamTrafficVolume,
+                 cgprsAccPtIpv6UpstreamPackets,
+                 cgprsAccPtIpv6DownstreamPackets." 
         REVISION        "200511221400Z"
         DESCRIPTION
                 "Changed the range of cgprsAccPtName and
@@ -278,6 +304,21 @@ AccessControlListOrZero ::= TEXTUAL-CONVENTION
                 A value of zero indicates no ACL is configured."
         SYNTAX          Integer32 (0..199 | 1300..2699)
 
+AccessControlListName ::= TEXTUAL-CONVENTION
+        STATUS          current
+        DESCRIPTION
+                "Access Control List (ACL) specifies the criteria by
+                which packets are evaluated as matching or
+                non-matching. The ACL also specifies an action,
+                which is applied to packets which match.
+                Objects which use this textual convention identify
+                ACLs.
+
+                ACLs are configured/defined outside the scope of
+                this MIB. The name of an object with this syntax
+                associates to an ACL with the same ACL name."
+        SYNTAX          OCTET STRING (SIZE (0..255)) 
+
 -- 
 -- Object Definitions
 -- 
@@ -356,7 +397,8 @@ CgprsAccPtEntry ::= SEQUENCE {
         cgprsAccPtPppRegenEnable          TruthValue,
         cgprsAccPtPppRegenMaxSessions     Integer32,
         cgprsAccPtPppRegenSetupTime       Integer32,
-        cgprsAccPtAutoAggregation         TruthValue
+        cgprsAccPtAutoAggregation         TruthValue,
+        cgprsAccPtPcscfServerGroupName    SnmpAdminString
         }
 
 cgprsAccPtIndex OBJECT-TYPE
@@ -411,7 +453,7 @@ cgprsAccPtName OBJECT-TYPE
 
 cgprsAccPtMode OBJECT-TYPE
         SYNTAX      INTEGER { 
-                            transparent(1),
+                            transparent   (1),
                             nontransparent(2)
                     }
         MAX-ACCESS  read-create        
@@ -430,11 +472,11 @@ cgprsAccPtMode OBJECT-TYPE
         
 cgprsAccPtIpAddressPool OBJECT-TYPE            
         SYNTAX      INTEGER { 
-                            global(1),
-                            dhcp(2),
-                            radius(3),
+                            global (1),
+                            dhcp   (2),
+                            radius (3),
                             disable(4),
-                            local(5)
+                            local  (5)
                     }
         MAX-ACCESS  read-create        
         STATUS      current
@@ -609,7 +651,7 @@ cgprsAccPtIfNextHop OBJECT-TYPE
  
 cgprsAccPtAccessViolation OBJECT-TYPE
         SYNTAX INTEGER {
-                        discardPacket(1),
+                        discardPacket   (1),
                         terminateSession(2)
                 }
         MAX-ACCESS  read-create
@@ -730,11 +772,11 @@ cgprsAccPtMsIsdnSuppressed  OBJECT-TYPE
         MAX-ACCESS  read-create
         STATUS      current
         DESCRIPTION
-                "This object specifies whether the ISDN id used 
+                "This object specifies whether the ISDN ID used 
                 by the MS, when authenticating with a radius server,
                 needs to be suppressed or not.  When set to 'true', 
-                the ISDN id attribute will not be sent by the GGSN.
-                When set to 'false', the ISDN id attribute will be 
+                the ISDN ID attribute will not be sent by the GGSN.
+                When set to 'false', the ISDN ID attribute will be 
                 sent by the GGSN.  To set this object to 'true', AAA
                 radius group for authentication should have been
                 configured on the GGSN(either at global or APN level)."
@@ -752,12 +794,12 @@ cgprsAccPtMsIsdnSuppressedValue OBJECT-TYPE
         DESCRIPTION
                 "This object specifies the value that will be 
                 transmitted to the radius server in place of 
-                mobile stations ISDN id.  This object can only 
+                mobile stations ISDN ID.  This object can only 
                 be set if cgprsAccPtMsIsdnSuppressed is 'true'.
                 
                 Valid characters for this object are 0..9, 
                 a, b, c, * and #.  If no value is set, no MS-ISDN
-                id will be sent to the radius server."
+                ID will be sent to the radius server."
         REFERENCE
                 "GSM 09.02: Digital cellular telecommunication
                 system (Phase 2+); Mobile Application Part (MAP) 
@@ -803,8 +845,8 @@ cgprsAccPtAaaAccountingEnable  OBJECT-TYPE
 
 cgprsAccPtType  OBJECT-TYPE
         SYNTAX      INTEGER {
-                            real(1),
-                            virtual(2),
+                            real          (1),
+                            virtual       (2),
                             virtualPreAuth(3)
                     }
         MAX-ACCESS  read-create
@@ -843,7 +885,7 @@ cgprsAccPtVrfName  OBJECT-TYPE
 cgprsAccPtDhcpAddrSpace  OBJECT-TYPE
         SYNTAX      INTEGER {
                              global(1),
-                             vrf(2)
+                             vrf   (2)
                     }
         MAX-ACCESS  read-create
         STATUS      current
@@ -907,6 +949,18 @@ cgprsAccPtAutoAggregation  OBJECT-TYPE
                 deleted."
         DEFVAL { false }
         ::= { cgprsAccPtEntry 35 }
+
+cgprsAccPtPcscfServerGroupName  OBJECT-TYPE
+        SYNTAX      SnmpAdminString (SIZE (0..100))
+        MAX-ACCESS  read-create
+        STATUS      current 
+        DESCRIPTION
+                "This object represents the Proxy-CSCF server group that
+                will be used by this APN.  The Proxy-CSCF server group
+                contains a list of Proxy-CSCF addresses which will be
+                provided to the MS(UE) in response to a PDP contexts for
+                which the P-CSCF address request field is set in PCO."
+        ::= { cgprsAccPtEntry 36 }
 
 cgprsAccPtAggregTable  OBJECT-TYPE
         SYNTAX      SEQUENCE OF CgprsAccPtAggregEntry
@@ -1215,13 +1269,13 @@ cgprsAccPtSetRadiusAttributes  OBJECT-TYPE
                 'userNameMsisdn' - MSISDN of the mobile is sent in the
                      user-name attribute.
 
-                'accSessIdChargingId' - Charging Id is sent in the
-                     accounting session id attribute."
+                'accSessIdChargingId' - Charging ID is sent in the
+                     accounting session ID attribute."
         ::= { cgprsAccPtExtEntry 11 }
 
 cgprsAccPtOperationMode  OBJECT-TYPE
         SYNTAX      INTEGER {
-                        inService(0),
+                        inService  (0),
                         maintenance(1)
                     }
         MAX-ACCESS  read-create
@@ -1263,10 +1317,10 @@ cgprsAccPtRadiusAttrNasId  OBJECT-TYPE
         MAX-ACCESS  read-create
         STATUS      current
         DESCRIPTION
-                "This object denotes the value used as NAS id in the 
+                "This object denotes the value used as NAS ID in the 
                 RADIUS access requests sent by GGSN on this APN.  A
                 zero length string needs to be set to unconfigure the
-                NAS Id value."
+                NAS ID value."
         ::= { cgprsAccPtExtEntry 14 }
 
 cgprsAccPtPdpInServicePolicyName  OBJECT-TYPE
@@ -1393,7 +1447,7 @@ cgprsAccPtDnsServerAddrType  OBJECT-TYPE
                 are reachable.
 
                 DNS addresses to be sent to the MS can come from DHCP
-                server or RADIUS server based on ip address allocation
+                server or RADIUS server based on IP address allocation
                 scheme chosen by cgprsAccPtIpAddressPool.  The IP
                 address configured to cgprsAccPtPriDnsServer and
                 cgprsAccPtSecDnsServer will be sent to MS only when
@@ -1432,13 +1486,13 @@ cgprsAccPtNetbiosServerAddrType  OBJECT-TYPE
                 cgprsAccPtSecNetbiosServer are reachable.
 
                 NBNS addresses to be sent to the MS can come from DHCP
-                server or RADIUS server based on ip address allocation
+                server or RADIUS server based on IP address allocation
                 scheme chosen by cgprsAccPtIpAddressPool.  The IP
                 address configured to cgprsAccPtPriNetbiosServer and
                 cgprsAccPtSecNetbiosServer will be sent to MS only when
 
                  - DHCP/RADIUS servers does not return any NBNS address.
-                 - local address pool is used for ip address allocation
+                 - local address pool is used for IP address allocation
                    for MS."
         ::= { cgprsAccPtGenServerConfigEntry 4 }
 
@@ -1472,7 +1526,7 @@ cgprsAccPtImsConfigs OBJECT IDENTIFIER
 cgprsAccPtImsConfigTable  OBJECT-TYPE
         SYNTAX      SEQUENCE OF CgprsAccPtImsConfigEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated 
         DESCRIPTION
                 "IP Multimedia Subsystem(IMS) has been introduced in
                 3GPP release 5 for the provision of multimedia services.
@@ -1483,7 +1537,8 @@ cgprsAccPtImsConfigTable  OBJECT-TYPE
                 using COPS protocol.
 
                 This table represents various parameters required to
-                support IMS."
+                support IMS.  This table is deprecated as IMS is not
+                supported from GGSN 5.0 release onwards."
         REFERENCE
                 "3GPP TS 29.207: Policy Control over Go interface."
         ::= { cgprsAccPtImsConfigs 1 }
@@ -1491,7 +1546,7 @@ cgprsAccPtImsConfigTable  OBJECT-TYPE
 cgprsAccPtImsConfigEntry  OBJECT-TYPE
         SYNTAX       CgprsAccPtImsConfigEntry
         MAX-ACCESS   not-accessible
-        STATUS       current
+        STATUS       deprecated 
         DESCRIPTION
                 "An entry in cgprsAccPtImsConfigTable"
         AUGMENTS    { cgprsAccPtEntry }
@@ -1513,7 +1568,7 @@ cgprsAccPtImsEnable  OBJECT-TYPE
                         transformPrimary(3)
                     }
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated 
         DESCRIPTION
                 "This object indicates whether IMS traffic, both
                 signalling and data, is allowed on this APN. When set to
@@ -1535,7 +1590,7 @@ cgprsAccPtImsEnable  OBJECT-TYPE
 cgprsAccPtPCscfGroupName  OBJECT-TYPE
         SYNTAX      SnmpAdminString (SIZE (0..100))
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated 
         DESCRIPTION
                 "This object represents the Proxy-CSCF server group that
                 will be used by this APN.  Proxy-CSCF server group
@@ -1547,7 +1602,7 @@ cgprsAccPtPCscfGroupName  OBJECT-TYPE
 cgprsAccPtImsSigAccGroupIn  OBJECT-TYPE
         SYNTAX      AccessControlListOrZero
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated 
         DESCRIPTION
                 "This object represents the access list that will be
                 applied to all the IMS signalling PDP context received
@@ -1560,7 +1615,7 @@ cgprsAccPtImsSigAccGroupIn  OBJECT-TYPE
 cgprsAccPtImsSigAccGroupOut  OBJECT-TYPE
         SYNTAX      AccessControlListOrZero
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated 
         DESCRIPTION
                 "This object represents the access list that will be
                 applied to all the IMS signalling PDP context received
@@ -1573,7 +1628,7 @@ cgprsAccPtImsSigAccGroupOut  OBJECT-TYPE
 cgprsAccPtRejNonImsPdp  OBJECT-TYPE
         SYNTAX      TruthValue
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated 
         DESCRIPTION
                 "This object represents the action to be taken on a non
                 IMS PDP context, when cgprsAccPtImsEnable is set to
@@ -1634,11 +1689,11 @@ CgprsAccPtChgProfEntry ::= SEQUENCE {
 
 cgprsAccPtMsType  OBJECT-TYPE
         SYNTAX      INTEGER {
-                        all(1),
-                        home(2),
-                        roaming(3),
-                        roamingTrusted(4),
-                        visiting(5),
+                        all            (1),
+                        home           (2),
+                        roaming        (3),
+                        roamingTrusted (4),
+                        visiting       (5),
                         visitingTrusted(6)
                     }
         MAX-ACCESS  not-accessible
@@ -1848,7 +1903,7 @@ cgprsAccPtRpDestAddr  OBJECT-TYPE
 
 cgprsAccPtRpProtocol  OBJECT-TYPE
         SYNTAX      INTEGER {
-                        udp(1),
+                        udp (1),
                         icmp(2)
                     }
         MAX-ACCESS  read-create
@@ -1884,6 +1939,290 @@ cgprsAccPtRpTtl  OBJECT-TYPE
         DEFVAL { 255 }
         ::= { cgprsAccPtRouteProbeEntry 5 }
 
+--
+-- APN IPv6 Configs
+--
+
+cgprsAccPtIpv6Configs    OBJECT IDENTIFIER
+        ::= { ciscoGprsAccPtConfig 9 }
+
+cgprsAccPtIpv6Table OBJECT-TYPE
+        SYNTAX      SEQUENCE OF CgprsAccPtIpv6Entry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+                "GGSN supports IPv6 PDP type and its user traffic.
+                It will provide the IPv6 prefix and interface identifier
+                to the MS; generate IPv6 PDP address in the appropriate
+                charging records and AAA accounting record. 
+
+                This table represents various parameters required to 
+                support IPv6 PDP under APN."
+        ::= { cgprsAccPtIpv6Configs 1 }
+
+cgprsAccPtIpv6Entry OBJECT-TYPE
+        SYNTAX       CgprsAccPtIpv6Entry
+        MAX-ACCESS   not-accessible
+        STATUS       current
+        DESCRIPTION
+                "An entry in cgprsAccPtIpv6Table.
+ 
+                The agent can create/destroy/modify a profile as a
+                result of actions from the local console.  The table
+                objects can be modified, when the RowStatus is active.
+ 
+                The entries in this table are stored in NVRAM when the
+                agent writes the configuration to memory before 
+                restart."
+        AUGMENTS    { cgprsAccPtEntry }
+        ::= { cgprsAccPtIpv6Table 1 }
+
+CgprsAccPtIpv6Entry ::= SEQUENCE {
+        cgprsAccPtIpv6BaseVTemplate        Unsigned32,
+        cgprsAccPtIpv6DnsAddrType          InetAddressType,
+        cgprsAccPtIpv6DnsPriAddress        InetAddress,
+        cgprsAccPtIpv6DnsSecAddress        InetAddress,
+        cgprsAccPtIpv6Enable               TruthValue,
+        cgprsAccPtIpv6Exclusive            TruthValue,
+        cgprsAccPtIpv6AccessGroupDown      AccessControlListName,
+        cgprsAccPtIpv6AccessGroupUp        AccessControlListName,
+        cgprsAccPtIpv6AddrPool             INTEGER,
+        cgprsAccPtIpv6AddrLocalPoolName    SnmpAdminString,
+        cgprsAccPtIpv6Redirect             INTEGER,
+        cgprsAccPtIpv6RedirectAddrType     InetAddressType,
+        cgprsAccPtIpv6RedirectAddr         InetAddress,
+        cgprsAccPtIpv6SecurityVerifySrc    TruthValue,
+        cgprsAccPtIpv6SecurityVerifyDst    TruthValue 
+} 
+
+cgprsAccPtIpv6BaseVTemplate  OBJECT-TYPE
+        SYNTAX               Unsigned32 
+        MAX-ACCESS           read-create
+        STATUS               current
+        DESCRIPTION
+                "This object specifies the base virtual template
+                for an APN.  To create a sub-interface for each PDP, 
+                a base virtual-template needs to be configured so that 
+                virtual-access interface can be cloned from it.  Many 
+                APN can share one base virtual-template.  But one APN  
+                can only use one base virtual-template.
+
+                This object must be set to appropriate value for IPv6 
+                APN i.e., when the object cgprsAccPtIpv6Enable or 
+                cgprsAccPtIpv6Exclusive is set to 'true'."
+        ::= { cgprsAccPtIpv6Entry 1 }
+
+cgprsAccPtIpv6DnsAddrType       OBJECT-TYPE
+        SYNTAX                  InetAddressType
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "This object specifies the type of 
+                cgprsAccPtIpv6DnsPriAddress and 
+                cgprsAccPtIpv6DnsSecAddress.
+
+                DNS addresses to be sent to the MS can come from DHCP
+                server or RADIUS server based on IP address allocation
+                scheme chosen by cgprsAccPtIpv6AddrPool.  The IP address
+                configured to cgprsAccPtIpv6DnsPriAddress and 
+                cgprsAccPtIpv6DnsSecAddress will be sent to MS only when
+         
+                 - DHCP/RADIUS servers does not return any DNS address.
+                 - local address pool is used for IP address
+                   allocation for MS." 
+        ::= { cgprsAccPtIpv6Entry 2 }
+
+cgprsAccPtIpv6DnsPriAddress     OBJECT-TYPE
+        SYNTAX                  InetAddress
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "This object specifies the IPv6 address of the primary
+                DNS server that will be sent to MS."
+        ::= { cgprsAccPtIpv6Entry 3 }
+
+cgprsAccPtIpv6DnsSecAddress     OBJECT-TYPE
+        SYNTAX                  InetAddress
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "This object specifies the IPv6 address of the secondary
+                DNS server that will be sent to MS.  This object can 
+                be configured only after configuring the primary DNS
+                address(cgprsAccPtIpv6DnsPriAddress)."
+        ::= { cgprsAccPtIpv6Entry 4 }
+
+cgprsAccPtIpv6Enable            OBJECT-TYPE
+        SYNTAX                  TruthValue
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "This object specifies whether the APN supports 
+                IPv6 PDP. 
+
+                GGSN supports dual stack APN.  Both IPv6 and IPv4 PDP 
+                can be created for the same APN."   
+        ::= { cgprsAccPtIpv6Entry 5 }
+
+cgprsAccPtIpv6Exclusive         OBJECT-TYPE
+        SYNTAX                  TruthValue
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "This object specifies whether the APN supports only  
+                IPv6 PDPs."
+        ::= { cgprsAccPtIpv6Entry 6 }
+
+cgprsAccPtIpv6AccessGroupDown   OBJECT-TYPE
+        SYNTAX                  AccessControlListName 
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "This object specifies the name of the access list 
+                applied to all the traffic received by this APN from 
+                the PDN,  for forwarding towards a MS." 
+        ::= { cgprsAccPtIpv6Entry 7 }
+
+cgprsAccPtIpv6AccessGroupUp     OBJECT-TYPE
+        SYNTAX                  AccessControlListName 
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "This object specifies the name of the access list 
+                applied to all the traffic received by this APN from
+                a MS,  for forwarding towards PDN."
+        ::= { cgprsAccPtIpv6Entry 8 }
+
+cgprsAccPtIpv6AddrPool          OBJECT-TYPE
+        SYNTAX                  INTEGER {
+                                         global  (1),
+                                         dhcp    (2),
+                                         disable (3),
+                                         local   (4),
+                                         radius  (5)
+                                }
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "This object specifies a dynamic address allocation 
+                method followed by this access point.
+
+                    - 'global', which indicates that no method is
+                    defined specifically to this access point and the
+                    DHCP or radius server configured for this GGSN
+                    under AAA configurations will be used to 
+                    allocation a dynamic IPv6 address to the user.
+
+                    - 'dhcp', which indicates that the DHCP server
+                    will be used.
+
+                    - 'radius', which indicates that the radius server
+                    will be used.
+
+                    - 'disable', which indicates that dynamic address
+                    allocation is disabled.
+
+                    - 'local', indicates that local address pool
+                    configured on the GGSN is going to be used.
+                    cgprsAccPtIpv6AddrLocalPoolName denotes the name
+                    of the corresponding address pool."
+        DEFVAL { global }
+        ::= { cgprsAccPtIpv6Entry 9 }
+
+cgprsAccPtIpv6AddrLocalPoolName  OBJECT-TYPE
+        SYNTAX                   SnmpAdminString
+        MAX-ACCESS               read-create
+        STATUS                   current
+        DESCRIPTION
+                "This object specifies the name of the local address
+                pool used when cgprsAccPtIpv6AddrPool is set to
+                'local'. "
+        ::= { cgprsAccPtIpv6Entry 10 }
+
+cgprsAccPtIpv6Redirect          OBJECT-TYPE
+        SYNTAX                  INTEGER {
+                                        none       (0),
+                                        all        (1),
+                                        intermobile(2)
+                                }
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "This object specifies the traffic redirection in an 
+                APN.
+               
+                 - 'none', indicates that, traffic will not be 
+                 redirected i.e., the traffic will get switched through 
+                 GGSN without going through any Gi interface. 
+
+                 - 'intermobile', when this redirection is active on 
+                 an APN, before downstream packets exit the GGSN, they
+                 are screened to see if they come from other GTP 
+                 tunnels.  If so, packets won't be GTP-tunneled 
+                 downstream, but will get redirected to the device
+                 specified by the object cgprsAccPtIpv6RedirectAddr. 
+
+                 - 'all', when this redirection is active on an APN, 
+                 redirect all packets to a specified destination, given
+                 by the object cgprsAccPtIpv6RedirectAddr, regardless  
+                 whether the destination address belongs to a MS on the 
+                 same GGSN or not."
+        ::= { cgprsAccPtIpv6Entry 11 }
+
+cgprsAccPtIpv6RedirectAddrType  OBJECT-TYPE
+        SYNTAX                  InetAddressType
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+               "This object specifies the type of 
+               cgprsAccPtIpv6RedirectAddr." 
+        ::= { cgprsAccPtIpv6Entry 12 }
+
+cgprsAccPtIpv6RedirectAddr      OBJECT-TYPE
+        SYNTAX                  InetAddress
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "This object specifies the Internet address of the 
+                device to which traffic will be re-directed."
+        ::= { cgprsAccPtIpv6Entry 13 }
+
+cgprsAccPtIpv6SecurityVerifySrc OBJECT-TYPE
+        SYNTAX                  TruthValue
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "When this object is set to 'true', GGSN will check the
+                 upstream TPDU source address against the address
+                 previously assigned to this user.  If the addresses are
+                 different, the TPDU is dropped. This check will enable
+                 the GGSN to restrict the users with fake identity.
+
+                 When the object is set to 'false', GGSN will not
+                 perform any checking on the upstream TPDU for the 
+                 source address."
+        DEFVAL { false } 
+        ::= { cgprsAccPtIpv6Entry 14 }
+
+cgprsAccPtIpv6SecurityVerifyDst OBJECT-TYPE
+        SYNTAX                  TruthValue
+        MAX-ACCESS              read-create
+        STATUS                  current
+        DESCRIPTION
+                "When this object is set to 'true', GGSN will check the
+                 upstream TPDU destination address against the range of
+                 IP addresses reserved for PLMN devices.  If there is a
+                 match, the TPDU is dropped. This check would enable 
+                 the GGSN to protect the GPRS network from some hacker
+                 who may try to flood the GGSN and PLMN nodes with 
+                 intense data traffic.
+
+                 When the object is set to 'false', GGSN will not
+                 perform any checking on the upstream TPDU for the 
+                 destination address."
+        DEFVAL { false }
+        ::= { cgprsAccPtIpv6Entry 15 } 
+                 
 -- *********************************************************************
 -- Configuration change notification history information 
 -- *********************************************************************
@@ -1967,8 +2306,8 @@ cgprsAccPtCfgNotifAccPtIndex OBJECT-TYPE
 cgprsAccPtCfgNotifReason OBJECT-TYPE
         SYNTAX      INTEGER {
                             modification(1),
-                            creation(2),
-                            deletion(3) 
+                            creation    (2),
+                            deletion    (3) 
                     }
         MAX-ACCESS  read-only
         STATUS      current
@@ -2038,29 +2377,43 @@ cgprsAccPtStatisticsEntry  OBJECT-TYPE
         ::= { cgprsAccPtStatisticsTable 1 }
 
 CgprsAccPtStatisticsEntry ::= SEQUENCE {
-        cgprsAccPtMsActivatedPdps          Counter32,
-        cgprsAccPtSuccMsActivatedPdps      Counter32,
-        cgprsAccPtMsActivatedDynPdps       Counter32,
-        cgprsAccPtSuccMsActivatedDynPdps   Counter32,
-        cgprsAccPtMsDeactivatedPdps        Counter32,
-        cgprsAccPtSuccMsDeactivatedPdps    Counter32,
-        cgprsAccPtNetworkInitPdps          Counter32,
-        cgprsAccPtSuccNetworkInitPdps      Counter32,
-        cgprsAccPtGgsnDeactivatedPdps      Counter32,
-        cgprsAccPtSuccGgsDeactivatedPdps   Counter32,
-        cgprsAccPtActivePdps               Gauge32,
-        cgprsAccPtUpstreamTrafficVol       Counter32,
-        cgprsAccPtDownstreamTrafficVol     Counter32,
-        cgprsAccPtSourceAddrViolTpdus      Counter32,
-        cgprsAccPtDestAddrViolTpdus        Counter32,
-        cgprsAccPtRedirInterMobilTraffic   Counter32,
-        cgprsAccPtRevUpstreamTrafficVol    Counter64,
-        cgprsAccPtRevDownstrTrafficVol     Counter64,
-        cgprsAccPtUpstreamPacketCount      Counter32,
-        cgprsAccPtDownstreamPacketCount    Counter32,
-        cgprsAccPtDhcpAddrRequests         Counter32,
-        cgprsAccPtSuccDhcpAddrRequests     Counter32,
-        cgprsAccPtDhcpAddrReleases         Counter32
+        cgprsAccPtMsActivatedPdps              Counter32,
+        cgprsAccPtSuccMsActivatedPdps          Counter32,
+        cgprsAccPtMsActivatedDynPdps           Counter32,
+        cgprsAccPtSuccMsActivatedDynPdps       Counter32,
+        cgprsAccPtMsDeactivatedPdps            Counter32,
+        cgprsAccPtSuccMsDeactivatedPdps        Counter32,
+        cgprsAccPtNetworkInitPdps              Counter32,
+        cgprsAccPtSuccNetworkInitPdps          Counter32,
+        cgprsAccPtGgsnDeactivatedPdps          Counter32,
+        cgprsAccPtSuccGgsDeactivatedPdps       Counter32,
+        cgprsAccPtActivePdps                   Gauge32,
+        cgprsAccPtUpstreamTrafficVol           Counter32,
+        cgprsAccPtDownstreamTrafficVol         Counter32,
+        cgprsAccPtSourceAddrViolTpdus          Counter32,
+        cgprsAccPtDestAddrViolTpdus            Counter32,
+        cgprsAccPtRedirInterMobilTraffic       Counter32,
+        cgprsAccPtRevUpstreamTrafficVol        Counter64,
+        cgprsAccPtRevDownstrTrafficVol         Counter64,
+        cgprsAccPtUpstreamPacketCount          Counter32,
+        cgprsAccPtDownstreamPacketCount        Counter32,
+        cgprsAccPtDhcpAddrRequests             Counter32,
+        cgprsAccPtSuccDhcpAddrRequests         Counter32,
+        cgprsAccPtDhcpAddrReleases             Counter32,
+        cgprsAccPtIpv6MsActivatedPdps          Counter32,
+        cgprsAccPtIpv6MsSuccActivatedPdps      Counter32,
+        cgprsAccPtIpv6NetworkInitDeactPdps     Counter32,
+        cgprsAccPtIpv6NetworkInitDeactSuccPdps Counter32,
+        cgprsAccPtIpv6MsActivatedDynPdps       Counter32,
+        cgprsAccPtIpv6MsSuccActivatedDynPdps   Counter32,
+        cgprsAccPtIpv6MsDeactivatedPdps        Counter32,
+        cgprsAccPtIpv6MsSuccDeactivatedPdps    Counter32,
+        cgprsAccPtIpv6GgsnDeactivatedPdps      Counter32,
+        cgprsAccPtIpv6GgsnSuccDeactivatedPdps  Counter32,
+        cgprsAccPtIpv6UpstreamTrafficVolume    Counter64,
+        cgprsAccPtIpv6DownstreamTrafficVolume  Counter64,
+        cgprsAccPtIpv6UpstreamPackets          Counter32,
+        cgprsAccPtIpv6DownstreamPackets        Counter32 
         }
 
 cgprsAccPtMsActivatedPdps  OBJECT-TYPE
@@ -2072,7 +2425,7 @@ cgprsAccPtMsActivatedPdps  OBJECT-TYPE
                 activation procedures initiated by any MS on this APN.
 
                 Trigger Condition: This counter is triggered by create
-                pdp request message."
+                PDP request message."
         REFERENCE
                 "GSM 12.04: Digital cellular telecommunications
                 system (Phase 2+); Performance data measurements,
@@ -2089,7 +2442,7 @@ cgprsAccPtSuccMsActivatedPdps  OBJECT-TYPE
                 by MS on this APN.
 
                 Trigger Condition: This counter is triggered by create
-                pdp request message."
+                PDP request message."
         REFERENCE
                 "GSM 12.04: Digital cellular telecommunications
                 system (Phase 2+); Performance data measurements,
@@ -2108,7 +2461,7 @@ cgprsAccPtMsActivatedDynPdps  OBJECT-TYPE
                 activation procedure is initiated.
 
                 Trigger Condition: This counter is triggered by create
-                pdp request message."
+                PDP request message."
         REFERENCE
                 "GSM 12.04: Digital cellular telecommunications
                 system (Phase 2+); Performance data measurements,
@@ -2125,7 +2478,7 @@ cgprsAccPtSuccMsActivatedDynPdps  OBJECT-TYPE
                 initiated by MS on this APN.
 
                 Trigger Condition: This counter is triggered by create
-                pdp request message."
+                PDP request message."
         REFERENCE
                 "GSM 12.04: Digital cellular telecommunications
                 system (Phase 2+); Performance data measurements,
@@ -2142,7 +2495,7 @@ cgprsAccPtMsDeactivatedPdps  OBJECT-TYPE
                 MS on this APN.
 
                 Trigger Condition: This counter is triggered by delete
-                pdp request message."
+                PDP request message."
         REFERENCE
                 "GSM 12.04: Digital cellular telecommunications
                 system (Phase 2+); Performance data measurements,
@@ -2159,7 +2512,7 @@ cgprsAccPtSuccMsDeactivatedPdps  OBJECT-TYPE
                 procedures initiated by the MS.
 
                 Trigger Condition: This counter is triggered by delete
-                pdp request message."
+                PDP request message."
         REFERENCE
                 "GSM 12.04: Digital cellular telecommunications
                 system (Phase 2+); Performance data measurements,
@@ -2175,7 +2528,7 @@ cgprsAccPtNetworkInitPdps  OBJECT-TYPE
                 initiated PDP context activation procedures.
 
                 Trigger Condition: This counter is triggered by create
-                pdp request message."
+                PDP request message."
         ::= { cgprsAccPtStatisticsEntry 7 }
 
 cgprsAccPtSuccNetworkInitPdps  OBJECT-TYPE
@@ -2188,7 +2541,7 @@ cgprsAccPtSuccNetworkInitPdps  OBJECT-TYPE
                 context activation procedures.
 
                 Trigger Condition: This counter is triggered by create
-                pdp request message."
+                PDP request message."
         ::= { cgprsAccPtStatisticsEntry 8 }
 
 cgprsAccPtGgsnDeactivatedPdps  OBJECT-TYPE
@@ -2201,7 +2554,7 @@ cgprsAccPtGgsnDeactivatedPdps  OBJECT-TYPE
                 GGSN.
 
                 Trigger Condition: This counter is triggered by delete
-                pdp request message." 
+                PDP request message." 
         REFERENCE
                 "GSM 12.04: Digital cellular telecommunications
                 system (Phase 2+); Performance data measurements,
@@ -2218,7 +2571,7 @@ cgprsAccPtSuccGgsDeactivatedPdps  OBJECT-TYPE
                 procedures initiated by the GGSN.
 
                 Trigger Condition: This counter is triggered by delete
-                pdp request message."
+                PDP request message."
         REFERENCE
                 "GSM 12.04: Digital cellular telecommunications
                 system (Phase 2+); Performance data measurements,
@@ -2234,7 +2587,7 @@ cgprsAccPtActivePdps  OBJECT-TYPE
                 PDP contexts on this APN.
 
                 Trigger Condition: This counter is incremented/
-                decremented by create/delete pdp context request
+                decremented by create/delete PDP context request
                 messages respectively."
         REFERENCE
                 "GSM 12.04: Digital cellular telecommunications
@@ -2372,7 +2725,7 @@ cgprsAccPtDhcpAddrRequests  OBJECT-TYPE
                 address request sent by the GGSN on this APN.
 
                 Trigger Condition: This counter is triggered by create
-                pdp request message."
+                PDP request message."
         ::= { cgprsAccPtStatisticsEntry 21 }
 
 cgprsAccPtSuccDhcpAddrRequests  OBJECT-TYPE
@@ -2385,7 +2738,7 @@ cgprsAccPtSuccDhcpAddrRequests  OBJECT-TYPE
                 DHCP address request sent by the GGSN on this APN.
 
                 Trigger Condition: This counter is triggered by create
-                pdp request message."
+                PDP request message."
         ::= { cgprsAccPtStatisticsEntry 22 }
 
 cgprsAccPtDhcpAddrReleases  OBJECT-TYPE
@@ -2398,8 +2751,196 @@ cgprsAccPtDhcpAddrReleases  OBJECT-TYPE
                 address release request sent by the GGSN on this APN.
 
                 Trigger Condition: This counter is triggered by delete
-                pdp request message."
+                PDP request message."
         ::= { cgprsAccPtStatisticsEntry 23 }
+
+cgprsAccPtIpv6MsActivatedPdps  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total number of IPv6 PDP 
+                context activation procedures initiated by any MS on 
+                this APN.
+
+                Trigger Condition: This counter is triggered by create
+                PDP request message."
+        ::= { cgprsAccPtStatisticsEntry 24 }
+
+cgprsAccPtIpv6MsSuccActivatedPdps  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total number of successfully
+                completed IPv6 PDP context activation procedures 
+                initiated by MS on this APN.
+
+                Trigger Condition: This counter is triggered by create
+                PDP response message sent by the GGSN."
+        ::= { cgprsAccPtStatisticsEntry 25 }
+
+cgprsAccPtIpv6NetworkInitDeactPdps  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+               "This object indicates the total number of IPv6 PDP
+               context deactivation procedures initiated by network.
+
+               Trigger Condition: This counter is triggered by delete 
+               PDP request message by network."
+        ::= { cgprsAccPtStatisticsEntry 26 }
+
+cgprsAccPtIpv6NetworkInitDeactSuccPdps  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+               "This object indicates the total number of
+                successfully completed IPv6 PDP context deactivation
+                procedures initiated by the network on this APN.
+
+                Trigger Condition: This counter is triggered by delete 
+                PDP response message by GGSN."
+        ::= { cgprsAccPtStatisticsEntry 27 }
+
+cgprsAccPtIpv6MsActivatedDynPdps  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total number of dynamic IPv6
+                PDP context activation procedures initiated by the MS
+                on this APN.  When a MS requests dynamic PDP address 
+                from the PLMN, a dynamic PDP context activation 
+                procedure is initiated.
+
+                Trigger Condition: This counter is triggered by create
+                PDP request message, received by GGSN from an MS."
+        ::= { cgprsAccPtStatisticsEntry 28 }
+
+cgprsAccPtIpv6MsSuccActivatedDynPdps  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total number of successfully
+                completed dynamic IPv6 PDP context activation procedures
+                initiated by MS on this APN.
+
+                Trigger Condition: This counter is triggered by create
+                PDP response message."
+        ::= { cgprsAccPtStatisticsEntry 29 }
+
+cgprsAccPtIpv6MsDeactivatedPdps  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total number of IPv6 PDP
+                context deactivation procedures initiated by the
+                MS on this APN.
+
+                Trigger Condition: This counter is triggered by delete
+                PDP request message, received by GGSN from an SGSN."
+        ::= { cgprsAccPtStatisticsEntry 30 }
+
+cgprsAccPtIpv6MsSuccDeactivatedPdps  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total number of
+                successfully completed IPv6 PDP context deactivation
+                procedures initiated by the MS on this APN.
+
+                Trigger Condition: This counter is triggered by delete
+                PDP context response message, sent by GGSN to an SGSN."
+        ::= { cgprsAccPtStatisticsEntry 31 }
+
+cgprsAccPtIpv6GgsnDeactivatedPdps  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total number of IPv6 PDP
+                context deactivation procedures initiated by the
+                GGSN on this APN.
+
+                Trigger Condition: This counter is triggered by delete
+                PDP request message, sent by GGSN to an SGSN."
+        ::= { cgprsAccPtStatisticsEntry 32 }
+
+cgprsAccPtIpv6GgsnSuccDeactivatedPdps  OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total number of
+                successfully completed IPv6 PDP context deactivation
+                procedures initiated by the GGSN on this APN.
+
+                Trigger Condition: This counter is triggered by delete
+                PDP response message, received by the GGSN from an 
+                SGSN."
+        ::= { cgprsAccPtStatisticsEntry 33 }
+
+cgprsAccPtIpv6UpstreamTrafficVolume  OBJECT-TYPE
+        SYNTAX      Counter64
+        UNITS       "bytes"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total payload volume in
+                upstream traffic sent on this APN.  Data flow from 
+                MS to PDN is considered to be upstream traffic.
+
+                Trigger Condition: This counter is triggered when
+                upstream traffic is being routed to PDN."
+        ::= { cgprsAccPtStatisticsEntry 34 }
+
+cgprsAccPtIpv6DownstreamTrafficVolume  OBJECT-TYPE
+        SYNTAX      Counter64
+        UNITS       "bytes"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total payload volume in
+                downstream traffic sent on this APN.  Data flow from 
+                PDN to MS is considered as downstream traffic.
+
+                Trigger Condition: This counter is triggered when
+                downstream traffic is being routed to PDN."
+        ::= { cgprsAccPtStatisticsEntry 35 }
+
+cgprsAccPtIpv6UpstreamPackets  OBJECT-TYPE
+        SYNTAX      Counter32
+        UNITS       "packets"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object indicates the total number of upstream
+                packets sent on this APN.  Data flow from MS to PDN is
+                considered to be upstream traffic.
+
+                Trigger Condition: This counter is triggered when
+                upstream traffic is being routed to PDN."
+        ::= { cgprsAccPtStatisticsEntry 36 }
+
+cgprsAccPtIpv6DownstreamPackets  OBJECT-TYPE
+        SYNTAX      Counter32
+        UNITS       "packets"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+                "This object represents the total number of downstream
+                packets sent on this APN.  Data flow from PDN to MS is
+                considered to be downstream traffic.
+
+                Trigger Condition: This counter is triggered when
+                downstream traffic is being routed to PDN."
+        ::= { cgprsAccPtStatisticsEntry 37 }
 
 -- *******************************************************************
 -- APN Throughput Statistics
@@ -2626,7 +3167,7 @@ cgprsAccPtMIBCompliance MODULE-COMPLIANCE
         STATUS  obsolete
         DESCRIPTION
                 "The compliance statements for entities which 
-                implement the CISCO GPRS ACC PT MIB."
+                implement the CISCO-GPRS-ACC-PT-MIB."
         MODULE  -- this module
         MANDATORY-GROUPS { cgprsAccPtMIBGroup,
                            cgprsAccPtCfgNotifGroup
@@ -2637,7 +3178,7 @@ cgprsAccPtMIBComplianceRev1 MODULE-COMPLIANCE
         STATUS  obsolete
         DESCRIPTION
                 "The compliance statements for entities which
-                implement the CISCO GPRS ACC PT MIB."
+                implement the CISCO-GPRS-ACC-PT-MIB."
         MODULE  -- this module
         MANDATORY-GROUPS { cgprsAccPtMIBGroupRev1,
                            cgprsAccPtCfgNotifGroup,
@@ -2651,7 +3192,7 @@ cgprsAccPtMIBComplianceRev2 MODULE-COMPLIANCE
         STATUS  obsolete
         DESCRIPTION
                 "The compliance statements for entities which
-                implement the CISCO GPRS ACC PT MIB. This is
+                implement the CISCO-GPRS-ACC-PT-MIB. This is
                 obsoleted by cgprsAccPtMIBComplianceRev3."
         MODULE  -- this module
         MANDATORY-GROUPS { cgprsAccPtMIBGroupRev1,
@@ -2666,7 +3207,7 @@ cgprsAccPtMIBComplianceRev3 MODULE-COMPLIANCE
         STATUS  deprecated
         DESCRIPTION
                 "The compliance statements for entities which
-                implement the CISCO GPRS ACC PT MIB. This is
+                implement the CISCO-GPRS-ACC-PT-MIB. This is
                 deprecated by cgprsAccPtMIBComplianceRev4."
         MODULE  -- this module
         MANDATORY-GROUPS { cgprsAccPtMIBGroupRev1,
@@ -2681,7 +3222,7 @@ cgprsAccPtMIBComplianceRev4 MODULE-COMPLIANCE
         STATUS  deprecated -- replaced by cgprsAccPtMIBComplianceRev5
         DESCRIPTION
                 "The compliance statements for entities which
-                implement the CISCO GPRS ACC PT MIB."
+                implement the CISCO-GPRS-ACC-PT-MIB."
         MODULE  -- this module
         MANDATORY-GROUPS { cgprsAccPtMIBGroupRev1,
                            cgprsAccPtCfgNotifGroup,
@@ -2699,10 +3240,10 @@ cgprsAccPtMIBComplianceRev4 MODULE-COMPLIANCE
         ::= { cgprsAccPtMIBCompliances 5 }
 
 cgprsAccPtMIBComplianceRev5 MODULE-COMPLIANCE
-        STATUS  current
+        STATUS  deprecated -- replaced by cgprsAccPtMIBComplianceRev6 
         DESCRIPTION
                 "The compliance statements for entities which
-                implement the CISCO GPRS ACC PT MIB."
+                implement the CISCO-GPRS-ACC-PT-MIB."
         MODULE  -- this module
         MANDATORY-GROUPS { cgprsAccPtMIBGroupRev1,
                            cgprsAccPtCfgNotifGroup,
@@ -2719,6 +3260,52 @@ cgprsAccPtMIBComplianceRev5 MODULE-COMPLIANCE
                            cgprsAccPtMIBR60Group
                          }
         ::= { cgprsAccPtMIBCompliances 6 }
+
+cgprsAccPtMIBComplianceRev6 MODULE-COMPLIANCE
+        STATUS  deprecated -- replaced by cgprsAccPtMIBComplianceRev7 
+        DESCRIPTION
+                "The compliance statements for entities which
+                implement the CISCO-GPRS-ACC-PT-MIB."
+        MODULE  -- this module
+        MANDATORY-GROUPS { cgprsAccPtMIBGroupRev1,
+                           cgprsAccPtCfgNotifGroup,
+                           cgprsAccPtExtMIBGroupRev3,
+                           cgprsAccPtGenServerGroup,
+                           cgprsAccPtImsGroup,
+                           cgprsAccPtChargingGroup,
+                           cgprsAccPtCacGroup,
+                           cgprsAccPtRouteProbeGroup,
+                           cgprsAccPtStatisticsGroupRev3,
+                           cgprsAccPtThruPutGroup,
+                           cgprsAccPtNotifInfoGroup,
+                           cgprsAccPtMIBNotifGroupRev1,
+                           cgprsAccPtMIBR60Group,
+                           cgprsAccPtIpv6Group
+                         }
+        ::= { cgprsAccPtMIBCompliances 7 }  
+
+cgprsAccPtMIBComplianceRev7 MODULE-COMPLIANCE
+        STATUS  current
+        DESCRIPTION
+                "The compliance statements for entities which
+                implement the CISCO-GPRS-ACC-PT-MIB."
+        MODULE  -- this module
+        MANDATORY-GROUPS { cgprsAccPtMIBGroupRev1,
+                           cgprsAccPtCfgNotifGroup,
+                           cgprsAccPtExtMIBGroupRev3,
+                           cgprsAccPtGenServerGroup,
+                           cgprsAccPtChargingGroup,
+                           cgprsAccPtCacGroup,
+                           cgprsAccPtRouteProbeGroup,
+                           cgprsAccPtStatisticsGroupRev3,
+                           cgprsAccPtThruPutGroup,
+                           cgprsAccPtNotifInfoGroup,
+                           cgprsAccPtMIBNotifGroupRev1,
+                           cgprsAccPtMIBR60Group,
+                           cgprsAccPtIpv6Group,
+                           cgprsAccPtPcscfGroup
+                         }
+        ::= { cgprsAccPtMIBCompliances 8 }
 
 -- Unit Conformance
 
@@ -2962,7 +3549,7 @@ cgprsAccPtImsGroup OBJECT-GROUP
              cgprsAccPtImsSigAccGroupOut,
              cgprsAccPtRejNonImsPdp
         }
-        STATUS        current
+        STATUS        deprecated 
         DESCRIPTION
                 "A collection of objects providing IMS configurations
                 under APN."
@@ -3030,10 +3617,11 @@ cgprsAccPtStatisticsGroupRev2 OBJECT-GROUP
              cgprsAccPtSuccDhcpAddrRequests,
              cgprsAccPtDhcpAddrReleases
         }
-        STATUS        current
+        STATUS        deprecated 
         DESCRIPTION
                 "A collection of objects providing GPRS access point
-                performance statistics per name."
+                performance statistics per name. This is deprecated by
+                cgprsAccPtStatisticsGroupRev3."
         ::= { cgprsAccPtMIBGroups 16 }
 
 cgprsAccPtThruPutGroup OBJECT-GROUP
@@ -3088,5 +3676,80 @@ cgprsAccPtMIBR60Group  OBJECT-GROUP
             "A collection of objects added as a part of GGSN R6.0
             release."
         ::= { cgprsAccPtMIBGroups 20 }
+
+cgprsAccPtIpv6Group     OBJECT-GROUP
+        OBJECTS {
+            cgprsAccPtIpv6BaseVTemplate,
+            cgprsAccPtIpv6DnsAddrType,
+            cgprsAccPtIpv6DnsPriAddress,
+            cgprsAccPtIpv6DnsSecAddress,
+            cgprsAccPtIpv6Enable,
+            cgprsAccPtIpv6Exclusive,
+            cgprsAccPtIpv6AccessGroupDown,
+            cgprsAccPtIpv6AccessGroupUp,
+            cgprsAccPtIpv6AddrPool,
+            cgprsAccPtIpv6AddrLocalPoolName,
+            cgprsAccPtIpv6Redirect,
+            cgprsAccPtIpv6RedirectAddrType,
+            cgprsAccPtIpv6RedirectAddr,
+            cgprsAccPtIpv6SecurityVerifySrc,
+            cgprsAccPtIpv6SecurityVerifyDst
+         }
+         STATUS         current
+         DESCRIPTION
+             " A collection of objects providing configurations for
+             IPv6 feature on GGSN."
+         ::= { cgprsAccPtMIBGroups 21 }
+
+cgprsAccPtStatisticsGroupRev3 OBJECT-GROUP
+        OBJECTS {
+             cgprsAccPtMsActivatedPdps,
+             cgprsAccPtSuccMsActivatedPdps,
+             cgprsAccPtMsActivatedDynPdps,
+             cgprsAccPtSuccMsActivatedDynPdps,
+             cgprsAccPtMsDeactivatedPdps,
+             cgprsAccPtSuccMsDeactivatedPdps,
+             cgprsAccPtNetworkInitPdps,
+             cgprsAccPtSuccNetworkInitPdps,
+             cgprsAccPtGgsnDeactivatedPdps,
+             cgprsAccPtSuccGgsDeactivatedPdps,
+             cgprsAccPtActivePdps,
+             cgprsAccPtSourceAddrViolTpdus,
+             cgprsAccPtDestAddrViolTpdus,
+             cgprsAccPtRedirInterMobilTraffic,
+             cgprsAccPtRevUpstreamTrafficVol,
+             cgprsAccPtRevDownstrTrafficVol,
+             cgprsAccPtUpstreamPacketCount,
+             cgprsAccPtDownstreamPacketCount,
+             cgprsAccPtDhcpAddrRequests,
+             cgprsAccPtSuccDhcpAddrRequests,
+             cgprsAccPtDhcpAddrReleases,
+             cgprsAccPtIpv6MsActivatedPdps,
+             cgprsAccPtIpv6MsSuccActivatedPdps,
+             cgprsAccPtIpv6NetworkInitDeactPdps,
+             cgprsAccPtIpv6NetworkInitDeactSuccPdps,
+             cgprsAccPtIpv6MsActivatedDynPdps,
+             cgprsAccPtIpv6MsSuccActivatedDynPdps,
+             cgprsAccPtIpv6MsDeactivatedPdps,
+             cgprsAccPtIpv6MsSuccDeactivatedPdps,
+             cgprsAccPtIpv6GgsnDeactivatedPdps,
+             cgprsAccPtIpv6GgsnSuccDeactivatedPdps,
+             cgprsAccPtIpv6UpstreamTrafficVolume,
+             cgprsAccPtIpv6DownstreamTrafficVolume,
+             cgprsAccPtIpv6UpstreamPackets,
+             cgprsAccPtIpv6DownstreamPackets
+        }
+        STATUS        current
+        DESCRIPTION
+                "A collection of objects providing GPRS access point
+                performance statistics per name."
+        ::= { cgprsAccPtMIBGroups 22 }
+
+cgprsAccPtPcscfGroup    OBJECT-GROUP
+        OBJECTS { cgprsAccPtPcscfServerGroupName }
+        STATUS        current
+        DESCRIPTION
+                "A collection of pcscf related objects."
+        ::= { cgprsAccPtMIBGroups 23 }
 
 END

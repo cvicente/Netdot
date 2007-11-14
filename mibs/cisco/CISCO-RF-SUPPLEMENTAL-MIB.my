@@ -3,7 +3,7 @@
 --
 -- Created January 2001, Fred Frazer
 --
--- Copyright (c) 2001 by Cisco Systems, Inc.
+-- Copyright (c) 2001, 2004 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -12,12 +12,15 @@ CISCO-RF-SUPPLEMENTAL-MIB DEFINITIONS ::= BEGIN
 IMPORTS
     MODULE-IDENTITY,
     OBJECT-TYPE,
+    NOTIFICATION-TYPE,
     Counter32
            FROM SNMPv2-SMI
     MODULE-COMPLIANCE,
+    NOTIFICATION-GROUP,
     OBJECT-GROUP
            FROM SNMPv2-CONF
     TEXTUAL-CONVENTION,
+    TruthValue,   
     DateAndTime
            FROM SNMPv2-TC
     ciscoMgmt
@@ -30,7 +33,7 @@ IMPORTS
            FROM ENTITY-MIB;
 
 ciscoRfSupMIB MODULE-IDENTITY
-    LAST-UPDATED "200103160000Z"
+    LAST-UPDATED "200405270000Z"
     ORGANIZATION "Cisco Systems, Inc."
     CONTACT-INFO
         "Cisco Systems Customer Service
@@ -85,6 +88,18 @@ ciscoRfSupMIB MODULE-IDENTITY
                        information from the Active CPU to a Standby 
                        CPU to allow it to maintain full system control        
                        following a switchover."
+    REVISION    "200405270000Z"
+    DESCRIPTION
+        "Added the following scalar object to the cRfSupSystem
+         subgroup:
+         cRfSupSysIfCounterSync"
+
+    REVISION    "200403040000Z"
+    DESCRIPTION
+        "Two notifications ciscoRfSupTimeChangeEvent and 
+        ciscoRfSupTimeZoneChangeEvent have been added.
+        cRfSupNotificationsEnabled has been added to control 
+        the above objects."
 
     REVISION    "200103160000Z"
     DESCRIPTION
@@ -123,6 +138,7 @@ RfSupSyncOperState ::= TEXTUAL-CONVENTION
 --
 -- OBJECT IDENTIFIER assignments for various groups
 --
+ciscoRfSupMIBNotifs   OBJECT IDENTIFIER ::= { ciscoRfSupMIB 0 }
 ciscoRfSupMIBObjects  OBJECT IDENTIFIER ::= { ciscoRfSupMIB 1 }
 
 --
@@ -356,7 +372,7 @@ cRfSupSysStandbyBootFile OBJECT-TYPE
     DESCRIPTION
         "Allow Standby unit(s) to automatically load a boot image 
         which differs from the image specified for the Active unit. 
-        The string should be of the form <device>:<fileName>.  
+        The string should be of the form <device>:<filename>.  
         Specifying a null value indicates that Standby unit(s) should 
         not use a different image than the Active unit.
 
@@ -364,6 +380,35 @@ cRfSupSysStandbyBootFile OBJECT-TYPE
         for platforms that support automatic syncs for boot image 
         memory."
     ::= { cRfSupSystem 13 }
+
+cRfSupNotificationsEnabled OBJECT-TYPE
+    SYNTAX        TruthValue
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "This specifies whether ciscoRfSupTimeChangeEvent,
+        ciscoRfSupTimeZoneChangeEvent notifications shall be sent 
+        when the system's clock or time zone is changed causing
+        a change in the values of cRfSupSysAvailableStartTime or 
+        cRfSupSysSwitchoverTime objects.
+ 
+        Notifications will be sent only if this object is 
+        set to 'true'."
+    DEFVAL { false }
+    ::= { cRfSupSystem 14 }
+
+cRfSupSysIfCounterSync OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+        "This object configures the synchronization of Interface
+         Statistics information from Active CPU to the
+         Standby CPU.
+         When this object is set to 'true', synchronization is
+         enabled. When this object is set to 'false',
+         synchronization is disabled."
+    ::= { cRfSupSystem 15 }
 
 --
 --  The following "Cpu" sub-group definitions are made up of 
@@ -500,6 +545,39 @@ cRfSupActionLastSyncResult OBJECT-TYPE
     ::= { cRfSupAction 2 }
 
 --
+--  Notifications
+--
+ciscoRfSupTimeChangeEvent NOTIFICATION-TYPE
+    OBJECTS {
+        cRfSupSysAvailableStartTime,
+        cRfSupSysSwitchoverTime}
+    STATUS current
+    DESCRIPTION
+        "This notification is sent on the event of system clock 
+        modification causing a change in the values of 
+        cRfSupSysAvailableStartTime or cRfSupSysSwitchoverTime objects,
+        if cRfSupNotificationsEnabled object has value 'true'.
+        
+        If the system clock change is a result of a time zone change
+        event,this notification will not be sent."
+
+    ::= { ciscoRfSupMIBNotifs 1 }
+
+ciscoRfSupTimeZoneChangeEvent NOTIFICATION-TYPE
+    OBJECTS {
+        cRfSupSysAvailableStartTime,
+        cRfSupSysSwitchoverTime}
+    STATUS current
+    DESCRIPTION
+        "This notification is sent on the event of system time zone
+        modification causing a change in the values of 
+        cRfSupSysAvailableStartTime or cRfSupSysSwitchoverTime objects,
+        if cRfSupNotificationsEnabled object has value 'true'."
+    ::= { ciscoRfSupMIBNotifs 2 }
+
+
+
+--
 -- Conformance
 --
 ciscoRfSupMibConformance  OBJECT IDENTIFIER
@@ -513,7 +591,7 @@ ciscoRfSupMibGroups       OBJECT IDENTIFIER
 -- compliance statements
 --
 ciscoRfSupMibCompliance MODULE-COMPLIANCE
-    STATUS current
+    STATUS deprecated
     DESCRIPTION
         "The compliance statement for entities which implement the
         Cisco RF SUPPLEMENTAL MIB. 
@@ -532,6 +610,68 @@ ciscoRfSupMibCompliance MODULE-COMPLIANCE
         supporting the ENTITY-MIB."
 
     ::= { ciscoRfSupMibCompliances 1 }
+
+ciscoRfSupMibComplianceRev1 MODULE-COMPLIANCE
+    STATUS deprecated
+    DESCRIPTION
+        "The compliance statement for entities which implement the
+         Cisco RF SUPPLEMENTAL MIB.
+   
+         Note: Platforms which implement the Cisco RF MIB are
+         not required to support the RF SUPPLEMENTAL MIB. "
+    MODULE -- this module
+    MANDATORY-GROUPS {
+        ciscoRfSupSysGroup,
+        ciscoRfSupActionGroup
+    }
+
+--  Conditionally mandatory groups
+    GROUP ciscoRfSupCpuGroup
+    DESCRIPTION
+        "The ciscoRfSupCpuGroup is mandatory only for platforms
+        supporting the ENTITY-MIB."
+    GROUP ciscoRfSupSysOptionalGroup
+    DESCRIPTION 
+        "The ciscoRfSupSysOptionalGroup is mandatory only for
+        systems supporting ciscoRfSupNotifGroup."
+
+    ::= { ciscoRfSupMibCompliances 2 }
+
+ciscoRfSupMibComplianceRev2 MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION
+        "The compliance statement for entities which implement the
+         Cisco RF SUPPLEMENTAL MIB.
+   
+         Note: Platforms which implement the Cisco RF MIB are
+         not required to support the RF SUPPLEMENTAL MIB. "
+    MODULE -- this module
+    MANDATORY-GROUPS {
+        ciscoRfSupSysGroup,
+        ciscoRfSupActionGroup
+    }
+
+--  Conditionally mandatory groups
+    GROUP ciscoRfSupCpuGroup
+    DESCRIPTION
+        "The ciscoRfSupCpuGroup is mandatory only for platforms
+        supporting the ENTITY-MIB."
+    GROUP ciscoRfSupSysOptionalGroup
+    DESCRIPTION 
+        "The ciscoRfSupSysOptionalGroup is mandatory only for
+        systems supporting ciscoRfSupNotifGroup."
+--  Optional groups
+    GROUP ciscoRfSupNotifGroup
+    DESCRIPTION
+        "This group is optional on platforms supporting the 
+         CISCO-RF-SUPPLEMENTAL-MIB."
+    GROUP ciscoRfSupSysOptionalSyncGroup
+    DESCRIPTION
+        "This group is optional on platforms supporting the
+         the CISCO-RF-SUPPLEMENTAL-MIB."
+ 
+    ::= { ciscoRfSupMibCompliances 3 }
+
 
 --
 -- Units of conformance
@@ -576,5 +716,37 @@ ciscoRfSupActionGroup OBJECT-GROUP
     DESCRIPTION
         "The collection of RF SUPPLEMENTAL execution actions."
     ::= { ciscoRfSupMibGroups 3 }
+
+ciscoRfSupSysOptionalGroup OBJECT-GROUP
+    OBJECTS {
+        cRfSupNotificationsEnabled
+    }
+    STATUS current
+    DESCRIPTION
+        "The collection of optional RF SUPPLEMENTAL system-wide 
+        objects."
+    ::= { ciscoRfSupMibGroups 4 }
+
+ciscoRfSupNotifGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+        ciscoRfSupTimeChangeEvent,
+        ciscoRfSupTimeZoneChangeEvent
+    }
+    STATUS current
+    DESCRIPTION
+        "The collection of optional notifications issued on
+        system time/time zone modifications."
+    ::= { ciscoRfSupMibGroups 5 }
+
+ciscoRfSupSysOptionalSyncGroup OBJECT-GROUP
+    OBJECTS {
+        cRfSupSysIfCounterSync
+    }
+    STATUS current
+    DESCRIPTION
+        "The collection of optional RF SUPPLEMENTAL system wide
+         objects that control and monitor the synchronization of
+         information between the redundant system units."               
+    ::= { ciscoRfSupMibGroups 6 }
 
 END

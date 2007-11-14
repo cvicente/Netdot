@@ -4,7 +4,7 @@ IMPORTS
     MODULE-COMPLIANCE, NOTIFICATION-GROUP, OBJECT-GROUP
         FROM SNMPv2-CONF
     snmpModules, MODULE-IDENTITY, NOTIFICATION-TYPE, Counter32,
-        Integer32, Unsigned32, OBJECT-TYPE, IpAddress
+        Integer32, Unsigned32, OBJECT-TYPE, IpAddress, mib-2
         FROM SNMPv2-SMI
     AtmAddr
         FROM ATM-TC-MIB
@@ -15,33 +15,36 @@ IMPORTS
     InterfaceIndex
         FROM IF-MIB;
 
-marsMIB MODULE-IDENTITY
-    LAST-UPDATED "9804150145Z" -- 15 April 1998
-    ORGANIZATION "Internetworking Over NBMA (ion) Working Group"
-    CONTACT-INFO
-        "        Chris Chung
-         Postal: SAIC
-                 1710 Goodridge Drive
-                 Mail Stop 1-4-7
-                 McLean, VA 22102
-         Tel:    +1 703 448 6485
-         Fax:    +1 703 356 2160
-         E-mail: cchung@tieo.saic.com
+   marsMIB MODULE-IDENTITY
+       LAST-UPDATED "9809010000Z" -- 01 September 1998
+       ORGANIZATION "Internetworking Over NBMA (ion) Working Group"
+       CONTACT-INFO
+           "        Chris Chung (chihschung@aol.com)
+                    Independent Consultant
 
-         Editor: Maria Greene
-         Postal: Independent Contractor
-         E-mail: maria@xedia.com
-        "
-    DESCRIPTION
-        "This module defines a portion of the managed information
-         base (MIB) for managing classical IP multicast address
-         resolution server (MARS) and related entities as
-         described in the RFC2022.  This MIB is meant to be
-         used in conjunction with the ATM-MIB (RFC1695),
-         MIB-II (RFC1213), and optionally the IF-MIB (RFC1573)."
-    ::= { snmpModules 17 }
+            Editor: Maria Greene
+            Postal: Independent Contractor
+            E-mail: maria@xedia.com
+           "
+       DESCRIPTION
+           "This module defines a portion of the managed information
+            base (MIB) for managing classical IP multicast address
+            resolution server (MARS) and related entities as
+            described in the RFC2022.  This MIB is meant to be
+            used in conjunction with the ATM-MIB (RFC1695),
+            MIB-II (RFC1213), and optionally the IF-MIB (RFC1573).
+           "
+       REVISION     "9809010000Z" -- 01 September 1998
+       DESCRIPTION  "Published as RFC 2417. Changes/fixes:
+                     - reroot this MIB from snmpModules to mib-2
+                       to be consistent with location of other MIBs.
+                     - obsoletes RFC2366."
+       REVISION     "9804150145Z" -- 15 April 1998
+       DESCRIPTION  "Initial version, published as RFC 2366"
+       ::= { mib-2 57 }
 
 --***************************************************************
+
 --  IP ATM MARS Client Object Definitions
 --***************************************************************
 
@@ -328,6 +331,7 @@ marsClientRowStatus OBJECT-TYPE
     ::= { marsClientEntry 18 }
 
 --****************************************************************
+
 -- IP ATM MARS Client Multicast Group Address Object Definitions
 --****************************************************************
 
@@ -472,6 +476,7 @@ marsClientBackupMarsRowStatus OBJECT-TYPE
     ::= { marsClientBackupMarsEntry 3 }
 
 --***************************************************************
+
 --  IP ATM MARS Client VC Object Definition Table
 --***************************************************************
 
@@ -568,6 +573,7 @@ marsClientVcMinGrpAddr OBJECT-TYPE
         "Minimum IP multicast group address - the min and
          max multicast forms a multi-group consecutive
          block which is associated with a table entry.
+
          if the MinGrpAddr and MaxGrpAddr are the same, it
          indicates that the size of multi-group block is 1,
          a single IP group."
@@ -617,7 +623,6 @@ marsClientVcType OBJECT-TYPE
     SYNTAX  INTEGER {
           pvc (1),
           svc (2)
-
         }
     MAX-ACCESS read-create
     STATUS  current
@@ -711,10 +716,10 @@ marsClientVcRowStatus OBJECT-TYPE
          are appropriately configured.
 
          While objects: marsClientVcIdleTimer and
+
          marsClientVcRevalidate in this conceptual
          row can be modified irrespective of the value
          of this object, all other objects in the row can
-
          not be modified when this object has a value
          of 'active'.
 
@@ -808,6 +813,7 @@ marsClientStatRxJoinMsgs OBJECT-TYPE
     STATUS  current
     DESCRIPTION
         "Total number of MARS_JOIN messages received by
+
          a client."
     ::= { marsClientStatEntry 5 }
 

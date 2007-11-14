@@ -1,9 +1,9 @@
- -- *****************************************************************
+-- *****************************************************************
 -- CISCO-L4L7MODULE-RESOURCE-LIMIT-MIB: MIB for limiting resources 
 --
 -- August 2005, Subrahmanya Hegde
---
--- Copyright (c) 2005 by cisco Systems, Inc.
+-- 
+-- Copyright (c) 2005, 2006 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 --
@@ -13,33 +13,39 @@ CISCO-L4L7MODULE-RESOURCE-LIMIT-MIB DEFINITIONS ::= BEGIN
 IMPORTS
     MODULE-IDENTITY,
     OBJECT-TYPE,
-    Unsigned32
+    Unsigned32,
+    Gauge32,
+    Counter32,
+    NOTIFICATION-TYPE
         FROM SNMPv2-SMI
-    MODULE-COMPLIANCE, OBJECT-GROUP
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP,
+    NOTIFICATION-GROUP
         FROM SNMPv2-CONF
+    TruthValue,
     TEXTUAL-CONVENTION,
     RowStatus,
     StorageType
-        FROM SNMPv2-TC
+            FROM SNMPv2-TC
     entPhysicalIndex 
         FROM ENTITY-MIB
     ciscoMgmt
         FROM CISCO-SMI;
 
 ciscoL4L7moduleResourceLimitMIB MODULE-IDENTITY
-    LAST-UPDATED    "200508050000Z" 
+    LAST-UPDATED    "200606190000Z" 
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
         "       Cisco Systems
                Customer Service
 
-		Postal: 170 W Tasman Drive
-			San Jose, CA  95134
-			USA
+        Postal: 170 W Tasman Drive
+            San Jose, CA  95134
+            USA
 
-		   Tel: +1 800 553-NETS
+           Tel: +1 800 553-NETS
 
-		E-mail: cs-l47security@cisco.com"
+        E-mail: cs-l4l7security@cisco.com"
     DESCRIPTION
             "The MIB module for managing resource classes
             and configuring limits(max/min) to different
@@ -73,7 +79,37 @@ ciscoL4L7moduleResourceLimitMIB MODULE-IDENTITY
               NAT - Network Address Translation.
               NBAR - Network Based Application Recognition.
               BPDU - Bridge Protocol Data Unit."
-   
+              
+    REVISION        "200606190000Z"
+    DESCRIPTION
+            "- Added following enumerations in CiscoResourceLimitType
+                  hosts           (15)
+                  ipsecSessions   (16)
+                  asdmSessions    (17)
+                  sshSessions     (18)
+                  telnetSessions  (19)
+                  
+             - Added following objects in ciscoL4L7ResourceLimitTable
+                  crlResourceLimitCurrentUsage
+                  crlResourceLimitPeakUsage
+                  crlResourceLimitReqsDeniedCount
+                  
+             - Added following objects in ciscoL4L7RateLimitTable
+                  crlRateLimitResourceCurrentUsage
+                  crlRateLimitResourcePeakUsage
+                  crlRateLimitResourceReqsDeniedCount
+                  
+             - Added following objects:
+                  clrResourceLimitReachedNotifEnabled
+                  clrResourceRateLimitReachedNotifEnabled
+                  
+             - Added following Notification objects     
+                  clrResourceLimitReached
+                  clrResourceRateLimitReached
+                  
+             - Added following in Compliance/Conformance
+                  ciscoL4L7ResourceLimitComplianceRev1."
+                  
     REVISION        "200508050000Z"
     DESCRIPTION
             "Initial version of the MIB module."
@@ -90,6 +126,9 @@ ciscoResourceLimitMIBConform OBJECT IDENTIFIER ::=
 
 crlResource OBJECT IDENTIFIER ::= 
             { ciscoL4L7ResourceLimitMIBObjects 1 }
+            
+crlNotificationObjects  OBJECT IDENTIFIER ::= 
+            { ciscoL4L7ResourceLimitMIBObjects 2 }
 
 CiscoResourceClass ::= TEXTUAL-CONVENTION
     STATUS            current
@@ -122,7 +161,7 @@ CiscoResourceLimitType ::= TEXTUAL-CONVENTION
                              entry.
         macAddresses(2)     : The number of MAC addresses allowed in
                               the MAC address table.
-        concurrentConns (3) : Concurrent TCP/UD connections that are
+        concurrentConns (3) : Concurrent TCP/UDP connections that are
                               supported.  Connections exist between 
                               any two hosts.  This is applicable
                               for through the box connections only.
@@ -157,9 +196,14 @@ CiscoResourceLimitType ::= TEXTUAL-CONVENTION
         syslogBuffer    (12) : buffer that is allocated for syslog 
                                messages that can be logged in the
                                system.
-        'tcpOOOBuffer   (13) : buffer that is allocated for TCP Out Of 
+        tcpOOOBuffer   (13) : buffer that is allocated for TCP Out Of 
                                Order packets.
-        sslConnections  (14) : The number of SSL Connections."
+        sslConnections  (14) : The number of SSL Connections.
+        hosts           (15) : Number of hosts allowed through the system.
+        ipsecSessions   (16) : Number of IPSec management sessions.
+        asdmSessions    (17) : Number of ASDM management sessions.
+        sshSessions     (18) : Number of SSH management sessions.
+        telnetSessions  (19) : Number of Telnet management sessions."
 
     SYNTAX      INTEGER {
                    all               (1),
@@ -175,7 +219,12 @@ CiscoResourceLimitType ::= TEXTUAL-CONVENTION
                    syslogBuffer      (11),
                    ipReassemBuffer   (12),
                    tcpOOOBuffer      (13),
-                   sslConnections    (14)
+                   sslConnections    (14),
+                   hosts             (15),
+                   ipsecSessions     (16),
+                   asdmSessions      (17),
+                   sshSessions       (18),
+                   telnetSessions    (19)
                 }
 
 CiscoRateLimitResourceType ::= TEXTUAL-CONVENTION
@@ -300,12 +349,15 @@ ciscoL4L7ResourceLimitEntry OBJECT-TYPE
     ::= { ciscoL4L7ResourceLimitTable 1 }
 
 CiscoL4L7ResourceLimitEntry ::= SEQUENCE {
-      crlResourceLimitType           CiscoResourceLimitType,
-      crlResourceLimitValueType      INTEGER,
-      crlResourceLimitMin            Unsigned32,
-      crlResourceLimitMax            Unsigned32,
-      crlResourceLimitStorageType    StorageType,
-      crlResourceLimitRowStatus      RowStatus
+      crlResourceLimitType               CiscoResourceLimitType,
+      crlResourceLimitValueType          INTEGER,
+      crlResourceLimitMin                Unsigned32,
+      crlResourceLimitMax                Unsigned32,
+      crlResourceLimitStorageType        StorageType,
+      crlResourceLimitRowStatus          RowStatus,
+      crlResourceLimitCurrentUsage       Gauge32,
+      crlResourceLimitPeakUsage          Gauge32,
+      crlResourceLimitReqsDeniedCount    Counter32
 }
 
 crlResourceLimitType OBJECT-TYPE
@@ -362,7 +414,7 @@ crlResourceLimitMax OBJECT-TYPE
         can be used until the system limit reached."
     DEFVAL { 0 }
     ::= { ciscoL4L7ResourceLimitEntry 5 }
-
+  
 crlResourceLimitStorageType OBJECT-TYPE
     SYNTAX       StorageType
     MAX-ACCESS   read-create
@@ -384,6 +436,40 @@ crlResourceLimitRowStatus OBJECT-TYPE
         "This object is used for adding/deleting
         entries in this table."
     ::= { ciscoL4L7ResourceLimitEntry 7 }
+
+crlResourceLimitCurrentUsage OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the number of resources identified by 
+        'ciscoResourceLimitType', that are currently being used in 
+        the system."
+    ::= { ciscoL4L7ResourceLimitEntry 8 }
+
+crlResourceLimitPeakUsage OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object represents the peak usage of the resource 
+         identified by 'ciscoResourceLimitType' since the statistics
+         were last cleared either through the command line interface or
+         bacause of the system reboot."
+    ::= { ciscoL4L7ResourceLimitEntry 9 }
+
+crlResourceLimitReqsDeniedCount OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object represents the number of resource requests that 
+         were denied when the configured resource limit is exceeded
+         for the resource identified by 'ciscoResourceLimitType'.
+         
+         The value for resource limiting is specified
+         in 'crlResourceLimitMax'."
+    ::= { ciscoL4L7ResourceLimitEntry 10 }
 
 ciscoL4L7ResourceRateLimitTable OBJECT-TYPE
     SYNTAX      SEQUENCE OF CiscoL4L7ResourceRateLimitEntry
@@ -410,11 +496,14 @@ ciscoL4L7ResourceRateLimitEntry OBJECT-TYPE
     ::= { ciscoL4L7ResourceRateLimitTable 1 }
 
 CiscoL4L7ResourceRateLimitEntry ::= SEQUENCE {
-      crlRateLimitResourceType           CiscoRateLimitResourceType,
-      crlRateLimitResourceMin            Unsigned32,
-      crlRateLimitResourceMax            Unsigned32,
-      crlRateLimitResourceStorageType    StorageType,
-      crlRateLimitResourceRowStatus      RowStatus
+      crlRateLimitResourceType               CiscoRateLimitResourceType,
+      crlRateLimitResourceMin                Unsigned32,
+      crlRateLimitResourceMax                Unsigned32,
+      crlRateLimitResourceStorageType        StorageType,
+      crlRateLimitResourceRowStatus          RowStatus,
+      crlRateLimitResourceCurrentUsage       Gauge32,
+      crlRateLimitResourcePeakUsage          Gauge32,
+      crlRateLimitResourceReqsDeniedCount    Counter32
 }
 
 crlRateLimitResourceType OBJECT-TYPE
@@ -453,8 +542,8 @@ crlRateLimitResourceMax OBJECT-TYPE
         The value zero specifies that this resource
         can be used until the system limit reached."
     DEFVAL { 0 }
-    ::= { ciscoL4L7ResourceRateLimitEntry 3 }
-
+    ::= { ciscoL4L7ResourceRateLimitEntry 3 }    
+   
 crlRateLimitResourceStorageType OBJECT-TYPE
     SYNTAX       StorageType
     MAX-ACCESS   read-create
@@ -479,8 +568,109 @@ crlRateLimitResourceRowStatus OBJECT-TYPE
         objects have valid value."
     ::= { ciscoL4L7ResourceRateLimitEntry 5 }
 
+crlRateLimitResourceCurrentUsage OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the number of resources identified by 
+        'crlRateLimitResourceType', that are currently being used in 
+        the system."
+    ::= { ciscoL4L7ResourceRateLimitEntry 6 }
+
+crlRateLimitResourcePeakUsage OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object represents the peak usage of the resource
+         identified by 'crlRateLimitResourceType' since the statistics
+         were last cleared either through the command line interface or
+         bacause of the system reboot."
+    ::= { ciscoL4L7ResourceRateLimitEntry 7 }
+
+crlRateLimitResourceReqsDeniedCount OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object represents the number of resource requests that
+         were denied when the configured rate limit is exceeded
+         for the resource identified by 'crlRateLimitResourceType'.
+         
+         The value for rate limiting is specified in
+         'crlRateLimitResourceMax'."
+    ::= { ciscoL4L7ResourceRateLimitEntry 8 }
+
+-- notification control objects  
+
+clrResourceLimitReachedNotifEnabled OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION 
+                "This object controls the generation of
+                 'clrResourceLimitReached' notification.
+                 
+                 'true'  Indicates that clrResourceLimitReached
+                         notification is to be generated when the 
+                         configured resource limit is reached. 
+                         The value for resource limiting is specified
+                         in 'crlResourceLimitMax'.
+                         
+                 'false' Indicates that clrResourceLimitReached
+                         notification generation is disabled."
+        DEFVAL { false }
+        ::= { crlNotificationObjects 1 }
+
+clrResourceRateLimitReachedNotifEnabled OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION 
+            "This object controls the generation of
+                 'clrResourceRateLimitReached' notification.
+                 
+             'true'  Indicates that clrResourceRateLimitReached
+                     notification is to be generated when the 
+                     configured resource rate limit is reached.
+                     The value for rate limiting is specified in
+                         'crlRateLimitResourceMax'.
+                     
+             'false' Indicates that clrResourceRateLimitReached
+                         notification generation is disabled."         
+        DEFVAL { false }
+        ::= { crlNotificationObjects 2 }
+
+-- notifications
+
+clrResourceLimitReached NOTIFICATION-TYPE
+    OBJECTS {
+        crlResourceLimitValueType,
+        crlResourceLimitMax
+    }
+    STATUS  current
+    DESCRIPTION
+        "This notification is generated when the configured resource
+         limit value specified in 'crlResourceLimitMax' is reached
+         for a particular resource. This resource is identified by
+         'crlResourceLimitType' in ciscoL4L7ResourceLimitTable."
+    ::= { ciscoL4L7ResourceLimitNotifs 1 }
+
+clrResourceRateLimitReached NOTIFICATION-TYPE
+    OBJECTS {
+        crlRateLimitResourceMax
+    }
+    STATUS  current
+    DESCRIPTION
+        "This notification is generated when the configured rate
+         limit value specified in 'crlRateLimitResourceMax' is reached
+         for a particular resource. This resource is identified by
+         'crlRateLimitResourceType' in ciscoL4L7ResourceRateLimitTable."
+    ::= { ciscoL4L7ResourceLimitNotifs 2 }
 
 -- conformance information
+
 ciscoL4L7ResourceLimitConformance OBJECT IDENTIFIER ::= 
                               { ciscoL4L7moduleResourceLimitMIB 3 }
 ciscoL4L7ResourceLimitCompliances OBJECT IDENTIFIER ::= 
@@ -489,11 +679,12 @@ ciscoL4L7ResourceLimitGroups      OBJECT IDENTIFIER ::=
                               { ciscoL4L7ResourceLimitConformance 2 }
 
 -- compliance statements
+
 ciscoL4L7ResourceLimitCompliance MODULE-COMPLIANCE
-    STATUS  current
+    STATUS  deprecated
     DESCRIPTION
         "The compliance statement for SNMP entities which implement
-        CISCO-L4L7MODULE-RESOURCE-LIMIT- MIB."
+        CISCO-L4L7MODULE-RESOURCE-LIMIT-MIB."
     MODULE  -- this module
         MANDATORY-GROUPS {
             ciscoL4L7ResourceClassGroup,
@@ -504,9 +695,42 @@ ciscoL4L7ResourceLimitCompliance MODULE-COMPLIANCE
         "This group is mandatory for those systems where
         rate limiting is supported."
     ::= { ciscoL4L7ResourceLimitCompliances 1 }
+    
+ciscoL4L7ResourceLimitComplianceRev1 MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "The compliance statement for SNMP entities which implement
+        CISCO-L4L7MODULE-RESOURCE-LIMIT-MIB."
+    MODULE  -- this module
+        MANDATORY-GROUPS {
+            ciscoL4L7ResourceClassGroup,
+            ciscoL4L7ResourceLimitGroup,
+            ciscoL4L7ResourceLimitUsageGroup
+        }
+        
+    GROUP ciscoL4L7ResourceRateLimitGroup
+    DESCRIPTION
+          "This group is mandatory for those systems where
+        rate limiting is supported."
+
+    GROUP ciscoL4L7ResourceRateLimitUsageGroup
+        DESCRIPTION
+             "This group is mandatory for those systems where
+        rate limiting is supported."
+
+    GROUP ciscoL4L7ResourceNotifEnabledGroup
+        DESCRIPTION
+          "This group is mandatory for those systems which
+        implement resource limit notifications."
+
+    GROUP ciscoL4L7ResourceNotifGroup
+        DESCRIPTION
+          "This group is mandatory for those systems which
+        implement resource limit notifications."
+
+    ::= { ciscoL4L7ResourceLimitCompliances 2 }
 
 -- MIB groupings
-
 
 ciscoL4L7ResourceClassGroup OBJECT-GROUP
     OBJECTS {
@@ -546,5 +770,51 @@ ciscoL4L7ResourceRateLimitGroup OBJECT-GROUP
         rate limits for resources."
     ::= { ciscoL4L7ResourceLimitGroups 3 }
 
+ciscoL4L7ResourceLimitUsageGroup OBJECT-GROUP
+    OBJECTS {
+        crlResourceLimitCurrentUsage,
+        crlResourceLimitPeakUsage,
+        crlResourceLimitReqsDeniedCount        
+    }
+    STATUS  current
+    DESCRIPTION
+        "The collection of objects which are used to represent
+        limit usage for resources."
+    ::= { ciscoL4L7ResourceLimitGroups 4 }
+
+ciscoL4L7ResourceRateLimitUsageGroup OBJECT-GROUP
+    OBJECTS {
+        crlRateLimitResourceCurrentUsage,
+        crlRateLimitResourcePeakUsage,
+        crlRateLimitResourceReqsDeniedCount
+    }
+    STATUS  current
+    DESCRIPTION
+        "The collection of objects which are used to represent
+        rate limit usage for resources."
+    ::= { ciscoL4L7ResourceLimitGroups 5 }
+    
+ciscoL4L7ResourceNotifEnabledGroup OBJECT-GROUP
+    OBJECTS {
+        clrResourceLimitReachedNotifEnabled,
+        clrResourceRateLimitReachedNotifEnabled
+    }
+    STATUS  current
+    DESCRIPTION
+        "The collection of objects which are used to represent
+        limit usage for resources."
+    ::= { ciscoL4L7ResourceLimitGroups 6 }
+
+ciscoL4L7ResourceNotifGroup NOTIFICATION-GROUP
+    NOTIFICATIONS {
+        clrResourceLimitReached,
+        clrResourceRateLimitReached
+    }
+    STATUS  current
+    DESCRIPTION
+        "The collection of objects which are used to represent
+        rate limit usage for resources."
+    ::= { ciscoL4L7ResourceLimitGroups 7 }
 
 END
+

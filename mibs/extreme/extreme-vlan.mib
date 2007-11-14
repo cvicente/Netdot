@@ -5,7 +5,10 @@
 -- *	  Extreme Networks
 -- *      http://www.extremenetworks.com
 -- *
+-- * extracted from $Extreme_Id: extreme.mib,v 1.24.6.35 2006/01/09 15:15:18 build-sc Exp $
+-- *
 -- */
+
 
 
 -- =========================================================================
@@ -123,6 +126,8 @@ EXTREME-VLAN-MIB DEFINITIONS ::= BEGIN
 	extremeVlanOpaqueGroup		OBJECT IDENTIFIER ::= { extremeVlan 6 }
 	extremeVlanStackGroup		OBJECT IDENTIFIER ::= { extremeVlan 7 }
         extremeVlanStatsGroup           OBJECT IDENTIFIER ::= { extremeVlan 8 }
+        extremeVlanAggregationGroup	OBJECT IDENTIFIER ::= { extremeVlan 9 }
+   	extremeVlanTranslationGroup 	OBJECT IDENTIFIER ::= { extremeVlan 10 }
 
 	--	
 	--
@@ -1104,5 +1109,174 @@ EXTREME-VLAN-MIB DEFINITIONS ::= BEGIN
 			"The total number of IGMP data packets switched on this VLAN."
 	        ::= { extremeVlanL2StatsEntry 5 }
 
-END
+        extremeVlanAggregationTable OBJECT-TYPE
+                SYNTAX      SEQUENCE OF ExtremeVlanAggregationEntry
+                MAX-ACCESS  not-accessible
+                STATUS      current
+                DESCRIPTION
+                "This table contains the VLAN aggregation information."
+                ::= { extremeVlanAggregationGroup 1 }
 
+        extremeVlanAggregationEntry       OBJECT-TYPE
+                SYNTAX      ExtremeVlanAggregationEntry
+                MAX-ACCESS  not-accessible
+                STATUS      current
+                DESCRIPTION
+                "Information about the individual VLAN aggregation entry."
+                INDEX   { extremeVlanAggregationSuperVlanIfIndex, 
+                          extremeVlanAggregationSubVlanIfIndex }
+                ::= { extremeVlanAggregationTable 1 }
+
+        ExtremeVlanAggregationEntry ::= SEQUENCE {
+                extremeVlanAggregationSuperVlanIfIndex      	INTEGER,
+                extremeVlanAggregationSubVlanIfIndex		INTEGER,
+                extremeVlanAggregationSubVlanStartIpNetAddress  IpAddress,
+                extremeVlanAggregationSubVlanStartIpNetMask	IpAddress,
+                extremeVlanAggregationSubVlanEndIpNetAddress	IpAddress,
+                extremeVlanAggregationSubVlanEndIpNetMask	IpAddress,
+                extremeVlanAggregationStatus		        RowStatus
+        }
+       
+        extremeVlanAggregationSuperVlanIfIndex    OBJECT-TYPE
+                SYNTAX      INTEGER
+                MAX-ACCESS  read-only
+                STATUS      current
+                DESCRIPTION
+                "The Super Vlan index for this entry."
+                ::= { extremeVlanAggregationEntry 1 }
+
+        extremeVlanAggregationSubVlanIfIndex    OBJECT-TYPE
+                SYNTAX      INTEGER
+                MAX-ACCESS  read-only
+                STATUS      current
+                DESCRIPTION
+                "The Sub Vlan index for this entry."
+                ::= { extremeVlanAggregationEntry 2 }
+
+        extremeVlanAggregationSubVlanStartIpNetAddress    OBJECT-TYPE
+                SYNTAX      IpAddress
+                MAX-ACCESS  read-create
+                STATUS      current
+                DESCRIPTION
+                "This represents the start network address of the IP range."
+                ::= { extremeVlanAggregationEntry 3 }
+       
+        extremeVlanAggregationSubVlanStartIpNetMask    OBJECT-TYPE
+                SYNTAX      IpAddress
+                MAX-ACCESS  read-only
+                STATUS      current
+                DESCRIPTION
+                "This represents the start network address mask of the IP range"
+                ::= { extremeVlanAggregationEntry 4 }
+                                         
+        extremeVlanAggregationSubVlanEndIpNetAddress    OBJECT-TYPE
+                SYNTAX      IpAddress
+                MAX-ACCESS  read-create
+                STATUS      current
+                DESCRIPTION
+                "This represents the end network address of the IP range."
+                ::= { extremeVlanAggregationEntry 5 }
+               
+        extremeVlanAggregationSubVlanEndIpNetMask    OBJECT-TYPE
+                SYNTAX      IpAddress
+                MAX-ACCESS  read-only
+                STATUS      current
+                DESCRIPTION
+                "This represents the end network address mask of the IP range."
+                ::= { extremeVlanAggregationEntry 6 }                                         
+        extremeVlanAggregationStatus		OBJECT-TYPE
+               SYNTAX       RowStatus
+               MAX-ACCESS   read-create
+               STATUS	    current
+               DESCRIPTION
+               "The status of this entry."
+               ::= { extremeVlanAggregationEntry 7 }
+        
+        extremeVlanAggregationConfigTable OBJECT-TYPE
+                SYNTAX      SEQUENCE OF ExtremeVlanAggregationConfigEntry
+                MAX-ACCESS  not-accessible
+                STATUS      current
+                DESCRIPTION
+                "This table contains the sub VLAN proxy setting information."
+                ::= { extremeVlanAggregationGroup 2 }
+        
+        extremeVlanAggregationConfigEntry       OBJECT-TYPE
+                SYNTAX      ExtremeVlanAggregationConfigEntry
+                MAX-ACCESS  not-accessible
+                STATUS      current
+                DESCRIPTION
+                "Information about the individual VLAN aggregation entry."
+                INDEX   { extremeVlanAggregationConfigSuperVlanIfIndex }
+                ::= { extremeVlanAggregationConfigTable 1 }
+        
+        ExtremeVlanAggregationConfigEntry ::= SEQUENCE {
+                extremeVlanAggregationConfigSuperVlanIfIndex 	INTEGER,
+                extremeVlanAggregationConfigSubVlanProxyEnable	TruthValue
+        }
+
+        extremeVlanAggregationConfigSuperVlanIfIndex    OBJECT-TYPE
+                SYNTAX      INTEGER
+                MAX-ACCESS  read-only
+                STATUS      current
+                DESCRIPTION
+                "The Super Vlan index for this entry."
+                ::= { extremeVlanAggregationConfigEntry 1 }
+
+        extremeVlanAggregationConfigSubVlanProxyEnable    OBJECT-TYPE
+                SYNTAX      TruthValue
+                MAX-ACCESS  read-create
+                STATUS      current
+                DESCRIPTION
+                "The boolean flag that prevents normal communication between sub vlans."
+                ::= { extremeVlanAggregationConfigEntry 2 }
+    
+
+        extremeVlanTranslationTable OBJECT-TYPE
+                SYNTAX      SEQUENCE OF ExtremeVlanTranslationEntry
+                MAX-ACCESS  not-accessible
+                STATUS      current
+                DESCRIPTION
+                "This table contains the VLAN translation information."
+                ::= { extremeVlanTranslationGroup 1 }
+
+        extremeVlanTranslationEntry       OBJECT-TYPE
+                SYNTAX      ExtremeVlanTranslationEntry
+                MAX-ACCESS  not-accessible
+                STATUS      current
+                DESCRIPTION
+                "Information about the individual VLAN translation entry."
+                INDEX   { extremeVlanTranslationSuperVlanIfIndex, 
+                          extremeVlanTranslationMemberVlanIfIndex }
+                ::= { extremeVlanTranslationTable 1 }
+
+        ExtremeVlanTranslationEntry ::= SEQUENCE {
+                  extremeVlanTranslationSuperVlanIfIndex     	INTEGER,
+                  extremeVlanTranslationMemberVlanIfIndex	INTEGER,
+                  extremeVlanTranslationStatus			RowStatus
+        }
+          
+        extremeVlanTranslationSuperVlanIfIndex    OBJECT-TYPE
+                SYNTAX      INTEGER
+                MAX-ACCESS  read-only
+                STATUS      current
+                DESCRIPTION
+                        "The Super Vlan index for this entry."
+                ::= { extremeVlanTranslationEntry 1 }
+
+        extremeVlanTranslationMemberVlanIfIndex    OBJECT-TYPE
+                SYNTAX      INTEGER
+                MAX-ACCESS  read-only
+                STATUS      current
+                DESCRIPTION
+                        "The member Vlan index for this entry."
+                ::= { extremeVlanTranslationEntry 2 }
+     
+        extremeVlanTranslationStatus		OBJECT-TYPE
+               SYNTAX		RowStatus
+               MAX-ACCESS	read-create
+               STATUS		current
+               DESCRIPTION
+            	    "The status of this entry."
+               ::= { extremeVlanTranslationEntry 3 }
+
+END

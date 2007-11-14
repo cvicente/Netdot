@@ -1,0 +1,632 @@
+-- *****************************************************************
+-- CISCO-PACKET-CAPTURE-MIB
+--   
+-- February 2006, Binh P Le
+--   
+-- Copyright (c) 2006-2007 by cisco Systems, Inc.
+--  
+-- All rights reserved.
+-- ****************************************************************
+
+CISCO-PACKET-CAPTURE-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    OBJECT-TYPE,
+    MODULE-IDENTITY,
+    Unsigned32
+        FROM SNMPv2-SMI
+    OBJECT-GROUP,
+    MODULE-COMPLIANCE
+        FROM SNMPv2-CONF
+    RowStatus,
+    MacAddress,
+    TEXTUAL-CONVENTION
+        FROM SNMPv2-TC
+    InetAddress,
+    InetAddressType,
+    InetAddressPrefixLength
+        FROM INET-ADDRESS-MIB
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
+    ifIndex
+        FROM IF-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
+
+
+ciscoPacketCaptureMIB MODULE-IDENTITY
+    LAST-UPDATED    "200701030000Z"
+    ORGANIZATION    "Cisco System, Inc."
+    CONTACT-INFO
+            "Cisco Systems
+            Customer Service
+
+            Postal: 170 W Tasman Drive
+            San Jose, CA  95134
+            USA
+
+            Tel: +1 800 553-NETS
+
+            E-mail: cs-lan-switch-snmp@cisco.com"
+    DESCRIPTION
+        "The MIB module for the management of Packet Capture
+        feature."
+    REVISION        "200701030000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+          ::= { ciscoMgmt 602 }
+
+
+cpcMIBNotification  OBJECT IDENTIFIER
+    ::= { ciscoPacketCaptureMIB 0 }
+
+cpcMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoPacketCaptureMIB 1 }
+
+cpcMIBConformance  OBJECT IDENTIFIER
+    ::= { ciscoPacketCaptureMIB 2 }
+
+-- TEXTUAL CONVENTION
+
+CiscoPacketCaptureFilterCriteria ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "Filter criteria to specify if packets will be captured
+        based on source or destination addresses.
+
+        source: packets will be captured based on source
+                address.
+
+        dest  : packets will be captured based on destination
+                address."
+    SYNTAX          INTEGER  {
+                        source(1),
+                        dest(2)
+                    }
+cpcGenericConfig  OBJECT IDENTIFIER
+    ::= { cpcMIBObjects 1 }
+
+cpcFilterConfig  OBJECT IDENTIFIER
+    ::= { cpcMIBObjects 2 }
+
+
+-- To start a packet capture session
+-- ---------------------------------
+-- Users should first configure proper entrie(s) in
+-- cpcSessionConfigTable and then cpcCaptureSourceIfTable.
+-- Filter tables (cpcMacFilterTable and cpcIpFilterTable) need to
+-- be configured if any packet filtering is necessary.
+-- Once the above configuration is completed, users can
+-- start the capture session through cpcSessionAction object
+-- in cpcSessionConfigTable.
+--   
+
+--   
+-- cpcGenericConfig
+cpcMaxSessionAllowed OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The maximum number of Packet Capture sessions
+        allowed in cpcSessionConfigTable. A value of zero
+        indicates no limiation on the number of
+        configurable sessions." 
+    ::= { cpcGenericConfig 1 }
+
+cpcSessionConfigTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CpcSessionConfigEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A table of configuration to be used in the Packet
+        Capture sessions."
+    ::= { cpcGenericConfig 2 }
+
+cpcSessionConfigEntry OBJECT-TYPE
+    SYNTAX          CpcSessionConfigEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An entry containing management information of a Packet
+        Capture session."
+    INDEX           { cpcSessionId } 
+    ::= { cpcSessionConfigTable 1 }
+
+CpcSessionConfigEntry ::= SEQUENCE {
+        cpcSessionId           Unsigned32,
+        cpcSessionOperStatus   INTEGER ,
+        cpcSessionDestFileName SnmpAdminString,
+        cpcSessionPacketLength Unsigned32,
+        cpcSessionPacketLimits Unsigned32,
+        cpcSessionAction       INTEGER ,
+        cpcSessionConfigStatus RowStatus
+}
+
+cpcSessionId OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4294967295 )
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An index value that uniquely identifies a packet
+        capture session." 
+    ::= { cpcSessionConfigEntry 1 }
+
+cpcSessionOperStatus OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        other(1),
+                        inProgress(2),
+                        completed(3),
+                        stopped(4),
+                        storageFull(5)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Operational status of a Packet Capture session.
+
+        other      : none of the following.
+        inProgress : Packet Capture session is in progress.
+        completed  : number of captured frames has reached
+                     the value of the corresponding instance of
+                     cpcSessionPacketLimits.
+        stopped    : Packet Capture session was administratively
+                     stopped.
+        storageFull: storage device is full." 
+    ::= { cpcSessionConfigEntry 2 }
+
+cpcSessionDestFileName OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The destination file name used to store the captured frames.
+        Value of this object must be specified in the format of
+        <device>:<filename>.
+
+        This object may not be modified if value of the corresponding
+        instance of cpcSessionOperStatus is 'inProgress'." 
+    ::= { cpcSessionConfigEntry 3 }
+
+cpcSessionPacketLength OBJECT-TYPE
+    SYNTAX          Unsigned32
+    UNITS           "octets"
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The length of packet to be captured by this session. If the
+        length of an actual packet is greater than the value of this
+        object, the session will only capture the first number of
+        bytes specified by this object. A value zero for this object
+        indicates that the entire packet will be captured.
+
+        This object may not be modified if value of the corresponding
+        instance of cpcSessionOperStatus is 'inProgress'."
+    DEFVAL          { 0 } 
+    ::= { cpcSessionConfigEntry 4 }
+
+cpcSessionPacketLimits OBJECT-TYPE
+    SYNTAX          Unsigned32
+    UNITS           "packets"
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The number of packets to be captured by this
+        session. A value of zero for this object
+        indicates that there is no limitation. When
+        the value of this object is zero, the session
+        remains 'inProgress' until it is administratively
+        stopped or the storage is full.
+
+        This object may not be modified if value of the
+        corresponding instance of cpcSessionOperStatus is
+        'inProgress'."
+    DEFVAL          { 0 } 
+    ::= { cpcSessionConfigEntry 5 }
+
+cpcSessionAction OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        start(1),
+                        stop(2)
+                    }
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The action control for this capture session.
+        Setting this object to 'start' causes the capture 
+        session to be started if it is not running. 
+        Setting this object to 'stop' terminates the 
+        capturing session if it is running. 
+
+        The value of this object will be changed to 'stop' 
+        when value of the corresponding instance of 
+        cpcSessionOperStatus leaves from 'inProgress' to 
+        other status. 
+
+        This object may only be set when value of the corresponding
+        instance of cpcSessionConfigStatus is 'active'."
+    DEFVAL          { stop } 
+    ::= { cpcSessionConfigEntry 6 }
+
+cpcSessionConfigStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The status of this conceptual row." 
+    ::= { cpcSessionConfigEntry 7 }
+ 
+
+
+cpcSessionMaxSources OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The maximum number of entries allowed in
+        cpcCaptureSourceIfTable for a packet capture session.
+        A value of zero indicates no limitation on the
+        number of configurable sources." 
+    ::= { cpcGenericConfig 3 }
+
+cpcCaptureSourceIfTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CpcCaptureSourceIfEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A table of interface information to be used in
+        the packet capture session."
+    ::= { cpcGenericConfig 4 }
+
+cpcCaptureSourceIfEntry OBJECT-TYPE
+    SYNTAX          CpcCaptureSourceIfEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An entry containing interface related management
+        information for a Packet Capture session. 
+
+        The entry is created and deleted by using 
+        cpcCaptureSourceIfStatus object. 
+
+        The entry may not be modified, added or deleted when
+        the corresponding value of cpcSessionOperStatus is
+        'inProgress'."
+    INDEX           {
+                        cpcSessionId,
+                        ifIndex
+                    } 
+    ::= { cpcCaptureSourceIfTable 1 }
+
+CpcCaptureSourceIfEntry ::= SEQUENCE {
+        cpcCaptureSourceIfDirection INTEGER ,
+        cpcCaptureSourceIfStatus    RowStatus
+}
+
+cpcCaptureSourceIfDirection OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        rx(1),
+                        tx(2),
+                        both(3)
+                    }
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The direction of traffic to be captured.
+
+        rx  : Only ingress traffic will be captured.
+
+        tx  : Only egress traffic will be captured.
+
+        both: Traffic from both directions will be
+              captured.
+
+        This object may be modified if value of the
+        corresponding instance of cpcCaptureSourceIfStatus
+        is 'active'."
+    DEFVAL          { rx } 
+    ::= { cpcCaptureSourceIfEntry 1 }
+
+cpcCaptureSourceIfStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The status of this conceptual row." 
+    ::= { cpcCaptureSourceIfEntry 2 }
+ 
+
+
+-- cpcFilterConfig group
+cpcMaxFilterAllowed OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The maximum number of filters allowed in a Packet
+        Capture session. Value of zero indicates that there
+        is no limitation." 
+    ::= { cpcFilterConfig 1 }
+
+cpcMacFilterTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CpcMacFilterEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A table of MAC filter information to be used in
+        the packet capture session."
+    ::= { cpcFilterConfig 2 }
+
+cpcMacFilterEntry OBJECT-TYPE
+    SYNTAX          CpcMacFilterEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An entry containing management information about
+        a Packet Capture filter based on MAC address.
+        The entry is created or deleted by using
+        cpcMacFilterRowStatus object.
+
+        The entry may not be modified, created or deleted
+        when the corresponding value of cpcSessionOperStatus is
+        'inProgress'."
+    INDEX           {
+                        cpcSessionId,
+                        cpcMacFilterMacAddress,
+                        cpcMacFilterCriteria
+                    } 
+    ::= { cpcMacFilterTable 1 }
+
+CpcMacFilterEntry ::= SEQUENCE {
+        cpcMacFilterMacAddress MacAddress,
+        cpcMacFilterCriteria   CiscoPacketCaptureFilterCriteria,
+        cpcMacFilterRowStatus  RowStatus
+}
+
+cpcMacFilterMacAddress OBJECT-TYPE
+    SYNTAX          MacAddress
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The filtered MAC address. Incorporated with the
+        corresponding instance value of crcMacFilterCriteria,
+        Packet Capture will capture packets sending from or to
+        the address specified by this object." 
+    ::= { cpcMacFilterEntry 1 }
+
+cpcMacFilterCriteria OBJECT-TYPE
+    SYNTAX          CiscoPacketCaptureFilterCriteria
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "The filter criteria of the entry." 
+    ::= { cpcMacFilterEntry 2 }
+
+cpcMacFilterRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The status of this conceptual row." 
+    ::= { cpcMacFilterEntry 3 }
+ 
+
+
+cpcIpFilterTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CpcIpFilterEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A table of IP filter information to be used in
+        the packet capture session."
+    ::= { cpcFilterConfig 3 }
+
+cpcIpFilterEntry OBJECT-TYPE
+    SYNTAX          CpcIpFilterEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An entry containing management information if IP based
+        packet capture filter for the packet capture session. 
+
+        The entry can be created or deleted by using 
+        cpcIpFilterRowStatus object. 
+
+        The entry may not be modified, created or deleted when
+        value of the corresponding instance of cpcSessionOperStatus
+        is 'inProgress'."
+    INDEX           {
+                        cpcSessionId,
+                        cpcIpFilterAddressType,
+                        cpcIpFilterAddress,
+                        cpcIpFilterCriteria
+                    } 
+    ::= { cpcIpFilterTable 1 }
+
+CpcIpFilterEntry ::= SEQUENCE {
+        cpcIpFilterAddressType InetAddressType,
+        cpcIpFilterAddress     InetAddress,
+        cpcIpFilterCriteria    CiscoPacketCaptureFilterCriteria,
+        cpcIpFilterMask        InetAddressPrefixLength,
+        cpcIpFilterRowStatus   RowStatus
+}
+
+cpcIpFilterAddressType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The type of Internet address is configured in this
+        Packet Capture filter." 
+    ::= { cpcIpFilterEntry 1 }
+
+cpcIpFilterAddress OBJECT-TYPE
+    SYNTAX          InetAddress (SIZE  (1..64))
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The Internet address for the filter. The type of
+        this address is determined by the value of the
+        cpcIpFilterAddressType object. The cpcIpFilterAddress
+        may not be empty due to the SIZE restriction.
+
+        Incorporated with value of the corresponding instance
+        of cpcIpFilterCriteria, Packet Capture will capture
+        packets sending to or from the address specified by
+        this object." 
+    ::= { cpcIpFilterEntry 2 }
+
+cpcIpFilterCriteria OBJECT-TYPE
+    SYNTAX          CiscoPacketCaptureFilterCriteria
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION     "The filter criteria of the entry." 
+    ::= { cpcIpFilterEntry 3 }
+
+cpcIpFilterMask OBJECT-TYPE
+    SYNTAX          InetAddressPrefixLength
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The prefix length value associated with the corresponding
+        cpcIpFilterAddress. The value of zero indicates that no IP 
+        mask is associated with the corresponding cpcIpFilterAddress. 
+
+        This object may be modified while value of the corresponding
+        instance of cpcIpFilterRowStatus is 'active'." 
+    ::= { cpcIpFilterEntry 4 }
+
+cpcIpFilterRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION     "The status of this conceptual row." 
+    ::= { cpcIpFilterEntry 5 }
+ 
+
+-- Conformance
+cpcMIBCompliances  OBJECT IDENTIFIER
+    ::= { cpcMIBConformance 1 }
+
+cpcMIBGroups  OBJECT IDENTIFIER
+    ::= { cpcMIBConformance 2 }
+
+
+cpcCompliance MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for devices that implement
+        CISCO-PACKET-CAPTURE-MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS { cpcGenericConfigGroup }
+
+    GROUP           cpcFilterConfigGroup
+    DESCRIPTION
+        "This group is mandatory in devices running software
+        which support filter configuration for Packet
+        Capture feature."
+
+    GROUP           cpcMacFilterConfigGroup
+    DESCRIPTION
+        "This group is mandatory in devices running software
+        which support MAC address filter configuration for
+        Packet Capture feature."
+
+    GROUP           cpcIpFilterConfigGroup
+    DESCRIPTION
+        "This group is mandatory in devices running software
+        which support IP address filter configuration for
+        Packet Capture feature."
+
+    GROUP           cpcDestFileNameConfigGroup
+    DESCRIPTION
+        "This group is mandatory in devices running software
+        which support destination file configuration for
+        Packet Capture feature."
+
+    OBJECT          cpcSessionConfigStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required if the managed device
+        has the session entry created by default."
+
+    OBJECT          cpcCaptureSourceIfStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION     "Support of 'createAndWait' are not required."
+
+    OBJECT          cpcMacFilterRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION     "Support of 'createAndWait' are not required."
+
+    OBJECT          cpcIpFilterRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION     "Support of 'createAndWait' are not required."
+    ::= { cpcMIBCompliances 1 }
+
+-- Units of Conformance
+cpcGenericConfigGroup OBJECT-GROUP
+    OBJECTS         {
+                        cpcMaxSessionAllowed,
+                        cpcSessionOperStatus,
+                        cpcSessionMaxSources,
+                        cpcSessionPacketLength,
+                        cpcSessionPacketLimits,
+                        cpcSessionAction,
+                        cpcSessionConfigStatus,
+                        cpcCaptureSourceIfDirection,
+                        cpcCaptureSourceIfStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of object(s) that provides the generic
+        configuration for Packet Capture feature."
+    ::= { cpcMIBGroups 1 }
+
+cpcFilterConfigGroup OBJECT-GROUP
+    OBJECTS         { cpcMaxFilterAllowed }
+    STATUS          current
+    DESCRIPTION
+        "A collection of object(s) that provides general
+        filter configuration for Packet Capture feature."
+    ::= { cpcMIBGroups 2 }
+
+cpcMacFilterConfigGroup OBJECT-GROUP
+    OBJECTS         { cpcMacFilterRowStatus }
+    STATUS          current
+    DESCRIPTION
+        "A collection of object(s) that provides the MAC
+        address filter configuration for Packet Capture
+        feature."
+    ::= { cpcMIBGroups 3 }
+
+cpcIpFilterConfigGroup OBJECT-GROUP
+    OBJECTS         {
+                        cpcIpFilterMask,
+                        cpcIpFilterRowStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of object(s) that provides the IP
+        address filter configuration for Packet Capture
+        feature."
+    ::= { cpcMIBGroups 4 }
+
+cpcDestFileNameConfigGroup OBJECT-GROUP
+    OBJECTS         { cpcSessionDestFileName }
+    STATUS          current
+    DESCRIPTION
+        "A collection of object(s) that provides configuration
+        for destination file for Packet Capture feature."
+    ::= { cpcMIBGroups 5 }
+
+END
+
+

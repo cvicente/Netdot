@@ -1,0 +1,944 @@
+-- *******************************************************************
+-- CISCO-LWAPP-MESH-STATS-MIB.my
+-- February,2007 Devesh Pujari
+--   
+-- Copyright (c) 2007 by Cisco Systems, Inc.
+-- All rights reserved.
+-- *******************************************************************
+
+CISCO-LWAPP-MESH-STATS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Unsigned32,
+    Counter32,
+    Gauge32,
+    NOTIFICATION-TYPE
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP,
+    NOTIFICATION-GROUP
+        FROM SNMPv2-CONF
+    TruthValue,
+    TimeStamp,
+    TimeInterval
+        FROM SNMPv2-TC
+    cLApSysMacAddress,
+    cLApName
+        FROM CISCO-LWAPP-AP-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
+
+
+-- ********************************************************************
+-- *  MODULE IDENTITY
+-- ********************************************************************
+
+ciscoLwappMeshStatsMIB MODULE-IDENTITY
+    LAST-UPDATED    "200703120000Z"
+    ORGANIZATION    "Cisco Systems Inc."
+    CONTACT-INFO
+            "Cisco Systems,
+            Customer Service
+            Postal: 170 West Tasman Drive
+            San Jose, CA  95134
+            USA
+            Tel: +1 800 553-NETS
+
+            Email: cs-wnbu-snmp@cisco.com"
+    DESCRIPTION
+        "This MIB is intended to be implemented on all those
+        devices operating as Central Controllers (CC) that
+        terminate the Light Weight Access Point Protocol
+        (LWAPP) tunnel from Light-weight  Access Points.
+
+        This MIB represents statistics collected for mesh node 
+        in Wireless Mesh Network. 
+
+        The deployment of the controller 
+        (referred to as CC in the diagram), mesh nodes 
+        (RAP and MAP) LWAPP APs, client(MS) and NMS appear 
+        as follows.
+
+         +.......+                 +.......+
+         +       +                 +       +
+         +  NMS  +                 +  NMS  +
+         +       +                 +       +
+         +.......+                 +.......+
+            .                         .
+         .    .                     .   .
+        .         .                .        .
+        .            .             .            .
+        +......+     +......+     +......+           +......+
+        +      +     +      +     +      +           +      +
+        +  CC  +     +  CC  +     +  CC  +           +  CC  +
+        +      +     +      +     +      +           +      +
+        +......+     +......+     +......+           +......+
+        ..            .             .                 .
+        ..            .             .                 .
+        .  .            .             .                 .
+        .    .            .             .                 .
+        .      .            .             .                 .
+        .        .            .             .                 .
+        +......+ +......+     +......+      +......+          +......+
+        +      + +      +     +      +      +      +          +      +
+        +  RAP + +  RAP +     +  RAP  +     +  RAP +          +  RAP +
+        +      + +      +     +      +      +      +          +      +
+        +......+ +......+     +......+      +......+          +......+
+        .        .              .             .                 .
+        .        .              .             .                 .
+        .        .              .             .                 .
+        .          .              .             .                 .
+        .           .              .             .                 .
+        +......+ +......+     +......+      +......+          +......+
+        +      + +      +     +      +      +      +          +      +
+        +  MAP + +  MS  +     +  MAP +      +  MAP +          +  MAP +
+        +      + +      +     +      +      +      +          +      +
+        +......+ +......+     +......+      +......+          +......+
+        .                    .                          ..    . 
+        . .                  .                     ..        .
+        .   .                .                  ..            .
+        .     .              .              .                .
+        +......+ +......+     +......+      +......+.         +......+
+        +      + +      +     +      +      +      +          +      +
+        +  MAP + +  MAP +     +  MAP +      +  MAP +          +  MS  +
+        +      + +      +     +      +      +      +          +      +
+        +......+ +......+     +......+      +......+          +......+
+
+
+
+
+        The LWAPP tunnel exists between the controller and
+        the APs. The MNs communicate with the APs through
+        the protocol defined by the 802.11 standard.
+
+        LWAPP APs, upon bootup, discover and join one of the
+        controllers and the controller pushes the 
+        configuration, that includes the WLAN parameters to 
+        the LWAPP APs. 
+        The APs encapsulate all the 802.11 frames from
+        wireless clients inside LWAPP frames and forward
+        the LWAPP frames to the controller.
+
+                           GLOSSARY
+
+        Access Point ( AP )
+
+        An entity that contains an 802.11 medium access
+        control ( MAC ) and physical layer ( PHY ) interface
+        and provides access to the distribution services via
+        the wireless medium for associated clients.
+        LWAPP APs encapsulate all the 802.11 frames in
+        LWAPP frames and sends them to the controller to which
+        it is logically connected.
+
+        Central Controller ( CC )
+
+        The central entity that terminates the LWAPP protocol
+        tunnel from the LWAPP APs. Throughout this MIB,
+        this entity is also referred to as 'controller'.
+
+        Mobile Station ( MS )
+
+        A roaming 802.11 wireless device in a wireless
+        network associated with an access point. Mobile Station
+        and client are used interchangeably. 
+
+        Network Management System ( NMS )
+
+        The station from which the administrator manages the
+        wired and wireless networks.
+
+        Mesh Node
+
+        A mesh node is defined as a physical or logical entity
+        in the mesh network participating in forming the mesh 
+        backhaul. RAP and MAP are two types of mesh nodes 
+        supported in mesh network.
+
+        Root AP (RAP)
+
+        The AP forming the bridge between a wired and a mesh
+        network with an Ethernet interface to the wired 
+        network and a 802.11 radio interface to the mesh 
+        network
+
+        Mesh AP (MAP).
+
+        The AP extending wireless coverage similar to a 
+        repeater in a mesh network and consists of a 802.11 
+        uplink and a 802.11 downlink. On a single-radio 
+        backhaul, both uplink and downlink exist on the same 
+        radio and are logical links only. On a multi-radio 
+        backhaul, they may exist on different radios.
+
+        Mesh Network
+
+        Network starting with the wireless backhaul downlink
+        of the RAP and all the entities below except any 
+        attached network to the Ethernet link of MAPs. A mesh 
+        network below a single RAP is also referred to as a 
+        'Mesh Sector'.A mesh network consists of mesh nodes. 
+        A single mesh network is always augmented to a single 
+        wired network.
+
+        Mesh Link
+
+        A logical 802.11 link between two mesh nodes. A single 
+        link is point-to-point. All point-to-multipoint links 
+        are considered as multiple mesh links. Often referred 
+        to as mesh backhaul link.
+
+        Mesh Backhaul
+
+        A Mesh backhaul consists of mesh nodes and mesh links 
+        terminating at a RAP. This necessarily creates a one-
+        to-one relationship between a 'mesh network', 'mesh
+        sector' and a 'mesh backhaul' where these terms can be 
+        used interchangeably.
+
+        SNR
+
+        Signal to Noise ratio on the 802.11 radio.
+
+        Bridged network 
+
+        The bridged network is defined as the network(s)
+        attached to the Ethernet port of any MAP. There can be
+        multiple such networks attached to a single mesh 
+        network.
+
+        Mesh Node Roaming
+
+        A mesh node may change its parent mesh node naturally 
+        when the RF/network condition changes. Child Mesh node 
+        will re-associate and re-authenticate to new parent 
+        mesh node. Mesh Security supports two types of mesh 
+        node roaming.
+           Intra-controller - LWAPP session is not lost.
+           Inter-controller - LWAPP session is lost.
+
+
+        REFERENCE
+
+        [1] Wireless LAN Medium Access Control ( MAC ) and
+        Physical Layer ( PHY ) Specifications.
+
+        [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
+        Weight Access Point Protocol"
+    REVISION        "200703120000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 617 }
+
+
+ciscoLwappMeshStatsMIBNotifs  OBJECT IDENTIFIER
+    ::= { ciscoLwappMeshStatsMIB 0 }
+
+ciscoLwappMeshStatsMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoLwappMeshStatsMIB 1 }
+
+ciscoLwappMeshStatsMIBConfigObjects  OBJECT IDENTIFIER
+    ::= { ciscoLwappMeshStatsMIB 2 }
+
+ciscoLwappMeshStatsMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoLwappMeshStatsMIB 3 }
+
+ciscoLwappMeshNodeStats  OBJECT IDENTIFIER
+    ::= { ciscoLwappMeshStatsMIBObjects 1 }
+
+-- ********************************************************************
+-- * Mesh Node Statistics
+-- ********************************************************************
+
+clMeshNodeStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF ClMeshNodeStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table represents information about packets
+        that were transmitted to or received from a mesh node. 
+        An entry in this table gets added when a mesh node 
+        associates to the controller and entry gets removed 
+        when mesh node disassociates from the controller."
+    ::= { ciscoLwappMeshNodeStats 1 }
+
+clMeshNodeStatsEntry OBJECT-TYPE
+    SYNTAX          ClMeshNodeStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An (conceptual) entry in this table represents statistics
+        for a mesh node."
+    INDEX           { cLApSysMacAddress } 
+    ::= { clMeshNodeStatsTable 1 }
+
+ClMeshNodeStatsEntry ::= SEQUENCE {
+        clMeshNodeMalformedNeighPkts Counter32,
+        clMeshNodePoorNeighSnrPkts   Counter32,
+        clMeshNodeExcludedPkts       Counter32,
+        clMeshNodeRxNeighReq         Counter32,
+        clMeshNodeRxNeighRsp         Counter32,
+        clMeshNodeTxNeighReq         Counter32,
+        clMeshNodeTxNeighRsp         Counter32,
+        clMeshNodeParentChanges      Counter32
+}
+
+clMeshNodeMalformedNeighPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents total number of packets
+        received from neighbor mesh nodes which could 
+        not be decoded." 
+    ::= { clMeshNodeStatsEntry 1 }
+
+clMeshNodePoorNeighSnrPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents total number of packets
+        received from neighbor mesh nodes which were below 
+        SNR threshold value." 
+    ::= { clMeshNodeStatsEntry 2 }
+
+clMeshNodeExcludedPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents total number of packets
+        received from excluded neighbor mesh nodes." 
+    ::= { clMeshNodeStatsEntry 3 }
+
+clMeshNodeRxNeighReq OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents total number of request
+        received from neighbor mesh node APs. Requests 
+        can be either broadcast or unicast from neighbor 
+        mesh nodes." 
+    ::= { clMeshNodeStatsEntry 4 }
+
+clMeshNodeRxNeighRsp OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents total number of response
+        received from neighbor mesh node APs." 
+    ::= { clMeshNodeStatsEntry 5 }
+
+clMeshNodeTxNeighReq OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents total number of request
+        sent to neighbor mesh node APs. Requests can be 
+        broadcast or unicast to neighbor mesh node." 
+    ::= { clMeshNodeStatsEntry 6 }
+
+clMeshNodeTxNeighRsp OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents total number of response
+        sent to neighbor mesh node APs." 
+    ::= { clMeshNodeStatsEntry 7 }
+
+clMeshNodeParentChanges OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "parent-switches"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents total number of times
+        this mesh node has changed its parent." 
+    ::= { clMeshNodeStatsEntry 8 }
+ 
+
+-- ********************************************************************
+-- * Mesh Node Packet Queue Statistics
+-- ********************************************************************
+
+clMeshNodePktQueueStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF ClMeshNodePktQueueStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table represents information about different
+        packet queues of a mesh node. Queues are maintained 
+        in a mesh node based on quality of service and packets 
+        wait for its turn in queue before it is sent to 
+        network. An (conceptual) entry in this table is created
+        when a mesh node associates with controller and start 
+        sending packets to neighbor mesh node or controller
+        Entries are removed when the mesh node disassociates 
+        from controller."
+    ::= { ciscoLwappMeshNodeStats 2 }
+
+clMeshNodePktQueueStatsEntry OBJECT-TYPE
+    SYNTAX          ClMeshNodePktQueueStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry in this table represents average queue size
+        and peak packets queue reached."
+    INDEX           {
+                        cLApSysMacAddress,
+                        clMeshNodePktQueueIndex
+                    } 
+    ::= { clMeshNodePktQueueStatsTable 1 }
+
+ClMeshNodePktQueueStatsEntry ::= SEQUENCE {
+        clMeshNodePktQueueIndex       INTEGER ,
+        clMeshNodePktQueueAvg         Gauge32,
+        clMeshNodePktQueuePeak        Gauge32,
+        clMeshNodePktQueuePktsDropped Counter32,
+        clMeshNodePktQueueTimeStamp   TimeStamp,
+        clMeshNodePktQueueSize        Unsigned32
+}
+
+clMeshNodePktQueueIndex OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        silver(1),
+                        gold(2),
+                        platinum(3),
+                        bronze(4),
+                        management(5)
+                    }
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object represents different types of queues
+        in a mesh node. 
+            silver     - queue for Best Effort packets.
+            gold       - queue for Video Application.
+            platinum   - queue for Voice Application.
+            bronze     - queue for Background.
+            management - queue for management frames." 
+    ::= { clMeshNodePktQueueStatsEntry 1 }
+
+clMeshNodePktQueueAvg OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents average number of
+        packets waiting in the queue during interval 
+        defined by object 'clMeshNodeStatsTimeInterval'." 
+    ::= { clMeshNodePktQueueStatsEntry 2 }
+
+clMeshNodePktQueuePeak OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents peak number of
+        packets waiting in the queue during interval
+        defined by object 'clMeshNodeStatsTimeInterval'." 
+    ::= { clMeshNodePktQueueStatsEntry 3 }
+
+clMeshNodePktQueuePktsDropped OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents total number of packets
+        dropped due to queue overflow." 
+    ::= { clMeshNodePktQueueStatsEntry 4 }
+
+clMeshNodePktQueueTimeStamp OBJECT-TYPE
+    SYNTAX          TimeStamp
+    UNITS           "seconds"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents when the queue statistics
+        was last collected. This value is represented as a 
+        instance of sysUp time." 
+    ::= { clMeshNodePktQueueStatsEntry 5 }
+
+clMeshNodePktQueueSize OBJECT-TYPE
+    SYNTAX          Unsigned32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents max number of packets a
+        queue can hold." 
+    ::= { clMeshNodePktQueueStatsEntry 6 }
+ 
+
+-- ********************************************************************
+-- * Mesh Node Security Statistics
+-- ********************************************************************
+
+clMeshNodeSecStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF ClMeshNodeSecStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table represents information about packets
+        transmitted to or received from a mesh node during 
+        association or authentication of a child mesh node 
+        to parent mesh node. An (conceptual) entry in this 
+        table is created when a mesh node associates 
+        or authenticates with a parent mesh node. Entries are 
+        removed when the mesh node disassociates from controller."
+    ::= { ciscoLwappMeshNodeStats 3 }
+
+clMeshNodeSecStatsEntry OBJECT-TYPE
+    SYNTAX          ClMeshNodeSecStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each (conceptual) entry in this table represents count of
+        security packets a mesh node exchange with its parent mesh
+        node."
+    INDEX           { cLApSysMacAddress } 
+    ::= { clMeshNodeSecStatsTable 1 }
+
+ClMeshNodeSecStatsEntry ::= SEQUENCE {
+        clMeshNodeSecTxPkts          Counter32,
+        clMeshNodeSecRxPkts          Counter32,
+        clMeshNodeAssocReqFailures   Counter32,
+        clMeshNodeAssocReqTimeouts   Counter32,
+        clMeshNodeAssocReqSuccess    Counter32,
+        clMeshNodeAuthReqFailures    Counter32,
+        clMeshNodeAuthReqTimeouts    Counter32,
+        clMeshNodeAuthReqSuccess     Counter32,
+        clMeshNodeReassocReqFailures Counter32,
+        clMeshNodeReassocReqTimeouts Counter32,
+        clMeshNodeReassocReqSuccess  Counter32,
+        clMeshNodeReauthReqFailures  Counter32,
+        clMeshNodeReauthReqTimeouts  Counter32,
+        clMeshNodeReauthReqSuccess   Counter32,
+        clMeshNodeUnknownAssocReq    Counter32,
+        clMeshNodeInvalidAssocReq    Counter32,
+        clMeshNodeUnknownReauthReq   Counter32,
+        clMeshNodeInvalidReauthReq   Counter32,
+        clMeshNodeUnknownReassocReq  Counter32,
+        clMeshNodeInvalidReassocReq  Counter32
+}
+
+clMeshNodeSecTxPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of packets
+        transmitted by this mesh node during security 
+        negotiations." 
+    ::= { clMeshNodeSecStatsEntry 1 }
+
+clMeshNodeSecRxPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of packets
+        received by this mesh node during security 
+        negotiations." 
+    ::= { clMeshNodeSecStatsEntry 2 }
+
+clMeshNodeAssocReqFailures OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        association request sent by this node as a 
+        child mesh node to a parent mesh node, that 
+        resulted in a failure." 
+    ::= { clMeshNodeSecStatsEntry 3 }
+
+clMeshNodeAssocReqTimeouts OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        association request sent by this node, as a 
+        child mesh node to a parent mesh node, that 
+        timed out." 
+    ::= { clMeshNodeSecStatsEntry 4 }
+
+clMeshNodeAssocReqSuccess OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of association
+        request sent by this node, as a child mesh 
+        node to a parent mesh node, that completed." 
+    ::= { clMeshNodeSecStatsEntry 5 }
+
+clMeshNodeAuthReqFailures OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        authenticaton request sent by this node, as a child 
+        mesh node to a parent mesh node, that failed." 
+    ::= { clMeshNodeSecStatsEntry 6 }
+
+clMeshNodeAuthReqTimeouts OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        authentication request sent by this node, as a child 
+        mesh node to a parent mesh node, that timed out." 
+    ::= { clMeshNodeSecStatsEntry 7 }
+
+clMeshNodeAuthReqSuccess OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        authentication request sent by this node, as a child 
+        mesh node to a parent mesh node, that completed." 
+    ::= { clMeshNodeSecStatsEntry 8 }
+
+clMeshNodeReassocReqFailures OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        re-association request sent by this node, as a child 
+        mesh node to a parent mesh node, that failed." 
+    ::= { clMeshNodeSecStatsEntry 9 }
+
+clMeshNodeReassocReqTimeouts OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        re-association request sent by this node, as a child 
+        mesh node to a parent mesh node, that timed out." 
+    ::= { clMeshNodeSecStatsEntry 10 }
+
+clMeshNodeReassocReqSuccess OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        re-association request sent by this node, as a child 
+        mesh node to a parent mesh node, that completed." 
+    ::= { clMeshNodeSecStatsEntry 11 }
+
+clMeshNodeReauthReqFailures OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        re-authentication request sent by this node, as a child 
+        mesh node to a parent mesh node, that failed." 
+    ::= { clMeshNodeSecStatsEntry 12 }
+
+clMeshNodeReauthReqTimeouts OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        re-authentication request sent by this node, as a child 
+        mesh node to a parent mesh node, that timed out." 
+    ::= { clMeshNodeSecStatsEntry 13 }
+
+clMeshNodeReauthReqSuccess OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of
+        re-authentication request sent by this node, as a child 
+        mesh node to a parent mesh node, that completed." 
+    ::= { clMeshNodeSecStatsEntry 14 }
+
+clMeshNodeUnknownAssocReq OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of unknown
+        association request received by this node, as 
+        a parent mesh node from a child mesh node. This 
+        may happen when child is a unknown neighbor." 
+    ::= { clMeshNodeSecStatsEntry 15 }
+
+clMeshNodeInvalidAssocReq OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of invalid
+        association request that were received by this node, 
+        as a parent mesh node from a child mesh node. This 
+        may happen when child is a valid neighbor but is in 
+        a wrong state to be associated." 
+    ::= { clMeshNodeSecStatsEntry 16 }
+
+clMeshNodeUnknownReauthReq OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of unknown
+        re-authentication request received by this node, as 
+        a parent mesh node from a child mesh node. This may 
+        happen when child is a unknown neighbor." 
+    ::= { clMeshNodeSecStatsEntry 17 }
+
+clMeshNodeInvalidReauthReq OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of invalid
+        re-authentication request received by this node, as 
+        a parent mesh node from a child mesh node. This may 
+        happen when child is a valid neighbor but is in a 
+        wrong state to be re-authenticated." 
+    ::= { clMeshNodeSecStatsEntry 18 }
+
+clMeshNodeUnknownReassocReq OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of unknown
+        re-association request received by this node, as 
+        a parent mesh node from a child mesh node. This may 
+        happen when child is a unknown neighbor." 
+    ::= { clMeshNodeSecStatsEntry 19 }
+
+clMeshNodeInvalidReassocReq OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates total number of invalid
+        re-association request received by this node, as 
+        a parent mesh node from a child mesh node. This 
+        may happen when child is a valid neighbor but is 
+        in a wrong state to be re-associated." 
+    ::= { clMeshNodeSecStatsEntry 20 }
+ 
+
+
+-- ********************************************************************
+-- *    Config objects
+-- ********************************************************************
+
+clMeshNodeQueueOverflowNotifEnabled OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The object to control the generation of
+        'ciscoLwappMeshQueueOverflow' notification.
+
+        A value of 'true' indicates that the agent generates
+        'ciscoLwappMeshQueueOverflow' notification.
+
+        A value of 'false' indicates that the agent doesn't
+        generate ciscoLwappMeshQueueOverflow notification."
+    DEFVAL          { true } 
+    ::= { ciscoLwappMeshStatsMIBConfigObjects 1 }
+
+clMeshNodeStatsTimeInterval OBJECT-TYPE
+    SYNTAX          TimeInterval (18000..90000 )
+    UNITS           "hundredths-seconds"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The object represents the time interval after
+        which statistics are populated for each mesh node."
+    DEFVAL          { 18000 } 
+    ::= { ciscoLwappMeshStatsMIBConfigObjects 2 }
+
+-- ********************************************************************
+-- *    NOTIFICATION TYPE objects
+-- ********************************************************************
+
+ciscoLwappMeshQueueOverflow NOTIFICATION-TYPE
+    OBJECTS         {
+                        cLApName,
+                        clMeshNodePktQueuePeak,
+                        clMeshNodePktQueuePktsDropped
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is sent by the agent when a
+        queue overflows and as a result packets get dropped.
+        After each time interval, defined by object 
+        'clMeshNodeStatsTimeInterval', mesh node sends its 
+        queue statistics to the controller which also includes 
+        cumulative number of packets dropped, defined by object 
+        'clMeshNodePktQueuePktsDropped'. If the packets dropped 
+        is higher than the previous time notification generated 
+        then this notification is raised.."
+   ::= { ciscoLwappMeshStatsMIBNotifs 1 }
+-- ********************************************************************
+-- *    Compliance statements
+-- ********************************************************************
+
+ciscoLwappMeshStatsMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoLwappMeshStatsMIBConform 1 }
+
+ciscoLwappMeshStatsMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoLwappMeshStatsMIBConform 2 }
+
+
+ciscoLwappMeshStatsMIBCompliance MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for the SNMP entities that
+        implement the ciscoLwappMeshStatsMIB module."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoLwappMeshNodeStatsGroup,
+                        ciscoLwappMeshNodePktQueueStatsGroup,
+                        ciscoLwappMeshNodeSecStatsGroup,
+                        ciscoLwappMeshStatsConfigObjsGroup,
+                        ciscoLwappMeshStatsNotifsGroup
+                    }
+    ::= { ciscoLwappMeshStatsMIBCompliances 1 }
+
+-- ********************************************************************
+-- *    Units of conformance
+-- ********************************************************************
+
+ciscoLwappMeshNodeStatsGroup OBJECT-GROUP
+    OBJECTS         {
+                        clMeshNodeMalformedNeighPkts,
+                        clMeshNodePoorNeighSnrPkts,
+                        clMeshNodeExcludedPkts,
+                        clMeshNodeRxNeighReq,
+                        clMeshNodeRxNeighRsp,
+                        clMeshNodeTxNeighReq,
+                        clMeshNodeTxNeighRsp,
+                        clMeshNodeParentChanges
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represent packets
+        that were transmitted or received between neighbor 
+        mesh nodes."
+    ::= { ciscoLwappMeshStatsMIBGroups 1 }
+
+ciscoLwappMeshNodePktQueueStatsGroup OBJECT-GROUP
+    OBJECTS         {
+                        clMeshNodePktQueueAvg,
+                        clMeshNodePktQueuePeak,
+                        clMeshNodePktQueuePktsDropped,
+                        clMeshNodePktQueueTimeStamp,
+                        clMeshNodePktQueueSize
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represent packets
+        is different types of queues to be transmitted to
+        neighbor meshnode or to controller."
+    ::= { ciscoLwappMeshStatsMIBGroups 2 }
+
+ciscoLwappMeshNodeSecStatsGroup OBJECT-GROUP
+    OBJECTS         {
+                        clMeshNodeSecTxPkts,
+                        clMeshNodeSecRxPkts,
+                        clMeshNodeAssocReqFailures,
+                        clMeshNodeAssocReqTimeouts,
+                        clMeshNodeAssocReqSuccess,
+                        clMeshNodeAuthReqFailures,
+                        clMeshNodeAuthReqTimeouts,
+                        clMeshNodeAuthReqSuccess,
+                        clMeshNodeReassocReqFailures,
+                        clMeshNodeReassocReqTimeouts,
+                        clMeshNodeReassocReqSuccess,
+                        clMeshNodeReauthReqFailures,
+                        clMeshNodeReauthReqTimeouts,
+                        clMeshNodeReauthReqSuccess,
+                        clMeshNodeUnknownAssocReq,
+                        clMeshNodeInvalidAssocReq,
+                        clMeshNodeUnknownReauthReq,
+                        clMeshNodeInvalidReauthReq,
+                        clMeshNodeUnknownReassocReq,
+                        clMeshNodeInvalidReassocReq
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represent packets
+        that were transmitted or received by a child mesh node 
+        or a parent mesh node during security negotiations."
+    ::= { ciscoLwappMeshStatsMIBGroups 3 }
+
+ciscoLwappMeshStatsConfigObjsGroup OBJECT-GROUP
+    OBJECTS         {
+                        clMeshNodeQueueOverflowNotifEnabled,
+                        clMeshNodeStatsTimeInterval
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represent configuration
+        objects for statistics of mesh network."
+    ::= { ciscoLwappMeshStatsMIBGroups 4 }
+
+ciscoLwappMeshStatsNotifsGroup NOTIFICATION-GROUP
+   NOTIFICATIONS    { ciscoLwappMeshQueueOverflow }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represent the mesh network
+        statistics related notifications sent by the agent to a
+        network management station."
+    ::= { ciscoLwappMeshStatsMIBGroups 5 }
+
+END
+
+
+

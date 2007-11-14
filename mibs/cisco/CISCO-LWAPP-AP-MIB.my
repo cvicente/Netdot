@@ -1,395 +1,492 @@
 -- *******************************************************************
--- CISCO-LWAPP-AP-MIB.my 
+-- CISCO-LWAPP-AP-MIB.my
 -- January 2006, Devesh Pujari, Prasanna Viswakumar
---
--- Copyright (c) 2005-2006 by Cisco Systems, Inc.
+--   
+-- Copyright (c) 2006, 2007 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *******************************************************************
---
+
 CISCO-LWAPP-AP-MIB DEFINITIONS ::= BEGIN
 
-IMPORTS 
-        MODULE-IDENTITY, 
-        OBJECT-TYPE,
-        Unsigned32
-                FROM SNMPv2-SMI
-        MODULE-COMPLIANCE, 
-        OBJECT-GROUP
-                FROM SNMPv2-CONF
-        MacAddress
-                FROM SNMPv2-TC 
-        CLApIfType
-                FROM CISCO-LWAPP-TC-MIB
-        ciscoMgmt
-                FROM CISCO-SMI;
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Unsigned32
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    MacAddress
+        FROM SNMPv2-TC
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
+    PhysicalIndex
+        FROM ENTITY-MIB
+    CLApIfType
+        FROM CISCO-LWAPP-TC-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
 
---********************************************************************
---*  MODULE IDENTITY
---********************************************************************
+-- ********************************************************************
+-- *  MODULE IDENTITY
+-- ********************************************************************
 
-ciscoLwappApMIB        MODULE-IDENTITY
-        LAST-UPDATED   "200603300000Z"
-        ORGANIZATION   "Cisco Systems Inc."
-        CONTACT-INFO  
-               "        Cisco Systems,
-                        Customer Service
+ciscoLwappApMIB MODULE-IDENTITY
+    LAST-UPDATED    "200701030000Z"
+    ORGANIZATION    "Cisco Systems Inc."
+    CONTACT-INFO
+            "Cisco Systems,
+            Customer Service
 
-                Postal: 170 West Tasman Drive
-                        San Jose, CA  95134
-                        USA
+            Postal: 170 West Tasman Drive
+            San Jose, CA  95134
+            USA
 
-                   Tel: +1 800 553-NETS
+            Tel: +1 800 553-NETS
 
-                 Email: cs-snmp@cisco.com"
+            Email: cs-snmp@cisco.com"
+    DESCRIPTION
+        "This MIB is intended to be implemented on all those
+        devices operating as Central Controllers (CC) that
+        terminate the Light Weight Access Point Protocol
+        tunnel from Light-weight LWAPP Access Points.
 
-        DESCRIPTION             
-                "This MIB is intended to be implemented on all those
-                devices operating as Central Controllers (CC) that
-                terminate the Light Weight Access Point Protocol
-                tunnel from Light-weight LWAPP Access Points.
+        This MIB provides configuration and status information
+        about the 802.11 Access Points that have joined the
+        controller.                 
 
-                This MIB provides configuration and status information
-                about the 802.11 Access Points that have joined the
-                controller.                 
-
-                The relationship between CC and the LWAPP APs
-                can be depicted as follows:
+        The relationship between CC and the LWAPP APs
+        can be depicted as follows:
 
         +......+     +......+     +......+           +......+
         +      +     +      +     +      +           +      +
         +  CC  +     +  CC  +     +  CC  +           +  CC  +
         +      +     +      +     +      +           +      +
         +......+     +......+     +......+           +......+
-          ..            .             .                 .
-          ..            .             .                 .
-         .  .            .             .                 .
+        ..            .             .                 .
+        ..            .             .                 .
+        .  .            .             .                 .
         .    .            .             .                 .
-       .      .            .             .                 .
-      .        .            .             .                 .
-   +......+ +......+     +......+      +......+          +......+
-   +      + +      +     +      +      +      +          +      +
-   +  AP  + +  AP  +     +  AP  +      +  AP  +          +  AP  +
-   +      + +      +     +      +      +      +          +      +
-   +......+ +......+     +......+      +......+          +......+
-              .              .             .                 .
-            .  .              .             .                 .
-           .    .              .             .                 .
-          .      .              .             .                 .
-         .        .              .             .                 .
-      +......+ +......+     +......+      +......+          +......+
-      +      + +      +     +      +      +      +          +      +
-      +  MN  + +  MN  +     +  MN  +      +  MN  +          +  MN  +
-      +      + +      +     +      +      +      +          +      +
-      +......+ +......+     +......+      +......+          +......+
+        .      .            .             .                 .
+        .        .            .             .                 .
+        +......+ +......+     +......+      +......+          +......+
+        +      + +      +     +      +      +      +          +      +
+        +  AP  + +  AP  +     +  AP  +      +  AP  +          +  AP  +
+        +      + +      +     +      +      +      +          +      +
+        +......+ +......+     +......+      +......+          +......+
+        .              .             .                 .
+        .  .              .             .                 .
+        .    .              .             .                 .
+        .      .              .             .                 .
+        .        .              .             .                 .
+        +......+ +......+     +......+      +......+          +......+
+        +      + +      +     +      +      +      +          +      +
+        +  MN  + +  MN  +     +  MN  +      +  MN  +          +  MN  +
+        +      + +      +     +      +      +      +          +      +
+        +......+ +......+     +......+      +......+          +......+
 
 
-                The LWAPP tunnel exists between the controller and
-                the APs.  The MNs communicate with the APs through
-                the protocol defined by the 802.11 standard.
+        The LWAPP tunnel exists between the controller and
+        the APs.  The MNs communicate with the APs through
+        the protocol defined by the 802.11 standard.
 
-                LWAPP APs, upon bootup, discover and join one of the
-                controllers and the controller pushes the configuration,
-                that includes the WLAN parameters, to the LWAPP APs.
-                The APs then encapsulate all the 802.11 frames from
-                wireless clients inside LWAPP frames and forward
-                the LWAPP frames to the controller.
-               
-                                   GLOSSARY
- 
-                Access Point ( AP )
+        LWAPP APs, upon bootup, discover and join one of the
+        controllers and the controller pushes the configuration,
+        that includes the WLAN parameters, to the LWAPP APs.
+        The APs then encapsulate all the 802.11 frames from
+        wireless clients inside LWAPP frames and forward
+        the LWAPP frames to the controller.
 
-                An entity that contains an 802.11 medium access
-                control ( MAC ) and physical layer ( PHY ) interface
-                and provides access to the distribution services via
-                the wireless medium for associated clients.  
+                           GLOSSARY
 
-                LWAPP APs encapsulate all the 802.11 frames in
-                LWAPP frames and sends it to the controller to which
-                it is logically connected.
+        Access Point ( AP )
 
-                Basic Service Set Identifier (BSSID)
+        An entity that contains an 802.11 medium access
+        control ( MAC ) and physical layer ( PHY ) interface
+        and provides access to the distribution services via
+        the wireless medium for associated clients.  
 
-                The identifier for the service set comprising of
-                all the 802.11 stations under the control of
-                one coordinating Access Point.  This identifier
-                happens to be the MAC address of the dot11 radio
-                interface of the Access Point.  The wireless
-                clients that associate with the Access Point
-                get the wired uplink through this particular 
-                dot11 interface. 
+        LWAPP APs encapsulate all the 802.11 frames in
+        LWAPP frames and sends it to the controller to which
+        it is logically connected.
 
-                Central Controller ( CC )
+        Basic Service Set Identifier (BSSID)
 
-                The central entity that terminates the LWAPP protocol
-                tunnel from the LWAPP APs.  Throughout this MIB,
-                this entity also referred to as 'controller'. 
+        The identifier for the service set comprising of
+        all the 802.11 stations under the control of
+        one coordinating Access Point.  This identifier
+        happens to be the MAC address of the dot11 radio
+        interface of the Access Point.  The wireless
+        clients that associate with the Access Point
+        get the wired uplink through this particular 
+        dot11 interface. 
 
-                Light Weight Access Point Protocol ( LWAPP ) 
+        Central Controller ( CC )
 
-                This is a generic protocol that defines the 
-                communication between the Access Points and the
-                Central Controller. 
+        The central entity that terminates the LWAPP protocol
+        tunnel from the LWAPP APs.  Throughout this MIB,
+        this entity also referred to as 'controller'. 
 
-                Mobile Node ( MN )
+        Light Weight Access Point Protocol ( LWAPP ) 
 
-                A roaming 802.11 wireless device in a wireless
-                network associated with an access point. 
+        This is a generic protocol that defines the 
+        communication between the Access Points and the
+        Central Controller. 
 
-                Station Management (SMT)
+        Mobile Node ( MN )
 
-                This term refers to the internal management of the
-                802.11 protocol operations by the AP to work
-                cooperatively with the other APs and 802.11
-                devices in the network.
- 
-                REFERENCE
- 
-                [1] Part 11 Wireless LAN Medium Access Control ( MAC )
-                and Physical Layer ( PHY ) Specifications.
-  
-                [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
-                Weight Access Point Protocol. "
-        
-        REVISION      "200603300000Z"
-        DESCRIPTION
-                "Initial version of this MIB module. "
-        ::= { ciscoMgmt 513 }
+        A roaming 802.11 wireless device in a wireless
+        network associated with an access point. 
 
-ciscoLwappApMIBNotifs  OBJECT IDENTIFIER ::= { ciscoLwappApMIB 0 }
-ciscoLwappApMIBObjects OBJECT IDENTIFIER ::= { ciscoLwappApMIB 1 }
-ciscoLwappApMIBConform OBJECT IDENTIFIER ::= { ciscoLwappApMIB 2 }
+        Station Management (SMT)
 
-ciscoLwappAp   OBJECT IDENTIFIER ::= { ciscoLwappApMIBObjects 1 }
-ciscoLwappApIf OBJECT IDENTIFIER ::= { ciscoLwappApMIBObjects 2 }
+        This term refers to the internal management of the
+        802.11 protocol operations by the AP to work
+        cooperatively with the other APs and 802.11
+        devices in the network.
+
+        REFERENCE
+
+        [1] Part 11 Wireless LAN Medium Access Control ( MAC )
+        and Physical Layer ( PHY ) Specifications.
+
+        [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
+        Weight Access Point Protocol."
+    REVISION        "200701030000Z"
+    DESCRIPTION
+        "The object cLApName has been added."
+    REVISION        "200607180000Z"
+    DESCRIPTION
+        "Added cLApEntPhysicalIndex object."
+    REVISION        "200603300000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 513 }
+
+
+ciscoLwappApMIBNotifs  OBJECT IDENTIFIER
+    ::= { ciscoLwappApMIB 0 }
+
+ciscoLwappApMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoLwappApMIB 1 }
+
+ciscoLwappApMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoLwappApMIB 2 }
+
+ciscoLwappApMIBNotifObjects  OBJECT IDENTIFIER
+    ::= { ciscoLwappApMIB 3 }
+
+ciscoLwappAp  OBJECT IDENTIFIER
+    ::= { ciscoLwappApMIBObjects 1 }
+
+ciscoLwappApIf  OBJECT IDENTIFIER
+    ::= { ciscoLwappApMIBObjects 2 }
 
 -- ********************************************************************
 -- APs that have joined the controller
 -- ********************************************************************
 
 cLApTable OBJECT-TYPE
-        SYNTAX     SEQUENCE OF CLApEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "This table represents the information about the
-                802.11 LWAPP Access Points that have joined the
-                controller.
+    SYNTAX          SEQUENCE OF CLApEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table represents the information about the
+        802.11 LWAPP Access Points that have joined the
+        controller.
 
-                LWAPP APs exchange configuration messages with the
-                controller and get the required configuration for
-                their 802.11 related operations, after they join the
-                controller. "
-        ::= { ciscoLwappAp 1 }
+        LWAPP APs exchange configuration messages with the
+        controller and get the required configuration for
+        their 802.11 related operations, after they join the
+        controller."
+    ::= { ciscoLwappAp 1 }
 
 cLApEntry OBJECT-TYPE
-        SYNTAX     CLApEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "Each entry in this table provides information about
-                one 802.11 LWAPP Access Point that has joined the
-                controller.
+    SYNTAX          CLApEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry in this table provides information about
+        one 802.11 LWAPP Access Point that has joined the
+        controller.
 
-                Entries are removed when the APs lose their
-                association with the controller due to loss
-                of communication. "
-        INDEX   { cLApSysMacAddress }
-        ::= { cLApTable 1 }
+        Entries are removed when the APs lose their
+        association with the controller due to loss
+        of communication."
+    INDEX           { cLApSysMacAddress } 
+    ::= { cLApTable 1 }
 
-CLApEntry ::= 
-        SEQUENCE {
-                cLApSysMacAddress         MacAddress,  
-                cLApIfMacAddress          MacAddress,
-                cLApMaxNumberOfDot11Slots Unsigned32
-        }
+CLApEntry ::= SEQUENCE {
+        cLApSysMacAddress         MacAddress,
+        cLApIfMacAddress          MacAddress,
+        cLApMaxNumberOfDot11Slots Unsigned32,
+        cLApEntPhysicalIndex      PhysicalIndex,
+        cLApName                  SnmpAdminString
+}
 
 cLApSysMacAddress OBJECT-TYPE
-        SYNTAX     MacAddress
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "This object represents the radio MAC address 
-                common to the dot11 interfaces of the AP
-                and uniquely identifies an entry in this table. "
-        ::= { cLApEntry 1 }
+    SYNTAX          MacAddress
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object represents the radio MAC address
+        common to the dot11 interfaces of the AP
+        and uniquely identifies an entry in this table." 
+    ::= { cLApEntry 1 }
 
 cLApIfMacAddress OBJECT-TYPE
-        SYNTAX     MacAddress
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object represents the Ethernet MAC address of
-                the AP. " 
-        ::= { cLApEntry 2 }
+    SYNTAX          MacAddress
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the Ethernet MAC address of
+        the AP." 
+    ::= { cLApEntry 2 }
 
 cLApMaxNumberOfDot11Slots OBJECT-TYPE
-        SYNTAX     Unsigned32
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object represents the maximum number of
-                802.11 radio interface slots in this AP. "
-        ::= { cLApEntry 3 }
+    SYNTAX          Unsigned32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the maximum number of
+        802.11 radio interface slots in this AP." 
+    ::= { cLApEntry 3 }
 
---********************************************************************
+cLApEntPhysicalIndex OBJECT-TYPE
+    SYNTAX          PhysicalIndex
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object provides the index value in the
+        entPhysicalEntry corresponding to this AP." 
+    ::= { cLApEntry 4 }
+
+cLApName OBJECT-TYPE
+    SYNTAX          SnmpAdminString (SIZE  (0..32))
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object represents the administrative name
+        assigned to the AP by the user. If an AP is not configured, 
+        its factory default name will be ap:<last three byte 
+        of MACAddress> eg. ap:af:12:be." 
+    ::= { cLApEntry 5 }
+ 
+
+-- ********************************************************************
 -- *  AP Dot11 Interface Information
---********************************************************************
+-- ********************************************************************
+
 cLApDot11IfTable OBJECT-TYPE
-        SYNTAX SEQUENCE OF CLApDot11IfEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "This table represents the information about the
-                basic functional parameters corresponding to
-                the dot11 interfaces of the APs that have joined
-                the controller. "
-        ::= { ciscoLwappApIf 1 }
+    SYNTAX          SEQUENCE OF CLApDot11IfEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table represents the information about the
+        basic functional parameters corresponding to
+        the dot11 interfaces of the APs that have joined
+        the controller."
+    ::= { ciscoLwappApIf 1 }
 
 cLApDot11IfEntry OBJECT-TYPE
-        SYNTAX     CLApDot11IfEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "An entry in this table represents the 802.11
-                functional parameters of the dot11 interface of
-                an AP that has joined the controller.
+    SYNTAX          CLApDot11IfEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An entry in this table represents the 802.11
+        functional parameters of the dot11 interface of
+        an AP that has joined the controller.
 
-                Entries are added when the APs associate to this
-                controller and deleted when they lose their
-                association. " 
-        INDEX { cLApSysMacAddress, cLApDot11IfSlotId }
-        ::= { cLApDot11IfTable 1 }
+        Entries are added when the APs associate to this
+        controller and deleted when they lose their
+        association."
+    INDEX           {
+                        cLApSysMacAddress,
+                        cLApDot11IfSlotId
+                    } 
+    ::= { cLApDot11IfTable 1 }
 
-CLApDot11IfEntry ::=
-        SEQUENCE {
-                cLApDot11IfSlotId Unsigned32, 
-                cLApDot11IfType   CLApIfType 
-        }
+CLApDot11IfEntry ::= SEQUENCE {
+        cLApDot11IfSlotId Unsigned32,
+        cLApDot11IfType   CLApIfType
+}
 
 cLApDot11IfSlotId OBJECT-TYPE
-        SYNTAX     Unsigned32
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "This object represents the slot ID of a dot11
-                interface on an AP. 
+    SYNTAX          Unsigned32
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object represents the slot ID of a dot11
+        interface on an AP. 
 
-                The slot ID for a particular dot11 interface as
-                represented by this object ranges from 0 to 
-                cLApMaxNumberOfDot11Slots - 1. "
-        ::= { cLApDot11IfEntry 1 }
+        The slot ID for a particular dot11 interface as
+        represented by this object ranges from 0 to 
+        cLApMaxNumberOfDot11Slots - 1." 
+    ::= { cLApDot11IfEntry 1 }
 
 cLApDot11IfType OBJECT-TYPE
-        SYNTAX     CLApIfType     
-        MAX-ACCESS read-only
-        STATUS     current 
-        DESCRIPTION
-                "This object represents the type of this dot11
-                interface. "
-        ::= { cLApDot11IfEntry 2 }
+    SYNTAX          CLApIfType
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the type of this dot11
+        interface." 
+    ::= { cLApDot11IfEntry 2 }
+ 
 
---********************************************************************
+-- ********************************************************************
 -- *  AP Station Mgmt(SMT) Parameters
---********************************************************************
+-- ********************************************************************
 
 cLApIfSmtParamTable OBJECT-TYPE
-        SYNTAX SEQUENCE OF CLApIfSmtParamEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "This table represents the station management
-                information in the APs that have joined the
-                controller.  Information populated through the
-                entries of this table is used by the AP to
-                perform the expected 802.11 operations on
-                the respective dot11 interfaces to coordinate with
-                other 802.11 devices in the network.
+    SYNTAX          SEQUENCE OF CLApIfSmtParamEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table represents the station management
+        information in the APs that have joined the
+        controller.  Information populated through the
+        entries of this table is used by the AP to
+        perform the expected 802.11 operations on
+        the respective dot11 interfaces to coordinate with
+        other 802.11 devices in the network.
 
-                Since this table has the indices defined in the
-                tables cLApTable and cLApDot11IfTable, an entry in
-                this table is automatically removed when the
-                respective entry is removed in either of those
-                tables. "  
-        ::= { ciscoLwappAp 2 }
+        Since this table has the indices defined in the
+        tables cLApTable and cLApDot11IfTable, an entry in
+        this table is automatically removed when the
+        respective entry is removed in either of those
+        tables."
+    ::= { ciscoLwappAp 2 }
 
 cLApIfSmtParamEntry OBJECT-TYPE
-        SYNTAX     CLApIfSmtParamEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "An entry in this table represents the information
-                pertaining to one particular dot11 interface of
-                this AP used to perform the 802.11 protocol
-                operations on the respective dot11 interface.
- 
-                Rows are added or deleted to this table when
-                APs join or leave the controller respectively. "
-        INDEX { cLApSysMacAddress, cLApDot11IfSlotId }
+    SYNTAX          CLApIfSmtParamEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An entry in this table represents the information
+        pertaining to one particular dot11 interface of
+        this AP used to perform the 802.11 protocol
+        operations on the respective dot11 interface.
+
+        Rows are added or deleted to this table when
+        APs join or leave the controller respectively."
+    INDEX           {
+                        cLApSysMacAddress,
+                        cLApDot11IfSlotId
+                    } 
     ::= { cLApIfSmtParamTable 1 }
 
-CLApIfSmtParamEntry ::=
-        SEQUENCE {
-                cLApIfSmtDot11Bssid MacAddress
-        }
+CLApIfSmtParamEntry ::= SEQUENCE {
+        cLApIfSmtDot11Bssid MacAddress
+}
 
 cLApIfSmtDot11Bssid OBJECT-TYPE
-        SYNTAX     MacAddress
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object defines the base BSSID of this AP, which
-                is the MAC address of the radio interface of this
-                AP. "
+    SYNTAX          MacAddress
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object defines the base BSSID of this AP, which
+        is the MAC address of the radio interface of this
+        AP." 
     ::= { cLApIfSmtParamEntry 1 }
-                
---********************************************************************
---*    Compliance statements  
---********************************************************************
+ 
 
-ciscoLwappApMIBCompliances OBJECT IDENTIFIER
-        ::= { ciscoLwappApMIBConform 1 }
+-- ********************************************************************
+-- *    Compliance statements
+-- ********************************************************************
+ciscoLwappApMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoLwappApMIBConform 1 }
 
-ciscoLwappApMIBGroups OBJECT IDENTIFIER
-        ::= { ciscoLwappApMIBConform 2 }
+ciscoLwappApMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoLwappApMIBConform 2 }
 
+
+-- STATUS deprecated by ciscoLwappApMIBComplianceRev1
 ciscoLwappApMIBCompliance MODULE-COMPLIANCE
-        STATUS     current 
-        DESCRIPTION
-                "The compliance statement for the SNMP entities that
-                implement the ciscoLwappApMIB module. "
-        MODULE MANDATORY-GROUPS {                
-                ciscoLwappApGroup,
-                ciscoLwappApIfGroup
-        }
-        ::= { ciscoLwappApMIBCompliances 1 }
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for the SNMP entities that
+        implement the ciscoLwappApMIB module."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoLwappApGroup,
+                        ciscoLwappApIfGroup
+                    }
+    ::= { ciscoLwappApMIBCompliances 1 }
 
---********************************************************************
---*    Units of conformance  
---********************************************************************
+-- STATUS deprecated by ciscoLwappApMIBComplianceRev2
+ciscoLwappApMIBComplianceRev1 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for the SNMP entities that
+        implement the ciscoLwappApMIB module."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoLwappApGroup,
+                        ciscoLwappApIfGroup,
+                        ciscoLwappApGroupSup1
+                    }
+    ::= { ciscoLwappApMIBCompliances 2 }
 
+ciscoLwappApMIBComplianceRev2 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for the SNMP entities that
+        implement the ciscoLwappApMIB module."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoLwappApGroup,
+                        ciscoLwappApIfGroup,
+                        ciscoLwappApGroupSup1,
+                        ciscoLwappApGroupSup2
+                    }
+    ::= { ciscoLwappApMIBCompliances 3 }
+
+-- ********************************************************************
+-- *    Units of conformance
+-- ********************************************************************
 ciscoLwappApGroup OBJECT-GROUP
-        OBJECTS {
-                cLApIfMacAddress,
-                cLApMaxNumberOfDot11Slots,
-                cLApIfSmtDot11Bssid
-        }                
-        STATUS  current
-        DESCRIPTION
-                "This collection of objects represents the information
-                about the general attributes and functional 
-                parameters of those APs that have joined the
-                controller. "
-        ::= { ciscoLwappApMIBGroups 1 }
+    OBJECTS         {
+                        cLApIfMacAddress,
+                        cLApMaxNumberOfDot11Slots,
+                        cLApIfSmtDot11Bssid
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represents the information
+        about the general attributes and functional 
+        parameters of those APs that have joined the
+        controller."
+    ::= { ciscoLwappApMIBGroups 1 }
 
 ciscoLwappApIfGroup OBJECT-GROUP
-        OBJECTS {
-                cLApDot11IfType 
-        }                
-        STATUS  current
-        DESCRIPTION
-                "This collection of objects represents the information
-                about the dot11 interfaces of those APs that have 
-                joined the controller. "
-        ::= { ciscoLwappApMIBGroups 2 }
+    OBJECTS         { cLApDot11IfType }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represents the information
+        about the dot11 interfaces of those APs that have 
+        joined the controller."
+    ::= { ciscoLwappApMIBGroups 2 }
+
+ciscoLwappApGroupSup1 OBJECT-GROUP
+    OBJECTS         { cLApEntPhysicalIndex }
+    STATUS          current
+    DESCRIPTION
+        "This supplemental collection of objects represents the
+        information about the general attributes and functional 
+        parameters of those APs that have joined the
+        controller."
+    ::= { ciscoLwappApMIBGroups 3 }
+
+ciscoLwappApGroupSup2 OBJECT-GROUP
+    OBJECTS         { cLApName }
+    STATUS          current
+    DESCRIPTION
+        "This supplemental collection of objects represents the
+        names of the APs that have joined the controller."
+    ::= { ciscoLwappApMIBGroups 4 }
 
 END
+
+
+

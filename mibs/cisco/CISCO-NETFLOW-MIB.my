@@ -3,7 +3,7 @@
 --
 -- January 2004, Nitish Kundu and Paul Aitken.
 --
--- Copyright (c) 2004, 2005 by Cisco Systems, Inc.
+-- Copyright (c) 2004, 2005, 2006 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *********************************************************************
 --
@@ -43,7 +43,7 @@ IMPORTS
                 FROM Q-BRIDGE-MIB;
 
 ciscoNetflowMIB MODULE-IDENTITY
-        LAST-UPDATED    "200503270000Z"
+        LAST-UPDATED    "200604270000Z"
         ORGANIZATION    "Cisco Systems, Inc."
         CONTACT-INFO
                 "        Cisco Systems
@@ -147,11 +147,25 @@ ciscoNetflowMIB MODULE-IDENTITY
                  This feature provides a mechanism to identify a flow
                  as either an ingress or an egress flow."
 
+        REVISION "200604270000Z"
+        DESCRIPTION
+                 "Added the following Group:
+                  cnfTopFlowsReportGenerateGroup"
+
+        REVISION "200604200000Z"
+        DESCRIPTION
+                 "Added the cache type expBgpPrefix"       
+            
+        REVISION "200508300000Z"
+        DESCRIPTION
+                 "Added the following Groups:
+                  cnfMcastNetflowControlGroup
+                  cnfBridgedFlowStatsCtrlGroup"
 
         REVISION "200503270000Z"
         DESCRIPTION
                  "Removed
-		    OBJECT IDENTIFIER ::= { ciscoNetflowMIBObjects 3 }."
+                    OBJECT IDENTIFIER ::= { ciscoNetflowMIBObjects 3 }."
 
         REVISION "200405180000Z"
         DESCRIPTION
@@ -242,7 +256,8 @@ NfCacheTypes ::= TEXTUAL-CONVENTION
             destinationPrefixTos(12),
             prefixTos(13),
             prefixPort(14),
-            bgpNexthopTos(15)
+            bgpNexthopTos(15),
+            expBgpPrefix(23)
     }
 
 NfProtocolTypes ::= TEXTUAL-CONVENTION
@@ -312,6 +327,7 @@ NfFlowDirectionTypes ::= TEXTUAL-CONVENTION
 --          cnfCIInterfaceEntry
 --              ifIndex
 --              cnfCINetflowEnable
+--              cnfCIMcastNetflowEnable
 --      cnfCICacheTable
 --          cnfCICacheEntry
 --              cnfCICacheType
@@ -323,6 +339,12 @@ NfFlowDirectionTypes ::= TEXTUAL-CONVENTION
 --              cnfCIInactiveTimeout
 --              cnfCIMinSourceMask
 --              cnfCIMinDestinationMask
+--      cnfCIBridgedFlowStatsCtrlTable
+--          cnfCIBridgedFlowStatsCtrlEntry
+--              cnfCIBridgedFlowVlan
+--              cnfCIBridgedFlowStatsCrtEnable
+--              cnfCIBridgedFlowStatsExpEnable
+--      cnfCIMcastNetflowRPFFailedEnable
 
 
 cnfCIInterfaceTable OBJECT-TYPE
@@ -343,7 +365,8 @@ cnfCIInterfaceEntry OBJECT-TYPE
     ::= { cnfCIInterfaceTable 1}
 
 CnfCIInterfaceEntry ::= SEQUENCE {
-        cnfCINetflowEnable              NfInterfaceDirectionTypes
+        cnfCINetflowEnable              NfInterfaceDirectionTypes,
+        cnfCIMcastNetflowEnable         NfInterfaceDirectionTypes
      }
 
 cnfCINetflowEnable OBJECT-TYPE
@@ -354,6 +377,16 @@ cnfCINetflowEnable OBJECT-TYPE
         "Indicates whether the netflow feature is enabled for this
          interface, and if so, in which directions."
     ::= { cnfCIInterfaceEntry 1 }
+
+cnfCIMcastNetflowEnable OBJECT-TYPE
+    SYNTAX      NfInterfaceDirectionTypes
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Indicates whether the multicast netflow accounting feature
+         is enabled for this interface, and if so, in which 
+         directions."
+    ::= { cnfCIInterfaceEntry 2 }
 
 cnfCICacheTable OBJECT-TYPE
     SYNTAX     SEQUENCE OF CnfCICacheEntry
@@ -475,6 +508,71 @@ cnfCIMinDestinationMask OBJECT-TYPE
          applicable to this cache type."
     ::= { cnfCICacheEntry 9 }
 
+cnfCIBridgedFlowStatsCtrlTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CnfCIBridgedFlowStatsCtrlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table controls the reporting of bridged flow statistics
+         per vlan."
+    ::= { cnfCacheInfo 3 }
+    
+cnfCIBridgedFlowStatsCtrlEntry OBJECT-TYPE
+    SYNTAX     CnfCIBridgedFlowStatsCtrlEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION 
+        "A conceptual row in the cnfCIBridgedFlowStatsCtrlTable,
+         containing the configuration of bridged flow statistics
+         per vlan. When a vlan is created in a device supporting
+         this table, a corresponding entry will be added to this 
+         table."
+    INDEX { cnfCIBridgedFlowVlan }
+    ::= { cnfCIBridgedFlowStatsCtrlTable 1}
+
+CnfCIBridgedFlowStatsCtrlEntry ::= SEQUENCE {
+        cnfCIBridgedFlowVlan            VlanIndex, 
+        cnfCIBridgedFlowStatsCrtEnable  TruthValue,
+        cnfCIBridgedFlowStatsExpEnable  TruthValue
+     }
+
+cnfCIBridgedFlowVlan    OBJECT-TYPE
+    SYNTAX      VlanIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Indicates the Vlan number on which the reporting of
+         bridged flow statistics is configured."
+    ::= { cnfCIBridgedFlowStatsCtrlEntry 1 }
+
+cnfCIBridgedFlowStatsCrtEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Indicates whether the bridged flow creation is enabled
+         for this vlan."
+    ::= { cnfCIBridgedFlowStatsCtrlEntry 2 }
+
+cnfCIBridgedFlowStatsExpEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Indicates whether the export of bridged flow statistics
+         is enabled for this vlan."
+    ::= { cnfCIBridgedFlowStatsCtrlEntry 3 }
+
+
+cnfCIMcastNetflowRPFFailedEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Indicates whether netflow accounting for multicast data
+         that fails the reverse path forwarding (RPF) check is
+         enabled."
+    ::= { cnfCacheInfo 4 }
 
 -- Object Group: cnfExportInfo
 --
@@ -1634,18 +1732,19 @@ cnfTopFlowsMatchDirection OBJECT-TYPE
          A value of 0 disables this match criteria."
     ::= { cnfTopFlows 34 }
 
-
 cnfTopFlowsGenerate OBJECT-TYPE
     SYNTAX      TruthValue
     MAX-ACCESS  read-write
     STATUS      current
     DESCRIPTION
-        "A control variable used to generate the Top Flows.
-         When this object is set to 'true', the current 
-         entries in cnfTopFlowsTable will be removed, 
-         Top Flows will be recalculated and new entries
-         will be populated in cnfTopFlowsTable. Setting
-         this object to 'false' has no effect.
+        "A control variable used to generate the Top Flows. 
+
+         Setting this object to 'true' will generate the Top Flows 
+         and populate the Top Flows report in cnfTopFlowsTable  
+         unless cnfTopFlowsNextGenActionEffect is supported and the
+         value of cnfTopFlowsNextGenActionEffect is 'noOp'.
+
+         Setting this object to 'false' has no effect.
 
          When read, this object always returns 'false'."
     ::= { cnfTopFlows 35 }
@@ -1655,9 +1754,84 @@ cnfTopFlowsReportAvailable OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "Indicates whether the Top Flows have been successfully 
-         generated and entries in cnfTopFlowsTable are populated."
-    ::= { cnfTopFlows 36 }
+        "Indicates whether the Top Flows report has been 
+         successfully generated and is available in 
+         cnfTopFlowsTable. 
+
+         When the value of this object is 'true', the 
+         top flows report is available in cnfTopFlowsTable.
+
+         When the value of this object is 'false', there is no
+         top flows report available in cnfTopFlowsTable. 
+         For Example:
+             1. When top flows report has not been generated or 
+                is currently in the generation process.
+             2. When the top flows has been purged due to
+                the modification of a matching criteria or the
+                expiration of top flow cache timeout."
+   ::= { cnfTopFlows 36 }
+
+cnfTopFlowsNextGenActionEffect OBJECT-TYPE
+    SYNTAX      INTEGER {
+                         noOp(1),
+                         generate(2)
+                         } 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the action effect on the system when the 
+         cnfTopFlowsGenerate is set to 'true'.  
+
+         'noOp' -- indicate that the system will make no operation 
+                   when the cnfTopFlowsGenerate is set to 'true'.
+                 Examples when this object could return 'noOp' are:
+                 1. the system is still in the top flow generation 
+                    process. 
+                 2. the system will not generate the top flows 
+                    report when the value of 
+                    cnfTopFlowsReportAvailable is 'true'.
+
+         'generate' -- indicates that the system will start the top 
+                       flows generation process if the 
+                       cntTopFlowsGenerate is set to 'true'.
+                 Examples when this object could return 'generate' 
+                 are:
+                 1. When the value of cnfTopFlowsReportAvailable is 
+                    'false'.  
+                 2. The system will always generate the top flow
+                    report when cnfTopFlowsGenerate is set to 
+                    'true'.
+         "
+    ::= { cnfTopFlows 37 }
+
+cnfTopFlowsReportSource OBJECT-TYPE
+    SYNTAX      INTEGER{
+                other(1),
+                hardware(2),
+                software(3),
+                both(4)
+    }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the source of Top Flows report generation for 
+         the entries populated in cnfTopFlowsTable.
+  
+         'other'    - The Top Flows are not available or the source 
+                      of the Top Flows cannot be identified.
+
+         'hardware' - The Top Flows report has been generated based 
+                      on the flows detected by the hardware platform
+                      with netflow capabilities.
+
+         'software' - The Top Flows report has been generated based
+                      on the flows detected by the software.
+
+         'both'     - The Top Flows report is an integrated list of 
+                      Top Flows detected by both the hardware
+                      platform and the software."
+    ::= { cnfTopFlows 38 }
+
 
 -- No Notification defined
 
@@ -1792,7 +1966,7 @@ cnfMIBCompliance MODULE-COMPLIANCE
         ::= { cnfMIBCompliances 1 }
 
 cnfMIBCompliance1 MODULE-COMPLIANCE
-        STATUS current
+        STATUS deprecated
         DESCRIPTION
                 "The compliance statement for the CISCO-NETFLOW-MIB.
 
@@ -1932,6 +2106,314 @@ cnfMIBCompliance1 MODULE-COMPLIANCE
             "This group is optional."
 
         ::= { cnfMIBCompliances 2 }
+
+cnfMIBCompliance2 MODULE-COMPLIANCE
+        STATUS deprecated
+        DESCRIPTION
+                "The compliance statement for the CISCO-NETFLOW-MIB.
+
+          OBJECT cnfCollectorAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfCollectorAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsSrcAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsSrcAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsDstAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsDstAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsNhAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsNhAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchSrcAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchSrcAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchDstAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchDstAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchNhAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchNhAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses."
+
+        MODULE  -- this module
+        MANDATORY-GROUPS { cnfCacheInfoGroup,
+                           cnfProtocolStatGroup
+                         }
+
+        GROUP   cnfExportInfoGroup
+        DESCRIPTION
+            "This group is mandatory where Export can be enabled
+             and specific netflow export configuration cab be 
+             supported."
+
+        GROUP   cnfExportStatisticsGroup
+        DESCRIPTION
+            "This group is mandatory where Export can be enabled
+             and statistical information is available."
+
+        GROUP   cnfExportTemplateGroup
+        DESCRIPTION
+            "This group is mandatory for version 9 Export."
+
+        OBJECT  cnfCICacheEnable
+        MIN-ACCESS read-only
+        DESCRIPTION
+            "Write access is not supported."
+
+        OBJECT  cnfCINetflowEnable
+        MIN-ACCESS read-only
+        DESCRIPTION
+            "Write access is not supported."
+
+        GROUP   cnfTopFlowsDataGroup1
+        DESCRIPTION
+            "This group is mandatory where Top Flows feature
+             is supported."
+
+        GROUP   cnfTopFlowsDataGroup2
+        DESCRIPTION
+            "This group is optional."
+
+        GROUP   cnfTopFlowsVlanGroup
+        DESCRIPTION
+            "This group is optional."
+
+        GROUP   cnfTopFlowsControlGroup1
+        DESCRIPTION
+            "This group is optional."
+
+        GROUP cnfTopFlowsControlGroup2
+        DESCRIPTION
+            "This group is optional."
+
+        GROUP cnfMcastNetflowControlGroup
+        DESCRIPTION
+            "This group is mandatory where Multicast Netflow feature
+             is supported."
+
+        GROUP cnfBridgedFlowStatsCtrlGroup
+        DESCRIPTION
+            "This group is mandatory where Bridged Flow Statistics
+             Control feature is supported."
+
+        ::= { cnfMIBCompliances 3 }
+
+cnfMIBCompliance3 MODULE-COMPLIANCE
+        STATUS current
+        DESCRIPTION
+                "The compliance statement for the CISCO-NETFLOW-MIB.
+
+          OBJECT cnfCollectorAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfCollectorAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsSrcAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsSrcAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsDstAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsDstAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsNhAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsNhAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchSrcAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchSrcAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchDstAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchDstAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchNhAddressType
+          SYNTAX InetAddressType { ipv4(1) }
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses.
+
+          OBJECT cnfTopFlowsMatchNhAddress
+          SYNTAX InetAddress (SIZE(4))
+          DESCRIPTION
+               An implementation is only required to support IPv4
+               addresses."
+
+        MODULE  -- this module
+        MANDATORY-GROUPS { cnfCacheInfoGroup,
+                           cnfProtocolStatGroup
+                         }
+
+        GROUP   cnfExportInfoGroup
+        DESCRIPTION
+            "This group is mandatory where Export can be enabled
+             and specific netflow export configuration cab be 
+             supported."
+
+        GROUP   cnfExportStatisticsGroup
+        DESCRIPTION
+            "This group is mandatory where Export can be enabled
+             and statistical information is available."
+
+        GROUP   cnfExportTemplateGroup
+        DESCRIPTION
+            "This group is mandatory for version 9 Export."
+
+        OBJECT  cnfCICacheEnable
+        MIN-ACCESS read-only
+        DESCRIPTION
+            "Write access is not supported."
+
+        OBJECT  cnfCINetflowEnable
+        MIN-ACCESS read-only
+        DESCRIPTION
+            "Write access is not supported."
+
+        GROUP   cnfTopFlowsDataGroup1
+        DESCRIPTION
+            "This group is mandatory where Top Flows feature
+             is supported."
+
+        GROUP   cnfTopFlowsDataGroup2
+        DESCRIPTION
+            "This group is optional."
+
+        GROUP   cnfTopFlowsVlanGroup
+        DESCRIPTION
+            "This group is optional."
+
+        GROUP   cnfTopFlowsControlGroup1
+        DESCRIPTION
+            "This group is optional."
+
+        GROUP cnfTopFlowsControlGroup2
+        DESCRIPTION
+            "This group is optional."
+
+        GROUP cnfMcastNetflowControlGroup
+        DESCRIPTION
+            "This group is mandatory where Multicast Netflow feature
+             is supported."
+
+        GROUP cnfBridgedFlowStatsCtrlGroup
+        DESCRIPTION
+            "This group is mandatory where Bridged Flow Statistics
+             Control feature is supported."
+
+        GROUP cnfTopFlowsReportGenerateGroup
+        DESCRIPTION
+            "This group is optional."
+
+        ::= { cnfMIBCompliances 4 }
 
 
 -- Units of Conformance
@@ -2187,5 +2669,38 @@ cnfTopFlowsControlGroup2 OBJECT-GROUP
             "A collection of objects providing the explicit control
              of the way top flows are generated."
         ::= { cnfMIBGroups 12 }
+
+cnfMcastNetflowControlGroup OBJECT-GROUP
+        OBJECTS {
+            cnfCIMcastNetflowEnable,
+            cnfCIMcastNetflowRPFFailedEnable
+        }
+        STATUS current
+        DESCRIPTION
+            "A collection of objects providing the control
+             of multicast netflow."
+        ::= { cnfMIBGroups 13 }
+
+cnfBridgedFlowStatsCtrlGroup OBJECT-GROUP
+        OBJECTS {
+            cnfCIBridgedFlowStatsCrtEnable,
+            cnfCIBridgedFlowStatsExpEnable
+        }
+        STATUS current
+        DESCRIPTION
+            "A collection of objects providing the control
+             of bridged flow statistics per vlan."
+        ::= { cnfMIBGroups 14 }
+
+cnfTopFlowsReportGenerateGroup OBJECT-GROUP
+        OBJECTS {
+            cnfTopFlowsNextGenActionEffect,
+            cnfTopFlowsReportSource
+        }
+        STATUS current
+        DESCRIPTION
+            "A collection of objects providing information about
+             the Top Flows Report generation." 
+        ::= { cnfMIBGroups 15 }
 
 END

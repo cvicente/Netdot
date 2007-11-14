@@ -5,7 +5,10 @@
 -- *	  Extreme Networks
 -- *      http://www.extremenetworks.com
 -- *
+-- * extracted from $Extreme_Id: extreme.mib,v 1.24.6.35 2006/01/09 15:15:18 build-sc Exp $
+-- *
 -- */
+
 
 
 -- ===============================================================================
@@ -442,12 +445,11 @@ EXTREME-QOS-MIB DEFINITIONS ::= BEGIN
 		STATUS	current
 		DESCRIPTION
 			"An individual ingress QoS profile Entry."
-		INDEX {ifIndex,
+		INDEX {ifIndex ,
                        extremeIQosProfileIndex}
 		::= {extremeIQosProfileTable 1}
 
 	ExtremeIQosProfileEntry ::= SEQUENCE {
---                extremeIQosProfilePort           INTEGER,
                 extremeIQosProfileIndex          INTEGER,
                 extremeIQosProfileName           DisplayString,
                 extremeIQosProfileMinBwType      INTEGER,
@@ -457,15 +459,6 @@ EXTREME-QOS-MIB DEFINITIONS ::= BEGIN
                 extremeIQosProfileRED            INTEGER,
                 extremeIQosProfileMaxBuf         INTEGER
         }
-
---        extremeIQosProfilePort OBJECT-TYPE
---                SYNTAX  INTEGER (1..65535)
---                MAX-ACCESS	read-only
---                STATUS	current
---                DESCRIPTION
---                        "An index that uniquely identifies a specific port
---                        for an ingress qos table."
---                ::= { extremeIQosProfileEntry 1}
 
         extremeIQosProfileIndex OBJECT-TYPE
                 SYNTAX  INTEGER (1..65535)
@@ -603,4 +596,3 @@ EXTREME-QOS-MIB DEFINITIONS ::= BEGIN
 
 
 END
-

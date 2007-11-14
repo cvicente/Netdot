@@ -1,11 +1,11 @@
 HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
 
     IMPORTS
-        OBJECT-TYPE, MODULE-IDENTITY
+        OBJECT-TYPE, MODULE-IDENTITY, NOTIFICATION-TYPE, Integer32
             FROM SNMPv2-SMI
-        TruthValue
+        TruthValue, TimeStamp, TimeInterval
             FROM SNMPv2-TC
-        MODULE-COMPLIANCE, OBJECT-GROUP
+        MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
             FROM SNMPv2-CONF
         dot1dBasePortEntry
             FROM BRIDGE-MIB
@@ -16,7 +16,11 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
         ConfigStatus
             FROM HP-ICF-TC
         hpSwitchStpPortEntry
-            FROM CONFIG-MIB;
+            FROM CONFIG-MIB
+        ifIndex
+            FROM IF-MIB
+        portCopyEntry
+            FROM SMON-MIB;
 
     BridgeId ::= TEXTUAL-CONVENTION
         STATUS       current
@@ -26,7 +30,7 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
 
 
     hpicfBridge MODULE-IDENTITY
-        LAST-UPDATED "200412141933Z"  -- December 14, 2004
+        LAST-UPDATED "200609260000Z"  -- September 26, 2006
         ORGANIZATION "Hewlett-Packard Company
                       Network Infrastructure Solutions"
         CONTACT-INFO "Hewlett-Packard Company
@@ -34,16 +38,24 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
                       Roseville, CA 95747"
         DESCRIPTION  "This MIB module contains HP proprietary
                       extensions to the standard Bridge MIBs."
-        
-        REVISION     "200412141933Z"  -- December  14, 2004
-        DESCRIPTION  "Added 'hpicfBridgeRstpPortBpduFiltering' MIB object."
- 
+
+        REVISION     "200609260000Z"  -- September 26, 2006
+        DESCRIPTION  "Added 'hpicfBridgeRstpAutoEdgePort' MIB object."
+	
+        REVISION     "200609300000Z"  -- September 30, 2006
+        DESCRIPTION  "Added 'hpicfBridgeMirrorSessionID' MIB object."
+       
+        REVISION     "200608131738Z"  -- Aug 08, 2006
+        DESCRIPTION  "Added hpicfLoopProtect MIB and 
+                      updated conformance statements."  
+
         REVISION     "200302200000Z"  -- February 20, 2003
         DESCRIPTION
                      "Added 'mstpOperation' option to the
                      'hpicfBridgeRstpForceVersion' MIB object.
                       Added 'ieee8021s' option to the 
                       'hpicfBridgeRstpProtocolVersion' MIB object."
+
 
         REVISION     "200205231738Z"  -- May 23, 2002
         DESCRIPTION  "Added conformance information."
@@ -56,10 +68,10 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
         DESCRIPTION  "Initial revision."
         ::= { hpSwitch 12 }
 
-    hpicfBridgeObjects OBJECT IDENTIFIER ::= { hpicfBridge 1 }
-
-    hpicfBridgeBase OBJECT IDENTIFIER ::= { hpicfBridgeObjects 1 }
-
+    hpicfBridgeObjects 
+        OBJECT IDENTIFIER ::= { hpicfBridge 1 }
+    hpicfBridgeBase 
+        OBJECT IDENTIFIER ::= { hpicfBridgeObjects 1 }
 -- **********************************************************************
 -- VLAN Objects
 -- **********************************************************************
@@ -222,10 +234,11 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
             hpicfBridgeRstpAdminEdgePort                INTEGER,
             hpicfBridgeRstpOperEdgePort                 INTEGER,
             hpicfBridgeRstpAdminPointToPointMac         INTEGER,
-            hpicfBridgeRstpOperPointToPointMac          INTEGER,
+            hpicfBridgeRstpOperPointToPointMac          TruthValue,
             hpicfBridgeRstpPortPathCost                 INTEGER,
-            hpicfBridgeRstpForceBpduMigrationCheck      INTEGER,
-            hpicfBridgeRstpPortBpduFiltering            INTEGER
+            hpicfBridgeRstpForceBpduMigrationCheck      TruthValue,
+            hpicfBridgeRstpAutoEdgePort	                TruthValue,
+            hpicfBridgeRstpPortBpduFiltering            TruthValue
         }
 
     hpicfBridgeRstpPortIndex OBJECT-TYPE
@@ -261,7 +274,7 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
         STATUS      current
         DESCRIPTION "Reflects the value of the operEdgePort parameter, as 
                      defined by the operation of the Bridge Detection state
-                     machine (Clause 18 of P802.1t). The value of this paramete
+                     machine (Clause 18 of P802.1t). The value of this parameter
                      is used by a Designated Port in order to determine how 
                      rapidly it may transition to the Forwarding Port State 
                      (see 17.23, Port Role Transitions state machine). 
@@ -298,10 +311,7 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
         ::= { hpicfBridgeRstpPortEntry 4 }
 
     hpicfBridgeRstpOperPointToPointMac OBJECT-TYPE
-        SYNTAX      INTEGER {
-                        true(1),
-                        false(2)
-                    }
+        SYNTAX      TruthValue
         MAX-ACCESS  read-only
         STATUS      current
         DESCRIPTION "
@@ -315,18 +325,6 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
              "IEEE P802.1w; IEEE P802.1t"
         ::= { hpicfBridgeRstpPortEntry 5 }
 
-    hpicfBridgeRstpForceBpduMigrationCheck OBJECT-TYPE
-        SYNTAX      INTEGER {
-                        enable(1),
-                        disable(2)
-                    }
-        MAX-ACCESS  read-write
-        STATUS      current
-        DESCRIPTION "Indicate that port is forced to transmit RST BPDU"
-        REFERENCE
-             "IEEE P802.1w"
-        ::= { hpicfBridgeRstpPortEntry 6 }
-
     hpicfBridgeRstpPortPathCost OBJECT-TYPE
         SYNTAX      INTEGER (1..200000000)
         MAX-ACCESS  read-write
@@ -334,13 +332,34 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
         DESCRIPTION "Rapid Reconfiguration Port Path Cost - 32 bit values"
         REFERENCE
              "IEEE 802.1w"
+        ::= { hpicfBridgeRstpPortEntry 6 }
+
+    hpicfBridgeRstpForceBpduMigrationCheck OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "When operating in RST (version 2 or greater) mode
+                    writing TRUE(1) to this object forces this port to 
+                    transmit RST BPDUs. Any other operation on this object
+                    has no effect and it always returns FALSE(2) when read."
+        REFERENCE
+             "IEEE P802.1w"
         ::= { hpicfBridgeRstpPortEntry 7 }
 
+    hpicfBridgeRstpAutoEdgePort OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Represents the value of 'autoEdgePort' parameter. 
+                    This parameter is optional. It is used by the Bridge 
+                    Detection state machine for the automatic identification 
+                    of edge ports. The default is false."
+        REFERENCE
+             "IEEE 802.1D-2004"
+        ::= { hpicfBridgeRstpPortEntry 8 }
+
     hpicfBridgeRstpPortBpduFiltering OBJECT-TYPE
-        SYNTAX      INTEGER {
-                        true(1),
-                        false(2)
-                    }
+        SYNTAX      TruthValue
         MAX-ACCESS  read-write
         STATUS      current
         DESCRIPTION "This value indicates whether or not BPDUs need
@@ -350,15 +369,228 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
                     are being processed as usual. The default is false."
         REFERENCE
              "IEEE P802.1w"
-        ::= { hpicfBridgeRstpPortEntry 8 }
+        ::= { hpicfBridgeRstpPortEntry 9 }
+
+-- **********************************************************************
+-- Loop Protection Objects
+-- **********************************************************************
+
+-- Port Remediation Textual Convention
+    LoopProtectReceiverAction::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+            " This TC describes the actions a port that receives a loop
+              protection protocol packet can take.
+            
+              The disableTx(1) enumeration indicates that the sender of
+              the loop protect packet will be disabled. 
+
+              The noDisable(2) enumeration indicates that no port is to
+              be disabled." 
+    SYNTAX   INTEGER  
+             {
+                disableTx(1),
+                noDisable(2)    
+             }
+
+
+    hpicfBridgeLoopProtect   OBJECT IDENTIFIER ::= { hpicfBridgeObjects 5 }
+
+    hpicfBridgeLoopProtectNotifications
+                             OBJECT IDENTIFIER ::= { hpicfBridgeLoopProtect 0 }
+    hpicfBridgeLoopProtectBase 
+                             OBJECT IDENTIFIER ::= { hpicfBridgeLoopProtect 1 }
+    hpicfBridgeLoopProtectPort 
+                             OBJECT IDENTIFIER ::= { hpicfBridgeLoopProtect 2 }
+
+    hpicfBridgeLoopProtectInterval OBJECT-TYPE
+        SYNTAX      Integer32 (1..10) 
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The interval in seconds at which loop protection packets are
+                     transmitted. The default value is 5 seconds."
+        ::= { hpicfBridgeLoopProtectBase 1 }
+
+    hpicfBridgeLoopProtectTrapLoopDetectEnable OBJECT-TYPE
+        SYNTAX      TruthValue 
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Indicates whether notifications should be sent when a loop
+                     is detected on a port.  By default this object will
+                     have a value of false(2)."
+        ::= { hpicfBridgeLoopProtectBase 2 }
+
+    hpicfBridgeLoopProtectEnableTimer OBJECT-TYPE
+        SYNTAX      Integer32 (0..2147483647) 
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The time in seconds to wait before reenabling a port
+                     disabled by loop protection. When a port is disabled by 
+                     loop protection a reenable timer for the port is initialized 
+                     with the value of this period. If the period is not equal to 
+                     zero the port will be reenabled after the period has 
+                     elapsed. Otherwise the port will remain disabled."
+        ::= { hpicfBridgeLoopProtectBase 3 }
+
+    hpicfBridgeLoopProtectPortTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfBridgeLoopProtectPortEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Per-interface configuration for Loop Protection."
+        ::= { hpicfBridgeLoopProtectPort 1 }
+
+    hpicfBridgeLoopProtectPortEntry OBJECT-TYPE
+        SYNTAX      HpicfBridgeLoopProtectPortEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Loop Protection configuration information for
+                     a single port."
+        INDEX       { ifIndex }
+        ::= { hpicfBridgeLoopProtectPortTable 1 }
+
+    HpicfBridgeLoopProtectPortEntry ::=
+        SEQUENCE {
+            hpicfBridgeLoopProtectPortEnable          TruthValue,
+            hpicfBridgeLoopProtectPortLoopDetected    TruthValue,
+            hpicfBridgeLoopProtectPortLastLoopTime    TimeStamp,
+            hpicfBridgeLoopProtectPortLoopCount       Counter32,    
+            hpicfBridgeLoopProtectPortReceiverAction  LoopProtectReceiverAction 
+        }
+
+    hpicfBridgeLoopProtectPortEnable  OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "This object indicates whether this port has
+                     Loop protection enabled. The default value is FALSE"
+        ::= { hpicfBridgeLoopProtectPortEntry 1 }
+
+    hpicfBridgeLoopProtectPortLoopDetected OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "This object will be set to TRUE when a loop is detected on 
+                     the port. The value of this object will be reset to FALSE when 
+                     the port's hpicfBridgeLoopProtectPortEnable is set to 
+                     FALSE." 
+        ::= { hpicfBridgeLoopProtectPortEntry 2 }
+    
+    hpicfBridgeLoopProtectPortLastLoopTime OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The value of sysUpTime when a loop was last detected
+                     on this port. A value of 0 means that the timestamp has
+                     not been set."
+        ::= { hpicfBridgeLoopProtectPortEntry 3 }
+
+    hpicfBridgeLoopProtectPortLoopCount OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "When the loop protect feature is enabled on the port this 
+                     object counts the number of loops detected on the port. 
+                     When the feature is disabled on the port the value of this
+                     object is set to 0."
+        ::= { hpicfBridgeLoopProtectPortEntry 4 } 
+        
+   hpicfBridgeLoopProtectPortReceiverAction OBJECT-TYPE
+        SYNTAX      LoopProtectReceiverAction 
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Controls the action taken when a Loop protection packet is
+                     received on this port. When set to 'disableTx' the port 
+                     that transmitted the packet will be disabled. When set to 
+                     'noDisable' the transmitting port will not be disabled." 
+        ::= { hpicfBridgeLoopProtectPortEntry 5 } 
+        
+-- **********************************************************************
+-- hpicfBridgeLoopProtect Notifications 
+-- **********************************************************************
+
+    hpicfBridgeLoopProtectLoopDetectedNotification NOTIFICATION-TYPE
+        OBJECTS     { ifIndex,
+                      hpicfBridgeLoopProtectPortLoopCount,       
+                      hpicfBridgeLoopProtectPortReceiverAction}
+        STATUS      current
+        DESCRIPTION "A hpicfBridgeLoopProtectLoopDetectedNotification signifies
+                     that a loop has been detected by the loop protection protocol.
+                     Generation of this notification is controlled by 
+                     hpicfBridgeLoopProtectTrapLoopDetectEnable. To prevent 
+                     excessive notifications this trap is rate-limited to allow 
+                     a maximum of 1 notifications every 30 seconds.
+                     Notifications that are not sent due to rate-limiting are
+                     dropped, and not queued up to be sent later."
+        ::= { hpicfBridgeLoopProtectNotifications 1 }
+                 
+
+
+-- **********************************************************************
+-- Local Mirror Session  Objects
+-- **********************************************************************
+
+    hpicfBridgeMirrorSession     OBJECT IDENTIFIER 
+                                             ::= { hpicfBridgeObjects 6 } 
+    hpicfBridgeMirrorSessionBase OBJECT IDENTIFIER 
+                                             ::= { hpicfBridgeMirrorSession 1 } 
+    hpicfBridgeMirrorSessionDestination OBJECT IDENTIFIER 
+                                             ::= { hpicfBridgeMirrorSession 2 } 
+
+    hpicfBridgeMirrorSessionTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfBridgeMirrorSessionEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "This table contains mirror session information 
+                     related to a given specified destination. A mirror 
+                     session is a group of one or more portCopyEntries 
+                     all having the same specified destination. A given
+                     specified destination may be associated with more
+                     then one mirror session."
+        ::= { hpicfBridgeMirrorSessionDestination 1 }
+
+
+    hpicfBridgeMirrorSessionEntry OBJECT-TYPE
+        SYNTAX      HpicfBridgeMirrorSessionEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "An entry in the hpicfBridgeMirrorSessionEntry contains
+                     mirror session specific identification
+                     information."
+        AUGMENTS    { portCopyEntry }
+        ::= { hpicfBridgeMirrorSessionTable 1 }
+
+
+    HpicfBridgeMirrorSessionEntry ::=
+        SEQUENCE {
+            hpicfBridgeMirrorSessionID                Integer32
+        }
+
+    hpicfBridgeMirrorSessionID OBJECT-TYPE
+        SYNTAX      Integer32 (0..2147483647)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION "This variable is valid only for mirroring
+                     transfers. It allows mirroring destinations
+                     to be grouped. A given hpicfBridgeMirrorSessionID
+                     can only be used with 1 destination. However,
+                     multiple sources may be related to the same
+                     hpicfBridgeMirrorSessionID. To ensure that the
+                     hpicfBridgeMirrorSessionID is properly assigned,
+                     it can only be updated when the respective
+                     portCopyEntry object is in the notReady state.
+                     For non-mirroring transfers, the value should
+                     be set to 0. "
+        DEFVAL { 1 }
+        ::= { hpicfBridgeMirrorSessionEntry 1 }
 
 -- **********************************************************************
 -- Conformance information
 -- **********************************************************************
 
-    hpicfBridgeConformance OBJECT IDENTIFIER ::= { hpicfBridge 2 }
-
-    hpicfBridgeGroups OBJECT IDENTIFIER ::= { hpicfBridgeConformance 1 }
+    hpicfBridgeConformance   OBJECT IDENTIFIER ::= { hpicfBridge 2 }
+    hpicfBridgeGroups        OBJECT IDENTIFIER ::= { hpicfBridgeConformance 1 }
+    hpicfBridgeCompliances   OBJECT IDENTIFIER ::= { hpicfBridgeConformance 2 }
+    hpicfBridgeNotGroups     OBJECT IDENTIFIER ::= { hpicfBridgeConformance 3 }
 
     hpicfBridgeVlanBaseGroup OBJECT-GROUP
         OBJECTS     { hpicfBridgeMaxVlans,
@@ -388,7 +620,7 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
                       hpicfBridgeRstpProtocolVersion,
                       hpicfBridgeRstpAdminStatus,
                       hpicfBridgeRstpPortTable }
-        STATUS      obsolete
+        STATUS      current
         DESCRIPTION "Rapid Spanning Tree Protocol (RSTP) configuration
                     information that is in neither the standard 802.1w
                     MIB, nor the standard 802.1d (STP) MIB.
@@ -397,11 +629,47 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
                     objects in this MIB will likely be deprecated."
         ::= {hpicfBridgeGroups 3 }
 
+    hpicfBridgeLoopProtectBaseGroup OBJECT-GROUP
+        OBJECTS     { hpicfBridgeLoopProtectInterval,
+                      hpicfBridgeLoopProtectEnableTimer,
+                      hpicfBridgeLoopProtectTrapLoopDetectEnable, 
+                      hpicfBridgeLoopProtectPortEnable,
+                      hpicfBridgeLoopProtectPortLoopDetected,
+                      hpicfBridgeLoopProtectPortLastLoopTime,
+                      hpicfBridgeLoopProtectPortLoopCount,
+                      hpicfBridgeLoopProtectPortReceiverAction  
+                    }
+        STATUS      current
+        DESCRIPTION "A collection of objects providing basic instrumentation
+                     and control of the HP Loop protection entity."
+
+        ::= {hpicfBridgeGroups 4 }
+       
+
+-- **********************************************************************
+-- Notification groups
+-- **********************************************************************
+
+       hpicfBridgeLoopProtectNotGrp NOTIFICATION-GROUP
+           NOTIFICATIONS { hpicfBridgeLoopProtectLoopDetectedNotification }
+           STATUS      current
+           DESCRIPTION "Notifications for Loop protection."
+           ::= { hpicfBridgeNotGroups 1 }
+        
+        
+     hpicfBridgeMirrorSessionBaseGroup OBJECT-GROUP
+        OBJECTS     { hpicfBridgeMirrorSessionID 
+                    }
+        STATUS      current
+        DESCRIPTION "A collection of objects providing identification
+                     of a mirroring session entity."
+
+        ::= {hpicfBridgeGroups 5 }
+       
+        
 -- **********************************************************************
 -- Compliance statements
 -- **********************************************************************
-
-    hpicfBridgeCompliances OBJECT IDENTIFIER ::= { hpicfBridgeConformance 2 }
 
     hpicfBridgeCompliance MODULE-COMPLIANCE
         STATUS      deprecated
@@ -419,7 +687,7 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
         ::= { hpicfBridgeCompliances 1 }
 
     hpicfBridgeComplianceRevTwo MODULE-COMPLIANCE
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "The compliance statement for HP Switches with IEEE
                     802.1W Rapid Spanning Tree Protocol support for 
                     bridging objects not found in the standard Bridge 
@@ -437,5 +705,65 @@ HP-ICF-BRIDGE DEFINITIONS ::= BEGIN
                         these objects is added to a standard MIB."
 
         ::= { hpicfBridgeCompliances 2 }
+	
+    hpicfBridgeComplianceRevThree MODULE-COMPLIANCE
+        STATUS      deprecated
+        DESCRIPTION "The compliance statement for HP Switches with IEEE
+                    802.1W Rapid Spanning Tree Protocol support for 
+                    bridging objects not found in the standard Bridge 
+                    MIBs."
+        MODULE
+            MANDATORY-GROUPS { hpicfBridgeVlanBaseGroup }
 
+            GROUP       hpicfBridgeGvrpPortGroup
+            DESCRIPTION "Support for this group is required for switches
+                        that support GVRP until such time as support for
+                        these objects is added to a standard MIB."
+            GROUP       hpicfBridgeRstpBaseGroup
+            DESCRIPTION "Support for this group is required for switches
+                        that implement RSTP until such time as support for
+                        these objects is added to a standard MIB."
+
+        ::= { hpicfBridgeCompliances 3 }
+
+    hpicfBridgeComplianceRevFour MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "The compliance statement for HP Switches with IEEE
+                    802.1W Rapid Spanning Tree Protocol support for 
+                    bridging objects not found in the standard Bridge 
+                    MIBs."
+        MODULE
+            MANDATORY-GROUPS { hpicfBridgeVlanBaseGroup }
+
+            GROUP       hpicfBridgeGvrpPortGroup
+            DESCRIPTION "Support for this group is required for switches
+                        that support GVRP until such time as support for
+                        these objects is added to a standard MIB."
+            GROUP       hpicfBridgeRstpBaseGroup
+            DESCRIPTION "Support for this group is required for switches
+                        that implement RSTP until such time as support for
+                        these objects is added to a standard MIB."
+            GROUP       hpicfBridgeMirrorSessionBaseGroup
+            DESCRIPTION "Support for this group is mandatory for switches
+                        that implement the multi session mirroring
+                        (intelligent mirroring) feature." 
+        ::= { hpicfBridgeCompliances 4 }
+
+    hpicfBridgeLoopProtectCompliance MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "The compliance statement for HP Switches with 
+                     support for hpicfBridge loop protection objects."
+                      
+        MODULE
+            MANDATORY-GROUPS { hpicfBridgeLoopProtectBaseGroup, 
+                               hpicfBridgeLoopProtectNotifications }
+            GROUP       hpicfBridgeLoopProtectBaseGroup
+            DESCRIPTION "Support for this group is mandatory for switches
+                        that implement the loop protection feature." 
+
+            GROUP       hpicfBridgeLoopProtectNotifications
+            DESCRIPTION "Implementation of this group is mandatory
+                         for switches that implement the loop protection
+                         feature."
+        ::= { hpicfBridgeCompliances 5 }
 END

@@ -4,7 +4,7 @@
 --
 -- Aug   2005, Suma Marutirao  Sutar.
 --
--- Copyright (c), 2000-2005 by Cisco Systems, Inc.
+-- Copyright (c), 2000-2005, 2006 by Cisco Systems, Inc.
 -- All rights reserved.
 -- ********************************************************************
 -- $Endlog$
@@ -41,7 +41,7 @@ IMPORTS
 
 
 cGgsnSAMIB    MODULE-IDENTITY
-        LAST-UPDATED    "200510110900Z"
+        LAST-UPDATED    "200605041700Z"
         ORGANIZATION    "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -142,6 +142,15 @@ cGgsnSAMIB    MODULE-IDENTITY
                     General Packet Radio Service(GPRS); GPRS
                     Tunnelling Protocol (GTP) across Gn and Gp
                     Interface (Release 1999). 3G TS 29.060 v3.5.0."
+        REVISION       "200605041700Z"
+        DESCRIPTION
+                "Added following objects to cGgsnSADccaProfileTable:
+                    cGgsnSADccaTriggerPlmnChange, 
+                    cGgsnSADccaTriggerRatChange.
+                Added following group to cGgsnSAMIBGroups:
+                    cGgsnSAExtConfigurationsGroup.
+                Added following compliance to cGgsnSAMIBCompliances:
+                    cGgsnSAMIBComplianceRev1." 
         REVISION       "200510110900Z"
         DESCRIPTION
                 "Initial version of this MIB module."
@@ -970,7 +979,10 @@ cGgsnSADccaProfileEntry        OBJECT-TYPE
      STATUS                    current
      DESCRIPTION
          "An entry contains DCCA profile, which interact with DCCA 
-         server for quota negotiation and usage reporting."
+         server for quota negotiation and usage reporting.
+
+         The entries in this table are stored in NVRAM when the agent 
+         writes the configuration to memory before restart."
      INDEX   { cGgsnSADccaProfileName }
      ::= { cGgsnSADccaProfileTable 1 } 
          
@@ -984,7 +996,9 @@ CGgsnSADccaProfileEntry         ::= SEQUENCE {
    cGgsnSADccaTxTimeout          Unsigned32,
    cGgsnSADccaTriggerSgsnChange  TruthValue,
    cGgsnSADccaTriggerQosChange   TruthValue,
-   cGgsnSADccaRowStatus          RowStatus 
+   cGgsnSADccaRowStatus          RowStatus,
+   cGgsnSADccaTriggerPlmnChange  TruthValue,
+   cGgsnSADccaTriggerRatChange   TruthValue
    }
 
 cGgsnSADccaProfileName       OBJECT-TYPE
@@ -1141,6 +1155,42 @@ cGgsnSADccaRowStatus          OBJECT-TYPE
          "This object is used to create a new row or delete an
          existing row in this table."
      ::= { cGgsnSADccaProfileEntry 9 }
+
+cGgsnSADccaTriggerPlmnChange OBJECT-TYPE
+     SYNTAX                  TruthValue
+     MAX-ACCESS              read-create
+     STATUS                  current
+     DESCRIPTION
+         "The value of this object takes effect only when DCCA client 
+         is configured as non-vodafone specfic. 
+
+         - 'true': PLMN ID change is considered as
+                   trigger for quota re-authorization.
+
+         - 'false': PLMN ID change is not considered as
+                    trigger for quota re-authorization.
+         This trigger will have effect on new PDPs, which are created
+         after enabling the trigger." 
+     DEFVAL { false }
+     ::= { cGgsnSADccaProfileEntry 10 }
+
+cGgsnSADccaTriggerRatChange  OBJECT-TYPE
+     SYNTAX                  TruthValue
+     MAX-ACCESS              read-create
+     STATUS                  current
+     DESCRIPTION
+         "The value of this object takes effect only when DCCA client 
+         is configured as non-vodafone specfic. 
+
+         - 'true': RAT change is considered as
+                   trigger for quota re-authorization.
+
+         - 'false': RAT change is not considered as
+                    trigger for quota re-authorization.
+         This trigger will have effect on new PDPs, which are created
+         after enabling the trigger."
+     DEFVAL { false }
+     ::= { cGgsnSADccaProfileEntry 11 }
 
 cGgsnSADccaClci               OBJECT-TYPE
      SYNTAX                   INTEGER {
@@ -1581,10 +1631,11 @@ cGgsnSAMIBGroups         OBJECT IDENTIFIER
 --
 
 cGgsnSAMIBCompliance     MODULE-COMPLIANCE
-        STATUS           current
+        STATUS           deprecated 
         DESCRIPTION
              "The compliance statements for entities which
-             implement the CISCO GGSN SERVICE AWARE MIB."
+             implement the CISCO GGSN SERVICE AWARE MIB. This 
+             is deprecated by cGgsnSAMIBComplianceRev1."
         MODULE      -- this module
         MANDATORY-GROUPS { cGgsnSAConfigurationsGroup, 
                            cGgsnSAStatisticsGroup,
@@ -1618,6 +1669,45 @@ cGgsnSAMIBCompliance     MODULE-COMPLIANCE
             createAndWait(5) need not be supported."
         ::= { cGgsnSAMIBCompliances 1 }
 
+cGgsnSAMIBComplianceRev1    MODULE-COMPLIANCE
+        STATUS              current
+        DESCRIPTION
+             "The compliance statements for entities which
+             implement the CISCO GGSN SERVICE AWARE MIB." 
+        MODULE      -- this module
+        MANDATORY-GROUPS { cGgsnSAConfigurationsGroup,
+                           cGgsnSAExtConfigurationsGroup,
+                           cGgsnSAStatisticsGroup,
+                           cGgsnSANotifGroup,
+                           cGgsnSANotifInfoGroup,
+                           cGgsnSANotifMgmtGroup
+                         }
+        OBJECT           cGgsnSADccaRowStatus
+        SYNTAX           INTEGER { active(1),
+                                   createAndGo(4),
+                                   destroy(6)
+                                 }
+        DESCRIPTION
+            "The states notInService(2), notReady(3) and
+            createAndWait(5) need not be supported."
+        OBJECT           cGgsnSACsgRowStatus
+        SYNTAX           INTEGER { active(1),
+                                   createAndGo(4),
+                                   destroy(6)
+                                 }
+        DESCRIPTION
+            "The states notInService(2), notReady(3) and
+            createAndWait(5) need not be supported."
+        OBJECT            cGgsnSAQuotaServerRowStatus
+        SYNTAX            INTEGER { active(1),
+                                   createAndGo(4),
+                                   destroy(6)
+                                 }
+        DESCRIPTION
+            "The states notInService(2), notReady(3) and
+            createAndWait(5) need not be supported."
+        ::= { cGgsnSAMIBCompliances 2 }
+
 -- units of conformance
 
 cGgsnSAConfigurationsGroup     OBJECT-GROUP
@@ -1650,6 +1740,7 @@ cGgsnSAConfigurationsGroup     OBJECT-GROUP
      DESCRIPTION
          "A collection of objects representing configurations on GGSN."
      ::= { cGgsnSAMIBGroups 1 }
+
 cGgsnSAStatisticsGroup   OBJECT-GROUP
     OBJECTS                {
                               cGgsnSACsgOutboundMsgs,
@@ -1765,4 +1856,13 @@ cGgsnSANotifMgmtGroup     OBJECT-GROUP
          management on GGSN."
      ::= { cGgsnSAMIBGroups 5 } 
 
+cGgsnSAExtConfigurationsGroup   OBJECT-GROUP
+     OBJECTS                   {
+                                cGgsnSADccaTriggerPlmnChange,
+                                cGgsnSADccaTriggerRatChange
+                               }
+     STATUS                    current
+     DESCRIPTION
+         "A collection of objects representing configurations on GGSN."
+     ::= { cGgsnSAMIBGroups 6 }
 END

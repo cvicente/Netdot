@@ -8,6 +8,11 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
             FROM RFC1155-SMI
         OBJECT-TYPE
             FROM RFC-1212
+        TRAP-TYPE
+            FROM RFC-1215
+        dot1dStpPortState, dot1dStpPortDesignatedBridge,
+        dot1dStpPortDesignatedPort
+            FROM BRIDGE-MIB -- RFC-1493
         DisplayString, RowStatus, MacAddress, TimeStamp
             FROM SNMPv2-TC
         HpSwitchPortType, ConfigStatus
@@ -364,7 +369,8 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
                         auto-10Mbits(7),
                         auto-100Mbits(8),
                         auto-1000Mbits(9),
-                        full-duplex-10Gbits(10)
+                        full-duplex-10Gbits(10),
+                        auto-10-100Mbits(11)
                     }
         ACCESS      read-write
         STATUS      mandatory
@@ -1130,7 +1136,10 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
             hpSwitchStpPortSrcMac             MacAddress,
             hpSwitchStpPortPriority           INTEGER,
             hpSwitchStpPortPathCost           INTEGER,
-            hpSwitchStpPortMode               INTEGER
+            hpSwitchStpPortMode               INTEGER,
+            hpSwitchStpPortBpduFilter         INTEGER,
+            hpSwitchStpPortBpduProtection     INTEGER,
+            hpSwitchStpPortErrantBpduCounter  Counter
         }
 
     hpSwitchStpPort OBJECT-TYPE
@@ -1203,6 +1212,72 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
                     on ports connected to a hub or switch may cause loops
                     in your network."
         ::= { hpSwitchStpPortEntry 6 }
+
+    hpSwitchStpPortBpduFilter OBJECT-TYPE
+        SYNTAX      INTEGER { 
+                        true(1), 
+                        false(2) 
+                    }
+        ACCESS      read-write
+        STATUS      optional
+        DESCRIPTION "Setting True will cause port to ignore ingress BPDUs
+                    and not generate egress BPDUs, as the result the port 
+                    will stay in forwarding state. Default is False."
+        DEFVAL      { false }
+        ::= { hpSwitchStpPortEntry 7 }
+
+    hpSwitchStpPortBpduProtection OBJECT-TYPE
+        SYNTAX      INTEGER { 
+                        true(1), 
+                        false(2) 
+                    }
+        ACCESS      read-write
+        STATUS      optional
+        DESCRIPTION "Setting True indicates that no BPDUs are expected to 
+                    be received on this port. At the reception of BPDUs 
+                    the BPDU protection mechanism will disable this port
+                    and port will transition into bpduError state.
+                    Default is False."
+        DEFVAL      { false }
+        ::= { hpSwitchStpPortEntry 8 }
+
+    hpSwitchStpPortErrantBpduCounter OBJECT-TYPE
+        SYNTAX      Counter
+        ACCESS      read-only
+        STATUS      optional
+        DESCRIPTION "Counts the number of BPDUs that were not expected to be
+                    received on this port. This counter gets incremented only
+                    if hpSwitchStpPortBpduProtection or
+                    hpSwitchStpPortBpduFilter is True for the port, otherwise
+                    it is cleared to zero."
+        ::= { hpSwitchStpPortEntry 9 }
+
+    hpSwitchStpTrapCntl OBJECT-TYPE
+        SYNTAX       BITS {
+                         errantBpdu(0)
+                     }
+        ACCESS       read-write
+        STATUS       optional
+        DESCRIPTION  "Controls generation of SNMP traps by STP-enabled switch
+                     for events defined in this MIB.
+                     The set bit means 'enabled'.
+
+                      - errantBpdu(0)
+                        The state of this bit specifies whether the 
+                        notification trap allowed to be send when 
+                        unexpected (errant) BPDU is received on a port."
+
+        ::= { hpSwitchStpConfig 3 }
+
+    hpSwitchStpBpduProtectionTimeout OBJECT-TYPE
+        SYNTAX       INTEGER
+        ACCESS       read-write
+        STATUS       optional
+        DESCRIPTION  "The duration of time in seconds when a protected port
+                     affected by receiving of an unauthorized BPDU will 
+                     remain in down state. The zero value means infinity."
+        DEFVAL      { 0 }
+        ::= { hpSwitchStpConfig 4 }
 
     hpSwitchIgmpConfig OBJECT IDENTIFIER ::= { hpSwitchConfig 15 }
 
@@ -2001,7 +2076,9 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
             hpSwitchCosAppTypeDSCPPolicy         INTEGER,
             hpSwitchCosAppTypeResolvedPriority   INTEGER,
             hpSwitchCosAppTypeApplyPolicy        INTEGER,
-            hpSwitchCosAppTypeStatus             RowStatus
+            hpSwitchCosAppTypeStatus             RowStatus,
+            hpSwitchCosAppTypeMaxSrcPort         INTEGER,
+            hpSwitchCosAppTypeMaxDestPort        INTEGER
         } 
 
     hpSwitchCosAppTypeConfigIndex OBJECT-TYPE
@@ -2031,16 +2108,16 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
         SYNTAX      INTEGER (1..65535)
         ACCESS      read-write
         STATUS      mandatory
-        DESCRIPTION "This object represents the index for the source
-                    network port that this policy applies to."
+        DESCRIPTION "This object represents the source network port
+                    that this policy applies to."
         ::= { hpSwitchCosAppTypeConfigEntry 3 }
    
     hpSwitchCosAppTypeDestPort OBJECT-TYPE
         SYNTAX      INTEGER (1..65535)
         ACCESS      read-write
         STATUS      mandatory
-        DESCRIPTION "This object represents the index for the
-                    destination network port that this policy applies to."
+        DESCRIPTION "This object represents the destination network
+                    port that this policy applies to."
         ::= { hpSwitchCosAppTypeConfigEntry 4 }
 
     hpSwitchCosAppTypePriority OBJECT-TYPE
@@ -2106,6 +2183,26 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
                     hpSwitchCosAppType table."
         ::= { hpSwitchCosAppTypeConfigEntry 9 }
 
+    hpSwitchCosAppTypeMaxSrcPort OBJECT-TYPE
+        SYNTAX      INTEGER (0..65535)
+        ACCESS      read-write
+        STATUS      mandatory
+        DESCRIPTION "This object represents the maximum source network
+                    port that this policy applies to. If a single, 
+                    specific port is being used and not a range, then
+                    value of this object is zero."
+        ::= { hpSwitchCosAppTypeConfigEntry 10 }
+   
+    hpSwitchCosAppTypeMaxDestPort OBJECT-TYPE
+        SYNTAX      INTEGER (0..65535)
+        ACCESS      read-write
+        STATUS      mandatory
+        DESCRIPTION "This object represents the maximum destination 
+                    network port that this policy applies to. If a 
+                    single, specific port is being used and not a range, 
+                    then value of this object is zero."
+        ::= { hpSwitchCosAppTypeConfigEntry 11 }
+
 
     hpSwitchCosLastChange OBJECT-TYPE
         SYNTAX      TimeStamp
@@ -2115,7 +2212,21 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
                     time this device experienced a change in the 
                     Class of Service configuration."
         ::= { hpSwitchCosConfig 8 }
-
+	
+    hpSwitchConfigCosLastConfigError OBJECT-TYPE
+        SYNTAX      INTEGER {
+                         aclQosNoError(1),
+                         aclQosTooManyRulesError(2),
+                         aclQosTooManyMasksError(3)
+                    }
+        ACCESS      read-only
+        STATUS      mandatory
+        DESCRIPTION "The type of the last QoS 
+                     configuration result or error. 
+                     This object is updated for each
+                     new QoS configuration. It is
+                     reset upon reboot."
+        ::= { hpSwitchCosConfig 9 }
 
     hpSwitchMeshConfig OBJECT IDENTIFIER ::= { hpSwitchConfig 18 }
 
@@ -2247,9 +2358,9 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
                      'version1' will accept connections from
                      v1.3 or v1.5 clients. 'version2' will accept 
                      connections only from v2.0 clients.
-                     'version1_or_2' will accept any connection which
-                     can be successfully negotiated.  Not all platforms
-                     support both versions."
+                     The default is 'version1_or_2' which will accept  any 
+                     connection which can be successfully negotiated."
+        DEFVAL { 1 }
         ::= { hpSwitchSshConfig 2 }
 
     hpSwitchSshTimeout OBJECT-TYPE
@@ -2259,6 +2370,7 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
         DESCRIPTION "The maximum length of time (in seconds) between the wakeup 
                      of SSH task and successful protocol negotiation and 
                      authentication. The default is 120 seconds."
+        DEFVAL { 120 }
         ::= { hpSwitchSshConfig 3 }
 
     hpSwitchSshPortNumber OBJECT-TYPE
@@ -2279,7 +2391,7 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
         MAX-ACCESS  read-write
         STATUS      mandatory
         DESCRIPTION "Specifies the key size (in bits) of version 1 SSH host
-                     rsa key.  This object has no effect on SSH version 2."
+                     rsa key"
         ::= { hpSwitchSshConfig 5 }
 
     hpSwitchSshFileServerAdminStatus OBJECT-TYPE
@@ -2290,8 +2402,7 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
         ACCESS      read-write
         STATUS      mandatory
         DESCRIPTION "Specifies whether or not the SSH daemon will accept
-                    and process file transfer requests. Tftp and auto-tftp
-                    must be disabled before this variable can be set to enable."
+                    and process file transfer requests."
         ::= { hpSwitchSshConfig 6 }
 
     hpSwitchPendingConfig OBJECT IDENTIFIER ::= { hpSwitchConfig 21 }
@@ -2525,15 +2636,18 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
 
     hpSwitchQosPassThroughModeConfig OBJECT-TYPE
         SYNTAX      INTEGER {
-                        enable (1),
-                        disable (2)
+                        optimized (1),
+                        typical (2),
+                        balanced (3),
+                        onequeue (4)
                     }
         MAX-ACCESS  read-write
         STATUS      mandatory
-        DESCRIPTION "Specify to enable/disable this feature.While enabling
-	             or disabling this feature momentarily require to bring
-		     down the logical port and after the initialisation
-		     of the queues the ports are brought up."
+        DESCRIPTION "Specify the queue configuration mode for the switch. 
+                     While changing the queue configuration mode this feature 
+                     momentarily require to bring down the logical port and 
+                     after the initialisation of the queues the ports are 
+                     brought up."
         
         ::= { hpSwitchQosPassThroughMode 1 }
     
@@ -2554,7 +2668,6 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
                      no (2)  reboot is not required."
         ::= { hpSwitchReboot 1 }
 
-
     hpSwitchRebootFastBoot OBJECT-TYPE
         SYNTAX      INTEGER {
                         enable (1),
@@ -2565,7 +2678,50 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
         DESCRIPTION "Specifies whether fastboot is enabled or not on
                      the switch."
         DEFVAL      { disable }
-                     
+
         ::= { hpSwitchReboot 2 }
 
+    -- **********************************************************
+    -- Trap Definitions
+    -- **********************************************************
+
+    hpSwitchTraps OBJECT IDENTIFIER ::= { hpSwitchConfig 0 }
+
+    hpSwitchTrapsObjects
+                   OBJECT IDENTIFIER ::= { hpSwitchTraps 1 }
+
+    hpSwitchStpErrantBpduDetector OBJECT-TYPE 
+        SYNTAX       INTEGER {
+                         bpduFilter (1),
+                         bpduProtection (2)
+                     }
+        ACCESS       accessible-for-notify
+        STATUS       optional
+        DESCRIPTION  "The identifier of the feature generating Errant 
+                     BPDU trap."
+        ::= { hpSwitchTrapsObjects 1 }
+
+    hpSwitchStpErrantBpduSrcMac OBJECT-TYPE
+        SYNTAX       MacAddress
+        ACCESS       accessible-for-notify
+        STATUS       optional
+        DESCRIPTION "The source MAC address of the port sending Errant
+                    STP BPDU."
+        ::= { hpSwitchTrapsObjects 2 }
+
+    hpSwitchStpErrantBpduReceived     TRAP-TYPE
+        ENTERPRISE  hpSwitchTraps
+        VARIABLES   { hpSwitchStpPort,  
+                      hpSwitchStpPortErrantBpduCounter,
+                      dot1dStpPortState,
+                      dot1dStpPortDesignatedBridge,
+                      dot1dStpPortDesignatedPort,
+                      hpSwitchStpErrantBpduSrcMac,
+                      hpSwitchStpErrantBpduDetector }
+        DESCRIPTION "This trap indicates that unexpected (errant) STP BPDU  
+                    has been received on a port (e.g. on a port that is 
+                    connected to non-STP device). This notification trap 
+                    is controlled by the state of 'hpSwitchStpTrapCntl' 
+                    object. Implementation of this trap is optional."
+        ::= 1
 END

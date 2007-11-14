@@ -3,7 +3,7 @@
 --
 -- April 2002, Francis Pang 
 --
--- Copyright (c) 2002-2004, 2005 by Cisco Systems, Inc.
+-- Copyright (c) 2002-2007 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 --
@@ -42,7 +42,7 @@ IMPORTS
 -- ********************************************************************
 
 ciscoDot11IfMIB MODULE-IDENTITY
-        LAST-UPDATED    "200503100000Z"
+        LAST-UPDATED    "200612200000Z"
         ORGANIZATION    "Cisco System Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -408,8 +408,24 @@ ciscoDot11IfMIB MODULE-IDENTITY
                     It is a client to APs or wireless root bridges.
                     The radio port of a WGB serves as the uplink to
                     the main network and the Ethernet port provides
-                    network access for devices like PC or IP phone."
+                    network access for devices like PC or IP phone.
 
+                Upgrade of Frequencies
+                    As per the latest regulations proposed by the 
+                    Japanese Government, the four channels 34
+                    ( 5170 GHz ), 38 ( 5190 GHz), 42 ( 5210 ) and 
+                    44 ( 5230 ) in the 5150-5250 MHz band has been
+                    shifted by 10 MHz. Thus, the new channels in the
+                    5150-5250 MHz band  are 36 ( 5180 ), 40 ( 5200 )
+                    and 44 ( 5220 ) and 48 ( 5240 )." 
+
+        REVISION        "200612200000Z"
+        DESCRIPTION
+                "- Added following objects in cd11IfStationConfigTable 
+                   cd11IfMobileStationListIgnore 
+                   cd11IfMobileStationScanChannel.
+                - Added cd11Ifdot11MobileStationScanGroup OBJECT-GROUP
+                - Added ciscoDot11IfComplianceRev4 MODULE-COMPLIANCE."
         REVISION        "200503100000Z"
         DESCRIPTION
                 "Updated the cd11IfCurrentCarrierSet to define new 
@@ -646,6 +662,29 @@ CDot11RadioModulationClass ::= TEXTUAL-CONVENTION
                        ofdm(2)
                            }
 
+Cd11IfDot11UpgradeStatus ::= TEXTUAL-CONVENTION
+        STATUS     current
+        DESCRIPTION
+                "These are the various status on the 
+                 Radio Upgrade:
+                    unknown(1)              - upgrade status unknown,
+                    upgradeNotApplicable(2) - Regulatory domain upgrade
+                                              is not applicable for 11b/g
+                                              radios and 11a radios not in
+                                              Japan regulatory domain,
+                    upgradeNotDone(3)       - 11a radio is in Japan domain but 
+                                              yet to be upgraded,
+                    upgradeNotNeeded(4)     - 11a radio is already configured to 
+                                              operate in the W52 domain and that 
+                                              the upgrade is not needed,
+                    upgradeDone(5)          - upgrade has been done from J52 to W52."
+        SYNTAX     INTEGER {
+                       unknown(1),
+                       upgradeNotApplicable(2),
+                       upgradeNotDone(3),
+                       upgradeNotNeeded(4),
+                       upgradeDone(5)
+                           }                     
 
 -- ********************************************************************
 -- *  Cisco IEEE 802.11 Interface Extension 
@@ -714,7 +753,9 @@ Cd11IfStationConfigEntry ::=
             cd11IfWorldModeCountry          OCTET STRING,
             cd11IfMobileStationScanParent   TruthValue, 
             cd11IfPsPacketForwardEnable     TruthValue,
-            cd11IfMultipleBssidEnable       TruthValue
+            cd11IfMultipleBssidEnable       TruthValue,
+            cd11IfMobileStationListIgnore   TruthValue,
+            cd11IfMobileStationScanChannel  OCTET STRING
                    }
 
 cd11IfStationRole OBJECT-TYPE
@@ -1016,6 +1057,62 @@ cd11IfMultipleBssidEnable OBJECT-TYPE
                 for passive scanning."
         DEFVAL     { false }
         ::= { cd11IfStationConfigEntry 16 }
+
+cd11IfMobileStationListIgnore OBJECT-TYPE
+        SYNTAX     TruthValue
+        MAX-ACCESS read-write
+        STATUS     current
+        DESCRIPTION
+                "This object indicates whether the radio should
+                process the AP adjacency and Enhanced Neighbor
+                List reports specified in the CCX Specification.
+                AP adjacency and Enhanced Neighbor List provide
+                information about the infrastructure wireless
+                devices found in the near vicinity of this
+                radio.
+                
+                This object is applicable only when the radio's
+                role as represented by the object cd11IfStationRole
+                is one of roleWgb(1), roleRepeater(5) or
+                roleNrbridge(9). 
+ 
+                Agent will populate a value of 'false', when the 
+                radio's role as represented by cd11IfStationRole
+                is one of roleRoot(4) ,roleBridge(2) or 
+                roleApBridge(6), to indicate that the object is
+                not applicable for the radio in these roles.  Set
+                requests will be rejected when the radio is 
+                configured to be in one of these roles.
+ 
+                User can configure this object only when
+                cd11IfMobileStationScanChannel is configured with
+                a valid set of channels.  When
+                cd11IfMobileStationScanChannel is configured with
+                a value of 0, the agent will automatically 
+                populate a value of 'false'. "
+        DEFVAL     { false }
+        ::= { cd11IfStationConfigEntry 17 }
+
+cd11IfMobileStationScanChannel OBJECT-TYPE
+        SYNTAX     OCTET STRING (SIZE(1..64))
+        MAX-ACCESS read-write
+        STATUS     current
+        DESCRIPTION
+                "This object specifies the channels to be used by
+                the infractructure clients for scanning purposes.
+                
+                This object is applicable only when the radio's
+                role as represented by the object cd11IfStationRole
+                is one of roleWgb(1), roleRepeater(5) or
+                roleNrbridge(9).   Agent will reject the request
+                to set this object when the cd11IfStationRole doesn't
+                populate one of the values mentioned above.
+ 
+                Each octet carries the channel number.  To configure
+                the radio to scan all the channels applicable to a
+                particular regulatory domain,  this object should be
+                configured with only one octet of value 0. "
+        ::= { cd11IfStationConfigEntry 18 }
 
 
 cd11IfAuthAlgorithmTable OBJECT-TYPE
@@ -2153,6 +2250,50 @@ cd11IfRadioMonitorRowStatus OBJECT-TYPE
         ::= { cd11IfRadioMonitoringEntry 5 }
 
 
+cd11IfDot11UpgradeStatusTable OBJECT-TYPE
+        SYNTAX     SEQUENCE OF Cd11IfDot11UpgradeStatusEntry
+        MAX-ACCESS not-accessible
+        STATUS     current
+        DESCRIPTION
+                "This table represents the status of upgrade of
+                the radios to the newer frequencies of the 5150-5250
+                MHz band.
+
+                This table has a sparse dependent relationship on the
+                ifTable.  For each entry in this table, there exists 
+                an entry in the ifTable of ifType ieee80211(71).
+
+                Entries in this table cannot be created or deleted
+                by the network management system.  All entries are
+                created or deleted by the agent. "
+        ::= { cd11IfManagement 12 }
+
+cd11IfDot11UpgradeStatusEntry OBJECT-TYPE
+        SYNTAX      Cd11IfDot11UpgradeStatusEntry
+        MAX-ACCESS not-accessible
+        STATUS     current
+        DESCRIPTION
+                "Each entry corresponds to one conceptual row in
+                 cd11IfDot11UpgradeStatusTable and represents the
+                 status of upgrade of a dot11 radio interface. "
+        INDEX      { ifIndex }
+        ::= { cd11IfDot11UpgradeStatusTable 1 }
+
+Cd11IfDot11UpgradeStatusEntry ::=
+        SEQUENCE   {
+                cd11IfDot11UpgradeStatus Cd11IfDot11UpgradeStatus
+                   }
+
+cd11IfDot11UpgradeStatus OBJECT-TYPE
+        SYNTAX     Cd11IfDot11UpgradeStatus
+        MAX-ACCESS read-only
+        STATUS     current
+        DESCRIPTION
+                "This object represents the status of upgrade of
+                 a dot11 radio interface. "
+        ::= {cd11IfDot11UpgradeStatusEntry 1 }
+
+
 cd11IfPhyOperationTable OBJECT-TYPE
         SYNTAX     SEQUENCE OF Cd11IfPhyOperationEntry
         MAX-ACCESS not-accessible
@@ -2221,7 +2362,8 @@ cd11IfCurrentCarrierSet OBJECT-TYPE
                          japan5GHzUNI12(24),    
                          taiwan5GHzUNI23E(25),
                          israel5GhzUNI12(26),
-                         usaFCC49PS(27)
+                         usaFCC49PS(27),
+                         japan5GHzUNI1(28)
                            } 
         MAX-ACCESS read-only
         STATUS     current
@@ -2271,7 +2413,9 @@ cd11IfCurrentCarrierSet OBJECT-TYPE
                          israel5GhzUNI12(26)   
                              - OFDM UNII 1,2 Israel
                          usaFCC49PS(27)
-                             - OFDM FCC49 USA Public Safety"
+                             - OFDM FCC49 USA Public Safety
+                         japan5GHzUNI1(28)
+                             - OFDM UNII 1 Japan"
         REFERENCE  
                 "IEEE Std 802.11-Jan 14 1999, Wireless LAN Medium 
                 Access Control and Physical Layer Specifications,
@@ -3704,7 +3848,7 @@ ciscoDot11IfComplianceRev1 MODULE-COMPLIANCE
         ::= { ciscoDot11IfMIBCompliances 2 }
 
 ciscoDot11IfComplianceRev2 MODULE-COMPLIANCE
-        STATUS     current
+        STATUS     deprecated 
         DESCRIPTION
                 "The compliance statement of the ciscoDot11IfMIB
                 module."
@@ -3782,6 +3926,166 @@ ciscoDot11IfComplianceRev2 MODULE-COMPLIANCE
                         supporting Frequency-Hopping Spread Spectrum."
         ::= { ciscoDot11IfMIBCompliances 3 }
 
+ciscoDot11IfComplianceRev3 MODULE-COMPLIANCE
+        STATUS     deprecated 
+        DESCRIPTION
+                "The compliance statement of the ciscoDot11IfMIB
+                module."
+        MODULE
+                MANDATORY-GROUPS {
+                        cd11IfStationManageGroup,
+                        cd11IfAssociationManageGroup,
+                        cd11IfPhyConfigGroupRev1,
+                        cd11IfMacStatisticsGroup,
+                        cd11IfNativeRadioManageGroup,
+                        cd11IfDataRatesSensitivityGroup,
+                        cd11Ifdot11UpgradeStatusGroup
+                                 }
+
+                GROUP   cd11IfSsidAssociationGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        implementing this MIB does not support
+                        CISCO-DOT11-SSID-SECURITY-MIB."
+
+                GROUP   cd11IfVlanManageGroup
+                DESCRIPTION
+                        "This group is required only if different
+                        encryption cipher types are configured for
+                        the same VLAN on different IEEE 802.11 radio
+                        interfaces or if the CISCO-WLAN-VLAN-MIB is
+                        not supported on the platform implementing
+                        this MIB."
+
+                GROUP   cd11IfVlanWepManageGroup
+                DESCRIPTION
+                        "This group is required only if different
+                        WEP keys are configured for the same VLAN
+                        on different IEEE 802.11 radio interfaces
+                        or if the CISCO-WLAN-VLAN-MIB is not
+                        supported on the platform implementing
+                        this MIB."
+
+                GROUP   cd11IfRemoteMonitoringGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        implementing this MIB does not support
+                        CISCO-L2-DEV-MONITORING-MIB."
+
+                GROUP   cd11IfPhyErpConfigGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        implementing IEEE 802.11g Protocol."
+
+                GROUP   cd11IfRogueApDetectedGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        implementing this MIB does not support
+                        ciscoDdpIappRogueApInfoGroup objects in
+                        CISCO-DDP-IAPP-MIB."
+
+                GROUP   cd11IfMonitorNotificationGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        implementing this MIB does not support
+                        CISCO-DDP-IAPP-MIB ciscoDdpIappNotificationGroup
+                        and CISCO-L2-DEV-MONITORING-MIB
+                        ciscoL2DevMonNotificationGroup."
+
+                OBJECT  cd11IfVlanEncryptKeyStatus
+                DESCRIPTION
+                        "Creation of rows must be done via
+                        'createAndGo' for all keys.  When the
+                        agent successfully creates the encryption
+                        key, this object is set to 'active' by the
+                        agent."
+
+                OBJECT  cd11IfPhyFhssMaxCompatibleRate
+                DESCRIPTION
+                        "This object is only mandatory for devices
+                        supporting Frequency-Hopping Spread Spectrum."
+        ::= { ciscoDot11IfMIBCompliances 4 }
+
+ciscoDot11IfComplianceRev4 MODULE-COMPLIANCE
+        STATUS     current 
+        DESCRIPTION
+                "The compliance statement of the ciscoDot11IfMIB
+                module."
+        MODULE
+                MANDATORY-GROUPS {
+                        cd11IfStationManageGroup,
+                        cd11IfAssociationManageGroup,
+                        cd11IfPhyConfigGroupRev1,
+                        cd11IfMacStatisticsGroup,
+                        cd11IfNativeRadioManageGroup,
+                        cd11IfDataRatesSensitivityGroup,
+                        cd11Ifdot11UpgradeStatusGroup,
+                        cd11Ifdot11MobileStationScanGroup
+                                 }
+
+                GROUP   cd11IfSsidAssociationGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        implementing this MIB does not support
+                        CISCO-DOT11-SSID-SECURITY-MIB."
+
+                GROUP   cd11IfVlanManageGroup
+                DESCRIPTION
+                        "This group is required only if different
+                        encryption cipher types are configured for
+                        the same VLAN on different IEEE 802.11 radio
+                        interfaces or if the CISCO-WLAN-VLAN-MIB is
+                        not supported on the platform implementing
+                        this MIB."
+
+                GROUP   cd11IfVlanWepManageGroup
+                DESCRIPTION
+                        "This group is required only if different
+                        WEP keys are configured for the same VLAN
+                        on different IEEE 802.11 radio interfaces
+                        or if the CISCO-WLAN-VLAN-MIB is not
+                        supported on the platform implementing
+                        this MIB."
+
+                GROUP   cd11IfRemoteMonitoringGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        implementing this MIB does not support
+                        CISCO-L2-DEV-MONITORING-MIB."
+
+                GROUP   cd11IfPhyErpConfigGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        implementing IEEE 802.11g Protocol."
+
+                GROUP   cd11IfRogueApDetectedGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        implementing this MIB does not support
+                        ciscoDdpIappRogueApInfoGroup objects in
+                        CISCO-DDP-IAPP-MIB."
+
+                GROUP   cd11IfMonitorNotificationGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        implementing this MIB does not support
+                        CISCO-DDP-IAPP-MIB ciscoDdpIappNotificationGroup
+                        and CISCO-L2-DEV-MONITORING-MIB
+                        ciscoL2DevMonNotificationGroup."
+
+                OBJECT  cd11IfVlanEncryptKeyStatus
+                DESCRIPTION
+                        "Creation of rows must be done via
+                        'createAndGo' for all keys.  When the
+                        agent successfully creates the encryption
+                        key, this object is set to 'active' by the
+                        agent."
+
+                OBJECT  cd11IfPhyFhssMaxCompatibleRate
+                DESCRIPTION
+                        "This object is only mandatory for devices
+                        supporting Frequency-Hopping Spread Spectrum."
+        ::= { ciscoDot11IfMIBCompliances 5 }
 
 -- *****************************************************************
 --   Units of conformance
@@ -4152,5 +4456,27 @@ cd11IfMonitorNotificationGroup NOTIFICATION-GROUP
                 "The notification group for this module."
         ::= { ciscoDot11IfMIBGroups 20 }
 
+cd11Ifdot11UpgradeStatusGroup OBJECT-GROUP
+        OBJECTS {
+                cd11IfDot11UpgradeStatus
+        }
+        STATUS current
+        DESCRIPTION
+                "This collection of objects provide information
+                about the status of upgrade of the dot11 radios
+                to operate in the new frequency set. "
+        ::= { ciscoDot11IfMIBGroups 21 }
+
+cd11Ifdot11MobileStationScanGroup OBJECT-GROUP
+        OBJECTS {
+                cd11IfMobileStationListIgnore,
+                cd11IfMobileStationScanChannel
+        }
+        STATUS current
+        DESCRIPTION
+                "This collection of objects provide information
+                about the limited channel to scan and Ignore
+                List. "
+        ::= { ciscoDot11IfMIBGroups 22 }
 END
 

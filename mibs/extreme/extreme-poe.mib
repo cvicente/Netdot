@@ -5,6 +5,8 @@
 -- *	  Extreme Networks
 -- *      http://www.extremenetworks.com
 -- *
+-- * extracted from $Extreme_Id: extreme.mib,v 1.24.6.35 2006/01/09 15:15:18 build-sc Exp $
+-- *
 -- */
 
 -- ============================================================================
@@ -40,7 +42,7 @@ EXTREME-POE-MIB DEFINITIONS ::= BEGIN
         extremePethPort   OBJECT IDENTIFIER ::= {extremePoE 2}
 --        powerEthernetMIB  OBJECT IDENTIFIER ::= {extremePoE 3}
         extremePethSystem OBJECT IDENTIFIER ::= {extremePoE 4}
---        extremePethTraps  OBJECT IDENTIFIER ::= {extremeV2Traps 8}
+--        extremePethTraps  OBJECT IDENTIFIER ::= {extremeV2Traps 12}
 
 
 -- extremePethSystem
@@ -58,8 +60,8 @@ extremePethSystemAdminEnable OBJECT-TYPE
 
 extremePethSystemDisconnectPrecedence OBJECT-TYPE
           SYNTAX INTEGER   {
-                  lowest-priority(1),
-                  deny-port(2)
+                  lowestPriority(1),
+                  denyPort(2)
           }
           MAX-ACCESS            read-write
           STATUS                current
@@ -72,7 +74,7 @@ extremePethSystemDisconnectPrecedence OBJECT-TYPE
                 Lowest-priority: next port connected causes a shutdown of the 
                                  lowest priority port.
                 Deny-port:       next port is denied power, regardless of priority."
-          DEFVAL                { deny-port }
+          DEFVAL                { denyPort }
           ::= { extremePethSystem 2 }
 
 extremePethSystemUsageThreshold OBJECT-TYPE
@@ -100,6 +102,19 @@ extremePethSystemPowerSupplyMode OBJECT-TYPE
                    provide redundant or load-sharing operations will return
                    an error on setting, and notApplicable on read."
          ::= { extremePethSystem 4 }
+
+extremePethSystemLegacyEnable OBJECT-TYPE
+          SYNTAX INTEGER   {
+                  enable(1),
+                  disable(2)
+          }
+          MAX-ACCESS            read-write
+          STATUS                current
+          DESCRIPTION
+                  "Controls whether legacy is supported by the system.  This is only supported on 
+                   S300-24 stackables currently."
+          DEFVAL                { disable }
+          ::= { extremePethSystem 5 }
 
 
 
@@ -168,7 +183,7 @@ extremePethSlotConsumptionPower  OBJECT-TYPE
           MAX-ACCESS            read-only
           STATUS                current
           DESCRIPTION
-                  "The amount of power allocated to PoE devices on the slot expressed in Watts.
+                  "The amount of power allocated to PoE devices on the slot expressed in mWatts.
                    The amount of power allocated to a PoE device is based upon the PoE device 
                    class and/or the port's extremePethPortViolationPrecedence setting. For
                    example, in the default configuration of extremePethPortViolationPrecedence 
@@ -317,7 +332,7 @@ extremePethSlotMeasuredPower  OBJECT-TYPE
           MAX-ACCESS            read-only
           STATUS                current
           DESCRIPTION
-                  "The measured amount of power for all PoE device on the
+                  "The measured amount of power for all PoE device on the 
                    slot."
           ::= { extremePethPseSlotEntry 14 }
 

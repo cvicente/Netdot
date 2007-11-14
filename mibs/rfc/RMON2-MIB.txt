@@ -1,11 +1,11 @@
 RMON2-MIB DEFINITIONS ::= BEGIN
 IMPORTS
     MODULE-IDENTITY, OBJECT-TYPE, Counter32, Integer32,
-        Gauge32, IpAddress, TimeTicks            FROM SNMPv2-SMI
+    Gauge32, IpAddress, TimeTicks, mib-2         FROM SNMPv2-SMI
     TEXTUAL-CONVENTION, RowStatus, DisplayString, TimeStamp
                                                  FROM SNMPv2-TC
-    MODULE-COMPLIANCE, OBJECT-GROUP FROM SNMPv2-CONF
-    mib-2, ifIndex                  FROM RFC1213-MIB
+    MODULE-COMPLIANCE, OBJECT-GROUP              FROM SNMPv2-CONF
+    ifIndex                                      FROM IF-MIB
     OwnerString, statistics, history, hosts,
     matrix, filter, etherStatsEntry, historyControlEntry,
     hostControlEntry, matrixControlEntry, filterEntry,
@@ -16,28 +16,135 @@ IMPORTS
 --  Remote Network Monitoring MIB
 
 rmon MODULE-IDENTITY
-    LAST-UPDATED "9605270000Z"
+    LAST-UPDATED "200605020000Z"    -- May 2, 2006
     ORGANIZATION "IETF RMON MIB Working Group"
     CONTACT-INFO
-        "Steve Waldbusser   (WG Editor)
-         Postal: International Network Services
-         650 Castro Street, Suite 260
-         Mountain View, CA 94041
-         Phone:  +1 415 254 4251
-         Email:  waldbusser@ins.com
+        "Author:
+                     Steve Waldbusser
+             Phone:  +1-650-948-6500
+             Fax :   +1-650-745-0671
+             Email:  waldbusser@nextbeacon.com
 
-         Andy Bierman   (WG Chair)
-         Phone:  +1 805 648 2028
-         Email:  abierman@west.net"
+         Working Group Chair:
+                     Andy Bierman
+             E-mail: ietf@andybierman.com
+
+         Working Group Mailing List: <rmonmib@ietf.org>
+         To subscribe send email to: <rmonmib-request@ietf.org>    "
     DESCRIPTION
         "The MIB module for managing remote monitoring
-         device implementations. This MIB module
-         augments the original RMON MIB as specified in
-         RFC 1757."
+         device implementations.  This MIB module
+         extends the architecture introduced in the original
+         RMON MIB as specified in RFC 2819.
+
+         Copyright (C) The Internet Society (2006).  This version of
+         this MIB module is part of RFC 4502;  see the RFC itself for
+         full legal notices."
+
+    REVISION "200605020000Z"    -- May 2, 2006
+    DESCRIPTION
+        "This version updates the proposed-standard version of the
+        RMON2 MIB (published as RFC 2021) by adding 2 new
+        enumerations to the nlMatrixTopNControlRateBase object and
+        4 new enumerations to the alMatrixTopNControlRateBase object.
+        These new enumerations support the creation of high-capacity
+        topN reports in the High Capacity RMON MIB [RFC3273].
+
+        Additionally, the following objects have been deprecated, as
+        they have not had enough independent implementations to
+        demonstrate interoperability to meet the requirements of a
+        Draft Standard:
+
+        probeDownloadFile
+        probeDownloadTFTPServer
+        probeDownloadAction
+        probeDownloadStatus
+
+        serialMode
+        serialProtocol
+        serialTimeout
+        serialModemInitString
+        serialModemHangUpString
+        serialModemConnectResp
+        serialModemNoConnectResp
+        serialDialoutTimeout
+        serialStatus
+        serialConnectDestIpAddress
+        serialConnectType
+        serialConnectDialString
+        serialConnectSwitchConnectSeq
+        serialConnectSwitchDisconnectSeq
+        serialConnectSwitchResetSeq
+        serialConnectOwner
+        serialConnectStatus
+        netConfigIPAddress
+        netConfigSubnetMask
+        netConfigStatus
+        netDefaultGateway
+        tokenRingMLStats2DroppedFrames
+        tokenRingMLStats2CreateTime
+        tokenRingPStats2DroppedFrames
+        tokenRingPStats2CreateTime
+        ringStationControl2DroppedFrames
+        ringStationControl2CreateTime
+        sourceRoutingStats2DroppedFrames
+        sourceRoutingStats2CreateTime
+        trapDestIndex
+        trapDestCommunity
+        trapDestProtocol
+        trapDestAddress
+        trapDestOwner
+        trapDestStatus
+
+        In addition, two corrections were made.  The LastCreateTime
+        Textual Convention had been defined with a base type of
+        another textual convention, which isn't allowed in SMIv2.  The
+        definition has been modified to use TimeTicks as the base
+        type.
+
+        Further, the SerialConfigEntry SEQUENCE definition included
+        sub-typing information that is not allowed in SMIv2.  This
+        information has been deleted.  Ranges were added to a number of
+        objects and textual-conventions to constrain their maximum
+        (and sometimes minimum) sizes.  The addition of these ranges
+        documents existing practice for these objects.  These objects
+
+        are:
+            ControlString
+            protocolDirID
+            protocolDirParameters
+            addressMapNetworkAddress
+            nlHostAddress
+            nlMatrixSDSourceAddress
+            nlMatrixSDDestAddress
+            nlMatrixDSSourceAddress
+            nlMatrixDSDestAddress
+            nlMatrixTopNSourceAddress
+            nlMatrixTopNDestAddress
+            alHostEntry
+            alMatrixSDEntry
+            alMatrixDSEntry
+            alMatrixTopNSourceAddress
+            alMatrixTopNDestAddress
+
+        Finally, the TimeFilter TC has been updated to encourage agent
+        implementations that allow a MIB walk to behave well even when
+        performed by an application that is not aware of the special
+        TimeFilter semantics."
+
+    REVISION "200207080000Z"        -- 08 July, 2002
+    DESCRIPTION
+        "Added new enumerations to support the High-Capacity RMON
+        MIB as defined in RFC 3273.  Also fixed some typos and
+        added clarifications."
+
+    REVISION "199605270000Z"    -- 27 May, 1996
+    DESCRIPTION
+        "Original version.  Published as RFC 2021."
     ::= { mib-2 16 }
 
 -- { rmon 1 } through { rmon 10 } are defined in RMON and
--- the Token Ring RMON MIB [RFC 1513]
+-- the Token Ring RMON MIB [RFC1513]
 
     protocolDir     OBJECT IDENTIFIER ::= { rmon 11 }
     protocolDist    OBJECT IDENTIFIER ::= { rmon 12 }
@@ -55,116 +162,264 @@ rmon MODULE-IDENTITY
 ZeroBasedCounter32 ::= TEXTUAL-CONVENTION
     STATUS current
     DESCRIPTION
-        "This TC describes an object which counts events with the
+        "This TC describes an object that counts events with the
         following semantics: objects of this type will be set to
         zero(0) on creation and will thereafter count appropriate
         events, wrapping back to zero(0) when the value 2^32 is
         reached.
 
         Provided that an application discovers the new object within
-        the minimum time to wrap it can use the initial value as a
+        the minimum time to wrap, it can use the initial value as a
         delta since it last polled the table of which this object is
         part.  It is important for a management station to be aware of
         this minimum time and the actual time between polls, and to
         discard data if the actual time is too long or there is no
         defined minimum time.
 
-        Typically this TC is used in tables where the INDEX space is
+        Typically, this TC is used in tables where the INDEX space is
         constantly changing and/or the TimeFilter mechanism is in use."
     SYNTAX Gauge32
 
 LastCreateTime ::= TEXTUAL-CONVENTION
     STATUS current
     DESCRIPTION
-        "This TC describes an object that stores the last time its
-        entry was created.
+        "This TC describes an object that stores the value of the
+        sysUpTime object at the last time its entry was created.
 
         This can be used for polling applications to determine that an
         entry has been deleted and re-created between polls, causing
-        an otherwise undetectable discontinuity in the data."
-    SYNTAX TimeStamp
+        an otherwise undetectable discontinuity in the data.
+
+        If sysUpTime is reset to zero as a result of a re-
+        initialization of the network management (sub)system, then
+        the values of all LastCreateTime objects are also reset.
+        However, after approximately 497 days without a re-
+        initialization, the sysUpTime object will reach 2^^32-1 and
+        then increment to zero; in this case, existing values
+        of TimeStamp objects do not change.  This can lead to
+        ambiguities in the value of TimeStamp objects."
+    SYNTAX TimeTicks
 
 TimeFilter ::= TEXTUAL-CONVENTION
-    STATUS        current
-    DESCRIPTION
-        "To be used for the index to a table.  Allows an application
-        to download only those rows changed since a particular time.
-        A row is considered changed if the value of any object in the
-        row changes or if the row is created or deleted.
+  STATUS        current
+  DESCRIPTION
+      "To be used for the index to a table.  Allows an application
+      to download only those rows changed since a particular time.
 
-        When sysUpTime is equal to zero, this table shall be empty.
+      Note that this is not a history mechanism.  Only current values
+      of underlying objects are returned; saved instance values
+      associated with particular values of sysUpTime are not.
 
-        One entry exists for each past value of sysUpTime, except that
-        the whole table is purged should sysUpTime wrap.
+      An entry is considered changed if the value of any object in the
+      entry changes, if the row is created, or if any object in the
+      entry is created or deleted.  Note that deleted entries cannot
+      be detected or downloaded.
 
-        As this basic row is updated new conceptual rows are created
-        (which still share the now updated object values with all
-        other instances).  The number of instances which are created
-        is determined by the value of sysUpTime at which the basic row
-        was last updated.  One instance will exist for each value of
-        sysUpTime at the last update time for the row.  A new
-        timeMark instance is created for each new sysUpTime value.
-        Each new conceptual row will be associated with the timeMark
-        instance which was created at the value of sysUpTime with
-        which the conceptual row is to be associated.
+      A time-filtered conceptual table is created by inserting a
+      single object of SYNTAX TimeFilter as the first INDEX component
+      in a copy of an existing basic conceptual table (i.e., any
+      SEQUENCE without a TimeFilter INDEX component).  Thus, for
+      each conceptual entry 'I' in the basic table, there exists N
+      conceptual entries in the time-filtered version, indexed N.I,
+      where 'N' is equal to the value of sysUpTime.
 
-        By definition all conceptual rows were updated at or after
-        time zero and so at least one conceptual row (associated with
-        timeMark.0) must exist for each underlying (basic) row.
+      When an application retrieves conceptual instances from a
+      time-filtered table, and an INDEX value is provided for the
+      TimeFilter INDEX component 'N', the agent will only consider
+      returning basic conceptual entries (e.g., 'fooColumn.N.I') if
+      any column within the basic conceptual entry has changed since
+      sysUpTime 'N'.  If not, the basic conceptual entry will
+      be ignored for the particular retrieval operation.
 
-        See the appendix for further discussion of this variable.
+      When sysUpTime is equal to zero, this table shall be empty.
 
-        Consider the following fooTable:
+      One conceptual entry exists for each past value of sysUpTime,
+      except that the whole table is purged should sysUpTime wrap.
 
-        fooTable ...
-        INDEX { fooTimeMark, fooIndex }
+      As an entry in a time-filtered table is updated (i.e., one of
+      the columns in the basic conceptual table is changed), new
+      conceptual entries are also created in the time-filtered version
+      (which still shares the now updated object values with all other
+      instances).  The number of unique time-filtered instances that
+      are created is determined by the value of sysUpTime at which the
+      basic entry was last updated.  One unique instance will exist
+      for each value of sysUpTime at the last update time for the row.
+      However, a new TimeFilter index instance is created for each new
+      sysUpTime value.  The TimeFilter index values not associated
+      with entry updates are called duplicate time-filtered instances.
 
-        FooEntry {
-           fooTimeMark  TimeFilter
-           fooIndex     INTEGER,
-           fooCounts    Counter
-        }
+      After some deployment experience, it has been determined that
+      a time-filtered table is more efficient if the agent
+      stops a MIB walk operation by skipping over rows with a
+      TimeFilter index value higher than the value in the received
+      GetNext/GetBulk request.  That is, instead of incrementing a
+      TimeFilter index value, the agent will continue to the next
 
-        Should there be two basic rows in this table (fooIndex == 1,
-        fooIndex == 2) and row 1 was updated most recently at time 6,
-        while row 2 was updated most recently at time 8, and both rows
-        had been updated on several earlier occasions such that the
-        current values were 5 and 9 respectively then the following
-        fooCounts instances would exist.
+      object or table.  As a consequence, GetNext or GetBulk
+      operations will provide only one pass through a time-filtered
+      table.
 
-        fooCounts.0.1  5
-        fooCounts.0.2  9
-        fooCounts.1.1  5
+      It is suggested that an agent implement a time-filtered table
+      in this manner to improve performance and avoid a MIB walk
+      getting stuck in time-filtered tables.  It is, however, still
+      acceptable for an agent to implement a time-filtered table in
+      the traditional manner (i.e., every conceptual time-filtered
+      instance is returned in GetNext and GetBulk PDU responses), and
+      management applications must be able to deal with such
+      traditional implementations.
 
-        fooCounts.1.2  9
-        fooCounts.2.1  5
-        fooCounts.2.2  9
-        fooCounts.3.1  5
-        fooCounts.3.2  9
-        fooCounts.4.1  5
-        fooCounts.4.2  9
-        fooCounts.5.1  5
-        fooCounts.5.2  9
-        fooCounts.6.1  5
-        fooCounts.6.2  9
-        fooCounts.7.2  9    -- note that row 1 doesn't exist for
-        fooCounts.8.2  9    -- times 7 and 8"
-    SYNTAX    TimeTicks
+      See the appendix for further discussion of this textual
+      convention.
+
+      The following example is provided to demonstrate TimeFilter
+      behavior:
+
+      Consider the following basic conceptual table, basicFooTable.
+      (Note that the basic version of a time-filtered table may not
+      actually be defined.)
+
+          basicFooTable:
+
+          basicFooTable ...
+          INDEX { fooIndex }
+
+          BasicFooEntry {
+             fooIndex     Integer32,
+             fooCounts    Counter32
+          }
+
+      For this example, the basicFooTable contains two static
+      conceptual entries (fooIndex equals '1' and '2'), created at
+      time zero.  It also contains one dynamic conceptual entry
+      (fooIndex equals '3'), which is created at time '3' and deleted
+      at time '7'.
+
+      The time-filtered version of the basicFooTable could be defined
+      as follows:
+
+          FooTable:
+
+          fooTable ...
+          INDEX { fooTimeMark, fooIndex }
+
+          FooEntry {
+
+             fooTimeMark  TimeFilter,
+             fooIndex     Integer32,
+             fooCounts    Counter32
+          }
+
+      Note that entries exist in the time-filtered conceptual table
+      only if they actually exist in the underlying (basic) table.
+
+      For this example, the fooTable will have three underlying
+      basic entries (fooIndex == 1, 2, and 3), with the following
+      activity (for sysUpTime equal 0 to 9):
+
+         - fooEntry.N.1 is created at time '0' and most recently
+           updated at time '6' to the value '5'.
+         - fooEntry.N.2 is created at time '0' and most recently
+           updated at time '8' to the value '9'.
+         - fooEntry.N.3 is created at time '3', updated at time '5'
+           to the value '17', and deleted at time '7'.
+
+     The following tables show the values that would be returned for
+     MIB walk operations with various TimeFilter values, done at
+     different times.  An application issues a retrieval request at
+     time 'T', with a TimeFilter value, 'N' (typically set to a lower
+     value, such as the value of sysUpTime at the last polling cycle).
+
+     The following values would be returned in a MIB walk of
+     fooCounts.N if T equals '0' and N equals '0':
+
+           fooCounts.N.I    Value
+           ==========================
+           fooCounts.0.1    0
+           fooCounts.0.2    0
+
+       Note that nothing is returned for fooCounts.0.3, since that
+       entry does not exist at sysUpTime equals '0'.
+
+     The following values would be returned in a full (traditional) MIB
+     walk of fooCounts.N if T equals '3' and N equals '0':
+
+           fooCounts.N.I    Value
+           =======================
+           fooCounts.0.1    0
+           fooCounts.0.2    0
+           fooCounts.0.3    0
+           fooCounts.1.3    0
+           fooCounts.2.3    0
+           fooCounts.3.3    0
+
+       Note that there are no instances for T equals 1 or 2 for the
+       first two values of N, as these entries did not change
+       since they were created at time '0'.
+
+       Note that the current value for 'fooCounts.N.3' is returned
+       here, even for values of N less than '3' (when the entry was
+       created).  The agent only considers the current existence of an
+       entry in the TimeFilter algorithm, not the time when the entry
+       was created.
+
+       Note that the instances 'fooCounts.0.3', 'fooCounts.1.3',
+       and 'fooCounts.2.3' are duplicates and can be suppressed by the
+       agent in a MIB walk.
+
+     The following values would be returned in a full (traditional)
+     MIB walk of fooCounts.N if T equals '6' and N equals '3':
+
+           fooCounts.N.I    Value
+           =======================
+           fooCounts.3.1    5
+           fooCounts.3.3    17
+           fooCounts.4.1    5
+           fooCounts.4.3    17
+           fooCounts.5.1    5
+           fooCounts.5.3    17
+           fooCounts.6.1    5
+
+        Note that no instances for entry 'fooCounts.N.2' are returned,
+        since it has not changed since time '3'.
+
+        Note that all instances except 'fooCounts.5.3' and
+        'fooCounts.6.1' are duplicates and can be suppressed by the
+        agent in a MIB walk.
+
+     The following values would be returned in a full (traditional)
+     MIB walk of fooCounts.N if T equals '9' and N equals '6':
+
+           fooCounts.N.I    Value
+           =======================
+           fooCounts.6.1    5
+           fooCounts.6.2    9
+           fooCounts.7.2    9
+           fooCounts.8.2    9
+
+        Note that no instances for entry 'fooCounts.N.3' are returned,
+        since it was deleted at time '7'.
+
+        Note that instances 'fooCounts.6.2' and 'fooCounts.7.2'
+
+        are duplicates and can be suppressed by the agent in a MIB
+        walk."
+  SYNTAX    TimeTicks
 
 DataSource ::= TEXTUAL-CONVENTION
     STATUS        current
     DESCRIPTION
         "Identifies the source of the data that the associated
-        function is configured to analyze. This source can be any
+        function is configured to analyze.  This source can be any
         interface on this device.
 
         In order to identify a particular interface, this
         object shall identify the instance of the ifIndex
-        object, defined in [3,5], for the desired interface.
+        object, defined in [RFC2863], for the desired interface.
 
         For example, if an entry were to receive data from
         interface #1, this object would be set to ifIndex.1."
     SYNTAX      OBJECT IDENTIFIER
+
 --
 -- Protocol Directory Group
 --
@@ -179,7 +434,7 @@ protocolDirLastChange OBJECT-TYPE
     DESCRIPTION
         "The value of sysUpTime at the time the protocol directory
         was last modified, either through insertions or deletions,
-        or through modifications of either the
+        or through modifications of the
         protocolDirAddressMapConfig, protocolDirHostConfig, or
         protocolDirMatrixConfig."
     ::= { protocolDir 1 }
@@ -192,13 +447,14 @@ protocolDirTable OBJECT-TYPE
         "This table lists the protocols that this agent has the
         capability to decode and count.  There is one entry in this
         table for each such protocol.  These protocols represent
-        different network layer, transport layer, and higher-layer
+        different network-layer, transport-layer, and higher-layer
+
         protocols.  The agent should boot up with this table
         preconfigured with those protocols that it knows about and
         wishes to monitor.  Implementations are strongly encouraged to
         support protocols higher than the network layer (at least for
         the protocol distribution group), even for implementations
-        that don't support the application layer groups."
+        that don't support the application-layer groups."
     ::= { protocolDir 2 }
 
 protocolDirEntry OBJECT-TYPE
@@ -212,7 +468,12 @@ protocolDirEntry OBJECT-TYPE
          protocolDirLocalIndex.8.0.0.0.1.0.0.8.0.2.0.0, which is the
          encoding of a length of 8, followed by 8 subids encoding the
          protocolDirID of 1.2048, followed by a length of 2 and the
-         2 subids encoding zero-valued parameters."
+         2 subids encoding zero-valued parameters.
+
+         Note that some combinations of index values may result in an
+         index that exceeds 128 sub-identifiers in length, which exceeds
+         the maximum for the SNMP protocol.  Implementations should take
+         care to avoid such combinations."
     INDEX { protocolDirID, protocolDirParameters }
     ::= { protocolDirTable  1 }
 
@@ -230,25 +491,26 @@ ProtocolDirEntry ::= SEQUENCE {
 }
 
 protocolDirID OBJECT-TYPE
-    SYNTAX      OCTET STRING
+    SYNTAX      OCTET STRING  (SIZE (4..128))
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
         "A unique identifier for a particular protocol.  Standard
-        identifiers will be defined in a manner such that they
-        can often be used as specifications for new protocols - i.e.
+        identifiers will be defined in such a manner that they
+
+        can often be used as specifications for new protocols - i.e.,
         a tree-structured assignment mechanism that matches the
-        protocol encapsulation `tree' and which has algorithmic
-        assignment mechanisms for certain subtrees. See RFC XXX for
+        protocol encapsulation 'tree' and that has algorithmic
+        assignment mechanisms for certain subtrees.  See RFC 2074 for
         more details.
 
         Despite the algorithmic mechanism, the probe will only place
         entries in here for those protocols it chooses to collect.  In
-        other words, it need not populate this table with all of the
+        other words, it need not populate this table with all
         possible ethernet protocol types, nor need it create them on
-        the fly when it sees them.  Whether or not it does these
+        the fly when it sees them.  Whether it does these
         things is a matter of product definition (cost/benefit,
-        usability), and is up to the designer of the product.
+        usability) and is up to the designer of the product.
 
         If an entry is written to this table with a protocolDirID that
         the agent doesn't understand, either directly or
@@ -257,13 +519,13 @@ protocolDirID OBJECT-TYPE
     ::= { protocolDirEntry 1 }
 
 protocolDirParameters OBJECT-TYPE
-    SYNTAX      OCTET STRING
+    SYNTAX      OCTET STRING (SIZE (1..32))
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
         "A set of parameters for the associated protocolDirID.
         See the associated RMON2 Protocol Identifiers document
-        for a description of the possible parameters. There
+        for a description of the possible parameters.  There
         will be one octet in this string for each sub-identifier in
         the protocolDirID, and the parameters will appear here in the
         same order as the associated sub-identifiers appear in the
@@ -274,7 +536,7 @@ protocolDirParameters OBJECT-TYPE
         parameters for a node is optional).  The proper parameter
         value for each node is included in this string.  Note that the
         inclusion of a parameter value in this string for each node is
-        not optional - what is optional is that a node may have no
+        not optional.  What is optional is that a node may have no
         parameters defined, in which case the parameter field for that
         node will be zero."
     ::= { protocolDirEntry 2 }
@@ -284,7 +546,7 @@ protocolDirLocalIndex OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "The locally arbitrary, but unique identifier associated
+        "The locally arbitrary but unique identifier associated
         with this protocolDir entry.
 
         The value for each supported protocol must remain constant at
@@ -295,9 +557,9 @@ protocolDirLocalIndex OBJECT-TYPE
         re-initialization.
 
         The specific value is meaningful only within a given SNMP
-        entity. A protocolDirLocalIndex must not be re-used until the
-        next agent-restart in the event the protocol directory entry
-        is deleted."
+        entity.  A protocolDirLocalIndex must not be re-used until the
+        next agent restart in the event that the protocol directory
+        entry is deleted."
     ::= { protocolDirEntry 3 }
 
 protocolDirDescr OBJECT-TYPE
@@ -307,7 +569,7 @@ protocolDirDescr OBJECT-TYPE
     DESCRIPTION
         "A textual description of the protocol encapsulation.
         A probe may choose to describe only a subset of the
-        entire encapsulation (e.g. only the highest layer).
+        entire encapsulation (e.g., only the highest layer).
 
         This object is intended for human consumption only.
 
@@ -326,21 +588,21 @@ protocolDirType OBJECT-TYPE
         "This object describes 2 attributes of this protocol
          directory entry.
 
-         The presence or absence of the `extensible' bit describes
-         whether or not this protocol directory entry can be extended
-
-         by the user by creating protocol directory entries which are
+         The presence or absence of the 'extensible' bit describes
+         whether this protocol directory entry can be extended
+         by the user by creating protocol directory entries that are
          children of this protocol.
 
          An example of an entry that will often allow extensibility is
-         `ip.udp'.  The probe may automatically populate some children
-         of this node such as `ip.udp.snmp' and `ip.udp.dns'.
+
+         'ip.udp'.  The probe may automatically populate some children
+         of this node, such as 'ip.udp.snmp' and 'ip.udp.dns'.
          A probe administrator or user may also populate additional
          children via remote SNMP requests that create entries in this
          table.  When a child node is added for a protocol for which the
-         probe has no built in support, extending a parent node (for
-         which the probe does have built in support),
-         that child node is not extendible.  This is termed `limited
+         probe has no built-in support extending a parent node (for
+         which the probe does have built-in support),
+         that child node is not extendable.  This is termed 'limited
          extensibility'.
 
          When a child node is added through this extensibility
@@ -350,17 +612,17 @@ protocolDirType OBJECT-TYPE
          The other objects in the entry will be assigned by the
          manager who is creating the new entry.
 
-         This object also describes whether or not this agent can
-         recognize addresses for this protocol, should it be a network
-         level protocol.  That is, while a probe may be able to
-         recognize packets of a particular network layer protocol and
-         count them, it takes additional logic to be able to recognize
-         the addresses in this protocol and to populate network layer
-         or application layer tables with the addresses in this
-         protocol.  If this bit is set, the agent will recognize
-         network layer addresses for this protoocl and populate the
-         network and application layer host and matrix tables with
-         these protocols.
+         This object also describes whether this agent can
+         recognize addresses for this protocol, should it be a
+         network-level protocol.  That is, while a probe may be able
+         to recognize packets of a particular network-layer protocol
+         and count them, it takes additional logic to be able to
+         recognize the addresses in this protocol and to populate
+         network-layer or application-layer tables with the addresses
+         in this protocol.  If this bit is set, the agent will
+         recognize network-layer addresses for this protocol and
+         populate the network- and application-layer host and matrix
+         tables with these protocols.
 
          Note that when an entry is created, the agent will supply
          values for the bits that match the capabilities of the agent
@@ -416,7 +678,7 @@ protocolDirHostConfig OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "This object describes and configures the probe's support for
-        the network layer and application layer host tables for this
+        the network-layer and application-layer host tables for this
         protocol.  When the probe creates entries in this table for
         all protocols that it understands, it will set the entry to
         notSupported(1) if it doesn't have the capability to track the
@@ -427,15 +689,16 @@ protocolDirHostConfig OBJECT-TYPE
         the nlHostTable and the alHostTable.
 
         If the associated protocolDirType object has the
-        addressRecognitionCapable bit set, then this is a network
+        addressRecognitionCapable bit set, then this is a network-
         layer protocol for which the probe recognizes addresses, and
+
         thus the probe will populate the nlHostTable and alHostTable
         with addresses it discovers for this protocol.
 
         If the value of this object is notSupported(1), the probe
         will not track the nlHostTable or alHostTable for this
         protocol and shall not allow this object to be changed to any
-        other value. If the value of this object is supportedOn(3),
+        other value.  If the value of this object is supportedOn(3),
         the probe supports tracking of the nlHostTable and alHostTable
         for this protocol and is configured to track both tables
         for this protocol for all control entries and all interfaces.
@@ -449,7 +712,7 @@ protocolDirHostConfig OBJECT-TYPE
 
         Note that since each alHostEntry references 2 protocol
         directory entries, one for the network address and one for the
-        type of the highest protocol recognized, that an entry will
+        type of the highest protocol recognized, an entry will
         only be created in that table if this value is supportedOn(3)
         for both protocols."
     ::= { protocolDirEntry 7 }
@@ -464,7 +727,7 @@ protocolDirMatrixConfig OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "This object describes and configures the probe's support for
-        the network layer and application layer matrix tables for this
+        the network-layer and application-layer matrix tables for this
         protocol.  When the probe creates entries in this table for
         all protocols that it understands, it will set the entry to
         notSupported(1) if it doesn't have the capability to track the
@@ -472,11 +735,12 @@ protocolDirMatrixConfig OBJECT-TYPE
         implemented but don't have the capability to track this
         protocol.  Note that if the alMatrix tables are implemented,
         the probe may only support a protocol if it is supported in
-        the the both of the nlMatrixTables and both of the
+        both of the nlMatrixTables and both of the
         alMatrixTables.
 
         If the associated protocolDirType object has the
-        addressRecognitionCapable bit set, then this is a network
+        addressRecognitionCapable bit set, then this is a network-
+
         layer protocol for which the probe recognizes addresses, and
         thus the probe will populate both of the nlMatrixTables and
         both of the alMatrixTables with addresses it discovers for
@@ -485,12 +749,12 @@ protocolDirMatrixConfig OBJECT-TYPE
         If the value of this object is notSupported(1), the probe
         will not track either of the nlMatrixTables or the
         alMatrixTables for this protocol and shall not allow this
-        object to be changed to any other value. If the value of this
+        object to be changed to any other value.  If the value of this
         object is supportedOn(3), the probe supports tracking of both
         of the nlMatrixTables and (if implemented) both of the
         alMatrixTables for this protocol and is configured to track
         these tables for this protocol for all control entries and all
-        interfaces. If the value of this object is supportedOff(2),
+        interfaces.  If the value of this object is supportedOff(2),
         the probe supports tracking of both of the nlMatrixTables and
         (if implemented) both of the alMatrixTables for this protocol
         but is configured to not track these tables for this
@@ -501,7 +765,7 @@ protocolDirMatrixConfig OBJECT-TYPE
 
         Note that since each alMatrixEntry references 2 protocol
         directory entries, one for the network address and one for the
-        type of the highest protocol recognized, that an entry will
+        type of the highest protocol recognized, an entry will
         only be created in that table if this value is supportedOn(3)
         for both protocols."
     ::= { protocolDirEntry 8 }
@@ -523,7 +787,6 @@ protocolDirStatus OBJECT-TYPE
         "The status of this protocol directory entry.
 
         An entry may not exist in the active state unless all
-
         objects in the entry have an appropriate value.
 
         If this object is not equal to active(1), all associated
@@ -559,7 +822,7 @@ protocolDistControlTable OBJECT-TYPE
         allocation utilized by different protocols.
 
         A media-specific statistics collection could also
-        be configured (e.g. etherStats, trPStats) to easily obtain
+        be configured (e.g., etherStats, trPStats) to easily obtain
         total frame, octet, and droppedEvents for the same
         interface."
     ::= { protocolDist 1 }
@@ -572,7 +835,6 @@ protocolDistControlEntry OBJECT-TYPE
         "A conceptual row in the protocolDistControlTable.
 
          An example of the indexing of this entry is
-
          protocolDistControlDroppedFrames.7"
     INDEX { protocolDistControlIndex }
     ::= { protocolDistControlTable 1 }
@@ -614,9 +876,9 @@ protocolDistControlDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
+        that the probe chose not to count for this entry for
         whatever reason.  Most often, this event occurs when the probe
         is out of some resources and decides to shed load from this
         collection.
@@ -634,7 +896,7 @@ protocolDistControlCreateTime OBJECT-TYPE
     STATUS     current
     DESCRIPTION
         "The value of sysUpTime when this control entry was last
-        activated. This can be used by the management station to
+        activated.  This can be used by the management station to
         ensure that the table has not been deleted and recreated
         between polls."
     ::= { protocolDistControlEntry 4 }
@@ -669,10 +931,10 @@ protocolDistStatsTable OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "An entry is made in this table for every protocol in the
-
-        protocolDirTable which has been seen in at least one packet.
+        protocolDirTable that has been seen in at least one packet.
         Counters are updated in this table for every protocol type
         that is encountered when parsing a packet, but no counters are
+
         updated for packets with MAC-layer errors.
 
         Note that if a protocolDirEntry is deleted, all associated
@@ -687,10 +949,10 @@ protocolDistStatsEntry OBJECT-TYPE
         "A conceptual row in the protocolDistStatsTable.
 
         The index is composed of the protocolDistControlIndex of the
-        associated protocolDistControlEntry followed by the
+        associated protocolDistControlEntry, followed by the
         protocolDirLocalIndex of the associated protocol that this
         entry represents.  In other words, the index identifies the
-        protocol distribution an entry is a part of as well as the
+        protocol distribution an entry is a part of and the
         particular protocol that it represents.
 
         An example of the indexing of this entry is
@@ -708,11 +970,11 @@ protocolDistStatsPkts OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "The number of packets without errors received of this
-        protocol type.  Note that this is the number of link-layer
-        packets, so if a single network-layer packet is fragmented
-        into several link-layer frames, this counter is incremented
-        several times."
+        "The number of packets of this protocol type received
+        without errors.  Note that this is the number of
+        link-layer packets, so if a single network-layer packet
+        is fragmented into several link-layer frames, this counter
+        is incremented several times."
     ::= { protocolDistStatsEntry 1 }
 
 protocolDistStatsOctets OBJECT-TYPE
@@ -720,14 +982,15 @@ protocolDistStatsOctets OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "The number of octets in packets received of this protocol
-        type since it was added to the protocolDistStatsTable
-        (excluding framing bits but including FCS octets), except for
+        "The number of octets in packets of this protocol type
+
+        received since it was added to the protocolDistStatsTable
+        (excluding framing bits, but including FCS octets), except for
         those octets in packets that contained errors.
 
-        Note this doesn't count just those octets in the particular
-        protocol frames, but includes the entire packet that contained
-        the protocol."
+        Note that this doesn't count just those octets in the
+        particular protocol frames but includes the entire packet
+        that contained the protocol."
     ::= { protocolDistStatsEntry 2 }
 
 --
@@ -772,9 +1035,9 @@ addressMapMaxDesiredEntries OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "The maximum number of entries that are desired in the
-        addressMapTable. The probe will not create more than
-        this number of entries in the table, but may choose to create
-        fewer entries in this table for any reason including the lack
+        addressMapTable.  The probe will not create more than
+        this number of entries in the table but may choose to create
+        fewer entries in this table for any reason, including the lack
         of resources.
 
         If this object is set to a value less than the current number
@@ -794,8 +1057,8 @@ addressMapControlTable OBJECT-TYPE
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
-        "A table to control the collection of network layer address to
-        physical address to interface mappings.
+        "A table to control the collection of mappings from network
+         layer address to physical address to interface.
 
         Note that this is not like the typical RMON
         controlTable and dataTable in which each entry creates
@@ -849,9 +1112,9 @@ addressMapControlDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
+        that the probe chose not to count for this entry for
         whatever reason.  Most often, this event occurs when the probe
         is out of some resources and decides to shed load from this
         collection.
@@ -891,12 +1154,12 @@ addressMapTable OBJECT-TYPE
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
-        "A table of network layer address to physical address to
-        interface mappings.
+        "A table of mappings from network layer address to physical
+        address to interface.
 
         The probe will add entries to this table based on the source
         MAC and network addresses seen in packets without MAC-level
-        errors. The probe will populate this table for all protocols
+        errors.  The probe will populate this table for all protocols
         in the protocol directory table whose value of
         protocolDirAddressMapConfig is equal to supportedOn(3), and
         will delete any entries whose protocolDirEntry is deleted or
@@ -909,11 +1172,17 @@ addressMapEntry OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "A conceptual row in the addressMapTable.
+
         The protocolDirLocalIndex in the index identifies the network
         layer protocol of the addressMapNetworkAddress.
 
         An example of the indexing of this entry is
-        addressMapSource.783495.18.4.128.2.6.6.11.1.3.6.1.2.1.2.2.1.1.1"
+        addressMapSource.783495.18.4.128.2.6.6.11.1.3.6.1.2.1.2.2.1.1.1.
+
+        Note that some combinations of index values may result in an
+        index that exceeds 128 sub-identifiers in length, which exceeds
+        the maximum for the SNMP protocol.  Implementations should take
+        care to avoid such combinations."
     INDEX { addressMapTimeMark, protocolDirLocalIndex,
             addressMapNetworkAddress, addressMapSource }
     ::= { addressMapTable 1 }
@@ -936,7 +1205,7 @@ addressMapTimeMark OBJECT-TYPE
     ::= { addressMapEntry 1 }
 
 addressMapNetworkAddress OBJECT-TYPE
-    SYNTAX      OCTET STRING
+    SYNTAX      OCTET STRING (SIZE (1..255))
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
@@ -949,7 +1218,7 @@ addressMapNetworkAddress OBJECT-TYPE
 
         For example, if the protocolDirLocalIndex indicates an
         encapsulation of ip, this object is encoded as a length
-        octet of 4, followed by the 4 octets of the ip address,
+        octet of 4, followed by the 4 octets of the IP address,
         in network byte order."
     ::= { addressMapEntry 2 }
 
@@ -963,21 +1232,21 @@ addressMapSource OBJECT-TYPE
 
         If this address mapping was discovered on an interface, this
         object shall identify the instance of the ifIndex
-        object, defined in [3,5], for the desired interface.
+        object, defined in [RFC2863], for the desired interface.
         For example, if an entry were to receive data from
         interface #1, this object would be set to ifIndex.1.
 
         If this address mapping was discovered on a port, this
         object shall identify the instance of the rptrGroupPortIndex
-        object, defined in [RFC1516], for the desired port.
+        object, defined in [RFC2108], for the desired port.
         For example, if an entry were to receive data from
         group #1, port #1, this object would be set to
         rptrGroupPortIndex.1.1.
 
         Note that while the dataSource associated with this entry
         may only point to index objects, this object may at times
-        point to repeater port objects. This situation occurs when
-        the dataSource points to an interface which is a locally
+        point to repeater port objects.  This situation occurs when
+        the dataSource points to an interface that is a locally
         attached repeater and the agent has additional information
         about the source port of traffic seen on that repeater."
     ::= { addressMapEntry 3 }
@@ -1009,7 +1278,6 @@ addressMapLastChange OBJECT-TYPE
 
 --
 -- Network Layer Host Group
-
 --
 -- Counts the amount of traffic sent from and to each network address
 -- discovered by the probe.
@@ -1022,19 +1290,20 @@ hlHostControlTable OBJECT-TYPE
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
-        "A list of higher layer (i.e. non-MAC) host table control entries.
+        "A list of higher-layer (i.e., non-MAC) host table control
+        entries.
 
-        These entries will enable the collection of the network and
-        application level host tables indexed by network addresses.
-        Both the network and application level host tables are
-        controlled by this table is so that they will both be created
+        These entries will enable the collection of the network- and
+        application-level host tables indexed by network addresses.
+        Both the network- and application-level host tables are
+        controlled by this table so that they will both be created
         and deleted at the same time, further increasing the ease with
-        which they can be implemented as a single datastore (note that
-        if an implementation stores application layer host records in
-        memory, it can derive network layer host records from them).
+        which they can be implemented as a single datastore.  (Note that
+        if an implementation stores application-layer host records in
+        memory, it can derive network-layer host records from them.)
 
         Entries in the nlHostTable will be created on behalf of each
-        entry in this table. Additionally, if this probe implements
+        entry in this table.  Additionally, if this probe implements
         the alHostTable, entries in the alHostTable will be created on
         behalf of each entry in this table.
 
@@ -1051,6 +1320,7 @@ hlHostControlEntry OBJECT-TYPE
         "A conceptual row in the hlHostControlTable.
 
         An example of the indexing of this entry is
+
         hlHostControlNlDroppedFrames.1"
     INDEX { hlHostControlIndex }
     ::= { hlHostControlTable 1 }
@@ -1103,10 +1373,9 @@ hlHostControlNlDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for the associated
-
+        that the probe chose not to count for the associated
         nlHost entries for whatever reason.  Most often, this event
         occurs when the probe is out of some resources and decides to
         shed load from this collection.
@@ -1148,6 +1417,7 @@ hlHostControlNlDeletes OBJECT-TYPE
     STATUS     current
     DESCRIPTION
         "The number of times an nlHost entry has been
+
         deleted from the nlHost table (for any reason).  If an entry
         is deleted, then inserted, and then deleted, this counter will
         be incremented by 2.
@@ -1155,7 +1425,6 @@ hlHostControlNlDeletes OBJECT-TYPE
         To allow for efficient implementation strategies, agents may
         delay updating this object for short periods of time.  For
         example, an implementation strategy may allow internal
-
         data structures to differ from those visible via SNMP for
         short periods of time.  This counter may reflect the internal
         data structures for those short periods of time.
@@ -1170,10 +1439,10 @@ hlHostControlNlMaxDesiredEntries OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "The maximum number of entries that are desired in the
-        nlHostTable on behalf of this control entry. The probe will
+        nlHostTable on behalf of this control entry.  The probe will
         not create more than this number of associated entries in the
-        table, but may choose to create fewer entries in this table
-        for any reason including the lack of resources.
+        table but may choose to create fewer entries in this table
+        for any reason, including the lack of resources.
 
         If this object is set to a value less than the current number
         of entries, enough entries are chosen in an
@@ -1182,7 +1451,7 @@ hlHostControlNlMaxDesiredEntries OBJECT-TYPE
 
         If this value is set to -1, the probe may create any number
         of entries in this table.  If the associated
-        hlHostControlStatus object is equal to `active', this
+        hlHostControlStatus object is equal to 'active', this
         object may not be modified.
 
         This object may be used to control how resources are allocated
@@ -1194,9 +1463,10 @@ hlHostControlAlDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for the associated
+        that the probe chose not to count for the associated
+
         alHost entries for whatever reason.  Most often, this event
         occurs when the probe is out of some resources and decides to
         shed load from this collection.
@@ -1245,6 +1515,7 @@ hlHostControlAlDeletes OBJECT-TYPE
 
         To allow for efficient implementation strategies, agents may
         delay updating this object for short periods of time.  For
+
         example, an implementation strategy may allow internal
         data structures to differ from those visible via SNMP for
         short periods of time.  This counter may reflect the internal
@@ -1260,10 +1531,10 @@ hlHostControlAlMaxDesiredEntries OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "The maximum number of entries that are desired in the alHost
-        table on behalf of this control entry. The probe will not
+        table on behalf of this control entry.  The probe will not
         create more than this number of associated entries in the
-        table, but may choose to create fewer entries in this table
-        for any reason including the lack of resources.
+        table but may choose to create fewer entries in this table
+        for any reason, including the lack of resources.
 
         If this object is set to a value less than the current number
         of entries, enough entries are chosen in an
@@ -1272,7 +1543,7 @@ hlHostControlAlMaxDesiredEntries OBJECT-TYPE
 
         If this value is set to -1, the probe may create any number
         of entries in this table.  If the associated
-        hlHostControlStatus object is equal to `active', this
+        hlHostControlStatus object is equal to 'active', this
         object may not be modified.
 
         This object may be used to control how resources are allocated
@@ -1336,7 +1607,13 @@ nlHostEntry OBJECT-TYPE
         network layer protocol of the nlHostAddress.
 
         An example of the indexing of this entry is
-        nlHostOutPkts.1.783495.18.4.128.2.6.6."
+        nlHostOutPkts.1.783495.18.4.128.2.6.6.
+
+        Note that some combinations of index values may result in an
+        index that exceeds 128 sub-identifiers in length, which exceeds
+        the maximum for the SNMP protocol.  Implementations should take
+
+        care to avoid such combinations."
     INDEX { hlHostControlIndex, nlHostTimeMark,
             protocolDirLocalIndex, nlHostAddress }
     ::= { nlHostTable 1 }
@@ -1362,7 +1639,7 @@ nlHostTimeMark OBJECT-TYPE
     ::= { nlHostEntry 1 }
 
 nlHostAddress OBJECT-TYPE
-    SYNTAX      OCTET STRING
+    SYNTAX      OCTET STRING  (SIZE (1..255))
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
@@ -1373,8 +1650,8 @@ nlHostAddress OBJECT-TYPE
         by the protocolDirLocalIndex component of the index.
 
         For example, if the protocolDirLocalIndex indicates an
-        encapsulation of ip, this object is encoded as a length
-        octet of 4, followed by the 4 octets of the ip address,
+        encapsulation of IP, this object is encoded as a length
+        octet of 4, followed by the 4 octets of the IP address,
         in network byte order."
     ::= { nlHostEntry 2 }
 
@@ -1384,6 +1661,7 @@ nlHostInPkts OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "The number of packets without errors transmitted to
+
         this address since it was added to the nlHostTable.  Note that
         this is the number of link-layer packets, so if a single
         network-layer packet is fragmented into several link-layer
@@ -1396,7 +1674,6 @@ nlHostOutPkts OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "The number of packets without errors transmitted by
-
         this address since it was added to the nlHostTable.  Note that
         this is the number of link-layer packets, so if a single
         network-layer packet is fragmented into several link-layer
@@ -1410,11 +1687,11 @@ nlHostInOctets OBJECT-TYPE
     DESCRIPTION
         "The number of octets transmitted to this address
         since it was added to the nlHostTable (excluding
-        framing bits but including FCS octets), excluding
-        those octets in packets that contained errors.
+        framing bits, but including FCS octets), excluding
+        octets in packets that contained errors.
 
-        Note this doesn't count just those octets in the particular
-        protocol frames, but includes the entire packet that contained
+        Note that this doesn't count just those octets in the particular
+        protocol frames but includes the entire packet that contained
         the protocol."
     ::= { nlHostEntry 5 }
 
@@ -1425,11 +1702,11 @@ nlHostOutOctets OBJECT-TYPE
     DESCRIPTION
         "The number of octets transmitted by this address
         since it was added to the nlHostTable (excluding
-        framing bits but including FCS octets), excluding
-        those octets in packets that contained errors.
+        framing bits, but including FCS octets), excluding
+        octets in packets that contained errors.
 
-        Note this doesn't count just those octets in the particular
-        protocol frames, but includes the entire packet that contained
+        Note that this doesn't count just those octets in the particular
+        protocol frames but includes the entire packet that contained
         the protocol."
     ::= { nlHostEntry 6 }
 
@@ -1441,7 +1718,7 @@ nlHostOutMacNonUnicastPkts OBJECT-TYPE
         "The number of packets without errors transmitted by this
         address that were directed to any MAC broadcast addresses
         or to any MAC multicast addresses since this host was
-        added to the nlHostTable. Note that this is the number of
+        added to the nlHostTable.  Note that this is the number of
         link-layer packets, so if a single network-layer packet is
         fragmented into several link-layer frames, this counter is
         incremented several times."
@@ -1471,18 +1748,19 @@ hlMatrixControlTable OBJECT-TYPE
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
-        "A list of higher layer (i.e. non-MAC) matrix control entries.
+        "A list of higher-layer (i.e., non-MAC) matrix control entries.
 
-        These entries will enable the collection of the network and
-        application level matrix tables containing conversation
+        These entries will enable the collection of the network- and
+        application-level matrix tables containing conversation
         statistics indexed by pairs of network addresses.
-        Both the network and application level matrix tables are
-        controlled by this table is so that they will both be created
+        Both the network- and application-level matrix tables are
+        controlled by this table so that they will both be created
         and deleted at the same time, further increasing the ease with
-        which they can be implemented as a single datastore (note that
-        if an implementation stores application layer matrix records
-        in memory, it can derive network layer matrix records from
-        them).
+        which they can be implemented as a single datastore.  (Note that
+        if an implementation stores application-layer matrix records
+
+        in memory, it can derive network-layer matrix records from
+        them.)
 
         Entries in the nlMatrixSDTable and nlMatrixDSTable will be
         created on behalf of each entry in this table.  Additionally,
@@ -1529,6 +1807,7 @@ hlMatrixControlIndex OBJECT-TYPE
         interface and places statistics about them in the
         nlMatrixSDTable and the nlMatrixDSTable, and optionally the
         alMatrixSDTable and alMatrixDSTable, on behalf of this
+
         hlMatrixControlEntry."
     ::= { hlMatrixControlEntry 1 }
 
@@ -1541,7 +1820,6 @@ hlMatrixControlDataSource OBJECT-TYPE
 
         The statistics in this group reflect all packets
         on the local network segment attached to the
-
         identified interface.
 
         This object may not be modified if the associated
@@ -1553,9 +1831,9 @@ hlMatrixControlNlDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
+        that the probe chose not to count for this entry for
         whatever reason.  Most often, this event occurs when the probe
         is out of some resources and decides to shed load from this
         collection.
@@ -1627,10 +1905,10 @@ hlMatrixControlNlMaxDesiredEntries OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "The maximum number of entries that are desired in the
-        nlMatrix tables on behalf of this control entry. The probe
+        nlMatrix tables on behalf of this control entry.  The probe
         will not create more than this number of associated entries in
-        the table, but may choose to create fewer entries in this
-        table for any reason including the lack of resources.
+        the table but may choose to create fewer entries in this
+        table for any reason, including the lack of resources.
 
         If this object is set to a value less than the current number
         of entries, enough entries are chosen in an
@@ -1639,8 +1917,7 @@ hlMatrixControlNlMaxDesiredEntries OBJECT-TYPE
 
         If this value is set to -1, the probe may create any number
         of entries in this table.  If the associated
-
-        hlMatrixControlStatus object is equal to `active', this
+        hlMatrixControlStatus object is equal to 'active', this
         object may not be modified.
 
         This object may be used to control how resources are allocated
@@ -1652,9 +1929,9 @@ hlMatrixControlAlDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
+        that the probe chose not to count for this entry for
         whatever reason.  Most often, this event occurs when the probe
         is out of some resources and decides to shed load from this
         collection.
@@ -1688,7 +1965,6 @@ hlMatrixControlAlInserts OBJECT-TYPE
         example, an implementation strategy may allow internal
         data structures to differ from those visible via SNMP for
         short periods of time.  This counter may reflect the internal
-
         data structures for those short periods of time.
 
         Note that the table size can be determined by subtracting
@@ -1725,10 +2001,10 @@ hlMatrixControlAlMaxDesiredEntries OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "The maximum number of entries that are desired in the
-        alMatrix tables on behalf of this control entry. The probe
+        alMatrix tables on behalf of this control entry.  The probe
         will not create more than this number of associated entries in
-        the table, but may choose to create fewer entries in this
-        table for any reason including the lack of resources.
+        the table but may choose to create fewer entries in this
+        table for any reason, including the lack of resources.
 
         If this object is set to a value less than the current number
         of entries, enough entries are chosen in an
@@ -1737,8 +2013,7 @@ hlMatrixControlAlMaxDesiredEntries OBJECT-TYPE
 
         If this value is set to -1, the probe may create any number
         of entries in this table.  If the associated
-
-        hlMatrixControlStatus object is equal to `active', this
+        hlMatrixControlStatus object is equal to 'active', this
         object may not be modified.
 
         This object may be used to control how resources are allocated
@@ -1766,7 +2041,7 @@ hlMatrixControlStatus OBJECT-TYPE
 
         If this object is not equal to active(1), all
         associated entries in the nlMatrixSDTable,
-        nlMatrixDSTable, alMatrixSDTable, and the alMatrixDSTable
+        nlMatrixDSTable, alMatrixSDTable, and alMatrixDSTable
         shall be deleted by the agent."
     ::= { hlMatrixControlEntry 12 }
 
@@ -1775,7 +2050,7 @@ nlMatrixSDTable OBJECT-TYPE
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
-        "A list of traffic matrix entries which collect statistics for
+        "A list of traffic matrix entries that collect statistics for
         conversations between two network-level addresses.  This table
         is indexed first by the source address and then by the
         destination address to make it convenient to collect all
@@ -1788,7 +2063,7 @@ nlMatrixSDTable OBJECT-TYPE
         has a protocolDirMatrixConfig value of supportedOff(2).
 
         The probe will add to this table all pairs of addresses
-        seen in all packets with no MAC errors, and will increment
+        seen in all packets with no MAC errors and will increment
         octet and packet counts in the table for all packets with no
         MAC errors.
 
@@ -1807,11 +2082,16 @@ nlMatrixSDEntry OBJECT-TYPE
         The hlMatrixControlIndex value in the index identifies the
         hlMatrixControlEntry on whose behalf this entry was created.
         The protocolDirLocalIndex value in the index identifies the
-        network layer protocol of the nlMatrixSDSourceAddress and
+        network-layer protocol of the nlMatrixSDSourceAddress and
         nlMatrixSDDestAddress.
 
         An example of the indexing of this table is
-        nlMatrixSDPkts.1.783495.18.4.128.2.6.6.4.128.2.6.7"
+        nlMatrixSDPkts.1.783495.18.4.128.2.6.6.4.128.2.6.7.
+
+        Note that some combinations of index values may result in an
+        index that exceeds 128 sub-identifiers in length, which exceeds
+        the maximum for the SNMP protocol.  Implementations should take
+        care to avoid such combinations."
     INDEX { hlMatrixControlIndex, nlMatrixSDTimeMark,
             protocolDirLocalIndex,
             nlMatrixSDSourceAddress, nlMatrixSDDestAddress }
@@ -1836,7 +2116,7 @@ nlMatrixSDTimeMark OBJECT-TYPE
     ::= { nlMatrixSDEntry 1 }
 
 nlMatrixSDSourceAddress OBJECT-TYPE
-    SYNTAX      OCTET STRING
+    SYNTAX      OCTET STRING  (SIZE (1..255))
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
@@ -1847,13 +2127,13 @@ nlMatrixSDSourceAddress OBJECT-TYPE
         by the protocolDirLocalIndex component of the index.
 
         For example, if the protocolDirLocalIndex indicates an
-        encapsulation of ip, this object is encoded as a length
-        octet of 4, followed by the 4 octets of the ip address,
+        encapsulation of IP, this object is encoded as a length
+        octet of 4, followed by the 4 octets of the IP address,
         in network byte order."
     ::= { nlMatrixSDEntry 2 }
 
 nlMatrixSDDestAddress OBJECT-TYPE
-    SYNTAX      OCTET STRING
+    SYNTAX      OCTET STRING  (SIZE (1..255))
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
@@ -1865,8 +2145,9 @@ nlMatrixSDDestAddress OBJECT-TYPE
         by the protocolDirLocalIndex component of the index.
 
         For example, if the protocolDirLocalIndex indicates an
-        encapsulation of ip, this object is encoded as a length
-        octet of 4, followed by the 4 octets of the ip address,
+
+        encapsulation of IP, this object is encoded as a length
+        octet of 4, followed by the 4 octets of the IP address,
         in network byte order."
     ::= { nlMatrixSDEntry 3 }
 
@@ -1890,12 +2171,12 @@ nlMatrixSDOctets OBJECT-TYPE
     DESCRIPTION
         "The number of octets transmitted from the source address to
         the destination address since this entry was added to the
-        nlMatrixSDTable (excluding framing bits but
-        including FCS octets), excluding those octets in packets that
+        nlMatrixSDTable (excluding framing bits, but
+        including FCS octets), excluding octets in packets that
         contained errors.
 
-        Note this doesn't count just those octets in the particular
-        protocol frames, but includes the entire packet that contained
+        Note that this doesn't count just those octets in the particular
+        protocol frames but includes the entire packet that contained
         the protocol."
     ::= { nlMatrixSDEntry 5 }
 
@@ -1916,7 +2197,7 @@ nlMatrixDSTable OBJECT-TYPE
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
-        "A list of traffic matrix entries which collect statistics for
+        "A list of traffic matrix entries that collect statistics for
         conversations between two network-level addresses.  This table
         is indexed first by the destination address and then by the
         source address to make it convenient to collect all
@@ -1929,8 +2210,7 @@ nlMatrixDSTable OBJECT-TYPE
         has a protocolDirMatrixConfig value of supportedOff(2).
 
         The probe will add to this table all pairs of addresses
-        seen in all packets with no MAC errors, and will increment
-
+        seen in all packets with no MAC errors and will increment
         octet and packet counts in the table for all packets with no
         MAC errors.
 
@@ -1949,11 +2229,16 @@ nlMatrixDSEntry OBJECT-TYPE
         The hlMatrixControlIndex value in the index identifies the
         hlMatrixControlEntry on whose behalf this entry was created.
         The protocolDirLocalIndex value in the index identifies the
-        network layer protocol of the nlMatrixDSSourceAddress and
+        network-layer protocol of the nlMatrixDSSourceAddress and
         nlMatrixDSDestAddress.
 
         An example of the indexing of this table is
-        nlMatrixDSPkts.1.783495.18.4.128.2.6.7.4.128.2.6.6"
+        nlMatrixDSPkts.1.783495.18.4.128.2.6.7.4.128.2.6.6.
+
+        Note that some combinations of index values may result in an
+        index that exceeds 128 sub-identifiers in length, which exceeds
+        the maximum for the SNMP protocol.  Implementations should take
+        care to avoid such combinations."
     INDEX { hlMatrixControlIndex, nlMatrixDSTimeMark,
             protocolDirLocalIndex,
             nlMatrixDSDestAddress, nlMatrixDSSourceAddress }
@@ -1978,7 +2263,7 @@ nlMatrixDSTimeMark OBJECT-TYPE
     ::= { nlMatrixDSEntry 1 }
 
 nlMatrixDSSourceAddress OBJECT-TYPE
-    SYNTAX      OCTET STRING
+    SYNTAX      OCTET STRING  (SIZE (1..255))
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
@@ -1989,13 +2274,13 @@ nlMatrixDSSourceAddress OBJECT-TYPE
         by the protocolDirLocalIndex component of the index.
 
         For example, if the protocolDirLocalIndex indicates an
-        encapsulation of ip, this object is encoded as a length
-        octet of 4, followed by the 4 octets of the ip address,
+        encapsulation of IP, this object is encoded as a length
+        octet of 4, followed by the 4 octets of the IP address,
         in network byte order."
     ::= { nlMatrixDSEntry 2 }
 
 nlMatrixDSDestAddress OBJECT-TYPE
-    SYNTAX      OCTET STRING
+    SYNTAX      OCTET STRING  (SIZE (1..255))
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
@@ -2004,11 +2289,12 @@ nlMatrixDSDestAddress OBJECT-TYPE
 
         This is represented as an octet string with
         specific semantics and length as identified
+
         by the protocolDirLocalIndex component of the index.
 
         For example, if the protocolDirLocalIndex indicates an
-        encapsulation of ip, this object is encoded as a length
-        octet of 4, followed by the 4 octets of the ip address,
+        encapsulation of IP, this object is encoded as a length
+        octet of 4, followed by the 4 octets of the IP address,
         in network byte order."
     ::= { nlMatrixDSEntry 3 }
 
@@ -2032,12 +2318,12 @@ nlMatrixDSOctets OBJECT-TYPE
     DESCRIPTION
         "The number of octets transmitted from the source address
         to the destination address since this entry was added to the
-        nlMatrixDSTable (excluding framing bits but
-        including FCS octets), excluding those octets in packets that
+        nlMatrixDSTable (excluding framing bits, but
+        including FCS octets), excluding octets in packets that
         contained errors.
 
-        Note this doesn't count just those octets in the particular
-        protocol frames, but includes the entire packet that contained
+        Note that this doesn't count just those octets in the particular
+        protocol frames but includes the entire packet that contained
         the protocol."
     ::= { nlMatrixDSEntry 5 }
 
@@ -2094,7 +2380,7 @@ nlMatrixTopNControlIndex OBJECT-TYPE
     DESCRIPTION
         "An index that uniquely identifies an entry
         in the nlMatrixTopNControlTable.  Each such
-        entry defines one top N report prepared for
+        entry defines one topN report prepared for
         one interface."
     ::= { nlMatrixTopNControlEntry 1 }
 
@@ -2103,7 +2389,7 @@ nlMatrixTopNControlMatrixIndex OBJECT-TYPE
     MAX-ACCESS read-create
     STATUS     current
     DESCRIPTION
-        "The nlMatrix[SD/DS] table for which a top N report will be
+        "The nlMatrix[SD/DS] table for which a topN report will be
         prepared on behalf of this entry.  The nlMatrix[SD/DS] table
         is identified by the value of the hlMatrixControlIndex
         for that table - that value is used here to identify the
@@ -2116,16 +2402,26 @@ nlMatrixTopNControlMatrixIndex OBJECT-TYPE
 nlMatrixTopNControlRateBase OBJECT-TYPE
     SYNTAX      INTEGER {
                     nlMatrixTopNPkts(1),
-                    nlMatrixTopNOctets(2)
+                    nlMatrixTopNOctets(2),
+                    nlMatrixTopNHighCapacityPkts(3),
+                    nlMatrixTopNHighCapacityOctets(4)
                 }
     MAX-ACCESS read-create
     STATUS     current
     DESCRIPTION
         "The variable for each nlMatrix[SD/DS] entry that the
-        nlMatrixTopNEntries are sorted by.
+        nlMatrixTopNEntries are sorted by, as well as a control
+        for the table that the results will be reported in.
 
         This object may not be modified if the associated
-        nlMatrixTopNControlStatus object is equal to active(1)."
+        nlMatrixTopNControlStatus object is equal to active(1).
+
+        If this value is less than or equal to 2, when the report
+        is prepared, entries are created in the nlMatrixTopNTable
+        associated with this object.
+        If this value is greater than or equal to 3, when the report
+        is prepared, entries are created in the
+        nlMatrixTopNHighCapacityTable associated with this object."
     ::= { nlMatrixTopNControlEntry 3 }
 
 nlMatrixTopNControlTimeRemaining OBJECT-TYPE
@@ -2138,11 +2434,13 @@ nlMatrixTopNControlTimeRemaining OBJECT-TYPE
         the management station, a new collection is started,
         possibly aborting a currently running report.  The
         new value is used as the requested duration of this
-        report, and is immediately loaded into the associated
+
+        report and is immediately loaded into the associated
         nlMatrixTopNControlDuration object.
+
         When the report finishes, the probe will automatically
         start another collection with the same initial value
-        of nlMatrixTopNControlTimeRemaining.  Thus the management
+        of nlMatrixTopNControlTimeRemaining.  Thus, the management
         station may simply read the resulting reports repeatedly,
         checking the startTime and duration each time to ensure that a
         report was not missed or that the report parameters were not
@@ -2157,8 +2455,8 @@ nlMatrixTopNControlTimeRemaining OBJECT-TYPE
         When this object is modified by the management station, any
         associated entries in the nlMatrixTopNTable shall be deleted.
 
-        (Note that this is a different algorithm than the one used in
-        the hostTopNTable)."
+        (Note that this is a different algorithm than the one used
+        in the hostTopNTable)."
     DEFVAL { 1800 }
     ::= { nlMatrixTopNControlEntry 4 }
 
@@ -2182,6 +2480,7 @@ nlMatrixTopNControlDuration OBJECT-TYPE
         set, this object shall be set by the probe to the
         same value and shall not be modified until the next
         time the nlMatrixTopNControlTimeRemaining is set.
+
         This value shall be zero if no reports have been
         requested for this nlMatrixTopNControlEntry."
     ::= { nlMatrixTopNControlEntry 6 }
@@ -2195,7 +2494,7 @@ nlMatrixTopNControlRequestedSize OBJECT-TYPE
 
         When this object is created or modified, the probe
         should set nlMatrixTopNControlGrantedSize as closely to this
-        object as is possible for the particular probe
+        object as possible for the particular probe
         implementation and available resources."
     DEFVAL { 150 }
     ::= { nlMatrixTopNControlEntry 7 }
@@ -2209,10 +2508,10 @@ nlMatrixTopNControlGrantedSize OBJECT-TYPE
 
         When the associated nlMatrixTopNControlRequestedSize object is
         created or modified, the probe should set this
-        object as closely to the requested value as is
+        object as closely to the requested value as
         possible for the particular implementation and
-        available resources. The probe must not lower this
-        value except as a result of a set to the associated
+        available resources.  The probe must not lower this
+        value except as a side-effect of a set to the associated
         nlMatrixTopNControlRequestedSize object.
 
         If the value of nlMatrixTopNControlRateBase is equal to
@@ -2220,7 +2519,6 @@ nlMatrixTopNControlGrantedSize OBJECT-TYPE
         matrix entries with the highest value of nlMatrixTopNPktRate
         shall be placed in this table in decreasing order of this rate
         until there is no more room or until there are no more
-
         matrix entries.
 
         If the value of nlMatrixTopNControlRateBase is equal to
@@ -2233,7 +2531,8 @@ nlMatrixTopNControlGrantedSize OBJECT-TYPE
         It is an implementation-specific matter how entries with the
         same value of nlMatrixTopNPktRate or nlMatrixTopNOctetRate are
         sorted.  It is also an implementation-specific matter as to
-        whether or not zero-valued entries are available."
+
+        whether zero-valued entries are available."
     ::= { nlMatrixTopNControlEntry 8 }
 
 nlMatrixTopNControlStartTime OBJECT-TYPE
@@ -2241,14 +2540,14 @@ nlMatrixTopNControlStartTime OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-        "The value of sysUpTime when this top N report was
+        "The value of sysUpTime when this topN report was
         last started.  In other words, this is the time that
         the associated nlMatrixTopNControlTimeRemaining object was
         modified to start the requested report or the time
         the report was last automatically (re)started.
 
         This object may be used by the management station to
-        determine if a report was missed or not."
+        determine whether a report was missed."
     ::= { nlMatrixTopNControlEntry 9 }
 
 nlMatrixTopNControlOwner OBJECT-TYPE
@@ -2280,7 +2579,8 @@ nlMatrixTopNTable OBJECT-TYPE
     MAX-ACCESS not-accessible
     STATUS     current
     DESCRIPTION
-        "A set of statistics for those network layer matrix entries
+        "A set of statistics for those network-layer matrix entries
+
         that have counted the highest number of octets or packets."
     ::= { nlMatrix 5 }
 
@@ -2318,7 +2618,6 @@ nlMatrixTopNIndex OBJECT-TYPE
     DESCRIPTION
         "An index that uniquely identifies an entry in
         the nlMatrixTopNTable among those in the same report.
-
         This index is between 1 and N, where N is the
         number of entries in this report.
 
@@ -2330,6 +2629,7 @@ nlMatrixTopNIndex OBJECT-TYPE
 
         If the value of nlMatrixTopNControlRateBase is equal to
         nlMatrixTopNOctets, increasing values of nlMatrixTopNIndex
+
         shall be assigned to entries with decreasing values of
         nlMatrixTopNOctetRate until index N is assigned or there are
         no more nlMatrixTopNEntries."
@@ -2340,16 +2640,16 @@ nlMatrixTopNProtocolDirLocalIndex OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-        "The protocolDirLocalIndex of the network layer protocol of
+        "The protocolDirLocalIndex of the network-layer protocol of
         this entry's network address."
     ::= { nlMatrixTopNEntry 2 }
 
 nlMatrixTopNSourceAddress OBJECT-TYPE
-    SYNTAX     OCTET STRING
+    SYNTAX     OCTET STRING  (SIZE (1..255))
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-        "The network layer address of the source host in this
+        "The network-layer address of the source host in this
         conversation.
 
         This is represented as an octet string with
@@ -2357,17 +2657,17 @@ nlMatrixTopNSourceAddress OBJECT-TYPE
         by the associated nlMatrixTopNProtocolDirLocalIndex.
 
         For example, if the protocolDirLocalIndex indicates an
-        encapsulation of ip, this object is encoded as a length
-        octet of 4, followed by the 4 octets of the ip address,
+        encapsulation of IP, this object is encoded as a length
+        octet of 4, followed by the 4 octets of the IP address,
         in network byte order."
     ::= { nlMatrixTopNEntry 3 }
 
 nlMatrixTopNDestAddress OBJECT-TYPE
-    SYNTAX     OCTET STRING
+    SYNTAX     OCTET STRING  (SIZE (1..255))
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-        "The network layer address of the destination host in this
+        "The network-layer address of the destination host in this
         conversation.
 
         This is represented as an octet string with
@@ -2375,8 +2675,8 @@ nlMatrixTopNDestAddress OBJECT-TYPE
         by the associated nlMatrixTopNProtocolDirLocalIndex.
 
         For example, if the nlMatrixTopNProtocolDirLocalIndex
-        indicates an encapsulation of ip, this object is encoded as a
-        length octet of 4, followed by the 4 octets of the ip address,
+        indicates an encapsulation of IP, this object is encoded as a
+        length octet of 4, followed by the 4 octets of the IP address,
         in network byte order."
     ::= { nlMatrixTopNEntry 4 }
 
@@ -2400,7 +2700,7 @@ nlMatrixTopNReversePktRate OBJECT-TYPE
     DESCRIPTION
         "The number of packets seen from the destination host to the
         source host during this sampling interval, counted
-        using the rules for counting the nlMatrixSDPkts object (note
+        using the rules for counting the nlMatrixSDPkts object.  (Note
         that the corresponding nlMatrixSDPkts object selected is the
         one whose source address is equal to nlMatrixTopNDestAddress
         and whose destination address is equal to
@@ -2432,7 +2732,7 @@ nlMatrixTopNReverseOctetRate OBJECT-TYPE
     DESCRIPTION
         "The number of octets seen from the destination host to the
         source host during this sampling interval, counted
-        using the rules for counting the nlMatrixDSOctets object (note
+        using the rules for counting the nlMatrixDSOctets object.  (Note
         that the corresponding nlMatrixSDOctets object selected is the
         one whose source address is equal to nlMatrixTopNDestAddress
         and whose destination address is equal to
@@ -2477,7 +2777,7 @@ alHostTable OBJECT-TYPE
 
         The probe will add to this table all addresses
         seen as the source or destination address in all packets with
-        no MAC errors, and will increment octet and packet counts in
+        no MAC errors and will increment octet and packet counts in
         the table for all packets with no MAC errors.  Further,
         entries will only be added to this table if their address
         exists in the nlHostTable and will be deleted from this table
@@ -2494,14 +2794,19 @@ alHostEntry OBJECT-TYPE
         The hlHostControlIndex value in the index identifies the
         hlHostControlEntry on whose behalf this entry was created.
         The first protocolDirLocalIndex value in the index identifies
-        the network layer protocol of the address.
-        The nlHostAddress value in the index identifies the network
+        the network-layer protocol of the address.
+        The nlHostAddress value in the index identifies the network-
         layer address of this entry.
         The second protocolDirLocalIndex value in the index identifies
         the protocol that is counted by this entry.
 
         An example of the indexing in this entry is
-        alHostOutPkts.1.783495.18.4.128.2.6.6.34"
+        alHostOutPkts.1.783495.18.4.128.2.6.6.34.
+
+        Note that some combinations of index values may result in an
+        index that exceeds 128 sub-identifiers in length, which exceeds
+        the maximum for the SNMP protocol.  Implementations should take
+        care to avoid such combinations."
     INDEX { hlHostControlIndex, alHostTimeMark,
             protocolDirLocalIndex, nlHostAddress,
             protocolDirLocalIndex }
@@ -2558,13 +2863,12 @@ alHostInOctets OBJECT-TYPE
     DESCRIPTION
         "The number of octets transmitted to this address
         of this protocol type since it was added to the
-        alHostTable (excluding framing bits but including
-
-        FCS octets), excluding those octets in packets that
+        alHostTable (excluding framing bits, but including
+        FCS octets), excluding octets in packets that
         contained errors.
 
-        Note this doesn't count just those octets in the particular
-        protocol frames, but includes the entire packet that contained
+        Note that this doesn't count just those octets in the particular
+        protocol frames but includes the entire packet that contained
         the protocol."
     ::= { alHostEntry 4 }
 
@@ -2575,12 +2879,12 @@ alHostOutOctets OBJECT-TYPE
     DESCRIPTION
         "The number of octets transmitted by this address
         of this protocol type since it was added to the
-        alHostTable (excluding framing bits but including
-        FCS octets), excluding those octets in packets that
+        alHostTable (excluding framing bits, but including
+        FCS octets), excluding octets in packets that
         contained errors.
 
-        Note this doesn't count just those octets in the particular
-        protocol frames, but includes the entire packet that contained
+        Note that this doesn't count just those octets in the particular
+        protocol frames but includes the entire packet that contained
         the protocol."
     ::= { alHostEntry 5 }
 
@@ -2607,8 +2911,7 @@ alMatrixSDTable OBJECT-TYPE
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
-        "A list of application traffic matrix entries which collect
-
+        "A list of application traffic matrix entries that collect
         statistics for conversations of a particular protocol between
         two network-level addresses.  This table is indexed first by
         the source address and then by the destination address to make
@@ -2617,12 +2920,13 @@ alMatrixSDTable OBJECT-TYPE
 
         The probe will populate this table for all protocols in the
         protocol directory table whose value of
+
         protocolDirMatrixConfig is equal to supportedOn(3), and
         will delete any entries whose protocolDirEntry is deleted or
         has a protocolDirMatrixConfig value of supportedOff(2).
 
         The probe will add to this table all pairs of addresses for
-        all protocols seen in all packets with no MAC errors, and will
+        all protocols seen in all packets with no MAC errors and will
         increment octet and packet counts in the table for all packets
         with no MAC errors.  Further, entries will only be added to
         this table if their address pair exists in the nlMatrixSDTable
@@ -2640,18 +2944,23 @@ alMatrixSDEntry OBJECT-TYPE
         The hlMatrixControlIndex value in the index identifies the
         hlMatrixControlEntry on whose behalf this entry was created.
         The first protocolDirLocalIndex value in the index identifies
-        the network layer protocol of the nlMatrixSDSourceAddress and
+        the network-layer protocol of the nlMatrixSDSourceAddress and
         nlMatrixSDDestAddress.
         The nlMatrixSDSourceAddress value in the index identifies the
-        network layer address of the source host in this conversation.
+        network-layer address of the source host in this conversation.
         The nlMatrixSDDestAddress value in the index identifies the
-        network layer address of the destination host in this
+        network-layer address of the destination host in this
         conversation.
         The second protocolDirLocalIndex value in the index identifies
         the protocol that is counted by this entry.
 
         An example of the indexing of this entry is
-        alMatrixSDPkts.1.783495.18.4.128.2.6.6.4.128.2.6.7.34"
+        alMatrixSDPkts.1.783495.18.4.128.2.6.6.4.128.2.6.7.34.
+
+        Note that some combinations of index values may result in an
+        index that exceeds 128 sub-identifiers in length, which exceeds
+        the maximum for the SNMP protocol.  Implementations should take
+        care to avoid such combinations."
     INDEX { hlMatrixControlIndex, alMatrixSDTimeMark,
             protocolDirLocalIndex,
             nlMatrixSDSourceAddress, nlMatrixSDDestAddress,
@@ -2695,11 +3004,11 @@ alMatrixSDOctets OBJECT-TYPE
         "The number of octets in packets of this protocol type
         transmitted from the source address to the destination address
         since this entry was added to the alMatrixSDTable (excluding
-        framing bits but including FCS octets), excluding those octets
+        framing bits, but including FCS octets), excluding octets
         in packets that contained errors.
 
-        Note this doesn't count just those octets in the particular
-        protocol frames, but includes the entire packet that contained
+        Note that this doesn't count just those octets in the particular
+        protocol frames but includes the entire packet that contained
         the protocol."
     ::= { alMatrixSDEntry 3 }
 
@@ -2720,7 +3029,7 @@ alMatrixDSTable OBJECT-TYPE
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
-        "A list of application traffic matrix entries which collect
+        "A list of application traffic matrix entries that collect
         statistics for conversations of a particular protocol between
         two network-level addresses.  This table is indexed first by
         the destination address and then by the source address to make
@@ -2734,7 +3043,7 @@ alMatrixDSTable OBJECT-TYPE
         has a protocolDirMatrixConfig value of supportedOff(2).
 
         The probe will add to this table all pairs of addresses for
-        all protocols seen in all packets with no MAC errors, and will
+        all protocols seen in all packets with no MAC errors and will
         increment octet and packet counts in the table for all packets
         with no MAC errors.  Further, entries will only be added to
         this table if their address pair exists in the nlMatrixDSTable
@@ -2752,19 +3061,24 @@ alMatrixDSEntry OBJECT-TYPE
         The hlMatrixControlIndex value in the index identifies the
         hlMatrixControlEntry on whose behalf this entry was created.
         The first protocolDirLocalIndex value in the index identifies
-        the network layer protocol of the alMatrixDSSourceAddress and
+        the network-layer protocol of the alMatrixDSSourceAddress and
         alMatrixDSDestAddress.
-
         The nlMatrixDSDestAddress value in the index identifies the
-        network layer address of the destination host in this
+        network-layer address of the destination host in this
+
         conversation.
         The nlMatrixDSSourceAddress value in the index identifies the
-        network layer address of the source host in this conversation.
+        network-layer address of the source host in this conversation.
         The second protocolDirLocalIndex value in the index identifies
         the protocol that is counted by this entry.
 
         An example of the indexing of this entry is
-        alMatrixDSPkts.1.783495.18.4.128.2.6.7.4.128.2.6.6.34"
+        alMatrixDSPkts.1.783495.18.4.128.2.6.7.4.128.2.6.6.34.
+
+        Note that some combinations of index values may result in an
+        index that exceeds 128 sub-identifiers in length, which exceeds
+        the maximum for the SNMP protocol.  Implementations should take
+        care to avoid such combinations."
     INDEX { hlMatrixControlIndex, alMatrixDSTimeMark,
             protocolDirLocalIndex,
             nlMatrixDSDestAddress, nlMatrixDSSourceAddress,
@@ -2808,11 +3122,11 @@ alMatrixDSOctets OBJECT-TYPE
         "The number of octets in packets of this protocol type
         transmitted from the source address to the destination address
         since this entry was added to the alMatrixDSTable (excluding
-        framing bits but including FCS octets), excluding those octets
+        framing bits, but including FCS octets), excluding octets
         in packets that contained errors.
 
-        Note this doesn't count just those octets in the particular
-        protocol frames, but includes the entire packet that contained
+        Note that this doesn't count just those octets in the particular
+        protocol frames but includes the entire packet that contained
         the protocol."
     ::= { alMatrixDSEntry 3 }
 
@@ -2869,7 +3183,7 @@ alMatrixTopNControlIndex OBJECT-TYPE
     DESCRIPTION
         "An index that uniquely identifies an entry
         in the alMatrixTopNControlTable.  Each such
-        entry defines one top N report prepared for
+        entry defines one topN report prepared for
         one interface."
     ::= { alMatrixTopNControlEntry 1 }
 
@@ -2878,7 +3192,7 @@ alMatrixTopNControlMatrixIndex OBJECT-TYPE
     MAX-ACCESS read-create
     STATUS     current
     DESCRIPTION
-        "The alMatrix[SD/DS] table for which a top N report will be
+        "The alMatrix[SD/DS] table for which a topN report will be
         prepared on behalf of this entry.  The alMatrix[SD/DS] table
         is identified by the value of the hlMatrixControlIndex
         for that table - that value is used here to identify the
@@ -2893,22 +3207,29 @@ alMatrixTopNControlRateBase OBJECT-TYPE
                   alMatrixTopNTerminalsPkts(1),
                   alMatrixTopNTerminalsOctets(2),
                   alMatrixTopNAllPkts(3),
-                  alMatrixTopNAllOctets(4)
+                  alMatrixTopNAllOctets(4),
+                  alMatrixTopNTerminalsHighCapacityPkts(5),
+                  alMatrixTopNTerminalsHighCapacityOctets(6),
+                  alMatrixTopNAllHighCapacityPkts(7),
+                  alMatrixTopNAllHighCapacityOctets(8)
                }
     MAX-ACCESS read-create
     STATUS     current
     DESCRIPTION
-        "The variable for each alMatrix[SD/DS] entry that the
+        "This object controls which alMatrix[SD/DS] entry that the
+        alMatrixTopNEntries are sorted by, which view of the matrix
+        table that will be used, as well as which table the results
+        will be reported in.
 
-        alMatrixTopNEntries are sorted by, as well as the
-        selector of the view of the matrix table that will be
-        used.
-
-        The values alMatrixTopNTerminalsPkts and
-        alMatrixTopNTerminalsOctets cause collection only from
-        protocols that have no child protocols that are counted.  The
-        values alMatrixTopNAllPkts and alMatrixTopNAllOctets cause
-        collection from all alMatrix entries.
+        The values alMatrixTopNTerminalsPkts,
+        alMatrixTopNTerminalsOctets,
+        alMatrixTopNTerminalsHighCapacityPkts, and
+        alMatrixTopNTerminalsHighCapacityOctets cause collection
+        only from protocols that have no child protocols that are
+        counted.  The values alMatrixTopNAllPkts,
+        alMatrixTopNAllOctets, alMatrixTopNAllHighCapacityPkts, and
+        alMatrixTopNAllHighCapacityOctets cause collection from all
+        alMatrix entries.
 
         This object may not be modified if the associated
         alMatrixTopNControlStatus object is equal to active(1)."
@@ -2924,11 +3245,12 @@ alMatrixTopNControlTimeRemaining OBJECT-TYPE
         the management station, a new collection is started,
         possibly aborting a currently running report.  The
         new value is used as the requested duration of this
-        report, and is immediately loaded into the associated
+        report and is immediately loaded into the associated
         alMatrixTopNControlDuration object.
+
         When the report finishes, the probe will automatically
         start another collection with the same initial value
-        of alMatrixTopNControlTimeRemaining.  Thus the management
+        of alMatrixTopNControlTimeRemaining.  Thus, the management
         station may simply read the resulting reports repeatedly,
         checking the startTime and duration each time to ensure that a
         report was not missed or that the report parameters were not
@@ -2936,6 +3258,7 @@ alMatrixTopNControlTimeRemaining OBJECT-TYPE
 
         While the value of this object is non-zero, it decrements
         by one per second until it reaches zero.  At the time
+
         that this object decrements to zero, the report is made
         accessible in the alMatrixTopNTable, overwriting any report
         that may be there.
@@ -2943,8 +3266,8 @@ alMatrixTopNControlTimeRemaining OBJECT-TYPE
         When this object is modified by the management station, any
         associated entries in the alMatrixTopNTable shall be deleted.
 
-        (Note that this is a different algorithm than the one used in
-        the hostTopNTable)."
+        (Note that this is a different algorithm than the one used
+        in the hostTopNTable)."
     DEFVAL { 1800 }
     ::= { alMatrixTopNControlEntry 4 }
 
@@ -2982,7 +3305,7 @@ alMatrixTopNControlRequestedSize OBJECT-TYPE
 
         When this object is created or modified, the probe
         should set alMatrixTopNControlGrantedSize as closely to this
-        object as is possible for the particular probe
+        object as possible for the particular probe
         implementation and available resources."
     DEFVAL { 150 }
     ::= { alMatrixTopNControlEntry 7 }
@@ -2996,11 +3319,10 @@ alMatrixTopNControlGrantedSize OBJECT-TYPE
 
         When the associated alMatrixTopNControlRequestedSize object
         is created or modified, the probe should set this
-
-        object as closely to the requested value as is
+        object as closely to the requested value as
         possible for the particular implementation and
         available resources. The probe must not lower this
-        value except as a result of a set to the associated
+        value except as a side-effect of a set to the associated
         alMatrixTopNControlRequestedSize object.
 
         If the value of alMatrixTopNControlRateBase is equal to
@@ -3020,7 +3342,7 @@ alMatrixTopNControlGrantedSize OBJECT-TYPE
         It is an implementation-specific matter how entries with the
         same value of alMatrixTopNPktRate or alMatrixTopNOctetRate are
         sorted.  It is also an implementation-specific matter as to
-        whether or not zero-valued entries are available."
+        whether zero-valued entries are available."
     ::= { alMatrixTopNControlEntry 8 }
 
 alMatrixTopNControlStartTime OBJECT-TYPE
@@ -3028,14 +3350,14 @@ alMatrixTopNControlStartTime OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-        "The value of sysUpTime when this top N report was
+        "The value of sysUpTime when this topN report was
         last started.  In other words, this is the time that
         the associated alMatrixTopNControlTimeRemaining object
         was modified to start the requested report or the time
         the report was last automatically (re)started.
 
         This object may be used by the management station to
-        determine if a report was missed or not."
+        determine whether a report was missed."
     ::= { alMatrixTopNControlEntry 9 }
 
 alMatrixTopNControlOwner OBJECT-TYPE
@@ -3067,7 +3389,7 @@ alMatrixTopNTable OBJECT-TYPE
     MAX-ACCESS not-accessible
     STATUS     current
     DESCRIPTION
-        "A set of statistics for those application layer matrix
+        "A set of statistics for those application-layer matrix
         entries that have counted the highest number of octets or
         packets."
     ::= { alMatrix 4 }
@@ -3107,6 +3429,7 @@ alMatrixTopNIndex OBJECT-TYPE
     DESCRIPTION
         "An index that uniquely identifies an entry in
         the alMatrixTopNTable among those in the same report.
+
         This index is between 1 and N, where N is the
         number of entries in this report.
 
@@ -3128,34 +3451,34 @@ alMatrixTopNProtocolDirLocalIndex OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-        "The protocolDirLocalIndex of the network layer protocol of
+        "The protocolDirLocalIndex of the network-layer protocol of
         this entry's network address."
     ::= { alMatrixTopNEntry 2 }
 
 alMatrixTopNSourceAddress OBJECT-TYPE
-    SYNTAX     OCTET STRING
+    SYNTAX     OCTET STRING  (SIZE (1..255))
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-        "The network layer address of the source host in this
+        "The network-layer address of the source host in this
         conversation.
+
         This is represented as an octet string with
         specific semantics and length as identified
-
         by the associated alMatrixTopNProtocolDirLocalIndex.
 
         For example, if the alMatrixTopNProtocolDirLocalIndex
-        indicates an encapsulation of ip, this object is encoded as a
-        length octet of 4, followed by the 4 octets of the ip address,
+        indicates an encapsulation of IP, this object is encoded as a
+        length octet of 4, followed by the 4 octets of the IP address,
         in network byte order."
     ::= { alMatrixTopNEntry 3 }
 
 alMatrixTopNDestAddress OBJECT-TYPE
-    SYNTAX     OCTET STRING
+    SYNTAX     OCTET STRING  (SIZE (1..255))
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-        "The network layer address of the destination host in this
+        "The network-layer address of the destination host in this
         conversation.
 
         This is represented as an octet string with
@@ -3163,8 +3486,8 @@ alMatrixTopNDestAddress OBJECT-TYPE
         by the associated alMatrixTopNProtocolDirLocalIndex.
 
         For example, if the alMatrixTopNProtocolDirLocalIndex
-        indicates an encapsulation of ip, this object is encoded as a
-        length octet of 4, followed by the 4 octets of the ip address,
+        indicates an encapsulation of IP, this object is encoded as a
+        length octet of 4, followed by the 4 octets of the IP address,
         in network byte order."
     ::= { alMatrixTopNEntry 4 }
 
@@ -3199,7 +3522,7 @@ alMatrixTopNReversePktRate OBJECT-TYPE
         "The number of packets seen of this protocol from the
         destination host to the source host during this sampling
         interval, counted using the rules for counting the
-        alMatrixDSPkts object  (note that the corresponding
+        alMatrixDSPkts object.  (Note that the corresponding
         alMatrixSDPkts object selected is the one whose source address
         is equal to alMatrixTopNDestAddress and whose destination
         address is equal to alMatrixTopNSourceAddress.)
@@ -3233,13 +3556,12 @@ alMatrixTopNReverseOctetRate OBJECT-TYPE
         "The number of octets seen of this protocol from the
         destination host to the source host during this sampling
         interval, counted using the rules for counting the
-        alMatrixDSOctets object  (note that the corresponding
+        alMatrixDSOctets object.  (Note that the corresponding
         alMatrixSDOctets object selected is the one whose source
         address is equal to alMatrixTopNDestAddress and whose
         destination address is equal to alMatrixTopNSourceAddress.)
 
         Note that if the value of alMatrixTopNControlRateBase is equal
-
         to alMatrixTopNTerminalsOctets or alMatrixTopNAllOctets, the
         sort of topN entries is based entirely on
         alMatrixTopNOctetRate, and not on the value of this object."
@@ -3251,13 +3573,13 @@ alMatrixTopNReverseOctetRate OBJECT-TYPE
 -- The usrHistory group combines mechanisms seen in the alarm and
 -- history groups to provide user-specified history collection,
 -- utilizing two additional control tables and one additional data
--- table. This function has traditionally been done by NMS
+-- table.  This function has traditionally been done by NMS
 -- applications, via periodic polling.  The usrHistory group allows
 -- this task to be offloaded to an RMON probe.
 --
 -- Data (an ASN.1 INTEGER based object) is collected in the same
--- manner as any history data table (e.g. etherHistoryTable) except
--- that the user specifies the MIB instances to be collected. Objects
+-- manner as any history data table (e.g., etherHistoryTable) except
+-- that the user specifies the MIB instances to be collected.  Objects
 -- are collected in bucket-groups, with the intent that all MIB
 -- instances in the same bucket-group are collected as atomically as
 -- possible by the RMON probe.
@@ -3266,7 +3588,7 @@ alMatrixTopNReverseOctetRate OBJECT-TYPE
 -- Each row configures a collection of user history buckets, much
 -- the same as a historyControlEntry, except that the creation of a
 -- row in this table will cause one or more associated instances in
--- the usrHistoryObjectTable to be created. The user specifies the
+-- the usrHistoryObjectTable to be created.  The user specifies the
 -- number of bucket elements (rows in the usrHistoryObjectTable)
 -- requested, as well as the number of buckets requested.
 --
@@ -3275,30 +3597,30 @@ alMatrixTopNReverseOctetRate OBJECT-TYPE
 -- All rows with the same major index constitute a bucket-group.
 --
 -- The usrHistoryTable is a 3-d read-only table containing
--- the data of associated usrHistoryControlEntries. Each
+
+-- the data of associated usrHistoryControlEntries.  Each
 -- entry represents the value of a single MIB instance
 -- during a specific sampling interval (or the rate of
 -- change during the interval).
 --
 -- A sample value is stored in two objects - an absolute value and
--- a status object. This allows numbers from -(2G-1) to +4G to be
+-- a status object.  This allows numbers from -(2G-1) to +4G to be
 -- stored.  The status object also indicates whether a sample is
--- valid. This allows data collection to continue if periodic
+-- valid.  This allows data collection to continue if periodic
 -- retrieval of a particular instance fails for any reason.
 --
 -- Row Creation Order Relationships
 --
-
 -- The static nature of the usrHistoryObjectTable creates
--- some row creation/modification issues. The rows in this
+-- some row creation/modification issues.  The rows in this
 -- table need to be set before the associated
 -- usrHistoryControlEntry can be activated.
 --
 -- Note that the usrHistoryObject entries associated with a
 -- particular usrHistoryControlEntry are not required to
--- be active before the control entry is activated. However,
+-- be active before the control entry is activated.  However,
 -- the usrHistory data entries associated with an inactive
--- usrHistoryObject entry will be inactive (i.e.
+-- usrHistoryObject entry will be inactive (i.e.,
 -- usrHistoryValStatus == valueNotAvailable).
 --
 
@@ -3369,7 +3691,7 @@ usrHistoryControlBucketsRequested OBJECT-TYPE
 
         When this object is created or modified, the probe
         should set usrHistoryControlBucketsGranted as closely to
-        this object as is possible for the particular probe
+        this object as possible for the particular probe
         implementation and available resources."
     DEFVAL { 50 }
     ::= { usrHistoryControlEntry 3 }
@@ -3385,10 +3707,9 @@ usrHistoryControlBucketsGranted OBJECT-TYPE
         usrHistoryControlEntry.
 
         When the associated usrHistoryControlBucketsRequested
-
         object is created or modified, the probe should set
-        this object as closely to the requested value as is
-        possible for the particular  probe implementation and
+        this object as closely to the requested value as
+        possible for the particular probe implementation and
         available resources.  The probe must not lower this
         value except as a result of a modification to the associated
         usrHistoryControlBucketsRequested object.
@@ -3433,10 +3754,9 @@ usrHistoryControlInterval OBJECT-TYPE
         Because the counters in a bucket may overflow at their
         maximum value with no indication, a prudent manager will
         take into account the possibility of overflow in any of
-
-        the associated counters. It is important to consider the
+        the associated counters.  It is important to consider the
         minimum time in which any counter could overflow on a
-        particular media type and set the usrHistoryControlInterval
+        particular media type and to set the usrHistoryControlInterval
         object to a value less than this interval.
 
         This object may not be modified if the associated
@@ -3517,6 +3837,7 @@ usrHistoryObjectVariable OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "The object identifier of the particular variable to be
+
         sampled.
 
         Only variables that resolve to an ASN.1 primitive type of
@@ -3529,10 +3850,10 @@ usrHistoryObjectVariable OBJECT-TYPE
         only those objects that exist in a particular MIB view.
         Because there is thus no acceptable means of restricting the
         read access that could be obtained through the user history
-
         mechanism, the probe must only grant write access to this
         object in those views that have read access to all objects on
-        the probe.
+        the probe.  See USM [RFC3414] and VACM [RFC3415] for more
+        information.
 
         During a set operation, if the supplied variable name is not
         available in the selected MIB view, a badValue error must be
@@ -3560,7 +3881,7 @@ usrHistoryObjectSampleType OBJECT-TYPE
         If the value of this object is deltaValue(2), the value of the
         selected variable at the last sample will be subtracted from
         the current value, and the difference will be stored in the
-        history bucket. If the associated usrHistoryObjectVariable
+        history bucket.  If the associated usrHistoryObjectVariable
         instance could not be obtained at the previous sample
         interval, then a delta sample is not possible, and the value
         of the associated usrHistoryValStatus object for this interval
@@ -3577,7 +3898,7 @@ usrHistoryTable OBJECT-TYPE
     MAX-ACCESS not-accessible
     STATUS current
     DESCRIPTION
-        "A list of user defined history entries."
+        "A list of user-defined history entries."
     ::= { usrHistory 3 }
 
 usrHistoryEntry OBJECT-TYPE
@@ -3586,12 +3907,11 @@ usrHistoryEntry OBJECT-TYPE
     STATUS current
     DESCRIPTION
         "A historical sample of user-defined variables.  This sample
-        is associated with the usrHistoryControlEntry which set up the
+        is associated with the usrHistoryControlEntry that set up the
         parameters for a regular collection of these samples.
 
         The usrHistoryControlIndex value in the index identifies the
         usrHistoryControlEntry on whose behalf this entry was created.
-
         The usrHistoryObjectIndex value in the index identifies the
         usrHistoryObjectEntry on whose behalf this entry was created.
 
@@ -3618,7 +3938,7 @@ usrHistorySampleIndex OBJECT-TYPE
     DESCRIPTION
         "An index that uniquely identifies the particular sample this
         entry represents among all samples associated with the same
-        usrHistoryControlEntry. This index starts at 1 and increases
+        usrHistoryControlEntry.  This index starts at 1 and increases
         by one as each new sample is taken."
     ::= { usrHistoryEntry 1 }
 
@@ -3633,9 +3953,9 @@ usrHistoryIntervalStart OBJECT-TYPE
         history at a time such that when the next hour of the day
         begins, a sample is started at that instant.
 
-        Note that following this rule may require the probe to delay
+        Note that following this rule may require that the probe delay
         collecting the first sample of the history, as each sample
-        must be of the same interval. Also note that the sample which
+        must be of the same interval.  Also note that the sample that
         is currently being collected is not accessible in this table
         until the end of its interval."
     ::= { usrHistoryEntry 2 }
@@ -3654,8 +3974,8 @@ usrHistoryAbsValue OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS current
     DESCRIPTION
-        "The absolute value (i.e. unsigned value) of the
-        user-specified statistic during the last sampling period. The
+        "The absolute value (i.e., unsigned value) of the
+        user-specified statistic during the last sampling period.  The
         value during the current sampling period is not made available
         until the period is completed.
 
@@ -3664,7 +3984,14 @@ usrHistoryAbsValue OBJECT-TYPE
         and usrHistoryAbsValue adjusted as necessary.
 
         If the MIB instance could not be accessed during the sampling
-        interval, then this object will have a value of zero and the
+        interval, then this object will have a value of zero, and the
+        associated instance of usrHistoryValStatus will be set to
+        'valueNotAvailable(1)'.
+
+        The access control check prescribed in the definition of
+        usrHistoryObjectVariable SHOULD be checked for each sampling
+        interval.  If this check determines that access should not be
+        allowed, then this object will have a value of zero, and the
         associated instance of usrHistoryValStatus will be set to
         'valueNotAvailable(1)'."
     ::= { usrHistoryEntry 4 }
@@ -3684,12 +4011,12 @@ usrHistoryValStatus OBJECT-TYPE
         If the MIB instance could not be accessed during the sampling
         interval, then 'valueNotAvailable(1)' will be returned.
 
-        If the sample is valid and actual value of the sample is
-        greater than or equal to zero then 'valuePositive(2)' is
+        If the sample is valid and the actual value of the sample is
+        greater than or equal to zero, then 'valuePositive(2)' is
         returned.
 
         If the sample is valid and the actual value of the sample is
-        less than zero, 'valueNegative(3)' will be returned. The
+        less than zero, 'valueNegative(3)' will be returned.  The
         associated instance of usrHistoryAbsValue should be multiplied
         by -1 to obtain the true sample value."
     ::= { usrHistoryEntry 5 }
@@ -3703,29 +4030,29 @@ ControlString ::= TEXTUAL-CONVENTION
     STATUS current
     DESCRIPTION
         "This data type is used to communicate with a modem or a
+
         serial data switch.  A ControlString contains embedded
         commands to control how the device will interact with the
         remote device through the serial interface.  Commands are
-        represented as two character sequences beginning with
-        the `^' character.
+        represented as two-character sequences beginning with
+        the '^' character.
 
         The following commands are recognized by the device (note
         that command characters are case sensitive):
 
-           ^s  Send string that follows which is terminated by the
+           ^s  Send string that follows, which is terminated by the
                next command or the end of string.
            ^c  Delay for the number of seconds that follows.  Toss
-               out any data received rather than storing it in a
+               out any data received rather than store it in a
                buffer for parsing.
            ^t  Set timeout to the value represented by the decimal
                digits that follow.  The default timeout is 20
-               seconds. Note that this timeout may be overridden
+               seconds.  Note that this timeout may be overridden
                by a smaller serialTimeout configured for the
-
                associated serial interface (see serialConfigTable).
-           ^w  Wait for the reply string that follows which is
+           ^w  Wait for the reply string that follows, which is
                terminated by the next command or the end of string.
-               Partial and case insensitive matching is applied, ie.
+               Partial and case-insensitive matching is applied, i.e.,
                if the reply string (any case combination) is found
                anywhere in the received string, then the a match is
                found.  If the current timeout elapses without a match,
@@ -3738,7 +4065,7 @@ ControlString ::= TEXTUAL-CONVENTION
                break will be enforced for 250 milliseconds by default.
 
         The following ASCII control characters may be inserted into
-        the `^s' send string or the `^w' reply string:
+        the '^s' send string or the '^w' reply string:
 
            ^@    0x00
            ^A    0x01
@@ -3755,10 +4082,10 @@ ControlString ::= TEXTUAL-CONVENTION
         Binary data may also be inserted into the data stream.  The
         control sequence for each byte of binary data is ^0x##, where
         ## is the hexadecimal representation of the data byte.  Two
-        ASCII characters (0-9, a-f, A-F) must follow the `^0x'
-        control prefix.  For example, `^0x0D^0x0A' is interpreted as a
+        ASCII characters (0-9, a-f, A-F) must follow the '^0x'
+        control prefix.  For example, '^0x0D^0x0A' is interpreted as a
         carriage return followed by a line feed."
-    SYNTAX DisplayString
+    SYNTAX OCTET STRING (SIZE (0..255))
 
 probeCapabilities OBJECT-TYPE
     SYNTAX BITS {
@@ -3842,9 +4169,9 @@ probeDateTime  OBJECT-TYPE
                      1992-5-26,13:30:15.0,-4:0
 
          Note that if only local time is known, then
-         timezone information (fields 8-10) is not
-         present, and if no time information is known, the null
-         string is returned."
+         time zone information (fields 8-10) is not
+         present, and that if no time information is known, the
+         null string is returned."
     ::= { probeConfig 4 }
 
 probeResetControl  OBJECT-TYPE
@@ -3861,7 +4188,7 @@ probeResetControl  OBJECT-TYPE
         parameters saved in non-volatile memory.  Setting this
         object to coldBoot(3) causes the device to reinitialize
         configuration parameters in non-volatile memory to default
-        values and restart the application software.  When the device
+        values and to restart the application software.  When the device
         is running normally, this variable has a value of
         running(1)."
     ::= { probeConfig 5 }
@@ -3876,22 +4203,31 @@ probeResetControl  OBJECT-TYPE
 probeDownloadFile  OBJECT-TYPE
     SYNTAX     DisplayString (SIZE(0..127))
     MAX-ACCESS read-write
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The file name to be downloaded from the TFTP server when a
         download is next requested via this MIB.  This value is set to
-        the zero length string when no file name has been specified."
+        the zero-length string when no file name has been specified.
+
+        This object has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability to
+        meet the requirements of a Draft Standard."
     ::= { probeConfig 6 }
 
 probeDownloadTFTPServer  OBJECT-TYPE
     SYNTAX     IpAddress
     MAX-ACCESS read-write
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The IP address of the TFTP server that contains the boot
         image to load when a download is next requested via this MIB.
-        This value is set to `0.0.0.0' when no IP address has been
-        specified."
+        This value is set to '0.0.0.0' when no IP address has been
+
+        specified.
+
+        This object has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability to
+        meet the requirements of a Draft Standard."
     ::= { probeConfig 7 }
 
 probeDownloadAction  OBJECT-TYPE
@@ -3901,23 +4237,26 @@ probeDownloadAction  OBJECT-TYPE
                   downloadToRAM(3)
                }
     MAX-ACCESS read-write
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "When this object is set to downloadToRAM(2) or
-        downloadToPROM(3), the device will discontinue its
+        "When this object is set to downloadToRAM(3) or
+        downloadToPROM(2), the device will discontinue its
         normal operation and begin download of the image specified
         by probeDownloadFile from the server specified by
         probeDownloadTFTPServer using the TFTP protocol.  If
-        downloadToRAM(2) is specified, the new image is copied
+        downloadToRAM(3) is specified, the new image is copied
         to RAM only (the old image remains unaltered in the flash
-        EPROM).  If downloadToPROM(3) is specified
+        EPROM).  If downloadToPROM(2) is specified,
         the new image is written to the flash EPROM
         memory after its checksum has been verified to be correct.
         When the download process is completed, the device will
-
         warm boot to restart the newly loaded application.
         When the device is not downloading, this object will have
-        a value of notDownloading(1)."
+        a value of notDownloading(1).
+
+        This object has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability to
+        meet the requirements of a Draft Standard."
     ::= { probeConfig 8 }
 
 probeDownloadStatus  OBJECT-TYPE
@@ -3932,30 +4271,38 @@ probeDownloadStatus  OBJECT-TYPE
                     downloadTftpAccessViolation(8)
                }
     MAX-ACCESS read-only
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The status of the last download procedure, if any.  This
         object will have a value of downloadStatusUnknown(2) if no
-        download process has been performed."
+        download process has been performed.
+
+        This object has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability to
+        meet the requirements of a Draft Standard."
     ::= { probeConfig 9 }
 
 serialConfigTable  OBJECT-TYPE
     SYNTAX     SEQUENCE OF SerialConfigEntry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "A table of serial interface configuration entries.  This data
         will be stored in non-volatile memory and preserved across
-        probe resets or power loss."
+        probe resets or power loss.
+
+        This table has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability to
+        meet the requirements of a Draft Standard."
     ::= { probeConfig 10 }
 
 serialConfigEntry  OBJECT-TYPE
     SYNTAX     SerialConfigEntry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "A set of configuration parameters for a particular
-        serial interface on this device. If the device has no serial
+        serial interface on this device.  If the device has no serial
         interfaces, this table is empty.
 
         The index is composed of the ifIndex assigned to this serial
@@ -3966,12 +4313,12 @@ serialConfigEntry  OBJECT-TYPE
 SerialConfigEntry ::= SEQUENCE {
     serialMode                   INTEGER,
     serialProtocol               INTEGER,
-    serialTimeout                Integer32 (1..65535),
-    serialModemInitString        ControlString (SIZE (0..255)),
-    serialModemHangUpString      ControlString (SIZE (0..255)),
-    serialModemConnectResp       DisplayString (SIZE (0..255)),
-    serialModemNoConnectResp     DisplayString (SIZE (0..255)),
-    serialDialoutTimeout         Integer32 (1..65535),
+    serialTimeout                Integer32,
+    serialModemInitString        ControlString,
+    serialModemHangUpString      ControlString,
+    serialModemConnectResp       DisplayString,
+    serialModemNoConnectResp     DisplayString,
+    serialDialoutTimeout         Integer32,
     serialStatus                 RowStatus
 }
 
@@ -3981,10 +4328,10 @@ serialMode  OBJECT-TYPE
                    modem(2)
                }
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "The type of incoming connection to expect on this serial
-        interface."
+        "The type of incoming connection to be expected on this
+         serial interface."
     DEFVAL { direct }
     ::= { serialConfigEntry 1 }
 
@@ -3995,7 +4342,7 @@ serialProtocol  OBJECT-TYPE
                    ppp(3)
                }
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The type of data link encapsulation to be used on this
         serial interface."
@@ -4005,13 +4352,12 @@ serialProtocol  OBJECT-TYPE
 serialTimeout  OBJECT-TYPE
     SYNTAX     Integer32 (1..65535)
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "This timeout value is used when the Management Station has
-        initiated the conversation over the serial link. This variable
+        initiated the conversation over the serial link.  This variable
         represents the number of seconds of inactivity allowed before
-        terminating the connection on this serial interface. Use the
-
+        terminating the connection on this serial interface.  Use the
         serialDialoutTimeout in the case where the probe has initiated
         the connection for the purpose of sending a trap."
     DEFVAL { 300 }
@@ -4020,9 +4366,9 @@ serialTimeout  OBJECT-TYPE
 serialModemInitString  OBJECT-TYPE
     SYNTAX     ControlString (SIZE (0..255))
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "A control string which controls how a modem attached to this
+        "A control string that controls how a modem attached to this
         serial interface should be initialized.  The initialization
         is performed once during startup and again after each
         connection is terminated if the associated serialMode has the
@@ -4035,12 +4381,13 @@ serialModemInitString  OBJECT-TYPE
 serialModemHangUpString  OBJECT-TYPE
     SYNTAX     ControlString (SIZE (0..255))
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "A control string which specifies how to disconnect a modem
+        "A control string that specifies how to disconnect a modem
          connection on this serial interface.  This object is only
          meaningful if the associated serialMode has the value
          of modem(2).
+
          A control string that is appropriate for a wide variety of
          modems is: '^d2^s+++^d2^sATH0^M^d2'."
     ::= { serialConfigEntry 5 }
@@ -4048,7 +4395,7 @@ serialModemHangUpString  OBJECT-TYPE
 serialModemConnectResp  OBJECT-TYPE
     SYNTAX     DisplayString (SIZE (0..255))
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "An ASCII string containing substrings that describe the
         expected modem connection response code and associated bps
@@ -4060,7 +4407,6 @@ serialModemConnectResp  OBJECT-TYPE
             response code    bps rate
             CONNECT            300
             CONNECT 1200      1200
-
             CONNECT 2400      2400
             CONNECT 4800      4800
             CONNECT 9600      9600
@@ -4069,6 +4415,7 @@ serialModemConnectResp  OBJECT-TYPE
         is established.
 
         A value that is appropriate for a wide variety of modems is:
+
         '/CONNECT/300/CONNECT 1200/1200/CONNECT 2400/2400/
          CONNECT 4800/4800/CONNECT 9600/9600/CONNECT 14400/14400/
         CONNECT 19200/19200/CONNECT 38400/38400/'."
@@ -4077,13 +4424,14 @@ serialModemConnectResp  OBJECT-TYPE
 serialModemNoConnectResp  OBJECT-TYPE
     SYNTAX     DisplayString (SIZE (0..255))
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "An ASCII string containing response codes that may be
         generated by a modem to report the reason why a connection
         attempt has failed.  The response codes are delimited by
         the first character in the string, for example:
            /NO CARRIER/BUSY/NO DIALTONE/NO ANSWER/ERROR/
+
         If one of these response codes is received via this serial
         interface while attempting to make a modem connection,
         the agent will issue the hang up command as specified by
@@ -4096,11 +4444,11 @@ serialModemNoConnectResp  OBJECT-TYPE
 serialDialoutTimeout  OBJECT-TYPE
     SYNTAX     Integer32 (1..65535)
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "This timeout value is used when the probe initiates the
         serial connection with the intention of contacting a
-        management station. This variable represents the number
+        management station.  This variable represents the number
         of seconds of inactivity allowed before terminating the
         connection on this serial interface."
     DEFVAL { 20 }
@@ -4109,7 +4457,7 @@ serialDialoutTimeout  OBJECT-TYPE
 serialStatus  OBJECT-TYPE
     SYNTAX     RowStatus
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The status of this serialConfigEntry.
 
@@ -4120,18 +4468,22 @@ serialStatus  OBJECT-TYPE
 netConfigTable  OBJECT-TYPE
     SYNTAX     SEQUENCE OF NetConfigEntry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "A table of netConfigEntries."
+        "A table of netConfigEntries.
+
+        This table has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability to
+        meet the requirements of a Draft Standard."
     ::= { probeConfig 11 }
 
 netConfigEntry  OBJECT-TYPE
     SYNTAX     NetConfigEntry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "A set of configuration parameters for a particular
-        network interface on this device. If the device has no network
+        network interface on this device.  If the device has no network
         interface, this table is empty.
 
         The index is composed of the ifIndex assigned to the
@@ -4148,42 +4500,41 @@ NetConfigEntry ::= SEQUENCE {
 netConfigIPAddress  OBJECT-TYPE
     SYNTAX     IpAddress
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The IP address of this Net interface.  The default value
         for this object is 0.0.0.0.  If either the netConfigIPAddress
-        or netConfigSubnetMask are 0.0.0.0, then when the device
+        or netConfigSubnetMask is 0.0.0.0, then when the device
         boots, it may use BOOTP to try to figure out what these
-        values should be. If BOOTP fails, before the device
+        values should be.  If BOOTP fails before the device
         can talk on the network, this value must be configured
-        (e.g., through a terminal attached to the device). If BOOTP is
-
+        (e.g., through a terminal attached to the device).  If BOOTP is
         used, care should be taken to not send BOOTP broadcasts too
-        frequently and to eventually send very infrequently if no
+        frequently and to eventually send them very infrequently if no
         replies are received."
     ::= { netConfigEntry 1 }
 
 netConfigSubnetMask  OBJECT-TYPE
     SYNTAX     IpAddress
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The subnet mask of this Net interface.  The default value
         for this object is 0.0.0.0.  If either the netConfigIPAddress
-        or netConfigSubnetMask are 0.0.0.0, then when the device
+        or netConfigSubnetMask is 0.0.0.0, then when the device
         boots, it may use BOOTP to try to figure out what these
-        values should be. If BOOTP fails, before the device
+        values should be.  If BOOTP fails before the device
         can talk on the network, this value must be configured
-        (e.g., through a terminal attached to the device). If BOOTP is
+        (e.g., through a terminal attached to the device).  If BOOTP is
         used, care should be taken to not send BOOTP broadcasts too
-        frequently and to eventually send very infrequently if no
+        frequently and to eventually send them very infrequently if no
         replies are received."
     ::= { netConfigEntry 2 }
 
 netConfigStatus  OBJECT-TYPE
     SYNTAX     RowStatus
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The status of this netConfigEntry.
 
@@ -4193,8 +4544,8 @@ netConfigStatus  OBJECT-TYPE
 
 netDefaultGateway  OBJECT-TYPE
     SYNTAX     IpAddress
-    MAX-ACCESS read-create
-    STATUS     current
+    MAX-ACCESS read-write
+    STATUS     deprecated
     DESCRIPTION
         "The IP Address of the default gateway.  If this value is
         undefined or unknown, it shall have the value 0.0.0.0."
@@ -4206,17 +4557,19 @@ netDefaultGateway  OBJECT-TYPE
 -- from the device.  This table maps a community to one or more trap
 -- destination entries.
 --
-
 -- The same trap will be sent to all destinations specified in the
 -- entries that have the same trapDestCommunity as the eventCommunity
--- (as defined by RMON MIB).  Information in this table will be stored
--- in non-volatile memory.  If the device has gone through a hard
--- restart, this information will be reset to its default state.
+-- (as defined by RMON MIB), as long as no access control mechanism
+-- (e.g., VACM) prohibits sending to one or more of the destinations.
+-- Information in this table will be stored in non-volatile memory.
+
+-- If the device has gone through a hard restart, this information
+-- will be reset to its default state.
 
 trapDestTable  OBJECT-TYPE
     SYNTAX     SEQUENCE OF TrapDestEntry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "A list of trap destination entries."
     ::= { probeConfig 13 }
@@ -4224,10 +4577,10 @@ trapDestTable  OBJECT-TYPE
 trapDestEntry  OBJECT-TYPE
     SYNTAX     TrapDestEntry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "This entry includes a destination IP address to which to send
-        traps for this community."
+        "This entry includes a destination IP address to which
+        traps are sent for this community."
     INDEX { trapDestIndex }
     ::= { trapDestTable 1 }
 
@@ -4243,7 +4596,7 @@ TrapDestEntry ::= SEQUENCE {
 trapDestIndex  OBJECT-TYPE
     SYNTAX     Integer32 (1..65535)
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "A value that uniquely identifies this trapDestEntry."
     ::= { trapDestEntry 1 }
@@ -4251,16 +4604,17 @@ trapDestIndex  OBJECT-TYPE
 trapDestCommunity  OBJECT-TYPE
     SYNTAX     OCTET STRING (SIZE(0..127))
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "A community to which this destination address belongs.
         This entry is associated with any eventEntries in the RMON
-
         MIB whose value of eventCommunity is equal to the value of
         this object.  Every time an associated event entry sends a
         trap due to an event, that trap will be sent to each
-        address in the trapDestTable with a trapDestCommunity equal to
-        eventCommunity.
+
+        address in the trapDestTable with a trapDestCommunity equal
+        to eventCommunity, as long as no access control mechanism
+        precludes it (e.g., VACM).
 
         This object may not be modified if the associated
         trapDestStatus object is equal to active(1)."
@@ -4272,21 +4626,22 @@ trapDestProtocol OBJECT-TYPE
                     ipx(2)
                 }
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "The protocol with which to send this trap."
+        "The protocol with which this trap is to be sent."
     ::= { trapDestEntry 3 }
 
 trapDestAddress  OBJECT-TYPE
     SYNTAX     OCTET STRING
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "The address to send traps on behalf of this entry.
+        "The destination address for traps on behalf of this entry.
 
         If the associated trapDestProtocol object is equal to ip(1),
         the encoding of this object is the same as the snmpUDPAddress
-        textual convention in [RFC1906]:
+        textual convention in RFC 3417, 'Transport Mappings for the
+         Simple Network Management Protocol (SNMP)' [RFC3417]:
           -- for a SnmpUDPAddress of length 6:
           --
           -- octets   contents        encoding
@@ -4295,7 +4650,8 @@ trapDestAddress  OBJECT-TYPE
 
         If the associated trapDestProtocol object is equal to ipx(2),
         the encoding of this object is the same as the snmpIPXAddress
-        textual convention in [RFC1906]:
+        textual convention in RFC 3417, 'Transport Mappings for the
+         Simple Network Management Protocol (SNMP)' [RFC3417]:
           -- for a SnmpIPXAddress of length 12:
           --
           -- octets   contents            encoding
@@ -4311,7 +4667,7 @@ trapDestAddress  OBJECT-TYPE
 trapDestOwner  OBJECT-TYPE
     SYNTAX     OwnerString
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The entity that configured this entry and is
         therefore using the resources assigned to it."
@@ -4320,7 +4676,7 @@ trapDestOwner  OBJECT-TYPE
 trapDestStatus  OBJECT-TYPE
     SYNTAX     RowStatus
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The status of this trap destination entry.
 
@@ -4339,15 +4695,19 @@ trapDestStatus  OBJECT-TYPE
 serialConnectionTable  OBJECT-TYPE
     SYNTAX     SEQUENCE OF SerialConnectionEntry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "A list of serialConnectionEntries."
+        "A list of serialConnectionEntries.
+
+        This table has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability
+        to meet the requirements of a Draft Standard."
     ::= { probeConfig 14 }
 
 serialConnectionEntry  OBJECT-TYPE
     SYNTAX     SerialConnectionEntry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "Configuration for a SLIP link over a serial line."
     INDEX { serialConnectIndex }
@@ -4368,7 +4728,7 @@ SerialConnectionEntry ::= SEQUENCE {
 serialConnectIndex  OBJECT-TYPE
     SYNTAX     Integer32 (1..65535)
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "A value that uniquely identifies this serialConnection
         entry."
@@ -4377,10 +4737,11 @@ serialConnectIndex  OBJECT-TYPE
 serialConnectDestIpAddress  OBJECT-TYPE
     SYNTAX     IpAddress
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The IP Address that can be reached at the other end of this
         serial connection.
+
         This object may not be modified if the associated
         serialConnectStatus object is equal to active(1)."
     ::= { serialConnectionEntry 2 }
@@ -4393,9 +4754,9 @@ serialConnectType  OBJECT-TYPE
                     modemSwitch(4)
                }
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "The type of outgoing connection to make.  If this object
+        "The type of outgoing connection to be made.  If this object
         has the value direct(1), then a direct serial connection
         is assumed.  If this object has the value modem(2),
         then serialConnectDialString will be used to make a modem
@@ -4404,7 +4765,7 @@ serialConnectType  OBJECT-TYPE
         the connection over a serial data switch, and
         serialConnectSwitchDisconnectSeq will be used to terminate
         the connection.  If this object has the value
-        modem-switch(4), then a modem connection will be made first
+        modem-switch(4), then a modem connection will be made first,
         followed by the switch connection.
 
         This object may not be modified if the associated
@@ -4415,15 +4776,16 @@ serialConnectType  OBJECT-TYPE
 serialConnectDialString  OBJECT-TYPE
     SYNTAX     ControlString (SIZE(0..255))
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "A control string which specifies how to dial the phone
+        "A control string that specifies how to dial the phone
         number in order to establish a modem connection.  The
-        string should include dialing prefix and suffix.  For
-        example: ``^s^MATD9,888-1234^M'' will instruct the Probe
-        to send a carriage return followed by the dialing prefix
-        ``ATD'', the phone number ``9,888-1234'', and a carriage
+        string should include the dialing prefix and suffix.  For
+        example: '^s^MATD9,888-1234^M' will instruct the Probe
+        to send a carriage return, followed by the dialing prefix
+        'ATD', the phone number '9,888-1234', and a carriage
         return as the dialing suffix.
+
         This object may not be modified if the associated
         serialConnectStatus object is equal to active(1)."
     ::= { serialConnectionEntry 4 }
@@ -4431,10 +4793,11 @@ serialConnectDialString  OBJECT-TYPE
 serialConnectSwitchConnectSeq  OBJECT-TYPE
     SYNTAX     ControlString (SIZE(0..255))
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "A control string which specifies how to establish a
+        "A control string that specifies how to establish a
         data switch connection.
+
         This object may not be modified if the associated
         serialConnectStatus object is equal to active(1)."
      ::= { serialConnectionEntry 5 }
@@ -4442,22 +4805,23 @@ serialConnectSwitchConnectSeq  OBJECT-TYPE
 serialConnectSwitchDisconnectSeq  OBJECT-TYPE
     SYNTAX     ControlString (SIZE(0..255))
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "A control string which specifies how to terminate a
+        "A control string that specifies how to terminate a
         data switch connection.
-        This object may not be modified if the associated
 
+        This object may not be modified if the associated
         serialConnectStatus object is equal to active(1)."
     ::= { serialConnectionEntry 6 }
 
 serialConnectSwitchResetSeq  OBJECT-TYPE
     SYNTAX     ControlString (SIZE(0..255))
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "A control string which specifies how to reset a data
+        "A control string that specifies how to reset a data
         switch in the event of a timeout.
+
         This object may not be modified if the associated
         serialConnectStatus object is equal to active(1)."
     ::= { serialConnectionEntry 7 }
@@ -4465,7 +4829,7 @@ serialConnectSwitchResetSeq  OBJECT-TYPE
 serialConnectOwner  OBJECT-TYPE
     SYNTAX     OwnerString
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The entity that configured this entry and is
         therefore using the resources assigned to it."
@@ -4474,7 +4838,7 @@ serialConnectOwner  OBJECT-TYPE
 serialConnectStatus  OBJECT-TYPE
     SYNTAX     RowStatus
     MAX-ACCESS read-create
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "The status of this serialConnectionEntry.
 
@@ -4488,8 +4852,9 @@ serialConnectStatus  OBJECT-TYPE
         the serialConnectType is set to switch(3) or modem-switch(4)
         and the serialConnectSwitchConnectSeq,
         the serialConnectSwitchDisconnectSeq, or
-        the serialConnectSwitchResetSeq are zero-length strings
-        or cannot be correctly parsed as ConnectStrings, the set
+
+        the serialConnectSwitchResetSeq is a zero-length string
+        or cannot be correctly parsed as a ConnectString, the set
         request will be rejected with badValue(3).
 
         An entry may not exist in the active state unless all
@@ -4535,15 +4900,14 @@ etherStatsDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
-        whatever reason.  Most often, this event occurs when the probe
-        is out of some resources and decides to shed load from this
-        collection.
+        that the probe chose not to count for this entry for
+        whatever reason.  Most often, this event occurs when the
+        probe is out of some resources and decides to shed load from
+        this collection.
 
         This count does not include packets that were not counted
-
         because they had MAC-layer errors.
 
         Note that, unlike the dropEvents counter, this number is the
@@ -4556,7 +4920,7 @@ etherStatsCreateTime OBJECT-TYPE
     STATUS     current
     DESCRIPTION
         "The value of sysUpTime when this control entry was last
-        activated. This can be used by the management station to
+        activated.  This can be used by the management station to
         ensure that the table has not been deleted and recreated
         between polls."
     ::= { etherStats2Entry 2 }
@@ -4587,13 +4951,12 @@ historyControlDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
-        whatever reason.  Most often, this event occurs when the probe
-        is out of some resources and decides to shed load from this
-
-        collection.
+        that the probe chose not to count for this entry for
+        whatever reason.  Most often, this event occurs when the
+        probe is out of some resources and decides to shed load from
+        this collection.
 
         This count does not include packets that were not counted
         because they had MAC-layer errors.
@@ -4629,12 +4992,13 @@ hostControlDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
-        whatever reason.  Most often, this event occurs when the probe
-        is out of some resources and decides to shed load from this
-        collection.
+        that the probe chose not to count for this entry for
+        whatever reason.  Most often, this event occurs when the
+
+        probe is out of some resources and decides to shed load from
+        this collection.
 
         This count does not include packets that were not counted
         because they had MAC-layer errors.
@@ -4649,7 +5013,7 @@ hostControlCreateTime OBJECT-TYPE
     STATUS     current
     DESCRIPTION
         "The value of sysUpTime when this control entry was last
-        activated. This can be used by the management station to
+        activated.  This can be used by the management station to
         ensure that the table has not been deleted and recreated
         between polls."
     ::= { hostControl2Entry 2 }
@@ -4681,15 +5045,14 @@ matrixControlDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
-        whatever reason.  Most often, this event occurs when the probe
-        is out of some resources and decides to shed load from this
-        collection.
+        that the probe chose not to count for this entry for
+        whatever reason.  Most often, this event occurs when the
+        probe is out of some resources and decides to shed load from
+        this collection.
 
         This count does not include packets that were not counted
-
         because they had MAC-layer errors.
 
         Note that, unlike the dropEvents counter, this number is the
@@ -4702,7 +5065,7 @@ matrixControlCreateTime OBJECT-TYPE
     STATUS     current
     DESCRIPTION
         "The value of sysUpTime when this control entry was last
-        activated. This can be used by the management station to
+        activated.  This can be used by the management station to
         ensure that the table has not been deleted and recreated
         between polls."
     ::= { matrixControl2Entry 2 }
@@ -4734,13 +5097,12 @@ channelDroppedFrames OBJECT-TYPE
     MAX-ACCESS read-only
     STATUS     current
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
-        whatever reason.  Most often, this event occurs when the probe
-
-        is out of some resources and decides to shed load from this
-        collection.
+        that the probe chose not to count for this entry for
+        whatever reason.  Most often, this event occurs when the
+        probe is out of some resources and decides to shed load from
+        this collection.
 
         This count does not include packets that were not counted
         because they had MAC-layer errors.
@@ -4755,7 +5117,7 @@ channelCreateTime OBJECT-TYPE
     STATUS     current
     DESCRIPTION
         "The value of sysUpTime when this control entry was last
-        activated. This can be used by the management station to
+        activated.  This can be used by the management station to
         ensure that the table has not been deleted and recreated
         between polls."
     ::= { channel2Entry 2 }
@@ -4763,15 +5125,19 @@ channelCreateTime OBJECT-TYPE
 tokenRingMLStats2Table  OBJECT-TYPE
     SYNTAX     SEQUENCE OF TokenRingMLStats2Entry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "Contains the RMON-2 augmentations to RMON-1."
+        "Contains the RMON-2 augmentations to RMON-1.
+
+        This table has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability
+        to meet the requirements of a Draft Standard."
     ::= { statistics 5 }
 
 tokenRingMLStats2Entry  OBJECT-TYPE
     SYNTAX     TokenRingMLStats2Entry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "Contains the RMON-2 augmentations to RMON-1."
     AUGMENTS { tokenRingMLStatsEntry }
@@ -4785,14 +5151,14 @@ TokenRingMLStats2Entry ::= SEQUENCE {
 tokenRingMLStatsDroppedFrames OBJECT-TYPE
     SYNTAX     Counter32
     MAX-ACCESS read-only
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
-        whatever reason.  Most often, this event occurs when the probe
-        is out of some resources and decides to shed load from this
-        collection.
+        that the probe chose not to count for this entry for
+        whatever reason.  Most often, this event occurs when the
+        probe is out of some resources and decides to shed load from
+        this collection.
 
         This count does not include packets that were not counted
         because they had MAC-layer errors.
@@ -4804,25 +5170,30 @@ tokenRingMLStatsDroppedFrames OBJECT-TYPE
 tokenRingMLStatsCreateTime OBJECT-TYPE
     SYNTAX     LastCreateTime
     MAX-ACCESS read-only
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "The value of sysUpTime when this control entry was last activated.
-        This can be used by the management station to ensure that the
-        table has not been deleted and recreated between polls."
+        "The value of sysUpTime when this control entry was last
+        activated.  This can be used by the management station to
+        ensure that the table has not been deleted and recreated
+        between polls."
     ::= { tokenRingMLStats2Entry 2 }
 
 tokenRingPStats2Table  OBJECT-TYPE
     SYNTAX     SEQUENCE OF TokenRingPStats2Entry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "Contains the RMON-2 augmentations to RMON-1."
+        "Contains the RMON-2 augmentations to RMON-1.
+
+        This table has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability
+        to meet the requirements of a Draft Standard."
     ::= { statistics 6 }
 
 tokenRingPStats2Entry  OBJECT-TYPE
     SYNTAX     TokenRingPStats2Entry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "Contains the RMON-2 augmentations to RMON-1."
     AUGMENTS {  tokenRingPStatsEntry }
@@ -4836,14 +5207,14 @@ TokenRingPStats2Entry ::= SEQUENCE {
 tokenRingPStatsDroppedFrames OBJECT-TYPE
     SYNTAX     Counter32
     MAX-ACCESS read-only
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
-        whatever reason.  Most often, this event occurs when the probe
-        is out of some resources and decides to shed load from this
-        collection.
+        that the probe chose not to count for this entry for
+        whatever reason.  Most often, this event occurs when the
+        probe is out of some resources and decides to shed load from
+        this collection.
 
         This count does not include packets that were not counted
         because they had MAC-layer errors.
@@ -4855,25 +5226,30 @@ tokenRingPStatsDroppedFrames OBJECT-TYPE
 tokenRingPStatsCreateTime OBJECT-TYPE
     SYNTAX     LastCreateTime
     MAX-ACCESS read-only
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "The value of sysUpTime when this control entry was last activated.
-        This can be used by the management station to ensure that the
-        table has not been deleted and recreated between polls."
+        "The value of sysUpTime when this control entry was last
+        activated.  This can be used by the management station to
+        ensure that the table has not been deleted and recreated
+        between polls."
     ::= { tokenRingPStats2Entry 2 }
 
 ringStationControl2Table  OBJECT-TYPE
     SYNTAX     SEQUENCE OF RingStationControl2Entry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "Contains the RMON-2 augmentations to RMON-1."
+        "Contains the RMON-2 augmentations to RMON-1.
+
+        This table has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability
+        to meet the requirements of a Draft Standard."
     ::= { tokenRing 7 }
 
 ringStationControl2Entry  OBJECT-TYPE
     SYNTAX     RingStationControl2Entry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "Contains the RMON-2 augmentations to RMON-1."
     AUGMENTS { ringStationControlEntry }
@@ -4887,14 +5263,14 @@ RingStationControl2Entry ::= SEQUENCE {
 ringStationControlDroppedFrames OBJECT-TYPE
     SYNTAX     Counter32
     MAX-ACCESS read-only
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
-        whatever reason.  Most often, this event occurs when the probe
-        is out of some resources and decides to shed load from this
-        collection.
+        that the probe chose not to count for this entry for
+        whatever reason.  Most often, this event occurs when the
+        probe is out of some resources and decides to shed load from
+        this collection.
 
         This count does not include packets that were not counted
         because they had MAC-layer errors.
@@ -4906,25 +5282,31 @@ ringStationControlDroppedFrames OBJECT-TYPE
 ringStationControlCreateTime OBJECT-TYPE
     SYNTAX     LastCreateTime
     MAX-ACCESS read-only
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "The value of sysUpTime when this control entry was last activated.
-        This can be used by the management station to ensure that the
-        table has not been deleted and recreated between polls."
+        "The value of sysUpTime when this control entry was last
+        activated.  This can be used by the management station to
+
+        ensure that the table has not been deleted and recreated
+        between polls."
     ::= { ringStationControl2Entry 2 }
 
 sourceRoutingStats2Table  OBJECT-TYPE
     SYNTAX     SEQUENCE OF SourceRoutingStats2Entry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "Contains the RMON-2 augmentations to RMON-1."
+        "Contains the RMON-2 augmentations to RMON-1.
+
+        This table has been deprecated, as it has not had enough
+        independent implementations to demonstrate interoperability
+        to meet the requirements of a Draft Standard."
     ::= { tokenRing 8 }
 
 sourceRoutingStats2Entry  OBJECT-TYPE
     SYNTAX     SourceRoutingStats2Entry
     MAX-ACCESS not-accessible
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
         "Contains the RMON-2 augmentations to RMON-1."
     AUGMENTS { sourceRoutingStatsEntry }
@@ -4938,14 +5320,14 @@ SourceRoutingStats2Entry ::= SEQUENCE {
 sourceRoutingStatsDroppedFrames OBJECT-TYPE
     SYNTAX     Counter32
     MAX-ACCESS read-only
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-       "The total number of frames which were received by the probe
+       "The total number of frames that were received by the probe
         and therefore not accounted for in the *StatsDropEvents, but
-        for which the probe chose not to count for this entry for
-        whatever reason.  Most often, this event occurs when the probe
-        is out of some resources and decides to shed load from this
-        collection.
+        that the probe chose not to count for this entry for
+        whatever reason.  Most often, this event occurs when the
+        probe is out of some resources and decides to shed load from
+        this collection.
 
         This count does not include packets that were not counted
         because they had MAC-layer errors.
@@ -4957,11 +5339,12 @@ sourceRoutingStatsDroppedFrames OBJECT-TYPE
 sourceRoutingStatsCreateTime OBJECT-TYPE
     SYNTAX     LastCreateTime
     MAX-ACCESS read-only
-    STATUS     current
+    STATUS     deprecated
     DESCRIPTION
-        "The value of sysUpTime when this control entry was last activated.
-        This can be used by the management station to ensure that the
-        table has not been deleted and recreated between polls."
+        "The value of sysUpTime when this control entry was last
+        activated.  This can be used by the management station to
+        ensure that the table has not been deleted and recreated
+        between polls."
     ::= { sourceRoutingStats2Entry 2 }
 
 filter2Table OBJECT-TYPE
@@ -4997,18 +5380,19 @@ filterProtocolDirDataLocalIndex OBJECT-TYPE
         it is associated with performs the following operations on
         every packet:
 
-        1) - If the packet doesn't match the protocol directory entry
-             identified by this object, discard the packet and exit
-             (i.e., discard the packet if it is not of the identified
-             protocol).
-        2) - If the associated filterProtocolDirLocalIndex is non-zero
-             and the packet doesn't match the protocol directory
-             entry identified by that object, discard the packet and
-             exit
-        3) - If the packet matches, perform the regular filter
-             algorithm as if the beginning of this named protocol is
-             the beginning of the packet, potentially applying the
-             filterOffset value to move further into the packet."
+        1) If the packet doesn't match the protocol directory entry
+           identified by this object, discard the packet and exit
+           (i.e., discard the packet if it is not of the identified
+           protocol).
+
+        2) If the associated filterProtocolDirLocalIndex is non-zero
+           and the packet doesn't match the protocol directory
+           entry identified by that object, discard the packet and
+           exit.
+        3) If the packet matches, perform the regular filter
+           algorithm as if the beginning of this named protocol is
+           the beginning of the packet, potentially applying the
+           filterOffset value to move further into the packet."
     DEFVAL { 0 }
     ::= { filter2Entry 1 }
 
@@ -5042,17 +5426,31 @@ rmon2MIBCompliance MODULE-COMPLIANCE
                            usrHistoryGroup,
                            probeInformationGroup }
 
+        OBJECT nlMatrixTopNControlRateBase
+            SYNTAX      INTEGER {
+                          nlMatrixTopNPkts(1),
+                          nlMatrixTopNOctets(2)
+                        }
+            DESCRIPTION
+                "Conformance to RMON2 requires only support for these
+                values of nlMatrixTopNControlRateBase."
+
         GROUP   rmon1EnhancementGroup
-        DESCRIPTION
-            "The rmon1EnhancementGroup is mandatory for systems which
-            implement RMON [RFC1757]"
+            DESCRIPTION
+                "The rmon1EnhancementGroup is mandatory for systems
+                that implement RMON [RFC2819]."
+        GROUP  rmon1EthernetEnhancementGroup
+            DESCRIPTION
+                "The rmon1EthernetEnhancementGroup is optional and is
+                appropriate for systems that implement the Ethernet
+                group of RMON [RFC2819]."
     ::= { rmon2MIBCompliances 1 }
 
 rmon2MIBApplicationLayerCompliance MODULE-COMPLIANCE
     STATUS  current
     DESCRIPTION
         "Describes the requirements for conformance to
-        the RMON2 MIB with Application Layer Enhancements."
+        the RMON2 MIB with Application-Layer Enhancements."
     MODULE  -- this module
         MANDATORY-GROUPS { protocolDirectoryGroup,
                            protocolDistributionGroup,
@@ -5064,10 +5462,36 @@ rmon2MIBApplicationLayerCompliance MODULE-COMPLIANCE
                            usrHistoryGroup,
                            probeInformationGroup }
 
+        OBJECT nlMatrixTopNControlRateBase
+            SYNTAX      INTEGER {
+                          nlMatrixTopNPkts(1),
+                          nlMatrixTopNOctets(2)
+                        }
+            DESCRIPTION
+                "Conformance to RMON2 requires only support for these
+                values of nlMatrixTopNControlRateBase."
+
+        OBJECT alMatrixTopNControlRateBase
+            SYNTAX     INTEGER {
+                           alMatrixTopNTerminalsPkts(1),
+                           alMatrixTopNTerminalsOctets(2),
+                           alMatrixTopNAllPkts(3),
+                           alMatrixTopNAllOctets(4)
+                       }
+            DESCRIPTION
+                "Conformance to RMON2 requires only support for these
+
+                values of alMatrixTopNControlRateBase."
+
         GROUP   rmon1EnhancementGroup
-        DESCRIPTION
-            "The rmon1EnhancementGroup is mandatory for systems which
-            implement RMON [RFC1757]"
+            DESCRIPTION
+                "The rmon1EnhancementGroup is mandatory for systems
+                that implement RMON [RFC2819]."
+        GROUP  rmon1EthernetEnhancementGroup
+            DESCRIPTION
+                "The rmon1EthernetEnhancementGroup is optional and is
+                appropriate for systems that implement the Ethernet
+                group of RMON [RFC2819]."
     ::= { rmon2MIBCompliances 2 }
 
 protocolDirectoryGroup OBJECT-GROUP
@@ -5078,9 +5502,9 @@ protocolDirectoryGroup OBJECT-GROUP
               protocolDirOwner, protocolDirStatus }
     STATUS  current
     DESCRIPTION
-        "Lists the inventory of protocols the probe has the capability
-        of monitoring and allows the addition, deletion, and
-        configuration of entries in this list."
+        "Lists the inventory of protocols the probe has the
+        capability of monitoring and allows the addition, deletion,
+        and configuration of entries in this list."
     ::= { rmon2MIBGroups 1 }
 
 protocolDistributionGroup OBJECT-GROUP
@@ -5123,11 +5547,10 @@ nlHostGroup OBJECT-GROUP
     STATUS  current
     DESCRIPTION
         "Counts the amount of traffic sent from and to each network
-
-        address discovered by the probe. Note that while the
+        address discovered by the probe.  Note that while the
         hlHostControlTable also has objects that control an optional
-        alHostTable, implementation of the alHostTable is not required
-        to fully implement this group."
+        alHostTable, implementation of the alHostTable is not
+        required to fully implement this group."
     ::= { rmon2MIBGroups 4 }
 
 nlMatrixGroup OBJECT-GROUP
@@ -5157,11 +5580,12 @@ nlMatrixGroup OBJECT-GROUP
     STATUS  current
     DESCRIPTION
         "Counts the amount of traffic sent between each pair of
-        network addresses discovered by the probe. Note that while the
-        hlMatrixControlTable also has objects that control optional
-        alMatrixTables, implementation of the alMatrixTables is not
-        required to fully implement this group."
-    ::= { rmon2MIBGroups 5 }
+        network addresses discovered by the probe.  Note that while
+        the hlMatrixControlTable also has objects that control
+        optional alMatrixTables, implementation of the
+        alMatrixTables is not required to fully implement this
+        group."
+     ::= { rmon2MIBGroups 5 }
 
 alHostGroup OBJECT-GROUP
     OBJECTS { alHostInPkts, alHostOutPkts,
@@ -5169,8 +5593,8 @@ alHostGroup OBJECT-GROUP
     STATUS  current
     DESCRIPTION
         "Counts the amount of traffic, by protocol, sent from and to
-        each network address discovered by the probe. Implementation
-        of this group requires implementation of the Network Layer
+        each network address discovered by the probe.  Implementation
+        of this group requires implementation of the Network-Layer
         Host Group."
     ::= { rmon2MIBGroups 6 }
 
@@ -5195,11 +5619,12 @@ alMatrixGroup OBJECT-GROUP
     DESCRIPTION
         "Counts the amount of traffic, by protocol, sent between each
         pair of network addresses discovered by the
-        probe. Implementation of this group requires implementation of
-        the Network Layer Matrix Group."
+        probe.  Implementation of this group requires implementation
+        of the Network-Layer Matrix Group."
     ::= { rmon2MIBGroups 7 }
 
 usrHistoryGroup OBJECT-GROUP
+
     OBJECTS { usrHistoryControlObjects,
               usrHistoryControlBucketsRequested,
               usrHistoryControlBucketsGranted,
@@ -5220,8 +5645,7 @@ probeInformationGroup OBJECT-GROUP
     STATUS  current
     DESCRIPTION
         "This group describes various operating parameters of the
-
-        probe as well as controlling the local time of the probe."
+        probe and controls the local time of the probe."
     ::= { rmon2MIBGroups 9 }
 
 probeConfigurationGroup OBJECT-GROUP
@@ -5241,10 +5665,12 @@ probeConfigurationGroup OBJECT-GROUP
               serialConnectSwitchDisconnectSeq,
               serialConnectSwitchResetSeq,
               serialConnectOwner, serialConnectStatus }
-    STATUS  current
+    STATUS  deprecated
     DESCRIPTION
         "This group controls the configuration of various operating
-        parameters of the probe."
+        parameters of the probe.  This group is not referenced by any
+        MODULE-COMPLIANCE macro because it is 'grandfathered' from
+        more recent MIB review rules that would require it."
     ::= { rmon2MIBGroups 10 }
 
 rmon1EnhancementGroup OBJECT-GROUP
@@ -5275,9 +5701,11 @@ rmon1TokenRingEnhancementGroup OBJECT-GROUP
               ringStationControlCreateTime,
               sourceRoutingStatsDroppedFrames,
               sourceRoutingStatsCreateTime }
-    STATUS  current
+    STATUS  deprecated
     DESCRIPTION
         "This group adds some enhancements to RMON-1 that help
-        management stations."
+        management stations.  This group is not referenced by any
+        MODULE-COMPLIANCE macro because it is 'grandfathered' from
+        more recent MIB review rules that would require it."
     ::= { rmon2MIBGroups 13 }
 END

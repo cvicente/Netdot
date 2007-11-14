@@ -4,7 +4,7 @@
 --
 -- October 2003, Francis Pang 
 --
--- Copyright (c) 2003-2004, 2005, 2006 by Cisco Systems, Inc.
+-- Copyright (c) 2003-2007 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 --
@@ -44,7 +44,7 @@ IMPORTS
 -- ********************************************************************
 
 ciscoDot11SsidSecMIB MODULE-IDENTITY
-        LAST-UPDATED    "200605160000Z"
+        LAST-UPDATED    "200704120000Z"
         ORGANIZATION    "Cisco System Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -337,6 +337,18 @@ ciscoDot11SsidSecMIB MODULE-IDENTITY
                     WEP is generally used to refer to 802.11 
                     encryption."
 
+        REVISION        "200704120000Z"
+        DESCRIPTION
+                "The following changes have been made 
+                - Added the following enumerations to 
+                  CDot11SecAuthKeyMgmtType.
+                 
+                  - 'wpa1'
+                  - 'wpa2'
+
+                - Added more explanations for the object
+                  cdot11SecAuxSsidAuthKeyMgmt to describe
+                  about the new key management 'wpa1' and 'wpa2'." 
         REVISION        "200605160000Z"
         DESCRIPTION
                 "Add cdot11SecSsidMaxBackupVlans, and
@@ -378,11 +390,16 @@ CDot11SecAuthKeyMgmtType ::= TEXTUAL-CONVENTION
                 applied to different encryption key algorithms,
                 like TKIP, WEP, and CKIP. 
                     cckm  -  Cisco Central Key Management 
-                    wpa   -  Wi-Fi Protected Access"
+                    wpa   -  Key management WPA version 1 for TKIP Cipher and
+                             Key management WPA version 2 for AES-CCMP Cipher
+                    wpa1  -  Key management WPA version 1
+                    wpa2  -  Key management WPA version 2"
         SYNTAX     BITS    {
                            cckm(0),
-                           wpa(1)
-                           }
+                           wpa(1),
+                           wpa1(2),
+                           wpa2(3) 
+                          }
  
 CDot11WiFiPaPreSharedKey ::= TEXTUAL-CONVENTION
         STATUS     current
@@ -669,15 +686,22 @@ cdot11SecAuxSsidAuthKeyMgmt OBJECT-TYPE
                 employed for encryption keys defined for the VLAN
                 in cdot11SecAuxSsidVlan.
 
-                WPA key management should only be selected
-                when encryption is TKIP and authentication is 
-                open, i.e. dot11AuthenticationAlgorithmsIndex 
-                is openSystem(1), together either with EAP or 
+                WPA key management('wpa') should only be selected
+                when encryption is TKIP or AES-CCMP and
+                authentication is open, i.e. 
+                dot11AuthenticationAlgorithmsIndex is  
+                openSystem(1), together either with EAP or 
                 WPA-PSK for this SSID.  
 
-                CCKM key management can be used with encryption
+                CCKM key management('cckm') can be used with encryption
                 TKIP, WEP, CKIP, and Network-EAP authentication
                 for this SSID.
+
+                The value 'wpa1' should be selected only
+                when encryption is TKIP.
+
+                The value 'wpa2' should be selected only when
+                encryption is either TKIP or AES-CCMP.
  
                 If none of the bits are set, there is no run-time
                 key management for this SSID."

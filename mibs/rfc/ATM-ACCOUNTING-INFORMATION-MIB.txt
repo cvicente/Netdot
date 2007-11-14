@@ -1,29 +1,13 @@
--- *****************************************************************
--- ATM Accounting Information MIB
---
--- Feb 1997, Vasmi Abidi
---
--- Copyright (c) 1996-1997, 1998 by cisco Systems, Inc.
--- All rights reserved.
--- *****************************************************************
---
--- This mib was extracted from an IETF Draft.
--- It currently uses a ciscoExperiment number.
-
 ATM-ACCOUNTING-INFORMATION-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
     MODULE-IDENTITY, OBJECT-TYPE, OBJECT-IDENTITY,
-    Integer32,
-    Counter64                                     FROM SNMPv2-SMI
-    DisplayString, DateAndTime, TEXTUAL-CONVENTION
-				                  FROM SNMPv2-TC
-    ciscoExperiment				  FROM CISCO-SMI;
-
-
+    mib-2, Integer32, Counter64                   FROM SNMPv2-SMI
+    DisplayString, DateAndTime                    FROM SNMPv2-TC
+    AtmAddr                                       FROM ATM-TC-MIB;
 
 atmAccountingInformationMIB MODULE-IDENTITY
-    LAST-UPDATED "9711050000Z"
+    LAST-UPDATED "9611052000Z"
     ORGANIZATION "IETF AToM MIB Working Group"
     CONTACT-INFO "
                   Keith McCloghrie
@@ -35,24 +19,10 @@ atmAccountingInformationMIB MODULE-IDENTITY
     DESCRIPTION
             "The MIB module for identifying items of accounting
             information which are applicable to ATM connections."
-    REVISION    "9711050000Z"
-    DESCRIPTION
-            "Added objects atmAcctngTransmittedPeakCells and
-             atmAcctngReceivedPeakCells."
-    ::= { ciscoExperiment 18 }
+    ::= { mib-2 59 }
 
-atmAcctngMIBObjects OBJECT IDENTIFIER ::= { atmAccountingInformationMIB 1 }
-
-AtmAddr ::= TEXTUAL-CONVENTION
-     STATUS  current
-     DESCRIPTION
-        "The ATM address used by the network entity.
-        The address types are: no address (0 octets),
-        E.164 (8 octets), and NSAP (20 octets).
-        Note: The E.164 address is encoded in BCD
-        format."
-     SYNTAX   OCTET STRING (SIZE(0|8|20))
-
+atmAcctngMIBObjects OBJECT IDENTIFIER ::=
+                                        { atmAccountingInformationMIB 1 }
 
 -- Definitions of objects for use in specifying ATM accounting
 -- data to be collected
@@ -106,12 +76,11 @@ atmAcctngIfName OBJECT-TYPE
             "A textual name for the interface on which the data for the
             connection was collected.  If the local SNMP agent supports
             the object ifName, the value of this object must be
-            identical that of ifName in the conceptual row of the
+            identical to that of ifName in the conceptual row of the
             ifTable corresponding to this interface."
     ::= { atmAcctngDataObjects 3 }
 
 atmAcctngIfAlias OBJECT-TYPE
-
     SYNTAX      DisplayString
     MAX-ACCESS  not-accessible
     STATUS      current
@@ -202,7 +171,6 @@ atmAcctngReleaseCause OBJECT-TYPE
     STATUS      current
     DESCRIPTION
             "If the connection data was collected because of the release
-
             of an SVC, then this is the cause code in the Release
             message for the connection; otherwise, this object has the
             value zero."
@@ -248,7 +216,6 @@ atmAcctngReceivedClp0Cells OBJECT-TYPE
     SYNTAX      Counter64
     MAX-ACCESS  not-accessible
     STATUS      current
-
     DESCRIPTION
             "The number of cells with CLP=0, including OAM cells,
             received by this switch on this connection."
@@ -294,7 +261,6 @@ atmAcctngTransmitTrafficDescriptorParam3 OBJECT-TYPE
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
-
             "The third traffic descriptor parameter in the direction in
             which this switch transmits cells on this connection.
             Interpretation of this parameter is dependent on the value
@@ -340,7 +306,6 @@ atmAcctngReceiveTrafficDescriptorParam1 OBJECT-TYPE
     SYNTAX      INTEGER (0..2147483647)
     MAX-ACCESS  not-accessible
     STATUS      current
-
     DESCRIPTION
             "The first traffic descriptor parameter in the direction in
             which this switch receives cells on this connection.
@@ -433,33 +398,5 @@ atmAcctngRecordCrc16 OBJECT-TYPE
             then the all-zeros value is overwritten (at the saved
             location) by the calculated value of the checksum."
     ::= { atmAcctngDataObjects 33 }
-
-atmAcctngTransmittedPeakCells OBJECT-TYPE
-      SYNTAX     Integer32
-      MAX-ACCESS  not-accessible
-      STATUS      current
-      DESCRIPTION
-              "The number of cells transmitted on the connection within
-              the peak 5-second sub-interval, where the peak sub-interval
-              is the one having the highest value of any sub-interval in
-              the current/completing accounting period.  One accounting
-              period ends and the next starts at the time of each
-              'periodic' collection of accounting information.  A value
-              of '-1' indicates that no peak value is available."
-      ::= { atmAcctngDataObjects 34 }
-
-atmAcctngReceivedPeakCells OBJECT-TYPE
-      SYNTAX     Integer32
-      MAX-ACCESS  not-accessible
-      STATUS      current
-      DESCRIPTION
-              "The number of cells received on the connection within
-              the peak 5-second sub-interval, where the peak sub-interval
-              is the one having the highest value of any sub-interval in
-              the current/completing accounting period.  One accounting
-              period ends and the next starts at the time of each
-              'periodic' collection of accounting information.  A value
-              of '-1' indicates that no peak value is available."
-      ::= { atmAcctngDataObjects 35 }
 
 END

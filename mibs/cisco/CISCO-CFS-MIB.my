@@ -3,7 +3,7 @@
 --
 -- September 2004, John Fan, Sanjeev C Joshi, H K Vivek, 
 --
--- Copyright (c) 2004, 2005 by cisco Systems, Inc.
+-- Copyright (c) 2004, 2005, 2006 by cisco Systems, Inc.
 -- All rights reserved.
 --
 -- *********************************************************************
@@ -19,7 +19,8 @@ IMPORTS
     NOTIFICATION-GROUP,
     OBJECT-GROUP
        FROM SNMPv2-CONF
-    TEXTUAL-CONVENTION
+    TEXTUAL-CONVENTION,
+    TimeStamp
        FROM SNMPv2-TC
     SnmpAdminString
        FROM SNMP-FRAMEWORK-MIB
@@ -30,7 +31,7 @@ IMPORTS
        FROM CISCO-SMI;
 
 ciscoCFSMIB MODULE-IDENTITY
-    LAST-UPDATED        "200511300000Z"
+    LAST-UPDATED        "200606130000Z"
     ORGANIZATION        "Cisco Systems, Inc."
     CONTACT-INFO
         "       Cisco Systems
@@ -179,6 +180,13 @@ ciscoCFSMIB MODULE-IDENTITY
                                     local or any other device connected
                                     to the fabric is allowed.
          
+         "
+
+    REVISION  "200606130000Z"
+    DESCRIPTION
+        "Added cfsFeatureOpExtLastActionTime object to cfsFeatureOpExtTable
+         Added cfsFeatureOpExtGroupRev1
+         Added ciscoCFSMIBComplianceRev3
          "
 
     REVISION  "200511300000Z"
@@ -1214,7 +1222,8 @@ CfsFeatureOpExtEntry ::=
         cfsFeatureOpExtLastAction        CiscoCFSAction,
         cfsFeatureOpExtLastActionResult  CiscoCFSFeatureActionResult,
         cfsFeatureOpExtLastFailureReason SnmpAdminString,
-        cfsFeatureOpExtShowCfgOption     INTEGER
+        cfsFeatureOpExtShowCfgOption     INTEGER,
+        cfsFeatureOpExtLastActionTime    TimeStamp
 }
 
 cfsFeatureOpExtScopeType OBJECT-TYPE
@@ -1306,7 +1315,19 @@ cfsFeatureOpExtShowCfgOption  OBJECT-TYPE
          "
     DEFVAL { runningConfig }
     ::= { cfsFeatureOpExtEntry 6 }
-    
+ 
+cfsFeatureOpExtLastActionTime OBJECT-TYPE
+    SYNTAX         TimeStamp
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+        "Time stamp of the last action performed. If no action
+         has been triggered for the feature (i.e cfsFeatureOpExtLastAction
+         equal to one '1')  since the last reboot of the system, the value
+         zero will be returned.
+        "
+    ::= { cfsFeatureOpExtEntry 7 }
+   
 cfsDistCtrl OBJECT-TYPE
     SYNTAX         INTEGER {
          enable(1),
@@ -1603,7 +1624,7 @@ ciscoCFSMIBComplianceRev1     MODULE-COMPLIANCE
     ::= { ciscoCFSMIBCompliances 2 }
 
 ciscoCFSMIBComplianceRev2     MODULE-COMPLIANCE
-    STATUS         current
+    STATUS         deprecated --Superseded by ciscoCFSMIBComplianceRev3
     DESCRIPTION
         "The compliance statement for entities which implement the
          CISCO-CFS-MIB.
@@ -1651,6 +1672,56 @@ ciscoCFSMIBComplianceRev2     MODULE-COMPLIANCE
          control.
          "         
     ::= { ciscoCFSMIBCompliances 3 }
+
+ciscoCFSMIBComplianceRev3     MODULE-COMPLIANCE
+    STATUS         current
+    DESCRIPTION
+        "The compliance statement for entities which implement the
+         CISCO-CFS-MIB.
+         "
+    MODULE
+       MANDATORY-GROUPS {
+           cfsFeatureOpGroupRev2,
+           cfsPendingConfOwnerGroup,
+           cfsFeatureActionNotifGroup,
+           cfsMembersGroup,
+           cfsPeerDiscoveryNotifGroup,
+           cfsFeatureOpExtGroupRev1
+       }
+    GROUP          cfsFeatureNotifObjectsGroup
+    DESCRIPTION
+        "This group is conditionally mandatory and must be
+         implemented by the agent of the managed entity only
+         if the CFS implementation on the managed entity
+         supports notifications as defined in the
+         'cfsMergeFailNotifGroup'.
+         "
+         
+    GROUP          cfsMergeFailNotifGroup
+    DESCRIPTION
+        "This group is conditionally mandatory and must be
+         implemented by the agent of the managed entity only
+         if the CFS implementation on the managed entity
+         supports fabric merge.
+         "
+         
+    GROUP          cfsDistCtrlGroup
+    DESCRIPTION
+        "This group is conditionally mandatory and must be
+         implemented by the agent of the managed entity only
+         if the CFS implementation on the managed entity
+         supports CFS distribution control.
+         "         
+
+    GROUP          cfsDistCtrlInetGroup
+    DESCRIPTION
+        "This group is conditionally mandatory and must be
+         implemented by the agent of the managed entity only
+         if the CFS implementation on the managed entity
+         supports per Internet address type CFS distribution
+         control.
+         "         
+    ::= { ciscoCFSMIBCompliances 4 }
 
 --
 -- Units of Conformance
@@ -1745,7 +1816,7 @@ cfsFeatureOpExtGroup  OBJECT-GROUP
         cfsFeatureOpExtLastFailureReason,
         cfsFeatureOpExtShowCfgOption
     }
-    STATUS         current
+    STATUS          deprecated  -- superseded by cfsFeatureOpExtGroupRev1
     DESCRIPTION
         "A collection of objects for CFS action results.
         "
@@ -1820,6 +1891,20 @@ cfsFeatureOpGroupRev2  OBJECT-GROUP
          features.
         "
     ::= { ciscoCFSMIBGroups 12 }    
-    
+ 
+cfsFeatureOpExtGroupRev1  OBJECT-GROUP
+    OBJECTS {
+        cfsFeatureOpExtLastAction,
+        cfsFeatureOpExtLastActionTime,
+        cfsFeatureOpExtLastActionResult,
+        cfsFeatureOpExtLastFailureReason,
+        cfsFeatureOpExtShowCfgOption
+    }
+    STATUS         current
+    DESCRIPTION
+        "A collection of objects for CFS action results.
+        "
+    ::= { ciscoCFSMIBGroups 13 }
+   
 END
 

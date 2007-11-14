@@ -4,7 +4,7 @@
 --
 -- April 2002, Francis Pang 
 --
--- Copyright (c) 2002-2005, 2006 by Cisco Systems, Inc.
+-- Copyright (c) 2002-2007 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *******************************************************************
 --
@@ -46,7 +46,7 @@ IMPORTS
 --********************************************************************
 
 ciscoDot11AssociationMIB MODULE-IDENTITY
-        LAST-UPDATED    "200606120000Z"
+        LAST-UPDATED    "200701050000Z"
         ORGANIZATION    "Cisco Systems Inc."
         CONTACT-INFO  
                 "       Cisco Systems
@@ -261,6 +261,17 @@ ciscoDot11AssociationMIB MODULE-IDENTITY
 
                 Work Group Bridges (WGB)
                     See bridge host."
+        REVISION      "200701050000Z"
+        DESCRIPTION
+                "The changes made are as follows.
+
+                 - Added more explanations on the kind of entries 
+                   populated for cDot11ClientConfigInfoTable, on
+                   infrastructure clients like repeaters, non-root
+                   bridges and workgroup bridges. 
+
+                 - Added cDot11ClientNewKeyManagement object
+                   to the cDot11ClientConfigInfoTable. " 
 
         REVISION      "200606120000Z"
         DESCRIPTION
@@ -542,7 +553,7 @@ CDot11Dot1xAuthenMethod ::= TEXTUAL-CONVENTION
                         }  
 
 CDot11KeyManagementMethod ::= TEXTUAL-CONVENTION 
-        STATUS     current                          
+        STATUS     deprecated                          
         DESCRIPTION                                
                 "These are the encryption key management methods
                 for IEEE 802.11 wireless frame encryption. The key 
@@ -553,6 +564,21 @@ CDot11KeyManagementMethod ::= TEXTUAL-CONVENTION
                     wpa(0),
                     cckm(1) 
                         }  
+
+CDot11NewKeyManagementMethod ::= TEXTUAL-CONVENTION
+        STATUS     current
+        DESCRIPTION
+                "These are the encryption key management methods
+                for IEEE 802.11 wireless frame encryption. The key
+                management methods are:
+                    cckm(0)  - Cisco proprietary key management
+                    wpa1(1)  - Wi-Fi Protected Access version 1
+                    wpa2(2)  - Wi-Fi Protected Access version 2."
+        SYNTAX     BITS {
+                    cckm(0),
+                    wpa1(1),
+                    wpa2(2)
+                        }
 
 --********************************************************************
 --*  dot11 association global parameters  
@@ -837,7 +863,10 @@ cDot11ClientConfigInfoTable OBJECT-TYPE
                 association with the device.  Entries are removed
                 when clients disassociate with the device.  These 
                 clients include: wireless clients, repeaters, 
-                and bridges."
+                and bridges.  On Infrastructure clients like
+                repeaters, non-root bridges and workgroup bridges,
+                this table also has an entry for the parent device
+                they are associated to."
         ::= { cDot11ClientConfiguration 1 }
 
 cDot11ClientConfigInfoEntry OBJECT-TYPE
@@ -890,7 +919,9 @@ CDot11ClientConfigInfoEntry ::=
                         CDot11IfCipherType,
                 cDot11ClientMulticastCipher
                         CDot11IfCipherType,
-                cDot11ClientDevObjectID OBJECT IDENTIFIER
+                cDot11ClientDevObjectID OBJECT IDENTIFIER,
+                cDot11ClientNewKeyManagement
+                        CDot11NewKeyManagementMethod 
                    }
 
 cDot11ClientAddress OBJECT-TYPE
@@ -1146,7 +1177,7 @@ cDot11ClientDot1xAuthenAlgorithm OBJECT-TYPE
 cDot11ClientKeyManagement OBJECT-TYPE
         SYNTAX     CDot11KeyManagementMethod
         MAX-ACCESS read-only
-        STATUS     current
+        STATUS     deprecated
         DESCRIPTION
                 "This is the encryption key management methods
                 employed by this client for IEEE 802.11 wireless frame
@@ -1211,6 +1242,17 @@ cDot11ClientDevObjectID OBJECT-TYPE
         REFERENCE
                "sysObjectID from SNMPv2-MIB" 
         ::= { cDot11ClientConfigInfoEntry 25 }
+
+cDot11ClientNewKeyManagement OBJECT-TYPE
+        SYNTAX     CDot11NewKeyManagementMethod
+        MAX-ACCESS read-only
+        STATUS     current
+        DESCRIPTION
+                "This is the encryption key management methods
+                employed by this client for IEEE 802.11 wireless frame
+                encryption.  If none of the bits is set, no key
+                management method is employed."
+        ::= { cDot11ClientConfigInfoEntry 26 }
 
 --********************************************************************
 --*  dot11 client statistics 
@@ -1524,6 +1566,29 @@ ciscoDot11AssocMIBComplianceRev4 MODULE-COMPLIANCE
 
         ::= { ciscoDot11AssocMIBCompliances 5 }
 
+ciscoDot11AssocMIBComplianceRev5 MODULE-COMPLIANCE
+        STATUS     current
+        DESCRIPTION
+                "The compliance statement for this
+                ciscoDot11AssociationMIB module."
+        MODULE
+                MANDATORY-GROUPS {
+                    ciscoDot11ClientConfigGroup,
+                    ciscoDot11ClientAuthenGroup,
+                    ciscoDot11ClientStatGroup,
+                    ciscoDot11ClientInfoGroup,
+                    ciscoDot11IfAssocStatGroup,
+                    ciscoDot11IfCipherStatGroup,
+                    ciscoDot11ClientConfigExtGroup,
+                    ciscoDot11ClientNewAuthenGroup
+                                 }
+                GROUP ciscoDot11ApAssocGlobalGroup
+                DESCRIPTION
+                        "This group is required only if the platform
+                        is a IEEE 802.11 AP/repeater or bridge."
+
+        ::= { ciscoDot11AssocMIBCompliances 6 }
+
 
 
 --********************************************************************
@@ -1659,7 +1724,7 @@ ciscoDot11ClientAuthenGroup OBJECT-GROUP
                 cDot11ClientUnicastCipher,
                 cDot11ClientMulticastCipher
                 }
-        STATUS     current
+        STATUS     deprecated 
         DESCRIPTION
                 "This group includes per IEEE 802.11 radio
                 interface cipher related statistics collected."
@@ -1675,6 +1740,16 @@ ciscoDot11ClientConfigExtGroup OBJECT-GROUP
                 information about a particular associated 802.11
                 client. " 
         ::= { ciscoDot11AssocMIBGroups 9 }
+
+ciscoDot11ClientNewAuthenGroup OBJECT-GROUP
+        OBJECTS {
+                cDot11ClientNewKeyManagement
+                }
+        STATUS     current
+        DESCRIPTION
+                "This group includes per IEEE 802.11 radio
+                interface cipher related statistics collected."
+        ::= { ciscoDot11AssocMIBGroups 10 }
 
 --********************************************************************
 --*   End of units of conformance  

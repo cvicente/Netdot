@@ -13,13 +13,17 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         ;
 
     hpicfRateLimitMIB MODULE-IDENTITY
-         LAST-UPDATED "200504201130Z"  -- April 20, 2005
+         LAST-UPDATED "200607071833Z"  -- July 07, 2006
          ORGANIZATION "Hewlett Packard Company,
                        Procurve Networking Business"
          CONTACT-INFO "Hewlett Packard Company
                        8000 Foothills Blvd.
                        Roseville, CA 95747"
          DESCRIPTION  "This MIB module describes HP rate limit information."
+
+	      REVISION     "200607071833Z"  -- July 07, 2007
+         DESCRIPTION  "Added new egress rate limiting bps objects, and
+                       ingress rate-limiting definitions."
 
 	      REVISION     "200504201130Z"  -- April 20, 2005
          DESCRIPTION  "Added minimum bandwidth and egress rate limiting
@@ -136,20 +140,21 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         SYNTAX      Integer32
         MAX-ACCESS  read-only
         STATUS      current
-        DESCRIPTION "The number of bandwidth minimum egress queues 
-                     supported on this system."
+        DESCRIPTION "The number of bandwidth minimum egress queues supported
+                     on this system."
         ::= { hpBWMinEgressPortConfig 1 }
 
     hpBWMinEgressPortPrctTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpBWMinEgressPortPrctEntry
         MAX-ACCESS  not-accessible
         STATUS      current
-        DESCRIPTION "A table that contains information about the port's
-		    egress Guaranteed Minimum Bandwidth percent configurations
-		    on this switch.  The number of entries in this table is 
-          determined by hpBWMinEgressPortNumQueues.  The priority of the
-          queues is in ascending order.  Starting with queue one being the
-          lowest and queue hpBWMinEgressPortNumQueues being the highest."
+        DESCRIPTION "A table that contains information about the port's egress
+		    Guaranteed Minimum Bandwidth percent configurations on
+		    this switch.  The number of entries in this table is 
+                    determined by hpBWMinEgressPortNumQueues.  The priority of 
+                    the queues is in ascending order, starting with queue one 
+                    being the lowest and queue hpBWMinEgressPortNumQueues 
+                    being the highest."
         ::= { hpBWMinEgressPortConfig 2 }
 
     hpBWMinEgressPortPrctEntry OBJECT-TYPE
@@ -171,20 +176,19 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         SYNTAX      Integer32 (1..9000)
         MAX-ACCESS  not-accessible
         STATUS      current
-        DESCRIPTION "The queue associated with this entry.
-                     The priority of the queues is in ascending order.  
-                     Starting with queue one being the lowest and queue 
-                     hpBWMinEgressPortNumQueues being the highest."
+        DESCRIPTION "The queue associated with this entry.  The priority of 
+                    the queues is in ascending order, starting with queue one 
+                    being the lowest and queue hpBWMinEgressPortNumQueues 
+                    being the highest."
         ::= { hpBWMinEgressPortPrctEntry 1 }
         
     hpBWMinEgressPortPrct  OBJECT-TYPE
         SYNTAX      Integer32 (0..100)
         MAX-ACCESS  read-write
         STATUS      current
-        DESCRIPTION "The percentage of Guaranteed Minimum bandwidth to
-		               be assigned to this egress queue for 
-		               this port. Total values for all queues must not
- 		               exceed 100 percent."
+        DESCRIPTION "The percentage of Guaranteed Minimum bandwidth to be 
+                    assigned to this egress queue for this port. Total values 
+                    for all queues must not exceed 100 percent."
         ::= { hpBWMinEgressPortPrctEntry 2 }
 
 -- Ingress Minimum Bandwidth Ojbects
@@ -198,8 +202,8 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         SYNTAX      Integer32
         MAX-ACCESS  read-only
         STATUS      current
-        DESCRIPTION "The number of bandwidth minimum ingress queues 
-                     supported on this system."
+        DESCRIPTION "The number of bandwidth minimum ingress queues supported 
+                    on this system."
         ::= { hpBWMinIngressPortConfig 1 }
 
     hpBWMinIngressPortPrctTable OBJECT-TYPE
@@ -207,11 +211,12 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         MAX-ACCESS  not-accessible
         STATUS      current
         DESCRIPTION "A table that contains information about the port's
-		    ingress Guaranteed Minimum Bandwidth percent configurations
-		    on this switch.  The number of entries in this table is 
-          determined by hpBWMinIngressPortNumQueues.  The priority of the
-          queues is in ascending order.  Starting with queue one being the
-          lowest and queue hpBWMinIngressPortNumQueues being the highest."
+		    ingress Guaranteed Minimum Bandwidth percent 
+                    configurations on this switch.  The number of entries in 
+                    this table is determined by hpBWMinIngressPortNumQueues.  
+                    The priority of the queues is in ascending order, starting 
+                    with queue one being the lowest and queue 
+                    hpBWMinIngressPortNumQueues being the highest."
         ::= { hpBWMinIngressPortConfig 2 }
 
     hpBWMinIngressPortPrctEntry OBJECT-TYPE
@@ -233,20 +238,19 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         SYNTAX      Integer32 (1..9000)
         MAX-ACCESS  not-accessible
         STATUS      current
-        DESCRIPTION "The queue associated with this entry.
-                     The priority of the queues is in ascending order.  
-                     Starting with queue one being the lowest and queue 
-                     hpBWMinIngressPortNumQueues being the highest."
+        DESCRIPTION "The queue associated with this entry.  The priority of 
+                     the queues is in ascending order, starting with queue one 
+                     being the lowest and queue hpBWMinIngressPortNumQueues 
+                     being the highest."
         ::= { hpBWMinIngressPortPrctEntry 1 }
         
     hpBWMinIngressPortPrct  OBJECT-TYPE
         SYNTAX      Integer32 (0..100)
         MAX-ACCESS  read-write
         STATUS      current
-        DESCRIPTION "The percentage of Guaranteed Minimum bandwidth to
-		               be assigned to this ingress queue for 
-		               this port. Total values for all queues must not
- 		               exceed 100 percent."
+        DESCRIPTION "The percentage of Guaranteed Minimum bandwidth to be 
+                    assigned to this ingress queue for this port. Total values 
+                    for all queues must not exceed 100 percent."
         ::= { hpBWMinIngressPortPrctEntry 2 }
 
 -- Egress Rate Limiting Objects
@@ -260,25 +264,24 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         SYNTAX      Integer32
         MAX-ACCESS  read-only
         STATUS      current
-        DESCRIPTION "The number of egress rate limiting  queues 
-                     supported on this system."
+        DESCRIPTION "The number of egress rate-limiting queues supported on 
+                    this system."
         ::= { hpRateLimitPortConfig 1 }
 
     hpEgressRateLimitPortConfigTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpEgressRateLimitPortConfigEntry
         MAX-ACCESS  not-accessible
         STATUS      current
-        DESCRIPTION "A table that contains information about the port
-                    egress Rate-Limiting port configurations on this 
-                    switch."
+        DESCRIPTION "A table that contains information about the port egress 
+                    Rate-Limiting configurations on this switch."
         ::= { hpRateLimitPortConfig 2 }
 
     hpEgressRateLimitPortConfigEntry OBJECT-TYPE
         SYNTAX      HpEgressRateLimitPortConfigEntry
         MAX-ACCESS  not-accessible
         STATUS      current
-        DESCRIPTION "The information associated with each port's egress
-                    Rate Limintg configuration."
+        DESCRIPTION "The information associated with each port's egress 
+                    Rate-Limiting configuration."
         INDEX       { hpEgressRateLimitPortIndex }
         ::= { hpEgressRateLimitPortConfigTable 1 }
 
@@ -286,36 +289,44 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         SEQUENCE {
             hpEgressRateLimitPortIndex             InterfaceIndex,
             hpEgressRateLimitPortControlMode       INTEGER,
-            hpEgressRateLimitPortSingleControlPrct Integer32
+            hpEgressRateLimitPortSingleControlPrct Integer32,
+            hpEgressRateLimitPortSingleControlBps  Unsigned32
         }
 
     hpEgressRateLimitPortIndex  OBJECT-TYPE
         SYNTAX      InterfaceIndex
         MAX-ACCESS  not-accessible
         STATUS      current
-        DESCRIPTION "The ifIndex value which uniquely identifies a row
-                     in the Interfaces Table."
+        DESCRIPTION "The ifIndex value which uniquely identifies a row in the 
+                    Interfaces Table."
         ::= { hpEgressRateLimitPortConfigEntry 1 }
 
     hpEgressRateLimitPortControlMode OBJECT-TYPE
         SYNTAX      INTEGER {
                         disabled(1),
                         egressRateLimitPerPortOnly(2),
-                        egressRateLimitPerQueue(3)
+                        egressRateLimitPerQueue(3),
+                        egressRateLimitPerPortOnlyBpsMode(4),
+                        egressRateLimitPerQueueBpsMode(5)
                     }
         MAX-ACCESS      read-write
         STATUS      current
-        DESCRIPTION "The mode by which this port will be Rate-Limited
-                    on egress. If egressRateLimitPerPortOnly is configured,
-                    there will be a single maximum rate for the entire
-                    port. If egressRateLimitPerQueue is configured, the values
-                    for each of the queues indicate the maximum
-                    percentage of port traffic that may be transmitted by
-                    that queue (the sum of these values must not exceed
-                    100).  The queues are defined under 
-                    hpEgressRateLimitPortPrctTable.  When egress rate-limiting 
-                    is disabled, there are no maximum controls on egress 
-                    for this port."
+        DESCRIPTION "The mode by which this port will be Rate-Limited on
+                    egress. If egressRateLimitPerPortOnly is configured, there 
+                    will be a single maximum percentage-based rate for the 
+                    entire port. If egressRateLimitPerQueue is configured, the 
+                    values for each of the queues indicate the maximum
+                    percentage of port traffic that may be transmitted by that
+                    queue. If egressRateLimitPerPortOnlyBpsMode is configured, 
+                    there will be a single maximum bits-per-second rate for 
+                    the entire port. If egressRateLimitPerQueueBpsMode  is
+                    configured, the maximum transmission-rate values for each 
+                    of the queues will be expressed in bits-per-second (again,
+                    the sum of these values must not exceed the maximum Bytes-
+                    per-second capability of the network link). The queues are 
+                    defined under hpEgressRateLimitPortPrctTable.  When egress 
+                    rate-limiting is disabled, there are no maximum controls 
+                    on egress for this port."
         DEFVAL { disabled }
         ::= { hpEgressRateLimitPortConfigEntry 2 }
 
@@ -329,18 +340,28 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
                     port on egress."
         ::= { hpEgressRateLimitPortConfigEntry 3 }
 
+    hpEgressRateLimitPortSingleControlBps OBJECT-TYPE
+        SYNTAX	    Unsigned32 (0..4200000000) 
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "When hpEgressRateLimitPortControlMode is configured for 
+                    egressRateLimitPerPortOnlyBpsMode, this value is the 
+                    maximum bits-per-second of traffic that may be transmitted 
+                    by this port on egress."
+        ::= { hpEgressRateLimitPortConfigEntry 4 }
+
     hpEgressRateLimitPortPrctTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpEgressRateLimitPortPrctEntry
         MAX-ACCESS  not-accessible
         STATUS      current
-        DESCRIPTION "A table that contains information about the port
-                    egress Rate-Limiting percent configurations on this 
-                    switch.  The number of entries in this table is 
-                    determined by hpEgressRateLimitPortNumQueues.  
-                    The priority of the queues is in ascending order.  
-                    Starting with queue one being the lowest priority 
-                    and queue hpEgressRateLimitPortNumQueues being the 
-                    highest priority."
+        DESCRIPTION "A table that contains information about the port egress 
+                    Rate-Limiting percent configurations on this switch.  The 
+                    number of entries in this table is determined by 
+                    hpEgressRateLimitPortNumQueues.  The priority of the 
+                    queues is in ascending order, starting with queue one 
+                    being the lowest priority and queue 
+                    hpEgressRateLimitPortNumQueues being the highest 
+                    priority."
         ::= { hpRateLimitPortConfig 3 }
 
     hpEgressRateLimitPortPrctEntry OBJECT-TYPE
@@ -348,7 +369,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         MAX-ACCESS  not-accessible
         STATUS      current
         DESCRIPTION "The information associated with each port's egress
-                    Rate Limintg percent configuration."
+                    Rate-Limiting percent configuration."
         INDEX       { hpEgressRateLimitPortIndex, 
                       hpEgressRateLimitPortPrctQueue }
         ::= { hpEgressRateLimitPortPrctTable 1 }
@@ -363,9 +384,9 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         SYNTAX      Integer32 (1..9000)
         MAX-ACCESS  not-accessible
         STATUS      current
-        DESCRIPTION "The queue associated with this entry.
-                     The priority of the queues is in ascending order.  
-                     Starting with queue one being the lowest and queue 
+        DESCRIPTION "The queue associated with this entry.  The priority o
+                     of the queues is in ascending order, starting with 
+                     queue one being the lowest and queue 
                      hpEgressRateLimitgressPortNumQueues being the highest."
         ::= { hpEgressRateLimitPortPrctEntry 1 }
         
@@ -373,16 +394,278 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         SYNTAX      Integer32 (0..100)
         MAX-ACCESS  read-write
         STATUS      current
-        DESCRIPTION "The maximum percentage of traffic that may be
+        DESCRIPTION "The maximum percentage of traffic that may be 
                     transmitted by this port's queue on egress.
                     hpEgressRateLimitPortControlMode must be configured to
-                    use egressRateLimitPerQueue for this to take effect. A value
-                    of 0-percent for any queue means that no traffic will
-                    ever be transmitted on this port for that egress queue.
-                    Total values for all queues must not exceed 100
-                    percent."
+                    use egressRateLimitPerQueue for this to take effect.  A 
+                    value of 0-percent for any queue means that no traffic 
+                    will ever be transmitted on this port for that egress 
+                    queue."  
         ::= { hpEgressRateLimitPortPrctEntry 2 }
 
+    hpEgressRateLimitPortBpsTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpEgressRateLimitPortBpsEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "A table that contains information about the port
+                    egress Rate-Limiting bits-per-second configurations on this
+                    switch.  The number of entries in this table is determined 
+	            by hpEgressRateLimitPortNumQueues. The priority of the 
+	            queues is in ascending order, starting with queue one 
+                    being the lowest priority and queue 
+                    hpEgressRateLimitPortNumQueues being the highest 
+                    priority queue."
+        ::= { hpRateLimitPortConfig 4 }
+  
+    hpEgressRateLimitPortBpsEntry OBJECT-TYPE
+        SYNTAX      HpEgressRateLimitPortBpsEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The information associated with each port's egress
+                    Rate-Limiting bits-per-second configuration."
+        INDEX       { hpEgressRateLimitPortIndex, 
+                      hpEgressRateLimitPortBpsQueue }
+        ::= { hpEgressRateLimitPortBpsTable 1 }
+
+    HpEgressRateLimitPortBpsEntry ::=
+        SEQUENCE {
+            hpEgressRateLimitPortBpsQueue            Integer32,
+            hpEgressRateLimitPortBps                 Unsigned32 
+        }
+
+
+    hpEgressRateLimitPortBpsQueue  OBJECT-TYPE
+        SYNTAX      Integer32 (1..64)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The queue associated with this entry. The priority of 
+	            the queues is in ascending order, starting with queue one 
+                    being the lowest and queue 
+                    hpEgressRateLimitgressPortNumQueues being the highest."
+        ::= { hpEgressRateLimitPortBpsEntry 1 }
+
+    hpEgressRateLimitPortBps  OBJECT-TYPE 
+        SYNTAX      Unsigned32 (0..4200000000)
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The maximum bits-per-second of traffic that may be 
+                    transmitted by this port's queue on egress.
+                    hpEgressRateLimitPortControlMode must be configured to use 
+                    egressRateLimitPerQueue for this to take effect.  A value
+                    of 0-percent for any queue means that no traffic will ever 
+                    be transmitted on this port for that egress queue. The 
+                    values for each queue must not exceed the bits-per-second 
+                    capability of the current network link speed."
+        ::= { hpEgressRateLimitPortBpsEntry 2 }
+
+
+-- Ingress Rate Limiting Objects
+
+    hpicfIngressRateLimitPortObjects OBJECT IDENTIFIER ::=
+                               { hpicfRateLimitObjects 5 }
+    hpRateLimitIngressPortConfig OBJECT IDENTIFIER ::=
+                               { hpicfIngressRateLimitPortObjects 1 }
+
+
+    hpIngressRateLimitPortNumQueues OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The number of ingress rate-limiting queues supported on 
+                    this system."
+        ::= { hpRateLimitIngressPortConfig 1 }
+
+    hpIngressRateLimitPortConfigTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpIngressRateLimitPortConfigEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "A table that contains information about the port ingress 
+                    Rate-Limiting configurations on this switch."
+        ::= { hpRateLimitIngressPortConfig 2 }
+
+    hpIngressRateLimitPortConfigEntry OBJECT-TYPE
+        SYNTAX      HpIngressRateLimitPortConfigEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The information associated with each port's ingress 
+                    Rate-Limiting configuration."
+        INDEX       { hpIngressRateLimitPortIndex }
+        ::= { hpIngressRateLimitPortConfigTable 1 }
+
+    HpIngressRateLimitPortConfigEntry ::=
+        SEQUENCE {
+            hpIngressRateLimitPortIndex             InterfaceIndex,
+            hpIngressRateLimitPortControlMode       INTEGER,
+            hpIngressRateLimitPortSingleControlPrct Integer32,
+            hpIngressRateLimitPortSingleControlBps  Unsigned32
+        }
+
+    hpIngressRateLimitPortIndex  OBJECT-TYPE
+        SYNTAX      InterfaceIndex
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The ifIndex value which uniquely identifies a row in the 
+                    Interfaces Table."
+        ::= { hpIngressRateLimitPortConfigEntry 1 }
+
+    hpIngressRateLimitPortControlMode OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        disabled(1),
+                        ingressRateLimitPerPortOnly(2),
+                        ingressRateLimitPerQueue(3),
+                        ingressRateLimitPerPortOnlyBpsMode(4),
+                        ingressRateLimitPerQueueBpsMode(5)
+                    }
+        MAX-ACCESS      read-write
+        STATUS      current
+        DESCRIPTION "The mode by which this port will be Rate-Limited on
+                    ingress. If ingressRateLimitPerPortOnly is configured, 
+		    there will be a single maximum percentage-based rate for 
+                    the entire port. If ingressRateLimitPerQueue is 
+                    configured, the values for each of the queues indicate the 
+                    maximum percentage of port traffic that may be transmitted 
+                    by that queue. If ingressRateLimitPerPortOnlyBpsMode is 
+                    configured, there will be a single maximum bits-per-second 
+                    rate for the entire port. If 
+                    ingressRateLimitPerQueueBpsMode is configured, the maximum 
+                    transmission-rate values for each of the queues will be 
+                    expressed in bits-per-second (again, the sum of these 
+                    values must not exceed the maximum Bytes-per-second 
+                    capability of the network link). The queues are defined 
+                    under hpIngressRateLimitPortPrctTable.  When ingress 
+                    rate-limiting is disabled, there are no maximum controls 
+                    on ingress for this port."
+        DEFVAL { disabled }
+        ::= { hpIngressRateLimitPortConfigEntry 2 }
+
+    hpIngressRateLimitPortSingleControlPrct OBJECT-TYPE
+        SYNTAX      Integer32 (0..100)
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "When hpIngressRateLimitPortControlMode is configured
+                    for ingressRateLimitPerPortOnly, this value is the maximum
+                    percentage of traffic that may be transmitted by this
+                    port on egress."
+        ::= { hpIngressRateLimitPortConfigEntry 3 }
+
+    hpIngressRateLimitPortSingleControlBps OBJECT-TYPE
+        SYNTAX	    Unsigned32 (0..4200000000) 
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "When hpIngressRateLimitPortControlMode is configured for 
+                    ingressRateLimitPerPortOnlyBpsMode, this value is the 
+                    maximum bits-per-second of traffic that may be transmitted 
+                    by this port on ingress."
+       ::= { hpIngressRateLimitPortConfigEntry 4}
+
+    hpIngressRateLimitPortPrctTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpIngressRateLimitPortPrctEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "A table that contains information about the port ingress 
+                    Rate-Limiting percent configurations on this switch.  The 
+                    number of entries in this table is determined by 
+                    hpIngressRateLimitPortNumQueues.  The priority of the 
+                    queues is in ascending order, starting with queue one 
+                    being the lowest priority and queue 
+                    hpIngressRateLimitPortNumQueues being the highest 
+                    priority."
+        ::= { hpRateLimitIngressPortConfig 3 }
+
+    hpIngressRateLimitPortPrctEntry OBJECT-TYPE
+        SYNTAX      HpIngressRateLimitPortPrctEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The information associated with each port's ingress
+                    Rate-Limiting percent configuration."
+        INDEX       { hpIngressRateLimitPortIndex, 
+                      hpIngressRateLimitPortPrctQueue }
+        ::= { hpIngressRateLimitPortPrctTable 1 }
+
+    HpIngressRateLimitPortPrctEntry ::=
+        SEQUENCE {
+            hpIngressRateLimitPortPrctQueue             Integer32,
+            hpIngressRateLimitPortPrct                  Integer32
+        }
+
+    hpIngressRateLimitPortPrctQueue  OBJECT-TYPE
+        SYNTAX      Integer32 (1..9000)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The queue associated with this entry.  The priority 
+                     of the queues is in ascending order, starting with 
+                     queue one being the lowest and queue 
+                     hpIngressRateLimitgressPortNumQueues being the highest."
+        ::= { hpIngressRateLimitPortPrctEntry 1 }
+        
+    hpIngressRateLimitPortPrct  OBJECT-TYPE
+        SYNTAX      Integer32 (0..100)
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The maximum percentage of traffic that may be 
+                    transmitted by this port's queue on ingress.
+                    hpIngressRateLimitPortControlMode must be configured to
+                    use ingressRateLimitPerQueue for this to take effect.  A 
+                    value of 0-percent for any queue means that no traffic 
+                    will ever be transmitted on this port for that ingress 
+                    queue.  The values for each queue must not exceed 100
+                    percent."
+        ::= { hpIngressRateLimitPortPrctEntry 2 }
+
+    hpIngressRateLimitPortBpsTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpIngressRateLimitPortBpsEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "A table that contains information about the port ingress
+                    Rate-Limiting bits-per-second configurations on this
+                    switch.  The number of entries in this table is determined 
+	            by hpIngressRateLimitPortNumQueues. The priority of the 
+	            queues is in ascending order, starting with queue one 
+                    being the lowest priority and queue 
+                    hpIngressRateLimitPortNumQueues being the highest 
+                    priority queue."
+        ::= { hpRateLimitIngressPortConfig 4 }
+  
+    hpIngressRateLimitPortBpsEntry OBJECT-TYPE
+        SYNTAX      HpIngressRateLimitPortBpsEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The information associated with each port's egress
+                    Rate-Limiting bits-per-second configuration."
+        INDEX       { hpIngressRateLimitPortIndex, 
+                      hpIngressRateLimitPortBpsQueue }
+        ::= { hpIngressRateLimitPortBpsTable 1 }
+
+    HpIngressRateLimitPortBpsEntry ::=
+        SEQUENCE {
+            hpIngressRateLimitPortBpsQueue            Integer32,
+            hpIngressRateLimitPortBps                 Unsigned32 
+        }
+
+    hpIngressRateLimitPortBpsQueue  OBJECT-TYPE
+        SYNTAX      Integer32 (1..64)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The queue associated with this entry. The priority of 
+	            the queues is in ascending order, starting with queue one 
+                    being the lowest and queue 
+                    hpIngressRateLimitgressPortNumQueues being the highest."
+        ::= { hpIngressRateLimitPortBpsEntry 1 }
+
+    hpIngressRateLimitPortBps  OBJECT-TYPE 
+        SYNTAX      Unsigned32 (0..4200000000)
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The maximum bits-per-second of traffic that may be 
+                    transmitted by this port's queue on ingress.
+                    hpIngressRateLimitPortControlMode must be configured to 
+                    use ingressRateLimitPerQueue for this to take effect.  A 
+                    value of 0-percent for any queue means that no traffic 
+                    will ever be transmitted on this port for that ingress 
+                    queue. The values for each queue must not exceed the 
+                    bits-per-second capability of the current network link 
+                    speed."
+        ::= { hpIngressRateLimitPortBpsEntry 2 }
 
 -- Conformance Information
 
@@ -393,10 +676,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
    hpicfRateLimitCompliances OBJECT IDENTIFIER
        ::= { hpicfRateLimitConformance 2 }
 
-
-
 -- units of conformance
-
 
    hpICMPRateLimitPortConfigGroup OBJECT-GROUP
         OBJECTS {
@@ -440,13 +720,30 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         OBJECTS {  hpEgressRateLimitPortNumQueues,
                    hpEgressRateLimitPortControlMode,
                    hpEgressRateLimitPortSingleControlPrct,  
-                   hpEgressRateLimitPortPrct  
+                   hpEgressRateLimitPortSingleControlBps,  
+                   hpEgressRateLimitPortPrct,
+                   hpEgressRateLimitPortBps 
                 }
         STATUS     current
         DESCRIPTION    
-          "A collection of objects providing configuration to Guaranteed 
-           Minimum ingress bandwidth on an interface." 
+          "A collection of objects providing configuration to Egress  
+           Rate-Limiting on an interface." 
        ::= { hpicfRateLimitGroups 5 }
+
+   hpIngressRateLimitPortConfigGroup OBJECT-GROUP
+        OBJECTS {  hpIngressRateLimitPortNumQueues,
+                   hpIngressRateLimitPortControlMode,
+                   hpIngressRateLimitPortSingleControlPrct,  
+                   hpIngressRateLimitPortSingleControlBps,  
+                   hpIngressRateLimitPortPrct,
+                   hpIngressRateLimitPortBps 
+                }
+        STATUS     current
+        DESCRIPTION    
+          "A collection of objects providing configuration to Ingress  
+           Rate-Limiting on an interface." 
+       ::= { hpicfRateLimitGroups 6 }
+
 
 -- compliance statements
 
@@ -473,7 +770,8 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
           MANDATORY-GROUPS { hpICMPRateLimitPortConfigGroup,
                              hpICMPRateLimitPortNotifyGroup,
                              hpBWMinIngressPortConfigGroup,
-                             hpEgressRateLimitPortConfigGroup
+                             hpEgressRateLimitPortConfigGroup,
+                             hpIngressRateLimitPortConfigGroup
                            }   
        ::= { hpicfRateLimitCompliances 2 }
  END

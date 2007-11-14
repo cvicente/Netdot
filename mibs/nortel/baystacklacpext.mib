@@ -12,7 +12,7 @@ IMPORTS
         FROM SYNOPTICS-ROOT-MIB;
 
 bayStackLacpExtMib MODULE-IDENTITY
-    LAST-UPDATED    "200405190000Z"
+    LAST-UPDATED    "200511140000Z"
     ORGANIZATION    "Nortel Networks"
     CONTACT-INFO    "Nortel Networks"
     DESCRIPTION
@@ -30,6 +30,9 @@ bayStackLacpExtMib MODULE-IDENTITY
          makes no warranty, either express or implied, as to the use,
          operation, condition, or performance of the Specification."
 
+    REVISION "200511140000Z" -- 14 November 2005
+    DESCRIPTION "v2:  Added bsleDot3adCompatibilityMode."
+
     REVISION "200406040000Z" -- 04 June 2004
     DESCRIPTION "v1:  Initial version."
 
@@ -37,6 +40,26 @@ bayStackLacpExtMib MODULE-IDENTITY
 
 bsleNotifications OBJECT IDENTIFIER ::= { bayStackLacpExtMib 0 }
 bsleObjects OBJECT IDENTIFIER ::= { bayStackLacpExtMib 1 }
+
+--
+-- Scalar objects
+--
+
+bsleScalars OBJECT IDENTIFIER ::= { bsleObjects 1 }
+
+bsleDot3adCompatibilityMode OBJECT-TYPE
+    SYNTAX INTEGER {
+                       default(1),
+                       advanced(2)
+                   }
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The compatibility mode.  This determines behaviour when
+         an LACP-enabled port is connected to a non-LACP partner,
+         or when an LACP active trunk port is removed from the
+         trunk configuration."
+    ::= { bsleScalars 1 }
 
 --
 -- 802.3ad Agg Port Extension Table

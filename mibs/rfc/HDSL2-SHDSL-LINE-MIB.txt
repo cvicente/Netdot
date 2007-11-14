@@ -1,67 +1,118 @@
 HDSL2-SHDSL-LINE-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
-MODULE-IDENTITY,
-OBJECT-TYPE,
-Counter32,
-Unsigned32,
-Gauge32,
-NOTIFICATION-TYPE,
-Integer32,
-transmission                  FROM SNMPv2-SMI
-RowStatus,
-TEXTUAL-CONVENTION            FROM SNMPv2-TC
-ifIndex                       FROM IF-MIB
-PerfCurrentCount,
-PerfIntervalCount             FROM PerfHist-TC-MIB
-SnmpAdminString               FROM SNMP-FRAMEWORK-MIB
-MODULE-COMPLIANCE,
-OBJECT-GROUP,
-NOTIFICATION-GROUP            FROM SNMPv2-CONF;
+   MODULE-IDENTITY,
+   OBJECT-TYPE,
+   Counter32,
+   Unsigned32,
+   Gauge32,
+   NOTIFICATION-TYPE,
+   Integer32,
+   transmission
+      FROM SNMPv2-SMI
+   RowStatus,
+   TEXTUAL-CONVENTION
+      FROM SNMPv2-TC
+   ifIndex
+      FROM IF-MIB
+   PerfCurrentCount,
+   PerfIntervalCount
+      FROM PerfHist-TC-MIB
+   SnmpAdminString
+      FROM SNMP-FRAMEWORK-MIB
+   MODULE-COMPLIANCE,
+   OBJECT-GROUP,
+   NOTIFICATION-GROUP
+      FROM SNMPv2-CONF;
 
 hdsl2ShdslMIB MODULE-IDENTITY
-    LAST-UPDATED "200205090000Z" -- May 9, 2002
-    ORGANIZATION "ADSLMIB Working Group"
-    CONTACT-INFO "WG-email:  adslmib@ietf.org
-               Info:      https://www1.ietf.org/mailman/listinfo/adslmib
-               Chair:     Mike Sneed
+   LAST-UPDATED "200512070000Z" -- December 7, 2005
+   ORGANIZATION "ADSLMIB Working Group"
+   CONTACT-INFO "WG-email:  adslmib@ietf.org
+      WG-URL:
+         http://www.ietf.org/html.charters/adslmib-charter.html
+      Info:       https://www1.ietf.org/mailman/listinfo/adslmib
+      Chair:      Mike Sneed
+                  Sand Channel Systems
+      Postal:     1210-203 Westview Ln
+                  Raleigh NC 27605  USA
+      Email:      sneedmike@hotmail.com
+      Phone:     +1 206 600 7022
 
-               Postal:    P.O. Box 37324
-                          Raleigh NC 27627-7324
-               Email:     sneedmike@hotmail.com
+      Co-Chair    Bob Ray
+                  PESA Switching Systems, Inc.
 
-               Co-editor: Bob Ray
-                          PESA Switching Systems, Inc.
-               Postal:    330-A Wynn Drive
-                          Huntsville, AL 35805 USA
-               Email:     rray@pesa.com
-               Phone:     +1 256 726 9200 ext. 142
+      Postal      330-A Wynn Drive
+                  Huntsville, AL 35805 USA
+      Phone       +1 256 726 9200 ext. 142
 
-               Co-editor: Rajesh Abbi
-                          Alcatel USA
-               Postal:    2912 Wake Forest Road
-                          Raleigh, NC 27609-7860 USA
+      Co-editor:  Clay Sikes
+                  Zhone Technologies, Inc.
+      Postal:     8545 126th Ave. N.
+                  Largo, FL 33772 USA
+      Email:      csikes@zhone.com
+      Phone:      +1 727 530 8257
 
-               Email:     Rajesh.Abbi@alcatel.com
-               Phone:     +1 919 850 6194
-              "
+      Co-editor:  Bob Ray
+                  PESA Switching Systems, Inc.
+      Postal:     330-A Wynn Drive
+                  Huntsville, AL 35805 USA
+      Email:      rray@pesa.com
+      Phone:      +1 256 726 9200 ext. 142
+
+      Co-editor:  Rajesh Abbi
+                  Alcatel USA
+      Postal:     2301 Sugar Bush Road
+                  Raleigh, NC 27612-3339 USA
+
+      Email:      Rajesh.Abbi@alcatel.com
+      Phone:      +1 919 850 6194"
 DESCRIPTION
      "This MIB module defines a collection of objects for managing
       HDSL2/SHDSL lines.  An agent may reside at either end of the
-      line, however the MIB is designed to require no management
-      communication between the modems beyond that inherent in the
-      low-level EOC line protocol as defined in ANSI T1E1.4/2000-006
-      (for HDSL2 lines), or in ITU G.991.2 (for SHDSL lines)."
- REVISION "200205090000Z" -- May 9, 2002
- DESCRIPTION "Initial version, published as RFC 3276."
- ::= { transmission 48 }
+      line; however, the MIB module is designed to require no
+      management communication between the modems beyond that
+      inherent in the low-level EOC line protocol as defined in
+      ANSI T1E1.4/2000-006 (for HDSL2 lines) or in ITU G.991.2
+      (for SHDSL lines).
+
+      Copyright (C) The Internet Society (2005).  This version of
+      this MIB module is part of RFC 4319; see the RFC itself for
+      full legal notices."
+
+REVISION    "200512070000Z" -- December 7, 2005
+DESCRIPTION "This version, published as RFC 4319.
+      The following changes have been made in this version:
+        1.  Added a 3rd and 4th wire pair.
+        2.  Modified all rates such that their rates are only
+            constrained by an unsigned 32-bit value and not by
+            what today's perceived technology limitations are.
+
+        3.  Clarified that the rates from RFC 3276 include
+            payload and any applicable framing and added
+            objects for payload-only rates.
+        4.  Added an object to indicate whether the
+            tip and ring are reversed on a wire pair.
+        5.  Added an object to display the activation state
+            of a wire pair.
+        6.  Added references as necessary for clarification.
+        7.  Added display hints to textual conventions as
+            necessary.
+        8.  Updated conformance statements as necessary.
+        9.  Some changes were due to IETF requirements and
+            RFC generation tools."
+
+REVISION    "200205090000Z" -- May 9, 2002
+DESCRIPTION "Initial version, published as RFC 3276."
+::= { transmission 48 }
 
 hdsl2ShdslMibObjects OBJECT IDENTIFIER ::= { hdsl2ShdslMIB 1 }
 
--- Textual Conventions used in this MIB
+-- Textual Conventions used in this MIB module
 --
 
 Hdsl2ShdslPerfCurrDayCount ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "d"
    STATUS    current
    DESCRIPTION
      "A gauge associated with interface performance measurements in
@@ -69,21 +120,21 @@ Hdsl2ShdslPerfCurrDayCount ::= TEXTUAL-CONVENTION
 
       The value of this gauge starts at zero at the beginning of an
       interval and is increased when associated events occur, until
-      the end of the 1-day interval.  At that time the value of the
+      the end of the 1-day interval.  At that time, the value of the
       gauge is stored in the previous 1-day history interval, as
       defined in a companion object of type
-
       Hdsl2Shdsl1DayIntevalCount, and the current interval gauge
       is restarted at zero.
 
       In the case where the agent has no valid data available for
-      this interval the corresponding object instance is not
-      available and upon a retrieval request a corresponding error
+      this interval, the corresponding object instance is not
+      available, and upon a retrieval request, a corresponding error
       message shall be returned to indicate that this instance does
       not exist.  Please note that zero is a valid value."
    SYNTAX  Gauge32
 
 Hdsl2Shdsl1DayIntervalCount ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "d"
    STATUS    current
    DESCRIPTION
      "A counter associated with interface performance measurements
@@ -94,13 +145,14 @@ Hdsl2Shdsl1DayIntervalCount ::= TEXTUAL-CONVENTION
       interval.
 
       In the case where the agent has no valid data available for
-      this interval the corresponding object instance is not
-      available and upon a retrieval request a corresponding error
+      this interval, the corresponding object instance is not
+      available, and upon a retrieval request, a corresponding error
       message shall be returned to indicate that this instance does
       not exist."
    SYNTAX  Gauge32
 
 Hdsl2ShdslPerfTimeElapsed ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "d"
    STATUS    current
    DESCRIPTION
      "The number of seconds that have elapsed since the beginning of
@@ -109,11 +161,12 @@ Hdsl2ShdslPerfTimeElapsed ::= TEXTUAL-CONVENTION
       of a leap second, the current interval exceeds the maximum
       value, the agent will return the maximum value.
 
-      For 15 minute intervals, the range is limited to (0..899).
-      For 24 hour intervals, the range is limited to (0..86399)."
+      For 15-minute intervals, the range is limited to (0..899).
+      For 24-hour intervals, the range is limited to (0..86399)."
    SYNTAX    Unsigned32(0..86399)
 
 Hdsl2ShdslPerfIntervalThreshold ::= TEXTUAL-CONVENTION
+   DISPLAY-HINT "d"
    STATUS    current
    DESCRIPTION
      "This convention defines a range of values that may be set in
@@ -126,10 +179,11 @@ Hdsl2ShdslPerfIntervalThreshold ::= TEXTUAL-CONVENTION
 Hdsl2ShdslUnitId ::= TEXTUAL-CONVENTION
    STATUS    current
    DESCRIPTION
-     "This is the unique identification for all units in a
-      HDSL2/SHDSL Span.  It is based on the EOC unit addressing
+     "This is the unique identification for all units in an
+      HDSL2/SHDSL span.  It is based on the EOC unit addressing
       scheme with reference to the xtuC."
    SYNTAX    INTEGER
+
            {
            xtuC(1),
            xtuR(2),
@@ -146,7 +200,7 @@ Hdsl2ShdslUnitId ::= TEXTUAL-CONVENTION
 Hdsl2ShdslUnitSide ::= TEXTUAL-CONVENTION
    STATUS    current
    DESCRIPTION
-     "This is the referenced side of a HDSL2/SHDSL unit - Network
+     "This is the referenced side of an HDSL2/SHDSL unit - Network
       or Customer side.  The side facing the Network is the Network
       side, while the side facing the Customer is the Customer side."
    SYNTAX    INTEGER
@@ -158,25 +212,30 @@ Hdsl2ShdslUnitSide ::= TEXTUAL-CONVENTION
 Hdsl2ShdslWirePair ::= TEXTUAL-CONVENTION
    STATUS    current
    DESCRIPTION
-     "This is the referenced pair of wires in a HDSL2/SHDSL Segment.
-      HDSL2 only supports a single pair (wirePair1), while SHDSL
-      supports an optional second pair (wirePair2)."
+     "This is the referenced pair of wires in an HDSL2/SHDSL segment.
+      HDSL2 only supports a single pair (wirePair1 or two wire),
+      SHDSL lines support an optional second pair (wirePair2 or four
+      wire), and G.shdsl.bis support an optional third pair
+      (wirePair3 or six wire) and an optional fourth pair
+      (wirePair4 or eight wire)."
    SYNTAX    INTEGER
            {
-           wirePair1(1),
-           wirePair2(2)
+           wirePair1(1),    -- two wire
+           wirePair2(2),    -- four wire
+           wirePair3(3),    -- six wire
+           wirePair4(4)     -- eight wire
            }
 
 Hdsl2ShdslTransmissionModeType ::= TEXTUAL-CONVENTION
    STATUS    current
    DESCRIPTION
      "Contains the regional setting of the HDSL2/SHDSL span,
-     represented as a bit-map of possible settings. The various
-     bit positions are:
+      represented as a bit-map of possible settings.  The various
+      bit positions are as follows:
 
-     Bit   Meaning      Description
-     1     region 1     Indicates ITU-T G.991.2 Annex A.
-     2     region 2     Indicates ITU-T G.991.2 Annex B."
+      Bit   Meaning      Description
+      1     region 1     Indicates ITU-T G.991.2 Annex A.
+      2     region 2     Indicates ITU-T G.991.2 Annex B."
    SYNTAX      BITS
            {
            region1(0),
@@ -187,7 +246,7 @@ Hdsl2ShdslClockReferenceType ::= TEXTUAL-CONVENTION
    STATUS    current
    DESCRIPTION
      "The various STU-C symbol clock references for the
-     HDSL2/SHDSL span, represented as an enumeration."
+      HDSL2/SHDSL span, represented as an enumeration."
    SYNTAX    INTEGER
           {
           localClk(1),          -- Mode-1 per G991.2
@@ -205,7 +264,7 @@ hdsl2ShdslSpanConfTable OBJECT-TYPE
    STATUS     current
    DESCRIPTION
      "This table supports overall configuration of HDSL2/SHDSL
-      Spans.  Entries in this table MUST be maintained in a
+      spans.  Entries in this table MUST be maintained in a
       persistent manner."
    ::= { hdsl2ShdslMibObjects 1 }
 
@@ -215,9 +274,8 @@ hdsl2ShdslSpanConfEntry OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "An entry in the hdsl2ShdslSpanConfTable.  Each entry
-      represents the complete Span in a single HDSL2/SHDSL line.
+      represents the complete span in a single HDSL2/SHDSL line.
       It is indexed by the ifIndex of the associated HDSL2/SHDSL
-
       line."
    INDEX { ifIndex }
    ::= { hdsl2ShdslSpanConfTable 1 }
@@ -237,7 +295,7 @@ Hdsl2ShdslSpanConfEntry ::=
    STATUS      current
    DESCRIPTION
      "This object provisions the number of repeaters/regenerators
-     in this HDSL2/SHDSL Span."
+      in this HDSL2/SHDSL span."
    ::= { hdsl2ShdslSpanConfEntry 1 }
 
 hdsl2ShdslSpanConfProfile OBJECT-TYPE
@@ -246,18 +304,18 @@ hdsl2ShdslSpanConfProfile OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object is a pointer to a span configuration profile in
-     the hdsl2ShdslSpanConfProfileTable, which applies to this span.
-     The value of this object is the index of the referenced profile
-     in the hdsl2ShdslSpanConfProfileTable.  Note that span
-     configuration profiles are only applicable to SHDSL lines.
+      the hdsl2ShdslSpanConfProfileTable, which applies to this
+      span.  The value of this object is the index of the referenced
+      profile in the hdsl2ShdslSpanConfProfileTable.  Note that span
+      configuration profiles are only applicable to SHDSL lines.
 
-     HDSL2 lines MUST reference the default profile, 'DEFVAL'.
-     By default, this object will have the value 'DEFVAL' (the index
-     of the default profile).
+      HDSL2 lines MUST reference the default profile, 'DEFVAL'.
+      By default, this object will have the value 'DEFVAL'
+      (the index of the default profile).
 
-     Any attempt to set this object to a value that is not the value
-     of the index for an active entry in the profile table,
-     hdsl2ShdslSpanConfProfileTable, MUST be rejected."
+      Any attempt to set this object to a value that is not the value
+      of the index for an active entry in the profile table,
+      hdsl2ShdslSpanConfProfileTable, MUST be rejected."
    ::= { hdsl2ShdslSpanConfEntry 2 }
 
 hdsl2ShdslSpanConfAlarmProfile OBJECT-TYPE
@@ -265,21 +323,22 @@ hdsl2ShdslSpanConfAlarmProfile OBJECT-TYPE
    MAX-ACCESS  read-write
    STATUS      current
    DESCRIPTION
-     "This object is a pointer to an Alarm configuration profile in
+     "This object is a pointer to an alarm configuration profile in
+      the hdsl2ShdslEndpointAlarmConfProfileTable.  The value of
+      this object is the index of the referenced profile in the
+      hdsl2ShdslEndpointAlarmConfProfileTable.  The alarm
+      threshold configuration in the referenced profile will be
 
-     the hdsl2ShdslEndpointAlarmConfProfileTable.  The value of this
-     object is the index of the referenced profile in the
-     hdsl2ShdslEndpointAlarmConfProfileTable.  The alarm threshold
-     configuration in the referenced profile will be used by default
-     for all segment endpoints in this span.  Individual endpoints
-     may override this profile by explicitly specifying some other
-     profile in the hdsl2ShdslEndpointConfTable.  By default, this
-     object will have the value 'DEFVAL' (the index of the default
-     profile).
+      used by default for all segment endpoints in this span.
+      Individual endpoints may override this profile by explicitly
+      specifying some other profile in the
+      hdsl2ShdslEndpointConfTable.  By default, this object will
+      have the value 'DEFVAL' (the index of the default
+      profile).
 
-     Any attempt to set this object to a value that is not the value
-     of the index for an active entry in the profile table,
-     hdsl2ShdslEndpointAlarmConfProfileTable, MUST be rejected."
+      Any attempt to set this object to a value that is not the value
+      of the index for an active entry in the profile table,
+      hdsl2ShdslEndpointAlarmConfProfileTable, MUST be rejected."
    ::= { hdsl2ShdslSpanConfEntry 3 }
 
 -- Span Status Group
@@ -314,8 +373,9 @@ Hdsl2ShdslSpanStatusEntry ::=
    hdsl2ShdslStatusMaxAttainableLineRate    Unsigned32,
    hdsl2ShdslStatusActualLineRate           Unsigned32,
    hdsl2ShdslStatusTransmissionModeCurrent
-             Hdsl2ShdslTransmissionModeType
-
+                        Hdsl2ShdslTransmissionModeType,
+   hdsl2ShdslStatusMaxAttainablePayloadRate Unsigned32,
+   hdsl2ShdslStatusActualPayloadRate        Unsigned32
    }
 
 hdsl2ShdslStatusNumAvailRepeaters OBJECT-TYPE
@@ -328,7 +388,7 @@ hdsl2ShdslStatusNumAvailRepeaters OBJECT-TYPE
    ::= { hdsl2ShdslSpanStatusEntry 1 }
 
 hdsl2ShdslStatusMaxAttainableLineRate OBJECT-TYPE
-   SYNTAX      Unsigned32(0..4112000)
+   SYNTAX      Unsigned32(0..4294967295)
    UNITS       "bps"
    MAX-ACCESS  read-only
    STATUS      current
@@ -336,17 +396,19 @@ hdsl2ShdslStatusMaxAttainableLineRate OBJECT-TYPE
      "Contains the maximum attainable line rate in this HDSL2/SHDSL
       span.  This object provides the maximum rate the line is
       capable of achieving.  This is based upon measurements made
-      during line probing."
+      during line probing.  This rate includes payload (user data)
+      and any applicable framing overhead."
    ::= { hdsl2ShdslSpanStatusEntry 2 }
 
 hdsl2ShdslStatusActualLineRate OBJECT-TYPE
-   SYNTAX      Unsigned32(0..4112000)
+   SYNTAX      Unsigned32(0..4294967295)
    UNITS       "bps"
    MAX-ACCESS  read-only
    STATUS      current
    DESCRIPTION
      "Contains the actual line rate in this HDSL2/SHDSL span.  This
-     should equal ifSpeed."
+      SHOULD equal ifSpeed.  This rate includes payload (user data)
+      and any applicable framing overhead"
    ::= { hdsl2ShdslSpanStatusEntry 3 }
 
 hdsl2ShdslStatusTransmissionModeCurrent OBJECT-TYPE
@@ -358,6 +420,29 @@ hdsl2ShdslStatusTransmissionModeCurrent OBJECT-TYPE
       setting of the HDSL2/SHDSL span."
    ::= { hdsl2ShdslSpanStatusEntry 4 }
 
+hdsl2ShdslStatusMaxAttainablePayloadRate OBJECT-TYPE
+   SYNTAX      Unsigned32(0..4294967295)
+   UNITS       "bps"
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION
+     "Contains the maximum attainable payload (user data)
+      line rate in this HDSL2/SHDSL span.  This object provides
+      the maximum rate the line is capable of achieving.  This
+      is based upon measurements made during line probing.  Any
+      framing overhead is not included."
+   ::= { hdsl2ShdslSpanStatusEntry 5 }
+
+hdsl2ShdslStatusActualPayloadRate OBJECT-TYPE
+   SYNTAX      Unsigned32(0..4294967295)
+   UNITS       "bps"
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION
+     "Contains the actual line rate in this HDSL2/SHDSL span.  Any
+      framing overhead is not included."
+   ::= { hdsl2ShdslSpanStatusEntry 6 }
+
 -- Unit Inventory Group
 --
 
@@ -367,7 +452,7 @@ hdsl2ShdslInventoryTable OBJECT-TYPE
    STATUS     current
    DESCRIPTION
      "This table supports retrieval of unit inventory information
-      available via the EOC from units in a HDSL2/SHDSL line.
+      available via the EOC from units in an HDSL2/SHDSL line.
 
       Entries in this table are dynamically created during the
       line discovery process.  The life cycle for these entries
@@ -377,7 +462,7 @@ hdsl2ShdslInventoryTable OBJECT-TYPE
          - an inventory table entry is created for the device
          - the line goes down for whatever reason
          - inventory table entries for unreachable devices are
-           destroyed.
+           destroyed
 
       As these entries are created/destroyed dynamically, they
       are NOT persistent."
@@ -389,7 +474,8 @@ hdsl2ShdslInventoryEntry OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "An entry in the hdsl2ShdslInventoryTable.  Each entry
-      represents inventory information for a single unit in a
+
+      represents inventory information for a single unit in an
       HDSL2/SHDSL line.  It is indexed by the ifIndex of the
       HDSL2/SHDSL line and the Hdsl2ShdslUnitId of the
       associated unit."
@@ -412,7 +498,6 @@ Hdsl2ShdslInventoryEntry ::=
    hdsl2ShdslInvVendorOther                OCTET STRING,
    hdsl2ShdslInvTransmissionModeCapability
                          Hdsl2ShdslTransmissionModeType
-
    }
 
 hdsl2ShdslInvIndex OBJECT-TYPE
@@ -420,8 +505,8 @@ hdsl2ShdslInvIndex OBJECT-TYPE
    MAX-ACCESS  not-accessible
    STATUS      current
    DESCRIPTION
-      "Each entry in this table corresponds to a physical element
-      in a HDSL2/SHDSL Span.  It is based on the EOC unit addressing
+     "Each entry in this table corresponds to a physical element
+      in an HDSL2/SHDSL span.  It is based on the EOC unit addressing
       scheme with reference to the xtuC."
    ::= { hdsl2ShdslInventoryEntry 1 }
 
@@ -431,6 +516,9 @@ hdsl2ShdslInvVendorID OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "Vendor ID as reported in an Inventory Response message."
+   REFERENCE
+     "G.991.2, Section 9.5.5.7.4, Inventory response - Message ID
+      130, Octets 25-32."
    ::= { hdsl2ShdslInventoryEntry 2 }
 
 hdsl2ShdslInvVendorModelNumber OBJECT-TYPE
@@ -440,6 +528,9 @@ hdsl2ShdslInvVendorModelNumber OBJECT-TYPE
    DESCRIPTION
      "Vendor model number as reported in an Inventory Response
       message."
+   REFERENCE
+     "G.991.2, Section 9.5.5.7.4, Inventory response - Message ID
+      130, Octets 33-44."
    ::= { hdsl2ShdslInventoryEntry 3 }
 
 hdsl2ShdslInvVendorSerialNumber OBJECT-TYPE
@@ -449,6 +540,9 @@ hdsl2ShdslInvVendorSerialNumber OBJECT-TYPE
    DESCRIPTION
      "Vendor serial number as reported in an Inventory Response
       message."
+   REFERENCE
+     "G.991.2, Section 9.5.5.7.4, Inventory response - Message ID
+      130, Octets 45-56."
    ::= { hdsl2ShdslInventoryEntry 4 }
 
 hdsl2ShdslInvVendorEOCSoftwareVersion OBJECT-TYPE
@@ -458,6 +552,9 @@ hdsl2ShdslInvVendorEOCSoftwareVersion OBJECT-TYPE
    DESCRIPTION
      "Vendor EOC version as reported in a Discovery Response
       message."
+   REFERENCE
+     "G.991.2, Section 9.5.5.7.2, Discovery response - Message ID
+      129, Octet 12."
    ::= { hdsl2ShdslInventoryEntry 5 }
 
 hdsl2ShdslInvStandardVersion OBJECT-TYPE
@@ -467,6 +564,9 @@ hdsl2ShdslInvStandardVersion OBJECT-TYPE
    DESCRIPTION
      "Version of the HDSL2/SHDSL standard implemented, as reported
       in an Inventory Response message."
+   REFERENCE
+     "G.991.2, Section 9.5.5.7.4, Inventory response - Message ID
+      130, Octet 2."
    ::= { hdsl2ShdslInventoryEntry 6 }
 
 hdsl2ShdslInvVendorListNumber OBJECT-TYPE
@@ -476,6 +576,9 @@ hdsl2ShdslInvVendorListNumber OBJECT-TYPE
    DESCRIPTION
      "Vendor list number as reported in an Inventory Response
       message."
+   REFERENCE
+     "G.991.2, Section 9.5.5.7.4, Inventory response - Message ID
+      130, Octets 3-5."
    ::= { hdsl2ShdslInventoryEntry 7 }
 
 hdsl2ShdslInvVendorIssueNumber OBJECT-TYPE
@@ -485,6 +588,9 @@ hdsl2ShdslInvVendorIssueNumber OBJECT-TYPE
    DESCRIPTION
      "Vendor issue number as reported in an Inventory Response
       message."
+   REFERENCE
+     "G.991.2, Section 9.5.5.7.4, Inventory response - Message ID
+      130, Octets 6-7."
    ::= { hdsl2ShdslInventoryEntry 8 }
 
 hdsl2ShdslInvVendorSoftwareVersion OBJECT-TYPE
@@ -494,6 +600,9 @@ hdsl2ShdslInvVendorSoftwareVersion OBJECT-TYPE
    DESCRIPTION
      "Vendor software version as reported in an Inventory Response
       message."
+   REFERENCE
+     "G.991.2, Section 9.5.5.7.4, Inventory response - Message ID
+      130, Octets 8-13."
    ::= { hdsl2ShdslInventoryEntry 9 }
 
 hdsl2ShdslInvEquipmentCode OBJECT-TYPE
@@ -503,6 +612,9 @@ hdsl2ShdslInvEquipmentCode OBJECT-TYPE
    DESCRIPTION
      "Equipment code conforming to ANSI T1.213, Coded Identification
       of Equipment Entities."
+   REFERENCE
+     "G.991.2, Section 9.5.5.7.4, Inventory response - Message ID
+      130, Octets 14-23."
    ::= { hdsl2ShdslInventoryEntry 10 }
 
 hdsl2ShdslInvVendorOther OBJECT-TYPE
@@ -512,6 +624,9 @@ hdsl2ShdslInvVendorOther OBJECT-TYPE
    DESCRIPTION
      "Other vendor information as reported in an Inventory Response
       message."
+   REFERENCE
+     "G.991.2, Section 9.5.5.7.4, Inventory response - Message ID
+      130, Octets 57-68."
    ::= { hdsl2ShdslInventoryEntry 11 }
 
 hdsl2ShdslInvTransmissionModeCapability OBJECT-TYPE
@@ -531,7 +646,7 @@ hdsl2ShdslEndpointConfTable OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This table supports configuration parameters for segment
-      endpoints in a HDSL2/SHDSL line.  As this table is indexed
+      endpoints in an HDSL2/SHDSL line.  As this table is indexed
       by ifIndex, it MUST be maintained in a persistent manner."
    ::= { hdsl2ShdslMibObjects 4 }
 
@@ -541,10 +656,10 @@ hdsl2ShdslEndpointConfEntry OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "An entry in the hdsl2ShdslEndpointConfTable.  Each entry
-      represents a single segment endpoint in a HDSL2/SHDSL line.
+      represents a single segment endpoint in an HDSL2/SHDSL line.
       It is indexed by the ifIndex of the HDSL2/SHDSL line, the
       UnitId of the associated unit, the side of the unit, and the
-      wire-pair of the associated modem."
+      wire pair of the associated modem."
    INDEX { ifIndex, hdsl2ShdslInvIndex, hdsl2ShdslEndpointSide,
            hdsl2ShdslEndpointWirePair}
    ::= { hdsl2ShdslEndpointConfTable 1 }
@@ -552,6 +667,7 @@ hdsl2ShdslEndpointConfEntry OBJECT-TYPE
 Hdsl2ShdslEndpointConfEntry ::=
    SEQUENCE
    {
+
    hdsl2ShdslEndpointSide                   Hdsl2ShdslUnitSide,
    hdsl2ShdslEndpointWirePair               Hdsl2ShdslWirePair,
    hdsl2ShdslEndpointAlarmConfProfile       SnmpAdminString
@@ -562,8 +678,8 @@ hdsl2ShdslEndpointSide OBJECT-TYPE
    MAX-ACCESS  not-accessible
    STATUS      current
    DESCRIPTION
-     "The side of the unit associated with this segment endpoint -
-      Network/Customer side - as per the Hdsl2ShdslUnitSide textual
+     "The side of the unit associated with this segment endpoint --
+      Network/Customer side -- as per the Hdsl2ShdslUnitSide textual
       convention."
    ::= { hdsl2ShdslEndpointConfEntry 1 }
 
@@ -572,7 +688,7 @@ hdsl2ShdslEndpointWirePair OBJECT-TYPE
    MAX-ACCESS  not-accessible
    STATUS      current
    DESCRIPTION
-     "The wire-pair of the modem associated with this segment
+     "The wire pair of the modem associated with this segment
       endpoint as per the Hdsl2ShdslWirePair textual convention."
    ::= { hdsl2ShdslEndpointConfEntry 2 }
 
@@ -585,8 +701,8 @@ hdsl2ShdslEndpointAlarmConfProfile OBJECT-TYPE
       for this segment endpoint.  The values are obtained from the
       alarm configuration profile referenced by this object.  The
       value of this object is the index of the referenced profile in
-      the hdsl2ShdslEndpointAlarmConfProfileTable, or NULL (a zero-
-      length SnmpAdminString).  If the value is a zero-length
+      the hdsl2ShdslEndpointAlarmConfProfileTable, or NULL (a
+      zero-length SnmpAdminString).  If the value is a zero-length
       SnmpAdminString, the endpoint uses the default Alarm
       Configuration Profile for the associated span as per the
       hdsl2ShdslSpanConfAlarmProfile object in the
@@ -607,9 +723,9 @@ hdsl2ShdslEndpointCurrTable OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This table contains current status and performance information
-      for segment endpoints in HDSL2/SHDSL Lines.  As with other
-      tables in this MIB indexed by ifIndex, entries in this table
-      MUST be maintained in a persistent manner."
+      for segment endpoints in HDSL2/SHDSL lines.  As with other
+      tables in this MIB module indexed by ifIndex, entries in this
+      table MUST be maintained in a persistent manner."
    ::= { hdsl2ShdslMibObjects 5 }
 
 hdsl2ShdslEndpointCurrEntry OBJECT-TYPE
@@ -618,10 +734,10 @@ hdsl2ShdslEndpointCurrEntry OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "An entry in the hdsl2ShdslEndpointCurrTable.  Each entry
-     contains status and performance information relating to a
-     single segment endpoint.  It is indexed by the ifIndex of the
-     HDSL2/SHDSL line, the UnitId of the associated unit, the side
-     of the unit, and the wire-pair of the associated modem."
+      contains status and performance information relating to a
+      single segment endpoint.  It is indexed by the ifIndex of the
+      HDSL2/SHDSL line, the UnitId of the associated unit, the side
+      of the unit, and the wire pair of the associated modem."
    INDEX { ifIndex, hdsl2ShdslInvIndex, hdsl2ShdslEndpointSide,
            hdsl2ShdslEndpointWirePair }
    ::= { hdsl2ShdslEndpointCurrTable 1 }
@@ -638,25 +754,27 @@ Hdsl2ShdslEndpointCurrEntry ::=
    hdsl2ShdslEndpointLOSWS                  Counter32,
    hdsl2ShdslEndpointUAS                    Counter32,
    hdsl2ShdslEndpointCurr15MinTimeElapsed
-                             Hdsl2ShdslPerfTimeElapsed,
+                            Hdsl2ShdslPerfTimeElapsed,
    hdsl2ShdslEndpointCurr15MinES            PerfCurrentCount,
    hdsl2ShdslEndpointCurr15MinSES           PerfCurrentCount,
    hdsl2ShdslEndpointCurr15MinCRCanomalies  PerfCurrentCount,
    hdsl2ShdslEndpointCurr15MinLOSWS         PerfCurrentCount,
    hdsl2ShdslEndpointCurr15MinUAS           PerfCurrentCount,
    hdsl2ShdslEndpointCurr1DayTimeElapsed
-                             Hdsl2ShdslPerfTimeElapsed,
+                                   Hdsl2ShdslPerfTimeElapsed,
    hdsl2ShdslEndpointCurr1DayES
-                             Hdsl2ShdslPerfCurrDayCount,
+                                  Hdsl2ShdslPerfCurrDayCount,
    hdsl2ShdslEndpointCurr1DaySES
-                             Hdsl2ShdslPerfCurrDayCount,
-   hdsl2ShdslEndpointCurr1DayCRCanomalies
-                             Hdsl2ShdslPerfCurrDayCount,
-   hdsl2ShdslEndpointCurr1DayLOSWS
 
-                             Hdsl2ShdslPerfCurrDayCount,
+                                  Hdsl2ShdslPerfCurrDayCount,
+   hdsl2ShdslEndpointCurr1DayCRCanomalies
+                                  Hdsl2ShdslPerfCurrDayCount,
+   hdsl2ShdslEndpointCurr1DayLOSWS
+                                  Hdsl2ShdslPerfCurrDayCount,
    hdsl2ShdslEndpointCurr1DayUAS
-                             Hdsl2ShdslPerfCurrDayCount
+                                  Hdsl2ShdslPerfCurrDayCount,
+   hdsl2ShdslEndpointCurrTipRingReversal    INTEGER,
+   hdsl2ShdslEndpointCurrActivationState    INTEGER
    }
 
 hdsl2ShdslEndpointCurrAtn OBJECT-TYPE
@@ -700,49 +818,49 @@ hdsl2ShdslEndpointCurrStatus OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "Contains the current state of the endpoint.  This is a
-     bitmap of possible conditions. The various bit positions
-     are:
+      bit-map of possible conditions.  The various bit positions
+      are as follows:
 
-     noDefect               There no defects on the line.
+      noDefect               There are no defects on the line.
 
-     powerBackoff           Indicates enhanced Power Backoff.
+      powerBackoff           Indicates enhanced Power Backoff.
 
-     deviceFault            Indicates a vendor-dependent
-                            diagnostic or self-test fault
-                            has been detected.
+      deviceFault            Indicates that a vendor-dependent
+                             diagnostic or self-test fault
+                             has been detected.
 
-     dcContinuityFault      Indicates vendor-dependent
-                            conditions that interfere with
-                            span powering such as short and
-                            open circuits.
+      dcContinuityFault      Indicates vendor-dependent
+                             conditions that interfere with
+                             span powering such as short and
+                             open circuits.
 
-     snrMarginAlarm         Indicates that the SNR margin
-                            has dropped below the alarm threshold.
+      snrMarginAlarm         Indicates that the SNR margin
+                             has dropped below the alarm threshold.
 
-     loopAttenuationAlarm   Indicates that the loop attenuation
-                            exceeds the alarm threshold.
+      loopAttenuationAlarm   Indicates that the loop attenuation
+                             exceeds the alarm threshold.
 
-     loswFailureAlarm       Indicates a forward LOSW alarm.
+      loswFailureAlarm       Indicates a forward LOSW alarm.
 
-     configInitFailure      Endpoint failure during initialization
-                            due to paired endpoint not able to
-                            support requested configuration.
+      configInitFailure      Endpoint failure during initialization
+                             due to paired endpoint not able to
+                             support requested configuration.
 
-     protocolInitFailure    Endpoint failure during initialization
-                            due to incompatible protocol used by
-                            the paired endpoint.
+      protocolInitFailure    Endpoint failure during initialization
+                             due to incompatible protocol used by
+                             the paired endpoint.
 
-     noNeighborPresent      Endpoint failure during initialization
-                            due to no activation sequence detected
-                            from paired endpoint.
+      noNeighborPresent      Endpoint failure during initialization
+                             due to no activation sequence detected
+                             from paired endpoint.
 
-     loopbackActive         A loopback is currently active at this
-                            Segment Endpoint.
+      loopbackActive         A loopback is currently active at this
+                             segment endpoint.
 
-     This is intended to supplement ifOperStatus.  Note that there
-     is a 1-1 relationship between the status bits defined in this
-     object and the notification thresholds defined elsewhere in
-     this MIB."
+      This is intended to supplement ifOperStatus.  Note that there
+      is a 1:1 relationship between the status bits defined in this
+      object and the notification thresholds defined elsewhere in
+      this MIB module."
    REFERENCE   "HDSL2 Section 7.5.3.7; SHDSL Section 9.5.5.7"
    ::= { hdsl2ShdslEndpointCurrEntry 3 }
 
@@ -929,6 +1047,34 @@ hdsl2ShdslEndpointCurr1DayUAS OBJECT-TYPE
    REFERENCE   "HDSL2 Section 7.5.3.7; SHDSL Section 9.5.5.7"
    ::= { hdsl2ShdslEndpointCurrEntry 20 }
 
+hdsl2ShdslEndpointCurrTipRingReversal OBJECT-TYPE
+   SYNTAX      INTEGER
+               {
+               normal(1),
+               reversed(2)
+               }
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION
+     "This object indicates the state of the tip/ring for the
+      wire pair."
+   ::= { hdsl2ShdslEndpointCurrEntry 21 }
+
+hdsl2ShdslEndpointCurrActivationState OBJECT-TYPE
+   SYNTAX      INTEGER
+               {
+               preActivation(1),  -- PreTrain
+               activation(2),     -- Training
+               data(3)            -- Trained
+               }
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION
+     "This object indicates the activation or training state of
+      the wire pair."
+   REFERENCE   "ITU-T G.991.2, Section 6.2 PMD Activation Sequence"
+   ::= { hdsl2ShdslEndpointCurrEntry 22 }
+
 -- Segment Endpoint 15-Minute Interval Status/Performance Group
 --
 
@@ -968,9 +1114,9 @@ hdsl2Shdsl15MinIntervalNumber OBJECT-TYPE
    MAX-ACCESS  not-accessible
    STATUS      current
    DESCRIPTION
-     "Performance Data Interval number. 1 is the the most recent
-      previous interval; interval 96 is 24 hours ago. Intervals
-      2..96 are optional."
+     "Performance Data Interval number.  Interval 1 is the most
+      recent previous interval; interval 96 is 24 hours ago.
+      Intervals 2..96 are optional."
    ::= { hdsl2Shdsl15MinIntervalEntry 1 }
 
 hdsl2Shdsl15MinIntervalES OBJECT-TYPE
@@ -1064,8 +1210,8 @@ hdsl2Shdsl1DayIntervalNumber OBJECT-TYPE
    MAX-ACCESS  not-accessible
    STATUS      current
    DESCRIPTION
-     "History Data Interval number. Interval 1 is the the most
-      recent previous day; interval 30 is 30 days ago. Intervals
+     "History Data Interval number.  Interval 1 is the most
+      recent previous day; interval 30 is 30 days ago.  Intervals
       2..30 are optional."
    ::= { hdsl2Shdsl1DayIntervalEntry 1 }
 
@@ -1089,7 +1235,6 @@ hdsl2Shdsl1DayIntervalES OBJECT-TYPE
    STATUS       current
    DESCRIPTION
      "Count of Errored Seconds (ES) during the 1-day interval as
-
       measured by hdsl2Shdsl1DayIntervalMoniSecs."
    REFERENCE   "HDSL2 Section 7.5.3.7; SHDSL Section 9.5.5.7"
    ::= { hdsl2Shdsl1DayIntervalEntry 3 }
@@ -1101,6 +1246,7 @@ hdsl2Shdsl1DayIntervalSES OBJECT-TYPE
    STATUS       current
    DESCRIPTION
      "Count of Severely Errored Seconds (SES) during the 1-day
+
       interval as measured by hdsl2Shdsl1DayIntervalMoniSecs."
    REFERENCE   "HDSL2 Section 7.5.3.7; SHDSL Section 9.5.5.7"
    ::= { hdsl2Shdsl1DayIntervalEntry 4 }
@@ -1146,9 +1292,10 @@ hdsl2ShdslEndpointMaintTable OBJECT-TYPE
    MAX-ACCESS  not-accessible
    STATUS      current
    DESCRIPTION
-     "This table supports maintenance operations (eg. loopbacks)
+     "This table supports maintenance operations (e.g., loopbacks)
       to be performed on HDSL2/SHDSL segment endpoints.  This table
       contains live data from equipment.  As such, it is NOT
+
       persistent."
    ::= { hdsl2ShdslMibObjects 8 }
 
@@ -1158,9 +1305,9 @@ hdsl2ShdslEndpointMaintEntry OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "An entry in the hdsl2ShdslEndpointMaintTable.  Each entry
-      corresponds to a single segment endpoint, and is indexed by the
+      corresponds to a single segment endpoint and is indexed by the
       ifIndex of the HDSL2/SHDSL line, the UnitId of the associated
-      unit and the side of the unit."
+      unit, and the side of the unit."
    INDEX { ifIndex, hdsl2ShdslInvIndex, hdsl2ShdslEndpointSide }
    ::= { hdsl2ShdslEndpointMaintTable 1 }
 
@@ -1225,11 +1372,12 @@ hdsl2ShdslMaintSoftRestart OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object enables the manager to trigger a soft restart
-      of the modem at the associated segment endpoint.  The manager
-      may only set this object to the 'restart(2)' value, which
-      initiates a restart.  The agent will perform a restart after
-      approximately 5 seconds.  Following the 5 second period, the
-      agent will restore the object to the 'ready(1)' state."
+      of the modem at the associated segment endpoint.  The
+      manager may only set this object to the 'restart(2)'
+      value, which initiates a restart.  The agent will perform a
+      restart after approximately 5 seconds.  Following the 5 second
+      period, the agent will restore the object to the 'ready(1)'
+      state."
    ::= { hdsl2ShdslEndpointMaintEntry 4 }
 
 hdsl2ShdslUnitMaintTable OBJECT-TYPE
@@ -1248,9 +1396,9 @@ hdsl2ShdslUnitMaintEntry OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "An entry in the hdsl2ShdslUnitMaintTable.  Each entry
-      corresponds to a single unit, and is indexed by the ifIndex
-      of the HDSL2/SHDSL line and the UnitId of the associated
-      unit."
+      corresponds to a single unit and is indexed by the
+      ifIndex of the HDSL2/SHDSL line and the UnitId of the
+      associated unit."
    INDEX { ifIndex, hdsl2ShdslInvIndex  }
    ::= { hdsl2ShdslUnitMaintTable 1 }
 
@@ -1282,7 +1430,6 @@ hdsl2ShdslMaintUnitPowerSource OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object indicates the DC power source being used by the
-
       associated unit."
    ::= { hdsl2ShdslUnitMaintEntry 2 }
 
@@ -1326,7 +1473,7 @@ Hdsl2ShdslSpanConfProfileEntry ::=
    hdsl2ShdslSpanConfMaxLineRate               Unsigned32,
    hdsl2ShdslSpanConfPSD                       INTEGER,
    hdsl2ShdslSpanConfTransmissionMode
-                                   Hdsl2ShdslTransmissionModeType,
+                           Hdsl2ShdslTransmissionModeType,
    hdsl2ShdslSpanConfRemoteEnabled             INTEGER,
    hdsl2ShdslSpanConfPowerFeeding              INTEGER,
    hdsl2ShdslSpanConfCurrCondTargetMarginDown  Integer32,
@@ -1335,7 +1482,7 @@ Hdsl2ShdslSpanConfProfileEntry ::=
    hdsl2ShdslSpanConfWorstCaseTargetMarginUp   Integer32,
    hdsl2ShdslSpanConfUsedTargetMargins         BITS,
    hdsl2ShdslSpanConfReferenceClock
-                                   Hdsl2ShdslClockReferenceType,
+                             Hdsl2ShdslClockReferenceType,
    hdsl2ShdslSpanConfLineProbeEnable           INTEGER,
    hdsl2ShdslSpanConfProfileRowStatus          RowStatus
    }
@@ -1354,43 +1501,49 @@ hdsl2ShdslSpanConfWireInterface OBJECT-TYPE
    SYNTAX      INTEGER
                {
                twoWire(1),
-               fourWire(2)
+               fourWire(2),
+               sixWire(3),
+               eightWire(4)
                }
    MAX-ACCESS  read-create
    STATUS      current
    DESCRIPTION
-     "This object configures the two-wire or optional four-wire
-      operation for SHDSL Lines."
+     "This object configures the two-wire or optional four-wire,
+      six-wire, or eight-wire operation for SHDSL lines."
    DEFVAL      { twoWire }
    ::= { hdsl2ShdslSpanConfProfileEntry 2 }
 
 hdsl2ShdslSpanConfMinLineRate OBJECT-TYPE
-   SYNTAX      Unsigned32(0..4112000)
+   SYNTAX      Unsigned32(0..4294967295)
    UNITS       "bps"
    MAX-ACCESS  read-create
    STATUS      current
    DESCRIPTION
      "This object configures the minimum transmission rate for
-      the associated SHDSL Line in bits-per-second (bps).  If
-      the minimum line rate equals the maximum line rate
+      the associated SHDSL Line in bits-per-second (bps) and includes
+      both payload (user data) and any applicable framing overhead.
+      If the minimum line rate equals the maximum line rate
       (hdsl2ShdslSpanMaxLineRate), the line rate is considered
-      'fixed'.  If the minimum line rate is less than the maximum
-      line rate, the line rate is considered 'rate-adaptive'."
+      'fixed'.  If the minimum line rate is less than the
+      maximum line rate, the line rate is considered
+      'rate-adaptive'."
    DEFVAL      { 1552000 }
    ::= { hdsl2ShdslSpanConfProfileEntry 3 }
 
 hdsl2ShdslSpanConfMaxLineRate OBJECT-TYPE
-   SYNTAX      Unsigned32(0..4112000)
+   SYNTAX      Unsigned32(0..4294967295)
    UNITS       "bps"
    MAX-ACCESS  read-create
    STATUS      current
    DESCRIPTION
      "This object configures the maximum transmission rate for
-      the associated SHDSL Line in bits-per-second (bps).  If
-      the minimum line rate equals the maximum line rate
+      the associated SHDSL Line in bits-per-second (bps) and includes
+      both payload (user data) and any applicable framing overhead.
+      If the minimum line rate equals the maximum line rate
       (hdsl2ShdslSpanMaxLineRate), the line rate is considered
-      'fixed'.  If the minimum line rate is less than the maximum
-      line rate, the line rate is considered 'rate-adaptive'."
+      'fixed'.  If the minimum line rate is less than the
+      maximum line rate, the line rate is considered
+      'rate-adaptive'."
    DEFVAL      { 1552000 }
    ::= { hdsl2ShdslSpanConfProfileEntry 4 }
 
@@ -1430,7 +1583,7 @@ hdsl2ShdslSpanConfRemoteEnabled OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object enables/disables support for remote management
-      of the units in a SHDSL line from the STU-R via the EOC."
+      of the units in an SHDSL line from the STU-R via the EOC."
    DEFVAL      { enabled }
    ::= { hdsl2ShdslSpanConfProfileEntry 7 }
 
@@ -1445,7 +1598,7 @@ hdsl2ShdslSpanConfPowerFeeding OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object enables/disables support for optional power
-      feeding in a SHDSL line."
+      feeding in an SHDSL line."
    DEFVAL      { noPower }
    ::= { hdsl2ShdslSpanConfProfileEntry 8 }
 
@@ -1456,7 +1609,7 @@ hdsl2ShdslSpanConfCurrCondTargetMarginDown OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object specifies the downstream current condition target
-      SNR margin for a SHDSL line.  The SNR margin is the difference
+      SNR margin for an SHDSL line.  The SNR margin is the difference
       between the desired SNR and the actual SNR.  Target SNR margin
       is the desired SNR margin for a unit."
    DEFVAL      { 0 }
@@ -1468,8 +1621,8 @@ hdsl2ShdslSpanConfWorstCaseTargetMarginDown OBJECT-TYPE
    MAX-ACCESS  read-create
    STATUS      current
    DESCRIPTION
-     "This object specifies the downstream worst case target SNR
-      margin for a SHDSL line.  The SNR margin is the difference
+     "This object specifies the downstream worst-case target SNR
+      margin for an SHDSL line.  The SNR margin is the difference
       between the desired SNR and the actual SNR.  Target SNR
       margin is the desired SNR margin for a unit."
    DEFVAL      { 0 }
@@ -1481,8 +1634,8 @@ hdsl2ShdslSpanConfCurrCondTargetMarginUp OBJECT-TYPE
    MAX-ACCESS  read-create
    STATUS      current
    DESCRIPTION
-     "This object specifies the upstream current condition target
-      SNR margin for a SHDSL line.  The SNR margin is the difference
+     "This object specifies the upstream current-condition target
+      SNR margin for an SHDSL line.  The SNR margin is the difference
       between the desired SNR and the actual SNR.  Target SNR margin
       is the desired SNR margin for a unit."
    DEFVAL      { 0 }
@@ -1494,8 +1647,8 @@ hdsl2ShdslSpanConfWorstCaseTargetMarginUp OBJECT-TYPE
    MAX-ACCESS  read-create
    STATUS      current
    DESCRIPTION
-     "This object specifies the upstream worst case target SNR
-      margin for a SHDSL line.  The SNR margin is the difference
+     "This object specifies the upstream worst-case target SNR
+      margin for an SHDSL line.  The SNR margin is the difference
       between the desired SNR and the actual SNR.  Target SNR margin
       is the desired SNR margin for a unit."
    DEFVAL      { 0 }
@@ -1512,21 +1665,20 @@ hdsl2ShdslSpanConfUsedTargetMargins OBJECT-TYPE
    MAX-ACCESS  read-create
    STATUS      current
    DESCRIPTION
-     "Contains indicates whether a target SNR margin is enabled or
+     "Indicates whether a target SNR margin is enabled or
       disabled.  This is a bit-map of possible settings.  The
-      various bit positions are:
+      various bit positions are as follows:
 
-      currCondDown     current condition downstream target SNR
+      currCondDown   - current-condition downstream target SNR
                        margin enabled
 
-      worstCaseDown    worst case downstream target SNR margin
+      worstCaseDown  - worst-case downstream target SNR margin
                        enabled
 
-      currCondUp       current condition upstream target SNR
-
+      currCondUp     - current-condition upstream target SNR
                        margin enabled
 
-      worstCaseUp      worst case upstream target SNR margin
+      worstCaseUp    - worst-case upstream target SNR margin
                        enabled."
    DEFVAL      { { currCondDown } }
    ::= { hdsl2ShdslSpanConfProfileEntry 13 }
@@ -1537,7 +1689,7 @@ hdsl2ShdslSpanConfReferenceClock OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object configures the clock reference for the STU-C
-     in a SHDSL Line."
+      in an SHDSL Line."
    DEFVAL      { localClk }
    ::= { hdsl2ShdslSpanConfProfileEntry 14 }
 
@@ -1551,10 +1703,10 @@ hdsl2ShdslSpanConfLineProbeEnable OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object enables/disables support for Line Probe of
-     the units in a SHDSL line.  When Line Probe is enabled, the
-     system performs Line Probing to find the best possible
-     rate.  If Line probe is disabled, the rate adaptation phase
-     is skipped to shorten set up time."
+      the units in an SHDSL line.  When Line Probe is enabled, the
+      system performs Line Probing to find the best possible
+      rate.  If Line Probe is disabled, the rate adaptation phase
+      is skipped to shorten set up time."
    DEFVAL      { disable }
    ::= { hdsl2ShdslSpanConfProfileEntry 15 }
 
@@ -1606,14 +1758,14 @@ Hdsl2ShdslEndpointAlarmConfProfileEntry ::=
    hdsl2ShdslEndpointThreshLoopAttenuation      Integer32,
    hdsl2ShdslEndpointThreshSNRMargin            Integer32,
    hdsl2ShdslEndpointThreshES
-               Hdsl2ShdslPerfIntervalThreshold,
+                                Hdsl2ShdslPerfIntervalThreshold,
    hdsl2ShdslEndpointThreshSES
-               Hdsl2ShdslPerfIntervalThreshold,
+                                Hdsl2ShdslPerfIntervalThreshold,
    hdsl2ShdslEndpointThreshCRCanomalies         Integer32,
    hdsl2ShdslEndpointThreshLOSWS
-               Hdsl2ShdslPerfIntervalThreshold,
+                                Hdsl2ShdslPerfIntervalThreshold,
    hdsl2ShdslEndpointThreshUAS
-               Hdsl2ShdslPerfIntervalThreshold,
+                                Hdsl2ShdslPerfIntervalThreshold,
    hdsl2ShdslEndpointAlarmConfProfileRowStatus  RowStatus
    }
 
@@ -1633,7 +1785,7 @@ hdsl2ShdslEndpointThreshLoopAttenuation OBJECT-TYPE
    DESCRIPTION
      "This object configures the loop attenuation alarm threshold.
       When the current value of hdsl2ShdslEndpointCurrAtn reaches
-      or exceeds this threshold, a hdsl2ShdslLoopAttenCrossing
+      or exceeds this threshold, an hdsl2ShdslLoopAttenCrossing
       MAY be generated."
    DEFVAL      { 0 }
    ::= { hdsl2ShdslEndpointAlarmConfProfileEntry 2 }
@@ -1658,11 +1810,11 @@ hdsl2ShdslEndpointThreshES OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object configures the threshold for the number of
-      errored seconds (ES) within any given 15-minute performance
-      data collection interval.  If the value of errored seconds
+      Errored Seconds (ES) within any given 15-minute performance
+      data collection interval.  If the value of Errored Seconds
       in a particular 15-minute collection interval reaches/
-      exceeds this value, a hdsl2ShdslPerfESThresh MAY be
-      generated.  At most one notification will be sent per
+      exceeds this value, an hdsl2ShdslPerfESThresh MAY be
+      generated.  At most, one notification will be sent per
       interval per endpoint."
    DEFVAL      { 0 }
    ::= { hdsl2ShdslEndpointAlarmConfProfileEntry 4 }
@@ -1674,11 +1826,11 @@ hdsl2ShdslEndpointThreshSES OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object configures the threshold for the number of
-      severely errored seconds (SES) within any given 15-minute
+      Severely Errored Seconds (SES) within any given 15-minute
       performance data collection interval.  If the value of
-      severely errored seconds in a particular 15-minute collection
-      interval reaches/exceeds this value, a hdsl2ShdslPerfSESThresh
-      MAY be generated.  At most one notification will be sent per
+      Severely Errored Seconds in a particular 15-minute collection
+      interval reaches/exceeds this value, an hdsl2ShdslPerfSESThresh
+      MAY be generated.  At most, one notification will be sent per
       interval per endpoint."
    DEFVAL      { 0 }
    ::= { hdsl2ShdslEndpointAlarmConfProfileEntry 5 }
@@ -1693,8 +1845,8 @@ hdsl2ShdslEndpointThreshCRCanomalies OBJECT-TYPE
       CRC anomalies within any given 15-minute performance data
       collection interval.  If the value of CRC anomalies in a
       particular 15-minute collection interval reaches/exceeds
-      this value, a hdsl2ShdslPerfCRCanomaliesThresh MAY be
-      generated.  At most one notification will be sent per
+      this value, an hdsl2ShdslPerfCRCanomaliesThresh MAY be
+      generated.  At most, one notification will be sent per
       interval per endpoint."
    DEFVAL      { 0 }
    ::= { hdsl2ShdslEndpointAlarmConfProfileEntry 6 }
@@ -1709,8 +1861,8 @@ hdsl2ShdslEndpointThreshLOSWS OBJECT-TYPE
       Loss of Sync Word (LOSW) Seconds within any given 15-minute
       performance data collection interval.  If the value of LOSW
       in a particular 15-minute collection interval reaches/exceeds
-      this value, a hdsl2ShdslPerfLOSWSThresh MAY be generated.
-      At most one notification will be sent per interval per
+      this value, an hdsl2ShdslPerfLOSWSThresh MAY be generated.
+      At most, one notification will be sent per interval per
       endpoint."
    DEFVAL      { 0 }
    ::= { hdsl2ShdslEndpointAlarmConfProfileEntry 7 }
@@ -1722,11 +1874,11 @@ hdsl2ShdslEndpointThreshUAS OBJECT-TYPE
    STATUS      current
    DESCRIPTION
      "This object configures the threshold for the number of
-      unavailable seconds (UAS) within any given 15-minute
+      Unavailable Seconds (UAS) within any given 15-minute
       performance data collection interval.  If the value of UAS
       in a particular 15-minute collection interval reaches/exceeds
-      this value, a hdsl2ShdslPerfUASThresh MAY be generated.
-      At most one notification will be sent per interval per
+      this value, an hdsl2ShdslPerfUASThresh MAY be generated.
+      At most, one notification will be sent per interval per
       endpoint."
    DEFVAL      { 0 }
    ::= { hdsl2ShdslEndpointAlarmConfProfileEntry 8 }
@@ -1764,10 +1916,8 @@ hdsl2ShdslLoopAttenCrossing NOTIFICATION-TYPE
    ::= { hdsl2ShdslNotifications 1 }
 
 hdsl2ShdslSNRMarginCrossing NOTIFICATION-TYPE
-
    OBJECTS
    {
-
    hdsl2ShdslEndpointCurrSnrMgn,
    hdsl2ShdslEndpointThreshSNRMargin
    }
@@ -1786,9 +1936,10 @@ hdsl2ShdslPerfESThresh NOTIFICATION-TYPE
    }
    STATUS     current
    DESCRIPTION
-     "This notification indicates that the errored seconds threshold
-      (as per the hdsl2ShdslEndpointThreshES value) has been reached/
-      exceeded for the HDSL2/SHDSL segment endpoint."
+     "This notification indicates that the errored seconds
+      threshold (as per the hdsl2ShdslEndpointThreshES value)
+      has been reached/exceeded for the HDSL2/SHDSL segment
+      endpoint."
    ::= { hdsl2ShdslNotifications 3 }
 
 hdsl2ShdslPerfSESThresh NOTIFICATION-TYPE
@@ -1801,7 +1952,7 @@ hdsl2ShdslPerfSESThresh NOTIFICATION-TYPE
    DESCRIPTION
      "This notification indicates that the severely errored seconds
       threshold (as per the hdsl2ShdslEndpointThreshSES value) has
-      been reached/exceeded for the HDSL2/SHDSL Segment Endpoint."
+      been reached/exceeded for the HDSL2/SHDSL segment endpoint."
    ::= { hdsl2ShdslNotifications 4 }
 
 hdsl2ShdslPerfCRCanomaliesThresh NOTIFICATION-TYPE
@@ -1813,21 +1964,20 @@ hdsl2ShdslPerfCRCanomaliesThresh NOTIFICATION-TYPE
    STATUS    current
    DESCRIPTION
      "This notification indicates that the CRC anomalies threshold
-
       (as per the hdsl2ShdslEndpointThreshCRCanomalies value) has
-      been reached/exceeded for the HDSL2/SHDSL Segment Endpoint."
+      been reached/exceeded for the HDSL2/SHDSL segment endpoint."
    ::= { hdsl2ShdslNotifications 5 }
 
 hdsl2ShdslPerfLOSWSThresh NOTIFICATION-TYPE
+
    OBJECTS
    {
-
    hdsl2ShdslEndpointCurr15MinLOSWS,
    hdsl2ShdslEndpointThreshLOSWS
    }
    STATUS     current
    DESCRIPTION
-     "This notification indicates that the LOSW seconds threshold
+     "This notification indicates that the LOSW Seconds threshold
       (as per the hdsl2ShdslEndpointThreshLOSWS value) has been
       reached/exceeded for the HDSL2/SHDSL segment endpoint."
    ::= { hdsl2ShdslNotifications 6 }
@@ -1854,7 +2004,7 @@ hdsl2ShdslSpanInvalidNumRepeaters NOTIFICATION-TYPE
    DESCRIPTION
      "This notification indicates that a mismatch has been detected
       between the number of repeater/regenerator units configured
-      for a HDSL2/SHDSL line via the hdsl2ShdslSpanConfNumRepeaters
+      for an HDSL2/SHDSL line via the hdsl2ShdslSpanConfNumRepeaters
       object and the actual number of repeater/regenerator units
       discovered via the EOC."
    ::= { hdsl2ShdslNotifications 8 }
@@ -1862,7 +2012,6 @@ hdsl2ShdslSpanInvalidNumRepeaters NOTIFICATION-TYPE
 hdsl2ShdslLoopbackFailure NOTIFICATION-TYPE
    OBJECTS
    {
-
    hdsl2ShdslMaintLoopbackConfig
    }
    STATUS     current
@@ -1911,7 +2060,6 @@ hdsl2ShdslconfigInitFailure NOTIFICATION-TYPE
    OBJECTS
    {
    hdsl2ShdslEndpointCurrStatus
-
    }
    STATUS    current
    DESCRIPTION
@@ -1960,7 +2108,6 @@ hdsl2ShdslLocalPowerLoss NOTIFICATION-TYPE
 
 hdsl2ShdslConformance OBJECT IDENTIFIER ::= { hdsl2ShdslMIB 3 }
 hdsl2ShdslGroups      OBJECT IDENTIFIER ::=
-
              { hdsl2ShdslConformance 1 }
 hdsl2ShdslCompliances OBJECT IDENTIFIER ::=
              { hdsl2ShdslConformance 2 }
@@ -1968,9 +2115,13 @@ hdsl2ShdslCompliances OBJECT IDENTIFIER ::=
 -- agent compliance statements
 
 hdsl2ShdslLineMibCompliance MODULE-COMPLIANCE
-   STATUS  current
+   STATUS  deprecated
    DESCRIPTION
-     "The section outlines compliance requirements for this MIB."
+     "The compliance statement for SNMP entities that implement
+     HDSL2 and SHDSL.  The version of SHDSL supported in this
+     compliance statement is g.shdsl.
+
+     **** This compliance statement is deprecated. ****"
    MODULE
    MANDATORY-GROUPS
    {
@@ -2000,7 +2151,93 @@ GROUP  hdsl2ShdslSpanConfProfileGroup
    DESCRIPTION
      "Support for this group is only required for implementations
      supporting SHDSL lines."
+
+OBJECT hdsl2ShdslSpanConfWireInterface
+   SYNTAX      INTEGER
+               {
+               twoWire(1),
+               fourWire(2)
+               }
+   DESCRIPTION
+     "An implementation only has to support the range as
+     applicable for the original g.shdsl specification defined
+     in RFC 3276."
+
+OBJECT hdsl2ShdslStatusMaxAttainableLineRate
+   SYNTAX      Unsigned32(0..4112000)
+   DESCRIPTION
+     "An implementation only has to support the range as
+     applicable for the original g.shdsl specification defined
+     in RFC 3276."
+
+OBJECT hdsl2ShdslStatusActualLineRate
+   SYNTAX      Unsigned32(0..4112000)
+   DESCRIPTION
+     "An implementation only has to support the range as
+     applicable for the original g.shdsl specification defined
+     in RFC 3276."
+
+OBJECT hdsl2ShdslSpanConfMinLineRate
+   SYNTAX      Unsigned32(0..4112000)
+   DESCRIPTION
+     "An implementation only has to support the range as
+     applicable for the original g.shdsl specification defined
+     in RFC 3276."
+
+OBJECT hdsl2ShdslSpanConfMaxLineRate
+   SYNTAX      Unsigned32(0..4112000)
+   DESCRIPTION
+     "An implementation only has to support the range as
+     applicable for the original g.shdsl specification defined
+     in RFC 3276."
    ::= { hdsl2ShdslCompliances 1 }
+
+hdsl2GshdslbisLineMibCompliance MODULE-COMPLIANCE
+   STATUS  current
+   DESCRIPTION
+     "The compliance statement for SNMP entities that implement
+     HDSL2 and SHDSL.  The version of SHDSL supported in this
+     compliance statement is g.shdsl.bis."
+   MODULE
+   MANDATORY-GROUPS
+   {
+   hdsl2ShdslSpanConfGroup,
+   hdsl2ShdslSpanStatusGroup,
+   hdsl2ShdslInventoryGroup,
+   hdsl2ShdslEndpointConfGroup,
+   hdsl2ShdslEndpointCurrGroup,
+   hdsl2Shdsl15MinIntervalGroup,
+   hdsl2Shdsl1DayIntervalGroup,
+   hdsl2ShdslMaintenanceGroup,
+   hdsl2ShdslEndpointAlarmConfGroup,
+   hdsl2ShdslNotificationGroup
+   }
+
+GROUP  hdsl2ShdslInventoryShdslGroup
+   DESCRIPTION
+     "Support for this group is only required for implementations
+     supporting SHDSL lines."
+
+GROUP  hdsl2ShdslSpanShdslStatusGroup
+   DESCRIPTION
+     "Support for this group is only required for implementations
+     supporting SHDSL lines."
+
+GROUP  hdsl2ShdslSpanConfProfileGroup
+   DESCRIPTION
+     "Support for this group is only required for implementations
+     supporting SHDSL lines."
+
+GROUP hdsl2ShdslWirePairGroup
+   DESCRIPTION
+     "Support for this group is only required for implementations
+     supporting SHDSL lines."
+
+GROUP hdsl2ShdslPayloadRateGroup
+   DESCRIPTION
+     "Support for this group is only required for implementations
+     supporting SHDSL lines."
+   ::= { hdsl2ShdslCompliances 2 }
 
 -- units of conformance
 --
@@ -2008,25 +2245,25 @@ GROUP  hdsl2ShdslSpanConfProfileGroup
 hdsl2ShdslSpanConfGroup OBJECT-GROUP
    OBJECTS
    {
-
    hdsl2ShdslSpanConfNumRepeaters,
    hdsl2ShdslSpanConfProfile,
    hdsl2ShdslSpanConfAlarmProfile
    }
    STATUS      current
    DESCRIPTION
-     "This group supports objects for configuring span related
+     "This group supports objects for configuring span-related
       parameters for HDSL2/SHDSL lines."
    ::= { hdsl2ShdslGroups 1 }
 
 hdsl2ShdslSpanStatusGroup OBJECT-GROUP
    OBJECTS
+
    {
    hdsl2ShdslStatusNumAvailRepeaters
    }
    STATUS      current
    DESCRIPTION
-     "This group supports objects for retrieving span related
+     "This group supports objects for retrieving span-related
       status for HDSL2/SHDSL lines."
    ::= { hdsl2ShdslGroups 2 }
 
@@ -2051,13 +2288,12 @@ hdsl2ShdslSpanShdslStatusGroup OBJECT-GROUP
    STATUS      current
    DESCRIPTION
      "This group supports objects for retrieving SHDSL-specific
-      span related status."
+      span-related status."
    ::= { hdsl2ShdslGroups 4 }
 
 hdsl2ShdslInventoryGroup OBJECT-GROUP
    OBJECTS
    {
-
    hdsl2ShdslInvVendorID,
    hdsl2ShdslInvVendorModelNumber,
    hdsl2ShdslInvVendorSerialNumber,
@@ -2112,12 +2348,13 @@ hdsl2ShdslEndpointCurrGroup OBJECT-GROUP
    }
    STATUS      current
    DESCRIPTION
-     "This group supports objects which provide current status and
+     "This group supports objects that provide current status and
       performance measurements relating to segment endpoints in
       HDSL2/SHDSL lines."
    ::= { hdsl2ShdslGroups 7 }
 
 hdsl2Shdsl15MinIntervalGroup OBJECT-GROUP
+
    OBJECTS
    {
    hdsl2Shdsl15MinIntervalES,
@@ -2128,7 +2365,7 @@ hdsl2Shdsl15MinIntervalGroup OBJECT-GROUP
    }
    STATUS      current
    DESCRIPTION
-     "This group supports objects which maintain historic
+     "This group supports objects that maintain historic
       performance measurements relating to segment endpoints in
       HDSL2/SHDSL lines in 15-minute intervals."
    ::= { hdsl2ShdslGroups 8 }
@@ -2145,7 +2382,7 @@ hdsl2Shdsl1DayIntervalGroup OBJECT-GROUP
    }
    STATUS      current
    DESCRIPTION
-     "This group supports objects which maintain historic
+     "This group supports objects that maintain historic
       performance measurements relating to segment endpoints in
       HDSL2/SHDSL lines in 1-day intervals."
    ::= { hdsl2ShdslGroups 9 }
@@ -2209,11 +2446,12 @@ hdsl2ShdslNotificationGroup NOTIFICATION-GROUP
    STATUS      current
    DESCRIPTION
      "This group supports notifications of significant conditions
-     associated with HDSL2/SHDSL lines."
+      associated with HDSL2/SHDSL lines."
    ::= { hdsl2ShdslGroups 12 }
 
 hdsl2ShdslSpanConfProfileGroup OBJECT-GROUP
    OBJECTS
+
    {
    hdsl2ShdslSpanConfWireInterface,
    hdsl2ShdslSpanConfMinLineRate,
@@ -2234,7 +2472,32 @@ hdsl2ShdslSpanConfProfileGroup OBJECT-GROUP
    STATUS      current
    DESCRIPTION
      "This group supports objects that constitute configuration
-      profiles for configuring span related parameters in SHDSL
+      profiles for configuring span-related parameters in SHDSL
       lines."
    ::= { hdsl2ShdslGroups 13 }
+
+hdsl2ShdslWirePairGroup OBJECT-GROUP
+   OBJECTS
+   {
+   hdsl2ShdslEndpointCurrTipRingReversal,
+   hdsl2ShdslEndpointCurrActivationState
+   }
+   STATUS      current
+   DESCRIPTION
+     "This group supports objects that provide the status
+      of SHDSL-specific wire pairs."
+   ::= { hdsl2ShdslGroups 14 }
+
+hdsl2ShdslPayloadRateGroup OBJECT-GROUP
+   OBJECTS
+   {
+   hdsl2ShdslStatusMaxAttainablePayloadRate,
+   hdsl2ShdslStatusActualPayloadRate
+   }
+   STATUS      current
+   DESCRIPTION
+     "This group supports objects for retrieving payload rates
+      that exclude any framing overhead."
+   ::= { hdsl2ShdslGroups 15 }
+
 END

@@ -3,7 +3,7 @@
 -- *
 -- * Altiga Networks was acquired by Cisco Systems on March 29, 2000
 -- *
--- * Copyright (c) 2002 by Cisco Systems, Inc.
+-- * Copyright (c) 2002,2007 by Cisco Systems, Inc.
 -- * All rights reserved.
 -- *
 -- *------------------------------------------------------------------
@@ -24,7 +24,7 @@ ALTIGA-PPPOE-STATS-MIB DEFINITIONS ::= BEGIN
          FROM ALTIGA-GLOBAL-REG; 
 
    altigaPPPoEStatsMibModule MODULE-IDENTITY
-      LAST-UPDATED   "200209051300Z"
+      LAST-UPDATED   "200707110000Z"
       ORGANIZATION   "Cisco Systems, Inc."
       CONTACT-INFO
          "Cisco Systems
@@ -55,7 +55,9 @@ ALTIGA-PPPOE-STATS-MIB DEFINITIONS ::= BEGIN
             PPPoE:      Point-to-Point Protocol over Ethernet
 
          "
-
+        REVISION "200707110000Z"
+       DESCRIPTION
+                "Added range for Index Object alPPPoEStatsIfIndex object "
         REVISION "200209051300Z"
         DESCRIPTION
                 "Added module compliance."
@@ -138,7 +140,7 @@ AlPPPoEStatsIfEntry ::= SEQUENCE {
 }
 
 alPPPoEStatsIfIndex     OBJECT-TYPE
-   SYNTAX         Integer32
+   SYNTAX         Integer32 (1..2147483647)
    MAX-ACCESS     read-only
    STATUS         current
    DESCRIPTION
@@ -348,3 +350,8 @@ altigaPPPoEStatsGroup      OBJECT-GROUP
    ::= { alPPPoEGroup 2 }
 
 END
+
+
+
+
+

@@ -3,7 +3,7 @@
 -- 
 -- June 2000, Huiyang Yang  
 --
--- Copyright (c) 2001, 2002, 2004, 2005 by cisco Systems, Inc. 
+-- Copyright (c) 2001, 2002, 2004, 2005, 2006 by cisco Systems, Inc. 
 -- All rights reserved. 
 -- ***************************************************************** 
 
@@ -13,21 +13,22 @@ IMPORTS
         MODULE-IDENTITY, NOTIFICATION-TYPE, OBJECT-TYPE, 
         Counter32, Gauge32, Integer32, Unsigned32 
                 FROM SNMPv2-SMI 
-        TEXTUAL-CONVENTION, TruthValue, RowStatus, TestAndIncr
+        TEXTUAL-CONVENTION, TruthValue, RowStatus, TestAndIncr, 
+        StorageType
                 FROM SNMPv2-TC 
         MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP 
                 FROM SNMPv2-CONF 
         SnmpAdminString
                 FROM SNMP-FRAMEWORK-MIB
-        CiscoAlarmSeverity 
-                FROM CISCO-TC 
         InetAddressType, InetAddress
                 FROM INET-ADDRESS-MIB
+        CiscoAlarmSeverity
+                FROM CISCO-TC
         ciscoMgmt 
                 FROM CISCO-SMI; 
 
 ciscoGprsChargingMIB MODULE-IDENTITY 
-        LAST-UPDATED    "200509161800Z" 
+        LAST-UPDATED    "200608180000Z" 
         ORGANIZATION    "Cisco Systems, Inc." 
         CONTACT-INFO 
                 "       Cisco Systems 
@@ -106,6 +107,48 @@ ciscoGprsChargingMIB MODULE-IDENTITY
 --               [3] GSM 12.15: 'Digital Cellular telecommunications  
 --                   system (Phase 2+); General Packet Radio Service  
 --                   (GPRS); Charging in GPRS', ETSI, (V7.2.1)" 
+        REVISION       "200608180000Z"
+        DESCRIPTION
+                 "- Deprecated following objects
+                      cgprsCgProfileMapNum, 
+                      cgprsCgProfileContentPostValTime.
+
+                  - Added following objects
+                      cgprsCgProfileMapNumber,
+                      cgprsCgProfileContentPostValidityTime.
+
+                  - Deprecated following groups and compliance
+                      cgprsCgMIBConfigGroupR60, 
+                      cgprsCgMIBConfigGroupRev3,
+                      cgprsCgComplianceRev5.
+                  
+                  - Added following group, compliance
+                      cgprsCgMIBConfigGroupRev4,
+                      cgprsCgMIBExtConfigGroup.
+                      cgprsCgComplianceRev6."
+                     
+        REVISION       "200604041900Z"
+        DESCRIPTION  
+                 "Added following objects in cgprsCgProfileTable:
+                     cgprsCgProfileContentPostQosChange,
+                     cgprsCgProfileContentPostSgsnChange,
+                     cgprsCgProfileContentPostRatChange,
+                     cgprsCgProfileContentPostPlmnChange,
+                     cgprsCgProfileStorageType
+
+                 Changed the DEFVAL of cgprsCgCdrOptionDynamicAddr,
+                 cgprsCgCdrOptionNip,
+                 cgprsCgCdrOptionPdpType and 
+                 cgprsCgCdrOptionPdpAddress from 'false' to 'true'.
+
+                 Added following objects in ciscoGprsChargingConfig:
+                    cgprsCgServiceRecordIncludeRat, 
+                    cgprsCgServiceRecordIncludePlmn
+
+                 Changed the DEFVAL of the following objects:
+                    cgprsCgProfileCategory,
+                    cgprsCgContainerTimeLimit."
+
         REVISION       "200509161800Z"
         DESCRIPTION
                  "Added cgprsCgCdrOptionServiceRecord,
@@ -886,7 +929,7 @@ cgprsCgContainerTimeLimit          OBJECT-TYPE
         Aspects; Telecommunication Management; Charging and billing;
         GSM call and event data for the Packet Switched (PS) domain
         (Release 1999); 3GPP TS 32.015"
-    DEFVAL { 3000 }
+    DEFVAL { 0 }
     ::= { ciscoGprsChargingConfig 29 }
 
 cgprsCgProfileTable                 OBJECT-TYPE
@@ -930,23 +973,29 @@ cgprsCgProfileEntry                 OBJECT-TYPE
     ::= { cgprsCgProfileTable 1 }
 
 CgprsCgProfileEntry         ::= SEQUENCE {
-    cgprsCgProfileNum               Unsigned32,
-    cgprsCgProfileRowStatus         RowStatus,
-    cgprsCgProfileDesc              SnmpAdminString,
-    cgprsCgProfileCategory          INTEGER,
-    cgprsCgProfileCdrSuppress       TruthValue,
-    cgprsCgProfileVolumeLimit       Unsigned32,
-    cgprsCgProfileVolumeLimitReset  TruthValue,
-    cgprsCgProfileDurLimit          Unsigned32,
-    cgprsCgProfileDurLimitReset     TruthValue,
-    cgprsCgProfileTariffTime        TruthValue,
-    cgprsCgProfileSgsnChange        Integer32,
-    cgprsCgProfileCdrSuppressPrepaid TruthValue,
-    cgprsCgProfileContentDccaProfile SnmpAdminString,
-    cgprsCgProfileContentPostTime    Unsigned32,
-    cgprsCgProfileContentPostValTime Unsigned32,
-    cgprsCgProfileContentPostVolume  Unsigned32,
-    cgprsCgProfileContentRulebaseId  SnmpAdminString
+    cgprsCgProfileNum                     Unsigned32,
+    cgprsCgProfileRowStatus               RowStatus,
+    cgprsCgProfileDesc                    SnmpAdminString,
+    cgprsCgProfileCategory                INTEGER,
+    cgprsCgProfileCdrSuppress             TruthValue,
+    cgprsCgProfileVolumeLimit             Unsigned32,
+    cgprsCgProfileVolumeLimitReset        TruthValue,
+    cgprsCgProfileDurLimit                Unsigned32,
+    cgprsCgProfileDurLimitReset           TruthValue,
+    cgprsCgProfileTariffTime              TruthValue,
+    cgprsCgProfileSgsnChange              Integer32,
+    cgprsCgProfileCdrSuppressPrepaid      TruthValue,
+    cgprsCgProfileContentDccaProfile      SnmpAdminString,
+    cgprsCgProfileContentPostTime         Unsigned32,
+    cgprsCgProfileContentPostValTime      Unsigned32,
+    cgprsCgProfileContentPostVolume       Unsigned32,
+    cgprsCgProfileContentRulebaseId       SnmpAdminString,
+    cgprsCgProfileContentPostQosChange    TruthValue,
+    cgprsCgProfileContentPostSgsnChange   TruthValue,
+    cgprsCgProfileContentPostRatChange    TruthValue,
+    cgprsCgProfileContentPostPlmnChange   TruthValue,
+    cgprsCgProfileStorageType             StorageType,
+    cgprsCgProfileContentPostValidityTime Unsigned32 
     }
 
 cgprsCgProfileNum                    OBJECT-TYPE
@@ -971,7 +1020,9 @@ cgprsCgProfileRowStatus              OBJECT-TYPE
         To delete a row, set this object to 'destroy'.
 
         Only these two values 'createAndGo' and 'destroy'
-        will be accepted."
+        will be accepted.  The table objects can be
+        modified, when the RowStatus (cgprsCgProfileRowStatus) is 
+        active." 
     ::= { cgprsCgProfileEntry 2 }
 
 cgprsCgProfileDesc                   OBJECT-TYPE
@@ -1000,7 +1051,7 @@ cgprsCgProfileCategory               OBJECT-TYPE
         normal(3)  - Normal charging."
     REFERENCE
         "3GPP TS 32.215 V5.5.0 (2003-12), section 5.6"
-    DEFVAL { flat }
+    DEFVAL { normal }
     ::= { cgprsCgProfileEntry 4 }
 
 cgprsCgProfileCdrSuppress            OBJECT-TYPE
@@ -1157,13 +1208,14 @@ cgprsCgProfileContentPostValTime     OBJECT-TYPE
     SYNTAX                           Unsigned32(900..4294967295)
     UNITS                            "seconds"
     MAX-ACCESS                       read-create
-    STATUS                           current
+    STATUS                           deprecated 
     DESCRIPTION
         "This object specifies the validity timeout for this 
         postpaid users in this charging profile. By default, the
         time and volume quota for postpaid has no validity timeout.
         If it is configured, it applies to both time based or volume 
-        based quota."
+        based quota.  This object is deprecated by 
+        cgprsCgProfileContentPostValidityTime"
     ::= { cgprsCgProfileEntry 15 }
 
 cgprsCgProfileContentPostVolume      OBJECT-TYPE
@@ -1200,6 +1252,100 @@ cgprsCgProfileContentRulebaseId      OBJECT-TYPE
         ID configured in a charging profile."
     ::= { cgprsCgProfileEntry 17 }
 
+cgprsCgProfileContentPostQosChange   OBJECT-TYPE
+    SYNTAX                           TruthValue
+    MAX-ACCESS                       read-create
+    STATUS                           current
+    DESCRIPTION
+        "This object when set to 'true' enables the trigger for QoS 
+        change for postpaid users using this charging profile. 
+
+        The change in QoS causes GGSN to close the G-CDR for a 
+        particular PDP context and generate the service record for each
+        service."
+    DEFVAL { false }
+    ::= { cgprsCgProfileEntry 18 }
+
+cgprsCgProfileContentPostSgsnChange  OBJECT-TYPE
+    SYNTAX                           TruthValue
+    MAX-ACCESS                       read-create
+    STATUS                           current
+    DESCRIPTION
+        "This object when set to 'true' enables the trigger for SGSN 
+        change for postpaid users using this charging profile.  The
+        SGSN address is added to the SGSN list in the context G-CDR.
+
+        When the SGSN limit is reached, the G-CDR is closed. Current
+        SGSN address is written into the CDR, when the cgprsCgRelease  
+        value is 'release4' or above, and service record is 
+        generated."
+    DEFVAL { false }
+    ::= { cgprsCgProfileEntry 19 }
+
+cgprsCgProfileContentPostRatChange   OBJECT-TYPE
+    SYNTAX                           TruthValue
+    MAX-ACCESS                       read-create
+    STATUS                           current
+    DESCRIPTION
+        "This object when set to 'true' enables the trigger for RAT
+        change for postpaid users using this charging profile.
+
+        This object can be set to 'true' only when the object 
+        cgprsCgServiceRecordIncludeRat is 'true'.
+
+        When a RAT change is received, the G-CDR is closed. The new 
+        RAT value is written into the new G-CDR and service record is
+        is generated with the new RAT value."   
+    DEFVAL { false }
+    ::= { cgprsCgProfileEntry 20 }
+
+cgprsCgProfileContentPostPlmnChange  OBJECT-TYPE
+    SYNTAX                           TruthValue
+    MAX-ACCESS                       read-create
+    STATUS                           current
+    DESCRIPTION
+        "This object when set to 'true' enables the trigger for PLMN 
+        change for postpaid users using this charging profile.  When 
+        enabled, the current PLMN-ID is always written into the 
+        service-record.  If none is received in the PDP create/update 
+        request, a value of zero is written into the service-record.
+
+        This object can be set to 'true' only when the object 
+        cgprsCgServiceRecordIncludePlmn is 'true'.
+ 
+        When a PLMN-ID change is received, the G-CDR is closed. 
+        A new service-record is generated and the new PLMN-ID is 
+        written into the new service-record."
+    DEFVAL { false }
+    ::= { cgprsCgProfileEntry 21 } 
+
+cgprsCgProfileStorageType     OBJECT-TYPE
+    SYNTAX                    StorageType
+    MAX-ACCESS                read-create
+    STATUS                    current
+    DESCRIPTION
+        "The storage type for this conceptual row.
+        Conceptual rows having the value 'permanent' need not
+        allow write-access to any columnar objects in the row."
+    DEFVAL { nonVolatile }
+    ::= { cgprsCgProfileEntry 22 }
+
+cgprsCgProfileContentPostValidityTime   OBJECT-TYPE
+    SYNTAX                              Unsigned32(0 | 900..4294967295)
+    UNITS                               "seconds"
+    MAX-ACCESS                          read-create
+    STATUS                              current
+    DESCRIPTION
+        "This object specifies the validity timeout for this
+        postpaid users in this charging profile. By default, the
+        time and volume quota for postpaid has no validity timeout.
+        If it is configured, it applies to both time based or volume
+        based quota.  The valid range of this object is from 900 to
+        4294967295, and the value 0 indicates that the validity
+        timeout is not configured."
+    DEFVAL { 0 }
+    ::= { cgprsCgProfileEntry 23 }
+
 cgprsCgProfileMapTable          OBJECT-TYPE
     SYNTAX                      SEQUENCE OF CgprsCgProfileMapEntry
     MAX-ACCESS                  not-accessible
@@ -1229,7 +1375,8 @@ CgprsCgProfileMapEntry           ::= SEQUENCE {
     cgprsCgProfileMapCategory        INTEGER,
     cgprsCgProfileMapNum             Integer32,
     cgprsCgProfileMapOverride        TruthValue,
-    cgprsCgProfileMapTrusted         TruthValue
+    cgprsCgProfileMapTrusted         TruthValue,
+    cgprsCgProfileMapNumber          Integer32
 }
 
 cgprsCgProfileMapCategory            OBJECT-TYPE
@@ -1249,7 +1396,7 @@ cgprsCgProfileMapCategory            OBJECT-TYPE
 cgprsCgProfileMapNum                 OBJECT-TYPE
     SYNTAX                           Integer32(0..65535)
     MAX-ACCESS                       read-write
-    STATUS                           current
+    STATUS                           deprecated 
     DESCRIPTION
         "This object represents the profile number which is
         created using cgprsCgProfileTable. This object holds the
@@ -1257,7 +1404,8 @@ cgprsCgProfileMapNum                 OBJECT-TYPE
         number 0 cannot be created or deleted using 
         cgprsCgProfileTable. It's created using the other 
         configuration objects cgprsCgContainerVolThresh, 
-        cgprsCgCdrSgsnChangeLimit, cgprsCgContainerTimeLimit."
+        cgprsCgCdrSgsnChangeLimit, cgprsCgContainerTimeLimit.
+        This object is deprecated by cgprsCgProfileMapNumber."
     DEFVAL { 0 }
     ::= { cgprsCgProfileMapEntry 2 }
 
@@ -1293,6 +1441,23 @@ cgprsCgProfileMapTrusted             OBJECT-TYPE
         roamer."
     DEFVAL { false }
     ::= { cgprsCgProfileMapEntry 4 }
+
+cgprsCgProfileMapNumber              OBJECT-TYPE
+    SYNTAX                           Integer32(-1..65535)
+    MAX-ACCESS                       read-write
+    STATUS                           current 
+    DESCRIPTION
+        "This object represents the profile number which is
+        created using cgprsCgProfileTable. This object holds the
+        valid value represented by cgprsCgProfileNum. The profile
+        number 0 cannot be created or deleted using
+        cgprsCgProfileTable. It's created using the other
+        configuration objects cgprsCgContainerVolThresh,
+        cgprsCgCdrSgsnChangeLimit, cgprsCgContainerTimeLimit.
+        The value -1 for this object indicates that the default
+        profile for the category is not configured."
+    DEFVAL { -1 }
+    ::= { cgprsCgProfileMapEntry 5 }
         
 cgprsCgChargingCharReject            OBJECT-TYPE
     SYNTAX                           TruthValue
@@ -1527,7 +1692,7 @@ cgprsCgCdrOptionApn                OBJECT-TYPE
          If object is set to 'false'- Access Point Name is 
          disabled in G-CDRs. The option cannot be disabed if the 
          CHARGING_RELEASE is 98 or 99." 
-     DEFVAL { false } 
+     DEFVAL { true } 
      ::= { ciscoGprsChargingConfig 42 }
 
 cgprsCgCdrOptionVirtualApn         OBJECT-TYPE
@@ -1572,7 +1737,7 @@ cgprsCgCdrOptionDynamicAddr        OBJECT-TYPE
          allocated for that particular PDP context. This field is
          missing if address is static i.e. part of PDP context 
          subscription." 
-     DEFVAL { false }  
+     DEFVAL { true }  
      ::= { ciscoGprsChargingConfig 45 }
 
 cgprsCgCdrOptionNip                OBJECT-TYPE
@@ -1585,7 +1750,7 @@ cgprsCgCdrOptionNip                OBJECT-TYPE
 
          This field indicates that PDP context is network initiated.
          The field is missing in case of mobile activated PDP context." 
-     DEFVAL { false }
+     DEFVAL { true }
      ::= { ciscoGprsChargingConfig 46 }
 
 cgprsCgCdrOptionPdpAddress         OBJECT-TYPE
@@ -1601,7 +1766,7 @@ cgprsCgCdrOptionPdpAddress         OBJECT-TYPE
          i.e. of type IP version 4 or IP version 6. This parameter 
          shall be present except when both the PDP type is PPP and 
          dynamic PDP address assignment is used." 
-     DEFVAL { false }
+     DEFVAL { true }
      ::= { ciscoGprsChargingConfig 47 }
 
 cgprsCgCdrOptionPdpType            OBJECT-TYPE
@@ -1613,7 +1778,7 @@ cgprsCgCdrOptionPdpType            OBJECT-TYPE
          in G-CDRs.   
 
          This field defines the PDP type,e.g.IP,PPP or IHOSS:OSP."
-     DEFVAL { false }
+     DEFVAL { true }
      ::= { ciscoGprsChargingConfig 48 }
 
 cgprsCgCdrOptionSerMsisdn          OBJECT-TYPE
@@ -1726,6 +1891,34 @@ cgprsCgCdrOptionUserLocInfo        OBJECT-TYPE
          currently located."
      DEFVAL { false }
      ::= { ciscoGprsChargingConfig 55 }         
+
+cgprsCgServiceRecordIncludeRat     OBJECT-TYPE
+     SYNTAX                        TruthValue
+     MAX-ACCESS                    read-write
+     STATUS                        current
+     DESCRIPTION
+         "This object when set to 'true', writes the RAT value into 
+         into the service record when RAT change is recieved.
+
+         If this object is set to 'false', it disables the RAT trigger 
+         set by the object cgprsCgProfileContentPostRatChange."
+     DEFVAL { false }
+     ::= { ciscoGprsChargingConfig 56 }
+
+cgprsCgServiceRecordIncludePlmn    OBJECT-TYPE
+     SYNTAX                        TruthValue
+     MAX-ACCESS                    read-write
+     STATUS                        current
+     DESCRIPTION
+         "This object when set to 'true', writes the PLMN-ID of the 
+         PDP into the service record when there is change in the
+         PLMN-ID.
+
+         If this object is set to 'false', it disables the plmn trigger 
+         set by the object cgprsCgProfileContentPostPlmnChange."
+     DEFVAL { false }
+     ::= { ciscoGprsChargingConfig 57 }
+
 -- 
 -- Charging GW statistics 
 -- 
@@ -1942,9 +2135,6 @@ cgprsCgAlarmHistTableMax     OBJECT-TYPE
      DEFVAL { 500 } 
      ::= { ciscoGprsChargingAlarms 2 } 
  
-
-
-   
 cgprsCgAlarmHistTable        OBJECT-TYPE 
      SYNTAX                  SEQUENCE OF CgprsCgAlarmHistEntry 
      MAX-ACCESS              not-accessible 
@@ -2212,7 +2402,7 @@ cgprsCgComplianceRev3 MODULE-COMPLIANCE
     ::= {cgprsCgMIBCompliances 4 }
 
 cgprsCgComplianceRev4 MODULE-COMPLIANCE
-     STATUS  current
+     STATUS  deprecated -- replaced by cgprsCgComplianceRev5 
      DESCRIPTION
             "The compliance statement for entities which implement the
             CISCO GPRS CHARGING MIB."
@@ -2235,6 +2425,66 @@ cgprsCgComplianceRev4 MODULE-COMPLIANCE
                 "The states notInService(2), notReady(3) and
                 createAndWait(5) need not be supported."
     ::= {cgprsCgMIBCompliances 5 }
+
+cgprsCgComplianceRev5 MODULE-COMPLIANCE
+     STATUS  deprecated -- replaced by cgprsCgComplianceRev6 
+     DESCRIPTION
+            "The compliance statement for entities which implement the
+            CISCO GPRS CHARGING MIB."
+     MODULE
+            MANDATORY-GROUPS { cgprsCgMIBConfigGroupRev3,
+                               cgprsCgMIBStatsGroupRev2,
+                               cgprsCgMIBAlarmsGroupRev1,
+                               cgprsCgMIBNotifGroupRev1,
+                               cgprsCgMIBStatusGroup,
+                               cgprsCgMIBConfigGroupR60,
+                               cgprsCgMIBStatusGroupR60,
+                               cgprsCgMIBConfigProfileChangeGroup 
+                             }
+            OBJECT           cgprsCgProfileRowStatus
+            SYNTAX           INTEGER {
+                                active(1),
+                                createAndGo(4),
+                                destroy(6)
+                             }
+            DESCRIPTION
+                "The states notInService(2), notReady(3) and
+                createAndWait(5) need not be supported."
+            
+            OBJECT           cgprsCgProfileStorageType
+            MIN-ACCESS       read-only
+            DESCRIPTION     "Write access is not required."
+    ::= {cgprsCgMIBCompliances 6 }
+
+cgprsCgComplianceRev6 MODULE-COMPLIANCE
+     STATUS  current
+     DESCRIPTION
+            "The compliance statement for entities which implement the
+            CISCO GPRS CHARGING MIB."
+     MODULE
+            MANDATORY-GROUPS { cgprsCgMIBConfigGroupRev4,
+                               cgprsCgMIBStatsGroupRev2,
+                               cgprsCgMIBAlarmsGroupRev1,
+                               cgprsCgMIBNotifGroupRev1,
+                               cgprsCgMIBStatusGroup,
+                               cgprsCgMIBStatusGroupR60,
+                               cgprsCgMIBExtConfigGroup,
+                               cgprsCgMIBConfigProfileChangeGroup
+                             }
+            OBJECT           cgprsCgProfileRowStatus
+            SYNTAX           INTEGER {
+                                active(1),
+                                createAndGo(4),
+                                destroy(6)
+                             }
+            DESCRIPTION
+                "The states notInService(2), notReady(3) and
+                createAndWait(5) need not be supported."
+
+            OBJECT           cgprsCgProfileStorageType
+            MIN-ACCESS       read-only
+            DESCRIPTION     "Write access is not required."
+    ::= { cgprsCgMIBCompliances 7 }
 
 -- units of conformance 
  
@@ -2488,7 +2738,7 @@ cgprsCgMIBConfigGroupRev3  OBJECT-GROUP
                cgprsCgPtcEnable,
                cgprsCgPtcPossiblyDupEnable
              }
-     STATUS    current
+     STATUS    deprecated -- Deprecated by cgprsCgMIBConfigGroupRev4. 
      DESCRIPTION
          "A collection of objects providing charging related
          configuration."
@@ -2559,7 +2809,7 @@ cgprsCgMIBConfigGroupR60   OBJECT-GROUP
               cgprsCgCdrOptionRatType,
               cgprsCgCdrOptionUserLocInfo 
             }
-    STATUS    current
+    STATUS    deprecated -- Deprecated by cgprsCgMIBExtConfigGroup. 
     DESCRIPTION
         "A collection of objects added as part of GGSN release
          R6.0."
@@ -2572,5 +2822,112 @@ cgprsCgMIBStatusGroupR60  OBJECT-GROUP
         "A collection of status object added as part of GGSN
         release R6.0."
     ::= { cgprsCgMIBGroups 14 }
+
+cgprsCgMIBConfigProfileChangeGroup   OBJECT-GROUP
+    OBJECTS { cgprsCgProfileContentPostQosChange, 
+              cgprsCgProfileContentPostSgsnChange,
+              cgprsCgProfileContentPostRatChange,
+              cgprsCgProfileContentPostPlmnChange,
+              cgprsCgProfileStorageType,
+              cgprsCgServiceRecordIncludeRat,
+              cgprsCgServiceRecordIncludePlmn
+            }
+    STATUS    current
+    DESCRIPTION
+        "A collection of objects providing charging related
+         configuration."
+    ::= { cgprsCgMIBGroups 15 }
+
+cgprsCgMIBConfigGroupRev4 OBJECT-GROUP
+    OBJECTS {  cgprsCgGatewayAddrType,
+               cgprsCgGatewayAddr,
+               cgprsCgGatewayRowStatus,
+               cgprsCgOperStatus,
+               cgprsCgLinkState,
+               cgprsCgEnable,
+               cgprsCgCdrLocalSeqNumEnable,
+               cgprsCgCdrNodeIdEnable,
+               cgprsCgFlowControlEcho,
+               cgprsCgCdrPktsStatEnable,
+               cgprsCgCdrAggreLimit,
+               cgprsCgTransInterval,
+               cgprsCgPktsQSize,
+               cgprsCgPathRequest,
+               cgprsCgContainerVolThresh,
+               cgprsCgMapDataTos,
+               cgprsCgPathProtocol,
+               cgprsCgServerSwitchTimeout,
+               cgprsCgConditionLimit,
+               cgprsCgGtpPrimePort,
+               cgprsCgN3BufferSize,
+               cgprsCgChargeForRoamersOnly,
+               cgprsCgTariffTimeMaxEntries,
+               cgprsCgTariffTimeNextIndex,
+               cgprsCgTariffTimeRowStatus,
+               cgprsCgTariffTimeHour,
+               cgprsCgTariffTimeMin,
+               cgprsCgTariffTimeSec,
+               cgprsCgClearCdrPartialCdr,
+               cgprsCgCdrSgsnChangeLimit,
+               cgprsCgRelease,
+               cgprsCgGtpShortHeaderEnable,
+               cgprsCgTransFormNumRespEnable,
+               cgprsCgContainerTimeLimit,
+               cgprsCgProfileRowStatus,
+               cgprsCgProfileDesc,
+               cgprsCgProfileCategory,
+               cgprsCgProfileCdrSuppress,
+               cgprsCgProfileVolumeLimit,
+               cgprsCgProfileVolumeLimitReset,
+               cgprsCgProfileDurLimit,
+               cgprsCgProfileDurLimitReset,
+               cgprsCgProfileTariffTime,
+               cgprsCgProfileSgsnChange,
+               cgprsCgProfileMapNumber,
+               cgprsCgProfileMapOverride,
+               cgprsCgProfileMapTrusted,
+               cgprsCgChargingCharReject,
+               cgprsCgServiceMode,
+               cgprsCgPartialCdrGenEnable,
+               cgprsCgSwitchOverPriority,
+               cgprsCgCharSelectionMode,
+               cgprsCgReconnect,
+               cgprsCgPtcEnable,
+               cgprsCgPtcPossiblyDupEnable
+            }
+    STATUS    current
+    DESCRIPTION
+        "A collection of objects providing charging related
+        configurations."
+    ::= { cgprsCgMIBGroups 16 }
+
+cgprsCgMIBExtConfigGroup   OBJECT-GROUP
+    OBJECTS {  cgprsCgCdrOptionServiceRecord,
+               cgprsCgPartialCdrGenEnableAll,
+               cgprsCgProfileCdrSuppressPrepaid,
+               cgprsCgProfileContentDccaProfile,
+               cgprsCgProfileContentPostTime,
+               cgprsCgProfileContentPostValidityTime,
+               cgprsCgProfileContentPostVolume,
+               cgprsCgProfileContentRulebaseId,
+               cgprsCgCdrOptionApn,
+               cgprsCgCdrOptionVirtualApn,
+               cgprsCgCdrOptionApnSelMode,
+               cgprsCgCdrOptionDynamicAddr,
+               cgprsCgCdrOptionNip,
+               cgprsCgCdrOptionPdpAddress,
+               cgprsCgCdrOptionPdpType,
+               cgprsCgCdrOptionSerMsisdn,
+               cgprsCgCdrOptionSgsnPlmn,
+               cgprsCgCdrOptionCamelCharInfo,
+               cgprsCgCdrOptionImeisv,
+               cgprsCgCdrOptionMsTimeZone,
+               cgprsCgCdrOptionRatType,
+               cgprsCgCdrOptionUserLocInfo
+            }
+    STATUS    current
+    DESCRIPTION
+        "A collection of status objects."
+    ::= { cgprsCgMIBGroups 17 }
 
 END 

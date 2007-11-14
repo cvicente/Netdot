@@ -4,7 +4,7 @@
 --
 -- May 1994, Jeffrey T. Johnson
 --
--- Copyright (c) 1994-2006 by cisco Systems, Inc.
+-- Copyright (c) 1994-2007 by cisco Systems, Inc.
 -- All rights reserved.
 --
 -- NOTE WELL
@@ -289,6 +289,7 @@
 			,c2621XM(337)                   -- Cisco 2621XM platform with 2 integrated fast ethernet interfaces with SDRAM
 			,c2650XM(338)                   -- Cisco 2650XM platform with 1 integrated fast ethernet interfaces with SDRAM
 			,c2651XM(339)                   -- Cisco 2651XM platform with 2 integrated fast ethernet interfaces with SDRAM
+			,c12816(344)			-- Cisco 12816 platform with 16 slot
 			,cat295024sx(350)		-- Cisco Catalyst c2950 switch with 24 10/100 BaseTX ports and 2 fixed 1000Base Multimode fiber (SX) ports (WS-C2950SX-24)
 			,as5400-hpx(353) 		-- chassis for cisco As5400HPX
 			,c7609(365)			-- 9 slots chassis in Cisco 7600 family
@@ -324,7 +325,7 @@
 			,cds-c9216i-k9(436)		--  2-Slot MDS fabric switch chassis
 			,airap-1130(439)		--  Cisco Aironet 1130 series WLAN Access Point with 1 10/100TX port, dual IEEE 802.11a and 802.11g  radio port
 			,c7604(440)			--  Cisco 7604 chassis, a 4-slot chassis. 
--- removed can reuse assignment
+                        ,cn7kc7010(442)                 --  Nexus7000 10 slot N7K chassis
 			,c371098-hp-001(443)		--  24 port Gigabit Ethernet switch module for HP ProLiant BL p-class server chassis
 			,cat356024-ts(447)		--  Catalyst 3560 24 10/100 ports + 2 Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Switch. (SFP Small Formfactor Pluggable) 
 			,cat356048-ts(448)		--  Catalyst 3560 48 10/100 ports + 4 Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Switch. (SFP Small Formfactor Pluggable)
@@ -345,6 +346,8 @@
 			,cme6340aca (482)			-- DSL Switch 48 port ADSL2/2+, Annex A, AC
 			,cme6340dca (483)			-- DSL Switch 48 port ADSL2/2+, Annex A, DC
 			,cme6340dcb (484)			-- DSL Switch 48 port ADSL2/2+, Annex B, DC
+			,cMEC6524gs8s (488)			-- Cisco ME 6524 chassis with 24 port SFP and 8 SFP uplinks
+			,cMEC6524gt8s (489)			-- Cisco ME 6524 chassis with 24 port 10/100/1000BaseT and 8 SFP uplinks
 			,nm-16es-1ge (493)			-- 16 Ports next genaration 10BaseT/100BaseTX EtherSwitch module with 1 GE and Inline Power
 			,nm-x-24es-1ge (494)			-- 24 Ports extended next genaration 10BaseT/100BaseTX EtherSwitch module with 1 GE and Inline Power
 			,nm-xd-24es-2st (495)			-- 24 Ports extended double-wide next genaration 10BaseT/100BaseTX EtherSwitch module with 2 stacking ports and Inline Power
@@ -364,9 +367,49 @@
 			,cwlse-1133(520)			-- Chassis for Cisco WLSE 1133.
 			,spa-ipsec-2g-2(529)			-- IPSec Shared Port Adapter with 2 Gbps DES/3DES/AES (SPA-IPSEC-2G-2)
 			,cips-virtual(543)			-- Cisco Intrusion Prevention System virtual sensor
+			,c5720(544)				-- Integrated Encryption Router 
 			,c7201(548)				-- Cisco 7201 platform, 1 Rack Unit (RU) application specific router with 1 slot	
 			,ds-c9222i-k9(549)			-- DS-C9222i-K9 Coco chassis
-			}
+			,c5740(557)				-- Integrated Encryption Router
+			,c7816-h(586)				-- MCS-7816H class of servers Starting with CCM 6.0 release
+			,c7603s(587)				-- 3 slots S-Series chassis in Cisco 7600 family 
+			,c7606s(588)				-- 6 slots S-Series chassis in Cisco 7600 family
+			,c7609s(589)				-- 9 slots S-Series chassis in Cisco 7600 family
+			,cuc500(591)				-- Cisco Unified Communication 500 (UC500)
+			,c860-ap(592)	   			-- Cisco 860 AP is the embedded wireless access point module for Cisco 860 router. It has one IEEE 802.11 b/g/n radio port which operates in 2.4 GHz.
+			,c880-ap(593)				-- Cisco 880 AP is the embedded wireless access point module for Cisco 880 router. It has one IEEE 802.11 b/g/n radio port which operates in 2.4 GHz. 
+			,c890-ap(594)				-- Cisco 890 AP is the embedded wireless access point module for Cisco 890 router. It has one IEEE 802.11 b/g/n radio port which operates in 2.4 GHz and one IEEE 802.11 a/n radio port which operates in 5 GHz
+			,c1900-ap(595)				-- Cisco 1900 AP is the embedded wireless access point module for Cisco 1900 router. It has one IEEE 802.11 b/g/n radio port which operates in 2.4 GHz and one IEEE 802.11 a/n radio port which operates in 5 GHz
+			,cuc520s-8u-4fxo-k9(597)                -- UC500 with support for 8 switch ports and 4 FXO ports
+			,cuc520s-8u-4fxo-w-k9(598)              -- UC500 with support for 8 switch ports, 4 FXO ports, and Wi-Fi
+ 			,cuc520s-8u-2bri-k9(599)                -- UC500 with support for 8 switch ports and 2 BRI
+			,cuc520s-8u-2bri-w-k9(600)              -- UC500 with support for 8 switch ports and 2 BRI, and Wi-Fi
+			,cuc520s-16u-4fxo-k9(601)               -- UC500 with support for 16 switch ports and 4 FXO ports
+			,cuc520s-16u-4fxo-w-k9(602)             -- UC500 with support for 16 switch ports, 4 FXO ports, and Wi-Fi
+			,cuc520s-16u-2bri-k9(603)               -- UC500 with support for 16 switch ports and 2 BRI
+			,cuc520s-16u-2bri-w-k9(604)             -- UC500 with support for 16 switch ports and 2 BRI, and Wi-Fi
+			,cuc520m-32u-8fxo-k9(605)               -- UC500 with support for 32 switch ports and 8 FXO ports
+			,cuc520m-32u-8fxo-w-k9(606)                -- UC500 with support for 32 switch ports and 8 FXO ports, and Wi-Fi
+			,cuc520m-32u-4bri-k9(607)		-- UC500 with support for 32 switch ports and 4 BRI
+			,cuc520m-32u-4bri-w-k9(608)		-- UC500 with support for 32 switch ports and 4 BRI, and Wi-Fi
+			,cuc520m-48u-12fxo-k9(609)              -- UC500 with support for 48 switch ports and 12 FXO ports
+			,cuc520m-48u-12fxo-w-k9(610)		-- UC500 with support for 48 switch ports and 12 FXO ports, and Wi-Fi
+			,cuc520m-48u-6bri-k9(611)               -- UC500 with support for 48 switch ports and 6 BRI
+			,cuc520m-48u-6bri-w-k9(612)		-- UC500 with support for 48 switch ports and 6 BRI, and Wi-Fi
+			,cuc520m-48u-1t1e1-f-k9(613)            -- UC500 with support for 48 switch ports,1 T1E1 and 4 FXO ports
+			,cuc520m-48u-1t1e1-b-k9(614)            -- UC500 with support for 48 switch ports ,1 T1E1 and BRI 
+		        ,c7828-h(615)				-- MCS-7828H class of servers Starting with CCM 6.0 release
+			,c7816-i(616)				-- MCS-7816I class of servers Starting with CCM 6.0 release
+			,c7828-i(617)				-- MCS-7828I class of servers Starting with CCM 6.0 release	
+			,c7330-oe-k9(622)			-- Cisco Optimization Engine Model OE-7330-K9.
+			,c7350-oe-k9(623)			-- Cisco Optimization Engine Model OE-7350-K9.
+                        ,cvgd-1t3(644)                          -- VGD Voice Gateway with 1xCT3 supporting CCM and MGCP 
+                        ,ws-cbs3130g-s(648)                     -- Cisco Catalyst Blade Switch 3130G for Dell %DNP until Dec 2007, contact alexv
+                        ,ws-cbs3130x-s(649)                     -- Cisco Catalyst Blade Switch 3130X for Dell %DNP until Dec 2007, contact alexv
+
+                        
+
+                   }
                    ACCESS  read-only
                    STATUS  deprecated
                    DESCRIPTION
@@ -1175,6 +1218,7 @@
 			,cpu-7200-nse1(1186)		-- CPU card for use in the 7200 series, Network Service Engine 1.  Contains a PXF (Parallel Express Forwarding) processor to accelerate layer 3-7 IP features.
 			,cpu-as5850(1187)			-- CPU card for AS5850 
 			,cpu-7200-npe400(1188)		-- Network processing engine (CPU card) for 7200 series 
+			,cpu-rsp4-plus(1190)		-- RSP4+ is ECC capable RSP4, ie.  With a Tiger5 asic
 			,cpu-7150(1191)			-- CPU for the 7150 series
 			,cpu-7401-nse(1193)		-- Cisco 7401 Network Processing Engine 
 			,cpu-gsr-prp1(1196)		-- GSR Performance Route Processor 1 
@@ -1190,8 +1234,13 @@
 			,cpu-as5400-hpx(1217)		-- CPU card for AS5400HPX
 			,cpu-vg224(1224)		-- Line Side Analog Gateway with 24FXS Analog ports
 			,cpu-gsr-prp2(1228)		-- GSR Performance Route Processor 2
+			,cpu-7200-npeg2(1238)			-- Network Processing Engine 2 (CPU card) for 7200VXR series
 			,cpu-c2801-2fe(1239)			-- 2801 Motherboard with two integrated fast ethernets
 			,cpu-7201-npeg2(1243)			-- Network Processing Engine 2 (CPU card) for 7201 series
+			,cpu-traffic(1250)			-- NME-APA SCE Entity Traffic Processor
+
+
+
 			,acc-24fe-tx(1307)		-- c10720 24 ports fast ethernet Tx access card
 			,acc-24fe-fx-mm(1308)		-- c10720 24 ports fast ethernet FX MM (2km) access card
 			,acc-24fe-fx-sm(1309)		-- c10720 24 ports fast ethernet FX SM (15km) access card
@@ -1321,6 +1370,7 @@
 			,as5850-24e1(1754)      -- Feature Card with 24 port Channelized E1 for the AS5850 platform
 
 
+
 			,gsr-16oc3-chstsds3-sm-ir-sc(1900)	--  GSR 16 port OC3 channelized to STS-3c/STM-1 or DS-3; Single Mode fiber, Intermediate Reach, SC connector line card
 			,gsr-16oc3-chstsds3-sm-lr-sc(1901)	--  GSR 16 port OC3 channelized to STS-3c/STM-1 or DS-3; Single Mode fiber, Long Reach, SC connector line card
 			,gsr-2oc3-chds1(1905)	-- GSR platform card, 2 ports of OC3 (Sonet/SDH); each port is channelized to DS1 level
@@ -1341,6 +1391,7 @@
 			,copper-12e3(1922)		-- GSR 12 port copper E3 interface line card
 			,gsr-e48-pos-16oc3-sm-ir-lc(1926)       -- GSR, Edge Engine 48, 16 port (concatenated) OC3 POS, single mode, intermediate reach, LC connector
 			,gsr-16oc3-chstsds3-sm-ir-lc(1927)      -- GSR 16 port OC3 channelized to STS-3c/STM-1 or DS-3; single mode fiber, intermediate reach, LC connector
+			,gsr-oc12-chds1-sm-ir-sc(1928)		-- GSR 1 port OC12 channelized to DS1, single-mode intermediate reach line card with SC connector
 			,gsr-sfc6(1929)			-- GSR 12406 Switch Fabric Card
 			,gsr-csc6(1930)			-- GSR 12406 Clock Scheduler Card
 			,gsr-alarm6(1931)		-- GSR 12406 Alarm Module
@@ -1400,6 +1451,7 @@
 
 			,c7200-vsa(2155)			-- C7200 VPN Services Adapter
 
+			,gsr-1p10ge(2200)			-- One Port 10 Gigabit Ethernet Card for the 12000 series routers
 			,gsr-e48-pos-oc48-sm-ir-sc(2201)	-- GSR, Edge Engine, OC48 POS, Single Mode, Intermediate Reach, SC Connector
 			,gsr-e-oc192-sm-lr-sc(2203)		-- GSR Edge 1 Port Packet over Sonet OC-192, Single Mode, Long Reach, SC Connector card
 			,gsr-e-oc192-sm-vsr-sc(2204)		-- GSR Edge 1 Port Packet over Sonet OC-192, Single Mode, Very Short Reach, SC Connector card
@@ -1448,6 +1500,8 @@
 			,ssrp-e48-2oc12-sm-xr(3009)		-- GSR 2 port SONET based SRP OC-12c/STM-4 Single mode Extented reach line card 
 			,ssrp-e48-1oc12-sm-ir(3010)		-- GSR 1 port SONET based SRP OC-12c/STM-4 Single mode Intermediate reach line card 
 			,ssrp-e48-1oc12-sm-xr(3011)		-- GSR 1 port SONET based SRP OC-12c/STM-4 Single mode Extented reach line card 
+			,gsr-csc12816(3012)			-- GSR 12816 Clock Scheduler Card 
+			,gsr-sfc12816(3015)			-- GSR 12816 Switch Fabric Card 
 			,gsr-sip-600(3016)			-- ISE 10G SPA Interface Card
 			,gsr-6ds3e3-smb(3028)			-- GSR 6 Port DS3/E3 Clear Channel, SMB Connector line card
 			,gsr-6ds3e3ct3-smb(3029)		-- GSR 6 Port DS3/E3 Clear channel and/or Channelized to DS1/E1, SMB Connector line card 
@@ -1510,6 +1564,10 @@
 			,cat6k-ws-6340-sup(4082)	-- ME6340 Supervisor
 			,cat6k-ws-6340-lca(4083)	-- ME6340 48 port ADSL 2/2+ Annex A Module
 			,cat6k-ws-6340-lcb(4084)	-- ME6340 48 port ADSL 2/2+ Annex B Module
+			,cat6k-mec-6524gs-8s(4085)	-- Cisco ME 6524 module with 24 port SFP and 8 SFP uplinks
+			,cat6k-mec-6524gt-8s(4086)	-- Cisco ME 6524 module with 24 port 10/100/1000BaseT and 8 SFP uplinks
+			,cat6k-mec-6524-msfc2a(4089)	-- Catalyst 6524 and 6724 Multilevel Switching Feature Card Version 2
+			,cat6k-mec-6524-pfc3c(4090)	-- Catalyst 6524 and 6724 Policy feature card 3C
 			,cat6k-wsx-6196-rj21(4091)	-- Catalyst 6500 96 port 10/100BaseTX (RJ-21) module
 			,cat6k-wsx-6148-fe-sfp(4092)	-- Catalyst 6500 48 port 100Base-X SFP module
 			,cat6k-wsx-6148a-getx(4093)	-- Catalyst 6500 48 port 10/100/1000BaseTX (RJ-45) module
@@ -1558,7 +1616,7 @@
 			,spa-10p-ge(4211)			--  10-port Gigabit Ethernet Shared Port Adapter (SPA-10X1GE)
 			,spa-1p-10ge-xfp(4212)			--  1-port 10 Gigabit Ethernet Shared Port Adapter XFP based (SPA-1XTENGE-XFP)
 			,spa-5p-ge(4213)			--  5-port Gigabit Ethernet Shared Port Adapter (SPA-5X1GE)
-			,spa-2p-t3e3-serial(4217)		--  2-port T3/E3 Serial Shared Port Adapter (SPA-2XT3/E3)
+                        ,spa-2p-t3e3-serial(4217)		--  2-port T3/E3 Serial Shared Port Adapter (SPA-2XT3/E3)
 			,spa-4p-t3e3-serial(4218)		--  4-port T3/E3 Serial Shared Port Adapter (SPA-4XT3/E3)
 			,spa-2p-ge(4219)			--  2-port Gigabit Ethernet Shared Port Adapter (SPA-2X1GE)
 			,hwic-dot11-bg(4221)			--  802.11 b/g Access Point until Jul 2004, contact pgiriraj
@@ -1595,11 +1653,10 @@
 
 
 
-
 			,ce-scsi-2636(4357)			-- SCSI daughter card used by Content Engine Modules for 26xx and 36xx series platforms
 			,ce-ide-2636(4358)			-- IDE  daughter card used by Content Engine Modules for 26xx and 36xx series platforms
 		
-			
+			,rsp720MsfcNaboo(4405)		-- RSP720 Multilevel Switching Feature Card 
 			,wic-t1-csudsu-v2(4450)			--  Wan Interface Card with 1 Fractional T1 CSU/DSU port, version 2
 			,spa-8xfe-tx(4451)			--  8 Port Fast Ethernet Shared Port Adapter
 			,crs14-oc192-ir-plim(4460)			-- Cisco CRS-1 Series 4xOC192/STM64 POS/DPT Interface Module/IR
@@ -1618,6 +1675,8 @@
 			,cat6k-wsx-6708-10ge(4501)		-- Catalyst 6500 8 port 10 GE with DFC
 			,cat6k-wsf-6700-dfc3c(4503)		-- Catalyst 6500 Distributed Forwarding Card 3C
 			,cat6k-wsf-6700-dfc3cxl(4504)		-- Catalyst 6500 Distributed Forwarding Card 3C XL
+                        ,cat6k-ws-sup32p-ge(4516)               -- Catalyst 6500 Supervisor Module with PISA and 8 Gigabit Ethernet SFP uplink ports
+                        ,cat6k-ws-sup32p-10ge(4517)             -- Catalyst 6500 Supervisor Module with PISA and 2 10-GE uplink ports
 			,hwic-4shdsl(4551)			-- HWIC G.SHDSL (4 port) with annex F&G and IMA.
 			,hwic-2shdsl(4552)			-- HWIC G.SHDSL (2 port) with annex F&G	
 			,nm-rvpn-sterra(4553)			-- Russia S-Terra VPN Module
@@ -1654,7 +1713,19 @@
                         ,dwdm-5898-sfp(4626)                    -- MOD,XCVR,2.5Gb/s,1558.98nm,SM,LR2,3.3V,0 to 70C,LC,SFP,DIGITAL DIAGS FIM32160/201W23
                         ,dwdm-5979-sfp(4627)			-- MOD,XCVR,2.5Gb/s,1559.79nm,SM,LR2,3.3V,0 to 70C,LC,SFP,DIGITAL DIAGS FIM32160/201W22
                         ,dwdm-6061-sfp(4628)                    -- MOD,XCVR,2.5Gb/s,1560.61nm,SM,LR2,3.3V,0 to 70C,LC,SFP,DIGITAL DIAGS FIM32160/201W21
-		}
+			,nme-apa-link(4634)			-- Service Classification Element Link between Network side and Subscriber side for NME-APA.
+                        ,pwr-n7k-ac-7500w(4639)                 -- N7K-AC-7.5KW,  AC 7.5KW powersupply for Nexus7000 N7K
+                        ,pwr-n7k-ac-6000w(4640)                 -- N7K-AC-6.0KW,  AC 6000W powersupply for Nexus7000 N7K
+
+			,nme-apa-m(4705)			-- Integrated Service Engine for Application Performance Assurance.
+                        ,mds-ds-x9248-fc-48gbps(4706)           -- 48 port 1/2/4/8G 48Gbps FibreChannel linecard A-Oahu PID:DS-X9248-48
+                        ,mds-ds-x9248-fc-96gbps(4707)           -- 48 port 1/2/4/8G 96Gbps FibreChannel linecard TwinPeaks PID:DS-X9248-96
+                        ,mds-ds-x9316-ssm(4708)                 -- Lanai PID=DS-X9316-SSM, 16 GE port Storage Service Module 
+                        ,c7600-ssc-400(4709)                    -- 2-subslot Services SPA Carrier-400
+                        ,ws-ssc-600(4710)                       -- 2-subslot Services SPA Carrier-600
+                        ,mds-ds-13slt-fab2(4716)                -- Cisco MDS 9513 Fabric2 (evia2)DS-13SLT-FAB2
+
+			}
                    ACCESS  read-only
                    STATUS  deprecated
                    DESCRIPTION

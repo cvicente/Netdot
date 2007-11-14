@@ -1,14 +1,14 @@
 HP-USER-AUTH DEFINITIONS ::= BEGIN
 
 IMPORTS
-    MODULE-IDENTITY, OBJECT-TYPE, Counter32, 
+    MODULE-IDENTITY, OBJECT-TYPE, Integer32,
     Unsigned32, IpAddress
         FROM SNMPv2-SMI
-    MacAddress, TEXTUAL-CONVENTION, TruthValue, RowStatus
+    MacAddress, TruthValue
         FROM SNMPv2-TC
     MODULE-COMPLIANCE, OBJECT-GROUP
         FROM SNMPv2-CONF
-    VlanId
+    VlanIndex
         FROM Q-BRIDGE-MIB
     SnmpAdminString
         FROM SNMP-FRAMEWORK-MIB
@@ -19,7 +19,7 @@ IMPORTS
     ;
 
 hpicfUsrAuthMIB MODULE-IDENTITY
-        LAST-UPDATED "200305231020Z"
+        LAST-UPDATED "200706280000Z" -- Jun 28, 2007
         ORGANIZATION "Hewlett-Packard Company
                       ProCurve Networking Business"
         CONTACT-INFO "Hewlett-Packard Company
@@ -31,6 +31,12 @@ hpicfUsrAuthMIB MODULE-IDENTITY
                       by this MIB are:
                       'WebAuth' - Web-based login authentication
                       'MacAuth' - MAC addresss-based authentication" 
+        REVISION     "200706280000Z" -- Jun 28, 2007
+        DESCRIPTION  "Modified hpicfUsrAuthMacAuthAddrFormat object."
+
+        REVISION     "200508050000Z" -- Aug 5, 2005
+        DESCRIPTION  "Added import objects."
+
         REVISION     "200305231020Z" -- May 23, 2003
         DESCRIPTION  "Initial revision."
         ::= { hpSwitch 19 }
@@ -89,21 +95,33 @@ hpicfUsrAuthMacAuthAddrFormat OBJECT-TYPE
                     noDelimiter(1),
                     singleDash(2),
                     multiDash(3),
-                    multiColon(4)                    
+                    multiColon(4),                    
+                    noDelimiterUppercase(5),
+                    singleDashUppercase(6),
+                    multiDashUppercase(7),
+                    multiColonUppercase(8)
                 } 
     MAX-ACCESS  read-write
     STATUS      current 
     DESCRIPTION "For all ports running with MAC authentication
                 enabled: Specifies the MAC address format to use
                 in the RADIUS access-request, as follows:
-                'noDelimiter'  - Sends MAC address in
-                                 AABBCCDDEEFF format
-                'singleDash'   - Sends MAC address in 
-                                 AABBCC-DDEEFF format
-                'multiDash'    - Sends MAC address in 
-                                 AA-BB-CC-DD-EE-FF format
-                'multiColon'   - Sends MAC address in 
-                                 AA:BB:CC:DD:EE:FF format
+                'noDelimiter'           - Sends MAC address in
+                                          aabbccddeeff format
+                'singleDash'            - Sends MAC address in 
+                                          aabbcc-ddeeff format
+                'multiDash'             - Sends MAC address in 
+                                          aa-bb-cc-dd-ee-ff format
+                'multiColon'            - Sends MAC address in 
+                                          aa:bb:cc:dd:ee:ff format
+                'noDelimiterUppercase'  - Sends MAC address in
+                                          AABBCCDDEEFF format
+                'singleDashUppercase'   - Sends MAC address in 
+                                          AABBCC-DDEEFF format
+                'multiDashUppercase'    - Sends MAC address in 
+                                          AA-BB-CC-DD-EE-FF format
+                'multiColonUppercase'   - Sends MAC address in 
+                                          AA:BB:CC:DD:EE:FF format
                 The default value is noDelimiter(1)."
     ::=  { hpicfUsrAuthSystem 4 }
 
@@ -635,7 +653,7 @@ hpicfUsrAuthWebAuthSessionUnauthVid OBJECT-TYPE
 -- ---------------------------------------------------------- --
 
 hpicfUsrAuthMacAuthSessionStatsTable OBJECT-TYPE
-    SYNTAX      SEQUENCE OF HpicfUsrAuthWebAuthSessionStatsEntry
+    SYNTAX      SEQUENCE OF HpicfUsrAuthMacAuthSessionStatsEntry
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION "A table that contains session statistic objects
@@ -650,7 +668,7 @@ hpicfUsrAuthMacAuthSessionStatsEntry OBJECT-TYPE
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION "The session statistics information for a port with
-                Web-based authentication enabled. This shows
+                Mac-based authentication enabled. This shows
                 the current values being collected for active sessions."
     INDEX { hpicfUsrAuthPortNumber,
             hpicfUsrAuthMacAuthSessionMacAddr}

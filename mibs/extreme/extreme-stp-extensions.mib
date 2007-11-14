@@ -5,8 +5,9 @@
 -- *	  Extreme Networks
 -- *      http://www.extremenetworks.com
 -- *
+-- * extracted from $Extreme_Id: extreme.mib,v 1.24.6.35 2006/01/09 15:15:18 build-sc Exp $
+-- *
 -- */
-
 -- ===========================================================================
 
 EXTREME-STP-EXTENSIONS-MIB DEFINITIONS ::= BEGIN
@@ -19,7 +20,9 @@ IMPORTS
 	Counter32, TimeTicks	FROM SNMPv2-SMI
 	RowStatus               FROM SNMPv2-TC
 	extremeVlanIfIndex	FROM EXTREME-VLAN-MIB
-	extremeAgent, PortList	FROM EXTREME-BASE-MIB;
+	extremeAgent, PortList	FROM EXTREME-BASE-MIB
+	NOTIFICATION-TYPE	FROM SNMPv2-SMI
+        dot1dStpPort            FROM BRIDGE-MIB;
 
         extremeStp MODULE-IDENTITY
                 LAST-UPDATED "0007240000Z"
@@ -451,5 +454,23 @@ IMPORTS
 	DESCRIPTION
 	"The status of this entry, as per standard RowStatus conventions."
 	::= { extremeStpVlanPortEntry 2 }
+
+--
+-- TRAP
+--
+         extremeStpTraps OBJECT IDENTIFIER
+              ::= { extremeStp 4 }
+
+	 extremeStpTrapsPrefix     OBJECT IDENTIFIER
+          ::= { extremeStpTraps 0 }
+
+        extremeStpEdgePortBlocked NOTIFICATION-TYPE 
+           OBJECTS { dot1dStpPort  }
+           STATUS current
+           DESCRIPTION
+                  "The extremeStpEdgePortBlocked notification is  
+                   generated when the STP's edge port is
+                   Blocked  due to the misconfiguration"
+           ::= { extremeStpTrapsPrefix 1 }
 
 END

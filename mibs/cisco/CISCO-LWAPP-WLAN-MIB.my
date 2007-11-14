@@ -1,262 +1,500 @@
 -- *******************************************************************
--- CISCO-LWAPP-WLAN-MIB.my 
+-- CISCO-LWAPP-WLAN-MIB.my
+-- This MIB helps to manage the WLANs on the controller
 -- January 2006, Devesh Pujari, Prasanna Viswakumar
---
--- Copyright (c) 2005-2006 by Cisco Systems, Inc.
+--   
+-- Copyright (c) 2006, 2007 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *******************************************************************
---
+
 CISCO-LWAPP-WLAN-MIB DEFINITIONS ::= BEGIN
 
-IMPORTS 
-        MODULE-IDENTITY, 
-        OBJECT-TYPE,
-        Unsigned32
-                FROM SNMPv2-SMI
-        MODULE-COMPLIANCE, 
-        OBJECT-GROUP
-                FROM SNMPv2-CONF
-        RowStatus 
-                FROM SNMPv2-TC 
-        ciscoMgmt
-                FROM CISCO-SMI;
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Unsigned32
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    TruthValue,
+    RowStatus,
+    DisplayString,
+    StorageType
+        FROM SNMPv2-TC
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
 
 
---********************************************************************
---*  MODULE IDENTITY
---********************************************************************
+ciscoLwappWlanMIB MODULE-IDENTITY
+    LAST-UPDATED    "2007020300Z"
+    ORGANIZATION    "Cisco Systems Inc."
+    CONTACT-INFO
+            "Cisco Systems,
+            Customer Service
+            Postal: 170 West Tasman Drive
+            San Jose, CA  95134
+            USA
+            Tel: +1 800 553-NETS
 
-ciscoLwappWlanMIB      MODULE-IDENTITY
-        LAST-UPDATED   "200603210000Z"
-        ORGANIZATION   "Cisco Systems Inc."
-        CONTACT-INFO  
-               "        Cisco Systems,
-                        Customer Service
-                Postal: 170 West Tasman Drive
-                        San Jose, CA  95134
-                        USA
-                   Tel: +1 800 553-NETS
-      
-                 Email: cs-snmp@cisco.com"
+            Email: cs-wnbu-snmp@cisco.com"
+    DESCRIPTION
+        "This MIB is intended to be implemented on all those
+        devices operating as Central Controllers (CC)  that
+        terminate the Light Weight Access Point Protocol
+        tunnel from Cisco Light-weight LWAPP Access Points.
 
-        DESCRIPTION             
-                "This MIB is intended to be implemented on all those
-                devices operating as Central Controllers (CC)  that
-                terminate the Light Weight Access Point Protocol
-                tunnel from Cisco Light-weight LWAPP Access Points.
+        This MIB helps to manage the WLANs on the controller.
 
-                This MIB helps to manage the WLANs on the controller.
-
-                The relationship between CC and the LWAPP APs
-                can be depicted as follows.
+        The relationship between CC and the LWAPP APs
+        can be depicted as follows:
 
         +......+     +......+     +......+           +......+
         +      +     +      +     +      +           +      +
         +  CC  +     +  CC  +     +  CC  +           +  CC  +
         +      +     +      +     +      +           +      +
         +......+     +......+     +......+           +......+
-          ..            .             .                 .
-          ..            .             .                 .
-         .  .            .             .                 .
+        ..            .             .                 .
+        ..            .             .                 .
+        .  .            .             .                 .
         .    .            .             .                 .
-       .      .            .             .                 .
-      .        .            .             .                 .
-   +......+ +......+     +......+      +......+          +......+
-   +      + +      +     +      +      +      +          +      +
-   +  AP  + +  AP  +     +  AP  +      +  AP  +          +  AP  +
-   +      + +      +     +      +      +      +          +      +
-   +......+ +......+     +......+      +......+          +......+
-              .              .             .                 .
-            .  .              .             .                 .
-           .    .              .             .                 .
-          .      .              .             .                 .
-         .        .              .             .                 .
-      +......+ +......+     +......+      +......+          +......+
-      +      + +      +     +      +      +      +          +      +
-      +  MN  + +  MN  +     +  MN  +      +  MN  +          +  MN  +
-      +      + +      +     +      +      +      +          +      +
-      +......+ +......+     +......+      +......+          +......+
+        .      .            .             .                 .
+        .        .            .             .                 .
+        +......+ +......+     +......+      +......+          +......+
+        +      + +      +     +      +      +      +          +      +
+        +  AP  + +  AP  +     +  AP  +      +  AP  +          +  AP  +
+        +      + +      +     +      +      +      +          +      +
+        +......+ +......+     +......+      +......+          +......+
+        .              .             .                 .
+        .  .              .             .                 .
+        .    .              .             .                 .
+        .      .              .             .                 .
+        .        .              .             .                 .
+        +......+ +......+     +......+      +......+          +......+
+        +      + +      +     +      +      +      +          +      +
+        +  MN  + +  MN  +     +  MN  +      +  MN  +          +  MN  +
+        +      + +      +     +      +      +      +          +      +
+        +......+ +......+     +......+      +......+          +......+
 
-                The LWAPP tunnel exists between the controller and
-                the APs.  The MNs communicate with the APs through
-                the protocol defined by the 802.11 standard.
+        The LWAPP tunnel exists between the controller and
+        the APs.  The MNs communicate with the APs through
+        the protocol defined by the 802.11 standard.
 
-                LWAPP APs, upon bootup, discover and join one of the
-                controllers and the controller pushes the configuration,
-                that includes the WLAN parameters, to the LWAPP APs.
-                The APs then encapsulate all the 802.11 frames from
-                wireless clients inside LWAPP frames and forward
-                the LWAPP frames to the controller.
-               
-                                   GLOSSARY
+        LWAPP APs, upon bootup, discover and join one of the
+        controllers and the controller pushes the configuration,
+        that includes the WLAN parameters, to the LWAPP APs.
+        The APs then encapsulate all the 802.11 frames from
+        wireless clients inside LWAPP frames and forward
+        the LWAPP frames to the controller.
 
-                Access Point ( AP )
+                           GLOSSARY
 
-                An entity that contains an 802.11 medium access
-                control ( MAC ) and physical layer ( PHY ) interface
-                and provides access to the distribution services via
-                the wireless medium for associated clients.  
+        Access Point ( AP )
 
-                LWAPP APs encapsulate all the 802.11 frames in
-                LWAPP frames and sends it to the controller to which
-                it is logically connected to.
+        An entity that contains an 802.11 medium access
+        control ( MAC ) and physical layer ( PHY ) interface
+        and provides access to the distribution services via
+        the wireless medium for associated clients.  
 
-                Central Controller ( CC )
+        LWAPP APs encapsulate all the 802.11 frames in
+        LWAPP frames and sends it to the controller to which
+        it is logically connected to.
 
-                The central entity that terminates the LWAPP protocol
-                tunnel from the LWAPP APs.  Throughout this MIB,
-                this entity also referred to as 'controller'.
+        Central Controller ( CC )
 
-                Light Weight Access Point Protocol ( LWAPP ) 
+        The central entity that terminates the LWAPP protocol
+        tunnel from the LWAPP APs.  Throughout this MIB,
+        this entity also referred to as 'controller'.
 
-                This is a generic protocol that defines the
-                communication between the Access Points and the
-                controllers.
+        Light Weight Access Point Protocol ( LWAPP ) 
 
-                Mobile Node ( MN )
+        This is a generic protocol that defines the
+        communication between the Access Points and the
+        controllers.
 
-                A roaming 802.11 wireless device in a wireless
-                network associated with an access point. 
- 
-                REFERENCE
- 
-                [1] Wireless LAN Medium Access Control ( MAC ) and
-                Physical Layer ( PHY ) Specifications.
+        Mobile Node ( MN )
 
-                [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
-                Weight Access Point Protocol "
-        
-        REVISION      "200603210000Z"
-        DESCRIPTION
-                "Initial version of this MIB module. "
-        ::= { ciscoMgmt 512 }
+        A roaming 802.11 wireless device in a wireless
+        network associated with an access point. 
 
-ciscoLwappWlanMIBNotifs  OBJECT IDENTIFIER ::= { ciscoLwappWlanMIB 0 }
-ciscoLwappWlanMIBObjects OBJECT IDENTIFIER ::= { ciscoLwappWlanMIB 1 }
-ciscoLwappWlanMIBConform OBJECT IDENTIFIER ::= { ciscoLwappWlanMIB 2 }
+        Access Control List ( ACL )
 
-ciscoLwappWlanConfig OBJECT IDENTIFIER  
-        ::= { ciscoLwappWlanMIBObjects 1 }
+        A list of rules used to restrict the traffic reaching 
+        an interface or the CPU or WLAN.  Each ACL is an ordered 
+        set of rules and actions.  If a rule matches then the 
+        action for that rule is applied to the packet.
+
+        802.1x
+
+        The IEEE ratified standard for enforcing port based
+        access control.  This was originally intended for
+        use on wired LANs and later extended for use in
+        802.11 WLAN environments.  This defines an
+        architecture with three main parts - a supplicant
+        (Ex. an 802.11 wireless client), an authenticator
+        (the AP) and an authentication server(a Radius
+        server).  The authenticator passes messages back
+        and forth between the supplicant and the
+        authentication server to enable the supplicant
+        get authenticated to the network.
+
+        Temporal Key Integrity Protocol ( TKIP )
+
+        A security protocol defined to enhance the limitations
+        of WEP.  Message Integrity Check and per-packet keying
+        on all WEP-encrypted frames are two significant
+        enhancements provided by TKIP to WEP.
+
+
+        Cisco Key Integrity Protocol ( CKIP )
+
+        A proprietary implementation similar to TKIP.  CKIP
+        implements key permutation for protecting the CKIP
+        key against attacks.  Other features of CKIP include
+        expansion of encryption key to 16 bytes of length for
+        key protection and MIC to ensure data integrity.
+
+
+        Wired Equivalent Privacy ( WEP )
+
+        A security method defined by 802.11. WEP uses a
+        symmetric key stream cipher called RC4 to encrypt the
+        data packets.
+
+        Wi-Fi Protected Access ( WPA )
+
+        Wi-Fi Protected Access (WPA and WPA2) are security
+        systems created in response to several serious
+        weaknesses found in Wired Equivalent Privacy (WEP).
+        WPA implements the majority of the IEEE 802.11i
+        standard, and was intended as an intermediate
+        measure to take the place of WEP while 802.11i was
+        prepared. WPA is designed to work with all wireless
+        network interface cards, but not necessarily with
+        first generation wireless access points.
+
+        WLAN Layer 2 Security
+
+        WLAN layer 2 (MAC) security defines the encryption and 
+        authentication approaches such as 802.1x, WPA, 
+        WPA2, CKIP and WEP.                
+
+        REFERENCE
+
+        [1] Wireless LAN Medium Access Control ( MAC ) and
+        Physical Layer ( PHY ) Specifications.
+
+        [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
+        Weight Access Point Protocol 
+
+        [3] IEEE 802.11 - The original 1 Mbit/s and 2 Mbit/s, 
+        2.4 GHz RF and IR standard."
+    REVISION        "200702030000Z"
+    DESCRIPTION
+        "Added following objects in cLWlanConfigTable:
+        cLWlanProfileName
+        cLWlanSsid 
+        cLWlanDiagChan
+        cLWlanStorageType
+        Added following table:
+        cLWlanConfigClientTable  
+        Added the following OBJECT-GROUPs:
+        ciscoLwappWlanConfigGroupSup1 
+        ciscoLwappWlanConfigClientGroup 
+        Added ciscoLwappWlanMIBComplianceRev1 MODULE-COMPLIANCE."
+    REVISION        "200603210000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 512 }
+
+
+ciscoLwappWlanMIBNotifs  OBJECT IDENTIFIER
+    ::= { ciscoLwappWlanMIB 0 }
+
+ciscoLwappWlanMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoLwappWlanMIB 1 }
+
+ciscoLwappWlanMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoLwappWlanMIB 2 }
+
+ciscoLwappWlanConfig  OBJECT IDENTIFIER
+    ::= { ciscoLwappWlanMIBObjects 1 }
 
 -- ********************************************************************
 -- WLAN configuration
 -- ********************************************************************
 
 cLWlanConfigTable OBJECT-TYPE
-        SYNTAX     SEQUENCE OF CLWlanConfigEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "This table represents the WLAN configuration sent by
-                the controller to the LWAPP APs for their operation.
+    SYNTAX          SEQUENCE OF CLWlanConfigEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table represents the WLAN configuration sent by
+        the controller to the LWAPP APs for their operation.
 
-                LWAPP APs exchange configuration messages with the
-                controller and get the required configuration for
-                their 802.11 related operations.  As part of these
-                messages, the WLAN configuration is pushed by the
-                controller to the LWAPP APs.  
+        LWAPP APs exchange configuration messages with the
+        controller and get the required configuration for
+        their 802.11 related operations.  As part of these
+        messages, the WLAN configuration is pushed by the
+        controller to the LWAPP APs.  
 
-                This table doesn't have any dependencies on other
-                existing tables.  By defining cLWlanIndex, the
-                unique identifier for a WLAN, this table provides
-                a common index structure for use in several other
-                new tables that populate information on security
-                related attributes like authentication, encryption,
-                802.11 parameters, Quality-of-Service attributes
-                etc., that would relate to a particular WLAN.
+        This table doesn't have any dependencies on other
+        existing tables.  By defining cLWlanIndex, the
+        unique identifier for a WLAN, this table provides
+        a common index structure for use in several other
+        new tables that populate information on security
+        related attributes like authentication, encryption,
+        802.11 parameters, Quality-of-Service attributes
+        etc., that would relate to a particular WLAN.
 
-                Rows are added or deleted by explicit 
-                management actions initiated by the user from a
-                network management station through the 
-                cLWlanRowStatus object. " 
-        ::= { ciscoLwappWlanConfig 1 }
+        Rows are added or deleted by explicit 
+        management actions initiated by the user from a
+        network management station through the 
+        cLWlanRowStatus object."
+    ::= { ciscoLwappWlanConfig 1 }
 
 cLWlanConfigEntry OBJECT-TYPE
-        SYNTAX     CLWlanConfigEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "Each entry in this table represents the WLAN
-                configuration sent by the controller to LWAPP APs
-                for use during their operations. "
-        INDEX   { cLWlanIndex }
-        ::= { cLWlanConfigTable 1 }
+    SYNTAX          CLWlanConfigEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry in this table represents the WLAN
+        configuration sent by the controller to LWAPP APs
+        for use during their operations. entries can be added/deleted by explicit management actions by NMS or by user console"
+    INDEX           { cLWlanIndex } 
+    ::= { cLWlanConfigTable 1 }
 
-CLWlanConfigEntry ::= 
-        SEQUENCE {
-                cLWlanIndex      Unsigned32,  
-                cLWlanRowStatus  RowStatus
-        }
+CLWlanConfigEntry ::= SEQUENCE {
+        cLWlanIndex       Unsigned32,
+        cLWlanRowStatus   RowStatus,
+        cLWlanProfileName SnmpAdminString,
+        cLWlanSsid        OCTET STRING,
+        cLWlanDiagChan    TruthValue,
+        cLWlanStorageType StorageType
+}
 
 cLWlanIndex OBJECT-TYPE
-        SYNTAX     Unsigned32
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "This object uniquely identifies one instance of
-                a WLAN on the controller. "
-        ::= { cLWlanConfigEntry 1 }
+    SYNTAX          Unsigned32 (1..255 )
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object uniquely identifies one instance of
+        a WLAN on the controller." 
+    ::= { cLWlanConfigEntry 1 }
 
 cLWlanRowStatus OBJECT-TYPE
-        SYNTAX     RowStatus
-        MAX-ACCESS read-create
-        STATUS     current
-        DESCRIPTION
-                "This is the status column for this row and used
-                to create and delete specific instances of rows
-                in this table. "
-        ::= { cLWlanConfigEntry 2 }
-        
---********************************************************************
---*    Compliance statements  
---********************************************************************
-ciscoLwappWlanMIBCompliances OBJECT IDENTIFIER
-        ::= { ciscoLwappWlanMIBConform 1 }
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This is the status column for this row and used
+        to create and delete specific instances of rows
+        in this table.  
+        The following objects are mandatory for successful
+        creation of an entry:
+            cLWlanProfileName 
+            cLWlanSsid." 
+    ::= { cLWlanConfigEntry 2 }
 
-ciscoLwappWlanMIBGroups OBJECT IDENTIFIER
-        ::= { ciscoLwappWlanMIBConform 2 }
+cLWlanProfileName OBJECT-TYPE
+    SYNTAX          SnmpAdminString (SIZE  (1..64))
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object represents the profile name assigned
+        to this WLAN. The name assigned to a WLAN has to be 
+        unique across all the WLANs on the controller.
+        An administrator can assign a meaningful
+        name that could be later used to refer a particular 
+        WLAN on the controller.  This object cannot be 
+        modified when cLWlanRowStatus is 'active'." 
+    ::= { cLWlanConfigEntry 3 }
+
+cLWlanSsid OBJECT-TYPE
+    SYNTAX          OCTET STRING (SIZE  (1..32))
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object represents the SSID assigned to
+        this WLAN. The access points will broadcast this SSID 
+        on this WLAN. Different WLAN could use the same SSID as
+        long as the layer 2 security is different. This object 
+        cannot be modified when cLWlanRowStatus is 'active'." 
+    ::= { cLWlanConfigEntry 4 }
+
+cLWlanDiagChan OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used to configure this WLAN as a
+        diagnostic WLAN. A value of 'true'  indicates that 
+        the diagnostic WLAN is enabled.  A value of 'false' 
+        indicates that the diagnostic WLAN is disabled."
+    DEFVAL          { false } 
+    ::= { cLWlanConfigEntry 5 }
+
+cLWlanStorageType OBJECT-TYPE
+    SYNTAX          StorageType
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object represnts the storage type for this conceptual
+        row."
+    DEFVAL          { nonVolatile } 
+    ::= { cLWlanConfigEntry 6 }
+ 
+
+-- ********************************************************************
+-- WLAN Client Configuration
+-- ********************************************************************
+
+cLWlanConfigClientTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CLWlanConfigClientEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table represents the WLAN configuration for
+        the 802.11 wireless clients that are associated 
+        with the APs that have joined this controller.
+
+        The creation of a new row in cLWlanConfigTable,
+        through an explicit network management action,
+        results in creation of an entry in this table.
+        Similarly, deletion of a row in
+        cLWlanConfigTable through user action causes the
+        deletion of corresponding row in this table.
+
+        This table has an one-to-one relationship with
+        cLWlanConfigTable. There exists an entry in this 
+        table for each corresponding entry in the 
+        cLWlanConfigTable."
+    ::= { ciscoLwappWlanConfig 2 }
+
+cLWlanConfigClientEntry OBJECT-TYPE
+    SYNTAX          CLWlanConfigClientEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry represents a conceptual row in this
+        table and provides the information about the
+        clients associated on the WLAN, uniquely identified by
+        the cLWlanIndex."
+    AUGMENTS           { cLWlanConfigEntry  } 
+ 
+    ::= { cLWlanConfigClientTable 1 }
+
+CLWlanConfigClientEntry ::= SEQUENCE {
+        cLWlanClientAclName DisplayString
+}
+
+cLWlanClientAclName OBJECT-TYPE
+    SYNTAX          DisplayString (SIZE  (0..64))
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object represents the name of the ACL applied
+        to this WLAN.  If it is required to remove the ACL
+        name for a WLAN, it should be set to 'none'.
+        ACL's are applied in the following priority order - 
+        interfaces ACLs, WLAN ACLs, client ACLs." 
+    ::= { cLWlanConfigClientEntry 1 }
+ 
+
+-- ********************************************************************
+-- *    Compliance statements
+-- ********************************************************************
+ciscoLwappWlanMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoLwappWlanMIBConform 1 }
+
+ciscoLwappWlanMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoLwappWlanMIBConform 2 }
+
 
 ciscoLwappWlanMIBCompliance MODULE-COMPLIANCE
-        STATUS     current 
-        DESCRIPTION
-                "The compliance statement for the SNMP entities that
-                implement the ciscoLwappWlanMIB module. "
-        MODULE MANDATORY-GROUPS {                
-                ciscoLwappWlanConfigGroup
-             }
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for the SNMP entities that
+        implement the ciscoLwappWlanMIB module."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoLwappWlanConfigGroup }
 
-                OBJECT  cLWlanRowStatus  
-                SYNTAX  INTEGER {
-                              active(1),
-                              createAndGo(4),
-                              destroy(6)
-                        }
-                DESCRIPTION
-                        "An implementation is only required to support
-                        three of the six enumerated values of the
-                        RowStatus textual convention, specifically,
-                        'active', 'createAndGo' and 'destroy'. "
+    OBJECT          cLWlanRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "An implementation is only required to support
+        three of the six enumerated values of the
+        RowStatus textual convention, specifically,
+        'active', 'createAndGo' and 'destroy'."
+    ::= { ciscoLwappWlanMIBCompliances 1 }
 
-        ::= { ciscoLwappWlanMIBCompliances 1 }
+ciscoLwappWlanMIBComplianceRev1 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for the SNMP entities that
+        implement the ciscoLwappWlanMIB module."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoLwappWlanConfigGroupSup1,
+                        ciscoLwappWlanConfigClientGroup
+                    }
 
---********************************************************************
---*    Units of conformance  
---********************************************************************
+    OBJECT          cLWlanRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "An implementation is only required to support
+        three of the six enumerated values of the
+        RowStatus textual convention, specifically,
+        'active', 'createAndGo' and 'destroy'."
+    ::= { ciscoLwappWlanMIBCompliances 2 }
 
+-- ********************************************************************
+-- *    Units of conformance
+-- ********************************************************************
 ciscoLwappWlanConfigGroup OBJECT-GROUP
-        OBJECTS {
-                cLWlanRowStatus
-             }                
-        STATUS     current
-        DESCRIPTION
-                "This collection of objects represent the 
-                configuration of WLANs on the controller to be passed
-                to an LWAPP AP. "
-        ::= { ciscoLwappWlanMIBGroups 1 }
+    OBJECTS         { cLWlanRowStatus }
+    STATUS          deprecated
+    DESCRIPTION
+        "This collection of objects represent the
+        configuration of WLANs on the controller to be passed
+        to an LWAPP AP."
+    ::= { ciscoLwappWlanMIBGroups 1 }
 
+ciscoLwappWlanConfigGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        cLWlanRowStatus,
+                        cLWlanProfileName,
+                        cLWlanSsid,
+                        cLWlanDiagChan,
+                        cLWlanStorageType
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represent the
+        configuration of WLANs on the controller to be passed
+        to an LWAPP AP."
+    ::= { ciscoLwappWlanMIBGroups 2 }
 
---********************************************************************
---*   End of units of conformance  
---********************************************************************
+ciscoLwappWlanConfigClientGroup OBJECT-GROUP
+    OBJECTS         { cLWlanClientAclName }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represent the
+        configuration of WLANs on the controller to be passed
+        to an 8021.11 clients."
+    ::= { ciscoLwappWlanMIBGroups 3 }
 
 END
+
+
+

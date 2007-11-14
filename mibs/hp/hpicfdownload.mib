@@ -505,7 +505,7 @@
                    of the attempt to download firmware to this 
                    device."
            ::= { hpicfDownloadLogEntry 9 }
-     
+
        hpicfDownloadTftpConfig OBJECT-TYPE
         SYNTAX      INTEGER {
                         disabled(1),
@@ -515,8 +515,18 @@
         STATUS      current
         DESCRIPTION "This object allows switch to enable or disable
                      tftp. Default value is 2. Cannot be enabled if
-                     sftp is enabled." 
+                     sftp is enabled."
         ::= { hpicfDownload 5 }
+
+        hpicfDownloadTftpServerConfig OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "When this is true(1), the TFTP server is enabled
+                     and will process incoming requests. When this is 
+                     false(2), the TFTP server will be shut down and 
+                     will not accept incoming connections."
+        ::= { hpicfDownload 6 }
 
        -- conformance information
 

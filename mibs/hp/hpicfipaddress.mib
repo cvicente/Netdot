@@ -7,17 +7,20 @@ HP-ICF-IPCONFIG DEFINITIONS ::= BEGIN
             FROM SNMPv2-TC
         MODULE-COMPLIANCE, OBJECT-GROUP
             FROM SNMPv2-CONF
-        InetAddress, InetAddressType, InetAddressPrefixLength
+        InetAddress, InetAddressType, InetAddressPrefixLength,
+        InetPortNumber
             FROM INET-ADDRESS-MIB
         ifIndex
             FROM IF-MIB
         hpicfCommon
             FROM HP-ICF-OID
         ipv4InterfaceEntry
-            FROM IP-MIB;
+            FROM IP-MIB
+        tunnelInetConfigEntry
+            FROM TUNNEL-MIB;
         
     hpicfIpConfig MODULE-IDENTITY
-        LAST-UPDATED "200508081600Z"  -- August 08, 2005
+        LAST-UPDATED "200705300000Z"  -- MAY 30, 2007
         ORGANIZATION "Hewlett Packard Company,
                       ProCurve Networking Business"
         CONTACT-INFO "Hewlett Packard Company
@@ -27,6 +30,18 @@ HP-ICF-IPCONFIG DEFINITIONS ::= BEGIN
                       IP address configuration and interface configuration
                       for devices in the HP Integrated Communication Facility
                       product line."
+
+        REVISION     "200705300000Z"  -- MAY 30, 2007
+        DESCRIPTION  "Added hpicfIpv4InterfaceLocalProxyArp on to the
+                      hpicfIpv4InterfaceEntry."
+
+        REVISION     "200612030000Z"  -- DECEMBER 03, 2006
+        DESCRIPTION  "Added hpicfUdpTunnelMirrorSessionID to augment the 
+                      tunnelInetConfigEntry object in RFC4087."
+
+        REVISION     "200607070000Z"  -- JULY 07, 2006
+        DESCRIPTION  "Added hpicfUdpTunnelSrcPort to augment the 
+                      tunnelInetConfigEntry object in RFC4087."
 
         REVISION     "200508081600Z"  -- August 08, 2005
         DESCRIPTION  "Initial version."
@@ -231,7 +246,8 @@ HP-ICF-IPCONFIG DEFINITIONS ::= BEGIN
         SEQUENCE {
             hpicfIpv4InterfaceDhcpEnable         INTEGER,
             hpicfIpv4InterfaceForwarding         INTEGER,
-            hpicfIpv4InterfaceProxyArp           INTEGER
+            hpicfIpv4InterfaceProxyArp           INTEGER,
+            hpicfIpv4InterfaceLocalProxyArp      INTEGER
         }
 
 
@@ -297,9 +313,91 @@ HP-ICF-IPCONFIG DEFINITIONS ::= BEGIN
         DEFVAL { disabled }
         ::= { hpicfIpv4InterfaceEntry 3 }
 
+    hpicfIpv4InterfaceLocalProxyArp OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enabled(1),
+                        disabled(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Enables/disables local ARP proxy on the interface. If set
+                     to 'enabled', the switch will respond on ARP request
+                     for IP addresses within the local subnet.
+                     If set to disabled (the default), the switch will not
+                     respond on ARP request for IP addresses within the
+                     local subnet."
+        DEFVAL { disabled }
+        ::= { hpicfIpv4InterfaceEntry 4 }
 
 
-    -- Conformance information
+-- **********************************************************************
+-- Remote mirroring tunnel Objects
+-- **********************************************************************
+
+    hpicfUdpTunnelTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfUdpTunnelEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "This table contains per interface IPV4
+                     Udp encapsulated tunnel specific configuration
+                     information."
+        ::= { hpicfIpv4InterfaceObjects 3 }
+
+
+    hpicfUdpTunnelEntry OBJECT-TYPE
+        SYNTAX      HpicfUdpTunnelEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "An entry in the hpicfUdpTunnelEntry contains
+                     Udp encapsulated tunnel specific configuration
+                     information."
+        AUGMENTS    { tunnelInetConfigEntry }
+        ::= { hpicfUdpTunnelTable 1 }
+
+
+    HpicfUdpTunnelEntry ::=
+        SEQUENCE {
+            hpicfUdpTunnelSrcPort                InetPortNumber,
+            hpicfUdpTunnelMirrorSessionID        Integer32
+        }
+
+    hpicfUdpTunnelSrcPort OBJECT-TYPE
+        SYNTAX      InetPortNumber
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION "This variable is valid only for the remote
+                        mirroring source or destination switch.  
+                        The value will be ignored otherwise. A 
+                        value of 0 means that the UDP port
+                        is irrelevant for the tunnel type. If this
+                        value is non-zero it must be duplicated
+                        in the tunnelInetConfigID value (this
+                        will ensure that a given UDP port can
+                        only be associated once with a given 
+                        tunnelInetConfigAddressType, 
+                        tunnelInetConfigLocalAddress,
+                        tunnelInetConfigRemoteAddress,
+                        tunnelInetConfigEncapsMethod combination)."
+        DEFVAL { 0 }
+        ::= { hpicfUdpTunnelEntry 1 }
+
+    hpicfUdpTunnelMirrorSessionID OBJECT-TYPE
+        SYNTAX      Integer32(0..512)   
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION "This variable is valid only for a remote
+                        mirroring switch which interfaces with the
+                        source end of the tunnel.  
+                        The value will be ignored otherwise. A 
+                        value of 0 means that the mirror session ID
+                        is irrelevant for the tunnel type. "
+        DEFVAL { 0 }
+        ::= { hpicfUdpTunnelEntry 2 }
+
+
+-- **********************************************************************
+-- Conformance information
+-- **********************************************************************
 
     hpicfIpConfigConformance OBJECT IDENTIFIER ::= {hpicfIpConfig  2}
 
@@ -307,12 +405,13 @@ HP-ICF-IPCONFIG DEFINITIONS ::= BEGIN
     hpicfIpConfigGroups      OBJECT IDENTIFIER ::= {hpicfIpConfigConformance 2}
 
 
-
-    -- compliance statements
+-- **********************************************************************
+-- Compliance statements
+-- **********************************************************************
 
 
     hpicfIpConfigCompliance MODULE-COMPLIANCE
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "
                 A compliance statement for HP Routing switches with IP 
                 Configuration"
@@ -328,6 +427,25 @@ HP-ICF-IPCONFIG DEFINITIONS ::= BEGIN
 
         ::= { hpicfIpConfigCompliances 1 }
 
+    hpicfIpConfigCompliance2 MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "
+                A compliance statement for HP Routing switches with IP 
+                Configuration"
+        MODULE
+        MANDATORY-GROUPS {  hpicfIpAddressTableGroup,
+                            hpicfIpv4InterfaceTableGroup,
+                            hpicfSwitchIpAddressTableGroup }
+        
+        GROUP       hpicfUdpTunnelTableGroup
+        DESCRIPTION "This group is valid only for the remote
+                        mirroring source or destination switch.  
+                        The value will be ignored otherwise."
+        OBJECT      hpicfIpv4InterfaceDhcpEnable
+        MIN-ACCESS  read-write        
+        DESCRIPTION "An agent is not required to implement inform (3) 
+                     state."
+        ::= { hpicfIpConfigCompliances 2 }
 
     hpicfIpAddressTableGroup OBJECT-GROUP
         OBJECTS { 
@@ -359,5 +477,15 @@ HP-ICF-IPCONFIG DEFINITIONS ::= BEGIN
                      configuration"
         ::= { hpicfIpConfigGroups 3 }
 
-                               
+ 
+    hpicfUdpTunnelTableGroup  OBJECT-GROUP
+        OBJECTS {
+                    hpicfUdpTunnelSrcPort,
+                    hpicfUdpTunnelMirrorSessionID }
+        STATUS      current
+        DESCRIPTION "A Collection of objects that allows IPV4 interface 
+                     configuration for remote mirroring"
+        ::= { hpicfIpConfigGroups 4 }
+
+                              
 END

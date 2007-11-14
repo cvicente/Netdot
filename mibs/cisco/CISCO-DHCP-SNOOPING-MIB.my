@@ -3,7 +3,7 @@
 --
 -- March 2004, Edward Pham
 --
--- Copyright (c) 2004 by cisco Systems, Inc.
+-- Copyright (c) 2004, 2005, 2006 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -43,7 +43,7 @@ IMPORTS
         FROM CISCO-SMI;
 
 ciscoDhcpSnoopingMIB MODULE-IDENTITY
-    LAST-UPDATED "200403040000Z"
+    LAST-UPDATED "200603161600Z"
     ORGANIZATION "Cisco Systems, Inc."
     CONTACT-INFO
         "        Cisco Systems
@@ -61,6 +61,17 @@ ciscoDhcpSnoopingMIB MODULE-IDENTITY
          feature. DHCP Snooping is a security mechanism which
          uses information gleaned from DHCP packets to provide
          per-interface security capabilities."
+    REVISION    "200603161600Z"
+    DESCRIPTION
+        "Add cdsBindingsLimitGroup,
+         cdsStaticBindingsGroup,
+         cdsIfSrcGuardIpFilterGroup,
+         cdsIfSrcGuardTrafficFilterGroup,
+         cdsIfSrcGuardExtGroup 
+         and deprecate cdsIfSrcGuardGroup with cdsIfSrcGuardGroupRev1."
+    REVISION    "200510260000Z"
+    DESCRIPTION
+        "Add cdsIfFeatureConfigGroup."
     REVISION    "200403040000Z"
     DESCRIPTION
         "Initial revision of this MIB module."
@@ -176,6 +187,15 @@ cdsMatchMacAddressEnable OBJECT-TYPE
         address matching is disabled."
     ::= { cdsGlobal 6 }
 
+cdsGlobalMaxBindingsLimit  OBJECT-TYPE
+    SYNTAX        Unsigned32 
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION
+        "This object specifies the maximum number of DHCP
+        bindings allowed in the device." 
+    ::= { cdsGlobal 7 }
+
 --
 -- The DHCP Snooping Vlan Group
 --
@@ -246,7 +266,7 @@ cdsIfConfigTable OBJECT-TYPE
     STATUS       current
     DESCRIPTION
         "A table provides the mechanism to configure the trust
-        state for DHCP Snooping purpose at each physical interface
+        state for DHCP Snooping purpose at each interface
         capable of this feature. Some of the interfaces
         (but not limited to) for which this feature might be
         applicable are: ifType = ethernetCsmacd(6)." 
@@ -258,7 +278,7 @@ cdsIfConfigEntry OBJECT-TYPE
     STATUS       current
     DESCRIPTION
         "A row instance contains the configuration to enable
-        or disable trust state for DHCP Snooping at each physical
+        or disable trust state for DHCP Snooping at each 
         interface capable of this feature." 
     INDEX { ifIndex }
     ::= { cdsIfConfigTable 1 }
@@ -294,7 +314,7 @@ cdsIfRateLimitTable OBJECT-TYPE
     STATUS       current
     DESCRIPTION
         "A table provides the mechanism to configure the rate limit
-        for DHCP Snooping purpose at each physical interface capable
+        for DHCP Snooping purpose at each interface capable
         of this feature. Some of the interfaces (but not limited to)
         for which this feature might be applicable are:
         ifType = ethernetCsmacd(6)." 
@@ -306,7 +326,7 @@ cdsIfRateLimitEntry OBJECT-TYPE
     STATUS       current
     DESCRIPTION
         "A row instance contains the configuration of rate limit 
-        DHCP Snooping at each physical interface capable of this
+        DHCP Snooping at each interface capable of this
         feature." 
     INDEX { ifIndex }
     ::= { cdsIfRateLimitTable 1 }
@@ -326,6 +346,95 @@ cdsIfRateLimit OBJECT-TYPE
         applied for DHCP traffic at this interface." 
     ::= { cdsIfRateLimitEntry 1 }
 
+
+--
+-- The DHCP Snooping Interface Feature Enable Table
+--
+
+cdsIfFeatureConfigTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF CdsIfFeatureConfigEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "A table provides the mechanism to enable or disable
+        DHCP Snooping feature at each interface capable of this
+        feature. Some of the interfaces (but not limited to) for
+        which this configuration might be applicable are: 
+        ifType = ethernetCsmacd(6)." 
+    ::= { cdsInterface 3 }
+ 
+cdsIfFeatureConfigEntry OBJECT-TYPE
+    SYNTAX       CdsIfFeatureConfigEntry 
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "A row instance contains the configuration to enable
+        or disable DHCP Snooping at each interface capable of this
+        feature." 
+    INDEX { ifIndex }
+    ::= { cdsIfFeatureConfigTable 1 }
+
+CdsIfFeatureConfigEntry ::= SEQUENCE {
+    cdsIfFeatureEnable       TruthValue 
+}
+ 
+cdsIfFeatureEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object indicates whether the  DHCP Snooping feature
+         is enabled at this interface. 
+
+         If this object is set to 'true', DHCP Snooping is enabled. 
+
+         If this object is set to 'false', DHCP Snooping is disabled."
+    ::= { cdsIfFeatureConfigEntry 1 }
+
+--
+-- The DHCP Bindings limit table
+--
+
+cdsIfBindingsLimitTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF CdsIfBindingsLimitEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "A table provides the mechanism to configure the binding limit
+        for DHCP Snooping purpose at each interface capable of
+        this feature. Some of the interfaces (but not limited to)
+        for which this feature might be applicable are:
+        ifType = ethernetCsmacd(6)."
+    ::= { cdsInterface 4 }
+
+cdsIfBindingsLimitEntry OBJECT-TYPE
+    SYNTAX       CdsIfBindingsLimitEntry 
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "A row instance contains the configuration of binding limit at
+        each interface capable of this feature."
+    INDEX { ifIndex }
+    ::= { cdsIfBindingsLimitTable 1 }
+
+CdsIfBindingsLimitEntry ::= SEQUENCE {
+    cdsIfBindingsLimit       Unsigned32
+}
+
+cdsIfBindingsLimit OBJECT-TYPE
+    SYNTAX       Unsigned32
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "This object specifies the maximum number of DHCP bindings
+        allowed on this interface. This objects value will limit
+        the number of entries in cdsBindingsTable and 
+        cdsStaticBindingsTable. The sum of all instances' value of
+        cdsIfBindingsLimit in this table should be less than or equal
+        to the object value of cdsGlobalMaxBindingsLimit."
+    ::= { cdsIfBindingsLimitEntry 1 }
+
+
 --
 --   The DHCP Bindings group
 --
@@ -336,7 +445,7 @@ cdsBindingsTable OBJECT-TYPE
     STATUS       current
     DESCRIPTION
         "A table provides the DHCP bindings information learnt by
-        the device." 
+        the device."
     ::= { cdsBindings 1 }
  
 cdsBindingsEntry OBJECT-TYPE
@@ -345,7 +454,7 @@ cdsBindingsEntry OBJECT-TYPE
     STATUS       current
     DESCRIPTION
         "A row instance contains the Mac address, IP address type,
-        IP address, VLAN number, interface number, leased time and
+        IP address, VLAN number, interface number, leased time, and
         status of this instance." 
     INDEX { cdsBindingsVlan, 
             cdsBindingsMacAddress }
@@ -421,7 +530,7 @@ cdsBindingsStatus OBJECT-TYPE
     MAX-ACCESS  read-create
     STATUS      current
     DESCRIPTION
-        "This object is used to to manage the deletion of rows
+        "This object is used to manage the deletion of rows
         in this table. This object only supports active(1) and
         destroy(6) value. 
 
@@ -431,6 +540,100 @@ cdsBindingsStatus OBJECT-TYPE
         object value to destroy(6) will clear the DHCP bindings
         information represented by this row instance."
     ::= { cdsBindingsEntry 7 }
+
+--
+--  The static bindings table
+--
+
+cdsStaticBindingsTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF CdsStaticBindingsEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "A table provides the DHCP bindings information configured
+        by (local or network) management."
+    ::= { cdsBindings 2 }
+ 
+cdsStaticBindingsEntry OBJECT-TYPE
+    SYNTAX       CdsStaticBindingsEntry 
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "A row instance contains the Mac address, IP address type,
+        IP address, VLAN number, interface number, and status of
+        this instance." 
+    INDEX { cdsStaticBindingsVlan, 
+            cdsStaticBindingsMacAddress }
+    ::= { cdsStaticBindingsTable 1 }
+
+CdsStaticBindingsEntry ::= SEQUENCE {
+    cdsStaticBindingsVlan            VlanIndex,
+    cdsStaticBindingsMacAddress      MacAddress, 
+    cdsStaticBindingsAddrType        InetAddressType,
+    cdsStaticBindingsIpAddress       InetAddress,
+    cdsStaticBindingsInterface       InterfaceIndex,
+    cdsStaticBindingsStatus          RowStatus
+}
+ 
+cdsStaticBindingsVlan OBJECT-TYPE
+    SYNTAX      VlanIndex
+    MAX-ACCESS  not-accessible 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the VLAN to which a DHCP client host
+         belongs."
+    ::= { cdsStaticBindingsEntry 1 }
+
+cdsStaticBindingsMacAddress OBJECT-TYPE
+    SYNTAX      MacAddress 
+    MAX-ACCESS  not-accessible 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the MAC address of a DHCP client
+         host." 
+    ::= { cdsStaticBindingsEntry 2 }
+
+cdsStaticBindingsAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the type of IP address denoted
+        in cdsStaticBindingsIpAddress object." 
+    ::= { cdsStaticBindingsEntry 3 }
+
+cdsStaticBindingsIpAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the allocated IP address of
+        a DHCP client host."
+    ::= { cdsStaticBindingsEntry 4 }
+
+cdsStaticBindingsInterface OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the ifIndex value of the interface
+        where a DHCP client host connects to."
+    ::= { cdsStaticBindingsEntry 5 }
+
+cdsStaticBindingsStatus OBJECT-TYPE
+    SYNTAX      RowStatus 
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object is used to manage the creation and deletion
+        of rows in this table. An entry can be created by setting
+        the instance value of this object to 'createAndGo', and
+        deleted by setting the instance value of this object to
+        'destroy'. The value of cdsStaticBindingsAddrType,
+        cdsStaticBindingsIpAddress, cdsStaticBindingsInterface 
+        object can be modified when the value of this RowStatus
+        object is 'active'." 
+    ::= { cdsStaticBindingsEntry 6 }
 
 --
 -- The DHCP Snooping Statistics group
@@ -493,19 +696,21 @@ cdsIfSrcGuardConfigEntry OBJECT-TYPE
     STATUS       current
     DESCRIPTION
         "A row instance contains the configuration to enable
-        or disable IP Source Guard at each physical interface
-        capable of this feature." 
+        or disable IP Source Guard as well as the configuration
+        of the filter type at each physical interface capable
+        of IP Source Guard feature."
     INDEX { ifIndex }
     ::= { cdsIfSrcGuardConfigTable 1 }
 
 CdsIfSrcGuardConfigEntry ::= SEQUENCE {
-    cdsIfSrcGuardEnable       TruthValue 
+    cdsIfSrcGuardEnable       TruthValue, 
+    cdsIfSrcGuardFilterType   INTEGER
 }
  
 cdsIfSrcGuardEnable OBJECT-TYPE
     SYNTAX      TruthValue
     MAX-ACCESS  read-write
-    STATUS      current
+    STATUS      deprecated 
     DESCRIPTION
         "This object indicates whether IP Source Guard is enabled
         at this interface. 
@@ -516,9 +721,36 @@ cdsIfSrcGuardEnable OBJECT-TYPE
         DHCP Snooping. Otherwise, it is denied.
 
         If this object is set to 'false', IP Source Guard is
-        disabled." 
+        disabled.
+
+        This object is deprecated and superceded by
+        cdsIfSrcGuardFilterType object." 
     ::= { cdsIfSrcGuardConfigEntry 1 }
 
+cdsIfSrcGuardFilterType OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                    disable(1),
+                    ip(2), 
+                    ipMac(3) 
+                } 
+    MAX-ACCESS  read-write 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the traffic filter type applied
+        at this interface.
+
+        'disable' indicates that Source Guard feature is disabled.
+
+        'ip' indicates that Source Guard feature is enabled and 
+        only applied to IP traffic.
+
+        'ipMac' indicates that Source Guard feature is enabled and
+        applied to both IP and MAC traffic."
+    ::= { cdsIfSrcGuardConfigEntry 2 }
+
+--
+--  cdsIfSrcGuardAddrTable
+--
 
 cdsIfSrcGuardAddrTable OBJECT-TYPE
     SYNTAX       SEQUENCE OF CdsIfSrcGuardAddrEntry
@@ -544,9 +776,15 @@ cdsIfSrcGuardAddrEntry OBJECT-TYPE
     ::= { cdsIfSrcGuardAddrTable 1 }
 
 CdsIfSrcGuardAddrEntry ::= SEQUENCE {
-    cdsIfSrcGuardIndex        Unsigned32,
-    cdsIfSrcGuardAddrType     InetAddressType,
-    cdsIfSrcGuardAddress      InetAddress 
+    cdsIfSrcGuardIndex           Unsigned32,
+    cdsIfSrcGuardAddrType        InetAddressType,
+    cdsIfSrcGuardAddress         InetAddress,
+    cdsIfSrcGuardIpFilterAction  INTEGER,
+    cdsIfSrcGuardFilterMode      INTEGER,
+    cdsIfSrcGuardMacAddress      MacAddress,
+    cdsIfSrcGuardMacFilterAction INTEGER,
+    cdsIfSrcGuardVlansLow        OCTET STRING,
+    cdsIfSrcGuardVlansHigh       OCTET STRING        
 }
  
 cdsIfSrcGuardIndex OBJECT-TYPE
@@ -572,10 +810,141 @@ cdsIfSrcGuardAddress OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "This object indicates the IP address obtained at
-        this interface through DHCP Snooping." 
+        this interface through DHCP Snooping or statically
+        configured." 
     ::= { cdsIfSrcGuardAddrEntry 3 }
 
+cdsIfSrcGuardIpFilterAction OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                    permitIpAddress(1), 
+                    denyAllIpAddress(2) 
+                } 
+    MAX-ACCESS  read-only 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the IP Source Guard action
+        applied at this interface with respect to IP traffic.
+
+        permitIpAddress(1) indicates that IP traffic coming
+        from the IP address denoted by cdsIfSrcGuardAddress
+        object will be allowed to go through.
+
+        denyAllIpAdress(2) indicates that all IP traffic
+        coming to this interface will be dropped. The value
+        of cdsIfSrcGuardAddress object will be ignored in
+        this case."
+    ::= { cdsIfSrcGuardAddrEntry 4 }
+
+cdsIfSrcGuardFilterMode OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                    active(1), 
+                    inactiveTrustPort(2),
+                    inactiveNoSnoopingVlan(3) 
+                } 
+    MAX-ACCESS  read-only 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the Source Guard filter mode at
+        this interface.
+
+        active(1) indicates that the Source Guard feature is
+        active at this interface.
+
+        inactiveTrustPort(2) indicates that the Source Guard
+        feature is inactive because this interface is a DHCP
+        Snooping trust interface.
+
+        inactiveNoSnoopingVlan(3) indicates that the Source
+        Guard feature is inactive because this interface
+        does not have a VLAN which has DHCP Snooping enabled." 
+    ::= { cdsIfSrcGuardAddrEntry 5 }
+
+cdsIfSrcGuardMacAddress OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-only 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the MAC address for Source Guard
+        purpose."  
+    ::= { cdsIfSrcGuardAddrEntry 6 }
+
+cdsIfSrcGuardMacFilterAction OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                    allowMacAddress(1), 
+                    denyAllMacAddresses(2),
+                    permitAllMacAddresses(3) 
+                } 
+    MAX-ACCESS  read-only 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the Source Guard action
+        applied at this interface with respect to MAC traffic.
+
+        allowMacAddress(1) indicates that MAC traffic coming
+        from the MAC address denoted by cdsIfSrcGuardMacAddress
+        object will be allowed to go through.
+
+        denyAllMacAddresses(2) indicates that all MAC traffic
+        coming to this interface will be dropped. The value
+        of cdsIfSrcGuardMacAddress object will be ignored in
+        this case.
+
+        permitAllMacAddresses(3) indicates that all MAC traffic
+        coming to this interface will be allowed. The value
+        of cdsIfSrcGuardMacAddress object will be ignored in
+        this case."
+    ::= { cdsIfSrcGuardAddrEntry 7 }
+
+cdsIfSrcGuardVlansLow OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE(0..256))
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "A string of octets containing one bit per VLAN for
+         VLANs with VlanIndex value of 0 to 2047. The first
+         octet corresponds to VLANs with VlanIndex values
+         of 0 through 7; the second octet to VLANs 8 through
+         15; etc.  The most significant bit of each octet
+         corresponds to the lowest value VlanIndex in that octet.
+
+         For each VLAN, if Source Guard feature is enabled then
+         the bit corresponding to that VLAN is set to '1'.
+
+         Note that if the length of this string is less than
+         256 octets, any 'missing' octets are assumed to contain
+         the value zero. A NMS may omit any zero-valued octets
+         from the end of this string in order to reduce SetPDU size,
+         and the agent may also omit zero-valued trailing octets,
+         to reduce the size of GetResponse PDUs."
+    ::= { cdsIfSrcGuardAddrEntry 8 }
+
+cdsIfSrcGuardVlansHigh OBJECT-TYPE
+    SYNTAX        OCTET STRING (SIZE(0..256))
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "A string of octets containing one bit per VLAN for
+         VLANs with VlanIndex value of 2048 to 4095. The first
+         octet corresponds to VLANs with VlanIndex values
+         of 2048 through 2055; the second octet to VLANs 2056
+         through 2063; etc.  The most significant bit of each
+         octet corresponds to the lowest value VlanIndex in that
+         octet.
+
+         For each VLAN, if Source Guard feature is enabled then
+         the bit corresponding to that VLAN is set to '1'.
+
+         Note that if the length of this string is less than
+         256 octets, any 'missing' octets are assumed to contain
+         the value zero. A NMS may omit any zero-valued octets
+         from the end of this string in order to reduce SetPDU size,
+         and the agent may also omit zero-valued trailing octets,
+         to reduce the size of GetResponse PDUs."
+    ::= { cdsIfSrcGuardAddrEntry 9 }
+
+--
 -- Conformance
+--
 
 cdsMIBCompliances
     OBJECT IDENTIFIER ::= { ciscoDhcpSnoopingMIBConformance 1 }
@@ -584,7 +953,7 @@ cdsMIBGroups
     OBJECT IDENTIFIER ::= { ciscoDhcpSnoopingMIBConformance 2 }
 
 cdsMIBCompliance MODULE-COMPLIANCE
-    STATUS  current
+    STATUS  deprecated 
     DESCRIPTION
         "The compliance statement for the CISCO-DHCP-SNOOPING-MIB"
     MODULE
@@ -634,6 +1003,99 @@ cdsMIBCompliance MODULE-COMPLIANCE
          DHCP Snooping Mac address matching."
 
     ::= { cdsMIBCompliances 1 }
+
+cdsMIBCompliance2 MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "The compliance statement for the CISCO-DHCP-SNOOPING-MIB"
+    MODULE
+    MANDATORY-GROUPS { 
+            cdsIfConfigGroup,
+            cdsBindingsGroup
+    }
+   
+    GROUP cdsGlobalEnableGroup
+    DESCRIPTION
+        "This group is mandatory only for the platform which supports
+         enabling the DHCP Snooping feature at device level."
+
+    GROUP cdsDatabaseGroup
+    DESCRIPTION
+        "This group is mandatory only for the platform which supports
+         storage of DHCP bindings information."
+
+    GROUP cdsVlanConfigGroup
+    DESCRIPTION
+        "This group is mandatory only for the platform which supports
+         controlling DHCP Snooping per VLAN."
+
+    GROUP cdsIfRateLimitGroup
+    DESCRIPTION
+        "This group is mandatory only for the platform which supports
+         DHCP Snooping rate limit per interface."
+
+    GROUP cdsStatisticsGroup
+    DESCRIPTION
+        "This group is mandatory only for the platform which supports
+         DHCP Snooping statistics information."
+
+    GROUP cdsRelayAgentInfoOptGroup
+    DESCRIPTION
+        "This group is mandatory only for the platform which supports
+         DHCP Snooping option 82 insertion information."
+
+    GROUP cdsIfSrcGuardGroupRev1
+    DESCRIPTION
+        "This group is mandatory only for the platform which supports
+         IP Source Guard."
+
+    GROUP cdsMatchMacAddressGroup
+    DESCRIPTION
+        "This group is mandatory only for the platform which supports
+         DHCP Snooping Mac address matching."
+
+    GROUP cdsRelayAgentRemoteIdGroup
+    DESCRIPTION
+        "This group is mandatory only for platforms which support
+         DHCP Option 82 remote ID relay agent."
+         
+    GROUP cdsIfFeatureConfigGroup 
+    DESCRIPTION
+        "This group is mandatory only for platforms which support
+         enable or disable of DHCP Snooping feature at the interface." 
+
+    GROUP cdsBindingsLimitGroup 
+    DESCRIPTION
+        "This group is mandatory only for platforms which support
+         binding limit for DHCP Snooping feature." 
+
+    GROUP cdsStaticBindingsGroup 
+    DESCRIPTION
+        "This group is mandatory only for platforms which support
+         the DHCP bindings data statically configured by (local
+         or network) management." 
+
+    GROUP cdsIfSrcGuardIpFilterGroup 
+    DESCRIPTION
+        "This group is mandatory only for platforms which support
+         interface IP source guard feature." 
+
+    GROUP cdsIfSrcGuardExtGroup 
+    DESCRIPTION
+        "This group is mandatory only for platforms which support
+         interface IP and MAC source guard feature." 
+
+    GROUP cdsIfSrcGuardTrafficFilterGroup
+    DESCRIPTION
+        "This group is mandatory only for platforms which support
+         interface IP source guard feature." 
+
+    OBJECT   cdsStaticBindingsStatus 
+    SYNTAX   INTEGER { active(1), createAndGo(4), destroy(6) }
+    DESCRIPTION
+        "Support for 'createAndWait' is not required."
+
+    ::= { cdsMIBCompliances 2 }
 
 -- Units of Conformance
 
@@ -738,7 +1200,7 @@ cdsIfSrcGuardGroup OBJECT-GROUP
         cdsIfSrcGuardAddrType,
         cdsIfSrcGuardAddress 
     }
-    STATUS current
+    STATUS deprecated 
     DESCRIPTION
         "A collection of objects which are used to configure as
          well as show information regarding IP Source Guard 
@@ -766,4 +1228,85 @@ cdsMatchMacAddressGroup OBJECT-GROUP
          address matching."
     ::= { cdsMIBGroups 11 }
 
+cdsIfFeatureConfigGroup OBJECT-GROUP
+    OBJECTS {
+        cdsIfFeatureEnable        
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of object which are used to configure as
+         well as show information regarding enable or disable of
+         DHCP Snooping feature at the interface."
+    ::= { cdsMIBGroups 12 }
+
+cdsBindingsLimitGroup OBJECT-GROUP
+    OBJECTS {
+        cdsGlobalMaxBindingsLimit,
+        cdsIfBindingsLimit
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects which provides information regarding
+        binding limit for DHCP Snooping purpose."
+    ::= { cdsMIBGroups 13 }
+
+cdsStaticBindingsGroup OBJECT-GROUP
+    OBJECTS {
+        cdsStaticBindingsAddrType,
+        cdsStaticBindingsIpAddress,
+        cdsStaticBindingsInterface,
+        cdsStaticBindingsStatus
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects which is used to configure
+         as well as show information regarding the DHCP bindings data
+         configured by users."
+    ::= { cdsMIBGroups 14 }
+
+cdsIfSrcGuardIpFilterGroup OBJECT-GROUP
+    OBJECTS {
+        cdsIfSrcGuardIpFilterAction,
+        cdsIfSrcGuardFilterMode
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects which is used to show information
+         regarding interface IP source guard purpose."
+    ::= { cdsMIBGroups 15 }
+
+cdsIfSrcGuardExtGroup OBJECT-GROUP
+    OBJECTS {
+        cdsIfSrcGuardMacAddress,
+        cdsIfSrcGuardMacFilterAction,
+        cdsIfSrcGuardVlansLow,
+        cdsIfSrcGuardVlansHigh 
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects which is used to show additional
+         information regarding the IP source guard feature."
+    ::= { cdsMIBGroups 16 }
+
+cdsIfSrcGuardTrafficFilterGroup OBJECT-GROUP
+    OBJECTS {
+        cdsIfSrcGuardFilterType
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects which is used to configure the 
+         type of traffic to be filtered by IP source guard feature."  
+    ::= { cdsMIBGroups 17 }
+
+cdsIfSrcGuardGroupRev1 OBJECT-GROUP
+    OBJECTS {
+        cdsIfSrcGuardAddrType,
+        cdsIfSrcGuardAddress 
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects which are used to configure as
+         well as show information regarding IP Source Guard 
+         purpose."
+    ::= { cdsMIBGroups 18 }
 END

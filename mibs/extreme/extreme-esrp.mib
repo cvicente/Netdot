@@ -5,6 +5,8 @@
 -- *	  Extreme Networks
 -- *      http://www.extremenetworks.com
 -- *
+-- * extracted from $Extreme_Id: extreme.mib,v 1.24.6.35 2006/01/09 15:15:18 build-sc Exp $
+-- *
 -- */
 
 -- ==================================================================================
@@ -64,7 +66,7 @@ EXTREME-ESRP-MIB DEFINITIONS ::= BEGIN
 
         extremeEsrpVlanIfIndex OBJECT-TYPE
                 SYNTAX  INTEGER (1..65535)
-                MAX-ACCESS	not-accessible
+                MAX-ACCESS	accessible-for-notify
                 STATUS	current
                 DESCRIPTION
                         "Any index to this table has a value that is
@@ -74,7 +76,7 @@ EXTREME-ESRP-MIB DEFINITIONS ::= BEGIN
 
          extremeEsrpGroup OBJECT-TYPE
                 SYNTAX	INTEGER (1..65535)
-                MAX-ACCESS 	not-accessible
+                MAX-ACCESS 	accessible-for-notify
                 STATUS	current
                 DESCRIPTION
                         "Indicates a gateway addresses this router backs
@@ -126,11 +128,11 @@ EXTREME-ESRP-MIB DEFINITIONS ::= BEGIN
 
          extremeEsrpElectionAlgorithm OBJECT-TYPE
                 SYNTAX	INTEGER {
-                        ports-track-priority-mac(1),
-                        track-ports-priority-mac(2),
-                        priority-ports-track-mac(3),
-		        priority-track-ports-mac(4),
-		        priority-mac-only(5)
+                        portsTrackPriorityMac(1),
+                        trackPortsPriorityMac(2),
+                        priorityPortsTrackMac(3),
+		        priorityTrackPortsMac(4),
+		        priorityMacOnly(5)
                 }
                 MAX-ACCESS read-create
                 STATUS	current

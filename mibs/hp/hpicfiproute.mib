@@ -1,9 +1,10 @@
 HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
 
     IMPORTS
-        OBJECT-TYPE, MODULE-IDENTITY, Integer32
+        OBJECT-TYPE, MODULE-IDENTITY, Integer32,
+        Unsigned32
             FROM SNMPv2-SMI
-        PhysAddress
+        PhysAddress, RowStatus
             FROM SNMPv2-TC
         MODULE-COMPLIANCE, OBJECT-GROUP
             FROM SNMPv2-CONF
@@ -17,7 +18,7 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
             FROM HP-ICF-OID;
 
     hpicfIpRouting MODULE-IDENTITY
-        LAST-UPDATED "200508130228Z" -- Aug 08, 2005
+        LAST-UPDATED "200704200000Z" -- Apr 20, 2007
         ORGANIZATION "Hewlett-Packard Company
                       Workgroup Networks Division"
         CONTACT-INFO "Hewlett-Packard Company
@@ -26,8 +27,14 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
         DESCRIPTION  "This MIB module contains HP proprietary
                      objects for managing IP Routing."
 
+        REVISION     "200704200000Z" -- Apr 20, 2007      
+        DESCRIPTION  "Added hpicfArpAgingTime."
+
         REVISION     "200508130228Z" -- Aug 08, 2005
         DESCRIPTION  "Added hpicfInetCidrRouteTable augmenting inetCidrRouteTable."
+
+        REVISION     "200508050000Z" -- Aug 5, 2005
+        DESCRIPTION  "Added import objects."
 
         REVISION     "200305130228Z" -- May 13, 2003
         DESCRIPTION  "Added static route configuration objects."
@@ -681,6 +688,26 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
        ::= { hpicfInetCidrRouteEntry 2 }
 
 
+    -- HP Arp (address resolution protocol) objects
+
+    hpicfArpInfo OBJECT IDENTIFIER ::= { hpicfIpRoutingObjects 6 }
+
+    hpicfArpAgingTime OBJECT-TYPE
+        SYNTAX      Integer32 (0..16666666)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION "The timeout period in minutes for aging out
+                     an arp entry in the arp cache.  Default value
+                     is 20 minutes.  Allowable values for the HP
+                     implementation are 1-1440 and 0. The value of 0
+                     indicates that an infinite ageout is to be
+                     used. The value 16666666 minutes (32 years) is 
+                     used internally to effectively indicate 
+                     an infinite timeout."
+        DEFVAL { 20 }                     
+        ::= { hpicfArpInfo 1 }
+
+
 
     hpicfIpRoutingConformance OBJECT IDENTIFIER ::= { hpicfIpRouting 2 }
 
@@ -764,6 +791,12 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
                     information about routes in the routing table."
         ::= { hpicfIpRoutingGroups 9 }
 
+    hpicfArpBaseGroup OBJECT-GROUP
+        OBJECTS     { hpicfArpAgingTime }
+        STATUS      current
+        DESCRIPTION "Basic ARP (address resolution protocol) configuration
+                    objects."
+        ::= { hpicfIpRoutingGroups 10 }
 
     hpicfIpRoutingCompliances OBJECT IDENTIFIER ::=
          { hpicfIpRoutingConformance 2 }
@@ -809,5 +842,14 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
                                hpicfIpStaticNeighborGroup,
                                hpicfIpCidrRouteGroup }
         ::= { hpicfIpRoutingCompliances 3 }
+
+    hpicfArpInfoCompliance MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "The compliance statement for HP Routing switches
+                    that support ARP."
+        MODULE
+            MANDATORY-GROUPS { hpicfArpBaseGroup }
+
+        ::= { hpicfIpRoutingCompliances 4 }
 
 END

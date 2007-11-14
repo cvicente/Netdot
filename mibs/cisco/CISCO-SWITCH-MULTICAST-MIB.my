@@ -1,0 +1,496 @@
+-- *****************************************************************
+-- CISCO-SWITCH-MULTICAST-MIB.my 
+--
+-- January 2006, Jayakumar Kadirvelu
+-- 
+--
+-- Copyright (c) 2006 by cisco Systems, Inc.
+-- All rights reserved.
+-- *****************************************************************
+--
+CISCO-SWITCH-MULTICAST-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Gauge32
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    ciscoMgmt
+        FROM CISCO-SMI
+    entPhysicalIndex
+        FROM ENTITY-MIB
+    MplsVpnId
+        FROM MPLS-VPN-MIB
+    InetAddressType
+        FROM INET-ADDRESS-MIB;
+
+ciscoSwitchMulticastMIB MODULE-IDENTITY
+        LAST-UPDATED        "200601060000Z"
+        ORGANIZATION        "Cisco Systems, Inc."
+        CONTACT-INFO
+                "       Cisco Systems
+                        Customer Service
+
+                Postal: 170 W Tasman Drive
+                        San Jose, CA  95134
+                        USA
+
+                   Tel: +1 800 553-NETS
+
+                E-mail: cs-lan-switch-snmp@cisco.com"
+        DESCRIPTION
+                "This MIB module defines management objects for the
+                 Multicast Switching features on Cisco Layer 2/3 
+                 devices.
+
+                 Definition of some of the terms used in this MIB:
+
+                     Multicast Replication - The mechanism by which a 
+                     system creates one or more copies of a multicast 
+                     packet for forwarding.
+
+                     Ingress Multicast Replication - A type of multicast
+                     replication where the replication engine on the 
+                     ingress module always performs the whole replication.
+ 
+                     Egress Multicast Replication - A type of multicast
+                     replication where the replication engines on both
+                     the ingress and egress modules preform the replication. 
+
+                     VPN  -  Virtual private network.
+                     A secure IP-based network that shares resources 
+                     with one or more physical networks.
+    
+                     VRF  - VPN Routing and Forwarding instance
+                     Consists of an IP routing table, a derived 
+                     forwarding table, a set of interfaces that use
+                     the forwarding table, and a set of rules and 
+                     routing protocols that determine what goes into 
+                     the forwarding table. 
+    
+                     MVPN - Multicast VPN
+    
+                     MVRF - Multicast VRF
+                     A VRF which has multicast routing enabled.
+      
+                     VRF-lite -  A feature that enables a service 
+                     provider to support two or more VPNs, where IP 
+                     addresses can be overlapped among the VPNs."
+
+        REVISION        "200601060000Z"
+        DESCRIPTION
+                "Initial version of this MIB module."
+        ::= { ciscoMgmt 504 }
+
+cswmMIBNotifs   OBJECT IDENTIFIER ::=  { ciscoSwitchMulticastMIB 0 } 
+cswmMIBObjects  OBJECT IDENTIFIER ::=  { ciscoSwitchMulticastMIB 1 }
+cswmMIBConform  OBJECT IDENTIFIER ::=  { ciscoSwitchMulticastMIB 2 }
+
+-- Overview of MIB Objects:
+--
+-- Defines 3 groups of objects
+-- 1. cswmGlobal                : A group of objects providing global 
+--                                multicast switching information and 
+--                                configuration 
+--
+-- 2. cswmReplication           : A group of objects related to 
+--                                multicast replication. 
+--
+-- 3. cswmMvrfStats             : A group of objects providing  
+--                                MVRF statistics. 
+ 
+cswmGlobal      OBJECT IDENTIFIER ::=  { cswmMIBObjects 1 }
+cswmReplication OBJECT IDENTIFIER ::=  { cswmMIBObjects 2 }
+cswmMvrfStats   OBJECT IDENTIFIER ::=  { cswmMIBObjects 3 }
+
+cswmMvpnHwSwitchingStatus OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                  notCapable(1), 
+                  enable(2),
+                  disable(3)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the MVPN hardware switching status.
+    
+         'notCapable'    - This device is not capable of MVPN 
+                           hardware switching 
+   
+         'enable'        - MVPN hardware switching is enabled. 
+   
+         'disable'       - MVPN hardware switching is disabled."
+    ::= { cswmGlobal 1 }
+
+cswmVrfLiteStatus OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                  notCapable(1),
+                  enable(2),
+                  disable(3)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the VRF-Lite switching status.
+   
+         'notCapable'    - This device is not capable of VRF-Lite 
+                           switching.
+   
+         'enable'        - VRF-Lite switching is enabled.
+   
+         'disable'       - VRF-Lite switching is disabled."
+    ::= { cswmGlobal 2 }
+
+cswmMRouteConsistCheck OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                  notCapable(1),  -- read-only
+                  enable(2),
+                  disable(3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Specifies the Multicast Routing(mroute) Table 
+         consistency checker support mode.
+         The consistency checker scans the mroute table 
+         and assures that multicast-hardware entries are 
+         consistent with mroute table.
+   
+         'notCapable'    - This device is not capable of mroute 
+                           consistency checker  
+   
+         'enable'        - mroute consistency checker is enabled.
+   
+         'disable'       - mroute consistency checker is disabled.
+       
+         When the value of this object is 'notCapable' the object
+         value is not writable.
+         The value 'notCapable' can not be set."
+    ::= { cswmGlobal 3 }
+
+cswmProcessorConsistCheck OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                  notCapable(1),  -- read-only
+                  enable(2),
+                  disable(3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Specifies the Processor consistency checker support mode.
+         In a multiple processor device, the consistency checker
+         assures that multicast flow entries are consistent across
+         processors. 
+
+         Example: In a Catalyst 6000 series device, which has a 
+         Route Processor (RP) and a Switch Processor (SP), the 
+         consistency checker assures that multicast flow entries on 
+         the Route Processor and the Switch Processor are consistent.
+   
+         'notCapable'    - This device is not capable of processor 
+                           consistency checker  
+   
+         'enable'        - processor consistency checker is enabled.
+   
+         'disable'       - processor consistency checker is disabled.
+      
+         When the value of this object is 'notCapable' the object
+         value is not writable.
+         The value 'notCapable' can not be set." 
+    ::= { cswmGlobal 4 }
+
+--
+-- Multicast Replication Capability information 
+-- 
+cswmReplCapabilityTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CswmReplCapabilityEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table containing multicast replication capability 
+         information."
+    ::= { cswmReplication 1 }
+
+cswmReplCapabilityEntry OBJECT-TYPE
+    SYNTAX      CswmReplCapabilityEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A conceptual row of cswmReplCapabilityTable, containing
+         the multicast replication capability information for
+         per module (identified by entPhysicalIndex) per Internet
+         address type supported on the managed system.
+
+         An entry is created by the agent at the system power-up or
+         module insertion."
+    INDEX  { entPhysicalIndex, cswmReplConfigAddrType }
+    ::= { cswmReplCapabilityTable 1 }
+
+CswmReplCapabilityEntry ::= SEQUENCE {
+        cswmReplCapability     BITS
+}
+
+cswmReplCapability OBJECT-TYPE
+    SYNTAX      BITS { ingress(0), egress(1) }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the multicast replication capability.
+         The replication capability of a module for a particular
+         address type is dependent on the hardware and software
+         capabilities of the module."
+    ::= { cswmReplCapabilityEntry 1 }
+
+--
+-- Multicast Flow Replication Config table
+--
+cswmReplConfigTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CswmReplConfigEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table containing multicast flow replication information
+         for the device."
+    ::= { cswmReplication 2 }
+
+cswmReplConfigEntry OBJECT-TYPE
+    SYNTAX      CswmReplConfigEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A conceptual row of cswmReplConfigTable, containing multicast
+         flow replication information." 
+    INDEX  { cswmReplConfigAddrType }
+    ::= { cswmReplConfigTable 1 }
+
+CswmReplConfigEntry ::= SEQUENCE {
+        cswmReplConfigAddrType          InetAddressType,
+        cswmReplConfigCurMode           INTEGER,
+        cswmReplConfigAutoDetect        INTEGER
+}
+
+cswmReplConfigAddrType OBJECT-TYPE
+    SYNTAX     InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+        "The Internet address type supporting multicast flow
+         replication."
+    ::= { cswmReplConfigEntry 1 }
+
+cswmReplConfigCurMode OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                  notCapable(1),  -- read-only
+                  ingress(2),
+                  egress(3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Specifies the current mode of multicast flow replication
+         for this address type.
+
+         'notCapable'  - This device is not capable of Multicast flow 
+                         replication for this address type. 
+   
+         'ingress'     - The current mode of replication is ingress.
+   
+         'egress'      - The current mode of replication is egress.
+  
+         When the value of this object is 'notCapable' the object
+         value is not writable.
+         The value 'notCapable' can not be set.
+
+         The values of cswmReplCapability for the modules on the system
+         should be considered when setting the value for this object.
+         Certain systems may not be fully operational in a particular 
+         replication mode if there is an inconsistency between 
+         this object and the values of cswmReplCapability."
+    ::= { cswmReplConfigEntry 2 }
+
+cswmReplConfigAutoDetect OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                  notCapable(1),  -- read-only
+                  enable(2),
+                  disable(3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Specifies the auto-detection of multicast replication
+         mode for this address type.
+       
+         'notCapable'  - This device is not capable of Auto-detection 
+                         of multicast replication mode for this 
+                         address type.
+   
+         'enable'      - The auto-detection of multicast replication
+                         mode is enabled.
+   
+         'disable'     - The auto-detection of multicast replication
+                         mode is disabled.
+
+         When the value of this object is 'notCapable' the object
+         value is not writable.
+         The value 'notCapable' can not be set."
+    ::= { cswmReplConfigEntry 3 }
+
+
+--
+-- The MVRF statistics table 
+-- 
+cswmMvrfStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CswmMvrfStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION 
+        "A table containing multicast flow statistics information on 
+         each Multicast VPN routing/forwarding instance (MVRF)."
+    ::= { cswmMvrfStats 1 }
+    
+cswmMvrfStatsEntry OBJECT-TYPE
+    SYNTAX      CswmMvrfStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION 
+        "A conceptual row of cswmMvrfStatsTable, containing 
+         multicast flow statistics for each MVRF."
+    INDEX  { cswmMvrfName }
+    ::= { cswmMvrfStatsTable 1 }
+    
+CswmMvrfStatsEntry ::= SEQUENCE {
+        cswmMvrfName         MplsVpnId,
+        cswmMvrfTotalFlows   Gauge32,
+        cswmMvrfPartialFlows Gauge32,
+        cswmMvrfRpfMfdFlows  Gauge32
+}
+
+cswmMvrfName OBJECT-TYPE
+    SYNTAX      MplsVpnId
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION 
+        "The human-readable name of this VPN."
+    ::= { cswmMvrfStatsEntry 1 }
+    
+cswmMvrfTotalFlows OBJECT-TYPE
+    SYNTAX      Gauge32 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the total number of multicast flow entries 
+         installed for this MVRF."
+    ::= { cswmMvrfStatsEntry 2 }
+
+cswmMvrfPartialFlows OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the total number of multicast partial short cut
+         flow entries installed for this MVRF."
+    ::= { cswmMvrfStatsEntry 3 }
+
+cswmMvrfRpfMfdFlows OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the total number of Reverse Path Forwarding(RPF)
+         Multicast Fast Drop(MFD) flow entries installed for this 
+         MVRF."
+    ::= { cswmMvrfStatsEntry 4 }
+
+
+-- No Notification defined
+
+-- Conformance
+
+cswmMIBCompliances OBJECT IDENTIFIER ::= { cswmMIBConform 1 }
+cswmMIBGroups      OBJECT IDENTIFIER ::= { cswmMIBConform 2 }
+
+
+cswmMIBCompliance MODULE-COMPLIANCE
+        STATUS current
+        DESCRIPTION
+            "The compliance statement for the 
+             CISCO-SWITCH-MULTICAST-MIB.
+
+             OBJECT cswmReplConfigAddrType
+             SYNTAX InetAddressType { ipv4(1), ipv6(2) }
+             DESCRIPTION
+                 An implementation is only required to support IPv4
+                 and IPv6 addresses."
+
+        MODULE  -- this module
+            MANDATORY-GROUPS { cswmGlobalGroup }
+
+            GROUP   cswmConsistCheckGroup
+            DESCRIPTION
+                "This group is mandatory where multicast consistency
+                 check is supported."
+
+            GROUP   cswmReplicationGroup
+            DESCRIPTION
+                "This group is mandatory where multicast flow
+                 replication is supported."
+
+            GROUP   cswmMvrfStatsGroup
+            DESCRIPTION
+                "This group is mandatory where MVRF 
+                 statistics are supported."
+
+        ::= { cswmMIBCompliances 1 }
+
+
+-- Units of Conformance
+
+cswmGlobalGroup OBJECT-GROUP
+        OBJECTS {
+            cswmMvpnHwSwitchingStatus,
+            cswmVrfLiteStatus
+        }
+        STATUS current
+        DESCRIPTION
+            "A collection of objects providing global multicast
+             information and configuration."
+        ::= { cswmMIBGroups 1 }
+
+cswmConsistCheckGroup OBJECT-GROUP
+        OBJECTS {
+            cswmMRouteConsistCheck,
+            cswmProcessorConsistCheck
+        }
+        STATUS current
+        DESCRIPTION
+            "A collection of objects providing multicast consitency
+             check information and configuration." 
+        ::= { cswmMIBGroups 2 }
+
+cswmReplicationGroup OBJECT-GROUP
+        OBJECTS {
+            cswmReplCapability,
+            cswmReplConfigCurMode,
+            cswmReplConfigAutoDetect
+        }
+        STATUS current
+        DESCRIPTION
+            "A collection of objects providing multicast
+             replication information and configuration."
+        ::= { cswmMIBGroups 3 }
+
+cswmMvrfStatsGroup OBJECT-GROUP
+        OBJECTS {
+            cswmMvrfTotalFlows,
+            cswmMvrfPartialFlows,
+            cswmMvrfRpfMfdFlows
+        }
+        STATUS current
+        DESCRIPTION
+            "A collection of objects providing MVRF
+             statistics."
+        ::= { cswmMIBGroups 4 }
+
+END

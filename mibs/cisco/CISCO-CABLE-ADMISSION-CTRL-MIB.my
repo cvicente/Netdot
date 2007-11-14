@@ -4,7 +4,7 @@
 --
 -- Nov 2004, Connie Chan
 --
--- Copyright (c) 2004-2005 by Cisco Systems, Inc.
+-- Copyright (c) 2004-2005, 2006 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -14,12 +14,12 @@ IMPORTS
         MODULE-IDENTITY,
         OBJECT-TYPE,
         NOTIFICATION-TYPE,
-        Gauge32,
         Unsigned32,
         Counter32
             FROM SNMPv2-SMI
         TEXTUAL-CONVENTION,
         RowStatus,
+        StorageType,
         TruthValue,
         TimeStamp,
         VariablePointer
@@ -31,15 +31,15 @@ IMPORTS
         ifIndex,
         InterfaceIndexOrZero
             FROM IF-MIB
-        SchedulingType
-            FROM DOCS-QOS-MIB
         entPhysicalIndex
             FROM ENTITY-MIB
+        SnmpAdminString
+            FROM SNMP-FRAMEWORK-MIB
         ciscoMgmt
             FROM CISCO-SMI;
 
 ciscoCableAdmCtrlMIB MODULE-IDENTITY
-        LAST-UPDATED "200505040000Z"
+        LAST-UPDATED "200610250000Z"
         ORGANIZATION "Cisco Systems, Inc."
         CONTACT-INFO
             "         Cisco Systems
@@ -88,7 +88,23 @@ ciscoCableAdmCtrlMIB MODULE-IDENTITY
 
             3. The downstream (DS) channel bandwidth utilization based 
                on voice or data."
+        REVISION     "200610250000Z"
+        DESCRIPTION
+            "The current cable admission control feature has been
+             changed to perform bandwidth allocation based on the
+             application types rather than scheduling types.
 
+             The following tables are based on scheduling types,
+             hence deprecated: ccacUsConfigTable, ccacDsConfigTable,
+             ccacUsTable and ccacDsTable.
+
+             New tables that are based on application types are
+             defined instead: ccacUsConfigRevTable, ccacDsConfigRevTable,
+             ccacUsRevTable, ccacDsRevTable.
+
+             Removed reference to SchedulingType from DOCS-QOS-MIB,
+             instead created CcacSchedulingType because DOCS-QOS-MIB
+             is no longer maintained by IETF."
         REVISION     "200505040000Z"
         DESCRIPTION
             "This is the initial version."
@@ -126,6 +142,42 @@ NonZeroPercent ::= TEXTUAL-CONVENTION
         "An integer that is in the range of a non-zero percent
         value."
     SYNTAX      Unsigned32 (1..100)
+
+TenthPercent ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "An integer that is in the range of tenths of a percent
+        value."
+    SYNTAX      Unsigned32 (0..1000 )
+
+CcacSchedulingType ::= TEXTUAL-CONVENTION
+    STATUS      deprecated
+    DESCRIPTION
+        "This type is deprecated because all the objects of this
+        type have been deprecated.
+
+        The scheduling service provided by a CMTS for an
+        upstream service flow. If the parameter is omitted
+        from an upstream QOS Parameter Set, this object takes
+        the value of bestEffort (2). This parameter must be
+        reported as undefined (1) for downstream QOS Parameter
+        Sets."
+    SYNTAX      INTEGER {
+            undefined (1),
+            bestEffort (2),
+            nonRealTimePollingService(3),
+            realTimePollingService(4),
+            unsolictedGrantServiceWithAD(5),
+            unsolictedGrantService(6)
+    }
+
+CcacApplicationBucketType ::= TEXTUAL-CONVENTION
+    STATUS      current
+    DESCRIPTION
+       "A unique value, greater than zero, for each application
+       bucket being defined for uniquely identifying application
+       types for cable admission control feature."
+    SYNTAX      Unsigned32 (1..64)
 
 QoSServiceClassNameOrNull ::= TEXTUAL-CONVENTION
     STATUS      current
@@ -177,7 +229,7 @@ CcacSysRscMonitoredType ::= TEXTUAL-CONVENTION
     }
 
 CcacDSTrafficMonitoredType ::= TEXTUAL-CONVENTION
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "The downstream traffic type being monitored by the CMTS
         admission control.
@@ -327,14 +379,16 @@ ccacSysRscConfigCritThreshold OBJECT-TYPE
             critical threshold."
         ::= { ccacSysRscConfigEntry 5 }
 
--- Configuration of upstream channel usage
+-- Configuration of upstream channel usage (DEPRECATED)
 
 ccacUsConfigTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF CcacUsConfigEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
-            "This table abstracts a sparse matrix of upstream
+            "This table is deprecated by ccacUsConfigRevTable.
+
+            This table abstracts a sparse matrix of upstream
             channel utilization thresholds to be monitored
             by Cable Admission Control.
             
@@ -365,7 +419,7 @@ ccacUsConfigTable OBJECT-TYPE
 ccacUsConfigEntry OBJECT-TYPE
         SYNTAX      CcacUsConfigEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "Each entry defines a set of configurable thresholds
             and parameters for each monitored scheduling service
@@ -406,7 +460,7 @@ ccacUsConfigEntry OBJECT-TYPE
 
 CcacUsConfigEntry ::= SEQUENCE {
             ccacUsConfigIfIndex             InterfaceIndexOrZero,
-            ccacUsConfigSchedType           SchedulingType,
+            ccacUsConfigSchedType           CcacSchedulingType,
             ccacUsConfigServiceClassName    QoSServiceClassNameOrNull,
             ccacUsConfigStatus              RowStatus,
             ccacUsConfigMinorThreshold      NonZeroPercent,
@@ -418,7 +472,7 @@ CcacUsConfigEntry ::= SEQUENCE {
 ccacUsConfigIfIndex OBJECT-TYPE
         SYNTAX      InterfaceIndexOrZero
         MAX-ACCESS  not-accessible 
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "The object identities the interface to which the 
             upstream channel thresholds applies:
@@ -435,9 +489,9 @@ ccacUsConfigIfIndex OBJECT-TYPE
         ::= { ccacUsConfigEntry 1 }
 
 ccacUsConfigSchedType OBJECT-TYPE
-        SYNTAX      SchedulingType
+        SYNTAX      CcacSchedulingType
         MAX-ACCESS  not-accessible 
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object specifies the scheduling type
             used in classifying an upstream channel.
@@ -451,7 +505,7 @@ ccacUsConfigSchedType OBJECT-TYPE
 ccacUsConfigServiceClassName OBJECT-TYPE
         SYNTAX      QoSServiceClassNameOrNull
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object specifies the QoS service class name.
 
@@ -464,7 +518,7 @@ ccacUsConfigServiceClassName OBJECT-TYPE
 ccacUsConfigStatus OBJECT-TYPE
         SYNTAX      RowStatus
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object facilitates the creation, modification, or
             deletion of a conceptual row in this table."
@@ -473,7 +527,7 @@ ccacUsConfigStatus OBJECT-TYPE
 ccacUsConfigMinorThreshold OBJECT-TYPE
         SYNTAX      NonZeroPercent
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object specifies the minor threshold related
             to the utilization of upstream bandwidth."
@@ -482,7 +536,7 @@ ccacUsConfigMinorThreshold OBJECT-TYPE
 ccacUsConfigMajorThreshold OBJECT-TYPE
         SYNTAX      NonZeroPercent
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object specifies the major threshold related
             to the utilization of upstream bandwidth.
@@ -493,7 +547,7 @@ ccacUsConfigMajorThreshold OBJECT-TYPE
 ccacUsConfigExclusivePercent OBJECT-TYPE
         SYNTAX      NonZeroPercent
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object specifies the reserved bandwidth exclusively
             related to the utilization of upstream bandwidth.
@@ -508,7 +562,7 @@ ccacUsConfigExclusivePercent OBJECT-TYPE
 ccacUsConfigNonExclusivePercent OBJECT-TYPE
         SYNTAX      Percent
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object specifies the percentage of 
             bandwidth, over and above the exclusive 
@@ -523,14 +577,16 @@ ccacUsConfigNonExclusivePercent OBJECT-TYPE
             same entry cannot be greater than '100'."
         ::= { ccacUsConfigEntry 8 }
 
--- Configuration of downstream usage
+-- Configuration of downstream usage (DEPRECATED)
 
 ccacDsConfigTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF CcacDsConfigEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
-            "This table abstracts a sparse matrix of downstream
+            "This table is deprecated by ccacDsConfigRevTable.
+
+            This table abstracts a sparse matrix of downstream
             channel utilization thresholds to be monitored
             by Cable Admission Control.
             
@@ -557,7 +613,7 @@ ccacDsConfigTable OBJECT-TYPE
 ccacDsConfigEntry OBJECT-TYPE
         SYNTAX      CcacDsConfigEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "Each entry defines a set of configurable thresholds
             and parameters for each monitoring traffic type for a
@@ -597,7 +653,7 @@ CcacDsConfigEntry ::= SEQUENCE {
 ccacDsConfigIfIndex OBJECT-TYPE
         SYNTAX      InterfaceIndexOrZero
         MAX-ACCESS  not-accessible 
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "The object identities the interface to which the 
             downstream thresholds applies:
@@ -612,7 +668,7 @@ ccacDsConfigIfIndex OBJECT-TYPE
 ccacDsConfigTrafficType OBJECT-TYPE
         SYNTAX      CcacDSTrafficMonitoredType
         MAX-ACCESS  not-accessible 
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object specifies the traffic type
             for which this policy applies."
@@ -621,7 +677,7 @@ ccacDsConfigTrafficType OBJECT-TYPE
 ccacDsConfigStatus OBJECT-TYPE
         SYNTAX      RowStatus
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object facilitates the creation, modification, or
             deletion of a conceptual row in this table."
@@ -630,7 +686,7 @@ ccacDsConfigStatus OBJECT-TYPE
 ccacDsConfigMinorThreshold OBJECT-TYPE
         SYNTAX      NonZeroPercent
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object specifies the minor threshold related to
             the utilization of downstream bandwidth."
@@ -639,7 +695,7 @@ ccacDsConfigMinorThreshold OBJECT-TYPE
 ccacDsConfigMajorThreshold OBJECT-TYPE
         SYNTAX      NonZeroPercent
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object specifies the major threshold related
             to the utilization of downstream bandwidth.
@@ -650,7 +706,7 @@ ccacDsConfigMajorThreshold OBJECT-TYPE
 ccacDsConfigExclusivePercent OBJECT-TYPE
         SYNTAX      NonZeroPercent
         MAX-ACCESS  read-create
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object specifies the reserved bandwidth exclusively
             related to the utilization of downstream bandwidth.
@@ -662,6 +718,382 @@ ccacDsConfigExclusivePercent OBJECT-TYPE
         ::= { ccacDsConfigEntry 6 }
 
 ccacDsConfigNonExclusivePercent OBJECT-TYPE
+        SYNTAX      Percent
+        MAX-ACCESS  read-create
+        STATUS      deprecated
+        DESCRIPTION
+            "This object specifies the percentage of 
+            bandwidth, over and above the exclusive 
+            share, which can be used by this traffic type after
+            the exclusive bandwidth has been used up.
+
+            Since the bandwidth is non-exclusive,
+            it can be used by other traffic type as
+            specified.
+
+            The sum of exclusive and non-exclusive percent in the
+            same entry cannot be greater than '100'."
+        ::= { ccacDsConfigEntry 7 }
+
+-- Configuration of upstream channel usage (REVISED)
+
+ccacUsConfigRevTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF CcacUsConfigRevEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table abstracts a sparse matrix of upstream
+            channel utilization thresholds to be monitored
+            by Cable Admission Control.
+            
+            The ifIndex uniquely identifies all upstream channels,
+            upstream channels associated with an interface or
+            an upstream channel with a set of upstream channel 
+            utilization thresholds being associated.
+
+            The ccacUsConfigRevAppBucketIndex identifies the application
+            bucket number being configured.
+            
+            The agent creates/destroys/modifies an entry whenever
+            the local console affects this configuration.
+            
+            The management application may create/destroy/modify
+            an entry.
+
+            When an entry is created and ccacUsConfigRevStatus is equal
+            to 'active', CMTS monitors the upstream channel bandwidth
+            utilization based on the configurable thresholds, minor,
+            major and exclusive percentage, for different scheduling
+            type or service class for an upstream channel."
+        ::= { ccacConfigObjects 4 }
+
+ccacUsConfigRevEntry OBJECT-TYPE
+        SYNTAX      CcacUsConfigRevEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "Each entry defines a set of configurable thresholds
+            and parameters for each monitored scheduling service
+            for an upstream channel.
+
+            A set of thresholds applied by cable admission control
+            in the process of monitoring upstream channel bandwidth.
+            
+            The following classes of upstream policies can be 
+            configured: 
+
+            1. Global
+               An entry with a ccacUsConfigRevIfIndex of '0' identifies
+               a global policy.
+
+            2. Per Interface
+               An entry with a ccacUsConfigRevIfIndex with an
+               ifType of 'docsCableMaclayer' identifies an interface
+               policy.
+
+               Interface level thresholds supersedes global level
+               thresholds.
+
+            3. Per Upstream Channel
+               An entry with a ccacUsConfigRevIfIndex with an ifType of 
+               'docsCableUpstream' identifies an upstream channel
+               policy.
+
+               Upstream level thresholds supersedes both global and
+               interface level thresholds."
+        INDEX { ccacUsConfigRevIfIndex,
+                ccacUsConfigRevAppBucketIndex }
+        ::= { ccacUsConfigRevTable 1 }
+
+CcacUsConfigRevEntry ::= SEQUENCE {
+            ccacUsConfigRevIfIndex             InterfaceIndexOrZero,
+            ccacUsConfigRevAppBucketIndex      CcacApplicationBucketType,
+            ccacUsConfigRevAppBucketName       SnmpAdminString,
+            ccacUsConfigRevMinorThreshold      NonZeroPercent,
+            ccacUsConfigRevMajorThreshold      NonZeroPercent,
+            ccacUsConfigRevExclusivePercent    NonZeroPercent,
+            ccacUsConfigRevNonExclusivePercent Percent,
+            ccacUsConfigRevStorageType         StorageType,
+            ccacUsConfigRevStatus              RowStatus
+        }
+
+ccacUsConfigRevIfIndex OBJECT-TYPE
+        SYNTAX      InterfaceIndexOrZero
+        MAX-ACCESS  not-accessible 
+        STATUS      current
+        DESCRIPTION
+            "The object identities the interface to which the 
+            upstream channel thresholds applies:
+
+            1. If '0', then the policy applies to all upstream
+               channels being monitored.
+
+            2. If the corresponding ifType is 'docsCableMacLayer',
+               then the policy applies to all upstream channels
+               being carried by the physical interface.
+
+            3. If the corresponding ifType is 'docsCableUpstream',
+               then the policy applies to that upstream channel."
+        ::= { ccacUsConfigRevEntry 1 }
+
+ccacUsConfigRevAppBucketIndex OBJECT-TYPE
+        SYNTAX      CcacApplicationBucketType
+        MAX-ACCESS  not-accessible 
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the application bucket number
+            in defining the parameters for bandwidth management."
+        ::= { ccacUsConfigRevEntry 2 }
+
+ccacUsConfigRevAppBucketName OBJECT-TYPE
+        SYNTAX      SnmpAdminString
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the application bucket name.
+
+            Application name can be used to label each application
+            bucket and give descriptive information on the type of
+            application.
+
+            Application bucket name may be a null string if it
+            is not defined."
+        DEFVAL { "" }
+        ::= { ccacUsConfigRevEntry 3 }
+
+ccacUsConfigRevMinorThreshold OBJECT-TYPE
+        SYNTAX      NonZeroPercent
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the minor threshold related
+            to the utilization of upstream bandwidth."
+        ::= { ccacUsConfigRevEntry 4 }
+
+ccacUsConfigRevMajorThreshold OBJECT-TYPE
+        SYNTAX      NonZeroPercent
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the major threshold related
+            to the utilization of upstream bandwidth.
+
+            The major threshold must be greater than minor threshold."
+        ::= { ccacUsConfigRevEntry 5 }
+
+ccacUsConfigRevExclusivePercent OBJECT-TYPE
+        SYNTAX      NonZeroPercent
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the reserved bandwidth exclusively
+            related to the utilization of upstream bandwidth.
+
+            The exclusive percent must be greater than major threshold.
+
+            The sum of exclusive percent for all different scheduling
+            services on this upstream channel cannot be greater than
+            '100'."
+        ::= { ccacUsConfigRevEntry 6 }
+
+ccacUsConfigRevNonExclusivePercent OBJECT-TYPE
+        SYNTAX      Percent
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the percentage of 
+            bandwidth, over and above the exclusive 
+            share, which can be used by scheduling service after
+            the exclusive bandwidth has been used up.
+
+            Since the bandwidth is non-exclusive,
+            it has the potential to be shared by other classes
+            depending on the configuration.
+
+            The sum of exclusive and non-exclusive percent in the
+            same entry cannot be greater than '100'."
+        ::= { ccacUsConfigRevEntry 7 }
+
+ccacUsConfigRevStorageType OBJECT-TYPE
+        SYNTAX      StorageType
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The storage type for this conceptual row.
+
+            If the value of this object is 'volatile', then
+            this entry only exists in RAM and the this row
+            would be lost on system reload.
+
+            If the value of this object is 'nonVolatile' then
+            this entry has been saved to NVRAM and will persist
+            across system reload."
+        DEFVAL { nonVolatile }
+        ::= { ccacUsConfigRevEntry 8 }
+
+ccacUsConfigRevStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object facilitates the creation, modification,
+            or deletion of a conceptual row in this table.
+
+            For row creation, ccacUsConfigRevMinorThreshold,
+            ccacUsConfigRevMajorThreshold,
+            ccacUsConfigRevExclusivePercen and
+            ccacUsConfigRevNonExclusivePercent are mandatory."
+        ::= { ccacUsConfigRevEntry 9 }
+
+-- Configuration of downstream usage (REVISED)
+
+ccacDsConfigRevTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF CcacDsConfigRevEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table abstracts a sparse matrix of downstream
+            channel utilization thresholds to be monitored
+            by Cable Admission Control.
+            
+            The ifIndex uniquely identifies all downstream channels,
+            or a downstream channel with a set of upstream channel 
+            utilization thresholds being associated.
+            
+            The ccacDsConfigRevAppBucketIndex identifies the application
+            bucket number being configured.
+            
+            The agent creates/destroys/modifies an entry whenever
+            the local console affects this configuration.
+            
+            The management application may create/destroy/modify
+            an entry.
+
+            When an entry is created and ccacDsConfigRevStatus is equal
+            to 'active', CMTS monitors the downstream bandwidth
+            utilization based on the configurable thresholds, minor,
+            major and exclusive percentage, for different traffic
+            type for a downstream."
+        ::= { ccacConfigObjects 5 }
+
+ccacDsConfigRevEntry OBJECT-TYPE
+        SYNTAX      CcacDsConfigRevEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "Each entry defines a set of configurable thresholds
+            and parameters for each monitoring traffic type for a
+            downstream.
+
+            A set of thresholds applied by cable admission control
+            in the process of monitoring downstream bandwidth.
+
+            The following classes of downstream policy can be 
+            configured: 
+
+            1. Global
+               An entry with a ccacDsConfigRevIfIndex of '0' identifies
+               a global policy.
+
+            2. Per Downstream Channel
+               An entry with a ccacDsConfigRevIfIndex with an ifType of 
+               'docsCableDownstream' identifies a downstream channel
+               policy.
+
+               Downstream level thresholds supersedes global level
+               thresholds."
+        INDEX { ccacDsConfigRevIfIndex,
+                ccacDsConfigRevAppBucketIndex }
+        ::= { ccacDsConfigRevTable 1 }
+
+CcacDsConfigRevEntry ::= SEQUENCE {
+            ccacDsConfigRevIfIndex             InterfaceIndexOrZero,
+            ccacDsConfigRevAppBucketIndex      CcacApplicationBucketType,
+            ccacDsConfigRevAppBucketName       SnmpAdminString,
+            ccacDsConfigRevMinorThreshold      NonZeroPercent,
+            ccacDsConfigRevMajorThreshold      NonZeroPercent,
+            ccacDsConfigRevExclusivePercent    NonZeroPercent,
+            ccacDsConfigRevNonExclusivePercent Percent,
+            ccacDsConfigRevStorageType         StorageType,
+            ccacDsConfigRevStatus              RowStatus
+        }
+
+ccacDsConfigRevIfIndex OBJECT-TYPE
+        SYNTAX      InterfaceIndexOrZero
+        MAX-ACCESS  not-accessible 
+        STATUS      current
+        DESCRIPTION
+            "The object identities the interface to which the 
+            downstream thresholds applies:
+
+            1. If '0', then the policy applies to all downstream
+               channels being monitored.
+
+            2. If the corresponding ifType is 'docsCableDownstream',
+               then the policy applies to that downstream."
+        ::= { ccacDsConfigRevEntry 1 }
+
+ccacDsConfigRevAppBucketIndex OBJECT-TYPE
+        SYNTAX      CcacApplicationBucketType
+        MAX-ACCESS  not-accessible 
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the application bucket number
+            in defining the parameters for policy applies."
+        ::= { ccacDsConfigRevEntry 2 }
+
+ccacDsConfigRevAppBucketName OBJECT-TYPE
+        SYNTAX      SnmpAdminString
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the application bucket name
+            corresponding to the application bucket number.
+
+            Application bucket name can be used to label each
+            application bucket and give descriptive information
+            on the type of application.
+
+            Application bucket name may be a null string if it
+            is not defined."
+        DEFVAL { "" }
+        ::= { ccacDsConfigRevEntry 3 }
+
+ccacDsConfigRevMinorThreshold OBJECT-TYPE
+        SYNTAX      NonZeroPercent
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the minor threshold related to
+            the utilization of downstream bandwidth."
+        ::= { ccacDsConfigRevEntry 4 }
+
+ccacDsConfigRevMajorThreshold OBJECT-TYPE
+        SYNTAX      NonZeroPercent
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the major threshold related
+            to the utilization of downstream bandwidth.
+
+            The major threshold must be greater than minor threshold."
+        ::= { ccacDsConfigRevEntry 5 }
+
+ccacDsConfigRevExclusivePercent OBJECT-TYPE
+        SYNTAX      NonZeroPercent
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the reserved bandwidth exclusively
+            related to the utilization of downstream bandwidth.
+
+            The exclusive percent must be greater than major threshold.
+
+            The sum of exclusive percent for all different traffic
+            type on this downstream cannot be greater than '100'."
+        ::= { ccacDsConfigRevEntry 6 }
+
+ccacDsConfigRevNonExclusivePercent OBJECT-TYPE
         SYNTAX      Percent
         MAX-ACCESS  read-create
         STATUS      current
@@ -677,7 +1109,38 @@ ccacDsConfigNonExclusivePercent OBJECT-TYPE
 
             The sum of exclusive and non-exclusive percent in the
             same entry cannot be greater than '100'."
-        ::= { ccacDsConfigEntry 7 }
+        ::= { ccacDsConfigRevEntry 7 }
+
+ccacDsConfigRevStorageType OBJECT-TYPE
+        SYNTAX      StorageType
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The storage type for this conceptual row.
+
+            If the value of this object is 'volatile', then
+            this entry only exists in RAM and the this row
+            would be lost on system reload.
+
+            If the value of this object is 'nonVolatile' then
+            this entry has been saved to NVRAM and will persist
+            across system reload."
+        DEFVAL { nonVolatile }
+        ::= { ccacDsConfigRevEntry 8 }
+
+ccacDsConfigRevStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object facilitates the creation, modification,
+            or deletion of a conceptual row in this table.
+
+            For row creation, ccacUsConfigRevMinorThreshold,
+            ccacUsConfigRevMajorThreshold,
+            ccacUsConfigRevExclusivePercent and
+            ccacUsConfigRevNonExclusivePercent are mandatory."
+        ::= { ccacDsConfigRevEntry 9 }
 
 -- Monitor of system resource utilization
 
@@ -777,14 +1240,16 @@ ccacSysRscCountersDscTime OBJECT-TYPE
             corresponding counters."
         ::= { ccacSysRscEntry 6 }
 
--- Monitor of upstream channel bandwidth utilization
+-- Monitor of upstream channel bandwidth utilization (DEPRECATED)
 
 ccacUsTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF CcacUsEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
-            "This table contains statistical data relating to 
+            "This table is deprecated by ccacUsRevTable.
+
+            This table contains statistical data relating to 
             an upstream channel bandwidth utilization for every 
             monitored upstream channel.
 
@@ -795,7 +1260,7 @@ ccacUsTable OBJECT-TYPE
 ccacUsEntry OBJECT-TYPE
         SYNTAX      CcacUsEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "Each entry contains statistical data relating to an
             upstream channel bandwidth utilization, for a scheduling 
@@ -806,7 +1271,7 @@ ccacUsEntry OBJECT-TYPE
         ::= { ccacUsTable 1 }
 
 CcacUsEntry ::= SEQUENCE {
-            ccacUsSchedType                SchedulingType,
+            ccacUsSchedType                CcacSchedulingType,
             ccacUsServiceClassName         QoSServiceClassNameOrNull,
             ccacUsUtilization              Percent,
             ccacUsMinorCrosses             Counter32,
@@ -816,9 +1281,9 @@ CcacUsEntry ::= SEQUENCE {
         }
 
 ccacUsSchedType OBJECT-TYPE
-        SYNTAX      SchedulingType
+        SYNTAX      CcacSchedulingType
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object indicates the scheduling type of an upstream
             channel.
@@ -832,7 +1297,7 @@ ccacUsSchedType OBJECT-TYPE
 ccacUsServiceClassName    OBJECT-TYPE
         SYNTAX      QoSServiceClassNameOrNull
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object indicates the QoS service class name.
             
@@ -845,7 +1310,7 @@ ccacUsServiceClassName    OBJECT-TYPE
 ccacUsUtilization OBJECT-TYPE
         SYNTAX      Percent
         MAX-ACCESS  read-only
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object indicates the upstream channel bandwidth
             utilized by the scheduling service."
@@ -854,7 +1319,7 @@ ccacUsUtilization OBJECT-TYPE
 ccacUsMinorCrosses OBJECT-TYPE
         SYNTAX      Counter32
         MAX-ACCESS  read-only
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "The value of the statistic during the last sampling
             period.
@@ -867,7 +1332,7 @@ ccacUsMinorCrosses OBJECT-TYPE
 ccacUsMajorCrosses OBJECT-TYPE
         SYNTAX      Counter32
         MAX-ACCESS  read-only
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object indicates the number of times upstream
             channel bandwidth utilization has crossed major threshold
@@ -877,7 +1342,7 @@ ccacUsMajorCrosses OBJECT-TYPE
 ccacUsExclusiveCrosses OBJECT-TYPE
         SYNTAX      Counter32
         MAX-ACCESS  read-only
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object indicates the number of times upstream
             channel bandwidth utilization has crossed exclusive 
@@ -887,7 +1352,7 @@ ccacUsExclusiveCrosses OBJECT-TYPE
 ccacUsCountersDscTime OBJECT-TYPE
         SYNTAX      TimeStamp
         MAX-ACCESS  read-only
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "The value of sysUpTime on the most recent occasion at
             which all counters suffered a discontinuity.
@@ -898,14 +1363,16 @@ ccacUsCountersDscTime OBJECT-TYPE
             corresponding counters."
         ::= { ccacUsEntry 7 }
       
--- Monitor of downstream bandwidth utilization
+-- Monitor of downstream bandwidth utilization (DEPRECATED)
 
 ccacDsTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF CcacDsEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
-            "This table contains the statistical data relating to
+            "This table is deprecated by ccacDsRevTable.
+
+            This table contains the statistical data relating to
             downstream bandwidth utilization for every monitored
             downstream. 
 
@@ -916,7 +1383,7 @@ ccacDsTable OBJECT-TYPE
 ccacDsEntry OBJECT-TYPE
         SYNTAX      CcacDsEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "Each entry contains statistical data on the
             bandwidth utilization, per traffic type and downstream."
@@ -936,7 +1403,7 @@ CcacDsEntry ::= SEQUENCE {
 ccacDsTrafficType OBJECT-TYPE
         SYNTAX      CcacDSTrafficMonitoredType
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object indicates the traffic type
             used in classifying a downstream."
@@ -945,7 +1412,7 @@ ccacDsTrafficType OBJECT-TYPE
 ccacDsUtilization OBJECT-TYPE
         SYNTAX      Percent
         MAX-ACCESS  read-only
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object indicates the downstream bandwidth
             utilization for the traffic type on the downstream."
@@ -954,7 +1421,7 @@ ccacDsUtilization OBJECT-TYPE
 ccacDsMinorCrosses OBJECT-TYPE
         SYNTAX      Counter32
         MAX-ACCESS  read-only
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object indicates the number of times
             the minor downstream bandwidth threshold,
@@ -964,7 +1431,7 @@ ccacDsMinorCrosses OBJECT-TYPE
 ccacDsMajorCrosses OBJECT-TYPE
         SYNTAX      Counter32
         MAX-ACCESS  read-only
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object indicates the number of times
             the major downstream bandwidth threshold,
@@ -974,7 +1441,7 @@ ccacDsMajorCrosses OBJECT-TYPE
 ccacDsExclusiveCrosses OBJECT-TYPE
         SYNTAX      Counter32
         MAX-ACCESS  read-only
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION
             "This object indicates the number of times
             the exclusive percentage, ccacDsConfigExclusivePercent,
@@ -982,6 +1449,106 @@ ccacDsExclusiveCrosses OBJECT-TYPE
         ::= { ccacDsEntry 5 }
         
 ccacDsCountersDscTime OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      deprecated
+        DESCRIPTION
+            "The value of sysUpTime on the most recent occasion at
+            which all counters suffered a discontinuity.
+
+            If no such discontinuities have occurred since the
+            last re-initialization of the local management subsystem,
+            then this object contains the creation time of the 
+            corresponding counters."
+        ::= { ccacDsEntry 6 }
+
+-- Monitor of upstream channel bandwidth utilization
+
+ccacUsRevTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF CcacUsRevEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table contains statistical data related to 
+            upstream channel bandwidth utilization for every 
+            monitored upstream channel and application bucket.
+
+            For every upstream channel that is being monitored,
+            if an application bucket has been configured in
+            ccacUsConfigRevTable for that upstream channel, there
+            will be one entry in this table."
+        ::= { ccacStatObjects 4 }
+
+ccacUsRevEntry OBJECT-TYPE
+        SYNTAX      CcacUsRevEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "Each entry contains statistical data on the
+            bandwidth utilization of a upstream channel with a
+            specific application bucket number."
+        INDEX { ifIndex,
+                ccacUsRevAppBucketIndex }
+        ::= { ccacUsRevTable 1 }
+
+CcacUsRevEntry ::= SEQUENCE {
+            ccacUsRevAppBucketIndex           CcacApplicationBucketType,
+            ccacUsRevUtilization              TenthPercent,
+            ccacUsRevMinorCrosses             Counter32,
+            ccacUsRevMajorCrosses             Counter32,
+            ccacUsRevExclusiveCrosses         Counter32,
+            ccacUsRevCountersDscTime          TimeStamp
+        }
+
+ccacUsRevAppBucketIndex OBJECT-TYPE
+        SYNTAX      CcacApplicationBucketType
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the application bucket number
+            that is being monitored."
+        ::= { ccacUsRevEntry 1 }
+
+ccacUsRevUtilization OBJECT-TYPE
+        SYNTAX      TenthPercent
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the upstream channel bandwidth
+            utilized by the scheduling service."
+        ::= { ccacUsRevEntry 2 }
+
+ccacUsRevMinorCrosses OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the number of times upstream
+            channel bandwidth utilization has crossed minor threshold
+            specified by ccacUsConfigRevMinorThreshold."
+        ::= { ccacUsRevEntry 3 }
+
+ccacUsRevMajorCrosses OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the number of times upstream
+            channel bandwidth utilization has crossed major threshold
+            specified by ccacUsConfigRevMajorThreshold."
+        ::= { ccacUsRevEntry 4 }
+
+ccacUsRevExclusiveCrosses OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the number of times upstream
+            channel bandwidth utilization has crossed exclusive 
+            percentage specified by ccacUsConfigRevExclusivePercent."
+        ::= { ccacUsRevEntry 5 }
+
+ccacUsRevCountersDscTime OBJECT-TYPE
         SYNTAX      TimeStamp
         MAX-ACCESS  read-only
         STATUS      current
@@ -993,7 +1560,107 @@ ccacDsCountersDscTime OBJECT-TYPE
             last re-initialization of the local management subsystem,
             then this object contains the creation time of the 
             corresponding counters."
-        ::= { ccacDsEntry 6 }
+        ::= { ccacUsRevEntry 6 }
+      
+-- Monitor of downstream bandwidth utilization
+
+ccacDsRevTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF CcacDsRevEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table contains the statistical data related to
+            downstream bandwidth utilization for every monitored
+            downstream channel and application bucket. 
+
+            For every downstream channel that is being monitored,
+            if an application bucket has been configured in
+            ccacDsConfigRevTable for that downstream channel,
+            there will be one entry in this table."
+        ::= { ccacStatObjects 5 }
+
+ccacDsRevEntry OBJECT-TYPE
+        SYNTAX      CcacDsRevEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "Each entry contains statistical data on the
+            bandwidth utilization of a downstream channel with a
+            specific application bucket number."
+        INDEX { ifIndex,
+                ccacDsRevAppBucketIndex }
+        ::= { ccacDsRevTable 1 }
+
+CcacDsRevEntry ::= SEQUENCE {
+            ccacDsRevAppBucketIndex           CcacApplicationBucketType,
+            ccacDsRevUtilization              TenthPercent,
+            ccacDsRevMinorCrosses             Counter32,
+            ccacDsRevMajorCrosses             Counter32,
+            ccacDsRevExclusiveCrosses         Counter32,
+            ccacDsRevCountersDscTime          TimeStamp
+        }
+
+ccacDsRevAppBucketIndex OBJECT-TYPE
+        SYNTAX      CcacApplicationBucketType
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This object identifies the application bucket number
+            that is being monitored."
+        ::= { ccacDsRevEntry 1 }
+
+ccacDsRevUtilization OBJECT-TYPE
+        SYNTAX      TenthPercent
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the downstream bandwidth
+            utilization."
+        ::= { ccacDsRevEntry 2 }
+
+ccacDsRevMinorCrosses OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the number of times
+            the minor downstream bandwidth threshold,
+            ccacDsConfigRevMinorThreshold, is crossed."
+        ::= { ccacDsRevEntry 3 }
+
+ccacDsRevMajorCrosses OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the number of times
+            the major downstream bandwidth threshold,
+            ccacDsConfigRevMajorThreshold, is crossed."
+        ::= { ccacDsRevEntry 4 }
+
+ccacDsRevExclusiveCrosses OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the number of times the
+            exclusive percentage, ccacDsConfigRevExclusivePercent,
+            is crossed."
+        ::= { ccacDsRevEntry 5 }
+        
+ccacDsRevCountersDscTime OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value of sysUpTime on the most recent occasion at
+            which all counters suffered a discontinuity.
+
+            If no such discontinuities have occurred since the
+            last re-initialization of the local management subsystem,
+            then this object contains the creation time of the 
+            corresponding counters."
+        ::= { ccacDsRevEntry 6 }
 
 -- Cisco Cable Admission Control Event History
 
@@ -1142,10 +1809,11 @@ ciscoCableAdmCtrlMIBGroups OBJECT IDENTIFIER
     ::= { ciscoCableAdmCtrlMIBConform 2 }
 
 ciscoCableAdmCtrlCompliance MODULE-COMPLIANCE
-        STATUS current
+        STATUS deprecated
         DESCRIPTION
             "The compliance statement for entities which implement the
-            Cisco Cable Admission Control MIB."
+            Cisco Cable Admission Control MIB. This statement is deprecated
+            by ciscoCableAdmCtrlComplianceRev."
         MODULE  -- this module
                 MANDATORY-GROUPS {
                     ciscoCableAdmCtrlConfigGroup,
@@ -1226,6 +1894,112 @@ ciscoCableAdmCtrlCompliance MODULE-COMPLIANCE
 
         ::= { ciscoCableAdmCtrlCompliances 1 }
 
+ciscoCableAdmCtrlComplianceRev MODULE-COMPLIANCE
+        STATUS current
+        DESCRIPTION
+            "The compliance statement for entities which implement the
+            Cisco Cable Admission Control MIB. This compliance module
+            deprecates ciscoCableAdmCtrlCompliance."
+        MODULE  -- this module
+                MANDATORY-GROUPS {
+                    ciscoCableAdmCtrlConfigGroupRev1,
+                    ciscoCableAdmCtrlStatGroupRev1,
+                    ciscoCableAdmCtrlEventHistGroup,
+                    ciscoCableAdmCtrlNotifGroup
+                }
+
+                OBJECT      ccacSysRscConfigStatus
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacSysRscConfigMinorThreshold
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacSysRscConfigMajorThreshold
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access is not required."
+
+                OBJECT      ccacSysRscConfigCritThreshold
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacUsConfigRevAppBucketName
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacUsConfigRevStatus
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacUsConfigRevMinorThreshold
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacUsConfigRevMajorThreshold
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacUsConfigRevExclusivePercent
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacUsConfigRevNonExclusivePercent
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacUsConfigRevStorageType
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacDsConfigRevStatus
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacDsConfigRevMinorThreshold
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacDsConfigRevMajorThreshold
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacDsConfigRevExclusivePercent
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacDsConfigRevNonExclusivePercent
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacDsConfigRevAppBucketName
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+                OBJECT      ccacDsConfigRevStorageType
+                MIN-ACCESS  read-only
+                DESCRIPTION
+                    "Write and create access are not required."
+
+        ::= { ciscoCableAdmCtrlCompliances 2 }
+
 -- Units of Conformance
 
 ciscoCableAdmCtrlConfigGroup OBJECT-GROUP
@@ -1247,10 +2021,11 @@ ciscoCableAdmCtrlConfigGroup OBJECT-GROUP
             ccacDsConfigExclusivePercent,
             ccacDsConfigNonExclusivePercent
          }
-        STATUS    current
+        STATUS    deprecated
         DESCRIPTION
             "A collection of objects providing the
-            event monitoring and notification configuration."
+            event monitoring and notification configuration.
+            This group is deprecated by ciscoCableAdmCtrlConfigGroupRev1."
         ::= { ciscoCableAdmCtrlMIBGroups 1 }
 
 ciscoCableAdmCtrlStatGroup OBJECT-GROUP
@@ -1271,10 +2046,11 @@ ciscoCableAdmCtrlStatGroup OBJECT-GROUP
             ccacDsExclusiveCrosses,
             ccacDsCountersDscTime
         }
-        STATUS    current
+        STATUS    deprecated
         DESCRIPTION
             "A collection of objects providing admission control
-            data based on resources."
+            data based on resources. This group is deprecated by
+            ciscoCableAdmCtrlStatGroupRev1."
         ::= { ciscoCableAdmCtrlMIBGroups 2 }
 
 ciscoCableAdmCtrlEventHistGroup OBJECT-GROUP
@@ -1302,5 +2078,60 @@ ciscoCableAdmCtrlNotifGroup NOTIFICATION-GROUP
             monitoring CMTS system resources, upstream channel
             bandwidth, downstream bandwidth."
         ::= { ciscoCableAdmCtrlMIBGroups 4 }
+
+ciscoCableAdmCtrlConfigGroupRev1 OBJECT-GROUP
+        OBJECTS {
+            ccacNotifyEnable,
+            ccacEventMonitoring,
+            ccacSysRscConfigStatus,
+            ccacSysRscConfigMinorThreshold,
+            ccacSysRscConfigMajorThreshold,
+            ccacSysRscConfigCritThreshold,
+            ccacUsConfigRevAppBucketName,
+            ccacUsConfigRevStatus,
+            ccacUsConfigRevMinorThreshold,
+            ccacUsConfigRevMajorThreshold,
+            ccacUsConfigRevExclusivePercent,
+            ccacUsConfigRevNonExclusivePercent,
+            ccacUsConfigRevStorageType,
+            ccacDsConfigRevStatus,
+            ccacDsConfigRevMinorThreshold,
+            ccacDsConfigRevMajorThreshold,
+            ccacDsConfigRevExclusivePercent,
+            ccacDsConfigRevNonExclusivePercent,
+            ccacDsConfigRevAppBucketName,
+            ccacDsConfigRevStorageType
+         }
+        STATUS    current
+        DESCRIPTION
+            "A collection of objects providing the
+            event monitoring and notification configuration.
+            This group deprecates ciscoCableAdmCtrlConfigGroup."
+        ::= { ciscoCableAdmCtrlMIBGroups 5 }
+
+ciscoCableAdmCtrlStatGroupRev1 OBJECT-GROUP
+        OBJECTS {
+            ccacSysRscUtilization,
+            ccacSysRscMinorCrosses,
+            ccacSysRscMajorCrosses,
+            ccacSysRscCountersDscTime,
+            ccacSysRscCriticalCrosses,
+            ccacUsRevUtilization,
+            ccacUsRevMinorCrosses,
+            ccacUsRevMajorCrosses,
+            ccacUsRevExclusiveCrosses,
+            ccacUsRevCountersDscTime,
+            ccacDsRevUtilization,
+            ccacDsRevMinorCrosses,
+            ccacDsRevMajorCrosses,
+            ccacDsRevExclusiveCrosses,
+            ccacDsRevCountersDscTime
+        }
+        STATUS    current
+        DESCRIPTION
+            "A collection of objects providing admission control
+            data based on resources. This group deprecates
+            ciscoCableAdmCtrlStatGroup."
+        ::= { ciscoCableAdmCtrlMIBGroups 6 }
 
 END

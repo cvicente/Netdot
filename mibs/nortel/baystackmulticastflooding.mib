@@ -10,7 +10,7 @@ IMPORTS
         FROM SYNOPTICS-ROOT-MIB;
 
 bayStackMulticastFloodingMib MODULE-IDENTITY
-    LAST-UPDATED    "200405190000Z"
+    LAST-UPDATED    "200608070000Z"
     ORGANIZATION    "Nortel Networks"
     CONTACT-INFO    "Nortel Networks"
     DESCRIPTION
@@ -28,6 +28,9 @@ bayStackMulticastFloodingMib MODULE-IDENTITY
          no warranty, either express or implied, as to the use,
          operation, condition, or performance of the Specification."
 
+    REVISION "200608070000Z" -- 07 August 2006
+    DESCRIPTION "v002:  Cleaned up some descriptions."
+
     REVISION "200405190000Z" -- 19 May 2004
     DESCRIPTION "v001:  Initial version."
 
@@ -41,12 +44,13 @@ bsmfMulticastFloodingEnabled OBJECT-TYPE
     MAX-ACCESS  read-write
     STATUS      current
     DESCRIPTION
-        "This object indicates whether multicast flooding is enabled.  If it
-        is enabled, then multicast packets are always flooded to all ports.
-        Otherwise, multicast packets that do not match an address in the
-        XXXTable are flooded only to IGMP multicast router ports, and
-        multicast packets that do match an address in the XXXTable are
-        flooded to all ports."
+        "This object indicates whether filtering of multicast MAC addresses to be
+        flooded is enabled.  If the value of this object is false(2), then
+        multicast packets are always flooded to all ports.  Otherwise, if the
+        value is true(1), multicast packets that do not match an address in the
+        bsmfAllowedAddressTable are flooded only to IGMP multicast router
+        ports, and multicast packets that do match an address in the
+        bsmfAllowedAddressTable are flooded to all ports."
     ::= { bsmfObjects 1 }
 
 --
@@ -58,8 +62,8 @@ bsmfAllowedAddressTable OBJECT-TYPE
     MAX-ACCESS not-accessible
     STATUS current
     DESCRIPTION
-        "This table is used to control the EAP multihost configuration
-        for each port in the system."
+        "This table is used to specify particular multicast MAC addresses
+         that are allowed to be flooded to all ports."
     ::= { bayStackMulticastFloodingMib 2 }
 
 bsmfAllowedAddressEntry OBJECT-TYPE
@@ -67,7 +71,7 @@ bsmfAllowedAddressEntry OBJECT-TYPE
     MAX-ACCESS not-accessible
     STATUS current
     DESCRIPTION
-        "The EAP multihost configuration for a port."
+        "An entry in the bsmfAllowedAddressTable."
     INDEX { bsmfAllowedAddressMacAddr }
     ::= { bsmfAllowedAddressTable 1 }
 

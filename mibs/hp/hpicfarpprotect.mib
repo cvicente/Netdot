@@ -1,0 +1,287 @@
+HP-ICF-ARP-PROTECT DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        OBJECT-TYPE, MODULE-IDENTITY, Counter32
+            FROM SNMPv2-SMI
+        TruthValue
+            FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP
+            FROM SNMPv2-CONF
+        ifIndex
+            FROM IF-MIB
+        VlanIndex
+            FROM Q-BRIDGE-MIB
+        hpSwitch
+            FROM HP-ICF-OID;
+
+    hpicfArpProtect  MODULE-IDENTITY
+        LAST-UPDATED "200605030027Z" -- May 3, 2006
+        ORGANIZATION "Hewlett-Packard Company
+                     ProCurve Networking Business"
+        CONTACT-INFO "Hewlett-Packard Company
+                     8000 Foothills Blvd.
+                     Roseville, CA 95747"
+        DESCRIPTION  "This MIB module contains HP proprietary
+                     objects for managing Dynamic ARP
+                     Protection."
+
+        REVISION     "200605030027Z" -- May 3, 2006
+        DESCRIPTION  "Initial revision."
+        ::= { hpSwitch 37 }
+
+    hpicfArpProtectObjects OBJECT IDENTIFIER ::= { hpicfArpProtect 1 }
+
+    hpicfArpProtectConfig OBJECT IDENTIFIER ::= { hpicfArpProtectObjects 1 }
+
+    hpicfArpProtectGlobalCfg OBJECT IDENTIFIER ::= { hpicfArpProtectConfig 1 }
+
+
+    hpicfArpProtectEnable OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The administrative status of the ARP Protection
+                    feature."
+        ::= { hpicfArpProtectGlobalCfg 1 }
+
+    hpicfArpProtectVlanEnable OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE (512))
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The administrative status for Dynamic ARP Protection
+                    on each VLAN.  There will be one bit in this string
+                    for each possible VLAN ID.  Each octet within this
+                    value specifies a set of eight VLANs, with the first
+                    octet specifying VLAN IDs 1 through 8, the second
+                    octet specifying VLAN IDs 9 through 16, etc.  Within
+                    each octet, the most significant bit represents the
+                    lowest numbered VLAN ID, and the least significant
+                    bit represents the highest numbered VLAN ID.  Thus,
+                    each possible VLAN ID of the bridge is represented by
+                    a single bit within the value of this object.  If
+                    that bit has a value of '1', then Dynamic ARP
+                    Protection is enabled on that VLAN; Dynamic ARP
+                    Protection is not enabled on the VLAN its bit has a
+                    value of '0'."
+        ::= { hpicfArpProtectGlobalCfg 2 }
+
+    hpicfArpProtectValidation OBJECT-TYPE
+        SYNTAX      BITS {
+                        srcMac(0),
+                        dstMac(1),
+                        ip(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Additional validation checks to perform on ARP
+                    packets during Dynamic ARP Protection.
+                      srcMac - Drop any ARP request or response
+                               packet where the source MAC address in
+                               the Ethernet header does not match the
+                               sender MAC address in the body of the
+                               ARP packet.
+                      dstMac - Drop any unicast ARP response packet
+                               where the destination MAC address in the
+                               Ethernet header does not match the target
+                               MAC address in the body of the ARP packet.
+                      ip     - Drop any ARP packet where the sender IP
+                               address is invalid.  Drop any ARP response
+                               packet where the target IP address is
+                               invalid.  Invalid addresses include
+                               0.0.0.0, 255.255.255.255, all IP multicast
+                               addresses, and all class E IP addresses.
+                    These checks are only performed for ARP packets
+                    received on untrusted ports in VLANs that are enabled
+                    for Dynamic ARP Protection.  ARP packets received on
+                    trusted ports, and ARP packets in VLANs for which
+                    Dynamic ARP Protection is disabled, are forwarded
+                    without validation."
+        ::= { hpicfArpProtectGlobalCfg 3 }
+
+
+    hpicfArpProtectPortTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfArpProtectPortEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Per-interface configuration for Dynamic ARP
+                    Protection."
+        ::= { hpicfArpProtectConfig 2 }
+
+    hpicfArpProtectPortEntry OBJECT-TYPE
+        SYNTAX      HpicfArpProtectPortEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Dynamic ARP Protection configuration information for
+                    a single port."
+        INDEX       { ifIndex }
+        ::= { hpicfArpProtectPortTable 1 }
+
+    HpicfArpProtectPortEntry ::=
+        SEQUENCE {
+            hpicfArpProtectPortTrust         TruthValue
+        }
+
+    hpicfArpProtectPortTrust OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "This object indicates whether this port is
+                    trusted for Dynamic ARP Protection."
+        ::= { hpicfArpProtectPortEntry 1 }
+
+    hpicfArpProtectStatus OBJECT IDENTIFIER ::= { hpicfArpProtectObjects 2 }
+
+    hpicfArpProtectVlanStatTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfArpProtectVlanStatEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Per-VLAN statistics for Dynamic ARP Protection."
+        ::= { hpicfArpProtectStatus 1 }
+
+    hpicfArpProtectVlanStatEntry OBJECT-TYPE
+        SYNTAX      HpicfArpProtectVlanStatEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Dynamic ARP Protection statistics for a single VLAN."
+        INDEX       { hpicfArpProtectVlanStatIndex }
+        ::= { hpicfArpProtectVlanStatTable 1 }
+
+    HpicfArpProtectVlanStatEntry ::=
+        SEQUENCE {
+            hpicfArpProtectVlanStatIndex       VlanIndex,
+            hpicfArpProtectVlanStatForwards    Counter32,
+            hpicfArpProtectVlanStatBadPkts     Counter32,
+            hpicfArpProtectVlanStatBadBindings Counter32,
+            hpicfArpProtectVlanStatBadSrcMacs  Counter32,
+            hpicfArpProtectVlanStatBadDstMacs  Counter32,
+            hpicfArpProtectVlanStatBadIpAddrs  Counter32
+        }
+
+    hpicfArpProtectVlanStatIndex OBJECT-TYPE
+        SYNTAX      VlanIndex
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "This variable uniquely identifies the VLAN that
+                    the counters in this entry apply to.  The VLAN
+                    identified by this object is the same VLAN as
+                    identified by the identical value in the
+                    dot1qVlanIndex object."
+        ::= { hpicfArpProtectVlanStatEntry 1 }
+
+    hpicfArpProtectVlanStatForwards OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The number of ARP packets received on untrusted
+                    ports in this VLAN that were successfully validated
+                    and forwarded.  This count does not increment for
+                    VLANs for which Dynamic ARP Protection is not
+                    enabled."
+        ::= { hpicfArpProtectVlanStatEntry 2 }
+
+    hpicfArpProtectVlanStatBadPkts OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The number of ARP packets received on untrusted
+                    ports that were dropped because they were malformed
+                    in some way.  This may include an unrecognized
+                    opcode, an unrecognized protocol type, an
+                    unrecognized hardware type, an invalid protocol
+                    address length, or an invalid hardware address
+                    length.  This count does not increment for VLANs
+                    for which Dynamic ARP Protection is not enabled."
+        ::= { hpicfArpProtectVlanStatEntry 3 }
+
+    hpicfArpProtectVlanStatBadBindings OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The number of ARP packets received on untrusted
+                    ports that were dropped because they advertized
+                    a source IP-to-MAC binding that did not match a
+                    known, valid binding.  This count does not increment
+                    for VLANs for which Dynamic ARP Protection is not
+                    enabled."
+        ::= { hpicfArpProtectVlanStatEntry 4 }
+
+    hpicfArpProtectVlanStatBadSrcMacs OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The number of ARP packets received on untrusted
+                    ports that were dropped because the source MAC
+                    address in the Ethernet header did not match the
+                    sender MAC address in the body of the ARP packet.
+                    This count does not increment when source MAC
+                    validation is not enabled.  This count does not
+                    increment for VLANs for which Dynamic ARP Protection
+                    is not enabled."
+        ::= { hpicfArpProtectVlanStatEntry 5 }
+
+    hpicfArpProtectVlanStatBadDstMacs OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The number of unicast ARP response packets received
+                    on untrusted ports that were dropped because the
+                    destination MAC address in the Ethernet header did
+                    not match the target MAC address in the body of the
+                    ARP packet.  This count does not increment when
+                    destination address validation is not enabled.
+                    This count does not increment for VLANs for which
+                    Dynamic ARP Protection is not enabled."
+        ::= { hpicfArpProtectVlanStatEntry 6 }
+
+    hpicfArpProtectVlanStatBadIpAddrs OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The number of ARP packets received on untrusted
+                    ports that were dropped because they contained
+                    an invalid sender IP address, or they contained
+                    an invalid target IP address in an ARP response.
+                    This count does not increment when IP address
+                    validation is not enabled. This count does not
+                    increment for VLANs for which Dynamic ARP Protection
+                    is not enabled."
+        ::= { hpicfArpProtectVlanStatEntry 7 }
+
+
+    hpicfArpProtectConformance OBJECT IDENTIFIER ::= { hpicfArpProtect 2 }
+
+    hpicfArpProtectGroups OBJECT IDENTIFIER ::=
+        { hpicfArpProtectConformance 1 }
+
+    hpicfArpProtectBaseGroup OBJECT-GROUP
+        OBJECTS     { 
+                      hpicfArpProtectEnable,
+                      hpicfArpProtectVlanEnable,
+                      hpicfArpProtectValidation,
+                      hpicfArpProtectPortTrust,
+                      hpicfArpProtectVlanStatForwards,
+                      hpicfArpProtectVlanStatBadPkts,
+                      hpicfArpProtectVlanStatBadBindings,
+                      hpicfArpProtectVlanStatBadSrcMacs,
+                      hpicfArpProtectVlanStatBadDstMacs,
+                      hpicfArpProtectVlanStatBadIpAddrs
+                    }
+        STATUS      current
+        DESCRIPTION "A collection of objects for configuring and
+                    monitoring the base Dynamic ARP Protection
+                    functionality."
+        ::= { hpicfArpProtectGroups 1 }
+
+
+    hpicfArpProtectCompliances OBJECT IDENTIFIER ::=
+         { hpicfArpProtectConformance 2 }
+
+    hpicfArpProtectCompliance MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "The compliance statement for HP ProCurve switches
+                    that support Dynamic ARP Protection."
+        MODULE
+            MANDATORY-GROUPS { hpicfArpProtectBaseGroup }
+
+        ::= { hpicfArpProtectCompliances 1 }
+END

@@ -5,6 +5,8 @@
 -- *	  Extreme Networks
 -- *      http://www.extremenetworks.com
 -- *
+-- * extracted from $Extreme_Id: extreme.mib,v 1.24.6.35 2006/01/09 15:15:18 build-sc Exp $
+-- *
 -- */
 
 -- ============================================================================
@@ -14,7 +16,8 @@ EXTREME-FDB-MIB DEFINITIONS ::= BEGIN
                 MODULE-IDENTITY         FROM SNMPv2-SMI
 		    OBJECT-TYPE             FROM SNMPv2-SMI
 		    IpAddress               FROM SNMPv2-SMI
-                MacAddress, RowStatus       FROM SNMPv2-TC
+                    Counter64		    FROM SNMPv2-SMI
+                DisplayString, MacAddress, RowStatus       FROM SNMPv2-TC
                 extremeAgent, PortList      FROM EXTREME-BASE-MIB;
 
 
@@ -274,5 +277,52 @@ EXTREME-FDB-MIB DEFINITIONS ::= BEGIN
                       supported."
 
               ::= { extremeFdbPermFdbEntry 6 }
+
+
+        extremeFdbMacFdbCounterTable    OBJECT-TYPE
+              SYNTAX    SEQUENCE OF ExtremeFdbMacFdbCounterEntry
+              MAX-ACCESS  not-accessible
+              STATUS current
+              DESCRIPTION
+                  "A table that contains change counters for the Operational FDB.  
+                   Each entry in the table corresponds to an individual port.  Whenever
+                   a change occurs to the operational FDB (MAC learned, aged out or
+                   removed), the counter associated with the port is incremented by one.
+             
+                   The counters are reset at agent startup and when the port is down.  
+                   They are not cleared when the port is enabled or disabled."
+
+              ::= { extremeFdb 5 }
+
+        extremeFdbMacFdbCounterEntry    OBJECT-TYPE
+              SYNTAX    ExtremeFdbMacFdbCounterEntry
+              MAX-ACCESS    not-accessible
+              STATUS    current
+              DESCRIPTION
+                   "An entry in the table of MAC FDB change counters."
+              INDEX { extremeFdbMacFdbCounterPortIfIndex }
+              ::= {extremeFdbMacFdbCounterTable 1}
+
+        ExtremeFdbMacFdbCounterEntry ::= SEQUENCE {
+              extremeFdbMacFdbCounterPortIfIndex     INTEGER,
+              extremeFdbMacFdbCounterValue           Counter64
+        }
+
+        extremeFdbMacFdbCounterPortIfIndex OBJECT-TYPE
+              SYNTAX  INTEGER
+              MAX-ACCESS  not-accessible
+              STATUS  current
+              DESCRIPTION
+                  "The ifIndex of the Port for which the counte applies."
+              ::= { extremeFdbMacFdbCounterEntry 1 }
+
+        extremeFdbMacFdbCounterValue OBJECT-TYPE
+              SYNTAX  Counter64
+              MAX-ACCESS read-only 
+              STATUS  current
+              DESCRIPTION
+                      "The count of the number of FDB changes for the given port
+                       since the counter was last reset."
+              ::= { extremeFdbMacFdbCounterEntry 2 }
 
 END

@@ -4,7 +4,7 @@
 -- October 2001, Edward Pham
 -- February 2003, Padma Pullela
 --
--- Copyright (c) 2001, 2003 by cisco Systems, Inc.
+-- Copyright (c) 2001, 2003, 2006 by cisco Systems, Inc.
 -- All rights reserved.
 --
 -- *****************************************************************
@@ -32,7 +32,7 @@ IMPORTS
 
 
 ciscoMacNotificationMIB MODULE-IDENTITY
-    LAST-UPDATED    "200303210000Z"
+    LAST-UPDATED    "200706110000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
         "       Cisco Systems
@@ -50,6 +50,12 @@ ciscoMacNotificationMIB MODULE-IDENTITY
         feature. MAC notification is a mechanism to inform monitoring
         devices when there are MAC addresses learnt or removed from
         the forwarding database of the monitored devices." 
+
+    REVISION   "200706110000Z"
+    DESCRIPTION
+        "Fixed typo and  made changes to the description of 
+         cmnMACMoveObjects, cmnMACThresholdNotifEnabled and 
+         cmnMacThresholdExceedNotif."
 
     REVISION   "200303210000Z"
     DESCRIPTION
@@ -365,8 +371,14 @@ cmnMACMoveNotificationsEnabled OBJECT-TYPE
      STATUS          current
      DESCRIPTION
          "Specifies whether cmnMacMoveNotification notifications
-          will or will not be sent when the MAC addresses are
-          moved between the interfaces."
+          will or will not be sent when a MAC move is detected by
+          the MAC move notification feature.
+
+          Setting this object to false(2) will not send the
+          cmnMacMoveNotification notifications.
+   
+          Setting this object to true(1) will send the 
+          cmnMacMoveNotification notifications."
     ::= { cmnMACMoveObjects 2 }
 
 cmnMACMoveAddress OBJECT-TYPE
@@ -377,8 +389,8 @@ cmnMACMoveAddress OBJECT-TYPE
          "Indicates the MAC address that is moved between
           cmnMACMoveFromPortId and cmnMACMoveToPortId on 
           cmnMACMoveVlanNumber.  This object is instantiated only 
-          when cmnMACMoveFeatureEnabled value is set to true(2) and
-          a MAC address is moved between the interfaces." 
+          when cmnMACMoveFeatureEnabled value is set to true(1) and
+          a MAC move is detected by the MAC move notification feature."
     ::= { cmnMACMoveObjects 3 }
 
 cmnMACMoveVlanNumber OBJECT-TYPE
@@ -389,8 +401,8 @@ cmnMACMoveVlanNumber OBJECT-TYPE
          "Indicates the VLAN on which the cmnMACMoveAddress is
           moved from cmnMACMoveFromPortId to cmnMACMoveToPortId. 
           This object is instantiated only when
-          cmnMACMoveFeatureEnabled value is set to true(2) and
-          a MAC address is moved between the interfaces."
+          cmnMACMoveFeatureEnabled value is set to true(1) and a
+          MAC move is detected by the MAC move notification feature."
     ::= { cmnMACMoveObjects 4 }
 
 cmnMACMoveFromPortId OBJECT-TYPE
@@ -401,8 +413,8 @@ cmnMACMoveFromPortId OBJECT-TYPE
          "The value of dot1dBasePort for the bridge port from which 
           the cmnMACMoveAddress is moved to cmnMACMoveToPortId on 
           cmnMACMoveVlanNumber. This object is instantiated only when
-          cmnMACMoveFeatureEnabled value is set to true(2) and
-          a MAC address is moved between the interfaces."
+          cmnMACMoveFeatureEnabled value is set to true(1) and a 
+          MAC move is detected by the MAC move notification feature."
      REFERENCE
                "dot1dBasePort is defined in RFC1493."
     ::= { cmnMACMoveObjects 5 }
@@ -415,8 +427,8 @@ cmnMACMoveToPortId OBJECT-TYPE
          "The value of dot1dBasePort for the bridge port to which 
           the cmnMACMoveAddress is moved from cmnMACMoveFromPortId 
           on cmnMACMoveVlanNumber.  This object is instantiated only 
-          when cmnMACMoveFeatureEnabled value is set to true(2) and a 
-          MAC address is moved between the interfaces."
+          when cmnMACMoveFeatureEnabled value is set to true(1) and  
+          a MAC move is detected by the MAC move notification feature."
      REFERENCE
                "dot1dBasePort is defined in RFC1493."
     ::= { cmnMACMoveObjects 6 }
@@ -429,8 +441,8 @@ cmnMACMoveTime OBJECT-TYPE
          "The value of sysUpTime when a cmnMACMoveAddress is moved 
           between cmnMACMoveFromPortId and cmnMACMACMoveToPortId. 
           This object is instantiated only when 
-          cmnMACMoveFeatureEnabled value is set to true(2) and a 
-          MAC address is moved between the interfaces."
+          cmnMACMoveFeatureEnabled value is set to true(1) and  
+          a MAC move is detected by the MAC move notification feature."
     ::= { cmnMACMoveObjects 7 }
 
 --*********************************************************************
@@ -476,10 +488,11 @@ cmnMACThresholdNotifEnabled OBJECT-TYPE
      MAX-ACCESS      read-write
      STATUS          current
      DESCRIPTION
-         "Specifies whether cmnMacMACThresholdNotification 
+         "Specifies whether cmnMacThresholdExceedNotif 
           notifications will or will not be sent when the forwarding 
-          table utilization exceeds  or equals to cmnMACThresholdLimit 
-          value."
+          table utilization exceeds or equals to cmnMACThresholdLimit 
+          value. cmnMacThresholdExceedNotif notification is not sent 
+          when cmnMACThresholdLimit is set to zero."
     ::= { cmnMACThresholdObjects 4 }
 
 cmnUtilizationTable OBJECT-TYPE
@@ -489,7 +502,7 @@ cmnUtilizationTable OBJECT-TYPE
     DESCRIPTION
         "cmnUtilizationTable  specifies the forwarding table 
          utilization information. This table is instantiated only 
-         when cmnMACThresholdFeatureEnabled value is set to true(2).
+         when cmnMACThresholdFeatureEnabled value is set to true(1).
          Entries in this table are updated at the end of every
          cmnMACThresholdInterval." 
           
@@ -598,7 +611,9 @@ cmnMacThresholdExceedNotif  NOTIFICATION-TYPE
     DESCRIPTION
          "cmnMacThresholdExceedNotif is sent when 
           cmnUtilizationUtilization exceeds or equals to the 
-          cmnMACThresholdLimit for a given entPhysicalIndex."
+          cmnMACThresholdLimit for a given entPhysicalIndex.
+          cmnMacThresholdExceedNotif is not sent when 
+          cmnMACThresholdLimit is set to zero"
     ::= { cmnMIBNotifications 3 } 
 
 --

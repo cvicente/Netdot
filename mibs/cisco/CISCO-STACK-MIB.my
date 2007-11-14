@@ -3,7 +3,7 @@
 --
 -- June 1995, Fei Xu
 --
--- Copyright (c) 1995-2005 by cisco Systems, Inc.
+-- Copyright (c) 1995-2007 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 --
@@ -13,7 +13,8 @@ IMPORTS
         MODULE-IDENTITY, OBJECT-TYPE, IpAddress, TimeTicks,
         Counter32, Counter64, Unsigned32, NOTIFICATION-TYPE
                 FROM SNMPv2-SMI
-        DisplayString, RowStatus, TruthValue, MacAddress
+        DisplayString, RowStatus, TruthValue, MacAddress,
+        TEXTUAL-CONVENTION
                 FROM SNMPv2-TC
         fddimibPORTSMTIndex, fddimibPORTIndex
                 FROM FDDI-SMT73-MIB
@@ -31,7 +32,7 @@ IMPORTS
                 FROM CISCO-VTP-MIB;
 
 ciscoStackMIB MODULE-IDENTITY
-        LAST-UPDATED        "200510280000Z"
+        LAST-UPDATED        "200705290000Z"
         ORGANIZATION        "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -49,6 +50,49 @@ ciscoStackMIB MODULE-IDENTITY
         DESCRIPTION
                 "This MIB provides configuration and runtime status for
                  chassis, modules, ports, etc. on the Catalyst systems."
+        REVISION "200705290000Z"
+        DESCRIPTION
+                 "Modified moduleType to include 'wsx6066SlbSk9'."
+
+        REVISION "200705250000Z"
+        DESCRIPTION
+                 "Updated chassisPs1Type and chassisPs2Type to include:
+                 'pwr1500dc'.
+
+                 Modified moduleType to include:
+                 'osm12t3e3', 'osm4GeWanGbicPlus', 'm7600Sip600',
+                 'm7600Sip200', 'm7600Sip400', 'c7600ssc400',
+                 'c7600ssc600', 'esm2x10ge', 'rsp720', 'rsp720base', 
+                 'c7600msfc4'.
+
+                 Updated moduleSubType to include new hardwares:
+                 'm7600pfc3c', 'sip600earl', 'c7600esmdfc3cxl',
+                 'c7600esmdfc3c'.
+
+                 Updated moduleSubType2 to include new hardwares:
+                 'esm2x10ge', 'c7600msfc4'."
+
+        REVISION "200703300000Z"
+        DESCRIPTION
+                 "Modified chassisSysType to include:
+                 'mec6524gs8s', 'mec6524gt8s', 'cisco7603s'.
+
+                 Updated chassisPs1Type and chassisPs2Type to include:
+                 'pwr400dc', 'pwr400ac'.
+
+                 Updated chassisComponentType for new hardwares:
+                 'fan6524', 'fanMod6Shs', 'fanMod9Shs', 'fanMod9St',
+                 'fanMod3Hs'.
+
+                 Modified moduleType to include:
+                 'mec6524gs8s', 'mec6524gt8s', 'me6524msfc2a',
+                 'wsx670810ge'. 
+
+                 Updated moduleSubType to include new hardwares:
+                 'mec6524pfc3c', 'wsf6700dfc3c', 'wsf6700dfc3cxl'.
+
+                 Modified VendorIdType to compliance with SNMP v2
+                 format"
 
         REVISION "200510280000Z"
         DESCRIPTION
@@ -495,11 +539,12 @@ configGrp           OBJECT IDENTIFIER ::= { ciscoStackMIB 29 }
 
 -- textual conventions
 
-VendorIdType ::= OCTET STRING (SIZE (3))
-        -- The vendor ID portion of a MacAddress (first 3 octets
-        -- of the 6-octet MAC address)
-
-
+-- The vendor ID portion of a MacAddress (first 3 octets
+-- of the 6-octet MAC address)
+VendorIdType ::= TEXTUAL-CONVENTION
+       STATUS          current
+       DESCRIPTION     "Vendor ID Type"
+       SYNTAX          OCTET STRING (SIZE (3))
 
 -- the system group
 
@@ -1880,7 +1925,10 @@ chassisSysType OBJECT-TYPE
                       cisco7613(40), -- 13 slot Chassis
                       wsc2948ggetx(41), -- closed 2 slot Switch
                       cisco7604(42), -- 4 slot Chassis
-                      wsc6504e(43)   -- 4 slot Chassis
+                      wsc6504e(43),  -- 4 slot Chassis
+                      mec6524gs8s(45), -- closed 1 slot switch
+                      mec6524gt8s(48), -- closed 1 slot switch
+                      cisco7603s(52)   -- 3 slot Chassis
                                 }
         MAX-ACCESS    read-only
         STATUS        current
@@ -1964,7 +2012,10 @@ chassisPs1Type OBJECT-TYPE
                                 pwr2700dc(55),    -- 2700 watt supply DC
                                 wscac8700we(58),  -- 8700 watt supply AC
                                 pwr2700ac4(59),   -- 2700 watt supply AC
-                                pwr2700dc4(60)    -- 2700 watt supply DC
+                                pwr2700dc4(60),   -- 2700 watt supply DC
+                                pwr400dc(63),     -- 400 watt supply DC
+                                pwr400ac(64),     -- 400 watt supply AC
+                                pwr1500dc(106)    -- 1500 watt supply DC
                                 }
         MAX-ACCESS    read-only
         STATUS        current
@@ -2054,7 +2105,10 @@ chassisPs2Type OBJECT-TYPE
                                 pwr2700dc(55),    -- 2700 watt supply DC
                                 wscac8700we(58),  -- 8700 watt supply AC
                                 pwr2700ac4(59),   -- 2700 watt supply AC
-                                pwr2700dc4(60)    -- 2700 watt supply DC
+                                pwr2700dc4(60),   -- 2700 watt supply DC
+                                pwr400dc(63),     -- 400 watt supply DC
+                                pwr400ac(64),     -- 400 watt supply AC
+                                pwr1500dc(106)    -- 1500 watt supply DC
                                 }
         MAX-ACCESS    read-only
         STATUS        current
@@ -2242,8 +2296,13 @@ chassisComponentType OBJECT-TYPE
                         wsc6509eFan(11), -- Catalyst 6509 E FAN Tray
                         wsc6503eFan(13), -- Catalyst 6503 E FAN Tray
                         wsc6000vtte(14), -- VTT module for cat6000 E
-                        fanMod4Hs(15)    -- Fan module for cisco7604
+                        fanMod4Hs(15),   -- Fan module for cisco7604
                                          -- and WS-C6504
+                        fan6524(16),     -- Catalyst 6524 Series FAN Tray
+                        fanMod6Shs(17),  -- 6-slot FAN for CISCO7606-S
+                        fanMod9Shs(18),  -- 9-slot FAN for CISCO7609-S
+                        fanMod9St(19),   -- 9-slot FAN for CISCO7609-S
+                        fanMod3Hs(21)    -- Fan Tray for CISCO7603-S
                       }
         MAX-ACCESS    read-only
         STATUS        deprecated
@@ -2702,10 +2761,17 @@ moduleType OBJECT-TYPE
                                      -- module
                 wssup3210ge3b(510),  -- 2 port 10GBaseX Supervisor
                                      -- module
+                mec6524gs8s(511),    -- 24 port SFP with 8 SFP uplinks
+                mec6524gt8s(512),    -- 24 port 10/100/1000BaseT with
+                                     -- 8 SFP uplinks
+                me6524msfc2a(598),   -- Multilayer switch feature card
+                                     -- II A
 
                 -- WAN module for c6k and 76xx
                 osm12ct3T1(600),     -- 12 port CT3 T1
+                osm12t3e3(601),      -- 12 port T3 E3
                 osm24t3e3(602),      -- 24 port T3 E3
+                osm4GeWanGbicPlus(603), -- 4 GE WAN ports and 2 GE LAN ports 
                 osm1choc12T3SI(604), -- 1 port OC-12 Singlemode
                                      -- Intermediate
                 osm2choc12T3SI(605), -- 2 port OC-12 Singlemode
@@ -2729,6 +2795,8 @@ moduleType OBJECT-TYPE
                 wsx6148rj21v(913),   -- 48 port 10/100BaseTX (RJ-21)
                 wsSvcNam1(914),      -- Network Analysis Module
                 wsx6548getx(915),    -- 48 port 10/100/1000BaseT(RJ-45)
+                wsx6066SlbSk9(920),  -- Content Switching Module with
+                                     -- SSL daughter card
                 wsx6148agetx(921),   -- 48 port
                                      -- 10/100/1000BaseTX (RJ-45)
                 wsx6148arj45(923),   -- 48 port 10/100BaseTX (RJ-45)
@@ -2746,12 +2814,30 @@ moduleType OBJECT-TYPE
                 wssup720(1001),      -- Supervisor Mod 720 CPU board
                                      -- (moduleSubType2)
                 wssup720base(1002),  -- Supervisor Mod 720 base board
+                m7600Sip600(1004),   -- SPA (Shared Port Adapter)
+                                     -- carrier card (SIP-10G)
                 wsx6748getx(1007),   -- 48 port 10/100/1000 (RJ-45)
                 wsx670410ge(1008),   -- 4 port 10 GE
                 wsx6748sfp(1009),    -- 48 port 1000Base FX (SFP GBIC)
                 wsx6724sfp(1010),    -- 24 port 1000Base FX (SFP GBIC)
+                wsx670810ge(1016),   -- 8 port X2 10 GE with DFC
                 -- constellation 2 WAN module
-                wsx65822pa(1101)     -- Enhanced FlexWAN Module
+                wsx65822pa(1101),    -- Enhanced FlexWAN Module
+                m7600Sip200(1102),   -- SPA (Shared Port Adapter)
+                                     -- carrier card (SIP-1)
+                m7600Sip400(1103),   -- SPA (Shared Port Adapter)
+                                     -- carrier card (SIP-2)
+                c7600ssc400(1104),   -- SPA Jacket card
+                c7600ssc600(1105),   -- IPSEC-VPN SPA jacket card
+                esm2x10ge(1106),     -- 2x10G CWAN 
+
+                --  7600 only module
+                rsp720(1800),        -- MSFC3 Daughterboard
+                                     -- (moduleSubType2)
+                rsp720base(1801),    -- Router Switch Processor 720
+                                     -- (moduleSubType2)
+                c7600msfc4(1805)     -- 7600 MSFC4 cpu daughtercard
+                                     -- (moduleSubType2)
                 }
         MAX-ACCESS    read-only
         STATUS        current
@@ -2975,12 +3061,27 @@ moduleSubType OBJECT-TYPE
                                        -- XL
                                 wsf6700cfc(208),
                                        -- Centralized forwarding card
+                                m7600pfc3c(213),
+                                       -- Policy feature card 3C
                                 wsf6kpfc3b(216),
                                        -- Policy feature card 3B
                                 wsf6700dfc3b(217),
                                        -- Distributed forwarding card 3B
-                                wsf6kdfc3b(223)
+                                wsf6700dfc3c(218),
+                                       -- Distributed forwarding card
+                                wsf6700dfc3cxl(221),
+                                       -- Distributed forwarding card
+                                wsf6kdfc3b(223),
                                        -- Distributed forwarding card 3B
+                                mec6524pfc3c(224),
+                                       -- Policy feature card 3C
+                                sip600earl(225),
+                                       -- Distributed feature card
+                                c7600esmdfc3cxl(228),
+                                       -- Distributed forwarding card
+                                       -- 3C XL
+                                c7600esmdfc3c(230)
+                                       -- Distributed forwarding card 3C
                                 }
         MAX-ACCESS    read-only
         STATUS        current
@@ -3090,11 +3191,15 @@ moduleSubType2 OBJECT-TYPE
                 wssvccmm24fxs(405), -- 24 FXS port adapter
                 wssvccmmact(406),   -- ad-hoc conferencing and
                                     -- transcoding port adapter
-
                 wsf6kmsfc2a(599), -- Multilayer switch feature card II A
 
                 -- sub module 2 type for sup 720
-                wssup720(1001)     -- Supervisor Mod 720 CPU board
+                wssup720(1001),     -- Supervisor Mod 720 CPU board
+
+                -- 7600 only module
+                esm2x10ge(1701),    -- CPU Daughterboard for esm2x10ge 
+                c7600msfc4(1805)    -- 7600 MSFC4 cpu daughtercard
+                                    -- (moduleSubType2)
                 }
         MAX-ACCESS    read-only
         STATUS        current

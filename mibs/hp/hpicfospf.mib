@@ -12,10 +12,12 @@ HP-ICF-OSPF DEFINITIONS ::= BEGIN
         IANAipRouteProtocol
             FROM IANA-RTPROTO-MIB
         hpSwitch
-            FROM HP-ICF-OID;
+            FROM HP-ICF-OID
+        ospfIfEntry
+            FROM OSPF-MIB;
 
     hpicfOspf MODULE-IDENTITY
-        LAST-UPDATED "200305130202Z" -- May 13, 2003
+        LAST-UPDATED "200607102010Z" -- July 10, 2006
         ORGANIZATION "Hewlett-Packard Company,
                       Workgroup Networks Division"
         CONTACT-INFO "John Flick
@@ -29,6 +31,14 @@ HP-ICF-OSPF DEFINITIONS ::= BEGIN
              E-mail: johnf@rose.hp.com"
         DESCRIPTION  "This MIB module contains HP proprietary
                      extensions to the OSPF-MIB module."
+
+        REVISION     "200704020933Z" -- April 2, 2007
+        DESCRIPTION  "Added object to indicate if ospf 
+                      interface is passive or active"
+
+        REVISION     "200607102010Z" -- July 10, 2006
+        DESCRIPTION  "Added objects to display the NSSA route 
+                     metric types."
 
         REVISION     "200305130202Z" -- May 13, 2003
         DESCRIPTION  "Added objects for configuring a default
@@ -310,5 +320,70 @@ HP-ICF-OSPF DEFINITIONS ::= BEGIN
             DESCRIPTION  "This group is mandatory for systems
                          that support route redistribution."
         ::= { hpicfOspfCompliances 1 }
+
+--  OSPF route classification used in CIDR Route Table with extensions for 
+--  NSSA route types.
+--  Please refer the ospfRouteGroup OID in RFC 1850 for a detailed description 
+--  of the route types.
+--  hpicfOspfNssaType1 and hpicfOspfNssaType2 are type 1 and type 2 metrics 
+--  associated with the routes imported into OSPF from a different protocol. 
+--  As with external metrics, type 1 is comparable and type 2 is non-comparable.
+
+
+hpicfOspfRouteGroup          OBJECT IDENTIFIER ::= { hpicfOspf 3 }
+
+hpicfOspfNssaType1      OBJECT IDENTIFIER ::= { hpicfOspfRouteGroup 1 }
+hpicfOspfNssaType2      OBJECT IDENTIFIER ::= { hpicfOspfRouteGroup 2 }
+
+-- ---------------------------------------------------------- --
+-- Extensions to the ospfIfTable
+-- ---------------------------------------------------------- --
+
+hpicfOspfIfTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF HpicfOspfIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Extensions to the table that contains OSPF Interface specific
+         information."
+    ::= { hpicfOspf 4 }
+
+hpicfOspfIfEntry OBJECT-TYPE
+    SYNTAX      HpicfOspfIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A list of extensions to the information maintained
+         for an OSPF interface."
+    AUGMENTS { ospfIfEntry }
+    ::= { hpicfOspfIfTable 1 }
+
+HpicfOspfIfEntry ::=
+    SEQUENCE { 
+        hpicfOspfIfPassive  TruthValue
+    }
+
+
+hpicfOspfIfPassive   OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+         "The passive state configuration of the OSPF interface. 
+          In the passive mode no OSPF protocol messages are exchanged on
+          this interface.
+
+          true  (1)   -  The interface is configured to work in Passive mode
+          false (2)   -  The interface is configured to work in normal mode.
+                         This is the default configuration.
+
+         Changing the value will cause OSPF to reset on this interface and
+         make necessary adjustments to the link state database.
+
+         All other operations are not defined and will not affect the state of
+         the protocol."
+
+    DEFVAL { false }
+    ::= { hpicfOspfIfEntry 1 }
 
 END

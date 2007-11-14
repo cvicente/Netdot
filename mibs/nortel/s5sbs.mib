@@ -16,7 +16,7 @@ IMPORTS
         FROM S5-ROOT-MIB;
 
 s5SbsAuth    MODULE-IDENTITY
-    LAST-UPDATED    "200503090000Z" -- 9 Mar 2005
+    LAST-UPDATED    "200609180000Z" -- 18 September 2006
     ORGANIZATION    "Nortel Networks"
     CONTACT-INFO    "Global Optical Customer Service
                         Tel:   1-800 (ASK-TRAN) or
@@ -35,6 +35,9 @@ s5SbsAuth    MODULE-IDENTITY
          This Specification is supplied 'AS IS,' and Bay Networks makes
          no warranty, either express or implied, as to the use,
          operation, condition, or performance of the Specification."
+
+    REVISION "200609180000Z" -- 18 September 2006
+    DESCRIPTION "Version 110:  Fix DESCRIPTIONS"
 
     REVISION "200503090000Z" -- 9 Mar 2005
     DESCRIPTION "Version 109:  Expanded range of s5SbsAutoLearningConfigMaxMacs."
@@ -652,7 +655,7 @@ s5SbsPortLearnStatus OBJECT-TYPE
     DESCRIPTION
         "The set of ports for which auto learning is enabled.  Note that
          a port's bit in this object may not be turned on if the port's
-         value of s5SbsAutoLearningConfigEnabled is true(2)."
+         value of s5SbsAutoLearningConfigEnabled is true(1)."
     ::= {  s5SbsAuth 16 }
 
 
@@ -892,13 +895,13 @@ s5SbsAutoLearningConfigEnabled OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "This object indicates whether auto-learning is enabled on
-         the port.  Note that this object may not be set to true(2)
+         the port.  Note that this object may not be set to true(1)
          for a port whose bit is turned on in s5SbsPortLearnStatus.
          Likewise, a port's bit in s5SbsPortLearnStatus may not be
          turned on if the port's value of s5SbsAutoLearningConfigEnabled
-         is true(2).
+         is true(1).
 
-         Note that if this object is changed from true(2) to false(1),
+         Note that if this object is changed from true(1) to false(2),
          all auto-learned MAC addresses for the port will be removed."
     DEFVAL { false }
     ::= { s5SbsAutoLearningConfigEntry 3 }

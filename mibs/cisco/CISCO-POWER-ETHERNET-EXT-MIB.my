@@ -3,8 +3,7 @@
 --   
 -- March 2004, Seth Wang
 --   
--- Copyright (c) 2004-2007 by Cisco Systems, Inc.
---   
+-- Copyright (c) 2004, 2007 - 2006 by Cisco Systems Inc.
 -- All rights reserved.
 -- ****************************************************************
 
@@ -13,28 +12,26 @@ CISCO-POWER-ETHERNET-EXT-MIB DEFINITIONS ::= BEGIN
 IMPORTS
     MODULE-IDENTITY,
     OBJECT-TYPE,
-    Unsigned32,
-    NOTIFICATION-TYPE
+    Unsigned32
         FROM SNMPv2-SMI
     MODULE-COMPLIANCE,
-    OBJECT-GROUP,
-    NOTIFICATION-GROUP
+    OBJECT-GROUP
         FROM SNMPv2-CONF
     TruthValue
         FROM SNMPv2-TC
     pethPsePortEntry,
     pethMainPseGroupIndex
         FROM POWER-ETHERNET-MIB
-    SnmpAdminString
-        FROM SNMP-FRAMEWORK-MIB
+    ciscoMgmt
+        FROM CISCO-SMI
     EntPhysicalIndexOrZero
         FROM CISCO-TC
-    ciscoMgmt
-        FROM CISCO-SMI;
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB;
 
 
 ciscoPowerEthernetExtMIB MODULE-IDENTITY
-    LAST-UPDATED    "200704120000Z"
+    LAST-UPDATED    "200612190000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -66,18 +63,12 @@ ciscoPowerEthernetExtMIB MODULE-IDENTITY
             supply from Power Sourcing Equipment. They are, for
             example, IP telephones and wireless access points
             or bridges."
-    REVISION        "200704120000Z"
-    DESCRIPTION
-        "Added 'overdrawLog' value to cpeExtPsePortAdditionalStatus.
-        Added cpeExtPortPolicingActionGroup, cpeExtPortPwrManAllocGroup
-        cpeExtPolicingNotifEnableGroup, and cpeExtPolicingNotifGroup."
-    REVISION        "200702020000Z"
+    REVISION        "200612190000Z"
     DESCRIPTION
         "Added cpeExtPsePortEntPhyIndex,
         cpeExtPsePortPolicingCapable and 
         cpeExtPsePortPolicingEnable to cpeExtPsePortTable.
-        Added cpeExtPdStatsTotalDevices and cpeExtPdStatsTable.
-        Added enumerated value disable(5) to cpeExtPsePortEnable."
+        Added cpeExtPdStatsTotalDevices and cpeExtPdStatsTable."
     REVISION        "200506100000Z"
     DESCRIPTION
         "Added 'limit' to cpeExtPsePortEnable, 'overdraw' to
@@ -153,17 +144,14 @@ CpeExtPsePortEntry ::= SEQUENCE {
         cpeExtPsePortMaxPwrDrawn      Unsigned32,
         cpeExtPsePortEntPhyIndex      EntPhysicalIndexOrZero,
         cpeExtPsePortPolicingCapable  TruthValue,
-        cpeExtPsePortPolicingEnable   INTEGER ,
-        cpeExtPsePortPolicingAction   INTEGER ,
-        cpeExtPsePortPwrManAlloc      Unsigned32
+        cpeExtPsePortPolicingEnable   INTEGER 
 }
 
 cpeExtPsePortEnable OBJECT-TYPE
     SYNTAX          INTEGER  {
                         auto(1),
                         static(2),
-                        limit(3),
-                        disable(4)
+                        limit(3)
                     }
     MAX-ACCESS      read-write
     STATUS          current
@@ -172,8 +160,9 @@ cpeExtPsePortEnable OBJECT-TYPE
         object from RFC3621. It allows the user to be more specific
         when enabling the PSE functions. The states, 'auto', 'static'
         and 'limit' correspond to a value of 'true' for the
-        pethPsePortAdminEnable object. The state 'disable' corresponds
-        to a value of 'false' for the pethPsePortAdminEnable object.
+        pethPsePortAdminEnable object. However, if the value of
+        pethPsePortAdminEnable is 'false', then the value of this
+        object is irrelevant.
 
         Setting this value to 'auto' enables Powered Device discovery
         on the interface and the amount of power allocated depends on
@@ -195,18 +184,14 @@ cpeExtPsePortEnable OBJECT-TYPE
         If pethPsePortAdminEnable was 'false' prior to this set
         operation, then it will become 'true'.
 
-        Setting this value to 'disable' disables the PSE functions.
-        The pethPsePortAdminEnable object will adopt the value of
-        'false' if it was 'true' prior to this set operation. When
-        setting the pethPsePortAdminEnable object to 'false' this
-        object cpeExtPsePortEnable will adopt the value of 'disable'.
+        When setting the pethPsePortAdminEnable object to 'true'
+        this object will adopt the value of 'auto'.
 
         If cpeExtPsePortPolicingCapable of the PSE port, or
-        cpeExtMainPsePwrMonitorCapable of the PSE port's
-        main group, has the value of 'false', this object
-        can only be set to 'auto', 'static' or 'disable'.
-        Otherwise, this object can be set to 'auto', 'static',
-        'limit' or 'disable'." 
+        cpeExtMainPsePwrMonitorCapable of the PSE port's 
+        main group, has the value of 'false', this object 
+        can only be set to 'auto' or 'static'; Otherwise, 
+        this object can be set to 'auto', 'static' or 'limit'." 
     ::= { cpeExtPsePortEntry 1 }
 
 cpeExtPsePortDiscoverMode OBJECT-TYPE
@@ -275,8 +260,7 @@ cpeExtPsePortIeeePd OBJECT-TYPE
 cpeExtPsePortAdditionalStatus OBJECT-TYPE
     SYNTAX          BITS {
                         deny(0),
-                        overdraw(1),
-                        overdrawLog(2)
+                        overdraw(1)
                     }
     MAX-ACCESS      read-only
     STATUS          current
@@ -289,15 +273,10 @@ cpeExtPsePortAdditionalStatus OBJECT-TYPE
               denied power due to insufficient power resources on
               the Power Sourcing Equipment.
 
-        overdraw: When set, the PD attached to the interface is 
-                  being denied power because the PD is trying 
-                  to consume more power than it has been 
-                  configured to consume.
-
-        overdrawLog: When set, the PD attached to the interface 
-                     is trying to consume more power than it has 
-                     been configured to consume, but is not being 
-                     denied power." 
+        overdraw: When set, the PD attached to the interface is
+                  being denied power because the PD is trying
+                  to consume more power than it has been
+                  configured to consume." 
     ::= { cpeExtPsePortEntry 5 }
 
 cpeExtPsePortPwrMax OBJECT-TYPE
@@ -394,43 +373,6 @@ cpeExtPsePortPolicingEnable OBJECT-TYPE
         to set this object to 'on' or 'off'. Otherwise, this
         object is read-only and always has the value of 'off'." 
     ::= { cpeExtPsePortEntry 13 }
-
-cpeExtPsePortPolicingAction OBJECT-TYPE
-    SYNTAX          INTEGER  {
-                        deny(1),
-                        logOnly(2)
-                    }
-    MAX-ACCESS      read-write
-    STATUS          current
-    DESCRIPTION
-        "This object specifies the power policing action that
-        the device will take on this PSE port when the real-time 
-        power consumption exceeds its max power allocation if 
-        the value of cpeExtPsePortPolicingEnable is 'on'. 
-             'deny'          - the device will deny the power to 
-                               the PSE port 
-             'logOnly'       - the device will not deny the power 
-                               to the PSE port" 
-    ::= { cpeExtPsePortEntry 14 }
-
-cpeExtPsePortPwrManAlloc OBJECT-TYPE
-    SYNTAX          Unsigned32
-    UNITS           "milliwatts"
-    MAX-ACCESS      read-write
-    STATUS          current
-    DESCRIPTION
-        "This object specifies the manual power allocation that
-        the PSE will allocate to the PD connected to this 
-        interface regardless of the amount requested via CDP 
-        or IEEE. 
-
-        Setting this object value to zero disables the manual 
-        power allocation. 
-
-        Warning: Misconfiguring this manual power allocation may 
-        cause demage to the system and void the warranty. Take 
-        precautions not to oversubscribe the power supply." 
-    ::= { cpeExtPsePortEntry 15 }
  
 
 
@@ -602,30 +544,6 @@ cpeExtPdStatsDeviceCount OBJECT-TYPE
     ::= { cpeExtPdStatsEntry 2 }
  
 
-
-cpeExtPolicingNotifEnable OBJECT-TYPE
-    SYNTAX          TruthValue
-    MAX-ACCESS      read-write
-    STATUS          current
-    DESCRIPTION
-        "This object is used to enable/disable the
-        the cpeExtPolicingNotif notification." 
-    ::= { cpeExtMIBObjects 5 }
-
--- Notifications
-
-cpeExtPolicingNotif NOTIFICATION-TYPE
-    OBJECTS         {
-                        cpeExtPsePortPolicingAction,
-                        cpeExtPsePortAdditionalStatus,
-                        cpeExtPsePortPwrAllocated,
-                        cpeExtPsePortMaxPwrDrawn
-                    }
-    STATUS          current
-    DESCRIPTION
-        "This notification is generated when the value of
-        cpeExtPsePortAdditionalStatus changes."
-   ::= { cpeExtMIBNotifs 1 }
 -- Conformance
 
 cpeExtMIBCompliances  OBJECT IDENTIFIER
@@ -724,29 +642,6 @@ cpeExtMIBCompliance3 MODULE-COMPLIANCE
         "The cpeExtPdStatsGroup is mandatory for agents
         that provide the statistics information for powered 
         devices."
-
-    GROUP           cpeExtPortPolicingActionGroup
-    DESCRIPTION
-        "The cpeExtPortPolicingActionGroup is mandatory
-        for agents that provide control of the power policing
-        action."
-
-    GROUP           cpeExtPortPwrManAllocGroup
-    DESCRIPTION
-        "The cpeExtPortPolicingActionGroup is mandatory
-        for agents that provide manual power allocation."
-
-    GROUP           cpeExtPolicingNotifEnableGroup
-    DESCRIPTION
-        "The cpeExtPolicingNotifEnableGroup is mandatory for agents
-        that provide notifications of power consumption policing
-        status for the PSE ports."
-
-    GROUP           cpeExtPolicingNotifGroup
-    DESCRIPTION
-        "The cpeExtPolicingNotifGroup is mandatory for agents
-        that provide notifications of power consumption policing
-        status for the PSE ports."
     ::= { cpeExtMIBCompliances 3 }
 
 -- Units of Conformance
@@ -848,40 +743,5 @@ cpeExtPseGrpPwrGroup OBJECT-GROUP
         power monitoring information for the PSE group."
     ::= { cpeExtMIBGroups 9 }
 
-cpeExtPortPolicingActionGroup OBJECT-GROUP
-    OBJECTS         { cpeExtPsePortPolicingAction }
-    STATUS          current
-    DESCRIPTION
-        "This is a collection of objects which provide control
-        of the power policing action of the PSE port."
-    ::= { cpeExtMIBGroups 10 }
-
-cpeExtPortPwrManAllocGroup OBJECT-GROUP
-    OBJECTS         { cpeExtPsePortPwrManAlloc }
-    STATUS          current
-    DESCRIPTION
-        "This is a collection of objects which provide manual
-        power allocation for the PSE port."
-    ::= { cpeExtMIBGroups 11 }
-
-cpeExtPolicingNotifEnableGroup OBJECT-GROUP
-    OBJECTS         { cpeExtPolicingNotifEnable }
-    STATUS          current
-    DESCRIPTION
-        "A collection of object that provides control over
-        power consumption policing status notification."
-    ::= { cpeExtMIBGroups 12 }
-
-cpeExtPolicingNotifGroup NOTIFICATION-GROUP
-   NOTIFICATIONS    { cpeExtPolicingNotif }
-    STATUS          current
-    DESCRIPTION
-        "This is a collection of notifications related to
-        power consumption policing information for PSE ports."
-    ::= { cpeExtMIBGroups 13 }
-
 END
-
-
-
 

@@ -1,812 +1,946 @@
 -- *******************************************************************
--- CISCO-LWAPP-QOS-MIB.my 
--- November 2005, Devesh Pujari, Bharat Biswal, 
--- Prasanna Viswakumar
---
--- Copyright (c) 2005, 2006 by Cisco Systems, Inc.
+-- CISCO-LWAPP-QOS-MIB.my
+-- November 2005, Devesh Pujari, Bharat Biswal,
+-- Prasanna Viswakumar, Srinath Candadai
+--   
+-- Copyright (c) 2005-2007 by Cisco Systems Inc.
 -- All rights reserved.
--- *******************************************************************
---
+-- ******************************************************************
+
 CISCO-LWAPP-QOS-MIB DEFINITIONS ::= BEGIN
 
-IMPORTS 
-        MODULE-IDENTITY, 
-        OBJECT-TYPE,
-        Unsigned32,
-        Counter32,
-        Gauge32
-                FROM SNMPv2-SMI
-        MODULE-COMPLIANCE, 
-        OBJECT-GROUP
-                FROM SNMPv2-CONF
-        TruthValue
-                FROM SNMPv2-TC 
-        ciscoMgmt
-                FROM CISCO-SMI
-        cLApDot11IfEntry
-                FROM CISCO-LWAPP-AP-MIB
-        cLWlanConfigEntry
-                FROM CISCO-LWAPP-WLAN-MIB;
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Unsigned32,
+    Counter32,
+    Gauge32
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    TruthValue
+        FROM SNMPv2-TC
+    cLApDot11IfEntry
+        FROM CISCO-LWAPP-AP-MIB
+    cLWlanConfigEntry
+        FROM CISCO-LWAPP-WLAN-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
+
+-- ********************************************************************
+-- *  MODULE IDENTITY
+-- ********************************************************************
+
+ciscoLwappQosMIB MODULE-IDENTITY
+    LAST-UPDATED    "200701070000Z"
+    ORGANIZATION    "Cisco Systems Inc."
+    CONTACT-INFO
+            "Cisco Systems,
+            Customer Service
+            Postal: 170 West Tasman Drive
+            San Jose, CA  95134
+            USA
+            Tel: +1 800 553-NETS
+
+            Email: cs-wnbu-snmp@cisco.com"
+    DESCRIPTION
+        "This MIB is intended to be implemented on all those
+        devices operating as Central controllers, that
+        terminate the Light Weight Access Point Protocol
+        tunnel from Cisco Light-weight LWAPP Access Points.
+
+        Information provided by this MIB is used to study
+        the quality of service in the voice and video traffic
+        on the WLAN.
+
+        The relationship between CC and the LWAPP APs
+        can be depicted as follows:
+
+              +......+     +......+     +......+
+              +      +     +      +     +      +
+              +  CC  +     +  CC  +     +  CC  +
+              +      +     +      +     +      +
+              +......+     +......+     +......+
+                ..            .             .
+                ..            .             .
+               .  .            .             .
+              .    .            .             .
+             .      .            .             .
+            .        .            .             .
+        +......+ +......+     +......+      +......+
+        +      + +      +     +      +      +      +
+        +  AP  + +  AP  +     +  AP  +      +  AP  +
+        +      + +      +     +      +      +      +
+        +......+ +......+     +......+      +......+
+                   .              .             .
+                 .  .              .             .
+                .    .              .             .
+               .      .              .             .
+              .        .              .             .
+           +......+ +......+     +......+      +......+
+           +      + +      +     +      +      +      +
+           +  MN  + +  MN  +     +  MN  +      +  MN  +
+           +      + +      +     +      +      +      +
+           +......+ +......+     +......+      +......+
 
 
---********************************************************************
---*  MODULE IDENTITY
---********************************************************************
+        The LWAPP tunnel exists between the controller and
+        the APs.  The MNs communicate with the APs through
+        the protocol defined by the 802.11 standard.
 
-ciscoLwappQosMIB   MODULE-IDENTITY
-        LAST-UPDATED   "200604130000Z"
-        ORGANIZATION   "Cisco Systems Inc."
-        CONTACT-INFO  
-               "        Cisco Systems,
-                        Customer Service
-                Postal: 170 West Tasman Drive
-                        San Jose, CA  95134
-                        USA
-                   Tel: +1 800 553-NETS
+        LWAPP APs, upon bootup, discover and join one of the
+        controllers and the controller pushes the configuration,
+        that includes the WLAN parameters, to the LWAPP APs.
+        The APs then encapsulate all the 802.11 frames from
+        wireless clients inside LWAPP frames and forward
+        the LWAPP frames to the controller.
 
-                 Email: cs-wnbu-snmp@cisco.com"
+                           GLOSSARY
 
-        DESCRIPTION             
-                "This MIB is intended to be implemented on all those
-                devices operating as Central controllers, that
-                terminate the Light Weight Access Point Protocol
-                tunnel from Cisco Light-weight LWAPP Access Points.
+        Access Point ( AP )
 
-                Information provided by this MIB is used to study
-                the quality of service in the voice and video traffic
-                on the WLAN.
+        An entity that contains an 802.11 medium access
+        control ( MAC ) and physical layer ( PHY ) interface
+        and provides access to the distribution services via
+        the wireless medium for associated clients.  
 
-                The relationship between CC and the LWAPP APs
-                can be depicted as follows:
+        LWAPP APs encapsulate all the 802.11 frames in
+        LWAPP frames and sends them to the controller to which
+        it is logically connected.
 
-                      +......+     +......+     +......+
-                      +      +     +      +     +      +
-                      +  CC  +     +  CC  +     +  CC  +
-                      +      +     +      +     +      +
-                      +......+     +......+     +......+
-                        ..            .             .
-                        ..            .             .
-                       .  .            .             .
-                      .    .            .             .
-                     .      .            .             .
-                    .        .            .             .
-                +......+ +......+     +......+      +......+
-                +      + +      +     +      +      +      +
-                +  AP  + +  AP  +     +  AP  +      +  AP  +
-                +      + +      +     +      +      +      +
-                +......+ +......+     +......+      +......+
-                           .              .             .
-                         .  .              .             .
-                        .    .              .             .
-                       .      .              .             .
-                      .        .              .             .
-                   +......+ +......+     +......+      +......+
-                   +      + +      +     +      +      +      +
-                   +  MN  + +  MN  +     +  MN  +      +  MN  +
-                   +      + +      +     +      +      +      +
-                   +......+ +......+     +......+      +......+
+        Gratuitous Probe Response (GPR)
+
+        The Gratuitous Probe Response feature aids in conserving
+        battery power of WLAN-enabled cell phones by providing
+        a high rate packet on the order of tens of milliseconds
+        such that these kind of phones can wake up and wait at
+        predefined intervals, to reduce battery power.  The 
+        GPR packet is transmitted from the AP at a predefined
+        time interval.
 
 
-                The LWAPP tunnel exists between the controller and
-                the APs.  The MNs communicate with the APs through
-                the protocol defined by the 802.11 standard.
+        Light Weight Access Point Protocol ( LWAPP )
 
-                LWAPP APs, upon bootup, discover and join one of the
-                controllers and the controller pushes the configuration,
-                that includes the WLAN parameters, to the LWAPP APs.
-                The APs then encapsulate all the 802.11 frames from
-                wireless clients inside LWAPP frames and forward
-                the LWAPP frames to the controller.
+        This is a generic protocol that defines the 
+        communication between the Access Points and the
+        Central Controller. 
 
-                                   GLOSSARY
+        Mobile Node ( MN )
 
-                Access Point ( AP )
+        A roaming 802.11 wireless device in a wireless
+        network associated with an access point. Mobile Node 
+        and client are used interchangeably. 
 
-                An entity that contains an 802.11 medium access
-                control ( MAC ) and physical layer ( PHY ) interface
-                and provides access to the distribution services via
-                the wireless medium for associated clients.  
+        TU
 
-                LWAPP APs encapsulate all the 802.11 frames in
-                LWAPP frames and sends them to the controller to which
-                it is logically connected.
+        A measurement of time in units of 1024 microseconds.
 
-                Gratuitous Probe Response (GPR)
+        User Priority ( UP )
 
-                The Gratuitous Probe Response feature aids in conserving
-                battery power of WLAN-enabled cell phones by providing
-                a high rate packet on the order of tens of milliseconds
-                such that these kind of phones can wake up and wait at
-                predefined intervals, to reduce battery power.  The 
-                GPR packet is transmitted from the AP at a predefined
-                time interval.
-                 
+        Specifies a the priority rules in QOS for handling user 
+        priority.
 
-                Light Weight Access Point Protocol ( LWAPP )
+        REFERENCE
 
-                This is a generic protocol that defines the 
-                communication between the Access Points and the
-                Central Controller. 
+        [1] Wireless LAN Medium Access Control ( MAC ) and
+        Physical Layer ( PHY ) Specifications
 
-                Mobile Node ( MN )
+        [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
+        Weight Access Point Protocol"
+    REVISION        "200701070000Z"
+    DESCRIPTION
+        "Added ciscoLwappQosDot11aConfigGroupSup1 and
+        ciscoLwappQosDot11bConfigGroupSup1 objects."
+    REVISION        "200604130000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 524 }
 
-                A roaming 802.11 wireless device in a wireless
-                network associated with an access point. Mobile Node 
-                and client are used interchangeably. 
 
-                TU
+ciscoLwappQosMIBNotifs  OBJECT IDENTIFIER
+    ::= { ciscoLwappQosMIB 0 }
 
-                A measurement of time in units of 1024 microseconds.
+ciscoLwappQosMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoLwappQosMIB 1 }
 
-                REFERENCE
- 
-                [1] Wireless LAN Medium Access Control ( MAC ) and
-                Physical Layer ( PHY ) Specifications
-  
-                [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
-                Weight Access Point Protocol "
-        
-        REVISION      "200604130000Z"
-        DESCRIPTION
-                "Initial version of this MIB module. "
-        ::= { ciscoMgmt 524 } 
-        
-ciscoLwappQosMIBNotifs  OBJECT IDENTIFIER ::= { ciscoLwappQosMIB 0 }
-ciscoLwappQosMIBObjects OBJECT IDENTIFIER ::= { ciscoLwappQosMIB 1 }
-ciscoLwappQosMIBConform OBJECT IDENTIFIER ::= { ciscoLwappQosMIB 2 }
+ciscoLwappQosMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoLwappQosMIB 2 }
 
-cLQd11aCACConfig OBJECT IDENTIFIER ::= { ciscoLwappQosMIBObjects 1 }
-cLQd11bCACConfig OBJECT IDENTIFIER ::= { ciscoLwappQosMIBObjects 2 }
-cLQd11GprConfig OBJECT IDENTIFIER ::= { ciscoLwappQosMIBObjects 3 }
-cLQd11CACStats OBJECT IDENTIFIER    ::= { ciscoLwappQosMIBObjects 4 }
+cLQd11aCACConfig  OBJECT IDENTIFIER
+    ::= { ciscoLwappQosMIBObjects 1 }
 
---********************************************************************
---*    Configuration for Call Admission Control parameters
---*    for VOICE traffic in 802.11a interfaces in the controller
---********************************************************************
+cLQd11bCACConfig  OBJECT IDENTIFIER
+    ::= { ciscoLwappQosMIBObjects 2 }
 
+cLQd11GprConfig  OBJECT IDENTIFIER
+    ::= { ciscoLwappQosMIBObjects 3 }
+
+cLQd11CACStats  OBJECT IDENTIFIER
+    ::= { ciscoLwappQosMIBObjects 4 }
+
+cLQEntConfConfig  OBJECT IDENTIFIER
+    ::= { ciscoLwappQosMIBObjects 5 }
+
+
+-- ********************************************************************
+-- *    Configuration for Call Admission Control parameters
+-- *    for VOICE traffic in 802.11a interfaces in the controller
+-- ********************************************************************
 cLQd11aVoiceAdmCtrlSupport OBJECT-TYPE
-        SYNTAX     TruthValue
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object is used to enable or disable admission 
-                control for voice traffic flowing through the 802.11a 
-                interfaces in the controller.
-    
-                When set to 'true', controller will reserve and manage 
-                max-bandwidth (cLQd11aVoiceMaxAdmBandwidth) 
-                and roaming-bandwidth
-                (cLQd11aVoiceMaxRoamBandwidth) as per user 
-                configured values.
-    
-                When disabled, admission control will not be enforced. 
-                This may delay voice traffic depending on load on
-                the WLAN. "
-        DEFVAL { true }
-        ::= { cLQd11aCACConfig 1 }
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to enable or disable admission
+        control for voice traffic flowing through the 802.11a 
+        interfaces in the controller.
+
+        When set to 'true', controller will reserve and manage 
+        max-bandwidth (cLQd11aVoiceMaxAdmBandwidth) 
+        and roaming-bandwidth
+        (cLQd11aVoiceMaxRoamBandwidth) as per user 
+        configured values.
+
+        When disabled, admission control will not be enforced. 
+        This may delay voice traffic depending on load on
+        the WLAN."
+    DEFVAL          { true } 
+    ::= { cLQd11aCACConfig 1 }
 
 cLQd11aVoiceMaxAdmBandwidth OBJECT-TYPE
-        SYNTAX     Unsigned32 (0..100)
-        UNITS      "Percent"
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object denotes the maximum bandwidth 
-                that can be allocated by controller for voice
-                traffic when admission control is enabled for
-                for 802.11a interfaces in the controller.
+    SYNTAX          Unsigned32 (0..100 )
+    UNITS           "Percent"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object denotes the maximum bandwidth
+        that can be allocated by controller for voice
+        traffic when admission control is enabled for
+        for 802.11a interfaces in the controller.
 
-                Please note that the write operation on this
-                object will be successful only if the 802.11a
-                network is not operational and the total
-                value populated for this object for all the
-                admission control attributes (voice, video)
-                together does not exceed 100%. " 
-        ::= { cLQd11aCACConfig 2 }
+        Please note that the write operation on this
+        object will be successful only if the 802.11a
+        network is not operational and the total
+        value populated for this object for all the
+        admission control attributes (voice, video)
+        together does not exceed 100%." 
+    ::= { cLQd11aCACConfig 2 }
 
 cLQd11aVoiceMaxRoamBandwidth OBJECT-TYPE
-        SYNTAX     Unsigned32 (0..100)
-        UNITS      "Percent"
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object represents the bandwidth relative
-                to the maximum allocated bandwidth indicated by
-                cLQd11aVoiceMaxAdmBandwidth, that can be 
-                allocated to roaming clients for voice traffic,
-                when admission control is enabled for 802.11a
-                interfaces in the controller.
+    SYNTAX          Unsigned32 (0..100 )
+    UNITS           "Percent"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object represents the bandwidth relative
+        to the maximum allocated bandwidth indicated by
+        cLQd11aVoiceMaxAdmBandwidth, that can be 
+        allocated to roaming clients for voice traffic,
+        when admission control is enabled for 802.11a
+        interfaces in the controller.
 
-                Please note that the write operation on this
-                object will be successful only if the 802.11a
-                network is disabled and not operational.  The
-                value configured through this object takes
-                effect when the 802.11a network is enabled. "
-        DEFVAL { 0 }
-        ::= { cLQd11aCACConfig 3 }
+        Please note that the write operation on this
+        object will be successful only if the 802.11a
+        network is disabled and not operational.  The
+        value configured through this object takes
+        effect when the 802.11a network is enabled."
+    DEFVAL          { 0 } 
+    ::= { cLQd11aCACConfig 3 }
 
-
---********************************************************************
---*    Configuration for Call Admission Control parameters
---*    for VIDEO traffic in 802.11a interfaces in the controller
---********************************************************************
-
+-- ********************************************************************
+-- *    Configuration for Call Admission Control parameters
+-- *    for VIDEO traffic in 802.11a interfaces in the controller
+-- ********************************************************************
 cLQd11aVideoAdmCtrlSupport OBJECT-TYPE
-        SYNTAX     TruthValue
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object is used to enable or disable admission 
-                control for video traffic flowing through the 802.11a 
-                interfaces in the controller.
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to enable or disable admission
+        control for video traffic flowing through the 802.11a 
+        interfaces in the controller.
 
-                When set to 'true', controller will reserve and manage 
-                max-bandwidth (cLQd11aVideoMaxAdmBandwidth) 
-                and roaming-bandwidth
-                (cLQd11aVideoMaxRoamBandwidth) as per user  
-                configured values.
-    
-                When disabled, admission control will not be enforced. 
-                This may delay video traffic depending on load on
-                the WLAN. "
-        DEFVAL { true }
-        ::= { cLQd11aCACConfig 4 }
+        When set to 'true', controller will reserve and manage 
+        max-bandwidth (cLQd11aVideoMaxAdmBandwidth) 
+        and roaming-bandwidth
+        (cLQd11aVideoMaxRoamBandwidth) as per user  
+        configured values.
+
+        When disabled, admission control will not be enforced. 
+        This may delay video traffic depending on load on
+        the WLAN."
+    DEFVAL          { true } 
+    ::= { cLQd11aCACConfig 4 }
 
 cLQd11aVideoMaxAdmBandwidth OBJECT-TYPE
-        SYNTAX     Unsigned32 (0..100)
-        UNITS      "Percent"   
-        MAX-ACCESS read-write
-        STATUS current
-        DESCRIPTION
-                "This object denotes the maximum bandwidth 
-                that can be allocated by controller for video traffic
-                when admission control is enabled for 802.11a 
-                interfaces in the controller.  When set to 0, all
-                available bandwidth in 802.11a interfaces can be
-                allocated to video traffic.
+    SYNTAX          Unsigned32 (0..100 )
+    UNITS           "Percent"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object denotes the maximum bandwidth
+        that can be allocated by controller for video traffic
+        when admission control is enabled for 802.11a 
+        interfaces in the controller.  When set to 0, all
+        available bandwidth in 802.11a interfaces can be
+        allocated to video traffic.
 
-                Please note that the write operation on this
-                object will be successful only if the 802.11a
-                network is not operational and the total
-                value populated for this object for all the
-                admission control attributes (voice, video)
-                together does not exceed 100%. " 
-        DEFVAL { 0 }
-        ::= { cLQd11aCACConfig 5 }
+        Please note that the write operation on this
+        object will be successful only if the 802.11a
+        network is not operational and the total
+        value populated for this object for all the
+        admission control attributes (voice, video)
+        together does not exceed 100%."
+    DEFVAL          { 0 } 
+    ::= { cLQd11aCACConfig 5 }
 
 cLQd11aVideoMaxRoamBandwidth OBJECT-TYPE
-        SYNTAX     Unsigned32 (0..100)
-        UNITS      "Percent"
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object represents the bandwidth relative
-                to the maximum allocated bandwidth indicated by
-                cLQd11aVideoMaxAdmBandwidth, that can be 
-                allocated to roaming clients for video traffic,
-                when admission control is enabled for 802.11a
-                interfaces in the controller.
+    SYNTAX          Unsigned32 (0..100 )
+    UNITS           "Percent"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object represents the bandwidth relative
+        to the maximum allocated bandwidth indicated by
+        cLQd11aVideoMaxAdmBandwidth, that can be 
+        allocated to roaming clients for video traffic,
+        when admission control is enabled for 802.11a
+        interfaces in the controller.
 
-                Please note that the write operation on this
-                object will be successful only if the 802.11a
-                network is disabled and not operational.  The
-                value configured through this object takes effect 
-                when the 802.11a network is enabled and 
-                operational. "
-        DEFVAL { 0 }
-        ::= { cLQd11aCACConfig 6 }
+        Please note that the write operation on this
+        object will be successful only if the 802.11a
+        network is disabled and not operational.  The
+        value configured through this object takes effect 
+        when the 802.11a network is enabled and 
+        operational."
+    DEFVAL          { 0 } 
+    ::= { cLQd11aCACConfig 6 }
 
---********************************************************************
---*    Configuration for  Call Admission Control parameters
---*    for VOICE traffic in 802.11b/g interfaces in the controller
---********************************************************************
-
+-- ********************************************************************
+-- *    Configuration for  Call Admission Control parameters
+-- *    for VOICE traffic in 802.11b/g interfaces in the controller
+-- ********************************************************************
 cLQd11bVoiceAdmCtrlSupport OBJECT-TYPE
-        SYNTAX     TruthValue
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object is used to enable or disable admission 
-                control for voice traffic flowing through the 
-                802.11b/g interfaces in the controller.
-    
-                When set to 'true', controller will reserve and manage
-                max-bandwidth (cLQd11bVoiceMaxAdmBandwidth)
-                and roaming-bandwidth
-                (cLQd11bVoiceMaxRoamingBandwidth) as per user
-                configured values.
- 
-                When disabled, admission control will not be enforced. 
-                This may delay voice traffic depending on load on the 
-                WLAN. "
-       DEFVAL { true }
-       ::= { cLQd11bCACConfig 1 }
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to enable or disable admission
+        control for voice traffic flowing through the 
+        802.11b/g interfaces in the controller.
+
+        When set to 'true', controller will reserve and manage
+        max-bandwidth (cLQd11bVoiceMaxAdmBandwidth)
+        and roaming-bandwidth
+        (cLQd11bVoiceMaxRoamingBandwidth) as per user
+        configured values.
+
+        When disabled, admission control will not be enforced. 
+        This may delay voice traffic depending on load on the 
+        WLAN."
+    DEFVAL          { true } 
+    ::= { cLQd11bCACConfig 1 }
 
 cLQd11bVoiceMaxAdmBandwidth OBJECT-TYPE
-        SYNTAX     Unsigned32 (0..100)
-        UNITS      "Percent"
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object denotes the maximum bandwidth that
-                can be allocated by controller for voice traffic 
-                when admission control is enabled for 802.11b/g
-                interfaces in the controller.
+    SYNTAX          Unsigned32 (0..100 )
+    UNITS           "Percent"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object denotes the maximum bandwidth that
+        can be allocated by controller for voice traffic 
+        when admission control is enabled for 802.11b/g
+        interfaces in the controller.
 
-                Please note that the write operation on this
-                object will be successful only if the 802.11b/g
-                network is not operational and the total
-                value populated for this object for all the
-                admission control attributes (voice, video)
-                together does not exceed 100%. "
-        ::= { cLQd11bCACConfig 2 }
+        Please note that the write operation on this
+        object will be successful only if the 802.11b/g
+        network is not operational and the total
+        value populated for this object for all the
+        admission control attributes (voice, video)
+        together does not exceed 100%." 
+    ::= { cLQd11bCACConfig 2 }
 
 cLQd11bVoiceMaxRoamBandwidth OBJECT-TYPE
-        SYNTAX     Unsigned32 (0..100)
-        UNITS      "Percent"
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object represents the bandwidth relative
-                to the maximum allocated bandwidth indicated by
-                cLQd11bVoiceMaxAdmBandwidth, that can be 
-                allocated to roaming clients for voice traffic,
-                when admission control is enabled for 802.11b
-                interfaces in the controller.
+    SYNTAX          Unsigned32 (0..100 )
+    UNITS           "Percent"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object represents the bandwidth relative
+        to the maximum allocated bandwidth indicated by
+        cLQd11bVoiceMaxAdmBandwidth, that can be 
+        allocated to roaming clients for voice traffic,
+        when admission control is enabled for 802.11b
+        interfaces in the controller.
 
-                Please note that the write operation on this
-                object will be successful only if the 802.11b/g
-                network is not operational.  The value configured
-                through this object takes effect when the 802.11b/g
-                network is enabled and operational. " 
-        DEFVAL { 0 }
-        ::= { cLQd11bCACConfig 3 }
+        Please note that the write operation on this
+        object will be successful only if the 802.11b/g
+        network is not operational.  The value configured
+        through this object takes effect when the 802.11b/g
+        network is enabled and operational."
+    DEFVAL          { 0 } 
+    ::= { cLQd11bCACConfig 3 }
 
---********************************************************************
---*    Configuration for Call Admission Control parameters
---*    for VIDEO traffic in 802.11b/g interfaces in the controller
---********************************************************************
-
+-- ********************************************************************
+-- *    Configuration for Call Admission Control parameters
+-- *    for VIDEO traffic in 802.11b/g interfaces in the controller
+-- ********************************************************************
 cLQd11bVideoAdmCtrlSupport OBJECT-TYPE
-        SYNTAX     TruthValue
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object is used to enable or disable admission 
-                control for video traffic flowing through the 
-                802.11b/g interfaces in the controller.
-    
-                When set to 'true', controller will reserve and manage
-                max-bandwidth (cLQd11bVideoMaxAdmBandwidth) 
-                and roaming-bandwidth
-                (cLQd11bVideoMaxRoamBandwidth) as per user 
-                configured values.
- 
-                When disabled, admission control will not be enforced. 
-                This may delay video traffic depending on load on the 
-                WLAN. "
-        DEFVAL { true }
-        ::= { cLQd11bCACConfig 4 }
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to enable or disable admission
+        control for video traffic flowing through the 
+        802.11b/g interfaces in the controller.
+
+        When set to 'true', controller will reserve and manage
+        max-bandwidth (cLQd11bVideoMaxAdmBandwidth) 
+        and roaming-bandwidth
+        (cLQd11bVideoMaxRoamBandwidth) as per user 
+        configured values.
+
+        When disabled, admission control will not be enforced. 
+        This may delay video traffic depending on load on the 
+        WLAN."
+    DEFVAL          { true } 
+    ::= { cLQd11bCACConfig 4 }
 
 cLQd11bVideoMaxAdmBandwidth OBJECT-TYPE
-        SYNTAX     Unsigned32 (0..100)
-        UNITS      "Percent"
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object denotes the maximum bandwidth that 
-                can be allocated by controller for video traffic when
-                admission control is enabled for 802.11b/g interfaces 
-                in the controller.  When set to 0, all available
-                bandwidth in 802.11b/g interfaces can be allocated
-                to video traffic.
+    SYNTAX          Unsigned32 (0..100 )
+    UNITS           "Percent"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object denotes the maximum bandwidth that
+        can be allocated by controller for video traffic when
+        admission control is enabled for 802.11b/g interfaces 
+        in the controller.  When set to 0, all available
+        bandwidth in 802.11b/g interfaces can be allocated
+        to video traffic.
 
-                Please note that the write operation on this
-                object will be successful only if the 802.11b/g
-                network is not operational and the total
-                value populated for this object for all the
-                admission control attributes (voice, video)
-                together does not exceed 100%. " 
-        DEFVAL { 0 }
-        ::= { cLQd11bCACConfig 5 }
+        Please note that the write operation on this
+        object will be successful only if the 802.11b/g
+        network is not operational and the total
+        value populated for this object for all the
+        admission control attributes (voice, video)
+        together does not exceed 100%."
+    DEFVAL          { 0 } 
+    ::= { cLQd11bCACConfig 5 }
 
 cLQd11bVideoMaxRoamBandwidth OBJECT-TYPE
-        SYNTAX     Unsigned32 (0..100)
-        UNITS      "Percent"
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This objects represents the bandwidth relative
-                to the maximum allocated bandwidth indicated by
-                cLQd11bVideoMaxAdmBandwidth, that can be 
-                allocated to roaming clients for video traffic,
-                when admission control is enabled for 802.11b
-                interfaces in the controller.
+    SYNTAX          Unsigned32 (0..100 )
+    UNITS           "Percent"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This objects represents the bandwidth relative
+        to the maximum allocated bandwidth indicated by
+        cLQd11bVideoMaxAdmBandwidth, that can be 
+        allocated to roaming clients for video traffic,
+        when admission control is enabled for 802.11b
+        interfaces in the controller.
 
-                Please note that the write operation on this
-                object will be successful only if the 802.11b/g
-                network is not operational.  The value configured
-                through this object takes effect when the 802.11b/g
-                network is enabled and operational. "
-        DEFVAL { 0 }
-        ::= { cLQd11bCACConfig 6 }
+        Please note that the write operation on this
+        object will be successful only if the 802.11b/g
+        network is not operational.  The value configured
+        through this object takes effect when the 802.11b/g
+        network is enabled and operational."
+    DEFVAL          { 0 } 
+    ::= { cLQd11bCACConfig 6 }
 
---********************************************************************
---*    Configuration of GPR (Gratuitous Probe Response) probe interval
---*    for all 802.11a interfaces in the controller
---********************************************************************
-
+-- ********************************************************************
+-- *    Configuration of GPR (Gratuitous Probe Response) probe interval
+-- *    for all 802.11a interfaces in the controller
+-- ********************************************************************
 cLQd11aGprProbeInterval OBJECT-TYPE
-        SYNTAX     Unsigned32(10..100)
-        UNITS      "TU"
-        MAX-ACCESS read-write
-        STATUS current
-        DESCRIPTION
-                "This object is used to set GPR probe interval 
-                period to be used by all 802.11a interfaces in the 
-                controller, when the radios are advertising any 
-                WLAN with GPR support enabled.
+    SYNTAX          Unsigned32 (10..100 )
+    UNITS           "TU"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to set GPR probe interval
+        period to be used by all 802.11a interfaces in the 
+        controller, when the radios are advertising any 
+        WLAN with GPR support enabled.
 
-                Please note that the write operation on this
-                object will be successful only if the 802.11a
-                network is not operational.  The value configured
-                through this object takes effect when the 802.11a
-                network is enabled and operational. "
-        DEFVAL { 10 }
-        ::= { cLQd11aCACConfig 7 }
+        Please note that the write operation on this
+        object will be successful only if the 802.11a
+        network is not operational.  The value configured
+        through this object takes effect when the 802.11a
+        network is enabled and operational."
+    DEFVAL          { 10 } 
+    ::= { cLQd11aCACConfig 7 }
 
+cLQd11aVoiceCtrl OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        loadBased(1),
+                        static(2)
+                    }
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "When admission control is enabled these parameters
+        can be modified.
+            loadBased - controller will reserve and manage
+                        max-bandwidth and roaming-bandwidth
+                        based on the load on the WLAN. 
+            static    - controller will reserve and
+                        manage max-bandwidth 
+                        (cLQd11aVoiceMaxAdmBandwidth)
+                        and roaming-bandwidth
+                        (cLQd11aVoiceMaxRoamBandwidth) 
+                        as per user configured values.
+         When ACM is disabled, admission control will not 
+         be enforced. This may delay voice traffic depending 
+         on the traffic on the WLAN."
+    DEFVAL          { loadBased } 
+    ::= { cLQd11aCACConfig 8 }
 
---********************************************************************
---*    Configuration of GPR (Gratuitous Probe Response) probe interval
---*    for all 802.11b/g interfaces in the controller
---********************************************************************
+cLQd11aExpeditedBw OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies if expedited BW feature is
+        enabled or not.
+        A value of 'true' will ensure that the APs advertise
+        the expedited BW support in their beacons and 
+        association responses.
+        A value of 'false' will ensure that the APs do not
+        advertise the expedited BW support in their beacons 
+        and association responses." 
+    ::= { cLQd11aCACConfig 9 }
 
+-- ********************************************************************
+-- *    Configuration of GPR (Gratuitous Probe Response) probe interval
+-- *    for all 802.11b/g interfaces in the controller
+-- ********************************************************************
 cLQd11bGprProbeInterval OBJECT-TYPE
-        SYNTAX     Unsigned32(10..100)
-        UNITS      "TU"
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "This object is used to set GPR probe interval 
-                period to be used by all 802.11b/g interfaces in the 
-                controller, when the radios are advertising any 
-                WLAN with GPR support enabled.
+    SYNTAX          Unsigned32 (10..100 )
+    UNITS           "TU"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to set GPR probe interval
+        period to be used by all 802.11b/g interfaces in the 
+        controller, when the radios are advertising any 
+        WLAN with GPR support enabled.
 
-                Please note that the write operation on this
-                object will be successful only if the 802.11b/g
-                network is not operational.  The value configured
-                through this object takes effect when the 802.11b/g
-                network is enabled. "
-        DEFVAL { 10 }
-        ::= { cLQd11bCACConfig 7 }
+        Please note that the write operation on this
+        object will be successful only if the 802.11b/g
+        network is not operational.  The value configured
+        through this object takes effect when the 802.11b/g
+        network is enabled."
+    DEFVAL          { 10 } 
+    ::= { cLQd11bCACConfig 7 }
 
---********************************************************************
--- Table to represent (Gratuitous Probe Response) GPR 
--- parameters per each WLAN. 
---********************************************************************
+cLQd11bVoiceCtrl OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        loadBased(1),
+                        static(2)
+                    }
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "When admission control is enabled these parameters
+        can be modified.
+            loadBased - controller will reserve and manage
+                        max-bandwidth and roaming-bandwidth
+                        based on the load on the WLAN. 
+            static    - controller will reserve and
+                        manage max-bandwidth 
+                        (cLQd11bVoiceMaxAdmBandwidth)
+                        and roaming-bandwidth
+                        (cLQd11bVoiceMaxRoamBandwidth) 
+                        as per user configured values.
+         When ACM is disabled, admission control will not 
+         be enforced. This may delay voice traffic depending 
+         on the traffic on the WLAN."
+    DEFVAL          { loadBased } 
+    ::= { cLQd11bCACConfig 8 }
+
+cLQd11bExpeditedBw OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies if expedited BW feature is
+        enabled or not.
+        A value of 'true' will ensure that the APs advertise
+        the expedited BW support in their beacons and 
+        association responses.
+        A value of 'false' will ensure that the APs do not
+        advertise the expedited BW support in their beacons 
+        and association responses." 
+    ::= { cLQd11bCACConfig 9 }
+-- ********************************************************************
+-- Table to represent (Gratuitous Probe Response) GPR
+-- parameters per each WLAN.
+-- ********************************************************************
 
 cLQd11GprTable OBJECT-TYPE
-        SYNTAX     SEQUENCE OF CLQd11GprEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "This table populates the GPR configuration on the
-                WLANs configured on this controller.  
+    SYNTAX          SEQUENCE OF CLQd11GprEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table populates the GPR configuration on the
+        WLANs configured on this controller.  
 
-                There exists a row in this table for each WLAN
-                configured through cLWlanConfigTable.  A row is added
-                is to this table by the agent when a WLAN is created
-                by the user through an explicit management action
-                initiated from a network management station.
-                Similarly a row gets deleted automatically when the
-                user deletes the particular WLAN. "
-        ::= { cLQd11GprConfig 1 }
+        There exists a row in this table for each WLAN
+        configured through cLWlanConfigTable.  A row is added
+        is to this table by the agent when a WLAN is created
+        by the user through an explicit management action
+        initiated from a network management station.
+        Similarly a row gets deleted automatically when the
+        user deletes the particular WLAN."
+    ::= { cLQd11GprConfig 1 }
 
 cLQd11GprEntry OBJECT-TYPE
-        SYNTAX     CLQd11GprEntry 
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "Each entry represents a conceptual row in
-                cLQd11GprTable and corresponds to the
-                GPR configuration on a WLAN. " 
-        AUGMENTS { cLWlanConfigEntry }
-        ::= { cLQd11GprTable 1 }
+    SYNTAX          CLQd11GprEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry represents a conceptual row in
+        cLQd11GprTable and corresponds to the
+        GPR configuration on a WLAN."
+    AUGMENTS           { cLWlanConfigEntry  } 
+ 
+    ::= { cLQd11GprTable 1 }
 
-CLQd11GprEntry ::=
-        SEQUENCE {
-                cLQd11GprSupport        TruthValue
-        }
+CLQd11GprEntry ::= SEQUENCE {
+        cLQd11GprSupport TruthValue
+}
 
 cLQd11GprSupport OBJECT-TYPE
-        SYNTAX     TruthValue
-        MAX-ACCESS read-write
-        STATUS     current
-        DESCRIPTION
-                "If 'true', then the corresponding radios that 
-                advertise this WLAN, will send Gratuitous Probe 
-                Response.  If 'false', then the corresponding radios 
-                that advertise this WLAN, will not send Gratuitous 
-                Probe Response. "
-        DEFVAL { false }
-        ::= { cLQd11GprEntry 1}
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "If 'true', then the corresponding radios that
+        advertise this WLAN, will send Gratuitous Probe 
+        Response.  If 'false', then the corresponding radios 
+        that advertise this WLAN, will not send Gratuitous 
+        Probe Response."
+    DEFVAL          { false } 
+    ::= { cLQd11GprEntry 1 }
+ 
 
---********************************************************************
---*  CALL admission control statistics
---********************************************************************
+-- ********************************************************************
+-- *  CALL admission control statistics
+-- ********************************************************************
 
 cLQd11CACStatsTable OBJECT-TYPE
-        SYNTAX     SEQUENCE OF CLQd11CACStatsEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "This table populates the call admission control
-                metrics collected by observing the voice or video
-                traffic on the dot11 interface of a particular
-                AP. 
+    SYNTAX          SEQUENCE OF CLQd11CACStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table populates the call admission control
+        metrics collected by observing the voice or video
+        traffic on the dot11 interface of a particular
+        AP. 
 
-                There exists a row in this table for each row
-                corresponding to a dot11 interface found in
-                cLApDot11IfTable.  A row corresponding to a
-                dot11 interface is added when an AP joins the
-                controller.  The row gets deleted when the AP
-                dissociates from the controller. "
-        ::= {  cLQd11CACStats 1 }
-
-CLQd11CACStatsEntry ::= 
-        SEQUENCE {
-                cLQd11CacVoiceBwInUse         Gauge32, 
-                cLQd11CacVideoBwInUse         Gauge32, 
-                cLQd11CacVoiceCallsInProgress Gauge32,
-                cLQd11CacRoamVoiceCallsInProg Gauge32,
-                cLQd11CacTotalVoiceCallsAP    Counter32,
-                cLQd11CacTotalRoamCallsAP     Counter32,
-                cLQd11CacVoiceCallsRejectedAP Counter32,
-                cLQd11CacRoamCallsRejectedAP  Counter32,
-                cLQd11CacRejCallsInsufBw      Counter32,
-                cLQd11CacRejCallsBadParams    Counter32,
-                cLQd11CacRejCallsPhyRate      Counter32,
-                cLQd11CacRejCallsQosPolicy    Counter32
-        }
+        There exists a row in this table for each row
+        corresponding to a dot11 interface found in
+        cLApDot11IfTable.  A row corresponding to a
+        dot11 interface is added when an AP joins the
+        controller.  The row gets deleted when the AP
+        dissociates from the controller."
+    ::= { cLQd11CACStats 1 }
 
 cLQd11CACStatsEntry OBJECT-TYPE
-        SYNTAX     CLQd11CACStatsEntry
-        MAX-ACCESS not-accessible
-        STATUS     current
-        DESCRIPTION
-                "Each entry represents a conceptual row in
-                CLQd11CACStatsTable and corresponds to the 
-                admission control statistics for a particular
-                dot11 interface. "
-        AUGMENTS { cLApDot11IfEntry }
-        ::= {  cLQd11CACStatsTable 1 }
-                 
+    SYNTAX          CLQd11CACStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry represents a conceptual row in
+        CLQd11CACStatsTable and corresponds to the 
+        admission control statistics for a particular
+        dot11 interface."
+    AUGMENTS           { cLApDot11IfEntry  } 
+ 
+    ::= { cLQd11CACStatsTable 1 }
+
+CLQd11CACStatsEntry ::= SEQUENCE {
+        cLQd11CacVoiceBwInUse         Gauge32,
+        cLQd11CacVideoBwInUse         Gauge32,
+        cLQd11CacVoiceCallsInProgress Gauge32,
+        cLQd11CacRoamVoiceCallsInProg Gauge32,
+        cLQd11CacTotalVoiceCallsAP    Counter32,
+        cLQd11CacTotalRoamCallsAP     Counter32,
+        cLQd11CacVoiceCallsRejectedAP Counter32,
+        cLQd11CacRoamCallsRejectedAP  Counter32,
+        cLQd11CacRejCallsInsufBw      Counter32,
+        cLQd11CacRejCallsBadParams    Counter32,
+        cLQd11CacRejCallsPhyRate      Counter32,
+        cLQd11CacRejCallsQosPolicy    Counter32
+}
+
 cLQd11CacVoiceBwInUse OBJECT-TYPE
-        SYNTAX     Gauge32(0..100)
-        UNITS      "Percent" 
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the voice bandwidth in use
-                as a percentage of the bandwidth configured through
-                cLQd11aVoiceMaxAdmBandwidth or
-                cLQd11bVoiceMaxAdmBandwidth, depending on the type
-                of this dot11 interface. "  
-        ::= {  cLQd11CACStatsEntry 1 }
+    SYNTAX          Gauge32 (0..100 )
+    UNITS           "Percent"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the voice bandwidth in use
+        as a percentage of the bandwidth configured through
+        cLQd11aVoiceMaxAdmBandwidth or
+        cLQd11bVoiceMaxAdmBandwidth, depending on the type
+        of this dot11 interface." 
+    ::= { cLQd11CACStatsEntry 1 }
 
 cLQd11CacVideoBwInUse OBJECT-TYPE
-        SYNTAX     Gauge32(0..100)
-        UNITS      "Percent" 
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the video bandwidth in use
-                as a percentage of the bandwidth configured through
-                cLQd11aVideoMaxAdmBandwidth or
-                cLQd11bVideoMaxAdmBandwidth, depending on the type
-                of this dot11 interface. "  
-        ::= {  cLQd11CACStatsEntry 2 }
+    SYNTAX          Gauge32 (0..100 )
+    UNITS           "Percent"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the video bandwidth in use
+        as a percentage of the bandwidth configured through
+        cLQd11aVideoMaxAdmBandwidth or
+        cLQd11bVideoMaxAdmBandwidth, depending on the type
+        of this dot11 interface." 
+    ::= { cLQd11CACStatsEntry 2 }
 
 cLQd11CacVoiceCallsInProgress OBJECT-TYPE
-        SYNTAX     Gauge32
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the count of the number of 
-                voice calls currently in progress on this dot11
-                interface. "
-        ::= {  cLQd11CACStatsEntry 3 }
+    SYNTAX          Gauge32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the count of the number of
+        voice calls currently in progress on this dot11
+        interface." 
+    ::= { cLQd11CACStatsEntry 3 }
 
 cLQd11CacRoamVoiceCallsInProg OBJECT-TYPE
-        SYNTAX     Gauge32 
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the count of the number of 
-                voice calls initiated from roaming clients
-                currently in progress on this dot11 interface. "
-        ::= {  cLQd11CACStatsEntry 4 }
+    SYNTAX          Gauge32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the count of the number of
+        voice calls initiated from roaming clients
+        currently in progress on this dot11 interface." 
+    ::= { cLQd11CACStatsEntry 4 }
 
 cLQd11CacTotalVoiceCallsAP OBJECT-TYPE
-        SYNTAX     Counter32
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the count of the number of 
-                voice calls observed on this dot11 interface
-                ever since this AP has joined the controller. "
-        ::= {  cLQd11CACStatsEntry 5 }
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the count of the number of
+        voice calls observed on this dot11 interface
+        ever since this AP has joined the controller." 
+    ::= { cLQd11CACStatsEntry 5 }
 
 cLQd11CacTotalRoamCallsAP OBJECT-TYPE
-        SYNTAX     Counter32
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the count of the number of 
-                voice and video calls initiated from roaming clients
-                observed on this dot11 interface ever since
-                this AP has joined the controller. "
-        ::= {  cLQd11CACStatsEntry 6 }
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the count of the number of
+        voice and video calls initiated from roaming clients
+        observed on this dot11 interface ever since
+        this AP has joined the controller." 
+    ::= { cLQd11CACStatsEntry 6 }
 
 cLQd11CacVoiceCallsRejectedAP OBJECT-TYPE
-        SYNTAX     Counter32
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the count of the number of 
-                voice calls observed as rejected on this dot11
-                interface, ever since this AP has joined the
-                controller. "
-        ::= {  cLQd11CACStatsEntry 7 }
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the count of the number of
+        voice calls observed as rejected on this dot11
+        interface, ever since this AP has joined the
+        controller." 
+    ::= { cLQd11CACStatsEntry 7 }
 
 cLQd11CacRoamCallsRejectedAP OBJECT-TYPE
-        SYNTAX     Counter32
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the count of the number of 
-                voice and video calls initiated from roaming
-                clients observed as rejected on this dot11
-                interface, ever since this AP has joined the
-                controller. "
-        ::= {  cLQd11CACStatsEntry 8 }
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the count of the number of
+        voice and video calls initiated from roaming
+        clients observed as rejected on this dot11
+        interface, ever since this AP has joined the
+        controller." 
+    ::= { cLQd11CACStatsEntry 8 }
 
 cLQd11CacRejCallsInsufBw OBJECT-TYPE
-        SYNTAX     Counter32
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the count of the number of 
-                calls observed as rejected on this dot11
-                interface due to insufficient bandwidth, ever
-                since this AP has joined the controller. "
-        ::= {  cLQd11CACStatsEntry 9 }
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the count of the number of
+        calls observed as rejected on this dot11
+        interface due to insufficient bandwidth, ever
+        since this AP has joined the controller." 
+    ::= { cLQd11CACStatsEntry 9 }
 
 cLQd11CacRejCallsBadParams OBJECT-TYPE
-        SYNTAX     Counter32
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the count of the number of 
-                calls observed as rejected on this dot11
-                interface due to mismatch in call parameters, ever
-                since this AP has joined the controller. "
-        ::= {  cLQd11CACStatsEntry 10 }
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the count of the number of
+        calls observed as rejected on this dot11
+        interface due to mismatch in call parameters, ever
+        since this AP has joined the controller." 
+    ::= { cLQd11CACStatsEntry 10 }
 
 cLQd11CacRejCallsPhyRate OBJECT-TYPE
-        SYNTAX     Counter32
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the count of the number of 
-                calls observed as rejected on this dot11
-                interface due to mismatch in 802.11 data rates,
-                ever since this AP has joined the controller. "
-        ::= {  cLQd11CACStatsEntry 11 }
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the count of the number of
+        calls observed as rejected on this dot11
+        interface due to mismatch in 802.11 data rates,
+        ever since this AP has joined the controller." 
+    ::= { cLQd11CACStatsEntry 11 }
 
 cLQd11CacRejCallsQosPolicy OBJECT-TYPE
-        SYNTAX     Counter32
-        MAX-ACCESS read-only
-        STATUS     current
-        DESCRIPTION
-                "This object indicates the count of the number of 
-                calls observed as rejected on this dot11
-                interface due to restrictions imposed by QOS
-                policies, ever since this AP has joined the
-                controller. "
-        ::= {  cLQd11CACStatsEntry 12 }
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the count of the number of
+        calls observed as rejected on this dot11
+        interface due to restrictions imposed by QOS
+        policies, ever since this AP has joined the
+        controller." 
+    ::= { cLQd11CACStatsEntry 12 }
+ 
 
---********************************************************************
---*    Compliance statements  
---********************************************************************
-ciscoLwappQosMIBCompliances OBJECT IDENTIFIER
-        ::= { ciscoLwappQosMIBConform 1 }
+-- ********************************************************************
+-- *    Compliance statements
+-- ********************************************************************
+ciscoLwappQosMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoLwappQosMIBConform 1 }
 
-ciscoLwappQosMIBGroups OBJECT IDENTIFIER
-        ::= { ciscoLwappQosMIBConform 2 }
+ciscoLwappQosMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoLwappQosMIBConform 2 }
+
 
 ciscoLwappQosMIBCompliance MODULE-COMPLIANCE
-        STATUS     current 
-        DESCRIPTION
-                "The compliance statement for the SNMP entities that
-                implement the ciscoLwappQosMIB module. "
-        MODULE MANDATORY-GROUPS {                
-                ciscoLwappQosDot11aConfigGroup,
-                ciscoLwappQosDot11bConfigGroup,
-                ciscoLwappQosDot11WlanConfigGroup,
-                ciscoLwappQosDot11CacStatsGroup
-        }
-        ::= { ciscoLwappQosMIBCompliances 1 }
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for the SNMP entities that
+        implement the ciscoLwappQosMIB module."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoLwappQosDot11aConfigGroup,
+                        ciscoLwappQosDot11bConfigGroup,
+                        ciscoLwappQosDot11WlanConfigGroup,
+                        ciscoLwappQosDot11CacStatsGroup
+                    }
+    ::= { ciscoLwappQosMIBCompliances 1 }
 
+ciscoLwappQosMIBComplianceRev1 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for the SNMP entities that
+        implement the ciscoLwappQosMIB module."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoLwappQosDot11aConfigGroup,
+                        ciscoLwappQosDot11bConfigGroup,
+                        ciscoLwappQosDot11WlanConfigGroup,
+                        ciscoLwappQosDot11CacStatsGroup,
+                        ciscoLwappQosDot11aConfigGroupSup1,
+                        ciscoLwappQosDot11bConfigGroupSup1
+                    }
+    ::= { ciscoLwappQosMIBCompliances 2 }
 
---********************************************************************
---*    Units of conformance  
---********************************************************************
-
+-- ********************************************************************
+-- *    Units of conformance
+-- ********************************************************************
 ciscoLwappQosDot11aConfigGroup OBJECT-GROUP
-        OBJECTS {
-                cLQd11aVoiceAdmCtrlSupport,
-                cLQd11aVoiceMaxAdmBandwidth,
-                cLQd11aVoiceMaxRoamBandwidth,
-                cLQd11aVideoAdmCtrlSupport,
-                cLQd11aVideoMaxAdmBandwidth,
-                cLQd11aVideoMaxRoamBandwidth,
-                cLQd11aGprProbeInterval 
-        }
-        STATUS     current
-        DESCRIPTION
-                "This collection of objects represents the 
-                quality-of-service parameters 802.11a networks. " 
-        ::= { ciscoLwappQosMIBGroups 1 }
+    OBJECTS         {
+                        cLQd11aVoiceAdmCtrlSupport,
+                        cLQd11aVoiceMaxAdmBandwidth,
+                        cLQd11aVoiceMaxRoamBandwidth,
+                        cLQd11aVideoAdmCtrlSupport,
+                        cLQd11aVideoMaxAdmBandwidth,
+                        cLQd11aVideoMaxRoamBandwidth,
+                        cLQd11aGprProbeInterval
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represents the
+        quality-of-service parameters 802.11a networks."
+    ::= { ciscoLwappQosMIBGroups 1 }
 
 ciscoLwappQosDot11bConfigGroup OBJECT-GROUP
-        OBJECTS {
-                cLQd11bVoiceAdmCtrlSupport,
-                cLQd11bVoiceMaxAdmBandwidth,
-                cLQd11bVoiceMaxRoamBandwidth,
-                cLQd11bVideoAdmCtrlSupport,
-                cLQd11bVideoMaxAdmBandwidth,
-                cLQd11bVideoMaxRoamBandwidth,
-                cLQd11bGprProbeInterval  
-        }
-        STATUS     current
-        DESCRIPTION
-                "This collection of objects represents the 
-                quality-of-service parameters 802.11b networks. " 
-        ::= { ciscoLwappQosMIBGroups 2 }
-  
+    OBJECTS         {
+                        cLQd11bVoiceAdmCtrlSupport,
+                        cLQd11bVoiceMaxAdmBandwidth,
+                        cLQd11bVoiceMaxRoamBandwidth,
+                        cLQd11bVideoAdmCtrlSupport,
+                        cLQd11bVideoMaxAdmBandwidth,
+                        cLQd11bVideoMaxRoamBandwidth,
+                        cLQd11bGprProbeInterval
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represents the
+        quality-of-service parameters 802.11b networks."
+    ::= { ciscoLwappQosMIBGroups 2 }
+
 ciscoLwappQosDot11WlanConfigGroup OBJECT-GROUP
-        OBJECTS { 
-                cLQd11GprSupport
-        }
-        STATUS     current
-        DESCRIPTION
-                "This collection of objects represents the
-                quality-of-services parameters on a particular WLAN. "
-        ::= { ciscoLwappQosMIBGroups 3 }
+    OBJECTS         { cLQd11GprSupport }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represents the
+        quality-of-services parameters on a particular WLAN."
+    ::= { ciscoLwappQosMIBGroups 3 }
 
 ciscoLwappQosDot11CacStatsGroup OBJECT-GROUP
-        OBJECTS { 
-                cLQd11CacVoiceBwInUse, 
-                cLQd11CacVideoBwInUse,
-                cLQd11CacVoiceCallsInProgress,
-                cLQd11CacRoamVoiceCallsInProg,
-                cLQd11CacTotalVoiceCallsAP,
-                cLQd11CacTotalRoamCallsAP,
-                cLQd11CacVoiceCallsRejectedAP,
-                cLQd11CacRoamCallsRejectedAP,
-                cLQd11CacRejCallsInsufBw,
-                cLQd11CacRejCallsBadParams,
-                cLQd11CacRejCallsPhyRate,
-                cLQd11CacRejCallsQosPolicy
-        }
-        STATUS     current
-        DESCRIPTION
-                "This collection of objects provide the call
-                admission control statistics observed on the
-                dot11 interfaces of an AP. "
-        ::= { ciscoLwappQosMIBGroups 4 }
+    OBJECTS         {
+                        cLQd11CacVoiceBwInUse,
+                        cLQd11CacVideoBwInUse,
+                        cLQd11CacVoiceCallsInProgress,
+                        cLQd11CacRoamVoiceCallsInProg,
+                        cLQd11CacTotalVoiceCallsAP,
+                        cLQd11CacTotalRoamCallsAP,
+                        cLQd11CacVoiceCallsRejectedAP,
+                        cLQd11CacRoamCallsRejectedAP,
+                        cLQd11CacRejCallsInsufBw,
+                        cLQd11CacRejCallsBadParams,
+                        cLQd11CacRejCallsPhyRate,
+                        cLQd11CacRejCallsQosPolicy
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects provide the call
+        admission control statistics observed on the
+        dot11 interfaces of an AP."
+    ::= { ciscoLwappQosMIBGroups 4 }
+
+ciscoLwappQosDot11aConfigGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        cLQd11aVoiceCtrl,
+                        cLQd11aExpeditedBw
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represents the
+        quality-of-service parameters 802.11a networks."
+    ::= { ciscoLwappQosMIBGroups 5 }
+
+ciscoLwappQosDot11bConfigGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        cLQd11bVoiceCtrl,
+                        cLQd11bExpeditedBw
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represents the
+        quality-of-service parameters 802.11b networks."
+    ::= { ciscoLwappQosMIBGroups 6 }
 
 END
+
+
 
