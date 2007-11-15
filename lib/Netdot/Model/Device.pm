@@ -491,9 +491,7 @@ sub get_snmp_info {
     # Interface stuff
     
     # Netdot Interface field name to SNMP::Info method conversion table
-    my %IFFIELDS = ( number          => "i_index",
-		     name            => "i_description",
-		     iname           => "i_name",
+    my %IFFIELDS = ( name            => "i_description",
 		     type            => "i_type",
 		     description     => "i_alias",
 		     speed           => "i_speed",
@@ -510,25 +508,25 @@ sub get_snmp_info {
     my $ifreserved = $self->config->get('IFRESERVED');
 
     foreach my $iid ( keys %{ $hashes{interfaces} } ){
-	my $ifindex = $hashes{'i_index'}->{$iid};
 	my $ifdescr = $hashes{interfaces}->{$iid};
-	
+	$dev{interface}{$iid}{number} = $iid;
+
 	# check whether it should be ignored
 	if ( defined $ifreserved ){
 	    next if ( $ifdescr =~ /$ifreserved/i );
 	}
 	foreach my $field ( keys %IFFIELDS ){
-	    $dev{interface}{$ifindex}{$field} = $hashes{$IFFIELDS{$field}}->{$iid} 
+	    $dev{interface}{$iid}{$field} = $hashes{$IFFIELDS{$field}}->{$iid} 
 	    if ( defined($hashes{$IFFIELDS{$field}}->{$iid}) && 
 		 $hashes{$IFFIELDS{$field}}->{$iid} =~ /\w+/ );
 	}
 
 
 	# Check if physaddr is valid
-	if ( my $physaddr = $dev{interface}{$ifindex}{physaddr} ){
+	if ( my $physaddr = $dev{interface}{$iid}{physaddr} ){
 	    if ( ! PhysAddr->validate($physaddr) ){
 		$logger->debug("Device::get_snmp_info: $name ($ip): Int $ifdescr: Invalid MAC: $physaddr");
-		delete $dev{interface}{$ifindex}{physaddr};
+		delete $dev{interface}{$iid}{physaddr};
 	    }	
 	}
 
@@ -539,9 +537,9 @@ sub get_snmp_info {
 		    $logger->debug("Device::get_snmp_info: $name ($ip): Invalid IP: $ip");
 		    next;
 		}	
-		$dev{interface}{$ifindex}{ips}{$ip}{address} = $ip;
+		$dev{interface}{$iid}{ips}{$ip}{address} = $ip;
 		if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
-		    $dev{interface}{$ifindex}{ips}{$ip}{mask} = $mask;
+		    $dev{interface}{$iid}{ips}{$ip}{mask} = $mask;
 		}
 	    }
 	}
@@ -549,10 +547,13 @@ sub get_snmp_info {
 	# Airespace Interfaces that represent thin APs
 	if ( exists $dev{airespace} ){
 	    
+	    # i_index value is different from iid in this case
+	    my $ifindex = $hashes{'i_index'}->{$iid};
+	    
 	    if ( $ifindex =~ /$AIRESPACEIF/ ){
-		my $ifname = $hashes{'i_name'}->{$iid};
-		$dev{interface}{$ifindex}{name}        = $ifindex;
-		$dev{interface}{$ifindex}{description} = $ifname;
+		my $ifname = $hashes{'i_name'}->{$iid};         # this has the name of the AP
+		$dev{interface}{$iid}{name}        = $ifindex;  
+		$dev{interface}{$iid}{description} = $ifname;
 
 		# Notice that we pass a hashref to get the results appended.
 		# This is somewhat confusing but necessary, since each AP might have
@@ -570,18 +571,18 @@ sub get_snmp_info {
 	my ($vid, $vname);
 	# This is the default vlan for this port
 	if ( $vid = $hashes{'i_vlan'}->{$iid} ){
-	    $dev{interface}{$ifindex}{vlans}{$vid}{vid} = $vid;
+	    $dev{interface}{$iid}{vlans}{$vid}{vid} = $vid;
 	}
 	# These are all the vlans that are enabled on this port.
 	# We might be able to get away with using only this one,
 	# but just in case...
 	if ( my $vm = $hashes{'i_vlan_membership'}->{$iid} ){
 	    foreach my $vid ( @$vm ){
-		$dev{interface}{$ifindex}{vlans}{$vid}{vid} = $vid;
+		$dev{interface}{$iid}{vlans}{$vid}{vid} = $vid;
 	    }
 	}
 	# Get VLAN names
-	foreach my $vid ( keys %{$dev{interface}{$ifindex}{vlans}} ){
+	foreach my $vid ( keys %{$dev{interface}{$iid}{vlans}} ){
 	    $vname = $hashes{'qb_v_name'}->{$vid}; # Standard MIB
 	    unless ( $vname ){
 		# We didn't get a vlan name in the standard place
@@ -597,7 +598,7 @@ sub get_snmp_info {
 		    }
 		}
 	    }
-	    $dev{interface}{$ifindex}{vlans}{$vid}{vname} = $vname if defined ($vname);
+	    $dev{interface}{$iid}{vlans}{$vid}{vname} = $vname if defined ($vname);
 	}
     }
 
@@ -1932,7 +1933,7 @@ sub snmp_update {
 
 	# Get all the APs we already had
 	foreach my $int ( $self->interfaces ){
-	    if ( $int->number =~ /$AIRESPACEIF/ ){
+	    if ( $int->name =~ /$AIRESPACEIF/ ){
 		my $apmac = $int->number;
 		$apmac =~ s/^(.*)\.\d$/$1/;
 		$oldaps{$apmac}++;
@@ -2827,7 +2828,6 @@ sub _get_snmp_session {
     $munge->{'airespace_ap_mac'}               = sub{ return $self->_oct2hex(@_) };
     $munge->{'airespace_bl_mac'}               = sub{ return $self->_oct2hex(@_) };
     $munge->{'airespace_if_mac'}               = sub{ return $self->_oct2hex(@_) };
-    $munge->{'airespace_sta_mac'}              = sub{ return $self->_oct2hex(@_) };
 
 
     if ( $class ){
