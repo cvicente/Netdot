@@ -23,8 +23,8 @@ $owner           => undef
 $used_by         => undef
 $site            => undef
 $contacts        => undef
-$add_subnets     => undef
-$subs_inherit    => undef
+$add_subnets     => 0
+$subs_inherit    => 0
 $pretend         => undef
 </%args>
 %
@@ -193,10 +193,8 @@ if ( $action eq "discover" ){
 	unless ( $o = Device->retrieve($argv{device}) ){
 	    $m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
 	}
-	my %uargs = (info         => $argv{info}, 
-		     add_subnets  => $add_subnets, 
-		     subs_inherit => $subs_inherit);
-	
+
+	my %uargs = (info => $argv{info});
 	if ( $pretend ){
 	    $uargs{pretend} = 1;
 	    eval {
@@ -211,11 +209,13 @@ if ( $action eq "discover" ){
 	    }
 	}
     }else{
-	$argv{owner}      = $owner          ||  0;
-	$argv{used_by}    = $used_by        ||  0;
-	$argv{site}       = $site           ||  0;
-	$argv{contacts}   = $contacts       ||  "";
-	$argv{community}  = $argv{info}->{community};
+	$argv{owner}        = $owner          ||  0;
+	$argv{used_by}      = $used_by        ||  0;
+	$argv{site}         = $site           ||  0;
+	$argv{contacts}     = $contacts       ||  "";
+	$argv{community}    = $argv{info}->{community};
+	$argv{add_subnets}  = $add_subnets;
+	$argv{subs_inherit} = $subs_inherit;
 	eval {
 	    $o = Device->discover(%argv);
 	};

@@ -1997,54 +1997,6 @@ sub snmp_update {
 }
 
 ############################################################################
-=head2 update_base_mac - Assign main Physical Address or MAC
-    
-    Checks if there is another device with the same MAC.
-    Creates a new PhysAddr if needed.
-
-  Arguments:
-    address
-  Returns:    
-    PhysAddr object id
-  Example:
-    $device->update_base_mac('DEADDEADBEEF');
-
-=cut
-
-sub update_base_mac {
-    my ($self, $address) = @_;
-    $self->isa_object_method('update_base_mac');
-
-    my $host = $self->fqdn;
-    my $mac;
-    # Look it up
-    if ( $mac = PhysAddr->search(address=>$address)->first ){
-	if ( my $otherdev = ($mac->devices)[0] ){
-	    if ( $self->id != $otherdev->id ){
-		# Another device has my address!
-		$self->throw_user( sprintf("%s: Base MAC %s belongs to existing device: %s. Aborting", 
-					   $host, $address, $otherdev->fqdn ) ); 
-	    }
-	}else{
-	    # The address exists but it's not the base bridge address of any other device
-	    # (maybe discovered in fw tables/arp cache)
-	    $mac->update({ last_seen => $self->timestamp });
-	    $logger->debug("$host: Using existing $address as base bridge address");		
-	}
-    }else{
-	# address is new.  Add it
-	my %mactmp = ( address    => $address,
-		       first_seen => $self->timestamp,
-		       last_seen  => $self->timestamp 
-		       );
-	$mac = PhysAddr->insert(\%mactmp);
-	$logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
-    }
-    $self->update({physaddr=>$mac});
-    return $mac;
-}
-
-############################################################################
 =head2 add_ip - Add an IP address (assumes only one interface)
    
   Arguments:
