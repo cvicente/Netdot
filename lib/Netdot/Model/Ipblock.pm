@@ -1015,13 +1015,12 @@ sub update_a_records {
 
 	# Is this the only ip in this device,
 	# or is this the address associated with the hostname?
-	my @devips = $device->get_ips();
-	if ( (scalar @devips) == 1 || exists $hostnameips{$self->address} ){
+	if ( exists $hostnameips{$self->address} ){
 
 	    # We should already have an RR created (via Device::assign_name)
 	    # Create the A record to link that RR with this Ipobject
 	    RRADDR->insert( {rr => $device->name, ipblock => $self} );
-	    $logger->info(sprintf("%s: Inserted DNS A record for %s: %s", 
+	    $logger->info(sprintf("%s: Inserted DNS A record for main device IP %s: %s", 
 				  $host, $self->address, $device->name->name));
 	}else{
 	    # This ip is not associated with the Device name.
