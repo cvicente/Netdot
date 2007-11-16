@@ -241,7 +241,6 @@ sub assign_name {
   Arguments:
     Arrayref with Device fields and values, plus:
     contacts    - ContactList object(s) (array or scalar)
-    info        - SNMP information  
   Returns:
     New Device object
 
@@ -332,10 +331,6 @@ sub insert {
 	$self->add_contact_lists();
     }
 
-    if ( $info ){
-	# Update with SNMP data passed to us
-	$self->snmp_update(info=>$info);
-    }
     return $self;
 }
 
