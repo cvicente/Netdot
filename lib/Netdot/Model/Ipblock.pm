@@ -795,32 +795,32 @@ sub update {
   Arguments: 
     recursive  - Remove blocks recursively (default is false)
     stack      - stack level (for recursiveness control)
-  Returns:
+   Returns:
     True if successful
   Examples:
     $ipblock->delete(recursive=>1);
 
 =cut
-
 sub delete {
     my ($self, %args) = @_;
     $self->isa_object_method('delete');
     my $class = ref($self);
-    my $stack = $args{stack}   || 0;
-    
+    my $stack = $args{stack} || 0;
+     
     if ( $args{recursive} ){
 	foreach my $ch ( $self->children ){
-	    $ch->delete(recursive=>1, stack=>$stack+1);
+           $ch->delete(recursive=>1, stack=>$stack+1);
 	}
-    }
-    my $version = $self->version;
-    
-    $self->SUPER::delete();
-
-    # We check if this is the first call in the stack
-    # to avoid rebuilding the tree unnecessarily
-    $class->build_tree($version) if ( $stack == 0 );
-        
+	my $version = $self->version;
+	$self->SUPER::delete();
+	# We check if this is the first call in the stack
+	# to avoid rebuilding the tree unnecessarily for
+	# each child
+	$class->build_tree($version) if ( $stack == 0 );
+    }else{
+	$self->delete_from_tree();
+	$self->SUPER::delete();
+    }    
     return 1;
 }
 ##################################################################
@@ -1498,8 +1498,7 @@ sub _build_tree_mem {
 					 prefix  => $prefix, 
 					 version => $version,
 					 data    => $id);
-	$parents{$node->data} = $node->parent->data 
-	    if ( defined $node->parent );
+	$parents{$id} = $node->parent->data if ( defined $node && $node->parent );
     }
 
     # Now the addresses
@@ -1551,12 +1550,48 @@ sub _update_tree{
 	
 	# Get parent id
 	my $parent;
-	$parent = $n->parent->data if ( $n && $n->parent );
+	if ( $n->iaddress != $self->address_numeric ) {
+	    $parent = $n->data if ( $n );
+	}else{
+	    $parent = $n->parent->data if ( $n && $n->parent );
+	}
 	$self->update({parent=>$parent}) if $parent;
 	
     }else{
 	# This is a block (subnet, container, etc)
 	$class->build_tree($self->version);
+    }
+    return 1;
+}
+
+##################################################################
+#   Be smart about deleting an IP from the hierarchy.
+#
+#   Arguments:
+#     None
+#   Returns:
+#     True
+#   Examples:
+#     $ip->_delete_from_tree();
+#
+sub _delete_from_tree{
+    my ($self) = @_;
+    $self->isa_object_method('_delete_from_tree');
+    my $class = ref($self);
+
+    if ( ! $self->is_address ){
+	# This is a block (subnet, container, etc)
+	my $parent   = $self->parent;
+	my @children = $self->children;
+	foreach my $child ( @children ){
+	    $child->update({parent=>$parent});
+	}
+    }
+    my $n = $class->_tree_find(version => $self->version, 
+			       address => $self->address_numeric,
+			       prefix  => $self->prefix);
+    if ( $n->iaddress == $self->address_numeric ){
+	$n->delete();
     }
     return 1;
 }
