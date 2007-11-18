@@ -1862,8 +1862,13 @@ sub snmp_update {
 	    
 	    $logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
 				  $host, $ip->address));
-	    $ip->delete();
+	    $ip->delete(no_update_tree=>1);
 	}
+	
+	# Rebuild IP space tree
+	# Notice we do this at the end instead of per IP to speed things up
+	Ipblock->build_tree(4);
+	#Ipblock->build_tree(6); # enable when we start getting IPv6 info out of SNMP
     }
     ###############################################################
     # Add/Update/Delete BGP Peerings

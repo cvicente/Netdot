@@ -284,7 +284,8 @@ sub is_loopback{
 =head2 insert - Insert a new block
 
   Modified Arguments:
-    status    name of, id or IpblockStatus object (default: Container)
+    status          - name of, id or IpblockStatus object (default: Container)
+    no_update_tree  - Do not update IP tree
   Returns: 
     New Ipblock object or 0
   Examples:
@@ -299,7 +300,7 @@ sub insert {
     
     $class->throw_fatal("Missing required arguments: address")
 	unless ( exists $argv->{address} );
-    
+
     $argv->{prefix}        ||= undef;
     $argv->{status}        ||= "Container";
     $argv->{interface}     ||= 0; 
@@ -322,9 +323,14 @@ sub insert {
     $argv->{first_seen} = $class->timestamp,
     $argv->{last_seen}  = $class->timestamp,
 
-    my $newblock = $class->SUPER::insert($argv);
+    my $no_update_tree = $argv->{no_update_tree};
+    delete $argv->{no_update_tree};
 
-    $newblock->_update_tree();
+    my $newblock = $class->SUPER::insert($argv);
+    
+    # Update tree unless we're told not to do so for speed reasons
+    # (usually because it will be rebuilt at the end of a device update)
+    $newblock->_update_tree() unless $no_update_tree;
     
     #####################################################################
     # Now check for rules
@@ -793,8 +799,9 @@ sub update {
     We override delete to allow deleting children recursively as an option.
     
   Arguments: 
-    recursive  - Remove blocks recursively (default is false)
-    stack      - stack level (for recursiveness control)
+    recursive      - Remove blocks recursively (default is false)
+    stack          - stack level (for recursiveness control)
+    no_update_tree - Do not update IP tree
    Returns:
     True if successful
   Examples:
@@ -816,9 +823,13 @@ sub delete {
 	# We check if this is the first call in the stack
 	# to avoid rebuilding the tree unnecessarily for
 	# each child
-	$class->build_tree($version) if ( $stack == 0 );
+	unless ( $args{no_update_tree} ){
+	    $class->build_tree($version) if ( $stack == 0 );
+	}
     }else{
-	$self->delete_from_tree();
+	unless ( $args{no_update_tree} ){
+	    $self->_delete_from_tree();
+	}
 	$self->SUPER::delete();
     }    
     return 1;
@@ -1581,16 +1592,17 @@ sub _delete_from_tree{
 
     if ( ! $self->is_address ){
 	# This is a block (subnet, container, etc)
+	# Assign all my children my current parent
 	my $parent   = $self->parent;
 	my @children = $self->children;
 	foreach my $child ( @children ){
 	    $child->update({parent=>$parent});
 	}
     }
-    my $n = $class->_tree_find(version => $self->version, 
+    my $n = $class->_tree_find(version  => $self->version, 
 			       address => $self->address_numeric,
-			       prefix  => $self->prefix);
-    if ( $n->iaddress == $self->address_numeric ){
+			       prefix   => $self->prefix);
+    if ( $n && ($n->iaddress == $self->address_numeric) ){
 	$n->delete();
     }
     return 1;
@@ -1645,9 +1657,9 @@ sub _tree_insert{
 sub _tree_find{
     my ($class, %argv) = @_;
     $class->isa_class_method('_tree_find');
-    $class->throw_user("Missing required arguments: version")
+    $class->throw_fatal("Ipblock::_tree_find: Missing required arguments: version")
 	unless ( $argv{version} );
-    $class->throw_user("Missing required arguments: address")
+    $class->throw_fatal("Ipblock::_tree_find: Missing required arguments: address")
 	unless ( $argv{address} );
     my $n;
     my %args = ( iaddress=>$argv{address} );

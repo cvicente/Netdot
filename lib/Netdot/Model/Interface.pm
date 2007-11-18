@@ -339,19 +339,22 @@ sub update_ip {
 		    }
 		    
 		    $logger->debug(sprintf("Subnet %s/%s does not exist.  Inserting.", $subnetaddr, $subnetprefix));
-
-		    my %state = ( address     => $subnetaddr, 
-				  prefix      => $subnetprefix, 
-				  status      => "Subnet" );
-
+		    # Prepare args for insert method
+		    # IP tree will be rebuilt at the end of the Device update
+		    my %iargs = ( address        => $subnetaddr, 
+				  prefix         => $subnetprefix, 
+				  status         => "Subnet",
+				  no_update_tree => 1,
+				  );
+		    
 		    # Check if subnet should inherit device info
 		    if ( $args{subs_inherit} ){
-			$state{owner}   = $self->device->owner;
-			$state{used_by} = $self->device->used_by;
+			$iargs{owner}   = $self->device->owner;
+			$iargs{used_by} = $self->device->used_by;
 		    }
 		    # Something might go wrong here, but we want to go on anyway
 		    eval {
-			Ipblock->insert(\%state);
+			Ipblock->insert(\%iargs);
 		    };
 		    if ( my $e = $@ ){
 			$logger->error(sprintf("%s: Could not insert Subnet %s/%s: %s", 
