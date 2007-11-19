@@ -2354,51 +2354,64 @@ $meta = {
         tag => 'Comments',
         type => 'blob'
       },
-      ipblock => {
+      fixed_address => {
         default => '',
-        description => '',
+        description => 'Reference to an IPblock object.  Only applies to host scopes.',
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'dhcpentries',
+          method => 'dhcp_hosts',
           table => 'Ipblock'
         },
         nullable => 1,
-        tag => 'IP Block',
+        tag => 'Fixed Address',
+        type => 'integer'
+      },
+      subnet => {
+        default => '',
+        description => 'Reference to an IPblock object.  Only applies to subnet scopes.',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'dhcp_subnets',
+          table => 'Ipblock'
+        },
+        nullable => 1,
+        tag => 'Subnet',
+        type => 'integer'
+      },
+      physaddr => {
+        default => '',
+        description => 'Reference to a MAC object.  Only useful within host scopes.',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'dhcp_hosts',
+          table => 'PhysAddr'
+        },
+        nullable => 0,
+        tag => 'Hardware Ethernet',
         type => 'integer'
       },
       name => {
         default => '',
-        description => '',
-        length => '',
-        nullable => 1,
+        description => 'Name of the Scope.  For example, a host name is the name of a scope of type "host".',
+        length => '128',
+        nullable => 0,
         tag => 'Name',
-        type => 'integer'
+        type => 'varchar'
       },
-      part_of => {
+      parent => {
         default => '',
         description => '',
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'parts',
+          method => 'children',
           table => 'DhcpScope'
         },
         nullable => 1,
-        tag => 'Belongs to',
-        type => 'integer'
-      },
-      service => {
-        default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'dhcpconfigs',
-          table => 'IpService'
-        },
-        nullable => 1,
-        tag => 'DHCP Service',
+        tag => 'Parent Scope',
         type => 'integer'
       },
       type => {
@@ -2411,7 +2424,7 @@ $meta = {
           table => 'DhcpScopeType'
         },
         nullable => 0,
-        tag => undef,
+        tag => 'Type',
         type => 'integer'
       }
     },
@@ -2424,7 +2437,6 @@ $meta = {
     ],
     isjoin => '0',
     label => [
-      'service',
       'type',
       'name'
     ],
@@ -2434,13 +2446,63 @@ $meta = {
       all => [
         'type',
         'name',
-        'part_of',
-        'ipblock',
-        'service',
+        'parent',
+        'fixed_address',
+        'subnet',
+        'physaddr',
+        'info'
+      ],
+      class => [
+        'type',
+        'name',
+        'parent',
+        'info'
+      ],
+      global => [
+        'type',
+        'name',
+        'parent',
+        'info'
+      ],
+      group => [
+        'type',
+        'name',
+        'parent',
+        'info'
+      ],
+      host => [
+        'type',
+        'name',
+        'parent',
+        'fixed_address',
+        'physaddr',
+        'info'
+      ],
+      pool => [
+        'type',
+        'name',
+        'parent',
+        'info'
+      ],
+      'shared-network' => [
+        'type',
+        'name',
+        'parent',
+        'info'
+      ],
+      subclass => [
+        'type',
+        'name',
+        'parent',
+        'info'
+      ],
+      subnet => [
+        'type',
+        'subnet',
+        'parent',
         'info'
       ],
       brief => [
-        'service',
         'type',
         'name'
       ]
@@ -3837,19 +3899,6 @@ $meta = {
         tag => 'Parent',
         type => 'integer'
       },
-      physaddr => {
-        default => '',
-        description => 'MAC address associated with this IP address',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'registeredips',
-          table => 'PhysAddr'
-        },
-        nullable => 1,
-        tag => 'MAC Address',
-        type => 'integer'
-      },
       prefix => {
         default => '',
         description => 'Prefix length of this IP block',
@@ -3922,9 +3971,6 @@ $meta = {
         'last_seen'
       ],
       [
-        'physaddr'
-      ],
-      [
         'interface'
       ]
     ],
@@ -3956,7 +4002,6 @@ $meta = {
         'last_seen',
         'dhcp_enabled',
         'dns_delegated',
-        'physaddr',
         'info'
       ],
       brief => [

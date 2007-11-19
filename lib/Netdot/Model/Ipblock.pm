@@ -721,7 +721,7 @@ sub update {
     if ( $recursive ){
 	my %data = %{ $argv };
         map { 
-	    if ( /^address|prefix|version|interface|status|physaddr$/ ){
+	    if ( /^address|prefix|version|interface|status$/ ){
 		$self->throw_fatal("$_ is not a valid field for a recursive update");
 	    }
 	} keys %data;
@@ -1117,7 +1117,7 @@ sub update_a_records {
   Returns:   
     Hash reference 
   Examples:
-    my $db_ips = PhysAddr->retriev_all_hash();
+    my $db_ips = Ipblock->retriev_all_hash();
 
 =cut
 sub retrieve_all_hashref {
@@ -1162,7 +1162,6 @@ sub retrieve_all_hashref {
 
   Arguments: 
     Hash ref keyed by ip address containing a hash with following keys:
-    physaddr  - String containing the MAC address associated with this IP
     timestamp
     prefix
     version
@@ -1180,7 +1179,6 @@ sub fast_update{
     my $start = time;
     $logger->debug("Ipblock::fast_update: Updating IP addresses in DB");
 
-    my $db_macs = PhysAddr->retrieve_all_hashref;
     my $db_ips  = $class->retrieve_all_hashref;
     
     my $dbh = $class->db_Main;
@@ -1188,19 +1186,12 @@ sub fast_update{
     # Build SQL queries
     my ($sth1, $sth2, $sth3, $sth4);
     eval {
-	$sth1 = $dbh->prepare_cached("UPDATE ipblock SET physaddr=?,last_seen=?
+	$sth1 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=?
                                       WHERE id=?");	
 
-	$sth2 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=?
-                                      WHERE id=?");	
-
-	$sth3 = $dbh->prepare_cached("INSERT INTO ipblock 
-                                     (address,prefix,version,status,physaddr,first_seen,last_seen)
-                                     VALUES (?, ?, ?, ?, ?, ?, ?)");	
-	
-	$sth4 = $dbh->prepare_cached("INSERT INTO ipblock 
+	$sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
                                      (address,prefix,version,status,first_seen,last_seen)
-                                     VALUES (?, ?, ?, ?, ?, ?, ?)");	
+                                     VALUES (?, ?, ?, ?, ?, ?)");	
 	
 
     };
@@ -1209,7 +1200,6 @@ sub fast_update{
     }
 
     # Now walk our list and do the right thing
-
     eval{
 	foreach my $address ( keys %$ips ){
 	    my $attrs = $ips->{$address};
@@ -1218,37 +1208,16 @@ sub fast_update{
 	    
 	    if ( exists $db_ips->{$dec_addr} ){
 		# IP exists
-		if ( exists $db_macs->{$attrs->{physaddr}} ){
-		    $sth1->execute($db_macs->{$attrs->{physaddr}}, 
-				   $attrs->{timestamp}, 
-				   $db_ips->{$dec_addr},
-				   );
-		}else{
-		    # MAC does not exist. Should not happen, but...
-		    $sth2->execute($attrs->{timestamp}, 
-				   $db_ips->{$dec_addr});
-		}
+		$sth1->execute($attrs->{timestamp}, $db_ips->{$dec_addr});
 	    }else{
 		# IP does not exist
-		if ( exists $db_macs->{$attrs->{physaddr}} ){
-		    $sth3->execute($dec_addr,
-				   $attrs->{prefix},
-				   $attrs->{version},
-				   $attrs->{status},
-				   $db_macs->{$attrs->{physaddr}},
-				   $attrs->{timestamp}, 
-				   $attrs->{timestamp},
-				   );
-		}else{
-		    # MAC does not exist.  Should not happen, but...
-		    $sth4->execute($dec_addr,
-				   $attrs->{prefix},
-				   $attrs->{version},
-				   $attrs->{status},
-				   $attrs->{timestamp}, 
-				   $attrs->{timestamp},
-				   );
-		}
+		$sth2->execute($dec_addr,
+			       $attrs->{prefix},
+			       $attrs->{version},
+			       $attrs->{status},
+			       $attrs->{timestamp}, 
+			       $attrs->{timestamp},
+			       );
 	    }
 	}
     };
@@ -1561,13 +1530,14 @@ sub _update_tree{
 	
 	# Get parent id
 	my $parent;
-	if ( $n->iaddress != $self->address_numeric ) {
-	    $parent = $n->data if ( $n );
-	}else{
-	    $parent = $n->parent->data if ( $n && $n->parent );
+	if ( $n ){
+	    if ( $n->iaddress != $self->address_numeric ) {
+		$parent = $n->data if ( $n );
+	    }else{
+		$parent = $n->parent->data if ( $n && $n->parent );
+	    }
+	    $self->update({parent=>$parent}) if $parent;
 	}
-	$self->update({parent=>$parent}) if $parent;
-	
     }else{
 	# This is a block (subnet, container, etc)
 	$class->build_tree($self->version);
