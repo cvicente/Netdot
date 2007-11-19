@@ -141,20 +141,27 @@ sub update {
     info          - Hash ref with SNMP info about interface
     add_subnets   - Whether to add subnets automatically
     subs_inherit  - Whether subnets should inherit info from the Device
+    ipv4_changed  - Scalar ref.  Set if IPv4 info changes
+    ipv6_changed  - Scalar ref.  Set if IPv6 info changes
   Returns:    
-    
+    Interface object
   Example:
-    
+    $if->snmp_update(info         => $info->{interface}->{$newif},
+		     add_subnets  => $add_subnets,
+		     subs_inherit => $subs_inherit,
+		     ipv4_changed => \$ipv4_changed,
+		     ipv6_changed => \$ipv6_changed,
+		     );
 =cut
 sub snmp_update {
     my ($self, %args) = @_;
     $self->isa_object_method('snmp_update');
     my $class = ref($self);
-
     my $newif = $args{info};
     my $host  = $self->device->fqdn;
-
     my %iftmp;
+    # Remember these are scalar refs.
+    my ( $ipv4_changed, $ipv6_changed ) = @args{'ipv4_changed', 'ipv6_changed'};
 
     ############################################
     # Fill in standard fields
@@ -164,7 +171,8 @@ sub snmp_update {
     foreach my $field ( @stdfields ){
 	$iftmp{$field} = $newif->{$field} if exists $newif->{$field};
     }
-    
+
+
     ############################################
     # Update PhysAddr
     if ( !defined $newif->{physaddr} ){
@@ -273,7 +281,10 @@ sub snmp_update {
 	    $self->update_ip( address      => $address,
 			      mask         => $mask,
 			      add_subnets  => $args{add_subnets},
-			      subs_inherit => $args{subs_inherit} );
+			      subs_inherit => $args{subs_inherit},
+			      ipv4_changed => $ipv4_changed,
+			      ipv6_changed => $ipv6_changed,
+			      );
 	}
     } 
     
@@ -289,6 +300,9 @@ sub snmp_update {
     mask         - Dotted quad mask
     add_subnets  - Flag.  Add subnet if necessary (only for routers)
     subs_inherit - Flag.  Have subnet inherit some Device information
+    ipv4_changed - Scalar ref.  Set if IPv4 info changes
+    ipv6_changed - Scalar ref.  Set if IPv6 info changes
+    
   Returns:
     Updated Ipblock object
   Example:
@@ -300,6 +314,8 @@ sub update_ip {
 
     my $address = $args{address};
     $self->throw_fatal("Missing required arguments: address") unless ( $address );
+    # Remember these are scalar refs.
+    my ( $ipv4_changed, $ipv6_changed ) = @args{'ipv4_changed', 'ipv6_changed'};
 
     my $host = $self->device->fqdn;
     
@@ -353,8 +369,9 @@ sub update_ip {
 			$iargs{used_by} = $self->device->used_by;
 		    }
 		    # Something might go wrong here, but we want to go on anyway
+		    my $newblock;
 		    eval {
-			Ipblock->insert(\%iargs);
+			$newblock = Ipblock->insert(\%iargs);
 		    };
 		    if ( my $e = $@ ){
 			$logger->error(sprintf("%s: Could not insert Subnet %s/%s: %s", 
@@ -362,6 +379,12 @@ sub update_ip {
 		    }else{
 			$logger->info(sprintf("%s: Created Subnet %s/%s", 
 					      $host, $subnetaddr, $subnetprefix));
+			my $version = $newblock->version;
+			if ( $version == 4 ){
+			    $$ipv4_changed = 1;
+			}elsif ( $version == 6 ){
+			    $$ipv6_changed = 1;
+			}
 		    }
 		}
 	    }
@@ -408,6 +431,12 @@ sub update_ip {
 	    return;
 	}else{
 	    $logger->info(sprintf("%s: Inserted IP %s", $host, $ipobj->address));
+	    my $version = $ipobj->version;
+	    if ( $version == 4 ){
+		$$ipv4_changed = 1;
+	    }elsif ( $version == 6 ){
+		$$ipv6_changed = 1;
+	    }
 	}
     }
     return $ipobj;

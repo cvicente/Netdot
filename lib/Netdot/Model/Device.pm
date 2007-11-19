@@ -1740,6 +1740,10 @@ sub snmp_update {
 	
  	# Get old Interfaces (if any).
  	my ( %oldifs, %oldifsbynumber, %oldifsbyname );
+
+	# Flag for determining if IP info has changed
+	my $ipv4_changed = 0;
+	my $ipv6_changed = 0;
 	
 	##############################################
 	# Try to solve the problem with devices that change ifIndex
@@ -1827,7 +1831,10 @@ sub snmp_update {
 		# Now update it with snmp info
 		$if->snmp_update(info         => $info->{interface}->{$newif},
 				 add_subnets  => $add_subnets,
-				 subs_inherit => $subs_inherit);
+				 subs_inherit => $subs_inherit,
+				 ipv4_changed => \$ipv4_changed,
+				 ipv6_changed => \$ipv6_changed,
+				 );
 		
 		$logger->debug(sprintf("%s: Interface %s (%s) updated", 
 				       $host, $if->number, $if->name));
@@ -1863,12 +1870,13 @@ sub snmp_update {
 	    $logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
 				  $host, $ip->address));
 	    $ip->delete(no_update_tree=>1);
+	    $ipv4_changed = 1;
 	}
 	
 	# Rebuild IP space tree
 	# Notice we do this at the end instead of per IP to speed things up
-	Ipblock->build_tree(4);
-	#Ipblock->build_tree(6); # enable when we start getting IPv6 info out of SNMP
+	Ipblock->build_tree(4) if $ipv4_changed;
+	Ipblock->build_tree(6) if $ipv6_changed;
     }
     ###############################################################
     # Add/Update/Delete BGP Peerings
