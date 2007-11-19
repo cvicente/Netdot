@@ -65,6 +65,7 @@ my %ifvlans;
 my %vlans;
 my $fqdn;
 my $whois_url = Netdot->config->get('BGP_AS_WHOIS_URL');
+my @arp_caches;
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
@@ -212,6 +213,13 @@ my $refresh_url = "device.html?id=$id&view=$view";
         <li><span>Topology</span></li>
 %     } else {
         <li><a href="device.html?id=<% $id %>&view=Topology">Topology</a></li>
+%     }
+%     if ( @arp_caches = ArpCache->search(device=>$o->id, {order_by=>'tstamp DESC'}) ){
+%       if( $view eq "ARP" ) {
+          <li><span>ARP</span></li>
+%       } else {
+          <li><a href="device.html?id=<% $id %>&view=ARP">ARP</a></li>
+%       }
 %     }
 %     if( $view eq "History" ) {
         <li><span>History</span></li>
@@ -1076,6 +1084,28 @@ if ( $ipeers ){
 </div>
 
 %}
+
+%#######################################################################
+%#
+%# ARP
+%#
+%#######################################################################
+%
+% if ( $view eq "ARP" || $view eq "All" ){
+%
+<!-- ARP Cache Table -->
+<div class="container">
+    <div class="containerhead">
+        ARP Caches
+    </div>
+    <div class="containerbody">
+        <& /generic/sortresults.mhtml, object => \@arp_caches , view => "row" &>
+    </div>
+</div>
+% }
+%
+%
+<!-- End ARP Cache Table -->
 
 %#######################################################################
 %#
