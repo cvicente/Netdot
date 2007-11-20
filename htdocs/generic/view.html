@@ -76,7 +76,7 @@ print '%ftables is  <pre>', Dumper(%ftables), '</pre><br>' if $DEBUG;
 
 <div id="sectiondetail">
 
-%  if ( $table !~ /_history/ ){
+%  if ( ! $table->meta_data->is_history() ){
       <div class="container">
 	<div class="containerhead">View</div>
 	   <div class="containerbody">
@@ -97,7 +97,9 @@ print '%ftables is  <pre>', Dumper(%ftables), '</pre><br>' if $DEBUG;
                    <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
 %               }   
 %             }
+%           if ( $table->meta_data->get_history_table_name() ){
               <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">[history]</a>
+%	    }
 	   </div>
 	</div>
       </div>
@@ -113,7 +115,7 @@ if ( $view eq 'all' || $view eq "$table" ){
 
 	<div class="containerheadleftoutside"><strong><% $table %></strong></div>
 	<div class="containerheadrightoutside">
-%         if ($table !~ /_history/){
+%         if ( ! $table->meta_data->is_history() ){
               <a href="edit.html?table=<% $table %>">[new]</a>
               <a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
 %	      }
@@ -159,7 +161,7 @@ if ( $view eq 'all' || $view eq "$table" ){
 
 <!-- Display history objects associated with this object-->
 
-%  if ( $view eq 'history' ){
+%  if ( $view eq 'history' && $table->meta_data->has_history() ){
 %   my @ho = $obj->get_history;
     <& sortresults.mhtml, object => \@ho , view => "row", sort => 0 &>
 %  } 

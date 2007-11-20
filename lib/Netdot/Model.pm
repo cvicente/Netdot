@@ -639,6 +639,7 @@ sub get_history {
 
     my $table  = $self->table;
     my $htable = $self->meta_data->get_history_table_name();
+    return unless $htable;
 
     # History objects have two indexes, one is the necessary
     # unique index, the other one refers to which real object
