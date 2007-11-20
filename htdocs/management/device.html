@@ -214,7 +214,7 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %     } else {
         <li><a href="device.html?id=<% $id %>&view=Topology">Topology</a></li>
 %     }
-%     if ( @arp_caches = ArpCache->search(device=>$o->id, {order_by=>'tstamp DESC'}) ){
+%     if ( @arp_caches = $o->arp_caches ){
 %       if( $view eq "ARP" ) {
           <li><span>ARP</span></li>
 %       } else {
@@ -1099,7 +1099,7 @@ if ( $ipeers ){
         ARP Caches
     </div>
     <div class="containerbody">
-        <& /generic/sortresults.mhtml, object => \@arp_caches , view => "row" &>
+        <& /generic/sortresults.mhtml, object => \@arp_caches , view => "row" , sort=>0&>
     </div>
 </div>
 % }

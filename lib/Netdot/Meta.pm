@@ -159,11 +159,11 @@ sub cdbi_class{
 
     # Build a Class for each DB table
     my $table = $argv{table};
+    my $tname = $table->name;
     my ($code, $package);
-    $package = ($argv{namespace}) ? $argv{namespace}."::".$table->name : $table->name;
+    $package = ($argv{namespace}) ? $argv{namespace}."::".$tname : $tname;
     $code .= "package ".$package.";\n";
     $code .= "use base '$argv{base}';\n";
-    my $tname = $table->name;
     $tname = lc($tname);
     $code .= "__PACKAGE__->table( '$tname' );\n";
 	
@@ -209,16 +209,18 @@ sub cdbi_class{
 	my $l      = $c->links_to_attrs();
 	my $casc   = $l->{cascade};
 	croak "cdbi_classes: Missing 'cascade' entry for $tab:$col" unless $casc;
-	my $arg;
+	my %args;
 	if ( $casc eq 'Nullify' ){
-	    $arg = "{cascade=>'Class::DBI::Cascade::Nullify'}";
+	    $args{cascade} = 'Class::DBI::Cascade::Nullify';
 	}elsif ( $casc =~ /^Delete|Fail$/i ){
-	    $arg = "{cascade=>'$casc'}";
+	    $args{cascade} = $casc;
 	}else{
 	    croak "cdbi_classes: Unknown cascade behavior $casc";
 	}
+	$args{order_by} = $l->{order_by} if defined $l->{order_by};
+	my $sargs = join ', ', map { sprintf("%s=>'%s'", $_, $args{$_}) } keys %args;
 	$tab = ($argv{namespace}) ? $argv{namespace}."::".$tab : $tab;
-	$code .= "__PACKAGE__->has_many( '$method', '$tab' => '$col', $arg );\n";
+	$code .= "__PACKAGE__->has_many( '$method', '$tab' => '$col', {$sargs} );\n";
     }
 
     return ($package, $code);
