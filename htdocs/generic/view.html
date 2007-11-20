@@ -47,8 +47,12 @@ foreach my $i ( keys %linksfrom ){
     my $j = (keys %{ $linksfrom{$i} })[0];
 
     #column in the other table that points to this table
-    $ftables{$i}{ffield} = $linksfrom{$i}{$j};  
+    $ftables{$i}{ffield} = $linksfrom{$i}{$j};
     
+    # Determine if the has_many method returns ordered data from the db
+    my $ffattrs = $j->meta_data->get_column($ftables{$i}{ffield})->links_to_attrs();
+    $ftables{$i}{ffield_order} = $ffattrs->{order_by} if ( exists $ffattrs->{order_by} );
+
     if ( $j->meta_data->is_join ){
 	# Foreign table is a join table
 	$ftables{$i}{join} = 1;
@@ -148,11 +152,14 @@ if ( $view eq 'all' || $view eq "$table" ){
 	       <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>">[add]</a>
 %           }
 	    </div>
+%              my %args = ( table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs} );
 %	       if ( $edit eq $i ){
-                 <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs}, withedit => 1 &>
+%                  $args{withedit} = 1;
 %	       }else{
-                 <& sortresults.mhtml, table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs} &>
+%                   # If data came ordered from the db, tell sortresults not to bother sorting
+%                   $args{sort} = 0 if ( $ftables{$i}{ffield_order} );
 %              }
+%	       $m->comp('sortresults.mhtml', %args);
           </div>
 %     }
 %   } 
