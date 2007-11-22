@@ -318,7 +318,7 @@ sub insert {
     }
     
     if ( my $dbdev = $class->search(name=>$devtmp{name})->first ){
-	$class->throw_user(sprintf("Device::insert: Device %s already exists in DB as %s",
+	$class->throw_user(sprintf("Device::insert: Device %s already exists in DB as %s\n",
 				   $argv->{name}, $dbdev->fqdn));
     }
 
@@ -424,7 +424,7 @@ sub get_snmp_info {
 
     my %ignored = %{ $self->config->get('IGNOREDEVS') };
     if ( exists($ignored{$dev{sysobjectid}}) ){
-	$self->throw_user(sprintf("Product id %s set to be ignored", $dev{sysobjectid}));
+	$self->throw_user(sprintf("Product id %s set to be ignored\n", $dev{sysobjectid}));
     }
 
     $dev{model}          = $sinfo->model();
@@ -702,65 +702,13 @@ sub get_snmp_info {
 sub snmp_update_all {
     my ($class, %argv) = @_;
     $class->isa_class_method('snmp_update_all');
-
     my $start = time;
 
     # Create a listening Unix socket to communicate with children
     my $server = $class->_server_listen();
     my $sel    = $class->_io_select($server);
-
-    my $device_count = 0;
-    my $it = $class->retrieve_all();
-    
-    while ( my $dev = $it->next ){
-	unless ( $dev->canautoupdate ){
-	    $logger->debug("%s excluded from auto-updates. Skipping", $dev->fqdn);
-	    next;
-	}
-	$class->_launch_child(server => $server,
-			      id     => $dev->id,
-			      code   => sub{ return $dev->get_snmp_info() });
-    }
-    
-    # Harvest children.  Pass server selector
-    my $data = $class->_harvest_children( select=>$sel );
-    
-    # Now that we have the data, go ahead and update the DB
-    # The data received is an arrayref of hashrefs with client's results
-
-    foreach my $cdata ( @$data ){
-	$device_count++;
-	my $info  = $cdata->{data} ||
-	    $class->throw_fatal("Device::snmp_update_all: Result data missing");
-
-	my $devid = $cdata->{id} ||
-	    $class->throw_fatal("Device::snmp_update_all: Result ID missing");
-
-	my $dev = $class->retrieve($devid) ||
-	    $class->throw_fatal("Device id $devid does not exist!");
-	
-	# Get relevant snmp_update args
-	my %uargs;
-	foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
-	    $uargs{$field} = $argv{$field} if defined ($argv{$field});
-	}
-	$uargs{info} = $info;
-	# Update Device with SNMP info obtained
-	if ( $uargs{pretend} ){
-	    $dev->snmp_update(%uargs);
-	}else{
-	    # If the transaction fails, catch the exception and log error
-	    # we want to go on, even if this device fails
-	    eval {
-		$class->do_transaction( sub{ return $dev->snmp_update(%uargs)} );
-	    };
-	    if ( $@ ){
-		# Exception message is being logged already
-		$logger->warn("Device::snmp_update_all caught exception but moving on");
-	    }	    
-	}
-    }
-    
+    my @devs   = $class->retrieve_all();
+    my $device_count = $class->_snmp_update_list(devs=>\@devs);
     my $end = time;
     $logger->info(sprintf("All Devices updated. %d devices in %d seconds", 
 			  $device_count, ($end-$start) ));
@@ -794,111 +742,72 @@ sub snmp_update_block {
     my ($class, %argv) = @_;
     $class->isa_class_method('snmp_update_block');
 
+    my $block;
     $class->throw_fatal("Missing required argument: IP block address")
-	unless defined $argv{block};
+	unless defined( $block = $argv{block} );
+    delete $argv{block};
 
     # Get a list of host addresses for the given block
-    my $hosts = Ipblock->get_host_addrs($argv{block});
+    my $hosts = Ipblock->get_host_addrs($block);
 
-    $logger->debug("SNMP-discovering all devices in $argv{block}");
+    $logger->debug("SNMP-discovering all devices in $block");
     my $start = time;
 
-    # Create a listening Unix socket to communicate with children
-    my $server = $class->_server_listen();
-    my $sel    = $class->_io_select($server);
+    # Call the more generic method
+    $argv{hosts} = $hosts;
+    my $device_count = $class->_snmp_update_list(%argv);
 
-    my $device_count = 0;
-    my %visited; # Make sure we don't query the same device twice
-
-    foreach my $ip ( @$hosts ){
-	if ( my $dev = $class->search(name=>$ip)->first ){
-	    # Device is already in DB
-	    unless ( $dev->canautoupdate ){
-		$logger->debug("Device::snmp_update_block: %s excluded from auto-updates. Skipping", 
-			       $dev->fqdn);
-		next;
-	    }
-	    if ( exists $visited{$dev->id} ){
-		$logger->debug(sprintf("Device::snmp_update_block: %s (%s) already queried", 
-				       $dev->fqdn, $ip));
-		next;
-	    }else{
-		$logger->debug(sprintf("Device::snmp_update_block: %s exists in DB as %s", 
-				       $ip, $dev->fqdn));
-		$visited{$dev->id}++;
-	    }
-	    $class->_launch_child(server => $server,
-				  id     => $dev->id,
-				  code   => sub { return $dev->get_snmp_info() } );
-
-	}else{
-	    # Device does not yet exist
-	    # Get relevant snmp args
-	    my %snmpargs;
-	    foreach my $field ( qw(communities version timeout retries) ){
-		$snmpargs{$field} = $argv{$field} if defined ($argv{$field});
-	    }
-
-	    $class->_launch_child(server => $server,
-				  id     => $ip,
-				  code   => sub { return $class->get_snmp_info(host=>$ip, %snmpargs) } );
-	}
-    }
-    
-    # Harvest children.  Pass server selector
-    my $data = $class->_harvest_children(select=>$sel);
-    
-    # Now that we have the data, go ahead and update the DB
-    # The data received is an arrayref of hashrefs with client's results
-
-    foreach my $cdata ( @$data ){
-	$device_count++;
-	my $info  = $cdata->{data} ||
-	    $class->throw_fatal("Device::snmp_update_block: Result data missing");
-	
-	my $devid = $cdata->{id} || 
-	    $class->throw_fatal("Device::snmp_update_block: Result ID missing");
-	
-	# Get relevant snmp_update args
-	my %uargs;
-	foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
-	    $uargs{$field} = $argv{$field} if defined ($argv{$field});
-	}
-	$uargs{info} = $info;
-	my $dev;
-	if ( $devid =~ /$IPV4|$IPV6/ ){
-	    # We gave the IP address as the id
-	    # Device does not yet exist in DB
-	    my $ip = $devid;
-	    
-	    $class->discover(name=>$ip, %uargs);
-	    
-	}else{
-	    # We should have a Device id
-	    $dev = $class->retrieve($devid)
-		or $class->throw_fatal("Device id $devid does not exist!");;
-	    
-	    if ( $uargs{pretend} ){
-		$dev->snmp_update(%uargs);
-	    }else{
-		# If the transaction fails, catch the exception and log error
-		# we want to go on, even if this device fails
-		eval {
-		    $class->do_transaction( sub{ return $dev->snmp_update(%uargs)} );
-		};
-		if ( $@ ){
-		    # Exception message is being logged already
-		    $logger->warn("Device::snmp_update_block caught exception but moving on");
-		}
-	    }
-	}
-    }
-    
     my $end = time;
-    $logger->info(sprintf("Devices in $argv{block} updated. %d devices in %d seconds", 
+    $logger->info(sprintf("Devices in $block updated. %d devices in %d seconds", 
 			  $device_count, ($end-$start) ));
 
-    $class->_server_close($server);
+}
+
+####################################################################################
+=head2 snmp_update_from_file - Discover and/or update all devices in a given file
+    
+  Arguments:
+    Hash with the following keys:
+    file          Path to file with list of hosts (IPs or hostnames) one per line
+    communities   Arrayref of SNMP communities
+    version       SNMP version
+    timeout       SNMP timeout
+    retries       SNMP retries
+    add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
+    subs_inherit  Flag. When adding subnets, have them inherit information from the Device
+    bgp_peers     Flag. When discovering routers, update bgp_peers
+    pretend       Flag. Do not commit changes to the database
+
+  Returns:
+    True if successful
+    
+  Examples:
+    Device->snmp_update_from_file("/path/to/file");
+
+=cut
+sub snmp_update_from_file {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('snmp_update_from_file');
+
+    my $file;
+    $class->throw_fatal("Missing required argument: file")
+	unless defined( $file = $argv{file} );
+    delete $argv{file};
+
+    # Get a list of hosts from given file
+    my $hosts = $class->_get_hosts_from_file($file);
+
+    $logger->debug("SNMP-discovering all devices in $file");
+    my $start = time;
+    
+    # Call the more generic method
+    $argv{hosts} = $hosts;
+    my $device_count = $class->_snmp_update_list(%argv);
+
+    my $end = time;
+    $logger->info(sprintf("Devices in $file updated. %d devices in %d seconds", 
+			  $device_count, ($end-$start) ));
+
 }
 
 
@@ -1016,7 +925,7 @@ sub arp_update_all {
 
     my @alldevs = $class->retrieve_all();
     $logger->debug("Fetching ARP tables from all devices in the database");
-    return $class->_arp_update_mult(list=>\@alldevs);
+    return $class->_arp_update_list(list=>\@alldevs);
 }
 
 #########################################################################
@@ -1027,7 +936,7 @@ sub arp_update_all {
   Returns:
     True if successful
   Examples:
-    Device->arp_update_all();
+    Device->arp_update_block();
 
 =cut
 sub arp_update_block {
@@ -1038,9 +947,34 @@ sub arp_update_block {
     my $devs = $class->get_all_from_block($argv{block});
 
     $logger->debug("Fetching ARP tables from all devices in block $argv{block}");
-    return $class->_arp_update_mult(list=>$devs);
+    return $class->_arp_update_list(list=>$devs);
 }
 
+#########################################################################
+=head2 arp_update_from_file - Update ARP cache from devices in given file
+    
+  Arguments:
+    file - Path to file with list of hosts
+  Returns:
+    True if successful
+  Examples:
+    Device->arp_update_from_file();
+
+=cut
+sub arp_update_from_file {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('arp_update_from_file');
+
+    my $file;
+    $class->throw_fatal("Missing required argument: file")
+	unless defined( $file = $argv{file} );
+
+    # Get a list of hosts from given file
+    my $devs = $class->_get_devs_from_file($file);
+
+    $logger->debug("Fetching ARP tables from all devices file: $file");
+    return $class->_arp_update_list(list=>$devs);
+}
 
 #########################################################################
 =head2 fwt_update_all - Update FWT for every device in DB
@@ -1059,7 +993,7 @@ sub fwt_update_all {
     
     my @alldevs = $class->retrieve_all();
     $logger->debug("Fetching forwarding tables from all devices in the database");
-    return $class->_fwt_update_mult(list=>\@alldevs);
+    return $class->_fwt_update_list(list=>\@alldevs);
 }
 
 #########################################################################
@@ -1084,7 +1018,33 @@ sub fwt_update_block {
     my $devs = $class->get_all_from_block($argv{block});
 
     $logger->debug("Fetching forwarding tables from all devices in $argv{block}");
-    return $class->_fwt_update_mult(list=>$devs);
+    return $class->_fwt_update_list(list=>$devs);
+}
+
+#########################################################################
+=head2 fwt_update_from_file - Update FWT for all devices in given file
+    
+  Arguments:
+    file - Path to file with list of hosts
+  Returns:
+    True if successful
+  Examples:
+    Device->fwt_update_block();
+
+=cut
+sub fwt_update_from_file {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('fwt_update_block');
+
+    my $file;
+    $class->throw_fatal("Missing required argument: file")
+	unless defined( $file = $argv{file} );
+
+    # Get a list of hosts from given file
+    my $devs = $class->_get_devs_from_file($file);
+
+    $logger->debug("Fetching forwarding tables from all devices in $argv{block}");
+    return $class->_fwt_update_list(list=>$devs);
 }
 
 #########################################################################
@@ -2101,7 +2061,7 @@ sub add_interfaces {
     $self->isa_object_method('add_interfaces');
 
     unless ( $num > 0 ){
-	$self->throw_user("Invalid number of Interfaces to add: $num");
+	$self->throw_user("Invalid number of Interfaces to add: $num\n");
     }
     # Determine highest numbered interface in this device
     my @ints;
@@ -2559,13 +2519,13 @@ sub _validate_args {
     # We need a name always
     $args->{name} ||= $self->name if ( defined $self );
     unless ( $args->{name} ){
-	$class->throw_user("Name cannot be null");
+	$class->throw_user("Name cannot be null\n");
     }
     
     # SNMP Version
     if ( defined $args->{snmp_version} ){
 	if ( $args->{snmp_version} !~ /^1|2|3$/ ){
-	    $class->throw_user("Invalid SNMP version.  It must be either 1, 2 or 3");
+	    $class->throw_user("Invalid SNMP version.  It must be either 1, 2 or 3\n");
 	}
     }
 
@@ -2574,11 +2534,11 @@ sub _validate_args {
 	if ( my $otherdev = $class->search(serialnumber=>$sn)->first ){
 	    if ( defined $self ){
 		if ( $self->id != $otherdev->id ){
-		    $self->throw_user( sprintf("%s: S/N %s belongs to existing device: %s.", 
+		    $self->throw_user( sprintf("%s: S/N %s belongs to existing device: %s.\n", 
 					       $self->fqdn, $sn, $otherdev->fqdn) ); 
 		}
 	    }else{
-		$class->throw_user( sprintf("S/N %s belongs to existing device: %s.", 
+		$class->throw_user( sprintf("S/N %s belongs to existing device: %s.\n", 
 					    $sn, $otherdev->fqdn) ); 
 	    }
 	}
@@ -2593,11 +2553,11 @@ sub _validate_args {
 		if ( defined $self ){
 		    if ( $self->id != $otherdev->id ){
 			# Another device has this address!
-			$class->throw_user( sprintf("%s: Base MAC %s belongs to existing device: %s", 
+			$class->throw_user( sprintf("%s: Base MAC %s belongs to existing device: %s\n", 
 						   $self->fqdn, $address, $otherdev->fqdn ) ); 
 		    }
 		}else{
-		    $class->throw_user( sprintf("Base MAC %s belongs to existing device: %s", 
+		    $class->throw_user( sprintf("Base MAC %s belongs to existing device: %s\n", 
 					       $address, $otherdev->fqdn ) ); 
 		}
 	    }
@@ -2665,7 +2625,7 @@ sub _get_snmp_session {
 	# Being called as an instance method
 
 	# Do not continue unless snmp_managed flag is on
-	$self->throw_user(sprintf("Device %s not SNMP-managed. Aborting.", $self->fqdn))
+	$self->throw_user(sprintf("Device %s not SNMP-managed. Aborting.\n", $self->fqdn))
 	    unless $self->snmp_managed;
 
 	# Fill up communities argument from object if it wasn't passed to us
@@ -2745,7 +2705,7 @@ sub _get_snmp_session {
 	if ( defined $sinfo ){
 	    # Check for errors
 	    if ( my $err = $sinfo->error ){
-		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
+		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s, community '%s': %s\n", 
 					  $sinfoargs{Version}, $sinfoargs{DestHost}, $sinfoargs{Community}, $err));
 	    }
 	    last; # If we made it here, we are fine.  Stop trying communities
@@ -2756,7 +2716,7 @@ sub _get_snmp_session {
     }
     
     unless ( defined $sinfo ){
-	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s community '%s'", 
+	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s community '%s'\n", 
 				  $sinfoargs{DestHost}, $sinfoargs{Community}));
     }
 
@@ -2796,6 +2756,212 @@ sub _get_snmp_session {
 	$self->{_snmp_session}->{$sinfoargs{Community}} = $sinfo;
     }
     return $sinfo;
+}
+
+#########################################################################
+# Retrieve a list of device objects from given file (one per line)
+#
+# Arguments:  File path
+# Returns  :  Arrayref of device objects
+#
+sub _get_devs_from_file {
+    my ($class, $file) = @_;
+    $class->isa_class_method('get_devs_from_file');
+
+    my $hosts = $class->_get_hosts_from_file($file);
+    my @devs;
+    foreach my $host ( keys %$hosts ){
+	if ( my $dev = $class->search(name=>$host)->first ){
+	    push @devs, $dev; 
+	}else{
+	    $logger->info("Device $host does not yet exist in the Database.");
+	}
+    }
+    $class->throw_user("Device::_get_devs_from_file: No existing devices in list.  You might need to run a discover first.\n")
+	unless ( scalar @devs );
+
+    return \@devs;
+}
+#########################################################################
+# Retrieve a list of hostnames/communities from given file (one per line)
+# 
+# Arguments:  File path
+# Returns  :  Hashref with hostnames (or IP addresses) as key 
+#             and SNMP community as value
+# 
+sub _get_hosts_from_file {
+    my ($class, $file) = @_;
+    $class->isa_class_method('get_hosts_from_file');
+
+    $class->throw_user("Device::_get_hosts_from_file: Missing or invalid file: $file\n")
+	unless ( defined($file) && -r $file );
+  
+    open(FILE, "<$file") or 
+	$class->throw_user("Can't open file $file for reading: $!\n");
+    
+    $logger->debug("Device::_get_hosts_from_file: Retrieving host list from $file");
+
+    my %hosts;
+    while (<FILE>){
+	chomp($_);
+	next if ( /^#/ );
+	if ( /\w+\s+\w+/ ){
+	    my ($host, $comm) = split /\s+/, $_;
+	    $hosts{$host} = $comm;
+	}
+    }
+    
+    $class->throw_user("Device::_get_hosts_from_file: Host list is empty!\n")
+	unless ( scalar keys %hosts );
+    
+    close(FILE);
+    return \%hosts;
+}
+
+####################################################################################
+# _snmp_update_list - Discover and/or update all devices in a given list
+#    
+#   Arguments:
+#     Hash with the following keys:
+#     hosts         Hashref of host names and their communities
+#     devs          Arrayref of Device objects
+#     communities   Arrayref of SNMP communities
+#     version       SNMP version
+#     timeout       SNMP timeout
+#     retries       SNMP retries
+#     add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
+#     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
+#     bgp_peers     Flag. When discovering routers, update bgp_peers
+#     pretend       Flag. Do not commit changes to the database
+#
+#   Returns:
+#     True if successful
+#    
+#   Examples:
+#     Device->_snmp_update_list(%args);
+#
+sub _snmp_update_list {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('snmp_update_list');
+
+    my ($hosts, $devs);
+    if ( defined $argv{hosts} ){
+	$class->throw_fatal("Invalid hosts hash") if ( ref($argv{hosts}) ne "HASH" );
+	$hosts = $argv{hosts};
+    }elsif ( defined $argv{devs} ){
+	$class->throw_fatal("Invalid devs array") if ( ref($argv{devs}) ne "ARRAY" );
+	$devs = $argv{devs};
+    }else{
+	$class->throw_fatal("Missing required parameters: hosts or devs");
+    }
+
+    # Create a listening Unix socket to communicate with children
+    my $server = $class->_server_listen();
+    my $sel    = $class->_io_select($server);
+    
+    if ( $devs ){
+	foreach my $dev ( @$devs ){
+	    unless ( $dev->canautoupdate ){
+		$logger->debug("Device::snmp_update_list: %s excluded from auto-updates. Skipping", 
+			       $dev->fqdn);
+		next;
+	    }
+	    $class->_launch_child(server => $server,
+				  id     => $dev->id,
+				  code   => sub { return $dev->get_snmp_info() } );
+	    
+	}
+    }elsif ( $hosts ){
+	my %visited; # Make sure we don't query the same device twice
+	foreach my $host ( keys %$hosts ){
+	    my $dev;
+	    if ( $dev = $class->search(name=>$host)->first ){
+		# Device is already in DB
+		unless ( $dev->canautoupdate ){
+		    $logger->debug("Device::snmp_update_list: %s excluded from auto-updates. Skipping", 
+				   $dev->fqdn);
+		    next;
+		}
+		if ( exists $visited{$dev->id} ){
+		    $logger->debug(sprintf("Device::snmp_update_list: %s (%s) already queried", 
+					   $dev->fqdn, $host));
+		    next;
+		}else{
+		    $logger->debug(sprintf("Device::snmp_update_list: %s exists in DB as %s", 
+					   $host, $dev->fqdn));
+		    $visited{$dev->id}++;
+		}
+		$class->_launch_child(server => $server,
+				      id     => $dev->id,
+				      code   => sub { return $dev->get_snmp_info() } );
+
+	    }else{
+		# Device does not yet exist
+		# Get relevant snmp args
+		my %snmpargs;
+		foreach my $field ( qw(communities version timeout retries) ){
+		    $snmpargs{$field} = $argv{$field} if defined ($argv{$field});
+		}
+		# Give preference to the community being passed (if any)
+		if ( my $commstr = $hosts->{$host} ){
+		    $snmpargs{communities} = [$commstr];
+		}
+		$class->_launch_child(server => $server,
+				      id     => $host,
+				      code   => sub { return $class->get_snmp_info(host=>$host, %snmpargs) } );
+	    }
+	}
+    }
+    
+    # Harvest children.  Pass server selector
+    my $data = $class->_harvest_children(select=>$sel);
+    
+    # Now that we have the data, go ahead and update the DB
+    # The data received is an arrayref of hashrefs with client's results
+    my $device_count = 0;
+    foreach my $cdata ( @$data ){
+	$device_count++;
+	my $info  = $cdata->{data} ||
+	    $class->throw_fatal("Device::snmp_update_list: Result data missing");
+	
+	my $devid = $cdata->{id} || 
+	    $class->throw_fatal("Device::snmp_update_list: Result ID missing");
+	
+	# Get relevant snmp_update args
+	my %uargs;
+	foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
+	    $uargs{$field} = $argv{$field} if defined ($argv{$field});
+	}
+	$uargs{info} = $info;
+	my $dev;
+	if ( $devid =~ /^\d+$/ ){
+	    # We should have a Device id
+	    $dev = $class->retrieve($devid)
+		or $class->throw_fatal("Device id $devid does not exist!");;
+	    
+	    if ( $uargs{pretend} ){
+		$dev->snmp_update(%uargs);
+	    }else{
+		# If the transaction fails, catch the exception and log error
+		# we want to go on, even if this device fails
+		eval {
+		    $class->do_transaction( sub{ return $dev->snmp_update(%uargs)} );
+		};
+		if ( $@ ){
+		    # Exception message is being logged already
+		    $logger->warn("Device::snmp_update_list caught exception but moving on");
+		}
+	    }
+	}else{
+	    # We gave a non-digit (IP or host name) as the id
+	    # Device does not yet exist in DB
+	    my $host = $devid;
+	    $class->discover(name=>$host, %uargs);
+	}
+    }
+    
+    $class->_server_close($server);
+    return $device_count;
 }
 
 ############################################################################
@@ -3497,19 +3663,19 @@ sub _get_airespace_ap_info {
 }
 
 #########################################################################
-# _fwt_update_mult - Update FWT for a given list of devices
+# _fwt_update_list - Update FWT for a given list of devices
 #    
 #   Arguments:
 #     list - array ref of Device objects
 #   Returns:
 #     True if successful
 #   Examples:
-#     Device->fwt_update_mult();
+#     Device->fwt_update_list();
 #
 #
-sub _fwt_update_mult {
+sub _fwt_update_list {
     my ($class, %argv) = @_;
-    $class->isa_class_method('fwt_update_mult');
+    $class->isa_class_method('fwt_update_list');
 
     my $list = $argv{list} or throw_fatal("Missing required arguments: list");
 
@@ -3560,7 +3726,7 @@ sub _fwt_update_mult {
     if ( @caches ){
 	$class->_update_macs_from_cache(\@caches);
     }else{
-	$logger->warn("Device::fwt_update_mult: No forwarding table info to go on.  Quitting.");
+	$logger->warn("Device::fwt_update_list: No forwarding table info to go on.  Quitting.");
 	$class->_server_close($server);
 	return;
     }
@@ -3579,7 +3745,7 @@ sub _fwt_update_mult {
 	};
 	if ( $@ ){
 	    # Exception message is being logged already
-	    $logger->warn("Device::fwt_update_mult caught exception but moving on");
+	    $logger->warn("Device::fwt_update_list caught exception but moving on");
 	}
 
     }
@@ -3593,18 +3759,18 @@ sub _fwt_update_mult {
 }
 
 #########################################################################
-# _arp_update_mult - Update ARP cache from multiple devices
+# _arp_update_list - Update ARP cache from devices in given list
 #    
 #   Arguments:
 #     list - array ref of Device objects
 #   Returns:
 #     True if successful
 #   Examples:
-#     Device->arp_update_mult();
+#     Device->arp_update_list();
 #
-sub _arp_update_mult {
+sub _arp_update_list {
     my ($class, %argv) = @_;
-    $class->isa_class_method('arp_update_mult');
+    $class->isa_class_method('_arp_update_list');
 
     my $list = $argv{list} or $class->throw_fatal("Missing required arguments: list");
     my $start = time;
@@ -3655,7 +3821,7 @@ sub _arp_update_mult {
 	$class->_update_macs_from_cache(\@caches);
 	$class->_update_ips_from_cache(\@caches);
     }else{
-	$logger->warn("Device::arp_update_mult: No ARP cache info to go on.  Quitting.");
+	$logger->warn("Device::arp_update_list: No ARP cache info to go on.  Quitting.");
 	$class->_server_close($server);
 	return;
     }
@@ -3674,7 +3840,7 @@ sub _arp_update_mult {
 	};
 	if ( $@ ){
 	    # Exception message is being logged already
-	    $logger->warn("Device::arp_update_mult caught exception but moving on");
+	    $logger->warn("Device::arp_update_list caught exception but moving on");
 	}
 
     }

@@ -14,7 +14,7 @@ use strict;
 use Log::Log4perl::Level;
 
 # Variables that will hold given values
-my ($host, $block, $db);
+my ($host, $block, $db, $file);
 
 # Default values
 my $communities     = Netdot->config->get('DEFAULT_SNMPCOMMUNITIES');
@@ -34,14 +34,21 @@ $ENV{REMOTE_USER}   = "netdot";
 
 my $USAGE = <<EOF;
  usage: $0 [ optional args ]
-           -H, --host <hostname|address> | -d, --db |  -b, --block <address/prefix>
-           [-I, --info]  [-F, --fwt]  [-A, --arp]
-           [-m|--send_mail] [-f|--from] | [-t|--to] | [-S|--subject]
+
+           Scope args:
+             -H, --host <hostname|address> | -D, --db |  -B, --block <address/prefix> | -e, --file <PATH>
+
+           Action args:
+             [-I, --info]  [-F, --fwt]  [-A, --arp]
+
+           Email report args:
+             [-m|--send_mail] [-f|--from <e-mail>] | [-t|--to <e-mail>] | [-S|--subject <subject>]
           
-    
+    Argument Detail: 
     -H, --host <hostname|address>  Update given host only.
-    -b, --block <address/prefix>   Specify an IP block to discover
-    -d, --db                       Update only DB existing devices
+    -B, --block <address/prefix>   Specify an IP block to discover
+    -D, --db                       Update only DB existing devices
+    -E, --file                     Update devices listed in given file
     -c, --community <string>       SNMP community string(s) (default: $commstrs)
     -r, --retries <integer >       SNMP retries (default: $retries)
     -t, --timeout <secs>           SNMP timeout in seconds (default: $timeout)
@@ -51,10 +58,10 @@ my $USAGE = <<EOF;
     -A, --arp                      Get ARP tables
     -a, --add-subnets              When discovering routers, add subnets to database if they do not exist
     -i, --subs_inherit             When adding subnets, have them inherit information from the Device
-    -B, --with-bgp-peers           When discovering routers, maintain their BGP Peers
+    -b, --with-bgp-peers           When discovering routers, maintain their BGP Peers
     -p, --pretend                  Do not commit changes to the database
     -h, --help                     Print help (this message)
-    -g, --debug                    Set syslog level to LOG_DEBUG
+    -d, --debug                    Set syslog level to LOG_DEBUG
     -m, --send_mail                Send logging output via e-mail instead of to STDOUT
     -f, --from                     e-mail From line (default: $from)
     -S, --subject                  e-mail Subject line (default: $subject)
@@ -66,8 +73,9 @@ EOF
     
 # handle cmdline args
 my $result = GetOptions( "H|host=s"          => \$host,
-			 "b|block=s"         => \$block,
-			 "d|db"              => \$db,
+			 "B|block=s"         => \$block,
+			 "D|db"              => \$db,
+			 "E|file=s"          => \$file,
 			 "c|communities:s"   => \$commstrs,
 			 "r|retries:s"       => \$retries,
 			 "t|timeout:s"       => \$timeout,
@@ -77,10 +85,10 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "A|arp"             => \$ARP,
 			 "a|add-subnets"     => \$ADDSUBNETS,
 			 "i|subs_inherit"    => \$SUBSINHERIT,
-			 "B|with-bgp-peers"  => \$BGPPEERS,
+			 "b|with-bgp-peers"  => \$BGPPEERS,
 			 "p|pretend"         => \$PRETEND,
 			 "h|help"            => \$HELP,
-			 "g|debug"           => \$_DEBUG,
+			 "d|debug"           => \$_DEBUG,
 			 "m|send_mail"       => \$EMAIL,
 			 "f|from:s"          => \$from,
 			 "t|to:s"            => \$to,
@@ -94,9 +102,9 @@ if ( $HELP ) {
     print $USAGE;
     exit;
 }
-if ( ($host && $block) || ($host && $db) || ($block && $db) ){
+if ( ($host && $db) || ($host && $block) || ($host && $file ) || ($db && $block) || ($db && $file) || ($block && $file) ){
     print $USAGE;
-    die "Error: arguments -H, -s and -d are mutually exclusive\n";
+    die "Error: arguments -H, -s, -d and -f are mutually exclusive\n";
 }
 unless ( $INFO || $FWT || $ARP ){
     print $USAGE;
@@ -169,9 +177,15 @@ if ( $host ){
     Device->snmp_update_all(%uargs) if ( $INFO );
     Device->fwt_update_all(%uargs)  if ( $FWT  );
     Device->arp_update_all(%uargs)  if ( $ARP  );
+}elsif ( $file ){
+    $logger->info("Updating all devices in given file: $file");
+    $uargs{file} = $file;
+    Device->snmp_update_from_file(%uargs) if ( $INFO );
+    Device->fwt_update_from_file(%uargs)  if ( $FWT  );
+    Device->arp_update_from_file(%uargs)  if ( $ARP  );
 }else{
     print $USAGE;
-    die "Error: You need to specify one of -H, -s or -d\n";
+    die "Error: You need to specify one of: -H, -B, -E or -D\n";
 }
 
 $logger->info(sprintf("Total runtime: %s secs\n", (time - $start)));
