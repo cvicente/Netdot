@@ -184,18 +184,32 @@ sub fast_update {
     }
     
     # Now walk our list and do the right thing
-    eval{
-	foreach my $address ( keys %$macs ){
-	    my $timestamp = $macs->{$address};
-	    if ( exists $db_macs->{$address} ){
-		$sth1->execute($timestamp, $db_macs->{$address});
-	    }else{
+    foreach my $address ( keys %$macs ){
+	my $timestamp = $macs->{$address};
+	if ( !exists $db_macs->{$address} ){
+	    # Insert
+	    eval {
 		$sth2->execute($address, $timestamp, $timestamp);
+	    };
+	    if ( my $e = $@ ){
+		if ( $e =~ /Duplicate/ ){
+		    # Since we're parallelizing, an address
+		    # might get inserted after we get our list.
+		    # Just go on.
+		    next;
+		}else{
+		    $class->throw_fatal($e);
+		}
+	    }
+	}else{
+	    # Update
+	    eval {
+		$sth1->execute($timestamp, $db_macs->{$address});
+	    };
+	    if ( my $e = $@ ){
+		$class->throw_fatal($e);
 	    }
 	}
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
     }
     
     my $end = time;

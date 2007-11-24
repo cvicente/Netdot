@@ -236,7 +236,8 @@ sub snmp_update {
 	    if ( $vo = Vlan->search(vid => $vid)->first ){
 		# update in case named changed
 		# (ignore default vlan 1)
-		if ( defined $vdata{name} && $vdata{name} ne $vo->name && $vo->vid ne "1" ){
+		if ( defined $vdata{name} && defined $vo->name && 
+		     $vdata{name} ne $vo->name && $vo->vid ne "1" ){
 		    $vo->update(\%vdata);
 		    $logger->debug(sprintf("%s: VLAN %s name updated: %s", $host, $vo->vid, $vo->name));		
 		}
@@ -323,7 +324,7 @@ sub update_ip {
     my $prefix  = ($version == 4)  ? 32 : 128;
     
     my $isrouter = 0;
-    if ( $self->device->product && 
+    if ( defined($self->device->product) && defined($self->device->product->type->name) && 
 	 $self->device->product->type->name eq "Router" ){
 	$isrouter = 1;
     }

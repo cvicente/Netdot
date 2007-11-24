@@ -1200,30 +1200,39 @@ sub fast_update{
     }
 
     # Now walk our list and do the right thing
-    eval{
-	foreach my $address ( keys %$ips ){
-	    my $attrs = $ips->{$address};
-	    # Convert address to decimal format
-	    my $dec_addr = $class->ip2int($address);
-	    
-	    if ( exists $db_ips->{$dec_addr} ){
-		# IP exists
+    foreach my $address ( keys %$ips ){
+	my $attrs = $ips->{$address};
+	# Convert address to decimal format
+	my $dec_addr = $class->ip2int($address);
+	
+	if ( exists $db_ips->{$dec_addr} ){
+	    # IP exists
+	    eval{
 		$sth1->execute($attrs->{timestamp}, $db_ips->{$dec_addr});
-	    }else{
-		# IP does not exist
-		$sth2->execute($dec_addr,
-			       $attrs->{prefix},
-			       $attrs->{version},
-			       $attrs->{status},
-			       $attrs->{timestamp}, 
-			       $attrs->{timestamp},
+	    };
+	    if ( my $e = $@ ){
+		$class->throw_fatal($e);
+	    }
+	}else{
+	    # IP does not exist
+	    eval{
+		$sth2->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
+			       $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp},
 			       );
+	    };
+	    if ( my $e = $@ ){
+		if ( $e =~ /Duplicate/ ){
+		    # Since we're parallelizing, an address
+		    # might get inserted after we get our list.
+		    # Just go on.
+		    next;
+		}else{
+		    $class->throw_fatal($e);
+		}
 	    }
 	}
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
     }
+    
     
     my $end = time;
     $logger->debug(sprintf("Ipblock::fast_update: Done Updating: %d addresses in %d secs",

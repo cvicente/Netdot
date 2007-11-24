@@ -140,7 +140,7 @@ $logger->warn("Warning: Pretend (-p) flag enabled.  Changes will not be committe
     if ( $PRETEND );
 
 my $start = time;
-$logger->info(sprintf("Started at %s", scalar localtime($start)));
+$logger->info(sprintf("$0 started at %s", scalar localtime($start)));
 
 my %uargs = (communities  => $communities, 
 	     version      => $version,
@@ -188,7 +188,7 @@ if ( $host ){
     die "Error: You need to specify one of: -H, -B, -E or -D\n";
 }
 
-$logger->info(sprintf("Total runtime: %s secs\n", (time - $start)));
+$logger->info(sprintf("$0 total runtime: %s secs\n", (time - $start)));
 
 if ( $EMAIL ){
     my $util = Netdot::Util::Misc->new();

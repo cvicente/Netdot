@@ -5,13 +5,14 @@ use warnings;
 use strict;
 use SNMP::Info;
 use Netdot::Util::DNS;
-use POSIX qw(:signal_h WNOHANG EWOULDBLOCK);
-use IO::Select;
-use IO::Socket;
-use Storable qw( freeze thaw );
-use vars qw( %CHILDREN %MACS_SEEN %IPS_SEEN );
+use Parallel::ForkManager;
 
-use constant BUFSIZE => 1024;
+# Timeout seconds for SNMP queries 
+# (different from SNMP connections)
+my $TIMEOUT = Netdot->config->get('SNMP_QUERY_TIMEOUT');;
+
+# Define some signal handlers
+$SIG{ALRM} = sub { die "timeout" };
 
 # Some regular expressions
 my $IPV4        = Netdot->get_ipv4_regex();
@@ -704,16 +705,12 @@ sub snmp_update_all {
     $class->isa_class_method('snmp_update_all');
     my $start = time;
 
-    # Create a listening Unix socket to communicate with children
-    my $server = $class->_server_listen();
-    my $sel    = $class->_io_select($server);
     my @devs   = $class->retrieve_all();
     my $device_count = $class->_snmp_update_list(devs=>\@devs);
     my $end = time;
     $logger->info(sprintf("All Devices updated. %d devices in %d seconds", 
 			  $device_count, ($end-$start) ));
 
-    $class->_server_close($server);
 }
 
 ####################################################################################
@@ -854,11 +851,11 @@ sub discover {
 	unless ( $info ){
 	    # Get relevant snmp args
 	    my %snmpargs;
-	    $snmpargs{host} = $argv{name};
+	    $snmpargs{host} = $name;
 	    foreach my $field ( qw(communities version timeout retries bgp_peers) ){
 		$snmpargs{$field} = $argv{$field} if defined ($argv{$field});
 	    }
-	    $info = $class->get_snmp_info(%snmpargs);
+	    $info = $class->_exec_timeout($name, sub { return $class->get_snmp_info(%snmpargs) });
 	}
 	
 	# Set some values in the new Device based on the SNMP info obtained
@@ -899,11 +896,7 @@ sub discover {
     $uargs{info} = $info;
 
     # Update Device with SNMP info obtained
-    if ( $uargs{pretend} ){
-	$dev->snmp_update(%uargs);
-    }else{
-	$class->do_transaction( sub{ return $dev->snmp_update(%uargs) } );
-    }
+    $dev->snmp_update(%uargs);
     
     return $dev;
 }
@@ -1158,6 +1151,7 @@ sub has_layer {
     cache          - hash reference with arp cache info (optional)
     no_update_macs - Do not update MAC addresses (bool)
     no_update_ips  - Do not update IP addresses (bool)
+    intmacs        - List of MAC addresses that belong to interfaces (optional)
   Returns:
     True if successful
     
@@ -1177,20 +1171,20 @@ sub arp_update {
 	$logger->debug("$host excluded from ARP collection. Skipping");
 	return;
     }
-
     # Fetch from SNMP if necessary
-    my $cache = $argv{cache} || $self->_get_arp_from_snmp();
+    my %args;
+    $args{intmacs} = $argv{intmacs} if defined $argv{intmacs};
+    my $cache = $argv{cache} || $self->_exec_timeout($host, sub { return $self->_get_arp_from_snmp(%args) });
     
     unless ( keys %$cache ){
-	$logger->info("$host ARP cache empty");
+	$logger->info("$host: ARP cache empty");
 	return;	
     }
     
     # Measure only db update time
     my $start = time;
-
     $logger->debug("$host: Updating ARP cache");
-    
+  
     # Create ArpCache object
     my $ac = ArpCache->insert({device  => $self,
 			       tstamp  => $timestamp});
@@ -1240,6 +1234,7 @@ sub arp_update {
     Hash with the following keys:
     fwt            - hash reference with FWT info (optional)
     no_update_macs - Do not update MAC addresses (bool)
+    intmacs        - List of MAC addresses that belong to interfaces (optional)
   Returns:
     True if successful
     
@@ -1261,10 +1256,12 @@ sub fwt_update {
     }
 
     # Fetch from SNMP if necessary
-    my $fwt = $argv{fwt} || $self->_get_fwt_from_snmp();
-
+    my %args;
+    $args{intmacs} = $argv{intmacs} if defined $argv{intmacs};
+    my $fwt = $argv{fwt} || $self->_exec_timeout($host, sub { return $self->_get_fwt_from_snmp(%args) });
+    
     unless ( keys %$fwt ){
-	$logger->info("$host FWT empty");
+	$logger->info("$host: FWT empty");
 	return;	
     }
     
@@ -1282,7 +1279,6 @@ sub fwt_update {
     }
     
     my @fw_updates;
-
     foreach my $idx ( keys %{$fwt} ){
 	my $if = Interface->search(device=>$self, number=>$idx)->first;
 	unless ( $if ){
@@ -1587,13 +1583,18 @@ sub snmp_update {
 
     my $communities = $argv{communities} || [$self->community] || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
     
-    my $info = $argv{info} || $self->get_snmp_info(communities => $communities, 
-						   version     => $snmpversion);
-	
-    $self->throw_fatal("Invalid or missing SNMP Info") 
-	unless ( $info && (ref($info) eq 'HASH') );
+    my $info = $argv{info} 
+    || $class->_exec_timeout($host, sub { return $self->get_snmp_info(communities => $communities, 
+								      version     => $snmpversion) });
     
-
+    unless ( $info ){
+	$logger->error("$host: No SNMP info received");
+	return;	
+    }
+    unless ( ref($info) eq 'HASH' ){
+	$self->throw_fatal("Invalid SNMP data structure");
+    }
+    
     # Pretend works by turning off autocommit in the DB handle and rolling back
     # all changes at the end
     if ( $argv{pretend} ){
@@ -2671,8 +2672,8 @@ sub _get_snmp_session {
     # Set defaults
     my %sinfoargs = ( DestHost      => $argv{host},
 		      Version       => $argv{version} || $self->config->get('DEFAULT_SNMPVERSION'),
-		      timeout       => (defined $argv{timeout}) ? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
-		      retries       => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
+		      Timeout       => (defined $argv{timeout}) ? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
+		      Retries       => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
 		      AutoSpecify   => 1,
 		      Debug         => 0,
 		      BulkWalk      => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
@@ -2710,8 +2711,8 @@ sub _get_snmp_session {
 	    }
 	    last; # If we made it here, we are fine.  Stop trying communities
 	}else{
-	    $logger->debug(sprintf("Device::get_snmp_session: Failed session with %s community '%s'", 
-				   $sinfoargs{DestHost}, $sinfoargs{Community}));
+	    $logger->debug(sprintf("Device::get_snmp_session: Failed %s session with %s community '%s'", 
+				   $sinfoargs{Version}, $sinfoargs{DestHost}, $sinfoargs{Community}));
 	}
     }
     
@@ -2818,6 +2819,27 @@ sub _get_hosts_from_file {
     return \%hosts;
 }
 
+#########################################################################
+# Initialize ForkManager
+# Arguments:    None
+# Returns  :    Parallel::ForkManager object
+#
+sub _fork_init {
+    my ($class) = @_;
+    $class->isa_class_method('_fork_init');
+
+    # Tell DBI that we don't want to disconnect the server's DB handle
+    my $dbh = $class->db_Main;
+    unless ( local($dbh->{InactiveDestroy}) = 1 ) {
+	$class->throw_fatal("Cannot set InactiveDestroy: ", $dbh->errstr);
+    }
+    # MAXPROCS processes for parallel updates
+    $logger->debug("Device::_fork_init: Launching up to $MAXPROCS children processes");
+    my $pm = Parallel::ForkManager->new($MAXPROCS);
+
+    return $pm;
+}
+
 ####################################################################################
 # _snmp_update_list - Discover and/or update all devices in a given list
 #    
@@ -2833,12 +2855,9 @@ sub _get_hosts_from_file {
 #     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
 #     bgp_peers     Flag. When discovering routers, update bgp_peers
 #     pretend       Flag. Do not commit changes to the database
-#
-#   Returns:
-#     True if successful
-#    
-#   Examples:
-#     Device->_snmp_update_list(%args);
+#   
+#   Returns: 
+#     Device count
 #
 sub _snmp_update_list {
     my ($class, %argv) = @_;
@@ -2854,47 +2873,26 @@ sub _snmp_update_list {
     }else{
 	$class->throw_fatal("Missing required parameters: hosts or devs");
     }
-
-    # Create a listening Unix socket to communicate with children
-    my $server = $class->_server_listen();
-    my $sel    = $class->_io_select($server);
     
+    # Init ForkManager
+    my $pm = $class->_fork_init();
+
+    my $device_count = 0;
+    my %do_devs;            # Key on device ID to avoid querying the same device twice
     if ( $devs ){
 	foreach my $dev ( @$devs ){
-	    unless ( $dev->canautoupdate ){
-		$logger->debug("Device::snmp_update_list: %s excluded from auto-updates. Skipping", 
-			       $dev->fqdn);
-		next;
-	    }
-	    $class->_launch_child(server => $server,
-				  id     => $dev->id,
-				  code   => sub { return $dev->get_snmp_info() } );
-	    
+	    # Put in list
+	    $do_devs{$dev->id} = $dev;
 	}
     }elsif ( $hosts ){
-	my %visited; # Make sure we don't query the same device twice
 	foreach my $host ( keys %$hosts ){
 	    my $dev;
 	    if ( $dev = $class->search(name=>$host)->first ){
 		# Device is already in DB
-		unless ( $dev->canautoupdate ){
-		    $logger->debug("Device::snmp_update_list: %s excluded from auto-updates. Skipping", 
-				   $dev->fqdn);
-		    next;
-		}
-		if ( exists $visited{$dev->id} ){
-		    $logger->debug(sprintf("Device::snmp_update_list: %s (%s) already queried", 
-					   $dev->fqdn, $host));
-		    next;
-		}else{
-		    $logger->debug(sprintf("Device::snmp_update_list: %s exists in DB as %s", 
-					   $host, $dev->fqdn));
-		    $visited{$dev->id}++;
-		}
-		$class->_launch_child(server => $server,
-				      id     => $dev->id,
-				      code   => sub { return $dev->get_snmp_info() } );
-
+		$logger->debug(sprintf("Device::snmp_update_list: %s exists in DB as %s", 
+				       $host, $dev->fqdn));
+		# Put in list
+		$do_devs{$dev->id} = $dev;
 	    }else{
 		# Device does not yet exist
 		# Get relevant snmp args
@@ -2906,63 +2904,44 @@ sub _snmp_update_list {
 		if ( my $commstr = $hosts->{$host} ){
 		    $snmpargs{communities} = [$commstr];
 		}
-		$class->_launch_child(server => $server,
-				      id     => $host,
-				      code   => sub { return $class->get_snmp_info(host=>$host, %snmpargs) } );
+		# FORK
+		$device_count++;
+		$pm->start and next;
+		$class->_launch_child(pm   => $pm, 
+				      code => sub { return $class->discover(name=>$host, %snmpargs) },
+				      );
 	    }
 	}
     }
-    
-    # Harvest children.  Pass server selector
-    my $data = $class->_harvest_children(select=>$sel);
-    
-    # Now that we have the data, go ahead and update the DB
-    # The data received is an arrayref of hashrefs with client's results
-    my $device_count = 0;
-    foreach my $cdata ( @$data ){
-	$device_count++;
-	my $info  = $cdata->{data} ||
-	    $class->throw_fatal("Device::snmp_update_list: Result data missing");
-	
-	my $devid = $cdata->{id} || 
-	    $class->throw_fatal("Device::snmp_update_list: Result ID missing");
-	
-	# Get relevant snmp_update args
-	my %uargs;
-	foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
-	    $uargs{$field} = $argv{$field} if defined ($argv{$field});
+    # Now go over list of existing devices
+    # Get relevant snmp_update args
+    my %uargs;
+    foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
+
+	$uargs{$field} = $argv{$field} if defined ($argv{$field});
+    }
+    foreach my $dev ( values %do_devs ){
+	unless ( $dev->canautoupdate ){
+	    $logger->debug("%s excluded from auto-updates. Skipping", 
+			   $dev->fqdn);
+	    next;
 	}
-	$uargs{info} = $info;
-	my $dev;
-	if ( $devid =~ /^\d+$/ ){
-	    # We should have a Device id
-	    $dev = $class->retrieve($devid)
-		or $class->throw_fatal("Device id $devid does not exist!");;
-	    
-	    if ( $uargs{pretend} ){
-		$dev->snmp_update(%uargs);
-	    }else{
-		# If the transaction fails, catch the exception and log error
-		# we want to go on, even if this device fails
-		eval {
-		    $class->do_transaction( sub{ return $dev->snmp_update(%uargs)} );
-		};
-		if ( $@ ){
-		    # Exception message is being logged already
-		    $logger->warn("Device::snmp_update_list caught exception but moving on");
-		}
-	    }
-	}else{
-	    # We gave a non-digit (IP or host name) as the id
-	    # Device does not yet exist in DB
-	    my $host = $devid;
-	    $class->discover(name=>$host, %uargs);
-	}
+	# FORK
+	$device_count++; # this isn't real, but...
+	$pm->start and next;
+	$class->_launch_child(pm   => $pm, 
+			      code => sub { return $dev->snmp_update(%uargs); },
+			      );
     }
     
-    $class->_server_close($server);
+    $logger->debug("Waiting for Children...");
+    $pm->wait_all_children;
+    
     return $device_count;
 }
+
+
+
 
 ############################################################################
 #_get_arp_from_snmp - Fetch ARP tables via SNMP
@@ -3189,7 +3168,7 @@ sub _walk_fwt {
 
 	    my $bp_id  = $fw_port->{$fw_index};
 	    unless ( defined $bp_id ) {
-		$logger->debug("Device::_walk_fwt: $host: Port $fw_mac->($fw_index) has no fw_port mapping.  Skipping");
+		$logger->debug("Device::_walk_fwt: $host: Port $fw_index has no fw_port mapping.  Skipping");
 		next;
 	    }
 	    
@@ -3255,265 +3234,65 @@ sub _walk_fwt {
 }
 
 #########################################################################
-# Create server non-blocking socket 
-# 
-sub _server_listen {
-    my ($class) = @_;
-    
-    $SIG{CHLD} = \&_reaper;
-    
-    # Create a listening Unix socket to communicate with children
-    unlink $SOCK_PATH;
-    my $server = IO::Socket::UNIX->new(Local   => $SOCK_PATH,
-				       Listen  => SOMAXCONN )
-	or $class->throw_fatal("Can't make server socket: $@");
-    
-    $server->autoflush;
-    $server->blocking(0);
-    $logger->debug("Device::_server_listen: Listening on UNIX socket path $SOCK_PATH");
-    
-    return $server;
-}
-
-#########################################################################
-# Create IO::Select object with given socket
+# Run given code within TIMEOUT time
+# Uses ALRM signal to tell process to throw an exception
 #
-sub _io_select {
-    my ($class, $socket) = @_;
-
-    # We'll do multiplexed I/O
-    my $sel = IO::Select->new($socket)
-	or $class->throw_fatal("Can't create IO::Select object: $!");
-    
-    return $sel;
-}
-
-#########################################################################
-#  Monitor server socket and collect all data sent by children processes.
+# Rationale: 
+# An SNMP connection is established but the agent never replies to a query.  
+# In those cases, the standard Timeout parameter for the SNMP session 
+# does not help.
 #
-#  Arguments:
-#  hash with following keys:
-#    select - IO::Select object associated with server socket
+# Arguments: 
+#   hostname
+#   code reference
+# Returns:
+#   Array with results
 #
-#  Returns:
-#  Arrayref containing client data
-#
-sub _harvest_children {
-    my ($class, %argv) = @_;
-    $class->isa_class_method('_harvest_children');
-    
-    my $sel = $argv{select} or $class->throw_fatal('Missing required arguments: select');
-
-    # Get server socket.  It is the only handle so far.
-    my $server = ($sel->handles)[0];
-    
-    my (%inbuffer, %ready);
-    
-    while ( (my @readers = $sel->can_read(1)) || %CHILDREN ){
-	foreach my $client ( @readers ){
-	    if ( $client == $server ){	    # Accept the incoming connection
-		$client = $server->accept();
-		$sel->add($client);
-	    }else{                          # Read data
-		my $buf = '';
-		my $bytes = sysread($client, $buf, BUFSIZE);
-		if ( !defined $bytes ){
-		    $logger->error(sprintf("Device::_harvest_children: sysread error from socket: %d",
-					   $client ));
-		    delete $inbuffer{$client};
-		    $sel->remove($client);
-		    close($client);
-		    next;
-		}elsif ( !length $buf ){
-		    $sel->remove($client);
-		    close($client);
-		    next;
-		}
-		# Append new data to client's string
-		$inbuffer{$client} .= $buf;
-	    }
+sub _exec_timeout {
+    my ($class, $host, $code) = @_;
+    $class->throw_fatal("Missing required argument: code") unless $code;
+    my @result;
+    eval {
+	alarm($TIMEOUT);
+	@result = $code->();
+	alarm(0);
+    };
+    if ( my $e = $@ ){
+	if ( $e =~ /timeout/ ){
+	    $logger->error("Device $host timed out ($TIMEOUT sec)\n");
 	}
+	return;
     }
-
-    # Client data in the inbuffer is serialized
-    my @data;
-    map { push @data, thaw $inbuffer{$_} } keys %inbuffer;
-
-    return \@data;
+    wantarray ? @result : $result[0];
 }
 
 #########################################################################
-# Handle Interrupt signals.  Make sure all children processes are killed
+#  Executes given code as a child process.  Makes sure DBI handle does
+#  not disconnect
 #
-sub _handle_int {
-    &_kill_children;
-    $logger->warn("Received Interrupt signal. Bye");
-    exit;
-}
-
-#########################################################################
-# Send TERM signal to all remaining children
-#
-sub _kill_children {
-    kill TERM => keys %CHILDREN;
-    sleep while %CHILDREN;
-}
-
-#########################################################################
-#
-sub _server_close {
-    my ($class, $server) = @_;
-
-    $logger->debug("Device::_server_close: Closing server socket");
-    close($server);
-    unlink $SOCK_PATH;
-}
-
-#########################################################################
-#
-sub _reaper {
-    my $pid;
-    while (($pid = waitpid(-1, &WNOHANG)) > 0) {
-	delete $CHILDREN{$pid};
-    }
-    $SIG{CHLD} = \&_reaper;
-}
-
-#########################################################################
-#
-#  Forks a new process to execute given code and sends back results
-#  via a unix socket.  Useful when parallelizing tasks such as
-#  SNMP queries 
-#            
-# 
 # Arguments:
 #   hash with following keys:
-#     id     - Some piece of id to help server process distinguish data
 #     code   - Code reference to execute
-#     server - Server socket
-# Returns:
-#   True if successful
+#     pm     - Parallel::ForkManager object
+#   
 #
 sub _launch_child {
     my ($class, %argv) = @_;
     $class->isa_class_method("_launch_child");
 
-    my ($server, $id, $code) = @argv{"server", "id", "code"};
+    my ($code, $pm) = @argv{"code", "pm"};
 
     $class->throw_fatal("Missing required arguments")
-	unless ( defined $server && defined $code );
-
-    my $WAIT = 1;  # Seconds to wait to allow number of processes to go down
-    my $pid;
+	unless ( defined $pm && defined $code );
 
     # Tell DBI that we don't want to disconnect the server's DB handle
     my $dbh = $class->db_Main;
     unless ( local($dbh->{InactiveDestroy}) = 1 ) {
 	$class->throw_fatal("Cannot set InactiveDestroy: ", $dbh->errstr);
     }
-
-  FORK: {
-
-      # Make sure we don't overwhelm the machine
-      while ( scalar(keys %CHILDREN) >= $MAXPROCS  ){
-	  sleep($WAIT);    # Allow reaper to reduce number of zombies
-      } 
-      
-      if ( $pid = fork ){ # parent here
-	  
-	  # Make sure all children are killed if 
-	  # we received a TERM signal
-	  $SIG{INT} = \&_handle_int;
-
-	  # Keep track of open children
-	  $CHILDREN{$pid}++;
-
-      }elsif ( defined $pid ) { # child here
-	  close($server); # We don't need that
-
-	  $SIG{TERM} = sub { 
-	      die "Child process $$ killed\n";
-	  };
-
-	  # We don't want a db handle here.
-	  unless ( $dbh->{InactiveDestroy} = 1 ) {
-	      $class->throw_fatal("Cannot set InactiveDestroy: ", $dbh->errstr);
-	  }
-	  $dbh->disconnect();
-
-	  # Run given code
-	  my $data;
-	  eval {
-	      $data = $code->();
-	  };
-	  if ( $@ ){
-	      # Exceptions are already logged
-	      exit;
-	  }
-	  # Result includes some piece of id to let server distinguish
-	  # this data later.
-	  my %result;
-	  $result{id}   = $id;
-	  $result{data} = $data;
-	  
-	  # Serialize the hash so we can send it over the socket
-	  my $serialized = freeze \%result;
-	  $class->_send_to_server($serialized);
-	  exit; # Finish child process
-
-      }elsif ( $! =~ /No more process/ ) {
-	  # EAGAIN, supposedly recoverable fork error
-	  $logger->warn("Problem while forking: $!.  Waiting for $WAIT seconds");
-	  sleep($WAIT);
-	  redo FORK;
-      }else {
-	  # weird fork error
-	  $class->throw_fatal("Cannot fork: $!") unless defined $pid;
-      }
-  }
-
-    return 1;
-}
-
-#########################################################################
-# Send a message to parent process
-# Deal with non-blocking sockets and partial writes
-#
-sub _send_to_server {
-    my ($class, $msg) = @_;
-
-    my $sock = IO::Socket::UNIX->new($SOCK_PATH)
-	or $class->throw_fatal ("pid: $$ could not connect to $SOCK_PATH: $!"); 
-    $sock->autoflush;
-    $sock->blocking(0);
-    $logger->debug(sprintf("Device::_send_to_server: Client: %d created new socket: %d", 
-			   $$, $sock));
-    
-    my $sel = $class->_io_select($sock);
-    
-    while(1){
-	if ( $sel->can_write(1) ){
-	    my $bytes = syswrite($sock, $msg);
-	    if ( defined $bytes && $bytes > 0 ){
-		# Remove as much as we just sent
-		substr($msg, 0, $bytes) = ''; 
-		# Stop when we run out of bytes
-		unless (length $msg){
-		    last;
-		}
-	    }elsif( $! == EWOULDBLOCK ){
-		sleep(1);
-		next;
-	    }else{
-		close($sock);        
-		$class->throw_fatal("pid: $$: Error on syswrite: $!");
-	    }
-	}
-    }
-    $logger->debug(sprintf("Device::_send_to_server: Closing socket: %d from client %d", 
-			   $sock, $$));
-    close($sock);
-    return 1;
+    # Run given code
+    $code->();
+    $pm->finish; # do the exit in the child process
 }
 
 #####################################################################
@@ -3526,7 +3305,6 @@ sub _update_macs_from_cache {
 	foreach my $idx ( keys %{$cache} ){
 	    foreach my $mac ( keys %{$cache->{$idx}} ){
 		$mac_updates{$mac} = $timestamp;
-		$MACS_SEEN{$mac}++;
 	    }
 	}
     }
@@ -3556,7 +3334,6 @@ sub _update_ips_from_cache {
 		    physaddr   => $mac,
 		    status     => $ip_status,
 		};
-		$IPS_SEEN{$ip}++;
 	    }
 	}
     }
@@ -3670,91 +3447,35 @@ sub _get_airespace_ap_info {
 #   Returns:
 #     True if successful
 #   Examples:
-#     Device->fwt_update_list();
+#     Device->fwt_update_list(list=>\@devs);
 #
 #
 sub _fwt_update_list {
     my ($class, %argv) = @_;
     $class->isa_class_method('fwt_update_list');
-
     my $list = $argv{list} or throw_fatal("Missing required arguments: list");
-
     my $start = time;
-
-    # Create a listening Unix socket to communicate with children
-    my $server = $class->_server_listen();
-    my $sel    = $class->_io_select($server);
 
     # Get a hash with all interface MACs
     my $intmacs = PhysAddr->from_interfaces();
 
-    # Clear MAC counter
-    %MACS_SEEN = ();
+    # Init ForkManager
+    my $pm = $class->_fork_init();
 
     my $device_count = 0;
-    
     foreach my $dev ( @$list ){
-	unless ( $dev->collect_fwt ){
-	    $logger->debug(sprintf("%s excluded from FWT collection. Skipping", $dev->fqdn));
-	    next;
-	}
-	unless ( $dev->has_layer(2) ){
-	    $logger->debug(sprintf("%s Device not layer2. Skipping", $dev->fqdn));
-	    next;
-	}
-
-	$class->_launch_child(server => $server,
-			      id     => $dev->id,
-			      code   => sub{ return $dev->_get_fwt_from_snmp(intmacs=>$intmacs) });
-    }
-    
-    # Harvest children.  Pass server selector
-    my $data = $class->_harvest_children( select=>$sel );
-    
-    # Now that we have the data, go ahead and update the DB
-    # The data received is an arrayref of hashrefs with client's results
-
-    # The idea here is to pass all fwt data to the mac methods.  
-    # Then tell each device to update their FWTable tables
-    my (%devs, @caches);
-    foreach my $cdata ( @$data ){
-	my $devid = $cdata->{id};
-	my $cache = $cdata->{data}; 
-	push @caches, $cache;
-	$devs{$devid} = $cache;
-    }
-    if ( @caches ){
-	$class->_update_macs_from_cache(\@caches);
-    }else{
-	$logger->warn("Device::fwt_update_list: No forwarding table info to go on.  Quitting.");
-	$class->_server_close($server);
-	return;
-    }
-    
-    foreach my $devid ( keys %devs ){
+	next unless ( $dev->has_layer(2) && $dev->collect_fwt );
+	# FORK
 	$device_count++;
-	my $dev = $class->retrieve($devid)
-	    or $class->throw_fatal("Device id $devid does not exist!");;
-	my $cache = $devs{$devid};
-
-	
-	# If the transaction fails, catch the exception and log error
-	# we want to go on, even if this device fails
-	eval {
-	    $class->do_transaction( sub{ return $dev->fwt_update(no_update_macs=>1)} );
-	};
-	if ( $@ ){
-	    # Exception message is being logged already
-	    $logger->warn("Device::fwt_update_list caught exception but moving on");
-	}
-
+	$pm->start and next;
+	$class->_launch_child(pm   => $pm,
+			      code => sub { return $dev->fwt_update(intmacs=>$intmacs) },
+			      );
     }
-    
     my $end = time;
-    $logger->info(sprintf("All FWTs updated. %d devices, %d unique MACs in %d seconds", 
-			  $device_count, scalar keys %MACS_SEEN, ($end-$start) ));
+    $logger->info(sprintf("Forwarding tables updated. %d devices in %d seconds", 
+			  $device_count, ($end-$start) ));
 
-    $class->_server_close($server);
     return 1;
 }
 
@@ -3766,7 +3487,7 @@ sub _fwt_update_list {
 #   Returns:
 #     True if successful
 #   Examples:
-#     Device->arp_update_list();
+#     Device->arp_update_list(list=>\@devs);
 #
 sub _arp_update_list {
     my ($class, %argv) = @_;
@@ -3775,81 +3496,26 @@ sub _arp_update_list {
     my $list = $argv{list} or $class->throw_fatal("Missing required arguments: list");
     my $start = time;
 
-    # Create a listening Unix socket to communicate with children
-    my $server = $class->_server_listen();
-    my $sel    = $class->_io_select($server);
-
     # Get a hash with all interface MACs
     my $intmacs = PhysAddr->from_interfaces();
 
-    # Clear some counters
-    %MACS_SEEN = ();
-    %IPS_SEEN  = ();
+    # Init ForkManager
+    my $pm = $class->_fork_init();
 
     my $device_count = 0;
-    
     foreach my $dev ( @$list ){
-	unless ( $dev->collect_arp ){
-	    $logger->debug(sprintf("%s excluded from ARP collection. Skipping", $dev->fqdn));
-	    next;
-	}
-	unless ( $dev->has_layer(3) ){
-	    $logger->debug(sprintf("%s Device not layer3. Skipping", $dev->fqdn));
-	    next;
-	}
-	$class->_launch_child(server => $server,
-			      id     => $dev->id,
-			      code   => sub{ return $dev->_get_arp_from_snmp(intmacs=>$intmacs) });
-    }
-    
-    # Harvest children.  Pass server selector
-    my $data = $class->_harvest_children( select=>$sel );
-    
-    # Now that we have the data, go ahead and update the DB
-    # The data received is an arrayref of hashrefs with client's results
-
-    # The idea here is to pass all cache data to the mac and ip update
-    # methods.  Then tell each device to update their ArpCache tables
-    my (%devs, @caches);
-    foreach my $cdata ( @$data ){
-	my $devid = $cdata->{id};
-	my $cache = $cdata->{data}; 
-	push @caches, $cache;
-	$devs{$devid} = $cache;
-    }
-    if ( @caches ){
-	$class->_update_macs_from_cache(\@caches);
-	$class->_update_ips_from_cache(\@caches);
-    }else{
-	$logger->warn("Device::arp_update_list: No ARP cache info to go on.  Quitting.");
-	$class->_server_close($server);
-	return;
-    }
-
-    foreach my $devid ( keys %devs ){
+	next unless ( $dev->has_layer(3) && $dev->collect_arp );
+	# Fork
 	$device_count++;
-	my $dev = $class->retrieve($devid)
-	    or $class->throw_fatal("Device id $devid does not exist!");;
-	my $cache = $devs{$devid};
-	
-	# If the transaction fails, catch the exception and log error
-	# we want to go on, even if this device fails
-	eval {
-	    $class->do_transaction( sub{ return $dev->arp_update(no_update_macs => 1, 
-								 no_update_ips  => 1)} );
-	};
-	if ( $@ ){
-	    # Exception message is being logged already
-	    $logger->warn("Device::arp_update_list caught exception but moving on");
-	}
-
+	$pm->start and next;
+	$class->_launch_child(pm   => $pm,
+			      code => sub{ return $dev->arp_update(int_macs=>$intmacs) },
+			      );
     }
-    
     my $end = time;
-    $logger->info(sprintf("All ARP caches updated. %d devices, %d unique MACs, %d unique IPs in %d seconds", 
-			  $device_count, scalar keys %MACS_SEEN, scalar keys %IPS_SEEN, ($end-$start) ));
+    $logger->info(sprintf("ARP caches updated. %d devices in %d seconds", 
+			  $device_count, ($end-$start) ));
 
-    $class->_server_close($server);
     return 1;
 }
 
