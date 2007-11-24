@@ -179,7 +179,7 @@ sub snmp_update {
 	if ( $self->physaddr ){
 	    # This seems unlikely, but...
 	    $logger->info(sprintf("%s: PhysAddr %s no longer in %s.  Removing"), 
-			  $self->device->fqdn, $newif->{physaddr}, $self->number);
+			  $self->device->fqdn, $self->physaddr, $self->number);
 	    $self->physaddr->delete;
 	}
     }else{
