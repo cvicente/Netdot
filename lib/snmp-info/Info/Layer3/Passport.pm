@@ -1,6 +1,6 @@
 # SNMP::Info::Layer3::Passport
 # Eric Miller
-# $Id: Passport.pm,v 1.25 2007/11/10 17:48:58 jeneric Exp $
+# $Id: Passport.pm,v 1.26 2007/11/19 02:59:31 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller, Max Baker
 # All rights reserved.
@@ -316,7 +316,7 @@ sub i_description {
         (($partial > 2000 and $model =~ /(86|83|81|16)/) or
         ($partial > 256  and $model =~ /(105|11[05]0|12[05])/)))) {
 
-        my $v_descr = $passport->rc_vlan_name();
+        my $v_descr = $passport->v_name();
         my $vlan_index = $passport->rc_vlan_if();
 
         foreach my $vid (keys %$v_descr){
@@ -347,7 +347,7 @@ sub i_name {
     if (!defined $partial or (defined $model and
         (($partial > 2000 and $model =~ /(86|83|81|16)/) or
         ($partial > 256  and $model =~ /(105|11[05]0|12[05])/)))) {
-            $v_name = $passport->rc_vlan_name() || {};
+            $v_name = $passport->v_name() || {};
             $vlan_index = $passport->rc_vlan_if() || {};
             %reverse_vlan = reverse %$vlan_index;
     }    
@@ -411,7 +411,7 @@ sub ip_index {
     if (defined $model and $model =~ /(86)/) {
 
     my $cpu_ip = $passport->rc_cpu_ip($partial) || {};
-    my $virt_ip = $passport->rc_virt_ip($partial) || {};
+    my $virt_ip = $passport->rc_virt_ip($partial);
 
         # Get CPU Ethernet IP
         foreach my $cid (keys %$cpu_ip){
@@ -421,8 +421,48 @@ sub ip_index {
             $ip_index{$c_ip} = $cid;
         }
 
+        # Get Virtual Mgmt IP 
+        $ip_index{$virt_ip} = 1 if (defined $virt_ip);
+    }
+    
+    return \%ip_index;
+}
+
+sub ip_netmask {
+    my $passport = shift;
+    my $partial = shift;
+
+    my $model   = $passport->model();
+    my $ip_mask = $passport->orig_ip_netmask($partial) || {};
+
+    my %ip_index;
+    foreach my $iid (keys %$ip_mask){
+        my $mask  = $ip_mask->{$iid};
+        next unless defined $mask;
+        
+        $ip_index{$iid} = $mask;
+    }
+
+    # Only 8600 has CPU and Virtual Management IP
+    if (defined $model and $model =~ /(86)/) {
+
+    my $cpu_ip = $passport->rc_cpu_ip($partial) || {};
+    my $cpu_mask = $passport->rc_cpu_mask($partial) || {};
+    my $virt_ip = $passport->rc_virt_ip($partial);
+    my $virt_mask = $passport->rc_virt_mask($partial) || {};
+
+        # Get CPU Ethernet IP
+        foreach my $iid (keys %$cpu_mask){
+            my $c_ip = $cpu_ip->{$iid};
+            next unless defined $c_ip;
+            my $c_mask = $cpu_mask->{$iid};
+            next unless defined $c_mask;
+
+            $ip_index{$c_ip} = $c_mask;
+        }
+
         # Get Virtual Mgmt IP
-        $ip_index{$virt_ip} = 1;
+        $ip_index{$virt_ip} = $virt_mask if (defined $virt_mask and defined $virt_ip);
     }
     
     return \%ip_index;
@@ -669,7 +709,6 @@ sub e_type {
     my $model = $passport->model();
     my $rc_ps = $passport->rc_ps_type() || {};
     my $rc_ch = $passport->rcChasType();
-    $rc_ch =~ s/a//;
 
     my %rc_e_type;
 
@@ -692,7 +731,7 @@ sub e_type {
             my $type = $rc_c_t->{$idx};
             next unless $type;
             my $index = "$idx"."0000";
-            $rc_e_type{$index} = "slot"."$idx";
+            $rc_e_type{$index} = "zeroDotZero";
             $index++;
             $rc_e_type{$index} = $type;
         }
@@ -710,7 +749,7 @@ sub e_type {
             my $cb = $rc2_cb->{$idx};
 
             my $index = "$idx"."0000";
-            $rc_e_type{$index} = "slot"."$idx";
+            $rc_e_type{$index} = "zeroDotZero";
             $index++;
             $rc_e_type{$index} = $cf;
             $index++;
@@ -1092,6 +1131,11 @@ name if exists.
 
 Maps the IP Table to the IID.  Extends (B<ipAdEntIfIndex>) by adding the index of
 the CPU virtual management IP (if present) and each CPU Ethernet port.
+
+=item $passport->ip_netmask()
+
+Extends (B<ipAdEntNetMask>) by adding the mask of the CPU virtual management
+IP (if present) and each CPU Ethernet port.
 
 =item $passport->bp_index()
 

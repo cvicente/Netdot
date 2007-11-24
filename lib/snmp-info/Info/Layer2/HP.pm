@@ -31,7 +31,7 @@
 
 package SNMP::Info::Layer2::HP;
 $VERSION = '1.05';
-# $Id: HP.pm,v 1.34 2007/11/04 03:29:40 jeneric Exp $
+# $Id: HP.pm,v 1.35 2007/11/21 21:34:40 jeneric Exp $
 
 use strict;
 
@@ -51,11 +51,12 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
           %SNMP::Info::MAU::MIBS,
           %SNMP::Info::LLDP::MIBS,
           %SNMP::Info::CDP::MIBS,
-          'RFC1271-MIB' => 'logDescription',
-          'HP-ICF-OID'  => 'hpSwitch4000',
-          'HP-VLAN'     => 'hpVlanMemberIndex',
+          'RFC1271-MIB'    => 'logDescription',
+          'HP-ICF-OID'     => 'hpSwitch4000',
+          'HP-VLAN'        => 'hpVlanMemberIndex',
           'STATISTICS-MIB' => 'hpSwitchCpuStat',
-          'NETSWITCH-MIB'  => 'hpMsgBufFree',   
+          'NETSWITCH-MIB'  => 'hpMsgBufFree',
+          'CONFIG-MIB'     => 'hpSwitchConfig',
         );
 
 %GLOBALS = (
@@ -92,6 +93,9 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
             'hp_v_mac'     => 'hpVlanAddrPhysAddress',
             'hp_v_if_index'=> 'hpVlanMemberIndex',
             'hp_v_if_tag'  => 'hpVlanMemberTagged2',
+            # CONFIG-MIB::hpSwitchPortTable
+            'hp_duplex'       => 'hpSwitchPortEtherMode',
+            'hp_duplex_admin' => 'hpSwitchPortFastEtherMode',
            );
 
 %MUNGE = (
@@ -137,14 +141,19 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
                 'J8165A' => '2650-PWR',
                 'J8433A' => 'CX4-6400cl-6XG',
                 'J8474A' => 'MF-6400cl-6XG',
+                'J8697A' => '5406zl',
+                'J8698A' => '5412zl',
                 'J8718A' => '5404yl',
                 'J8719A' => '5408yl',
+                'J8770A' => '4204vl',
+                'J8773A' => '4208vl',
+                'J8680A' => '9608sl',
+                'J8762A' => '2600-8-PWR',
+                'J8692A' => '3500yl-24G-PWR',
+                'J8693A' => '3500yl-48G-PWR',
            );
 
 # Method Overrides
-
-*SNMP::Info::Layer2::HP::i_duplex       = \&SNMP::Info::MAU::mau_i_duplex;
-*SNMP::Info::Layer2::HP::i_duplex_admin = \&SNMP::Info::MAU::mau_i_duplex_admin;
 
 sub cpu {
     my $hp = shift;
@@ -234,6 +243,37 @@ sub i_name {
     }
     
     return \%i_name;
+}
+
+sub i_duplex {
+    my $hp = shift;
+
+    return $hp->mau_i_duplex();
+}
+
+sub i_duplex_admin {
+    my $hp = shift;
+    my $partial = shift;
+
+    # Try HP MIB first
+    my $hp_duplex = $hp->hp_duplex_admin($partial);
+    if (defined $hp_duplex and scalar(keys %$hp_duplex)){
+
+        my %i_duplex;
+        foreach my $if (keys %$hp_duplex){
+            my $duplex = $hp_duplex->{$if};
+            next unless defined $duplex; 
+    
+            $duplex = 'half' if $duplex =~ /half/i;
+            $duplex = 'full' if $duplex =~ /full/i;
+            $duplex = 'auto' if $duplex =~ /auto/i;
+            $i_duplex{$if}=$duplex; 
+        }
+        return \%i_duplex;
+    }
+    else {
+        return $hp->mau_i_duplex_admin();
+    }
 }
 
 sub vendor {
@@ -747,9 +787,11 @@ Included in V2 mibs from Cisco
 
 =item NETSWITCH-MIB
 
+=item CONFIG-MIB
+
 =back
 
-The last three MIBs listed are from HP and can be found at L<http://www.hp.com/rnd/software>
+The last five MIBs listed are from HP and can be found at L<http://www.hp.com/rnd/software>
 or L<http://www.hp.com/rnd/software/MIBs.htm>
 
 =head1 ChangeLog
@@ -822,10 +864,17 @@ the common model number with this map :
                 'J8165A' => '2650-PWR',
                 'J8433A' => 'CX4-6400cl-6XG',
                 'J8474A' => 'MF-6400cl-6XG',
+                'J8697A' => '5406zl',
+                'J8698A' => '5412zl',
                 'J8718A' => '5404yl',
                 'J8719A' => '5408yl',
-
-              );
+                'J8770A' => '4204vl',
+                'J8773A' => '4208vl',
+                'J8680A' => '9608sl',
+                'J8762A' => '2600-8-PWR',
+                'J8692A' => '3500yl-24G-PWR',
+                'J8693A' => '3500yl-48G-PWR',
+                );
 
 =item $hp->os()
 
@@ -885,14 +934,11 @@ Uses $hp->i_description()
 
 =item $hp->i_duplex()
 
-Maps $hp->mau_index() with $hp->mau_link().  Methods inherited from
-SNMP::Info::MAU.
+Returns reference to map of IIDs to current link duplex.
 
 =item $hp->i_duplex_admin()
 
-Maps $hp->mau_index() with $hp->mau_auto(), $hp->mau_autostat(),
-$hp->typeadmin(), and $mau_autosent().  Methods inherited from
-SNMP::Info::MAU.
+Returns reference to hash of IIDs to admin duplex setting.
 
 =item $hp->i_name()
 
@@ -1044,4 +1090,3 @@ numeric VLAN ID and port ifIndex.
     or die "Couldn't add port to egress list. ",$hp->error(1);
 
 =cut
-

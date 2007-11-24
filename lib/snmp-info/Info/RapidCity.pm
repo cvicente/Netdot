@@ -1,5 +1,5 @@
 # SNMP::Info::RapidCity
-# $Id: RapidCity.pm,v 1.11 2007/11/04 03:29:47 jeneric Exp $
+# $Id: RapidCity.pm,v 1.12 2007/11/19 02:50:42 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller, Max Baker
 #
@@ -53,6 +53,7 @@ use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
             'rc_ch_rev'    => 'rcChasHardwareRevision',
             'rc_base_mac'  => 'rc2kChassisBaseMacAddr',
             'rc_virt_ip'   => 'rcSysVirtualIpAddr',
+            'rc_virt_mask' => 'rcSysVirtualNetMask',
             );
 
 %FUNCS  = (
@@ -68,6 +69,7 @@ use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
             'rc_cpu_admin'         => 'rc2kCpuEthernetPortAdminStatus',
             'rc_cpu_oper'          => 'rc2kCpuEthernetPortOperStatus',
             'rc_cpu_ip'            => 'rc2kCpuEthernetPortAddr',
+            'rc_cpu_mask'          => 'rc2kCpuEthernetPortMask',
             'rc_cpu_auto'          => 'rc2kCpuEthernetPortAutoNegotiate',
             'rc_cpu_duplex_admin'  => 'rc2kCpuEthernetPortAdminDuplex',
             'rc_cpu_duplex'        => 'rc2kCpuEthernetPortOperDuplex',
@@ -406,7 +408,7 @@ sub set_remove_i_vlan_tagged {
 #        print "Error: Unable to activate VLAN: $vlan_id\n" if $rapidcity->debug();
 #        return undef;
 #    }
-#    my $rv = $rapidcity->set_rc_vlan_name($name, $vlan_id);
+#    my $rv = $rapidcity->set_v_name($name, $vlan_id);
 #    unless ($rv) {
 #        print "Error: Unable to create VLAN: $vlan_id\n" if $rapidcity->debug();
 #        return undef;
@@ -596,6 +598,10 @@ These are methods that return scalar values from SNMP
 
 (B<rcSysVirtualIpAddr>)
 
+=item  $rapidcity->rc_virt_mask()
+
+(B<rcSysVirtualNetMask>)
+
 =item  $rapidcity->tftp_host()
 
 (B<rcTftpHost>)
@@ -710,6 +716,10 @@ These are the VLANs which are members of the egress list for the port.
 
 (B<rc2kCpuEthernetPortAddr>)
 
+=item $rapidcity->rc_cpu_mask()
+
+(B<rc2kCpuEthernetPortMask>)
+
 =item $rapidcity->rc_cpu_auto()
 
 (B<rc2kCpuEthernetPortAutoNegotiate>)
@@ -774,7 +784,7 @@ These are the VLANs which are members of the egress list for the port.
 
 (B<rcVlanId>)
 
-=item $rapidcity->rc_vlan_name()
+=item $rapidcity->v_name()
 
 (B<rcVlanName>)
 

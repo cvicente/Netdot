@@ -30,7 +30,7 @@
 package SNMP::Info::Layer2::Baystack;
 $VERSION = '1.05';
 
-# $Id: Baystack.pm,v 1.16 2007/10/08 22:30:30 fenner Exp $
+# $Id: Baystack.pm,v 1.17 2007/11/19 04:28:01 jeneric Exp $
 use strict;
 
 use Exporter;
@@ -89,8 +89,11 @@ sub os {
     my $descr = $baystack->description();
     my $model = $baystack->model();
 
-    if ((defined $model and $model =~ /(470|460|BPS|5510|5520|5530)/) and (defined $descr and $descr =~ m/SW:v[3-5]/i)) {
+    if ((defined $model and $model =~ /(325|420|425|470|460|BPS|2500|3510|4524|4526|4548|4550|5510|5520|5530)/) and (defined $descr and $descr =~ m/SW:v[3-5]/i)) {
        return 'boss';
+    }
+    if ((defined $descr and $descr =~ /Business Ethernet Switch.*SW:v/i)) {
+       return 'bes';
     }
     return 'baystack';
 }
@@ -132,7 +135,7 @@ sub model {
     return '303' if (defined $descr and $descr =~ /\D303\D/);
     return '304' if (defined $descr and $descr =~ /\D304\D/);
     return 'BPS' if ($model =~ /BPS2000/i);
-    return $2 if ($model =~ /(ES|ERS|BayStack|EthernetRoutingSwitch|EthernetSwitch)(\d+)/);
+    return $2 if ($model =~ /(ES|ERS|BayStack|EthernetRoutingSwitch|EthernetSwitch)-?(\d+)/);
     
     return $model;
 }
@@ -207,7 +210,7 @@ sub index_factor {
     $op_mode = 'pure' unless defined $op_mode;
 
     my $index_factor = 32;
-    $index_factor = 64 if ((defined $model and $model =~ /(470)/) or ($os eq 'boss') and ($op_mode eq 'pure'));
+    $index_factor = 64 if ((defined $model and $model =~ /(470)/) or ($os =~ m/(boss|bes)/) and ($op_mode eq 'pure'));
     
     return $index_factor;
 }
@@ -347,17 +350,7 @@ sub e_index {
     my $stack   = shift;
     my $partial = shift;
 
-    # This has intimate knowledge of the implementation of e_index.
-    # e_index is implemented in terms of e_descr, so unlike the other
-    # functions below we can't just
-    # return $stack->SUPER::e_index($partial) || $stack->ns_e_index($partial);
-    # since it will call *our* e_descr.  So we only call e_index if
-    # SUPER::e_descr works.
-    if ($stack->SUPER::e_descr($partial)) {
-	return $stack->SUPER::e_index($partial);
-    } else {
-	return $stack->ns_e_index($partial);
-    }
+    return $stack->SUPER::e_index($partial) || $stack->ns_e_index($partial);
 }
 
 sub e_class {

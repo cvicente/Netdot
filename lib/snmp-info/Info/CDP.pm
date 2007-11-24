@@ -32,7 +32,7 @@
 
 package SNMP::Info::CDP;
 $VERSION = '1.05';
-# $Id: CDP.pm,v 1.18 2007/06/13 02:52:21 jeneric Exp $
+# $Id: CDP.pm,v 1.20 2007/11/21 20:35:58 jeneric Exp $
 
 use strict;
 
@@ -59,7 +59,7 @@ use vars qw/$VERSION $DEBUG %FUNCS %GLOBALS %MIBS %MUNGE $INIT/;
 %FUNCS  = (
             'c_index'        => 'cdpCacheIfIndex',
             'c_proto'        => 'cdpCacheAddressType',
-            'c_ip'           => 'cdpCacheAddress',
+            'c_addr'         => 'cdpCacheAddress',
             'c_ver'          => 'cdpCacheVersion',
             'c_id'           => 'cdpCacheDeviceId',
             'c_port'         => 'cdpCacheDevicePort',
@@ -147,6 +147,26 @@ sub c_if {
     }
 
     return \%c_if;
+}
+
+sub c_ip {
+    my $cdp = shift;
+    my $partial = shift;
+
+    my $c_addr  = $cdp->c_addr($partial) || {};
+    my $c_proto = $cdp->c_proto($partial) || {};
+    
+    my %c_ip;    
+    foreach my $key (keys %$c_addr) {
+        my $addr  = $c_addr->{$key};
+        my $proto = $c_proto->{$key};
+        next unless defined $addr;
+        next if (defined $proto and $proto ne 'ip');
+
+        my $ip = join('.',unpack('C4',$addr));
+        $c_ip{$key} = $ip;
+    }
+    return \%c_ip;
 }
 
 1;
@@ -356,7 +376,14 @@ See c_if() entry.
 
 =item  $cdp->c_ip()
 
-Returns remote IP address
+If $cdp->c_proto() is supported, returns remote IPV4 address only.  Otherwise
+it will return all addresses.
+
+(B<cdpCacheAddress>)
+
+=item  $cdp->c_addr()
+
+Returns remote address
 
 (B<cdpCacheAddress>)
 

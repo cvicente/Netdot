@@ -6,7 +6,7 @@
 # All rights reserved.  
 #
 # See COPYRIGHT at bottom
-# $Id: Info.pm,v 1.122 2007/10/09 17:53:23 fenner Exp $
+# $Id: Info.pm,v 1.123 2007/11/19 04:25:17 jeneric Exp $
 
 package SNMP::Info;
 $VERSION = '1.05';
@@ -932,6 +932,7 @@ Algorithm for Subclass Detection:
             HP Procurve                    -> SNMP::Info::Layer2::HP
             Nortel/Bay Centillion ATM      -> SNMP::Info::Layer2::Centillion
             Nortel/Bay Baystack            -> SNMP::Info::Layer2::Baystack
+            Nortel Business Ethernet Switch-> SNMP::Info::Layer2::Baystack
             Nortel Passport/Accelar 8100   -> SNMP::Info::Layer3::Passport
             Nortel AP 222x                 -> SNMP::Info::Layer2::NAP222x
             Orinco AP                      -> SNMP::Info::Layer2::Orinoco
@@ -1022,7 +1023,7 @@ sub device_type {
         # Nortel ERS (Passport) 1600 Series < version 2.1
         $objtype = 'SNMP::Info::Layer3::N1600'  if $desc =~ /(Passport|Ethernet\s+Routing\s+Switch)-16/i;
         #  ERS - BayStack Numbered 
-        $objtype = 'SNMP::Info::Layer2::Baystack' if ($desc =~ /(BayStack|Ethernet\s+Routing\s+Switch)\s[345]\d/i);
+        $objtype = 'SNMP::Info::Layer2::Baystack' if ($desc =~ /^(BayStack|Ethernet\s+Routing\s+Switch)\s[2345](\d){2,3}/i);
         # Nortel Alteon AD Series
         $objtype = 'SNMP::Info::Layer3::AlteonAD' if $desc =~ /Alteon\s[1A][8D]/;
         # Nortel Contivity
@@ -1067,7 +1068,10 @@ sub device_type {
         $objtype = 'SNMP::Info::Layer2::Baystack' if ($desc =~ /Business\sPolicy\sSwitch/i);
 
         #  BayStack Numbered
-        $objtype = 'SNMP::Info::Layer2::Baystack' if ($desc =~ /(BayStack|Ethernet\s+(Routing\s+)??Switch)\s[345]\d/i);
+        $objtype = 'SNMP::Info::Layer2::Baystack' if ($desc =~ /^(BayStack|Ethernet\s+(Routing\s+)??Switch)\s[2345](\d){2,3}/i);
+
+        #  Nortel Business Ethernet Switch
+        $objtype = 'SNMP::Info::Layer2::Baystack' if ($desc =~ /^Business Ethernet Switch\s[12]\d\d/i);
 
         #  Nortel AP 222X
         $objtype = 'SNMP::Info::Layer2::NAP222x' if ($desc =~ /Access\s+Point\s+222/);
