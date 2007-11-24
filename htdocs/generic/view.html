@@ -139,14 +139,18 @@ if ( $view eq 'all' || $view eq "$table" ){
 
 %   foreach my $i (sort keys %ftables){
 %     if ( ($view eq 'all' || $view eq $i ) && $view ne "$table"){
+%         my $num;
+%         defined($ftables{$i}{objs})  && ($num = scalar(@{$ftables{$i}{objs}}));
+%	  defined($ftables{$i}{robjs}) && ($num = scalar(@{$ftables{$i}{robjs}}));
           <div class="container">
-	    <div class="containerheadleft"><% $i %></div>
+%           my $title = $i;
+%           $title .= " ($num)" if $num;	     
+	    <div class="containerheadleft"><% $title %></div>
 	    <div class="containerheadright">
 %           if ( $edit eq $i ){	    
                &nbsp;
 %           }else{
-%	       if ( (defined($ftables{$i}{objs})  && scalar(@{$ftables{$i}{objs}})) ||
-%		    (defined($ftables{$i}{robjs}) && scalar(@{$ftables{$i}{robjs}})) ){
+%	       if ( $num ){
                    <a href="view.html?table=<% $table %>&id=<% $id %>&edit=<% $i %>">[edit]</a>
 %	       }
 	       <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>">[add]</a>
