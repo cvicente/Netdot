@@ -421,11 +421,12 @@ sub get_snmp_info {
     # Device's global vars
     $dev{layers}      = $sinfo->layers;
     $dev{sysobjectid} = $sinfo->id;
-    $dev{sysobjectid} =~ s/^\.(.*)/$1/;  # Remove unwanted first dot
-
-    my %ignored = %{ $self->config->get('IGNOREDEVS') };
-    if ( exists($ignored{$dev{sysobjectid}}) ){
-	$self->throw_user(sprintf("Product id %s set to be ignored\n", $dev{sysobjectid}));
+    if ( defined $dev{sysobjectid} ){
+	$dev{sysobjectid} =~ s/^\.(.*)/$1/;  # Remove unwanted first dot
+	my %ignored = %{ $self->config->get('IGNOREDEVS') };
+	if ( exists($ignored{$dev{sysobjectid}}) ){
+	    $self->throw_user(sprintf("Product id %s set to be ignored\n", $dev{sysobjectid}));
+	}
     }
 
     $dev{model}          = $sinfo->model();
@@ -1680,7 +1681,7 @@ sub snmp_update {
     # (specified in config file)
     #
     my %ignored = %{ $self->config->get('IGNOREPORTS') };
-    unless ( exists $info->{sysobjectid} && exists $ignored{$info->{sysobjectid}} ){
+    unless ( defined $info->{sysobjectid} && exists $ignored{$info->{sysobjectid}} ){
 	
 	# How to deal with new subnets
 	# First grab defaults from config file
