@@ -408,7 +408,7 @@ sub get_snmp_info {
     # SNMP::Info methods that return hash refs
     my @SMETHODS = ( 'e_descr',
 		     'interfaces', 'i_name', 'i_type', 'i_index', 'i_alias', 'i_description', 
-		     'i_speed', 'i_up', 'i_up_admin', 'i_duplex', 
+		     'i_speed', 'i_up', 'i_up_admin', 'i_duplex', 'i_duplex_admin', 
 		     'ip_index', 'ip_netmask', 'i_mac',
 		     'i_vlan', 'i_vlan_membership', 'qb_v_name', 'v_name',
 		     'bgp_peers', 'bgp_peer_id', 'bgp_peer_as');
