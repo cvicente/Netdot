@@ -21,8 +21,6 @@ my $AIRESPACEIF = '(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\.\d';
 
 # Other fixed variables
 my $MAXPROCS    = Netdot->config->get('SNMP_MAX_PROCS');
-my $TMP         = Netdot->config->get('TMP');
-my $SOCK_PATH   = "$TMP/netdot_sock";
 
 # Objects we need here
 my $logger      = Netdot->log->get_logger('Netdot::Model::Device');
@@ -1883,14 +1881,21 @@ sub snmp_update {
     ##############################################################
     # Assign the snmp_target address if it's not there yet
     #
-    unless ( $self->snmp_target ){
-	if ( scalar @hostnameips ){
-	    my $ipb = Ipblock->search(address=>$hostnameips[0])->first;
-	    if ( $ipb ){
-		$self->update({snmp_target=>$ipb});
-		$logger->info(sprintf("%s: SNMP target address set to %s", 
-				      $host, $self->snmp_target->address));
+    if ( !defined($self->snmp_target) || $self->snmp_target == 0 ){
+	my $ipb;
+	if ( my $rr = RR->search(name=>$self->fqdn)->first ){
+	    if ( my $rraddr = ($rr->arecords)[0] ){
+		$ipb = $rraddr->ipblock;
 	    }
+	}elsif ( scalar @hostnameips ){
+	    $ipb = Ipblock->search(address=>$hostnameips[0])->first;
+	}
+	if ( $ipb ){
+	    $self->update({snmp_target=>$ipb});
+	    $logger->info(sprintf("%s: SNMP target address set to %s", 
+				  $host, $self->snmp_target->address));
+	}else{
+	    $logger->error("Could not determine main IP address!");
 	}
     }
 
@@ -2649,12 +2654,15 @@ sub _get_snmp_session {
 	
 	# Fill out some arguments if not given explicitly
 	unless ( $argv{host} ){
-	    if ( ref($self->snmp_target) =~ /Ipblock/ ){
+	    if ( defined $self->snmp_target && ref($self->snmp_target) =~ /Ipblock/ ){
 		$argv{host} = $self->snmp_target->address;
 	    }else{
 		$argv{host} = $self->fqdn;
 	    }
 	}
+	$self->throw_user("Could not determine IP nor hostname for Device id: %d", $self->id)
+	    unless $argv{host};
+
 	$argv{version}  ||= $self->snmp_version;
 	$argv{bulkwalk} ||= $self->snmp_bulk;
 	
@@ -2813,7 +2821,7 @@ sub _get_hosts_from_file {
 	}
     }
     
-    $class->throw_user("Device::_get_hosts_from_file: Host list is empty!\n")
+    $class->throw_user("Host list is empty!\n")
 	unless ( scalar keys %hosts );
     
     close(FILE);
@@ -2831,14 +2839,38 @@ sub _fork_init {
 
     # Tell DBI that we don't want to disconnect the server's DB handle
     my $dbh = $class->db_Main;
-    unless ( local($dbh->{InactiveDestroy}) = 1 ) {
-	$class->throw_fatal("Cannot set InactiveDestroy: ", $dbh->errstr);
+    unless ( $dbh->{InactiveDestroy} = 1 ) {
+	$class->throw_fatal("Device::_fork_init: Cannot set InactiveDestroy: ", $dbh->errstr);
     }
+
     # MAXPROCS processes for parallel updates
     $logger->debug("Device::_fork_init: Launching up to $MAXPROCS children processes");
     my $pm = Parallel::ForkManager->new($MAXPROCS);
 
     return $pm;
+}
+
+#########################################################################
+# _fork_end - Wrap up ForkManager
+#    Wait for all children
+#    Set InactiveDestroy back to default
+#
+# Arguments:    Parallel::ForkManager object
+# Returns  :    True if successful
+#
+sub _fork_end {
+    my ($class, $pm) = @_;
+    $class->isa_class_method('_fork_end');
+
+    # Wait for all children to finish
+    $logger->debug("Device::_fork_end: Waiting for children...");
+    $pm->wait_all_children;
+    $logger->debug("Device::_fork_end: All children finished");
+
+    # Return DBI to its normal DESTROY behavior
+    my $dbh = $class->db_Main;
+    $dbh->{InactiveDestroy} = 0;
+    return 1;
 }
 
 ####################################################################################
@@ -2935,9 +2967,9 @@ sub _snmp_update_list {
 			      );
     }
     
-    $logger->debug("Waiting for Children...");
-    $pm->wait_all_children;
-    
+    # End forking state
+    $class->_fork_end($pm);
+
     return $device_count;
 }
 
@@ -3288,12 +3320,13 @@ sub _launch_child {
 
     # Tell DBI that we don't want to disconnect the server's DB handle
     my $dbh = $class->db_Main;
-    unless ( local($dbh->{InactiveDestroy}) = 1 ) {
+    unless ( $dbh->{InactiveDestroy} = 1 ) {
 	$class->throw_fatal("Cannot set InactiveDestroy: ", $dbh->errstr);
     }
     # Run given code
     $code->();
-    $pm->finish; # do the exit in the child process
+    $dbh->disconnect();
+    $pm->finish; # exit the child process
 }
 
 #####################################################################
@@ -3473,6 +3506,10 @@ sub _fwt_update_list {
 			      code => sub { return $dev->fwt_update(intmacs=>$intmacs) },
 			      );
     }
+
+    # End forking state
+    $class->_fork_end($pm);
+
     my $end = time;
     $logger->info(sprintf("Forwarding tables updated. %d devices in %d seconds", 
 			  $device_count, ($end-$start) ));
@@ -3513,6 +3550,10 @@ sub _arp_update_list {
 			      code => sub{ return $dev->arp_update(int_macs=>$intmacs) },
 			      );
     }
+
+    # End forking state
+    $class->_fork_end($pm);
+
     my $end = time;
     $logger->info(sprintf("ARP caches updated. %d devices in %d seconds", 
 			  $device_count, ($end-$start) ));
