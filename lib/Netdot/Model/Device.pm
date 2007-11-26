@@ -1640,7 +1640,7 @@ sub snmp_update {
     }
     
     # Assign Product
-    my $name = $info->{productname} || $info->{model} || $info->{sysdescription};
+    my $name = $info->{model} || $info->{productname};
     if ( defined $info->{sysobjectid} ){
 	$devtmp{product} = Product->find_or_create( name           => $name,
 						    description    => $name,
