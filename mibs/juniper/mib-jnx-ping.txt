@@ -1,7 +1,7 @@
 --
 -- Juniper Enterprise Specific MIB: Ping MIB
 -- 
--- Copyright (c) 2001-2005, Juniper Networks, Inc.
+-- Copyright (c) 2001-2007, Juniper Networks, Inc.
 -- All rights reserved.
 --
 -- The contents of this document are subject to change without notice.
@@ -17,7 +17,7 @@ IMPORTS
         FROM IF-MIB                  -- RFC2863
     SnmpAdminString
         FROM SNMP-FRAMEWORK-MIB      -- RFC2571
-    DisplayString, DateAndTime
+    DisplayString, DateAndTime, TruthValue
         FROM SNMPv2-TC
     pingResultsEntry, pingProbeHistoryEntry, pingCtlTargetAddressType,
     pingCtlTargetAddress, pingResultsOperStatus, pingResultsIpTargetAddressType,
@@ -151,7 +151,10 @@ JnxPingCtlEntry ::=
         jnxPingCtlIngressStddevThreshold Unsigned32,
         jnxPingCtlIngressJitterThreshold Unsigned32,
         jnxPingCtlTrapGeneration         BITS,
-        jnxPingCtlTargetPort             InetPortNumber
+        jnxPingCtlTargetPort             InetPortNumber,
+        jnxPingCtlJseriesHWTimeStamp     TruthValue,
+        jnxPingCtlOneWayHWTimeStamp      TruthValue,
+        jnxPingCtlMovAvgSize             Unsigned32
     }
 
 jnxPingCtlOwnerIndex OBJECT-TYPE
@@ -453,6 +456,50 @@ jnxPingCtlTargetPort  OBJECT-TYPE
     DESCRIPTION
         "The target UDP/TCP port used by the probe."
     ::= { jnxPingCtlEntry 17 }
+
+jnxPingCtlJseriesHWTimeStamp  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Use to enable the RPM Hardware Timestamp feature on J-series routers.
+         For M/T series routers, use the jnxPingCtlIfName and 
+         pingCtlByPassRouteTable objects to redirect probes to the AS Pic.
+         For those routers, this object must have the value: false."
+    DEFVAL { false }
+    ::= { jnxPingCtlEntry 18 }
+
+jnxPingCtlOneWayHWTimeStamp  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Use this object to enable Hardware Timestamp-based one-way
+         measurements.  If this object is not enabled (ie, set to true),
+         no Hardware Timestamp based one way measurements or calculations
+         will be performed for this control entry.  This object applies to 
+         all Juniper routers.  Note, due to clock synchronization artifacts,
+         many one-way jitter measurements & calculations may include signifacant
+         variations, in some cases  orders of magnitude greater than the round 
+         trip times."
+    DEFVAL { false }
+    ::= { jnxPingCtlEntry 19 }
+
+jnxPingCtlMovAvgSize  OBJECT-TYPE
+    SYNTAX      Unsigned32 
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The Juniper RPM feature maintains a set of the most recent probe
+        measurements & provides the same calculations over that collection
+        as provided over a test (ie, average, standard deviation, etc).  This
+        data is available via the jnx-rpm mib or via the CLI/XML.  The
+        number of samples maintained in this moving collection is specified
+        by this object.  This value must be less than the number of samples
+        maintained in the history table (ie, pingCtlMaxRows)."
+    DEFVAL { 0 }
+    ::= { jnxPingCtlEntry 20 }
+
 
 
 --
@@ -881,6 +928,273 @@ jnxPingProbeHistoryIngressJitterUs OBJECT-TYPE
         delay measurements.
         For all other probe types, the value is irrelevant and will return 0."
     ::= { jnxPingProbeHistoryEntry 6 }
+
+
+--
+-- Last ping test Results Table
+--
+
+jnxPingLastTestResultTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF JnxPingLastTestResultEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Stores result of the most recently completed test. Entry corresponding
+         to a test will be created only after completion of first test." 
+   ::= { jnxPingObjects 5 }
+
+jnxPingLastTestResultEntry OBJECT-TYPE
+    SYNTAX      JnxPingLastTestResultEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each entry provides most recently completed test result."
+    INDEX {
+             jnxPingCtlOwnerIndex,
+             jnxPingCtlTestName
+          }
+    ::= { jnxPingLastTestResultTable 1 }
+
+JnxPingLastTestResultEntry ::=
+    SEQUENCE {
+        jnxPingLastTestResultProbeResponses            Unsigned32,
+        jnxPingLastTestResultSentProbes                Unsigned32,
+        jnxPingLastTestResultSumRttUs                  Unsigned32,
+        jnxPingLastTestResultMinRttUs                  Unsigned32,
+        jnxPingLastTestResultMaxRttUs                  Unsigned32,
+        jnxPingLastTestResultAvgRttUs                  Unsigned32,
+        jnxPingLastTestResultStdDevRttUs               Unsigned32,
+        jnxPingLastTestResultMinEgressUs               Unsigned32,
+        jnxPingLastTestResultMaxEgressUs               Unsigned32,
+        jnxPingLastTestResultAvgEgressUs               Unsigned32,
+        jnxPingLastTestResultStddevEgressUs            Unsigned32,
+        jnxPingLastTestResultMinIngressUs              Unsigned32,
+        jnxPingLastTestResultMaxIngressUs              Unsigned32,
+        jnxPingLastTestResultAvgIngressUs              Unsigned32,
+        jnxPingLastTestResultStddevIngressUs           Unsigned32,
+        jnxPingLastTestResultPeakToPeakJitterRttUs     Unsigned32,
+        jnxPingLastTestResultPeakToPeakJitterEgressUs  Unsigned32,
+        jnxPingLastTestResultPeakToPeakJitterIngressUs Unsigned32,
+        jnxPingLastTestResultTime                      DateAndTime
+     }
+
+jnxPingLastTestResultProbeResponses OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "responses"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Number of responses received in the most recently completed test."
+    ::= { jnxPingLastTestResultEntry 1 }
+
+jnxPingLastTestResultSentProbes OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "probes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of this object reflects the number of probes sent in the
+        most recently completed test."
+    ::= { jnxPingLastTestResultEntry 2 }
+
+jnxPingLastTestResultSumRttUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The sum of the round trip delays measured for all the probes
+        during the most recently completed test. Measured in microseconds."
+    ::= { jnxPingLastTestResultEntry 3 }
+
+jnxPingLastTestResultMinRttUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The minimum of the round trip delays measured for all the probes
+        during the most recently completed test. Measured in microseconds."
+    ::= { jnxPingLastTestResultEntry 4 }
+
+jnxPingLastTestResultMaxRttUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The maximum of the round trip delays measured for all the probes
+        during the most recently completed test. Measured in microseconds."
+    ::= { jnxPingLastTestResultEntry 5 }
+
+jnxPingLastTestResultAvgRttUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The average of the round trip delays measured for all the probes
+        during the most recently completed test. Measured in microseconds."
+    ::= { jnxPingLastTestResultEntry 6 }
+
+jnxPingLastTestResultStdDevRttUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The standard deviation of the round trip delays measured during
+        the most recently completed test. Measured in microseconds."
+    ::= { jnxPingLastTestResultEntry 7 }
+
+jnxPingLastTestResultMinEgressUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The minimum of the egress trip delays measured over all probes
+        during the most recently completed test. Measured in microseconds.
+        This applies only if the probe type (pingCtlType) provides
+        one-way delay measurements.  For all other probe types, their
+        values are irrelevant and will return 0."
+    ::= { jnxPingLastTestResultEntry 8 }
+
+jnxPingLastTestResultMaxEgressUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The maximum of the egress trip delays measured over all probes
+        during the most recently completed test. Measured in microseconds.
+        This applies only if the probe type (pingCtlType) provides
+        one-way delay measurements.  For all other probe types, their
+        values are irrelevant and will return 0."
+    ::= { jnxPingLastTestResultEntry 9 }
+
+jnxPingLastTestResultAvgEgressUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The average of the egress trip delays measured over all probes
+        during the most recently completed test. Measured in microseconds.
+        This applies only if the probe type (pingCtlType) provides
+        one-way delay measurements.  For all other probe types, their
+        values are irrelevant and will return 0."
+    ::= { jnxPingLastTestResultEntry 10 }
+
+jnxPingLastTestResultStddevEgressUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The standard deviation of the egress trip delays measured over all
+        probes during the most recently completed test. Measured in
+        microseconds. This applies only if the probe type (pingCtlType)
+        provides one-way delay measurements.  For all other probe types, their
+        values are irrelevant and will return 0."
+    ::= { jnxPingLastTestResultEntry 11 }
+
+jnxPingLastTestResultMinIngressUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The minimum of the ingress trip delays measured for over all probes
+        during the most recently completed test. Measured in microseconds.
+        This applies only if the probe type (pingCtlType) provides
+        one-way delay measurements.  For all other probe types, their
+        values are irrelevant and will return 0."
+    ::= { jnxPingLastTestResultEntry 12 }
+
+jnxPingLastTestResultMaxIngressUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The maximum of the ingress trip delays measured over all probes
+        during the most recently completed test. Measured in microseconds.
+        This applies only if the probe type (pingCtlType) provides
+        one-way delay measurements.  For all other probe types, their
+        values are irrelevant and will return 0."
+    ::= { jnxPingLastTestResultEntry 13 }
+
+jnxPingLastTestResultAvgIngressUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The average of the ingress trip delays measured over all probes
+        during the most recently completed test. Measured in microseconds.
+        This applies only if the probe type (pingCtlType) provides
+        one-way delay measurements.  For all other probe types, their
+        values are irrelevant and will return 0."
+    ::= { jnxPingLastTestResultEntry 14 }
+
+jnxPingLastTestResultStddevIngressUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The standard deviation of the ingress trip delays measured over all
+        probes during the most recently completed test. Measured in
+        microseconds. This applies only if the probe type (pingCtlType)
+        provides one-way delay measurements.  For all other probe types,
+        their values are irrelevant and will return 0."
+    ::= { jnxPingLastTestResultEntry 15 }
+    
+jnxPingLastTestResultPeakToPeakJitterRttUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This indicates the difference  between the min and max delays over 
+        the course of the last completed test. Measured in microseconds."
+    ::= { jnxPingLastTestResultEntry 16 }
+
+jnxPingLastTestResultPeakToPeakJitterEgressUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This indicates the difference  between the min and max egress trip 
+        delays over the course of the last completed test.  Measured in 
+        microseconds. This applies only if the probe type (pingCtlType) provides
+        one-way delay measurements. For all other probe types, their values are
+        irrelevant and will return 0."
+    ::= { jnxPingLastTestResultEntry 17 }
+
+jnxPingLastTestResultPeakToPeakJitterIngressUs OBJECT-TYPE
+    SYNTAX      Unsigned32
+    UNITS       "microseconds"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This indicates the difference  between the min and max ingress trip 
+        delays over the course of the last completed test.  Measured in
+        microseconds. This applies only if the probe type (pingCtlType) provides
+        one-way delay measurements. For all other probe types, their values are
+        irrelevant and will return 0."
+    ::= { jnxPingLastTestResultEntry 18 }
+
+jnxPingLastTestResultTime OBJECT-TYPE
+    SYNTAX      DateAndTime
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Timestamp for when the last test was completed."
+    ::= { jnxPingLastTestResultEntry 19 }
+
 
 --
 -- Notification definitions

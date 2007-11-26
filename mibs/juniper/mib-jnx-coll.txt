@@ -1,7 +1,7 @@
 --
 -- Juniper Enterprise Specific MIB: Collector PIC MIB
 -- 
--- Copyright (c) 2003, Juniper Networks, Inc.
+-- Copyright (c) 2003, 2005-2006, Juniper Networks, Inc.
 -- All rights reserved.
 --
 -- The contents of this document are subject to change without notice.
@@ -704,8 +704,74 @@ JnxCollPicStateDef ::= TEXTUAL-CONVENTION
         DESCRIPTION
             "Provides the current system date and time."
         ::= { jnxCollNotifyVars 13 }
- 
- 
+
+    jnxCollNotifyFromFtpServerInetType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION
+            "Used with jnxCollNotifyFromFtpServerInetAddress to identify
+            a specific FTP server address."
+        ::= { jnxCollNotifyVars 14 }
+
+    jnxCollNotifyFromFtpServerInetAddress OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION
+            "The FTP server address from which the switchover occurs."
+        ::= { jnxCollNotifyVars 15 }
+
+    jnxCollNotifyFromFtpServerType OBJECT-TYPE
+        SYNTAX      INTEGER {
+            primary (1),
+            secondary (2)
+        }
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION
+            "The FTP server Type from which the switchover occurs."
+        ::= { jnxCollNotifyVars 16 }
+
+    jnxCollNotifyToFtpServerInetType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION
+            "Used with jnxCollNotifyToFtpServerInetAddress to identify
+            a specific FTP server address."
+        ::= { jnxCollNotifyVars 17 }
+
+    jnxCollNotifyToFtpServerInetAddress OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION
+            "The FTP server address to which the switchover occurs."
+        ::= { jnxCollNotifyVars 18 }
+
+    jnxCollNotifyToFtpServerType OBJECT-TYPE
+        SYNTAX      INTEGER {
+            primary (1),
+            secondary (2)
+        }
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION
+            "The FTP server Type to which the switchover occurs."
+        ::= { jnxCollNotifyVars 19 }
+
+    jnxCollNotifyInitiatedBy OBJECT-TYPE
+        SYNTAX      INTEGER {
+            cli (1),
+            automatic (2)
+        }
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION
+            "Identify what initiates the FTP switchover."
+        ::= { jnxCollNotifyVars 20 }
+
  
 --
 -- Collector PIC Notification definitions
@@ -808,5 +874,19 @@ JnxCollPicStateDef ::= TEXTUAL-CONVENTION
             cleared."
         ::= { jnxCollNotificationPrefix 7 }
 
+    jnxCollFtpSwitchover NOTIFICATION-TYPE
+        OBJECTS { ifDescr, 
+                  jnxCollNotifyDate,
+                  jnxCollNotifyFromFtpServerInetType,
+                  jnxCollNotifyFromFtpServerInetAddress,
+                  jnxCollNotifyFromFtpServerType,
+                  jnxCollNotifyToFtpServerInetType,
+                  jnxCollNotifyToFtpServerInetAddress,
+                  jnxCollNotifyToFtpServerType,
+                  jnxCollNotifyInitiatedBy }
+        STATUS  current
+        DESCRIPTION
+            "This indicates an FTP server switchover has occurred." 
+        ::= { jnxCollNotificationPrefix 8 }
 
 END

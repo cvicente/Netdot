@@ -1,7 +1,7 @@
 --
 -- Juniper Networks: SNMP Experimental MIB Registry
 -- 
--- Copyright (c) 2003, 2005, Juniper Networks, Inc.
+-- Copyright (c) 2003, 2005-2007, Juniper Networks, Inc.
 -- All rights reserved.
 --
 -- The contents of this document are subject to change without notice.
@@ -16,7 +16,7 @@ IMPORTS
         FROM JUNIPER-SMI;
 
 jnxExperiment MODULE-IDENTITY
-    LAST-UPDATED "200509010000Z" -- Sept 1 00:00:00 2005 UTC
+    LAST-UPDATED "200701080000Z" -- Jan 8 00:00:00 2007 UTC
     ORGANIZATION "Juniper Networks, Inc."
     CONTACT-INFO
             "Juniper Technical Assistance Center
@@ -44,6 +44,9 @@ jnxExperiment MODULE-IDENTITY
     REVISION     "200509010000Z" -- Sept 1 00:00:00 2005 UTC
     DESCRIPTION
             "Added jnxLdapExperiment branch"
+    REVISION     "200701080000Z" -- Jan 8 00:00:00 2007 UTC
+    DESCRIPTION
+            "Added jnxExampleMibRoot branch"
     ::= { juniperMIB 5 }
 
 -- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -66,5 +69,27 @@ jnxLdapExperiment OBJECT-IDENTITY
         "The object identifier used to anchor mibs for the internal juniper ldap
         applications."
     ::= { jnxExperiment 2 }
+
+jnxBfdExperiment OBJECT-IDENTITY
+    STATUS  current
+    DESCRIPTION
+        "The object identifier used to anchor the experimental IETF draft 
+         for the BFD MIB."
+    ::= { jnxExperiment 3 }
+
+jnxOspfv3Experiment OBJECT-IDENTITY
+    STATUS  current
+    DESCRIPTION
+        "The object identifier used to anchor the experimental IETF draft 
+         for the OSPFv3 MIB."
+    ::= { jnxExperiment 4 }
+
+jnxExampleMibRoot OBJECT-IDENTITY
+    STATUS  current
+    DESCRIPTION
+        "This branch anchors mibs used for private, internal sample 
+         implementations."
+    ::= { jnxExperiment 5 }
+
 
 END
