@@ -1257,8 +1257,8 @@ sub fwt_update {
     # Fetch from SNMP if necessary
     my %args;
     $args{intmacs} = $argv{intmacs} if defined $argv{intmacs};
-    my $fwt = $argv{fwt} || $self->_exec_timeout($host, sub { return $self->_get_fwt_from_snmp(%args) });
-    
+    my $fwt = $argv{fwt} || $self->_get_fwt_from_snmp(%args);
+
     unless ( keys %$fwt ){
 	$logger->info("$host: FWT empty");
 	return;	
@@ -2693,6 +2693,11 @@ sub _get_snmp_session {
 		      MibDirs       => \@mibdirs,
 		      );
     
+    # Turn off bulkwalk if we're using Net-SNMP 5.2.3 or 5.3.1.
+    if ( $sinfoargs{BulkWalk} == 1  && ($SNMP::VERSION eq '5.0203' || $SNMP::VERSION eq '5.0301') ) {
+	$logger->info("! Turning off bulkwalk due to buggy Net-SNMP $SNMP::VERSION\n");
+	$sinfoargs{BulkWalk} = 0;
+    }
     my ($sinfo, $layers);
 
     # Try each community
@@ -2849,6 +2854,12 @@ sub _fork_init {
     # MAXPROCS processes for parallel updates
     $logger->debug("Device::_fork_init: Launching up to $MAXPROCS children processes");
     my $pm = Parallel::ForkManager->new($MAXPROCS);
+
+    # Prevent SNMP::Info load mib-init in each forked process
+    my $dummy = SNMP::Info->new( DestHost    => 'localhost',
+				 Version     => 1,
+				 AutoSpecify => 0,
+				 Debug       => 0);
 
     return $pm;
 }
@@ -3101,12 +3112,13 @@ sub _get_fwt_from_snmp {
     # easiest way to append more info later using the same function (see below).
     my %fwt; 
     $logger->debug("$host: Fetching forwarding table");
-    $self->_walk_fwt(sinfo   => $sinfo,
-		     sints   => $sints,
-		     intmacs => $intmacs,
-		     devints => \%devints,
-		     fwt     => \%fwt,
-		     ); 
+    $self->_exec_timeout($host, sub { return $self->_walk_fwt(sinfo   => $sinfo,
+							      sints   => $sints,
+							      intmacs => $intmacs,
+							      devints => \%devints,
+							      fwt     => \%fwt,
+							      ); 
+				  });
     
     # For certain Cisco switches you have to connect to each
     # VLAN and get the forwarding table out of it.
@@ -3155,11 +3167,12 @@ sub _get_fwt_from_snmp {
                 $logger->error("$host: Error getting SNMP session for VLAN: $vlan");
                 next;
             }
-            $self->_walk_fwt(sinfo      => $vlan_sinfo,
-			     sints      => $sints,
-			     intmacs    => $intmacs,
-			     devints    => \%devints,
-			     fwt        => \%fwt);
+            $self->_exec_timeout($host, sub { return $self->_walk_fwt(sinfo      => $vlan_sinfo,
+								      sints      => $sints,
+								      intmacs    => $intmacs,
+								      devints    => \%devints,
+								      fwt        => \%fwt);
+					  });
         }
     }
 	    
