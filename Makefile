@@ -88,6 +88,7 @@ testdeps:
 	perl -M'Apache2::SiteControl 1.0' -e 1
 	perl -M'Log::Dispatch' -e 1
 	perl -M'Log::Log4perl' -e 1
+	perl -M'Parallel::ForkManager' -e 1
 	if [ `whoami` != root ]; then \
 	   echo "You're not root; this may fail" ; \
 	fi
