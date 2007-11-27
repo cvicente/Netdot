@@ -484,15 +484,21 @@ sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
     my $class = ref($self);
+    my @changed_keys;
     if ( $argv ){
 	$class->_adjust_vals($argv);
-	$self->set( %$argv );
+	foreach my $col ( keys %$argv ){
+	    my $val = $argv->{$col};
+	    if ( $self->$col ne $val ){
+		$self->set($col=>$val);
+		push @changed_keys, $col;
+	    }
+	}
     }
 
-    my @changed_keys;
     my $id = $self->id;
     my $res;
-    if ( @changed_keys = $self->is_changed() ){
+    if ( @changed_keys ){
 	eval {
 	    $res = $self->SUPER::update();
 	};
