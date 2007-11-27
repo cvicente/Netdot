@@ -2729,8 +2729,8 @@ sub _get_snmp_session {
     }
     
     unless ( defined $sinfo ){
-	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s community '%s'\n", 
-				  $sinfoargs{DestHost}, $sinfoargs{Community}));
+	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
+				  $sinfoargs{DestHost}, (join ', ', @{$argv{communities}}) ));
     }
 
     # Save SNMP::Info class if we are an object
@@ -2958,8 +2958,8 @@ sub _snmp_update_list {
     }
     foreach my $dev ( values %do_devs ){
 	unless ( $dev->canautoupdate ){
-	    $logger->debug("%s excluded from auto-updates. Skipping", 
-			   $dev->fqdn);
+	    $logger->debug(sprintf("%s excluded from auto-updates. Skipping", 
+			   $dev->fqdn));
 	    next;
 	}
 	# FORK
@@ -3294,10 +3294,14 @@ sub _exec_timeout {
 	alarm(0);
     };
     if ( my $e = $@ ){
+	my $msg;
 	if ( $e =~ /timeout/ ){
-	    $logger->error("Device $host timed out ($TIMEOUT sec)\n");
+	    $msg = "Device $host timed out ($TIMEOUT sec)\n";
+	    # Throw 
+	    $class->throw_user($msg);
+	}else{
+	    $class->throw_user("$e\n");
 	}
-	return;
     }
     wantarray ? @result : $result[0];
 }
