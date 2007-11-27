@@ -12,6 +12,8 @@ use Netdot::Util::Misc;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
 use Log::Log4perl::Level;
+#use Devel::Profiler bad_pkgs => [qw(UNIVERSAL Time::HiRes B Carp Exporter Cwd Config CORE DynaLoader XSLoader AutoLoader
+#					DBD::_::st DBD::_::db DBD::st DBD::db DBI::st DBI::db DBI::dr)];
 
 # Variables that will hold given values
 my ($host, $block, $db, $file);

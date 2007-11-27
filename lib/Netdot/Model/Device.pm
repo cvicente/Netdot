@@ -1527,8 +1527,8 @@ sub update_bgp_peering {
     }
     if ( $p ){
 	# Update in case anything has changed
-	$p->update(\%pstate);
-	$logger->debug(sprintf("%s: Updated Peering with: %s. ", $host, $entity->name));
+	my $r = $p->update(\%pstate);
+	$logger->debug(sprintf("%s: Updated Peering with: %s. ", $host, $entity->name)) if $r;
 	
     }else{
 	# Peering Doesn't exist.  Create.
@@ -1795,9 +1795,6 @@ sub snmp_update {
 				 ipv4_changed => \$ipv4_changed,
 				 ipv6_changed => \$ipv6_changed,
 				 );
-		
-		$logger->debug(sprintf("%s: Interface %s (%s) updated", 
-				       $host, $if->number, $if->name));
 		
 		# Remove this interface from list to delete
 		delete $oldifs{$if->id} if exists $oldifs{$if->id};  

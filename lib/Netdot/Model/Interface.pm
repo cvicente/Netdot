@@ -197,7 +197,7 @@ sub snmp_update {
 		# and reference it from this Interface
 		$physaddr->update({last_seen=>$self->timestamp});
 		$logger->debug(sprintf("%s: Interface %s (%s) has existing PhysAddr: %s",
-				       $self->device->fqdn, $self->number, $self->name, $addr ));
+				       $host, $self->number, $self->name, $addr ));
 	    }else{
 		# address is new.  Add it
 		$physaddr = PhysAddr->insert({ address => $addr }); 
@@ -214,8 +214,11 @@ sub snmp_update {
     ############################################
     # Update
 
-    $self->update( \%iftmp );
+    my $r = $self->update( \%iftmp );
+    $logger->debug(sprintf("%s: Interface %s (%s) updated", 
+			   $host, $self->number, $self->name)) if $r;
     
+
     ##############################################
     # Update VLANs
     #
@@ -238,8 +241,8 @@ sub snmp_update {
 		# (ignore default vlan 1)
 		if ( defined $vdata{name} && defined $vo->name && 
 		     $vdata{name} ne $vo->name && $vo->vid ne "1" ){
-		    $vo->update(\%vdata);
-		    $logger->debug(sprintf("%s: VLAN %s name updated: %s", $host, $vo->vid, $vo->name));		
+		    my $r = $vo->update(\%vdata);
+		    $logger->debug(sprintf("%s: VLAN %s name updated: %s", $host, $vo->vid, $vo->name)) if $r;
 		}
 	    }else{
 		# create
