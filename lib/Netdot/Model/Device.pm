@@ -1687,7 +1687,7 @@ sub snmp_update {
 	my $subs_inherit_default = $self->config->get('SUBNET_INHERIT_DEV_INFO');
 	
 	# Then check what was passed
-	my $add_subnets   = ( $info->{type} eq "Router" && defined($argv{add_subnets}) ) ? 
+	my $add_subnets   = ( defined($info->{type}) && $info->{type} eq "Router" && defined($argv{add_subnets}) ) ? 
 	    $argv{add_subnets} : $add_subnets_default;
 	my $subs_inherit = ( $add_subnets && defined($argv{subs_inherit}) ) ? 
 	    $argv{subs_inherit} : $subs_inherit_default;
