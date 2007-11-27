@@ -160,11 +160,13 @@ if ( $host ){
     }
     if ( $FWT ){
 	$dev ||= Device->search(name=>$host)->first;
+	die "Error: Could not find $host in database\n" unless $dev;
 	$dev->fwt_update();
     }
     if ( $ARP ){
 	$dev ||= Device->search(name=>$host)->first;
-	$dev->arp_update();	
+	die "Error: Could not find $host in database\n" unless $dev;
+	$dev->arp_update();
     }
 }elsif ( $block ){
     $logger->info("Updating all devices in block: $block");
