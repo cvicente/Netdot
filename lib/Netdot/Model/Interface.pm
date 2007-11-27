@@ -196,8 +196,6 @@ sub snmp_update {
 		# Make sure to update the timestamp
 		# and reference it from this Interface
 		$physaddr->update({last_seen=>$self->timestamp});
-		$logger->debug(sprintf("%s: Interface %s (%s) has existing PhysAddr: %s",
-				       $host, $self->number, $self->name, $addr ));
 	    }else{
 		# address is new.  Add it
 		$physaddr = PhysAddr->insert({ address => $addr }); 
@@ -254,8 +252,6 @@ sub snmp_update {
 	    my %ivtmp = ( interface => $self->id, vlan => $vo->id );
 	    my $iv;
 	    if  ( $iv = InterfaceVlan->search( \%ivtmp )->first ){
-		$logger->debug(sprintf("%s: Interface %s (%s) already member of vlan %s", 
-				       $host, $self->number, $self->name, $vo->vid));
 		delete $oldvlans{$iv->id};
 	    }else {
 		# insert
