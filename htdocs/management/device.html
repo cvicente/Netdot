@@ -290,10 +290,22 @@ push( @cell_data,
       }}
 );
 
-my @fields = ('serialnumber','date_installed','last_updated', 'product','inventorynumber','sysdescription', 'os', 'layers');
+my @fields = ('serialnumber','date_installed','last_updated', 'product','inventorynumber','sysdescription', 'os');
 my @linkpages = ('', 'view.html', '', 'view.html', 'view.html', '', '' );
 $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, 
 		   cell_data=>\@cell_data, linkpages=>\@linkpages);
+
+
+push( @field_headers, $ui->col_descr_link('Device', 'layers', 'Layers:') );
+push( @cell_data, 
+      &{sub{	
+	  my @layers;
+	  if ( @layers = $o->list_layers ){
+	      sprintf("%s", ( join ', ', @layers));
+	  }
+      }}
+);
+
 </%perl>
 
 <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, 

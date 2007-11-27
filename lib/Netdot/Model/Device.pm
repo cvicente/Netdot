@@ -1142,6 +1142,27 @@ sub has_layer {
     return substr($layers,8-$layer, 1);
 }
 
+############################################################################
+=head2 list_layers - Return a list of active OSI layers
+    
+  Arguments:
+    None
+  Returns:
+    Array of scalars
+  Examples:
+    $device->list_layers();
+
+=cut
+sub list_layers {
+    my ($self) = @_;
+    $self->isa_object_method('list_layers');
+    my @layers;
+    for ( my($i)=1; $i<=8; $i++ ){
+	push @layers, $i if ( $self->has_layer($i) );
+    }
+    return @layers;
+}
+
 #########################################################################
 =head2 arp_update - Update ARP cache in DB
     
