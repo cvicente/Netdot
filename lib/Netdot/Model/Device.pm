@@ -2660,12 +2660,15 @@ sub _get_snmp_session {
 		$argv{host} = $self->fqdn;
 	    }
 	}
-	$self->throw_user("Could not determine IP nor hostname for Device id: %d", $self->id)
+	$self->throw_user(sprintf("Could not determine IP nor hostname for Device id: %d", $self->id))
 	    unless $argv{host};
 
 	$argv{version}  ||= $self->snmp_version;
 	$argv{bulkwalk} ||= $self->snmp_bulk;
 	
+    }else{
+	$self->throw_fatal("Missing required arguments: host")
+	    unless $argv{host};
     }
     
     # If we still don't have any communities, get defaults from config file
