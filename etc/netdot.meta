@@ -5729,6 +5729,7 @@ $meta = {
         length => '',
         linksto => {
           cascade => 'Delete',
+          order_by => 'number',
           method => 'stp_instances',
           table => 'Device'
         },
@@ -5756,7 +5757,13 @@ $meta = {
         default => '',
         description => 'Root port for this STP instance',
         length => '',
-        nullable => 1,
+        linksto => {
+          cascade => 'Delete',
+          order_by => 'number',
+          method => 'stp_instances',
+          table => 'Interface'
+        },
+        nullable => 0,
         tag => 'Root Port',
         type => 'integer'
       },

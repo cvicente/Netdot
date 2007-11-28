@@ -440,7 +440,10 @@ sub get_snmp_info {
 
     if ( defined $dev{physaddr} ){
 	# Check Spanning Tree stuff
-	$dev{stp_type} = $sinfo->stp_ver();
+	$dev{stp_type}          = $sinfo->stp_ver();
+	$dev{stp_root}          = $sinfo->stp_root();
+	$dev{stp_root_port}     = $sinfo->dot1dStpRootPort();
+	$dev{stp_root_priority} = $sinfo->dot1dStpPriority();
     }
 
     $dev{sysname}        = $sinfo->name();
@@ -1686,8 +1689,53 @@ sub snmp_update {
     $devtmp{stp_type}    = $info->{stp_type};
     $devtmp{stp_enabled} = 1 if ( defined $info->{stp_type} && $info->{stp_type} ne 'unknown' );
     if ( $devtmp{stp_enabled} ){
-	$logger->debug(sprintf("%s: Spanning Tree is enabled", $host));
-	$logger->debug(sprintf("%s: Spanning Tree type is: %s", $host, $devtmp{stp_type}));
+	$logger->debug(sprintf("%s: STP is enabled", $host));
+	$logger->debug(sprintf("%s: STP type is: %s", $host, $devtmp{stp_type}));
+	
+        if ( $devtmp{stp_type} eq 'ieee8021d' ){
+	    # We'll do instance 0 for standard STP
+	    if ( defined $info->{stp_root} ){
+		my $stpinst;
+		my %args = (device=>$self, number=>0);
+		unless ( $stpinst = STPInstance->search(%args)->first ){
+		    $stpinst = STPInstance->insert(\%args);
+		    $logger->info("STP Instance 0 created");
+		}
+		# update arguments for this instance
+		my %uargs;
+
+		# Get the actual MAC address (first 2 octets are priority)
+		my $root_bridge = substr($info->{stp_root}, 4, 12);
+		if ( defined $stpinst->root_bridge && ($root_bridge ne $stpinst->root_bridge) ){
+		    $logger->warn(sprintf("%s: STP instance %s: Root Bridge changed: %s -> %s", 
+					  $host, $stpinst->number, $stpinst->root_bridge, $root_bridge));
+		    $uargs{root_bridge} = $root_bridge;
+		}
+		
+		# Convert the ifIndex value into an Interface id
+		my $root_p_ifindex = $info->{stp_root_port};
+		my $int = Interface->search(device=>$self, number=>$root_p_ifindex)->first;
+		$int = 0 unless defined $int;
+		if ( defined $stpinst->root_port && (int($int) != $stpinst->root_port) ){
+		    $logger->warn(sprintf("%s: STP instance %s: Root Port has changed: %s -> %s", 
+					  $host, $stpinst->number, $stpinst->root_port, $int));
+		    $uargs{root_port} = $int;
+		}
+		# Finally, just get the priority
+		$uargs{root_bridge_priority} = $info->{stp_root_priority};
+
+		# Update the instance
+		$stpinst->update(\%uargs);
+	    }else{
+		$logger->debug("$host: Spanning Tree Designated Root not defined");
+	    }
+	}
+    }else{
+	# Remove any existing STP instances
+	foreach my $i ( $self->stp_instances ){
+	    $logger->info(sprintf("Removing STP instance %s", $i->number));
+	    $i->delete();
+	}
     }
 
     # Update Device object
@@ -2779,6 +2827,7 @@ sub _get_snmp_session {
     $munge->{'i_mac'}                          = sub{ return $self->_oct2hex(@_) };
     $munge->{'fw_mac'}                         = sub{ return $self->_oct2hex(@_) };
     $munge->{'mac'}                            = sub{ return $self->_oct2hex(@_) };
+    $munge->{'stp_root'}                       = sub{ return $self->_oct2hex(@_) };
     $munge->{'at_paddr'}                       = sub{ return $self->_oct2hex(@_) };
     $munge->{'rptrAddrTrackNewLastSrcAddress'} = sub{ return $self->_oct2hex(@_) };
     $munge->{'airespace_ap_mac'}               = sub{ return $self->_oct2hex(@_) };
