@@ -30,9 +30,9 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::C1900;
-$VERSION = '1.05';
+$VERSION = '1.07';
 
-# $Id: C1900.pm,v 1.24 2007/11/04 02:51:35 jeneric Exp $
+# $Id: C1900.pm,v 1.25 2007/11/26 04:24:51 jeneric Exp $
 use strict;
 
 use Exporter;

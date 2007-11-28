@@ -1,6 +1,6 @@
 # SNMP::Info::CiscoRTT
 # Alexander Hartmaier <alexander.hartmaier@t-systems.at>
-# $Id: CiscoRTT.pm,v 1.5 2006/11/15 19:38:20 jeneric Exp $
+# $Id: CiscoRTT.pm,v 1.6 2007/11/26 04:24:50 jeneric Exp $
 #
 # Copyright (c) 2005 Alexander Hartmaier
 #
@@ -30,7 +30,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoRTT;
-$VERSION = '1.05';
+$VERSION = '1.07';
 
 use strict;
 

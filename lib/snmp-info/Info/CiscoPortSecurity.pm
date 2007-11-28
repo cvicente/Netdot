@@ -27,8 +27,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoPortSecurity;
-$VERSION = '1.05';
-# $Id: CiscoPortSecurity.pm,v 1.1 2006/10/03 02:56:36 jeneric Exp $
+$VERSION = '1.07';
+# $Id: CiscoPortSecurity.pm,v 1.2 2007/11/26 04:24:50 jeneric Exp $
 
 use strict;
 

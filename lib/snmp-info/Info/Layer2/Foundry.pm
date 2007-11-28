@@ -26,8 +26,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::Foundry;
-$VERSION = '1.05';
-# $Id: Foundry.pm,v 1.8 2007/06/11 00:54:20 jeneric Exp $
+$VERSION = '1.07';
+# $Id: Foundry.pm,v 1.9 2007/11/26 04:24:51 jeneric Exp $
 
 use strict;
 

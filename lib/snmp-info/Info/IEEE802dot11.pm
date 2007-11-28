@@ -1,6 +1,6 @@
 # SNMP::Info::IEEE802dot11
 # Eric Miller
-# $Id: IEEE802dot11.pm,v 1.3 2006/11/18 00:23:24 fenner Exp $
+# $Id: IEEE802dot11.pm,v 1.4 2007/11/26 04:24:50 jeneric Exp $
 #
 # Copyright (c) 2006 Eric Miller
 #
@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::IEEE802dot11;
-$VERSION = '1.05';
+$VERSION = '1.07';
 use strict;
 
 use Exporter;

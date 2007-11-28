@@ -26,13 +26,13 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::NetSNMP;
-# $Id: NetSNMP.pm,v 1.3 2007/06/13 02:52:43 jeneric Exp $
+# $Id: NetSNMP.pm,v 1.4 2007/11/26 04:24:52 jeneric Exp $
 
 use Exporter;
 use SNMP::Info::Layer3;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
-$VERSION = '1.05';
+$VERSION = '1.07';
 @SNMP::Info::Layer3::NetSNMP::ISA = qw/SNMP::Info::Layer3 Exporter/;
 @SNMP::Info::Layer3::NetSNMP::EXPORT_OK = qw//;
 

@@ -31,8 +31,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoStats;
-$VERSION = '1.05';
-# $Id: CiscoStats.pm,v 1.17 2007/04/05 02:46:54 jeneric Exp $
+$VERSION = '1.07';
+# $Id: CiscoStats.pm,v 1.18 2007/11/26 04:24:50 jeneric Exp $
 
 use strict;
 

@@ -30,8 +30,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer1::Allied;
-$VERSION = '1.05';
-# $Id: Allied.pm,v 1.16 2006/11/18 00:23:25 fenner Exp $
+$VERSION = '1.07';
+# $Id: Allied.pm,v 1.17 2007/11/26 04:24:51 jeneric Exp $
 use strict;
 
 use Exporter;

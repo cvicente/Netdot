@@ -29,9 +29,9 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoQOS;
-$VERSION = '1.05';
+$VERSION = '1.07';
 
-# $Id: CiscoQOS.pm,v 1.8 2007/06/19 01:52:32 jeneric Exp $
+# $Id: CiscoQOS.pm,v 1.9 2007/11/26 04:24:50 jeneric Exp $
 use strict;
 
 use Exporter;

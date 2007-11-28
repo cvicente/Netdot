@@ -26,13 +26,13 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Juniper;
-# $Id: Juniper.pm,v 1.10 2007/08/13 12:52:05 fenner Exp $
+# $Id: Juniper.pm,v 1.11 2007/11/26 04:24:52 jeneric Exp $
 
 use Exporter;
 use SNMP::Info::Layer3;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
-$VERSION = '1.05';
+$VERSION = '1.07';
 @SNMP::Info::Layer3::Juniper::ISA = qw/SNMP::Info::Layer3 Exporter/;
 @SNMP::Info::Layer3::Juniper::EXPORT_OK = qw//;
 

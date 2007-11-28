@@ -1,6 +1,6 @@
 # SNMP::Info::SONMP
 # Eric Miller
-# $Id: SONMP.pm,v 1.9 2007/04/06 02:10:58 jeneric Exp $
+# $Id: SONMP.pm,v 1.10 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller, Max Baker
 #
@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::SONMP;
-$VERSION = '1.05';
+$VERSION = '1.07';
 
 use strict;
 

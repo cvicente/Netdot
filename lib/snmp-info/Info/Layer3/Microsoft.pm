@@ -24,8 +24,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Microsoft;
-$VERSION = '1.05';
-# $Id: Microsoft.pm,v 1.1 2007/06/11 02:38:53 jeneric Exp $
+$VERSION = '1.07';
+# $Id: Microsoft.pm,v 1.2 2007/11/26 04:24:52 jeneric Exp $
 
 use Exporter;
 use SNMP::Info::Layer3;

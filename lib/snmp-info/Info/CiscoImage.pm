@@ -1,5 +1,5 @@
 package SNMP::Info::CiscoImage;
-#$Id: CiscoImage.pm,v 1.6 2006/11/15 19:38:20 jeneric Exp $
+#$Id: CiscoImage.pm,v 1.7 2007/11/26 04:24:50 jeneric Exp $
 
 # Copyright (c) 2005 Matt Tuttle
 #
@@ -32,7 +32,7 @@ use Exporter;
 use SNMP::Info;
 
 use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
-$VERSION = '1.05';
+$VERSION = '1.07';
 
 @SNMP::Info::CiscoImage::ISA = qw/SNMP::Info Exporter/;
 @SNMP::Info::CiscoImage::EXPORT_OK = qw//;

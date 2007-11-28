@@ -1,6 +1,6 @@
 # SNMP::Info::Layer2::NAP222x
 # Eric Miller
-# $Id: NAP222x.pm,v 1.10 2006/11/18 00:23:25 fenner Exp $
+# $Id: NAP222x.pm,v 1.11 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller
 #
@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::NAP222x;
-$VERSION = '1.05';
+$VERSION = '1.07';
 use strict;
 
 use Exporter;

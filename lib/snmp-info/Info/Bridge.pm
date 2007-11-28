@@ -32,8 +32,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Bridge;
-$VERSION = '1.05';
-# $Id: Bridge.pm,v 1.26 2007/11/04 05:01:42 jeneric Exp $
+$VERSION = '1.07';
+# $Id: Bridge.pm,v 1.27 2007/11/26 04:24:50 jeneric Exp $
 
 use strict;
 
@@ -109,9 +109,9 @@ use vars qw/$VERSION $DEBUG %MIBS %FUNCS %GLOBALS %MUNGE $INIT/;
           'b_mac'        => \&SNMP::Info::munge_mac,
           'fw_mac'       => \&SNMP::Info::munge_mac,
           'bs_mac'       => \&SNMP::Info::munge_mac,
-          'stp_root'     => \&SNMP::Info::munge_mac,
-          'stp_p_root'   => \&SNMP::Info::munge_mac,
-          'stp_p_bridge' => \&SNMP::Info::munge_mac,
+          'stp_root'     => \&SNMP::Info::munge_prio_mac,
+          'stp_p_root'   => \&SNMP::Info::munge_prio_mac,
+          'stp_p_bridge' => \&SNMP::Info::munge_prio_mac,
           'stp_p_port'   => \&SNMP::Info::munge_mac
          );
 

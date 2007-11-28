@@ -6,10 +6,10 @@
 # All rights reserved.  
 #
 # See COPYRIGHT at bottom
-# $Id: Info.pm,v 1.123 2007/11/19 04:25:17 jeneric Exp $
+# $Id: Info.pm,v 1.124 2007/11/27 03:17:36 jeneric Exp $
 
 package SNMP::Info;
-$VERSION = '1.05';
+$VERSION = '1.07';
 use strict;
 
 use Exporter;
@@ -29,7 +29,7 @@ SNMP::Info - Object Oriented Perl5 Interface to Network devices and MIBs through
 
 =head1 VERSION
 
-SNMP::Info - Version 1.05
+SNMP::Info - Version 1.07
 
 =head1 AUTHOR
 
@@ -2218,6 +2218,21 @@ sub munge_mac {
     return undef unless length $mac;
     $mac = join(':',map { sprintf "%02x",$_ } unpack('C*',$mac));
     return $mac if $mac =~ /^([0-9A-F][0-9A-F]:){5}[0-9A-F][0-9A-F]$/i;
+    return undef;
+}
+
+=item munge_prio_mac()
+
+Takes an 8-byte octet stream (HEX-STRING) and returns a colon separated ASCII hex string.
+
+=cut
+
+sub munge_prio_mac {
+    my $mac = shift;
+    return undef unless defined $mac;
+    return undef unless length $mac;
+    $mac = join(':',map { sprintf "%02x",$_ } unpack('C*',$mac));
+    return $mac if $mac =~ /^([0-9A-F][0-9A-F]:){7}[0-9A-F][0-9A-F]$/i;
     return undef;
 }
 

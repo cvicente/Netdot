@@ -28,8 +28,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::ZyXEL_DSLAM;
-$VERSION = '1.04';
-# $Id: ZyXEL_DSLAM.pm,v 1.9 2006/11/18 00:23:25 fenner Exp $
+$VERSION = '1.07';
+# $Id: ZyXEL_DSLAM.pm,v 1.10 2007/11/26 04:24:51 jeneric Exp $
 use strict;
 
 use Exporter;

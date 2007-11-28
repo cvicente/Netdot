@@ -4,7 +4,7 @@
 # This file is meant to detail the cababilities
 # of network devices to supply data via SNMP.  
 
-# $Id: DeviceMatrix.txt,v 1.30 2007/06/12 03:18:20 jeneric Exp $
+# $Id: DeviceMatrix.txt,v 1.31 2007/11/27 03:00:25 jeneric Exp $
 
 # Airespace (pre-Cisco)
 device-vendor: Airespace
@@ -14,24 +14,25 @@ macsuck: yes
 portmac: yes
 duplex: both
 vlan: yes
+modules: yes
+class: Layer2::Airespace
 note: Uses proprietary MIBs to provide MAC to port mapping.  APs appear as switch ports.
 note: Device will only communicate with SNMP version configured in the controller.
 
 device-family: Airespace Wireless Controllers
-class: Layer2::Airespace
 
 device: 3500, 4101, 4102
 
 # Allied
 device-vendor: Allied Telesyn
 cdp:no
-
-device-family: Allied Hubs
 class: Layer1::Allied
 ver: 1
 arpnip: no
 macsuck: no
 duplex: no
+
+device-family: Allied Hubs
 
 device: AT-3624T
 
@@ -42,8 +43,6 @@ macsuck: yes
 
 # Aruba
 device-vendor: Aruba
-
-device-family: Aruba Wireless Controllers
 arpnip: no
 macsuck: yes
 portmac: yes
@@ -51,17 +50,19 @@ duplex: no
 class: Layer2::Aruba
 note: Uses proprietary MIBs to provide MAC to port mapping.  APs appear as switch ports.
 
+device-family: Aruba Wireless Controllers
+
 device: 5000
 
 # Asante
 device-vendor: Asante
-
-device-family: Asante Hubs
 class: Layer1::Asante
 ver: 1
 arpnip: no
 macsuck: no
 duplex: no
+
+device-family: Asante Hubs
 
 device: 1012
 
@@ -73,6 +74,7 @@ note: See Nortel
 device-vendor: Cisco
 cdp: yes
 ver: 2
+modules: yes
 note: Error in CISCO-TC-MIB. See README for how to patch.
 
 device-family: Aironet
@@ -109,17 +111,9 @@ arpnip: yes
 ver: 1
 class: Layer3::Cisco
 
-device: 2501
+device: 2501,2503,2511,2514
 
-device: 2503
-
-device: AS2509RJ
-
-device: AS2511RJ
-
-device: 2511
-
-device: 2514
+device: AS2509RJ,AS2511RJ
 
 device-family: 2600
 duplex: link
@@ -127,13 +121,19 @@ arpnip: yes
 macsuck: yes
 class: Layer3::Cisco
 
-device:2610,2610XM,2611,2620,2620XM,2621
-
-device:2621XM
+device:2610,2610XM,2611,2620,2620XM,2621,2621XM
 
 device:2651XM
 
 device:2691
+
+device-family: 2800
+duplex: link
+arpnip: yes
+macsuck: yes
+class: Layer3::Cisco
+
+device: 2811,2821,2851
 
 device-family: 3600
 class: Layer3::Cisco
@@ -315,11 +315,7 @@ note: !Macsuck not working?
 device: wsc5000
 note: !Has nasty tendency to not give you all SNMP data ,flaky for some older Catalyst versions.
 
-device: wsc5505
-
-device: wsc5509
-
-device: wsc5500
+device: wsc5500,wsc5505,wsc5509
 
 device: wsx5302
 arpnip: yes
@@ -390,6 +386,7 @@ macsuck: yes
 duplex: both
 vlan: yes
 cdp: no
+modules: yes
 class: Layer3::Dell
 
 device-family: Dell PowerConnect 6000 Series
@@ -402,16 +399,36 @@ device: 5324
 device-family: Dell PowerConnect 3000 Series
 device: 3348, 3448P, 3424, 3424P
 
+# Enterasys
+device-vendor: Enterasys Networks
+arpnip: yes
+macsuck: yes
+duplex: both
+vlan: yes
+cdp: yes
+modules: yes
+class: Layer3::Enterasys
+
+device-family: SuperStack C-Series
+
+device: C3G124-24, C3G124-48
+device: C2G124-24, C2G124-48
+
+device-family: Matrix
+
+device: Matrix N-Series DFE
+
 # Extreme
 device-vendor: Extreme Networks
-
-device-family: Alpine and Summit
 arpnip: yes
 macsuck: yes
 duplex: both
 vlan: yes
 cdp: no
+modules: yes
 class: Layer3::Extreme
+
+device-family: Alpine and Summit
 
 device: Alpine 3808
 device: Summit 7i, 48si
@@ -420,6 +437,7 @@ device: Summit 7i, 48si
 device-vendor: Foundry Networks
 note: CDP --> FDP.
 vlan: yes
+modules: no
 
 device-family: FastIron
 class: Layer3::Foundry
@@ -445,13 +463,15 @@ note: FDP enabled.
 duplex: yes
 macsuck: yes
 arpnip: yes
-device:FWSX424 
-device:SI400 Router
+device: FWSX424 
+device: ServerIronGT
+device: FLS624, FLS648
 
 # HP
 device-vendor: HP
 class:  Layer2::HP
 ver: 2
+modules: yes
 
 device-family: HP ProCurve
 duplex: both
@@ -506,13 +526,14 @@ device:  BSD routers
 
 # NORTEL
 device-vendor: Nortel
+macsuck: yes
+cdp: proprietary
 note: CDP --> SONMP.
 
 device-family: BayStack Hub
-macsuck: yes
 duplex: both
-cdp: proprietary
 ver: 1
+modules: yes
 class: Layer1::Bayhub
 note: Uses proprietary MIBs to provide MAC to port mapping.
 note: !Requires Advanced or Advanced Analyzer NMM
@@ -522,11 +543,10 @@ device: 102
 device: System 5000
 
 device-family: Ethernet Switch/Baystack Switch
-arpnip: no
 macsuck: yes
 duplex: both
 vlan: write
-cdp: proprietary
+modules: yes
 class: Layer2::Baystack
 
 device: 303,304
@@ -549,20 +569,30 @@ device: BPS
 
 device-family: Ethernet Routing Switch/Baystack Switch
 arpnip: yes
-macsuck: yes
 duplex: write
 vlan: write
-cdp: proprietary
+modules: yes
 class: Layer2::Baystack
 
 device: 3510
 
+device: 2526,2550
+
+device: 4524,4526,4548,4550
+
 device: 5510,5520,5530
 
+device-family: Business Ethernet Switch
+arpnip: yes
+duplex: write
+vlan: write
+modules: yes
+class: Layer2::Baystack
+
+device: 50,110,120,210,220,1010,1020 
+
 device-family: Centillion
-macsuck: yes
 duplex: both
-cdp: proprietary
 vlan: yes
 class: Layer2::Centillion
 note: !Must be on version 4.x or 5.x (VLAN based) software.
@@ -576,58 +606,39 @@ device: C100
 device: C50
 
 device-family: AP222x
-macsuck: yes
 duplex: both
-cdp: proprietary
+modules: no
 class: Layer2::NAP222x
 note: !Upgrade to version 1.3 or higher.
 note: Sends out topology packets if enabled but does not build neighbor table.
 
-device: AP-2220
-
-device: AP-2221
+device: AP-2220, AP-2221
 
 device-family: Alteon AD
 arpnip: yes
-macsuck: yes
 duplex: both
 cdp: no
 vlan: yes
+modules: no
 class: Layer3::AlteonAD
 note: !Some versions have issues with continuous SNMP polling. Upgrade to 10.0.30.7 or higher.
 
-device: AD2
+device: AD2,AD3,AD4
 
-device: AD3
-
-device: AD4
-
-device: 180
-
-device: 183
-
-device: 184
+device: 180,183,184
 
 device-family: Multiprotocol Router/BayRS
 arpnip: yes
-macsuck: yes
 portmac: yes
 duplex: both
 cdp: no
 vlan: yes
+modules: yes
 class: Layer3::BayRS
 
-device: AN
+device: AN,ARN,ASN,BLN,BCN
 
-device: ARN
-
-device: ASN
-
-device: BLN
-
-device: Passport 2430
-
-device: Passport 5430
+device: 2430,5430
 
 device-family: VPN Router/Contivity
 arpnip: yes
@@ -635,13 +646,14 @@ macsuck: no
 portmac: yes
 duplex: no
 cdp: no
+modules: yes
 class: Layer3::Contivity
 
 device: 100,400,600
 
 device: 1000,1010,1050
 
-device: 1500,1600,1700,1740
+device: 1500,1600,1700,1740,1750
 
 device: 2500,2600,2700
 
@@ -654,6 +666,7 @@ portmac: yes
 duplex: write
 cdp: proprietary
 vlan: write
+modules: yes
 class: Layer3::Passport
 note: !8600 Code versions < 3.2 vlan based mac-suck and are unsupported.  Upgrade code.
 note: !8600 3.2 code versions < 3.2.2.2 have Bridge MIB loop.  Upgrade code.
@@ -707,6 +720,7 @@ macsuck: yes
 portmac: yes
 duplex: both
 cdp: proprietary
+modules: yes
 class: Layer2::N2270
 note: Uses proprietary MIBs to provide MAC to port mapping.  APs appear as switch ports.
 
@@ -714,18 +728,14 @@ device: 2270
 
 # Proxim
 device-vendor: Proxim
-
-device-family: Orinoco
 macsuck: yes
 duplex: no
 cdp: no
 class: Layer2::Orinoco
 
-device: AP-1000
+device-family: Orinoco
 
-device: AP-2000
-
-device: AP-4000
+device: AP-1000,AP-2000,AP-4000
 
 device: WavePOINT-II
 

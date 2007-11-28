@@ -1,5 +1,5 @@
 # SNMP::Info::RapidCity
-# $Id: RapidCity.pm,v 1.12 2007/11/19 02:50:42 jeneric Exp $
+# $Id: RapidCity.pm,v 1.13 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller, Max Baker
 #
@@ -27,7 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::RapidCity;
-$VERSION = '1.05';
+$VERSION = '1.07';
 use strict;
 
 use Exporter;

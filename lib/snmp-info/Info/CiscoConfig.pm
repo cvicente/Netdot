@@ -1,6 +1,6 @@
 # SNMP::Info::CiscoConfig
 # Justin Hunter, Eric Miller
-# $Id: CiscoConfig.pm,v 1.3 2006/11/18 00:23:24 fenner Exp $
+# $Id: CiscoConfig.pm,v 1.4 2007/11/26 04:24:50 jeneric Exp $
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -26,7 +26,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoConfig;
-$VERSION = 1.05;
+$VERSION = '1.07';
 
 use strict;
 

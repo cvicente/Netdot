@@ -30,8 +30,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::EtherLike;
-$VERSION = '1.05';
-# $Id: EtherLike.pm,v 1.15 2007/06/13 02:52:21 jeneric Exp $
+$VERSION = '1.07';
+# $Id: EtherLike.pm,v 1.16 2007/11/26 04:24:50 jeneric Exp $
 
 use strict;
 

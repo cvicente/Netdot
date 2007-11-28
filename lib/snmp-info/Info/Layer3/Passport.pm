@@ -1,6 +1,6 @@
 # SNMP::Info::Layer3::Passport
 # Eric Miller
-# $Id: Passport.pm,v 1.26 2007/11/19 02:59:31 jeneric Exp $
+# $Id: Passport.pm,v 1.28 2007/11/26 04:24:52 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller, Max Baker
 # All rights reserved.
@@ -29,7 +29,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Passport;
-$VERSION = '1.05';
+$VERSION = '1.07';
 
 use strict;
 
@@ -623,10 +623,10 @@ sub e_class {
         if ($iid == 1) {
             $rc_e_class{$iid} = 'chassis';
         }
-        elsif ($iid =~/^9/) {
+        elsif ($iid =~/^9(\d)/ and length $iid > 5) {
             $rc_e_class{$iid} = 'powerSupply';
         }
-        elsif ($iid =~/00$/) {
+        elsif ($iid =~/0000$/) {
             $rc_e_class{$iid} = 'container';
         }    
         else {
@@ -665,7 +665,7 @@ sub e_descr {
             my $type = $rc_c_t->{$idx};
             next unless $type;
             my $index = "$idx"."0000";
-            $rc_e_descr{$index} = "slot"."$idx";
+            $rc_e_descr{$index} = "Slot "."$idx";
             $index++;
             $rc_e_descr{$index} = $type;
         }
@@ -683,7 +683,7 @@ sub e_descr {
             my $cb = $rc2_cb->{$idx};
 
             my $index = "$idx"."0000";
-            $rc_e_descr{$index} = "slot"."$idx";
+            $rc_e_descr{$index} = "Slot "."$idx";
             $index++;
             $rc_e_descr{$index} = $cf;
             $index++;
@@ -767,6 +767,45 @@ sub e_type {
         }
     }
     return \%rc_e_type;
+}
+
+sub e_name {
+    my $passport = shift;
+
+    my $model = $passport->model();
+    my $rc_e_idx  = $passport->e_index() || {};
+
+    my %rc_e_name;
+    foreach my $iid (keys %$rc_e_idx){
+
+        if ($iid == 1) {
+            $rc_e_name{$iid} = 'Chassis';
+            next;
+        }
+
+        my $mod = int (substr($iid, -4, 2));
+        my $slot = substr($iid, -6, 2);
+
+        if ($iid =~/^9(\d)/ and length $iid > 5) {
+            $rc_e_name{$iid} = "Power Supply $1";
+        }
+        elsif ($iid =~/(00){2}$/) {
+            $rc_e_name{$iid} = "Slot $slot";
+        }
+        elsif ($iid =~/(00){1}$/) {
+            $rc_e_name{$iid} = "Card $slot, MDA $mod";
+        }
+        elsif (defined $model and $model =~ /(105|11[05]0|12[05])/ and $iid =~ /1$/) {
+            $rc_e_name{$iid} = "Card $slot";
+        }
+        elsif ($iid =~ /1$/) {
+            $rc_e_name{$iid} = "Card $slot (front)";
+        }
+        elsif ($iid =~ /2$/) {
+            $rc_e_name{$iid} = "Card $slot (back)";
+        }
+    }
+    return \%rc_e_name;
 }
 
 sub e_hwver {
@@ -915,10 +954,14 @@ sub e_pos {
             $rc_e_pos{$iid} = -1;
             next;
         }
-        my $sub = substr($iid, -1);
+        my $sub = int (substr($iid, -2, 2));
+        my $mod = int (substr($iid, -4, 2));
         my $slot = substr($iid, -6, 2);
-        if ($iid =~/(00){1,2}$/) {
+        if ($iid =~/(00){2}$/) {
             $rc_e_pos{$iid} = $slot;
+        }
+        elsif ($iid =~/(00){1}$/) {
+            $rc_e_pos{$iid} = $mod * 100;
         }
         else {
             $rc_e_pos{$iid} = $sub;
@@ -939,13 +982,9 @@ sub e_parent {
             $rc_e_parent{$iid} = 0;
             next;
         }
-        my $mod = substr($iid, -4, 2);
         my $slot = substr($iid, -6, 2);
         if ($iid =~/(00){1,2}$/) {
             $rc_e_parent{$iid} = 1;
-        }
-        elsif ($mod != 0) {
-            $rc_e_parent{$iid} = "$slot"."$mod"."00";
         }
         else {
             $rc_e_parent{$iid} = "$slot"."0000";

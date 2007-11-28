@@ -30,7 +30,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Foundry;
-# $Id: Foundry.pm,v 1.21 2007/06/13 02:52:43 jeneric Exp $
+# $Id: Foundry.pm,v 1.22 2007/11/26 04:24:52 jeneric Exp $
 
 use strict;
 
@@ -41,7 +41,7 @@ use SNMP::Info::LLDP;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %FUNCS $INIT %MIBS %MUNGE/;
 
-$VERSION = '1.05';
+$VERSION = '1.07';
 
 @SNMP::Info::Layer3::Foundry::ISA = qw/SNMP::Info::FDP SNMP::Info::LLDP
                                        SNMP::Info::Layer3 Exporter/;

@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::C6500;
-# $Id: C6500.pm,v 1.18 2007/10/09 17:57:23 fenner Exp $
+# $Id: C6500.pm,v 1.19 2007/11/26 04:24:51 jeneric Exp $
 
 use strict;
 
@@ -44,7 +44,7 @@ use SNMP::Info::CiscoPower;
 use SNMP::Info::Layer3;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
-$VERSION = '1.05';
+$VERSION = '1.07';
 @SNMP::Info::Layer3::C6500::ISA = qw/SNMP::Info::CiscoVTP SNMP::Info::CiscoStack 
                                     SNMP::Info::CDP SNMP::Info::CiscoStats 
                                     SNMP::Info::CiscoImage 

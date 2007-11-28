@@ -27,8 +27,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoPower;
-$VERSION = '1.05';
-# $Id: CiscoPower.pm,v 1.1 2007/07/30 15:25:28 fenner Exp $
+$VERSION = '1.07';
+# $Id: CiscoPower.pm,v 1.2 2007/11/26 04:24:50 jeneric Exp $
 
 use strict;
 

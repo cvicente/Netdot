@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::C4000;
-# $Id: C4000.pm,v 1.10 2007/04/15 02:44:14 jeneric Exp $
+# $Id: C4000.pm,v 1.11 2007/11/26 04:24:51 jeneric Exp $
 
 use strict;
 
@@ -44,7 +44,7 @@ use SNMP::Info::MAU;
 use SNMP::Info::Layer3;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
-$VERSION = '1.05';
+$VERSION = '1.07';
 @SNMP::Info::Layer3::C4000::ISA = qw/SNMP::Info::CiscoVTP SNMP::Info::CDP
                                     SNMP::Info::CiscoStats SNMP::Info::CiscoImage
                                     SNMP::Info::CiscoPortSecurity

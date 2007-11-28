@@ -1,6 +1,6 @@
 # SNMP::Info::Layer3::BayRS
 # Eric Miller
-# $Id: BayRS.pm,v 1.17 2007/11/20 03:48:20 jeneric Exp $
+# $Id: BayRS.pm,v 1.19 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller, Max Baker
 # All rights reserved.
@@ -29,7 +29,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::BayRS;
-$VERSION = '1.05';
+$VERSION = '1.07';
 
 use strict;
 
@@ -743,7 +743,7 @@ sub root_ip {
     return undef;
 }
 
-# Psuedo ENTITY-MIB methods
+# Pseudo ENTITY-MIB methods
 
 sub e_index {
     my $bayrs   = shift;
@@ -862,20 +862,45 @@ sub e_name {
         elsif ($iid =~/(00){2}$/) {
             $wf_e_name{$iid} = "Slot $slot";
         }
-        elsif ($iid =~/(00){1}$/) {
+        elsif ($iid =~/(00){1}$/ and $bp_id =~ /asn/) {
             $wf_e_name{$iid} = "Module Container $slot $sub";
+        }
+        elsif ($iid =~/(00){1}$/ and $bp_id =~ /an|arn/) {
+            $sub--;
+            if ($sub == 0) {
+                $wf_e_name{$iid} = "Motherboard  Container";
+            }
+            else {
+                $wf_e_name{$iid} = "Module Container $sub";
+            }
         }
         elsif ($bp_id !~ /an|arn|asn/ and $iid =~/1$/) {
             $wf_e_name{$iid} = "Processor Slot $slot";
         }
-        elsif ($bp_id =~ /an|arn|asn/ and $iid =~/1$/) {
+        elsif ($bp_id =~ /asn/ and $iid =~/1$/) {
             $wf_e_name{$iid} = "Module $slot $sub";
         }
-        elsif ($bp_id !~ /an|arn|asn/ and $iid =~/2$/) {
+        elsif ($bp_id =~ /an|arn/ and $iid =~/1$/) {
+            $sub--;
+            if ($sub == 0) {
+                $wf_e_name{$iid} = "Motherboard";
+            }
+            else {
+                $wf_e_name{$iid} = "Module $sub";
+            }
+        }
+        elsif ($bp_id !~ /asn/ and $iid =~/2$/) {
             $wf_e_name{$iid} = "Processor Daughter Board Slot $slot";
         }
-        elsif ($bp_id =~ /an|arn|asn/ and $iid =~/2$/) {
+        elsif ($bp_id !~ /an|arn/ and $iid =~/2$/) {
+            $wf_e_name{$iid} = "Processor Daughter Board";
+        }
+        elsif ($bp_id =~ /asn/ and $iid =~/2$/) {
             $wf_e_name{$iid} = "Module Daughter Board $slot $sub";
+        }
+        elsif ($bp_id =~ /an|arn/ and $iid =~/2$/) {
+            $sub--;
+            $wf_e_name{$iid} = "Module Daughter Board $sub";
         }
         elsif ($iid =~/3$/) {
             $wf_e_name{$iid} = "Processor Baby Board Slot $slot";
@@ -958,7 +983,18 @@ sub e_descr {
         next unless ($wf_mm->{$iid});
         my $idx = join('',map { sprintf "%02d",$_ } split /\./, $iid);
         my ($slot, $mod) = split /\./, $iid;
-        $wf_e_descr{"$idx"."00"} = "Module Container $slot $mod";
+        if ($bp_id =~ /an|arn/) {
+            $mod--;
+            if ($mod == 0) {
+                $wf_e_descr{"$idx"."00"} = "Motherboard Container";
+            }
+            else {
+                $wf_e_descr{"$idx"."00"} = "Module Container $mod";
+            }
+        }
+        else {
+            $wf_e_descr{"$idx"."00"} = "Module Container $slot $mod";
+        }
         my $mm_id  = &SNMP::mapEnum('wfHwModuleModIdOpt',$wf_mm->{$iid});
         my $index = join('',map { sprintf "%02d",$_ } split /\./, $iid);
         $wf_e_descr{"$index"."01"} =
@@ -1441,7 +1477,7 @@ Returns reference to hash.  Maps port VLAN ID to IIDs.
 
 =back
 
-=head2 Psuedo ENTITY-MIB information
+=head2 Pseudo ENTITY-MIB information
 
 These methods emulate ENTITY-MIB Physical Table methods using
 Wellfleet-HARDWARE-MIB and Wellfleet-MODULE-MIB.

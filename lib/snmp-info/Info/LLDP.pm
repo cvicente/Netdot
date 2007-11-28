@@ -26,8 +26,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::LLDP;
-$VERSION = '1.05';
-# $Id: LLDP.pm,v 1.2 2007/04/14 23:59:35 jeneric Exp $
+$VERSION = '1.07';
+# $Id: LLDP.pm,v 1.3 2007/11/26 04:24:50 jeneric Exp $
 
 use strict;
 

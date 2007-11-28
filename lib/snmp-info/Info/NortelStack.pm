@@ -1,6 +1,6 @@
 # SNMP::Info::NortelStack
 # Eric Miller
-# $Id: NortelStack.pm,v 1.10 2007/11/20 03:45:15 jeneric Exp $
+# $Id: NortelStack.pm,v 1.12 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller, Max Baker
 # 
@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::NortelStack;
-$VERSION = '1.05'; 
+$VERSION = '1.07'; 
 
 use strict;
 
@@ -229,6 +229,55 @@ sub ns_e_descr {
     return \%ns_e_descr;
 }
 
+sub ns_e_name {
+    my $stack = shift;
+    my $partial = shift;
+
+    my $ns_class  = $stack->ns_e_class() || {};
+    my $ns_e_idx  = $stack->ns_e_index() || {};
+    my $ns_grp_enc = $stack->s5ChasGrpEncodeFactor($partial) || {};
+    my $is_virtual = $stack->ns_e_is_virtual();
+
+    my %ns_e_name;
+    foreach my $iid (keys %$ns_e_idx){
+
+        my ($grp, $idx, $sub) = split (/\./,$iid);
+        my $class = $ns_class->{$iid};
+        next unless defined $class;
+        my $enc = $ns_grp_enc->{$grp};
+
+        if ((!$is_virtual) and ($grp == 1)) {
+            $ns_e_name{$iid} = 'Supervisory Module';
+        }
+        elsif ($class eq 'stack') {
+            $ns_e_name{$iid} = 'Stack Master Unit';
+        }
+        elsif ($class eq 'chassis') {
+            if ($is_virtual) {
+                my $unit = $idx / $enc;
+                $ns_e_name{$iid} = "Switch Unit $unit";
+            }
+            else {
+                $ns_e_name{$iid} = "Chassis";
+            }
+        }
+        elsif ($class eq 'module') {
+            if ($is_virtual) {
+                my $unit = int ($idx / $enc);
+                my $mda  = $idx % $enc;
+                $ns_e_name{$iid} = "Switch Unit $unit, MDA $mda";
+            }
+            elsif ($sub != 0) {
+                $ns_e_name{$iid} = "Module Slot $idx, Subcomponent $sub";
+            }
+            else {
+                $ns_e_name{$iid} = "Module Slot $idx";
+            }
+        }
+    }
+    return \%ns_e_name;
+}
+
 sub ns_e_hwver {
     my $stack   = shift;
     my $partial = shift;
@@ -325,14 +374,14 @@ sub ns_e_pos {
         }
         elsif ($grp == 3 and $idx == 0 ) {
             my $enc = $ns_grp_enc->{$grp};
-            if ($is_stack and ($pos % $enc)) {
+            if ($is_virtual and ($pos % $enc)) {
                 $pos = int ($pos % $enc);
-            }
-            elsif ($is_stack and !($pos % $enc)) {
-                $pos = ($pos / $enc);
             }
             elsif ($is_virtual and !$is_stack and !($pos % $enc)) {
                 $pos = -1;
+            }
+            elsif ($is_virtual and !($pos % $enc)) {
+                $pos = ($pos / $enc);
             }
         }
         elsif (!$is_stack and $grp == 3) {

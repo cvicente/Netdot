@@ -27,7 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Dell;
-# $Id: Dell.pm,v 1.6 2007/10/10 03:31:42 jeneric Exp $
+# $Id: Dell.pm,v 1.7 2007/11/26 04:24:52 jeneric Exp $
 
 use strict;
 
@@ -36,7 +36,7 @@ use SNMP::Info::Layer3;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %FUNCS $INIT %MIBS %MUNGE/;
 
-$VERSION = '1.05';
+$VERSION = '1.07';
 
 @SNMP::Info::Layer3::Dell::ISA = qw/SNMP::Info::Layer3 Exporter/;
 @SNMP::Info::Layer3::Dell::EXPORT_OK = qw//;

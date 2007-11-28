@@ -30,8 +30,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::HP;
-$VERSION = '1.05';
-# $Id: HP.pm,v 1.35 2007/11/21 21:34:40 jeneric Exp $
+$VERSION = '1.07';
+# $Id: HP.pm,v 1.36 2007/11/26 04:24:51 jeneric Exp $
 
 use strict;
 

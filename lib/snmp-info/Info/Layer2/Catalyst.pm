@@ -29,8 +29,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::Catalyst;
-$VERSION = '1.05';
-# $Id: Catalyst.pm,v 1.26 2007/11/04 02:58:01 jeneric Exp $
+$VERSION = '1.07';
+# $Id: Catalyst.pm,v 1.27 2007/11/26 04:24:51 jeneric Exp $
 
 use strict;
 

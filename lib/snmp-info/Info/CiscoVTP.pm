@@ -30,8 +30,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoVTP;
-$VERSION = '1.05';
-# $Id: CiscoVTP.pm,v 1.15 2007/11/21 04:23:38 jeneric Exp $
+$VERSION = '1.07';
+# $Id: CiscoVTP.pm,v 1.18 2007/11/27 17:19:28 jeneric Exp $
 
 use strict;
 
@@ -191,6 +191,7 @@ sub i_vlan_membership {
     my $ports_vlans_2k = $vtp->vtp_trunk_vlans_2k($partial) || {};
     my $ports_vlans_3k = $vtp->vtp_trunk_vlans_3k($partial) || {};
     my $ports_vlans_4k = $vtp->vtp_trunk_vlans_4k($partial) || {};
+    my $voice_vlans    = $vtp->i_voice_vlan($partial) || {};
     my $vtp_vlans      = $vtp->v_state();
     my $i_vlan         = $vtp->i_vlan2($partial) || {};
     my $trunk_dyn_stat = $vtp->vtp_trunk_dyn_stat($partial) || {};
@@ -202,9 +203,18 @@ sub i_vlan_membership {
         my $vlan = $i_vlan->{$port};
         next unless defined $vlan;
         my $stat = $trunk_dyn_stat->{$port};
-        unless ( defined $stat and $stat =~ /^trunking/ ) {
+        if ( defined $stat and $stat =~ /notTrunking/ ) {
             push(@{$i_vlan_membership->{$port}}, $vlan);
         }
+    }
+
+    # Get special voice VLANs (0 and 4096)
+    foreach my $port (keys %$voice_vlans) {
+        my $vlan = $voice_vlans->{$port};
+        next unless defined $vlan;
+        # Going to assume we would catch regular VLANs with the other methods
+        next unless ($vlan == 0 or $vlan == 4096);
+            push(@{$i_vlan_membership->{$port}}, $vlan);
     }
 
     # Get trunk ports
@@ -224,30 +234,22 @@ sub i_vlan_membership {
     }
 
     foreach my $port (keys %$ports_vlans) {
-        my $vlanlist = [split(//, unpack("B*", $ports_vlans->{$port}))];
-        foreach my $vlan (keys %oper_vlans) {            
-            push(@{$i_vlan_membership->{$port}}, $vlan) if (@$vlanlist[$vlan]);
-        }
-    }
-
-    foreach my $port (keys %$ports_vlans_2k) {
-        my $vlanlist = [split(//, unpack("B*", $ports_vlans_2k->{$port}))];
-        foreach my $vlan (keys %oper_vlans) {   
-            push(@{$i_vlan_membership->{$port}}, $vlan) if (@$vlanlist[$vlan-1024]);
-        }
-    }
-
-    foreach my $port (keys %$ports_vlans_3k) {
-        my $vlanlist = [split(//, unpack("B*", $ports_vlans_3k->{$port}))];
-        foreach my $vlan (keys %oper_vlans) {
-            push(@{$i_vlan_membership->{$port}}, $vlan) if (@$vlanlist[$vlan-2048]);
-        }
-    }
-
-    foreach my $port (keys %$ports_vlans_4k) {
-        my $vlanlist = [split(//, unpack("B*", $ports_vlans_4k->{$port}))];
-        foreach my $vlan (keys %oper_vlans) {
-            push(@{$i_vlan_membership->{$port}}, $vlan) if (@$vlanlist[$vlan-3072]);
+        my $stat = $trunk_dyn_stat->{$port};
+        if ( defined $stat and $stat =~ /^trunking/ ) {
+            my $k = 0;
+            my $list1 = $ports_vlans->{$port} || 'unavail';
+            my $list2 = $ports_vlans_2k->{$port} || 'unavail';
+            my $list3 = $ports_vlans_3k->{$port} || 'unavail';
+            my $list4 = $ports_vlans_4k->{$port} || 'unavail';
+            foreach my $list ("$list1", "$list2", "$list3", "$list4") {
+                next if ($list eq 'unavail');
+                my $vlanlist = [split(//, unpack("B*", $list))];
+                my $offset = 1024 * $k;
+                foreach my $vlan (keys %oper_vlans) {            
+                    push(@{$i_vlan_membership->{$port}}, $vlan) if (@$vlanlist[$vlan]-$offset);
+                }
+                $k++;
+            }
         }
     }
 

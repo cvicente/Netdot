@@ -1,6 +1,6 @@
 # SNMP::Info::Layer2::Airespace
 # Eric Miller
-# $Id: Airespace.pm,v 1.1 2007/01/25 03:59:30 jeneric Exp $
+# $Id: Airespace.pm,v 1.2 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2007 Eric Miller
 #
@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::Airespace;
-$VERSION = '1.05';
+$VERSION = '1.07';
 use strict;
 
 use Exporter;

@@ -31,8 +31,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CDP;
-$VERSION = '1.05';
-# $Id: CDP.pm,v 1.20 2007/11/21 20:35:58 jeneric Exp $
+$VERSION = '1.07';
+# $Id: CDP.pm,v 1.21 2007/11/26 04:24:50 jeneric Exp $
 
 use strict;
 

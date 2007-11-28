@@ -31,7 +31,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Extreme;
-# $Id: Extreme.pm,v 1.8 2007/06/13 15:11:04 fenner Exp $
+# $Id: Extreme.pm,v 1.9 2007/11/26 04:24:52 jeneric Exp $
 
 use strict;
 
@@ -41,7 +41,7 @@ use SNMP::Info::MAU;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %FUNCS $INIT %MIBS %MUNGE/;
 
-$VERSION = '1.05';
+$VERSION = '1.07';
 
 @SNMP::Info::Layer3::Extreme::ISA = qw/SNMP::Info::Layer3 SNMP::Info::MAU Exporter/;
 @SNMP::Info::Layer3::Extreme::EXPORT_OK = qw//;

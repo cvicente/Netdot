@@ -28,8 +28,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoStack;
-$VERSION = '1.05';
-# $Id: CiscoStack.pm,v 1.13 2007/06/20 03:05:15 jeneric Exp $
+$VERSION = '1.07';
+# $Id: CiscoStack.pm,v 1.14 2007/11/26 04:24:50 jeneric Exp $
 
 use strict;
 

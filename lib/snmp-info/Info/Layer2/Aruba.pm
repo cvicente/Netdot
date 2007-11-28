@@ -1,6 +1,6 @@
 # SNMP::Info::Layer2::Aruba
 # Eric Miller
-# $Id: Aruba.pm,v 1.7 2006/11/18 00:23:25 fenner Exp $
+# $Id: Aruba.pm,v 1.8 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2005 Eric Miller
 #
@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::Aruba;
-$VERSION = '1.05';
+$VERSION = '1.07';
 use strict;
 
 use Exporter;

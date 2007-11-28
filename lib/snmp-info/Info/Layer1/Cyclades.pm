@@ -1,6 +1,6 @@
 # SNMP::Info::Layer1::Cyclades
 # Eric Miller
-# $Id: Cyclades.pm,v 1.2 2006/11/20 16:29:21 jeneric Exp $
+# $Id: Cyclades.pm,v 1.3 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2006 Eric Miller
 #
@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer1::Cyclades;
-$VERSION = '1.05';
+$VERSION = '1.07';
 use strict;
 
 use Exporter;

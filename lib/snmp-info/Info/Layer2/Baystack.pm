@@ -28,9 +28,9 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::Baystack;
-$VERSION = '1.05';
+$VERSION = '1.07';
 
-# $Id: Baystack.pm,v 1.17 2007/11/19 04:28:01 jeneric Exp $
+# $Id: Baystack.pm,v 1.19 2007/11/26 04:24:51 jeneric Exp $
 use strict;
 
 use Exporter;
@@ -365,6 +365,13 @@ sub e_descr {
     my $partial = shift;
 
     return $stack->SUPER::e_descr($partial) || $stack->ns_e_descr($partial);
+}
+
+sub e_name {
+    my $stack   = shift;
+    my $partial = shift;
+
+    return $stack->SUPER::e_name($partial) || $stack->ns_e_name($partial);
 }
 
 sub e_fwver {

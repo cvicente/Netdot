@@ -1,6 +1,6 @@
 # SNMP::Info::Layer3::AlteonAD
 # Eric Miller
-# $Id: AlteonAD.pm,v 1.11 2006/11/18 00:23:25 fenner Exp $
+# $Id: AlteonAD.pm,v 1.12 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller
 # All Rights Reserved
@@ -29,7 +29,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::AlteonAD;
-$VERSION = '1.04';
+$VERSION = '1.07';
 
 use strict;
 

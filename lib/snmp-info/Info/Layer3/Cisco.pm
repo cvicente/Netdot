@@ -27,7 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Cisco;
-# $Id: Cisco.pm,v 1.16 2007/07/30 15:32:18 fenner Exp $
+# $Id: Cisco.pm,v 1.17 2007/11/26 04:24:51 jeneric Exp $
 
 use strict;
 
@@ -43,7 +43,7 @@ use SNMP::Info::CiscoPower;
 use SNMP::Info::Layer3;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
-$VERSION = '1.05';
+$VERSION = '1.07';
 @SNMP::Info::Layer3::Cisco::ISA = qw/SNMP::Info::CiscoVTP SNMP::Info::CDP
                                     SNMP::Info::CiscoStats SNMP::Info::CiscoImage 
                                     SNMP::Info::CiscoRTT  SNMP::Info::CiscoQOS

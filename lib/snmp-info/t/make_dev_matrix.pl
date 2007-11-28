@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: make_dev_matrix.pl,v 1.6 2006/02/21 02:25:14 jeneric Exp $
+# $Id: make_dev_matrix.pl,v 1.7 2007/11/27 02:59:18 jeneric Exp $
 
 $DevMatrix = '../DeviceMatrix.txt';
 $DevHTML   = 'DeviceMatrix.html';
@@ -294,6 +294,10 @@ be assumed working.
         method.
         </UL>
     </TD>
+</TR>
+<TR>
+    <TD>Modules</TD>
+    <TD>Ability to gather hardware module information.</TD>
 </TR>
 <TR>
     <TD>Portmac</TD>

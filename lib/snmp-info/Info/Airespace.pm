@@ -1,6 +1,6 @@
 # SNMP::Info::Airespace
 # Eric Miller
-# $Id: Airespace.pm,v 1.8 2007/01/26 03:44:11 jeneric Exp $
+# $Id: Airespace.pm,v 1.10 2007/11/26 04:24:50 jeneric Exp $
 #
 # Copyright (c) 2005 Eric Miller
 #
@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Airespace;
-$VERSION = '1.05';
+$VERSION = '1.07';
 use strict;
 
 use Exporter;
@@ -47,11 +47,14 @@ use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
 %GLOBALS = (
             %SNMP::Info::GLOBALS,
+            'airespace_type'         => 'agentInventoryMachineType',
             'airespace_model'        => 'agentInventoryMachineModel',
             'airespace_serial'       => 'agentInventorySerialNumber',
+            'airespace_maint_ver'    => 'agentInventoryMaintenanceLevel',
             'airespace_mac'          => 'agentInventoryBurnedInMacAddress',
             'airespace_os'           => 'agentInventoryOperatingSystem',
             'airespace_vendor'       => 'agentInventoryManufacturerName',
+            'airespace_prod_name'    => 'agentInventoryProductName',
             'os_ver'                 => 'agentInventoryProductVersion',
             'airespace_bssid_mode'   => 'agentNetworkBroadcastSsidMode',
             'airespace_mc_mode'      => 'agentNetworkMulticastMode',
@@ -83,8 +86,10 @@ use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
             'airespace_ap_ip'         => 'bsnApIpAddress',
             'airespace_ap_loc'        => 'bsnAPLocation',
             'airespace_ap_sw'         => 'bsnAPSoftwareVersion',
+            'airespace_ap_fw'         => 'bsnAPBootVersion',
             'airespace_ap_model'      => 'bsnAPModel',
             'airespace_ap_serial'     => 'bsnAPSerialNumber',
+            'airespace_ap_type'       => 'bsnAPType',            
             'airespace_ap_status'     => 'bsnAPAdminStatus',
             # AIRESPACE-WIRELESS-MIB::bsnAPIfTable
             'airespace_apif_slot'     => 'bsnAPIfSlotId',
@@ -641,6 +646,234 @@ sub i_80211channel {
     return \%i_80211channel;
 }
 
+
+# Psuedo ENTITY-MIB methods
+
+sub e_index {
+    my $airespace = shift;
+
+    my $ap_model = $airespace->airespace_ap_model() || {};
+
+    my %e_index;
+    # Chassis
+    $e_index{1} = 1;
+
+    # We're going to hack an index to capture APs 
+    foreach my $idx (keys %$ap_model){
+        # Create the integer index by joining the last three octets of the MAC.
+        # Hopefully, this will be unique since the manufacturer should be
+        # limited to Airespace and Cisco.  We can't use the entire MAC since
+        # we would exceed the intger size limit.
+        if ($idx =~ /(\d+\.\d+\.\d+)$/) { 
+            my $index = int (join('',map { sprintf "%03d",$_ } split /\./, $1));
+            $e_index{$idx} = $index;
+        }
+    }
+    return \%e_index;
+}
+
+sub e_class {
+    my $airespace = shift;
+
+    my $e_idx = $airespace->e_index() || {};
+
+    my %e_class;
+    foreach my $iid (keys %$e_idx){
+        if ($iid eq 1) {
+            $e_class{$iid} = 'chassis';
+        }
+        # This isn't a valid PhysicalClass, but we're hacking this anyway 
+        else {
+            $e_class{$iid} = 'ap';
+        }
+    }
+    return \%e_class;
+}
+
+sub e_name {
+    my $airespace = shift;
+
+    my $ap_name = $airespace->airespace_ap_name() || {};
+
+    my %e_name;
+    # Chassis
+    $e_name{1} = 'WLAN Controller';
+
+    # APs
+    foreach my $iid (keys %$ap_name){
+        $e_name{$iid} = 'AP';
+    }
+    return \%e_name;
+}
+
+sub e_descr {
+    my $airespace = shift;
+
+    my $ap_model = $airespace->airespace_ap_model() || {};
+    my $ap_name  = $airespace->airespace_ap_name() || {};
+    my $ap_loc   = $airespace->airespace_ap_loc() || {};
+
+    my %e_descr;
+    # Chassis
+    $e_descr{1} = $airespace->airespace_prod_name();
+
+    # APs
+    foreach my $iid (keys %$ap_name){
+        my $name = $ap_name->{$iid};
+        next unless defined $name;
+        my $model = $ap_model->{$iid} || 'AP';
+        my $loc = $ap_loc->{$iid} || 'unknown';
+
+        $e_descr{$iid} = "$model: $name ($loc)";
+    }
+    return \%e_descr;
+}
+
+sub e_model {
+    my $airespace = shift;
+
+    my $ap_model = $airespace->airespace_ap_model() || {};
+
+    my %e_model;
+    # Chassis
+    $e_model{1} = $airespace->airespace_model();
+
+    # APs
+    foreach my $iid (keys %$ap_model){
+        my $model = $ap_model->{$iid};
+        next unless defined $model;
+
+        $e_model{$iid} = $model;
+    }
+    return \%e_model;
+}
+
+sub e_type {
+    my $airespace = shift;
+
+    my $ap_type = $airespace->airespace_ap_type() || {};
+
+    my %e_type;
+    # Chassis
+    $e_type{1} = $airespace->airespace_type();
+
+    # APs
+    foreach my $iid (keys %$ap_type){
+        my $type = $ap_type->{$iid};
+        next unless defined $type;
+
+        $e_type{$iid} = $type;
+    }
+    return \%e_type;
+}
+
+sub e_fwver {
+    my $airespace = shift;
+
+    my $ap_fw = $airespace->airespace_ap_fw() || {};
+
+    my %e_fwver;
+    # Chassis
+    $e_fwver{1} = $airespace->airespace_maint_ver();
+
+    # APs
+    foreach my $iid (keys %$ap_fw){
+        my $fw = $ap_fw->{$iid};
+        next unless defined $fw;
+
+        $e_fwver{$iid} = $fw;
+    }
+    return \%e_fwver;
+}
+
+sub e_vendor {
+    my $airespace = shift;
+
+    my $e_idx  = $airespace->e_index() || {};
+
+    my %e_vendor;
+    foreach my $iid (keys %$e_idx){
+        $e_vendor{$iid} = 'cisco';
+    }
+    return \%e_vendor;
+}
+
+sub e_serial {
+    my $airespace = shift;
+
+    my $ap_serial = $airespace->airespace_ap_serial() || {};
+
+    my %e_serial;
+    # Chassis
+    $e_serial{1} = $airespace->airespace_serial();
+
+    # APs
+    foreach my $iid (keys %$ap_serial){
+        my $serial = $ap_serial->{$iid};
+        next unless defined $serial;
+
+        $e_serial{$iid} = $serial;
+    }
+    return \%e_serial;
+}
+
+sub e_pos {
+    my $airespace = shift;
+
+    my $e_idx  = $airespace->e_index() || {};
+
+    my %e_pos;
+    my $pos = 0;
+    foreach my $iid (sort keys %$e_idx){
+        if ($iid eq 1) {
+            $e_pos{$iid} = -1;
+            next;
+        }
+        else {
+            $pos++;
+            $e_pos{$iid} = $pos;
+        }
+    }
+    return \%e_pos;
+}
+
+sub e_swver {
+    my $airespace = shift;
+
+    my $ap_sw = $airespace->airespace_ap_sw() || {};
+
+    my %e_swver;
+    # Chassis
+    $e_swver{1} = $airespace->airespace_os();
+
+    # APs
+    foreach my $iid (keys %$ap_sw){
+        my $sw = $ap_sw->{$iid};
+        next unless defined $sw;
+
+        $e_swver{$iid} = $sw;
+    }
+    return \%e_swver;
+}
+
+sub e_parent {
+    my $airespace = shift;
+
+    my $e_idx  = $airespace->e_index() || {};
+
+    my %e_parent;
+    foreach my $iid (sort keys %$e_idx){
+        if ($iid eq 1) {
+            $e_parent{$iid} = 0;
+            next;
+        }
+        else {
+            $e_parent{$iid} = 1;
+        }
+    }
+    return \%e_parent;
+}
+
 1;
 __END__
 
@@ -710,6 +943,10 @@ These are methods that return scalar value from SNMP
 
 =over
 
+=item $airespace->airespace_type()
+
+(B<agentInventoryMachineType>)
+
 =item $airespace->airespace_model()
 
 (B<agentInventoryMachineModel>)
@@ -717,6 +954,10 @@ These are methods that return scalar value from SNMP
 =item $airespace->airespace_serial()
 
 (B<agentInventorySerialNumber>)
+
+=item $airespace->airespace_maint_ver()
+
+(B<agentInventoryMaintenanceLevel>)
 
 =item $airespace->airespace_mac()
 
@@ -729,6 +970,10 @@ These are methods that return scalar value from SNMP
 =item $airespace->airespace_vendor()
 
 (B<agentInventoryManufacturerName>)
+
+=item $airespace->airespace_prod_name()
+
+(B<agentInventoryProductName>)
 
 =item $airespace->os_ver()
 
@@ -937,6 +1182,10 @@ User specified location of this AP.
 
 (B<bsnAPSoftwareVersion>)
 
+=item $airespace->airespace_ap_fw()
+
+(B<bsnAPBootVersion>)
+
 =item $airespace->airespace_ap_model()
 
 (B<bsnAPModel>)
@@ -944,6 +1193,10 @@ User specified location of this AP.
 =item $airespace->airespace_ap_serial()
 
 (B<bsnAPSerialNumber>)
+
+=item $airespace->airespace_ap_type()
+
+(B<bsnAPType>)
 
 =item $airespace->airespace_ap_status()
 
@@ -1287,5 +1540,64 @@ airespace_sta_slot() combined to match the interface iid.
 =item $airespace->fw_mac()
 
 (B<bsnMobileStationMacAddress>)
+
+=back
+
+=head2 Psuedo ENTITY-MIB information
+
+These methods emulate ENTITY-MIB Physical Table methods using
+AIRESPACE-SWITCHING-MIB and AIRESPACE-WIRELESS-MIB.  Thin APs are included
+as subcomponents of the wireless controller.
+
+=over
+
+=item $airespace->e_index()
+
+Returns reference to hash.  Key: IID and Value: Integer. The index for APs is
+created with an integer representation of the last three octets of the
+AP MAC address.
+
+=item $airespace->e_class()
+
+Returns reference to hash.  Key: IID, Value: General hardware type.  Return ap
+for wireless access points.
+
+=item $airespace->e_descr()
+
+Returns reference to hash.  Key: IID, Value: Human friendly name.
+
+=item $airespace->e_model()
+
+Returns reference to hash.  Key: IID, Value: Model name.
+
+=item $airespace->e_vendor()
+
+Returns reference to hash.  Key: IID, Value: cisco.
+
+=item $airespace->e_serial()
+
+Returns reference to hash.  Key: IID, Value: Serial number.
+
+=item $airespace->e_pos()
+
+Returns reference to hash.  Key: IID, Value: The relative position among all
+entities sharing the same parent.
+
+=item $airespace->e_type()
+
+Returns reference to hash.  Key: IID, Value: Type of component.
+
+=item $airespace->e_fwver()
+
+Returns reference to hash.  Key: IID, Value: Firmware revision.
+
+=item $airespace->e_swver()
+
+Returns reference to hash.  Key: IID, Value: Software revision.
+
+=item $airespace->e_parent()
+
+Returns reference to hash.  Key: IID, Value: The value of e_index() for the
+entity which 'contains' this entity.
 
 =cut

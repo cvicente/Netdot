@@ -24,7 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::N1600;
-# $Id: N1600.pm,v 1.7 2007/06/13 02:48:44 jeneric Exp $
+# $Id: N1600.pm,v 1.8 2007/11/26 04:24:52 jeneric Exp $
 
 use strict;
 
@@ -34,7 +34,7 @@ use SNMP::Info::SONMP;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %FUNCS $INIT %MIBS %MUNGE/;
 
-$VERSION = '1.05';
+$VERSION = '1.07';
 
 @SNMP::Info::Layer3::N1600::ISA = qw/SNMP::Info::Layer3 SNMP::Info::SONMP Exporter/;
 @SNMP::Info::Layer3::N1600::EXPORT_OK = qw//;

@@ -1,6 +1,6 @@
 # SNMP::Info::Layer1::Bayhub
 # Eric Miller
-# $Id: Bayhub.pm,v 1.12 2007/04/14 20:54:57 jeneric Exp $
+# $Id: Bayhub.pm,v 1.14 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller, Max Baker
 #
@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer1::Bayhub;
-$VERSION = '1.05';
+$VERSION = '1.07';
 use strict;
 
 use Exporter;
@@ -389,6 +389,13 @@ sub e_descr {
     my $partial = shift;
 
     return $stack->ns_e_descr($partial);
+}
+
+sub e_name {
+    my $stack   = shift;
+    my $partial = shift;
+
+    return $stack->ns_e_name($partial);
 }
 
 sub e_fwver {

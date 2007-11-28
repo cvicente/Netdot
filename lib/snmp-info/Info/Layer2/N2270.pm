@@ -1,6 +1,6 @@
 # SNMP::Info::Layer2::N2270
 # Eric Miller
-# $Id: N2270.pm,v 1.7 2006/11/18 00:23:25 fenner Exp $
+# $Id: N2270.pm,v 1.8 2007/11/26 04:24:51 jeneric Exp $
 #
 # Copyright (c) 2005 Eric Miller
 #
@@ -28,7 +28,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::N2270;
-$VERSION = '1.04';
+$VERSION = '1.07';
 use strict;
 
 use Exporter;

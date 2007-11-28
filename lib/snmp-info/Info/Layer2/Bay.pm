@@ -31,8 +31,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::Bay;
-$VERSION = '1.04';
-# $Id: Bay.pm,v 1.22 2006/11/18 00:23:25 fenner Exp $
+$VERSION = '1.07';
+# $Id: Bay.pm,v 1.23 2007/11/26 04:24:51 jeneric Exp $
 use strict;
 
 use Exporter;

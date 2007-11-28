@@ -24,9 +24,9 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Sun;
-$VERSION = '1.05';
+$VERSION = '1.07';
 
-# $Id: Sun.pm,v 1.4 2007/06/13 02:48:44 jeneric Exp $
+# $Id: Sun.pm,v 1.5 2007/11/26 04:24:52 jeneric Exp $
 use strict;
 
 use Exporter;

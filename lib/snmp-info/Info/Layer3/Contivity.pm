@@ -1,6 +1,6 @@
 # SNMP::Info::Layer3::Contivity
 # Eric Miller
-# $Id: Contivity.pm,v 1.12 2007/06/13 02:48:44 jeneric Exp $
+# $Id: Contivity.pm,v 1.13 2007/11/26 04:24:52 jeneric Exp $
 #
 # Copyright (c) 2004 Eric Miller, Max Baker
 # All rights reserved.
@@ -29,7 +29,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Contivity;
-$VERSION = '1.05';
+$VERSION = '1.07';
 
 use strict;
 
