@@ -274,7 +274,7 @@ sub insert {
 		  maint_covered    => 0,
 		  monitor_config   => 0,
 		  monitorstatus    => 0,
-		  snmp_bulk        => 0,
+		  snmp_bulk        => $class->config->get('DEFAULT_SNMPBULK'),
 		  snmp_managed     => 0,
 		  snmp_polling     => 0,
 		  );
@@ -2813,7 +2813,8 @@ sub _get_snmp_session {
     # We might have tried a different SNMP version and community above. Rectify DB if necessary
     if ( $class ){
 	my %uargs;
-	$uargs{snmp_version} = $sinfoargs{Version}   if ( $self->snmp_version ne $sinfoargs{Version} );
+	$uargs{snmp_version} = $sinfoargs{Version}   if ( $self->snmp_version ne $sinfoargs{Version}   );
+	$uargs{snmp_bulk}    = $sinfoargs{BulkWalk}  if ( $self->snmp_bulk    ne $sinfoargs{BulkWalk}  );
 	$uargs{community}    = $sinfoargs{Community} if ( $self->community    ne $sinfoargs{Community} );
 	$self->update(\%uargs) if ( keys %uargs );
     }
