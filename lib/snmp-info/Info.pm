@@ -6,10 +6,10 @@
 # All rights reserved.  
 #
 # See COPYRIGHT at bottom
-# $Id: Info.pm,v 1.124 2007/11/27 03:17:36 jeneric Exp $
+# $Id: Info.pm,v 1.125 2007/11/29 02:31:13 jeneric Exp $
 
 package SNMP::Info;
-$VERSION = '1.07';
+$VERSION = '1.09';
 use strict;
 
 use Exporter;
@@ -29,7 +29,7 @@ SNMP::Info - Object Oriented Perl5 Interface to Network devices and MIBs through
 
 =head1 VERSION
 
-SNMP::Info - Version 1.07
+SNMP::Info - Version 1.09
 
 =head1 AUTHOR
 
@@ -904,6 +904,7 @@ Algorithm for Subclass Detection:
             Enterasys                      -> SNMP::Info::Layer3::Enterasys
             Extreme                        -> SNMP::Info::Layer3::Extreme
             Foundry                        -> SNMP::Info::Layer3::Foundry
+            HP Procurve                    -> SNMP::Info::Layer2::HP
             Juniper                        -> SNMP::Info::Layer3::Juniper
             Microsoft                      -> SNMP::Info::Layer3::Microsoft
             Net-SNMP                       -> SNMP::Info::Layer3::NetSNMP

@@ -31,23 +31,23 @@
 
 package SNMP::Info::Layer2::HP;
 $VERSION = '1.07';
-# $Id: HP.pm,v 1.36 2007/11/26 04:24:51 jeneric Exp $
+# $Id: HP.pm,v 1.37 2007/11/29 02:29:26 jeneric Exp $
 
 use strict;
 
 use Exporter;
-use SNMP::Info::Layer2;
+use SNMP::Info::Layer3;
 use SNMP::Info::MAU;
 use SNMP::Info::LLDP;
 use SNMP::Info::CDP;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $INIT/ ;
 
-@SNMP::Info::Layer2::HP::ISA = qw/SNMP::Info::Layer2 SNMP::Info::MAU SNMP::Info::LLDP
+@SNMP::Info::Layer2::HP::ISA = qw/SNMP::Info::Layer3 SNMP::Info::MAU SNMP::Info::LLDP
                                   SNMP::Info::CDP Exporter/;
 @SNMP::Info::Layer2::HP::EXPORT_OK = qw//;
 
-%MIBS = ( %SNMP::Info::Layer2::MIBS,
+%MIBS = ( %SNMP::Info::Layer3::MIBS,
           %SNMP::Info::MAU::MIBS,
           %SNMP::Info::LLDP::MIBS,
           %SNMP::Info::CDP::MIBS,
@@ -60,7 +60,7 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
         );
 
 %GLOBALS = (
-            %SNMP::Info::Layer2::GLOBALS,
+            %SNMP::Info::Layer3::GLOBALS,
             %SNMP::Info::MAU::GLOBALS,
             %SNMP::Info::LLDP::GLOBALS,
             %SNMP::Info::CDP::GLOBALS,
@@ -76,7 +76,7 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
            );
 
 %FUNCS   = (
-            %SNMP::Info::Layer2::FUNCS,
+            %SNMP::Info::Layer3::FUNCS,
             %SNMP::Info::MAU::FUNCS,
             %SNMP::Info::LLDP::FUNCS,
             %SNMP::Info::CDP::FUNCS,
@@ -100,7 +100,7 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
 
 %MUNGE = (
             # Inherit all the built in munging
-            %SNMP::Info::Layer2::MUNGE,
+            %SNMP::Info::Layer3::MUNGE,
             %SNMP::Info::MAU::MUNGE,
             %SNMP::Info::LLDP::MUNGE,
             %SNMP::Info::CDP::MUNGE
@@ -112,6 +112,7 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
                 'J4120A' => '1600M',
                 'J4121A' => '4000M',
                 'J4122A' => '2400M',
+                'J4122B' => '2424M',
                 'J4138A' => '9308M',
                 'J4139A' => '9304M',
                 'J4812A' => '2512',
@@ -141,16 +142,29 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
                 'J8165A' => '2650-PWR',
                 'J8433A' => 'CX4-6400cl-6XG',
                 'J8474A' => 'MF-6400cl-6XG',
+                'J8680A' => '9608sl',
+                'J8692A' => '3500yl-24G-PWR',
+                'J8693A' => '3500yl-48G-PWR',
                 'J8697A' => '5406zl',
                 'J8698A' => '5412zl',
                 'J8718A' => '5404yl',
                 'J8719A' => '5408yl',
                 'J8770A' => '4204vl',
+                'J8771A' => '4202vl-48G',
+                'J8772A' => '4202vl-72',
                 'J8773A' => '4208vl',
-                'J8680A' => '9608sl',
                 'J8762A' => '2600-8-PWR',
-                'J8692A' => '3500yl-24G-PWR',
-                'J8693A' => '3500yl-48G-PWR',
+                'J8992A' => '6200yl-24G',
+                'J9019A' => '2510-24A',
+                'J9020A' => '2510-48A',
+                'J9021A' => '2810-24G',
+                'J9022A' => '2810-48G',
+                'J9028A' => '1800-24G',
+                'J9029A' => '1800-8G',
+                'J9050A' => '2900-48G',
+                'J9049A' => '2900-24G',
+                'J9032A' => '4202vl-68G',
+                'J9091A' => '8212zl',
            );
 
 # Method Overrides
@@ -835,6 +849,7 @@ the common model number with this map :
                 'J4120A' => '1600M',
                 'J4121A' => '4000M',
                 'J4122A' => '2400M',
+                'J4122B' => '2424M',
                 'J4138A' => '9308M',
                 'J4139A' => '9304M',
                 'J4812A' => '2512',
@@ -864,16 +879,29 @@ the common model number with this map :
                 'J8165A' => '2650-PWR',
                 'J8433A' => 'CX4-6400cl-6XG',
                 'J8474A' => 'MF-6400cl-6XG',
+                'J8680A' => '9608sl',
+                'J8692A' => '3500yl-24G-PWR',
+                'J8693A' => '3500yl-48G-PWR',
                 'J8697A' => '5406zl',
                 'J8698A' => '5412zl',
                 'J8718A' => '5404yl',
                 'J8719A' => '5408yl',
                 'J8770A' => '4204vl',
+                'J8771A' => '4202vl-48G',
+                'J8772A' => '4202vl-72',
                 'J8773A' => '4208vl',
-                'J8680A' => '9608sl',
                 'J8762A' => '2600-8-PWR',
-                'J8692A' => '3500yl-24G-PWR',
-                'J8693A' => '3500yl-48G-PWR',
+                'J8992A' => '6200yl-24G',
+                'J9019A' => '2510-24A',
+                'J9020A' => '2510-48A',
+                'J9021A' => '2810-24G',
+                'J9022A' => '2810-48G',
+                'J9028A' => '1800-24G',
+                'J9029A' => '1800-8G',
+                'J9050A' => '2900-48G',
+                'J9049A' => '2900-24G',
+                'J9032A' => '4202vl-68G',
+                'J9091A' => '8212zl',
                 );
 
 =item $hp->os()
