@@ -28,18 +28,20 @@
 
 package SNMP::Info::CiscoPortSecurity;
 $VERSION = '1.07';
-# $Id: CiscoPortSecurity.pm,v 1.2 2007/11/26 04:24:50 jeneric Exp $
+# $Id: CiscoPortSecurity.pm,v 1.4 2007/12/07 23:13:01 jeneric Exp $
 
 use strict;
 
 use Exporter;
 
-use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
+use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE %PAECAPABILITIES/;
 @SNMP::Info::CiscoPortSecurity::ISA = qw/Exporter/;
 @SNMP::Info::CiscoPortSecurity::EXPORT_OK = qw//;
 
 %MIBS    = (
             'CISCO-PORT-SECURITY-MIB' => 'ciscoPortSecurityMIB',
+ 	    'CISCO-PAE-MIB'           => 'ciscoPaeMIB',
+            'IEEE8021-PAE-MIB'        => 'dot1xAuthLastEapolFrameSource',
            );
 
 %GLOBALS = (
@@ -83,16 +85,32 @@ use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
             'cps_i_v_mac'        => 'cpsIfVlanSecureMacAddress',
             # CISCO-PORT-SECURITY-MIB::cpsSecureMacAddressTable
             'cps_m_status' => 'cpsSecureMacAddrRowStatus',
-            'cps_m_age' => 'cpsSecureMacAddrRemainingAge',
-            'cps_m_type' => 'cpsSecureMacAddrType',
-            'cps_m_mac' => 'cpsSecureMacAddress',
+            'cps_m_age'    => 'cpsSecureMacAddrRemainingAge',
+            'cps_m_type'   => 'cpsSecureMacAddrType',
+            'cps_m_mac'    => 'cpsSecureMacAddress',
+ 	    # CISCO-PAE-MIB::dot1xPaePortEntry
+            'pae_i_capabilities'             => 'dot1xPaePortCapabilities',
+            'pae_i_last_eapol_frame_source'  => 'dot1xAuthLastEapolFrameSource',
            );
 
 %MUNGE   = (
-            'cps_i_mac'      => \&SNMP::Info::munge_mac, 
-            'cps_m_mac'      => \&SNMP::Info::munge_mac,
-            'cps_i_v_mac'    => \&SNMP::Info::munge_mac,
+            'cps_i_mac'                      => \&SNMP::Info::munge_mac, 
+            'cps_m_mac'                      => \&SNMP::Info::munge_mac,
+            'cps_i_v_mac'                    => \&SNMP::Info::munge_mac,
+            'pae_i_last_eapol_frame_source'  => \&SNMP::Info::munge_mac,
+            'pae_i_capabilities'             => \&munge_pae_capabilities,
            );
+
+%PAECAPABILITIES = (0 => 'dot1xPaePortAuthCapable',
+ 		    1 => 'dot1xPaePortSuppCapable');
+
+sub munge_pae_capabilities {
+    my $bits = shift;
+
+    return undef unless defined $bits;
+    my @vals = map($PAECAPABILITIES{$_},sprintf("%x",unpack('b*',$bits)));
+    return join(' ',@vals);
+}
 
 1;
 __END__
@@ -100,7 +118,7 @@ __END__
 =head1 NAME
 
 SNMP::Info::CiscoPortSecurity - SNMP Interface to data from
-CISCO-PORT-SECURITY-MIB
+CISCO-PORT-SECURITY-MIB and CISCO-PAE-MIB
 
 =head1 AUTHOR
 
@@ -125,8 +143,8 @@ Eric Miller
 =head1 DESCRIPTION
 
 SNMP::Info::CiscoPortSecurity is a subclass of SNMP::Info that provides
-an interface to the C<CISCO-PORT-SECURITY-MIB>.  This MIB is used across
-the Catalyst family under CatOS and IOS.
+an interface to the C<CISCO-PORT-SECURITY-MIB> and C<CISCO-PAE-MIB>.  These
+MIBs are used across the Catalyst family under CatOS and IOS.
 
 Use or create in a subclass of SNMP::Info.  Do not use directly.
 
@@ -139,6 +157,10 @@ None.
 =over
 
 =item CISCO-PORT-SECURITY-MIB
+
+=item CISCO-PAE-MIB
+
+=item IEEE8021-PAE-MIB
 
 =back
 
@@ -322,6 +344,19 @@ These are methods that return scalar values from SNMP
 =item $stack->cps_m_mac()
 
 (B<cpsSecureMacAddress>)
+
+=back
+
+=head2 CISCO-PAE-MIB::dot1xPaePortEntry
+
+=over
+
+=item $stack->pae_i_capabilities()
+
+B<dot1xPaePortCapabilities>
+
+Indicates the PAE functionality that this Port supports
+and that may be managed through this MIB.
 
 =back
 

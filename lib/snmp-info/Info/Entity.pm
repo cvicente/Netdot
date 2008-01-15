@@ -31,7 +31,7 @@
 
 package SNMP::Info::Entity;
 $VERSION = '1.07';
-# $Id: Entity.pm,v 1.17 2007/11/26 04:24:50 jeneric Exp $
+# $Id: Entity.pm,v 1.18 2007/12/02 20:01:59 fenner Exp $
 
 use strict;
 
@@ -272,7 +272,8 @@ The relative position among all entities sharing the same parent.
 
 =item $entity->e_type()
 
-This is an OID.
+This is an OID, which gets munged into the object name if the right
+MIB is loaded.
 
 (C<entPhysicalVendorType>)
 

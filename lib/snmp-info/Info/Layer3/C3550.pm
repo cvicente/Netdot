@@ -43,6 +43,7 @@ use SNMP::Info::CiscoImage;
 use SNMP::Info::CiscoPortSecurity;
 use SNMP::Info::CiscoPower;
 use SNMP::Info::Layer3;
+use SNMP::Info::CiscoStpExtensions;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
 @SNMP::Info::Layer3::C3550::ISA = qw/SNMP::Info::CiscoVTP SNMP::Info::CiscoStack 
@@ -50,11 +51,13 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
                                      SNMP::Info::CiscoPortSecurity
                                      SNMP::Info::CiscoImage SNMP::Info::CiscoPower
                                      SNMP::Info::Layer3
+                                     SNMP::Info::CiscoStpExtensions
                                      Exporter/;
 @SNMP::Info::Layer3::C3550::EXPORT_OK = qw//;
 
 %MIBS =    (
             %SNMP::Info::Layer3::MIBS,
+            %SNMP::Info::CiscoStpExtensions::MIBS,
             %SNMP::Info::CiscoPower::MIBS,
             %SNMP::Info::CiscoPortSecurity::MIBS,
             %SNMP::Info::CiscoImage::MIBS,
@@ -66,6 +69,7 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
 
 %GLOBALS = (
             %SNMP::Info::Layer3::GLOBALS,
+            %SNMP::Info::CiscoStpExtensions::GLOBALS,
             %SNMP::Info::CiscoPower::GLOBALS,
             %SNMP::Info::CiscoPortSecurity::GLOBALS,
             %SNMP::Info::CiscoImage::GLOBALS,
@@ -78,6 +82,7 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
 
 %FUNCS = (
             %SNMP::Info::Layer3::FUNCS,
+            %SNMP::Info::CiscoStpExtensions::FUNCS,
             %SNMP::Info::CiscoPower::FUNCS,
             %SNMP::Info::CiscoPortSecurity::FUNCS,
             %SNMP::Info::CiscoImage::FUNCS,
@@ -90,6 +95,7 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
 %MUNGE = (
             # Inherit all the built in munging
             %SNMP::Info::Layer3::MUNGE,
+            %SNMP::Info::CiscoStpExtensions::MUNGE,
             %SNMP::Info::CiscoPower::MUNGE,
             %SNMP::Info::CiscoPortSecurity::MUNGE,
             %SNMP::Info::CiscoImage::MUNGE,
@@ -265,6 +271,8 @@ after determining a more specific class using the method above.
 
 =item SNMP::Info::Layer3
 
+=item SNMP::Info::CiscoSTPExtensions
+
 =item SNMP::Info::CiscoPower
 
 =item SNMP::Info::CiscoPortSecurity
@@ -288,6 +296,8 @@ after determining a more specific class using the method above.
 =item Inherited Classes' MIBs
 
 See L<SNMP::Info::Layer3/"Required MIBs"> for its own MIB requirements.
+
+See L<SNMP::Info::CiscoStpExtensions/"Required MIBs"> for its own MIB requirements.
 
 See L<SNMP::Info::CiscoPower/"Required MIBs"> for its own MIB requirements.
 
@@ -331,6 +341,10 @@ Trys to cull the number of ports from the model number.
 =head2 Globals imported from SNMP::Info::Layer3
 
 See documentation in L<SNMP::Info::Layer3/"GLOBALS"> for details.
+
+=head2 Globals imported from SNMP::Info::CiscoStpExtensions
+
+See documentation in L<SNMP::Info::CiscoStpExtensions/"GLOBALS"> for details.
 
 =head2 Globals imported from SNMP::Info::CiscoPower
 
@@ -408,6 +422,10 @@ Crosses $c3550->p_port() with $c3550->p_duplex() to utilize port ifIndex.
 =head2 Table Methods imported from SNMP::Info::Layer3
 
 See documentation in L<SNMP::Info::Layer3/"TABLE METHODS"> for details.
+
+=head2 Table Methods imported from SNMP::Info::CiscoStpExtensions
+
+See documentation in L<SNMP::Info::CiscoStpExtensions/"TABLE METHODS"> for details.
 
 =head2 Table Methods imported from SNMP::Info::CiscoPower
 

@@ -31,7 +31,7 @@
 
 package SNMP::Info::Layer2::HP;
 $VERSION = '1.07';
-# $Id: HP.pm,v 1.37 2007/11/29 02:29:26 jeneric Exp $
+# $Id: HP.pm,v 1.38 2007/12/02 03:02:01 jeneric Exp $
 
 use strict;
 
@@ -57,6 +57,8 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
           'STATISTICS-MIB' => 'hpSwitchCpuStat',
           'NETSWITCH-MIB'  => 'hpMsgBufFree',
           'CONFIG-MIB'     => 'hpSwitchConfig',
+          'SEMI-MIB'       => 'hpHttpMgSerialNumber',
+          'HP-ICF-CHASSIS' => 'hpicfSensorObjectId',
         );
 
 %GLOBALS = (
@@ -65,6 +67,7 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
             %SNMP::Info::LLDP::GLOBALS,
             %SNMP::Info::CDP::GLOBALS,
             'serial1'      => 'entPhysicalSerialNum.1',
+            'serial2'      => 'hpHttpMgSerialNumber.0',
             'hp_cpu'       => 'hpSwitchCpuStat.0',
             'hp_mem_total' => 'hpGlobalMemTotalBytes.1',
             'mem_free'     => 'hpGlobalMemFreeBytes.1',
@@ -96,6 +99,10 @@ use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %PORTSTAT %MODEL_MAP %MUNGE $I
             # CONFIG-MIB::hpSwitchPortTable
             'hp_duplex'       => 'hpSwitchPortEtherMode',
             'hp_duplex_admin' => 'hpSwitchPortFastEtherMode',
+             # HP-ICF-CHASSIS
+             'hp_s_oid'     => 'hpicfSensorObjectId',
+             'hp_s_name'    => 'hpicfSensorDescr',
+             'hp_s_status'  => 'hpicfSensorStatus',
            );
 
 %MUNGE = (
@@ -207,16 +214,11 @@ sub model {
     return defined $MODEL_MAP{$model} ? $MODEL_MAP{$model} : $model;
 }
 
-# Some have the serial num in entity mib, some dont.
+# Some have the serial in entity mib, some have it in SEMI-MIB::hphttpmanageable
 sub serial {
     my $hp = shift;
-    
-    # procurve 2xxx have this
-    my $serial = $hp->serial1();
 
-    return undef unless defined $serial;
-    # 4xxx dont
-    return undef if $serial =~ /nosuchobject/i;
+    my $serial = $hp->serial1() || $hp->serial2() || undef;
 
     return $serial; 
 }
@@ -324,14 +326,39 @@ sub slots {
     return $slots;
 }
 
-#sub fan {
-#    my $hp = shift;
-#
-#    my %ents = reverse %{$hp->e_name()};
-#
-#    my $fan = $ents{'Fan'};
-#
-#}
+sub fan {
+    my $hp = shift;
+    return &sensor($hp, 'fan');
+}
+
+sub ps1_status {
+    my $hp = shift;
+    return &sensor($hp, 'power', '^power supply 1') || &sensor($hp, 'power', '^power supply sensor');
+}
+
+sub ps2_status {
+    my $hp = shift;
+    return &sensor($hp, 'power', '^power supply 2') || &sensor($hp, 'power', '^redundant');
+}
+
+sub sensor {
+    my $hp = shift;
+    my $search_type = shift || 'fan';
+    my $search_name = shift || '';
+    my $hp_s_oid = $hp->hp_s_oid();
+    my $result;
+    foreach my $sensor (keys %$hp_s_oid) {
+        my $sensortype = &SNMP::translateObj($hp_s_oid->{$sensor});
+        if ($sensortype =~ /$search_type/i) {
+            my $sensorname = $hp->hp_s_name()->{$sensor};
+            my $sensorstatus = $hp->hp_s_status()->{$sensor};
+            if ($sensorname =~ /$search_name/i) {
+                $result = $sensorstatus;
+            }
+        }
+    }
+    return $result;
+}
 
 # Bridge MIB does not map Bridge Port to ifIndex correctly on all models
 sub bp_index {

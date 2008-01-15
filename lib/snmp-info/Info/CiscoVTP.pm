@@ -31,7 +31,7 @@
 
 package SNMP::Info::CiscoVTP;
 $VERSION = '1.07';
-# $Id: CiscoVTP.pm,v 1.18 2007/11/27 17:19:28 jeneric Exp $
+# $Id: CiscoVTP.pm,v 1.20 2007/12/20 04:05:58 jeneric Exp $
 
 use strict;
 
@@ -208,14 +208,14 @@ sub i_vlan_membership {
         }
     }
 
-    # Get special voice VLANs (0 and 4096)
-    foreach my $port (keys %$voice_vlans) {
-        my $vlan = $voice_vlans->{$port};
-        next unless defined $vlan;
-        # Going to assume we would catch regular VLANs with the other methods
-        next unless ($vlan == 0 or $vlan == 4096);
-            push(@{$i_vlan_membership->{$port}}, $vlan);
-    }
+#    # Get special voice VLANs (0 and 4096)
+#    foreach my $port (keys %$voice_vlans) {
+#        my $vlan = $voice_vlans->{$port};
+#        next unless defined $vlan;
+#        # Going to assume we would catch regular VLANs with the other methods
+#        next unless ($vlan == 0 or $vlan == 4096);
+#            push(@{$i_vlan_membership->{$port}}, $vlan);
+#    }
 
     # Get trunk ports
 
@@ -237,18 +237,17 @@ sub i_vlan_membership {
         my $stat = $trunk_dyn_stat->{$port};
         if ( defined $stat and $stat =~ /^trunking/ ) {
             my $k = 0;
-            my $list1 = $ports_vlans->{$port} || 'unavail';
-            my $list2 = $ports_vlans_2k->{$port} || 'unavail';
-            my $list3 = $ports_vlans_3k->{$port} || 'unavail';
-            my $list4 = $ports_vlans_4k->{$port} || 'unavail';
+            my $list1 = $ports_vlans->{$port} || '0';
+            my $list2 = $ports_vlans_2k->{$port} || '0';
+            my $list3 = $ports_vlans_3k->{$port} || '0';
+            my $list4 = $ports_vlans_4k->{$port} || '0';
             foreach my $list ("$list1", "$list2", "$list3", "$list4") {
-                next if ($list eq 'unavail');
+                my $offset = 1024 * $k++;
+                next unless $list;
                 my $vlanlist = [split(//, unpack("B*", $list))];
-                my $offset = 1024 * $k;
                 foreach my $vlan (keys %oper_vlans) {            
-                    push(@{$i_vlan_membership->{$port}}, $vlan) if (@$vlanlist[$vlan]-$offset);
+                    push(@{$i_vlan_membership->{$port}}, $vlan) if (@$vlanlist[$vlan-$offset]);
                 }
-                $k++;
             }
         }
     }

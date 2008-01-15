@@ -42,6 +42,7 @@ use SNMP::Info::CiscoPortSecurity;
 use SNMP::Info::CiscoConfig;
 use SNMP::Info::CiscoPower;
 use SNMP::Info::Layer3;
+use SNMP::Info::CiscoStpExtensions;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
 $VERSION = '1.07';
@@ -52,6 +53,7 @@ $VERSION = '1.07';
                                     SNMP::Info::CiscoConfig
                                     SNMP::Info::CiscoPower
                                     SNMP::Info::Layer3
+                                    SNMP::Info::CiscoStpExtensions
                                     Exporter/;
 @SNMP::Info::Layer3::C6500::EXPORT_OK = qw//;
 
@@ -65,6 +67,7 @@ $VERSION = '1.07';
             %SNMP::Info::CDP::MIBS,
             %SNMP::Info::CiscoStack::MIBS,
             %SNMP::Info::CiscoVTP::MIBS,
+	    %SNMP::Info::CiscoStpExtensions::MIBS,
            );
 
 %GLOBALS = (
@@ -77,6 +80,7 @@ $VERSION = '1.07';
             %SNMP::Info::CDP::GLOBALS,
             %SNMP::Info::CiscoStack::GLOBALS,
             %SNMP::Info::CiscoVTP::GLOBALS,
+	    %SNMP::Info::CiscoStpExtensions::GLOBALS,
            );
 
 %FUNCS = (
@@ -89,6 +93,7 @@ $VERSION = '1.07';
             %SNMP::Info::CDP::FUNCS,
             %SNMP::Info::CiscoStack::FUNCS,
             %SNMP::Info::CiscoVTP::FUNCS,
+	    %SNMP::Info::CiscoStpExtensions::FUNCS,
          );
 
 %MUNGE = (
@@ -101,6 +106,7 @@ $VERSION = '1.07';
             %SNMP::Info::CDP::MUNGE,
             %SNMP::Info::CiscoStack::MUNGE,
             %SNMP::Info::CiscoVTP::MUNGE,
+	    %SNMP::Info::CiscoStpExtensions::MUNGE,
          );
 
 sub vendor {
@@ -191,6 +197,7 @@ sub set_i_duplex_admin {
     }
 }
 
+
 1;
 __END__
 
@@ -254,6 +261,8 @@ after determining a more specific class using the method above.
 
 =item SNMP::Info::Layer3
 
+=item SNMP::Info::CiscoStpExtensions
+
 =back
 
 =head2 Required MIBs
@@ -279,6 +288,8 @@ See L<SNMP::Info::CiscoConfig/"Required MIBs"> for its own MIB requirements.
 See L<SNMP::Info::CiscoPower/"Required MIBs"> for its own MIB requirements.
 
 See L<SNMP::Info::Layer3/"Required MIBs"> for its own MIB requirements.
+
+See L<SNMP::Info::CiscoStpExtensions/"Required MIBs"> for its own MIB requirements.
 
 =back
 
@@ -329,6 +340,10 @@ See documentation in L<SNMP::Info::CiscoPower/"GLOBALS"> for details.
 =head2 Globals imported from SNMP::Info::Layer3
 
 See documentation in L<SNMP::Info::Layer3/"GLOBALS"> for details.
+
+=head2 Globals imported from SNMP::Info::CiscoStpExtensions
+
+See documentation in L<SNMP::Info::CiscoStpExtensions/"GLOBALS"> for details.
 
 =head1 TABLE METHODS
 
@@ -407,9 +422,13 @@ See documentation in L<SNMP::Info::CiscoConfig/"TABLE METHODS"> for details.
 
 See documentation in L<SNMP::Info::CiscoPower/"TABLE METHODS"> for details.
 
+=head2 Table Methods imported from SNMP::Info::CiscoStpExtensions
+
 =head2 Table Methods imported from SNMP::Info::Layer3
 
 See documentation in L<SNMP::Info::Layer3/"TABLE METHODS"> for details.
+
+See documentation in L<SNMP::Info::CiscoStpExtensions/"TABLE METHODS"> for details.
 
 =cut
 

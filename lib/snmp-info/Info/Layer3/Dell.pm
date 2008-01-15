@@ -27,7 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Dell;
-# $Id: Dell.pm,v 1.7 2007/11/26 04:24:52 jeneric Exp $
+# $Id: Dell.pm,v 1.8 2007/12/07 04:09:47 jeneric Exp $
 
 use strict;
 
@@ -60,7 +60,7 @@ $VERSION = '1.07';
             'dell_duplex_admin' => 'swIfDuplexAdminMode',
             'dell_duplex'       => 'swIfDuplexOperMode',
             'dell_tag_mode'     => 'swIfTaggedMode',
-            'dell_i_type'            => 'swIfType',
+            'dell_i_type'       => 'swIfType',
             'dell_fc_admin'     => 'swIfFlowControlMode',
             'dell_speed_admin'  => 'swIfSpeedAdminMode',
             'dell_auto'         => 'swIfSpeedDuplexAutoNegotiation',
@@ -103,28 +103,31 @@ $VERSION = '1.07';
 
 # Method OverRides
 
-sub bulkwalk_no { 1; }
-
 sub model {
     my $dell = shift;
 
-    my $name = $dell->dell_id_name();
-    
-    if ($name =~ m/(\d+)/){
+    my $name =  $dell->dell_id_name();
+    my $descr = $dell->description();
+
+    if (defined $name and $name =~ m/(\d+)/){
         return $1;
     }
-
-    return undef;
+    # Don't have a vendor MIB for D-Link
+    else {
+        return $descr;
+    }
 }
 
 sub vendor {
-
-    return 'dell';
+    my $dell = shift;
+    
+    return $dell->_vendor();
 }
 
 sub os {
-
-    return 'dell';
+    my $dell = shift;
+    
+    return $dell->_vendor();
 }
 
 sub serial {
@@ -138,26 +141,26 @@ sub serial {
         next;
     }
 
-    return undef;
+    # Last resort
+    return $dell->SUPER::serial();
 }
 
-# Descriptions are all the same, so use name instead
 sub interfaces {
     my $dell = shift;
     my $partial = shift;
 
-    my $interfaces = $dell->i_index($partial) || {};
-    my $names = $dell->orig_i_name($partial) || {};
+    my $i_descr = $dell->i_description($partial) || {};
+    my $i_name  = $dell->i_name($partial) || {};
 
-    my %interfaces = ();
-    foreach my $iid (keys %$interfaces){
-        my $name = $names->{$iid};
+    # Descriptions are all the same on some Dells, so use name instead if
+    # available
+    foreach my $iid (keys %$i_name){
+        my $name = $i_name->{$iid};
         next unless defined $name;
-
-        $interfaces{$iid} = $name;
+        $i_descr->{$iid} = $name;
     }
     
-    return \%interfaces;
+    return $i_descr;
 }
 
 sub i_duplex_admin {
@@ -182,19 +185,42 @@ sub i_duplex_admin {
     return \%i_duplex_admin;
 }
 
-# Normal BRIDGE-MIB not working?  Use Q-BRIDGE-MIB for macsuck
+# Use same methods as netgear.  Some device didn't implement the bridge MIB
+# forwarding table and some don't return MACs for VLANs other than default yet
+# don't support community indexing, so we use the Q-BRIDGE-MIB forwarding
+# table.  Fall back to the orig functions if the qb versions don't
+# return anything.
 sub fw_mac {
     my $dell = shift;
-    my $partial = shift;
-
-    return $dell->qb_fw_mac($partial);
+    my $ret = $dell->qb_fw_mac();
+    $ret = $dell->orig_fw_mac() if (!defined($ret));
+    return $ret;
 }
 
 sub fw_port {
     my $dell = shift;
-    my $partial = shift;
+    my $ret = $dell->qb_fw_port();
+    $ret = $dell->orig_fw_port() if (!defined($ret));
+    return $ret;
+}
 
-    return $dell->qb_fw_port($partial);
+sub _vendor {
+    my $dell = shift;
+
+    my $id     = $dell->id() || 'undef';
+    my %oidmap = (
+                  2   => 'ibm',
+                  171 => 'dlink',
+                  674 => 'dell',
+                );
+    $id = $1 if (defined($id) && $id =~ /^\.1\.3\.6\.1\.4\.1\.(\d+)/);
+
+    if (defined($id) and exists($oidmap{$id})) {
+        return $oidmap{$id};
+    }
+    else {
+        return 'dlink';
+    }
 }
 
 1;
@@ -228,7 +254,8 @@ Eric Miller
 =head1 DESCRIPTION
 
 Provides abstraction to the configuration information obtainable from an 
-Dell Power Connect device through SNMP. 
+Dell Power Connect device through SNMP.  D-Link and the IBM BladeCenter
+Gigabit Ethernet Switch Module also use this module based upon MIB support. 
 
 For speed or debugging purposes you can call the subclass directly, but not
 after determining a more specific class using the method above. 
@@ -277,15 +304,18 @@ These are methods that return scalar value from SNMP
 
 =item $dell->model()
 
-Returns model type.  Returns numeric from (B<productIdentificationDisplayName>).
+Returns model type.  Returns numeric from (B<productIdentificationDisplayName>)
+if available, otherwise if returns description().
 
 =item $dell->vendor()
 
-Returns dell
+Returns 'dell', 'dlink', or 'ibm' based upon the IANA enterprise number in
+id().  Defaults to 'dlink'.
 
 =item $dell->os()
 
-Returns dell
+Returns 'dell', 'dlink', or 'ibm' based upon the IANA enterprise number in
+id().  Defaults to 'dlink'.
 
 =back
 
@@ -293,13 +323,10 @@ Returns dell
 
 =over
 
-=item $dell->bulkwalk_no
-
-Return C<1>.  Bulkwalk is currently turned off for this class.
-
 =item $dell->serial()
 
-Returns serial number. (B<rlPhdUnitGenParamSerialNum>)
+Returns serial number. Returns (B<rlPhdUnitGenParamSerialNum>) if available,
+otherwise uses the Layer3 serial method.
 
 =back
 
@@ -357,9 +384,8 @@ to a hash.
 =item $dell->interfaces()
 
 Returns the map between SNMP Interface Identifier (iid) and physical port name.
-Uses name instead of description since descriptions are not unique.
-
-Only returns those iids that have a name listed in $l3->i_name()
+Uses name if available instead of description since descriptions are 
+sometimes not unique.
 
 =item $dell->i_duplex_admin()
 
