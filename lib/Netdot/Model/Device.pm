@@ -694,7 +694,7 @@ sub get_snmp_info {
 	    }elsif ( $dev{stp_type} =~ /pvst/i ){
 		# In PVST, we number the instances the same as VLANs
 		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = $vid;
-	    }elsif ( $dev{stp_type} ne 'unknown' ){
+	    }elsif ( $dev{stp_type} eq 'ieee8021d' ){
 		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = 0;
 	    }
 	}
