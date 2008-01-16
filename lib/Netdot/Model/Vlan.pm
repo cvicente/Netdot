@@ -127,7 +127,7 @@ sub get_stp_links {
 			       $self->vid, $root_b));
 	my (%far, %near);
 	foreach my $iv ( @{$sets{$root_b}} ){
-	    if ( $iv->stp_state eq 'forwarding' ){
+	    if ( $iv->stp_state =~ /^forwarding|blocking$/ ){
 		if ( $iv->stp_des_bridge && int($iv->interface->device->physaddr) ){
 		    my $des_b     = $iv->stp_des_bridge;
 		    my $des_p     = $iv->stp_des_port;
