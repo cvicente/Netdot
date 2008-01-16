@@ -195,17 +195,19 @@ sub _validate {
     my $groups = VlanGroup->retrieve_all();
 
     # Check range validity
+    if ( $argv->{start_vid} < 1 || $argv->{end_vid} > 4096 ){
+	$class->throw_user("Invalid range: It must be within 1 and 4096");
+    }
+	
     if ( exists $argv->{start_vid} && exists $argv->{end_vid} ){
 	if ( $argv->{start_vid} >= $argv->{end_vid} ){
 	    $class->throw_user("Invalid range: start must be lower than end");
 	}
-	
 	while ( my $g = $groups->next ){
 	    # Do not compare to self
 	    if ( $self && ($self->id == $g->id) ){
 		next;
 	    }
-	    
 	    # Check that ranges do not overlap
 	    unless ( ($argv->{start_vid} < $g->start_vid && $argv->{end_vid} < $g->start_vid) ||
 		     ($argv->{start_vid} > $g->end_vid && $argv->{end_vid} > $g->end_vid) ){
@@ -215,12 +217,6 @@ sub _validate {
 	    }
 	}
     }
-    # No negative values
-    if ( (exists $argv->{start_vid} && $argv->{start_vid} < 0) 
-	 || (exists $argv->{end_vid} && $argv->{end_vid} < 0)  ){
-	$class->throw_user("Invalid range: Neither start nor end can be negative");
-    }
-
     return 1;
 }
 

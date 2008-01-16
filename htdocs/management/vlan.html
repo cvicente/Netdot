@@ -40,7 +40,7 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 #######################################################################################
 if( $_action eq "INSERT" && !$o ){
     
-    if ( $name && $start && $end ){
+    if ( defined($name) && defined($start) && defined($end) ){
 	eval {
 	    VlanGroup->insert({name=>$name, start_vid=>$start, end_vid=>$end});
 	};
@@ -49,7 +49,7 @@ if( $_action eq "INSERT" && !$o ){
 	}
 	$_action = 'SHOW_GROUPS';
     }else{
-	$m->comp('/generic/error.mhtml', error=>"Missing required arguments: 'name', 'start', 'end'");
+	$m->comp('/generic/error.mhtml', error=>"Missing one or more required arguments: 'name', 'start', 'end'");
     }
 }
 </%perl>    
