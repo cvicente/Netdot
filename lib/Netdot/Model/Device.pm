@@ -3340,52 +3340,31 @@ sub _get_fwt_from_snmp {
     my $cisco_comm_indexing = $sinfo->cisco_comm_indexing();
     if ( $cisco_comm_indexing ){
         $logger->debug("$host supports Cisco community string indexing. Connecting to each VLAN");
-        my $v_name   = $sinfo->v_name() || {};
-        my $i_vlan   = $sinfo->i_vlan() || {};
-	my $sclass   = $sinfo->class();
-	
-        # Get list of VLANs currently in use by ports
-        my %vlans;
-        foreach my $key ( keys %$i_vlan ){
-            my $vlan = $i_vlan->{$key};
-            $vlans{$vlan}++;
-        }
-	
-        # For each VLAN, connect and then retrieve forwarding tables
-	# VLAN id comes as 1.142 instead of 142
-        foreach my $vid (sort { my $aa=$a; my $bb=$b; $aa =~ s/^\d+\.//;$bb=~ s/^\d+\.//;
-                                # Sort by VLAN id
-                                $aa <=> $bb
-				}
-                         keys %$v_name){
-	    
-            my $vlan_name = $v_name->{$vid} || '(Unnamed)';
-            my $vlan = $vid;
-            $vlan =~ s/^\d+\.//;
-	    
-            # Only get macs from VLAN if in use by port
-            # but check to see if device serves us that list first
-            if ( scalar keys(%$i_vlan) && !defined $vlans{$vlan} ){
-                $logger->debug("VLAN:$vlan_name ($vlan) skipped because not in use by a port");
-		next;
-	    }
-	    
-            my %args = ('host'        => $host,
+	my $sclass = $sinfo->class();
+
+        # Get list of all VLANS on this device
+	my %vlans;
+	foreach my $int ( $self->interfaces ){
+	    map { $vlans{$_->vlan->vid}++ } $int->vlans;
+	}
+
+        foreach my $vlan ( sort{$a<=>$b} keys %vlans ){
+	    my %args = ('host'        => $host,
                         'communities' => [$self->community . '@' . $vlan],
                         'version'     => $self->snmp_version,
 			'sclass'      => $sclass,
-			);
+		);
             my $vlan_sinfo = $class->_get_snmp_session(%args);
 	    
             unless ( defined $vlan_sinfo ){
                 $logger->error("$host: Error getting SNMP session for VLAN: $vlan");
                 next;
             }
-            $self->_exec_timeout($host, sub { return $self->_walk_fwt(sinfo      => $vlan_sinfo,
-								      sints      => $sints,
-								      intmacs    => $intmacs,
-								      devints    => \%devints,
-								      fwt        => \%fwt);
+            $self->_exec_timeout($host, sub { return $self->_walk_fwt(sinfo   => $vlan_sinfo,
+								      sints   => $sints,
+								      intmacs => $intmacs,
+								      devints => \%devints,
+								      fwt     => \%fwt);
 					  });
         }
     }
