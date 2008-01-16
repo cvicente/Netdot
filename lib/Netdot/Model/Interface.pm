@@ -389,7 +389,7 @@ sub update_ip {
 		    
 		    # Make sure that the status is 'Subnet'
 		    my %iargs;
-		    $iargs{status=>'Subnet'} if ( $subnet->status->name ne 'Subnet' );
+		    $iargs{status} = 'Subnet' if ( $subnet->status->name ne 'Subnet' );
 		    
 		    # If we have a VLAN, make the relationship
 		    $iargs{vlan} = $vlan->id if defined $vlan;
