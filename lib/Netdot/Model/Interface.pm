@@ -369,12 +369,18 @@ sub update_ip {
     if ( my $mask = $args{mask} ){
 	if ( $args{add_subnets} && $isrouter ){
 	    # Create a subnet if necessary
-
 	    my ($subnetaddr, $subnetprefix) = Ipblock->get_subnet_addr(address => $address, 
 								       prefix  => $mask );
-	    $logger->debug("Subnet address: $subnetaddr. Subnet prefix: $subnetprefix");
-
+	    
 	    if ( $subnetaddr ne $address ){
+		my @ivs = $self->vlans;
+		my $vlan;
+		if ( scalar(@ivs) == 1 ){
+		    $vlan = $ivs[0]->vlan;
+		}elsif ( scalar(@ivs) > 1 ){
+		    $logger->debug(sprintf("%s: Interface %s (%s) member of more than one VLAN.  Skipping VLAN to Subnet assignment",
+					   $host, $self->number, $self->name));
+		}
 		if ( my $subnet = Ipblock->search(address => $subnetaddr, 
 						  prefix  => $subnetprefix)->first ){
 		    
@@ -382,7 +388,14 @@ sub update_ip {
 					   $host, $subnetaddr, $subnetprefix));
 		    
 		    # Make sure that the status is 'Subnet'
-		    $subnet->update({status=>'Subnet'}) if ( $subnet->status->name ne 'Subnet' );
+		    my %iargs;
+		    $iargs{status=>'Subnet'} if ( $subnet->status->name ne 'Subnet' );
+		    
+		    # If we have a VLAN, make the relationship
+		    $iargs{vlan} = $vlan->id if defined $vlan;
+
+		    # Update if needed
+		    $subnet->update(\%iargs) if keys %iargs;
 
 		}else{
 		    # Do not bother inserting loopbacks
@@ -399,6 +412,9 @@ sub update_ip {
 				  status         => "Subnet",
 				  no_update_tree => 1,
 				  );
+		    
+		    # If we have a VLAN, make the relationship
+		    $iargs{vlan} = $vlan->id if defined $vlan;
 		    
 		    # Check if subnet should inherit device info
 		    if ( $args{subs_inherit} ){
