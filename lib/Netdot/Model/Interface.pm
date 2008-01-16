@@ -143,6 +143,7 @@ sub update {
     subs_inherit  - Whether subnets should inherit info from the Device
     ipv4_changed  - Scalar ref.  Set if IPv4 info changes
     ipv6_changed  - Scalar ref.  Set if IPv6 info changes
+    stp_instances - Hash ref with device STP info
   Returns:    
     Interface object
   Example:
@@ -165,44 +166,47 @@ sub snmp_update {
 
     ############################################
     # Fill in standard fields
-    my @stdfields = qw(number name type description speed admin_status 
-		    oper_status admin_duplex oper_duplex);
+    my @stdfields = qw( number name type description speed admin_status 
+		        oper_status admin_duplex oper_duplex stp_id 
+   		        bpdu_guard_enabled bpdu_filter_enabled loop_guard_enabled root_guard_enabled
+                      );
     
     foreach my $field ( @stdfields ){
 	$iftmp{$field} = $newif->{$field} if exists $newif->{$field};
     }
-
 
     ############################################
     # Update PhysAddr
     if ( !defined $newif->{physaddr} ){
 	if ( $self->physaddr ){
 	    # This seems unlikely, but...
-	    $logger->info(sprintf("%s: PhysAddr %s no longer in %s.  Removing"), 
-			  $self->device->fqdn, $self->physaddr, $self->number);
-	    $self->physaddr->delete;
+	    $logger->info(sprintf("%s: PhysAddr %s no longer in %s.  Removing", 
+			  $host, $self->physaddr->address, $self->name));
+	    $iftmp{physaddr} = 0;
 	}
     }else{
 	my $addr = $newif->{physaddr};
 	# Check if it's valid
 	if ( ! PhysAddr->validate( $addr ) ){
-	    $logger->warn(sprintf("%s: Interface %s: PhysAddr: %s is not valid"),
-			  $self->device->name, $self->name, $addr);
+	    $logger->warn(sprintf("%s: Interface %s (%s): PhysAddr %s is not valid"),
+			  $host, $iftmp{number}, $iftmp{name}, $addr);
 	}else{
 	    # Look it up
 	    my $physaddr;
-	    if ( my $physaddr = PhysAddr->search(address => $addr)->first ){
+	    if ( $physaddr = PhysAddr->search(address=>$addr)->first ){
 		# The address exists.
 		# Make sure to update the timestamp
 		# and reference it from this Interface
 		$physaddr->update({last_seen=>$self->timestamp});
+		$logger->debug(sprintf("%s: Interface %s (%s) has PhysAddr %s", 
+				      $host, $iftmp{number}, $iftmp{name}, $addr));
 	    }else{
 		# address is new.  Add it
 		$physaddr = PhysAddr->insert({ address => $addr }); 
-		$logger->info(sprintf("%s: Added new PhysAddr %s for Interface %s (%s)",
-				      $host, $addr, $iftmp{number}, $iftmp{name})),
+		$logger->info(sprintf("%s: Interface %s (%s) has new PhysAddr %s",
+				      $host, $iftmp{number}, $iftmp{name}, $addr)),
 	    }
-	    $iftmp{physaddr} = $physaddr;
+	    $iftmp{physaddr} = $physaddr->id;
 	}
     }
 
@@ -221,11 +225,17 @@ sub snmp_update {
     # Update VLANs
     #
     # Get our current vlan memberships
-    # InterfaceVlan objects (joins)
+    # InterfaceVlan objects
     #
     if ( exists $newif->{vlans} ){
 	my %oldvlans;
 	map { $oldvlans{$_->id} = $_ } $self->vlans();
+	
+	# InterfaceVlan STP fields and their methods
+	my %IVFIELDS = ( stp_des_bridge => 'i_stp_bridge',
+			 stp_des_port   => 'i_stp_port',
+			 stp_state      => 'i_stp_state',
+	    );
 	
 	foreach my $newvlan ( keys %{ $newif->{vlans} } ){
 	    my $vid   = $newif->{vlans}->{$newvlan}->{vid} || $newvlan;
@@ -259,7 +269,34 @@ sub snmp_update {
 		$logger->info(sprintf("%s: Assigned Interface %s (%s) to VLAN %s", 
 				      $host, $self->number, $self->name, $vo->vid));
 	    }
-	}
+
+	    # Insert STP information for this interface on this vlan
+	    my $stpinst = $newif->{vlans}->{$newvlan}->{stp_instance};
+	    my $instobj;
+	    if ( defined $stpinst ){
+		# In theory, this happens after the STP instances have been updated on this device
+		$instobj = STPInstance->search(device=>$self->device, number=>$stpinst)->first;
+		unless ( $instobj ){
+		    $logger->error("$host: Cannot find STP instance $stpinst");
+		    next;
+		}
+	    }else{
+		next;
+	    }
+	    my %uargs;
+	    foreach my $field ( keys %IVFIELDS ){
+		my $method = $IVFIELDS{$field};
+		if ( exists $args{stp_instances}->{$stpinst}->{$method} &&
+		     (my $v = $args{stp_instances}->{$stpinst}->{$method}->{$newif->{number}}) ){
+		    $uargs{$field} = $v;
+		}
+	    }
+	    if ( %uargs ){
+		$iv->update({stp_instance=>$instobj, %uargs});
+		$logger->debug(sprintf("%s: Updated STP info for Interface %s (%s) on VLAN %s", 
+				       $host, $self->number, $self->name, $vo->vid));
+	    }
+	}    
 	# Remove each vlan membership that no longer exists
 	#
 	foreach my $oldvlan ( keys %oldvlans ) {

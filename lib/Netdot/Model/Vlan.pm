@@ -78,6 +78,112 @@ sub update{
     }
 
 }
+###################################################################################################
+=head2 get_stp_links - Get links between devices on this vlan based on STP information
+
+  Arguments:  
+    Hashref with the following keys:
+     root  - Address of Root bridge (optional)
+  Returns:    
+    Hashref with link info
+  Example:
+    my $links = $vlan->get_stp_links(root=>'DEADDEADBEEF');
+
+=cut
+sub get_stp_links {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('get_stp_links');
+    
+    my @ivs = $self->interfaces;
+    # There can be multiple disconnected trees for this VLAN
+    # Each set, keyed by root bridge, will include STP port
+    # info for that tree
+    my %sets;
+    if ( $argv{root} ){
+	foreach my $iv ( @ivs ){
+	    if ( my $inst = $iv->stp_instance ){
+		if ( $inst->root_bridge && $inst->root_bridge eq $argv{root} ){
+		    push @{$sets{$argv{root}}}, $iv;
+		}
+	    }
+	}
+    }else{
+	foreach my $iv ( @ivs ){
+	    if ( my $inst = $iv->stp_instance ){
+		if ( my $root_b = $inst->root_bridge ){
+		    push @{$sets{$root_b}}, $iv;
+		}
+	    }
+	}
+    }
+    
+    # Run the analysis.  The designated bridge on a given segment will 
+    # have its own base MAC as the designated bridge and its own STP port ID as 
+    # the designated port.  The non-designated bridge will point to the 
+    # designated bridge instead.
+    my %links;
+    foreach my $root_b ( keys %sets ){
+	$logger->debug(sprintf("Vlan::get_stp_links: Determining STP topology for VLAN %s, root %s", 
+			       $self->vid, $root_b));
+	my (%far, %near);
+	foreach my $iv ( @{$sets{$root_b}} ){
+	    if ( $iv->stp_state eq 'forwarding' ){
+		if ( $iv->stp_des_bridge && int($iv->interface->device->physaddr) ){
+		    my $des_b     = $iv->stp_des_bridge;
+		    my $des_p     = $iv->stp_des_port;
+		    my $int       = $iv->interface->id;
+		    my $device_id = $iv->interface->device->id;
+		    # Now, the trick is to determine if the MAC in the designated
+		    # bridge value belongs to this same switch
+		    # It can either be the base bridge MAC, or the MAC of one of the
+		    # interfaces in the switch
+		    my $physaddr = PhysAddr->search(address=>$des_b)->first;
+		    next unless $physaddr;
+		    my $des_device;
+		    if ( my $dev = ($physaddr->devices)[0] ){
+			$des_device = $dev->id;
+		    }elsif ( (my $i = ($physaddr->interfaces)[0]) ){
+			if ( my $dev = $i->device ){
+			    $des_device = $dev->id ;
+			}
+		    }
+		    # If the bridge points to itself, it is the designated bridge
+		    # for the segment, which is nearest to the root
+		    if ( $des_device && $device_id && $des_device == $device_id ){
+			$near{$des_b}{$des_p} = $int;
+		    }else{
+			$far{$int}{des_p} = $des_p;
+			$far{$int}{des_b} = $des_b;
+		    }
+		}
+	    }
+	}
+	# Find the port in the designated bridge that is referenced by the far
+	# bridge
+	foreach my $int ( keys %far ){
+	    my $des_b = $far{$int}{des_b};
+	    my $des_p = $far{$int}{des_p};
+	    if ( exists $near{$des_b} ){
+		if ( exists $near{$des_b}{$des_p} ){
+		    my $r_int = $near{$des_b}{$des_p};
+		    $links{$int} = $r_int;
+		}else{
+		    # Octet representations may not match
+		    foreach my $r_des_p ( keys %{$near{$des_b}} ){
+			if ( $self->_cmp_des_p($r_des_p, $des_p) ){
+			    my $r_int = $near{$des_b}{$r_des_p};
+			    $links{$int} = $r_int;
+			}
+		    }
+		}
+	    }else{
+		$logger->debug(sprintf("Vlan::get_stp_links: Designated bridge %s not found", $des_b));
+	    }
+	}
+    }
+    return \%links;
+}
+
 
 #########################################################################################
 #
@@ -99,6 +205,38 @@ sub _find_group{
 	}
     }
     return;
+}
+
+############################################################################
+# Compare designated Port values
+# Depending on the vendor (and the switch model within the same vendor)
+# the value of dot1dStpPortDesignatedPort might be represented in different
+# ways.  I ignore what the actual logic is, but some times the octets
+# are swapped, and one of them may have the most significant or second to most
+# significant bit turned on.  Go figure.
+sub _cmp_des_p {
+    my ($self, $a, $b) = @_;
+    my ($aa, $ab, $ba, $bb, $x, $y);
+    if ( $a =~ /(\w{2})(\w{2})/ ){
+	( $aa, $ab ) = ($1, $2);
+    }
+    if ( $b =~ /(\w{2})(\w{2})/ ){
+	( $ba, $bb ) = ($1, $2);
+    }
+    if ( $aa eq '00' || $aa eq '80' || $aa eq '40' ){
+	$x = $ab;
+    }else{
+	$x = $aa;
+    }
+    if ( $ba eq '00' || $ba eq '80' || $ba eq '40' ){
+	$y = $bb;
+    }else{
+	$y = $ba;
+    }
+    if ( $x eq $y ){
+	return 1;
+    }
+    return 0;
 }
 
 =head1 AUTHOR

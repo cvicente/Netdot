@@ -360,6 +360,7 @@ sub insert {
 =cut
 sub get_snmp_info {
     my ($self, %args) = @_;
+    my $class = ref($self) || $self;
     
     my $target_address;
 
@@ -427,23 +428,15 @@ sub get_snmp_info {
 	}
     }
 
-    $dev{model}          = $sinfo->model();
-    $dev{os}             = $sinfo->os_ver();
-    $dev{physaddr}       = $sinfo->mac();
+    $dev{model}    = $sinfo->model();
+    $dev{os}       = $sinfo->os_ver();
+    $dev{physaddr} = $sinfo->b_mac() || $sinfo->mac();
     # Check if it's valid
     if ( $dev{physaddr} ){
 	if ( ! PhysAddr->validate($dev{physaddr}) ){
 	    $logger->debug("Device::get_snmp_info: $name ($ip) invalid Base MAC: $dev{physaddr}");
 	    delete $dev{physaddr};
 	}	
-    }
-
-    if ( defined $dev{physaddr} ){
-	# Check Spanning Tree stuff
-	$dev{stp_type}          = $sinfo->stp_ver();
-	$dev{stp_root}          = $sinfo->stp_root();
-	$dev{stp_root_port}     = $sinfo->dot1dStpRootPort();
-	$dev{stp_root_priority} = $sinfo->dot1dStpPriority();
     }
 
     $dev{sysname}        = $sinfo->name();
@@ -454,6 +447,92 @@ sub get_snmp_info {
     $dev{manufacturer}   = $sinfo->vendor();
     $dev{serialnumber}   = $sinfo->serial();
 
+    # Get STP (Spanning Tree Protocol) stuff
+    if ( $self->config->get('QUERY_STP_INFO') ){
+	if ( defined $dev{physaddr} ){
+	    $dev{stp_type} = $sinfo->stp_ver();
+	    
+	    if ( defined $dev{stp_type} && $dev{stp_type} ne 'unknown' ){
+		# Get STP port id
+		$hashes{'i_stp_id'} = $sinfo->i_stp_id;
+		
+		# Get all the 'guards and 'filters (where available)
+		foreach my $method ( 'i_rootguard_enabled', 'i_loopguard_enabled', 
+				     'i_bpduguard_enabled', 'i_bpdufilter_enabled' ){
+		    $hashes{$method} = $sinfo->$method;
+		}
+		
+		if ( $dev{stp_type} eq 'ieee8021d' || $dev{stp_type} eq 'mst' ){
+		    
+		    # Standard values (make it instance 0)
+		    my $stp_p_info = $self->_get_stp_info(sinfo=>$sinfo);
+		    foreach my $method ( keys %$stp_p_info ){
+			$dev{stp_instances}{0}{$method} = $stp_p_info->{$method};
+		    }
+		    
+		    # MST-specific
+		    if ( $dev{stp_type} eq 'mst' ){
+			# Get MST-specific values
+			$dev{stp_mst_region} = $sinfo->mst_region_name();
+			$dev{stp_mst_rev}    = $sinfo->mst_region_rev();
+			$dev{stp_mst_digest} = $sinfo->mst_config_digest();
+			
+			# Get the mapping of vlans to STP instance
+			$dev{stp_vlan2inst} = $sinfo->mst_vlan2instance();
+			my $mapping = join ', ', 
+			map { sprintf("%s=>%s", $_, $dev{stp_vlan2inst}->{$_}) } keys %{$dev{stp_vlan2inst}};
+			$logger->debug("Device::get_snmp_info: $name ($ip) MST VLAN mapping: $mapping ");
+			
+			# Get a list of vlans per instance
+			my %mst_inst_vlans;
+			foreach my $vlan ( keys %{$dev{stp_vlan2inst}} ){
+			    my $inst = $dev{stp_vlan2inst}->{$vlan};
+			    push @{$mst_inst_vlans{$inst}}, $vlan;
+			}
+			
+			# Now, if there's more than one instance, we need to get
+			# the STP standard info for at least one vlan on that instance.
+			# Cisco case: query repeatedly for each "community@vlan_id"
+			if ( $sinfo->cisco_comm_indexing() ){
+			    foreach my $mst_inst ( keys %mst_inst_vlans ){
+				# Skip instance 0
+				next if ( $mst_inst == 0 );
+				my $vid = $mst_inst_vlans{$mst_inst}->[0];
+				my $vsinfo = $class->_get_snmp_session('host'        => $target_address,
+								       'communities' => [$sinfo->snmp_comm . '@' . $vid],
+								       'version'     => $sinfo->snmp_ver,
+								       'sclass'      => $sinfo->class);
+				my $stp_p_info = $self->_get_stp_info(sinfo=>$vsinfo);
+				foreach my $method ( keys %$stp_p_info ){
+				    $dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
+				}
+			    }
+			}
+		    }
+		}elsif ( $dev{stp_type} =~ /pvst/i ){
+		    # Get stp info for each vlan
+		    # STPInstance numbers match vlan id's
+		    if ( $sinfo->cisco_comm_indexing() ){
+			my %vlans;
+			foreach my $p ( keys %{$hashes{'i_vlan_membership'}} ){
+			    my $vlans = $hashes{'i_vlan_membership'}->{$p};
+			    map { $vlans{$_}++ } @$vlans; 
+			}
+			foreach my $vid ( keys %vlans ){
+			    my $vsinfo = $class->_get_snmp_session('host'        => $target_address,
+								   'communities' => [$sinfo->snmp_comm . '@' . $vid],
+								   'version'     => $sinfo->snmp_ver,
+								   'sclass'      => $sinfo->class);
+			    my $stp_p_info = $self->_get_stp_info(sinfo=>$vsinfo);
+			    foreach my $method ( keys %$stp_p_info ){
+				$dev{stp_instances}{$vid}{$method} = $stp_p_info->{$method};
+			    }
+			}
+		    }
+		}
+	    }
+	}
+    }
     # Try to guess product type based on name
     if ( my $NAME2TYPE = $self->config->get('DEV_NAME2TYPE') ){
 	foreach my $str ( keys %$NAME2TYPE ){
@@ -489,15 +568,20 @@ sub get_snmp_info {
     # Interface stuff
     
     # Netdot Interface field name to SNMP::Info method conversion table
-    my %IFFIELDS = ( name            => "i_description",
-		     type            => "i_type",
-		     description     => "i_alias",
-		     speed           => "i_speed",
-		     admin_status    => "i_up",
-		     oper_status     => "i_up_admin", 
-		     physaddr        => "i_mac", 
-		     oper_duplex     => "i_duplex",
-		     admin_duplex    => "i_duplex_admin",
+    my %IFFIELDS = ( name                => "i_description",
+		     type                => "i_type",
+		     description         => "i_alias",
+		     speed               => "i_speed",
+		     admin_status        => "i_up",
+		     oper_status         => "i_up_admin", 
+		     physaddr            => "i_mac", 
+		     oper_duplex         => "i_duplex",
+		     admin_duplex        => "i_duplex_admin",
+		     stp_id              => "i_stp_id",
+		     bpdu_guard_enabled  => "i_bpduguard_enabled",   
+		     bpdu_filter_enabled => "i_bpdufilter_enabled",
+		     loop_guard_enabled  => "i_loopguard_enabled",
+		     root_guard_enabled  => "i_rootguard_enabled",
 		     );
     
     ##############################################
@@ -514,11 +598,16 @@ sub get_snmp_info {
 	    next if ( $ifdescr =~ /$ifreserved/i );
 	}
 	foreach my $field ( keys %IFFIELDS ){
-	    $dev{interface}{$iid}{$field} = $hashes{$IFFIELDS{$field}}->{$iid} 
-	    if ( defined($hashes{$IFFIELDS{$field}}->{$iid}) && 
-		 $hashes{$IFFIELDS{$field}}->{$iid} =~ /\w+/ );
+	    my $method = $IFFIELDS{$field};
+	    if ( defined($hashes{$method}->{$iid}) && $hashes{$method}->{$iid} =~ /\w+/ ){
+		if ( $field =~ /_enabled/ ){
+		    # These are all booleans
+		    $dev{interface}{$iid}{$field} = ( $hashes{$method}->{$iid} eq 'true' )? 1 : 0;
+		}else{
+		    $dev{interface}{$iid}{$field} = $hashes{$method}->{$iid};
+		}
+	    }
 	}
-
 
 	# Check if physaddr is valid
 	if ( my $physaddr = $dev{interface}{$iid}{physaddr} ){
@@ -579,8 +668,8 @@ sub get_snmp_info {
 		$dev{interface}{$iid}{vlans}{$vid}{vid} = $vid;
 	    }
 	}
-	# Get VLAN names
 	foreach my $vid ( keys %{$dev{interface}{$iid}{vlans}} ){
+	    # Get VLAN names
 	    $vname = $hashes{'qb_v_name'}->{$vid}; # Standard MIB
 	    unless ( $vname ){
 		# We didn't get a vlan name in the standard place
@@ -597,6 +686,17 @@ sub get_snmp_info {
 		}
 	    }
 	    $dev{interface}{$iid}{vlans}{$vid}{vname} = $vname if defined ($vname);
+
+	    if ( $dev{stp_type} eq 'mst' ){
+		# Get STP instance where this VLAN belongs
+		# If there is no mapping, make it instance 0
+		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = $dev{stp_vlan2inst}->{$vid} || 0;
+	    }elsif ( $dev{stp_type} =~ /pvst/ ){
+		# In PVST, we number the instances the same as VLANs
+		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = $vid;
+	    }elsif ( $dev{stp_type} ne 'unknown' ){
+		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = 0;
+	    }
 	}
     }
 
@@ -753,7 +853,11 @@ sub snmp_update_block {
     my $start = time;
 
     # Call the more generic method
-    $argv{hosts} = $hosts;
+    my %h;
+    foreach my $host ( @$hosts ){
+	$h{$host} = "";
+    }
+    $argv{hosts} = \%h;
     my $device_count = $class->_snmp_update_list(%argv);
 
     my $end = time;
@@ -875,6 +979,7 @@ sub discover {
 	    }
 	    if ( $class->_layer_active($info->{layers}, 2) ){
 		$devtmp{collect_fwt} = 1;
+		$devtmp{collect_stp} = 1;
 	    }
 	    if ( $class->_layer_active($info->{layers}, 3) ){
 		$devtmp{collect_arp} = 1;
@@ -1685,56 +1790,87 @@ sub snmp_update {
 	$devtmp{bgpid} = $info->{bgpid};
     }
     
-    # Spanning Tree stuff
+    # Global Spanning Tree Info
     $devtmp{stp_type}    = $info->{stp_type};
     $devtmp{stp_enabled} = 1 if ( defined $info->{stp_type} && $info->{stp_type} ne 'unknown' );
+    # MST-specific
+    foreach my $field ( qw( stp_mst_region stp_mst_rev stp_mst_digest ) ){
+	if ( exists $info->{$field} ){
+	    $devtmp{$field} = $info->{$field};
+	    # Notify if these have changed
+	    if ( $field eq 'stp_mst_region' || $field eq 'stp_mst_digest' ){
+		if ( defined($self->$field) && ($self->$field ne $devtmp{$field}) ){
+		    $logger->warn(sprintf("%s: $field has changed: %s -> %s", 
+					  $host, $self->$field, $devtmp{$field}));
+		}
+	    }
+	}
+    }
+    # Deal with STP instances
     if ( $devtmp{stp_enabled} ){
 	$logger->debug(sprintf("%s: STP is enabled", $host));
 	$logger->debug(sprintf("%s: STP type is: %s", $host, $devtmp{stp_type}));
 	
-        if ( $devtmp{stp_type} eq 'ieee8021d' ){
-	    # We'll do instance 0 for standard STP
-	    if ( defined $info->{stp_root} ){
+	# Get all current instances, hash by number
+	my %old_instances;
+	map { $old_instances{$_->number} = $_ } $self->stp_instances();
+
+	# Go over all STP instances
+	foreach my $instn ( keys %{$info->{stp_instances}} ){
 		my $stpinst;
-		my %args = (device=>$self, number=>0);
+		my %args = (device=>$self, number=>$instn);
+		# Create if it does not exist
 		unless ( $stpinst = STPInstance->search(%args)->first ){
 		    $stpinst = STPInstance->insert(\%args);
-		    $logger->info("STP Instance 0 created");
+		    $logger->info("$host: STP Instance $instn created");
 		}
 		# update arguments for this instance
 		my %uargs;
-
-		# Get the actual MAC address (first 2 octets are priority)
-		my $root_bridge = substr($info->{stp_root}, 4, 12);
-		if ( defined $stpinst->root_bridge && ($root_bridge ne $stpinst->root_bridge) ){
-		    $logger->warn(sprintf("%s: STP instance %s: Root Bridge changed: %s -> %s", 
-					  $host, $stpinst->number, $stpinst->root_bridge, $root_bridge));
+		if ( my $root_bridge = $info->{stp_instances}->{$instn}->{stp_root} ){
+		    if ( defined $stpinst->root_bridge && ($root_bridge ne $stpinst->root_bridge) ){
+			$logger->warn(sprintf("%s: STP instance %s: Root Bridge changed: %s -> %s", 
+					      $host, $stpinst->number, $stpinst->root_bridge, $root_bridge));
+		    }
 		    $uargs{root_bridge} = $root_bridge;
+		}else{
+		    $logger->debug("$host: STP Designated Root not defined for instance $instn");
 		}
 		
-		# Convert the ifIndex value into an Interface id
-		my $root_p_ifindex = $info->{stp_root_port};
-		my $int = Interface->search(device=>$self, number=>$root_p_ifindex)->first;
-		$int = 0 unless defined $int;
-		if ( defined $stpinst->root_port && (int($int) != $stpinst->root_port) ){
-		    $logger->warn(sprintf("%s: STP instance %s: Root Port has changed: %s -> %s", 
-					  $host, $stpinst->number, $stpinst->root_port, $int));
-		    $uargs{root_port} = $int;
+		if ( my $root_p = $info->{stp_instances}->{$instn}->{stp_root_port} ){
+		    if ( defined $stpinst->root_port && $stpinst->root_port != 0 &&
+			 ( $root_p != $stpinst->root_port) ){
+			# Do not notify if this is the first time it's set
+			$logger->warn(sprintf("%s: STP instance %s: Root Port changed: %s -> %s", 
+					      $host, $stpinst->number, $stpinst->root_port, $root_p));
+		    }
+		    $uargs{root_port} = $root_p;
+		}else{
+		    $logger->debug("$host: STP Root Port not defined for instance $instn");
 		}
 		# Finally, just get the priority
-		$uargs{root_bridge_priority} = $info->{stp_root_priority};
+		$uargs{bridge_priority} = $info->{stp_instances}->{$instn}->{stp_priority};
+		if ( defined $stpinst->bridge_priority && $stpinst->bridge_priority ne $uargs{bridge_priority} ){
+		    $logger->warn(sprintf("%s: STP instance %s: Bridge Priority Changed: %s -> %s", 
+					  $host, $stpinst->number, $stpinst->bridge_priority, $uargs{bridge_priority}));
+		}
 
 		# Update the instance
 		$stpinst->update(\%uargs);
-	    }else{
-		$logger->debug("$host: Spanning Tree Designated Root not defined");
-	    }
+		
+		# Remove this one from the old list
+		delete $old_instances{$instn};
+	}
+	# Remove any non-existing STP instances
+	foreach my $i ( keys %old_instances ){
+	    $logger->info("$host: Removing STP instance $i");
+	    $old_instances{$i}->delete;
 	}
     }else{
-	# Remove any existing STP instances
-	foreach my $i ( $self->stp_instances ){
-	    $logger->info(sprintf("Removing STP instance %s", $i->number));
-	    $i->delete();
+	if ( my @instances = $self->stp_instances() ){
+	    $logger->debug("$host: STP appears disabled.  Removing all existing STP instances");
+	    foreach my $i ( @instances ){
+		$i->delete();
+	    }
 	}
     }
 
@@ -1858,11 +1994,12 @@ sub snmp_update {
 		    unless $if;
 		
 		# Now update it with snmp info
-		$if->snmp_update(info         => $info->{interface}->{$newif},
-				 add_subnets  => $add_subnets,
-				 subs_inherit => $subs_inherit,
-				 ipv4_changed => \$ipv4_changed,
-				 ipv6_changed => \$ipv6_changed,
+		$if->snmp_update(info          => $info->{interface}->{$newif},
+				 add_subnets   => $add_subnets,
+				 subs_inherit  => $subs_inherit,
+				 ipv4_changed  => \$ipv4_changed,
+				 ipv6_changed  => \$ipv6_changed,
+				 stp_instances => $info->{stp_instances},
 				 );
 		
 		# Remove this interface from list to delete
@@ -1904,10 +2041,11 @@ sub snmp_update {
 	Ipblock->build_tree(4) if $ipv4_changed;
 	Ipblock->build_tree(6) if $ipv6_changed;
     }
+
     ###############################################################
     # Add/Update/Delete BGP Peerings
     #
-    if ( $argv{bgp_peers} ){
+   if ( $argv{bgp_peers} ){
 	
 	# Get current bgp peerings
 	#
@@ -2565,7 +2703,6 @@ sub set_overwrite_if_descr {
     return 1;
 }
 
-
 #####################################################################
 #
 # Private methods
@@ -2824,24 +2961,33 @@ sub _get_snmp_session {
     # We want to do our own 'munging' for certain things
     my $munge = $sinfo->munge();
     delete $munge->{'i_speed'};      # We store these as integers in the db.  Munge at display
-    $munge->{'i_speed_high'}                   = sub{ return $self->_munge_speed_high(@_) };
-    $munge->{'i_mac'}                          = sub{ return $self->_oct2hex(@_) };
-    $munge->{'fw_mac'}                         = sub{ return $self->_oct2hex(@_) };
-    $munge->{'mac'}                            = sub{ return $self->_oct2hex(@_) };
-    $munge->{'stp_root'}                       = sub{ return $self->_oct2hex(@_) };
-    $munge->{'at_paddr'}                       = sub{ return $self->_oct2hex(@_) };
-    $munge->{'rptrAddrTrackNewLastSrcAddress'} = sub{ return $self->_oct2hex(@_) };
-    $munge->{'airespace_ap_mac'}               = sub{ return $self->_oct2hex(@_) };
-    $munge->{'airespace_bl_mac'}               = sub{ return $self->_oct2hex(@_) };
-    $munge->{'airespace_if_mac'}               = sub{ return $self->_oct2hex(@_) };
-
-
+    $munge->{'i_speed_high'} = sub{ return $self->_munge_speed_high(@_) };
+    $munge->{'stp_root'}     = sub{ return $self->_stp2mac(@_) };
+    $munge->{'stp_p_bridge'} = sub{ return $self->_stp2mac(@_) };
+    foreach my $m ('i_mac', 'fw_mac', 'mac', 'b_mac', 'at_paddr', 'rptrAddrTrackNewLastSrcAddress',
+		   'airespace_ap_mac', 'airespace_bl_mac', 'airespace_if_mac', 'stp_p_port'){
+	$munge->{$m} = sub{ return $self->_oct2hex(@_) };
+    }
     if ( $class ){
 	# Save session if object exists
 	# Notice that there can be different sessions depending on the community
 	$self->{_snmp_session}->{$sinfoargs{Community}} = $sinfo;
     }
     return $sinfo;
+}
+
+#########################################################################
+# Retrieve standard STP info
+sub _get_stp_info {
+    my ($self, %argv) = @_;
+    
+    my $sinfo = $argv{sinfo};
+    my %res;
+    foreach my $method ( 'stp_root', 'stp_root_port', 'stp_priority', 
+			 'i_stp_bridge', 'i_stp_port', 'i_stp_state' ){
+	$res{$method} = $sinfo->$method;
+    }
+    return \%res;
 }
 
 #########################################################################
@@ -3657,6 +3803,21 @@ sub _oct2hex {
     return uc( sprintf('%s', unpack('H*', $v)) );
 }
 
+ 
+#####################################################################
+# Takes an 8-byte octet stream (HEX-STRING) containing priority+MAC
+# (from do1dStp MIBs) and returns a ASCII hex string containing the 
+# MAC address only (6 bytes).
+# 
+sub _stp2mac {
+    my ($self, $mac) = @_;
+    return undef unless $mac;
+    $mac = $self->_oct2hex($mac);
+    $mac = substr($mac, 4, 12);
+    return $mac if length $mac;
+    return undef;
+}
+
 #####################################################################
 # ifHighSpeed is an estimate of the interface's current bandwidth in units
 # of 1,000,000 bits per second.  
@@ -3666,6 +3827,7 @@ sub _munge_speed_high {
     my ($self, $v) = @_;
     return $v * 1000000;
 }
+
 
 ############################################################################
 #

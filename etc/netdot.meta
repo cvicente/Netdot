@@ -1655,6 +1655,14 @@ $meta = {
         tag => 'Collect FWT?',
         type => 'bool'
       },
+      collect_stp => {
+        default => '',
+        description => 'Enable or Disable querying device for Spanning Tree information',
+        length => '',
+        nullable => 0,
+        tag => 'Collect STP Info?',
+        type => 'bool'
+      },
       community => {
         default => '',
         description => 'SNMP community',
@@ -2004,12 +2012,20 @@ $meta = {
         tag => 'STP Enabled?',
         type => 'bool'
       },
-      stp_mst_domain => {
+      stp_mst_digest => {
         default => '',
-        description => 'Multiple Spanning Tree (MST) domain',
+        description => 'Multiple Spanning Tree (MST) Configuration Digest',
+        length => '255',
+        nullable => 1,
+        tag => 'MST Config Digest',
+        type => 'varchar'
+      },
+      stp_mst_region => {
+        default => '',
+        description => 'Multiple Spanning Tree (MST) region name',
         length => '128',
         nullable => 1,
-        tag => 'MST Domain',
+        tag => 'MST Region',
         type => 'varchar'
       },
       stp_mst_rev => {
@@ -2110,6 +2126,7 @@ $meta = {
 	'collect_arp',
 	'last_arp',
 	'collect_fwt',
+        'collect_stp',
 	'last_fwt',
         'snmp_bulk',
         'snmp_version',
@@ -2121,8 +2138,9 @@ $meta = {
         'snmp_securitylevel',
 	'stp_enabled',
         'stp_type',
-        'stp_mst_domain',
+        'stp_mst_region',
         'stp_mst_rev',
+	'stp_mst_digest',
         'room',
         'closet',
         'rack',
@@ -3363,6 +3381,22 @@ $meta = {
         tag => 'Admin Status',
         type => 'varchar'
       },
+      bpdu_filter_enabled => {
+        default => '',
+        description => 'Whether BPDU filter is enabled on this port',
+        length => '',
+        nullable => 0,
+        tag => 'BPDU Filter?',
+        type => 'bool'
+      },
+      bpdu_guard_enabled => {
+        default => '',
+        description => 'Whether BPDU Guard is enabled on this port',
+        length => '',
+        nullable => 0,
+        tag => 'BPDU Guard?',
+        type => 'bool'
+      },
       contactlist => {
         default => '',
         description => '',
@@ -3433,6 +3467,14 @@ $meta = {
         nullable => 1,
         tag => 'Jack(char)',
         type => 'varchar'
+      },
+      loop_guard_enabled => {
+        default => '',
+        description => 'Whether Loop guard is enabled on this port',
+        length => '',
+        nullable => 0,
+        tag => 'Loop Guard?',
+        type => 'bool'
       },
       monitored => {
         default => '',
@@ -3537,6 +3579,14 @@ $meta = {
         tag => 'Room(char)',
         type => 'varchar'
       },
+      root_guard_enabled => {
+        default => '',
+        description => 'Whether Root guard is enabled on this port',
+        length => '',
+        nullable => 0,
+        tag => 'Root Guard?',
+        type => 'bool'
+      },
       snmp_managed => {
         default => '',
         description => 'Determines whether this Interface should be included in the collection of SNMP statistics',
@@ -3553,6 +3603,22 @@ $meta = {
         tag => 'Speed',
         type => 'bigint'
       },
+     stp_id => {
+        default => '',
+        description => 'The ID of this port in the Spanning Tree Protocol (dot1dStpPort)',
+        length => '32',
+        nullable => 1,
+        tag => 'STP Port ID',
+        type => 'varchar'
+      },
+     stp_id_rep => {
+        default => '',
+        description => 'The Octet-String representation that this device uses for the STP designated ports',
+        length => '32',
+        nullable => 1,
+        tag => 'STP Port Rep',
+        type => 'varchar'
+      },      
       type => {
         default => '',
         description => 'Type of Interface',
@@ -3567,6 +3633,12 @@ $meta = {
     index => [
       [
         'name'
+      ],
+      [
+        'number'
+      ],
+      [
+        'stp_id'
       ],
       [
         'physaddr'
@@ -3609,6 +3681,12 @@ $meta = {
         'snmp_managed',
         'physaddr',
 	'neighbor',
+	'stp_id',
+	'stp_id_rep',
+	'bpdu_filter_enabled',
+	'bpdu_guard_enabled',
+	'loop_guard_enabled',
+	'root_guard_enabled',
         'contactlist',
         'info'
       ],
@@ -3641,8 +3719,45 @@ $meta = {
           table => 'Interface'
         },
         nullable => 0,
-        tag => undef,
+        tag => 'Interface',
         type => 'integer'
+      },
+     stp_instance => {
+        default => '',
+        description => 'The Spanning Tree Protocol instance that this port belongs to, for this VLAN',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'stp_ports',
+          table => 'STPInstance'
+        },
+        nullable => 0,
+        tag => 'STP Instance',
+        type => 'integer'
+      },
+      stp_des_bridge => {
+        default => '',
+        description => 'The Bridge ID of the bridge that this port considers to be the Designated Bridge for this segment (dot1dStpPortDesignatedBridge)',
+        length => '32',
+        nullable => 1,
+        tag => 'STP Des. Bridge',
+        type => 'varchar'
+      },
+     stp_des_port => {
+        default => '',
+        description => 'The Port ID of the port on the Designated Bridge for this segment (dot1dStpPortDesignatedPort)',
+        length => '32',
+        nullable => 1,
+        tag => 'STP Des. Port',
+        type => 'varchar'
+      },
+      stp_state => {
+        default => '',
+        description => 'The current Spanning Tree State of this port (dot1dStpPortState). It can be one of: 1 - disabled, 2 - blocking, 3 - listening, 4 - learning, 5 - forwarding, 6 - broken',
+        length => '32',
+        nullable => 1,
+        tag => 'STP State',
+        type => 'varchar'
       },
       vlan => {
         default => '',
@@ -3654,14 +3769,24 @@ $meta = {
           table => 'Vlan'
         },
         nullable => 0,
-        tag => undef,
+        tag => 'Vlan',
         type => 'integer'
       }
     },
     description => 'Interface to VLAN join table',
     has_history => 0,
-    index => [],
-    isjoin => '1',
+    index => [
+      [
+       'stp_instance',
+      ],
+      [
+       'stp_des_bridge',
+      ],
+      [
+       'stp_des_port',
+      ],
+    ],
+    isjoin => '0',
     label => [
       'interface',
       'vlan'
@@ -3676,11 +3801,19 @@ $meta = {
     views => {
       all => [
         'interface',
-        'vlan'
+        'vlan',
+        'stp_instance',
+	'stp_des_bridge',
+	'stp_des_port',
+	'stp_state',
       ],
       brief => [
         'interface',
-        'vlan'
+        'vlan',
+        'stp_instance',
+	'stp_des_bridge',
+	'stp_des_port',
+	'stp_state',
       ]
     }
   },
@@ -5745,45 +5878,22 @@ $meta = {
         tag => 'Root Bridge',
         type => 'varchar'
       },
-      root_bridge_priority => {
+      bridge_priority => {
         default => '',
-        description => 'Root bridge priority',
+        description => 'Bridge priority',
         length => '',
         nullable => 1,
-        tag => 'Root Priority',
+        tag => 'Bridge Priority',
         type => 'integer'
       },
       root_port => {
         default => '',
-        description => 'Root port for this STP instance',
+        description => 'Root port (ifIndex) for this STP instance',
         length => '',
-        linksto => {
-          cascade => 'Delete',
-          order_by => 'number',
-          method => 'stp_instances',
-          table => 'Interface'
-        },
         nullable => 0,
         tag => 'Root Port',
         type => 'integer'
       },
-      vlan_range => {
-        default => '',
-        description => 'VLAN range for this STP instance',
-        length => '255',
-        nullable => 1,
-        tag => 'VLAN Range',
-        type => 'varchar'
-      },
-      enabled => {
-        default => '',
-        description => 'Whether this particular STP instance is enabled on this device',
-        length => '',
-        nullable => 0,
-        tag => 'Enabled?',
-        type => 'bool'
-      },
-
     },
     description => 'Spanning Tree Protocol Instance',
     has_history => 0,
@@ -5804,17 +5914,16 @@ $meta = {
       all => [
         'number',
         'device',
-        'enabled',
         'root_port',
         'root_bridge',
-        'root_bridge_priority',
-        'vlan_range',
+        'bridge_priority',
       ],
       brief => [
         'number',
         'device',
         'root_port',
         'root_bridge',
+        'bridge_priority',
       ]
     }
   },

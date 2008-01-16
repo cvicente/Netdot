@@ -470,7 +470,7 @@ $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@fi
 
     if ( $o->snmp_managed ){
 	push @fields, ('snmp_version', 'community', 'snmp_bulk', 'canautoupdate', 'snmp_polling',
-		       'collect_arp', 'collect_fwt');
+		       'collect_arp', 'collect_fwt', 'collect_stp');
 	$ui->add_to_fields(o=>$o, edit=>$editsnmp, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 
 	@fields = ('last_arp', 'last_fwt');
@@ -1086,13 +1086,20 @@ if ( $ipeers ){
 
 % if ( $view eq "STP" || $view eq "All"){
 
-% my (@field_headers, @cell_data);
+%     my (@field_headers, @cell_data);
 
-% my @fields = ('physaddr', 'stp_enabled', 'stp_type');
-% my @linkpages = ('view.html', '', '' );
-
-% $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, 
-%	 	     cell_data=>\@cell_data, linkpages=>\@linkpages);
+%     # General info
+%     my @fields = ('physaddr', 'stp_enabled', 'stp_type');
+%     my @linkpages = ('view.html', '', '' );
+%     $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, 
+%    	 	         cell_data=>\@cell_data, linkpages=>\@linkpages);
+%
+%     if ( $o->stp_type eq 'mst' ){
+%         # MST info
+%         push @fields, ('stp_mst_region', 'stp_mst_rev', 'stp_mst_digest');
+%         $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, 
+%	 	             cell_data=>\@cell_data);
+%     }
 
 <div class="container">
    <div class="containerheadleft">Spanning Tree Info</div>
@@ -1102,8 +1109,9 @@ if ( $ipeers ){
    </div>
 </div>
 
-% my @instances;
-% if ( @instances = $o->stp_instances ){
+%    # Instance Info
+%     my @instances;
+%     if ( @instances = $o->stp_instances ){
 <div class="container">
     <div class="containerhead">
         STP Instances
@@ -1113,9 +1121,8 @@ if ( $ipeers ){
     </div>
 </div>
 
+%     }
 % }
-
-%}
 
 %#######################################################################
 %#
