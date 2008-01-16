@@ -305,7 +305,6 @@ sub insert {
     $argv->{status}        ||= "Container";
     $argv->{interface}     ||= 0; 
     $argv->{dhcp_enabled}  ||= 0; 
-    $argv->{dns_delegated} ||= 0; 
     $argv->{owner}         ||= 0; 
     $argv->{used_by}       ||= 0; 
     $argv->{parent}        ||= 0; 
@@ -352,9 +351,7 @@ sub insert {
     
     # Inherit some of parent's values if it's not an address
     if ( !$newblock->is_address && (int($newblock->parent) != 0) ){
-	my %state = ( dns_delegated => $newblock->parent->dns_delegated, 
-		      owner         => $newblock->parent->owner );
-	$newblock->update(\%state);
+	$newblock->update({owner=>$newblock->parent->owner});
     }
     
     # This is a funny hack to avoid the address being shown in numeric.
@@ -734,16 +731,15 @@ sub update {
     # We need at least these args before proceeding
     # If not passed, use current values
     $argv->{status}  ||= $self->status;
-    $argv->{address} ||= $self->address;
     $argv->{prefix}  ||= $self->prefix;
 
-    my $ip;
-    $ip = $class->_prevalidate($argv->{address}, $argv->{prefix});
-    
-    if ( my $tmp = $class->search(address => $ip->addr,
-				  prefix  => $ip->masklen)->first ){
-	$self->throw_user("Block ".$argv->{address}."/".$argv->{prefix}." already exists in db")
-	    if ( $tmp->id != $self->id );
+    if ( $argv->{address} ){
+	my $ip = $class->_prevalidate($argv->{address}, $argv->{prefix});
+	if ( my $tmp = $class->search(address => $ip->addr,
+				      prefix  => $ip->masklen)->first ){
+	    $self->throw_user("Block ".$argv->{address}."/".$argv->{prefix}." already exists in db")
+		if ( $tmp->id != $self->id );
+	}
     }
 
     my $statusid = $self->_get_status_id($argv->{status});
@@ -766,10 +762,13 @@ sub update {
     # but the way we do transactions, they cannot be nested, and this
     # method is pretty low level
 
-    my %bak  = $self->get_state();
+    my %bak    = $self->get_state();
     my $result = $self->SUPER::update( \%state );
 
-    # Unly rebuild the tree if address/prefix have changed
+    # This makes sure we have the latest values
+    $self = $class->retrieve($self->id);
+
+    # Only rebuild the tree if address/prefix have changed
     if ( $self->address ne $bak{address} || $self->prefix ne $bak{prefix} ){
 	$self->_update_tree();
     }
@@ -1357,7 +1356,6 @@ sub _validate {
     # or what it already has
     my $statusname = $args->{status} || $self->status->name;
     $args->{dhcp_enabled}            ||= $self->dhcp_enabled;
-    $args->{dns_delegated}           ||= $self->dns_delegated;
     
     my ($pstatus, $parent);
     if ( ($parent = $self->parent) && $parent->id ){
@@ -1406,9 +1404,6 @@ sub _validate {
 	}
 	if ( $args->{dhcp_enabled} ){
 		$self->throw_user("Can't enable DHCP on Reserved blocks");
-	}
-	if ( $args->{dns_delegated} ){
-		$self->throw_user("Can't delegate DNS on Reserved blocks");
 	}
     }elsif ( $statusname eq "Dynamic" ) {
 	unless ( $self->is_address($self) ){
@@ -1579,7 +1574,7 @@ sub _delete_from_tree{
 	}
     }
     my $n = $class->_tree_find(version  => $self->version, 
-			       address => $self->address_numeric,
+			       address  => $self->address_numeric,
 			       prefix   => $self->prefix);
     if ( $n && ($n->iaddress == $self->address_numeric) ){
 	$n->delete();

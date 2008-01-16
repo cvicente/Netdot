@@ -458,6 +458,10 @@ sub update_ip {
 	    return;
 	}
 	
+	# update
+	$logger->debug(sprintf("%s: IP %s/%s does not exist. Inserting", 
+			      $host, $address, $prefix));
+	
 	# This could also go wrong, but we don't want to bail out
 	eval {
 	    $ipobj = Ipblock->insert({address => $address, prefix => $prefix, 

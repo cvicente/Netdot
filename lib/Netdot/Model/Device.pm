@@ -691,7 +691,7 @@ sub get_snmp_info {
 		# Get STP instance where this VLAN belongs
 		# If there is no mapping, make it instance 0
 		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = $dev{stp_vlan2inst}->{$vid} || 0;
-	    }elsif ( $dev{stp_type} =~ /pvst/ ){
+	    }elsif ( $dev{stp_type} =~ /pvst/i ){
 		# In PVST, we number the instances the same as VLANs
 		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = $vid;
 	    }elsif ( $dev{stp_type} ne 'unknown' ){
