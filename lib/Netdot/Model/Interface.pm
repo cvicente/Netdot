@@ -565,6 +565,14 @@ sub speed_pretty {
     }
 }
 
+############################################################################
+sub get_label{
+    my ($self) = @_;
+    $self->isa_object_method('get_label');
+    return unless $self->id;
+    my $label = sprintf("%s [%s]", $self->device->get_label, $self->name);
+}
+
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>

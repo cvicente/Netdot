@@ -571,7 +571,7 @@ function setNull(select){
     my %intinfo;
     foreach my $if ( @$ifs ){ 
 	foreach my $field ( qw/jack room_char jack_char description neighbor/ ){
-	    $intinfo{$field}{$if->id} = $if->$field if ( $if->$field );
+	    $intinfo{$field}{$if->id} = $if->$field if ( defined ($if->$field) && (int($if->$field)) );
 	}
     } 
     ### Headers
