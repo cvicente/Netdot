@@ -502,7 +502,8 @@ sub get_snmp_info {
 								       'communities' => [$sinfo->snmp_comm . '@' . $vid],
 								       'version'     => $sinfo->snmp_ver,
 								       'sclass'      => $sinfo->class);
-				my $stp_p_info = $self->_get_stp_info(sinfo=>$vsinfo);
+				my $stp_p_info = $self->_exec_timeout( $target_address, 
+								       sub { return $self->_get_stp_info(sinfo=>$vsinfo) } );
 				foreach my $method ( keys %$stp_p_info ){
 				    $dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
 				}
@@ -523,7 +524,8 @@ sub get_snmp_info {
 								   'communities' => [$sinfo->snmp_comm . '@' . $vid],
 								   'version'     => $sinfo->snmp_ver,
 								   'sclass'      => $sinfo->class);
-			    my $stp_p_info = $self->_get_stp_info(sinfo=>$vsinfo);
+			    my $stp_p_info = $self->_exec_timeout( $target_address, 
+								   sub { return $self->_get_stp_info(sinfo=>$vsinfo) } );
 			    foreach my $method ( keys %$stp_p_info ){
 				$dev{stp_instances}{$vid}{$method} = $stp_p_info->{$method};
 			    }
@@ -3493,6 +3495,7 @@ sub _walk_fwt {
 sub _exec_timeout {
     my ($class, $host, $code) = @_;
     $class->throw_fatal("Missing required argument: code") unless $code;
+    $class->throw_fatal("Invalid code reference") unless ( ref($code) eq 'CODE' );
     my @result;
     eval {
 	alarm($TIMEOUT);
