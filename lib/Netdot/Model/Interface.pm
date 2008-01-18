@@ -178,7 +178,7 @@ sub snmp_update {
     ############################################
     # Update PhysAddr
     if ( !defined $newif->{physaddr} ){
-	if ( $self->physaddr ){
+	if ( int($self->physaddr) ){
 	    # This seems unlikely, but...
 	    $logger->info(sprintf("%s: PhysAddr %s no longer in %s.  Removing", 
 			  $host, $self->physaddr->address, $self->name));

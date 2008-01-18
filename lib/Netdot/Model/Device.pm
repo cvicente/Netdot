@@ -9,7 +9,7 @@ use Parallel::ForkManager;
 
 # Timeout seconds for SNMP queries 
 # (different from SNMP connections)
-my $TIMEOUT = Netdot->config->get('SNMP_QUERY_TIMEOUT');;
+my $TIMEOUT = Netdot->config->get('SNMP_QUERY_TIMEOUT');
 
 # Define some signal handlers
 $SIG{ALRM} = sub { die "timeout" };
