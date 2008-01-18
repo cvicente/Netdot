@@ -1,3 +1,4 @@
+-- ArubaOS 3.2.0.0_16376
    WLSR-AP-MIB DEFINITIONS ::= BEGIN
 
    IMPORTS
@@ -29,7 +30,7 @@
 			FROM ARUBA-MIB;
 
    wlsrMIB MODULE-IDENTITY 
-       LAST-UPDATED "0410271730Z"
+       LAST-UPDATED "0601221834Z"
        ORGANIZATION "Aruba Wireless Networks"
        CONTACT-INFO
             "Postal:    1322 Crossman Avenue
@@ -37,9 +38,10 @@
             E-mail:     dl-support@arubanetworks.com
             Phone:      +1 408 227 4500"
        DESCRIPTION
-           "This MIB module defines MIB objects which provide
-            System level information about Aruba A 5000 Switch."
-       REVISION        "0410271730Z"
+           "This MIB is for managing the
+			Access Points and Air Monitors.
+			"
+       REVISION        "0601221834Z"
        DESCRIPTION
            "The initial revision."
        ::= { wlsrEnterpriseMibModules 1 }
@@ -102,7 +104,8 @@
 		 wlsrBGmode					INTEGER ,
 		 wlsrCardType				INTEGER ,
 		 wlsrRegDomain				Integer32 ,
-		 wlsrCountryCode			DisplayString 
+		 wlsrCountryCode			DisplayString,
+		 wlsrTxRates			        BITS
      }
 
      wlsrBSSID OBJECT-TYPE
@@ -148,7 +151,6 @@
          DESCRIPTION
             "
 			The current operating frequency channel of the DSSS PHY.
-			The valid channel numbers are 1-11 for .b and 1-12 for .a
             "
         ::= { wlsrConfigEntry 4 }
 
@@ -158,7 +160,7 @@
          STATUS       current
          DESCRIPTION
             "
-			Transmit power in dbm
+			Transmit power of the Access point. The value is between 0 ... 4
             "
         ::= { wlsrConfigEntry 5 }
 
@@ -242,24 +244,28 @@
 
      wlsrSupportedRates OBJECT-TYPE
         SYNTAX      BITS {
-						rate1Mbps(0),
-						rate2Mbps(1),
-						rate5Mbps(2),
-						rate11Mbps(3),
-						rate6Mbps(4),
-						rate9Mbps(5),
-						rate12Mbps(6),
-						rate18Mbps(7),
-						rate24Mbps(8),
-						rate36Mbps(9),
-						rate48Mbps(10),
-						rate54Mbps(11)
+						unused0(0),
+						unused1(1),
+						unused2(2),
+						unused3(3),
+						rate54Mbps(4),
+						rate48Mbps(5),
+						rate36Mbps(6),
+						rate24Mbps(7),
+						rate18Mbps(8),
+						rate12Mbps(9),
+						rate9Mbps(10),
+						rate6Mbps(11),
+						rate11Mbps(12),
+						rate5Mbps(13),
+						rate2Mbps(14),
+						rate1Mbps(15)
 					 }
          MAX-ACCESS   read-only
          STATUS       current
          DESCRIPTION
             "
-			Transmit Bit rates supported by this WIFI interface.
+			Basic Bit rates supported by this WIFI interface.
             "
         ::= { wlsrConfigEntry 12 }
 
@@ -285,19 +291,29 @@
          STATUS       current
          DESCRIPTION
             "
-			This attribute indicates the IP Address of the Local A5000
-			the AP is connected to.
+			This attribute indicates the IP Address of the Local 
+			switch that the AP is connected to.
             "
         ::= { wlsrConfigEntry 14 }
 
      wlsrEncryption OBJECT-TYPE
         SYNTAX      BITS{
-						disabled(0),
-						staticWep(1),
-						dynamicWep(2),
-						staticTkip(3),
-						dynamicTkip(4),
-						aes(5)
+						unused0(0),
+						unused1(1),
+						unused2(2),
+						unused3(3),
+						unused4(4),
+						unused5(5),
+						unused6(6),
+						xSec(7),
+						wpa2PreAuth(8),
+						aes8021x(9),
+						aesPSK(10),
+						dynamicTkip(11),
+						staticTkip(12),
+						dynamicWep(13),
+						staticWep(14),
+						disabled(15)
 						}
          MAX-ACCESS   read-only
          STATUS       current
@@ -387,22 +403,46 @@
 						noCard(1),
 						intersil(2),
 						atherosA(3),
-						atherosABG(4)
+						atherosBG(4),
+						atherosABG(5),
+						ar5212A(10),
+						ar5212BG(11),
+						ar5212ABG(12)
 					}
          MAX-ACCESS   read-only
          STATUS       current
          DESCRIPTION
             "
-			A True value indicates that Broadcast is disabled.
+			Indicates the type of the radio card.
             "
         ::= { wlsrConfigEntry 24 }
 
      wlsrRegDomain OBJECT-TYPE
         SYNTAX      Integer32 
          MAX-ACCESS   read-only
-         STATUS       current
+         STATUS       deprecated
          DESCRIPTION
             "
+			This Object represents the configured Regulatory Domain this AP 
+			will adhere to.
+			1 -- US
+			2 -- JAPAN
+			3 -- EU
+			4 -- EU2
+			5 -- EU3
+			6 -- KOREA
+			7 -- CHINA
+			8 -- France
+			9 -- Singapore
+			10 -- MALAY
+			11 -- BRAZIL
+			12 -- Taiwan
+			13 -- Czech Republic
+			14 -- GR
+			15 -- South Africa
+			16 -- Argentina
+			17 -- Australia
+			18 -- Chile
             "
         ::= { wlsrConfigEntry 25 }
 
@@ -412,9 +452,36 @@
          STATUS       current
          DESCRIPTION
             "
+				This Object represents the configured Country code .
             "
         ::= { wlsrConfigEntry 26 }
 
+     wlsrTxRates OBJECT-TYPE
+        SYNTAX      BITS {
+						unused0(0),
+						unused1(1),
+						unused2(2),
+						unused3(3),
+						rate54Mbps(4),
+						rate48Mbps(5),
+						rate36Mbps(6),
+						rate24Mbps(7),
+						rate18Mbps(8),
+						rate12Mbps(9),
+						rate9Mbps(10),
+						rate6Mbps(11),
+						rate11Mbps(12),
+						rate5Mbps(13),
+						rate2Mbps(14),
+						rate1Mbps(15)
+					 }
+         MAX-ACCESS   read-only
+         STATUS       current
+         DESCRIPTION
+            "
+			Transmit Bit rates supported by this WIFI interface.
+            "
+        ::= { wlsrConfigEntry 27 }
 
 -- wlsrStatsGroup All the Statistics stored by the Access Point.
 
@@ -507,7 +574,7 @@
          STATUS       current
          DESCRIPTION
             "
-			This attribute indicates the total packets observerd on this
+			This attribute indicates the total packets observed on this
 			channel.
             "
         ::= { wlsrChannelStatsEntry 4 }
@@ -518,7 +585,7 @@
          STATUS       current
          DESCRIPTION
             "
-			This attribute indicates the total Bytes observerd on this
+			This attribute indicates the total Bytes observed on this
 			channel.
             "
         ::= { wlsrChannelStatsEntry 5 }
@@ -552,8 +619,8 @@
          DESCRIPTION
             "
 			This attribute indicates the total Physical Error Packets observed 
-			on this channel. -- should explain what phy erros are ??
-            "
+			on this channel. 
+			"
         ::= { wlsrChannelStatsEntry 8 }
 
      wlsrChStatsTotMacErrPkts OBJECT-TYPE
@@ -567,14 +634,13 @@
             "
         ::= { wlsrChannelStatsEntry 9 }
 
- --Should Explain these Rates in a little more detail.
      wlsrChStatsFrameErrorRate OBJECT-TYPE
          SYNTAX       Integer32 
          MAX-ACCESS   read-only
          STATUS       current
          DESCRIPTION
             "
-			Frame Error Rate in kbps.
+			Frame errors as a percentage of total frames on this channel.
             "
         ::= { wlsrChannelStatsEntry 10 }
 
@@ -584,7 +650,7 @@
          STATUS       current
          DESCRIPTION
             "
-			Frame Retry Rate in kbps
+			The Frame Retry Rate
             "
         ::= { wlsrChannelStatsEntry 11 }
 
@@ -639,7 +705,7 @@
         ::= { wlsrChannelStatsEntry 16 }
 
 -- This table breaks down the channel statistics observed into different
--- rate catagories.
+-- rate categories.
 
    wlsrChannelRateStatsTable  OBJECT-TYPE 
 	  SYNTAX       SEQUENCE OF WlsrChannelRateStatsEntry 
@@ -648,7 +714,7 @@
       DESCRIPTION 
 	  	"
 		This table contains all the per channel Packet and Byte Counts
-		but represented in terms of rate catagories.
+		but represented in terms of rate categories.
 		"
 	
       ::= { wlsrStatsChannelGroup 2 } 
@@ -695,7 +761,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 1Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 1 }
@@ -706,7 +772,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 1Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 2 }
@@ -717,7 +783,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 2Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 3 }
@@ -728,7 +794,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 2Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 4 }
@@ -739,7 +805,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 5Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 5 }
@@ -750,7 +816,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 5Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 6 }
@@ -761,7 +827,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 11Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 7 }
@@ -772,7 +838,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 11Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 8 }
@@ -783,7 +849,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 6Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 9 }
@@ -794,7 +860,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 6Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 10 }
@@ -805,7 +871,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 12Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 11 }
@@ -816,7 +882,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 12Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 12 }
@@ -827,7 +893,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 18Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 13 }
@@ -838,7 +904,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 18Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 14 }
@@ -849,7 +915,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 24Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 15 }
@@ -860,7 +926,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 24Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 16 }
@@ -871,7 +937,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 36Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 17 }
@@ -882,7 +948,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 36Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 18 }
@@ -893,7 +959,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 48Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 19 }
@@ -904,7 +970,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 48Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 20 }
@@ -915,7 +981,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of packets observerd
+			 This attribute indicates the total number of packets observed
 			 on this channel at 54Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 21 }
@@ -926,7 +992,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the total number of Bytes observerd
+			 This attribute indicates the total number of Bytes observed
 			 on this channel at 54Mbps rate.
             "
         ::= { wlsrChannelRateStatsEntry 22 }
@@ -972,7 +1038,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Broadcast packets 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelDATypeStatsEntry 1 }
 
@@ -983,7 +1049,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Broadcast Bytes 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelDATypeStatsEntry 2 }
 
@@ -994,7 +1060,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Multicast packets 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelDATypeStatsEntry 3 }
 
@@ -1005,7 +1071,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Multicast Bytes 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelDATypeStatsEntry 4 }
 
@@ -1016,7 +1082,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Unicast packets 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelDATypeStatsEntry 5 }
 
@@ -1027,7 +1093,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Unicast Bytes 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelDATypeStatsEntry 6 }
 
@@ -1072,7 +1138,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Management packets 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelFrameTypeStatsEntry 1 }
 
@@ -1083,7 +1149,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Management Bytes 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelFrameTypeStatsEntry 2 }
 
@@ -1094,7 +1160,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Control packets 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelFrameTypeStatsEntry 3 }
 
@@ -1105,7 +1171,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Control Bytes 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelFrameTypeStatsEntry 4 }
 
@@ -1116,7 +1182,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Data packets 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelFrameTypeStatsEntry 5 }
 
@@ -1127,7 +1193,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total number of Data Bytes 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrChannelFrameTypeStatsEntry 6 }
 
@@ -1351,7 +1417,7 @@
          STATUS       current
          DESCRIPTION
             "
-			This attribute indicates the Retry Packets transmited by the 
+			This attribute indicates the Retry Packets transmitted by the 
 			station
             "
         ::= { wlsrStaStatsEntry 6 }
@@ -1373,7 +1439,7 @@
          STATUS       current
          DESCRIPTION
             "
-			This attribute indicates the Fragmented Packets transmited by the 
+			This attribute indicates the Fragmented Packets transmitted by the 
 			station.
             "
         ::= { wlsrStaStatsEntry 8 }
@@ -1406,7 +1472,8 @@
          STATUS       current
          DESCRIPTION
             "
-			???
+			The attribute indicates the total transmitted signal computed for 
+			this station.
             "
         ::= { wlsrStaStatsEntry 11 }
 
@@ -1565,7 +1632,7 @@
         ::= { wlsrStaStatsEntry 26 }
 
 -- This table breaks down the Station statistics into different
--- rate catagories.
+-- rate categories.
 
    wlsrStaRateStatsTable  OBJECT-TYPE 
 	  SYNTAX       SEQUENCE OF WlsrStaRateStatsEntry 
@@ -1574,7 +1641,7 @@
       DESCRIPTION 
 	  	"
 		This table contains all the per channel Packet and Byte Counts
-		but represented in terms of rate catagories.
+		but represented in terms of rate categories.
 		"
 	
       ::= { wlsrStatsStaGroup 2 } 
@@ -2163,7 +2230,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the number of Broadcast packets 
-			 transmited by this Station.
+			 transmitted by this Station.
             "
         ::= { wlsrStaDATypeStatsEntry 1 }
 
@@ -2174,7 +2241,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the number of Broadcast Bytes 
-			 transmited by this Station.
+			 transmitted by this Station.
             "
         ::= { wlsrStaDATypeStatsEntry 2 }
 
@@ -2185,7 +2252,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the number of Multicast packets 
-			 transmited by this station.
+			 transmitted by this station.
             "
         ::= { wlsrStaDATypeStatsEntry 3 }
 
@@ -2196,7 +2263,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the number of Multicast Bytes 
-			 transmited by this station.
+			 transmitted by this station.
             "
         ::= { wlsrStaDATypeStatsEntry 4 }
 
@@ -2207,7 +2274,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total of Unicast packets 
-			 transmited by this station.
+			 transmitted by this station.
             "
         ::= { wlsrStaDATypeStatsEntry 5 }
 
@@ -2218,7 +2285,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the total of Unicast Bytes 
-			 transmited by this station.
+			 transmitted by this station.
             "
         ::= { wlsrStaDATypeStatsEntry 6 }
 
@@ -2324,7 +2391,7 @@
          DESCRIPTION
             "
 			 This attribute indicates the Transmited Data Bytes 
-			 observerd on this channel.
+			 observed on this channel.
             "
         ::= { wlsrStaFrameTypeStatsEntry 6 }
 
@@ -2394,7 +2461,7 @@
             "
         ::= { wlsrStaFrameTypeStatsEntry 12 }
 
--- This table breaks down the Station statistics received or transmited by a 
+-- This table breaks down the Station statistics received or transmitted by a 
 -- station into packet size buckets. 
 
    wlsrStaPktSizeStatsTable  OBJECT-TYPE 
@@ -2413,7 +2480,7 @@
 	  MAX-ACCESS   not-accessible		
       STATUS       current 
       DESCRIPTION 
-             "Station Paket Size Stats."
+             "Station Packet Size Stats."
 	  INDEX { wlsrStaAddress}
       ::= { wlsrStaPktSizeStatsTable 1 } 
 	
@@ -2440,7 +2507,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the number of packets transmited by the 
+			 This attribute indicates the number of packets transmitted by the 
 			 station that were less than 64 bytes long.
             "
         ::= { wlsrStaPktSizeStatsEntry 1 }
@@ -2451,7 +2518,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the number of packets transmited by the 
+			 This attribute indicates the number of packets transmitted by the 
 			 station that were between 64 and 127 bytes long.
             "
         ::= { wlsrStaPktSizeStatsEntry 2 }
@@ -2462,7 +2529,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the number of packets transmited by the 
+			 This attribute indicates the number of packets transmitted by the 
 			 station that were between 128 and 255 bytes long.
             "
         ::= { wlsrStaPktSizeStatsEntry 3 }
@@ -2473,7 +2540,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the number of packets transmited by the 
+			 This attribute indicates the number of packets transmitted by the 
 			 station that were between 256 and 511 bytes long.
             "
         ::= { wlsrStaPktSizeStatsEntry 4 }
@@ -2484,7 +2551,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the number of packets transmited by the 
+			 This attribute indicates the number of packets transmitted by the 
 			 station that were between 512 and 1023 bytes long.
             "
         ::= { wlsrStaPktSizeStatsEntry 5 }
@@ -2495,7 +2562,7 @@
          STATUS       current
          DESCRIPTION
             "
-			 This attribute indicates the number of packets transmited by the 
+			 This attribute indicates the number of packets transmitted by the 
 			 station that were between 1024 and 1518 bytes long.
             "
         ::= { wlsrStaPktSizeStatsEntry 6 }
@@ -2596,7 +2663,11 @@
 		 wlsrAmChannel		INTEGER ,
 		 wlsrAmPhysicalType	INTEGER , 
 		 wlsrAmAccessPointType		INTEGER ,
-		 wlsrAmRAPType				INTEGER
+		 wlsrAmRAPType				INTEGER,
+		 wlsrAmRSSI				Integer32,
+		 wlsrAmMonitoredTime	TimeTicks,
+		 wlsrAmInactivityTime	TimeTicks,
+		 wlsrAmLoadBalancing	INTEGER
 
      }
 
@@ -2672,11 +2743,59 @@
          STATUS       current
          DESCRIPTION
             "
+				Type of the Access Point.
             "
         ::= { wlsrAirMonitorApListEntry 6 }
 
+     wlsrAmRSSI OBJECT-TYPE
+         SYNTAX       Integer32
+         MAX-ACCESS   read-only
+         STATUS       current
+         DESCRIPTION
+            "
+				Access point Receiver Signal Strength Indicator.
+				
+            "
+        ::= { wlsrAirMonitorApListEntry 7 }
+		
+     wlsrAmMonitoredTime OBJECT-TYPE
+         SYNTAX       TimeTicks
+         MAX-ACCESS   read-only
+         STATUS       current
+         DESCRIPTION
+            "
+			Time in ticks, since the AM is observing this access point.
+            "
+        ::= { wlsrAirMonitorApListEntry 8 }
+
+     wlsrAmInactivityTime OBJECT-TYPE
+         SYNTAX       TimeTicks
+         MAX-ACCESS   read-only
+         STATUS       current
+         DESCRIPTION
+            "
+				Access point Inactivity Time.
+				
+            "
+        ::= { wlsrAirMonitorApListEntry 9 }
+
+     wlsrAmLoadBalancing OBJECT-TYPE
+         SYNTAX       INTEGER{
+		 				enable(1),
+						disable(2)
+					  }
+         MAX-ACCESS   read-only
+         STATUS       current
+         DESCRIPTION
+            "
+				The attributes indicates wheather Load balancing is enabled 
+				for this access point.
+				
+            "
+        ::= { wlsrAirMonitorApListEntry 10 }
+
 -- wlsrTrapsGroup
--- This group defines all the traps generated by Aruba Access Point.
+-- This group defines all the traps generated by the access points.
 
 -- Objects defined under this group does not have support for
 -- GET or SET. They are defined in the MIB to pass specific
@@ -2848,28 +2967,28 @@ wlsrRSSI OBJECT-TYPE
          DESCRIPTION
             "
 				This Object is used in the traps to indicate the 
-				Signal Strength Integer.
+				Signal Strength Indicator.
 			"
 ::= { wlsrTrapObjectsGroup 13 }
 
-wlsrRougeInfoURL OBJECT-TYPE
+wlsrRogueInfoURL OBJECT-TYPE
          SYNTAX       DisplayString(SIZE(0..256))
          MAX-ACCESS   read-only
          STATUS       current
          DESCRIPTION
             "
-				This Object is used to point to the WEBGUI Rouge AP information 
+				This Object is used to point to the WEBGUI Rogue AP information 
 				URL.
 			"
 ::= { wlsrTrapObjectsGroup 14 }
 
-wlsrInterfereingAPInfoURL OBJECT-TYPE
+wlsrInterferingAPInfoURL OBJECT-TYPE
          SYNTAX       DisplayString(SIZE(0..256))
          MAX-ACCESS   read-only
          STATUS       current
          DESCRIPTION
             "
-				This Object is used to point to the WEBGUI Rouge interfereing 
+				This Object is used to point to the WEBGUI Rogue interfering 
 				AP information URL.
 			"
 ::= { wlsrTrapObjectsGroup 15 }
@@ -2878,7 +2997,7 @@ wlsrInterfereingAPInfoURL OBJECT-TYPE
 wlsrUnsecureApDetected NOTIFICATION-TYPE        
 	OBJECTS {wlsrTargetApBSSID, wlsrTargetApSSID, 
 	         wlsrLocation, wlsrCurrentChannel, wlsrMatchedMac, 
-			 wlsrMatchedIp, wlsrRougeInfoURL}
+			 wlsrMatchedIp, wlsrRogueInfoURL}
     STATUS  current
     DESCRIPTION
 		"
@@ -2906,8 +3025,8 @@ wlsrReservedChannelViolation NOTIFICATION-TYPE
     DESCRIPTION
 		"
 			This trap indicates that an Access Point is detected
-			is detected by an AP at location wlsrLocation, which
-			voilates the Reserved Channel.
+			by an AP at location wlsrLocation, which
+			violates the Reserved Channel configuration.
 		"
     ::= { wlsrTrapsGroup 1003 }
 
@@ -3143,7 +3262,7 @@ wlsrLoadbalancingEnabled NOTIFICATION-TYPE
 		"
 			This trap indicates that an AM/AP located at 
 			wlsrLocation is reporting that an AP with BSSID wlsrTargetApBSSID 
-			has enabled Load balacing.
+			has enabled Load balancing.
 		"
     ::= { wlsrTrapsGroup 1023 }
 
@@ -3296,7 +3415,7 @@ wlsrInvalidMacOUI NOTIFICATION-TYPE
     DESCRIPTION
 		"
 		This trap indicates that an AP/AM at wlsrLocation detected an Invalid
-		MAC OUI in transmissions from the Node wlsrNodeMac. The invalid mac is
+		MAC OUI in transmission from the Node wlsrNodeMac. The invalid mac is
 		the <wlsrAddressType>.
 		"
     ::= { wlsrTrapsGroup 1037 }
@@ -3319,7 +3438,7 @@ wlsrWEPMisconfiguration NOTIFICATION-TYPE
     STATUS  current
     DESCRIPTION
 		"
-			This trap indicates that an Access Point has bad WPA
+			This trap indicates that an Access Point has bad WEP
 			configuration.
 		"
     ::= { wlsrTrapsGroup 1039 }
@@ -3349,7 +3468,7 @@ wlsrStaWeakWEPIVViolation NOTIFICATION-TYPE
 
 wlsrStaAssociatedToUnsecureAp NOTIFICATION-TYPE        
 	OBJECTS {wlsrTargetApBSSID, wlsrTargetApSSID, 
-	         wlsrLocation, wlsrCurrentChannel, wlsrNodeMac, wlsrRougeInfoURL}
+	         wlsrLocation, wlsrCurrentChannel, wlsrNodeMac, wlsrRogueInfoURL}
     STATUS  current
     DESCRIPTION
 		"
@@ -3374,7 +3493,7 @@ wlsrAdhocNetworkBridgeDetected NOTIFICATION-TYPE
 
 wlsrInterferingApDetected NOTIFICATION-TYPE        
 	OBJECTS {wlsrTargetApBSSID, wlsrTargetApSSID, 
-	         wlsrLocation, wlsrCurrentChannel, wlsrInterfereingAPInfoURL}
+	         wlsrLocation, wlsrCurrentChannel, wlsrInterferingAPInfoURL}
     STATUS  current
     DESCRIPTION
 		"

@@ -1768,7 +1768,7 @@ snL4PolicyPortAccessRowStatus   OBJECT-TYPE
 
 snL4TrapRealServerIP             OBJECT-TYPE
 	SYNTAX IpAddress
-	ACCESS not-accessible
+	ACCESS read-only
 	STATUS mandatory
 	DESCRIPTION
 		"Real server IP address."
@@ -1776,7 +1776,7 @@ snL4TrapRealServerIP             OBJECT-TYPE
 
 snL4TrapRealServerName           OBJECT-TYPE
 	SYNTAX L4ServerName
-	ACCESS not-accessible
+	ACCESS read-only
 	STATUS mandatory
 	DESCRIPTION
 		"Real server name."
@@ -1784,7 +1784,7 @@ snL4TrapRealServerName           OBJECT-TYPE
 
 snL4TrapRealServerPort           OBJECT-TYPE
 	SYNTAX INTEGER
-	ACCESS not-accessible
+	ACCESS read-only
 	STATUS mandatory
 	DESCRIPTION
 		"Transport protocol port number of the real server."
@@ -1792,7 +1792,7 @@ snL4TrapRealServerPort           OBJECT-TYPE
 
 snL4TrapRealServerCurConnections OBJECT-TYPE
 	SYNTAX INTEGER
-	ACCESS not-accessible
+	ACCESS read-only
 	STATUS mandatory
 	DESCRIPTION
 		"Real Server current connections."
@@ -1800,7 +1800,7 @@ snL4TrapRealServerCurConnections OBJECT-TYPE
 
 snL4TrapLinkName OBJECT-TYPE
 	SYNTAX L4ServerName
-	ACCESS not-accessible
+	ACCESS read-only
 	STATUS mandatory
 	DESCRIPTION
 		"Link name."
@@ -1808,7 +1808,7 @@ snL4TrapLinkName OBJECT-TYPE
 
 snL4LinkVirtualInterface OBJECT-TYPE
 	SYNTAX INTEGER
-	ACCESS not-accessible
+	ACCESS read-only
 	STATUS mandatory
 	DESCRIPTION
 		"Link virtual interface."
@@ -1884,7 +1884,7 @@ snL4WebCacheMaxConnections 	OBJECT-TYPE
 	::= { snL4WebCacheEntry 4 }
 
  snL4WebCacheWeight	OBJECT-TYPE
-	SYNTAX	INTEGER	  (1..20)
+	SYNTAX	INTEGER	  (1..65000)
 	ACCESS  read-write
 	STATUS  mandatory
 	DESCRIPTION
@@ -2368,7 +2368,7 @@ snL4RealServerCfgMaxConnections 	OBJECT-TYPE
 	::= { snL4RealServerCfgEntry 4 }
 
  snL4RealServerCfgWeight	OBJECT-TYPE
-	SYNTAX	INTEGER	  (1..20)
+	SYNTAX	INTEGER	  (0..65000)
 	ACCESS  read-write
 	STATUS  mandatory
 	DESCRIPTION

@@ -2339,16 +2339,20 @@ SnAgTrpRcvrEntry ::= SEQUENCE {
 		INTEGER,
 	snAgTrpRcvrIpAddr
 		IpAddress,
-	snAgTrpRcvrComm
+	snAgTrpRcvrCommunityOrSecurityName
 		OCTET STRING,
 	snAgTrpRcvrStatus
 		INTEGER,
 	snAgTrpRcvrUDPPort
+		INTEGER,
+	snAgTrpRcvrSecurityModel
+		INTEGER,
+	snAgTrpRcvrSecurityLevel
 		INTEGER
 	}
 
 snAgTrpRcvrIndex OBJECT-TYPE
-	SYNTAX	INTEGER (1..10)
+	SYNTAX	INTEGER
 	ACCESS	read-only
 	STATUS	mandatory
 	DESCRIPTION
@@ -2364,12 +2368,13 @@ snAgTrpRcvrIpAddr OBJECT-TYPE
 		SNMP manager that is to receive the trap."
 	::= { snAgTrpRcvrEntry 2 }
 
-snAgTrpRcvrComm OBJECT-TYPE
+snAgTrpRcvrCommunityOrSecurityName OBJECT-TYPE
 	SYNTAX	OCTET STRING (SIZE(0..32))
 	ACCESS	read-write
 	STATUS	mandatory
 	DESCRIPTION
-		"Community string to use."
+		"Community string to use. In case of USM (SNMPv3) security model,
+		this object is used to provide the security name."
 	::= { snAgTrpRcvrEntry 3 }
 
 
@@ -2412,6 +2417,33 @@ snAgTrpRcvrUDPPort       OBJECT-TYPE
 		"UDP port number of the trap receiver."
     DEFVAL { 162 }
 	::= { snAgTrpRcvrEntry 5 }
+
+snAgTrpRcvrSecurityModel       OBJECT-TYPE
+	SYNTAX	INTEGER {
+		v1(1),
+		v2c(2),
+		usm(3)
+		}
+	ACCESS  read-write
+	STATUS  mandatory
+	DESCRIPTION
+		"Version of trap format to be used."
+    DEFVAL { 1 }
+	::= { snAgTrpRcvrEntry 6 }
+
+snAgTrpRcvrSecurityLevel       OBJECT-TYPE
+	SYNTAX	INTEGER {
+		noAuth(1),
+		auth(2),
+		authPriv(3)
+		}
+	ACCESS  read-write
+	STATUS  mandatory
+	DESCRIPTION
+		"Used for USM (SNMPv3) security model to specify the level of security.
+		The security name is provided by snAgTrpRcvrCommunityOrSecurityName."
+    DEFVAL { 1 }
+	::= { snAgTrpRcvrEntry 7 }
 
 
 -- Boot Sequence Table
@@ -2973,15 +3005,6 @@ snAgSysLogGblFacility OBJECT-TYPE
     DEFVAL { user }
 	::= { snAgSysLogGbl 10 }
 
-snAgSysLogGblPersistenceEnable OBJECT-TYPE
-	SYNTAX	INTEGER { disabled(0), enabled(1) }
-	ACCESS	read-write
-	STATUS	mandatory
-	DESCRIPTION
-		"Enable/disable system logging persistence."
-    DEFVAL { enabled }
-	::= { snAgSysLogGbl 11 }
-
 -- Dynamic System Logging Buffer Table
 
 snAgSysLogBufferTable OBJECT-TYPE
@@ -3412,10 +3435,31 @@ snAgentConfigModuleType OBJECT-TYPE
 		fesx48GigModule(55),
 		fesx48Gig2TenGigModule(56),
 		fesx48Gig1TenGigModule(57),
+		superx12ComboPortManagementModule(64),
+		superx2PortTenGigModule(65),
+		superx24PortGigCopperModule(66),
+		superx24PortGigFiberModule(67),
+		superx2PortTenGigLanWanModule(68),
+		superx24Port100tx1PortGigFiberModule(69),
+		superx12ComboPortManagement2Module(74),
+		superxR2PortTenGigManagementModule(80),
+		superxRManagementModule(81),
+		fesx24GigFiberGigCopperModule(112),
+		fesx24GigFiber2TenGigModule(113),
+		fesx24GigFiber1TenGigModule(114),
 		biFiJc48ePort100fxIpcModule(195),
 		biFiJc48tPort100fxIpcModule(196),
 		biFiJc8PortGigM4ManagementModule(197),
-		biFiJc8PortGigIgcModule(198)
+		biFiJc8PortGigIgcModule(198),
+		biFiJc16PortGigIgcModule(200),
+		biJc24PortCopperIpc4GigIgcModule(201),
+		biJc16PortGigCopperIgcModule(202),
+		biFiJc24Port100fxIpcModule(206),
+		bi2Port10GigModule(207),
+		biJc48tPortRJ21OmpModule(208),
+		biJc48ePortRJ45OmpModule(209),
+		biJc24PortIpcRJ45PoeModule(212),
+		biJc2PortGigIgcM4ManagementModule(214)
 		}
 
     ACCESS read-write
@@ -3487,8 +3531,11 @@ snAgentConfigModuleMgmtModuleType OBJECT-TYPE
 		m3ManagementModule(6),
 		m4ManagementModule(7),
 		m5ManagementModule(8),
-		jetcoreStackManagementModule(9), 
-		xfesStackManagementModule(10) }
+		jetcoreStackManagementModule(9),
+		muchoManagementModule(10),
+		rottWeilerManagementModule(11),
+		fesXStackManagementModule(12),
+		fgsStackManagementModule(13) }
 	ACCESS	read-only
 	STATUS	mandatory
 	DESCRIPTION

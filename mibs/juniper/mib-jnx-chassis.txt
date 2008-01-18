@@ -1,7 +1,7 @@
 --
 -- Juniper Enterprise Specific MIB: Chassis MIB
 -- 
--- Copyright (c) 1998-2007, Juniper Networks, Inc.
+-- Copyright (c) 1998-2005, Juniper Networks, Inc.
 -- All rights reserved.
 --
 -- The contents of this document are subject to change without notice.
@@ -14,14 +14,14 @@ IMPORTS
     MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
     Integer32, Gauge32, Counter32
         FROM SNMPv2-SMI
-    DisplayString, TimeStamp, TimeInterval, TEXTUAL-CONVENTION, DateAndTime
+    DisplayString, TimeStamp, TimeInterval, TEXTUAL-CONVENTION
         FROM SNMPv2-TC
     jnxMibs, jnxChassisTraps, jnxChassisOKTraps
         FROM JUNIPER-SMI;
 
 jnxBoxAnatomy MODULE-IDENTITY
 
-    LAST-UPDATED "200611200000Z" -- Mon Nov 20 00:00:00 2006 UTC
+    LAST-UPDATED "200507190000Z" -- Mon Jul 19 00:00:00 2005 UTC
     ORGANIZATION "Juniper Networks, Inc."
     CONTACT-INFO
             "        Juniper Technical Assistance Center
@@ -52,10 +52,6 @@ jnxBoxAnatomy MODULE-IDENTITY
     REVISION     "200507190000Z"    -- Jul 19, 2005
     DESCRIPTION
                "Added new offline reason pfeVersionMismatch
-                to jnxFruOfflineReason enumeration."
-    REVISION     "200611200000Z"    -- Nov 20, 2006
-    DESCRIPTION
-               "Added new offline reason fruFebOffline
                 to jnxFruOfflineReason enumeration."
 
     ::= { jnxMibs 1 }
@@ -753,8 +749,7 @@ JnxChassisId ::= TEXTUAL-CONVENTION
 	    jnxOperatingMemory          Integer32,
             jnxOperatingStateOrdered    INTEGER,
             jnxOperatingChassisId       JnxChassisId,
-            jnxOperatingChassisDescr    DisplayString,
-            jnxOperatingRestartTime     DateAndTime
+            jnxOperatingChassisDescr    DisplayString
     }
 
     jnxOperatingContentsIndex OBJECT-TYPE
@@ -879,7 +874,7 @@ JnxChassisId ::= TEXTUAL-CONVENTION
     jnxOperatingUpTime OBJECT-TYPE
 	SYNTAX		TimeInterval
 	MAX-ACCESS	read-only
-        STATUS          deprecated
+	STATUS		current
 	DESCRIPTION
 		"The time interval in 10-millisecond period
 		that this subject has been up and running.  
@@ -943,16 +938,7 @@ JnxChassisId ::= TEXTUAL-CONVENTION
                 "A textual description of the chassis on which the
                 contents of this row exists."
         ::= { jnxOperatingEntry 18 }
-
-    jnxOperatingRestartTime OBJECT-TYPE
-        SYNTAX          DateAndTime
-        MAX-ACCESS      read-only
-        STATUS          current
-        DESCRIPTION
-                "The time at which this entity
-                last restarted."
-        ::= { jnxOperatingEntry 19 }
-
+	
 
 --
 -- Box Redundancy Information Table
@@ -1352,16 +1338,7 @@ JnxChassisId ::= TEXTUAL-CONVENTION
                 reconnect(23),                  -- reconnect
                 overvoltage(24),                -- overvoltage
                 pfeVersionMismatch(25),         -- PFE version mismatch
-                febRddCfgChange(26),            -- FEB redundancy cfg changed
-                fpcMisconfig(27),               -- FPC is misconfigured
-                fruReconnectFail(28),           -- FRU did not reconnect
-                fruFwddReset(29),               -- FWDD reset the fru
-                fruFebSwitch(30),               -- FEB got switched
-                fruFebOffline(31),              -- FEB was offlined
-                fruInServSoftUpgradeError(32),  -- In Service Software Upgrade Error
-                fruChasdPowerRatingExceed(33),  -- Chassis power rating exceeded
-                fruConfigOffline(34),           -- Configured offline
-                fruServiceRestartRequest(35)    -- restarting request from a service
+                febRddCfgChange(26)             -- Feb redundancy cfg changed
 	}
 	MAX-ACCESS	read-only
 	STATUS		current
@@ -1415,20 +1392,6 @@ JnxChassisId ::= TEXTUAL-CONVENTION
                 "A textual description of the chassis on which the
                 contents of this row exists."
         ::= { jnxFruEntry 15 }
-
---
--- definition of Kernel Memory Used related stuff
---
-
-    jnxBoxKernelMemoryUsedPercent OBJECT-TYPE
-	SYNTAX		Integer32
-	MAX-ACCESS	read-only
-	STATUS		current
-	DESCRIPTION
-		"The percentage of kernel memory used
-		of this subject.  0 if unavailable or
-		inapplicable."
-	::= { jnxBoxAnatomy 16 }
 
 
 --
@@ -1694,23 +1657,6 @@ JnxChassisId ::= TEXTUAL-CONVENTION
 		in the chassis has recovered from over temperature
 		condition." 
 	::= { jnxChassisOKTraps 3 }
-
-    jnxFruOK NOTIFICATION-TYPE
-        OBJECTS         { jnxFruContentsIndex,
-                          jnxFruL1Index,
-                          jnxFruL2Index,
-                          jnxFruL3Index,
-                          jnxFruName,
-                          jnxFruType,
-                          jnxFruSlot }
-        STATUS          current
-        DESCRIPTION
-                "A jnxFruOK trap signifies that the SNMP
-                entity, acting in an agent role, has detected that
-                the specified FRU (Field Replaceable Unit) has
-                recovered from previous operational errors and it
-                is in ok state in the chassis."
-        ::= { jnxChassisOKTraps 4 }
 
 
 END

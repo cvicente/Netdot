@@ -1,3 +1,4 @@
+
 FOUNDRY-SN-SWITCH-GROUP-MIB DEFINITIONS ::= BEGIN
 
 
@@ -98,6 +99,9 @@ IMPORTS
 	  --
 	  -- pvc(9), format: type.slot.port.subInterface.vpi.vci
 	  --   e.g. 9.3.1.2.1.2 is port atm 3/1.2.1.2
+	  --
+	  -- virtual management(10), format: type
+	  --   e.g. 10 is the virtual management interface	  
 
 -- Groups
 
@@ -128,6 +132,9 @@ snMac	 				OBJECT IDENTIFIER ::= { snSwitch 24 }
 snPortMonitor			OBJECT IDENTIFIER ::= { snSwitch 25 }
 snSSH					OBJECT IDENTIFIER ::= { snSwitch 26 }
 snSSL					OBJECT IDENTIFIER ::= { snSwitch 27 }
+snMacAuth				OBJECT IDENTIFIER ::= { snSwitch 28 }
+snMetroRing				OBJECT IDENTIFIER ::= { snSwitch 29 }
+snMacVlan				OBJECT IDENTIFIER ::= { snSwitch 30 }
 
 -- SECTION 2: Switch Group Configuration MIBs
 
@@ -848,7 +855,7 @@ snVLanByPortStpMode OBJECT-TYPE
 	::= { snVLanByPortEntry 5 }
 
 snVLanByPortStpPriority OBJECT-TYPE
-    SYNTAX  INTEGER (1..65535)
+    SYNTAX  INTEGER (0..65535)
     ACCESS  read-write
     STATUS  deprecated
     DESCRIPTION
@@ -860,7 +867,7 @@ snVLanByPortStpPriority OBJECT-TYPE
 	::= { snVLanByPortEntry 6 }
 
 snVLanByPortStpGroupMaxAge OBJECT-TYPE
-	SYNTAX  INTEGER (6..40)
+	SYNTAX  INTEGER (0..40)
     ACCESS  read-write
     STATUS  deprecated
     DESCRIPTION
@@ -877,7 +884,7 @@ snVLanByPortStpGroupMaxAge OBJECT-TYPE
 	::= { snVLanByPortEntry 7 }
 
 snVLanByPortStpGroupHelloTime OBJECT-TYPE
-    SYNTAX  INTEGER (1..10)
+    SYNTAX  INTEGER (0..10)
     ACCESS  read-write
     STATUS  deprecated
     DESCRIPTION
@@ -891,7 +898,7 @@ snVLanByPortStpGroupHelloTime OBJECT-TYPE
 	::= { snVLanByPortEntry 8 }
 
 snVLanByPortStpGroupForwardDelay OBJECT-TYPE
-	SYNTAX  INTEGER (2..30)
+	SYNTAX  INTEGER (0..30)
     ACCESS  read-write
     STATUS  deprecated
     DESCRIPTION
@@ -1135,7 +1142,7 @@ snVLanByPortVLanName OBJECT-TYPE
 
 
 snVLanByPortRouterIntf OBJECT-TYPE
-	SYNTAX  INTEGER (1..60)
+	SYNTAX  INTEGER
 	ACCESS  read-write
 	STATUS  deprecated
 	DESCRIPTION
@@ -1145,7 +1152,7 @@ snVLanByPortRouterIntf OBJECT-TYPE
 
 
 snVLanByPortChassisPortMask OBJECT-TYPE
-	SYNTAX  OCTET STRING (SIZE(32))
+	SYNTAX  OCTET STRING
 	ACCESS  read-write
 	STATUS  deprecated
 	DESCRIPTION
@@ -5127,7 +5134,21 @@ SnIfStpEntry ::= SEQUENCE {
     snIfStpPortAdminPointToPoint
         INTEGER,
     snIfStpOperPathCost
-        INTEGER
+        INTEGER,
+    snIfStpPortRole
+        INTEGER,
+    snIfStpBPDUTransmitted
+        Counter32,
+    snIfStpBPDUReceived
+        Counter32,
+    snIfRstpConfigBPDUReceived
+        Counter32,
+    snIfRstpTCNBPDUReceived
+        Counter32,
+    snIfRstpConfigBPDUTransmitted
+        Counter32,
+    snIfRstpTCNBPDUTransmitted
+        Counter32
 	}
 
 snIfStpVLanId OBJECT-TYPE
@@ -5323,6 +5344,69 @@ snIfStpOperPathCost OBJECT-TYPE
 	 path cost value because port speed cannot be determined
 	 due to speed auto sense in progress or port link is down."
 	::= { snIfStpEntry 17 }
+
+snIfStpPortRole OBJECT-TYPE
+    SYNTAX  INTEGER {
+              unknown(0),
+              alternate(1),
+              root(2),
+              designated(3),
+              backupRole(4),
+              disabledRole(5)
+            }
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+    "STP/RSTP port role."
+	::= { snIfStpEntry 18 }
+
+snIfStpBPDUTransmitted OBJECT-TYPE
+    SYNTAX  Counter32
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+    "STP/RSTP bridge protocol unit transmitted counter."
+	::= { snIfStpEntry 19 }
+
+snIfStpBPDUReceived OBJECT-TYPE
+    SYNTAX  Counter32
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+    "STP/RSTP bridge protocol unit received counter."
+	::= { snIfStpEntry 20 }
+
+snIfRstpConfigBPDUReceived OBJECT-TYPE
+    SYNTAX  Counter32
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+    "RSTP configuration bridge protocol unit received counter."
+	::= { snIfStpEntry 21 }
+
+snIfRstpTCNBPDUReceived OBJECT-TYPE
+    SYNTAX  Counter32
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+    "RSTP topology change notification bridge protocol unit received counter."
+	::= { snIfStpEntry 22 }
+
+snIfRstpConfigBPDUTransmitted OBJECT-TYPE
+    SYNTAX  Counter32
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+    "RSTP configuration bridge protocol unit transmitted counter."
+	::= { snIfStpEntry 23 }
+
+snIfRstpTCNBPDUTransmitted OBJECT-TYPE
+    SYNTAX  Counter32
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+    "RSTP topology change notification bridge protocol unit transmitted counter."
+	::= { snIfStpEntry 24 }
 
 
 -- Trunk Port Configuration Group
@@ -7452,7 +7536,8 @@ snFdpCachedAddrValue OBJECT-TYPE
 
 
 snMacSecurity   OBJECT IDENTIFIER ::= { snMac 1 }
-snPortMacSecurity   OBJECT IDENTIFIER ::= { snMacSecurity 1 }
+snPortMacSecurity   		OBJECT IDENTIFIER ::= { snMacSecurity 1 }
+snPortMacGlobalSecurity   	OBJECT IDENTIFIER ::= { snMacSecurity 2 }
 
 --
 -- Port MAC Security Table
@@ -7558,6 +7643,372 @@ snPortMacSecurityVlanId OBJECT-TYPE
     DESCRIPTION
             "The vlan membership of this interface."
     ::= {snPortMacSecurityEntry 8}
+
+
+--
+-- Port MAC Security Module Statistics Table
+--
+
+snPortMacSecurityModuleStatTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PortMacSecurityModuleStatEntry
+    ACCESS     not-accessible
+    STATUS     mandatory
+    DESCRIPTION
+            "Port MAC security statistics on each module."
+    ::= { snPortMacSecurity 2 }
+
+snPortMacSecurityModuleStatEntry OBJECT-TYPE
+    SYNTAX     PortMacSecurityModuleStatEntry 
+    ACCESS     not-accessible
+    STATUS     mandatory
+    DESCRIPTION
+            "An entry in the snPortMacSecurityModuleStatTable"
+    INDEX      { snPortMacSecurityModuleStatSlotNum }
+    ::= { snPortMacSecurityModuleStatTable 1 }
+
+PortMacSecurityModuleStatEntry ::= SEQUENCE {
+    snPortMacSecurityModuleStatSlotNum					INTEGER,
+    snPortMacSecurityModuleStatTotalSecurityPorts		Unsigned32,
+    snPortMacSecurityModuleStatTotalMACs				Unsigned32,
+    snPortMacSecurityModuleStatViolationCounts			Unsigned32,
+    snPortMacSecurityModuleStatTotalShutdownPorts		Unsigned32
+}
+
+snPortMacSecurityModuleStatSlotNum 		OBJECT-TYPE
+    SYNTAX     INTEGER    
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "The slot number of the port security device module."
+    ::= {snPortMacSecurityModuleStatEntry 1}
+
+snPortMacSecurityModuleStatTotalSecurityPorts     OBJECT-TYPE
+    SYNTAX     Unsigned32
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "The totol number of Ethernet interfaces on which MAC security is configured in this module."
+    ::= {snPortMacSecurityModuleStatEntry 2}
+
+snPortMacSecurityModuleStatTotalMACs     OBJECT-TYPE
+    SYNTAX     Unsigned32
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "The totol number of port MAC security MAC addresses are learned or configured in this module."
+    ::= {snPortMacSecurityModuleStatEntry 3}
+
+snPortMacSecurityModuleStatViolationCounts     OBJECT-TYPE
+    SYNTAX     Unsigned32
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "The totol number of counts of violation are collected in this module."
+    ::= {snPortMacSecurityModuleStatEntry 4}
+
+snPortMacSecurityModuleStatTotalShutdownPorts     OBJECT-TYPE
+    SYNTAX     Unsigned32
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "The totol number of Ethernet interfaces are shutted down due to security violation in this module."
+    ::= {snPortMacSecurityModuleStatEntry 5}
+
+--
+-- Port MAC Security Interface Table
+--
+
+snPortMacSecurityIntfContentTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PortMacSecurityIntfContentEntry
+    ACCESS     not-accessible
+    STATUS     mandatory
+    DESCRIPTION
+            "Port MAC security statistics on each Ethernet Interface."
+    ::= { snPortMacSecurity 3 }
+
+snPortMacSecurityIntfContentEntry OBJECT-TYPE
+    SYNTAX     PortMacSecurityIntfContentEntry 
+    ACCESS     not-accessible
+    STATUS     mandatory
+    DESCRIPTION
+            "An entry in the snPortMacSecurityIntfContentTable"
+    INDEX      { snPortMacSecurityIntfContentIfIndex }
+    ::= { snPortMacSecurityIntfContentTable 1 }
+
+PortMacSecurityIntfContentEntry ::= SEQUENCE {
+    snPortMacSecurityIntfContentIfIndex					InterfaceIndex,
+    snPortMacSecurityIntfContentSecurity   				INTEGER,
+    snPortMacSecurityIntfContentViolationType			INTEGER,
+    snPortMacSecurityIntfContentShutdownTime			Unsigned32,
+    snPortMacSecurityIntfContentShutdownTimeLeft		Unsigned32,
+    snPortMacSecurityIntfContentAgeOutTime				Unsigned32,
+    snPortMacSecurityIntfContentMaxLockedMacAllowed		Unsigned32,
+    snPortMacSecurityIntfContentTotalMACs				Unsigned32,
+    snPortMacSecurityIntfContentViolationCounts			Unsigned32
+}
+
+snPortMacSecurityIntfContentIfIndex OBJECT-TYPE
+    SYNTAX  InterfaceIndex
+    ACCESS  not-accessible
+    STATUS  mandatory
+    DESCRIPTION
+    	"In order to identify a particular interface, this
+		object shall identify the instance of the ifIndex
+		object, defined in RFC 2863."
+	::= { snPortMacSecurityIntfContentEntry 1 }
+
+snPortMacSecurityIntfContentSecurity OBJECT-TYPE
+    SYNTAX     INTEGER { disable(0), enable(1) }
+    ACCESS     read-write
+    STATUS     mandatory
+    DESCRIPTION
+            "Port security for this interface can be either disabled or enabled."
+    ::= {snPortMacSecurityIntfContentEntry 2}
+
+snPortMacSecurityIntfContentViolationType OBJECT-TYPE
+    SYNTAX     INTEGER { shutdown(0), restrict(1) }
+    ACCESS     read-write
+    STATUS     mandatory
+    DESCRIPTION
+            "Port security violation type for this interface is shutdown or restrict."
+    ::= {snPortMacSecurityIntfContentEntry 3}
+
+snPortMacSecurityIntfContentShutdownTime OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..1440)
+    ACCESS     read-write
+    STATUS     mandatory
+    DESCRIPTION
+            "If snPortMacSecurityIntfContentViolationType is shutdown(1),
+			this value gives the number of seconds this interface is shut down when violation occurs.
+            In the shutdown(1) case, 0 means interface is permanently down.
+            If snPortMacSecurityIntfContentViolationType is restrict(2), this value will be always 0."
+    ::= {snPortMacSecurityIntfContentEntry 4}
+
+snPortMacSecurityIntfContentShutdownTimeLeft OBJECT-TYPE
+    SYNTAX     Unsigned32
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "If snPortMacSecurityIntfContentViolationType is shutdown(1), 
+            whether this interface has been shut down due to a security violation 
+            and the value gives the number of seconds before this interface is enabled again.
+            If snPortMacSecurityIntfContentViolationType is restrict(2), this value will be always 0."
+    ::= {snPortMacSecurityIntfContentEntry 5}
+
+snPortMacSecurityIntfContentAgeOutTime OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..1440)
+    ACCESS     read-write
+    STATUS     mandatory
+    DESCRIPTION
+            "The amount of time, in minutes, MAC addresses learned on this interface will remain secure.
+            It allows configurable values 0-1440.  0 means no aging permanently."
+    ::= {snPortMacSecurityIntfContentEntry 6}
+
+snPortMacSecurityIntfContentMaxLockedMacAllowed OBJECT-TYPE
+    SYNTAX     Unsigned32
+    ACCESS     read-write
+    STATUS     mandatory
+    DESCRIPTION
+            "Maximum number of security MAC addresses can be locked to this interface."
+    ::= {snPortMacSecurityIntfContentEntry 7}
+
+snPortMacSecurityIntfContentTotalMACs     OBJECT-TYPE
+    SYNTAX     Unsigned32
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "The totol number of port MAC security MAC addresses are locked in this interface."
+    ::= {snPortMacSecurityIntfContentEntry 8}
+
+snPortMacSecurityIntfContentViolationCounts     OBJECT-TYPE
+    SYNTAX     Unsigned32
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "The totol number of counts of violation are collected in this interface."
+    ::= {snPortMacSecurityIntfContentEntry 9}
+
+--
+-- Port MAC Security Interface MAC Table
+--
+
+snPortMacSecurityIntfMacTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PortMacSecurityIntfMacEntry
+    ACCESS     not-accessible
+    STATUS     mandatory
+    DESCRIPTION
+            "Status of port MAC security on the device's interfaces."
+    ::= { snPortMacSecurity 4 }
+
+snPortMacSecurityIntfMacEntry OBJECT-TYPE
+    SYNTAX     PortMacSecurityIntfMacEntry
+    ACCESS     not-accessible
+    STATUS     mandatory
+    DESCRIPTION
+            "An entry in the snPortMacSecurityIntfMacTable"
+    INDEX      { snPortMacSecurityIntfMacIfIndex,
+                	snPortMacSecurityIntfMacAddress 
+               		}
+    ::= { snPortMacSecurityIntfMacTable 1 }
+
+PortMacSecurityIntfMacEntry ::= SEQUENCE {
+    snPortMacSecurityIntfMacIfIndex			INTEGER,
+    snPortMacSecurityIntfMacAddress			MacAddress,
+    snPortMacSecurityIntfMacVlanId			INTEGER,
+	snPortMacSecurityIntfMacRowStatus 		INTEGER
+}
+
+snPortMacSecurityIntfMacIfIndex     OBJECT-TYPE
+    SYNTAX     INTEGER
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "ifIndex value of the local Ethernet interface on 
+            which MAC security is configured."
+    ::= {snPortMacSecurityIntfMacEntry 1}
+
+snPortMacSecurityIntfMacAddress OBJECT-TYPE
+    SYNTAX     MacAddress
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "The secure MAC address for this local Ethernet interface on 
+            which the secure MAC Address is configured and/or learned.  
+            The maximum number of the secure MAC Addresses is restricted 
+            by the snPortMacSecurityIntfContentMaxLockedMacAllowed."
+    ::= {snPortMacSecurityIntfMacEntry 2}
+
+snPortMacSecurityIntfMacVlanId OBJECT-TYPE
+    SYNTAX     INTEGER (1..4095)
+    ACCESS     read-write
+    STATUS     mandatory
+    DESCRIPTION
+            "The vlan membership of this interface, zero means don't care."
+    ::= {snPortMacSecurityIntfMacEntry 3}
+
+snPortMacSecurityIntfMacRowStatus OBJECT-TYPE
+	SYNTAX  INTEGER {
+		other(1),
+		valid(2),
+		delete(3),
+		create(4)
+		}
+	ACCESS  read-write
+	STATUS  mandatory
+	DESCRIPTION
+		"This object is used to create and
+		delete row in the table and control
+		if they are used. The values
+		that can be written are:
+		  delete(3)...deletes the row
+		  create(4)...creates a new row
+
+		If the row exists, then a SET with
+		value of create(4) returns error
+		'badValue'. Deleted rows go away
+		immediately. The following values
+		can be returned on reads:
+		  noSuch(0)...no such row
+		  other(1)....some other case
+		  valid(2)....the row exists and is valid"
+    ::= {snPortMacSecurityIntfMacEntry 4}
+
+
+--
+-- Port MAC Security Autosave MAC Table
+--
+
+snPortMacSecurityAutosaveMacTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF PortMacSecurityAutosaveMacEntry
+    ACCESS     not-accessible
+    STATUS     mandatory
+    DESCRIPTION
+            "Autosave MAC addresses of port MAC security on the device's interfaces."
+    ::= { snPortMacSecurity 5 }
+
+snPortMacSecurityAutosaveMacEntry OBJECT-TYPE
+    SYNTAX     PortMacSecurityAutosaveMacEntry
+    ACCESS     not-accessible
+    STATUS     mandatory
+    DESCRIPTION
+            "An entry in the snPortMacSecurityAutosaveMacTable"
+    INDEX      { snPortMacSecurityAutosaveMacIfIndex,
+				 snPortMacSecurityAutosaveMacResource,
+				 snPortMacSecurityAutosaveMacQueryIndex
+               		}
+    ::= { snPortMacSecurityAutosaveMacTable 1 }
+
+PortMacSecurityAutosaveMacEntry ::= SEQUENCE {
+    snPortMacSecurityAutosaveMacIfIndex		INTEGER,
+	snPortMacSecurityAutosaveMacResource	INTEGER,
+	snPortMacSecurityAutosaveMacQueryIndex	Unsigned32,
+	snPortMacSecurityAutosaveMacAddress		MacAddress
+}
+
+snPortMacSecurityAutosaveMacIfIndex     OBJECT-TYPE
+    SYNTAX     INTEGER
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "ifIndex value of the local Ethernet interface on 
+            which MAC security is configured."
+    ::= {snPortMacSecurityAutosaveMacEntry 1}
+
+snPortMacSecurityAutosaveMacResource OBJECT-TYPE
+    SYNTAX     INTEGER { local(1), shared(2) }
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "The MAC address was autosaved using local or shared resources."
+    ::= {snPortMacSecurityAutosaveMacEntry 2}
+
+snPortMacSecurityAutosaveMacQueryIndex     OBJECT-TYPE
+    SYNTAX     Unsigned32
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "Entry index within the given resource of local Ethernet interface on 
+            which MAC security is autosaved."
+    ::= {snPortMacSecurityAutosaveMacEntry 3}
+
+snPortMacSecurityAutosaveMacAddress OBJECT-TYPE
+    SYNTAX     MacAddress
+    ACCESS     read-only
+    STATUS     mandatory
+    DESCRIPTION
+            "The secure MAC address for this local Ethernet interface on 
+            which the secure MAC Address is autosaved."
+    ::= {snPortMacSecurityAutosaveMacEntry 4}
+
+
+
+-- Port MAC Global Security MIB Group 
+
+snPortMacGlobalSecurityFeature OBJECT-TYPE
+    SYNTAX     INTEGER { disable(0), enable(1) }
+    ACCESS     read-write
+    STATUS     mandatory
+    DESCRIPTION
+            "Port security for this device can be either disabled or enabled."
+	::= { snPortMacGlobalSecurity 1 }
+
+snPortMacGlobalSecurityAgeOutTime OBJECT-TYPE
+    SYNTAX     Unsigned32 (0..1440)
+    ACCESS     read-write
+    STATUS     mandatory
+    DESCRIPTION
+             "The amount of time, in minutes, MAC addresses learned on this device will remain secure.
+            It allows configurable values in the range of 0-1440.  0 means no aging permanently."
+	::= { snPortMacGlobalSecurity 2 }
+
+snPortMacGlobalSecurityAutosave OBJECT-TYPE
+    SYNTAX     Unsigned32
+    ACCESS     read-write
+    STATUS     mandatory
+    DESCRIPTION
+            "The port security autosave value for this device. It allows
+    configurable values 0 and also in the range of 15-1440. The value 0 means no autosave."
+	::= { snPortMacGlobalSecurity 3 }
 
 
 --
