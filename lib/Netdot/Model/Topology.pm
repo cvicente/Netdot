@@ -4,7 +4,7 @@ use base 'Netdot::Model';
 use warnings;
 use strict;
 
-my $logger = Netdot->log->get_logger('Netdot::Model::Topology');
+my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
 
 # Make sure to return 1

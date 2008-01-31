@@ -423,9 +423,11 @@ sub get_snmp_info {
     $dev{sysobjectid} = $sinfo->id;
     if ( defined $dev{sysobjectid} ){
 	$dev{sysobjectid} =~ s/^\.(.*)/$1/;  # Remove unwanted first dot
-	my %ignored = %{ $self->config->get('IGNOREDEVS') };
-	if ( exists($ignored{$dev{sysobjectid}}) ){
-	    $self->throw_user(sprintf("Product id %s set to be ignored\n", $dev{sysobjectid}));
+	my %IGNORED;
+	map { $IGNORED{$_}++ }  @{ $self->config->get('IGNOREDEVS') };
+	if ( exists($IGNORED{$dev{sysobjectid}}) ){
+	    $self->throw_user(sprintf("%s (%s) Product id %s ignored per configuration option (IGNOREDEVS)\n", 
+				      $name, $ip, $dev{sysobjectid}));
 	}
     }
 
@@ -641,7 +643,10 @@ sub get_snmp_info {
 
 	# check whether it should be ignored
 	if ( defined $ifreserved ){
-	    next if ( $ifdescr =~ /$ifreserved/i );
+	    if ( $ifdescr =~ /$ifreserved/i ){
+		$logger->debug("Device::get_snmp_info: Interface $ifdescr ignored per configuration option (IFRESERVED)");
+		next;
+	    }
 	}
 	foreach my $field ( keys %IFFIELDS ){
 	    my $method = $IFFIELDS{$field};
@@ -1946,8 +1951,11 @@ sub snmp_update {
     # Do not update interfaces for these devices
     # (specified in config file)
     #
-    my %ignored = %{ $self->config->get('IGNOREPORTS') };
-    unless ( defined $info->{sysobjectid} && exists $ignored{$info->{sysobjectid}} ){
+    my %IGNORED;
+    map { $IGNORED{$_}++ } @{ $self->config->get('IGNOREPORTS') };
+    if ( defined $info->{sysobjectid} && exists $IGNORED{$info->{sysobjectid}} ){
+	$logger->debug("Device::snmp_update: $host ports ignored per configuration option (IGNOREPORTS)");
+    }else{
 	
 	# How to deal with new subnets
 	# First grab defaults from config file
@@ -1966,9 +1974,6 @@ sub snmp_update {
 	    map { $oldips{$_->address} = $_ } @{ $devips };
 	}
 	
- 	# Get old Interfaces (if any).
- 	my ( %oldifs, %oldifsbynumber, %oldifsbyname );
-
 	# Flag for determining if IP info has changed
 	my $ipv4_changed = 0;
 	my $ipv6_changed = 0;
@@ -1976,30 +1981,44 @@ sub snmp_update {
 	##############################################
 	# Try to solve the problem with devices that change ifIndex
 	# We use the name as the most stable key to identify interfaces
-	my %tmpifs;
-	$tmpifs{tmp}++; # Just so we can start the loop
-	while ( keys %tmpifs ){
-	    delete $tmpifs{tmp};
+	# If names are not unique, use number
+	
+ 	# Get old Interfaces (if any).
+ 	my ( %oldifs, %oldifsbynumber, %oldifsbyname );
 
-	    # Index by object id. 	
-	    map { $oldifs{$_->id} = $_ } $self->interfaces();
+        # Index by object id. 	
+	map { $oldifs{$_->id} = $_ } $self->interfaces();
+	
+	# Index by interface name (ifDescr) and number (ifIndex)
+	foreach my $id ( keys %oldifs ){
+	    $oldifsbynumber{$oldifs{$id}->number} = $oldifs{$id}
+	    if ( defined($oldifs{$id}->number) );
 	    
-	    # Index by interface name (ifDescr) and number (ifIndex)
-	    foreach my $id ( keys %oldifs ){
-		$oldifsbynumber{$oldifs{$id}->number} = $oldifs{$id}
-		if ( defined($oldifs{$id}->number) );
-		
-		$oldifsbyname{$oldifs{$id}->name} = $oldifs{$id}
-		if ( defined($oldifs{$id}->name) );
+	    $oldifsbyname{$oldifs{$id}->name} = $oldifs{$id}
+	    if ( defined($oldifs{$id}->name) );
+	}
+	
+	# Index new interfaces by name to check if any names are repeated
+	my %newifsbyname;
+	map { $newifsbyname{$info->{interface}->{$_}->{name}}++ } keys %{ $info->{interface} };
+	my %seenifs;
+	my $ifkey = 'name';
+	foreach my $name ( keys %newifsbyname ){
+	    $seenifs{$name}++;
+	    if ( exists $seenifs{$name} ){
+		# Names are not unique, so we use ifIndex
+		$ifkey = 'number';
+		last;
 	    }
-	    
-	    foreach my $newif ( sort keys %{ $info->{interface} } ) {
-		my $newname   = $info->{interface}->{$newif}->{name};
-		my $newnumber = $info->{interface}->{$newif}->{number};
-		my $oldif;
+	}
+	
+	foreach my $newif ( sort keys %{ $info->{interface} } ) {
+	    my $newname   = $info->{interface}->{$newif}->{name};
+	    my $newnumber = $info->{interface}->{$newif}->{number};
+	    my $oldif;
+	    if ( $ifkey eq 'name' ){
 		if ( defined $newname && ($oldif = $oldifsbyname{$newname}) ){
 		    # Found one with the same name
-		    
 		    $logger->debug(sprintf("%s: Interface with name %s found", 
 					   $host, $oldif->name));
 		    
@@ -2007,74 +2026,62 @@ sub snmp_update {
 			# New and old numbers do not match for this name
 			$logger->info(sprintf("%s: Interface %s had number: %s, now has: %s", 
 					      $host, $oldif->name, $oldif->number, $newnumber));
-			
-			# Check if a third one has that number
-			my $thirdif;
-			if ( ($thirdif = $oldifsbynumber{$newnumber}) &&
-			    $thirdif->name ne $newname ){
-
-			    # The number field is unique in the DB, 
-			    # so we need to assign temporary numbers
-			    my $rand = int(rand 1000) + 1;
-			    my $tmp = $thirdif->number . "-" . $rand;
-			    $thirdif->update({number=>$tmp});
-			    $tmpifs{$thirdif->id}++;
-			}
 		    }
-		    
 		}elsif ( exists $oldifsbynumber{$newnumber} ){
 		    # Name not found, but found one with the same number
 		    $oldif = $oldifsbynumber{$newnumber};
 		    $logger->debug(sprintf("%s: Interface with number %s found", 
 					   $host, $oldif->number));
 		}
-		
-		my $if;
-		if ( $oldif ){
-		    # Remove the new interface's ip addresses from list to delete
-		    foreach my $newaddr ( keys %{$info->{interface}->{$newif}->{ips}} ){
-			delete $oldips{$newaddr} if exists $oldips{$newaddr};
-		    }
-		    $if = $oldif;
-		}else{
-		    # Interface does not exist.  Add it.
-		    my $ifname = $info->{interface}->{$newif}->{name} || $newnumber;
-		    $logger->info(sprintf("%s: Interface %s (%s) not found. Inserting.", 
-					  $host, $newnumber, $ifname));
-		    
-		    my %args = (device      => $self, 
-				number      => $newif, 
-				name        => $ifname,
-				);
-		    # Make sure we can write to the description field when
-		    # device is airespace - we store the AP name as the int description
-		    $args{overwrite_descr} = 1 if ( $info->{airespace} );
-
-		    $if = Interface->insert(\%args);
+	    }else{
+		# Using number as unique reference
+		if ( exists $oldifsbynumber{$newnumber} ){
+		    $oldif = $oldifsbynumber{$newnumber};
+		    $logger->debug(sprintf("%s: Interface with number %s found", 
+					   $host, $oldif->number));
 		}
+	    }	    
+	    my $if;
+	    if ( $oldif ){
+		# Remove the new interface's ip addresses from list to delete
+		foreach my $newaddr ( keys %{$info->{interface}->{$newif}->{ips}} ){
+		    delete $oldips{$newaddr} if exists $oldips{$newaddr};
+		}
+		$if = $oldif;
+	    }else{
+		# Interface does not exist.  Add it.
+		my $ifname = $info->{interface}->{$newif}->{name} || $newnumber;
+		$logger->info(sprintf("%s: Interface %s (%s) not found. Inserting.", 
+				      $host, $newnumber, $ifname));
 		
-		$self->throw_fatal("$host: Could not find or create interface: $newnumber") 
-		    unless $if;
+		my %args = (device      => $self, 
+			    number      => $newif, 
+			    name        => $ifname,
+		    );
+		# Make sure we can write to the description field when
+		# device is airespace - we store the AP name as the int description
+		$args{overwrite_descr} = 1 if ( $info->{airespace} );
 		
-		# Now update it with snmp info
-		$if->snmp_update(info          => $info->{interface}->{$newif},
-				 add_subnets   => $add_subnets,
-				 subs_inherit  => $subs_inherit,
-				 ipv4_changed  => \$ipv4_changed,
-				 ipv6_changed  => \$ipv6_changed,
-				 stp_instances => $info->{stp_instances},
-				 );
-		
-		# Remove this interface from list to delete
-		delete $oldifs{$if->id} if exists $oldifs{$if->id};  
-
-		# Remove from list of temporarily-numbered ifs
-		delete $tmpifs{$if->id} if exists $tmpifs{$if->id};  
-		
-		
-	    } #end foreach my newif
-	} # end while 
-
+		$if = Interface->insert(\%args);
+	    }
+	    
+	    $self->throw_fatal("$host: Could not find or create interface: $newnumber")
+		unless $if;
+	    
+	    # Now update it with snmp info
+	    $if->snmp_update(info          => $info->{interface}->{$newif},
+			     add_subnets   => $add_subnets,
+			     subs_inherit  => $subs_inherit,
+			     ipv4_changed  => \$ipv4_changed,
+			     ipv6_changed  => \$ipv6_changed,
+			     stp_instances => $info->{stp_instances},
+		);
+	    
+	    # Remove this interface from list to delete
+	    delete $oldifs{$if->id} if exists $oldifs{$if->id};  
+	    
+	} #end foreach my newif
+	
 	##############################################
 	# remove each interface that no longer exists
 	#
