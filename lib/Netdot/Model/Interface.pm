@@ -685,17 +685,26 @@ sub get_dp_neighbor {
 	}
     }
     if ( ! $rem_dev ){
+	if ( $self->dp_remote_id ){
+	    $logger->debug(sprintf("%s: DP Remote Device not found: %s ", 
+				   $self->get_label, $self->dp_remote_ip));
+	}
+	if ( $self->dp_remote_id ){
+	    $logger->debug(sprintf("%s: DP Remote Device not found: %s ", 
+				   $self->get_label, $self->dp_remote_id));
+	}
 	return;
     }
     # Find the port on the remote device
     if ( defined $self->dp_remote_port ){
 	foreach my $rem_port ( split ',', $self->dp_remote_port ){
-	    # Try name first, then number, then description
-	    my $rem_int = Interface->search(device=>$rem_dev, name=>$rem_port)->first || 
-		Interface->search(device=>$rem_dev, number=>$rem_port)->first ||
-		Interface->search(device=>$rem_dev, description=>$rem_port)->first;
+	    # Try name first, then number
+	    my $rem_int = Interface->search(device=>$rem_dev, name=>$rem_port)->first 
+		|| Interface->search(device=>$rem_dev, number=>$rem_port)->first;
 	    if ( $rem_int ){
 		# We have a winner
+		$logger->debug(sprintf("%s: DP Remote Port found: %s, %s ", 
+				       $self->get_label, $rem_dev->get_label, $rem_int->get_label));
 		return $rem_int->id;
 	    }else{
 		$logger->debug(sprintf("%s: DP Remote Port not found: %s, %s ", 

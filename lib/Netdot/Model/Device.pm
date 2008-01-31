@@ -591,14 +591,14 @@ sub get_snmp_info {
 		# which means that for each port, we can have different
 		# values.  We save them all in a comma-separated list
 		if ( defined $hashes{$m}->{$iid} ){
-		    my @vals = split ',', $hashes{$m}->{$iid};
-		    foreach my $val ( @vals ){
-			if ( $val ne $dp_hashes{$m}->{$key} ){
-			    # Append new value to list
-			    push @vals, $dp_hashes{$m}->{$key};
-			}
+		    # Use a hash for fast lookup
+		    my %vals;
+		    map { $vals{$_}++ } split ',', $hashes{$m}->{$iid};
+		    if ( ! exists $vals{$dp_hashes{$m}->{$key}} ){
+			# Append new value to list
+			$vals{$dp_hashes{$m}->{$key}}++;
 		    }
-		    $hashes{$m}->{$iid} = join ',', @vals;
+		    $hashes{$m}->{$iid} = join ',', keys %vals;
 		}else{
 		    $hashes{$m}->{$iid} = $dp_hashes{$m}->{$key};
 		}
