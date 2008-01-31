@@ -6,6 +6,8 @@ use strict;
 
 my $IPV4 = Netdot->get_ipv4_regex();
 my $IPV6 = Netdot->get_ipv6_regex();
+my $HOCT = '[0-9A-F]{2}';
+my $MAC  = "$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT";
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
@@ -87,6 +89,59 @@ sub delete {
 }
 
 ############################################################################
+=head2 add_neighbor
+    
+  Arguments:
+    Neighbor Interface id
+    score
+  Returns:
+    True
+  Example:
+    $interface->add_neighbor($id);
+
+=cut
+sub add_neighbor{
+    my ($self, $nid, $score) = @_;
+    $self->isa_object_method('add_neighbor');
+    $score ||= 'n\a';
+
+    my $neighbor = Interface->retrieve($nid) 
+	|| $self->throw_fatal("Cannot retrieve Interface id $nid");
+	
+    unless ( int($self->neighbor) && int($neighbor->neighbor) && 
+	     $self->neighbor->id == $neighbor->id && $neighbor->neighbor->id == $self->id ){
+	$logger->info(sprintf("Adding new neighbors: %s <=> %s, score: %s", 
+			      $self->get_label, $neighbor->get_label, $score));
+	if ( $self->neighbor && $self->neighbor_fixed ){
+	    $logger->warn(sprintf("%s has been manually fixed to %s", $self->get_label, 
+				  $self->neighbor->get_label));
+	}elsif ( $neighbor->neighbor && $neighbor->neighbor_fixed ) {
+	    $logger->warn(sprintf("%s has been manually fixed to %s", $neighbor->get_label, 
+				  $neighbor->neighbor->get_label));
+	}else{
+	    $self->update({neighbor=>$neighbor});
+	}
+    }
+    return 1;
+}
+
+############################################################################
+=head2 remove_neighbor
+    
+  Arguments:
+    None
+  Returns:
+    See update method
+  Example:
+    $interface->remove_neighbor();
+
+=cut
+sub remove_neighbor{
+    my ($self) = @_;
+    return $self->update({neighbor=>0}) if (int($self->neighbor));
+}
+
+############################################################################
 =head2 update - Update Interface
     
     We override the update method for extra functionality:
@@ -95,7 +150,7 @@ sub delete {
     Hash ref with Interface fields
     We add an extra 'reciprocal' flag to avoid infinite loops
   Returns:
-    Updated Interface object
+    See Class::DBI::update()
   Example:
     $interface->update( \%data );
 
@@ -104,29 +159,35 @@ sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');    
     my $class = ref($self);
+    # Neighbor updates are reciprocal unless told otherwise
     my $nr = defined($argv->{reciprocal}) ? $argv->{reciprocal} : 1;
 
     if ( exists $argv->{neighbor} ){
-	if ( $self->type ne "53" && $self->type ne "propVirtual" ){
-	    my $nid = int($argv->{neighbor});
-	    if ( $nid == $self->id ){
-		$self->throw_user("An interface cannot be a neighbor of itself");
-	    }
-	    my $current_neighbor = ( $self->neighbor ) ? $self->neighbor->id : 0;
-	    if ( $nid != $current_neighbor ){
-		if ( $nr ){
-		    if ( $nid ){
-			my $neighbor = $class->retrieve($nid);
-			$neighbor->update({neighbor=>$self, reciprocal=>0});
-		    }else{
-			# I'm basically removing my current neighbor
-			# Tell the neighbor to remove me
-			$self->neighbor->update({neighbor=>0, reciprocal=>0}) if ($self->neighbor);
-		    }
+	my $nid = int($argv->{neighbor});
+	if ( $nid == $self->id ){
+	    $self->throw_user(sprintf("%s: interface cannot be neighbor of itself", $self->get_label));
+	}
+	my $current_neighbor = ( $self->neighbor ) ? $self->neighbor->id : 0;
+	if ( $nid != $current_neighbor ){
+	    if ( $nid != 0 ){
+		# We might still want to set a virtual interface's neighbor to 0
+		# If we are correcting an error
+		if ( $self->type eq "53" && $self->type eq "propVirtual" ){
+		    $self->throw_user(sprintf("Virtual interface: %s cannot have neighbors",
+					      $self->get_label));
 		}
 	    }
-	}else{
-	    $self->throw_user("Virtual interfaces cannot have neighbors");
+	    if ( $nr ){
+		if ( $nid ){
+		    my $neighbor = $class->retrieve($nid);
+		    $neighbor->update({neighbor=>$self, reciprocal=>0});
+		}else{
+		    # I'm basically removing my current neighbor
+		    # Tell the neighbor to remove me
+		    $self->neighbor->update({neighbor=>0, reciprocal=>0}) 
+			if (int($self->neighbor));
+		}
+	    }
 	}
     }
     delete $argv->{reciprocal};
@@ -169,6 +230,7 @@ sub snmp_update {
     my @stdfields = qw( number name type description speed admin_status 
 		        oper_status admin_duplex oper_duplex stp_id 
    		        bpdu_guard_enabled bpdu_filter_enabled loop_guard_enabled root_guard_enabled
+                        dp_remote_id dp_remote_ip dp_remote_port dp_remote_type
                       );
     
     foreach my $field ( @stdfields ){
@@ -571,6 +633,78 @@ sub get_label{
     $self->isa_object_method('get_label');
     return unless $self->id;
     my $label = sprintf("%s [%s]", $self->device->get_label, $self->name);
+}
+
+############################################################################
+=head2 get_dp_neighbor - Get Discovery Protocol (CDP/LLDP) neighbor
+
+
+  Arguments:
+    None
+  Returns:
+    Interface object id of remote
+  Examples:
+
+=cut
+sub get_dp_neighbor {
+    my ($self) = @_;
+    $self->isa_object_method('get_dp_neighbor');
+
+    # Find the remote device
+    my $rem_dev;
+    if ( defined $self->dp_remote_ip ){
+	foreach my $rem_ip ( split ',', $self->dp_remote_ip ){
+	    my $ipb = Ipblock->search(address=>$rem_ip)->first;
+	    if ( $ipb ){
+		if ( $ipb->interface && $ipb->interface->device ){
+		    $rem_dev = $ipb->interface->device;
+		    last;
+		}
+	    }
+	}
+    }
+    if ( !$rem_dev && defined $self->dp_remote_id ){
+	# Use Device ID
+	# This is somewhat more involved because it can be a number of things
+	foreach my $rem_id ( split ',', $self->dp_remote_id ){
+	    if ( $rem_id =~ /($MAC)/i ){
+		my $mac = $1;
+		my $physaddr = PhysAddr->search(address=>$mac)->first;
+		if ( $physaddr ){
+		    if ( $physaddr->device ){
+			$rem_dev = $physaddr->device;
+		    }elsif ( $physaddr->interface && $physaddr->interface->device ){
+			$rem_dev = $physaddr->interface->device;
+		    }
+		}
+	    }else{
+		# Try to find the device name
+		$rem_dev = Device->search(name=>$rem_id)->first;
+	    }
+	    last if $rem_dev;
+	}
+    }
+    if ( ! $rem_dev ){
+	return;
+    }
+    # Find the port on the remote device
+    if ( defined $self->dp_remote_port ){
+	foreach my $rem_port ( split ',', $self->dp_remote_port ){
+	    # Try name first, then number, then description
+	    my $rem_int = Interface->search(device=>$rem_dev, name=>$rem_port)->first || 
+		Interface->search(device=>$rem_dev, number=>$rem_port)->first ||
+		Interface->search(device=>$rem_dev, description=>$rem_port)->first;
+	    if ( $rem_int ){
+		# We have a winner
+		return $rem_int->id;
+	    }else{
+		$logger->debug(sprintf("%s: DP Remote Port not found: %s, %s ", 
+				      $self->get_label, $rem_dev->get_label, $rem_port));
+	    }
+	}
+    }else{
+	$logger->warn(sprintf("%s: DP Remote Port not defined", $self->get_label));
+    }
 }
 
 =head1 AUTHOR

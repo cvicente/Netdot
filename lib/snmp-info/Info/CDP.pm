@@ -86,7 +86,7 @@ use vars qw/$VERSION $DEBUG %FUNCS %GLOBALS %MIBS %MUNGE $INIT/;
 # munge_null() - removes nulls (\0)
 sub munge_null {
     my $text = shift || return;
-    
+
     $text =~ s/\0//g;
     return $text;
 }

@@ -410,7 +410,8 @@ sub get_snmp_info {
 		     'i_speed', 'i_up', 'i_up_admin', 'i_duplex', 'i_duplex_admin', 
 		     'ip_index', 'ip_netmask', 'i_mac',
 		     'i_vlan', 'i_vlan_membership', 'qb_v_name', 'v_name',
-		     'bgp_peers', 'bgp_peer_id', 'bgp_peer_as');
+		     'bgp_peers', 'bgp_peer_id', 'bgp_peer_as', 
+		     'hasCDP');
     my %hashes;
     foreach my $method ( @SMETHODS ){
 	$hashes{$method} = $sinfo->$method;
@@ -447,6 +448,7 @@ sub get_snmp_info {
     $dev{manufacturer}   = $sinfo->vendor();
     $dev{serialnumber}   = $sinfo->serial();
 
+    ################################################################
     # Get STP (Spanning Tree Protocol) stuff
     if ( $self->config->get('QUERY_STP_INFO') ){
 	if ( defined $dev{physaddr} ){
@@ -535,6 +537,8 @@ sub get_snmp_info {
 	    }
 	}
     }
+
+    ################################################################
     # Try to guess product type based on name
     if ( my $NAME2TYPE = $self->config->get('DEV_NAME2TYPE') ){
 	foreach my $str ( keys %$NAME2TYPE ){
@@ -566,6 +570,42 @@ sub get_snmp_info {
 	$dev{bgplocalas}  =  $sinfo->bgp_local_as();
 	$dev{bgpid}       =  $sinfo->bgp_id();
     }
+
+    ################################################################
+    # CDP/LLDP stuff
+    if ( $hashes{hasCDP} ){
+	# Call all the relevant methods
+	my %dp_hashes;
+	my @dp_methods = qw ( c_id c_ip c_port c_platform );
+	foreach my $m ( @dp_methods ){
+	    $dp_hashes{$m} = $sinfo->$m;
+	}
+	# Translate keys into iids
+	my $c_ifs = $sinfo->c_if();
+	foreach my $key ( %$c_ifs ){
+	    my $iid = $c_ifs->{$key};
+	    foreach my $m ( @dp_methods ){
+		next unless ( defined $dp_hashes{$m}->{$key} &&
+			      $dp_hashes{$m}->{$key} =~ /\w+/ );
+		# SNMP::Info can include values from both LLDP and CDP
+		# which means that for each port, we can have different
+		# values.  We save them all in a comma-separated list
+		if ( defined $hashes{$m}->{$iid} ){
+		    my @vals = split ',', $hashes{$m}->{$iid};
+		    foreach my $val ( @vals ){
+			if ( $val ne $dp_hashes{$m}->{$key} ){
+			    # Append new value to list
+			    push @vals, $dp_hashes{$m}->{$key};
+			}
+		    }
+		    $hashes{$m}->{$iid} = join ',', @vals;
+		}else{
+		    $hashes{$m}->{$iid} = $dp_hashes{$m}->{$key};
+		}
+	    }
+	}
+    }
+
     ################################################################
     # Interface stuff
     
@@ -584,6 +624,10 @@ sub get_snmp_info {
 		     bpdu_filter_enabled => "i_bpdufilter_enabled",
 		     loop_guard_enabled  => "i_loopguard_enabled",
 		     root_guard_enabled  => "i_rootguard_enabled",
+		     dp_remote_id        => "c_id",
+		     dp_remote_ip        => "c_ip",
+		     dp_remote_port      => "c_port",
+		     dp_remote_type      => "c_platform",
 		     );
     
     ##############################################
@@ -1512,8 +1556,25 @@ sub short_name {
 sub fqdn {
     my $self = shift;
     $self->isa_object_method('short_name');
-    
     return $self->name->get_label;
+}
+
+############################################################################
+=head2 get_label - Overrides label method
+   
+  Arguments:
+    None
+  Returns:
+    FQDN string
+  Examples:
+   print $device->get_label(), "\n";
+
+=cut
+
+sub get_label {
+    my $self = shift;
+    $self->isa_object_method('get_label');
+    return $self->fqdn;
 }
 
 ############################################################################
@@ -1526,7 +1587,7 @@ sub fqdn {
   Arguments:
     Hash ref with Device fields
   Returns:
-    Updated Device object
+    See Class::DBI update()
   Example:
     $device->update( \%data );
 
@@ -2207,7 +2268,6 @@ sub add_ip {
     print $_->address, "\n" foreach $device->get_ips( sort_by => 'address' );
 
 =cut
-
 sub get_ips {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_ips');
@@ -2226,6 +2286,45 @@ sub get_ips {
 }
 
 ############################################################################
+=head2 get_dp_neighbors - Get all Discovery Protocol (CDP/LLDP) neighbors
+
+  Arguments:
+    None
+  Returns:
+    Hash ref with remote Interface info
+  Examples:
+    my $neighbors = $device->get_dp_neighbors();
+=cut
+sub get_dp_neighbors {
+    my ($self, $devs) = @_;
+    $self->isa_object_method('get_dp_neighbors');
+
+    my %res;
+    foreach my $int ( $self->interfaces ){
+	my $n = $int->get_dp_neighbor();
+	$res{$int->id} = $n if defined $n;
+    }
+    return \%res;
+}
+
+############################################################################
+=head2 remove_neighbors - Remove neighbors from all interfaces
+   
+  Arguments:
+    None
+  Returns:
+    True
+  Examples:
+    $device->remove_neighbors();
+=cut
+sub remove_neighbors {
+    my ($self) = @_;
+    foreach my $int ( $self->interfaces ){
+	$int->remove_neighbor();
+    }
+}
+
+############################################################################
 =head2 get_subnets  - Get all the subnets in which this device has any addresses
    
   Arguments:
@@ -2237,7 +2336,6 @@ sub get_ips {
     print $s{$_}->address, "\n" foreach keys %s;
 
 =cut
-
 sub get_subnets {
     my $self = shift;
     $self->isa_object_method('get_subnets');
@@ -2966,6 +3064,7 @@ sub _get_snmp_session {
     $munge->{'i_speed_high'} = sub{ return $self->_munge_speed_high(@_) };
     $munge->{'stp_root'}     = sub{ return $self->_stp2mac(@_) };
     $munge->{'stp_p_bridge'} = sub{ return $self->_stp2mac(@_) };
+    $munge->{'c_id'}         = sub{ return $self->_munge_c_id(@_) };
     foreach my $m ('i_mac', 'fw_mac', 'mac', 'b_mac', 'at_paddr', 'rptrAddrTrackNewLastSrcAddress',
 		   'airespace_ap_mac', 'airespace_bl_mac', 'airespace_if_mac', 'stp_p_port'){
 	$munge->{$m} = sub{ return $self->_oct2hex(@_) };
@@ -3785,6 +3884,19 @@ sub _oct2hex {
     return uc( sprintf('%s', unpack('H*', $v)) );
 }
 
+#####################################################################
+# Be smart about converting cdpCacheDeviceId, as it sometimes
+# returns STRING and other times it returns Hex-STRING
+# We keep SNMP::Info's formatting of MAC addresses for consistency
+# with values returned from LLDP.pm
+sub _munge_c_id {
+    my ($self, $v) = @_;
+    if ( length(unpack('H*', $v)) == 12 ){
+	return join(':',map { sprintf "%02x",$_ } unpack('C*',$v));
+    }else{
+	return $v;
+    }
+}
  
 #####################################################################
 # Takes an 8-byte octet stream (HEX-STRING) containing priority+MAC
@@ -3834,7 +3946,6 @@ __PACKAGE__->set_sql(no_type => qq{
         GROUP BY p.name, p.id
         ORDER BY numdevs DESC
     });
-
 
 =head1 AUTHOR
 
