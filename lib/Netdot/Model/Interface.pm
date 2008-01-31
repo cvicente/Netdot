@@ -138,7 +138,12 @@ sub add_neighbor{
 =cut
 sub remove_neighbor{
     my ($self) = @_;
-    return $self->update({neighbor=>0}) if (int($self->neighbor));
+    if ( int($self->neighbor) ){
+	my $nei = $self->neighbor;
+	$logger->info(sprintf("Removing neighbors: %s <=> %s", 
+			      $self->get_label, $nei->get_label));
+	return $self->update({neighbor=>0});
+    }
 }
 
 ############################################################################

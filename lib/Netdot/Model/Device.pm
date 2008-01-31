@@ -999,7 +999,7 @@ sub discover {
     if ( $dev = Device->search(name=>$name)->first ){
 	$logger->debug("Device::discover: Device $name already exists in DB");
     }else{
-	$logger->info("Device $name does not yet exist. Inserting.");
+	$logger->debug("Device::discover: Device $name does not yet exist");
 	unless ( $info ){
 	    # Get relevant snmp args
 	    my %snmpargs;
@@ -2286,12 +2286,34 @@ sub get_ips {
 }
 
 ############################################################################
+=head2 get_neighbors - Get all Interface neighbors
+
+  Arguments:
+    None
+  Returns:
+    Hash ref with key = local int id, value = remote int id
+  Examples:
+    my $neighbors = $device->get_neighbors();
+=cut
+sub get_neighbors {
+    my ($self, $devs) = @_;
+    $self->isa_object_method('get_neighbors');
+
+    my %res;
+    foreach my $int ( $self->interfaces ){
+	my $n = $int->neighbor();
+	$res{$int->id} = $n if int($n);
+    }
+    return \%res;
+}
+
+############################################################################
 =head2 get_dp_neighbors - Get all Discovery Protocol (CDP/LLDP) neighbors
 
   Arguments:
     None
   Returns:
-    Hash ref with remote Interface info
+    Hash ref with key = local int id, value = remote int id
   Examples:
     my $neighbors = $device->get_dp_neighbors();
 =cut

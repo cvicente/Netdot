@@ -116,31 +116,27 @@ sub discover_subnet{
     }
     $dp_links = $class->get_dp_links(\@dp_devs) if @dp_devs;
 
-    # Remove all existing neighbors before adding new ones
-    # but first make sure we have some data
-    if ( $dp_links || $stp_links || $fdb_links ){
-	$logger->debug(sprintf("Netdot::Model::Topology::discover_subnet: Removing all links in %s.", 
-			       $subnet->get_label));
-	foreach my $devid ( keys %devs ){
-	    my $dev = $devs{$devid};
-	    $dev->remove_neighbors();
-	}
+    # Get all existing links
+    my %old_links;
+    foreach my $devid ( keys %devs ){
+	my $dev = $devs{$devid};
+	my $n   = $dev->get_neighbors();
+	map { $old_links{$_} = $n->{$_} } keys %$n;	
     }
-
     my %args;
-    $args{dp}  = $dp_links  if $dp_links;
-    $args{stp} = $stp_links if $stp_links;
-    $args{fdb} = $fdb_links if $fdb_links;
-    
-    my $linkcount = $class->create_links(%args);
+    $args{old_links} = \%old_links;
+    $args{dp}        = $dp_links  if $dp_links;
+    $args{stp}       = $stp_links if $stp_links;
+    $args{fdb}       = $fdb_links if $fdb_links;
+    my ($addcount, $remcount) = $class->update_links(%args);
     my $end = time;
-    $logger->info(sprintf("Topology discovery on Subnet %s done. Created %d links in %d seconds", 
-			  $subnet->get_label, $linkcount, $end-$start));
+    $logger->info(sprintf("Topology discovery on Subnet %s done in %d seconds. Links added: %d, removed: %d", 
+			  $subnet->get_label, $end-$start, $addcount, $remcount));
 
 }
 
 ######################################################################################
-=head2 create_links - Create links between Device Interfaces
+=head2 update_links - Update links between Device Interfaces
     
     The different sources of topology information are assigned specific weights to
     calculate a final score.  Contradicting information lowers the score, while
@@ -149,16 +145,17 @@ sub discover_subnet{
     to create a link in the database.
     
   Arguments:
-    dp  - Hash ref with links discovered by discovery protocols (CDP/LLDP)
-    stp - Hash ref with links discovered by Spanning Tree Protocol
-    fdb - Hash ref with links discovered from forwarding tables
+    dp        - Hash ref with links discovered by discovery protocols (CDP/LLDP)
+    stp       - Hash ref with links discovered by Spanning Tree Protocol
+    fdb       - Hash ref with links discovered from forwarding tables
+    old_links - Hash ref with current links
   Returns:
     
   Examples:
-    Netdot::Model::Topology->create_links(db_links=>$links);
+    Netdot::Model::Topology->update_links(db_links=>$links);
 
 =cut
-sub create_links {
+sub update_links {
     my ($class, %argv) = @_;
     my %links;
     my %WEIGHTS;
@@ -167,7 +164,8 @@ sub create_links {
     $WEIGHTS{fdb} = $class->config->get('TOPO_WEIGHT_FDB');
     my $MINSCORE  = $class->config->get('TOPO_MIN_SCORE');
     my %hashes;
-    foreach my $source ( keys %argv ){
+    my $old_links = $argv{old_links};
+    foreach my $source ( qw( dp stp fdb ) ){
 	$hashes{$source} = $argv{$source};
     }
     foreach my $source ( keys %hashes ){
@@ -189,19 +187,35 @@ sub create_links {
 	}
     }
     
-    my $count = 0;
+    my $addcount = 0;
+    my $remcount = 0;
     foreach my $id ( keys %links ){
 	foreach my $nei ( keys %{$links{$id}} ){
 	    my $score = ${$links{$id}{$nei}};
 	    next unless ( $score >= $MINSCORE );
-	    my $int = Interface->retrieve($id) || $class->throw_fatal("Cannot retrieve Interface id $id");
-	    $int->add_neighbor($nei, $score);
-	    $count++;
+	    if ( (exists($old_links->{$id})  && $old_links->{$id}  == $nei) || 
+		 (exists($old_links->{$nei}) && $old_links->{$nei} == $id) ){
+		delete $old_links->{$id}  if ( exists $old_links->{$id}  );
+		delete $old_links->{$nei} if ( exists $old_links->{$nei} );
+	    }else{
+		my $int = Interface->retrieve($id) || $class->throw_fatal("Cannot retrieve Interface id $id");
+		$int->add_neighbor($nei, $score);
+		$addcount++;
+	    }
 	    delete $links{$id};
-	    delete $links{$nei};
+	    delete $links{$nei};		
 	}
     }
-    return $count;
+    # Remove old links than no longer exist
+    foreach my $id ( keys %$old_links ){
+	my $nei = $old_links->{$id};
+	my $int = Interface->retrieve($id) || $class->throw_fatal("Cannot retrieve Interface id $id");
+	if ( int($int->neighbor) == $nei ){
+	    $int->remove_neighbor() ;
+	    $remcount++;
+	}
+    }
+    return ($addcount, $remcount);
 }
 
 ###################################################################################################

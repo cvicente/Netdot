@@ -8,6 +8,7 @@
 #
 use lib "<<Make:LIB>>";
 use Netdot::Model::Device;
+use Netdot::Model::Topology;
 use Netdot::Util::Misc;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
@@ -29,7 +30,7 @@ my $to              = Netdot->config->get('NOCEMAIL');
 my $subject         = 'Netdot Device Updates';
 
 # Flags
-my ($ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $INFO, $FWT, $ARP, $PRETEND, $HELP, $_DEBUG, $EMAIL, $PRETEND);
+my ($ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $INFO, $FWT, $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG, $EMAIL, $PRETEND);
 
 # This will be reflected in the history tables
 $ENV{REMOTE_USER}   = "netdot";
@@ -57,6 +58,7 @@ my $USAGE = <<EOF;
     -v, --version <integer>        SNMP version [1|2|3] (default: $version)
     -I, --info                     Get device info
     -F, --fwt                      Get forwarding tables
+    -T, --topology                 Update Topology
     -A, --arp                      Get ARP tables
     -a, --add-subnets              When discovering routers, add subnets to database if they do not exist
     -i, --subs_inherit             When adding subnets, have them inherit information from the Device
@@ -85,6 +87,7 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "I|info"            => \$INFO,
 			 "F|fwt"             => \$FWT,
 			 "A|arp"             => \$ARP,
+			 "T|topology"        => \$TOPO,
 			 "a|add-subnets"     => \$ADDSUBNETS,
 			 "i|subs_inherit"    => \$SUBSINHERIT,
 			 "b|with-bgp-peers"  => \$BGPPEERS,
@@ -106,11 +109,16 @@ if ( $HELP ) {
 }
 if ( ($host && $db) || ($host && $block) || ($host && $file ) || ($db && $block) || ($db && $file) || ($block && $file) ){
     print $USAGE;
-    die "Error: arguments -H, -s, -d and -f are mutually exclusive\n";
+    die "Error: arguments -H, -B, -D and -E are mutually exclusive\n";
 }
-unless ( $INFO || $FWT || $ARP ){
+unless ( $INFO || $FWT || $ARP || $TOPO ){
     print $USAGE;
-    die "Error: You need to specify at least one of -I, -F or -A\n";
+    die "Error: You need to specify at least one of -I, -F, -A or -T\n";
+}
+
+if ( $TOPO && ( $host || $db ) ){
+    print $USAGE;
+    die "Error: Topology discovery can only be applied to IP blocks (option -B)";
 }
 
 # Re-read communities, in case we were passed new ones
@@ -173,20 +181,21 @@ if ( $host ){
 }elsif ( $block ){
     $logger->info("Updating all devices in block: $block");
     $uargs{block} = $block;
-    Device->snmp_update_block(%uargs) if ( $INFO );
-    Device->fwt_update_block(%uargs)  if ( $FWT  );
-    Device->arp_update_block(%uargs)  if ( $ARP  );	
+    Netdot::Model::Device->snmp_update_block(%uargs)   if ( $INFO );
+    Netdot::Model::Device->fwt_update_block(%uargs)    if ( $FWT  );
+    Netdot::Model::Device->arp_update_block(%uargs)    if ( $ARP  );
+    Netdot::Model::Topology->discover(ipblock=>$block) if ( $TOPO );
 }elsif ( $db ){
     $logger->info("Updating all devices in the DB");
-    Device->snmp_update_all(%uargs) if ( $INFO );
-    Device->fwt_update_all(%uargs)  if ( $FWT  );
-    Device->arp_update_all(%uargs)  if ( $ARP  );
+    Netdot::Model::Device->snmp_update_all(%uargs) if ( $INFO );
+    Netdot::Model::Device->fwt_update_all(%uargs)  if ( $FWT  );
+    Netdot::Model::Device->arp_update_all(%uargs)  if ( $ARP  );
 }elsif ( $file ){
     $logger->info("Updating all devices in given file: $file");
     $uargs{file} = $file;
-    Device->snmp_update_from_file(%uargs) if ( $INFO );
-    Device->fwt_update_from_file(%uargs)  if ( $FWT  );
-    Device->arp_update_from_file(%uargs)  if ( $ARP  );
+    Netdot::Model::Device->snmp_update_from_file(%uargs) if ( $INFO );
+    Netdot::Model::Device->fwt_update_from_file(%uargs)  if ( $FWT  );
+    Netdot::Model::Device->arp_update_from_file(%uargs)  if ( $ARP  );
 }else{
     print $USAGE;
     die "Error: You need to specify one of: -H, -B, -E or -D\n";
