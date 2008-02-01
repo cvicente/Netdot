@@ -117,6 +117,7 @@ sub find_or_create {
 	###############################################
 	# Insert New product
 	#	
+	$name ||= $sysobjectid;
 	my $newproduct = Product->insert({ name         => $name,
 					   description  => $description,
 					   sysobjectid  => $sysobjectid,
