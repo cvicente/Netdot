@@ -193,9 +193,7 @@ sub assign_name {
 		return $rr;
 	    }
 	}else{
-	    # No reverse resolution.
-	    # TODO: Try to determine the domain name based on the subnet
-	    # (use SubnetZone)
+	    $logger->debug("Device::assign_name: $ip does not resolve");
 	}
     }
     # If we do not yet have a fqdn, just use what we've got
@@ -363,6 +361,7 @@ sub get_snmp_info {
     my $class = ref($self) || $self;
     
     my $target_address;
+    my %dev;
 
     if ( ref($self) ){
 	if ( $self->snmp_target && int($self->snmp_target) != 0 ){
@@ -392,14 +391,15 @@ sub get_snmp_info {
     if ( $target_address =~ /$IPV4|$IPV6/ ){
 	# looks like an IP address
 	$ip   = $target_address;
+	$dev{snmp_target} = $ip;
 	$name = $dns->resolve_ip($ip) || "?";
     }else{
 	# looks like a name
 	$name = $target_address;
-	$ip   = ($dns->resolve_name($name))[0] || "?";
+	$ip   = ($dns->resolve_name($name))[0];
+	$dev{snmp_target} = $ip;
     }
 
-    my %dev;
     $dev{community}    = $sinfo->snmp_comm;
     $dev{snmp_version} = $sinfo->snmp_ver;
 
@@ -443,6 +443,7 @@ sub get_snmp_info {
     }
 
     $dev{sysname}        = $sinfo->name();
+    $dev{router_id}      = $sinfo->root_ip();
     $dev{sysdescription} = $sinfo->description();
     $dev{syscontact}     = $sinfo->contact();
     $dev{syslocation}    = $sinfo->location();
@@ -750,7 +751,7 @@ sub get_snmp_info {
 	    }
 	}
     }
-
+    
     ##############################################
     # Deal with BGP Peers
     # only proceed if we were told to discover peers, either directly or in the config file
@@ -832,6 +833,8 @@ sub get_snmp_info {
     $logger->debug("Device::get_snmp_info: Finished getting SNMP info from $name ($ip)");
     return \%dev;
 }
+
+
 
 
 #########################################################################
@@ -1014,9 +1017,9 @@ sub discover {
 	    }
 	    $info = $class->_exec_timeout($name, sub { return $class->get_snmp_info(%snmpargs) });
 	}
-	
 	# Set some values in the new Device based on the SNMP info obtained
-	my %devtmp = (name          => $name,
+	my $main_ip = $class->_get_main_ip($info) || $name;
+	my %devtmp = (name          => $main_ip,
 		      snmp_managed  => 1,
 		      canautoupdate => 1,
 		      community     => $info->{community},
@@ -1999,19 +2002,17 @@ sub snmp_update {
 	}
 	
 	# Index new interfaces by name to check if any names are repeated
-	my %newifsbyname;
-	map { $newifsbyname{$info->{interface}->{$_}->{name}}++ } keys %{ $info->{interface} };
-	my %seenifs;
 	my $ifkey = 'name';
-	foreach my $name ( keys %newifsbyname ){
-	    $seenifs{$name}++;
-	    if ( exists $seenifs{$name} ){
-		# Names are not unique, so we use ifIndex
-		$ifkey = 'number';
-		last;
+	my %newifsbyname;
+	foreach my $int ( keys %{$info->{interface}} ){
+	    if ( defined $info->{interface}->{$int}->{name} ){
+		my $n = $info->{interface}->{$int}->{name};
+		$newifsbyname{$n}++;
+		if ( $newifsbyname{$n} > 1 ){
+		    $ifkey = 'number';
+		}
 	    }
 	}
-	
 	foreach my $newif ( sort keys %{ $info->{interface} } ) {
 	    my $newname   = $info->{interface}->{$newif}->{name};
 	    my $newnumber = $info->{interface}->{$newif}->{number};
@@ -2157,19 +2158,13 @@ sub snmp_update {
     #
     if ( !defined($self->snmp_target) || $self->snmp_target == 0 ){
 	my $ipb;
-	if ( my $rr = RR->search(name=>$self->fqdn)->first ){
-	    if ( my $rraddr = ($rr->arecords)[0] ){
-		$ipb = $rraddr->ipblock;
-	    }
-	}elsif ( scalar @hostnameips ){
-	    $ipb = Ipblock->search(address=>$hostnameips[0])->first;
-	}
+	$ipb = Ipblock->search(address=>$info->{snmp_target})->first;
 	if ( $ipb ){
 	    $self->update({snmp_target=>$ipb});
 	    $logger->info(sprintf("%s: SNMP target address set to %s", 
 				  $host, $self->snmp_target->address));
 	}else{
-	    $logger->error("Could not determine main IP address!");
+	    $logger->error("Could not determine SNMP target address!");
 	}
     }
 
@@ -3107,8 +3102,80 @@ sub _get_snmp_session {
 }
 
 #########################################################################
+# Return device's main IP, which will determine device's main name
+#
+sub _get_main_ip {
+    my ($class, $info) = @_;
+
+    $class->throw_fatal("Missing required argument (info)")
+	unless $info;
+    my @methods = @{$class->config->get('DEVICE_NAMING_METHOD_ORDER')};
+    $class->throw_fatal("Missing or invalid configuration variable: DEVICE_NAMING_METHOD_ORDER")
+	unless scalar @methods;
+
+    my @allints = keys %{$info->{interface}};
+    my @allips;
+    map { map { push @allips, $_ } keys %{$info->{interface}->{$_}->{ips}} } @allints;
+
+    my $ip;
+    if ( scalar(@allips) == 1 ){
+	$ip = $allips[0];
+	$logger->debug("Device::_get_main_ip: Device has one IP: $ip");
+	return $ip;
+    }
+    foreach my $method ( @methods ){
+	$logger->debug("Device::_get_main_ip: Trying method $method");
+	if ( $method eq 'sysname' && $info->{sysname} ){
+	    $ip = ($dns->resolve_name($info->{sysname}))[0];
+	}elsif ( $method eq 'highest_ip' ){
+	    my %dec;
+	    foreach my $int ( @allints ){
+		map { $dec{$_} = Ipblock->ip2int($_) } @allips;
+	    }
+	    my @ordered = sort { $dec{$b} <=> $dec{$a} } keys %dec;
+	    $ip = $ordered[0];
+	}elsif ( $method =~ /loopback/ ){
+	    my %loopbacks;
+	    foreach my $int ( @allints ){
+		my $name = $info->{interface}->{$int}->{name};
+		if (  $name && $name =~ /^loopback(\d+)/i ){
+		    $loopbacks{$int} = $1;
+		}
+	    }
+	    my @ordered = sort { $loopbacks{$a} <=> $loopbacks{$b} } keys %loopbacks;
+	    my $main_int;
+	    if ( $method eq 'lowest_loopback' ){
+		$main_int = shift @ordered;
+	    }elsif ( $method eq 'highest_loopback' ){
+		$main_int = pop @ordered;
+	    }
+	    if ( $main_int ){
+		$ip = (keys %{$info->{interface}->{$main_int}->{ips}})[0];
+	    }
+	}elsif ( $method eq 'router_id' ){
+	    $ip = $info->{router_id} if defined $info->{router_id};
+	}elsif ( $method eq 'snmp_target' ){
+	    $ip = $info->{snmp_target};
+	}
+	
+	if ( defined $ip ){
+	    if ( $dns->resolve_ip($ip) ){
+		$logger->debug("Device::_get_main_ip: Chose $ip using naming method: $method");
+		return $ip ;
+	    }else{
+		# We do not want an IP that does not resolve
+		# Keep trying
+		undef($ip);
+	    }
+	    
+	}
+    }
+    return;
+}
+
+#########################################################################
 # Retrieve standard STP info
-sub _get_stp_info {
+sub r_get_stp_info {
     my ($self, %argv) = @_;
     
     my $sinfo = $argv{sinfo};
