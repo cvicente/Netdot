@@ -739,7 +739,7 @@ sub get_snmp_info {
 	    }
 	    $dev{interface}{$iid}{vlans}{$vid}{vname} = $vname if defined ($vname);
 
-	    if ( $dev{stp_type} eq 'mst' ){
+	    if ( $dev{stp_type} && $dev{stp_type} eq 'mst' ){
 		# Get STP instance where this VLAN belongs
 		# If there is no mapping, make it instance 0
 		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = $dev{stp_vlan2inst}->{$vid} || 0;
