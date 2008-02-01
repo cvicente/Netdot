@@ -3175,7 +3175,7 @@ sub _get_main_ip {
 
 #########################################################################
 # Retrieve standard STP info
-sub r_get_stp_info {
+sub _get_stp_info {
     my ($self, %argv) = @_;
     
     my $sinfo = $argv{sinfo};
