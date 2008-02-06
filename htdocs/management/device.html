@@ -66,6 +66,7 @@ my %vlans;
 my $fqdn;
 my $whois_url = Netdot->config->get('BGP_AS_WHOIS_URL');
 my (@arp_caches, @fwt);
+my @modules;
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
@@ -189,6 +190,13 @@ my $refresh_url = "device.html?id=$id&view=$view";
         <li><span>Interfaces</span></li>
 %     } else {
         <li><a href="device.html?id=<% $id %>&view=Interfaces">Interfaces</a></li>
+%     }
+%     if ( @modules = $o->modules ){
+%       if( $view eq "Modules" ) {
+          <li><span>Modules</span></li>
+%       } else {
+          <li><a href="device.html?id=<% $id %>&view=Modules">Modules</a></li>
+%       }
 %     }
 %     if( $view eq "IP" ) {
         <li><span>IP info</span></li>
@@ -775,7 +783,66 @@ function setNull(select){
 
 <!-- End Interfaces Section -->
 
+%#######################################################################
+%#
+%# Modules
+%#
+%#######################################################################
 
+% if ( $view eq "Modules" || $view eq "All"){
+
+<%perl>
+my %modules;
+if ( @modules ){
+    foreach my $m ( @modules ) {
+	if ( $m->contained_in ){
+	    push @{$modules{$m->contained_in}{children}}, $m;
+	}else{
+	    push @{$modules{root}}, $m;
+	}
+    }
+}
+print "<pre>", Dumper(%modules), "</pre>" if $DEBUG;
+</%perl>
+
+<div class="container">
+    <div class="containerhead">
+        Device Modules (<% scalar @modules %>)
+    </div>
+    <div class="containerbody">
+       <& .show_modules, modules=>\%modules, objects=>$modules{root} &>
+    </div>
+</div>
+% }
+
+<%def .show_modules>
+<%args>
+$modules
+$objects
+</%args>
+
+<div class="container">
+    <div class="containerbody">
+       <& /generic/sortresults.mhtml, object=>$objects, view => "row" , sort=>0 &>
+% foreach my $obj ( @$objects ){
+%   if ( defined $modules->{$obj->number}{children} ){
+%    # Order by position
+%    my @children = sort { $a->pos <=> $b->pos } @{$modules->{$obj->number}{children}};
+<div class="container">
+    <div class="containerheadleft">
+        Module <% $obj->number %> contains:
+    </div>
+    <div class="containerheadright">&nbsp;
+    </div>
+    <div class="containerbody">
+         <& .show_modules, modules=>$modules, objects=>\@children &>
+    </div>
+</div>
+%   }
+% }
+    </div>
+</div>
+</%def>
 
 %#######################################################################
 %#

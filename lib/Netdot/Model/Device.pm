@@ -405,13 +405,17 @@ sub get_snmp_info {
 
     ################################################################
     # SNMP::Info methods that return hash refs
-    my @SMETHODS = ( 'e_descr',
-		     'interfaces', 'i_name', 'i_type', 'i_index', 'i_alias', 'i_description', 
-		     'i_speed', 'i_up', 'i_up_admin', 'i_duplex', 'i_duplex_admin', 
-		     'ip_index', 'ip_netmask', 'i_mac',
-		     'i_vlan', 'i_vlan_membership', 'qb_v_name', 'v_name',
-		     'bgp_peers', 'bgp_peer_id', 'bgp_peer_as', 
-		     'hasCDP');
+    my @SMETHODS = qw( hasCDP e_descr
+		       interfaces i_name i_type i_index i_alias i_description 
+		       i_speed i_up i_up_admin i_duplex i_duplex_admin 
+		       ip_index ip_netmask i_mac
+		       i_vlan i_vlan_membership qb_v_name v_name
+		       bgp_peers bgp_peer_id bgp_peer_as );
+
+    if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
+	push @SMETHODS, qw( e_type e_parent e_name e_class e_pos e_descr
+                            e_hwver e_fwver e_swver e_model e_serial e_fru );
+    }
     my %hashes;
     foreach my $method ( @SMETHODS ){
 	$hashes{$method} = $sinfo->$method;
@@ -610,27 +614,48 @@ sub get_snmp_info {
     }
 
     ################################################################
+    # Modules
+
+    if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
+	# DeviceModule field name to SNMP::Info method conversion table
+	my %MFIELDS = ( name         => 'e_name',    type         => 'e_type',
+			contained_in => 'e_parent',  class        => 'e_class',    
+			pos          => 'e_pos',     hw_rev       => 'e_hwver',
+			fw_rev       => 'e_fwver',   sw_rev       => 'e_swver',
+			model        => 'e_model',   serialnumber => 'e_serial',
+			fru          => 'e_fru',     description  => 'e_descr',
+	    );
+	    
+	foreach my $key ( keys %{ $hashes{e_class} } ){
+	    $dev{module}{$key}{number} = $key;;
+	    foreach my $field ( keys %MFIELDS ){
+		my $method = $MFIELDS{$field};
+		if ( defined($hashes{$method}->{$key}) && $hashes{$method}->{$key} =~ /\w+/ ){
+		    if ( $field eq 'fru' ){
+			# This is boolean
+			$dev{module}{$key}{$field} = ( $hashes{$method}->{$key} eq 'true' )? 1 : 0;
+		    }else{
+			$dev{module}{$key}{$field} = $hashes{$method}->{$key};
+		    }
+		}
+	    }
+	}
+	
+    }
+
+    ################################################################
     # Interface stuff
     
     # Netdot Interface field name to SNMP::Info method conversion table
-    my %IFFIELDS = ( name                => "i_description",
-		     type                => "i_type",
-		     description         => "i_alias",
-		     speed               => "i_speed",
-		     admin_status        => "i_up",
-		     oper_status         => "i_up_admin", 
-		     physaddr            => "i_mac", 
-		     oper_duplex         => "i_duplex",
-		     admin_duplex        => "i_duplex_admin",
-		     stp_id              => "i_stp_id",
-		     bpdu_guard_enabled  => "i_bpduguard_enabled",   
-		     bpdu_filter_enabled => "i_bpdufilter_enabled",
-		     loop_guard_enabled  => "i_loopguard_enabled",
-		     root_guard_enabled  => "i_rootguard_enabled",
-		     dp_remote_id        => "c_id",
-		     dp_remote_ip        => "c_ip",
-		     dp_remote_port      => "c_port",
-		     dp_remote_type      => "c_platform",
+    my %IFFIELDS = ( name                => 'i_description',         type                => 'i_type',
+		     description         => 'i_alias',		     speed               => 'i_speed',
+		     admin_status        => 'i_up',		     oper_status         => 'i_up_admin', 
+		     physaddr            => 'i_mac', 		     oper_duplex         => 'i_duplex',
+		     admin_duplex        => 'i_duplex_admin',	     stp_id              => 'i_stp_id',
+		     bpdu_guard_enabled  => 'i_bpduguard_enabled',   bpdu_filter_enabled => 'i_bpdufilter_enabled',
+		     loop_guard_enabled  => 'i_loopguard_enabled',   root_guard_enabled  => 'i_rootguard_enabled',
+		     dp_remote_id        => 'c_id',		     dp_remote_ip        => 'c_ip',
+		     dp_remote_port      => 'c_port',		     dp_remote_type      => 'c_platform',
 		     );
     
     ##############################################
@@ -1948,6 +1973,37 @@ sub snmp_update {
     # Update Device object
     $self->update( \%devtmp );
     
+    ##############################################
+    # Add/Update Modules
+    #
+    # Get old modules (if any)
+    my %oldmodules;
+    map { $oldmodules{$_->number} = $_ } $self->modules();
+
+    foreach my $number ( sort { $a <=> $b } keys %{ $info->{module} } ){
+	my %args = %{$info->{module}->{$number}};
+	$args{device} = $self->id;
+	my $name = $args{name} || $args{description};
+	# See if it exists
+	my $module;
+	if ( exists $oldmodules{$number} ){
+	    $module = $oldmodules{$number};
+	    # Update
+	    $module->update(\%args);
+	}else{
+	    # Create new object
+	    $logger->info("$host: New module $number ($name) found. Inserting.");
+	    $module = DeviceModule->insert(\%args);
+	}
+	delete $oldmodules{$number};
+    }
+    # Remove modules that no longer exist
+    foreach my $number ( keys %oldmodules ){
+	my $module = $oldmodules{$number};
+	$logger->info("$host:  Module no longe exists: $number.  Removing.");
+	$module->delete();
+    }
+
     ##############################################
     # Add/Update Interfaces
     #

@@ -2155,6 +2155,194 @@ $meta = {
       ]
     }
   },
+  DeviceModule => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      class => {
+        default => '',
+        description => 'Module Class',
+        length => '128',
+        nullable => 0,
+        tag => 'Class',
+        type => 'varchar'
+      },
+      date_installed => {
+        default => '',
+        description => 'Date when this module was installed/discovered',
+        length => '',
+        nullable => 0,
+        tag => 'First Discovered',
+        type => 'timestamp'
+      },
+      description => {
+        default => '',
+        description => 'A textual description of physical entity',
+        length => '255',
+        nullable => 0,
+        tag => 'Description',
+        type => 'varchar'
+      },
+      device => {
+        default => '',
+        description => 'Device where this Module belongs',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+	  order_by => 'contained_in,pos,number',
+          method => 'modules',
+          table => 'Device'
+        },
+        nullable => 0,
+        tag => 'Device',
+        type => 'integer'
+      },
+      fw_rev => {
+        default => '',
+        description => 'The vendor-specific firmware revision string for the physical entity',
+        length => '128',
+        nullable => 0,
+        tag => 'Firmware Revision',
+        type => 'varchar'
+      },
+      fru => {
+        default => '',
+        description => 'Whether or not this physical entity is considered a "Field Replaceable Unit" by the vendor.',
+        length => '',
+        nullable => 0,
+        tag => 'FRU?',
+        type => 'bool'
+      },
+      hw_rev => {
+        default => '',
+        description => 'The vendor-specific hardware revision string for the physical entity',
+        length => '128',
+        nullable => 0,
+        tag => 'Hardware Revision',
+        type => 'varchar'
+      },
+      name => {
+        default => '',
+        description => 'The textual name of the physical entity',
+        length => '128',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      number => {
+        default => '',
+        description => 'Module index number',
+        length => '',
+        nullable => 0,
+        tag => 'Number',
+        type => 'integer'
+      },
+      model => {
+        default => '',
+        description => 'The vendor-specific model name identifier string associated with this physical component',
+        length => '128',
+        nullable => 0,
+        tag => 'Model',
+        type => 'varchar'
+      },
+      contained_in => {
+        default => '',
+        description => 'The number for the physical entity which "contains" this physical entity',
+        length => '',
+        nullable => 0,
+        tag => 'Contained In',
+        type => 'integer'
+      },
+      pos => {
+        default => '',
+        description => 'An indication of the relative position of this child component among all its sibling components',
+        length => '',
+        nullable => 0,
+        tag => 'Position',
+        type => 'integer'
+      },
+      serialnumber => {
+        default => '',
+        description => 'The vendor-specific serial number string for the physical entity',
+        length => '128',
+        nullable => 0,
+        tag => 'Serial Number',
+        type => 'varchar'
+      },
+      sw_rev => {
+        default => '',
+        description => 'The vendor-specific software revision string for the physical entity',
+        length => '128',
+        nullable => 0,
+        tag => 'Software Revision',
+        type => 'varchar'
+      },
+      type => {
+        default => '',
+        description => 'An indication of the vendor-specific hardware type of the physical entity',
+        length => '128',
+        nullable => 0,
+        tag => 'Type',
+        type => 'varchar'
+      },
+      last_updated => {
+        default => '',
+        description => 'Date when this module was installed/discovered',
+        length => '',
+        nullable => 0,
+        tag => 'Last Updated',
+        type => 'timestamp'
+      }
+    },
+    description => 'A Device Physical Entity',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+	'name',
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'device',
+        'number'
+      ]
+    ],
+    views => {
+      all => [
+      'device',
+      'contained_in',
+      'number',
+      'pos',
+      'name',
+      'type',
+      'class',
+      'description',
+      'model',
+      'hw_rev',
+      'fw_rev',
+      'sw_rev',
+      'fru',
+      'serialnumber',
+      'date_installed',
+      'last_updated',
+      ],
+      brief => [
+	'number',
+        'name',
+        'class',
+        'model',
+        'description',
+        'serialnumber',
+      ]
+    }
+  },
   DeviceContacts => {
     columns => {
       contactlist => {
