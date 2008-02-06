@@ -49,9 +49,10 @@ sub search {
 	# No use searching for non-digits in id field
 	$argv{id} = 0;
     } 
-    if ( exists $argv{mname} && $argv{mname} =~ /\./ ){
-	my @sections = split /\./, $argv{mname};
-
+    if ( $class->SUPER::search(%argv) ){
+	return $class->SUPER::search(%argv);
+    }elsif ( defined $argv{mname} && $argv{mname} =~ /\./ ){
+	my @sections = split '.', $argv{mname};
 	while ( @sections ){
 	    $argv{mname} = join '.', @sections;
 	    $logger->debug("Zone::search: $argv{mname}");

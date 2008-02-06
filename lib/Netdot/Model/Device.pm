@@ -201,7 +201,7 @@ sub assign_name {
 
     # Now we have a fqdn. First, check if we have a matching domain
     my $mname;
-    if ( my @sections = split /\./, $fqdn ){
+    if ( my @sections = split '.', $fqdn ){
 
 	# Notice that we search the whole string.  That's because
 	# the hostname part might have dots.  The Zone search method
@@ -220,9 +220,10 @@ sub assign_name {
 	    $mname = join '.', @sections;
 	}
     }
-
+    my %args = ( name=>$host );
+    $args{mname} = $mname if defined $mname;
     # This will create the Zone object if necessary
-    $rr = RR->insert({name => $host, zone => $mname});
+    $rr = RR->insert(\%args);
     $logger->info(sprintf("Inserted new RR: %s", $rr->get_label));
     return $rr;
 }
@@ -315,8 +316,9 @@ sub insert {
     }
     
     if ( my $dbdev = $class->search(name=>$devtmp{name})->first ){
-	$class->throw_user(sprintf("Device::insert: Device %s already exists in DB as %s\n",
-				   $argv->{name}, $dbdev->fqdn));
+	$logger->warn(sprintf("Device::insert: Device %s already exists in DB as %s\n",
+			      $argv->{name}, $dbdev->fqdn));
+	return $dbdev;
     }
 
     $class->_validate_args(\%devtmp);
@@ -616,7 +618,7 @@ sub get_snmp_info {
     ################################################################
     # Modules
 
-    if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
+    if ( $self->config->get('GET_DEVICE_MODULE_INFO') && !defined $dev{airespace} ){
 	# DeviceModule field name to SNMP::Info method conversion table
 	my %MFIELDS = ( name         => 'e_name',    type         => 'e_type',
 			contained_in => 'e_parent',  class        => 'e_class',    
@@ -710,7 +712,7 @@ sub get_snmp_info {
   
 	# Airespace Interfaces that represent thin APs
 	if ( exists $dev{airespace} ){
-	    
+    
 	    # i_index value is different from iid in this case
 	    my $ifindex = $hashes{'i_index'}->{$iid};
 	    
@@ -2212,7 +2214,7 @@ sub snmp_update {
     ##############################################################
     # Assign the snmp_target address if it's not there yet
     #
-    if ( !defined($self->snmp_target) || $self->snmp_target == 0 ){
+    if ( $self->snmp_managed && (!defined($self->snmp_target) || $self->snmp_target == 0) ){
 	my $ipb;
 	$ipb = Ipblock->search(address=>$info->{snmp_target})->first;
 	if ( $ipb ){

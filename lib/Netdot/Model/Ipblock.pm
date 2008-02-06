@@ -74,7 +74,7 @@ sub search {
     my $opts = @args % 2 ? pop @args : {}; 
     my %args = @args;
 
-    if ( exists $args{address} ){
+    if ( defined $args{address} ){
 	my ($address, $prefix);
 	if ( $args{address} =~ /\/\d+$/ ){
 	    # Address is in CIDR format

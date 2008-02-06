@@ -134,11 +134,12 @@ sub insert {
     
     # Insert zone if necessary;
     my $zone;
-    if ( ref( $zone = $argv->{zone} ) =~ /Zone/
-	 || ( $zone = (Zone->search(id    =>$argv->{zone}))[0] )
-	 || ( $zone = (Zone->search(mname =>$argv->{zone}))[0] )
-	 ){
+    if ( (ref( $zone = $argv->{zone} ) =~ /Zone/)
+	 || ( $zone = (Zone->search(id   =>$argv->{zone}))[0] )
+	 || ( $zone = (Zone->search(mname=>$argv->{zone}))[0] )
+	){
     }else{
+	$logger->debug(sprintf("Zone not found: \"%s\".  Inserting.", $argv->{zone}));
 	$zone = Zone->insert({ mname => $argv->{zone} });
 	$logger->info(sprintf("Inserted new Zone: %s", $zone->get_label));
     }
