@@ -52,7 +52,7 @@ sub search {
     if ( $class->SUPER::search(%argv) ){
 	return $class->SUPER::search(%argv);
     }elsif ( defined $argv{mname} && $argv{mname} =~ /\./ ){
-	my @sections = split '.', $argv{mname};
+	my @sections = split /\./, $argv{mname};
 	while ( @sections ){
 	    $argv{mname} = join '.', @sections;
 	    $logger->debug("Zone::search: $argv{mname}");

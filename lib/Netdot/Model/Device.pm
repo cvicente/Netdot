@@ -201,7 +201,7 @@ sub assign_name {
 
     # Now we have a fqdn. First, check if we have a matching domain
     my $mname;
-    if ( my @sections = split '.', $fqdn ){
+    if ( my @sections = split /\./, $fqdn ){
 
 	# Notice that we search the whole string.  That's because
 	# the hostname part might have dots.  The Zone search method
@@ -219,6 +219,8 @@ sub assign_name {
 	    $host  = shift @sections;
 	    $mname = join '.', @sections;
 	}
+    }else{
+	$host = $fqdn;
     }
     my %args = ( name=>$host );
     $args{mname} = $mname if defined $mname;

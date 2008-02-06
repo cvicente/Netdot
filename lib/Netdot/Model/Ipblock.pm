@@ -1312,6 +1312,9 @@ sub _prevalidate {
 	     $address =~ /$IPV6/) {
 	$class->throw_user("Invalid IP: $address");
     }
+    if ( $address eq '1.1.1.1' ) {
+	$class->throw_user("IP $address is not valid");
+    }
     my $ip;
     my $str;
     if ( !($ip = NetAddr::IP->new($address, $prefix)) ||
