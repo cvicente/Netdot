@@ -345,7 +345,7 @@ sub insert {
 	};
 	if ( my $e = $@ ){
 	    $newblock->delete();
-	    $e->rethrow();
+	    $e->rethrow() if ref($e);
 	}
     }
     
@@ -1354,9 +1354,19 @@ sub _validate {
     
     # Make these values what the block is being set to
     # or what it already has
-    my $statusname = $args->{status} || $self->status->name;
-    $args->{dhcp_enabled}            ||= $self->dhcp_enabled;
-    
+    my $statusname;
+    if ( $args->{status} ){
+	if ( ref($args->{status}) ){
+	    $statusname = $args->{status}->name;
+	}else{
+	    $statusname = $args->{status};
+	}
+    }else{
+	$self->status->name;
+    }
+
+    $args->{dhcp_enabled} ||= $self->dhcp_enabled;
+   
     my ($pstatus, $parent);
     if ( ($parent = $self->parent) && $parent->id ){
 	
