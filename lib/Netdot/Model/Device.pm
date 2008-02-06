@@ -4101,6 +4101,14 @@ __PACKAGE__->set_sql(no_type => qq{
         ORDER BY numdevs DESC
     });
 
+__PACKAGE__->set_sql(by_product_os => qq{
+    SELECT id,product,os
+        FROM device
+        WHERE os is NOT NULL 
+        AND os != '0'
+        ORDER BY product,os
+    });
+
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>

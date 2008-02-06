@@ -50,7 +50,7 @@ if ( $report_type eq 'product' ){
 	$grandtotal += $t{'Unknown'}{total};
     }
 
-    @headers = ( 'Type', 'Product', 'Count', );
+    @headers = ( 'Type', 'Model', 'Count', );
 
     my @row = ();
     push( @row, "Total Devices in Inventory:" );
@@ -80,15 +80,16 @@ if ( $report_type eq 'product' ){
     }
 
 }elsif ( $report_type eq 'os' ){
-    my $it = Device->retrieve_all();
     my %t;
-    while ( my $dev = $it->next ){
+    my @devs = Device->search_by_product_os();
+    foreach my $dev (@devs){
+	my $prod  = ($dev->product) ? $dev->product->id : "Unknown";
 	my $manuf = ($dev->product && $dev->product->manufacturer) ? $dev->product->manufacturer->id : 'Unknown';
 	my $os    = $dev->os;
-	$t{$manuf}{os}{$os}{total}++ if defined ($os);
+	$t{$manuf}{product}{$prod}{os}{$os}{total}++ if defined ($os);
     }
 
-    @headers = ( 'Manufacturer', 'OS', 'Count', );
+    @headers = ( 'Manufacturer', 'Model', 'OS', 'Count', );
     my @row = ();
     foreach my $m ( keys %t ){
 	my @row = ();
@@ -98,14 +99,26 @@ if ( $report_type eq 'product' ){
 	}else{
 	    push( @row, $m );
 	}
-	push ( @row, " "); push ( @row, " ");
+	push ( @row, " ", " ", " ");
 	push( @rows, \@row );
-	foreach my $os ( keys %{$t{$m}{os}} ){
+	foreach my $prod ( keys %{$t{$m}{product}} ){
 	    my @row = ();
 	    push( @row, " " );
-	    push( @row, "<a href=\"../generic/search_obj.html?table=Device&os=$os&res=1\">" . $os . '</a>' );
-	    push( @row, $t{$m}{os}{$os}{total} );
+	    my $product;
+	    if ( $prod ne 'Unknown' && ($product = Product->retrieve($prod)) ){
+		push( @row, "<strong><a href=\"../generic/view.html?table=Product&id=$prod\">" . $product->name . "</a></strong>" );
+	    }else{
+		push( @row, $prod );
+	    }
+	    push( @row, " ", " " );
 	    push( @rows, \@row );
+	    foreach my $os ( keys %{$t{$m}{product}{$prod}{os}} ){
+		my @row = ();
+		push( @row, " ", " " );
+		push( @row, "<a href=\"../generic/search_obj.html?table=Device&product=$prod&&os=$os&res=1\">" . $os . '</a>' );
+		push( @row, $t{$m}{product}{$prod}{os}{$os}{total} );
+		push( @rows, \@row );
+	    }
 	}
     }
 }else{
@@ -120,11 +133,11 @@ if ( $report_type eq 'product' ){
       <form name="report_form" action="device_inventory.html" method="POST">
          By <select name="report_type" onChange="document.report_form.submit()">
 %        if ( $report_type eq "product" ){
-	       <option value="product" SELECTED>Product</option>
-	       <option value="os">OS</option>
+	       <option value="product" SELECTED>Model</option>
+	       <option value="os">Model/OS</option>
 %        }else{
-	       <option value="product">Product</option>
-	       <option value="os" SELECTED>OS</option>
+	       <option value="product">Model</option>
+	       <option value="os" SELECTED>Model/OS</option>
 %        }
          </select>
       </form>
