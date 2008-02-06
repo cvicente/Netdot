@@ -457,7 +457,7 @@ sub get_snmp_info {
 
     ################################################################
     # Get STP (Spanning Tree Protocol) stuff
-    if ( $self->config->get('QUERY_STP_INFO') ){
+    if ( $self->config->get('GET_DEVICE_STP_INFO') ){
 	if ( defined $dev{physaddr} ){
 	    $dev{stp_type} = $sinfo->stp_ver();
 	    
