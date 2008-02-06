@@ -177,7 +177,7 @@ sub update {
 	    if ( $nid != 0 ){
 		# We might still want to set a virtual interface's neighbor to 0
 		# If we are correcting an error
-		if ( $self->type eq "53" && $self->type eq "propVirtual" ){
+		if ( $self->type && $self->type eq "53" && $self->type eq "propVirtual" ){
 		    $self->throw_user(sprintf("Virtual interface: %s cannot have neighbors",
 					      $self->get_label));
 		}
@@ -676,10 +676,13 @@ sub get_dp_neighbor {
 		my $mac = $1;
 		my $physaddr = PhysAddr->search(address=>$mac)->first;
 		if ( $physaddr ){
-		    if ( $physaddr->device ){
-			$rem_dev = $physaddr->device;
-		    }elsif ( $physaddr->interface && $physaddr->interface->device ){
-			$rem_dev = $physaddr->interface->device;
+		    if ( $physaddr->devices ){
+			$rem_dev = ($physaddr->devices)[0];
+		    }elsif ( $physaddr->interfaces ){
+			my $int = ($physaddr->interfaces)[0];
+			if ( $int->device ){
+			    $rem_dev = $int->device;
+			}
 		    }
 		}
 	    }else{
