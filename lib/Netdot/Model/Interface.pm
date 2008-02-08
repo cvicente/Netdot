@@ -77,7 +77,20 @@ sub find_duplex_mismatches {
     if ( my $e = $@ ){
 	$class->throw_fatal($e);
     }
-    return $mism;
+    # SQL returns pairs in both orders. Until I figure out how 
+    # to get SQL to return unique pairs...
+    if ( $mism ){
+	my (%seen, @res);
+	foreach my $pair ( @$mism ){
+	    next if ( exists $seen{$pair->[0]} || exists $seen{$pair->[1]} );
+	    push @res, $pair;
+	    $seen{$pair->[0]}++;
+	    $seen{$pair->[1]}++;
+	}
+	return \@res;
+    }else{
+	return;
+    }
 }
 
 =head1 OBJECT METHODS
