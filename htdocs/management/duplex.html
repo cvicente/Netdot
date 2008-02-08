@@ -1,0 +1,51 @@
+<%doc>
+Show duplex mismatches
+</%doc>
+%
+%
+<%attr>
+title   => 'Duplex Mismatches' 
+section => 'Management'
+</%attr>
+%
+%
+<%args>
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+my $list = Interface->find_duplex_mismatches();
+my @cssitem = ("formtablec1", "formtablec2");
+my $ci = 1;
+
+</%init>
+
+<div class="container">
+    <div class="containerheadleft"><b>Duplex/Speed Mismatches:</b></div>
+    <div class="containerheadright">&nbsp;</div>
+        <div class="containerbody">
+        <table border="0" cellpading="0" width="100%">
+            <tr class="rowtitle2">
+%           foreach ('Interface', 'Admin Duplex', 'Oper Duplex', 'Speed'){
+                <td class="formtabletitle"><% $_ %></td>
+%           }
+            </tr>
+%           foreach my $pair ( @$list ){
+%               $ci = ($ci + 1) % 2;
+%               foreach my $id ( @$pair ){
+%                   my $int = Interface->retrieve($id) || die "Can't retrieve Interaface id: $id";
+                    <tr class="<% $cssitem[$ci] %>">
+                    <td><a href="../generic/view.html?table=Interface&id=<% $id %>"><% $int->get_label %></a></td>
+                    <td><% $int->admin_duplex %></td>
+                    <td><% $int->oper_duplex %></td>
+                    <td><% $int->speed_pretty %></td>
+                    </tr>    
+%               }
+                <tr><td colspan="4"><hr></td></tr>
+%           }
+        </table>
+        </div>
+</div>
