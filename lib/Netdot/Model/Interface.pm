@@ -6,9 +6,7 @@ use strict;
 
 my $IPV4 = Netdot->get_ipv4_regex();
 my $IPV6 = Netdot->get_ipv6_regex();
-my $HOCT = '[0-9A-F]{2}';
-my $MAC  = "$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT";
-
+my $MAC  = Netdot->get_mac_regex();
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
 #Be sure to return 1
@@ -36,7 +34,6 @@ Netdot::Model::Interface
   Examples:
 
 =cut
-
 sub insert {
     my ($self, $argv) = @_;
     $self->isa_class_method('insert');
@@ -53,6 +50,35 @@ sub insert {
     return $self->SUPER::insert( $argv );
 }
 
+################################################################
+=head2 - find_duplex_mismatches - Finds pairs of interfaces with duplex and/or speed mismatch
+
+  Arguments: 
+    None
+  Returns:   
+    Array of arrayrefs containing pairs of interface id's
+  Examples:
+    my @list = Interface->find_duplex_mismatches();
+=cut
+sub find_duplex_mismatches {
+    my ($class) = @_;
+    $class->isa_class_method('find_duplex_mismatches');
+    my $mism;
+    my $dbh = $class->db_Main();
+    eval {
+	my $sth = $dbh->prepare_cached("SELECT i.id, r.id
+                                        FROM interface i, interface r
+                                        WHERE i.neighbor=r.id 
+                                        AND (i.oper_duplex!=r.oper_duplex 
+                                        OR ((i.speed!=0 AND r.speed!=0) AND (i.speed!=r.speed)))");
+	$sth->execute();
+	$mism = $sth->fetchall_arrayref;
+    };
+    if ( my $e = $@ ){
+	$class->throw_fatal($e);
+    }
+    return $mism;
+}
 
 =head1 OBJECT METHODS
 =cut

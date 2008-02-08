@@ -44,11 +44,11 @@ Netdot::Model::Device - Network Device Class
 
   Arguments:
     Hash with the following keys:
-      name - Can be either a string, RR object RR id or IP address, 
-             String can be FQDN or hostname.
-    
-      The rest of the fields in the Device table.
+      name         - Can be either a string, RR object RR id or IP address, 
+                     String can be FQDN or hostname.
+      producttype  - Search for all Devices of a certain product type
 
+      The rest of the fields in the Device table.
   Returns:
     Array of Device objects or iterator (depending on context)
 
@@ -99,6 +99,8 @@ sub search {
 		$argv{name} = 0;
 	    }
 	}
+    }elsif ( exists $argv{producttype} ){
+	return $class->search_by_type($argv{producttype});
     }
 
     # Proceed as a regular search
@@ -131,6 +133,8 @@ sub search_like {
 	}
 	$logger->debug("Device::search_like: $argv{name} not found");
 	return;
+    }elsif ( exists $argv{producttype} ){
+	return $class->search_by_type($argv{producttype});
     }else{
 	return $class->SUPER::search(%argv);
     }

@@ -60,7 +60,7 @@ if ( $report_type eq 'product' ){
 
     foreach my $pt ( sort keys %t ){
 	my @row = ();
-	push( @row, "<strong><a href=\"../management/device.html?submit=search&search=ProductType:$t{$pt}{id}\">" . $pt . "</a></strong>" );
+	push( @row, "<strong><a href=\"../generic/search_obj.html?table=Device&producttype=$t{$pt}{id}&res=1\">" . $pt . "</a></strong>" );
 	push( @row, "" );
 	push( @row, '<strong>' . $t{$pt}{total} . '</strong>' );
 	push( @rows, \@row );
@@ -71,7 +71,7 @@ if ( $report_type eq 'product' ){
 	    if ( $t{$pt}{prod}{$product}{id} ){
 		push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
 	    }elsif ( $product eq "Unknown" ){
-		push( @row, '<a href="../management/device.html?submit=search&search=product:0">' . $product . '</a>' );
+		push( @row, '<a href="../generic/search_obj.html?table=Device&product=0&res=1">' . $product . '</a>' );
 	    }
 	    push( @row, $t{$pt}{prod}{$product}{num}  );
 	    push( @rows, \@row );
@@ -133,7 +133,7 @@ if ( $report_type eq 'product' ){
       <form name="report_form" action="device_inventory.html" method="POST">
          By <select name="report_type" onChange="document.report_form.submit()">
 %        if ( $report_type eq "product" ){
-	       <option value="product" SELECTED>Model</option>
+	       <option value="product" SELECTED>Type/Model</option>
 	       <option value="os">Model/OS</option>
 %        }else{
 	       <option value="product">Model</option>

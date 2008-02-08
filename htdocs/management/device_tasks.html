@@ -35,8 +35,10 @@ $showheader     => 1
 <%init>
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
-
-my $list;
+my $IPV4 = Netdot->get_ipv4_regex();
+my $IPV6 = Netdot->get_ipv6_regex();
+my $MAC  = Netdot->get_mac_regex();
+my @list;
 $show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
 if ( $show_tasks eq "" ) {
     $user->setAttribute($r, "SHOW_TASKS", "show");
@@ -50,54 +52,37 @@ $ARGS{show_tasks} = $show_tasks;
 
 <%perl>
 if ( $submit ){
-    if ( defined $device_search ){
-
-        $m->comp('.show_tasks', %ARGS);
-
-	if ( $device_search =~ /\w+:\w+/){
-	    # Advanced search.  User is passing
-	    # key/value pairs
-	    my @pairs = split /,/, $device_search;
-	    my %parms;
-	    foreach ( @pairs ){
-		my ($key, $value) = split /:/, $_;
-		if ( $key eq "ProductType" ){
-		    # Special case
-		    @$list = Device->search_by_type($value);
-		    last;
-		}else{
-		    $parms{$key} = $value;
-		}
-	    }
-	    @$list = Device->search(\%parms) if ( ! $list );
+    if ( $device_search ){
+	$device_search =~ s/\s+//g;
+	if ( $device_search =~ /$IPV4|$IPV6/ ){
+	    $m->comp('/management/address_tasks.html', submit=>1, search_address=>$device_search, user=>$user );
+	}elsif ( $device_search =~ /$MAC/ ){
+	    $m->comp('.show_tasks', %ARGS);
+	    $m->comp('/management/mac.html', search=>$device_search );
 	}else{
+	    $m->comp('.show_tasks', %ARGS);
 	    # Get rid of spaces
-	    $device_search =~ s/\s+//;
-	    unless ( (@$list = Device->search_like(name=>$device_search)) ){
+	    unless ( (@list = Device->search_like(name=>$device_search)) ){
 		$m->comp('/generic/no_search_results.html', search=>$device_search);
 	    }
-	    my $num = scalar(@$list);
-	    if ( $num == 1 ){
-		# Don't offer list.  Just display device
-		my $o      = $list->[0];
-		my $id     = $o->id;
-		$m->comp('/management/device.html', id => $id, user=>$user );
-	    }else{
-		$m->comp('.show_results', search=>$device_search, list=>$list);
-	    }
 	}
-    }elsif ( $ip_search ){
-	$m->comp('/management/address_tasks.html', submit=>1, search_address=>$ip_search, user => $user );
-    }elsif ( $mac_search ){
-        $m->comp('.show_tasks', %ARGS);
-	$m->comp('/management/mac.html', list=>$list, search=>$mac_search );
+	my $num = scalar(@list);
+	if ( $num == 1 ){
+	    # Don't offer list.  Just display device
+	    my $o  = $list[0];
+	    my $id = $o->id;
+	    $m->comp('/management/device.html', id => $id, user=>$user );
+	}else{
+	    $m->comp('.show_results', search=>$device_search, list=>\@list);
+	}
     }else{
-        $m->comp('.show_tasks', %ARGS);
+	$m->comp('.show_tasks', %ARGS);
 	$m->comp('/generic/no_search_criteria.html');
     }
 }else{
     $m->comp('.show_tasks', %ARGS);
 }
+
 
 </%perl>
 
@@ -118,7 +103,7 @@ $search => undef
     <% scalar(@$list) %> results for <i><% $search %></i>
   </div><div class="containerheadright">&nbsp;</div>
   <div class="containerbody">
-      <& /generic/sortresults.mhtml, object => $list, page => "device.html", withedit => 1 &>
+      <& /generic/sortresults.mhtml, object=>$list, page=>"device.html", withedit=>1 &>
   </div>
 </div>
 
@@ -146,55 +131,44 @@ $mac_search     => undef
         <fieldset class="medium">
             <legend>Find Devices</legend>
             <form action="device_tasks.html" method="POST">
-                <p>
-                <label for="search">Name:</label>
+                <label for="search">Name/IP/MAC:</label>
                 <input type="text" name="device_search" class="txt" value="<% $device_search %>"> 
                 <input name="submit" value="search" class="btn" type="submit">
-                </p>
-            </form>
-            <form action="device_tasks.html" method="POST">
-                <p>
-                <label for="search">IP:</label>
-                <input type="text" name="ip_search" class="txt" value="<% $ip_search %>"> 
-                <input name="submit" value="search" class="btn" type="submit">
-                </p>
-            </form> 
-            <form action="device_tasks.html" method="POST">
-                <p>
-                <label for="search">MAC:</label>
-                <input type="text" name="mac_search" class="txt" value="<% $mac_search %>"> 
-                <input name="submit" value="search" class="btn" type="submit">
-                </p>
             </form>
         </fieldset>
         <fieldset class="medium">
             <legend>Discover/Update a Device</legend>
             <form action="updatedevice.html" method="POST">
-                <p>
                 <label for="host">Name:</label>
                 <input type="text" name="host" class="txt" value="">
-                </p>
-                <p>
                 <label for="comstr">Community:</label>
                 <input type="text" name="comstr" class="txt" value="<% (Netdot->config->get('DEFAULT_SNMPCOMMUNITIES'))->[0] %>">
                 <input type="hidden" name="action" value="discover">
                 <input type="submit" name="submit" class="btn" value="discover">
-                </p>
+            </form>
+        </fieldset>
+        <fieldset class="medium">
+            <legend>Misc Tasks</legend>
+            <form action="device_tasks.html" method="POST">
+                <label for="l2trace">L2 Traceroute</label>
+                from: <input type="text" name="l2trace_a" class="txt" value=""> 
+                to: <input type="text" name="l2trace_b" class="txt" value=""> 
+                <input name="submit" value="Trace" class="btn" type="submit">
+            </form>
+            <form action="duplex.html" method="POST">
+                <label for="duplex">Duplex Mismatches:</label>
+                <input name="submit" value="Find" class="btn" type="submit">
             </form>
         </fieldset>
         <fieldset class="medium">
             <legend>Manually Add a Device</legend>
         	<form action="device.html" method="POST">
-                <p>
                 <label for="newhost">Name:</label>
                 <input type="text" name="newhost" class="txt" value="">
-                </p>
-                <p>
                 <label for="newip">IP:</label>
                 <input type="text" name="newip" class="txt" value="">
                 <input type="hidden" name="deviceadd" value="add">
                 <input type="submit" name="submit" class="btn" value="add">
-                </p>
             </form>
         </fieldset>
 
