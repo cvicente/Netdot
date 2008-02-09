@@ -182,24 +182,25 @@ sub insert {
     $class->throw_fatal("insert needs field/value parameters") 
 	unless ( keys %{$argv} );
     
-    $class->_adjust_vals($argv);
+    $class->_adjust_vals(args=>$argv, action=>'insert');
     my $obj;
     eval {
 	$obj = $class->SUPER::insert($argv);
     };
     if ( my $e = $@ ){
+	my $msg = "Error while inserting $class: ";
 	# Class::DBI shows a full stack trace
 	# Try to make it less frightening for the user
 	if ( $e =~ /Duplicate entry/i ){
-	    $e = "$class Insert error:  One or more fields were detected as duplicate.";
+	    $msg .= "Some values are duplicated.";
 	}elsif ( $e =~ /cannot be null|not-null constraint/i ){
-	    $e = "$class Insert error:  One or more fields cannot be null.";
+	    $msg .= "Some fields cannot be null.";
 	}elsif ( $e =~ /invalid input syntax/i ){
-	    $e = "$class Insert error: One or more fields have invalid input syntax.";
+	    $msg .= "Some fields have invalid input syntax.";
 	}elsif ( $e =~ /out of range/i ){
-	    $e = "$class Insert error: One or more values are out of valid range.";
+	    $msg .= "Some values are out of valid range.";
 	}
-	$class->throw_user($e);
+	$class->throw_user("$msg\n\nFull error: $e\n");
     }
 
     $logger->debug( sub { sprintf("Model::insert: Inserted new record %i in table: %s", 
@@ -486,7 +487,7 @@ sub update {
     my $class = ref($self);
     my @changed_keys;
     if ( $argv ){
-	$class->_adjust_vals($argv);
+	$class->_adjust_vals(args=>$argv, action=>'update');
 	foreach my $col ( keys %$argv ){
 	    my $val = $argv->{$col};
 	    my $a = ref($self->$col) ? $self->$col->id : $self->$col;
@@ -505,17 +506,18 @@ sub update {
 	    $res = $self->SUPER::update();
 	};
 	if ( my $e = $@ ){
+	    my $msg = "Error while updating $class: ";
 	    # Class::DBI shows a full stack trace
 	    # Try to make it less frightening for the user
 	    if ( $e =~ /Duplicate/i ){
-		$e = "$class Update error:  One or more fields are invalid duplicates";
+		$msg = "Some values are duplicated";
 	    }elsif ( $e =~ /invalid input syntax/i ){
-		$e = "$class Update error: One or more fields have invalid input syntax";
+		$msg = "Some fields have invalid input syntax";
 	    }elsif ( $e =~ /out of range/i ){
-		$e = "$class Update error: One or more values are out of valid range.";
+		$msg = "Some values are out of valid range.";
 	    }
 
-	    $self->throw_user($e);
+	    $self->throw_user("$msg\n\nFull Error: $e\n");
 	}
 	# For some reason, we (with some classes) get an empty object after updating (weird)
 	# so we re-read the object from the DB to make sure we have the id value below:
@@ -700,20 +702,26 @@ sub search_all_tables {
 ############################################################################
 # _adjust_vals - Adjust field values before inserting/updating
 # 
-#    Make sure to set integer and bool fields to 0 instead of the empty string.
-#    Ignore the empty string when inserting/updating date fields.
+#    - Make sure to set integer and bool fields to 0 instead of the empty string.
+#    - Make sure non-nullable fields are inserted as 0 if not passed
+#    - Ignore the empty string when inserting/updating date fields.
 #
 # Arguments:
-#   hash ref with key/value pairs
+#   hash with following keys:
+#      - args   - field/value pairs
+#      - action - <update|insert>
 # Returns:
 #   True
 # Examples:
 #
 sub _adjust_vals{
-    my ($self, $args) = @_;
-    $self->isa_class_method('_adjust_vals');
+    my ($class, %argv) = @_;
+    $class->isa_class_method('_adjust_vals');
+    my ($action, $args) = @argv{'action', 'args'};
+    my %meta_columns;
+    map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
-	my $mcol = $self->meta_data->get_column($field);
+	my $mcol = $meta_columns{$field};
 	# arg can be an object, so ignore refs
 	if ( !ref($args->{$field}) && (!defined($args->{$field}) || $args->{$field} =~ /^null$/i) ){
 	    if ( $mcol->sql_type =~ /integer|bool/i ){
@@ -724,6 +732,20 @@ sub _adjust_vals{
 		$logger->debug( sub { sprintf("Model::_adjust_vals: Removing empty field %s type %s.", 
 					      $field, $mcol->sql_type) } );
 		delete $args->{$field};
+	    }
+	}
+	delete $meta_columns{$field};
+    }
+    # Go over remaining columns to make sure non-nullables are 
+    # explicitely set to 0
+    if ( $action eq 'insert' ){
+	foreach my $field ( keys %meta_columns ){
+	    next if ( $field eq 'id' );
+	    my $mcol = $meta_columns{$field};
+	    if ( !$mcol->is_nullable && $mcol->sql_type =~ /integer|bool/i ){
+		$logger->debug( sub { sprintf("Model::_adjust_vals: Setting missing non-nullable field '%s' type '%s' to 0.", 
+					      $field, $mcol->sql_type) } );
+		$args->{$field} = 0;
 	    }
 	}
     }

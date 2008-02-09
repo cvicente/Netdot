@@ -1189,8 +1189,9 @@ sub fast_update{
                                       WHERE id=?");	
 
 	$sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
-                                     (address,prefix,version,status,first_seen,last_seen)
-                                     VALUES (?, ?, ?, ?, ?, ?)");	
+                                     (address,prefix,version,status,first_seen,last_seen,
+                                      dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
+                                     VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')");
 	
 
     };

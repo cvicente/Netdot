@@ -268,20 +268,22 @@ sub insert {
 
     # Assign defaults
     # These will be overridden by the given arguments
-    my %devtmp = (community        => 'public',
-		  monitored        => 1,
+    my %devtmp = (closet           => 0,
+		  community        => 'public',
 		  customer_managed => 0,
-		  date_installed   => $class->timestamp,
-		  owner            => $default_owner,
 		  collect_arp      => 0,
 		  collect_fwt      => 0,
 		  canautoupdate    => 0,
-		  maint_covered    => 0,
+		  date_installed   => $class->timestamp,
 		  monitor_config   => 0,
+		  monitored        => 1,
 		  monitorstatus    => 0,
+		  owner            => $default_owner,
+		  product          => 0,
 		  snmp_bulk        => $class->config->get('DEFAULT_SNMPBULK'),
 		  snmp_managed     => 0,
 		  snmp_polling     => 0,
+		  snmp_target      => 0,
 		  );
 
     # Add given args (overrides defaults).

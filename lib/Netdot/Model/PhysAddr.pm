@@ -175,8 +175,8 @@ sub fast_update {
                                     ");	
 	
 	
-	$sth2 = $dbh->prepare_cached("INSERT INTO physaddr (address, first_seen, last_seen)
-                                     VALUES (?, ?, ?)
+	$sth2 = $dbh->prepare_cached("INSERT INTO physaddr (address, first_seen, last_seen, static)
+                                     VALUES (?, ?, ?, '0')
                                     ");	
     };
     if ( my $e = $@ ){
