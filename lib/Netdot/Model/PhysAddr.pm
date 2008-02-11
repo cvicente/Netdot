@@ -339,11 +339,75 @@ sub from_interfaces {
     
 }
 
+#################################################################
+=head2 from_interfaces - Get addresses that are devices' base MACs
+
+  Arguments: 
+    None
+  Returns:   
+    Hash ref keyed by address
+  Examples:
+    my $intmacs = PhysAddr->from_devices();
+
+=cut
+sub from_devices {
+    my ($class) = @_;
+    $class->isa_class_method('from_devices');
+
+    # Build the SQL query
+    $logger->debug("PhysAddr::from_devices: Retrieving all Device MACs...");
+    my ($mac_aref, %dev_macs);
+
+    my $dbh = $class->db_Main;
+    eval {
+	my $sth = $dbh->prepare_cached("SELECT p.id,p.address 
+                                        FROM physaddr p, device d
+                                        WHERE d.physaddr=p.id");
+	$sth->execute();
+	$mac_aref = $sth->fetchall_arrayref;
+    };
+    if ( my $e = $@ ){
+	$class->throw_fatal($e);
+    }
+    # Build a hash of mac addresses.
+    foreach my $row ( @$mac_aref ){
+	my ($id, $address) = @$row;
+	$dev_macs{$address} = $id;
+    }
+    $logger->debug("Physaddr::from_devices: ...done");
+    return \%dev_macs;
+    
+}
+
+#################################################################
+=head2 infrastructure - Get all infrastructure MACs
+
+  Arguments: 
+    None
+  Returns:   
+    Hash ref keyed by address
+  Examples:
+    my $intmacs = PhysAddr->infrastructure();
+
+=cut
+sub infrastructure {
+    my ($class) = @_;
+    $class->isa_class_method('infrastructure');
+    
+    my $int_macs = $class->from_interfaces();
+    my $dev_macs = $class->from_devices();
+    my %inf_macs = %{$int_macs};
+    foreach my $address ( keys %$dev_macs ){
+	$inf_macs{$address} = $dev_macs->{$address};
+    }
+    return \%inf_macs;
+}
+
 ################################################################
 =head2 vendor_count - Count MACs by vendor
-
+    
   Arguments:
-    none
+    type  -  [infrastructure|node|all]
   Returns:
     hash reference keyed by vendor, value is count
   Examples:
@@ -351,22 +415,36 @@ sub from_interfaces {
 
 =cut
 sub vendor_count{
-    my ($self) = @_;
+    my ($self, $type) = @_;
     $self->isa_class_method('vendor_count');
-    my %res;
-    my $all_macs = $self->retrieve_all_hashref();
+    $type ||= 'all';
+    my (%res, $macs);
+    if ( $type eq 'infrastructure' ){
+	$macs = $self->infrastructure();
+    }elsif ( $type eq 'node' ){
+	my $infra = $self->infrastructure();
+	my $all   = $self->retrieve_all_hashref();
+	foreach my $address ( keys %$all ){
+	    if ( !exists $infra->{$address} ){
+		$macs->{$address} = $all->{$address};
+	    }
+	}
+    }elsif ( $type eq 'all' ){
+	$macs = $self->retrieve_all_hashref();
+    }
     my $it = OUI->retrieve_all;
     my %OUI;
     while ( my $oui = $it->next ){
 	$OUI{$oui->oui} = $oui->vendor;
     }
-    foreach my $address ( keys %$all_macs ){
+    foreach my $address ( keys %$macs ){
 	my $oui_str = $self->_oui_from_address($address);
 	if ( exists $OUI{$oui_str} ){
 	    my $vendor = $OUI{$oui_str};
-	    $res{$vendor}++;
+	    $res{"$oui_str"}{total}++;
+	    $res{"$oui_str"}{vendor} = $vendor;
 	}else{
-	    $res{"Unknown"}++;
+	    $res{"Unknown"}{total}++;
 	}
     }
     return \%res;
