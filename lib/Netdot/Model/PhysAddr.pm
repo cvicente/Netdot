@@ -162,34 +162,22 @@ sub fast_update {
     my $start = time;
     $logger->debug("PhysAddr::fast_update: Updating MAC addresses in DB");
     
-    my $db_macs = $class->retrieve_all_hashref;
-    
     my $dbh = $class->db_Main;
-    my $sth;
-    
-    # Build SQL queries
-    my ($sth1, $sth2);
-    eval {
-	$sth1 = $dbh->prepare_cached("UPDATE physaddr SET last_seen=?
-                                     WHERE id=?
-                                    ");	
-	
-	
-	$sth2 = $dbh->prepare_cached("INSERT INTO physaddr (address, first_seen, last_seen, static)
-                                     VALUES (?, ?, ?, '0')
-                                    ");	
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
-    }
-    
-    # Now walk our list and do the right thing
-    foreach my $address ( keys %$macs ){
-	my $timestamp = $macs->{$address};
-	if ( !exists $db_macs->{$address} ){
-	    # Insert
+    if ( $class->config->get('DB_TYPE') eq 'mysql' ){
+	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
+	my $sth;
+	eval {
+	    $sth = $dbh->prepare_cached("INSERT INTO physaddr (address,first_seen,last_seen,static)
+                                         VALUES (?, ?, ?, '0')
+                                         ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");	
+	};
+	if ( my $e = $@ ){
+	    $class->throw_fatal($e);
+	}
+	foreach my $address ( keys %$macs ){
+	    my $timestamp = $macs->{$address};
 	    eval {
-		$sth2->execute($address, $timestamp, $timestamp);
+		$sth->execute($address, $timestamp, $timestamp);
 	    };
 	    if ( my $e = $@ ){
 		if ( $e =~ /Duplicate/ ){
@@ -201,13 +189,48 @@ sub fast_update {
 		    $class->throw_fatal($e);
 		}
 	    }
-	}else{
-	    # Update
-	    eval {
-		$sth1->execute($timestamp, $db_macs->{$address});
-	    };
-	    if ( my $e = $@ ){
-		$class->throw_fatal($e);
+	}
+    }else{    
+	my $db_macs = $class->retrieve_all_hashref;
+	# Build SQL queries
+	my ($sth1, $sth2);
+	eval {
+	    $sth1 = $dbh->prepare_cached("UPDATE physaddr SET last_seen=?
+                                          WHERE id=?");	
+	    
+	    $sth2 = $dbh->prepare_cached("INSERT INTO physaddr (address, first_seen, last_seen, static)
+                                     VALUES (?, ?, ?, '0')");	
+	};
+	if ( my $e = $@ ){
+	    $class->throw_fatal($e);
+	}
+	
+	# Now walk our list and do the right thing
+	foreach my $address ( keys %$macs ){
+	    my $timestamp = $macs->{$address};
+	    if ( !exists $db_macs->{$address} ){
+		# Insert
+		eval {
+		    $sth2->execute($address, $timestamp, $timestamp);
+		};
+		if ( my $e = $@ ){
+		    if ( $e =~ /Duplicate/ ){
+			# Since we're parallelizing, an address
+			# might get inserted after we get our list.
+			# Just go on.
+			next;
+		    }else{
+			$class->throw_fatal($e);
+		    }
+		}
+	    }else{
+		# Update
+		eval {
+		    $sth1->execute($timestamp, $db_macs->{$address});
+		};
+		if ( my $e = $@ ){
+		    $class->throw_fatal($e);
+		}
 	    }
 	}
     }

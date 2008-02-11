@@ -1177,48 +1177,28 @@ sub fast_update{
 
     my $start = time;
     $logger->debug("Ipblock::fast_update: Updating IP addresses in DB");
-
-    my $db_ips  = $class->retrieve_all_hashref;
-    
     my $dbh = $class->db_Main;
 
-    # Build SQL queries
-    my ($sth1, $sth2, $sth3, $sth4);
-    eval {
-	$sth1 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=?
-                                      WHERE id=?");	
-
-	$sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
-                                     (address,prefix,version,status,first_seen,last_seen,
-                                      dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
-                                     VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')");
-	
-
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
-    }
-
-    # Now walk our list and do the right thing
-    foreach my $address ( keys %$ips ){
-	my $attrs = $ips->{$address};
-	# Convert address to decimal format
-	my $dec_addr = $class->ip2int($address);
-	
-	if ( exists $db_ips->{$dec_addr} ){
-	    # IP exists
+    if ( $class->config->get('DB_TYPE') eq 'mysql' ){
+	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
+	my $sth;
+	eval {
+	    $sth = $dbh->prepare_cached("INSERT INTO ipblock
+                                         (address,prefix,version,status,first_seen,last_seen,
+                                         dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
+                                         VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')
+                                         ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");
+	};
+	if ( my $e = $@ ){
+	    $class->throw_fatal($e);
+	}
+	foreach my $address ( keys %$ips ){
+	    my $attrs = $ips->{$address};
+	    # Convert address to decimal format
+	    my $dec_addr = $class->ip2int($address);
 	    eval{
-		$sth1->execute($attrs->{timestamp}, $db_ips->{$dec_addr});
-	    };
-	    if ( my $e = $@ ){
-		$class->throw_fatal($e);
-	    }
-	}else{
-	    # IP does not exist
-	    eval{
-		$sth2->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
-			       $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp},
-			       );
+		$sth->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
+			      $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp});
 	    };
 	    if ( my $e = $@ ){
 		if ( $e =~ /Duplicate/ ){
@@ -1230,10 +1210,63 @@ sub fast_update{
 		    $class->throw_fatal($e);
 		}
 	    }
+	    
+	}
+    }else{
+	my $db_ips  = $class->retrieve_all_hashref;
+
+	# Build SQL queries
+	my ($sth1, $sth2);
+	eval {
+	    $sth1 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=?
+                                          WHERE id=?");	
+	    
+	    $sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
+                                          (address,prefix,version,status,first_seen,last_seen,
+                                           dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
+                                           VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')");
+	
+	    
+	};
+	if ( my $e = $@ ){
+	    $class->throw_fatal($e);
+	}
+	
+	# Now walk our list and do the right thing
+	foreach my $address ( keys %$ips ){
+	    my $attrs = $ips->{$address};
+	    # Convert address to decimal format
+	    my $dec_addr = $class->ip2int($address);
+	    
+	    if ( exists $db_ips->{$dec_addr} ){
+		# IP exists
+		eval{
+		    $sth1->execute($attrs->{timestamp}, $db_ips->{$dec_addr});
+		};
+		if ( my $e = $@ ){
+		    $class->throw_fatal($e);
+		}
+	    }else{
+		# IP does not exist
+		eval{
+		    $sth2->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
+				   $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp},
+			);
+		};
+		if ( my $e = $@ ){
+		    if ( $e =~ /Duplicate/ ){
+			# Since we're parallelizing, an address
+			# might get inserted after we get our list.
+			# Just go on.
+			next;
+		    }else{
+			$class->throw_fatal($e);
+		    }
+		}
+	    }
 	}
     }
-    
-    
+
     my $end = time;
     $logger->debug(sprintf("Ipblock::fast_update: Done Updating: %d addresses in %d secs",
 			   scalar(keys %$ips), ($end-$start)));
