@@ -16,12 +16,14 @@ Arguments:
     field_headers  -  array of captions to show on the top row
     data           -  array of arrays to show in the rows
     subclass       -  use class "datatabler1_subclass" in the stylesheet
+    style          -  array of style parameters for columns (any css)
 </%doc>
 
 <%args>
 @field_headers => undef;
 @data          => undef;
 $subclass      => "";
+@style         => undef;
 </%args>
 
 % if( $subclass ) { $subclass = '_'.$subclass; }
@@ -30,19 +32,31 @@ $subclass      => "";
 <table border="0" width="100%" cellspacing="0">
 
   <tr>
-% foreach (@field_headers) {
-    <td class="formtabletitle"><% $_ %></td>
+% if ( @style  ){
+%     for (my $i=0; $i < scalar @field_headers; $i++) {
+          <td class="formtabletitle" style="<% $style[$i] %>"><% $field_headers[$i] %></td>
+%     }
+% }else{
+%     foreach (@field_headers) {
+          <td class="formtabletitle"><% $_ %></td>
+%     }
 % }
-  </tr>
+</tr>
 
 % my $row;
 % my $toggle = 1;
 % foreach $row(@data) {
 % ($toggle %= 2) += 1;
   <tr>
+% if ( @style  ){
+%   for (my $i=0; $i < scalar @$row; $i++) {
+      <td class="datatabler<% $toggle.$subclass %>" style="<% $style[$i] %>" ><% $row->[$i] %></td>
+%   }
+% }else{
 %   foreach (@$row) {
       <td class="datatabler<% $toggle.$subclass %>"><% $_ %></td>
 %   }
+% }
   </tr>
 % }
 
