@@ -2222,16 +2222,20 @@ sub snmp_update {
     ##############################################################
     # Assign the snmp_target address if it's not there yet
     #
-    if ( $self->snmp_managed && (!defined($self->snmp_target) || $self->snmp_target == 0) ){
+    if ( $self->snmp_managed && (!defined($self->snmp_target) || int($self->snmp_target) == 0) ){
 	my $ipb;
 	$ipb = Ipblock->search(address=>$info->{snmp_target})->first;
-	if ( $ipb ){
+	unless ( $ipb ){
+	    $ipb = Ipblock->insert({address=>$info->{snmp_target}});
+	}
+        if ( $ipb ){
 	    $self->update({snmp_target=>$ipb});
 	    $logger->info(sprintf("%s: SNMP target address set to %s", 
 				  $host, $self->snmp_target->address));
-	}else{
-	    $logger->error("Could not determine SNMP target address!");
-	}
+        }else{
+	    $logger->warn(sprintf("%s: Could not set SNMP target address: %s.", 
+				  $host, $info->{snmp_target}));
+        }
     }
 
     ##############################################################
