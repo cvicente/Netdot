@@ -216,7 +216,7 @@ sub assign_name {
 	    $host =~ s/\.$mname//;
 	}else{
 	    $logger->debug("Device::assign_name: $fqdn not found");
-
+	    
 	    # Assume the zone to be everything to the right
 	    # of the first dot. This might be a wrong guess
 	    # but it is as close as I can get.
@@ -224,13 +224,20 @@ sub assign_name {
 	    $mname = join '.', @sections;
 	}
     }else{
-	$host = $fqdn;
+        $host = $fqdn;
     }
     my %args = ( name=>$host );
     $args{mname} = $mname if defined $mname;
     # This will create the Zone object if necessary
     $rr = RR->insert(\%args);
     $logger->info(sprintf("Inserted new RR: %s", $rr->get_label));
+    # Make sure name has an associated IP and A record
+    if ( $ip ){
+	my $ipb = Ipblock->search(address=>$ip)->first;
+	$ipb = Ipblock->insert({address=>$ip}) 
+	    unless $ipb;
+	my $rraddr = RRADDR->find_or_create({ipblock=>$ipb, rr=>$rr});
+    }
     return $rr;
 }
 
@@ -2223,19 +2230,12 @@ sub snmp_update {
     # Assign the snmp_target address if it's not there yet
     #
     if ( $self->snmp_managed && (!defined($self->snmp_target) || int($self->snmp_target) == 0) ){
-	my $ipb;
-	$ipb = Ipblock->search(address=>$info->{snmp_target})->first;
-	unless ( $ipb ){
-	    $ipb = Ipblock->insert({address=>$info->{snmp_target}});
-	}
-        if ( $ipb ){
-	    $self->update({snmp_target=>$ipb});
-	    $logger->info(sprintf("%s: SNMP target address set to %s", 
-				  $host, $self->snmp_target->address));
-        }else{
-	    $logger->warn(sprintf("%s: Could not set SNMP target address: %s.", 
-				  $host, $info->{snmp_target}));
-        }
+	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first;
+	$ipb = Ipblock->insert({address=>$info->{snmp_target}}) 
+	    unless $ipb;
+	$self->update({snmp_target=>$ipb});
+	$logger->info(sprintf("%s: SNMP target address set to %s", 
+			      $host, $self->snmp_target->address));
     }
 
     ##############################################################
