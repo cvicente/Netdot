@@ -1419,7 +1419,8 @@ sub _validate {
 	    }
 	}else{
 	    if ( $pstatus ne "Container" ){
-		$self->throw_user("Block allocations only allowed under Container blocks");
+		$self->throw_user(sprintf("Block allocations only allowed under Container blocks: %s within %s",
+				  $self->get_label, $parent->get_label));
 	    }	    
 	}
     }
