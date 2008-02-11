@@ -205,8 +205,8 @@ sub assign_name {
 
     # Now we have a fqdn. First, check if we have a matching domain
     my $mname;
-    if ( my @sections = split /\./, $fqdn ){
-
+    if ( $fqdn =~ /\./  && $fqdn !~ /$IPV4|$IPV6/ ){
+	my @sections = split /\./, $fqdn;
 	# Notice that we search the whole string.  That's because
 	# the hostname part might have dots.  The Zone search method
 	# will take care of that.
@@ -781,15 +781,17 @@ sub get_snmp_info {
 	    }
 	    $dev{interface}{$iid}{vlans}{$vid}{vname} = $vname if defined ($vname);
 
-	    if ( $dev{stp_type} && $dev{stp_type} eq 'mst' ){
-		# Get STP instance where this VLAN belongs
-		# If there is no mapping, make it instance 0
-		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = $dev{stp_vlan2inst}->{$vid} || 0;
-	    }elsif ( $dev{stp_type} =~ /pvst/i ){
-		# In PVST, we number the instances the same as VLANs
-		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = $vid;
-	    }elsif ( $dev{stp_type} eq 'ieee8021d' ){
-		$dev{interface}{$iid}{vlans}{$vid}{stp_instance} = 0;
+	    if ( $dev{stp_type} ){
+		if ( $dev{stp_type} eq 'mst' ){
+		    # Get STP instance where this VLAN belongs
+		    # If there is no mapping, make it instance 0
+		    $dev{interface}{$iid}{vlans}{$vid}{stp_instance} = $dev{stp_vlan2inst}->{$vid} || 0;
+		}elsif ( $dev{stp_type} =~ /pvst/i ){
+		    # In PVST, we number the instances the same as VLANs
+		    $dev{interface}{$iid}{vlans}{$vid}{stp_instance} = $vid;
+		}elsif ( $dev{stp_type} eq 'ieee8021d' ){
+		    $dev{interface}{$iid}{vlans}{$vid}{stp_instance} = 0;
+		}
 	    }
 	}
     }
