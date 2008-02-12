@@ -530,6 +530,41 @@ sub vendor {
     return "Unknown";
 }
 
+################################################################
+=head2 find_edge_port - Find edge port where MAC is found
+
+  Arguments: 
+    None
+  Returns:   
+    Array ref of Interface ids and timestamps
+  Examples:
+    print $physaddr->find_edge_port;
+
+=cut
+sub find_edge_port {
+    my ($self) = @_;
+    $self->isa_object_method('find_edge_port');
+    if ( $self->interfaces || $self->devices ){
+	$logger->debug(sprintf("PhysAddr::find_edge_port: %s is infrastructure,",
+			       $self->address));
+	return [];
+    }else{
+	my $dbh = $self->db_Main();
+	my $sth;
+	eval {
+	    $sth = $dbh->prepare_cached('SELECT i.id, MAX(ft.tstamp) 
+                                         FROM interface i, fwtableentry fte, fwtable ft 
+                                         WHERE fte.physaddr=? AND fte.interface=i.id AND fte.fwtable=ft.id AND i.neighbor=0 
+                                         GROUP BY i.id');
+	    $sth->execute($self->id);
+	};
+	if ( my $e = $@ ){
+	    $self->throw_fatal($e);
+	}
+	return $sth->fetchall_arrayref;
+    }
+}
+
 #################################################
 # Add some triggers
 

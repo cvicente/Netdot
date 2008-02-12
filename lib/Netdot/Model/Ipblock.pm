@@ -88,6 +88,10 @@ sub search {
 	    }
 	}
     }
+    if ( defined $args{status} ){
+	my $statusid = $class->_get_status_id($args{status});
+	$args{status} = $statusid;
+    }
     return $class->SUPER::search( %args, $opts );
 }
 
@@ -226,7 +230,6 @@ sub get_subnet_addr {
     my $hosts = Ipblock->get_host_addrs( $address );
 
 =cut
-
 sub get_host_addrs {
     my ($class, $subnet) = @_;
     $class->isa_class_method('get_host_addrs');
@@ -242,7 +245,6 @@ sub get_host_addrs {
 
     return $hosts;
 }
-
 
 ##################################################################
 =head2 is_loopback - Check if address is a loopback address
@@ -565,6 +567,174 @@ sub build_tree {
 	$class->throw_fatal( $e );
     }
     
+    return 1;
+}
+
+############################################################################
+=head2 retrieve_all_hashref
+
+    Retrieves all IPs from the DB and stores them in a hash, keyed by 
+    numeric address. The value is the Ipblock id.
+
+  Arguments: 
+    None
+  Returns:   
+    Hash reference 
+  Examples:
+    my $db_ips = Ipblock->retriev_all_hash();
+
+=cut
+sub retrieve_all_hashref {
+    my ($class) = @_;
+    $class->isa_class_method('retrieve_all_hashref');
+
+    # Build the search-all-ips SQL
+    $logger->debug("Ipblock::retrieve_all_hashref: Retrieving all IPs...");
+    my ($ip_aref, %db_ips, $sth);
+    
+    my $dbh = $class->db_Main;
+    eval {
+	$sth = $dbh->prepare_cached("SELECT id,address FROM ipblock");	
+	$sth->execute();
+	$ip_aref = $sth->fetchall_arrayref;
+    };
+    if ( my $e = $@ ){
+	$class->throw_fatal($e);
+    }
+    # Build a hash of ip addresses.
+    foreach my $row ( @$ip_aref ){
+	my ($id, $address) = @$row;
+	$db_ips{$address} = $id;
+    }
+    $logger->debug("Ipblock::retrieve_all_hashref: ...done");
+
+    return \%db_ips;
+}
+
+##################################################################
+=head2 fast_update - Faster updates for specific cases
+
+    This method will traverse a list of hashes containing an IP address
+    and other Ipblock values.  If a record does not exist with that address,
+    it is created and both timestamps ('first_seen' and 'last_seen') are 
+    instantiated, together with other fields.
+    If the address already exists, only the 'last_seen' timestamp is
+    updated.
+
+    Meant to be used by processes that insert/update large amounts of 
+    objects.  We use direct SQL commands for improved speed.
+
+  Arguments: 
+    Hash ref keyed by ip address containing a hash with following keys:
+    timestamp
+    prefix
+    version
+    status 
+  Returns:   
+    True if successul
+  Examples:
+    Ipblock->fast_update(\%ips);
+
+=cut
+sub fast_update{
+    my ($class, $ips) = @_;
+    $class->isa_class_method('fast_update');
+
+    my $start = time;
+    $logger->debug("Ipblock::fast_update: Updating IP addresses in DB");
+    my $dbh = $class->db_Main;
+
+    if ( $class->config->get('DB_TYPE') eq 'mysql' ){
+	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
+	my $sth;
+	eval {
+	    $sth = $dbh->prepare_cached("INSERT INTO ipblock
+                                         (address,prefix,version,status,first_seen,last_seen,
+                                         dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
+                                         VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')
+                                         ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");
+	};
+	if ( my $e = $@ ){
+	    $class->throw_fatal($e);
+	}
+	foreach my $address ( keys %$ips ){
+	    my $attrs = $ips->{$address};
+	    # Convert address to decimal format
+	    my $dec_addr = $class->ip2int($address);
+	    eval{
+		$sth->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
+			      $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp});
+	    };
+	    if ( my $e = $@ ){
+		if ( $e =~ /Duplicate/ ){
+		    # Since we're parallelizing, an address
+		    # might get inserted after we get our list.
+		    # Just go on.
+		    next;
+		}else{
+		    $class->throw_fatal($e);
+		}
+	    }
+	    
+	}
+    }else{
+	my $db_ips  = $class->retrieve_all_hashref;
+
+	# Build SQL queries
+	my ($sth1, $sth2);
+	eval {
+	    $sth1 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=?
+                                          WHERE id=?");	
+	    
+	    $sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
+                                          (address,prefix,version,status,first_seen,last_seen,
+                                           dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
+                                           VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')");
+	
+	    
+	};
+	if ( my $e = $@ ){
+	    $class->throw_fatal($e);
+	}
+	
+	# Now walk our list and do the right thing
+	foreach my $address ( keys %$ips ){
+	    my $attrs = $ips->{$address};
+	    # Convert address to decimal format
+	    my $dec_addr = $class->ip2int($address);
+	    
+	    if ( exists $db_ips->{$dec_addr} ){
+		# IP exists
+		eval{
+		    $sth1->execute($attrs->{timestamp}, $db_ips->{$dec_addr});
+		};
+		if ( my $e = $@ ){
+		    $class->throw_fatal($e);
+		}
+	    }else{
+		# IP does not exist
+		eval{
+		    $sth2->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
+				   $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp},
+			);
+		};
+		if ( my $e = $@ ){
+		    if ( $e =~ /Duplicate/ ){
+			# Since we're parallelizing, an address
+			# might get inserted after we get our list.
+			# Just go on.
+			next;
+		    }else{
+			$class->throw_fatal($e);
+		    }
+		}
+	    }
+	}
+    }
+
+    my $end = time;
+    $logger->debug(sprintf("Ipblock::fast_update: Done Updating: %d addresses in %d secs",
+			   scalar(keys %$ips), ($end-$start)));
     return 1;
 }
 
@@ -1105,174 +1275,6 @@ sub update_a_records {
     return 1;
 }
 
-############################################################################
-=head2 retrieve_all_hashref
-
-    Retrieves all IPs from the DB and stores them in a hash, keyed by 
-    numeric address. The value is the Ipblock id.
-
-  Arguments: 
-    None
-  Returns:   
-    Hash reference 
-  Examples:
-    my $db_ips = Ipblock->retriev_all_hash();
-
-=cut
-sub retrieve_all_hashref {
-    my ($class) = @_;
-    $class->isa_class_method('retrieve_all_hashref');
-
-    # Build the search-all-ips SQL
-    $logger->debug("Ipblock::retrieve_all_hashref: Retrieving all IPs...");
-    my ($ip_aref, %db_ips, $sth);
-    
-    my $dbh = $class->db_Main;
-    eval {
-	$sth = $dbh->prepare_cached("SELECT id,address FROM ipblock");	
-	$sth->execute();
-	$ip_aref = $sth->fetchall_arrayref;
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
-    }
-    # Build a hash of ip addresses.
-    foreach my $row ( @$ip_aref ){
-	my ($id, $address) = @$row;
-	$db_ips{$address} = $id;
-    }
-    $logger->debug("Ipblock::retrieve_all_hashref: ...done");
-
-    return \%db_ips;
-}
-
-##################################################################
-=head2 fast_update - Faster updates for specific cases
-
-    This method will traverse a list of hashes containing an IP address
-    and other Ipblock values.  If a record does not exist with that address,
-    it is created and both timestamps ('first_seen' and 'last_seen') are 
-    instantiated, together with other fields.
-    If the address already exists, only the 'last_seen' timestamp is
-    updated.
-
-    Meant to be used by processes that insert/update large amounts of 
-    objects.  We use direct SQL commands for improved speed.
-
-  Arguments: 
-    Hash ref keyed by ip address containing a hash with following keys:
-    timestamp
-    prefix
-    version
-    status 
-  Returns:   
-    True if successul
-  Examples:
-    Ipblock->fast_update(\%ips);
-
-=cut
-sub fast_update{
-    my ($class, $ips) = @_;
-    $class->isa_class_method('fast_update');
-
-    my $start = time;
-    $logger->debug("Ipblock::fast_update: Updating IP addresses in DB");
-    my $dbh = $class->db_Main;
-
-    if ( $class->config->get('DB_TYPE') eq 'mysql' ){
-	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
-	my $sth;
-	eval {
-	    $sth = $dbh->prepare_cached("INSERT INTO ipblock
-                                         (address,prefix,version,status,first_seen,last_seen,
-                                         dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
-                                         VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')
-                                         ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");
-	};
-	if ( my $e = $@ ){
-	    $class->throw_fatal($e);
-	}
-	foreach my $address ( keys %$ips ){
-	    my $attrs = $ips->{$address};
-	    # Convert address to decimal format
-	    my $dec_addr = $class->ip2int($address);
-	    eval{
-		$sth->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
-			      $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp});
-	    };
-	    if ( my $e = $@ ){
-		if ( $e =~ /Duplicate/ ){
-		    # Since we're parallelizing, an address
-		    # might get inserted after we get our list.
-		    # Just go on.
-		    next;
-		}else{
-		    $class->throw_fatal($e);
-		}
-	    }
-	    
-	}
-    }else{
-	my $db_ips  = $class->retrieve_all_hashref;
-
-	# Build SQL queries
-	my ($sth1, $sth2);
-	eval {
-	    $sth1 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=?
-                                          WHERE id=?");	
-	    
-	    $sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
-                                          (address,prefix,version,status,first_seen,last_seen,
-                                           dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
-                                           VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')");
-	
-	    
-	};
-	if ( my $e = $@ ){
-	    $class->throw_fatal($e);
-	}
-	
-	# Now walk our list and do the right thing
-	foreach my $address ( keys %$ips ){
-	    my $attrs = $ips->{$address};
-	    # Convert address to decimal format
-	    my $dec_addr = $class->ip2int($address);
-	    
-	    if ( exists $db_ips->{$dec_addr} ){
-		# IP exists
-		eval{
-		    $sth1->execute($attrs->{timestamp}, $db_ips->{$dec_addr});
-		};
-		if ( my $e = $@ ){
-		    $class->throw_fatal($e);
-		}
-	    }else{
-		# IP does not exist
-		eval{
-		    $sth2->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
-				   $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp},
-			);
-		};
-		if ( my $e = $@ ){
-		    if ( $e =~ /Duplicate/ ){
-			# Since we're parallelizing, an address
-			# might get inserted after we get our list.
-			# Just go on.
-			next;
-		    }else{
-			$class->throw_fatal($e);
-		    }
-		}
-	    }
-	}
-    }
-
-    my $end = time;
-    $logger->debug(sprintf("Ipblock::fast_update: Done Updating: %d addresses in %d secs",
-			   scalar(keys %$ips), ($end-$start)));
-    return 1;
-}
-
 #################################################################
 =head2 ip2int - Convert IP(v4/v6) address string into its decimal value
 
@@ -1317,6 +1319,41 @@ sub validate {
     }
     return 1;
 }
+
+##################################################################
+=head2 get_devices - Get all devices with IPs within this block
+
+  Arguments:
+    None
+  Returns: 
+    Arrayref of device objects
+  Examples:
+    my $devs = $subnet->get_devices();
+
+=cut
+sub get_devices {
+    my ($self) = @_;
+    $self->isa_object_method('get_devices');
+    
+    my %devs;
+    foreach my $ch ( $self->children ){
+	if ( $ch->is_address ){
+	    if ( int($ch->interface) && int($ch->interface->device) ){
+		my $dev = $ch->interface->device;
+		$devs{$dev->id} = $dev;
+	    }
+	}else{
+	    my $ldevs = $ch->get_devices();
+	    foreach my $dev ( @$ldevs ){
+		$devs{$dev->id} = $dev;
+	    }
+	}
+    }
+    my @devs = values %devs;
+    return \@devs;
+}
+
+
 ##################################################################
 #
 # Private Methods
@@ -1818,6 +1855,7 @@ sub _get_status_id {
     }
     return $id;
 }
+
 
 ##################################################################
 # Short way to retrieve all the ip addresses from a device

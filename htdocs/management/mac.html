@@ -58,4 +58,10 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 %         }
           </div>
        </div>
+% }elsif ( $o ){
+%   my $edge_ports;
+%   unless ( $o->interfaces || $o->devices ){
+%      $edge_ports = $o->find_edge_port;
+%   }
+    <& /generic/view.html, table=>'PhysAddr', id=>$id &>
 % }

@@ -75,7 +75,6 @@ sub resolve_name {
     my $name = Netdot::Util::DNS->resolve_ip($ip);
 
 =cut 
-
 sub resolve_ip {
     my ($self, $ip) = @_;
     return unless $ip;
@@ -93,6 +92,32 @@ sub resolve_ip {
     return $name;
 }
 
+############################################################################
+=head2 resolve_any - Resolve ip or name
+
+  Arguments:
+    IP or hostname
+  Returns:
+    Array with ip, name
+  Example:
+    my ($ip, $name) = Netdot::Util::DNS->resolve_any('blah');
+
+=cut 
+sub resolve_any {
+    my ($self, $host) = @_;
+    return unless $host;
+    my ($ip, $name);
+    if ( $host =~ /$IPV4|$IPV6/ ){
+	# looks like an IP address
+	$ip   = $host;
+	$name = $self->resolve_ip($ip) || "?";
+    }else{
+	# looks like a name
+	$name = $host;
+	$ip   = ($self->resolve_name($name))[0];
+    }
+    return ($ip, $name);
+}
 
 =head1 AUTHOR
 

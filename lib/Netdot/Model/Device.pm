@@ -402,21 +402,11 @@ sub get_snmp_info {
     }
     
     my $sinfo = $self->_get_snmp_session(%sess_args);
-    
-    # Get both name and IP for better error reporting
-    my ($ip, $name);
-    if ( $target_address =~ /$IPV4|$IPV6/ ){
-	# looks like an IP address
-	$ip   = $target_address;
-	$dev{snmp_target} = $ip;
-	$name = $dns->resolve_ip($ip) || "?";
-    }else{
-	# looks like a name
-	$name = $target_address;
-	$ip   = ($dns->resolve_name($name))[0];
-	$dev{snmp_target} = $ip;
-    }
 
+    # Get both name and IP for better error reporting
+    my ($ip, $name)   = $dns->resolve_any($target_address);
+    $dev{snmp_target} = $ip if defined $ip;
+    
     $dev{community}    = $sinfo->snmp_comm;
     $dev{snmp_version} = $sinfo->snmp_ver;
 
@@ -914,11 +904,11 @@ sub snmp_update_all {
 }
 
 ####################################################################################
-=head2 snmp_update_block - Discover and/or update all devices in a given IP block
+=head2 snmp_update_block - Discover and/or update all devices in given IP blocks
     
   Arguments:
     Hash with the following keys:
-    block         IP block address in CIDR or dotted mask notation
+    blocks        Arrayref of IP block addresses in CIDR or dotted mask notation
     communities   Arrayref of SNMP communities
     version       SNMP version
     timeout       SNMP timeout
@@ -932,34 +922,38 @@ sub snmp_update_all {
     True if successful
     
   Examples:
-    Device->snmp_update_block("192.168.0.0/24");
+    Device->snmp_update_block(blocks=>"192.168.0.0/24");
 
 =cut
 sub snmp_update_block {
     my ($class, %argv) = @_;
     $class->isa_class_method('snmp_update_block');
 
-    my $block;
-    $class->throw_fatal("Missing required argument: IP block address")
-	unless defined( $block = $argv{block} );
-    delete $argv{block};
+    my $blocks;
+    $class->throw_fatal("Missing or invalid required argument: blocks")
+	unless ( defined($blocks = $argv{blocks}) && ref($blocks) eq 'ARRAY' );
+    delete $argv{blocks};
+    
+    # Just for logging
+    my $blist = join ', ', @$blocks;
 
-    # Get a list of host addresses for the given block
-    my $hosts = Ipblock->get_host_addrs($block);
-
-    $logger->debug("SNMP-discovering all devices in $block");
+    my %h;
+    foreach my $block ( @$blocks ){
+	# Get a list of host addresses for the given block
+	my $hosts = Ipblock->get_host_addrs($block);
+	foreach my $host ( @$hosts ){
+	    $h{$host} = "";
+	}
+    }
+    $logger->debug("SNMP-discovering all devices in $blist");
     my $start = time;
 
     # Call the more generic method
-    my %h;
-    foreach my $host ( @$hosts ){
-	$h{$host} = "";
-    }
     $argv{hosts} = \%h;
     my $device_count = $class->_snmp_update_list(%argv);
 
     my $end = time;
-    $logger->info(sprintf("Devices in $block updated. %d devices in %d seconds", 
+    $logger->info(sprintf("Devices in $blist updated. %d devices in %d seconds", 
 			  $device_count, ($end-$start) ));
 
 }
@@ -1127,10 +1121,10 @@ sub arp_update_all {
 }
 
 #########################################################################
-=head2 arp_update_block - Update ARP cache from every device within an IP block
+=head2 arp_update_block - Update ARP cache from every device within given IP blocks
     
   Arguments:
-    block - IP block in CIDR notation
+    blocks - Arrayref of IP block addresses in CIDR notation
   Returns:
     True if successful
   Examples:
@@ -1141,11 +1135,18 @@ sub arp_update_block {
     my ($class, %argv) = @_;
     $class->isa_class_method('arp_update_block');
 
-    defined $argv{block} || $class->throw_fatal("Missing required arguments: block");
-    my $devs = $class->get_all_from_block($argv{block});
-
-    $logger->debug("Fetching ARP tables from all devices in block $argv{block}");
-    return $class->_arp_update_list(list=>$devs);
+    my $blocks;
+    $class->throw_fatal("Missing or invalid required arguments: blocks")
+	unless ( defined($blocks = $argv{blocks}) && ref($blocks) eq 'ARRAY' );
+ 
+   my %devs; # Make sure we have no dups
+    foreach my $block ( @$blocks ){
+	my $devs = $class->get_all_from_block($block);
+	foreach my $dev ( @$devs ) { $devs{$dev->id} = $dev; }
+    }
+    my $blist = join ', ', @$blocks;
+    $logger->debug("Fetching ARP tables from all devices in blocks $blist");
+    return $class->_arp_update_list(list=>[values %devs]);
 }
 
 #########################################################################
@@ -1195,28 +1196,36 @@ sub fwt_update_all {
 }
 
 #########################################################################
-=head2 fwt_update_block - Update FWT for all devices within a IP block
+=head2 fwt_update_block - Update FWT for all devices within give IP blocks
     
   Only devices already in the DB will be queried.  To include all devices
   in a given subnet, run snmp_update_block() first.
     
   Arguments:
-    block - IP block in CIDR notation
+    blocks - Arrayref of IP blocks in CIDR notation
   Returns:
     True if successful
   Examples:
-    Device->fwt_update_block();
+    Device->fwt_update_block(blocks=>"192.168.0.0/24");
 
 =cut
 sub fwt_update_block {
     my ($class, %argv) = @_;
     $class->isa_class_method('fwt_update_block');
 
-    defined $argv{block} || $class->throw_fatal("Missing required arguments: block");
-    my $devs = $class->get_all_from_block($argv{block});
+    my $blocks;
+    $class->throw_fatal("Missing or invalid required arguments: blocks")
+	unless ( defined($blocks = $argv{blocks}) && ref($blocks) eq 'ARRAY' );
 
-    $logger->debug("Fetching forwarding tables from all devices in $argv{block}");
-    return $class->_fwt_update_list(list=>$devs);
+   my %devs; # Make sure we have no dups
+    foreach my $block ( @$blocks ){
+	my $devs = $class->get_all_from_block($block);
+	foreach my $dev ( @$devs ) { $devs{$dev->id} = $dev; }
+    }
+
+    my $blist = join ', ', @$blocks;
+    $logger->debug("Fetching forwarding tables from all devices in $blist");
+    return $class->_fwt_update_list(list=>[values %devs]);
 }
 
 #########################################################################
@@ -1262,21 +1271,33 @@ sub get_all_from_block {
 
     defined $block || $class->throw_fatal("Missing required arguments: block");
 
-    # Get a list of host addresses for the given block
-    my $hosts = Ipblock->get_host_addrs($block);
-    my %devs;
-    foreach my $ip ( @$hosts ){
-	if ( my $dev = $class->search(name=>$ip)->first ){
-	    $devs{$dev->id} = $dev; #index by id to avoid duplicates
+    my $devs;
+    if ( my $ipb = Ipblock->search(address=>$block)->first ){
+	$devs = $ipb->get_devices();
+    }else{
+	# Get a list of host addresses for the given block
+	# This is highly inefficient
+	my $hosts = Ipblock->get_host_addrs($block);
+	my %devs; #index by id to avoid duplicates
+	foreach my $ip ( @$hosts ){
+	    if ( my $ipb = Ipblock->search(address=>$ip)->first ){
+		if ( int($ipb->interface) && int($ipb->interface->device) ){
+		    my $dev = $ipb->interface->device;
+		    $devs->{$dev->id} = $dev; 
+		}
+	    }
 	}
+	$devs = \values %{$devs};
     }
-    my @devs = values %devs;
-    return \@devs;
+    return $devs;
 }
+
+##################################################################
 
 =head1 INSTANCE METHODS
 
 =cut
+
 ############################################################################
 ############################################################################
 ########################## INSTANCE METHODS ################################
@@ -1447,8 +1468,8 @@ sub arp_update {
     $self->update({last_arp=>$self->timestamp});
 
     my $end = time;
-    $logger->info(sprintf("$host: ARP cache updated. %s entries in %d seconds", 
-			  $arp_count, ($end-$start) ));
+    $logger->debug(sprintf("$host: ARP cache updated. %s entries in %d seconds", 
+			   $arp_count, ($end-$start) ));
 
     return 1;
 }
@@ -1528,8 +1549,8 @@ sub fwt_update {
     $self->update({last_fwt=>$self->timestamp});
 
     my $end = time;
-    $logger->info(sprintf("$host: FWT updated. %s entries in %d seconds", 
-			  scalar @fw_updates, ($end-$start) ));
+    $logger->debug(sprintf("$host: FWT updated. %s entries in %d seconds", 
+			   scalar @fw_updates, ($end-$start) ));
     
     return 1;
 }
@@ -3069,7 +3090,10 @@ sub _get_snmp_session {
 	$self->throw_fatal("Missing required arguments: host")
 	    unless $argv{host};
     }
-    
+    # Get both name and IP for better error reporting
+    my ($ip, $name) = $dns->resolve_any($argv{host});
+    $name ||= '?';
+
     # If we still don't have any communities, get defaults from config file
     $argv{communities} = $self->config->get('DEFAULT_SNMPCOMMUNITIES')
 	unless defined $argv{communities};
@@ -3103,8 +3127,8 @@ sub _get_snmp_session {
     foreach my $community ( @{$argv{communities}} ){
 	$sinfoargs{Community} = $community;
 	
-	$logger->debug(sprintf("Device::get_snmp_session: Trying session with %s, community %s",
-			       $sinfoargs{DestHost}, $sinfoargs{Community}));
+	$logger->debug(sprintf("Device::get_snmp_session: Trying session with %s (%s), community %s",
+			       $name, $ip, $sinfoargs{Community}));
 	
 	$sinfo = $sclass->new( %sinfoargs );
 	
@@ -3113,8 +3137,8 @@ sub _get_snmp_session {
 	
 	# Try Version 1 if we haven't already
 	if ( !defined $sinfo && !defined $layers && $sinfoargs{Version} != 1 ){
-	    $logger->debug(sprintf("Device::get_snmp_session: %s: SNMPv%d failed. Trying SNMPv1", 
-				   $sinfoargs{DestHost}, $sinfoargs{Version}));
+	    $logger->debug(sprintf("Device::get_snmp_session: %s (%s): SNMPv%d failed. Trying SNMPv1", 
+				   $name, $ip, $sinfoargs{Version}));
 	    $sinfoargs{Version} = 1;
 	    $sinfo = $sclass->new( %sinfoargs );
 	}
@@ -3122,23 +3146,23 @@ sub _get_snmp_session {
 	if ( defined $sinfo ){
 	    # Check for errors
 	    if ( my $err = $sinfo->error ){
-		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s, community '%s': %s\n", 
-					  $sinfoargs{Version}, $sinfoargs{DestHost}, $sinfoargs{Community}, $err));
+		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s (%s), community '%s': %s\n", 
+					  $sinfoargs{Version}, $name, $ip, $sinfoargs{Community}, $err));
 	    }
 	    last; # If we made it here, we are fine.  Stop trying communities
 	}else{
-	    $logger->debug(sprintf("Device::get_snmp_session: Failed %s session with %s community '%s'", 
-				   $sinfoargs{Version}, $sinfoargs{DestHost}, $sinfoargs{Community}));
+	    $logger->debug(sprintf("Device::get_snmp_session: Failed %s session with %s (%s) community '%s'", 
+				   $sinfoargs{Version}, $name, $ip, $sinfoargs{Community}));
 	}
     }
     
     unless ( defined $sinfo ){
-	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
-				  $sinfoargs{DestHost}, (join ', ', @{$argv{communities}}) ));
+	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s (%s).  Tried communities: %s", 
+				  $name, $ip, (join ', ', @{$argv{communities}}) ));
     }
 
     # Save SNMP::Info class if we are an object
-    $logger->debug("Device::get_snmp_session: $argv{host} is: ", $sinfo->class());
+    $logger->debug("Device::get_snmp_session: $ip ($name) is: ", $sinfo->class());
     if ( $class ){
 	$self->{_sclass} = $sinfo->class();
     }
@@ -3151,8 +3175,8 @@ sub _get_snmp_session {
 	$uargs{community}    = $sinfoargs{Community} if ( $self->community    ne $sinfoargs{Community} );
 	$self->update(\%uargs) if ( keys %uargs );
     }
-    $logger->debug(sprintf("SNMPv%d session with host %s, community '%s' established",
-			  $sinfoargs{Version}, $sinfoargs{DestHost}, $sinfoargs{Community}) );
+    $logger->debug(sprintf("SNMPv%d session with host %s (%s), community '%s' established",
+			  $sinfoargs{Version}, $name, $ip, $sinfoargs{Community}) );
 
     # We want to do our own 'munging' for certain things
     my $munge = $sinfo->munge();
@@ -3549,9 +3573,8 @@ sub _get_arp_from_snmp {
     map { $arp_count+= scalar(keys %{$cache{$_}}) } keys %cache;
 
     my $end = time;
-    $logger->info(sprintf("$host: ARP cache fetched. %s entries in %d seconds", 
-		  $arp_count, ($end-$start) ));
-
+    $logger->debug(sprintf("$host: ARP cache fetched. %s entries in %d seconds", 
+			   $arp_count, ($end-$start) ));
     return \%cache;
 }
 
@@ -3641,8 +3664,8 @@ sub _get_fwt_from_snmp {
     my $end = time;
     my $fwt_count = 0;
     map { $fwt_count+= scalar keys %{ $fwt{$_} } } keys %fwt;
-    $logger->info(sprintf("$host: FWT fetched. %d entries in %d seconds", 
-			  $fwt_count, ($end-$start) ));
+    $logger->debug(sprintf("$host: FWT fetched. %d entries in %d seconds", 
+			   $fwt_count, ($end-$start) ));
     
     return \%fwt;
 }
@@ -3981,7 +4004,7 @@ sub _fwt_update_list {
 
     my $device_count = 0;
     foreach my $dev ( @$list ){
-	next unless ( $dev->has_layer(2) && $dev->collect_fwt );
+	next unless ( $dev->collect_fwt );
 	# FORK
 	$device_count++;
 	$pm->start and next;

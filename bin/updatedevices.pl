@@ -17,7 +17,7 @@ use Log::Log4perl::Level;
 #					DBD::_::st DBD::_::db DBD::st DBD::db DBI::st DBI::db DBI::dr)];
 
 # Variables that will hold given values
-my ($host, $block, $db, $file);
+my ($host, $blocks, $db, $file);
 
 # Default values
 my $communities     = Netdot->config->get('DEFAULT_SNMPCOMMUNITIES');
@@ -39,7 +39,7 @@ my $USAGE = <<EOF;
  usage: $0 [ optional args ]
 
            Scope args:
-             -H, --host <hostname|address> | -D, --db |  -B, --block <address/prefix> | -e, --file <PATH>
+             -H, --host <hostname|address> | -D, --db |  -B, --block <address/prefix>[, ...] | -E, --file <PATH>
 
            Action args:
              [-I, --info]  [-F, --fwt]  [-A, --arp]
@@ -48,28 +48,28 @@ my $USAGE = <<EOF;
              [-m|--send_mail] [-f|--from <e-mail>] | [-t|--to <e-mail>] | [-S|--subject <subject>]
           
     Argument Detail: 
-    -H, --host <hostname|address>  Update given host only.
-    -B, --block <address/prefix>   Specify an IP block to discover
-    -D, --db                       Update only DB existing devices
-    -E, --file                     Update devices listed in given file
-    -c, --community <string>       SNMP community string(s) (default: $commstrs)
-    -r, --retries <integer >       SNMP retries (default: $retries)
-    -t, --timeout <secs>           SNMP timeout in seconds (default: $timeout)
-    -v, --version <integer>        SNMP version [1|2|3] (default: $version)
-    -I, --info                     Get device info
-    -F, --fwt                      Get forwarding tables
-    -T, --topology                 Update Topology
-    -A, --arp                      Get ARP tables
-    -a, --add-subnets              When discovering routers, add subnets to database if they do not exist
-    -i, --subs_inherit             When adding subnets, have them inherit information from the Device
-    -b, --with-bgp-peers           When discovering routers, maintain their BGP Peers
-    -p, --pretend                  Do not commit changes to the database
-    -h, --help                     Print help (this message)
-    -d, --debug                    Set syslog level to LOG_DEBUG
-    -m, --send_mail                Send logging output via e-mail instead of to STDOUT
-    -f, --from                     e-mail From line (default: $from)
-    -S, --subject                  e-mail Subject line (default: $subject)
-    -t, --to                       e-mail To line (default: $to)
+    -H, --host <hostname|address>        Update given host only.
+    -B, --blocks <address/prefix>[, ...]  Specify an IP block (or blocks) to discover
+    -D, --db                             Update only DB existing devices
+    -E, --file                           Update devices listed in given file
+    -c, --community <string>             SNMP community string(s) (default: $commstrs)
+    -r, --retries <integer >             SNMP retries (default: $retries)
+    -t, --timeout <secs>                 SNMP timeout in seconds (default: $timeout)
+    -v, --version <integer>              SNMP version [1|2|3] (default: $version)
+    -I, --info                           Get device info
+    -F, --fwt                            Get forwarding tables
+    -T, --topology                       Update Topology
+    -A, --arp                            Get ARP tables
+    -a, --add-subnets                    When discovering routers, add subnets to database if they do not exist
+    -i, --subs_inherit                   When adding subnets, have them inherit information from the Device
+    -b, --with-bgp-peers                 When discovering routers, maintain their BGP Peers
+    -p, --pretend                        Do not commit changes to the database
+    -h, --help                           Print help (this message)
+    -d, --debug                          Set syslog level to LOG_DEBUG
+    -m, --send_mail                      Send logging output via e-mail instead of to STDOUT
+    -f, --from                           e-mail From line (default: $from)
+    -S, --subject                        e-mail Subject line (default: $subject)
+    -t, --to                             e-mail To line (default: $to)
 
 Options override default settings from config file.
     
@@ -77,7 +77,7 @@ EOF
     
 # handle cmdline args
 my $result = GetOptions( "H|host=s"          => \$host,
-			 "B|block=s"         => \$block,
+			 "B|blocks=s"        => \$blocks,
 			 "D|db"              => \$db,
 			 "E|file=s"          => \$file,
 			 "c|communities:s"   => \$commstrs,
@@ -107,7 +107,7 @@ if ( $HELP ) {
     print $USAGE;
     exit;
 }
-if ( ($host && $db) || ($host && $block) || ($host && $file ) || ($db && $block) || ($db && $file) || ($block && $file) ){
+if ( ($host && $db) || ($host && $blocks) || ($host && $file ) || ($db && $blocks) || ($db && $file) || ($blocks && $file) ){
     print $USAGE;
     die "Error: arguments -H, -B, -D and -E are mutually exclusive\n";
 }
@@ -122,7 +122,7 @@ if ( $TOPO && ( $host || $db ) ){
 }
 
 # Re-read communities, in case we were passed new ones
-@$communities = split /,/, $commstrs if defined $commstrs;
+@$communities = split ',', $commstrs if defined $commstrs;
 # Remove any spaces
 map { $_ =~ s/\s+// } @$communities;
 
@@ -178,13 +178,15 @@ if ( $host ){
 	die "Error: Could not find $host in database\n" unless $dev;
 	$dev->arp_update();
     }
-}elsif ( $block ){
-    $logger->info("Updating all devices in block: $block");
-    $uargs{block} = $block;
-    Netdot::Model::Device->snmp_update_block(%uargs)   if ( $INFO );
-    Netdot::Model::Device->fwt_update_block(%uargs)    if ( $FWT  );
-    Netdot::Model::Device->arp_update_block(%uargs)    if ( $ARP  );
-    Netdot::Model::Topology->discover(ipblock=>$block) if ( $TOPO );
+}elsif ( $blocks ){
+    my @blocks = split ',', $blocks;
+    map { $_ =~ s/\s+//g } @blocks;
+    $logger->info("Updating all devices in $blocks");
+    $uargs{blocks} = \@blocks;
+    Netdot::Model::Device->snmp_update_block(%uargs)    if ( $INFO );
+    Netdot::Model::Device->fwt_update_block(%uargs)     if ( $FWT  );
+    Netdot::Model::Device->arp_update_block(%uargs)     if ( $ARP  );
+    Netdot::Model::Topology->discover(blocks=>\@blocks) if ( $TOPO );
 }elsif ( $db ){
     $logger->info("Updating all devices in the DB");
     Netdot::Model::Device->snmp_update_all(%uargs) if ( $INFO );

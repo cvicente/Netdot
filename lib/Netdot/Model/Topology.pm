@@ -28,71 +28,46 @@ Netdot Device Topology Class
         
   Arguments:
     Hash with following keys:
-    ipblock - CIDR block (192.168.0.0/24)
+    blocks - array ref of CIDR blocks (192.168.0.0/24)
   Returns:
-
+    
   Examples:
-    Netdot::Model::Topology->discover(ipblock=>'192.1.0.0/16');
+    Netdot::Model::Topology->discover(blocks=>['192.1.0.0/16', ...]);
 
 =cut
 sub discover {
     my ($class, %argv) = @_;
     $class->isa_class_method('discover');
 
-    if ( $argv{ipblock} ){
-	my $ip = Ipblock->search(address=>$argv{ipblock})->first;
-	unless ( $ip ){
-	    $class->throw_user("IP block $argv{ipblock} not found in DB");
-	}
-	if ( $ip->status->name eq 'Container' ){
-	    $logger->info(sprintf("Performing topology discovery on IP Block %s", $ip->get_label));
-	    # Get all possible subnets
-	    my @subnets = Ipblock->search(parent=>$ip, status=>'Subnet');
-	    foreach my $s ( @subnets ){
-		$class->discover_subnet($s);
-	    }
-	}elsif ( $ip->status->name eq 'Subnet' ){
-	    $class->discover_subnet($ip);
-	}else{
-	    $class->throw_user(sprintf("Block %s is a %s. Topology discovery only allowed on Container or Subnet Blocks",
-				       $ip->get_label, $ip->status->name ));
-	}
+    unless ( $argv{blocks} && ref($argv{blocks}) eq 'ARRAY' ){
+	$class->throw_fatal('Missing or invalid argument: blocks');
     }
-}
-
-######################################################################################
-=head2 discover_subnet - Discover topology for devices within given subnet
-        
-  Arguments: 
-    Ipblock object (subnet)
-  Returns:
-
-  Examples:
-    Netdot::Model::Topology->discover_subnet($ip_obj);
-
-=cut
-sub discover_subnet{
-    my ($class, $subnet) = @_;
-    $class->isa_class_method('discover_subnet');
-    
+    my $blist = join ', ', @{$argv{blocks}};
     my %SOURCES;
     $SOURCES{DP}  = 1 if $class->config->get('TOPO_USE_DP');
     $SOURCES{STP} = 1 if $class->config->get('TOPO_USE_STP');
     $SOURCES{FDB} = 1 if $class->config->get('TOPO_USE_FDB');
     my $MINSCORE  = $class->config->get('TOPO_MIN_SCORE');
-    my $srcs = join ',', keys %SOURCES;
-    $logger->info(sprintf("Discovering topology for devices on subnet %s, using sources: %s, min score: %s", 
-			  $subnet->get_label, $srcs, $MINSCORE));
-    my $start = time;
-
-    my ($dp_links, $stp_links, $fdb_links);
+    my $srcs = join ', ', keys %SOURCES;
+    
     my %devs;
-    foreach my $ip ( $subnet->children ){
-	if ( int($ip->interface) && int($ip->interface->device) ){
-	    my $dev = $ip->interface->device;
-	    $devs{$dev->id} = $dev;
+    foreach my $block ( @{$argv{blocks}} ){
+	my $ipb = Ipblock->search(address=>$block)->first;
+	unless ( $ipb ){
+	    $class->throw_user("IP block $block not found in DB");
+	}
+	my $status = $ipb->status->name;
+	if (  $status eq 'Container' || $status eq 'Subnet' ){
+	    map { $devs{$_->id} = $_ } @{$ipb->get_devices()};
+	}else{
+	    $class->throw_user(sprintf("Block %s is %s. Topology discovery only allowed on Container or Subnet Blocks",
+				       $ipb->get_label, $status ));
 	}
     }
+
+    $logger->info(sprintf("Discovering topology for devices on %s, using sources: %s. Min score: %s", 
+			  $blist, $srcs, $MINSCORE));
+    my $start = time;
     my (@dp_devs, %stp_roots);
     foreach my $devid ( keys %devs ){
 	my $dev = $devs{$devid};
@@ -109,7 +84,9 @@ sub discover_subnet{
 	    push @dp_devs, $dev;
 	}
     }
+
     # Determine links
+    my ($dp_links, $stp_links, $fdb_links);
     foreach my $root ( keys %stp_roots ){
 	my $links = $class->get_stp_links(root=>$root);
 	map { $stp_links->{$_} = $links->{$_} } keys %$links;
@@ -130,9 +107,10 @@ sub discover_subnet{
     $args{fdb}       = $fdb_links if $fdb_links;
     my ($addcount, $remcount) = $class->update_links(%args);
     my $end = time;
-    $logger->info(sprintf("Topology discovery on Subnet %s done in %d seconds. Links added: %d, removed: %d", 
-			  $subnet->get_label, $end-$start, $addcount, $remcount));
+    $logger->info(sprintf("Topology discovery on %s done in %d seconds. Links added: %d, removed: %d", 
+			  $blist, $end-$start, $addcount, $remcount));
 
+    
 }
 
 ######################################################################################

@@ -28,10 +28,11 @@ use strict;
 
 # Some tables have a specific view page. 
 #
-my %VIEWPAGE = ( BinFile => "../generic/display_bin.html",
-		 Closet  => "../cable_plant/closet.html",
-		 Ipblock => "../management/ip.html",
-		 Device  => "../management/device.html"  
+my %VIEWPAGE = ( BinFile   => "../generic/display_bin.html",
+		 Closet    => "../cable_plant/closet.html",
+		 Ipblock   => "../management/ip.html",
+		 Device    => "../management/device.html",
+		 PhysAddr  => "../management/mac.html",
 		 );
 
 
