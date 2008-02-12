@@ -86,6 +86,8 @@ if ( $report_type eq 'product' ){
 	my $prod  = ($dev->product) ? $dev->product->id : "Unknown";
 	my $manuf = ($dev->product && $dev->product->manufacturer) ? $dev->product->manufacturer->id : 'Unknown';
 	my $os    = $dev->os;
+	$t{$manuf}{total}++;
+	$t{$manuf}{product}{$prod}{total}++;
 	$t{$manuf}{product}{$prod}{os}{$os}{total}++ if defined ($os);
     }
 
@@ -99,7 +101,7 @@ if ( $report_type eq 'product' ){
 	}else{
 	    push( @row, $m );
 	}
-	push ( @row, " ", " ", " ");
+	push ( @row, " ", " ", "<b>$t{$m}{total}</b>" );
 	push( @rows, \@row );
 	foreach my $prod ( keys %{$t{$m}{product}} ){
 	    my @row = ();
@@ -110,7 +112,7 @@ if ( $report_type eq 'product' ){
 	    }else{
 		push( @row, $prod );
 	    }
-	    push( @row, " ", " " );
+	    push( @row, " ", $t{$m}{product}{$prod}{total} );
 	    push( @rows, \@row );
 	    foreach my $os ( keys %{$t{$m}{product}{$prod}{os}} ){
 		my @row = ();
