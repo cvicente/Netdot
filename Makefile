@@ -73,26 +73,26 @@ testdeps:
 	@echo "Installation directory: $(PREFIX)"
 	@echo 
 	@echo "Testing for required perl modules...."
-	perl -M'CGI 3.20' -e 1
-	perl -M'Ima::DBI 0.35' -e 1
-	perl -M'Class::DBI 3.0.10' -e 1
-	perl -MApache2::Request -e 1
-	perl -M'HTML::Mason 1.31' -e 1
-	perl -M'Apache::Session 1.6' -e 1
-	perl -MApache::DBI -e 1
-	perl -MURI::Escape -e 1
-	perl -MDBIx::DataSource -e 1
-	perl -M'GraphViz 2.02' -e 1
-	perl -M'SQL::Translator 0.07' -e 1
-	perl -MSNMP::Info -e 1
-	perl -MNetAddr::IP -e 1
-	perl -M'Apache2::SiteControl 1.0' -e 1
-	perl -M'Log::Dispatch' -e 1
-	perl -M'Log::Log4perl' -e 1
-	perl -M'Parallel::ForkManager' -e 1
-	if [ `whoami` != root ]; then \
-	   echo "You're not root; this may fail" ; \
-	fi
+	@(  perl -M'CGI 3.20' -e 1 ;\
+	    perl -M'Ima::DBI 0.35' -e 1 ;\
+	    perl -M'Class::DBI 3.0.10' -e 1 ;\
+	    perl -MApache2::Request -e 1 ;\
+	    perl -M'HTML::Mason 1.31' -e 1 ;\
+	    perl -M'Apache::Session 1.6' -e 1 ;\
+	    perl -MApache::DBI -e 1 ;\
+	    perl -MURI::Escape -e 1 ;\
+	    perl -MDBIx::DataSource -e 1 ;\
+	    perl -M'GraphViz 2.02' -e 1 ;\
+	    perl -M'SQL::Translator 0.07' -e 1 ;\
+	    perl -MSNMP::Info -e 1 ;\
+	    perl -MNetAddr::IP -e 1 ;\
+	    perl -M'Apache2::SiteControl 1.0' -e 1 ;\
+	    perl -M'Log::Dispatch' -e 1 ;\
+	    perl -M'Log::Log4perl' -e 1 ;\
+	    perl -M'Parallel::ForkManager' -e 1  \
+	    perl -M'Net::IPTrie' -e 1  \
+	    perl -M'Authen::Radius' -e 1  \
+	) 2>&1 | grep "Can't" | sed -e 's/ in .*//'
 
 dir:
 	@echo 
