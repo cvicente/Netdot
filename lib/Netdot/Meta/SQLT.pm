@@ -169,7 +169,7 @@ sub _parser{
 		$table->add_constraint(name             => "fk_".$mcol->name,
 				       type             => 'FOREIGN_KEY',
 				       fields           => $mcol->name,
-				       reference_table  => $ft,
+				       reference_table  => lc($ft),
 				       reference_fields => 'id',
 				       );
 	    }
