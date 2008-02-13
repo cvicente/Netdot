@@ -1628,7 +1628,7 @@ sub short_name {
 
 sub fqdn {
     my $self = shift;
-    $self->isa_object_method('short_name');
+    $self->isa_object_method('fqdn');
     return $self->name->get_label;
 }
 
@@ -3074,13 +3074,13 @@ sub _get_snmp_session {
 	
 	# Fill out some arguments if not given explicitly
 	unless ( $argv{host} ){
-	    if ( defined $self->snmp_target && ref($self->snmp_target) =~ /Ipblock/ ){
+	    if ( int($self->snmp_target) ){
 		$argv{host} = $self->snmp_target->address;
 	    }else{
 		$argv{host} = $self->fqdn;
 	    }
 	}
-	$self->throw_user(sprintf("Could not determine IP nor hostname for Device id: %d", $self->id))
+	$self->throw_user(sprintf("Could not determine IP nor hostname for Device id: %d\n", $self->id))
 	    unless $argv{host};
 
 	$argv{version}  ||= $self->snmp_version;
@@ -3157,7 +3157,7 @@ sub _get_snmp_session {
     }
     
     unless ( defined $sinfo ){
-	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s (%s).  Tried communities: %s", 
+	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s (%s).  Tried communities: %s\n", 
 				  $name, $ip, (join ', ', @{$argv{communities}}) ));
     }
 
