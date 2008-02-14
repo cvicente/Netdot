@@ -400,9 +400,6 @@ sub get_covering_block {
 
     if ( $n && $n->data ){
 	return Ipblock->retrieve($n->data);
-    }else{
-	$class->throw_user(sprintf("Block %s/%s: no covering block found!", 
-			  $ip->addr, $ip->masklen));
     }
 }
 
