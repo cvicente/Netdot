@@ -4,7 +4,11 @@ use base 'Netdot::Model';
 use warnings;
 use strict;
 
-my $logger = Netdot->log->get_logger('Netdot::Model');
+my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
+
+# Some regular expressions
+my $IPV4        = Netdot->get_ipv4_regex();
+my $IPV6        = Netdot->get_ipv6_regex();
 
 =head1 NAME
 
@@ -51,7 +55,7 @@ sub search {
     } 
     if ( $class->SUPER::search(%argv) ){
 	return $class->SUPER::search(%argv);
-    }elsif ( defined $argv{mname} && $argv{mname} =~ /\./ ){
+    }elsif ( defined $argv{mname} && $argv{mname} =~ /\./ && $argv{mname} !~ /$IPV4|$IPV6/ ){
 	my @sections = split /\./, $argv{mname};
 	while ( @sections ){
 	    $argv{mname} = join '.', @sections;

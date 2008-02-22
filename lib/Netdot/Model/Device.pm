@@ -204,19 +204,18 @@ sub assign_name {
     $fqdn ||= $host;
 
     # Now we have a fqdn. First, check if we have a matching domain
-    my $mname;
+    my ($mname, $zone);
     if ( $fqdn =~ /\./  && $fqdn !~ /$IPV4|$IPV6/ ){
 	my @sections = split /\./, $fqdn;
 	# Notice that we search the whole string.  That's because
 	# the hostname part might have dots.  The Zone search method
 	# will take care of that.
-	if ( my $zone = (Zone->search(mname=>$fqdn))[0] ){
-	    $mname = $zone->mname;
+	if ( $zone = (Zone->search(mname=>$fqdn))[0] ){
+            $mname = $zone->mname;
 	    $host = $fqdn;
 	    $host =~ s/\.$mname//;
-	}else{
+        }else{
 	    $logger->debug("Device::assign_name: $fqdn not found");
-	    
 	    # Assume the zone to be everything to the right
 	    # of the first dot. This might be a wrong guess
 	    # but it is as close as I can get.
@@ -226,8 +225,12 @@ sub assign_name {
     }else{
         $host = $fqdn;
     }
-    my %args = ( name=>$host );
-    $args{mname} = $mname if defined $mname;
+    my %args    = ( name=>$host );
+    if ( defined $zone ){
+       $args{zone} = $zone;
+    }elsif ( defined $mname ){
+       $args{mname} = $mname;
+    }
     # This will create the Zone object if necessary
     $rr = RR->insert(\%args);
     $logger->info(sprintf("Inserted new RR: %s", $rr->get_label));
