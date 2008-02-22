@@ -38,14 +38,18 @@ $ENV{REMOTE_USER}   = "netdot";
 my $USAGE = <<EOF;
  usage: $0 [ optional args ]
 
-           Scope args:
-             -H, --host <hostname|address> | -D, --db |  -B, --block <address/prefix>[, ...] | -E, --file <PATH>
+    Scope args:
+        -H, --host <hostname|address> | -D, --db |  -B, --block <address/prefix>[, ...] | -E, --file <PATH>
 
-           Action args:
-             [-I, --info]  [-F, --fwt]  [-A, --arp]
+    Action args:
+        -I, --info  | -F, --fwt  | -A, --arp | -T, --topology
 
-           Email report args:
-             [-m|--send_mail] [-f|--from <e-mail>] | [-t|--to <e-mail>] | [-S|--subject <subject>]
+    Optional args:
+        [c, --community] [r, --retries] [o, --timeout] [v, --version] [d, --debug]
+        [a, --add-subnets] [i, --subs-inherit] [-b, --with-bgp-peers] [-p, --pretend] 
+        
+    Email report args:
+        [-m|--send-mail] [-f|--from <e-mail>] | [-t|--to <e-mail>] | [-s|--subject <subject>]
           
     Argument Detail: 
     -H, --host <hostname|address>        Update given host only.
@@ -54,21 +58,21 @@ my $USAGE = <<EOF;
     -E, --file                           Update devices listed in given file
     -c, --community <string>             SNMP community string(s) (default: $commstrs)
     -r, --retries <integer >             SNMP retries (default: $retries)
-    -t, --timeout <secs>                 SNMP timeout in seconds (default: $timeout)
+    -o, --timeout <secs>                 SNMP timeout in seconds (default: $timeout)
     -v, --version <integer>              SNMP version [1|2|3] (default: $version)
     -I, --info                           Get device info
     -F, --fwt                            Get forwarding tables
     -T, --topology                       Update Topology
     -A, --arp                            Get ARP tables
     -a, --add-subnets                    When discovering routers, add subnets to database if they do not exist
-    -i, --subs_inherit                   When adding subnets, have them inherit information from the Device
+    -i, --subs-inherit                   When adding subnets, have them inherit information from the Device
     -b, --with-bgp-peers                 When discovering routers, maintain their BGP Peers
     -p, --pretend                        Do not commit changes to the database
     -h, --help                           Print help (this message)
     -d, --debug                          Set syslog level to LOG_DEBUG
-    -m, --send_mail                      Send logging output via e-mail instead of to STDOUT
+    -m, --send-mail                      Send logging output via e-mail instead of to STDOUT
     -f, --from                           e-mail From line (default: $from)
-    -S, --subject                        e-mail Subject line (default: $subject)
+    -s, --subject                        e-mail Subject line (default: $subject)
     -t, --to                             e-mail To line (default: $to)
 
 Options override default settings from config file.
@@ -80,24 +84,24 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "B|blocks=s"        => \$blocks,
 			 "D|db"              => \$db,
 			 "E|file=s"          => \$file,
-			 "c|communities:s"   => \$commstrs,
-			 "r|retries:s"       => \$retries,
-			 "t|timeout:s"       => \$timeout,
-			 "v|version:s"       => \$version,
 			 "I|info"            => \$INFO,
 			 "F|fwt"             => \$FWT,
 			 "A|arp"             => \$ARP,
 			 "T|topology"        => \$TOPO,
+			 "c|communities:s"   => \$commstrs,
+			 "r|retries:s"       => \$retries,
+			 "o|timeout:s"       => \$timeout,
+			 "v|version:s"       => \$version,
 			 "a|add-subnets"     => \$ADDSUBNETS,
-			 "i|subs_inherit"    => \$SUBSINHERIT,
+			 "i|subs-inherit"    => \$SUBSINHERIT,
 			 "b|with-bgp-peers"  => \$BGPPEERS,
 			 "p|pretend"         => \$PRETEND,
 			 "h|help"            => \$HELP,
 			 "d|debug"           => \$_DEBUG,
-			 "m|send_mail"       => \$EMAIL,
+			 "m|send-mail"       => \$EMAIL,
 			 "f|from:s"          => \$from,
 			 "t|to:s"            => \$to,
-			 "S|subject:s"       => \$subject);
+			 "s|subject:s"       => \$subject);
 
 if ( ! $result ) {
     print $USAGE;
