@@ -1278,20 +1278,19 @@ sub build_device_topology_graph_html {
     sub dfs { # DEPTH FIRST SEARCH
         my ($g, $device, $hops, $seen, $view, $web_path) = @_;
         return unless $hops;
-        $seen->{$device->name->name} = 1;
+        $seen->{$device->id} = 1;
 
         my $ifaces = Interface->search(device => $device->id);
         while (my $iface = $ifaces->next) {
-            my @neighbors = $iface->neighbors;
-            my $neighbor = shift @neighbors || 0;
-            next unless $neighbor;
-            next if exists $seen->{$neighbor->device->name->name};
-            $seen->{$neighbor->device->name->name} = 1;
+            my $neighbor = $iface->neighbor;
+            next unless int($neighbor);
+            next if exists $seen->{$neighbor->device->id};
+            $seen->{$neighbor->device->id} = 1;
 
             my $nd = $neighbor->device;
 
-            $g->add_node($nd->name->name, URL=>"$web_path/management/device.html?id=".$nd->id."&view=$view");
-            $g->add_edge($device->name->name => $nd->name->name,
+            $g->add_node($nd->short_name, URL=>"$web_path/management/device.html?id=".$nd->id."&view=$view");
+            $g->add_edge($device->short_name => $nd->short_name,
                     tailURL=>"$web_path/management/view.html?table=Interface&id=".$iface->id,
                     taillabel=>$iface->number, 
                     headURL=>"$web_path/management/view.html?table=Interface&id=".$neighbor->id, 
@@ -1306,21 +1305,21 @@ sub build_device_topology_graph_html {
                            edge=>{dir=>'none', labelfontsize=>8} );
 
     my $start = Device->retrieve($id);
-    $g->add_node($start->name->name, color=>'red');
+    $g->add_node($start->short_name, color=>'red');
     dfs($g, $start, $depth, {}, $view, $web_path);
     my $netdot_path = Netdot->config->get('NETDOT_PATH');
     my $graph_path  = "img/graphs/Device-$id-$depth.png";
     my $out_file    = "$netdot_path/htdocs/" . $graph_path;
     $g->as_png($out_file);
     my $cmap = $g->as_cmapx;
-    my $img      = $web_path . $graph_path;
+    my $img  = $web_path . $graph_path;
 
     return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" . $cmap;
 }
 
 =head1 AUTHORS
 
-Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >> with contributions from Nathan Collins and Aaron Parecki.
+Carlos Vicente, Nathan Collins, Aaron Parecki, Peter Boothe.
 
 =head1 COPYRIGHT & LICENSE
 
