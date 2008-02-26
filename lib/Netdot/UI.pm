@@ -1289,11 +1289,11 @@ sub build_device_topology_graph_html {
 
             my $nd = $neighbor->device;
 
-            $g->add_node($nd->short_name, URL=>"$web_path/management/device.html?id=".$nd->id."&view=$view");
+            $g->add_node($nd->short_name, URL=>"device.html?id=".$nd->id."&view=$view");
             $g->add_edge($device->short_name => $nd->short_name,
-                    tailURL=>"$web_path/management/view.html?table=Interface&id=".$iface->id,
+                    tailURL=>"view.html?table=Interface&id=".$iface->id,
                     taillabel=>$iface->number, 
-                    headURL=>"$web_path/management/view.html?table=Interface&id=".$neighbor->id, 
+                    headURL=>"view.html?table=Interface&id=".$neighbor->id, 
                     headlabel=>$neighbor->number
                 );
             dfs($g, $nd, $hops-1, $seen, $view, $web_path);
