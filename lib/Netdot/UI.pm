@@ -1259,6 +1259,65 @@ sub table_view_page {
     return $VIEWPAGE{$table};
 }
 
+
+############################################################################
+=head2 build_device_topology_graph_html
+
+  Arguments:
+    The id of start device, the current view, search depth, and web path
+  Returns:
+    A string containing an img tag and a cmap
+  Examples:
+    my $page = $ui->table_view_page{$table};
+
+=cut
+sub build_device_topology_graph_html {
+    my ($self, $id, $view, $depth, $web_path) = @_;
+    use GraphViz;
+
+    sub dfs { # DEPTH FIRST SEARCH
+        my ($g, $device, $hops, $seen, $view, $web_path) = @_;
+        return unless $hops;
+        $seen->{$device->name->name} = 1;
+
+        my $ifaces = Interface->search(device => $device->id);
+        while (my $iface = $ifaces->next) {
+            my @neighbors = $iface->neighbors;
+            my $neighbor = shift @neighbors || 0;
+            next unless $neighbor;
+            next if exists $seen->{$neighbor->device->name->name};
+            $seen->{$neighbor->device->name->name} = 1;
+
+            my $nd = $neighbor->device;
+
+            $g->add_node($nd->name->name, URL=>"$web_path/management/device.html?id=".$nd->id."&view=$view");
+            $g->add_edge($device->name->name => $nd->name->name,
+                    tailURL=>"$web_path/management/view.html?table=Interface&id=".$iface->id,
+                    taillabel=>$iface->number, 
+                    headURL=>"$web_path/management/view.html?table=Interface&id=".$neighbor->id, 
+                    headlabel=>$neighbor->number
+                );
+            dfs($g, $nd, $hops-1, $seen, $view, $web_path);
+        }
+    }
+
+    my $g = GraphViz->new(layout=>'dot', overlap=>'compress', name=>"topo",   truecolor=>1, bgcolor=>"#ffffff00", size=>'10x10', rankdir=>'LR', ranksep=>2,
+                           node=>{shape=>'box', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
+                           edge=>{dir=>'none', labelfontsize=>8} );
+
+    my $start = Device->retrieve($id);
+    $g->add_node($start->name->name, color=>'red');
+    dfs($g, $start, $depth, {}, $view, $web_path);
+    my $netdot_path = Netdot->config->get('NETDOT_PATH');
+    my $graph_path  = "img/graphs/Device-$id-$depth.png";
+    my $out_file    = "$netdot_path/htdocs/" . $graph_path;
+    $g->as_png($out_file);
+    my $cmap = $g->as_cmapx;
+    my $img      = $web_path . $graph_path;
+
+    return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" . $cmap;
+}
+
 =head1 AUTHORS
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >> with contributions from Nathan Collins and Aaron Parecki.
