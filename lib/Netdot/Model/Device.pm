@@ -3644,6 +3644,7 @@ sub _get_fwt_from_snmp {
 	}
 
         foreach my $vlan ( sort{$a<=>$b} keys %vlans ){
+	    next if ( $vlan == 1 );  # Ignore vlan 1
 	    my %args = ('host'        => $host,
                         'communities' => [$self->community . '@' . $vlan],
                         'version'     => $self->snmp_version,
