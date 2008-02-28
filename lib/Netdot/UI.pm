@@ -1275,38 +1275,64 @@ sub build_device_topology_graph_html {
     my ($self, $id, $view, $depth, $web_path) = @_;
     use GraphViz;
 
-    sub dfs { # DEPTH FIRST SEARCH
-        my ($g, $device, $hops, $seen, $view, $web_path) = @_;
-        return unless $hops;
-        $seen->{$device->id} = 1;
+    sub add_node {
+        my ($g, $device, $nodeoptions) = @_;
 
-        my $ifaces = Interface->search(device => $device->id);
-        while (my $iface = $ifaces->next) {
+        $g->add_node(name=>$device->short_name, 
+                shape=>"record",
+                URL=>"device.html?id=".$device->id."&view=$view",
+                %$nodeoptions
+            );
+    }
+
+    # Tried to be fancy and add lots of port information.  EPIC FAIL.  There's no
+    # good way to do it.  A nice tarpit for others to avoid.
+
+    sub dfs { # DEPTH FIRST SEARCH - recursive
+        my ($g, $device, $hops, $seen) = @_;
+        return unless $hops;
+
+        my @ifaces = $device->interfaces;
+        sort { int($a) cmp int($b) } @ifaces;
+        
+        
+        foreach my $iface (@ifaces) {
             my $neighbor = $iface->neighbor;
-            next unless int($neighbor);
-            next if exists $seen->{$neighbor->device->id};
-            $seen->{$neighbor->device->id} = 1;
+            next unless int($neighbor);  # If there's no neighbor, skip ahead
 
             my $nd = $neighbor->device;
 
-            $g->add_node($nd->short_name, URL=>"device.html?id=".$nd->id."&view=$view");
+            # If we haven't seen this device before, add it to the graph
+            add_node($g, $nd) unless exists $seen->{'NODE'}{$nd->id};
+
+            # If we haven't seen this edge before, add it to the graph
+            next if exists $seen->{'EDGE'}{$neighbor->id . " " . $iface->id};
+            $seen->{'EDGE'}{$neighbor->id . " " . $iface->id} = 1;
+            $seen->{'EDGE'}{$iface->id . " " . $neighbor->id} = 1;
+
             $g->add_edge($device->short_name => $nd->short_name,
                     tailURL=>"view.html?table=Interface&id=".$iface->id,
                     taillabel=>$iface->number, 
                     headURL=>"view.html?table=Interface&id=".$neighbor->id, 
                     headlabel=>$neighbor->number
                 );
-            dfs($g, $nd, $hops-1, $seen, $view, $web_path);
+
+            # If we haven't recursed across this edge before, then do so now.
+            dfs($g, $nd, $hops-1, $seen);
         }
     }
 
-    my $g = GraphViz->new(layout=>'dot', overlap=>'compress', name=>"topo",   truecolor=>1, bgcolor=>"#ffffff00", size=>'10x10', rankdir=>'LR', ranksep=>2,
-                           node=>{shape=>'box', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
+    my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>4, rankdir=>"LR",
+                           node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
                            edge=>{dir=>'none', labelfontsize=>8} );
 
     my $start = Device->retrieve($id);
-    $g->add_node($start->short_name, color=>'red');
-    dfs($g, $start, $depth, {}, $view, $web_path);
+    add_node($g, $start, { color=>'red'});
+
+    my $seen = { NODE=>{}, EDGE=>{} };
+    $seen->{'NODE'}{$start->id} = 1;
+    dfs($g, $start, $depth, $seen);
+
     my $netdot_path = Netdot->config->get('NETDOT_PATH');
     my $graph_path  = "img/graphs/Device-$id-$depth.png";
     my $out_file    = "$netdot_path/htdocs/" . $graph_path;
@@ -1314,6 +1340,7 @@ sub build_device_topology_graph_html {
     my $cmap = $g->as_cmapx;
     my $img  = $web_path . $graph_path;
 
+    #print $g->as_debug . '<br>';
     return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" . $cmap;
 }
 
