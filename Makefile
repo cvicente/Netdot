@@ -8,8 +8,8 @@ export SRCROOT := $(shell pwd)
 #
 PERL = /usr/bin/perl
 PREFIX = /usr/local/netdot
-APACHEUSER = apache
-APACHEGROUP = apache
+APACHEUSER = www-data
+APACHEGROUP = www-data
 usage:
 	@echo 
 	@echo "usage: make install|installdb|upgrade [ PARAMETER=value ]"

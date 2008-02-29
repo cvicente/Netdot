@@ -44,6 +44,9 @@ $view       => "Basics"
 $deviceadd  => undef
 $newhost    => undef
 $newip      => undef
+$topodepth  => 1
+$topovlans  => 0
+$toponames  => 0
 </%args>
 %
 %
@@ -1211,8 +1214,19 @@ if ( $ipeers ){
     <div class="containerhead">
         Topology - Layer 2
     </div>
-    <div class="containerbody" style="text-align: center">
-%       print $ui->build_device_topology_graph_html($id, $view, 1, $r->dir_config('NetdotPath'));
+    <div class="containerbody">
+    <table><tr><td>
+    <form name="change_topo_view_form" action="device.html" method="GET">
+      <input type="hidden" name="id" value="<% $id %>">
+      <input type="hidden" name="view" value="<% $view %>">
+        Show Vlans? <input type="checkbox" name="topovlans" value="1" <% ($topovlans ? "checked" : "") %><br>
+        Show Interface Names? <input type="checkbox" name="toponames" value="1"  <% ($toponames ? "checked" : "") %>><br>
+        Search depth: <input type="text" name="topodepth" size=2 value="<% $topodepth %>"><br>
+        <small>(Deeper than 2 may take a long time to render)</small> <br>
+      <input type="submit" value="Change View">
+    </form></td><td style="text-align:center">
+%       print $ui->build_device_topology_graph_html($id, $view, $topodepth, $r->dir_config('NetdotPath'), $topovlans, $toponames);
+    </td></tr></table>
     </div>
 </div>
 

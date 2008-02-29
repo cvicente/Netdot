@@ -1264,23 +1264,28 @@ sub table_view_page {
 =head2 build_device_topology_graph_html
 
   Arguments:
-    The id of start device, the current view, search depth, and web path
+    The id of start device, the current view, search depth, web path, two flags
   Returns:
-    A string containing an img tag and a cmap
+    A string containing an img tag, a cmap, and a bunch of vlans
   Examples:
-    my $page = $ui->table_view_page{$table};
+    See htdocs/management/device.html
 
 =cut
 sub build_device_topology_graph_html {
-    my ($self, $id, $view, $depth, $web_path) = @_;
-    use GraphViz;
+    my ($self, $id, $view, $depth, $web_path, $showvlans, $shownames) = @_;
 
+    # Guard against malicious input
+    $depth = (int($depth) > 0) ? int($depth) : 0;
+    $showvlans = ($showvlans == 1) ? 1 : 0;
+    $shownames = ($shownames == 1) ? 1 : 0;
+
+    # Delcare a bunch of useful functions
     sub add_node {
         my ($g, $device, $nodeoptions) = @_;
 
         $g->add_node(name=>$device->short_name, 
                 shape=>"record",
-                URL=>"device.html?id=".$device->id."&view=$view",
+                URL=>"device.html?id=".$device->id."&view=$view&toponames=$shownames&topovlans=$showvlans",
                 %$nodeoptions
             );
     }
@@ -1288,8 +1293,12 @@ sub build_device_topology_graph_html {
     # Tried to be fancy and add lots of port information.  EPIC FAIL.  There's no
     # good way to do it.  A nice tarpit for others to avoid.
 
+    sub randomcolor {
+        return sprintf("#%02X%02X%02X", rand(128), rand(128), rand(128));
+    }
+
     sub dfs { # DEPTH FIRST SEARCH - recursive
-        my ($g, $device, $hops, $seen) = @_;
+        my ($g, $device, $hops, $seen, $vlans, $showvlans, $shownames) = @_;
         return unless $hops;
 
         my @ifaces = $device->interfaces;
@@ -1310,19 +1319,49 @@ sub build_device_topology_graph_html {
             $seen->{'EDGE'}{$neighbor->id . " " . $iface->id} = 1;
             $seen->{'EDGE'}{$iface->id . " " . $neighbor->id} = 1;
 
-            $g->add_edge($device->short_name => $nd->short_name,
-                    tailURL=>"view.html?table=Interface&id=".$iface->id,
-                    taillabel=>$iface->number, 
-                    headURL=>"view.html?table=Interface&id=".$neighbor->id, 
-                    headlabel=>$neighbor->number
-                );
+            my $color = 'black';
+            if ($showvlans and int($iface->vlans)) { 
+                foreach my $vlan ($iface->vlans) {
+                    my $style = 'solid';
+                    my $name = $vlan->vlan->name || $vlan->vlan->vid;
+                    if (not exists $vlans->{$name}) {
+                        $vlans->{$name} = { color=>&randomcolor, vlan=>$vlan->vlan->id };
+                    }
+                    $color = $vlans->{$name}{'color'};
+
+                    my $neighbor_vlan = InterfaceVlan->search(interface=>$neighbor->id, vlan=>$vlan->vlan->id)->first;
+                    if ($vlan->stp_state eq 'blocking' 
+                            or ($neighbor_vlan and $neighbor_vlan->stp_state eq 'blocking')) {
+                        $style='dashed';
+                    }   
+
+                    $g->add_edge($device->short_name => $nd->short_name,
+                            tailURL=>"view.html?table=Interface&id=".$iface->id,
+                            taillabel=>($shownames ? $iface->name : $iface->number), 
+                            headURL=>"view.html?table=Interface&id=".$neighbor->id, 
+                            headlabel=>($shownames ? $neighbor->name : $neighbor->number),
+                            color=>$color,
+                            style=>$style
+                        );
+                }
+            } else {
+                $g->add_edge($device->short_name => $nd->short_name,
+                        tailURL=>"view.html?table=Interface&id=".$iface->id,
+                        taillabel=>($shownames ? $iface->name : $iface->number),
+                        headURL=>"view.html?table=Interface&id=".$neighbor->id, 
+                        headlabel=>($shownames ? $neighbor->name : $neighbor->number),
+                        color=>'black'
+                    );
+            }
 
             # If we haven't recursed across this edge before, then do so now.
-            dfs($g, $nd, $hops-1, $seen);
+            dfs($g, $nd, $hops-1, $seen, $vlans, $showvlans, $shownames);
         }
     }
 
-    my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>4, rankdir=>"LR",
+    # Actually do the searching
+    use GraphViz;
+    my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>"LR", 
                            node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
                            edge=>{dir=>'none', labelfontsize=>8} );
 
@@ -1331,17 +1370,27 @@ sub build_device_topology_graph_html {
 
     my $seen = { NODE=>{}, EDGE=>{} };
     $seen->{'NODE'}{$start->id} = 1;
-    dfs($g, $start, $depth, $seen);
+
+    my $vlans = { 1=>{color=>'#000000', vlan=>Vlan->search(id=>1)->first} };
+    dfs($g, $start, $depth, $seen, $vlans, $showvlans, $shownames);
 
     my $netdot_path = Netdot->config->get('NETDOT_PATH');
-    my $graph_path  = "img/graphs/Device-$id-$depth.png";
+    my $graph_path  = "img/graphs/Device-$id-$depth-$showvlans-$shownames.png";
     my $out_file    = "$netdot_path/htdocs/" . $graph_path;
     $g->as_png($out_file);
-    my $cmap = $g->as_cmapx;
     my $img  = $web_path . $graph_path;
 
+    my  $vlanlist = "";
+    foreach my $vlan (keys %$vlans) {
+        $vlanlist .= '<a href="view.html?table=Vlan&id=' . $vlans->{$vlan}{'vlan'} . '"><font color="' . $vlans->{$vlan}{'color'} . "\">$vlan</font></a> ";
+    }
+
     #print $g->as_debug . '<br>';
-    return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" . $cmap;
+    return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" 
+            . $g->as_cmapx
+            . ($showvlans ? '<br><b>List of vlans and their colors:</b><br>'
+                                . '<b>' . $vlanlist . '</b>'
+                    : "");
 }
 
 =head1 AUTHORS
