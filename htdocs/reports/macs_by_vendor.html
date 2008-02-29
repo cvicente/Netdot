@@ -37,7 +37,8 @@ foreach my $oui ( sort { $stats->{$b}{total} <=> $stats->{$a}{total} } keys %$st
     my @row = ();
     my $vendor = $stats->{$oui}{vendor};
     my $count  = $stats->{$oui}{total};
-    my $slink  = "<a href=\"../generic/search_obj.html?table=PhysAddr&address=$oui&res=1\">$oui</a>";
+    my $srch   = "$oui*";
+    my $slink  = "<a href=\"../generic/search_obj.html?table=PhysAddr&address=$srch&res=1\">$oui</a>";
     push( @row, $slink, $vendor, $count );
     push( @row, sprintf("%02.2f",$count/$total * 100) );
     push( @rows, \@row );
