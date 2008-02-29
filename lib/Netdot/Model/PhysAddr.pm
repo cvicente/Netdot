@@ -409,7 +409,9 @@ sub infrastructure {
   Arguments:
     type  -  [infrastructure|node|all]
   Returns:
-    hash reference keyed by vendor, value is count
+    Array with:
+       - Hash ref keyed by oui, value is count
+       - Total of given type 
   Examples:
     my %count = PhysAddr->vendor_count();
 
@@ -432,14 +434,16 @@ sub vendor_count{
     }elsif ( $type eq 'all' ){
 	$macs = $self->retrieve_all_hashref();
     }
+    my $total = 0;
     my $OUI = OUI->retrieve_all_hashref;
     foreach my $address ( keys %$macs ){
 	my $oui = $self->_oui_from_address($address);
 	my $vendor = $OUI->{$oui} || "Unknown";
 	$res{$oui}{vendor} = $vendor;
 	$res{$oui}{total}++;
+	$total++;
     }
-    return \%res;
+    return (\%res, $total);
 }
 
 =head1 INSTANCE METHODS
