@@ -432,20 +432,12 @@ sub vendor_count{
     }elsif ( $type eq 'all' ){
 	$macs = $self->retrieve_all_hashref();
     }
-    my $it = OUI->retrieve_all;
-    my %OUI;
-    while ( my $oui = $it->next ){
-	$OUI{$oui->oui} = $oui->vendor;
-    }
+    my $OUI = OUI->retrieve_all_hashref;
     foreach my $address ( keys %$macs ){
-	my $oui_str = $self->_oui_from_address($address);
-	if ( exists $OUI{$oui_str} ){
-	    my $vendor = $OUI{$oui_str};
-	    $res{"$oui_str"}{total}++;
-	    $res{"$oui_str"}{vendor} = $vendor;
-	}else{
-	    $res{"Unknown"}{total}++;
-	}
+	my $oui = $self->_oui_from_address($address);
+	my $vendor = $OUI->{$oui} || "Unknown";
+	$res{$oui}{vendor} = $vendor;
+	$res{$oui}{total}++;
     }
     return \%res;
 }

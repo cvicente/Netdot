@@ -11,21 +11,19 @@ title   => 'MAC Address Report'
 section => 'Reports'
 </%attr>
 <%args>
-$topn => 20;
+$topn => 100;
 $type => 'node'
 </%args>
 <%init>
 my $DEBUG = 0;
 my $stats = PhysAddr->vendor_count($type);
-my $total = 0;
-map { $total+= $stats->{$_}{total} } keys %$stats;
-
+my $total = PhysAddr->count_all;
 print "<pre>", Dumper($stats), "</pre>" if $DEBUG;
 </%init>
 <%perl>
 my (@headers, @rows) = ();
 
-@headers = ( 'Vendor', 'OUI', 'Count', '%', );
+@headers = ( 'OUI', 'Vendor', 'Count', '%', );
 
 my @row = ();
 push( @row, "Total in Database" );
@@ -40,7 +38,8 @@ foreach my $oui ( sort { $stats->{$b}{total} <=> $stats->{$a}{total} } keys %$st
     my @row = ();
     my $vendor = $stats->{$oui}{vendor};
     my $count  = $stats->{$oui}{total};
-    push( @row, $vendor, $oui, $count );
+    my $slink  = "<a href=\"../generic/search_obj.html?table=PhysAddr&address=$oui&res=1\">$oui</a>";
+    push( @row, $slink, $vendor, $count );
     push( @row, sprintf("%02.2f",$count/$total * 100) );
     push( @rows, \@row );
     last if ( $i == $topn );
