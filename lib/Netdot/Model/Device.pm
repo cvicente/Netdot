@@ -1601,7 +1601,6 @@ sub delete {
     $device->short_name('switch1');
 
 =cut
-    
 sub short_name {
     my ($self, $name) = @_;
     $self->isa_object_method('short_name');
@@ -1616,6 +1615,24 @@ sub short_name {
     return $rr->name;
 }
 
+############################################################################
+=head2 product_type - Get Device type
+   
+  Arguments:
+    None
+  Returns:
+    ProductType object name
+  Examples:
+    $device->product_type();
+
+=cut
+sub product_type {
+    my ($self) = @_;
+    $self->isa_object_method('product_type');
+    if (($self->product) && ($self->product->type)){	 
+	return $self->product->type->name;
+    }
+}
 
 ############################################################################
 =head2 fqdn - Get Fully Qualified Domain Name

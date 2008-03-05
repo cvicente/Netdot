@@ -466,8 +466,7 @@ sub update_ip {
     my $prefix  = ($version == 4)  ? 32 : 128;
     
     my $isrouter = 0;
-    if ( defined($self->device->product) && defined($self->device->product->type) && 
-	 $self->device->product->type->name eq "Router" ){
+    if ( $self->device->product_type && $self->device->product_type eq "Router" ){
 	$isrouter = 1;
     }
     
