@@ -355,7 +355,7 @@ sub raw_sql {
     	if ( $@ ){
             # parse out SQL error message from the entire error
             my ($errormsg) = $@ =~ m{execute[ ]failed:[ ](.*)[ ]at[ ]/};
-    	    $self->error("SQL Error: $errormsg");
+    	    $self->throw_user("SQL Error: $errormsg");
     	    return;
     	}
 
