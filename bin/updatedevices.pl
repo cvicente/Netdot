@@ -120,9 +120,9 @@ unless ( $INFO || $FWT || $ARP || $TOPO ){
     die "Error: You need to specify at least one of -I, -F, -A or -T\n";
 }
 
-if ( $TOPO && ( $host || $db ) ){
+if ( $TOPO && ( $host ) ){
     print $USAGE;
-    die "Error: Topology discovery can only be applied to IP blocks (option -B)";
+    die "Error: Topology discovery can not be applied to hosts";
 }
 
 # Re-read communities, in case we were passed new ones
@@ -196,6 +196,7 @@ if ( $host ){
     Netdot::Model::Device->snmp_update_all(%uargs) if ( $INFO );
     Netdot::Model::Device->fwt_update_all(%uargs)  if ( $FWT  );
     Netdot::Model::Device->arp_update_all(%uargs)  if ( $ARP  );
+    Netdot::Model::Topology->discover              if ( $TOPO );
 }elsif ( $file ){
     $logger->info("Updating all devices in given file: $file");
     $uargs{file} = $file;

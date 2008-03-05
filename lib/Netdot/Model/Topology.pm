@@ -5,6 +5,8 @@ use warnings;
 use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
+my $MAC  = Netdot->get_mac_regex();
+
 
 
 # Make sure to return 1
@@ -39,10 +41,9 @@ sub discover {
     my ($class, %argv) = @_;
     $class->isa_class_method('discover');
 
-    unless ( $argv{blocks} && ref($argv{blocks}) eq 'ARRAY' ){
-	$class->throw_fatal('Missing or invalid argument: blocks');
-    }
-    my $blist = join ', ', @{$argv{blocks}};
+    my @blocks = (exists $argv{blocks}) ? @{$argv{blocks}}  : ();
+    my $blist = (@blocks) ? join ', ', @blocks : "db";
+
     my %SOURCES;
     $SOURCES{DP}  = 1 if $class->config->get('TOPO_USE_DP');
     $SOURCES{STP} = 1 if $class->config->get('TOPO_USE_STP');
@@ -51,22 +52,27 @@ sub discover {
     my $srcs = join ', ', keys %SOURCES;
     
     my %devs;
-    foreach my $block ( @{$argv{blocks}} ){
-	my $ipb = Ipblock->search(address=>$block)->first;
-	unless ( $ipb ){
-	    $class->throw_user("IP block $block not found in DB");
-	}
-	my $status = $ipb->status->name;
-	if (  $status eq 'Container' || $status eq 'Subnet' ){
-	    map { $devs{$_->id} = $_ } @{$ipb->get_devices()};
-	}else{
-	    $class->throw_user(sprintf("Block %s is %s. Topology discovery only allowed on Container or Subnet Blocks",
-				       $ipb->get_label, $status ));
-	}
+    if (@blocks) {
+        foreach my $block ( @blocks ){
+            my $ipb = Ipblock->search(address=>$block)->first;
+            unless ( $ipb ){
+                $class->throw_user("IP block $block not found in DB");
+            }
+            my $status = $ipb->status->name;
+            if (  $status eq 'Container' || $status eq 'Subnet' ){
+                map { $devs{$_->id} = $_ } @{$ipb->get_devices()};
+            }else{
+                $class->throw_user(sprintf("Block %s is %s. Topology discovery only allowed on Container or Subnet Blocks",
+                                           $ipb->get_label, $status ));
+            }
+        }
+    } else {
+        map { $devs{$_->id} = $_ } Device->retrieve_all;
     }
 
     $logger->info(sprintf("Discovering topology for devices on %s, using sources: %s. Min score: %s", 
 			  $blist, $srcs, $MINSCORE));
+
     my $start = time;
     my (@dp_devs, %stp_roots);
     foreach my $devid ( keys %devs ){
@@ -91,15 +97,33 @@ sub discover {
 	my $links = $class->get_stp_links(root=>$root);
 	map { $stp_links->{$_} = $links->{$_} } keys %$links;
     }
-    $dp_links = $class->get_dp_links(\@dp_devs) if @dp_devs;
+    if (@blocks) {
+        $dp_links = $class->get_dp_links(\@dp_devs) if @dp_devs;
+    } else {
+        $dp_links = $class->get_dp_links;
+    }   
+
+    $logger->debug(sprintf("Links determined in %d seconds", time - $start));
 
     # Get all existing links
     my %old_links;
-    foreach my $devid ( keys %devs ){
-	my $dev = $devs{$devid};
-	my $n   = $dev->get_neighbors();
-	map { $old_links{$_} = $n->{$_} } keys %$n;	
+
+    # Two approaches - one optimized for dealing with ALL the data
+    if (@blocks) {
+        foreach my $devid ( keys %devs ){
+            my $dev = $devs{$devid};
+            my $n   = $dev->get_neighbors();
+            map { $old_links{$_} = $n->{$_} } keys %$n;	
+        }
+    } else {
+        my $dbh = $class->db_Main;
+        foreach my $row (@{$dbh->selectall_arrayref(
+                        "SELECT id, neighbor FROM interface WHERE neighbor != 0")}) {
+            my ($id, $neighbor) = @$row;
+            $old_links{$id} = $neighbor;
+        }
     }
+
     my %args;
     $args{old_links} = \%old_links;
     $args{dp}        = $dp_links  if $dp_links;
@@ -109,8 +133,6 @@ sub discover {
     my $end = time;
     $logger->info(sprintf("Topology discovery on %s done in %d seconds. Links added: %d, removed: %d", 
 			  $blist, $end-$start, $addcount, $remcount));
-
-    
 }
 
 ######################################################################################
@@ -208,14 +230,129 @@ sub update_links {
 
 =cut
 sub get_dp_links {
-    my ($self, $devs) = @_;
+    my ($self, %argv) = @_;
     $self->isa_class_method('get_dp_links');
 
-    my %links;
-    foreach my $dev ( @$devs ){
-	my $n = $dev->get_dp_neighbors();
-	map { $links{$_} = $n->{$_} } keys %$n;
+    # Using raw database access because Class::DBI was too slow here
+    my $dbh = $self->db_Main;
+    my $results;
+    my $sth = $dbh->prepare("SELECT d.id, i.id, i.dp_remote_ip, i.dp_remote_id, i.dp_remote_port  
+                             FROM device d, interface i 
+                             WHERE d.id = i.device 
+                                 AND (i.dp_remote_ip IS NOT NULL OR i.dp_remote_id IS NOT NULL)");
+    $sth->execute;
+    $results = $sth->fetchall_arrayref;
+
+    # Filter the results if we didn't want every link in the database
+    if (exists $argv{'devs'}) {
+        my $devs =  $argv{'devs'};
+        my $filteredresults = ();
+        my %devicehash;
+        foreach my $dev ( @$devs ){
+            $devicehash{$dev->id} = $dev;
+        }
+
+        foreach my $row (@$results) {
+            if (exists $devicehash{$row->[0]}) {
+                push @$filteredresults, $row;
+            }
+        }
+
+        $results = $filteredresults;
     }
+
+    # Now go through everything looking for results
+    my %links = ();
+    my $allmacs = PhysAddr->retrieve_all_hashref;
+    my $allips = Ipblock->retrieve_all_hashref;
+    
+    foreach my $row (@$results) {
+        my ($did, $iid, $r_ip, $r_id, $r_port) = @$row;
+        next if (exists $links{$iid});
+
+        my $rem_dev = 0;
+
+        # Find the connected device
+        if (defined($r_id)) {  # Deal with ID stuff first
+            foreach my $rem_id ( split ',', $r_id){
+                if ( $rem_id =~ /($MAC)/i ){
+                    my $mac = PhysAddr->format_address($1);
+
+                    next if (not exists $allmacs->{$mac});
+                    my $physaddr = PhysAddr->retrieve($allmacs->{$mac});
+
+                    if ( $physaddr->devices ){
+                        $rem_dev = ($physaddr->devices)[0];
+                    } elsif ( $physaddr->interfaces ) {
+                        my $interface = ($physaddr->interfaces)[0];
+                        if ( int($interface->device) ) {
+                            $rem_dev = $interface->device;
+                        } else {
+                            $logger->warn("DP Interface $interface has no device");
+                        }
+                    } else {
+                        $logger->warn("DP Physical address ($mac) found that was not a member of any device");
+                    }
+
+                    if (!$rem_dev && !int($rem_dev)) {
+                        $logger->debug(sprintf("DP Device MAC not found: %d -> %s ", $iid, $mac));
+                    }
+               }else{
+                   # Try to find the device name
+                   $rem_dev = Device->search(name=>$rem_id)->first;
+                   unless ($rem_dev) {
+                       $logger->debug(sprintf("DP Device name not found: %d -> %s ", $iid, $rem_id));
+                   }
+               }
+
+               last if $rem_dev;
+            }
+
+            unless ($rem_dev) {
+                $logger->warn(sprintf("DP Device ID(s) not found: %d -> %s ", $iid, $r_id));
+            }
+        } elsif ($r_ip) {
+            foreach my $rem_ip ( split ',', $r_ip ) {
+                my $decimalip = Ipblock->ip2int($rem_ip);
+                next unless (exists $allips->{$decimalip});
+                my $ipb = Ipblock->retrieve($allips->{$decimalip});
+
+                if ( $ipb->interface && $ipb->interface->device ){
+                    $rem_dev = $ipb->interface->device;
+                    last;
+                }
+
+               unless ($rem_dev) {
+                   $logger->debug(sprintf("DP Device IP not found: %d -> %s ", $iid, $r_ip));
+               }
+            }
+        } 
+
+        unless ($rem_dev) {
+	    $logger->warn(sprintf("DP Remote Device not found: %d -> %s ", $iid, ($r_id || $r_ip || " ")));
+            next;
+        }
+
+        # Now we have a remote device in $rem_dev
+        if ($r_port) {
+            foreach my $rem_port ( split ',', $r_port) {
+                # Try name first, then number
+                my $rem_int = Interface->search(device=>$rem_dev, name=>$rem_port)->first
+                            || Interface->search(device=>$rem_dev, number=>$rem_port)->first;
+
+                if ( $rem_int ){
+                    $links{$iid} = $rem_int->id;
+                    $links{$rem_int->id} = $iid;
+                }else{
+                    $logger->debug(sprintf("DP Remote Port not found: %s, %s ", 
+                                          $rem_dev, $rem_port||" "));
+                }
+            }
+        }else{
+            $logger->warn(sprintf("DP Remote Port not defined: %d", $iid));
+        }
+    }
+
     return \%links;
 }
 

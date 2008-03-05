@@ -33,7 +33,7 @@ sub search {
     my ($self, %argv) = @_;
     
     if ( $argv{address} ){
-	$argv{address} = $self->_format_address($argv{address});
+	$argv{address} = $self->format_address($argv{address});
     }
     return $self->SUPER::search(%argv);
 }
@@ -60,7 +60,7 @@ sub search_like {
 	    # User wants exact match 
 	    # do nothing
 	}else{
-	    $argv{address} = $self->_format_address($argv{address});
+	    $argv{address} = $self->format_address($argv{address});
 	}
     }
     return $self->SUPER::search_like(%argv);
@@ -587,7 +587,7 @@ sub _canonicalize {
     my $self = shift;
     my $class = ref($self) || $self;
     my $address = ($self->_attrs('address'))[0];
-    $address = $self->_format_address($address);
+    $address = $self->format_address($address);
     unless ( $class->validate( $address ) ){
 	$self->throw_user("Invalid Address: $address");	
     }
@@ -596,11 +596,11 @@ sub _canonicalize {
 
 
 #################################################
-# _format_address - Format MAC address
+# format_address - Format MAC address
 #    - Removes usual separators
 #    - Converts to all uppercase
 #
-sub _format_address {
+sub format_address {
     my ($self, $address) = @_;
     $address =~ s/[:\-\.]//g;
     $address = uc($address);

@@ -2406,28 +2406,6 @@ sub get_neighbors {
 }
 
 ############################################################################
-=head2 get_dp_neighbors - Get all Discovery Protocol (CDP/LLDP) neighbors
-
-  Arguments:
-    None
-  Returns:
-    Hash ref with key = local int id, value = remote int id
-  Examples:
-    my $neighbors = $device->get_dp_neighbors();
-=cut
-sub get_dp_neighbors {
-    my ($self, $devs) = @_;
-    $self->isa_object_method('get_dp_neighbors');
-
-    my %res;
-    foreach my $int ( $self->interfaces ){
-	my $n = $int->get_dp_neighbor();
-	$res{$int->id} = $n if defined $n;
-    }
-    return \%res;
-}
-
-############################################################################
 =head2 remove_neighbors - Remove neighbors from all interfaces
    
   Arguments:
