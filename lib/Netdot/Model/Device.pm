@@ -3073,8 +3073,8 @@ sub _get_snmp_session {
     }
     # Get both name and IP for better error reporting
     my ($ip, $name) = $dns->resolve_any($argv{host});
-    $ip   ||= '?';
-    $name ||= '?';
+    $ip   ||= $argv{host};
+    $name ||= $argv{host};
 
     # If we still don't have any communities, get defaults from config file
     $argv{communities} = $self->config->get('DEFAULT_SNMPCOMMUNITIES')
