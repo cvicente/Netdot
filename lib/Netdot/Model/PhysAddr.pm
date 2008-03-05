@@ -304,7 +304,7 @@ sub validate {
   Arguments: 
     None
   Returns:   
-    Hash ref keyed by address
+    Hash ref key=address, value=id
   Examples:
     my $intmacs = PhysAddr->from_interfaces();
 
@@ -345,7 +345,7 @@ sub from_interfaces {
   Arguments: 
     None
   Returns:   
-    Hash ref keyed by address
+    Hash ref key=address, value=id
   Examples:
     my $intmacs = PhysAddr->from_devices();
 
@@ -385,7 +385,7 @@ sub from_devices {
   Arguments: 
     None
   Returns:   
-    Hash ref keyed by address
+    Hash ref key=address, value=id
   Examples:
     my $intmacs = PhysAddr->infrastructure();
 

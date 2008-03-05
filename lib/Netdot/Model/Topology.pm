@@ -103,7 +103,7 @@ sub discover {
         $dp_links = $class->get_dp_links;
     }   
 
-    $logger->debug(sprintf("Links determined in %d seconds", time - $start));
+    $logger->debug(sprintf("Netdot::Model::Topology: Links determined in %d seconds", time - $start));
 
     # Get all existing links
     my %old_links;
@@ -263,7 +263,7 @@ sub get_dp_links {
 
     # Now go through everything looking for results
     my %links = ();
-    my $allmacs = PhysAddr->retrieve_all_hashref;
+    my $allmacs = PhysAddr->infrastructure;
     my $allips = Ipblock->retrieve_all_hashref;
     
     foreach my $row (@$results) {
@@ -274,10 +274,9 @@ sub get_dp_links {
 
         # Find the connected device
         if (defined($r_id)) {  # Deal with ID stuff first
-            foreach my $rem_id ( split ',', $r_id){
+            foreach my $rem_id (split ',', $r_id){
                 if ( $rem_id =~ /($MAC)/i ){
                     my $mac = PhysAddr->format_address($1);
-
                     next if (not exists $allmacs->{$mac});
                     my $physaddr = PhysAddr->retrieve($allmacs->{$mac});
 
@@ -288,20 +287,20 @@ sub get_dp_links {
                         if ( int($interface->device) ) {
                             $rem_dev = $interface->device;
                         } else {
-                            $logger->warn("DP Interface $interface has no device");
+                            $logger->warn("Netdot::Model::Topology::get_dp_links: Interface $interface has no device");
                         }
                     } else {
-                        $logger->warn("DP Physical address ($mac) found that was not a member of any device");
+                        $logger->warn("Netdot::Model::Topology::get_dp_links: Physical address ($mac) found that was not a member of any device");
                     }
 
                     if (!$rem_dev && !int($rem_dev)) {
-                        $logger->debug(sprintf("DP Device MAC not found: %d -> %s ", $iid, $mac));
+                        $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Device MAC not found for interface %d: %s ", $iid, $mac));
                     }
                }else{
                    # Try to find the device name
                    $rem_dev = Device->search(name=>$rem_id)->first;
                    unless ($rem_dev) {
-                       $logger->debug(sprintf("DP Device name not found: %d -> %s ", $iid, $rem_id));
+                       $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Device name not found for interface %d: %s ", $iid, $rem_id));
                    }
                }
 
@@ -309,7 +308,7 @@ sub get_dp_links {
             }
 
             unless ($rem_dev) {
-                $logger->warn(sprintf("DP Device ID(s) not found: %d -> %s ", $iid, $r_id));
+                $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Device ID(s) not found for interface %d: %s ", $iid, $r_id));
             }
         } elsif ($r_ip) {
             foreach my $rem_ip ( split ',', $r_ip ) {
@@ -323,13 +322,16 @@ sub get_dp_links {
                 }
 
                unless ($rem_dev) {
-                   $logger->debug(sprintf("DP Device IP not found: %d -> %s ", $iid, $r_ip));
+                   $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Device IP not found for interface %d: %s ", $iid, $r_ip));
                }
             }
         } 
 
         unless ($rem_dev) {
-	    $logger->warn(sprintf("DP Remote Device not found: %d -> %s ", $iid, ($r_id || $r_ip || " ")));
+	    my $str = " ";
+	    $str .= " id=$r_id"  if $r_id;
+	    $str .= ", ip=$r_ip" if $r_ip;
+	    $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Remote Device not found for interface %d: %s ", $iid, $str));
             next;
         }
 
@@ -343,13 +345,15 @@ sub get_dp_links {
                 if ( $rem_int ){
                     $links{$iid} = $rem_int->id;
                     $links{$rem_int->id} = $iid;
+		    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Found link: %d -> %d", 
+					   $iid, $rem_int->id));
                 }else{
-                    $logger->debug(sprintf("DP Remote Port not found: %s, %s ", 
-                                          $rem_dev, $rem_port||" "));
+                    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Remote Port not found: %s, %s ", 
+                                          $rem_dev, $rem_port));
                 }
             }
         }else{
-            $logger->warn(sprintf("DP Remote Port not defined: %d", $iid));
+            $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Remote Port not defined: %d", $iid));
         }
     }
 
@@ -427,12 +431,16 @@ sub get_stp_links {
 	    if ( exists $near{$des_b}{$des_p} ){
 		my $r_int = $near{$des_b}{$des_p};
 		$links{$int} = $r_int;
+		$logger->debug(sprintf("Netdot::Model::Topology::get_stp_links: Found link: %d -> %d", 
+				       $int, $r_int));
 	    }else{
 		# Octet representations may not match
 		foreach my $r_des_p ( keys %{$near{$des_b}} ){
 		    if ( $self->_cmp_des_p($r_des_p, $des_p) ){
 			my $r_int = $near{$des_b}{$r_des_p};
 			$links{$int} = $r_int;
+			$logger->debug(sprintf("Netdot::Model::Topology::get_stp_links: Found link: %d -> %d", 
+					       $int, $r_int));
 		    }
 		}
 	    }
