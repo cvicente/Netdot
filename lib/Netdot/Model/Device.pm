@@ -1415,7 +1415,7 @@ sub arp_update {
 
     my $host      = $self->fqdn;
     my $dbh       = $self->db_Main;
-    my $timestamp = $self->timestamp;
+    my $timestamp = exists($argv{timestamp}) ? $argv{timestamp} : $self->timestamp;
 
     unless ( $self->collect_arp ){
 	$logger->debug("$host excluded from ARP collection. Skipping");
@@ -1498,7 +1498,7 @@ sub fwt_update {
 
     my $host      = $self->fqdn;
     my $dbh       = $self->db_Main;
-    my $timestamp = $self->timestamp;
+    my $timestamp = exists($argv{timestamp}) ? $argv{timestamp} : $self->timestamp;
 
     unless ( $self->collect_fwt ){
 	$logger->debug("$host excluded from FWT collection. Skipping");
@@ -4003,13 +4003,14 @@ sub _fwt_update_list {
     my $pm = $class->_fork_init();
 
     my $device_count = 0;
+    my $timestamp = $class->timestamp;
     foreach my $dev ( @$list ){
 	next unless ( $dev->collect_fwt );
 	# FORK
 	$device_count++;
 	$pm->start and next;
 	$class->_launch_child(pm   => $pm,
-			      code => sub { return $dev->fwt_update(intmacs=>$intmacs) },
+			      code => sub { return $dev->fwt_update(intmacs=>$intmacs, timestamp=>$timestamp) },
 			      );
     }
 
@@ -4047,13 +4048,14 @@ sub _arp_update_list {
     my $pm = $class->_fork_init();
 
     my $device_count = 0;
+    my $timestamp = $class->timestamp;
     foreach my $dev ( @$list ){
 	next unless ( $dev->has_layer(3) && $dev->collect_arp );
 	# Fork
 	$device_count++;
 	$pm->start and next;
 	$class->_launch_child(pm   => $pm,
-			      code => sub{ return $dev->arp_update(int_macs=>$intmacs) },
+			      code => sub{ return $dev->arp_update(int_macs=>$intmacs, timestamp=>$timestamp) },
 			      );
     }
 
