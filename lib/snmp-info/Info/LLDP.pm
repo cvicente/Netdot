@@ -199,7 +199,13 @@ sub lldp_id {
         # May need to format other types in the future
         if ($type =~ /mac/) {
             $id = join(':',map { sprintf "%02x",$_ } unpack('C*',$id));
-        }
+	}elsif ($type eq 'networkAddress'){
+ 	    if ( length(unpack('H*', $id)) == 10 ){
+ 		# IP address (first octet is sign, I guess)
+ 		my @octets = (map { sprintf "%02x",$_ } unpack('C*', $id))[1..4];
+ 		$id = join '.', map { hex($_) } @octets;
+ 	    }
+	}
         $lldp_id{$key} = $id;
     }
     return \%lldp_id;

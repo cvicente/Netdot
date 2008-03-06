@@ -3183,7 +3183,6 @@ sub _get_snmp_session {
     $munge->{'i_speed_high'} = sub{ return $self->_munge_speed_high(@_) };
     $munge->{'stp_root'}     = sub{ return $self->_stp2mac(@_) };
     $munge->{'stp_p_bridge'} = sub{ return $self->_stp2mac(@_) };
-    $munge->{'c_id'}         = sub{ return $self->_munge_c_id(@_) };
     foreach my $m ('i_mac', 'fw_mac', 'mac', 'b_mac', 'at_paddr', 'rptrAddrTrackNewLastSrcAddress',
 		   'airespace_ap_mac', 'airespace_bl_mac', 'airespace_if_mac', 'stp_p_port'){
 	$munge->{$m} = sub{ return $self->_oct2hex(@_) };
@@ -4077,20 +4076,6 @@ sub _oct2hex {
     return uc( sprintf('%s', unpack('H*', $v)) );
 }
 
-#####################################################################
-# Be smart about converting cdpCacheDeviceId, as it sometimes
-# returns STRING and other times it returns Hex-STRING
-# We keep SNMP::Info's formatting of MAC addresses for consistency
-# with values returned from LLDP.pm
-sub _munge_c_id {
-    my ($self, $v) = @_;
-    if ( length(unpack('H*', $v)) == 12 ){
-	return join(':',map { sprintf "%02x",$_ } unpack('C*',$v));
-    }else{
-	return $v;
-    }
-}
- 
 #####################################################################
 # Takes an 8-byte octet stream (HEX-STRING) containing priority+MAC
 # (from do1dStp MIBs) and returns a ASCII hex string containing the 
