@@ -140,15 +140,19 @@ if ( $TYPE eq 'history' ){
                        WHERE p.static=0 AND p.last_seen < '$sqldate'
                        AND a.physaddr=p.id AND f.physaddr=p.id");
     
-    my $r2 = $dbh->do("DELETE a,e FROM arpcache a, arpcacheentry e
+    my $r2 = $dbh->do("DELETE ip,a FROM ipblock ip, arpcacheentry a, ipblockstatus s
+                       WHERE s.name='Discovered' AND ip.status=s.id 
+                       AND ip.last_seen < '$sqldate' AND a.ipaddr=ip.id ");
+    
+    my $r3 = $dbh->do("DELETE a,e FROM arpcache a, arpcacheentry e
                        WHERE a.tstamp < '$sqldate'
                        AND e.arpcache=a.id");
 	
-    my $r3 = $dbh->do("DELETE f,e FROM fwtable f, fwtableentry e
+    my $r4 = $dbh->do("DELETE f,e FROM fwtable f, fwtableentry e
                        WHERE f.tstamp < '$sqldate'
                        AND e.fwtable=f.id");
 
-    $total_deleted = $r1 + $r2 + $r3;
+    $total_deleted = $r1 + $r2 + $r3 + $r4;
     if ( $total_deleted ){
 	foreach my $t (qw /physaddr arpcache arpcacheentry fwtable fwtableentry/){
 	    $rows_deleted{$t} = 1;
