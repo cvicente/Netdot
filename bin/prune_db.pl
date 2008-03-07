@@ -14,7 +14,7 @@ my $DEBUG       = 0;
 my $HELP        = 0;
 my $VERBOSE     = 0;
 my $EMAIL       = 0;
-my $TABLES;
+my $TYPE;
 my $NUM_DAYS    = 365;
 my $NUM_HISTORY = 100;
 my $FROM        = Netdot->config->get('ADMINEMAIL');
@@ -23,7 +23,7 @@ my $SUBJECT     = 'Netdot DB Maintenance';
 my $output;
 
 my $usage = <<EOF;
- usage: $0   -T|--tables <regex>
+ usage: $0   -T|--type <history|address_tracking>
            [ -d|--num_months <number> ] [ -n|--num_history <number> ] 
            [ -v|--verbose ] [ -g|--debug ] 
            [ -m|--send_mail] [-f|--from] | [-t|--to] | [-s|--subject]
@@ -40,13 +40,12 @@ my $usage = <<EOF;
        more than NUM_HISTORY items for a record, then we drop anything older 
        than NUM_DAYS.
 
-    * For tables with timestamps:
+    * For address tracking tables:
     
-        We delete records that are older than NUM_DAYS if there are fewer
-        than NUM_HISTORY items in that table.
+        We delete records that are older than NUM_DAYS.
 
            
-    -T, --tables                   (Perl) Regular expression matching table names. Required.
+    -T, --type                     <history|address_tracking) History tables or address tracking tables
     -d, --num_days                 Number of days worth of items to keep (default: $NUM_DAYS);
     -n, --num_history              Number of history items to keep for each record (default: $NUM_HISTORY);
     -v, --verbose                  Print informational output
@@ -59,7 +58,7 @@ my $usage = <<EOF;
 EOF
     
 # handle cmdline args
-my $result = GetOptions( "T|tables=s"      => \$TABLES,
+my $result = GetOptions( "T|type=s"        => \$TYPE,
                          "d|num_days=i"    => \$NUM_DAYS,
 			 "n|num_history=i" => \$NUM_HISTORY,
 			 "m|send_mail"     => \$EMAIL,
@@ -71,7 +70,7 @@ my $result = GetOptions( "T|tables=s"      => \$TABLES,
 			 "g|debug"         => \$DEBUG,
 			 );
 
-if ( ! $result || !$TABLES ) {
+if ( ! $result || !$TYPE ) {
     print $usage;
     die "Error: Problem with cmdline args\n";
 }
@@ -80,10 +79,7 @@ if ( $HELP ) {
     exit;
 }
 
-&debug(sprintf("%s: Executing with: T=\"%s\", d=%d, n=%s\n", $0, $TABLES, $NUM_DAYS, $NUM_HISTORY));
-
-my @tables;
-map { push @tables, $_ if ( $_->name =~ /$TABLES/i ) } Netdot->meta->get_tables(with_history=>1);
+&debug(sprintf("%s: Executing with: T=\"%s\", d=%d, n=%s\n", $0, $TYPE, $NUM_DAYS, $NUM_HISTORY));
 
 # Get DB handle 
 my $dbh = Netdot::Model::db_Main();
@@ -96,19 +92,22 @@ my $sqldate = sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year,$mon,$mday,$hour,$min
 
 my $start = time;
 
-foreach my $table ( @tables ) {
-    my $tablename      = lc($table->name);
-    my $is_history     = 1 if $table->is_history;
-    my $total_deleted  = 0;
-    my $r;
+my %rows_deleted;
+my $total_deleted;
 
-    &debug(sprintf("Checking in %s \n", $tablename));
+if ( $TYPE eq 'history' ){
+    my @tables;
+    map { push @tables, $_ if ( $_->is_history ) } Netdot->meta->get_tables(with_history=>1);
+    
+    foreach my $table ( @tables ) {
+	my $tablename = lc($table->name);
+	my $orig = $table->original_table;
+	die "Cannot determine table for history able $tablename\n" unless $orig;
+	my $table_id_field = lc($orig)."_id";
 
-    if ( $is_history ){
-	my $ot = $table->original_table;
-	next unless $ot;
-	my $table_id_field = lc($ot)."_id";
+	&debug(sprintf("Checking in %s \n", $tablename));
 
+	my $r = 0;
 	# for each unique table_id in the history table
 	my $q = $dbh->prepare("SELECT $table_id_field, COUNT(id) FROM $tablename GROUP BY $table_id_field");
 	$q->execute();
@@ -124,39 +123,52 @@ foreach my $table ( @tables ) {
 		$r = $dbh->do("DELETE FROM $tablename WHERE $table_id_field=$table_id AND modified < '$sqldate'");
 	    }
 	}
-	################################################################################################
-	# Special cases
-    }elsif ( $tablename =~ /^arpcache$|^fwtable$|^physaddr$/ ){
-	
-	my $q = $dbh->prepare_cached("SELECT COUNT(id) FROM $tablename");
-	$q->execute();
-	while ( my $count = $q->fetchrow_array() ) {
-	    if ( $count > $NUM_HISTORY ) {
-		&debug(sprintf("%s has %s items\n", $tablename, $count));
-		
-		if ( $tablename eq 'physaddr' ){
-		    # "Static" means do not delete
-		    $r = $dbh->do("DELETE FROM $tablename WHERE static='0' AND last_seen < '$sqldate'");
-		}else{
-		    $r = $dbh->do("DELETE FROM $tablename WHERE tstamp < '$sqldate'");
-		}	    
+	if ( $r ){
+	    $rows_deleted{$tablename} = $r;
+	    if ( ($VERBOSE || $DEBUG) ){
+		printf("%d rows deleted\n", $r);
 	    }
+	    $total_deleted += $r;
 	}
-    }	
-    if ( ($VERBOSE || $DEBUG) && $r > 0 ){
-	printf("%d rows deleted\n", $r);
     }
-    $total_deleted += $r;
+    $output .= sprintf("A total of %d rows deleted from history tables\n", 
+		       $total_deleted) if (($VERBOSE || $DEBUG) && $total_deleted);
     
-    $output .= sprintf("A total of %d rows deleted from %s\n", 
-		       $total_deleted, $tablename) if (($VERBOSE || $DEBUG) && $total_deleted);    
+}elsif ( $TYPE eq 'address_tracking' ){
+
+    my $r1 = $dbh->do("DELETE p,a,f FROM physaddr p, arpcacheentry a, fwtableentry f
+                       WHERE p.static=0 AND p.last_seen < '$sqldate'
+                       AND a.physaddr=p.id AND f.physaddr=p.id");
     
-    if ( $total_deleted > 0 ) {
+    my $r2 = $dbh->do("DELETE a,e FROM arpcache a, arpcacheentry e
+                       WHERE a.tstamp < '$sqldate'
+                       AND e.arpcache=a.id");
+	
+    my $r3 = $dbh->do("DELETE f,e FROM fwtable f, fwtableentry e
+                       WHERE f.tstamp < '$sqldate'
+                       AND e.fwtable=f.id");
+
+    $total_deleted = $r1 + $r2 + $r3;
+    if ( $total_deleted ){
+	foreach my $t (qw /physaddr arpcache arpcacheentry fwtable fwtableentry/){
+	    $rows_deleted{$t} = 1;
+	}
+    }
+
+    $output .= sprintf("A total of %d rows deleted from address tracking tables\n", 
+		       $total_deleted) if (($VERBOSE || $DEBUG) && $total_deleted);
+    
+}else{
+    print $usage;
+    die "Unknown type: $TYPE\n";
+}
+ 
+if ( $total_deleted > 0 ) {
+    foreach my $table ( keys %rows_deleted ){
 	# now optimize the table to free up the space from the deleted records
-	printf("Freeing deleted space in %s\n", $tablename) if $DEBUG;
-	$dbh->do("OPTIMIZE TABLE $tablename");
+	printf("Freeing deleted space in %s\n", $table) if $DEBUG;
+	$dbh->do("OPTIMIZE TABLE $table");
     }
-    
 }
 
 my $end = time;
