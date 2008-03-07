@@ -12,7 +12,7 @@
 <%args>
 $table
 $id
-$view    => "all"
+$view    => "$table"
 $edit    => undef
 </%args>
 
@@ -39,63 +39,38 @@ if ( $DEBUG ){
     print '%linksfrom is  <pre>', Dumper(%linksfrom), '</pre><br>';
     print '%order is  <pre>', Dumper(%order), '</pre><br>';
 }
-
-# List all the has_many objects for this object
-#
-foreach my $i ( keys %linksfrom ){
-    # Table that points to us
-    my $j = (keys %{ $linksfrom{$i} })[0];
-
-    #column in the other table that points to this table
-    $ftables{$i}{ffield} = $linksfrom{$i}{$j};
-    
-    # Determine if the has_many method returns ordered data from the db
-    my $ffattrs = $j->meta_data->get_column($ftables{$i}{ffield})->links_to_attrs();
-    $ftables{$i}{ffield_order} = $ffattrs->{order_by} if ( exists $ffattrs->{order_by} );
-
-    if ( $j->meta_data->is_join ){
-	# Foreign table is a join table
-	$ftables{$i}{join} = 1;
-	# Get has_a entries 
-	my %jlinksto = $j->meta_data->get_links_to();
-	# Column in join table that points to third table
-	my $col;
-	map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
-	map { push @{ $ftables{$i}{robjs} }, $_->$col } $obj->$i;
-	@{$ftables{$i}{objs}} = $obj->$i;
-	$ftables{$i}{dtbl} = $jlinksto{$col};  # table to display
-	$ftables{$i}{ctbl} = $j;               # table to pass to create.html
-    }else{  
-	# table is not a join table
-	$ftables{$i}{join} = 0;
-	@{$ftables{$i}{robjs}} = $obj->$i;
-	$ftables{$i}{dtbl} = $j;
-	$ftables{$i}{ctbl} = $j; 
-    }
-}
-
-print '%ftables is  <pre>', Dumper(%ftables), '</pre><br>' if $DEBUG;
-
 </%init>
 
 <div id="sectiondetail">
 
+<!-- Display main object values -->
+<div class="container">
+    <div class="containerheadleftoutside"><strong><% $table %></strong></div>
+    <div class="containerheadrightoutside">
+%       if ( ! $table->meta_data->is_history() ){
+            <a href="edit.html?table=<% $table %>">[new]</a>
+            <a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
+%	}
+          <a href="delete.html?table=<% $table %>&id=<% $obj %>">[delete]</a>
+    </div>
+    <div class="containerbodyoutside">
+        <& form.mhtml, table=>$table, id=>$id, edit=>0 &>
+    </div>
+</div>
+<!-- End Display main object values -->
+
+<!-- Display has_many possibilities-->
 %  if ( ! $table->meta_data->is_history() ){
       <div class="container">
 	<div class="containerhead">View</div>
 	   <div class="containerbody">
-%	      if ($view eq "all"){
+%	      if ( $view eq "all" ){
 		  [all]
 %	      }else{
 		  <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">[all]</a>
 %             }
-%	      if ($view eq $table){
-		  [<% lc($table) %>]
-%	      }else{
-                  <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $table %>">[<% lc($table) %>]</a>
-%             }
-%             foreach my $i (keys %ftables){
-%               if ($view eq $i){
+%             foreach my $i ( keys %linksfrom ){
+%               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
                    <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
@@ -108,76 +83,80 @@ print '%ftables is  <pre>', Dumper(%ftables), '</pre><br>' if $DEBUG;
 	</div>
       </div>
 %  }
-
-  <div class="containeroutside">
-
-<%perl>
-
-if ( $view eq 'all' || $view eq "$table" ){
-    
-</%perl>
-
-	<div class="containerheadleftoutside"><strong><% $table %></strong></div>
-	<div class="containerheadrightoutside">
-%         if ( ! $table->meta_data->is_history() ){
-              <a href="edit.html?table=<% $table %>">[new]</a>
-              <a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
-%	      }
-          <a href="delete.html?table=<% $table %>&id=<% $obj %>">[delete]</a>
-	</div>
-
-	<div class="containerbodyoutside">
-
-          <& form.mhtml, table=>$table, id=>$id, edit=>0 &>
-
-	</div>
-%}
-<!-- End Display main object values -->
-
+<!-- End Display has_many possibilities-->
 
 <!-- Display has_many objects -->
+<%perl>
+foreach my $i ( keys %linksfrom ){
+    if ( ($view eq 'all' || $view eq $i ) ){
+    # Table that points to us
+    my $j = (keys %{ $linksfrom{$i} })[0];
 
-%   foreach my $i (sort keys %ftables){
-%     if ( ($view eq 'all' || $view eq $i ) && $view ne "$table"){
-%         my $num;
-%         defined($ftables{$i}{objs})  && ($num = scalar(@{$ftables{$i}{objs}}));
-%	  defined($ftables{$i}{robjs}) && ($num = scalar(@{$ftables{$i}{robjs}}));
-          <div class="container">
-%           my $title = $i;
-%           $title .= " ($num)" if $num;	     
-	    <div class="containerheadleft"><% $title %></div>
-	    <div class="containerheadright">
-%           if ( $edit eq $i ){	    
-               &nbsp;
-%           }else{
-%	       if ( $num ){
-                   <a href="view.html?table=<% $table %>&id=<% $id %>&edit=<% $i %>">[edit]</a>
-%	       }
-	       <a href="edit.html?table=<% $ftables{$i}{ctbl} %>&<% $ftables{$i}{ffield} %>=<% $obj %>">[add]</a>
-%           }
-	    </div>
-%              my %args = ( table => $ftables{$i}{dtbl}, object => $ftables{$i}{robjs} );
-%	       if ( $edit eq $i ){
-%                  $args{withedit} = 1;
-%	       }else{
-%                   # If data came ordered from the db, tell sortresults not to bother sorting
-%                   $args{sort} = 0 if ( $ftables{$i}{ffield_order} );
-%              }
-%	       $m->comp('sortresults.mhtml', %args);
-          </div>
-%     }
-%   } 
+    # Column in the other table that points to this table
+    my $ffield = $linksfrom{$i}{$j};
+    
+    # Determine if the has_many method returns ordered data from the db
+    my $ffattrs = $j->meta_data->get_column($ffield)->links_to_attrs();
+    my $ffield_order = $ffattrs->{order_by} if ( defined $ffattrs && exists $ffattrs->{order_by} );
+    
+    my (@robjs, $dtbl, $ctbl);
+    if ( $j->meta_data->is_join ){
+	# Foreign table is a join table
+	# Get has_a entries 
+	my %jlinksto = $j->meta_data->get_links_to();
+	# Column in join table that points to third table
+	my $col;
+	map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
+	map { push @robjs, $_->$col } $obj->$i;
+	$dtbl = $jlinksto{$col};  # table to display
+	$ctbl = $j;               # table to pass to create.html
+    }else{  
+	# table is not a join table
+	@robjs = $obj->$i;
+	$dtbl = $j;
+	$ctbl = $j; 
+    }
 
+    my $num = scalar(@robjs);
+</%perl>
+
+      <div class="container">
+%     my $title = $i;
+%     $title .= " ($num)" if $num;	     
+          <div class="containerheadleft"><% $title %></div>
+	  <div class="containerheadright">
+%         if ( $edit eq $i ){	    
+              &nbsp;
+%         }else{
+%	      if ( $num ){
+                  <a href="view.html?table=<% $table %>&id=<% $id %>&edit=<% $i %>">[edit]</a>
+%	      }
+	      <a href="edit.html?table=<% $ctbl %>&<% $ffield %>=<% $obj %>">[add]</a>
+%         }
+	  </div>
+%         my %args = ( table=>$dtbl, object=>\@robjs );
+%	  if ( $edit eq $i ){
+%             $args{withedit} = 1;
+%	  }else{
+%         # If data came ordered from the db, tell sortresults not to bother sorting
+%             $args{sort} = 0 if ( $ffield_order );
+%         }
+%	  $m->comp('sortresults.mhtml', %args);
+     </div>
+%    }
+%}
 <!-- End Display has_many objects -->
 
+
+
 <!-- Display history objects associated with this object-->
-
-%  if ( $view eq 'history' && $table->meta_data->has_history() ){
-%   my @ho = $obj->get_history;
-    <& sortresults.mhtml, object => \@ho , view => "row", sort => 0 &>
-%  } 
-
+%if ( $view eq 'history' && $table->meta_data->has_history() ){
+<div class="container">
+%    my @ho = $obj->get_history;
+     <& sortresults.mhtml, object => \@ho , view => "row", sort => 0 &>
+</div>
+%} 
 <!-- End Display history objects -->
 
-   </div>
+
 </div>
