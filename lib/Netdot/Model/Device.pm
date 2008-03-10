@@ -601,8 +601,12 @@ sub get_snmp_info {
 	my $c_ifs = $sinfo->c_if();
 	foreach my $key ( %$c_ifs ){
 	    my $iid = $c_ifs->{$key};
+	    next unless $iid;
 	    foreach my $m ( @dp_methods ){
-		next unless ( exists $dp_hashes{$m}->{$key} );
+		if ( !exists $dp_hashes{$m}->{$key} ){
+		    $hashes{$m}->{$iid} = "";
+		    next;
+		}
 		# SNMP::Info can include values from both LLDP and CDP
 		# which means that for each port, we can have different
 		# values.  We save them all in a comma-separated list
@@ -693,8 +697,7 @@ sub get_snmp_info {
 		    $dev{interface}{$iid}{$field} = $hashes{$method}->{$iid};
 		}
 	    }else{
-		# Erase any old values
-		$dev{interface}{$iid}{$field} = '';
+		$dev{interface}{$iid}{$field} = "";
 	    }
 	}
 

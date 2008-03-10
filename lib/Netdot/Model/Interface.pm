@@ -283,7 +283,7 @@ sub snmp_update {
 
     ############################################
     # Update PhysAddr
-    if ( !defined $newif->{physaddr} ){
+    if ( ! $newif->{physaddr} ){
 	if ( int($self->physaddr) ){
 	    # This seems unlikely, but...
 	    $logger->info(sprintf("%s: PhysAddr %s no longer in %s.  Removing", 
@@ -294,7 +294,7 @@ sub snmp_update {
 	my $addr = $newif->{physaddr};
 	# Check if it's valid
 	if ( ! PhysAddr->validate( $addr ) ){
-	    $logger->warn(sprintf("%s: Interface %s (%s): PhysAddr %s is not valid"),
+	    $logger->warn(sprintf("%s: Interface %s (%s): PhysAddr %s is not valid\n"),
 			  $host, $iftmp{number}, $iftmp{name}, $addr);
 	}else{
 	    # Look it up
