@@ -3121,8 +3121,9 @@ sub _get_snmp_session {
 		      );
     
     # Turn off bulkwalk if we're using Net-SNMP 5.2.3 or 5.3.1.
-    if ( $sinfoargs{BulkWalk} == 1  && ($SNMP::VERSION eq '5.0203' || $SNMP::VERSION eq '5.0301') ) {
-	$logger->info("! Turning off bulkwalk due to buggy Net-SNMP $SNMP::VERSION\n");
+    if ( $sinfoargs{BulkWalk} == 1  && ($SNMP::VERSION eq '5.0203' || $SNMP::VERSION eq '5.0301') 
+	&& !$self->config->get('IGNORE_BUGGY_SNMP_CHECK')) {
+	$logger->info("Turning off bulkwalk due to buggy Net-SNMP $SNMP::VERSION\n");
 	$sinfoargs{BulkWalk} = 0;
     }
     my ($sinfo, $layers);
