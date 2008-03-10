@@ -599,14 +599,10 @@ sub get_snmp_info {
 	}
 	# Translate keys into iids
 	my $c_ifs = $sinfo->c_if();
-	foreach my $key ( %$c_ifs ){
-	    my $iid = $c_ifs->{$key};
+	while ( my ($key, $iid) = each %$c_ifs ){
 	    next unless $iid;
 	    foreach my $m ( @dp_methods ){
-		if ( !exists $dp_hashes{$m}->{$key} ){
-		    $hashes{$m}->{$iid} = "";
-		    next;
-		}
+		next if !exists $dp_hashes{$m}->{$key};
 		# SNMP::Info can include values from both LLDP and CDP
 		# which means that for each port, we can have different
 		# values.  We save them all in a comma-separated list
@@ -696,8 +692,10 @@ sub get_snmp_info {
 		}else{
 		    $dev{interface}{$iid}{$field} = $hashes{$method}->{$iid};
 		}
-	    }else{
-		$dev{interface}{$iid}{$field} = "";
+ 	    }else{
+ 		# Make sure we erase any old discovery protocol values
+ 		$dev{interface}{$iid}{$field} = "" 
+ 		    if ( $field =~ /^dp_/ );
 	    }
 	}
 

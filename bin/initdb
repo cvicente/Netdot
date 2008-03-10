@@ -248,7 +248,7 @@ sub insert_oui{
     &db_query(\@data);
 
     my %oui;
-    open (OUI, "<$oui_file") or die "Can't open $oui_file: $!\n";
+    open (OUI, "<:encoding(iso-8859-1)","$oui_file") or die "Can't open $oui_file: $!\n";
     while (my $line = <OUI>){
         chomp $line;
         if ($line =~ /^(.{2}-.{2}-.{2})\s+\(hex\)\s+(.*)\s*$/i){

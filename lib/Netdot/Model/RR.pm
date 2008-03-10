@@ -130,7 +130,8 @@ sub insert {
 
     # Set default zone if needed
     $argv->{zone} = $class->config->get('DEFAULT_DNSDOMAIN') 
-	unless ( defined $argv->{zone} );
+	unless ($argv->{zone});
+#    print "RR: zone is: ",  $argv->{zone}, "\n";
     
     # Insert zone if necessary;
     my $zone;
