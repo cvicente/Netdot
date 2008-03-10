@@ -198,6 +198,7 @@ $meta = {
     unique => [
       [
         'arpcache',
+        'interface',
         'ipaddr',
         'physaddr'
       ]
@@ -1464,6 +1465,9 @@ $meta = {
     index => [
       [
         'contactlist'
+      ],
+      [
+        'contacttype'
       ]
     ],
     isjoin => '0',
@@ -2073,6 +2077,9 @@ $meta = {
         'physaddr'
       ],
       [
+        'product'
+      ],
+      [
         'used_by'
       ],
       [
@@ -2452,7 +2459,11 @@ $meta = {
     },
     description => 'A DHCP Attribute or Parameter',
     has_history => 0,
-    index => [],
+    index => [
+      [
+        'scope'
+      ],
+    ],
     isjoin => '0',
     label => [
       'name',
@@ -2640,9 +2651,7 @@ $meta = {
     description => 'A DHCP Scope',
     has_history => 0,
     index => [
-      [
-        'name'
-      ]
+      ['fixed_address'], ['type' ]
     ],
     isjoin => '0',
     label => [
@@ -2650,7 +2659,7 @@ $meta = {
       'name'
     ],
     primary_key => 'id',
-    unique => [],
+    unique => [ ['name'] ],
     views => {
       all => [
         'type',
@@ -3850,8 +3859,20 @@ $meta = {
         'physaddr'
       ],
       [
-        'jack'
-      ]
+        'jack',
+      ],
+      [
+        'neighbor'
+      ],
+      [
+        'oper_duplex'
+      ],
+      [
+        'oper_status'
+      ],
+      [
+        'speed'
+      ],
     ],
     isjoin => '0',
     label => [
@@ -4310,6 +4331,9 @@ $meta = {
       ],
       [
         'interface'
+      ],
+      [
+        'vlan'
       ]
     ],
     isjoin => '0',
@@ -4862,7 +4886,7 @@ $meta = {
         default => '',
         description => 'Reference to an Entity which manufactures this product',
         length => '',
-        linksto => {
+        inksto => {
           cascade => 'Delete',
           method => 'products',
           table => 'Entity'
@@ -4906,7 +4930,10 @@ $meta = {
     index => [
       [
         'sysobjectid'
-      ]
+      ],
+      [
+        'type'
+      ],
     ],
     isjoin => '0',
     label => [
@@ -6098,7 +6125,11 @@ $meta = {
     },
     description => 'Spanning Tree Protocol Instance',
     has_history => 0,
-    index => [],
+    index => [
+      [
+        'root_bridge'
+      ],
+    ],
     isjoin => '0',
     label => [
       'number',
@@ -6650,7 +6681,9 @@ $meta = {
     },
     description => 'A Virtual LAN',
     has_history => 0,
-    index => [],
+    index => [
+      [ 'vlangroup' ],
+    ],
     isjoin => '0',
     label => [
       'vid', 
