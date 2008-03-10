@@ -602,12 +602,11 @@ sub get_snmp_info {
 	foreach my $key ( %$c_ifs ){
 	    my $iid = $c_ifs->{$key};
 	    foreach my $m ( @dp_methods ){
-		next unless ( defined $dp_hashes{$m}->{$key} &&
-			      $dp_hashes{$m}->{$key} =~ /\w+/ );
+		next unless ( exists $dp_hashes{$m}->{$key} );
 		# SNMP::Info can include values from both LLDP and CDP
 		# which means that for each port, we can have different
 		# values.  We save them all in a comma-separated list
-		if ( defined $hashes{$m}->{$iid} ){
+		if ( exists $hashes{$m}->{$iid} ){
 		    # Use a hash for fast lookup
 		    my %vals;
 		    map { $vals{$_}++ } split ',', $hashes{$m}->{$iid};
@@ -686,13 +685,16 @@ sub get_snmp_info {
 	}
 	foreach my $field ( keys %IFFIELDS ){
 	    my $method = $IFFIELDS{$field};
-	    if ( defined($hashes{$method}->{$iid}) && $hashes{$method}->{$iid} =~ /\w+/ ){
+	    if ( exists $hashes{$method}->{$iid} ){
 		if ( $field =~ /_enabled/ ){
 		    # These are all booleans
 		    $dev{interface}{$iid}{$field} = ( $hashes{$method}->{$iid} eq 'true' )? 1 : 0;
 		}else{
 		    $dev{interface}{$iid}{$field} = $hashes{$method}->{$iid};
 		}
+	    }else{
+		# Erase any old values
+		$dev{interface}{$iid}{$field} = '';
 	    }
 	}
 
