@@ -139,9 +139,11 @@ sub _parser{
     foreach my $mtable ( @tables ) {
 	my $tname = $mtable->name;
 	$tname = lc($tname);
-	my $table = $schema->add_table( name => $tname )
+	my $table = $schema->add_table(name=>$tname)
 	    or croak $schema->error;
 
+	$table->extra(mysql_table_type=>'InnoDB');
+	
 	# Add Primary key constraint
 	$table->add_constraint(name   => "pk_".$table->name,
 			       type   => 'PRIMARY_KEY',
