@@ -239,6 +239,11 @@ sub insert_default_data{
 sub insert_oui{
     my $oui_file = "oui.txt";
     unless ( -r $oui_file ){
+        print "  $oui_file not found! Using default file in package.\n";
+    }
+    # Use the local copy (probably outdated)
+    $oui_file = "oui.txt.default";
+    unless ( -r $oui_file ){
         print "  $oui_file not found!\n";
         die "Please run ''make oui'' to download oui.txt.\n";
     }
