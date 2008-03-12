@@ -81,7 +81,12 @@ sub resolve_ip {
 
     my $name;
     if ( $ip =~ /$IPV4/ ){
-	unless ($name = gethostbyaddr(inet_aton($ip), AF_INET)){
+	my $iaddr = inet_aton($ip);
+	unless ( $iaddr ){
+	    $self->{_logger}->error("Netdot::Util::DNS::resolve_ip: Can't resolve $ip");
+	    return;
+	}
+	unless ($name = gethostbyaddr($iaddr, AF_INET)){
 	    $self->{_logger}->error("Netdot::Util::DNS::resolve_ip: Can't resolve $ip");
 	    return;
 	}
