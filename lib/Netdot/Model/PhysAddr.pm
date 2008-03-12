@@ -527,12 +527,18 @@ sub vendor {
 }
 
 ################################################################
-=head2 find_edge_port - Find edge port where MAC is found
+=head2 find_edge_port - Find edge port where this MAC is located
+
+    The idea is to get all non-neighboring device ports 
+    whose latest forwarding tables included this address. 
+    If topology status is complete, this would ideally be only one
+    port.  If we get more than one, select the one whose forwarding
+    table had the least entries.
 
   Arguments: 
     None
   Returns:   
-    Array ref of Interface ids and timestamps
+    Interface id
   Examples:
     print $physaddr->find_edge_port;
 
@@ -540,25 +546,117 @@ sub vendor {
 sub find_edge_port {
     my ($self) = @_;
     $self->isa_object_method('find_edge_port');
-    if ( $self->interfaces || $self->devices ){
-	$logger->debug(sprintf("PhysAddr::find_edge_port: %s is infrastructure,",
-			       $self->address));
-	return [];
+    if ( $self->interfaces ){
+	$self->throw_user(sprintf("PhysAddr::find_edge_port: Address %s belongs to a Device Interface\n",
+				  $self->address));
     }else{
-	my $dbh = $self->db_Main();
-	my $sth;
+	my ($sth, $sth2, $rows, $rows2);
 	eval {
-	    $sth = $dbh->prepare_cached('SELECT i.id, MAX(ft.tstamp) 
+	    my $dbh = $self->db_Main();
+	    $sth = $dbh->prepare_cached('SELECT i.id, ft.id, MAX(ft.tstamp) 
                                          FROM interface i, fwtableentry fte, fwtable ft 
                                          WHERE fte.physaddr=? AND fte.interface=i.id AND fte.fwtable=ft.id AND i.neighbor=0 
                                          GROUP BY i.id');
+	    
+	    $sth2 = $dbh->prepare_cached('SELECT COUNT(i.id) 
+                                          FROM interface i, fwtable ft, fwtableentry fte 
+                                          WHERE fte.fwtable=ft.id AND fte.interface=i.id AND ft.id=? AND fte.interface=?');
+	    
 	    $sth->execute($self->id);
+	    $rows = $sth->fetchall_arrayref;
 	};
 	if ( my $e = $@ ){
 	    $self->throw_fatal($e);
 	}
-	return $sth->fetchall_arrayref;
+	
+	if ( scalar @$rows > 1 ){
+	    my @results;
+	    foreach my $row ( @$rows ){
+		my ($iid, $ftid, $tstamp) = @$row;
+		eval{
+		    $sth2->execute($ftid, $iid);
+		    $rows2 = $sth2->fetchall_arrayref;
+		};
+		if ( my $e = $@ ){
+		    $self->throw_fatal($e);
+		}
+		foreach my $row2 ( @$rows2 ){
+		    my ($count) = @$row2;
+		    push @results, [$count, $iid];
+		}
+	    }
+	    @results = sort { $a->[0] <=> $b->[0] } @results;
+	    my $result = $results[0];
+	    return $result->[1];
+	}else{
+	    return $rows->[0]->[0];
+	}
     }
+}
+
+
+################################################################
+=head2 get_last_n_fte - Get last N forwarding table entries
+
+  Arguments: 
+    limit  - Return N last entries (default: 10)
+  Returns:   
+    Array ref of Interface ids and timestamps
+  Examples:
+    print $physaddr->get_last_n_fte(10);
+
+=cut
+sub get_last_n_fte {
+    my ($self, $limit) = @_;
+    $self->isa_object_method('get_last_n_fte');
+	
+    my $dbh = $self->db_Main();
+    my $sth;
+    my $q = "SELECT i.id, ft.tstamp 
+             FROM physaddr p, interface i, fwtableentry fte, fwtable ft 
+             WHERE p.id=? AND fte.physaddr=p.id AND fte.interface=i.id 
+                   AND fte.fwtable=ft.id 
+             ORDER BY ft.tstamp DESC LIMIT $limit";
+    eval {
+	$sth = $dbh->prepare($q);
+	$sth->execute($self->id);
+    };
+    if ( my $e = $@ ){
+	$self->throw_fatal($e);
+    }
+    return $sth->fetchall_arrayref;
+}
+
+################################################################
+=head2 get_last_n_arp - Get last N forwarding table entries
+
+  Arguments: 
+    limit  - Return N last entries (default: 10)
+  Returns:   
+    Array ref of Interface ids and timestamps
+  Examples:
+    print $physaddr->get_last_n_arp(10);
+
+=cut
+sub get_last_n_arp {
+    my ($self, $limit) = @_;
+    $self->isa_object_method('get_last_n_arp');
+	
+    my $dbh = $self->db_Main();
+    my $sth;
+    my $q = "SELECT i.id, ip.id, arp.tstamp
+             FROM physaddr p, interface i, arpcacheentry arpe, arpcache arp, ipblock ip
+             WHERE p.id=? AND arpe.physaddr=p.id AND arpe.interface=i.id 
+                   AND arpe.ipaddr=ip.id AND arpe.arpcache=arp.id 
+             ORDER BY arp.tstamp DESC LIMIT $limit";
+    eval {
+	$sth = $dbh->prepare($q);
+	$sth->execute($self->id);
+    };
+    if ( my $e = $@ ){
+	$self->throw_fatal($e);
+    }
+    return $sth->fetchall_arrayref;
 }
 
 #################################################

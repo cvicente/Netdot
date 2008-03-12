@@ -10,9 +10,10 @@ section => 'Management'
 %
 %
 <%args>
-$id                => undef
-$search            => undef
-$delete            => undef
+$id     => undef
+$search => undef
+$delete => undef
+$limit  => 10
 </%args>
 %
 %
@@ -20,9 +21,24 @@ $delete            => undef
 my $DEBUG = 0;
 my $o;
 my @list;
+my (@interfaces, @devices);
+my $edge_port;
+my ($fwt, $arp);
 if ( $id ){
     unless ( $o = PhysAddr->retrieve($id) ){
 	$m->comp('/generic/error.mhtml', error => "Could not retrieve PhysAddr id: $id");
+    }
+    # Get latest forwarding table entries
+    $fwt = $o->get_last_n_fte($limit);
+
+    # Get latest arp entries
+    $arp = $o->get_last_n_arp($limit);
+
+    @devices = $o->devices;
+	
+    if ( @interfaces = $o->interfaces ){
+    }else{
+	$edge_port = $o->find_edge_port;
     }
 }
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
@@ -59,9 +75,130 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
           </div>
        </div>
 % }elsif ( $o ){
-%   my $edge_ports;
-%   unless ( $o->interfaces || $o->devices ){
-%      $edge_ports = $o->find_edge_port;
-%   }
-    <& /generic/view.html, table=>'PhysAddr', id=>$id &>
+
+<%perl>
+my (@headers, @data) = ();
+
+my @fields = ('address');
+$ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, 
+		   field_headers=>\@headers, cell_data=>\@data);
+
+# Add Vendor
+push(@headers, 'Vendor');
+my $vendor = $o->vendor;
+my $oui    = $o->oui;
+my $srch   = "$oui*";
+my $slink  = "<a href=\"../generic/search_obj.html?table=PhysAddr&address=$srch&res=1\">$vendor ($oui)</a>";
+push(@data, $slink);
+
+@fields = ('static', 'first_seen', 'last_seen');
+$ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields,
+		   field_headers=>\@headers, cell_data=>\@data);
+
+</%perl>
+<!-- Display main object values -->
+<div class="container">
+    <div class="containerhead"><strong>MAC Address: <% $o->address %></strong></div>
+    <div class="containerbodyoutside">
+        <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
+           width=>"1", headercolwidth=>"25%", datacolwidth=>"75%" &>
+    </div>
+</div>
+<!-- End Display main object values -->
+
+%if ( @devices ){
+<!-- Display Device -->
+<div class="container">
+    <div class="containerhead"><strong>Devices</strong></div>
+    <div class="containerbodyoutside">
+        <& /generic/sortresults.mhtml, object=>\@devices &>
+    </div>
+</div>
+
+<!-- EndDisplay Device -->
+%}
+
+%if ( @interfaces ){
+<!-- Display Interfaces -->
+<div class="container">
+    <div class="containerhead"><strong>Interfaces</strong></div>
+    <div class="containerbodyoutside">
+        <& /generic/sortresults.mhtml, object=>\@interfaces &>
+    </div>
+</div>
+
+<!-- EndDisplay Interfaces -->
+%}
+
+<%perl>
+if ( $edge_port ){
+    my $iface = Interface->retrieve($edge_port);
+    my ($jack, $room);
+    if ( $iface->jack ){
+	$jack = $iface->jack->jackid;
+	$room = $iface->jack->room->name if $iface->jack->room;
+    }else{
+	$jack = $iface->jack_char;
+	$room = $iface->room_char;
+    }
+    $jack ||=  'n/a';
+    $room ||=  'n/a';
+    my $lbl = $iface->get_label;
+    my $lnk = "<a href=\"../generic/view.html?table=Interface&id=$edge_port\">$lbl</a>";
+</%perl>
+<!-- Display Location -->
+<div class="container">
+    <div class="containerhead"><strong>Location</strong></div>
+    <div class="containerbodyoutside">
+        <& /generic/data_table.mhtml, field_headers=>['Interface', 'Room', 'Jack', 'Description'], 
+           data=>[[$lnk, $room, $jack, $iface->description]] &>
+    </div>
+</div>
+<!-- End Display Location -->
+%    }
+
+
+%    if ( scalar @$fwt ){
+%        my @rows;
+%        foreach my $row ( @$fwt ){
+%            my ($iid, $tstamp) = @$row;
+%            my $iface = Interface->retrieve($iid);
+%            my $lbl   = $iface->get_label;
+%            my $lnk   = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$lbl</a>";
+%            push @rows, [$tstamp, $lnk];
+%        }
+%       
+<!-- Display FWT -->
+<div class="container">
+    <div class="containerhead"><strong>Last <% $limit %> forwarding table entries</strong></div>
+    <div class="containerbodyoutside">
+        <& /generic/data_table.mhtml, field_headers=>['Time Seen', 'Interface'], data=>\@rows &>
+    </div>
+</div>
+<!-- End Display FWT -->
+%     }
+
+%    if ( scalar @$arp ){
+%        my @rows;
+%        foreach my $row ( @$arp ){
+%            my ($iid, $ipid, $tstamp) = @$row;
+%            my $iface   = Interface->retrieve($iid);
+%            my $ipblock = Ipblock->retrieve($ipid);
+%            my $ilbl    = $iface->get_label;
+%            my $iplbl   = $ipblock->get_label;
+%            my $ilnk    = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$ilbl</a>";
+%            my $iplnk   = "<a href=\"../generic/view.html?table=Ipblock&id=$ipid\">$iplbl</a>";
+%            push @rows, [$tstamp, $iplnk, $ilnk ];
+%        }
+%       
+<!-- Display ARP -->
+<div class="container">
+    <div class="containerhead"><strong>Last <% $limit %> ARP entries</strong></div>
+    <div class="containerbodyoutside">
+        <& /generic/data_table.mhtml, field_headers=>['Time Seen', 'IP', 'Interface'], data=>\@rows &>
+    </div>
+</div>
+<!-- End Display ARP -->
+%     }
+
 % }
