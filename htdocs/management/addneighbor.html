@@ -12,7 +12,7 @@ inherit => undef
 %
 <%args>
 $int_id   =>   undef
-$neighbor =>  undef
+$neighbor =>   undef
 $Add      =>   undef
 </%args>
 %
@@ -43,16 +43,19 @@ if ( $int_id ){
 	foreach my $ip ( $subnets->{$subnet}->children ){
 	    if ( $ip->is_address ){
 		if ( $ip->interface && $ip->interface->device ){
+		    # Exclude our device
+		    next if ( $ip->interface->device->id == $device->id );
 		    $devs{$ip->interface->device->short_name}++;
 		}
 	    }
 	}
     }
     # If we have no devices yet, just get all of them
-    unless ( keys %devs ){
+    unless ( %devs ){
 	map { $devs{$_->short_name}++ } Device->retrieve_all();
+	# Exclude our device
+	delete $devs{$device->short_name};
     }
-    
 }
 my $bodyargs;
 if ( $Add ){
@@ -79,21 +82,22 @@ $m->clear_buffer;
 <%perl>
 
 if ( $Add ){
-
-    if ( 0 ){
-	print "<br>Dependency already exists!<br><br>";
+    if ( !$neighbor ){
+	$m->comp('/generic/error.mhtml', error=>"Missing neighbor value!");
+    }
+    if ( int($intobj->neighbor) == $neighbor ){
+	print "<br>Neighbor relationship already exists!<br><br>";
 	print '<a href="#" onClick="window.close()">[close]</a><br>';
 	$m->abort;
     }else{
 	eval {
-	    $intobj->update({neighbor=>$neighbor});
+	    $intobj->add_neighbor(id=>$neighbor, fixed=>1, score=>'manual');
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
     }
     print "Neighbor added.<br>";
-    
     print "<p><a href=\"#\" onClick=\"window.close()\">[done]</a>";
     $m->abort;
 </%perl>
@@ -153,8 +157,7 @@ if ( $Add ){
 }}      );
 </%perl>
 
-<& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-
+      <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
       <input name="Add" value="Add" type="submit">
       <input name="Cancel" value="Cancel" type="submit" onClick="window.close()">
 </form>

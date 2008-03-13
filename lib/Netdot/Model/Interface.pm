@@ -131,8 +131,10 @@ sub delete {
 =head2 add_neighbor
     
   Arguments:
-    Neighbor Interface id
-    score
+    Hash with following key/value pairs:
+    neighbor  - Neighbor's Interface id
+    score     - Optional score obtained from Topology discovery code (for logging)
+    fixed     - (bool) Whether relationship should be removed by automated processes
   Returns:
     True
   Example:
@@ -140,9 +142,11 @@ sub delete {
 
 =cut
 sub add_neighbor{
-    my ($self, $nid, $score) = @_;
+    my ($self, %argv) = @_;
     $self->isa_object_method('add_neighbor');
-    $score ||= 'n\a';
+    my $nid   = $argv{id}    || $self->throw_fatal("Missing required argument: id");
+    my $score = $argv{score} || 'n/a';
+    my $fixed = $argv{fixed} || 0;
 
     my $neighbor = Interface->retrieve($nid) 
 	|| $self->throw_fatal("Cannot retrieve Interface id $nid");
@@ -158,7 +162,7 @@ sub add_neighbor{
 	    $logger->warn(sprintf("%s has been manually fixed to %s", $neighbor->get_label, 
 				  $neighbor->neighbor->get_label));
 	}else{
-	    $self->update({neighbor=>$neighbor});
+	    $self->update({neighbor=>$neighbor, neighbor_fixed=>$fixed});
 	}
     }
     return 1;
@@ -179,8 +183,6 @@ sub remove_neighbor{
     my ($self) = @_;
     if ( int($self->neighbor) ){
 	my $nei = $self->neighbor;
-	$logger->info(sprintf("Removing neighbors: %s <=> %s", 
-			      $self->get_label, $nei->get_label));
 	return $self->update({neighbor=>0});
     }
 }
@@ -213,23 +215,31 @@ sub update {
 	}
 	my $current_neighbor = ( $self->neighbor ) ? $self->neighbor->id : 0;
 	if ( $nid != $current_neighbor ){
-	    if ( $nid != 0 ){
-		# We might still want to set a virtual interface's neighbor to 0
-		# If we are correcting an error
-		if ( $self->type && $self->type eq "53" && $self->type eq "propVirtual" ){
-		    $self->throw_user(sprintf("Virtual interface: %s cannot have neighbors",
+	    # We might still want to set a virtual interface's neighbor to 0
+	    # If we are correcting an error
+	    if ( $nid ){
+		if ( $self->type && ($self->type eq "53" || $self->type eq "propVirtual") ){
+		    $self->throw_user(sprintf("%s: Virtual interfaces cannot have neighbors",
 					      $self->get_label));
 		}
 	    }
 	    if ( $nr ){
 		if ( $nid ){
+		    # Update my neighbor
 		    my $neighbor = $class->retrieve($nid);
-		    $neighbor->update({neighbor=>$self, reciprocal=>0});
+		    my %args = (neighbor=>$self, reciprocal=>0);
+		    $args{neighbor_fixed} = $argv->{neighbor_fixed} if exists $argv->{neighbor_fixed};
+		    $neighbor->update(\%args);
 		}else{
 		    # I'm basically removing my current neighbor
-		    # Tell the neighbor to remove me
-		    $self->neighbor->update({neighbor=>0, reciprocal=>0}) 
-			if (int($self->neighbor));
+		    # Tell the neighbor to remove me.
+		    # Also make sure the neighbor_fixed flag is off on both sides
+		    if (int($self->neighbor)){
+			$self->neighbor->update({neighbor=>0, neighbor_fixed=>0, reciprocal=>0});
+			$logger->info(sprintf("Removing neighbors: %s <=> %s", 
+					      $self->get_label, $self->neighbor->get_label));
+		    }
+		    $argv->{neighbor_fixed} = 0;
 		}
 	    }
 	}

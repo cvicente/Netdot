@@ -71,13 +71,18 @@ sub keyword_search {
             $response .= "0=".URLEncode("More than ".$MAX." matches.  Refine search")."&";
         }
         my @objs = map { $r->{$_} } keys %$r;
-        my $lblfield = ( $table->meta_data->get_labels )[0];
-	my $type = $table->meta_data->get_column($lblfield)->sql_type;
-        if ( $type =~ /int/ || $table eq "Interface" ){  # Ugly hack
-           @objs = sort { $a->$lblfield <=> $b->$lblfield } @objs;
-        }else {
-           @objs = sort { $a->$lblfield cmp $b->$lblfield } @objs;
-        }
+	if ( $table eq 'Interface' ){
+	    # Always order interfaces by ifIndex
+	    @objs = sort { $a->number <=> $b->number } @objs;
+	}else{
+	    my $lblfield = ( $table->meta_data->get_labels )[0];
+	    my $type = $table->meta_data->get_column($lblfield)->sql_type;
+	    if ( $type eq 'integer' ){
+		@objs = sort { $a->$lblfield <=> $b->$lblfield } @objs;
+	    }else {
+		@objs = sort { $a->$lblfield cmp $b->$lblfield } @objs;
+	    }
+	}
         # Added this select tag so that the user is able to select
         # something which will trigger updating of related select
         # lists.  This is important because if there is only one result then the
