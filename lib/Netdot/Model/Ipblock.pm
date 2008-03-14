@@ -1229,10 +1229,7 @@ sub update_a_records {
 	    if ( $rr->auto_update ){
 		# We won't update the RR for the IP that the 
 		# device name points to
-		if ( exists $hostnameips{$self->address} ){
-		    $logger->debug( sprintf("Ipblock::update_a_records: %s: Will not update DNS for main address: %s", 
-					    $host, $self->address) );
-		}else{
+		if ( !exists $hostnameips{$self->address} ){
 		    # Check if the name already exists
 		    my $other;
 		    if ( $other = RR->search(%rrstate)->first ){
