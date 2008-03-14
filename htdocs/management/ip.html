@@ -43,7 +43,11 @@ my $o;
 my $ci = 0;
 my $title;
 my @list;
+
 my $covering_block;
+# Some regular expressions
+my $IPV4        = Netdot->get_ipv4_regex();
+my $IPV6        = Netdot->get_ipv6_regex();
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
@@ -197,21 +201,13 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     if ($add_block =~ /\//){
 	($address, $prefix) = split /\//, $add_block;
     }else{
-	# If not passed,
-	# assign a host prefix automatically
-	if ( $add_block =~ /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/ ){
-	    ($address, $prefix) = ($add_block, '32');
-	}elsif( $add_block =~ /:/ ){
-	    ($address, $prefix) = ($add_block, '128');
-	}else{
-	    $m->comp('/generic/error.mhtml', error=> "$add_block does not look like a valid IP address");
-	}
+	$address = $add_block;
     }
+    my %args = (address=>$address, status=>"Container");
+    $args{prefix} = $prefix if $prefix;
     my $newblock; 
     eval {
-	$newblock = Ipblock->insert({address => $address, 
-				    prefix   => $prefix, 
-				    status   => "Container"});
+	$newblock = Ipblock->insert(\%args);
     };
     if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
@@ -430,7 +426,7 @@ if ( my @parents = $o->get_ancestors ){
        # Address:
        my %addr_tmp = $ui->form_field(object=>$o, column=>"address", edit=>$edit_ip, htmlExtra=>"style='width: 15em'");
        push( @field_headers, $addr_tmp{'label'} );
-       push( @cell_data, $addr_tmp{'value'}."/32" );
+       push( @cell_data, $addr_tmp{'value'} );
 
        push( @field_headers, $ui->col_descr_link('Ipblock', 'status', 'Status: ')  );
             my $status;

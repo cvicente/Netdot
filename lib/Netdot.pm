@@ -16,8 +16,8 @@ $class->{_meta}   = Netdot::Meta->new();
 $class->{_log}    = Netdot::Util::Log->new(config => $class->{_config}->get('LOG_OPTIONS'));
 
 my $IPV4 = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}';
-my $IPV6 = ':';  # Lame, but that's what we have for now
-my $HOCT = '[0-9A-F]{2}';
+my $IPV6 = '(^([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}){1})|::'; # This is not strictly correct
+my $HOCT = '[0-9A-Fa-f]{2}';
 my $MAC  = "$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT";
     
 # Be sure to return 1

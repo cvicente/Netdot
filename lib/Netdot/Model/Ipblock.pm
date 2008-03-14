@@ -1376,12 +1376,11 @@ sub _prevalidate {
     $class->throw_fatal("Ipblock::_prevalidate: Missing required arguments: address")
 	unless $address;
 
-    unless ( $address =~ /$IPV4/ ||
-	     $address =~ /$IPV6/) {
-	$class->throw_user("Invalid IP: $address");
+    unless ( $address =~ /$IPV4/ || $address =~ /$IPV6/ ) {
+	$class->throw_user("IP: $address does not match valid patterns");
     }
     if ( $address eq '1.1.1.1' ) {
-	$class->throw_user("IP $address is not valid");
+	$class->throw_user("IP $address is bogus");
     }
     my $ip;
     my $str;
@@ -1394,7 +1393,7 @@ sub _prevalidate {
     # Make sure that what we're working with the base address
     # of the block, and not an address within the block
     unless( $ip->network == $ip ){
-	$class->throw_user("Invalid IP: $str");
+	$class->throw_user("IP: $str is not base address of block");
     }
     if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
 	 || $ip eq '::1' ) {
