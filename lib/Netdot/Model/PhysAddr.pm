@@ -546,51 +546,46 @@ sub vendor {
 sub find_edge_port {
     my ($self) = @_;
     $self->isa_object_method('find_edge_port');
-    if ( $self->interfaces ){
-	$self->throw_user(sprintf("PhysAddr::find_edge_port: Address %s belongs to a Device Interface\n",
-				  $self->address));
-    }else{
-	my ($sth, $sth2, $rows, $rows2);
-	eval {
-	    my $dbh = $self->db_Main();
-	    $sth = $dbh->prepare_cached('SELECT i.id, ft.id, MAX(ft.tstamp) 
+    my ($sth, $sth2, $rows, $rows2);
+    eval {
+	my $dbh = $self->db_Main();
+	$sth = $dbh->prepare_cached('SELECT i.id, ft.id, MAX(ft.tstamp) 
                                          FROM interface i, fwtableentry fte, fwtable ft 
                                          WHERE fte.physaddr=? AND fte.interface=i.id AND fte.fwtable=ft.id AND i.neighbor=0 
                                          GROUP BY i.id');
-	    
-	    $sth2 = $dbh->prepare_cached('SELECT COUNT(i.id) 
+	
+	$sth2 = $dbh->prepare_cached('SELECT COUNT(i.id) 
                                           FROM interface i, fwtable ft, fwtableentry fte 
                                           WHERE fte.fwtable=ft.id AND fte.interface=i.id AND ft.id=? AND fte.interface=?');
-	    
-	    $sth->execute($self->id);
-	    $rows = $sth->fetchall_arrayref;
-	};
-	if ( my $e = $@ ){
-	    $self->throw_fatal($e);
-	}
 	
-	if ( scalar @$rows > 1 ){
-	    my @results;
-	    foreach my $row ( @$rows ){
-		my ($iid, $ftid, $tstamp) = @$row;
-		eval{
-		    $sth2->execute($ftid, $iid);
-		    $rows2 = $sth2->fetchall_arrayref;
-		};
-		if ( my $e = $@ ){
-		    $self->throw_fatal($e);
-		}
-		foreach my $row2 ( @$rows2 ){
-		    my ($count) = @$row2;
-		    push @results, [$count, $iid];
-		}
+	$sth->execute($self->id);
+	$rows = $sth->fetchall_arrayref;
+    };
+    if ( my $e = $@ ){
+	$self->throw_fatal($e);
+    }
+    
+    if ( scalar @$rows > 1 ){
+	my @results;
+	foreach my $row ( @$rows ){
+	    my ($iid, $ftid, $tstamp) = @$row;
+	    eval{
+		$sth2->execute($ftid, $iid);
+		$rows2 = $sth2->fetchall_arrayref;
+	    };
+	    if ( my $e = $@ ){
+		$self->throw_fatal($e);
 	    }
-	    @results = sort { $a->[0] <=> $b->[0] } @results;
-	    my $result = $results[0];
-	    return $result->[1];
-	}else{
-	    return $rows->[0]->[0];
+	    foreach my $row2 ( @$rows2 ){
+		my ($count) = @$row2;
+		push @results, [$count, $iid];
+	    }
 	}
+	@results = sort { $a->[0] <=> $b->[0] } @results;
+	my $result = $results[0];
+	return $result->[1];
+    }else{
+	return $rows->[0]->[0];
     }
 }
 

@@ -30,16 +30,14 @@ if ( $id ){
     }
     # Get latest forwarding table entries
     $fwt = $o->get_last_n_fte($limit);
-
     # Get latest arp entries
-    $arp = $o->get_last_n_arp($limit);
-
-    @devices = $o->devices;
-	
-    if ( @interfaces = $o->interfaces ){
-    }else{
-	$edge_port = $o->find_edge_port;
-    }
+    $arp        = $o->get_last_n_arp($limit);
+    # Devices whose base_mac address is this one
+    @devices    = $o->devices;
+    # Interfaces with this address
+    @interfaces = $o->interfaces;
+    # Edge port
+    $edge_port  = $o->find_edge_port;
 }
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 </%init>
