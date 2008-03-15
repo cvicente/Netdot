@@ -586,7 +586,7 @@ sub retrieve_all_hashref {
     $class->isa_class_method('retrieve_all_hashref');
 
     # Build the search-all-ips SQL
-    $logger->debug("Ipblock::retrieve_all_hashref: Retrieving all IPs...");
+    $logger->debug(sub{"Ipblock::retrieve_all_hashref: Retrieving all IPs..." });
     my ($ip_aref, %db_ips, $sth);
     
     my $dbh = $class->db_Main;
@@ -603,7 +603,7 @@ sub retrieve_all_hashref {
 	my ($id, $address) = @$row;
 	$db_ips{$address} = $id;
     }
-    $logger->debug("Ipblock::retrieve_all_hashref: ...done");
+    $logger->debug(sub{"Ipblock::retrieve_all_hashref: ...done" });
 
     return \%db_ips;
 }
@@ -638,7 +638,7 @@ sub fast_update{
     $class->isa_class_method('fast_update');
 
     my $start = time;
-    $logger->debug("Ipblock::fast_update: Updating IP addresses in DB");
+    $logger->debug(sub{"Ipblock::fast_update: Updating IP addresses in DB" });
     my $dbh = $class->db_Main;
 
     if ( $class->config->get('DB_TYPE') eq 'mysql' ){
@@ -730,8 +730,8 @@ sub fast_update{
     }
 
     my $end = time;
-    $logger->debug(sprintf("Ipblock::fast_update: Done Updating: %d addresses in %d secs",
-			   scalar(keys %$ips), ($end-$start)));
+    $logger->debug(sub{ sprintf("Ipblock::fast_update: Done Updating: %d addresses in %d secs",
+				scalar(keys %$ips), ($end-$start)) });
     return 1;
 }
 
@@ -1204,8 +1204,8 @@ sub update_a_records {
 	    # Insert and/or assign necessary records
 	    my $rr;
 	    if ( $rr = RR->search(%rrstate)->first ){
-		$logger->debug( sprintf("Ipblock::update_a_records: %s: Name %s: %s already exists.", 
-					$host, $self->address, $name) );
+		$logger->debug(sub{ sprintf("Ipblock::update_a_records: %s: Name %s: %s already exists.", 
+					    $host, $self->address, $name) });
 	    }else{
 		# Create name first
 		$rr = RR->insert(\%rrstate);
@@ -1237,8 +1237,8 @@ sub update_a_records {
 			    # This means we need to assign the other
 			    # name to this IP, not update the current name
 			    $ar->update({rr=>$other});
-			    $logger->debug(sprintf("%s: Assigned existing name %s to %s", 
-						   $host, $name, $self->address));
+			    $logger->debug(sub{ sprintf("%s: Assigned existing name %s to %s", 
+							$host, $name, $self->address)} );
 			    
 			    # And get rid of the old name
 			    $rr->delete() unless $rr->arecords;
@@ -1257,8 +1257,8 @@ sub update_a_records {
 			}else{
 			    # Just update the current name, then
 			    $rr->update(\%rrstate);
-			    $logger->debug(sprintf("%s: Updated DNS record for %s: %s", 
-						  $host, $self->address, $name));
+			    $logger->debug(sub{ sprintf("%s: Updated DNS record for %s: %s", 
+							$host, $self->address, $name) });
 			}
 		    }
 		}
@@ -1417,8 +1417,8 @@ sub _prevalidate {
 sub _validate {
     my ($self, $args) = @_;
     $self->isa_object_method('_validate');
-    $logger->debug("Ipblock::_validate: Checking validity of " . $self->get_label);
-    
+    $logger->debug(sub{"Ipblock::_validate: Checking validity of " . $self->get_label });
+		   
     # Make these values what the block is being set to
     # or what it already has
     my $statusname;
@@ -1524,8 +1524,8 @@ sub _build_tree_mem {
     my $tr = Net::IPTrie->new(version=>$version);
     $class->throw_fatal("Error initializing IP Trie") unless defined $tr;
 
-    $logger->debug( sprintf("Ipblock::_build_tree_mem: Building hierarchy for IP space version %d", 
-			    $version) );
+    $logger->debug(sub{ sprintf("Ipblock::_build_tree_mem: Building hierarchy for IP space version %d", 
+				$version) });
 
     # keep tree handy in global vars for faster operations
     # on individual nodes

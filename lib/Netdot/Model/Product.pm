@@ -57,14 +57,14 @@ sub find_or_create {
 	unless defined($sysobjectid);
     
     if ( my $prod = $class->search( sysobjectid => $sysobjectid )->first ) {
-	$logger->debug(sprintf("Product known as %s", $prod->name));
+	$logger->debug(sub{ sprintf("Product known as %s", $prod->name) });
 	return $prod;
     }else{
 	###############################################
 	# Create a new product
 	#
-	$logger->debug(sprintf("Product::find_or_create: Adding new Product with SysID %s.", 
-			       $sysobjectid));
+	$logger->debug(sub{ sprintf("Product::find_or_create: Adding new Product with SysID %s.", 
+				    $sysobjectid) });
 	
 	###############################################
 	# Check if Manufacturer Entity exists or can be added

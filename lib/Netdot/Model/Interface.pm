@@ -314,8 +314,8 @@ sub snmp_update {
 		# Make sure to update the timestamp
 		# and reference it from this Interface
 		$physaddr->update({last_seen=>$self->timestamp});
-		$logger->debug(sprintf("%s: Interface %s (%s) has PhysAddr %s", 
-				      $host, $iftmp{number}, $iftmp{name}, $addr));
+		$logger->debug(sub{ sprintf("%s: Interface %s (%s) has PhysAddr %s", 
+				      $host, $iftmp{number}, $iftmp{name}, $addr) });
 	    }else{
 		# address is new.  Add it
 		$physaddr = PhysAddr->insert({ address => $addr }); 
@@ -333,8 +333,8 @@ sub snmp_update {
     # Update
 
     my $r = $self->update( \%iftmp );
-    $logger->debug(sprintf("%s: Interface %s (%s) updated", 
-			   $host, $self->number, $self->name)) if $r;
+    $logger->debug(sub{ sprintf("%s: Interface %s (%s) updated", 
+				$host, $self->number, $self->name) }) if $r;
     
 
     ##############################################
@@ -366,7 +366,8 @@ sub snmp_update {
 		if ( defined $vdata{name} && defined $vo->name && 
 		     $vdata{name} ne $vo->name && $vo->vid ne "1" ){
 		    my $r = $vo->update(\%vdata);
-		    $logger->debug(sprintf("%s: VLAN %s name updated: %s", $host, $vo->vid, $vo->name)) if $r;
+		    $logger->debug(sub{ sprintf("%s: VLAN %s name updated: %s", $host, $vo->vid, $vo->name) })
+			if $r;
 		}
 	    }else{
 		# create
@@ -409,8 +410,8 @@ sub snmp_update {
 	    }
 	    if ( %uargs ){
 		$iv->update({stp_instance=>$instobj, %uargs});
-		$logger->debug(sprintf("%s: Updated STP info for Interface %s (%s) on VLAN %s", 
-				       $host, $self->number, $self->name, $vo->vid));
+		$logger->debug(sub{ sprintf("%s: Updated STP info for Interface %s (%s) on VLAN %s", 
+					    $host, $self->number, $self->name, $vo->vid) });
 	    }
 	}    
 	# Remove each vlan membership that no longer exists
@@ -493,14 +494,14 @@ sub update_ip {
 		if ( scalar(@ivs) == 1 ){
 		    $vlan = $ivs[0]->vlan;
 		}elsif ( scalar(@ivs) > 1 ){
-		    $logger->debug(sprintf("%s: Interface %s (%s) member of more than one VLAN.  Skipping VLAN to Subnet assignment",
-					   $host, $self->number, $self->name));
+		    $logger->debug(sub{ sprintf("%s: Interface %s (%s) member of more than one VLAN.  Skipping VLAN to Subnet assignment",
+						$host, $self->number, $self->name) });
 		}
 		if ( my $subnet = Ipblock->search(address => $subnetaddr, 
 						  prefix  => $subnetprefix)->first ){
 		    
-		    $logger->debug(sprintf("%s: Block %s/%s already exists", 
-					   $host, $subnetaddr, $subnetprefix));
+		    $logger->debug(sub{ sprintf("%s: Block %s/%s already exists", 
+						$host, $subnetaddr, $subnetprefix)} );
 		    
 		    # Make sure that the status is 'Subnet'
 		    my %iargs;
@@ -519,7 +520,7 @@ sub update_ip {
 			return;
 		    }
 		    
-		    $logger->debug(sprintf("Subnet %s/%s does not exist.  Inserting.", $subnetaddr, $subnetprefix));
+		    $logger->debug(sub{ sprintf("Subnet %s/%s does not exist.  Inserting.", $subnetaddr, $subnetprefix) });
 		    # Prepare args for insert method
 		    # IP tree will be rebuilt at the end of the Device update
 		    my %iargs = ( address        => $subnetaddr, 
@@ -563,8 +564,8 @@ sub update_ip {
     if ( $ipobj = Ipblock->search(address=>$address)->first ){
 
 	# update
-	$logger->debug(sprintf("%s: IP %s/%s exists. Updating", 
-			      $host, $address, $prefix));
+	$logger->debug(sub{ sprintf("%s: IP %s/%s exists. Updating", 
+				    $host, $address, $prefix) });
 	
 	# Notice that this is basically to confirm that the IP belongs
 	# to this interface and that the status is set to Static.  
@@ -590,8 +591,8 @@ sub update_ip {
 	}
 	
 	# update
-	$logger->debug(sprintf("%s: IP %s/%s does not exist. Inserting", 
-			      $host, $address, $prefix));
+	$logger->debug(sub{ sprintf("%s: IP %s/%s does not exist. Inserting", 
+				    $host, $address, $prefix) });
 	
 	# This could also go wrong, but we don't want to bail out
 	eval {

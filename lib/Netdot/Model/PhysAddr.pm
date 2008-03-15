@@ -110,7 +110,7 @@ sub retrieve_all_hashref {
     $class->isa_class_method('retrieve_all_hashref');
 
     # Build the search-all-macs SQL query
-    $logger->debug("PhysAddr::retrieve_all_hashref: Retrieving all MACs...");
+    $logger->debug(sub{ "PhysAddr::retrieve_all_hashref: Retrieving all MACs..." });
     my ($mac_aref, %db_macs, $sth);
 
     my $dbh = $class->db_Main;
@@ -127,7 +127,7 @@ sub retrieve_all_hashref {
 	my ($id, $address) = @$row;
 	$db_macs{$address} = $id;
     }
-    $logger->debug("PhysAddr::retrieve_all_hashref: ...done");
+    $logger->debug(sub{ "PhysAddr::retrieve_all_hashref: ...done" });
 
     return \%db_macs;
 }
@@ -160,7 +160,7 @@ sub fast_update {
     $class->isa_class_method('fast_update');
     
     my $start = time;
-    $logger->debug("PhysAddr::fast_update: Updating MAC addresses in DB");
+    $logger->debug(sub{ "PhysAddr::fast_update: Updating MAC addresses in DB" });
     
     my $dbh = $class->db_Main;
     if ( $class->config->get('DB_TYPE') eq 'mysql' ){
@@ -236,8 +236,8 @@ sub fast_update {
     }
     
     my $end = time;
-    $logger->debug(sprintf("PhysAddr::fast_update: Done Updating: %d addresses in %d secs",
-			   scalar(keys %$macs), ($end-$start)));
+    $logger->debug(sub{ sprintf("PhysAddr::fast_update: Done Updating: %d addresses in %d secs",
+				scalar(keys %$macs), ($end-$start)) });
     
     return 1;
 }
@@ -265,32 +265,32 @@ sub validate {
 
     if ( $addr !~ /^[0-9A-F]{12}$/ ){
 	# Format must be DEADDEADBEEF
-	$logger->debug("PhysAddr::validate: Bad format: $addr");
+	$logger->debug(sub{ "PhysAddr::validate: Bad format: $addr" });
 	return 0;
 
     }elsif ( $addr =~ /^([0-9A-F]{1})/ && $addr =~ /$1{12}/ ) {
 	# Assume the all-equal-bits address is invalid
-	$logger->debug("PhysAddr::validate: Bogus address: $addr");
+	$logger->debug(sub{ "PhysAddr::validate: Bogus address: $addr" });
 	return 0;
 
     }elsif ( $addr eq '000000000001' ) {
 	 # Skip Passport 8600 CLIP MAC addresses
-	$logger->debug("PhysAddr::validate: CLIP: $addr");
+	$logger->debug(sub{ "PhysAddr::validate: CLIP: $addr" });
 	return 0;
 
     }elsif ( $addr =~ /^00005E00/i ) {
 	 # Skip VRRP addresses
-	$logger->debug("PhysAddr::validate: VRRP: $addr");
+	$logger->debug(sub{ "PhysAddr::validate: VRRP: $addr" });
 	return 0;
 
     }elsif ( $addr =~ /^00000C07AC/i ) {
 	 # Skip VRRP addresses
-	$logger->debug("PhysAddr::validate: HSRP: $addr");
+	$logger->debug(sub{ "PhysAddr::validate: HSRP: $addr" });
 	return 0;
 
     }elsif ( $addr =~ /^([0-9A-F]{2})/  && $1 =~ /.(1|3|5|7|9|B|D|F)/ ) {
 	 # Multicast addresses
-	$logger->debug("PhysAddr::validate: address is Multicast: $addr");
+	$logger->debug(sub{ "PhysAddr::validate: address is Multicast: $addr" });
 	return 0;	
     }
 	 
@@ -314,7 +314,7 @@ sub from_interfaces {
     $class->isa_class_method('from_interfaces');
 
     # Build the SQL query
-    $logger->debug("PhysAddr::from_interfaces: Retrieving all Interface MACs...");
+    $logger->debug(sub{ "PhysAddr::from_interfaces: Retrieving all Interface MACs..." });
     my ($mac_aref, %int_macs, $sth);
 
     my $dbh = $class->db_Main;
@@ -333,7 +333,7 @@ sub from_interfaces {
 	my ($id, $address) = @$row;
 	$int_macs{$address} = $id;
     }
-    $logger->debug("Physaddr::from_interfaces: ...done");
+    $logger->debug(sub{ "Physaddr::from_interfaces: ...done" });
 
     return \%int_macs;
     
@@ -355,7 +355,7 @@ sub from_devices {
     $class->isa_class_method('from_devices');
 
     # Build the SQL query
-    $logger->debug("PhysAddr::from_devices: Retrieving all Device MACs...");
+    $logger->debug(sub{ "PhysAddr::from_devices: Retrieving all Device MACs..." });
     my ($mac_aref, %dev_macs);
 
     my $dbh = $class->db_Main;
@@ -374,7 +374,7 @@ sub from_devices {
 	my ($id, $address) = @$row;
 	$dev_macs{$address} = $id;
     }
-    $logger->debug("Physaddr::from_devices: ...done");
+    $logger->debug(sub{ "Physaddr::from_devices: ...done" });
     return \%dev_macs;
     
 }

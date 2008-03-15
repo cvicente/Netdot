@@ -12,7 +12,7 @@ use Parallel::ForkManager;
 my $TIMEOUT = Netdot->config->get('SNMP_QUERY_TIMEOUT');
 
 # Define some signal handlers
-$SIG{ALRM} = sub { die "timeout" };
+$SIG{ALRM} = sub{ die "timeout" };
 
 # Some regular expressions
 my $IPV4        = Netdot->get_ipv4_regex();
@@ -80,10 +80,10 @@ sub search {
 		if ( $ip->interface && ($dev = $ip->interface->device) ){
 		    $argv{name} = $dev->name;
 		}else{
-		    $logger->debug("Address $argv{name} exists but no Device associated");
+		    $logger->debug(sub{ print "Address $argv{name} exists but no Device associated"});
 		}
 	    }else{
-		$logger->debug("Device::search: $argv{name} not found in DB");
+		$logger->debug(sub{ print "Device::search: $argv{name} not found in DB"});
 	    }
 	}
 	# Notice that we could be looking for a RR with an IP address as name
@@ -131,7 +131,7 @@ sub search_like {
 	if ( my @rrs = RR->search_like(name=>$argv{name}) ){
 	    return map { $class->search(name=>$_) } @rrs;
 	}
-	$logger->debug("Device::search_like: $argv{name} not found");
+	$logger->debug(sub{ print "Device::search_like: $argv{name} not found"});
 	return;
     }elsif ( exists $argv{producttype} ){
 	return $class->search_by_type($argv{producttype});
@@ -163,7 +163,7 @@ sub assign_name {
 
     my $rr;
     if ( $rr = RR->search(name=>$host)->first ){
-	$logger->debug("Name $host exists in DB");
+	$logger->debug(sub{ print "Name $host exists in DB"});
 	return $rr;
     }
     # An RR matching $host does not exist
@@ -181,23 +181,23 @@ sub assign_name {
 	# We were given a name (not an address)
 	# Resolve to an IP address
 	if ( $ip = ($dns->resolve_name($host))[0] ){
-	    $logger->debug("Device::assign_name: $host resolves to $ip");
+	    $logger->debug(sub{ print "Device::assign_name: $host resolves to $ip"});
 	}else{
 	    # Name does not resolve
-	    $logger->debug("Device::assign_name: $host does not resolve");
+	    $logger->debug(sub{ print "Device::assign_name: $host does not resolve"});
 	}
     }
     if ( $ip ){
 	# At this point, we were either passed an IP
 	# or we got it from DNS.  The idea is to obtain a FQDN
 	if ( $fqdn = $dns->resolve_ip($ip) ){
-	    $logger->debug("Device::assign_name: $ip resolves to $fqdn");
+	    $logger->debug(sub{print "Device::assign_name: $ip resolves to $fqdn"});
 	    if ( my $rr = RR->search(name=>$fqdn)->first ){
-		$logger->debug("Device::assign_name: RR $fqdn already exists in DB");
+		$logger->debug(sub{  print "Device::assign_name: RR $fqdn already exists in DB"});
 		return $rr;
 	    }
 	}else{
-	    $logger->debug("Device::assign_name: $ip does not resolve");
+	    $logger->debug(sub{ print "Device::assign_name: $ip does not resolve"} );
 	}
     }
     # If we do not yet have a fqdn, just use what we've got
@@ -215,7 +215,7 @@ sub assign_name {
 	    $host = $fqdn;
 	    $host =~ s/\.$mname//;
         }else{
-	    $logger->debug("Device::assign_name: $fqdn not found");
+	    $logger->debug(sub{ print "Device::assign_name: $fqdn not found" });
 	    # Assume the zone to be everything to the right
 	    # of the first dot. This might be a wrong guess
 	    # but it is as close as I can get.
@@ -386,7 +386,7 @@ sub get_snmp_info {
     if ( ref($self) ){
 	if ( $self->snmp_target && int($self->snmp_target) != 0 ){
 	    $target_address = $self->snmp_target->address;
-	    $logger->debug("Device::get_snmp_info: Using configured target address: $target_address");
+	    $logger->debug(sub{ print "Device::get_snmp_info: Using configured target address: $target_address"});
 	}else{
 	    $target_address = $self->fqdn;
 	}
@@ -451,7 +451,7 @@ sub get_snmp_info {
     # Check if it's valid
     if ( $dev{physaddr} ){
 	if ( ! PhysAddr->validate($dev{physaddr}) ){
-	    $logger->debug("Device::get_snmp_info: $name ($ip) invalid Base MAC: $dev{physaddr}");
+	    $logger->debug(sub{ print"Device::get_snmp_info: $name ($ip) invalid Base MAC: $dev{physaddr}"});
 	    delete $dev{physaddr};
 	}	
     }
@@ -500,7 +500,7 @@ sub get_snmp_info {
 			$dev{stp_vlan2inst} = $sinfo->mst_vlan2instance();
 			my $mapping = join ', ', 
 			map { sprintf("%s=>%s", $_, $dev{stp_vlan2inst}->{$_}) } keys %{$dev{stp_vlan2inst}};
-			$logger->debug("Device::get_snmp_info: $name ($ip) MST VLAN mapping: $mapping ");
+			$logger->debug(sub{ print "Device::get_snmp_info: $name ($ip) MST VLAN mapping: $mapping"});
 			
 			# Get a list of vlans per instance
 			my %mst_inst_vlans;
@@ -522,7 +522,7 @@ sub get_snmp_info {
 								       'version'     => $sinfo->snmp_ver,
 								       'sclass'      => $sinfo->class);
 				my $stp_p_info = $self->_exec_timeout( $target_address, 
-								       sub { return $self->_get_stp_info(sinfo=>$vsinfo) } );
+								       sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
 				foreach my $method ( keys %$stp_p_info ){
 				    $dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
 				}
@@ -544,7 +544,7 @@ sub get_snmp_info {
 								   'version'     => $sinfo->snmp_ver,
 								   'sclass'      => $sinfo->class);
 			    my $stp_p_info = $self->_exec_timeout( $target_address, 
-								   sub { return $self->_get_stp_info(sinfo=>$vsinfo) } );
+								   sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
 			    foreach my $method ( keys %$stp_p_info ){
 				$dev{stp_instances}{$vid}{$method} = $stp_p_info->{$method};
 			    }
@@ -679,7 +679,7 @@ sub get_snmp_info {
 	# check whether it should be ignored
 	if ( defined $ifreserved ){
 	    if ( $ifdescr =~ /$ifreserved/i ){
-		$logger->debug("Device::get_snmp_info: Interface $ifdescr ignored per configuration option (IFRESERVED)");
+		$logger->debug(sub{ print "Device::get_snmp_info: Interface $ifdescr ignored per configuration option (IFRESERVED)"});
 		next;
 	    }
 	}
@@ -702,7 +702,7 @@ sub get_snmp_info {
 	# Check if physaddr is valid
 	if ( my $physaddr = $dev{interface}{$iid}{physaddr} ){
 	    if ( ! PhysAddr->validate($physaddr) ){
-		$logger->debug("Device::get_snmp_info: $name ($ip): Int $ifdescr: Invalid MAC: $physaddr");
+		$logger->debug(sub{ print "Device::get_snmp_info: $name ($ip): Int $ifdescr: Invalid MAC: $physaddr"});
 		delete $dev{interface}{$iid}{physaddr};
 	    }	
 	}
@@ -711,7 +711,7 @@ sub get_snmp_info {
 	foreach my $ip ( keys %{ $hashes{'ip_index'} } ){
 	    if ( $hashes{'ip_index'}->{$ip} eq $iid ){
 		if ( !Ipblock->validate($ip) ){
-		    $logger->debug("Device::get_snmp_info: $name ($ip): Invalid IP: $ip");
+		    $logger->debug(sub{ print "Device::get_snmp_info: $name ($ip): Invalid IP: $ip"});
 		    next;
 		}	
 		$dev{interface}{$iid}{ips}{$ip}{address} = $ip;
@@ -798,7 +798,7 @@ sub get_snmp_info {
     if ( $args{bgp_peers} || $self->config->get('ADD_BGP_PEERS')) {
 
 	if ( scalar keys %{$hashes{'bgp_peers'}} ){
-	    $logger->debug("Device::get_snmp_info: Checking for BGPPeers");
+	    $logger->debug(sub{ print "Device::get_snmp_info: Checking for BGPPeers"});
 	    
 	    my %qcache;  # Cache queries for the same AS
 	    my $whois;  # Get the whois program path
@@ -830,7 +830,7 @@ sub get_snmp_info {
 		    
 		    if ( defined $whois ){
 			# We enabled whois queries in config and we have the whois command
-			$logger->debug("Device::get_snmp_info: Going to query WHOIS for $peer: (AS $asn)");
+			$logger->debug(sub{ print "Device::get_snmp_info: Going to query WHOIS for $peer: (AS $asn)"});
 			
 			# Query any configured WHOIS servers for more info about this AS
 			# But first check if it has been found already
@@ -842,17 +842,17 @@ sub get_snmp_info {
 			    my %servers = %{ $self->config->get('WHOIS_SERVERS') };
 			    foreach my $server ( keys %servers ){
 				my $cmd = "$whois -h $server AS$asn";
-				$logger->debug("Device::get_snmp_info: Querying: $cmd");
+				$logger->debug(sub{ print "Device::get_snmp_info: Querying: $cmd"});
 				my @lines = `$cmd`;
 				if ( grep /No.*found/i, @lines ){
-				    $logger->debug("Device::get_snmp_info: $server AS$asn not found");
+				    $logger->debug(sub{ print "Device::get_snmp_info: $server AS$asn not found"});
 				}else{
 				    foreach my $key ( keys %{$servers{$server}} ){
 					my $exp = $servers{$server}->{$key};
 					if ( my @l = grep /^$exp/, @lines ){
 					    my (undef, $val) = split /:\s+/, $l[0]; #first line
 					    $val =~ s/\s*$//;
-					    $logger->debug("Device::get_snmp_info:: $server: Found $exp: $val");
+					    $logger->debug(sub{ print "Device::get_snmp_info:: $server: Found $exp: $val"});
 					    $qcache{$asn}{$key} = $val;
 					    $dev{bgppeer}{$peer}{$key} = $val;
 					}
@@ -862,15 +862,15 @@ sub get_snmp_info {
 			    }
 			}
 		    }else{
-			$logger->debug("Device::get_snmp_info: BGPPeer WHOIS queries disabled in config file");
+			$logger->debug(sub{ print "Device::get_snmp_info: BGPPeer WHOIS queries disabled in config file"});
 		    }
 		}
 	    }
 	}
     }else{
-	$logger->debug("Device::get_snmp_info: BGP Peer discovery not enabled");
+	$logger->debug(sub{ print "Device::get_snmp_info: BGP Peer discovery not enabled"});
     }
-    $logger->debug("Device::get_snmp_info: Finished getting SNMP info from $name ($ip)");
+    $logger->debug(sub{ print "Device::get_snmp_info: Finished getting SNMP info from $name ($ip)"});
     return \%dev;
 }
 
@@ -906,7 +906,7 @@ sub snmp_update_all {
     my $end = time;
     $logger->info(sprintf("All Devices updated. %d devices in %d seconds", 
 			  $device_count, ($end-$start) ));
-
+    
 }
 
 ####################################################################################
@@ -951,7 +951,7 @@ sub snmp_update_block {
 	    $h{$host} = "";
 	}
     }
-    $logger->debug("SNMP-discovering all devices in $blist");
+    $logger->debug(sub{ print "SNMP-discovering all devices in $blist"});
     my $start = time;
 
     # Call the more generic method
@@ -998,7 +998,7 @@ sub snmp_update_from_file {
     # Get a list of hosts from given file
     my $hosts = $class->_get_hosts_from_file($file);
 
-    $logger->debug("SNMP-discovering all devices in $file");
+    $logger->debug(sub{ print "SNMP-discovering all devices in $file"});
     my $start = time;
     
     # Call the more generic method
@@ -1007,8 +1007,8 @@ sub snmp_update_from_file {
 
     my $end = time;
     $logger->info(sprintf("Devices in $file updated. %d devices in %d seconds", 
-			  $device_count, ($end-$start) ));
-
+			  $device_count, ($end-$start)));
+		  
 }
 
 
@@ -1049,9 +1049,9 @@ sub discover {
     my $dev;
 
     if ( $dev = Device->search(name=>$name)->first ){
-	$logger->debug("Device::discover: Device $name already exists in DB");
+	$logger->debug(sub{"Device::discover: Device $name already exists in DB"});
     }else{
-	$logger->debug("Device::discover: Device $name does not yet exist");
+	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	unless ( $info ){
 	    # Get relevant snmp args
 	    my %snmpargs;
@@ -1059,7 +1059,7 @@ sub discover {
 	    foreach my $field ( qw(communities version timeout retries bgp_peers) ){
 		$snmpargs{$field} = $argv{$field} if defined ($argv{$field});
 	    }
-	    $info = $class->_exec_timeout($name, sub { return $class->get_snmp_info(%snmpargs) });
+	    $info = $class->_exec_timeout($name, sub{ return $class->get_snmp_info(%snmpargs) });
 	}
 	# Set some values in the new Device based on the SNMP info obtained
 	my $main_ip = $class->_get_main_ip($info) || $name;
@@ -1122,7 +1122,7 @@ sub arp_update_all {
     $class->isa_class_method('arp_update_all');
 
     my @alldevs = $class->retrieve_all();
-    $logger->debug("Fetching ARP tables from all devices in the database");
+    $logger->debug(sub{ print "Fetching ARP tables from all devices in the database"});
     return $class->_arp_update_list(list=>\@alldevs);
 }
 
@@ -1151,7 +1151,7 @@ sub arp_update_block {
 	foreach my $dev ( @$devs ) { $devs{$dev->id} = $dev; }
     }
     my $blist = join ', ', @$blocks;
-    $logger->debug("Fetching ARP tables from all devices in blocks $blist");
+    $logger->debug(sub{"Fetching ARP tables from all devices in blocks $blist"});
     return $class->_arp_update_list(list=>[values %devs]);
 }
 
@@ -1177,7 +1177,7 @@ sub arp_update_from_file {
     # Get a list of hosts from given file
     my $devs = $class->_get_devs_from_file($file);
 
-    $logger->debug("Fetching ARP tables from all devices file: $file");
+    $logger->debug(sub{"Fetching ARP tables from all devices file: $file"});
     return $class->_arp_update_list(list=>$devs);
 }
 
@@ -1197,7 +1197,7 @@ sub fwt_update_all {
     $class->isa_class_method('fwt_update_all');
     
     my @alldevs = $class->retrieve_all();
-    $logger->debug("Fetching forwarding tables from all devices in the database");
+    $logger->debug(sub{"Fetching forwarding tables from all devices in the database"});
     return $class->_fwt_update_list(list=>\@alldevs);
 }
 
@@ -1230,7 +1230,7 @@ sub fwt_update_block {
     }
 
     my $blist = join ', ', @$blocks;
-    $logger->debug("Fetching forwarding tables from all devices in $blist");
+    $logger->debug(sub{"Fetching forwarding tables from all devices in $blist"});
     return $class->_fwt_update_list(list=>[values %devs]);
 }
 
@@ -1256,7 +1256,7 @@ sub fwt_update_from_file {
     # Get a list of hosts from given file
     my $devs = $class->_get_devs_from_file($file);
 
-    $logger->debug("Fetching forwarding tables from all devices in $argv{block}");
+    $logger->debug(sub{"Fetching forwarding tables from all devices in $argv{block}"});
     return $class->_fwt_update_list(list=>$devs);
 }
 
@@ -1421,13 +1421,13 @@ sub arp_update {
     my $timestamp = exists($argv{timestamp}) ? $argv{timestamp} : $self->timestamp;
 
     unless ( $self->collect_arp ){
-	$logger->debug("$host excluded from ARP collection. Skipping");
+	$logger->debug(sub{"$host excluded from ARP collection. Skipping"});
 	return;
     }
     # Fetch from SNMP if necessary
     my %args;
     $args{intmacs} = $argv{intmacs} if defined $argv{intmacs};
-    my $cache = $argv{cache} || $self->_exec_timeout($host, sub { return $self->_get_arp_from_snmp(%args) });
+    my $cache = $argv{cache} || $self->_exec_timeout($host, sub{ return $self->_get_arp_from_snmp(%args) });
     
     unless ( keys %$cache ){
 	$logger->info("$host: ARP cache empty");
@@ -1436,7 +1436,7 @@ sub arp_update {
     
     # Measure only db update time
     my $start = time;
-    $logger->debug("$host: Updating ARP cache");
+    $logger->debug(sub{"$host: Updating ARP cache"});
   
     # Create ArpCache object
     my $ac = ArpCache->insert({device  => $self,
@@ -1474,8 +1474,8 @@ sub arp_update {
     $self->update({last_arp=>$self->timestamp});
 
     my $end = time;
-    $logger->debug(sprintf("$host: ARP cache updated. %s entries in %d seconds", 
-			   $arp_count, ($end-$start) ));
+    $logger->debug(sub{ sprintf("$host: ARP cache updated. %s entries in %d seconds", 
+				$arp_count, ($end-$start) )});
 
     return 1;
 }
@@ -1502,9 +1502,9 @@ sub fwt_update {
     my $host      = $self->fqdn;
     my $dbh       = $self->db_Main;
     my $timestamp = exists($argv{timestamp}) ? $argv{timestamp} : $self->timestamp;
-
+    
     unless ( $self->collect_fwt ){
-	$logger->debug("$host excluded from FWT collection. Skipping");
+	$logger->debug(sub{"$host excluded from FWT collection. Skipping"});
 	return;
     }
 
@@ -1521,7 +1521,7 @@ sub fwt_update {
     # Measure only db update time
     my $start = time;
 
-    $logger->debug("$host: Updating Forwarding Table (FWT)");
+    $logger->debug(sub{"$host: Updating Forwarding Table (FWT)"});
     
     # Create FWTable object
     my $fw = FWTable->insert({device  => $self,
@@ -1547,7 +1547,7 @@ sub fwt_update {
 	}
     }
 
-    $logger->debug("$host: Updating FWTable...");
+    $logger->debug(sub{"$host: Updating FWTable..."});
     FWTableEntry->fast_insert(list=>\@fw_updates);
     
     ##############################################################
@@ -1555,8 +1555,8 @@ sub fwt_update {
     $self->update({last_fwt=>$self->timestamp});
 
     my $end = time;
-    $logger->debug(sprintf("$host: FWT updated. %s entries in %d seconds", 
-			   scalar @fw_updates, ($end-$start) ));
+    $logger->debug(sub{ sprintf("$host: FWT updated. %s entries in %d seconds", 
+				scalar @fw_updates, ($end-$start) )});
     
     return 1;
 }
@@ -1778,12 +1778,12 @@ sub update_bgp_peering {
 	my %eroletmp = ( entity => $entity, type => $type );
 	my $erole;
 	if ( $erole = EntityRole->search(%eroletmp)->first ){
-	    $logger->debug(sprintf("%s: Entity %s already has 'Peer' role", 
-				   $host, $entityname ));
+	    $logger->debug(sub{ sprintf("%s: Entity %s already has 'Peer' role", 
+					$host, $entityname )});
 	}else{
 	    EntityRole->insert(\%eroletmp);
 	    $logger->info(sprintf("%s: Added 'Peer' role to Entity %s", 
-				   $host, $entityname ));
+				  $host, $entityname ));
 	}
 
     }else{
@@ -1816,7 +1816,7 @@ sub update_bgp_peering {
     if ( $p ){
 	# Update in case anything has changed
 	my $r = $p->update(\%pstate);
-	$logger->debug(sprintf("%s: Updated Peering with: %s. ", $host, $entity->name)) if $r;
+	$logger->debug(sub{ sprintf("%s: Updated Peering with: %s. ", $host, $entity->name)}) if $r;
 	
     }else{
 	# Peering Doesn't exist.  Create.
@@ -1871,8 +1871,8 @@ sub snmp_update {
     my $communities = $argv{communities} || [$self->community] || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
     
     my $info = $argv{info} 
-    || $class->_exec_timeout($host, sub { return $self->get_snmp_info(communities => $communities, 
-								      version     => $snmpversion) });
+    || $class->_exec_timeout($host, sub{ return $self->get_snmp_info(communities => $communities, 
+								     version     => $snmpversion) });
     
     unless ( $info ){
 	$logger->error("$host: No SNMP info received");
@@ -1902,7 +1902,7 @@ sub snmp_update {
 	    # The address exists
 	    # (may have been discovered in fw tables/arp cache)
 	    $mac->update({last_seen=>$self->timestamp});
-	    $logger->debug("$host: Using existing $address as base bridge address");		
+	    $logger->debug(sub{"$host: Using existing $address as base bridge address"});
 	}else{
 	    # address is new.  Add it
 	    my %mactmp = (address    => $address,
@@ -1914,12 +1914,12 @@ sub snmp_update {
 	}
 	$devtmp{physaddr} = $mac->id;
     }else{
-	$logger->debug("$host did not return base MAC");
+	$logger->debug(sub{"$host did not return base MAC"});
     }
 
     # Serial Number
     unless ( $devtmp{serialnumber} = $info->{serialnumber} ){
-    	$logger->debug("$host did not return serial number");
+    	$logger->debug(sub{"$host did not return serial number" });
     }
     
     # Fill in some basic device info
@@ -1941,11 +1941,11 @@ sub snmp_update {
     
     # Set Local BGP info
     if( defined $info->{bgplocalas} ){
-	$logger->debug(sprintf("%s: BGP Local AS is %s", $host, $info->{bgplocalas}));
+	$logger->debug(sub{ sprintf("%s: BGP Local AS is %s", $host, $info->{bgplocalas}) });
 	$devtmp{bgplocalas} = $info->{bgplocalas};
     }
     if( defined $info->{bgpid} ){
-	$logger->debug(sprintf("%s: BGP ID is %s", $host, $info->{bgpid}));
+	$logger->debug(sub{ sprintf("%s: BGP ID is %s", $host, $info->{bgpid})});
 	$devtmp{bgpid} = $info->{bgpid};
     }
     
@@ -1967,8 +1967,8 @@ sub snmp_update {
     }
     # Deal with STP instances
     if ( $devtmp{stp_enabled} ){
-	$logger->debug(sprintf("%s: STP is enabled", $host));
-	$logger->debug(sprintf("%s: STP type is: %s", $host, $devtmp{stp_type}));
+	$logger->debug(sub{ sprintf("%s: STP is enabled", $host)});
+	$logger->debug(sub{ sprintf("%s: STP type is: %s", $host, $devtmp{stp_type})});
 	
 	# Get all current instances, hash by number
 	my %old_instances;
@@ -1992,7 +1992,7 @@ sub snmp_update {
 		    }
 		    $uargs{root_bridge} = $root_bridge;
 		}else{
-		    $logger->debug("$host: STP Designated Root not defined for instance $instn");
+		    $logger->debug(sub{ "$host: STP Designated Root not defined for instance $instn"});
 		}
 		
 		if ( my $root_p = $info->{stp_instances}->{$instn}->{stp_root_port} ){
@@ -2004,7 +2004,7 @@ sub snmp_update {
 		    }
 		    $uargs{root_port} = $root_p;
 		}else{
-		    $logger->debug("$host: STP Root Port not defined for instance $instn");
+		    $logger->debug(sub{"$host: STP Root Port not defined for instance $instn"});
 		}
 		# Finally, just get the priority
 		$uargs{bridge_priority} = $info->{stp_instances}->{$instn}->{stp_priority};
@@ -2026,7 +2026,7 @@ sub snmp_update {
 	}
     }else{
 	if ( my @instances = $self->stp_instances() ){
-	    $logger->debug("$host: STP appears disabled.  Removing all existing STP instances");
+	    $logger->debug(sub{"$host: STP appears disabled.  Removing all existing STP instances"});
 	    foreach my $i ( @instances ){
 		$i->delete();
 	    }
@@ -2076,7 +2076,7 @@ sub snmp_update {
     my %IGNORED;
     map { $IGNORED{$_}++ } @{ $self->config->get('IGNOREPORTS') };
     if ( defined $info->{sysobjectid} && exists $IGNORED{$info->{sysobjectid}} ){
-	$logger->debug("Device::snmp_update: $host ports ignored per configuration option (IGNOREPORTS)");
+	$logger->debug(sub{"Device::snmp_update: $host ports ignored per configuration option (IGNOREPORTS)"});
     }else{
 	
 	# How to deal with new subnets
@@ -2139,8 +2139,8 @@ sub snmp_update {
 	    if ( $ifkey eq 'name' ){
 		if ( defined $newname && ($oldif = $oldifsbyname{$newname}) ){
 		    # Found one with the same name
-		    $logger->debug(sprintf("%s: Interface with name %s found", 
-					   $host, $oldif->name));
+		    $logger->debug(sub{ sprintf("%s: Interface with name %s found", 
+						$host, $oldif->name)});
 		    
 		    if ( $oldif->number ne $newnumber ){
 			# New and old numbers do not match for this name
@@ -2150,15 +2150,15 @@ sub snmp_update {
 		}elsif ( exists $oldifsbynumber{$newnumber} ){
 		    # Name not found, but found one with the same number
 		    $oldif = $oldifsbynumber{$newnumber};
-		    $logger->debug(sprintf("%s: Interface with number %s found", 
-					   $host, $oldif->number));
+		    $logger->debug(sub{ sprintf("%s: Interface with number %s found", 
+						$host, $oldif->number)});
 		}
 	    }else{
 		# Using number as unique reference
 		if ( exists $oldifsbynumber{$newnumber} ){
 		    $oldif = $oldifsbynumber{$newnumber};
-		    $logger->debug(sprintf("%s: Interface with number %s found", 
-					   $host, $oldif->number));
+		    $logger->debug(sub{ sprintf("%s: Interface with number %s found", 
+						$host, $oldif->number)});
 		}
 	    }	    
 	    my $if;
@@ -2264,8 +2264,8 @@ sub snmp_update {
     # Get addresses that the main Device name resolves to
     my @hostnameips;
     if ( @hostnameips = $dns->resolve_name($host) ){
-	$logger->debug(sprintf("Device::snmp_update: %s resolves to: %s",
-			       $host, (join ", ", @hostnameips)) );
+	$logger->debug(sub{ sprintf("Device::snmp_update: %s resolves to: %s",
+				    $host, (join ", ", @hostnameips))});
     }
     
     foreach my $ip ( @{ $self->get_ips() } ){
@@ -2336,18 +2336,18 @@ sub snmp_update {
     }
 
     my $end = time;
-    $logger->debug(sprintf("%s: SNMP update completed in %d seconds", 
-			  $host, ($end-$start)));
+    $logger->debug(sub{ sprintf("%s: SNMP update completed in %d seconds", 
+				$host, ($end-$start))});
 
     if ( $argv{pretend} ){
-	$logger->debug("$host: Rolling back changes");
+	$logger->debug(sub{"$host: Rolling back changes"});
 	eval {
 	    $self->dbi_rollback;
 	};
 	if ( my $e = $@ ){
 	    $self->throw_fatal("Rollback Failed!: $e");
 	}
-	$logger->debug("Turning AutoCommit back on");
+	$logger->debug(sub{"Turning AutoCommit back on"});
 	unless ( Netdot::Model->db_auto_commit(1) == 1 ){
 	    $self->throw_fatal("Unable to set AutoCommit on");
 	}
@@ -3063,8 +3063,8 @@ sub _get_snmp_session {
 	if ( defined $self->{_snmp_session} ){
 	    foreach my $comm ( @{$argv{communities}} ){
 		if ( defined $self->{_snmp_session}->{$comm} ){
-		    $logger->debug(sprintf("Device::get_snmp_session: Reusing existing session with %s, community %s", 
-					   $self->fqdn, $comm));
+		    $logger->debug(sub{ sprintf("Device::get_snmp_session: Reusing existing session with %s, community %s", 
+						$self->fqdn, $comm)});
 		    return $self->{_snmp_session}->{$comm};
 		}
 	    }
@@ -3130,8 +3130,8 @@ sub _get_snmp_session {
     foreach my $community ( @{$argv{communities}} ){
 	$sinfoargs{Community} = $community;
 	
-	$logger->debug(sprintf("Device::get_snmp_session: Trying session with %s (%s), community %s",
-			       $name, $ip, $sinfoargs{Community}));
+	$logger->debug(sub{ sprintf("Device::get_snmp_session: Trying session with %s (%s), community %s",
+				    $name, $ip, $sinfoargs{Community})});
 	
 	$sinfo = $sclass->new( %sinfoargs );
 	
@@ -3140,8 +3140,8 @@ sub _get_snmp_session {
 	
 	# Try Version 1 if we haven't already
 	if ( !defined $sinfo && !defined $layers && $sinfoargs{Version} != 1 ){
-	    $logger->debug(sprintf("Device::get_snmp_session: %s (%s): SNMPv%d failed. Trying SNMPv1", 
-				   $name, $ip, $sinfoargs{Version}));
+	    $logger->debug(sub{ sprintf("Device::get_snmp_session: %s (%s): SNMPv%d failed. Trying SNMPv1", 
+					$name, $ip, $sinfoargs{Version})});
 	    $sinfoargs{Version} = 1;
 	    $sinfo = $sclass->new( %sinfoargs );
 	}
@@ -3154,8 +3154,8 @@ sub _get_snmp_session {
 	    }
 	    last; # If we made it here, we are fine.  Stop trying communities
 	}else{
-	    $logger->debug(sprintf("Device::get_snmp_session: Failed %s session with %s (%s) community '%s'", 
-				   $sinfoargs{Version}, $name, $ip, $sinfoargs{Community}));
+	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Failed %s session with %s (%s) community '%s'", 
+					$sinfoargs{Version}, $name, $ip, $sinfoargs{Community})});
 	}
     }
     
@@ -3165,7 +3165,7 @@ sub _get_snmp_session {
     }
 
     # Save SNMP::Info class if we are an object
-    $logger->debug("Device::get_snmp_session: $ip ($name) is: ", $sinfo->class());
+    $logger->debug(sub{"Device::get_snmp_session: $ip ($name) is: ", $sinfo->class() });
     if ( $class ){
 	$self->{_sclass} = $sinfo->class();
     }
@@ -3178,8 +3178,8 @@ sub _get_snmp_session {
 	$uargs{community}    = $sinfoargs{Community} if ( $self->community    ne $sinfoargs{Community} );
 	$self->update(\%uargs) if ( keys %uargs );
     }
-    $logger->debug(sprintf("SNMPv%d session with host %s (%s), community '%s' established",
-			  $sinfoargs{Version}, $name, $ip, $sinfoargs{Community}) );
+    $logger->debug(sub{ sprintf("SNMPv%d session with host %s (%s), community '%s' established",
+				$sinfoargs{Version}, $name, $ip, $sinfoargs{Community}) });
 
     # We want to do our own 'munging' for certain things
     my $munge = $sinfo->munge();
@@ -3218,11 +3218,11 @@ sub _get_main_ip {
     my $ip;
     if ( scalar(@allips) == 1 ){
 	$ip = $allips[0];
-	$logger->debug("Device::_get_main_ip: Device has one IP: $ip");
+	$logger->debug(sub{"Device::_get_main_ip: Device has one IP: $ip" });
 	return $ip;
     }
     foreach my $method ( @methods ){
-	$logger->debug("Device::_get_main_ip: Trying method $method");
+	$logger->debug(sub{"Device::_get_main_ip: Trying method $method" });
 	if ( $method eq 'sysname' && $info->{sysname} ){
 	    $ip = ($dns->resolve_name($info->{sysname}))[0];
 	}elsif ( $method eq 'highest_ip' ){
@@ -3258,7 +3258,7 @@ sub _get_main_ip {
 	
 	if ( defined $ip ){
 	    if ( $dns->resolve_ip($ip) ){
-		$logger->debug("Device::_get_main_ip: Chose $ip using naming method: $method");
+		$logger->debug(sub{"Device::_get_main_ip: Chose $ip using naming method: $method" });
 		return $ip ;
 	    }else{
 		# We do not want an IP that does not resolve
@@ -3326,7 +3326,7 @@ sub _get_hosts_from_file {
     open(FILE, "<$file") or 
 	$class->throw_user("Can't open file $file for reading: $!\n");
     
-    $logger->debug("Device::_get_hosts_from_file: Retrieving host list from $file");
+    $logger->debug(sub{"Device::_get_hosts_from_file: Retrieving host list from $file" });
 
     my %hosts;
     while (<FILE>){
@@ -3361,7 +3361,7 @@ sub _fork_init {
     }
 
     # MAXPROCS processes for parallel updates
-    $logger->debug("Device::_fork_init: Launching up to $MAXPROCS children processes");
+    $logger->debug(sub{"Device::_fork_init: Launching up to $MAXPROCS children processes" });
     my $pm = Parallel::ForkManager->new($MAXPROCS);
 
     # Prevent SNMP::Info load mib-init in each forked process
@@ -3386,9 +3386,9 @@ sub _fork_end {
     $class->isa_class_method('_fork_end');
 
     # Wait for all children to finish
-    $logger->debug("Device::_fork_end: Waiting for children...");
+    $logger->debug(sub{"Device::_fork_end: Waiting for children..." });
     $pm->wait_all_children;
-    $logger->debug("Device::_fork_end: All children finished");
+    $logger->debug(sub{"Device::_fork_end: All children finished" });
 
     # Return DBI to its normal DESTROY behavior
     my $dbh = $class->db_Main;
@@ -3445,8 +3445,8 @@ sub _snmp_update_list {
 	    my $dev;
 	    if ( $dev = $class->search(name=>$host)->first ){
 		# Device is already in DB
-		$logger->debug(sprintf("Device::snmp_update_list: %s exists in DB as %s", 
-				       $host, $dev->fqdn));
+		$logger->debug(sub{ sprintf("Device::snmp_update_list: %s exists in DB as %s", 
+					    $host, $dev->fqdn) });
 		# Put in list
 		$do_devs{$dev->id} = $dev;
 	    }else{
@@ -3464,8 +3464,8 @@ sub _snmp_update_list {
 		$device_count++;
 		$pm->start and next;
 		$class->_launch_child(pm   => $pm, 
-				      code => sub { return $class->discover(name=>$host, %snmpargs) },
-				      );
+				      code => sub{ return $class->discover(name=>$host, %snmpargs) },
+		    );
 	    }
 	}
     }
@@ -3478,16 +3478,16 @@ sub _snmp_update_list {
     }
     foreach my $dev ( values %do_devs ){
 	unless ( $dev->canautoupdate ){
-	    $logger->debug(sprintf("%s excluded from auto-updates. Skipping", 
-			   $dev->fqdn));
+	    $logger->debug(sub{ sprintf("%s excluded from auto-updates. Skipping", 
+					$dev->fqdn) });
 	    next;
 	}
 	# FORK
 	$device_count++; # this isn't real, but...
 	$pm->start and next;
 	$class->_launch_child(pm   => $pm, 
-			      code => sub { return $dev->snmp_update(%uargs); },
-			      );
+			      code => sub{ return $dev->snmp_update(%uargs); },
+	    );
     }
     
     # End forking state
@@ -3528,7 +3528,7 @@ sub _get_arp_from_snmp {
     my $sinfo = $self->_get_snmp_session();
 
     # Fetch ARP Cache
-    $logger->debug("$host: Fetching ARP cache");
+    $logger->debug(sub{"$host: Fetching ARP cache" });
     my $start      = time;
     my $at_paddr   = $sinfo->at_paddr();
 
@@ -3540,43 +3540,43 @@ sub _get_arp_from_snmp {
 	    $ip  = $2;
 	    $mac = $at_paddr->{$key};
 	}else{
-	    $logger->debug("Device::_get_arp_from_snmp: $host: Unrecognized hash key: $key");
+	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: Unrecognized hash key: $key" });
 	    next;
 	}
         unless ( defined($ip) ){
-	    $logger->debug("Device::_get_arp_from_snmp: $host: IP not defined in hash key: $key");
+	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: IP not defined in hash key: $key" });
 	    next;
 	}
 	unless ( defined($idx) ){
-	    $logger->debug("Device::_get_arp_from_snmp: $host: ifIndex not defined in hash key: $key");
+	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: ifIndex not defined in hash key: $key" });
 	    next;
 	}
 	unless ( defined($mac) ){
-	    $logger->debug("Device::_get_arp_from_snmp: $host: MAC not defined in at_paddr->{$key}");
+	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: MAC not defined in at_paddr->{$key}" });
 	    next;
 	}
 	if ( ! PhysAddr->validate($mac) ){
-	    $logger->debug("Device::get_snmp_arp: $host: Invalid MAC: $mac");
+	    $logger->debug(sub{"Device::get_snmp_arp: $host: Invalid MAC: $mac" });
 	    next;
 	}	
 	
 	# Skip MACs that belong to interfaces
 	if ( $intmacs->{$mac} ){
- 	    $logger->debug("Device::get_snmp_arp: $host: $mac is a port.  Skipping.");
+ 	    $logger->debug(sub{"Device::get_snmp_arp: $host: $mac is a port.  Skipping." });
 	    next;
 	}
 
 	# Store in hash
 	$cache{$idx}{$mac} = $ip;
 
-	$logger->debug("Device::get_snmp_arp: $host: $idx -> $ip -> $mac");
+	$logger->debug(sub{"Device::get_snmp_arp: $host: $idx -> $ip -> $mac" });
     }
     
     map { $arp_count+= scalar(keys %{$cache{$_}}) } keys %cache;
 
     my $end = time;
-    $logger->debug(sprintf("$host: ARP cache fetched. %s entries in %d seconds", 
-			   $arp_count, ($end-$start) ));
+    $logger->debug(sub{ sprintf("$host: ARP cache fetched. %s entries in %d seconds", 
+				$arp_count, ($end-$start) ) });
     return \%cache;
 }
 
@@ -3619,21 +3619,21 @@ sub _get_fwt_from_snmp {
     # Notice that we pass the result variable as a parameter since that's the
     # easiest way to append more info later using the same function (see below).
     my %fwt; 
-    $logger->debug("$host: Fetching forwarding table");
-    $self->_exec_timeout($host, sub { return $self->_walk_fwt(sinfo   => $sinfo,
-							      sints   => $sints,
-							      intmacs => $intmacs,
-							      devints => \%devints,
-							      fwt     => \%fwt,
-							      ); 
-				  });
+    $logger->debug(sub{"$host: Fetching forwarding table" });
+    $self->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $sinfo,
+							     sints   => $sints,
+							     intmacs => $intmacs,
+							     devints => \%devints,
+							     fwt     => \%fwt,
+					 ); 
+			 });
     
     # For certain Cisco switches you have to connect to each
     # VLAN and get the forwarding table out of it.
     # Notably the Catalyst 5k, 6k, and 3500 series
     my $cisco_comm_indexing = $sinfo->cisco_comm_indexing();
     if ( $cisco_comm_indexing ){
-        $logger->debug("$host supports Cisco community string indexing. Connecting to each VLAN");
+        $logger->debug(sub{"$host supports Cisco community string indexing. Connecting to each VLAN" });
 	my $sclass = $sinfo->class();
 
         # Get list of all VLANS on this device
@@ -3655,7 +3655,7 @@ sub _get_fwt_from_snmp {
                 $logger->error("$host: Error getting SNMP session for VLAN: $vlan");
                 next;
             }
-            $self->_exec_timeout($host, sub { return $self->_walk_fwt(sinfo   => $vlan_sinfo,
+            $self->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $vlan_sinfo,
 								      sints   => $sints,
 								      intmacs => $intmacs,
 								      devints => \%devints,
@@ -3667,8 +3667,8 @@ sub _get_fwt_from_snmp {
     my $end = time;
     my $fwt_count = 0;
     map { $fwt_count+= scalar keys %{ $fwt{$_} } } keys %fwt;
-    $logger->debug(sprintf("$host: FWT fetched. %d entries in %d seconds", 
-			   $fwt_count, ($end-$start) ));
+    $logger->debug(sub{ sprintf("$host: FWT fetched. %d entries in %d seconds", 
+				$fwt_count, ($end-$start) ) });
     
     return \%fwt;
 }
@@ -3699,19 +3699,19 @@ sub _walk_fwt {
 
 	    my $mac = $fw_mac->{$fw_index};
 	    unless ( defined $mac ) {
-		$logger->debug("Device::_walk_fwt: $host: MAC not defined at index $fw_index.  Skipping");
+		$logger->debug(sub{"Device::_walk_fwt: $host: MAC not defined at index $fw_index.  Skipping" });
 		next;
 	    }
 
 	    my $bp_id  = $fw_port->{$fw_index};
 	    unless ( defined $bp_id ) {
-		$logger->debug("Device::_walk_fwt: $host: Port $fw_index has no fw_port mapping.  Skipping");
+		$logger->debug(sub{"Device::_walk_fwt: $host: Port $fw_index has no fw_port mapping.  Skipping" });
 		next;
 	    }
 	    
 	    my $iid = $bp_index->{$bp_id};
 	    unless ( defined $iid ) {
-		$logger->debug("Device::_walk_fwt: $host: Interface $bp_id has no bp_index mapping. Skipping");
+		$logger->debug(sub{"Device::_walk_fwt: $host: Interface $bp_id has no bp_index mapping. Skipping" });
 		next;
 	    }
 	    
@@ -3723,7 +3723,7 @@ sub _walk_fwt {
 	foreach my $iid ( keys %{ $last_src } ){
 	    my $mac = $last_src->{$iid};
 	    unless ( defined $mac ) {
-		$logger->debug("Device::_walk_fwt: $host: MAC not defined at rptr index $iid. Skipping");
+		$logger->debug(sub{"Device::_walk_fwt: $host: MAC not defined at rptr index $iid. Skipping" });
 		next;
 	    }
 	    
@@ -3736,7 +3736,7 @@ sub _walk_fwt {
     foreach my $iid ( keys %$fwt ){
 	my $descr = $sints->{$iid};
 	unless ( defined $descr ) {
-	    $logger->debug("Device::_walk_fwt: $host: SNMP iid $iid has no physical port matching. Skipping");
+	    $logger->debug(sub{"Device::_walk_fwt: $host: SNMP iid $iid has no physical port matching. Skipping" });
 	    delete $fwt->{$iid};
 	    next;
 	}
@@ -3750,19 +3750,19 @@ sub _walk_fwt {
 	foreach my $mac ( keys %{ $fwt->{$iid} } ){
 
 	    if ( ! PhysAddr->validate($mac) ){
-		$logger->debug("Device::_walk_fwt: $host: Invalid MAC: $mac");
+		$logger->debug(sub{"Device::_walk_fwt: $host: Invalid MAC: $mac" });
 		delete $fwt->{$iid}->{$mac};
 		next;
 	    }	
 
 	    if ( $intmacs->{$mac} ){
-		$logger->debug("Device::_walk_fwt: $host: $mac is an interface.  Skipping.");
+		$logger->debug(sub{"Device::_walk_fwt: $host: $mac is an interface.  Skipping." });
 		delete $fwt->{$iid}->{$mac};
 		next;
 		
 	    }
 
-	    $logger->debug("Device::_walk_fwt: $host: $iid ($descr) -> $mac ");
+	    $logger->debug(sub{"Device::_walk_fwt: $host: $iid ($descr) -> $mac" });
 	}
 	
     }
@@ -3933,7 +3933,7 @@ sub _get_airespace_ap_info {
     # AP Ethernet MAC
     if ( defined(my $basemac = $hashes->{'airespace_ap_mac'}->{$idx}) ){
 	if ( ! PhysAddr->validate($basemac) ){
-	    $logger->debug("Device::get_airspace_if_info: iid $iid: Invalid MAC: $basemac");
+	    $logger->debug(sub{"Device::get_airspace_if_info: iid $iid: Invalid MAC: $basemac" });
 	}else{
 	    $info->{physaddr} = $basemac;
 	}
@@ -4013,7 +4013,7 @@ sub _fwt_update_list {
 	$device_count++;
 	$pm->start and next;
 	$class->_launch_child(pm   => $pm,
-			      code => sub { return $dev->fwt_update(intmacs=>$intmacs, timestamp=>$timestamp) },
+			      code => sub{ return $dev->fwt_update(intmacs=>$intmacs, timestamp=>$timestamp) },
 			      );
     }
 

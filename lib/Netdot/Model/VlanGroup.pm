@@ -109,8 +109,8 @@ sub assign_vlans{
 	if ( $vlan->vid >= $self->start_vid && $vlan->vid <= $self->end_vid ){
 	    unless ( $vlan->vlangroup == $self->id ){
 		$vlan->update({vlangroup=>$self->id});
-		$logger->debug(sprintf("VlanGroup: %s: Vlan %s within my range. Updating.", 
-				       $self->name, $vlan->vid));
+		$logger->debug(sub{ sprintf("VlanGroup: %s: Vlan %s within my range. Updating.", 
+					    $self->name, $vlan->vid) });
 	    }
 		
 	}else{

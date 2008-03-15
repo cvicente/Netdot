@@ -59,11 +59,11 @@ sub search {
 	my @sections = split /\./, $argv{mname};
 	while ( @sections ){
 	    $argv{mname} = join '.', @sections;
-	    $logger->debug("Zone::search: $argv{mname}");
+	    $logger->debug(sub{ "Zone::search: $argv{mname}" });
 	    if ( $class->SUPER::search(%argv) ){
 		# We call the method again to not mess
 		# with CDBI's wantarray checks
-		$logger->debug("Zone::search: found: ", $argv{mname});
+		$logger->debug(sub{ "Zone::search: found: ", $argv{mname} });
 		return $class->SUPER::search(%argv);
 	    }
 	    shift @sections;

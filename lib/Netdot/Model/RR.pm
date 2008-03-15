@@ -131,7 +131,6 @@ sub insert {
     # Set default zone if needed
     $argv->{zone} = $class->config->get('DEFAULT_DNSDOMAIN') 
 	unless ($argv->{zone});
-#    print "RR: zone is: ",  $argv->{zone}, "\n";
     
     # Insert zone if necessary;
     my $zone;
@@ -140,7 +139,7 @@ sub insert {
 	 || ( $zone = (Zone->search(mname=>$argv->{zone}))[0] )
 	){
     }else{
-	$logger->debug(sprintf("Zone not found: \"%s\".  Inserting.", $argv->{zone}));
+	$logger->debug(sub{ sprintf("Zone not found: \"%s\".  Inserting.", $argv->{zone}) });
 	$zone = Zone->insert({ mname => $argv->{zone} });
 	$logger->info(sprintf("Inserted new Zone: %s", $zone->get_label));
     }

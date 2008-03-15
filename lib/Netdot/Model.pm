@@ -785,7 +785,7 @@ sub _convert_search_keyword {
 	# Add wildcards at beginning and end
 	$new =  "%" . $keyword . "%";
     }
-    $logger->debug("Model::_convert_search_keyword: Converted $keyword into $new");
+    $logger->debug(sub{ print "Model::_convert_search_keyword: Converted $keyword into $new" });
     return $new;
 }
 
