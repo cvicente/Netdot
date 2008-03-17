@@ -483,11 +483,13 @@ sub select_lookup{
 	# or if we've been passed a specific default list, 
 	# show the select box.
         if ( $count <= $args{maxCount} || @defaults ){
-            @fo = $args{lookup}->retrieve_all() if ( !$args{where} && !@defaults );
-	    @fo = map  { $_->[0] }
-	    sort { $a->[1] cmp $b->[1] }
-	    map { [$_ , $_->get_label] } @fo;
-
+            if ( !$args{where} && !@defaults ){
+		@fo = $args{lookup}->retrieve_all();
+	    }
+	    unless ( @defaults ){
+		# Assume the list is ordered when passed to us
+		@fo = sort { $a->get_label cmp $b->get_label } @fo;
+	    }
             # if an object was passed we use it to obtain table name, id, etc
             # as well as add an initial element to the selection list.
             if ( $o ){
