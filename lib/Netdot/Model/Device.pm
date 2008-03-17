@@ -80,10 +80,10 @@ sub search {
 		if ( $ip->interface && ($dev = $ip->interface->device) ){
 		    $argv{name} = $dev->name;
 		}else{
-		    $logger->debug(sub{ print "Address $argv{name} exists but no Device associated"});
+		    $logger->debug(sub{"Address $argv{name} exists but no Device associated"});
 		}
 	    }else{
-		$logger->debug(sub{ print "Device::search: $argv{name} not found in DB"});
+		$logger->debug(sub{"Device::search: $argv{name} not found in DB"});
 	    }
 	}
 	# Notice that we could be looking for a RR with an IP address as name
@@ -131,7 +131,7 @@ sub search_like {
 	if ( my @rrs = RR->search_like(name=>$argv{name}) ){
 	    return map { $class->search(name=>$_) } @rrs;
 	}
-	$logger->debug(sub{ print "Device::search_like: $argv{name} not found"});
+	$logger->debug(sub{"Device::search_like: $argv{name} not found"});
 	return;
     }elsif ( exists $argv{producttype} ){
 	return $class->search_by_type($argv{producttype});
@@ -163,7 +163,7 @@ sub assign_name {
 
     my $rr;
     if ( $rr = RR->search(name=>$host)->first ){
-	$logger->debug(sub{ print "Name $host exists in DB"});
+	$logger->debug(sub{"Name $host exists in DB"});
 	return $rr;
     }
     # An RR matching $host does not exist
@@ -181,23 +181,23 @@ sub assign_name {
 	# We were given a name (not an address)
 	# Resolve to an IP address
 	if ( $ip = ($dns->resolve_name($host))[0] ){
-	    $logger->debug(sub{ print "Device::assign_name: $host resolves to $ip"});
+	    $logger->debug(sub{"Device::assign_name: $host resolves to $ip"});
 	}else{
 	    # Name does not resolve
-	    $logger->debug(sub{ print "Device::assign_name: $host does not resolve"});
+	    $logger->debug(sub{"Device::assign_name: $host does not resolve"});
 	}
     }
     if ( $ip ){
 	# At this point, we were either passed an IP
 	# or we got it from DNS.  The idea is to obtain a FQDN
 	if ( $fqdn = $dns->resolve_ip($ip) ){
-	    $logger->debug(sub{print "Device::assign_name: $ip resolves to $fqdn"});
+	    $logger->debug(sub{"Device::assign_name: $ip resolves to $fqdn"});
 	    if ( my $rr = RR->search(name=>$fqdn)->first ){
-		$logger->debug(sub{  print "Device::assign_name: RR $fqdn already exists in DB"});
+		$logger->debug(sub{"Device::assign_name: RR $fqdn already exists in DB"});
 		return $rr;
 	    }
 	}else{
-	    $logger->debug(sub{ print "Device::assign_name: $ip does not resolve"} );
+	    $logger->debug(sub{"Device::assign_name: $ip does not resolve"} );
 	}
     }
     # If we do not yet have a fqdn, just use what we've got
@@ -215,7 +215,7 @@ sub assign_name {
 	    $host = $fqdn;
 	    $host =~ s/\.$mname//;
         }else{
-	    $logger->debug(sub{ print "Device::assign_name: $fqdn not found" });
+	    $logger->debug(sub{"Device::assign_name: $fqdn not found" });
 	    # Assume the zone to be everything to the right
 	    # of the first dot. This might be a wrong guess
 	    # but it is as close as I can get.
@@ -386,7 +386,7 @@ sub get_snmp_info {
     if ( ref($self) ){
 	if ( $self->snmp_target && int($self->snmp_target) != 0 ){
 	    $target_address = $self->snmp_target->address;
-	    $logger->debug(sub{ print "Device::get_snmp_info: Using configured target address: $target_address"});
+	    $logger->debug(sub{"Device::get_snmp_info: Using configured target address: $target_address"});
 	}else{
 	    $target_address = $self->fqdn;
 	}
@@ -451,7 +451,7 @@ sub get_snmp_info {
     # Check if it's valid
     if ( $dev{physaddr} ){
 	if ( ! PhysAddr->validate($dev{physaddr}) ){
-	    $logger->debug(sub{ print"Device::get_snmp_info: $name ($ip) invalid Base MAC: $dev{physaddr}"});
+	    $logger->debug(sub{"Device::get_snmp_info: $name ($ip) invalid Base MAC: $dev{physaddr}"});
 	    delete $dev{physaddr};
 	}	
     }
@@ -500,7 +500,7 @@ sub get_snmp_info {
 			$dev{stp_vlan2inst} = $sinfo->mst_vlan2instance();
 			my $mapping = join ', ', 
 			map { sprintf("%s=>%s", $_, $dev{stp_vlan2inst}->{$_}) } keys %{$dev{stp_vlan2inst}};
-			$logger->debug(sub{ print "Device::get_snmp_info: $name ($ip) MST VLAN mapping: $mapping"});
+			$logger->debug(sub{"Device::get_snmp_info: $name ($ip) MST VLAN mapping: $mapping"});
 			
 			# Get a list of vlans per instance
 			my %mst_inst_vlans;
@@ -679,7 +679,7 @@ sub get_snmp_info {
 	# check whether it should be ignored
 	if ( defined $ifreserved ){
 	    if ( $ifdescr =~ /$ifreserved/i ){
-		$logger->debug(sub{ print "Device::get_snmp_info: Interface $ifdescr ignored per configuration option (IFRESERVED)"});
+		$logger->debug(sub{"Device::get_snmp_info: Interface $ifdescr ignored per configuration option (IFRESERVED)"});
 		next;
 	    }
 	}
@@ -702,7 +702,7 @@ sub get_snmp_info {
 	# Check if physaddr is valid
 	if ( my $physaddr = $dev{interface}{$iid}{physaddr} ){
 	    if ( ! PhysAddr->validate($physaddr) ){
-		$logger->debug(sub{ print "Device::get_snmp_info: $name ($ip): Int $ifdescr: Invalid MAC: $physaddr"});
+		$logger->debug(sub{"Device::get_snmp_info: $name ($ip): Int $ifdescr: Invalid MAC: $physaddr"});
 		delete $dev{interface}{$iid}{physaddr};
 	    }	
 	}
@@ -711,7 +711,7 @@ sub get_snmp_info {
 	foreach my $ip ( keys %{ $hashes{'ip_index'} } ){
 	    if ( $hashes{'ip_index'}->{$ip} eq $iid ){
 		if ( !Ipblock->validate($ip) ){
-		    $logger->debug(sub{ print "Device::get_snmp_info: $name ($ip): Invalid IP: $ip"});
+		    $logger->debug(sub{"Device::get_snmp_info: $name ($ip): Invalid IP: $ip"});
 		    next;
 		}	
 		$dev{interface}{$iid}{ips}{$ip}{address} = $ip;
@@ -798,7 +798,7 @@ sub get_snmp_info {
     if ( $args{bgp_peers} || $self->config->get('ADD_BGP_PEERS')) {
 
 	if ( scalar keys %{$hashes{'bgp_peers'}} ){
-	    $logger->debug(sub{ print "Device::get_snmp_info: Checking for BGPPeers"});
+	    $logger->debug(sub{"Device::get_snmp_info: Checking for BGPPeers"});
 	    
 	    my %qcache;  # Cache queries for the same AS
 	    my $whois;  # Get the whois program path
@@ -830,7 +830,7 @@ sub get_snmp_info {
 		    
 		    if ( defined $whois ){
 			# We enabled whois queries in config and we have the whois command
-			$logger->debug(sub{ print "Device::get_snmp_info: Going to query WHOIS for $peer: (AS $asn)"});
+			$logger->debug(sub{"Device::get_snmp_info: Going to query WHOIS for $peer: (AS $asn)"});
 			
 			# Query any configured WHOIS servers for more info about this AS
 			# But first check if it has been found already
@@ -842,17 +842,17 @@ sub get_snmp_info {
 			    my %servers = %{ $self->config->get('WHOIS_SERVERS') };
 			    foreach my $server ( keys %servers ){
 				my $cmd = "$whois -h $server AS$asn";
-				$logger->debug(sub{ print "Device::get_snmp_info: Querying: $cmd"});
+				$logger->debug(sub{"Device::get_snmp_info: Querying: $cmd"});
 				my @lines = `$cmd`;
 				if ( grep /No.*found/i, @lines ){
-				    $logger->debug(sub{ print "Device::get_snmp_info: $server AS$asn not found"});
+				    $logger->debug(sub{"Device::get_snmp_info: $server AS$asn not found"});
 				}else{
 				    foreach my $key ( keys %{$servers{$server}} ){
 					my $exp = $servers{$server}->{$key};
 					if ( my @l = grep /^$exp/, @lines ){
 					    my (undef, $val) = split /:\s+/, $l[0]; #first line
 					    $val =~ s/\s*$//;
-					    $logger->debug(sub{ print "Device::get_snmp_info:: $server: Found $exp: $val"});
+					    $logger->debug(sub{"Device::get_snmp_info:: $server: Found $exp: $val"});
 					    $qcache{$asn}{$key} = $val;
 					    $dev{bgppeer}{$peer}{$key} = $val;
 					}
@@ -862,15 +862,15 @@ sub get_snmp_info {
 			    }
 			}
 		    }else{
-			$logger->debug(sub{ print "Device::get_snmp_info: BGPPeer WHOIS queries disabled in config file"});
+			$logger->debug(sub{"Device::get_snmp_info: BGPPeer WHOIS queries disabled in config file"});
 		    }
 		}
 	    }
 	}
     }else{
-	$logger->debug(sub{ print "Device::get_snmp_info: BGP Peer discovery not enabled"});
+	$logger->debug(sub{"Device::get_snmp_info: BGP Peer discovery not enabled"});
     }
-    $logger->debug(sub{ print "Device::get_snmp_info: Finished getting SNMP info from $name ($ip)"});
+    $logger->debug(sub{"Device::get_snmp_info: Finished getting SNMP info from $name ($ip)"});
     return \%dev;
 }
 
@@ -951,7 +951,7 @@ sub snmp_update_block {
 	    $h{$host} = "";
 	}
     }
-    $logger->debug(sub{ print "SNMP-discovering all devices in $blist"});
+    $logger->debug(sub{"SNMP-discovering all devices in $blist"});
     my $start = time;
 
     # Call the more generic method
@@ -998,7 +998,7 @@ sub snmp_update_from_file {
     # Get a list of hosts from given file
     my $hosts = $class->_get_hosts_from_file($file);
 
-    $logger->debug(sub{ print "SNMP-discovering all devices in $file"});
+    $logger->debug(sub{"SNMP-discovering all devices in $file"});
     my $start = time;
     
     # Call the more generic method
@@ -1122,7 +1122,7 @@ sub arp_update_all {
     $class->isa_class_method('arp_update_all');
 
     my @alldevs = $class->retrieve_all();
-    $logger->debug(sub{ print "Fetching ARP tables from all devices in the database"});
+    $logger->debug(sub{"Fetching ARP tables from all devices in the database"});
     return $class->_arp_update_list(list=>\@alldevs);
 }
 
@@ -1404,7 +1404,6 @@ sub list_layers {
     cache          - hash reference with arp cache info (optional)
     no_update_macs - Do not update MAC addresses (bool)
     no_update_ips  - Do not update IP addresses (bool)
-    intmacs        - List of MAC addresses that belong to interfaces (optional)
   Returns:
     True if successful
     
@@ -1426,7 +1425,6 @@ sub arp_update {
     }
     # Fetch from SNMP if necessary
     my %args;
-    $args{intmacs} = $argv{intmacs} if defined $argv{intmacs};
     my $cache = $argv{cache} || $self->_exec_timeout($host, sub{ return $self->_get_arp_from_snmp(%args) });
     
     unless ( keys %$cache ){
@@ -1487,7 +1485,6 @@ sub arp_update {
     Hash with the following keys:
     fwt            - hash reference with FWT info (optional)
     no_update_macs - Do not update MAC addresses (bool)
-    intmacs        - List of MAC addresses that belong to interfaces (optional)
   Returns:
     True if successful
     
@@ -1510,7 +1507,6 @@ sub fwt_update {
 
     # Fetch from SNMP if necessary
     my %args;
-    $args{intmacs} = $argv{intmacs} if defined $argv{intmacs};
     my $fwt = $argv{fwt} || $self->_get_fwt_from_snmp(%args);
 
     unless ( keys %$fwt ){
@@ -3506,8 +3502,7 @@ sub _snmp_update_list {
 #     Some logic borrowed from netdisco's arpnip()
 #    
 #   Arguments:
-#     Hash with following keys:
-#       intmacs - Hash ref with Interface MACs
+#       none
 #   Returns:
 #     Hash ref.
 #    
@@ -3517,12 +3512,8 @@ sub _snmp_update_list {
 #
 sub _get_arp_from_snmp {
     my ($self, %argv) = @_;
-
-
     $self->isa_object_method('_get_arp_from_snmp');
     my $host = $self->fqdn;
-
-    my $intmacs = $argv{intmacs} || PhysAddr->from_interfaces();
 
     my %cache;
     my $sinfo = $self->_get_snmp_session();
@@ -3560,12 +3551,6 @@ sub _get_arp_from_snmp {
 	    next;
 	}	
 	
-	# Skip MACs that belong to interfaces
-	if ( $intmacs->{$mac} ){
- 	    $logger->debug(sub{"Device::get_snmp_arp: $host: $mac is a port.  Skipping." });
-	    next;
-	}
-
 	# Store in hash
 	$cache{$idx}{$mac} = $ip;
 
@@ -3588,7 +3573,7 @@ sub _get_arp_from_snmp {
 #     Some logic borrowed from netdisco's macksuck()
 #    
 #   Arguments:
-#     intmacs - Hashref with Interface MACs
+#     none
 #   Returns:
 #     Hash ref.
 #    
@@ -3607,7 +3592,6 @@ sub _get_fwt_from_snmp {
     my $start   = time;
     my $sinfo   = $self->_get_snmp_session();
     my $sints   = $sinfo->interfaces();
-    my $intmacs = $argv{intmacs} || PhysAddr->from_interfaces();
 
     # Build a hash with device's interfaces, indexed by ifIndex
     my %devints;
@@ -3622,7 +3606,6 @@ sub _get_fwt_from_snmp {
     $logger->debug(sub{"$host: Fetching forwarding table" });
     $self->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $sinfo,
 							     sints   => $sints,
-							     intmacs => $intmacs,
 							     devints => \%devints,
 							     fwt     => \%fwt,
 					 ); 
@@ -3657,7 +3640,6 @@ sub _get_fwt_from_snmp {
             }
             $self->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $vlan_sinfo,
 								      sints   => $sints,
-								      intmacs => $intmacs,
 								      devints => \%devints,
 								      fwt     => \%fwt);
 					  });
@@ -3678,12 +3660,12 @@ sub _walk_fwt {
     my ($self, %argv) = @_;
     $self->isa_object_method('_walk_fwt');
 
-    my ($sinfo, $sints, $intmacs, $devints, $fwt) = @argv{"sinfo", "sints", "intmacs", "devints",  "fwt"};
+    my ($sinfo, $sints, $devints, $fwt) = @argv{"sinfo", "sints", "devints",  "fwt"};
     
     my $host = $self->fqdn;
     
     $self->throw_fatal("Missing required arguments") 
-	unless ( $sinfo && $sints && $intmacs && $devints && $fwt );
+	unless ( $sinfo && $sints && $devints && $fwt );
 
     # Try BRIDGE mib stuff first, then REPEATER mib
     if ( my $fw_mac = $sinfo->fw_mac() ){
@@ -3748,20 +3730,11 @@ sub _walk_fwt {
 	}
 	
 	foreach my $mac ( keys %{ $fwt->{$iid} } ){
-
 	    if ( ! PhysAddr->validate($mac) ){
 		$logger->debug(sub{"Device::_walk_fwt: $host: Invalid MAC: $mac" });
 		delete $fwt->{$iid}->{$mac};
 		next;
 	    }	
-
-	    if ( $intmacs->{$mac} ){
-		$logger->debug(sub{"Device::_walk_fwt: $host: $mac is an interface.  Skipping." });
-		delete $fwt->{$iid}->{$mac};
-		next;
-		
-	    }
-
 	    $logger->debug(sub{"Device::_walk_fwt: $host: $iid ($descr) -> $mac" });
 	}
 	
@@ -3999,9 +3972,6 @@ sub _fwt_update_list {
     my $list = $argv{list} or throw_fatal("Missing required arguments: list");
     my $start = time;
 
-    # Get a hash with all interface MACs
-    my $intmacs = PhysAddr->from_interfaces();
-
     # Init ForkManager
     my $pm = $class->_fork_init();
 
@@ -4013,7 +3983,7 @@ sub _fwt_update_list {
 	$device_count++;
 	$pm->start and next;
 	$class->_launch_child(pm   => $pm,
-			      code => sub{ return $dev->fwt_update(intmacs=>$intmacs, timestamp=>$timestamp) },
+			      code => sub{ return $dev->fwt_update(timestamp=>$timestamp) },
 			      );
     }
 
@@ -4044,9 +4014,6 @@ sub _arp_update_list {
     my $list = $argv{list} or $class->throw_fatal("Missing required arguments: list");
     my $start = time;
 
-    # Get a hash with all interface MACs
-    my $intmacs = PhysAddr->from_interfaces();
-
     # Init ForkManager
     my $pm = $class->_fork_init();
 
@@ -4058,7 +4025,7 @@ sub _arp_update_list {
 	$device_count++;
 	$pm->start and next;
 	$class->_launch_child(pm   => $pm,
-			      code => sub{ return $dev->arp_update(int_macs=>$intmacs, timestamp=>$timestamp) },
+			      code => sub{ return $dev->arp_update(timestamp=>$timestamp) },
 			      );
     }
 
