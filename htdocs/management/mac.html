@@ -36,8 +36,11 @@ if ( $id ){
     @devices    = $o->devices;
     # Interfaces with this address
     @interfaces = $o->interfaces;
-    # Edge port
-    $edge_port  = $o->find_edge_port;
+
+    # Get edge port unless MAC belongs to an Interface with a neighbor
+    unless ( scalar(@interfaces) == 1 && ($interfaces[0])->neighbor ){
+	$edge_port  = $o->find_edge_port;
+    }
 }
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 </%init>
@@ -96,7 +99,7 @@ $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields,
 </%perl>
 <!-- Display main object values -->
 <div class="container">
-    <div class="containerhead"><strong>MAC Address: <% $o->address %></strong></div>
+    <div class="containerhead"><strong>MAC Address</strong></div>
     <div class="containerbodyoutside">
         <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
            width=>"1", headercolwidth=>"25%", datacolwidth=>"75%" &>
@@ -107,7 +110,7 @@ $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields,
 %if ( @devices ){
 <!-- Display Device -->
 <div class="container">
-    <div class="containerhead"><strong>Devices</strong></div>
+    <div class="containerhead"><strong>Devices using this address</strong></div>
     <div class="containerbodyoutside">
         <& /generic/sortresults.mhtml, object=>\@devices &>
     </div>
@@ -119,7 +122,7 @@ $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields,
 %if ( @interfaces ){
 <!-- Display Interfaces -->
 <div class="container">
-    <div class="containerhead"><strong>Interfaces</strong></div>
+    <div class="containerhead"><strong>Interfaces using this address</strong></div>
     <div class="containerbodyoutside">
         <& /generic/sortresults.mhtml, object=>\@interfaces &>
     </div>
@@ -146,7 +149,7 @@ if ( $edge_port ){
 </%perl>
 <!-- Display Location -->
 <div class="container">
-    <div class="containerhead"><strong>Location</strong></div>
+    <div class="containerhead"><strong>Edge Port</strong></div>
     <div class="containerbodyoutside">
         <& /generic/data_table.mhtml, field_headers=>['Interface', 'Room', 'Jack', 'Description'], 
            data=>[[$lnk, $room, $jack, $iface->description]] &>
