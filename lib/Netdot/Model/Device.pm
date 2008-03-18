@@ -1095,7 +1095,7 @@ sub discover {
     
     # Get relevant snmp_update args
     my %uargs;
-    foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
+    foreach my $field ( qw( communities add_subnets subs_inherit bgp_peers pretend ) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
     $uargs{info} = $info;
