@@ -488,11 +488,10 @@ sub update {
     my @changed_keys;
     if ( $argv ){
 	$class->_adjust_vals(args=>$argv, action=>'update');
-	foreach my $col ( keys %$argv ){
-	    my $val = $argv->{$col};
+	while ( my ($col, $val) = each %$argv ){
 	    my $a = ref($self->$col) ? $self->$col->id : $self->$col;
 	    my $b = ref($val)        ? $val->id        : $val;
-	    if ( $a ne $b ){
+	    if ( $a && $b && ($a ne $b) ){
 		$self->set($col=>$b);
 		push @changed_keys, $col;
 	    }

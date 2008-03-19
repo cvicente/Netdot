@@ -30,7 +30,7 @@ my $to              = Netdot->config->get('NOCEMAIL');
 my $subject         = 'Netdot Device Updates';
 
 # Flags
-my ($ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $INFO, $FWT, $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG, $EMAIL, $PRETEND);
+my ($ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $INFO, $FWT, $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG, $EMAIL);
 
 # This will be reflected in the history tables
 $ENV{REMOTE_USER}   = "netdot";
