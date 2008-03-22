@@ -24,7 +24,7 @@ Netdot Device Topology Class
 =cut
 
 ######################################################################################
-=head2 discover - Discover Topology for devices within given IP block
+=head2 discover - Discover Topology for devices within (optional) given IP block
 
   Kinds of IP blocks allowed: 'Container' and 'Subnet'
         
@@ -74,7 +74,8 @@ sub discover {
 			  $blist, $srcs, $MINSCORE));
 
     my $start = time;
-    my (@dp_devs, %stp_roots);
+    my (@dp_devs, %stp_roots, %fdb_vlans);
+    my $count = 0;
     foreach my $devid ( keys %devs ){
 	my $dev = $devs{$devid};
 	# STP sources
@@ -97,9 +98,13 @@ sub discover {
 	my $links = $class->get_stp_links(root=>$root);
 	map { $stp_links->{$_} = $links->{$_} } keys %$links;
     }
+
     if (@blocks) {
         $dp_links = $class->get_dp_links(\@dp_devs) if @dp_devs;
+        #$fdb_links = $class->get_fdb_links(\@blocks);
+        $logger->info("FDB information only gets used on whole-database queries");
     } else {
+        $fdb_links = $class->get_fdb_links if ($SOURCES{FDB});
         $dp_links = $class->get_dp_links;
     }   
 
@@ -168,6 +173,7 @@ sub update_links {
     foreach my $source ( qw( dp stp fdb ) ){
 	$hashes{$source} = $argv{$source};
     }
+
     foreach my $source ( keys %hashes ){
 	my $score = $WEIGHTS{$source};
 	foreach my $int ( keys %{$hashes{$source}} ){
@@ -357,6 +363,167 @@ sub get_dp_links {
         }
     }
 
+    return \%links;
+}
+
+###################################################################################################
+=head2 get_fdb_links - Get links between devices based on FDB information
+
+  Arguments:  
+    none
+  Returns:    
+    Hashref with link info
+  Example:
+    my $links = Netdot::Model::Topology->get_fdb_links;
+
+=cut
+sub get_fdb_links {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('get_fdb_links');
+
+    my %links;
+
+    my $dbh = $class->db_Main;
+
+    # Find the most recent query for every Vlan
+    my $vlanstatement = $dbh->prepare("
+        SELECT MAX(tstamp), interfacevlan.vlan
+        FROM fwtable, interfacevlan, device, interface
+        WHERE fwtable.device = device.id
+            AND interface.device = device.id
+            AND interfacevlan.interface = interface.id
+        GROUP BY interfacevlan.vlan");
+    $vlanstatement->execute;
+
+    my ($maxtstamp, $vlan);
+    $vlanstatement->bind_columns(\$maxtstamp, \$vlan);
+
+    my $fdbstatement = $dbh->prepare_cached("
+            SELECT fwtable.device, interface.id, p1.address, p2.address
+            FROM interface, interfacevlan, fwtable, fwtableentry,
+                physaddr p1, physaddr p2
+            WHERE fwtable.device = interface.device
+                AND fwtable.tstamp = ?
+                AND fwtableentry.fwtable = fwtable.id
+                AND fwtableentry.interface = interface.id
+                AND interfacevlan.vlan = ?
+                AND interfacevlan.interface = interface.id
+                AND interface.physaddr = p1.id
+                AND fwtableentry.physaddr = p2.id
+        ");
+
+    while ($vlanstatement->fetch) {
+        $logger->debug("Discovering how vlan $vlan was connected at $maxtstamp");
+
+        $fdbstatement->execute($maxtstamp, $vlan);
+        
+        my ($device, $ifaceid, $localiface, $entry);
+
+        $fdbstatement->bind_columns(\$device, \$ifaceid, \$localiface, \$entry);
+
+        my %addriface = ();
+        my $d = {};
+        while ($fdbstatement->fetch) {
+            $addriface{$localiface} = $ifaceid;
+
+            $d->{$device} = {} unless exists $d->{$device};
+            $d->{$device}{$localiface} = {} unless exists $d->{$device}{$localiface};
+            $d->{$device}{$localiface}{$entry} = 1;
+        }
+
+        if (1 >= keys %$d) {
+            $logger->debug("Only one device on vlan $vlan");
+            next;
+        }
+
+        $logger->debug("vlan $vlan has multiple devices at time $maxtstamp");
+
+        # Now thin out the data hash
+        my $interfaces = {};
+        foreach my $device (keys %$d) {
+            foreach my $interface (keys %{$d->{$device}}) {
+                $interfaces->{$interface} = 1;
+            }
+        }
+
+        # Delete all entries that don't refer to other infrastructure
+        # devices on the same vlan
+        foreach my $device (keys %$d) {
+            foreach my $interface (keys %{$d->{$device}}) {
+                foreach my $addr (keys %{$d->{$device}{$interface}}) {
+                    unless (exists $interfaces->{$addr}) {
+                        delete $d->{$device}{$interface}{$addr};
+                    }
+                }
+            }
+        }
+
+        # Delete all interfaces that have no fwtable entries for other
+        # items in the same vlan
+        foreach my $device (keys %$d) {
+            foreach my $interface (keys %{$d->{$device}}) {
+                if (0 == scalar keys %{$d->{$device}{$interface}}) {
+                    delete $d->{$device}{$interface};
+                } 
+            }
+        }
+
+        # Delete all devices on the vlan which don't seem to connect to
+        # other devices on the vlan
+        foreach my $device (keys %$d) {
+            delete $d->{$device}
+                if (0 == keys %{$d->{$device}});
+        }
+
+        unless (scalar keys %$d && 1 != scalar keys %$d) {
+            $logger->debug("No cross-referencing fwtables found in $vlan");
+            next;
+        }
+
+        # Now we know we actually have data to work with in $d
+        # First is the easy case - when we have only A in B's FDB and only B in
+        # A's FDB.
+
+        $interfaces = {};
+
+        # Things with a single entry are considered individually
+        foreach my $device (keys %$d) {
+            foreach my $interface (keys %{$d->{$device}}) {
+                $interfaces->{$interface} = $d->{$device}{$interface};
+            }
+        }
+
+        foreach my $interface (keys %$interfaces) {
+            next if (exists $links{$interface});
+
+            my @table = keys %{$interfaces->{$interface}};
+            if (1 == scalar @table
+                    && 1 == scalar keys %{$interfaces->{$table[0]}}
+                    && exists $interfaces->{$table[0]}{$interface} ) {
+
+                $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link: " . $addriface{$interface} . " -> " . $addriface{$table[0]});
+                $links{$addriface{$interface}} = $addriface{$table[0]};
+                $links{$addriface{$table[0]}} = $addriface{$interface};
+            }
+        }
+
+        # Now, if there are any more complicated cases, we do the full
+        # algorithm
+
+        foreach my $device (keys %$d) {
+            foreach my $interface (keys %{$d->{$device}}) {
+                if (1 > (int keys %{$d->{$device}{$interface}})) {
+                    print "WE MUST DO THE BIG CASE ON VLAN $vlan\n";
+                    use Data::Dumper;
+                    print "The table is " . Dumper($d);
+                    exit 0;
+                }
+            }
+        }
+
+    }
+
+    use Data::Dumper;
     return \%links;
 }
 
