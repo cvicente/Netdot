@@ -108,6 +108,18 @@ sub discover {
         $dp_links = $class->get_dp_links;
     }   
 
+#    print "Discovering unique things\n";
+#    while (my ($from, $to) = each(%$fdb_links)) {
+#        if (Interface->retrieve($from)  && Interface->retrieve($to)) {
+#            print Interface->retrieve($from)->device->name->name ." -> ".  Interface->retrieve($to)->device->name->name;
+#        } else {
+#            print "$from -> $to";
+#        }
+#        print " STP" if (exists $stp_links->{$from} && $stp_links->{$from} == $to);
+#        print " DP"  if (exists $dp_links->{$from} && $dp_links->{$from} == $to);
+#        print "\n";
+#    }
+
     $logger->debug(sprintf("Netdot::Model::Topology: Links determined in %d seconds", time - $start));
 
     # Get all existing links
@@ -387,7 +399,7 @@ sub get_fdb_links {
 
     # Find the most recent query for every Vlan
     my $vlanstatement = $dbh->prepare("
-        SELECT MAX(tstamp), interfacevlan.vlan
+        SELECT MAX(tstamp), interfacevlan.vlan, 
         FROM fwtable, interfacevlan, device, interface
         WHERE fwtable.device = device.id
             AND interface.device = device.id
@@ -471,6 +483,7 @@ sub get_fdb_links {
         # Delete all devices on the vlan which don't seem to connect to
         # other devices on the vlan
         foreach my $device (keys %$d) {
+            $logger->debug("Device $device has no fwtables containing anything in vlan $vlan");
             delete $d->{$device}
                 if (0 == keys %{$d->{$device}});
         }
@@ -504,26 +517,51 @@ sub get_fdb_links {
                 $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link: " . $addriface{$interface} . " -> " . $addriface{$table[0]});
                 $links{$addriface{$interface}} = $addriface{$table[0]};
                 $links{$addriface{$table[0]}} = $addriface{$interface};
-            }
+            } 
         }
 
         # Now, if there are any more complicated cases, we do the full
         # algorithm
+        sub hash_intersection {
+            my ($a, $b) = @_;
+            my %combo = ();
+            for my $k (keys %$a) { $combo{$k} = 1 if (exists $b->{$k}) }
+            return keys %combo;
+        }
 
-        foreach my $device (keys %$d) {
-            foreach my $interface (keys %{$d->{$device}}) {
-                if (1 > (int keys %{$d->{$device}{$interface}})) {
-                    print "WE MUST DO THE BIG CASE ON VLAN $vlan\n";
-                    use Data::Dumper;
-                    print "The table is " . Dumper($d);
-                    exit 0;
+        sub hash_union {
+            my ($a, $b) = @_;
+            my %combo = ();
+            for my $k (keys %$a) { $combo{$k} = 1 }
+            for my $k (keys %$b) { $combo{$k} = 1 }
+            return \%combo;
+        }
+
+        sub same_hash_keys {
+            my ($a, $b) = @_;
+            for my $k (keys %$a) { return 0 unless (exists $b->{$k}) }
+            for my $k (keys %$b) { return 0 unless (exists $a->{$k}) }
+            return 1;
+        }
+
+        foreach my $from (keys %$interfaces) {
+            next if (exists $links{$from});
+
+            foreach my $to (keys %{$interfaces->{$from}}) {
+                if ((0 == scalar hash_intersection($interfaces->{$from}, 
+                                                   $interfaces->{$to}))
+                        && same_hash_keys(hash_union($interfaces->{$from}, 
+                                                      $interfaces->{$to}), 
+                                          $interfaces)) {
+                    $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link: " . $addriface{$interface} . " -> " . $addriface{$table[0]});
+                    $links{$addriface{$from}} = $addriface{$to};
+                    $links{$addriface{$to}} = $addriface{$from};
+                    last;
                 }
             }
         }
-
     }
 
-    use Data::Dumper;
     return \%links;
 }
 
