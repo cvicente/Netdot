@@ -553,7 +553,7 @@ sub get_fdb_links {
                         && same_hash_keys(hash_union($interfaces->{$from}, 
                                                       $interfaces->{$to}), 
                                           $interfaces)) {
-                    $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link: " . $addriface{$interface} . " -> " . $addriface{$table[0]});
+#                    $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link: " . $addriface{$interface} . " -> " . $addriface{$table[0]});
                     $links{$addriface{$from}} = $addriface{$to};
                     $links{$addriface{$to}} = $addriface{$from};
                     last;
