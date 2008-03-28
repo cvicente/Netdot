@@ -294,12 +294,7 @@ sub snmp_update {
     ############################################
     # Update PhysAddr
     if ( ! $newif->{physaddr} ){
-	if ( int($self->physaddr) ){
-	    # This seems unlikely, but...
-	    $logger->info(sprintf("%s: PhysAddr %s no longer in %s.  Removing", 
-			  $host, $self->physaddr->address, $self->name));
-	    $iftmp{physaddr} = 0;
-	}
+	$iftmp{physaddr} = 0;
     }else{
 	my $addr = $newif->{physaddr};
 	# Check if it's valid
@@ -307,20 +302,16 @@ sub snmp_update {
 	    $logger->warn(sprintf("%s: Interface %s (%s): PhysAddr %s is not valid\n"),
 			  $host, $iftmp{number}, $iftmp{name}, $addr);
 	}else{
-	    # Look it up
 	    my $physaddr;
-	    if ( $physaddr = PhysAddr->search(address=>$addr)->first ){
-		# The address exists.
-		# Make sure to update the timestamp
-		# and reference it from this Interface
-		$physaddr->update({last_seen=>$self->timestamp});
-		$logger->debug(sub{ sprintf("%s: Interface %s (%s) has PhysAddr %s", 
-				      $host, $iftmp{number}, $iftmp{name}, $addr) });
+	    eval {
+		$physaddr = PhysAddr->find_or_create({address=>$addr}); 
+	    };
+	    if ( my $e = $@ ){
+		$logger->warn(sprintf("%s: Could not insert PhysAddr %s for Interface %s (%s): %s", 
+				      $host, $addr, $iftmp{number}, $iftmp{name}, $e));
 	    }else{
-		# address is new.  Add it
-		$physaddr = PhysAddr->insert({ address => $addr }); 
-		$logger->info(sprintf("%s: Interface %s (%s) has new PhysAddr %s",
-				      $host, $iftmp{number}, $iftmp{name}, $addr)),
+		$logger->debug(sub{ sprintf("%s: Interface %s (%s) has PhysAddr %s", 
+					    $host, $iftmp{number}, $iftmp{name}, $addr) });
 	    }
 	    $iftmp{physaddr} = $physaddr->id;
 	}
@@ -389,15 +380,12 @@ sub snmp_update {
 
 	    # Insert STP information for this interface on this vlan
 	    my $stpinst = $newif->{vlans}->{$newvlan}->{stp_instance};
+	    next unless defined $stpinst;
 	    my $instobj;
-	    if ( defined $stpinst ){
 		# In theory, this happens after the STP instances have been updated on this device
-		$instobj = STPInstance->search(device=>$self->device, number=>$stpinst)->first;
-		unless ( $instobj ){
-		    $logger->error("$host: Cannot find STP instance $stpinst");
-		    next;
-		}
-	    }else{
+	    $instobj = STPInstance->search(device=>$self->device, number=>$stpinst)->first;
+	    unless ( $instobj ){
+		$logger->warn("$host: Cannot find STP instance $stpinst");
 		next;
 	    }
 	    my %uargs;
@@ -428,17 +416,23 @@ sub snmp_update {
     # Update IPs
     #
     if ( exists( $newif->{ips} ) ) {
+
+	# For SubnetVlan assignments
+	my @ivs  = $self->vlans;
+	my $vlan = $ivs[0]->vlan if ( scalar(@ivs) == 1 ); 
+	
 	foreach my $newip ( keys %{ $newif->{ips} } ){
-	    my $address = $newif->{ips}->{$newip}->{address};
-	    my $mask    = $newif->{ips}->{$newip}->{mask};
-	       
-	    $self->update_ip( address      => $address,
-			      mask         => $mask,
-			      add_subnets  => $args{add_subnets},
-			      subs_inherit => $args{subs_inherit},
-			      ipv4_changed => $ipv4_changed,
-			      ipv6_changed => $ipv6_changed,
-			      );
+	    if ( my $address = $newif->{ips}->{$newip}->{address} ){
+		my %iargs   =  (address      => $address,
+				mask         => $newif->{ips}->{$newip}->{mask},
+				add_subnets  => $args{add_subnets},
+				subs_inherit => $args{subs_inherit},
+				ipv4_changed => $ipv4_changed,
+				ipv6_changed => $ipv6_changed,
+		    );
+		$iargs{vlan} = $vlan if $vlan;
+		$self->update_ip(%iargs);
+	    }
 	}
     } 
     
@@ -456,6 +450,7 @@ sub snmp_update {
     subs_inherit - Flag.  Have subnet inherit some Device information
     ipv4_changed - Scalar ref.  Set if IPv4 info changes
     ipv6_changed - Scalar ref.  Set if IPv6 info changes
+    vlan         - Vlan ID (for Subnet to Vlan mapping)
     
   Returns:
     Updated Ipblock object
@@ -480,86 +475,77 @@ sub update_ip {
     if ( $self->device->product_type && $self->device->product_type eq "Router" ){
 	$isrouter = 1;
     }
-    
-    # If given a mask, we might have to add subnets and stuff
-    if ( my $mask = $args{mask} ){
-	if ( $args{add_subnets} && $isrouter ){
-	    # Create a subnet if necessary
-	    my ($subnetaddr, $subnetprefix) = Ipblock->get_subnet_addr(address => $address, 
-								       prefix  => $mask );
+
+#   If given a mask, we might have to add subnets and stuff
+    if ( (my $mask = $args{mask}) && $args{add_subnets} && $isrouter ){
+	# Create a subnet if necessary
+	my ($subnetaddr, $subnetprefix) = Ipblock->get_subnet_addr(address => $address, 
+								   prefix  => $mask );
+	
+	# Do not bother with loopbacks
+	if ( Ipblock->is_loopback($subnetaddr, $subnetprefix) ){
+	    $logger->warn("IP $subnetaddr/$subnetprefix is a loopback. Skipping.");
+	    return;
+	}
+	
+	if ( $subnetaddr ne $address ){
+	    my %iargs;
+	    $iargs{status} = 'Subnet' ;
 	    
-	    if ( $subnetaddr ne $address ){
-		my @ivs = $self->vlans;
-		my $vlan;
-		if ( scalar(@ivs) == 1 ){
-		    $vlan = $ivs[0]->vlan;
-		}elsif ( scalar(@ivs) > 1 ){
-		    $logger->debug(sub{ sprintf("%s: Interface %s (%s) member of more than one VLAN.  Skipping VLAN to Subnet assignment",
-						$host, $self->number, $self->name) });
-		}
-		if ( my $subnet = Ipblock->search(address => $subnetaddr, 
-						  prefix  => $subnetprefix)->first ){
-		    
-		    $logger->debug(sub{ sprintf("%s: Block %s/%s already exists", 
-						$host, $subnetaddr, $subnetprefix)} );
-		    
-		    # Make sure that the status is 'Subnet'
-		    my %iargs;
-		    $iargs{status} = 'Subnet' if ( $subnet->status->name ne 'Subnet' );
-		    
-		    # If we have a VLAN, make the relationship
-		    $iargs{vlan} = $vlan->id if defined $vlan;
+	    # If we have a VLAN, make the relationship
+	    $iargs{vlan} = $args{vlan} if defined $args{vlan};
+	    
+	    # Check if subnet should inherit device info
+	    if ( $args{subs_inherit} ){
+		$iargs{owner}   = $self->device->owner;
+		$iargs{used_by} = $self->device->used_by;
+	    }
+	    # Skip validation for speed, since the block already exists
+	    $iargs{validate} = 0;
 
-		    # Update if needed
-		    $subnet->update(\%iargs) if keys %iargs;
+	    if ( my $subnet = Ipblock->search(address => $subnetaddr, 
+					      prefix  => $subnetprefix)->first ){
+		
+		$logger->debug(sub{ sprintf("%s: Block %s/%s already exists", 
+					    $host, $subnetaddr, $subnetprefix)} );
+		
+		$subnet->update(\%iargs);
+	    }else{
+		$logger->debug(sub{ sprintf("Subnet %s/%s does not exist.  Inserting.", $subnetaddr, $subnetprefix) });
 
+		# IP tree will be rebuilt at the end of the Device update
+		$iargs{address}        = $subnetaddr;
+		$iargs{prefix}         = $subnetprefix;
+		$iargs{no_update_tree} = 1;
+		
+		# Ipblock validation might throw an exception
+		my $newblock;
+		eval {
+		    $newblock = Ipblock->insert(\%iargs);
+		};
+		if ( my $e = $@ ){
+		    $logger->error(sprintf("%s: Could not insert Subnet %s/%s: %s", 
+					   $host, $subnetaddr, $subnetprefix, $e));
 		}else{
-		    # Do not bother inserting loopbacks
-		    if ( Ipblock->is_loopback($subnetaddr, $subnetprefix) ){
-			$logger->warn("IP $subnetaddr/$subnetprefix is a loopback. Will not insert.");
-			return;
-		    }
-		    
-		    $logger->debug(sub{ sprintf("Subnet %s/%s does not exist.  Inserting.", $subnetaddr, $subnetprefix) });
-		    # Prepare args for insert method
-		    # IP tree will be rebuilt at the end of the Device update
-		    my %iargs = ( address        => $subnetaddr, 
-				  prefix         => $subnetprefix, 
-				  status         => "Subnet",
-				  no_update_tree => 1,
-				  );
-		    
-		    # If we have a VLAN, make the relationship
-		    $iargs{vlan} = $vlan->id if defined $vlan;
-		    
-		    # Check if subnet should inherit device info
-		    if ( $args{subs_inherit} ){
-			$iargs{owner}   = $self->device->owner;
-			$iargs{used_by} = $self->device->used_by;
-		    }
-		    # Something might go wrong here, but we want to go on anyway
-		    my $newblock;
-		    eval {
-			$newblock = Ipblock->insert(\%iargs);
-		    };
-		    if ( my $e = $@ ){
-			$logger->error(sprintf("%s: Could not insert Subnet %s/%s: %s", 
-					       $host, $subnetaddr, $subnetprefix, $e));
-		    }else{
-			$logger->info(sprintf("%s: Created Subnet %s/%s", 
-					      $host, $subnetaddr, $subnetprefix));
-			my $version = $newblock->version;
-			if ( $version == 4 ){
-			    $$ipv4_changed = 1;
-			}elsif ( $version == 6 ){
-			    $$ipv6_changed = 1;
-			}
+		    $logger->info(sprintf("%s: Created Subnet %s/%s", 
+					  $host, $subnetaddr, $subnetprefix));
+		    my $version = $newblock->version;
+		    if ( $version == 4 ){
+			$$ipv4_changed = 1;
+		    }elsif ( $version == 6 ){
+			$$ipv6_changed = 1;
 		    }
 		}
 	    }
 	}
     }
     
+    # Do not bother with loopbacks
+    if ( Ipblock->is_loopback($address) ){
+	$logger->warn("IP $address is a loopback. Will not insert.");
+	return;
+    }
+	
     my $ipobj;
     if ( $ipobj = Ipblock->search(address=>$address)->first ){
 
@@ -571,26 +557,12 @@ sub update_ip {
 	# to this interface and that the status is set to Static.  
 	# Therefore, it's very unlikely that the object won't pass 
 	# validation, so we skip it to speed things up.
-	eval {
-	    $ipobj->update({ status     => "Static",
-			     interface  => $self,
-			     validate   => 0,
-			 });
-	};
-	if ( my $e = $@ ){
-	    $logger->error("$host: $e");
-	    return;
-	}
+	$ipobj->update({ status     => "Static",
+			 interface  => $self,
+			 validate   => 0,
+		       });
     }else {
 	# Create a new Ip
-
-	# Do not bother inserting loopbacks
-	if ( Ipblock->is_loopback($address) ){
-	    $logger->warn("IP $address is a loopback. Will not insert.");
-	    return;
-	}
-	
-	# update
 	$logger->debug(sub{ sprintf("%s: IP %s/%s does not exist. Inserting", 
 				    $host, $address, $prefix) });
 	

@@ -416,16 +416,21 @@ sub get_snmp_info {
     ################################################################
     # SNMP::Info methods that return hash refs
     my @SMETHODS = qw( hasCDP e_descr
-		       interfaces i_name i_type i_index i_alias i_description 
+		       i_index i_name i_type i_alias i_description 
 		       i_speed i_up i_up_admin i_duplex i_duplex_admin 
 		       ip_index ip_netmask i_mac
-		       i_vlan i_vlan_membership qb_v_name v_name
-		       bgp_peers bgp_peer_id bgp_peer_as );
+		       i_vlan_membership qb_v_name v_name
+		       );
 
     if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
 	push @SMETHODS, qw( e_type e_parent e_name e_class e_pos e_descr
                             e_hwver e_fwver e_swver e_model e_serial e_fru );
     }
+
+    if ( $args{bgp_peers} || $self->config->get('ADD_BGP_PEERS')) {
+	push @SMETHODS, qw( bgp_peers bgp_peer_id bgp_peer_as );
+    }
+
     my %hashes;
     foreach my $method ( @SMETHODS ){
 	$hashes{$method} = $sinfo->$method;
@@ -445,17 +450,9 @@ sub get_snmp_info {
 	}
     }
 
-    $dev{model}    = $sinfo->model();
-    $dev{os}       = $sinfo->os_ver();
-    $dev{physaddr} = $sinfo->b_mac() || $sinfo->mac();
-    # Check if it's valid
-    if ( $dev{physaddr} ){
-	if ( ! PhysAddr->validate($dev{physaddr}) ){
-	    $logger->debug(sub{"Device::get_snmp_info: $name ($ip) invalid Base MAC: $dev{physaddr}"});
-	    delete $dev{physaddr};
-	}	
-    }
-
+    $dev{model}          = $sinfo->model();
+    $dev{os}             = $sinfo->os_ver();
+    $dev{physaddr}       = $sinfo->b_mac() || $sinfo->mac();
     $dev{sysname}        = $sinfo->name();
     $dev{router_id}      = $sinfo->root_ip();
     $dev{sysdescription} = $sinfo->description();
@@ -672,8 +669,8 @@ sub get_snmp_info {
 
     my $ifreserved = $self->config->get('IFRESERVED');
 
-    foreach my $iid ( keys %{ $hashes{interfaces} } ){
-	my $ifdescr = $hashes{interfaces}->{$iid};
+    foreach my $iid ( keys %{ $hashes{i_index} } ){
+	my $ifdescr = $hashes{i_description}->{$iid};
 	$dev{interface}{$iid}{number} = $iid;
 
 	# check whether it should be ignored
@@ -699,21 +696,9 @@ sub get_snmp_info {
 	    }
 	}
 
-	# Check if physaddr is valid
-	if ( my $physaddr = $dev{interface}{$iid}{physaddr} ){
-	    if ( ! PhysAddr->validate($physaddr) ){
-		$logger->debug(sub{"Device::get_snmp_info: $name ($ip): Int $ifdescr: Invalid MAC: $physaddr"});
-		delete $dev{interface}{$iid}{physaddr};
-	    }	
-	}
-
 	# IP addresses and masks 
 	foreach my $ip ( keys %{ $hashes{'ip_index'} } ){
 	    if ( $hashes{'ip_index'}->{$ip} eq $iid ){
-		if ( !Ipblock->validate($ip) ){
-		    $logger->debug(sub{"Device::get_snmp_info: $name ($ip): Invalid IP: $ip"});
-		    next;
-		}	
 		$dev{interface}{$iid}{ips}{$ip}{address} = $ip;
 		if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
 		    $dev{interface}{$iid}{ips}{$ip}{mask} = $mask;
@@ -746,13 +731,7 @@ sub get_snmp_info {
 	# Vlan info
 	# 
 	my ($vid, $vname);
-	# This is the default vlan for this port
-	if ( $vid = $hashes{'i_vlan'}->{$iid} ){
-	    $dev{interface}{$iid}{vlans}{$vid}{vid} = $vid;
-	}
 	# These are all the vlans that are enabled on this port.
-	# We might be able to get away with using only this one,
-	# but just in case...
 	if ( my $vm = $hashes{'i_vlan_membership'}->{$iid} ){
 	    foreach my $vid ( @$vm ){
 		$dev{interface}{$iid}{vlans}{$vid}{vid} = $vid;
@@ -902,7 +881,7 @@ sub snmp_update_all {
     my $start = time;
 
     my @devs   = $class->retrieve_all();
-    my $device_count = $class->_snmp_update_list(devs=>\@devs);
+    my $device_count = $class->_snmp_update_parallel(devs=>\@devs);
     my $end = time;
     $logger->info(sprintf("All Devices updated. %d devices in %d seconds", 
 			  $device_count, ($end-$start) ));
@@ -956,7 +935,7 @@ sub snmp_update_block {
 
     # Call the more generic method
     $argv{hosts} = \%h;
-    my $device_count = $class->_snmp_update_list(%argv);
+    my $device_count = $class->_snmp_update_parallel(%argv);
 
     my $end = time;
     $logger->info(sprintf("Devices in $blist updated. %d devices in %d seconds", 
@@ -1003,7 +982,7 @@ sub snmp_update_from_file {
     
     # Call the more generic method
     $argv{hosts} = $hosts;
-    my $device_count = $class->_snmp_update_list(%argv);
+    my $device_count = $class->_snmp_update_parallel(%argv);
 
     my $end = time;
     $logger->info(sprintf("Devices in $file updated. %d devices in %d seconds", 
@@ -1095,13 +1074,13 @@ sub discover {
     
     # Get relevant snmp_update args
     my %uargs;
-    foreach my $field ( qw( communities add_subnets subs_inherit bgp_peers pretend ) ){
+    foreach my $field ( qw(communities timeout retries add_subnets subs_inherit bgp_peers pretend) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
     $uargs{info} = $info;
 
     # Update Device with SNMP info obtained
-    $dev->snmp_update(%uargs);
+    Netdot::Model->do_transaction( sub{ return $dev->snmp_update(%uargs) } );
     
     return $dev;
 }
@@ -1835,11 +1814,13 @@ sub update_bgp_peering {
                   If not passed, this method will try to get it.
     communities   Arrayref of SNMP Community strings
     snmpversion   SNMP Version [1|2|3]
+    timeout       SNMP Timeout
+    retries       SNMP Retries
     add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
     pretend       Flag. Do not commit changes to the database
-    
+
   Returns:
     Updated Device object
 
@@ -1865,10 +1846,15 @@ sub snmp_update {
 	|| $self->config->get('DEFAULT_SNMPVERSION');
 
     my $communities = $argv{communities} || [$self->community] || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
-    
+    my $timeout     = $argv{timeout}     || $self->config->get('DEFAULT_SNMPTIMEOUT');
+    my $retries     = $argv{retries}     || $self->config->get('DEFAULT_SNMPRETRIES');
+
     my $info = $argv{info} 
     || $class->_exec_timeout($host, sub{ return $self->get_snmp_info(communities => $communities, 
-								     version     => $snmpversion) });
+								     version     => $snmpversion,
+								     timeout     => $timeout,
+								     retries     => $retries,
+					     ) });
     
     unless ( $info ){
 	$logger->error("$host: No SNMP info received");
@@ -1903,10 +1889,17 @@ sub snmp_update {
 	    # address is new.  Add it
 	    my %mactmp = (address    => $address,
 			  first_seen => $self->timestamp,
-			  last_seen  => $self->timestamp 
-			  );
-	    $mac = PhysAddr->insert(\%mactmp);
-	    $logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
+			  last_seen  => $self->timestamp, 
+		);
+	    eval {
+		$mac = PhysAddr->insert(\%mactmp);
+	    };
+	    if ( my $e = $@ ){
+		$logger->warn(sprintf("%s: Could not insert base MAC: %s: %s",
+				      $host, $address, $e));
+	    }else{
+		$logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
+	    }
 	}
 	$devtmp{physaddr} = $mac->id;
     }else{
@@ -3360,11 +3353,18 @@ sub _fork_init {
     $logger->debug(sub{"Device::_fork_init: Launching up to $MAXPROCS children processes" });
     my $pm = Parallel::ForkManager->new($MAXPROCS);
 
+    my @mibdirs;
+    foreach my $md ( @{ $class->config->get('SNMP_MIB_DIRS') } ){
+	push @mibdirs, $class->config->get('NETDOT_PATH')."/".$md;
+    }
+
     # Prevent SNMP::Info load mib-init in each forked process
     my $dummy = SNMP::Info->new( DestHost    => 'localhost',
 				 Version     => 1,
 				 AutoSpecify => 0,
-				 Debug       => 0);
+				 Debug       => 0,
+				 MibDirs     => \@mibdirs,
+	);
 
     return $pm;
 }
@@ -3393,7 +3393,7 @@ sub _fork_end {
 }
 
 ####################################################################################
-# _snmp_update_list - Discover and/or update all devices in a given list
+# _snmp_update_parallel - Discover and/or update all devices in a given list
 #    
 #   Arguments:
 #     Hash with the following keys:
@@ -3411,9 +3411,9 @@ sub _fork_end {
 #   Returns: 
 #     Device count
 #
-sub _snmp_update_list {
+sub _snmp_update_parallel {
     my ($class, %argv) = @_;
-    $class->isa_class_method('snmp_update_list');
+    $class->isa_class_method('snmp_update_parallel');
 
     my ($hosts, $devs);
     if ( defined $argv{hosts} ){
@@ -3429,70 +3429,51 @@ sub _snmp_update_list {
     # Init ForkManager
     my $pm = $class->_fork_init();
 
+    # Go over list of existing devices
     my $device_count = 0;
-    my %do_devs;            # Key on device ID to avoid querying the same device twice
+
+    my %uargs;
+    foreach my $field ( qw(version timeout retries add_subnets subs_inherit bgp_peers pretend ) ){
+	$uargs{$field} = $argv{$field} if defined ($argv{$field});
+    }
+
     if ( $devs ){
+	my %seen;
 	foreach my $dev ( @$devs ){
-	    # Put in list
-	    $do_devs{$dev->id} = $dev;
+	    next if ( exists $seen{$dev->id} );
+	    unless ( $dev->canautoupdate ){
+		$logger->debug(sub{ sprintf("%s excluded from auto-updates. Skipping", $dev->fqdn) });
+		next;
+	    }
+	    $seen{$dev->id} = 1;
+	    $device_count++;
+	    # FORK
+	    $pm->start and next;
+	    $class->_launch_child(pm   => $pm, 
+				  code => sub{ return Netdot::Model->do_transaction( sub{ return $dev->snmp_update(%uargs) } )},
+		);
 	}
     }elsif ( $hosts ){
 	foreach my $host ( keys %$hosts ){
-	    my $dev;
-	    if ( $dev = $class->search(name=>$host)->first ){
-		# Device is already in DB
-		$logger->debug(sub{ sprintf("Device::snmp_update_list: %s exists in DB as %s", 
-					    $host, $dev->fqdn) });
-		# Put in list
-		$do_devs{$dev->id} = $dev;
+	    $device_count++;
+	    # Give preference to the community associated with the host
+	    if ( my $commstr = $hosts->{$host} ){
+		$uargs{communities} = [$commstr];
 	    }else{
-		# Device does not yet exist
-		# Get relevant snmp args
-		my %snmpargs;
-		foreach my $field ( qw(communities version timeout retries) ){
-		    $snmpargs{$field} = $argv{$field} if defined ($argv{$field});
-		}
-		# Give preference to the community being passed (if any)
-		if ( my $commstr = $hosts->{$host} ){
-		    $snmpargs{communities} = [$commstr];
-		}
-		# FORK
-		$device_count++;
-		$pm->start and next;
-		$class->_launch_child(pm   => $pm, 
-				      code => sub{ return $class->discover(name=>$host, %snmpargs) },
-		    );
+		$uargs{communities} = $argv{communities};
 	    }
+	    # FORK
+	    $pm->start and next;
+	    $class->_launch_child(pm   => $pm, 
+				  code => sub{ return $class->discover(name=>$host, %uargs) },
+		);
 	}
     }
-    # Now go over list of existing devices
-    # Get relevant snmp_update args
-    my %uargs;
-    foreach my $field ( qw( add_subnets subs_inherit bgp_peers pretend ) ){
-
-	$uargs{$field} = $argv{$field} if defined ($argv{$field});
-    }
-    foreach my $dev ( values %do_devs ){
-	unless ( $dev->canautoupdate ){
-	    $logger->debug(sub{ sprintf("%s excluded from auto-updates. Skipping", 
-					$dev->fqdn) });
-	    next;
-	}
-	# FORK
-	$device_count++; # this isn't real, but...
-	$pm->start and next;
-	$class->_launch_child(pm   => $pm, 
-			      code => sub{ return $dev->snmp_update(%uargs); },
-	    );
-    }
-    
     # End forking state
     $class->_fork_end($pm);
 
     return $device_count;
 }
-
-
 
 
 ############################################################################

@@ -6,15 +6,14 @@
 # and updates the Netdot database.  It can retrive basic device information
 # as well as bridge forwarding tables and ARP caches.
 #
+use strict;
 use lib "<<Make:LIB>>";
 use Netdot::Model::Device;
 use Netdot::Model::Topology;
 use Netdot::Util::Misc;
 use Getopt::Long qw(:config no_ignore_case bundling);
-use strict;
 use Log::Log4perl::Level;
-#use Devel::Profiler bad_pkgs => [qw(UNIVERSAL Time::HiRes B Carp Exporter Cwd Config CORE DynaLoader XSLoader AutoLoader
-#					DBD::_::st DBD::_::db DBD::st DBD::db DBI::st DBI::db DBI::dr)];
+#use Devel::Profiler bad_pkgs => [qw(UNIVERSAL Time::HiRes B Carp Exporter Cwd Config CORE DynaLoader XSLoader AutoLoader DBD::_::st DBD::_::db DBD::st DBD::db DBI::st DBI::db DBI::dr)];
 
 # Variables that will hold given values
 my ($host, $blocks, $db, $file);

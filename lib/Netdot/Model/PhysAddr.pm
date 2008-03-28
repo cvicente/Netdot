@@ -30,12 +30,13 @@ Netdot::Model::PhysAddr - Physical Address Class
 =cut
 
 sub search {
-    my ($self, %argv) = @_;
+    my $self = shift;
+    my $args = ref $_[0] eq "HASH" ? shift : {@_};
     
-    if ( $argv{address} ){
-	$argv{address} = $self->format_address($argv{address});
+    if ( $args->{address} ){
+	$args->{address} = $self->format_address($args->{address});
     }
-    return $self->SUPER::search(%argv);
+    return $self->SUPER::search($args);
 }
 
 

@@ -215,7 +215,7 @@ if ( $action eq "discover" ){
 	$argv{add_subnets}  = $add_subnets;
 	$argv{subs_inherit} = $subs_inherit;
 	eval {
-	    $o = Netdot::Model->do_transaction( sub { return Device->discover(%argv) } );
+	    $o = Device->discover(%argv);
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);

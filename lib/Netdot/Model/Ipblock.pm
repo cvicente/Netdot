@@ -909,15 +909,8 @@ sub update {
 	}
     }
 
-    my $statusid = $self->_get_status_id($argv->{status});
-    my %state;
-    foreach my $key ( keys %$argv ){
-	if ( $key eq 'status' ){
-	    $state{status} = $statusid;
-	}else {
-	    $state{$key} = $argv->{$key};
-	}
-    }
+    my %state = %$argv;
+    $state{status}    = $self->_get_status_id($argv->{status});
     $state{last_seen} = $self->timestamp;
 
     # We might need to discard changes.
@@ -930,7 +923,7 @@ sub update {
     # method is pretty low level
 
     my %bak    = $self->get_state();
-    my $result = $self->SUPER::update( \%state );
+    my $result = $self->SUPER::update(\%state);
 
     # This makes sure we have the latest values
     $self = $class->retrieve($self->id);
