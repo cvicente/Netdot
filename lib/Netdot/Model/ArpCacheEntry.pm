@@ -52,7 +52,6 @@ sub fast_insert{
     my $dbh = $class->db_Main;
 
     # Build SQL query
-    my $sth;
     my $sth = $dbh->prepare_cached("INSERT INTO arpcacheentry 
                                     (arpcache,interface,ipaddr,physaddr)
                                     VALUES (?, ?, ?, ?)");	
