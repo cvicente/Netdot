@@ -166,15 +166,9 @@ sub fast_update {
     my $dbh = $class->db_Main;
     if ( $class->config->get('DB_TYPE') eq 'mysql' ){
 	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
-	my $sth;
-	eval {
-	    $sth = $dbh->prepare_cached("INSERT INTO physaddr (address,first_seen,last_seen,static)
-                                         VALUES (?, ?, ?, '0')
-                                         ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");	
-	};
-	if ( my $e = $@ ){
-	    $class->throw_fatal($e);
-	}
+	my $sth = $dbh->prepare_cached("INSERT INTO physaddr (address,first_seen,last_seen,static)
+                                     VALUES (?, ?, ?, '0')
+                                     ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");	
 	foreach my $address ( keys %$macs ){
 	    my $timestamp = $macs->{$address};
 	    eval {
@@ -194,18 +188,12 @@ sub fast_update {
     }else{    
 	my $db_macs = $class->retrieve_all_hashref;
 	# Build SQL queries
-	my ($sth1, $sth2);
-	eval {
-	    $sth1 = $dbh->prepare_cached("UPDATE physaddr SET last_seen=?
-                                          WHERE id=?");	
+	my $sth1 = $dbh->prepare_cached("UPDATE physaddr SET last_seen=?
+                                         WHERE id=?");	
 	    
-	    $sth2 = $dbh->prepare_cached("INSERT INTO physaddr (address, first_seen, last_seen, static)
-                                     VALUES (?, ?, ?, '0')");	
-	};
-	if ( my $e = $@ ){
-	    $class->throw_fatal($e);
-	}
-	
+	my $sth2 = $dbh->prepare_cached("INSERT INTO physaddr (address, first_seen, last_seen, static)
+                                         VALUES (?, ?, ?, '0')");	
+
 	# Now walk our list and do the right thing
 	foreach my $address ( keys %$macs ){
 	    my $timestamp = $macs->{$address};

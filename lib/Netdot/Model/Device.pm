@@ -1102,7 +1102,7 @@ sub arp_update_all {
 
     my @alldevs = $class->retrieve_all();
     $logger->debug(sub{"Fetching ARP tables from all devices in the database"});
-    return $class->_arp_update_list(list=>\@alldevs);
+    return $class->_arp_update_parallel(list=>\@alldevs);
 }
 
 #########################################################################
@@ -1131,7 +1131,7 @@ sub arp_update_block {
     }
     my $blist = join ', ', @$blocks;
     $logger->debug(sub{"Fetching ARP tables from all devices in blocks $blist"});
-    return $class->_arp_update_list(list=>[values %devs]);
+    return $class->_arp_update_parallel(list=>[values %devs]);
 }
 
 #########################################################################
@@ -1157,7 +1157,7 @@ sub arp_update_from_file {
     my $devs = $class->_get_devs_from_file($file);
 
     $logger->debug(sub{"Fetching ARP tables from all devices file: $file"});
-    return $class->_arp_update_list(list=>$devs);
+    return $class->_arp_update_parallel(list=>$devs);
 }
 
 #########################################################################
@@ -1177,7 +1177,7 @@ sub fwt_update_all {
     
     my @alldevs = $class->retrieve_all();
     $logger->debug(sub{"Fetching forwarding tables from all devices in the database"});
-    return $class->_fwt_update_list(list=>\@alldevs);
+    return $class->_fwt_update_parallel(list=>\@alldevs);
 }
 
 #########################################################################
@@ -1210,7 +1210,7 @@ sub fwt_update_block {
 
     my $blist = join ', ', @$blocks;
     $logger->debug(sub{"Fetching forwarding tables from all devices in $blist"});
-    return $class->_fwt_update_list(list=>[values %devs]);
+    return $class->_fwt_update_parallel(list=>[values %devs]);
 }
 
 #########################################################################
@@ -1236,7 +1236,7 @@ sub fwt_update_from_file {
     my $devs = $class->_get_devs_from_file($file);
 
     $logger->debug(sub{"Fetching forwarding tables from all devices in $argv{block}"});
-    return $class->_fwt_update_list(list=>$devs);
+    return $class->_fwt_update_parallel(list=>$devs);
 }
 
 #########################################################################
@@ -1252,7 +1252,7 @@ sub fwt_update_from_file {
 =cut
 sub get_all_from_block {
     my ($class, $block) = @_;
-    $class->isa_class_method('fwt_update_block');
+    $class->isa_class_method('get_all_from_block');
 
     defined $block || $class->throw_fatal("Missing required arguments: block");
 
@@ -1381,8 +1381,8 @@ sub list_layers {
   Arguments:
     Hash with the following keys:
     cache          - hash reference with arp cache info (optional)
-    no_update_macs - Do not update MAC addresses (bool)
-    no_update_ips  - Do not update IP addresses (bool)
+    timestamp      - Time Stamp (optional)
+    no_update_tree - Do not update IP tree
   Returns:
     True if successful
     
@@ -1416,39 +1416,32 @@ sub arp_update {
     $logger->debug(sub{"$host: Updating ARP cache"});
   
     # Create ArpCache object
-    my $ac = ArpCache->insert({device  => $self,
-			       tstamp  => $timestamp});
+    my $ac = ArpCache->insert({device  => $self,tstamp  => $timestamp});
 
-    unless ( $argv{no_update_macs} ){
-	$self->_update_macs_from_cache([$cache]);
-    }
-    unless ( $argv{no_update_ips} ){
-	$self->_update_ips_from_cache([$cache]);
-    }
-    
+    $self->_update_macs_from_cache([$cache], $timestamp);
+
+    $self->_update_ips_from_cache(caches         => [$cache], 
+				  timestamp      => $timestamp, 
+				  no_update_tree => $argv{no_update_tree});
+
     my ($arp_count, @ce_updates);
 
-    foreach my $idx ( keys %$cache ){
-	my $if = Interface->search(device=>$self, number=>$idx)->first;
-	unless ( $if ){
-	    $logger->error("Device::arp_update: $host: Interface number $idx does not exist!  Run device update.");
-	    next;
-	}
-	foreach my $mac ( keys %{$cache->{$idx}} ){
+    foreach my $intid ( keys %$cache ){
+	foreach my $mac ( keys %{$cache->{$intid}} ){
 	    $arp_count++;
-	    my $ip = $cache->{$idx}->{$mac};
+	    my $ip = $cache->{$intid}->{$mac};
 	    push @ce_updates, {
 		arpcache  => $ac->id,
-		interface => $if->id,
+		interface => $intid,
 		ipaddr    => Ipblock->ip2int($ip),
 		physaddr  => $mac,
 	    };
 	}
     }
-    ArpCacheEntry->fast_insert(list=>\@ce_updates);
+    Netdot::Model->do_transaction( sub{ return ArpCacheEntry->fast_insert(list=>\@ce_updates) } );
 
     # Set the last_arp timestamp
-    $self->update({last_arp=>$self->timestamp});
+    $self->update({last_arp=>$timestamp});
 
     my $end = time;
     $logger->debug(sub{ sprintf("$host: ARP cache updated. %s entries in %d seconds", 
@@ -1463,7 +1456,7 @@ sub arp_update {
   Arguments:
     Hash with the following keys:
     fwt            - hash reference with FWT info (optional)
-    no_update_macs - Do not update MAC addresses (bool)
+    timestamp      - Time Stamp (optional)
   Returns:
     True if successful
     
@@ -1502,32 +1495,26 @@ sub fwt_update {
     my $fw = FWTable->insert({device  => $self,
 			      tstamp  => $timestamp});
 
-    unless ( $argv{no_update_macs} ){
-	$self->_update_macs_from_cache([$fwt]);
-    }
+    $self->_update_macs_from_cache([$fwt], $timestamp);
     
     my @fw_updates;
-    foreach my $idx ( keys %{$fwt} ){
-	my $if = Interface->search(device=>$self, number=>$idx)->first;
-	unless ( $if ){
-	    $logger->error("Device::fwt_update: $host: Interface number $idx does not exist!");
-	    next;
-	}
-	foreach my $mac ( keys %{$fwt->{$idx}} ){
+    foreach my $intid ( keys %{$fwt} ){
+	foreach my $mac ( keys %{$fwt->{$intid}} ){
 	    push @fw_updates, {
 		fwtable   => $fw->id,
-		interface => $if->id,
+		interface => $intid,
 		physaddr  => $mac,
 	    };
 	}
     }
 
     $logger->debug(sub{"$host: Updating FWTable..."});
-    FWTableEntry->fast_insert(list=>\@fw_updates);
+    
+    Netdot::Model->do_transaction( sub{ return FWTableEntry->fast_insert(list=>\@fw_updates) } );
     
     ##############################################################
     # Set the last_fwt timestamp
-    $self->update({last_fwt=>$self->timestamp});
+    $self->update({last_fwt=>$timestamp});
 
     my $end = time;
     $logger->debug(sub{ sprintf("$host: FWT updated. %s entries in %d seconds", 
@@ -3479,8 +3466,7 @@ sub _snmp_update_parallel {
 ############################################################################
 #_get_arp_from_snmp - Fetch ARP tables via SNMP
 #
-#     Performs some validation and abstracts snmp::info logic
-#     Some logic borrowed from netdisco's arpnip()
+#     Performs some validation and abstracts SNMP::Info logic
 #    
 #   Arguments:
 #       none
@@ -3499,11 +3485,16 @@ sub _get_arp_from_snmp {
     my %cache;
     my $sinfo = $self->_get_snmp_session();
 
+    # Build a hash with device's interfaces, indexed by ifIndex
+    my %devints;
+    foreach my $int ( $self->interfaces ){
+	$devints{$int->number} = $int->id;
+    }
+
     # Fetch ARP Cache
     $logger->debug(sub{"$host: Fetching ARP cache" });
-    my $start      = time;
-    my $at_paddr   = $sinfo->at_paddr();
-
+    my $start     = time;
+    my $at_paddr  = $sinfo->at_paddr();
     my $arp_count = 0;
     foreach my $key ( keys %$at_paddr ){
 	my ($ip, $idx, $mac);
@@ -3523,6 +3514,11 @@ sub _get_arp_from_snmp {
 	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: ifIndex not defined in hash key: $key" });
 	    next;
 	}
+	my $intid = $devints{$idx} if exists $devints{$idx};
+	unless ( $intid  ){
+	    $logger->warn("Device::get_snmp_arp: $host: Interface $idx not in database. Skipping");
+	    next;
+	}
 	unless ( defined($mac) ){
 	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: MAC not defined in at_paddr->{$key}" });
 	    next;
@@ -3533,7 +3529,7 @@ sub _get_arp_from_snmp {
 	}	
 	
 	# Store in hash
-	$cache{$idx}{$mac} = $ip;
+	$cache{$intid}{$mac} = $ip;
 
 	$logger->debug(sub{"Device::get_snmp_arp: $host: $idx -> $ip -> $mac" });
     }
@@ -3570,6 +3566,11 @@ sub _get_fwt_from_snmp {
 
     my $host = $self->fqdn;
 
+    unless ( $self->collect_fwt ){
+	$logger->debug(sub{"$host excluded from FWT collection. Skipping"});
+	return;
+    }
+
     my $start   = time;
     my $sinfo   = $self->_get_snmp_session();
     my $sints   = $sinfo->interfaces();
@@ -3577,7 +3578,7 @@ sub _get_fwt_from_snmp {
     # Build a hash with device's interfaces, indexed by ifIndex
     my %devints;
     foreach my $int ( $self->interfaces ){
-	$devints{$int->number} = $int;
+	$devints{$int->number} = $int->id;
     }
 
     # Fetch FWT. 
@@ -3620,10 +3621,10 @@ sub _get_fwt_from_snmp {
                 next;
             }
             $self->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $vlan_sinfo,
-								      sints   => $sints,
-								      devints => \%devints,
-								      fwt     => \%fwt);
-					  });
+								     sints   => $sints,
+								     devints => \%devints,
+								     fwt     => \%fwt);
+				 });
         }
     }
 	    
@@ -3647,6 +3648,9 @@ sub _walk_fwt {
     
     $self->throw_fatal("Missing required arguments") 
 	unless ( $sinfo && $sints && $devints && $fwt );
+
+
+    my %tmp;
 
     # Try BRIDGE mib stuff first, then REPEATER mib
     if ( my $fw_mac = $sinfo->fw_mac() ){
@@ -3678,7 +3682,7 @@ sub _walk_fwt {
 		next;
 	    }
 	    
-	    $fwt->{$iid}->{$mac}++;
+	    $tmp{$iid}{$mac} = 1;
 	}
     
     }elsif ( my $last_src = $sinfo->rptrAddrTrackNewLastSrcAddress() ){
@@ -3690,32 +3694,31 @@ sub _walk_fwt {
 		next;
 	    }
 	    
-	    $fwt->{$iid}->{$mac}++;
+	    $tmp{$iid}{$mac} = 1;
 	}
 	    
     }
     
     # Clean up here to avoid repeating these checks in each loop above
-    foreach my $iid ( keys %$fwt ){
+    foreach my $iid ( keys %tmp ){
 	my $descr = $sints->{$iid};
 	unless ( defined $descr ) {
 	    $logger->debug(sub{"Device::_walk_fwt: $host: SNMP iid $iid has no physical port matching. Skipping" });
-	    delete $fwt->{$iid};
 	    next;
 	}
 	
-	unless ( $devints->{$iid} ){
+	my $intid = $devints->{$iid} if exists $devints->{$iid};
+	unless ( $intid  ){
 	    $logger->warn("Device::_walk_fwt: $host: Interface $iid ($descr) is not in database. Skipping");
-	    delete $fwt->{$iid};
 	    next;
 	}
 	
-	foreach my $mac ( keys %{ $fwt->{$iid} } ){
+	foreach my $mac ( keys %{ $tmp{$iid} } ){
 	    if ( ! PhysAddr->validate($mac) ){
 		$logger->debug(sub{"Device::_walk_fwt: $host: Invalid MAC: $mac" });
-		delete $fwt->{$iid}->{$mac};
 		next;
-	    }	
+	    }
+	    $fwt->{$intid}->{$mac} = 1;
 	    $logger->debug(sub{"Device::_walk_fwt: $host: $iid ($descr) -> $mac" });
 	}
 	
@@ -3793,11 +3796,15 @@ sub _launch_child {
 }
 
 #####################################################################
+# _update_macs_from_cache - Update MAC addresses
+# 
+# Arguments:
+#     caches    - Arrayref with ARP cache or FWT info
+#     timestamp 
 sub _update_macs_from_cache {
-    my ($class, $caches) = @_;
+    my ($class, $caches, $timestamp) = @_;
     
     my %mac_updates;
-    my $timestamp = $class->timestamp;
     foreach my $cache ( @$caches ){
 	foreach my $idx ( keys %{$cache} ){
 	    foreach my $mac ( keys %{$cache->{$idx}} ){
@@ -3805,16 +3812,24 @@ sub _update_macs_from_cache {
 	    }
 	}
     }
-    PhysAddr->fast_update(\%mac_updates);
+    Netdot::Model->do_transaction( sub{ return PhysAddr->fast_update(\%mac_updates) } );
     return 1;
 }
 
 #####################################################################
+#
+#
+# Arguments:
+#   hash with following keys:
+#   caches         - Array ref with Arp Cache info
+#   timestamp      - Time Stamp
+#   no_update_tree - Boolean 
+#
 sub _update_ips_from_cache {
-    my ($class, $caches) = @_;
+    my ($class, %argv) = @_;
+    my ($caches, $timestamp, $no_update_tree) = @argv{'caches', 'timestamp', 'no_update_tree'};
 
     my %ip_updates;
-    my $timestamp = $class->timestamp;
 
     my $ip_status = (IpblockStatus->search(name=>'Discovered'))[0];
     $class->throw_fatal("IpblockStatus 'Discovered' not found?")
@@ -3835,8 +3850,12 @@ sub _update_ips_from_cache {
 	}
     }
     
-    Ipblock->fast_update(\%ip_updates);
-    Ipblock->build_tree(4);
+    Netdot::Model->do_transaction( sub{ return Ipblock->fast_update(\%ip_updates) } );
+
+    unless ( $no_update_tree ){
+	Ipblock->build_tree(4);
+    }
+
     return 1;
 }
 
@@ -3937,19 +3956,19 @@ sub _get_airespace_ap_info {
 }
 
 #########################################################################
-# _fwt_update_list - Update FWT for a given list of devices
+# _fwt_update_parallel - Update FWT for a given list of devices
 #    
 #   Arguments:
 #     list - array ref of Device objects
 #   Returns:
 #     True if successful
 #   Examples:
-#     Device->fwt_update_list(list=>\@devs);
+#     Device->fwt_update_parallel(list=>\@devs);
 #
 #
-sub _fwt_update_list {
+sub _fwt_update_parallel {
     my ($class, %argv) = @_;
-    $class->isa_class_method('fwt_update_list');
+    $class->isa_class_method('fwt_update_parallel');
     my $list = $argv{list} or throw_fatal("Missing required arguments: list");
     my $start = time;
 
@@ -3979,18 +3998,18 @@ sub _fwt_update_list {
 }
 
 #########################################################################
-# _arp_update_list - Update ARP cache from devices in given list
+# _arp_update_parallel - Update ARP cache from devices in given list
 #    
 #   Arguments:
 #     list - array ref of Device objects
 #   Returns:
 #     True if successful
 #   Examples:
-#     Device->arp_update_list(list=>\@devs);
+#     Device->arp_update_parallel(list=>\@devs);
 #
-sub _arp_update_list {
+sub _arp_update_parallel {
     my ($class, %argv) = @_;
-    $class->isa_class_method('_arp_update_list');
+    $class->isa_class_method('_arp_update_parallel');
 
     my $list = $argv{list} or $class->throw_fatal("Missing required arguments: list");
     my $start = time;
@@ -4006,12 +4025,14 @@ sub _arp_update_list {
 	$device_count++;
 	$pm->start and next;
 	$class->_launch_child(pm   => $pm,
-			      code => sub{ return $dev->arp_update(timestamp=>$timestamp) },
+			      code => sub{ return $dev->arp_update(timestamp=>$timestamp, no_update_tree=>1) },
 			      );
     }
 
     # End forking state
     $class->_fork_end($pm);
+
+    Ipblock->build_tree(4);
 
     my $end = time;
     $logger->info(sprintf("ARP caches updated. %d devices in %d seconds", 

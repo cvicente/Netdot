@@ -50,32 +50,18 @@ sub fast_insert{
     my $dbh = $class->db_Main;
 
     # Build SQL query
-    my $sth;
-    eval {
-	$sth = $dbh->prepare_cached("INSERT INTO fwtableentry 
-                                     (fwtable,interface,physaddr)
-                                     VALUES (?, ?, ?)
+    my $sth= $dbh->prepare_cached("INSERT INTO fwtableentry 
+                                   (fwtable,interface,physaddr)
+                                   VALUES (?, ?, ?)
                                     ");	
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
-    }
-    
-    # Now walk our list and insert
-    eval{
-	foreach my $r ( @$list ){
-	    if ( exists $db_macs->{$r->{physaddr}} ){
-		$sth->execute($r->{fwtable}, 
-			      $r->{interface},
-			      $db_macs->{$r->{physaddr}},
-			      );
-	    }
+    foreach my $r ( @$list ){
+	if ( exists $db_macs->{$r->{physaddr}} ){
+	    $sth->execute($r->{fwtable}, 
+			  $r->{interface},
+			  $db_macs->{$r->{physaddr}},
+		);
 	}
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
     }
-    
     return 1;
 }
 

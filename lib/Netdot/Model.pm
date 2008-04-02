@@ -421,29 +421,39 @@ sub do_transaction {
     # and turn off for this block.
     local $dbh->{AutoCommit};
 
-    eval {
-        @result = $code->(@args);
-	$self->dbi_commit;
-    };
-    if ( my $e = $@ ) {
-        $self->clear_object_index;
-	eval { $self->dbi_rollback; };
-	my $rollback_error = $@;
-	if ( $rollback_error ){
-	    $self->throw_fatal("Transaction aborted: $e; "
-				. "(Rollback failed): $rollback_error\n");
-        }else{
-	    # Rethrow
-	    if ( ref($e) =~ /Netdot::Util::Exception/  &&
-		 $e->isa_netdot_exception('User') ){
-		$self->throw_user("Transaction aborted " 
-				   . "(Rollback successful): $e\n");
-	    }else{
-		$self->throw_fatal("Transaction aborted " 
-				   . "(Rollback successful): $e\n");
+    # Parallel processes might cause deadlocks so we try 
+    # up to three times if that happens
+    for ( 1..3 ){
+	eval {
+	    @result = $code->(@args);
+	    $self->dbi_commit;
+	};
+	if ( my $e = $@ ) {
+	    if ( $e =~ /deadlock/i ){
+		$logger->debug("Deadlock found.  Restarting transaction.");
+		next;
 	    }
+	    $self->clear_object_index;
+	    eval { $self->dbi_rollback; };
+	    my $rollback_error = $@;
+	    if ( $rollback_error ){
+		$self->throw_fatal("Transaction aborted: $e; "
+				   . "(Rollback failed): $rollback_error\n");
+	    }else{
+		# Rethrow
+		if ( ref($e) =~ /Netdot::Util::Exception/  &&
+		     $e->isa_netdot_exception('User') ){
+		    $self->throw_user("Transaction aborted " 
+				      . "(Rollback successful): $e\n");
+		}else{
+		    $self->throw_fatal("Transaction aborted " 
+				       . "(Rollback successful): $e\n");
+		}
+	    }
+	    return;
+	}else{
+	    last;
 	}
-        return;
     }
     wantarray ? @result : $result[0];
 } 

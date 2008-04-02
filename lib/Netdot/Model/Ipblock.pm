@@ -643,17 +643,12 @@ sub fast_update{
 
     if ( $class->config->get('DB_TYPE') eq 'mysql' ){
 	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
-	my $sth;
-	eval {
-	    $sth = $dbh->prepare_cached("INSERT INTO ipblock
+	my $sth = $dbh->prepare_cached("INSERT INTO ipblock
                                          (address,prefix,version,status,first_seen,last_seen,
                                          dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
                                          VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')
                                          ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");
-	};
-	if ( my $e = $@ ){
-	    $class->throw_fatal($e);
-	}
+
 	foreach my $address ( keys %$ips ){
 	    my $attrs = $ips->{$address};
 	    # Convert address to decimal format
@@ -678,21 +673,13 @@ sub fast_update{
 	my $db_ips  = $class->retrieve_all_hashref;
 
 	# Build SQL queries
-	my ($sth1, $sth2);
-	eval {
-	    $sth1 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=?
+	my $sth1 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=?
                                           WHERE id=?");	
-	    
-	    $sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
+	
+	my $sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
                                           (address,prefix,version,status,first_seen,last_seen,
                                            dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
                                            VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')");
-	
-	    
-	};
-	if ( my $e = $@ ){
-	    $class->throw_fatal($e);
-	}
 	
 	# Now walk our list and do the right thing
 	foreach my $address ( keys %$ips ){
@@ -1517,7 +1504,7 @@ sub _build_tree_mem {
     my $tr = Net::IPTrie->new(version=>$version);
     $class->throw_fatal("Error initializing IP Trie") unless defined $tr;
 
-    $logger->debug(sub{ sprintf("Ipblock::_build_tree_mem: Building hierarchy for IP space version %d", 
+    $logger->debug(sub{ sprintf("Ipblock::_build_tree_mem: Building hierarchy for IPv%d space", 
 				$version) });
 
     # keep tree handy in global vars for faster operations

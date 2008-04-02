@@ -53,38 +53,26 @@ sub fast_insert{
 
     # Build SQL query
     my $sth;
-    eval {
-	$sth = $dbh->prepare_cached("INSERT INTO arpcacheentry 
-                                     (arpcache,interface,ipaddr,physaddr)
-                                     VALUES (?, ?, ?, ?)
-                                    ");	
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
-    }
-    
+    my $sth = $dbh->prepare_cached("INSERT INTO arpcacheentry 
+                                    (arpcache,interface,ipaddr,physaddr)
+                                    VALUES (?, ?, ?, ?)");	
     # Now walk our list and insert
-    eval{
-	foreach my $r ( @$list ){
-	    if ( !exists $db_macs->{$r->{physaddr}} ){
-		$logger->error(sprintf("Netdot::Model::arpcacheentry::fast_insert: Error: MAC: %s not found in database.", 
-				       $r->{physaddr}));
-		next;
-	    }
-	    if ( !exists $db_ips->{$r->{ipaddr}} ){
-		$logger->error(sprintf("Netdot::Model::arpcacheentry::fast_insert: Error: IP: %s not found in database.", 
-				       $r->{ipaddr}));
-		next;
-	    }
-	    $sth->execute($r->{arpcache}, 
-			  $r->{interface},
-			  $db_ips->{$r->{ipaddr}},
-			  $db_macs->{$r->{physaddr}},
-			  );
+    foreach my $r ( @$list ){
+	if ( !exists $db_macs->{$r->{physaddr}} ){
+	    $logger->error(sprintf("Netdot::Model::arpcacheentry::fast_insert: Error: MAC: %s not found in database.", 
+				   $r->{physaddr}));
+	    next;
 	}
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
+	if ( !exists $db_ips->{$r->{ipaddr}} ){
+	    $logger->error(sprintf("Netdot::Model::arpcacheentry::fast_insert: Error: IP: %s not found in database.", 
+				   $r->{ipaddr}));
+	    next;
+	}
+	$sth->execute($r->{arpcache}, 
+		      $r->{interface},
+		      $db_ips->{$r->{ipaddr}},
+		      $db_macs->{$r->{physaddr}},
+	    );
     }
     
     return 1;
