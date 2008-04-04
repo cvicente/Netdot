@@ -359,12 +359,13 @@ sub insert {
 
   Arguments:
     Arrayref with the following keys:
-     host         (required unless called as object method)
-     communities
-     version
-     timeout
-     retries
-     bgp_peers
+     host         - hostname or IP address (required unless called as object method)
+     session      - SNMP Session (optional)
+     communities  - SNMP communities
+     version      - SNMP version
+     timeout      - SNMP timeout
+     retries      - SNMP retries
+     bgp_peers    - (flag) Retrieve bgp peer info
   Returns:
     Hash reference containing SNMP information
   Examples:
@@ -380,34 +381,34 @@ sub get_snmp_info {
     my ($self, %args) = @_;
     my $class = ref($self) || $self;
     
-    my $target_address;
     my %dev;
 
-    if ( ref($self) ){
-	if ( $self->snmp_target && int($self->snmp_target) != 0 ){
-	    $target_address = $self->snmp_target->address;
-	    $logger->debug(sub{"Device::get_snmp_info: Using configured target address: $target_address"});
-	}else{
-	    $target_address = $self->fqdn;
+    my $sinfo = $args{session};
+    if ( $sinfo ){
+	$args{host} = $sinfo->{args}->{DestHost};
+    }else{
+	if ( ref($self) ){
+	    if ( $self->snmp_target && int($self->snmp_target) != 0 ){
+		$args{host} = $self->snmp_target->address;
+		$logger->debug(sub{"Device::get_snmp_info: Using configured target address: $args{host}"});
+	    }else{
+		$args{host} = $self->fqdn;
+	    }
+	}else {
+	    $self->throw_fatal('Device::get_snmp_info: Missing required parameters: host')
+		unless $args{host};
 	}
-    }else {
-	$self->throw_fatal('Device::get_snmp_info: Missing required parameters: host')
-	    unless $args{host};
+	# Get SNMP session
+	my %sess_args;
+	$sess_args{host} = $args{host};
+	foreach my $arg ( qw( communities version timeout retries ) ){
+	    $sess_args{$arg} = $args{$arg} if defined $args{$arg};
+	}
+	$sinfo = $self->_get_snmp_session(%sess_args);
     }
-    
-    $target_address ||= $args{host};
-
-    # Get SNMP session
-    my %sess_args;
-    $sess_args{host} = $target_address;
-    foreach my $arg ( qw( communities version timeout retries ) ){
-	$sess_args{$arg} = $args{$arg} if defined $args{$arg};
-    }
-    
-    my $sinfo = $self->_get_snmp_session(%sess_args);
 
     # Get both name and IP for better error reporting
-    my ($ip, $name)   = $dns->resolve_any($target_address);
+    my ($ip, $name)   = $dns->resolve_any($args{host});
     $dev{snmp_target} = $ip if defined $ip;
     
     $dev{community}    = $sinfo->snmp_comm;
@@ -514,11 +515,11 @@ sub get_snmp_info {
 				# Skip instance 0
 				next if ( $mst_inst == 0 );
 				my $vid = $mst_inst_vlans{$mst_inst}->[0];
-				my $vsinfo = $class->_get_snmp_session('host'        => $target_address,
+				my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
 								       'communities' => [$sinfo->snmp_comm . '@' . $vid],
 								       'version'     => $sinfo->snmp_ver,
 								       'sclass'      => $sinfo->class);
-				my $stp_p_info = $self->_exec_timeout( $target_address, 
+				my $stp_p_info = $self->_exec_timeout( $args{host}, 
 								       sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
 				foreach my $method ( keys %$stp_p_info ){
 				    $dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
@@ -536,11 +537,11 @@ sub get_snmp_info {
 			    map { $vlans{$_}++ } @$vlans; 
 			}
 			foreach my $vid ( keys %vlans ){
-			    my $vsinfo = $class->_get_snmp_session('host'        => $target_address,
+			    my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
 								   'communities' => [$sinfo->snmp_comm . '@' . $vid],
 								   'version'     => $sinfo->snmp_ver,
 								   'sclass'      => $sinfo->class);
-			    my $stp_p_info = $self->_exec_timeout( $target_address, 
+			    my $stp_p_info = $self->_exec_timeout( $args{host}, 
 								   sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
 			    foreach my $method ( keys %$stp_p_info ){
 				$dev{stp_instances}{$vid}{$method} = $stp_p_info->{$method};
@@ -864,6 +865,9 @@ sub get_snmp_info {
     version       SNMP version
     timeout       SNMP timeout
     retries       SNMP retries
+    do_info       Update Device Info
+    do_fwt        Update Forwarding Tables
+    do_arp        Update ARP caches
     add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
@@ -881,7 +885,7 @@ sub snmp_update_all {
     my $start = time;
 
     my @devs   = $class->retrieve_all();
-    my $device_count = $class->_snmp_update_parallel(devs=>\@devs);
+    my $device_count = $class->_snmp_update_parallel(devs=>\@devs, %argv);
     my $end = time;
     $logger->info(sprintf("All Devices updated. %d devices in %d seconds", 
 			  $device_count, ($end-$start) ));
@@ -898,6 +902,9 @@ sub snmp_update_all {
     version       SNMP version
     timeout       SNMP timeout
     retries       SNMP retries
+    do_info       Update Device Info
+    do_fwt        Update Forwarding Tables
+    do_arp        Update ARP caches
     add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
@@ -1009,7 +1016,7 @@ sub snmp_update_from_file {
     bgp_peers     Flag. When discovering routers, update bgp_peers
     pretend       Flag. Do not commit changes to the database
     info          Hashref with SNMP info (optional)
-
+    timestamp     Time Stamp (optional)
   Returns:
     New or existing Device object
   Examples:
@@ -1032,13 +1039,17 @@ sub discover {
     }else{
 	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	unless ( $info ){
-	    # Get relevant snmp args
-	    my %snmpargs;
-	    $snmpargs{host} = $name;
-	    foreach my $field ( qw(communities version timeout retries bgp_peers) ){
-		$snmpargs{$field} = $argv{$field} if defined ($argv{$field});
-	    }
-	    $info = $class->_exec_timeout($name, sub{ return $class->get_snmp_info(%snmpargs) });
+	    my $sinfo = $class->_get_snmp_session(host        => $name,
+						  communities => $argv{communities},
+						  version     => $argv{version},
+						  timeout     => $argv{timeout},
+						  retries     => $argv{retries},
+		);
+	    
+	    $info = $class->_exec_timeout($name, 
+					  sub{ return $class->get_snmp_info(session   => $sinfo,
+									    bgp_peers => $argv{bgp_peers},
+						   ) });
 	}
 	# Set some values in the new Device based on the SNMP info obtained
 	my $main_ip = $class->_get_main_ip($info) || $name;
@@ -1074,169 +1085,16 @@ sub discover {
     
     # Get relevant snmp_update args
     my %uargs;
-    foreach my $field ( qw(communities timeout retries add_subnets subs_inherit bgp_peers pretend) ){
+    foreach my $field ( qw(communities timeout retries add_subnets subs_inherit 
+                           bgp_peers pretend do_info do_fwt do_arp timestamp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
     $uargs{info} = $info;
 
     # Update Device with SNMP info obtained
-    Netdot::Model->do_transaction( sub{ return $dev->snmp_update(%uargs) } );
+    $dev->snmp_update(%uargs);
     
     return $dev;
-}
-
-#########################################################################
-=head2 arp_update_all - Update ARP cache from every device in DB
-    
-  Arguments:
-    None
-  Returns:
-    True if successful
-  Examples:
-    Device->arp_update_all();
-
-=cut
-sub arp_update_all {
-    my ($class) = @_;
-    $class->isa_class_method('arp_update_all');
-
-    my @alldevs = $class->retrieve_all();
-    $logger->debug(sub{"Fetching ARP tables from all devices in the database"});
-    return $class->_arp_update_parallel(list=>\@alldevs);
-}
-
-#########################################################################
-=head2 arp_update_block - Update ARP cache from every device within given IP blocks
-    
-  Arguments:
-    blocks - Arrayref of IP block addresses in CIDR notation
-  Returns:
-    True if successful
-  Examples:
-    Device->arp_update_block();
-
-=cut
-sub arp_update_block {
-    my ($class, %argv) = @_;
-    $class->isa_class_method('arp_update_block');
-
-    my $blocks;
-    $class->throw_fatal("Missing or invalid required arguments: blocks")
-	unless ( defined($blocks = $argv{blocks}) && ref($blocks) eq 'ARRAY' );
- 
-   my %devs; # Make sure we have no dups
-    foreach my $block ( @$blocks ){
-	my $devs = $class->get_all_from_block($block);
-	foreach my $dev ( @$devs ) { $devs{$dev->id} = $dev; }
-    }
-    my $blist = join ', ', @$blocks;
-    $logger->debug(sub{"Fetching ARP tables from all devices in blocks $blist"});
-    return $class->_arp_update_parallel(list=>[values %devs]);
-}
-
-#########################################################################
-=head2 arp_update_from_file - Update ARP cache from devices in given file
-    
-  Arguments:
-    file - Path to file with list of hosts
-  Returns:
-    True if successful
-  Examples:
-    Device->arp_update_from_file();
-
-=cut
-sub arp_update_from_file {
-    my ($class, %argv) = @_;
-    $class->isa_class_method('arp_update_from_file');
-
-    my $file;
-    $class->throw_fatal("Missing required argument: file")
-	unless defined( $file = $argv{file} );
-
-    # Get a list of hosts from given file
-    my $devs = $class->_get_devs_from_file($file);
-
-    $logger->debug(sub{"Fetching ARP tables from all devices file: $file"});
-    return $class->_arp_update_parallel(list=>$devs);
-}
-
-#########################################################################
-=head2 fwt_update_all - Update FWT for every device in DB
-    
-  Arguments:
-    None
-  Returns:
-    True if successful
-  Examples:
-    Device->fwt_update_all();
-
-=cut
-sub fwt_update_all {
-    my ($class) = @_;
-    $class->isa_class_method('fwt_update_all');
-    
-    my @alldevs = $class->retrieve_all();
-    $logger->debug(sub{"Fetching forwarding tables from all devices in the database"});
-    return $class->_fwt_update_parallel(list=>\@alldevs);
-}
-
-#########################################################################
-=head2 fwt_update_block - Update FWT for all devices within give IP blocks
-    
-  Only devices already in the DB will be queried.  To include all devices
-  in a given subnet, run snmp_update_block() first.
-    
-  Arguments:
-    blocks - Arrayref of IP blocks in CIDR notation
-  Returns:
-    True if successful
-  Examples:
-    Device->fwt_update_block(blocks=>"192.168.0.0/24");
-
-=cut
-sub fwt_update_block {
-    my ($class, %argv) = @_;
-    $class->isa_class_method('fwt_update_block');
-
-    my $blocks;
-    $class->throw_fatal("Missing or invalid required arguments: blocks")
-	unless ( defined($blocks = $argv{blocks}) && ref($blocks) eq 'ARRAY' );
-
-   my %devs; # Make sure we have no dups
-    foreach my $block ( @$blocks ){
-	my $devs = $class->get_all_from_block($block);
-	foreach my $dev ( @$devs ) { $devs{$dev->id} = $dev; }
-    }
-
-    my $blist = join ', ', @$blocks;
-    $logger->debug(sub{"Fetching forwarding tables from all devices in $blist"});
-    return $class->_fwt_update_parallel(list=>[values %devs]);
-}
-
-#########################################################################
-=head2 fwt_update_from_file - Update FWT for all devices in given file
-    
-  Arguments:
-    file - Path to file with list of hosts
-  Returns:
-    True if successful
-  Examples:
-    Device->fwt_update_block();
-
-=cut
-sub fwt_update_from_file {
-    my ($class, %argv) = @_;
-    $class->isa_class_method('fwt_update_block');
-
-    my $file;
-    $class->throw_fatal("Missing required argument: file")
-	unless defined( $file = $argv{file} );
-
-    # Get a list of hosts from given file
-    my $devs = $class->_get_devs_from_file($file);
-
-    $logger->debug(sub{"Fetching forwarding tables from all devices in $argv{block}"});
-    return $class->_fwt_update_parallel(list=>$devs);
 }
 
 #########################################################################
@@ -1380,6 +1238,7 @@ sub list_layers {
     
   Arguments:
     Hash with the following keys:
+    session        - SNMP Session
     cache          - hash reference with arp cache info (optional)
     timestamp      - Time Stamp (optional)
     no_update_tree - Do not update IP tree
@@ -1396,15 +1255,14 @@ sub arp_update {
 
     my $host      = $self->fqdn;
     my $dbh       = $self->db_Main;
-    my $timestamp = exists($argv{timestamp}) ? $argv{timestamp} : $self->timestamp;
+    my $timestamp = $argv{timestamp} || $self->timestamp;
 
     unless ( $self->collect_arp ){
 	$logger->debug(sub{"$host excluded from ARP collection. Skipping"});
 	return;
     }
     # Fetch from SNMP if necessary
-    my %args;
-    my $cache = $argv{cache} || $self->_exec_timeout($host, sub{ return $self->_get_arp_from_snmp(%args) });
+    my $cache = $argv{cache} || $self->_exec_timeout($host, sub{ return $self->_get_arp_from_snmp(session=>$argv{session}) });
     
     unless ( keys %$cache ){
 	$logger->info("$host: ARP cache empty");
@@ -1455,6 +1313,7 @@ sub arp_update {
     
   Arguments:
     Hash with the following keys:
+    session        - SNMP Session (optional)
     fwt            - hash reference with FWT info (optional)
     timestamp      - Time Stamp (optional)
   Returns:
@@ -1470,7 +1329,7 @@ sub fwt_update {
 
     my $host      = $self->fqdn;
     my $dbh       = $self->db_Main;
-    my $timestamp = exists($argv{timestamp}) ? $argv{timestamp} : $self->timestamp;
+    my $timestamp = $argv{timestamp} || $self->timestamp;
     
     unless ( $self->collect_fwt ){
 	$logger->debug(sub{"$host excluded from FWT collection. Skipping"});
@@ -1478,8 +1337,7 @@ sub fwt_update {
     }
 
     # Fetch from SNMP if necessary
-    my %args;
-    my $fwt = $argv{fwt} || $self->_get_fwt_from_snmp(%args);
+    my $fwt = $argv{fwt} || $self->_exec_timeout($host, sub{ return $self->_get_fwt_from_snmp(session=>$argv{session}) } );
 
     unless ( keys %$fwt ){
 	$logger->info("$host: FWT empty");
@@ -1508,8 +1366,6 @@ sub fwt_update {
 	}
     }
 
-    $logger->debug(sub{"$host: Updating FWTable..."});
-    
     Netdot::Model->do_transaction( sub{ return FWTableEntry->fast_insert(list=>\@fw_updates) } );
     
     ##############################################################
@@ -1789,18 +1645,95 @@ sub update_bgp_peering {
     return $p;
 }
 
+
 ############################################################################
-=head2 snmp_update - Update Device in Database using SNMP info
+=head2 snmp_update - Update Devices using SNMP information
+
+
+  Arguments:
+    Hash with the following keys:
+    do_info       Update device info
+    do_fwt        Update forwarding tables
+    do_arp        Update ARP cache
+    info          Hashref with device info (optional)
+    communities   Arrayref of SNMP Community strings
+    version       SNMP Version [1|2|3]
+    timeout       SNMP Timeout
+    retries       SNMP Retries
+    session       SNMP Session
+    add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
+    subs_inherit  Flag. When adding subnets, have them inherit information from the Device
+    bgp_peers     Flag. When discovering routers, update bgp_peers
+    pretend       Flag. Do not commit changes to the database
+    timestamp     Time Stamp (optional)
+    no_update_tree
+  Returns:
+    Updated Device object
+
+  Example:
+    my $device = $device->snmp_update(do_info=>1, do_arp=>0, do_fwt=>1);
+
+=cut
+sub snmp_update {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('snmp_update');
+
+    $self->throw_fatal("Missing required arguments")
+	unless ( $argv{do_info} || $argv{do_fwt} || $argv{do_arp} );
+
+    my $host = $self->fqdn;
+    my $timestamp = $argv{timestamp} || $self->timestamp;
+
+    my $sinfo = $argv{session};
+    unless ( $sinfo ){
+	$sinfo = $self->_get_snmp_session(communities => $argv{communities},
+					  version     => $argv{version},
+					  timeout     => $argv{timeout},
+					  retries     => $argv{retries},
+	    );
+    }
+    
+    if ( $argv{do_info} ){
+	my $info = $argv{info} || $self->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
+											       bgp_peers => $argv{bgp_peers}) });
+	
+	Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets  => $argv{add_subnets},
+								      subs_inherit => $argv{subs_inherit},
+								      bgp_peers    => $argv{bgp_peers},
+								      pretend      => $argv{pretend},
+								      info         => $info,
+						) } );
+    }
+    if ( $argv{do_fwt} ){
+	if ( $self->has_layer(2) && $self->collect_fwt ){
+	    $self->fwt_update(session   => $sinfo, 
+			      timestamp => $timestamp,
+		);
+	}
+    }
+    if ( $argv{do_arp} ){
+	if ( $self->has_layer(3) && $self->collect_arp ){
+	    $self->arp_update(session        => $sinfo, 
+			      timestamp      => $timestamp,
+			      no_update_tree => $argv{no_update_tree},
+		);
+	}
+    }
+}
+
+############################################################################
+=head2 info_update - Update Device in Database using SNMP info
 
     Updates an existing Device based on information gathered via SNMP.  
     This is exclusively an object method.
 
   Arguments:
     Hash with the following keys:
+    session       SNMP session (optional)
     info          Hashref with Device SNMP information. 
                   If not passed, this method will try to get it.
     communities   Arrayref of SNMP Community strings
-    snmpversion   SNMP Version [1|2|3]
+    version       SNMP Version [1|2|3]
     timeout       SNMP Timeout
     retries       SNMP Retries
     add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
@@ -1812,12 +1745,12 @@ sub update_bgp_peering {
     Updated Device object
 
   Example:
-    my $device = $device->snmp_update();
+    my $device = $device->info_update();
 
 =cut
-sub snmp_update {
+sub info_update {
     my ($self, %argv) = @_;
-    $self->isa_object_method('snmp_update');
+    $self->isa_object_method('info_update');
     
     my $class = ref $self;
     my $start = time;
@@ -1829,7 +1762,7 @@ sub snmp_update {
     my $host = $self->fqdn;
 
     # Get SNMP info
-    my $snmpversion = $argv{snmp_version} || $self->snmp_version 
+    my $version = $argv{snmp_version} || $self->snmp_version 
 	|| $self->config->get('DEFAULT_SNMPVERSION');
 
     my $communities = $argv{communities} || [$self->community] || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
@@ -1838,7 +1771,7 @@ sub snmp_update {
 
     my $info = $argv{info} 
     || $class->_exec_timeout($host, sub{ return $self->get_snmp_info(communities => $communities, 
-								     version     => $snmpversion,
+								     version     => $version,
 								     timeout     => $timeout,
 								     retries     => $retries,
 					     ) });
@@ -2052,7 +1985,7 @@ sub snmp_update {
     my %IGNORED;
     map { $IGNORED{$_}++ } @{ $self->config->get('IGNOREPORTS') };
     if ( defined $info->{sysobjectid} && exists $IGNORED{$info->{sysobjectid}} ){
-	$logger->debug(sub{"Device::snmp_update: $host ports ignored per configuration option (IGNOREPORTS)"});
+	$logger->debug(sub{"Device::info_update: $host ports ignored per configuration option (IGNOREPORTS)"});
     }else{
 	
 	# How to deal with new subnets
@@ -2240,7 +2173,7 @@ sub snmp_update {
     # Get addresses that the main Device name resolves to
     my @hostnameips;
     if ( @hostnameips = $dns->resolve_name($host) ){
-	$logger->debug(sub{ sprintf("Device::snmp_update: %s resolves to: %s",
+	$logger->debug(sub{ sprintf("Device::info_update: %s resolves to: %s",
 				    $host, (join ", ", @hostnameips))});
     }
     
@@ -2291,7 +2224,7 @@ sub snmp_update {
 				       contacts      => map { $_->contactlist } $self->contacts,
 				      });
 	    }
-	    $dev->snmp_update(info=>$info->{airespace}->{$ap});
+	    $dev->info_update(info=>$info->{airespace}->{$ap});
 
 	    my $apmac = $info->{airespace}->{$ap}->{physaddr};
 	    delete $oldaps{$apmac};
@@ -3035,17 +2968,6 @@ sub _get_snmp_session {
 	# Fill up communities argument from object if it wasn't passed to us
 	push @{$argv{communities}}, $self->community unless defined $argv{communities};
 
-	# We might already have a session
-	if ( defined $self->{_snmp_session} ){
-	    foreach my $comm ( @{$argv{communities}} ){
-		if ( defined $self->{_snmp_session}->{$comm} ){
-		    $logger->debug(sub{ sprintf("Device::get_snmp_session: Reusing existing session with %s, community %s", 
-						$self->fqdn, $comm)});
-		    return $self->{_snmp_session}->{$comm};
-		}
-	    }
-	}
-	
 	# We might already have a SNMP::Info class
 	$sclass ||= $self->{_sclass};
 	
@@ -3166,11 +3088,6 @@ sub _get_snmp_session {
     foreach my $m ('i_mac', 'fw_mac', 'mac', 'b_mac', 'at_paddr', 'rptrAddrTrackNewLastSrcAddress',
 		   'airespace_ap_mac', 'airespace_bl_mac', 'airespace_if_mac', 'stp_p_port'){
 	$munge->{$m} = sub{ return $self->_oct2hex(@_) };
-    }
-    if ( $class ){
-	# Save session if object exists
-	# Notice that there can be different sessions depending on the community
-	$self->{_snmp_session}->{$sinfoargs{Community}} = $sinfo;
     }
     return $sinfo;
 }
@@ -3380,21 +3297,23 @@ sub _fork_end {
 }
 
 ####################################################################################
-# _snmp_update_parallel - Discover and/or update all devices in a given list
+# _snmp_update_parallel - Discover and/or update all devices in given list concurrently
 #    
 #   Arguments:
 #     Hash with the following keys:
-#     hosts         Hashref of host names and their communities
-#     devs          Arrayref of Device objects
-#     communities   Arrayref of SNMP communities
-#     version       SNMP version
-#     timeout       SNMP timeout
-#     retries       SNMP retries
-#     add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
-#     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
-#     bgp_peers     Flag. When discovering routers, update bgp_peers
-#     pretend       Flag. Do not commit changes to the database
-#   
+#     hosts          Hashref of host names and their communities
+#     devs           Arrayref of Device objects
+#     communities    Arrayref of SNMP communities
+#     version        SNMP version
+#     timeout        SNMP timeout
+#     retries        SNMP retries
+#     do_info        Update Device Info
+#     do_fwt         Update Forwarding Tables
+#     do_arp         Update ARP caches
+#     add_subnets    Flag. When discovering routers, add subnets to database if they do not exist
+#     subs_inherit   Flag. When adding subnets, have them inherit information from the Device
+#     bgp_peers      Flag. When discovering routers, update bgp_peers
+#     pretend        Flag. Do not commit changes to the database
 #   Returns: 
 #     Device count
 #
@@ -3420,10 +3339,13 @@ sub _snmp_update_parallel {
     my $device_count = 0;
 
     my %uargs;
-    foreach my $field ( qw(version timeout retries add_subnets subs_inherit bgp_peers pretend ) ){
+    foreach my $field ( qw(version timeout retries add_subnets subs_inherit bgp_peers pretend 
+                           do_info do_fwt do_arp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
-
+    $uargs{no_update_tree} = 1;
+    $uargs{timestamp}      = $class->timestamp;
+    
     if ( $devs ){
 	my %seen;
 	foreach my $dev ( @$devs ){
@@ -3437,8 +3359,7 @@ sub _snmp_update_parallel {
 	    # FORK
 	    $pm->start and next;
 	    $class->_launch_child(pm   => $pm, 
-				  code => sub{ return Netdot::Model->do_transaction( sub{ return $dev->snmp_update(%uargs) } )},
-		);
+				  code => sub{ return $dev->snmp_update(%uargs) } );
 	}
     }elsif ( $hosts ){
 	foreach my $host ( keys %$hosts ){
@@ -3452,12 +3373,14 @@ sub _snmp_update_parallel {
 	    # FORK
 	    $pm->start and next;
 	    $class->_launch_child(pm   => $pm, 
-				  code => sub{ return $class->discover(name=>$host, %uargs) },
-		);
+				  code => sub{ return $class->discover(name=>$host, %uargs) } );
 	}
     }
     # End forking state
     $class->_fork_end($pm);
+
+    # Rebuild the IP tree if ARP caches were updated
+    Ipblock->build_tree(4) if $argv{do_arp};
 
     return $device_count;
 }
@@ -3469,12 +3392,12 @@ sub _snmp_update_parallel {
 #     Performs some validation and abstracts SNMP::Info logic
 #    
 #   Arguments:
-#       none
+#       session - SNMP session (optional)
 #   Returns:
 #     Hash ref.
 #    
 #   Examples:
-#     $self->get_snmp_arp;
+#     $self->_get_arp_from_snmp();
 #
 #
 sub _get_arp_from_snmp {
@@ -3483,7 +3406,8 @@ sub _get_arp_from_snmp {
     my $host = $self->fqdn;
 
     my %cache;
-    my $sinfo = $self->_get_snmp_session();
+    
+    my $sinfo = $argv{session} || $self->_get_snmp_session();
 
     # Build a hash with device's interfaces, indexed by ifIndex
     my %devints;
@@ -3550,7 +3474,7 @@ sub _get_arp_from_snmp {
 #     Some logic borrowed from netdisco's macksuck()
 #    
 #   Arguments:
-#     none
+#     session - SNMP Session (optional)
 #   Returns:
 #     Hash ref.
 #    
@@ -3572,7 +3496,7 @@ sub _get_fwt_from_snmp {
     }
 
     my $start   = time;
-    my $sinfo   = $self->_get_snmp_session();
+    my $sinfo   = $argv{session} || $self->_get_snmp_session();
     my $sints   = $sinfo->interfaces();
 
     # Build a hash with device's interfaces, indexed by ifIndex
@@ -3808,11 +3732,11 @@ sub _update_macs_from_cache {
     foreach my $cache ( @$caches ){
 	foreach my $idx ( keys %{$cache} ){
 	    foreach my $mac ( keys %{$cache->{$idx}} ){
-		$mac_updates{$mac} = $timestamp;
+		$mac_updates{$mac} = 1;
 	    }
 	}
     }
-    Netdot::Model->do_transaction( sub{ return PhysAddr->fast_update(\%mac_updates) } );
+    Netdot::Model->do_transaction( sub{ return PhysAddr->fast_update(\%mac_updates, $timestamp) } );
     return 1;
 }
 
@@ -3952,92 +3876,6 @@ sub _get_airespace_ap_info {
 	}
     }
     
-    return 1;
-}
-
-#########################################################################
-# _fwt_update_parallel - Update FWT for a given list of devices
-#    
-#   Arguments:
-#     list - array ref of Device objects
-#   Returns:
-#     True if successful
-#   Examples:
-#     Device->fwt_update_parallel(list=>\@devs);
-#
-#
-sub _fwt_update_parallel {
-    my ($class, %argv) = @_;
-    $class->isa_class_method('fwt_update_parallel');
-    my $list = $argv{list} or throw_fatal("Missing required arguments: list");
-    my $start = time;
-
-    # Init ForkManager
-    my $pm = $class->_fork_init();
-
-    my $device_count = 0;
-    my $timestamp = $class->timestamp;
-    foreach my $dev ( @$list ){
-	next unless ( $dev->collect_fwt );
-	# FORK
-	$device_count++;
-	$pm->start and next;
-	$class->_launch_child(pm   => $pm,
-			      code => sub{ return $dev->fwt_update(timestamp=>$timestamp) },
-			      );
-    }
-
-    # End forking state
-    $class->_fork_end($pm);
-
-    my $end = time;
-    $logger->info(sprintf("Forwarding tables updated. %d devices in %d seconds", 
-			  $device_count, ($end-$start) ));
-
-    return 1;
-}
-
-#########################################################################
-# _arp_update_parallel - Update ARP cache from devices in given list
-#    
-#   Arguments:
-#     list - array ref of Device objects
-#   Returns:
-#     True if successful
-#   Examples:
-#     Device->arp_update_parallel(list=>\@devs);
-#
-sub _arp_update_parallel {
-    my ($class, %argv) = @_;
-    $class->isa_class_method('_arp_update_parallel');
-
-    my $list = $argv{list} or $class->throw_fatal("Missing required arguments: list");
-    my $start = time;
-
-    # Init ForkManager
-    my $pm = $class->_fork_init();
-
-    my $device_count = 0;
-    my $timestamp = $class->timestamp;
-    foreach my $dev ( @$list ){
-	next unless ( $dev->has_layer(3) && $dev->collect_arp );
-	# Fork
-	$device_count++;
-	$pm->start and next;
-	$class->_launch_child(pm   => $pm,
-			      code => sub{ return $dev->arp_update(timestamp=>$timestamp, no_update_tree=>1) },
-			      );
-    }
-
-    # End forking state
-    $class->_fork_end($pm);
-
-    Ipblock->build_tree(4);
-
-    my $end = time;
-    $logger->info(sprintf("ARP caches updated. %d devices in %d seconds", 
-			  $device_count, ($end-$start) ));
-
     return 1;
 }
 

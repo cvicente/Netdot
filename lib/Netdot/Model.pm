@@ -417,13 +417,14 @@ sub do_transaction {
     my @result;
     my $dbh = $self->db_Main();
 
-    # Localize AutoCommit database handle attribute
-    # and turn off for this block.
-    local $dbh->{AutoCommit};
-
     # Parallel processes might cause deadlocks so we try 
     # up to three times if that happens
     for ( 1..3 ){
+
+	# Localize AutoCommit database handle attribute
+	# and turn off for this block.
+	local $dbh->{AutoCommit};
+	
 	eval {
 	    @result = $code->(@args);
 	    $self->dbi_commit;

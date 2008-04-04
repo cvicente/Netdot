@@ -147,9 +147,8 @@ sub retrieve_all_hashref {
     objects.  We use direct SQL commands for improved speed.
 
   Arguments: 
-    hash ref consisting of:
-    key       - String containing MAC address
-    value     - timestamp
+    hash ref with key = MAC address string
+    timestamp
   Returns:   
     True if successul
   Examples:
@@ -157,7 +156,7 @@ sub retrieve_all_hashref {
 
 =cut
 sub fast_update {
-    my ($class, $macs) = @_;
+    my ($class, $macs, $timestamp) = @_;
     $class->isa_class_method('fast_update');
     
     my $start = time;
@@ -167,23 +166,10 @@ sub fast_update {
     if ( $class->config->get('DB_TYPE') eq 'mysql' ){
 	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
 	my $sth = $dbh->prepare_cached("INSERT INTO physaddr (address,first_seen,last_seen,static)
-                                     VALUES (?, ?, ?, '0')
-                                     ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");	
+                                        VALUES (?, ?, ?, '0')
+                                        ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");	
 	foreach my $address ( keys %$macs ){
-	    my $timestamp = $macs->{$address};
-	    eval {
-		$sth->execute($address, $timestamp, $timestamp);
-	    };
-	    if ( my $e = $@ ){
-		if ( $e =~ /Duplicate/ ){
-		    # Since we're parallelizing, an address
-		    # might get inserted after we get our list.
-		    # Just go on.
-		    next;
-		}else{
-		    $class->throw_fatal($e);
-		}
-	    }
+	    $sth->execute($address, $timestamp, $timestamp);
 	}
     }else{    
 	my $db_macs = $class->retrieve_all_hashref;
@@ -196,7 +182,6 @@ sub fast_update {
 
 	# Now walk our list and do the right thing
 	foreach my $address ( keys %$macs ){
-	    my $timestamp = $macs->{$address};
 	    if ( !exists $db_macs->{$address} ){
 		# Insert
 		eval {

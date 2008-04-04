@@ -193,19 +193,13 @@ if ( $action eq "discover" ){
 	    $m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
 	}
 
-	my %uargs = (info => $argv{info});
-	if ( $pretend ){
-	    $uargs{pretend} = 1;
-	    eval {
-		$o->snmp_update(%uargs);
-	    };
-	}else{
-	    eval {
-		Netdot::Model->do_transaction( sub { return $o->snmp_update(\%uargs) } );
-	      };
-	    if ( my $e = $@ ){
-		$m->comp('/generic/error.mhtml', error=>$e);
-	    }
+	my %uargs = (info=>$argv{info}, do_info=>1);
+	$uargs{pretend} = 1 if $pretend;
+	eval {
+	    $o->snmp_update(%uargs);
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
     }else{
 	$argv{owner}        = $owner          ||  0;

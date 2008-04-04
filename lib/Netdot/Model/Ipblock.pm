@@ -644,30 +644,17 @@ sub fast_update{
     if ( $class->config->get('DB_TYPE') eq 'mysql' ){
 	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
 	my $sth = $dbh->prepare_cached("INSERT INTO ipblock
-                                         (address,prefix,version,status,first_seen,last_seen,
-                                         dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
-                                         VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')
-                                         ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");
+                                        (address,prefix,version,status,first_seen,last_seen,
+                                        dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
+                                        VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')
+                                        ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");
 
 	foreach my $address ( keys %$ips ){
 	    my $attrs = $ips->{$address};
 	    # Convert address to decimal format
 	    my $dec_addr = $class->ip2int($address);
-	    eval{
-		$sth->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
-			      $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp});
-	    };
-	    if ( my $e = $@ ){
-		if ( $e =~ /Duplicate/ ){
-		    # Since we're parallelizing, an address
-		    # might get inserted after we get our list.
-		    # Just go on.
-		    next;
-		}else{
-		    $class->throw_fatal($e);
-		}
-	    }
-	    
+	    $sth->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
+			  $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp});
 	}
     }else{
 	my $db_ips  = $class->retrieve_all_hashref;

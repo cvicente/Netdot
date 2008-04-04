@@ -119,11 +119,6 @@ unless ( $INFO || $FWT || $ARP || $TOPO ){
     die "Error: You need to specify at least one of -I, -F, -A or -T\n";
 }
 
-if ( $TOPO && ( $host ) ){
-    print $USAGE;
-    die "Error: Topology discovery can not be applied to hosts";
-}
-
 # Re-read communities, in case we were passed new ones
 @$communities = split ',', $commstrs if defined $commstrs;
 # Remove any spaces
@@ -163,49 +158,37 @@ my %uargs = (communities  => $communities,
 	     add_subnets  => $ADDSUBNETS,
 	     subs_inherit => $SUBSINHERIT,
 	     bgp_peers    => $BGPPEERS,
+	     do_info      => $INFO,
+	     do_fwt       => $FWT,
+	     do_arp       => $ARP,
 	     );
 if ( $host ){
     $logger->info("Updating single device: $host");
-    my $dev;
-    if ( $INFO ){
-	$uargs{name} = $host;
-	$dev = Device->discover(%uargs);
-    }
-    if ( $FWT ){
-	$dev ||= Device->search(name=>$host)->first;
-	die "Error: Could not find $host in database\n" unless $dev;
-	$dev->fwt_update();
-    }
-    if ( $ARP ){
-	$dev ||= Device->search(name=>$host)->first;
-	die "Error: Could not find $host in database\n" unless $dev;
-	$dev->arp_update();
-    }
+    $uargs{name} = $host;
+    Device->discover(%uargs);
+
 }elsif ( $blocks ){
     my @blocks = split ',', $blocks;
     map { $_ =~ s/\s+//g } @blocks;
     $logger->info("Updating all devices in $blocks");
     $uargs{blocks} = \@blocks;
-    Netdot::Model::Device->snmp_update_block(%uargs)    if ( $INFO );
-    Netdot::Model::Device->fwt_update_block(%uargs)     if ( $FWT  );
-    Netdot::Model::Device->arp_update_block(%uargs)     if ( $ARP  );
-    Netdot::Model::Topology->discover(blocks=>\@blocks) if ( $TOPO );
+    Netdot::Model::Device->snmp_update_block(%uargs);
+
 }elsif ( $db ){
     $logger->info("Updating all devices in the DB");
-    Netdot::Model::Device->snmp_update_all(%uargs) if ( $INFO );
-    Netdot::Model::Device->fwt_update_all(%uargs)  if ( $FWT  );
-    Netdot::Model::Device->arp_update_all(%uargs)  if ( $ARP  );
-    Netdot::Model::Topology->discover              if ( $TOPO );
+    Netdot::Model::Device->snmp_update_all(%uargs);
+
 }elsif ( $file ){
     $logger->info("Updating all devices in given file: $file");
     $uargs{file} = $file;
-    Netdot::Model::Device->snmp_update_from_file(%uargs) if ( $INFO );
-    Netdot::Model::Device->fwt_update_from_file(%uargs)  if ( $FWT  );
-    Netdot::Model::Device->arp_update_from_file(%uargs)  if ( $ARP  );
-}else{
+    Netdot::Model::Device->snmp_update_from_file(%uargs);
+
+}elsif ( !$TOPO ) {
     print $USAGE;
-    die "Error: You need to specify one of: -H, -B, -E or -D\n";
+    die "Error: You need to specify one of: -H, -B, -E, -D or -T\n";
 }
+
+Netdot::Model::Topology->discover if ( $TOPO );
 
 $logger->info(sprintf("$0 total runtime: %s secs\n", (time - $start)));
 
