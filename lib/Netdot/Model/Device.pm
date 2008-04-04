@@ -1805,6 +1805,7 @@ sub info_update {
 	    # (may have been discovered in fw tables/arp cache)
 	    $mac->update({last_seen=>$self->timestamp});
 	    $logger->debug(sub{"$host: Using existing $address as base bridge address"});
+	    $devtmp{physaddr} = $mac->id;
 	}else{
 	    # address is new.  Add it
 	    my %mactmp = (address    => $address,
@@ -1819,9 +1820,9 @@ sub info_update {
 				      $host, $address, $e));
 	    }else{
 		$logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
+		$devtmp{physaddr} = $mac->id;
 	    }
 	}
-	$devtmp{physaddr} = $mac->id;
     }else{
 	$logger->debug(sub{"$host did not return base MAC"});
     }
