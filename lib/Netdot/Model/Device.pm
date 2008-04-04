@@ -2189,9 +2189,11 @@ sub info_update {
 	 && defined($info->{snmp_target}) ){
 	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first ||
 	    Ipblock->insert({address=>$info->{snmp_target}});
-	$self->update({snmp_target=>$ipb});
-	$logger->info(sprintf("%s: SNMP target address set to %s", 
-			      $host, $self->snmp_target->address));
+	if ( $ipb ){
+	    $self->update({snmp_target=>$ipb});
+	    $logger->info(sprintf("%s: SNMP target address set to %s", 
+				  $host, $ipb->address));
+	}
     }
 
     ##############################################################
