@@ -299,8 +299,8 @@ sub snmp_update {
 	my $addr = $newif->{physaddr};
 	# Check if it's valid
 	if ( ! PhysAddr->validate( $addr ) ){
-	    $logger->warn(sprintf("%s: Interface %s (%s): PhysAddr %s is not valid\n"),
-			  $host, $iftmp{number}, $iftmp{name}, $addr);
+	    $logger->warn(sprintf("%s: Interface %s (%s): PhysAddr %s is not valid\n",
+				  $host, $iftmp{number}, $iftmp{name}, $addr));
 	}else{
 	    my $physaddr;
 	    eval {
