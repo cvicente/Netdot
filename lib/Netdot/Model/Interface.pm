@@ -297,26 +297,18 @@ sub snmp_update {
 	$iftmp{physaddr} = 0;
     }else{
 	my $addr = $newif->{physaddr};
-	# Check if it's valid
-	if ( ! PhysAddr->validate( $addr ) ){
-	    $logger->warn(sprintf("%s: Interface %s (%s): PhysAddr %s is not valid\n",
-				  $host, $iftmp{number}, $iftmp{name}, $addr));
+	my $physaddr;
+	eval {
+	    $physaddr = PhysAddr->find_or_create({address=>$addr}); 
+	};
+	if ( my $e = $@ ){
+	    $logger->warn(sprintf("%s: Could not insert PhysAddr %s for Interface %s (%s): %s", 
+				  $host, $addr, $iftmp{number}, $iftmp{name}, $e));
 	}else{
-	    my $physaddr;
-	    eval {
-		$physaddr = PhysAddr->find_or_create({address=>$addr}); 
-	    };
-	    if ( my $e = $@ ){
-		$logger->warn(sprintf("%s: Could not insert PhysAddr %s for Interface %s (%s): %s", 
-				      $host, $addr, $iftmp{number}, $iftmp{name}, $e));
-	    }else{
-		$logger->debug(sub{ sprintf("%s: Interface %s (%s) has PhysAddr %s", 
-					    $host, $iftmp{number}, $iftmp{name}, $addr) });
-	    }
 	    $iftmp{physaddr} = $physaddr->id;
 	}
     }
-
+    
     # Check if description can be overwritten
     delete $iftmp{description} if !($self->overwrite_descr) ;
 
