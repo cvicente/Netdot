@@ -542,7 +542,7 @@ sub update_ip {
     
     # Do not bother with loopbacks
     if ( Ipblock->is_loopback($address) ){
-	$logger->warn("IP $address is a loopback. Will not insert.");
+	$logger->debug("$host: IP $address is a loopback. Will not insert.");
 	return;
     }
 	
