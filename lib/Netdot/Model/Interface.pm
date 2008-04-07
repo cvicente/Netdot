@@ -302,8 +302,8 @@ sub snmp_update {
 	    $physaddr = PhysAddr->find_or_create({address=>$addr}); 
 	};
 	if ( my $e = $@ ){
-	    $logger->warn(sprintf("%s: Could not insert PhysAddr %s for Interface %s (%s): %s", 
-				  $host, $addr, $iftmp{number}, $iftmp{name}, $e));
+	    $logger->debug(sprintf("%s: Could not insert PhysAddr %s for Interface %s (%s): %s", 
+				   $host, $addr, $iftmp{number}, $iftmp{name}, $e));
 	}else{
 	    $iftmp{physaddr} = $physaddr->id;
 	}

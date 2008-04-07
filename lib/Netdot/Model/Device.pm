@@ -1282,11 +1282,16 @@ sub arp_update {
     # Create ArpCache object
     my $ac = ArpCache->insert({device  => $self,tstamp  => $timestamp});
 
-    $self->_update_macs_from_cache([$cache], $timestamp);
+    $self->_update_macs_from_cache(caches    => [$cache], 
+				   timestamp => $timestamp, 
+				   atomic    => $argv{atomic},
+	);
 
     $self->_update_ips_from_cache(caches         => [$cache], 
 				  timestamp      => $timestamp, 
-				  no_update_tree => $argv{no_update_tree});
+				  no_update_tree => $argv{no_update_tree},
+				  atomic         => $argv{atomic},
+	);
 
     my ($arp_count, @ce_updates);
 
@@ -1364,7 +1369,10 @@ sub fwt_update {
     my $fw = FWTable->insert({device  => $self,
 			      tstamp  => $timestamp});
 
-    $self->_update_macs_from_cache([$fwt], $timestamp);
+    $self->_update_macs_from_cache(caches    => [$fwt], 
+				   timestamp => $timestamp,
+				   atomic    => $argv{atomic},
+	);
     
     my @fw_updates;
     foreach my $intid ( keys %{$fwt} ){
@@ -1845,8 +1853,8 @@ sub info_update {
 		$mac = PhysAddr->insert(\%mactmp);
 	    };
 	    if ( my $e = $@ ){
-		$logger->warn(sprintf("%s: Could not insert base MAC: %s: %s",
-				      $host, $address, $e));
+		$logger->debug(sprintf("%s: Could not insert base MAC: %s: %s",
+				       $host, $address, $e));
 	    }else{
 		$logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
 		$devtmp{physaddr} = $mac->id;
@@ -3671,6 +3679,7 @@ sub _walk_fwt {
 	
 	foreach my $mac ( keys %{ $tmp{$iid} } ){
 	    next unless $mac;
+	    $mac = PhysAddr->format_address($mac);
 	    if ( ! PhysAddr->validate($mac) ){
 		$logger->debug(sub{"Device::_walk_fwt: $host: Invalid MAC: $mac" });
 		next;
@@ -3756,11 +3765,14 @@ sub _launch_child {
 # _update_macs_from_cache - Update MAC addresses
 # 
 # Arguments:
+#   hash with following keys:
 #     caches    - Arrayref with ARP cache or FWT info
-#     timestamp 
+#     timestamp - Time Stamp
+#     atomic    - Perform atomic updates
 sub _update_macs_from_cache {
-    my ($class, $caches, $timestamp) = @_;
-    
+    my ($class, %argv) = @_;
+    my ($caches, $timestamp, $atomic) = @argv{'caches', 'timestamp', 'atomic'};
+
     my %mac_updates;
     foreach my $cache ( @$caches ){
 	foreach my $idx ( keys %{$cache} ){
@@ -3769,7 +3781,11 @@ sub _update_macs_from_cache {
 	    }
 	}
     }
-    Netdot::Model->do_transaction( sub{ return PhysAddr->fast_update(\%mac_updates, $timestamp) } );
+    if ( $atomic ){
+	Netdot::Model->do_transaction( sub{ return PhysAddr->fast_update(\%mac_updates, $timestamp) } );
+    }else{
+	PhysAddr->fast_update(\%mac_updates, $timestamp);
+    }
     return 1;
 }
 
@@ -3778,13 +3794,14 @@ sub _update_macs_from_cache {
 #
 # Arguments:
 #   hash with following keys:
-#   caches         - Array ref with Arp Cache info
-#   timestamp      - Time Stamp
-#   no_update_tree - Boolean 
-#
+#     caches         - Array ref with Arp Cache info
+#     timestamp      - Time Stamp
+#     no_update_tree - Boolean 
+#     atomic         - Perform atomic updates
 sub _update_ips_from_cache {
     my ($class, %argv) = @_;
-    my ($caches, $timestamp, $no_update_tree) = @argv{'caches', 'timestamp', 'no_update_tree'};
+    my ($caches, $timestamp, $no_update_tree, $atomic) = @argv{'caches', 'timestamp', 
+							       'no_update_tree', 'atomic'};
 
     my %ip_updates;
 
@@ -3807,7 +3824,11 @@ sub _update_ips_from_cache {
 	}
     }
     
-    Netdot::Model->do_transaction( sub{ return Ipblock->fast_update(\%ip_updates) } );
+    if ( $atomic ){
+	Netdot::Model->do_transaction( sub{ return Ipblock->fast_update(\%ip_updates) } );
+    }else{
+	Ipblock->fast_update(\%ip_updates);
+    }
 
     unless ( $no_update_tree ){
 	Ipblock->build_tree(4);
@@ -3861,7 +3882,8 @@ sub _get_airespace_ap_info {
     $info->{type} = "Access Point";
 
     # AP Ethernet MAC
-    if ( defined(my $basemac = $hashes->{'airespace_ap_mac'}->{$idx}) ){
+    if ( my $basemac = $hashes->{'airespace_ap_mac'}->{$idx} ){
+	$basemac = PhysAddr->format_address($basemac);
 	if ( ! PhysAddr->validate($basemac) ){
 	    $logger->debug(sub{"Device::get_airspace_if_info: iid $iid: Invalid MAC: $basemac" });
 	}else{
