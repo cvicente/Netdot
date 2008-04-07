@@ -417,7 +417,7 @@ sub get_snmp_info {
     ################################################################
     # SNMP::Info methods that return hash refs
     my @SMETHODS = qw( hasCDP e_descr
-		       i_index i_name i_type i_alias i_description 
+		       interfaces i_index i_name i_type i_alias i_description 
 		       i_speed i_up i_up_admin i_duplex i_duplex_admin 
 		       ip_index ip_netmask i_mac
 		       i_vlan_membership qb_v_name v_name
@@ -654,7 +654,7 @@ sub get_snmp_info {
     # Interface stuff
     
     # Netdot Interface field name to SNMP::Info method conversion table
-    my %IFFIELDS = ( name                => 'i_description',         type                => 'i_type',
+    my %IFFIELDS = ( type                => 'i_type',
 		     description         => 'i_alias',		     speed               => 'i_speed',
 		     admin_status        => 'i_up',		     oper_status         => 'i_up_admin', 
 		     physaddr            => 'i_mac', 		     oper_duplex         => 'i_duplex',
@@ -670,17 +670,23 @@ sub get_snmp_info {
 
     my $ifreserved = $self->config->get('IFRESERVED');
 
-    foreach my $iid ( keys %{ $hashes{i_index} } ){
-	my $ifdescr = $hashes{i_description}->{$iid};
+    foreach my $iid ( keys %{ $hashes{interfaces} } ){
 	$dev{interface}{$iid}{number} = $iid;
 
 	# check whether it should be ignored
-	if ( defined $ifreserved ){
-	    if ( $ifdescr =~ /$ifreserved/i ){
-		$logger->debug(sub{"Device::get_snmp_info: Interface $ifdescr ignored per configuration option (IFRESERVED)"});
-		next;
+	my $name = $hashes{i_description}->{$iid};
+	if ( $name ){
+	    $dev{interface}{$iid}{name} = $name;
+	    if ( defined $ifreserved ){
+		if ( $name =~ /$ifreserved/i ){
+		    $logger->debug(sub{"Device::get_snmp_info: Interface $name ignored per configuration option (IFRESERVED)"});
+		    next;
+		}
 	    }
+	}else{
+	    $dev{interface}{$iid}{name} = $iid;
 	}
+
 	foreach my $field ( keys %IFFIELDS ){
 	    my $method = $IFFIELDS{$field};
 	    if ( exists $hashes{$method}->{$iid} ){
@@ -690,10 +696,9 @@ sub get_snmp_info {
 		}else{
 		    $dev{interface}{$iid}{$field} = $hashes{$method}->{$iid};
 		}
- 	    }else{
+ 	    }elsif ( $field =~ /^dp_/ ) {
  		# Make sure we erase any old discovery protocol values
- 		$dev{interface}{$iid}{$field} = "" 
- 		    if ( $field =~ /^dp_/ );
+ 		$dev{interface}{$iid}{$field} = "";
 	    }
 	}
 
@@ -1242,6 +1247,7 @@ sub list_layers {
     cache          - hash reference with arp cache info (optional)
     timestamp      - Time Stamp (optional)
     no_update_tree - Do not update IP tree
+    atomic         - Flag. Perform atomic updates.
   Returns:
     True if successful
     
@@ -1296,7 +1302,11 @@ sub arp_update {
 	    };
 	}
     }
-    Netdot::Model->do_transaction( sub{ return ArpCacheEntry->fast_insert(list=>\@ce_updates) } );
+    if ( $argv{atomic} ){
+	Netdot::Model->do_transaction( sub{ return ArpCacheEntry->fast_insert(list=>\@ce_updates) } );
+    }else{
+	ArpCacheEntry->fast_insert(list=>\@ce_updates);
+    }
 
     # Set the last_arp timestamp
     $self->update({last_arp=>$timestamp});
@@ -1316,6 +1326,7 @@ sub arp_update {
     session        - SNMP Session (optional)
     fwt            - hash reference with FWT info (optional)
     timestamp      - Time Stamp (optional)
+    atomic         - Flag.  Perform atomic updates.
   Returns:
     True if successful
     
@@ -1366,7 +1377,11 @@ sub fwt_update {
 	}
     }
 
-    Netdot::Model->do_transaction( sub{ return FWTableEntry->fast_insert(list=>\@fw_updates) } );
+    if ( $argv{atomic} ){
+	Netdot::Model->do_transaction( sub{ return FWTableEntry->fast_insert(list=>\@fw_updates) } );
+    }else{
+	FWTableEntry->fast_insert(list=>\@fw_updates);
+    }
     
     ##############################################################
     # Set the last_fwt timestamp
@@ -1652,26 +1667,27 @@ sub update_bgp_peering {
 
   Arguments:
     Hash with the following keys:
-    do_info       Update device info
-    do_fwt        Update forwarding tables
-    do_arp        Update ARP cache
-    info          Hashref with device info (optional)
-    communities   Arrayref of SNMP Community strings
-    version       SNMP Version [1|2|3]
-    timeout       SNMP Timeout
-    retries       SNMP Retries
-    session       SNMP Session
-    add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
-    subs_inherit  Flag. When adding subnets, have them inherit information from the Device
-    bgp_peers     Flag. When discovering routers, update bgp_peers
-    pretend       Flag. Do not commit changes to the database
-    timestamp     Time Stamp (optional)
-    no_update_tree
+    do_info        Update device info
+    do_fwt         Update forwarding tables
+    do_arp         Update ARP cache
+    info           Hashref with device info (optional)
+    communities    Arrayref of SNMP Community strings
+    version        SNMP Version [1|2|3]
+    timeout        SNMP Timeout
+    retries        SNMP Retries
+    session        SNMP Session
+    add_subnets    Flag. When discovering routers, add subnets to database if they do not exist
+    subs_inherit   Flag. When adding subnets, have them inherit information from the Device
+    bgp_peers      Flag. When discovering routers, update bgp_peers
+    pretend        Flag. Do not commit changes to the database
+    timestamp      Time Stamp (optional)
+    no_update_tree Flag. Do not update IP tree.
+    atomic         Flag. Perform atomic updates.
   Returns:
     Updated Device object
 
   Example:
-    my $device = $device->snmp_update(do_info=>1, do_arp=>0, do_fwt=>1);
+    my $device = $device->snmp_update(do_info=>1, do_fwt=>1);
 
 =cut
 sub snmp_update {
@@ -1680,6 +1696,8 @@ sub snmp_update {
 
     $self->throw_fatal("Missing required arguments")
 	unless ( $argv{do_info} || $argv{do_fwt} || $argv{do_arp} );
+
+    my $atomic = defined $argv{atomic} ? $argv{atomic} : $self->config->get('ATOMIC_DEVICE_UPDATES');
 
     my $host = $self->fqdn;
     my $timestamp = $argv{timestamp} || $self->timestamp;
@@ -1694,20 +1712,29 @@ sub snmp_update {
     }
     
     if ( $argv{do_info} ){
-	my $info = $argv{info} || $self->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
-											       bgp_peers => $argv{bgp_peers}) });
-	
-	Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets  => $argv{add_subnets},
-								      subs_inherit => $argv{subs_inherit},
-								      bgp_peers    => $argv{bgp_peers},
-								      pretend      => $argv{pretend},
-								      info         => $info,
-						) } );
+	if ( $atomic && !$argv{pretend} ){
+	    my $info = $argv{info} || 
+		$self->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
+									     bgp_peers => $argv{bgp_peers}) });
+	    
+	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets  => $argv{add_subnets},
+									  subs_inherit => $argv{subs_inherit},
+									  bgp_peers    => $argv{bgp_peers},
+									  info         => $info,
+						    ) } );
+	}else{
+	    $self->info_update(add_subnets  => $argv{add_subnets},
+			       subs_inherit => $argv{subs_inherit},
+			       bgp_peers    => $argv{bgp_peers},
+			       pretend      => $argv{pretend},
+		);
+	}
     }
     if ( $argv{do_fwt} ){
-	if ( $self->has_layer(2) && $self->collect_fwt ){
+	if ( $self->collect_fwt ){
 	    $self->fwt_update(session   => $sinfo, 
 			      timestamp => $timestamp,
+			      atomic    => $atomic,
 		);
 	}
     }
@@ -1716,6 +1743,7 @@ sub snmp_update {
 	    $self->arp_update(session        => $sinfo, 
 			      timestamp      => $timestamp,
 			      no_update_tree => $argv{no_update_tree},
+			      atomic         => $atomic,
 		);
 	}
     }
@@ -1774,6 +1802,7 @@ sub info_update {
 								     version     => $version,
 								     timeout     => $timeout,
 								     retries     => $retries,
+								     bgp_peers   => $argv{bgp_peers},
 					     ) });
     
     unless ( $info ){
@@ -3446,7 +3475,7 @@ sub _get_arp_from_snmp {
 	    $logger->warn("Device::get_snmp_arp: $host: Interface $idx not in database. Skipping");
 	    next;
 	}
-	unless ( defined($mac) ){
+	unless ( $mac ){
 	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: MAC not defined in at_paddr->{$key}" });
 	    next;
 	}
@@ -3641,6 +3670,7 @@ sub _walk_fwt {
 	}
 	
 	foreach my $mac ( keys %{ $tmp{$iid} } ){
+	    next unless $mac;
 	    if ( ! PhysAddr->validate($mac) ){
 		$logger->debug(sub{"Device::_walk_fwt: $host: Invalid MAC: $mac" });
 		next;

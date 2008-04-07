@@ -29,7 +29,7 @@ my $to              = Netdot->config->get('NOCEMAIL');
 my $subject         = 'Netdot Device Updates';
 
 # Flags
-my ($ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $INFO, $FWT, $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG, $EMAIL);
+my ($ATOMIC, $ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $INFO, $FWT, $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG, $EMAIL);
 
 # This will be reflected in the history tables
 $ENV{REMOTE_USER}   = "netdot";
@@ -45,10 +45,10 @@ my $USAGE = <<EOF;
 
     Optional args:
         [c, --community] [r, --retries] [o, --timeout] [v, --version] [d, --debug]
-        [a, --add-subnets] [i, --subs-inherit] [-b, --with-bgp-peers] [-p, --pretend] 
+        [--add-subnets] [--subs-inherit] [--with-bgp-peers] [--pretend] [--atomic]
         
     Email report args:
-        [-m|--send-mail] [-f|--from <e-mail>] | [-t|--to <e-mail>] | [-s|--subject <subject>]
+        [--send-mail] [--from <e-mail>] | [--to <e-mail>] | [--subject <subject>]
           
     Argument Detail: 
     -H, --host <hostname|address>        Update given host only.
@@ -63,16 +63,17 @@ my $USAGE = <<EOF;
     -F, --fwt                            Get forwarding tables
     -T, --topology                       Update Topology
     -A, --arp                            Get ARP tables
-    -a, --add-subnets                    When discovering routers, add subnets to database if they do not exist
-    -i, --subs-inherit                   When adding subnets, have them inherit information from the Device
-    -b, --with-bgp-peers                 When discovering routers, maintain their BGP Peers
-    -p, --pretend                        Do not commit changes to the database
+    --atomic                             Make updates atomic (enable transactions)
+    --add-subnets                        When discovering routers, add subnets to database if they do not exist
+    --subs-inherit                       When adding subnets, have them inherit information from the Device
+    --with-bgp-peers                     When discovering routers, maintain their BGP Peers
+    --pretend                            Do not commit changes to the database
+    --send-mail                          Send logging output via e-mail instead of to STDOUT
+    --from                               e-mail From line (default: $from)
+    --subject                            e-mail Subject line (default: $subject)
+    --to                                 e-mail To line (default: $to)
     -h, --help                           Print help (this message)
     -d, --debug                          Set syslog level to LOG_DEBUG
-    -m, --send-mail                      Send logging output via e-mail instead of to STDOUT
-    -f, --from                           e-mail From line (default: $from)
-    -s, --subject                        e-mail Subject line (default: $subject)
-    -t, --to                             e-mail To line (default: $to)
 
 Options override default settings from config file.
     
@@ -91,16 +92,18 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "r|retries:s"       => \$retries,
 			 "o|timeout:s"       => \$timeout,
 			 "v|version:s"       => \$version,
-			 "a|add-subnets"     => \$ADDSUBNETS,
-			 "i|subs-inherit"    => \$SUBSINHERIT,
-			 "b|with-bgp-peers"  => \$BGPPEERS,
-			 "p|pretend"         => \$PRETEND,
+			 "atomic"            => \$ATOMIC,
+			 "add-subnets"       => \$ADDSUBNETS,
+			 "subs-inherit"      => \$SUBSINHERIT,
+			 "with-bgp-peers"    => \$BGPPEERS,
+			 "pretend"           => \$PRETEND,
+			 "send-mail"         => \$EMAIL,
+			 "from:s"            => \$from,
+			 "to:s"              => \$to,
+			 "subject:s"         => \$subject,
 			 "h|help"            => \$HELP,
 			 "d|debug"           => \$_DEBUG,
-			 "m|send-mail"       => \$EMAIL,
-			 "f|from:s"          => \$from,
-			 "t|to:s"            => \$to,
-			 "s|subject:s"       => \$subject);
+);
 
 if ( ! $result ) {
     print $USAGE;
@@ -155,6 +158,7 @@ my %uargs = (communities  => $communities,
 	     timeout      => $timeout,
 	     retries      => $retries,
 	     pretend      => $PRETEND,
+	     atomic       => $ATOMIC,
 	     add_subnets  => $ADDSUBNETS,
 	     subs_inherit => $SUBSINHERIT,
 	     bgp_peers    => $BGPPEERS,
