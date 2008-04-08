@@ -476,7 +476,7 @@ sub update_ip {
 	
 	# Do not bother with loopbacks
 	if ( Ipblock->is_loopback($subnetaddr, $subnetprefix) ){
-	    $logger->warn("IP $subnetaddr/$subnetprefix is a loopback. Skipping.");
+	    $logger->debug("IP $subnetaddr/$subnetprefix is a loopback. Skipping.");
 	    return;
 	}
 	
