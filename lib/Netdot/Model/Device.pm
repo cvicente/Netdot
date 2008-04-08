@@ -1735,6 +1735,7 @@ sub snmp_update {
 			       subs_inherit => $argv{subs_inherit},
 			       bgp_peers    => $argv{bgp_peers},
 			       pretend      => $argv{pretend},
+			       session      => $sinfo,
 		);
 	}
     }
@@ -1797,22 +1798,31 @@ sub info_update {
     # Show full name in output
     my $host = $self->fqdn;
 
-    # Get SNMP info
-    my $version = $argv{snmp_version} || $self->snmp_version 
-	|| $self->config->get('DEFAULT_SNMPVERSION');
-
-    my $communities = $argv{communities} || [$self->community] || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
-    my $timeout     = $argv{timeout}     || $self->config->get('DEFAULT_SNMPTIMEOUT');
-    my $retries     = $argv{retries}     || $self->config->get('DEFAULT_SNMPRETRIES');
-
-    my $info = $argv{info} 
-    || $class->_exec_timeout($host, sub{ return $self->get_snmp_info(communities => $communities, 
-								     version     => $version,
-								     timeout     => $timeout,
-								     retries     => $retries,
-								     bgp_peers   => $argv{bgp_peers},
-					     ) });
-    
+    my $info = $argv{info};
+    unless ( $info ){
+	# Get SNMP info
+	if ( $argv{session} ){
+	    $info = $class->_exec_timeout($host, 
+					  sub{ return $self->get_snmp_info(bgp_peers => $argv{bgp_peers},
+									   session   => $argv{session},
+						   ) });
+	    
+	}else{
+	    my $version = $argv{snmp_version} || $self->snmp_version 
+		|| $self->config->get('DEFAULT_SNMPVERSION');
+	    
+	    my $communities = $argv{communities} || [$self->community] || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
+	    my $timeout     = $argv{timeout}     || $self->config->get('DEFAULT_SNMPTIMEOUT');
+	    my $retries     = $argv{retries}     || $self->config->get('DEFAULT_SNMPRETRIES');
+	    $info = $class->_exec_timeout($host, 
+					  sub{ return $self->get_snmp_info(communities => $communities, 
+									   version     => $version,
+									   timeout     => $timeout,
+									   retries     => $retries,
+									   bgp_peers   => $argv{bgp_peers},
+						   ) });
+	}
+    }
     unless ( $info ){
 	$logger->error("$host: No SNMP info received");
 	return;	
