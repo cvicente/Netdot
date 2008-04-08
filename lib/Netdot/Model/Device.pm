@@ -1094,7 +1094,8 @@ sub discover {
                            bgp_peers pretend do_info do_fwt do_arp timestamp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
-    $uargs{info} = $info;
+    $uargs{info}    = $info;
+    $uargs{do_info} = 1;
 
     # Update Device with SNMP info obtained
     $dev->snmp_update(%uargs);
