@@ -492,8 +492,6 @@ sub update_ip {
 		$iargs{owner}   = $self->device->owner;
 		$iargs{used_by} = $self->device->used_by;
 	    }
-	    # Skip validation for speed, since the block already exists
-	    $iargs{validate} = 0;
 
 	    if ( my $subnet = Ipblock->search(address => $subnetaddr, 
 					      prefix  => $subnetprefix)->first ){
@@ -501,6 +499,9 @@ sub update_ip {
 		$logger->debug(sub{ sprintf("%s: Block %s/%s already exists", 
 					    $host, $subnetaddr, $subnetprefix)} );
 		
+		# Skip validation for speed, since the block already exists
+		$iargs{validate} = 0;
+
 		$subnet->update(\%iargs);
 	    }else{
 		$logger->debug(sub{ sprintf("Subnet %s/%s does not exist.  Inserting.", $subnetaddr, $subnetprefix) });
