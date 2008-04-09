@@ -321,11 +321,18 @@ sub insert {
     my $statusid     = $class->_get_status_id($argv->{status});
     $argv->{status}  = $statusid;
 
-    $argv->{first_seen} = $class->timestamp,
-    $argv->{last_seen}  = $class->timestamp,
+    my $timestamp = $class->timestamp;
+    $argv->{first_seen} = $timestamp;
+    $argv->{last_seen}  = $timestamp;
 
     my $no_update_tree = $argv->{no_update_tree};
     delete $argv->{no_update_tree};
+
+    my $validate  = 1;
+    if ( defined $argv->{validate} ){
+	$validate = $argv->{validate};
+	delete $argv->{validate};
+    }
 
     my $newblock = $class->SUPER::insert($argv);
     
@@ -340,7 +347,7 @@ sub insert {
     # Notice that we might be told to skip validation
     #####################################################################
     
-    unless ( exists $argv->{validate} && $argv->{validate} == 0 ){
+    if ( $validate ){
 	# We need to delete the object before bailing out
 	eval { 
 	    $newblock->_validate($argv);
@@ -353,13 +360,12 @@ sub insert {
     
     # Inherit some of parent's values if it's not an address
     if ( !$newblock->is_address && (int($newblock->parent) != 0) ){
-	$newblock->update({owner=>$newblock->parent->owner});
+	$newblock->SUPER::update({owner=>$newblock->parent->owner});
     }
     
     # This is a funny hack to avoid the address being shown in numeric.
     my $id = $newblock->id;
-    undef $newblock;
-    $newblock = __PACKAGE__->retrieve($id);
+    $newblock = $class->retrieve($id);
     return $newblock;
 }
 
@@ -809,11 +815,11 @@ sub is_address {
     my $self = shift;
     $self->isa_object_method('is_address');
 
-    if ( ($self->version == 4 && $self->prefix < 32) 
-	 || ($self->version == 6 && $self->prefix < 128) ){
-	return 0; 
+    if ( ($self->version == 4 && $self->prefix == 32) 
+	 || ($self->version == 6 && $self->prefix == 128) ){
+	return 1; 
     }else{
-	return 1;
+	return 0;
     }
 }
 
@@ -1384,7 +1390,7 @@ sub _prevalidate {
 sub _validate {
     my ($self, $args) = @_;
     $self->isa_object_method('_validate');
-    $logger->debug(sub{"Ipblock::_validate: Checking validity of " . $self->get_label });
+    $logger->debug(sub{"Ipblock::_validate: Checking " . $self->get_label });
 		   
     # Make these values what the block is being set to
     # or what it already has
@@ -1585,7 +1591,7 @@ sub _update_tree{
 	    }else{
 		$parent = $n->parent->data if ( $n && $n->parent );
 	    }
-	    $self->update({parent=>$parent}) if $parent;
+	    $self->SUPER::update({parent=>$parent}) if $parent;
 	}
     }else{
 	# This is a block (subnet, container, etc)

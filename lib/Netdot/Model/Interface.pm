@@ -556,9 +556,6 @@ sub update_ip {
 		       });
     }else {
 	# Create a new Ip
-	$logger->debug(sub{ sprintf("%s: IP %s/%s does not exist. Inserting", 
-				    $label, $address, $prefix) });
-	
 	# This could also go wrong, but we don't want to bail out
 	eval {
 	    $ipobj = Ipblock->insert({address => $address, prefix => $prefix, 
@@ -568,7 +565,7 @@ sub update_ip {
 	    $logger->debug("$label: $e");
 	    return;
 	}else{
-	    $logger->info(sprintf("%s: Inserted IP %s", $label, $ipobj->address));
+	    $logger->info(sprintf("%s: Inserted new IP %s", $label, $ipobj->address));
 	    my $version = $ipobj->version;
 	    if ( $version == 4 ){
 		$$ipv4_changed = 1;

@@ -236,9 +236,8 @@ sub assign_name {
     $logger->info(sprintf("Inserted new RR: %s", $rr->get_label));
     # Make sure name has an associated IP and A record
     if ( $ip ){
-	my $ipb = Ipblock->search(address=>$ip)->first;
-	$ipb = Ipblock->insert({address=>$ip}) 
-	    unless $ipb;
+	my $ipb = Ipblock->search(address=>$ip)->first ||
+	    Ipblock->insert({address=>$ip});
 	my $rraddr = RRADDR->find_or_create({ipblock=>$ipb, rr=>$rr});
     }
     return $rr;
@@ -815,8 +814,6 @@ sub get_snmp_info {
 		    
 		    if ( defined $whois ){
 			# We enabled whois queries in config and we have the whois command
-			$logger->debug(sub{"Device::get_snmp_info: Going to query WHOIS for $peer: (AS $asn)"});
-			
 			# Query any configured WHOIS servers for more info about this AS
 			# But first check if it has been found already
 			if ( exists $qcache{$asn} ){
@@ -1016,6 +1013,9 @@ sub snmp_update_from_file {
     version       SNMP version
     timeout       SNMP timeout
     retries       SNMP retries
+    do_info       Update device info
+    do_fwt        Update forwarding tables
+    do_arp        Update ARP cache
     add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
@@ -1036,19 +1036,20 @@ sub discover {
     my $name = $argv{name} || 
 	$class->throw_fatal("Device::discover: Missing required arguments: name");
 
+    my $sinfo;
     my $info = $argv{info} if defined $argv{info};
     my $dev;
-
+    
     if ( $dev = Device->search(name=>$name)->first ){
 	$logger->debug(sub{"Device::discover: Device $name already exists in DB"});
     }else{
 	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	unless ( $info ){
-	    my $sinfo = $class->_get_snmp_session(host        => $name,
-						  communities => $argv{communities},
-						  version     => $argv{version},
-						  timeout     => $argv{timeout},
-						  retries     => $argv{retries},
+	    $sinfo = $class->_get_snmp_session(host        => $name,
+					       communities => $argv{communities},
+					       version     => $argv{version},
+					       timeout     => $argv{timeout},
+					       retries     => $argv{retries},
 		);
 	    
 	    $info = $class->_exec_timeout($name, 
@@ -1094,6 +1095,7 @@ sub discover {
                            bgp_peers pretend do_info do_fwt do_arp timestamp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
+    $uargs{session} = $sinfo if $sinfo;
     $uargs{info}    = $info;
     $uargs{do_info} = 1;
 
@@ -1721,11 +1723,11 @@ sub snmp_update {
     }
     
     if ( $argv{do_info} ){
-	if ( $atomic && !$argv{pretend} ){
-	    my $info = $argv{info} || 
-		$self->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
-									     bgp_peers => $argv{bgp_peers}) });
+	my $info = $argv{info} || 
+	    $self->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
+									 bgp_peers => $argv{bgp_peers}) });
 	    
+	if ( $atomic && !$argv{pretend} ){
 	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets  => $argv{add_subnets},
 									  subs_inherit => $argv{subs_inherit},
 									  bgp_peers    => $argv{bgp_peers},
@@ -1736,7 +1738,7 @@ sub snmp_update {
 			       subs_inherit => $argv{subs_inherit},
 			       bgp_peers    => $argv{bgp_peers},
 			       pretend      => $argv{pretend},
-			       session      => $sinfo,
+			       info         => $info,
 		);
 	}
     }
