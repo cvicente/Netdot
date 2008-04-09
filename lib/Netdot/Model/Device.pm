@@ -2143,9 +2143,6 @@ sub info_update {
 	    }else{
 		# Interface does not exist.  Add it.
 		my $ifname = $info->{interface}->{$newif}->{name} || $newnumber;
-		$logger->info(sprintf("%s: Interface %s (%s) not found. Inserting.", 
-				      $host, $newnumber, $ifname));
-		
 		my %args = (device      => $self, 
 			    number      => $newif, 
 			    name        => $ifname,
@@ -2155,6 +2152,9 @@ sub info_update {
 		$args{overwrite_descr} = 1 if ( $info->{airespace} );
 		
 		$if = Interface->insert(\%args);
+		
+		$logger->info(sprintf("%s: New Interface Inserted", $if->get_label));
+		
 	    }
 	    
 	    $self->throw_fatal("$host: Could not find or create interface: $newnumber")
@@ -2179,8 +2179,8 @@ sub info_update {
 	#
 	foreach my $id ( keys %oldifs ) {
 	    my $if = $oldifs{$id};
-	    $logger->info(sprintf("%s: Interface %s,%s no longer exists.  Removing.", 
-				  $host, $if->number, $if->name));
+	    $logger->info(sprintf("Interface %s no longer exists.  Removing.", 
+				  $host, $if->get_label));
 	    $if->delete();
 	}
 	

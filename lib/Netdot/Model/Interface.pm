@@ -274,7 +274,7 @@ sub snmp_update {
     $self->isa_object_method('snmp_update');
     my $class = ref($self);
     my $newif = $args{info};
-    my $host  = $self->device->fqdn;
+    my $label  = $self->get_label;
     my %iftmp;
     # Remember these are scalar refs.
     my ( $ipv4_changed, $ipv6_changed ) = @args{'ipv4_changed', 'ipv6_changed'};
@@ -302,8 +302,8 @@ sub snmp_update {
 	    $physaddr = PhysAddr->find_or_create({address=>$addr}); 
 	};
 	if ( my $e = $@ ){
-	    $logger->debug(sprintf("%s: Could not insert PhysAddr %s for Interface %s (%s): %s", 
-				   $host, $addr, $iftmp{number}, $iftmp{name}, $e));
+	    $logger->debug(sprintf("%s: Could not insert PhysAddr %s: %s", 
+				   $label, $addr, $e));
 	}else{
 	    $iftmp{physaddr} = $physaddr->id;
 	}
@@ -317,7 +317,7 @@ sub snmp_update {
 
     my $r = $self->update( \%iftmp );
     $logger->debug(sub{ sprintf("%s: Interface %s (%s) updated", 
-				$host, $self->number, $self->name) }) if $r;
+				$label, $self->number, $self->name) }) if $r;
     
 
     ##############################################
@@ -349,13 +349,13 @@ sub snmp_update {
 		if ( defined $vdata{name} && defined $vo->name && 
 		     $vdata{name} ne $vo->name && $vo->vid ne "1" ){
 		    my $r = $vo->update(\%vdata);
-		    $logger->debug(sub{ sprintf("%s: VLAN %s name updated: %s", $host, $vo->vid, $vo->name) })
+		    $logger->debug(sub{ sprintf("%s: VLAN %s name updated: %s", $label, $vo->vid, $vo->name) })
 			if $r;
 		}
 	    }else{
 		# create
 		$vo = Vlan->insert(\%vdata);
-		$logger->info(sprintf("%s: Inserted VLAN %s", $host, $vo->vid));
+		$logger->info(sprintf("%s: Inserted VLAN %s", $label, $vo->vid));
 	    }
 	    # Now verify membership
 	    #
@@ -367,7 +367,7 @@ sub snmp_update {
 		# insert
 		$iv = InterfaceVlan->insert( \%ivtmp );
 		$logger->info(sprintf("%s: Assigned Interface %s (%s) to VLAN %s", 
-				      $host, $self->number, $self->name, $vo->vid));
+				      $label, $self->number, $self->name, $vo->vid));
 	    }
 
 	    # Insert STP information for this interface on this vlan
@@ -377,7 +377,7 @@ sub snmp_update {
 		# In theory, this happens after the STP instances have been updated on this device
 	    $instobj = STPInstance->search(device=>$self->device, number=>$stpinst)->first;
 	    unless ( $instobj ){
-		$logger->warn("$host: Cannot find STP instance $stpinst");
+		$logger->warn("$label: Cannot find STP instance $stpinst");
 		next;
 	    }
 	    my %uargs;
@@ -390,16 +390,16 @@ sub snmp_update {
 	    }
 	    if ( %uargs ){
 		$iv->update({stp_instance=>$instobj, %uargs});
-		$logger->debug(sub{ sprintf("%s: Updated STP info for Interface %s (%s) on VLAN %s", 
-					    $host, $self->number, $self->name, $vo->vid) });
+		$logger->debug(sub{ sprintf("%s: Updated STP info on VLAN %s", 
+					    $label, $vo->vid) });
 	    }
 	}    
 	# Remove each vlan membership that no longer exists
 	#
 	foreach my $oldvlan ( keys %oldvlans ) {
 	    my $iv = $oldvlans{$oldvlan};
-	    $logger->info( sprintf("%s: Vlan membership %s:%s no longer exists.  Removing.", 
-				   $host, $iv->interface->name, $iv->vlan->vid) );
+	    $logger->info( sprintf("%s: membership with VLAN %s no longer exists.  Removing.", 
+				   $label, $iv->vlan->vid) );
 	    $iv->delete();
 	}
     }
@@ -458,7 +458,7 @@ sub update_ip {
     # Remember these are scalar refs.
     my ( $ipv4_changed, $ipv6_changed ) = @args{'ipv4_changed', 'ipv6_changed'};
 
-    my $host = $self->device->fqdn;
+    my $label = $self->get_label;
     
     my $version = ($address =~ /$IPV4/) ?  4 : 6;
     my $prefix  = ($version == 4)  ? 32 : 128;
@@ -468,7 +468,7 @@ sub update_ip {
 	$isrouter = 1;
     }
 
-#   If given a mask, we might have to add subnets and stuff
+    # If given a mask, we might have to add a subnet
     if ( (my $mask = $args{mask}) && $args{add_subnets} && $isrouter ){
 	# Create a subnet if necessary
 	my ($subnetaddr, $subnetprefix) = Ipblock->get_subnet_addr(address => $address, 
@@ -476,7 +476,7 @@ sub update_ip {
 	
 	# Do not bother with loopbacks
 	if ( Ipblock->is_loopback($subnetaddr, $subnetprefix) ){
-	    $logger->debug("IP $subnetaddr/$subnetprefix is a loopback. Skipping.");
+	    $logger->debug("$label: IP $subnetaddr/$subnetprefix is a loopback. Skipping.");
 	    return;
 	}
 	
@@ -497,7 +497,7 @@ sub update_ip {
 					      prefix  => $subnetprefix)->first ){
 		
 		$logger->debug(sub{ sprintf("%s: Block %s/%s already exists", 
-					    $host, $subnetaddr, $subnetprefix)} );
+					    $label, $subnetaddr, $subnetprefix)} );
 		
 		# Skip validation for speed, since the block already exists
 		$iargs{validate} = 0;
@@ -518,10 +518,10 @@ sub update_ip {
 		};
 		if ( my $e = $@ ){
 		    $logger->error(sprintf("%s: Could not insert Subnet %s/%s: %s", 
-					   $host, $subnetaddr, $subnetprefix, $e));
+					   $label, $subnetaddr, $subnetprefix, $e));
 		}else{
 		    $logger->info(sprintf("%s: Created Subnet %s/%s", 
-					  $host, $subnetaddr, $subnetprefix));
+					  $label, $subnetaddr, $subnetprefix));
 		    my $version = $newblock->version;
 		    if ( $version == 4 ){
 			$$ipv4_changed = 1;
@@ -535,7 +535,7 @@ sub update_ip {
     
     # Do not bother with loopbacks
     if ( Ipblock->is_loopback($address) ){
-	$logger->debug("$host: IP $address is a loopback. Will not insert.");
+	$logger->debug("$label: IP $address is a loopback. Will not insert.");
 	return;
     }
 	
@@ -544,7 +544,7 @@ sub update_ip {
 
 	# update
 	$logger->debug(sub{ sprintf("%s: IP %s/%s exists. Updating", 
-				    $host, $address, $prefix) });
+				    $label, $address, $prefix) });
 	
 	# Notice that this is basically to confirm that the IP belongs
 	# to this interface and that the status is set to Static.  
@@ -557,7 +557,7 @@ sub update_ip {
     }else {
 	# Create a new Ip
 	$logger->debug(sub{ sprintf("%s: IP %s/%s does not exist. Inserting", 
-				    $host, $address, $prefix) });
+				    $label, $address, $prefix) });
 	
 	# This could also go wrong, but we don't want to bail out
 	eval {
@@ -565,10 +565,10 @@ sub update_ip {
 				      status  => "Static", interface  => $self});
 	};
 	if ( my $e = $@ ){
-	    $logger->error("$host: $e");
+	    $logger->debug("$label: $e");
 	    return;
 	}else{
-	    $logger->info(sprintf("%s: Inserted IP %s", $host, $ipobj->address));
+	    $logger->info(sprintf("%s: Inserted IP %s", $label, $ipobj->address));
 	    my $version = $ipobj->version;
 	    if ( $version == 4 ){
 		$$ipv4_changed = 1;
