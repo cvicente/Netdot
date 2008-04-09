@@ -1835,10 +1835,10 @@ sub info_update {
     # Pretend works by turning off autocommit in the DB handle and rolling back
     # all changes at the end
     if ( $argv{pretend} ){
-	$logger->info("$host: Performing a dry-run");
-	unless ( Netdot::Model->db_auto_commit(0) == 0 ){
-	    $self->throw_fatal("Unable to set AutoCommit off");
-	}
+        $logger->info("$host: Performing a dry-run");
+        unless ( Netdot::Model->db_auto_commit(0) == 0 ){
+            $self->throw_fatal("Unable to set AutoCommit off");
+        }
     }
     
     # Data that will be passed to the update method
@@ -1885,6 +1885,20 @@ sub info_update {
 	$devtmp{$field} = $info->{$field} if exists $info->{$field};
     }
     
+    ##############################################################
+    # Assign the snmp_target address if it's not there yet
+    #
+    if ( $self->snmp_managed && (!defined($self->snmp_target) || int($self->snmp_target) == 0) 
+	 && defined($info->{snmp_target}) ){
+	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first ||
+	    Ipblock->insert({address=>$info->{snmp_target, status=>'Static'}});
+	if ( $ipb ){
+	    $devtmp{snmp_target} = $ipb;
+	    $logger->info(sprintf("%s: SNMP target address set to %s", 
+				  $host, $ipb->address));
+	}
+    }
+
     # Assign Product
     my $name = $info->{model} || $info->{productname};
     if ( defined $info->{sysobjectid} ){
@@ -2230,20 +2244,6 @@ sub info_update {
 	$ip->update_a_records(\@hostnameips);
     }
     
-    ##############################################################
-    # Assign the snmp_target address if it's not there yet
-    #
-    if ( $self->snmp_managed && (!defined($self->snmp_target) || int($self->snmp_target) == 0) 
-	 && defined($info->{snmp_target}) ){
-	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first ||
-	    Ipblock->insert({address=>$info->{snmp_target}});
-	if ( $ipb ){
-	    $self->update({snmp_target=>$ipb});
-	    $logger->info(sprintf("%s: SNMP target address set to %s", 
-				  $host, $ipb->address));
-	}
-    }
-
     ##############################################################
     # Airespace APs
     #
