@@ -53,6 +53,7 @@ $ARGS{show_tasks} = $show_tasks;
 <%perl>
 if ( $submit ){
     if ( $device_search ){
+	# Get rid of spaces
 	$device_search =~ s/\s+//g;
 	if ( $device_search =~ /$MAC/ ){
 	    $m->comp('.show_tasks', %ARGS);
@@ -61,7 +62,6 @@ if ( $submit ){
 	    $m->comp('/management/address_tasks.html', submit=>1, search_address=>$device_search, user=>$user );
 	}else{
 	    $m->comp('.show_tasks', %ARGS);
-	    # Get rid of spaces
 	    unless ( (@list = Device->search_like(name=>$device_search)) ){
 		$m->comp('/generic/no_search_results.html', search=>$device_search);
 	    }

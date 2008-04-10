@@ -152,7 +152,7 @@ if ( $action eq "discover" ){
 	    # try to guess site based on SNMP location
 	    if ( ! $guessed_site ){
 		if ( my $loc = $info->{syslocation} ){
-		    if ( my $site = (Site->search_like( name => "%$loc%" ))[0] ){
+		    if ( my $site = Site->search_like(name=>"%$loc%")->first ){
 			$guessed_site = $site;
 		    }
 		}

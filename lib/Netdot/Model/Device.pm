@@ -462,6 +462,10 @@ sub get_snmp_info {
     $dev{manufacturer}   = $sinfo->vendor();
     $dev{serialnumber}   = $sinfo->serial();
 
+    # Remove leading and trailing white space
+    $dev{syslocation}    =~ s/(\w+)\s+$/$1/;
+    $dev{syslocation}    =~ s/^\s+(\w+)/$1/;
+
     ################################################################
     # Get STP (Spanning Tree Protocol) stuff
     if ( $self->config->get('GET_DEVICE_STP_INFO') ){
@@ -1085,6 +1089,13 @@ sub discover {
 		$devtmp{$field} = $argv{$field};
 	    }
 	}
+	# Try to assign a Site based on syslocation
+	if ( !$devtmp{site} && (my $loc = $info->{syslocation}) ){
+	    if ( my $site = Site->search_like(name=>"%$loc%")->first ){
+		$devtmp{site} = $site;
+	    }
+	}
+
 	# Insert the new Device
 	$dev = $class->insert(\%devtmp);
     }
@@ -1883,7 +1894,7 @@ sub info_update {
     }
     
     # Fill in some basic device info
-    foreach my $field ( qw( community snmp_version layers sysdescription os collect_arp collect_fwt ) ){
+    foreach my $field ( qw( community snmp_version layers sysdescription syslocation os collect_arp collect_fwt ) ){
 	$devtmp{$field} = $info->{$field} if exists $info->{$field};
     }
     
@@ -2006,7 +2017,7 @@ sub info_update {
 	    }
 	}
     }
-
+    
     # Update Device object
     $self->update( \%devtmp );
     

@@ -123,8 +123,8 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 <!-- Header Table -->
 <div class="containeroutside">
     <div class="containerheadoutside">
-%    if ( $o->connectionid ){
-        Circuit for Connection: <a href="view.html?table=Connection&id=<% $o->connectionid %>"><% $o->connectionid->name %></a>
+%    if ( $o->linkid ){
+        Circuit for Site Link: <a href="view.html?table=SiteLink&id=<% $o->linkid %>"><% $o->linkid->name %></a>
 %    }else{
         Circuit ID: <% $o->cid %>
 %    }
@@ -152,7 +152,7 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 <%perl>
 my (@field_headers, @cell_data);
 {
-    my @fields = ('cid','connectionid','vendor','nearend','farend','type','dlci','speed','installdate','status');
+    my @fields = ('cid','linkid','vendor','nearend','farend','type','dlci','speed','installdate','status');
     my @linkpages = ('', 'view.html', 'view.html', 'view.html', 'view.html');
     $ui->add_to_fields(o=>$o, table=>"Circuit", edit=>$editCircuit, fields=>\@fields, linkpages=>\@linkpages, 
 		       field_headers=>\@field_headers, cell_data=>\@cell_data);
@@ -270,7 +270,7 @@ my %comments = $ui->form_field(object=>$o, table=>"Circuit", column=>"info", edi
 %   }
 <!-- End Cable Strand Table -->
 
-% if (defined($o) && $o->connectionid) {
+% if (defined($o) && $o->linkid) {
     </div> <!-- close containerbodyoutside -->
 </div> <!-- close containeroutside -->
 % }

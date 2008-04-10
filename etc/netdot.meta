@@ -189,20 +189,14 @@ $meta = {
     description => 'ARP Cache Entry',
     has_history => 0,
     index => [],
+    index => [ ['arpcache'], ['interface'], ['physaddr'], ['ipaddr'] ],
     isjoin => '0',
     label => [
       'ipaddr',
       'physaddr'
     ],
     primary_key => 'id',
-    unique => [
-      [
-        'arpcache',
-        'interface',
-        'ipaddr',
-        'physaddr'
-      ]
-    ],
+    unique => [],
     views => {
       all => [
 	'interface',
@@ -741,15 +735,15 @@ $meta = {
       },
       linkid => {
         default => '',
-        description => 'Link to which this circuit belongs',
+        description => 'Site Link to which this circuit belongs',
         length => '',
         linksto => {
           cascade => 'Delete',
           method => 'circuits',
-          table => 'Link'
+          table => 'SiteLink'
         },
         nullable => 0,
-        tag => 'Part of Link',
+        tag => 'Site Link',
         type => 'integer'
       },
       dlci => {
@@ -1260,7 +1254,7 @@ $meta = {
       ]
     }
   },
-  Link => {
+  SiteLink => {
     columns => {
       entity => {
         default => '',
@@ -1326,7 +1320,7 @@ $meta = {
         type => 'integer'
       }
     },
-    description => 'A Link between two Sites.  A link can consist of one or more circuits',
+    description => 'A Link between two Sites.  A Site Link can consist of one or more circuits',
     has_history => 1,
     index => [],
     isjoin => '0',
@@ -1904,7 +1898,7 @@ $meta = {
       },
       site => {
         default => '',
-        description => 'Site or Building where this Device is located',
+        description => 'Site or Building where this Device is located.  This is set manually.',
         length => '',
         linksto => {
           cascade => 'Delete',
@@ -2050,10 +2044,18 @@ $meta = {
       },
       sysdescription => {
         default => '',
-        description => 'Syste Description.  Meant to be populated by SNMP',
+        description => 'System Description.  Meant to be populated by SNMP',
         length => '255',
         nullable => 1,
         tag => 'System Description',
+        type => 'varchar'
+      },
+      syslocation => {
+        default => '',
+        description => 'System Location.  Meant to be populated by SNMP.',
+        length => '255',
+        nullable => 1,
+        tag => 'System Location',
         type => 'varchar'
       },
       used_by => {
@@ -2108,6 +2110,7 @@ $meta = {
         'aliases',
         'snmp_target',
         'sysdescription',
+        'syslocation',
         'layers',
         'os',
         'physaddr',
@@ -3244,7 +3247,7 @@ $meta = {
     },
     description => 'Bridge Forwarding Table entry',
     has_history => 0,
-    index => [],
+    index => [ ['fwtable'], ['interface'], ['physaddr'] ],
     isjoin => '0',
     label => [
       'interface',
@@ -3252,11 +3255,6 @@ $meta = {
     ],
     primary_key => 'id',
     unique => [
-      [
-        'fwtable',
-        'interface',
-        'physaddr'
-      ]
     ],
     views => {
       all => [
@@ -4466,78 +4464,6 @@ $meta = {
       ]
     }
   },
-  L3Dep => {
-    columns => {
-      child => {
-        default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'parents',
-          table => 'Ipblock'
-        },
-        nullable => 0,
-        tag => undef,
-        type => 'integer'
-      },
-      id => {
-        default => '',
-        description => '',
-        length => '',
-        nullable => 0,
-        tag => undef,
-        type => 'integer'
-      },
-      manual => {
-        default => '',
-        description => 'Indicates that this relationship was set manually and should not be modified by an automated process',
-        length => '',
-        nullable => 0,
-        tag => 'Manual?',
-        type => 'bool'
-      },
-      parent => {
-        default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'children',
-          table => 'Ipblock'
-        },
-        nullable => 0,
-        tag => undef,
-        type => 'integer'
-      }
-    },
-    description => 'Layer 3 relationship.  Links two Ipblock objects',
-    has_history => 0,
-    index => [],
-    isjoin => '0',
-    label => [
-      'parent',
-      'child'
-    ],
-    primary_key => 'id',
-    unique => [
-      [
-        'parent',
-        'child'
-      ]
-    ],
-    views => {
-      all => [
-        'parent',
-        'child',
-        'manual',
-      ],
-      brief => [
-        'parent',
-        'child'
-      ]
-    }
-  },
   OUI => {
     columns => {
       id => {
@@ -4619,7 +4545,7 @@ $meta = {
         description => 'Email address used for paging (via a pager gateway)',
         length => '32',
         nullable => 1,
-        tag => 'Email Pager',
+        tag => 'Pager Email',
         type => 'varchar'
       },
       entity => {
@@ -4633,6 +4559,14 @@ $meta = {
         },
         nullable => 0,
         tag => 'Employer',
+        type => 'integer'
+      },
+      extension => {
+        default => '',
+        description => 'Work Telephone number extension',
+        length => '',
+        nullable => 1,
+        tag => 'Work Phone Extension',
         type => 'integer'
       },
       fax => {
@@ -4693,7 +4627,7 @@ $meta = {
           table => 'Site'
         },
         nullable => 0,
-        tag => 'Location',
+        tag => 'Site',
         type => 'integer'
       },
       office => {
@@ -4762,8 +4696,10 @@ $meta = {
         'position',
         'entity',
         'location',
+        'room',
         'email',
         'office',
+        'extension',
         'cell',
         'home',
         'pager',
@@ -5806,7 +5742,7 @@ $meta = {
         description => '',
         length => '64',
         nullable => 0,
-        tag => 'Name',
+        tag => 'Number',
         type => 'varchar'
       }
     },
@@ -6039,9 +5975,6 @@ $meta = {
       [
         'name'
       ],
-      [
-        'number'
-      ]
     ],
     views => {
       all => [

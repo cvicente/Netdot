@@ -165,7 +165,7 @@ my $refresh_url = "device.html?id=$id&view=$view";
 <div class="containeroutside">
   <div class="containerheadleftoutside">
   Device: <b><% $fqdn %></b>&nbsp;
- <a href="http://<% $fqdn %>" target="#">[HTTP]</a> <a href="ssh://<% $user->getUsername() %>@<% $fqdn %>">[SSH]</a> <a href="telnet://<% $fqdn %>">[Telnet]</a>
+ <a href="http://<% $fqdn %>" target="#">[HTTP]</a> <a href="https://<% $fqdn %>" target="#">[HTTPS]</a>
   </div><!-- close containerheadleftoutside -->
 
  <div class="containerheadrightoutside">
@@ -253,7 +253,6 @@ my $refresh_url = "device.html?id=$id&view=$view";
 </div>
 
  <div class="containerbodyoutside">
-
 
 %#######################################################################
 %#
@@ -361,7 +360,7 @@ print $tmp{value};
 	push( @fields, 'person' );
 	push( @linkpages, 'view.html' );
     }
-    push( @fields, 'site' );
+    push( @fields, 'site');
     
     $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, 
 		       cell_data=>\@cell_data, linkpages=>\@linkpages);
