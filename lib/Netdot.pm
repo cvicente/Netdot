@@ -94,6 +94,69 @@ sub get_ipv6_regex { return $IPV6 }
 
 sub get_mac_regex { return $MAC }
 
+######################################################################
+=head2 sec2dhms - Translate seconds into days, minutes, hours, seconds
+	
+   Arguments: 
+     Integer (seconds)
+   Returns:
+    String like "0:0:41:40"
+   Example:
+    print Netdot->sec2dhms($seconds);
+=cut   
+sub sec2dhms {
+    my ($self, $seconds) = @_;
+    my @parts = gmtime($seconds);
+    my @l;
+    push @l, sprintf("%d days",  $parts[7]) if ( $parts[7] ); 
+    push @l, sprintf("%d hours", $parts[2]) if ( $parts[2] ); 
+    push @l, sprintf("%d min",   $parts[1]) if ( $parts[1] ); 
+    push @l, sprintf("%d sec",   $parts[0]);
+    my $string = join ', ', @l;
+    return $string;
+}
+
+######################################################################
+=head2 send_mail - Send mail to desired destination
+
+    Useful to e-mail output from automatic processes
+
+    Arguments (hash):
+    - to      : destination email (defaults to NOCEMAIL from config file)
+    - from    : orignin email (defaults to ADMINEMAIL from config file)
+    - subject : subject of message
+    - body    : body of message
+
+    Returns true/false for success/failure
+
+=cut
+sub send_mail {
+    my ($self, %args) = @_;
+    my ($to, $from, $subject, $body) = 	@args{'to', 'from', 'subject', 'body'};
+    
+    my $SENDMAIL = $self->config->get('SENDMAIL');
+    
+    $to    ||= $self->config->get('NOCEMAIL');
+    $from  ||= $self->config->get('ADMINEMAIL');
+    
+    if ( !open(SENDMAIL, "|$SENDMAIL -oi -t") ){
+        $self->throw_fatal("send_mail: Can't fork for $SENDMAIL: $!");
+    }
+
+    print SENDMAIL <<EOF;
+From: $from
+To: $to
+Subject: $subject
+    
+$body
+    
+EOF
+
+close(SENDMAIL);
+    return 1;
+
+}
+
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>

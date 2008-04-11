@@ -210,8 +210,8 @@ sub fast_update {
     }
     
     my $end = time;
-    $logger->debug(sub{ sprintf("PhysAddr::fast_update: Done Updating: %d addresses in %d secs",
-				scalar(keys %$macs), ($end-$start)) });
+    $logger->debug(sub{ sprintf("PhysAddr::fast_update: Done Updating: %d addresses in %s",
+				scalar(keys %$macs), $class->sec2dhms($end-$start)) });
     
     return 1;
 }

@@ -893,8 +893,8 @@ sub snmp_update_all {
     my @devs   = $class->retrieve_all();
     my $device_count = $class->_snmp_update_parallel(devs=>\@devs, %argv);
     my $end = time;
-    $logger->info(sprintf("All Devices updated. %d devices in %d seconds", 
-			  $device_count, ($end-$start) ));
+    $logger->info(sprintf("All Devices updated. %d devices in %s", 
+			  $device_count, $class->sec2dhms($end-$start) ));
     
 }
 
@@ -951,8 +951,8 @@ sub snmp_update_block {
     my $device_count = $class->_snmp_update_parallel(%argv);
 
     my $end = time;
-    $logger->info(sprintf("Devices in $blist updated. %d devices in %d seconds", 
-			  $device_count, ($end-$start) ));
+    $logger->info(sprintf("Devices in $blist updated. %d devices in %s", 
+			  $device_count, $class->sec2dhms($end-$start) ));
 
 }
 
@@ -998,8 +998,8 @@ sub snmp_update_from_file {
     my $device_count = $class->_snmp_update_parallel(%argv);
 
     my $end = time;
-    $logger->info(sprintf("Devices in $file updated. %d devices in %d seconds", 
-			  $device_count, ($end-$start)));
+    $logger->info(sprintf("Devices in $file updated. %d devices in %s", 
+			  $device_count, $class->sec2dhms($end-$start)));
 		  
 }
 
@@ -1331,8 +1331,8 @@ sub arp_update {
     $self->update({last_arp=>$timestamp});
 
     my $end = time;
-    $logger->debug(sub{ sprintf("$host: ARP cache updated. %s entries in %d seconds", 
-				$arp_count, ($end-$start) )});
+    $logger->debug(sub{ sprintf("$host: ARP cache updated. %s entries in %s", 
+				$arp_count, $self->sec2dhms($end-$start) )});
 
     return 1;
 }
@@ -1410,8 +1410,8 @@ sub fwt_update {
     $self->update({last_fwt=>$timestamp});
 
     my $end = time;
-    $logger->debug(sub{ sprintf("$host: FWT updated. %s entries in %d seconds", 
-				scalar @fw_updates, ($end-$start) )});
+    $logger->debug(sub{ sprintf("$host: FWT updated. %s entries in %s", 
+				scalar @fw_updates, $self->sec2dhms($end-$start) )});
     
     return 1;
 }
@@ -2309,8 +2309,8 @@ sub info_update {
     }
 
     my $end = time;
-    $logger->debug(sub{ sprintf("%s: SNMP update completed in %d seconds", 
-				$host, ($end-$start))});
+    $logger->debug(sub{ sprintf("%s: SNMP update completed in %s", 
+				$host, $self->sec2dhms($end-$start))});
 
     if ( $argv{pretend} ){
 	$logger->debug(sub{"$host: Rolling back changes"});
@@ -3525,8 +3525,8 @@ sub _get_arp_from_snmp {
     map { $arp_count+= scalar(keys %{$cache{$_}}) } keys %cache;
 
     my $end = time;
-    $logger->debug(sub{ sprintf("$host: ARP cache fetched. %s entries in %d seconds", 
-				$arp_count, ($end-$start) ) });
+    $logger->debug(sub{ sprintf("$host: ARP cache fetched. %s entries in %s", 
+				$arp_count, $self->sec2dhms($end-$start) ) });
     return \%cache;
 }
 
@@ -3619,8 +3619,8 @@ sub _get_fwt_from_snmp {
     my $end = time;
     my $fwt_count = 0;
     map { $fwt_count+= scalar keys %{ $fwt{$_} } } keys %fwt;
-    $logger->debug(sub{ sprintf("$host: FWT fetched. %d entries in %d seconds", 
-				$fwt_count, ($end-$start) ) });
+    $logger->debug(sub{ sprintf("$host: FWT fetched. %d entries in %s", 
+				$fwt_count, $self->sec2dhms($end-$start) ) });
     
     return \%fwt;
 }
@@ -3989,7 +3989,6 @@ sub _munge_speed_high {
     my ($self, $v) = @_;
     return $v * 1000000;
 }
-
 
 ############################################################################
 #

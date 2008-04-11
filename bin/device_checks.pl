@@ -2,7 +2,6 @@
 
 use lib "<<Make:LIB>>";
 use Netdot::Model;
-use Netdot::Util::Misc;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
 
@@ -118,11 +117,10 @@ if ( $ENTITY || $NEIG || $SITE ){
 }
 
 if ( $EMAIL && $output ){
-    my $misc = Netdot::Util::Misc->new();
-    $misc->send_mail(from    => $FROM,
-		     to      => $TO,
-		     subject => $SUBJECT, 
-		     body    => $output);
+    Netdot->send_mail(from    => $FROM,
+		      to      => $TO,
+		      subject => $SUBJECT, 
+		      body    => $output);
 }else{
     print STDOUT $output, "\n";
 }

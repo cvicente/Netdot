@@ -710,8 +710,8 @@ sub fast_update{
     }
 
     my $end = time;
-    $logger->debug(sub{ sprintf("Ipblock::fast_update: Done Updating: %d addresses in %d secs",
-				scalar(keys %$ips), ($end-$start)) });
+    $logger->debug(sub{ sprintf("Ipblock::fast_update: Done Updating: %d addresses in %s",
+				scalar(keys %$ips), $class->sec2dhms($end-$start)) });
     return 1;
 }
 

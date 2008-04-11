@@ -10,7 +10,6 @@ use strict;
 use lib "<<Make:LIB>>";
 use Netdot::Model::Device;
 use Netdot::Model::Topology;
-use Netdot::Util::Misc;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 #use Devel::Profiler bad_pkgs => [qw(UNIVERSAL Time::HiRes B Carp Exporter Cwd Config CORE DynaLoader XSLoader AutoLoader DBD::_::st DBD::_::db DBD::st DBD::db DBI::st DBI::db DBI::dr)];
@@ -153,43 +152,47 @@ $logger->warn("Warning: Pretend (-p) flag enabled.  Changes will not be committe
 my $start = time;
 $logger->info(sprintf("$0 started at %s", scalar localtime($start)));
 
-my %uargs = (communities  => $communities, 
-	     version      => $version,
-	     timeout      => $timeout,
-	     retries      => $retries,
-	     pretend      => $PRETEND,
-	     atomic       => $ATOMIC,
-	     add_subnets  => $ADDSUBNETS,
-	     subs_inherit => $SUBSINHERIT,
-	     bgp_peers    => $BGPPEERS,
-	     do_info      => $INFO,
-	     do_fwt       => $FWT,
-	     do_arp       => $ARP,
-	     );
-if ( $host ){
-    $logger->info("Updating single device: $host");
-    $uargs{name} = $host;
-    Device->discover(%uargs);
-
-}elsif ( $blocks ){
-    my @blocks = split ',', $blocks;
-    map { $_ =~ s/\s+//g } @blocks;
-    $logger->info("Updating all devices in $blocks");
-    $uargs{blocks} = \@blocks;
-    Netdot::Model::Device->snmp_update_block(%uargs);
-
-}elsif ( $db ){
-    $logger->info("Updating all devices in the DB");
-    Netdot::Model::Device->snmp_update_all(%uargs);
-
-}elsif ( $file ){
-    $logger->info("Updating all devices in given file: $file");
-    $uargs{file} = $file;
-    Netdot::Model::Device->snmp_update_from_file(%uargs);
-
-}elsif ( !$TOPO ) {
-    print $USAGE;
-    die "Error: You need to specify one of: -H, -B, -E, -D or -T\n";
+if ( $INFO || $FWT || $ARP ){
+    
+    my %uargs = (communities  => $communities, 
+		 version      => $version,
+		 timeout      => $timeout,
+		 retries      => $retries,
+		 pretend      => $PRETEND,
+		 atomic       => $ATOMIC,
+		 add_subnets  => $ADDSUBNETS,
+		 subs_inherit => $SUBSINHERIT,
+		 bgp_peers    => $BGPPEERS,
+		 do_info      => $INFO,
+		 do_fwt       => $FWT,
+		 do_arp       => $ARP,
+	);
+    
+    if ( $host ){
+	$logger->info("Updating single device: $host");
+	$uargs{name} = $host;
+	Device->discover(%uargs);
+	
+    }elsif ( $blocks ){
+	my @blocks = split ',', $blocks;
+	map { $_ =~ s/\s+//g } @blocks;
+	$logger->info("Updating all devices in $blocks");
+	$uargs{blocks} = \@blocks;
+	Netdot::Model::Device->snmp_update_block(%uargs);
+	
+    }elsif ( $db ){
+	$logger->info("Updating all devices in the DB");
+	Netdot::Model::Device->snmp_update_all(%uargs);
+	
+    }elsif ( $file ){
+	$logger->info("Updating all devices in given file: $file");
+	$uargs{file} = $file;
+	Netdot::Model::Device->snmp_update_from_file(%uargs);
+	
+    }else{
+	print $USAGE;
+	die "Error: You need to specify one of: -H, -B, -E, -D or -T\n";
+    }
 }
 
 Netdot::Model::Topology->discover if ( $TOPO );
@@ -197,10 +200,9 @@ Netdot::Model::Topology->discover if ( $TOPO );
 $logger->info(sprintf("$0 total runtime: %s secs\n", (time - $start)));
 
 if ( $EMAIL ){
-    my $util = Netdot::Util::Misc->new();
-    $util->send_mail(from    => $from,
-		     to      => $to,
-		     subject => $subject, 
-		     body    => $logstr->string);
+    Netdot->send_mail(from    => $from,
+		      to      => $to,
+		      subject => $subject, 
+		      body    => $logstr->string);
 }
 

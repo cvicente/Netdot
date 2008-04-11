@@ -120,7 +120,7 @@ sub discover {
 #        print "\n";
 #    }
 
-    $logger->debug(sprintf("Netdot::Model::Topology: Links determined in %d seconds", time - $start));
+    $logger->debug(sprintf("Netdot::Model::Topology: Links determined in %s", $class->sec2dhms(time - $start)));
 
     # Get all existing links
     my %old_links;
@@ -148,8 +148,8 @@ sub discover {
     $args{fdb}       = $fdb_links if $fdb_links;
     my ($addcount, $remcount) = $class->update_links(%args);
     my $end = time;
-    $logger->info(sprintf("Topology discovery on %s done in %d seconds. Links added: %d, removed: %d", 
-			  $blist, $end-$start, $addcount, $remcount));
+    $logger->info(sprintf("Topology discovery on %s done in %s. Links added: %d, removed: %d", 
+			  $blist, $class->sec2dhms($end-$start), $addcount, $remcount));
 }
 
 ######################################################################################
