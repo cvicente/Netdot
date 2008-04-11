@@ -682,7 +682,7 @@ sub get_snmp_info {
 	    $dev{interface}{$iid}{name} = $name;
 	    if ( defined $ifreserved ){
 		if ( $name =~ /$ifreserved/i ){
-		    $logger->debug(sub{"Device::get_snmp_info: Interface $name ignored per configuration option (IFRESERVED)"});
+		    $logger->debug(sub{"Device::get_snmp_info: %s (%s): Interface $name ignored per configuration option (IFRESERVED)"});
 		    next;
 		}
 	    }
@@ -1904,7 +1904,7 @@ sub info_update {
     if ( $self->snmp_managed && (!defined($self->snmp_target) || int($self->snmp_target) == 0) 
 	 && defined($info->{snmp_target}) ){
 	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first ||
-	    Ipblock->insert({address=>$info->{snmp_target, status=>'Static'}});
+	    Ipblock->insert({address=>$info->{snmp_target}, status=>'Static'});
 	if ( $ipb ){
 	    $devtmp{snmp_target} = $ipb;
 	    $logger->info(sprintf("%s: SNMP target address set to %s", 

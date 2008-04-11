@@ -399,7 +399,7 @@ sub get_fdb_links {
 
     # Find the most recent query for every Vlan
     my $vlanstatement = $dbh->prepare("
-        SELECT MAX(tstamp), interfacevlan.vlan, 
+        SELECT MAX(tstamp), interfacevlan.vlan
         FROM fwtable, interfacevlan, device, interface
         WHERE fwtable.device = device.id
             AND interface.device = device.id
