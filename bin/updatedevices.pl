@@ -197,7 +197,7 @@ if ( $INFO || $FWT || $ARP ){
 
 Netdot::Model::Topology->discover if ( $TOPO );
 
-$logger->info(sprintf("$0 total runtime: %s secs\n", (time - $start)));
+$logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
 
 if ( $EMAIL ){
     Netdot->send_mail(from    => $from,
