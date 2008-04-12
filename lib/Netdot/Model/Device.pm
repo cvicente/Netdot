@@ -3454,7 +3454,7 @@ sub _snmp_update_parallel {
     }
     
     # Go over list of existing devices
-    foreach my $dev ( keys %do_devs ){
+    while ( my ($id, $dev) = each %do_devs ){
 	unless ( $dev->canautoupdate ){
 	    $logger->debug(sub{ sprintf("%s excluded from auto-updates. Skipping", $dev->fqdn) });
 	    next;
