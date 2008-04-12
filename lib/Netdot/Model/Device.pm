@@ -3414,7 +3414,7 @@ sub _snmp_update_parallel {
     }
     
     my %uargs;
-    foreach my $field ( qw(communities version timeout retries add_subnets subs_inherit 
+    foreach my $field ( qw(version timeout retries add_subnets subs_inherit 
                            bgp_peers pretend do_info do_fwt do_arp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
@@ -3438,6 +3438,8 @@ sub _snmp_update_parallel {
 	    # Give preference to the community associated with the host
 	    if ( my $commstr = $hosts->{$host} ){
 		$uargs{communities} = [$commstr];
+	    }else{
+		$uargs{communities} = $argv{communities};
 	    }
 	    # If the device exists in the DB, we add it to the list
 	    my $dev;

@@ -217,7 +217,12 @@ sub update_links {
 		delete $old_links->{$nei} if ( exists $old_links->{$nei} );
 	    }else{
 		my $int = Interface->retrieve($id) || $class->throw_fatal("Cannot retrieve Interface id $id");
-		$int->add_neighbor(id=>$nei, score=>$score);
+		eval {
+		    $int->add_neighbor(id=>$nei, score=>$score);
+		};
+		if ( my $e = $@ ){
+		    $logger->warn($e);
+		}
 		$addcount++;
 	    }
 	    delete $links{$id};
