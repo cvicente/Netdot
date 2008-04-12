@@ -188,13 +188,12 @@ sub update_links {
 
     foreach my $source ( keys %hashes ){
 	my $score = $WEIGHTS{$source};
-	foreach my $int ( keys %{$hashes{$source}} ){
-	    my $nei = $hashes{$source}->{$int};
+	while ( my ($int, $nei) = each %{$hashes{$source}} ){
 	    ${$links{$int}{$nei}} += $score;
 	    $links{$nei}{$int}     = $links{$int}{$nei};
 	    if ( scalar(keys %{$links{$int}}) > 1 ){
 		foreach my $o ( keys %{$links{$int}} ){
-		    ${$links{$int}{$o}} -= $score if ( $o ne $nei );
+		    ${$links{$int}{$o}} -= $score if ( $o != $nei );
 		}
 	    }
 	    if ( scalar(keys %{$links{$nei}}) > 1 ){
@@ -209,6 +208,7 @@ sub update_links {
     my $remcount = 0;
     foreach my $id ( keys %links ){
 	foreach my $nei ( keys %{$links{$id}} ){
+	    next unless defined $links{$id}{$nei};
 	    my $score = ${$links{$id}{$nei}};
 	    next unless ( $score >= $MINSCORE );
 	    if ( (exists($old_links->{$id})  && $old_links->{$id}  == $nei) || 
