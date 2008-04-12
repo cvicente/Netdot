@@ -679,13 +679,13 @@ sub get_snmp_info {
 	# check whether it should be ignored
 	my $name = $hashes{i_description}->{$iid};
 	if ( $name ){
-	    $dev{interface}{$iid}{name} = $name;
 	    if ( defined $ifreserved ){
 		if ( $name =~ /$ifreserved/i ){
-		    $logger->debug(sub{"Device::get_snmp_info: %s (%s): Interface $name ignored per configuration option (IFRESERVED)"});
+		    $logger->debug(sub{"Device::get_snmp_info: $name ($ip): Interface $name ignored per config option (IFRESERVED)"});
 		    next;
 		}
 	    }
+	    $dev{interface}{$iid}{name} = $name;
 	}else{
 	    $dev{interface}{$iid}{name} = $iid;
 	}
@@ -1013,6 +1013,7 @@ sub snmp_update_from_file {
   Arguments:
     Hash containing the following keys:
     name          Host name (required)
+    session       SNMP Session (optional)
     communities   Arrayref of SNMP communities
     version       SNMP version
     timeout       SNMP timeout
@@ -1040,8 +1041,8 @@ sub discover {
     my $name = $argv{name} || 
 	$class->throw_fatal("Device::discover: Missing required arguments: name");
 
-    my $sinfo;
-    my $info = $argv{info} if defined $argv{info};
+    my $info  = $argv{info}    if defined $argv{info};
+    my $sinfo = $argv{session} if defined $argv{session};
     my $dev;
     
     if ( $dev = Device->search(name=>$name)->first ){
@@ -1049,12 +1050,14 @@ sub discover {
     }else{
 	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	unless ( $info ){
-	    $sinfo = $class->_get_snmp_session(host        => $name,
-					       communities => $argv{communities},
-					       version     => $argv{version},
-					       timeout     => $argv{timeout},
-					       retries     => $argv{retries},
-		);
+	    unless ( $sinfo ){
+		$sinfo = $class->_get_snmp_session(host        => $name,
+						   communities => $argv{communities},
+						   version     => $argv{version},
+						   timeout     => $argv{timeout},
+						   retries     => $argv{retries},
+		    );
+	    }
 	    
 	    $info = $class->_exec_timeout($name, 
 					  sub{ return $class->get_snmp_info(session   => $sinfo,
@@ -1294,8 +1297,16 @@ sub arp_update {
     $logger->debug(sub{"$host: Updating ARP cache"});
   
     # Create ArpCache object
-    my $ac = ArpCache->insert({device  => $self,tstamp  => $timestamp});
-
+    
+    my $ac;
+    eval {
+	$ac = ArpCache->insert({device=>$self, tstamp=>$timestamp});
+    };
+    if ( my $e = $@ ){
+	$logger->warn(sprintf("Device %s: Could not insert ArpCache at %s", $self->fqdn, $timestamp));
+	return;
+    }
+	
     $self->_update_macs_from_cache(caches    => [$cache], 
 				   timestamp => $timestamp, 
 				   atomic    => $argv{atomic},
@@ -1380,9 +1391,15 @@ sub fwt_update {
     $logger->debug(sub{"$host: Updating Forwarding Table (FWT)"});
     
     # Create FWTable object
-    my $fw = FWTable->insert({device  => $self,
-			      tstamp  => $timestamp});
-
+    my $fw;
+    eval {
+	$fw = FWTable->insert({device  => $self,
+			       tstamp  => $timestamp});
+    };
+    if ( my $e = $@ ){
+	$logger->warn(sprintf("Device %s: Could not insert FWTable at %s", $self->fqdn, $timestamp));
+	return;
+    }
     $self->_update_macs_from_cache(caches    => [$fwt], 
 				   timestamp => $timestamp,
 				   atomic    => $argv{atomic},
@@ -3396,56 +3413,65 @@ sub _snmp_update_parallel {
 	$class->throw_fatal("Missing required parameters: hosts or devs");
     }
     
-    # Init ForkManager
-    my $pm = $class->_fork_init();
-
-    # Go over list of existing devices
-    my $device_count = 0;
-
     my %uargs;
-    foreach my $field ( qw(version timeout retries add_subnets subs_inherit bgp_peers pretend 
-                           do_info do_fwt do_arp) ){
+    foreach my $field ( qw(communities version timeout retries add_subnets subs_inherit 
+                           bgp_peers pretend do_info do_fwt do_arp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
     $uargs{no_update_tree} = 1;
     $uargs{timestamp}      = $class->timestamp;
+    my %do_devs;
     
+    my $device_count = 0;
+
+    # Init ForkManager
+    my $pm = $class->_fork_init();
+
     if ( $devs ){
-	my %seen;
 	foreach my $dev ( @$devs ){
-	    next if ( exists $seen{$dev->id} );
-	    unless ( $dev->canautoupdate ){
-		$logger->debug(sub{ sprintf("%s excluded from auto-updates. Skipping", $dev->fqdn) });
-		next;
-	    }
-	    $seen{$dev->id} = 1;
-	    $device_count++;
-	    # FORK
-	    $pm->start and next;
-	    $class->_launch_child(pm   => $pm, 
-				  code => sub{ return $dev->snmp_update(%uargs) } );
+	    # Put in list
+	    $do_devs{$dev->id} = $dev;
 	}
     }elsif ( $hosts ){
+	my %seen;
 	foreach my $host ( keys %$hosts ){
-	    $device_count++;
 	    # Give preference to the community associated with the host
 	    if ( my $commstr = $hosts->{$host} ){
 		$uargs{communities} = [$commstr];
-	    }else{
-		$uargs{communities} = $argv{communities};
 	    }
-	    # FORK
-	    $pm->start and next;
-	    $class->_launch_child(pm   => $pm, 
-				  code => sub{ return $class->discover(name=>$host, %uargs) } );
+	    # If the device exists in the DB, we add it to the list
+	    my $dev;
+	    if ( $dev = $class->search(name=>$host)->first ){
+		$do_devs{$dev->id} = $dev;
+		$logger->debug(sub{ sprintf("%s exists in DB.", $dev->fqdn) });
+	    }else{
+		# FORK
+		$pm->start and next;
+		$class->_launch_child(pm   => $pm, 
+				      code => sub{ return $class->discover(name=>$host, %uargs) } );
+	    }
 	}
     }
+    
+    # Go over list of existing devices
+    foreach my $dev ( keys %do_devs ){
+	unless ( $dev->canautoupdate ){
+	    $logger->debug(sub{ sprintf("%s excluded from auto-updates. Skipping", $dev->fqdn) });
+	    next;
+	}
+	$device_count++;
+	# FORK
+	$pm->start and next;
+	$class->_launch_child(pm   => $pm, 
+			      code => sub{ return $dev->snmp_update(%uargs) } );
+    }
+
     # End forking state
     $class->_fork_end($pm);
-
+    
     # Rebuild the IP tree if ARP caches were updated
     Ipblock->build_tree(4) if $argv{do_arp};
-
+    
     return $device_count;
 }
 
