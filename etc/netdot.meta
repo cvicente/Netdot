@@ -2058,6 +2058,14 @@ $meta = {
         tag => 'System Location',
         type => 'varchar'
       },
+      sysname => {
+        default => '',
+        description => 'System Name.  Meant to be populated by SNMP.',
+        length => '255',
+        nullable => 1,
+        tag => 'System Name',
+        type => 'varchar'
+      },
       used_by => {
         default => '',
         description => 'Entity that uses this Device',
@@ -2092,6 +2100,9 @@ $meta = {
       ],
       [
         'os'
+      ],
+      [
+        'sysname'
       ]
     ],
     isjoin => '0',
@@ -2109,6 +2120,7 @@ $meta = {
         'name',
         'aliases',
         'snmp_target',
+        'sysname',
         'sysdescription',
         'syslocation',
         'layers',

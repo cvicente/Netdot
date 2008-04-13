@@ -1157,6 +1157,85 @@ sub get_all_from_block {
     return $devs;
 }
 
+#################################################################
+=head2 get_macs_from_all
+    
+    Retrieve all MAC addresses that belong to Devices
+
+  Arguments: 
+    None
+  Returns:   
+    Hashref with key=address, value=device
+  Examples:
+   my $devmacs = Device->get_macs_from_all();
+
+=cut
+sub get_macs_from_all {
+    my ($class) = @_;
+    $class->isa_class_method('get_macs_from_all');
+
+    # Build the SQL query
+    $logger->debug(sub{ "Device::get_macs_from_all: Retrieving all Device MACs..." });
+
+    my $dbh = $class->db_Main;
+    my $aref1 = $dbh->selectall_arrayref("SELECT p.address, d.id
+                                          FROM physaddr p, device d
+                                          WHERE d.physaddr=p.id
+                                         ");
+    my $aref2 = $dbh->selectall_arrayref("SELECT p.address, d.id
+                                          FROM physaddr p, device d, interface i
+                                          WHERE i.device=d.id AND i.physaddr=p.id
+                                         ");
+    # Build a hash of mac addresses to device ids
+    my %dev_macs;
+    foreach my $row ( @$aref1 ){
+	my ($address, $id) = @$row;
+	$dev_macs{$address} = $id;
+    }
+    foreach my $row ( @$aref2 ){
+	my ($address, $id) = @$row;
+	$dev_macs{$address} = $id;
+    }
+    return \%dev_macs;
+    
+}
+
+#################################################################
+=head2 get_ips_from_all
+    
+    Retrieve all IP addresses that belong to Devices
+
+  Arguments: 
+    None
+  Returns:   
+    Hashref with key=address (Decimal), value=device
+  Examples:
+   my $devips = Device->get_ips_from_all();
+
+=cut
+sub get_ips_from_all {
+    my ($class) = @_;
+    $class->isa_class_method('get_ips_from_all');
+
+    # Build the SQL query
+    $logger->debug(sub{ "Device::get_macs_from_all: Retrieving all Device IPs..." });
+
+    my $dbh = $class->db_Main;
+    my $aref = $dbh->selectall_arrayref("SELECT ip.address, d.id
+                                         FROM ipblock ip, device d, interface i
+                                         WHERE i.device=d.id AND ip.interface=i.id
+                                         ");
+    # Build a hash of mac addresses to device ids
+    my %dev_ips;
+    foreach my $row ( @$aref ){
+	my ($address, $id) = @$row;
+	$dev_ips{$address} = $id;
+    }
+    return \%dev_ips;
+    
+}
+
+
 ##################################################################
 
 =head1 INSTANCE METHODS
@@ -1911,7 +1990,8 @@ sub info_update {
     }
     
     # Fill in some basic device info
-    foreach my $field ( qw( community snmp_version layers sysdescription syslocation os collect_arp collect_fwt ) ){
+    foreach my $field ( qw( community snmp_version layers sysname sysdescription 
+                            syslocation os collect_arp collect_fwt ) ){
 	$devtmp{$field} = $info->{$field} if exists $info->{$field};
     }
     

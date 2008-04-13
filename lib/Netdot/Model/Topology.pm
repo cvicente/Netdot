@@ -222,8 +222,9 @@ sub update_links {
 		};
 		if ( my $e = $@ ){
 		    $logger->warn($e);
+		}else{
+		    $addcount++;
 		}
-		$addcount++;
 	    }
 	    delete $links{$id};
 	    delete $links{$nei};		
@@ -286,8 +287,8 @@ sub get_dp_links {
 
     # Now go through everything looking for results
     my %links = ();
-    my $allmacs = PhysAddr->infrastructure;
-    my $allips = Ipblock->retrieve_all_hashref;
+    my $allmacs = Device->get_macs_from_all();
+    my $allips  = Device->get_ips_from_all();
     
     foreach my $row (@$results) {
         my ($did, $iid, $r_ip, $r_id, $r_port) = @$row;
@@ -296,87 +297,67 @@ sub get_dp_links {
         my $rem_dev = 0;
 
         # Find the connected device
-        if (defined($r_id)) {  # Deal with ID stuff first
-            foreach my $rem_id (split ',', $r_id){
-                if ( $rem_id =~ /($MAC)/i ){
-                    my $mac = PhysAddr->format_address($1);
-                    next if (not exists $allmacs->{$mac});
-                    my $physaddr = PhysAddr->retrieve($allmacs->{$mac});
-
-                    if ( $physaddr->devices ){
-                        $rem_dev = ($physaddr->devices)[0];
-                    } elsif ( $physaddr->interfaces ) {
-                        my $interface = ($physaddr->interfaces)[0];
-                        if ( int($interface->device) ) {
-                            $rem_dev = $interface->device;
-                        } else {
-                            $logger->warn("Netdot::Model::Topology::get_dp_links: Interface $interface has no device");
-                        }
-                    } else {
-                        $logger->warn("Netdot::Model::Topology::get_dp_links: Physical address ($mac) found that was not a member of any device");
-                    }
-
-                    if (!$rem_dev && !int($rem_dev)) {
-                        $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Device MAC not found for interface %d: %s ", $iid, $mac));
-                    }
-               }else{
-                   # Try to find the device name
-                   $rem_dev = Device->search(name=>$rem_id)->first;
-                   unless ($rem_dev) {
-                       $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Device name not found for interface %d: %s ", $iid, $rem_id));
-                   }
-               }
-
-               last if $rem_dev;
-            }
-
-            unless ($rem_dev) {
-                $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Device ID(s) not found for interface %d: %s ", $iid, $r_id));
-            }
-        } elsif ($r_ip) {
+        if ($r_ip) {
             foreach my $rem_ip ( split ',', $r_ip ) {
                 my $decimalip = Ipblock->ip2int($rem_ip);
                 next unless (exists $allips->{$decimalip});
-                my $ipb = Ipblock->retrieve($allips->{$decimalip});
-
-                if ( $ipb->interface && $ipb->interface->device ){
-                    $rem_dev = $ipb->interface->device;
-                    last;
-                }
-
-               unless ($rem_dev) {
-                   $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Device IP not found for interface %d: %s ", $iid, $r_ip));
-               }
+		$rem_dev = $allips->{$decimalip};
+		last if $rem_dev;
+		unless ($rem_dev) {
+		    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Device IP not found: %s", $iid, $r_ip));
+		}
+            }
+        }elsif (defined($r_id)) {  
+            foreach my $rem_id (split ',', $r_id){
+                if ( $rem_id =~ /($MAC)/i ){
+                    my $mac = PhysAddr->format_address($1);
+                    if ( !exists $allmacs->{$mac} ){
+                        $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Device MAC not found: %s", $iid, $mac));
+			next;
+		    }
+		    $rem_dev = $allmacs->{$mac};
+		}else{
+		    # Try to find the device name
+		    $rem_dev = Device->search(sysname=>$rem_id)->first 
+			|| Device->search(name=>$rem_id)->first;
+		    unless ($rem_dev) {
+			$logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device name not found: %s", $iid, $rem_id));
+		    }
+		}
+		last if $rem_dev;
+            }
+            unless ( $rem_dev ) {
+                $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device not found: %s", $iid, $r_id));
             }
         } 
-
-        unless ($rem_dev) {
+        unless ( $rem_dev ) {
 	    my $str = " ";
 	    $str .= " id=$r_id"  if $r_id;
 	    $str .= ", ip=$r_ip" if $r_ip;
-	    $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Remote Device not found for interface %d: %s ", $iid, $str));
+	    $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device not found: %s", $iid, $str));
             next;
         }
-
+	
         # Now we have a remote device in $rem_dev
-        if ($r_port) {
-            foreach my $rem_port ( split ',', $r_port) {
+        if ( $r_port ) {
+            foreach my $rem_port ( split ',', $r_port ) {
                 # Try name first, then number
                 my $rem_int = Interface->search(device=>$rem_dev, name=>$rem_port)->first
-                            || Interface->search(device=>$rem_dev, number=>$rem_port)->first;
-
+		    || Interface->search(device=>$rem_dev, number=>$rem_port)->first;
+		
                 if ( $rem_int ){
                     $links{$iid} = $rem_int->id;
                     $links{$rem_int->id} = $iid;
 		    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Found link: %d -> %d", 
 					   $iid, $rem_int->id));
+		    last;
                 }else{
-                    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Remote Port not found: %s, %s ", 
-                                          $rem_dev, $rem_port));
+                    $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Port %s not found in Device id %d", 
+                                          $iid, $rem_port, $rem_dev));
                 }
             }
         }else{
-            $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Remote Port not defined: %d", $iid));
+            $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Port not defined", $iid));
         }
     }
 
@@ -591,6 +572,7 @@ sub get_stp_links {
     my @stp_instances = STPInstance->search(root_bridge=>$argv{root});
     map { map { $ivs{$_->id} = $_ } $_->stp_ports } @stp_instances;
     
+
     # Run the analysis.  The designated bridge on a given segment will 
     # have its own base MAC as the designated bridge and its own STP port ID as 
     # the designated port.  The non-designated bridge will point to the 
@@ -598,6 +580,7 @@ sub get_stp_links {
     my %links;
     $logger->debug(sprintf("Netdot::Model::Topology::get_stp_links: Determining topology for STP tree with root at %s", 
 			   $argv{root}));
+    my $allmacs = Device->get_macs_from_all();
     my (%far, %near);
     foreach my $ivid ( keys %ivs ){
 	my $iv = $ivs{$ivid};
@@ -611,16 +594,9 @@ sub get_stp_links {
 		# bridge value belongs to this same switch
 		# It can either be the base bridge MAC, or the MAC of one of the
 		# interfaces in the switch
-		my $physaddr = PhysAddr->search(address=>$des_b)->first;
-		next unless $physaddr;
-		my $des_device;
-		if ( my $dev = ($physaddr->devices)[0] ){
-		    $des_device = $dev->id;
-		}elsif ( (my $i = ($physaddr->interfaces)[0]) ){
-		    if ( my $dev = $i->device ){
-			$des_device = $dev->id ;
-		    }
-		}
+		next unless exists $allmacs->{$des_b};
+		my $des_device = $allmacs->{$des_b};
+
 		# If the bridge points to itself, it is the designated bridge
 		# for the segment, which is nearest to the root
 		if ( $des_device && $device_id && $des_device == $device_id ){

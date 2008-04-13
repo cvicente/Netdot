@@ -314,7 +314,7 @@ sub from_interfaces {
 }
 
 #################################################################
-=head2 from_interfaces - Get addresses that are devices' base MACs
+=head2 from_devices - Get addresses that are devices' base MACs
 
   Arguments: 
     None
