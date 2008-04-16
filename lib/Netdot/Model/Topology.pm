@@ -42,7 +42,7 @@ sub discover {
     $class->isa_class_method('discover');
 
     my @blocks = (exists $argv{blocks}) ? @{$argv{blocks}}  : ();
-    my $blist = (@blocks) ? join ', ', @blocks : "db";
+    my $blist = (@blocks) ? join ', ', @blocks : "DB";
 
     my %SOURCES;
     $SOURCES{DP}  = 1 if $class->config->get('TOPO_USE_DP');
@@ -70,7 +70,7 @@ sub discover {
         map { $devs{$_->id} = $_ } Device->retrieve_all;
     }
 
-    $logger->info(sprintf("Discovering topology for devices on %s, using sources: %s. Min score: %s", 
+    $logger->info(sprintf("Discovering topology for devices in %s, using sources: %s. Min score: %s", 
 			  $blist, $srcs, $MINSCORE));
 
     my $start = time;
@@ -375,7 +375,7 @@ sub get_dp_links {
 
     if ( keys %ips2discover ){
 	$logger->info("Netdot::Model::Topology::get_dp_links: Discovering unknown neighbors");
-	Device->snmp_update_parallel(hosts=>\%ips2discover);
+	Device->snmp_update_parallel(hosts=>\%ips2discover, do_info=>1);
 	$logger->info("Netdot::Model::Topology::get_dp_links: You may have to discover topology again to make sure any newly added neighbors are linked");
     }
     return \%links;
