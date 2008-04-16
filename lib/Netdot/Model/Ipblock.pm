@@ -771,7 +771,11 @@ sub address_numeric {
 sub cidr {
     my $self = shift;
     $self->isa_object_method('cidr');
-    return $self->address . '/' . $self->prefix;
+    if ( $self->address && $self->prefix ){
+	return $self->address . '/' . $self->prefix;
+    }else{
+	return;
+    }
 }
 
 ##################################################################
