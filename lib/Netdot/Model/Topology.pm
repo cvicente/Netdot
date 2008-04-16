@@ -336,8 +336,10 @@ sub get_dp_links {
 	unless ( $rem_dev ) {
 	    if ( $r_ip && $self->config->get('ADD_UNKNOWN_DP_DEVS') ){
 		foreach my $ip ( split ',', $r_ip ) {
-		    $ips2discover{$ip} = '';
-		    $logger->info(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Adding remote device %s to discover list", $iid, $ip));
+		    if ( Ipblock->validate($ip) ){
+			$ips2discover{$ip} = '';
+			$logger->info(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Adding remote device %s to discover list", $iid, $ip));
+		    }
 		}
 	    }else{
 		my $str = "";
