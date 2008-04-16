@@ -215,14 +215,6 @@ sub update {
 	}
 	my $current_neighbor = ( $self->neighbor ) ? $self->neighbor->id : 0;
 	if ( $nid != $current_neighbor ){
-	    # We might still want to set a virtual interface's neighbor to 0
-	    # If we are correcting an error
-	    if ( $nid ){
-		if ( $self->type && ($self->type eq "53" || $self->type eq "propVirtual") ){
-		    $self->throw_user(sprintf("%s: Virtual interfaces cannot have neighbors",
-					      $self->get_label));
-		}
-	    }
 	    if ( $nr ){
 		if ( $nid ){
 		    # Update my neighbor
