@@ -3220,7 +3220,7 @@ sub _get_snmp_session {
 	    }
 	    last; # If we made it here, we are fine.  Stop trying communities
 	}else{
-	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Failed %s session with %s (%s) community '%s'", 
+	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Failed v%s session with %s (%s) community '%s'", 
 					$sinfoargs{Version}, $name, $ip, $sinfoargs{Community})});
 	}
     }
