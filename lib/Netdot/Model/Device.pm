@@ -995,7 +995,7 @@ sub snmp_update_from_file {
     
     # Call the more generic method
     $argv{hosts} = $hosts;
-    my $device_count = $class->_snmp_update_parallel(%argv);
+    my $device_count = $class->snmp_update_parallel(%argv);
 
     my $end = time;
     $logger->info(sprintf("Devices in $file updated. %d devices in %s", 
@@ -1041,8 +1041,8 @@ sub discover {
     my $name = $argv{name} || 
 	$class->throw_fatal("Device::discover: Missing required arguments: name");
 
-    my $info  = $argv{info}    if defined $argv{info};
-    my $sinfo = $argv{session} if defined $argv{session};
+    my $info  = $argv{info}    || 0;
+    my $sinfo = $argv{session} || 0;
     my $dev;
     
     if ( $dev = Device->search(name=>$name)->first ){
@@ -3458,7 +3458,7 @@ sub _fork_end {
 }
 
 ####################################################################################
-# _snmp_update_parallel - Discover and/or update all devices in given list concurrently
+# snmp_update_parallel - Discover and/or update all devices in given list concurrently
 #    
 #   Arguments:
 #     Hash with the following keys:
@@ -3478,7 +3478,7 @@ sub _fork_end {
 #   Returns: 
 #     Device count
 #
-sub _snmp_update_parallel {
+sub snmp_update_parallel {
     my ($class, %argv) = @_;
     $class->isa_class_method('snmp_update_parallel');
 

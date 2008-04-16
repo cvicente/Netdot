@@ -289,7 +289,8 @@ sub get_dp_links {
     my %links = ();
     my $allmacs = Device->get_macs_from_all();
     my $allips  = Device->get_ips_from_all();
-    
+    my %ips2discover;
+
     foreach my $row (@$results) {
         my ($did, $iid, $r_ip, $r_id, $r_port) = @$row;
         next if (exists $links{$iid});
@@ -331,15 +332,23 @@ sub get_dp_links {
                 $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device not found: %s", $iid, $r_id));
             }
         } 
-        unless ( $rem_dev ) {
-	    my $str = "";
-	    $str .= "id=$r_id"   if $r_id;
-	    $str .= ", ip=$r_ip" if $r_ip;
-	    $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device not found: %s", $iid, $str));
-            next;
-        }
-	
-        # Now we have a remote device in $rem_dev
+
+	unless ( $rem_dev ) {
+	    if ( $r_ip && $self->config->get('ADD_UNKNOWN_DP_DEVS') ){
+		foreach my $ip ( split ',', $r_ip ) {
+		    $ips2discover{$ip} = '';
+		    $logger->info(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Adding remote device %s to discover list", $iid, $ip));
+		}
+	    }else{
+		my $str = "";
+		$str .= "id=$r_id"   if $r_id;
+		$str .= ", ip=$r_ip" if $r_ip;
+		$logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device not found: %s", $iid, $str));
+	    }
+	    next;
+	}
+
+       # Now we have a remote device in $rem_dev
         if ( $r_port ) {
             foreach my $rem_port ( split ',', $r_port ) {
                 # Try name first, then number
@@ -362,6 +371,11 @@ sub get_dp_links {
         }
     }
 
+    if ( keys %ips2discover ){
+	$logger->info("Netdot::Model::Topology::get_dp_links: Discovering unknown neighbors");
+	Device->snmp_update_parallel(hosts=>\%ips2discover);
+	$logger->info("Netdot::Model::Topology::get_dp_links: You may have to discover topology again to make sure any newly added neighbors are linked");
+    }
     return \%links;
 }
 
