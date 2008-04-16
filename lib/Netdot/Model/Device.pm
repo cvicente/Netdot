@@ -2000,8 +2000,15 @@ sub info_update {
     #
     if ( $self->snmp_managed && (!defined($self->snmp_target) || int($self->snmp_target) == 0) 
 	 && defined($info->{snmp_target}) ){
-	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first ||
-	    Ipblock->insert({address=>$info->{snmp_target}, status=>'Static'});
+	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first;
+	unless ( $ipb ){
+	    eval {
+		$ipb = Ipblock->insert({address=>$info->{snmp_target}, status=>'Static'});
+	    };
+	    if ( $@ ){
+		$logger->warn("Netdot::Model::Device::info_update: Could not insert snmp_target address: ", $info->{snmp_target}, ": ", $@);
+	    }
+	}
 	if ( $ipb ){
 	    $devtmp{snmp_target} = $ipb;
 	    $logger->info(sprintf("%s: SNMP target address set to %s", 
@@ -2145,7 +2152,7 @@ sub info_update {
     # Remove modules that no longer exist
     foreach my $number ( keys %oldmodules ){
 	my $module = $oldmodules{$number};
-	$logger->info("$host:  Module no longe exists: $number.  Removing.");
+	$logger->info("$host:  Module no longer exists: $number.  Removing.");
 	$module->delete();
     }
 
@@ -3266,23 +3273,26 @@ sub _get_main_ip {
 	unless scalar @methods;
 
     my @allints = keys %{$info->{interface}};
-    my @allips;
-    map { map { push @allips, $_ } keys %{$info->{interface}->{$_}->{ips}} } @allints;
+    my %allips;
+    map { map { $allips{$_} = '' } keys %{$info->{interface}->{$_}->{ips}} } @allints;
 
     my $ip;
-    if ( scalar(@allips) == 1 ){
-	$ip = $allips[0];
+    if ( scalar(keys %allips) == 1 ){
+	$ip = (keys %allips)[0];
 	$logger->debug(sub{"Device::_get_main_ip: Device has one IP: $ip" });
 	return $ip;
     }
     foreach my $method ( @methods ){
 	$logger->debug(sub{"Device::_get_main_ip: Trying method $method" });
 	if ( $method eq 'sysname' && $info->{sysname} ){
-	    $ip = ($dns->resolve_name($info->{sysname}))[0];
+	    my $resip = ($dns->resolve_name($info->{sysname}))[0];
+	    if ( exists $allips{$resip} ){
+		$ip = $resip;
+	    }
 	}elsif ( $method eq 'highest_ip' ){
 	    my %dec;
 	    foreach my $int ( @allints ){
-		map { $dec{$_} = Ipblock->ip2int($_) } @allips;
+		map { $dec{$_} = Ipblock->ip2int($_) } keys %allips;
 	    }
 	    my @ordered = sort { $dec{$b} <=> $dec{$a} } keys %dec;
 	    $ip = $ordered[0];
