@@ -1111,7 +1111,6 @@ sub discover {
     }
     $uargs{session} = $sinfo if $sinfo;
     $uargs{info}    = $info;
-    $uargs{do_info} = 1;
 
     # Update Device with SNMP info obtained
     $dev->snmp_update(%uargs);
@@ -1785,7 +1784,7 @@ sub update_bgp_peering {
 
   Arguments:
     Hash with the following keys:
-    do_info        Update device info
+    do_info        Update device info (default)
     do_fwt         Update forwarding tables
     do_arp         Update ARP cache
     info           Hashref with device info (optional)
@@ -1812,8 +1811,9 @@ sub snmp_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('snmp_update');
 
-    $self->throw_fatal("Missing required arguments")
-	unless ( $argv{do_info} || $argv{do_fwt} || $argv{do_arp} );
+    unless ( $argv{do_info} || $argv{do_fwt} || $argv{do_arp} ){
+	$argv{do_info} = 1;
+    }
 
     my $atomic = defined $argv{atomic} ? $argv{atomic} : $self->config->get('ATOMIC_DEVICE_UPDATES');
 
@@ -3628,7 +3628,10 @@ sub _get_arp_from_snmp {
 	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: MAC not defined in at_paddr->{$key}" });
 	    next;
 	}
-	if ( ! PhysAddr->validate($mac) ){
+	my $validmac = PhysAddr->validate($mac); 
+	if ( $validmac ){
+	    $mac = $validmac;
+	}else{
 	    $logger->debug(sub{"Device::get_snmp_arp: $host: Invalid MAC: $mac" });
 	    next;
 	}	
@@ -3713,7 +3716,7 @@ sub _get_fwt_from_snmp {
 	}
 
         foreach my $vlan ( sort{$a<=>$b} keys %vlans ){
-	    next if ( $vlan == 1 );  # Ignore vlan 1
+	    next if ( $vlan == 0 || $vlan == 1 );  # Ignore vlans 0 and 1
 	    my %args = ('host'        => $host,
                         'communities' => [$self->community . '@' . $vlan],
                         'version'     => $self->snmp_version,
@@ -3820,8 +3823,10 @@ sub _walk_fwt {
 	
 	foreach my $mac ( keys %{ $tmp{$iid} } ){
 	    next unless $mac;
-	    $mac = PhysAddr->format_address($mac);
-	    if ( ! PhysAddr->validate($mac) ){
+	    my $validmac = PhysAddr->validate($mac);
+	    if ( $validmac ){
+		$mac = $validmac;
+	    }else{
 		$logger->debug(sub{"Device::_walk_fwt: $host: Invalid MAC: $mac" });
 		next;
 	    }
@@ -4024,11 +4029,11 @@ sub _get_airespace_ap_info {
 
     # AP Ethernet MAC
     if ( my $basemac = $hashes->{'airespace_ap_mac'}->{$idx} ){
-	$basemac = PhysAddr->format_address($basemac);
-	if ( ! PhysAddr->validate($basemac) ){
-	    $logger->debug(sub{"Device::get_airspace_if_info: iid $iid: Invalid MAC: $basemac" });
+	my $validmac = PhysAddr->validate($basemac);
+	if ( $validmac ){
+	    $info->{physaddr} = $validmac;
 	}else{
-	    $info->{physaddr} = $basemac;
+	    $logger->debug(sub{"Device::get_airspace_if_info: iid $iid: Invalid MAC: $basemac" });
 	}
     } 
 

@@ -375,7 +375,7 @@ sub get_dp_links {
 
     if ( keys %ips2discover ){
 	$logger->info("Netdot::Model::Topology::get_dp_links: Discovering unknown neighbors");
-	Device->snmp_update_parallel(hosts=>\%ips2discover, do_info=>1);
+	Device->snmp_update_parallel(hosts=>\%ips2discover);
 	$logger->info("Netdot::Model::Topology::get_dp_links: You may have to discover topology again to make sure any newly added neighbors are linked");
     }
     return \%links;

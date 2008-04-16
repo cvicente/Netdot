@@ -217,18 +217,17 @@ sub fast_update {
 }
 
 ################################################################
-=head2 validate - Perform validation of MAC address strings
+=head2 validate - Format and validate MAC address strings
 
-    String must look like "DEADDEADBEEF".
     Assumes that "000000000000", "111111111111" ... "FFFFFFFFFF" 
     are invalid.  Also invalidates known bogus and Multicast addresses.
 
   Arguments: 
-    physical address (string)
+    Physical address string
   Returns:   
-    True if valid, False if invalid
+    Physical address string in canonical format, false if invalid
   Examples:
-    PhysAddr->validate('DEADDEADBEEF');
+    my $validmac = PhysAddr->validate('DEADDEADBEEF');
 
 =cut
 sub validate {
@@ -236,7 +235,7 @@ sub validate {
     $self->isa_class_method('validate');
 
     return unless $addr;
-
+    $addr = $self->format_address($addr);
     if ( $addr !~ /^[0-9A-F]{12}$/ ){
 	# Format must be DEADDEADBEEF
 	$logger->debug(sub{ "PhysAddr::validate: Bad format: $addr" });
@@ -268,7 +267,7 @@ sub validate {
 	return 0;	
     }
 	 
-    return 1;
+    return $addr;
 }
 
 #################################################################
