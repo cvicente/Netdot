@@ -297,7 +297,7 @@ sub get_dp_links {
         my $rem_dev = 0;
 
         # Find the connected device
-        if ($r_ip) {
+        if ( $r_ip ) {
             foreach my $rem_ip ( split ',', $r_ip ) {
                 my $decimalip = Ipblock->ip2int($rem_ip);
                 next unless (exists $allips->{$decimalip});
@@ -307,7 +307,8 @@ sub get_dp_links {
 		    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Device IP not found: %s", $iid, $r_ip));
 		}
             }
-        }elsif (defined($r_id)) {  
+	}
+        if ( !$rem_dev && $r_id ) {  
             foreach my $rem_id (split ',', $r_id){
                 if ( $rem_id =~ /($MAC)/i ){
                     my $mac = PhysAddr->format_address($1);
@@ -331,8 +332,8 @@ sub get_dp_links {
             }
         } 
         unless ( $rem_dev ) {
-	    my $str = " ";
-	    $str .= " id=$r_id"  if $r_id;
+	    my $str = "";
+	    $str .= "id=$r_id"   if $r_id;
 	    $str .= ", ip=$r_ip" if $r_ip;
 	    $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device not found: %s", $iid, $str));
             next;
