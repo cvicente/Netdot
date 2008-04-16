@@ -891,7 +891,7 @@ sub snmp_update_all {
     my $start = time;
 
     my @devs   = $class->retrieve_all();
-    my $device_count = $class->_snmp_update_parallel(devs=>\@devs, %argv);
+    my $device_count = $class->snmp_update_parallel(devs=>\@devs, %argv);
     my $end = time;
     $logger->info(sprintf("All Devices updated. %d devices in %s", 
 			  $device_count, $class->sec2dhms($end-$start) ));
@@ -948,7 +948,7 @@ sub snmp_update_block {
 
     # Call the more generic method
     $argv{hosts} = \%h;
-    my $device_count = $class->_snmp_update_parallel(%argv);
+    my $device_count = $class->snmp_update_parallel(%argv);
 
     my $end = time;
     $logger->info(sprintf("Devices in $blist updated. %d devices in %s", 
