@@ -672,28 +672,26 @@ sub get_history {
 }
 
 ############################################################################
-=head2 search_all_tables - Search for a string in all fields from all tables, excluding foreign key fields.
+=head2 search_all_tables - Search for a string in all text fields from all tables
 
-Arguments:  query string
-Returns:    reference to hash of hashes
+  Arguments:  
+    query string    
+  Returns:    
+    reference to hash of hashes
 
 =cut
 sub search_all_tables {
     my ($self, $q) = @_;
     my %results;
 
-    # Ignore these fields when searching
-    my %ign_fields = ('id' => '');
-
     foreach my $tbl ( $self->meta->get_table_names() ) {
 	$lctbl = lc($tbl);
-	# Ignore foreign key fields and booleans
+	# Only search blob and varchar fields
 	my @cols;
 	map { push @cols, $_ 
-		  unless( exists $ign_fields{$_} || 
-			  defined $tbl->meta_data->get_column($_)->links_to ||
-			  $tbl->meta_data->get_column($_)->sql_type =~ /bool/
-			  ) 
+		  if ( $tbl->meta_data->get_column($_)->sql_type eq 'blob'
+		       || $tbl->meta_data->get_column($_)->sql_type eq 'varchar'
+		  ) 
 	      } $tbl->columns();
 	foreach my $col ( @cols ){
 	    my @res = $tbl->search_like($col=>$q);
