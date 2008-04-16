@@ -3321,11 +3321,10 @@ sub _get_main_ip {
 	}
 	
 	if ( defined $ip ){
-	    if ( $dns->resolve_ip($ip) ){
+	    if ( $dns->resolve_ip($ip) && Ipblock->validate($ip) ){
 		$logger->debug(sub{"Device::_get_main_ip: Chose $ip using naming method: $method" });
 		return $ip ;
 	    }else{
-		# We do not want an IP that does not resolve
 		# Keep trying
 		undef($ip);
 	    }
