@@ -1313,6 +1313,7 @@ sub build_device_topology_graph_html {
 
             my $nd = $neighbor->device;
             unless (scalar($nd)) {
+                my $logger = Netdot->log->get_logger("Netdot::Model");
                 $logger->debug("No device found for neighbor $neighbor");
                 next;
             }
