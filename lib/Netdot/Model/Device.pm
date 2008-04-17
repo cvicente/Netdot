@@ -3605,7 +3605,7 @@ sub _get_arp_from_snmp {
     my $arp_count = 0;
     foreach my $key ( keys %$at_paddr ){
 	my ($ip, $idx, $mac);
-	if ( $key =~ /(\d+)\.($IPV4)/ ){
+	if ( $key =~ /(\d+)\.($IPV4)$/ ){
 	    $idx = $1;
 	    $ip  = $2;
 	    $mac = $at_paddr->{$key};
