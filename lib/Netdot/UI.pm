@@ -1312,6 +1312,10 @@ sub build_device_topology_graph_html {
             next unless int($neighbor);  # If there's no neighbor, skip ahead
 
             my $nd = $neighbor->device;
+            unless (scalar($nd)) {
+                $logger->debug("No device found for neighbor $neighbor");
+                next;
+            }
 
             # If we haven't seen this device before, add it to the graph
             add_node($g, $nd) unless exists $seen->{'NODE'}{$nd->id};
