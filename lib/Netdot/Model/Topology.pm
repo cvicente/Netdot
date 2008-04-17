@@ -6,6 +6,7 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 my $MAC  = Netdot->get_mac_regex();
+my $IP   = Netdot->get_ipv4_regex();
 
 
 
@@ -260,10 +261,10 @@ sub get_dp_links {
     # Using raw database access because Class::DBI was too slow here
     my $dbh = $self->db_Main;
     my $results;
-    my $sth = $dbh->prepare("SELECT d.id, i.id, i.dp_remote_ip, i.dp_remote_id, i.dp_remote_port  
-                             FROM device d, interface i 
-                             WHERE d.id = i.device 
-                                 AND (i.dp_remote_ip IS NOT NULL OR i.dp_remote_id IS NOT NULL)");
+    my $sth = $dbh->prepare("SELECT device, id, dp_remote_ip, dp_remote_id, dp_remote_port 
+                             FROM interface 
+                             WHERE (dp_remote_ip IS NOT NULL OR dp_remote_id IS NOT NULL) 
+                               AND dp_remote_port IS NOT NULL");
     $sth->execute;
     $results = $sth->fetchall_arrayref;
 
@@ -293,6 +294,9 @@ sub get_dp_links {
 
     foreach my $row (@$results) {
         my ($did, $iid, $r_ip, $r_id, $r_port) = @$row;
+	# In theory this is not needed, but I've seen some funny results from that query
+	next unless ( ($r_ip || $r_id) && $r_port );
+
         next if (exists $links{$iid});
 
         my $rem_dev = 0;
@@ -318,6 +322,14 @@ sub get_dp_links {
 			next;
 		    }
 		    $rem_dev = $allmacs->{$mac};
+		}elsif ( $rem_id =~ /($IP)/ ){
+		    # Turns out that some devices send IP addresses as IDs
+		    my $decimalip = Ipblock->ip2int($1);
+		    $rem_dev = $allips->{$decimalip};
+		    last if $rem_dev;
+		    unless ($rem_dev) {
+			$logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Device IP not found: %s", $iid, $r_ip));
+		    }
 		}else{
 		    # Try to find the device name
 		    $rem_dev = Device->search(sysname=>$rem_id)->first 
@@ -334,45 +346,46 @@ sub get_dp_links {
         } 
 
 	unless ( $rem_dev ) {
-	    if ( $r_ip && $self->config->get('ADD_UNKNOWN_DP_DEVS') ){
-		foreach my $ip ( split ',', $r_ip ) {
-		    if ( Ipblock->validate($ip) ){
-			$ips2discover{$ip} = '';
-			$logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Adding remote device %s to discover list", $iid, $ip));
+	    if ( $self->config->get('ADD_UNKNOWN_DP_DEVS') ){
+		if ( $r_ip ){
+		    foreach my $ip ( split ',', $r_ip ) {
+			if ( Ipblock->validate($ip) ){
+			    $ips2discover{$ip} = '';
+			    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Adding remote device %s to discover list", $iid, $ip));
+			}
+		    }
+		}elsif ( $r_id ){
+		    foreach my $rem_id ( split ',', $r_id ) {
+			if ( $rem_id =~ /($IP)/ ){
+			    my $ip = $1;
+			    if ( Ipblock->validate($ip) ){
+				$ips2discover{$ip} = '';
+				$logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Adding remote device %s to discover list", $iid, $ip));
+			    }
+			}
 		    }
 		}
 	    }else{
 		my $str = "";
 		$str .= "id=$r_id"   if $r_id;
 		$str .= ", ip=$r_ip" if $r_ip;
-		$logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device not found: %s", $iid, $str));
+		my $int = Interface->retrieve($iid);
+		$logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: %s: Remote Device not found: %s", $int->get_label, $str));
 	    }
 	    next;
 	}
 
        # Now we have a remote device in $rem_dev
         if ( $r_port ) {
-	    # To avoid multiple queries to the database, build a hash of all interfaces 
-	    # in this device by name, number and description.
-	    # name and number are unique, but description is not, so we check to
-	    # make sure we only have one interface description match
-	    my $dev = ref($rem_dev) ? $rem_dev : Device->retrieve($rem_dev);
-	    my (%bynumber, %byname, %bydesc);
-	    foreach ( $dev->interfaces ){
-		$bynumber{$_->number}            = $_ if $_->number; 
-		$byname{$_->name}                = $_ if $_->name; 
-		$bydesc{$_->description}{$_->id} = $_ if $_->description;
-	    }
 	    my $rem_int;
             foreach my $rem_port ( split ',', $r_port ) {
-		if ( exists $byname{$rem_port} ){
-		    $rem_int = $byname{$rem_port};
-		}elsif ( exists $bynumber{$rem_port} ){
-		    $rem_int = $bynumber{$rem_port};
-		}elsif ( exists $bydesc{$rem_port} && (scalar keys %{$bydesc{$rem_port}} == 1) ){
-		    my $id = (keys %{$bydesc{$rem_port}})[0];
-		    $rem_int = $bydesc{$rem_port}{$id};
-		}		
+                # Try name first, then number, then description (if it is unique)
+                $rem_int = Interface->search(device=>$rem_dev, name=>$rem_port)->first
+		    || Interface->search(device=>$rem_dev, number=>$rem_port)->first;
+		unless ( $rem_int ){
+		    my @ints = Interface->search(device=>$rem_dev, description=>$rem_port);
+		    $rem_int = $ints[0] if ( scalar @ints == 1 );
+		}
                 if ( $rem_int ){
                     $links{$iid} = $rem_int->id;
                     $links{$rem_int->id} = $iid;
@@ -382,11 +395,14 @@ sub get_dp_links {
                 }
             }
 	    unless ( $rem_int ){
-		$logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Port %s not found in Device id %d", 
-				      $iid, $r_port, $rem_dev));
+		my $int = Interface->retrieve($iid);
+		my $dev = ref($rem_dev) ? $rem_dev : Device->retrieve($rem_dev);
+		$logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: %s: Port %s not found in Device: %s", 
+				      $int->get_label, $r_port, $dev->get_label));
 	    }
         }else{
-            $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Port not defined", $iid));
+	    my $int = Interface->retrieve($iid);
+            $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: %s: Remote Port not defined", $int->get_label));
         }
     }
 

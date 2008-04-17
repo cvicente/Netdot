@@ -518,6 +518,7 @@ sub get_snmp_info {
 				# Skip instance 0
 				next if ( $mst_inst == 0 );
 				my $vid = $mst_inst_vlans{$mst_inst}->[0];
+				next if ( $vid == 0 );
 				my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
 								       'communities' => [$sinfo->snmp_comm . '@' . $vid],
 								       'version'     => $sinfo->snmp_ver,
@@ -540,6 +541,7 @@ sub get_snmp_info {
 			    map { $vlans{$_}++ } @$vlans; 
 			}
 			foreach my $vid ( keys %vlans ){
+			    next if ( $vid == 0 );
 			    my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
 								   'communities' => [$sinfo->snmp_comm . '@' . $vid],
 								   'version'     => $sinfo->snmp_ver,
@@ -3196,8 +3198,8 @@ sub _get_snmp_session {
     foreach my $community ( @{$argv{communities}} ){
 	$sinfoargs{Community} = $community;
 	
-	$logger->debug(sub{ sprintf("Device::get_snmp_session: Trying session with %s (%s), community %s",
-				    $name, $ip, $sinfoargs{Community})});
+	$logger->debug(sub{ sprintf("Device::get_snmp_session: Trying SNMPv%d session with %s (%s), community %s",
+				    $sinfoargs{Version}, $name, $ip, $sinfoargs{Community})});
 	
 	$sinfo = $sclass->new( %sinfoargs );
 	
@@ -3220,7 +3222,7 @@ sub _get_snmp_session {
 	    }
 	    last; # If we made it here, we are fine.  Stop trying communities
 	}else{
-	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Failed v%s session with %s (%s) community '%s'", 
+	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Failed SNMPv%s session with %s (%s) community '%s'", 
 					$sinfoargs{Version}, $name, $ip, $sinfoargs{Community})});
 	}
     }
