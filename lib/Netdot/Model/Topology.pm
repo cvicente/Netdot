@@ -309,7 +309,7 @@ sub get_dp_links {
 		$rem_dev = $allips->{$decimalip};
 		last if $rem_dev;
 		unless ($rem_dev) {
-		    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Device IP not found: %s", $iid, $r_ip));
+		    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device IP not found: %s", $iid, $r_ip));
 		}
             }
 	}
@@ -318,7 +318,7 @@ sub get_dp_links {
                 if ( $rem_id =~ /($MAC)/i ){
                     my $mac = PhysAddr->format_address($1);
                     if ( !exists $allmacs->{$mac} ){
-                        $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Device MAC not found: %s", $iid, $mac));
+                        $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device MAC not found: %s", $iid, $mac));
 			next;
 		    }
 		    $rem_dev = $allmacs->{$mac};
@@ -328,7 +328,7 @@ sub get_dp_links {
 		    $rem_dev = $allips->{$decimalip};
 		    last if $rem_dev;
 		    unless ($rem_dev) {
-			$logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Device IP not found: %s", $iid, $r_ip));
+			$logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device IP not found: %s", $iid, $rem_id));
 		    }
 		}else{
 		    # Try to find the device name
