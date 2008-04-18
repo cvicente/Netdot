@@ -640,7 +640,9 @@ sub get_label{
     my ($self) = @_;
     $self->isa_object_method('get_label');
     return unless $self->id;
-    my $label = sprintf("%s [%s]", $self->device->get_label, $self->name);
+    my $name = $self->name || $self->number;
+    my $label = sprintf("%s [%s]", $self->device->get_label, $name);
+    return $label;
 }
 
 =head1 AUTHOR

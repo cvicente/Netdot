@@ -2297,18 +2297,17 @@ sub info_update {
 	#
 	foreach my $id ( keys %oldifs ) {
 	    my $if = $oldifs{$id};
-	    $logger->info(sprintf("Interface %s no longer exists.  Removing.", 
+	    $logger->info(sprintf("%s: Interface %s no longer exists.  Removing.", 
 				  $host, $if->get_label));
 	    $if->delete();
 	}
 	
 	##############################################
 	# remove ip addresses that no longer exist
-	foreach my $oldip ( keys %oldips ){
-	    my $ip = $oldips{$oldip};
+	while ( my ($oldip, $ip) = each %oldips ){
 	    # Check that it still exists 
 	    # (could have been deleted if its interface was deleted)
-	    next unless ( defined $ip && ref($ip) );
+	    next unless ( defined $ip && ref($ip) =~ /deleted/i );
 	    
 	    $logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
 				  $host, $ip->address));
