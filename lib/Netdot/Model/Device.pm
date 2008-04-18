@@ -676,8 +676,6 @@ sub get_snmp_info {
     my $ifreserved = $self->config->get('IFRESERVED');
 
     foreach my $iid ( keys %{ $hashes{interfaces} } ){
-	$dev{interface}{$iid}{number} = $iid;
-
 	# check whether it should be ignored
 	my $name = $hashes{i_description}->{$iid};
 	if ( $name ){
@@ -691,6 +689,7 @@ sub get_snmp_info {
 	}else{
 	    $dev{interface}{$iid}{name} = $iid;
 	}
+	$dev{interface}{$iid}{number} = $iid;
 
 	foreach my $field ( keys %IFFIELDS ){
 	    my $method = $IFFIELDS{$field};
