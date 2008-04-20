@@ -3603,9 +3603,14 @@ sub _get_arp_from_snmp {
     my $arp_count = 0;
     foreach my $key ( keys %$at_paddr ){
 	my ($ip, $idx, $mac);
-	if ( $key =~ /(\d+)\.($IPV4)$/ ){
+	# Notice that the following regexp allows us to query only one
+	# OID instead of three, which is a significant performance
+	# improvement with very large caches.
+	# The optional .1 in the middle is for cases where the old
+	# atPhysAddress is used.
+	if ( $key =~ /^(\d+)(\.1)?\.($IPV4)$/ ){
 	    $idx = $1;
-	    $ip  = $2;
+	    $ip  = $3;
 	    $mac = $at_paddr->{$key};
 	}else{
 	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: Unrecognized hash key: $key" });
