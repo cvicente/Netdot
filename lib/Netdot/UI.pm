@@ -1469,13 +1469,14 @@ sub rrd_graph{
 		     "GPRINT:avgarp:%6lg %s");
 	
     }elsif ( $argv{type} eq 'time' ){
-	push @args, ("--vertical-label=Poll Time",
+	push @args, ("--vertical-label=Time (min)",
 		     "DEF:poll_time=$rrd_file:poll_time:AVERAGE",
-		     "VDEF:maxtime=poll_time,MAXIMUM",
-		     "VDEF:mintime=poll_time,MINIMUM",
-		     "VDEF:avgtime=poll_time,AVERAGE",
+		     "CDEF:poll_mins=poll_time,60,/",
+		     "VDEF:maxtime=poll_mins,MAXIMUM",
+		     "VDEF:mintime=poll_mins,MINIMUM",
+		     "VDEF:avgtime=poll_mins,AVERAGE",
 		     "COMMENT:         Maximum   Minimum   Average\\l",
-		     "AREA:poll_time#FFCC00:FWT",
+		     "AREA:poll_mins#FFCC00:Time",
 		     "GPRINT:maxtime:%6lg %s",
 		     "GPRINT:mintime:%6lg %s",
 		     "GPRINT:avgtime:%6lg %s\\l");
