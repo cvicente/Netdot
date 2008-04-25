@@ -1,0 +1,29 @@
+<%doc>
+  Device Polling Statistics - Devices
+</%doc>
+
+<%args>
+</%args>
+
+<%init>
+my $web_path = $r->dir_config('NetdotPath');
+</%init>
+
+<div class="container">
+  <div class="containerhead">Polled Device Statistics</div>
+  <div class="containerbody">
+
+<p>Number of devices polled for ARP caches and forwarding tables:
+
+<center>
+<p>
+%    print $ui->rrd_graph(type=>'dev', period=>'-1d', web_path=>$web_path, img=>"1d_dev_stats.png", title=>"Last day");
+<p>
+%    print $ui->rrd_graph(type=>'dev', period=>'-1w', web_path=>$web_path, img=>"1w_dev_stats.png", title=>"Last Week");
+<p>
+%    print $ui->rrd_graph(type=>'dev', period=>'-1m', web_path=>$web_path, img=>"1m_dev_stats.png", title=>"Last Month");
+<p>
+%    print $ui->rrd_graph(type=>'dev', period=>'-1y', web_path=>$web_path, img=>"1y_dev_stats.png", title=>"Last Year");
+</center>
+  </div>
+</div>

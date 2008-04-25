@@ -1,0 +1,29 @@
+<%doc>
+  Device Polling Statistics - Time
+</%doc>
+
+<%args>
+</%args>
+
+<%init>
+my $web_path = $r->dir_config('NetdotPath');
+</%init>
+
+<div class="container">
+  <div class="containerhead">Device Polling Time</div>
+  <div class="containerbody">
+
+<p>Device Polling time statistics:
+
+<center>
+<p>
+%    print $ui->rrd_graph(type=>'time', period=>'-1d', web_path=>$web_path, img=>"1d_time_stats.png", title=>"Last day");
+<p>
+%    print $ui->rrd_graph(type=>'time', period=>'-1w', web_path=>$web_path, img=>"1w_time_stats.png", title=>"Last Week");
+<p>
+%    print $ui->rrd_graph(type=>'time', period=>'-1m', web_path=>$web_path, img=>"1m_time_stats.png", title=>"Last Month");
+<p>
+%    print $ui->rrd_graph(type=>'time', period=>'-1y', web_path=>$web_path, img=>"1y_time_stats.png", title=>"Last Year");
+</center>
+  </div>
+</div>
