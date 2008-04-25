@@ -46,18 +46,18 @@ FMOD = 0644
 XMOD = 0744
 # If mason ever decides to use different directories in its data_dir there will
 # be trouble.
-DIR = bin doc htdocs tmp tmp/sessions /tmp/sessions/locks lib etc import export mibs
+DIR = bin doc htdocs tmp tmp/sessions /tmp/sessions/locks lib etc var import export mibs
 
-.PHONY: bin doc htdocs lib etc
+.PHONY: bin doc htdocs lib etc var
 
-install: dir doc htdocs lib _mibs bin etc _import _export
+install: dir doc htdocs lib var _mibs bin etc _import _export
 	@echo
 	@echo "Netdot is installed. "
 	@echo "Please read the available documentation before proceeding."
 	@echo "If you are installing Netdot for the first time, you need to"
 	@echo "  'make installdb'"
 
-upgrade: dir doc htdocs lib mibs bin etc updatedb
+upgrade: dir doc htdocs lib var mibs bin etc updatedb
 	@echo
 	@echo "Netdot has been upgraded. "
 	@echo "You will need to restart Apache"
@@ -92,6 +92,7 @@ testdeps:
 	     -M'Parallel::ForkManager' \
 	     -M'Net::IPTrie' \
 	     -M'Authen::Radius' \
+	     -M'RRDs' \
 	    -e 1
 
 dir:
@@ -116,6 +117,9 @@ doc:
 	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=$@
 
 lib:
+	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
+
+var:
 	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
 
 _mibs:

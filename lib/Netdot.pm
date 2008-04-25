@@ -8,6 +8,7 @@ use Netdot::Config;
 use Netdot::Util::Log;
 use Netdot::Util::Exception;
 use Carp;
+use RRDs;
 use Data::Dumper;
 
 my $class = {};

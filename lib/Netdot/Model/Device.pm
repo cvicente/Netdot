@@ -3512,7 +3512,7 @@ sub snmp_update_parallel {
     my %do_devs;
     
     my $device_count = 0;
-
+    my $start = time;
     # Init ForkManager
     my $pm = $class->_fork_init();
 
@@ -3562,10 +3562,134 @@ sub snmp_update_parallel {
     
     # Rebuild the IP tree if ARP caches were updated
     Ipblock->build_tree(4) if $argv{do_arp};
+    my $runtime = time - $start;
+    $class->_update_poll_stats($uargs{timestamp}, $runtime);
     
     return $device_count;
 }
 
+############################################################################
+#_update_poll_stats
+#
+#   Arguments:
+#       timestamp
+#   Returns:
+#     True if successful
+#   Examples:
+#     $class->_update_poll_stats($timestamp);
+#
+#
+sub _update_poll_stats {
+    my ($class, $timestamp, $runtime) = @_;
+    my $relpath = Netdot->config->get('POLL_STATS_FILE_PATH');
+    my $file = Netdot->config->get('NETDOT_PATH')."/".$relpath;
+    $class->isa_class_method('_update_poll_stats');
+    my $stats = $class->_get_poll_stats($timestamp);
+    $class->throw_fatal("Netdot::Model::Device::_update_poll_stats: Error getting stats")
+	unless ($stats && ref($stats) eq "HASH");
+    my @vals = ($stats->{ips}, $stats->{macs}, $stats->{arp_devices}, 
+		$stats->{fwt_devices}, $runtime);
+    my $valstr = 'N:';
+    $valstr .= join ':', @vals;
+    my $template = "ips:macs:arp_devs:fwt_devs:poll_time";
+    $logger->debug("Updating Poll Stats for $timestamp: $template, $valstr");
+    RRDs::update($file, "-t", $template, $valstr);
+    if ( my $e = RRDs::error ){
+	$logger->error("_update_poll_stats: Could not update RRD: $e");
+	return;
+    }
+    return 1;
+}
+
+############################################################################
+#_get_poll_stats
+#
+#   Arguments:
+#       timestamp
+#   Returns:
+#     True if successful
+#   Examples:
+#     $class->_get_poll_stats($timestamp);
+#
+#
+sub _get_poll_stats {
+    my ($class, $timestamp) = @_;
+    $class->isa_class_method('_update_poll_stats');
+    $logger->debug("Getting Poll Stats for $timestamp");
+    my $dbh = $class->db_Main;
+
+    my %res;  # Store results here
+
+    ##############################################
+    # IP addresses
+    my $sth1 = $dbh->prepare_cached('SELECT COUNT(id)
+                                     FROM   ipblock 
+                                     WHERE  version=4   AND
+                                            prefix=32   AND 
+                                            last_seen=?
+                                    ');
+
+    $sth1->execute($timestamp);
+    my $total_ips= $sth1->fetchrow_array() || 0;
+
+    my $sth2 = $dbh->prepare_cached('SELECT COUNT(ip.id)
+                                     FROM   ipblock ip, interface i
+                                     WHERE  ip.interface=i.id AND
+                                            ip.last_seen=?
+                                    ');
+    $sth2->execute($timestamp);
+    my $dev_ips= $sth2->fetchrow_array() || 0;
+
+    $res{ips} = $total_ips - $dev_ips;
+    
+    ##############################################
+    # MAC addresses
+    my $sth3 = $dbh->prepare_cached('SELECT COUNT(p.id)
+                                     FROM   physaddr p, interface i 
+                                     WHERE  i.physaddr=p.id AND
+                                            p.last_seen=?
+	                            ');
+    $sth3->execute($timestamp);
+    my $num_int_macs = $sth3->fetchrow_array() || 0;
+
+    my $sth4 = $dbh->prepare_cached('SELECT COUNT(p.id)
+                                     FROM   physaddr p, device d
+                                     WHERE  d.physaddr=p.id AND
+                                            p.last_seen=?
+                                    ');
+    $sth4->execute($timestamp);
+    my $num_dev_macs = $sth4->fetchrow_array() || 0;
+
+    my $sth5 = $dbh->prepare_cached('SELECT COUNT(id)
+                                     FROM   physaddr
+                                     WHERE  last_seen=?
+                                    ');
+    $sth5->execute($timestamp);
+    my $total_macs = $sth5->fetchrow_array() || 0;
+
+    $res{macs} = $total_macs - ($num_int_macs + $num_dev_macs);
+
+    ##############################################
+    # ARP Devices
+    my $sth6 = $dbh->prepare_cached('SELECT COUNT(id)
+                                     FROM   device
+                                     WHERE  last_arp=?
+                                    ');
+    $sth6->execute($timestamp);
+    $res{arp_devices} = $sth6->fetchrow_array() || 0;
+
+    ##############################################
+    # FWT Devices
+    my $sth7 = $dbh->prepare_cached('SELECT COUNT(id)
+                                     FROM   device
+                                     WHERE  last_fwt=?
+                                    ');
+    $sth7->execute($timestamp);
+    $res{fwt_devices} = $sth7->fetchrow_array() || 0;
+    
+    return \%res;
+
+}
 
 ############################################################################
 #_get_arp_from_snmp - Fetch ARP tables via SNMP

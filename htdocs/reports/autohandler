@@ -42,10 +42,11 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 	    title        => 'Reports',
 	    attribute    => $PAGE_ATTRIBUTE,
 	    sub_sections => [
-		{ section => 'DEVICE',   title => 'Device Inventory' },
-		{ section => 'MACS',     title => 'MAC Addresses' },
-		{ section => 'DATABASE', title => 'Database Reports' },
-		{ section => 'CUSTOM',   title => 'Custom Reports' },
+		{ section => 'POLLSTATS', title => 'Polling Stats' },
+		{ section => 'DEVICE',    title => 'Device Inventory' },
+		{ section => 'MACS',      title => 'MAC Addresses' },
+		{ section => 'DATABASE',  title => 'Database Reports' },
+		{ section => 'CUSTOM',    title => 'Custom Reports' },
 	    ]
         };
     </%init>
@@ -53,7 +54,30 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 
 <%perl>
 
-if ( $page eq "DEVICE" && $m->request_comp->name ne "device_inventory.html" ) {
+if ( $page eq "POLLSTATS" ) {
+</%perl>	
+    <div class="container">
+	<div class="containerhead">Device Polling Statistics</div>
+	<div class="containerbody">
+	<table border="0">
+  	  <tr>
+	    <td><a href="addr_poll_stats.html">Network Addresses</a></td>
+	    <td>MAC and IP addresses active on the Network</td>
+	  </tr>
+  	  <tr>
+	    <td><a href="dev_poll_stats.html">Devices</a></td>
+	    <td>Devices being polled for ARP caches and forwarding tables</td>
+	  </tr>
+  	  <tr>
+	    <td><a href="time_poll_stats.html">Poll Time</a></td>
+	    <td>Device polling time</td>
+	  </tr>
+	</table>
+	</div>
+    </div>
+ 
+<%perl>
+}elsif ( $page eq "DEVICE" && $m->request_comp->name ne "device_inventory.html" ) {
 	
 	$m->comp('device_inventory.html');
 
@@ -77,9 +101,8 @@ if ( $page eq "DEVICE" && $m->request_comp->name ne "device_inventory.html" ) {
 	</div>
 <%perl>
 } elsif ($page eq "CUSTOM") { 
-    
-    
-  }
+  
+}
 
 if ( $m->fetch_next ){
     $m->call_next;

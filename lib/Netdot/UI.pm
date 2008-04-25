@@ -1400,6 +1400,97 @@ sub build_device_topology_graph_html {
                     : "");
 }
 
+############################################################################
+=head2 rrd_graph - Create RRD graphs
+
+  Arguments:
+    type
+    title
+    period
+    img
+    web_path
+  Returns:
+    <IMG> html tag containing graph img path
+  Examples:
+    
+
+=cut
+sub rrd_graph{
+    my ($class, %argv) = @_;
+    die "UI::rrd_graph: Missing required arguments" 
+	unless ($argv{title} && $argv{period} && $argv{type} 
+		&& $argv{img} && $argv{web_path});
+    my $rrd_rel_path = Netdot->config->get('POLL_STATS_FILE_PATH');
+    my $netdot_path  = Netdot->config->get('NETDOT_PATH');
+    my $rrd_file     = "$netdot_path/$rrd_rel_path";
+    my $graph_path   = "img/graphs/$argv{img}";
+    my $out_file     = "$netdot_path/htdocs/" . $graph_path;
+    my @args = ( $out_file, "--imgformat=PNG", "--interlaced",
+		 "--title=$argv{title}", "--start=$argv{period}");
+    
+    if ( $argv{type} eq 'addr' ){
+	push @args, ("--vertical-label=Addresses",
+		     "DEF:ips=$rrd_file:ips:AVERAGE",
+		     "DEF:macs=$rrd_file:macs:AVERAGE",
+		     "VDEF:maxips=ips,MAXIMUM",
+		     "VDEF:minips=ips,MINIMUM",
+		     "VDEF:avgips=ips,AVERAGE",
+		     "VDEF:maxmacs=macs,MAXIMUM",
+		     "VDEF:minmacs=macs,MINIMUM",
+		     "VDEF:avgmacs=macs,AVERAGE",
+		     "COMMENT:         Maximum   Minimum   Average\\l",
+		     "AREA:macs#0033CC:MACs",
+		     "GPRINT:maxips:%6lg %s",
+		     "GPRINT:minips:%6lg %s",
+		     "GPRINT:avgips:%6lg %s\\l",
+		     "LINE:ips#00CC66:IPs ",
+		     "GPRINT:maxmacs:%6lg %s",
+		     "GPRINT:minmacs:%6lg %s",
+		     "GPRINT:avgmacs:%6lg %s");
+
+    }elsif ( $argv{type} eq 'dev' ){
+	push @args, ("--vertical-label=Devices",
+		     "DEF:fwt_devs=$rrd_file:fwt_devs:AVERAGE",
+		     "DEF:arp_devs=$rrd_file:arp_devs:AVERAGE",
+		     "VDEF:maxfwt=fwt_devs,MAXIMUM",
+		     "VDEF:minfwt=fwt_devs,MINIMUM",
+		     "VDEF:avgfwt=fwt_devs,AVERAGE",
+		     "VDEF:maxarp=arp_devs,MAXIMUM",
+		     "VDEF:minarp=arp_devs,MINIMUM",
+		     "VDEF:avgarp=arp_devs,AVERAGE",
+		     "COMMENT:         Maximum   Minimum   Average\\l",
+		     "AREA:fwt_devs#0033CC:FWT",
+		     "GPRINT:maxfwt:%6lg %s",
+		     "GPRINT:minfwt:%6lg %s",
+		     "GPRINT:avgfwt:%6lg %s\\l",
+		     "LINE:arp_devs#00CC66:ARP",
+		     "GPRINT:maxarp:%6lg %s",
+		     "GPRINT:minarp:%6lg %s",
+		     "GPRINT:avgarp:%6lg %s");
+	
+    }elsif ( $argv{type} eq 'time' ){
+	push @args, ("--vertical-label=Poll Time",
+		     "DEF:poll_time=$rrd_file:poll_time:AVERAGE",
+		     "VDEF:maxtime=poll_time,MAXIMUM",
+		     "VDEF:mintime=poll_time,MINIMUM",
+		     "VDEF:avgtime=poll_time,AVERAGE",
+		     "COMMENT:         Maximum   Minimum   Average\\l",
+		     "AREA:poll_time#FFCC00:FWT",
+		     "GPRINT:maxtime:%6lg %s",
+		     "GPRINT:mintime:%6lg %s",
+		     "GPRINT:avgtime:%6lg %s\\l");
+	
+    }else{
+	die("UI::rrd_graph: Unknown type: $argv{type}");
+    }
+    RRDs::graph(@args);
+    if ( my $e = RRDs::error ){
+	die("UI::rrd_graph: Could not graph RRD: $e");
+    }
+    my $img  = $argv{web_path} . $graph_path;
+    return "<img src=\"$img\" border=\"0\">";
+}
+
 =head1 AUTHORS
 
 Carlos Vicente, Nathan Collins, Aaron Parecki, Peter Boothe.
