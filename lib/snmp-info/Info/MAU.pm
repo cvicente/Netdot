@@ -164,6 +164,7 @@ sub mau_i_duplex_admin {
     my $partial = shift;
 
     my $mau_index = $mau->mau_index();
+    return unless defined $mau_index;
     my %rev_mau_index = reverse %$mau_index;
     my $mau_autostat = defined $partial ? $mau->mau_autostat($rev_mau_index{$partial}) : $mau->mau_autostat();
     my $mau_type_admin = defined $partial ? $mau->mau_type_admin($rev_mau_index{$partial}) : $mau->mau_type_admin();
