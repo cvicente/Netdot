@@ -635,7 +635,7 @@ sub get_stp_links {
     foreach my $ivid ( keys %ivs ){
 	my $iv = $ivs{$ivid};
 	if ( defined $iv->stp_state && $iv->stp_state =~ /^forwarding|blocking$/ ){
-	    if ( $iv->stp_des_bridge && int($iv->interface->device->physaddr) ){
+	    if ( $iv->stp_des_bridge && scalar $iv->interface->device ){
 		my $des_b     = $iv->stp_des_bridge;
 		my $des_p     = $iv->stp_des_port;
 		my $int       = $iv->interface->id;
