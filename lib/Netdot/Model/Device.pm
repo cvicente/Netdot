@@ -4198,11 +4198,22 @@ sub _get_airespace_ap_info {
 	$mac = $self->_oct2hex($mac);
 	$info->{interface}{$ethidx}{physaddr} = $mac;
     }
-    # Assign the IP and Netmask to the Ethernet interface
+
+    # Add the Null0 interface
+    my $nullidx = 4;
+    $info->{interface}{$nullidx}{name}   = 'Null0';
+    $info->{interface}{$nullidx}{number} = 4;
+
+    # Add the BVI interface
+    my $bviidx = 5;
+    $info->{interface}{$bviidx}{name}   = 'BVI1';
+    $info->{interface}{$bviidx}{number} = $bviidx;
+
+    # Assign the IP and Netmask to the BVI1 interface
     if ( my $ip = $hashes->{'airespace_ap_ip'}->{$idx}  ){
-	$info->{interface}{$ethidx}{ips}{$ip}{address} = $ip;
+	$info->{interface}{$bviidx}{ips}{$ip}{address} = $ip;
 	if ( my $mask = $hashes->{'bsnAPNetmask'}->{$idx}  ){
-	    $info->{interface}{$ethidx}{ips}{$ip}{mask} = $mask;
+	    $info->{interface}{$bviidx}{ips}{$ip}{mask} = $mask;
 	}
     }
     
