@@ -3622,21 +3622,21 @@ sub _get_poll_stats {
 
     ##############################################
     # IP addresses
-    my $sth1 = $dbh->prepare_cached('SELECT COUNT(id)
-                                     FROM   ipblock 
-                                     WHERE  version=4   AND
-                                            prefix=32   AND 
-                                            last_seen=?
-                                    ');
+    my $sth1 = $dbh->prepare('SELECT COUNT(id)
+                              FROM   ipblock 
+                              WHERE  version=4   AND
+                                     prefix=32   AND 
+                                     last_seen=?
+                             ');
 
     $sth1->execute($timestamp);
     my $total_ips= $sth1->fetchrow_array() || 0;
 
-    my $sth2 = $dbh->prepare_cached('SELECT COUNT(ip.id)
-                                     FROM   ipblock ip, interface i
-                                     WHERE  ip.interface=i.id AND
-                                            ip.last_seen=?
-                                    ');
+    my $sth2 = $dbh->prepare('SELECT COUNT(ip.id)
+                              FROM   ipblock ip, interface i
+                              WHERE  ip.interface=i.id AND
+                                     ip.last_seen=?
+                             ');
     $sth2->execute($timestamp);
     my $dev_ips= $sth2->fetchrow_array() || 0;
 
@@ -3644,26 +3644,26 @@ sub _get_poll_stats {
     
     ##############################################
     # MAC addresses
-    my $sth3 = $dbh->prepare_cached('SELECT COUNT(p.id)
-                                     FROM   physaddr p, interface i 
-                                     WHERE  i.physaddr=p.id AND
-                                            p.last_seen=?
-	                            ');
+    my $sth3 = $dbh->prepare('SELECT COUNT(p.id)
+                              FROM   physaddr p, interface i 
+                              WHERE  i.physaddr=p.id AND
+                                     p.last_seen=?
+	                     ');
     $sth3->execute($timestamp);
     my $num_int_macs = $sth3->fetchrow_array() || 0;
 
-    my $sth4 = $dbh->prepare_cached('SELECT COUNT(p.id)
-                                     FROM   physaddr p, device d
-                                     WHERE  d.physaddr=p.id AND
-                                            p.last_seen=?
-                                    ');
+    my $sth4 = $dbh->prepare('SELECT COUNT(p.id)
+                              FROM   physaddr p, device d
+                              WHERE  d.physaddr=p.id AND
+                                     p.last_seen=?
+                             ');
     $sth4->execute($timestamp);
     my $num_dev_macs = $sth4->fetchrow_array() || 0;
 
-    my $sth5 = $dbh->prepare_cached('SELECT COUNT(id)
-                                     FROM   physaddr
-                                     WHERE  last_seen=?
-                                    ');
+    my $sth5 = $dbh->prepare('SELECT COUNT(id)
+                              FROM   physaddr
+                              WHERE  last_seen=?
+                             ');
     $sth5->execute($timestamp);
     my $total_macs = $sth5->fetchrow_array() || 0;
 
@@ -3671,19 +3671,19 @@ sub _get_poll_stats {
 
     ##############################################
     # ARP Devices
-    my $sth6 = $dbh->prepare_cached('SELECT COUNT(id)
-                                     FROM   device
-                                     WHERE  last_arp=?
-                                    ');
+    my $sth6 = $dbh->prepare('SELECT COUNT(id)
+                              FROM   device
+                              WHERE  last_arp=?
+                             ');
     $sth6->execute($timestamp);
     $res{arp_devices} = $sth6->fetchrow_array() || 0;
 
     ##############################################
     # FWT Devices
-    my $sth7 = $dbh->prepare_cached('SELECT COUNT(id)
-                                     FROM   device
-                                     WHERE  last_fwt=?
-                                    ');
+    my $sth7 = $dbh->prepare('SELECT COUNT(id)
+                              FROM   device
+                              WHERE  last_fwt=?
+                             ');
     $sth7->execute($timestamp);
     $res{fwt_devices} = $sth7->fetchrow_array() || 0;
     
