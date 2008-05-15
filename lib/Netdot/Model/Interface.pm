@@ -639,7 +639,7 @@ sub speed_pretty {
 sub get_label{
     my ($self) = @_;
     $self->isa_object_method('get_label');
-    return unless $self->id;
+    return unless ( $self->id && $self->device );
     my $name = $self->name || $self->number;
     my $label = sprintf("%s [%s]", $self->device->get_label, $name);
     return $label;
