@@ -66,7 +66,12 @@ BEGIN {
 	$current_data{$oid}     = $self->id;
 	$current_data{modified} = $self->timestamp;
 	$current_data{modifier} = $ENV{REMOTE_USER} || "unknown";
-	$h_table->insert(\%current_data);
+	eval {
+	    $h_table->insert(\%current_data);
+	};
+	if ( my $e = $@ ){
+	    $logger->error("Could not insert history record for $table id ".$self->id);
+	}
 	1;
     }
 
