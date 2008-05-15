@@ -1067,6 +1067,78 @@ sub address_usage {
 }
 
 ##################################################################
+=head2 free_space - The free space in this ipblock
+
+  Arguments:
+    None
+  Returns:
+    an array (possibly empty) of Netaddr::IP objects that fill in all the
+    un-subnetted nooks and crannies of this IPblock
+  Examples:
+
+=cut
+
+sub free_space {
+    my $self = shift;
+    $self->isa_object_method('free_space');
+
+    sub find_first_one {
+        use bigint;
+        my $num = shift;
+        if ($num & 1 || $num == 0) { 
+            return 0; 
+        } else { 
+            return 1 + find_first_one($num >> 1); 
+        }
+    }
+
+    sub fill { 
+        # Fill from the given address to the beginning of the given netblock
+        # The block will INCLUDE the first address and EXCLUDE the final block
+        my ($from, $to) = @_;
+        use bigint;
+
+        if ($from->within($to)) {  # Base case
+            return ();
+        }
+        
+        # The first argument needs to be an address and not a subnet.
+        my $curr_addr = $from->numeric;
+        my $max_masklen = $from->masklen;
+        my $numbits = find_first_one($from);
+        my $mask = $max_masklen - $numbits;
+
+        my $subnet = NetAddr::IP->new($curr_addr, $mask);
+        my $newfrom = NetAddr::IP->new(
+                $subnet->broadcast->numeric + 1,
+                $max_masklen
+            );
+        return ($subnet, fill($newfrom, $to));
+    }
+
+    my @kids = map { $_->_netaddr } $self->children;
+    my $curr = $self->_netaddr;
+    my @freespace = ();
+    foreach my $kid (sort { $a->numeric <=> $b->numeric } @kids) {
+        my $curr_addr = NetAddr::IP->new($curr->addr);
+
+        if (!$kid->contains($curr_addr)) {
+            foreach my $space(&fill($curr_addr, $kid)) {
+                push @freespace, $space;
+                $curr += $space->num;
+            }
+        }
+
+        $curr += $kid->num();
+    }
+
+    my $end = $self->_netaddr->broadcast->numeric + 1;
+    map { push @freespace, $_ } &fill($curr, $end);
+
+    return @freespace;
+}
+
+##################################################################
 =head2 subnet_usage - Number of hosts covered by subnets in a container
 
   Arguments:
