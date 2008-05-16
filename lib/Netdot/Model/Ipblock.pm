@@ -1098,21 +1098,28 @@ sub free_space {
         my ($from, $to) = @_;
         use bigint;
 
-        if ($from->within($to)) {  # Base case
+        if ($from->within($to) || $from->numeric > $to->numeric ) {  # Base case
             return ();
         }
         
         # The first argument needs to be an address and not a subnet.
         my $curr_addr = $from->numeric;
         my $max_masklen = $from->masklen;
-        my $numbits = find_first_one($from);
+        my $numbits = find_first_one($curr_addr);
+
         my $mask = $max_masklen - $numbits;
 
         my $subnet = NetAddr::IP->new($curr_addr, $mask);
+        while ($subnet->contains($to)) {
+            $subnet = NetAddr::IP->new($curr_addr, ++$mask);
+        }
+
+
         my $newfrom = NetAddr::IP->new(
                 $subnet->broadcast->numeric + 1,
                 $max_masklen
             );
+
         return ($subnet, fill($newfrom, $to));
     }
 
@@ -1120,10 +1127,10 @@ sub free_space {
     my $curr = $self->_netaddr;
     my @freespace = ();
     foreach my $kid (sort { $a->numeric <=> $b->numeric } @kids) {
-        my $curr_addr = NetAddr::IP->new($curr->addr);
+        my $curr_addr = NetAddr::IP->new($curr->addr, 32);
 
         if (!$kid->contains($curr_addr)) {
-            foreach my $space(&fill($curr_addr, $kid)) {
+            foreach my $space (&fill($curr_addr, $kid)) {
                 push @freespace, $space;
                 $curr += $space->num;
             }
@@ -1132,8 +1139,9 @@ sub free_space {
         $curr += $kid->num();
     }
 
-    my $end = $self->_netaddr->broadcast->numeric + 1;
-    map { push @freespace, $_ } &fill($curr, $end);
+    my $end = NetAddr::IP->new($self->_netaddr->broadcast->numeric + 1, 32);
+    my $curr_addr = NetAddr::IP->new($curr->addr, 32);
+    map { push @freespace, $_ } &fill($curr_addr, $end);
 
     return @freespace;
 }
