@@ -33,7 +33,7 @@ $dividefreespace => 'max'
     ## Now output the HTML
     ######################################################################
 
-    sub printNetblock {
+    sub print_net_block {
         my ($class, $title, $width, $link, $cellsperrow) = @_;
 
         if ($width > $cellsperrow) {
@@ -87,10 +87,10 @@ EOF
 
         if ($needtr) { 
             $needtr = 0;
-            print '<tr class="outerrow"><th width="100">' . $title . '</th><td><table cellpadding="0" cellspacing="0"><tr>'; 
+            print '<tr class="outerrow"><td width="100">' . $title . '</td><td><table cellpadding="0" cellspacing="0"><tr>'; 
         }
 
-        printNetblock($class, $title, $width, $link, $cellsperrow);
+        &print_net_block($class, $title, $width, $link, $cellsperrow);
 
         if ($count >= $cellsperrow) { 
             $needtr = 1;

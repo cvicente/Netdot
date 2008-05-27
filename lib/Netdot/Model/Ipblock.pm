@@ -1075,7 +1075,7 @@ sub address_usage {
     an array (possibly empty) of Netaddr::IP objects that fill in all the
     un-subnetted nooks and crannies of this IPblock
   Examples:
-
+    my @freespace = sort $network->free_space;
 =cut
 
 sub free_space {
