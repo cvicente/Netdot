@@ -429,23 +429,25 @@ if ( my @parents = $o->get_ancestors ){
        push( @cell_data, $addr_tmp{'value'} );
 
        push( @field_headers, $ui->col_descr_link('Ipblock', 'status', 'Status: ')  );
-            my $status;
-            my @valid_block_status = qw ( Static Dynamic Reserved );
-            if ( my $sn = $o->status->name ){
-                if ( $edit eq "ipinfo" ){
-                   $status = qq(<select name="Ipblock__).$o->id.qq(__status">);
-                   foreach my $st ( @valid_block_status ){
-                      if ( $st eq $sn ){
-                         $status .= qq(<option value="$st" SELECTED>$st</option>);
-                      }else{
-                         $status .= qq(<option value="$st">$st</option>);
-                      }
-                   }
-                   $status .= "</select>";
-                }else{
-                   $status = qq(<strong>$sn</strong>);
-                }
-            }
+
+       my $status;
+       my @valid_block_status = qw ( Static Dynamic Reserved );
+       if ( my $sn = $o->status->name ){
+           if ( $edit eq "ipinfo" ){
+              $status = qq(<select name="Ipblock__).$o->id.qq(__status">);
+              foreach my $st ( @valid_block_status ){
+                 if ( $st eq $sn ){
+                    $status .= qq(<option value="$st" SELECTED>$st</option>);
+                 }else{
+                    $status .= qq(<option value="$st">$st</option>);
+                 }
+              }
+              $status .= "</select>";
+           }else{
+              $status = qq(<strong>$sn</strong>);
+           }
+       }
+
        push( @cell_data, $status );
 
        my @fields = ('description','info', 'first_seen','last_seen');
@@ -801,7 +803,9 @@ if ($o->status->name eq "Subnet") {
             Legend:
             <span class="ipaddr_available">Available</span>
             <span class="ipaddr_container">Container</span>
-            <span class="ipaddr_subnet">Subnet</span>
+            <span class="ipaddr_discovered">Discovered</span>
+            <span class="ipaddr_dynamic">Dynamic</span>
+            <span class="ipaddr_static">Static</span>
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
          	<a href="ip.html?id=<% $id %>">[List View]</a>
