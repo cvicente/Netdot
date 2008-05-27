@@ -15,7 +15,8 @@ $_action           => 'SHOW_GROUPS'
 $name              => undef
 $start             => undef
 $end               => undef
-$edit              => undef
+$editvlans         => undef
+$editgroups        => undef
 </%args>
 %
 %
@@ -23,7 +24,7 @@ $edit              => undef
 
 my $DEBUG = 0;
 my $o;
-my @list;
+my (@grouplist, @vlanlist);
 
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
@@ -60,31 +61,55 @@ if( $_action eq "INSERT" && !$o ){
 %#######################################################################################
 %if( $_action eq "SHOW_GROUPS" && !$o ){
     
-%    @list = VlanGroup->retrieve_all;
+%    @grouplist = VlanGroup->retrieve_all;
     
       <div class="container">
           <div class="containerheadleft">VLAN Groups:</div>
 	  <div class="containerheadright">
-%	  if ( $edit ){
+%	  if ( $editgroups ){
                &nbsp;
-%	  }elsif ( scalar(@list) ){
-              <a href="vlan.html?$action=<% $_action %>&edit=1">[edit]</a>
+%	  }elsif ( scalar(@grouplist) ){
+              <a href="vlan.html?$action=<% $_action %>&editgroups=1">[edit]</a>
 %	  }else{
 	      &nbsp;
 %         }
           </div>
           <div class="containerbody">
-%             if ( @list ){
-%	          if ( $edit ){
-                      <& /generic/sortresults.mhtml, object => \@list, page=>'view.html', withedit=>1  &>
+%             if ( @grouplist ){
+%	          if ( $editgroups ){
+                      <& /generic/sortresults.mhtml, object => \@grouplist, page=>'view.html', withedit=>1  &>
 %                 }else{
-                      <& /generic/sortresults.mhtml, object => \@list, page=>'view.html', withedit=>0  &>
+                      <& /generic/sortresults.mhtml, object => \@grouplist, page=>'view.html', withedit=>0  &>
 %                 }
 %             }else{
                   No VLAN Groups Defined
 %             }
           </div>
       </div>
+
+%     @vlanlist = Vlan->search(vlangroup=>0);
+      <div class="container">
+          <div class="containerheadleft">Ungrouped VLANs:</div>
+	  <div class="containerheadright">
+%	  if ( $editvlans ){
+               &nbsp;
+%	  }elsif ( scalar(@vlanlist) ){
+              <a href="vlan.html?$action=<% $_action %>&editvlans=1">[edit]</a>
+%	  }else{
+	      &nbsp;
+%         }
+          </div>
+          <div class="containerbody">
+%	          if ( $editvlans ){
+                      <& /generic/sortresults.mhtml, object => \@vlanlist, page=>'view.html', withedit=>1  &>
+%                 }else{
+                      <& /generic/sortresults.mhtml, object => \@vlanlist, page=>'view.html', withedit=>0  &>
+%                 }
+
+          </div>
+      </div>
+
+
 %}
 
 </div> <!-- End sectiondetail -->
