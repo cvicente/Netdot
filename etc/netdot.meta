@@ -99,19 +99,14 @@ $meta = {
     },
     description => 'Device ARP Cache',
     has_history => 0,
-    index => [],
+    index => [ ['device'], ['tstamp'] ],
     isjoin => '0',
     label => [
       'tstamp',
       'device'
     ],
     primary_key => 'id',
-    unique => [
-      [
-        'device',
-        'tstamp'
-      ]
-    ],
+    unique => [ ['device', 'tstamp'] ],
     views => {
       all => [
         'tstamp',
@@ -188,7 +183,6 @@ $meta = {
     },
     description => 'ARP Cache Entry',
     has_history => 0,
-    index => [],
     index => [ ['arpcache'], ['interface'], ['physaddr'], ['ipaddr'] ],
     isjoin => '0',
     label => [
@@ -3183,19 +3177,14 @@ $meta = {
     },
     description => 'Bridge Forwarding Table.  One of these is created every time a Device is queried.  Entries in these tables contain physical addresses and the ports where they have been seen.',
     has_history => 0,
-    index => [],
+    index => [ ['device'], ['tstamp'] ],
     isjoin => '0',
     label => [
       'tstamp',
       'device'
     ],
     primary_key => 'id',
-    unique => [
-      [
-        'device',
-        'tstamp'
-      ]
-    ],
+    unique => [ ['device','tstamp'] ],
     views => {
       all => [
         'tstamp',
@@ -3266,8 +3255,7 @@ $meta = {
       'physaddr'
     ],
     primary_key => 'id',
-    unique => [
-    ],
+    unique => [],
     views => {
       all => [
         'interface',
@@ -3802,7 +3790,7 @@ $meta = {
         description => 'MAC address of this Interface',
         length => '',
         linksto => {
-          cascade => 'Delete',
+          cascade => 'Nullify',
           method => 'interfaces',
           table => 'PhysAddr'
         },
@@ -4744,14 +4732,7 @@ $meta = {
     },
     description => 'A physical or MAC address',
     has_history => 0,
-    index => [
-      [
-        'first_seen'
-      ],
-      [
-        'last_seen'
-      ]
-    ],
+    index => [ ['first_seen' ], ['last_seen'] ],
     isjoin => '0',
     label => [
       'address'
@@ -4952,18 +4933,13 @@ $meta = {
         tag => 'Auto Update?',
         type => 'bool'
       },
-      contactlist => {
+      expiration => {
         default => '',
-        description => '',
+        description => 'Expiration Date for this Record (YYYY-MM-DD)',
         length => '',
-        linksto => {
-          cascade => 'Nullify',
-          method => 'resourcerecords',
-          table => 'ContactList'
-        },
-        nullable => 0,
-        tag => "Contact List",
-        type => 'integer'
+        nullable => 1,
+        tag => 'Expiration Date',
+        type => 'date'
       },
       id => {
         default => '',
@@ -4973,20 +4949,20 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
       name => {
         default => '',
         description => 'The identifier for this Record',
         length => '128',
         nullable => 0,
         tag => 'Name',
-        type => 'varchar'
-      },
-      origin => {
-        default => '',
-        description => '',
-        length => '128',
-        nullable => 1,
-        tag => 'Origin',
         type => 'varchar'
       },
       zone => {
@@ -5005,36 +4981,26 @@ $meta = {
     },
     description => 'DNS Resource Record',
     has_history => 0,
-    index => [
-      [
-        'origin'
-      ]
-    ],
+    index => [ ['name'], ['zone'], ['expiration'] ],
     isjoin => '0',
     label => [
       'name',
       'zone',
     ],
     primary_key => 'id',
-    unique => [
-      [
-        'zone',
-        'name'
-      ]
-    ],
+    unique => [ ['zone', 'name'] ],
     views => {
       all => [
         'name',
         'zone',
-        'origin',
         'active',
         'auto_update',
-        'contactlist'
+        'expiration',
+        'info',
       ],
       brief => [
         'name',
         'zone',
-        'origin'
       ]
     }
   },
