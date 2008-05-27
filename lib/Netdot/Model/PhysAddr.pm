@@ -668,6 +668,7 @@ sub _canonicalize {
 #
 sub format_address {
     my ($self, $address) = @_;
+    return unless $address;
     $address =~ s/[:\-\.]//g;
     $address = uc($address);
     return $address;
