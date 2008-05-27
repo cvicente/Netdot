@@ -76,6 +76,7 @@ testdeps:
 	@perl -M'CGI 3.20' \
 	     -M'Ima::DBI 0.35' \
 	     -M'Class::DBI 3.0.10' \
+             -MClass::DBI::AbstractSearch
 	     -MApache2::Request  \
 	     -M'HTML::Mason 1.31' \
 	     -M'Apache::Session 1.6' \
