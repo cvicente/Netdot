@@ -144,6 +144,7 @@ sub get_tables {
   Arguments:
     table     - Meta::Table object
     base      - Our main Class::DBI subclass (base for other subclasses)
+    usepkg    - Arrayref with packages to 'use'
     namespace - Classes will be defined under this namespace
   Returns:
     Array containing: Package name, Class definition
@@ -164,6 +165,9 @@ sub cdbi_class{
     $package = ($argv{namespace}) ? $argv{namespace}."::".$tname : $tname;
     $code .= "package ".$package.";\n";
     $code .= "use base '$argv{base}';\n";
+    foreach my $pkg ( @{$argv{usepkg}} ){
+	$code .= "use $pkg;\n";
+    }
     $tname = lc($tname);
     $code .= "__PACKAGE__->table( '$tname' );\n";
 	

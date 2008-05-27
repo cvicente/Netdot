@@ -104,6 +104,7 @@ BEGIN {
 	}
 	($package, $code) = __PACKAGE__->meta->cdbi_class(table     => $table,
 							  base      => $base,
+							  usepkg    => ['Class::DBI::AbstractSearch'],
 							  namespace => 'Netdot::Model',
 							  );
 	$subclasses{$package} = $code;

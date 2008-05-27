@@ -1961,17 +1961,13 @@ sub info_update {
 	if ( $mac = PhysAddr->search(address=>$address)->first ){
 	    # The address exists
 	    # (may have been discovered in fw tables/arp cache)
-	    $mac->update({last_seen=>$self->timestamp});
+	    $mac->update({static=>1});
 	    $logger->debug(sub{"$host: Using existing $address as base bridge address"});
 	    $devtmp{physaddr} = $mac->id;
 	}else{
 	    # address is new.  Add it
-	    my %mactmp = (address    => $address,
-			  first_seen => $self->timestamp,
-			  last_seen  => $self->timestamp, 
-		);
 	    eval {
-		$mac = PhysAddr->insert(\%mactmp);
+		$mac = PhysAddr->insert({static=>1});
 	    };
 	    if ( my $e = $@ ){
 		$logger->debug(sprintf("%s: Could not insert base MAC: %s: %s",

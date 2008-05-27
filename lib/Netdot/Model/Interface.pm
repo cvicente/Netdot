@@ -289,15 +289,18 @@ sub snmp_update {
 	$iftmp{physaddr} = 0;
     }else{
 	my $addr = $newif->{physaddr};
-	my $physaddr;
-	eval {
-	    $physaddr = PhysAddr->find_or_create({address=>$addr}); 
-	};
-	if ( my $e = $@ ){
-	    $logger->debug(sprintf("%s: Could not insert PhysAddr %s: %s", 
-				   $label, $addr, $e));
-	}else{
+	my $physaddr = PhysAddr->search(address=>$addr)->first;
+	if ( $physaddr ){
+	    $physaddr->update({last_seen=>$self->timestamp, static=>1});
 	    $iftmp{physaddr} = $physaddr->id;
+	}else{
+	    eval {
+		$physaddr = PhysAddr->insert({address=>$addr, static=>1}); 
+	    };
+	    if ( my $e = $@ ){
+		$logger->debug(sprintf("%s: Could not insert PhysAddr %s: %s", 
+				       $label, $addr, $e));
+	    }
 	}
     }
     

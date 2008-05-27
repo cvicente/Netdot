@@ -6,11 +6,11 @@
 
 use lib "<<Make:LIB>>";
 use Netdot::Model;
-use Netdot::Util::Misc;
 use Getopt::Long qw(:config no_ignore_case bundling);
+use Log::Log4perl::Level;
 use strict;
 
-my $DEBUG       = 0;
+my $_DEBUG      = 0;
 my $HELP        = 0;
 my $VERBOSE     = 0;
 my $EMAIL       = 0;
@@ -24,31 +24,30 @@ my $output;
 
 my $usage = <<EOF;
  usage: $0   -T|--type <history|address_tracking>
-           [ -d|--num_months <number> ] [ -n|--num_history <number> ] 
-           [ -v|--verbose ] [ -g|--debug ] 
-           [ -m|--send_mail] [-f|--from] | [-t|--to] | [-s|--subject]
-           
+    [ -d|--num_months <number> ] [ -n|--num_history <number> ] 
+    [ -g|--debug ] 
+    [ -m|--send_mail] [-f|--from] | [-t|--to] | [-s|--subject]
+    
     Deletes old items from database as necessary.
-
-    * For tables with corresponding "history" tables:
-
-        We want to keep NUM_DAYS worth of history for every record. But
-       if a record doesn't change at all during the last NUM_DAYS, we don't 
-       want to lose the history that does exist for it from before that time. 
-       To compromise, we will only check the history tables for old data 
-       if there are more than NUM_HISTORY items for a record.  If there are 
-       more than NUM_HISTORY items for a record, then we drop anything older 
-       than NUM_DAYS.
-
+    
+    * For "history" tables:
+    
+    We want to keep NUM_DAYS worth of history for every record. But
+    if a record doesnt change at all during the last NUM_DAYS, we dont 
+    want to lose the history that does exist for it from before that time. 
+    To compromise, we will only check the history tables for old data 
+    if there are more than NUM_HISTORY items for a record.  If there are 
+    more than NUM_HISTORY items for a record, then we drop anything older 
+    than NUM_DAYS.
+    
     * For address tracking tables:
     
-        We delete records that are older than NUM_DAYS.
-
-           
-    -T, --type                     <history|address_tracking) History tables or address tracking tables
+    We delete records that are older than NUM_DAYS.
+    
+    
+    -T, --type                     <history|address_tracking> History tables or address tracking tables
     -d, --num_days                 Number of days worth of items to keep (default: $NUM_DAYS);
     -n, --num_history              Number of history items to keep for each record (default: $NUM_HISTORY);
-    -v, --verbose                  Print informational output
     -g, --debug                    Print (lots of) debugging output
     -m, --send_mail                Send output via e-mail instead of to STDOUT
     -f, --from                     e-mail From line (default: $FROM)
@@ -57,29 +56,48 @@ my $usage = <<EOF;
     
 EOF
     
-# handle cmdline args
-my $result = GetOptions( "T|type=s"        => \$TYPE,
-                         "d|num_days=i"    => \$NUM_DAYS,
-			 "n|num_history=i" => \$NUM_HISTORY,
-			 "m|send_mail"     => \$EMAIL,
-			 "f|from:s"        => \$FROM,
-			 "t|to:s"          => \$TO,
-			 "s|subject:s"     => \$SUBJECT,
-			 "h|help"          => \$HELP,
-			 "v|verbose"       => \$VERBOSE,
-			 "g|debug"         => \$DEBUG,
-			 );
 
-if ( ! $result || !$TYPE ) {
-    print $usage;
-    die "Error: Problem with cmdline args\n";
-}
+# handle cmdline args
+my $result = GetOptions( 
+    "T|type=s"        => \$TYPE,
+    "d|num_days=i"    => \$NUM_DAYS,
+    "n|num_history=i" => \$NUM_HISTORY,
+    "m|send_mail"     => \$EMAIL,
+    "f|from:s"        => \$FROM,
+    "t|to:s"          => \$TO,
+    "s|subject:s"     => \$SUBJECT,
+    "h|help"          => \$HELP,
+    "g|debug"         => \$_DEBUG,
+    );
+
 if ( $HELP ) {
     print $usage;
     exit;
 }
 
-&debug(sprintf("%s: Executing with: T=\"%s\", d=%d, n=%s\n", $0, $TYPE, $NUM_DAYS, $NUM_HISTORY));
+if ( ! $result || ! $TYPE ) {
+    print $usage;
+    die "Error: Problem with cmdline args\n";
+}
+
+# Add a log appender depending on the output type requested
+my $logger = Netdot->log->get_logger('Netdot::Model');
+my ($logstr, $logscr);
+if ( $EMAIL ){
+    $logstr = Netdot::Util::Log->new_appender('String', name=>'prune_db.pl');
+    $logger->add_appender($logstr);
+}else{
+    $logscr = Netdot::Util::Log->new_appender('Screen', stderr=>0);
+    $logger->add_appender($logscr);
+}
+
+#   Set logging level to debug
+#   Notice that $DEBUG is imported from Log::Log4perl
+if ( $_DEBUG ){
+    $logger->level($DEBUG);
+}
+
+$logger->debug(sprintf("%s: Executing with: T=\"%s\", d=%d, n=%s", $0, $TYPE, $NUM_DAYS, $NUM_HISTORY));
 
 # Get DB handle 
 my $dbh = Netdot::Model::db_Main();
@@ -88,12 +106,10 @@ my $dbh = Netdot::Model::db_Main();
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime (time-($NUM_DAYS*24*60*60));
 $year += 1900; $mon += 1;
 my $sqldate = sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year,$mon,$mday,$hour,$min,$sec);
-&debug(sprintf("NUM_DAYS(%d) ago was : %s\n", $NUM_DAYS, $sqldate));
+$logger->debug(sprintf("NUM_DAYS(%d) ago was : %s", $NUM_DAYS, $sqldate));
 
 my $start = time;
-
 my %rows_deleted;
-my $total_deleted;
 
 if ( $TYPE eq 'history' ){
     my @tables;
@@ -105,7 +121,7 @@ if ( $TYPE eq 'history' ){
 	die "Cannot determine table for history able $tablename\n" unless $orig;
 	my $table_id_field = lc($orig)."_id";
 
-	&debug(sprintf("Checking in %s \n", $tablename));
+	$logger->debug("Checking in $tablename");
 
 	my $r = 0;
 	# for each unique table_id in the history table
@@ -113,7 +129,7 @@ if ( $TYPE eq 'history' ){
 	$q->execute();
 	while (my ($table_id, $count) = $q->fetchrow_array()) {
 	    if ( $count > $NUM_HISTORY ) {
-		&debug(sprintf("%s record %s has %s history items\n", $tablename, $table_id, $count));
+		$logger->info(sprintf("%s record %s has %s history items", $tablename, $table_id, $count));
 		###################################
 		# Deletes history items that are older than NUM_DAYS.
 		# Note that this is run inside an 'if' statement ($count > $NUM_HISTORY), so
@@ -125,70 +141,76 @@ if ( $TYPE eq 'history' ){
 	}
 	if ( $r ){
 	    $rows_deleted{$tablename} = $r;
-	    if ( ($VERBOSE || $DEBUG) ){
-		printf("%d rows deleted\n", $r);
-	    }
-	    $total_deleted += $r;
 	}
     }
-    $output .= sprintf("A total of %d rows deleted from history tables\n", 
-		       $total_deleted) if (($VERBOSE || $DEBUG) && $total_deleted);
     
 }elsif ( $TYPE eq 'address_tracking' ){
 
-    my $r1 = $dbh->do("DELETE p,a,f FROM physaddr p, arpcacheentry a, fwtableentry f
-                       WHERE p.static=0 AND p.last_seen < '$sqldate'
-                       AND a.physaddr=p.id AND f.physaddr=p.id");
-    
-    my $r2 = $dbh->do("DELETE ip,a FROM ipblock ip, arpcacheentry a, ipblockstatus s
-                       WHERE s.name='Discovered' AND ip.status=s.id 
-                       AND ip.last_seen < '$sqldate' AND a.ipaddr=ip.id ");
-    
-    my $r3 = $dbh->do("DELETE a,e FROM arpcache a, arpcacheentry e
-                       WHERE a.tstamp < '$sqldate'
-                       AND e.arpcache=a.id");
-	
-    my $r4 = $dbh->do("DELETE f,e FROM fwtable f, fwtableentry e
-                       WHERE f.tstamp < '$sqldate'
-                       AND e.fwtable=f.id");
+    my $num_arpe = ArpCacheEntry->count_all;
+    my $num_fte  = FWTableEntry->count_all;
 
-    $total_deleted = $r1 + $r2 + $r3 + $r4;
-    if ( $total_deleted ){
-	foreach my $t (qw /physaddr arpcache arpcacheentry fwtable fwtableentry/){
-	    $rows_deleted{$t} = 1;
-	}
+    ###########################################################################################
+    # Delete non-static MAC addresses
+    # Note: This will also delete FWTableEntry, ArpCacheEntry objects, etc.
+    my @macs = PhysAddr->search_where(static=>0, last_seen=>{ '<', $sqldate } );
+    $rows_deleted{physaddr} = scalar @macs;
+    foreach my $mac ( @macs ){
+	$logger->debug(sprintf("Deleting PhysAddr id %d", $mac->id));
+	$mac->delete;
     }
 
-    $output .= sprintf("A total of %d rows deleted from address tracking tables\n", 
-		       $total_deleted) if (($VERBOSE || $DEBUG) && $total_deleted);
-    
+    ###########################################################################################
+    # Delete 'Discovered' IP addresses
+    # Note: This will also delete ArpCache entries, etc.
+    my $ip_status = IpblockStatus->search(name=>'Discovered')->first;
+    die "Can't retrieve IpblockStatus 'Discovered'" 
+	unless $ip_status;
+    my @ips = Ipblock->search_where(status=>$ip_status, last_seen=>{ '<', $sqldate });
+    $rows_deleted{ipblock} = scalar @ips;
+    foreach my $ip ( @ips ){
+	$logger->debug(sprintf("Deleting Ipblock id %d", $ip->id));
+	$ip->delete;
+    }
+
+    $rows_deleted{arpcacheentry} = ($num_arpe - ArpCacheEntry->count_all);
+    $rows_deleted{fwtableentry}  = ($num_fte  - FWTableEntry->count_all);
+
+    ###########################################################################################
+    # Delete FWTable and ARPCache objects
+    my @fwts = FWTable->search_where(tstamp=>{ '<', $sqldate });
+    $rows_deleted{fwtable} = scalar @fwts;
+    foreach my $fwt ( @fwts ){
+	$logger->debug(sprintf("Deleting FWTable id %d", $fwt->id));
+	$fwt->delete;
+    }
+
+    my @arpcs = ArpCache->search_where(tstamp=>{ '<', $sqldate });
+    $rows_deleted{arpcache} = scalar @arpcs;
+    foreach my $arpc ( @arpcs ){
+	$logger->debug(sprintf("Deleting ArpCache id %d", $arpc->id));
+	$arpc->delete;
+    }
+
 }else{
     print $usage;
     die "Unknown type: $TYPE\n";
 }
  
-if ( $total_deleted > 0 ) {
-    foreach my $table ( keys %rows_deleted ){
+foreach my $table ( keys %rows_deleted ){
+    if ( $rows_deleted{$table} ){
+	$logger->info(sprintf("A total of %d %s records deleted", 
+			      $rows_deleted{$table}, $table));
 	# now optimize the table to free up the space from the deleted records
-	printf("Freeing deleted space in %s\n", $table) if $DEBUG;
+	$logger->debug("Freeing deleted space in $table");
 	$dbh->do("OPTIMIZE TABLE $table");
     }
 }
 
-my $end = time;
-$output .= sprintf ("Completed in %d seconds\n", ($end-$start)) if $VERBOSE;
+$logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
 
 if ( $EMAIL ){
-    my $misc = Netdot::Util::Misc->new();
-    $misc->send_mail(subject => $SUBJECT, 
-		     to      => $TO,
-		     from    => $FROM,
-		     body    => $output );
-}else{
-    print STDOUT $output;
-}
-
-sub debug {
-    my $msg = shift @_;
-    print $msg if $DEBUG;
+    Netdot->send_mail(subject => $SUBJECT, 
+		      to      => $TO,
+		      from    => $FROM,
+		      body    => $logstr->string );
 }
