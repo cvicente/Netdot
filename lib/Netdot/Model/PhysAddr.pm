@@ -653,6 +653,8 @@ sub _canonicalize {
     my $self = shift;
     my $class = ref($self) || $self;
     my $address = ($self->_attrs('address'))[0];
+    $self->throw_user("Missing address") 
+	unless $address;	
     $address = $self->format_address($address);
     unless ( $class->validate( $address ) ){
 	$self->throw_user("Invalid Address: $address");	
@@ -668,7 +670,8 @@ sub _canonicalize {
 #
 sub format_address {
     my ($self, $address) = @_;
-    return unless $address;
+    $self->throw_user("Missing address")
+	unless $address;
     $address =~ s/[:\-\.]//g;
     $address = uc($address);
     return $address;
