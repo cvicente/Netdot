@@ -1098,7 +1098,8 @@ sub free_space {
         my ($from, $to) = @_;
         use bigint;
 
-        if ($from->within($to) || $from->numeric > $to->numeric ) {  # Base case
+        if ($from->within($to) || $from->numeric >= $to->numeric ) {  
+            # Base case
             return ();
         }
         
@@ -1123,24 +1124,25 @@ sub free_space {
         return ($subnet, fill($newfrom, $to));
     }
 
+    use bigint;
     my @kids = map { $_->_netaddr } $self->children;
-    my $curr = $self->_netaddr;
+    my $curr = $self->_netaddr->numeric;
     my @freespace = ();
     foreach my $kid (sort { $a->numeric <=> $b->numeric } @kids) {
-        my $curr_addr = NetAddr::IP->new($curr->addr, 32);
+        my $curr_addr = NetAddr::IP->new($curr, 32);
+        die "$curr_addr $kid" unless ($kid->numeric >= $curr_addr->numeric);
 
         if (!$kid->contains($curr_addr)) {
             foreach my $space (&fill($curr_addr, $kid)) {
                 push @freespace, $space;
-                $curr += $space->num;
             }
         }
 
-        $curr += $kid->num();
+        $curr = $kid->broadcast->numeric + 1;
     }
 
     my $end = NetAddr::IP->new($self->_netaddr->broadcast->numeric + 1, 32);
-    my $curr_addr = NetAddr::IP->new($curr->addr, 32);
+    my $curr_addr = NetAddr::IP->new($curr, 32);
     map { push @freespace, $_ } &fill($curr_addr, $end);
 
     return @freespace;

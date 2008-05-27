@@ -3,26 +3,13 @@
 </%doc>
 
 <%args>
-$network         => undef
+$network
 $rowsize         => 22
 $dividefreespace => 'max'
 </%args>
 
 
 <%perl>
-    my %used;
-    my %names;
-    my %iplinks;
-    my @start_cells;  # start a table cell on these indices
-    my @end_cells;    # start a table cell on these indices
-    my @start_addrs;
-    my @end_addrs;
-    my @used_addrs;   # list of addresses that are not free         (128.223.112.0/28)
-    my @cell_info;    # hold information about a cell in here       (sample data:)
-                      # $c[x][0] = address (short form for display) (112.0/28)
-                      #       1  = status                           (Container)
-                      #       2  = span                             (32)
-                      #       3  = full address (for calculations)  (128.223.112.0/28)
     my $mask = $network->prefix;
     my $network_addr = NetAddr::IP->new($network->address,$network->prefix); # the address of the start of the subnet
 
@@ -30,399 +17,88 @@ $dividefreespace => 'max'
     my $maxrowsize;
 
     # set the visual size of the table on the screen:
-    my $numcols = 128;             # should remain fixed at 128
-    my $table_width = 960;         # at some point I'd like to set this dynamically based on a variable that javascript returns.
-                                   # This number is really only a guideline, the actual width of the table is set by:
-                                   # int($table_width/($numcols+1)) * $numcols
-    my $cell_width = int($table_width/($numcols+1));  # cell width in pixels
-
-    $rowsize = int($rowsize);      # don't allow floating point numbers to be entered. that would be bad
+    $rowsize = int($rowsize);
 
     # there should never be more /32's in the row than there are in the subnet
     $rowsize = ($rowsize>$mask?$rowsize:$mask);
-    
-    my $scale = Ipblock->numhosts($rowsize) / $numcols;     # number of /32's per table cell (should be a power of 2)
+    my $cellsperrow = 2**(32-$rowsize);
 
-    # limit $scale so that we never have one cell be smaller than a /32
-    if( $scale < 1 ) { 
-        $scale = 1;
-        $rowsize = Ipblock->subnetmask($numcols*$scale);
-    }
+    my $maxmask = $rowsize + 10;
+    $maxmask = $maxmask > 32 ? 32 : $maxmask;
 
-    $maxrowsize = Ipblock->subnetmask($numcols);
-
-    # if we're dividing the free space into smaller blocks, set the scale, rowsize, max and minrowsize appropriately
-    if( $dividefreespace ne 'max' ) {
-        if( $dividefreespace > Ipblock->subnetmask($scale) ) {
-            $scale = Ipblock->numhosts($dividefreespace);
-            #$scale = max($scale, 2);
-            $rowsize = Ipblock->subnetmask($scale * $numcols);
-            $minrowsize = $rowsize;
-        }
-    }
-
+    my @children = sort { $a->_netaddr <=> $b->_netaddr } $network->children;
+    my @freespace = sort $network->free_space;
 
     ######################################################################
-    ## First, pull out all children from the database.
+    ## Now output the HTML
     ######################################################################
-    my @children;  
-    if (scalar( @children = $network->children() )){
 
-        # get the sizes of all the children and determine what scale we should 
-        #   use to show them, so that there are never two blocks per cell
-        my $minsubnet = 0;
-        foreach my $o ( @children ) {
-            if( $o->prefix > $minsubnet ) {
-                $minsubnet = $o->prefix;
+    sub printNetblock {
+        my ($class, $title, $width, $link, $cellsperrow) = @_;
+
+        if ($width > $cellsperrow) {
+            my $height = $width / $cellsperrow * 15;
+            print <<EOF
+<td title="$title"><a href="$link" class="$class" style="display: block; width: $cellsperrow; border: 0; height: $height"><table>
+EOF
+;
+            for (my $i = 0; $i < $width / $cellsperrow; $i++) {
+                print '<tr><td></td></tr>';
             }
-        }
-        if( $minsubnet > Ipblock->subnetmask($scale) ) {
-            $minrowsize = Ipblock->subnetmask(Ipblock->numhosts($minsubnet)*$numcols);
-            $rowsize = $minrowsize;
-            $scale = Ipblock->numhosts($rowsize) / $numcols;
-            #print "But! There are some /$minsubnet blocks in this list!<br>";
-            #print "I'm going to change the scale to $scale, so now, one row is a /$rowsize. There are $scale /32's per cell, so each cell is a /".(32 - (log($scale)/log(2)))."<br>";
-        }
-
-        foreach my $o ( @children ) {
-            $used{ $o->address } = 1;
-            my $dnsname;
-        	if ( my $rraddr = ($o->arecords)[0] ){
-		    $dnsname = $rraddr->rr->get_label;
-        	}
-
-            $names{ $o->address.'/'.$o->prefix } = $o->status->name;  # default to show status first
-            $iplinks{ $o->address.'/'.$o->prefix } = $o->id;
-
-            if( $o->status->name =~ /^Container|Reserved|Subnet$/ ) {
-                if( $o->description ) {
-                    $names{ $o->address.'/'.$o->prefix } = $o->description;
-                }
-	    }
-
-            my $ip = NetAddr::IP->new($o->address, $o->prefix);     # this ip address
-
-            my $ipaddr = Ipblock->shorten(ipaddr=>$ip->addr, mask=>$mask);
-
-            my $start = $ip->numeric - $network_addr->numeric;  # offset of this ip address from the start of the subnet
-
-            my @tmp = ();
-            $tmp[0] = $ipaddr;     # shortened version of ip address to display in table cell
-            $tmp[1] = $o->status->name; # status of block
-            $tmp[2] = (($start + (2**(32-$o->prefix)))/$scale - 1) - ($start/$scale) + 1; #   = end-start+1  (number of columns to span)
-            $tmp[3] = $ip->cidr;   # full version of the ip address, used for calculations
-            $cell_info[($start/$scale)] = \@tmp;
-
-            push(@start_cells, $start / $scale);
-            push(@end_cells, ($start + (2**(32-$o->prefix)))/$scale - 1);  # end position
-
-            push(@start_addrs, NetAddr::IP->new($ip->cidr));
-            push(@end_addrs, NetAddr::IP->new($ip->broadcast));
-
-            push(@used_addrs, $ip);
-        }
-    }    
-    ######################################################################
-
-    # we just read all the data out of the database, and stored data into:
-    # @start_cells  = cell numbers to start cells on
-    # @end_cells    = cell numbers to end cells on
-    # @cell_info    = array of info about cell for display
-
-    # now we need to fill in the empty space where there are no database entries.
-    # default to fill empty space with maximum size subnets, option to specify subnet size to show
-
-    ######################################################################
-    ## Fill any empty space in the container with links to add a subnet there
-    ######################################################################
-
-    my $start_address = NetAddr::IP->new($network->address.'/'.$network->prefix);
-    my $end_address = NetAddr::IP->new($start_address->broadcast);
-
-    # check for empty space prior to any existing blocks
-    if( @start_addrs > 0 ) {  # only check if there's actually stuff there
-        my $numhosts = $start_addrs[0]->numeric - $start_address->numeric;
-        my $newbaseaddr = $start_address->numeric;
-        fill_space($dividespace, $numhosts, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
-    }
-
-    # check for empty space in between any existing blocks
-    for( my $i=0; $i<@start_addrs-1; $i++ ) {
-        my $numhosts = $start_addrs[$i+1]->numeric - $end_addrs[$i]->numeric - 1;
-        my $newbaseaddr = $end_addrs[$i]->numeric + 1;
-        fill_space($dividespace, $numhosts, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
-    }
-
-    # check for empty space after any existing blocks
-    if( @end_addrs > 0 ) {  # only check if there's actually stuff there
-        my $numhosts = $end_address->numeric - $end_addrs[@end_addrs-1]->numeric;
-        my $newbaseaddr = $end_addrs[@end_addrs-1]->numeric + 1;
-        fill_space($dividespace, $numhosts, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
-    }
-
-    # container is completely empty, fill all space
-    # (if any of the three above conditions passed, this will not)
-    if( @start_addrs == 0 && @end_addrs == 0 ) {
-        my $numhosts = $end_address->numeric - $start_address->numeric + 1;
-        my $newbaseaddr = $start_address->numeric;
-        fill_space($dividespace, $numhosts, $newbaseaddr, $numcols, $scale, $dividefreespace, \%names, \@cell_info, \@start_cells, \@end_cells, $network_addr);
-    }
-
-
-    sub fill_space {
-        my ($dividespace, $numhosts, $newbaseaddr, $numcols, $scale, $dividefreespace, $names, $cell_info, $start_cells, $end_cells, $network_addr) = @_;
-
-        if( $numhosts > 0 ) {
-            # we've got room for $numhosts hosts. how to break this up?
-            my $subnetsize;
-            if( $dividefreespace eq "max" ) {
-                # what is the biggest subnet that can fit into $numhosts hosts?
-                $subnetsize = $umath->powerof2lo($numhosts);
-            } else {
-                $subnetsize = Ipblock->numhosts($dividefreespace);
-            }
-            # this starts dividespace going with the initial value of subnetsize. it will look for as many subnetsize subnets it can
-            #   find, and when it runs out of room, searches for subnets of size subnetsize/2.
-            $dividespace->($dividespace, $newbaseaddr, $newbaseaddr+$numhosts, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, \$network_addr);
-        }
-    }
-    ######################################################################
-
-
-    ######################################################################
-    ## Now output the HTML table
-    ######################################################################
-
-    @start_cells = sort{$a <=> $b}(@start_cells);
-    @end_cells = sort{$a <=> $b}(@end_cells);
-
-    my $net = NetAddr::IP->new($network->address . "/" . $network->prefix);
-
-    my $subnetsize = $net->num()+1;
-    my $numrows = ($subnetsize/$scale) / $numcols;
-
-    print "\n\n\n";
-    print '<table align="center" class="containertable" style="width:'.(($cell_width*$numcols)+50).'">';
-    print '<tr>';
-        print '<td>&nbsp;</td>';
-        print '<td colspan="'.($numcols/2-1).'" class="small">';
-            print 'Divide free space into subnets with maximum size ';
-            print '<select name="rowsize" class="small">';
-            my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace=max';
-            print '<option onclick="parent.location=\''.$link.'\'" value="max"'.($dividefreespace eq 'max'?' selected':'').'>MAX</option>';
-            for( my $i=$mask; $i<=30; $i++ ) {
-                my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace='.$i;
-                print '<option onclick="parent.location=\''.$link.'\'" value="'.$i.'"'.($dividefreespace==$i?' selected':'').'>/'.$i.'</option>';
-            }
-            print '</select>';
-        print '</td>';
-        print '<td colspan="'.($numcols/2).'" style="text-align:right" class="small">';
-            print 'Zoom: Set one row equal to ';
-            print '<select name="rowsize" class="small">';
-            for( my $i=$minrowsize; $i<=$maxrowsize; $i++ ) {
-                my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$i.'&dividefreespace='.$dividefreespace;
-                print '<option onclick="parent.location=\''.$link.'\'" value="'.$i.'"'.($rowsize==$i?' selected':'').'>/'.$i.'</option>';
-            }
-            print '</select>';
-        print '</td>';
-    print "</tr>\n";
-
-    # print empty row first for aligning cells and their colspans
-    print "<tr>\n";
-    print '<td style="text-align:right;" width="50" class="containertable_cell"><img src="img/clear.gif" width="1" height="1"></td>';
-    for( my $i=0; $i<$numcols; $i++ ) {
-        print '<td width="'.($cell_width).'" class="containertable_cell">';
-                #print '<div class="ipaddr_reserved">';
-                print '<img src="img/clear.gif" width="1" height="1">';
-                #print '</div>';
-        print "</td>\n";
-    }
-    print "</tr>\n";
-
-	my %hover_data; my %hover_class;
-
-    for( my $r=0; $r<$numrows; $r++ ) {
-        my $cell = $r * $numcols;
-
-        print "<tr>\n";
-        print '<td style="text-align:right;" class="containertable_cell">&nbsp;'.substr($cell_info[$cell][0],0,index($cell_info[$cell][0],'/')).'</td>';
-        print "\n";
-
-        # print "Are there any starting cells in the range: ".$cell.", ".($cell+$numcols-1)."?<br>";
-        for( my $c=0; $c<@start_cells; $c++ ) {
-            my $start = $start_cells[$c];
-            my $end = $end_cells[$c];
-
-            my $span = $cell_info[$start][2];
-
-            if( 
-                $umath->within( $start, $cell, $cell+$numcols-1 )  # find all starting cells in this row: range [cell, cell+63]
-                || $umath->within( $cell, $start, $end ) ) {       # is cell in the middle of this start-end block?
-
-                my $divclass;
-                my $divtitle;
-                if( $cell_info[$start][1] eq "Subnet" ) {
-                    # show used addresses in red, with no link tag, show dns name on mouseover
-                    $divclass = "ipaddr_static";
-
-                } elsif( $cell_info[$start][1] eq "Reserved" ) {
-                    # show reserved addresses in grey
-                    $divclass = "ipaddr_reserved";
-
-                } elsif( $cell_info[$start][1] eq "Container" ) {
-                    # link to detail page for containers
-                    $divclass = "ipaddr_container";
-
-                } elsif( $cell_info[$start][1] eq "New" ) {
-                    # show new addresses in green
-                    $divclass = "ipaddr_available";
-
-                } 
-
-                $divtitle = '('.$names{ $cell_info[$start][3] }.')' if exists $names{ $cell_info[$start][3] };
-                $divtitle = $cell_info[$start][3].' '.$divtitle;
-
-                my $hover_addr = (NetAddr::IP->new($cell_info[$start][3]))->numeric;
-				my $hover_id = $r.'_'.$c;
-
-                my $link;
-                if( $cell_info[$start][1] eq "New" ) {
-                    $link = 'ip.html?allocate='.$cell_info[$start][3].'&_action=ADD_BLOCK';
-                } else {
-                    $link = 'ip.html?id='.$iplinks{ $cell_info[$start][3] };
-                }
-
-                print '<td width="'.($span*($cell_width+1)).'" colspan="'.($span>$numcols?$numcols:$span).'" class="containertable_cell">';
-                print '<div class="'.$divclass.'" title="'.$divtitle.'" id="ip_'.$hover_id.'" onmouseover="ip_hover('.$hover_addr.')" onclick="parent.location=\''.$link.'\'" style="cursor:hand;">';
-                    print '<img src="img/clear.gif" width="1" height="10">';
-                print '</div>';
-                print '</td>';
-                print "\n";
-
-				push( @{$hover_data{$hover_addr}}, $hover_id );
-				$hover_class{$hover_addr} = $divclass;
-
-            }
-        }
-
-        print '</tr>';
-        print "\n\n";
-    }
-    print '</table>';
-    print "\n<br>";
-    
-
-	## print javascript functions for ip block highlighting
-	</%perl>
-	<script type="text/javascript" language="javascript">
-	<!--
-	function getObj(name)
-	{
-	  if (document.getElementById) {
-	  	this.obj = document.getElementById(name);
-		this.style = document.getElementById(name).style;
-	  } else if (document.all) {
-		this.obj = document.all[name];
-		this.style = document.all[name].style;
-	  } else if (document.layers) {
-	   	this.obj = document.layers[name];
-	   	this.style = document.layers[name];
-	  }
-	}
-
-	var last_id = "";  // keeps track of what block was highlighted, to remove flicker
-
-	function ip_hover(addr) {
-		if( addr != last_id ) {
-			if( last_id != "" ) { ip_hoverout(last_id); }
-			for( i=0; i<cellmap['_'+addr]['ids'].length; i++ ) {
-				var elt = new getObj('ip_'+cellmap['_'+addr]['ids'][i]);
-				elt.obj.className = cellmap['_'+addr]['class']+'_hover';
-			}
-		}
-		last_id = addr;
-	}
-	function ip_hoverout(addr) {
-		for( i=0; i<cellmap['_'+addr]['ids'].length; i++ ) {
-			var elt = new getObj('ip_'+cellmap['_'+addr]['ids'][i]);
-			elt.obj.className = cellmap['_'+addr]['class'];
-		}
-	}	
-	<%perl>
-
-	# generate javascript array from %hoverdata
-	print "var cellmap = new Array();\n";
-	while( my ($ip, $addresses) = each(%hover_data) ) {
-		print "cellmap['_$ip'] = new Array();\n";
-		print "cellmap['_$ip']['ids'] = new Array(";
-		foreach my $cell( @$addresses ) {
-			if( $cell != @$addresses[0] ) { print ','; }
-			print "'$cell'";
-		}
-		print ");\n";
-		print "cellmap['_$ip']['class'] = '".$hover_class{$ip}."';\n";
-	}
-
-	</%perl>
-	//-->
-	</script>
-	<%perl>	
-    ######################################################################
-
-</%perl>
-<%once>
-use Netdot::Util::Math;
-my $umath = Netdot::Util::Math->new();
-
-# define anonymous subroutine to be able to do a recursive call inside a mason component
-my $dividespace = sub {
-    my ($dividespace, $start, $end, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, $network_addr) = @_;
-
-    # find first multiple of $subnetsize that starts after $start
-    my $x = $start/$subnetsize;
-    $x = $umath->ceil($x);
-    my $blockstart = int($subnetsize * $x);   # either the previous operation or this multiplication was 
-                                              #   making $blockstart into a float, which created problems when
-                                              #   checking for equality before the recursive calls
-
-    if( $blockstart + $subnetsize <= $end ) {
-        # actually add the subnet to the list now. starts on $blockstart, network mask is Ipblock->subnetmask($subnetsize)
-                my $newsubnet = Ipblock->subnetmask($subnetsize);
-                my $newaddress = NetAddr::IP->new($blockstart, $newsubnet);
-
-                my $start_ad = $newaddress->numeric - $$network_addr->numeric;
-                my @tmp = ();
-                $tmp[0] = Ipblock->shorten(ipaddr=>$newaddress->cidr, mask=>$$network_addr->masklen);     # shortened version of ip address to display in table cell
-                $tmp[1] = "New";                    # status of block
-                $tmp[2] = (($start_ad + Ipblock->numhosts($newaddress->masklen))/$scale - 1) - ($start_ad/$scale) + 1; #   = end-start+1  (number of columns to span)
-                $tmp[3] = $newaddress->cidr;                 # full version of the ip address, used for calculations
-
-                my $start_pos = $start_ad / $scale;
-                my $end_pos   = ($start_ad + Ipblock->numhosts($newsubnet))/$scale - 1;
-
-                $cell_info->[$start_pos] = \@tmp;
-                $names->{ $newaddress->cidr } = "Click to Create";
-
-                push(@$start_cells, $start_pos);
-                push(@$end_cells, $end_pos); 
-
-        # these if statements prevent the function from checking for empty space in a space where the start and end are the same address
-        if( $start != $blockstart ) {
-            #print STDERR "    dividespace 1: start: ".NetAddr::IP->new($start,Ipblock->subnetmask($subnetsize))."; end: ".NetAddr::IP->new($blockstart,Ipblock->subnetmask($subnetsize))."; subnetsize: $subnetsize\n";
-            $dividespace->($dividespace, $start, $blockstart, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, $network_addr);
-        }
-        if( $blockstart+$subnetsize != $end ) {
-            #print STDERR "    dividespace 2: start: ".NetAddr::IP->new($blockstart+$subnetsize,Ipblock->subnetmask($subnetsize))."; end: ".NetAddr::IP->new($end,Ipblock->subnetmask($subnetsize))."; subnetsize: $subnetsize\n";
-            $dividespace->($dividespace, $blockstart+$subnetsize, $end, $subnetsize, $scale, $names, $cell_info, $start_cells, $end_cells, $network_addr);
-        }
-    } else { 
-        if( $subnetsize/2 >= 1 && $start != $end ) {
-            #print STDERR "    dividespace 0: start: ".NetAddr::IP->new($start,Ipblock->subnetmask($subnetsize/2))."; end: ".NetAddr::IP->new($end,Ipblock->subnetmask($subnetsize/2))."; subnetsize: ".($subnetsize/2)."\n";
-            $dividespace->($dividespace, $start, $end, $subnetsize/2, $scale, $names, $cell_info, $start_cells, $end_cells, $network_addr); 
+            print '</table></a></td>';
         } else {
-            return;
+            print <<EOF
+<td title="$title"><a href="$link" class="$class" style="display: block; width: $width; border: 0; height: 15px"></a></td>
+EOF
         }
     }
-};
+    
+    print "\n\n\n";
+    print '<table class="ipcontainertable" style="width:' . ($cellsperrow+100) . ';" cellpadding="0" cellspacing="0"><tr class="outerrow"><td><table cellpadding="0" cellspacing="0" border="0">';
 
-</%once>
+    my $count = 0;
+    my $prevclass = "";
+    my $needtr = 1;
+    while (@children || @freespace) {
+        my ($class, $title, $width, $link);
+        if (!@children || $freespace[0] < $children[0]->_netaddr) {
+            my $child = shift @freespace;
+            $class = "ipaddr_available";
+            if ($prevclass eq $class) { $class .= "_2"; }
+            $title = "$child";
+            $link = "ip.html?add_block=$child&_action=ADD_BLOCK";
+            $width = 2**(32-$child->masklen);
+            $count += $width;
+            $prevclass = $class;
+        } elsif (!@freespace || $freespace[0] > $children[0]->_netaddr) {
+            my $child = shift @children;
+            my $status = $child->status->name;
+            $class = "ipaddr_" . lc($status);
+            if ($prevclass eq $class) { $class .= "_2"; }
+            $title = $child->_netaddr;
+            $width = 2**(32-$title->masklen);
+            $count += $width;
+            $link = "ip.html?id=$child";
+            $prevclass = $class;
+        } else {
+            print STDERR $freespace[0] . " " . $children[0]->_netaddr . "\n";
+            die "SHOULD NOT HAPPEN";
+        }
+
+        if ($needtr) { 
+            $needtr = 0;
+            print '<tr class="outerrow"><th width="100">' . $title . '</th><td><table cellpadding="0" cellspacing="0"><tr>'; 
+        }
+
+        printNetblock($class, $title, $width, $link, $cellsperrow);
+
+        if ($count >= $cellsperrow) { 
+            $needtr = 1;
+            $count = 0;
+            print '</tr></table></td></tr>';
+        }
+    }
+
+    print "\n</tr></table></td></tr></table>";
+    
+</%perl>
