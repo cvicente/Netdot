@@ -303,7 +303,7 @@ sub get_dp_links {
 
         # Find the connected device
         if ( $r_ip ) {
-            foreach my $rem_ip ( split ',', $r_ip ) {
+            foreach my $rem_ip ( split ';', $r_ip ) {
                 my $decimalip = Ipblock->ip2int($rem_ip);
                 next unless (exists $allips->{$decimalip});
 		$rem_dev = $allips->{$decimalip};
@@ -314,7 +314,7 @@ sub get_dp_links {
             }
 	}
         if ( !$rem_dev && $r_id ) {  
-            foreach my $rem_id (split ',', $r_id){
+            foreach my $rem_id (split ';', $r_id){
                 if ( $rem_id =~ /($MAC)/i ){
                     my $mac = PhysAddr->format_address($1);
                     if ( !exists $allmacs->{$mac} ){
@@ -348,14 +348,14 @@ sub get_dp_links {
 	unless ( $rem_dev ) {
 	    if ( $self->config->get('ADD_UNKNOWN_DP_DEVS') ){
 		if ( $r_ip ){
-		    foreach my $ip ( split ',', $r_ip ) {
+		    foreach my $ip ( split ';', $r_ip ) {
 			if ( Ipblock->validate($ip) ){
 			    $ips2discover{$ip} = '';
 			    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Adding remote device %s to discover list", $iid, $ip));
 			}
 		    }
 		}elsif ( $r_id ){
-		    foreach my $rem_id ( split ',', $r_id ) {
+		    foreach my $rem_id ( split ';', $r_id ) {
 			if ( $rem_id =~ /($IP)/ ){
 			    my $ip = $1;
 			    if ( Ipblock->validate($ip) ){
@@ -378,7 +378,7 @@ sub get_dp_links {
        # Now we have a remote device in $rem_dev
         if ( $r_port ) {
 	    my $rem_int;
-            foreach my $rem_port ( split ',', $r_port ) {
+            foreach my $rem_port ( split ';', $r_port ) {
                 # Try name first, then number, then description (if it is unique)
                 $rem_int = Interface->search(device=>$rem_dev, name=>$rem_port)->first
 		    || Interface->search(device=>$rem_dev, number=>$rem_port)->first;
