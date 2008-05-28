@@ -13,107 +13,101 @@ $caller => $ARGS{self};
 </%args>
 
 <%init>
-my $DEBUG       = 0;
-
+my $DEBUG = 1;
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-
 </%init>
 
 <%perl>
 
-do "jsrsServer.pl";
+require jsrsServer;
 jsrsDispatch("backbone_search");
 
+</%perl>
+
+<%shared>
 
 sub backbone_search {
-# Arguments:
-# - field:  Form element to add the results into
-# - crit:   Criteria.  A string with one or more keywords to search
+    # Arguments:
+    # - field:  Form element to add the results into
+    # - crit:   Criteria.  A string with one or more keywords to search
 
-my $field = shift;
-my $crit = shift;
-my $val = $crit;
-
-
-my @terms;
-my $MAX_RESULTS = 2000;
-
-
-if ($val =~ /\w+/) {
-    if ($val =~ /\w+\s+\w+/) {
-        # if there's more than one word
-        @terms = split /\s+/, $val;
-    } else {
-        $val =~ s/\s+//;
-        push @terms, $val;
+    my $field = shift;
+    my $crit = shift;
+    my $val = $crit;
+    my @terms;
+    my $MAX_RESULTS = 2000;
+    
+    if ( $val =~ /\w+/ ) {
+	if ( $val =~ /\w+\s+\w+/ ){
+	    # if there's more than one word
+	    @terms = split /\s+/, $val;
+	}else{
+	    $val =~ s/\s+//;
+	    push @terms, $val;
+	}
+#	print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
     }
     
-    #print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
-}
-
-my $site_id   = $terms[0] if (scalar(@terms));
-my $site;
-unless ( $site = Site->retrieve($site_id) ){
-    $m->comp("error.mhtml", error=>"Can't retrieve site id $site_id");
-}
-my @closets   = $site->closets;
-my @results;
-my %stored;
-my @backbones;
-
-
-
-
-# get backbone cable for each closet
-foreach my $closet (@closets) {
-    my $c_id = $closet->id;
-    map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$c_id),
-                                   BackboneCable->search(end_closet=>$c_id));
-}
-
-# and now go through all of our backbones and add sites to our list.
-foreach my $backbone (@backbones) {
-    my ($start_site, $end_site);
-    if ( $backbone->start_closet->floor && $backbone->start_closet->floor->site ){
-	$start_site = $backbone->start_closet->floor->site;
-    }elsif( $backbone->start_closet->site ){
-	$start_site = $backbone->start_closet->site;
+    my $site_id = $terms[0] if ( scalar(@terms) );
+    my $site;
+    unless ( $site = Site->retrieve($site_id) ){
+	$m->comp("error.mhtml", error=>"Can't retrieve site id $site_id");
     }
-    if ( $backbone->end_closet->floor && $backbone->end_closet->floor->site ){
-	$end_site = $backbone->end_closet->floor->site;
-    }elsif( $backbone->end_closet->site ){
-	$end_site = $backbone->end_closet->site;
+    my @closets   = $site->closets;
+    my @results;
+    my %stored;
+    my @backbones;
+    
+    # get backbone cable for each closet
+    foreach my $closet ( @closets ){
+	my $c_id = $closet->id;
+	map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$c_id),
+				       BackboneCable->search(end_closet=>$c_id));
     }
-
-    if ($start_site->id != $site_id &&
-        !exists($stored{$start_site})) {
-        push(@results, $start_site);
-        $stored{$start_site} = 1;
+    
+    # and now go through all of our backbones and add sites to our list.
+    foreach my $backbone ( @backbones ){
+	my ($start_site, $end_site);
+	if ( $backbone->start_closet->floor && $backbone->start_closet->floor->site ){
+	    $start_site = $backbone->start_closet->floor->site;
+	}elsif( $backbone->start_closet->site ){
+	    $start_site = $backbone->start_closet->site;
+	}
+	if ( $backbone->end_closet->floor && $backbone->end_closet->floor->site ){
+	    $end_site = $backbone->end_closet->floor->site;
+	}elsif( $backbone->end_closet->site ){
+	    $end_site = $backbone->end_closet->site;
+	}
+	
+	if ($start_site->id != $site_id &&
+	    !exists($stored{$start_site})) {
+	    push(@results, $start_site);
+	    $stored{$start_site} = 1;
+	}
+	
+	if ($end_site->id != $site_id &&
+	    !exists($stored{$end_site})) {
+	    push(@results, $end_site);
+	    $stored{$end_site} = 1;
+	}
     }
-
-    if ($end_site->id != $site_id &&
-        !exists($stored{$end_site})) {
-        push(@results, $end_site);
-        $stored{$end_site} = 1;
-    }
-}
-
+    
 # printf("var listdata = new Array();\n");
-
-my $response = $field."&";
-
-if (scalar(@results) < $MAX_RESULTS) {
-    @results = sort { $a->name cmp $b->name } @results;
-
-    $response .= "0=".URLEncode("No matches") unless (scalar(@results));
     
-    foreach my $end_site (@results) {
-        $response .= $end_site->id."=".URLEncode($end_site->name)."&";
+    my $response = $field."&";
+    
+    if ( scalar(@results ) < $MAX_RESULTS) {
+	@results = sort { $a->name cmp $b->name } @results;
+	
+	$response .= "0=".URLEncode("No matches") unless (scalar(@results));
+	
+	foreach my $end_site ( @results ){
+	    $response .= $end_site->id."=".URLEncode($end_site->name)."&";
+	}
+    }else{
+	$response .= "0=".URLEncode("Too Many Results");
     }
-} else {
-    $response .= "0=".URLEncode("Too Many Results");
-}
-
+    
     return $response;    
 }
 
@@ -132,4 +126,4 @@ sub URLDecode {
     return $theURL;
 }
 
-</%perl>
+</%shared>

@@ -42,7 +42,7 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
     if ( $search =~ /\w+/ ){
 	# remove spaces at beginning and end
 	$search =~ s/^\s*(.*)\s*$/$1/;
-	unless ( @list = $cable_manager->search_circuits($search) ){
+	unless ( @list = Circuit->search_by_keyword($search) ){
 	    print  "<p><b>No results</b>";
 	    $m->abort;
 	}
@@ -57,11 +57,10 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
 	print "<p><b>No search criteria</b>";   
 	$m->abort;
     }
-}
 
 # code for inserting/updating
 # -----------------------------------------------------------------------------
-elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
+}elsif( defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT" ){
     my %update_info = ();
     print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
     if (!(%update_info = $ui->form_to_db(%ARGS))) {
@@ -79,7 +78,7 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
     if ($id && $id ne "NEW") {
 	$o = Circuit->retrieve($id);
     }
-} elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{sequence_list}) {
+}elsif( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{sequence_list} ){
     my @sequences;
     if (UNIVERSAL::isa($ARGS{sequence_list}, "ARRAY")) {
 	@sequences = @{$ARGS{sequence_list}};
@@ -87,14 +86,21 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT") {
 	push(@sequences, $ARGS{sequence_list});
     }
     
-    my $circuit_id = $o->id;
-    foreach my $seq (@sequences) {
-	$cable_manager->assigncircuit($circuit_id, split(/,/o, $seq));
+    foreach my $seq ( @sequences ){
+	my @strands = split(/,/o, $seq);
+	foreach my $strandid ( @strands ){
+	    my $strand = CableStrand->retrieve($strandid);
+	    $strand->update(circuit_id=>$o);
+	}
     }
-} elsif (defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_SEQUENCES") {
-    foreach my $key (keys(%ARGS)) {
+}elsif( defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_SEQUENCES" ){
+    foreach my $key ( keys(%ARGS) ) {
 	next if ($key !~ /^__unassign_(\d+)/o);
-	$cable_manager->removecircuit(split(/,/o, $ARGS{"__sequence_" . $1}));
+	my @strands = split(/,/o, $ARGS{"__sequence_" . $1});
+	foreach my $strandid ( @strands ){
+	    my $strand = CableStrand->retrieve($strandid);
+	    $strand->update(circuit_id=>0);
+	}	    
     }
 }
 
@@ -173,17 +179,13 @@ my %comments = $ui->form_field(object=>$o, table=>"Circuit", column=>"info", edi
 
 
 <!-- Begin Cable Strand Sequence Table -->
-%   if (defined($o)) {
-%   my @strands = ();
-%   foreach my $s ($o->strands) {
-%       push(@strands, $s->id);
-%   }
+%   if ( defined($o) ) {
     <form name="sequence_form" action="circuit.html" method="POST">
     <input type="hidden" name="_action" value="UPDATE_SEQUENCES">
     <input type="hidden" name="id" value="<% $id %>">
-    <& display_sequence.mhtml, strands=>\@strands, table_view=>1 &>
-%   if (scalar(@strands)) {    
-    <div align="left"><input type="submit" name="submit_seq" value="Unassign"></div>
+    <& display_sequence.mhtml, strands=>[$o->strands], table_view=>1 &>
+%   if ( scalar($o->strands) ) {
+      <div align="left"><input type="submit" name="submit_seq" value="Unassign"></div>
 %   }    
     </form>
     <P>

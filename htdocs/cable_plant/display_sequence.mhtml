@@ -1,11 +1,8 @@
 <%doc>
 Display sequences for the given strands.
 
-TODO: revisit this code at some point and move appropriate sections
-      to CablePlantManager, tweak for performance, etc.
-
 Arguments:
-    - strands: an array of CableStrands to display sequences for
+    - strands: arrayref of CableStrand objects to display sequences for
     - table_view: if set, output is in a table format.
 </%doc>
 
@@ -21,7 +18,7 @@ my %sequences = ();
 
 </%init>
 
-% if ($table_view) {
+% if ( $table_view ){
 <div class="container">
     <div class="containerhead">Sequences</div>
     <div class="containerbody">
@@ -30,13 +27,13 @@ my %sequences = ();
 %   my $j = 0;
 %   my $i = 0;
 %   my %found = ();
-%   foreach my $st (@{$strands}) {
-%       next if (exists($found{$st}));
+%   foreach my $st ( @{$strands} ){
+%       next if ( exists($found{$st->id}) );
 %       $j = ($j + 1) % 2;
 %       ++$i;
 %       my @links = ();
 %       my @ids = ();
-%       if ( my $seq = $cable_manager->getsequence($st) ){
+%       if ( my $seq = $st->get_sequence() ){
 %           foreach my $row ( @$seq ) {
 %               $found{@$row[0]} = 1;
 %               push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", @$row[0], @$row[1]));
@@ -58,9 +55,9 @@ my %sequences = ();
 % } else {
 <%perl>
     my @links = ();
-    foreach my $st (@{$strands}) {
-	if ( my $seq = $cable_manager->getsequence($st) ){
-	    foreach my $row (@$seq) {
+    foreach my $st ( @{$strands} ){
+	if ( my $seq = $st->get_sequence() ){
+	    foreach my $row ( @$seq ) {
 		push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", @$row[0], @$row[1]));
 	    }
 	}

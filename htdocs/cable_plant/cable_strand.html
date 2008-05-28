@@ -62,13 +62,13 @@ if (defined($ARGS{_action})) {
     # Special case for splices, store in many to many table...
     if (defined($ARGS{__splice1}) || defined($ARGS{__splice2})) {
         # first delete all splices for this cable strand.
-        $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->deletesplices($o)));
+	$o->delete_splices();
         
         # and now add back any splices...
         my @splices = ("__splice1", "__splice2");
-        foreach my $sp (@splices) {
+        foreach my $sp ( @splices ){
             next if (!defined($ARGS{$sp}) || $ARGS{$sp} eq "");
-            $m->comp("error.mhtml", $cable_manager->error()) if (!($cable_manager->insertsplice($o, CableStrand->retrieve($ARGS{$sp}))));
+	    Splice->insert($o, $ARGS{$sp});
         }
     }
 }

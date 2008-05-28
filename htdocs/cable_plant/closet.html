@@ -29,9 +29,11 @@ my $editPictures   = 0;
 my $editBackbones  = 0;
 my $editHorizontal = 0;
 
-if ($id && $id ne "NEW")  {
-   $o = Closet->retrieve($id);
-   $site = $o->floor->site || $o->site;
+if ( defined $id && $id ne "NEW" ){
+    $o = Closet->retrieve($id);
+    $m->comp('/generic/error.mhtml', error=>"Cannot retrieve Closet id $id") 
+	unless $o;
+    $site = $o->floor->site || $o->site;
 }
 
 $editCloset     = 1 if ($id eq "NEW" || $edit eq "closetinfo");

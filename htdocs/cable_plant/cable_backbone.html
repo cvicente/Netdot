@@ -27,7 +27,7 @@ my $editStrand = 0;
 my ($o, $start_site, $end_site);
 my ($start_site_id, $end_site_id) = (0, 0);
 
-if ($id && $id ne "NEW") {
+if ( $id && $id ne "NEW" ) {
     $o = BackboneCable->retrieve($id);
     
     if ( $o->start_closet->floor && $o->start_closet->floor->site ){
@@ -97,8 +97,11 @@ if (defined($ARGS{_action}) && ($ARGS{_action} eq "UPDATE" || $ARGS{_action} eq 
 }
 
 # insert N number of strands...
-elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS") {
-    $m->comp("error.mhtml", error => $cable_manager->error()) if (!($cable_manager->insertstrands($o, $ARGS{number_strands})));
+elsif ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" ){
+    eval{
+	$o->insert_strands($ARGS{number_strands});
+    };
+    $m->comp("error.mhtml", error=>"$@") if $@;
 }
 
 # splice cables by a range of strands
@@ -123,16 +126,21 @@ elsif (defined($ARGS{_action}) && $ARGS{_action} eq "ADD_SPLICE_RANGE") {
         push(@end_strands, CableStrand->search(cable=>$bb_end->id, number=>$i));
     }
 
-    if (scalar(@start_strands) != scalar(@end_strands)) {
+    if ( scalar(@start_strands) != scalar(@end_strands) ){
         $m->comp("error.mhtml", error => "Mismatch between start strand and end strand length.");
     }
 
     # first delete all splices associated with our starting strands
-    $m->comp("error.mhtml", error => $cable_manager->error()) if (!($cable_manager->deletesplices(@start_strands)));
+    foreach my $strand ( @start_strands ){
+	eval {
+	    $strand->delete_splices;
+	};
+	$m->comp("error.mhtml", error=>"$@") if $@;
+    }
     
     # and now lets add our splices...
     for (my $i = 0, my $len = scalar(@start_strands); $i < $len; ++$i) {
-        $m->comp("error.mhtml", error => $cable_manager->error() ) if (!($cable_manager->insertsplice($start_strands[$i], $end_strands[$i])));
+	Splice->insert({strand1=>$start_strands[$i], strand2=>$end_strands[$i]});
     }
 }
 
@@ -156,13 +164,21 @@ if (defined($ARGS{_action}) && $ARGS{_action} eq "STRAND_UPDATE") {
 
     
     # first delete all splices for these strands
-    $m->comp("error.mhtml", error => $cable_manager->error()) if (!($cable_manager->deletesplices(@strands)));
-    
+    foreach my $strand ( @strands ){
+	eval {
+	    $strand->delete_splices;
+	};
+	$m->comp("error.mhtml", error=>"$@") if ( $@ );
+    }
     # then work through the post data and recreate splices as needed.
-    foreach my $strand (@strands) {
-        foreach my $sp (@splices) {
+    foreach my $strand ( @strands ) {
+        foreach my $sp ( @splices ) {
             next if (!defined($ARGS{$sp . $strand->id}) || $ARGS{$sp . $strand->id} eq "");
-            $m->comp("error.mhtml", error => $cable_manager->error()) if (!($cable_manager->insertsplice($strand, CableStrand->retrieve($ARGS{$sp . $strand->id}))));
+	    my $strand2 = CableStrand->retrieve($ARGS{$sp . $strand->id});
+	    eval {
+		Splice->insert({strand1=>$strand, strand2=>$strand2});
+	    };
+	    $m->comp("error.mhtml", error=>"$@") if $@;
         }
     }
 }
@@ -543,7 +559,7 @@ HERE
 		  }} );
 
 	    if (!$editStrand) {        
-	      push( @row, $m->scomp('display_sequence.mhtml', strands=>[$st->id]) );
+	      push( @row, $m->scomp('display_sequence.mhtml', strands=>[$st]) );
 
 	      push( @row, '<input type="checkbox" name="edit_' . $st->id . '" onChange="editCheck(this);">' );
 
@@ -617,8 +633,7 @@ HERE
           foreach my $bb (sort { $a->name cmp $b->name } @bbones) {
 	      next if ($bb->id eq $id || exists($stored{$bb}));
 	      $stored{$bb} = 1;
-	      my  $cl_lbl = $ui->getobjlabel($bb->end_closet, ", ");
-	      printf("<OPTION VALUE=\"%s\">%s, %s</OPTION>\n", $bb->id, $bb->name, $cl_lbl);
+	      printf("<OPTION VALUE=\"%s\">%s, %s</OPTION>\n", $bb->id, $bb->name, $bb->end_closet->get_label());
 	  }
 	  </%perl>
 

@@ -3,9 +3,9 @@ Code to determine available "sequences" between a starting an ending
 site. A sequence is a set of CableStrands with splice relationships.
 
 Arguments;
-    - start_id: id of starting Site.
-    - end_id: id of ending Site.
-    - form_name: name of html form.
+    - start_id:   id of starting Site.
+    - end_id:     id of ending Site.
+    - form_name:  name of html form.
     - field_name: name of <select> field to store results.
 
 </%doc>
@@ -34,18 +34,17 @@ my $MAX_RESULTS = 1000;
 printf("opener.document.forms[\'%s\'][\'%s\'].options.length = 0;\n", $form_name, $field_name);
 
 my $i = 0;
-my %sequences = $cable_manager->findsequences($start_id, $end_id);
-foreach my $seq (keys(%sequences)) {
-    my @names = ();
-    my @ids = ();
-    foreach my $row (@{$sequences{$seq}}) {
+my %sequences = CableStrand->find_sequences($start_id, $end_id);
+foreach my $seq ( keys(%sequences) ){
+    my (@names, @ids);
+    foreach my $row ( @{$sequences{$seq}} ){
         push(@ids, @$row[0]);
         push(@names, @$row[1]);
     }
 
     printf("opener.document.forms[\'%s\'][\'%s\'].options[%d] = new Option();\n", $form_name, $field_name, $i);
     printf("opener.document.forms[\'%s\'][\'%s\'].options[%d].value = \'%s\';\n", $form_name, $field_name, $i, join(",", @ids));
-    printf("opener.document.forms[\'%s\'][\'%s\'].options[%d].text = \'%s\';\n", $form_name, $field_name, $i, join(" ---- ", @names));
+    printf("opener.document.forms[\'%s\'][\'%s\'].options[%d].text = \'%s\';\n",  $form_name, $field_name, $i, join(" ---- ", @names));
     ++$i;
 }
 
