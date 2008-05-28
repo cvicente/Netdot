@@ -438,8 +438,9 @@ sub get_snmp_info {
 
     ################################################################
     # Device's global vars
-    $dev{layers}      = $sinfo->layers;
-    $dev{sysobjectid} = $sinfo->id;
+    $dev{layers}       = $sinfo->layers;
+    $dev{ipforwarding} = ($sinfo->ipforwarding eq 'forwarding') ? 1 : 0;
+    $dev{sysobjectid}  = $sinfo->id;
     if ( defined $dev{sysobjectid} ){
 	$dev{sysobjectid} =~ s/^\.(.*)/$1/;  # Remove unwanted first dot
 	my %IGNORED;
@@ -572,7 +573,7 @@ sub get_snmp_info {
     # If not, assign type based on layers
     unless ( $dev{type} ){
 	$dev{type}  = "Server"  if ( $sinfo->class =~ /Layer7/ );
-	$dev{type}  = "Router"  if ( $sinfo->class =~ /Layer3/ && $sinfo->ipforwarding =~ 'forwarding' );
+	$dev{type}  = "Router"  if ( $sinfo->class =~ /Layer3/ && $dev{ipforwarding} );
 	$dev{type}  = "Switch"  if ( $sinfo->class =~ /Layer2/ );
 	$dev{type}  = "Hub"     if ( $sinfo->class =~ /Layer1/ );
 	$dev{type} |= "Switch"; # Last resort
@@ -586,7 +587,7 @@ sub get_snmp_info {
     }
 
     # Set some defaults specific to device types
-    if ( $dev{type} eq 'Router' ){
+    if ( $dev{ipforwarding} ){
 	$dev{bgplocalas}  =  $sinfo->bgp_local_as();
 	$dev{bgpid}       =  $sinfo->bgp_id();
     }
@@ -1967,7 +1968,7 @@ sub info_update {
 	}else{
 	    # address is new.  Add it
 	    eval {
-		$mac = PhysAddr->insert({static=>1});
+		$mac = PhysAddr->insert({address=>$address, static=>1});
 	    };
 	    if ( my $e = $@ ){
 		$logger->debug(sprintf("%s: Could not insert base MAC: %s: %s",
@@ -1987,8 +1988,8 @@ sub info_update {
     }
     
     # Fill in some basic device info
-    foreach my $field ( qw( community snmp_version layers sysname sysdescription 
-                            syslocation os collect_arp collect_fwt ) ){
+    foreach my $field ( qw( community snmp_version layers ipforwarding sysname 
+                            sysdescription syslocation os collect_arp collect_fwt ) ){
 	$devtmp{$field} = $info->{$field} if exists $info->{$field};
     }
     
@@ -2171,7 +2172,7 @@ sub info_update {
 	my $subs_inherit_default = $self->config->get('SUBNET_INHERIT_DEV_INFO');
 	
 	# Then check what was passed
-	my $add_subnets   = ( defined($info->{type}) && $info->{type} eq "Router" && defined($argv{add_subnets}) ) ? 
+	my $add_subnets   = ( defined($info->{type}) && $info->{ipforwarding} && defined($argv{add_subnets}) ) ? 
 	    $argv{add_subnets} : $add_subnets_default;
 	my $subs_inherit = ( $add_subnets && defined($argv{subs_inherit}) ) ? 
 	    $argv{subs_inherit} : $subs_inherit_default;

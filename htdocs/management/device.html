@@ -301,7 +301,7 @@ push( @cell_data,
 );
 
 my @fields = ('physaddr', 'serialnumber','date_installed','last_updated', 'product','inventorynumber','os');
-my @linkpages = ('mac.html', '', 'view.html', '', 'view.html', 'view.html', '', '' );
+my @linkpages = ('mac.html', '', 'view.html', '', 'view.html', 'view.html', '', '');
 $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, 
 		   cell_data=>\@cell_data, linkpages=>\@linkpages);
 
@@ -315,6 +315,10 @@ push( @cell_data,
 	  }
       }}
 );
+
+$ui->add_to_fields(o=>$o, edit=>0, fields=>['ipforwarding'], 
+		   field_headers=>\@field_headers, cell_data=>\@cell_data);
+
 
 </%perl>
 

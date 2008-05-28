@@ -458,13 +458,8 @@ sub update_ip {
     my $version = ($address =~ /$IPV4/) ?  4 : 6;
     my $prefix  = ($version == 4)  ? 32 : 128;
     
-    my $isrouter = 0;
-    if ( $self->device->product_type && $self->device->product_type eq "Router" ){
-	$isrouter = 1;
-    }
-
     # If given a mask, we might have to add a subnet
-    if ( (my $mask = $args{mask}) && $args{add_subnets} && $isrouter ){
+    if ( (my $mask = $args{mask}) && $args{add_subnets} && $self->device->ipforwarding ){
 	# Create a subnet if necessary
 	my ($subnetaddr, $subnetprefix) = Ipblock->get_subnet_addr(address => $address, 
 								   prefix  => $mask );
