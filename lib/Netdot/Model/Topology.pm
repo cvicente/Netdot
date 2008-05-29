@@ -49,6 +49,7 @@ sub discover {
     $SOURCES{DP}  = 1 if $class->config->get('TOPO_USE_DP');
     $SOURCES{STP} = 1 if $class->config->get('TOPO_USE_STP');
     $SOURCES{FDB} = 1 if $class->config->get('TOPO_USE_FDB');
+    $SOURCES{P2P} = 1 if $class->config->get('TOPO_USE_P2P');
     my $MINSCORE  = $class->config->get('TOPO_MIN_SCORE');
     my $srcs = join ', ', keys %SOURCES;
     
@@ -94,7 +95,7 @@ sub discover {
     }
 
     # Determine links
-    my ($dp_links, $stp_links, $fdb_links);
+    my ($dp_links, $stp_links, $fdb_links, $p2p_links);
     foreach my $root ( keys %stp_roots ){
 	my $links = $class->get_stp_links(root=>$root);
 	map { $stp_links->{$_} = $links->{$_} } keys %$links;
@@ -120,6 +121,8 @@ sub discover {
 #        print " DP"  if (exists $dp_links->{$from} && $dp_links->{$from} == $to);
 #        print "\n";
 #    }
+
+    $p2p_links = $class->get_p2p_links();
 
     $logger->debug(sprintf("Netdot::Model::Topology: Links determined in %s", $class->sec2dhms(time - $start)));
 
@@ -147,6 +150,7 @@ sub discover {
     $args{dp}        = $dp_links  if $dp_links;
     $args{stp}       = $stp_links if $stp_links;
     $args{fdb}       = $fdb_links if $fdb_links;
+    $args{p2p}       = $p2p_links if $p2p_links;
     my ($addcount, $remcount) = $class->update_links(%args);
     my $end = time;
     $logger->info(sprintf("Topology discovery on %s done in %s. Links added: %d, removed: %d", 
@@ -180,10 +184,11 @@ sub update_links {
     $WEIGHTS{dp}  = $class->config->get('TOPO_WEIGHT_DP');
     $WEIGHTS{stp} = $class->config->get('TOPO_WEIGHT_STP');
     $WEIGHTS{fdb} = $class->config->get('TOPO_WEIGHT_FDB');
+    $WEIGHTS{p2p} = $class->config->get('TOPO_WEIGHT_P2P');
     my $MINSCORE  = $class->config->get('TOPO_MIN_SCORE');
     my %hashes;
     my $old_links = $argv{old_links};
-    foreach my $source ( qw( dp stp fdb ) ){
+    foreach my $source ( qw( dp stp fdb p2p ) ){
 	$hashes{$source} = $argv{$source};
     }
 
@@ -688,6 +693,49 @@ sub get_stp_links {
     return \%links;
 }
 
+###################################################################################################
+=head2 get_p2p_links - Get Point-to-Point links based on network prefix
+
+    Take advantage of the fact that point to point links between routers are usually configured
+    to use IP subnets of /30 prefix length.  
+
+  Arguments:  
+    None
+  Returns:    
+    Hashref with link info
+  Example:
+    my $links = Netdot::Model::Topology->get_p2p_links();
+
+=cut
+sub get_p2p_links {
+    my ($self, %argv) = @_;
+    $self->isa_class_method('get_stp_links');
+    my %links;
+    my @blocks = Ipblock->search(prefix=>'30');
+    foreach my $block ( @blocks ){
+	next unless ( $block->status->name eq 'Subnet' );
+	$logger->debug(sprintf("Netdot::Model::Topology::get_p2p_links: Checking Subnet %s",
+			       $block->get_label));
+	my @ips = $block->children;
+	if ( scalar(@ips) == 2 ){
+	    my @ints;
+	    foreach my $ip ( @ips ){
+		if ( $ip->interface ){
+		    my $type = $ip->interface->type || 'unknown';
+		    # Ignore 'propVirtual' interfaces, sice most likely these
+		    # are not where the actual physical connection happens
+		    push @ints, $ip->interface if ( $type ne 'propVirtual' );
+		}
+	    }
+	    if ( scalar(@ints) == 2 ){
+		$logger->debug(sprintf("Netdot::Model::Topology::get_p2p_links: Found link: %d -> %d", 
+				       $ints[0], $ints[1]));
+		$links{$ints[0]} = $ints[1];
+	    }
+	}
+    }
+    return \%links;
+}
 
 #########################################################################################
 #
