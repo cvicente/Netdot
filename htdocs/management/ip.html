@@ -668,7 +668,7 @@ my $ip = new NetAddr::IP($o->address, $o->prefix);
 	push( @cell_data, ($ip->version == 6 ? $ip->first->short." - ".$ip->last->short : $ip->first->addr." - ".$ip->last->addr) );
 	
 if ($o->status->name eq "Subnet") {
-      my $used = new Math::BigInt(scalar $o->children);
+      my $used = new Math::BigInt($o->num_children);
       my $total = new Math::BigInt($o->num_addr);
       my $avail = $total - $used;
       my $avail_percent = $ui->friendly_percent(value=>$avail,total=>$total);
@@ -820,7 +820,7 @@ if ($o->status->name eq "Subnet") {
 %   #  
 %   my @children;   
 %   if (scalar( @children = $o->children )){  
-%      @children = sort { $a->address_numeric <=> $b->address_numeric } @children;
+%#      @children = sort { $a->address_numeric <=> $b->address_numeric } @children;
        <div class="container">
 %      if ( $edit_children ){
 	     <form name="edit_children" id="edit_children" action="ip.html" method="POST">

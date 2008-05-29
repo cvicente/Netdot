@@ -1024,6 +1024,30 @@ sub num_addr {
 }
 
 ##################################################################
+=head2 num_children - Count number of children
+
+  Arguments:
+    None
+  Returns:
+    Integer
+
+=cut
+sub num_children {
+    my ($self) = @_;
+    $self->isa_object_method('num_children');
+    my $dbh = $self->db_Main;
+    my $sth;
+    eval {
+	$sth = $dbh->prepare("SELECT COUNT(id) FROM ipblock WHERE parent=?");
+	$sth->execute($self->id);
+    };
+    $self->throw_fatal("$@") if $@;
+    my $num= $sth->fetchrow_array() || 0;
+    return $num;
+}
+
+
+##################################################################
 =head2 address_usage -  Returns the number of hosts in a given container.
 
   Arguments:
