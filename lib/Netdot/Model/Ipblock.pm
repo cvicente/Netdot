@@ -4,6 +4,7 @@ use base 'Netdot::Model';
 use Netdot::Util::DNS;
 use warnings;
 use strict;
+use Math::BigInt;
 use NetAddr::IP;
 use Net::IPTrie;
 
@@ -467,7 +468,6 @@ IPv6 version of numhosts
 =cut
 
 sub numhosts_v6 {
-    use bigint;
     my ($class, $x) = @_;
     $class->isa_class_method('numhosts');
     return 2**(128-$x);
@@ -740,7 +740,6 @@ sub address_numeric {
     $self->isa_object_method('address_numeric');
     my $dbh = $self->db_Main();
     my $id = $self->id;
-    use bigint;
     my $address;
     eval {
 	($address) = $dbh->selectrow_array("SELECT address 
@@ -1037,7 +1036,6 @@ sub num_addr {
 =cut
 
 sub address_usage {
-    use bigint;
     my ($self) = @_;
     $self->isa_object_method('address_usage');
 
@@ -1083,7 +1081,6 @@ sub free_space {
     $self->isa_object_method('free_space');
 
     sub find_first_one {
-        use bigint;
         my $num = shift;
         if ($num & 1 || $num == 0) { 
             return 0; 
@@ -1096,7 +1093,6 @@ sub free_space {
         # Fill from the given address to the beginning of the given netblock
         # The block will INCLUDE the first address and EXCLUDE the final block
         my ($from, $to) = @_;
-        use bigint;
 
         if ($from->within($to) || $from->numeric >= $to->numeric ) {  
             # Base case
@@ -1124,7 +1120,6 @@ sub free_space {
         return ($subnet, fill($newfrom, $to));
     }
 
-    use bigint;
     my @kids = map { $_->_netaddr } $self->children;
     my $curr = $self->_netaddr->numeric;
     my @freespace = ();
@@ -1170,7 +1165,6 @@ sub subnet_usage {
     my $start = $self->_netaddr->network();
     my $end   = $self->_netaddr->broadcast();
 
-    use bigint;
     my $count = new Math::BigInt(0);
     my $dbh   = $self->db_Main;
     my $q;
@@ -1841,8 +1835,6 @@ sub _obj_int2ip {
 	$val = (new NetAddr::IP $address)->addr();
     }elsif ($self->version == 6) {
 	# This code adapted from Net::IP::ip_inttobin()
-
-	use bigint;
 
 	my $dec = new Math::BigInt $address;
 	my @hex = (0..9,'a'..'f');

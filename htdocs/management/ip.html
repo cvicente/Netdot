@@ -667,7 +667,6 @@ my $ip = new NetAddr::IP($o->address, $o->prefix);
 	push( @field_headers, "Usable Addresses:" );
 	push( @cell_data, ($ip->version == 6 ? $ip->first->short." - ".$ip->last->short : $ip->first->addr." - ".$ip->last->addr) );
 	
-use Math::BigInt;
 if ($o->status->name eq "Subnet") {
       my $used = new Math::BigInt(scalar $o->children);
       my $total = new Math::BigInt($o->num_addr);
