@@ -26,6 +26,8 @@ my $MAXPROCS    = Netdot->config->get('SNMP_MAX_PROCS');
 my $logger      = Netdot->log->get_logger('Netdot::Model::Device');
 my $dns         = Netdot::Util::DNS->new();
 
+my %IGNOREDVLANS;
+map { $IGNOREDVLANS{$_}++ } @{ Netdot->config->get('IGNOREVLANS') };
 
 =head1 NAME
 
@@ -439,7 +441,8 @@ sub get_snmp_info {
     ################################################################
     # Device's global vars
     $dev{layers}       = $sinfo->layers;
-    $dev{ipforwarding} = ($sinfo->ipforwarding eq 'forwarding') ? 1 : 0;
+    my $ipf = $sinfo->ipforwarding || 'unknown';
+    $dev{ipforwarding} = ( $ipf eq 'forwarding') ? 1 : 0;
     $dev{sysobjectid}  = $sinfo->id;
     if ( defined $dev{sysobjectid} ){
 	$dev{sysobjectid} =~ s/^\.(.*)/$1/;  # Remove unwanted first dot
@@ -542,7 +545,7 @@ sub get_snmp_info {
 			    map { $vlans{$_}++ } @$vlans; 
 			}
 			foreach my $vid ( keys %vlans ){
-			    next if ( $vid == 0 );
+			    next if ( exists $IGNOREDVLANS{$vid} );
 			    my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
 								   'communities' => [$sinfo->snmp_comm . '@' . $vid],
 								   'version'     => $sinfo->snmp_ver,
@@ -741,10 +744,15 @@ sub get_snmp_info {
 	################################################################
 	# Vlan info
 	# 
+
 	my ($vid, $vname);
 	# These are all the vlans that are enabled on this port.
 	if ( my $vm = $hashes{'i_vlan_membership'}->{$iid} ){
 	    foreach my $vid ( @$vm ){
+		if ( exists $IGNOREDVLANS{$vid} ){
+		    $logger->debug(sub{"Device::get_snmp_info: $args{host} VLAN $vid ignored per configuration option (IGNOREVLANS)"});
+		    next;
+		}
 		$dev{interface}{$iid}{vlans}{$vid}{vid} = $vid;
 	    }
 	}
