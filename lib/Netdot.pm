@@ -56,17 +56,17 @@ sub config { return $class->{_config} }
 sub log { return $class->{_log} }
 
 sub throw_user {
-    my $self = shift;
+    my ($self, $msg) = @_;
     my $logger = $class->{_log}->get_logger('Netdot');
-    $logger->error( @_ );
-    return Netdot::Util::Exception::User->throw(message=>@_);
+    $logger->error($msg);
+    return Netdot::Util::Exception::User->throw(message=>$msg);
 }
 
 sub throw_fatal {
-    my $self = shift;
+    my ($self, $msg) = @_;
     my $logger = $class->{_log}->get_logger('Netdot');
-    $logger->fatal( @_ );
-    return Netdot::Util::Exception::Fatal->throw(message=>@_);
+    $logger->fatal($msg);
+    return Netdot::Util::Exception::Fatal->throw(message=>$msg);
 }
 
 sub isa_class_method {

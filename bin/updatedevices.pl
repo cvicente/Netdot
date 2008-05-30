@@ -171,7 +171,10 @@ if ( $INFO || $FWT || $ARP ){
     if ( $host ){
 	$logger->info("Updating single device: $host");
 	$uargs{name} = $host;
-	Device->discover(%uargs);
+	eval {
+	    Device->discover(%uargs);
+	};
+	die "ERROR: $@\n" if $@;
 	
     }elsif ( $blocks ){
 	my @blocks = split ',', $blocks;
@@ -195,7 +198,10 @@ if ( $INFO || $FWT || $ARP ){
     }
 }
 
-Netdot::Model::Topology->discover if ( $TOPO );
+eval {
+    Netdot::Model::Topology->discover if ( $TOPO );
+};
+die "ERROR: $@\n" if $@;
 
 $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
 

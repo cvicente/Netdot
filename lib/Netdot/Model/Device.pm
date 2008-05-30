@@ -335,7 +335,7 @@ sub insert {
     }
     
     if ( my $dbdev = $class->search(name=>$devtmp{name})->first ){
-	$logger->warn(sprintf("Device::insert: Device %s already exists in DB as %s\n",
+	$logger->warn(sprintf("Device::insert: Device %s already exists in DB as %s",
 			      $argv->{name}, $dbdev->fqdn));
 	return $dbdev;
     }
@@ -449,7 +449,7 @@ sub get_snmp_info {
 	my %IGNORED;
 	map { $IGNORED{$_}++ }  @{ $self->config->get('IGNOREDEVS') };
 	if ( exists($IGNORED{$dev{sysobjectid}}) ){
-	    $self->throw_user(sprintf("%s (%s) Product id %s ignored per configuration option (IGNOREDEVS)\n", 
+	    $self->throw_user(sprintf("%s (%s) Product id %s ignored per configuration option (IGNOREDEVS)", 
 				      $name, $ip, $dev{sysobjectid}));
 	}
     }
@@ -461,15 +461,16 @@ sub get_snmp_info {
     $dev{router_id}      = $sinfo->root_ip();
     $dev{sysdescription} = $sinfo->description();
     $dev{syscontact}     = $sinfo->contact();
-    $dev{syslocation}    = $sinfo->location();
     $dev{productname}    = $hashes{'e_descr'}->{1};
     $dev{manufacturer}   = $sinfo->vendor();
     $dev{serialnumber}   = $sinfo->serial();
 
+    $dev{syslocation}    = $sinfo->location();
     # Remove leading and trailing white space
-    $dev{syslocation}    =~ s/(\w+)\s+$/$1/;
-    $dev{syslocation}    =~ s/^\s+(\w+)/$1/;
-
+    if ( $dev{syslocation} ){
+	$dev{syslocation} =~ s/(\w+)\s+$/$1/;
+	$dev{syslocation} =~ s/^\s+(\w+)/$1/;
+    }
     ################################################################
     # Get STP (Spanning Tree Protocol) stuff
     if ( $self->config->get('GET_DEVICE_STP_INFO') ){
@@ -2572,7 +2573,7 @@ sub add_interfaces {
     $self->isa_object_method('add_interfaces');
 
     unless ( $num > 0 ){
-	$self->throw_user("Invalid number of Interfaces to add: $num\n");
+	$self->throw_user("Invalid number of Interfaces to add: $num");
     }
     # Determine highest numbered interface in this device
     my @ints;
@@ -3029,13 +3030,13 @@ sub _validate_args {
     # We need a name always
     $args->{name} ||= $self->name if ( defined $self );
     unless ( $args->{name} ){
-	$class->throw_user("Name cannot be null\n");
+	$class->throw_user("Name cannot be null");
     }
     
     # SNMP Version
     if ( defined $args->{snmp_version} ){
 	if ( $args->{snmp_version} !~ /^1|2|3$/ ){
-	    $class->throw_user("Invalid SNMP version.  It must be either 1, 2 or 3\n");
+	    $class->throw_user("Invalid SNMP version.  It must be either 1, 2 or 3");
 	}
     }
 
@@ -3044,11 +3045,11 @@ sub _validate_args {
 	if ( my $otherdev = $class->search(serialnumber=>$sn)->first ){
 	    if ( defined $self ){
 		if ( $self->id != $otherdev->id ){
-		    $self->throw_user( sprintf("%s: S/N %s belongs to existing device: %s.\n", 
+		    $self->throw_user( sprintf("%s: S/N %s belongs to existing device: %s.", 
 					       $self->fqdn, $sn, $otherdev->fqdn) ); 
 		}
 	    }else{
-		$class->throw_user( sprintf("S/N %s belongs to existing device: %s.\n", 
+		$class->throw_user( sprintf("S/N %s belongs to existing device: %s.", 
 					    $sn, $otherdev->fqdn) ); 
 	    }
 	}
@@ -3063,11 +3064,11 @@ sub _validate_args {
 		if ( defined $self ){
 		    if ( $self->id != $otherdev->id ){
 			# Another device has this address!
-			$class->throw_user( sprintf("%s: Base MAC %s belongs to existing device: %s\n", 
+			$class->throw_user( sprintf("%s: Base MAC %s belongs to existing device: %s", 
 						   $self->fqdn, $address, $otherdev->fqdn ) ); 
 		    }
 		}else{
-		    $class->throw_user( sprintf("Base MAC %s belongs to existing device: %s\n", 
+		    $class->throw_user( sprintf("Base MAC %s belongs to existing device: %s", 
 					       $address, $otherdev->fqdn ) ); 
 		}
 	    }
@@ -3135,7 +3136,7 @@ sub _get_snmp_session {
 	# Being called as an instance method
 
 	# Do not continue unless snmp_managed flag is on
-	$self->throw_user(sprintf("Device %s not SNMP-managed. Aborting.\n", $self->fqdn))
+	$self->throw_user(sprintf("Device %s not SNMP-managed. Aborting.", $self->fqdn))
 	    unless $self->snmp_managed;
 
 	# Fill up communities argument from object if it wasn't passed to us
@@ -3152,7 +3153,7 @@ sub _get_snmp_session {
 		$argv{host} = $self->fqdn;
 	    }
 	}
-	$self->throw_user(sprintf("Could not determine IP nor hostname for Device id: %d\n", $self->id))
+	$self->throw_user(sprintf("Could not determine IP nor hostname for Device id: %d", $self->id))
 	    unless $argv{host};
 
 	$argv{version}  ||= $self->snmp_version;
@@ -3192,7 +3193,7 @@ sub _get_snmp_session {
     # Turn off bulkwalk if we're using Net-SNMP 5.2.3 or 5.3.1.
     if ( $sinfoargs{BulkWalk} == 1  && ($SNMP::VERSION eq '5.0203' || $SNMP::VERSION eq '5.0301') 
 	&& !$self->config->get('IGNORE_BUGGY_SNMP_CHECK')) {
-	$logger->info("Turning off bulkwalk due to buggy Net-SNMP $SNMP::VERSION\n");
+	$logger->info("Turning off bulkwalk due to buggy Net-SNMP $SNMP::VERSION");
 	$sinfoargs{BulkWalk} = 0;
     }
     my ($sinfo, $layers);
@@ -3220,7 +3221,7 @@ sub _get_snmp_session {
 	if ( defined $sinfo ){
 	    # Check for errors
 	    if ( my $err = $sinfo->error ){
-		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s (%s), community '%s': %s\n", 
+		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s (%s), community '%s': %s", 
 					  $sinfoargs{Version}, $name, $ip, $sinfoargs{Community}, $err));
 	    }
 	    last; # If we made it here, we are fine.  Stop trying communities
@@ -3231,7 +3232,7 @@ sub _get_snmp_session {
     }
     
     unless ( defined $sinfo ){
-	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s (%s).  Tried communities: %s\n", 
+	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s (%s).  Tried communities: %s", 
 				  $name, $ip, (join ', ', @{$argv{communities}}) ));
     }
 
@@ -3372,7 +3373,7 @@ sub _get_devs_from_file {
 	    $logger->info("Device $host does not yet exist in the Database.");
 	}
     }
-    $class->throw_user("Device::_get_devs_from_file: No existing devices in list.  You might need to run a discover first.\n")
+    $class->throw_user("Device::_get_devs_from_file: No existing devices in list.  You might need to run a discover first.")
 	unless ( scalar @devs );
 
     return \@devs;
@@ -3388,11 +3389,11 @@ sub _get_hosts_from_file {
     my ($class, $file) = @_;
     $class->isa_class_method('get_hosts_from_file');
 
-    $class->throw_user("Device::_get_hosts_from_file: Missing or invalid file: $file\n")
+    $class->throw_user("Device::_get_hosts_from_file: Missing or invalid file: $file")
 	unless ( defined($file) && -r $file );
   
     open(FILE, "<$file") or 
-	$class->throw_user("Can't open file $file for reading: $!\n");
+	$class->throw_user("Can't open file $file for reading: $!");
     
     $logger->debug(sub{"Device::_get_hosts_from_file: Retrieving host list from $file" });
 
@@ -3406,7 +3407,7 @@ sub _get_hosts_from_file {
 	}
     }
     
-    $class->throw_user("Host list is empty!\n")
+    $class->throw_user("Host list is empty!")
 	unless ( scalar keys %hosts );
     
     close(FILE);
@@ -4001,11 +4002,9 @@ sub _exec_timeout {
     if ( my $e = $@ ){
 	my $msg;
 	if ( $e =~ /timeout/ ){
-	    $msg = "Device $host timed out ($TIMEOUT sec)\n";
-	    # Throw 
-	    $class->throw_user($msg);
+	    $class->throw_user("Device $host timed out ($TIMEOUT sec)");
 	}else{
-	    $class->throw_user("$e\n");
+	    $class->throw_user("$e");
 	}
     }
     wantarray ? @result : $result[0];
