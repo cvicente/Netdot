@@ -335,8 +335,8 @@ sub insert {
     }
     
     if ( my $dbdev = $class->search(name=>$devtmp{name})->first ){
-	$logger->warn(sprintf("Device::insert: Device %s already exists in DB as %s",
-			      $argv->{name}, $dbdev->fqdn));
+	$logger->debug(sprintf("Device::insert: Device %s already exists in DB as %s",
+			       $argv->{name}, $dbdev->fqdn));
 	return $dbdev;
     }
 
