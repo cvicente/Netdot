@@ -19,6 +19,7 @@ $edit         => 1
 
 my $maxselect = 100;
 my $DEBUG     = 0;
+my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
 
 if ( $DEBUG ){
     print "ARGS: ";
@@ -39,9 +40,7 @@ my %order   = $table->meta_data->get_column_order();
 my %linksto = $table->meta_data->get_links_to();
 
 </%init>
-
-<script language="javascript" src="/java_script/select.js"></script>
-
+<script language="javascript" src="<% $js_prefix %>/datechooser.js"></script>
 <%perl>
 
 my (@headers, @data) = ();

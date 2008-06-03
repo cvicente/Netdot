@@ -262,15 +262,16 @@ my $refresh_url = "device.html?id=$id&view=$view";
 
 % if ( $view eq "Basics" || $view eq "All" ){
 <!-- Two-column Division Table -->
+% if ($editgen || $editloc || $editmgmt || $editsnmp) {
+        <form name="netdotform" action="device.html" method="POST">
+            <script language="javascript" src="../java_script/datechooser.js"></script>
+	    <input type="hidden" name="id" value="<% $id %>">
+	    <input type="hidden" name="view" value="<% $view %>">
+% }
 <table border="0" width="100%" align="center">
   <tr>
     <td valign="top" width="50%" align="center">
 
-% if ($editgen || $editloc || $editmgmt || $editsnmp) {
-        <form name="netdotform" action="device.html" method="POST">
-	    <input type="hidden" name="id" value="<% $id %>">
-	    <input type="hidden" name="view" value="<% $view %>">
-% }
     <div class="container">
 	<!-- General Info Table -->
     	<div class="containerheadleft"><b>General</b></div>
@@ -529,7 +530,6 @@ $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@fi
 %   if ( $editgen || $editloc || $editmgmt || $editsnmp ) {
       </form>
 %   }
-
 
 % } 
 <!-- End Basics Section -->

@@ -317,10 +317,14 @@ sub form_field {
     } else {
         my $type = $mcol->sql_type;
 
-	if ( $type =~ /^varchar|timestamp|integer|numeric|date|bigint$/ ){
+	if ( $type =~ /^varchar|timestamp|integer|numeric|bigint$/ ){
 	    $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 				       default=>$args{default}, linkPage=>$args{linkPage}, returnAsVar=>1, 
 				       htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
+	    
+	}elsif ( $type eq 'date' ){
+	    $value = $self->date_field(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
+				       default=>$args{default}, returnAsVar=>1, shortFieldName=>$args{shortFieldName} );
 	    
 	} elsif ( $type eq "blob" ) {
 	    $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
@@ -835,6 +839,64 @@ sub text_field($@){
         print $output;
     }
 }
+
+############################################################################
+=head2 date_field
+
+ Arguments:
+   Hash containing key/value pairs.  Keys are:
+   - object:         DBI object, can be null if a table object is included
+   - table:          Name of table in DB. (required if object is null)
+   - column:         Name of field in DB.
+   - default:        Default value to display if no value is defined in DB.
+   - edit:           True if editing, false otherwise.
+   - htmlExtra:      Extra html you want included in the output. Common use
+                     would be to include style="width: 150px;" and the like.
+   - linkPage:       (optional) Make the printed value a link
+                     to itself via some component (i.e. view.html) 
+                     (requires that column value be defined)
+   - returnAsVar:    default false, true if the sub should return the string instead of outputting
+   - shortFieldName: Whether to set the input tag name as the column name or
+                     the format used by form_to_db()
+  Returns:
+    If returnAsVar, returns variable containing HTML code.  Otherwise, prints HTML code to STDOUT
+    or False if failure    
+  Examples:
+
+    $ui->text_field(object=>$pic->binfile, table=>"BinFile", column=>"filename", edit=>$editPictures);
+
+=cut
+
+sub date_field($@){
+    my ($self, %args) = @_;
+    my $output;
+
+    my ($o, $column) = @args{'object', 'column'};
+    my $table  = ($o ? $o->short_class : $args{table});
+    my $id     = ($o ? $o->id : "NEW");
+    my $value  = ($o ? $o->$column : $args{default});
+    my $name   = ( $args{shortFieldName} ? $column : $table . "__" . $id . "__" . $column );
+    my $htmlExtra = $args{htmlExtra} || "";
+    
+    $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
+	unless ($o || $table) ;
+    
+    if ( $args{edit} ){
+        $output .= sprintf("<input id=\"%s\" type=\"text\" name=\"%s\" value=\"%s\">", $name, $name, $value);
+	$output .= "<img src=\"../img/calendar.gif\" onclick=\"showChooser(this, '$name', 'chooserSpan', 1990, 2050, 'Y-m-d', false);\"/>
+<div id=\"chooserSpan\" class=\"dateChooser select-free\" style=\"display: none; visibility: hidden; width: 160px;\"></div>";
+
+    }else{
+        $output .= sprintf("%s", $value);
+    }
+
+    if ( $args{returnAsVar} == 1 ){
+        return $output;
+    }else{
+        print $output;
+    }
+}
+
 
 ############################################################################
 =head2 text_area
