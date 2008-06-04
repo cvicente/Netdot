@@ -24,24 +24,6 @@ my @list;
 my (@interfaces, @devices);
 my $edge_port;
 my ($fwt, $arp);
-if ( $id ){
-    unless ( $o = PhysAddr->retrieve($id) ){
-	$m->comp('/generic/error.mhtml', error => "Could not retrieve PhysAddr id: $id");
-    }
-    # Get latest forwarding table entries
-    $fwt = $o->get_last_n_fte($limit);
-    # Get latest arp entries
-    $arp        = $o->get_last_n_arp($limit);
-    # Devices whose base_mac address is this one
-    @devices    = $o->devices;
-    # Interfaces with this address
-    @interfaces = $o->interfaces;
-
-    # Get edge port unless MAC belongs to an Interface with a neighbor
-    unless ( scalar(@interfaces) == 1 && ($interfaces[0])->neighbor ){
-	$edge_port  = $o->find_edge_port;
-    }
-}
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 </%init>
 
@@ -62,8 +44,10 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
               Query <em><% $search %></em> returned: <% scalar(@list) %> matches
           </div>
           <div class="containerbody">
-%         if ( @list ){
+%         if ( scalar(@list) > 1 ){
               <& /generic/sortresults.mhtml, object => \@list  &>
+%         }elsif ( @list ){
+%             $o = $list[0];
 %         }else{
 	      <form action="mac.html" method="POST">
                 <p>
@@ -75,26 +59,48 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 %         }
           </div>
        </div>
-% }elsif ( $o ){
+% }
 
 <%perl>
-my (@headers, @data) = ();
 
-my @fields = ('address');
-$ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, 
-		   field_headers=>\@headers, cell_data=>\@data);
+if ( $id && !$o ){
+    unless ( $o = PhysAddr->retrieve($id) ){
+	$m->comp('/generic/error.mhtml', error => "Could not retrieve PhysAddr id: $id");
+    }
+}
 
-# Add Vendor
-push(@headers, 'Vendor');
-my $vendor = $o->vendor;
-my $oui    = $o->oui;
-my $srch   = "$oui*";
-my $slink  = "<a href=\"../generic/search_obj.html?table=PhysAddr&address=$srch&res=1\">$vendor ($oui)</a>";
-push(@data, $slink);
+if ( $o ){
+    # Get latest forwarding table entries
+    $fwt = $o->get_last_n_fte($limit);
+    # Get latest arp entries
+    $arp        = $o->get_last_n_arp($limit);
+    # Devices whose base_mac address is this one
+    @devices    = $o->devices;
+    # Interfaces with this address
+    @interfaces = $o->interfaces;
 
-@fields = ('static', 'first_seen', 'last_seen');
-$ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields,
-		   field_headers=>\@headers, cell_data=>\@data);
+    # Get edge port unless MAC belongs to an Interface with a neighbor
+    unless ( scalar(@interfaces) == 1 && ($interfaces[0])->neighbor ){
+	$edge_port  = $o->find_edge_port;
+    }
+    
+    my (@headers, @data) = ();
+    
+    my @fields = ('address');
+    $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, 
+		       field_headers=>\@headers, cell_data=>\@data);
+    
+ # Add Vendor
+    push(@headers, 'Vendor');
+    my $vendor = $o->vendor;
+    my $oui    = $o->oui;
+    my $srch   = "$oui*";
+    my $slink  = "<a href=\"../generic/search_obj.html?table=PhysAddr&address=$srch&res=1\">$vendor ($oui)</a>";
+    push(@data, $slink);
+    
+    @fields = ('static', 'first_seen', 'last_seen');
+    $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields,
+		       field_headers=>\@headers, cell_data=>\@data);
 
 </%perl>
 <!-- Display main object values -->
@@ -132,20 +138,20 @@ $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields,
 %}
 
 <%perl>
-if ( $edge_port ){
-    my $iface = Interface->retrieve($edge_port);
-    my ($jack, $room);
-    if ( $iface->jack ){
-	$jack = $iface->jack->jackid;
-	$room = $iface->jack->room->name if $iface->jack->room;
-    }else{
-	$jack = $iface->jack_char;
-	$room = $iface->room_char;
-    }
-    $jack ||=  'n/a';
-    $room ||=  'n/a';
-    my $lbl = $iface->get_label;
-    my $lnk = "<a href=\"../generic/view.html?table=Interface&id=$edge_port\">$lbl</a>";
+    if ( $edge_port ){
+	my $iface = Interface->retrieve($edge_port);
+	my ($jack, $room);
+	if ( $iface->jack ){
+	    $jack = $iface->jack->jackid;
+	    $room = $iface->jack->room->name if $iface->jack->room;
+	}else{
+	    $jack = $iface->jack_char;
+	    $room = $iface->room_char;
+	}
+	$jack ||=  'n/a';
+	$room ||=  'n/a';
+	my $lbl = $iface->get_label;
+	my $lnk = "<a href=\"../generic/view.html?table=Interface&id=$edge_port\">$lbl</a>";
 </%perl>
 <!-- Display Location -->
 <div class="container">
@@ -158,17 +164,17 @@ if ( $edge_port ){
 <!-- End Display Location -->
 %    }
 
-
-%    if ( scalar @$fwt ){
-%        my @rows;
-%        foreach my $row ( @$fwt ){
-%            my ($iid, $tstamp) = @$row;
-%            my $iface = Interface->retrieve($iid);
-%            my $lbl   = $iface->get_label;
-%            my $lnk   = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$lbl</a>";
-%            push @rows, [$tstamp, $lnk];
-%        }
-%       
+<%perl>
+    if ( scalar @$fwt ){
+        my @rows;
+        foreach my $row ( @$fwt ){
+            my ($iid, $tstamp) = @$row;
+            my $iface = Interface->retrieve($iid);
+            my $lbl   = $iface->get_label;
+            my $lnk   = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$lbl</a>";
+            push @rows, [$tstamp, $lnk];
+        }
+</%perl>
 <!-- Display FWT -->
 <div class="container">
     <div class="containerhead"><strong>Last <% $limit %> forwarding table entries</strong></div>
@@ -179,19 +185,21 @@ if ( $edge_port ){
 <!-- End Display FWT -->
 %     }
 
-%    if ( scalar @$arp ){
-%        my @rows;
-%        foreach my $row ( @$arp ){
-%            my ($iid, $ipid, $tstamp) = @$row;
-%            my $iface   = Interface->retrieve($iid);
-%            my $ipblock = Ipblock->retrieve($ipid);
-%            my $ilbl    = $iface->get_label;
-%            my $iplbl   = $ipblock->get_label;
-%            my $ilnk    = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$ilbl</a>";
-%            my $iplnk   = "<a href=\"../generic/view.html?table=Ipblock&id=$ipid\">$iplbl</a>";
-%            push @rows, [$tstamp, $iplnk, $ilnk ];
-%        }
-%       
+<%perl>
+    if ( scalar @$arp ){
+        my @rows;
+        foreach my $row ( @$arp ){
+            my ($iid, $ipid, $tstamp) = @$row;
+            my $iface   = Interface->retrieve($iid);
+            my $ipblock = Ipblock->retrieve($ipid);
+            my $ilbl    = $iface->get_label;
+            my $iplbl   = $ipblock->get_label;
+            my $ilnk    = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$ilbl</a>";
+            my $iplnk   = "<a href=\"../generic/view.html?table=Ipblock&id=$ipid\">$iplbl</a>";
+            push @rows, [$tstamp, $iplnk, $ilnk ];
+        }
+       
+</%perl>
 <!-- Display ARP -->
 <div class="container">
     <div class="containerhead"><strong>Last <% $limit %> ARP entries</strong></div>
@@ -200,6 +208,7 @@ if ( $edge_port ){
     </div>
 </div>
 <!-- End Display ARP -->
+
 %     }
 
 % }
