@@ -150,19 +150,24 @@ sub add_neighbor{
 
     my $neighbor = Interface->retrieve($nid) 
 	|| $self->throw_fatal("Cannot retrieve Interface id $nid");
+    
+    unless ( int($self->neighbor) && int($neighbor->neighbor) 
+	     && $self->neighbor->id == $neighbor->id 
+	     && $neighbor->neighbor->id == $self->id ){
 	
-    unless ( int($self->neighbor) && int($neighbor->neighbor) && 
-	     $self->neighbor->id == $neighbor->id && $neighbor->neighbor->id == $self->id ){
-	$logger->info(sprintf("Adding new neighbors: %s <=> %s, score: %s", 
-			      $self->get_label, $neighbor->get_label, $score));
+	$logger->debug(sprintf("Adding new neighbors: %s <=> %s, score: %s", 
+			       $self->get_label, $neighbor->get_label, $score));
+	
 	if ( $self->neighbor && $self->neighbor_fixed ){
-	    $logger->warn(sprintf("%s has been manually fixed to %s", $self->get_label, 
-				  $self->neighbor->get_label));
+	    $logger->debug(sprintf("%s has been manually fixed to %s", $self->get_label, 
+				   $self->neighbor->get_label));
 	}elsif ( $neighbor->neighbor && $neighbor->neighbor_fixed ) {
-	    $logger->warn(sprintf("%s has been manually fixed to %s", $neighbor->get_label, 
+	    $logger->debug(sprintf("%s has been manually fixed to %s", $neighbor->get_label, 
 				  $neighbor->neighbor->get_label));
 	}else{
 	    $self->update({neighbor=>$neighbor, neighbor_fixed=>$fixed});
+	    $logger->info(sprintf("Added new neighbors: %s <=> %s, score: %s", 
+				  $self->get_label, $neighbor->get_label, $score));
 	}
     }
     return 1;
@@ -228,7 +233,7 @@ sub update {
 		    # Also make sure the neighbor_fixed flag is off on both sides
 		    if (int($self->neighbor)){
 			$self->neighbor->update({neighbor=>0, neighbor_fixed=>0, reciprocal=>0});
-			$logger->info(sprintf("Removing neighbors: %s <=> %s", 
+			$logger->info(sprintf("Removed neighbors: %s <=> %s", 
 					      $self->get_label, $self->neighbor->get_label));
 		    }
 		    $argv->{neighbor_fixed} = 0;
