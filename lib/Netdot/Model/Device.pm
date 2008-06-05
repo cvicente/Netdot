@@ -1965,7 +1965,7 @@ sub info_update {
     my %devtmp;
 
     # Assign Base MAC
-    if ( my $address = $info->{physaddr} ) {
+    if ( $info->{physaddr} && (my $address = PhysAddr->validate($info->{physaddr})) ) {
 	# Look it up
 	my $mac;
 	if ( $mac = PhysAddr->search(address=>$address)->first ){

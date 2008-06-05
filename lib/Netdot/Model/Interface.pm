@@ -292,8 +292,8 @@ sub snmp_update {
     # Update PhysAddr
     if ( ! $newif->{physaddr} ){
 	$iftmp{physaddr} = 0;
-    }else{
-	my $addr = $newif->{physaddr};
+    }elsif ( my $addr = PhysAddr->validate($newif->{physaddr}) ){
+	
 	my $physaddr = PhysAddr->search(address=>$addr)->first;
 	if ( $physaddr ){
 	    $physaddr->update({last_seen=>$self->timestamp, static=>1});
