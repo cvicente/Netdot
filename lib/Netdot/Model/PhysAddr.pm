@@ -569,7 +569,7 @@ sub find_edge_port {
   Arguments: 
     limit  - Return N last entries (default: 10)
   Returns:   
-    Array ref of Interface ids and timestamps
+    Array ref of timestamps and Interface IDs
   Examples:
     print $physaddr->get_last_n_fte(10);
 
@@ -577,31 +577,39 @@ sub find_edge_port {
 sub get_last_n_fte {
     my ($self, $limit) = @_;
     $self->isa_object_method('get_last_n_fte');
-	
+    my $id = $self->id;
     my $dbh = $self->db_Main();
-    my $sth;
-    my $q = "SELECT i.id, ft.tstamp 
-             FROM physaddr p, interface i, fwtableentry fte, fwtable ft 
-             WHERE p.id=? AND fte.physaddr=p.id AND fte.interface=i.id 
-                   AND fte.fwtable=ft.id 
-             ORDER BY ft.tstamp DESC LIMIT $limit";
-    eval {
-	$sth = $dbh->prepare($q);
-	$sth->execute($self->id);
-    };
-    if ( my $e = $@ ){
-	$self->throw_fatal($e);
-    }
-    return $sth->fetchall_arrayref;
+    my $q1 = "SELECT   ft.tstamp 
+              FROM     physaddr p, interface i, fwtableentry fte, fwtable ft 
+              WHERE    p.id=$id 
+                AND    fte.physaddr=p.id 
+                AND    fte.interface=i.id 
+                AND    fte.fwtable=ft.id 
+              GROUP BY ft.tstamp LIMIT $limit";
+
+    my @tstamps = @{ $dbh->selectall_arrayref($q1) };
+    return unless @tstamps;
+    my $tstamps = join ',', map { "'$_'" } map { $_->[0] } @tstamps;
+
+    my $q2 = "SELECT   ft.tstamp, i.id
+              FROM     physaddr p, interface i, fwtableentry fte, fwtable ft 
+              WHERE    p.id=$id 
+                AND    fte.physaddr=p.id 
+                AND    fte.interface=i.id 
+                AND    fte.fwtable=ft.id 
+                AND    ft.tstamp IN($tstamps) 
+              ORDER BY ft.tstamp DESC";
+    
+    return $dbh->selectall_arrayref($q2);
 }
 
 ################################################################
-=head2 get_last_n_arp - Get last N forwarding table entries
+=head2 get_last_n_arp - Get last N ARP entries
 
   Arguments: 
     limit  - Return N last entries (default: 10)
   Returns:   
-    Array ref of Interface ids and timestamps
+    Array ref of timestamps and Interface IDs
   Examples:
     print $physaddr->get_last_n_arp(10);
 
@@ -611,20 +619,28 @@ sub get_last_n_arp {
     $self->isa_object_method('get_last_n_arp');
 	
     my $dbh = $self->db_Main();
-    my $sth;
-    my $q = "SELECT i.id, ip.id, arp.tstamp
-             FROM physaddr p, interface i, arpcacheentry arpe, arpcache arp, ipblock ip
-             WHERE p.id=? AND arpe.physaddr=p.id AND arpe.interface=i.id 
-                   AND arpe.ipaddr=ip.id AND arpe.arpcache=arp.id 
-             ORDER BY arp.tstamp DESC LIMIT $limit";
-    eval {
-	$sth = $dbh->prepare($q);
-	$sth->execute($self->id);
-    };
-    if ( my $e = $@ ){
-	$self->throw_fatal($e);
-    }
-    return $sth->fetchall_arrayref;
+    my $id = $self->id;
+    my $q1 = "SELECT   arp.tstamp
+              FROM     physaddr p, interface i, arpcacheentry arpe, arpcache arp, ipblock ip
+              WHERE    p.id=$id AND arpe.physaddr=p.id AND arpe.interface=i.id 
+                AND    arpe.ipaddr=ip.id AND arpe.arpcache=arp.id 
+              GROUP BY arp.tstamp LIMIT $limit";
+
+    my @tstamps = @{ $dbh->selectall_arrayref($q1) };
+    return unless @tstamps;
+    my $tstamps = join ',', map { "'$_'" } map { $_->[0] } @tstamps;
+
+    my $q2 = "SELECT   i.id, ip.id, arp.tstamp
+              FROM     physaddr p, interface i, arpcacheentry arpe, arpcache arp, ipblock ip
+              WHERE    p.id=$id 
+                AND    arpe.physaddr=p.id 
+                AND    arpe.interface=i.id 
+                AND    arpe.ipaddr=ip.id 
+                AND    arpe.arpcache=arp.id 
+                AND    arp.tstamp IN($tstamps)
+              ORDER BY arp.tstamp DESC";
+
+    return $dbh->selectall_arrayref($q2);
 }
 
 #################################################

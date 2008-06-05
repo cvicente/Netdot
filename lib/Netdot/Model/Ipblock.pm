@@ -1425,6 +1425,49 @@ sub get_devices {
 }
 
 
+################################################################
+=head2 get_last_n_arp - Get last N ARP entries
+
+  Arguments: 
+    limit  - Return N last entries (default: 10)
+  Returns:   
+    Array ref of timestamps, PhysAddr IDs and Interface IDs
+  Examples:
+    print $ip->get_last_n_arp(10);
+
+=cut
+sub get_last_n_arp {
+    my ($self, $limit) = @_;
+    $self->isa_object_method('get_last_n_arp');
+	
+    my $dbh = $self->db_Main();
+    my $id = $self->id;
+    my $q1 = "SELECT   arp.tstamp
+              FROM     interface i, arpcacheentry arpe, arpcache arp, ipblock ip
+              WHERE    ip.id=$id
+                AND    arpe.interface=i.id 
+                AND    arpe.ipaddr=ip.id 
+                AND    arpe.arpcache=arp.id 
+              GROUP BY arp.tstamp LIMIT $limit";
+
+    my @tstamps = @{ $dbh->selectall_arrayref($q1) };
+    return unless @tstamps;
+    my $tstamps = join ',', map { "'$_'" } map { $_->[0] } @tstamps;
+
+    my $q2 = "SELECT   i.id, p.id, arp.tstamp
+              FROM     physaddr p, interface i, arpcacheentry arpe, arpcache arp, ipblock ip
+              WHERE    ip.id=$id 
+                AND    arpe.physaddr=p.id 
+                AND    arpe.interface=i.id 
+                AND    arpe.ipaddr=ip.id 
+                AND    arpe.arpcache=arp.id 
+                AND    arp.tstamp IN($tstamps)
+              ORDER BY arp.tstamp DESC";
+
+    return $dbh->selectall_arrayref($q2);
+}
+
+
 ##################################################################
 #
 # Private Methods

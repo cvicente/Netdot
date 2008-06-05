@@ -32,6 +32,7 @@ $rootversion       => 4
 $view_availability => 0
 $rowsize           => 22
 $dividefreespace   => 'max'
+$arp_limit         => 10
 </%args>
 %
 %
@@ -528,27 +529,42 @@ if ( my @parents = $o->get_ancestors ){
 </%perl>
 </div>
 
-
+<!-- Display ARP -->
+<%perl>
+# Get latest arp entries
+    if ( my $arp = $o->get_last_n_arp($arp_limit) ){
+        my @rows;
+	my %tstamps;
+        foreach my $row ( @$arp ){
+            my ($iid, $macid, $tstamp) = @$row;
+            my $lbl    = Interface->retrieve($iid)->get_label;
+            my $lnk   = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$lbl</a>";
+	    push @{$tstamps{$tstamp}{$macid}}, $lnk;
+        }
+	foreach my $tstamp ( reverse sort keys %tstamps ){
+	    foreach my $macid ( keys %{$tstamps{$tstamp}} ){
+		my $maclbl   = PhysAddr->retrieve($macid)->get_label;
+		my $maclnk   = "<a href=\"../management/mac.html?id=$macid\">$maclbl</a>";
+		push @rows, [$tstamp, $maclnk, (join ', ', @{$tstamps{$tstamp}{$macid}})];
+	    }
+	}
+       
+</%perl>
 <div class="container">
-    <div class="containerhead">ARP entries</div>
-%     if ( my @arp_entries = ArpCacheEntry->search_by_ip($o) ){
-        <%perl>
-            my @field_headers = ("Interface", "Physical Address", "Timestamp");
-            my @rows;
-            foreach my $arpentry ( @arp_entries ){
-                push( @rows, 
-                    [ "<a href=\"view.html?table=Interface&id=".$arpentry->interface->id."\">".
-                      $arpentry->interface->get_label()."</a>"
-                     ,
-                      "<a href=\"view.html?table=PhysAddr&id=".$arpentry->physaddr->id."\">".$arpentry->physaddr->address."</a>",
-		      $arpentry->arpcache->tstamp,
-                    ] );
-            } 
-        </%perl>
-        <& /generic/data_table.mhtml, field_headers=>\@field_headers, data=>\@rows &>
-%     }
+    <div class="containerheadleft"><strong>Last <% $arp_limit %> ARP entries</strong></div>
+          <div class="containerheadright">
+	    <form name="netdotform" action="ip.html" method="POST">
+	      <input type="hidden" name="id" value="<% $id %>">
+	      Last <input type="text" size="3" name="arp_limit" value="<% $arp_limit %>"> ARP entries <input type="submit" name="submit" value="show">
+            </form>
+	  </div>
+    <div class="containerbodyoutside">
+        <& /generic/data_table.mhtml, field_headers=>['Time Seen', 'MAC', 'Interfaces'], data=>\@rows, style=>['', '', 'width: 60%'] &>
+    </div>
 </div>
 
+%     }
+<!-- End Display ARP -->
 
 
 %} else {     

@@ -10,10 +10,11 @@ section => 'Management'
 %
 %
 <%args>
-$id     => undef
-$search => undef
-$delete => undef
-$limit  => 10
+$id         => undef
+$search     => undef
+$delete     => undef
+$fwt_limit  => 10
+$arp_limit  => 10
 </%args>
 %
 %
@@ -71,11 +72,11 @@ if ( $id && !$o ){
 
 if ( $o ){
     # Get latest forwarding table entries
-    $fwt = $o->get_last_n_fte($limit);
+    $fwt = $o->get_last_n_fte($fwt_limit);
     # Get latest arp entries
-    $arp        = $o->get_last_n_arp($limit);
+    $arp = $o->get_last_n_arp($arp_limit);
     # Devices whose base_mac address is this one
-    @devices    = $o->devices;
+    @devices = $o->devices;
     # Interfaces with this address
     @interfaces = $o->interfaces;
 
@@ -165,46 +166,66 @@ if ( $o ){
 %    }
 
 <%perl>
-    if ( scalar @$fwt ){
+    if ( $fwt && scalar @$fwt ){
         my @rows;
+	my %tstamps;
         foreach my $row ( @$fwt ){
-            my ($iid, $tstamp) = @$row;
+            my ($tstamp, $iid) = @$row;
             my $iface = Interface->retrieve($iid);
             my $lbl   = $iface->get_label;
             my $lnk   = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$lbl</a>";
-            push @rows, [$tstamp, $lnk];
+	    push @{$tstamps{$tstamp}}, $lnk;
         }
+	foreach my $tstamp ( reverse sort keys %tstamps ){
+            push @rows, [$tstamp, join ', ', @{$tstamps{$tstamp}}];
+	}
 </%perl>
 <!-- Display FWT -->
 <div class="container">
-    <div class="containerhead"><strong>Last <% $limit %> forwarding table entries</strong></div>
+    <div class="containerheadleft"><strong>Last <% $fwt_limit %> forwarding table entries</strong></div>
+    <div class="containerheadright">
+      <form name="netdotform" action="mac.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>">
+	Last <input type="text" size="3" name="fwt_limit" value="<% $fwt_limit %>"> FWT entries <input type="submit" name="submit" value="show">
+      </form>
+    </div>
     <div class="containerbodyoutside">
-        <& /generic/data_table.mhtml, field_headers=>['Time Seen', 'Interface'], data=>\@rows &>
+        <& /generic/data_table.mhtml, field_headers=>['Time Seen', 'Interfaces'], data=>\@rows, style=>['', 'width: 80%']  &>
     </div>
 </div>
 <!-- End Display FWT -->
 %     }
 
 <%perl>
-    if ( scalar @$arp ){
+    if ( $arp && scalar @$arp ){
         my @rows;
+	my %tstamps;
         foreach my $row ( @$arp ){
             my ($iid, $ipid, $tstamp) = @$row;
-            my $iface   = Interface->retrieve($iid);
-            my $ipblock = Ipblock->retrieve($ipid);
-            my $ilbl    = $iface->get_label;
-            my $iplbl   = $ipblock->get_label;
-            my $ilnk    = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$ilbl</a>";
-            my $iplnk   = "<a href=\"../generic/view.html?table=Ipblock&id=$ipid\">$iplbl</a>";
-            push @rows, [$tstamp, $iplnk, $ilnk ];
+            my $lbl    = Interface->retrieve($iid)->get_label;
+            my $lnk   = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$lbl</a>";
+	    push @{$tstamps{$tstamp}{$ipid}}, $lnk;
         }
+	foreach my $tstamp ( reverse sort keys %tstamps ){
+	    foreach my $ipid ( keys %{$tstamps{$tstamp}} ){
+		my $iplbl   = Ipblock->retrieve($ipid)->get_label;
+		my $iplnk   = "<a href=\"../management/ip.html?id=$ipid\">$iplbl</a>";
+		push @rows, [$tstamp, $iplnk, (join ', ', @{$tstamps{$tstamp}{$ipid}})];
+	    }
+	}
        
 </%perl>
 <!-- Display ARP -->
 <div class="container">
-    <div class="containerhead"><strong>Last <% $limit %> ARP entries</strong></div>
+    <div class="containerheadleft"><strong>Last <% $arp_limit %> ARP entries</strong></div>
+    <div class="containerheadright">
+      <form name="netdotform" action="mac.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>">
+	Last <input type="text" size="3" name="arp_limit" value="<% $arp_limit %>"> ARP entries <input type="submit" name="submit" value="show">
+      </form>
+    </div>
     <div class="containerbodyoutside">
-        <& /generic/data_table.mhtml, field_headers=>['Time Seen', 'IP', 'Interface'], data=>\@rows &>
+        <& /generic/data_table.mhtml, field_headers=>['Time Seen', 'IP', 'Interfaces'], data=>\@rows, style=>['', '', 'width: 60%']  &>
     </div>
 </div>
 <!-- End Display ARP -->
