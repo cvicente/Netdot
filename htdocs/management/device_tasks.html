@@ -65,15 +65,14 @@ if ( $submit ){
 	    unless ( (@list = Device->search_like(name=>$device_search)) ){
 		$m->comp('/generic/no_search_results.html', search=>$device_search);
 	    }
-	}
-	my $num = scalar(@list);
-	if ( $num == 1 ){
-	    # Don't offer list.  Just display device
-	    my $o  = $list[0];
-	    my $id = $o->id;
-	    $m->comp('/management/device.html', id => $id, user=>$user );
-	}else{
-	    $m->comp('.show_results', search=>$device_search, list=>\@list);
+	    if ( scalar(@list) == 1 ){
+		# Don't offer list.  Just display device
+		my $o  = $list[0];
+		my $id = $o->id;
+		$m->comp('/management/device.html', id => $id, user=>$user );
+	    }else{
+		$m->comp('.show_results', search=>$device_search, list=>\@list);
+	    }
 	}
     }else{
 	$m->comp('.show_tasks', %ARGS);
