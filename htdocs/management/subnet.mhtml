@@ -4,49 +4,53 @@
 </%doc>
 
 <%args>
-$network => undef
+$network
 </%args>
 
 <%init>
-</%init>
-
-    <%perl>
-
-    my %used;
+my %used;
 my %names;
 my %status;
 my %iplinks;
-
 my @children; 
+my $dbh = Netdot::Model->db_Main();
+my $id = $network->id;
+</%init>
+
+<%perl>
+
+my $q = "SELECT   ipblock.id, ipblock.address, ipblock.description, ipblockstatus.name, rr.name, device.id
+         FROM     ipblockstatus, ipblock 
+                  LEFT OUTER JOIN (rr, rraddr) ON (ipblock.id=rraddr.ipblock AND rraddr.rr=rr.id)
+                  LEFT OUTER JOIN (device, interface) ON ( ipblock.interface=interface.id AND interface.device=device.id)
+         WHERE    ipblock.parent=$id
+           AND    ipblock.status=ipblockstatus.id
+         ORDER BY ipblock.address";
+
+my $results = $dbh->selectall_arrayref($q);
+
+foreach my $r ( @$results ){
+    my ( $ipid, $address, $description, $status, $dnsname, $device ) = @$r;
+    $used{$address}  = 1;
+    $names{$address} = $status;  # default to show status first
     
-    if ( scalar(@children = $network->children) ){
-        foreach my $o ( @children ) {
-            $used{ $o->address } = 1;
-            my $dnsname;
-	    if ( my $rraddr = ($o->arecords)[0] ){
-		$dnsname = $rraddr->get_label;
+    if( $status eq "Static" ) {
+	if( $dnsname ) {
+	    $names{$address} = $dnsname;
+	}elsif( $device ){
+	    if ( my $lbl = Device->retrieve($device)->get_label ) {
+		$names{$address} = $lbl;
 	    }
+	}
+    }else{
+	$names{$address} = $description if ( $description ) ;
+    }
+    $status{$address}  = $status;
+    $iplinks{$address} = $ipid;
+}
+#$m->abort;
 
-            $names{ $o->address } = $o->status->name;  # default to show status first
-
-	    if( $o->status->name eq "Static" ) {
-                if( $dnsname ne "" ) {
-                    $names{ $o->address } = $dnsname;
-                } elsif( my $lbl = $o->interface->device->get_label ne "" ) {
-                    $names{ $o->address } = $lbl;
-                }
-	    }else{
-                if( $o->description ) {
-                    $names{ $o->address } = $o->description;
-                }
-	    }
-
-            $status{ $o->address }  = $o->status->name;
-            $iplinks{ $o->address } = $o->id;
-        }
-    }    
-
-my $net = NetAddr::IP->new($network->address . "/" . $network->prefix);
+my $net = NetAddr::IP->new($network->address, $network->prefix);
 my $mask = $net->masklen;
 
 my @headers = ( );
@@ -87,39 +91,38 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 	    $ipaddr = $ipaddr;
 	}
 
-
-	if( $net == $net->network || $net == $net->broadcast ) {
+	if ( $net == $net->network || $net == $net->broadcast ) {
 	    # don't allow selection of network or broadcast addresses
 	    if( $net == $net->network ) {
 		$ipaddr = '<div class="ipaddr_disabled" title="Network">'.$ipaddr.'</div>';
 	    } else {
 		$ipaddr = '<div class="ipaddr_disabled" title="Broadcast">'.$ipaddr.'</div>';
 	    }
-	} elsif( defined $used{ $net->addr } ) {
+	} elsif( exists $used{$net->numeric} ) {
 	    my $divclass;
-	    my $divtitle = $names{ $net->addr } if exists $names{ $net->addr };
+	    my $divtitle = $names{$net->numeric} if exists $names{$net->numeric};
 
-	    if( $status{$net->addr} eq "Static" ) {
+	    if( $status{$net->numeric} eq "Static" ) {
 		# show used addresses in red, with no link tag, show dns name on mouseover
 		$divclass = "ipaddr_static";
 
-	    } elsif( $status{$net->addr} eq "Dynamic" ) {
+	    } elsif( $status{$net->numeric} eq "Dynamic" ) {
 		# show dynamic addresses in orange, don't link
 		$divclass = "ipaddr_dynamic";
 
-	    } elsif( $status{$net->addr} eq "Reserved" ) {
+	    } elsif( $status{$net->numeric} eq "Reserved" ) {
 		# show reserved addresses in grey, don't link
 		$divclass = "ipaddr_reserved";
 
-	    } elsif( $status{$net->addr} eq "Container" ) {
+	    } elsif( $status{$net->numeric} eq "Container" ) {
 		# link to detail page for containers
 		$divclass = "ipaddr_container";
 
-	    }elsif( $status{$net->addr} eq "Discovered" ) {
+	    }elsif( $status{$net->numeric} eq "Discovered" ) {
 		$divclass = "ipaddr_discovered";
 	    }
 
-	    $ipaddr = '<a href="ip.html?id='.$iplinks{ $net->addr }.'" class="ipaddr">'.$ipaddr.'</a>';
+	    $ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>';
 	    $ipaddr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$ipaddr.'</div>';
 	} else {
 	    # link this address to the "Add" section in ip.html
