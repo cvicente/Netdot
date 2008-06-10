@@ -348,6 +348,13 @@ sub insert {
     # Notice that we might be told to skip validation
     #####################################################################
     
+    # This is a funny hack to avoid the address being shown in numeric.
+    # It also makes sure that the object's attributes are updated before
+    # calling validation methods
+    my $id = $newblock->id;
+    undef $newblock;
+    $newblock = $class->retrieve($id);
+
     if ( $validate ){
 	# We need to delete the object before bailing out
 	eval { 
@@ -364,9 +371,6 @@ sub insert {
 	$newblock->SUPER::update({owner=>$newblock->parent->owner});
     }
     
-    # This is a funny hack to avoid the address being shown in numeric.
-    my $id = $newblock->id;
-    $newblock = $class->retrieve($id);
     return $newblock;
 }
 
@@ -392,14 +396,11 @@ sub get_covering_block {
     $class->throw_fatal('Ipblock::get_covering_block: Missing required arguments: address')
 	unless ( $args{address} );
 
-    my $ip = $class->_prevalidate($args{address}, $args{prefix});
+    my @ipargs = ($args{address});
+    push @ipargs, $args{prefix} if defined $args{prefix};
+    my $ip = NetAddr::IP->new(@ipargs);
+    return unless defined $ip;
 
-    # Make sure this block does not exist
-    if ( $class->search(address=>$ip->addr, prefix=>$ip->masklen) ){
-	$class->throw_user(sprintf("Block %s/%s exists in db.  Using wrong method!", 
-				   $ip->addr, $ip->masklen));
-    }
-    
     # Search for this IP in the tree.  We should get the parent node
     my $n = $class->_tree_find(version => $ip->version, 
 			       address => $ip->numeric, 
@@ -1573,6 +1574,8 @@ sub _validate {
 				  $self->get_label, $parent->get_label));
 	    }	    
 	}
+    }else{
+	$logger->debug("Ipblock::_validate: " . $self->id . " does not have parent");
     }
     if ( $statusname eq "Subnet" ){
 	# We only want addresses inside a subnet.  If any blocks within this subnet

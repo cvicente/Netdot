@@ -194,100 +194,80 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
 
 #######################################################################################
-# ADD BLOCK
-#
-#######################################################################################
-}elsif ( $_action eq "ADD_BLOCK" ){
-    my ($address, $prefix);
-    if ($add_block =~ /\//){
-	($address, $prefix) = split /\//, $add_block;
-    }else{
-	$address = $add_block;
-    }
-    my %args = (address=>$address, status=>"Container");
-    $args{prefix} = $prefix if $prefix;
-    my $newblock; 
-    eval {
-	$newblock = Ipblock->insert(\%args);
-    };
-    if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);
-    }
-    if ($newblock){
-    	$o = $newblock;
-    	$id = $newblock->id;
-
-        if( $o->is_address ) {
-            $edit_ip   = 1;
-            $edit      = "ipinfo";
-            $added_ip  = 1;
-        } else {
-            $edit_block  = 1;
-            $edit        = "blockinfo";
-            $added_block = 1;
-        }
-    }
-
-#######################################################################################
-# ADD RANGE
+# ADD BLOCK OR RANGE
 #
 #######################################################################################
 }elsif ( $_action eq "ADD_RANGE" ){
-    my ($range_start, $range_end);
-
+    
     if ( $add_range_prefix ){
 	unless ( $add_range_prefix =~ /\// ){
-	    $m->comp('/generic/error.mhtml', error=> "$add_range_prefix does not look like a valid IP prefix.");
+	    $m->comp('/generic/error.mhtml', error=> "$add_range_prefix not a valid CIDR string.");
 	}
-	
-	my $hosts = Ipblock->get_host_addrs($add_range_prefix);
-	my $last = (scalar @$hosts) - 1;
-	$range_start = $hosts->[0];
-	$range_end   = $hosts->[$last];
-
-    }elsif ( $add_range_start && $add_range_end ){
-	$range_start = $add_range_start;
-	$range_end   = $add_range_end;
-    }else{
-	$m->comp('/generic/error.mhtml', error=>"You need to specify some kind of range!");
-    }
-
-    my $ipstart = NetAddr::IP->new($range_start);
-    my $ipend   = NetAddr::IP->new($range_end);
-
-    my @newips;
-    
-    unless ( $ipstart < $ipend ){
-	$m->comp('/generic/error.mhtml', error=>"Invalid range");
-    }
-    
-    # We want this to happen atomically (all or nothing)
-    eval {
-	Netdot::Model->do_transaction(sub {
-	    for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
-		my $ip = NetAddr::IP->new($i);
-		push @newips, Ipblock->insert({address     => $ip->addr,
-					       status      => $range_status,
-					       used_by     => $range_used_by,
-					       description => $range_description,
-					   });
+	my ($address, $prefix) = split /\//, $add_range_prefix;
+	if ( $range_status eq 'Dynamic' || $range_status eq 'Static' ){
+	    $m->comp('/generic/error.mhtml', error=>"IP block cannot be 'Dynamic' or 'Static'.  Specify IP Range instead.");
+	}
+	my $newblock;
+	eval {
+	    $newblock = Ipblock->insert({address     => $address,
+					 prefix      => $prefix,
+					 status      => $range_status,
+					 used_by     => $range_used_by,
+					 description => $range_description,
+					});
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}elsif ( $newblock ){
+	    $o  = $newblock;
+	    $id = $newblock->id;
+	    if( $o->is_address ) {
+		$added_ip  = 1;
+	    }else {
+		$added_block = 1;
 	    }
-	});
-      };
-    if ( my $e = $@ ){
-	$m->comp('/generic/error.mhtml', error=>$e);
-    }else{
-	$m->comp('.show_message', title=>"Action Message", msg=>"Address Range Added Successfully");
-	
-	# Show parent block
-	my $parent = $newips[0]->parent;
-	$id = $parent->id;
-	if ( $id != 0 ){
-	    $o = Ipblock->retrieve($id) 
-		|| $m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
 	}
+    }elsif ( $add_range_start && $add_range_end ){
+	if ( $range_status eq 'Subnet' ){
+	    $m->comp('/generic/error.mhtml', error=>"IP range cannot be 'Subnet'.  Specify IP/prefix instead.");
+	}
+	my $ipstart  = NetAddr::IP->new($add_range_start);
+	my $ipend    = NetAddr::IP->new($add_range_end);
+	unless ( $ipstart < $ipend ){
+	    $m->comp('/generic/error.mhtml', error=>"Invalid range: $add_range_start - $add_range_end");
+	}
+	# We want this to happen atomically (all or nothing)
+	my @newips;
+	eval {
+	    Netdot::Model->do_transaction(sub {
+		for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
+		    my $ip = NetAddr::IP->new($i);
+		    push @newips, Ipblock->insert({address     => $ip->addr,
+						   status      => $range_status,
+						   used_by     => $range_used_by,
+						   description => $range_description,
+						  });
+		}
+					  });
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
+	$m->comp('.show_message', title=>"Action Message", msg=>"Address Range Added Successfully");
+	# Show parent block
+	if ( my $parent = $newips[0]->parent ){
+	    $id = $parent->id;
+	    if ( $id != 0 ){
+		$o = Ipblock->retrieve($id) 
+		    || $m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
+	    }
+	}
+    }else{
+	$m->comp('/generic/error.mhtml', error=>"You need to specify either a IP/prefix or range of addresses");
     }
     
+    
+
 #######################################################################################
 # Delete
 #

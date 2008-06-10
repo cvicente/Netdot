@@ -77,34 +77,23 @@ my @list;
             </form>
             <form action="address_tasks.html" method="POST">
                 <p>
-                <label for="Find">Other:</label>
+                <label for="Find">Keywords:</label>
                 <input type="text" name="search_other" class="txt" value=""> 
                 <input name="submit" value="Search" class="btn" type="submit">
                 </p>
             </form>
         </fieldset>
         <fieldset class="medium">
-            <legend>Add Block</legend>
-            <form action="ip.html" method="POST">
-                <p>
-                <label for="add_block">IP[/prefix]:</label>
-                 <input type="text" name="add_block" class="txt" value=""> 
-                 <input name="submit" value="Add" class="btn" type="submit">
-                 <input type="hidden" name="_action" value="ADD_BLOCK">
-                </p>
-            </form>
-        </fieldset>
-        <fieldset class="medium">
-            <legend>Add Address Range</legend>
+            <legend>Add Block or Address Range</legend>
             <form action="ip.html" method="POST">
                 <input type="hidden" name="_action" value="ADD_RANGE">
                 <p>
-                <label for="add_range">Range:</label>
-                <input type="text" name="add_range_start" class="txt" value=""> - <input type="text" name="add_range_end" class="txt" value=""> OR
+                <label for="add_range">IP/prefix:</label>
+                <input type="text" name="add_range_prefix" class="txt" value="">
                 </p>
                 <p>
-                <label for="add_range">IP/prefix:</label>
-                <input type="text" name="add_range_prefix" class="txt" value=""> 
+                <label for="add_range">Or IP Range:</label>
+                <input type="text" name="add_range_start" class="txt" value=""> - <input type="text" name="add_range_end" class="txt" value="">
                 </p>
                 <p>
                 <label for="range_used_by">Used By:</label>
@@ -122,7 +111,7 @@ my @list;
                 <label for="range_status">Status:</label>
                 <select name="range_status" id="range_used_by">
                 <option value="0">-- Select --</option>
-%               my @allstatus = qw( Dynamic Reserved Static ); 
+%               my @allstatus = qw( Subnet Container Dynamic Reserved Static ); 
 %               foreach my $status ( @allstatus ){
                     <option value="<% $status %>"><% $status %></option>                
 %               }
@@ -153,16 +142,10 @@ if ( $submit ){
 	$search = $search_address;
 	$search =~ s/s+//g;
 	# These might throw exceptions
-	eval {
-	    if ( !(@list = Ipblock->search(address=>$search)) ){
-		# Return next existing higher block in the tree if not found
-		$covering_block = Ipblock->get_covering_block(address=>$search);
-	    }
-	};
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);	
+	if ( !(@list = Ipblock->search(address=>$search)) ){
+	    # Return next existing higher block in the tree if not found
+	    $covering_block = Ipblock->get_covering_block(address=>$search);
 	}
-	
     }elsif ( $search_regex ){
 	$search = $search_regex;
 	$search =~ s/s+//g;
