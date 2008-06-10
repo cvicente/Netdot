@@ -5,8 +5,8 @@ use warnings;
 use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
-my $MAC  = Netdot->get_mac_regex();
-my $IP   = Netdot->get_ipv4_regex();
+my $MAC    = Netdot->get_mac_regex();
+my $IP     = Netdot->get_ipv4_regex();
 
 
 
@@ -30,20 +30,16 @@ Netdot Device Topology Class
   Kinds of IP blocks allowed: 'Container' and 'Subnet'
         
   Arguments:
-    Hash with following keys:
-    blocks - array ref of CIDR blocks (192.168.0.0/24)
+    None
   Returns:
-    
+    True
   Examples:
-    Netdot::Model::Topology->discover(blocks=>['192.1.0.0/16', ...]);
+    Netdot::Model::Topology->discover();
 
 =cut
 sub discover {
     my ($class, %argv) = @_;
     $class->isa_class_method('discover');
-
-    my @blocks = (exists $argv{blocks}) ? @{$argv{blocks}}  : ();
-    my $blist = (@blocks) ? join ', ', @blocks : "DB";
 
     my %SOURCES;
     $SOURCES{DP}  = 1 if $class->config->get('TOPO_USE_DP');
@@ -53,98 +49,26 @@ sub discover {
     my $MINSCORE  = $class->config->get('TOPO_MIN_SCORE');
     my $srcs = join ', ', keys %SOURCES;
     
-    my %devs;
-    if (@blocks) {
-        foreach my $block ( @blocks ){
-            my $ipb = Ipblock->search(address=>$block)->first;
-            unless ( $ipb ){
-                $class->throw_user("IP block $block not found in DB");
-            }
-            my $status = $ipb->status->name;
-            if (  $status eq 'Container' || $status eq 'Subnet' ){
-                map { $devs{$_->id} = $_ } @{$ipb->get_devices()};
-            }else{
-                $class->throw_user(sprintf("Block %s is %s. Topology discovery only allowed on Container or Subnet Blocks",
-                                           $ipb->get_label, $status ));
-            }
-        }
-    } else {
-        map { $devs{$_->id} = $_ } Device->retrieve_all;
-    }
-
-    $logger->info(sprintf("Discovering topology for devices in %s, using sources: %s. Min score: %s", 
-			  $blist, $srcs, $MINSCORE));
+    $logger->info(sprintf("Discovering Network Topology using sources: %s. Min score: %s", 
+			  $srcs, $MINSCORE));
 
     my $start = time;
-    my (@dp_devs, %stp_roots, %fdb_vlans);
-    my $count = 0;
-    foreach my $devid ( keys %devs ){
-	my $dev = $devs{$devid};
-	# STP sources
-	if ( $SOURCES{STP} ){
-	    foreach my $stp_instance ( $dev->stp_instances() ){
-		if ( my $root = $stp_instance->root_bridge ){
-		    $stp_roots{$root}++;
-		}
-	    }
-	}
-	# Discovery Protocol sources
-	if ( $SOURCES{DP} ){
-	    push @dp_devs, $dev;
-	}
-    }
+    my $stp_links = $class->get_stp_links() if ( $SOURCES{STP} );
+    my $fdb_links = $class->get_fdb_links() if ( $SOURCES{FDB} );
+    my $dp_links  = $class->get_dp_links()  if ( $SOURCES{DP}  );
+    my $p2p_links = $class->get_p2p_links() if ( $SOURCES{P2P} );
 
-    # Determine links
-    my ($dp_links, $stp_links, $fdb_links, $p2p_links);
-    foreach my $root ( keys %stp_roots ){
-	#my $links = $class->get_stp_links(root=>$root);
-	#map { $stp_links->{$_} = $links->{$_} } keys %$links;
-    }
-
-    if (@blocks) {
-        $dp_links = $class->get_dp_links(\@dp_devs) if @dp_devs;
-        #$fdb_links = $class->get_fdb_links(\@blocks);
-        $logger->info("FDB information only gets used on whole-database queries");
-    } else {
-        $fdb_links = $class->get_fdb_links if ($SOURCES{FDB});
-        #$dp_links = $class->get_dp_links;
-    }   
-
-    print "Discovering unique things\n";
-    while (my ($from, $to) = each(%$fdb_links)) {
-        if (Interface->retrieve($from)  && Interface->retrieve($to)) {
-            print Interface->retrieve($from)->device->name->name ." -> ".  Interface->retrieve($to)->device->name->name;
-        } else {
-            print "$from -> $to";
-        }
-        print " STP" if (exists $stp_links->{$from} && $stp_links->{$from} == $to);
-        print " DP"  if (exists $dp_links->{$from} && $dp_links->{$from} == $to);
-        print "\n";
-    }
-
-    $p2p_links = $class->get_p2p_links();
-
-    $logger->debug(sprintf("Netdot::Model::Topology: Links determined in %s", $class->sec2dhms(time - $start)));
+    $logger->debug(sprintf("Netdot::Model::Topology: All links determined in %s", 
+			   $class->sec2dhms(time - $start)));
 
     # Get all existing links
     my %old_links;
-
-    # Two approaches - one optimized for dealing with ALL the data
-    if (@blocks) {
-        foreach my $devid ( keys %devs ){
-            my $dev = $devs{$devid};
-            my $n   = $dev->get_neighbors();
-            map { $old_links{$_} = $n->{$_} } keys %$n;	
-        }
-    } else {
-        my $dbh = $class->db_Main;
-        foreach my $row (@{$dbh->selectall_arrayref(
-                        "SELECT id, neighbor FROM interface WHERE neighbor != 0")}) {
-            my ($id, $neighbor) = @$row;
-            $old_links{$id} = $neighbor;
-        }
+    my $dbh = $class->db_Main;
+    foreach my $row (@{$dbh->selectall_arrayref("SELECT id, neighbor FROM interface WHERE neighbor != 0")}) {
+	my ($id, $neighbor) = @$row;
+	$old_links{$id} = $neighbor;
     }
-
+    
     my %args;
     $args{old_links} = \%old_links;
     $args{dp}        = $dp_links  if $dp_links;
@@ -153,8 +77,9 @@ sub discover {
     $args{p2p}       = $p2p_links if $p2p_links;
     my ($addcount, $remcount) = $class->update_links(%args);
     my $end = time;
-    $logger->info(sprintf("Topology discovery on %s done in %s. Links added: %d, removed: %d", 
-			  $blist, $class->sec2dhms($end-$start), $addcount, $remcount));
+    $logger->info(sprintf("Topology discovery done in %s. Links added: %d, removed: %d", 
+			  $class->sec2dhms($end-$start), $addcount, $remcount));
+    return 1;
 }
 
 ######################################################################################
@@ -172,14 +97,13 @@ sub discover {
     fdb       - Hash ref with links discovered from forwarding tables
     old_links - Hash ref with current links
   Returns:
-    
+    Array with: number of links added, number of links removed
   Examples:
     Netdot::Model::Topology->update_links(db_links=>$links);
 
 =cut
 sub update_links {
     my ($class, %argv) = @_;
-    my %links;
     my %WEIGHTS;
     $WEIGHTS{dp}  = $class->config->get('TOPO_WEIGHT_DP');
     $WEIGHTS{stp} = $class->config->get('TOPO_WEIGHT_STP');
@@ -192,6 +116,7 @@ sub update_links {
 	$hashes{$source} = $argv{$source};
     }
 
+    my %links;
     foreach my $source ( keys %hashes ){
 	my $score = $WEIGHTS{$source};
 	while ( my ($int, $nei) = each %{$hashes{$source}} ){
@@ -238,8 +163,8 @@ sub update_links {
     }
     # Remove old links than no longer exist
     foreach my $id ( keys %$old_links ){
-	my $nei = $old_links->{$id};
-	my $int = Interface->retrieve($id)   || $class->throw_fatal("Cannot retrieve Interface id $id");
+	my $nei  = $old_links->{$id};
+	my $int  = Interface->retrieve($id)  || $class->throw_fatal("Cannot retrieve Interface id $id");
 	my $nint = Interface->retrieve($nei) || $class->throw_fatal("Cannot retrieve Interface id $nei");
 	# Do not remove neighbors if the neighbor_fixed flag is on
         unless ( $int->neighbor_fixed || $nint->neighbor_fixed ){
@@ -256,7 +181,7 @@ sub update_links {
 =head2 get_dp_links - Get links between devices based on Discovery Protocol (CDP/LLDP) Info 
 
   Arguments:  
-    Reference to array of Device objects
+    None
   Returns:    
     Hashref with link info
   Example:
@@ -264,11 +189,13 @@ sub update_links {
 
 =cut
 sub get_dp_links {
-    my ($self, %argv) = @_;
-    $self->isa_class_method('get_dp_links');
+    my ($class, %argv) = @_;
+    $class->isa_class_method('get_dp_links');
+
+    my $start = time;
 
     # Using raw database access because Class::DBI was too slow here
-    my $dbh = $self->db_Main;
+    my $dbh = $class->db_Main;
     my $results;
     my $sth = $dbh->prepare("SELECT device, id, dp_remote_ip, dp_remote_id, dp_remote_port 
                              FROM interface 
@@ -277,31 +204,13 @@ sub get_dp_links {
     $sth->execute;
     $results = $sth->fetchall_arrayref;
 
-    # Filter the results if we didn't want every link in the database
-    if (exists $argv{'devs'}) {
-        my $devs =  $argv{'devs'};
-        my $filteredresults = ();
-        my %devicehash;
-        foreach my $dev ( @$devs ){
-            $devicehash{$dev->id} = $dev;
-        }
-
-        foreach my $row (@$results) {
-            if (exists $devicehash{$row->[0]}) {
-                push @$filteredresults, $row;
-            }
-        }
-
-        $results = $filteredresults;
-    }
-
     # Now go through everything looking for results
     my %links = ();
     my $allmacs = Device->get_macs_from_all();
     my $allips  = Device->get_ips_from_all();
     my %ips2discover;
 
-    foreach my $row (@$results) {
+    foreach my $row ( @$results ){
         my ($did, $iid, $r_ip, $r_id, $r_port) = @$row;
 	# In theory this is not needed, but I've seen some funny results from that query
 	next unless ( ($r_ip || $r_id) && $r_port );
@@ -355,7 +264,7 @@ sub get_dp_links {
         } 
 
 	unless ( $rem_dev ) {
-	    if ( $self->config->get('ADD_UNKNOWN_DP_DEVS') ){
+	    if ( $class->config->get('ADD_UNKNOWN_DP_DEVS') ){
 		if ( $r_ip ){
 		    foreach my $ip ( split ';', $r_ip ) {
 			if ( Ipblock->validate($ip) ){
@@ -415,6 +324,9 @@ sub get_dp_links {
         }
     }
 
+    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Links determined in %s", 
+			   $class->sec2dhms(time - $start)));
+    
     if ( keys %ips2discover ){
 	$logger->info("Netdot::Model::Topology::get_dp_links: Discovering unknown neighbors");
 	Device->snmp_update_parallel(hosts=>\%ips2discover);
@@ -424,7 +336,7 @@ sub get_dp_links {
 }
 
 ###################################################################################################
-=head2 get_fdb_links - Get links between devices based on FDB information
+=head2 get_fdb_links - Get links between devices based on Forwarding Database (FDB) information
 
   Arguments:  
     none
@@ -437,7 +349,7 @@ sub get_dp_links {
 sub get_fdb_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_fdb_links');
-
+    my $start = time;
     my $dbh = $class->db_Main;
 
     # Find the most recent query for every Vlan
@@ -492,172 +404,213 @@ sub get_fdb_links {
         while ($fdbstatement->fetch) {
             $d->{$device} = {} unless exists $d->{$device};
             $d->{$device}{$ifaceid} = {} unless exists $d->{$device}{$ifaceid};
-            next if (exists $infrastructure_macs{$entry}
-                || "$entry" eq "003048839C5F");  # This is pretty clearly another infrastructure MAC
+            next if (exists $infrastructure_macs{$entry});
+	    $d->{$device}{$ifaceid}{$entry} = 1;
+	}
 
-            $d->{$device}{$ifaceid}{$entry} = 1;
-        }
+	if (1 >= keys %$d) {
+	    $logger->debug("Only one device on vlan $vlan");
+	    next;
+	}
 
-        if (1 >= keys %$d) {
-            $logger->debug("Only one device on vlan $vlan");
-            next;
-        }
+	$logger->debug("vlan " . $vid . " has " . (scalar keys %$d) .  " devices at time $maxtstamp");
 
-        $logger->debug("vlan " . $vid . " has " . (scalar keys %$d) .  " devices at time $maxtstamp");
+	# Now, if there are any more complicated cases, we do the full
+	# algorithm
+	sub hash_intersection {
+	    my ($a, $b) = @_;
+	    my %combo = ();
+	    for my $k (keys %$a) { $combo{$k} = 1 if (exists $b->{$k}) }
+	    return \%combo;
+	}
 
-        # Now, if there are any more complicated cases, we do the full
-        # algorithm
-        sub hash_intersection {
-            my ($a, $b) = @_;
-            my %combo = ();
-            for my $k (keys %$a) { $combo{$k} = 1 if (exists $b->{$k}) }
-            return \%combo;
-        }
+	sub hash_union {
+	    my ($a, $b) = @_;
+	    my %combo = ();
+	    for my $k (keys %$a) { $combo{$k} = 1 }
+	    for my $k (keys %$b) { $combo{$k} = 1 }
+	    return \%combo;
+	}
 
-        sub hash_union {
-            my ($a, $b) = @_;
-            my %combo = ();
-            for my $k (keys %$a) { $combo{$k} = 1 }
-            for my $k (keys %$b) { $combo{$k} = 1 }
-            return \%combo;
-        }
+	sub same_hash_keys {
+	    my ($a, $b) = @_;
+	    for my $k (keys %$a) { return 0 unless (exists $b->{$k}) }
+	    for my $k (keys %$b) { return 0 unless (exists $a->{$k}) }
+	    return 1;
+	}
 
-        sub same_hash_keys {
-            my ($a, $b) = @_;
-            for my $k (keys %$a) { return 0 unless (exists $b->{$k}) }
-            for my $k (keys %$b) { return 0 unless (exists $a->{$k}) }
-            return 1;
-        }
-
-        $logger->debug("Finding all interfaces and on all devices");
-        my $device_addresses = {};
-        foreach my $device (keys %{$d}) {
-            $device_addresses->{$device} = {} unless exists $device_addresses->{$device};
-            foreach my $interface (keys %{$d->{$device}}) {
-                $device_addresses->{$device} = hash_union($device_addresses->{$device}, 
-                        $d->{$device}{$interface})
-            }
-        }
-
-        sub breakIntoGroups {
-            my ($device_addresses) = @_;
-            
-            # Make the graph we need to search
-            $logger->debug(" " . (scalar keys %$device_addresses) . " devices");
-            my $graph = {};
-            foreach my $device (keys %$device_addresses) {
-                $logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) . " addresses on a device");
-
-                $graph->{$device} = {} unless exists $graph->{$device};
-
-                foreach my $entry (keys %{$device_addresses->{$device}}) {
-                    $graph->{$entry} = {} unless exists $graph->{$entry};
-                    $graph->{$entry}{$device} = 1;
-                    $graph->{$device}{$entry} = 1;
-                }
-            }
-
-            # Now we have a big graph - let's search it
-            my %possibilities = ();
-
-            # Record, as a hash of listrefs, the devices we should check for connectivity with each device
-            foreach my $device (keys %$device_addresses) {
-                $possibilities{$device} = [];
-                my %seen = ();
-
-                $seen{$device} = 1; # Record that we've seen ourselves
-
-                # For every device that we have something in common with, we should check connectivity
-                foreach my $address (keys %{$graph->{$device}}) {
-                    if (100 < scalar keys %{$graph->{$address}}) {
-                        $logger->debug("Popular address: $address");
-                    }
-
-                    foreach my $neighbor (keys %{$graph->{$address}}) {
-                        next if (exists $seen{$neighbor});
-                        $seen{$neighbor} = 1;
-                        push @{$possibilities{$device}}, $neighbor;
-                    }
-                }
-            }
-
-            return %possibilities;
-        }
-
-        $logger->debug("We begin by breaking the devices up into separate subnets");
-        use Data::Dumper;
-        my %groups = breakIntoGroups($device_addresses);
-
-        $logger->debug("We now know what to search for each device");
-        my @possiblelinks = ();
-        foreach my $device (keys %groups) {
-            my @group = @{$groups{$device}};
-            my $hashsize = scalar keys %{$device_addresses->{$device}};
-            next if (0 == $hashsize);
-
-            foreach my $device2 (@group) {
-                next if ($device2 == $device);
-                next if (0 == scalar keys %{$device_addresses->{$device2}});
-
-                my $combosize = scalar keys %{hash_union($device_addresses->{$device}, 
-                                                  $device_addresses->{$device2})};
-
-                foreach my $interface (keys %{$d->{$device}}) {
-                    my $ihash = $d->{$device}{$interface};
-                    if (0 == scalar keys %$ihash) {
-                        next;
-                    }
-
-                    foreach my $interface2 (keys %{$d->{$device2}}) {
-                        my $ihash2 = $d->{$device2}{$interface2};
-                        if (0 == scalar keys %$ihash2) {
-                            next;
-                        }
-
-                        if (0 == scalar keys %{hash_intersection($ihash2, $ihash)}) {
-                            my $percentage = $hashsize / $combosize;
-                            push @possiblelinks, [ $percentage, $interface, $interface2 ]
-                                if ($percentage > .85);
-                        } 
-                    }
-                }
-            }
-        }
-
-        $logger->debug("" . (scalar @possiblelinks) . " possible links");
-
-        @possiblelinks = sort { $b->[0] <=> $a->[0] } @possiblelinks;
-        foreach my $l (@possiblelinks) {
-            my ($percent, $from, $to) = @$l;
-            next if (exists $links{$from});
-            next if (exists $links{$to});
-
-            my $toi = Interface->retrieve(id=>$to);
-            my $fromi = Interface->retrieve(id=>$from);
-            $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link (" . int (100*$percent) . "%): " . $fromi->device->get_label . " port " . $fromi->number . " -> " . $toi->device->get_label . " port " . $toi->number);
-            $links{$from} = $to;
-            $links{$to} = $from;
-        }
+	$logger->debug("Finding all interfaces and on all devices");
+	my $device_addresses = {};
+	foreach my $device (keys %{$d}) {
+	    $device_addresses->{$device} = {} unless exists $device_addresses->{$device};
+	    foreach my $interface (keys %{$d->{$device}}) {
+		$device_addresses->{$device} = &hash_union($device_addresses->{$device}, 
+							   $d->{$device}{$interface})
+	    }
+	}
+	sub break_into_groups {
+	    my ($device_addresses) = @_;
+	    
+	    # Make the graph we need to search
+	    $logger->debug(" " . (scalar keys %$device_addresses) . " devices");
+	    my $graph = {};
+	    foreach my $device (keys %$device_addresses) {
+		$logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) . " addresses on a device");
+		
+		$graph->{$device} = {} unless exists $graph->{$device};
+		
+		foreach my $entry (keys %{$device_addresses->{$device}}) {
+		    $graph->{$entry} = {} unless exists $graph->{$entry};
+		    $graph->{$entry}{$device} = 1;
+		    $graph->{$device}{$entry} = 1;
+		}
+	    }
+	    
+	    # Now we have a big graph - let's search it
+	    my %possibilities = ();
+	    
+	    # Record, as a hash of listrefs, the devices we should check for connectivity with each device
+	    foreach my $device (keys %$device_addresses) {
+		$possibilities{$device} = [];
+		my %seen = ();
+		
+		$seen{$device} = 1; # Record that we've seen ourselves
+		
+		# For every device that we have something in common with, we should check connectivity
+		foreach my $address (keys %{$graph->{$device}}) {
+		    if (100 < scalar keys %{$graph->{$address}}) {
+			$logger->debug("Popular address: $address");
+		    }
+		    
+		    foreach my $neighbor (keys %{$graph->{$address}}) {
+			next if (exists $seen{$neighbor});
+			$seen{$neighbor} = 1;
+			push @{$possibilities{$device}}, $neighbor;
+		    }
+		}
+	    }
+	    
+	    return %possibilities;
+	}
+	
+	$logger->debug("We begin by breaking the devices up into separate subnets");
+	my %groups = &break_into_groups($device_addresses);
+	
+	$logger->debug("We now know what to search for each device");
+	my @possiblelinks = ();
+	foreach my $device (keys %groups) {
+	    my @group = @{$groups{$device}};
+	    my $hashsize = scalar keys %{$device_addresses->{$device}};
+	    next if (0 == $hashsize);
+	    
+	    foreach my $device2 (@group) {
+		next if ($device2 == $device);
+		next if (0 == scalar keys %{$device_addresses->{$device2}});
+		
+		my $combosize = scalar keys %{&hash_union($device_addresses->{$device}, 
+							  $device_addresses->{$device2})};
+		
+		foreach my $interface (keys %{$d->{$device}}) {
+		    my $ihash = $d->{$device}{$interface};
+		    if (0 == scalar keys %$ihash) {
+			next;
+		    }
+		    
+		    foreach my $interface2 (keys %{$d->{$device2}}) {
+			my $ihash2 = $d->{$device2}{$interface2};
+			if (0 == scalar keys %$ihash2) {
+			    next;
+			}
+			
+			if (0 == scalar keys %{&hash_intersection($ihash2, $ihash)}) {
+			    my $percentage = $hashsize / $combosize;
+			    push @possiblelinks, [ $percentage, $interface, $interface2 ]
+				if ($percentage > .85);
+			} 
+		    }
+		}
+	    }
+	}
+	
+	$logger->debug("" . (scalar @possiblelinks) . " possible links");
+	
+	@possiblelinks = sort { $b->[0] <=> $a->[0] } @possiblelinks;
+	foreach my $l (@possiblelinks) {
+	    my ($percent, $from, $to) = @$l;
+	    next if (exists $links{$from});
+	    next if (exists $links{$to});
+	    
+	    my $toi   = Interface->retrieve(id=>$to);
+	    my $fromi = Interface->retrieve(id=>$from);
+	    $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link (" . int (100*$percent) . "%): " 
+			   . $fromi->device->get_label . " port " . $fromi->number . " -> " 
+			   . $toi->device->get_label . " port " . $toi->number);
+	    $links{$from} = $to;
+	    $links{$to}   = $from;
+	}
     }
 
+    $logger->debug(sprintf("Netdot::Model::Topology::get_fdb_links: Links determined in %s", 
+			   $class->sec2dhms(time - $start)));
     return \%links;
+    
 }
 
 ###################################################################################################
-=head2 get_stp_links - Get links between devices based on STP information
+=head2 get_stp_links - Get links between all devices based on STP information
 
   Arguments:  
-    Hashref with the following keys:
-     root  - Address of Root bridge
+    None
   Returns:    
     Hashref with link info
   Example:
-    my $links = Netdot::Model::Topology->get_stp_links(root=>'DEADDEADBEEF');
+    my $links = Netdot::Model::Topology->get_stp_links();
 
 =cut
 sub get_stp_links {
-    my ($self, %argv) = @_;
-    $self->isa_class_method('get_stp_links');
+    my ($class, %argv) = @_;
+    $class->isa_class_method('get_stp_links');
+    my $start = time;
+    my (%stp_roots, %stp_links);
+    my $it = Device->retrieve_all;
+    while ( my $dev = $it->next ){
+	foreach my $stp_instance ( $dev->stp_instances() ){
+	    if ( my $root = $stp_instance->root_bridge ){
+		$stp_roots{$root}++;
+	    }
+	}
+    }
+    my $devicemacs = Device->get_macs_from_all();
+    # Determine links
+    foreach my $root ( keys %stp_roots ){
+	my $links = $class->get_tree_stp_links(root=>$root, devicemacs=>$devicemacs);
+	map { $stp_links{$_} = $links->{$_} } keys %$links;
+    }
+    $logger->debug(sprintf("Netdot::Model::Topology::get_stp_links: Links determined in %s", 
+			   $class->sec2dhms(time - $start)));
+    
+    return \%stp_links;
+}
+
+###################################################################################################
+=head2 get_tree_stp_links - Get links between devices in a Spanning Tree
+
+  Arguments:  
+    Hashref with the following keys:
+    root  - Address of Root bridge
+    devicemacs - Hashref of Device MACs
+  Returns:    
+    Hashref with link info
+  Example:
+    my $links = Netdot::Model::Topology->get_tree_stp_links(root=>'DEADDEADBEEF');
+
+=cut
+sub get_tree_stp_links {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('get_tree_stp_links');
+
+    defined $argv{root} || $class->throw_fatal("Missing required argument: root");
+    my $allmacs = $argv{devicemacs} || $class->throw_fatal("Missing required argument: devicemacs");
     
     # Retrieve all the InterfaceVlan objects that participate in this tree
     my %ivs;
@@ -670,9 +623,9 @@ sub get_stp_links {
     # the designated port.  The non-designated bridge will point to the 
     # designated bridge instead.
     my %links;
-    $logger->debug(sprintf("Netdot::Model::Topology::get_stp_links: Determining topology for STP tree with root at %s", 
+    $logger->debug(sprintf("Netdot::Model::Topology::get_tree_stp_links: Determining topology for STP tree with root at %s", 
 			   $argv{root}));
-    my $allmacs = Device->get_macs_from_all();
+
     my (%far, %near);
     foreach my $ivid ( keys %ivs ){
 	my $iv = $ivs{$ivid};
@@ -709,21 +662,21 @@ sub get_stp_links {
 	    if ( exists $near{$des_b}{$des_p} ){
 		my $r_int = $near{$des_b}{$des_p};
 		$links{$int} = $r_int;
-		$logger->debug(sprintf("Netdot::Model::Topology::get_stp_links: Found link: %d -> %d", 
+		$logger->debug(sprintf("Netdot::Model::Topology::get_tree_stp_links: Found link: %d -> %d", 
 				       $int, $r_int));
 	    }else{
 		# Octet representations may not match
 		foreach my $r_des_p ( keys %{$near{$des_b}} ){
-		    if ( $self->_cmp_des_p($r_des_p, $des_p) ){
+		    if ( $class->_cmp_des_p($r_des_p, $des_p) ){
 			my $r_int = $near{$des_b}{$r_des_p};
 			$links{$int} = $r_int;
-			$logger->debug(sprintf("Netdot::Model::Topology::get_stp_links: Found link: %d -> %d", 
+			$logger->debug(sprintf("Netdot::Model::Topology::get_tree_stp_links: Found link: %d -> %d", 
 					       $int, $r_int));
 		    }
 		}
 	    }
 	}else{
-	    $logger->debug(sprintf("Netdot::Model::Topology::get_stp_links: Designated bridge %s not found", 
+	    $logger->debug(sprintf("Netdot::Model::Topology::get_tree_stp_links: Designated bridge %s not found", 
 				   $des_b));
 	}
     }
@@ -745,8 +698,9 @@ sub get_stp_links {
 
 =cut
 sub get_p2p_links {
-    my ($self, %argv) = @_;
-    $self->isa_class_method('get_stp_links');
+    my ($class, %argv) = @_;
+    $class->isa_class_method('get_p2p_links');
+    my $start = time;
     my %links;
     my @blocks = Ipblock->search(prefix=>'30');
     foreach my $block ( @blocks ){
@@ -771,6 +725,8 @@ sub get_p2p_links {
 	    }
 	}
     }
+    $logger->debug(sprintf("Netdot::Model::Topology::get_p2p_links: Links determined in %s", 
+			   $class->sec2dhms(time - $start)));
     return \%links;
 }
 
@@ -788,7 +744,7 @@ sub get_p2p_links {
 # are swapped, and one of them may have the most significant or second to most
 # significant bit turned on.  Go figure.
 sub _cmp_des_p {
-    my ($self, $a, $b) = @_;
+    my ($class, $a, $b) = @_;
     my ($aa, $ab, $ba, $bb, $x, $y);
     if ( $a =~ /(\w{2})(\w{2})/ ){
 	( $aa, $ab ) = ($1, $2);
