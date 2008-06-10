@@ -97,8 +97,8 @@ sub discover {
     # Determine links
     my ($dp_links, $stp_links, $fdb_links, $p2p_links);
     foreach my $root ( keys %stp_roots ){
-	my $links = $class->get_stp_links(root=>$root);
-	map { $stp_links->{$_} = $links->{$_} } keys %$links;
+	#my $links = $class->get_stp_links(root=>$root);
+	#map { $stp_links->{$_} = $links->{$_} } keys %$links;
     }
 
     if (@blocks) {
@@ -107,20 +107,20 @@ sub discover {
         $logger->info("FDB information only gets used on whole-database queries");
     } else {
         $fdb_links = $class->get_fdb_links if ($SOURCES{FDB});
-        $dp_links = $class->get_dp_links;
+        #$dp_links = $class->get_dp_links;
     }   
 
-#    print "Discovering unique things\n";
-#    while (my ($from, $to) = each(%$fdb_links)) {
-#        if (Interface->retrieve($from)  && Interface->retrieve($to)) {
-#            print Interface->retrieve($from)->device->name->name ." -> ".  Interface->retrieve($to)->device->name->name;
-#        } else {
-#            print "$from -> $to";
-#        }
-#        print " STP" if (exists $stp_links->{$from} && $stp_links->{$from} == $to);
-#        print " DP"  if (exists $dp_links->{$from} && $dp_links->{$from} == $to);
-#        print "\n";
-#    }
+    print "Discovering unique things\n";
+    while (my ($from, $to) = each(%$fdb_links)) {
+        if (Interface->retrieve($from)  && Interface->retrieve($to)) {
+            print Interface->retrieve($from)->device->name->name ." -> ".  Interface->retrieve($to)->device->name->name;
+        } else {
+            print "$from -> $to";
+        }
+        print " STP" if (exists $stp_links->{$from} && $stp_links->{$from} == $to);
+        print " DP"  if (exists $dp_links->{$from} && $dp_links->{$from} == $to);
+        print "\n";
+    }
 
     $p2p_links = $class->get_p2p_links();
 
@@ -438,8 +438,6 @@ sub get_fdb_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_fdb_links');
 
-    my %links;
-
     my $dbh = $class->db_Main;
 
     # Find the most recent query for every Vlan
@@ -456,36 +454,48 @@ sub get_fdb_links {
     $vlanstatement->bind_columns(\$maxtstamp, \$vlan);
 
     my $fdbstatement = $dbh->prepare_cached("
-            SELECT fwtable.device, interface.id, p1.address, p2.address
-            FROM interface, interfacevlan, fwtable, fwtableentry,
-                physaddr p1, physaddr p2
-            WHERE fwtable.device = interface.device
+            SELECT fwtable.device, interface.id, physaddr.address
+            FROM interface, interfacevlan, fwtable, fwtableentry, physaddr
+            WHERE 
+                    fwtable.device = interface.device
                 AND fwtable.tstamp = ?
                 AND fwtableentry.fwtable = fwtable.id
                 AND fwtableentry.interface = interface.id
                 AND interfacevlan.vlan = ?
                 AND interfacevlan.interface = interface.id
-                AND interface.physaddr = p1.id
-                AND fwtableentry.physaddr = p2.id
+                AND fwtableentry.physaddr = physaddr.id
         ");
 
+    my %links;  # The links we find go here
+
+    my %devices = (); # Device ids to Device objects -- just for debugging
+    foreach my $device (Device->retrieve_all) {
+        $devices{$device->id} = $device;
+    }
+
+    # Ignore all entries that aren't about end devices
+    my %infrastructure_macs = %{PhysAddr->infrastructure};
+
     while ($vlanstatement->fetch) {
-        $logger->debug("Discovering how vlan $vlan was connected at $maxtstamp");
+        my $vid = Vlan->retrieve(id=>$vlan)->vid;
+        $logger->debug("Discovering how vlan " . $vid . " (id=$vlan) was connected at $maxtstamp");
 
         $fdbstatement->execute($maxtstamp, $vlan);
         
+        $logger->debug("Done executing the FDB query");
+
         my ($device, $ifaceid, $localiface, $entry);
+        $fdbstatement->bind_columns(\$device, \$ifaceid, \$entry);
 
-        $fdbstatement->bind_columns(\$device, \$ifaceid, \$localiface, \$entry);
-
-        my %addriface = ();
+        $logger->debug("Iterating through all the return values");
         my $d = {};
         while ($fdbstatement->fetch) {
-            $addriface{$localiface} = $ifaceid;
-
             $d->{$device} = {} unless exists $d->{$device};
-            $d->{$device}{$localiface} = {} unless exists $d->{$device}{$localiface};
-            $d->{$device}{$localiface}{$entry} = 1;
+            $d->{$device}{$ifaceid} = {} unless exists $d->{$device}{$ifaceid};
+            next if (exists $infrastructure_macs{$entry}
+                || "$entry" eq "003048839C5F");  # This is pretty clearly another infrastructure MAC
+
+            $d->{$device}{$ifaceid}{$entry} = 1;
         }
 
         if (1 >= keys %$d) {
@@ -493,77 +503,7 @@ sub get_fdb_links {
             next;
         }
 
-        $logger->debug("vlan $vlan has multiple devices at time $maxtstamp");
-
-        # Now thin out the data hash
-        my $interfaces = {};
-        foreach my $device (keys %$d) {
-            foreach my $interface (keys %{$d->{$device}}) {
-                $interfaces->{$interface} = 1;
-            }
-        }
-
-        # Delete all entries that don't refer to other infrastructure
-        # devices on the same vlan
-        foreach my $device (keys %$d) {
-            foreach my $interface (keys %{$d->{$device}}) {
-                foreach my $addr (keys %{$d->{$device}{$interface}}) {
-                    unless (exists $interfaces->{$addr}) {
-                        delete $d->{$device}{$interface}{$addr};
-                    }
-                }
-            }
-        }
-
-        # Delete all interfaces that have no fwtable entries for other
-        # items in the same vlan
-        foreach my $device (keys %$d) {
-            foreach my $interface (keys %{$d->{$device}}) {
-                if (0 == scalar keys %{$d->{$device}{$interface}}) {
-                    delete $d->{$device}{$interface};
-                } 
-            }
-        }
-
-        # Delete all devices on the vlan which don't seem to connect to
-        # other devices on the vlan
-        foreach my $device (keys %$d) {
-            $logger->debug("Device $device has no fwtables containing anything in vlan $vlan");
-            delete $d->{$device}
-                if (0 == keys %{$d->{$device}});
-        }
-
-        unless (scalar keys %$d && 1 != scalar keys %$d) {
-            $logger->debug("No cross-referencing fwtables found in $vlan");
-            next;
-        }
-
-        # Now we know we actually have data to work with in $d
-        # First is the easy case - when we have only A in B's FDB and only B in
-        # A's FDB.
-
-        $interfaces = {};
-
-        # Things with a single entry are considered individually
-        foreach my $device (keys %$d) {
-            foreach my $interface (keys %{$d->{$device}}) {
-                $interfaces->{$interface} = $d->{$device}{$interface};
-            }
-        }
-
-        foreach my $interface (keys %$interfaces) {
-            next if (exists $links{$interface});
-
-            my @table = keys %{$interfaces->{$interface}};
-            if (1 == scalar @table
-                    && 1 == scalar keys %{$interfaces->{$table[0]}}
-                    && exists $interfaces->{$table[0]}{$interface} ) {
-
-                $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link: " . $addriface{$interface} . " -> " . $addriface{$table[0]});
-                $links{$addriface{$interface}} = $addriface{$table[0]};
-                $links{$addriface{$table[0]}} = $addriface{$interface};
-            } 
-        }
+        $logger->debug("vlan " . $vid . " has " . (scalar keys %$d) .  " devices at time $maxtstamp");
 
         # Now, if there are any more complicated cases, we do the full
         # algorithm
@@ -571,7 +511,7 @@ sub get_fdb_links {
             my ($a, $b) = @_;
             my %combo = ();
             for my $k (keys %$a) { $combo{$k} = 1 if (exists $b->{$k}) }
-            return keys %combo;
+            return \%combo;
         }
 
         sub hash_union {
@@ -589,21 +529,114 @@ sub get_fdb_links {
             return 1;
         }
 
-        foreach my $from (keys %$interfaces) {
-            next if (exists $links{$from});
+        $logger->debug("Finding all interfaces and on all devices");
+        my $device_addresses = {};
+        foreach my $device (keys %{$d}) {
+            $device_addresses->{$device} = {} unless exists $device_addresses->{$device};
+            foreach my $interface (keys %{$d->{$device}}) {
+                $device_addresses->{$device} = hash_union($device_addresses->{$device}, 
+                        $d->{$device}{$interface})
+            }
+        }
 
-            foreach my $to (keys %{$interfaces->{$from}}) {
-                if ((0 == scalar hash_intersection($interfaces->{$from}, 
-                                                   $interfaces->{$to}))
-                        && same_hash_keys(hash_union($interfaces->{$from}, 
-                                                      $interfaces->{$to}), 
-                                          $interfaces)) {
-#                    $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link: " . $addriface{$interface} . " -> " . $addriface{$table[0]});
-                    $links{$addriface{$from}} = $addriface{$to};
-                    $links{$addriface{$to}} = $addriface{$from};
-                    last;
+        sub breakIntoGroups {
+            my ($device_addresses) = @_;
+            
+            # Make the graph we need to search
+            $logger->debug(" " . (scalar keys %$device_addresses) . " devices");
+            my $graph = {};
+            foreach my $device (keys %$device_addresses) {
+                $logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) . " addresses on a device");
+
+                $graph->{$device} = {} unless exists $graph->{$device};
+
+                foreach my $entry (keys %{$device_addresses->{$device}}) {
+                    $graph->{$entry} = {} unless exists $graph->{$entry};
+                    $graph->{$entry}{$device} = 1;
+                    $graph->{$device}{$entry} = 1;
                 }
             }
+
+            # Now we have a big graph - let's search it
+            my %possibilities = ();
+
+            # Record, as a hash of listrefs, the devices we should check for connectivity with each device
+            foreach my $device (keys %$device_addresses) {
+                $possibilities{$device} = [];
+                my %seen = ();
+
+                $seen{$device} = 1; # Record that we've seen ourselves
+
+                # For every device that we have something in common with, we should check connectivity
+                foreach my $address (keys %{$graph->{$device}}) {
+                    if (100 < scalar keys %{$graph->{$address}}) {
+                        $logger->debug("Popular address: $address");
+                    }
+
+                    foreach my $neighbor (keys %{$graph->{$address}}) {
+                        next if (exists $seen{$neighbor});
+                        $seen{$neighbor} = 1;
+                        push @{$possibilities{$device}}, $neighbor;
+                    }
+                }
+            }
+
+            return %possibilities;
+        }
+
+        $logger->debug("We begin by breaking the devices up into separate subnets");
+        use Data::Dumper;
+        my %groups = breakIntoGroups($device_addresses);
+
+        $logger->debug("We now know what to search for each device");
+        my @possiblelinks = ();
+        foreach my $device (keys %groups) {
+            my @group = @{$groups{$device}};
+            my $hashsize = scalar keys %{$device_addresses->{$device}};
+            next if (0 == $hashsize);
+
+            foreach my $device2 (@group) {
+                next if ($device2 == $device);
+                next if (0 == scalar keys %{$device_addresses->{$device2}});
+
+                my $combosize = scalar keys %{hash_union($device_addresses->{$device}, 
+                                                  $device_addresses->{$device2})};
+
+                foreach my $interface (keys %{$d->{$device}}) {
+                    my $ihash = $d->{$device}{$interface};
+                    if (0 == scalar keys %$ihash) {
+                        next;
+                    }
+
+                    foreach my $interface2 (keys %{$d->{$device2}}) {
+                        my $ihash2 = $d->{$device2}{$interface2};
+                        if (0 == scalar keys %$ihash2) {
+                            next;
+                        }
+
+                        if (0 == scalar keys %{hash_intersection($ihash2, $ihash)}) {
+                            my $percentage = $hashsize / $combosize;
+                            push @possiblelinks, [ $percentage, $interface, $interface2 ]
+                                if ($percentage > .85);
+                        } 
+                    }
+                }
+            }
+        }
+
+        $logger->debug("" . (scalar @possiblelinks) . " possible links");
+
+        @possiblelinks = sort { $b->[0] <=> $a->[0] } @possiblelinks;
+        foreach my $l (@possiblelinks) {
+            my ($percent, $from, $to) = @$l;
+            next if (exists $links{$from});
+            next if (exists $links{$to});
+
+            my $toi = Interface->retrieve(id=>$to);
+            my $fromi = Interface->retrieve(id=>$from);
+            $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link (" . int (100*$percent) . "%): " . $fromi->device->get_label . " port " . $fromi->number . " -> " . $toi->device->get_label . " port " . $toi->number);
+            $links{$from} = $to;
+            $links{$to} = $from;
         }
     }
 
