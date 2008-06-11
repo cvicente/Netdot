@@ -1093,7 +1093,8 @@ sub discover {
 		$devtmp{collect_fwt} = 1;
 		$devtmp{collect_stp} = 1;
 	    }
-	    if ( $class->_layer_active($info->{layers}, 3) ){
+	    if ( $class->_layer_active($info->{layers}, 3) 
+		 && $info->{ipforwarding} ){
 		$devtmp{collect_arp} = 1;
 	    }
 	}
