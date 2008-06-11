@@ -296,13 +296,8 @@ if ( $submit eq 'Edit' ) {
             Changes Saved
         </div>
         <div class="containerbody">
-            Your changes to the following records have been saved:<br>
-            <div style="margin-left:30px;">
-%           my @lbls = map { $_->get_label } @objs;
-%           foreach my $lbl ( sort @lbls ) {
-                <% $table %> <% $lbl %><br>
-%           }
-            </div>
+            <br>Your changes to the following <% $table %> records have been saved:<br><br>
+            <& sortresults.mhtml, object=>\@objs &>
         </div>
     </div>
     <%perl>
