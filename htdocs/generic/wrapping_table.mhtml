@@ -8,45 +8,31 @@ Arguments:
 </%doc>
 
 <%args>
-@data       => undef;
-$cols       => 4;
+@data   => undef;
+$cols   => 4;
 </%args>
 
-<%perl>
+<%init>
+my $nfields = scalar (@data);
+my $nrows   = ( $nfields % $cols == 0 ) ? $nfields/$cols : int($nfields/$cols)+1;
+my $pos     = 0;
+my $colwidth = int(100/$cols);
+</%init>
 
-print '<table border="0" width="100%" cellspacing="0">';
-print "\n";
 
-my $pos = 0;
-foreach (@data) {
-
-  if ($pos % $cols == 0) {
-    print '<tr>';
-    print "\n";
-  }
-
-    print '    <td>'.$_.'</td>';
-    print "\n";
-
-  if ($pos % $cols == $cols-1) {
-    print '</tr>';
-    print "\n";
-  }
-
-  $pos++;
-}
-
-# check for empty cells to fill in case number of items does not divide cols evenly
-if ( $pos % $cols != 0 ) {
-  while ($pos%$cols > 0) {
-    print '<td>&nbsp;</td>';
-    $pos++;
-  }
-  print '</tr>';
-  print "\n";
-}
-
-print '</table>';
-print "\n";
-
-</%perl>
+ <table border="0" width="100%">
+    <tr>
+%    for ( my($w)=1; $w <= $cols; $w++ ){
+       <td width="<% $colwidth %>%">
+	<table border="0" width="100%">
+%	    for ( my($r)=1; $r <= $nrows; $r++ ){
+		<tr>
+		    <td><% $data[$pos] %></td>		    
+		</tr>
+%		$pos++;
+%	    }
+       </td>
+	</table>
+%    }
+    </tr>
+ </table>
