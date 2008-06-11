@@ -62,6 +62,18 @@ my $SECTION = "Advanced";
 
     <p>
     <fieldset class="small">
+        <legend>Browse</legend>
+        <form action="browse.html" method="POST" name="browse_form">
+            <select name="table" onChange="document.browse_form.submit()">
+%       foreach my $t (@t) {
+                <option><% $t %></option>
+%       }
+            </select>
+        </form>
+    </fieldset>
+    </p>
+    <p>
+    <fieldset class="small">
         <legend>Search</legend>
         <form action="search_obj.html" method="POST" name="search_form">
             <select name="table" onChange="document.search_form.submit()">
@@ -78,19 +90,6 @@ my $SECTION = "Advanced";
         <legend>Add</legend>
         <form action="edit.html" method="POST" name="add_form">
             <select name="table" onChange="document.add_form.submit()">
-%       foreach my $t (@t) {
-                <option><% $t %></option>
-%       }
-            </select>
-        </form>
-    </fieldset>
-    </p>
-
-    <p>
-    <fieldset class="small">
-        <legend>Browse</legend>
-        <form action="browse.html" method="POST" name="browse_form">
-            <select name="table" onChange="document.browse_form.submit()">
 %       foreach my $t (@t) {
                 <option><% $t %></option>
 %       }
