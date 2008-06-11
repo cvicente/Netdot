@@ -2273,7 +2273,8 @@ sub info_update {
 		    );
 		# Make sure we can write to the description field when
 		# device is airespace - we store the AP name as the int description
-		$args{overwrite_descr} = 1 if ( $info->{airespace} );
+		# Also, if device is a router
+		$args{overwrite_descr} = 1 if ( $info->{airespace} || $info->{ipforwarding} );
 		
 		$if = Interface->insert(\%args);
 		
