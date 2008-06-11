@@ -3650,7 +3650,7 @@ sub _get_poll_stats {
     
     ##############################################
     # MAC addresses
-    my $sth3 = $dbh->prepare('SELECT COUNT(p.id)
+    my $sth3 = $dbh->prepare('SELECT COUNT(DISTINCT i.physaddr)
                               FROM   physaddr p, interface i 
                               WHERE  i.physaddr=p.id AND
                                      p.last_seen=?
