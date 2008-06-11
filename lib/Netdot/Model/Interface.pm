@@ -63,25 +63,20 @@ sub insert {
 sub find_duplex_mismatches {
     my ($class) = @_;
     $class->isa_class_method('find_duplex_mismatches');
-    my $mism;
     my $dbh = $class->db_Main();
-    eval {
-	my $sth = $dbh->prepare_cached("SELECT i.id, r.id
-                                        FROM interface i, interface r
-                                        WHERE i.neighbor=r.id 
-                                        AND (i.oper_duplex!=r.oper_duplex 
-                                        OR ((i.speed!=0 AND r.speed!=0) AND (i.speed!=r.speed)))");
-	$sth->execute();
-	$mism = $sth->fetchall_arrayref;
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
-    }
+    my $mismatches = $dbh->selectall_arrayref("SELECT  i.id, r.id
+                                               FROM    interface i, interface r
+                                               WHERE   i.neighbor=r.id  
+                                                 AND   i.type=r.type
+                                                 AND   i.type='ethernetCsmacd'
+                                                 AND   (i.oper_duplex!=r.oper_duplex 
+                                                   OR  ((i.speed!=0 AND r.speed!=0) AND (i.speed!=r.speed)))");
+
     # SQL returns pairs in both orders. Until I figure out how 
     # to get SQL to return unique pairs...
-    if ( $mism ){
+    if ( $mismatches ){
 	my (%seen, @res);
-	foreach my $pair ( @$mism ){
+	foreach my $pair ( @$mismatches ){
 	    next if ( exists $seen{$pair->[0]} || exists $seen{$pair->[1]} );
 	    push @res, $pair;
 	    $seen{$pair->[0]}++;
