@@ -388,6 +388,28 @@ sub get_fdb_links {
     # Ignore all entries that aren't about end devices
     my %infrastructure_macs = %{PhysAddr->infrastructure};
 
+    sub hash_intersection {
+	my ($a, $b) = @_;
+	my %combo = ();
+	for my $k (keys %$a) { $combo{$k} = 1 if (exists $b->{$k}) }
+	return \%combo;
+    }
+    
+    sub hash_union {
+	my ($a, $b) = @_;
+	my %combo = ();
+	for my $k (keys %$a) { $combo{$k} = 1 }
+	for my $k (keys %$b) { $combo{$k} = 1 }
+	return \%combo;
+    }
+    
+    sub same_hash_keys {
+	my ($a, $b) = @_;
+	for my $k (keys %$a) { return 0 unless (exists $b->{$k}) }
+	for my $k (keys %$b) { return 0 unless (exists $a->{$k}) }
+	return 1;
+    }
+    
     while ($vlanstatement->fetch) {
         my $vid = Vlan->retrieve(id=>$vlan)->vid;
         $logger->debug("Discovering how vlan " . $vid . " (id=$vlan) was connected at $maxtstamp");
@@ -417,27 +439,6 @@ sub get_fdb_links {
 
 	# Now, if there are any more complicated cases, we do the full
 	# algorithm
-	sub hash_intersection {
-	    my ($a, $b) = @_;
-	    my %combo = ();
-	    for my $k (keys %$a) { $combo{$k} = 1 if (exists $b->{$k}) }
-	    return \%combo;
-	}
-
-	sub hash_union {
-	    my ($a, $b) = @_;
-	    my %combo = ();
-	    for my $k (keys %$a) { $combo{$k} = 1 }
-	    for my $k (keys %$b) { $combo{$k} = 1 }
-	    return \%combo;
-	}
-
-	sub same_hash_keys {
-	    my ($a, $b) = @_;
-	    for my $k (keys %$a) { return 0 unless (exists $b->{$k}) }
-	    for my $k (keys %$b) { return 0 unless (exists $a->{$k}) }
-	    return 1;
-	}
 
 	$logger->debug("Finding all interfaces and on all devices");
 	my $device_addresses = {};
@@ -455,14 +456,14 @@ sub get_fdb_links {
 	    $logger->debug(" " . (scalar keys %$device_addresses) . " devices");
 	    my $graph = {};
 	    foreach my $device (keys %$device_addresses) {
-		$logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) . " addresses on a device");
+		$logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) . " addresses on device $device");
 		
-		$graph->{$device} = {} unless exists $graph->{$device};
+		$graph->{addresses}->{$device} = {} unless exists $graph->{addresses}->{$device};
 		
 		foreach my $entry (keys %{$device_addresses->{$device}}) {
-		    $graph->{$entry} = {} unless exists $graph->{$entry};
-		    $graph->{$entry}{$device} = 1;
-		    $graph->{$device}{$entry} = 1;
+		    $graph->{devices}->{$entry} = {} unless exists $graph->{devices}->{$entry};
+		    $graph->{devices}->{$entry}{$device} = 1;
+		    $graph->{addresses}->{$device}{$entry} = 1;
 		}
 	    }
 	    
@@ -477,12 +478,12 @@ sub get_fdb_links {
 		$seen{$device} = 1; # Record that we've seen ourselves
 		
 		# For every device that we have something in common with, we should check connectivity
-		foreach my $address (keys %{$graph->{$device}}) {
-		    if (100 < scalar keys %{$graph->{$address}}) {
+		foreach my $address (keys %{$graph->{addresses}->{$device}}) {
+		    if (100 < scalar keys %{$graph->{devices}->{$address}}) {
 			$logger->debug("Popular address: $address");
 		    }
 		    
-		    foreach my $neighbor (keys %{$graph->{$address}}) {
+		    foreach my $neighbor (keys %{$graph->{devices}->{$address}}) {
 			next if (exists $seen{$neighbor});
 			$seen{$neighbor} = 1;
 			push @{$possibilities{$device}}, $neighbor;
@@ -499,16 +500,19 @@ sub get_fdb_links {
 	$logger->debug("We now know what to search for each device");
 	my @possiblelinks = ();
 	foreach my $device (keys %groups) {
-	    my @group = @{$groups{$device}};
-	    my $hashsize = scalar keys %{$device_addresses->{$device}};
-	    next if (0 == $hashsize);
+	    my @neighbors = @{$groups{$device}};
+	    next if (0 == scalar keys %{$device_addresses->{$device}};
 	    
-	    foreach my $device2 (@group) {
+	    foreach my $device2 (@neighbors) {
 		next if ($device2 == $device);
 		next if (0 == scalar keys %{$device_addresses->{$device2}});
 		
-		my $combosize = scalar keys %{&hash_union($device_addresses->{$device}, 
-							  $device_addresses->{$device2})};
+		my $union = $device_addresses->{$device};
+		foreach my $neighbor ( @neighbors ){
+		    $union = &hash_union($union, $device_addresses->{$neighbor});
+		}
+		my $unionsize = scalar keys %$union;
+		$logger->debug(" $unionsize combined addresses in this group");
 		
 		foreach my $interface (keys %{$d->{$device}}) {
 		    my $ihash = $d->{$device}{$interface};
@@ -521,9 +525,10 @@ sub get_fdb_links {
 			if (0 == scalar keys %$ihash2) {
 			    next;
 			}
-			
+			my $combosize = scalar keys %{&hash_union($ihash2, $ihash)};
+
 			if (0 == scalar keys %{&hash_intersection($ihash2, $ihash)}) {
-			    my $percentage = $hashsize / $combosize;
+			    my $percentage = $combosize / $unionsize;
 			    push @possiblelinks, [ $percentage, $interface, $interface2 ]
 				if ($percentage > .85);
 			} 
@@ -543,8 +548,7 @@ sub get_fdb_links {
 	    my $toi   = Interface->retrieve(id=>$to);
 	    my $fromi = Interface->retrieve(id=>$from);
 	    $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link (" . int (100*$percent) . "%): " 
-			   . $fromi->device->get_label . " port " . $fromi->number . " -> " 
-			   . $toi->device->get_label . " port " . $toi->number);
+			   . $fromi->get_label . " -> " . $toi->get_label );
 	    $links{$from} = $to;
 	    $links{$to}   = $from;
 	}
