@@ -95,12 +95,12 @@ if( $intadd ){
     }else{
 	# Minimal info to create device manually
 	eval {
-	    $o = Device->discover(name=>$newhost, 
-				  info=> { interface => { '1' => {'name'   => "eth0",
-								  'number' => 1,
-								  'ips'    => {
-								      $newip => { address => $newip } } } } } );
-	    $o->update({snmp_managed=>0, canautoupdate=>0});
+	    $o = Device->insert({name=>$newhost, snmp_managed=>0, canautoupdate=>0});
+	    $o->snmp_update(info=>{ do_info=>1,
+				    interface => { '1' => {'name'   => "",
+							   'number' => 1,
+							   'ips'    => {
+							       $newip => { address => $newip } } } } } );
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);	

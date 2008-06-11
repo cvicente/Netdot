@@ -1833,7 +1833,7 @@ sub snmp_update {
     my $timestamp = $argv{timestamp} || $self->timestamp;
 
     my $sinfo = $argv{session};
-    unless ( $sinfo ){
+    unless ( $argv{info} || $sinfo ){
 	$sinfo = $self->_get_snmp_session(communities => $argv{communities},
 					  version     => $argv{version},
 					  timeout     => $argv{timeout},
