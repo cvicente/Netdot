@@ -23,12 +23,15 @@ my $user       = Apache2::SiteControl->getCurrentUser($r);
 if ( my $show = $m->base_comp->attr_if_exists('showheader') ){
     $showheader = defined($showheader) ?  $showheader : $show;
 }
+my $meta_refresh = 0;
+$meta_refresh = $m->base_comp->attr_if_exists('meta_refresh');
+
 </%init>
 %
 %
 % print "base comp: ", $m->base_comp->name, "<br>"  if $DEBUG;
 % print "req comp: ", $m->request_comp->name, "<br>"  if $DEBUG;
-<& header.mhtml,   title => $title, section => $section, user => $user, showheader=>$showheader, onload=>$onload &>
+<& header.mhtml,   title => $title, section => $section, user => $user, showheader=>$showheader, onload=>$onload, meta_refresh=>$meta_refresh &>
 <& section1.mhtml, title => $title, section => $section, user => $user, showheader=>$showheader &>
 <div id="content">
 % $m->call_next(user => $user, showheader => $showheader);
