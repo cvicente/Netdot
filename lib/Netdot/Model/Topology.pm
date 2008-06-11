@@ -501,7 +501,7 @@ sub get_fdb_links {
 	my @possiblelinks = ();
 	foreach my $device (keys %groups) {
 	    my @neighbors = @{$groups{$device}};
-	    next if (0 == scalar keys %{$device_addresses->{$device}};
+	    next if (0 == scalar keys %{$device_addresses->{$device}});
 	    
 	    foreach my $device2 (@neighbors) {
 		next if ($device2 == $device);
@@ -531,7 +531,7 @@ sub get_fdb_links {
 			    my $percentage = $combosize / $unionsize;
 			    push @possiblelinks, [ $percentage, $interface, $interface2 ]
 				if ($percentage > .85);
-			} 
+			}
 		    }
 		}
 	    }
