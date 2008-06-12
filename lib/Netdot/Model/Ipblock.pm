@@ -652,8 +652,8 @@ sub fast_update{
 	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
 	my $sth = $dbh->prepare_cached("INSERT INTO ipblock
                                         (address,prefix,version,status,first_seen,last_seen,
-                                        dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
-                                        VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')
+                                        dhcp_enabled,interface,owner,parent,used_by,vlan)
+                                        VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0')
                                         ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");
 
 	foreach my $address ( keys %$ips ){
@@ -672,8 +672,8 @@ sub fast_update{
 	
 	my $sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
                                           (address,prefix,version,status,first_seen,last_seen,
-                                           dhcp_enabled,interface,natted_to,owner,parent,used_by,vlan)
-                                           VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0','0')");
+                                           dhcp_enabled,interface,owner,parent,used_by,vlan)
+                                           VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0')");
 	
 	# Now walk our list and do the right thing
 	foreach my $address ( keys %$ips ){
