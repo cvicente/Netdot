@@ -6,7 +6,7 @@
 # All rights reserved.  
 #
 # See COPYRIGHT at bottom
-# $Id: Info.pm,v 1.130 2007/12/20 04:01:17 jeneric Exp $
+# $Id: Info.pm,v 1.131 2008/04/21 20:55:52 jeneric Exp $
 
 package SNMP::Info;
 $VERSION = '1.09';
@@ -1991,8 +1991,14 @@ $INIT    = 0;
 
 =item %GLOBALS
 
-Contains a hash in the form ( method_name => SNMP iid name )
-These are scalar values such as name,uptime, etc. 
+Contains a hash in the form ( method_name => SNMP MIB leaf name )
+These are scalar values such as name, uptime, etc. 
+
+To resolve MIB leaf name conflicts between private MIBs, you may prefix the
+leaf name with the MIB replacing each - (dash) and : (colon) with
+an _ (underscore).  For example, ALTEON_TIGON_SWITCH_MIB__agSoftwareVersion
+would be used as the hash value instead of the net-snmp notation
+ALTEON-TIGON-SWITCH-MIB::agSoftwareVersion.
 
 When choosing the name for the methods, be aware that other new
 Sub Modules might inherit this one to get it's features.  Try to
@@ -2016,8 +2022,14 @@ the SNMP::Info methods.
 
 =item %FUNCS
 
-Contains a hash in the form ( method_name => SNMP iid)
+Contains a hash in the form ( method_name => SNMP MIB leaf name)
 These are table entries, such as the IfIndex
+
+To resolve MIB leaf name conflicts between private MIBs, you may prefix the
+leaf name with the MIB replacing each - (dash) and : (colon) with
+an _ (underscore).  For example, ALTEON_TS_PHYSICAL_MIB__agPortCurCfgPortName
+would be used as the hash value instead of the net-snmp notation
+ALTEON-TS-PHYSICAL-MIB::agPortCurCfgPortName.
 
 =cut
 
