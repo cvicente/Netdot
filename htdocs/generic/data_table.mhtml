@@ -21,9 +21,9 @@ Arguments:
 
 <%args>
 @field_headers => undef;
-@data          => undef;
+@data          => ();
 $subclass      => "";
-@style         => undef;
+@style         => ();
 </%args>
 
 % if( $subclass ) { $subclass = '_'.$subclass; }
@@ -32,7 +32,7 @@ $subclass      => "";
 <table border="0" width="100%" cellspacing="0">
 
   <tr>
-% if ( @style  ){
+% if ( @style ){
 %     for (my $i=0; $i < scalar @field_headers; $i++) {
           <td class="formtabletitle" style="<% $style[$i] %>"><% $field_headers[$i] %></td>
 %     }
@@ -48,7 +48,7 @@ $subclass      => "";
 % foreach $row(@data) {
 % ($toggle %= 2) += 1;
   <tr>
-% if ( @style  ){
+% if ( @style ){
 %   for (my $i=0; $i < scalar @$row; $i++) {
       <td class="datatabler<% $toggle.$subclass %>" style="<% $style[$i] %>" ><% $row->[$i] %></td>
 %   }
