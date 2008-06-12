@@ -1504,15 +1504,15 @@ sub rrd_graph{
 		     "VDEF:curmacs=macs,LAST",
 		     "COMMENT:         Average   Maximum   Minimum   Current\\l",
 		     "AREA:macs#0033CC:MACs",
-		     "GPRINT:avgips:%6lg %s",
-		     "GPRINT:maxips:%6lg %s",
-		     "GPRINT:minips:%6lg %s",
-		     "GPRINT:curips:%6lg %s\\l",
-		     "LINE:ips#00CC66:IPs ",
 		     "GPRINT:avgmacs:%6lg %s",
 		     "GPRINT:maxmacs:%6lg %s",
 		     "GPRINT:minmacs:%6lg %s",
-		     "GPRINT:curmacs:%6lg %s",
+		     "GPRINT:curmacs:%6lg %s\\l",
+		     "LINE:ips#00CC66:IPs ",
+		     "GPRINT:avgips:%6lg %s",
+		     "GPRINT:maxips:%6lg %s",
+		     "GPRINT:minips:%6lg %s",
+		     "GPRINT:curips:%6lg %s",
 	);
 
     }elsif ( $argv{type} eq 'dev' ){
