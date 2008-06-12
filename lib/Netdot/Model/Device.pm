@@ -150,8 +150,8 @@ sub search_like {
     Resource Record for a Device, given a hostname or ip address.
 
   Arguments:  
-    hostname or IP address (string)
-
+    host    - hostname or IP address (string)
+    sysname - sysName value from SNMP (string)
   Returns:    
     RR object if successful
 
@@ -160,35 +160,50 @@ sub search_like {
 
 =cut
 sub assign_name {
-    my ($class, $host) = @_;
+    my ($class, %argv) = @_;
     $class->isa_class_method('assign_name');
+    my $host    = $argv{host};
+    my $sysname = $argv{sysname};
 
-    my $rr;
-    if ( $rr = RR->search(name=>$host)->first ){
+    $class->throw_fatal("Device::assign_name: Missing arguments: host or sysname")
+	unless $host || $sysname;
+
+    # An RR record might alrady exist
+    if ( defined $host && (my $rr = RR->search(name=>$host)->first) ){
 	$logger->debug(sub{"Name $host exists in DB"});
 	return $rr;
     }
-    # An RR matching $host does not exist
-    my ($ip, $fqdn);
+    if ( defined $sysname && (my $rr = RR->search(name=>$sysname)->first) ){
+	$logger->debug(sub{"Name $sysname exists in DB"});
+	return $rr;
+    }
+    
+    # An RR matching $host or $sysname does not exist
+    my $ip;
     if ( $host =~ /$IPV4|$IPV6/ ){
-	$ip = $host;
 	# we were given an IP address
+	$ip = $host;
 	if ( my $ipb = Ipblock->search(address=>$ip)->first ){
 	    if ( $ipb->interface && ( my $dev = $ipb->interface->device ) ){
-		# We have a Device with that IP.  Return its name.
-		return $dev->name;
+		$class->throw_user("Device::assign_name: A Device with IP $ip already exists: id: " . $dev->id);
 	    }
 	}
     }else{
 	# We were given a name (not an address)
 	# Resolve to an IP address
-	if ( $ip = ($dns->resolve_name($host))[0] ){
+	if ( defined $host && ($ip = ($dns->resolve_name($host))[0]) ){
 	    $logger->debug(sub{"Device::assign_name: $host resolves to $ip"});
 	}else{
-	    # Name does not resolve
 	    $logger->debug(sub{"Device::assign_name: $host does not resolve"});
 	}
+	if ( defined $sysname && ($ip = ($dns->resolve_name($sysname))[0]) ){
+	    $logger->debug(sub{"Device::assign_name: $sysname resolves to $ip"});
+	}else{
+	    $logger->debug(sub{"Device::assign_name: $sysname does not resolve"});
+	}
     }
+    my $fqdn;
+    my %args;
     if ( $ip ){
 	# At this point, we were either passed an IP
 	# or we got it from DNS.  The idea is to obtain a FQDN
@@ -202,39 +217,33 @@ sub assign_name {
 	    $logger->debug(sub{"Device::assign_name: $ip does not resolve"} );
 	}
     }
-    # If we do not yet have a fqdn, just use what we've got
-    $fqdn ||= $host;
+    $fqdn ||= (defined $sysname)? $sysname : $host;
 
-    # Now we have a fqdn. First, check if we have a matching domain
-    my ($mname, $zone);
+    # Check if we have a matching domain
     if ( $fqdn =~ /\./  && $fqdn !~ /$IPV4|$IPV6/ ){
 	my @sections = split /\./, $fqdn;
-	# Notice that we search the whole string.  That's because
+   	# Notice that we search the whole string.  That's because
 	# the hostname part might have dots.  The Zone search method
 	# will take care of that.
-	if ( $zone = (Zone->search(mname=>$fqdn))[0] ){
-            $mname = $zone->mname;
-	    $host = $fqdn;
-	    $host =~ s/\.$mname//;
+	if ( my $zone = (Zone->search(mname=>$fqdn))[0] ){
+            $args{mname} = $zone->mname;
+	    $args{name}  = $fqdn;
+	    $args{name}  =~ s/\.$args{mname}//;
         }else{
 	    $logger->debug(sub{"Device::assign_name: $fqdn not found" });
 	    # Assume the zone to be everything to the right
 	    # of the first dot. This might be a wrong guess
 	    # but it is as close as I can get.
-	    $host  = shift @sections;
-	    $mname = join '.', @sections;
+	    $args{name} = shift @sections;
+	    $args{mname} = join '.', @sections;
 	}
     }else{
-        $host = $fqdn;
+	$args{name} = $fqdn;
     }
-    my %args    = ( name=>$host );
-    if ( defined $zone ){
-       $args{zone} = $zone;
-    }elsif ( defined $mname ){
-       $args{mname} = $mname;
-    }
-    # This will create the Zone object if necessary
-    $rr = RR->insert(\%args);
+    
+    # Try to create the RR object
+    # This will also create the Zone object if necessary
+    my $rr = RR->insert(\%args);
     $logger->info(sprintf("Inserted new RR: %s", $rr->get_label));
     # Make sure name has an associated IP and A record
     if ( $ip ){
@@ -271,7 +280,6 @@ sub insert {
     if ( !exists($argv->{name}) ){
 	$class->throw_fatal('Missing required arguments: name');
     }
-
 
     # Get the default owner entity from config
     my $config_owner  = Netdot->config->get('DEFAULT_DEV_OWNER');
@@ -331,7 +339,7 @@ sub insert {
 	$devtmp{name} = $argv->{name};
     }else{
 	# A string hostname was passed
-	$devtmp{name} = $class->assign_name( $argv->{name} );
+	$devtmp{name} = $argv->{name};
     }
     
     if ( my $dbdev = $class->search(name=>$devtmp{name})->first ){
@@ -411,6 +419,7 @@ sub get_snmp_info {
     # Get both name and IP for better error reporting
     my ($ip, $name)   = $dns->resolve_any($args{host});
     $dev{snmp_target} = $ip if defined $ip;
+    $logger->debug("Device::get_snmp_info: SNMP target is $dev{snmp_target}");
     
     $dev{community}    = $sinfo->snmp_comm;
     $dev{snmp_version} = $sinfo->snmp_ver;
@@ -1076,8 +1085,10 @@ sub discover {
 						   ) });
 	}
 	# Set some values in the new Device based on the SNMP info obtained
-	my $main_ip = $class->_get_main_ip($info) || $name;
-	my %devtmp = (name          => $main_ip,
+	my $main_ip = $class->_get_main_ip($info);
+	my $host = $main_ip || $name;
+	my $newname = $class->assign_name(host=>$host, sysname=>$info->{sysname} );
+	my %devtmp = (name          => $newname,
 		      snmp_managed  => 1,
 		      canautoupdate => 1,
 		      community     => $info->{community},
@@ -3294,7 +3305,7 @@ sub _get_main_ip {
 	$logger->debug(sub{"Device::_get_main_ip: Trying method $method" });
 	if ( $method eq 'sysname' && $info->{sysname} ){
 	    my $resip = ($dns->resolve_name($info->{sysname}))[0];
-	    if ( exists $allips{$resip} ){
+	    if ( defined $resip && exists $allips{$resip} ){
 		$ip = $resip;
 	    }
 	}elsif ( $method eq 'highest_ip' ){
@@ -3329,16 +3340,18 @@ sub _get_main_ip {
 	}
 	
 	if ( defined $ip ){
-	    if ( $dns->resolve_ip($ip) && Ipblock->validate($ip) ){
+	    if ( Ipblock->validate($ip) ){
 		$logger->debug(sub{"Device::_get_main_ip: Chose $ip using naming method: $method" });
 		return $ip ;
 	    }else{
+		$logger->debug(sub{"Device::_get_main_ip: $ip not valid.  Ignoring"});
 		# Keep trying
 		undef($ip);
 	    }
 	    
 	}
     }
+    $logger->debug(sub{"Device::_get_main_ip: Could not determine the main IP for this device"});
     return;
 }
 
