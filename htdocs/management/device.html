@@ -24,6 +24,7 @@ $search     => undef
 $edit       => undef
 $editgen    => undef
 $editloc    => undef
+$editcomments => undef
 $editmgmt   => undef
 $editsnmp   => undef
 $editips    => undef
@@ -189,6 +190,11 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %     } else {
         <li><a href="device.html?id=<% $id %>&view=Basics">Basics</a></li>
 %     }
+%     if( $view eq "Management" ) {
+        <li><span>Management</span></li>
+%     } else {
+        <li><a href="device.html?id=<% $id %>&view=Management">Management</a></li>
+%     }
 %     if( $view eq "Interfaces" ) {
         <li><span>Interfaces</span></li>
 %     } else {
@@ -261,17 +267,12 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %#######################################################################
 
 % if ( $view eq "Basics" || $view eq "All" ){
-<!-- Two-column Division Table -->
-% if ($editgen || $editloc || $editmgmt || $editsnmp) {
+% if ($editgen || $editloc || $editcomments) {
         <form name="netdotform" action="device.html" method="POST">
             <script language="javascript" src="../java_script/datechooser.js"></script>
 	    <input type="hidden" name="id" value="<% $id %>">
 	    <input type="hidden" name="view" value="<% $view %>">
 % }
-<table border="0" width="100%" align="center">
-  <tr>
-    <td valign="top" width="50%" align="center">
-
     <div class="container">
 	<!-- General Info Table -->
     	<div class="containerheadleft"><b>General</b></div>
@@ -321,19 +322,18 @@ $ui->add_to_fields(o=>$o, edit=>0, fields=>['ipforwarding'],
 		   field_headers=>\@field_headers, cell_data=>\@cell_data);
 
 
+@linkpages = (1, '', '');
+@fields = ('maint_contract', 'maint_from', 'maint_until');
+$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, linkpages=>\@linkpages,
+		   field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+
 </%perl>
 
 <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, 
                           width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
-<%perl>
-my %tmp;
-%tmp = $ui->form_field(object=>$o, column=>"info", edit=>$editgen, htmlExtra=>'cols="60"');
-print '<div class="containerseparator">'.$tmp{label}.'</div>';
-print $tmp{value};         
-</%perl>
 
-%#    </div>
       </div> <!-- containerbody -->
    </div> <!-- container -->
 <!-- End General Info Table -->
@@ -418,17 +418,57 @@ push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_ta
       
 </%perl>
 
-    <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+    <& /generic/attribute_table.mhtml, width=>"2", field_headers=>\@field_headers, data=>\@cell_data &>
 
     </div>
 </div>
 <!-- End Location Table -->
 
+<div class="container">
+    <div class="containerheadleft">
+        Comments
+    </div>
+    <div class="containerheadright">
+%	if ($editcomments){	 
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+        <input type="submit" name="submit" value="save">
+%	}else{
+        <a href="device.html?id=<% $id %>&view=<% $view %>&editcomments=1">[edit]</a>
+%	}
+    </div>
+    <div class="containerbody">
 
-  </td>
-  <td valign="top"  width="50%" align="center">
+<%perl>
+my %tmp;
+%tmp = $ui->form_field(object=>$o, column=>"info", edit=>$editcomments, htmlExtra=>'cols="80" rows="10"');
+print $tmp{value};         
+</%perl>
 
+    </div>
+ </div>
 
+%   if ( $editgen || $editloc || $editcomments ) {
+      </form>
+%   }
+
+% } 
+<!-- End Basics Section -->
+
+%#######################################################################
+%#
+%# Management
+%#
+%#######################################################################
+%
+% if ( $view eq "Management" || $view eq "All" ){
+% 
+<!-- Management Section-->
+% if ($editmgmt || $editsnmp ) {
+        <form name="netdotform" action="device.html" method="POST">
+        <script language="javascript" src="../java_script/datechooser.js"></script>
+        <input type="hidden" name="id" value="<% $id %>">
+	<input type="hidden" name="view" value="<% $view %>">
+% }
 
 <!-- Management Table -->
 <div class="container">
@@ -446,17 +486,17 @@ push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_ta
     <div class="containerbody">
 
 <%perl>
-(@field_headers, @cell_data) = ();
+my (@field_headers, @cell_data) = ();
 
 {
-my @fields = ('oobname','oobnumber','monitored','customer_managed', 'monitor_config', 'down_from', 'down_until');
+my @fields = ('oobname','oobnumber','monitored','customer_managed', 'monitor_config', 
+	      'down_from', 'down_until');
 $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 
+
 </%perl>
-
-       <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-
+       <& /generic/attribute_table.mhtml, width=>"2", field_headers=>\@field_headers, data=>\@cell_data &>
     </div>
 </div>
 <!-- End Management Table -->
@@ -476,7 +516,6 @@ $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@fi
     </div>
     <div class="containerbody">
 <%perl>
-
 (@field_headers, @cell_data) = ();
 {
     my @fields = ('snmp_managed');
@@ -515,25 +554,17 @@ $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@fi
 }
 </%perl>
 
-       <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+       <& /generic/attribute_table.mhtml, width=>"2", field_headers=>\@field_headers, data=>\@cell_data &>
 
     </div>
 </div>
 <!-- End SNMP Table -->
 
-
-  </td>
- </tr>
-</table>
-<!-- End Division Table -->
-
-%   if ( $editgen || $editloc || $editmgmt || $editsnmp ) {
+%   if ( $editmgmt || $editsnmp ) {
       </form>
 %   }
 
-% } 
-<!-- End Basics Section -->
-
+% } # End Management section
 
 %#######################################################################
 %#
@@ -1203,6 +1234,7 @@ if ( $ipeers ){
 
 %     }
 % }
+
 
 %#######################################################################
 %#

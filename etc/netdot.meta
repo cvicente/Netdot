@@ -1759,13 +1759,34 @@ $meta = {
         tag => 'Last Updated',
         type => 'timestamp'
       },
-      maint_covered => {
+      maint_contract => {
         default => '',
         description => '',
         length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'devices',
+          table => 'MaintContract'
+        },
         nullable => 0,
-        tag => 'In Maintenance Contract?',
-        type => 'bool'
+        tag => 'Maintenance Contract',
+        type => 'integer'
+      },
+      maint_from => {
+        default => '',
+        description => 'Device covered in maintenance from this date (YYYY-MM-DD)',
+        length => '',
+        nullable => 1,
+        tag => 'Maintenance From',
+        type => 'date'
+      },
+      maint_until => {
+        default => '',
+        description => 'Device covered in maintenance until this date (YYYY-MM-DD)',
+        length => '',
+        nullable => 1,
+        tag => 'Maintenance Until',
+        type => 'date'
       },
       monitor_config => {
         default => '',
@@ -2159,7 +2180,9 @@ $meta = {
         'serialnumber',
         'product',
         'inventorynumber',
-        'maint_covered',
+        'maint_contract',
+        'maint_from',
+        'maint_until',
         'canautoupdate',
         'site',
         'snmp_managed',
@@ -4417,6 +4440,58 @@ $meta = {
       brief => [
         'name'
       ]
+    }
+  },
+  MaintContract => {
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      provider => {
+        default => '',
+        description => 'Maintenace Contract Provider',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'maintenance_contracts',
+          table => 'Entity'
+        },
+        nullable => 0,
+        tag => 'Provider',
+        type => 'integer'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+      number => {
+        default => '',
+        description => '',
+        length => '255',
+        nullable => 0,
+        tag => 'Number',
+        type => 'varchar'
+      }
+    },
+    description => 'Device Maintenance Contract',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => ['provider','number'],
+    primary_key => 'id',
+    unique => [ ['number'] ],
+    views => {
+      all => ['number','provider','info'],
+      brief => ['number']
     }
   },
   MonitorStatus => {
