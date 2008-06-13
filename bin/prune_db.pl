@@ -158,12 +158,13 @@ if ( $IPS ){
 if ( $FWT ){
     ###########################################################################################
     # Delete FWTables
+    $logger->info("Deleting Forwarding Tables older than $sqldate");
     my $r = $dbh->do("DELETE fwtable, fwtableentry 
                       FROM   fwtable, fwtableentry 
                       WHERE  fwtable.tstamp < '$sqldate'
                         AND  fwtableentry.fwtable=fwtable.id");
 
-    $logger->info(sprintf("A total of $r records deleted"));
+    $logger->info("A total of $r records deleted");
 
     foreach my $table ( qw (fwtable fwtableentry) ){
 	$logger->debug("Freeing deleted space in $table");
@@ -174,12 +175,13 @@ if ( $ARP ){
     ###########################################################################################
     # Delete FWTables
     # Note: This will also delete ArpCacheEntry objects.
+    $logger->info("Deleting ARP Caches older than $sqldate");
     my $r = $dbh->do("DELETE arpcache, arpcacheentry 
                       FROM   arpcache, arpcacheentry 
                       WHERE  arpcache.tstamp < '$sqldate'
                         AND  arpcacheentry.arpcache=arpcache.id");
 
-    $logger->info(sprintf("A total of $r records deleted"));
+    $logger->info("A total of $r records deleted");
 
     foreach my $table ( qw (arpcache arpcacheentry) ){
 	$logger->debug("Freeing deleted space in $table");
