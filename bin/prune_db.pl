@@ -13,21 +13,25 @@ use strict;
 my $_DEBUG      = 0;
 my $HELP        = 0;
 my $VERBOSE     = 0;
-my $EMAIL       = 0;
-my $TYPE;
+my ($HISTORY, $FWT, $ARP, $MACS, $IPS);
 my $NUM_DAYS    = 365;
 my $NUM_HISTORY = 100;
-my $FROM        = Netdot->config->get('ADMINEMAIL');
-my $TO          = Netdot->config->get('NOCEMAIL');
-my $SUBJECT     = 'Netdot DB Maintenance';
-my $output;
 
 my $usage = <<EOF;
- usage: $0   -T|--type <history|address_tracking>
+ usage: $0   -H|--history | -F|--fwt | -A|--arp | -M|--macs | -I|--ips
     [ -d|--num_months <number> ] [ -n|--num_history <number> ] 
-    [ -g|--debug ] 
-    [ -m|--send_mail] [-f|--from] | [-t|--to] | [-s|--subject]
+    [ -g|--debug ] [-h|--help]
     
+    -H, --history                  History tables
+    -F, --fwt                      Forwarding Tables
+    -A, --arp                      ARP caches
+    -M, --macs                     MAC addresses
+    -I, --ips                      IP addresses
+    -d, --num_days                 Number of days worth of items to keep (default: $NUM_DAYS);
+    -n, --num_history              Number of history items to keep for each record (default: $NUM_HISTORY);
+    -g, --debug                    Print (lots of) debugging output
+    -h, --help                     Print help
+
     Deletes old items from database as necessary.
     
     * For "history" tables:
@@ -45,27 +49,18 @@ my $usage = <<EOF;
     We delete records that are older than NUM_DAYS.
     
     
-    -T, --type                     <history|address_tracking> History tables or address tracking tables
-    -d, --num_days                 Number of days worth of items to keep (default: $NUM_DAYS);
-    -n, --num_history              Number of history items to keep for each record (default: $NUM_HISTORY);
-    -g, --debug                    Print (lots of) debugging output
-    -m, --send_mail                Send output via e-mail instead of to STDOUT
-    -f, --from                     e-mail From line (default: $FROM)
-    -s, --subject                  e-mail Subject line (default: $SUBJECT)
-    -t, --to                       e-mail To line (default: $TO)
-    
 EOF
     
 
 # handle cmdline args
 my $result = GetOptions( 
-    "T|type=s"        => \$TYPE,
-    "d|num_days=i"    => \$NUM_DAYS,
+    "H|history"       => \$HISTORY,
+    "F|fwt"           => \$FWT,
+    "A|arp"           => \$ARP,
+    "M|macs"          => \$MACS,
+    "I|ips"           => \$IPS,
+    "d|num_days=i"    => \$NUM_DAYS,,
     "n|num_history=i" => \$NUM_HISTORY,
-    "m|send_mail"     => \$EMAIL,
-    "f|from:s"        => \$FROM,
-    "t|to:s"          => \$TO,
-    "s|subject:s"     => \$SUBJECT,
     "h|help"          => \$HELP,
     "g|debug"         => \$_DEBUG,
     );
@@ -75,29 +70,19 @@ if ( $HELP ) {
     exit;
 }
 
-if ( ! $result || ! $TYPE ) {
+if ( !$result || !($HISTORY || $FWT || $ARP || $MACS || $IPS) ){
     print $usage;
     die "Error: Problem with cmdline args\n";
 }
 
 # Add a log appender depending on the output type requested
 my $logger = Netdot->log->get_logger('Netdot::Model');
-my ($logstr, $logscr);
-if ( $EMAIL ){
-    $logstr = Netdot::Util::Log->new_appender('String', name=>'prune_db.pl');
-    $logger->add_appender($logstr);
-}else{
-    $logscr = Netdot::Util::Log->new_appender('Screen', stderr=>0);
-    $logger->add_appender($logscr);
-}
+my $logscr = Netdot::Util::Log->new_appender('Screen', stderr=>0);
+$logger->add_appender($logscr);
 
-#   Set logging level to debug
-#   Notice that $DEBUG is imported from Log::Log4perl
-if ( $_DEBUG ){
-    $logger->level($DEBUG);
-}
-
-$logger->debug(sprintf("%s: Executing with: T=\"%s\", d=%d, n=%s", $0, $TYPE, $NUM_DAYS, $NUM_HISTORY));
+# Set logging level to debug
+# Notice that $DEBUG is imported from Log::Log4perl
+$logger->level($DEBUG) if ( $_DEBUG );
 
 # Get DB handle 
 my $dbh = Netdot::Model::db_Main();
@@ -111,7 +96,7 @@ $logger->debug(sprintf("NUM_DAYS(%d) ago was : %s", $NUM_DAYS, $sqldate));
 my $start = time;
 my %rows_deleted;
 
-if ( $TYPE eq 'history' ){
+if ( $HISTORY ){
     my @tables;
     map { push @tables, $_ if ( $_->is_history ) } Netdot->meta->get_tables(with_history=>1);
     
@@ -143,22 +128,20 @@ if ( $TYPE eq 'history' ){
 	    $rows_deleted{$tablename} = $r;
 	}
     }
+}
     
-}elsif ( $TYPE eq 'address_tracking' ){
-
-    my $num_arpe = ArpCacheEntry->count_all;
-    my $num_fte  = FWTableEntry->count_all;
-
+if ( $MACS ){
     ###########################################################################################
     # Delete non-static MAC addresses
-    # Note: This will also delete FWTableEntry, ArpCacheEntry objects, etc.
+    # Note: This will also delete FWTableEntry, ArpCacheEntry objects.
     my @macs = PhysAddr->search_where(static=>0, last_seen=>{ '<', $sqldate } );
     $rows_deleted{physaddr} = scalar @macs;
     foreach my $mac ( @macs ){
 	$logger->debug(sprintf("Deleting PhysAddr id %d", $mac->id));
 	$mac->delete;
     }
-
+}
+if ( $IPS ){
     ###########################################################################################
     # Delete 'Discovered' IP addresses
     # Note: This will also delete ArpCache entries, etc.
@@ -171,31 +154,39 @@ if ( $TYPE eq 'history' ){
 	$logger->debug(sprintf("Deleting Ipblock id %d", $ip->id));
 	$ip->delete;
     }
-
-    $rows_deleted{arpcacheentry} = ($num_arpe - ArpCacheEntry->count_all);
-    $rows_deleted{fwtableentry}  = ($num_fte  - FWTableEntry->count_all);
-
-    ###########################################################################################
-    # Delete FWTable and ARPCache objects
-    my @fwts = FWTable->search_where(tstamp=>{ '<', $sqldate });
-    $rows_deleted{fwtable} = scalar @fwts;
-    foreach my $fwt ( @fwts ){
-	$logger->debug(sprintf("Deleting FWTable id %d", $fwt->id));
-	$fwt->delete;
-    }
-
-    my @arpcs = ArpCache->search_where(tstamp=>{ '<', $sqldate });
-    $rows_deleted{arpcache} = scalar @arpcs;
-    foreach my $arpc ( @arpcs ){
-	$logger->debug(sprintf("Deleting ArpCache id %d", $arpc->id));
-	$arpc->delete;
-    }
-
-}else{
-    print $usage;
-    die "Unknown type: $TYPE\n";
 }
- 
+if ( $FWT ){
+    ###########################################################################################
+    # Delete FWTables
+    my $r = $dbh->do("DELETE fwtable, fwtableentry 
+                      FROM   fwtable, fwtableentry 
+                      WHERE  fwtable.tstamp < '$sqldate'
+                        AND  fwtableentry.fwtable=fwtable.id");
+
+    $logger->info(sprintf("A total of $r records deleted"));
+
+    foreach my $table ( qw (fwtable fwtableentry) ){
+	$logger->debug("Freeing deleted space in $table");
+	$dbh->do("OPTIMIZE TABLE $table");
+    }
+}
+if ( $ARP ){
+    ###########################################################################################
+    # Delete FWTables
+    # Note: This will also delete ArpCacheEntry objects.
+    my $r = $dbh->do("DELETE arpcache, arpcacheentry 
+                      FROM   arpcache, arpcacheentry 
+                      WHERE  arpcache.tstamp < '$sqldate'
+                        AND  arpcacheentry.arpcache=arpcache.id");
+
+    $logger->info(sprintf("A total of $r records deleted"));
+
+    foreach my $table ( qw (arpcache arpcacheentry) ){
+	$logger->debug("Freeing deleted space in $table");
+	$dbh->do("OPTIMIZE TABLE $table");
+    }
+}
+
 foreach my $table ( keys %rows_deleted ){
     if ( $rows_deleted{$table} ){
 	$logger->info(sprintf("A total of %d %s records deleted", 
@@ -205,12 +196,4 @@ foreach my $table ( keys %rows_deleted ){
 	$dbh->do("OPTIMIZE TABLE $table");
     }
 }
-
 $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
-
-if ( $EMAIL ){
-    Netdot->send_mail(subject => $SUBJECT, 
-		      to      => $TO,
-		      from    => $FROM,
-		      body    => $logstr->string );
-}
