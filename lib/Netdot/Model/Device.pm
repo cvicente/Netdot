@@ -185,7 +185,8 @@ sub assign_name {
 	$ip = $host;
 	if ( my $ipb = Ipblock->search(address=>$ip)->first ){
 	    if ( $ipb->interface && ( my $dev = $ipb->interface->device ) ){
-		$class->throw_user("Device::assign_name: A Device with IP $ip already exists: id: " . $dev->id);
+		$logger->debug("Device::assign_name: A Device with IP $ip already exists: " . $dev->get_label);
+		return $dev->name;
 	    }
 	}
     }else{
@@ -218,6 +219,7 @@ sub assign_name {
 	}
     }
     $fqdn ||= (defined $sysname)? $sysname : $host;
+    $fqdn = lc($fqdn);
 
     # Check if we have a matching domain
     if ( $fqdn =~ /\./  && $fqdn !~ /$IPV4|$IPV6/ ){
@@ -269,7 +271,7 @@ sub assign_name {
     New Device object
 
   Examples:
-    my $newdevice = Device->insert(name=>'device1');
+    my $newdevice = Device->insert(\%args);
 
 =cut
 sub insert {
@@ -1582,7 +1584,7 @@ sub short_name {
     $self->isa_object_method('short_name');
     
     my $rr;
-    $self->throw_fatal("Device has no RR defined") 
+    $self->throw_fatal("Device id ". $self->id ." has no RR defined") 
 	unless ( int($rr = $self->name) != 0 );
     if ( $name ){
 	$rr->name($name);
@@ -2400,18 +2402,20 @@ sub info_update {
 	# When creating, we turn off snmp_managed because
 	# the APs don't actually do SNMP
 	# We also inherit some values from the Controller
+	$logger->debug("Creating any new Access Points");
 	foreach my $ap ( keys %{ $info->{airespace} } ){
 	    my $dev;
 	    unless ( $dev = $class->search(name=>$ap)->first ){
-		$dev = $class->insert({name          => $ap,
-				       snmp_managed  => 0,
-				       canautoupdate => 0,
-				       owner         => $self->owner,
-				       used_by       => $self->used_by,
-				       contacts      => map { $_->contactlist } $self->contacts,
-				      });
+		my @contacts = map { $_->contactlist } $self->contacts;
+		$dev = $class->discover(name          => $ap,
+					 snmp_managed  => 0,
+					 canautoupdate => 0,
+					 owner         => $self->owner,
+					 used_by       => $self->used_by,
+					 contacts      => @contacts,
+					 info          => $info->{airespace}->{$ap},
+					);
 	    }
-	    $dev->info_update(info=>$info->{airespace}->{$ap});
 
 	    my $apmac = $info->{airespace}->{$ap}->{physaddr};
 	    delete $oldaps{$apmac};
@@ -4181,7 +4185,7 @@ sub _get_airespace_ap_info {
 	if ( $validmac ){
 	    $info->{physaddr} = $validmac;
 	}else{
-	    $logger->debug(sub{"Device::get_airspace_if_info: iid $iid: Invalid MAC: $basemac" });
+	    $logger->debug(sub{"Device::get_airespace_if_info: iid $iid: Invalid MAC: $basemac" });
 	}
     } 
 

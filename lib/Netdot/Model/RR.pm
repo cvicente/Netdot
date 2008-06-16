@@ -177,7 +177,11 @@ sub insert {
 =cut
 sub get_label {
     my $self = shift;
-    return sprintf("%s.%s", $self->name, $self->zone->mname);
+    if ( $self->zone ){
+	return sprintf("%s.%s", $self->name, $self->zone->mname);
+    }else{
+	return $self->name;
+    }
 }
 
 
