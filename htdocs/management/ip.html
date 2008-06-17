@@ -44,11 +44,15 @@ my $o;
 my $ci = 0;
 my $title;
 my @list;
-
+my $edit_ip     = ( $edit && $edit eq "ipinfo"    ) ? 1 : 0;
+my $edit_block  = ( $edit && $edit eq "blockinfo" ) ? 1 : 0;
+my $added_ip    = 0;
+my $added_block = 0;
 my $covering_block;
+
 # Some regular expressions
-my $IPV4        = Netdot->get_ipv4_regex();
-my $IPV6        = Netdot->get_ipv6_regex();
+my $IPV4 = Netdot->get_ipv4_regex();
+my $IPV6 = Netdot->get_ipv6_regex();
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
@@ -61,13 +65,6 @@ if ( $id ){
 }else{
     $title = "Search";
 }
-
-my $edit_ip    = 0;
-my $edit_block = 0;
-my $added_ip   = 0;
-my $added_block  = 0;
-$edit_ip       = 1 if ($edit eq "ipinfo");
-$edit_block    = 1 if ($edit eq "blockinfo");
 
 # By default, view object after any operation
 # ( some exceptions will override )
@@ -194,7 +191,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
 
 #######################################################################################
-# ADD BLOCK OR RANGE
+# ADD/MODIFY BLOCK OR RANGE
 #
 #######################################################################################
 }elsif ( $_action eq "ADD_RANGE" ){
@@ -207,20 +204,27 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	if ( $range_status eq 'Dynamic' || $range_status eq 'Static' ){
 	    $m->comp('/generic/error.mhtml', error=>"IP block cannot be 'Dynamic' or 'Static'.  Specify IP Range instead.");
 	}
-	my $newblock;
+	my $block;
 	eval {
-	    $newblock = Ipblock->insert({address     => $address,
-					 prefix      => $prefix,
-					 status      => $range_status,
-					 used_by     => $range_used_by,
-					 description => $range_description,
-					});
+	    if ( $block = Ipblock->search(address=>$address, prefix=>$prefix)->first ){
+		$block->update({status      => $range_status,
+				used_by     => $range_used_by,
+				description => $range_description,
+			       });
+	    }else{
+		$block = Ipblock->insert({address     => $address,
+					  prefix      => $prefix,
+					  status      => $range_status,
+					  used_by     => $range_used_by,
+					  description => $range_description,
+					 });
+	    }
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
-	}elsif ( $newblock ){
-	    $o  = $newblock;
-	    $id = $newblock->id;
+	}elsif ( $block ){
+	    $o  = $block;
+	    $id = $block->id;
 	    if( $o->is_address ) {
 		$added_ip  = 1;
 	    }else {
@@ -242,18 +246,28 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	    Netdot::Model->do_transaction(sub {
 		for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
 		    my $ip = NetAddr::IP->new($i);
-		    push @newips, Ipblock->insert({address     => $ip->addr,
-						   status      => $range_status,
-						   used_by     => $range_used_by,
-						   description => $range_description,
-						  });
+		    my $decimal = $ip->numeric;
+		    if ( my $ipb = Ipblock->search(address=>$decimal)->first ){
+			$ipb->update({status      => $range_status,
+				      used_by     => $range_used_by,
+				      description => $range_description,
+				     });
+			push @newips, $ipb;
+			
+		    }else{
+			push @newips, Ipblock->insert({address     => $ip->addr,
+						       status      => $range_status,
+						       used_by     => $range_used_by,
+						       description => $range_description,
+						      });
+		    }
 		}
 					  });
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
-	$m->comp('.show_message', title=>"Action Message", msg=>"Address Range Added Successfully");
+	$m->comp('.show_message', title=>"Action Message", msg=>"Address Range Added/Modified Successfully");
 	# Show parent block
 	if ( my $parent = $newips[0]->parent ){
 	    $id = $parent->id;

@@ -76,10 +76,9 @@ sub search {
     my %args = @args;
 
     if ( defined $args{address} ){
-	my ($address, $prefix);
 	if ( $args{address} =~ /\/\d+$/ ){
 	    # Address is in CIDR format
-	    ($address, $prefix) = split /\//, $args{address};
+	    my ($address, $prefix) = split /\//, $args{address};
 	    $args{address} = $class->ip2int($address);
 	    $args{prefix}  = $prefix;
 	}else{

@@ -84,7 +84,7 @@ my @list;
             </form>
         </fieldset>
         <fieldset class="medium">
-            <legend>Add Block or Address Range</legend>
+            <legend>Add/Modify Block or Address Range</legend>
             <form action="ip.html" method="POST">
                 <input type="hidden" name="_action" value="ADD_RANGE">
                 <p>
@@ -96,11 +96,21 @@ my @list;
                 <input type="text" name="add_range_start" class="txt" value=""> - <input type="text" name="add_range_end" class="txt" value="">
                 </p>
                 <p>
-                <label for="range_used_by">Used By:</label>
-                <select name="range_used_by" id="range_used_by">
+                <label for="range_owner">Owner:</label>
+                <select name="range_owner" id="range_owner">
                 <option value="0">-- Select --</option>
 %               my @allents = Entity->retrieve_all; 
 %               @allents = sort { $a->name cmp $b->name } @allents;
+%               foreach my $ent ( @allents ){
+                    <option value="<% $ent->id %>"><% $ent->name %></option>                
+%               }
+                </select>
+                <a class="hand" onClick="openinsertwindow('table=Entity&select_id=range_owner&selected=1&dowindow=1')">[new]</a>
+                </p>
+                <p>
+                <label for="range_used_by">Used By:</label>
+                <select name="range_used_by" id="range_used_by">
+                <option value="0">-- Select --</option>
 %               foreach my $ent ( @allents ){
                     <option value="<% $ent->id %>"><% $ent->name %></option>                
 %               }
@@ -121,7 +131,7 @@ my @list;
                 <p>
                 <label for="range_status">Description:</label>
                 <input type="text" class="longtxt" name="range_description">
-                <input name="submit" value="Add" class="btn" type="submit">
+                <input name="submit" value="Set" class="btn" type="submit">
                 </p>
             </form>
         </fieldset>
