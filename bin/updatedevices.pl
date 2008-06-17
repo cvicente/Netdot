@@ -139,12 +139,8 @@ if ( $EMAIL ){
     $logscr = Netdot::Util::Log->new_appender('Screen', stderr=>0);
     $logger->add_appender($logscr);
 }
+$logger->level($DEBUG) if ( $_DEBUG ); # Notice that $DEBUG is imported from Log::Log4perl
 
-if ( $_DEBUG ){
-#   Set logging level to debug
-#   Notice that $DEBUG is imported from Log::Log4perl
-    $logger->level($DEBUG);
-}
 
 $logger->warn("Warning: Pretend (-p) flag enabled.  Changes will not be committed to the DB")
     if ( $PRETEND );
@@ -198,10 +194,15 @@ if ( $INFO || $FWT || $ARP ){
     }
 }
 
-eval {
-    Netdot::Model::Topology->discover if ( $TOPO );
-};
-die "ERROR: $@\n" if $@;
+if ( $TOPO ){
+    $logger = Netdot->log->get_logger('Netdot::Model::Topology');
+    $logger->level($DEBUG) if ( $_DEBUG ); # Notice that $DEBUG is imported from Log::Log4perl
+    $logger->add_appender($logscr);
+    eval {
+	Netdot::Model::Topology->discover;
+    };
+    die "ERROR: $@\n" if $@;
+}
 
 $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
 

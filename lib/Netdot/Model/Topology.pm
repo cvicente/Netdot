@@ -4,7 +4,7 @@ use base 'Netdot::Model';
 use warnings;
 use strict;
 
-my $logger = Netdot->log->get_logger('Netdot::Model::Device');
+my $logger = Netdot->log->get_logger('Netdot::Model::Topology');
 my $MAC    = Netdot->get_mac_regex();
 my $IP     = Netdot->get_ipv4_regex();
 
@@ -107,7 +107,7 @@ sub update_links {
     my %WEIGHTS;
     $WEIGHTS{dp}  = $class->config->get('TOPO_WEIGHT_DP');
     $WEIGHTS{stp} = $class->config->get('TOPO_WEIGHT_STP');
-    $WEIGHTS{fdb} = $class->config->get('TOPO_WEIGHT_FDB');
+    $WEIGHTS{fdb} = $class->config->get('TOPO_WEIGHT_FDB') / 2;
     $WEIGHTS{p2p} = $class->config->get('TOPO_WEIGHT_P2P');
     my $MINSCORE  = $class->config->get('TOPO_MIN_SCORE');
     my %hashes;
@@ -227,7 +227,8 @@ sub get_dp_links {
 		$rem_dev = $allips->{$decimalip};
 		last if $rem_dev;
 		unless ($rem_dev) {
-		    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device IP not found: %s", $iid, $r_ip));
+		    $logger->debug("Topology::get_dp_links: Interface id $iid: ".
+				   "Remote Device IP not found: $r_ip");
 		}
             }
 	}
@@ -236,7 +237,8 @@ sub get_dp_links {
                 if ( $rem_id =~ /($MAC)/i ){
                     my $mac = PhysAddr->format_address($1);
                     if ( !exists $allmacs->{$mac} ){
-                        $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device MAC not found: %s", $iid, $mac));
+                        $logger->debug("Topology::get_dp_links: Interface id $iid: ".
+				       "Remote Device MAC not found: $mac");
 			next;
 		    }
 		    $rem_dev = $allmacs->{$mac};
@@ -246,20 +248,23 @@ sub get_dp_links {
 		    $rem_dev = $allips->{$decimalip};
 		    last if $rem_dev;
 		    unless ($rem_dev) {
-			$logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device IP not found: %s", $iid, $rem_id));
+			$logger->debug("Topology::get_dp_links: Interface id $iid: ".
+				       "Remote Device IP not found: $rem_id");
 		    }
 		}else{
 		    # Try to find the device name
 		    $rem_dev = Device->search(sysname=>$rem_id)->first 
 			|| Device->search(name=>$rem_id)->first;
 		    unless ($rem_dev) {
-			$logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device name not found: %s", $iid, $rem_id));
+			$logger->debug("Topology::get_dp_links: Interface id $iid: ".
+				       "Remote Device name not found: $rem_id");
 		    }
 		}
 		last if $rem_dev;
             }
             unless ( $rem_dev ) {
-                $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Remote Device not found: %s", $iid, $r_id));
+                $logger->debug("Topology::get_dp_links: Interface id $iid: ".
+			       "Remote Device not found: $r_id");
             }
         } 
 
@@ -269,7 +274,8 @@ sub get_dp_links {
 		    foreach my $ip ( split ';', $r_ip ) {
 			if ( Ipblock->validate($ip) ){
 			    $ips2discover{$ip} = '';
-			    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Adding remote device %s to discover list", $iid, $ip));
+			    $logger->debug("Topology::get_dp_links: Interface id $iid: ".
+					   "Adding remote device $ip to discover list");
 			}
 		    }
 		}elsif ( $r_id ){
@@ -278,7 +284,8 @@ sub get_dp_links {
 			    my $ip = $1;
 			    if ( Ipblock->validate($ip) ){
 				$ips2discover{$ip} = '';
-				$logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Interface id %d: Adding remote device %s to discover list", $iid, $ip));
+				$logger->debug("Topology::get_dp_links: Interface id $iid: ".
+					       "Adding remote device $ip to discover list");
 			    }
 			}
 		    }
@@ -288,7 +295,8 @@ sub get_dp_links {
 		$str .= "id=$r_id"   if $r_id;
 		$str .= ", ip=$r_ip" if $r_ip;
 		my $int = Interface->retrieve($iid);
-		$logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: %s: Remote Device not found: %s", $int->get_label, $str));
+		$logger->warn(sprintf("Topology::get_dp_links: %s: ".
+				      "Remote Device not found: %s", $int->get_label, $str));
 	    }
 	    next;
 	}
@@ -307,7 +315,7 @@ sub get_dp_links {
                 if ( $rem_int ){
                     $links{$iid} = $rem_int->id;
                     $links{$rem_int->id} = $iid;
-		    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Found link: %d -> %d", 
+		    $logger->debug(sprintf("Topology::get_dp_links: Found link: %d -> %d", 
 					   $iid, $rem_int->id));
 		    last;
                 }
@@ -315,22 +323,22 @@ sub get_dp_links {
 	    unless ( $rem_int ){
 		my $int = Interface->retrieve($iid);
 		my $dev = ref($rem_dev) ? $rem_dev : Device->retrieve($rem_dev);
-		$logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: %s: Port %s not found in Device: %s", 
+		$logger->warn(sprintf("Topology::get_dp_links: %s: Port %s not found in Device: %s", 
 				      $int->get_label, $r_port, $dev->get_label));
 	    }
         }else{
 	    my $int = Interface->retrieve($iid);
-            $logger->warn(sprintf("Netdot::Model::Topology::get_dp_links: %s: Remote Port not defined", $int->get_label));
+            $logger->warn(sprintf("Topology::get_dp_links: %s: Remote Port not defined", $int->get_label));
         }
     }
 
-    $logger->debug(sprintf("Netdot::Model::Topology::get_dp_links: Links determined in %s", 
+    $logger->debug(sprintf("Topology::get_dp_links: Links determined in %s", 
 			   $class->sec2dhms(time - $start)));
     
     if ( keys %ips2discover ){
-	$logger->info("Netdot::Model::Topology::get_dp_links: Discovering unknown neighbors");
+	$logger->info("Topology::get_dp_links: Discovering unknown neighbors");
 	Device->snmp_update_parallel(hosts=>\%ips2discover);
-	$logger->info("Netdot::Model::Topology::get_dp_links: You may have to discover topology again to make sure any newly added neighbors are linked");
+	$logger->info("Topology::get_dp_links: You may have to discover topology again to make sure any newly added neighbors are linked");
     }
     return \%links;
 }
@@ -350,7 +358,44 @@ sub get_fdb_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_fdb_links');
     my $start = time;
-    my $dbh = $class->db_Main;
+    my $dbh   = $class->db_Main;
+
+    # Build a hash with device base macs for faster lookups later
+    my $base_macs_q = $dbh->selectall_arrayref("
+       SELECT  device.id, physaddr.address 
+       FROM    device, physaddr
+       WHERE   device.physaddr=physaddr.id");
+    my %base_macs;
+    foreach my $row ( @$base_macs_q ) {
+	my ($id, $address) = @$row;
+	$base_macs{$id} = $address;
+    }
+
+    # This value loosely represents a perceived completeness of the forwarding tables.
+    # It is used to determine how much our results are to be trusted.
+    # The closer this value is to 1 (that is, 100%), the stricter this code is about
+    # reporting discovered links.  In our experience, surprisingly low values (25%)
+    # yield surprisingly accurate results.
+    my $fdb_completeness_ratio = Netdot->config->get('FDB_COMPLETENESS_RATIO') || .5;
+    $logger->debug("FDB_COMPLETENESS_RATIO > $fdb_completeness_ratio");
+
+    # For each VLAN we analyze, we can't assume that all devices with memberships on 
+    # those VLANs are on the same physical segment.  For that reason, this code tries
+    # to find possible 'islands' of devices in each vlan.  We've seen cases where
+    # special purpose devices that connect to every VLAN (for management purposes)
+    # cause this to break.  We then provide the user with this configuration option to
+    # improve the reliability of this code.
+    my %excluded_devices;
+    if ( defined Netdot->config->get('FDB_EXCLUDE_DEVICES') ){
+	foreach my $mac ( @{Netdot->config->get('FDB_EXCLUDE_DEVICES')} ){
+	    $mac = PhysAddr->format_address($mac);
+	    my $addr = PhysAddr->search(address=>$mac)->first;
+	    next unless $addr;
+	    my $device = Device->search(physaddr=>$addr)->first;
+	    next unless $device;
+	    $excluded_devices{$device->id} = 1 if $device;
+	}    
+    }
 
     # Find the most recent query for every Vlan
     my $vlanstatement = $dbh->prepare("
@@ -366,35 +411,34 @@ sub get_fdb_links {
     $vlanstatement->bind_columns(\$maxtstamp, \$vlan);
 
     my $fdbstatement = $dbh->prepare_cached("
-            SELECT fwtable.device, interface.id, physaddr.address
-            FROM interface, interfacevlan, fwtable, fwtableentry, physaddr
-            WHERE 
-                    fwtable.device = interface.device
-                AND fwtable.tstamp = ?
-                AND fwtableentry.fwtable = fwtable.id
-                AND fwtableentry.interface = interface.id
-                AND interfacevlan.vlan = ?
-                AND interfacevlan.interface = interface.id
-                AND fwtableentry.physaddr = physaddr.id
+            SELECT   fwtable.device, interface.id, physaddr.address
+            FROM     interface, interfacevlan, fwtable, fwtableentry, physaddr
+            WHERE    fwtable.device = interface.device
+                AND  fwtable.tstamp = ?
+                AND  fwtableentry.fwtable = fwtable.id
+                AND  fwtableentry.interface = interface.id
+                AND  interfacevlan.vlan = ?
+                AND  interfacevlan.interface = interface.id
+                AND  fwtableentry.physaddr = physaddr.id
         ");
 
     my %links;  # The links we find go here
 
-    my %devices = (); # Device ids to Device objects -- just for debugging
-    foreach my $device (Device->retrieve_all) {
+    my %devices; # Device ids to Device objects -- just for debugging
+    foreach my $device ( Device->retrieve_all ){
         $devices{$device->id} = $device;
     }
 
-    # Ignore all entries that aren't about end devices
-    my %infrastructure_macs = %{PhysAddr->infrastructure};
+    my %infrastructure_macs = %{ PhysAddr->infrastructure() };
 
+    # Some utility functions
+    #
     sub hash_intersection {
 	my ($a, $b) = @_;
 	my %combo = ();
 	for my $k (keys %$a) { $combo{$k} = 1 if (exists $b->{$k}) }
 	return \%combo;
     }
-    
     sub hash_union {
 	my ($a, $b) = @_;
 	my %combo = ();
@@ -402,159 +446,198 @@ sub get_fdb_links {
 	for my $k (keys %$b) { $combo{$k} = 1 }
 	return \%combo;
     }
-    
-    sub same_hash_keys {
+    # Returns true if hashes have at least one key in common
+    sub hash_match {
 	my ($a, $b) = @_;
-	for my $k (keys %$a) { return 0 unless (exists $b->{$k}) }
-	for my $k (keys %$b) { return 0 unless (exists $a->{$k}) }
-	return 1;
+	my $smallest = (scalar keys %$a < scalar keys %$b)? $a : $b;
+	my $largest = ( $smallest == $a )? $b : $a;
+	for my $k (keys %$smallest) { return 1 if (exists $largest->{$k}) }
+	return 0;
     }
     
-    while ($vlanstatement->fetch) {
-        my $vid = Vlan->retrieve(id=>$vlan)->vid;
-        $logger->debug("Discovering how vlan " . $vid . " (id=$vlan) was connected at $maxtstamp");
+    # Find groups of devices on the same physical segment by checking to 
+    # see if they have addresses in common
+    sub break_into_groups {
+	my (%argv) = @_;
+	my ($class, $device_addresses, $devices, $infrastructure_macs, $excluded_devices) 
+	    = @argv{'class', 'device_addresses', 'devices', 'infrastructure_macs', 'excluded_devices'};
+	
+	$logger->debug(" " . (scalar keys %$device_addresses) . " devices");
+	my %map;
+	foreach my $device ( keys %$device_addresses ){
 
-        $fdbstatement->execute($maxtstamp, $vlan);
-        
-        $logger->debug("Done executing the FDB query");
+	    # Ignore devices that can affect the grouping results
+	    next if ( exists $excluded_devices->{$device} );
 
-        my ($device, $ifaceid, $localiface, $entry);
-        $fdbstatement->bind_columns(\$device, \$ifaceid, \$entry);
-
-        $logger->debug("Iterating through all the return values");
-        my $d = {};
-        while ($fdbstatement->fetch) {
-            $d->{$device} = {} unless exists $d->{$device};
-            $d->{$device}{$ifaceid} = {} unless exists $d->{$device}{$ifaceid};
-            next if (exists $infrastructure_macs{$entry});
-	    $d->{$device}{$ifaceid}{$entry} = 1;
+	    $logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) . " addresses on device $device");
+	    foreach my $address (keys %{$device_addresses->{$device}}) {
+		$map{$address}{$device} = 1;
+	    }
 	}
 
-	if (1 >= keys %$d) {
-	    $logger->debug("Only one device on vlan $vlan");
+	my @groups;
+
+	# This threshold represents the maximum number of layer2 devices that 
+	# should be expected to exist in a given layer2 network
+	my $threshold = Netdot->config->get('FDB_MAX_NUM_DEVS_IN_SEGMENT');
+
+	# Start with the addresses seen by most devices
+	foreach my $address ( sort { scalar(keys %{$map{$b}}) <=> scalar(keys %{$map{$a}}) } keys %map ){
+	    # Do not take into account infrastructure MACs for this
+            next if ( exists $infrastructure_macs->{$address} );
+	    
+	    my $num_devs = scalar keys %{ $map{$address} };
+	    if ( $num_devs > $threshold ){
+		$logger->info("  Topology::get_fdb_links: Skipping too popular address $address ".
+			      "(num_devs $num_devs > threshold $threshold)");
+		next;
+	    }
+	    if ( $logger->is_debug() ){
+		my @lbls = map { $devices->{$_}->get_label } keys %{$map{$address}};
+		$logger->debug("  Address $address seen by: " . (join ', ', @lbls));
+	    }
+	    
+	    # Start by inserting the first group
+	    if ( !scalar @groups ){
+		$logger->debug("  Added first group with devices seeing address $address");
+		push @groups, $map{$address};
+		next;
+	    }
+	    my @matches;
+	    my $i = 0;
+	    foreach my $group ( sort { scalar($b) <=> scalar($a) } @groups ){
+		if ( &hash_match($map{$address}, $group) ){
+		    $matches[$i] = $group;
+		    $i++;
+		}
+	    }
+	    if ( !@matches ){
+		$logger->debug("  Added new group with devices seeing address $address");
+		push @groups, $map{$address};
+	    }elsif ( scalar @matches == 1 ){
+		my $group = $matches[0];
+		$group = &hash_union($map{$address}, $group);
+		$logger->debug("  Devices seeing address $address added to existing group");
+	    }else{
+		$logger->debug("  Devices seeing $address match more than 1 group.  Skipping.");
+	    }
+	}
+	return \@groups;
+    }
+    
+    while ( $vlanstatement->fetch ) {
+        my $vid = Vlan->retrieve(id=>$vlan)->vid;
+        $logger->debug("Discovering how vlan " . $vid . " was connected at $maxtstamp");
+	
+        $fdbstatement->execute($maxtstamp, $vlan);
+        
+        my ($device, $ifaceid, $address);
+        $fdbstatement->bind_columns(\$device, \$ifaceid, \$address);
+	
+        my $d = {};
+        while ( $fdbstatement->fetch ){
+	    next if ( exists $excluded_devices{$device} );
+	    $d->{$device}{$ifaceid}{$address} = 1;
+	}
+
+	if ( 1 >= keys %$d ){
+	    $logger->debug("  Only one device on vlan $vid");
 	    next;
 	}
 
 	$logger->debug("vlan " . $vid . " has " . (scalar keys %$d) .  " devices at time $maxtstamp");
-
-	# Now, if there are any more complicated cases, we do the full
-	# algorithm
-
-	$logger->debug("Finding all interfaces and on all devices");
+	$logger->debug("Creating a hash of addresses keyed by device");
 	my $device_addresses = {};
-	foreach my $device (keys %{$d}) {
+	foreach my $device (keys %$d) {
 	    $device_addresses->{$device} = {} unless exists $device_addresses->{$device};
 	    foreach my $interface (keys %{$d->{$device}}) {
 		$device_addresses->{$device} = &hash_union($device_addresses->{$device}, 
 							   $d->{$device}{$interface})
 	    }
 	}
-	sub break_into_groups {
-	    my ($device_addresses) = @_;
-	    
-	    # Make the graph we need to search
-	    $logger->debug(" " . (scalar keys %$device_addresses) . " devices");
-	    my $graph = {};
-	    foreach my $device (keys %$device_addresses) {
-		$logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) . " addresses on device $device");
-		
-		$graph->{addresses}->{$device} = {} unless exists $graph->{addresses}->{$device};
-		
-		foreach my $entry (keys %{$device_addresses->{$device}}) {
-		    $graph->{devices}->{$entry} = {} unless exists $graph->{devices}->{$entry};
-		    $graph->{devices}->{$entry}{$device} = 1;
-		    $graph->{addresses}->{$device}{$entry} = 1;
-		}
-	    }
-	    
-	    # Now we have a big graph - let's search it
-	    my %possibilities = ();
-	    
-	    # Record, as a hash of listrefs, the devices we should check for connectivity with each device
-	    foreach my $device (keys %$device_addresses) {
-		$possibilities{$device} = [];
-		my %seen = ();
-		
-		$seen{$device} = 1; # Record that we've seen ourselves
-		
-		# For every device that we have something in common with, we should check connectivity
-		foreach my $address (keys %{$graph->{addresses}->{$device}}) {
-		    if (100 < scalar keys %{$graph->{devices}->{$address}}) {
-			$logger->debug("Popular address: $address");
-		    }
-		    
-		    foreach my $neighbor (keys %{$graph->{devices}->{$address}}) {
-			next if (exists $seen{$neighbor});
-			$seen{$neighbor} = 1;
-			push @{$possibilities{$device}}, $neighbor;
-		    }
-		}
-	    }
-	    
-	    return %possibilities;
-	}
+	my $groups;
+	$logger->debug("  Breaking devices up into separate layer2 networks");
+	$groups = &break_into_groups(class               => $class, 
+				     device_addresses    => $device_addresses, 
+				     devices             => \%devices, 
+				     infrastructure_macs => \%infrastructure_macs, 
+				     excluded_devices    => \%excluded_devices,
+	    );
 	
-	$logger->debug("We begin by breaking the devices up into separate subnets");
-	my %groups = &break_into_groups($device_addresses);
+	$logger->debug("  We now have " . scalar @$groups . " groups");
 	
-	$logger->debug("We now know what to search for each device");
-	my @possiblelinks = ();
-	foreach my $device (keys %groups) {
-	    my @neighbors = @{$groups{$device}};
-	    next if (0 == scalar keys %{$device_addresses->{$device}});
-	    
-	    foreach my $device2 (@neighbors) {
-		next if ($device2 == $device);
-		next if (0 == scalar keys %{$device_addresses->{$device2}});
-		
-		my $union = $device_addresses->{$device};
-		foreach my $neighbor ( @neighbors ){
-		    $union = &hash_union($union, $device_addresses->{$neighbor});
-		}
-		my $unionsize = scalar keys %$union;
-		$logger->debug(" $unionsize combined addresses in this group");
-		
-		foreach my $interface (keys %{$d->{$device}}) {
-		    my $ihash = $d->{$device}{$interface};
-		    if (0 == scalar keys %$ihash) {
-			next;
-		    }
-		    
-		    foreach my $interface2 (keys %{$d->{$device2}}) {
-			my $ihash2 = $d->{$device2}{$interface2};
-			if (0 == scalar keys %$ihash2) {
-			    next;
-			}
-			my $combosize = scalar keys %{&hash_union($ihash2, $ihash)};
+	foreach my $group ( @$groups ) {
+	    my @possiblelinks;
+	    if ( $logger->is_debug ){
+		my @lbls = map { $devices{$_}->get_label } keys %$group;
+		$logger->debug("  This group has: " . (join ', ', @lbls));
+	    }
+	    my $num_devs = scalar keys %$group;
+	    next if ( 1 == $num_devs );
 
-			if (0 == scalar keys %{&hash_intersection($ihash2, $ihash)}) {
-			    my $percentage = $combosize / $unionsize;
-			    push @possiblelinks, [ $percentage, $interface, $interface2 ]
-				if ($percentage > .85);
+	    # Only consider base MACs
+	    my %universal;
+	    foreach my $device ( keys %$group ){
+		$universal{$base_macs{$device}} = 1 if ( exists $base_macs{$device} );
+	    }
+	    my $universal_size = scalar keys %universal;
+	    $logger->debug("  Universal contains: " . (join ', ', keys %universal));
+	    
+	    $logger->debug("  Starting interface checks");
+	    foreach my $device ( keys %$group ){
+		next if ( 0 == scalar keys %{$device_addresses->{$device}} );
+		
+		foreach my $device2 ( keys %$group ) {
+		    next if ( $device2 == $device );
+		    next if ( 0 == scalar keys %{$device_addresses->{$device2}} );
+		    
+		    foreach my $interface (keys %{$d->{$device}}) {
+			my $ihash = $d->{$device}{$interface};
+			next if ( 0 == scalar keys %$ihash );
+
+			my $r_ihash = &hash_intersection($ihash, \%universal);
+
+			foreach my $interface2 (keys %{$d->{$device2}}) {
+			    my $ihash2 = $d->{$device2}{$interface2};
+			    next if (0 == scalar keys %$ihash2);
+
+			    if ( 0 == scalar keys %{&hash_intersection($ihash2, $ihash)} ){
+
+				my $r_ihash2        = &hash_intersection($ihash2, \%universal);
+				my $i_address_union = &hash_union($r_ihash, $r_ihash2);
+				my $combo_size      = scalar keys %$i_address_union;
+				my $percentage      = $combo_size / $universal_size;
+				
+				if ( $percentage > $fdb_completeness_ratio ){
+				    push @possiblelinks, [ $percentage, $interface, $interface2 ];
+				}
+			    }
 			}
 		    }
 		}
 	    }
-	}
-	
-	$logger->debug("" . (scalar @possiblelinks) . " possible links");
-	
-	@possiblelinks = sort { $b->[0] <=> $a->[0] } @possiblelinks;
-	foreach my $l (@possiblelinks) {
-	    my ($percent, $from, $to) = @$l;
-	    next if (exists $links{$from});
-	    next if (exists $links{$to});
 	    
-	    my $toi   = Interface->retrieve(id=>$to);
-	    my $fromi = Interface->retrieve(id=>$from);
-	    $logger->debug("Netdot::Model::Topology::get_fdb_links: Found link (" . int (100*$percent) . "%): " 
-			   . $fromi->get_label . " -> " . $toi->get_label );
-	    $links{$from} = $to;
-	    $links{$to}   = $from;
+	    $logger->debug("   " . (scalar @possiblelinks) . " possible links");
+	    
+	    @possiblelinks = sort { $b->[0] <=> $a->[0] } @possiblelinks;
+	    foreach my $l ( @possiblelinks ){
+		my ($percent, $from, $to) = @$l;
+		next if ( exists $links{$from} );
+		next if ( exists $links{$to} );
+		
+		if ( $logger->is_debug() ){
+		    my $toi   = Interface->retrieve(id=>$to);
+		    my $fromi = Interface->retrieve(id=>$from);
+		    $logger->debug("Topology::get_fdb_links: Found link (" . int(100*$percent) . "%): " 
+				   . $fromi->get_label . " -> " . $toi->get_label );
+		}
+		$links{$from} = $to;
+		$links{$to}   = $from;
+	    }
 	}
     }
 
-    $logger->debug(sprintf("Netdot::Model::Topology::get_fdb_links: Links determined in %s", 
+    $logger->debug(sprintf("Topology::get_fdb_links: Links determined in %s", 
 			   $class->sec2dhms(time - $start)));
     return \%links;
     
@@ -568,7 +651,7 @@ sub get_fdb_links {
   Returns:    
     Hashref with link info
   Example:
-    my $links = Netdot::Model::Topology->get_stp_links();
+    my $links =Netdot::Model::Topology->get_stp_links();
 
 =cut
 sub get_stp_links {
@@ -590,7 +673,7 @@ sub get_stp_links {
 	my $links = $class->get_tree_stp_links(root=>$root, devicemacs=>$devicemacs);
 	map { $stp_links{$_} = $links->{$_} } keys %$links;
     }
-    $logger->debug(sprintf("Netdot::Model::Topology::get_stp_links: Links determined in %s", 
+    $logger->debug(sprintf("Topology::get_stp_links: Links determined in %s", 
 			   $class->sec2dhms(time - $start)));
     
     return \%stp_links;
@@ -627,7 +710,7 @@ sub get_tree_stp_links {
     # the designated port.  The non-designated bridge will point to the 
     # designated bridge instead.
     my %links;
-    $logger->debug(sprintf("Netdot::Model::Topology::get_tree_stp_links: Determining topology for STP tree with root at %s", 
+    $logger->debug(sprintf("Topology::get_tree_stp_links: Determining topology for STP tree with root at %s", 
 			   $argv{root}));
 
     my (%far, %near);
@@ -666,7 +749,7 @@ sub get_tree_stp_links {
 	    if ( exists $near{$des_b}{$des_p} ){
 		my $r_int = $near{$des_b}{$des_p};
 		$links{$int} = $r_int;
-		$logger->debug(sprintf("Netdot::Model::Topology::get_tree_stp_links: Found link: %d -> %d", 
+		$logger->debug(sprintf("Topology::get_tree_stp_links: Found link: %d -> %d", 
 				       $int, $r_int));
 	    }else{
 		# Octet representations may not match
@@ -674,13 +757,13 @@ sub get_tree_stp_links {
 		    if ( $class->_cmp_des_p($r_des_p, $des_p) ){
 			my $r_int = $near{$des_b}{$r_des_p};
 			$links{$int} = $r_int;
-			$logger->debug(sprintf("Netdot::Model::Topology::get_tree_stp_links: Found link: %d -> %d", 
+			$logger->debug(sprintf("Topology::get_tree_stp_links: Found link: %d -> %d", 
 					       $int, $r_int));
 		    }
 		}
 	    }
 	}else{
-	    $logger->debug(sprintf("Netdot::Model::Topology::get_tree_stp_links: Designated bridge %s not found", 
+	    $logger->debug(sprintf("Topology::get_tree_stp_links: Designated bridge %s not found", 
 				   $des_b));
 	}
     }
@@ -709,7 +792,7 @@ sub get_p2p_links {
     my @blocks = Ipblock->search(prefix=>'30');
     foreach my $block ( @blocks ){
 	next unless ( $block->status->name eq 'Subnet' );
-	$logger->debug(sprintf("Netdot::Model::Topology::get_p2p_links: Checking Subnet %s",
+	$logger->debug(sprintf("Topology::get_p2p_links: Checking Subnet %s",
 			       $block->get_label));
 	my @ips = $block->children;
 	if ( scalar(@ips) == 2 ){
@@ -723,13 +806,13 @@ sub get_p2p_links {
 		}
 	    }
 	    if ( scalar(@ints) == 2 ){
-		$logger->debug(sprintf("Netdot::Model::Topology::get_p2p_links: Found link: %d -> %d", 
+		$logger->debug(sprintf("Topology::get_p2p_links: Found link: %d -> %d", 
 				       $ints[0], $ints[1]));
 		$links{$ints[0]} = $ints[1];
 	    }
 	}
     }
-    $logger->debug(sprintf("Netdot::Model::Topology::get_p2p_links: Links determined in %s", 
+    $logger->debug(sprintf("Topology::get_p2p_links: Links determined in %s", 
 			   $class->sec2dhms(time - $start)));
     return \%links;
 }
