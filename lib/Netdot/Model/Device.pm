@@ -341,7 +341,11 @@ sub insert {
 	$devtmp{name} = $argv->{name};
     }else{
 	# A string hostname was passed
-	$devtmp{name} = $argv->{name};
+	if ( my $rr = RR->search(name=>$argv->{name}) ){
+	    $devtmp{name} = $rr;
+	}else{
+	    $devtmp{name} = RR->insert({name=>$argv->{name}});
+	}
     }
     
     if ( my $dbdev = $class->search(name=>$devtmp{name})->first ){
@@ -1088,7 +1092,7 @@ sub discover {
 	}
 	# Set some values in the new Device based on the SNMP info obtained
 	my $main_ip = $class->_get_main_ip($info);
-	my $host = $main_ip || $name;
+	my $host    = $main_ip || $name;
 	my $newname = $class->assign_name(host=>$host, sysname=>$info->{sysname} );
 	my %devtmp = (name          => $newname,
 		      snmp_managed  => 1,
