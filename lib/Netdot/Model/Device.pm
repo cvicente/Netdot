@@ -1084,7 +1084,6 @@ sub discover {
 						   retries     => $argv{retries},
 		    );
 	    }
-	    
 	    $info = $class->_exec_timeout($name, 
 					  sub{ return $class->get_snmp_info(session   => $sinfo,
 									    bgp_peers => $argv{bgp_peers},
@@ -1094,8 +1093,7 @@ sub discover {
 	my $main_ip = $class->_get_main_ip($info);
 	my $host    = $main_ip || $name;
 	my $newname = $class->assign_name(host=>$host, sysname=>$info->{sysname} );
-	my %devtmp = (name          => $newname,
-		      snmp_managed  => 1,
+	my %devtmp = (snmp_managed  => 1,
 		      canautoupdate => 1,
 		      community     => $info->{community},
 		      snmp_version  => $info->{snmp_version},
@@ -1116,8 +1114,9 @@ sub discover {
 	    }
 	}
 	# Catch any other Device fields passed to us
+	# This will override the previous default values
 	foreach my $field ( $class->meta_data->get_column_names ){
-	    if ( defined $argv{$field} && !defined $devtmp{$field} ){
+	    if ( defined $argv{$field} ){
 		$devtmp{$field} = $argv{$field};
 	    }
 	}
@@ -1127,8 +1126,8 @@ sub discover {
 		$devtmp{site} = $site;
 	    }
 	}
-
 	# Insert the new Device
+	$devtmp{name} = $newname;
 	$dev = $class->insert(\%devtmp);
     }
     
@@ -2412,13 +2411,13 @@ sub info_update {
 	    unless ( $dev = $class->search(name=>$ap)->first ){
 		my @contacts = map { $_->contactlist } $self->contacts;
 		$dev = $class->discover(name          => $ap,
-					 snmp_managed  => 0,
-					 canautoupdate => 0,
-					 owner         => $self->owner,
-					 used_by       => $self->used_by,
-					 contacts      => @contacts,
-					 info          => $info->{airespace}->{$ap},
-					);
+					snmp_managed  => 0,
+					canautoupdate => 0,
+					owner         => $self->owner,
+					used_by       => $self->used_by,
+					contacts      => @contacts,
+					info          => $info->{airespace}->{$ap},
+		    );
 	    }
 
 	    my $apmac = $info->{airespace}->{$ap}->{physaddr};
@@ -3161,7 +3160,9 @@ sub _get_snmp_session {
 	    unless $self->snmp_managed;
 
 	# Fill up communities argument from object if it wasn't passed to us
-	push @{$argv{communities}}, $self->community unless defined $argv{communities};
+	if ( ! exists $argv{communities} && $self->community ){
+	    push @{$argv{communities}}, $self->community;
+	}
 
 	# We might already have a SNMP::Info class
 	$sclass ||= $self->{_sclass};
