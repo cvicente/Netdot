@@ -3567,8 +3567,14 @@ sub snmp_update_parallel {
 	    }else{
 		# FORK
 		$pm->start and next;
-		$class->_launch_child(pm   => $pm, 
-				      code => sub{ return $class->discover(name=>$host, %uargs) } );
+		eval {
+		    $class->_launch_child(pm   => $pm, 
+					  code => sub{ return $class->discover(name=>$host, %uargs) } );
+		};
+		if ( my $e = $@ ){
+		    $logger->error($e);
+		    exit 1;
+		}
 	    }
 	}
     }
@@ -3582,8 +3588,14 @@ sub snmp_update_parallel {
 	$device_count++;
 	# FORK
 	$pm->start and next;
-	$class->_launch_child(pm   => $pm, 
-			      code => sub{ return $dev->snmp_update(%uargs) } );
+	eval {
+	    $class->_launch_child(pm   => $pm, 
+				  code => sub{ return $dev->snmp_update(%uargs) } );
+	};
+	if ( my $e = $@ ){
+	    $logger->error($e);
+	    exit 1;
+	}
     }
 
     # End forking state
