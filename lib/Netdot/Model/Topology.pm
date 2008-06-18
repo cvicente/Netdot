@@ -463,15 +463,14 @@ sub get_fdb_links {
 	    = @argv{'class', 'device_addresses', 'devices', 'infrastructure_macs', 'excluded_devices'};
 	
 	$logger->debug(" " . (scalar keys %$device_addresses) . " devices");
-	my %map;
+	my (%admap, %damap);
 	foreach my $device ( keys %$device_addresses ){
-
 	    # Ignore devices that can affect the grouping results
 	    next if ( exists $excluded_devices->{$device} );
-
 	    $logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) . " addresses on device $device");
 	    foreach my $address (keys %{$device_addresses->{$device}}) {
-		$map{$address}{$device} = 1;
+		$admap{$address}{$device}   = 1;
+		$damap{$device}{$address} = 1;
 	    }
 	}
 
@@ -481,46 +480,44 @@ sub get_fdb_links {
 	# should be expected to exist in a given layer2 network
 	my $threshold = Netdot->config->get('FDB_MAX_NUM_DEVS_IN_SEGMENT');
 
-	# Start with the addresses seen by most devices
-	foreach my $address ( sort { scalar(keys %{$map{$b}}) <=> scalar(keys %{$map{$a}}) } keys %map ){
-	    # Do not take into account infrastructure MACs for this
-            next if ( exists $infrastructure_macs->{$address} );
-	    
-	    my $num_devs = scalar keys %{ $map{$address} };
-	    if ( $num_devs > $threshold ){
-		$logger->info("  Topology::get_fdb_links: Skipping too popular address $address ".
-			      "(num_devs $num_devs > threshold $threshold)");
-		next;
-	    }
-	    if ( $logger->is_debug() ){
-		my @lbls = map { $devices->{$_}->get_label } keys %{$map{$address}};
-		$logger->debug("  Address $address seen by: " . (join ', ', @lbls));
-	    }
-	    
-	    # Start by inserting the first group
-	    if ( !scalar @groups ){
-		$logger->debug("  Added first group with devices seeing address $address");
-		push @groups, $map{$address};
-		next;
-	    }
-	    my @matches;
-	    my $i = 0;
-	    foreach my $group ( sort { scalar($b) <=> scalar($a) } @groups ){
-		if ( &hash_match($map{$address}, $group) ){
-		    $matches[$i] = $group;
-		    $i++;
+	# A variation of depth-first search
+	my %seen;
+	foreach my $address ( keys %admap ){
+	    next if ( exists $infrastructure_macs->{$address} );
+	    next if exists $seen{$address};
+	    my (@astack, @dstack);
+	    push @astack, $address;
+	    my %group;
+	    while ( @astack || @dstack ){
+		if ( @astack ){
+		    my $address = pop @astack;
+		    next if exists $seen{$address};
+		    $seen{$address} = 1;
+		    my $num_devs = scalar keys %{ $admap{$address} };
+		    if ( $num_devs > $threshold ){
+			$logger->info("  Topology::get_fdb_links: Skipping too popular address $address ".
+				      "(num_devs $num_devs > threshold $threshold)");
+			next;
+		    }
+
+		    foreach my $device ( keys %{$admap{$address}} ){
+			next if exists $seen{$device};
+			push @dstack, $device;
+		    }
+		}
+		if ( @dstack ){
+		    my $device = pop @dstack;
+		    next if exists $seen{$device};
+		    $seen{$device} = 1;
+		    $group{$device} = 1;
+		    foreach my $address ( keys %{$damap{$device}} ){
+			next if exists $seen{$address};
+			next if ( exists $infrastructure_macs->{$address} );
+			push @astack, $address;
+		    }
 		}
 	    }
-	    if ( !@matches ){
-		$logger->debug("  Added new group with devices seeing address $address");
-		push @groups, $map{$address};
-	    }elsif ( scalar @matches == 1 ){
-		my $group = $matches[0];
-		$group = &hash_union($map{$address}, $group);
-		$logger->debug("  Devices seeing address $address added to existing group");
-	    }else{
-		$logger->debug("  Devices seeing $address match more than 1 group.  Skipping.");
-	    }
+	    push @groups, \%group;
 	}
 	return \@groups;
     }
