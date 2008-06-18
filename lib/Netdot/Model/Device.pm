@@ -3308,7 +3308,6 @@ sub _get_main_ip {
     if ( scalar(keys %allips) == 1 ){
 	$ip = (keys %allips)[0];
 	$logger->debug(sub{"Device::_get_main_ip: Device has one IP: $ip" });
-	return $ip;
     }
     foreach my $method ( @methods ){
 	$logger->debug(sub{"Device::_get_main_ip: Trying method $method" });
@@ -3349,7 +3348,7 @@ sub _get_main_ip {
 	}
 	
 	if ( defined $ip ){
-	    if ( Ipblock->validate($ip) ){
+	    if ( $ip =~ /^$IPV4$/ && Ipblock->validate($ip) ){
 		$logger->debug(sub{"Device::_get_main_ip: Chose $ip using naming method: $method" });
 		return $ip ;
 	    }else{
