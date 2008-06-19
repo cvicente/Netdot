@@ -71,16 +71,16 @@ sub search {
     my $dev;
     
     if ( exists $argv{name} ){
+	my $foundname = 0;
 	if ( ref($argv{name}) =~ /RR/ ){ 
 	    # We were passed a RR object.  
 	    # Proceed as regular search
-	    return $class->SUPER::search(%argv, $opts);
-	}
-	if ( $argv{name} =~ /$IPV4|$IPV6/ ){
+	}elsif ( $argv{name} =~ /$IPV4|$IPV6/ ){
 	    # Looks like an IP address
 	    if ( my $ip = Ipblock->search(address=>$argv{name})->first ){
 		if ( $ip->interface && ($dev = $ip->interface->device) ){
 		    $argv{name} = $dev->name;
+		    $foundname = 1;
 		}else{
 		    $logger->debug(sub{"Address $argv{name} exists but no Device associated"});
 		}
@@ -88,17 +88,38 @@ sub search {
 		$logger->debug(sub{"Device::search: $argv{name} not found in DB"});
 	    }
 	}
-	# Notice that we could be looking for a RR with an IP address as name
-	# So go on.
-
-	# name is either a string or a RR id
-	if ( $argv{name} =~ /\D+/ ){
-	    # argument has non-digits.  It's not an id.  Look it up as name
-	    if ( my $rr = RR->search(name=>$argv{name})->first ){
-		$argv{name} = $rr->id;
-	    }else{
-		# No use searching for a non-digit string in the name field
-		$argv{name} = 0;
+	if ( !$foundname ){
+	    # Notice that we could be looking for a RR with an IP address as name
+	    # So go on.
+	    # name is either a string or a RR id
+	    if ( $argv{name} =~ /\D+/ ){
+		# argument has non-digits, so it's not an id.  Look up RR name
+		if ( my @rrs = RR->search(name=>$argv{name}) ){
+		    if ( scalar @rrs == 1 ){
+			$argv{name} = $rrs[0];
+		    }else{
+			# This means we have the same RR name on different zones
+			# Try to resolve the name and look up IP address
+			if ( my $ip = ($dns->resolve_name($argv{name}))[0] ){
+			    $logger->debug(sub{"Device::search: $argv{name} resolves to $ip"});
+			    if ( my $ip = Ipblock->search(address=>$ip)->first ){
+				if ( $ip->interface && ($dev = $ip->interface->device) ){
+				    $argv{name} = $dev->name;
+				}elsif ( my @arecords = $ip->arecords ){
+				    # The IP is not assigned to any device interfaces
+				    # but there might be a device with a name and A record
+				    # associated with this IP
+				    $argv{name} = $arecords[0]->rr;
+				}else{
+				    $argv{name} = 0;
+				}
+			    }
+			}
+		    }
+		}else{
+		    # No use searching for a non-digit string in the name field
+		    $argv{name} = 0;
+		}
 	    }
 	}
     }elsif ( exists $argv{producttype} ){
