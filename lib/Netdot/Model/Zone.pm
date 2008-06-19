@@ -56,7 +56,7 @@ sub search {
     if ( $class->SUPER::search(%argv) ){
 	return $class->SUPER::search(%argv);
     }elsif ( defined $argv{mname} && $argv{mname} =~ /\./ && $argv{mname} !~ /$IPV4|$IPV6/ ){
-	my @sections = split /\./, $argv{mname};
+	my @sections = split '\.', $argv{mname};
 	while ( @sections ){
 	    $argv{mname} = join '.', @sections;
 	    $logger->debug(sub{ "Zone::search: $argv{mname}" });
@@ -113,7 +113,22 @@ sub insert {
 		 reverse   => $argv->{reverse} || 0,
 		 );
 
-    return $class->SUPER::insert( \%state );
+    my $newzone = $class->SUPER::insert( \%state );
+    
+    # We want all the existing RR's to fall under this new zone when appropriate
+    my $mname = $newzone->mname;
+    if ( my @rrs = RR->retrieve_all() ){
+	foreach my $rr ( @rrs ){
+	    my $fqdn = $rr->get_label;
+	    if ( $fqdn =~ /\.$mname$/ ){
+		my $newname = $fqdn;
+		$newname =~ s/\.$mname$//;
+		$rr->update({name=>$newname, zone=>$newzone});
+	    }
+	}
+    }
+
+    return $newzone;
 }
 
 
