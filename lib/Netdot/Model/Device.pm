@@ -189,14 +189,18 @@ sub assign_name {
     $class->throw_fatal("Device::assign_name: Missing arguments: host or sysname")
 	unless $host || $sysname;
 
-    # An RR record might alrady exist
-    if ( defined $host && (my $rr = RR->search(name=>$host)->first) ){
-	$logger->debug(sub{"Name $host exists in DB"});
-	return $rr;
+    # An RR record might already exist
+    if ( defined $host && (my @rrs = RR->search(name=>$host)) ){
+	if ( scalar @rrs == 1 ){
+	    $logger->debug(sub{"Name $host exists in DB"});
+	    return $rrs[0];
+	}
     }
-    if ( defined $sysname && (my $rr = RR->search(name=>$sysname)->first) ){
-	$logger->debug(sub{"Name $sysname exists in DB"});
-	return $rr;
+    if ( defined $sysname && (my @rrs = RR->search(name=>$sysname)) ){
+	if ( scalar @rrs == 1 ){
+	    $logger->debug(sub{"Name $sysname exists in DB"});
+	    return $rrs[0];
+	}
     }
     
     # An RR matching $host or $sysname does not exist
