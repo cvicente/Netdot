@@ -80,7 +80,7 @@ sub resolve_ip {
     return unless $ip;
 
     my $name;
-    if ( $ip =~ /$IPV4/ ){
+    if ( $ip =~ /^($IPV4)$/ ){
 	my $iaddr = inet_aton($ip);
 	unless ( $iaddr ){
 	    $self->{_logger}->error("Netdot::Util::DNS::resolve_ip: Can't resolve $ip");
@@ -112,7 +112,7 @@ sub resolve_any {
     my ($self, $host) = @_;
     return unless $host;
     my ($ip, $name);
-    if ( $host =~ /$IPV4|$IPV6/ ){
+    if ( $host =~ /^($IPV4)|($IPV6)$/ ){
 	# looks like an IP address
 	$ip   = $host;
 	$name = $self->resolve_ip($ip) || "?";
