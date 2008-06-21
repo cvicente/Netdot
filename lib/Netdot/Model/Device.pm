@@ -29,6 +29,11 @@ my $dns         = Netdot::Util::DNS->new();
 my %IGNOREDVLANS;
 map { $IGNOREDVLANS{$_}++ } @{ Netdot->config->get('IGNOREVLANS') };
 
+my @MIBDIRS;
+foreach my $md ( @{ Netdot->config->get('SNMP_MIB_DIRS') } ){
+    push @MIBDIRS, Netdot->config->get('NETDOT_PATH')."/".$md;
+}
+
 =head1 NAME
 
 Netdot::Model::Device - Network Device Class
@@ -75,7 +80,7 @@ sub search {
 	if ( ref($argv{name}) =~ /RR/ ){ 
 	    # We were passed a RR object.  
 	    # Proceed as regular search
-	}elsif ( $argv{name} =~ /$IPV4|$IPV6/ ){
+	}elsif ( $argv{name} =~ /^($IPV4)|($IPV6)$/ ){
 	    # Looks like an IP address
 	    if ( my $ip = Ipblock->search(address=>$argv{name})->first ){
 		if ( $ip->interface && ($dev = $ip->interface->device) ){
@@ -205,7 +210,7 @@ sub assign_name {
     
     # An RR matching $host or $sysname does not exist
     my $ip;
-    if ( $host =~ /$IPV4|$IPV6/ ){
+    if ( $host =~ /^($IPV4)|($IPV6)$/ ){
 	# we were given an IP address
 	$ip = $host;
 	if ( my $ipb = Ipblock->search(address=>$ip)->first ){
@@ -247,7 +252,7 @@ sub assign_name {
     $fqdn = lc($fqdn);
 
     # Check if we have a matching domain
-    if ( $fqdn =~ /\./  && $fqdn !~ /$IPV4|$IPV6/ ){
+    if ( $fqdn =~ /\./  && $fqdn !~ /^($IPV4)|($IPV6)$/ ){
 	my @sections = split /\./, $fqdn;
    	# Notice that we search the whole string.  That's because
 	# the hostname part might have dots.  The Zone search method
@@ -1102,6 +1107,7 @@ sub discover {
 	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	unless ( $info ){
 	    unless ( $sinfo ){
+		
 		$sinfo = $class->_get_snmp_session(host        => $name,
 						   communities => $argv{communities},
 						   version     => $argv{version},
@@ -3110,11 +3116,11 @@ sub _validate_args {
 		    if ( $self->id != $otherdev->id ){
 			# Another device has this address!
 			$class->throw_user( sprintf("%s: Base MAC %s belongs to existing device: %s", 
-						   $self->fqdn, $address, $otherdev->fqdn ) ); 
+						    $self->fqdn, $address, $otherdev->fqdn ) ); 
 		    }
 		}else{
 		    $class->throw_user( sprintf("Base MAC %s belongs to existing device: %s", 
-					       $address, $otherdev->fqdn ) ); 
+						$address, $otherdev->fqdn ) ); 
 		}
 	    }
 	}
@@ -3173,7 +3179,7 @@ sub _layer_active {
 
 sub _get_snmp_session {
     my ($self, %argv) = @_;
-    
+
     my $class;
     my $sclass = $argv{sclass} if defined ( $argv{sclass} );
 
@@ -3185,7 +3191,7 @@ sub _get_snmp_session {
 	    unless $self->snmp_managed;
 
 	# Fill up communities argument from object if it wasn't passed to us
-	if ( ! exists $argv{communities} && $self->community ){
+	if ( !defined $argv{communities} && $self->community ){
 	    push @{$argv{communities}}, $self->community;
 	}
 
@@ -3210,10 +3216,11 @@ sub _get_snmp_session {
 	$self->throw_fatal("Missing required arguments: host")
 	    unless $argv{host};
     }
+
     # Get both name and IP for better error reporting
     my ($ip, $name) = $dns->resolve_any($argv{host});
-    $ip   ||= $argv{host};
-    $name ||= $argv{host};
+    $ip   ||= '?';
+    $name ||= '?';
 
     # If we still don't have any communities, get defaults from config file
     $argv{communities} = $self->config->get('DEFAULT_SNMPCOMMUNITIES')
@@ -3221,20 +3228,16 @@ sub _get_snmp_session {
     
     $sclass ||= 'SNMP::Info';
     
-    my @mibdirs;
-    foreach my $md ( @{ $self->config->get('SNMP_MIB_DIRS') } ){
-	push @mibdirs, $self->config->get('NETDOT_PATH')."/".$md;
-    }
     # Set defaults
     my %sinfoargs = ( DestHost      => $argv{host},
 		      Version       => $argv{version} || $self->config->get('DEFAULT_SNMPVERSION'),
 		      Timeout       => (defined $argv{timeout}) ? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
 		      Retries       => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
 		      AutoSpecify   => 1,
-		      Debug         => 0,
+		      Debug         => ( $logger->is_debug() )? 1 : 0,
 		      BulkWalk      => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
 		      BulkRepeaters => 20,
-		      MibDirs       => \@mibdirs,
+		      MibDirs       => \@MIBDIRS,
 		      );
     
     # Turn off bulkwalk if we're using Net-SNMP 5.2.3 or 5.3.1.
@@ -3373,7 +3376,7 @@ sub _get_main_ip {
 	}
 	
 	if ( defined $ip ){
-	    if ( $ip =~ /^$IPV4$/ && Ipblock->validate($ip) ){
+	    if ( $ip =~ /^($IPV4)$/ && Ipblock->validate($ip) ){
 		$logger->debug(sub{"Device::_get_main_ip: Chose $ip using naming method: $method" });
 		return $ip ;
 	    }else{
@@ -3481,17 +3484,13 @@ sub _fork_init {
     $logger->debug(sub{"Device::_fork_init: Launching up to $MAXPROCS children processes" });
     my $pm = Parallel::ForkManager->new($MAXPROCS);
 
-    my @mibdirs;
-    foreach my $md ( @{ $class->config->get('SNMP_MIB_DIRS') } ){
-	push @mibdirs, $class->config->get('NETDOT_PATH')."/".$md;
-    }
-
-    # Prevent SNMP::Info load mib-init in each forked process
+    # Prevent SNMP::Info from loading mib-init in each forked process
+    $logger->debug("Device::_fork_init: Loading dummy SNMP::Info object");
     my $dummy = SNMP::Info->new( DestHost    => 'localhost',
 				 Version     => 1,
 				 AutoSpecify => 0,
-				 Debug       => 0,
-				 MibDirs     => \@mibdirs,
+				 Debug       => ( $logger->is_debug() )? 1 : 0,
+				 MibDirs     => \@MIBDIRS,
 	);
 
     return $pm;

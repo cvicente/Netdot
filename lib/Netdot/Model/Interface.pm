@@ -455,7 +455,7 @@ sub update_ip {
 
     my $label = $self->get_label;
     
-    my $version = ($address =~ /$IPV4/) ?  4 : 6;
+    my $version = ($address =~ /^($IPV4)$/) ?  4 : 6;
     my $prefix  = ($version == 4)  ? 32 : 128;
     
     # If given a mask, we might have to add a subnet

@@ -164,8 +164,16 @@ sub update_links {
     # Remove old links than no longer exist
     foreach my $id ( keys %$old_links ){
 	my $nei  = $old_links->{$id};
-	my $int  = Interface->retrieve($id)  || $class->throw_fatal("Cannot retrieve Interface id $id");
-	my $nint = Interface->retrieve($nei) || $class->throw_fatal("Cannot retrieve Interface id $nei");
+	my $int  = Interface->retrieve($id);
+	unless ( $int ){
+	    $logger->warn("Cannot retrieve Interface id $id");
+	    next;
+	}
+	my $nint = Interface->retrieve($nei);
+	unless ( $nint ){
+	    $logger->warn("Cannot retrieve Interface id $nei");
+	    next;
+	}
 	# Do not remove neighbors if the neighbor_fixed flag is on
         unless ( $int->neighbor_fixed || $nint->neighbor_fixed ){
 	    if ( int($int->neighbor) == $nei ){

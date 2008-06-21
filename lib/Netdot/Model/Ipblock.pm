@@ -83,7 +83,7 @@ sub search {
 	    $args{prefix}  = $prefix;
 	}else{
 	    # Ony convert to integer if address is human-readable
-	    if ( $args{address} =~ /$IPV4|$IPV6/ ){
+	    if ( $args{address} =~ /^$IPV4$|^$IPV6$/ ){
 		$args{address} = $class->ip2int($args{address});
 	    }
 	}
@@ -1493,7 +1493,7 @@ sub _prevalidate {
     $class->throw_fatal("Ipblock::_prevalidate: Missing required arguments: address")
 	unless $address;
 
-    unless ( $address =~ /$IPV4/ || $address =~ /$IPV6/ ) {
+    unless ( $address =~ /^$IPV4$/ || $address =~ /^$IPV6$/ ) {
 	$class->throw_user("IP: $address does not match valid patterns");
     }
     if ( $address eq '1.1.1.1' ) {
