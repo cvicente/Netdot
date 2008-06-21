@@ -6,10 +6,13 @@
 
 use lib "<<Make:LIB>>";
 use Netdot::Export;
-use Netdot::DBI;
+use Netdot::Model;
 use strict;
 use Data::Dumper;
 use Getopt::Long;
+
+use Netdot::Util::DNS;
+my $dns = Netdot::Util::DNS->new();
 
 use vars qw( %self $USAGE %hosts %groups %contacts %contactlists %services %servicegroups );
 
@@ -17,7 +20,7 @@ use vars qw( %self $USAGE %hosts %groups %contacts %contactlists %services %serv
 
 my $USAGE = <<EOF;
 usage: $0 [options]
-          
+    --monitor         <hostname> Monitoring system name
     --dir             <path> Path to configuration file
     --cfg_ext         <extension> Config file extension (default: $self{cfg_ext})
     --skel_ext        <extension> Skeleton file extension (default: $self{skel_ext})
@@ -40,23 +43,24 @@ EOF
 ##################################################
 sub set_defaults {
     %self = (
-	     cfg_ext         => 'cfg',
-	     skel_ext        => 'cfg.skel',
-	     files           => 'hosts',
-	     first_notif     => 4,
-	     last_notif      => 6,
-	     notif_interval  => 0,
-	     rtt             => 1,
-	     traps           => 1,
-	     help            => 0,
-	     debug           => 0, 
-	     );
+	dir             => '.',
+	cfg_ext         => 'cfg',
+	skel_ext        => 'cfg.skel',
+	files           => 'hosts',
+	first_notif     => 4,
+	last_notif      => 6,
+	notif_interval  => 0,
+	rtt             => 0,
+	traps           => 1,
+	help            => 0,
+	debug           => 0, 
+	);
 }
 
 ##################################################
 sub setup{
 
-    my $result = GetOptions( 
+    my $result = GetOptions( "monitor=s"        => \$self{monitor},
 			     "dir=s"            => \$self{dir},
 			     "cfg_ext=s"        => \$self{cfg_ext}, 
 			     "skel_ext=s"       => \$self{skel_ext}, 
@@ -76,12 +80,16 @@ sub setup{
 	print $USAGE;
 	exit 0;
     }
+    if( ! $self{monitor} ){
+	print $USAGE;
+	die "Please specify the name of the monitoring device\n";
+    }
     
-    @{ $self{files_arr} } = split /,/, $self{files};
+    @{ $self{files_array} } = split ',', $self{files};
 
     # Put APAN's stuff in a separate file
     if ( $self{rtt} ){
-	push @{ $self{files_arr} }, 'apan';
+	push @{ $self{files_array} }, 'apan';
     }
   
     # Map Netdot's service names to Nagios' plugin names
@@ -121,30 +129,34 @@ sub setup{
 
 ##################################################
 sub gather_data{
-    my (%name2ip, %ip2name );
+    my (%name2ip, %ip2name);
     
-    my $it = Ipblock->retrieve_all;
+    my $monitor = Device->search(name=>$self{monitor})->first 
+	|| die "Cannot find monitor device";
     
-    while ( my $ipobj = $it->next ) {
-	
-	next unless ( $ipobj->interface->monitored 
-		      && $ipobj->interface->device->monitored );
-	
+    my $device_ips = &get_device_ips();
+
+    foreach my $row ( @$device_ips ){
+	my ($deviceid, $ipid, $int_monitored, $dev_monitored) = @$row;
+	next unless ($int_monitored && $dev_monitored);
+
+	my $ipobj = Ipblock->retrieve($ipid);
 	# Determine the group name for this device
-	# order is: subnet entity, subnet description, device entity
 	my $group;
 	if ( int($ipobj->parent) != 0 ){
 	    if ( int($ipobj->parent->used_by) != 0 ){
 		$group = $ipobj->parent->used_by->name;
 	    }elsif ( $ipobj->parent->description ){
 		$group = $ipobj->parent->description;
+	    }else{
+		$group = $ipobj->parent->address;
 	    }
 	}elsif ( int($ipobj->interface->device->used_by) != 0 ){
 	    $group = $ipobj->interface->device->used_by->name;
 	}
-	unless ( $group =~ /\w+/ ){
-	    warn "Could not determine group name for ", $ipobj->address, ". Excluding\n";
-	    next;
+	unless ( $group ){
+	    warn "Address ", $ipobj->address, " in unknown network\n";
+	    $group = "Unknown";
 	}
 	#Remove illegal chars for Nagios
 	$group =~ s/[\(\),]//g;  
@@ -178,69 +190,73 @@ sub gather_data{
 	
 	$hosts{$ipobj->id}{group} = $group;
 	
-	# For a given IP addres we'll try to get its name directly
-	# from the DNS.  If it's not there, or if it's not unique
-	# the name will be the device name plus the interface name
-	# plus the IP address
-	my $hostname = &resolve($ipobj->address);
-	$hostname    =~ s/$self{strip_domain}// if $self{strip_domain};
-
-	unless ( $hostname && !exists $name2ip{$hostname} ){
-	    $hostname = $ipobj->interface->device->name->name
-		. "-" . $ipobj->interface->name
-		. "-" . $ipobj->address;
-	    warn "Assigned name $hostname \n" if $self{debug};
+	my $name;
+	if ( my @arecords = $ipobj->arecords ){
+	    $name = $arecords[0]->rr->get_label;
+	}else{ 
+	    $name = $dns->resolve_ip($ipobj->address) ||
+		$ipobj->address;
 	}
-	$hosts{$ipobj->id}{name} = $hostname;
-	push @{ $groups{$group}{members} }, $hostname;
-	$name2ip{$hostname} = $ipobj->id;
-	$ip2name{$ipobj->id} = $hostname;
+	$name =~ s/$self{strip_domain}// if $self{strip_domain};
+
+	$hosts{$ipobj->id}{name} = $name;
+	push @{ $groups{$group}{members} }, $name;
+	$name2ip{$name} = $ipobj->id;
+	$ip2name{$ipobj->id} = $name;
 	
 	# Add services (if any)
 	foreach my $ipsrv ( $ipobj->services ){
 	    my $srvname = $ipsrv->service->name;
 	    my $srvclobj;
 	    warn "Service $srvname being added to IP ",$ipobj->address, "\n" if $self{debug};
-	    push  @{ $servicegroups{$srvname}{members} }, $hostname ;
+	    push  @{ $servicegroups{$srvname}{members} }, $name ;
 	    
 	    # If service has a contactlist, use that
 	    # if not, use the associated IP's contactlists
 	    #
 	    my $srvclobj;
 	    if ( ($srvclobj = $ipsrv->contactlist) != 0 ) {
-		push @{ $services{$hostname}{$srvname}{contactlists} }, $srvclobj;
+		push @{ $services{$name}{$srvname}{contactlists} }, $srvclobj;
 		$contactlists{$srvclobj->id}{name} = join '_', split /\s+/, $srvclobj->name;
 		$contactlists{$srvclobj->id}{obj}  = $srvclobj;
-		warn "Contactlist ",$srvclobj->name, " assigned to service $srvname for IP ",$ipobj->address, "\n" if $self{debug};
+		warn "Contactlist ". $srvclobj->name ." assigned to service $srvname for IP ".
+		    $ipobj->address ."\n" if $self{debug};
 	    }elsif( $hosts{$ipobj->id}{contactlists} ){
-		$services{$hostname}{$srvname}{contactlists} = $hosts{$ipobj->id}{contactlists};
+		$services{$name}{$srvname}{contactlists} = $hosts{$ipobj->id}{contactlists};
 	    }else{
-		warn "Service $srvname for IP ", $ipobj->address, " has no contactlist defined\n" if $self{debug};
+		warn "Service $srvname for IP ". $ipobj->address ." has no contactlist defined\n" 
+		    if $self{debug};
 	    }
 	    # Add the SNMP community in case it's needed
-	    $services{$hostname}{$srvname}{community} =  $ipobj->interface->device->community;
+	    $services{$name}{$srvname}{community} =  $ipobj->interface->device->community;
 	}
     } #foreach ip
     
-# Now that we have everybody in, assign parent list.
-    
+    # Now that we have everybody in, assign parent list.
+    my $dependencies = &get_dependencies($monitor->id, \%hosts);
     foreach my $ipid ( keys %hosts ){
-	my @parentlist;
-	my $ipobj = $hosts{$ipid}{ipobj};
-	if ( my $intobj = $ipobj->interface ){
-	    if ( scalar(@parentlist = &get_dependencies(interface=>$intobj)) ){
-		$hosts{$ipid}{parents} = join ',', map { $ip2name{$_} } @parentlist;
-	    }else{
-		$hosts{$ipid}{parents} = undef;
+	next unless defined $dependencies->{$ipid};
+	if ( my @parentlist = @{$dependencies->{$ipid}} ){
+	    my @names;
+	    foreach my $parent ( @parentlist ){
+		if ( !exists $ip2name{$parent} ){
+		    warn "IP $ipid parent $parent not in monitored list."
+			." Skipping.\n";
+		    next;
+		}
+		push @names, $ip2name{$parent};
 	    }
+	    $hosts{$ipid}{parents} = join ',', @names;
+	}else{
+	    $hosts{$ipid}{parents} = undef;
 	}
     }
 
     print Dumper(%hosts) if $self{debug};
 
     
-# Classify contacts by their escalation-level
-# We'll create a contactgroup for each level
+    # Classify contacts by their escalation-level
+    # We'll create a contactgroup for each level
     
     foreach my $clid ( keys %contactlists ){
 	my $clobj = $contactlists{$clid}{obj};
@@ -279,7 +295,7 @@ sub gather_data{
 ##################################################
 sub build_configs{
     
-    foreach my $file ( @{ $self{files_arr} } ){
+    foreach my $file ( @{ $self{files_array} } ){
 	# Open skeleton file for reading
 	my $skel_file = "$self{dir}/$file.$self{skel_ext}";
 	open (SKEL, "$skel_file") or die "Can't open $skel_file\n";
@@ -296,7 +312,7 @@ sub build_configs{
 	    }elsif (/<INSERT HOST DEFINITIONS>/){
 		
 		foreach my $ipid ( keys %hosts ){
-		    my $hostname = $hosts{$ipid}{name};
+		    my $name = $hosts{$ipid}{name};
 		    my $ip       = $hosts{$ipid}{ip};
 		    my $group    = $hosts{$ipid}{group};
 		    my $parents  = $hosts{$ipid}{parents};
@@ -307,7 +323,7 @@ sub build_configs{
 			# This will make sure we're looping through the highest level number
 			map { map { $levels{$_} = '' } keys %{ $contactlists{$_->id}{level} } } @cls;
 		    }else{
-			warn "Host $hostname (IP id $ipid) does not have a valid Contact Group!\n";
+			warn "Host $name (IP id $ipid) does not have a valid Contact Group!\n";
 		    }
 
 		    if ( keys %levels ){
@@ -328,7 +344,7 @@ sub build_configs{
 			    if ( $first ){
 				print "define host{\n";
 				print "\tuse                    generic-host\n";
-				print "\thost_name              $hostname\n";
+				print "\thost_name              $name\n";
 				print "\talias                  $group\n";
 				print "\taddress                $ip\n";
 				print "\tparents                $parents\n" if ($parents);
@@ -337,14 +353,14 @@ sub build_configs{
 				if ( $self{traps} ){
 				    print "define service{\n";
 				    print "\tuse                     generic-trap\n";
-				    print "\thost_name               $hostname\n";
+				    print "\thost_name               $name\n";
 				    print "\tcontact_groups          $contact_groups\n";
 				    print "}\n\n";
 				}
 				$first = 0;
 			    }else{
 				print "define hostescalation{\n";
-				print "\thost_name                $hostname\n";
+				print "\thost_name                $name\n";
 				print "\tfirst_notification       $fn\n";
 				print "\tlast_notification        $ln\n";
 				print "\tnotification_interval    $self{notif_interval}\n";
@@ -353,7 +369,7 @@ sub build_configs{
 				
 				if ( $self{traps} ){
 				    print "define serviceescalation{\n";
-				    print "\thost_name                $hostname\n";
+				    print "\thost_name                $name\n";
 				    print "\tservice_description      TRAP\n";
 				    print "\tfirst_notification       $fn\n";
 				    print "\tlast_notification        $ln\n";
@@ -371,7 +387,7 @@ sub build_configs{
 		    if ( !@cls || ! keys %levels ){
 			print "define host{\n";
 			print "\tuse                    generic-host\n";
-			print "\thost_name              $hostname\n";
+			print "\thost_name              $name\n";
 			print "\talias                  $group\n";
 			print "\taddress                $ip\n";
 			print "\tparents                $parents\n" if ($parents);
@@ -382,7 +398,7 @@ sub build_configs{
 			    # Define a TRAP service for every host
 			    print "define service{\n";
 			    print "\tuse                    generic-trap\n";
-			    print "\thost_name              $hostname\n";
+			    print "\thost_name              $name\n";
 			    print "\tcontact_groups         nobody\n";
 			    print "}\n\n";
 			}
@@ -391,12 +407,12 @@ sub build_configs{
 		    if ( $self{rtt} ){
 			# Define RTT (Round Trip Time) as a service
 			print "define service{\n";
-			print "\thost_name              $hostname\n";
+			print "\thost_name              $name\n";
 			print "\tuse                    generic-RTT\n";
 			print "}\n\n";
 			
 			print "define serviceextinfo{\n";
-			print "\thost_name              $hostname\n";
+			print "\thost_name              $name\n";
 			print "\tservice_description    RTT\n";
 			print "\tnotes                  Round Trip Time Statistics\n";
 			print "\tnotes_url              /nagios/cgi-bin/apan.cgi?host=$ip&service=RTT\n";
@@ -409,7 +425,7 @@ sub build_configs{
 			# Nagios requires at least one service per host
 			print "define service{\n";
 			print "\tuse                    generic-ping\n";
-			print "\thost_name              $hostname\n";
+			print "\thost_name              $name\n";
 			print "}\n\n";
 		    }
 		    
@@ -464,7 +480,8 @@ sub build_configs{
 					print "}\n\n";
 				    }
 				}else{
-				    warn $contact->notify_email->name, " is not a defined timeperiod\n" if ($self{debug});
+				    warn $contact->notify_email->name, " is not a defined timeperiod\n" 
+					if ($self{debug});
 				}
 			    }
 			    # And one for paging
@@ -483,7 +500,8 @@ sub build_configs{
 					print "}\n\n";
 				    }
 				}else{
-				    warn $contact->notify_pager->name, " is not a defined timeperiod\n" if ($self{debug});
+				    warn $contact->notify_pager->name, " is not a defined timeperiod\n" 
+					if ($self{debug});
 				}
 			    }
 			}
@@ -524,28 +542,29 @@ sub build_configs{
 		
 	    }elsif (/<INSERT SERVICE DEFINITIONS>/){
 		
-		foreach my $hostname ( keys %services ){
-		    foreach my $srvname ( keys %{ $services{$hostname} } ){
+		foreach my $name ( keys %services ){
+		    foreach my $srvname ( keys %{ $services{$name} } ){
 			if (! exists $self{servchecks}{$srvname}){
 			    warn "Warning: service check for $srvname not implemented.";
-			    warn "Skipping $srvname check for host $hostname.\n";
+			    warn "Skipping $srvname check for host $name.\n";
 			    next;
 			}
 			my $checkcmd = $self{servchecks}{$srvname};
 			
 			# Add community argument for checks that use SNMP
 			if ( $checkcmd eq "check_bgp"){
-			    $checkcmd .= "!$services{$hostname}{$srvname}{community}";
+			    $checkcmd .= "!$services{$name}{$srvname}{community}";
 			}
-			my @cls = @{ $services{$hostname}{$srvname}{contactlists} } 
-			if $services{$hostname}{$srvname}{contactlists};
+			my @cls = @{ $services{$name}{$srvname}{contactlists} } 
+			if $services{$name}{$srvname}{contactlists};
 			
 			my %levels;
 			if ( @cls ){
 			    # This will make sure we're looping through the highest level number
 			    map { map { $levels{$_} = '' } keys %{ $contactlists{$_->id}{level} } } @cls;
 			}else{
-			    warn "Service ", $srvname, " on ", $hostname, " does not have a valid Contact Group\n";
+			    warn "Service ". $srvname  ." on ". $name 
+				." does not have a valid Contact Group\n";
 			}
 			if ( keys %levels ){
 			    my $first  = 1;
@@ -567,7 +586,7 @@ sub build_configs{
 				    if ($first){
 					print "define service{\n";
 					print "\tuse                  generic-service\n";
-					print "\thost_name            $hostname\n";
+					print "\thost_name            $name\n";
 					print "\tservice_description  $srvname\n";
 					print "\tcontact_groups       $contact_groups\n";
 					print "\tcheck_command        $checkcmd\n";
@@ -577,7 +596,7 @@ sub build_configs{
 				    }else{
 					
 					print "define serviceescalation{\n";
-					print "\thost_name                $hostname\n";
+					print "\thost_name                $name\n";
 					print "\tservice_description      $srvname\n";
 					print "\tfirst_notification       $fn\n";
 					print "\tlast_notification        $ln\n";
@@ -595,7 +614,7 @@ sub build_configs{
 			    
 			    print "define service{\n";
 			    print "\tuse                  generic-service\n";
-			    print "\thost_name            $hostname\n";
+			    print "\thost_name            $name\n";
 			    print "\tservice_description  $srvname\n";
 			    print "\tcontact_groups       nobody\n";
 			    print "\tcheck_command        $checkcmd\n";

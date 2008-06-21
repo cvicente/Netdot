@@ -3,8 +3,9 @@ include $(SRCROOT)/etc/utility-Makefile
 #
 # makefile for export/
 #
+NDIR = nagios sysmon
 
-FILES := $(shell ls *.skel *.inst )
+FILES := `find -type f |grep -v .svn |sed -e 's/\.\///'`
 
 install:
 	$(substitute)
