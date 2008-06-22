@@ -625,7 +625,7 @@ sub get_snmp_info {
 	$dev{type}  = "Router"  if ( $sinfo->class =~ /Layer3/ && $dev{ipforwarding} );
 	$dev{type}  = "Switch"  if ( $sinfo->class =~ /Layer2/ );
 	$dev{type}  = "Hub"     if ( $sinfo->class =~ /Layer1/ );
-	$dev{type} |= "Switch"; # Last resort
+	$dev{type} |= "Unknown";
     }
 
     if ( $sinfo->class =~ /Airespace/ ){
@@ -2061,7 +2061,7 @@ sub info_update {
 		$ipb = Ipblock->insert({address=>$info->{snmp_target}, status=>'Static'});
 	    };
 	    if ( $@ ){
-		$logger->warn("Netdot::Model::Device::info_update: Could not insert snmp_target address: ", $info->{snmp_target}, ": ", $@);
+		$logger->warn("Device::info_update: Could not insert snmp_target address: ", $info->{snmp_target}, ": ", $@);
 	    }
 	}
 	if ( $ipb ){
@@ -3650,7 +3650,7 @@ sub _update_poll_stats {
     my $file = Netdot->config->get('NETDOT_PATH')."/".$relpath;
     $class->isa_class_method('_update_poll_stats');
     my $stats = $class->_get_poll_stats($timestamp);
-    $class->throw_fatal("Netdot::Model::Device::_update_poll_stats: Error getting stats")
+    $class->throw_fatal("Device::_update_poll_stats: Error getting stats")
 	unless ($stats && ref($stats) eq "HASH");
     my @vals = ($stats->{ips}, $stats->{macs}, $stats->{arp_devices}, 
 		$stats->{fwt_devices}, $runtime);
