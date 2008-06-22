@@ -438,6 +438,14 @@ sub get_fdb_links {
     }
 
     my %infrastructure_macs = %{ PhysAddr->infrastructure() };
+    my %interface_macs;
+    my $int_macs_q = $dbh->selectall_arrayref("SELECT physaddr.address, interface.id 
+                                               FROM   physaddr, interface
+                                               WHERE  interface.physaddr=physaddr.id");
+    foreach my $row ( @$int_macs_q ){
+	my ( $address, $interface ) = @$row;
+	$interface_macs{$address} = $interface;
+    }
 
     # Some utility functions
     #
@@ -531,6 +539,7 @@ sub get_fdb_links {
     }
     
     while ( $vlanstatement->fetch ) {
+	my @single_entry_links;
         my $vid = Vlan->retrieve(id=>$vlan)->vid;
         $logger->debug("Discovering how vlan " . $vid . " was connected at $maxtstamp");
 	
@@ -556,6 +565,13 @@ sub get_fdb_links {
 	foreach my $device (keys %$d) {
 	    $device_addresses->{$device} = {} unless exists $device_addresses->{$device};
 	    foreach my $interface (keys %{$d->{$device}}) {
+		# This should find non-bridging devices connected to this interface
+		if ( 1 == scalar keys %{$d->{$device}{$interface} }){
+		    my $address = (keys %{$d->{$device}{$interface}})[0];
+		    if ( my $neighbor = $interface_macs{$address} ){
+			push @single_entry_links, [$interface, $neighbor];
+		    }
+		}
 		$device_addresses->{$device} = &hash_union($device_addresses->{$device}, 
 							   $d->{$device}{$interface})
 	    }
@@ -629,7 +645,6 @@ sub get_fdb_links {
 		my ($percent, $from, $to) = @$l;
 		next if ( exists $links{$from} );
 		next if ( exists $links{$to} );
-		
 		if ( $logger->is_debug() ){
 		    my $toi   = Interface->retrieve(id=>$to);
 		    my $fromi = Interface->retrieve(id=>$from);
@@ -640,7 +655,23 @@ sub get_fdb_links {
 		$links{$to}   = $from;
 	    }
 	}
+	# Single entry links
+	foreach my $l ( @single_entry_links ){
+	    my ($from, $to) = @$l;
+	    next if ( exists $links{$from} );
+	    next if ( exists $links{$to} );
+	    if ( $logger->is_debug() ){
+		my $toi   = Interface->retrieve(id=>$to);
+		my $fromi = Interface->retrieve(id=>$from);
+		$logger->debug("Topology::get_fdb_links: Found link (single entry): " 
+			       . $fromi->get_label . " -> " . $toi->get_label );
+	    }
+	    $links{$from} = $to;
+	    $links{$to}   = $from;
+	}
+
     }
+
 
     $logger->debug(sprintf("Topology::get_fdb_links: Links determined in %s", 
 			   $class->sec2dhms(time - $start)));
