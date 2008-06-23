@@ -26,7 +26,6 @@ $editgen    => undef
 $editloc    => undef
 $editcomments => undef
 $editmgmt   => undef
-$editsnmp   => undef
 $editips    => undef
 $addips     => undef
 $editints   => undef
@@ -190,11 +189,6 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %     } else {
         <li><a href="device.html?id=<% $id %>&view=Basics">Basics</a></li>
 %     }
-%     if( $view eq "Management" ) {
-        <li><span>Management</span></li>
-%     } else {
-        <li><a href="device.html?id=<% $id %>&view=Management">Management</a></li>
-%     }
 %     if( $view eq "Interfaces" ) {
         <li><span>Interfaces</span></li>
 %     } else {
@@ -267,7 +261,7 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %#######################################################################
 
 % if ( $view eq "Basics" || $view eq "All" ){
-% if ($editgen || $editloc || $editcomments) {
+% if ( $editgen || $editloc || $editcomments || $editmgmt ) {
         <form name="netdotform" action="device.html" method="POST">
             <script language="javascript" src="../java_script/datechooser.js"></script>
 	    <input type="hidden" name="id" value="<% $id %>">
@@ -302,24 +296,10 @@ push( @cell_data,
       }}
 );
 
-my @fields = ('physaddr', 'serialnumber','date_installed','last_updated', 'product','inventorynumber','os');
+my @fields = ('physaddr', 'serialnumber','product','inventorynumber','os');
 my @linkpages = ('mac.html', '', 'view.html', '', 'view.html', 'view.html', '', '');
 $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, 
 		   cell_data=>\@cell_data, linkpages=>\@linkpages);
-
-
-push( @field_headers, $ui->col_descr_link('Device', 'layers', 'Layers:') );
-push( @cell_data, 
-      &{sub{	
-	  my @layers;
-	  if ( @layers = $o->list_layers ){
-	      sprintf("%s", ( join ', ', @layers));
-	  }
-      }}
-);
-
-$ui->add_to_fields(o=>$o, edit=>0, fields=>['ipforwarding'], 
-		   field_headers=>\@field_headers, cell_data=>\@cell_data);
 
 
 @linkpages = (1, '', '');
@@ -424,6 +404,83 @@ push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_ta
 </div>
 <!-- End Location Table -->
 
+
+<!-- Management Table -->
+<div class="container">
+    <div class="containerheadleft">
+        Management
+    </div>
+    <div class="containerheadright">
+%	 if ($editmgmt){	 
+        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+        <input type="submit" name="submit" value="save">
+%	 }else{
+        <a href="device.html?id=<% $id %>&view=<% $view %>&editmgmt=1">[edit]</a>
+%	 }
+    </div>
+    <div class="containerbody">
+<%perl>
+(@field_headers, @cell_data) = ();
+
+$ui->add_to_fields(o=>$o, edit=>0, fields=>['date_installed', 'last_updated'], field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+{
+    my @fields = ('oobname','oobnumber','monitored','customer_managed', 'monitor_config', 
+		  'down_from', 'down_until', 'snmp_managed');
+    $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+    
+    push( @field_headers, $ui->col_descr_link('Device', 'layers', 'Layers:') );
+    push( @cell_data, 
+	  &{sub{	
+	      my @layers;
+	      if ( @layers = $o->list_layers ){
+		  sprintf("%s", ( join ', ', @layers));
+	      }
+	    }}
+	);
+}
+
+$ui->add_to_fields(o=>$o, edit=>0, fields=>['ipforwarding'], 
+		   field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+
+if ( $o->snmp_managed ){
+    push @fields, ('snmp_version', 'community', 'snmp_bulk', 'canautoupdate', 'snmp_polling',
+		   'collect_arp', 'collect_fwt', 'collect_stp');
+    $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+    
+    @fields = ('last_arp', 'last_fwt', 'sysname', 'syslocation', 'sysdescription');
+    $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+}
+if ( $o->snmp_version eq "3" ){
+    push @fields, ('snmp_authkey', 'snmp_authprotocol', 'snmp_privkey', 'snmp_privprotocol', 'snmp_securitylevel', 
+		   'snmp_securityname' );
+    $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);    
+}
+
+# Add the snmp_target IP.  We want to show only the device IPs when editing
+# Do not retrieve all the IPs unless we are indeed editing
+if ( $o->snmp_managed ){
+    my %tmp;
+    if ( $editmgmt ){
+	my $ips = $o->get_ips();
+	%tmp = $ui->form_field(object=>$o, column=>"snmp_target", defaults=>$ips, edit=>$editmgmt);
+    }else{
+	%tmp = $ui->form_field(object=>$o, column=>"snmp_target", edit=>$editmgmt);	    
+    }
+    push( @field_headers, $tmp{label} );
+    push( @cell_data, $tmp{value} );
+}
+</%perl>
+
+       <& /generic/attribute_table.mhtml, width=>"4", field_headers=>\@field_headers, data=>\@cell_data &>
+
+    </div>
+</div>
+<!-- End Management Table -->
+
+
+
 <div class="container">
     <div class="containerheadleft">
         Comments
@@ -447,124 +504,12 @@ print $tmp{value};
     </div>
  </div>
 
-%   if ( $editgen || $editloc || $editcomments ) {
+%   if ( $editgen || $editloc || $editcomments || $editmgmt ) {
       </form>
 %   }
 
 % } 
 <!-- End Basics Section -->
-
-%#######################################################################
-%#
-%# Management
-%#
-%#######################################################################
-%
-% if ( $view eq "Management" || $view eq "All" ){
-% 
-<!-- Management Section-->
-% if ($editmgmt || $editsnmp ) {
-        <form name="netdotform" action="device.html" method="POST">
-        <script language="javascript" src="../java_script/datechooser.js"></script>
-        <input type="hidden" name="id" value="<% $id %>">
-	<input type="hidden" name="view" value="<% $view %>">
-% }
-
-<!-- Management Table -->
-<div class="container">
-    <div class="containerheadleft">
-        Management
-    </div>
-    <div class="containerheadright">
-%	 if ($editmgmt){	 
-        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-        <input type="submit" name="submit" value="save">
-%	 }else{
-        <a href="device.html?id=<% $id %>&view=<% $view %>&editmgmt=1">[edit]</a>
-%	 }
-    </div>
-    <div class="containerbody">
-
-<%perl>
-my (@field_headers, @cell_data) = ();
-
-{
-my @fields = ('oobname','oobnumber','monitored','customer_managed', 'monitor_config', 
-	      'down_from', 'down_until');
-$ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-}
-
-
-</%perl>
-       <& /generic/attribute_table.mhtml, width=>"2", field_headers=>\@field_headers, data=>\@cell_data &>
-    </div>
-</div>
-<!-- End Management Table -->
-
-<!-- SNMP Table -->
-<div class="container">
-    <div class="containerheadleft">
-        SNMP
-    </div>
-    <div class="containerheadright">
-%	 if ($editsnmp){	 
-        <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-        <input type="submit" name="submit" value="save">
-%	 }else{
-        <a href="device.html?id=<% $id %>&view=<% $view %>&editsnmp=1">[edit]</a>
-%	 }
-    </div>
-    <div class="containerbody">
-<%perl>
-(@field_headers, @cell_data) = ();
-{
-    my @fields = ('snmp_managed');
-    $ui->add_to_fields(o=>$o, edit=>$editsnmp, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-    @fields = ();
-
-    if ( $o->snmp_managed ){
-	push @fields, ('snmp_version', 'community', 'snmp_bulk', 'canautoupdate', 'snmp_polling',
-		       'collect_arp', 'collect_fwt', 'collect_stp');
-	$ui->add_to_fields(o=>$o, edit=>$editsnmp, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-
-	@fields = ('last_arp', 'last_fwt', 'sysname', 'syslocation', 'sysdescription');
-	$ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-    }
-    if ( $o->snmp_version eq "3" ){
-	push @fields, ('snmp_authkey', 'snmp_authprotocol', 'snmp_privkey', 'snmp_privprotocol', 'snmp_securitylevel', 
-		       'snmp_securityname' );
-	$ui->add_to_fields(o=>$o, edit=>$editsnmp, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);    
-    }
-
-    # Add the snmp_target IP.  We want to show only the device IPs when editing
-    # Do not retrieve all the IPs unless we are indeed editing
-    if ( $o->snmp_managed ){
-	my %tmp;
-	if ( $editsnmp ){
-	    my $ips = $o->get_ips();
-	    %tmp = $ui->form_field(object=>$o, column=>"snmp_target", defaults=>$ips, edit=>$editsnmp);
-	}else{
-	    %tmp = $ui->form_field(object=>$o, column=>"snmp_target", edit=>$editsnmp);	    
-	}
-	push( @field_headers, $tmp{label} );
-	push( @cell_data, $tmp{value} );
-    }
-    
-
-}
-</%perl>
-
-       <& /generic/attribute_table.mhtml, width=>"2", field_headers=>\@field_headers, data=>\@cell_data &>
-
-    </div>
-</div>
-<!-- End SNMP Table -->
-
-%   if ( $editmgmt || $editsnmp ) {
-      </form>
-%   }
-
-% } # End Management section
 
 %#######################################################################
 %#

@@ -882,7 +882,7 @@ sub date_field($@){
 	unless ($o || $table) ;
     
     if ( $args{edit} ){
-        $output .= sprintf("<input id=\"%s\" type=\"text\" name=\"%s\" value=\"%s\">", $name, $name, $value);
+        $output .= sprintf("<input id=\"%s\" type=\"text\" size=\"10\" name=\"%s\" value=\"%s\">", $name, $name, $value);
 	$output .= "<img src=\"../img/calendar.gif\" onclick=\"showChooser(this, '$name', 'chooserSpan', 1990, 2050, 'Y-m-d', false);\"/>
 <div id=\"chooserSpan\" class=\"dateChooser select-free\" style=\"display: none; visibility: hidden; width: 160px;\"></div>";
 
