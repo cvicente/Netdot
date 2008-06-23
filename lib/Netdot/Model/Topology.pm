@@ -379,6 +379,29 @@ sub get_fdb_links {
 	$base_macs{$id} = $address;
     }
 
+    my %infrastructure_macs = %{ PhysAddr->infrastructure() };
+    my $int_macs_q = $dbh->selectall_arrayref("SELECT physaddr.address, interface.id 
+                                               FROM   physaddr, interface
+                                               WHERE  interface.physaddr=physaddr.id");
+    my %interface_macs;
+    foreach my $row ( @$int_macs_q ){
+	my ( $address, $interface ) = @$row;
+	$interface_macs{$address} = $interface;
+    }
+
+    my $layer1_devs_q = $dbh->selectall_arrayref("SELECT physaddr.address, interface.id 
+                                                  FROM   physaddr, interface, device
+                                                  WHERE  interface.physaddr=physaddr.id
+                                                     AND interface.device=device.id
+                                                     AND device.layers='00000001'");
+
+    my %layer1_ints;
+    foreach my $row ( @$layer1_devs_q ){
+	my ( $address, $interface ) = @$row;
+	$layer1_ints{$address} = $interface;
+    }
+    
+
     # This value loosely represents a perceived completeness of the forwarding tables.
     # It is used to determine how much our results are to be trusted.
     # The closer this value is to 1 (that is, 100%), the stricter this code is about
@@ -437,22 +460,14 @@ sub get_fdb_links {
         $devices{$device->id} = $device;
     }
 
-    my %infrastructure_macs = %{ PhysAddr->infrastructure() };
-    my %interface_macs;
-    my $int_macs_q = $dbh->selectall_arrayref("SELECT physaddr.address, interface.id 
-                                               FROM   physaddr, interface
-                                               WHERE  interface.physaddr=physaddr.id");
-    foreach my $row ( @$int_macs_q ){
-	my ( $address, $interface ) = @$row;
-	$interface_macs{$address} = $interface;
-    }
-
     # Some utility functions
     #
     sub hash_intersection {
 	my ($a, $b) = @_;
 	my %combo = ();
-	for my $k (keys %$a) { $combo{$k} = 1 if (exists $b->{$k}) }
+	my $smallest = (scalar keys %$a < scalar keys %$b)? $a : $b;
+	my $largest = ( $smallest == $a )? $b : $a;
+	for my $k (keys %$smallest) { $combo{$k} = 1 if ( exists $largest->{$k} ) }
 	return \%combo;
     }
     sub hash_union {
@@ -483,9 +498,10 @@ sub get_fdb_links {
 	foreach my $device ( keys %$device_addresses ){
 	    # Ignore devices that can affect the grouping results
 	    next if ( exists $excluded_devices->{$device} );
-	    $logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) . " addresses on device $device");
+	    $logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) 
+			   . " addresses on device $device");
 	    foreach my $address (keys %{$device_addresses->{$device}}) {
-		$admap{$address}{$device}   = 1;
+		$admap{$address}{$device} = 1;
 		$damap{$device}{$address} = 1;
 	    }
 	}
@@ -511,7 +527,7 @@ sub get_fdb_links {
 		    $seen{$address} = 1;
 		    my $num_devs = scalar keys %{ $admap{$address} };
 		    if ( $num_devs > $threshold ){
-			$logger->info("  Topology::get_fdb_links: Skipping too popular address $address ".
+			$logger->debug("  Topology::get_fdb_links: Skipping too popular address $address ".
 				      "(num_devs $num_devs > threshold $threshold)");
 			next;
 		    }
@@ -539,7 +555,7 @@ sub get_fdb_links {
     }
     
     while ( $vlanstatement->fetch ) {
-	my @single_entry_links;
+	my @other_links;
         my $vid = Vlan->retrieve(id=>$vlan)->vid;
         $logger->debug("Discovering how vlan " . $vid . " was connected at $maxtstamp");
 	
@@ -562,20 +578,48 @@ sub get_fdb_links {
 	$logger->debug("vlan " . $vid . " has " . (scalar keys %$d) .  " devices at time $maxtstamp");
 	$logger->debug("Creating a hash of addresses keyed by device");
 	my $device_addresses = {};
-	foreach my $device (keys %$d) {
-	    $device_addresses->{$device} = {} unless exists $device_addresses->{$device};
-	    foreach my $interface (keys %{$d->{$device}}) {
+	my %layer1_edges;
+	foreach my $device ( keys %$d ){
+	    foreach my $interface ( keys %{$d->{$device}} ){
 		# This should find non-bridging devices connected to this interface
-		if ( 1 == scalar keys %{$d->{$device}{$interface} }){
+		# It will also find hub-switch links if the hubs have no active devices 
+		# behind them
+		my $num_addresses = scalar keys %{$d->{$device}{$interface}};
+		if ( 1 == $num_addresses ){
 		    my $address = (keys %{$d->{$device}{$interface}})[0];
 		    if ( my $neighbor = $interface_macs{$address} ){
-			push @single_entry_links, [$interface, $neighbor];
+			push @other_links, ['single-entry', $interface, $neighbor];
 		    }
+		}elsif ( $num_addresses ){
+		    my $intersection = &hash_intersection($d->{$device}{$interface},
+							  \%layer1_ints);
+
+		    foreach my $address ( keys %$intersection ){
+			$layer1_edges{$address}{$interface} = $num_addresses;
+		    }
+		}else{
+		    next;
 		}
 		$device_addresses->{$device} = &hash_union($device_addresses->{$device}, 
 							   $d->{$device}{$interface})
 	    }
 	}
+	
+	# Determine Layer1 links
+	foreach my $address ( keys %layer1_edges ){
+	    my $layer1_int = $layer1_ints{$address};
+	    my $count = 9999999;
+	    my $edge;
+	    foreach my $interface ( keys %{ $layer1_edges{$address} } ){
+		my $num_addresses = $layer1_edges{$address}{$interface};
+		if ( $count > $num_addresses ){
+		    $count = $num_addresses;
+		    $edge  = $interface;
+		}
+	    }
+	    push @other_links, ['layer1', $edge, $layer1_int];
+	}
+	
 	my $groups;
 	$logger->debug("  Breaking devices up into separate layer2 networks");
 	$groups = &break_into_groups(class               => $class, 
@@ -655,15 +699,15 @@ sub get_fdb_links {
 		$links{$to}   = $from;
 	    }
 	}
-	# Single entry links
-	foreach my $l ( @single_entry_links ){
-	    my ($from, $to) = @$l;
+	# Other non switch-switch links
+	foreach my $l ( @other_links ){
+	    my ($type, $from, $to) = @$l;
 	    next if ( exists $links{$from} );
 	    next if ( exists $links{$to} );
 	    if ( $logger->is_debug() ){
 		my $toi   = Interface->retrieve(id=>$to);
 		my $fromi = Interface->retrieve(id=>$from);
-		$logger->debug("Topology::get_fdb_links: Found link (single entry): " 
+		$logger->debug("Topology::get_fdb_links: Found link ($type): " 
 			       . $fromi->get_label . " -> " . $toi->get_label );
 	    }
 	    $links{$from} = $to;
