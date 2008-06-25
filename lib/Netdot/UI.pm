@@ -26,6 +26,8 @@ use Apache::Session::Lock::File;
 use GraphViz;
 use strict;
 
+my $logger = Netdot->log->get_logger("Netdot::Model");
+
 # Some tables have a specific view page. 
 #
 my %VIEWPAGE = ( BinFile   => "../generic/display_bin.html",
@@ -1347,8 +1349,11 @@ sub build_device_topology_graph {
 
     # Declare some useful functions
     sub add_node {
-        my ($g, $device, $nodeoptions) = @_;
-
+        my (%argv) = @_;
+	my ($g, $device, $view, $shownames, $showvlans, $nodeoptions) = 
+	    @argv{'graph', 'device', 'view', 'show_names', 'show_vlans', 'nodeoptions'};
+	
+	$view ||= "view";
         $g->add_node(name  => $device->short_name, 
 		     shape => "record",
 		     URL   => "device.html?id=".$device->id."&view=$view&toponames=$shownames&topovlans=$showvlans",
@@ -1364,25 +1369,28 @@ sub build_device_topology_graph {
     }
 
     sub dfs { # DEPTH FIRST SEARCH - recursive
-        my ($g, $device, $hops, $seen, $vlans, $showvlans, $shownames) = @_;
+        my ($g, $device, $hops, $seen, $vlans, $showvlans, $shownames, $view) = @_;
         return unless $hops;
 
         my @ifaces = $device->interfaces;
-        sort { int($a) cmp int($b) } @ifaces;
         
-        foreach my $iface (@ifaces) {
+        foreach my $iface ( sort { int($a) cmp int($b) }  @ifaces) {
             my $neighbor = $iface->neighbor;
             next unless int($neighbor);  # If there's no neighbor, skip ahead
 
             my $nd = $neighbor->device;
             unless (scalar($nd)) {
-                my $logger = Netdot->log->get_logger("Netdot::Model");
                 $logger->debug("No device found for neighbor $neighbor");
                 next;
             }
 
             # If we haven't seen this device before, add it to the graph
-            add_node($g, $nd) unless exists $seen->{'NODE'}{$nd->id};
+            &add_node(graph      => $g, 
+		      device     => $nd, 
+		      view       => $view,
+		      show_names => $shownames, 
+		      show_vlans => $showvlans)
+		unless exists $seen->{'NODE'}{$nd->id};
 
             # If we haven't seen this edge before, add it to the graph
             next if exists $seen->{'EDGE'}{$neighbor->id . " " . $iface->id};
@@ -1390,57 +1398,63 @@ sub build_device_topology_graph {
             $seen->{'EDGE'}{$iface->id . " " . $neighbor->id} = 1;
 
             my $color = 'black';
-            if ($showvlans and int($iface->vlans)) { 
+            if ($showvlans && int($iface->vlans)) { 
                 foreach my $vlan ($iface->vlans) {
                     my $style = 'solid';
                     my $name = $vlan->vlan->name || $vlan->vlan->vid;
-                    if (not exists $vlans->{$name}) {
+                    if (!exists $vlans->{$name}) {
                         $vlans->{$name} = { color=>&randomcolor, vlan=>$vlan->vlan->id };
                     }
                     $color = $vlans->{$name}{'color'};
 
                     my $neighbor_vlan = InterfaceVlan->search(interface=>$neighbor->id, vlan=>$vlan->vlan->id)->first;
                     if ($vlan->stp_state eq 'blocking' 
-                            or ($neighbor_vlan and $neighbor_vlan->stp_state eq 'blocking')) {
+			|| ($neighbor_vlan and $neighbor_vlan->stp_state eq 'blocking')) {
                         $style='dashed';
                     }   
 
                     $g->add_edge($device->short_name => $nd->short_name,
-                            tailURL=>"view.html?table=Interface&id=".$iface->id,
-                            taillabel=>($shownames ? $iface->name : $iface->number), 
-                            headURL=>"view.html?table=Interface&id=".$neighbor->id, 
-                            headlabel=>($shownames ? $neighbor->name : $neighbor->number),
-                            color=>$color,
-                            style=>$style
+				 tailURL             => "view.html?table=Interface&id=".$iface->id,
+				 taillabel           => ($shownames ? $iface->name : $iface->number), 
+				 headURL             => "view.html?table=Interface&id=".$neighbor->id, 
+				 headlabel           => ($shownames ? $neighbor->name : $neighbor->number),
+				 color               => $color,
+				 style               => $style,
                         );
                 }
             } else {
                 $g->add_edge($device->short_name => $nd->short_name,
-                        tailURL=>"view.html?table=Interface&id=".$iface->id,
-                        taillabel=>($shownames ? $iface->name : $iface->number),
-                        headURL=>"view.html?table=Interface&id=".$neighbor->id, 
-                        headlabel=>($shownames ? $neighbor->name : $neighbor->number),
-                        color=>'black'
+			     tailURL             => "view.html?table=Interface&id=".$iface->id,
+			     taillabel           => ($shownames ? $iface->name : $iface->number),
+			     headURL             => "view.html?table=Interface&id=".$neighbor->id, 
+			     headlabel           => ($shownames ? $neighbor->name : $neighbor->number),
+			     color               => 'black',
                     );
             }
 
             # If we haven't recursed across this edge before, then do so now.
-            &dfs($g, $nd, $hops-1, $seen, $vlans, $showvlans, $shownames);
+            &dfs($g, $nd, $hops-1, $seen, $vlans, $showvlans, $shownames, $view);
         }
     }
 
     # Actually do the searching
     my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>"LR", 
-                           node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
-                           edge=>{dir=>'none', labelfontsize=>8} );
-
+			  node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
+			  edge=>{dir=>'none', labelfontsize=>8} );
+    
     my $start = Device->retrieve($id);
-    &add_node($g, $start, { color=>'red'});
+    &add_node(graph       => $g,
+	      device      => $start, 
+	      show_vlans  => $showvlans,
+	      show_names  => $shownames, 
+	      view        => $view,
+	      nodeoptions => { color=>'red'},
+	);
 
     my $seen = { NODE=>{}, EDGE=>{} };
     $seen->{'NODE'}{$start->id} = 1;
 
-    &dfs($g, $start, $depth, $seen, $vlans, $showvlans, $shownames);
+    &dfs($g, $start, $depth, $seen, $vlans, $showvlans, $shownames, $view);
 
     $g->as_png($filename);
 
