@@ -17,7 +17,7 @@ my $USAGE = <<EOF;
  Build Network Topology Graph
 
  Usage: $0 [-r|--root <device>] [-d|--depth <integer>] 
-           [-v|--vlans] [-n|names] [-w|--webpath <path>]
+           [-v|--vlans] [-n|names] 
            -f|--filename <name>
 
     Argument Detail: 
