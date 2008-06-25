@@ -32,12 +32,12 @@ if ( $DEBUG ){
     print '<pre>', Dumper(%ARGS), '</pre>';
 }
 
-$root = Netdot->config->get('NMS_DEVICE');
+$root ||= Netdot->config->get('NMS_DEVICE');
 </%init>
 
 <%perl>
 my $device_obj = Device->search(name=>$root)->first
-    || die "Cannot find root device: $root";
+    || $m->comp('/generic/error.mhtml', error=>"Cannot find root device: $root");
 
 my $id = $device_obj->id;
 </%perl>
