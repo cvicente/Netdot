@@ -45,6 +45,7 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 		{ section => 'POLLSTATS', title => 'Polling Stats' },
 		{ section => 'DEVICE',    title => 'Device Inventory' },
 		{ section => 'MACS',      title => 'MAC Addresses' },
+		{ section => 'TOPOLOGY',  title => 'Topology Graph' },
 		{ section => 'DATABASE',  title => 'Database Reports' },
 		{ section => 'CUSTOM',    title => 'Custom Reports' },
 	    ]
@@ -81,11 +82,11 @@ if ( $page eq "POLLSTATS" ) {
 	
 	$m->comp('device_inventory.html');
 
-} elsif ( $page eq "MACS" && $m->request_comp->name ne "macs_by_vendor.html" ) {
+}elsif ( $page eq "MACS" && $m->request_comp->name ne "macs_by_vendor.html" ) {
 
 	$m->comp('macs_by_vendor.html');
 
-} elsif ($page eq "DATABASE") {
+}elsif ($page eq "DATABASE") {
 </%perl>	
 	<div class="container">
 	<div class="containerhead">Database Reports</div>
@@ -100,7 +101,11 @@ if ( $page eq "POLLSTATS" ) {
 	</div>
 	</div>
 <%perl>
-} elsif ($page eq "CUSTOM") { 
+}elsif ( $page eq "TOPOLOGY" && $m->request_comp->name ne 'topology_graph.html' ) { 
+
+    $m->comp('topology_graph.html');
+
+}elsif ($page eq "CUSTOM") { 
   
 }
 

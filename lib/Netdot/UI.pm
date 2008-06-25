@@ -19,11 +19,11 @@ Netdot::UI groups common methods and variables related to Netdot's user interfac
 =cut
 
 use lib "<<Make:LIB>>";
-use Apache::Session::File;
-use Apache::Session::Lock::File;
-
 use base qw( Netdot );
 use Netdot::Model;
+use Apache::Session::File;
+use Apache::Session::Lock::File;
+use GraphViz;
 use strict;
 
 # Some tables have a specific view page. 
@@ -1325,32 +1325,34 @@ sub table_view_page {
 
 
 ############################################################################
-=head2 build_device_topology_graph_html
+=head2 build_device_topology_graph
 
   Arguments:
-    The id of start device, the current view, search depth, web path, two flags
+    
   Returns:
-    A string containing an img tag, a cmap, and a bunch of vlans
+
   Examples:
-    See htdocs/management/device.html
+
 
 =cut
-sub build_device_topology_graph_html {
-    my ($self, $id, $view, $depth, $web_path, $showvlans, $shownames) = @_;
-
+sub build_device_topology_graph {
+    my ($self, %argv) = @_;
+    my ($id, $depth, $view, $showvlans, $shownames, $filename, $vlans) = 
+	@argv{'id', 'depth', 'view', 'show_vlans', 'show_names', 'filename', 'vlans'};
+    
     # Guard against malicious input
     $depth = (int($depth) > 0) ? int($depth) : 0;
     $showvlans = ($showvlans == 1) ? 1 : 0;
     $shownames = ($shownames == 1) ? 1 : 0;
 
-    # Delcare a bunch of useful functions
+    # Declare some useful functions
     sub add_node {
         my ($g, $device, $nodeoptions) = @_;
 
-        $g->add_node(name=>$device->short_name, 
-                shape=>"record",
-                URL=>"device.html?id=".$device->id."&view=$view&toponames=$shownames&topovlans=$showvlans",
-                %$nodeoptions
+        $g->add_node(name  => $device->short_name, 
+		     shape => "record",
+		     URL   => "device.html?id=".$device->id."&view=$view&toponames=$shownames&topovlans=$showvlans",
+		     %$nodeoptions
             );
     }
 
@@ -1367,7 +1369,6 @@ sub build_device_topology_graph_html {
 
         my @ifaces = $device->interfaces;
         sort { int($a) cmp int($b) } @ifaces;
-        
         
         foreach my $iface (@ifaces) {
             my $neighbor = $iface->neighbor;
@@ -1424,43 +1425,65 @@ sub build_device_topology_graph_html {
             }
 
             # If we haven't recursed across this edge before, then do so now.
-            dfs($g, $nd, $hops-1, $seen, $vlans, $showvlans, $shownames);
+            &dfs($g, $nd, $hops-1, $seen, $vlans, $showvlans, $shownames);
         }
     }
 
     # Actually do the searching
-    use GraphViz;
     my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>"LR", 
                            node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
                            edge=>{dir=>'none', labelfontsize=>8} );
 
     my $start = Device->retrieve($id);
-    add_node($g, $start, { color=>'red'});
+    &add_node($g, $start, { color=>'red'});
 
     my $seen = { NODE=>{}, EDGE=>{} };
     $seen->{'NODE'}{$start->id} = 1;
 
-    my $vlans = { 1=>{color=>'#000000', vlan=>Vlan->search(id=>1)->first} };
-    dfs($g, $start, $depth, $seen, $vlans, $showvlans, $shownames);
+    &dfs($g, $start, $depth, $seen, $vlans, $showvlans, $shownames);
 
-    my $netdot_path = Netdot->config->get('NETDOT_PATH');
-    my $graph_path  = "img/graphs/Device-$id-$depth-$showvlans-$shownames.png";
-    my $out_file    = "$netdot_path/htdocs/" . $graph_path;
-    $g->as_png($out_file);
-    my $img  = $web_path . $graph_path;
+    $g->as_png($filename);
+
+    return $g;
+}
+############################################################################
+=head2 build_device_topology_graph_html
+
+  Arguments:
+
+  Returns:
+    A string containing an img tag, a cmap, and a bunch of vlans
+  Examples:
+    See htdocs/management/device.html
+
+=cut
+sub build_device_topology_graph_html {
+    my ($self, %argv) = @_;
+    my ($id, $view, $depth, $web_path, $showvlans, $shownames, $filename) = 
+	@argv{'id', 'view', 'depth', 'web_path', 'show_vlans', 'show_names', 'filename'};
+    
+    my $img_name      = $filename || "Device-$id-$depth-$showvlans-$shownames.png";
+    my $graph_path    = "img/graphs/$img_name";
+    my $img           = $web_path . $graph_path;
+    my $netdot_path   = Netdot->config->get('NETDOT_PATH');
+    $argv{filename}   = "$netdot_path/htdocs/" . $graph_path;
+
+    my $vlans    = { 1=>{color=>'#000000', vlan=>Vlan->search(id=>1)->first} };
+    $argv{vlans} = $vlans;
+
+    my $g = $self->build_device_topology_graph(%argv);
 
     my  $vlanlist = "";
     foreach my $vlan (keys %$vlans) {
-        $vlanlist .= '<a href="view.html?table=Vlan&id=' . $vlans->{$vlan}{'vlan'} . '"><font color="' . $vlans->{$vlan}{'color'} . "\">$vlan</font></a> ";
+	$vlanlist .= '<a href="view.html?table=Vlan&id=' . $vlans->{$vlan}{'vlan'} . '"><font color="' . $vlans->{$vlan}{'color'} . "\">$vlan</font></a> ";
     }
-
-    #print $g->as_debug . '<br>';
     return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" 
-            . $g->as_cmapx
-            . ($showvlans ? '<br><b>List of vlans and their colors:</b><br>'
-                                . '<b>' . $vlanlist . '</b>'
-                    : "");
+	. $g->as_cmapx
+	. ($showvlans ? '<br><b>List of vlans and their colors:</b><br>'
+	   . '<b>' . $vlanlist . '</b>'
+	   : "");
 }
+
 
 ############################################################################
 =head2 rrd_graph - Create RRD graphs

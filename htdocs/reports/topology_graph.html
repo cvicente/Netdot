@@ -1,0 +1,111 @@
+<%doc>
+Network Topology Graph
+</%doc>
+
+<%attr>
+title   => 'Network Topology Graph' 
+</%attr>
+
+<%args>
+$root      => undef
+$submit1   => undef
+$submit2   => undef
+</%args>
+
+<%init>
+use File::stat;
+my $DEBUG = 0;
+my $ui = Netdot::UI->new();
+my $netdot_path   = Netdot->config->get('NETDOT_PATH');
+my $web_path      = $r->dir_config('NetdotPath');
+my $filename1     = "whole_network_no_vlans.png";
+my $filename2     = "whole_network_with_vlans.png";
+my $graph_path1   = "img/graphs/$filename1";
+my $graph_path2   = "img/graphs/$filename2";
+my $rel_img_path1 = "$web_path" . "$graph_path1";
+my $rel_img_path2 = "$web_path" . "$graph_path2";
+my $abs_img_path1 = "$netdot_path/htdocs/$graph_path1";
+my $abs_img_path2 = "$netdot_path/htdocs/$graph_path2";
+my $depth         = 99999;
+
+if ( $DEBUG ){
+    print '<pre>', Dumper(%ARGS), '</pre>';
+}
+
+$root = Netdot->config->get('NMS_DEVICE');
+</%init>
+
+<%perl>
+my $device_obj = Device->search(name=>$root)->first
+    || die "Cannot find root device: $root";
+
+my $id = $device_obj->id;
+</%perl>
+
+<div class="container">
+  <div class="containerhead">Network Topology Graph</div>
+    <div class="containerbody">
+    <p>
+    <div class="note">
+    Note: Regenerating the topology graph for the whole network can consume a <strong>considerable amount of computing resources</strong>, depending on the number of devices and links in the database.   
+    <br><strong>Please use cautiously!</strong>
+    </div>
+
+
+<%perl>
+if ( $submit1 ){
+    $ui->build_device_topology_graph(id         => $id, 
+				     depth      => $depth, 
+				     show_vlans => 0, 
+				     show_names => 0,
+				     filename   => $abs_img_path1,
+	);
+    
+}elsif ( $submit2 ){
+    $ui->build_device_topology_graph(id         => $id, 
+				     depth      => $depth, 
+				     show_vlans => 1, 
+				     show_names => 0,
+				     filename   => $abs_img_path2,
+	);
+}
+
+</%perl>
+<h4>Network Graph without VLANs</h4>
+<ul>
+%if ( -r $abs_img_path1 ){
+%   my $inode = stat($abs_img_path1);
+%   my $size  = $inode->size;
+%   my $ctime = $inode->ctime;
+
+    <li> <a href="<% $rel_img_path1 %>" target="#"><% $filename1 %></a> - Generated at: <% scalar localtime($ctime) %>, Size: <% $size %> bytes. 
+%}else{
+    <li> Graph has not been generated yet
+%}
+<form name="topo_graph_form" action="topology_graph.html" method="POST">
+    <input type="submit" name="submit1" value="Regenerate">
+</form>
+</ul>
+
+<h4>Network Graph with VLANs</h4>
+<ul>
+%if ( -r $abs_img_path2 ){
+%   my $inode = stat($abs_img_path2);
+%   my $size  = $inode->size;
+%   my $ctime = $inode->ctime;
+
+    <li> <a href="<% $rel_img_path2 %>" target="#"><% $filename2 %></a> - Generated at: <% scalar localtime($ctime) %>, Size: <% $size %> bytes. 
+
+%}else{
+    <li> Graph has not been generated yet
+%}
+<form name="topo_graph_form" action="topology_graph.html" method="POST">
+    <input type="submit" name="submit2" value="Regenerate">
+</form>
+</ul>
+
+
+    </div>
+  </div>
+</div>
+
