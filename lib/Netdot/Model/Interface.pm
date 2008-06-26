@@ -150,15 +150,15 @@ sub add_neighbor{
 	     && $self->neighbor->id == $neighbor->id 
 	     && $neighbor->neighbor->id == $self->id ){
 	
-	$logger->debug(sprintf("Adding new neighbors: %s <=> %s, score: %s", 
-			       $self->get_label, $neighbor->get_label, $score));
+	$logger->debug(sub{sprintf("Adding new neighbors: %s <=> %s, score: %s", 
+			       $self->get_label, $neighbor->get_label, $score)});
 	
 	if ( $self->neighbor && $self->neighbor_fixed ){
-	    $logger->debug(sprintf("%s has been manually fixed to %s", $self->get_label, 
-				   $self->neighbor->get_label));
+	    $logger->debug(sub{sprintf("%s has been manually fixed to %s", $self->get_label, 
+				   $self->neighbor->get_label)});
 	}elsif ( $neighbor->neighbor && $neighbor->neighbor_fixed ) {
-	    $logger->debug(sprintf("%s has been manually fixed to %s", $neighbor->get_label, 
-				  $neighbor->neighbor->get_label));
+	    $logger->debug(sub{sprintf("%s has been manually fixed to %s", $neighbor->get_label, 
+				  $neighbor->neighbor->get_label)});
 	}else{
 	    $self->update({neighbor=>$neighbor, neighbor_fixed=>$fixed});
 	    $logger->info(sprintf("Added new neighbors: %s <=> %s, score: %s", 
@@ -298,8 +298,7 @@ sub snmp_update {
 		$physaddr = PhysAddr->insert({address=>$addr, static=>1}); 
 	    };
 	    if ( my $e = $@ ){
-		$logger->debug(sprintf("%s: Could not insert PhysAddr %s: %s", 
-				       $label, $addr, $e));
+		$logger->debug(sub{"$label: Could not insert PhysAddr $addr: $e"});
 	    }
 	}
     }
@@ -466,7 +465,7 @@ sub update_ip {
 	
 	# Do not bother with loopbacks
 	if ( Ipblock->is_loopback($subnetaddr, $subnetprefix) ){
-	    $logger->debug("$label: IP $subnetaddr/$subnetprefix is a loopback. Skipping.");
+	    $logger->debug(sub{"$label: IP $subnetaddr/$subnetprefix is a loopback. Skipping."});
 	    return;
 	}
 	
@@ -525,7 +524,7 @@ sub update_ip {
     
     # Do not bother with loopbacks
     if ( Ipblock->is_loopback($address) ){
-	$logger->debug("$label: IP $address is a loopback. Will not insert.");
+	$logger->debug(sub{"$label: IP $address is a loopback. Will not insert."});
 	return;
     }
 	
@@ -552,7 +551,7 @@ sub update_ip {
 				      status  => "Static", interface  => $self});
 	};
 	if ( my $e = $@ ){
-	    $logger->debug("$label: $e");
+	    $logger->debug(sub{"$label: $e"});
 	    return;
 	}else{
 	    $logger->info(sprintf("%s: Inserted new IP %s", $label, $ipobj->address));

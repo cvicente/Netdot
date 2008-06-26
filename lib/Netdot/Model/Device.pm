@@ -2060,8 +2060,9 @@ sub info_update {
 	    eval {
 		$ipb = Ipblock->insert({address=>$info->{snmp_target}, status=>'Static'});
 	    };
-	    if ( $@ ){
-		$logger->warn("Device::info_update: Could not insert snmp_target address: ", $info->{snmp_target}, ": ", $@);
+	    if ( my $e = $@ ){
+		$logger->warn("Device::info_update: $host: Could not insert snmp_target address: ". 
+			      $info->{snmp_target} .": ", $e);
 	    }
 	}
 	if ( $ipb ){
