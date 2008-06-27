@@ -3904,17 +3904,24 @@ sub _get_fwt_from_snmp {
         $logger->debug(sub{"$host supports Cisco community string indexing. Connecting to each VLAN" });
 	my $sclass = $sinfo->class();
 
-        # Get list of all VLANS on this device
+        # Get list of all active VLANS on this device
 	my %vlans;
 	foreach my $int ( $self->interfaces ){
 	    map { $vlans{$_->vlan->vid}++ } $int->vlans;
 	}
+	my $v_state = $sinfo->v_state();
+	foreach my $vid ( keys %vlans ){
+	    my $key = '1.'.$vid;
+	    delete $vlans{$vid} unless ( exists $v_state->{$key} 
+					 && $v_state->{$key} eq 'operational' ); 
+	}
 
-        foreach my $vlan ( sort{$a<=>$b} keys %vlans ){
+        foreach my $vlan ( sort { $a <=> $b } keys %vlans ){
 	    next if ( $vlan == 0 || $vlan == 1 );  # Ignore vlans 0 and 1
-	    my %args = ('host'        => $host,
-                        'communities' => [$self->community . '@' . $vlan],
-                        'version'     => $self->snmp_version,
+	    my $target = (scalar($self->snmp_target))? $self->snmp_target->address : $host;
+	    my %args = ('host'        => $target,
+			'communities' => [$self->community . '@' . $vlan],
+			'version'     => $self->snmp_version,
 			'sclass'      => $sclass,
 		);
             my $vlan_sinfo = $class->_get_snmp_session(%args);
