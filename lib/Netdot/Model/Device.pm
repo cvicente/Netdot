@@ -2360,14 +2360,15 @@ sub info_update {
 	
 	##############################################
 	# remove ip addresses that no longer exist
-	while ( my ($oldip, $ip) = each %oldips ){
+	while ( my ($address, $obj) = each %oldips ){
 	    # Check that it still exists 
 	    # (could have been deleted if its interface was deleted)
-	    next unless ( defined $ip && ref($ip) =~ /deleted/i );
+	    next unless ( defined $obj );
+	    next if ( ref($obj) =~ /deleted/i );
 	    
 	    $logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
-				  $host, $ip->address));
-	    $ip->delete(no_update_tree=>1);
+				  $host, $obj->address));
+	    $obj->delete(no_update_tree=>1);
 	    $ipv4_changed = 1;
 	}
 	
