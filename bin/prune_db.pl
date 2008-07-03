@@ -159,13 +159,13 @@ if ( $FWT ){
     ###########################################################################################
     # Delete FWTables
     $logger->info("Deleting Forwarding Tables older than $sqldate");
-    my $r = $dbh->do("DELETE fwtable, fwtableentry 
-                      FROM   fwtable, fwtableentry 
-                      WHERE  fwtable.tstamp < '$sqldate'
-                        AND  fwtableentry.fwtable=fwtable.id");
-
-    $logger->info("A total of $r records deleted");
-
+    my @fwts = FWTable->search_where(tstamp=>{ '<', $sqldate });
+    foreach my $fwt ( @fwts ){
+	$logger->debug("Deleting FWTable id ". $fwt->id);
+	$fwt->delete;
+    }
+    $logger->info("A total of ". scalar(@fwts) ." records deleted");
+    
     foreach my $table ( qw (fwtable fwtableentry) ){
 	$logger->debug("Freeing deleted space in $table");
 	$dbh->do("OPTIMIZE TABLE $table");
@@ -173,15 +173,16 @@ if ( $FWT ){
 }
 if ( $ARP ){
     ###########################################################################################
-    # Delete FWTables
+    # Delete ArpCaches
     # Note: This will also delete ArpCacheEntry objects.
     $logger->info("Deleting ARP Caches older than $sqldate");
-    my $r = $dbh->do("DELETE arpcache, arpcacheentry 
-                      FROM   arpcache, arpcacheentry 
-                      WHERE  arpcache.tstamp < '$sqldate'
-                        AND  arpcacheentry.arpcache=arpcache.id");
 
-    $logger->info("A total of $r records deleted");
+    my @arps = ArpCache->search_where(tstamp=>{ '<', $sqldate });
+    foreach my $arp ( @arps ){
+	$logger->debug("Deleting ArpCache id ". $arp->id);
+	$arp->delete;
+    }
+    $logger->info("A total of ". scalar(@arps) ." records deleted");
 
     foreach my $table ( qw (arpcache arpcacheentry) ){
 	$logger->debug("Freeing deleted space in $table");
