@@ -10,16 +10,16 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 use strict;
 
+my ($HISTORY, $FWT, $ARP, $MACS, $IPS);
 my $_DEBUG      = 0;
 my $HELP        = 0;
 my $VERBOSE     = 0;
-my ($HISTORY, $FWT, $ARP, $MACS, $IPS);
 my $NUM_DAYS    = 365;
 my $NUM_HISTORY = 100;
 
 my $usage = <<EOF;
  usage: $0   -H|--history | -F|--fwt | -A|--arp | -M|--macs | -I|--ips
-    [ -d|--num_months <number> ] [ -n|--num_history <number> ] 
+    [ -d|--num_days <number> ] [ -n|--num_history <number> ] 
     [ -g|--debug ] [-h|--help]
     
     -H, --history                  History tables
