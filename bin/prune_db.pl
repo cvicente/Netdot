@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 ###############################################################
 # prune_db.pl
@@ -6,6 +6,7 @@
 
 use lib "<<Make:LIB>>";
 use Netdot::Model;
+use DBUTIL;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 use strict;
@@ -16,10 +17,11 @@ my $HELP        = 0;
 my $VERBOSE     = 0;
 my $NUM_DAYS    = 365;
 my $NUM_HISTORY = 100;
+my $ROTATE      = 0;
 
 my $usage = <<EOF;
  usage: $0   -H|--history | -F|--fwt | -A|--arp | -M|--macs | -I|--ips
-    [ -d|--num_days <number> ] [ -n|--num_history <number> ] 
+    [ -d|--num_days <number> ] [ -n|--num_history <number> ] [ -r|--rotate ]
     [ -g|--debug ] [-h|--help]
     
     -H, --history                  History tables
@@ -29,6 +31,7 @@ my $usage = <<EOF;
     -I, --ips                      IP addresses
     -d, --num_days                 Number of days worth of items to keep (default: $NUM_DAYS);
     -n, --num_history              Number of history items to keep for each record (default: $NUM_HISTORY);
+    -r, --rotate                   Rotate forwarding tables and ARP caches (rather than delete records) 
     -g, --debug                    Print (lots of) debugging output
     -h, --help                     Print help
 
@@ -61,6 +64,7 @@ my $result = GetOptions(
     "I|ips"           => \$IPS,
     "d|num_days=i"    => \$NUM_DAYS,,
     "n|num_history=i" => \$NUM_HISTORY,
+    "r|rotate"        => \$ROTATE,
     "h|help"          => \$HELP,
     "g|debug"         => \$_DEBUG,
     );
@@ -88,9 +92,11 @@ $logger->level($DEBUG) if ( $_DEBUG );
 my $dbh = Netdot::Model::db_Main();
 
 # date NUM_DAYS ago
-my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime (time-($NUM_DAYS*24*60*60));
+my $epochdate = time-($NUM_DAYS*24*60*60);
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime $epochdate;
 $year += 1900; $mon += 1;
 my $sqldate = sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year,$mon,$mday,$hour,$min,$sec);
+
 $logger->debug(sprintf("NUM_DAYS(%d) ago was : %s", $NUM_DAYS, $sqldate));
 
 my $start = time;
@@ -156,39 +162,58 @@ if ( $IPS ){
     }
 }
 if ( $FWT ){
-    ###########################################################################################
-    # Delete FWTables
-    $logger->info("Deleting Forwarding Tables older than $sqldate");
-    my @fwts = FWTable->search_where(tstamp=>{ '<', $sqldate });
-    foreach my $fwt ( @fwts ){
-	$logger->debug("Deleting FWTable id ". $fwt->id);
-	$fwt->delete;
-    }
-    $logger->info("A total of ". scalar(@fwts) ." records deleted");
-    
-    foreach my $table ( qw (fwtable fwtableentry) ){
-	$logger->debug("Freeing deleted space in $table");
-	$dbh->do("OPTIMIZE TABLE $table");
+    if ( $ROTATE ){
+	if ( Netdot->config->get('DB_TYPE') eq 'mysql' ){
+	    &rotate_table('fwtable');
+	    &rotate_table('fwtableentry');
+	}else{
+	    die "Rotate function only implemented in mysql for now";
+	}
+    }else{
+	###########################################################################################
+	# Delete FWTables
+	$logger->info("Deleting Forwarding Tables older than $sqldate");
+	my @fwts = FWTable->search_where(tstamp=>{ '<', $sqldate });
+	foreach my $fwt ( @fwts ){
+	    $logger->debug("Deleting FWTable id ". $fwt->id);
+	    $fwt->delete;
+	}
+	$logger->info("A total of ". scalar(@fwts) ." records deleted");
+	
+	foreach my $table ( qw (fwtable fwtableentry) ){
+	    $logger->debug("Freeing deleted space in $table");
+	    $dbh->do("OPTIMIZE TABLE $table");
+	}
     }
 }
 if ( $ARP ){
-    ###########################################################################################
-    # Delete ArpCaches
-    # Note: This will also delete ArpCacheEntry objects.
-    $logger->info("Deleting ARP Caches older than $sqldate");
-
-    my @arps = ArpCache->search_where(tstamp=>{ '<', $sqldate });
-    foreach my $arp ( @arps ){
-	$logger->debug("Deleting ArpCache id ". $arp->id);
-	$arp->delete;
-    }
-    $logger->info("A total of ". scalar(@arps) ." records deleted");
-
-    foreach my $table ( qw (arpcache arpcacheentry) ){
-	$logger->debug("Freeing deleted space in $table");
-	$dbh->do("OPTIMIZE TABLE $table");
+    if ( $ROTATE ){
+	if ( Netdot->config->get('DB_TYPE') eq 'mysql' ){
+	    &rotate_table('arpcache');
+	    &rotate_table('arpcacheentry');
+	}else{
+	    die "Rotate function only implemented in mysql for now";
+	}
+    }else{
+	###########################################################################################
+	# Delete ArpCaches
+	# Note: This will also delete ArpCacheEntry objects.
+	$logger->info("Deleting ARP Caches older than $sqldate");
+	
+	my @arps = ArpCache->search_where(tstamp=>{ '<', $sqldate });
+	foreach my $arp ( @arps ){
+	    $logger->debug("Deleting ArpCache id ". $arp->id);
+	    $arp->delete;
+	}
+	$logger->info("A total of ". scalar(@arps) ." records deleted");
+	
+	foreach my $table ( qw (arpcache arpcacheentry) ){
+	    $logger->debug("Freeing deleted space in $table");
+	    $dbh->do("OPTIMIZE TABLE $table");
+	}
     }
 }
+
 
 foreach my $table ( keys %rows_deleted ){
     if ( $rows_deleted{$table} ){
@@ -200,3 +225,46 @@ foreach my $table ( keys %rows_deleted ){
     }
 }
 $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
+
+
+
+###########################################################################################
+# Subroutines
+###########################################################################################
+
+sub rotate_table{
+    my $table = shift;
+    
+    # We need DBA privileges here
+    my $dbh = &dbconnect(Netdot->config->get('DB_TYPE'), 
+			 Netdot->config->get('DB_HOST'), 
+			 Netdot->config->get('DB_PORT'), 
+			 Netdot->config->get('DB_DBA') , 
+			 Netdot->config->get('DB_DBA_PASSWORD'), 
+			 Netdot->config->get('DB_DATABASE'))
+	|| die "Cannot connect to database as root";
+    
+    my $timestamp = time;
+    my $q = $dbh->selectall_arrayref("SHOW CREATE TABLE $table");
+    my $create_query = $q->[0]->[1];
+    $create_query =~ s/CREATE TABLE `(.*)`/CREATE TABLE `$1\_tmp`/;
+    $dbh->do($create_query);
+    $dbh->do("RENAME TABLE $table TO $table\_$timestamp");
+    $dbh->do("RENAME TABLE $1\_tmp TO $table");
+    $logger->info("Table $table rotated successfully");
+
+    $logger->debug("Droping $table backups older than $NUM_DAYS days");
+    my $tables_q = $dbh->selectall_arrayref("SHOW TABLES");
+    foreach my $row ( @$tables_q ){
+	my $tablename = $row->[0];
+	if ( $tablename =~ /$table\_(\d+)/ ){
+	    my $tstamp = $1;
+	    if ( $tstamp < $epochdate ){
+		$logger->debug("Droping $table\_$tstamp");
+		$dbh->do("DROP TABLE $table\_$tstamp");
+	    }
+	}
+    }
+    &dbdisconnect($dbh);
+    return 1;
+}
