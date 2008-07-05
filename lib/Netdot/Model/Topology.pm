@@ -90,7 +90,7 @@ sub discover {
     corroborating information raises the score in a cumulative fashion.
     Tuples with a score equal or above the configured minimum score are qualified
     to create a link in the database.
-    
+
   Arguments:
     dp        - Hash ref with links discovered by discovery protocols (CDP/LLDP)
     stp       - Hash ref with links discovered by Spanning Tree Protocol
@@ -110,8 +110,10 @@ sub update_links {
     $WEIGHTS{fdb} = $class->config->get('TOPO_WEIGHT_FDB') / 2;
     $WEIGHTS{p2p} = $class->config->get('TOPO_WEIGHT_P2P');
     my $MINSCORE  = $class->config->get('TOPO_MIN_SCORE');
-    my %hashes;
+
     my $old_links = $argv{old_links};
+
+    my %hashes;
     foreach my $source ( qw( dp stp fdb p2p ) ){
 	$hashes{$source} = $argv{$source};
     }
@@ -119,17 +121,17 @@ sub update_links {
     my %links;
     foreach my $source ( keys %hashes ){
 	my $score = $WEIGHTS{$source};
-	while ( my ($int, $nei) = each %{$hashes{$source}} ){
-	    ${$links{$int}{$nei}} += $score;
-	    $links{$nei}{$int}     = $links{$int}{$nei};
-	    if ( scalar(keys %{$links{$int}}) > 1 ){
-		foreach my $o ( keys %{$links{$int}} ){
-		    ${$links{$int}{$o}} -= $score if ( $o != $nei );
+	while ( my ($ifaceid1, $ifaceid2) = each %{$hashes{$source}} ){
+	    ${$links{$ifaceid1}{$ifaceid2}} += $score;
+	    $links{$ifaceid2}{$ifaceid1}     = $links{$ifaceid1}{$ifaceid2};
+	    if ( scalar(keys %{$links{$ifaceid1}}) > 1 ){
+		foreach my $o ( keys %{$links{$ifaceid1}} ){
+		    ${$links{$ifaceid1}{$o}} -= $score if ( $o != $ifaceid2 );
 		}
 	    }
-	    if ( scalar(keys %{$links{$nei}}) > 1 ){
-		foreach my $o ( keys %{$links{$nei}} ){
-		    ${$links{$nei}{$o}} -= $score if ( $o != $nei );
+	    if ( scalar(keys %{$links{$ifaceid2}}) > 1 ){
+		foreach my $o ( keys %{$links{$ifaceid2}} ){
+		    ${$links{$ifaceid2}{$o}} -= $score if ( $o != $ifaceid2 );
 		}
 	    }
 	}
@@ -137,19 +139,20 @@ sub update_links {
     
     my $addcount = 0;
     my $remcount = 0;
-    foreach my $id ( keys %links ){
-	foreach my $nei ( keys %{$links{$id}} ){
-	    next unless defined $links{$id}{$nei};
-	    my $score = ${$links{$id}{$nei}};
+
+    while ( my ($ifaceid1, $ifaceid2) = each %links ){
+	foreach my $ifaceid2 ( keys %{$links{$ifaceid1}} ){
+	    next unless defined $links{$ifaceid1}{$ifaceid2};
+	    my $score = ${$links{$ifaceid1}{$ifaceid2}};
 	    next unless ( $score >= $MINSCORE );
-	    if ( (exists($old_links->{$id})  && $old_links->{$id}  == $nei) || 
-		 (exists($old_links->{$nei}) && $old_links->{$nei} == $id) ){
-		delete $old_links->{$id}  if ( exists $old_links->{$id}  );
-		delete $old_links->{$nei} if ( exists $old_links->{$nei} );
+	    if ( (exists($old_links->{$ifaceid1})  && $old_links->{$ifaceid1}  == $ifaceid2) || 
+		 (exists($old_links->{$ifaceid2}) && $old_links->{$ifaceid2} == $ifaceid1) ){
+		delete $old_links->{$ifaceid1}  if ( exists $old_links->{$ifaceid1}  );
+		delete $old_links->{$ifaceid2} if ( exists $old_links->{$ifaceid2} );
 	    }else{
-		my $int = Interface->retrieve($id) || $class->throw_fatal("Cannot retrieve Interface id $id");
+		my $iface = Interface->retrieve($ifaceid1) || $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
 		eval {
-		    $int->add_neighbor(id=>$nei, score=>$score);
+		    $iface->add_neighbor(id=>$ifaceid2, score=>$score);
 		};
 		if ( my $e = $@ ){
 		    $logger->warn($e);
@@ -157,30 +160,126 @@ sub update_links {
 		    $addcount++;
 		}
 	    }
-	    delete $links{$id};
-	    delete $links{$nei};		
+	    delete $links{$ifaceid1};
+	    delete $links{$ifaceid2};		
 	}
     }
-    # Remove old links than no longer exist
-    foreach my $id ( keys %$old_links ){
-	my $nei  = $old_links->{$id};
-	my $int  = Interface->retrieve($id);
-	unless ( $int ){
-	    $logger->warn("Cannot retrieve Interface id $id");
+
+#     Link removal policy:
+#    
+#     * Never remove links when:
+#         - neighbor_fixed flag is true on either neighbor
+#         - One of the devices has no other links (would be left out of topology)
+#        
+#     * Always Remove links when:
+#         - Both Devices are linked to each other on different ports
+#         - neighbor_missed counter has reached MAX
+#        
+#     * In all other cases:
+#         - Increment neighbor_missed counter
+    
+    while ( my ($ifaceid1, $ifaceid2) = each %$old_links ){
+	my $iface1  = Interface->retrieve($ifaceid1);
+	unless ( $iface1 ){
+	    $logger->warn("Cannot retrieve Interface id $ifaceid1");
 	    next;
 	}
-	my $nint = Interface->retrieve($nei);
-	unless ( $nint ){
-	    $logger->warn("Cannot retrieve Interface id $nei");
+	my $iface2 = Interface->retrieve($ifaceid2);
+	unless ( $iface2 ){
+	    $logger->warn("Cannot retrieve Interface id $ifaceid2");
 	    next;
 	}
+
+	############
 	# Do not remove neighbors if the neighbor_fixed flag is on
-        unless ( $int->neighbor_fixed || $nint->neighbor_fixed ){
-	    if ( int($int->neighbor) == $nei ){
-		$int->remove_neighbor();
-		$remcount++;
+        if ( $iface1->neighbor_fixed || $iface2->neighbor_fixed ){
+	    $logger->debug("Topology::update_links: Link $ifaceid1 <=> $ifaceid2 not removed because ".
+			   "neighbor_fixed flag is on");
+	    next;
+	}
+
+	############
+	# Do some more tests
+
+	my $devices_linked_on_other_ports = 0;
+	my $device1_has_neighbors         = 0;
+	my $device2_has_neighbors         = 0;
+
+	my $device1 = $iface1->device;
+	my $device2 = $iface2->device;
+
+	foreach my $iface ( $device1->interfaces ){
+	    next if ( $iface->id == $iface1->id );
+	    if ( int($iface->neighbor) ){
+		my $neighbor = $iface->neighbor;
+		if ( int($neighbor->device) && ($neighbor->device->id == $device2->id) ){
+		    $devices_linked_on_other_ports = 1;
+		    last;
+		}
+		$device1_has_neighbors = 1;
+		last;
 	    }
 	}
+
+	if ( $devices_linked_on_other_ports ){
+	    # Remove link right away
+	    if ( int($iface1->neighbor) == $ifaceid2 ){
+		$iface1->remove_neighbor();  # This will actually remove it in both directions
+		$remcount++;
+		next;
+	    }
+	} 
+
+	foreach my $iface ( $device2->interfaces ){
+	    next if ( $iface->id == $iface2->id );
+	    if ( int($iface->neighbor) ){
+		$device2_has_neighbors = 1;
+		last;
+	    }
+	}
+
+	############
+	# If either of the devices has no other links, do not remove this link
+	# Otherwise, a device would be left out of the topology
+	if ( !$device1_has_neighbors || !$device2_has_neighbors ){
+	    if ( $logger->is_debug() ){
+		$logger->debug("Topology::update_links: Link ".
+			       $iface1->get_label() ." <=> ".  $iface2->get_label() 
+			       ." preserved because at least one device would be left out of topology");
+	    }
+	    next;
+	}
+
+	###########
+	# Remove if necessary
+
+	my $MAX_NEIGHBOR_MISSED_TIMES = $class->config->get('MAX_NEIGHBOR_MISSED_TIMES') || 0;
+
+	if ( $iface1->neighbor_missed >=  $MAX_NEIGHBOR_MISSED_TIMES
+	     || $iface2->neighbor_missed >= $MAX_NEIGHBOR_MISSED_TIMES ){
+	    if ( $logger->is_debug() ){
+		$logger->debug("Topology::update_links: Link ". 
+			       $iface1->get_label() ." <=> ".  $iface2->get_label() 
+			       ." has reached MAX_NEIGHBOR_MISSED_TIMES.  Removing.");
+	    }
+	    if ( int($iface1->neighbor) == int($iface2) ){
+		$iface1->remove_neighbor();  # This will actually remove it in both directions
+		$remcount++;
+	    }
+	}else{
+	    # Increment counters
+	    my $counter1 = $iface1->neighbor_missed + 1;
+	    my $counter2 = $iface2->neighbor_missed + 1;
+	    if ( $logger->is_debug() ){
+		$logger->debug("Topology::update_links: Link ".
+			       $iface1->get_label() ." <=> ". $iface2->get_label()
+			       ." not seen. Increasing neighbor_missed counter.");
+	    }
+	    $iface1->update({neighbor_missed => $counter1});
+	    $iface2->update({neighbor_missed => $counter2});
+	}
+
+    
     }
     return ($addcount, $remcount);
 }
@@ -797,7 +896,7 @@ sub get_tree_stp_links {
     foreach my $ivid ( keys %ivs ){
 	my $iv = $ivs{$ivid};
 	if ( defined $iv->stp_state && $iv->stp_state =~ /^forwarding|blocking$/ ){
-	    if ( $iv->stp_des_bridge && scalar $iv->interface->device ){
+	    if ( $iv->stp_des_bridge && int($iv->interface->device) ){
 		my $des_b     = $iv->stp_des_bridge;
 		my $des_p     = $iv->stp_des_port;
 		my $int       = $iv->interface->id;

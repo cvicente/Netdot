@@ -3819,6 +3819,14 @@ $meta = {
         tag => 'Neighbor Fixed?',
         type => 'bool'
       },
+      neighbor_missed => {
+        default => 0,
+        description => 'Number of times neighbor has not been seen by topology discovery process.  Once MAX_NEIGHBOR_MISSED_TIMES has been reached, the neighbor relationship is removed.',
+        length => '',
+        nullable => 0,
+        tag => 'Neighbor Missed',
+        type => 'integer'
+      },
       number => {
         default => '',
         description => 'The number of this Interface (usually corresponds to SNMP ifIndex).  In some cases, this value can be a alphanumeric string.',
@@ -3945,6 +3953,7 @@ $meta = {
         'physaddr',
 	'neighbor',
         'neighbor_fixed',
+        'neighbor_missed',
 	'stp_id',
 	'bpdu_filter_enabled',
 	'bpdu_guard_enabled',

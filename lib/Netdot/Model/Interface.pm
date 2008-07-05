@@ -153,12 +153,12 @@ sub add_neighbor{
 	$logger->debug(sub{sprintf("Adding new neighbors: %s <=> %s, score: %s", 
 			       $self->get_label, $neighbor->get_label, $score)});
 	
-	if ( $self->neighbor && $self->neighbor_fixed ){
+	if ( int($self->neighbor) && $self->neighbor_fixed ){
 	    $logger->debug(sub{sprintf("%s has been manually fixed to %s", $self->get_label, 
-				   $self->neighbor->get_label)});
-	}elsif ( $neighbor->neighbor && $neighbor->neighbor_fixed ) {
+				       $self->neighbor->get_label)});
+	}elsif ( int($neighbor->neighbor) && $neighbor->neighbor_fixed ) {
 	    $logger->debug(sub{sprintf("%s has been manually fixed to %s", $neighbor->get_label, 
-				  $neighbor->neighbor->get_label)});
+				       $neighbor->neighbor->get_label)});
 	}else{
 	    $self->update({neighbor=>$neighbor, neighbor_fixed=>$fixed});
 	    $logger->info(sprintf("Added new neighbors: %s <=> %s, score: %s", 
@@ -182,7 +182,6 @@ sub add_neighbor{
 sub remove_neighbor{
     my ($self) = @_;
     if ( int($self->neighbor) ){
-	my $nei = $self->neighbor;
 	return $self->update({neighbor=>0});
     }
 }
