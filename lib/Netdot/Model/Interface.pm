@@ -160,7 +160,10 @@ sub add_neighbor{
 	    $logger->debug(sub{sprintf("%s has been manually fixed to %s", $neighbor->get_label, 
 				       $neighbor->neighbor->get_label)});
 	}else{
-	    $self->update({neighbor=>$neighbor, neighbor_fixed=>$fixed});
+	    $self->update({neighbor        => $neighbor, 
+			   neighbor_fixed  => $fixed, 
+			   neighbor_missed => 0});
+
 	    $logger->info(sprintf("Added new neighbors: %s <=> %s, score: %s", 
 				  $self->get_label, $neighbor->get_label, $score));
 	}

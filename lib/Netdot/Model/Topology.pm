@@ -149,8 +149,18 @@ sub update_links {
 		 (exists($old_links->{$ifaceid2}) && $old_links->{$ifaceid2} == $ifaceid1) ){
 		delete $old_links->{$ifaceid1}  if ( exists $old_links->{$ifaceid1}  );
 		delete $old_links->{$ifaceid2} if ( exists $old_links->{$ifaceid2} );
+		
+		# Reset neighbor_missed counter
+		my $iface1 = Interface->retrieve($ifaceid1) 
+		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
+		$iface1->update({neighbor_missed=>0});
+		my $iface2 = Interface->retrieve($ifaceid2) 
+		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid2");
+		$iface2->update({neighbor_missed=>0});
+
 	    }else{
-		my $iface = Interface->retrieve($ifaceid1) || $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
+		my $iface = Interface->retrieve($ifaceid1) 
+		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
 		eval {
 		    $iface->add_neighbor(id=>$ifaceid2, score=>$score);
 		};
