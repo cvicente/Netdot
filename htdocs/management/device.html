@@ -87,7 +87,7 @@ if( $intadd ){
 	$m->comp('/generic/error.mhtml', error=>$e);	
     }
 
-}elsif( $deviceadd && $newhost && $newip ){
+}elsif( $deviceadd && $newhost ){
     if ( Device->search(name=>$newhost) ){
 	# It's already there
 	print "<p><b>Device $newhost already exists in DB</b>";   
@@ -96,11 +96,6 @@ if( $intadd ){
 	# Minimal info to create device manually
 	eval {
 	    $o = Device->insert({name=>$newhost, snmp_managed=>0, canautoupdate=>0});
-	    $o->snmp_update(info=>{ do_info=>1,
-				    interface => { '1' => {'name'   => "",
-							   'number' => 1,
-							   'ips'    => {
-							       $newip => { address => $newip } } } } } );
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);	
