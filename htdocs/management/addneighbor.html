@@ -57,13 +57,6 @@ if ( $int_id ){
 	delete $devs{$device->short_name};
     }
 }
-my $bodyargs;
-if ( $Add ){
-    $bodyargs = 'onUnload="opener.location.reload()"';
-} else {
-    $bodyargs = '';
-}
-
 $m->clear_buffer;
 </%init>
 
@@ -71,7 +64,7 @@ $m->clear_buffer;
 <head>
     <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
 </head>      
-<body class="bodytag" <% $bodyargs %>>
+<body>
 
 <div class="container">
     <div class="containerhead">
@@ -97,10 +90,22 @@ if ( $Add ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
     }
-    print "Neighbor added.<br>";
-    print "<p><a href=\"#\" onClick=\"window.close()\">[done]</a>";
-    $m->abort;
+    my $lbl1 = $intobj->get_label();
+    my $nobj = $intobj->neighbor();
+    my $lbl2 = $nobj->get_label();
+    my $link = "$lbl1 <=> $lbl2";
+
 </%perl>
+
+   <p>The following link has been manually added:
+
+   <p><b>&nbsp;&nbsp;<% $link %></b>
+
+   <p>This link has been marked as "fixed" and thus will not be affected by topology discovery processes.<br>
+
+   <p><a href="#" onClick="window.close()">[ok]</a>
+
+% $m->abort;
 
 %}
 
