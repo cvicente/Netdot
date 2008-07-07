@@ -3607,8 +3607,27 @@ sub snmp_update_parallel {
     
     # Go over list of existing devices
     while ( my ($id, $dev) = each %do_devs ){
-	unless ( $dev->canautoupdate ){
-	    $logger->debug(sub{ sprintf("%s excluded from auto-updates. Skipping", $dev->fqdn) });
+	my %args = %uargs;
+	# Make sure we don't launch a process unless necessary
+	if ( $args{do_info} ){
+	    unless ( $dev->canautoupdate ){
+		$logger->debug(sub{ sprintf("%s excluded from auto-updates", $dev->fqdn) });
+		$args{do_info} = 0;
+	    }
+	}
+	if ( $args{do_fwt} ){
+	    unless ( $dev->collect_fwt ){
+		$logger->debug(sub{ sprintf("%s excluded from FWT collection", $dev->fqdn) });
+		$args{do_fwt} = 0;
+	    }
+	}
+	if ( $args{do_arp} ){
+	    unless ( $dev->collect_arp ){
+		$logger->debug(sub{ sprintf("%s excluded from ARP collection", $dev->fqdn) });
+		$args{do_arp} = 0;
+	    }
+	}
+	unless ( $args{do_info} || $args{do_fwt} || $args{do_arp} ){
 	    next;
 	}
 	$device_count++;
@@ -3616,7 +3635,7 @@ sub snmp_update_parallel {
 	$pm->start and next;
 	eval {
 	    $class->_launch_child(pm   => $pm, 
-				  code => sub{ return $dev->snmp_update(%uargs) } );
+				  code => sub{ return $dev->snmp_update(%args) } );
 	};
 	if ( my $e = $@ ){
 	    $logger->error($e);
