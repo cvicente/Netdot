@@ -75,14 +75,38 @@ sub find_duplex_mismatches {
     # SQL returns pairs in both orders. Until I figure out how 
     # to get SQL to return unique pairs...
     if ( $mismatches ){
-	my (%seen, @res);
+	my (%seen, @pairs);
 	foreach my $pair ( @$mismatches ){
 	    next if ( exists $seen{$pair->[0]} || exists $seen{$pair->[1]} );
-	    push @res, $pair;
+	    push @pairs, $pair;
 	    $seen{$pair->[0]}++;
 	    $seen{$pair->[1]}++;
 	}
-	return \@res;
+	#
+	# Ignore devices that incorrectly report their settings
+	my @results;
+	if ( my $ignored_list = $class->config->get('IGNORE_DUPLEX') ){
+	    my %ignored;
+	    foreach my $id ( @$ignored_list){
+		$ignored{$id} = 1;
+	    }
+	    foreach my $pair ( @pairs ){
+		my $match = 0;
+		foreach my $ifaceid ( @$pair ){
+		    my $iface = Interface->retrieve($ifaceid) 
+			|| $class->throw_fatal("Cannot retrieve Interface id $ifaceid");
+		    if ( $iface->device && $iface->device->product 
+			 && $iface->device->product->sysobjectid 
+			 && exists $ignored{$iface->device->product->sysobjectid} ){
+			$match = 1;
+		    }
+		}
+		push @results, $pair unless $match;
+	    }
+	}else{
+	    return \@pairs;
+	}
+	return \@results;
     }else{
 	return;
     }
