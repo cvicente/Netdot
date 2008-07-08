@@ -118,8 +118,12 @@ sub delete {
 	$logger->warn( sprintf("The following circuits are now missing one or more endpoints: %s", 
 			       (join ', ', map { $_->cid } @circuits) ) );
     }
-    $self->SUPER::delete();
-    return 1;
+
+    foreach my $neighbor ( $self->neighbors ){
+	$neighbor->update({neighbor=>0, neighbor_fixed=>0, neighbor_missed=>0});
+    }
+
+    return $self->SUPER::delete();
 }
 
 ############################################################################
@@ -154,11 +158,11 @@ sub add_neighbor{
 			       $self->get_label, $neighbor->get_label, $score)});
 	
 	if ( int($self->neighbor) && $self->neighbor_fixed ){
-	    $logger->debug(sub{sprintf("%s has been manually fixed to %s", $self->get_label, 
-				       $self->neighbor->get_label)});
+	    $logger->debug(sub{sprintf("%s has been manually linked to %s", 
+				       $self->get_label, $neighbor->get_label)});
 	}elsif ( int($neighbor->neighbor) && $neighbor->neighbor_fixed ) {
-	    $logger->debug(sub{sprintf("%s has been manually fixed to %s", $neighbor->get_label, 
-				       $neighbor->neighbor->get_label)});
+	    $logger->debug(sub{sprintf("%s has been manually linked to %s", 
+				       $neighbor->get_label, $neighbor->neighbor->get_label)});
 	}else{
 	    $self->update({neighbor        => $neighbor, 
 			   neighbor_fixed  => $fixed, 
@@ -170,6 +174,7 @@ sub add_neighbor{
     }
     return 1;
 }
+
 
 ############################################################################
 =head2 remove_neighbor
