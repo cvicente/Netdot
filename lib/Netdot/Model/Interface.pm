@@ -99,6 +99,7 @@ sub find_duplex_mismatches {
 			 && $iface->device->product->sysobjectid 
 			 && exists $ignored{$iface->device->product->sysobjectid} ){
 			$match = 1;
+			last;
 		    }
 		}
 		push @results, $pair unless $match;
