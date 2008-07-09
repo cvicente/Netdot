@@ -667,10 +667,9 @@ push( @cell_data, $usedby_tmp{'value'} );
 
 my $ip = new NetAddr::IP($o->address, $o->prefix);
 
-################
-# Broadcast
-	push( @field_headers, "Broadcast:" );
-	push( @cell_data, ($ip->version == 6?$ip->broadcast->short:$ip->broadcast->addr) );
+push( @field_headers, "Netmask:", "Broadcast:" );
+push( @cell_data, $ip->mask);
+push( @cell_data, ($ip->version == 6?$ip->broadcast->short:$ip->broadcast->addr) );
 
 ################
 # Usable address range
