@@ -51,8 +51,8 @@ $ARGS{show_tasks} = $show_tasks;
 
 
 <%perl>
-if ( $submit ){
-    if ( $device_search ){
+
+if ( $device_search ){
 	# Get rid of spaces
 	$device_search =~ s/\s+//g;
 	if ( $device_search =~ /$MAC/ ){
@@ -74,10 +74,6 @@ if ( $submit ){
 		$m->comp('.show_results', search=>$device_search, list=>\@list);
 	    }
 	}
-    }else{
-	$m->comp('.show_tasks', %ARGS);
-	$m->comp('/generic/no_search_criteria.html');
-    }
 }else{
     $m->comp('.show_tasks', %ARGS);
 }
@@ -132,7 +128,7 @@ $mac_search     => undef
             <form action="device_tasks.html" method="POST">
                 <label for="search">Name/IP/MAC:</label>
                 <input type="text" name="device_search" class="txt" value="<% $device_search %>"> 
-                <input name="submit" value="search" class="btn" type="submit">
+                <input type="submit" name="submit" class="btn" value="search" >
             </form>
         </fieldset>
         <fieldset class="medium">
