@@ -259,11 +259,13 @@ sub update {
 		    # Tell the neighbor to remove me.
 		    # Also make sure the neighbor_fixed flag is off on both sides
 		    if (int($self->neighbor)){
-			$self->neighbor->update({neighbor=>0, neighbor_fixed=>0, reciprocal=>0});
+			$self->neighbor->update({neighbor=>0, neighbor_fixed=>0, 
+						 neighbor_missed=>0, reciprocal=>0});
 			$logger->info(sprintf("Removed neighbors: %s <=> %s", 
 					      $self->get_label, $self->neighbor->get_label));
 		    }
-		    $argv->{neighbor_fixed} = 0;
+		    $argv->{neighbor_fixed}  = 0;
+		    $argv->{neighbor_missed} = 0;
 		}
 	    }
 	}
