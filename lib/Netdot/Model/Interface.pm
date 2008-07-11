@@ -527,10 +527,8 @@ sub update_ip {
 	    }else{
 		$logger->debug(sub{ sprintf("Subnet %s/%s does not exist.  Inserting.", $subnetaddr, $subnetprefix) });
 
-		# IP tree will be rebuilt at the end of the Device update
-		$iargs{address}        = $subnetaddr;
-		$iargs{prefix}         = $subnetprefix;
-		$iargs{no_update_tree} = 1;
+		$iargs{address} = $subnetaddr;
+		$iargs{prefix}  = $subnetprefix;
 		
 		# Ipblock validation might throw an exception
 		my $newblock;

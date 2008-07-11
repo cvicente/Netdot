@@ -1539,23 +1539,14 @@ sub _validate {
     $self->isa_object_method('_validate');
     $logger->debug(sub{"Ipblock::_validate: Checking " . $self->get_label });
 		   
-    # Make these values what the block is being set to
-    # or what it already has
-    my $statusname;
-    if ( $args->{status} ){
-	if ( ref($args->{status}) ){
-	    $statusname = $args->{status}->name;
-	}else{
-	    $statusname = $args->{status};
-	}
-    }else{
-	$self->status->name;
-    }
+    my $statusname = $self->status->name;
+    $logger->debug("Ipblock::_validate: " . $self->get_label . " has status: $statusname");
 
     $args->{dhcp_enabled} ||= $self->dhcp_enabled;
    
     my ($pstatus, $parent);
     if ( ($parent = $self->parent) && $parent->id ){
+	$logger->debug("Ipblock::_validate: " . $self->id . " parent is ", $parent->get_label);
 	
 	$pstatus = $parent->status->name;
 	if ( $self->is_address() ){
@@ -1570,11 +1561,11 @@ sub _validate {
 	}else{
 	    if ( $pstatus ne "Container" ){
 		$self->throw_user(sprintf("Block allocations only allowed under Container blocks: %s within %s",
-				  $self->get_label, $parent->get_label));
+					  $self->get_label, $parent->get_label));
 	    }	    
 	}
     }else{
-	$logger->debug("Ipblock::_validate: " . $self->id . " does not have parent");
+	$logger->debug("Ipblock::_validate: " . $self->get_label . " does not have parent");
     }
     if ( $statusname eq "Subnet" ){
 	# We only want addresses inside a subnet.  If any blocks within this subnet
