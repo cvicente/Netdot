@@ -725,6 +725,10 @@ sub get_snmp_info {
 
     my $ifreserved = $self->config->get('IFRESERVED');
 
+    unless ( scalar keys %{ $hashes{interfaces} } ){
+	$logger->debug(sub{"$name ($ip) did not return any interfaces"});
+    }
+
     foreach my $iid ( keys %{ $hashes{interfaces} } ){
 	# check whether it should be ignored
 	my $name = $hashes{i_description}->{$iid};
