@@ -140,27 +140,30 @@ sub update_links {
     my $addcount = 0;
     my $remcount = 0;
 
-    while ( my ($ifaceid1, $ifaceid2) = each %links ){
+    foreach my $ifaceid1 ( keys %links ){
 	foreach my $ifaceid2 ( keys %{$links{$ifaceid1}} ){
 	    next unless defined $links{$ifaceid1}{$ifaceid2};
 	    my $score = ${$links{$ifaceid1}{$ifaceid2}};
 	    next unless ( $score >= $MINSCORE );
-	    if ( (exists($old_links->{$ifaceid1})  && $old_links->{$ifaceid1}  == $ifaceid2) || 
-		 (exists($old_links->{$ifaceid2}) && $old_links->{$ifaceid2} == $ifaceid1) ){
-		delete $old_links->{$ifaceid1}  if ( exists $old_links->{$ifaceid1}  );
+
+	    if ( (exists($old_links->{$ifaceid1})  && $old_links->{$ifaceid1} == $ifaceid2) || 
+		 (exists($old_links->{$ifaceid2})  && $old_links->{$ifaceid2} == $ifaceid1) ){
+
+		delete $old_links->{$ifaceid1} if ( exists $old_links->{$ifaceid1} );
 		delete $old_links->{$ifaceid2} if ( exists $old_links->{$ifaceid2} );
 		
 		# Reset neighbor_missed counter
 		my $iface1 = Interface->retrieve($ifaceid1) 
 		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
 		$iface1->update({neighbor_missed=>0});
+
 		my $iface2 = Interface->retrieve($ifaceid2) 
 		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid2");
 		$iface2->update({neighbor_missed=>0});
-
+		
 	    }else{
 		my $iface = Interface->retrieve($ifaceid1) 
-		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
+		|| $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
 		eval {
 		    $iface->add_neighbor(id=>$ifaceid2, score=>$score);
 		};
@@ -189,6 +192,10 @@ sub update_links {
 #         - Increment neighbor_missed counter
     
     while ( my ($ifaceid1, $ifaceid2) = each %$old_links ){
+
+	# Make sure we don't visit this link again
+	delete $old_links->{$ifaceid2};
+
 	my $iface1  = Interface->retrieve($ifaceid1);
 	unless ( $iface1 ){
 	    $logger->warn("Cannot retrieve Interface id $ifaceid1");
