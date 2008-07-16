@@ -138,7 +138,7 @@ _import:
 
 _export:
 	@echo "Going into $@..."
-	cd export ; make install PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=export
+	cd export ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=export
 
 dropdb: 
 	@echo "WARNING:  This will erase all data in the database!"

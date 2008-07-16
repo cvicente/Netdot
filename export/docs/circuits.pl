@@ -5,7 +5,7 @@
 #
 use strict;
 use lib "<<Make:LIB>>";
-use Netdot::DBI;
+use Netdot::Model;
 use Data::Dumper;
 use Getopt::Long;
 
@@ -36,7 +36,6 @@ sub set_defaults {
 	      help            => 0,
 	      debug           => 0, 
 	      );
-
 }
 
 ##################################################

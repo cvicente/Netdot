@@ -5,22 +5,25 @@
 # grouped by the building their located in and their subnet
 #
 # 
-use lib "/usr/local/netdot/lib";
+use lib "<<Make:LIB>>";
 use Netdot::Export;
-use Netdot::DBI;
+use Netdot::Model;
 use strict;
 use Getopt::Long;
 
 use vars qw( %self $USAGE %types %hosts %entities %ip2name %name2ip );
 
+my $dns    = Netdot::Util::DNS->new();
+my $export = Netdot::Export->new();
 
 &set_defaults();
 
 my $USAGE = <<EOF;
 usage: $0 --dir <DIR> --out <FILE>
-
+    --monitor         <hostname> Monitoring system name
     --dir             <path> Path to configuration file
     --out             <name> Configuration file name (default: $self{out})
+    --strip_domain    <domain_name> Strip off domain name from device name
     --debug           Print debugging output
     --help            Display this message
 
@@ -45,9 +48,10 @@ sub set_defaults {
 ##################################################
 sub setup{
     
-    my $result = GetOptions( 
+    my $result = GetOptions( "monitor=s"        => \$self{monitor},
 			     "dir=s"            => \$self{dir},
 			     "out=s"            => \$self{out},
+			     "strip_domain=s"   => \$self{strip_domain},
 			     "debug"            => \$self{debug},
 			     "h"                => \$self{help},
 			     "help"             => \$self{help},
@@ -62,57 +66,36 @@ sub setup{
 	print "ERROR: Missing required arguments\n";
 	die $USAGE;
     }
-
-    %types = (
-	      'Access Point'     => 'access-point', 
-	      'DSL Modem'	 => 'dsl-modem',
-	      'Firewall'         => 'host',
-	      'Hub'		 => 'hub',
-	      'IP Phone'	 => 'host',
-	      'Packet Shaper'	 => 'host',
-	      'Router'           => 'router',
-	      'Server'	         => 'host',
-	      'Switch'	         => 'switch',
-	      'Wireless Bridge'  => 'access-point',
-	      'Wireless Gateway' => 'access-point',
-	      );
 }
 
 ##################################################
 sub gather_data{
 
-    my $it = Ipblock->retrieve_all();
-    while ( my $ip = $it->next ){
-	next if $ip->address =~ /^127\.0\.0/;
-	next unless ( $ip->prefix == 32 || $ip->prefix == 128);
+    my $monitor = Device->search(name=>$self{monitor})->first 
+	|| die "Cannot find monitor device"; 
+
+    my $device_ips = $export->get_device_ips();
+    foreach my $row ( @$device_ips ){
+	my ($deviceid, $ipid, $int_monitored, $dev_monitored) = @$row;
+	my $ip = Ipblock->retrieve($ipid);
+	my $address = $ip->address;
 	my ($type, $site, $entity);
-	
-	if ( $ip->interface->device ){
-	    my $address = $ip->address;
-
-	    if ( $ip->interface->device->productname &&
-		 $ip->interface->device->productname->type){
-
-		$type = $ip->interface->device->productname->type->name;
-		if (exists $types{$type}){
-		    $type = $types{$type};
-		}else{
-		    $type = "host";
-		}
+	if ( my $device = Netdot::Model::Device->retrieve($deviceid) ){
+	    if ( $device->product && $device->product->type ){
+		$type = $device->product->type->name;
+		$type =~ s/\s+/_/g;
 	    }else{
-		$type = 'host';
+		$type = 'Unknown';
 		warn "Can't figure out type for Device with ip $address" if $self{debug};
 	    }
-	    if ( $ip->interface->device->site ){
-		my $s = $ip->interface->device->site;
-		$site = $s->name;
+	    if ( $device->site ){
+		$site = $device->site->name;
 		$site = join '_', split /\s+/, $site;
 	    }else{
 		$site = 'unknown';
 		warn "Can't determine site for Device with ip $address" if $self{debug};
 	    }
-	    if ( $ip->interface->device->used_by ){
-		my $e = $ip->interface->device->used_by;
+	    if ( my $e = $device->used_by ){
 		$entity = $e->name;
 		$entity = join '_', split /\s+/, $entity;
 		$entities{$entity}{id} = $e->id;
@@ -122,39 +105,48 @@ sub gather_data{
 		warn "Can't determine entity for Device with ip $address" if $self{debug};
 	    }
 	}else{
-	    warn "Can't determine Device from ip ", $ip->address if $self{debug};
+	    warn "Can't determine Device from ip ", $address if $self{debug};
 	    next;
 	}
 	
 	my $name;
-	unless ( ($name = &resolve($ip->address)) && !exists $name2ip{$name} ){
-	    $name = $ip->interface->device->name 
-		. "-" . $ip->interface->name
-		. "-" . $ip->address;
-	    warn "Assigned name $name \n" if $self{debug};
+	if ( my @arecords = $ip->arecords ){
+	    $name = $arecords[0]->rr->get_label;
+	}else{ 
+	    $name = $dns->resolve_ip($address) || $address;
 	}
+	$name =~ s/$self{strip_domain}// if $self{strip_domain};
+
 	$name2ip{$name} = $ip->id;
-	$ip2name{$ip->id} = $name;
-	$hosts{$ip->address}{type} = $type;
-	$hosts{$ip->address}{name} = $name;
-	push @{ $entities{$entity}{site}{$site}{hosts} }, $ip->address;
-	
+	$ip2name{$ipid} = $name;
+	$hosts{$address}{type} = $type;
+	$hosts{$address}{name} = $name;
+	push @{ $entities{$entity}{site}{$site}{hosts} }, $address;
     }
 
-    # Now that we have all the names
+    my $dependencies = $export->get_dependencies($monitor->id);
     foreach my $ipid ( keys %ip2name ){
-	
+	next unless defined $dependencies->{$ipid};
 	my $ipobj = Ipblock->retrieve($ipid);
-	
-	my $parentlist =  join ',', map { $ip2name{$_} } 
-	map { ($_->ips)[0] }  map { $_->parent }  $ipobj->interface->parents;
-	
-	if ( $parentlist ){
-	    $hosts{$ipobj->address}{parents} = $parentlist;
+	my @parentlist = @{$dependencies->{$ipid}};
+	if ( scalar @parentlist ){
+	    my @names;
+	    foreach my $parent ( @parentlist ){
+		if ( !exists $ip2name{$parent} ){
+		    warn "Can't determine name for Ipblock id $parent\n";
+		}
+		push @names, $ip2name{$parent};
+	    }
+	    if ( scalar @names ){
+		$hosts{$ipobj->address}{parents} = join ',', @names;
+	    }else{
+		$hosts{$ipobj->address}{parents} = 'NULL';
+	    }
 	}else{
-	    $hosts{$ipobj->address}{parents} = "NULL";
+	    $hosts{$ipobj->address}{parents} = 'NULL';
 	}
     }
+
 }
 
 ##################################################

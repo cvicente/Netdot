@@ -10,7 +10,9 @@ use Netdot::Export;
 use strict;
 use Getopt::Long;
 use Netdot::Util::DNS;
-my $dns = Netdot::Util::DNS->new();
+
+my $dns    = Netdot::Util::DNS->new();
+my $export = Netdot::Export->new();
 
 use vars qw( %self $USAGE %hosts %name2ip %ip2name );
 
@@ -87,7 +89,7 @@ sub gather_data {
     my $monitor = Device->search(name=>$self{monitor})->first 
 	|| die "Cannot find monitor device";
     
-    my $device_ips = &get_device_ips();
+    my $device_ips = $export->get_device_ips();
 
     foreach my $row ( @$device_ips ){
 	my ($deviceid, $ipid, $int_monitored, $dev_monitored) = @$row;
@@ -116,7 +118,7 @@ sub gather_data {
 
     # Now that we have everybody in
     # assign parent list
-    my $dependencies = &get_dependencies($monitor->id, \%hosts);
+    my $dependencies = $export->get_dependencies($monitor->id);
     foreach my $ipid ( keys %hosts ){
 	next unless defined $dependencies->{$ipid};
 	if ( my @parentlist = @{$dependencies->{$ipid}} ){

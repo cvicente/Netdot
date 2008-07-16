@@ -6,7 +6,7 @@
 #
 use strict;
 use lib "<<Make:LIB>>";
-use Netdot::DBI;
+use Netdot::Model;
 use Data::Dumper;
 use Getopt::Long;
 
@@ -65,7 +65,7 @@ sub setup{
 
 ##################################################
 sub gather_data{
-    
+   
     unless ( @cls = sort { $a->name cmp $b->name } ContactList->retrieve_all ){
 	die "No Contact Lists found in db\n";
     }

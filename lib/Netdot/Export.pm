@@ -1,39 +1,51 @@
 package Netdot::Export;
-#
-# Common routines for scripts that export netdot data
-#
-# 
+
+use base 'Netdot';
+use warnings;
 use strict;
-use Socket;
-use Exporter ;
 use Data::Dumper;
 
-use vars qw ( @EXPORT @ISA @EXPORT_OK);
+my $logger = Netdot->log->get_logger('Netdot::Export');
 
-@ISA       = qw( Exporter ) ;
-@EXPORT    = qw( get_dependencies get_device_ips );
-@EXPORT_OK = qw();
+=head1 NAME
 
-my $DEBUG = 0;
-my ($dbh, $graph, $device_ips);
+Netdot::Export - Methods for scripts that export netdot data
 
-########################################################################
-sub get_dbh {
-    unless ( $dbh ){
-        $dbh = Netdot::Model->db_Main();	
-    }
-    return $dbh;
+=head1 SYNOPSIS
+
+
+=head1 CLASS METHODS
+=cut
+
+############################################################################
+=head2 new - Class constructor
+
+  Arguments:
+    None
+  Returns:
+    Netdot::Export object
+  Examples:
+    my $export = Netdot::Export->new();
+=cut
+sub new{
+    my ($proto, %argv) = @_;
+    my $class = ref($proto) || $proto;
+    my $self = {};
+    bless $self, $class;
+    $self->{_dbh} = Netdot::Model->db_Main();
+    return $self;
 }
 
 ########################################################################
 sub get_graph {
-    unless ( $graph ) {
-        $graph = {};
-	$dbh = &get_dbh();
-        my $links = $dbh->selectall_arrayref("
-                SELECT d1.id, d2.id 
-                FROM device d1, device d2, interface i1, interface i2
-                WHERE i1.device = d1.id AND i2.device = d2.id
+    my ($self) = @_;
+    unless ( $self->{_graph} ) {
+	$logger->debug("Netdot::Export::get_graph: querying database");
+        my $graph = {};
+        my $links = $self->{_dbh}->selectall_arrayref("
+                SELECT  d1.id, d2.id 
+                FROM    device d1, device d2, interface i1, interface i2
+                WHERE   i1.device = d1.id AND i2.device = d2.id
                     AND i2.neighbor = i1.id AND i1.neighbor = i2.id
             ");
         foreach my $link (@$links) {
@@ -41,40 +53,43 @@ sub get_graph {
             $graph->{$fr}{$to}  = 1;
             $graph->{$to}{$fr}  = 1;
         }
+	$self->{_graph} = $graph;
     }
-    return $graph;
+    return $self->{_graph};
 }
 
 ########################################################################
 sub get_device_ips {
-    unless ( $device_ips ){
-	$dbh = &get_dbh();
-	$device_ips = $dbh->selectall_arrayref("
+    my ($self) = @_;
+    unless ( $self->{_device_ips} ){
+	$logger->debug("Netdot::Export::get_device_ips: querying database");
+	my $device_ips = $self->{_dbh}->selectall_arrayref("
                 SELECT   device.id, ipblock.id, ipblock.address, interface.monitored, device.monitored
                 FROM     device, interface, ipblock
                 WHERE    ipblock.interface=interface.id
                   AND    interface.device=device.id
                 ORDER BY ipblock.address
          ");
+	$self->{_device_ips} = $device_ips;
     }
-    return $device_ips;
+    return $self->{_device_ips};
 }
+
 ########################################################################
 # Recursively look for valid parents
 # If the parent(s) don't have ip addresses or are not managed,
 # try to keep the tree connected anyways
 # Arguments: 
-#   Hash ref of host ips
+#   ID of Network Management Device
 # Returns:
-#   Hash ref of arrayrefs of parent ips
+#   Hash ref where key = Ipblock.id, value = Arrayref of parent Ipblock.id' s
 ########################################################################
 sub get_dependencies{
-    my ($monitor, $ips) = @_;
-    defined $monitor || die "Need to pass monitoring device";
-    defined $ips     || die "Need to pass IPs";
+    my ($self, $nms) = @_;
+    defined $nms || $self->throw_fatal("Need to pass monitoring device");
 
-    my $graph      = &get_graph();
-    my $device_ips = &get_device_ips();
+    my $graph      = $self->get_graph();
+    my $device_ips = $self->get_device_ips();
 
     my (%device2ips, %ip_monitored);
     foreach my $row ( @$device_ips ){
@@ -83,63 +98,93 @@ sub get_dependencies{
 	$ip_monitored{$ipid} = ($int_monitored && $dev_monitored) ? 1 : 0;
     }
 
-    sub dfs {
-        my $s         = shift || die "No source vertex";
-        my $t         = shift || die "No target vertex";
-        my $graph     = shift || die "No graph";
-        my $forbidden = shift || die "No forbidden vertex";
-        my $seen      = shift || {};
-
-        $seen->{$s} = 1;
-        if ($s == $t) { # Base case 
-            return 1; 
-        } else { # Recursive case
-            foreach my $n ( keys %{$graph->{$s}} ) {
-                next if exists $seen->{$n};
-                next if $forbidden == $n;
-
-                if (dfs($n, $t, $graph, $forbidden, $seen)) {
-                    return 1;
-                }
-            }
-
-            return 0;
-        }
-    }
-
-    # I am unsure where this code wants to live.  For this code to get doing, it
-    # needs a hashref, called $ips, which maps devices to a listref of the IP
-    # addresses of that device.  If none of the ip's of that device are monitored,
-    # then the hashref should be empty.  It also needs a hashref of hashrefs called
-    # "graph", where, if there is a network link between device A and B, then it is
-    # true that $graph->{A}{B} = $graph->{B}{A} = 1
-
+    # For each device, the parent list consists of all neighbor devices
+    # which are in the path between this device and the monitoring system
     my %parents = ();
-    foreach my $d (keys %$graph) {
+    foreach my $d ( keys %$graph ) {
 	$parents{$d} = [];
 	foreach my $neighbor ( keys %{$graph->{$d}} ) {
-	    if (dfs($neighbor, $monitor, $graph, $d)) {
+	    if ( $self->dfs($neighbor, $nms, $graph, $d) ) {
 		push @{$parents{$d}}, $neighbor;
 	    }
 	}
-    }
-
-    my $ipdeps = {};
-    foreach my $device ( keys %parents ){
-	foreach my $ipid ( @{$device2ips{$device}} ){
-	    foreach my $parent ( @{$parents{$device}} ){
-		foreach my $ipid2 ( @{$device2ips{$parent}} ){
-		   $ipdeps->{$ipid}{$ipid2} = 1 if $ip_monitored{$ipid2};
-		}
+	unless ( scalar @{$parents{$d}} ){
+	    if ( $logger->is_debug() ){
+		my $dev = Netdot::Model::Device->retrieve($d);
+		$logger->debug("Device ". $dev->get_label .": No path to NMS.  Assigning NMS as parent.");
+		push @{$parents{$d}}, $nms;
 	    }
 	}
     }
-    
+
+    # Build the IP dependency hash
+    my $ipdeps = {};
+    foreach my $device ( keys %parents ){
+	foreach my $ipid ( @{$device2ips{$device}} ){
+	    my $deps = $self->get_ip_deps($ipid, $parents{$device}, \%parents, 
+					  \%device2ips, \%ip_monitored);
+	    $ipdeps->{$ipid} = $deps if defined $deps;
+	}
+    }
+
+    # Convert hash of hashes to hash of arrayrefs
     foreach my $ipid ( keys %$ipdeps ){
 	my @list = keys %{$ipdeps->{$ipid}};
 	$ipdeps->{$ipid} = \@list;
     }
     return $ipdeps;
+}
+
+##################################
+# Depth first search
+sub dfs {
+    my ($self, $s, $t, $graph, $forbidden, $seen) = @_;
+    defined $s         || $self->throw_fatal("No saource vertex");
+    defined $t         || $self->throw_fatal("No target vertex");
+    defined $graph     || $self->throw_fatal("No graph");
+    defined $forbidden || $self->throw_fatal("No forbidden vertex");
+    $seen ||= {};
+    
+    $seen->{$s} = 1;
+    if ($s == $t) { # Base case 
+	return 1; 
+    } else { # Recursive case
+	foreach my $n ( keys %{$graph->{$s}} ) {
+	    next if exists $seen->{$n};
+	    next if $forbidden == $n;
+	    if ( $self->dfs($n, $t, $graph, $forbidden, $seen) ) {
+		return 1;
+	    }
+	}
+	return 0;
+    }
+}
+
+##################################
+# Recursively look for monitored ancestors
+sub get_ip_deps {
+    my ($self, $ipid, $parents, $ancestors, $device2ips, $ip_monitored) = @_;
+    my %deps;
+    foreach my $parent ( @$parents ){
+	foreach my $ipid2 ( @{$device2ips->{$parent}} ){
+	    if ( $ip_monitored->{$ipid2} ){
+		$deps{$ipid2} = 1;
+	    }
+	}
+    }
+    if ( %deps ){
+	return \%deps;
+    }else{
+	if ( $logger->is_debug() ){
+	    my $ipb = Netdot::Model::Ipblock->retrieve($ipid);
+	    $logger->debug($ipb->get_label .": no monitored parents found.  Looking for ancestors.");
+	}
+	my @grandparents;
+	foreach my $parent ( @$parents ){
+	    push @grandparents, @{$ancestors->{$parent}};
+	}
+	$self->get_ip_deps($ipid, \@grandparents, $ancestors, $device2ips, $ip_monitored);
+    }
 }
 
 
