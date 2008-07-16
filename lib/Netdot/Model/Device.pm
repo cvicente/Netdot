@@ -326,7 +326,7 @@ sub insert {
 		  collect_fwt      => 0,
 		  canautoupdate    => 0,
 		  date_installed   => $class->timestamp,
-		  monitor_config   => 0,
+		  monitor_config   => 1,
 		  monitored        => 1,
 		  monitorstatus    => 0,
 		  owner            => $default_owner,
@@ -1129,6 +1129,7 @@ sub discover {
 	my $host    = $main_ip || $name;
 	my $newname = $class->assign_name(host=>$host, sysname=>$info->{sysname} );
 	my %devtmp = (snmp_managed  => 1,
+		      snmp_polling  => 1,
 		      canautoupdate => 1,
 		      community     => $info->{community},
 		      snmp_version  => $info->{snmp_version},
