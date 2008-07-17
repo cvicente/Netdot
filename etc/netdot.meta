@@ -1716,7 +1716,7 @@ $meta = {
         description => 'A number given to this Device by the organization for accounting/inventory purposes',
         length => '64',
         nullable => 1,
-        tag => 'Inventory Number',
+        tag => 'Inventory',
         type => 'varchar'
       },
       ipforwarding => {
@@ -1761,7 +1761,7 @@ $meta = {
       },
       maint_contract => {
         default => '',
-        description => '',
+        description => 'Reference to a maintenance or support contract with hardware vendor or third party.',
         length => '',
         linksto => {
           cascade => 'Nullify',
@@ -2338,8 +2338,45 @@ $meta = {
         description => 'The vendor-specific serial number string for the physical entity',
         length => '128',
         nullable => 1,
-        tag => 'Serial Number',
+        tag => 'S/N',
         type => 'varchar'
+      },
+      inventorynumber => {
+        default => '',
+        description => 'A number given to this Module by the organization for accounting/inventory purposes',
+        length => '64',
+        nullable => 1,
+        tag => 'Inventory',
+        type => 'varchar'
+      },
+      maint_contract => {
+        default => '',
+        description => 'Reference to a maintenance or support contract with hardware vendor or third party.',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'devices',
+          table => 'MaintContract'
+        },
+        nullable => 0,
+        tag => 'Maintenance Contract',
+        type => 'integer'
+      },
+      maint_from => {
+        default => '',
+        description => 'Module covered in maintenance from this date (YYYY-MM-DD)',
+        length => '',
+        nullable => 1,
+        tag => 'Maintenance From',
+        type => 'date'
+      },
+      maint_until => {
+        default => '',
+        description => 'Module covered in maintenance until this date (YYYY-MM-DD)',
+        length => '',
+        nullable => 1,
+        tag => 'Maintenance Until',
+        type => 'date'
       },
       sw_rev => {
         default => '',
@@ -2396,6 +2433,10 @@ $meta = {
       'sw_rev',
       'fru',
       'serialnumber',
+      'inventorynumber',
+      'maint_contract',
+      'maint_from',
+      'maint_until',
       'date_installed',
       'last_updated',
       ],
@@ -2406,6 +2447,7 @@ $meta = {
         'model',
         'description',
         'serialnumber',
+        'inventorynumber',
       ]
     }
   },
