@@ -60,13 +60,14 @@ if ( $DEBUG ){
 <!-- End Display main object values -->
 
 <!-- Display has_many possibilities-->
-%  if ( ! $table->meta_data->is_history() ){
+%  my $has_history_table = 1 if ( $table->meta_data->get_history_table_name() );
+%  if ( ! $table->meta_data->is_history() && ( keys %linksfrom ) ){
       <div class="container">
 	<div class="containerhead">View</div>
 	   <div class="containerbody">
 %	      if ( $view eq "all" ){
 		  [all]
-%	      }else{
+%	      }elsif ( keys %linksfrom > 1 ){
 		  <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">[all]</a>
 %             }
 %             foreach my $i ( keys %linksfrom ){
@@ -76,7 +77,7 @@ if ( $DEBUG ){
                    <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
 %               }   
 %             }
-%           if ( $table->meta_data->get_history_table_name() ){
+%           if ( $has_history_table ){
               <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">[history]</a>
 %	    }
 	   </div>
