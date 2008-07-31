@@ -1,26 +1,39 @@
-# SNMP::Info -  Makefile.PL
-# $Id: Makefile.PL,v 1.5 2003/08/14 18:24:56 maxbaker Exp $
+# Module makefile for SNMP::Info (using ExtUtils::MakeMaker)
+# $Id: Makefile.PL,v 1.7 2008/07/20 03:46:08 jeneric Exp $
 
+require 5.006;
+
+use strict;
+use warnings;
 use ExtUtils::MakeMaker;
-WriteMakefile(
-    'NAME'               => 'SNMP::Info',
-    'VERSION_FROM'       => 'Info.pm',
-    'PREREQ_PM'          => {
-                                'Math::BigInt' => 0
-                                # SNMP not available on CPAN . 
-                                # Install with net-snmp.sourceforge.net
-                                # 'SNMP' => '4'
-                            },
-    ($] >= 5.005 ?    
-          (ABSTRACT_FROM => 'Info.pm', 
-           AUTHOR        => 'Max Baker <max@warped.org>')
-                 : () 
-    ),
-    'PMLIBDIRS'          => ['Info','$(BASEEXT)'],
-             );
 
-sub MY::postamble { "
+WriteMakefile(
+    NAME          => 'SNMP::Info',
+    AUTHOR        => 'Eric A. Miller <emiller@cpan.org>',
+    VERSION_FROM  => 'Info.pm',
+    ABSTRACT_FROM => 'Info.pm',
+    PREREQ_PM     => {
+        'Test::More'   => 0,
+        'Math::BigInt' => 0,
+        'SNMP'         => 0,
+    },
+    PMLIBDIRS => [ 'Info', '$(BASEEXT)' ],
+    dist      => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean     => { FILES    => 'SNMP-Info-*' },
+    realclean => { FILES    => 'Makefile.old' },
+    (     ( ExtUtils::MakeMaker->VERSION() lt '6.25' ) ? ( 'PL_FILES' => {} )
+        : ()
+    ),
+    (   ( ExtUtils::MakeMaker->VERSION() gt '6.30' ) ? ( 'LICENSE' => 'bsd' )
+        : ()
+    ),
+
+);
+
+sub MY::postamble {
+    "
 .PHONY: readme
 readme: README
 README: Info.pm
-	pod2text -l Info.pm > README" }
+	pod2text -l Info.pm > README";
+}

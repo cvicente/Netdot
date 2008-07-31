@@ -1,7 +1,9 @@
 #!/usr/local/bin/perl -w
 # prereq.t - Test file for prerequesites for SNMP::Info
-# $Id: prereq.t,v 1.1 2003/03/06 21:47:37 maxbaker Exp $
+# $Id: prereq.t,v 1.2 2008/07/19 03:03:53 jeneric Exp $
 
+use strict;
+use warnings;
 use Test::More tests=> 3;
 
 # Check for SNMP Module
@@ -14,10 +16,11 @@ eval {
 if ($@){
     print STDERR <<'end_snmp';
 
-Net-SNMP not found.  Net-SNMP installs the perl modules
-SNMP and SNMP::Session.  As of version 4.2.1 and greater the Perl
-modules are no longer distributed on CPAN, as they are specific to different
-versions of SNMP. 
+Net-SNMP not found.  Net-SNMP installs the perl modules SNMP and
+SNMP::Session.
+
+Versions 4.2.1 to 5.3 the Perl modules are not distributed on CPAN, you must
+install from the distribution. 
 
 Install Net-SNMP from http://net-snmp.sourceforge.net and make sure you run
 configure with the --with-perl-modules switch!
@@ -26,7 +29,7 @@ Note to Redhat Users:  Redhat, in its infinite wisdom, does not install the
 Perl modules as part of their 8.0 RPMS.  Please uninstall them and install the
 newest version by hand.
 
-
+Versions 5.3.1 and higher are once again available from CPAN.
 
 end_snmp
     ok(0,'Net-SNMP not installed, or missing Perl modules.');
@@ -67,7 +70,17 @@ Perl module of Net-SNMP 5.0.1 is buggy. Please upgrade.
 
 
 end_501
+    }
+ 
+    if(( $ver_maj == 5 and $ver_min == 3 and $ver_rev == 1 ) or
+      ( $ver_maj == 5 and $ver_min == 2 and $ver_rev == 3 )) {
+        print STDERR << "end_bulkwalk";
 
+
+Perl module of Net-SNMP Versions 5.3.1 and 5.2.3 have issues with bulkwalk,
+turn off bulkwalk. Please upgrade.
+
+end_bulkwalk
     } 
 }
 

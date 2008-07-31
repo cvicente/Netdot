@@ -1,69 +1,69 @@
 # SNMP::Info::SONMP
-# Eric Miller
-# $Id: SONMP.pm,v 1.10 2007/11/26 04:24:51 jeneric Exp $
+# $Id: SONMP.pm,v 1.13 2008/07/20 03:27:07 jeneric Exp $
 #
-# Copyright (c) 2004 Eric Miller, Max Baker
+# Copyright (c) 2008 Eric Miller
+# All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without 
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::SONMP;
-$VERSION = '1.07';
 
 use strict;
-
 use Exporter;
 use SNMP::Info;
 
-@SNMP::Info::SONMP::ISA = qw/SNMP::Info Exporter/;
+@SNMP::Info::SONMP::ISA       = qw/SNMP::Info Exporter/;
 @SNMP::Info::SONMP::EXPORT_OK = qw//;
 
-use vars qw/$VERSION $DEBUG %FUNCS %GLOBALS %MIBS %MUNGE $INIT/;
+use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-%MIBS    = (
-            'SYNOPTICS-ROOT-MIB' => 'synoptics',
-            'S5-ETH-MULTISEG-TOPOLOGY-MIB' => 's5EnMsTop',
-            );
+$VERSION = '1.09';
+
+%MIBS = (
+    'SYNOPTICS-ROOT-MIB'           => 'synoptics',
+    'S5-ETH-MULTISEG-TOPOLOGY-MIB' => 's5EnMsTop',
+);
 
 %GLOBALS = (
-            'cdp_id'  => 's5EnMsTopIpAddr',
-            'cdp_run' => 's5EnMsTopStatus',
-            );
+    'cdp_id'  => 's5EnMsTopIpAddr',
+    'cdp_run' => 's5EnMsTopStatus',
+);
 
-%FUNCS  = (
-            # From S5-ETH-MULTISEG-TOPOLOGY-MIB::TopNmmTable
-            'sonmp_topo_slot'     => 's5EnMsTopNmmSlot',
-            'sonmp_topo_port'     => 's5EnMsTopNmmPort',
-            'sonmp_topo_ip'       => 's5EnMsTopNmmIpAddr',
-            'sonmp_topo_seg'      => 's5EnMsTopNmmSegId',
-            'sonmp_topo_mac'      => 's5EnMsTopNmmMacAddr',
-            'sonmp_topo_platform' => 's5EnMsTopNmmChassisType',
-            'sonmp_topo_localseg' => 's5EnMsTopNmmLocalSeg',
-          );
+%FUNCS = (
 
-%MUNGE = (
-         'sonmp_topo_mac'           => \&SNMP::Info::munge_mac
-         );
+    # From S5-ETH-MULTISEG-TOPOLOGY-MIB::TopNmmTable
+    'sonmp_topo_slot'     => 's5EnMsTopNmmSlot',
+    'sonmp_topo_port'     => 's5EnMsTopNmmPort',
+    'sonmp_topo_ip'       => 's5EnMsTopNmmIpAddr',
+    'sonmp_topo_seg'      => 's5EnMsTopNmmSegId',
+    'sonmp_topo_mac'      => 's5EnMsTopNmmMacAddr',
+    'sonmp_topo_platform' => 's5EnMsTopNmmChassisType',
+    'sonmp_topo_localseg' => 's5EnMsTopNmmLocalSeg',
+);
+
+%MUNGE = ( 'sonmp_topo_mac' => \&SNMP::Info::munge_mac );
 
 sub index_factor {
     return 32;
@@ -83,56 +83,59 @@ sub hasCDP {
 }
 
 sub c_if {
-    my $sonmp = shift;
+    my $sonmp   = shift;
     my $partial = shift;
 
     my $sonmp_topo_port = $sonmp->sonmp_topo_port($partial) || {};
     my $sonmp_topo_slot = $sonmp->sonmp_topo_slot($partial) || {};
-    my $index_factor = $sonmp->index_factor();
-    my $slot_offset = $sonmp->slot_offset();
-    my $port_offset = $sonmp->port_offset();
-    my $model = $sonmp->model();
+    my $index_factor    = $sonmp->index_factor();
+    my $slot_offset     = $sonmp->slot_offset();
+    my $port_offset     = $sonmp->port_offset();
+    my $model           = $sonmp->model();
 
     my %c_if;
-    foreach my $entry (keys %$sonmp_topo_port){
+    foreach my $entry ( keys %$sonmp_topo_port ) {
         my $port = $sonmp_topo_port->{$entry};
         next unless defined $port;
         next if $port == 0;
         my $slot = $sonmp_topo_slot->{$entry} || 0;
 
-        if ($model eq 'Baystack Hub') {
-        my $comidx = $slot;
-            if (! ($comidx % 5)) {
-               $slot = ($slot / 5);
-            } elsif ($comidx =~ /[16]$/) {
-               $slot = int($slot/5);
-               $port = 25;          
-            } elsif ($comidx =~ /[27]$/) {
-               $slot = int($slot/5);
-               $port = 26;          
+        if ( $model eq 'Baystack Hub' ) {
+            my $comidx = $slot;
+            if ( !( $comidx % 5 ) ) {
+                $slot = ( $slot / 5 );
+            }
+            elsif ( $comidx =~ /[16]$/ ) {
+                $slot = int( $slot / 5 );
+                $port = 25;
+            }
+            elsif ( $comidx =~ /[27]$/ ) {
+                $slot = int( $slot / 5 );
+                $port = 26;
             }
         }
 
-        my $index = (($slot-$slot_offset)*$index_factor) + ($port-$port_offset);
-        
+        my $index = ( ( $slot - $slot_offset ) * $index_factor )
+            + ( $port - $port_offset );
+
         $c_if{$entry} = $index;
     }
     return \%c_if;
 }
 
 sub c_ip {
-    my $sonmp = shift;
+    my $sonmp   = shift;
     my $partial = shift;
 
     my $sonmp_topo_port = $sonmp->sonmp_topo_port($partial) || {};
-    my $sonmp_topo_ip   = $sonmp->sonmp_topo_ip($partial) || {};
+    my $sonmp_topo_ip   = $sonmp->sonmp_topo_ip($partial)   || {};
 
     my %c_ip;
-    foreach my $entry (keys %$sonmp_topo_ip){
+    foreach my $entry ( keys %$sonmp_topo_ip ) {
         my $port = $sonmp_topo_port->{$entry};
         next unless defined $port;
         next if $port == 0;
-        
+
         my $ip = $sonmp_topo_ip->{$entry};
         $c_ip{$entry} = $ip;
     }
@@ -140,54 +143,57 @@ sub c_ip {
 }
 
 sub c_port {
-    my $sonmp = shift;
+    my $sonmp   = shift;
     my $partial = shift;
 
-    my $sonmp_topo_port = $sonmp->sonmp_topo_port($partial) || {};
-    my $sonmp_topo_seg = $sonmp->sonmp_topo_seg($partial) || {};
+    my $sonmp_topo_port     = $sonmp->sonmp_topo_port($partial)     || {};
+    my $sonmp_topo_seg      = $sonmp->sonmp_topo_seg($partial)      || {};
     my $sonmp_topo_platform = $sonmp->sonmp_topo_platform($partial) || {};
 
     my %c_port;
-    foreach my $entry (keys %$sonmp_topo_seg){
+    foreach my $entry ( keys %$sonmp_topo_seg ) {
         my $port = $sonmp_topo_port->{$entry};
         next unless defined $port;
         next if $port == 0;
 
-        my $seg  = $sonmp_topo_seg->{$entry};
+        my $seg      = $sonmp_topo_seg->{$entry};
         my $platform = $sonmp_topo_platform->{$entry};
+
         # AP-222x Series does not adhere to port numbering
-        if ($platform =~ /AccessPoint/i) {
+        if ( $platform =~ /AccessPoint/i ) {
             $c_port{$entry} = 'dp0';
         }
-        # BayHubs send the lower three bytes of the MAC not the slot/port        
-        elsif ($seg > 4000) {
+
+        # BayHubs send the lower three bytes of the MAC not the slot/port
+        elsif ( $seg > 4000 ) {
             $c_port{$entry} = 'unknown';
         }
         else {
+
             # Segment id is (256 * remote slot_num) + (remote_port)
             my $remote_port = $seg % 256;
-            my $remote_slot = int($seg / 256);
-    
-           $c_port{$entry} = "$remote_slot.$remote_port";
+            my $remote_slot = int( $seg / 256 );
+
+            $c_port{$entry} = "$remote_slot.$remote_port";
         }
     }
     return \%c_port;
 }
 
 sub c_platform {
-    my $sonmp = shift;
+    my $sonmp   = shift;
     my $partial = shift;
 
-    my $sonmp_topo_port = $sonmp->sonmp_topo_port($partial) || {};
+    my $sonmp_topo_port     = $sonmp->sonmp_topo_port($partial)     || {};
     my $sonmp_topo_platform = $sonmp->sonmp_topo_platform($partial) || {};
 
     my %c_platform;
-    foreach my $entry (keys %$sonmp_topo_platform){
+    foreach my $entry ( keys %$sonmp_topo_platform ) {
         my $port = $sonmp_topo_port->{$entry};
         next unless defined $port;
         next if $port == 0;
 
-        my $platform  = $sonmp_topo_platform->{$entry};
+        my $platform = $sonmp_topo_platform->{$entry};
 
         $c_platform{$entry} = $platform;
     }
@@ -198,16 +204,17 @@ sub mac {
     my $sonmp = shift;
 
     my $sonmp_topo_port = $sonmp->sonmp_topo_port();
-    my $sonmp_topo_mac = $sonmp->sonmp_topo_mac();
-    
-    foreach my $entry (keys %$sonmp_topo_port){
+    my $sonmp_topo_mac  = $sonmp->sonmp_topo_mac();
+
+    foreach my $entry ( keys %$sonmp_topo_port ) {
         my $port = $sonmp_topo_port->{$entry};
         next unless $port == 0;
         my $mac = $sonmp_topo_mac->{$entry};
         return $mac;
     }
+
     # Topology turned off, not supported.
-    return undef;
+    return;
 }
 
 1;
@@ -215,7 +222,8 @@ __END__
 
 =head1 NAME
 
-SNMP::Info::SONMP - SNMP Interface to SynOptics Network Management Protocol (SONMP)
+SNMP::Info::SONMP - SNMP Interface to SynOptics Network Management Protocol
+(SONMP)
 
 =head1 AUTHOR
 
@@ -257,11 +265,13 @@ interface to the SynOptics Network Management Protocol (SONMP) information
 through SNMP.
 
 SONMP is a Layer 2 protocol that supplies topology information of devices that
-also speak SONMP, mostly switches and hubs.  SONMP is implemented in SynOptics,
-Bay, and Nortel devices.  SONMP has been rebranded by Bay then Nortel and is
-know by several different names, most recently Nortel Discovery Protocol (NDP).
+also speak SONMP, mostly switches and hubs.  SONMP is implemented in
+SynOptics, Bay, and Nortel devices.  SONMP has been rebranded by Bay then
+Nortel and is know by several different names, most recently Nortel
+Discovery Protocol (NDP).
 
-Create or use a device subclass that inherits this class.  Do not use directly.
+Create or use a device subclass that inherits this class.  Do not use
+directly.
 
 Each device implements a subset of the global and cache entries. 
 Check the return value to see if that data is held by the device.
@@ -274,9 +284,9 @@ None.
 
 =over
 
-=item SYNOPTICS-ROOT-MIB
+=item F<SYNOPTICS-ROOT-MIB>
 
-=item S5-ETH-MULTISEG-TOPOLOGY-MIB
+=item F<S5-ETH-MULTISEG-TOPOLOGY-MIB>
 
 =back
 
@@ -307,13 +317,13 @@ Is SONMP is active in this device?
 
 Returns the IP that the device is sending out for its Nmm topology info.
 
-(B<s5EnMsTopIpAddr>)
+(C<s5EnMsTopIpAddr>)
 
 =item $sonmp->cdp_run()
 
 Returns true if SONMP is on for this device. 
 
-(B<s5EnMsTopStatus>)
+(C<s5EnMsTopStatus>)
 
 =item $sonmp->mac()
 
@@ -326,7 +336,7 @@ Returns MAC of the advertised IP address of the device.
 These are methods that return tables of information in the form of a reference
 to a hash.
 
-=head2 Layer2 Topology info (B<s5EnMsTopNmmTable>)
+=head2 Layer2 Topology info (C<s5EnMsTopNmmTable>)
 
 =over
 
@@ -334,29 +344,30 @@ to a hash.
 
 Returns reference to hash.  Key: Table entry, Value:slot number
 
-(B<s5EnMsTopNmmSlot>)
+(C<s5EnMsTopNmmSlot>)
 
 =item $sonmp->sonmp_topo_port()
 
-Returns reference to hash.  Key: Table entry, Value:Port Number (interface iid)
+Returns reference to hash.  Key: Table entry, Value:Port Number
+(interface iid)
 
-(B<s5EnMsTopNmmPort>)
+(C<s5EnMsTopNmmPort>)
 
 =item $sonmp->sonmp_topo_ip()
 
 Returns reference to hash.  Key: Table entry, Value:Remote IP address of entry
 
-(B<s5EnMsTopNmmIpAddr>)
+(C<s5EnMsTopNmmIpAddr>)
 
 =item $sonmp->sonmp_topo_seg()
 
 Returns reference to hash.  Key: Table entry, Value:Remote Segment ID
 
-(B<s5EnMsTopNmmSegId>)
+(C<s5EnMsTopNmmSegId>)
 
 =item $sonmp->sonmp_topo_mac()
 
-(B<s5EnMsTopNmmMacAddr>)
+(C<s5EnMsTopNmmMacAddr>)
 
 Returns reference to hash.  Key: Table entry, Value:Remote MAC address
 
@@ -364,18 +375,18 @@ Returns reference to hash.  Key: Table entry, Value:Remote MAC address
 
 Returns reference to hash.  Key: Table entry, Value:Remote Device Type
 
-(B<s5EnMsTopNmmChassisType>)
+(C<s5EnMsTopNmmChassisType>)
 
 =item $sonmp->sonmp_topo_localseg
 
-Returns reference to hash.  Key: Table entry, Value: Boolean, if bay_topo_seg()
-is local.
+Returns reference to hash.  Key: Table entry, Value: Boolean, if
+bay_topo_seg() is local.
 
-(B<s5EnMsTopNmmLocalSeg>)
+(C<s5EnMsTopNmmLocalSeg>)
 
 =back
 
-=head2 Psuedo CDP information
+=head2 Pseudo CDP information
 
 All entries with port=0 are local and ignored.
 
@@ -389,8 +400,8 @@ Returns reference to hash.  Key: IID, Value: Local port (interfaces)
 
 Returns reference to hash.  Key: IID, Value: Remote IP address
 
-If multiple entries exist with the same local port, c_if(), with different IPv4
-addresses, c_ip(), there is either a non-SONMP device in between two or
+If multiple entries exist with the same local port, c_if(), with different
+IPv4 addresses, c_ip(), there is either a non SONMP device in between two or
 more devices or multiple devices which are not directly connected.  
 
 Use the data from the Layer2 Topology Table below to dig deeper.

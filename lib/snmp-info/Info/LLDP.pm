@@ -1,8 +1,7 @@
 # SNMP::Info::LLDP
+# $Id: LLDP.pm,v 1.7 2008/07/20 03:27:07 jeneric Exp $
 #
-# Eric Miller
-#
-# Copyright (c) 2007 Eric Miller
+# Copyright (c) 2008 Eric Miller
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -10,88 +9,78 @@
 #
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::LLDP;
-$VERSION = '1.07';
-# $Id: LLDP.pm,v 1.3 2007/11/26 04:24:50 jeneric Exp $
 
 use strict;
-
 use Exporter;
 use SNMP::Info;
- 
-@SNMP::Info::LLDP::ISA = qw/SNMP::Info Exporter/;
+
+@SNMP::Info::LLDP::ISA       = qw/SNMP::Info Exporter/;
 @SNMP::Info::LLDP::EXPORT_OK = qw//;
 
-use vars qw/$VERSION $DEBUG %FUNCS %GLOBALS %MIBS %MUNGE $INIT/;
+use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-%MIBS    = (
-            'LLDP-MIB'          => 'lldpLocSysCapEnabled',
-            'LLDP-EXT-DOT1-MIB' => 'lldpXdot1MIB',
-            'LLDP-EXT-DOT3-MIB' => 'lldpXdot3MIB',            
-            );
+$VERSION = '1.09';
+
+%MIBS = (
+    'LLDP-MIB'          => 'lldpLocSysCapEnabled',
+    'LLDP-EXT-DOT1-MIB' => 'lldpXdot1MIB',
+    'LLDP-EXT-DOT3-MIB' => 'lldpXdot3MIB',
+);
 
 %GLOBALS = (
-            'lldp_sysname'   => 'lldpLocSysName',
-            'lldp_sysdesc'   => 'lldpLocSysDesc',
-            'lldp_sys_cap'   => 'lldpLocSysCapEnabled',
-           );
+    'lldp_sysname' => 'lldpLocSysName',
+    'lldp_sysdesc' => 'lldpLocSysDesc',
+    'lldp_sys_cap' => 'lldpLocSysCapEnabled',
+);
 
-%FUNCS  = (
-           # LLDP-MIB::lldpLocManAddrTable
-           'lldp_lman_addr'     => 'lldpLocManAddrIfId',
-           # LLDP-MIB::lldpRemTable
-           'lldp_rem_id_type'   => 'lldpRemChassisIdSubtype',
-           'lldp_rem_id'        => 'lldpRemChassisId',
-           'lldp_rem_pid_type'  => 'lldpRemPortIdSubtype',
-           'lldp_rem_pid'       => 'lldpRemPortId',
-           'lldp_rem_desc'      => 'lldpRemPortDesc',
-           'lldp_rem_sysname'   => 'lldpRemSysName',
-           'lldp_rem_sysdesc'   => 'lldpRemSysDesc',
-           'lldp_rem_sys_cap'   => 'lldpRemSysCapEnabled',
-           # LLDP-MIB::lldpRemManAddrTable
-           'lldp_rman_addr'     => 'lldpRemManAddrIfSubtype',
-          );
+%FUNCS = (
 
+    # LLDP-MIB::lldpLocManAddrTable
+    'lldp_lman_addr' => 'lldpLocManAddrIfId',
+
+    # LLDP-MIB::lldpRemTable
+    'lldp_rem_id_type'  => 'lldpRemChassisIdSubtype',
+    'lldp_rem_id'       => 'lldpRemChassisId',
+    'lldp_rem_pid_type' => 'lldpRemPortIdSubtype',
+    'lldp_rem_pid'      => 'lldpRemPortId',
+    'lldp_rem_desc'     => 'lldpRemPortDesc',
+    'lldp_rem_sysname'  => 'lldpRemSysName',
+    'lldp_rem_sysdesc'  => 'lldpRemSysDesc',
+    'lldp_rem_sys_cap'  => 'lldpRemSysCapEnabled',
+
+    # LLDP-MIB::lldpRemManAddrTable
+    'lldp_rman_addr' => 'lldpRemManAddrIfSubtype',
+);
 
 %MUNGE = (
-          'lldp_sysdesc'        => \&munge_null,
-          'lldp_sysname'        => \&munge_null,
-          'lldp_rem_sysname'    => \&munge_null,
-          'lldp_rem_sysdesc'    => \&munge_null,
-          'lldp_rem_port_desc'  => \&munge_null,
-          'lldp_sys_cap'        => \&munge_caps,
-          'lldp_rem_sys_cap'    => \&munge_caps,
-         );
-
-sub munge_null {
-    my $text = shift || return;
-    
-    $text =~ s/\0//g;
-    return $text;
-}
-
-sub munge_caps {
-    my $caps = shift;
-    return undef unless defined $caps;
-
-    my $bits = unpack("b*",$caps);
-    return $bits;
-}
+    'lldp_sysdesc'       => \&SNMP::Info::munge_null,
+    'lldp_sysname'       => \&SNMP::Info::munge_null,
+    'lldp_rem_sysname'   => \&SNMP::Info::munge_null,
+    'lldp_rem_sysdesc'   => \&SNMP::Info::munge_null,
+    'lldp_rem_port_desc' => \&SNMP::Info::munge_null,
+    'lldp_sys_cap'       => \&SNMP::Info::munge_bits,
+    'lldp_rem_sys_cap'   => \&SNMP::Info::munge_bits,
+);
 
 sub hasLLDP {
     my $lldp = shift;
@@ -101,7 +90,7 @@ sub hasLLDP {
     my $lldp_cap = $lldp->lldp_sys_cap();
 
     return 1 if defined $lldp_cap;
-    return undef;
+    return;
 }
 
 sub lldp_if {
@@ -109,25 +98,25 @@ sub lldp_if {
     my $partial = shift;
 
     my $addr = $lldp->lldp_rem_pid($partial) || {};
-    
+
     my %lldp_if;
-    foreach my $key (keys %$addr) {
-        my @aOID = split ('\.',$key);
-	my $port = $aOID[1];
-	$lldp_if{$key} = $port;
+    foreach my $key ( keys %$addr ) {
+        my @aOID = split( '\.', $key );
+        my $port = $aOID[1];
+        $lldp_if{$key} = $port;
     }
     return \%lldp_if;
 }
 
 sub lldp_ip {
-    my $lldp = shift;
+    my $lldp    = shift;
     my $partial = shift;
 
     my $rman_addr = $lldp->lldp_rman_addr($partial) || {};
-    
-    my %lldp_ip;    
-    foreach my $key (keys %$rman_addr) {
-        my($index, $proto, $addr) = _lldp_addr_index($key);
+
+    my %lldp_ip;
+    foreach my $key ( keys %$rman_addr ) {
+        my ( $index, $proto, $addr ) = _lldp_addr_index($key);
         next unless defined $index;
         next unless $proto == 1;
         $lldp_ip{$index} = $addr;
@@ -136,14 +125,14 @@ sub lldp_ip {
 }
 
 sub lldp_addr {
-    my $lldp = shift;
+    my $lldp    = shift;
     my $partial = shift;
 
     my $rman_addr = $lldp->lldp_rman_addr($partial) || {};
-    
-    my %lldp_ip;    
-    foreach my $key (keys %$rman_addr) {
-        my($index, $proto, $addr) = _lldp_addr_index($key);
+
+    my %lldp_ip;
+    foreach my $key ( keys %$rman_addr ) {
+        my ( $index, $proto, $addr ) = _lldp_addr_index($key);
         next unless defined $index;
         $lldp_ip{$index} = $addr;
     }
@@ -151,29 +140,31 @@ sub lldp_addr {
 }
 
 sub lldp_port {
-    my $lldp = shift;
+    my $lldp    = shift;
     my $partial = shift;
 
-    my $pdesc  = $lldp->lldp_rem_desc($partial) || {};
-    my $pid    = $lldp->lldp_rem_pid($partial) || {};
-    my $ptype  = $lldp->lldp_rem_pid_type($partial) || {};
+    my $pdesc = $lldp->lldp_rem_desc($partial)     || {};
+    my $pid   = $lldp->lldp_rem_pid($partial)      || {};
+    my $ptype = $lldp->lldp_rem_pid_type($partial) || {};
 
-    my %lldp_port;    
-    foreach my $key (sort keys %$pid) {
+    my %lldp_port;
+    foreach my $key ( sort keys %$pid ) {
         my $port = $pdesc->{$key};
-	unless ($port) {
+        unless ($port) {
             $port = $pid->{$key};
             next unless $port;
-	    my $type = $ptype->{$key};
+            my $type = $ptype->{$key};
             next unless $type;
-            # May need to format other types in the future, i.e. Network address
-            if ($type =~ /mac/) {
-                $port = join(':',map { sprintf "%02x",$_ } unpack('C*',$port));
+
+          # May need to format other types in the future, i.e. Network address
+            if ( $type =~ /mac/ ) {
+                $port = join( ':',
+                    map { sprintf "%02x", $_ } unpack( 'C*', $port ) );
             }
         }
 
         # Nortel lldpRemPortDesc doesn't match ifDescr, but we can still
-        # figure out slot.port based upon lldpRemPortDesc 
+        # figure out slot.port based upon lldpRemPortDesc
         if ( $port =~ /^(Unit\s+(\d+)\s+)?Port\s+(\d+)$/ ) {
             $port = defined $1 ? "$2.$3" : "$3";
         }
@@ -184,22 +175,23 @@ sub lldp_port {
 }
 
 sub lldp_id {
-    my $lldp = shift;
+    my $lldp    = shift;
     my $partial = shift;
-    
-    my $ch_type = $lldp->lldp_rem_id_type($partial) || {};
-    my $ch = $lldp->lldp_rem_id($partial) || {};
 
-    my %lldp_id;    
-    foreach my $key (keys %$ch) {
-	my $id = $ch->{$key};
+    my $ch_type = $lldp->lldp_rem_id_type($partial) || {};
+    my $ch      = $lldp->lldp_rem_id($partial)      || {};
+
+    my %lldp_id;
+    foreach my $key ( keys %$ch ) {
+        my $id = $ch->{$key};
         next unless $id;
-	my $type = $ch_type->{$key};
+        my $type = $ch_type->{$key};
         next unless $type;
+
         # May need to format other types in the future
-        if ($type =~ /mac/) {
-            $id = join(':',map { sprintf "%02x",$_ } unpack('C*',$id));
-	}elsif ($type eq 'networkAddress'){
+        if ( $type =~ /mac/ ) {
+            $id = join( ':', map { sprintf "%02x", $_ } unpack( 'C*', $id ) );
+        }elsif ($type eq 'networkAddress'){
  	    if ( length(unpack('H*', $id)) == 10 ){
  		# IP address (first octet is sign, I guess)
  		my @octets = (map { sprintf "%02x",$_ } unpack('C*', $id))[1..4];
@@ -226,28 +218,32 @@ sub lldp_id {
 #            return $addr if (defined $addr and $lldp->snmp_connect_ip($addr));
 #        }
 #    }
-#    return undef;
+#    return;
 #}
 
 # Break up the lldpRemManAddrTable INDEX into common index, protocol,
 # and address.
 sub _lldp_addr_index {
-    my $idx = shift;
-    my @oids   = split(/\./, $idx);
-    my $index  = join('.', splice(@oids, 0, 3));
+    my $idx    = shift;
+    my @oids   = split( /\./, $idx );
+    my $index  = join( '.', splice( @oids, 0, 3 ) );
     my $proto  = shift(@oids);
     my $length = shift(@oids);
+
     # IPv4
-    if ($proto == 1) {
-        return ($index, $proto, join('.',@oids));
+    if ( $proto == 1 ) {
+        return ( $index, $proto, join( '.', @oids ) );
     }
+
     # MAC
-    elsif ($proto == 6) {
-        return ($index, $proto, join(':',map { sprintf "%02x",$_ } @oids));
+    elsif ( $proto == 6 ) {
+        return ( $index, $proto,
+            join( ':', map { sprintf "%02x", $_ } @oids ) );
     }
+
     # TODO - Need to handle other protocols, i.e. IPv6
     else {
-        return undef;
+        return;
     }
 }
 
@@ -300,7 +296,8 @@ LLDP is a Layer 2 protocol that allows a network device to advertise its
 identity and capabilities on the local network providing topology information.
 The protocol is defined in the IEEE standard 802.1AB.
 
-Create or use a device subclass that inherits this class.  Do not use directly.
+Create or use a device subclass that inherits this class.  Do not use
+directly.
 
 =head2 Inherited Classes
 
@@ -310,11 +307,11 @@ None.
 
 =over
 
-=item LLDP-MIB
+=item F<LLDP-MIB>
 
-=item LLDP-EXT-DOT1-MIB
+=item F<LLDP-EXT-DOT1-MIB>
 
-=item LLDP-EXT-DOT3-MIB  
+=item F<LLDP-EXT-DOT3-MIB>
 
 =back
 
@@ -328,28 +325,28 @@ These are methods that return scalar values from SNMP
 
 Is LLDP is active in this device?  
 
-Note:  LLDP may be active, but nothing in B<lldpRemoteSystemsData> Tables so
+Note:  LLDP may be active, but nothing in C<lldpRemoteSystemsData> Tables so
 the device would not return any useful topology information.
 
 =item $lldp->lldp_sysname()
 
 The string value used to identify the system name of the local system.  If the
-local agent supports IETF RFC 3418, B<lldpLocSysName> object should have the
-same value of B<sysName> object.
+local agent supports IETF RFC 3418, C<lldpLocSysName> object should have the
+same value of C<sysName> object.
 
 Nulls are removed before the value is returned. 
 
-(B<lldpLocSysName>)
+(C<lldpLocSysName>)
 
 =item $lldp->lldp_sysdesc()
 
 The string value used to identify the system description of the local system.
-If the local agent supports IETF RFC 3418, B<lldpLocSysDesc> object should have
-the same value of B<sysDesc> object.
+If the local agent supports IETF RFC 3418, C<lldpLocSysDesc> object should
+have the same value of C<sysDesc> object.
  
 Nulls are removed before the value is returned.
 
-(B<lldpLocSysDesc>)
+(C<lldpLocSysDesc>)
 
 =item  $lldp->lldp_sys_cap() 
 
@@ -381,7 +378,7 @@ capability and nothing else."
 
 =back
 
-(B<lldpLocSysCapEnabled>)
+(C<lldpLocSysCapEnabled>)
 
 =back
 
@@ -397,7 +394,7 @@ to a hash.
 Returns the string value used to identify the chassis component	associated
 with the remote system.
 
-(B<lldpRemChassisId>)
+(C<lldpRemChassisId>)
 
 =item $lldp->lldp_if()
 
@@ -405,13 +402,13 @@ Returns the mapping to the SNMP Interface Table.
 
 =item  $lldp->lldp_ip()
 
-Returns remote IPv4 address.  Returns undef for all other address types, use
+Returns remote IPv4 address.  Returns for all other address types, use
 lldp_addr if you want any return address type.
 
 =item  $lldp->lldp_addr()
 
-Returns remote address.  Type may be any IANA Address Family Number.  Currently
-only returns IPv4 or MAC addresses.
+Returns remote address.  Type may be any IANA Address Family Number.
+Currently only returns IPv4 or MAC addresses.
 
 =item $lldp->lldp_port()
 
@@ -419,7 +416,7 @@ Returns remote port ID
 
 =back
 
-=head2 LLDP Remote Table (B<lldpRemTable>)
+=head2 LLDP Remote Table (C<lldpRemTable>)
 
 =over
 
@@ -428,28 +425,28 @@ Returns remote port ID
 Returns the type of encoding used to identify the chassis associated with
 the remote system.
 
-(B<lldpRemChassisIdSubtype>)
+(C<lldpRemChassisIdSubtype>)
 
 =item $lldp->lldp_rem_id()
 
 Returns the string value used to identify the chassis component	associated
 with the remote system.
 
-(B<lldpRemChassisId>)
+(C<lldpRemChassisId>)
 
 =item $lldp->lldp_rem_pid_type()
 
 Returns the type of port identifier encoding used in the associated
-B<lldpRemPortId> object.
+C<lldpRemPortId> object.
 
-(B<lldpRemPortIdSubtype>)
+(C<lldpRemPortIdSubtype>)
 
 =item $lldp->lldp_rem_pid()
 
 Returns the string value used to identify the port component associated with
 the remote system.
 
-(B<lldpRemPortId>)
+(C<lldpRemPortId>)
 
 =item $lldp->lldp_rem_desc()
 
@@ -458,15 +455,16 @@ associated with the remote system.
 
 Nulls are removed before the value is returned. 
 
-(B<lldpRemPortDesc>)
+(C<lldpRemPortDesc>)
 
 =item $lldp->lldp_rem_sysname()
 
-Returns the string value used to identify the system name of the remote system.
+Returns the string value used to identify the system name of the remote
+system.
 
 Nulls are removed before the value is returned. 
 
-(B<lldpRemSysName>)
+(C<lldpRemSysName>)
 
 =item $lldp->lldp_rem_sysdesc()
 
@@ -475,7 +473,7 @@ remote system.
 
 Nulls are removed before the value is returned. 
 
-(B<lldpRemSysDesc>)
+(C<lldpRemSysDesc>)
 
 =item  $lldp->lldp_rem_sys_cap() 
 
@@ -507,7 +505,7 @@ capability and nothing else."
 
 =back
 
-(B<lldpRemSysCapEnabled>)
+(C<lldpRemSysCapEnabled>)
 
 =back
 

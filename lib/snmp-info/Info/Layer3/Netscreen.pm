@@ -1,65 +1,62 @@
 # SNMP::Info::Layer3::Netscreen
-# Kent Hamilton
-# $Id: Netscreen.pm,v 1.4 2007/11/26 04:24:52 jeneric Exp $
+# $Id: Netscreen.pm,v 1.7 2008/07/20 03:27:18 jeneric Exp $
 #
-# Redistribution and use in source and binary forms, with or without 
+# Copyright (c) 2008 Eric Miller
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Netscreen;
-$VERSION = '1.07';
-use strict;
 
+use strict;
 use Exporter;
 use SNMP::Info::Layer3;
 
-@SNMP::Info::Layer3::Netscreen::ISA = qw/SNMP::Info::Layer3 Exporter/;
+@SNMP::Info::Layer3::Netscreen::ISA       = qw/SNMP::Info::Layer3 Exporter/;
 @SNMP::Info::Layer3::Netscreen::EXPORT_OK = qw//;
 
-use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE $AUTOLOAD $INIT $DEBUG/;
- 
-%MIBS    = ( 
-	     %SNMP::Info::Layer3::MIBS,
-	     'NETSCREEN-SMI'             => 'netscreenSetting',
-             'NETSCREEN-PRODUCTS-MIB'    => 'netscreenGeneric',
-	     'NETSCREEN-INTERFACE-MIB'   => 'nsIfIndex',
-             'NETSCREEN-SET-GEN-MIB'     => 'nsSetGenSwVer',
-           );
+use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-%GLOBALS = (
-             %SNMP::Info::Layer3::GLOBALS,
-	     'os_version'   =>  'nsSetGenSwVer',
-           );
+$VERSION = '1.09';
 
-%FUNCS   = (
-             %SNMP::Info::Layer3::FUNCS,
-           );
+%MIBS = (
+    %SNMP::Info::Layer3::MIBS,
+    'NETSCREEN-SMI'           => 'netscreenSetting',
+    'NETSCREEN-PRODUCTS-MIB'  => 'netscreenGeneric',
+    'NETSCREEN-INTERFACE-MIB' => 'nsIfIndex',
+    'NETSCREEN-SET-GEN-MIB'   => 'nsSetGenSwVer',
+);
 
-%MUNGE   = (
-             %SNMP::Info::Layer3::MUNGE,
-           );
+%GLOBALS = ( %SNMP::Info::Layer3::GLOBALS, 'os_version' => 'nsSetGenSwVer', );
+
+%FUNCS = ( %SNMP::Info::Layer3::FUNCS, );
+
+%MUNGE = ( %SNMP::Info::Layer3::MUNGE, );
 
 sub layers {
-	return '01001100';
+    return '01001100';
 }
 
 sub vendor {
@@ -74,10 +71,10 @@ sub os_ver {
     my $netscreen = shift;
 
     my $descr = $netscreen->description();
-    if ( $descr =~ m/version (\d\S*) \(SN: /) {
-      return $1;
+    if ( $descr =~ m/version (\d\S*) \(SN: / ) {
+        return $1;
     }
-    return undef;
+    return;
 }
 
 sub serial {
@@ -87,12 +84,12 @@ sub serial {
 
     my $serial = $e_serial->{1} || undef;
 
-    return $1 if (defined $serial and $serial =~ /(\d+)/);
+    return $1 if ( defined $serial and $serial =~ /(\d+)/ );
     my $descr = $netscreen->description();
-    if ( $descr =~ m/version .*\(SN: (\d\S*),/) {
+    if ( $descr =~ m/version .*\(SN: (\d\S*),/ ) {
         return $1;
     }
-    return undef;
+    return;
 }
 
 1;
@@ -114,7 +111,6 @@ Kent Hamilton
     my $netscreen = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -145,13 +141,13 @@ my $netscreen = new SNMP::Info::Layer3::Netscreen(...);
 
 =over
 
-=item NETSCREEN-SMI
+=item F<NETSCREEN-SMI>
 
-=item NETSCREEN-PRODUCTS-MIB
+=item F<NETSCREEN-PRODUCTS-MIB>
 
-=item NETSCREEN-INTERFACE-MIB
+=item F<NETSCREEN-INTERFACE-MIB>
 
-=item NETSCREEN-SET-GEN-MIB
+=item F<NETSCREEN-SET-GEN-MIB>
 
 =item Inherited Classes
 
@@ -171,7 +167,7 @@ Returns 'netscreen'
 
 =item $netscreen->os()
 
-Returns 'screenos'
+Returns C<'screenos'>
 
 =item $netscreen->os_ver()
 

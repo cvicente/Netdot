@@ -1,36 +1,47 @@
 SNMP::Info - Friendly OO-style interface to Network devices using SNMP.
-ChangeLog $Id: ChangeLog,v 1.75 2008/04/21 20:57:30 jeneric Exp $
+ChangeLog $Id: ChangeLog,v 1.77 2008/07/23 02:14:25 jeneric Exp $
 
-version 1.09
-    +  Added support for HP ProCurve Foundry OEM switches, such as the 9300
-       series, in new class L3::HP9300 (contributions from Douglas McKeown and
-       Ivan Auger)
-    +  Added support for CISCO-PAE-MIB in CiscoPortSecurity (Kesy)
-    +  Support for D-Link devices through L3::Dell
-    +  Support for IBM BladeCenter 4-Port GB Ethernet Switch Module through
-       L3::Dell (Alex Kramarov)
-    +  Support for newer Nortel Alteon switches and Nortel BladeCenter Switch
-       Modules in L3::AlteonAD
-    +  Updates to fan, power supply, and serial number methods in
-       L2::HP (Jeroen van Ingen)
-    +  Use Cisco Client Association MIBs for Aironet client reporting
-       via fw_mac
-    +  Support VLANs on Aironet
-    +  Get the proper radio MAC address from aironet in MBSS mode
-    +  Additional wireless statistics from Aironet
-    +  Add support to specify MIB to resolve leaf names conflicts in
-       %GLOBALS and %FUNCS.
+version 1.09  (07/22/08) - Beta/developer release
+    + Added support for HP ProCurve Foundry OEM switches, such as the 9300
+      series, in new class L3::HP9300 (contributions from Douglas McKeown and
+      Ivan Auger)
+    + Added support for CISCO-PAE-MIB in CiscoPortSecurity (Kesy)
+    + Support for D-Link devices through L3::Dell
+    + Support for Linksys SRW2048 through L3::Dell
+    + Support for IBM BladeCenter 4-Port GB Ethernet Switch Module through
+      L3::Dell (Alex Kramarov)
+    + Support for newer Nortel Alteon switches and Nortel BladeCenter Switch
+      Modules in L3::AlteonAD
+    + Support for Cisco 1250 series through L2::Aironet
+    + Updates to fan, power supply, and serial number methods in
+      L2::HP (Jeroen van Ingen)
+    + Use Cisco Client Association MIBs for Aironet client reporting
+      via fw_mac
+    + Support VLANs on Aironet
+    + Get the proper radio MAC address from aironet in MBSS mode
+    + Additional wireless statistics from Aironet
+    + Add support to specify MIB to resolve leaf names conflicts in
+      %GLOBALS and %FUNCS.
     + Added munge_port_list() and modify_port_list() methods to assist in
       working with PortList objects. 
     + Added set_multi() method to enable a SNMP set command on several new
       values in one request.  Required for complex set operations
       on some agents.
+    + Infrastructure for SNMPv3 support:
+        + Save the SecName passed into the constructor
+        + Create an update() function, which replaces the underlying
+          SNMP session using different parameters.
+        + Return the SecName instead of community from snmp_comm() when using
+          SNMPv3.
 
-    *  L2::HP now isa Layer3 instead of Layer2 to support arpnip
-       (Dudley Freeman)
-    *  Silence warnings from Cisco devices which don't return values for
-       extended VLAN range (1024-4096)
-    *  Documentation corrections and updates
+    * L2::HP now isa Layer3 instead of Layer2 to support arpnip
+      (Dudley Freeman)
+    * Silence warnings from Cisco devices which don't return values for
+      extended VLAN range (1024-4096)
+    * Documentation coverage, spelling, and syntax updates
+    * set_i_pvid(), set_i_vlan(), set_add_i_vlan_tagged(),
+      set_remove_i_vlan_tagged() removed from Bridge and HP classes due to
+      incompatibility across devices.
 
 version 1.07 (11/26/07) - Beta/developer release
 

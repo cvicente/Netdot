@@ -1,128 +1,136 @@
 # SNMP::Info::NortelStack
-# Eric Miller
-# $Id: NortelStack.pm,v 1.12 2007/11/26 04:24:51 jeneric Exp $
+# $Id: NortelStack.pm,v 1.18 2008/07/20 03:27:07 jeneric Exp $
 #
-# Copyright (c) 2004 Eric Miller, Max Baker
-# 
-# Redistribution and use in source and binary forms, with or without 
+# Copyright (c) 2008 Eric Miller
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::NortelStack;
-$VERSION = '1.07'; 
 
 use strict;
-
 use Exporter;
 use SNMP::Info;
 
-@SNMP::Info::NortelStack::ISA = qw/SNMP::Info Exporter/;
+@SNMP::Info::NortelStack::ISA       = qw/SNMP::Info Exporter/;
 @SNMP::Info::NortelStack::EXPORT_OK = qw//;
 
-use vars qw/$VERSION $DEBUG %FUNCS %GLOBALS %MIBS %MUNGE $INIT/;
+use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-%MIBS    = (
-            # S5-ROOT-MIB and S5-TCS-MIB required by the MIBs below
-            'S5-AGENT-MIB'   => 's5AgMyGrpIndx',
-            'S5-CHASSIS-MIB' => 's5ChasType',
-            'S5-REG-MIB'     => 's5ChasTypeVal',
-            );
+$VERSION = '1.09';
+
+%MIBS = (
+
+    # S5-ROOT-MIB and S5-TCS-MIB required by the MIBs below
+    'S5-AGENT-MIB'   => 's5AgMyGrpIndx',
+    'S5-CHASSIS-MIB' => 's5ChasType',
+    'S5-REG-MIB'     => 's5ChasTypeVal',
+);
 
 %GLOBALS = (
-            # From S5-AGENT-MIB
-            'ns_ag_ver'    => 's5AgInfoVer',
-            'ns_op_mode'   => 's5AgSysCurrentOperationalMode',
-            'ns_auto_pvid' => 's5AgSysAutoPvid',
-            'tftp_host'    => 's5AgSysTftpServerAddress',
-            'tftp_file'    => 's5AgSysBinaryConfigFilename',
-            'tftp_action'  => 's5AgInfoFileAction',
-            'tftp_result'  => 's5AgInfoFileStatus',
-            'vlan'         => 's5AgSysManagementVlanId',
-            # From S5-CHASSIS-MIB
-            'ns_serial'    => 's5ChasSerNum',
-            'ns_ch_type'   => 's5ChasType',
-            'ns_cfg_chg'   => 's5ChasGblConfChngs',
-            'ns_cfg_time'  => 's5ChasGblConfLstChng',
-            );
 
-%FUNCS  = (
-            # From S5-AGENT-MIB::s5AgMyIfTable
-            'i_cfg_file'       => 's5AgMyIfCfgFname',
-            'i_cfg_host'       => 's5AgMyIfLdSvrAddr',
-            # From S5-CHASSIS-MIB::s5ChasGrpTable
-            'ns_grp_type'      => 's5ChasGrpType',
-            # From S5-CHASSIS-MIB::s5ChasComTable
-            'ns_com_grp_idx'   => 's5ChasComGrpIndx',
-            'ns_com_idx'       => 's5ChasComIndx',
-            'ns_com_sub_idx'   => 's5ChasComSubIndx',
-            'ns_com_type'      => 's5ChasComType',
-            'ns_com_descr'     => 's5ChasComDescr',
-            'ns_com_ver'       => 's5ChasComVer',
-            'ns_com_serial'    => 's5ChasComSerNum',
-            # From S5-CHASSIS-MIB::s5ChasStoreTable
-            'ns_store_grp_idx' => 's5ChasStoreGrpIndx',
-            'ns_store_com_idx' => 's5ChasStoreComIndx',
-            'ns_store_sub_idx' => 's5ChasStoreSubIndx',
-            'ns_store_idx'     => 's5ChasStoreIndx',
-            'ns_store_type'    => 's5ChasStoreType',
-            'ns_store_size'    => 's5ChasStoreCurSize',
-            'ns_store_ver'     => 's5ChasStoreCntntVer',
-          );
+    # From S5-AGENT-MIB
+    'ns_ag_ver'    => 's5AgInfoVer',
+    'ns_op_mode'   => 's5AgSysCurrentOperationalMode',
+    'ns_auto_pvid' => 's5AgSysAutoPvid',
+    'tftp_host'    => 's5AgSysTftpServerAddress',
+    'tftp_file'    => 's5AgSysBinaryConfigFilename',
+    'tftp_action'  => 's5AgInfoFileAction',
+    'tftp_result'  => 's5AgInfoFileStatus',
+    'vlan'         => 's5AgSysManagementVlanId',
+
+    # From S5-CHASSIS-MIB
+    'ns_serial'   => 's5ChasSerNum',
+    'ns_ch_type'  => 's5ChasType',
+    'ns_cfg_chg'  => 's5ChasGblConfChngs',
+    'ns_cfg_time' => 's5ChasGblConfLstChng',
+);
+
+%FUNCS = (
+
+    # From S5-AGENT-MIB::s5AgMyIfTable
+    'i_cfg_file' => 's5AgMyIfCfgFname',
+    'i_cfg_host' => 's5AgMyIfLdSvrAddr',
+
+    # From S5-CHASSIS-MIB::s5ChasGrpTable
+    'ns_grp_type' => 's5ChasGrpType',
+
+    # From S5-CHASSIS-MIB::s5ChasComTable
+    'ns_com_grp_idx' => 's5ChasComGrpIndx',
+    'ns_com_idx'     => 's5ChasComIndx',
+    'ns_com_sub_idx' => 's5ChasComSubIndx',
+    'ns_com_type'    => 's5ChasComType',
+    'ns_com_descr'   => 's5ChasComDescr',
+    'ns_com_ver'     => 's5ChasComVer',
+    'ns_com_serial'  => 's5ChasComSerNum',
+
+    # From S5-CHASSIS-MIB::s5ChasStoreTable
+    'ns_store_grp_idx' => 's5ChasStoreGrpIndx',
+    'ns_store_com_idx' => 's5ChasStoreComIndx',
+    'ns_store_sub_idx' => 's5ChasStoreSubIndx',
+    'ns_store_idx'     => 's5ChasStoreIndx',
+    'ns_store_type'    => 's5ChasStoreType',
+    'ns_store_size'    => 's5ChasStoreCurSize',
+    'ns_store_ver'     => 's5ChasStoreCntntVer',
+);
 
 %MUNGE = (
-            'ns_ch_type'       => \&munge_ns_com_type,
-            'ns_grp_type'      => \&munge_ns_grp_type,
-            'ns_com_type'      => \&munge_ns_com_type,
-            'ns_store_type'    => \&munge_ns_store_type,
-         );
+    'ns_ch_type'    => \&SNMP::Info::munge_e_type,
+    'ns_grp_type'   => \&munge_ns_grp_type,
+    'ns_com_type'   => \&SNMP::Info::munge_e_type,
+    'ns_store_type' => \&SNMP::Info::munge_e_type,
+);
 
 sub os_ver {
     my $stack = shift;
 
     my $ver = $stack->ns_ag_ver();
-    return undef unless defined $ver;
+    return unless defined $ver;
 
-    if ($ver =~ m/(\d+\.\d+\.\d+\.\d+)/){
+    if ( $ver =~ m/(\d+\.\d+\.\d+\.\d+)/ ) {
         return $1;
-    }      
-    if ($ver =~ m/V(\d+\.\d+\.\d+)/i){
+    }
+    if ( $ver =~ m/V(\d+\.\d+\.\d+)/i ) {
         return $1;
-    }  
-   return undef;
+    }
+    return;
 }
 
 sub os_bin {
     my $stack = shift;
 
     my $ver = $stack->ns_ag_ver();
-    return undef unless defined $ver;
+    return unless defined $ver;
 
-    if ($ver =~ m/(\d+\.\d+\.\d+\.\d+)/i){
-        return $1;
-    }     
-    if ($ver =~ m/V(\d+\.\d+.\d+)/i){
+    if ( $ver =~ m/(\d+\.\d+\.\d+\.\d+)/i ) {
         return $1;
     }
-   return undef;
+    if ( $ver =~ m/V(\d+\.\d+.\d+)/i ) {
+        return $1;
+    }
+    return;
 }
 
 # Need to override here since overridden in Layer2 and Layer3 classes
@@ -131,33 +139,33 @@ sub serial {
 
     my $ver = $stack->ns_serial();
     return $ver unless !defined $ver;
-    
-    return undef;
+
+    return;
 }
 
-# Psuedo ENTITY-MIB methods for older switches with don't support ENTITY-MIB
+# Pseudo ENTITY-MIB methods for older switches with don't support ENTITY-MIB
 
 # This class supports both stackable and chassis based switches, identify if
-# we have a stackable so that we return appropriate entPhysicalClass 
-sub ns_e_is_virtual {
-    my $stack   = shift;
+# we have a stackable so that we return appropriate entPhysicalClass
+sub _ns_e_is_virtual {
+    my $stack = shift;
 
-    # We really only need one value, but we want this cached since most methods
-    # call it at least via ns_e_index() 
+    # We really only need one value, but we want this cached since most
+    # methods call it at least via ns_e_index()
     my $v_test = $stack->s5ChasComRelPos() || {};
     return $v_test->{'8.1.0'};
 }
 
 # Identify is the stackable is actually a stack vs. single switch
-sub ns_e_is_stack {
-    my $stack   = shift;
+sub _ns_e_is_stack {
+    my $stack = shift;
 
     my $s_test = $stack->ns_e_class() || {};
-    
-    foreach my $iid (keys %$s_test){
+
+    foreach my $iid ( keys %$s_test ) {
         my $class = $s_test->{$iid};
         next unless defined $class;
-        return 1 if ($class eq 'stack');
+        return 1 if ( $class eq 'stack' );
     }
     return 0;
 }
@@ -167,43 +175,45 @@ sub ns_e_index {
     my $partial = shift;
 
     my $ns_e_idx = $stack->ns_com_grp_idx($partial) || {};
-    my $is_virtual = $stack->ns_e_is_virtual();
+    my $is_virtual = $stack->_ns_e_is_virtual();
 
     my %ns_e_index;
-    foreach my $iid (keys %$ns_e_idx){
+    foreach my $iid ( keys %$ns_e_idx ) {
+
         # Skip backplane, power, sensor, fan, clock - these aren't in the
         # newer devices ENTITY-MIB we're emulating
-        next if ($iid =~ /^[24567]/);
-        next if (($is_virtual) and ($iid =~ /^8/ or $iid eq '1.0.0'));
+        next if ( $iid =~ /^[24567]/ );
+        next if ( ($is_virtual) and ( $iid =~ /^8/ or $iid eq '1.0.0' ) );
+
         # Format into consistent integer format so that numeric sorting works
-        my $index = join('',map { sprintf "%02d",$_ } split /\./, $iid);
+        my $index = join( '', map { sprintf "%02d", $_ } split /\./, $iid );
         $ns_e_index{$iid} = $index;
     }
     return \%ns_e_index;
 }
 
 sub ns_e_class {
-    my $stack = shift;
+    my $stack   = shift;
     my $partial = shift;
 
     my $ns_e_idx   = $stack->ns_e_index($partial) || {};
     my $classes    = $stack->ns_grp_type();
     my $ns_grp_enc = $stack->s5ChasGrpEncodeFactor($partial) || {};
-    my $is_virtual = $stack->ns_e_is_virtual();
+    my $is_virtual = $stack->_ns_e_is_virtual();
 
     my %ns_e_class;
-    foreach my $iid (keys %$ns_e_idx){
-        my ($grp, $idx, $sub) = split (/\./,$iid);
+    foreach my $iid ( keys %$ns_e_idx ) {
+        my ( $grp, $idx, $sub ) = split( /\./, $iid );
         next unless defined $grp;
         my $class = $classes->{$grp};
         next unless defined $class;
         my $enc = $ns_grp_enc->{$grp};
 
         # Handle quirks of dealing with both stacks and chassis
-        if ((!$is_virtual) and ($grp == 1)) {
+        if ( ( !$is_virtual ) and ( $grp == 1 ) ) {
             $class = 'module';
         }
-        if (($is_virtual) and ($grp == 3) and !($idx % $enc)) {
+        if ( ($is_virtual) and ( $grp == 3 ) and !( $idx % $enc ) ) {
             $class = 'chassis';
         }
 
@@ -216,11 +226,11 @@ sub ns_e_descr {
     my $stack   = shift;
     my $partial = shift;
 
-    my $ns_e_idx   = $stack->ns_e_index($partial) || {};
+    my $ns_e_idx   = $stack->ns_e_index($partial)   || {};
     my $ns_e_descr = $stack->ns_com_descr($partial) || {};
 
     my %ns_e_descr;
-    foreach my $iid (keys %$ns_e_idx){
+    foreach my $iid ( keys %$ns_e_idx ) {
         my $descr = $ns_e_descr->{$iid};
         next unless defined $descr;
 
@@ -230,29 +240,29 @@ sub ns_e_descr {
 }
 
 sub ns_e_name {
-    my $stack = shift;
+    my $stack   = shift;
     my $partial = shift;
 
-    my $ns_class  = $stack->ns_e_class() || {};
-    my $ns_e_idx  = $stack->ns_e_index() || {};
+    my $ns_class   = $stack->ns_e_class()                    || {};
+    my $ns_e_idx   = $stack->ns_e_index()                    || {};
     my $ns_grp_enc = $stack->s5ChasGrpEncodeFactor($partial) || {};
-    my $is_virtual = $stack->ns_e_is_virtual();
+    my $is_virtual = $stack->_ns_e_is_virtual();
 
     my %ns_e_name;
-    foreach my $iid (keys %$ns_e_idx){
+    foreach my $iid ( keys %$ns_e_idx ) {
 
-        my ($grp, $idx, $sub) = split (/\./,$iid);
+        my ( $grp, $idx, $sub ) = split( /\./, $iid );
         my $class = $ns_class->{$iid};
         next unless defined $class;
         my $enc = $ns_grp_enc->{$grp};
 
-        if ((!$is_virtual) and ($grp == 1)) {
+        if ( ( !$is_virtual ) and ( $grp == 1 ) ) {
             $ns_e_name{$iid} = 'Supervisory Module';
         }
-        elsif ($class eq 'stack') {
+        elsif ( $class eq 'stack' ) {
             $ns_e_name{$iid} = 'Stack Master Unit';
         }
-        elsif ($class eq 'chassis') {
+        elsif ( $class eq 'chassis' ) {
             if ($is_virtual) {
                 my $unit = $idx / $enc;
                 $ns_e_name{$iid} = "Switch Unit $unit";
@@ -261,13 +271,13 @@ sub ns_e_name {
                 $ns_e_name{$iid} = "Chassis";
             }
         }
-        elsif ($class eq 'module') {
+        elsif ( $class eq 'module' ) {
             if ($is_virtual) {
-                my $unit = int ($idx / $enc);
+                my $unit = int( $idx / $enc );
                 my $mda  = $idx % $enc;
                 $ns_e_name{$iid} = "Switch Unit $unit, MDA $mda";
             }
-            elsif ($sub != 0) {
+            elsif ( $sub != 0 ) {
                 $ns_e_name{$iid} = "Module Slot $idx, Subcomponent $sub";
             }
             else {
@@ -286,7 +296,7 @@ sub ns_e_hwver {
     my $ns_e_ver = $stack->ns_com_ver($partial) || {};
 
     my %ns_e_hwver;
-    foreach my $iid (keys %$ns_e_idx){
+    foreach my $iid ( keys %$ns_e_idx ) {
         my $ver = $ns_e_ver->{$iid};
         next unless defined $ver;
 
@@ -302,7 +312,7 @@ sub ns_e_vendor {
     my $ns_e_idx = $stack->ns_e_index($partial) || {};
 
     my %ns_e_vendor;
-    foreach my $iid (keys %$ns_e_idx){
+    foreach my $iid ( keys %$ns_e_idx ) {
         my $vendor = 'nortel';
 
         $ns_e_vendor{$iid} = $vendor;
@@ -314,11 +324,11 @@ sub ns_e_serial {
     my $stack   = shift;
     my $partial = shift;
 
-    my $ns_e_idx    = $stack->ns_e_index($partial) || {};
+    my $ns_e_idx    = $stack->ns_e_index($partial)    || {};
     my $ns_e_serial = $stack->ns_com_serial($partial) || {};
 
     my %ns_e_serial;
-    foreach my $iid (keys %$ns_e_idx){
+    foreach my $iid ( keys %$ns_e_idx ) {
         my $serial = $ns_e_serial->{$iid};
         next unless defined $serial;
 
@@ -331,17 +341,17 @@ sub ns_e_type {
     my $stack   = shift;
     my $partial = shift;
 
-    my $ns_e_idx  = $stack->ns_e_index($partial) || {};
+    my $ns_e_idx  = $stack->ns_e_index($partial)  || {};
     my $ns_e_type = $stack->ns_com_type($partial) || {};
-    my $is_stack  = $stack->ns_e_is_stack();
+    my $is_stack  = $stack->_ns_e_is_stack();
     my $ch_type   = $stack->ns_ch_type();
 
     my %ns_e_type;
-    foreach my $iid (keys %$ns_e_idx){
+    foreach my $iid ( keys %$ns_e_idx ) {
         my $type = $ns_e_type->{$iid};
         next unless defined $type;
-        
-        if ($is_stack and $iid =~ /^1/) {
+
+        if ( $is_stack and $iid =~ /^1/ ) {
             $type = $ch_type;
         }
         $ns_e_type{$iid} = $type;
@@ -353,18 +363,18 @@ sub ns_e_pos {
     my $stack   = shift;
     my $partial = shift;
 
-    my $ns_e_idx   = $stack->ns_e_index($partial) || {};
+    my $ns_e_idx   = $stack->ns_e_index($partial)            || {};
     my $ns_grp_enc = $stack->s5ChasGrpEncodeFactor($partial) || {};
-    my $is_stack   = $stack->ns_e_is_stack();
-    my $is_virtual = $stack->ns_e_is_virtual();
+    my $is_stack   = $stack->_ns_e_is_stack();
+    my $is_virtual = $stack->_ns_e_is_virtual();
 
     my %ns_e_pos;
-    foreach my $iid (keys %$ns_e_idx){
-        my ($grp, $pos, $idx) = split (/\./,$iid);
+    foreach my $iid ( keys %$ns_e_idx ) {
+        my ( $grp, $pos, $idx ) = split( /\./, $iid );
         next unless defined $grp;
         next unless defined $pos;
 
-        if ($grp == 1) {
+        if ( $grp == 1 ) {
             if ($is_stack) {
                 $pos = -1;
             }
@@ -372,22 +382,22 @@ sub ns_e_pos {
                 $pos = 99;
             }
         }
-        elsif ($grp == 3 and $idx == 0 ) {
+        elsif ( $grp == 3 and $idx == 0 ) {
             my $enc = $ns_grp_enc->{$grp};
-            if ($is_virtual and ($pos % $enc)) {
-                $pos = int ($pos % $enc);
+            if ( $is_virtual and ( $pos % $enc ) ) {
+                $pos = int( $pos % $enc );
             }
-            elsif ($is_virtual and !$is_stack and !($pos % $enc)) {
+            elsif ( $is_virtual and !$is_stack and !( $pos % $enc ) ) {
                 $pos = -1;
             }
-            elsif ($is_virtual and !($pos % $enc)) {
-                $pos = ($pos / $enc);
+            elsif ( $is_virtual and !( $pos % $enc ) ) {
+                $pos = ( $pos / $enc );
             }
         }
-        elsif (!$is_stack and $grp == 3) {
+        elsif ( !$is_stack and $grp == 3 ) {
             $pos = $idx;
         }
-        elsif ($grp == 8) {
+        elsif ( $grp == 8 ) {
             $pos = -1;
         }
         $ns_e_pos{$iid} = $pos;
@@ -399,23 +409,23 @@ sub ns_e_fwver {
     my $stack   = shift;
     my $partial = shift;
 
-    my $ns_e_idx   = $stack->ns_e_index($partial) || {};
-    my $ns_e_ver   = $stack->ns_store_ver($partial)  || {};
-    my $ns_e_type  = $stack->ns_store_type($partial) || {};
+    my $ns_e_idx   = $stack->ns_e_index($partial)            || {};
+    my $ns_e_ver   = $stack->ns_store_ver($partial)          || {};
+    my $ns_e_type  = $stack->ns_store_type($partial)         || {};
     my $ns_grp_enc = $stack->s5ChasGrpEncodeFactor($partial) || {};
-    my $is_virt   = $stack->ns_e_is_virtual();
+    my $is_virt    = $stack->_ns_e_is_virtual();
 
     my %ns_e_fwver;
-    foreach my $iid (keys %$ns_e_type){
+    foreach my $iid ( keys %$ns_e_type ) {
         my $type = $ns_e_type->{$iid};
         next unless defined $type;
         next unless $type =~ /(rom|boot|fw)/i;
-        my $ver  = $ns_e_ver->{$iid};
+        my $ver = $ns_e_ver->{$iid};
         next unless defined $ver;
         $iid =~ s/\.\d+$//;
-        
+
         if ($is_virt) {
-            my ($grp, $idx, $pos) = split (/\./,$iid);
+            my ( $grp, $idx, $pos ) = split( /\./, $iid );
             my $enc = $ns_grp_enc->{$grp};
             $idx = $idx * $enc;
             $iid = "3.$idx.$pos";
@@ -429,23 +439,23 @@ sub ns_e_swver {
     my $stack   = shift;
     my $partial = shift;
 
-    my $ns_e_idx   = $stack->ns_e_index($partial) || {};
-    my $ns_e_ver  = $stack->ns_store_ver($partial)  || {};
-    my $ns_e_type = $stack->ns_store_type($partial) || {};
+    my $ns_e_idx   = $stack->ns_e_index($partial)            || {};
+    my $ns_e_ver   = $stack->ns_store_ver($partial)          || {};
+    my $ns_e_type  = $stack->ns_store_type($partial)         || {};
     my $ns_grp_enc = $stack->s5ChasGrpEncodeFactor($partial) || {};
-    my $is_virt   = $stack->ns_e_is_virtual();
+    my $is_virt    = $stack->_ns_e_is_virtual();
 
     my %ns_e_swver;
-    foreach my $iid (keys %$ns_e_type){
+    foreach my $iid ( keys %$ns_e_type ) {
         my $type = $ns_e_type->{$iid};
         next unless defined $type;
         next unless $type =~ /(flash)/i;
-        my $ver  = $ns_e_ver->{$iid};
+        my $ver = $ns_e_ver->{$iid};
         next unless defined $ver;
         $iid =~ s/\.\d+$//;
 
         if ($is_virt) {
-            my ($grp, $idx, $pos) = split (/\./,$iid);
+            my ( $grp, $idx, $pos ) = split( /\./, $iid );
             my $enc = $ns_grp_enc->{$grp};
             $idx = $idx * $enc;
             $iid = "3.$idx.$pos";
@@ -459,20 +469,20 @@ sub ns_e_parent {
     my $stack   = shift;
     my $partial = shift;
 
-    my $ns_e_idx   = $stack->ns_e_index($partial) || {};
+    my $ns_e_idx   = $stack->ns_e_index($partial)            || {};
     my $ns_grp_enc = $stack->s5ChasGrpEncodeFactor($partial) || {};
-    my $is_stack   = $stack->ns_e_is_stack();
-    my $is_virtual = $stack->ns_e_is_virtual();
+    my $is_stack   = $stack->_ns_e_is_stack();
+    my $is_virtual = $stack->_ns_e_is_virtual();
 
     my %ns_e_parent;
-    foreach my $iid (keys %$ns_e_idx){
+    foreach my $iid ( keys %$ns_e_idx ) {
         my $index = $ns_e_idx->{$iid};
-        my ($grp, $idx, $pos) = split (/\./,$iid);
+        my ( $grp, $idx, $pos ) = split( /\./, $iid );
         next unless defined $grp;
-        if ($grp == 8) {
-                $ns_e_parent{$iid} = '0';
+        if ( $grp == 8 ) {
+            $ns_e_parent{$iid} = '0';
         }
-        if ($grp == 1) {
+        if ( $grp == 1 ) {
             if ($is_stack) {
                 $ns_e_parent{$iid} = '0';
             }
@@ -480,27 +490,28 @@ sub ns_e_parent {
                 $ns_e_parent{$iid} = '080100';
             }
         }
-        if ($grp == 3) {
+        if ( $grp == 3 ) {
             my $enc = $ns_grp_enc->{$grp};
-            if ($idx % $enc) {
-                my $npos = ($idx % $enc) * $enc;
-                my @parent = ($grp, $npos, $pos);
-                my $parent = join('',map { sprintf "%02d",$_ } @parent);
+            if ( $idx % $enc ) {
+                my $npos   = ( $idx % $enc ) * $enc;
+                my @parent = ( $grp, $npos, $pos );
+                my $parent = join( '', map { sprintf "%02d", $_ } @parent );
                 $ns_e_parent{$iid} = $parent;
             }
             elsif ($is_stack) {
                 $ns_e_parent{$iid} = '010100';
             }
-            elsif ($is_virtual and !$is_stack) {
+            elsif ( $is_virtual and !$is_stack ) {
                 $ns_e_parent{$iid} = 0;
             }
-            elsif ($pos == 0) {
+            elsif ( $pos == 0 ) {
                 $ns_e_parent{$iid} = '080100';
             }
             else {
                 my $parent = $iid;
                 $parent =~ s/\.\d+$/\.00/;
-                $parent = join('',map { sprintf "%02d",$_ } split /\./, $parent);
+                $parent = join( '', map { sprintf "%02d", $_ } split /\./,
+                    $parent );
                 $ns_e_parent{$iid} = $parent;
             }
         }
@@ -509,39 +520,23 @@ sub ns_e_parent {
     return \%ns_e_parent;
 }
 
-sub munge_ns_com_type {
-    my $oid = shift;
-
-    my $name = &SNMP::translateObj($oid);
-    return $name if defined($name);
-    return $oid;
-}
-
-sub munge_ns_store_type {
-    my $oid = shift;
-
-    my $name = &SNMP::translateObj($oid);
-    return $name if defined($name);
-    return $oid;
-}
-
 sub munge_ns_grp_type {
     my $oid = shift;
-    
+
     my %e_class = (
-                    Sup     => 'stack',
-                    Bkpl    => 'backplane',
-                    Brd     => 'module',
-                    Pwr     => 'powerSupply',
-                    TmpSnr  => 'sensor',
-                    Fan     => 'fan',
-                    Clk     => 'other',
-                    Unit    => 'chassis',
-                  );
+        Sup    => 'stack',
+        Bkpl   => 'backplane',
+        Brd    => 'module',
+        Pwr    => 'powerSupply',
+        TmpSnr => 'sensor',
+        Fan    => 'fan',
+        Clk    => 'other',
+        Unit   => 'chassis',
+    );
 
     my $name = &SNMP::translateObj($oid);
     $name =~ s/s5ChasGrp//;
-    if ((defined($name)) and (exists($e_class{$name}))) {
+    if ( ( defined($name) ) and ( exists( $e_class{$name} ) ) ) {
         $name = $e_class{$name};
     }
     return $name if defined($name);
@@ -554,7 +549,8 @@ __END__
 
 =head1 NAME
 
-SNMP::Info::NortelStack - SNMP Interface to the Nortel S5-AGENT-MIB and S5-CHASSIS-MIB
+SNMP::Info::NortelStack - SNMP Interface to the Nortel F<S5-AGENT-MIB> and
+F<S5-CHASSIS-MIB>
 
 =head1 AUTHOR
 
@@ -579,9 +575,9 @@ Eric Miller
 =head1 DESCRIPTION
 
 SNMP::Info::NortelStack is a subclass of SNMP::Info that provides an interface
-to C<S5-AGENT-MIB> and C<S5-CHASSIS-MIB>.  These MIBs are used across the
-Nortel Stackable Ethernet Switches (BayStack), as well as, older Nortel devices
-such as the Centillion family of ATM switches.
+to F<S5-AGENT-MIB> and F<S5-CHASSIS-MIB>.  These MIBs are used across the
+Nortel Stackable Ethernet Switches (BayStack), as well as, older Nortel
+devices such as the Centillion family of ATM switches.
 
 Use or create in a subclass of SNMP::Info.  Do not use directly.
 
@@ -593,11 +589,11 @@ None.
 
 =over
 
-=item S5-AGENT-MIB
+=item F<S5-AGENT-MIB>
 
-=item S5-CHASSIS-MIB
+=item F<S5-CHASSIS-MIB>
 
-=item S5-ROOT-MIB and S5-TCS-MIB are required by the other MIBs.
+=item F<S5-ROOT-MIB> and F<S5-TCS-MIB> are required by the other MIBs.
 
 =back
 
@@ -609,89 +605,90 @@ These are methods that return scalar values from SNMP
 
 =item $stack->os_ver()
 
-Returns the software version extracted from (B<s5AgInfoVer>)
+Returns the software version extracted from (C<s5AgInfoVer>)
 
 =item $stack->os_bin()
 
-Returns the firmware version extracted from (B<s5AgInfoVer>)
+Returns the firmware version extracted from (C<s5AgInfoVer>)
 
 =item  $stack->serial()
 
 Returns serial number of the chassis
 
-(B<s5ChasSerNum>)
+(C<s5ChasSerNum>)
 
 =item $stack->ns_ag_ver()
 
-Returns the version of the agent in the form 'major.minor.maintenance[letters]'. 
+Returns the version of the agent in the form
+'major.minor.maintenance[letters]'. 
 
-(B<s5AgInfoVer>)
+(C<s5AgInfoVer>)
 
 =item $stack->ns_op_mode()
 
 Returns the stacking mode. 
 
-(B<s5AgSysCurrentOperationalMode>)
+(C<s5AgSysCurrentOperationalMode>)
 
 =item $stack->tftp_action()
 
 This object is used to download or upload a config file or an image file.
 
-(B<s5AgInfoFileAction>)
+(C<s5AgInfoFileAction>)
 
 =item $stack->tftp_result()
 
 Returns the status of the latest action as shown by $stack->tftp_action().
 
-(B<s5AgInfoFileStatus>)
+(C<s5AgInfoFileStatus>)
 
 =item $stack->ns_auto_pvid()
 
 Returns the value indicating whether adding a port as a member of a VLAN
 automatically results in its PVID being set to be the same as that VLAN ID.
 
-(B<s5AgSysAutoPvid>)
+(C<s5AgSysAutoPvid>)
 
 =item $stack->tftp_file()
 
 Name of the binary configuration file that will be downloaded/uploaded when
 the $stack->tftp_action() object is set.
 
-(B<s5AgSysBinaryConfigFilename>)
+(C<s5AgSysBinaryConfigFilename>)
 
 =item $stack->tftp_host()
 
 The IP address of the TFTP server for all TFTP operations.
 
-(B<s5AgSysTftpServerAddress>)
+(C<s5AgSysTftpServerAddress>)
 
 =item $stack->vlan()
 
 Returns the VLAN ID of the system's management VLAN.
 
-(B<s5AgSysManagementVlanId>)
+(C<s5AgSysManagementVlanId>)
 
 =item $stack->ch_ser()
 
 Returns the serial number of the chassis.
 
-(B<s5ChasSerNum>)
+(C<s5ChasSerNum>)
 
 =item $stack->ns_cfg_chg()
 
-Returns the total number of configuration changes (other than attachment changes,
-or physical additions or removals) in the chassis that have been detected since
-cold/warm start.
+Returns the total number of configuration changes (other than attachment
+changes, or physical additions or removals) in the chassis that have been
+detected since cold/warm start.
 
-(B<s5ChasGblConfChngs>)
+(C<s5ChasGblConfChngs>)
 
 =item $stack->ns_cfg_time()
 
-Returns the value of sysUpTime when the last configuration change (other than
-attachment changes, or physical additions or removals) in the chassis was
-detected.
+Returns the value of C<sysUpTime> when the last configuration change (other
+than attachment changes, or physical additions or removals) in the chassis
+was detected.
 
-(B<s5ChasGblConfLstChng>)
+(C<s5ChasGblConfLstChng>)
 
 =back
 
@@ -700,7 +697,7 @@ detected.
 These are methods that return tables of information in the form of a reference
 to a hash.
 
-=head2 Agent Interface Table (s5AgMyIfTable)
+=head2 Agent Interface Table (C<s5AgMyIfTable>)
 
 =over
 
@@ -708,147 +705,155 @@ to a hash.
 
 Returns reference to hash.  Key: Table entry, Value: Name of the file
 
-(B<s5AgMyIfCfgFname>)
+(C<s5AgMyIfCfgFname>)
 
 =item $stack->i_cfg_host()
 
-Returns reference to hash.  Key: Table entry, Value: IP address of the load server
+Returns reference to hash.  Key: Table entry, Value: IP address of the load
+server
 
-(B<s5AgMyIfLdSvrAddr>)
+(C<s5AgMyIfLdSvrAddr>)
 
 =back
 
-=head2 Chassis Components Table (s5ChasComTable)
+=head2 Chassis Components Table (C<s5ChasComTable>)
 
 =over
 
 =item $stack->ns_com_grp_idx()
 
-Returns reference to hash.  Key: Table entry, Value: Index of the chassis level
-group which contains this component.
+Returns reference to hash.  Key: Table entry, Value: Index of the chassis
+level group which contains this component.
 
-(B<s5ChasComGrpIndx>)
+(C<s5ChasComGrpIndx>)
 
 =item $stack->ns_com_idx()
 
-Returns reference to hash.  Key: Table entry, Value: Index of the component in
-the group.  For modules in the 'board' group, this is the slot number.
+Returns reference to hash.  Key: Table entry, Value: Index of the component
+in the group.  For modules in the 'board' group, this is the slot number.
 
-(B<s5ChasComIndx>)
+(C<s5ChasComIndx>)
 
 =item $stack->ns_com_sub_idx()
 
-Returns reference to hash.  Key: Table entry, Value: Index of the sub-component
-in the component.
+Returns reference to hash.  Key: Table entry, Value: Index of the
+sub-component in the component.
 
-(B<s5ChasComSubIndx>)
+(C<s5ChasComSubIndx>)
 
 =item $stack->ns_com_type()
 
 Returns reference to hash.  Key: Table entry, Value: Type
 
-(B<s5ChasComType>)
+(C<s5ChasComType>)
 
 =item $stack->ns_com_descr()
 
 Returns reference to hash.  Key: Table entry, Value: Description
 
-(B<s5ChasComDescr>)
+(C<s5ChasComDescr>)
 
 =item $stack->ns_com_ver()
 
 Returns reference to hash.  Key: Table entry, Value: Version
 
-(B<s5ChasComVer>)
+(C<s5ChasComVer>)
 
 =item $stack->ns_com_serial()
 
 Returns reference to hash.  Key: Table entry, Value: Serial Number
 
-(B<s5ChasComSerNum>)
+(C<s5ChasComSerNum>)
 
 =back
 
-=head2 Storage Area Table (s5ChasStoreTable)
+=head2 Storage Area Table (C<s5ChasStoreTable>)
 
 =over
 
 =item $stack->ns_store_grp_idx()
 
-Returns reference to hash.  Key: Table entry, Value: Index of the chassis level
-group.
+Returns reference to hash.  Key: Table entry, Value: Index of the chassis
+level group.
 
-(B<s5ChasStoreGrpIndx>)
+(C<s5ChasStoreGrpIndx>)
 
 =item $stack->ns_store_idx()
 
 Returns reference to hash.  Key: Table entry, Value: Index of the group.
 
-(B<s5ChasStoreComIndx>)
+(C<s5ChasStoreComIndx>)
 
 =item $stack->ns_store_sub_idx()
 
-Returns reference to hash.  Key: Table entry, Value: Index of the sub-component.
+Returns reference to hash.  Key: Table entry, Value: Index of the
+sub-component.
 
-(B<s5ChasStoreSubIndx>)
+(C<s5ChasStoreSubIndx>)
 
 =item $stack->ns_store_idx()
 
-Returns reference to hash.  Key: Table entry, Value: Index of the storage area.
+Returns reference to hash.  Key: Table entry, Value: Index of the storage
+area.
 
-(B<s5ChasStoreIndx>)
+(C<s5ChasStoreIndx>)
 
 =item $stack->ns_store_type()
 
 Returns reference to hash.  Key: Table entry, Value: Type
 
-(B<s5ChasStoreType>)
+(C<s5ChasStoreType>)
 
 =item $stack->ns_store_size()
 
 Returns reference to hash.  Key: Table entry, Value: Size
 
-(B<s5ChasStoreCurSize>)
+(C<s5ChasStoreCurSize>)
 
 =item $stack->ns_store_ver()
 
 Returns reference to hash.  Key: Table entry, Value: Version
 
-(B<s5ChasStoreCntntVer>)
+(C<s5ChasStoreCntntVer>)
 
 =back
 
-=head2 Psuedo ENTITY-MIB information
+=head2 Pseudo F<ENTITY-MIB> information
 
-These methods emulate ENTITY-MIB Physical Table methods using S5-CHASSIS-MIB. 
+These methods emulate F<ENTITY-MIB> Physical Table methods using
+F<S5-CHASSIS-MIB>. 
 
 =over
 
 =item $stack->ns_e_index()
 
-Returns reference to hash.  Key: IID, Value: Integer, Indicies are combined
+Returns reference to hash.  Key: IID, Value: Integer, Indices are combined
 into a six digit integer, each index is two digits padded with leading zero if
 required.
 
 =item $stack->ns_e_class()
 
 Returns reference to hash.  Key: IID, Value: General hardware type
-(B<s5ChasGrpDescr>).
+(C<s5ChasGrpDescr>).
 
 Group is stripped from the string.  Values may be Supervisory Module,
-Backplane, Board, Power Supply, Sensor, Fan, Clock, Unit.
+Back Plane, Board, Power Supply, Sensor, Fan, Clock, Unit.
 
 =item $stack->ns_e_descr()
 
 Returns reference to hash.  Key: IID, Value: Human friendly name
 
-(B<s5ChasComDescr>)
+(C<s5ChasComDescr>)
+
+=item $stack->ns_e_name()
+
+Returns reference to hash.  Key: IID, Value: Human friendly name
 
 =item $stack->ns_e_hwver()
 
 Returns reference to hash.  Key: IID, Value: Hardware version
 
-(B<s5ChasComVer>)
+(C<s5ChasComVer>)
 
 =item $stack->ns_e_vendor()
 
@@ -858,37 +863,50 @@ Returns reference to hash.  Key: IID, Value: nortel
 
 Returns reference to hash.  Key: IID, Value: Serial number
 
-(B<s5ChasComSerNum>)
+(C<s5ChasComSerNum>)
 
 =item $stack->ns_e_pos()
 
 Returns reference to hash.  Key: IID, Value: The relative position among all
 entities sharing the same parent.
 
-(B<s5ChasComSubIndx>)
+(C<s5ChasComSubIndx>)
 
 =item $stack->ns_e_type()
 
 Returns reference to hash.  Key: IID, Value: Type of component/sub-component
-as defined under B<s5ChasComTypeVal> in S5-REG-MIB.
+as defined under C<s5ChasComTypeVal> in F<S5-REG-MIB>.
 
 =item $stack->ns_e_fwver()
 
 Returns reference to hash.  Key: IID, Value: Firmware revision.
 
-Value of B<s5ChasStoreCntntVer> for entries with rom, boot, or fw in
-B<s5ChasStoreType>.
+Value of C<s5ChasStoreCntntVer> for entries with rom, boot, or firmware in
+C<s5ChasStoreType>.
 
-=item $stack->ns_e_fwver()
+=item $stack->ns_e_swver()
 
 Returns reference to hash.  Key: IID, Value: Software revision.
 
-Value of B<s5ChasStoreCntntVer> for entries with "flash" in B<s5ChasStoreType>.
+Value of C<s5ChasStoreCntntVer> for entries with "flash" in
+C<s5ChasStoreType>.
 
 =item $stack->ns_e_parent()
 
 Returns reference to hash.  Key: IID, Value: The value of ns_e_index() for the
 entity which 'contains' this entity.  A value of zero indicates	this entity
 is not contained in any other entity.
+
+=back
+
+=head1 Data Munging Callback Subroutines
+
+=over
+
+=item $stack->munge_ns_grp_type()
+
+Munges C<s5ChasGrpType> into an C<ENTITY-MIB PhysicalClass> equivalent. 
+
+=back
 
 =cut

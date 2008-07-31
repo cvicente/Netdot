@@ -1,74 +1,69 @@
 # SNMP::Info::Layer2::N2270
-# Eric Miller
-# $Id: N2270.pm,v 1.8 2007/11/26 04:24:51 jeneric Exp $
+# $Id: N2270.pm,v 1.11 2008/07/20 03:27:30 jeneric Exp $
 #
-# Copyright (c) 2005 Eric Miller
+# Copyright (c) 2008 Eric Miller
+# All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without 
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::N2270;
-$VERSION = '1.07';
-use strict;
 
+use strict;
 use Exporter;
 use SNMP::Info;
 use SNMP::Info::Bridge;
 use SNMP::Info::SONMP;
 use SNMP::Info::Airespace;
 
-@SNMP::Info::Layer2::N2270::ISA = qw/SNMP::Info SNMP::Info::Bridge SNMP::Info::SONMP SNMP::Info::Airespace Exporter/;
+@SNMP::Info::Layer2::N2270::ISA
+    = qw/SNMP::Info SNMP::Info::Bridge SNMP::Info::SONMP SNMP::Info::Airespace Exporter/;
 @SNMP::Info::Layer2::N2270::EXPORT_OK = qw//;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE $AUTOLOAD $INIT $DEBUG/;
 
-%MIBS    = (
-            %SNMP::Info::MIBS,
-            %SNMP::Info::Bridge::MIBS,
-            %SNMP::Info::SONMP::MIBS,
-            %SNMP::Info::Airespace::MIBS,
-            );
+$VERSION = '1.09';
+
+%MIBS = (
+    %SNMP::Info::MIBS,        %SNMP::Info::Bridge::MIBS,
+    %SNMP::Info::SONMP::MIBS, %SNMP::Info::Airespace::MIBS,
+);
 
 %GLOBALS = (
-            %SNMP::Info::GLOBALS,
-            %SNMP::Info::Bridge::GLOBALS,
-            %SNMP::Info::SONMP::GLOBALS,
-            %SNMP::Info::Airespace::GLOBALS,
-            );
+    %SNMP::Info::GLOBALS,        %SNMP::Info::Bridge::GLOBALS,
+    %SNMP::Info::SONMP::GLOBALS, %SNMP::Info::Airespace::GLOBALS,
+);
 
-%FUNCS   = (
-            %SNMP::Info::FUNCS,
-            %SNMP::Info::Bridge::FUNCS,
-            %SNMP::Info::SONMP::FUNCS,
-            %SNMP::Info::Airespace::FUNCS,
-            );
+%FUNCS = (
+    %SNMP::Info::FUNCS,        %SNMP::Info::Bridge::FUNCS,
+    %SNMP::Info::SONMP::FUNCS, %SNMP::Info::Airespace::FUNCS,
+);
 
-%MUNGE   = (
-          %SNMP::Info::MUNGE,
-          %SNMP::Info::Bridge::MUNGE,
-          %SNMP::Info::SONMP::MUNGE,
-          %SNMP::Info::Airespace::MUNGE,
-            );
+%MUNGE = (
+    %SNMP::Info::MUNGE,        %SNMP::Info::Bridge::MUNGE,
+    %SNMP::Info::SONMP::MUNGE, %SNMP::Info::Airespace::MUNGE,
+);
 
 sub os {
     return 'nortel';
@@ -80,8 +75,8 @@ sub vendor {
 
 sub model {
     my $n2270 = shift;
-    my $id = $n2270->id();
-    return undef unless defined $id;
+    my $id    = $n2270->id();
+    return unless defined $id;
     my $model = &SNMP::translateObj($id);
     return $id unless defined $model;
     $model =~ s/^sreg-WLANSecuritySwitch//i;
@@ -102,7 +97,8 @@ __END__
 
 =head1 NAME
 
-SNMP::Info::Layer2::N2270 - SNMP Interface to Nortel 2270 Series Wireless Switch
+SNMP::Info::Layer2::N2270 - SNMP Interface to Nortel 2270 Series Wireless
+Switch
 
 =head1 AUTHOR
 
@@ -115,7 +111,6 @@ Eric Miller
     my $n2270 = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -131,8 +126,8 @@ Eric Miller
 Provides abstraction to the configuration information obtainable from a 
 Nortel 2270 Series Wireless Switch through SNMP.
 
-For speed or debugging purposes you can call the subclass directly, but not after
-determining a more specific class using the method above. 
+For speed or debugging purposes you can call the subclass directly, but not
+after determining a more specific class using the method above. 
 
 my $n2270 = new SNMP::Info::Layer2::N2270(...);
 
@@ -182,10 +177,10 @@ Returns 'nortel'
 
 =item $n2270->model()
 
-Cross references $bayhub->id() to the SYNOPTICS-ROOT-MIB and returns
+Cross references $bayhub->id() to the F<SYNOPTICS-ROOT-MIB> and returns
 the results.
 
-Removes sreg-WLANSecuritySwitch from the model name
+Removes C<sreg-WLANSecuritySwitch> from the model name
 
 =back
 

@@ -1,63 +1,65 @@
 # SNMP::Info::PowerEthernet
-# Bill Fenner
+# $Id: PowerEthernet.pm,v 1.5 2008/07/20 03:27:07 jeneric Exp $
 #
-# Copyright (c) 2007 Bill Fenner
-# 
-# Redistribution and use in source and binary forms, with or without 
+# Copyright (c) 2008 Bill Fenner
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::PowerEthernet;
-$VERSION = '1.07';
-# $Id: PowerEthernet.pm,v 1.2 2007/11/26 04:24:51 jeneric Exp $
 
 use strict;
-
 use Exporter;
 use SNMP::Info;
 
-use vars qw/$VERSION $DEBUG %MIBS %FUNCS %GLOBALS %MUNGE $INIT/;
-@SNMP::Info::PowerEthernet::ISA = qw/SNMP::Info Exporter/;
+@SNMP::Info::PowerEthernet::ISA       = qw/SNMP::Info Exporter/;
 @SNMP::Info::PowerEthernet::EXPORT_OK = qw//;
 
-%MIBS    = ('POWER-ETHERNET-MIB' => 'pethPsePortDetectionStatus');
+use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
 
-%GLOBALS = (
-           );
+$VERSION = '1.09';
 
-%FUNCS   = (
-	    # parts of pethPsePortTable
-	    'peth_port_admin'    => 'pethPsePortAdminEnable',
-	    'peth_port_status'   => 'pethPsePortDetectionStatus',
-	    'peth_port_class'    => 'pethPsePortPowerClassifications',
-	    # pethMainPseTable
-	    'peth_power_watts'       => 'pethMainPsePower',
-	    'peth_power_status'      => 'pethMainPseOperStatus',
-	    'peth_power_consumption' => 'pethMainPseConsumptionPower',
-	    'peth_power_threshold'   => 'pethMainPseUsageThreshold',
-           );
+%MIBS = ( 'POWER-ETHERNET-MIB' => 'pethPsePortDetectionStatus' );
 
-%MUNGE   = (
-           );
+%GLOBALS = ();
+
+%FUNCS = (
+
+    # parts of pethPsePortTable
+    'peth_port_admin'  => 'pethPsePortAdminEnable',
+    'peth_port_status' => 'pethPsePortDetectionStatus',
+    'peth_port_class'  => 'pethPsePortPowerClassifications',
+
+    # pethMainPseTable
+    'peth_power_watts'       => 'pethMainPsePower',
+    'peth_power_status'      => 'pethMainPseOperStatus',
+    'peth_power_consumption' => 'pethMainPseConsumptionPower',
+    'peth_power_threshold'   => 'pethMainPseUsageThreshold',
+);
+
+%MUNGE = ();
 
 # POWER-ETHERNET-MIB doesn't define a mapping of its
 # "module"/"port" index to ifIndex.  Different vendors
@@ -67,30 +69,34 @@ use vars qw/$VERSION $DEBUG %MIBS %FUNCS %GLOBALS %MUNGE $INIT/;
 # If there is a module != 1, this heuristic doesn't work
 # so returns undef.
 sub peth_port_ifindex {
-    my $peth = shift;
+    my $peth    = shift;
     my $partial = shift;
 
     my $peth_port_status = $peth->peth_port_status($partial);
     my $peth_port_ifindex;
 
-    foreach my $i (keys %$peth_port_status) {
-	my ($module, $port) = split(/\./, $i);
-	if ($module != 1) {
-	    # This heuristic won't work, so say that we got nothing.
-	    # If you have this case, you have to write a device-specific
-	    # version of this function.
-	    return undef;
-	}
-	$peth_port_ifindex->{$i} = $port;
+    foreach my $i ( keys %$peth_port_status ) {
+        my ( $module, $port ) = split( /\./, $i );
+        if ( $module != 1 ) {
+
+            # This heuristic won't work, so say that we got nothing.
+            # If you have this case, you have to write a device-specific
+            # version of this function.
+            return;
+        }
+        $peth_port_ifindex->{$i} = $port;
     }
     return $peth_port_ifindex;
 }
 
 1;
 
+__END__
+
 =head1 NAME
 
-SNMP::Info::PowerEthernet - SNMP Interface to data stored in POWER-ETHERNET-MIB.
+SNMP::Info::PowerEthernet - SNMP Interface to data stored in
+F<POWER-ETHERNET-MIB>.
 
 =head1 AUTHOR
 
@@ -102,7 +108,6 @@ Bill Fenner
  my $poe = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -114,11 +119,12 @@ Bill Fenner
 
 =head1 DESCRIPTION
 
-POWER-ETHERNET-MIB is used to describe PoE (IEEE 802.3af)
+F<POWER-ETHERNET-MIB> is used to describe PoE (IEEE 802.3af)
 
 Create or use a device subclass that inherit this class.  Do not use directly.
 
-For debugging purposes you can call this class directly as you would SNMP::Info
+For debugging purposes you can call this class directly as you would
+SNMP::Info
 
  my $poe = new SNMP::Info::PowerEthernet (...);
 
@@ -130,7 +136,7 @@ none.
 
 =over
 
-=item POWER-ETHERNET-MIB
+=item F<POWER-ETHERNET-MIB>
 
 =back
 
@@ -163,15 +169,15 @@ C<pethPsePortDetectionStatus>
 
 =item $poe->peth_port_class()
 
-Device class: if status is deliveringPower, this represents the 802.3af
+Device class: if status is delivering power, this represents the 802.3af
 class of the device being powered.
 
 C<pethPsePortPowerClassifications>
 
 =item $poe->peth_port_ifindex()
 
-A mapping function from the pethPsePortTable INDEX of
-module.port to an ifIndex.  The default mapping ignores the
+A mapping function from the C<pethPsePortTable> INDEX of
+module.port to an C<ifIndex>.  The default mapping ignores the
 module (returning undef if there are any module values greater
 than 1) and returns the port number, assuming that there is a
 1:1 mapping.
@@ -202,7 +208,7 @@ C<pethMainPseOperStatus>
 =item $poe->peth_power_consumption()
 
 How much power, in watts, this power supply has been committed to
-deliver.  (Note: certain devices seem to supply this value in milliwats,
+deliver.  (Note: certain devices seem to supply this value in milliwatts,
 so be cautious interpreting it.)
 
 C<pethMainPseConsumptionPower>

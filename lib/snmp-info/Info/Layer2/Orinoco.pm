@@ -1,70 +1,70 @@
 # SNMP::Info::Layer2::Orinoco
-# Eric Miller
-# $Id: Orinoco.pm,v 1.11 2007/11/26 04:24:51 jeneric Exp $
+# $Id: Orinoco.pm,v 1.14 2008/07/20 03:27:30 jeneric Exp $
 #
-# Copyright (c) 2004 Eric Miller
+# Copyright (c) 2008 Eric Miller
+# All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without 
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::Orinoco;
-$VERSION = '1.07';
-use strict;
 
+use strict;
 use Exporter;
 use SNMP::Info::IEEE802dot11;
 use SNMP::Info::Layer2;
 
-@SNMP::Info::Layer2::Orinoco::ISA = qw/SNMP::Info::IEEE802dot11 SNMP::Info::Layer2 Exporter/;
+@SNMP::Info::Layer2::Orinoco::ISA
+    = qw/SNMP::Info::IEEE802dot11 SNMP::Info::Layer2 Exporter/;
 @SNMP::Info::Layer2::Orinoco::EXPORT_OK = qw//;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-%MIBS    = (
-            %SNMP::Info::Layer2::MIBS,
-            %SNMP::Info::IEEE802dot11::MIBS,
-            #'ORiNOCO-MIB' => 'orinoco',
-           );
+$VERSION = '1.09';
 
-%GLOBALS = (
-            %SNMP::Info::Layer2::GLOBALS,
-            %SNMP::Info::IEEE802dot11::GLOBALS,
-           );
+%MIBS = (
+    %SNMP::Info::Layer2::MIBS,
+    %SNMP::Info::IEEE802dot11::MIBS,
 
-%FUNCS   = (
-            %SNMP::Info::Layer2::FUNCS,
-            %SNMP::Info::IEEE802dot11::FUNCS,
-            # ORiNOCO-MIB:oriWirelessIfPropertiesTable
-            #'ori_ssid'       => 'oriWirelessIfNetworkName',
-            #'ori_channel'    => 'oriWirelessIfChannel',
-            #'ori_closed_sys' => 'oriWirelessIfClosedSystem',
-            # ORiNOCO-MIB:oriSystemInvMgmtComponentTable
-             );
+    #'ORiNOCO-MIB' => 'orinoco',
+);
 
-%MUNGE   = (
-            %SNMP::Info::Layer2::MUNGE,
-            %SNMP::Info::IEEE802dot11::MUNGE,
-            );
+%GLOBALS
+    = ( %SNMP::Info::Layer2::GLOBALS, %SNMP::Info::IEEE802dot11::GLOBALS, );
+
+%FUNCS = (
+    %SNMP::Info::Layer2::FUNCS,
+    %SNMP::Info::IEEE802dot11::FUNCS,
+
+    # ORiNOCO-MIB:oriWirelessIfPropertiesTable
+    #'ori_ssid'       => 'oriWirelessIfNetworkName',
+    #'ori_channel'    => 'oriWirelessIfChannel',
+    #'ori_closed_sys' => 'oriWirelessIfClosedSystem',
+    # ORiNOCO-MIB:oriSystemInvMgmtComponentTable
+);
+
+%MUNGE = ( %SNMP::Info::Layer2::MUNGE, %SNMP::Info::IEEE802dot11::MUNGE, );
 
 sub os {
     return 'orinoco';
@@ -74,32 +74,32 @@ sub os_ver {
     my $orinoco = shift;
 
     my $descr = $orinoco->description();
-    return undef unless defined $descr;
+    return unless defined $descr;
 
-    if ($descr =~ m/V(\d+\.\d+)/){
+    if ( $descr =~ m/V(\d+\.\d+)/ ) {
         return $1;
     }
-    if ($descr =~ m/v(\d+\.\d+\.\d+)/){
+    if ( $descr =~ m/v(\d+\.\d+\.\d+)/ ) {
         return $1;
     }
 
-    return undef;
+    return;
 }
 
 sub os_bin {
     my $orinoco = shift;
 
     my $descr = $orinoco->description();
-    return undef unless defined $descr;
+    return unless defined $descr;
 
-    if ($descr =~ m/V(\d+\.\d+)$/){
+    if ( $descr =~ m/V(\d+\.\d+)$/ ) {
         return $1;
     }
-    if ($descr =~ m/v(\d+\.\d+\.\d+)$/){
+    if ( $descr =~ m/v(\d+\.\d+\.\d+)$/ ) {
         return $1;
     }
 
-    return undef;
+    return;
 }
 
 sub vendor {
@@ -110,20 +110,20 @@ sub model {
     my $orinoco = shift;
 
     my $descr = $orinoco->description();
-    return undef unless defined $descr;
+    return unless defined $descr;
 
-    return $1 if ($descr =~ /(AP-\d+)/);
-    return 'WavePOINT-II' if ($descr =~ /WavePOINT-II/);
-    return undef;
+    return $1             if ( $descr =~ /(AP-\d+)/ );
+    return 'WavePOINT-II' if ( $descr =~ /WavePOINT-II/ );
+    return;
 }
 
 sub serial {
     my $orinoco = shift;
 
     my $descr = $orinoco->description();
-    return undef unless defined $descr;
+    return unless defined $descr;
 
-    $descr  = $1 if $descr =~ /SN-(\S+)/;
+    $descr = $1 if $descr =~ /SN-(\S+)/;
     return $descr;
 }
 
@@ -134,9 +134,10 @@ sub i_ignore {
     my $descr = $orinoco->i_description($partial) || {};
 
     my %i_ignore;
-    foreach my $if (keys %$descr){
+    foreach my $if ( keys %$descr ) {
         my $type = $descr->{$if};
-	  # Skip virtual interfaces  
+
+        # Skip virtual interfaces
         $i_ignore{$if}++ if $type =~ /(lo|empty|PCMCIA)/i;
     }
     return \%i_ignore;
@@ -146,16 +147,16 @@ sub interfaces {
     my $orinoco = shift;
     my $partial = shift;
 
-    my $interfaces = $orinoco->i_index($partial) || {};
+    my $interfaces   = $orinoco->i_index($partial)       || {};
     my $descriptions = $orinoco->i_description($partial) || {};
 
     my %interfaces = ();
-    foreach my $iid (keys %$interfaces){
+    foreach my $iid ( keys %$interfaces ) {
         my $desc = $descriptions->{$iid};
         next unless defined $desc;
         next if $desc =~ /(lo|empty|PCMCIA)/i;
 
-	$desc  = 'AMD' if $desc =~ /AMD/;
+        $desc = 'AMD' if $desc =~ /AMD/;
 
         $interfaces{$iid} = $desc;
     }
@@ -175,7 +176,7 @@ sub interfaces {
 #
 #        $i_ssidbcast{$iid} = $bc;
 #    }
-#    return \%i_ssidbcast;        
+#    return \%i_ssidbcast;
 #}
 
 1;
@@ -195,7 +196,6 @@ Eric Miller
  my $orinoco = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -207,12 +207,12 @@ Eric Miller
 
 =head1 DESCRIPTION
 
-Provides abstraction to the configuration information obtainable from a Orinoco
-Access Point through SNMP.  Orinoco devices have been maufactured by Proxim,
-Agere, and Lucent.
+Provides abstraction to the configuration information obtainable from
+Orinoco Access Point through SNMP.  Orinoco devices have been manufactured
+by Proxim, Agere, and Lucent.
 
-For speed or debugging purposes you can call the subclass directly, but not after
-determining a more specific class using the method above. 
+For speed or debugging purposes you can call the subclass directly, but not
+after determining a more specific class using the method above. 
 
  my $orinoco = new SNMP::Info::Layer2::Orinoco(...);
 
@@ -252,7 +252,7 @@ Returns 'proxim'
 
 =item $orinoco->model()
 
-Returns the model extracted from B<sysDescr>.
+Returns the model extracted from C<sysDescr>.
 
 =item $orinoco->os()
 
@@ -260,15 +260,15 @@ Returns 'Orinoco'
 
 =item $orinoco->os_ver()
 
-Returns the software version extracted from B<sysDescr>.
+Returns the software version extracted from C<sysDescr>.
 
 =item $orinoco->os_bin()
 
-Returns the firmware version extracted from B<sysDescr>.
+Returns the firmware version extracted from C<sysDescr>.
 
 =item $orinoco->serial()
 
-Returns the serial number extracted from B<sysDescr>.
+Returns the serial number extracted from C<sysDescr>.
 
 =back
 

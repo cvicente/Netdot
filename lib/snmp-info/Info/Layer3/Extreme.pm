@@ -1,112 +1,119 @@
 # SNMP::Info::Layer3::Extreme - SNMP Interface to Extreme devices
-# Eric Miller
-# Bill Fenner
+# $Id: Extreme.pm,v 1.14 2008/07/20 03:27:18 jeneric Exp $
 #
-# Copyright (c) 2005 Eric Miller
+# Copyright (c) 2008 Eric Miller
 #
 # Copyright (c) 2002,2003 Regents of the University of California
 # All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without 
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Extreme;
-# $Id: Extreme.pm,v 1.9 2007/11/26 04:24:52 jeneric Exp $
 
 use strict;
-
 use Exporter;
 use SNMP::Info::Layer3;
 use SNMP::Info::MAU;
 
-use vars qw/$VERSION $DEBUG %GLOBALS %FUNCS $INIT %MIBS %MUNGE/;
-
-$VERSION = '1.07';
-
-@SNMP::Info::Layer3::Extreme::ISA = qw/SNMP::Info::Layer3 SNMP::Info::MAU Exporter/;
+@SNMP::Info::Layer3::Extreme::ISA
+    = qw/SNMP::Info::Layer3 SNMP::Info::MAU Exporter/;
 @SNMP::Info::Layer3::Extreme::EXPORT_OK = qw//;
 
-%MIBS = ( %SNMP::Info::Layer3::MIBS,
-          %SNMP::Info::MAU::MIBS,
-          'EXTREME-BASE-MIB'   => 'extremeAgent',
-          'EXTREME-SYSTEM-MIB' => 'extremeSystem',
-          'EXTREME-FDB-MIB'    => 'extremeSystem',
-          'EXTREME-VLAN-MIB'   => 'extremeVlan',
-        );
+use vars qw/$VERSION %GLOBALS %FUNCS %MIBS %MUNGE/;
+
+$VERSION = '1.09';
+
+%MIBS = (
+    %SNMP::Info::Layer3::MIBS,
+    %SNMP::Info::MAU::MIBS,
+    'EXTREME-BASE-MIB'   => 'extremeAgent',
+    'EXTREME-SYSTEM-MIB' => 'extremeSystem',
+    'EXTREME-FDB-MIB'    => 'extremeSystem',
+    'EXTREME-VLAN-MIB'   => 'extremeVlan',
+);
 
 %GLOBALS = (
-            %SNMP::Info::Layer3::GLOBALS,
-            %SNMP::Info::MAU::GLOBALS,
-            'serial1'        => 'extremeSystemID.0',
-            'temp'           => 'extremeCurrentTemperature',
-            'ps1_status_old' => 'extremePrimaryPowerOperational.0',
-            'ps1_status_new' => 'extremePowerSupplyStatus.1',
-            'ps2_status_old' => 'extremeRedundantPowerStatus.0',
-            'ps2_status_new' => 'extremePowerSupplyStatus.2',
-            'mac'            => 'dot1dBaseBridgeAddress',
-           );
+    %SNMP::Info::Layer3::GLOBALS,
+    %SNMP::Info::MAU::GLOBALS,
+    'serial1'        => 'extremeSystemID.0',
+    'temp'           => 'extremeCurrentTemperature',
+    'ps1_status_old' => 'extremePrimaryPowerOperational.0',
+    'ps1_status_new' => 'extremePowerSupplyStatus.1',
+    'ps2_status_old' => 'extremeRedundantPowerStatus.0',
+    'ps2_status_new' => 'extremePowerSupplyStatus.2',
+    'mac'            => 'dot1dBaseBridgeAddress',
+);
 
-%FUNCS   = (
-            %SNMP::Info::Layer3::FUNCS,
-            %SNMP::Info::MAU::FUNCS,
-            'fan_state'         => 'extremeFanOperational',
-            # EXTREME-FDB-MIB:extremeFdbMacFdbTable
-            'ex_fw_mac'         => 'extremeFdbMacFdbMacAddress',
-            'ex_fw_port'        => 'extremeFdbMacFdbPortIfIndex',
-            'ex_fw_status'      => 'extremeFdbMacFdbStatus',
-            # EXTREME-VLAN-MIB:extremeVlanIfTable
-            'ex_vlan_descr'     => 'extremeVlanIfDescr',
-            'ex_vlan_global_id' => 'extremeVlanIfGlobalIdentifier',
-            # EXTREME-VLAN-MIB:extremeVlanEncapsIfTable
-            'ex_vlan_encap_tag' => 'extremeVlanEncapsIfTag',
-           );
+%FUNCS = (
+    %SNMP::Info::Layer3::FUNCS,
+    %SNMP::Info::MAU::FUNCS,
+    'fan_state' => 'extremeFanOperational',
+
+    # EXTREME-FDB-MIB:extremeFdbMacFdbTable
+    'ex_fw_mac'    => 'extremeFdbMacFdbMacAddress',
+    'ex_fw_port'   => 'extremeFdbMacFdbPortIfIndex',
+    'ex_fw_status' => 'extremeFdbMacFdbStatus',
+
+    # EXTREME-VLAN-MIB:extremeVlanIfTable
+    'ex_vlan_descr'     => 'extremeVlanIfDescr',
+    'ex_vlan_global_id' => 'extremeVlanIfGlobalIdentifier',
+
+    # EXTREME-VLAN-MIB:extremeVlanEncapsIfTable
+    'ex_vlan_encap_tag' => 'extremeVlanEncapsIfTag',
+);
 
 %MUNGE = (
-            # Inherit all the built in munging
-            %SNMP::Info::Layer3::MUNGE,
-            %SNMP::Info::MAU::MUNGE,
-            'ex_fw_mac' => \&SNMP::Info::munge_mac,
-            'ps1_status_old' => \&munge_true_ok,
-            'ps1_status_new' => \&munge_power_stat,
-            'ps2_status_old' => \&munge_power_stat,
-            'ps2_status_new' => \&munge_power_stat,
-            'fan_state' => \&munge_true_ok,
-         );
+
+    # Inherit all the built in munging
+    %SNMP::Info::Layer3::MUNGE,
+    %SNMP::Info::MAU::MUNGE,
+    'ex_fw_mac'      => \&SNMP::Info::munge_mac,
+    'ps1_status_old' => \&munge_true_ok,
+    'ps1_status_new' => \&munge_power_stat,
+    'ps2_status_old' => \&munge_power_stat,
+    'ps2_status_new' => \&munge_power_stat,
+    'fan_state'      => \&munge_true_ok,
+);
 
 # Method OverRides
 
-*SNMP::Info::Layer3::Extreme::i_duplex       = \&SNMP::Info::MAU::mau_i_duplex;
-*SNMP::Info::Layer3::Extreme::i_duplex_admin = \&SNMP::Info::MAU::mau_i_duplex_admin;
+*SNMP::Info::Layer3::Extreme::i_duplex = \&SNMP::Info::MAU::mau_i_duplex;
+*SNMP::Info::Layer3::Extreme::i_duplex_admin
+    = \&SNMP::Info::MAU::mau_i_duplex_admin;
 
 sub model {
     my $extreme = shift;
-    my $id = $extreme->id();
-    
-    unless (defined $id){
-        print " SNMP::Info::Layer3::Extreme::model() - Device does not support sysObjectID\n" if $extreme->debug(); 
-        return undef;
+    my $id      = $extreme->id();
+
+    unless ( defined $id ) {
+        print
+            " SNMP::Info::Layer3::Extreme::model() - Device does not support sysObjectID\n"
+            if $extreme->debug();
+        return;
     }
-    
+
     my $model = &SNMP::translateObj($id);
 
     return $id unless defined $model;
@@ -124,14 +131,14 @@ sub os {
 
 sub os_ver {
     my $extreme = shift;
-    my $descr = $extreme->description();
-    return undef unless defined $descr;
+    my $descr   = $extreme->description();
+    return unless defined $descr;
 
-    if ($descr =~ m/Version ([\d.]*)/){
+    if ( $descr =~ m/Version ([\d.]*)/ ) {
         return $1;
     }
 
-    return undef;
+    return;
 }
 
 #
@@ -141,15 +148,16 @@ sub os_ver {
 # assigned for router interfaces, so we use ifDescr
 # for those.
 sub interfaces {
-    my $extreme = shift;
-    my $partial = shift;
-    my $i_name = $extreme->orig_i_name($partial);
+    my $extreme       = shift;
+    my $partial       = shift;
+    my $i_name        = $extreme->orig_i_name($partial);
     my $i_description = $extreme->orig_i_description($partial);
-    my $interfaces = {};
-    foreach my $idx (keys %$i_name) {
-        if ($i_name->{$idx} =~ /\([0-9.]+\)/) {
+    my $interfaces    = {};
+    foreach my $idx ( keys %$i_name ) {
+        if ( $i_name->{$idx} =~ /\([0-9.]+\)/ ) {
             $interfaces->{$idx} = $i_description->{$idx};
-        } else {
+        }
+        else {
             $interfaces->{$idx} = $i_name->{$idx};
         }
     }
@@ -161,12 +169,14 @@ sub interfaces {
 sub i_ignore {
     my $extreme = shift;
     my $partial = shift;
-    
+
     my $i_description = $extreme->i_description($partial) || {};
 
     my %i_ignore;
-    foreach my $if (keys %$i_description) {
-        if ($i_description->{$if} =~ /^(802.1Q Encapsulation Tag \d+|VLAN \d+|lo\d+)/i){
+    foreach my $if ( keys %$i_description ) {
+        if ( $i_description->{$if}
+            =~ /^(802.1Q Encapsulation Tag \d+|VLAN \d+|lo\d+)/i )
+        {
             $i_ignore{$if}++;
         }
     }
@@ -177,11 +187,11 @@ sub i_ignore {
 # Either way, Extreme uses a 1:1 mapping of bridge interface ID to
 # ifIndex.
 sub bp_index {
-    my $extreme = shift;
+    my $extreme  = shift;
     my $if_index = $extreme->i_index();
 
     my %bp_index;
-    foreach my $iid (keys %$if_index){
+    foreach my $iid ( keys %$if_index ) {
         $bp_index{$iid} = $iid;
     }
     return \%bp_index;
@@ -189,43 +199,43 @@ sub bp_index {
 
 sub munge_true_ok {
     my $val = shift;
-    return undef unless defined($val);
-    return "OK" if ($val eq 'true');
-    return "Not OK" if ($val eq 'false');
+    return unless defined($val);
+    return "OK"     if ( $val eq 'true' );
+    return "Not OK" if ( $val eq 'false' );
     return $val;
 }
 
 sub munge_power_stat {
     my $val = shift;
-    return undef unless defined($val);
+    return unless defined($val);
     $val =~ s/^present//;
     $val =~ s/^not/Not /i;
     return $val;
 }
 
 sub ps1_status {
-    my $extreme = shift;
+    my $extreme    = shift;
     my $ps1_status = $extreme->ps1_status_new();
     return $ps1_status || $extreme->ps1_status_old();
 }
 
 sub ps2_status {
-    my $extreme = shift;
+    my $extreme    = shift;
     my $ps2_status = $extreme->ps2_status_new();
     return $ps2_status || $extreme->ps2_status_old();
 }
 
 sub fan {
-    my $extreme = shift;
+    my $extreme   = shift;
     my $fan_state = $extreme->fan_state();
-    my $ret = "";
-    my $s = "";
-    foreach my $i (sort {$a <=> $b} keys %$fan_state) {
+    my $ret       = "";
+    my $s         = "";
+    foreach my $i ( sort { $a <=> $b } keys %$fan_state ) {
         $ret .= $s . $i . ": " . $fan_state->{$i};
         $s = ", ";
     }
-    return undef if ($s eq "");
-    $ret;
+    return if ( $s eq "" );
+    return $ret;
 }
 
 # Newer versions of the Extreme firmware have vendor-specific tables
@@ -233,7 +243,7 @@ sub fan {
 # these tables, so we use the BRIDGE-MIB tables.
 sub fw_mac {
     my $extreme = shift;
-    my $fw_mac = $extreme->ex_fw_mac;
+    my $fw_mac  = $extreme->ex_fw_mac;
     return $fw_mac if defined($fw_mac);
     return $extreme->orig_fw_mac();
 }
@@ -246,7 +256,7 @@ sub fw_port {
 }
 
 sub fw_status {
-    my $extreme = shift;
+    my $extreme   = shift;
     my $fw_status = $extreme->ex_fw_status;
     return $fw_status if defined($fw_status);
     return $extreme->orig_fw_status();
@@ -262,38 +272,41 @@ sub fw_status {
 #  To represent this, we use a negative version of the
 #  internal VLAN ID (the deprecated extremeVlanIfGlobalIdentifier)
 sub _if2tag {
-    my $extreme = shift;
-    my $partial = shift;
-    my $stack = shift || $extreme->ifStackStatus($partial);
-    my $encap_tag = $extreme->ex_vlan_encap_tag();
+    my $extreme    = shift;
+    my $partial    = shift;
+    my $stack      = shift || $extreme->ifStackStatus($partial);
+    my $encap_tag  = $extreme->ex_vlan_encap_tag();
     my $vlan_descr = $extreme->ex_vlan_descr();
 
     my $stackmap = {};
-    foreach my $idx (keys %$stack) {
-        my ($higher, $lower) = split(/\./, $idx);
+    foreach my $idx ( keys %$stack ) {
+        my ( $higher, $lower ) = split( /\./, $idx );
         $stackmap->{$higher}->{$lower} = $stack->{$idx};
     }
 
     my %if2tag = ();
     my $missed = 0;
-    foreach my $if (keys %$vlan_descr) {
+    foreach my $if ( keys %$vlan_descr ) {
         $if2tag{$if} = -1;
-        foreach my $tagif (keys %$encap_tag) {
-            if (defined($stackmap->{$if}->{$tagif}) && $stackmap->{$if}->{$tagif} eq 'active') {
+        foreach my $tagif ( keys %$encap_tag ) {
+            if ( defined( $stackmap->{$if}->{$tagif} )
+                && $stackmap->{$if}->{$tagif} eq 'active' )
+            {
                 $if2tag{$if} = $encap_tag->{$tagif};
             }
         }
-        if ($if2tag{$if} == -1) {
+        if ( $if2tag{$if} == -1 ) {
             $missed++;
         }
     }
     if ($missed) {
         my $global_id = $extreme->ex_vlan_global_id();
-        foreach my $if (keys %if2tag) {
-            $if2tag{$if} = -$global_id->{$if} if ($if2tag{$if} == -1 && defined($global_id->{$if}));
+        foreach my $if ( keys %if2tag ) {
+            $if2tag{$if} = -$global_id->{$if}
+                if ( $if2tag{$if} == -1 && defined( $global_id->{$if} ) );
         }
     }
-    \%if2tag;
+    return \%if2tag;
 }
 
 # No partial support in v_name or v_index, because the obivous partial
@@ -310,23 +323,24 @@ sub v_index {
 }
 
 sub i_vlan {
-    my $extreme = shift;
-    my $partial = shift;
-    my $stack = $extreme->ifStackStatus($partial);
-    my $encap_tag = $extreme->ex_vlan_encap_tag();
+    my $extreme    = shift;
+    my $partial    = shift;
+    my $stack      = $extreme->ifStackStatus($partial);
+    my $encap_tag  = $extreme->ex_vlan_encap_tag();
     my $vlan_descr = $extreme->ex_vlan_descr();
-    my $stackmap = {};
-    foreach my $idx (keys %$stack) {
-        my ($higher, $lower) = split(/\./, $idx);
+    my $stackmap   = {};
+    foreach my $idx ( keys %$stack ) {
+        my ( $higher, $lower ) = split( /\./, $idx );
         $stackmap->{$higher}->{$lower} = $stack->{$idx};
     }
-    my $if2tag = $extreme->_if2tag($partial, $stack);
+    my $if2tag = $extreme->_if2tag( $partial, $stack );
+
     #
     # Now that we've done all that mapping work, we can map the
     #   ifStack indexes.
     my %i_vlan = ();
-    foreach my $if (keys %$if2tag) {
-        foreach my $lowif (keys %{$stackmap->{$if}}) {
+    foreach my $if ( keys %$if2tag ) {
+        foreach my $lowif ( keys %{ $stackmap->{$if} } ) {
             $i_vlan{$lowif} = $if2tag->{$if};
         }
     }
@@ -334,31 +348,33 @@ sub i_vlan {
 }
 
 sub i_vlan_membership {
-    my $extreme = shift;
-    my $partial = shift;
-    my $stack = $extreme->ifStackStatus($partial);
-    my $encap_tag = $extreme->ex_vlan_encap_tag();
+    my $extreme    = shift;
+    my $partial    = shift;
+    my $stack      = $extreme->ifStackStatus($partial);
+    my $encap_tag  = $extreme->ex_vlan_encap_tag();
     my $vlan_descr = $extreme->ex_vlan_descr();
-    my $stackmap = {};
-    foreach my $idx (keys %$stack) {
-        my ($higher, $lower) = split(/\./, $idx);
+    my $stackmap   = {};
+    foreach my $idx ( keys %$stack ) {
+        my ( $higher, $lower ) = split( /\./, $idx );
         $stackmap->{$higher}->{$lower} = $stack->{$idx};
     }
-    my $if2tag = $extreme->_if2tag($partial, $stack);
+    my $if2tag = $extreme->_if2tag( $partial, $stack );
+
     #
     # Now that we've done all that mapping work, we can map the
     #   ifStack indexes.
     my %i_vlan_membership = ();
-    foreach my $if (keys %$if2tag) {
-        foreach my $lowif (keys %{$stackmap->{$if}}) {
-	    push(@{$i_vlan_membership{$lowif}}, $if2tag->{$if});
+    foreach my $if ( keys %$if2tag ) {
+        foreach my $lowif ( keys %{ $stackmap->{$if} } ) {
+            push( @{ $i_vlan_membership{$lowif} }, $if2tag->{$if} );
         }
     }
+
     #
     # Now add all the tagged ports.
-    foreach my $if (keys %$encap_tag) {
-        foreach my $lowif (keys %{$stackmap->{$if}}) {
-	    push(@{$i_vlan_membership{$lowif}}, $encap_tag->{$if});
+    foreach my $if ( keys %$encap_tag ) {
+        foreach my $lowif ( keys %{ $stackmap->{$if} } ) {
+            push( @{ $i_vlan_membership{$lowif} }, $encap_tag->{$if} );
         }
     }
     return \%i_vlan_membership;
@@ -370,12 +386,12 @@ sub i_vlan_membership {
 
 sub set_i_vlan {
     my $extreme = shift;
-    return $extreme->_extreme_set_i_vlan(0, @_);
+    return $extreme->_extreme_set_i_vlan( 0, @_ );
 }
 
 sub set_i_pvid {
     my $extreme = shift;
-    return $extreme->_extreme_set_i_vlan(1, @_);
+    return $extreme->_extreme_set_i_vlan( 1, @_ );
 }
 
 # set_i_vlan implicitly turns off any encapsulation
@@ -386,103 +402,133 @@ sub set_i_pvid {
 # off any encapsulation.
 sub _extreme_set_i_vlan {
     my $extreme = shift;
-    my ($is_pvid, $vlan_id, $ifindex) = @_;
+    my ( $is_pvid, $vlan_id, $ifindex ) = @_;
     my $encap_tag = $extreme->ex_vlan_encap_tag();
+
     # The inverted stack MIB would make this easier, since
     # we need to find the vlan interface
     # that's stacked above $ifindex.
     my $cur_stack = $extreme->ifStackStatus();
+
     #
     # create inverted stack
     my $invstack;
-    foreach my $idx (keys %$cur_stack) {
-        my ($higher, $lower) = split(/\./, $idx);
+    foreach my $idx ( keys %$cur_stack ) {
+        my ( $higher, $lower ) = split( /\./, $idx );
         $invstack->{$lower}->{$higher} = $cur_stack->{$idx};
     }
+
     # create vlan tag -> encap interface map
     my %encapif = reverse %$encap_tag;
+
     # now find encap interface from tag
     my $encapidx = $encapif{$vlan_id};
-    if (!defined($encapidx)) {
-        $extreme->error_throw("can't map $vlan_id to encapsulation interface");
-        return undef;
+    if ( !defined($encapidx) ) {
+        $extreme->error_throw(
+            "can't map $vlan_id to encapsulation interface");
+        return;
     }
+
     # now find vlan interface stacked above encap
-    my @abovevlan =  keys %{$invstack->{$encapidx}};
-    if (@abovevlan != 1) {
-        $extreme->error_throw("can't map encap interface $encapidx for $vlan_id to encapsulation interface");
-        return undef;
+    my @abovevlan = keys %{ $invstack->{$encapidx} };
+    if ( @abovevlan != 1 ) {
+        $extreme->error_throw(
+            "can't map encap interface $encapidx for $vlan_id to encapsulation interface"
+        );
+        return;
     }
     my $vlanidx = $abovevlan[0];
     my $rv;
+
     # Delete old VLAN mapping
-    foreach my $oldidx (keys %{$invstack->{$ifindex}}) {
-        if ($is_pvid && defined($encap_tag->{$oldidx})) {
-            next;       # Don't delete tagged mappings
+    foreach my $oldidx ( keys %{ $invstack->{$ifindex} } ) {
+        if ( $is_pvid && defined( $encap_tag->{$oldidx} ) ) {
+            next;    # Don't delete tagged mappings
         }
-        $rv = $extreme->set_ifStackStatus("destroy", $oldidx . "." . $ifindex);
+        $rv = $extreme->set_ifStackStatus( "destroy",
+            $oldidx . "." . $ifindex );
         unless ($rv) {
-            $extreme->error_throw("Unable to remove $ifindex from old VLAN index $oldidx");
-            return undef;
+            $extreme->error_throw(
+                "Unable to remove $ifindex from old VLAN index $oldidx");
+            return;
         }
     }
+
     # Add new VLAN mapping
-    $rv = $extreme->set_ifStackStatus("createAndGo", $vlanidx . "." . $ifindex);
+    $rv = $extreme->set_ifStackStatus( "createAndGo",
+        $vlanidx . "." . $ifindex );
     unless ($rv) {
-        $extreme->error_throw("Unable to add new VLAN index $vlanidx to ifIndex $ifindex");
-        return undef;
+        $extreme->error_throw(
+            "Unable to add new VLAN index $vlanidx to ifIndex $ifindex");
+        return;
     }
-    # XXX invalidate cache of ifstack?
-    # XXX Info.pm library function for this?
-    # XXX set_ should do invalidation?
-    # $store = $extreme->store(); delete $store->{ifStackStatus}; $extreme->store($store);
-    # $extreme->{_ifStackStatus} = 0;
+
+# XXX invalidate cache of ifstack?
+# XXX Info.pm library function for this?
+# XXX set_ should do invalidation?
+# $store = $extreme->store(); delete $store->{ifStackStatus}; $extreme->store($store);
+# $extreme->{_ifStackStatus} = 0;
     return $rv;
 }
 
 sub set_remove_i_vlan_tagged {
     my $extreme = shift;
-    my ($vlan_id, $ifindex) = @_;
+    my ( $vlan_id, $ifindex ) = @_;
     my $encap_tag = $extreme->ex_vlan_encap_tag();
+
     # create vlan tag -> encap interface map
     my %encapif = reverse %$encap_tag;
+
     # now find encap interface from tag
     my $encapidx = $encapif{$vlan_id};
-    if (!defined($encapidx)) {
-        $extreme->error_throw("can't map $vlan_id to encapsulation interface");
-        return undef;
+    if ( !defined($encapidx) ) {
+        $extreme->error_throw(
+            "can't map $vlan_id to encapsulation interface");
+        return;
     }
-    my $rv = $extreme->set_ifStackStatus("destroy", $encapidx . "." . $ifindex);
+    my $rv = $extreme->set_ifStackStatus( "destroy",
+        $encapidx . "." . $ifindex );
     unless ($rv) {
-        $extreme->error_throw("Unable to delete VLAN encap ifIndex $encapidx for VLAN $vlan_id from ifIndex $ifindex");
-        return undef;
+        $extreme->error_throw(
+            "Unable to delete VLAN encap ifIndex $encapidx for VLAN $vlan_id from ifIndex $ifindex"
+        );
+        return;
     }
+
     # invalidate cache of ifstack?
     return $rv;
 }
 
 sub set_add_i_vlan_tagged {
     my $extreme = shift;
-    my ($vlan_id, $ifindex) = @_;
+    my ( $vlan_id, $ifindex ) = @_;
     my $encap_tag = $extreme->ex_vlan_encap_tag();
+
     # create vlan tag -> encap interface map
     my %encapif = reverse %$encap_tag;
+
     # now find encap interface from tag
     my $encapidx = $encapif{$vlan_id};
-    if (!defined($encapidx)) {
-        $extreme->error_throw("can't map $vlan_id to encapsulation interface");
-        return undef;
+    if ( !defined($encapidx) ) {
+        $extreme->error_throw(
+            "can't map $vlan_id to encapsulation interface");
+        return;
     }
-    my $rv = $extreme->set_ifStackStatus("createAndGo", $encapidx . "." . $ifindex);
+    my $rv = $extreme->set_ifStackStatus( "createAndGo",
+        $encapidx . "." . $ifindex );
     unless ($rv) {
-        $extreme->error_throw("Unable to add VLAN encap ifIndex $encapidx for VLAN $vlan_id to ifIndex $ifindex");
-        return undef;
+        $extreme->error_throw(
+            "Unable to add VLAN encap ifIndex $encapidx for VLAN $vlan_id to ifIndex $ifindex"
+        );
+        return;
     }
+
     # invalidate cache of ifstack?
     return $rv;
 }
 
 1;
+
 __END__
 
 =head1 NAME
@@ -499,7 +545,6 @@ Eric Miller, Bill Fenner
  my $extreme = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 1
@@ -515,8 +560,8 @@ Eric Miller, Bill Fenner
 Provides abstraction to the configuration information obtainable from an 
 Extreme device through SNMP. 
 
-For speed or debugging purposes you can call the subclass directly, but not after determining
-a more specific class using the method above. 
+For speed or debugging purposes you can call the subclass directly, but not
+after determining a more specific class using the method above. 
 
 my $extreme = new SNMP::Info::Layer3::Extreme(...);
 
@@ -534,13 +579,13 @@ my $extreme = new SNMP::Info::Layer3::Extreme(...);
 
 =over
 
-=item EXTREME-BASE-MIB
+=item F<EXTREME-BASE-MIB>
 
-=item EXTREME-SYSTEM-MIB
+=item F<EXTREME-SYSTEM-MIB>
 
-=item EXTREME-FDB-MIB
+=item F<EXTREME-FDB-MIB>
 
-=item EXTREME-VLAN-MIB
+=item F<EXTREME-VLAN-MIB>
 
 =item Inherited Classes' MIBs
 
@@ -554,13 +599,9 @@ These are methods that return scalar value from SNMP
 
 =over
 
-#=item $extreme->bulkwalk_no
-#
-#Return C<1>.  Bulkwalk is currently turned off for this class.
-
 =item $extreme->model()
 
-Returns model type.  Checks $extreme->id() against the EXTREME-BASE-MIB.
+Returns model type.  Checks $extreme->id() against the F<EXTREME-BASE-MIB>.
 
 =item $extreme->vendor()
 
@@ -570,35 +611,45 @@ Returns extreme
 
 Returns extreme
 
+=item $extreme->os_ver()
+
+Parses device operating system version from description()
+
 =item $extreme->serial()
 
 Returns serial number
 
-(B<extremeSystemID>)
+(C<extremeSystemID>)
 
 =item $extreme->temp()
 
 Returns system temperature
 
-(B<extremeCurrentTemperature>)
+(C<extremeCurrentTemperature>)
 
 =item $extreme->ps1_status()
 
 Returns status of power supply 1
 
-(B<extremePowerSupplyStatus.1>)
+(C<extremePowerSupplyStatus.1>)
+
+=item $extreme->ps2_status()
+
+Returns status of power supply 2
+
+(C<extremePowerSupplyStatus.2>)
 
 =item $extreme->fan()
 
 Returns fan status
 
-(B<extremeFanOperational.1>)
+(C<extremeFanOperational.1>)
 
 =item $extreme->mac()
 
 Returns base mac
 
-(B<dot1dBaseBridgeAddress>)
+(C<dot1dBaseBridgeAddress>)
 
 =back
 
@@ -625,28 +676,77 @@ to a hash.
 
 =over
 
+=item $extreme->interfaces()
+
+Returns a mapping between the Interface Table Index (iid) and the physical
+port name.
+
+=item $extreme->i_duplex()
+
+Parses mau_index and mau_link to return the duplex information for
+interfaces.
+
+=item $extreme->i_duplex_admin()
+
+Parses C<mac_index>,C<mau_autostat>,C<mau_type_admin> in
+order to find the admin duplex setting for all the interfaces.
+
+Returns either (auto,full,half).
+
+=item $extreme->i_ignore()
+
+Returns reference to hash.  Increments value of IID if port is to be ignored.
+
+Ignores VLAN meta interfaces and loopback
+
 =item $extreme->fw_mac()
 
-(B<extremeFdbMacFdbMacAddress>)
+(C<extremeFdbMacFdbMacAddress>)
 
 =item $extreme->fw_port()
 
-(B<extremeFdbMacFdbPortIfIndex>)
+(C<extremeFdbMacFdbPortIfIndex>)
 
 =item $extreme->fw_status()
 
-(B<extremeFdbMacFdbStatus>)
+(C<extremeFdbMacFdbStatus>)
 
 =item $extreme->i_vlan()
 
-Returns a mapping between ifIndex and the VLAN.
+Returns a mapping between C<ifIndex> and the VLAN.
 
-=item $stack->bp_index()
+=item $extreme->i_vlan_membership()
 
-Returns reference to hash of bridge port table entries map back to interface identifier (iid)
+Returns reference to hash of arrays: key = C<ifIndex>, value = array of VLAN
+IDs.  These are the VLANs which are members of the egress list for the port.
 
-Returns (B<ifIndex>) for both key and value since we're using EXTREME-FDB-MIB
-rather than BRIDGE-MIB.
+  Example:
+  my $interfaces = $extreme->interfaces();
+  my $vlans      = $extreme->i_vlan_membership();
+  
+  foreach my $iid (sort keys %$interfaces) {
+    my $port = $interfaces->{$iid};
+    my $vlan = join(',', sort(@{$vlans->{$iid}}));
+    print "Port: $port VLAN: $vlan\n";
+  }
+
+=item $extreme->v_index()
+
+Returns VLAN IDs
+
+=item $extreme->v_name()
+
+Returns VLAN names
+
+(C<extremeVlanIfDescr>)
+
+=item $extreme->bp_index()
+
+Returns reference to hash of bridge port table entries map back to interface
+identifier (iid)
+
+Returns (C<ifIndex>) for both key and value since we're using
+F<EXTREME-FDB-MIB> rather than F<BRIDGE-MIB>.
 
 =back
 
@@ -658,10 +758,19 @@ See documentation in L<SNMP::Info::Layer3/"TABLE METHODS"> for details.
 
 See documentation in L<SNMP::Info::MAU/"TABLE METHODS"> for details.
 
+=head1 SET METHODS
+
+These are methods that provide SNMP set functionality for overridden methods
+or provide a simpler interface to complex set operations.  See
+L<SNMP::Info/"SETTING DATA VIA SNMP"> for general information on set
+operations. 
+
+=over
+
 =item $extreme->set_i_vlan ( vlan, ifIndex )
 
 Changes an access (untagged) port VLAN, must be supplied with the numeric
-VLAN ID and port ifIndex.  This method should only be used on end station
+VLAN ID and port C<ifIndex>.  This method should only be used on end station
 (non-trunk) ports.
 
   Example:
@@ -672,7 +781,7 @@ VLAN ID and port ifIndex.  This method should only be used on end station
 =item $extreme->set_i_pvid ( pvid, ifIndex )
 
 Sets port default VLAN, must be supplied with the numeric VLAN ID and
-port ifIndex.  This method should only be used on trunk ports.
+port C<ifIndex>.  This method should only be used on trunk ports.
 
   Example:
   my %if_map = reverse %{$extreme->interfaces()};
@@ -682,7 +791,7 @@ port ifIndex.  This method should only be used on trunk ports.
 =item $extreme->set_add_i_vlan_tagged ( vlan, ifIndex )
 
 Adds the VLAN to the enabled VLANs list of the port, must be supplied with the
-numeric VLAN ID and port ifIndex.
+numeric VLAN ID and port C<ifIndex>.
 
   Example:
   my %if_map = reverse %{$extreme->interfaces()};
@@ -692,11 +801,27 @@ numeric VLAN ID and port ifIndex.
 =item $extreme->set_remove_i_vlan_tagged ( vlan, ifIndex )
 
 Removes the VLAN from the enabled VLANs list of the port, must be supplied
-with the numeric VLAN ID and port ifIndex.
+with the numeric VLAN ID and port C<ifIndex>.
 
   Example:
   my %if_map = reverse %{$extreme->interfaces()};
   $extreme->set_remove_i_vlan_tagged('2', $if_map{'FastEthernet0/1'}) 
     or die "Couldn't add port to egress list. ",$extreme->error(1);
+
+=back
+
+=head1 Data Munging Callback Subroutines
+
+=over
+
+=item $extreme->munge_power_stat()
+
+Removes 'present' and changes 'not' to 'Not' in the front of a string.
+
+=item $extreme->munge_true_ok()
+
+Replaces 'true' with "OK" and 'false' with "Not OK".
+
+=back
 
 =cut

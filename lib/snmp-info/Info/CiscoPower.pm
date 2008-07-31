@@ -1,81 +1,82 @@
 # SNMP::Info::CiscoPower
-# Bill Fenner
+# $Id: CiscoPower.pm,v 1.5 2008/07/20 03:27:07 jeneric Exp $
 #
-# Copyright (c) 2007 Bill Fenner
-# 
-# Redistribution and use in source and binary forms, with or without 
+# Copyright (c) 2008 Bill Fenner
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoPower;
-$VERSION = '1.07';
-# $Id: CiscoPower.pm,v 1.2 2007/11/26 04:24:50 jeneric Exp $
 
 use strict;
-
 use Exporter;
 use SNMP::Info;
 
-use vars qw/$VERSION $DEBUG %MIBS %FUNCS %GLOBALS %MUNGE $INIT/;
-@SNMP::Info::CiscoPower::ISA = qw/SNMP::Info Exporter/;
+@SNMP::Info::CiscoPower::ISA       = qw/SNMP::Info Exporter/;
 @SNMP::Info::CiscoPower::EXPORT_OK = qw//;
 
-%MIBS    = ('CISCO-POWER-ETHERNET-EXT-MIB' => 'cpeExtPsePortEntPhyIndex');
+use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
 
-%GLOBALS = (
-           );
+$VERSION = '1.09';
 
-%FUNCS   = (
-	    'cpeth_ent_phy'    => 'cpeExtPsePortEntPhyIndex',
-           );
+%MIBS = ( 'CISCO-POWER-ETHERNET-EXT-MIB' => 'cpeExtPsePortEntPhyIndex' );
 
-%MUNGE   = (
-           );
+%GLOBALS = ();
+
+%FUNCS = ( 'cpeth_ent_phy' => 'cpeExtPsePortEntPhyIndex', );
+
+%MUNGE = ();
 
 # Cisco overcame the limitation of the module.port index of the
 # pethPsePortTable by adding another mapping table, which maps
 # a pethPsePortTable row to an entPhysicalTable index, which can
 # then be mapped to ifIndex.
 sub peth_port_ifindex {
-    my $cpeth = shift;
+    my $cpeth   = shift;
     my $partial = shift;
 
     my $ent_phy = $cpeth->cpeth_ent_phy($partial);
-    my $e_port = $cpeth->e_port();
+    my $e_port  = $cpeth->e_port();
 
     my $peth_port_ifindex = {};
-    foreach my $i (keys %$ent_phy) {
-	if ($e_port->{$ent_phy->{$i}}) {
-	    $peth_port_ifindex->{$i} = $e_port->{$ent_phy->{$i}};
-	}
+    foreach my $i ( keys %$ent_phy ) {
+        if ( $e_port->{ $ent_phy->{$i} } ) {
+            $peth_port_ifindex->{$i} = $e_port->{ $ent_phy->{$i} };
+        }
     }
     return $peth_port_ifindex;
 }
 
 1;
 
+__END__
+
 =head1 NAME
 
-SNMP::Info::CiscoPower - SNMP Interface to data stored in CISCO-POWER-ETHERNET-EXT-MIB.
+SNMP::Info::CiscoPower - SNMP Interface to data stored in
+F<CISCO-POWER-ETHERNET-EXT-MIB>.
 
 =head1 AUTHOR
 
@@ -87,7 +88,6 @@ Bill Fenner
  my $poe = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -100,14 +100,15 @@ Bill Fenner
 =head1 DESCRIPTION
 
 The Info::PowerEthernet class needs a per-device helper function to
-properly map the pethPsePortTable to ifIndex values.  This class
-provides that helper, using CISCO-POWER-ETHERNET-EXT-MIB.
+properly map the C<pethPsePortTable> to C<ifIndex> values.  This class
+provides that helper, using F<CISCO-POWER-ETHERNET-EXT-MIB>.
 It does not define any helpers for the extra values that this MIB
 contains.
 
 Create or use a device subclass that inherit this class.  Do not use directly.
 
-For debugging purposes you can call this class directly as you would SNMP::Info
+For debugging purposes you can call this class directly as you would
+SNMP::Info
 
  my $poe = new SNMP::Info::CiscoPower (...);
 
@@ -121,7 +122,7 @@ Note that it requires that the device inherits from Info::Entity.
 
 =over
 
-=item CISCO-POWER-ETHERNET-EXT-MIB
+=item F<CISCO-POWER-ETHERNET-EXT-MIB>
 
 =back
 
@@ -140,7 +141,7 @@ to a hash.
 
 =item $poe->peth_port_ifindex()
 
-Maps the pethPsePortTable to ifIndex by way of the ENTITY-MIB.
+Maps the C<pethPsePortTable> to C<ifIndex> by way of the F<ENTITY-MIB>.
 
 =back
 

@@ -1,62 +1,58 @@
 # SNMP::Info::CiscoRTT
-# Alexander Hartmaier <alexander.hartmaier@t-systems.at>
-# $Id: CiscoRTT.pm,v 1.6 2007/11/26 04:24:50 jeneric Exp $
+# $Id: CiscoRTT.pm,v 1.9 2008/07/20 03:27:07 jeneric Exp $
 #
 # Copyright (c) 2005 Alexander Hartmaier
-#
 # All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without 
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoRTT;
-$VERSION = '1.07';
 
 use strict;
-
 use Exporter;
 use SNMP::Info;
 
-@SNMP::Info::CiscoRTT::ISA = qw/SNMP::Info Exporter/;
+@SNMP::Info::CiscoRTT::ISA       = qw/SNMP::Info Exporter/;
 @SNMP::Info::CiscoRTT::EXPORT_OK = qw//;
 
 use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
 
-%MIBS    = (
-            'CISCO-RTTMON-MIB'      => 'rttMonCtrlAdminOwner',
-           );
+$VERSION = '1.09';
 
-%GLOBALS = (
-           );
+%MIBS = ( 'CISCO-RTTMON-MIB' => 'rttMonCtrlAdminOwner', );
 
-%FUNCS   = (
-            # CISCO-RTTMON-MIB
-            'rtt_desc'              => 'rttMonCtrlAdminOwner',
-            'rtt_last'              => 'rttMonLatestRttOperCompletionTime',
-           );
+%GLOBALS = ();
 
-%MUNGE   = (
-           );
+%FUNCS = (
+
+    # CISCO-RTTMON-MIB
+    'rtt_desc' => 'rttMonCtrlAdminOwner',
+    'rtt_last' => 'rttMonLatestRttOperCompletionTime',
+);
+
+%MUNGE = ();
 
 1;
 __END__
@@ -75,7 +71,6 @@ Alexander Hartmaier
  my $rtt = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -100,7 +95,7 @@ none.
 
 =over
 
-=item CISCO-RTTMON-MIB
+=item F<CISCO-RTTMON-MIB>
 
 =back
 
@@ -118,25 +113,25 @@ None
 
 =head2 Overall Control Group Table
 
-This table is from CISCO-RTTMAN-MIB::rttMonCtrlAdminTable
+This table is from C<CISCO-RTTMAN-MIB::rttMonCtrlAdminTable>
 
 =over
 
 =item $rtt->rtt_desc()
 
-(B<rttMonCtrlAdminOwner>)
+(C<rttMonCtrlAdminOwner>)
 
 =back
 
 =head2 Overall Control Group Table
 
-This table is from CISCO-RTTMON-MIB::rttMonCtrl
+This table is from C<CISCO-RTTMON-MIB::rttMonCtrl>
 
 =over
 
 =item $rtt->rtt_last()
 
-(B<rttMonLatestRttOperCompletionTime>)
+(C<rttMonLatestRttOperCompletionTime>)
 
 =back
 

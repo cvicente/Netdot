@@ -1,82 +1,81 @@
 # SNMP::Info::Layer3::Passport
-# Eric Miller
-# $Id: Passport.pm,v 1.28 2007/11/26 04:24:52 jeneric Exp $
+# $Id: Passport.pm,v 1.33 2008/07/29 03:23:27 jeneric Exp $
 #
-# Copyright (c) 2004 Eric Miller, Max Baker
+# Copyright (c) 2008 Eric Miller
 # All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without 
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::Passport;
-$VERSION = '1.07';
 
 use strict;
-
 use Exporter;
 use SNMP::Info::SONMP;
 use SNMP::Info::RapidCity;
 use SNMP::Info::Layer3;
 
-use vars qw/$VERSION $DEBUG %GLOBALS %FUNCS $INIT %MIBS %MUNGE/;
-
-@SNMP::Info::Layer3::Passport::ISA = qw/SNMP::Info::SONMP SNMP::Info::RapidCity
-                                        SNMP::Info::Layer3 Exporter/;
+@SNMP::Info::Layer3::Passport::ISA
+    = qw/SNMP::Info::SONMP SNMP::Info::RapidCity
+    SNMP::Info::Layer3 Exporter/;
 @SNMP::Info::Layer3::Passport::EXPORT_OK = qw//;
 
+use vars qw/$VERSION %GLOBALS %FUNCS %MIBS %MUNGE/;
+
+$VERSION = '1.09';
+
 %MIBS = (
-         %SNMP::Info::Layer3::MIBS,
-         %SNMP::Info::RapidCity::MIBS,
-         %SNMP::Info::SONMP::MIBS,
-        );
+    %SNMP::Info::Layer3::MIBS, %SNMP::Info::RapidCity::MIBS,
+    %SNMP::Info::SONMP::MIBS,
+);
 
 %GLOBALS = (
-            %SNMP::Info::Layer3::GLOBALS,
-            %SNMP::Info::RapidCity::GLOBALS,
-            %SNMP::Info::SONMP::GLOBALS,
-           );
+    %SNMP::Info::Layer3::GLOBALS, %SNMP::Info::RapidCity::GLOBALS,
+    %SNMP::Info::SONMP::GLOBALS,
+);
 
 %FUNCS = (
-          %SNMP::Info::Layer3::FUNCS,
-          %SNMP::Info::RapidCity::FUNCS,
-          %SNMP::Info::SONMP::FUNCS,
-         );
-         
+    %SNMP::Info::Layer3::FUNCS, %SNMP::Info::RapidCity::FUNCS,
+    %SNMP::Info::SONMP::FUNCS,
+);
+
 %MUNGE = (
-          %SNMP::Info::Layer3::MUNGE,
-          %SNMP::Info::RapidCity::MUNGE,
-          %SNMP::Info::SONMP::MUNGE,
-         );
+    %SNMP::Info::Layer3::MUNGE, %SNMP::Info::RapidCity::MUNGE,
+    %SNMP::Info::SONMP::MUNGE,
+);
 
 sub model {
     my $passport = shift;
-    my $id = $passport->id();
-    
-    unless (defined $id){
-        print " SNMP::Info::Layer3::Passport::model() - Device does not support sysObjectID\n" if $passport->debug(); 
-        return undef;
+    my $id       = $passport->id();
+
+    unless ( defined $id ) {
+        print
+            " SNMP::Info::Layer3::Passport::model() - Device does not support sysObjectID\n"
+            if $passport->debug();
+        return;
     }
-    
+
     my $model = &SNMP::translateObj($id);
 
     return $id unless defined $model;
@@ -95,29 +94,30 @@ sub os {
 
 sub os_ver {
     my $passport = shift;
-    my $descr = $passport->description();
-    return undef unless defined $descr;
+    my $descr    = $passport->description();
+    return unless defined $descr;
 
     #ERS / Passport
-    if ($descr =~ m/(\d+\.\d+\.\d+\.\d+)/){
+    if ( $descr =~ m/(\d+\.\d+\.\d+\.\d+)/ ) {
         return $1;
     }
+
     #Accelar
-    if ($descr =~ m/(\d+\.\d+\.\d+)/){
+    if ( $descr =~ m/(\d+\.\d+\.\d+)/ ) {
         return $1;
     }
-    return undef;
+    return;
 }
 
 sub i_index {
     my $passport = shift;
-    my $partial = shift;
+    my $partial  = shift;
 
     my $i_index = $passport->orig_i_index($partial);
     my $model   = $passport->model();
 
     my %if_index;
-    foreach my $iid (keys %$i_index){
+    foreach my $iid ( keys %$i_index ) {
         my $index = $i_index->{$iid};
         next unless defined $index;
 
@@ -125,29 +125,33 @@ sub i_index {
     }
 
     # Get VLAN Virtual Router Interfaces
-    if (!defined $partial or (defined $model and
-        (($partial > 2000 and $model =~ /(86|83|81|16)/) or
-        ($partial > 256  and $model =~ /(105|11[05]0|12[05])/)))) {
-        
+    if (!defined $partial
+        or (defined $model
+            and (  ( $partial > 2000 and $model =~ /(86|83|81|16)/ )
+                or ( $partial > 256 and $model =~ /(105|11[05]0|12[05])/ ) )
+        )
+        )
+    {
+
         my $vlan_index = $passport->rc_vlan_if() || {};
-        
-        foreach my $vid (keys %$vlan_index){
+
+        foreach my $vid ( keys %$vlan_index ) {
             my $v_index = $vlan_index->{$vid};
             next unless defined $v_index;
             next if $v_index == 0;
-            next if (defined $partial and $v_index !~ /^$partial$/);
+            next if ( defined $partial and $v_index !~ /^$partial$/ );
 
             $if_index{$v_index} = $v_index;
         }
     }
 
-    if (defined $model and $model =~ /(86)/) {
+    if ( defined $model and $model =~ /(86)/ ) {
 
         my $cpu_index = $passport->rc_cpu_ifindex($partial) || {};
         my $virt_ip = $passport->rc_virt_ip();
-        
+
         # Get CPU Ethernet Interfaces
-        foreach my $cid (keys %$cpu_index){
+        foreach my $cid ( keys %$cpu_index ) {
             my $c_index = $cpu_index->{$cid};
             next unless defined $c_index;
             next if $c_index == 0;
@@ -156,7 +160,8 @@ sub i_index {
         }
 
         # Check for Virtual Mgmt Interface
-        unless ($virt_ip eq '0.0.0.0') {
+        unless ( $virt_ip eq '0.0.0.0' ) {
+
             # Make up an index number, 1 is not reserved AFAIK
             $if_index{1} = 1;
         }
@@ -166,58 +171,63 @@ sub i_index {
 
 sub interfaces {
     my $passport = shift;
-    my $partial = shift;
+    my $partial  = shift;
 
-    my $i_index = $passport->i_index($partial);
-    my $model   = $passport->model();
+    my $i_index      = $passport->i_index($partial);
+    my $model        = $passport->model();
     my $index_factor = $passport->index_factor();
-    my $port_offset = $passport->port_offset();
-    my $vlan_index = {};
+    my $port_offset  = $passport->port_offset();
+    my $vlan_index   = {};
     my %reverse_vlan;
     my $vlan_id = {};
-    
-    if (!defined $partial or (defined $model and
-        (($partial > 2000 and $model =~ /(86|83|81|16)/) or
-        ($partial > 256  and $model =~ /(105|11[05]0|12[05])/)))) {
-            $vlan_index = $passport->rc_vlan_if(); 
-            %reverse_vlan = reverse %$vlan_index;
-            $vlan_id = $passport->rc_vlan_id();
+
+    if (!defined $partial
+        or (defined $model
+            and (  ( $partial > 2000 and $model =~ /(86|83|81|16)/ )
+                or ( $partial > 256 and $model =~ /(105|11[05]0|12[05])/ ) )
+        )
+        )
+    {
+        $vlan_index   = $passport->rc_vlan_if() || {};
+        %reverse_vlan = reverse %$vlan_index;
+        $vlan_id      = $passport->rc_vlan_id();
     }
-   
+
     my %if;
-    foreach my $iid (keys %$i_index){
+    foreach my $iid ( keys %$i_index ) {
         my $index = $i_index->{$iid};
         next unless defined $index;
 
-        if (($index == 1) and ($model =~ /(86)/)) {
+        if ( ( $index == 1 ) and ( $model =~ /(86)/ ) ) {
             $if{$index} = 'Cpu.Virtual';
         }
 
-        elsif (($index == 192) and ($model eq '8603')) {
+        elsif ( ( $index == 192 ) and ( $model eq '8603' ) ) {
             $if{$index} = 'Cpu.3';
         }
 
-        elsif (($index == 320) and ($model =~ /(8606|8610|8610co)/)) {
+        elsif ( ( $index == 320 ) and ( $model =~ /(8606|8610|8610co)/ ) ) {
             $if{$index} = 'Cpu.5';
         }
 
-        elsif (($index == 384) and ($model =~ /(8606|8610|8610co)/)) {
+        elsif ( ( $index == 384 ) and ( $model =~ /(8606|8610|8610co)/ ) ) {
             $if{$index} = 'Cpu.6';
         }
 
-        elsif (($index > 2000 and $model =~ /(86|83|81|16)/) or
-               ($index > 256  and $model =~ /(105|11[05]0|12[05])/)) {
+        elsif (( $index > 2000 and $model =~ /(86|83|81|16)/ )
+            or ( $index > 256 and $model =~ /(105|11[05]0|12[05])/ ) )
+        {
 
-                my $v_index = $reverse_vlan{$iid};
-                my $v_id = $vlan_id->{$v_index};
-                next unless defined $v_id;
-                my $v_port = 'Vlan'."$v_id";
-                $if{$index} = $v_port;
-        }           
+            my $v_index = $reverse_vlan{$iid};
+            my $v_id    = $vlan_id->{$v_index};
+            next unless defined $v_id;
+            my $v_port = 'Vlan' . "$v_id";
+            $if{$index} = $v_port;
+        }
 
         else {
-            my $port = ($index % $index_factor) + $port_offset;
-            my $slot = int($index / $index_factor);
+            my $port = ( $index % $index_factor ) + $port_offset;
+            my $slot = int( $index / $index_factor );
 
             my $slotport = "$slot.$port";
             $if{$iid} = $slotport;
@@ -230,13 +240,13 @@ sub interfaces {
 
 sub i_mac {
     my $passport = shift;
-    my $partial = shift;
+    my $partial  = shift;
 
     my $i_mac = $passport->orig_i_mac($partial) || {};
-    my $model   = $passport->model();
+    my $model = $passport->model();
 
     my %if_mac;
-    foreach my $iid (keys %$i_mac){
+    foreach my $iid ( keys %$i_mac ) {
         my $mac = $i_mac->{$iid};
         next unless defined $mac;
 
@@ -244,31 +254,35 @@ sub i_mac {
     }
 
     # Get VLAN Virtual Router Interfaces
-    if (!defined $partial or (defined $model and
-        (($partial > 2000 and $model =~ /(86|83|81|16)/) or
-        ($partial > 256  and $model =~ /(105|11[05]0|12[05])/)))) {
+    if (!defined $partial
+        or (defined $model
+            and (  ( $partial > 2000 and $model =~ /(86|83|81|16)/ )
+                or ( $partial > 256 and $model =~ /(105|11[05]0|12[05])/ ) )
+        )
+        )
+    {
 
-        my $vlan_index = $passport->rc_vlan_if() || {};
-        my $vlan_mac = $passport->rc_vlan_mac() || {};
+        my $vlan_index = $passport->rc_vlan_if()  || {};
+        my $vlan_mac   = $passport->rc_vlan_mac() || {};
 
-        foreach my $iid (keys %$vlan_mac){
+        foreach my $iid ( keys %$vlan_mac ) {
             my $v_mac = $vlan_mac->{$iid};
             next unless defined $v_mac;
-            my $v_id  = $vlan_index->{$iid};
+            my $v_id = $vlan_index->{$iid};
             next unless defined $v_id;
-            next if (defined $partial and $v_id !~ /^$partial$/);
+            next if ( defined $partial and $v_id !~ /^$partial$/ );
 
             $if_mac{$v_id} = $v_mac;
         }
     }
-    
-    if (defined $model and $model =~ /(86)/) {
+
+    if ( defined $model and $model =~ /(86)/ ) {
 
         my $cpu_mac = $passport->rc_cpu_mac($partial) || {};
-        my $virt_ip = $passport->rc_virt_ip() || '0.0.0.0';
+        my $virt_ip = $passport->rc_virt_ip()         || '0.0.0.0';
 
         # Get CPU Ethernet Interfaces
-        foreach my $iid (keys %$cpu_mac){
+        foreach my $iid ( keys %$cpu_mac ) {
             my $mac = $cpu_mac->{$iid};
             next unless defined $mac;
 
@@ -276,18 +290,20 @@ sub i_mac {
         }
 
         # Check for Virtual Mgmt Interface
-        unless (($virt_ip eq '0.0.0.0') or (defined $partial and $partial ne "1")) {
+        unless ( ( $virt_ip eq '0.0.0.0' )
+            or ( defined $partial and $partial ne "1" ) )
+        {
             my $chassis_base_mac = $passport->rc_base_mac();
-            if (defined $chassis_base_mac) {
+            if ( defined $chassis_base_mac ) {
                 my @virt_mac = split /:/, $chassis_base_mac;
-                $virt_mac[0] = hex($virt_mac[0]);
-                $virt_mac[1] = hex($virt_mac[1]);
-                $virt_mac[2] = hex($virt_mac[2]);
-                $virt_mac[3] = hex($virt_mac[3]);
-                $virt_mac[4] = hex($virt_mac[4]) + 0x03;
-                $virt_mac[5] = hex($virt_mac[5]) + 0xF8;
+                $virt_mac[0] = hex( $virt_mac[0] );
+                $virt_mac[1] = hex( $virt_mac[1] );
+                $virt_mac[2] = hex( $virt_mac[2] );
+                $virt_mac[3] = hex( $virt_mac[3] );
+                $virt_mac[4] = hex( $virt_mac[4] ) + 0x03;
+                $virt_mac[5] = hex( $virt_mac[5] ) + 0xF8;
 
-                my $mac = join(':',map { sprintf "%02x",$_ } @virt_mac);
+                my $mac = join( ':', map { sprintf "%02x", $_ } @virt_mac );
 
                 $if_mac{1} = $mac;
             }
@@ -298,13 +314,13 @@ sub i_mac {
 
 sub i_description {
     my $passport = shift;
-    my $partial = shift;
+    my $partial  = shift;
 
     my $i_descr = $passport->orig_i_description($partial) || {};
-    my $model   = $passport->model();
+    my $model = $passport->model();
 
     my %descr;
-    foreach my $iid (keys %$i_descr){
+    foreach my $iid ( keys %$i_descr ) {
         my $if_descr = $i_descr->{$iid};
         next unless defined $if_descr;
 
@@ -312,80 +328,94 @@ sub i_description {
     }
 
     # Get VLAN Virtual Router Interfaces
-    if (!defined $partial or (defined $model and
-        (($partial > 2000 and $model =~ /(86|83|81|16)/) or
-        ($partial > 256  and $model =~ /(105|11[05]0|12[05])/)))) {
+    if (!defined $partial
+        or (defined $model
+            and (  ( $partial > 2000 and $model =~ /(86|83|81|16)/ )
+                or ( $partial > 256 and $model =~ /(105|11[05]0|12[05])/ ) )
+        )
+        )
+    {
 
-        my $v_descr = $passport->v_name();
+        my $v_descr    = $passport->v_name();
         my $vlan_index = $passport->rc_vlan_if();
 
-        foreach my $vid (keys %$v_descr){
+        foreach my $vid ( keys %$v_descr ) {
             my $vl_descr = $v_descr->{$vid};
             next unless defined $vl_descr;
-            my $v_id  = $vlan_index->{$vid};
+            my $v_id = $vlan_index->{$vid};
             next unless defined $v_id;
-            next if (defined $partial and $v_id !~ /^$partial$/);
+            next if ( defined $partial and $v_id !~ /^$partial$/ );
 
             $descr{$v_id} = $vl_descr;
         }
     }
     return \%descr;
 }
-    
+
 sub i_name {
     my $passport = shift;
-    my $partial = shift;
+    my $partial  = shift;
 
-    my $model   = $passport->model();
-    my $i_index = $passport->i_index($partial) || {};
-    my $rc_alias = $passport->rc_alias($partial) || {};
-    my $i_name2  = $passport->orig_i_name($partial) || {};
-    my $v_name = {};
+    my $model      = $passport->model();
+    my $i_index    = $passport->i_index($partial) || {};
+    my $rc_alias   = $passport->rc_alias($partial) || {};
+    my $i_name2    = $passport->orig_i_name($partial) || {};
+    my $v_name     = {};
     my $vlan_index = {};
     my %reverse_vlan;
 
-    if (!defined $partial or (defined $model and
-        (($partial > 2000 and $model =~ /(86|83|81|16)/) or
-        ($partial > 256  and $model =~ /(105|11[05]0|12[05])/)))) {
-            $v_name = $passport->v_name() || {};
-            $vlan_index = $passport->rc_vlan_if() || {};
-            %reverse_vlan = reverse %$vlan_index;
-    }    
+    if (!defined $partial
+        or (defined $model
+            and (  ( $partial > 2000 and $model =~ /(86|83|81|16)/ )
+                or ( $partial > 256 and $model =~ /(105|11[05]0|12[05])/ ) )
+        )
+        )
+    {
+        $v_name     = $passport->v_name()     || {};
+        $vlan_index = $passport->rc_vlan_if() || {};
+        %reverse_vlan = reverse %$vlan_index;
+    }
 
     my %i_name;
-    foreach my $iid (keys %$i_index){
- 
-        if (($iid == 1) and ($model =~ /(86)/)) {
+    foreach my $iid ( keys %$i_index ) {
+
+        if ( ( $iid == 1 ) and ( $model =~ /(86)/ ) ) {
             $i_name{$iid} = 'CPU Virtual Management IP';
         }
 
-        elsif (($iid == 192) and ($model eq '8603')) {
+        elsif ( ( $iid == 192 ) and ( $model eq '8603' ) ) {
             $i_name{$iid} = 'CPU 3 Ethernet Port';
         }
 
-        elsif (($iid == 320) and ($model =~ /(8606|8610|8610co)/)) {
+        elsif ( ( $iid == 320 ) and ( $model =~ /(8606|8610|8610co)/ ) ) {
             $i_name{$iid} = 'CPU 5 Ethernet Port';
         }
 
-        elsif (($iid == 384) and ($model =~ /(8606|8610|8610co)/)) {
+        elsif ( ( $iid == 384 ) and ( $model =~ /(8606|8610|8610co)/ ) ) {
             $i_name{$iid} = 'CPU 6 Ethernet Port';
         }
 
-        elsif (($iid > 2000 and defined $model and $model =~ /(86|83|81|16)/) or
-                ($iid > 256 and defined $model and $model =~ /(105|11[05]0|12[05])/)) {
+        elsif (
+            ( $iid > 2000 and defined $model and $model =~ /(86|83|81|16)/ )
+            or (    $iid > 256
+                and defined $model
+                and $model =~ /(105|11[05]0|12[05])/ )
+            )
+        {
             my $vlan_index = $reverse_vlan{$iid};
-            my $vlan_name = $v_name->{$vlan_index};
+            my $vlan_name  = $v_name->{$vlan_index};
             next unless defined $vlan_name;
 
             $i_name{$iid} = $vlan_name;
         }
 
         else {
-            my $name = $i_name2->{$iid};
+            my $name  = $i_name2->{$iid};
             my $alias = $rc_alias->{$iid};
-            $i_name{$iid} = (defined $alias and $alias !~ /^\s*$/) ?
-                        $alias : 
-                        $name;
+            $i_name{$iid}
+                = ( defined $alias and $alias !~ /^\s*$/ )
+                ? $alias
+                : $name;
         }
     }
 
@@ -394,65 +424,65 @@ sub i_name {
 
 sub ip_index {
     my $passport = shift;
-    my $partial = shift;
+    my $partial  = shift;
 
-    my $model   = $passport->model();
+    my $model = $passport->model();
     my $ip_index = $passport->orig_ip_index($partial) || {};
 
     my %ip_index;
-    foreach my $ip (keys %$ip_index){
-        my $iid  = $ip_index->{$ip};
+    foreach my $ip ( keys %$ip_index ) {
+        my $iid = $ip_index->{$ip};
         next unless defined $iid;
-        
+
         $ip_index{$ip} = $iid;
     }
 
     # Only 8600 has CPU and Virtual Management IP
-    if (defined $model and $model =~ /(86)/) {
+    if ( defined $model and $model =~ /(86)/ ) {
 
-    my $cpu_ip = $passport->rc_cpu_ip($partial) || {};
-    my $virt_ip = $passport->rc_virt_ip($partial);
+        my $cpu_ip = $passport->rc_cpu_ip($partial) || {};
+        my $virt_ip = $passport->rc_virt_ip($partial);
 
         # Get CPU Ethernet IP
-        foreach my $cid (keys %$cpu_ip){
+        foreach my $cid ( keys %$cpu_ip ) {
             my $c_ip = $cpu_ip->{$cid};
             next unless defined $c_ip;
 
             $ip_index{$c_ip} = $cid;
         }
 
-        # Get Virtual Mgmt IP 
-        $ip_index{$virt_ip} = 1 if (defined $virt_ip);
+        # Get Virtual Mgmt IP
+        $ip_index{$virt_ip} = 1 if ( defined $virt_ip );
     }
-    
+
     return \%ip_index;
 }
 
 sub ip_netmask {
     my $passport = shift;
-    my $partial = shift;
+    my $partial  = shift;
 
-    my $model   = $passport->model();
+    my $model = $passport->model();
     my $ip_mask = $passport->orig_ip_netmask($partial) || {};
 
     my %ip_index;
-    foreach my $iid (keys %$ip_mask){
-        my $mask  = $ip_mask->{$iid};
+    foreach my $iid ( keys %$ip_mask ) {
+        my $mask = $ip_mask->{$iid};
         next unless defined $mask;
-        
+
         $ip_index{$iid} = $mask;
     }
 
     # Only 8600 has CPU and Virtual Management IP
-    if (defined $model and $model =~ /(86)/) {
+    if ( defined $model and $model =~ /(86)/ ) {
 
-    my $cpu_ip = $passport->rc_cpu_ip($partial) || {};
-    my $cpu_mask = $passport->rc_cpu_mask($partial) || {};
-    my $virt_ip = $passport->rc_virt_ip($partial);
-    my $virt_mask = $passport->rc_virt_mask($partial) || {};
+        my $cpu_ip    = $passport->rc_cpu_ip($partial)    || {};
+        my $cpu_mask  = $passport->rc_cpu_mask($partial)  || {};
+        my $virt_ip   = $passport->rc_virt_ip($partial);
+        my $virt_mask = $passport->rc_virt_mask($partial) || {};
 
         # Get CPU Ethernet IP
-        foreach my $iid (keys %$cpu_mask){
+        foreach my $iid ( keys %$cpu_mask ) {
             my $c_ip = $cpu_ip->{$iid};
             next unless defined $c_ip;
             my $c_mask = $cpu_mask->{$iid};
@@ -462,66 +492,75 @@ sub ip_netmask {
         }
 
         # Get Virtual Mgmt IP
-        $ip_index{$virt_ip} = $virt_mask if (defined $virt_mask and defined $virt_ip);
+        $ip_index{$virt_ip} = $virt_mask
+            if ( defined $virt_mask and defined $virt_ip );
     }
-    
+
     return \%ip_index;
 }
 
 sub root_ip {
-    my $passport = shift;
-    my $model   = $passport->model();
-    my $rc_ip_addr = $passport->rc_ip_addr();
-    my $rc_ip_type = $passport->rc_ip_type();
-    my $virt_ip = $passport->rc_virt_ip();
-    my $router_ip  = $passport->router_ip();
+    my $passport        = shift;
+    my $model           = $passport->model();
+    my $rc_ip_addr      = $passport->rc_ip_addr();
+    my $rc_ip_type      = $passport->rc_ip_type();
+    my $virt_ip         = $passport->rc_virt_ip();
+    my $router_ip       = $passport->router_ip();
     my $sonmp_topo_port = $passport->sonmp_topo_port();
-    my $sonmp_topo_ip = $passport->sonmp_topo_ip();
+    my $sonmp_topo_ip   = $passport->sonmp_topo_ip();
 
     # Only 8600 and 1600 have CLIP or Management Virtual IP
-    if (defined $model and $model =~ /(86|16)/) {
+    if ( defined $model and $model =~ /(86|16)/ ) {
+
         # Return CLIP (CircuitLess IP)
-        foreach my $iid (keys %$rc_ip_type){
+        foreach my $iid ( keys %$rc_ip_type ) {
             my $ip_type = $rc_ip_type->{$iid};
-            next unless ((defined $ip_type) and ($ip_type =~ /circuitLess/i));
+            next
+                unless ( ( defined $ip_type )
+                and ( $ip_type =~ /circuitLess/i ) );
             my $ip = $rc_ip_addr->{$iid};
             next unless defined $ip;
-            
+
             return $ip if $passport->snmp_connect_ip($ip);
         }
 
         # Return Management Virtual IP address
-        if ( (defined $virt_ip) and ($virt_ip ne '0.0.0.0') ) {
+        if ( ( defined $virt_ip ) and ( $virt_ip ne '0.0.0.0' ) ) {
             return $virt_ip if $passport->snmp_connect_ip($virt_ip);
         }
     }
 
     # Return OSPF Router ID
-    if ((defined $router_ip) and ($router_ip ne '0.0.0.0')) {
-        foreach my $iid (keys %$rc_ip_addr){
+    if ( ( defined $router_ip ) and ( $router_ip ne '0.0.0.0' ) ) {
+        foreach my $iid ( keys %$rc_ip_addr ) {
             my $ip = $rc_ip_addr->{$iid};
             next unless $router_ip eq $ip;
             return $router_ip if $passport->snmp_connect_ip($router_ip);
         }
     }
 
-    # Otherwise Return SONMP Advertised IP Address    
-    foreach my $entry (keys %$sonmp_topo_port){
+    # Otherwise Return SONMP Advertised IP Address
+    foreach my $entry ( keys %$sonmp_topo_port ) {
         my $port = $sonmp_topo_port->{$entry};
         next unless $port == 0;
         my $ip = $sonmp_topo_ip->{$entry};
-        return $ip if ( (defined $ip) and ($ip ne '0.0.0.0') and ($passport->snmp_connect_ip($ip)) );
+        return $ip
+            if (( defined $ip )
+            and ( $ip ne '0.0.0.0' )
+            and ( $passport->snmp_connect_ip($ip) ) );
     }
-    return undef;
+    return;
 }
 
 # Required for SNMP::Info::SONMP
 sub index_factor {
-    my $passport   = shift;
-    my $model   = $passport->model();
+    my $passport     = shift;
+    my $model        = $passport->model();
     my $index_factor = 64;
+
     # Older Accelar models use base 16 instead of 64
-    $index_factor = 16  if (defined $model and $model =~ /(105|11[05]0|12[05])/);
+    $index_factor = 16
+        if ( defined $model and $model =~ /(105|11[05]0|12[05])/ );
     return $index_factor;
 }
 
@@ -536,23 +575,23 @@ sub port_offset {
 # Bridge MIB does not map Bridge Port to ifIndex correctly
 sub bp_index {
     my $passport = shift;
-    my $partial = shift;
+    my $partial  = shift;
 
     my $if_index = $passport->i_index($partial) || {};
 
     my %bp_index;
-    foreach my $iid (keys %$if_index){
+    foreach my $iid ( keys %$if_index ) {
         $bp_index{$iid} = $iid;
     }
     return \%bp_index;
 }
 
-# Psuedo ENTITY-MIB methods
+# Pseudo ENTITY-MIB methods
 
 sub e_index {
     my $passport = shift;
 
-    my $model   = $passport->model();
+    my $model = $passport->model();
     my $rc_ps_t = $passport->rc_ps_type() || {};
 
     # We're going to hack an index: Slot/Mda/Postion
@@ -562,49 +601,52 @@ sub e_index {
 
     # Make up a chassis index
     $rc_e_index{1} = 1;
-    
+
     # Power supplies are common, handle them first
-    foreach my $idx (keys %$rc_ps_t){
+    foreach my $idx ( keys %$rc_ps_t ) {
         next unless $idx;
+
         # We should never have 90 slots, they will also
         # sort numerically at the bottom
-        my $index = $idx + 90 ."0000";
+        my $index = $idx + 90 . "0000";
         $rc_e_index{$index} = $index;
     }
+
     # Older Accelars use RAPID-CITY::rcCardTable
-    if (defined $model and $model =~ /(105|11[05]0|12[05])/) {
-        my $rc_c_t  = $passport->rc_c_type() || {};
-        foreach my $idx (keys %$rc_c_t){
+    if ( defined $model and $model =~ /(105|11[05]0|12[05])/ ) {
+        my $rc_c_t = $passport->rc_c_type() || {};
+        foreach my $idx ( keys %$rc_c_t ) {
             next unless $idx;
 
-            my $index = "$idx"."0000";
+            my $index = "$idx" . "0000";
             $rc_e_index{$index} = $index;
             $index++;
             $rc_e_index{$index} = $index;
         }
     }
+
     # All newer models use RAPID-CITY::rc2kCardTable
     else {
-        my $rc2_c_t = $passport->rc2k_c_ftype() || {};
+        my $rc2_c_t = $passport->rc2k_c_ftype()  || {};
         my $rc2_m_t = $passport->rc2k_mda_type() || {};
-        
-        foreach my $idx (keys %$rc2_c_t){
+
+        foreach my $idx ( keys %$rc2_c_t ) {
             next unless $idx;
 
-            my $index = "$idx"."0000";
-            for ( 0 .. 2) {
+            my $index = "$idx" . "0000";
+            for ( 0 .. 2 ) {
                 $rc_e_index{$index} = $index;
-                $index ++;
+                $index++;
             }
         }
-        foreach my $idx (keys %$rc2_m_t){
+        foreach my $idx ( keys %$rc2_m_t ) {
             next unless $idx;
             next if $idx == 0;
 
-            my ($slot, $mda) = split /\./,$idx;
-            $mda = sprintf ("%02d", $mda);
+            my ( $slot, $mda ) = split /\./, $idx;
+            $mda = sprintf( "%02d", $mda );
 
-            my $index = "$idx"."$mda"."00";
+            my $index = "$idx" . "$mda" . "00";
             $rc_e_index{$index} = $index;
             $index++;
             $rc_e_index{$index} = $index;
@@ -616,19 +658,19 @@ sub e_index {
 sub e_class {
     my $passport = shift;
 
-    my $rc_e_idx  = $passport->e_index() || {};
+    my $rc_e_idx = $passport->e_index() || {};
 
     my %rc_e_class;
-    foreach my $iid (keys %$rc_e_idx){
-        if ($iid == 1) {
+    foreach my $iid ( keys %$rc_e_idx ) {
+        if ( $iid == 1 ) {
             $rc_e_class{$iid} = 'chassis';
         }
-        elsif ($iid =~/^9(\d)/ and length $iid > 5) {
+        elsif ( $iid =~ /^9(\d)/ and length $iid > 5 ) {
             $rc_e_class{$iid} = 'powerSupply';
         }
-        elsif ($iid =~/0000$/) {
+        elsif ( $iid =~ /0000$/ ) {
             $rc_e_class{$iid} = 'container';
-        }    
+        }
         else {
             $rc_e_class{$iid} = 'module';
         }
@@ -645,58 +687,60 @@ sub e_descr {
     $rc_ch =~ s/a//;
 
     my %rc_e_descr;
-    
+
     # Chassis
     $rc_e_descr{1} = $rc_ch;
 
     # Power supplies are common, handle them first
-    foreach my $idx (keys %$rc_ps){
+    foreach my $idx ( keys %$rc_ps ) {
         next unless $idx;
         my $ps = $rc_ps->{$idx};
         next unless $ps;
         my $index = $idx + 90 . "0000";
         $rc_e_descr{$index} = $ps;
     }
+
     # Older Accelars use RAPID-CITY::rcCardTable
-    if (defined $model and $model =~ /(105|11[05]0|12[05])/) {
-        my $rc_c_t  = $passport->rc_c_type() || {};
-        foreach my $idx (keys %$rc_c_t){
+    if ( defined $model and $model =~ /(105|11[05]0|12[05])/ ) {
+        my $rc_c_t = $passport->rc_c_type() || {};
+        foreach my $idx ( keys %$rc_c_t ) {
             next unless $idx;
             my $type = $rc_c_t->{$idx};
             next unless $type;
-            my $index = "$idx"."0000";
-            $rc_e_descr{$index} = "Slot "."$idx";
+            my $index = "$idx" . "0000";
+            $rc_e_descr{$index} = "Slot " . "$idx";
             $index++;
             $rc_e_descr{$index} = $type;
         }
     }
+
     # All newer models use RAPID-CITY::rc2kCardTable
     else {
-        my $rc2_cf = $passport->rc2k_c_fdesc() || {};
-        my $rc2_cb = $passport->rc2k_c_bdesc() || {};
+        my $rc2_cf = $passport->rc2k_c_fdesc()  || {};
+        my $rc2_cb = $passport->rc2k_c_bdesc()  || {};
         my $rc2_m  = $passport->rc2k_mda_desc() || {};
-        
-        foreach my $idx (keys %$rc2_cf){
+
+        foreach my $idx ( keys %$rc2_cf ) {
             next unless $idx;
             my $cf = $rc2_cf->{$idx};
             next unless $idx;
             my $cb = $rc2_cb->{$idx};
 
-            my $index = "$idx"."0000";
-            $rc_e_descr{$index} = "Slot "."$idx";
+            my $index = "$idx" . "0000";
+            $rc_e_descr{$index} = "Slot " . "$idx";
             $index++;
             $rc_e_descr{$index} = $cf;
             $index++;
             $rc_e_descr{$index} = $cb;
         }
-        foreach my $idx (keys %$rc2_m){
+        foreach my $idx ( keys %$rc2_m ) {
             next unless $idx;
             my $cm = $rc2_m->{$idx};
             next unless $cm;
-            my ($slot, $mda) = split /\./,$idx;
-            $mda = sprintf ("%02d", $mda);
+            my ( $slot, $mda ) = split /\./, $idx;
+            $mda = sprintf( "%02d", $mda );
 
-            my $index = "$idx"."$mda"."00";
+            my $index = "$idx" . "$mda" . "00";
             $rc_e_descr{$index} = $cm;
         }
     }
@@ -716,53 +760,55 @@ sub e_type {
     $rc_e_type{1} = $rc_ch;
 
     # Power supplies are common, handle them first
-    foreach my $idx (keys %$rc_ps){
+    foreach my $idx ( keys %$rc_ps ) {
         next unless $idx;
         my $ps = $rc_ps->{$idx};
         next unless $ps;
         my $index = $idx + 90 . "0000";
         $rc_e_type{$index} = $ps;
     }
+
     # Older Accelars use RAPID-CITY::rcCardTable
-    if (defined $model and $model =~ /(105|11[05]0|12[05])/) {
-        my $rc_c_t  = $passport->rc_c_type() || {};
-        foreach my $idx (keys %$rc_c_t){
+    if ( defined $model and $model =~ /(105|11[05]0|12[05])/ ) {
+        my $rc_c_t = $passport->rc_c_type() || {};
+        foreach my $idx ( keys %$rc_c_t ) {
             next unless $idx;
             my $type = $rc_c_t->{$idx};
             next unless $type;
-            my $index = "$idx"."0000";
+            my $index = "$idx" . "0000";
             $rc_e_type{$index} = "zeroDotZero";
             $index++;
             $rc_e_type{$index} = $type;
         }
     }
+
     # All newer models use RAPID-CITY::rc2kCardTable
     else {
-        my $rc2_cf = $passport->rc2k_c_ftype() || {};
-        my $rc2_cb = $passport->rc2k_c_btype() || {};
+        my $rc2_cf = $passport->rc2k_c_ftype()  || {};
+        my $rc2_cb = $passport->rc2k_c_btype()  || {};
         my $rc2_m  = $passport->rc2k_mda_type() || {};
-        
-        foreach my $idx (keys %$rc2_cf){
+
+        foreach my $idx ( keys %$rc2_cf ) {
             next unless $idx;
             my $cf = $rc2_cf->{$idx};
             next unless $idx;
             my $cb = $rc2_cb->{$idx};
 
-            my $index = "$idx"."0000";
+            my $index = "$idx" . "0000";
             $rc_e_type{$index} = "zeroDotZero";
             $index++;
             $rc_e_type{$index} = $cf;
             $index++;
             $rc_e_type{$index} = $cb;
         }
-        foreach my $idx (keys %$rc2_m){
+        foreach my $idx ( keys %$rc2_m ) {
             next unless $idx;
             my $cm = $rc2_m->{$idx};
             next unless $cm;
-            my ($slot, $mda) = split /\./,$idx;
-            $mda = sprintf ("%02d", $mda);
+            my ( $slot, $mda ) = split /\./, $idx;
+            $mda = sprintf( "%02d", $mda );
 
-            my $index = "$idx"."$mda"."00";
+            my $index = "$idx" . "$mda" . "00";
             $rc_e_type{$index} = $cm;
         }
     }
@@ -773,35 +819,38 @@ sub e_name {
     my $passport = shift;
 
     my $model = $passport->model();
-    my $rc_e_idx  = $passport->e_index() || {};
+    my $rc_e_idx = $passport->e_index() || {};
 
     my %rc_e_name;
-    foreach my $iid (keys %$rc_e_idx){
+    foreach my $iid ( keys %$rc_e_idx ) {
 
-        if ($iid == 1) {
+        if ( $iid == 1 ) {
             $rc_e_name{$iid} = 'Chassis';
             next;
         }
 
-        my $mod = int (substr($iid, -4, 2));
-        my $slot = substr($iid, -6, 2);
+        my $mod = int( substr( $iid, -4, 2 ) );
+        my $slot = substr( $iid, -6, 2 );
 
-        if ($iid =~/^9(\d)/ and length $iid > 5) {
+        if ( $iid =~ /^9(\d)/ and length $iid > 5 ) {
             $rc_e_name{$iid} = "Power Supply $1";
         }
-        elsif ($iid =~/(00){2}$/) {
+        elsif ( $iid =~ /(00){2}$/ ) {
             $rc_e_name{$iid} = "Slot $slot";
         }
-        elsif ($iid =~/(00){1}$/) {
+        elsif ( $iid =~ /(00){1}$/ ) {
             $rc_e_name{$iid} = "Card $slot, MDA $mod";
         }
-        elsif (defined $model and $model =~ /(105|11[05]0|12[05])/ and $iid =~ /1$/) {
+        elsif ( defined $model
+            and $model =~ /(105|11[05]0|12[05])/
+            and $iid   =~ /1$/ )
+        {
             $rc_e_name{$iid} = "Card $slot";
         }
-        elsif ($iid =~ /1$/) {
+        elsif ( $iid =~ /1$/ ) {
             $rc_e_name{$iid} = "Card $slot (front)";
         }
-        elsif ($iid =~ /2$/) {
+        elsif ( $iid =~ /2$/ ) {
             $rc_e_name{$iid} = "Card $slot (back)";
         }
     }
@@ -820,49 +869,51 @@ sub e_hwver {
     $rc_e_hwver{1} = $passport->rc_ch_rev();
 
     # Power supplies are common, handle them first
-    foreach my $idx (keys %$rc_ps){
+    foreach my $idx ( keys %$rc_ps ) {
         next unless $idx;
         my $ps = $rc_ps->{$idx};
         next unless $ps;
         my $index = $idx + 90 . "0000";
         $rc_e_hwver{$index} = $ps;
     }
+
     # Older Accelars use RAPID-CITY::rcCardTable
-    if (defined $model and $model =~ /(105|11[05]0|12[05])/) {
-        my $rc_c_t  = $passport->rc_c_rev() || {};
-        foreach my $idx (keys %$rc_c_t){
+    if ( defined $model and $model =~ /(105|11[05]0|12[05])/ ) {
+        my $rc_c_t = $passport->rc_c_rev() || {};
+        foreach my $idx ( keys %$rc_c_t ) {
             next unless $idx;
             my $type = $rc_c_t->{$idx};
             next unless $type;
-            my $index = "$idx"."0001";
+            my $index = "$idx" . "0001";
             $rc_e_hwver{$index} = $type;
         }
     }
+
     # All newer models use RAPID-CITY::rc2kCardTable
     else {
-        my $rc2_cf = $passport->rc2k_c_frev() || {};
-        my $rc2_cb = $passport->rc2k_c_brev() || {};
+        my $rc2_cf = $passport->rc2k_c_frev()  || {};
+        my $rc2_cb = $passport->rc2k_c_brev()  || {};
         my $rc2_m  = $passport->rc2k_mda_rev() || {};
-        
-        foreach my $idx (keys %$rc2_cf){
+
+        foreach my $idx ( keys %$rc2_cf ) {
             next unless $idx;
             my $cf = $rc2_cf->{$idx};
             next unless $idx;
             my $cb = $rc2_cb->{$idx};
 
-            my $index = "$idx"."0001";
+            my $index = "$idx" . "0001";
             $rc_e_hwver{$index} = $cf;
             $index++;
             $rc_e_hwver{$index} = $cb;
         }
-        foreach my $idx (keys %$rc2_m){
+        foreach my $idx ( keys %$rc2_m ) {
             next unless $idx;
             my $cm = $rc2_m->{$idx};
             next unless $cm;
-            my ($slot, $mda) = split /\./,$idx;
-            $mda = sprintf ("%02d", $mda);
+            my ( $slot, $mda ) = split /\./, $idx;
+            $mda = sprintf( "%02d", $mda );
 
-            my $index = "$idx"."$mda"."00";
+            my $index = "$idx" . "$mda" . "00";
             $rc_e_hwver{$index} = $cm;
         }
     }
@@ -872,10 +923,10 @@ sub e_hwver {
 sub e_vendor {
     my $passport = shift;
 
-    my $rc_e_idx  = $passport->e_index() || {};
+    my $rc_e_idx = $passport->e_index() || {};
 
     my %rc_e_vendor;
-    foreach my $iid (keys %$rc_e_idx){
+    foreach my $iid ( keys %$rc_e_idx ) {
         $rc_e_vendor{$iid} = 'nortel';
     }
     return \%rc_e_vendor;
@@ -893,49 +944,51 @@ sub e_serial {
     $rc_e_serial{1} = $passport->rc_serial();
 
     # Power supplies are common, handle them first
-    foreach my $idx (keys %$rc_ps){
+    foreach my $idx ( keys %$rc_ps ) {
         next unless $idx;
         my $ps = $rc_ps->{$idx};
         next unless $ps;
         my $index = $idx + 90 . "0000";
         $rc_e_serial{$index} = $ps;
     }
+
     # Older Accelars use RAPID-CITY::rcCardTable
-    if (defined $model and $model =~ /(105|11[05]0|12[05])/) {
-        my $rc_c_t  = $passport->rc_c_serial() || {};
-        foreach my $idx (keys %$rc_c_t){
+    if ( defined $model and $model =~ /(105|11[05]0|12[05])/ ) {
+        my $rc_c_t = $passport->rc_c_serial() || {};
+        foreach my $idx ( keys %$rc_c_t ) {
             next unless $idx;
             my $type = $rc_c_t->{$idx};
             next unless $type;
-            my $index = "$idx"."0001";
+            my $index = "$idx" . "0001";
             $rc_e_serial{$index} = $type;
         }
     }
+
     # All newer models use RAPID-CITY::rc2kCardTable
     else {
-        my $rc2_cf = $passport->rc2k_c_fserial() || {};
-        my $rc2_cb = $passport->rc2k_c_bserial() || {};
+        my $rc2_cf = $passport->rc2k_c_fserial()  || {};
+        my $rc2_cb = $passport->rc2k_c_bserial()  || {};
         my $rc2_m  = $passport->rc2k_mda_serial() || {};
-        
-        foreach my $idx (keys %$rc2_cf){
+
+        foreach my $idx ( keys %$rc2_cf ) {
             next unless $idx;
             my $cf = $rc2_cf->{$idx};
             next unless $idx;
             my $cb = $rc2_cb->{$idx};
 
-            my $index = "$idx"."0001";
+            my $index = "$idx" . "0001";
             $rc_e_serial{$index} = $cf;
             $index++;
             $rc_e_serial{$index} = $cb;
         }
-        foreach my $idx (keys %$rc2_m){
+        foreach my $idx ( keys %$rc2_m ) {
             next unless $idx;
             my $cm = $rc2_m->{$idx};
             next unless $cm;
-            my ($slot, $mda) = split /\./,$idx;
-            $mda = sprintf ("%02d", $mda);
+            my ( $slot, $mda ) = split /\./, $idx;
+            $mda = sprintf( "%02d", $mda );
 
-            my $index = "$idx"."$mda"."00";
+            my $index = "$idx" . "$mda" . "00";
             $rc_e_serial{$index} = $cm;
         }
     }
@@ -945,22 +998,22 @@ sub e_serial {
 sub e_pos {
     my $passport = shift;
 
-    my $rc_e_idx  = $passport->e_index() || {};
+    my $rc_e_idx = $passport->e_index() || {};
 
     my %rc_e_pos;
-    foreach my $iid (keys %$rc_e_idx){
+    foreach my $iid ( keys %$rc_e_idx ) {
         next unless $iid;
-        if ($iid == 1) {
+        if ( $iid == 1 ) {
             $rc_e_pos{$iid} = -1;
             next;
         }
-        my $sub = int (substr($iid, -2, 2));
-        my $mod = int (substr($iid, -4, 2));
-        my $slot = substr($iid, -6, 2);
-        if ($iid =~/(00){2}$/) {
+        my $sub = int( substr( $iid, -2, 2 ) );
+        my $mod = int( substr( $iid, -4, 2 ) );
+        my $slot = substr( $iid, -6, 2 );
+        if ( $iid =~ /(00){2}$/ ) {
             $rc_e_pos{$iid} = $slot;
         }
-        elsif ($iid =~/(00){1}$/) {
+        elsif ( $iid =~ /(00){1}$/ ) {
             $rc_e_pos{$iid} = $mod * 100;
         }
         else {
@@ -973,21 +1026,21 @@ sub e_pos {
 sub e_parent {
     my $passport = shift;
 
-    my $rc_e_idx  = $passport->e_index() || {};
+    my $rc_e_idx = $passport->e_index() || {};
 
     my %rc_e_parent;
-    foreach my $iid (keys %$rc_e_idx){
+    foreach my $iid ( keys %$rc_e_idx ) {
         next unless $iid;
-        if ($iid == 1) {
+        if ( $iid == 1 ) {
             $rc_e_parent{$iid} = 0;
             next;
         }
-        my $slot = substr($iid, -6, 2);
-        if ($iid =~/(00){1,2}$/) {
+        my $slot = substr( $iid, -6, 2 );
+        if ( $iid =~ /(00){1,2}$/ ) {
             $rc_e_parent{$iid} = 1;
         }
         else {
-            $rc_e_parent{$iid} = "$slot"."0000";
+            $rc_e_parent{$iid} = "$slot" . "0000";
         }
     }
     return \%rc_e_parent;
@@ -1011,7 +1064,6 @@ Eric Miller
  my $passport = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -1026,12 +1078,12 @@ Eric Miller
 Abstraction subclass for modular Nortel Ethernet Routing Switches (formerly
 Passport and Accelar Series Switches).
 
-These devices have some of the same charactersitics as the stackable Nortel 
+These devices have some of the same characteristics as the stackable Nortel 
 Ethernet Switches (Baystack).  For example, extended interface information is 
-gleened from RAPID-CITY.
+gleaned from F<RAPID-CITY>.
 
-For speed or debugging purposes you can call the subclass directly, but not after
-determining a more specific class using the method above. 
+For speed or debugging purposes you can call the subclass directly, but not
+after determining a more specific class using the method above. 
 
  my $passport = new SNMP::Info::Layer3::Passport(...);
 
@@ -1070,7 +1122,7 @@ These are methods that return scalar value from SNMP
 =item $passport->model()
 
 Returns model type.  Checks $passport->id() against the 
-RAPID-CITY-MIB and then parses out rcA.
+F<RAPID-CITY-MIB> and then parses out C<rcA>.
 
 =item $passport->vendor()
 
@@ -1082,17 +1134,17 @@ Returns 'passport'
 
 =item $passport->os_ver()
 
-Returns the software version extracted from B<sysDescr>
+Returns the software version extracted from C<sysDescr>
 
 =item $passport->serial()
 
-Returns (B<rcChasSerialNumber>)
+Returns (C<rcChasSerialNumber>)
 
 =item $passport->root_ip()
 
 Returns the primary IP used to communicate with the device.  Returns the first
-found:  CLIP (CircuitLess IP), Management Virtual IP (B<rcSysVirtualIpAddr>),
-OSPF Router ID (B<ospfRouterId>), SONMP Advertised IP Address.
+found:  CLIP (CircuitLess IP), Management Virtual IP (C<rcSysVirtualIpAddr>),
+OSPF Router ID (C<ospfRouterId>), SONMP Advertised IP Address.
 
 =back
 
@@ -1137,24 +1189,26 @@ to a hash.
 
 =item $passport->i_index()
 
-Returns SNMP IID to Interface index.  Extends (B<ifIndex>) by adding the index of
-the CPU virtual management IP (if present), each CPU Ethernet port, and each VLAN
-to ensure the virtual router ports are captured.
+Returns SNMP IID to Interface index.  Extends (C<ifIndex>) by adding the index
+of the CPU virtual management IP (if present), each CPU Ethernet port, and
+each VLAN to ensure the virtual router ports are captured.
 
 =item $passport->interfaces()
 
 Returns reference to the map between IID and physical Port.
 
 Slot and port numbers on the Passport switches are determined by the formula:
-port = (ifIndex % index_factor) + port_offset, slot = int(ifIndex / index_factor).
+port = (C<ifIndex % index_factor>) + port_offset,
+slot = int(C<ifIndex / index_factor>).
 
-The physical port name is returned as slot.port.  CPU Ethernet ports are prefixed
-with CPU and VLAN interfaces are returned as the VLAN ID prefixed with Vlan.
+The physical port name is returned as slot.port.  CPU Ethernet ports are
+prefixed with CPU and VLAN interfaces are returned as the VLAN ID prefixed
+with Vlan.
 
 =item $passport->i_mac()
 
-MAC address of the interface.  Note this is just the MAC of the port, not anything
-connected to it.
+MAC address of the interface.  Note this is just the MAC of the port, not
+anything connected to it.
 
 =item $passport->i_description()
 
@@ -1163,32 +1217,33 @@ human and machine friendly.  Not always.
 
 =item $passport->i_name()
 
-Crosses rc_alias() (B<rcPortName>) with ifAlias() and returns the human set port
-name if exists.
+Crosses rc_alias() (C<rcPortName>) with ifAlias() and returns the human set
+port name if exists.
 
 =item $passport->ip_index()
 
-Maps the IP Table to the IID.  Extends (B<ipAdEntIfIndex>) by adding the index of
+Maps the IP Table to the IID.  Extends (C<ipAdEntIfIndex>) by adding the index of
 the CPU virtual management IP (if present) and each CPU Ethernet port.
 
 =item $passport->ip_netmask()
 
-Extends (B<ipAdEntNetMask>) by adding the mask of the CPU virtual management
+Extends (C<ipAdEntNetMask>) by adding the mask of the CPU virtual management
 IP (if present) and each CPU Ethernet port.
 
 =item $passport->bp_index()
 
-Returns reference to hash of bridge port table entries map back to interface identifier (iid)
+Returns reference to hash of bridge port table entries map back to interface
+identifier (iid)
 
-Returns (B<ifIndex>) for both key and value since some devices seem to have
-problems with BRIDGE-MIB
+Returns (C<ifIndex>) for both key and value since some devices seem to have
+problems with F<BRIDGE-MIB>
 
 =back
 
-=head2 Psuedo ENTITY-MIB information
+=head2 Pseudo F<ENTITY-MIB> information
 
-These devices do not support ENTITY-MIB.  These methods emulate Physical Table
-methods using the RAPID-CITY MIB.
+These devices do not support F<ENTITY-MIB>.  These methods emulate Physical
+Table methods using the F<RAPID-CITY MIB>.
 
 =over
 
@@ -1202,9 +1257,13 @@ two digits padded with leading zero if required.
 =item $passport->e_class()
 
 Returns reference to hash.  Key: IID, Value: General hardware type.  This
-class only returns container, module, and powerSupply types.
+class only returns container, module, and power supply types.
 
 =item $passport->e_descr()
+
+Returns reference to hash.  Key: IID, Value: Human friendly name.
+
+=item $passport->e_name()
 
 Returns reference to hash.  Key: IID, Value: Human friendly name.
 

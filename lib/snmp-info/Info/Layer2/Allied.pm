@@ -1,65 +1,62 @@
 # SNMP::Info::Layer2::Allied
-# Max Baker, Dmitry Sergienko <dmitry@trifle.net>
+# $Id: Allied.pm,v 1.16 2008/07/20 03:27:30 jeneric Exp $
 #
-# Copyright (c) 2004 Max Baker
+# Copyright (c) 2008 Max Baker
 # All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without 
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of Netdisco nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::Allied;
-$VERSION = '1.07';
-# $Id: Allied.pm,v 1.11 2007/11/26 04:24:51 jeneric Exp $
-use strict;
 
+use strict;
 use Exporter;
 use SNMP::Info::Layer2;
 use SNMP::Info::Layer1;
 
-@SNMP::Info::Layer2::Allied::ISA = qw/SNMP::Info::Layer2 Exporter/;
+@SNMP::Info::Layer2::Allied::ISA       = qw/SNMP::Info::Layer2 Exporter/;
 @SNMP::Info::Layer2::Allied::EXPORT_OK = qw//;
 
-use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE $AUTOLOAD $INIT $DEBUG/;
+use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-%GLOBALS = (
-            %SNMP::Info::Layer2::GLOBALS
-           );
+$VERSION = '1.09';
 
-%FUNCS   = (
-            %SNMP::Info::Layer2::FUNCS,
-            'ip_adresses'=> 'atNetAddress',
-            'ip_mac'     => 'atPhysAddress',
-           );
+%GLOBALS = ( %SNMP::Info::Layer2::GLOBALS );
 
-%MIBS    = (
-            %SNMP::Info::Layer2::MIBS,
-            'AtiSwitch-MIB'    => 'atiswitchProductType',
-            'AtiStackInfo-MIB' => 'atiswitchEnhancedStacking',
-           );
+%FUNCS = (
+    %SNMP::Info::Layer2::FUNCS,
+    'ip_adresses' => 'atNetAddress',
+    'ip_mac'      => 'atPhysAddress',
+);
 
-%MUNGE   = (
-            %SNMP::Info::Layer2::MUNGE,
-           );
+%MIBS = (
+    %SNMP::Info::Layer2::MIBS,
+    'AtiSwitch-MIB'    => 'atiswitchProductType',
+    'AtiStackInfo-MIB' => 'atiswitchEnhancedStacking',
+);
+
+%MUNGE = ( %SNMP::Info::Layer2::MUNGE, );
 
 sub vendor {
     return 'allied';
@@ -71,9 +68,9 @@ sub os {
 
 sub os_ver {
     my $allied = shift;
-    my $descr = $allied->description();
-    
-    if ($descr =~ m/version (\d+\.\d+)/){
+    my $descr  = $allied->description();
+
+    if ( $descr =~ m/version (\d+\.\d+)/ ) {
         return $1;
     }
 }
@@ -83,50 +80,48 @@ sub model {
 
     my $desc = $allied->description();
 
-    if ($desc =~ /(AT-80\d{2}\S*)/){
+    if ( $desc =~ /(AT-80\d{2}\S*)/ ) {
         return $1;
     }
-    return undef;
+    return;
 }
 
 sub root_ip {
-    my $allied = shift;
+    my $allied  = shift;
     my $ip_hash = $allied->ip_addresses();
-    my $ip;
     my $found_ip;
-    
-    foreach $ip (values %{$ip_hash}) {
-        my $found_ip = SNMP::Info::munge_ip($ip) if (defined $ip);
-        last; # this is only one IP address
+
+    foreach my $ip ( values %{$ip_hash} ) {
+        $found_ip = SNMP::Info::munge_ip($ip) if ( defined $ip );
+        last;    # this is only one IP address
     }
     return $found_ip;
 }
 
-sub mac{
-    my $allied = shift;
+sub mac {
+    my $allied   = shift;
     my $mac_hash = $allied->ip_mac();
-    my $mac;
     my $found_mac;
-    
-    foreach $mac (values %{$mac_hash}) {
+
+    foreach my $mac ( values %{$mac_hash} ) {
         $found_mac = SNMP::Info::munge_mac($mac);
-        last; # this is only one MAC address
+        last;    # this is only one MAC address
     }
     return $found_mac;
 }
 
 sub i_up {
-    my $allied = shift;
+    my $allied  = shift;
     my $partial = shift;
 
-    my $i_up  = SNMP::Info::Layer1::i_up($allied, $partial);
+    my $i_up = SNMP::Info::Layer1::i_up( $allied, $partial );
 
-    foreach my $port (keys %$i_up){
+    foreach my $port ( keys %$i_up ) {
         my $up = $i_up->{$port};
         $i_up->{$port} = 'down' if $up eq 'linktesterror';
-        $i_up->{$port} = 'up' if $up eq 'nolinktesterror';
+        $i_up->{$port} = 'up'   if $up eq 'nolinktesterror';
     }
-    
+
     return $i_up;
 }
 1;
@@ -146,7 +141,6 @@ Max Baker, Dmitry Sergienko <dmitry@trifle.net>
  my $allied = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myhub',
                           Community   => 'public',
                           Version     => 1
@@ -174,9 +168,9 @@ inherited methods.
 
 =over
 
-=item AtiSwitch-MIB
+=item F<AtiSwitch-MIB>
 
-=item AtiStackInfo-MIB
+=item F<AtiStackInfo-MIB>
 
 Download for your device from ftp://ftp.allied-telesyn.com/pub/switches/mibs/
 
@@ -210,11 +204,15 @@ Culls Version from description()
 
 Returns IP Address of Managed Device.
 
-(B<actualIpAddr>)
+(C<actualIpAddr>)
 
 =item $allied->model()
 
-Trys to cull out AT-nnnnX out of the description field.
+Tries to cull out C<AT-nnnnX> out of the description field.
+
+=item $allied->mac()
+
+Returns device MAC. 
 
 =back
 

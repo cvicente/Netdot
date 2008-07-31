@@ -1,60 +1,53 @@
 # SNMP::Info::Layer2::Netgear
-# Bill Fenner and Zoltan Erszenyi
+# $Id: Netgear.pm,v 1.6 2008/07/20 03:27:30 jeneric Exp $
 #
-# 
-# Redistribution and use in source and binary forms, with or without 
+# Copyright (c) 2008 Bill Fenner
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::Netgear;
-# $Id: Netgear.pm,v 1.2 2007/11/26 04:24:51 jeneric Exp $
 
 use strict;
-
 use Exporter;
 use SNMP::Info::Layer2;
 
-
-use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/;
-
-$VERSION = '1.07';
-@SNMP::Info::Layer2::Netgear::ISA = qw/SNMP::Info::Layer2 Exporter/;
+@SNMP::Info::Layer2::Netgear::ISA       = qw/SNMP::Info::Layer2 Exporter/;
 @SNMP::Info::Layer2::Netgear::EXPORT_OK = qw//;
 
-%MIBS    = (
-            %SNMP::Info::Layer2::MIBS,
-           );
+use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
 
-%GLOBALS = (
-            %SNMP::Info::Layer2::GLOBALS,
-           );
+$VERSION = '1.09';
 
-%FUNCS   = (
-	    %SNMP::Info::Layer2::FUNCS,
-           );
+%MIBS = ( %SNMP::Info::Layer2::MIBS, );
 
-%MUNGE   = (
-	    %SNMP::Info::Layer2::MUNGE,
-           );
+%GLOBALS = ( %SNMP::Info::Layer2::GLOBALS, );
+
+%FUNCS = ( %SNMP::Info::Layer2::FUNCS, );
+
+%MUNGE = ( %SNMP::Info::Layer2::MUNGE, );
 
 sub vendor {
     return 'netgear';
@@ -81,20 +74,20 @@ sub model {
 # return anything.
 sub fw_mac {
     my $netgear = shift;
-    my $ret = $netgear->qb_fw_mac();
-    $ret = $netgear->orig_fw_mac() if (!defined($ret));
+    my $ret     = $netgear->qb_fw_mac();
+    $ret = $netgear->orig_fw_mac() if ( !defined($ret) );
     return $ret;
 }
 
 sub fw_port {
     my $netgear = shift;
-    my $ret = $netgear->qb_fw_port();
-    $ret = $netgear->orig_fw_port() if (!defined($ret));
+    my $ret     = $netgear->qb_fw_port();
+    $ret = $netgear->orig_fw_port() if ( !defined($ret) );
     return $ret;
 }
 
 1;
-  
+
 __END__
 
 =head1 NAME
@@ -111,7 +104,6 @@ Bill Fenner and Zoltan Erszenyi
  my $netgear = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -141,7 +133,8 @@ inherited methods.
 
 =item Inherited Classes' MIBs
 
-MIBs listed in L<SNMP::Info::Layer2/"Required MIBs"> and its inherited classes.
+MIBs listed in L<SNMP::Info::Layer2/"Required MIBs"> and its inherited
+classes.
 
 =back
 
@@ -175,6 +168,29 @@ See documentation in L<SNMP::Info::Layer2/"GLOBALS"> for details.
 
 These are methods that return tables of information in the form of
 a reference to a hash.
+
+=head2 Overrides
+
+=over
+
+=item $netgear->fw_mac()
+
+Returns reference to hash of forwarding table MAC Addresses.
+
+Some devices don't implement the C<BRIDGE-MIB> forwarding table, so we use
+the C<Q-BRIDGE-MIB> forwarding table.  Fall back to the C<BRIDGE-MIB> if
+C<Q-BRIDGE-MIB> doesn't return anything.
+
+=item $netgear->fw_port()
+
+Returns reference to hash of forwarding table entries port interface
+identifier (iid)
+
+Some devices don't implement the C<BRIDGE-MIB> forwarding table, so we use
+the C<Q-BRIDGE-MIB> forwarding table.  Fall back to the C<BRIDGE-MIB> if
+C<Q-BRIDGE-MIB> doesn't return anything.
+
+=back
 
 =head2 Table Methods imported from SNMP::Info::Layer2
 

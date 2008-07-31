@@ -1,77 +1,72 @@
 # SNMP::Info::Layer1::Asante
-# Max Baker
+# $Id: Asante.pm,v 1.23 2008/07/20 03:27:36 jeneric Exp $
 #
-# Copyright (c) 2004 Max Baker changes from version 0.8 and beyond.
+# Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 #
 # Copyright (c) 2002,2003 Regents of the University of California
 # All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without 
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer1::Asante;
-$VERSION = '1.07';
-# $Id: Asante.pm,v 1.19 2007/11/26 04:24:51 jeneric Exp $
-use strict;
 
+use strict;
 use Exporter;
 use SNMP::Info::Layer1;
 
-@SNMP::Info::Layer1::Asante::ISA = qw/SNMP::Info::Layer1 Exporter/;
+@SNMP::Info::Layer1::Asante::ISA       = qw/SNMP::Info::Layer1 Exporter/;
 @SNMP::Info::Layer1::Asante::EXPORT_OK = qw//;
 
-use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE $AUTOLOAD $INIT $DEBUG/;
+use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
+
+$VERSION = '1.09';
 
 # Set for No CDP
-%GLOBALS = (
-            %SNMP::Info::Layer1::GLOBALS,
-            );
+%GLOBALS = ( %SNMP::Info::Layer1::GLOBALS, );
 
-%FUNCS   = (%SNMP::Info::Layer1::FUNCS,
-            'asante_port'  => 'ePortIndex',
-            'asante_group' => 'ePortGrpIndex',
-            'i_type'       => 'ePortStateType',
-            'asante_up'    => 'ePortStateLinkStatus',
-            );
+%FUNCS = (
+    %SNMP::Info::Layer1::FUNCS,
+    'asante_port'  => 'ePortIndex',
+    'asante_group' => 'ePortGrpIndex',
+    'i_type'       => 'ePortStateType',
+    'asante_up'    => 'ePortStateLinkStatus',
+);
 
-%MIBS    = (
-            %SNMP::Info::Layer1::MIBS,
-            'ASANTE-HUB1012-MIB' => 'asante'
-            );
+%MIBS = ( %SNMP::Info::Layer1::MIBS, 'ASANTE-HUB1012-MIB' => 'asante' );
 
-%MUNGE   = (
-            %SNMP::Info::Layer1::MUNGE,
-            );
+%MUNGE = ( %SNMP::Info::Layer1::MUNGE, );
 
 sub interfaces {
-    my $asante = shift;
+    my $asante  = shift;
     my $partial = shift;
 
     my $rptr_port = $asante->rptr_port($partial) || {};
 
     my %interfaces;
 
-    foreach my $port (keys %$rptr_port){
+    foreach my $port ( keys %$rptr_port ) {
         $interfaces{$port} = $port;
     }
 
@@ -84,13 +79,13 @@ sub os {
 
 sub os_ver {
     my $asante = shift;
-    my $descr = $asante->description();
-    
-    if ($descr =~ /software v(\d+\.\d+)/){
+    my $descr  = $asante->description();
+
+    if ( $descr =~ /software v(\d+\.\d+)/ ) {
         return $1;
     }
 }
-    
+
 sub vendor {
     return 'asante';
 }
@@ -98,30 +93,30 @@ sub vendor {
 sub model {
     my $asante = shift;
 
-    my $id = $asante->id();
+    my $id    = $asante->id();
     my $model = &SNMP::translateObj($id);
 
     return $model;
 }
 
 sub i_up {
-    my $asante = shift;
+    my $asante  = shift;
     my $partial = shift;
 
     my $asante_up = $asante->asante_up($partial) || {};
 
     my $i_up = {};
-    foreach my $port (keys %$asante_up){
+    foreach my $port ( keys %$asante_up ) {
         my $up = $asante_up->{$port};
         $i_up->{$port} = 'down' if $up =~ /on/;
-        $i_up->{$port} = 'up' if $up =~ /off/;
+        $i_up->{$port} = 'up'   if $up =~ /off/;
     }
-    
+
     return $i_up;
 }
 
 sub i_speed {
-    my $asante = shift;
+    my $asante  = shift;
     my $partial = shift;
 
     my $i_speed = $asante->orig_i_speed($partial) || {};
@@ -134,7 +129,7 @@ sub i_speed {
 }
 
 sub i_mac {
-    my $asante = shift;
+    my $asante  = shift;
     my $partial = shift;
 
     my $i_mac = $asante->orig_i_mac($partial) || {};
@@ -147,11 +142,11 @@ sub i_mac {
 }
 
 sub i_description {
-    return undef;
+    return;
 }
 
 sub i_name {
-    my $asante = shift;
+    my $asante  = shift;
     my $partial = shift;
 
     my $i_name = $asante->orig_i_descr($partial) || {};
@@ -162,7 +157,9 @@ sub i_name {
 
     return \%i_name;
 }
+
 1;
+
 __END__
 
 =head1 NAME
@@ -179,7 +176,6 @@ Max Baker
  my $asante = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -206,9 +202,7 @@ Asante device through SNMP.
 
 =over
 
-=item ASANTE-HUB1012-MIB
-
-Download from http://www.mibdepot.com
+=item F<ASANTE-HUB1012-MIB>
 
 =back
 
@@ -236,7 +230,7 @@ Returns 'asante' :)
 
 =item $asante->model()
 
-Cross references $asante->id() to the ASANTE-HUB1012-MIB and returns
+Cross references $asante->id() to the F<ASANTE-HUB1012-MIB> and returns
 the results.
 
 =back
@@ -251,6 +245,19 @@ See L<SNMP::Info::Layer1/"GLOBALS"> for details.
 
 =over
 
+=item $asante->interfaces()
+
+Returns reference to the map between IID and physical Port.
+
+=item $asante->i_description() 
+
+Description of the interface.
+
+=item $asante->i_mac()
+
+MAC address of the interface.  Note this is just the MAC of the port, not
+anything connected to it.
+
 =item $asante->i_name()
 
 Returns reference to map of IIDs to human-set port name.
@@ -260,6 +267,10 @@ Returns reference to map of IIDs to human-set port name.
 Returns reference to map of IIDs to link status.  Changes
 the values of asante_up() to 'up' and 'down'.
 
+=item $asante->i_speed()
+
+Speed of the link, human format.
+
 =back
 
 =head2 Asante MIB
@@ -268,11 +279,11 @@ the values of asante_up() to 'up' and 'down'.
 
 =item $asante->ati_p_name()
 
-(B<portName>)
+(C<portName>)
 
 =item $asante->ati_up()
 
-(B<linkTestLED>)
+(C<linkTestLED>)
 
 =back
 

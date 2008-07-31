@@ -1,7 +1,7 @@
 # SNMP::Info::Layer2::C1900
-# Max Baker
+# $Id: C1900.pm,v 1.30 2008/07/20 03:27:30 jeneric Exp $
 #
-# Copyright (c) 2004 Max Baker changes from version 0.8 and beyond.
+# Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 #
 # Copyright (c) 2002,2003 Regents of the University of California
 # All rights reserved.
@@ -11,30 +11,28 @@
 #
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
 #     * Neither the name of the University of California, Santa Cruz nor the
 #       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::C1900;
-$VERSION = '1.07';
 
-# $Id: C1900.pm,v 1.25 2007/11/26 04:24:51 jeneric Exp $
 use strict;
-
 use Exporter;
 use SNMP::Info::CDP;
 use SNMP::Info::CiscoStats;
@@ -42,54 +40,56 @@ use SNMP::Info::CiscoConfig;
 use SNMP::Info::Layer2;
 
 @SNMP::Info::Layer2::C1900::ISA = qw/SNMP::Info::CDP SNMP::Info::CiscoStats
-                                    SNMP::Info::CiscoConfig SNMP::Info::Layer2
-                                    Exporter/;
+    SNMP::Info::CiscoConfig SNMP::Info::Layer2
+    Exporter/;
 @SNMP::Info::Layer2::C1900::EXPORT_OK = qw//;
 
-use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE $AUTOLOAD $INIT $DEBUG/;
+use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
+
+$VERSION = '1.09';
 
 %GLOBALS = (
-             %SNMP::Info::Layer2::GLOBALS,
-             %SNMP::Info::CiscoConfig::GLOBALS,
-             %SNMP::Info::CiscoStats::GLOBALS,
-             %SNMP::Info::CDP::GLOBALS,
-             'c1900_flash_status' => 'upgradeFlashBankStatus',
-           );
+    %SNMP::Info::Layer2::GLOBALS,
+    %SNMP::Info::CiscoConfig::GLOBALS,
+    %SNMP::Info::CiscoStats::GLOBALS,
+    %SNMP::Info::CDP::GLOBALS,
+    'c1900_flash_status' => 'upgradeFlashBankStatus',
+);
 
 %FUNCS = (
-           %SNMP::Info::Layer2::FUNCS,
-           %SNMP::Info::CiscoConfig::FUNCS,
-           %SNMP::Info::CiscoStats::FUNCS,
-           %SNMP::Info::CDP::FUNCS,
-           # ESSWITCH-MIB
-           'c1900_p_index'        => 'swPortIndex',
-           'c1900_p_ifindex'      => 'swPortIfIndex',
-           'c1900_p_duplex'       => 'swPortDuplexStatus',
-           'c1900_p_duplex_admin' => 'swPortFullDuplex',
-           'c1900_p_name'         => 'swPortName',
-           'c1900_p_up_admin'     => 'swPortAdminStatus',
-           'c1900_p_type'         => 'swPortMediaCapability',
-           'c1900_p_media'        => 'swPortConnectorType',
-         );
+    %SNMP::Info::Layer2::FUNCS,
+    %SNMP::Info::CiscoConfig::FUNCS,
+    %SNMP::Info::CiscoStats::FUNCS,
+    %SNMP::Info::CDP::FUNCS,
+
+    # ESSWITCH-MIB
+    'c1900_p_index'        => 'swPortIndex',
+    'c1900_p_ifindex'      => 'swPortIfIndex',
+    'c1900_p_duplex'       => 'swPortDuplexStatus',
+    'c1900_p_duplex_admin' => 'swPortFullDuplex',
+    'c1900_p_name'         => 'swPortName',
+    'c1900_p_up_admin'     => 'swPortAdminStatus',
+    'c1900_p_type'         => 'swPortMediaCapability',
+    'c1900_p_media'        => 'swPortConnectorType',
+);
 
 %MIBS = (
-          %SNMP::Info::Layer2::MIBS,
-          %SNMP::Info::CiscoConfig::MIBS,
-          %SNMP::Info::CiscoStats::MIBS,
-          %SNMP::Info::CDP::MIBS,
-          # Also known as the ESSWITCH-MIB
-          'STAND-ALONE-ETHERNET-SWITCH-MIB' => 'series2000'
-        );
+    %SNMP::Info::Layer2::MIBS,
+    %SNMP::Info::CiscoConfig::MIBS,
+    %SNMP::Info::CiscoStats::MIBS,
+    %SNMP::Info::CDP::MIBS,
+
+    # Also known as the ESSWITCH-MIB
+    'STAND-ALONE-ETHERNET-SWITCH-MIB' => 'series2000'
+);
 
 %MUNGE = (
-           %SNMP::Info::Layer2::MUNGE,
-           %SNMP::Info::CiscoConfig::MUNGE,
-           %SNMP::Info::CiscoStats::MUNGE,
-           %SNMP::Info::CDP::MUNGE,
-         );
+    %SNMP::Info::Layer2::MUNGE,     %SNMP::Info::CiscoConfig::MUNGE,
+    %SNMP::Info::CiscoStats::MUNGE, %SNMP::Info::CDP::MUNGE,
+);
 
-sub bulkwalk_no         { 1; }
-sub cisco_comm_indexing { 1; }
+sub bulkwalk_no         { return 1; }
+sub cisco_comm_indexing { return 1; }
 
 sub vendor {
     return 'cisco';
@@ -107,12 +107,12 @@ sub os_ver {
     return $os_ver if defined $os_ver;
 
     my $c1900_flash_status = $c1900->c1900_flash_status();
-    return undef unless defined $c1900_flash_status;
+    return unless defined $c1900_flash_status;
 
     if ( $c1900_flash_status =~ m/V(\d+\.\d+(\.\d+)?)/ ) {
         return $1;
     }
-    return undef;
+    return;
 }
 
 sub interfaces {
@@ -199,53 +199,54 @@ sub set_i_duplex_admin {
 }
 
 sub i_vlan {
-    my $c1900 = shift;
-    my $partial = shift;    
+    my $c1900   = shift;
+    my $partial = shift;
 
-    # Overlap allows more than one VLAN per port.  Unable to determine default    
-    my $overlap = $c1900->bridgeGroupAllowMembershipOverlap() ||
-                  $c1900->vlanAllowMembershipOverlap() || 'disabled';
-    
-    if ($overlap eq 'enabled') {
-        return undef;
+    # Overlap allows more than one VLAN per port.  Unable to determine default
+    my $overlap = $c1900->bridgeGroupAllowMembershipOverlap()
+        || $c1900->vlanAllowMembershipOverlap()
+        || 'disabled';
+
+    if ( $overlap eq 'enabled' ) {
+        return;
     }
 
-    my $member_of = $c1900->bridgeGroupMemberPortOfBridgeGroup() ||
-                    $c1900->vlanMemberPortOfVlan();
+    my $member_of = $c1900->bridgeGroupMemberPortOfBridgeGroup()
+        || $c1900->vlanMemberPortOfVlan();
 
     my $i_pvid = {};
-    foreach my $idx (keys %$member_of) {
-        my @values = split(/\./, $idx);
-        my ($vlan, $port) = @values;
+    foreach my $idx ( keys %$member_of ) {
+        my @values = split( /\./, $idx );
+        my ( $vlan, $port ) = @values;
         next unless $vlan;
         next unless $port;
-        next if (defined $partial and $port !~ /^$partial$/);
+        next if ( defined $partial and $port !~ /^$partial$/ );
         my $value = $member_of->{$idx};
-        next if ($value eq 'false');
-        
+        next if ( $value eq 'false' );
+
         $i_pvid->{$port} = $vlan;
     }
     return $i_pvid;
 }
 
 sub i_vlan_membership {
-    my $c1900 = shift;
+    my $c1900   = shift;
     my $partial = shift;
 
-    my $member_of = $c1900->bridgeGroupMemberPortOfBridgeGroup() ||
-                    $c1900->vlanMemberPortOfVlan();
+    my $member_of = $c1900->bridgeGroupMemberPortOfBridgeGroup()
+        || $c1900->vlanMemberPortOfVlan();
 
     my $i_vlan_membership = {};
-    foreach my $idx (keys %$member_of) {
-        my @values = split(/\./, $idx);
-        my ($vlan, $port) = @values;
+    foreach my $idx ( keys %$member_of ) {
+        my @values = split( /\./, $idx );
+        my ( $vlan, $port ) = @values;
         next unless $vlan;
         next unless $port;
-        next if (defined $partial and $port !~ /^$partial$/);
+        next if ( defined $partial and $port !~ /^$partial$/ );
         my $value = $member_of->{$idx};
-        next if ($value eq 'false');
+        next if ( $value eq 'false' );
 
-        push(@{$i_vlan_membership->{$port}}, $vlan);
+        push( @{ $i_vlan_membership->{$port} }, $vlan );
     }
     return $i_vlan_membership;
 }
@@ -255,7 +256,7 @@ __END__
 
 =head1 NAME
 
-SNMP::Info::Layer2::C1900 - SNMP Interface to data from Cisco Catlyst 1900
+SNMP::Info::Layer2::C1900 - SNMP Interface to data from Cisco Catalyst 1900
 Network Switches running CatOS
 
 =head1 AUTHOR
@@ -268,7 +269,6 @@ Max Baker
  my $c1900 = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 1
@@ -308,9 +308,9 @@ after determining a more specific class using the method above.
 
 =over
 
-=item STAND-ALONE-ETHERNET-SWITCH-MIB (ESSWITCH-MIB)
+=item F<STAND-ALONE-ETHERNET-SWITCH-MIB (ESSWITCH-MIB)>
 
-ESSWITCH-MIB is included in the Version 1 MIBS from Cisco.
+F<ESSWITCH-MIB> is included in the Version 1 MIBs from Cisco.
 
 They can be found at ftp://ftp.cisco.com/pub/mibs/v1/v1.tar.gz
 
@@ -337,7 +337,7 @@ These are methods that return scalar value from SNMP
 Usually contains the version of the software loaded in flash.
 Used by os_ver()
 
-B<STAND-ALONE-ETHERNET-SWITCH-MIB::upgradeFlashBankStatus>
+C<STAND-ALONE-ETHERNET-SWITCH-MIB::upgradeFlashBankStatus>
 
 =item $c1900->os()
 
@@ -359,6 +359,10 @@ Returns 'cisco' :)
 =head2 Overrides
 
 =over
+
+=item $c1900->cisco_comm_indexing()
+
+Returns 1.  Use vlan indexing.
 
 =item $c1900->bulkwalk_no
 
@@ -391,6 +395,10 @@ to a hash.
 
 =over
 
+=item $c1900->interfaces()
+
+Returns reference to the map between IID and physical Port.
+
 =item $c1900->i_duplex()
 
 Returns reference to map of IIDs to current link duplex
@@ -401,8 +409,8 @@ Returns reference to hash of IIDs to admin duplex setting
 
 =item $c1900->i_name()
 
-Crosses ifName with $c1900->c1900_p_name() and returns the human set port name
-if exists.
+Crosses C<ifName> with $c1900->c1900_p_name() and returns the human set port
+name if exists.
 
 =item $c1900->i_vlan()
 
@@ -426,7 +434,7 @@ bridge group IDs.
 
 =back
 
-=head2 STAND-ALONE-ETHERNET-SWITCH-MIB Switch Port Table Entries:
+=head2 F<STAND-ALONE-ETHERNET-SWITCH-MIB> Switch Port Table Entries:
 
 =over
 
@@ -434,43 +442,43 @@ bridge group IDs.
 
 Maps the Switch Port Table to the IID
 
-B<swPortIfIndex>
+C<swPortIfIndex>
 
 =item $c1900->c1900_p_duplex()
 
 Gives Port Duplex Info
 
-(B<swPortDuplexStatus>)
+(C<swPortDuplexStatus>)
 
 =item $c1900->c1900_p_duplex_admin()
 
 Gives admin setting for Duplex Info
 
-(B<swPortFullDuplex>)
+(C<swPortFullDuplex>)
 
 =item $c1900->c1900_p_name()
 
 Gives human set name for port 
 
-(B<swPortName>)
+(C<swPortName>)
 
 =item $c1900->c1900_p_up_admin()
 
 Gives Admin status of port enabled.
 
-(B<swPortAdminStatus>)
+(C<swPortAdminStatus>)
 
 =item $c1900->c1900_p_type()
 
-Gives Type of port, ie. "general-ethernet"
+Gives Type of port, i.e. C<"general-ethernet">
 
-(B<swPortMediaCapability>)
+(C<swPortMediaCapability>)
 
 =item $c1900->c1900_p_media()
 
-Gives the media of the port , ie "fiber-sc"
+Gives the media of the port , i.e. "C<fiber-sc>"
 
-(B<swPortConnectorType>)
+(C<swPortConnectorType>)
 
 =back
 
@@ -492,20 +500,23 @@ See L<SNMP::Info::Layer2/"TABLE METHODS"> for details.
 
 =head1 SET METHODS
 
-These are methods that provide SNMP set functionality for overridden methods or
-provide a simpler interface to complex set operations.  See
-L<SNMP::Info/"SETTING DATA VIA SNMP"> for general information on set operations. 
+These are methods that provide SNMP set functionality for overridden methods
+or provide a simpler interface to complex set operations.  See
+L<SNMP::Info/"SETTING DATA VIA SNMP"> for general information on set
+operations. 
 
 =over
 
 =item $c1900->set_i_duplex_admin(duplex, ifIndex)
 
-Sets port duplex, must be supplied with duplex and port ifIndex.  Speed choices
-are 'auto', 'half', 'full'.
+Sets port duplex, must be supplied with duplex and port C<ifIndex>.  Speed
+choices are 'auto', 'half', 'full'.
 
   Example:
   my %if_map = reverse %{$c1900->interfaces()};
   $c1900->set_i_duplex_admin('auto', $if_map{'1'}) 
     or die "Couldn't change port duplex. ",$c1900->error(1);
+
+=back
 
 =cut

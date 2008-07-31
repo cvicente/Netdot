@@ -1,95 +1,86 @@
 # SNMP::Info::FDP
-# Bruce Rodger
-# $Id: FDP.pm,v 1.8 2007/11/26 04:24:50 jeneric Exp $
+# $Id: FDP.pm,v 1.12 2008/07/20 03:27:07 jeneric Exp $
 #
-# (c) 2004 Bruce Rodger, Max Baker 
-# All rights reserved.  
+# Copyright (c) 2008 Bruce Rodger, Max Baker
+# All rights reserved.
 #
 # Copyright (c) 2002,2003 Regents of the University of California
 # All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without 
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::FDP;
 
 use strict;
-
 use Exporter;
 use SNMP::Info;
 
-@SNMP::Info::FDP::ISA = qw/SNMP::Info Exporter/;
+@SNMP::Info::FDP::ISA       = qw/SNMP::Info Exporter/;
 @SNMP::Info::FDP::EXPORT_OK = qw//;
 
-use vars qw/$VERSION $DEBUG %FUNCS %GLOBALS %MIBS %MUNGE $INIT/;
-$VERSION = '1.07';
+use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-%MIBS 	= (
-           'FOUNDRY-SN-SWITCH-GROUP-MIB' => 'snFdpGlobalRun'
-           );
+$VERSION = '1.09';
+
+%MIBS = ( 'FOUNDRY-SN-SWITCH-GROUP-MIB' => 'snFdpGlobalRun' );
 
 %GLOBALS = (
-            # CDP-Compatibility
-            'cdp_interval' => 'snFdpGlobalMessageInterval',
-            'cdp_holdtime' => 'snFdpGlobalHoldTime',
-            'cdp_id'       => 'snFdpGlobalDeviceId',
-            #
-            'fdp_run'      => 'snFdpGlobalRun',
-            'fdp_interval' => 'snFdpGlobalMessageInterval',
-            'fdp_holdtime' => 'snFdpGlobalHoldTime',
-            'fdp_id'       => 'snFdpGlobalDeviceId',
-           );
 
-%FUNCS  = (
-            'c_index'        => 'snFdpCacheIfIndex',
-            'c_proto'        => 'snFdpCacheAddressType',
-            'c_ip'           => 'snFdpCacheAddress',
-            'c_ver'          => 'snFdpCacheVersion',
-            'c_id'           => 'snFdpCacheDeviceId',
-            'c_port'         => 'snFdpCacheDevicePort',
-            'c_platform'     => 'snFdpCachePlatform',
-            'c_capabilities' => 'snFdpCacheCapabilities',
-            'c_domain'       => 'snFdpCacheVTPMgmtDomain',
-            'c_vlan'         => 'snFdpCacheNativeVLAN',
-            'c_duplex'       => 'snFdpCacheDuplex',
-          );
+    # CDP-Compatibility
+    'cdp_interval' => 'snFdpGlobalMessageInterval',
+    'cdp_holdtime' => 'snFdpGlobalHoldTime',
+    'cdp_id'       => 'snFdpGlobalDeviceId',
+
+    #
+    'fdp_run'      => 'snFdpGlobalRun',
+    'fdp_interval' => 'snFdpGlobalMessageInterval',
+    'fdp_holdtime' => 'snFdpGlobalHoldTime',
+    'fdp_id'       => 'snFdpGlobalDeviceId',
+);
+
+%FUNCS = (
+    'c_index'        => 'snFdpCacheIfIndex',
+    'c_proto'        => 'snFdpCacheAddressType',
+    'c_ip'           => 'snFdpCacheAddress',
+    'c_ver'          => 'snFdpCacheVersion',
+    'c_id'           => 'snFdpCacheDeviceId',
+    'c_port'         => 'snFdpCacheDevicePort',
+    'c_platform'     => 'snFdpCachePlatform',
+    'c_capabilities' => 'snFdpCacheCapabilities',
+    'c_domain'       => 'snFdpCacheVTPMgmtDomain',
+    'c_vlan'         => 'snFdpCacheNativeVLAN',
+    'c_duplex'       => 'snFdpCacheDuplex',
+);
 
 %MUNGE = (
-          'c_capabilities' => \&munge_caps,
-          'c_ip'           => \&SNMP::Info::munge_ip
-         );
-
-
-sub munge_caps {
-    my $caps = shift;
-    return undef unless defined $caps;
-
-    my $bits = substr(unpack("B*",$caps),-7);
-    return $bits;
-}
+    'c_capabilities' => \&SNMP::Info::munge_caps,
+    'c_ip'           => \&SNMP::Info::munge_ip
+);
 
 sub cdp_run {
-    my $fdp = shift;
+    my $fdp     = shift;
     my $fdp_run = $fdp->fdp_run();
 
     # if fdp_run isn't implemented on device, assume FDP is on
@@ -101,40 +92,45 @@ sub hasFDP {
     my $fdp = shift;
 
     my $ver = $fdp->{_version};
+
     #my $ver = $fdp->fdp_ver;
 
     # SNMP v1 clients dont have the globals
-    if (defined $ver and $ver == 1){
+    if ( defined $ver and $ver == 1 ) {
         my $fdp_ip = $fdp->fdp_ip();
+
         # See if anything in fdp cache, if so we have fdp
-        return 1 if (defined $fdp_ip and scalar(keys %$fdp_ip)) ;
-        return undef;
+        return 1 if ( defined $fdp_ip and scalar( keys %$fdp_ip ) );
+        return;
     }
-    
+
     return $fdp->fdp_run();
 }
 
 sub c_if {
-    my $fdp  = shift;
+    my $fdp = shift;
 
     # See if by some miracle Cisco implemented the fdpCacheIfIndex entry
-    my $fdp_index     = $fdp->fdp_index();
+    my $fdp_index = $fdp->fdp_index();
     return $fdp_index if defined $fdp_index;
 
     # Nope, didn't think so. Now we fake it.
     my $fdp_ip = $fdp->c_ip();
-    unless (defined $fdp_ip){
-        $fdp->error_throw("SNMP::Info::FDP:fdp_if() - Device doesn't have fdp_ip() data.  Can't fake fdp_index()");
-        return undef;
+    unless ( defined $fdp_ip ) {
+        $fdp->error_throw(
+            "SNMP::Info::FDP:fdp_if() - Device doesn't have fdp_ip() data.  Can't fake fdp_index()"
+        );
+        return;
     }
 
     my %fdp_if;
-    foreach my $key (keys %$fdp_ip){
-      next unless defined $key;
-      my $iid = $key;
-      # Truncate .1 from fdp cache entry
-      $iid =~ s/\.\d+$//;
-      $fdp_if{$key} = $iid;
+    foreach my $key ( keys %$fdp_ip ) {
+        next unless defined $key;
+        my $iid = $key;
+
+        # Truncate .1 from fdp cache entry
+        $iid =~ s/\.\d+$//;
+        $fdp_if{$key} = $iid;
     }
 
     return \%fdp_if;
@@ -145,7 +141,8 @@ __END__
 
 =head1 NAME
 
-SNMP::Info::FDP - SNMP Interface to Foundry Discovery Protocol (FDP) using SNMP
+SNMP::Info::FDP - SNMP Interface to Foundry Discovery Protocol (FDP) using
+SNMP
 
 =head1 AUTHOR
 
@@ -191,7 +188,8 @@ similar functionality to Cisco's CDP, and the SNMP interface is
 virtually identical.  FDP is implemented in Foundry devices, including
 the Bigiron and Fastiron range.
 
-Create or use a device subclass that inherits this class.  Do not use directly.
+Create or use a device subclass that inherits this class.  Do not use
+directly.
 
 Each device implements a subset of the global and cache entries. 
 Check the return value to see if that data is held by the device.
@@ -204,16 +202,12 @@ None.
 
 =over
 
-=item FOUNDRY-SN-SWITCH-GROUP-MIB
+=item F<FOUNDRY-SN-SWITCH-GROUP-MIB>
 
 Needs a reasonably recent MIB. Works OK with B2R07604A.mib, but doesn't
 work with B2R07600C. 
 
-
 =back
-
-MIBs are normally distributed with each code update. Contact your vendor,
-or trawl through google...
 
 =head1 GLOBAL METHODS
 
@@ -231,27 +225,61 @@ Accounts for SNMP version 1 devices which may have FDP but not fdp_run()
 
 Is FDP enabled on this device?  
 
-(B<fdpGlobalRun>)
+(C<fdpGlobalRun>)
 
 =item $fdp->fdp_interval()
 
 Interval in seconds at which FDP messages are generated.
 
-(B<fdpGlobalMessageInterval>)
+(C<fdpGlobalMessageInterval>)
 
 =item $fdp->fdp_holdtime()
 
 Time in seconds that FDP messages are kept. 
 
-(B<fdpGlobalHoldTime>)
+(C<fdpGlobalHoldTime>)
 
 =item  $fdp->fdp_id() 
 
 Returns FDP device ID.  
 
-This is the device id broadcast via FDP to other devices, and is what is retrieved from remote devices with $fdp->id().
+This is the device id broadcast via FDP to other devices, and is what is
+retrieved from remote devices with $fdp->id().
 
-(B<fdpGlobalDeviceId>)
+(C<fdpGlobalDeviceId>)
+
+=back
+
+=head2 Overrides
+
+CDP compatibility
+
+=over
+
+=item $fdp->c_interval()
+
+Interval in seconds at which FDP messages are generated.
+
+(C<fdpGlobalMessageInterval>)
+
+=item $fdp->c_holdtime()
+
+Time in seconds that FDP messages are kept. 
+
+(C<fdpGlobalHoldTime>)
+
+=item  $fdp->c_id() 
+
+Returns FDP device ID.  
+
+This is the device id broadcast via FDP to other devices, and is what is
+retrieved from remote devices with $fdp->id().
+
+(C<fdpGlobalDeviceId>)
+
+=item $cdp->cdp_run()
+
+Is FDP enabled on this device?
 
 =back
 
@@ -260,11 +288,13 @@ This is the device id broadcast via FDP to other devices, and is what is retriev
 These are methods that return tables of information in the form of a reference
 to a hash.
 
-=head2 FDP CACHE ENTRIES
+=head2 Overrides
+
+CDP compatibility
 
 =over
 
-=item $fdp->fdp_capabilities()
+=item $fdp->c_capabilities()
 
 Returns Device Functional Capabilities.  Results are munged into an ascii
 binary string, 7 digits long, MSB.  Each digit represents a bit from the
@@ -278,51 +308,59 @@ From L<http://www.cisco.com/univercd/cc/td/doc/product/lan/trsrb/frames.htm#1884
 
 =item (0x40) - Provides level 1 functionality.
 
-=item (0x20) - The bridge or switch does not forward IGMP Report packets on nonrouter ports.
+=item (0x20) - The bridge or switch does not forward IGMP Report packets on
+non router ports.
 
-=item (0x10) - Sends and receives packets for at least one network layer protocol. If the device is routing the protocol, this bit should not be set.
+=item (0x10) - Sends and receives packets for at least one network layer
+protocol. If the device is routing the protocol, this bit should not be set.
 
-=item (0x08) - Performs level 2 switching. The difference between this bit and bit 0x02 is that a switch does not run the Spanning-Tree Protocol. This device is assumed to be deployed in a physical loop-free topology.
+=item (0x08) - Performs level 2 switching. The difference between this bit
+and bit 0x02 is that a switch does not run the Spanning-Tree Protocol. This
+device is assumed to be deployed in a physical loop-free topology.
 
-=item (0x04) - Performs level 2 source-route bridging. A source-route bridge would set both this bit and bit 0x02.
+=item (0x04) - Performs level 2 source-route bridging. A source-route bridge
+would set both this bit and bit 0x02.
 
 =item (0x02) - Performs level 2 transparent bridging.
 
-=item (0x01) - Performs level 3 routing for at least one network layer protocol.
+=item (0x01) - Performs level 3 routing for at least one network layer
+protocol.
 
 =back
 
-Thanks to Martin Lorensen C<martin -at- lorensen.dk> for a pointer to this information.
+Thanks to Martin Lorensen C<martin -at- lorensen.dk> for a pointer to
+this information.
 
-(B<fdpCacheCapabilities>)
+(C<fdpCacheCapabilities>)
 
-=item $fdp->fdp_domain()
+=item $fdp->c_domain()
 
-The CDP version of this returns remote VTP Management Domain as defined in CISCO-VTP-MIB::managementDomainName
+The CDP version of this returns remote VTP Management Domain as defined
+in C<CISCO-VTP-MIB::managementDomainName>
 
-(B<fdpCacheVTPMgmtDomain>)
+(C<fdpCacheVTPMgmtDomain>)
 
-=item $fdp->fdp_duplex() 
+=item $fdp->c_duplex() 
 
 Returns the port duplex status from remote devices.
 
-(B<fdpCacheDuplex>)
+(C<fdpCacheDuplex>)
 
-=item $fdp->fdp_id()
+=item $fdp->c_id()
 
 Returns remote device id string
 
-(B<fdpCacheDeviceId>)
+(C<fdpCacheDeviceId>)
 
-=item $fdp->fdp_if()
+=item $fdp->c_if()
 
 Returns the mapping to the SNMP Interface Table.
 
-Note that a lot devices don't implement $fdp->fdp_index(),  So if it isn't around,
-we fake it. 
+Note that a lot devices don't implement $fdp->fdp_index(),  So if it isn't
+around, we fake it. 
 
-In order to map the fdp table entry back to the interfaces() entry, we truncate the last number
-off of it :
+In order to map the fdp table entry back to the interfaces() entry, we
+truncate the last number off of it :
 
   # it exists, yay.
   my $fdp_index     = $device->fdp_index();
@@ -342,51 +380,52 @@ off of it :
   return \%fdp_if;
 
 
-=item $fdp->fdp_index()
+=item $fdp->c_index()
 
 Returns the mapping to the SNMP2 Interface table for FDP Cache Entries. 
 
-Most devices don't implement this, so you probably want to use $fdp->fdp_if() instead.
+Most devices don't implement this, so you probably want to use $fdp->fdp_if()
+instead.
 
 See fdp_if() entry.
 
-(B<fdpCacheIfIndex>)
+(C<fdpCacheIfIndex>)
 
-=item  $fdp->fdp_ip()
+=item  $fdp->c_ip()
 
 Returns remote IP address
 
-(B<fdpCacheAddress>)
+(C<fdpCacheAddress>)
 
-=item $fdp->fdp_platform() 
+=item $fdp->c_platform() 
 
 Returns remote platform id 
 
-(B<fdpCachePlatform>)
+(C<fdpCachePlatform>)
 
-=item $fdp->fdp_port()
+=item $fdp->c_port()
 
 Returns remote port ID
 
-(B<fdpDevicePort>)
+(C<fdpDevicePort>)
 
-=item  $fdp->fdp_proto()
+=item  $fdp->c_proto()
 
 Returns remote address type received.  Usually IP.
 
-(B<fdpCacheAddressType>)
+(C<fdpCacheAddressType>)
 
-=item $fdp->fdp_ver() 
+=item $fdp->c_ver() 
 
 Returns remote hardware version
 
-(B<fdpCacheVersion>)
+(C<fdpCacheVersion>)
 
-=item $fdp->fdp_vlan()
+=item $fdp->c_vlan()
 
 Returns the remote interface native VLAN.
 
-(B<fdpCacheNativeVLAN>)
+(C<fdpCacheNativeVLAN>)
 
 =back
 

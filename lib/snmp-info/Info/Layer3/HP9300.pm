@@ -1,96 +1,100 @@
 # SNMP::Info::Layer3::HP9300 - SNMP Interface to HP Foundry OEM devices
-# Eric Miller
+# $Id: HP9300.pm,v 1.5 2008/07/20 03:27:18 jeneric Exp $
 #
-# Copyright (c) 2007 Eric Miller
+# Copyright (c) 2008 Eric Miller
+# All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without 
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer3::HP9300;
-# $Id: HP9300.pm,v 1.2 2007/12/07 04:23:37 jeneric Exp $
 
 use strict;
-
 use Exporter;
 use SNMP::Info::Layer3;
 use SNMP::Info::FDP;
 use SNMP::Info::LLDP;
 
-use vars qw/$VERSION $DEBUG %GLOBALS %FUNCS $INIT %MIBS %MUNGE/;
+@SNMP::Info::Layer3::HP9300::ISA = qw/SNMP::Info::FDP SNMP::Info::LLDP
+    SNMP::Info::Layer3 Exporter/;
+@SNMP::Info::Layer3::HP9300::EXPORT_OK = qw//;
+
+use vars qw/$VERSION %GLOBALS %FUNCS %MIBS %MUNGE/;
 
 $VERSION = '1.09';
 
-@SNMP::Info::Layer3::HP9300::ISA = qw/SNMP::Info::FDP SNMP::Info::LLDP
-                                       SNMP::Info::Layer3 Exporter/;
-@SNMP::Info::Layer3::HP9300::EXPORT_OK = qw//;
-
-%MIBS = ( %SNMP::Info::Layer3::MIBS,
-          %SNMP::Info::LLDP::MIBS,
-          %SNMP::Info::FDP::MIBS,
-          'HP-SN-ROOT-MIB'         => 'hp',
-          'HP-SN-AGENT-MIB'        => 'snChasPwrSupplyDescription',
-          'HP-SN-SWITCH-GROUP-MIB' => 'snSwGroupOperMode',
-        );
+%MIBS = (
+    %SNMP::Info::Layer3::MIBS,
+    %SNMP::Info::LLDP::MIBS,
+    %SNMP::Info::FDP::MIBS,
+    'HP-SN-ROOT-MIB'         => 'hp',
+    'HP-SN-AGENT-MIB'        => 'snChasPwrSupplyDescription',
+    'HP-SN-SWITCH-GROUP-MIB' => 'snSwGroupOperMode',
+);
 
 %GLOBALS = (
-            %SNMP::Info::Layer3::GLOBALS,
-            %SNMP::Info::LLDP::GLOBALS,
-            %SNMP::Info::FDP::GLOBALS,
-            'mac'        => 'ifPhysAddress.1',
-            'chassis'    => 'entPhysicalDescr.1',
-            'temp'       => 'snChasActualTemperature',
-            'ps1_type'   => 'snChasPwrSupplyDescription.1',
-            'ps1_status' => 'snChasPwrSupplyOperStatus.1',
-            'fan'        => 'snChasFanOperStatus.1',
+    %SNMP::Info::Layer3::GLOBALS,
+    %SNMP::Info::LLDP::GLOBALS,
+    %SNMP::Info::FDP::GLOBALS,
+    'mac'        => 'ifPhysAddress.1',
+    'chassis'    => 'entPhysicalDescr.1',
+    'temp'       => 'snChasActualTemperature',
+    'ps1_type'   => 'snChasPwrSupplyDescription.1',
+    'ps1_status' => 'snChasPwrSupplyOperStatus.1',
+    'fan'        => 'snChasFanOperStatus.1',
 
-           );
+);
 
-%FUNCS   = (
-            %SNMP::Info::Layer3::FUNCS,
-            %SNMP::Info::LLDP::FUNCS,
-            %SNMP::Info::FDP::FUNCS,
-            # HP-SN-SWITCH-GROUP-MIB
-            # snSwPortInfoTable - Switch Port Information Group
-            # Fully qualify these since FDP class will load
-            # FOUNDRY-SN-SWITCH-GROUP-MIB which contains the same leaf names
-            'sw_index'    => 'HP_SN_SWITCH_GROUP_MIB__snSwPortIfIndex',
-            'sw_duplex'   => 'HP_SN_SWITCH_GROUP_MIB__snSwPortInfoChnMode',
-            'sw_type'     => 'HP_SN_SWITCH_GROUP_MIB__snSwPortInfoMediaType',
-            'sw_speed'    => 'HP_SN_SWITCH_GROUP_MIB__snSwPortInfoSpeed',
-           );
+%FUNCS = (
+    %SNMP::Info::Layer3::FUNCS,
+    %SNMP::Info::LLDP::FUNCS,
+    %SNMP::Info::FDP::FUNCS,
+
+    # HP-SN-SWITCH-GROUP-MIB
+    # snSwPortInfoTable - Switch Port Information Group
+    # Fully qualify these since FDP class will load
+    # FOUNDRY-SN-SWITCH-GROUP-MIB which contains the same leaf names
+    'sw_index'  => 'HP_SN_SWITCH_GROUP_MIB__snSwPortIfIndex',
+    'sw_duplex' => 'HP_SN_SWITCH_GROUP_MIB__snSwPortInfoChnMode',
+    'sw_type'   => 'HP_SN_SWITCH_GROUP_MIB__snSwPortInfoMediaType',
+    'sw_speed'  => 'HP_SN_SWITCH_GROUP_MIB__snSwPortInfoSpeed',
+);
 
 %MUNGE = (
-            %SNMP::Info::Layer3::MUNGE,
-            %SNMP::Info::LLDP::MUNGE,
-            %SNMP::Info::FDP::MUNGE,
-         );
+    %SNMP::Info::Layer3::MUNGE, %SNMP::Info::LLDP::MUNGE,
+    %SNMP::Info::FDP::MUNGE,
+);
 
 sub i_ignore {
-    my $hp9300 = shift;
+    my $hp9300  = shift;
     my $partial = shift;
 
     my $interfaces = $hp9300->interfaces($partial) || {};
 
     my %i_ignore;
-    foreach my $if (keys %$interfaces) {
-        if ($interfaces->{$if} =~ /(tunnel|loopback|\blo\b|lb|null)/i){
+    foreach my $if ( keys %$interfaces ) {
+        if ( $interfaces->{$if} =~ /(tunnel|loopback|\blo\b|lb|null)/i ) {
             $i_ignore{$if}++;
         }
     }
@@ -98,19 +102,19 @@ sub i_ignore {
 }
 
 sub i_duplex {
-    my $hp9300 = shift;
+    my $hp9300  = shift;
     my $partial = shift;
 
-    my $sw_index = $hp9300->sw_index($partial);
-    my $sw_duplex= $hp9300->sw_duplex($partial);
+    my $sw_index  = $hp9300->sw_index($partial);
+    my $sw_duplex = $hp9300->sw_duplex($partial);
 
-    unless (defined $sw_index and defined $sw_duplex){
-       return $hp9300->SUPER::i_duplex(); 
+    unless ( defined $sw_index and defined $sw_duplex ) {
+        return $hp9300->SUPER::i_duplex();
     }
-    
+
     my %i_duplex;
-    foreach my $sw_port (keys %$sw_duplex){
-        my $iid = $sw_index->{$sw_port};
+    foreach my $sw_port ( keys %$sw_duplex ) {
+        my $iid    = $sw_index->{$sw_port};
         my $duplex = $sw_duplex->{$sw_port};
         next if $duplex =~ /none/i;
         $i_duplex{$iid} = 'half' if $duplex =~ /half/i;
@@ -121,17 +125,17 @@ sub i_duplex {
 
 sub model {
     my $hp9300 = shift;
-    my $id = $hp9300->id();
-    my $model = &SNMP::translateObj($id);
-    
+    my $id     = $hp9300->id();
+    my $model  = &SNMP::translateObj($id);
+
     return $id unless defined $model;
-    
+
     $model =~ s/^hpSwitch//;
 
     return $model;
 }
 
-sub os { 
+sub os {
     return 'hp';
 }
 
@@ -146,7 +150,7 @@ sub os_ver {
 
     # Some older ones don't have this value,so we cull it from the description
     my $descr = $hp9300->description();
-    if ($descr =~ m/Version (\d\S*)/) {
+    if ( $descr =~ m/Version (\d\S*)/ ) {
         return $1;
     }
 
@@ -164,7 +168,7 @@ sub serial {
     # If no chassis serial use first module serial
     my $mod_serials = $hp9300->snAgentConfigModuleSerialNumber();
 
-    foreach my $mod (sort keys %$mod_serials){
+    foreach my $mod ( sort keys %$mod_serials ) {
         my $serial = $mod_serials->{$mod} || '';
         next unless defined $serial;
         return $serial;
@@ -175,20 +179,20 @@ sub serial {
 }
 
 sub interfaces {
-    my $hp9300 = shift;
+    my $hp9300  = shift;
     my $partial = shift;
 
     my $i_descr = $hp9300->i_description($partial) || {};
-    my $i_name  = $hp9300->i_name($partial) || {};
+    my $i_name  = $hp9300->i_name($partial)        || {};
 
     # Use ifName for EdgeIrons else use ifDescr
-    foreach my $iid (keys %$i_name){
+    foreach my $iid ( keys %$i_name ) {
         my $name = $i_name->{$iid};
         next unless defined $name;
-        $i_descr->{$iid} = $name 
+        $i_descr->{$iid} = $name
             if $name =~ /^port\d+/i;
     }
-    
+
     return $i_descr;
 }
 
@@ -201,21 +205,21 @@ sub hasCDP {
 }
 
 sub c_ip {
-    my $hp9300 = shift;
+    my $hp9300  = shift;
     my $partial = shift;
 
     my $cdp  = $hp9300->SUPER::c_ip($partial) || {};
-    my $lldp = $hp9300->lldp_ip($partial) || {};
+    my $lldp = $hp9300->lldp_ip($partial)     || {};
 
     my %c_ip;
-    foreach my $iid (keys %$cdp){
+    foreach my $iid ( keys %$cdp ) {
         my $ip = $cdp->{$iid};
         next unless defined $ip;
 
         $c_ip{$iid} = $ip;
     }
 
-    foreach my $iid (keys %$lldp){
+    foreach my $iid ( keys %$lldp ) {
         my $ip = $lldp->{$iid};
         next unless defined $ip;
 
@@ -225,21 +229,21 @@ sub c_ip {
 }
 
 sub c_if {
-    my $hp9300 = shift;
+    my $hp9300  = shift;
     my $partial = shift;
 
-    my $lldp = $hp9300->lldp_if($partial) || {};;
+    my $lldp = $hp9300->lldp_if($partial)     || {};
     my $cdp  = $hp9300->SUPER::c_if($partial) || {};
-    
+
     my %c_if;
-    foreach my $iid (keys %$cdp){
+    foreach my $iid ( keys %$cdp ) {
         my $if = $cdp->{$iid};
         next unless defined $if;
 
         $c_if{$iid} = $if;
     }
 
-    foreach my $iid (keys %$lldp){
+    foreach my $iid ( keys %$lldp ) {
         my $if = $lldp->{$iid};
         next unless defined $if;
 
@@ -249,21 +253,21 @@ sub c_if {
 }
 
 sub c_port {
-    my $hp9300 = shift;
+    my $hp9300  = shift;
     my $partial = shift;
 
-    my $lldp = $hp9300->lldp_port($partial) || {};
+    my $lldp = $hp9300->lldp_port($partial)     || {};
     my $cdp  = $hp9300->SUPER::c_port($partial) || {};
-    
+
     my %c_port;
-    foreach my $iid (keys %$cdp){
+    foreach my $iid ( keys %$cdp ) {
         my $port = $cdp->{$iid};
         next unless defined $port;
 
         $c_port{$iid} = $port;
     }
 
-    foreach my $iid (keys %$lldp){
+    foreach my $iid ( keys %$lldp ) {
         my $port = $lldp->{$iid};
         next unless defined $port;
 
@@ -273,21 +277,21 @@ sub c_port {
 }
 
 sub c_id {
-    my $hp9300 = shift;
+    my $hp9300  = shift;
     my $partial = shift;
 
-    my $lldp = $hp9300->lldp_id($partial) || {};
+    my $lldp = $hp9300->lldp_id($partial)     || {};
     my $cdp  = $hp9300->SUPER::c_id($partial) || {};
 
     my %c_id;
-    foreach my $iid (keys %$cdp){
+    foreach my $iid ( keys %$cdp ) {
         my $id = $cdp->{$iid};
         next unless defined $id;
 
         $c_id{$iid} = $id;
     }
 
-    foreach my $iid (keys %$lldp){
+    foreach my $iid ( keys %$lldp ) {
         my $id = $lldp->{$iid};
         next unless defined $id;
 
@@ -297,21 +301,21 @@ sub c_id {
 }
 
 sub c_platform {
-    my $hp9300 = shift;
+    my $hp9300  = shift;
     my $partial = shift;
 
-    my $lldp = $hp9300->lldp_rem_sysdesc($partial) || {};
+    my $lldp = $hp9300->lldp_rem_sysdesc($partial)  || {};
     my $cdp  = $hp9300->SUPER::c_platform($partial) || {};
 
     my %c_platform;
-    foreach my $iid (keys %$cdp){
+    foreach my $iid ( keys %$cdp ) {
         my $platform = $cdp->{$iid};
         next unless defined $platform;
 
         $c_platform{$iid} = $platform;
     }
 
-    foreach my $iid (keys %$lldp){
+    foreach my $iid ( keys %$lldp ) {
         my $platform = $lldp->{$iid};
         next unless defined $platform;
 
@@ -337,7 +341,6 @@ Eric Miller
  my $hp9300 = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 1
@@ -374,11 +377,11 @@ after determining a more specific class using the method above.
 
 =over
 
-=item HP-SN-ROOT-MIB
+=item F<HP-SN-ROOT-MIB>
 
-=item HP-SN-AGENT-MIB
+=item F<HP-SN-AGENT-MIB>
 
-=item HP-SN-SWITCH-GROUP-MIB
+=item F<HP-SN-SWITCH-GROUP-MIB>
 
 =item Inherited Classes' MIBs
 
@@ -398,8 +401,8 @@ These are methods that return scalar value from SNMP
 
 =item $hp9300->model()
 
-Returns model type.  Checks $hp9300->id() against the HP-SN-ROOT-MIB
-and removes 'hpSwitch'.
+Returns model type.  Checks $hp9300->id() against the F<HP-SN-ROOT-MIB>
+and removes C<hpSwitch>.
 
 =item $hp9300->vendor()
 
@@ -417,13 +420,13 @@ Returns the software version
 
 Returns MAC Address of root port.
 
-(B<ifPhysAddress.1>)
+(C<ifPhysAddress.1>)
 
 =item $hp9300->chassis()
 
 Returns Chassis type.
 
-(B<entPhysicalDescr.1>)
+(C<entPhysicalDescr.1>)
 
 =item $hp9300->serial()
 
@@ -433,25 +436,25 @@ Returns serial number of device.
 
 Returns the chassis temperature
 
-(B<snChasActualTemperature>)
+(C<snChasActualTemperature>)
 
 =item $hp9300->ps1_type()
 
 Returns the Description for the power supply
 
-(B<snChasPwrSupplyDescription.1>)
+(C<snChasPwrSupplyDescription.1>)
 
 =item $hp9300->ps1_status()
 
 Returns the status of the power supply.
 
-(B<snChasPwrSupplyOperStatus.1>)
+(C<snChasPwrSupplyOperStatus.1>)
 
 =item $hp9300->fan()
 
 Returns the status of the chassis fan.
 
-(B<snChasFanOperStatus.1>)
+(C<snChasFanOperStatus.1>)
 
 =back
 
@@ -494,7 +497,7 @@ Crosses $hp9300->sw_duplex() with $hp9300->sw_index()
 
 =back
 
-=head2 Switch Port Information Table (B<snSwPortIfTable>)
+=head2 Switch Port Information Table (C<snSwPortIfTable>)
 
 =over
 
@@ -502,25 +505,25 @@ Crosses $hp9300->sw_duplex() with $hp9300->sw_index()
 
 Returns reference to hash.  Maps Table to Interface IID. 
 
-(B<snSwPortIfIndex>)
+(C<snSwPortIfIndex>)
 
 =item $hp9300->sw_duplex()
 
 Returns reference to hash.   Current duplex status for switch ports. 
 
-(B<snSwPortInfoChnMode>)
+(C<snSwPortInfoChnMode>)
 
 =item $hp9300->sw_type()
 
 Returns reference to hash.  Current Port Type .
 
-(B<snSwPortInfoMediaType>)
+(C<snSwPortInfoMediaType>)
 
 =item $hp9300->sw_speed()
 
 Returns reference to hash.  Current Port Speed. 
 
-(B<snSwPortInfoSpeed>)
+(C<snSwPortInfoSpeed>)
 
 =back
 
@@ -531,7 +534,8 @@ Protocol (FDP) and Link Layer Discovery Protocol (LLDP). These
 methods will query both and return the combination of all information. As a
 result, there may be identical topology information returned from the two
 protocols causing duplicate entries.  It is the calling program's
-responsibility to identify any duplicate entries and de-duplicate if necessary.
+responsibility to identify any duplicate entries and remove duplicates
+if necessary.
 
 =over
 
@@ -550,9 +554,9 @@ Returns reference to hash.  Key: iid Value: remote IPv4 address
 If multiple entries exist with the same local port, c_if(), with the same IPv4
 address, c_ip(), it may be a duplicate entry.
 
-If multiple entries exist with the same local port, c_if(), with different IPv4
-addresses, c_ip(), there is either a non-FDP/LLDP device in between two or
-more devices or multiple devices which are not directly connected.  
+If multiple entries exist with the same local port, c_if(), with different
+IPv4 addresses, c_ip(), there is either a non-FDP/LLDP device in between two
+or more devices or multiple devices which are not directly connected.  
 
 Use the data from the Layer2 Topology Table below to dig deeper.
 

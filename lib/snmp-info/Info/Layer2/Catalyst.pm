@@ -1,39 +1,37 @@
 # SNMP::Info::Layer2::Catalyst
-# Max Baker
+# $Id: Catalyst.pm,v 1.32 2008/07/20 03:27:30 jeneric Exp $
 #
 # Copyright (c) 2002,2003 Regents of the University of California
-# Copyright (c) 2003,2004 Max Baker changes from version 0.8 and beyond
+# Copyright (c) 2008 Max Baker changes from version 0.8 and beyond
 # All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without 
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Layer2::Catalyst;
-$VERSION = '1.07';
-# $Id: Catalyst.pm,v 1.27 2007/11/26 04:24:51 jeneric Exp $
 
 use strict;
-
 use Exporter;
 use SNMP::Info::CiscoStack;
 use SNMP::Info::CiscoVTP;
@@ -42,48 +40,43 @@ use SNMP::Info::CiscoStats;
 use SNMP::Info::CiscoPortSecurity;
 use SNMP::Info::Layer2;
 
-use vars qw/$VERSION $DEBUG %GLOBALS %MIBS %FUNCS %MUNGE $INIT/ ;
-@SNMP::Info::Layer2::Catalyst::ISA = qw/SNMP::Info::CiscoStack SNMP::Info::CiscoVTP 
-                                        SNMP::Info::CDP SNMP::Info::CiscoStats
-                                        SNMP::Info::CiscoPortSecurity
-                                        SNMP::Info::Layer2 Exporter/;
+@SNMP::Info::Layer2::Catalyst::ISA
+    = qw/SNMP::Info::CiscoStack SNMP::Info::CiscoVTP
+    SNMP::Info::CDP SNMP::Info::CiscoStats
+    SNMP::Info::CiscoPortSecurity
+    SNMP::Info::Layer2 Exporter/;
 @SNMP::Info::Layer2::Catalyst::EXPORT_OK = qw//;
 
-%MIBS =    (
-            %SNMP::Info::Layer2::MIBS,
-            %SNMP::Info::CiscoPortSecurity::MIBS,
-            %SNMP::Info::CiscoStats::MIBS,
-            %SNMP::Info::CDP::MIBS,
-            %SNMP::Info::CiscoVTP::MIBS,
-            %SNMP::Info::CiscoStack::MIBS,
-            );
+use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
+
+$VERSION = '1.09';
+
+%MIBS = (
+    %SNMP::Info::Layer2::MIBS,     %SNMP::Info::CiscoPortSecurity::MIBS,
+    %SNMP::Info::CiscoStats::MIBS, %SNMP::Info::CDP::MIBS,
+    %SNMP::Info::CiscoVTP::MIBS,   %SNMP::Info::CiscoStack::MIBS,
+);
 
 %GLOBALS = (
-            %SNMP::Info::Layer2::GLOBALS,
-            %SNMP::Info::CiscoPortSecurity::GLOBALS,
-            %SNMP::Info::CiscoStats::GLOBALS,
-            %SNMP::Info::CDP::GLOBALS,
-            %SNMP::Info::CiscoVTP::GLOBALS,
-            %SNMP::Info::CiscoStack::GLOBALS,
-            );
+    %SNMP::Info::Layer2::GLOBALS,
+    %SNMP::Info::CiscoPortSecurity::GLOBALS,
+    %SNMP::Info::CiscoStats::GLOBALS,
+    %SNMP::Info::CDP::GLOBALS,
+    %SNMP::Info::CiscoVTP::GLOBALS,
+    %SNMP::Info::CiscoStack::GLOBALS,
+);
 
-%FUNCS =   (
-            %SNMP::Info::Layer2::FUNCS,
-            %SNMP::Info::CiscoPortSecurity::FUNCS,
-            %SNMP::Info::CiscoStats::FUNCS,
-            %SNMP::Info::CDP::FUNCS,
-            %SNMP::Info::CiscoVTP::FUNCS,
-            %SNMP::Info::CiscoStack::FUNCS,
-           );
+%FUNCS = (
+    %SNMP::Info::Layer2::FUNCS,     %SNMP::Info::CiscoPortSecurity::FUNCS,
+    %SNMP::Info::CiscoStats::FUNCS, %SNMP::Info::CDP::FUNCS,
+    %SNMP::Info::CiscoVTP::FUNCS,   %SNMP::Info::CiscoStack::FUNCS,
+);
 
-%MUNGE =   (
-            %SNMP::Info::Layer2::MUNGE,
-            %SNMP::Info::CiscoPortSecurity::MUNGE,
-            %SNMP::Info::CiscoStats::MUNGE,
-            %SNMP::Info::CDP::MUNGE,
-            %SNMP::Info::CiscoVTP::MUNGE,
-            %SNMP::Info::CiscoStack::MUNGE,
-            );
+%MUNGE = (
+    %SNMP::Info::Layer2::MUNGE,     %SNMP::Info::CiscoPortSecurity::MUNGE,
+    %SNMP::Info::CiscoStats::MUNGE, %SNMP::Info::CDP::MUNGE,
+    %SNMP::Info::CiscoVTP::MUNGE,   %SNMP::Info::CiscoStack::MUNGE,
+);
 
 # Overidden Methods
 
@@ -94,9 +87,9 @@ sub i_physical {
     my $p_port = $cat->p_port();
 
     my %i_physical;
-    foreach my $port (keys %$p_port) {
+    foreach my $port ( keys %$p_port ) {
         my $iid = $p_port->{$port};
-        $i_physical{$iid} = 1;  
+        $i_physical{$iid} = 1;
     }
     return \%i_physical;
 }
@@ -110,29 +103,29 @@ sub os {
 }
 
 sub os_ver {
-    my $cat = shift;
+    my $cat    = shift;
     my $os_ver = $cat->SUPER::os_ver();
     return $os_ver if defined $os_ver;
 
     my $m_swver = $cat->m_swver();
-    return undef unless defined $m_swver;
+    return unless defined $m_swver;
 
     # assume .1 entry is the chassis and the sw version we want.
     return $m_swver->{1} if defined $m_swver->{1};
-    return undef;
+    return;
 }
 
 # Workaround for incomplete bp_index
 sub bp_index {
-    my $cat = shift;
+    my $cat     = shift;
     my $p_index = $cat->p_port();
     my $b_index = $cat->p_oidx();
 
     my %bp_index;
-    foreach my $iid (keys %$p_index){
+    foreach my $iid ( keys %$p_index ) {
         my $ifidx = $p_index->{$iid};
         next unless defined $ifidx;
-        my $bpidx = $b_index->{$iid}||0;
+        my $bpidx = $b_index->{$iid} || 0;
 
         $bp_index{$bpidx} = $ifidx;
     }
@@ -140,19 +133,19 @@ sub bp_index {
 }
 
 sub cisco_comm_indexing {
-    1;
+    return 1;
 }
 
 sub interfaces {
-    my $cat = shift;
+    my $cat     = shift;
     my $partial = shift;
 
-    my $i_index    = $cat->i_index($partial);
-    my $portnames  = $cat->p_port() || {};
-    my %portmap    = reverse %$portnames;
+    my $i_index   = $cat->i_index($partial);
+    my $portnames = $cat->p_port() || {};
+    my %portmap   = reverse %$portnames;
 
     my %interfaces = ();
-    foreach my $iid (keys %$i_index) {
+    foreach my $iid ( keys %$i_index ) {
         next unless defined $iid;
         my $if   = $i_index->{$iid};
         my $port = $portmap{$iid};
@@ -162,20 +155,20 @@ sub interfaces {
 }
 
 sub i_name {
-    my $cat = shift; 	 
+    my $cat     = shift;
     my $partial = shift;
 
     my $p_port = $cat->p_port() || {};
     my $p_name = $cat->p_name() || {};
 
     my %i_name;
-    foreach my $port (keys %$p_name) {
+    foreach my $port ( keys %$p_name ) {
         my $iid = $p_port->{$port};
         next unless defined $iid;
-        next if (defined $partial and $iid !~ /^$partial$/);
+        next if ( defined $partial and $iid !~ /^$partial$/ );
         $i_name{$iid} = $p_name->{$port};
     }
-    return \%i_name; 
+    return \%i_name;
 }
 
 1;
@@ -196,7 +189,6 @@ Max Baker
  my $cat = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -211,7 +203,8 @@ Max Baker
 SNMP::Info subclass to provide information for Cisco Catalyst series switches
 running CatOS.
 
-This class includes the Catalyst 2920, 4000, 5000, 6000 (hybrid mode) families.
+This class includes the Catalyst 2920, 4000, 5000, 6000 (hybrid mode)
+families.
 
 This subclass is not for all devices that have the name Catalyst.  Note that
 some Catalyst switches run IOS, like the 2900 and 3550 families.  Cisco
@@ -261,7 +254,8 @@ See L<SNMP::Info::CDP/"Required MIBs"> for its own MIB requirements.
 
 See L<SNMP::Info::CiscoStats/"Required MIBs"> for its own MIB requirements.
 
-See L<SNMP::Info::CiscoPortSecurity/"Required MIBs"> for its own MIB requirements.
+See L<SNMP::Info::CiscoPortSecurity/"Required MIBs"> for its own MIB
+requirements.
 
 See L<SNMP::Info::Layer2/"Required MIBs"> for its own MIB requirements.
 
@@ -287,6 +281,10 @@ it grabs $cat->m_swver()->{1} and uses that.
 =item $cat->vendor()
 
 Returns 'cisco'
+
+=item $cat->cisco_comm_indexing()
+
+Returns 1.  Use vlan indexing.
 
 =back
 
@@ -325,21 +323,26 @@ to a hash.
 
 =item $cat->interfaces()
 
-Returns the map between SNMP Interface Identifier (iid) and physical port name. 
+Returns the map between SNMP Interface Identifier (iid) and physical port
+name. 
 
 =item $cat->i_name()
 
 Returns reference to hash of iid to human set name. 
 
-B<portName>
+C<portName>
+
+=item $cat->i_physical()
+
+Returns a map to IID for ports that are physical ports, not vlans, etc.
 
 =item $cat->bp_index()
 
 Returns reference to hash of bridge port table entries map back to interface
 identifier (iid)
 
-Crosses (B<portCrossIndex>) to (B<portIfIndex>) since some devices seem to have
-problems with BRIDGE-MIB
+Crosses (C<portCrossIndex>) to (C<portIfIndex>) since some devices seem to
+have problems with F<BRIDGE-MIB>
 
 =back
 

@@ -1,104 +1,102 @@
 # SNMP::Info::Entity
-# Max Baker
+# $Id: Entity.pm,v 1.22 2008/07/20 03:27:07 jeneric Exp $
 #
-# Copyright (c) 2004 Max Baker changes from version 0.8 and beyond.
+# Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 #
 # Copyright (c) 2003 Regents of the University of California
 # All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without 
+#
+# Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice,
-#       this list of conditions and the following disclaimer in the documentation
-#       and/or other materials provided with the distribution.
-#     * Neither the name of the University of California, Santa Cruz nor the 
-#       names of its contributors may be used to endorse or promote products 
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the University of California, Santa Cruz nor the
+#       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR # ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::Entity;
-$VERSION = '1.07';
-# $Id: Entity.pm,v 1.18 2007/12/02 20:01:59 fenner Exp $
 
 use strict;
-
 use Exporter;
 use SNMP::Info;
 
-use vars qw/$VERSION $DEBUG %MIBS %FUNCS %GLOBALS %MUNGE $INIT/;
-@SNMP::Info::Entity::ISA = qw/SNMP::Info Exporter/;
+@SNMP::Info::Entity::ISA       = qw/SNMP::Info Exporter/;
 @SNMP::Info::Entity::EXPORT_OK = qw//;
 
-%MIBS    = ('ENTITY-MIB' => 'entPhysicalSerialNum');
+use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
 
-%GLOBALS = (
-           );
+$VERSION = '1.09';
 
-%FUNCS   = (
-            'e_alias'   => 'entPhysicalAlias',
-            'e_class'   => 'entPhysicalClass',
-            'e_descr'   => 'entPhysicalDescr',
-            'e_fwver'   => 'entPhysicalFirmwareRev',
-            'e_fru'     => 'entPhysicalIsFRU',
-            'e_hwver'   => 'entPhysicalHardwareRev',
-            'e_id'      => 'entPhysicalAssetID',
-            'e_map'     => 'entAliasMappingIdentifier',
-            'e_model'   => 'entPhysicalModelName',
-            'e_name'    => 'entPhysicalName',
-            'e_parent'  => 'entPhysicalContainedIn',
-            'e_pos'     => 'entPhysicalParentRelPos',
-            'e_serial'  => 'entPhysicalSerialNum',
-            'e_swver'   => 'entPhysicalSoftwareRev',
-            'e_type'    => 'entPhysicalVendorType',
-            'e_vendor'  => 'entPhysicalMfgName',
-           );
+%MIBS = ( 'ENTITY-MIB' => 'entPhysicalSerialNum' );
 
-%MUNGE   = (
-            'e_type'    => \&munge_e_type,
-           );
+%GLOBALS = ();
+
+%FUNCS = (
+    'e_alias'  => 'entPhysicalAlias',
+    'e_class'  => 'entPhysicalClass',
+    'e_descr'  => 'entPhysicalDescr',
+    'e_fwver'  => 'entPhysicalFirmwareRev',
+    'e_fru'    => 'entPhysicalIsFRU',
+    'e_hwver'  => 'entPhysicalHardwareRev',
+    'e_id'     => 'entPhysicalAssetID',
+    'e_map'    => 'entAliasMappingIdentifier',
+    'e_model'  => 'entPhysicalModelName',
+    'e_name'   => 'entPhysicalName',
+    'e_parent' => 'entPhysicalContainedIn',
+    'e_pos'    => 'entPhysicalParentRelPos',
+    'e_serial' => 'entPhysicalSerialNum',
+    'e_swver'  => 'entPhysicalSoftwareRev',
+    'e_type'   => 'entPhysicalVendorType',
+    'e_vendor' => 'entPhysicalMfgName',
+);
+
+%MUNGE = ( 'e_type' => \&SNMP::Info::munge_e_type, );
 
 # entPhysicalIndex is not-accessible.  Create to facilitate emulation methods
 # in other classes
 
 sub e_index {
-    my $entity = shift;
+    my $entity  = shift;
     my $partial = shift;
 
     # Force use of MIB leaf to avoid inheritance issues in psuedo classes
-    my $e_descr  = $entity->entPhysicalDescr($partial);
+    my $e_descr = $entity->entPhysicalDescr($partial);
 
-    return undef unless ($e_descr);
-    
+    return unless ($e_descr);
+
     my %e_index;
 
-    foreach my $iid (keys %$e_descr) {
+    foreach my $iid ( keys %$e_descr ) {
         $e_index{$iid} = $iid;
     }
     return \%e_index;
 }
 
 sub e_port {
-    my $entity = shift;
+    my $entity  = shift;
     my $partial = shift;
 
-    my $e_map  = $entity->e_map($partial);
+    my $e_map = $entity->e_map($partial);
 
     my %e_port;
 
-    foreach my $e_id (keys %$e_map) {
+    foreach my $e_id ( keys %$e_map ) {
         my $id = $e_id;
         $id =~ s/\.0$//;
 
@@ -111,18 +109,13 @@ sub e_port {
     return \%e_port;
 }
 
-sub munge_e_type {
-    my $oid = shift;
-
-    my $name = &SNMP::translateObj($oid);
-    return $name if defined($name);
-    return $oid;
-}
 1;
+
+__END__
 
 =head1 NAME
 
-SNMP::Info::Entity - SNMP Interface to data stored in ENTITY-MIB. RFC 2737
+SNMP::Info::Entity - SNMP Interface to data stored in F<ENTITY-MIB>. RFC 2737
 
 =head1 AUTHOR
 
@@ -134,7 +127,6 @@ Max Baker
  my $entity = new SNMP::Info(
                           AutoSpecify => 1,
                           Debug       => 1,
-                          # These arguments are passed directly on to SNMP::Session
                           DestHost    => 'myswitch',
                           Community   => 'public',
                           Version     => 2
@@ -146,13 +138,15 @@ Max Baker
 
 =head1 DESCRIPTION
 
-ENTITY-MIB is used by Layer 2 devices from HP,Aironet,Foundry,Cisco and more.
+F<ENTITY-MIB> is used by Layer 2 devices from HP, Aironet, Foundry, Cisco,
+and more.
 
 See RFC 2737 for full details.
 
 Create or use a device subclass that inherit this class.  Do not use directly.
 
-For debugging purposes you can call this class directly as you would SNMP::Info
+For debugging purposes you can call this class directly as you would
+SNMP::Info
 
  my $entity = new SNMP::Info::Entity (...);
 
@@ -164,7 +158,7 @@ none.
 
 =over
 
-=item ENTITY-MIB
+=item F<ENTITY-MIB>
 
 =back
 
@@ -253,7 +247,7 @@ More computer friendly name of entity.  Parse me.
 
 =item $entity->e_port()
 
-Maps EntityTable entries to the Interface Table (IfTable) using
+Maps Entity Table entries to the Interface Table (C<IfTable>) using
 $entity->e_map()
 
 =item $entity->e_pos()
