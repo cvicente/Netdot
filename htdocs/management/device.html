@@ -70,6 +70,10 @@ my $fqdn;
 my $whois_url = Netdot->config->get('BGP_AS_WHOIS_URL');
 my (@arp_caches, @fwt);
 my @modules;
+my %ifacecolors = ( 
+    manual  => "cccccc",
+    removed => "ff8e8e",
+    );
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
@@ -511,7 +515,7 @@ print $tmp{value};
 %# Interfaces section
 %#
 %#######################################################################
-% my (@headers, @rows, @row);
+% my (@headers, @rows, @row, @rowstyles);
 
 %if ( $view eq "Interfaces" || $view eq "All" ){
 
@@ -675,6 +679,12 @@ function setNull(select){
       push @row, $ac;
       
       push @rows, \@row;
+      my $doc_status = $if->doc_status;
+      if (  exists $ifacecolors{$doc_status} ){
+	  push @rowstyles, "background-color: #$ifacecolors{$doc_status};"; 
+      }else{
+	  push @rowstyles, "";
+      } 
       
     } #foreach
     
@@ -712,12 +722,17 @@ function setNull(select){
 %       }
         </select>
         </form> 
+        Legend: 
+%	foreach my $status ( keys %ifacecolors ){
+	    <span style="background-color: #<% $ifacecolors{$status} %>;"><% $status %></span>
+%       }
+	&nbsp;&nbsp;
         <a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=<% $ifsort %>&editints=1">[edit]</a>
 %  }
 
     </div>
     <div class="containerbody">
-        <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+        <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows, rowstyle=>\@rowstyles &>
     </div>
     <div class="containerheadright">
 %	  if ( $editints ){	 

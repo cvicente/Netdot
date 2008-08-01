@@ -43,6 +43,7 @@ sub insert {
     $argv->{monitored}       ||= $self->config->get('IF_MONITORED');
     $argv->{snmp_managed}    ||= $self->config->get('IF_SNMP');
     $argv->{overwrite_descr} ||= $self->config->get('IF_OVERWRITE_DESCR');
+    $argv->{doc_status}      ||= 'manual';
     
     my $unkn = (MonitorStatus->search( name=>"Unknown" ))[0];
     $argv->{monitorstatus} = ( $unkn ) ? $unkn->id : 0;
@@ -301,9 +302,10 @@ sub snmp_update {
     my $class = ref($self);
     my $newif = $args{info};
     my $label  = $self->get_label;
-    my %iftmp;
     # Remember these are scalar refs.
     my ( $ipv4_changed, $ipv6_changed ) = @args{'ipv4_changed', 'ipv6_changed'};
+
+    my %iftmp = (doc_status => 'snmp');
 
     ############################################
     # Fill in standard fields
@@ -316,7 +318,7 @@ sub snmp_update {
     foreach my $field ( @stdfields ){
 	$iftmp{$field} = $newif->{$field} if exists $newif->{$field};
     }
-
+    
     ############################################
     # Update PhysAddr
     if ( ! $newif->{physaddr} ){

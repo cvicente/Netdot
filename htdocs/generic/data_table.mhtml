@@ -6,17 +6,18 @@ example data:
 --------------------------------------------------------
 | Address      | Status | Name                         |
 --------------------------------------------------------
-| 128.223.56.5 | Static | vlan56-5.uoregon.edu         |
-| 128.223.56.5 | Static | vlan56-5.uoregon.edu         |
-| 128.223.56.5 | Static | vlan56-5.uoregon.edu         |
-| 128.223.56.5 | Static | vlan56-5.uoregon.edu         |
+| 192.168.56.5 | Static | vlan56-5.mydomain.com         |
+| 192.168.56.5 | Static | vlan56-5.mydomain.com         |
+| 192.168.56.5 | Static | vlan56-5.mydomain.com         |
+| 192.168.56.5 | Static | vlan56-5.mydomain.com         |
 --------------------------------------------------------
 
 Arguments:  
     field_headers  -  array of captions to show on the top row
     data           -  array of arrays to show in the rows
     subclass       -  use class "datatabler1_subclass" in the stylesheet
-    style          -  array of style parameters for columns (any css)
+    rowstyle       -  array of style parameters for all columns in a row (any css)
+    style          -  array of style parameters for columns (any css).  Overrides rowstyle.
 </%doc>
 
 <%args>
@@ -24,6 +25,7 @@ Arguments:
 @data          => ();
 $subclass      => "";
 @style         => ();
+@rowstyle      => ();
 </%args>
 
 % if( $subclass ) { $subclass = '_'.$subclass; }
@@ -43,21 +45,26 @@ $subclass      => "";
 % }
 </tr>
 
-% my $row;
+% my $i = 0;
 % my $toggle = 1;
-% foreach $row(@data) {
-% ($toggle %= 2) += 1;
-  <tr>
-% if ( @style ){
-%   for (my $i=0; $i < scalar @$row; $i++) {
-      <td class="datatabler<% $toggle.$subclass %>" style="<% $style[$i] %>" ><% $row->[$i] %></td>
-%   }
-% }else{
-%   foreach (@$row) {
-      <td class="datatabler<% $toggle.$subclass %>"><% $_ %></td>
-%   }
-% }
-  </tr>
+% foreach my $row ( @data ) {
+%    ($toggle %= 2) += 1;
+     <tr>
+%    if ( @style ){
+%        for (my $j=0; $j < scalar @$row; $j++) {
+             <td class="datatabler<% $toggle.$subclass %>" style="<% $style[$j] %>"><% $row->[$j] %></td>
+%        }
+%    }elsif ( @rowstyle ){
+%        foreach (@$row) {
+             <td class="datatabler<% $toggle.$subclass %>" style="<% $rowstyle[$i] %>"><% $_ %></td>
+%       }
+%    }else{
+%        foreach (@$row) {
+             <td class="datatabler<% $toggle.$subclass %>"><% $_ %></td>
+%       }
+%    }
+%    $i++;
+     </tr>
 % }
 
 </table>

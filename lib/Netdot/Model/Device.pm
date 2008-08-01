@@ -2324,6 +2324,7 @@ sub info_update {
 		my %args = (device      => $self, 
 			    number      => $newif, 
 			    name        => $ifname,
+			    doc_status  => 'snmp',
 		    );
 		# Make sure we can write to the description field when
 		# device is airespace - we store the AP name as the int description
@@ -2354,13 +2355,15 @@ sub info_update {
 	} #end foreach my newif
 	
 	##############################################
-	# remove each interface that no longer exists
+	# Mark each interface that no longer exists
 	#
 	foreach my $id ( keys %oldifs ) {
-	    my $if = $oldifs{$id};
-	    $logger->info(sprintf("%s: Interface %s no longer exists.  Removing.", 
-				  $host, $if->get_label));
-	    $if->delete();
+	    my $iface = $oldifs{$id};
+	    if ( $iface->doc_status eq "snmp" ){
+		$logger->info(sprintf("%s: Interface %s no longer exists.  Marking as removed.", 
+				      $host, $iface->get_label));
+		$iface->update({doc_status=>'removed'});
+	    }
 	}
 	
 	##############################################
