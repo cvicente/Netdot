@@ -26,7 +26,7 @@ $dividefreespace => 'max'
     my $maxmask = $rowsize + 10;
     $maxmask = $maxmask > 32 ? 32 : $maxmask;
 
-    my @children = sort { $a->_netaddr <=> $b->_netaddr } $network->children;
+    my @children = sort { $a->address_numeric <=> $b->address_numeric } $network->children;
     my @freespace = sort $network->free_space;
 
     ######################################################################
@@ -59,9 +59,9 @@ EOF
     my $count = 0;
     my $prevclass = "";
     my $needtr = 1;
-    while (@children || @freespace) {
+    while ( @children || @freespace ) {
         my ($class, $title, $width, $link);
-        if (!@children || $freespace[0] < $children[0]->_netaddr) {
+        if ( !@children || (@freespace && $freespace[0]->numeric < $children[0]->address_numeric) ) {
             my $child = shift @freespace;
             $class = "ipaddr_available";
             if ($prevclass eq $class) { $class .= "_2"; }
@@ -70,19 +70,19 @@ EOF
             $width = 2**(32-$child->masklen);
             $count += $width;
             $prevclass = $class;
-        } elsif (!@freespace || $freespace[0] > $children[0]->_netaddr) {
+        } elsif (!@freespace || $freespace[0]->numeric > $children[0]->address_numeric) {
             my $child = shift @children;
             my $status = $child->status->name;
             $class = "ipaddr_" . lc($status);
             if ($prevclass eq $class) { $class .= "_2"; }
-            $title = $child->_netaddr;
-            $width = 2**(32-$title->masklen);
+            $title = $child->cidr;
+            $width = 2**(32-$child->prefix);
             $count += $width;
             $link = "ip.html?id=$child";
             $prevclass = $class;
         } else {
-            print STDERR $freespace[0] . " " . $children[0]->_netaddr . "\n";
-            die "SHOULD NOT HAPPEN";
+            print STDERR $freespace[0] . " " . $children[0]->get_label() . "\n";
+	    $m->comp('/generic/error.mhtml', error=>"Invalid conditional.  This should not happen.");
         }
 
         if ($needtr) { 
