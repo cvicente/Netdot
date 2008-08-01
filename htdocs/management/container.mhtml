@@ -14,7 +14,7 @@ $dividefreespace => 'max'
     my $network_addr = NetAddr::IP->new($network->address,$network->prefix); # the address of the start of the subnet
 
     my $minrowsize = $mask;
-    my $maxrowsize;
+    my $maxrowsize = 128;
 
     # set the visual size of the table on the screen:
     $rowsize = int($rowsize);
@@ -53,7 +53,20 @@ EOF
         }
     }
     
-    print "\n\n\n";
+    print "<br>";
+
+    print "<center>";
+    print 'Zoom: Set one row equal to ';
+    print '<select name="rowsize" class="small">';
+    for( my $i=$minrowsize; $i<=$maxrowsize; $i++ ) {
+        my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$i.'&dividefreespace='.$dividefreespace;
+        print '<option onclick="parent.location=\''.$link.'\'" value="'.$i.'"'.($rowsize==$i?' selected':'').'>/'.$i.'</option>';
+    }
+    print '</select>';
+    print "</center>";
+
+    print "<br>";
+
     print '<table class="ipcontainertable" style="width:' . ($cellsperrow+100) . ';" cellpadding="0" cellspacing="0"><tr class="outerrow"><td><table cellpadding="0" cellspacing="0" border="0">';
 
     my $count = 0;
@@ -65,7 +78,7 @@ EOF
             my $child = shift @freespace;
             $class = "ipaddr_available";
             if ($prevclass eq $class) { $class .= "_2"; }
-            $title = "$child";
+            $title = $child->addr;
             $link = "ip.html?add_block=$child&_action=ADD_BLOCK";
             $width = 2**(32-$child->masklen);
             $count += $width;
@@ -75,7 +88,7 @@ EOF
             my $status = $child->status->name;
             $class = "ipaddr_" . lc($status);
             if ($prevclass eq $class) { $class .= "_2"; }
-            $title = $child->cidr;
+            $title = $child->address;
             $width = 2**(32-$child->prefix);
             $count += $width;
             $link = "ip.html?id=$child";
