@@ -73,12 +73,13 @@ EOF
     my $prevclass = "";
     my $needtr = 1;
     while ( @children || @freespace ) {
-        my ($class, $title, $width, $link);
+        my ($class, $rowtitle, $title, $width, $link);
         if ( !@children || (@freespace && $freespace[0]->numeric < $children[0]->address_numeric) ) {
             my $child = shift @freespace;
             $class = "ipaddr_available";
             if ($prevclass eq $class) { $class .= "_2"; }
-            $title = $child->addr;
+            $rowtitle = $child->addr;
+            $title = $child;
             $link = "ip.html?add_block=$child&_action=ADD_BLOCK";
             $width = 2**(32-$child->masklen);
             $count += $width;
@@ -88,19 +89,20 @@ EOF
             my $status = $child->status->name;
             $class = "ipaddr_" . lc($status);
             if ($prevclass eq $class) { $class .= "_2"; }
-            $title = $child->address;
+            $rowtitle = $child->address;
+            $title = $child->cidr;
             $width = 2**(32-$child->prefix);
             $count += $width;
             $link = "ip.html?id=$child";
             $prevclass = $class;
         } else {
             print STDERR $freespace[0] . " " . $children[0]->get_label() . "\n";
-	    $m->comp('/generic/error.mhtml', error=>"Invalid conditional.  This should not happen.");
+	    $m->comp('/generic/error.mhtml', error=>"Invalid condition.  This should not happen.");
         }
 
         if ($needtr) { 
             $needtr = 0;
-            print '<tr class="outerrow"><td width="100">' . $title . '</td><td><table cellpadding="0" cellspacing="0"><tr>'; 
+            print '<tr class="outerrow"><td width="100">' . $rowtitle . '</td><td><table cellpadding="0" cellspacing="0"><tr>'; 
         }
 
         &print_net_block($class, $title, $width, $link, $cellsperrow);
