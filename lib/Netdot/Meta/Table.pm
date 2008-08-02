@@ -59,6 +59,23 @@ sub name {
     my $self = shift;
     return $self->_get_attr('name');
 }
+
+##################################################
+=head2 db_name - Returns the actual name of this table in the database
+
+  Arguments:
+    None
+  Returns:
+    name (scalar)
+  Example: 
+    my $db_name = $mtable->db_name;
+
+=cut
+sub db_name {
+    my $self = shift;
+    return $self->_get_attr('table_db_name');
+}
+
 ##################################################
 =head2 descr -  Get Table description
 

@@ -1,10 +1,12 @@
 package Netdot::Config;
 
 use Carp;
+use File::Spec::Functions qw( catpath splitpath rel2abs );
 
 my %config;
 
 my $default_config_dir = "<<Make:PREFIX>>/etc";
+my $alt_config_dir     = catpath( ( splitpath( rel2abs $0 ) )[ 0, 1 ] ) . "../etc";
 
 #Be sure to return 1
 1;
@@ -29,7 +31,7 @@ sub new {
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
     my $self  = {};
-    $self->{'_config_dir'} = $argv{config_dir} || $default_config_dir;
+    $self->{'_config_dir'} = $argv{config_dir};
     bless $self, $class;
     # Read config files
     %config = $self->_read_configs();
@@ -54,11 +56,21 @@ sub _read_configs {
     my ($self, $dir) = @_;
     my %config;
     my @files;
-    push @files, $self->{'_config_dir'} .'/Default.conf';
-    push @files, $self->{'_config_dir'} .'/Site.conf'
-	if ( -e $self->{'_config_dir'}.'/Site.conf' );
+    my $dir;
+    if ( defined $self->{'_config_dir'} ){
+	$dir = $self->{'_config_dir'};
+    }elsif ( -d $default_config_dir ){
+	$dir = $default_config_dir;
+    }elsif ( -d $alt_config_dir ){
+	$dir = $alt_config_dir;
+    }else{
+	croak "No suitable config directory found!\n";
+    }
+    push @files, $dir .'/Default.conf';
+    push @files, $dir .'/Site.conf'
+	if ( -e $dir .'/Site.conf' );
     foreach my $file ( @files ){
-	my $config_href = do $file or die "Can't read config file: $file: ", $@ || $!;
+	my $config_href = do $file or croak "Can't read config file: $file: ", $@ || $!;
 	foreach my $key ( %$config_href ) {
 	    $config{$key} = $config_href->{$key};
 	}

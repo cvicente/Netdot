@@ -57,10 +57,12 @@ install: dir doc htdocs lib var _mibs bin etc _import _export
 	@echo "If you are installing Netdot for the first time, you need to"
 	@echo "  'make installdb'"
 
-upgrade: dir doc htdocs lib var mibs bin etc updatedb
+upgrade: updatedb
 	@echo
-	@echo "Netdot has been upgraded. "
-	@echo "You will need to restart Apache"
+	@echo "Netdot has been upgraded. Now you should:"
+	@echo 
+	@echo "  1) 'make install'"
+	@echo "  2) Stop and start Apache"
 	@echo 
 
 updatedb:

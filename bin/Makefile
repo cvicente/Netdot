@@ -22,11 +22,13 @@ installdb: _installdb oui
 _installdb:
 	$(PERL) initdb initdb
 
-updatedb:
-	$(PERL) updatedb
+updatedb: _updatedb
+
+_updatedb:
+	$(PERL) updatedb 
 
 genschema:
-	$(PERL) initdb  generate
+	$(PERL) initdb generate
 
 dropdb:
 	$(PERL) initdb dropdb

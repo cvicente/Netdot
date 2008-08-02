@@ -2,62 +2,220 @@
 # Make the necessary modifications to upgrade Netdot's schema and data
 #
 use strict;
-use vars qw( $dbh $DEBUG $DB_TYPE $DB_HOST $DB_PORT 
-	     $DB_DBA $DB_DATABASE $DB_DBA_PASSWORD);
-
+use lib "../lib";
 use DBUTIL;
+use Netdot;
+use Netdot::Model;
 
-($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWORD, $DB_DATABASE) = @ARGV;
+my %CONFIG;
+$CONFIG{olddb}             = 'netdot-0712';
+$CONFIG{debug}             = 1;
+$CONFIG{keep_history}      = 1;
+$CONFIG{keep_dependencies} = 0;
 
-if ( my $dbh = &dbconnect($DB_TYPE, $DB_HOST, $DB_PORT, $DB_DBA, $DB_DBA_PASSWORD, $DB_DATABASE) ){
-    
-    # Convert Mysql tables from MyISAM to INNODB
-    my @lines;
-    foreach my $table ( $dbh->tables ){
-	push @lines, "ALTER TABLE $table ENGINE=INNODB";
-    }
-    
-    # Drop the obsolete Meta table
-    push @lines, "
-DROP TABLE Meta";
-    
-    # column nsdname should be an integer, not a varchar
-    push @lines, "
-ALTER TABLE RRNS CHANGE nsdname nsdname int(11) default NULL";
-
-    # Add VLanGroup and modify related stuff
-    push @lines, "
-CREATE TABLE VlanGroup (
-  info LONGBLOB NULL  ,
-  name varchar(128) NOT NULL  ,
-  id INTEGER NOT NULL  AUTO_INCREMENT,
-  description varchar(255) NULL  ,
-  end integer NOT NULL  ,
-  start integer NOT NULL  ,
-  PRIMARY KEY (id)
-);
-CREATE UNIQUE INDEX VlanGroup1 ON VlanGroup (name);
-CREATE TABLE VlanGroup_history (
-  info LONGBLOB NULL  ,
-  name varchar(128) NOT NULL  ,
-  vlangroup_id integer NOT NULL  ,
-  description varchar(255) NULL  ,
-  modifier varchar(32) NULL  ,
-  modified DATETIME NOT NULL  ,
-  end integer NOT NULL  ,
-  id INTEGER NOT NULL  AUTO_INCREMENT,
-  start integer NOT NULL  ,
-  PRIMARY KEY (id)
-);
-CREATE INDEX VlanGroup_history1 ON VlanGroup_history (vlangroup_id);
-ALTER TABLE Vlan DROP COLUMN subnet;
-ALTER TABLE Vlan ADD COLUMN name varchar(255) AFTER vid;
-ALTER TABLE Ipblock ADD COLUMN vlan integer AFTER dhcp_enabled;
-";
-    
-    &processdata($dbh, \@lines);
-    
-    &dbdisconnect($dbh);
+foreach my $var ( qw /DB_TYPE DB_HOME DB_HOST DB_PORT DB_DBA DB_DBA_PASSWORD 
+		  DB_NETDOT_USER DB_NETDOT_PASS DB_DATABASE/ ){
+    $CONFIG{$var} = Netdot->config->get($var);
 }
 
 
+my $olddbh = &dbconnect($CONFIG{DB_TYPE}, $CONFIG{DB_HOST}, $CONFIG{DB_PORT}, 
+			$CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}, $CONFIG{olddb});
+
+my $newdbh = &dbconnect($CONFIG{DB_TYPE}, $CONFIG{DB_HOST}, $CONFIG{DB_PORT}, 
+			$CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}, $CONFIG{DB_DATABASE});
+
+
+my %table_skips = (
+    'BinFile'       => 1,
+    'ClosetPicture' => 1,
+    'FloorPlan'     => 1,
+    'InterfaceDep'  => 1,
+    'Meta'          => 1,
+    );
+
+my %table_renames = ( 
+    'NetConnection' => 'sitelink',
+    );
+
+my %field_skips = (
+    'Device'           => { 
+	'natted'         => 1,
+	'maint_covered'  => 1,
+	'part_of'        => 1,
+    },
+    'Device_history'   => { 
+	'natted'         => 1,
+	'maint_covered'  => 1,
+	'part_of'        => 1,
+    },
+    'Entity' => {
+	'type' => 1,
+    },
+    'Ipblock' => {
+	'dns_delegated' => 1,
+	'physaddr'      => 1,
+    },
+    'RR' => {
+	'contactlist'   => 1,
+	'origin'        => 1,
+    },
+    'Vlan' => {
+	'subnet' => 1,
+    }
+    );
+
+my %field_renames = (
+    'Circuit'          => { 'connectionid' => 'linkid'    },
+    'Circuit_history'  => { 'connectionid' => 'linkid'    },
+    'Closet'           => { 
+	'110_blocks'   => 'ot_blocks',
+	'66_blocks'    => 'ss_blocks'  
+    },
+    'Closet_history' => { 
+	'110_blocks'   => 'ot_blocks',
+	'66_blocks'    => 'ss_blocks' 
+    },
+    'Device' => { 
+	'lastupdated'   => 'last_updated',
+	'dateinstalled' => 'date_installed',
+	'productname'   => 'product',
+    },
+    'Device_history' => { 
+	'lastupdated'   => 'last_updated',
+	'dateinstalled' => 'date_installed',
+	'productname'   => 'product',
+    },
+    );
+
+foreach my $oldtable ( $olddbh->tables() ){
+    
+    $oldtable =~ s/`//g;
+    $oldtable =~ s/$CONFIG{olddb}\.//;
+
+    if ( $oldtable =~ /_history/ ){
+	if ( !$CONFIG{keep_history} ){
+	    &debug("Ignoring history table: $oldtable");
+	    next;
+	}
+    }
+
+    my $newtable;
+    
+    if ( exists $table_skips{$oldtable} ){
+	next;
+    }elsif ( exists $table_renames{$oldtable} ){
+	$newtable = $table_renames{$oldtable};
+    }else{
+	# New database has all lowercase table names
+	$newtable = lc($oldtable);
+    }
+    
+    &debug("oldtable: $oldtable");
+    &debug("newtable: $newtable");
+    
+    # overwrite default data
+    &debug("Deleting all rows from $newtable");
+    $newdbh->do("DELETE FROM $newtable");
+    
+    # Get column metadata
+    my $mtable = Netdot->meta->get_table($newtable) 
+	|| die "Cannot get table metadata for $newtable";
+    my $class = $mtable->name;
+    my %meta_columns;
+    map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
+    
+    my $sth = $olddbh->prepare("SELECT * FROM $oldtable");
+    $sth->execute();
+    my @statements;
+    while ( my $href = $sth->fetchrow_hashref() ){
+	my %args;
+	foreach my $field ( keys %$href ){
+	    my $f;
+	    if ( exists $field_renames{$oldtable}{$field} ){
+		$f = $field_renames{$oldtable}{$field};
+	    }elsif ( exists $field_skips{$oldtable}{$field} ){
+		next;
+	    }else{
+		$f = $field;
+	    }
+	    # Metacolumn object
+	    my $mcol = $meta_columns{$f};
+	    die "Cannot get metadata for column $f in table $newtable\n"
+		unless defined $mcol && ref($mcol);
+
+	    my $value = $href->{$field};
+	    if ( !defined $value && !$mcol->is_nullable && $mcol->sql_type =~ /integer|bool/i ){
+		$args{$f} = 0;
+	    }else{
+		$args{$f} = $value;
+	    }
+	}
+	my $fields = join (',', keys %args);
+	my $values = join (',', map { $newdbh->quote($_) } values %args);
+	push @statements, "INSERT INTO $newtable ($fields) VALUES ($values);";
+    }
+    &debug("Inserting data into $newtable");
+    &processdata($newdbh, \@statements);
+}
+
+#####################
+# Special Cases
+#####################
+
+#####################
+# ClosetPicture
+
+my $bf = $olddbh->selectall_arrayref("SELECT id, bindata, filename, filesize, filetype, info
+                                      FROM BinFile
+                                     ");
+my %map;
+foreach my $row ( @$bf ){
+    my ($id, $bindata, $filename, $filesize, $filetype, $info) = @$row;
+    next unless ($bindata && $filename && $filesize && $filetype);
+    $map{$id}{bindata}  = $bindata;
+    $map{$id}{filename} = $filename;
+    $map{$id}{filesize} = $filesize;
+    $map{$id}{filetype} = $filetype;
+    $map{$id}{info}     = $info;
+}
+my $cp = $olddbh->selectall_arrayref("SELECT id, closet, binfile FROM ClosetPicture");
+
+my $st = $newdbh->prepare("INSERT INTO closetpicture (closet,bindata,filename,filesize,filetype,info)
+                           VALUES (?,?,?,?,?,?);");
+
+$newdbh->do("DELETE FROM closetpicture");
+foreach my $row ( @$cp ){
+    my ($id, $closet, $binfile) = @$row;
+    my $data = $map{$binfile};
+    unless ( $data ){
+	&debug("closetpicture $id refers to unexistent binfile $binfile");
+	next;
+    }
+    
+    $st->execute($closet, $data->{bindata}, $data->{filename}, $data->{filesize}, $data->{filetype}, $data->{info});
+}
+
+#####################
+# EntityRole
+
+my @statements;
+my $ent = $olddbh->selectall_arrayref("SELECT id, type FROM Entity");
+&debug("Inserting existing Entity types into EntityRole");
+foreach my $row ( @$ent ){
+    my ($id, $type) = @$row;
+    push @statements, "INSERT INTO entityrole (entity,type) VALUES ($id,$type);";
+}
+&processdata($newdbh, \@statements);
+
+#####################
+# Mark all interfaces as snmp
+$newdbh->do("UPDATE interface SET doc_status='snmp';");
+
+&dbdisconnect($olddbh);
+&dbdisconnect($newdbh);
+
+
+sub debug {
+    print STDERR "DEBUG: ", @_, "\n" if $CONFIG{debug};
+}

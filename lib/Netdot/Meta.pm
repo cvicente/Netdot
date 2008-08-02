@@ -1,13 +1,14 @@
 package Netdot::Meta;
 
 use Netdot::Meta::Table;
+use File::Spec::Functions qw( catpath splitpath rel2abs );
 
 use strict;
 use Carp;
 
-
-# Default location of the file that contains Meta Information
-my $META_FILE = "<<Make:ETC>>/netdot.meta";
+# Default name of the file that contains Meta Information
+my $DEFAULT_META_FILE = "<<Make:PREFIX>>/etc/netdot.meta";
+my $ALT_META_FILE     = catpath( ( splitpath( rel2abs $0 ) )[ 0, 1 ] ) . "../etc/netdot.meta";
 
 # Some private class data and related methods
 {
@@ -47,8 +48,19 @@ Netdot::Meta - Metainformation Class for Netdot
 sub new {
     my ($proto, %argv) = @_;
     my $class = ref($proto) || $proto;
-    my $file = $argv{'meta_file'} || $META_FILE;
-    my $self = do "$file" or croak "Netdot::Meta::new(): Can't read $file: $@ || $!";
+    my $file;
+    if ( -r $argv{'meta_file'} ){
+	$file = $argv{'meta_file'};
+    }elsif ( -r $DEFAULT_META_FILE ){
+	$file = $DEFAULT_META_FILE;
+    }elsif ( -r $ALT_META_FILE ){
+	$file = $ALT_META_FILE;
+    }else{
+	croak "No suitable metadata file found!\n";
+    }
+    
+    my $self = do "$file" 
+	or croak "Netdot::Meta::new(): Can't read $file: $@ || $!";
     unless (ref($self) eq "HASH"){
 	croak "Netdot::Meta::new(): Error in metadata: file is not a valid hash reference: $file";
     }
@@ -94,13 +106,14 @@ sub get_table{
 	my $hf = $self->get_history_suffix();
 	$actual_name =~ s/$hf//;
 	my $info = $self->_get_table_info($actual_name);
-	$info->{name} = $name;
 	$info->{meta} = $self;
 	# Let new table know if it is a history table
 	if ( $name ne $actual_name ){
 	    $info->{is_history}     = 1;
+	    $info->{name}           = $info->{name} . $hf;
 	    $info->{original_table} = $actual_name;
 	    $info->{has_history}    = 0;
+	    $info->{table_db_name} .= $self->get_history_suffix();
 	}else{
 	    $info->{is_history}     = 0;
 	}
@@ -160,16 +173,16 @@ sub cdbi_class{
 
     # Build a Class for each DB table
     my $table = $argv{table};
-    my $tname = $table->name;
+    my $classname = $table->name;
     my ($code, $package);
-    $package = ($argv{namespace}) ? $argv{namespace}."::".$tname : $tname;
+    $package = ($argv{namespace}) ? $argv{namespace}."::".$classname : $classname;
     $code .= "package ".$package.";\n";
     $code .= "use base '$argv{base}';\n";
     foreach my $pkg ( @{$argv{usepkg}} ){
 	$code .= "use $pkg;\n";
     }
-    $tname = lc($tname);
-    $code .= "__PACKAGE__->table( '$tname' );\n";
+    my $table_db_name = $table->db_name;
+    $code .= "__PACKAGE__->table( '$table_db_name' );\n";
 	
     # Set up primary columns
     $code .=  "__PACKAGE__->columns( Primary => qw / id /);\n";
@@ -279,11 +292,25 @@ sub _get_table_info{
     croak "_get_table_info: Need to pass table name"
 	unless $name;
     my $tables = $self->_get_tables_hash();
-    croak "_get_table_info: Table $name does not exist" 
-	unless exists $tables->{$name};
     # We need to make a copy of the hash.  Otherwise
     # unexpected things will happen.
-    my %info = %{ $tables->{$name} };
+    my %info;
+    if ( exists $tables->{$name} ){
+	%info = %{ $tables->{$name} };
+	$info{name} = $name;
+    }else{
+	# We might have been given the table's db name
+	foreach my $t ( keys %$tables ){
+	    if ( $tables->{$t}->{table_db_name} eq $name ){
+		%info = %{ $tables->{$t} };
+		$info{name} = $t;
+		last;
+	    }
+	}
+    }
+    croak "_get_table_info: Table $name does not exist." 
+	unless %info;
+
     return \%info;
 }
 

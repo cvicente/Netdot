@@ -13,8 +13,7 @@ use Exporter ();
 @ISA = qw(Exporter);
 @EXPORT = qw( dbconnect processdata dbdisconnect );
 
-# Be verbose by default
-$DEBUG = 1;
+$DEBUG = 0;
 
 1;
 
@@ -66,7 +65,7 @@ sub processdata {
     while (my $cmd = shift @$statements ){
 	$cmd  =~ /^(.*)$/;
 	chomp($cmd);
-	print "DEBUG: ($cmd): ";
+	print "DEBUG: ($cmd): " if $DEBUG;
 	$rows = $dbh->do( $cmd );
 	print "rows affected: $rows\n" if $DEBUG;
     }

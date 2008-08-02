@@ -1,2 +1,32 @@
 
-Read the INSTALL file
+Netdot 0.8 Notes:
+
+This version contains significant schema changes from version 0.7.12
+
+#######################################################################
+          - BEFORE YOU CONTINUE WITH THE INSTALLATION - 
+#######################################################################
+
+* Back up your existing database and put it in a safe place.
+
+        # mysqldump -c netdot > /home/dir/netdot-bak.sql
+
+* Rename the database with the following name:
+        
+	# cd /var/lib/mysql (or wherever your mysql database directory resides)
+	# mv netdot netdot-0712
+
+* Run the upgrade process to move your data from the old db to the new db:
+
+        # make upgrade
+
+* Follow the instructions in the INSTALL file to install the package.
+
+* If things go really bad, you can always reinstall netdot-0.7.12 
+  and put back your old database in place:
+
+        # Re-install netdot-0.7.12
+        # make dropdb
+        # mysqladmin create netdot
+        # mysqldump -c netdot-bak.sql | mysql netdot
+        # mysqladmin drop netdot-0712
