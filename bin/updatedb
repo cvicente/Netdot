@@ -128,6 +128,7 @@ foreach my $oldtable ( $olddbh->tables() ){
     my %meta_columns;
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     
+    &debug("Inserting data into $newtable");
     my $sth = $olddbh->prepare("SELECT * FROM $oldtable");
     $sth->execute();
     my @statements;
@@ -158,7 +159,6 @@ foreach my $oldtable ( $olddbh->tables() ){
 	my $values = join (',', map { $newdbh->quote($_) } values %args);
 	push @statements, "INSERT INTO $newtable ($fields) VALUES ($values);";
     }
-    &debug("Inserting data into $newtable");
     &processdata($newdbh, \@statements);
 }
 

@@ -96,8 +96,12 @@ testdeps:
 	     -M'Net::IPTrie' \
 	     -M'Authen::Radius' \
 	     -M'RRDs' \
+	     -MTest::More \
+	     -MTest::Harness \
 	    -e 1
 
+test:
+	prove -r
 dir:
 	@echo 
 	@echo "Creating necessary directories..."
