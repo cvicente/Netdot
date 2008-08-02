@@ -3305,9 +3305,12 @@ sub _get_snmp_session {
     # We might have tried a different SNMP version and community above. Rectify DB if necessary
     if ( $class ){
 	my %uargs;
-	$uargs{snmp_version} = $sinfoargs{Version}   if ( $self->snmp_version ne $sinfoargs{Version}   );
-	$uargs{snmp_bulk}    = $sinfoargs{BulkWalk}  if ( $self->snmp_bulk    ne $sinfoargs{BulkWalk}  );
-	$uargs{community}    = $sinfoargs{Community} if ( $self->community    ne $sinfoargs{Community} );
+	$uargs{snmp_version} = $sinfoargs{Version}   
+	if ( !$self->snmp_version || $self->snmp_version ne $sinfoargs{Version} );
+	$uargs{snmp_bulk} = $sinfoargs{BulkWalk}  
+	if ( !$self->snmp_bulk || $self->snmp_bulk ne $sinfoargs{BulkWalk} );
+	$uargs{community} = $sinfoargs{Community} 
+	if ( !$self->community || $self->community ne $sinfoargs{Community} );
 	$self->update(\%uargs) if ( keys %uargs );
     }
     $logger->debug(sub{ sprintf("SNMPv%d session with host %s (%s), community '%s' established",
