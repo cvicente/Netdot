@@ -53,7 +53,7 @@ sub get {
 # and second one is site-specific (and optional)
 ######################################################################
 sub _read_configs {
-    my ($self, $dir) = @_;
+    my ($self) = @_;
     my %config;
     my @files;
     my $dir;
