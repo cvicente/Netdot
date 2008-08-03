@@ -71,37 +71,16 @@ updatedb:
 	cd bin ; make updatedb FMOD=$(FMOD) 
 
 testdeps:
-	@echo
-	@echo "Installation directory: $(PREFIX)"
-	@echo 
-	@echo "Testing for required perl modules...."
-	@perl -M'CGI 3.20' \
-	     -M'Ima::DBI 0.35' \
-	     -M'Class::DBI 3.0.10' \
-             -MClass::DBI::AbstractSearch \
-	     -MApache2::Request  \
-	     -M'HTML::Mason 1.31' \
-	     -M'Apache::Session 1.6' \
-	     -MApache::DBI \
-	     -MURI::Escape \
-	     -MDBIx::DataSource \
-	     -M'GraphViz 2.02' \
-	     -M'SQL::Translator 0.07' \
-	     -MSNMP::Info \
-	     -MNetAddr::IP \
-	     -M'Apache2::SiteControl 1.0' \
-	     -M'Log::Dispatch' \
-	     -M'Log::Log4perl' \
-	     -M'Parallel::ForkManager' \
-	     -M'Net::IPTrie' \
-	     -M'Authen::Radius' \
-	     -M'RRDs' \
-	     -MTest::More \
-	     -MTest::Harness \
-	    -e 1
+	@echo "Testing for required Perl modules"
+	$(PERL) bin/perldeps.pl test
+
+installdeps:
+	@echo "Installing required Perl modules"
+	$(PERL) bin/perldeps.pl install
 
 test:
 	prove -r
+
 dir:
 	@echo 
 	@echo "Creating necessary directories..."
