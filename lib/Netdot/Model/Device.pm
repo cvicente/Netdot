@@ -6,6 +6,7 @@ use strict;
 use SNMP::Info;
 use Netdot::Util::DNS;
 use Parallel::ForkManager;
+use Net::IRR;
 
 # Timeout seconds for SNMP queries 
 # (different from SNMP connections)
@@ -848,19 +849,6 @@ sub get_snmp_info {
 	if ( scalar keys %{$hashes{'bgp_peers'}} ){
 	    $logger->debug(sub{"Device::get_snmp_info: Checking for BGPPeers"});
 	    
-	    my %qcache;  # Cache queries for the same AS
-	    my $whois;  # Get the whois program path
-	    if ( $self->config->get('DO_WHOISQ') ){
-		# First Check if we have whois installed
-		$whois = `which whois`;
-		if ( $whois =~ /not found/i || $whois !~ /\w+/ ){
-		    $whois = undef;
-		    $logger->warn("Device::get_snmp_info: Whois queries enabled in config file but whois command not found.");
-		}else{
-		    chomp $whois;
-		}
-	    }
-
 	    ##############################################
 	    # for each BGP Peer discovered...
 	    foreach my $peer ( keys %{$hashes{'bgp_peers'}} ) {
@@ -872,43 +860,16 @@ sub get_snmp_info {
 		if ( ! $asn ){
 		    $logger->warn("Could not determine AS number of peer $peer");
 		}else{
-		    $dev{bgppeer}{$peer}{asnumber}  = $asn;
-		    $dev{bgppeer}{$peer}{asname}    = "AS $asn";
-		    $dev{bgppeer}{$peer}{orgname}   = "AS $asn";
+		    $dev{bgppeer}{$peer}{asnumber} = $asn;
+		    $dev{bgppeer}{$peer}{asname}   = "AS $asn";
+		    $dev{bgppeer}{$peer}{orgname}  = "AS $asn";
 		    
-		    if ( defined $whois ){
-			# We enabled whois queries in config and we have the whois command
-			# Query any configured WHOIS servers for more info about this AS
-			# But first check if it has been found already
-			if ( exists $qcache{$asn} ){
-			    foreach my $key ( keys %{$qcache{$asn}} ){
-				$dev{bgppeer}{$peer}{$key} = $qcache{$asn}{$key};
-			    }
-			}else{
-			    my %servers = %{ $self->config->get('WHOIS_SERVERS') };
-			    foreach my $server ( keys %servers ){
-				my $cmd = "$whois -h $server AS$asn";
-				$logger->debug(sub{"Device::get_snmp_info: Querying: $cmd"});
-				my @lines = `$cmd`;
-				if ( grep /No.*found/i, @lines ){
-				    $logger->debug(sub{"Device::get_snmp_info: $server AS$asn not found"});
-				}else{
-				    foreach my $key ( keys %{$servers{$server}} ){
-					my $exp = $servers{$server}->{$key};
-					if ( my @l = grep /^$exp/, @lines ){
-					    my (undef, $val) = split /:\s+/, $l[0]; #first line
-					    $val =~ s/\s*$//;
-					    $logger->debug(sub{"Device::get_snmp_info:: $server: Found $exp: $val"});
-					    $qcache{$asn}{$key} = $val;
-					    $dev{bgppeer}{$peer}{$key} = $val;
-					}
-				    }
-				    last;
-				}
-			    }
+		    if ( Netdot->config->get('DO_WHOISQ') ){
+			# We enabled whois queries in config
+			if ( my $as_info = $self->_get_as_info($asn) ){
+			    $dev{bgppeer}{$peer}{asname}  = $as_info->{asname};
+			    $dev{bgppeer}{$peer}{orgname} = $as_info->{orgname};
 			}
-		    }else{
-			$logger->debug(sub{"Device::get_snmp_info: BGPPeer WHOIS queries disabled in config file"});
 		    }
 		}
 	    }
@@ -919,8 +880,6 @@ sub get_snmp_info {
     $logger->debug(sub{"Device::get_snmp_info: Finished getting SNMP info from $name ($ip)"});
     return \%dev;
 }
-
-
 
 
 #########################################################################
@@ -4136,6 +4095,49 @@ sub _launch_child {
     $code->();
     $dbh->disconnect();
     $pm->finish; # exit the child process
+}
+
+#####################################################################
+# _get_as_info - Retrieve info about given Autonomous System Number
+# 
+# Arguments:
+#   asn: Autonomous System Number
+# Returns:
+#   Hash with keys:
+#     asname:  Short name for this AS
+#     orgname: Short description for this AS
+
+sub _get_as_info{
+    my ($self, $asn) = @_;
+
+    my %results;
+
+    my $server = $self->config->get('WHOIS_SERVER');
+    $logger->debug(sub{"Device::_get_as_info: Querying: $server"});
+    my $i = Net::IRR->connect(host => $server);
+    unless ( $i ){
+	$logger->error("Device::_get_as_info: connect to $server\n");
+	return;
+    }
+    my $obj = $i->match("aut-num","as$asn");
+    unless ( $obj ){
+	$logger->warn("Device::_get_as_info: Can't find $asn object: " . $i->error . "\n");
+	return;
+    }
+    $i->disconnect();
+
+    if ( $obj =~ /as-name:\s+(.*)\n/ ){
+	my $as_name = $1;
+	$results{asname} = $as_name;
+	$logger->debug(sub{"Device::_get_as_info:: $server: Found asname: $as_name"});
+    }
+    if ( $obj =~ /descr:\s+(.*)\n/ ){
+	my $descr = $1;
+	$results{orgname} = $descr;
+	$logger->debug(sub{"Device::_get_as_info:: $server: Found orgname: $descr"});
+    }
+    return \%results if %results;
+    return;
 }
 
 #####################################################################
