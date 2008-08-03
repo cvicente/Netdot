@@ -215,6 +215,10 @@ foreach my $row ( @$ent ){
 # Mark all interfaces as snmp
 $newdbh->do("UPDATE interface SET doc_status='snmp';");
 
+#####################
+# Insert missing default data
+$newdbh->do("INSERT INTO ipblockstatus (name) VALUES ('Discovered');");
+
 &dbdisconnect($olddbh);
 &dbdisconnect($newdbh);
 

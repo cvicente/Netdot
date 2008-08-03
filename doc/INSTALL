@@ -20,21 +20,11 @@ REQUIREMENTS
 
         http://oss.oetiker.ch/rrdtool/
 
-* The following Perl modules:
+* Various Perl modules.  Run 
+  
+        'make testdeps'
 
-	CGI
-	Class::DBI
-	DBD::<your-dbms> (The DBI driver for your DBMS. e.g DBD::mysql)
-	HTML::Mason
-	Apache::Session
-	Apache::DBI
-	URI::Escape
-	DBIx::DBSchema
-	DBIx::DataSource
-	SNMP::Info (with the appropriate MIBs): 
-  	  http://sourceforge.net/project/showfiles.php?group_id=80033&package_id=135517
-	Apache2::SiteControl
-        GraphViz
+  to test for missing modules in your system.
 
   The easiest way to install Perl modules is using the CPAN
   (Comprehensive Perl Archive Network):
@@ -60,6 +50,45 @@ Netdot will first read Default.conf and then Site.conf.
 The reason for keeping two files is that when an upgrade is performed, 
 the Default.conf can be re-written (to add new variables, etc.), without 
 overwriting your site-specific configuration.
+
+----------------------------------------------------------------------
+UPGRADING
+----------------------------------------------------------------------
+
+* Back up your existing database and put it in a safe place.
+
+        # mysqldump netdot > /home/dir/netdot-bak.sql
+
+* Rename the database with the following name:
+        
+	# cd /var/lib/mysql (or wherever your mysql database directory resides)
+	# mv netdot netdot-0712
+
+        * Alternatively, you could also do it this way:
+
+	# mysqladmin create netdot-0712
+	# cat /home/dir/netdot-bak.sql | mysql netdot-0712
+	
+* Run the upgrade process to move your data from the old db to the new db:
+
+        # make dropdb      (did you back up????!!!!)
+        # make installdb   (creates a new database called 'netdot')
+        # make upgrade     (moves data from 'netdot-0712' to 'nedot')
+	# make install
+	# stop and start Apache
+
+* Take a look at /etc/Default.conf for new variables.  If you need to 
+  adjust any variables, copy the relevant lines into etc/Site.conf 
+  and edit their values.
+
+* If things go really bad, you can always reinstall netdot-0.7.12 
+  and put back your old database in place:
+
+        # Re-install netdot-0.7.12, then:
+        # make dropdb
+        # mysqladmin create netdot
+        # mysqldump -c netdot-bak.sql | mysql netdot
+        # mysqladmin drop netdot-0712
 
 ----------------------------------------------------------------------
 INSTALLING THE PACKAGE FOR THE FIRST TIME
@@ -99,27 +128,6 @@ INSTALLING THE PACKAGE FOR THE FIRST TIME
   in *bin/Makefile*.
 
 ----------------------------------------------------------------------
-UPGRADING
-----------------------------------------------------------------------
-
-It is possible that there exist DB schema changes between your current 
-installation and the version you plan to install. It is highly recommended 
-that you back up your existing database.  mysqldump is one option for MySQL 
-    installations (e.g.):
-
-	% mysqldump netdot >netdot-bak.sql
-
-After you have made backups of your database, from the main directory, do:
-
-	% make upgrade [parameters]
-
-This will modify the schema for you and will try to adapt your current data
-to the new structures.
-
-[parameters] are the same ones you used when you first installed
-(explained above)
-
-----------------------------------------------------------------------
 APACHE CONFIGURATION
 ----------------------------------------------------------------------
 
@@ -138,13 +146,17 @@ APACHE CONFIGURATION
   PREFIX).
 
 ----------------------------------------------------------------------
-ACTIVATING SCRIPTS
+CRON JOBS
 ----------------------------------------------------------------------
 
-Netdot comes with a few scripts that can be run periodically as cron jobs.
-For example:
+Netdot comes with a few scripts that should be run periodically as cron jobs:
+
+ * Retrieval of forwarding tables and ARP caches for IP/MAC address tracking.
+
  * Devices should be re-discovered via SNMP frequently to maintain an accurate 
    list of ports, ip addresses, etc.
+
+ * Rediscovery of network topology.
 
  * Netdot keeps history records for some objects every time they are updated.
    With time, old history should be deleted from the database to save disk space.
@@ -157,34 +169,7 @@ For example:
  * Configurations for external programs can be generated using Netdot data.
    Current supported programs include: Nagios, Sysmon and Rancid.
    
-
-Below is a recommended crontab file.
-
-#################################################################################
-# Sample Crontab file - customize to your needs
-#################################################################################
-
-# Rediscover all devices in the db
-#
-0 0 * * * perl /usr/local/netdot/bin/updatedevices.pl -avdm
-
-#
-# Prune DB of old history items (once a month)
-0 4 1 * * perl /usr/local/netdot/bin/prune_db.pl -v -m 12 -n 100 -e
-
-# Generate text documentation and configuration files for external programs
-# (Nagios, Sysmon, Rancid, etc)
-0 16 * * * cd /usr/local/netdot/export; /usr/bin/make Makefile all 
-5 16 * * * cd /usr/local/netdot/export; /usr/bin/make Makefile install
-
-#
-# Check for orphan devices (devices with no Site, no Entity, no dependencies)
-#
-30 3 * * * perl /usr/local/netdot/bin/chk_orphans.pl -edsm
-
-# Dump the database once a day and copy it to a remote host
-0 6 * * * perl /usr/local/netdot/export/dump-db.pl --db netdot --dbtype mysql --dbpass netdot_pass  --host back
-up-host --user jdoe --dir /home/jdoe/netdot_data --key /home/jdoe/.ssh/id_dsa
-# Keep a few copies locally
-0 7 * * * find /root -name "hostname*" -ctime +5 -exec rm -f '{}' ';'
+ * The netdot.cron file included in this package is a sample crontab file
+   that you can customize and copy to /etc/cron.d/netdot, containing 
+   recommended periodic jobs.
 
