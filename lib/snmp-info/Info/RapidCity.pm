@@ -1,5 +1,5 @@
 # SNMP::Info::RapidCity
-# $Id: RapidCity.pm,v 1.18 2008/07/20 03:27:07 jeneric Exp $
+# $Id: RapidCity.pm,v 1.19 2008/08/02 03:21:25 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller
 # All rights reserved.
@@ -39,7 +39,7 @@ use SNMP::Info;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = ( 'RAPID-CITY' => 'rapidCity', );
 

@@ -1,5 +1,5 @@
 # SNMP::Info::CiscoStack
-# $Id: CiscoStack.pm,v 1.20 2008/07/29 03:23:19 jeneric Exp $
+# $Id: CiscoStack.pm,v 1.21 2008/08/02 03:21:25 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker
 # All rights reserved.
@@ -39,7 +39,7 @@ use SNMP::Info;
 
 use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE %PORTSTAT/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = ( 'CISCO-STACK-MIB' => 'ciscoStackMIB', );
 

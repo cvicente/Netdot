@@ -1,5 +1,5 @@
 # SNMP::Info::Layer2::C1900
-# $Id: C1900.pm,v 1.30 2008/07/20 03:27:30 jeneric Exp $
+# $Id: C1900.pm,v 1.31 2008/08/02 03:21:57 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 #
@@ -46,7 +46,7 @@ use SNMP::Info::Layer2;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %GLOBALS = (
     %SNMP::Info::Layer2::GLOBALS,

@@ -1,5 +1,5 @@
 # SNMP::Info::CiscoQOS
-# $Id: CiscoQOS.pm,v 1.12 2008/07/20 03:27:07 jeneric Exp $
+# $Id: CiscoQOS.pm,v 1.13 2008/08/02 03:21:25 jeneric Exp $
 #
 # Copyright (c) 2005 Alexander Hartmaier
 # All rights reserved.
@@ -39,7 +39,7 @@ use SNMP::Info;
 
 use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = ( 'CISCO-CLASS-BASED-QOS-MIB' => 'cbQosIfIndex', );
 

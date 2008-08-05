@@ -1,5 +1,5 @@
 # SNMP::Info::Layer1::Bayhub
-# $Id: Bayhub.pm,v 1.19 2008/07/29 03:23:35 jeneric Exp $
+# $Id: Bayhub.pm,v 1.20 2008/08/02 03:22:03 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller, Max Baker
 # All rights reserved.
@@ -42,7 +42,7 @@ use SNMP::Info::Layer2;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer2::MIBS,

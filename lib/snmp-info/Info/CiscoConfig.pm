@@ -1,5 +1,5 @@
 # SNMP::Info::CiscoConfig
-# $Id: CiscoConfig.pm,v 1.7 2008/07/20 03:27:06 jeneric Exp $
+# $Id: CiscoConfig.pm,v 1.8 2008/08/02 03:21:25 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller
 # All rights reserved.
@@ -39,7 +39,7 @@ use SNMP::Info;
 
 use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     'CISCO-CONFIG-COPY-MIB' => 'ccCopyTable',

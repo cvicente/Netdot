@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::Enterasys - SNMP Interface to Enterasys devices
-# $Id: Enterasys.pm,v 1.10 2008/07/20 03:27:18 jeneric Exp $
+# $Id: Enterasys.pm,v 1.11 2008/08/02 03:21:47 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller
 # All rights reserved.
@@ -44,7 +44,7 @@ use SNMP::Info::Layer3;
 
 use vars qw/$VERSION $DEBUG %GLOBALS %FUNCS $INIT %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer3::MIBS, %SNMP::Info::CDP::MIBS,

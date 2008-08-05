@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::C3550
-# $Id: C3550.pm,v 1.30 2008/07/20 03:27:18 jeneric Exp $
+# $Id: C3550.pm,v 1.31 2008/08/02 03:21:47 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 # Copyright (c) 2004 Regents of the University of California
@@ -45,8 +45,6 @@ use SNMP::Info::CiscoStpExtensions;
 
 use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
 
-$VERSION = '1.09';
-
 @SNMP::Info::Layer3::C3550::ISA
     = qw/SNMP::Info::CiscoVTP SNMP::Info::CiscoStack
     SNMP::Info::CDP SNMP::Info::CiscoStats
@@ -57,6 +55,8 @@ $VERSION = '1.09';
     Exporter/;
 
 @SNMP::Info::Layer3::C3550::EXPORT_OK = qw//;
+
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer3::MIBS,            %SNMP::Info::CiscoPower::MIBS,

@@ -1,5 +1,5 @@
 # SNMP::Info::FDP
-# $Id: FDP.pm,v 1.12 2008/07/20 03:27:07 jeneric Exp $
+# $Id: FDP.pm,v 1.13 2008/08/02 03:21:25 jeneric Exp $
 #
 # Copyright (c) 2008 Bruce Rodger, Max Baker
 # All rights reserved.
@@ -42,7 +42,7 @@ use SNMP::Info;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = ( 'FOUNDRY-SN-SWITCH-GROUP-MIB' => 'snFdpGlobalRun' );
 

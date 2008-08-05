@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::Netscreen
-# $Id: Netscreen.pm,v 1.7 2008/07/20 03:27:18 jeneric Exp $
+# $Id: Netscreen.pm,v 1.8 2008/08/02 03:21:47 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller
 # All rights reserved.
@@ -39,7 +39,7 @@ use SNMP::Info::Layer3;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer3::MIBS,

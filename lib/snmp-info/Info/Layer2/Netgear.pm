@@ -1,5 +1,5 @@
 # SNMP::Info::Layer2::Netgear
-# $Id: Netgear.pm,v 1.6 2008/07/20 03:27:30 jeneric Exp $
+# $Id: Netgear.pm,v 1.7 2008/08/02 03:21:57 jeneric Exp $
 #
 # Copyright (c) 2008 Bill Fenner
 # All rights reserved.
@@ -39,7 +39,7 @@ use SNMP::Info::Layer2;
 
 use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = ( %SNMP::Info::Layer2::MIBS, );
 

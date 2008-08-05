@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::BayRS
-# $Id: BayRS.pm,v 1.24 2008/07/20 03:27:18 jeneric Exp $
+# $Id: BayRS.pm,v 1.25 2008/08/02 03:21:47 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller
 # All rights reserved.
@@ -43,7 +43,7 @@ use SNMP::Info::Bridge;
 use vars qw/$VERSION %GLOBALS %FUNCS %MIBS %MUNGE %MODEL_MAP
     %MODID_MAP %PROCID_MAP/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::MIBS,

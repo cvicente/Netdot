@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::C4000
-# $Id: C4000.pm,v 1.16 2008/07/20 03:27:18 jeneric Exp $
+# $Id: C4000.pm,v 1.17 2008/08/02 03:21:47 jeneric Exp $
 #
 # Copyright (c) 2008 Bill Fenner
 # All rights reserved.
@@ -50,7 +50,7 @@ use SNMP::Info::Layer3;
 
 use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer3::MIBS,

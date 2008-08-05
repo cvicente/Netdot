@@ -1,5 +1,5 @@
 # SNMP::Info::IEEE802dot11
-# $Id: IEEE802dot11.pm,v 1.8 2008/07/20 03:27:07 jeneric Exp $
+# $Id: IEEE802dot11.pm,v 1.9 2008/08/02 03:21:25 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller
 # All rights reserved.
@@ -38,7 +38,7 @@ use Exporter;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = ( 'IEEE802dot11-MIB' => 'dot11DesiredSSID', );
 

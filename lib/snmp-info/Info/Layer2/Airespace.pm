@@ -1,5 +1,5 @@
 # SNMP::Info::Layer2::Airespace
-# $Id: Airespace.pm,v 1.5 2008/07/20 03:27:30 jeneric Exp $
+# $Id: Airespace.pm,v 1.6 2008/08/02 03:21:57 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller
 #
@@ -41,7 +41,7 @@ use SNMP::Info::Airespace;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::MIBS,      %SNMP::Info::Bridge::MIBS,

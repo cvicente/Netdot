@@ -1,5 +1,5 @@
 # SNMP::Info::Layer2::Cisco
-# $Id: Cisco.pm,v 1.8 2008/07/20 03:27:30 jeneric Exp $
+# $Id: Cisco.pm,v 1.9 2008/08/02 03:21:57 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker
 # All rights reserved.
@@ -50,7 +50,7 @@ use SNMP::Info::Layer2;
 
 use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer2::MIBS,     %SNMP::Info::CiscoConfig::MIBS,

@@ -1,5 +1,5 @@
 # SNMP::Info::PowerEthernet
-# $Id: PowerEthernet.pm,v 1.5 2008/07/20 03:27:07 jeneric Exp $
+# $Id: PowerEthernet.pm,v 1.6 2008/08/02 03:21:25 jeneric Exp $
 #
 # Copyright (c) 2008 Bill Fenner
 # All rights reserved.
@@ -39,7 +39,7 @@ use SNMP::Info;
 
 use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = ( 'POWER-ETHERNET-MIB' => 'pethPsePortDetectionStatus' );
 

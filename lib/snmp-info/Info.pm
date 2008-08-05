@@ -1,5 +1,5 @@
 # SNMP::Info - Max Baker
-# $Id: Info.pm,v 1.140 2008/07/23 02:03:07 jeneric Exp $
+# $Id: Info.pm,v 1.142 2008/08/02 03:21:09 jeneric Exp $
 #
 # Copyright (c) 2003-2008 Max Baker
 # All rights reserved.
@@ -23,7 +23,7 @@ use vars
     qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE $AUTOLOAD $INIT $DEBUG %SPEED_MAP
     $NOSUCH $BIGINT $REPEATERS/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 =head1 NAME
 
@@ -31,7 +31,7 @@ SNMP::Info - Object Oriented Perl5 Interface to Network devices and MIBs through
 
 =head1 VERSION
 
-SNMP::Info - Version 1.09
+SNMP::Info - Version 2.00
 
 =head1 AUTHOR
 
@@ -1102,6 +1102,8 @@ Algorithm for Subclass Detection:
         Layer3 Support                     -> SNMP::Info::Layer3
             Aironet (BR500,AP340,350,1200) -> SNMP::Info::Layer3::Aironet
                      AP4800... All Non IOS
+            Alcatel-Lucent OmniSwitch      -> SNMP::Info::Layer3::AlcatelLucent
+            Alcatel-Lucent Service Router  -> SNMP::Info::Layer3::Timetra
             Catalyst 3550,3548,3560        -> SNMP::Info::Layer3::C3550
             Catalyst 4000,4500             -> SNMP::Info::Layer3::C4000
             Catalyst 6500,3750             -> SNMP::Info::Layer3::C6500
@@ -1158,6 +1160,7 @@ Algorithm for Subclass Detection:
         Else                               -> SNMP::Info
             ZyXEL_DSLAM                    -> SNMP::Info::Layer2::ZyXEL_DSLAM
             Aruba wireless                 -> SNMP::Info::Layer2::Aruba
+            Alcatel OmniAccess             -> SNMP::Info::Layer2::Aruba
             Juniper NetScreen              -> SNMP::Info::Layer3::Netscreen
 
 =cut
@@ -1197,6 +1200,8 @@ sub device_type {
         2636 => 'SNMP::Info::Layer3::Juniper',
         2925 => 'SNMP::Info::Layer1::Cyclades',
         5624 => 'SNMP::Info::Layer3::Enterasys',
+        6486 => 'SNMP::Info::Layer3::AlcatelLucent',
+        6527 => 'SNMP::Info::Layer3::Timetra',
         8072 => 'SNMP::Info::Layer3::NetSNMP',
     );
 
@@ -1395,6 +1400,10 @@ sub device_type {
         # Aruba wireless switches
         $objtype = 'SNMP::Info::Layer2::Aruba'
             if ( $desc =~ /(ArubaOS|AirOS)/ );
+
+        # Alcatel-Lucent branded Aruba
+        $objtype = 'SNMP::Info::Layer2::Aruba'
+            if ( $desc =~ /^AOS-W/ );
 
         #Juniper NetScreen
         $objtype = 'SNMP::Info::Layer3::Netscreen'

@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::N1600 - SNMP Interface to Nortel N16XX devices
-# $Id: N1600.pm,v 1.13 2008/07/20 03:27:18 jeneric Exp $
+# $Id: N1600.pm,v 1.14 2008/08/02 03:21:47 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller
 # All rights reserved.
@@ -41,7 +41,7 @@ use SNMP::Info::SONMP;
 
 use vars qw/$VERSION %GLOBALS %FUNCS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer3::MIBS,

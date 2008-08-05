@@ -1,5 +1,5 @@
 # SNMP::Info::MAU - Media Access Unit - RFC 2668
-# $Id: MAU.pm,v 1.26 2008/07/29 03:23:19 jeneric Exp $
+# $Id: MAU.pm,v 1.27 2008/08/02 03:21:25 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 #
@@ -41,7 +41,7 @@ use SNMP::Info;
 
 use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = ( 'MAU-MIB' => 'mauMod' );
 

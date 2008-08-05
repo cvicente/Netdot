@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::C6500
-# $Id: C6500.pm,v 1.24 2008/07/20 03:27:18 jeneric Exp $
+# $Id: C6500.pm,v 1.25 2008/08/02 03:21:47 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker
 # All rights reserved.
@@ -45,8 +45,6 @@ use SNMP::Info::CiscoStpExtensions;
 
 use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
 
-$VERSION = '1.09';
-
 @SNMP::Info::Layer3::C6500::ISA
     = qw/SNMP::Info::CiscoVTP SNMP::Info::CiscoStack
     SNMP::Info::CDP SNMP::Info::CiscoStats
@@ -59,6 +57,10 @@ $VERSION = '1.09';
     Exporter/;
 
 @SNMP::Info::Layer3::C6500::EXPORT_OK = qw//;
+
+use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
+
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer3::MIBS,      %SNMP::Info::CiscoPower::MIBS,

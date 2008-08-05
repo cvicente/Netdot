@@ -1,5 +1,5 @@
 # SNMP::Info::Layer2::Foundry - SNMP Interface to Foundry Switches
-# $Id: Foundry.pm,v 1.15 2008/07/20 03:27:30 jeneric Exp $
+# $Id: Foundry.pm,v 1.16 2008/08/02 03:21:57 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker
 # All rights reserved.
@@ -44,7 +44,7 @@ use SNMP::Info::MAU;
 
 use vars qw/$VERSION %GLOBALS %FUNCS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer2::MIBS,    %SNMP::Info::FDP::MIBS,

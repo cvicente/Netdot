@@ -1,5 +1,5 @@
 # SNMP::Info::Layer2::Baystack
-# $Id: Baystack.pm,v 1.23 2008/07/20 03:27:30 jeneric Exp $
+# $Id: Baystack.pm,v 1.24 2008/08/02 03:21:57 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 # All rights reserved.
@@ -46,7 +46,7 @@ use SNMP::Info::Layer3;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer3::MIBS,    %SNMP::Info::LLDP::MIBS,

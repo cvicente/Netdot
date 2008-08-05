@@ -1,8 +1,7 @@
-# SNMP::Info::Layer3::Juniper
-# $Id: Juniper.pm,v 1.17 2008/08/02 03:21:47 jeneric Exp $
+# SNMP::Info::Layer3::Timetra
+# $Id: Timetra.pm,v 1.3 2008/08/02 03:21:47 jeneric Exp $
 #
 # Copyright (c) 2008 Bill Fenner
-# All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,91 +27,69 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-package SNMP::Info::Layer3::Juniper;
+package SNMP::Info::Layer3::Timetra;
 
 use strict;
+
 use Exporter;
 use SNMP::Info::Layer3;
 
-@SNMP::Info::Layer3::Juniper::ISA       = qw/SNMP::Info::Layer3 Exporter/;
-@SNMP::Info::Layer3::Juniper::EXPORT_OK = qw//;
+@SNMP::Info::Layer3::Timetra::ISA = qw/SNMP::Info::Layer3
+    Exporter/;
+@SNMP::Info::Layer3::Timetra::EXPORT_OK = qw//;
 
 use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
 
 $VERSION = '2.00';
 
-%MIBS = (
-    %SNMP::Info::Layer3::MIBS,
-    'JUNIPER-CHASSIS-DEFINES-MIB' => 'jnxChassisDefines',
-    'JUNIPER-MIB'                 => 'jnxBoxAnatomy',
-);
+%MIBS = ( %SNMP::Info::Layer3::MIBS, 'TIMETRA-GLOBAL-MIB' => 'timetraReg', );
 
-%GLOBALS = ( %SNMP::Info::Layer3::GLOBALS, 'serial' => 'jnxBoxSerialNo.0', );
+%GLOBALS = ( %SNMP::Info::Layer3::GLOBALS, );
 
 %FUNCS = ( %SNMP::Info::Layer3::FUNCS, );
 
 %MUNGE = ( %SNMP::Info::Layer3::MUNGE, );
 
-sub vendor {
-    return 'juniper';
-}
-
-sub os {
-    return 'junos';
-}
-
-sub os_ver {
-    my $juniper = shift;
-    my $descr   = $juniper->description();
-    return unless defined $descr;
-
-    if ( $descr =~ m/kernel JUNOS (\S+)/ ) {
-        return $1;
-    }
-    return;
-}
-
 sub model {
-    my $l3 = shift;
-    my $id = $l3->id();
-
-    unless ( defined $id ) {
-        print
-            " SNMP::Info::Layer3::Juniper::model() - Device does not support sysObjectID\n"
-            if $l3->debug();
-        return;
-    }
-
-    my $model = &SNMP::translateObj($id);
+    my $timetra = shift;
+    my $id      = $timetra->id();
+    my $model   = &SNMP::translateObj($id);
 
     return $id unless defined $model;
 
-    $model =~ s/^jnxProductName//i;
+    $model =~ s/^tmnxModel//;
+
     return $model;
 }
 
-# Override the fancy Layer3.pm serial function
-sub serial {
-    my $juniper = shift;
-    return $juniper->orig_serial();
+sub os {
+    return 'TiMOS';
 }
 
-sub i_vlan {
-    my ($juniper) = shift;
-    my ($partial) = shift;
+sub vendor {
+    return 'alcatel-lucent';
+}
 
-    my ($i_type)  = $juniper->i_type($partial);
-    my ($i_descr) = $juniper->i_description($partial);
-    my %i_vlan;
+sub os_ver {
+    my $timetra = shift;
 
-    foreach my $idx ( keys %$i_descr ) {
-        if ( $i_type->{$idx} eq 'l2vlan' || $i_type->{$idx} eq 135 ) {
-            if ( $i_descr->{$idx} =~ /\.(\d+)$/ ) {
-                $i_vlan{$idx} = $1;
-            }
-        }
+    my $descr = $timetra->description();
+    if ( $descr =~ m/^TiMOS-(\S+)/ ) {
+        return $1;
     }
-    return \%i_vlan;
+
+    # No clue what this will try but hey
+    return $timetra->SUPER::os_ver();
+}
+
+# The interface description contains the SFP type, so
+# to avoid losing historical information through a configuration change
+# we use interface name instead.
+sub interfaces {
+    my $alu     = shift;
+    my $partial = shift;
+
+    return $alu->orig_i_name($partial);
 }
 
 1;
@@ -120,7 +97,7 @@ __END__
 
 =head1 NAME
 
-SNMP::Info::Layer3::Juniper - SNMP Interface to L3 Juniper Devices
+SNMP::Info::Layer3::Timetra - SNMP Interface to Alcatel-Lucent SR
 
 =head1 AUTHOR
 
@@ -129,21 +106,22 @@ Bill Fenner
 =head1 SYNOPSIS
 
  # Let SNMP::Info determine the correct subclass for you. 
- my $juniper = new SNMP::Info(
-                          AutoSpecify => 1,
-                          Debug       => 1,
-                          DestHost    => 'myrouter',
-                          Community   => 'public',
-                          Version     => 2
+ my $alu = new SNMP::Info(
+                        AutoSpecify => 1,
+                        Debug       => 1,
+                        # These arguments are passed directly to SNMP::Session
+                        DestHost    => 'myswitch',
+                        Community   => 'public',
+                        Version     => 2
                         ) 
     or die "Can't connect to DestHost.\n";
 
- my $class      = $juniper->class();
+ my $class      = $alu->class();
  print "SNMP::Info determined this device to fall under subclass : $class\n";
 
 =head1 DESCRIPTION
 
-Subclass for Generic Juniper Routers running JUNOS
+Subclass for Alcatel-Lucent Service Routers
 
 =head2 Inherited Classes
 
@@ -157,6 +135,8 @@ Subclass for Generic Juniper Routers running JUNOS
 
 =over
 
+=item F<TIMETRA-GLOBAL-MIB>
+
 =item Inherited Classes' MIBs
 
 See L<SNMP::Info::Layer3/"Required MIBs"> for its own MIB requirements.
@@ -169,28 +149,23 @@ These are methods that return scalar value from SNMP
 
 =over
 
-=item $juniper->vendor()
+=item $alu->vendor()
 
-Returns C<'juniper'>
+Returns 'alcatel-lucent'
 
-=item $juniper->os()
+=item $alu->os()
 
-Returns C<'junos'>
+Returns 'TiMOS'
 
-=item $juniper->os_ver()
+=item $alu->os_ver()
 
-Returns the software version extracted from C<sysDescr>.
+Grabs the version string from C<sysDescr>.
 
-=item $juniper->model()
+=item $alu->model()
 
-Returns the model from C<sysObjectID>, with C<jnxProductNameremoved> from the
-beginning.
+Tries to reference $alu->id() to one of the product MIBs listed above
 
-=item $juniper->serial()
-
-Returns serial number
-
-(C<jnxBoxSerialNo.0>)
+Removes 'tmnxModel' from the name for readability.
 
 =back
 
@@ -205,10 +180,10 @@ to a hash.
 
 =over
 
-=item $juniper->i_vlan()
+=item $alu->interfaces()
 
-Returns the list of interfaces whose C<ifType> is l2vlan(135), and
-the VLAN ID extracted from the interface description.
+Returns C<ifName>, since the default Layer3 C<ifDescr> varies based
+upon the transceiver inserted.
 
 =back
 

@@ -1,5 +1,5 @@
 # SNMP::Info::Layer1::Cyclades
-# $Id: Cyclades.pm,v 1.6 2008/07/20 03:27:36 jeneric Exp $
+# $Id: Cyclades.pm,v 1.7 2008/08/02 03:22:04 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller
 # All rights reserved.
@@ -39,7 +39,7 @@ use SNMP::Info::Layer1;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE $AUTOLOAD/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer1::MIBS,

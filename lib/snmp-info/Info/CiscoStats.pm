@@ -1,5 +1,5 @@
 # SNMP::Info::CiscoStats
-# $Id: CiscoStats.pm,v 1.21 2008/07/20 03:27:07 jeneric Exp $
+# $Id: CiscoStats.pm,v 1.22 2008/08/02 03:21:25 jeneric Exp $
 #
 # Changes since Version 0.7 Copyright (c) 2008 Max Baker
 # All rights reserved.
@@ -42,7 +42,7 @@ use SNMP::Info;
 
 use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     'SNMPv2-MIB'            => 'sysDescr',

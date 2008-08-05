@@ -1,5 +1,5 @@
 # SNMP::Info::Bridge
-# $Id: Bridge.pm,v 1.37 2008/07/20 03:27:06 jeneric Exp $
+# $Id: Bridge.pm,v 1.38 2008/08/02 03:21:25 jeneric Exp $
 #
 # Changes since Version 0.7 Copyright (c) 2004 Max Baker
 # All rights reserved.
@@ -42,7 +42,7 @@ use SNMP::Info;
 
 use vars qw/$VERSION $DEBUG %MIBS %FUNCS %GLOBALS %MUNGE $INIT/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     'BRIDGE-MIB'   => 'dot1dBaseBridgeAddress',

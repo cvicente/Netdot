@@ -1,5 +1,5 @@
 # SNMP::Info::Layer1::Allied
-# $Id: Allied.pm,v 1.20 2008/07/20 03:27:36 jeneric Exp $
+# $Id: Allied.pm,v 1.21 2008/08/02 03:22:03 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 #
@@ -41,7 +41,7 @@ use SNMP::Info::Layer1;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 # Set for No CDP
 %GLOBALS = ( %SNMP::Info::Layer1::GLOBALS, 'root_ip' => 'actualIPAddr', );

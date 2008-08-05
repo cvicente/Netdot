@@ -1,5 +1,5 @@
 # SNMP::Info::Layer1::S3000
-# $Id: S3000.pm,v 1.11 2008/07/20 03:27:36 jeneric Exp $
+# $Id: S3000.pm,v 1.12 2008/08/02 03:22:04 jeneric Exp $
 #
 # Copyright (c) 2008 Eric Miller
 # All rights reserved.
@@ -39,7 +39,7 @@ use SNMP::Info::Layer2;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer2::MIBS,

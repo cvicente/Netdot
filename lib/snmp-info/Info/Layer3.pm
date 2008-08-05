@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3 - SNMP Interface to Layer3 devices
-# $Id: Layer3.pm,v 1.33 2008/07/20 03:27:07 jeneric Exp $
+# $Id: Layer3.pm,v 1.34 2008/08/02 03:21:25 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker -- All changes from Version 0.7 on
 #
@@ -47,7 +47,7 @@ use SNMP::Info::PowerEthernet;
 
 use vars qw/$VERSION %GLOBALS %FUNCS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::MIBS,

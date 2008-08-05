@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::Foundry - SNMP Interface to Foundry devices
-# $Id: Foundry.pm,v 1.26 2008/07/20 03:27:18 jeneric Exp $
+# $Id: Foundry.pm,v 1.27 2008/08/02 03:21:47 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 #
@@ -44,7 +44,7 @@ use SNMP::Info::LLDP;
 
 use vars qw/$VERSION %GLOBALS %FUNCS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %MIBS = (
     %SNMP::Info::Layer3::MIBS,

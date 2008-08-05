@@ -1,5 +1,5 @@
 # SNMP::Info::Layer2::Aironet
-# $Id: Aironet.pm,v 1.26 2008/07/20 03:27:30 jeneric Exp $
+# $Id: Aironet.pm,v 1.27 2008/08/02 03:21:57 jeneric Exp $
 #
 # Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 #
@@ -48,7 +48,7 @@ use SNMP::Info::IEEE802dot11;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
 
-$VERSION = '1.09';
+$VERSION = '2.00';
 
 %GLOBALS = (
     %SNMP::Info::IEEE802dot11::GLOBALS,
