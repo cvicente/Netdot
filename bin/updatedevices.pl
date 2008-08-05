@@ -9,7 +9,7 @@
 use strict;
 use lib "<<Make:LIB>>";
 use Netdot::Model::Device;
-use Netdot::Model::Topology;
+use Netdot::Topology;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 #use Devel::Profiler bad_pkgs => [qw(UNIVERSAL Time::HiRes B Carp Exporter Cwd Config CORE DynaLoader XSLoader AutoLoader DBD::_::st DBD::_::db DBD::st DBD::db DBI::st DBI::db DBI::dr)];
@@ -170,11 +170,11 @@ if ( $INFO || $FWT || $ARP ){
 }
 
 if ( $TOPO ){
-    $logger = Netdot->log->get_logger('Netdot::Model::Topology');
+    $logger = Netdot->log->get_logger('Netdot::Topology');
     $logger->level($DEBUG) if ( $_DEBUG ); # Notice that $DEBUG is imported from Log::Log4perl
     $logger->add_appender($logscr);
     eval {
-	Netdot::Model::Topology->discover;
+	Netdot::Topology->discover;
     };
     die "ERROR: $@\n" if $@;
 }

@@ -1,21 +1,20 @@
-package Netdot::Model::Topology;
+package Netdot::Topology;
 
-use base 'Netdot::Model';
+use base 'Netdot';
+use Netdot::Model;
 use warnings;
 use strict;
 
-my $logger = Netdot->log->get_logger('Netdot::Model::Topology');
+my $logger = Netdot->log->get_logger('Netdot::Topology');
 my $MAC    = Netdot->get_mac_regex();
 my $IP     = Netdot->get_ipv4_regex();
-
-
 
 # Make sure to return 1
 1;
 
 =head1 NAME
 
-Netdot::Model::Topology
+Netdot::Topology
 
 =head1 SYNOPSIS
 
@@ -34,7 +33,7 @@ Netdot Device Topology Class
   Returns:
     True
   Examples:
-    Netdot::Model::Topology->discover();
+    Netdot::Topology->discover();
 
 =cut
 sub discover {
@@ -58,12 +57,12 @@ sub discover {
     my $dp_links  = $class->get_dp_links()  if ( $SOURCES{DP}  );
     my $p2p_links = $class->get_p2p_links() if ( $SOURCES{P2P} );
 
-    $logger->debug(sprintf("Netdot::Model::Topology: All links determined in %s", 
+    $logger->debug(sprintf("Netdot::Topology: All links determined in %s", 
 			   $class->sec2dhms(time - $start)));
 
     # Get all existing links
     my %old_links;
-    my $dbh = $class->db_Main;
+    my $dbh = Netdot::Model->db_Main;
     foreach my $row (@{$dbh->selectall_arrayref("SELECT id, neighbor FROM interface WHERE neighbor != 0")}) {
 	my ($id, $neighbor) = @$row;
 	$old_links{$id} = $neighbor;
@@ -99,7 +98,7 @@ sub discover {
   Returns:
     Array with: number of links added, number of links removed
   Examples:
-    Netdot::Model::Topology->update_links(db_links=>$links);
+    Netdot::Topology->update_links(db_links=>$links);
 
 =cut
 sub update_links {
@@ -309,7 +308,7 @@ sub update_links {
   Returns:    
     Hashref with link info
   Example:
-    my $links = Netdot::Model::Topology->get_dp_links(\@devices);
+    my $links = Netdot::Topology->get_dp_links(\@devices);
 
 =cut
 sub get_dp_links {
@@ -319,7 +318,7 @@ sub get_dp_links {
     my $start = time;
 
     # Using raw database access because Class::DBI was too slow here
-    my $dbh = $class->db_Main;
+    my $dbh = Netdot::Model->db_Main;
     my $results;
     my $sth = $dbh->prepare("SELECT device, id, dp_remote_ip, dp_remote_id, dp_remote_port 
                              FROM interface 
@@ -475,14 +474,14 @@ sub get_dp_links {
   Returns:    
     Hashref with link info
   Example:
-    my $links = Netdot::Model::Topology->get_fdb_links;
+    my $links = Netdot::Topology->get_fdb_links;
 
 =cut
 sub get_fdb_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_fdb_links');
     my $start = time;
-    my $dbh   = $class->db_Main;
+    my $dbh   = Netdot::Model->db_Main;
 
     # Build a hash with device base macs for faster lookups later
     my $base_macs_q = $dbh->selectall_arrayref("
@@ -847,7 +846,7 @@ sub get_fdb_links {
   Returns:    
     Hashref with link info
   Example:
-    my $links =Netdot::Model::Topology->get_stp_links();
+    my $links =Netdot::Topology->get_stp_links();
 
 =cut
 sub get_stp_links {
@@ -885,15 +884,17 @@ sub get_stp_links {
   Returns:    
     Hashref with link info
   Example:
-    my $links = Netdot::Model::Topology->get_tree_stp_links(root=>'DEADDEADBEEF');
+    my $links = Netdot::Topology->get_tree_stp_links(root=>'DEADDEADBEEF');
 
 =cut
 sub get_tree_stp_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_tree_stp_links');
 
-    defined $argv{root} || $class->throw_fatal("Missing required argument: root");
-    my $allmacs = $argv{devicemacs} || $class->throw_fatal("Missing required argument: devicemacs");
+    defined $argv{root} || 
+	$class->throw_fatal("Topology::get_tree_stp_links: Missing required argument: root");
+    my $allmacs = $argv{devicemacs} || 
+	$class->throw_fatal("Topology::get_tree_stp_links: Missing required argument: devicemacs");
     
     # Retrieve all the InterfaceVlan objects that participate in this tree
     my %ivs;
@@ -977,7 +978,7 @@ sub get_tree_stp_links {
   Returns:    
     Hashref with link info
   Example:
-    my $links = Netdot::Model::Topology->get_p2p_links();
+    my $links = Netdot::Topology->get_p2p_links();
 
 =cut
 sub get_p2p_links {
