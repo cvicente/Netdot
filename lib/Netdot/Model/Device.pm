@@ -6,7 +6,6 @@ use strict;
 use SNMP::Info;
 use Netdot::Util::DNS;
 use Parallel::ForkManager;
-use Net::IRR;
 
 # Timeout seconds for SNMP queries 
 # (different from SNMP connections)
@@ -4109,6 +4108,14 @@ sub _launch_child {
 
 sub _get_as_info{
     my ($self, $asn) = @_;
+    
+    # For some reason, use'ing this module at the top of this
+    # file causes mod_perl to raise hell.
+    # Loading it this way seems to avoid that problem
+    eval "use Net::IRR";
+    if ( my $e = $@ ){
+	$self->throw_fatal("Error loading module: $e");
+    }
 
     my %results;
 
