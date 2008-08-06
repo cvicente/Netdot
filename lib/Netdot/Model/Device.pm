@@ -326,7 +326,7 @@ sub insert {
 		  collect_fwt      => 0,
 		  canautoupdate    => 0,
 		  date_installed   => $class->timestamp,
-		  monitor_config   => 1,
+		  monitor_config   => $class->config->get('DEV_MONITOR_CONFIG'),
 		  monitored        => 1,
 		  monitorstatus    => 0,
 		  owner            => $default_owner,
@@ -2047,6 +2047,17 @@ sub info_update {
 						    );
     }
     
+    # Assign monitor_config_group
+    my $monitor_config_map = $self->config->get('DEV_MONITOR_CONFIG_GROUP_MAP') || {};
+    my $config_group;
+    unless ( $devtmp{monitor_config_group} ){
+	if ( my $type = $info->{type} ){
+	    if ( exists $monitor_config_map->{$type} ){
+		$devtmp{monitor_config_group} = $monitor_config_map->{$type};
+	    }
+	}
+    }
+
     # Set Local BGP info
     if( defined $info->{bgplocalas} ){
 	$logger->debug(sub{ sprintf("%s: BGP Local AS is %s", $host, $info->{bgplocalas}) });
