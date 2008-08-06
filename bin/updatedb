@@ -36,6 +36,7 @@ my %table_skips = (
 
 my %table_renames = ( 
     'NetConnection' => 'sitelink',
+    'NetConnection_history' => 'sitelink_history',
     );
 
 my %field_skips = (
@@ -218,6 +219,15 @@ $newdbh->do("UPDATE interface SET doc_status='snmp';");
 #####################
 # Insert missing default data
 $newdbh->do("INSERT INTO ipblockstatus (name) VALUES ('Discovered');");
+
+#####################
+# Get rid of 'na' value for admin_duplex and oper_duplex
+# (has undesired effects on duplex mismatch finder)
+$newdbh->do("UPDATE interface SET admin_duplex=NULL WHERE admin_duplex='na';");
+$newdbh->do("UPDATE interface SET oper_duplex=NULL WHERE oper_duplex='na';");
+
+# Set all devices to SNMPv2 by default
+$newdbh->do("UPDATE device SET snmp_version=2 WHERE snmp_managed=1");
 
 &dbdisconnect($olddbh);
 &dbdisconnect($newdbh);
