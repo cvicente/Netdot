@@ -1806,11 +1806,19 @@ $meta = {
       },
       monitor_config => {
         default => '',
-        description => 'Indicates whether this Device should be included in configuration management tools',
+        description => 'Indicates whether this Device should be included in configuration management tools (i.e. RANCID)',
         length => '',
         nullable => 0,
         tag => 'Monitor Config?',
         type => 'bool'
+      },
+      monitor_config_group => {
+        default => '',
+        description => 'Configuration Management group (i.e. RANCID group)',
+        length => '64',
+        nullable => 1,
+        tag => 'Config Group?',
+        type => 'varchar'
       },
       monitored => {
         default => '',
@@ -2201,6 +2209,8 @@ $meta = {
         'maint_until',
         'canautoupdate',
         'site',
+        'monitor_config',
+        'monitor_config_group',
         'snmp_managed',
         'snmp_polling',
 	'collect_arp',
