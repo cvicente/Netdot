@@ -252,7 +252,7 @@ sub update {
 		if ( $nid ){
 		    # Update my neighbor
 		    my $neighbor = $class->retrieve($nid);
-		    my %args = (neighbor=>$self, reciprocal=>0, neighbor_missed=>0);
+		    my %args = (neighbor=>$self->id, reciprocal=>0, neighbor_missed=>0);
 		    $args{neighbor_fixed} = $argv->{neighbor_fixed} if exists $argv->{neighbor_fixed};
 		    $neighbor->update(\%args);
 		}else{

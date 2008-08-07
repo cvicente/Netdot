@@ -1400,10 +1400,10 @@ sub arp_update {
     
     my $ac;
     eval {
-	$ac = ArpCache->insert({device=>$self, tstamp=>$timestamp});
+	$ac = ArpCache->insert({device=>$self->id, tstamp=>$timestamp});
     };
     if ( my $e = $@ ){
-	$logger->warn(sprintf("Device %s: Could not insert ArpCache at %s", $self->fqdn, $timestamp));
+	$logger->warn(sprintf("Device %s: Could not insert ArpCache at %s: %s", $self->fqdn, $timestamp, $e));
 	return;
     }
 	
@@ -1493,11 +1493,11 @@ sub fwt_update {
     # Create FWTable object
     my $fw;
     eval {
-	$fw = FWTable->insert({device  => $self,
+	$fw = FWTable->insert({device  => $self->id,
 			       tstamp  => $timestamp});
     };
     if ( my $e = $@ ){
-	$logger->warn(sprintf("Device %s: Could not insert FWTable at %s", $self->fqdn, $timestamp));
+	$logger->warn(sprintf("Device %s: Could not insert FWTable at %s: %s", $self->fqdn, $timestamp, $e));
 	return;
     }
     $self->_update_macs_from_cache(caches    => [$fwt], 
@@ -2096,7 +2096,7 @@ sub info_update {
 	# Go over all STP instances
 	foreach my $instn ( keys %{$info->{stp_instances}} ){
 		my $stpinst;
-		my %args = (device=>$self, number=>$instn);
+		my %args = (device=>$self->id, number=>$instn);
 		# Create if it does not exist
 		unless ( $stpinst = STPInstance->search(%args)->first ){
 		    $stpinst = STPInstance->insert(\%args);
