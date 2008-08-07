@@ -512,6 +512,7 @@ sub update {
 	    my $a = ref($self->$col) ? $self->$col->id : $self->$col;
 	    my $b = ref($val)        ? $val->id        : $val;
 	    if ( $a ne $b ){
+		$logger->debug("Model::update: $class col $col: $a ne $b");
 		$self->set($col=>$b);
 		push @changed_keys, $col;
 	    }
@@ -740,7 +741,9 @@ sub _adjust_vals{
     foreach my $field ( keys %$args ){
 	my $mcol = $meta_columns{$field};
 	# arg can be an object, so ignore refs
-	if ( !ref($args->{$field}) && (!defined($args->{$field}) || $args->{$field} =~ /^null$/i) ){
+	if ( ref($args->{$field}) ){
+	    next;
+	}elsif ( (!defined($args->{$field}) || $args->{$field} =~ /^null$/i) ){
 	    if ( $mcol->sql_type =~ /integer|bool/i ){
 		$logger->debug( sub { sprintf("Model::_adjust_vals: Setting empty field '%s' type '%s' to 0.", 
 					      $field, $mcol->sql_type) } );
@@ -750,7 +753,11 @@ sub _adjust_vals{
 					      $field, $mcol->sql_type) } );
 		delete $args->{$field};
 	    }
+	}elsif ( $args->{$field} eq "" ){
+	    # This causes DBI to insert NULL instead of ""
+	    $args->{$field} = undef;
 	}
+
 	delete $meta_columns{$field};
     }
     # Go over remaining columns to make sure non-nullables are 
