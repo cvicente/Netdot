@@ -53,7 +53,7 @@ sub find_or_create {
     my ($name, $description, $sysobjectid, $type, $manufacturer, $hostname) 
 	= @argv{"name", "description", "sysobjectid", "type", "manufacturer", "hostname"};
     
-    $class->throw_fatal("Product::find_or_create: Missing required arguments: sysobjectid")
+    $class->throw_fatal("Model::Product::find_or_create: Missing required arguments: sysobjectid")
 	unless defined($sysobjectid);
     
     if ( my $prod = $class->search( sysobjectid => $sysobjectid )->first ) {

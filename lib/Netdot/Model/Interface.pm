@@ -95,7 +95,7 @@ sub find_duplex_mismatches {
 		my $match = 0;
 		foreach my $ifaceid ( @$pair ){
 		    my $iface = Interface->retrieve($ifaceid) 
-			|| $class->throw_fatal("Cannot retrieve Interface id $ifaceid");
+			|| $class->throw_fatal("Model::Interface::find_duplex_mismatches: Cannot retrieve Interface id $ifaceid");
 		    if ( $iface->device && $iface->device->product 
 			 && $iface->device->product->sysobjectid 
 			 && exists $ignored{$iface->device->product->sysobjectid} ){
@@ -169,12 +169,12 @@ sub delete {
 sub add_neighbor{
     my ($self, %argv) = @_;
     $self->isa_object_method('add_neighbor');
-    my $nid   = $argv{id}    || $self->throw_fatal("Missing required argument: id");
+    my $nid   = $argv{id}    || $self->throw_fatal("Model::Interface::add_neighbor: Missing required argument: id");
     my $score = $argv{score} || 'n/a';
     my $fixed = $argv{fixed} || 0;
 
     my $neighbor = Interface->retrieve($nid) 
-	|| $self->throw_fatal("Cannot retrieve Interface id $nid");
+	|| $self->throw_fatal("Model::Interface::add_neighbor: Cannot retrieve Interface id $nid");
     
     unless ( int($self->neighbor) && int($neighbor->neighbor) 
 	     && $self->neighbor->id == $neighbor->id 
@@ -484,7 +484,7 @@ sub update_ip {
     $self->isa_object_method('update_ip');
 
     my $address = $args{address};
-    $self->throw_fatal("Missing required arguments: address") unless ( $address );
+    $self->throw_fatal("Model::Interface::update_ip: Missing required arguments: address") unless ( $address );
     # Remember these are scalar refs.
     my ( $ipv4_changed, $ipv6_changed ) = @args{'ipv4_changed', 'ipv6_changed'};
 

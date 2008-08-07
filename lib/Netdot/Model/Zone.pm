@@ -98,7 +98,7 @@ sub search {
 =cut
 sub insert {
     my ($class, $argv) = @_;
-    $class->throw_fatal("Zone::insert: Missing required arguments")
+    $class->throw_fatal("Model::Zone::insert: Missing required arguments")
 	unless ( $argv->{mname} );
 
     # Some defaults

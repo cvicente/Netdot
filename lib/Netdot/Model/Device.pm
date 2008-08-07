@@ -191,7 +191,7 @@ sub assign_name {
     my $host    = $argv{host};
     my $sysname = $argv{sysname};
 
-    $class->throw_fatal("Device::assign_name: Missing arguments: host or sysname")
+    $class->throw_fatal("Model::Device::assign_name: Missing arguments: host or sysname")
 	unless $host || $sysname;
 
     # An RR record might already exist
@@ -310,7 +310,7 @@ sub insert {
 
     # name is required
     if ( !exists($argv->{name}) ){
-	$class->throw_fatal('Missing required arguments: name');
+	$class->throw_fatal('Model::Device::insert: Missing required arguments: name');
     }
 
     # Get the default owner entity from config
@@ -440,7 +440,7 @@ sub get_snmp_info {
 		$args{host} = $self->fqdn;
 	    }
 	}else {
-	    $self->throw_fatal('Device::get_snmp_info: Missing required parameters: host')
+	    $self->throw_fatal('Model::Device::get_snmp_info: Missing required parameters: host')
 		unless $args{host};
 	}
 	# Get SNMP session
@@ -946,7 +946,7 @@ sub snmp_update_block {
     $class->isa_class_method('snmp_update_block');
 
     my $blocks;
-    $class->throw_fatal("Missing or invalid required argument: blocks")
+    $class->throw_fatal("Model::Device::snmp_update_block: Missing or invalid required argument: blocks")
 	unless ( defined($blocks = $argv{blocks}) && ref($blocks) eq 'ARRAY' );
     delete $argv{blocks};
     
@@ -1001,7 +1001,7 @@ sub snmp_update_from_file {
     $class->isa_class_method('snmp_update_from_file');
 
     my $file;
-    $class->throw_fatal("Missing required argument: file")
+    $class->throw_fatal("Model::Device::snmp_update_from_file:Missing required argument: file")
 	unless defined( $file = $argv{file} );
     delete $argv{file};
 
@@ -1057,7 +1057,7 @@ sub discover {
     $class->isa_class_method('discover');
 
     my $name = $argv{name} || 
-	$class->throw_fatal("Device::discover: Missing required arguments: name");
+	$class->throw_fatal("Model::Device::discover: Missing required arguments: name");
 
     my $info  = $argv{info}    || 0;
     my $sinfo = $argv{session} || 0;
@@ -1155,7 +1155,8 @@ sub get_all_from_block {
     my ($class, $block) = @_;
     $class->isa_class_method('get_all_from_block');
 
-    defined $block || $class->throw_fatal("Missing required arguments: block");
+    defined $block || 
+	$class->throw_fatal("Model::Device::get_all_from_block: Missing required arguments: block");
 
     my $devs;
     if ( my $ipb = Ipblock->search(address=>$block)->first ){
@@ -1581,7 +1582,7 @@ sub short_name {
     $self->isa_object_method('short_name');
     
     my $rr;
-    $self->throw_fatal("Device id ". $self->id ." has no RR defined") 
+    $self->throw_fatal("Model::Device::short_name: Device id ". $self->id ." has no RR defined") 
 	unless ( int($rr = $self->name) != 0 );
     if ( $name ){
 	$rr->name($name);
@@ -1706,7 +1707,7 @@ sub update_bgp_peering {
     my ($peer, $oldpeerings) = @argv{"peer", "oldpeerings"};
     $self->isa_object_method('update_bgp_peering');
 
-    $self->throw_fatal("Missing Required Arguments: peer, oldpeerings")
+    $self->throw_fatal("Model::Device::update_bgp_peering: Missing required arguments: peer, oldpeerings")
 	unless ( $peer && $oldpeerings );
     my $host = $self->fqdn;
 
@@ -1960,7 +1961,7 @@ sub info_update {
 	return;	
     }
     unless ( ref($info) eq 'HASH' ){
-	$self->throw_fatal("Invalid SNMP data structure");
+	$self->throw_fatal("Model::Device::info_update: Invalid SNMP data structure");
     }
     
     # Pretend works by turning off autocommit in the DB handle and rolling back
@@ -1968,7 +1969,7 @@ sub info_update {
     if ( $argv{pretend} ){
         $logger->info("$host: Performing a dry-run");
         unless ( Netdot::Model->db_auto_commit(0) == 0 ){
-            $self->throw_fatal("Unable to set AutoCommit off");
+            $self->throw_fatal("Model::Device::info_update: Unable to set AutoCommit off");
         }
     }
     
@@ -2306,7 +2307,7 @@ sub info_update {
 		
 	    }
 	    
-	    $self->throw_fatal("$host: Could not find or create interface: $newnumber")
+	    $self->throw_fatal("Model::Device::info_update: $host: Could not find or create interface: $newnumber")
 		unless $if;
 	    
 	    # Now update it with snmp info
@@ -2458,11 +2459,11 @@ sub info_update {
 	    $self->dbi_rollback;
 	};
 	if ( my $e = $@ ){
-	    $self->throw_fatal("Rollback Failed!: $e");
+	    $self->throw_fatal("Model::Device::info_update: Rollback Failed!: $e");
 	}
-	$logger->debug(sub{"Turning AutoCommit back on"});
+	$logger->debug(sub{"Model::Device::info_update: Turning AutoCommit back on"});
 	unless ( Netdot::Model->db_auto_commit(1) == 1 ){
-	    $self->throw_fatal("Unable to set AutoCommit on");
+	    $self->throw_fatal("Model::Device::info_update: Unable to set AutoCommit on");
 	}
     }
 
@@ -2511,7 +2512,7 @@ sub get_ips {
     }elsif ( $argv{sort_by} eq "interface" ){
 	@ips = Ipblock->search_devipsbyint($self->id);
     }else{
-	$self->throw_fatal("Invalid sort criteria: $argv{sort_by}");
+	$self->throw_fatal("Model::Device::get_ips: Invalid sort criteria: $argv{sort_by}");
     }
     return \@ips;
 }
@@ -2864,7 +2865,7 @@ sub interfaces_by {
     }elsif( $sort eq "snmp"){
 	return $self->ints_by_snmp;
     }else{
-	$self->throw_fatal("Unknown sort field: $sort");
+	$self->throw_fatal("Model::Device::interfaces_by: Unknown sort field: $sort");
     }
 }
 
@@ -2927,7 +2928,7 @@ sub bgppeers_by_entity {
 
     $sort ||= "name";
     unless ( $sort =~ /name|asnumber|asname/ ){
-	$self->throw_fatal("Invalid Entity field: $sort");
+	$self->throw_fatal("Model::Device::bgppeers_by_entity: Invalid Entity field: $sort");
     }
     my $sortsub = ($sort eq "asnumber") ? 
 	sub{$a->entity->$sort <=> $b->entity->$sort} :
@@ -2984,10 +2985,10 @@ sub get_bgp_peers {
 	}elsif ( $argv{type} eq "all" ){
 	    @peers = $self->bgppeers();
 	}else{
-	    $self->throw_fatal("Invalid type: $argv{type}");
+	    $self->throw_fatal("Model::Device::get_bgp_peers: Invalid type: $argv{type}");
 	}
     }elsif ( ! $argv{sort} ){
-	$self->throw_fatal("Missing or invalid search criteria");
+	$self->throw_fatal("Model::Device::get_bgp_peers: Missing or invalid search criteria");
     }
     if ( $argv{sort} =~ /entity|asnumber|asname/ ){
 	$argv{sort} =~ s/entity/name/;
@@ -2997,7 +2998,7 @@ sub get_bgp_peers {
     }elsif( $argv{sort} eq "id" ){
 	return $self->bgppeers_by_id(\@peers);
     }else{
-	$self->throw_fatal("Invalid sort argument: $argv{sort}");
+	$self->throw_fatal("Model::Device::get_bgp_peers: Invalid sort argument: $argv{sort}");
     }
     
     return \@peers if scalar @peers;
@@ -3024,7 +3025,7 @@ sub set_overwrite_if_descr {
     my ($self, $value) = @_;
     $self->isa_object_method("set_overwrite_if_descr");
     
-    $self->throw_fatal("Invalid value: $value.  Should be 0|1")
+    $self->throw_fatal("Model::Device::set_overwrite_if_descr: Invalid value: $value.  Should be 0|1")
 	unless ( $value =~ /0|1/ );
 
     foreach my $int ( $self->interfaces ){
@@ -3125,7 +3126,7 @@ sub _layer_active {
     my ($class, $layers, $layer) = @_;
     $class->isa_class_method('_layer_active');
     
-    $class->throw_fatal("Missing required arguments")
+    $class->throw_fatal("Model::Device::_layer_active: Missing required arguments: layers && layer")
 	unless ( $layers && $layer );
     
     return substr($layers,8-$layer, 1);
@@ -3192,7 +3193,7 @@ sub _get_snmp_session {
 	$argv{bulkwalk} ||= $self->snmp_bulk;
 	
     }else{
-	$self->throw_fatal("Missing required arguments: host")
+	$self->throw_fatal("Model::Device::_get_snmp_session: Missing required arguments: host")
 	    unless $argv{host};
     }
 
@@ -3304,10 +3305,10 @@ sub _get_snmp_session {
 sub _get_main_ip {
     my ($class, $info) = @_;
 
-    $class->throw_fatal("Missing required argument (info)")
+    $class->throw_fatal("Model::Device::_get_main_ip: Missing required argument (info)")
 	unless $info;
     my @methods = @{$class->config->get('DEVICE_NAMING_METHOD_ORDER')};
-    $class->throw_fatal("Missing or invalid configuration variable: DEVICE_NAMING_METHOD_ORDER")
+    $class->throw_fatal("Model::Device::_get_main_ip: Missing or invalid configuration variable: DEVICE_NAMING_METHOD_ORDER")
 	unless scalar @methods;
 
     my @allints = keys %{$info->{interface}};
@@ -3459,7 +3460,7 @@ sub _fork_init {
     # Tell DBI that we don't want to disconnect the server's DB handle
     my $dbh = $class->db_Main;
     unless ( $dbh->{InactiveDestroy} = 1 ) {
-	$class->throw_fatal("Device::_fork_init: Cannot set InactiveDestroy: ", $dbh->errstr);
+	$class->throw_fatal("Model::Device::_fork_init: Cannot set InactiveDestroy: ", $dbh->errstr);
     }
 
     # MAXPROCS processes for parallel updates
@@ -3528,13 +3529,15 @@ sub snmp_update_parallel {
 
     my ($hosts, $devs);
     if ( defined $argv{hosts} ){
-	$class->throw_fatal("Invalid hosts hash") if ( ref($argv{hosts}) ne "HASH" );
+	$class->throw_fatal("Model::Device::snmp_update_parallel: Invalid hosts hash") 
+	    if ( ref($argv{hosts}) ne "HASH" );
 	$hosts = $argv{hosts};
     }elsif ( defined $argv{devs} ){
-	$class->throw_fatal("Invalid devs array") if ( ref($argv{devs}) ne "ARRAY" );
+	$class->throw_fatal("Model::Device::snmp_update_parallel: Invalid devs array") 
+	    if ( ref($argv{devs}) ne "ARRAY" );
 	$devs = $argv{devs};
     }else{
-	$class->throw_fatal("Missing required parameters: hosts or devs");
+	$class->throw_fatal("Model::Device::_snmp_update_parallel: Missing required parameters: hosts or devs");
     }
     
     my %uargs;
@@ -3956,7 +3959,7 @@ sub _walk_fwt {
     
     my $host = $self->fqdn;
     
-    $self->throw_fatal("Missing required arguments") 
+    $self->throw_fatal("Model::Device::_walk_fwt: Missing required arguments") 
 	unless ( $sinfo && $sints && $devints && $fwt );
 
 
@@ -4058,8 +4061,8 @@ sub _walk_fwt {
 #
 sub _exec_timeout {
     my ($class, $host, $code) = @_;
-    $class->throw_fatal("Missing required argument: code") unless $code;
-    $class->throw_fatal("Invalid code reference") unless ( ref($code) eq 'CODE' );
+    $class->throw_fatal("Model::Device::_exec_timeout: Missing required argument: code") unless $code;
+    $class->throw_fatal("Model::Device::_exec_timeout: Invalid code reference") unless ( ref($code) eq 'CODE' );
     my @result;
     eval {
 	alarm($TIMEOUT);
@@ -4093,13 +4096,13 @@ sub _launch_child {
 
     my ($code, $pm) = @argv{"code", "pm"};
 
-    $class->throw_fatal("Missing required arguments")
+    $class->throw_fatal("Model::Device::_launch_child: Missing required arguments")
 	unless ( defined $pm && defined $code );
 
     # Tell DBI that we don't want to disconnect the server's DB handle
     my $dbh = $class->db_Main;
     unless ( $dbh->{InactiveDestroy} = 1 ) {
-	$class->throw_fatal("Cannot set InactiveDestroy: ", $dbh->errstr);
+	$class->throw_fatal("Model::Device::_launch_child: Cannot set InactiveDestroy: ", $dbh->errstr);
     }
     # Run given code
     $code->();
@@ -4125,7 +4128,7 @@ sub _get_as_info{
     # Loading it this way seems to avoid that problem
     eval "use Net::IRR";
     if ( my $e = $@ ){
-	$self->throw_fatal("Error loading module: $e");
+	$self->throw_fatal("Model::Device::_get_as_info: Error loading module: $e");
     }
 
     my %results;
@@ -4203,7 +4206,7 @@ sub _update_ips_from_cache {
     my %ip_updates;
 
     my $ip_status = (IpblockStatus->search(name=>'Discovered'))[0];
-    $class->throw_fatal("IpblockStatus 'Discovered' not found?")
+    $class->throw_fatal("Model::Device::_update_ips_from_cache: IpblockStatus 'Discovered' not found?")
 	unless $ip_status;
     
     foreach my $cache ( @$caches ){

@@ -41,7 +41,7 @@ Netdot::Model::RR - DNS Resource Record Class
 sub search {
     my ($class, %argv) = @_;
     $class->isa_class_method('search');
-    $class->throw_fatal('Missing required arguments')
+    $class->throw_fatal('Model::RR::search: Missing required arguments')
 	unless %argv;
 
     my ($rr, @sections);
@@ -81,7 +81,7 @@ sub search {
 sub search_like {
     my ($class, %argv) = @_;
     $class->isa_class_method('search_like');
-    $class->throw_fatal('Missing required arguments')
+    $class->throw_fatal('Model::RR::search_like: Missing required arguments')
 	unless %argv;
 
     my ($rr, @sections);
@@ -125,7 +125,7 @@ sub search_like {
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
-    $class->throw_fatal('RR::insert: Missing required parameters: name')
+    $class->throw_fatal('Model::RR::insert: Missing required parameters: name')
 	unless ( defined $argv->{name} );
 
     # Set default zone if needed
