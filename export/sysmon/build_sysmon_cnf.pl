@@ -97,11 +97,14 @@ sub gather_data {
 	my $ipobj = Ipblock->retrieve($ipid);
 
 	my $hostname;
-	if ( my @arecords = $ipobj->arecords ){
+	if ( my $name = $dns->resolve_ip($ipobj->address) ){
+	    $hostname = $name;
+	}elsif ( my @arecords = $ipobj->arecords ){
 	    $hostname = $arecords[0]->rr->get_label;
-	}else{ 
-	    $hostname = $dns->resolve_ip($ipobj->address);
+	}else{
+	    $hostname = $ipobj->address;
 	}
+
 	unless ( $hostname && $dns->resolve_name($hostname) ){
 	    warn $ipobj->address, " does not resolve symmetrically.  Using IP address\n";
 	    $hostname = $ipobj->address;

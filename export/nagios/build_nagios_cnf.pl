@@ -192,11 +192,12 @@ sub gather_data{
 	$hosts{$ipobj->id}{group} = $group;
 	
 	my $name;
-	if ( my @arecords = $ipobj->arecords ){
+	if ( $name = $dns->resolve_ip($ipobj->address) ){
+	    
+	}elsif ( my @arecords = $ipobj->arecords ){
 	    $name = $arecords[0]->rr->get_label;
-	}else{ 
-	    $name = $dns->resolve_ip($ipobj->address) ||
-		$ipobj->address;
+	}else{
+	    $name = $ipobj->address;
 	}
 	$name =~ s/$self{strip_domain}// if $self{strip_domain};
 
