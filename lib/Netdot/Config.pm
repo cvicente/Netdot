@@ -64,7 +64,7 @@ sub _read_configs {
     }elsif ( -d $alt_config_dir ){
 	$dir = $alt_config_dir;
     }else{
-	croak "No suitable config directory found!\n";
+	croak "Netdot::Config: No suitable config directory found!\n";
     }
     push @files, $dir .'/Default.conf';
     push @files, $dir .'/Site.conf'

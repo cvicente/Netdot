@@ -141,10 +141,10 @@ sub update_links {
 
     foreach my $ifaceid1 ( keys %links ){
 	foreach my $ifaceid2 ( keys %{$links{$ifaceid1}} ){
+	    next unless ( $ifaceid1 && $ifaceid2 );
 	    next unless defined $links{$ifaceid1}{$ifaceid2};
 	    my $score = ${$links{$ifaceid1}{$ifaceid2}};
 	    next unless ( $score >= $MINSCORE );
-
 	    if ( (exists($old_links->{$ifaceid1})  && $old_links->{$ifaceid1} == $ifaceid2) || 
 		 (exists($old_links->{$ifaceid2})  && $old_links->{$ifaceid2} == $ifaceid1) ){
 
@@ -162,7 +162,7 @@ sub update_links {
 		
 	    }else{
 		my $iface = Interface->retrieve($ifaceid1) 
-		|| $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
+		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
 		eval {
 		    $iface->add_neighbor(id=>$ifaceid2, score=>$score);
 		};
