@@ -740,10 +740,7 @@ sub _adjust_vals{
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
 	my $mcol = $meta_columns{$field};
-	# arg can be an object, so ignore refs
-	if ( ref($args->{$field}) ){
-	    next;
-	}elsif ( (!defined($args->{$field}) || $args->{$field} =~ /^null$/i) ){
+	if ( !ref($args->{$field}) && (!defined($args->{$field}) || $args->{$field} =~ /^null$/i) ){
 	    if ( $mcol->sql_type =~ /integer|bool/i ){
 		$logger->debug( sub { sprintf("Model::_adjust_vals: Setting empty field '%s' type '%s' to 0.", 
 					      $field, $mcol->sql_type) } );
