@@ -7,20 +7,22 @@ use Netdot::Meta;
 use Netdot::Config;
 use Netdot::Util::Log;
 use Netdot::Util::Exception;
+use Netdot::Util::DNS;
 use Carp;
 use RRDs;
 use Data::Dumper;
-
-my $class = {};
-$class->{_config} = Netdot::Config->new();
-$class->{_meta}   = Netdot::Meta->new();
-$class->{_log}    = Netdot::Util::Log->new(config => $class->{_config}->get('LOG_OPTIONS'));
 
 my $IPV4 = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}';
 my $IPV6 = '(^([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}){1})|::'; # This is not strictly correct
 my $HOCT = '[0-9A-Fa-f]{2}';
 my $MAC  = "$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT";
     
+my $class = {};
+$class->{_config} = Netdot::Config->new();
+$class->{_meta}   = Netdot::Meta->new();
+$class->{_log}    = Netdot::Util::Log->new(config => $class->{_config}->get('LOG_OPTIONS'));
+$class->{_dns}    = Netdot::Util::DNS->new();
+
 # Be sure to return 1
 1;
 
@@ -54,6 +56,10 @@ sub config { return $class->{_config} }
 =head2 log - Get Netdot::Util::Log object
 =cut
 sub log { return $class->{_log} }
+
+=head2 dns - Get Netdot::Util::DNS object
+=cut
+sub dns { return $class->{_dns} }
 
 sub throw_user {
     my ($self, $msg) = @_;

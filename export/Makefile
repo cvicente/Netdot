@@ -11,6 +11,11 @@ all: dir
 	$(substitute)
 	mv $(PREFIX)/$(DIR)/Makefile.inst $(PREFIX)/$(DIR)/Makefile
 
+	for dir in $(NDIR); do \
+	  chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/$(DIR)/$$dir; \
+	  chmod 0755 $(PREFIX)/$(DIR)/$$dir; \
+	done
+
 # This section creates the lib/Netdot subdirs
 dir:
 	$(mkdirs)

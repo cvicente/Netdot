@@ -5,9 +5,6 @@ use warnings;
 use strict;
 use Socket;
 
-my $IPV4 = Netdot->get_ipv4_regex();
-my $IPV6 = Netdot->get_ipv6_regex();
-
 =head1 NAME
 
 Netdot::Util::DNS - DNS utilities class
@@ -35,6 +32,9 @@ sub new{
     my $class = ref($proto) || $proto;
     my $self = {};
     $self->{_logger} = Netdot->log->get_logger('Netdot::Util');
+    $self->{_IPV4}   = Netdot->get_ipv4_regex();
+    $self->{_IPV6}   = Netdot->get_ipv6_regex();
+    
     bless $self, $class;
 }
 
@@ -78,7 +78,7 @@ sub resolve_name {
 sub resolve_ip {
     my ($self, $ip) = @_;
     return unless $ip;
-
+    my $IPV4 = $self->{_IPV4};
     my $name;
     if ( $ip =~ /^($IPV4)$/ ){
 	my $iaddr = inet_aton($ip);
@@ -111,6 +111,8 @@ sub resolve_ip {
 sub resolve_any {
     my ($self, $host) = @_;
     return unless $host;
+    my $IPV4 = $self->{_IPV4};
+    my $IPV6 = $self->{_IPV6};
     my ($ip, $name);
     if ( $host =~ /^($IPV4)|($IPV6)$/ ){
 	# looks like an IP address

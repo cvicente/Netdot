@@ -123,8 +123,8 @@ _import:
 
 _export:
 	@echo "Going into $@..."
-	cd export ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=export
-
+	cd export ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=export \
+	APACHEUSER=$(APACHEUSER) APACHEGROUP=$(APACHEGROUP) 
 dropdb: 
 	@echo "WARNING:  This will erase all data in the database!"
 	cd bin ; make dropdb FMOD=$(FMOD) 

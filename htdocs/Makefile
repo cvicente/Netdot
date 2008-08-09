@@ -3,7 +3,7 @@ include $(SRCROOT)/etc/utility-Makefile
 #
 # makefile for htdocs
 
-NDIR =  cable_plant css generic help img img/graphs java_script management operations reports masondata/obj masondata/cache
+NDIR =  cable_plant css generic help img img/graphs java_script management operations reports export masondata/obj masondata/cache
 
 FILES := `find -name "*" | egrep ".*(handler|\.?html|\.css|\.png|\.gif|\.js)$$" | sed -e 's/\.\///'`
 
@@ -21,7 +21,7 @@ dir:
 	@echo "Hacking together mason permissions fix..."
 	touch $(PREFIX)/$(DIR)/masondata/obj/.__obj_create_marker
 	chown -R $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/$(DIR)/masondata
-	chmod 0750 $(PREFIX)/$(DIR)/masondata
+	chmod 0755 $(PREFIX)/$(DIR)/masondata
 # Graphs can be updated dynamically so apache needs +w
 	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/$(DIR)/img/graphs
 	chmod 0750 $(PREFIX)/$(DIR)/img/graphs

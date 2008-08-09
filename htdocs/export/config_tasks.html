@@ -1,0 +1,78 @@
+<%doc>
+
+-- Config tasks --
+
+</%doc>
+%
+<%attr>
+title => 'Config Tasks' 
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
+<%args>
+@config_types   => undef
+$user           => undef
+$submit         => undef
+$showheader     => 1
+$hideheader     => undef
+</%args>
+%
+%
+%
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
+<%init>
+use Netdot::Exporter;
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+my @types = qw /Nagios Sysmon Rancid/;
+</%init>
+
+<div id="sectiontools" <% $hideheader %>>
+<div class="container">
+    <div class="containerhead">
+        Export third party configurations from Netdot
+    </div>
+    <div class="containerbody" id="tasks">
+        <p><br>
+        <table><tr><td>
+        <fieldset class="medium">
+            <legend>Export Options</legend>
+            <form action="config_tasks.html" method="POST">
+                Select:
+                <select name="config_types" MULTIPLE>
+%               foreach my $type ( @types ){
+        	    <option value="<% $type %>"><% $type %></option> 
+%               } 
+                </select>
+                <input type="submit" name="submit" class="btn" value="submit" >
+            </form>
+        </fieldset>
+        </td></tr></table>
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+<%perl>
+if ( $submit ){
+    foreach my $type ( @config_types ){
+	my $exporter = Netdot::Exporter->new(type=>$type);
+	eval {
+	    $exporter->generate_configs();
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
+    }
+}
+</%perl>
+ 

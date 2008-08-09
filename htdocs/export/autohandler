@@ -1,0 +1,63 @@
+<%doc>
+
+ Export Section.
+
+</%doc>
+%
+%
+<%args>
+$user
+$showheader => 1
+</%args>
+%
+%
+<%attr>
+title   => 'Export' 
+section => 'Export'
+</%attr>
+%
+%
+<%shared>
+my $PAGE_ATTRIBUTE = "EXPORT_PAGE";
+my $SECTION        = "Export";
+</%shared>
+%
+%
+<%init>
+my %caller_args = $m->caller_args(-1);
+
+if (exists($caller_args{page})){
+    $user->setAttribute($r, "$PAGE_ATTRIBUTE", $caller_args{page});
+}
+my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
+</%init>
+
+<%method .section_meta_data>
+    <%doc>
+        Returns the meta data used to generate this sections header in section1.mhtml
+    </%doc>
+    <%init>
+        return {  
+	    section      => $SECTION,
+	    page         => 'export/',
+	    title        => 'Export',
+	    attribute    => $PAGE_ATTRIBUTE,
+	    sub_sections => [
+		{ section => 'CONFIG',    title => 'Configurations' },
+	    ]
+        };
+    </%init>
+</%method>
+
+<%perl>
+
+if ( ($page eq "CONFIG" || $page eq "") && $m->request_comp->name ne "config_tasks.html" ) {
+    
+    $m->comp('config_tasks.html', user=>$user, showheader=>$showheader);
+    
+}if ( $m->fetch_next ){
+    $m->call_next;
+}
+
+
+</%perl>

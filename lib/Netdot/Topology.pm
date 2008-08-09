@@ -1052,9 +1052,10 @@ sub _cmp_des_p {
     return 0;
 }
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
+Peter Boothe
 
 =head1 COPYRIGHT & LICENSE
 
