@@ -512,12 +512,6 @@ sub update_ip {
 	    # If we have a VLAN, make the relationship
 	    $iargs{vlan} = $args{vlan} if defined $args{vlan};
 	    
-	    # Check if subnet should inherit device info
-	    if ( $args{subs_inherit} ){
-		$iargs{owner}   = $self->device->owner;
-		$iargs{used_by} = $self->device->used_by;
-	    }
-
 	    if ( my $subnet = Ipblock->search(address => $subnetaddr, 
 					      prefix  => $subnetprefix)->first ){
 		
@@ -530,6 +524,12 @@ sub update_ip {
 		$subnet->update(\%iargs);
 	    }else{
 		$logger->debug(sub{ sprintf("Subnet %s/%s does not exist.  Inserting.", $subnetaddr, $subnetprefix) });
+		
+		# Check if subnet should inherit device info
+		if ( $args{subs_inherit} ){
+		    $iargs{owner}   = $self->device->owner;
+		    $iargs{used_by} = $self->device->used_by;
+		}
 
 		$iargs{address} = $subnetaddr;
 		$iargs{prefix}  = $subnetprefix;
