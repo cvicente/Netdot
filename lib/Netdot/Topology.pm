@@ -24,10 +24,8 @@ Netdot Device Topology Class
 =cut
 
 ######################################################################################
-=head2 discover - Discover Topology for devices within (optional) given IP block
+=head2 discover - Discover Topology
 
-  Kinds of IP blocks allowed: 'Container' and 'Subnet'
-        
   Arguments:
     None
   Returns:
@@ -155,7 +153,7 @@ sub update_links {
 		my $iface1 = Interface->retrieve($ifaceid1) 
 		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
 		$iface1->update({neighbor_missed=>0});
-
+		
 		my $iface2 = Interface->retrieve($ifaceid2) 
 		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid2");
 		$iface2->update({neighbor_missed=>0});
@@ -205,7 +203,7 @@ sub update_links {
 	    $logger->warn("Cannot retrieve Interface id $ifaceid2");
 	    next;
 	}
-
+	
 	############
 	# Do not remove neighbors if the neighbor_fixed flag is on
         if ( $iface1->neighbor_fixed || $iface2->neighbor_fixed ){
@@ -294,7 +292,7 @@ sub update_links {
 	    $iface1->update({neighbor_missed => $counter1});
 	    $iface2->update({neighbor_missed => $counter2});
 	}
-
+	
     
     }
     return ($addcount, $remcount);

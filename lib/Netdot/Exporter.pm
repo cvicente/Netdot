@@ -99,7 +99,7 @@ sub get_device_ips {
     unless ( $self->{_device_ips} ){
 	$logger->debug("Netdot::Exporter::get_device_ips: querying database");
 	my $device_ips = $self->{_dbh}->selectall_arrayref("
-                SELECT   device.id, ipblock.id, ipblock.address, interface.monitored, device.monitored
+                SELECT   device.id, ipblock.id, interface.monitored, device.monitored
                 FROM     device, interface, ipblock
                 WHERE    ipblock.interface=interface.id
                   AND    interface.device=device.id
