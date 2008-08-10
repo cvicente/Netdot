@@ -1551,7 +1551,7 @@ sub _validate {
 	$pstatus = $parent->status->name;
 	if ( $self->is_address() ){
 	    if ( $pstatus eq "Reserved" ){
-		$self->throw_user("Address allocations not allowed under Reserved blocks");
+		$self->throw_user($self->get_label.": Address allocations not allowed under Reserved blocks");
 	    }elsif ( $pstatus eq 'Subnet' ){
 		if ( $self->address eq $parent->address ){
 		    $self->throw_user(sprintf("IP cannot have same address as its subnet: %s == %s", 
@@ -1587,28 +1587,28 @@ sub _validate {
 	}
     }elsif ( $statusname eq "Container" ){
 	if ( $args->{dhcp_enabled} ){
-		$self->throw_user("Can't enable DHCP in Container blocks");
+		$self->throw_user($self->get_label.": Can't enable DHCP in Container blocks");
 	}
     }elsif ( $statusname eq "Reserved" ){
 	if ( $self->children ){
-	    $self->throw_user("Reserved blocks can't contain other blocks");
+	    $self->throw_user($self->get_label.": Reserved blocks can't contain other blocks");
 	}
 	if ( $args->{dhcp_enabled} ){
-		$self->throw_user("Can't enable DHCP on Reserved blocks");
+		$self->throw_user($self->get_label.": Can't enable DHCP on Reserved blocks");
 	}
     }elsif ( $statusname eq "Dynamic" ) {
 	unless ( $self->is_address($self) ){
-	    $self->throw_user("Only addresses can be set to Dynamic");
+	    $self->throw_user($self->get_label.": Only addresses can be set to Dynamic");
 	}
 	unless ( $pstatus eq "Subnet" ){
-		$self->throw_user("Dynamic addresses must be within Subnet blocks");
+		$self->throw_user($self->get_label.": Dynamic addresses must be within Subnet blocks");
 	}
 	unless ( $self->parent->dhcp_enabled ){
-		$self->throw_user("Parent Subnet must have DHCP enabled");
+		$self->throw_user($self->get_label.": Parent Subnet must have DHCP enabled");
 	}
     }elsif ( $statusname eq "Static" ) {
 	unless ( $self->is_address($self) ){
-	    $self->throw_user("Only addresses can be set to Static");
+	    $self->throw_user($self->get_label.": Only addresses can be set to Static");
 	}
     }
     return 1;
