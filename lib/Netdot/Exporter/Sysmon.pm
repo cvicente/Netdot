@@ -125,8 +125,9 @@ sub generate_configs {
     open (OUT, ">$filename") 
 	or die "Can't open $filename $!\n";
     
+    my $root = $self->{MONITOR}->fqdn();
     print OUT <<EOP;
-root \"$self->{NMS_DEVICE}\"\;
+root \"$root\"\;
 config queuetime $self->{SYSMON_QUEUETIME}\;
 config maxqueued $self->{SYSMON_MAXQUEUED}\;
 config noheartbeat\;
