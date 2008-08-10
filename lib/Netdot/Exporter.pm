@@ -227,7 +227,8 @@ sub _get_ip_deps {
 	}
 	my @grandparents;
 	foreach my $parent ( @$parents ){
-	    push @grandparents, @{$ancestors->{$parent}};
+	    push @grandparents, @{$ancestors->{$parent}} 
+	    if ( defined $ancestors->{$parent} && ref($ancestors->{$parent}) eq "ARRAY" );
 	}
 	if ( @grandparents ){
 	    $self->_get_ip_deps($ipid, \@grandparents, $ancestors, $device2ips, $ip_monitored);
