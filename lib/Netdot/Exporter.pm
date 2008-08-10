@@ -141,6 +141,7 @@ sub get_dependencies{
     # which are in the path between this device and the monitoring system
     my %parents = ();
     foreach my $d ( keys %$graph ) {
+	next if ( $d == $nms );
 	$parents{$d} = [];
 	foreach my $neighbor ( keys %{$graph->{$d}} ) {
 	    if ( $self->_dfs($neighbor, $nms, $graph, $d) ) {
