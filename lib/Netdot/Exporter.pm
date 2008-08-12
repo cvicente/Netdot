@@ -16,10 +16,12 @@ my %types = (
 	
 =head1 NAME
 
-Netdot::Exporter - Object Factory for Classes that 
+Netdot::Exporter - Base class and object factory for Netdot exports
 
 =head1 SYNOPSIS
 
+    my $export = Netdot::Exporter->new(type=>'Nagios');
+    $export->generate_configs();
 
 =head1 CLASS METHODS
 =cut
@@ -148,18 +150,18 @@ sub get_dependencies{
 		push @{$parents{$d}}, $neighbor;
 	    }
 	}
-	unless ( scalar @{$parents{$d}} ){
-	    if ( $logger->is_debug() ){
-		my $dev = Netdot::Model::Device->retrieve($d);
-		$logger->debug("Device ". $dev->get_label .": No path to NMS.  Assigning NMS as parent.");
-		push @{$parents{$d}}, $nms;
-	    }
-	}
     }
 
     # Build the IP dependency hash
     my $ipdeps = {};
-    foreach my $device ( keys %parents ){
+    foreach my $device ( keys %device2ips ){
+	if ( !exists $parents{$device} ){
+ 	    if ( $logger->is_debug() ){
+ 		my $dev = Netdot::Model::Device->retrieve($device);
+ 		$logger->debug("Device ". $dev->get_label .": No path to NMS.  Assigning NMS as parent.");
+	    }
+	    push @{$parents{$device}}, $nms;
+	}
 	foreach my $ipid ( @{$device2ips{$device}} ){
 	    my $deps = $self->_get_ip_deps($ipid, $parents{$device}, \%parents, 
 					   \%device2ips, \%ip_monitored);
@@ -167,7 +169,6 @@ sub get_dependencies{
 		if ( defined $deps && ref($deps) eq 'HASH' );
 	}
     }
-
     # Convert hash of hashes to hash of arrayrefs
     foreach my $ipid ( keys %$ipdeps ){
 	my @list = keys %{$ipdeps->{$ipid}};
@@ -182,6 +183,15 @@ sub get_dependencies{
 
 ########################################################################
 # Depth first search
+#
+# Arguments:
+#    s          Source vertex
+#    t          Target vertex
+#    graph      Hashref with connected devices 
+#               (key=Device ID, value=Device ID)
+#    forbidden  Device ID to avoid in path
+#    seen       Hashref of seen devices
+#
 sub _dfs {
     my ($self, $s, $t, $graph, $forbidden, $seen) = @_;
     defined $s         || $self->throw_fatal("Netdot::Exporter::_dfs: No saource vertex");
@@ -208,6 +218,18 @@ sub _dfs {
 
 ########################################################################
 # Recursively look for monitored ancestors
+#
+# Arguments:
+#    ipid         Ipblock ID
+#    parents      Arrayref of Device IDs
+#    ancestors    Hashref containing all Devices and their parents 
+#                 where key=Device ID, value=Arrayref of Device IDs
+#    device2ips   Hashref with key=Device ID, value=Arrayref of Ipblock IDs
+#    ip_monitored Hashref with key=Ipblock, value=monitored flag
+#  
+#  Returns:
+#    Hashref with ip dependencies where key=Ipblock ID
+#
 sub _get_ip_deps {
     my ($self, $ipid, $parents, $ancestors, $device2ips, $ip_monitored) = @_;
     my %deps;
