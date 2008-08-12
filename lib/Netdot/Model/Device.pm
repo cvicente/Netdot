@@ -4133,7 +4133,7 @@ sub _get_as_info{
     my %results;
 
     my $server = $self->config->get('WHOIS_SERVER');
-    $logger->debug(sub{"Device::_get_as_info: Querying: $server"});
+    $logger->debug(sub{"Device::_get_as_info: Querying $server"});
     my $i = Net::IRR->connect(host => $server);
     unless ( $i ){
 	$logger->error("Device::_get_as_info: connect to $server\n");
@@ -4141,7 +4141,7 @@ sub _get_as_info{
     }
     my $obj = $i->match("aut-num","as$asn");
     unless ( $obj ){
-	$logger->warn("Device::_get_as_info: Can't find $asn object: " . $i->error . "\n");
+	$logger->warn("Device::_get_as_info: Can't find AS $asn in $server");
 	return;
     }
     $i->disconnect();
