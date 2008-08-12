@@ -162,7 +162,7 @@ if ( $submit ){
 	@list = Ipblock->search_like(address=>$search);
     }elsif ( $search_other ){
 	$search = $search_other;
-	$search =~ s/s+//g;
+	$search =~ s/^\s+(.*)\s+$/$1/g;
 	@list = Ipblock->keyword_search($search);
     }else {
 	$m->comp('/generic/no_search_criteria.html');
