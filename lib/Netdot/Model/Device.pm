@@ -2421,18 +2421,15 @@ sub info_update {
 	$logger->debug("Creating any new Access Points");
 	foreach my $ap ( keys %{ $info->{airespace} } ){
 	    my $dev;
-	    unless ( $dev = $class->search(name=>$ap)->first ){
-		my @contacts = map { $_->contactlist } $self->contacts;
-		$dev = $class->discover(name          => $ap,
-					snmp_managed  => 0,
-					canautoupdate => 0,
-					owner         => $self->owner,
-					used_by       => $self->used_by,
-					contacts      => @contacts,
-					info          => $info->{airespace}->{$ap},
-		    );
-	    }
-
+	    my @contacts = map { $_->contactlist } $self->contacts;
+	    $dev = $class->discover(name          => $ap,
+				    snmp_managed  => 0,
+				    canautoupdate => 0,
+				    owner         => $self->owner,
+				    used_by       => $self->used_by,
+				    contacts      => @contacts,
+				    info          => $info->{airespace}->{$ap},
+		);
 	    my $apmac = $info->{airespace}->{$ap}->{physaddr};
 	    delete $oldaps{$apmac};
 	}
