@@ -1389,7 +1389,7 @@ sub arp_update {
     my $cache = $argv{cache} || $self->_exec_timeout($host, sub{ return $self->_get_arp_from_snmp(session=>$argv{session}) });
     
     unless ( keys %$cache ){
-	$logger->info("$host: ARP cache empty");
+	$logger->debug("$host: ARP cache empty");
 	return;	
     }
     
@@ -1482,7 +1482,7 @@ sub fwt_update {
     my $fwt = $argv{fwt} || $self->_exec_timeout($host, sub{ return $self->_get_fwt_from_snmp(session=>$argv{session}) } );
 
     unless ( keys %$fwt ){
-	$logger->info("$host: FWT empty");
+	$logger->debug("$host: FWT empty");
 	return;	
     }
     
