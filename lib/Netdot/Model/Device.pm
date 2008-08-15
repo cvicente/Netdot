@@ -4121,7 +4121,14 @@ sub _launch_child {
 
 sub _get_as_info{
     my ($self, $asn) = @_;
-    
+
+    return unless $asn;
+
+    if ( $asn >= 64512 && $asn <= 65535 ){
+	$logger->debug("Device::_get_as_info: $asn is IANA reserved");
+	return;
+    }
+
     # For some reason, use'ing this module at the top of this
     # file causes mod_perl to raise hell.
     # Loading it this way seems to avoid that problem
@@ -4136,7 +4143,7 @@ sub _get_as_info{
     $logger->debug(sub{"Device::_get_as_info: Querying $server"});
     my $i = Net::IRR->connect(host => $server);
     unless ( $i ){
-	$logger->error("Device::_get_as_info: connect to $server\n");
+	$logger->error("Device::_get_as_info: Cannot connect to $server");
 	return;
     }
     my $obj = $i->match("aut-num","as$asn");
