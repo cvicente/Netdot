@@ -281,6 +281,39 @@ sub is_loopback{
     return;
 }
 
+##################################################################
+=head2 within - Check if address is within block
+
+  Arguments:
+    address - dotted quad ip address.  Required.
+    block   - dotted quad network address.  Required.
+
+  Returns:
+    True or false
+  Example:
+    Ipblock->within('127.0.0.1', '127.0.0.0/8');
+
+=cut
+sub within{
+    my ($class, $address, $block) = @_;
+    $class->isa_class_method('within');
+    
+    $class->throw_fatal("Ipblock::within: Missing required arguments: address and/or block")
+	unless ( $address && $block );
+    
+    unless ( $block =~ /\// ){
+	$class->throw_user("Ipblock::within: $block not a valid CIDR string")
+    }
+    my ($baddr, $bprefix) = split /\//, $block;
+    
+    if ( (my $ip      = NetAddr::IP->new($address)) && 
+	 (my $network = NetAddr::IP->new($baddr, $bprefix)) 
+	){
+	return 1 if $ip->within($network);
+    }
+    
+    return 0;
+}
 
 ##################################################################
 =head2 insert - Insert a new block
@@ -295,7 +328,6 @@ sub is_loopback{
     
 
 =cut
-
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -1448,7 +1480,9 @@ sub get_last_n_arp {
                 AND    arpe.interface=i.id 
                 AND    arpe.ipaddr=ip.id 
                 AND    arpe.arpcache=arp.id 
-              GROUP BY arp.tstamp LIMIT $limit";
+              GROUP BY arp.tstamp 
+              ORDER BY arp.tstamp DESC
+              LIMIT $limit";
 
     my @tstamps = @{ $dbh->selectall_arrayref($q1) };
     return unless @tstamps;
