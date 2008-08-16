@@ -161,7 +161,7 @@ sub delete {
     score     - Optional score obtained from Topology discovery code (for logging)
     fixed     - (bool) Whether relationship should be removed by automated processes
   Returns:
-    True
+    True if neighbor was successfully added, false otherwise.
   Example:
     $interface->add_neighbor($id);
 
@@ -186,9 +186,13 @@ sub add_neighbor{
 	if ( int($self->neighbor) && $self->neighbor_fixed ){
 	    $logger->debug(sub{sprintf("%s has been manually linked to %s", 
 				       $self->get_label, $neighbor->get_label)});
+	    return 0;
+
 	}elsif ( int($neighbor->neighbor) && $neighbor->neighbor_fixed ) {
 	    $logger->debug(sub{sprintf("%s has been manually linked to %s", 
 				       $neighbor->get_label, $neighbor->neighbor->get_label)});
+	    return 0;
+
 	}else{
 	    $self->update({neighbor        => $neighbor, 
 			   neighbor_fixed  => $fixed, 
@@ -196,9 +200,9 @@ sub add_neighbor{
 
 	    $logger->info(sprintf("Added new neighbors: %s <=> %s, score: %s", 
 				  $self->get_label, $neighbor->get_label, $score));
+	    return 1;
 	}
     }
-    return 1;
 }
 
 

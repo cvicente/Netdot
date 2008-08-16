@@ -161,14 +161,16 @@ sub update_links {
 	    }else{
 		my $iface = Interface->retrieve($ifaceid1) 
 		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
+
+		my $added = 0;
 		eval {
-		    $iface->add_neighbor(id=>$ifaceid2, score=>$score);
+		    $added = $iface->add_neighbor(id=>$ifaceid2, score=>$score);
 		};
 		if ( my $e = $@ ){
 		    $logger->warn($e);
-		}else{
-		    $addcount++;
 		}
+		
+		$addcount++ if $added;
 	    }
 	    delete $links{$ifaceid1};
 	    delete $links{$ifaceid2};		
@@ -313,8 +315,9 @@ sub get_dp_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_dp_links');
 
-    my $start = time;
+    my $excluded_blocks = $class->config->get('EXCLUDE_UNKNOWN_DP_DEVS_FROM_BLOCKS') || {};
 
+    my $start = time;
     # Using raw database access because Class::DBI was too slow here
     my $dbh = Netdot::Model->db_Main;
     my $results;
@@ -453,9 +456,18 @@ sub get_dp_links {
         }
     }
 
-    $logger->debug(sprintf("Topology::get_dp_links: Links determined in %s", 
-			   $class->sec2dhms(time - $start)));
+    $logger->debug(sprintf("Topology::get_dp_links: %d Links determined in %s", 
+			   scalar keys %links, $class->sec2dhms(time - $start)));
     
+    foreach my $ip ( keys %ips2discover ){
+	foreach my $block ( keys %$excluded_blocks ){
+	    if ( Ipblock->within($ip, $block) ){
+		$logger->debug("Netdot::Topology::get_dp_links: $ip within $block in ".
+			       "EXCLUDE_UNKNOWN_DP_DEVS_FROM_BLOCKS");
+		delete $ips2discover{$ip};
+	    }
+	}
+    }
     if ( keys %ips2discover ){
 	$logger->info("Topology::get_dp_links: Discovering unknown neighbors");
 	Device->snmp_update_parallel(hosts=>\%ips2discover);
@@ -830,8 +842,8 @@ sub get_fdb_links {
     }
 
 
-    $logger->debug(sprintf("Topology::get_fdb_links: Links determined in %s", 
-			   $class->sec2dhms(time - $start)));
+    $logger->debug(sprintf("Topology::get_fdb_links: %d Links determined in %s", 
+			   scalar keys %links, $class->sec2dhms(time - $start)));
     return \%links;
     
 }
@@ -851,7 +863,7 @@ sub get_stp_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_stp_links');
     my $start = time;
-    my (%stp_roots, %stp_links);
+    my (%stp_roots, %links);
     my $it = Device->retrieve_all;
     while ( my $dev = $it->next ){
 	foreach my $stp_instance ( $dev->stp_instances() ){
@@ -864,12 +876,12 @@ sub get_stp_links {
     # Determine links
     foreach my $root ( keys %stp_roots ){
 	my $links = $class->get_tree_stp_links(root=>$root, devicemacs=>$devicemacs);
-	map { $stp_links{$_} = $links->{$_} } keys %$links;
+	map { $links{$_} = $links->{$_} } keys %$links;
     }
-    $logger->debug(sprintf("Topology::get_stp_links: Links determined in %s", 
-			   $class->sec2dhms(time - $start)));
+    $logger->debug(sprintf("Topology::get_stp_links: %d Links determined in %s", 
+			   scalar keys %links, $class->sec2dhms(time - $start)));
     
-    return \%stp_links;
+    return \%links;
 }
 
 ###################################################################################################
@@ -1007,8 +1019,8 @@ sub get_p2p_links {
 	    }
 	}
     }
-    $logger->debug(sprintf("Topology::get_p2p_links: Links determined in %s", 
-			   $class->sec2dhms(time - $start)));
+    $logger->debug(sprintf("Topology::get_p2p_links: %d Links determined in %s", 
+			   scalar keys %links, $class->sec2dhms(time - $start)));
     return \%links;
 }
 
