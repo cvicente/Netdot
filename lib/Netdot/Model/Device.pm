@@ -87,7 +87,7 @@ sub search {
 		    $argv{name} = $dev->name;
 		    $foundname = 1;
 		}else{
-		    $logger->debug(sub{"Address $argv{name} exists but no Device associated"});
+		    $logger->debug(sub{"Device::search: Address $argv{name} exists but no Device associated"});
 		}
 	    }else{
 		$logger->debug(sub{"Device::search: $argv{name} not found in DB"});
