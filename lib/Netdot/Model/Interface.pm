@@ -157,7 +157,7 @@ sub delete {
     
   Arguments:
     Hash with following key/value pairs:
-    neighbor  - Neighbor's Interface id
+    id        - Neighbor's Interface id
     score     - Optional score obtained from Topology discovery code (for logging)
     fixed     - (bool) Whether relationship should be removed by automated processes
   Returns:
@@ -173,35 +173,49 @@ sub add_neighbor{
     my $score = $argv{score} || 'n/a';
     my $fixed = $argv{fixed} || 0;
 
+    if ( $nid == $self->id ){
+	$self->throw_user(sprintf("%s: interface cannot be neighbor of itself", $self->get_label));
+    }
+
     my $neighbor = Interface->retrieve($nid) 
 	|| $self->throw_fatal("Model::Interface::add_neighbor: Cannot retrieve Interface id $nid");
     
-    unless ( int($self->neighbor) && int($neighbor->neighbor) 
-	     && $self->neighbor->id == $neighbor->id 
-	     && $neighbor->neighbor->id == $self->id ){
+    if ( int($self->neighbor) && int($neighbor->neighbor) 
+	 && $self->neighbor->id == $neighbor->id 
+	 && $neighbor->neighbor->id == $self->id ){
 	
-	$logger->debug(sub{sprintf("Adding new neighbors: %s <=> %s, score: %s", 
+	return 1;
+    }
+    
+    $logger->debug(sub{sprintf("Adding new neighbors: %s <=> %s, score: %s", 
 			       $self->get_label, $neighbor->get_label, $score)});
+    
+    if ( (my $current_neighbor = $self->neighbor) && $self->neighbor_fixed ){
+	$logger->debug(sub{sprintf("%s has been manually linked to %s", 
+				   $self->get_label, $current_neighbor->get_label)});
+	return 0;
 	
-	if ( int($self->neighbor) && $self->neighbor_fixed ){
-	    $logger->debug(sub{sprintf("%s has been manually linked to %s", 
-				       $self->get_label, $neighbor->get_label)});
-	    return 0;
+    }elsif ( (my $neighbors_neighbor = $neighbor->neighbor) && $neighbor->neighbor_fixed ) {
+	$logger->debug(sub{sprintf("%s has been manually linked to %s", 
+				   $neighbor->get_label, $neighbors_neighbor->get_label)});
+	return 0;
 
-	}elsif ( int($neighbor->neighbor) && $neighbor->neighbor_fixed ) {
-	    $logger->debug(sub{sprintf("%s has been manually linked to %s", 
-				       $neighbor->get_label, $neighbor->neighbor->get_label)});
-	    return 0;
-
-	}else{
-	    $self->update({neighbor        => $neighbor, 
-			   neighbor_fixed  => $fixed, 
-			   neighbor_missed => 0});
-
-	    $logger->info(sprintf("Added new neighbors: %s <=> %s, score: %s", 
-				  $self->get_label, $neighbor->get_label, $score));
-	    return 1;
-	}
+    }else{
+	# Make sure all neighbor relationships are cleared before going on
+	$self->remove_neighbor();
+	$neighbor->remove_neighbor();
+	
+	$self->SUPER::update({neighbor        => $neighbor->id, 
+			      neighbor_fixed  => $fixed, 
+			      neighbor_missed => 0});
+	
+	$neighbor->SUPER::update({neighbor        => $self->id, 
+				  neighbor_fixed  => $fixed, 
+				  neighbor_missed => 0});
+	
+	$logger->info(sprintf("Added new neighbors: %s <=> %s, score: %s", 
+			      $self->get_label, $neighbor->get_label, $score));
+	return 1;
     }
 }
 
@@ -219,19 +233,26 @@ sub add_neighbor{
 =cut
 sub remove_neighbor{
     my ($self) = @_;
-    if ( int($self->neighbor) ){
-	return $self->update({neighbor=>0});
-    }
+
+    my %args = (
+	neighbor        => 0,
+	neighbor_fixed  => 0, 
+	neighbor_missed => 0
+	);
+
+    # Unset neighbor field in all interfaces that have
+    # me as their neighbor
+    map { $_->SUPER::update(\%args) } $self->neighbors;
+    
+    # Unset my own neighbor field
+    return $self->SUPER::update(\%args);
 }
 
 ############################################################################
 =head2 update - Update Interface
     
-    We override the update method for extra functionality:
-      - When adding neighbor relationships, make them bi-directional
   Arguments:
     Hash ref with Interface fields
-    We add an extra 'reciprocal' flag to avoid infinite loops
   Returns:
     See Class::DBI::update()
   Example:
@@ -242,40 +263,12 @@ sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');    
     my $class = ref($self);
-    # Neighbor updates are reciprocal unless told otherwise
-    my $nr = defined($argv->{reciprocal}) ? $argv->{reciprocal} : 1;
-
+    
     if ( exists $argv->{neighbor} ){
-	my $nid = int($argv->{neighbor});
-	if ( $nid == $self->id ){
-	    $self->throw_user(sprintf("%s: interface cannot be neighbor of itself", $self->get_label));
-	}
-	my $current_neighbor = ( $self->neighbor ) ? $self->neighbor->id : 0;
-	if ( $nid != $current_neighbor ){
-	    if ( $nr ){
-		if ( $nid ){
-		    # Update my neighbor
-		    my $neighbor = $class->retrieve($nid);
-		    my %args = (neighbor=>$self->id, reciprocal=>0, neighbor_missed=>0);
-		    $args{neighbor_fixed} = $argv->{neighbor_fixed} if exists $argv->{neighbor_fixed};
-		    $neighbor->update(\%args);
-		}else{
-		    # I'm basically removing my current neighbor
-		    # Tell the neighbor to remove me.
-		    # Also make sure the neighbor_fixed flag is off on both sides
-		    if (int($self->neighbor)){
-			$self->neighbor->update({neighbor=>0, neighbor_fixed=>0, 
-						 neighbor_missed=>0, reciprocal=>0});
-			$logger->info(sprintf("Removed neighbors: %s <=> %s", 
-					      $self->get_label, $self->neighbor->get_label));
-		    }
-		    $argv->{neighbor_fixed}  = 0;
-		    $argv->{neighbor_missed} = 0;
-		}
-	    }
-	}
+	$self->add_neighbor(id    => $argv->{neighbor},
+			    fixed => $argv->{neighbor_fixed});
     }
-    delete $argv->{reciprocal};
+    delete $argv->{neighbor};
     return $self->SUPER::update($argv);
 }
 
