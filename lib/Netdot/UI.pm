@@ -361,7 +361,11 @@ sub form_field {
 	unless ( $args{no_help} ){
 	    $label = $self->col_descr_link($table, $column, $label);
 	}
-	if ( $args{edit} && $mcol->is_unique ){  $label .= "<font color=\"red\">*</font>" }
+	if ( $args{edit} && 
+	     ($mcol->is_unique || ($mcol->sql_type =~ /^varchar|timestamp|date|blob$/ 
+				   && !$mcol->is_nullable)) ){  
+	    $label .= "<font color=\"red\">*</font>" 
+	}
         $returnhash{label} = $label . ':';
         $returnhash{value} = $value;
         return %returnhash;
