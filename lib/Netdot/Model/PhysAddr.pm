@@ -590,7 +590,9 @@ sub get_last_n_fte {
                 AND    fte.physaddr=p.id 
                 AND    fte.interface=i.id 
                 AND    fte.fwtable=ft.id 
-              GROUP BY ft.tstamp LIMIT $limit";
+              GROUP BY ft.tstamp 
+              ORDER BY ft.tstamp DESC
+              LIMIT $limit";
 
     my @tstamps = @{ $dbh->selectall_arrayref($q1) };
     return unless @tstamps;
