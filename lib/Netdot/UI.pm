@@ -1277,6 +1277,7 @@ sub select_query {
     my @labels = $table->meta_data->get_labels();
     foreach my $term ( @$terms ){
 	foreach my $c ( @labels ){
+	    $logger->debug("Netdot::UI::select_query: Searching for $term on $table $c");
 	    my $f_table = $table->meta_data->get_column($c)->links_to();
 	    if ( !defined $f_table ){ # column is local
 		my $it;

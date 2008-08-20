@@ -25,14 +25,15 @@ my $DEBUG = 0;
 </%shared>
 
 <%perl>
-
 if ( $DEBUG ){
     use Data::Dumper;
     print "<pre> ", Dumper(%ARGS), "</pre><br>";
     print &keyword_search($ARGS{table}, $ARGS{form_field}, 
 			  $ARGS{keywords}, $ARGS{field});
 }else{
-    require jsrsServer;
+    # Do not use 'require' here.  
+    # We need to make sure the file is read *each time*
+    do "jsrsServer.pm";
     jsrsDispatch("keyword_search");
 }
 
@@ -49,9 +50,14 @@ sub keyword_search {
     my @terms;
     my $MAX   = 100;
 
-    if ($keywords =~ /\w+/){
-        $keywords =~ s/^\s*(.*)\s*$/$1/;
-        @terms = split /\s+/, $keywords;
+    if ( $keywords =~ /\w+/ ){
+	if ( $keywords =~ s/^\s*(.*)\s*$/$1/ ){
+	    @terms = split /\s+/, $keywords;
+	}else{
+	    $terms[0] = $keywords;
+	}
+    }else{
+	return;
     }
 
     my $response = $form_field."&";
@@ -60,7 +66,7 @@ sub keyword_search {
 	my @r = $table->search($field=>$terms[0]);
 	map { $r->{$_->id} = $_ } @r;
     }else{
-	$r = $ui->select_query(table => $table, terms => \@terms, max => $MAX);
+	$r = $ui->select_query(table => $table, terms => \@terms);
     }
 
 
@@ -117,5 +123,5 @@ sub URLDecode {
     return $theURL;
 }
 
-
 </%perl>
+

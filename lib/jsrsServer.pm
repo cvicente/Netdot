@@ -1,6 +1,6 @@
 # **************************************************************
 # *
-# * jsrsServer.pl JavaScript Remote Scripting server include
+# * jsrsServer.pm JavaScript Remote Scripting server include
 # *
 # * Author: Stephen Carroll [scarroll@virtuosoft.net]
 # *         originally adapted from ASP version by
