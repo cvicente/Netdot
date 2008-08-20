@@ -505,6 +505,7 @@ sub get_fdb_links {
     }
 
     my %infrastructure_macs = %{ PhysAddr->infrastructure() };
+
     my $int_macs_q = $dbh->selectall_arrayref("SELECT physaddr.address, interface.id 
                                                FROM   physaddr, interface
                                                WHERE  interface.physaddr=physaddr.id");
@@ -541,9 +542,10 @@ sub get_fdb_links {
     # special purpose devices that connect to every VLAN (for management purposes)
     # cause this to break.  We then provide the user with this configuration option to
     # improve the reliability of this code.
-    my %excluded_devices;
+    my (%excluded_devices, %excluded_macs);
     if ( defined Netdot->config->get('FDB_EXCLUDE_DEVICES') ){
 	foreach my $mac ( @{Netdot->config->get('FDB_EXCLUDE_DEVICES')} ){
+	    $excluded_macs{$mac} = 1;
 	    $mac = PhysAddr->format_address($mac);
 	    my $addr = PhysAddr->search(address=>$mac)->first;
 	    next unless $addr;
@@ -580,9 +582,11 @@ sub get_fdb_links {
 
     my %links;  # The links we find go here
 
-    my %devices; # Device ids to Device objects -- just for debugging
-    foreach my $device ( Device->retrieve_all ){
-        $devices{$device->id} = $device;
+    my %device_names; # Device ids to Device full names -- just for debugging
+    if ( $logger->is_debug ){
+	foreach my $device ( Device->retrieve_all ){
+	    $device_names{$device->id} = $device->get_label();
+	}
     }
 
     # Some utility functions
@@ -615,17 +619,26 @@ sub get_fdb_links {
     # see if they have addresses in common
     sub break_into_groups {
 	my (%argv) = @_;
-	my ($class, $device_addresses, $devices, $infrastructure_macs, $excluded_devices) 
-	    = @argv{'class', 'device_addresses', 'devices', 'infrastructure_macs', 'excluded_devices'};
+	my ($class, $device_addresses, $device_names, $infrastructure_macs, $excluded_devices, $excluded_macs) 
+	    = @argv{'class', 'device_addresses', 'device_names', 'infrastructure_macs', 'excluded_devices', 'excluded_macs'};
 	
 	$logger->debug(" " . (scalar keys %$device_addresses) . " devices");
 	my (%admap, %damap);
-	foreach my $device ( keys %$device_addresses ){
+	foreach my $device ( sort { keys %{$device_addresses->{$b}} <=> keys %{$device_addresses->{$a}} } 
+			     keys %$device_addresses ){
+
 	    # Ignore devices that can affect the grouping results
 	    next if ( exists $excluded_devices->{$device} );
-	    $logger->debug("    " . (scalar keys %{$device_addresses->{$device}}) 
-			   . " addresses on device $device");
-	    foreach my $address (keys %{$device_addresses->{$device}}) {
+	    
+	    if ( $logger->is_debug() ){
+		my $name = $device_names->{$device};
+		$logger->debug("    " . (scalar keys %{$device_addresses->{$device}})
+			       . " addresses on device $name");
+	    }
+	    foreach my $address ( keys %{$device_addresses->{$device}} ) {
+		next if exists $infrastructure_macs->{$address};
+		next if exists $excluded_macs->{$address};
+		next if ( PhysAddr->is_broad_multi($address) );
 		$admap{$address}{$device} = 1;
 		$damap{$device}{$address} = 1;
 	    }
@@ -635,31 +648,31 @@ sub get_fdb_links {
 
 	# This threshold represents the maximum number of layer2 devices that 
 	# should be expected to exist in a given layer2 network
-	my $threshold = Netdot->config->get('FDB_MAX_NUM_DEVS_IN_SEGMENT');
+	my $threshold = Netdot->config->get('FDB_MAX_NUM_DEVS_IN_SEGMENT') || 9999;
 
 	# A variation of depth-first search
 	my %seen;
 	foreach my $address ( keys %admap ){
-	    next if ( exists $infrastructure_macs->{$address} );
 	    next if exists $seen{$address};
 	    my (@astack, @dstack);
 	    push @astack, $address;
 	    my %group;
 	    while ( @astack || @dstack ){
 		if ( @astack ){
-		    my $address = pop @astack;
-		    next if exists $seen{$address};
-		    $seen{$address} = 1;
-		    my $num_devs = scalar keys %{ $admap{$address} };
+		    my $address2 = pop @astack;
+		    next if exists $seen{$address2};
+		    $seen{$address2} = 1;
+		    my $num_devs = scalar keys %{ $admap{$address2} };
 		    if ( $num_devs > $threshold ){
-			$logger->debug("  Topology::get_fdb_links: Skipping too popular address $address ".
+			$logger->debug("  Topology::get_fdb_links: Skipping too-popular address $address ".
 				      "(num_devs $num_devs > threshold $threshold)");
 			next;
 		    }
 
-		    foreach my $device ( keys %{$admap{$address}} ){
+		    foreach my $device ( keys %{$admap{$address2}} ){
 			next if exists $seen{$device};
 			push @dstack, $device;
+#			$logger->debug("$address2 -> ". $device_names->{$device});
 		    }
 		}
 		if ( @dstack ){
@@ -667,14 +680,19 @@ sub get_fdb_links {
 		    next if exists $seen{$device};
 		    $seen{$device} = 1;
 		    $group{$device} = 1;
-		    foreach my $address ( keys %{$damap{$device}} ){
-			next if exists $seen{$address};
-			next if ( exists $infrastructure_macs->{$address} );
-			push @astack, $address;
+#		    $logger->debug("$address -> ". $device_names->{$device});
+		    foreach my $address3 ( keys %{$damap{$device}} ){
+			next if exists $seen{$address3};
+			push @astack, $address3;
+#			$logger->debug($device_names->{$device} . " -> $address3");
 		    }
 		}
 	    }
 	    push @groups, \%group;
+	    if ( $logger->is_debug ){
+		my @names = sort map { $device_names->{$_} } keys %group;
+		$logger->debug("  This group has: " . (join ', ', @names));
+	    }
 	}
 	return \@groups;
     }
@@ -749,19 +767,16 @@ sub get_fdb_links {
 	$logger->debug("  Breaking devices up into separate layer2 networks");
 	$groups = &break_into_groups(class               => $class, 
 				     device_addresses    => $device_addresses, 
-				     devices             => \%devices, 
+				     device_names        => \%device_names, 
 				     infrastructure_macs => \%infrastructure_macs, 
 				     excluded_devices    => \%excluded_devices,
+				     excluded_macs       => \%excluded_macs,
 	    );
 	
 	$logger->debug("  We now have " . scalar @$groups . " groups");
 	
 	foreach my $group ( @$groups ) {
 	    my @possiblelinks;
-	    if ( $logger->is_debug ){
-		my @lbls = map { $devices{$_}->get_label } keys %$group;
-		$logger->debug("  This group has: " . (join ', ', @lbls));
-	    }
 	    my $num_devs = scalar keys %$group;
 	    next if ( 1 == $num_devs );
 

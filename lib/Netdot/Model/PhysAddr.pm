@@ -419,6 +419,36 @@ sub vendor_count{
     return (\%res, $total);
 }
 
+################################################################
+=head2 - is_broad_multi - Check for broadcast/multicast bit
+
+    IEEE 802.3 specifies that the lowest order bit in the first
+    octet designates an address as broadcast/multicast.
+    
+  Arguments:
+    As an object method, none.
+    As a class method, the address is required.
+  Returns:
+    True or false
+  Examples:
+     PhysAddr->is_broad_multi($address)
+    or 
+     $physaddr->is_broad_multi();
+=cut
+sub is_broad_multi {
+    my ($class, $address) = @_;
+    my $self;
+    if ( $self = ref($class) ){
+	$address = $self->address;
+    }else{
+	$class->throw_fatal("PhysAddr::is_broad_multi: Need an address to continue")
+	    unless $address;
+    }
+    my $dec = hex(substr($address, 1, 1));
+    return 1 if ( $dec & 1 );
+    return 0
+}
+
 =head1 INSTANCE METHODS
 =cut
 
