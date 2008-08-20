@@ -2,6 +2,7 @@ package Netdot::Model;
 
 use base qw ( Class::DBI  Netdot );
 use Netdot::Model::Nullify;
+use Time::Local;
 
 =head1 NAME
 
@@ -709,6 +710,26 @@ sub search_all_tables {
 	}
     }
     return \%results;
+}
+
+
+############################################################################
+=head2 
+
+  Arguments:  
+    SQL date string (YYYY-MM-DD)
+  Returns:    
+    Seconds since epoch (compatible with Perl's time function)
+
+=cut
+sub sqldate2time {
+    my ($self, $d) = @_;
+    if ( $d =~ /^(\d{4})-(\d{2})-(\d{2})$/ ){
+	my ($y, $m, $d) = ($1, $2, $3);
+	return timelocal(0,0,0,$d,$m-1,$y);
+    }else{
+	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid SQL date format: $d. Should be (YYYY-MM-DD).");
+    }
 }
 
 ##################################################################

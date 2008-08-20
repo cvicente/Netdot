@@ -70,7 +70,19 @@ sub generate_configs {
     foreach my $row ( @$device_ips ){
 	my ($deviceid, $ipid, $int_monitored, $dev_monitored) = @$row;
 	next unless ( $int_monitored && $dev_monitored );
-	my $ipobj = Ipblock->retrieve($ipid);
+	my $ipobj  = Ipblock->retrieve($ipid);
+	my $device = Device->retrieve($deviceid);
+	
+	# Check maintenance dates to see if this device should be excluded
+	if ( $device->maint_from && $device->maint_until ){
+	    my $time1 = Netdot::Model->sqldate2time($device->maint_from);
+	    my $time2 = Netdot::Model->sqldate2time($device->maint_until);
+	    my $now = time;
+	    if ( $time1 < $now && $now < $time2 ){
+		$logger->debug($device->get_label ." within maintenance period.  Excluding.");
+		next;
+	    }
+	}
 	
 	my $hostname;
 	if ( my $name = $self->dns->resolve_ip($ipobj->address) ){

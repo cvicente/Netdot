@@ -36,6 +36,7 @@ my @DEPS = (
     'Test::More' ,
     'Test::Harness' ,
     'Net::IRR',
+    'Time::Local',
     );
 
 if ( $action eq 'test' ){

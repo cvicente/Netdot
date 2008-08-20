@@ -85,12 +85,25 @@ sub generate_configs {
     my (%name2ip, %ip2name);
     
     my $device_ips = $self->get_device_ips();
-
+    
     foreach my $row ( @$device_ips ){
 	my ($deviceid, $ipid, $int_monitored, $dev_monitored) = @$row;
 	next unless ($int_monitored && $dev_monitored);
 	
 	my $ipobj = Ipblock->retrieve($ipid);
+	my $device = Device->retrieve($deviceid);
+	
+	# Check maintenance dates to see if this device should be excluded
+	if ( $device->maint_from && $device->maint_until ){
+	    my $time1 = Netdot::Model->sqldate2time($device->maint_from);
+	    my $time2 = Netdot::Model->sqldate2time($device->maint_until);
+	    my $now = time;
+	    if ( $time1 < $now && $now < $time2 ){
+		$logger->debug($device->get_label ." within maintenance period.  Excluding.");
+		next;
+	    }
+	}
+	
 	# Determine the group name for this device
 	my $group;
 	if ( int($ipobj->parent) != 0 ){
@@ -101,14 +114,14 @@ sub generate_configs {
 	    }else{
 		$group = $ipobj->parent->address;
 	    }
-	}elsif ( int($ipobj->interface->device->used_by) != 0 ){
-	    $group = $ipobj->interface->device->used_by->name;
+	}elsif ( int($device->used_by) != 0 ){
+	    $group = $device->used_by->name;
 	}
 	unless ( $group ){
 	    $logger->warn("Address " . $ipobj->address . " in unknown network");
 	    $group = "Unknown";
 	}
-
+	
 	# Remove illegal chars for Nagios
 	$group =~ s/[\(\),]//g;  
 	$group =~ s/^\s*(.)\s*$/$1/;
@@ -116,29 +129,31 @@ sub generate_configs {
 	$group =~ s/&/and/g;     
 	$hosts{$ipobj->id}{ip}    = $ipobj->address;
 	$hosts{$ipobj->id}{ipobj} = $ipobj;
-
+	
 	# Assign most specific contactlist 
 	# Order is: interface, device and then entity
 	# 
 	my $clobj;
 	if( ($clobj = $ipobj->interface->contactlist) != 0 ){
 	    push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
-
+	    
 	    # Devices can have many contactlists
 	    # This gets me DeviceContacts objects (join table)
-	}elsif( my @dcs = $ipobj->interface->device->contacts ){
+	}elsif( my @dcs = $device->contacts ){
 	    foreach my $dc ( @dcs ){
 		push @{ $hosts{$ipobj->id}{contactlists} }, $dc->contactlist;
 	    }
-	}elsif( ($clobj = $ipobj->interface->device->used_by->contactlist) != 0 ){
+	}elsif( ($clobj = $device->used_by->contactlist) != 0 ){
 	    push @{ $hosts{$ipobj->id}{contactlists} }, $clobj;
 	}
 	
 	foreach my $clobj ( @{ $hosts{$ipobj->id}{contactlists} } ){
-	    $contactlists{$clobj->id}{name} = join '_', split /\s+/, $clobj->name;
+	    my $name = $clobj->name;
+	    next unless defined $name;
+	    $contactlists{$clobj->id}{name} = join '_', split /\s+/, $name;
 	    $contactlists{$clobj->id}{obj}  = $clobj;
 	}
-
+	
 	$hosts{$ipobj->id}{group} = $group;
 
 	my $name;
@@ -173,14 +188,14 @@ sub generate_configs {
 		push @{ $services{$name}{$srvname}{contactlists} }, $srvclobj;
 		$contactlists{$srvclobj->id}{name} = join '_', split /\s+/, $srvclobj->name;
 		$contactlists{$srvclobj->id}{obj}  = $srvclobj;
-		$logger->warn("Contactlist ". $srvclobj->name ." assigned to service $srvname for IP " . $ipobj->address);
+		$logger->debug("Contactlist ". $srvclobj->name ." assigned to service $srvname for IP " . $ipobj->address);
 	    }elsif( $hosts{$ipobj->id}{contactlists} ){
 		$services{$name}{$srvname}{contactlists} = $hosts{$ipobj->id}{contactlists};
 	    }else{
 		$logger->debug("Service $srvname for IP ". $ipobj->address ." has no contactlist defined\n");
 	    }
 	    # Add the SNMP community in case it's needed
-	    $services{$name}{$srvname}{community} =  $ipobj->interface->device->community;
+	    $services{$name}{$srvname}{community} = $device->community;
 	}
     } #foreach ip
 
