@@ -672,8 +672,9 @@ push( @cell_data, ($ip->version == 6?$ip->broadcast->short:$ip->broadcast->addr)
 
 ################
 # Usable address range
-	push( @field_headers, "Usable Addresses:" );
-	push( @cell_data, ($ip->version == 6 ? $ip->first->short." - ".$ip->last->short : $ip->first->addr." - ".$ip->last->addr) );
+
+push( @field_headers, "Usable Addresses:" );
+push( @cell_data, ($ip->num." (". ($ip->version == 6 ? $ip->first->short."-".$ip->last->short : $ip->first->addr."-".$ip->last->addr) .")") );
 	
 if ($o->status->name eq "Subnet") {
       my $used = new Math::BigInt($o->num_children);
