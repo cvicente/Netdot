@@ -80,7 +80,7 @@ EOF
             if ($prevclass eq $class) { $class .= "_2"; }
             $rowtitle = $child->addr;
             $title = $child;
-            $link = "ip.html?add_block=$child&_action=ADD_BLOCK";
+            $link = "ip.html?add_range_prefix=$child&_action=ADD_RANGE";
             $width = 2**(32-$child->masklen);
             $count += $width;
             $prevclass = $class;
@@ -90,7 +90,7 @@ EOF
             $class = "ipaddr_" . lc($status);
             if ($prevclass eq $class) { $class .= "_2"; }
             $rowtitle = $child->address;
-            $title = $child->cidr;
+            $title = $child->cidr  ." (". $child->description() .")" ;
             $width = 2**(32-$child->prefix);
             $count += $width;
             $link = "ip.html?id=$child";
