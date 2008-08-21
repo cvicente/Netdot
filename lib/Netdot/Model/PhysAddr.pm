@@ -661,7 +661,9 @@ sub get_last_n_arp {
               FROM     physaddr p, interface i, arpcacheentry arpe, arpcache arp, ipblock ip
               WHERE    p.id=$id AND arpe.physaddr=p.id AND arpe.interface=i.id 
                 AND    arpe.ipaddr=ip.id AND arpe.arpcache=arp.id 
-              GROUP BY arp.tstamp LIMIT $limit";
+              GROUP BY arp.tstamp 
+              ORDER BY arp.tstamp DESC
+              LIMIT $limit";
 
     my @tstamps = @{ $dbh->selectall_arrayref($q1) };
     return unless @tstamps;
