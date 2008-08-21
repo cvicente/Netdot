@@ -200,8 +200,8 @@ sub _validate {
     }
 	
     if ( exists $argv->{start_vid} && exists $argv->{end_vid} ){
-	if ( $argv->{start_vid} >= $argv->{end_vid} ){
-	    $class->throw_user("Invalid range: start must be lower than end");
+	if ( $argv->{start_vid} > $argv->{end_vid} ){
+	    $class->throw_user("Invalid range: start must be lower or equal than end");
 	}
 	while ( my $g = $groups->next ){
 	    # Do not compare to self
