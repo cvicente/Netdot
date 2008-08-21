@@ -270,8 +270,8 @@ sub generate_configs {
 	while ( <SKEL> ){
 	    if (/<INSERT HOST DEFINITIONS>/){
 		
-		foreach my $ipid ( keys %hosts ){
-		    my $name = $hosts{$ipid}{name};
+		foreach my $ipid ( sort { $hosts{$a}{name} cmp $hosts{$b}{name} } keys %hosts ){
+		    my $name     = $hosts{$ipid}{name};
 		    my $ip       = $hosts{$ipid}{ip};
 		    my $group    = $hosts{$ipid}{group};
 		    my $parents  = $hosts{$ipid}{parents};

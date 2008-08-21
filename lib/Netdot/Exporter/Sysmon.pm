@@ -149,7 +149,7 @@ config html refresh $self->{SYSMON_HTML_REFRESH};
 EOP
 
     
-    foreach my $ipid ( keys %hosts ){
+    foreach my $ipid ( sort { $hosts{$a}{name} cmp $hosts{$b}{name} } keys %hosts ){
 	my $name = $hosts{$ipid}{name};
 	
 	print OUT "\n";
