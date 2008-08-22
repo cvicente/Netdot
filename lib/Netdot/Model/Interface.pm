@@ -146,7 +146,7 @@ sub delete {
     }
 
     foreach my $neighbor ( $self->neighbors ){
-	$neighbor->update({neighbor=>0, neighbor_fixed=>0, neighbor_missed=>0});
+	$neighbor->SUPER::update({neighbor=>0, neighbor_fixed=>0, neighbor_missed=>0});
     }
 
     return $self->SUPER::delete();
