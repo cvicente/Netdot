@@ -265,8 +265,12 @@ sub update {
     my $class = ref($self);
     
     if ( exists $argv->{neighbor} ){
-	$self->add_neighbor(id    => $argv->{neighbor},
-			    fixed => $argv->{neighbor_fixed});
+	if ( int($argv->{neighbor}) == 0 ){
+	    $self->remove_neighbor();
+	}else{
+	    $self->add_neighbor(id    => $argv->{neighbor},
+				fixed => $argv->{neighbor_fixed});
+	}
     }
     delete $argv->{neighbor};
     return $self->SUPER::update($argv);
