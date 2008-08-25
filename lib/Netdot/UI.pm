@@ -1281,8 +1281,8 @@ sub select_query {
 	    my $f_table = $table->meta_data->get_column($c)->links_to();
 	    if ( !defined $f_table ){ # column is local
 		my $it;
-		$it = $table->search_like( $c => $term );
-		while (my $obj = $it->next){
+		my @results = $table->search_like( $c => $term );
+		foreach my $obj ( @results ) {
 		    $found{$term}{$obj->id} = $obj;
 		}
 	    }else{ # column is a foreign key.

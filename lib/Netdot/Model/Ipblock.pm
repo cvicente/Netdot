@@ -125,11 +125,14 @@ sub search_like {
 
     foreach my $key ( keys %argv ){
 	if ( $key eq 'address' ){
+	    my $pattern = $argv{address};
+	    $pattern =~ s/\./\\./g;
 	    my @ipb;
-	    my $it = __PACKAGE__->retrieve_all;
+	    my $it = $class->retrieve_all;
 	    while ( my $ipb = $it->next ){
-		$_ = $ipb->cidr();
-		push @ipb, $ipb if ( /$argv{address}/ );
+		if ( $ipb->cidr() =~ /$pattern/ ){
+		    push @ipb, $ipb;
+		}
 		if ( scalar(@ipb) > $class->config->get('IPMAXSEARCH') ){
 		    last;
 		}
