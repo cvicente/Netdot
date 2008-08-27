@@ -155,6 +155,7 @@ sub get_dependencies{
     # Build the IP dependency hash
     my $ipdeps = {};
     foreach my $device ( keys %device2ips ){
+	next if ( $device == $nms );
 	if ( !exists $parents{$device} ){
  	    if ( $logger->is_debug() ){
  		my $dev = Netdot::Model::Device->retrieve($device);
