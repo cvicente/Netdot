@@ -37,6 +37,7 @@ my @DEPS = (
     'Test::Harness' ,
     'Net::IRR',
     'Time::Local',
+    'File::Spec',
     );
 
 if ( $action eq 'test' ){
