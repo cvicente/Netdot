@@ -236,6 +236,7 @@ sub _get_ip_deps {
     my %deps;
     foreach my $parent ( @$parents ){
 	foreach my $ipid2 ( @{$device2ips->{$parent}} ){
+	    next if ( $ipid2 == $ipid );
 	    if ( $ip_monitored->{$ipid2} ){
 		$deps{$ipid2} = 1;
 	    }
