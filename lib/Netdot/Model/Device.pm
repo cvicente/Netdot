@@ -253,21 +253,21 @@ sub assign_name {
 
     # Check if we have a matching domain
     if ( $fqdn =~ /\./  && $fqdn !~ /^($IPV4)|($IPV6)$/ ){
-	my @sections = split /\./, $fqdn;
    	# Notice that we search the whole string.  That's because
 	# the hostname part might have dots.  The Zone search method
 	# will take care of that.
 	if ( my $zone = (Zone->search(mname=>$fqdn))[0] ){
-            $args{mname} = $zone->mname;
+            $args{zone} = $zone->mname;
 	    $args{name}  = $fqdn;
-	    $args{name}  =~ s/\.$args{mname}//;
+	    $args{name}  =~ s/\.$args{zone}//;
         }else{
 	    $logger->debug(sub{"Device::assign_name: $fqdn not found" });
 	    # Assume the zone to be everything to the right
 	    # of the first dot. This might be a wrong guess
 	    # but it is as close as I can get.
+	    my @sections = split '\.', $fqdn;
 	    $args{name} = shift @sections;
-	    $args{mname} = join '.', @sections;
+	    $args{zone} = join '.', @sections;
 	}
     }else{
 	$args{name} = $fqdn;
