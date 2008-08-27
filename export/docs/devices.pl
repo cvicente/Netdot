@@ -116,7 +116,7 @@ sub build_configs{
     foreach my $pt ( keys %product_types ){
 	next unless ( keys %{$product_types{$pt}} );
 	$pt =~ s/\s+/_/g;
-	my $filename = "$pt-$self{suffix}";
+	my $filename = "$pt".$self{suffix};
 	$filename = lc($filename);
 	$filename = $self{dir}."/".$filename;
 	
