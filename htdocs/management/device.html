@@ -295,15 +295,16 @@ push( @cell_data,
       }}
 );
 
-my @fields = ('physaddr', 'serialnumber', 'custom_serial', 'inventorynumber', 'product', 'os');
-my @linkpages = ('mac.html', '', '', 'view.html', '', 'view.html', 'view.html', '', '');
-$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, 
-		   cell_data=>\@cell_data, linkpages=>\@linkpages);
+$ui->add_to_fields(o=>$o, edit=>$editgen, 
+		   fields=>['physaddr', 'serialnumber', 'custom_serial', 'inventorynumber', 'product', 'os'], 
+		   field_headers=>\@field_headers, cell_data=>\@cell_data, 
+		   linkpages=>['mac.html', '', '', '', 1, '']
+    );
 
 
-@linkpages = (1, '', '');
-@fields = ('maint_contract', 'maint_from', 'maint_until');
-$ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, linkpages=>\@linkpages,
+$ui->add_to_fields(o=>$o, edit=>$editgen, 
+		   fields=>['maint_contract', 'maint_from', 'maint_until'], 
+		   linkpages=>[1, '', ''],
 		   field_headers=>\@field_headers, cell_data=>\@cell_data);
 
 
@@ -436,7 +437,7 @@ $ui->add_to_fields(o=>$o, edit=>0, fields=>['ipforwarding'],
 
 
 if ( $o->snmp_managed ){
-    push @fields, ('snmp_version', 'community', 'snmp_bulk', 'canautoupdate', 'snmp_polling',
+    my @fields = ('snmp_version', 'community', 'snmp_bulk', 'canautoupdate', 'snmp_polling',
 		   'collect_arp', 'collect_fwt', 'collect_stp');
     $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
     
@@ -444,8 +445,8 @@ if ( $o->snmp_managed ){
     $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 if ( $o->snmp_version eq "3" ){
-    push @fields, ('snmp_authkey', 'snmp_authprotocol', 'snmp_privkey', 'snmp_privprotocol', 'snmp_securitylevel', 
-		   'snmp_securityname' );
+    my @fields = ('snmp_authkey', 'snmp_authprotocol', 'snmp_privkey', 'snmp_privprotocol', 'snmp_securitylevel', 
+		  'snmp_securityname' );
     $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);    
 }
 
