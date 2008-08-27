@@ -65,7 +65,7 @@ sub gather_data{
 
     my $dbh = Netdot::Model->db_Main();
     $query = $dbh->selectall_arrayref("
-                SELECT     d.serialnumber, d.rack, site.name, dr.name, rr.name, zone.mname, 
+                SELECT     d.serialnumber, d.rack, d.info, site.name, dr.name, rr.name, zone.mname, 
                            i.name, i.number, i.description, i.neighbor, i.room_char, i.jack_char, 
                            hc.jackid, p.name, pt.name, e.name, ir.name
                  FROM      rr, zone, product p, producttype pt, entity e, interface i 
@@ -89,7 +89,7 @@ sub build_configs{
     my %product_types;
 
     foreach my $row ( @$query ){
-	my ($serialnumber, $rack, $site, $droom, $rrname, $zone, 
+	my ($serialnumber, $rack, $info, $site, $droom, $rrname, $zone, 
 	    $iname, $inumber, $idescription, $ineighbor, $iroomchar, $ijackchar,
 	    $ijack, $product, $pt, $manufacturer, $iroom) = @$row;
 
@@ -103,6 +103,7 @@ sub build_configs{
 	$product_types{$pt}{$name}{rack}                              = $rack;
 	$product_types{$pt}{$name}{model}                             = $product;
 	$product_types{$pt}{$name}{manufacturer}                      = $manufacturer;
+	$product_types{$pt}{$name}{info}                              = $info;
 	$product_types{$pt}{$name}{interfaces}{$inumber}{number}      = $inumber;
 	$product_types{$pt}{$name}{interfaces}{$inumber}{name}        = $iname;
 	$product_types{$pt}{$name}{interfaces}{$inumber}{description} = $idescription;
@@ -135,6 +136,10 @@ sub build_configs{
 	    print $name, " -- Model: ",        $d->{model},        "\n";
 	    print $name, " -- Manufacturer: ", $d->{manufacturer}, "\n";
 	    print $name, " -- s/n: ",          $d->{serialnumber}, "\n";
+	    my @info_lines = split /\n+/, $d->{info};
+	    foreach my $line ( @info_lines ){
+		print $name, " -- Info: $line\n";
+	    }
 		
 	    foreach my $p ( keys %{$d->{interfaces}} ){
 		my $i    = $d->{interfaces}{$p};
