@@ -25,10 +25,16 @@ sub handler
 {
     my ($r) = @_;
 
+    # As instructed by Ima::DBI's documentation
+    $r->push_handlers(PerlCleanupHandler => sub {
+	Netdot::Model->dbi_rollback();
+		      });
+
     # We don't need to handle non-text items
     return -1 if $r->content_type && $r->content_type !~ m|^text/|i;
 
     return $ah->handle_request($r);
+
 }
 
 1;

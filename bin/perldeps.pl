@@ -19,7 +19,6 @@ my @DEPS = (
     'Apache2::Request'  ,
     'HTML::Mason 1.31' ,
     'Apache::Session 1.6' ,
-    'Apache::DBI' ,
     'URI::Escape' ,
     'DBIx::DataSource' ,
     'GraphViz 2.02' ,

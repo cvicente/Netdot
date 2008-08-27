@@ -136,37 +136,6 @@ BEGIN {
 	croak $@ if ($@);
    }
     
-    #########################################################
-    # Override db_Main to avoid problems between Class::DBI
-    # and Apache::DBI. See:
-    # http://wiki.class-dbi.com/wiki/Using_with_mod_perl
-
-    __PACKAGE__->_remember_handle('Main'); # so dbi_commit works
-    
-    # Note, this subroutine *has* to be inside the BEGIN block, 
-    # otherwise the call to SUPER:: won't work (it might have to do
-    # with the fact that it is resolved at compile time, not
-    # at run time)
-    
-    sub db_Main {
-	my $self = shift;
-	my $dbh;
-	if ( $ENV{'MOD_PERL'} and !$Apache::ServerStarting ) {
-	    $dbh = Apache->request()->pnotes('dbh');
-	}else{
-	    $dbh = $self->SUPER::db_Main();
-	}
-	if ( !$dbh ) {
-	    $dbh = DBI->connect_cached($defaults{dsn}, $defaults{user}, 
-				       $defaults{password}, $defaults{dbi_options});
-	    
-	    if ( $ENV{'MOD_PERL'} and !$Apache::ServerStarting ) {
-		Apache->request()->pnotes( 'dbh', $dbh );
-	    }
-	}
-	return $dbh;
-    }
-
 }
 
 =head1 CLASS METHODS
