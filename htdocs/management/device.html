@@ -295,7 +295,7 @@ push( @cell_data,
       }}
 );
 
-my @fields = ('physaddr', 'serialnumber', 'custom_serial', 'product','inventorynumber','os');
+my @fields = ('physaddr', 'serialnumber', 'custom_serial', 'inventorynumber', 'product', 'os');
 my @linkpages = ('mac.html', '', '', 'view.html', '', 'view.html', 'view.html', '', '');
 $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, field_headers=>\@field_headers, 
 		   cell_data=>\@cell_data, linkpages=>\@linkpages);
@@ -334,22 +334,21 @@ $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>\@fields, linkpages=>\@linkpag
 <%perl>
 (@field_headers, @cell_data) = ();
 
-{
-    my @fields;
-    @linkpages = ("view.html","view.html","view.html");
-    
-    push( @fields, 'owner' );
-    push( @fields, 'used_by' );
-    if ( (int($o->person) != 0) || $editloc ){
-	push( @fields, 'person' );
-	push( @linkpages, 'view.html' );
-    }
-    push( @fields, 'site');
-    
-    $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, 
-		       cell_data=>\@cell_data, linkpages=>\@linkpages);
-}
+$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>['owner', 'used_by', 'person'], 
+		   field_headers=>\@field_headers, cell_data=>\@cell_data, 
+		   linkpages=>['view.html','view.html','view.html']);
 
+my @devcontacts = $o->contacts;
+push( @field_headers, $ui->table_descr_link('DeviceContacts', 'Contacts:') );
+push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_table=>"DeviceContacts", 
+				       this_field=>"device", other_table=>"ContactList", 
+				       other_field=>"contactlist", isEditing=>$editloc, action=>"delete", 
+				       makeLink=>1, returnAsVar=>1 ) );
+      
+
+$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>['site'], 
+		   field_headers=>\@field_headers, cell_data=>\@cell_data, 
+		   linkpages=>['view.html']);
 
 push( @field_headers, $ui->col_descr_link('Device', 'room', 'Room:')  );
 push( @cell_data, &{sub{ 
@@ -388,13 +387,6 @@ my @fields = ('rack');
 $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 
-my @devcontacts = $o->contacts;
-push( @field_headers, $ui->table_descr_link('DeviceContacts', 'Contacts:') );
-push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_table=>"DeviceContacts", 
-				       this_field=>"device", other_table=>"ContactList", 
-				       other_field=>"contactlist", isEditing=>$editloc, action=>"delete", 
-				       makeLink=>1, returnAsVar=>1 ) );
-      
 </%perl>
 
     <& /generic/attribute_table.mhtml, width=>"2", field_headers=>\@field_headers, data=>\@cell_data &>
