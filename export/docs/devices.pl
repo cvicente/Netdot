@@ -79,7 +79,6 @@ sub gather_data{
                   AND      d.product=p.id
                   AND      p.type=pt.id
                   AND      p.manufacturer=e.id
-                ORDER BY   rr.name, i.number
          ");
 }
 
@@ -129,7 +128,7 @@ sub build_configs{
 	print "            ****        THIS FILE WAS GENERATED FROM A DATABASE         ****\n";
 	print "            ****           ANY CHANGES YOU MAKE WILL BE LOST            ****\n";
 	
-	foreach my $name ( keys %{$product_types{$pt}} ){
+	foreach my $name ( sort keys %{$product_types{$pt}} ){
 	    my $d = $product_types{$pt}{$name};
 	    print $name, " -- Building: ",     $d->{site},         "\n";
 	    print $name, " -- Room: ",         $d->{room},         "\n";
@@ -142,8 +141,8 @@ sub build_configs{
 		print $name, " -- Info: $line\n";
 	    }
 		
-	    foreach my $p ( keys %{$d->{interfaces}} ){
-		my $i    = $d->{interfaces}{$p};
+	    foreach my $p ( sort { $a <=> $b } keys %{$d->{interfaces}} ){
+		my $i = $d->{interfaces}{$p};
 		my $room = ( $i->{room} )? $i->{room} : $i->{room_char};
 		my $jack = ( $i->{jack} )? $i->{jack} : $i->{jack_char};
 		my $neighbor = ""; 
