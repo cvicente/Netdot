@@ -481,8 +481,7 @@ sub update {
 	while ( my ($col, $val) = each %$argv ){
 	    my $a = ref($self->$col) ? $self->$col->id : $self->$col;
 	    my $b = ref($val)        ? $val->id        : $val;
-	    if ( $a ne $b ){
-		$logger->debug("Model::update: $class col $col: $a ne $b");
+	    if ( !defined $a || $a ne $b ){
 		$self->set($col=>$b);
 		push @changed_keys, $col;
 	    }
