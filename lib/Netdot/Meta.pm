@@ -49,7 +49,7 @@ sub new {
     my ($proto, %argv) = @_;
     my $class = ref($proto) || $proto;
     my $file;
-    if ( -r $argv{'meta_file'} ){
+    if ( defined $argv{'meta_file'} && -r $argv{'meta_file'} ){
 	$file = $argv{'meta_file'};
     }elsif ( -r $DEFAULT_META_FILE ){
 	$file = $DEFAULT_META_FILE;
