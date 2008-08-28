@@ -77,17 +77,27 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
     if ( my $e = $@ ){
 	$m->comp('error.mhtml', error=>$e);
     }
-    @objs = @{$session->{objects}};
-    foreach my $ref ( @objs ){
-	my ($table, $id) = @$ref;
+
+    my @records = @{$session->{objects}};
+    my @objs;
+    foreach my $l ( @records ){
+	my ($table, $id) = @$l;
+	push @objs, $table->retrieve($id);
+    }
+    my @lbls = map { "$table " . $_->get_label } @objs;
+    foreach my $obj ( @objs ){
 	eval {
-	    $table->retrieve($id)->delete();
+	    $obj->delete();
 	};
 	if ( my $e = $@ ){
 	    $m->comp('error.mhtml', error=>$e);
 	} 
     }
-    $m->redirect("index.html");
+    print "<ul>\n";
+    foreach my $lbl ( @lbls ){
+	print "<li>$lbl has been deleted</li>";
+    }
+    print "</ul>\n";
     
 }elsif ( $submit eq "Cancel" ){
     print "<p><br>";
