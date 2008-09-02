@@ -134,11 +134,11 @@ sub generate_configs {
     
     # Open output file for writing
     my $filename = $self->{SYSMON_DIR}."/".$self->{SYSMON_FILE};
-    open (OUT, ">$filename") 
+    open (SYSMON, ">$filename") 
 	or die "Can't open $filename $!\n";
     
     my $root = $self->{MONITOR}->fqdn();
-    print OUT <<EOP;
+    print SYSMON <<EOP;
 root \"$root\"\;
 config queuetime $self->{SYSMON_QUEUETIME}\;
 config maxqueued $self->{SYSMON_MAXQUEUED}\;
@@ -152,24 +152,24 @@ EOP
     foreach my $ipid ( sort { $hosts{$a}{name} cmp $hosts{$b}{name} } keys %hosts ){
 	my $name = $hosts{$ipid}{name};
 	
-	print OUT "\n";
-	print OUT "object $name \{\n";
-	print OUT "   ip \"$name\"\;\n";
-	print OUT "   type ping\;\n";
-	print OUT "   desc \"$name\"\;\n";
+	print SYSMON "\n";
+	print SYSMON "object $name \{\n";
+	print SYSMON "   ip \"$name\"\;\n";
+	print SYSMON "   type ping\;\n";
+	print SYSMON "   desc \"$name\"\;\n";
 	
 	foreach my $parent ( @{ $hosts{$ipid}{parents} } ){
 	    next if ($parent eq "");
-	    print OUT "   dep \"$parent\"\;\n";
+	    print SYSMON "   dep \"$parent\"\;\n";
 	}
 	
-	print OUT "\}\;";
-	print OUT "\n";
+	print SYSMON "\}\;";
+	print SYSMON "\n";
 	
     }
     
+    close(SYSMON) or $logger->warn("$filename did not close nicely");
     $logger->info("Sysmon configuration written to $filename");
-    close(OUT) or $logger->warn("$filename did not close nicely");
 }
 
 =head1 AUTHOR
