@@ -86,10 +86,17 @@ sub generate_configs {
 	    $monitor, $group) = @$row;  
 	
 	my $name = $rrname . "." . $zone;
+
 	unless ( $monitor ){
 	    $logger->debug("Netdot::Exporter::Rancid:generate_configs: $name configured to not monitor config");
 	    next;
 	}
+
+	unless ( $group ){
+	    $logger->warn("Netdot::Exporter::Rancid:generate_configs: $name has no Config Group!");
+	    next;
+	}
+
 	if ( exists $self->{EXCLUDE}->{$oid} ){
 	    my $descr = $self->{EXCLUDE}->{$oid};
 	    $logger->debug("$name: $descr ($oid) excluded in configuration");
@@ -98,7 +105,7 @@ sub generate_configs {
 	
 	my $mfg = $self->_convert_mfg($vendor);
 	unless ( $mfg ) {
-	    $logger->debug("Netdot::Exporter::Rancid:generate_configs: $vendor has no RANCID device_type mapping");
+	    $logger->debug("Netdot::Exporter::Rancid:generate_configs: $name: $vendor has no RANCID device_type mapping");
 	    next;
 	}
 	$groups{$group}{$name}{mfg} = $mfg;
