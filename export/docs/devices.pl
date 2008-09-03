@@ -62,6 +62,8 @@ sub setup{
 
 ##################################################
 sub gather_data{
+    
+    &debug("Executing SQL statement");
 
     my $dbh = Netdot::Model->db_Main();
     $query = $dbh->selectall_arrayref("
@@ -84,6 +86,8 @@ sub gather_data{
 
 ##################################################
 sub build_configs{
+
+    &debug("Building data structures");
 
     my %product_types;
 
@@ -113,6 +117,7 @@ sub build_configs{
 	$product_types{$pt}{$name}{interfaces}{$inumber}{room}        = $iroom;
     }
 
+
     foreach my $pt ( keys %product_types ){
 	next unless ( keys %{$product_types{$pt}} );
 	my $filename = $pt;
@@ -125,6 +130,8 @@ sub build_configs{
 	    or die "Couldn't open $filename: $!\n";
 	select (FILE);
 	
+	&debug("Writing to $filename");
+
 	print "            ****        THIS FILE WAS GENERATED FROM A DATABASE         ****\n";
 	print "            ****           ANY CHANGES YOU MAKE WILL BE LOST            ****\n";
 	
@@ -149,11 +156,20 @@ sub build_configs{
 		if ( my $nid = $i->{neighbor} ){
 		    $neighbor = "link: ". Interface->retrieve($nid)->get_label();
 		}
+		# Sometimes description has carriage returns
+		my $description = $i->{description};
+		chomp($description);
+
 		print $name, ", port ", $i->{number}, ", ", $i->{iname}, ", ", $room, ", ", $jack, 
-		$i->{description}, ", ", $neighbor, "\n";
+		$idescription, ", ", $neighbor, "\n";
+
 	    }
 	    print "\n";
 	}    
 	close (FILE) or warn "$filename did not close nicely\n";
     }
+}
+
+sub debug {
+    print @_, "\n" if $self{debug};
 }
