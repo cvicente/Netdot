@@ -161,7 +161,7 @@ sub build_configs{
 		chomp($description);
 
 		print $name, ", port ", $i->{number}, ", ", $i->{iname}, ", ", $room, ", ", $jack, 
-		$idescription, ", ", $neighbor, "\n";
+		$description, ", ", $neighbor, "\n";
 
 	    }
 	    print "\n";
