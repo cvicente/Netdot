@@ -656,7 +656,7 @@ sub select_multiple {
 	$output .= "</select>";
 	$output .= "<a onClick=\"openinsertwindow('table=$join_table&$this_field=";
 	$output .= $o->id;
-	$output .= "&select_id=$select_name&selected=0')\" class=\"hand\">[add]</a>";
+	$output .= "&select_id=$select_name&selected=0&dowindow=1')\" class=\"hand\">[add]</a>";
 	if ( @joins ){
 	    $output .= '<br>(*) Selecting will delete';
 	}

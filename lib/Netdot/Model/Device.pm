@@ -1114,6 +1114,10 @@ sub discover {
 		$devtmp{$field} = $argv{$field};
 	    }
 	}
+
+	# Add contacts argument if passed
+	$devtmp{contacts} = $argv{contacts} if defined $argv{contacts};
+
 	# Try to assign a Site based on syslocation
 	if ( !$devtmp{site} && (my $loc = $info->{syslocation}) ){
 	    if ( my $site = Site->search_like(name=>"%$loc%")->first ){
