@@ -67,7 +67,7 @@ sub setup{
 sub gather_data{
    
     unless ( @cls = sort { $a->name cmp $b->name } ContactList->retrieve_all ){
-	die "No Contact Lists found in db\n";
+	exit 0;
     }
     
 }
@@ -78,17 +78,16 @@ sub build_configs{
     my $filename = "$self{dir}/$self{out}";
     open (FILE, ">$filename") 
 	or die "Couldn't open $filename: $!\n";
-    select (FILE);
     
-    print "            ****        THIS FILE WAS GENERATED FROM A DATABASE         ****\n";
-    print "            ****           ANY CHANGES YOU MAKE WILL BE LOST            ****\n";
+    print FILE "            ****        THIS FILE WAS GENERATED FROM A DATABASE         ****\n";
+    print FILE "            ****           ANY CHANGES YOU MAKE WILL BE LOST            ****\n\n";
     
-    foreach my $cl (@cls){
+    foreach my $cl ( @cls ){
 	my @sites    = $cl->sites;
 	my @entities = $cl->entities;
 	my @contacts = $cl->contacts;
-	my @people = map { $_->person } @contacts;
-	my @people = sort { $a->lastname cmp $b->lastname } @people;
+	my @people   = map { $_->person } @contacts;
+	my @people   = sort { $a->lastname cmp $b->lastname } @people;
 	
 	foreach my $site (@sites){
 	    my $prefix = $site->name;
@@ -108,12 +107,13 @@ sub print_people {
     foreach my $person ( @$people ){
 	my $pref = $prefix;
 	$pref .= ": " . $person->firstname . " " . $person->lastname;
-	print $pref, ": Employer: ", $person->entity->name, "\n" if ($person->entity);
-	print $pref, ": Position: ", $person->position, "\n" if ($person->position);
-	print $pref, ": Office: ", $person->office, "\n" if ($person->office);
-	print $pref, ": Email: <", $person->email, ">\n" if ($person->email);
-	print $pref, ": Cell: ", $person->cell, "\n" if ($person->cell);
-	print $pref, ": Pager: ", $person->pager, "\n" if ($person->pager);
-	print $pref, ": Email-Pager: ", $person->emailpager, "\n" if ($person->emailpager);
+	print FILE $pref, ": Employer: ",    $person->entity->name, "\n"  if ($person->entity);
+	print FILE $pref, ": Position: ",    $person->position,     "\n"  if ($person->position);
+	print FILE $pref, ": Office: ",      $person->office,       "\n"  if ($person->office);
+	print FILE $pref, ": Email: <",      $person->email,        ">\n" if ($person->email);
+	print FILE $pref, ": Cell: ",        $person->cell,         "\n"  if ($person->cell);
+	print FILE $pref, ": Pager: ",       $person->pager,        "\n"  if ($person->pager);
+	print FILE $pref, ": Email-Pager: ", $person->emailpager,   "\n"  if ($person->emailpager);
     }
+    print FILE "\n";
 }
