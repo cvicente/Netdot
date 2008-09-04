@@ -35,6 +35,8 @@ use Netdot::Exporter;
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my @types = qw /Nagios Sysmon Rancid/;
+my $logstr;
+
 </%init>
 
 <div id="sectiontools" <% $hideheader %>>
@@ -48,7 +50,7 @@ my @types = qw /Nagios Sysmon Rancid/;
         <fieldset class="medium">
             <legend>Export Options</legend>
             <form action="config_tasks.html" method="POST">
-                Select:
+                Select one or more of:
                 <select name="config_types" MULTIPLE>
 %               foreach my $type ( @types ){
         	    <option value="<% $type %>"><% $type %></option> 
@@ -58,12 +60,20 @@ my @types = qw /Nagios Sysmon Rancid/;
             </form>
         </fieldset>
         </td></tr></table>
-    </div> <!-- close containerbody -->
-</div> <!-- close container -->
-</div> <!-- close sectiontools -->
 
 <%perl>
 if ( $submit ){
+
+    $m->comp('/generic/error.mhtml', error=>"Please select an Export type")
+	unless ( $ARGS{config_types} );
+
+    my $logger = Netdot->log->get_logger('Netdot::Exporter');
+    if ( $logstr = Log::Log4perl::appender_by_name('config_tasks.html') ){
+	Log::Log4perl->eradicate_appender('config_tasks.html');
+    }
+    $logstr = Netdot::Util::Log->new_appender('String', name=>'config_tasks.html');
+    $logger->add_appender($logstr);
+
     foreach my $type ( @config_types ){
 	my $exporter = Netdot::Exporter->new(type=>$type);
 	eval {
@@ -73,6 +83,24 @@ if ( $submit ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
     }
+
+    my $log = $logstr->string() ;
+    if ( $log ){
+	print "<strong>Exporter Output:</strong> <br>";
+	print "<p><pre>";
+	print "$log";
+	print "</pre> <br />";
+    }
 }
 </%perl>
  
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+
+<%cleanup>
+    if ( defined $logstr ){
+        Log::Log4perl->eradicate_appender('config_tasks.html')
+    }
+</%cleanup>
