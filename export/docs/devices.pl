@@ -11,7 +11,7 @@ use Netdot::Model;
 use Data::Dumper;
 use Getopt::Long;
 
-use vars qw( %self $USAGE $query );
+use vars qw( %self $USAGE $q1 $q2 );
 
 &set_defaults();
 
@@ -63,12 +63,12 @@ sub setup{
 ##################################################
 sub gather_data{
     
-    &debug("Executing SQL statement");
+    &debug("Executing SQL query 1");
 
     my $dbh = Netdot::Model->db_Main();
-    $query = $dbh->selectall_arrayref("
+    $q1 = $dbh->selectall_arrayref("
                 SELECT     d.serialnumber, d.rack, d.info, site.name, dr.name, rr.name, zone.mname, 
-                           i.name, i.number, i.description, i.neighbor, i.room_char, i.jack_char, 
+                           i.id, i.name, i.number, i.description, i.neighbor, i.room_char, i.jack_char, 
                            hc.jackid, p.name, pt.name, e.name, ir.name
                  FROM      rr, zone, product p, producttype pt, entity e, interface i 
                  LEFT JOIN (horizontalcable hc, room ir) ON (hc.id=i.jack AND hc.room=ir.id), 
@@ -82,6 +82,18 @@ sub gather_data{
                   AND      p.type=pt.id
                   AND      p.manufacturer=e.id
          ");
+
+    &debug("Executing SQL query 2");
+
+    $q2 = $dbh->selectall_arrayref("
+                SELECT  i1.id, i2.id, i2.name, rr2.name, zone2.mname
+                FROM    device d1, device d2, interface i1, interface i2,
+                        rr rr1, rr rr2, zone zone1, zone zone2
+                WHERE   i1.device = d1.id AND i2.device = d2.id
+                    AND d1.name = rr1.id AND rr1.zone = zone1.id
+                    AND d2.name = rr2.id AND rr2.zone = zone2.id
+                    AND i2.neighbor = i1.id AND i1.neighbor = i2.id
+         ");
 }
 
 ##################################################
@@ -91,9 +103,9 @@ sub build_configs{
 
     my %product_types;
 
-    foreach my $row ( @$query ){
+    foreach my $row ( @$q1 ){
 	my ($serialnumber, $rack, $info, $site, $droom, $rrname, $zone, 
-	    $iname, $inumber, $idescription, $ineighbor, $iroomchar, $ijackchar,
+	    $iid, $iname, $inumber, $idescription, $ineighbor, $iroomchar, $ijackchar,
 	    $ijack, $product, $pt, $manufacturer, $iroom) = @$row;
 
 	next unless $pt;
@@ -107,6 +119,7 @@ sub build_configs{
 	$product_types{$pt}{$name}{model}                             = $product;
 	$product_types{$pt}{$name}{manufacturer}                      = $manufacturer;
 	$product_types{$pt}{$name}{info}                              = $info;
+	$product_types{$pt}{$name}{interfaces}{$inumber}{id}          = $iid;
 	$product_types{$pt}{$name}{interfaces}{$inumber}{number}      = $inumber;
 	$product_types{$pt}{$name}{interfaces}{$inumber}{name}        = $iname;
 	$product_types{$pt}{$name}{interfaces}{$inumber}{description} = $idescription;
@@ -115,6 +128,15 @@ sub build_configs{
 	$product_types{$pt}{$name}{interfaces}{$inumber}{jack_char}   = $ijackchar;
 	$product_types{$pt}{$name}{interfaces}{$inumber}{jack}        = $ijack;
 	$product_types{$pt}{$name}{interfaces}{$inumber}{room}        = $iroom;
+    }
+
+    # Build a hash of neighbor names keyed by id
+    my %neighbors;
+    foreach my $row ( @$q2 ){
+	my ($i1id, $i2id, $i2name, $i2dev, $i2zone) = @$row;
+
+	my $neighbor_name = "$i2dev.$i2zone [$i2name]";
+	$neighbors{$i1id} = $neighbor_name;
     }
 
     &debug("Done building data structures");
@@ -131,47 +153,46 @@ sub build_configs{
 
 	open (FILE, ">$filename") 
 	    or die "Couldn't open $filename: $!\n";
-	select (FILE);
-	
 
-	print "            ****        THIS FILE WAS GENERATED FROM A DATABASE         ****\n";
-	print "            ****           ANY CHANGES YOU MAKE WILL BE LOST            ****\n";
+	print FILE "            ****        THIS FILE WAS GENERATED FROM A DATABASE         ****\n";
+	print FILE "            ****           ANY CHANGES YOU MAKE WILL BE LOST            ****\n\n";
 	
 	foreach my $name ( sort keys %{$product_types{$pt}} ){
 	    my $d = $product_types{$pt}{$name};
-	    print $name, " -- Building: ",     $d->{site},         "\n";
-	    print $name, " -- Room: ",         $d->{room},         "\n";
-	    print $name, " -- Rack: ",         $d->{rack},         "\n";
-	    print $name, " -- Model: ",        $d->{model},        "\n";
-	    print $name, " -- Manufacturer: ", $d->{manufacturer}, "\n";
-	    print $name, " -- s/n: ",          $d->{serialnumber}, "\n";
+	    print FILE $name, " -- Building: ",     $d->{site},         "\n";
+	    print FILE $name, " -- Room: ",         $d->{room},         "\n";
+	    print FILE $name, " -- Rack: ",         $d->{rack},         "\n";
+	    print FILE $name, " -- Model: ",        $d->{model},        "\n";
+	    print FILE $name, " -- Manufacturer: ", $d->{manufacturer}, "\n";
+	    print FILE $name, " -- s/n: ",          $d->{serialnumber}, "\n";
 	    my @info_lines = split /\n+/, $d->{info};
 	    foreach my $line ( @info_lines ){
-		print $name, " -- Info: $line\n";
+		print FILE $name, " -- Info: $line\n";
 	    }
 		
 	    foreach my $p ( sort { $a <=> $b } keys %{$d->{interfaces}} ){
-		my $i = $d->{interfaces}{$p};
+		my $i    = $d->{interfaces}{$p};
+		my $iid  = $i->{id};
 		my $room = ( $i->{room} )? $i->{room} : $i->{room_char};
 		my $jack = ( $i->{jack} )? $i->{jack} : $i->{jack_char};
 		my $neighbor = ""; 
 		if ( my $nid = $i->{neighbor} ){
-		    $neighbor = "link: ". Interface->retrieve($nid)->get_label();
+		    $neighbor = "link: ". $neighbors{$iid};
 		}
 		# Sometimes description has carriage returns
 		my $description = $i->{description};
 		chomp($description);
 
-		print $name, ", port ", $i->{number}, ", ", $i->{iname}, ", ", $room, ", ", $jack, 
+		print FILE $name, ", port ", $i->{number}, ", ", $i->{iname}, ", ", $room, ", ", $jack, 
 		$description, ", ", $neighbor, "\n";
 
 	    }
-	    print "\n";
+	    print FILE "\n";
 	}    
 	close (FILE) or warn "$filename did not close nicely\n";
     }
 }
 
 sub debug {
-    print "DEBUG: ", @_, "\n" if $self{debug};
+    print STDERR "DEBUG: ", @_, "\n" if $self{debug};
 }
