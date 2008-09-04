@@ -68,7 +68,7 @@ BEGIN {
 	$current_data{modified} = $self->timestamp;
 	$current_data{modifier} = $ENV{REMOTE_USER} || "unknown";
 	eval {
-	    $h_table->insert(\%current_data);
+	    $h_table->SUPER::insert(\%current_data);
 	};
 	if ( my $e = $@ ){
 	    $logger->error("Could not insert history record for $table id ".$self->id);
@@ -729,32 +729,34 @@ sub _adjust_vals{
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
 	my $mcol = $meta_columns{$field};
-	if ( !ref($args->{$field}) && (!defined($args->{$field}) || $args->{$field} =~ /^null$/i) ){
-	    if ( $mcol->sql_type =~ /integer|bool/i ){
-		$logger->debug( sub { sprintf("Model::_adjust_vals: Setting empty field '%s' type '%s' to 0.", 
-					      $field, $mcol->sql_type) } );
+	if ( !ref($args->{$field}) && 
+	     (!defined($args->{$field}) || $args->{$field} eq 'null' || 
+	      $args->{$field} eq 'NULL' || $args->{$field} eq "") ){
+	    if ( $mcol->sql_type eq 'integer' || $mcol->sql_type eq 'bool' ){
+		$logger->debug(sub{sprintf("Model::_adjust_vals: Setting empty field '%s' type '%s' to 0.", 
+					   $field, $mcol->sql_type) });
 		$args->{$field} = 0;
-	    }elsif ( $mcol->sql_type =~ /date/i ){
+	    }elsif ( $mcol->sql_type eq 'date' ){
 		$logger->debug( sub { sprintf("Model::_adjust_vals: Removing empty field %s type %s.", 
 					      $field, $mcol->sql_type) } );
 		delete $args->{$field};
+	    }elsif ( $args->{$field} eq "" ){
+		# This causes DBI to insert NULL instead of ""
+		$args->{$field} = undef;
 	    }
-	}elsif ( $args->{$field} eq "" ){
-	    # This causes DBI to insert NULL instead of ""
-	    $args->{$field} = undef;
 	}
-
 	delete $meta_columns{$field};
     }
     # Go over remaining columns to make sure non-nullables are 
-    # explicitely set to 0
+    # explicitly set to 0
     if ( $action eq 'insert' ){
 	foreach my $field ( keys %meta_columns ){
 	    next if ( $field eq 'id' );
 	    my $mcol = $meta_columns{$field};
-	    if ( !$mcol->is_nullable && $mcol->sql_type =~ /integer|bool/i ){
-		$logger->debug( sub { sprintf("Model::_adjust_vals: Setting missing non-nullable field '%s' type '%s' to 0.", 
-					      $field, $mcol->sql_type) } );
+	    if ( !$mcol->is_nullable && ($mcol->sql_type eq 'integer' || $mcol->sql_type eq 'bool') ){
+		$logger->debug(sub{sprintf("Model::_adjust_vals: Setting missing non-nullable ". 
+					   "field '%s' type '%s' to 0.", 
+					   $field, $mcol->sql_type) } );
 		$args->{$field} = 0;
 	    }
 	}
