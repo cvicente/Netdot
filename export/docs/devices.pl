@@ -16,9 +16,10 @@ use vars qw( %self $USAGE $q1 $q2 );
 &set_defaults();
 
 my $USAGE = <<EOF;
-usage: $0 --dir <DIR> --suffix <STRING>
+usage: $0 --dir <PATH> --suffix <STRING>
 
-    --dir             <path> Path to configuration file
+    --dir             <PATH> Path to configuration file
+    --suffix          <STRING> Extension for file names (default: $self{suffix})
     --debug           Print debugging output
     --help            Display this message
 
