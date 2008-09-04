@@ -75,57 +75,56 @@ sub build_configs{
     my $file = "$self{dir}/$self{out}";
     open (FILE, ">$file")
 	or die "Couldn't open $file: $!\n";
-    select (FILE);
 
-    print "            ****        THIS FILE WAS GENERATED FROM A DATABASE         ****\n";
-    print "            ****           ANY CHANGES YOU MAKE WILL BE LOST            ****\n";
+    print FILE "            ****        THIS FILE WAS GENERATED FROM A DATABASE         ****\n";
+    print FILE "            ****           ANY CHANGES YOU MAKE WILL BE LOST            ****\n";
     
     @circuits = sort { $a->cid cmp $b->cid } @circuits;
-    foreach my $c (@circuits){
+    foreach my $c ( @circuits ){
             my %contacts;
 	    my @comments = $c->info;
 	    my $prefix = $c->cid . ":" ;
-	    $prefix .= " " . $c->connectionid->name if ($c->connectionid);
-	    print $prefix, ": Type: ", $c->type->name, "\n" if ($c->type);
-	    print $prefix, ": Speed: ", $c->speed, "\n" if ($c->speed);
-	    print $prefix, ": Provider: ", $c->vendor->name, "\n" if ($c->vendor);
-	    print $prefix, ": DLCI: ", $c->dlci, "\n" if ($c->dlci);
-	    print $prefix, ": Near Interface: ", $c->nearend->name, ",", $c->nearend->device->name->name, "\n" 
+	    $prefix .= " " . $c->linkid->name if ( $c->linkid );
+	    print FILE $prefix, ": Type: ", $c->type->name, "\n" if ($c->type);
+	    print FILE $prefix, ": Speed: ", $c->speed, "\n" if ($c->speed);
+	    print FILE $prefix, ": Provider: ", $c->vendor->name, "\n" if ($c->vendor);
+	    print FILE $prefix, ": DLCI: ", $c->dlci, "\n" if ($c->dlci);
+	    print FILE $prefix, ": Near Interface: ", $c->nearend->name, ",", $c->nearend->device->name->name, "\n" 
 	        if ($c->nearend && $c->nearend->device && $c->nearend->device->name);
-	    print $prefix, ": Far Interface: ", $c->farend->name, ",", $c->farend->device->name->name, "\n" 
+	    print FILE $prefix, ": Far Interface: ", $c->farend->name, ",", $c->farend->device->name->name, "\n" 
 	        if ($c->farend && $c->farend->device && $c->farend->device->name);
-	    if ($c->connectionid){
-		print $prefix, ": Entity: ", $c->connectionid->entity->name, "\n" if ($c->connectionid->entity);
-		if ( (my $n = $c->connectionid->nearend) != 0){
-		   print $prefix, ": Origin: ", $n->name, "\n"; 
-		   print $prefix, ": Origin: ", $n->street1, "\n"; 
-		   print $prefix, ": Origin: ", $n->city, "\n"; 
+	    if ( $c->linkid ){
+		print FILE $prefix, ": Entity: ", $c->linkid->entity->name, "\n" if ($c->linkid->entity);
+		if ( (my $n = $c->linkid->nearend) != 0){
+		   print FILE $prefix, ": Origin: ", $n->name, "\n"; 
+		   print FILE $prefix, ": Origin: ", $n->street1, "\n"; 
+		   print FILE $prefix, ": Origin: ", $n->city, "\n"; 
 		}
-		map { $contacts{$_->id} = $_ } $c->connectionid->entity->contactlist->contacts 
-		     if ($c->connectionid && $c->connectionid->entity && $c->connectionid->entity->contactlist);
-		if ((my $f = $c->connectionid->farend) != 0){
+		map { $contacts{$_->id} = $_ } $c->linkid->entity->contactlist->contacts 
+		     if ($c->linkid && $c->linkid->entity && $c->linkid->entity->contactlist);
+		if ((my $f = $c->linkid->farend) != 0){
 		   map { $contacts{$_->id} = $_ } $f->contactlist->contacts if ($f->contactlist);
-		   print $prefix, ": Destination: ", $f->name, "\n"; 
-		   print $prefix, ": Destination: ", $f->street1, "\n"; 
-		   print $prefix, ": Destination: ", $f->city, "\n"; 
+		   print FILE $prefix, ": Destination: ", $f->name, "\n"; 
+		   print FILE $prefix, ": Destination: ", $f->street1, "\n"; 
+		   print FILE $prefix, ": Destination: ", $f->city, "\n"; 
 		}
 	    }
 	    foreach my $contact ( sort { $a->person->lastname cmp $b->person->lastname } 
 	    	                  map { $contacts{$_} } keys %contacts ){
 		my $person = $contact->person;
 		my $pr = $prefix . ": Contacts : " . $person->firstname . " " . $person->lastname;
-	    	print $pr, ": Role: ", $contact->contacttype->name, "\n" if ($contact->contacttype);
-	    	print $pr, ": Position: ", $person->position, "\n" if ($person->position);
-	    	print $pr, ": Office: ", $person->office, "\n" if ($person->office);
-	    	print $pr, ": Email: <", $person->email, ">\n" if ($person->email);
-	    	print $pr, ": Cell: ", $person->cell, "\n" if ($person->cell);
-	    	print $pr, ": Pager: ", $person->pager, "\n" if ($person->pager);
-	    	print $pr, ": Email-Pager: ", $person->emailpager, "\n" if ($person->emailpager);
+	    	print FILE $pr, ": Role: ", $contact->contacttype->name, "\n" if ($contact->contacttype);
+	    	print FILE $pr, ": Position: ", $person->position, "\n" if ($person->position);
+	    	print FILE $pr, ": Office: ", $person->office, "\n" if ($person->office);
+	    	print FILE $pr, ": Email: <", $person->email, ">\n" if ($person->email);
+	    	print FILE $pr, ": Cell: ", $person->cell, "\n" if ($person->cell);
+	    	print FILE $pr, ": Pager: ", $person->pager, "\n" if ($person->pager);
+	    	print FILE $pr, ": Email-Pager: ", $person->emailpager, "\n" if ($person->emailpager);
 	   }
 	   foreach my $l (@comments){
-              print $prefix, " Comments: ", $l, "\n";
+              print FILE $prefix, " Comments: ", $l, "\n";
 	   }
-	   print "\n";
+	   print FILE "\n";
     }
 
     close (FILE) or warn "$file did not close nicely\n";
