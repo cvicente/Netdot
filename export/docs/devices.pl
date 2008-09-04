@@ -117,6 +117,7 @@ sub build_configs{
 	$product_types{$pt}{$name}{interfaces}{$inumber}{room}        = $iroom;
     }
 
+    &debug("Done building data structures");
 
     foreach my $pt ( keys %product_types ){
 	next unless ( keys %{$product_types{$pt}} );
@@ -126,11 +127,12 @@ sub build_configs{
 	$filename = lc($filename);
 	$filename = $self{dir}."/".$filename;
 	
+	&debug("Writing to $filename");
+
 	open (FILE, ">$filename") 
 	    or die "Couldn't open $filename: $!\n";
 	select (FILE);
 	
-	&debug("Writing to $filename");
 
 	print "            ****        THIS FILE WAS GENERATED FROM A DATABASE         ****\n";
 	print "            ****           ANY CHANGES YOU MAKE WILL BE LOST            ****\n";
@@ -171,5 +173,5 @@ sub build_configs{
 }
 
 sub debug {
-    print @_, "\n" if $self{debug};
+    print "DEBUG: ", @_, "\n" if $self{debug};
 }
