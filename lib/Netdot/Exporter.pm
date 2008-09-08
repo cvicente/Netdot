@@ -13,7 +13,10 @@ my %types = (
     'Sysmon' => 'Netdot::Exporter::Sysmon',
     'Rancid' => 'Netdot::Exporter::Rancid',
     );
-	
+
+my %_class_data;
+my $_cache_timeout = 3600;  # Seconds	
+
 =head1 NAME
 
 Netdot::Exporter - Base class and object factory for Netdot exports
@@ -55,6 +58,7 @@ sub new{
     return $self;
 }
 
+
 ############################################################################
 =head2 get_graph
 
@@ -67,23 +71,25 @@ sub new{
 =cut
 sub get_graph {
     my ($self) = @_;
-    unless ( $self->{_graph} ) {
-	$logger->debug("Netdot::Exporter::get_graph: querying database");
-        my $graph = {};
-        my $links = $self->{_dbh}->selectall_arrayref("
+
+    return $self->_cache('graph')
+	if $self->_cache('graph');
+
+    $logger->debug("Netdot::Exporter::get_graph: querying database");
+    my $graph = {};
+    my $links = $self->{_dbh}->selectall_arrayref("
                 SELECT  d1.id, d2.id 
                 FROM    device d1, device d2, interface i1, interface i2
                 WHERE   i1.device = d1.id AND i2.device = d2.id
                     AND i2.neighbor = i1.id AND i1.neighbor = i2.id
             ");
-        foreach my $link (@$links) {
-            my ($fr, $to) = @$link;
-            $graph->{$fr}{$to}  = 1;
-            $graph->{$to}{$fr}  = 1;
-        }
-	$self->{_graph} = $graph;
+    foreach my $link (@$links) {
+	my ($fr, $to) = @$link;
+	$graph->{$fr}{$to}  = 1;
+	$graph->{$to}{$fr}  = 1;
     }
-    return $self->{_graph};
+    
+    return $self->_cache('graph', $graph);
 }
 
 ########################################################################
@@ -98,18 +104,82 @@ sub get_graph {
 =cut
 sub get_device_ips {
     my ($self) = @_;
-    unless ( $self->{_device_ips} ){
-	$logger->debug("Netdot::Exporter::get_device_ips: querying database");
-	my $device_ips = $self->{_dbh}->selectall_arrayref("
-                SELECT   device.id, ipblock.id, interface.monitored, device.monitored
+    
+    return $self->_cache('device_ips')
+	if $self->_cache('device_ips');
+    
+    $logger->debug("Netdot::Exporter::get_monitored_ips: querying database");
+    my $device_ips = $self->{_dbh}->selectall_arrayref("
+                SELECT   device.id, ipblock.id, interface.monitored, device.monitored,
+                         device.down_from, device.down_until
                 FROM     device, interface, ipblock
                 WHERE    ipblock.interface=interface.id
                   AND    interface.device=device.id
                 ORDER BY ipblock.address
          ");
-	$self->{_device_ips} = $device_ips;
+    
+    return $self->_cache('device_ips', $device_ips);
+}
+########################################################################
+=head2 get_monitored_ips
+
+  Arguments:
+    None
+  Returns:
+    Array reference
+  Examples:
+
+=cut
+sub get_monitored_ips {
+    my ($self) = @_;
+
+    return $self->_cache('monitored_ips') 
+	if $self->_cache('monitored_ips');
+
+    my $device_ips = $self->get_device_ips();
+    my @results;
+    my %name2ip;
+    
+    foreach my $row ( @$device_ips ){
+	my ($deviceid, $ipid, $int_monitored, $dev_monitored, $down_from, $down_until) = @$row;
+	next unless ( $int_monitored && $dev_monitored );
+	
+	# Check downtime dates to see if this device should be excluded
+	if ( $down_from && $down_until ){
+	    my $time1 = Netdot::Model->sqldate2time($down_from);
+	    my $time2 = Netdot::Model->sqldate2time($down_until);
+	    my $now = time;
+	    if ( $time1 < $now && $now < $time2 ){
+		$logger->debug("Netdot::Exporter::get_monitored_ips: Device $deviceid".
+			       " within scheduled downtime period.  Excluding.");
+		next;
+	    }
+	}
+	my $ipobj  = Ipblock->retrieve($ipid);
+	
+	my $hostname;
+	if ( my $name = $self->dns->resolve_ip($ipobj->address) ){
+	    $hostname = $name;
+	}elsif ( my @arecords = $ipobj->arecords ){
+	    $hostname = $arecords[0]->rr->get_label;
+	}else{
+	    $hostname = $ipobj->address;
+	}
+	
+	unless ( $hostname && $self->dns->resolve_name($hostname) ){
+	    $logger->warn($ipobj->address." does not resolve symmetrically.  Using IP address");
+	    $hostname = $ipobj->address;
+	}
+	if ( exists $name2ip{$hostname} ){
+	    $logger->warn($hostname." is not unique.  Using IP address");
+	    $hostname = $ipobj->address;
+	}
+	$name2ip{$hostname} = $ipobj->id;
+	
+	push @results, [$deviceid, $ipid, $ipobj->address, $hostname];
     }
-    return $self->{_device_ips};
+    
+    return $self->_cache('monitored_ips', \@results);
 }
 
 ########################################################################
@@ -126,6 +196,10 @@ sub get_device_ips {
 =cut
 sub get_dependencies{
     my ($self, $nms) = @_;
+
+    return $self->_cache('dependencies')
+	if $self->_cache('dependencies');
+
     defined $nms || 
 	$self->throw_fatal("Netdot::Exporter::get_dependencies: Need to pass monitoring device");
 
@@ -141,16 +215,27 @@ sub get_dependencies{
 
     # For each device, the parent list consists of all neighbor devices
     # which are in the path between this device and the monitoring system
-    my %parents = ();
-    foreach my $d ( keys %$graph ) {
-	next if ( $d == $nms );
-	$parents{$d} = [];
-	foreach my $neighbor ( keys %{$graph->{$d}} ) {
-	    if ( $self->_dfs($neighbor, $nms, $graph, $d) ) {
-		push @{$parents{$d}}, $neighbor;
+
+    my %excluded_devices;
+    if ( defined Netdot->config->get('NMS_SP_EXCLUDE_DEVICES') ){
+	foreach my $mac ( @{Netdot->config->get('NMS_SP_EXCLUDE_DEVICES')} ){
+	    $mac = PhysAddr->format_address($mac);
+	    my $physaddr = PhysAddr->search(address=>$mac)->first;
+	    unless ( $physaddr ) {
+		$logger->warn("Netdot::Exporter::get_dependencies: Address $mac in ".
+			      "NMS_SP_EXCLUDE_DEVICES not found in DB");
+		next;
 	    }
+	    my $device = Device->search(physaddr=>$physaddr)->first;
+	    unless ( $device ) {
+		$logger->warn("Netdot::Exporter::get_dependencies: Device with address $mac ".
+			      "in NMS_SP_EXCLUDE_DEVICES not found in DB");
+		next;
+	    }
+	    $excluded_devices{$device->id} = 1;
 	}
     }
+    my %parents = %{ $self->_shortest_path_parents($graph, $nms, \%excluded_devices) };
 
     # Build the IP dependency hash
     my $ipdeps = {};
@@ -159,7 +244,7 @@ sub get_dependencies{
 	if ( !exists $parents{$device} ){
  	    if ( $logger->is_debug() ){
  		my $dev = Netdot::Model::Device->retrieve($device);
- 		$logger->debug("Device ". $dev->get_label .": No path to NMS.  Assigning NMS as parent.");
+ 		$logger->debug("Netdot::Exporter::get_dependencies: ". $dev->get_label .": No path to NMS.  Assigning NMS as parent.");
 	    }
 	    push @{$parents{$device}}, $nms;
 	}
@@ -175,7 +260,8 @@ sub get_dependencies{
 	my @list = keys %{$ipdeps->{$ipid}};
 	$ipdeps->{$ipid} = \@list;
     }
-    return $ipdeps;
+
+    return $self->_cache('dependencies', $ipdeps);
 }
 
 ########################################################################
@@ -183,37 +269,75 @@ sub get_dependencies{
 ########################################################################
 
 ########################################################################
-# Depth first search
+# Shortest Path Parents
+#
+# A variation of Dijkstra's single-source shortest paths algorithm 
+# to determine all the possible parents of each node that are in the 
+# shortest paths between that node and the given source.
 #
 # Arguments:
 #    s          Source vertex
-#    t          Target vertex
 #    graph      Hashref with connected devices 
 #               (key=Device ID, value=Device ID)
-#    forbidden  Device ID to avoid in path
-#    seen       Hashref of seen devices
+#    ignore     Hashref of Device IDs to exclude
 #
-sub _dfs {
-    my ($self, $s, $t, $graph, $forbidden, $seen) = @_;
-    defined $s         || $self->throw_fatal("Netdot::Exporter::_dfs: No saource vertex");
-    defined $t         || $self->throw_fatal("Netdot::Exporter::_dfs: No target vertex");
-    defined $graph     || $self->throw_fatal("Netdot::Exporter::_dfs: No graph");
-    defined $forbidden || $self->throw_fatal("Netdot::Exporter::_dfs: No forbidden vertex");
-    $seen ||= {};
+# Returns:
+#    Hash ref where key = Device.id, value = Arrayref of parent Device.id's
+#
+sub _shortest_path_parents {
+    my ($self, $graph, $s, $ignore) = @_;
     
-    $seen->{$s} = 1;
-    if ($s == $t) { # Base case 
-	return 1; 
-    } else { # Recursive case
-	foreach my $n ( keys %{$graph->{$s}} ) {
-	    next if exists $seen->{$n};
-	    next if $forbidden == $n;
-	    if ( $self->_dfs($n, $t, $graph, $forbidden, $seen) ) {
-		return 1;
+    $self->throw_fatal("Missing required arguments")
+	unless ( $graph && $s && $ignore);
+
+    $logger->debug("Netdot::Exporter::_sp_parents: Determining all shortest paths to NMS");
+
+    my %parents;
+    my %dist;
+    my $infinity = 1000000;
+    my @nodes    = keys %$graph;
+    my @q        = @nodes;
+    
+    # Set all distances to infinity, except the source
+    foreach my $n ( @nodes ) { 
+	$dist{$n} = $infinity; 
+    }
+    $dist{$s} = 0;
+
+    while ( @q ) {
+	
+	# sort unsolved by distance from root
+	@q = sort { $dist{$a} <=> $dist{$b} } @q;
+	
+	# we'll solve the closest node.
+	my $n = shift @q;
+	
+	next if ( exists $ignore->{$n} );
+
+	# now, look at all the nodes connected to n
+	foreach my $n2 ( keys %{$graph->{$n}} ) {
+
+	    next if ( exists $ignore->{$n2} );
+
+	    # .. and find out if any of their estimated distances
+	    # can be improved if we go through n
+	    if ( $dist{$n2} >= ($dist{$n} + 1) ) {
+		$dist{$n2} = $dist{$n} + 1;
+		# Make sure all our parents have same shortest distance
+		foreach my $p ( keys %{$parents{$n2}} ){
+		    delete $parents{$n2}{$p} if ( $dist{$p} > $dist{$n} );
+		}
+		$parents{$n2}{$n} = 1;
 	    }
 	}
-	return 0;
     }
+    # Convert hash of hashes into hash of arrayrefs
+    my %results;
+    foreach my $n ( keys %parents ){
+	my @a = keys %{$parents{$n}};
+	$results{$n} = \@a;
+    }
+    return \%results;
 }
 
 
@@ -247,7 +371,8 @@ sub _get_ip_deps {
     }else{
 	if ( $logger->is_debug() ){
 	    my $ipb = Netdot::Model::Ipblock->retrieve($ipid);
-	    $logger->debug($ipb->get_label .": no monitored parents found.  Looking for ancestors.");
+	    $logger->debug("Netdot::Exporter::_get_ip_deps: ". $ipb->get_label .
+			   ": no monitored parents found.  Looking for ancestors.");
 	}
 	my @grandparents;
 	foreach my $parent ( @$parents ){
@@ -257,6 +382,42 @@ sub _get_ip_deps {
 	if ( @grandparents ){
 	    $self->_get_ip_deps($ipid, \@grandparents, $ancestors, $device2ips, $ip_monitored);
 	}
+    }
+}
+
+
+############################################################################
+# _cache - Get or set class data cache
+#
+#  Values time out after $_cache_timeout seconds
+#
+#  Arguments:
+#    cache key
+#    cacje data (optional)
+#  Returns:
+#    cache data or undef if timed out
+#  Examples:
+#    my $graph = $self->_cache('graph');
+#    $self->_cache('graph', $data);
+#
+#
+sub _cache {
+    my ($self, $key, $data) = @_;
+
+    $self->throw_fatal("Missing required argument: key")
+	unless $key;
+
+    my $timekey = $key."_time";
+
+    if ( defined $data ){
+	$_class_data{$key}     = $data;
+	$_class_data{$timekey} = time;
+    }
+    if ( defined $_class_data{$timekey} && 
+	 (time - $_class_data{$timekey} > $_cache_timeout) ){
+	return;
+    }else{
+	return $_class_data{$key};
     }
 }
 

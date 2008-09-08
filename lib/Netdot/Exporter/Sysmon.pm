@@ -63,57 +63,26 @@ sub new{
 sub generate_configs {
     my ($self) = @_;
 
-    my (%hosts, %name2ip, %ip2name);
+    my (%hosts, %ip2name);
 
-    my $device_ips = $self->get_device_ips();
+    my $device_ips = $self->get_monitored_ips();
+    my $monitor      = $self->{MONITOR};
+    my $dependencies = $self->get_dependencies($monitor->id);
 
     foreach my $row ( @$device_ips ){
-	my ($deviceid, $ipid, $int_monitored, $dev_monitored) = @$row;
-	next unless ( $int_monitored && $dev_monitored );
-	my $ipobj  = Ipblock->retrieve($ipid);
-	my $device = Device->retrieve($deviceid);
-	
-	# Check maintenance dates to see if this device should be excluded
-	if ( $device->maint_from && $device->maint_until ){
-	    my $time1 = Netdot::Model->sqldate2time($device->maint_from);
-	    my $time2 = Netdot::Model->sqldate2time($device->maint_until);
-	    my $now = time;
-	    if ( $time1 < $now && $now < $time2 ){
-		$logger->debug($device->get_label ." within maintenance period.  Excluding.");
-		next;
-	    }
-	}
-	
-	my $hostname;
-	if ( my $name = $self->dns->resolve_ip($ipobj->address) ){
-	    $hostname = $name;
-	}elsif ( my @arecords = $ipobj->arecords ){
-	    $hostname = $arecords[0]->rr->get_label;
-	}else{
-	    $hostname = $ipobj->address;
-	}
-	
-	unless ( $hostname && $self->dns->resolve_name($hostname) ){
-	    $logger->warn($ipobj->address." does not resolve symmetrically.  Using IP address");
-	    $hostname = $ipobj->address;
-	}
-	if ( exists $name2ip{$hostname} ){
-	    $logger->warn($hostname." is not unique.  Using IP address");
-	    $hostname = $ipobj->address;
-	}
-	if ( $self->{SYSMON_STRIP_DOMAIN} ){
-	    my $domain = Netdot->config->get('DEFAULT_DNSDOMAIN');
-	    $hostname =~ s/\.$domain}//;
-	}
-	$hosts{$ipobj->id}{name} = $hostname;
-	$ip2name{$ipobj->id}     = $hostname;
-	$name2ip{$hostname}      = $ipobj->id;
+	my ($deviceid, $ipid, $address, $hostname) = @$row;
+
+ 	if ( $self->{SYSMON_STRIP_DOMAIN} ){
+ 	    my $domain = Netdot->config->get('DEFAULT_DNSDOMAIN');
+ 	    $hostname =~ s/\.$domain}//;
+ 	}
+
+	$hosts{$ipid}{name} = $hostname;
+	$ip2name{$ipid}     = $hostname;
     }
 
     # Now that we have everybody in
     # assign parent list
-    my $monitor = $self->{MONITOR};
-    my $dependencies = $self->get_dependencies($monitor->id);
     foreach my $ipid ( keys %hosts ){
 	next unless defined $dependencies->{$ipid};
 	if ( my @parentlist = @{$dependencies->{$ipid}} ){
