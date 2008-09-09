@@ -159,21 +159,33 @@ sub update_links {
 		$iface2->update({neighbor_missed=>0});
 		
 	    }else{
-		my $iface = Interface->retrieve($ifaceid1) 
-		    || $class->throw_fatal("Cannot retrieve Interface id $ifaceid1");
-
-		my $added = 0;
-		eval {
-		    $added = $iface->add_neighbor(id=>$ifaceid2, score=>$score);
-		};
-		if ( my $e = $@ ){
-		    $logger->warn($e);
+		my $fixed = 0;
+		foreach my $id ( ($ifaceid1, $ifaceid2) ){
+		    my $iface = Interface->retrieve($id) 
+			|| $class->throw_fatal("Cannot retrieve Interface id $id");
+		    
+		    if ( $iface->neighbor && $iface->neighbor_fixed ){
+			$logger->debug(sprintf("%s has been manually linked to %s", 
+					       $iface->get_label, $iface->neighbor->get_label));
+			$fixed = 1;
+			last;
+		    }
 		}
+		unless ( $fixed ){
+		    my $added = 0;
+		    my $iface = Interface->retrieve($ifaceid1);
+		    eval {
+			$added = $iface->add_neighbor(id=>$ifaceid2, score=>$score);
+		    };
+		    if ( my $e = $@ ){
+			$logger->warn($e);
+		    }
 		
-		$addcount++ if $added;
+		    $addcount++ if $added;
+		}
+		delete $links{$ifaceid1};
+		delete $links{$ifaceid2};		
 	    }
-	    delete $links{$ifaceid1};
-	    delete $links{$ifaceid2};		
 	}
     }
 
