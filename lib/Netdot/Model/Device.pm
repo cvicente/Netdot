@@ -1386,9 +1386,14 @@ sub arp_update {
     my $timestamp = $argv{timestamp} || $self->timestamp;
 
     unless ( $self->collect_arp ){
-	$logger->debug(sub{"$host excluded from ARP collection. Skipping"});
+	$logger->debug(sub{"Device::arp_update: $host excluded from ARP collection. Skipping"});
 	return;
     }
+    if ( $self->is_in_downtime ){
+	$logger->debug(sub{"Device::arp_update: $host in downtime. Skipping"});
+	return;
+    }
+
     # Fetch from SNMP if necessary
     my $cache = $argv{cache} || $self->_exec_timeout($host, sub{ return $self->_get_arp_from_snmp(session=>$argv{session}) });
     
@@ -1478,7 +1483,11 @@ sub fwt_update {
     my $timestamp = $argv{timestamp} || $self->timestamp;
     
     unless ( $self->collect_fwt ){
-	$logger->debug(sub{"$host excluded from FWT collection. Skipping"});
+	$logger->debug(sub{"Device::fwt_update: $host excluded from FWT collection. Skipping"});
+	return;
+    }
+    if ( $self->is_in_downtime ){
+	$logger->debug(sub{"Device::fwt_update: $host in downtime. Skipping"});
 	return;
     }
 
@@ -1648,6 +1657,31 @@ sub get_label {
     my $self = shift;
     $self->isa_object_method('get_label');
     return $self->fqdn;
+}
+
+############################################################################
+=head2 is_in_downtime - Is this device within downtime period?
+
+  Arguments:
+    None
+  Returns:
+    True or false
+  Examples:
+    if ( $device->is_in_downtime ) ...
+
+=cut
+sub is_in_downtime {
+    my ($self) = @_;
+
+    if ( $self->down_from && $self->down_until ){
+	my $time1 = $self->sqldate2time($self->down_from);
+	my $time2 = $self->sqldate2time($self->down_until);
+	my $now = time;
+	if ( $time1 < $now && $now < $time2 ){
+	    return 1;
+	}
+    }
+    return 0;
 }
 
 ############################################################################
@@ -3593,8 +3627,13 @@ sub snmp_update_parallel {
     
     # Go over list of existing devices
     while ( my ($id, $dev) = each %do_devs ){
-	my %args = %uargs;
+	
 	# Make sure we don't launch a process unless necessary
+	if ( $dev->is_in_downtime() ){
+	    $logger->debug(sub{ sprintf("Model::Device::_snmp_update_parallel: %s in downtime.  Skipping", $dev->fqdn) });
+	}
+	my %args = %uargs;
+
 	if ( $args{do_info} ){
 	    unless ( $dev->canautoupdate ){
 		$logger->debug(sub{ sprintf("%s excluded from auto-updates", $dev->fqdn) });
@@ -3782,6 +3821,15 @@ sub _get_arp_from_snmp {
     $self->isa_object_method('_get_arp_from_snmp');
     my $host = $self->fqdn;
 
+    unless ( $self->collect_arp ){
+	$logger->debug(sub{"Device::_get_arp_from_snmp: $host excluded from ARP collection. Skipping"});
+	return;
+    }
+    if ( $self->is_in_downtime ){
+	$logger->debug(sub{"Device::_get_arp_from_snmp: $host in downtime. Skipping"});
+	return;
+    }
+
     my %cache;
     
     my $sinfo = $argv{session} || $self->_get_snmp_session();
@@ -3876,7 +3924,12 @@ sub _get_fwt_from_snmp {
     my $host = $self->fqdn;
 
     unless ( $self->collect_fwt ){
-	$logger->debug(sub{"$host excluded from FWT collection. Skipping"});
+	$logger->debug(sub{"Device::_get_fwt_from_snmp: $host excluded from FWT collection. Skipping"});
+	return;
+    }
+
+    if ( $self->is_in_downtime ){
+	$logger->debug(sub{"Device::_get_fwt_from_snmp: $host in downtime. Skipping"});
 	return;
     }
 
