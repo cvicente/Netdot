@@ -42,7 +42,7 @@ $sid           => undef
 my $DEBUG = 0;
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 my $session;
-my %order  = $table->meta_data->get_column_order;
+my @columns  = $table->meta_data->get_columns;
 my %objs;
 </%init>
 
@@ -74,12 +74,9 @@ if ( $submit eq 'Edit' ) {
     $session->{objs} = \%objs;
     
     my @cells;
-    foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
-	next if( $c eq 'id' );
-	my $caption;
-	my $mcol = $table->meta_data->get_column($c);
-	$caption = $mcol->tag;
-	my $html = '<input type="checkbox" name="tablefields" value="'.$c.'">'.$caption;
+    foreach my $c ( sort { $a->tag cmp $b->tag } @columns ) {
+	next if ( $c->name eq 'id' );
+	my $html = '<input type="checkbox" name="tablefields" value="'.$c->name.'">'.$c->tag;
 	push(@cells, $html);
     }
     
