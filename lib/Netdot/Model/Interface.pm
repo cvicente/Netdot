@@ -395,8 +395,8 @@ sub snmp_update {
 	    }else {
 		# insert
 		$iv = InterfaceVlan->insert( \%ivtmp );
-		$logger->info(sprintf("%s: Assigned Interface %s (%s) to VLAN %s", 
-				      $label, $self->number, $self->name, $vo->vid));
+		$logger->debug(sub{sprintf("%s: Assigned Interface %s (%s) to VLAN %s", 
+					   $label, $self->number, $self->name, $vo->vid)});
 	    }
 
 	    # Insert STP information for this interface on this vlan
