@@ -711,7 +711,7 @@ sub get_snmp_info {
     # Netdot Interface field name to SNMP::Info method conversion table
     my %IFFIELDS = ( type                => 'i_type',
 		     description         => 'i_alias',		     speed               => 'i_speed',
-		     admin_status        => 'i_up',		     oper_status         => 'i_up_admin', 
+		     admin_status        => 'i_up_admin',	     oper_status         => 'i_up', 
 		     physaddr            => 'i_mac', 		     oper_duplex         => 'i_duplex',
 		     admin_duplex        => 'i_duplex_admin',	     stp_id              => 'i_stp_id',
 		     bpdu_guard_enabled  => 'i_bpduguard_enabled',   bpdu_filter_enabled => 'i_bpdufilter_enabled',
