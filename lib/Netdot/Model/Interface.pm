@@ -427,8 +427,8 @@ sub snmp_update {
 	#
 	foreach my $oldvlan ( keys %oldvlans ) {
 	    my $iv = $oldvlans{$oldvlan};
-	    $logger->info( sprintf("%s: membership with VLAN %s no longer exists.  Removing.", 
-				   $label, $iv->vlan->vid) );
+	    $logger->debug(sub{sprintf("%s: membership with VLAN %s no longer exists.  Removing.", 
+				   $label, $iv->vlan->vid)});
 	    $iv->delete();
 	}
     }
