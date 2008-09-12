@@ -2373,6 +2373,7 @@ sub info_update {
 		$logger->info(sprintf("%s: Interface %s no longer exists.  Marking as removed.", 
 				      $host, $iface->get_label));
 		$iface->update({doc_status=>'removed'});
+		$iface->remove_neighbor() if $iface->neighbor();
 	    }
 	}
 	
