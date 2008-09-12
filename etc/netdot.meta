@@ -1684,6 +1684,14 @@ $meta = {
         tag => 'Managed by Customer?',
         type => 'bool'
       },
+      custom_serial => {
+        default => '',
+        description => 'Custom (human-set) serial number of the Device',
+        length => '64',
+        nullable => 1,
+        tag => 'Custom S/N',
+        type => 'varchar'
+      },
       date_installed => {
         default => '1970-01-01 00:00:00',
         description => 'Date that this Device was installed, or first seen in the network',
@@ -1825,6 +1833,14 @@ $meta = {
         tag => 'Monitored?',
         type => 'bool'
       },
+      monitoring_path_cost => {
+        default => '',
+        description => 'Netdot uses a variant of the Dijkstra algorithm to determine monitoring dependencies. Results can be affected adversely, for instance, by passive devices with connections that are not actually passing traffic.  This value allows the administrator to set a higher cost for those devices, for the purpose of influencing the determination of monitoring paths.',
+        length => '',
+        nullable => 1,
+        tag => 'Path Cost',
+        type => 'integer'
+      },
       monitorstatus => {
         default => '',
         description => 'The monitoring status of this Device.  This values is supposed to be fed back into Netdot by an external process',
@@ -1954,14 +1970,6 @@ $meta = {
         length => '64',
         nullable => 1,
         tag => 'S/N',
-        type => 'varchar'
-      },
-      custom_serial => {
-        default => '',
-        description => 'Custom (human-set) serial number of the Device',
-        length => '64',
-        nullable => 1,
-        tag => 'Custom S/N',
         type => 'varchar'
       },
       site => {
@@ -2203,6 +2211,7 @@ $meta = {
         'used_by',
         'person',
         'monitored',
+        'monitoring_path_cost',
         'monitorstatus',
         'customer_managed',
         'community',

@@ -216,26 +216,7 @@ sub get_dependencies{
     # For each device, the parent list consists of all neighbor devices
     # which are in the path between this device and the monitoring system
 
-    my %excluded_devices;
-    if ( defined Netdot->config->get('NMS_SP_EXCLUDE_DEVICES') ){
-	foreach my $mac ( @{Netdot->config->get('NMS_SP_EXCLUDE_DEVICES')} ){
-	    $mac = PhysAddr->format_address($mac);
-	    my $physaddr = PhysAddr->search(address=>$mac)->first;
-	    unless ( $physaddr ) {
-		$logger->warn("Netdot::Exporter::get_dependencies: Address $mac in ".
-			      "NMS_SP_EXCLUDE_DEVICES not found in DB");
-		next;
-	    }
-	    my $device = Device->search(physaddr=>$physaddr)->first;
-	    unless ( $device ) {
-		$logger->warn("Netdot::Exporter::get_dependencies: Device with address $mac ".
-			      "in NMS_SP_EXCLUDE_DEVICES not found in DB");
-		next;
-	    }
-	    $excluded_devices{$device->id} = 1;
-	}
-    }
-    my %parents = %{ $self->_shortest_path_parents($graph, $nms, \%excluded_devices) };
+    my %parents = %{ $self->_shortest_path_parents($graph, $nms) };
 
     # Build the IP dependency hash
     my $ipdeps = {};
@@ -279,19 +260,18 @@ sub get_dependencies{
 #    s          Source vertex
 #    graph      Hashref with connected devices 
 #               (key=Device ID, value=Device ID)
-#    ignore     Hashref of Device IDs to exclude
-#
 # Returns:
 #    Hash ref where key = Device.id, value = Arrayref of parent Device.id's
 #
 sub _shortest_path_parents {
-    my ($self, $graph, $s, $ignore) = @_;
+    my ($self, $graph, $s) = @_;
     
     $self->throw_fatal("Missing required arguments")
-	unless ( $graph && $s && $ignore);
+	unless ( $graph && $s );
 
     $logger->debug("Netdot::Exporter::_sp_parents: Determining all shortest paths to NMS");
 
+    my %cost;
     my %parents;
     my %dist;
     my $infinity = 1000000;
@@ -299,11 +279,24 @@ sub _shortest_path_parents {
     my @q        = @nodes;
     
     # Set all distances to infinity, except the source
+    # Set default cost to 1
     foreach my $n ( @nodes ) { 
 	$dist{$n} = $infinity; 
+	$cost{$n} = 1;
     }
     $dist{$s} = 0;
 
+    # Get path costs
+    my $q = $self->{_dbh}->selectall_arrayref("SELECT device.id, 
+                                                      device.monitoring_path_cost 
+                                               FROM   device
+                                               WHERE  device.monitoring_path_cost > 1
+                                              ");
+    foreach my $row ( @$q ){
+	my ($id, $cost) = @$row;
+	$cost{$id} = $cost;
+    }
+    
     while ( @q ) {
 	
 	# sort unsolved by distance from root
@@ -312,20 +305,16 @@ sub _shortest_path_parents {
 	# we'll solve the closest node.
 	my $n = shift @q;
 	
-	next if ( exists $ignore->{$n} );
-
 	# now, look at all the nodes connected to n
 	foreach my $n2 ( keys %{$graph->{$n}} ) {
 
-	    next if ( exists $ignore->{$n2} );
-
 	    # .. and find out if any of their estimated distances
 	    # can be improved if we go through n
-	    if ( $dist{$n2} >= ($dist{$n} + 1) ) {
-		$dist{$n2} = $dist{$n} + 1;
+	    if ( $dist{$n2} >= ($dist{$n} + $cost{$n}) ) {
+		$dist{$n2} = $dist{$n} + $cost{$n};
 		# Make sure all our parents have same shortest distance
 		foreach my $p ( keys %{$parents{$n2}} ){
-		    delete $parents{$n2}{$p} if ( $dist{$p} > $dist{$n} );
+		    delete $parents{$n2}{$p} if ( $dist{$p}+$cost{$p} > $dist{$n}+$cost{$n} );
 		}
 		$parents{$n2}{$n} = 1;
 	    }
