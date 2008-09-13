@@ -5,7 +5,7 @@ include $(SRCROOT)/etc/utility-Makefile
 #
 NDIR = docs nagios sysmon rancid
 
-FILES := `find -type f |grep -v .svn |sed -e 's/\.\///'`
+FILES := `find -type f --regex !name Makefile |grep -v .svn |sed -e 's/\.\///'`
 
 all: dir
 	$(substitute)
