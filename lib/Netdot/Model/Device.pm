@@ -136,6 +136,141 @@ sub search {
 }
 
 ############################################################################
+=head2 search_address_live
+    
+    Query relevant devices for ARP and FWT entries in order to locate 
+    a particular address in the netwrok.
+
+  Arguments: 
+    mac     - MAC address (required unless ip is given)
+    ip      - IP address (required unless mac is given)
+    vlan    - VLAN id (optional but useful)
+  Returns: 
+    Hashref with following keys:
+    edge - Edge port interface id
+    arp  - Hashref with key=interface, value=hashref with key=ip, value=mac
+    fwt  - Hashref with key=interface, value=number of macs
+  Examples:
+    my $info = Device->search_address_live(mac=>'DEADDEADBEEF', vlan=60);
+
+=cut
+sub search_address_live {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('search_address_live');
+    $class->throw_fatal("Device::search_address_live: Cannot proceed without a MAC or IP")
+	unless ( $argv{mac} || $argv{ip} );
+
+    my (@fwt_devs, @arp_devs);
+    my ($vlan, $subnet);
+    my %results;
+
+    if ( $argv{vlan} ){
+	$vlan = Vlan->search(vid=>$argv{vlan})->first;
+	$class->throw_user("Cannot find VLAN id $argv{vlan}\n")
+	    unless $vlan;
+    }
+
+    if ( $argv{ip} ){
+	my $ipblock = Ipblock->search(address=>$argv{ip})->first;
+	if ( $ipblock ){
+	    if ( $ipblock->is_address ){
+		$subnet = $ipblock->parent;
+	    }else{
+		$subnet = $ipblock;
+	    }
+	    if ( !$vlan ){
+		$vlan = $subnet->vlan;
+	    }
+	    @arp_devs = @{$subnet->get_devices()};
+	}
+    }
+
+    if ( $vlan ){
+	my @ivlans = $vlan->interfaces;
+	my %fwt_devs;
+	foreach my $iface ( map { $_->interface } @ivlans ){
+	    $fwt_devs{$iface->device->id} = $iface->device;
+	}
+	@fwt_devs = values %fwt_devs;
+	
+	if ( !@arp_devs && !$subnet ){
+	    foreach my $subnet  ( $vlan->subnets ){
+		@arp_devs = @{$subnet->get_devices()};
+	    }
+	}
+    }else{
+	if ( $subnet && !@fwt_devs ){
+	    @fwt_devs = @{$subnet->get_devices()};
+	}else{
+	    $class->throw_user("Device::search_address_live: Cannot proceed without VLAN or IP information\n");
+	}
+    }
+
+    my (@fwts);
+    my %routerports;
+    foreach my $dev ( @arp_devs ){
+	my $cache;
+	eval {
+	    $cache = $class->_exec_timeout($dev->fqdn, sub{ return $dev->_get_arp_from_snmp() });
+	};
+	$logger->debug($@) if $@;
+	if ( $cache ){
+	    foreach my $intid ( keys %$cache ){
+		foreach my $mac ( keys %{$cache->{$intid}} ){
+		    next if ( $argv{mac} && ($mac ne $argv{mac}) );
+		    my $ip = $cache->{$intid}->{$mac};
+		    next if ( $argv{ip} && ($ip ne $argv{ip}) );
+		    # We now have a mac address if we didn't have it yet
+		    unless ( $argv{mac} ){
+			$argv{mac} = $mac;
+		    }
+		    # Keep record of all the interfaces where this ip was seen
+		    $routerports{$intid}{$ip} = $mac;
+		}
+	    }
+	}
+	# Do not query all the routers unless needed.
+	if ( %routerports ){
+	    $results{routerports} = \%routerports;
+	    last;
+	}
+    }
+
+    # If we do not have a MAC at this point, there's no point in getting FWTs
+    if ( $argv{mac} ){
+	$results{mac} = $argv{mac};
+	foreach my $dev ( @fwt_devs ){
+	    my $fwt;
+	    eval {
+		$fwt = $class->_exec_timeout($dev->fqdn, sub{ return $dev->_get_fwt_from_snmp(vlan=>$vlan->vid) } );
+	    };
+	    $logger->debug($@) if $@;
+	    push @fwts, $fwt if $fwt;
+	}
+	
+	my %switchports;
+	foreach my $fwt ( @fwts ){
+	    foreach my $intid ( keys %{$fwt} ){
+		foreach my $mac ( keys %{$fwt->{$intid}} ){
+		    next if ( $mac ne $argv{mac} );
+		    # Keep record of all the interfaces where it was seen
+		    # How many MACs were on that interface is essential to 
+		    # determine the edge port
+		    $switchports{$intid} = scalar(keys %{$fwt->{$intid}});
+		}
+	    }
+	}
+	$results{switchports} = \%switchports if %switchports;
+
+	# Now look for the port with the least addresses
+	my @ordered = sort { $switchports{$a} <=> $switchports{$b} } keys %switchports;
+	$results{edge} = $ordered[0] if $ordered[0];
+    }
+    return \%results if %results;
+}
+
+
+############################################################################
 =head2 search_like -  Search for device objects.  Allow substrings
 
     We override the base class to allow 'name' to be searched as 
@@ -3252,7 +3387,7 @@ sub _get_snmp_session {
 		      Timeout       => (defined $argv{timeout}) ? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
 		      Retries       => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
 		      AutoSpecify   => 1,
-		      Debug         => ( $logger->is_debug() )? 1 : 0,
+#		      Debug         => ( $logger->is_debug() )? 1 : 0,
 		      BulkWalk      => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
 		      BulkRepeaters => 20,
 		      MibDirs       => \@MIBDIRS,
@@ -3909,6 +4044,7 @@ sub _get_arp_from_snmp {
 #    
 #   Arguments:
 #     session - SNMP Session (optional)
+#     vlan    - Only query table for this VLAN (optional)
 #   Returns:
 #     Hash ref.
 #    
@@ -3977,6 +4113,7 @@ sub _get_fwt_from_snmp {
 	}
 
         foreach my $vlan ( sort { $a <=> $b } keys %vlans ){
+	    next if ( $argv{vlan} && $argv{vlan} ne $vlan );
 	    next if ( $vlan == 0 || $vlan == 1 );  # Ignore vlans 0 and 1
 	    my $target = (scalar($self->snmp_target))? $self->snmp_target->address : $host;
 	    my %args = ('host'        => $target,
