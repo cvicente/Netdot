@@ -57,6 +57,7 @@ elsif ( $action eq 'install' ){
     foreach my $module ( @DEPS ){
 	eval "use $module";	
 	if ( $@ ){
+	    $module =~ s/^(.*)\s+.*/$1/;
 	    eval {
 		CPAN::Shell->install($module);
 	    };
