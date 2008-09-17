@@ -13,9 +13,10 @@ $self{FWT_LIMIT} = 3;
 
 my $USAGE = <<EOF;
 
- Locate a MAC or IP address.  By default, this script uses Netdot database 
- information.  The user also has the option of performing a "live" search 
- by querying relevant devices in the network.
+ Locate a MAC or IP address.  By default, this script uses information from
+ the Netdot database.  The user also has the option of doing a "live" search 
+ by querying relevant devices in the network.  In this case, providing a
+ VLAN id can significantly speed up the search.
 
  Usage: $0 [options] <ether|ip|name>
 

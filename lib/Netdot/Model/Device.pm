@@ -179,9 +179,10 @@ sub search_address_live {
 		$subnet = $ipblock;
 	    }
 	    if ( !$vlan ){
-		$vlan = $subnet->vlan;
+		$vlan = $subnet->vlan if int($subnet->vlan);
 	    }
 	    @arp_devs = @{$subnet->get_devices()};
+
 	}
     }
 
@@ -241,8 +242,10 @@ sub search_address_live {
 	$results{mac} = $argv{mac};
 	foreach my $dev ( @fwt_devs ){
 	    my $fwt;
+	    my %args;
+	    $args{vlan} = $vlan->vid if ( $vlan );
 	    eval {
-		$fwt = $class->_exec_timeout($dev->fqdn, sub{ return $dev->_get_fwt_from_snmp(vlan=>$vlan->vid) } );
+		$fwt = $class->_exec_timeout($dev->fqdn, sub{ return $dev->_get_fwt_from_snmp(%args) } );
 	    };
 	    $logger->debug($@) if $@;
 	    push @fwts, $fwt if $fwt;
