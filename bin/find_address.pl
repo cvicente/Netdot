@@ -22,12 +22,12 @@ my $USAGE = <<EOF;
 
     Available options:
 
-    -A|--arp_limit   Number of latest ARP cache entries to show (default: $self{ARP_LIMIT})
-    -F|--fwt_limit   Number of latest Forwardint Table entries to show (default: $self{FWT_LIMIT})
-    -v|--vlan        VLAN id to use when searching addresses "live"
-    -f|--forcelive   Force a "live" search
-    -d|--debug       Show debugging output
-    -h|--help        Show help
+    -A|--arp_limit <value>  Number of latest ARP cache entries to show (default: $self{ARP_LIMIT})
+    -F|--fwt_limit <valud>  Number of latest Forwardint Table entries to show (default: $self{FWT_LIMIT})
+    -v|--vlan      <vlanid> VLAN id to use when searching addresses "live"
+    -f|--forcelive          Force a "live" search
+    -d|--debug              Show debugging output
+    -h|--help               Show help
     
 EOF
     
