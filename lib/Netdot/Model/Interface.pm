@@ -438,9 +438,15 @@ sub snmp_update {
     #
     if ( exists( $newif->{ips} ) ) {
 
-	# For SubnetVlan assignments
+	# For Subnet->vlan assignments
 	my @ivs  = $self->vlans;
 	my $vlan = $ivs[0]->vlan if ( scalar(@ivs) == 1 ); 
+
+	# For layer3 switches with virtual VLAN interfaces
+	if ( !$vlan && $self->name =~ /vlan(\d+)/i ){
+	    my $vid = $1;
+	    $vlan = Vlan->search(vid=>$vid)->first;
+	}
 	
 	foreach my $newip ( keys %{ $newif->{ips} } ){
 	    if ( my $address = $newif->{ips}->{$newip}->{address} ){
