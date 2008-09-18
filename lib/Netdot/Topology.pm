@@ -183,9 +183,9 @@ sub update_links {
 		
 		    $addcount++ if $added;
 		}
-		delete $links{$ifaceid1};
-		delete $links{$ifaceid2};		
 	    }
+	    delete $links{$ifaceid1};
+	    delete $links{$ifaceid2};		
 	}
     }
 
@@ -291,7 +291,10 @@ sub update_links {
 			       ." has reached MAX_NEIGHBOR_MISSED_TIMES.  Removing.");
 	    }
 	    if ( int($iface1->neighbor) == int($iface2) ){
-		$iface1->remove_neighbor();  # This will actually remove it in both directions
+		$logger->info(sprintf("Removing neighbors: %s <=> %s", 
+				      $iface1->get_label, $iface2->get_label));
+		# This will actually remove it in both directions
+		$iface1->remove_neighbor();  
 		$remcount++;
 	    }
 	}else{
