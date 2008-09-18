@@ -1576,7 +1576,7 @@ sub _validate {
     $self->isa_object_method('_validate');
     $logger->debug(sub{"Ipblock::_validate: Checking " . $self->get_label });
 		   
-    my $statusname = $self->status->name;
+    my $statusname = $self->status->name || "unknown";
     $logger->debug("Ipblock::_validate: " . $self->get_label . " has status: $statusname");
 
     $args->{dhcp_enabled} ||= $self->dhcp_enabled;
