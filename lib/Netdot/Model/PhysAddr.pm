@@ -513,20 +513,28 @@ sub oui {
 =head2 vendor - Return OUI vendor name
 
   Arguments: 
-    None
+    None if called as an object method
+    MAC Address if called as class method
   Returns:   
     String (e.g. 'Cisco Systems')
   Examples:
     print $physaddr->vendor;
+    print PhysAddr->vendor('DEADEADBEEF');
 
 =cut
 sub vendor {
-    my ($self) = @_;
-    $self->isa_object_method('vendor');
-    my $ouistr = $self->oui;
-    my $oui = OUI->search(oui=>$ouistr)->first;
-    return $oui->vendor if defined $oui;
-    return "Unknown";
+    my ($self, $address) = @_;
+    my $class = ref($self) || $self;
+    my $ouistr;
+    if ( ref($self) ){
+	# Being called as an object method
+	$ouistr = $self->oui;
+    }else{
+	$class->throw_fatal("PhysAddr::vendor: Missing address") 
+	    unless ( defined $address );
+	$ouistr =  $class->_oui_from_address($address);
+    }
+    return $self->_get_vendor_from_oui($ouistr);
 }
 
 ################################################################
@@ -738,6 +746,15 @@ sub format_address {
 sub _oui_from_address {
     my ($self, $addr) = @_;
     return substr($addr, 0, 6);
+}
+
+################################################################
+# Get Vendor information given an OUI string
+sub _get_vendor_from_oui {
+    my ($class, $ouistr) = @_;
+    my $oui = OUI->search(oui=>$ouistr)->first;
+    return $oui->vendor if defined $oui;
+    return "Unknown";    
 }
 
 

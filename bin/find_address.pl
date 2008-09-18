@@ -8,17 +8,19 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 
 my %self;
-$self{ARP_LIMIT} = 1;
-$self{FWT_LIMIT} = 1;
+$self{ARP_LIMIT} = 0;
+$self{FWT_LIMIT} = 0;
 
 my $USAGE = <<EOF;
 
- Locate a MAC or IP address.  By default, this script uses information from
- the Netdot database.  The user also has the option of doing a "live" search 
- by querying relevant devices in the network.  In this case, providing a
- VLAN id can significantly speed up the search.
+    Locate a device given its name, MAC or IP address.  
 
- Usage: $0 [options] <ether|ip|name>
+    By default, this script uses information from the Netdot database.  
+    The user also has the option of doing a "live" search by querying 
+    relevant devices in the network.  In this case, providing a VLAN id 
+    can significantly speed up the search.
+
+  Usage: $0 [options] <ether|ip|name>
 
     Available options:
 
@@ -31,7 +33,7 @@ my $USAGE = <<EOF;
     
 EOF
     
-my $IPV4 = Netdot->get_ipv4_regex();
+    my $IPV4 = Netdot->get_ipv4_regex();
 my $IPV6 = Netdot->get_ipv6_regex();
 my $MAC  = Netdot->get_mac_regex();
 
@@ -42,7 +44,7 @@ my $result = GetOptions( "A|arp_limit:s"  => \$self{ARP_LIMIT},
 			 "f|forcelive"    => \$self{FORCE_LIVE},
 			 "h|help"         => \$self{HELP},
 			 "d|debug"        => \$self{DEBUG},
-			 );
+    );
 
 my $address = shift @ARGV;
 
@@ -69,8 +71,7 @@ $logger->level($DEBUG) if ( $self{DEBUG} );
 print "--------------------\n";
 
 if ( $address =~ /$MAC/ ){
-    $address = PhysAddr->format_address($address);
-
+    $address   = PhysAddr->format_address($address);
     if ( $self{FORCE_LIVE} ){
 	&search_live(mac=>$address, vlan=>$self{VLAN});
     }else{
@@ -82,7 +83,7 @@ if ( $address =~ /$MAC/ ){
     if ( $self{FORCE_LIVE} ){
 	&search_live(ip=>$address, vlan=>$self{VLAN});
     }else{
-	&show_ip($address);
+	&show_ip($address, 1);
     }
 }else{
     # Try to resolve
@@ -90,7 +91,7 @@ if ( $address =~ /$MAC/ ){
 	if ( $self{FORCE_LIVE} ){
 	    &search_live(ip=>$ip, vlan=>$self{VLAN});
 	}else{
-	    &show_ip($ip);
+	    &show_ip($ip, 1);
 	}
     }else{
 	die "$address not found\n"
@@ -105,7 +106,7 @@ if ( $address =~ /$MAC/ ){
 
 ###############################################################################
 sub show_ip {
-    my ($address) = @_;
+    my ($address, $show_arp) = @_;
     my $ip     = Ipblock->search(address=>$address)->first;
     my $parent = $ip->parent;
     my $subnet;
@@ -119,24 +120,31 @@ sub show_ip {
 	print "DNS        : ", $name, "\n";
     }
     if ( $ip ){
-	if ( my $arp = $ip->get_last_n_arp($self{ARP_LIMIT}) ){
-	    print "\nLast $self{ARP_LIMIT} ARP cache entries:\n\n";
-	    my @rows;
-	    my %tstamps;
-	    my $latest_mac;
-	    foreach my $row ( @$arp ){
-		my ($iid, $macid, $tstamp) = @$row;
-		my $lbl   = Interface->retrieve($iid)->get_label;
-		push @{$tstamps{$tstamp}{$macid}}, $lbl;
-	    }
-	    foreach my $tstamp ( reverse sort keys %tstamps ){
-		foreach my $macid ( keys %{$tstamps{$tstamp}} ){
-		    my $maclbl   = PhysAddr->retrieve($macid)->get_label;
-		    $latest_mac  = $maclbl unless defined $latest_mac;
-		    print $tstamp, " ", $maclbl, " ", (join ', ', @{$tstamps{$tstamp}{$macid}}), "\n";
+	if ( $show_arp ){
+	    my $last_n = $self{ARP_LIMIT} || 1;
+	    if ( my $arp = $ip->get_last_n_arp($last_n) ){
+		my @rows;
+		my %tstamps;
+		my $latest_mac;
+		foreach my $row ( @$arp ){
+		    my ($iid, $macid, $tstamp) = @$row;
+		    my $lbl   = Interface->retrieve($iid)->get_label;
+		    push @{$tstamps{$tstamp}{$macid}}, $lbl;
 		}
+		if ( $self{ARP_LIMIT} ){
+		    print "\nLatest ARP cache entries:\n\n";
+		}
+		foreach my $tstamp ( reverse sort keys %tstamps ){
+		    foreach my $macid ( keys %{$tstamps{$tstamp}} ){
+			my $mac   = PhysAddr->retrieve($macid)->address;
+			$latest_mac  = $mac unless defined $latest_mac;
+			if ( $self{ARP_LIMIT} ){
+			    print $tstamp, " ", $mac, " ", (join ', ', @{$tstamps{$tstamp}{$macid}}), "\n";
+			}
+		    }
+		}
+		&show_mac($latest_mac);
 	    }
-	    &show_mac($latest_mac);
 	}
     }else{
 	warn "$address not found in DB.  Try searching live (--forcelive)\n";
@@ -161,58 +169,70 @@ sub show_mac {
     print "First Seen  : ", $mac->first_seen, "\n";
     print "Last Seen   : ", $mac->last_seen,  "\n";
 
-    my $fwt        = $mac->get_last_n_fte($self{FWT_LIMIT});
-    my $arp        = $mac->get_last_n_arp($self{ARP_LIMIT});
+    my $last_n_fte = $self{FWT_LIMIT} || 1;
+    my $last_n_arp = $self{ARP_LIMIT} || 1;
+
+    my $fwt        = $mac->get_last_n_fte($last_n_fte);
+    my $arp        = $mac->get_last_n_arp($last_n_arp);
     my @devices    = $mac->devices;
     if ( @devices ){
-	print "Devices using this address: ";
+	print "\nDevices using this address: ";
 	print join(', ', map { $_->get_label } @devices), "\n";
-	
     }
     my @interfaces = $mac->interfaces;
     if ( @interfaces ){
-	print "Interfaces using this address: ";
+	print "\nInterfaces using this address: ";
 	print join(', ', map { $_->get_label } @interfaces), "\n";
     }
-    print "\n";
 
-    if ( $fwt && scalar @$fwt ){
-	my %tstamps;
-        foreach my $row ( @$fwt ){
-            my ($tstamp, $iid) = @$row;
-            my $iface = Interface->retrieve($iid);
-            my $lbl   = $iface->get_label;
-	    push @{$tstamps{$tstamp}}, $lbl;
-        }
+    if ( $self{FWT_LIMIT} ){
+	if ( $fwt && scalar @$fwt ){
+	    my %tstamps;
+	    foreach my $row ( @$fwt ){
+		my ($tstamp, $iid) = @$row;
+		my $iface = Interface->retrieve($iid);
+		my $lbl   = $iface->get_label;
+		push @{$tstamps{$tstamp}}, $lbl;
+	    }
 
-	print "Last $self{FWT_LIMIT} forwarding table entries:\n\n";
-
-	foreach my $tstamp ( reverse sort keys %tstamps ){
-            print $tstamp, ", ", join ', ', @{$tstamps{$tstamp}}, "\n";
+	    print "\nLatest forwarding table entries:\n\n";
+	    
+	    foreach my $tstamp ( reverse sort keys %tstamps ){
+		print $tstamp, ", ", join ', ', @{$tstamps{$tstamp}}, "\n";
+	    }
 	}
     }
 
+    my ($latest_ip_id, $latest_ip);
     if ( $show_arp ){
-	print "\nLast $self{ARP_LIMIT} ARP cache entries:\n\n";
+	if ( $self{ARP_LIMIT} ){
+	    print "\nLatest ARP cache entries:\n\n";
+	}
 
 	if ( $arp && scalar @$arp ){
 	    my %tstamps;
 	    foreach my $row ( @$arp ){
 		my ($iid, $ipid, $tstamp) = @$row;
-		my $lbl    = Interface->retrieve($iid)->get_label;
+		$latest_ip_id = $ipid unless $latest_ip_id;
+		my $lbl = Interface->retrieve($iid)->get_label;
 		push @{$tstamps{$tstamp}{$ipid}}, $lbl;
 	    }
-	    foreach my $tstamp ( reverse sort keys %tstamps ){
-		foreach my $ipid ( keys %{$tstamps{$tstamp}} ){
-		    my $iplbl   = Ipblock->retrieve($ipid)->get_label;
-		    print $tstamp, ", ", $iplbl, ", ", (join ', ', @{$tstamps{$tstamp}{$ipid}}), "\n";
+	    if ( $self{ARP_LIMIT} ){
+		foreach my $tstamp ( reverse sort keys %tstamps ){
+		    foreach my $ipid ( keys %{$tstamps{$tstamp}} ){
+			my $iplbl   = Ipblock->retrieve($ipid)->get_label;
+			print $tstamp, ", ", $iplbl, ", ", (join ', ', @{$tstamps{$tstamp}{$ipid}}), "\n";
+		    }
 		}
 	    }
+	    $latest_ip = Ipblock->retrieve($latest_ip_id)->address;
 	}
     }
-    print "\n";
+    
+    &show_ip($latest_ip) if $latest_ip;
+
     if ( scalar(@interfaces) == 1 && int($interfaces[0]->neighbor) ){
-	print "Neighbor interface: ", $interfaces[0]->neighbor->get_label, "\n";
+	print "\nNeighbor interface: ", $interfaces[0]->neighbor->get_label, "\n";
     }else{
 	my $edge_port = $mac->find_edge_port();
 	&print_location($edge_port) if $edge_port;
@@ -221,25 +241,50 @@ sub show_mac {
 
 ###############################################################################
 sub search_live{
-    my %argv = @_;
+    my (%argv) = @_;
 
     my $info = Device->search_address_live(%argv);
     if ( $info ){
-	print "Address: $address\n";
-	print "ARP entries: \n";
-	foreach my $id ( keys %{$info->{routerports}} ){
-	    my $iface = Interface->retrieve($id);
-	    my $ip  = (keys %{$info->{routerports}{$id}})[0];
-	    my $mac = $info->{routerports}{$id}{$ip};
-	    print $iface->get_label, ", ", $ip, ", ", $mac, "\n";
+	my ($ipaddr, $macaddr); 
+	$ipaddr  = $argv{ip}  if $argv{ip};
+	$macaddr = $argv{mac} if $argv{mac};
+	if ( scalar keys %{$info->{routerports}} ){
+	    if ( $self{ARP_LIMIT} ){
+		print "\nARP entries: \n";
+	    }
+	    foreach my $id ( keys %{$info->{routerports}} ){
+		my $iface = Interface->retrieve($id);
+		my $ip    = (keys %{$info->{routerports}{$id}})[0];
+		$ipaddr   = $ip unless $ipaddr;
+		my $mac   = $info->{routerports}{$id}{$ip};
+		$macaddr  = $mac unless $macaddr;
+		if ( $self{ARP_LIMIT} ){
+		    print $iface->get_label, ", ", $ip, ", ", $mac, "\n";
+		}
+	    }
+	}
+	if ( scalar keys %{$info->{switchports}} && $self{FWT_LIMIT} ){ 
+	    print "\nFWT entries: \n";
+	    foreach my $id ( keys %{$info->{switchports}} ){
+		my $iface = Interface->retrieve($id);
+		print $iface->get_label;
+		print " ";
+	    }
+	    print "\n";
 	}
 	print "\n";
-	print "FWT entries: \n";
-	foreach my $id ( keys %{$info->{switchports}} ){
-	    my $iface = Interface->retrieve($id);
-	    print $iface->get_label;
-	    print " ";
+	if ( $macaddr ){
+	    my $vendor = PhysAddr->vendor($macaddr);
+	    print "MAC Address : ", $macaddr, "\n";
+	    print "Vendor      : ", $vendor,  "\n";
 	}
+	if ( $ipaddr ){
+	    print "IP Address  : ", $ipaddr, "\n";
+	    if ( my $name = Netdot->dns->resolve_ip($ipaddr) ){
+		print "DNS         : ", $name, "\n";
+	    }
+	}
+
 	print "\n";
 	&print_location($info->{edge}) if $info->{edge};
 	
