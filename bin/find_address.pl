@@ -8,8 +8,8 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 
 my %self;
-$self{ARP_LIMIT} = 3;
-$self{FWT_LIMIT} = 3;
+$self{ARP_LIMIT} = 1;
+$self{FWT_LIMIT} = 1;
 
 my $USAGE = <<EOF;
 
