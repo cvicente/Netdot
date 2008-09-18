@@ -46,13 +46,17 @@ my $result = GetOptions( "A|arp_limit:s"  => \$self{ARP_LIMIT},
 
 my $address = shift @ARGV;
 
-if ( !$result || !$address ) {
+if ( !$result ) {
     print $USAGE;
     die "Error: Problem with cmdline args\n";
 }
 if ( $self{HELP} ) {
     print $USAGE;
     exit;
+}
+if ( !$address ) {
+    print $USAGE;
+    die "Error: Missing address or name\n";
 }
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
