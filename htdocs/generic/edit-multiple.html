@@ -51,15 +51,30 @@ my %objs;
 if ( $submit eq 'Edit' ) {
     
     if ( $selectall && $selectall_ids ){
-	foreach my $id ( split /,/, $selectall_ids ){
-	    $objs{$table}{$id} = "";
-	}
+	@{$objs{$table}} = map { $table->retrieve($_) } split ',', $selectall_ids;
     }else{
-	foreach my $arg (sort keys %ARGS){
+	foreach my $arg ( keys %ARGS ){
 	    next unless $arg =~ /__/;
 	    my ($table, $id) = split /__/, $arg;
-	    $objs{$table}{$id} = "";
+	    push @{$objs{$table}}, $id;
 	}
+	# Sort
+	foreach my $table ( keys %objs ){
+	    my $lblf = ($table->meta_data->get_labels)[0];
+	    my @objs = map { $table->retrieve($_) } @{$objs{$table}};
+	    my $alpha = 0;
+	    foreach my $obj ( @objs ){
+		if ( $obj->$lblf =~ /D+/ ){
+		    $alpha = 1;
+		}
+	    }
+	    if ( $alpha ){
+		@{$objs{$table}} = sort { $a->$lblf cmp $b->$lblf } @objs;
+	    }else{
+		@{$objs{$table}} = sort { $a->$lblf <=> $b->$lblf } @objs;
+	    }
+	}
+
     }
     print "<pre>", Dumper(%objs), "</pre>" if $DEBUG;
 
@@ -115,7 +130,7 @@ if ( $submit eq 'Edit' ) {
     %objs = %{ $session->{objs} };
     
     print "<pre>", Dumper(%objs), "</pre>" if $DEBUG;
-    my $numobjs = scalar keys %{$objs{$table}};
+    my $numobjs = scalar @{$objs{$table}};
 
     my (@headers, @rows);
     my $showeditbuttons;
@@ -155,8 +170,8 @@ if ( $submit eq 'Edit' ) {
 	     
 	 } else {
 	     
-	     foreach my $id ( keys %{$objs{$table}} ) {
-		 my $obj = $table->retrieve($id);
+	     foreach my $obj ( @{$objs{$table}} ) {
+#		 my $obj = $table->retrieve($id);
 		 my @row = ();
 		 push( @row, $obj->get_label );
 		 foreach my $field ( @tablefields ) {
