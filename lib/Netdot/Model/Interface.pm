@@ -68,10 +68,7 @@ sub find_duplex_mismatches {
     my $mismatches = $dbh->selectall_arrayref("SELECT  i.id, r.id
                                                FROM    interface i, interface r
                                                WHERE   i.neighbor=r.id  
-                                                 AND   i.type=r.type
-                                                 AND   i.type='ethernetCsmacd'
-                                                 AND   (i.oper_duplex!=r.oper_duplex 
-                                                   OR  ((i.speed!=0 AND r.speed!=0) AND (i.speed!=r.speed)))");
+                                                 AND   i.oper_duplex!=r.oper_duplex");
 
     # SQL returns pairs in both orders. Until I figure out how 
     # to get SQL to return unique pairs...
