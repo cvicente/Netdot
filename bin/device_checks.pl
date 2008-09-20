@@ -19,7 +19,7 @@ my $usage = <<EOF;
     -e, --entity                   report devices with no entity
     -n, --neighbors                report devices with no neighbors
     -s, --site                     report devices with no site
-    -d, --duplex                     report duplex mismatches
+    -d, --duplex                   report duplex mismatches
     -h, --help                     print help (this message)
     -m, --send_mail                send output via e-mail
     -f, --from                     e-mail From line (default: $FROM)
@@ -100,7 +100,7 @@ if ( $ENTITY || $NEIG || $SITE ){
     }
 }elsif ( $DUPLEX ){
     my $list = Interface->find_duplex_mismatches();
-    if ( $list ){
+    if ( scalar @$list ){
 	$output .= sprintf("\nThe following Interfaces have duplex/speed mismatch:\n");
 	my $count = 0;
 	foreach my $pair ( @$list ){
@@ -122,5 +122,5 @@ if ( $EMAIL && $output ){
 		      subject => $SUBJECT, 
 		      body    => $output);
 }else{
-    print STDOUT $output, "\n";
+    print STDOUT $output, "\n" if $output;
 }
