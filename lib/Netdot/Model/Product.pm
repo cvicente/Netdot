@@ -53,35 +53,40 @@ sub find_or_create {
     my ($name, $description, $sysobjectid, $type, $manufacturer, $hostname) 
 	= @argv{"name", "description", "sysobjectid", "type", "manufacturer", "hostname"};
     
-    $class->throw_fatal("Model::Product::find_or_create: Missing required arguments: sysobjectid")
-	unless defined($sysobjectid);
+    $class->throw_fatal("Model::Product::find_or_create: Missing required arguments")
+	unless defined( $sysobjectid || $name );
     
-    if ( my $prod = $class->search( sysobjectid => $sysobjectid )->first ) {
+    my $prod;
+    if ( $sysobjectid && ($prod = $class->search(sysobjectid=>$sysobjectid)->first) ) {
 	$logger->debug(sub{ sprintf("Product known as %s", $prod->name) });
+	return $prod;
+    }elsif ( $prod = $class->search(name=>$name)->first ) {
+	$logger->debug(sub{ sprintf("Product %s found", $prod->name) });
 	return $prod;
     }else{
 	###############################################
 	# Create a new product
 	#
-	$logger->debug(sub{ sprintf("Product::find_or_create: Adding new Product with SysID %s.", 
-				    $sysobjectid) });
+	$logger->debug("Product::find_or_create: Adding new Product");
 	
 	###############################################
 	# Check if Manufacturer Entity exists or can be added
 	#
-	my $oid = $sysobjectid;
-	$oid    =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
-	my $ent;
-	if( $ent = Entity->search( oid => $oid )->first ) {
+	my ($ent, $oid);
+	if( $sysobjectid ) {
+	    $oid = $sysobjectid;
+	    $oid =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
+	    $ent = Entity->search(oid=>$oid)->first; 
 	    $logger->info(sprintf("Product::find_or_create: Manufacturer OID matches %s", 
 				  $ent->name));
-	}else{
-	    $logger->info(sprintf("Entity with Enterprise OID %s not found. Creating.", 
-				  $oid));
+	}elsif ( $manufacturer ){
+	    $ent = Entity->search(name=>$manufacturer)->first; 
+	}
+	if ( !$ent ){
 	    my $entname = $manufacturer || $oid;
-	    $ent = Entity->insert({ name => $entname, oid => $oid});
+	    $ent = Entity->insert({name=>$entname, oid=>$oid});
 	    $logger->info("Inserted new Entity: $entname.");
-	    my $etype   = EntityType->search(name=>"Manufacturer")->first || 0;
+	    my $etype = EntityType->search(name=>"Manufacturer")->first || 0;
 	    my $erole = EntityRole->insert({entity=>$ent, type=>$etype});
 	}
 	

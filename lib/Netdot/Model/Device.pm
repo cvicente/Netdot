@@ -2214,14 +2214,15 @@ sub info_update {
 
     # Assign Product
     my $name = $info->{model} || $info->{productname};
-    if ( defined $info->{sysobjectid} ){
-	$devtmp{product} = Product->find_or_create( name           => $name,
-						    description    => $name,
-						    sysobjectid    => $info->{sysobjectid},
-						    type           => $info->{type},
-						    manufacturer   => $info->{manufacturer}, 
-						    hostname       => $host,
-						    );
+    if ( defined $name ){
+	my %args = (name           => $name,
+		    description    => $name,
+		    type           => $info->{type},
+		    manufacturer   => $info->{manufacturer}, 
+		    hostname       => $host,
+	    );
+	$args{sysobjectid} = $info->{sysobjectid} if $info->{sysobjectid};
+	$devtmp{product} = Product->find_or_create(%args);
     }
     
     if ( $self->monitor_config && (!$self->monitor_config_group || $self->monitor_config_group eq "") ){
@@ -4450,7 +4451,9 @@ sub _get_airespace_snmp {
     
     my @METHODS = ('airespace_apif_slot', 'airespace_ap_model', 'airespace_ap_mac', 'bsnAPEthernetMacAddress',
 		   'airespace_ap_ip', 'bsnAPNetmask', 'airespace_apif_type', 'bsnAPIOSVersion',
-		   'airespace_apif', 'airespace_apif_admin', 'airespace_ap_serial');
+		   'airespace_apif', 'airespace_apif_admin', 'airespace_ap_serial', 'airespace_ap_name',
+		   'airespace_ap_loc'
+	);
     
     foreach my $method ( @METHODS ){
 	$hashes->{$method} = $sinfo->$method;
@@ -4480,10 +4483,12 @@ sub _get_airespace_ap_info {
     if ( defined(my $serial = $hashes->{'airespace_ap_serial'}->{$idx}) ){
 	$info->{serialnumber} = $serial;
     }
+    if ( defined(my $sysname = $hashes->{'airespace_ap_name'}->{$idx}) ){
+	$info->{sysname} = $sysname;
+    }
 
-    # This is the bsnAPTable oid.  Kind of a hack
-    $info->{sysobjectid} = '1.3.6.1.4.1.14179.2.2';
-    $info->{type} = "Access Point";
+    $info->{type}         = "Access Point";
+    $info->{manufacturer} = "Cisco";
 
     # AP Ethernet MAC
     if ( my $basemac = $hashes->{'airespace_ap_mac'}->{$idx} ){
