@@ -182,7 +182,14 @@ sub search_address_live {
 		$vlan = $subnet->vlan if int($subnet->vlan);
 	    }
 	    @arp_devs = @{$subnet->get_devices()};
-
+	}else{
+	    $subnet = Ipblock->get_covering_block(address=>$argv{ip});
+	    if ( $subnet ){
+		if ( !$vlan ){
+		    $vlan = $subnet->vlan if ( $subnet && int($subnet->vlan) );
+		}
+		@arp_devs = @{$subnet->get_devices()};
+	    }
 	}
     }
 
@@ -227,6 +234,8 @@ sub search_address_live {
 		    }
 		    # Keep record of all the interfaces where this ip was seen
 		    $routerports{$intid}{$ip} = $mac;
+		    $results{mac} = $mac;
+		    $results{ip}  = $ip;
 		}
 	    }
 	}
@@ -269,7 +278,20 @@ sub search_address_live {
 	my @ordered = sort { $switchports{$a} <=> $switchports{$b} } keys %switchports;
 	$results{edge} = $ordered[0] if $ordered[0];
     }
-    return \%results if %results;
+    
+    if ( %results ){
+	if ( $results{mac} ){
+	    if ( my $vendor = PhysAddr->vendor($results{mac}) ){
+		$results{vendor} = $vendor;
+	    }
+	}
+	if ( $results{ip} ){
+	    if ( my $name = Netdot->dns->resolve_ip($results{ip}) ){
+		$results{dns} = $name;
+	    }
+	}
+	return \%results;
+    }
 }
 
 

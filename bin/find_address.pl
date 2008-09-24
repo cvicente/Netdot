@@ -107,19 +107,21 @@ if ( $address =~ /$MAC/ ){
 ###############################################################################
 sub show_ip {
     my ($address, $show_arp) = @_;
-    my $ip     = Ipblock->search(address=>$address)->first;
-    my $parent = $ip->parent;
+    my $ip = Ipblock->search(address=>$address)->first;
     my $subnet;
-    if ( int($parent->status) && $parent->status->name eq "Subnet" ){
-	$subnet = $parent;
-    }
-    print "\n";
-    print "IP Address : ", $address, "\n";
-    print "Subnet     : ", $subnet->get_label, ", ", $subnet->description, "\n";
-    if ( my $name = Netdot->dns->resolve_ip($address) ){
-	print "DNS        : ", $name, "\n";
-    }
     if ( $ip ){
+	my $parent = $ip->parent;	
+	if ( int($parent->status) && $parent->status->name eq "Subnet" ){
+	    $subnet = $parent;
+	}
+	print "\n";
+	print "IP Address : ", $address, "\n";
+	if ( $subnet ){
+	    print "Subnet     : ", $subnet->get_label, ", ", $subnet->description, "\n";
+	}
+	if ( my $name = Netdot->dns->resolve_ip($address) ){
+	    print "DNS        : ", $name, "\n";
+	}
 	if ( $show_arp ){
 	    my $last_n = $self{ARP_LIMIT} || 1;
 	    if ( my $arp = $ip->get_last_n_arp($last_n) ){
@@ -246,8 +248,8 @@ sub search_live{
     my $info = Device->search_address_live(%argv);
     if ( $info ){
 	my ($ipaddr, $macaddr); 
-	$ipaddr  = $argv{ip}  if $argv{ip};
-	$macaddr = $argv{mac} if $argv{mac};
+	$ipaddr  = $info->{ip};
+	$macaddr = $info->{mac};
 	if ( scalar keys %{$info->{routerports}} ){
 	    if ( $self{ARP_LIMIT} ){
 		print "\nARP entries: \n";
@@ -274,15 +276,12 @@ sub search_live{
 	}
 	print "\n";
 	if ( $macaddr ){
-	    my $vendor = PhysAddr->vendor($macaddr);
 	    print "MAC Address : ", $macaddr, "\n";
-	    print "Vendor      : ", $vendor,  "\n";
+	    print "Vendor      : ", $info->{vendor}, "\n" if $info->{vendor};
 	}
 	if ( $ipaddr ){
 	    print "IP Address  : ", $ipaddr, "\n";
-	    if ( my $name = Netdot->dns->resolve_ip($ipaddr) ){
-		print "DNS         : ", $name, "\n";
-	    }
+	    print "DNS         : ", $info->{dns}, "\n" if $info->{dns};
 	}
 
 	print "\n";
