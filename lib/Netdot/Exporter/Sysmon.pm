@@ -103,11 +103,10 @@ sub generate_configs {
     
     # Open output file for writing
     my $filename = $self->{SYSMON_DIR}."/".$self->{SYSMON_FILE};
-    open (SYSMON, ">$filename") 
-	or die "Can't open $filename $!\n";
+    my $sysmon = $self->open_and_lock($filename);
     
     my $root = $self->{MONITOR}->fqdn();
-    print SYSMON <<EOP;
+    print $sysmon <<EOP;
 root \"$root\"\;
 config queuetime $self->{SYSMON_QUEUETIME}\;
 config maxqueued $self->{SYSMON_MAXQUEUED}\;
@@ -121,19 +120,19 @@ EOP
     foreach my $ipid ( sort { $hosts{$a}{name} cmp $hosts{$b}{name} } keys %hosts ){
 	my $name = $hosts{$ipid}{name};
 	
-	print SYSMON "\n";
-	print SYSMON "object $name \{\n";
-	print SYSMON "   ip \"$name\"\;\n";
-	print SYSMON "   type ping\;\n";
-	print SYSMON "   desc \"$name\"\;\n";
+	print $sysmon "\n";
+	print $sysmon "object $name \{\n";
+	print $sysmon "   ip \"$name\"\;\n";
+	print $sysmon "   type ping\;\n";
+	print $sysmon "   desc \"$name\"\;\n";
 	
 	foreach my $parent ( @{ $hosts{$ipid}{parents} } ){
 	    next if ($parent eq "");
-	    print SYSMON "   dep \"$parent\"\;\n";
+	    print $sysmon "   dep \"$parent\"\;\n";
 	}
 	
-	print SYSMON "\}\;";
-	print SYSMON "\n";
+	print $sysmon "\}\;";
+	print $sysmon "\n";
 	
     }
     

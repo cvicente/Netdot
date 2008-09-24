@@ -130,15 +130,14 @@ sub generate_configs {
 		&& $self->throw_fatal("Netdot::Exporter::Rancid::generate_configs: Can't make dir $dir_path: $!");
 	}
 	my $file_path = "$dir_path/".$self->{RANCID_FILE};
-	open (RANCID, ">$file_path")
-	    or $self->throw_fatal("Netdot::Exporter::Rancid::generate_configs: Can't open $file_path: $!");
+	my $rancid = $self->open_and_lock($file_path);
 
 	foreach my $device ( sort keys %{$groups{$group}} ){
 	    my $mfg   = $groups{$group}{$device}{mfg};
 	    my $state = $groups{$group}{$device}{state};
-	    print RANCID $device, ":$mfg:$state\n";
+	    print $rancid $device, ":$mfg:$state\n";
 	}
-	close(RANCID) || $logger->warn("Netdot::Exporter::Rancid::generate_configs: ".
+	close($rancid) || $logger->warn("Netdot::Exporter::Rancid::generate_configs: ".
 				    "$file_path did not close nicely");
 
 	$logger->info("Netdot::Exporter::Rancid::generate_configs:".

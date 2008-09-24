@@ -5,6 +5,7 @@ use Netdot::Model;
 use warnings;
 use strict;
 use Carp;
+use Fcntl qw(:DEFAULT :flock);
 
 my $logger = Netdot->log->get_logger('Netdot::Exporter');
 
@@ -243,6 +244,34 @@ sub get_dependencies{
     }
 
     return $self->_cache('dependencies', $ipdeps);
+}
+
+########################################################################
+=head2 open_and_lock - Open and lock file for writing
+
+
+ Arguments: 
+    filename
+ Returns:
+    File handle reference
+
+=cut
+sub open_and_lock {
+    my ($self, $filename) = @_;
+
+    eval {
+	sysopen(FH, $filename, O_WRONLY | O_CREAT)
+	    or $self->throw_user("Exporter::lock_file: Can't open $filename: $!");
+	flock(FH, LOCK_EX | LOCK_NB)
+	    or $self->throw_user("Exporter::lock_file: Can't lock $filename: $!");
+	truncate(FH, 0)
+	    or $self->throw_user("Exporter::lock_file: Can't truncate $filename: $!");
+    };
+    if ( my $e = $@ ){
+	$self->throw_fatal($e);
+    }else{
+	return \*FH;
+    }
 }
 
 ########################################################################

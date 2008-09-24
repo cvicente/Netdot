@@ -243,7 +243,7 @@ sub generate_configs {
 	
 	# Open output file for writing
 	my $out_file = $self->{NAGIOS_DIR}."/$file.".$self->{NAGIOS_CFG_EXT};
-	open (OUT, ">$out_file") or die "Can't open $out_file\n";
+	my $out = $self->open_and_lock($out_file);
 	
 	while ( <SKEL> ){
 	    if (/<INSERT HOST DEFINITIONS>/){
@@ -279,40 +279,40 @@ sub generate_configs {
 			    my $contact_groups = join ',', @contact_groups;
 			    
 			    if ( $first ){
-				print OUT "define host{\n";
-				print OUT "\tuse                    generic-host\n";
-				print OUT "\thost_name              $name\n";
-				print OUT "\talias                  $group\n";
-				print OUT "\taddress                $ip\n";
-				print OUT "\tparents                $parents\n" if ($parents);
-				print OUT "\tcontact_groups         $contact_groups\n";
-				print OUT "}\n\n";
+				print $out "define host{\n";
+				print $out "\tuse                    generic-host\n";
+				print $out "\thost_name              $name\n";
+				print $out "\talias                  $group\n";
+				print $out "\taddress                $ip\n";
+				print $out "\tparents                $parents\n" if ($parents);
+				print $out "\tcontact_groups         $contact_groups\n";
+				print $out "}\n\n";
 				if ( $self->{NAGIOS_TRAPS} ){
-				    print OUT "define service{\n";
-				    print OUT "\tuse                     generic-trap\n";
-				    print OUT "\thost_name               $name\n";
-				    print OUT "\tcontact_groups          $contact_groups\n";
-				    print OUT "}\n\n";
+				    print $out "define service{\n";
+				    print $out "\tuse                     generic-trap\n";
+				    print $out "\thost_name               $name\n";
+				    print $out "\tcontact_groups          $contact_groups\n";
+				    print $out "}\n\n";
 				}
 				$first = 0;
 			    }else{
-				print OUT "define hostescalation{\n";
-				print OUT "\thost_name                $name\n";
-				print OUT "\tfirst_notification       $fn\n";
-				print OUT "\tlast_notification        $ln\n";
-				print OUT "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
-				print OUT "\tcontact_groups           $contact_groups\n";
-				print OUT "}\n\n";
+				print $out "define hostescalation{\n";
+				print $out "\thost_name                $name\n";
+				print $out "\tfirst_notification       $fn\n";
+				print $out "\tlast_notification        $ln\n";
+				print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
+				print $out "\tcontact_groups           $contact_groups\n";
+				print $out "}\n\n";
 				
 				if ( $self->{NAGIOS_TRAPS} ){
-				    print OUT "define serviceescalation{\n";
-				    print OUT "\thost_name                $name\n";
-				    print OUT "\tservice_description      TRAP\n";
-				    print OUT "\tfirst_notification       $fn\n";
-				    print OUT "\tlast_notification        $ln\n";
-				    print OUT "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
-				    print OUT "\tcontact_groups           $contact_groups\n";
-				    print OUT "}\n\n";
+				    print $out "define serviceescalation{\n";
+				    print $out "\thost_name                $name\n";
+				    print $out "\tservice_description      TRAP\n";
+				    print $out "\tfirst_notification       $fn\n";
+				    print $out "\tlast_notification        $ln\n";
+				    print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
+				    print $out "\tcontact_groups           $contact_groups\n";
+				    print $out "}\n\n";
 				}
 				
 				$fn += $ln - $fn + 1;
@@ -322,48 +322,48 @@ sub generate_configs {
 			
 		    }
 		    if ( !@cls || ! keys %levels ){
-			print OUT "define host{\n";
-			print OUT "\tuse                    generic-host\n";
-			print OUT "\thost_name              $name\n";
-			print OUT "\talias                  $group\n";
-			print OUT "\taddress                $ip\n";
-			print OUT "\tparents                $parents\n" if ($parents);
-			print OUT "\tcontact_groups         nobody\n";
-			print OUT "}\n\n";
+			print $out "define host{\n";
+			print $out "\tuse                    generic-host\n";
+			print $out "\thost_name              $name\n";
+			print $out "\talias                  $group\n";
+			print $out "\taddress                $ip\n";
+			print $out "\tparents                $parents\n" if ($parents);
+			print $out "\tcontact_groups         nobody\n";
+			print $out "}\n\n";
 			
 			if ( $self->{NAGIOS_TRAPS} ){
 			    # Define a TRAP service for every host
-			    print OUT "define service{\n";
-			    print OUT "\tuse                    generic-trap\n";
-			    print OUT "\thost_name              $name\n";
-			    print OUT "\tcontact_groups         nobody\n";
-			    print OUT "}\n\n";
+			    print $out "define service{\n";
+			    print $out "\tuse                    generic-trap\n";
+			    print $out "\thost_name              $name\n";
+			    print $out "\tcontact_groups         nobody\n";
+			    print $out "}\n\n";
 			}
 		    }
 		    
 		    if ( $self->{NAGIOS_GRAPH_RTT} ){
 			# Define RTT (Round Trip Time) as a service
-			print OUT "define service{\n";
-			print OUT "\thost_name              $name\n";
-			print OUT "\tuse                    generic-RTT\n";
-			print OUT "}\n\n";
+			print $out "define service{\n";
+			print $out "\thost_name              $name\n";
+			print $out "\tuse                    generic-RTT\n";
+			print $out "}\n\n";
 			
-			print OUT "define serviceextinfo{\n";
-			print OUT "\thost_name              $name\n";
-			print OUT "\tservice_description    RTT\n";
-			print OUT "\tnotes                  Round Trip Time Statistics\n";
-			print OUT "\tnotes_url              /nagios/cgi-bin/apan.cgi?host=$ip&service=RTT\n";
-			print OUT "\ticon_image             graph.png\n";
-			print OUT "\ticon_image_alt         View RTT graphs\n";
-			print OUT "}\n\n";
+			print $out "define serviceextinfo{\n";
+			print $out "\thost_name              $name\n";
+			print $out "\tservice_description    RTT\n";
+			print $out "\tnotes                  Round Trip Time Statistics\n";
+			print $out "\tnotes_url              /nagios/cgi-bin/apan.cgi?host=$ip&service=RTT\n";
+			print $out "\ticon_image             graph.png\n";
+			print $out "\ticon_image_alt         View RTT graphs\n";
+			print $out "}\n\n";
 			
 		    }else{
 			
 			# Nagios requires at least one service per host
-			print OUT "define service{\n";
-			print OUT "\tuse                    generic-ping\n";
-			print OUT "\thost_name              $name\n";
-			print OUT "}\n\n";
+			print $out "define service{\n";
+			print $out "\tuse                    generic-ping\n";
+			print $out "\thost_name              $name\n";
+			print $out "}\n\n";
 		    }
 		    
 		}
@@ -375,7 +375,7 @@ sub generate_configs {
 		    $name =~ s/\//-/;
 		    my $ip = $hosts{$ipid}{ip};
 		    my $dir = $self->{NAGIOS_RTT_RRD_DIR};
-		    print OUT "$ip;RTT;$dir/$ip-RTT.rrd;ping;RTT:LINE2;Ping round-trip time;Seconds\n"; 
+		    print $out "$ip;RTT;$dir/$ip-RTT.rrd;ping;RTT:LINE2;Ping round-trip time;Seconds\n"; 
 		}
 		
 	    }elsif (/<INSERT CONTACT DEFINITIONS>/){
@@ -383,14 +383,14 @@ sub generate_configs {
 		# A person might be a contact for several groups/events
 		
 		foreach my $name (keys %contacts){
-		    print OUT "define contact{\n";
-		    print OUT "\tname                            $name\n";
-		    print OUT "\tuse                             generic-contact\n";
-		    print OUT "\talias                           $name\n";
-		    print OUT "\temail                           $contacts{$name}{email}\n" if $contacts{$name}{email};
-		    print OUT "\tpager                           $contacts{$name}{pager}\n" if $contacts{$name}{pager};
-		    print OUT "\tregister                        0 ; (THIS WILL BE INHERITED LATER)\n";  
-		    print OUT "}\n\n";
+		    print $out "define contact{\n";
+		    print $out "\tname                            $name\n";
+		    print $out "\tuse                             generic-contact\n";
+		    print $out "\talias                           $name\n";
+		    print $out "\temail                           $contacts{$name}{email}\n" if $contacts{$name}{email};
+		    print $out "\tpager                           $contacts{$name}{pager}\n" if $contacts{$name}{pager};
+		    print $out "\tregister                        0 ; (THIS WILL BE INHERITED LATER)\n";  
+		    print $out "}\n\n";
 		    
 		}
 		
@@ -408,14 +408,14 @@ sub generate_configs {
 				    if ((my $emailperiod = $self->{NAGIOS_TIMEPERIODS}{$contact->notify_email->name}) ne 'none' ){
 					my $contactname = "$name-$clname-email-level_$level";
 					push @members, $contactname;
-					print OUT "define contact{\n";
-					print OUT "\tcontact_name                    $contactname\n";
-					print OUT "\tuse                             $name\n";
-					print OUT "\tservice_notification_period     $emailperiod\n";
-					print OUT "\thost_notification_period        $emailperiod\n";
-					print OUT "\tservice_notification_commands   notify-by-email\n";
-					print OUT "\thost_notification_commands      host-notify-by-email\n";
-					print OUT "}\n\n";
+					print $out "define contact{\n";
+					print $out "\tcontact_name                    $contactname\n";
+					print $out "\tuse                             $name\n";
+					print $out "\tservice_notification_period     $emailperiod\n";
+					print $out "\thost_notification_period        $emailperiod\n";
+					print $out "\tservice_notification_commands   notify-by-email\n";
+					print $out "\thost_notification_commands      host-notify-by-email\n";
+					print $out "}\n\n";
 				    }
 				}else{
 				    $logger->warn($contact->notify_email->name . " is not a defined timeperiod");
@@ -427,14 +427,14 @@ sub generate_configs {
 				    if ((my $pagerperiod = $self->{NAGIOS_TIMEPERIODS}{$contact->notify_pager->name}) ne 'none' ){
 					my $contactname = "$name-$clname-pager-level_$level";
 					push @members, $contactname;
-					print OUT "define contact{\n";
-					print OUT "\tcontact_name                    $contactname\n";
-					print OUT "\tuse                             $name\n";
-					print OUT "\tservice_notification_period     $pagerperiod\n";
-					print OUT "\thost_notification_period        $pagerperiod\n";
-					print OUT "\tservice_notification_commands   notify-by-epager\n";
-					print OUT "\thost_notification_commands      host-notify-by-epager\n";
-					print OUT "}\n\n";
+					print $out "define contact{\n";
+					print $out "\tcontact_name                    $contactname\n";
+					print $out "\tuse                             $name\n";
+					print $out "\tservice_notification_period     $pagerperiod\n";
+					print $out "\thost_notification_period        $pagerperiod\n";
+					print $out "\tservice_notification_commands   notify-by-epager\n";
+					print $out "\thost_notification_commands      host-notify-by-epager\n";
+					print $out "}\n\n";
 				    }
 				}else{
 				    $logger->warn($contact->notify_pager->name . " is not a defined timeperiod");
@@ -444,11 +444,11 @@ sub generate_configs {
 			# Create the contactgroup
 			my $members = join ',', @members;
 			
-			print OUT "define contactgroup{\n";
-			print OUT "\tcontactgroup_name       $clname-level_$level\n";
-			print OUT "\talias                   $clname\n";
-			print OUT "\tmembers                 $members\n";
-			print OUT "}\n\n";
+			print $out "define contactgroup{\n";
+			print $out "\tcontactgroup_name       $clname-level_$level\n";
+			print $out "\talias                   $clname\n";
+			print $out "\tmembers                 $members\n";
+			print $out "}\n\n";
 		    }
 		}
 		
@@ -456,11 +456,11 @@ sub generate_configs {
 		foreach my $group ( keys %groups ){
 		    
 		    my $hostlist = join ',', @{ $groups{$group}{members} };
-		    print OUT "define hostgroup{\n";
-		    print OUT "\thostgroup_name      $group\n";
-		    print OUT "\talias               $group\n";
-		    print OUT "\tmembers             $hostlist\n";
-		    print OUT "}\n\n";
+		    print $out "define hostgroup{\n";
+		    print $out "\thostgroup_name      $group\n";
+		    print $out "\talias               $group\n";
+		    print $out "\tmembers             $hostlist\n";
+		    print $out "}\n\n";
 		}
 		
 	    }elsif (/<INSERT SERVICE GROUP DEFINITIONS>/){
@@ -469,11 +469,11 @@ sub generate_configs {
 		    # servicegroup members are like:
 		    # members=<host1>,<service1>,<host2>,<service2>,...,
 		    my $hostlist = join ',', map { "$_,$group" }@{ $servicegroups{$group}{members} };
-		    print OUT "define servicegroup{\n";
-		    print OUT "\tservicegroup_name      $group\n";
-		    print OUT "\talias                  $group\n";
-		    print OUT "\tmembers                $hostlist\n";
-		    print OUT "}\n\n";
+		    print $out "define servicegroup{\n";
+		    print $out "\tservicegroup_name      $group\n";
+		    print $out "\talias                  $group\n";
+		    print $out "\tmembers                $hostlist\n";
+		    print $out "}\n\n";
 		}
 		
 	    }elsif (/<INSERT SERVICE DEFINITIONS>/){
@@ -517,55 +517,52 @@ sub generate_configs {
 				}
 				my $contact_groups = join ',', @contact_groups;
 				
-#				foreach my $level ( sort keys %levels ){
+				if ( $first ){
+				    print $out "define service{\n";
+				    print $out "\tuse                  generic-service\n";
+				    print $out "\thost_name            $name\n";
+				    print $out "\tservice_description  $srvname\n";
+				    print $out "\tcontact_groups       $contact_groups\n";
+				    print $out "\tcheck_command        $checkcmd\n";
+				    print $out "}\n\n";
 				    
-				    if ( $first ){
-					print OUT "define service{\n";
-					print OUT "\tuse                  generic-service\n";
-					print OUT "\thost_name            $name\n";
-					print OUT "\tservice_description  $srvname\n";
-					print OUT "\tcontact_groups       $contact_groups\n";
-					print OUT "\tcheck_command        $checkcmd\n";
-					print OUT "}\n\n";
-					
-					$first = 0;
-				    }else{
-					
-					print OUT "define serviceescalation{\n";
-					print OUT "\thost_name                $name\n";
-					print OUT "\tservice_description      $srvname\n";
-					print OUT "\tfirst_notification       $fn\n";
-					print OUT "\tlast_notification        $ln\n";
-					print OUT "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
-					print OUT "\tcontact_groups           $contact_groups\n";
-					print OUT "}\n\n";
-					
-					$fn += $ln - $fn + 1;
-					$ln += $ln - $fn + 1;
-				    }
-				}	   
-#			    }
+				    $first = 0;
+				}else{
+				    
+				    print $out "define serviceescalation{\n";
+				    print $out "\thost_name                $name\n";
+				    print $out "\tservice_description      $srvname\n";
+				    print $out "\tfirst_notification       $fn\n";
+				    print $out "\tlast_notification        $ln\n";
+				    print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
+				    print $out "\tcontact_groups           $contact_groups\n";
+				    print $out "}\n\n";
+				    
+				    $fn += $ln - $fn + 1;
+				    $ln += $ln - $fn + 1;
+				}
+			    }	   
 			}
 			if ( ! @cls || ! keys %levels ){
 			    
-			    print OUT "define service{\n";
-			    print OUT "\tuse                  generic-service\n";
-			    print OUT "\thost_name            $name\n";
-			    print OUT "\tservice_description  $srvname\n";
-			    print OUT "\tcontact_groups       nobody\n";
-			    print OUT "\tcheck_command        $checkcmd\n";
-			    print OUT "}\n\n";
+			    print $out "define service{\n";
+			    print $out "\tuse                  generic-service\n";
+			    print $out "\thost_name            $name\n";
+			    print $out "\tservice_description  $srvname\n";
+			    print $out "\tcontact_groups       nobody\n";
+			    print $out "\tcheck_command        $checkcmd\n";
+			    print $out "}\n\n";
 			}
 		    }
 		}
 		
 	    }else{
-		print OUT $_;
+		print $out $_;
 	    }
 	}
 	$logger->info("Netdot::Exporter::Nagios: Configuration written to file: $out_file");
 	close(SKEL);
-	close(OUT);
+	close($out);
     }
 }
 
