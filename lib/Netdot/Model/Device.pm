@@ -1385,6 +1385,37 @@ sub get_macs_from_all {
     return \%dev_macs;
     
 }
+#################################################################
+=head2 get_within_downtime
+    
+    Get the devices within downtime.
+
+  Arguments:
+    None
+  Returns:   
+    Array of Device objects
+  Examples:  
+    my @devices = Device->get_within_downtime();
+
+=cut
+sub get_within_downtime {
+    my ($class) = @_;
+    $class->isa_class_method('get_within_downtime');
+
+    my $now = $class->time2sqldate(time);
+    my $dbh = $class->db_Main;
+    my $aref = $dbh->selectall_arrayref("SELECT id
+                                         FROM   device
+                                         WHERE  down_from  <= '$now' 
+                                            AND down_until >= '$now'
+                                         ");
+    my @devices;
+    foreach my $row ( @$aref ){
+	my ($id) = @$row;
+	push @devices, Device->retrieve($id);
+    }
+    return @devices;
+}
 
 #################################################################
 =head2 get_ips_from_all

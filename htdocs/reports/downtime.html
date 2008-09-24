@@ -1,0 +1,29 @@
+<%doc>
+Devices in downtime
+</%doc>
+
+<%attr>
+title   => 'Devices in Downtime' 
+section => 'Reports'
+</%attr>
+
+<%args>
+
+</%args>
+
+<%init>
+my $DEBUG = 0;
+if ( $DEBUG ){
+    print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>';
+}
+my @devices = Device->get_within_downtime();
+</%init>
+
+
+<div class="container">
+    <div class="containerhead">Devices within downtime</div>
+    <div class="containerbody">
+    <& ../generic/sortresults.mhtml, table => 'Device', object=>\@devices, view => "row", withdelete => 1, withedit => 1 &>
+    </div>
+</div>
+

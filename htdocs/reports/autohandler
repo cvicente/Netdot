@@ -44,6 +44,7 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 	    sub_sections => [
 		{ section => 'DUPLEX',    title => 'Duplex Mismatches' },
 		{ section => 'DEVICE',    title => 'Device Inventory' },
+		{ section => 'DOWNTIME',  title => 'Downtime' },
 		{ section => 'MACS',      title => 'MAC Addresses' },
 		{ section => 'TOPOLOGY',  title => 'Topology Graph' },
 		{ section => 'POLLSTATS', title => 'Polling Stats' },
@@ -86,6 +87,10 @@ if ( $page eq "POLLSTATS" ) {
 }elsif ( $page eq "DEVICE" && $m->request_comp->name ne "device_inventory.html" ) {
 	
 	$m->comp('device_inventory.html');
+
+}elsif ( $page eq "DOWNTIME" && $m->request_comp->name ne "downtime.html" ) {
+	
+	$m->comp('downtime.html');
 
 }elsif ( $page eq "MACS" && $m->request_comp->name ne "macs_by_vendor.html" ) {
 

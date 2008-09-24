@@ -682,7 +682,7 @@ sub search_all_tables {
 
 
 ############################################################################
-=head2 
+=head2 sqldate2time
 
   Arguments:  
     SQL date string (YYYY-MM-DD)
@@ -698,6 +698,24 @@ sub sqldate2time {
     }else{
 	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid SQL date format: $d. Should be (YYYY-MM-DD).");
     }
+}
+
+############################################################################
+=head2 time2sqldate
+
+  Arguments:  
+    time (epoch)
+  Returns:    
+    Date string in SQL format (YYYY-MM-DD)
+
+=cut
+sub time2sqldate {
+    my ($self, $time) = @_;
+    $time ||= time;
+    my (@arr) = localtime($time);
+    my ($d, $m, $y) = ($arr[3], $arr[4], $arr[5]);
+    $m++; $y += 1900;
+    return "$y-$m-$d";
 }
 
 ##################################################################
