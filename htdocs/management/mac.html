@@ -100,11 +100,8 @@ if ( $o ){
     @devices = $o->devices;
     # Interfaces with this address
     @interfaces = $o->interfaces;
-
-    # Get edge port unless MAC belongs to an Interface with a neighbor
-    unless ( scalar(@interfaces) == 1 && ($interfaces[0])->neighbor ){
-	$edge_port  = $o->find_edge_port;
-    }
+    # Edge port
+    $edge_port  = $o->find_edge_port;
     
     my (@headers, @data) = ();
     
