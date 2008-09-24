@@ -224,10 +224,10 @@ sub search_address_live {
 	$logger->debug($@) if $@;
 	if ( $cache ){
 	    foreach my $intid ( keys %$cache ){
-		foreach my $mac ( keys %{$cache->{$intid}} ){
-		    next if ( $argv{mac} && ($mac ne $argv{mac}) );
-		    my $ip = $cache->{$intid}->{$mac};
+		foreach my $ip ( keys %{$cache->{$intid}} ){
 		    next if ( $argv{ip} && ($ip ne $argv{ip}) );
+		    my $mac = $cache->{$intid}->{$ip};
+		    next if ( $argv{mac} && ($mac ne $argv{mac}) );
 		    # We now have a mac address if we didn't have it yet
 		    unless ( $argv{mac} ){
 			$argv{mac} = $mac;
@@ -1608,23 +1608,23 @@ sub arp_update {
 	return;
     }
 	
-    $self->_update_macs_from_cache(caches    => [$cache], 
-				   timestamp => $timestamp, 
-				   atomic    => $argv{atomic},
+    $self->_update_macs_from_arp_cache(caches    => [$cache], 
+				       timestamp => $timestamp, 
+				       atomic    => $argv{atomic},
 	);
 
-    $self->_update_ips_from_cache(caches         => [$cache], 
-				  timestamp      => $timestamp, 
-				  no_update_tree => $argv{no_update_tree},
-				  atomic         => $argv{atomic},
+    $self->_update_ips_from_arp_cache(caches         => [$cache], 
+				      timestamp      => $timestamp, 
+				      no_update_tree => $argv{no_update_tree},
+				      atomic         => $argv{atomic},
 	);
 
     my ($arp_count, @ce_updates);
 
     foreach my $intid ( keys %$cache ){
-	foreach my $mac ( keys %{$cache->{$intid}} ){
+	foreach my $ip ( keys %{$cache->{$intid}} ){
+	    my $mac = $cache->{$intid}->{$ip};
 	    $arp_count++;
-	    my $ip = $cache->{$intid}->{$mac};
 	    push @ce_updates, {
 		arpcache  => $ac->id,
 		interface => $intid,
@@ -1705,9 +1705,9 @@ sub fwt_update {
 	$logger->warn(sprintf("Device %s: Could not insert FWTable at %s: %s", $self->fqdn, $timestamp, $e));
 	return;
     }
-    $self->_update_macs_from_cache(caches    => [$fwt], 
-				   timestamp => $timestamp,
-				   atomic    => $argv{atomic},
+    $self->_update_macs_from_fwt(caches    => [$fwt], 
+				 timestamp => $timestamp,
+				 atomic    => $argv{atomic},
 	);
     
     my @fw_updates;
@@ -4079,7 +4079,7 @@ sub _get_arp_from_snmp {
 	}	
 	
 	# Store in hash
-	$cache{$intid}{$mac} = $ip;
+	$cache{$intid}{$ip} = $mac;
 
 	$logger->debug(sub{"Device::get_snmp_arp: $host: $idx -> $ip -> $mac" });
     }
@@ -4420,14 +4420,14 @@ sub _get_as_info{
 }
 
 #####################################################################
-# _update_macs_from_cache - Update MAC addresses
+# _update_macs_from_fwt - Update MAC addresses
 # 
 # Arguments:
 #   hash with following keys:
-#     caches    - Arrayref with ARP cache or FWT info
+#     caches    - Arrayref with FWT info
 #     timestamp - Time Stamp
 #     atomic    - Perform atomic updates
-sub _update_macs_from_cache {
+sub _update_macs_from_fwt {
     my ($class, %argv) = @_;
     my ($caches, $timestamp, $atomic) = @argv{'caches', 'timestamp', 'atomic'};
 
@@ -4447,19 +4447,50 @@ sub _update_macs_from_cache {
     return 1;
 }
 
+
 #####################################################################
-#
+# _update_macs_from_arp_cache - Update MAC addresses from ARP cache
+# 
+# Arguments:
+#   hash with following keys:
+#     caches    - Arrayref with ARP cache
+#     timestamp - Time Stamp
+#     atomic    - Perform atomic updates
+sub _update_macs_from_arp_cache {
+    my ($class, %argv) = @_;
+    my ($caches, $timestamp, $atomic) = @argv{'caches', 'timestamp', 'atomic'};
+
+    my %mac_updates;
+    foreach my $cache ( @$caches ){
+	foreach my $idx ( keys %{$cache} ){
+	    foreach my $ip ( keys %{$cache->{$idx}} ){
+		my $mac = $cache->{$idx}{$ip};
+		$mac_updates{$mac} = 1;
+	    }
+	}
+    }
+    if ( $atomic ){
+	Netdot::Model->do_transaction( sub{ return PhysAddr->fast_update(\%mac_updates, $timestamp) } );
+    }else{
+	PhysAddr->fast_update(\%mac_updates, $timestamp);
+    }
+    return 1;
+}
+
+#####################################################################
+# _update_ips_from_arp_cache - Update IP addresses from ARP cache
 #
 # Arguments:
 #   hash with following keys:
-#     caches         - Array ref with Arp Cache info
+#     caches         - Array ref with ARP Cache info
 #     timestamp      - Time Stamp
 #     no_update_tree - Boolean 
 #     atomic         - Perform atomic updates
-sub _update_ips_from_cache {
+sub _update_ips_from_arp_cache {
     my ($class, %argv) = @_;
-    my ($caches, $timestamp, $no_update_tree, $atomic) = @argv{'caches', 'timestamp', 
-							       'no_update_tree', 'atomic'};
+    my ($caches, $timestamp, 
+	$no_update_tree, $atomic) = @argv{'caches', 'timestamp', 
+					  'no_update_tree', 'atomic'};
 
     my %ip_updates;
 
@@ -4469,8 +4500,8 @@ sub _update_ips_from_cache {
     
     foreach my $cache ( @$caches ){
 	foreach my $idx ( keys %{$cache} ){
-	    foreach my $mac ( keys %{$cache->{$idx}} ){
-		my $ip = $cache->{$idx}->{$mac};
+	    foreach my $ip ( keys %{$cache->{$idx}} ){
+		my $mac = $cache->{$idx}->{$ip};
 		$ip_updates{$ip} = {
 		    prefix     => 32,
 		    version    => 4,
@@ -4494,7 +4525,6 @@ sub _update_ips_from_cache {
 
     return 1;
 }
-
 
 #####################################################################
 # Add more specific info to the SNMP hashes
