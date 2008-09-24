@@ -540,10 +540,9 @@ sub vendor {
 ################################################################
 =head2 find_edge_port - Find edge port where this MAC is located
 
-    The idea is to get all non-neighboring device ports 
-    whose latest forwarding tables included this address. 
-    If topology status is complete, this would ideally be only one
-    port.  If we get more than one, select the one whose forwarding
+    The idea is to get all device ports whose latest forwarding 
+    tables included this address. 
+    If we get more than one, select the one whose forwarding
     table had the least entries.
 
   Arguments: 
@@ -564,7 +563,7 @@ sub find_edge_port {
                                      FROM     interface i, fwtableentry fte, fwtable ft 
                                      WHERE    fte.physaddr=? 
                                        AND    fte.interface=i.id 
-                                       AND    fte.fwtable=ft.id AND i.neighbor=0 
+                                       AND    fte.fwtable=ft.id
                                      GROUP BY i.id');
 	
 	$sth2 = $dbh->prepare_cached('SELECT COUNT(i.id) 
