@@ -136,7 +136,7 @@ EOP
 	
     }
     
-    close(SYSMON) or $logger->warn("$filename did not close nicely");
+    close($sysmon) or $logger->warn("$filename did not close nicely");
     $logger->info("Sysmon configuration written to $filename");
 }
 
