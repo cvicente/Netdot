@@ -20,6 +20,10 @@
         jsrsExecute( "../cable_plant/backbone_list_query.html", jsrsParseresults, "backbone_search", Array(form_field.name, val) );
     }
 
+    function jsrsResetSelection(elementID) {
+        document.getElementById(elementID).options.length = 0;
+    }
+
     function jsrsParseresults( returnstring ) {
         //alert(returnstring);
         var data = explode(returnstring, "&");
