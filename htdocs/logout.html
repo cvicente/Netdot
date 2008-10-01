@@ -13,33 +13,9 @@ $user
 </%args>
 
 <%init>
-my $success;
-
 if(defined($user) && $user->isa("Apache2::SiteControl::User")) {
    $user->logout($r);
-   $success = 1;
 }
+
+$m->redirect(".");
 </%init>
-
-
-<div class="sectiondetail">
-
-<div id="loginform">
-
-<div class="container">
-    <div class="containerhead">
-        Logout
-    </div>
-    <div class="containerbody">
-%     if($success) {
-          You have been logged out.
-%     } else {
-          Attempt to log out failed. You were not logged in.
-%     }
-    <p>Click <a href="login.html">here</a> to log in.</p>
-    </div>
-</div>
-
-</div>
-
-</div>
