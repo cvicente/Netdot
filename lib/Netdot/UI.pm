@@ -542,7 +542,7 @@ sub select_lookup{
             my $srchf = "_" . $id . "_" . $column . "_srch";
             $output .= "<nobr>";   # forces the text field and button to be on the same line
             $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">", $srchf);
-            $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"jsrsSendquery(\'%s\', %s, %s.value);\">\n", time(), $args{lookup}, $name, $srchf );
+            $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"jsrsSendquery(\'%s\', \'%s\', %s.value);\">\n", time(), $args{lookup}, $name, $srchf );
             $output .= "</nobr>";
             $output .= "<nobr>";   # forces the select box and "new" link to be on the same line
             $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
