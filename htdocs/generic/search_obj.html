@@ -12,6 +12,9 @@ Arguments:
    table - The name of the table to search
    res   - A flag to distinguish between showing the form or 
            showing the results
+   adv_search - If adv_search=1 is passed then show radio buttons for
+           boolean fields (unset, true, false) instead of
+           checkboxes (which only has true, false)
    ARGS  - The rest are fields to be passed to the 
            search_like method. 
 
@@ -20,6 +23,7 @@ Arguments:
 <%args>
 $table => undef
 $res   => undef
+$adv_search => 0
 </%args>
 
 <%attr>
@@ -67,7 +71,7 @@ unless ( $table ){ # offer a list of tables to select
     <form name="netdotform" action="search_obj.html" method="POST">
     <input type="hidden" name="res" value="1">
 
-    <& form.mhtml, table => $table, allow_create => 0  &>     
+    <& form.mhtml, table => $table, allow_create => 0, adv_search => $adv_search  &>
 
     <input name="submit" value="Search" type="submit">
     <input type="reset">
@@ -88,6 +92,10 @@ foreach my $j (keys %ARGS){
     next unless ( $ARGS{$j} );
     next if ( exists $reserved{$j} );
     next if ( $j =~ /_srch/ );
+    next if ( $ARGS{$j} =~ /radio_unset/ );
+    
+    $ARGS{$j} =~ s/radio_yes/1/;
+    $ARGS{$j} =~ s/radio_no/0/;
     
     # "/^_/" is added to avoid using reserved words in javascript
     # chop it off

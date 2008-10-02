@@ -262,7 +262,7 @@ sub form_to_db{
 =head2 form_field - Generate a HTML form field.
 
     This method detects the type of form input required for the object, and then calls the appropriate
-    method in UI.pm. Either select_lookup, select_multiple, radio_group_boolean, text_field, or text_area.
+    method in UI.pm. Either select_lookup, select_multiple, radio_group_boolean/checkbox_boolean, text_field, or text_area.
     If the interface is in "edit" mode, the user will see a form element specific to the type of data
     being viewed, otherwise, the user will see the value of the object in plain text.
     
@@ -278,6 +278,8 @@ sub form_to_db{
     - returnValOnly:  Return only the form field and no label as a string
     - shortFieldName: Whether to set the input tag name as the column name or
                       the format used by form_to_db()
+    - adv_search:     uses radio button groups for true/false/unset instead of
+                      checkboxes which only have true/false
     - no_help         Do not show [?] help link
   Returns:
     if returnValOnly, the form field as a string
@@ -333,8 +335,13 @@ sub form_field {
 				      returnAsVar=>1, htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
 	    
 	} elsif ( $type eq "bool" ) {
-	    $value = $self->checkbox_boolean(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
+	    if ( $args{adv_search} == 1 ) {
+		$value = $self->radio_group_boolean(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
+						returnAsVar=>1, shortFieldName=>$args{shortFieldName}, adv_search=>1);
+	    } else {
+		$value = $self->checkbox_boolean(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 						returnAsVar=>1, shortFieldName=>$args{shortFieldName});
+	    }
 	    
 	} elsif ( $table =~ /Picture/ && $type eq "longblob" ) {
 	    if ( ! $args{edit} ){
@@ -692,6 +699,8 @@ sub select_multiple {
    - returnAsVar:    Whether to return output as a variable or STDOUT
    - shortFieldName: Whether to set the input tag name as the column name or
                      the format used by form_to_db()
+   - adv_search:     If this is 1 then we provide a third, default radio button
+                     with value unset
   Returns:
     String
   Examples:
@@ -709,13 +718,20 @@ sub radio_group_boolean{
     my $id    = ($o ? $o->id : "NEW");
     my $value = ($o ? $o->$column : "");
     my $name  = ( $args{shortFieldName} ? $column : $table . "__" . $id . "__" . $column );
+    my $adv_search = ( $args{adv_search} ? 1 : 0 );
 
     $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
 	unless ( $o || $table );
 
     if ( $args{edit} ){
-        $output .= sprintf("<nobr>Yes<input type=\"radio\" name=\"%s\" value=\"1\" %s></nobr>&nbsp;\n", $name, ($value ? "checked" : ""));
-        $output .= sprintf("<nobr>No<input type=\"radio\" name=\"%s\" value=\"0\" %s></nobr>\n", $name, (!$value ? "checked" : ""));
+        if ( $adv_search == 1 ){
+            $output .= sprintf("<nobr>Yes<input type=\"radio\" name=\"%s\" value=\"radio_yes\" %s></nobr>&nbsp;\n", $name, "");
+            $output .= sprintf("<nobr>No<input type=\"radio\" name=\"%s\" value=\"radio_no\" %s></nobr>\n", $name, "");
+            $output .= sprintf("&nbsp;<nobr>Unset<input type=\"radio\" name=\"%s\" value=\"radio_unset\" %s></nobr>\n", $name, "checked");
+	}else{
+            $output .= sprintf("<nobr>Yes<input type=\"radio\" name=\"%s\" value=\"1\" %s></nobr>&nbsp;\n", $name, ($value ? "checked" : ""));
+            $output .= sprintf("<nobr>No<input type=\"radio\" name=\"%s\" value=\"0\" %s></nobr>\n", $name, (!$value ? "checked" : ""));
+	}
     }else{
         $output .= sprintf("%s\n", ($value ? "Yes" : "No"));
     }

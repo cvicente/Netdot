@@ -13,6 +13,7 @@ $id           => undef       #  id (row) from the above table  (OPTIONAL)
 %session      => undef       #  ref to a hash with values to insert (if object does not exist)
 $allow_create => 1
 $edit         => 1
+$adv_search   => 0           #  toggle radio buttons so we have true/false/unset options
 </%args>
 
 <%init>
@@ -67,20 +68,20 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     if ( $obj ) {
 	if ( my $ftable = $linksto{$c} ){
 	    my $linkPage = $ui->table_view_page($ftable) || 'view.html';
-	    %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>1, linkPage=>$linkPage);
+	    %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>1, linkPage=>$linkPage, adv_search=>$adv_search);
 	}else{
 	    # Do not create link if column is local
-	    %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>1, linkPage=>0);
+	    %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>1, linkPage=>0, adv_search=>$adv_search);
 	}
 
     } elsif( exists( $session{$c} ) ) {
 	my @defaults = ($linksto{$c}->retrieve($session{$c}));
 	%field = $ui->form_field(table=>$table, column=>$c, 
 				 defaults=>\@defaults, default=>$session{$c}, 
-				 edit=>$edit, shortFieldName=>1);
+				 edit=>$edit, shortFieldName=>1, adv_search=>$adv_search);
     } else {
 	%field = $ui->form_field(table=>$table, column=>$c, 
-				 edit=>$edit, shortFieldName=>1);
+				 edit=>$edit, shortFieldName=>1, adv_search=>$adv_search);
     }
     push(@headers, $field{'label'});
     push(@data,    $field{'value'});
