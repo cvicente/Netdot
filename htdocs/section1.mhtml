@@ -17,9 +17,6 @@ my %caller_args = $m->caller_args(-1);
 my $page = "";
 
 my $hideheader;
-if (!$user) {
-    $showheader=0;
-}
 if( !$showheader ) {
     $hideheader = 'style="display:none"';
 }
@@ -107,6 +104,7 @@ HERE
 </%def>
 %
 %
+%   if ($user) {
 <div id="navbar" <% $hideheader %>>
     <ul id="navigation">
 <%perl>
@@ -122,3 +120,4 @@ HERE
 </%perl>
     </ul>
 </div>
+%   } #end if($user)
