@@ -53,8 +53,8 @@ my $SECTION = "Advanced";
     <div class="containerbody">
 
     <p>From the menus below, select the table you want to work with to either search, add or browse records.
-%     push @t, 'Select table';
-%     map { push @t, $_ unless ($_ =~ /_history/) } sort $ui->meta->get_table_names;
+%     map { push @t, $_ unless ($_->name =~ /_history/) } 
+%           sort { $a->name cmp $b->name }  $ui->meta->get_tables;
 %
 
     </div> <!-- close containerbody -->
@@ -65,9 +65,10 @@ my $SECTION = "Advanced";
         <legend>Browse</legend>
         <form action="browse.html" method="POST" name="browse_form">
             <select name="table" onChange="document.browse_form.submit()">
-%       foreach my $t (@t) {
-                <option><% $t %></option>
-%       }
+            <option>Select table</option>
+%           foreach my $t ( @t ) {
+                <option value="<% $t->name %>"><% $t->db_name %></option>
+%           }
             </select>
         </form>
     </fieldset>
@@ -78,8 +79,9 @@ my $SECTION = "Advanced";
         <form action="search_obj.html" method="POST" name="search_form">
             <input type="hidden" name="adv_search" value="1">
             <select name="table" onChange="document.search_form.submit()">
-%       foreach my $t (@t) {
-                <option><% $t %></option>
+            <option>Select table</option>
+%       foreach my $t ( @t ) {
+                <option value="<% $t->name %>"><% $t->db_name %></option>
 %       }
             </select>
         </form>
@@ -91,8 +93,9 @@ my $SECTION = "Advanced";
         <legend>Add</legend>
         <form action="edit.html" method="POST" name="add_form">
             <select name="table" onChange="document.add_form.submit()">
-%       foreach my $t (@t) {
-                <option><% $t %></option>
+            <option>Select table</option>
+%       foreach my $t ( @t ) {
+                <option value="<% $t->name %>"><% $t->db_name %></option>
 %       }
             </select>
         </form>
