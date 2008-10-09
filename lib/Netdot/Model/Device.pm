@@ -1403,17 +1403,10 @@ sub get_within_downtime {
     $class->isa_class_method('get_within_downtime');
 
     my $now = $class->time2sqldate(time);
-    my $dbh = $class->db_Main;
-    my $aref = $dbh->selectall_arrayref("SELECT id
-                                         FROM   device
-                                         WHERE  down_from  <= '$now' 
-                                            AND down_until >= '$now'
-                                         ");
-    my @devices;
-    foreach my $row ( @$aref ){
-	my ($id) = @$row;
-	push @devices, Device->retrieve($id);
-    }
+    my @devices = Device->retrieve_from_sql(qq{
+        down_from <= '$now'
+        AND down_until >= '$now'
+    });
     return @devices;
 }
 
@@ -4699,6 +4692,15 @@ __PACKAGE__->set_sql(by_product_os => qq{
         WHERE os is NOT NULL 
         AND os != '0'
         ORDER BY product,os
+    });
+
+__PACKAGE__->set_sql(for_os_mismatches => qq{
+    SELECT device.id
+        FROM   device,product
+        WHERE  device.product=product.id
+        AND device.os IS NOT NULL
+        AND product.latest_os IS NOT NULL
+        AND device.os!=product.latest_os
     });
 
 =head1 AUTHOR

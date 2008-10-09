@@ -30,7 +30,7 @@
 #        },
 #
 #        nullable => 0,   # can this column be set to null?
-#        tag => undef,    # 
+#        tag => undef,    # a user friendly name that is displayed in the UI
 #        type => '[bool|date|integer|blob|numeric|varchar]' 
 #	          The SQL data type of this column
 #      },
@@ -4993,6 +4993,14 @@ $meta = {
         tag => 'Comments',
         type => 'blob'
       },
+      latest_os => {
+        default => '',
+        description => 'Latest recommended OS version',
+        length => '128',
+        nullable => 1,
+        tag => 'Latest OS',
+        type => 'varchar'
+      },
       manufacturer => {
         default => '',
         description => 'Reference to an Entity which manufactures this product',
@@ -5045,6 +5053,9 @@ $meta = {
       [
         'type'
       ],
+      [
+        'latest_os'
+      ],
     ],
     isjoin => '0',
     label => ['manufacturer','name'],
@@ -5062,6 +5073,7 @@ $meta = {
         'description',
         'sysobjectid',
         'manufacturer',
+        'latest_os',
         'info'
       ],
       brief => [

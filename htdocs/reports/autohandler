@@ -46,6 +46,7 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 		{ section => 'DEVICE',    title => 'Device Inventory' },
 		{ section => 'DOWNTIME',  title => 'Downtime' },
 		{ section => 'MACS',      title => 'MAC Addresses' },
+		{ section => 'OS',        title => 'OS Mismatches' },
 		{ section => 'TOPOLOGY',  title => 'Topology Graph' },
 		{ section => 'POLLSTATS', title => 'Polling Stats' },
 		{ section => 'DATABASE',  title => 'Database Reports' },
@@ -95,6 +96,10 @@ if ( $page eq "POLLSTATS" ) {
 }elsif ( $page eq "MACS" && $m->request_comp->name ne "macs_by_vendor.html" ) {
 
 	$m->comp('macs_by_vendor.html');
+
+}elsif ( $page eq "OS" && $m->request_comp->name ne "os_mismatches.html" ) {
+
+	$m->comp('os_mismatches.html');
 
 }elsif ($page eq "DATABASE") {
 </%perl>	

@@ -1,9 +1,9 @@
 <%doc>
-Devices in downtime
+OS Mismatches
 </%doc>
 
 <%attr>
-title   => 'Devices in Downtime' 
+title   => 'OS Mismatches' 
 section => 'Reports'
 </%attr>
 
@@ -16,18 +16,14 @@ my $DEBUG = 0;
 if ( $DEBUG ){
     print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>';
 }
-my @devices = Device->get_within_downtime();
+my @devices = Device->search_for_os_mismatches();
 </%init>
 
 
 <div class="container">
-    <div class="containerhead">Devices within downtime</div>
+    <div class="containerhead">Devices with OS different from latest OS of product</div>
     <div class="containerbody">
-%   if( @devices ){
     <& ../generic/sortresults.mhtml, table => 'Device', object=>\@devices, view => "row", withdelete => 1, withedit => 1 &>
-%   }else{
-    None
-%   }
     </div>
 </div>
 
