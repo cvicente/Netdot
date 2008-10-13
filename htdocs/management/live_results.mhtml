@@ -1,0 +1,92 @@
+<%doc>
+
+Show results from Live address search
+
+</%doc>
+%
+%
+%
+<%args>
+$info
+</%args>
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+</%init>
+
+<%perl>
+      my (@headers, @data) = ();
+      if ( $info->{mac} ){
+	 push @headers, 'MAC Address';
+	 push @data, $info->{mac};
+
+	 if ( $info->{vendor} ){
+	     push(@headers, 'Vendor');
+	     push(@data, $info->{vendor});
+	 }
+      }
+      if ( $info->{ip} ){
+	  push @headers, 'IP Address';
+	  push @data, $info->{ip};
+	  if ( $info->{dns} ){
+	      push(@headers, 'DNS');
+	      push(@data, $info->{dns});
+	  }
+      }
+</%perl>
+%     if ( @headers && @data ){
+        <div class="container">
+          <div class="containerhead"><strong>Live Search Results</strong></div>
+          <div class="containerbodyoutside">
+          <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
+            width=>"1", headercolwidth=>"25%", datacolwidth=>"75%" &>
+          </div>
+        </div>
+%     }
+
+%     if ( $info->{edge} ){
+%         my $iface = Interface->retrieve($info->{edge});
+          <div class="container">
+            <div class="containerhead"><strong>Edge Port</strong></div>
+            <div class="containerbodyoutside">
+	        <& /generic/sortresults.mhtml, object=>[$iface], view=>"row" &>
+            </div>
+          </div>
+% }
+
+<%perl>
+     if ( $info->{routerports} ){
+	 my @rows;
+         foreach my $iid ( keys %{$info->{routerports}} ){
+	     my $iface = Interface->retrieve($iid);
+	     my $lbl   = $iface->get_label;
+	     my $ilnk  = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$lbl</a>";
+	     my $ip    = (keys %{$info->{routerports}{$iid}})[0];
+	     my $mac   = $info->{routerports}{$iid}{$ip};
+	     push @rows, [$ip, $mac, $ilnk];
+	 }
+</%perl>
+        <div class="container">
+          <div class="containerhead"><strong>Router Ports</strong></div>
+          <div class="containerbodyoutside">
+           <& /generic/data_table.mhtml, field_headers=>['IP', 'MAC', 'Interfaces'], data=>\@rows &>
+          </div>
+        </div>
+% }
+
+<%perl>
+     if ( $info->{switchports} ){
+	 my @rows;
+         foreach my $i ( keys %{$info->{switchports}} ){
+	     my $iface = Interface->retrieve($i);
+	     push @rows, $iface;
+	 }
+</%perl>
+        <div class="container">
+          <div class="containerhead"><strong>Switch Ports</strong></div>
+          <div class="containerbody">
+            <& /generic/sortresults.mhtml, object=>\@rows, view=>"row" &>
+          </div>
+        </div>
+%     }
