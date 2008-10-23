@@ -301,6 +301,13 @@ $ui->add_to_fields(o=>$o, edit=>$editgen,
 		   linkpages=>['mac.html', '', '', '', 1, '']
     );
 
+my $os_used = pop @cell_data;
+my $latest_os = $o->product->latest_os;
+if ($os_used eq $latest_os){
+    push (@cell_data, $os_used);
+}else{
+    push (@cell_data, $os_used . " <b>(Recommended OS: " . $latest_os . ")</b>");
+}
 
 $ui->add_to_fields(o=>$o, edit=>$editgen, 
 		   fields=>['maint_contract', 'maint_from', 'maint_until'], 

@@ -42,11 +42,8 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 	    title        => 'Reports',
 	    attribute    => $PAGE_ATTRIBUTE,
 	    sub_sections => [
-		{ section => 'DUPLEX',    title => 'Duplex Mismatches' },
-		{ section => 'DEVICE',    title => 'Device Inventory' },
-		{ section => 'DOWNTIME',  title => 'Downtime' },
+		{ section => 'DEVICE',    title => 'Devices' },
 		{ section => 'MACS',      title => 'MAC Addresses' },
-		{ section => 'OS',        title => 'OS Mismatches' },
 		{ section => 'TOPOLOGY',  title => 'Topology Graph' },
 		{ section => 'POLLSTATS', title => 'Polling Stats' },
 		{ section => 'DATABASE',  title => 'Database Reports' },
@@ -81,25 +78,14 @@ if ( $page eq "POLLSTATS" ) {
     </div>
  
 <%perl>
-}elsif ( $page eq "DUPLEX" && $m->request_comp->name ne "duplex.html" ) {
-	
-	$m->comp('duplex.html');
 
 }elsif ( $page eq "DEVICE" && $m->request_comp->name ne "device_inventory.html" ) {
 	
 	$m->comp('device_inventory.html');
 
-}elsif ( $page eq "DOWNTIME" && $m->request_comp->name ne "downtime.html" ) {
-	
-	$m->comp('downtime.html');
-
 }elsif ( $page eq "MACS" && $m->request_comp->name ne "macs_by_vendor.html" ) {
 
 	$m->comp('macs_by_vendor.html');
-
-}elsif ( $page eq "OS" && $m->request_comp->name ne "os_mismatches.html" ) {
-
-	$m->comp('os_mismatches.html');
 
 }elsif ($page eq "DATABASE") {
 </%perl>	
