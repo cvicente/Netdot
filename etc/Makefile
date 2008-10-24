@@ -5,8 +5,12 @@ include $(SRCROOT)/etc/utility-Makefile
 
 
 FILES = Default.conf netdot_apache2_radius.conf netdot.meta
+
 all: 
 	$(substitute)
 	if ! test -r $(PREFIX)/$(DIR)/Site.conf; then \
-	  install -m $(FMOD) Site.conf $(PREFIX)/$(DIR)/Site.conf; \
+	  sed -r $(REPLACEMENT_EXPRESSIONS) Site.conf \
+          > Site.conf.tmp;\
+          install -m $(FMOD) Site.conf.tmp $(PREFIX)/$(DIR)/Site.conf;\
+          rm -rf Site.conf.tmp;\
 	fi;
