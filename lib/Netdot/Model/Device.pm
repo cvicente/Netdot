@@ -3817,6 +3817,7 @@ sub snmp_update_parallel {
 	# Make sure we don't launch a process unless necessary
 	if ( $dev->is_in_downtime() ){
 	    $logger->debug(sub{ sprintf("Model::Device::_snmp_update_parallel: %s in downtime.  Skipping", $dev->fqdn) });
+	    next;
 	}
 	my %args = %uargs;
 
