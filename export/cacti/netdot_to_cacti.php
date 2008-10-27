@@ -61,7 +61,7 @@ if (sizeof($parms)) {
   
   $sortMethods    = array('manual' => 1, 'alpha' => 2, 'natural' => 3, 'numeric' => 4);
   $nodeTypes      = array('header' => 1, 'graph' => 2, 'host' => 3);
-  $hostGroupStyle = 1;    /* 1 = Graph Template,  2 = Data Query Index */
+  $hostGroupStyle = 2;    /* 1 = Graph Template,  2 = Data Query Index */
   
   foreach($parms as $parameter) {
     @list($arg, $value) = @explode("=", $parameter);
