@@ -302,7 +302,10 @@ foreach ($groups as $group => $hosts){
 				     4  => 23,  # In/Out Unicast Packets
 				     13 => 2,   # In/Out Bits
 				     );
-    create_ds_graphs($dsGraph);
+    $graphsCreated = create_ds_graphs($dsGraph);
+    if ( $graphsCreated ){
+      echo "$description: Graphs created: ($graphsCreated)\n";
+    }
   }
 
 }
@@ -328,7 +331,7 @@ foreach($headerNodes as $oldHeader){
 // Subroutines
 /* ----------------------------------------------------------------------------------------------------- */
 function create_ds_graphs($args) {
-  global $hostIds, $debug;
+  global $debug;
 
   $hostId       = $args["hostId"];
   $queryTypeIds = $args["queryTypeIds"];
@@ -364,22 +367,24 @@ function create_ds_graphs($args) {
 	if ( isset($graphsBySnmpIndex[$snmpIndex][$templateId]) ){
 	  $graphId = $graphsBySnmpIndex[$snmpIndex][$templateId];
 	  if ($debug){
-	    echo "DEBUG: " . $hostIds[$hostId]["description"] . ": Graph already exists: ($graphId)\n";
+	    echo "DEBUG: " . $hostId . ": Graph already exists: ($graphId)\n";
 	  }
 	  continue;
 	}
+	$snmpQueryArray["snmp_index"] = $snmpIndex;
 	$empty = array();
 	$returnArray = create_complete_graph_from_template($templateId, $hostId, $snmpQueryArray, $empty);
-	echo $hostIds[$hostId]["description"] . ": Added Graph id: (" . $returnArray["local_graph_id"] . ")\n";
+	echo $hostId . ": Added Graph id: (" . $returnArray["local_graph_id"] . ")\n";
 	$graphsCreated++;
       }
     }
     if($graphsCreated > 0){
       push_out_host($hostId,0);
+      return $graphsCreated;
     }
 
   }else{
-    echo "WARN: Could not find snmp-field " . $args["snmpField"] . " (" . $args["snmpValue"] . ") for host-id " . $hostId . " (" . $hostIds[$hostId]["description"] . ")\n";
+    echo "WARN: Could not find snmp-field " . $args["snmpField"] . " (" . $args["snmpValue"] . ") for host-id " . $hostId . " (" . $hostId . ")\n";
   }
 }
 
