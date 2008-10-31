@@ -95,7 +95,7 @@ if ( $ENTITY || $NEIG || $SITE ){
     }
     if ( @orphans ){
 	@orphans = sort { $a->name->name cmp $b->name->name } @orphans;
-	$output .= sprintf("\nThe following devices have no dependencies defined:\n");
+	$output .= sprintf("\nThe following devices have no neighbors:\n");
 	map { $output .= sprintf(" %s\n", $_->name->name) } @orphans;
     }
 }elsif ( $DUPLEX ){
