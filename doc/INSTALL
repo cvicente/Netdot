@@ -62,12 +62,13 @@ UPGRADING
 
         # mysqldump netdot > /home/dir/netdot-bak.sql
 
-* Rename the database with the following name:
+* Rename the database:
         
+	# /etc/init.d/mysqld stop
 	# cd /var/lib/mysql (or wherever your mysql database directory resides)
 	# mv netdot netdot-0712
 
-        * Alternatively, you could also do it this way:
+        * Alternatively, you could also do it this (slower) way:
 
 	# mysqladmin create netdot-0712
 	# cat /home/dir/netdot-bak.sql | mysql netdot-0712

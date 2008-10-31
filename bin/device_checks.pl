@@ -73,7 +73,7 @@ if ( $ENTITY || $NEIG || $SITE ){
 	if ( $NEIG ){
 	    my $found = 0;
 	    foreach my $int ( $dev->interfaces ){
-		if ( $int->neighbor ) { $found = 1; last }
+		if ( int($int->neighbor) ) { $found = 1; last }
 	    }
 	    push @orphans, $dev unless $found;
 	}
