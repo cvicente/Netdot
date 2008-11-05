@@ -225,9 +225,9 @@ foreach ($groups as $group => $hosts){
     /* Add or Update Device */
 
     if ($hostId){
-      debug("$description: Updating device id $hostId ($ip) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"");
+      debug("$description: Updating device id $hostId ($description) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"");
     }else{
-      echo "$description: Adding device ($ip) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"\n";
+      echo "$description: Adding device ($description) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"\n";
     }
     $hostId = api_device_save($hostId, $template_id, $description, $ip,
 			      $community, $snmp_ver, $snmp_username, $snmp_password,
@@ -245,6 +245,8 @@ foreach ($groups as $group => $hosts){
 
     /* ----------------------------------------------------------------------------------------------------- */
     /* Add node to tree */
+
+    $nodeId = 0;
 
     if (isset($hostNodes[$hostId])){
       $nodeId = $hostNodes[$hostId];
