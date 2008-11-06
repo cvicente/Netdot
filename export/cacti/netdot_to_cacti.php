@@ -58,6 +58,8 @@ if (sizeof($parms)) {
   $ping_timeout         = 500;
   $ping_retries         = 2;
   $max_oids             = 10;
+  $snmp_field           = "";
+  $snmp_value           = "";
   
   $sortMethods    = array('manual' => 1, 'alpha' => 2, 'natural' => 3, 'numeric' => 4);
   $nodeTypes      = array('header' => 1, 'graph' => 2, 'host' => 3);
@@ -86,6 +88,12 @@ if (sizeof($parms)) {
       break;
     case "--file":
       $file = trim($value);
+      break;
+    case "--snmp-field":
+      $snmp_field = trim($value);
+      break;
+    case "--snmp-value":
+      $snmp_value = trim($value);
       break;
     default:
       echo "ERROR: Invalid Argument: ($arg)\n\n";
@@ -296,9 +304,12 @@ foreach ($groups as $group => $hosts){
     
     $dsGraph["hostId"]        = $hostId;
     $dsGraph["description"]   = $description;
-    $dsGraph["snmpQueryId"]   = 1;              # SNMP - Interface Statistics
-    $dsGraph["snmpField"]     = "ifOperStatus";
-    $dsGraph["snmpValue"]     = 'Up';
+    $dsGraph["snmpQueryId"]   = 1;    /* SNMP - Interface Statistics */
+    
+    if (isset($snmp_field) && isset($snmp_value)){
+      $dsGraph["snmpField"] = $snmp_field;
+      $dsGraph["snmpValue"] = $snmp_value;
+    }
     
     /* query_type_id => template_id */
     $dsGraph["queryTypeIds"] = array(2  => 22,  # In/Out Errors/Discarded Packets
@@ -339,14 +350,21 @@ function create_ds_graphs($args) {
   $snmpQueryArray = array();
   $snmpQueryArray["snmp_query_id"] = $args["snmpQueryId"];
   $snmpQueryArray["snmp_index_on"] = get_best_data_query_index_type($hostId, $args["snmpQueryId"]);
-
-  $snmpIndexes = db_fetch_assoc("SELECT snmp_index
-                                 FROM   host_snmp_cache
-                                 WHERE  host_id=" . $hostId . "
-                                    AND snmp_query_id=" . $args["snmpQueryId"] . "
-                                    AND field_name='" . $args["snmpField"] . "'
-                                    AND field_value='" . $args["snmpValue"] . "'");
   
+  $indexes_query = "SELECT snmp_index
+                    FROM   host_snmp_cache
+                    WHERE  host_id=" . $hostId . "
+                       AND snmp_query_id=" . $args["snmpQueryId"];
+  
+  if (isset($args["snmp_field"]) && isset($args["snmp_value"])){
+    $indexes_query .= " AND field_name='" . $args["snmpField"] . "' AND field_value='" . $args["snmpValue"] . "'";
+  }else{
+    # This will actually select all interfaces
+    $indexes_query .= " AND field_name='ifIndex'";
+  }
+  
+  $snmpIndexes = db_fetch_assoc($indexes_query);
+
   
   if (sizeof($snmpIndexes)) {
     $graphsCreated = 0;
@@ -404,6 +422,11 @@ function display_help() {
   echo "    --file         File name with Netdot information\n";
   echo "                   The file should contain a semi-colon separated list of fields:\n";
   echo "                   netdot_id;description;ip;template_id;group;disable;snmp_ver;community)\n";
+  echo "Optional:\n";
+  echo "    --snmp-field   SNMP field (i.e. 'ifOperStatus')\n";
+  echo "    --snmp-value   SNMP value (i.e. 'Up')\n";
+  echo "                   These arguments allow the user to select a subset of the interfaces\n";
+  echo "                   Not passing these arguments will create graphs for all interfaces\n";
   echo "\n";
   echo "Optional:\n";
   echo "    --no-graphs    Do not add graphs, only update devices and tree\n";
