@@ -755,9 +755,12 @@ sub _adjust_vals{
 					   $field, $mcol->sql_type) });
 		$args->{$field} = 0;
 	    }elsif ( $mcol->sql_type eq 'date' ){
-		$logger->debug( sub { sprintf("Model::_adjust_vals: Removing empty field %s type %s.", 
-					      $field, $mcol->sql_type) } );
-		delete $args->{$field};
+		#$logger->debug( sub { sprintf("Model::_adjust_vals: Removing empty field %s type %s.", 
+		#			      $field, $mcol->sql_type) } );
+		#delete $args->{$field};
+		
+		#If date field is empty, insert NULL instead of ignoring it
+		$args->{$field} = undef;
 	    }elsif ( $args->{$field} eq "" ){
 		# This causes DBI to insert NULL instead of ""
 		$args->{$field} = undef;
