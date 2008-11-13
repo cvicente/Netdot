@@ -76,9 +76,10 @@ sub find_or_create {
 	if( $sysobjectid ) {
 	    $oid = $sysobjectid;
 	    $oid =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
-	    $ent = Entity->search(oid=>$oid)->first; 
-	    $logger->info(sprintf("Product::find_or_create: Manufacturer OID matches %s", 
-				  $ent->name));
+	    if ( $ent = Entity->search(oid=>$oid)->first ){
+		$logger->info(sprintf("Product::find_or_create: Manufacturer OID matches %s", 
+				      $ent->name));
+	    }
 	}elsif ( $manufacturer ){
 	    $ent = Entity->search(name=>$manufacturer)->first; 
 	}
