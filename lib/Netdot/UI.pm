@@ -957,7 +957,8 @@ sub text_area($@){
     my $id     = ($o ? $o->id : "NEW");
     my $value  = ($o ? $o->$column : "");
     my $name   = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
-    $htmlExtra = "" if (!$htmlExtra);
+    #textareas need bigger space, so we'll specify a default htmlExtra
+    $htmlExtra = "cols='80' rows='10'" if (!$htmlExtra);
 
     $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
 	unless ( $o || $table );
