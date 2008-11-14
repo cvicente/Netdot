@@ -2260,16 +2260,17 @@ sub info_update {
 
     # Assign Product
     my $name = $info->{model} || $info->{productname};
+    my %args;
     if ( defined $name ){
-	my %args = (name           => $name,
-		    description    => $name,
-		    type           => $info->{type},
-		    manufacturer   => $info->{manufacturer}, 
-		    hostname       => $host,
-	    );
-	$args{sysobjectid} = $info->{sysobjectid} if $info->{sysobjectid};
-	$devtmp{product} = Product->find_or_create(%args);
+	$args{name}        = $name;
+	$args{description} = $name;
     }
+    $args{sysobjectid}   = $info->{sysobjectid}  if defined $info->{sysobjectid};
+    $args{type}          = $info->{type}         if defined $info->{type};
+    $args{manufacturer}  = $info->{manufacturer} if defined $info->{manufacturer}; 
+    $args{hostname}      = $host;
+    
+    $devtmp{product} = Product->find_or_create(%args);
     
     if ( $self->monitor_config && (!$self->monitor_config_group || $self->monitor_config_group eq "") ){
 	# Assign monitor_config_group

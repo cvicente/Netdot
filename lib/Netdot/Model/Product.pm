@@ -58,7 +58,7 @@ sub find_or_create {
     
     my $prod;
     if ( $sysobjectid && ($prod = $class->search(sysobjectid=>$sysobjectid)->first) ) {
-	$logger->debug(sub{ sprintf("Product known as %s", $prod->name) });
+	$logger->debug(sub{ sprintf("Product $sysobjectid known as %s", $prod->name) });
 	return $prod;
     }elsif ( $prod = $class->search(name=>$name)->first ) {
 	$logger->debug(sub{ sprintf("Product %s found", $prod->name) });
