@@ -58,6 +58,8 @@ if (sizeof($parms)) {
   $ping_timeout         = 500;
   $ping_retries         = 2;
   $max_oids             = 10;
+  $snmp_field           = "";
+  $snmp_value           = "";
   
   $sortMethods    = array('manual' => 1, 'alpha' => 2, 'natural' => 3, 'numeric' => 4);
   $nodeTypes      = array('header' => 1, 'graph' => 2, 'host' => 3);
@@ -87,6 +89,12 @@ if (sizeof($parms)) {
     case "--file":
       $file = trim($value);
       break;
+    case "--snmp-field":
+      $snmp_field = trim($value);
+      break;
+    case "--snmp-value":
+      $snmp_value = trim($value);
+      break;
     default:
       echo "ERROR: Invalid Argument: ($arg)\n\n";
       display_help();
@@ -102,7 +110,6 @@ if (sizeof($parms)) {
 $hostTemplates    = getHostTemplates();
 $hostDescriptions = getHostsByDescription();
 $addresses        = getAddresses();
-$hostIds          = getHosts();
 $graphTemplates   = getGraphTemplates();
 $snmpQueries      = getSNMPQueries();
 
@@ -135,9 +142,7 @@ foreach ($lines as $line) {
 /* Make sure we have a netdot tree */
 $treeId = db_fetch_cell("SELECT id FROM graph_tree WHERE name = 'Netdot'");
 if ($treeId) {
-  if ($debug){
-    echo "DEBUG: Netdot tree already exists - id: ($treeId)\n";
-  }
+  debug("Netdot tree already exists - id: ($treeId)");
  }else{
   $treeOpts = array();
   $treeOpts["id"]        = 0; # Zero means create a new one rather than save over an existing one
@@ -151,7 +156,7 @@ if ($treeId) {
 /* Store all header and host nodes for faster lookups */
 $hostNodes   = array();
 $headerNodes = array();
-$treeNodes = db_fetch_assoc("SELECT id, title, host_id FROM graph_tree_items WHERE graph_tree_id=$treeId");
+$treeNodes   = db_fetch_assoc("SELECT id, title, host_id FROM graph_tree_items WHERE graph_tree_id=$treeId");
 foreach ($treeNodes as $row){
   if ($row["host_id"] != 0){
     $hostNodes[$row["host_id"]] = $row["id"];
@@ -167,12 +172,8 @@ foreach ($groups as $group => $hosts){
   /* Make sure we have a header for this group */
   if (isset($headerNodes[$group])){
     $headerId = $headerNodes[$group];
+    debug("$group: Header already exists - id: ($headerId)");
     unset($headerNodes[$group]);
-  }
-  if ($headerId){
-    if ($debug){
-      echo "$group: Header already exists - id: ($headerId)\n";
-    }
   }else{
     $headerId = api_tree_item_save(0, $treeId, $nodeTypes["header"], $treeId, $group, 0, 0, 0, $hostGroupStyle, 1, false);
     echo "$group: Added Header id: ($headerId)\n";
@@ -192,15 +193,11 @@ foreach ($groups as $group => $hosts){
 
     if (isset($hostsByNetdotId[$netdot_id])) {
       $hostId = $hostsByNetdotId[$netdot_id];
-      if ($debug){
-	echo "DEBUG: Device with netdot_id $netdot_id found: ($description), id: ($hostId)\n";
-      }
+      debug("Device with netdot_id $netdot_id found: ($description), id: ($hostId)");
     }elseif (isset($hostDescriptions[$description])) {
       $hostId = $hostDescriptions[$description];
-      if ($debug){
-	echo "DEBUG: Device $description found: ($hostId)\n";
-      }
-
+      debug("Device $description found: ($hostId)");
+      
     }elseif (isset($addresses[$ip])) {
       /* Another device has this ip */
       echo "ERROR: This IP already exists in the database ($ip) device-id: (" . $addresses[$ip] . ")\n";
@@ -236,11 +233,9 @@ foreach ($groups as $group => $hosts){
     /* Add or Update Device */
 
     if ($hostId){
-      if ($debug){
-	echo "DEBUG: $description: Updating device id $hostId ($ip) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"\n";
-      }
+      debug("$description: Updating device id $hostId ($description) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"");
     }else{
-      echo "$description: Adding device ($ip) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"\n";
+      echo "$description: Adding device ($description) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"\n";
     }
     $hostId = api_device_save($hostId, $template_id, $description, $ip,
 			      $community, $snmp_ver, $snmp_username, $snmp_password,
@@ -253,22 +248,20 @@ foreach ($groups as $group => $hosts){
       echo "ERROR: $description: Failed device save\n";
       exit(1);
     }else {
-      if ($debug){
-	echo "DEBUG: $description: device saved: ($hostId)\n";
-      }
+      debug("$description: device saved: ($hostId)");
     }
 
     /* ----------------------------------------------------------------------------------------------------- */
     /* Add node to tree */
+
+    $nodeId = 0;
 
     if (isset($hostNodes[$hostId])){
       $nodeId = $hostNodes[$hostId];
       unset($hostNodes[$hostId]);
     }
     if ($nodeId){
-      if ($debug){
-	echo "DEBUG: $description: host node already exists - id: ($nodeId)\n";
-      }
+      debug("$description: host node already exists - id: ($nodeId)");
       /* Make sure that it is under the right header, has the right hostId, etc */
       api_tree_item_save($nodeId, $treeId, $nodeTypes["host"], $headerId, '', 0, 0, $hostId, $hostGroupStyle, 1, false);
     }else{
@@ -287,14 +280,36 @@ foreach ($groups as $group => $hosts){
     }
 
     /* ----------------------------------------------------------------------------------------------------- */
+    /* Re-index */
+
+    /* determine data queries to rerun */
+    $data_queries = db_fetch_assoc("SELECT host_id, snmp_query_id FROM host_snmp_query WHERE host_id='$hostId'");
+    
+    /* issue warnings and start message if applicable */
+    debug("$description: There are '" . sizeof($data_queries) . "' data queries to run");
+    
+    $i = 1;
+    foreach ($data_queries as $data_query) {
+      debug("$description: Data query number '" . $i . "' starting");
+      run_data_query($data_query["host_id"], $data_query["snmp_query_id"]);
+      debug("$description: Data query number '" . $i . "' ending");
+      $i++;
+    }
+
+
+    /* ----------------------------------------------------------------------------------------------------- */
     /* Add Graphs */
 
     /* Interface stats */
     
     $dsGraph["hostId"]        = $hostId;
-    $dsGraph["snmpQueryId"]   = 1;              # SNMP - Interface Statistics
-    $dsGraph["snmpField"]     = "ifOperStatus";
-    $dsGraph["snmpValue"]     = 'Up';
+    $dsGraph["description"]   = $description;
+    $dsGraph["snmpQueryId"]   = 1;    /* SNMP - Interface Statistics */
+    
+    if (isset($snmp_field) && isset($snmp_value)){
+      $dsGraph["snmpField"] = $snmp_field;
+      $dsGraph["snmpValue"] = $snmp_value;
+    }
     
     /* query_type_id => template_id */
     $dsGraph["queryTypeIds"] = array(2  => 22,  # In/Out Errors/Discarded Packets
@@ -314,15 +329,11 @@ foreach ($groups as $group => $hosts){
 /* Clean up stale groups and nodes in the tree */
 
 foreach($hostNodes as $oldNode){
-  if ($debug){
-    echo "DEBUG: Deleting old tree node: $oldNode";
-  } 
+  debug("Deleting old tree node: $oldNode");
   db_execute("DELETE FROM graph_tree_items WHERE id=$oldNode");
 }
 foreach($headerNodes as $oldHeader){
-  if ($debug){
-    echo "DEBUG: Deleting old tree header: $oldHeader";
-  } 
+  debug("Deleting old tree header: $oldHeader");
   db_execute("DELETE FROM graph_tree_items WHERE id=$oldHeader");
 }
 
@@ -331,22 +342,29 @@ foreach($headerNodes as $oldHeader){
 // Subroutines
 /* ----------------------------------------------------------------------------------------------------- */
 function create_ds_graphs($args) {
-  global $debug;
 
   $hostId       = $args["hostId"];
+  $description  = $args["description"];
   $queryTypeIds = $args["queryTypeIds"];
 
   $snmpQueryArray = array();
   $snmpQueryArray["snmp_query_id"] = $args["snmpQueryId"];
   $snmpQueryArray["snmp_index_on"] = get_best_data_query_index_type($hostId, $args["snmpQueryId"]);
-
-  $snmpIndexes = db_fetch_assoc("SELECT snmp_index
-                                 FROM   host_snmp_cache
-                                 WHERE  host_id=" . $hostId . "
-                                    AND snmp_query_id=" . $args["snmpQueryId"] . "
-                                    AND field_name='" . $args["snmpField"] . "'
-                                    AND field_value='" . $args["snmpValue"] . "'");
   
+  $indexes_query = "SELECT snmp_index
+                    FROM   host_snmp_cache
+                    WHERE  host_id=" . $hostId . "
+                       AND snmp_query_id=" . $args["snmpQueryId"];
+  
+  if (isset($args["snmp_field"]) && isset($args["snmp_value"])){
+    $indexes_query .= " AND field_name='" . $args["snmpField"] . "' AND field_value='" . $args["snmpValue"] . "'";
+  }else{
+    # This will actually select all interfaces
+    $indexes_query .= " AND field_name='ifIndex'";
+  }
+  
+  $snmpIndexes = db_fetch_assoc($indexes_query);
+
   
   if (sizeof($snmpIndexes)) {
     $graphsCreated = 0;
@@ -366,15 +384,13 @@ function create_ds_graphs($args) {
 	$snmpIndex = $row["snmp_index"];
 	if ( isset($graphsBySnmpIndex[$snmpIndex][$templateId]) ){
 	  $graphId = $graphsBySnmpIndex[$snmpIndex][$templateId];
-	  if ($debug){
-	    echo "DEBUG: " . $hostId . ": Graph already exists: ($graphId)\n";
-	  }
+	  debug("$description: Graph already exists: ($graphId)");
 	  continue;
 	}
 	$snmpQueryArray["snmp_index"] = $snmpIndex;
 	$empty = array();
 	$returnArray = create_complete_graph_from_template($templateId, $hostId, $snmpQueryArray, $empty);
-	echo $hostId . ": Added Graph id: (" . $returnArray["local_graph_id"] . ")\n";
+	echo "$description: Added Graph id: (" . $returnArray["local_graph_id"] . ")\n";
 	$graphsCreated++;
       }
     }
@@ -384,10 +400,17 @@ function create_ds_graphs($args) {
     }
 
   }else{
-    echo "WARN: Could not find snmp-field " . $args["snmpField"] . " (" . $args["snmpValue"] . ") for host-id " . $hostId . " (" . $hostId . ")\n";
+    echo "WARN: $description: Could not find snmp-field " . $args["snmpField"] . " (" . $args["snmpValue"] . ")\n";
   }
 }
 
+
+function debug($message) {
+  global $debug;
+  if ($debug) {
+    print("DEBUG: " . $message . "\n");
+  }
+}
 
 function display_help() {
   echo "\n netdot_to_cacti.php - Part of the Netdot package (http://netdot.uoregon.edu)\n\n";
@@ -399,6 +422,11 @@ function display_help() {
   echo "    --file         File name with Netdot information\n";
   echo "                   The file should contain a semi-colon separated list of fields:\n";
   echo "                   netdot_id;description;ip;template_id;group;disable;snmp_ver;community)\n";
+  echo "Optional:\n";
+  echo "    --snmp-field   SNMP field (i.e. 'ifOperStatus')\n";
+  echo "    --snmp-value   SNMP value (i.e. 'Up')\n";
+  echo "                   These arguments allow the user to select a subset of the interfaces\n";
+  echo "                   Not passing these arguments will create graphs for all interfaces\n";
   echo "\n";
   echo "Optional:\n";
   echo "    --no-graphs    Do not add graphs, only update devices and tree\n";

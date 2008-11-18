@@ -1359,6 +1359,10 @@ sub device_type {
         $objtype = 'SNMP::Info::Layer3::Aironet'
             if ( $desc =~ /Cisco/ and $desc =~ /\D(BR500)\D/ );
 
+        # Airespace (WLC) Module
+        $objtype = 'SNMP::Info::Layer2::Airespace'
+            if ( $desc =~ /Cisco Controller/ );
+
         #Nortel 2270
         $objtype = 'SNMP::Info::Layer2::N2270'
             if (

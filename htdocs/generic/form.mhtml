@@ -45,6 +45,7 @@ my %linksto = $table->meta_data->get_links_to();
 <%perl>
 
 my (@headers, @data) = ();
+my (@comments_header, @comments_data) = ();
 print "<input type=\"hidden\" name=\"table\" value=\"$table\">";
 if( $id ) {
     print "<input type=\"hidden\" name=\"id\" value=\"$id\">";
@@ -85,12 +86,23 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     }
     push(@headers, $field{'label'});
     push(@data,    $field{'value'});
+    
+    #special case for comments, because it needs more space
+    if($field{'label'} =~ m/Comments<\/a>:$/) {
+	push(@comments_header, pop @headers);
+	push(@comments_data,   pop @data);
+    }
 
 } # foreach
 
 </%perl>
     <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
     width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
+
+% if ( scalar @comments_header ) {
+    <& /generic/attribute_table.mhtml, field_headers=>\@comments_header, data=>\@comments_data, 
+    width=>"1", headercolwidth=>"15%", datacolwidth=>"85%" &>
+% }
 
 % if ( $edit ){
       <br>(<font color="red">*</font>) Field is required. <br>

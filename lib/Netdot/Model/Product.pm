@@ -58,7 +58,7 @@ sub find_or_create {
     
     my $prod;
     if ( $sysobjectid && ($prod = $class->search(sysobjectid=>$sysobjectid)->first) ) {
-	$logger->debug(sub{ sprintf("Product known as %s", $prod->name) });
+	$logger->debug(sub{ sprintf("Product $sysobjectid known as %s", $prod->name) });
 	return $prod;
     }elsif ( $prod = $class->search(name=>$name)->first ) {
 	$logger->debug(sub{ sprintf("Product %s found", $prod->name) });
@@ -76,9 +76,10 @@ sub find_or_create {
 	if( $sysobjectid ) {
 	    $oid = $sysobjectid;
 	    $oid =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
-	    $ent = Entity->search(oid=>$oid)->first; 
-	    $logger->info(sprintf("Product::find_or_create: Manufacturer OID matches %s", 
-				  $ent->name));
+	    if ( $ent = Entity->search(oid=>$oid)->first ){
+		$logger->info(sprintf("Product::find_or_create: Manufacturer OID matches %s", 
+				      $ent->name));
+	    }
 	}elsif ( $manufacturer ){
 	    $ent = Entity->search(name=>$manufacturer)->first; 
 	}
