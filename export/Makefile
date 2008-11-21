@@ -3,7 +3,7 @@ include $(SRCROOT)/etc/utility-Makefile
 #
 # makefile for export/
 #
-NDIR = docs nagios sysmon rancid
+NDIR = docs nagios sysmon rancid cacti
 
 FILES := `find -type f --regex !name Makefile |grep -v .svn |sed -e 's/\.\///'`
 
@@ -15,6 +15,6 @@ all: dir
 	  chmod 0755 $(PREFIX)/$(DIR)/$$dir; \
 	done
 
-# This section creates the lib/Netdot subdirs
+# This section creates the export/ subdirs
 dir:
 	$(mkdirs)

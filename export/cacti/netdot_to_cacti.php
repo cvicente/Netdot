@@ -15,6 +15,7 @@ if (!isset($_SERVER["argv"][0]) || isset($_SERVER['REQUEST_METHOD'])  || isset($
 $no_http_headers = true;
 
 include(dirname(__FILE__)."/../include/global.php");
+include("netdot_to_cacti_config.php");
 include_once($config["base_path"]."/lib/api_automation_tools.php");
 include_once($config["base_path"]."/lib/utility.php");
 include_once($config["base_path"]."/lib/sort.php");
@@ -31,39 +32,6 @@ $parms = $_SERVER["argv"];
 array_shift($parms);
 
 if (sizeof($parms)) {
-  
-  /* parameter defaults */
-  $debug         = 0;
-  $no_graphs     = 0;
-  
-  /* device defaults */
-  $description          = "";
-  $ip                   = "";
-  $template_id          = 0;
-  $community            = "public";
-  $snmp_ver             = 1;
-  $disable              = 0;
-  $notes                = "";
-  $snmp_username        = "";
-  $snmp_password        = "";
-  $snmp_auth_protocol   = "MD5";
-  $snmp_priv_passphrase = "";
-  $snmp_priv_protocol   = "DES";
-  $snmp_context         = "";
-  $snmp_port            = 161;
-  $snmp_timeout         = 500;
-  $avail                = 2;
-  $ping_method          = 3;
-  $ping_port            = 23;
-  $ping_timeout         = 500;
-  $ping_retries         = 2;
-  $max_oids             = 10;
-  $snmp_field           = "";
-  $snmp_value           = "";
-  
-  $sortMethods    = array('manual' => 1, 'alpha' => 2, 'natural' => 3, 'numeric' => 4);
-  $nodeTypes      = array('header' => 1, 'graph' => 2, 'host' => 3);
-  $hostGroupStyle = 2;    /* 1 = Graph Template,  2 = Data Query Index */
   
   foreach($parms as $parameter) {
     @list($arg, $value) = @explode("=", $parameter);
@@ -85,15 +53,6 @@ if (sizeof($parms)) {
       break;
     case "--no-graphs":
       $no_graphs = TRUE;
-      break;
-    case "--file":
-      $file = trim($value);
-      break;
-    case "--snmp-field":
-      $snmp_field = trim($value);
-      break;
-    case "--snmp-value":
-      $snmp_value = trim($value);
       break;
     default:
       echo "ERROR: Invalid Argument: ($arg)\n\n";
@@ -126,18 +85,102 @@ foreach ($hq as $row){
 }
 
 /* ----------------------------------------------------------------------------------------------------- */
-/* Open file and build multi-dimensional array */
-$lines = file($file);
-foreach ($lines as $line) {
-  @list($netdot_id, $description, $ip, $template_id, $group, $disable, $snmp_ver, $community) = @explode(";", $line);
+/* Query Netdot and build multi-dimensional array */
+
+$netdot_db = NewADOConnection($netdot_db_type);
+$netdot_db->Connect($netdot_db_server, $netdot_db_user, $netdot_db_pass, $netdot_db_database);
+if (!$netdot_db) {
+  echo "Connect failed\n";
+  exit(1);
+ }
+
+$q = $netdot_db->Execute("
+                SELECT     rr.name, zone.mname, ipblock.address, site.name, p.name, pt.name, 
+                           d.id, d.snmp_managed, d.snmp_polling, d.community, d.snmp_version, e.name, m.name
+                FROM      rr, zone, producttype pt, device d
+                LEFT JOIN (site) ON (d.site=site.id)
+                LEFT JOIN (ipblock) ON (d.snmp_target=ipblock.id)
+                LEFT JOIN (entity e) ON (d.used_by=e.id),
+                           product p
+                LEFT JOIN (entity m) ON (p.manufacturer=m.id)
+                WHERE      d.name=rr.id
+                  AND      rr.zone=zone.id
+                  AND      d.product=p.id
+                  AND      p.type=pt.id
+                ORDER BY   rr.name;
+");
+
+if (!$q) {
+  print "DB Error: ".$netdot_db->ErrorMsg();
+  exit (1);
+ }
+
+while ($row = $q->FetchRow()) {
+  list($name, $domain, $iaddress, $site, $product, $ptype, 
+       $netdot_id, $managed, $enabled, $community, $version, $used_by, $mfg) = $row; 
+
+  if (!$managed) {
+    continue;
+  }
+  $host = $name . "." . $domain;
+  if ($iaddress){
+    $address = long2ip($iaddress);
+  }else{
+    $address = $host;
+  }
+  # Strip domain name from host name
+  $host = preg_replace("/(.*)\.$strip_domain/", "$1", $host);
+
+  if ( $group_source == 'used_by' ){
+    $group = $used_by;
+  }elseif ( $group_source == 'site' ){
+    $group = $site;
+  }
+  if (!$group){
+    $group = 'unknown';
+  }
+  $group = preg_replace('/\s+/', '_', $group);
+  if (!$mfg){
+    $mfg = 'unknown';
+  }
+  if (!$ptype){
+    $ptype = 'unknown';
+  }
+  if (!$version){
+    $version = 2;
+  }
+  if (!$community){
+    $community = "public";
+  }
+  $disabled = ($enabled)? 0 : 1;
+  
+# Try to assign a template based on the device type
+  $template_name = 'Generic SNMP-enabled Host';
+  if ( $ptype == 'Server' ){
+    if ( preg_match('Net-SNMP', $product) ){
+      $template_name = 'ucd/net SNMP Host';
+    }elseif ( preg_match('Windows', $product) ){
+      $template_name = 'Windows 2000/XP Host';
+    }
+  }elseif ( preg_match('/Router/', $ptype) ){
+    if ( preg_match('/Cisco/', $mfg) ){
+      $template_name = 'Cisco Router';
+    }
+  }
+  
+  $template_id = $templates[$template_name];
   $community = trim($community);
-  $groups[$group][$description]["netdot_id"]   = $netdot_id;
-  $groups[$group][$description]["ip"]          = $ip;
-  $groups[$group][$description]["template_id"] = $template_id;
-  $groups[$group][$description]["disable"]     = $disable;
-  $groups[$group][$description]["snmp_ver"]    = $snmp_ver;
-  $groups[$group][$description]["community"]   = $community;
-}
+
+  $groups[$group][$host]["netdot_id"]   = $netdot_id;
+  $groups[$group][$host]["ip"]          = $address;
+  $groups[$group][$host]["template_id"] = $template_id;
+  $groups[$group][$host]["disable"]     = $disable;
+  $groups[$group][$host]["snmp_ver"]    = $version;
+  $groups[$group][$host]["community"]   = $community;
+
+ }
+
+/* ----------------------------------------------------------------------------------------------------- */
 
 /* Make sure we have a netdot tree */
 $treeId = db_fetch_cell("SELECT id FROM graph_tree WHERE name = 'Netdot'");
@@ -290,9 +333,7 @@ foreach ($groups as $group => $hosts){
     
     $i = 1;
     foreach ($data_queries as $data_query) {
-      debug("$description: Data query number '" . $i . "' starting");
       run_data_query($data_query["host_id"], $data_query["snmp_query_id"]);
-      debug("$description: Data query number '" . $i . "' ending");
       $i++;
     }
 
@@ -300,29 +341,16 @@ foreach ($groups as $group => $hosts){
     /* ----------------------------------------------------------------------------------------------------- */
     /* Add Graphs */
 
-    /* Interface stats */
-    
-    $dsGraph["hostId"]        = $hostId;
-    $dsGraph["description"]   = $description;
-    $dsGraph["snmpQueryId"]   = 1;    /* SNMP - Interface Statistics */
-    
-    if (isset($snmp_field) && isset($snmp_value)){
-      $dsGraph["snmpField"] = $snmp_field;
-      $dsGraph["snmpValue"] = $snmp_value;
-    }
-    
-    /* query_type_id => template_id */
-    $dsGraph["queryTypeIds"] = array(2  => 22,  # In/Out Errors/Discarded Packets
-				     3  => 24,  # In/Out Non-Unicast Packets
-				     4  => 23,  # In/Out Unicast Packets
-				     13 => 2,   # In/Out Bits
-				     );
-    $graphsCreated = create_ds_graphs($dsGraph);
-    if ( $graphsCreated ){
-      echo "$description: Graphs created: ($graphsCreated)\n";
+    foreach($dsGraphs as $dsGraph => $GraphAttr){
+      $GraphAttr["hostId"]      = $hostId;
+      $GraphAttr["description"] = $description;
+      
+      $graphsCreated = create_ds_graphs($GraphAttr);
+      if ( $graphsCreated ){
+	echo "$description: Graphs created: ($graphsCreated)\n";
+      }
     }
   }
-
 }
 
 /* ----------------------------------------------------------------------------------------------------- */
@@ -356,7 +384,7 @@ function create_ds_graphs($args) {
                     WHERE  host_id=" . $hostId . "
                        AND snmp_query_id=" . $args["snmpQueryId"];
   
-  if (isset($args["snmp_field"]) && isset($args["snmp_value"])){
+  if (isset($args["snmpField"]) && isset($args["snmpValue"])){
     $indexes_query .= " AND field_name='" . $args["snmpField"] . "' AND field_value='" . $args["snmpValue"] . "'";
   }else{
     # This will actually select all interfaces
@@ -417,16 +445,7 @@ function display_help() {
   echo "Command line utility to add and update devices, graphs and trees in Cacti, based on Netdot information\n\n";
   echo "Locate this script in your cacti directory (e.g. /var/www/cacti/) and run periodically via cron\n";
   echo "\n";
-  echo "usage: netdot_to_cacti.php --file=<filename> [--no-graphs] [-d|--debug] [-h|-help]\n";
-  echo "Required:\n";
-  echo "    --file         File name with Netdot information\n";
-  echo "                   The file should contain a semi-colon separated list of fields:\n";
-  echo "                   netdot_id;description;ip;template_id;group;disable;snmp_ver;community)\n";
-  echo "Optional:\n";
-  echo "    --snmp-field   SNMP field (i.e. 'ifOperStatus')\n";
-  echo "    --snmp-value   SNMP value (i.e. 'Up')\n";
-  echo "                   These arguments allow the user to select a subset of the interfaces\n";
-  echo "                   Not passing these arguments will create graphs for all interfaces\n";
+  echo "usage: netdot_to_cacti.php [--no-graphs] [-d|--debug] [-h|-help]\n";
   echo "\n";
   echo "Optional:\n";
   echo "    --no-graphs    Do not add graphs, only update devices and tree\n";
