@@ -31,8 +31,6 @@ include_once($config["base_path"].'/lib/tree.php');
 $parms = $_SERVER["argv"];
 array_shift($parms);
 
-if (sizeof($parms)) {
-  
   foreach($parms as $parameter) {
     @list($arg, $value) = @explode("=", $parameter);
     
@@ -60,10 +58,6 @@ if (sizeof($parms)) {
       exit(1);
     }
   }
- }else{
-  display_help();
-  exit(0);
- }
 
 /* Build some data structures */
 $hostTemplates    = getHostTemplates();
@@ -95,8 +89,8 @@ if (!$netdot_db) {
  }
 
 $q = $netdot_db->Execute("
-                SELECT     rr.name, zone.mname, ipblock.address, site.name, p.name, pt.name, 
-                           d.id, d.snmp_managed, d.snmp_polling, d.community, d.snmp_version, e.name, m.name
+                SELECT     rr.name, zone.mname, ipblock.address, site.name, p.name, p.sysobjectid, pt.name, 
+                           d.id, d.snmp_managed, d.snmp_polling, d.community, d.snmp_version, e.name, m.name 
                 FROM      rr, zone, producttype pt, device d
                 LEFT JOIN (site) ON (d.site=site.id)
                 LEFT JOIN (ipblock) ON (d.snmp_target=ipblock.id)
@@ -116,7 +110,7 @@ if (!$q) {
  }
 
 while ($row = $q->FetchRow()) {
-  list($name, $domain, $iaddress, $site, $product, $ptype, 
+  list($name, $domain, $iaddress, $site, $product, $sysobjectid, $ptype, 
        $netdot_id, $managed, $enabled, $community, $version, $used_by, $mfg) = $row; 
 
   if (!$managed) {
@@ -154,21 +148,46 @@ while ($row = $q->FetchRow()) {
   }
   $disabled = ($enabled)? 0 : 1;
   
-# Try to assign a template based on the device type
-  $template_name = 'Generic SNMP-enabled Host';
-  if ( $ptype == 'Server' ){
-    if ( preg_match('Net-SNMP', $product) ){
-      $template_name = 'ucd/net SNMP Host';
-    }elseif ( preg_match('Windows', $product) ){
-      $template_name = 'Windows 2000/XP Host';
-    }
-  }elseif ( preg_match('/Router/', $ptype) ){
-    if ( preg_match('/Cisco/', $mfg) ){
-      $template_name = 'Cisco Router';
+  // Try to assign a template
+  $template_id = "";
+  
+  if (isset($oid_to_host_template)){
+    foreach ($oid_to_host_template as $pattern => $t_id){
+      if ( preg_match($pattern, $sysobjectid) ){
+	$template_id = $t_id;
+	debug("$host: Assinging template $t_id");
+	break;
+      }else{
+	debug("$host: $product does not match $pattern");
+      }
     }
   }
-  
-  $template_id = $templates[$template_name];
+  if ($template_id == "" && isset($product_to_host_template)){
+    foreach ($product_to_host_template as $pattern => $t_id){
+      if ( preg_match($pattern, $product) ){
+	$template_id = $t_id;
+	debug("$host: Assinging template $t_id");
+	break;
+      }else{
+	debug("$host: $product does not match $pattern");
+      }
+    }
+  }
+  if ($template_id == "" && isset($mfg_to_host_template)){
+    foreach ($mfg_to_host_template as $pattern => $t_id){
+      if ( preg_match($pattern, $mfg) ){
+	$template_id = $t_id;
+	debug("$host: Assinging template $t_id");
+	break;
+      }else{
+	debug("$host: $mfg does not match $pattern");
+      }
+    }
+  }
+  if ($template_id == ""){
+    $template_id = 1;
+  }
+
   $community = trim($community);
 
   $groups[$group][$host]["netdot_id"]   = $netdot_id;
@@ -193,7 +212,7 @@ if ($treeId) {
   $treeOpts["sort_type"] = $sortMethods["alpha"];
   $treeId = sql_save($treeOpts, "graph_tree");
   sort_tree(SORT_TYPE_TREE, $treeId, $treeOpts["sort_type"]);
-  echo "Created Netdot Tree - id: ($treeId)\n";
+  echo "Created Netdot Tree - id: $treeId\n";
  }
 
 /* Store all header and host nodes for faster lookups */
@@ -291,7 +310,7 @@ foreach ($groups as $group => $hosts){
       echo "ERROR: $description: Failed device save\n";
       exit(1);
     }else {
-      debug("$description: device saved: ($hostId)");
+      debug("$description: device saved: $hostId");
     }
 
     /* ----------------------------------------------------------------------------------------------------- */
@@ -309,7 +328,7 @@ foreach ($groups as $group => $hosts){
       api_tree_item_save($nodeId, $treeId, $nodeTypes["host"], $headerId, '', 0, 0, $hostId, $hostGroupStyle, 1, false);
     }else{
       $nodeId = api_tree_item_save(0, $treeId, $nodeTypes["host"], $headerId, '', 0, 0, $hostId, $hostGroupStyle, 1, false);
-      echo "$description: Added host node - id: ($nodeId)\n";
+      echo "$description: Added host node: $nodeId\n";
     }
 
     /* Skip creating graphs if told to */
@@ -327,27 +346,47 @@ foreach ($groups as $group => $hosts){
 
     /* determine data queries to rerun */
     $data_queries = db_fetch_assoc("SELECT host_id, snmp_query_id FROM host_snmp_query WHERE host_id='$hostId'");
-    
-    /* issue warnings and start message if applicable */
     debug("$description: There are '" . sizeof($data_queries) . "' data queries to run");
     
-    $i = 1;
     foreach ($data_queries as $data_query) {
       run_data_query($data_query["host_id"], $data_query["snmp_query_id"]);
-      $i++;
     }
 
 
     /* ----------------------------------------------------------------------------------------------------- */
     /* Add Graphs */
 
-    foreach($dsGraphs as $dsGraph => $GraphAttr){
-      $GraphAttr["hostId"]      = $hostId;
-      $GraphAttr["description"] = $description;
-      
-      $graphsCreated = create_ds_graphs($GraphAttr);
-      if ( $graphsCreated ){
-	echo "$description: Graphs created: ($graphsCreated)\n";
+    $dsGraphsCreated = 0;
+    
+    foreach($dsGraphs as $HostTemplateId => $GraphGroup){
+      if ($HostTemplateId != "any") {
+	if ($template_id != $HostTemplateId){
+	  continue;
+	}
+      }
+      foreach($GraphGroup as $descr => $GraphAttr){
+	$GraphAttr["hostId"]      = $hostId;
+	$GraphAttr["description"] = $description;
+	debug("$description: Creating ds graphs: $descr");
+	$dsGraphsCreated = create_ds_graphs($GraphAttr);
+	if ( $dsGraphsCreated ){
+	  echo "$description: Graphs created: $dsGraphsCreated\n";
+	}
+      }
+    }
+
+    foreach($cgGraphs as $HostTemplateId => $Attr){
+      if ($HostTemplateId != "any") {
+	if ($template_id != $HostTemplateId){
+	  continue;
+	}
+      }
+      foreach($Attr as $descr => $val){
+	$GraphAttr["GraphTemplateId"] = $val;
+	$GraphAttr["hostId"]          = $hostId;
+	$GraphAttr["description"]     = $description;
+	debug("$description: Creating cg graph: $descr (template: $val)");
+	$cgGraphCreated = create_cg_graph($GraphAttr);
       }
     }
   }
@@ -369,37 +408,79 @@ foreach($headerNodes as $oldHeader){
 /* ----------------------------------------------------------------------------------------------------- */
 // Subroutines
 /* ----------------------------------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------------------------------------- */
+/* Create 'ds' graphs  
+   'ds' graphs are for data-source based graphs (interface stats etc.)
+*/
+
 function create_ds_graphs($args) {
 
   $hostId       = $args["hostId"];
   $description  = $args["description"];
   $queryTypeIds = $args["queryTypeIds"];
+  $snmpQueryId  = $args["snmpQueryId"];
+
+  if (!isset($hostId) || !isset($description) || !isset($queryTypeIds) || !isset($snmpQueryId)){
+    echo "ERROR: create_ds_graph: Missing required arguments\n";
+    exit(1);
+  }
 
   $snmpQueryArray = array();
-  $snmpQueryArray["snmp_query_id"] = $args["snmpQueryId"];
-  $snmpQueryArray["snmp_index_on"] = get_best_data_query_index_type($hostId, $args["snmpQueryId"]);
+  $snmpQueryArray["snmp_query_id"] = $snmpQueryId;
+  $snmpQueryArray["snmp_index_on"] = get_best_data_query_index_type($hostId, $snmpQueryId);
   
+   /* Check if host has associated data query */
+   $host_data_query = "SELECT snmp_query_id
+                       FROM   host_snmp_query
+                       WHERE  host_id='$hostId'
+                          AND snmp_query_id='$snmpQueryId'";
+  
+   $snmpQuery = db_fetch_cell($host_data_query);
+
+   if (!$snmpQuery) {
+     
+     /* 
+      This chunk does not work for some reason
+
+      // The query is not yet int the database.  Insert it 
+      $r = db_execute("REPLACE INTO host_snmp_query (host_id,snmp_query_id,reindex_method) 
+      VALUES ($hostId,$snmpQueryId,2)");
+      
+      if (!$r){
+      echo "ERROR: DB operation failed for $host_data_query\n";
+      return 0;
+      }
+      
+      // recache snmp data 
+      debug("Running Data query for new query id: $snmpQueryId");
+      run_data_query($hostId, $snmpQueryId);
+     */
+     
+     echo "ERROR: $description does not have associated data query: $snmpQueryId\n";
+     continue;
+   }
+
   $indexes_query = "SELECT snmp_index
                     FROM   host_snmp_cache
-                    WHERE  host_id=" . $hostId . "
-                       AND snmp_query_id=" . $args["snmpQueryId"];
+                    WHERE  host_id='$hostId'
+                       AND snmp_query_id='$snmpQueryId'";
   
-  if (isset($args["snmpField"]) && isset($args["snmpValue"])){
-    $indexes_query .= " AND field_name='" . $args["snmpField"] . "' AND field_value='" . $args["snmpValue"] . "'";
-  }else{
-    # This will actually select all interfaces
-    $indexes_query .= " AND field_name='ifIndex'";
+  if (isset($args["snmpField"]) && $args["snmpField"] != ""){
+    $indexes_query .= " AND field_name='" . $args["snmpField"] . "'";
+    if (isset($args["snmpValue"]) && $args["snmpValue"] != ""){
+      $indexes_query .= " AND field_value='" . $args["snmpValue"] . "'";
+    }
   }
   
   $snmpIndexes = db_fetch_assoc($indexes_query);
 
-  
   if (sizeof($snmpIndexes)) {
     $graphsCreated = 0;
     $graphs = db_fetch_assoc("SELECT id, snmp_index, graph_template_id
                               FROM   graph_local
                               WHERE  host_id=$hostId
-                                AND  snmp_query_id='" . $args["snmpQueryId"] . "'");
+                                AND  snmp_query_id=$snmpQueryId");
     
     foreach ($graphs as $row){
       $graphsBySnmpIndex[$row["snmp_index"]][$row["graph_template_id"]] = $row["id"];
@@ -418,7 +499,7 @@ function create_ds_graphs($args) {
 	$snmpQueryArray["snmp_index"] = $snmpIndex;
 	$empty = array();
 	$returnArray = create_complete_graph_from_template($templateId, $hostId, $snmpQueryArray, $empty);
-	echo "$description: Added Graph id: (" . $returnArray["local_graph_id"] . ")\n";
+	echo "$description: Added Graph id: " . $returnArray["local_graph_id"] . "\n";
 	$graphsCreated++;
       }
     }
@@ -428,10 +509,42 @@ function create_ds_graphs($args) {
     }
 
   }else{
-    echo "WARN: $description: Could not find snmp-field " . $args["snmpField"] . " (" . $args["snmpValue"] . ")\n";
+    echo "WARN: $description: No rows in query: $indexes_query\n";
   }
 }
-
+ 
+/* ----------------------------------------------------------------------------------------------------- */
+/* Create 'cg' graphs  
+   'cg' graphs are for things like CPU temp/fan speed, etc
+*/
+function create_cg_graph($args) {
+  
+  $hostId       = $args["hostId"];
+  $description  = $args["description"];
+  $templateId   = $args["GraphTemplateId"];
+  
+  $values["cg"] = array(); // Not doing anything with this for now
+  
+  if (!isset($hostId) || !isset($description) || !isset($templateId)){
+    echo "ERROR: create_cg_graph: Missing required arguments\n";
+    exit(1);
+  }
+  
+  $existsAlready = db_fetch_cell("SELECT id 
+                                  FROM   graph_local 
+                                  WHERE  graph_template_id=$templateId 
+                                     AND host_id=$hostId");
+   
+  if (isset($existsAlready) && $existsAlready > 0) {
+    debug("$description: Graph already exists: ($existsAlready)");
+    return 0;
+  }else{
+    $returnArray = create_complete_graph_from_template($templateId, $hostId, "", $values["cg"]);
+    echo "$description: Added Graph id: " . $returnArray["local_graph_id"] . "\n";
+    push_out_host($hostId,0);
+    return 1;
+  }
+}
 
 function debug($message) {
   global $debug;
