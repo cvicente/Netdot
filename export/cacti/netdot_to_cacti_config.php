@@ -9,8 +9,7 @@ $netdot_db_server   = 'localhost';
 $netdot_db_port     = '';
 
 /* This will remove the given domain name from the host names */
-$strip_domain = 'uoregon.edu';
-#$strip_domain = 'localdomain';
+$strip_domain = 'localdomain';
 $group_source = 'used_by';
 
 /* 
