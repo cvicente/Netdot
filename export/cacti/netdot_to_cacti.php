@@ -458,7 +458,7 @@ function create_ds_graphs($args) {
      */
      
      echo "ERROR: $description does not have associated data query: $snmpQueryId\n";
-     continue;
+     return 0;
    }
 
   $indexes_query = "SELECT snmp_index
