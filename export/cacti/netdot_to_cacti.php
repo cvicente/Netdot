@@ -365,8 +365,9 @@ foreach ($groups as $group => $hosts){
 	}
       }
       foreach($GraphGroup as $descr => $GraphAttr){
-	$GraphAttr["hostId"]      = $hostId;
-	$GraphAttr["description"] = $description;
+	$GraphAttr["hostTemplateId"] = $template_id;
+	$GraphAttr["hostId"]         = $hostId;
+	$GraphAttr["description"]    = $description;
 	debug("$description: Creating ds graphs: $descr");
 	$dsGraphsCreated = create_ds_graphs($GraphAttr);
 	if ( $dsGraphsCreated ){
@@ -416,66 +417,60 @@ foreach($headerNodes as $oldHeader){
 
 function create_ds_graphs($args) {
 
-  $hostId       = $args["hostId"];
-  $description  = $args["description"];
-  $queryTypeIds = $args["queryTypeIds"];
-  $snmpQueryId  = $args["snmpQueryId"];
+  $hostId          = $args["hostId"];
+  $hostTemplateId  = $args["hostTemplateId"];
+  $description     = $args["description"];
+  $queryTypeIds    = $args["queryTypeIds"];
+  $snmpQueryId     = $args["snmpQueryId"];
 
   if (!isset($hostId) || !isset($description) || !isset($queryTypeIds) || !isset($snmpQueryId)){
     echo "ERROR: create_ds_graph: Missing required arguments\n";
     exit(1);
   }
 
-  $snmpQueryArray = array();
-  $snmpQueryArray["snmp_query_id"] = $snmpQueryId;
-  $snmpQueryArray["snmp_index_on"] = get_best_data_query_index_type($hostId, $snmpQueryId);
-  
    /* Check if host has associated data query */
    $host_data_query = "SELECT snmp_query_id
                        FROM   host_snmp_query
                        WHERE  host_id='$hostId'
                           AND snmp_query_id='$snmpQueryId'";
-  
+   
    $snmpQuery = db_fetch_cell($host_data_query);
-
+   
    if (!$snmpQuery) {
+     // The query is not yet int the database.  Insert it 
+     debug("Inserting missing host_snmp_query");
+     $insertQuery = "REPLACE INTO host_snmp_query (host_id,snmp_query_id,reindex_method) 
+                            VALUES ($hostId,$snmpQueryId,2)";
+     $r = db_execute($insertQuery);
+     if (!$r){
+       echo "ERROR: DB operation failed for $insertQuery\n";
+       return 0;
+     }
      
-     /* 
-      This chunk does not work for some reason
-
-      // The query is not yet int the database.  Insert it 
-      $r = db_execute("REPLACE INTO host_snmp_query (host_id,snmp_query_id,reindex_method) 
-      VALUES ($hostId,$snmpQueryId,2)");
-      
-      if (!$r){
-      echo "ERROR: DB operation failed for $host_data_query\n";
-      return 0;
-      }
-      
-      // recache snmp data 
-      debug("Running Data query for new query id: $snmpQueryId");
-      run_data_query($hostId, $snmpQueryId);
-     */
-     
-     echo "ERROR: $description does not have associated data query: $snmpQueryId\n";
-     return 0;
+     // recache snmp data 
+     debug("Running Data query for new query id: $snmpQueryId");
+     run_data_query($hostId, $snmpQueryId);
    }
-
-  $indexes_query = "SELECT snmp_index
+   
+   $snmpQueryArray = array();
+   $snmpQueryArray["snmp_query_id"] = $snmpQueryId;
+   $snmpQueryArray["snmp_index_on"] = get_best_data_query_index_type($hostId, $snmpQueryId);
+   
+   $indexes_query = "SELECT snmp_index
                     FROM   host_snmp_cache
                     WHERE  host_id='$hostId'
                        AND snmp_query_id='$snmpQueryId'";
-  
-  if (isset($args["snmpField"]) && $args["snmpField"] != ""){
-    $indexes_query .= " AND field_name='" . $args["snmpField"] . "'";
-    if (isset($args["snmpValue"]) && $args["snmpValue"] != ""){
-      $indexes_query .= " AND field_value='" . $args["snmpValue"] . "'";
-    }
-  }
-  
-  $snmpIndexes = db_fetch_assoc($indexes_query);
-
-  if (sizeof($snmpIndexes)) {
+   
+   if (isset($args["snmpField"]) && $args["snmpField"] != ""){
+     $indexes_query .= " AND field_name='" . $args["snmpField"] . "'";
+     if (isset($args["snmpValue"]) && $args["snmpValue"] != ""){
+       $indexes_query .= " AND field_value='" . $args["snmpValue"] . "'";
+     }
+   }
+   
+   $snmpIndexes = db_fetch_assoc($indexes_query);
+   
+   if (sizeof($snmpIndexes)) {
     $graphsCreated = 0;
     $graphs = db_fetch_assoc("SELECT id, snmp_index, graph_template_id
                               FROM   graph_local

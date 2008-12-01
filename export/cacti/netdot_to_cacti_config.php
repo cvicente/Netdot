@@ -72,9 +72,6 @@ $hostGroupStyle = 2;    /* 1 = Graph Template,  2 = Data Query Index */
  $dsGraphs["<HostTemplateID>|any>"]["queryTypeIds"] = array(<query_type_id> => <template_id>)
  $dsGraphs["any"]["snmpField"] = <snmp field>
  $dsGraphs["any"]["snmpValue"] = <snmp value>
-
-Make sure you associate the SNMP Query ID to the appropriate Host Template using Cacti's Web UI.  
-Otherwise, the script will throw an error.  I haven't figured out how to do this automatically yet.
 */
 
 /* SNMP - Interface Statistics */
