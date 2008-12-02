@@ -81,12 +81,12 @@
    }
 
 //      Opens a new browser window for viewing (e.g. contact)
-    function openviewingwindow(data_string) {
-	var viewingwindow;
+function opentextwindow(data_string, format, urlargs) {
+	var textwindow;
 	var now = new Date();
-	var url = "viewdisplay.html";
-	viewingwindow = window.open(url, "viewingwind"+now.getMinutes()+now.getSeconds(), "width=600,height=400,scrollbars=yes");
-	viewingwindow.data_string = data_string;
+	var url = "viewtext.html?format="+format+"&"+urlargs;
+	textwindow = window.open(url, "textwind"+now.getMinutes()+now.getSeconds(), "width=600,height=400,scrollbars=yes");
+	if(format == 'js') textwindow.data_string = data_string;
     }
 
 // this code inserts an element into the select box in the  
