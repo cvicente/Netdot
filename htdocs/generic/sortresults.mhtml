@@ -208,6 +208,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
 % $numcols = scalar @orderbrief;
 % $numcols++ if $withedit;
+% $numcols++ if $withedit;  #again to accomodate [edit] buttons
 
 %     if ( $withedit ) {
          <form name="form_<% $table %>" method="POST" >
@@ -229,6 +230,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %	   }
 %     }
 %     if ( $withedit ){
+          <th></th>
           <th align="center">Select</th>
 %     }
       </tr>
@@ -292,6 +294,9 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %     } # for c
 %
 %     if ( $withedit ){
+          <td style="text-align:right" valign="middle">
+              <a href="#" onClick="openinsertwindow('table=<% $table %>&id=<% $o->id %>')">[edit]</a>
+          </td>
           <td style="text-align:center" valign="middle" width="40">
               <input type="checkbox" name="<% $table %>__<% $o->id %>">
           </td>

@@ -81,7 +81,7 @@
    }
 
 //      Opens a new browser window for viewing (e.g. contact)
-function opentextwindow(data_string, format, urlargs) {
+    function opentextwindow(data_string, format, urlargs) {
 	var textwindow;
 	var now = new Date();
 	var url = "viewtext.html?format="+format+"&"+urlargs;
