@@ -200,9 +200,11 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	    $m->comp('/generic/error.mhtml', error=> "$add_range_prefix not a valid CIDR string.");
 	}
 	my ($address, $prefix) = split /\//, $add_range_prefix;
-	if ( $range_status eq 'Dynamic' || $range_status eq 'Static' ){
+	if ( (($address =~ $IPV4 && $prefix ne '32') ||
+	      ($address =~ $IPV6 && $prefix ne '128')) &&
+	      ($range_status eq 'Dynamic' || $range_status eq 'Static') ){
 	    $m->comp('/generic/error.mhtml', error=>"IP block cannot be 'Dynamic' or 'Static'.  Specify IP Range instead.");
-	}
+        }
 	my $block;
 	eval {
 	    if ( $block = Ipblock->search(address=>$address, prefix=>$prefix)->first ){
