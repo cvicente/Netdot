@@ -1583,7 +1583,7 @@ sub _validate {
    
     my ($pstatus, $parent);
     if ( ($parent = $self->parent) && $parent->id ){
-	$logger->debug("Ipblock::_validate: " . $self->id . " parent is ", $parent->get_label);
+	$logger->debug("Ipblock::_validate: " . $self->get_label . " parent is ", $parent->get_label);
 	
 	$pstatus = $parent->status->name;
 	if ( $self->is_address() ){
@@ -1755,6 +1755,9 @@ sub _update_tree{
     my $class = ref($self);
 
     if ( $self->is_address ){
+
+	$logger->debug("Ipblock::_update_tree: Searching v". $self->version .
+		       " tree for " . $self->address);
 	# Search the tree.  
 	my $n = $class->_tree_find(version => $self->version, 
 				   address => $self->address_numeric,
@@ -1763,10 +1766,14 @@ sub _update_tree{
 	# Get parent id
 	my $parent;
 	if ( $n ){
-	    if ( $n->iaddress != $self->address_numeric ) {
-		$parent = $n->data if ( $n );
-	    }else{
+	    my $a = Math::BigInt->new($n->iaddress);
+	    my $b = Math::BigInt->new($self->address_numeric);
+	    if ( $a == $b ) {
 		$parent = $n->parent->data if ( $n && $n->parent );
+		$logger->debug("Ipblock::_update_tree: ". $self->address ." is in tree");
+	    }else{
+		$parent = $n->data if ( $n->data );
+		$logger->debug("Ipblock::_update_tree: ". $self->address ." not in tree");
 	    }
 	    $self->SUPER::update({parent=>$parent}) if $parent;
 	}

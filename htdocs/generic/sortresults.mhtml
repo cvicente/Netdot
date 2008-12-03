@@ -151,15 +151,14 @@ if ( defined($object) && scalar @$object ){
 	}
     }
 
-    if ( $total > $per_page ){
-	$session = $ui->mk_session();
-	$session->{objindex}   = \%objindex;
-	$session->{table}      = $table;
-	$session->{orderbrief} = \@orderbrief;
-	$session->{page}       = $page;
-	$session->{withedit}   = $withedit;
-	$session->{total}      = $total;
-    }
+    $session = $ui->mk_session();
+    $session->{objindex}   = \%objindex;
+    $session->{table}      = $table;
+    $session->{orderbrief} = \@orderbrief;
+    $session->{page}       = $page;
+    $session->{withedit}   = $withedit;
+    $session->{total}      = $total;
+
     
 #########################################################
 #
@@ -209,6 +208,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 
 % $numcols = scalar @orderbrief;
 % $numcols++ if $withedit;
+% $numcols++ if $withedit;  #again to accomodate [edit] buttons
 
 %     if ( $withedit ) {
          <form name="form_<% $table %>" method="POST" >
@@ -230,6 +230,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %	   }
 %     }
 %     if ( $withedit ){
+          <th></th>
           <th align="center">Select</th>
 %     }
       </tr>
@@ -293,6 +294,9 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %     } # for c
 %
 %     if ( $withedit ){
+          <td style="text-align:right" valign="middle">
+              <a href="#" onClick="openinsertwindow('table=<% $table %>&id=<% $o->id %>')">[edit]</a>
+          </td>
           <td style="text-align:center" valign="middle" width="40">
               <input type="checkbox" name="<% $table %>__<% $o->id %>">
           </td>
@@ -336,13 +340,16 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
           <a href="../generic/list.html?sid=<% $session->{_session_id} %>&offset=<% $last_item %>">[>>] </a>
 %     }
 % }
+
+    <a href="#" onClick="opentextwindow('','csv','sid=<% $session->{_session_id} %>')">[csv]</a>
+
 % if ( $withedit ){
       <p>
       <input type="button" name="Edit" value="Edit" onClick="document.form_<% $table %>.action='edit-multiple.html';document.form_<% $table %>.submit();">
       <input type="button" name="Delete" value="Delete" onClick="document.form_<% $table %>.action='delete.html';document.form_<% $table %>.submit();">
       <input type="button" name="Cancel" value="Cancel" onClick="history.go(-1)">
-      </p>
       </form>
+      </p>
 % }
 
 % if ( $session ){

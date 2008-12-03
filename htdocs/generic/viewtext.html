@@ -1,0 +1,136 @@
+<%doc>
+
+Display a text version of information, easy to select and copy.
+
+Formats accepted: text, csv
+
+</%doc>
+%
+%
+%
+<%args>
+$object => undef
+$total  => undef
+$sid    => undef
+$osid   => undef
+$format => "js";
+</%args>
+%
+<%attr>
+title => 'View'
+</%attr>
+%
+<%init>
+my $js = 0;
+my $csv = 0;
+
+my @orderbrief;
+my $session;
+my $osession;
+my %objindex;
+my $table;
+
+$m->clear_buffer;
+
+if ($format eq "js") {
+    $js = 1;
+}
+elsif ($format eq "csv") {
+    $csv = 1;
+}
+
+if ($csv && $osid) {
+    $osession = $ui->get_session($osid);
+    $object = $osession->{object};
+}
+if ($csv && $sid) {
+    $session = $ui->get_session($sid);
+    %objindex   = %{ $session->{objindex} };
+    $table      = $session->{table};
+    @orderbrief = @{ $session->{orderbrief} };
+    $total      = $session->{total};
+}
+</%init>
+
+<html>
+<head>
+    <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
+</head>      
+<body class="bodytag" >
+
+<div class="container">
+    <div class="containerhead"> View</div>
+    <div class="containerbody">
+
+<p>
+
+<div id="datadiv">
+
+%   if ($csv) {
+        <b>
+%       my @outlist;
+%       my $outstring;
+%       #headers
+%       foreach my $c (@orderbrief) {
+%           my $tag = $table->meta_data->get_column($c)->tag;
+%           if( defined($tag) ) {
+%               $outstring = $tag;
+%           }else{
+%               $outstring = $c;
+%           }
+%           $outstring =~ s/,/ /g;
+%           $outstring =~ s/"/'/g;
+%           push(@outlist, $outstring);
+%       }
+%       print join(',',@outlist);
+%       @outlist = ();
+        </b><br>
+%       #data
+%       my $pos = 0;
+%       while ($pos < $total) {
+%           my $o = $objindex{$pos};
+%           $pos++;
+%           foreach my $c ( @orderbrief ) {
+%               my $ftable = $table->meta_data->get_column($c)->links_to;
+%               if (defined $ftable) {
+%                   if (int(my $fo = $o->$c) != 0 ) {
+%                       $outstring = $fo->get_label;  #$lbl
+%                   }else{
+%                   $outstring = "";
+%                   }
+%               }else{
+%                   $outstring = $o->$c;
+%               }
+%               $outstring =~ s/,/ /g;
+%               $outstring =~ s/"/'/g;
+%               push(@outlist, $outstring);
+%           }
+%           print join(',',@outlist);
+%           @outlist = ();
+            <br>
+%       }
+%   }
+
+</div> <!-- close datadiv -->
+
+
+<center>
+<a class="hand" onClick="window.close();">[close]</a>
+</center>
+
+    </div> <!-- close containerbody -->
+</div> <!-- close container -->
+
+% if($js){
+    <script language="javascript">
+%       #if the calling window has not set the data_string value,
+%       #we assume it is the 'jspopoutstring' variable that contains the string
+        if(typeof(data_string) == 'undefined') {
+	    var data_string = window.opener.jspopoutstring;
+        }
+        document.getElementById("datadiv").innerHTML=unescape(data_string);
+    </script>
+% }
+ 
+</body>
+</html>
