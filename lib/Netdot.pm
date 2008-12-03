@@ -13,7 +13,10 @@ use RRDs;
 use Data::Dumper;
 
 my $IPV4 = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}';
-my $IPV6 = '(^([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}){1})|::'; # This is not strictly correct
+my $HD   = '[0-9A-Fa-f]{1,4}'; # Hexadecimal digits, 2 bytes
+my $V6P1 = "$HD:$HD:$HD:$HD:$HD:$HD:$HD:$HD";
+my $V6P2 = "($HD(:$HD){0,6})?::($HD(:$HD){0,6})?";
+my $IPV6 = "($V6P1)|($V6P2)"; # Note: Not strictly a valid V6 address
 my $HOCT = '[0-9A-Fa-f]{2}';
 my $MAC  = "$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT\[.:-\]?$HOCT";
     
