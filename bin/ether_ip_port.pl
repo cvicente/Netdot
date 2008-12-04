@@ -1,4 +1,4 @@
-# !<<Make:PERL>>
+#!<<Make:PERL>>
 #
 # ether_ip_port.pl -- Export text files merging ethernet address, ip address
 # and switch port location.  A single datestamped file
