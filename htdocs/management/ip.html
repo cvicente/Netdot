@@ -224,8 +224,13 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}elsif ( $block ){
-	    $o  = $block;
 	    $id = $block->id;
+	    # Do this to 'flush' the values associated with the object
+	    # before redisplaying
+	    $block = undef;
+	    if ( $id ){
+		$o = Ipblock->retrieve($id);
+	    }
 	    if( $o->is_address ) {
 		$added_ip  = 1;
 	    }else {
