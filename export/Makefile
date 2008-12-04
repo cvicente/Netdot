@@ -3,9 +3,9 @@ include $(SRCROOT)/etc/utility-Makefile
 #
 # makefile for export/
 #
-NDIR = docs nagios sysmon rancid cacti
+NDIR = docs nagios sysmon rancid cacti ethers
 
-FILES := `find -type f --regex !name Makefile |grep -v .svn |sed -e 's/\.\///'`
+FILES := `find -type f |egrep -v '\.svn|Makefile' |sed -e 's/\.\///'`
 
 all: dir
 	$(substitute)
