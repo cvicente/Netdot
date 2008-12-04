@@ -115,4 +115,4 @@ foreach my $mac ( keys %macs ){
     print OUTFILE "\n";
 }
 
-close(FILE);
+close(OUTFILE);
