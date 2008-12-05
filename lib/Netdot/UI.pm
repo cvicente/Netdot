@@ -35,6 +35,7 @@ my %VIEWPAGE = ( BinFile   => "../generic/display_bin.html",
 		 Ipblock   => "../management/ip.html",
 		 Device    => "../management/device.html",
 		 PhysAddr  => "../management/mac.html",
+		 Interface => "../management/interface.html",
 		 );
 
 

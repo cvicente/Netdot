@@ -1,0 +1,33 @@
+<%doc>
+Interface ARP entries for given timestamp
+</%doc>
+%
+%
+<%attr>
+title   => 'Interface' 
+section => 'Management'
+</%attr>
+%
+%
+<%args>
+$id
+$tstamp
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+my $obj = Interface->retrieve($id);
+my @arp = ArpCacheEntry->search_interface($id, $tstamp);
+</%init>
+
+<div id="sectiondetail">
+<div class="container">
+  <div class="containerhead">ARP entries in <a href="interface.html?id=<% $id %>"><% $obj->get_label %></a> at <% $tstamp %></div>
+    <div class="containerbody">
+    <& /generic/sortresults.mhtml, object=>\@arp &>
+    </div>
+  </div>
+</div>
+

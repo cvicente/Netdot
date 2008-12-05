@@ -689,6 +689,28 @@ sub get_last_n_arp {
     return $dbh->selectall_arrayref($q2);
 }
 
+################################################################
+=head2 search_interface_macs
+
+  Arguments: 
+    Interface id
+    Timestamp
+  Returns:   
+    Array of PhysAddr objects
+  Examples:
+    my @macs = PhysAddr->search_interface_macs($iid, $tstamp)
+
+=cut
+__PACKAGE__->set_sql(interface_macs => qq{
+SELECT p.id
+FROM     physaddr p, interface i, fwtable ft, fwtableentry fte 
+WHERE    fte.interface=i.id 
+  AND    fte.fwtable=ft.id 
+  AND    fte.physaddr=p.id 
+  AND    i.id=? 
+  AND    ft.tstamp=?
+ORDER BY p.address    });
+
 #################################################
 # Add some triggers
 

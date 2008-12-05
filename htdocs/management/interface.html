@@ -1,0 +1,122 @@
+<%doc>
+Device Interface UI
+</%doc>
+%
+%
+<%attr>
+title   => 'Interface' 
+section => 'Management'
+</%attr>
+%
+%
+<%args>
+$id
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+my $obj = Interface->retrieve($id);
+my $dbh = Netdot::Model->db_Main();
+my $fdb_tstamps;
+</%init>
+
+<div id="sectiondetail">
+
+<!-- Display main object values -->
+<div class="container">
+    <div class="containerheadleftoutside"><strong>Interface</strong></div>
+    <div class="containerheadrightoutside">
+          <a href="edit.html?table=Interface">[new]</a>
+          <a href="edit.html?table=Interface&id=<% $id %>">[edit]</a>
+          <a href="delete.html?table=Interface&id=<% $id %>">[delete]</a>
+          <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
+    </div>
+    <div class="containerbodyoutside">
+        <& /generic/form.mhtml, table=>"Interface", id=>$id, edit=>0 &>
+    </div>
+</div>
+<!-- End Display main object values -->
+
+<!-- Display has_many objects -->
+
+%##############################################################################################
+% if( my @ivlans = $obj->vlans ){
+%     my @vlans = map { $_->vlan } @ivlans;
+      <div class="containerhead">VLANs</div>
+	  <div class="container">
+	      <& /generic/sortresults.mhtml, object => \@vlans &>
+          </div>
+      </div>
+% }
+
+%##############################################################################################
+% my @nearcirc = $obj->nearcircuits();
+% my @farcirc  = $obj->farcircuits();
+% my @circuits = (@nearcirc, @farcirc);
+% if( @circuits  ){
+      <div class="containerhead">Circuits</div>
+	  <div class="container">
+	      <& /generic/sortresults.mhtml, object => \@circuits &>
+          </div>
+      </div>
+% }
+
+%##############################################################################################
+<%perl>
+    my $sth1 = $dbh->prepare("SELECT   ft.tstamp 
+                              FROM     interface i, fwtable ft, fwtableentry fte 
+                              WHERE    fte.interface=i.id 
+                                 AND   fte.fwtable=ft.id 
+                                 AND   i.id=?
+                              GROUP BY ft.tstamp
+                              ORDER BY ft.tstamp DESC");
+$sth1->execute($id);
+$fdb_tstamps = $sth1->fetchall_arrayref();
+my $fdb_count = scalar(@$fdb_tstamps);
+my @headers = ("Timestamp");
+my @rows;
+</%perl>
+
+% if ( $fdb_count ){
+    <div class="containerhead">FWT entries</div>
+%    foreach my $row (@$fdb_tstamps){
+%	my ($tstamp) = @$row;
+%       push @rows, ["<a href=\"i_fdb.html?id=$id&tstamp=$tstamp\">$tstamp</a>"];
+%    }
+%    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
+    </div>
+% }
+%##############################################################################################
+<%perl>
+    my $sth2 = $dbh->prepare("SELECT   arp.tstamp 
+                              FROM     interface i, arpcache arp, arpcacheentry arpe
+                              WHERE    arpe.interface=i.id 
+                                 AND   arpe.arpcache=arp.id 
+                                 AND   i.id=?
+                              GROUP BY arp.tstamp
+                              ORDER BY arp.tstamp DESC");
+$sth2->execute($id);
+my $arp_tstamps = $sth2->fetchall_arrayref();
+my $arp_count = scalar(@$arp_tstamps);
+@headers = ("Timestamp");
+@rows = ();
+</%perl>
+
+% if ( $arp_count ){
+    <div class="containerhead">ARP entries</div>
+%    foreach my $row (@$arp_tstamps){
+%	my ($tstamp) = @$row;
+%       push @rows, ["<a href=\"i_arp.html?id=$id&tstamp=$tstamp\">$tstamp</a>"];
+%    }
+%    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
+    </div>
+% }
+</div>
+
+
+<!-- End Display has_many objects -->
+
+
+</div>

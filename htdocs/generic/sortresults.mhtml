@@ -352,7 +352,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
       </p>
 % }
 
-% if ( $session ){
+% if ( $session && ($total > $per_page) ){
     <form name="form_sortresults" method="POST" action="list.html">
       <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
       <input type="hidden" name="offset" value="<% $offset %>">
