@@ -146,7 +146,7 @@ while ($row = $q->FetchRow()) {
   if (!$community){
     $community = "public";
   }
-  $disabled = ($enabled)? 0 : 1;
+  $disable = ($enabled)? 0 : 1;
   
   // Try to assign a template
   $template_id = "";
