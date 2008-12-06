@@ -1,0 +1,40 @@
+<%doc>
+IP Reports
+</%doc>
+
+<%attr>
+title   => 'IP Reports' 
+section => 'Reports'
+</%attr>
+
+<%args>
+$report_type => 'unused_subnets'
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my (@headers, @rows) = ();
+</%init>
+
+
+<div class="container">
+  <div class="containerhead">IP Reports</div>
+    <div class="containerbody">
+    <p>
+      <form name="report_form" action="ip_reports.html" method="POST">
+         <select name="report_type" onChange="document.report_form.submit()">
+         <option value="unused_subnets" <% ($report_type eq "unused_subnets")?"SELECTED":"" %>>Unused Subnets</option>
+         <option value="unused_v4_subnets" <% ($report_type eq "unused_v4_subnets")?"SELECTED":"" %>>Unused Subnets (v4)</option>
+         <option value="unused_v6_subnets" <% ($report_type eq "unused_v6_subnets")?"SELECTED":"" %>>Unused Subnets (v6)</option>
+         </select>
+      </form>
+
+<%perl>
+if ( $report_type eq 'unused_subnets' ){
+    $m->comp('unused_subnets.html');
+}elsif ( $report_type eq 'unused_v4_subnets' ){
+    $m->comp('unused_subnets.html', version=>4);
+}elsif( $report_type eq 'unused_v6_subnets' ){
+    $m->comp('unused_subnets.html', version=>6);
+}
+</%perl>

@@ -193,26 +193,29 @@ sub keyword_search {
 =head2 get_unused_subnets - Retrieve subnets with no device interfaces
 
   Arguments:
-    None
+    version - 4 or 6 (defaults to all)
   Returns: 
     Array of Ipblock IDs
   Examples:
-    my @unused = Ipblock->get_unused_subnets();
+    my @unused = Ipblock->get_unused_subnets(version=>4);
 =cut
 
 sub get_unused_subnets {
     my ($class, %args) = @_;
     $class->isa_class_method('get_unused_subnets');
     my @ids;
+    my $query = "SELECT    subnet.id, address.id, interface.id 
+                 FROM       ipblockstatus, ipblock subnet
+                 LEFT JOIN  ipblock address ON (address.parent=subnet.id)
+                 LEFT JOIN  interface ON (interface.id=address.interface)
+                 WHERE      subnet.status=ipblockstatus.id 
+                    AND     ipblockstatus.name='Subnet'";
 
+    if ( $args{version} ){
+	$query .= " AND subnet.version=$args{version}";
+    }
     my $dbh = $class->db_Main;
-    my $sth = $dbh->prepare_cached("SELECT     subnet.id, address.id, interface.id 
-                                    FROM       ipblockstatus, ipblock subnet
-                                    LEFT JOIN  ipblock address ON (address.parent=subnet.id)
-                                    LEFT JOIN  interface ON (interface.id=address.interface)
-                                    WHERE      subnet.status=ipblockstatus.id 
-                                       AND     ipblockstatus.name='Subnet'
-");
+    my $sth = $dbh->prepare_cached($query);
     $sth->execute();
     my $rows = $sth->fetchall_arrayref();
     my %subs;

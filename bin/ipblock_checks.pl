@@ -52,15 +52,19 @@ if( $self{HELP} ) {
 unless ( $self{UNUSED} ){
     print $usage;
 }
-###############################################################################
 
-my @unused = Ipblock->get_unused_subnets();
+my %args;
+if ( $self{4} ){
+    $args{version} = 4;
+}elsif ( $self{6} ){
+    $args{version} = 6;
+}
+
+my @unused = Ipblock->get_unused_subnets(%args);
+
 if ( @unused ){
     $output = "\nThe following Subnets appear to be unused:\n\n";
     foreach my $subnet ( @unused ){
-	if ( $self{4} && $subnet->version ne "4" ){
-	    next;
-	}
 	$output .= "  " . $subnet->get_label() . "\n";
     }
 }
