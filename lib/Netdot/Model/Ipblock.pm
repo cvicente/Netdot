@@ -212,7 +212,6 @@ sub get_unused_subnets {
                                     LEFT JOIN  interface ON (interface.id=address.interface)
                                     WHERE      subnet.status=ipblockstatus.id 
                                        AND     ipblockstatus.name='Subnet'
-                                    ORDER BY   subnet.id
 ");
     $sth->execute();
     my $rows = $sth->fetchall_arrayref();
@@ -246,7 +245,7 @@ sub get_unused_subnets {
     foreach my $id ( @ids ){
 	push @result, Ipblock->retrieve($id);
     }
-
+    @result = sort { $a->address_numeric <=> $b->address_numeric } @result;
     return @result;
 }
 
