@@ -190,6 +190,68 @@ sub keyword_search {
 
 
 ##################################################################
+=head2 get_unused_subnets - Retrieve subnets with no device interfaces
+
+  Arguments:
+    None
+  Returns: 
+    Array of Ipblock IDs
+  Examples:
+    my @unused = Ipblock->get_unused_subnets();
+=cut
+
+sub get_unused_subnets {
+    my ($class, %args) = @_;
+    $class->isa_class_method('get_unused_subnets');
+    my @ids;
+
+    my $dbh = $class->db_Main;
+    my $sth = $dbh->prepare_cached("SELECT     subnet.id, address.id, interface.id 
+                                    FROM       ipblockstatus, ipblock subnet
+                                    LEFT JOIN  ipblock address ON (address.parent=subnet.id)
+                                    LEFT JOIN  interface ON (interface.id=address.interface)
+                                    WHERE      subnet.status=ipblockstatus.id 
+                                       AND     ipblockstatus.name='Subnet'
+                                    ORDER BY   subnet.id
+");
+    $sth->execute();
+    my $rows = $sth->fetchall_arrayref();
+    my %subs;
+    foreach my $row ( @$rows ){
+	my ($subnet, $address, $interface) = @$row;
+	if ( defined $address ){
+	    $subs{$subnet}{$address} = $interface;
+	}else{
+	    $subs{$subnet} = {};
+	}
+    }
+
+    foreach my $subnet ( keys %subs ){
+	if ( !keys %{$subs{$subnet}} ){
+	    push @ids, $subnet;
+	}else{
+	    my $has_ints = 0;
+	    foreach my $address ( keys %{$subs{$subnet}} ){
+		if ( defined $subs{$subnet}{$address} ){
+		    $has_ints = 1;
+		    last;
+		}
+	    }
+	    if ( !$has_ints ) {
+		push @ids, $subnet;
+	    }
+	}
+    }
+    my @result;
+    foreach my $id ( @ids ){
+	push @result, Ipblock->retrieve($id);
+    }
+
+    return @result;
+}
+
+
+##################################################################
 =head2 get_subnet_addr - Get subnet address for a given address
 
 
