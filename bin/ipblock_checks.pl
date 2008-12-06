@@ -20,6 +20,8 @@ my $usage = <<EOF;
 
     
     -u, --unused       report unused subnets
+    -4, --v4-only      IPv4 subnets only
+    -6, --v6-only      IPv6 subnets only
     -m, --send_mail    send output via e-mail
     -f, --from         e-mail From line (default: $self{FROM})
     -S, --subject      e-mail Subject line (default: $self{SUBJECT})
@@ -30,6 +32,8 @@ EOF
     
 # handle cmdline args
 my $result = GetOptions( "u|unused"       => \$self{UNUSED},
+			 "4|v4-only"      => \$self{4},
+			 "6|v6-only"      => \$self{6},
 			 "h|help"         => \$self{HELP},
 			 "m|send_mail"    => \$self{EMAIL},
 			 "f|from:s"       => \$self{FROM},
@@ -54,6 +58,9 @@ my @unused = Ipblock->get_unused_subnets();
 if ( @unused ){
     $output = "\nThe following Subnets appear to be unused:\n\n";
     foreach my $subnet ( @unused ){
+	if ( $self{4} && $subnet->version ne "4" ){
+	    next;
+	}
 	$output .= "  " . $subnet->get_label() . "\n";
     }
 }
