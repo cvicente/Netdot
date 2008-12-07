@@ -1,0 +1,35 @@
+<%doc>
+Show unused subnets
+</%doc>
+%
+%
+<%attr>
+title   => 'Unused Subnets' 
+section => 'Reports'
+</%attr>
+%
+%
+<%args>
+$version => undef;
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+my @subnets = Ipblock->get_unused_subnets(version=>$version);
+
+</%init>
+
+<div class="container">
+    <div class="containerheadleft"><b>The following subnets appear to be unused:</b></div>
+    <div class="containerheadright">&nbsp;</div>
+        <div class="containerbody">
+%       if ( !scalar(@subnets) ){
+	   <p>No unused subnets found.</p>
+%       }else{
+            <& /generic/sortresults.mhtml, object=>\@subnets &>
+%       }
+        </div>
+</div>

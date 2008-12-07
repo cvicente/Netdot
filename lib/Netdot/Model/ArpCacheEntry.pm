@@ -104,6 +104,27 @@ __PACKAGE__->set_sql(by_ip => qq{
 	ORDER BY arpcache.tstamp DESC
     });
 
+
+=head2 search_interface - Retrieve all entries for given interface and timestamp
+
+  Arguments: 
+    Interface id
+    ArpCache timestamp
+  Returns:   
+    Array of ArpCacheEntry objects
+  Examples:
+    ArpCacheEntry->->search_interface($int->id, $tstamp)
+
+=cut
+__PACKAGE__->set_sql(interface => qq{
+SELECT arpe.id
+FROM   interface i, arpcache arp, arpcacheentry arpe
+ WHERE arpe.interface=i.id 
+   AND arpe.arpcache=arp.id 
+   AND i.id=? 
+   AND arp.tstamp=?
+});
+
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
