@@ -26,6 +26,8 @@ my (@headers, @rows) = ();
          <option value="unused_subnets" <% ($report_type eq "unused_subnets")?"SELECTED":"" %>>Unused Subnets</option>
          <option value="unused_v4_subnets" <% ($report_type eq "unused_v4_subnets")?"SELECTED":"" %>>Unused Subnets (v4)</option>
          <option value="unused_v6_subnets" <% ($report_type eq "unused_v6_subnets")?"SELECTED":"" %>>Unused Subnets (v6)</option>
+         <option value="maxed_v4_subnets" <% ($report_type eq "maxed_v4_subnets")?"SELECTED":"" %>>Maxed Out Subnets (v4)</option>
+         <option value="maxed_v6_subnets" <% ($report_type eq "maxed_v6_subnets")?"SELECTED":"" %>>Maxed Out Subnets (v6)</option>
          </select>
       </form>
 
@@ -36,5 +38,9 @@ if ( $report_type eq 'unused_subnets' ){
     $m->comp('unused_subnets.html', version=>4);
 }elsif( $report_type eq 'unused_v6_subnets' ){
     $m->comp('unused_subnets.html', version=>6);
+}elsif ( $report_type eq 'maxed_v4_subnets' ){
+    $m->comp('maxed_subnets.html', version=>4);
+}elsif ( $report_type eq 'maxed_v6_subnets' ){
+    $m->comp('maxed_subnets.html', version=>6);
 }
 </%perl>

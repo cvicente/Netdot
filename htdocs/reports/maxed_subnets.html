@@ -1,0 +1,37 @@
+<%doc>
+Show maxed out subnets
+</%doc>
+%
+%
+<%attr>
+title   => 'Maxed Out Subnets'
+section => 'Reports'
+</%attr>
+%
+%
+<%args>
+$version => undef;
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+my $threshold = Netdot->config->get('SUBNET_USAGE_MINPERCENT');
+my @pairs = Ipblock->get_maxed_out_subnets(version=>$version);
+
+my @subnets = map { $_->[0] } @pairs;
+
+</%init>
+
+<div class="container">
+    <div class="containerheadleft"><b>The following subnets are below <% $threshold %>% free:</b></div>
+    <div class="containerheadright">&nbsp;</div>
+        <div class="containerbody">
+%       if ( !scalar(@subnets) ){
+	   <p>No maxed-out subnets found.</p>
+%       }else{
+            <& /generic/sortresults.mhtml, object=>\@subnets &>
+%       }
+        </div>
+</div>

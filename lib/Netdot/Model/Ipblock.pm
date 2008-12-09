@@ -815,6 +815,65 @@ sub fast_update{
 }
 
 
+##################################################################
+=head2 get_maxed_out_subnets - 
+
+  Arguments:
+    version (optional)
+  Returns:
+    Array of arrayrefs containing the subnet object and the percentage of free addresses
+  Examples:
+    my @maxed_out = Ipblock->get_maxed_out_subnets();
+
+=cut
+sub get_maxed_out_subnets {
+    my ($self, %args) = @_;
+    $self->isa_class_method('get_maxed_out_subnets');
+
+    my $threshold = Netdot->config->get('SUBNET_USAGE_MINPERCENT') 
+	|| $self->throw_user("Ipblock::get_maxed_out_subnets: SUBNET_USAGE_MINPERCENT is not defined in config");
+
+    my @result;
+    my $query = "SELECT     subnet.id, subnet.version, subnet.prefix
+                 FROM       ipblockstatus, ipblock subnet
+                 WHERE      subnet.status=ipblockstatus.id 
+                    AND     ipblockstatus.name='Subnet'
+                 ";
+    
+    if ( $args{version} ){
+	$query .= " AND subnet.version=$args{version}";
+    }
+
+    $query .= " ORDER BY   subnet.address";
+
+    my $dbh  = $self->db_Main();
+    my $rows = $dbh->selectall_arrayref($query);
+    foreach my $row ( @$rows ){
+	my ($id, $version, $prefix) = @$row;
+	if ( $version == 4 && $prefix >= 30 ){
+	    # Ignore point-to-point subnets
+	    next;
+	}
+	my $subnet = Ipblock->retrieve($id);
+	my ($total, $used);
+	if ( $version == 6 ){
+	    $total = new Math::BigInt($subnet->num_addr());
+	    $used  = new Math::BigInt($subnet->num_children());
+	}else{ 
+	    $total = $subnet->num_addr();
+	    $used  = $subnet->num_children();
+	}
+	my $free  = $total - $used;
+	my $percent_free = ($free*100/$total);
+	
+	if ( $percent_free <= $threshold ){
+	    push @result, [$subnet, $percent_free];
+	}
+    }
+    return @result;
+}
+
+
 =head1 INSTANCE METHODS
 =cut
 
@@ -1147,14 +1206,14 @@ sub num_children {
 
 
 ##################################################################
-=head2 address_usage -  Returns the number of hosts in a given container.
+=head2 address_usage -  Returns the number of hosts in a given container or subnet
 
   Arguments:
     None
   Returns:
     integer
   Examples:
-
+    my $count = $ipblock->address_usage();
 
 =cut
 
@@ -1169,8 +1228,8 @@ sub address_usage {
     my $dbh = $self->db_Main;
     eval {
 	$q = $dbh->prepare_cached("SELECT id, address, prefix, version 
-                                       FROM ipblock 
-                                       WHERE ? <= address AND address <= ?");
+                                   FROM   ipblock 
+                                   WHERE  ? <= address AND address <= ?");
 	
 	$q->execute(scalar($start->numeric), scalar($end->numeric));
     };
