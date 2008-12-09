@@ -682,7 +682,7 @@ push( @field_headers, "Usable Addresses:" );
 push( @cell_data, ($ip->num." (". ($ip->version == 6 ? $ip->first->short."-".$ip->last->short : $ip->first->addr."-".$ip->last->addr) .")") );
 	
 if ($o->status->name eq "Subnet") {
-      my $used = new Math::BigInt($o->num_children);
+      my $used  = new Math::BigInt($o->num_children);
       my $total = new Math::BigInt($o->num_addr);
       my $avail = $total - $used;
       my $avail_percent = $ui->friendly_percent(value=>$avail,total=>$total);
