@@ -12,6 +12,7 @@ $netdot_db_port     = '';
 $strip_domain = 'localdomain';
 $group_source = 'used_by';
 
+
 /* 
  Define various patterns for Host Template assignments.
  The hash values must match exactly the output from
@@ -19,8 +20,10 @@ $group_source = 'used_by';
 */
 
 /* Match Product's sysobjectid field */
-$oid_to_host_template = array('/1\.3\.6\.1\.4\.1\.11\.2\.3\.7\.11/' => '9',
-			      );
+
+// (Maches HP Procurve switches)
+//$oid_to_host_template = array('/1\.3\.6\.1\.4\.1\.11\.2\.3\.7\.11/' => '9',
+//			      );
 
 /* Match Product name */
 $product_to_host_template = array('/windows/i'  => '7',
@@ -58,7 +61,6 @@ $sortMethods    = array('manual' => 1, 'alpha' => 2, 'natural' => 3, 'numeric' =
 $nodeTypes      = array('header' => 1, 'graph' => 2, 'host' => 3);
 $hostGroupStyle = 2;    /* 1 = Graph Template,  2 = Data Query Index */
 
-/* ---------------------------------------------------------------------------------- */
 /* 
  $dsGraphs is a data structure containing the necessary information to build 'ds' type graphs
  See the documentation on Cacti's CLI commands for more detailed explanations, specifically:
@@ -66,23 +68,26 @@ $hostGroupStyle = 2;    /* 1 = Graph Template,  2 = Data Query Index */
    php -q add_device.php --list-host-templates
    php -q add_graphs.php --list-snmp-queries
    php -q add_graphs.php --list-graph-templates
+   or: 
+   select * from snmp_query_graph;
+   select * from graph_templates;
  
  Syntax:
  $dsGraphs["<HostTemplateID>|any>"]["snmpQueryId"]  = <SNMP Query ID>
  $dsGraphs["<HostTemplateID>|any>"]["queryTypeIds"] = array(<query_type_id> => <template_id>)
- $dsGraphs["any"]["snmpField"] = <snmp field>
- $dsGraphs["any"]["snmpValue"] = <snmp value>
+ $dsGraphs["any"]["snmpCriteria"] = <SQL criteria>
+
 */
 
-/* SNMP - Interface Statistics */
+/* ---------------------------------------------------------------------------------- */
+/* SNMP - Interface Statistics 
+*/
 $dsGraphs["any"]["Interface Statistics"]["snmpQueryId"] = 1;
 
 /* 
 Select a subset of the interfaces:
-Omitting the snmpValue parameter will create graphs for all interfaces
 */
-$dsGraphs["any"]["Interface Statistics"]["snmpField"] = 'ifOperStatus';
-$dsGraphs["any"]["Interface Statistics"]["snmpValue"] = 'Up';
+$dsGraphs["any"]["Interface Statistics"]["snmpCriteria"] = "field_name='ifSpeed' AND field_value<='100000000'";
 
 $dsGraphs["any"]["Interface Statistics"]["queryTypeIds"] = array(2  => 22,  // In/Out Errors/Discarded Packets
 								 3  => 24,  // In/Out Non-Unicast Packets
@@ -90,12 +95,30 @@ $dsGraphs["any"]["Interface Statistics"]["queryTypeIds"] = array(2  => 22,  // I
 								 13 => 2,   // In/Out Bits
 								 );
 
+$dsGraphs["any"]["64-bit Interface Statistics"]["snmpQueryId"]  = 1;
+$dsGraphs["any"]["64-bit Interface Statistics"]["snmpCriteria"] = "field_name='ifSpeed' AND field_value>'100000000'";
+$dsGraphs["any"]["64-bit Interface Statistics"]["queryTypeIds"] = array(2  => 22,  // In/Out Errors/Discarded Packets
+									3  => 24,  // In/Out Non-Unicast Packets
+									4  => 23,  // In/Out Unicast Packets
+									14 => 2,   // In/Out Bits (64-bit Counters)
+									);
+
+/* Host MIB Mounted Partitions Stats */
+$dsGraphs["3"]["Mounted Partitions"]["snmpQueryId"]  = 8;
+$dsGraphs["3"]["Mounted Partitions"]["snmpCriteria"] = "field_name='hrStorageIndex'";
+$dsGraphs["3"]["Mounted Partitions"]["queryTypeIds"] = array(18 => 26); // Host MIB - Available Disk Space
+
+/* Cisco EnvMon Temperature */
+$dsGraphs["5"]["EnvMon Temp"]["snmpQueryId"]  = 10;
+$dsGraphs["5"]["EnvMon Temp"]["snmpCriteria"] = "field_name='TempStatusDescr'";
+$dsGraphs["5"]["EnvMon Temp"]["queryTypeIds"] = array(23 => 40);
+
 /* ---------------------------------------------------------------------------------- */
 /* 
- $cgGraphs is a data structure containing the necessary information to build 'cg' type graphs.
- See the documentation on Cacti's CLI commands for more detailed explanations, specifically:
+    $cgGraphs is a data structure containing the necessary information to build 'cg' type graphs.
+    See the documentation on Cacti's CLI commands for more detailed explanations, specifically:
 
-    php -q add_graphs.php --list-graph-templates
+        php -q add_graphs.php --list-graph-templates
 
     Syntax:
     $cgGraphs["<Host Template ID>"]["<Description>"] = <Graph Template ID>
@@ -113,5 +136,11 @@ $cgGraphs["3"]["ucd/net - Mem"]  = 13;
 
 /* Cisco CPU Usage*/
 $cgGraphs["5"]["Cisco - CPU Usage"] = 18;
+$cgGraphs["5"]["Cisco - Mem Usage"] = 43;
+
+/* HP Procurve CPU, Memory and MAC address count */
+//$cgGraphs["9"]["Procurve MAC Count"] = 37;
+//$cgGraphs["9"]["Procurve MEM Usage"] = 38;
+//$cgGraphs["9"]["Procurve CPU Usage"] = 39;
 
 ?>

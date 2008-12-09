@@ -146,7 +146,7 @@ while ($row = $q->FetchRow()) {
   if (!$community){
     $community = "public";
   }
-  $disable = ($enabled)? 0 : 1;
+  $disabled = ($enabled)? 0 : 1;
   
   // Try to assign a template
   $template_id = "";
@@ -457,15 +457,12 @@ function create_ds_graphs($args) {
    $snmpQueryArray["snmp_index_on"] = get_best_data_query_index_type($hostId, $snmpQueryId);
    
    $indexes_query = "SELECT snmp_index
-                    FROM   host_snmp_cache
-                    WHERE  host_id='$hostId'
-                       AND snmp_query_id='$snmpQueryId'";
-   
-   if (isset($args["snmpField"]) && $args["snmpField"] != ""){
-     $indexes_query .= " AND field_name='" . $args["snmpField"] . "'";
-     if (isset($args["snmpValue"]) && $args["snmpValue"] != ""){
-       $indexes_query .= " AND field_value='" . $args["snmpValue"] . "'";
-     }
+                     FROM   host_snmp_cache
+                     WHERE  host_id='$hostId'
+                        AND snmp_query_id='$snmpQueryId'";
+
+   if (isset($args["snmpCriteria"]) && $args["snmpCriteria"] != ""){
+     $indexes_query .= " AND ". $args["snmpCriteria"];
    }
    
    $snmpIndexes = db_fetch_assoc($indexes_query);
@@ -504,7 +501,7 @@ function create_ds_graphs($args) {
     }
 
   }else{
-    echo "WARN: $description: No rows in query: $indexes_query\n";
+    echo "DEBUG: $description: No rows in query: $indexes_query\n";
   }
 }
  
