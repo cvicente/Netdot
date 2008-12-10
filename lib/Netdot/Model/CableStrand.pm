@@ -147,6 +147,7 @@ sub get_sequence_path {
     my @ret;
     my $dbh = $self->db_Main;
     my $id  = $self->id;
+    my $strand = $id;
     eval{
 	my $st = $dbh->prepare_cached("SELECT strand2 FROM splice WHERE strand1 = ?");
 	$st->execute($id);
@@ -154,7 +155,7 @@ sub get_sequence_path {
 	if ( $st->rows() == 0 ) {
 	    return;
 	}else{
-	    my $strand = $self->find_endpoint() if ( $st->rows() > 1 );
+	    $strand = $self->find_endpoint() if ( $st->rows() > 1 );
 	    $st->execute($strand);
 	    my $tmp_strand = ($st->fetchrow_array())[0];
 	    push(@ret, $strand);
