@@ -29,8 +29,8 @@ $0 <dir path>
 ";
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime;
-$year += 1900; $mon += 1; $mday = sprintf("%02d", $mday);
-my $DATE    = $year.$mon.$mday.$hour;
+$year += 1900; $mon += 1;
+my $DATE    = sprintf("%4d%02d%02d%02d", $year,$mon,$mday,$hour);
 my $FILEDIR = $ARGV[0] or die $USAGE;
 my $OUTFILE = "$FILEDIR/$DATE";
 
@@ -93,20 +93,18 @@ foreach my $row (@$arows){
 }
 print "arp hash contains: ", Dumper(%arp), "\n" if $DEBUG;
 
-
-
 foreach my $mac ( keys %macs ){
     print OUTFILE "$mac";
-    my @arp_ports;
     foreach my $decip ( keys %{$arp{$mac}} ){
+	my @arp_ports;
 	my $ip = NetAddr::IP->new($decip)->addr();
 	print OUTFILE " $ip";
 	foreach my $host ( keys %{$arp{$mac}{$decip}} ){
 	    my $arp_port = "$host.$arp{$mac}{$decip}{$host}";
 	    push @arp_ports, $arp_port;
 	}
+	print OUTFILE " ", join(" ", @arp_ports) if @arp_ports;
     }
-    print OUTFILE " ", join(" ", @arp_ports) if @arp_ports;
     foreach my $host ( keys %{$macs{$mac}} ){
 	my $ifindex = $macs{$mac}{$host};
 	my $count = scalar(keys %{$ports{$host}{$ifindex}});
