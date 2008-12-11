@@ -39,6 +39,9 @@ sub insert {
     
     $class->throw_fatal("Missing required arguments: strand1/strand2")
 	unless ( exists $argv->{strand1} && exists $argv->{strand2} );
+
+    $class->throw_user("You cannot splice a strand with itself!")
+	if ( $argv->{strand1} == $argv->{strand2} );
     
     # Insert inverse first
     $class->SUPER::insert({strand1=>$argv->{strand2}, strand2=>$argv->{strand1}});
