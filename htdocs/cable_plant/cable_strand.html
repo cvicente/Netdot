@@ -46,7 +46,7 @@ if (defined($ARGS{_action})) {
     
     my %update_info = ();
     if (!(%update_info = $ui->form_to_db(%ARGS))) {
-        $m->comp("error.mhtml", error => $ui->error());
+        $m->comp("../generic/error.mhtml", error => $ui->error());
 	}
 
     if ($update_info{CableStrand}{id}) {
@@ -68,7 +68,7 @@ if (defined($ARGS{_action})) {
         my @splices = ("__splice1", "__splice2");
         foreach my $sp ( @splices ){
             next if (!defined($ARGS{$sp}) || $ARGS{$sp} eq "");
-	    Splice->insert($o, $ARGS{$sp});
+	    Splice->insert({strand1=>$o, strand2=>$ARGS{$sp}});
         }
     }
 }
