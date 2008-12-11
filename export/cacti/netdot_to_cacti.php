@@ -499,10 +499,10 @@ function create_ds_graphs($args) {
       push_out_host($hostId,0);
       return $graphsCreated;
     }
-
-  }else{
-    echo "DEBUG: $description: No rows in query: $indexes_query\n";
-  }
+    
+   }else{
+     debug("$description: No rows in query: $indexes_query");
+   }
 }
  
 /* ----------------------------------------------------------------------------------------------------- */

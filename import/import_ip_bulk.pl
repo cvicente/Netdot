@@ -27,7 +27,7 @@ while (<FILE>){
     if ($used_by){
 	$ent2 = Entity->find_or_create({name=>$used_by});
     }
-    if (my $ip = Ipblock->search(address=>$address)->first){
+    if ( my $ip = Ipblock->search(address=>$address, prefix=>$prefix)->first ){
 	print "IP " . $ip->get_label . " exists.  Updating.\n";
 	$ip->update({status         => $status, 
 		     owner          => $ent1, 

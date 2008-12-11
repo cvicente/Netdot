@@ -46,7 +46,7 @@ if (defined($ARGS{_action})) {
     
     my %update_info = ();
     if (!(%update_info = $ui->form_to_db(%ARGS))) {
-        $m->comp("error.mhtml", error => $ui->error());
+        $m->comp("../generic/error.mhtml", error => $ui->error());
 	}
 
     if ($update_info{CableStrand}{id}) {
@@ -68,7 +68,7 @@ if (defined($ARGS{_action})) {
         my @splices = ("__splice1", "__splice2");
         foreach my $sp ( @splices ){
             next if (!defined($ARGS{$sp}) || $ARGS{$sp} eq "");
-	    Splice->insert($o, $ARGS{$sp});
+	    Splice->insert({strand1=>$o, strand2=>$ARGS{$sp}});
         }
     }
 }
@@ -91,9 +91,9 @@ if (defined($ARGS{_action})) {
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
 %           if ($editStrand) {
-            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> <input name="submit" value="save" type="submit">
 %           } else {
-            <a href="cable_strand.html?id=NEW">[new]</a> &nbsp;&nbsp; <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a> &nbsp;&nbsp;<a href="delete.html?table=CableStrand&id=<% $id %>">[delete]</a>
+            <a href="cable_strand.html?id=NEW">[new]</a> <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a> <a href="delete.html?table=CableStrand&id=<% $id %>">[delete]</a>
 %           }
 </div>
 <!-- End Header Table -->
