@@ -256,7 +256,11 @@ function suggestName()
 %         }
 	</div>
 	<div class="containerbody">
-          <& /generic/form.mhtml, table=>"BackboneCable", id=>$id, edit=>$edit, short_field_names=>0 &>
+%       if ( $edit eq 'cableinfo' ){
+           <& /generic/form.mhtml, table=>"BackboneCable", id=>$id, edit=>1, short_field_names=>0 &>
+%       }else{
+           <& /generic/form.mhtml, table=>"BackboneCable", id=>$id, edit=>0 &>
+%       }
 	</div>
       </form>
     </div>
@@ -359,6 +363,7 @@ function editSelected(id)
 
 	@headers = ( 
 		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=name#cable_strand">Name</a>',
+		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=type#cable_strand">Type</a>',
 		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=status#cable_strand">Status</a>',
 		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=direction#cable_strand">Direction</a>',
 	             'Spliced With',
@@ -380,6 +385,10 @@ function editSelected(id)
 	    # sort by status
 	    # -----------------------------------------------------------
 	    @sorted_strands = sort { uc($a->status->name) cmp uc($b->status->name) } @strands;
+	} elsif ($strand_sort eq "type") {
+	    # sort by status
+	    # -----------------------------------------------------------
+	    @sorted_strands = sort { uc($a->fiber_type->name) cmp uc($b->fiber_type->name) } @strands;
 	} elsif ($strand_sort eq "direction") {
 	    # sort by direction
 	    # -----------------------------------------------------------
@@ -403,7 +412,11 @@ function editSelected(id)
 		      }
 		      $ac;
 		  }} );
-        my %tmp = $ui->form_field(object=>$st, column=>"status", edit=>$editStrand);
+
+	    my %tmp = $ui->form_field(object=>$st, column=>"fiber_type", edit=>$editStrand);
+	    push( @row, $tmp{value} );
+
+	    %tmp = $ui->form_field(object=>$st, column=>"status", edit=>$editStrand);
 	    push( @row, $tmp{value} );
 
 	    push( @row, 
