@@ -12,6 +12,7 @@ $edit_list      => undef
 $__edit_list    => undef
 $_action        => undef
 $number_strands => undef
+$fiber_type     => undef
 $range1         => undef
 $range2         => undef
 $splice_bb_end  => undef
@@ -106,7 +107,7 @@ if (defined($_action) && ($_action eq "UPDATE" || $_action eq "STRAND_UPDATE")) 
 # insert N number of strands...
 elsif ( defined($_action) && $_action eq "ADD_STRANDS" ){
     eval{
-	$o->insert_strands($number_strands);
+	$o->insert_strands($number_strands, $fiber_type);
     };
     $m->comp("../generic/error.mhtml", error=>"$@") if $@;
 }
@@ -616,8 +617,11 @@ HERE
 	<input type="hidden" name="_action" value="ADD_STRANDS" />
 	Manually 
 	&nbsp;<input type="submit" name="strand_add" value="Add" />&nbsp;
-	<input type="text" name="number_strands" value="0" size="3" /> strands
-	
+	<input type="text" name="number_strands" value="0" size="3" /> strands of type 
+	<select name="fiber_type">
+	  <option value="1">Multimode</option>
+	  <option value="2">Singlemode</option>
+        </select>
       </form>
     </div>
   </div>
