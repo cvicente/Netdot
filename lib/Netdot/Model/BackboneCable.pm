@@ -34,7 +34,7 @@ Netdot::Model::BackboneCable
 
 =cut
 sub insert_strands {
-    my ($self, $number) = @_;
+    my ($self, $number, $type) = @_;
 
     if ( $number <= 0 ) {
         $self->throw_user("Cannot insert $number strands.");
@@ -44,7 +44,10 @@ sub insert_strands {
     my @cables = CableStrand->search_like(name=>$backbone_name . "%");
     my $strand_count = scalar(@cables);
     my %tmp_strands;
-    $tmp_strands{cable} = $self->id;
+   
+    $tmp_strands{cable}      = $self->id;
+    $tmp_strands{fiber_type} = $type;
+
     for (my $i = 0; $i < $number; ++$i) {
         $tmp_strands{name} = $backbone_name . "." . (++$strand_count);
         $tmp_strands{number} = $strand_count;
