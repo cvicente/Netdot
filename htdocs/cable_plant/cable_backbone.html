@@ -264,11 +264,59 @@ function suggestName()
 %         }
 	</div>
 	<div class="containerbody">
-%       if ( $edit eq 'cableinfo' ){
-           <& /generic/form.mhtml, table=>"BackboneCable", id=>$id, edit=>1, short_field_names=>0 &>
-%       }else{
-           <& /generic/form.mhtml, table=>"BackboneCable", id=>$id, edit=>0 &>
-%       }
+
+	  <!-- Table for two column layout -->
+	  <table width="100%"  class="formtablebg">
+	    <tr>
+	      <!-- Left sub table -->
+	      <td width="50%">
+<%perl>
+    (@field_headers, @cell_data) = ();
+    my @fields = ('start_closet','end_closet','type');
+    $ui->add_to_fields(o=>$o, table=>"BackboneCable", edit=>$editBackbone, fields=>\@fields, 
+		       field_headers=>\@field_headers, cell_data=>\@cell_data);
+</%perl>
+    
+		<& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+              </td>
+
+	      <!-- Right sub table -->  
+	      <td width="50%">
+<%perl>
+    (@field_headers, @cell_data) = ();
+
+    my %tmp = $ui->form_field(object=>$o, table=>"BackboneCable", column=>"name", edit=>$editBackbone);
+    my $name_tmp = $tmp{value};
+    if ($editBackbone) {                
+	$name_tmp .= '&nbsp;&nbsp;&nbsp;<input type="button" name="suggest_name"'
+	    . 'value="Suggest Name" onClick="suggestName();" />';
+    }
+    push( @field_headers, $tmp{label} );
+    push( @cell_data, $name_tmp );
+
+    $ui->add_to_fields(o=>$o, table=>"BackboneCable", edit=>$editBackbone, fields=>['owner', 'installdate', 'length'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+#    %tmp = $ui->form_field(object=>$o, table=>"BackboneCable", column=>"length", edit=>$editBackbone);
+#    push( @field_headers, $tmp{label} );
+#    push( @cell_data, $tmp{value} );
+
+</%perl>
+
+		<& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+              </td>
+	    </tr>
+	  </table>
+
+<%perl> 
+{
+    my %tmp;
+    %tmp = $ui->form_field(object=>$o, table=>"BackboneCable", column=>"info", edit=>$editBackbone, 
+			   htmlExtra=>'rows="3" cols="80"');
+    print '<div class="containerseparator">'.$tmp{label}.'</div>';
+    print $tmp{value};         
+} 
+</%perl>
 	</div>
       </form>
     </div>
