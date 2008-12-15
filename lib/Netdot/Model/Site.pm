@@ -30,6 +30,12 @@ WHERE    (backbonecable.start_closet=closet.id OR backbonecable.end_closet=close
 GROUP BY site.id    
 });
 
+__PACKAGE__->set_sql(with_closets => qq{
+SELECT   site.id 
+FROM     site, closet
+WHERE    closet.site=site.id 
+GROUP BY site.id    
+});
 
 =head1 AUTHOR
 

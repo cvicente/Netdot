@@ -47,7 +47,8 @@ if ($show_tasks eq "") {
 my @sites = Site->retrieve_all();
 @sites = sort { $a->name cmp $b->name } @sites;
 
-my @bbsites = Site->search_with_backbones();
+my @bbsites      = Site->search_with_backbones();
+my @closet_sites = Site->search_with_closets();
 
 my $hideheader;
 if( !$showheader ) {
@@ -263,7 +264,7 @@ if( !$showheader ) {
                 <select name="id" id="site_id" onChange="jsrsSendqueryTB('Floor', floor_id, site_id.value, 'site')">
                     <option value="0">-- Select --</option>
                     <%perl>
-                    foreach my $site (@sites) {
+                    foreach my $site ( @closet_sites ) {
                         printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
                     }
                     </%perl>
