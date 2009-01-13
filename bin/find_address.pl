@@ -302,5 +302,7 @@ sub print_location{
     $info    .= ', '.$iface->description if $iface->description;
     my $jack  = ($iface->jack)? $iface->jack->get_label : $iface->jack_char;
     $info    .= ', '.$jack if $jack;
-    print "\nLocation: ", $iface->get_label, $info, "\n\n";
+    print "\nLocation    : ", $iface->get_label, $info;
+    print "\nModel       : ", $iface->device->product->get_label;
+    print "\n\n";
 }
