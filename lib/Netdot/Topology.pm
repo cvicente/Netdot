@@ -444,8 +444,13 @@ sub get_dp_links {
         if ( $r_port ) {
 	    my $rem_int;
             foreach my $rem_port ( split ';', $r_port ) {
+		# If interface name has a slot/sub-slot number, use that only
+		# (helps finding stuff like Gi2/7)
+		if ( $rem_port =~ /\w+(\d+\/\d+)$/ ){
+		    $rem_port = '%'. $1 .'%';
+		}
                 # Try name first, then number, then description (if it is unique)
-                $rem_int = Interface->search(device=>$rem_dev, name=>$rem_port)->first
+                $rem_int = Interface->search_like(device=>$rem_dev, name=>$rem_port)->first
 		    || Interface->search(device=>$rem_dev, number=>$rem_port)->first;
 		unless ( $rem_int ){
 		    my @ints = Interface->search(device=>$rem_dev, description=>$rem_port);
