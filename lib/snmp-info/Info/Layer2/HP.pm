@@ -117,7 +117,6 @@ $VERSION = '2.00';
     %SNMP::Info::MAU::MUNGE,
     %SNMP::Info::LLDP::MUNGE,
     %SNMP::Info::CDP::MUNGE,
-    'c_port' => \&munge_hp_c_port,
     'c_id'   => \&munge_hp_c_id,
 );
 
@@ -557,15 +556,6 @@ sub c_port {
         $c_port{$iid} = $port;
     }
     return \%c_port;
-}
-
-sub munge_hp_c_port {
-    my ($v) = @_;
-    if ( length(unpack('H*', $v)) == 12 ){
-	return join(':',map { sprintf "%02x", $_ } unpack('C*', $v));
-    }else{
-	return $v;
-    }
 }
 
 sub c_id {

@@ -510,7 +510,7 @@ sub update_ip {
 	    return;
 	}
 	
-	if ( $subnetaddr ne $address ){
+	if ( ($version == 4 && $subnetprefix == 31) || $subnetaddr ne $address ){
 	    my %iargs;
 	    $iargs{status} = 'Subnet' ;
 	    

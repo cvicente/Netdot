@@ -171,7 +171,7 @@ if ( $o ){
 	$jack ||=  'n/a';
 	$room ||=  'n/a';
 	my $lbl = $iface->get_label;
-	my $lnk = "<a href=\"../generic/view.html?table=Interface&id=$edge_port\">$lbl</a>";
+	my $lnk = "<a href=\"interface.html?id=$edge_port\">$lbl</a>";
 </%perl>
 <!-- Display Location -->
 <div class="container">
@@ -192,7 +192,7 @@ if ( $o ){
             my ($tstamp, $iid) = @$row;
             my $iface = Interface->retrieve($iid);
             my $lbl   = $iface->get_label;
-            my $lnk   = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$lbl</a>";
+            my $lnk   = "<a href=\"interface.html?id=$iid\">$lbl</a>";
 	    push @{$tstamps{$tstamp}}, $lnk;
         }
 	foreach my $tstamp ( reverse sort keys %tstamps ){
@@ -222,7 +222,7 @@ if ( $o ){
         foreach my $row ( @$arp ){
             my ($iid, $ipid, $tstamp) = @$row;
             my $lbl    = Interface->retrieve($iid)->get_label;
-            my $lnk   = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$lbl</a>";
+            my $lnk   = "<a href=\"interface.html?id=$iid\">$lbl</a>";
 	    push @{$tstamps{$tstamp}{$ipid}}, $lnk;
         }
 	foreach my $tstamp ( reverse sort keys %tstamps ){

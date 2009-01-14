@@ -559,12 +559,14 @@ sub find_edge_port {
     my ($sth, $sth2, $rows, $rows2);
     eval {
 	my $dbh = $self->db_Main();
-	$sth = $dbh->prepare_cached('SELECT   i.id, ft.id, MAX(ft.tstamp) 
+	$sth = $dbh->prepare_cached('SELECT   i.id, ft.id
                                      FROM     interface i, fwtableentry fte, fwtable ft 
                                      WHERE    fte.physaddr=? 
                                        AND    fte.interface=i.id 
                                        AND    fte.fwtable=ft.id
-                                     GROUP BY i.id');
+                                       AND    ft.tstamp=?
+                                     GROUP BY i.id
+                                     ');
 	
 	$sth2 = $dbh->prepare_cached('SELECT COUNT(i.id) 
                                       FROM   interface i, fwtable ft, fwtableentry fte 
@@ -573,7 +575,7 @@ sub find_edge_port {
                                         AND  ft.id=? 
                                         AND  fte.interface=?');
 	
-	$sth->execute($self->id);
+	$sth->execute($self->id, $self->last_seen);
 	$rows = $sth->fetchall_arrayref;
     };
     if ( my $e = $@ ){
@@ -583,14 +585,10 @@ sub find_edge_port {
     if ( scalar @$rows > 1 ){
 	my @results;
 	foreach my $row ( @$rows ){
-	    my ($iid, $ftid, $tstamp) = @$row;
-	    eval{
-		$sth2->execute($ftid, $iid);
-		$rows2 = $sth2->fetchall_arrayref;
-	    };
-	    if ( my $e = $@ ){
-		$self->throw_fatal($e);
-	    }
+	    my ($iid, $ftid) = @$row;
+	    $sth2->execute($ftid, $iid);
+	    $rows2 = $sth2->fetchall_arrayref;
+	    
 	    foreach my $row2 ( @$rows2 ){
 		my ($count) = @$row2;
 		push @results, [$count, $iid];

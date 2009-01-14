@@ -45,10 +45,10 @@ my $title;
 my @list;
 my $edit_ip     = ( $edit && $edit eq "ipinfo"    ) ? 1 : 0;
 my $edit_block  = ( $edit && $edit eq "blockinfo" ) ? 1 : 0;
+my $max_ips     = Netdot->config->get('SHOW_COUNT_THRESHOLD');
 my $added_ip    = 0;
 my $added_block = 0;
 my $covering_block;
-
 # Some regular expressions
 my $IPV4 = Netdot->get_ipv4_regex();
 my $IPV6 = Netdot->get_ipv6_regex();
@@ -536,7 +536,7 @@ if ( my @parents = $o->get_ancestors ){
         foreach my $row ( @$arp ){
             my ($iid, $macid, $tstamp) = @$row;
             my $lbl    = Interface->retrieve($iid)->get_label;
-            my $lnk   = "<a href=\"../generic/view.html?table=Interface&id=$iid\">$lbl</a>";
+            my $lnk   = "<a href=\"interface.html?id=$iid\">$lbl</a>";
 	    push @{$tstamps{$tstamp}{$macid}}, $lnk;
         }
 	foreach my $tstamp ( reverse sort keys %tstamps ){
@@ -679,7 +679,23 @@ push( @cell_data, ($ip->version == 6?$ip->broadcast->short:$ip->broadcast->addr)
 # Usable address range
 
 push( @field_headers, "Usable Addresses:" );
-push( @cell_data, ($ip->num." (". ($ip->version == 6 ? $ip->first->short."-".$ip->last->short : $ip->first->addr."-".$ip->last->addr) .")") );
+my ($num_addresses, $first_address, $last_address);
+if ( $o->version == 4 ){
+    if ( $o->prefix == 31 ){
+	$num_addresses = 2;
+	$first_address = $ip->addr;
+	$last_address  = $ip->broadcast->addr;
+    }else{
+	$num_addresses = $ip->num;
+	$first_address = $ip->first->addr;
+	$last_address  = $ip->last->addr;
+    }
+}else{
+    $num_addresses = $ip->num;
+    $first_address = $ip->first->short;
+    $last_address  = $ip->last->short;
+}
+push( @cell_data, ($num_addresses." (". $first_address."-".$last_address.")") );
 	
 if ($o->status->name eq "Subnet") {
       my $used  = new Math::BigInt($o->num_children);
@@ -692,19 +708,19 @@ if ($o->status->name eq "Subnet") {
     my $available_text;
     {
         my $used_text;
-        if ($used <= $ui->{config}->{SHOW_COUNT_THRESHOLD}) {
+        if ($used <= $max_ips) {
             $used_text = 'Used: '.$used;
-            if ($total <= $ui->{config}->{SHOW_COUNT_THRESHOLD}) {
+            if ($total <= $max_ips) {
                 $used_text .= ' of '.$total;
             }
             $used_text .= ' &nbsp;&nbsp;';
         }
         my $avail_text = 'Available: ';
-        if ($avail <= $ui->{config}->{SHOW_COUNT_THRESHOLD}) {
+        if ($avail <= $max_ips) {
             $avail_text .= $avail.' &nbsp;(';
         }
         $avail_text .= $ui->friendly_percent(value=>$avail,total=>$total);
-        if ($avail <= $ui->{config}->{SHOW_COUNT_THRESHOLD}) {
+        if ($avail <= $max_ips) {
             $avail_text .= ')';
         }
         $available_text = $used_text.$avail_text;
@@ -739,21 +755,21 @@ if ($o->status->name eq "Subnet") {
 
     $subnet_text = 'Available: '.($ui->friendly_percent(value=>$avail_s,total=>$total));
 
-        if( $used_a <= $ui->{config}->{SHOW_COUNT_THRESHOLD} ) {
+        if( $used_a <= $max_ips ) {
             $address_text .= 'Used: '.$used_a;
-            if( $total <= $ui->{config}->{SHOW_COUNT_THRESHOLD} ) {
+            if( $total <= $max_ips ) {
                 $address_text .= ' of '.$total;
             }
             $address_text .= ' &nbsp;&nbsp; Available: ';
-            if( $total <= $ui->{config}->{SHOW_COUNT_THRESHOLD} ) {
+            if( $total <= $max_ips ) {
                 $address_text .= $avail_a.' &nbsp;(';
             }
             $address_text .= $ui->friendly_percent(value=>$avail_a,total=>$total);
-            if ($total <= $ui->{config}->{SHOW_COUNT_THRESHOLD}) {
+            if ($total <= $max_ips) {
                 $address_text .= ')';
             }
         } else {
-            if( $avail_a <= $ui->{config}->{SHOW_COUNT_THRESHOLD} ) {
+            if( $avail_a <= $max_ips ) {
                 $address_text .= 'Available: '.$avail_a.' ('.(100-$address_percent).'%)';
             } else {
                 $address_text .= 'Available: '.(100-$address_percent).'%';
