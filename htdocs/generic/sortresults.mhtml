@@ -262,7 +262,8 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %             # If it is a link to another column....
 %             #####################################################################
 %             if ( defined $ftable ) {
-%                 if ( int(my $fo = $o->$c) != 0  ) {
+%                 my $fo; # foreign object
+%                 if ( int($fo = $o->$c) != 0 && ref($fo) ) {
 %                     my $lbl = $fo->get_label;
 %                     if( $first_column ) {
                           &nbsp;
