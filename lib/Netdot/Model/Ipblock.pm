@@ -1175,7 +1175,11 @@ sub num_addr {
     my $class = ref($self);
     
     if ( $self->version == 4 ) {
-        return $class->numhosts($self->prefix) - 2;
+	if ( $self->prefix < 31 ){
+	    return $class->numhosts($self->prefix) - 2;
+	}else{
+	    return $class->numhosts($self->prefix);
+	}
     }elsif ( $self->version == 6 ) {
         return $class->numhosts_v6($self->prefix) - 2;
     }
@@ -1712,7 +1716,7 @@ sub _validate {
 	if ( $self->is_address() ){
 	    if ( $pstatus eq "Reserved" ){
 		$self->throw_user($self->get_label.": Address allocations not allowed under Reserved blocks");
-	    }elsif ( $pstatus eq 'Subnet' ){
+	    }elsif ( $pstatus eq 'Subnet' && !($self->version == 4 && $parent->prefix == 31) ){
 		if ( $self->address eq $parent->address ){
 		    $self->throw_user(sprintf("IP cannot have same address as its subnet: %s == %s", 
 					      $self->address, $parent->address));
@@ -1815,18 +1819,13 @@ sub _build_tree_mem {
     
     my $size = ( $version == 4 ) ? 32 : 128;
     
-    eval {
-	$sth = $dbh->prepare_cached("SELECT id,address,prefix,parent 
-                                     FROM ipblock 
-                                     WHERE version = $version
-                                     AND prefix < $size
-                                     ORDER BY prefix");	
-	$sth->execute();
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
-    }
-    
+    $sth = $dbh->prepare_cached("SELECT   id,address,prefix,parent 
+                                 FROM     ipblock 
+                                 WHERE    version = $version
+                                   AND    prefix < $size
+                                 ORDER BY prefix");	
+    $sth->execute();
+
     my %parents;
     while ( my ($id, $address, $prefix, $parent) = $sth->fetchrow_array ){
 	my $node =  $class->_tree_insert(address => $address, 
@@ -1837,17 +1836,13 @@ sub _build_tree_mem {
     }
 
     # Now the addresses
-    eval {
-	$sth = $dbh->prepare_cached("SELECT id,address,prefix,parent 
-                                     FROM ipblock 
-                                     WHERE version = $version
-                                     AND prefix = $size
-                                     ORDER BY prefix");	
-	$sth->execute();
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
-    }
+    $sth = $dbh->prepare_cached("SELECT   id,address,prefix,parent 
+                                 FROM     ipblock 
+                                 WHERE    version = $version
+                                   AND    prefix = $size
+                                 ORDER BY prefix");	
+    $sth->execute();
+
     while ( my ($id, $address, $prefix, $parent) = $sth->fetchrow_array ){
 	my $node =  $class->_tree_find(address => $address, 
 				       version => $version,
@@ -1880,7 +1875,7 @@ sub _update_tree{
     if ( $self->is_address ){
 
 	$logger->debug("Ipblock::_update_tree: Searching v". $self->version .
-		       " tree for " . $self->address);
+		       " tree for " . $self->get_label);
 	# Search the tree.  
 	my $n = $class->_tree_find(version => $self->version, 
 				   address => $self->address_numeric,
@@ -1891,16 +1886,17 @@ sub _update_tree{
 	if ( $n ){
 	    my $a = Math::BigInt->new($n->iaddress);
 	    my $b = Math::BigInt->new($self->address_numeric);
-	    if ( $a == $b ) {
+	    if ( $a == $b && $self->prefix == $n->prefix ) {
 		$parent = $n->parent->data if ( $n && $n->parent );
-		$logger->debug("Ipblock::_update_tree: ". $self->address ." is in tree");
+		$logger->debug("Ipblock::_update_tree: ". $self->get_label ." is in tree");
 	    }else{
 		$parent = $n->data if ( $n->data );
-		$logger->debug("Ipblock::_update_tree: ". $self->address ." not in tree");
+		$logger->debug("Ipblock::_update_tree: ". $self->get_label ." not in tree");
+		
 	    }
 	    $self->SUPER::update({parent=>$parent}) if $parent;
 	}
-    }else{
+   }else{
 	# This is a block (subnet, container, etc)
 	$class->build_tree($self->version);
     }
@@ -1934,7 +1930,7 @@ sub _delete_from_tree{
     my $n = $class->_tree_find(version  => $self->version, 
 			       address  => $self->address_numeric,
 			       prefix   => $self->prefix);
-    if ( $n && ($n->iaddress == $self->address_numeric) ){
+    if ( $n && ($n->iaddress == $self->address_numeric  && $n->prefix == $self->prefix ) ){
 	$n->delete();
     }
     return 1;
