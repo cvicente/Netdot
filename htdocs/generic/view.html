@@ -45,8 +45,8 @@ if ( $DEBUG ){
 
 <!-- Display main object values -->
 <div class="container">
-    <div class="containerheadleftoutside"><strong><% $table %></strong></div>
-    <div class="containerheadrightoutside">
+    <div class="containerheadleft"><strong><% $table %></strong></div>
+    <div class="containerheadright">
 %       if ( ! $table->meta_data->is_history() ){
             <a href="edit.html?table=<% $table %>">[new]</a>
             <a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
@@ -143,7 +143,9 @@ foreach my $i ( keys %linksfrom ){
 %         # If data came ordered from the db, tell sortresults not to bother sorting
 %             $args{sort} = 0 if ( $ffield_order );
 %         }
-%	  $m->comp('sortresults.mhtml', %args);
+%	  if ( $num ) {
+%             $m->comp('sortresults.mhtml', %args);
+%         }
      </div>
 %    }
 %}
