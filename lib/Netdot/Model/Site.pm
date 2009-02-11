@@ -1,6 +1,6 @@
 package Netdot::Model::Site;
 
-use base 'Netdot::Model::Site';
+use base 'Netdot::Model';
 use warnings;
 use strict;
 

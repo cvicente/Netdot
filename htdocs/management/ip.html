@@ -457,8 +457,11 @@ if ( my @parents = $o->get_ancestors ){
     push( @field_headers, "Device:" );
     push( @cell_data, 
         eval {
-            if ( $o->interface && $o->interface->device ){
-                qq(<a href="device.html?id=).$o->interface->device->id.qq(">).$o->interface->device->get_label()."</a>";
+	    my $device;
+	    $device = $o->interface->device if ($o->interface);
+	    $device ||= ($o->snmp_devices)[0];
+            if ( $device ){
+                qq(<a href="device.html?id=).$device->id.qq(">).$device->get_label()."</a>";
             }else{
                 "&nbsp;";
             }
