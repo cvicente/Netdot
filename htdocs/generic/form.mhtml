@@ -104,8 +104,9 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     $jsvalue =~ s/<.*?>//g;
     $jslabel =~ s/"/\\"/g;
     $jsvalue =~ s/"/\\"/g;
-    $jslabel =~ s/\n//g;
-    $jsvalue =~ s/\n//g;
+    $jslabel =~ s/[\n\r]//g;
+    $jsvalue =~ s/\r\n/<br>/g;
+    $jsvalue =~ s/\n/<br>/g;
     print "jspopoutstring+=escape(\"".$jslabel." ".$jsvalue."<br>\");";
 
 } # foreach

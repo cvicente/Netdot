@@ -1,0 +1,280 @@
+<%doc>
+
+Entities
+
+</%doc>
+%
+<%attr>
+title        => 'Entities'
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
+<%args>
+$search           => undef
+$search_entities  => undef
+$user             => undef
+$submit           => undef
+$show_tasks       => undef
+$showheader       => 1
+$_action          => undef
+
+#add a new entity
+$_rolecount       => undef
+$role1            => undef
+$sitestatus       => undef
+$clstatus         => undef
+$entity_name      => undef
+$site             => undef
+$newsite          => undef
+$contactlist      => undef
+$newcontactlist   => undef
+</%args>
+%
+%
+%
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+$show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
+if ( $show_tasks eq "" ) {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+my $hideheader = 'style="display:none"' if ( !$showheader );
+
+my @list;
+</%init>
+
+<div id="sectiontools" <% $hideheader %>>
+  <div class="container">
+    <div class="containerheadleft">
+        Tasks
+    </div>
+    <div class="containerheadright">
+%       print_showtaskslink($show_tasks);
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+        <table><tr><td>
+        <fieldset class="medium">
+            <legend>Search</legend>
+            <form action="entities.html" method="POST">
+                <p>
+                <label for="Find">Entity:</label>
+                <input type="text" name="search_entities" class="txt" value="<% $search_entities %>"> 
+                <input name="submit" value="Find" class="btn" type="submit">
+                <input type="hidden" name="_action" value="SEARCH">
+                </p>
+            </form>
+        </fieldset>
+
+        <script type="text/javascript">
+            var rolecount=1;
+            function jsaddrole(countid) {
+		countid = countid.toString();
+		var rolehtml='<p><label for="new"';
+		if (countid=="1") {rolehtml+=" id='roleslabel'>Role:";}
+		else {rolehtml+=">&nbsp;";}
+		rolehtml+='</label><select name="role'+countid+'" class="dropdown"><option value="0">-- Select --</option>';
+%               my @roles = EntityType->retrieve_all;
+%               foreach my $r (@roles) {
+%                   print "rolehtml+='<option value=\"".$r->id."\">".$r->name."</option>';\n";
+%               }
+		rolehtml+='</select>';
+		if (countid=="1") {
+		    rolehtml+='<a href="#" onClick="document.getElementById(\'roles\').innerHTML+=jsaddrole(rolecount+1);rolecount+=1;document.getElementById(\'_rolecount\').value=rolecount">&nbsp;[Add Another Role]</a>';
+		}
+                rolehtml+='</p>';
+		return rolehtml;
+            }
+        </script>
+
+        <fieldset class="medium">
+            <legend>Add A New Entity</legend>
+            <form action="entities.html" method="POST">
+                <p>
+                <label for="new">Name:</label>
+    <script type="text/javascript">var entorigname="";</script>
+    <input type="text" name="entity_name" id="entitynameinput" class="txt" value="" onfocus="entorigname=document.getElementById('entitynameinput').value;" onblur="var entname=document.getElementById('entitynameinput').value;if(document.getElementById('newsiteinput').value==entorigname){document.getElementById('newsiteinput').value=entname;}if(document.getElementById('newclistinput').value==entorigname){document.getElementById('newclistinput').value=entname;}">
+                </p>
+                <input type="hidden" name="_rolecount" id="_rolecount" value="1">
+                <input type="hidden" name="sitestatus" id="sitestatus" value="new">
+                <input type="hidden" name="clstatus" id="clstatus" value="new">
+                <div id="roles">
+                <script type="text/javascript">
+                    document.write(jsaddrole(1));
+                </script>
+                </div>
+                <p>
+                <label for="new" id="sitelabel">Site:</label>
+                <div id="existingsite" style="display:none">
+                    <select name="site" class="dropdown">
+                    <option value="0">-- Select --</option>
+%                   my @sites = Site->retrieve_all;
+%                   foreach my $s (@sites) {
+                        <option value="<% $s->id %>"><% $s->name %></option>
+%                   }
+                    </select>
+                    <a href="#" onClick="toggleLayer('existingsite');toggleLayer('newsite');document.getElementById('sitelabel').innerHTML='New Site:';document.getElementById('sitestatus').value='new';">[new]</a>
+                </div>
+                <div id="newsite" style="display:block">
+                    <input type="text" name="newsite" id="newsiteinput" class="txt" value="">
+                    <a href="#" onClick="toggleLayer('newsite');toggleLayer('existingsite');document.getElementById('sitelabel').innerHTML='Site:';document.getElementById('sitestatus').value='old';">[existing]</a>
+                </div>
+                </p>
+                <p>
+                <label for="new" id='cllabel'>Contact List:</label>
+                <div id="existingcontactlist" style="display:none">
+                    <select name="contactlist" class="dropdown">
+                    <option value="0">-- Select --</option>
+%                   my @clist = ContactList->retrieve_all;
+%                   foreach my $cl (@clist) {
+                        <option value="<% $cl->id %>"><% $cl->name %></option>
+%                   }
+                    </select>
+                    <a href="#" onClick="toggleLayer('existingcontactlist');toggleLayer('newcontactlist');document.getElementById('cllabel').innerHTML='New Contact List:';document.getElementById('clstatus').value='new';">[new]</a>
+                </div>
+                <div id="newcontactlist" style="display:block">
+                    <input type="text" name="newcontactlist" id="newclistinput" class="txt" value="">
+                    <a href="#" onClick="toggleLayer('newcontactlist');toggleLayer('existingcontactlist');document.getElementById('cllabel').innerHTML='Contact List:';document.getElementById('clstatus').value='old';">[existing]</a>
+                </div>
+                </p>
+                <p>
+                <label for="new">&nbsp;</label>
+                <input type="hidden" name="_action" value="INSERT">
+                <input name="submit" value="Add Entity" class="btn" type="submit">
+                </p>
+            </form>
+        </fieldset>
+        </td></tr></table>
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+
+
+
+<%perl>
+#######################################################################################
+# Search
+#
+#######################################################################################
+
+if ( $_action eq "SEARCH" && $submit ){
+    # Remove trailing and leading spaces
+    if ( $search_entities ){
+	$search = $search_entities;
+	$search =~ s/^\s*(.*)\s*$/$1/g;
+	my %idx;
+        map { $idx{$_->id} = $_ } Entity->search_like(name       => $search);
+        map { $idx{$_->id} = $_ } Entity->search_like(short_name => $search);
+        # deeper search, within entitysite
+	my @sites = Site->search_like(name => $search);
+	foreach my $s ( @sites ) {
+	    my @entitysites = EntitySite->search(site => $s->id);
+	    foreach my $es (@entitysites) {
+		my $entid = $es->entity;
+		map { $idx{$_->id} = $_ } Entity->search(id => $entid);
+	    }
+	}
+	@list = values %idx;
+    }else {
+	$m->comp('/generic/no_search_criteria.html');
+    }
+}
+
+
+#######################################################################################
+# Add Entities
+#
+#######################################################################################
+
+if ( $_action eq "INSERT" && $submit ){
+    # Remove trailing and leading spaces
+    if ( $entity_name )	{ $entity_name =~ s/^\s*(.*)\s*$/$1/g; }
+    if ( $newsite ) { $newsite =~ s/^\s*(.*)\s*$/$1/g; }
+    if ( $newcontactlist ) { $newcontactlist =~ s/^\s*(.*)\s*$/$1/g; }
+    my $entityid = -1;
+#    my %toDB = ();
+    
+    if (($clstatus eq "new") && ($newcontactlist) && ($newcontactlist ne "")) {
+	my %toDB = ();
+	$toDB{ "ContactList__NEW1__name" } = $newcontactlist;
+	my %info = $ui->form_to_db(%toDB);
+	my @CLids = keys %{$info{'ContactList'}{id}};
+	$contactlist = pop @CLids;  #this is the new ID of the ContactList
+    }
+    
+    if (($sitestatus eq "new") && ($newsite) && ($newsite ne "")) {
+	my %toDB = ();
+	$toDB{ "Site__NEW1__name" } = $newsite;
+	$toDB{ "Site__NEW1__contactlist" } = $contactlist;
+	my %info = $ui->form_to_db(%toDB);
+	my @siteids = keys %{$info{'Site'}{id}};
+	$site = pop @siteids;
+    }
+    
+    if (($entity_name) && ($entity_name ne "")) {
+	my %toDB = ();
+	$toDB{ "Entity__NEW1__name" } = $entity_name;
+	$toDB{ "Entity__NEW1__contactlist" } = $contactlist;
+	my %info = $ui->form_to_db(%toDB);
+	my @entityids = keys %{$info{'Entity'}{id}};
+	$entityid = pop @entityids;
+    }
+    
+    if (($entityid) && ($site)) {
+	my %toDB = ();
+	$toDB{ "EntitySite__NEW1__entity" } = $entityid;
+	$toDB{ "EntitySite__NEW1__site" } = $site;
+	my %info = $ui->form_to_db(%toDB);
+	#my @entitySiteids = keys %{$info{'EntitySite'}{id}};
+	#$ = pop @entitySiteids;
+    }
+    
+    if (($entityid) && ($_rolecount =~ m/^\d+$/) && ($role1 ne "0")) {
+	my %toDB = ();
+	my $i;
+	for ($i=1; $i<=$_rolecount; $i++) {
+#	    my $rolei = "role".$i;
+	    if ($ARGS{"role".$i} ne "0") {
+		$toDB{ "EntityRole__NEW".$i."__entity" } = $entityid;
+		$toDB{ "EntityRole__NEW".$i."__type" } = $ARGS{"role".$i};
+	    }
+	}
+	my %info = $ui->form_to_db(%toDB);
+	#my @entityRoleids = keys %{$info{'EntityRole'}{id}};
+	#$ = pop @entityRoleids;
+    }
+        
+}
+
+</%perl>
+
+% if ( $search ){
+%     if ( @list ){
+	 <div class="container">
+           <div class="containerhead">
+              Query <em><% $search %></em> returned: <% scalar(@list) %> matches
+           </div>
+           <div class="containerbody">
+               <& /generic/sortresults.mhtml, object=>\@list, page=>'view.html', withedit=>0  &>
+          </div>
+       </div>
+%     }else{
+%         $m->comp('/generic/no_search_results.html', search=>$search);
+%     }
+
+% }
