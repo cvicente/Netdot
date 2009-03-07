@@ -1,0 +1,253 @@
+<%doc>
+Custom Interface for Contact Lists
+</%doc>
+%
+%
+<%attr>
+title   => 'Contact List' 
+section => 'Generic'
+</%attr>
+%
+%
+<%args>
+$id
+$view       => undef
+$edit       => undef
+$submit     => undef
+$_action    => undef
+$contact_id => undef
+$person_id  => undef
+$role_id    => undef
+$personstatus => undef
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+my $obj       = ContactList->retrieve($id);
+my %linksfrom = ContactList->meta_data->get_links_from;
+
+if ( $_action ){
+    my %ret;
+    if ( $_action eq 'edit_contact' ){
+	eval {
+	    %ret = $ui->form_to_db(%ARGS);
+	    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
+
+    }elsif ( $_action eq 'new_contact' ){
+	
+	my (%pargs, %cargs);
+	foreach my $arg ( keys %ARGS ){
+	    if ( $personstatus eq 'new' && $arg =~ /^Person__/ ){
+		$pargs{$arg} = $ARGS{$arg};
+	    }
+	    if ( $arg =~ /^Contact__/ ){
+		if ( $personstatus eq 'new' && $arg =~ /^Contact__NEW__person/ ){
+		    next;
+		}else{
+		    $cargs{$arg} = $ARGS{$arg};
+		}
+	    }
+	}
+	if ( $personstatus eq 'new' ){
+	    eval {
+		%ret = $ui->form_to_db(%pargs);
+		print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+	    };
+	    if ( my $e = $@ ){
+		$m->comp('/generic/error.mhtml', error=>$e);
+	    }
+	}
+
+	# Now we add the Contact record
+	if ( $personstatus eq 'new' && %ret ){
+	    my $personid = (keys %{$ret{'Person'}{id}})[0];
+	    $cargs{'Contact__NEW__person'}      = $personid;
+	}
+	$cargs{'Contact__NEW__contactlist'} = $id;
+	eval {
+	    %ret = $ui->form_to_db(%cargs);
+	    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
+
+    }elsif ( $_action eq 'delete_person' ){
+	$m->comp('.delete_person_confirmation', person_id=>$person_id, contactlist_id=>$id);
+	$m->abort;
+
+    }elsif ( $_action eq 'delete_person_confirm' ){
+	my $person = Person->retrieve($person_id);
+	unless ( $person ){
+	    $m->comp('/generic/error.mhtml', error=>"Cannot retrieve Person id $person_id");
+	}
+	eval {
+	    $person->delete();
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
+    }elsif ( $_action eq 'delete_role' ){
+	my $role = Contact->retrieve($role_id);
+	unless ( $role ){
+	    $m->comp('/generic/error.mhtml', error=>"Cannot retrieve Role id $role_id");
+	}
+	eval {
+	    $role->delete();
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
+    }
+}
+
+</%init>
+
+<!-- Display main object values -->
+<div id="sectiondetail">
+        <& /generic/contactlist.mhtml, id=>$id, edit=>$edit, contact_id => $contact_id &>
+</div>
+<!-- End Display main object values -->
+
+<!-- Display has_many possibilities-->
+%  if ( keys %linksfrom ){
+      <div class="container">
+	<div class="containerhead">View</div>
+	   <div class="containerbody">
+%	      if ( $view eq "all" ){
+		  [all]
+%	      }elsif ( keys %linksfrom > 1 ){
+		  <a href="contactlist.html?id=<% $obj %>&view=all">[all]</a>
+%             }
+%             foreach my $i ( sort keys %linksfrom ){
+%               next if ($i eq 'contacts');
+%               if ( $view eq $i ){
+                   [<% $i %>]
+%               }else{
+                   <a href="contactlist.html?id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
+%               }   
+%             }
+	   </div>
+	</div>
+      </div>
+%  }
+<!-- End Display has_many possibilities-->
+
+<!-- Display has_many objects -->
+<%perl>
+foreach my $i ( keys %linksfrom ){
+    if ( ($view eq 'all' || $view eq $i ) ){
+
+    next if ($i eq 'contacts');
+
+    # Table that points to us
+    my $j = (keys %{ $linksfrom{$i} })[0];
+
+    # Column in the other table that points to this table
+    my $ffield = $linksfrom{$i}{$j};
+    
+    # Determine if the has_many method returns ordered data from the db
+    my $ffattrs = $j->meta_data->get_column($ffield)->links_to_attrs();
+    my $ffield_order = $ffattrs->{order_by} if ( defined $ffattrs && exists $ffattrs->{order_by} );
+    
+    my (@robjs, $dtbl, $ctbl);
+    if ( $j->meta_data->is_join ){
+	# Foreign table is a join table
+	# Get has_a entries 
+	my %jlinksto = $j->meta_data->get_links_to();
+	# Column in join table that points to third table
+	my $col;
+	map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
+	map { push @robjs, $_->$col } $obj->$i;
+	$dtbl = $jlinksto{$col};  # table to display
+	$ctbl = $j;               # table to pass to create.html
+    }else{  
+	# table is not a join table
+	@robjs = $obj->$i;
+	$dtbl = $j;
+	$ctbl = $j; 
+    }
+
+    my $num = scalar(@robjs);
+</%perl>
+
+      <div class="container">
+%     my $title = $i;
+%     $title .= " ($num)" if $num;	     
+          <div class="containerheadleft"><% $title %></div>
+	  <div class="containerheadright">
+%         if ( $edit eq $i ){	    
+              &nbsp;
+%         }else{
+%	      if ( $num ){
+                  <a href="contactlist.html?id=<% $id %>&view=<% $view %>&edit=<% $i %>">[edit]</a>
+%	      }
+	      <a href="edit.html?table=<% $ctbl %>&<% $ffield %>=<% $obj %>">[add]</a>
+%         }
+	  </div>
+%         my %args = ( table=>$dtbl, object=>\@robjs );
+%	  if ( $edit eq $i ){
+%             $args{withedit} = 1;
+%	  }else{
+%         # If data came ordered from the db, tell sortresults not to bother sorting
+%             $args{sort} = 0 if ( $ffield_order );
+%         }
+%	  if ( $num ) {
+%             $m->comp('sortresults.mhtml', %args);
+%         }
+     </div>
+%    }
+%}
+<!-- End Display has_many objects -->
+
+</div>
+
+
+<%def .delete_person_confirmation>
+<%args>
+$contactlist_id
+$person_id
+</%args>
+<%init>
+    my $person = Person->retrieve($person_id);
+</%init>
+
+<div class="container">
+    <div class="containerbody">
+
+ <form name="netdotform" action="contactlist.html" method="POST">
+   <input type="hidden" name="id" value="<% $contactlist_id %>">
+
+   <p><% $person->get_label %>
+
+% my @r = $person->roles;
+% my @roles;
+% map { push @roles, $_ if ($_->contactlist ne $contactlist_id) } @r;
+%  if ( @roles ){
+   <p>is also in the following Contact Lists: 
+   <p>
+       <ul>
+%      foreach my $role ( @roles ){
+           <li><% $role->contactlist->get_label %> (<% $role->contacttype->name %>)<br>
+%      }
+%  }
+       </ul>
+
+    <p><strong>Are you sure you want to delete this person?</strong>
+    <p>
+    <input type="submit" name="submit"    value="Confirm" >
+    <input type="button" name="cancel"    value="Cancel" onClick="history.go(-1);">
+    <input type="hidden" name="_action"   value="delete_person_confirm">
+    <input type="hidden" name="person_id" value="<% $person->id %>">
+ </form>
+
+    </div>
+</div>
+
+</%def>

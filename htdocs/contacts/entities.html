@@ -56,6 +56,7 @@ if ( $show_tasks eq "" ) {
 my $hideheader = 'style="display:none"' if ( !$showheader );
 
 my @list;
+my $entityid = -1;
 </%init>
 
 <div id="sectiontools" <% $hideheader %>>
@@ -123,7 +124,7 @@ my @list;
                     <select name="site" class="dropdown">
                     <option value="0">-- Select --</option>
 %                   my @sites = Site->retrieve_all;
-%                   foreach my $s (@sites) {
+%                   foreach my $s (sort { $a->name cmp $b->name } @sites) {
                         <option value="<% $s->id %>"><% $s->name %></option>
 %                   }
                     </select>
@@ -206,65 +207,77 @@ if ( $_action eq "INSERT" && $submit ){
     if ( $entity_name )	{ $entity_name =~ s/^\s*(.*)\s*$/$1/g; }
     if ( $newsite ) { $newsite =~ s/^\s*(.*)\s*$/$1/g; }
     if ( $newcontactlist ) { $newcontactlist =~ s/^\s*(.*)\s*$/$1/g; }
-    my $entityid = -1;
-#    my %toDB = ();
-    
-    if (($clstatus eq "new") && ($newcontactlist) && ($newcontactlist ne "")) {
-	my %toDB = ();
-	$toDB{ "ContactList__NEW1__name" } = $newcontactlist;
-	my %info = $ui->form_to_db(%toDB);
-	my @CLids = keys %{$info{'ContactList'}{id}};
-	$contactlist = pop @CLids;  #this is the new ID of the ContactList
+
+    if ( Entity->search(name=>$entity_name)->first ){
+	$m->comp("/generic/error.mhtml", error=>"Entity $entity_name already exists!");
     }
     
-    if (($sitestatus eq "new") && ($newsite) && ($newsite ne "")) {
-	my %toDB = ();
-	$toDB{ "Site__NEW1__name" } = $newsite;
-	$toDB{ "Site__NEW1__contactlist" } = $contactlist;
-	my %info = $ui->form_to_db(%toDB);
-	my @siteids = keys %{$info{'Site'}{id}};
-	$site = pop @siteids;
-    }
-    
-    if (($entity_name) && ($entity_name ne "")) {
-	my %toDB = ();
-	$toDB{ "Entity__NEW1__name" } = $entity_name;
-	$toDB{ "Entity__NEW1__contactlist" } = $contactlist;
-	my %info = $ui->form_to_db(%toDB);
-	my @entityids = keys %{$info{'Entity'}{id}};
-	$entityid = pop @entityids;
-    }
-    
-    if (($entityid) && ($site)) {
-	my %toDB = ();
-	$toDB{ "EntitySite__NEW1__entity" } = $entityid;
-	$toDB{ "EntitySite__NEW1__site" } = $site;
-	my %info = $ui->form_to_db(%toDB);
-	#my @entitySiteids = keys %{$info{'EntitySite'}{id}};
-	#$ = pop @entitySiteids;
-    }
-    
-    if (($entityid) && ($_rolecount =~ m/^\d+$/) && ($role1 ne "0")) {
-	my %toDB = ();
-	my $i;
-	for ($i=1; $i<=$_rolecount; $i++) {
-#	    my $rolei = "role".$i;
-	    if ($ARGS{"role".$i} ne "0") {
-		$toDB{ "EntityRole__NEW".$i."__entity" } = $entityid;
-		$toDB{ "EntityRole__NEW".$i."__type" } = $ARGS{"role".$i};
+    if ( ($clstatus eq "new") && ($newcontactlist) && ($newcontactlist ne "") ) {
+	if ( $contactlist = ContactList->search(name=>$newcontactlist)->first ){
+	    # There's already one with that name.  Just use that.
+	}else{
+	    eval {
+		$contactlist = ContactList->insert({name=>$newcontactlist});
+	    };
+	    if ( my $e = $@ ){
+		$m->comp("/generic/error.mhtml", error=>$e);
 	    }
 	}
-	my %info = $ui->form_to_db(%toDB);
-	#my @entityRoleids = keys %{$info{'EntityRole'}{id}};
-	#$ = pop @entityRoleids;
     }
+    
+    if ( ($sitestatus eq "new") && ($newsite) && ($newsite ne "") ) {
+	if ( $site = Site->search(name=>$newsite)->first ){
+	    # Use the existing one
+	}else{
+	    eval {
+		$site = Site->insert({name=>$newsite, contactlist=>$contactlist});
+	    };
+	    if ( my $e = $@ ){
+		$m->comp("/generic/error.mhtml", error=>$e);
+	    }
+	}
+    }
+    
+    if ( ($entity_name) && ($entity_name ne "") ) {
+	my $newentity;
+	eval {
+	    $newentity = Entity->insert({name=>$entity_name, contactlist=>$contactlist});
+	};
+	if ( my $e = $@ ){
+	    $m->comp("/generic/error.mhtml", error=>$e);
+	}
+	$entityid = $newentity->id;
+    }
+    
+    if ( ($entityid) && ($site) ) {
+	eval {
+	    EntitySite->insert({entity=>$entityid, site=>$site});
+	};
+	if ( my $e = $@ ){
+	    $m->comp("/generic/error.mhtml", error=>$e);
+	}
+    }
+    
+    if ( ($entityid) && ($_rolecount =~ m/^\d+$/) && ($role1 ne "0") ) {
+	eval {
+	    for ( my$i=1; $i<=$_rolecount; $i++ ) {
+		if ($ARGS{"role".$i} ne "0") {
+		    EntityRole->insert({entity=>$entityid, type=>$ARGS{"role".$i}});
+		}
+	    }
+	};
+	if ( my $e = $@ ){
+	    $m->comp("/generic/error.mhtml", error=>$e);
+	}
         
+    }
+    $_action = 'VIEW';
 }
 
 </%perl>
 
 % if ( $search ){
-%     if ( @list ){
+%     if ( scalar @list > 1 ){
 	 <div class="container">
            <div class="containerhead">
               Query <em><% $search %></em> returned: <% scalar(@list) %> matches
@@ -273,8 +286,17 @@ if ( $_action eq "INSERT" && $submit ){
                <& /generic/sortresults.mhtml, object=>\@list, page=>'view.html', withedit=>0  &>
           </div>
        </div>
+%     }elsif ( scalar @list == 1 ){
+%         $entityid = $list[0]->id;
+%         $m->comp('/generic/view.html', table=>"Entity", id=>$entityid);
 %     }else{
 %         $m->comp('/generic/no_search_results.html', search=>$search);
 %     }
 
+% }
+
+
+
+% if ( $_action eq "VIEW" && defined $entityid ){
+%     $m->comp('/generic/view.html', table=>"Entity", id=>$entityid);
 % }

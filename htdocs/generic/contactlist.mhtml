@@ -1,0 +1,147 @@
+<%doc>
+Special component for Contact Lists Interface.  
+The idea is to list all contact information to avoid drilling down
+</%doc>
+%
+%
+<%attr>
+section => 'Generic'
+</%attr>
+%
+%
+<%args>
+$id
+$edit         => undef
+$show_buttons => 1
+$contact_id   => undef
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+my $obj = ContactList->retrieve($id);
+if ( $edit ) { $show_buttons = 0; }
+
+</%init>
+
+
+% if ( $edit ) {
+    <form name="netdotform" action="contactlist.html" method="POST">
+        <input type="hidden" name="id" value="<% $id %>">
+% }
+
+<div class="container">
+    <div class="containerheadleftoutside"><strong><a href="contactlist.html?id=<% $obj->id %>"><% $obj->get_label %></a></strong></div>
+    <div class="containerheadrightoutside">
+% if ( ! $show_buttons ) {
+    &nbsp;
+% }else{
+          <a href="edit.html?table=ContactList">[new list]</a>
+          <a href="contactlist.html?id=<% $id %>&edit=newcontact">[new contact]</a>
+          <a href="delete.html?table=ContactList&id=<% $id %>">[delete]</a>
+          <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
+% }
+
+    </div>
+
+% if ( $edit eq 'contact' ){
+      <input type="hidden" name="_action" value="edit_contact">
+% }
+
+
+% if ( my @contacts = $obj->contacts ){
+%     foreach my $role ( @contacts ){
+%         my (@headers, @data);
+%         my $person = $role->person;
+%         my $editct = ($edit eq 'contact' && $contact_id eq $role->id)? 1 : 0;
+
+         <div class="containerbodyoutside">
+             <div class="container">
+                 <div class="containerheadleft"><% $person->get_label %></div>
+                     <div class="containerheadright">
+%		 if ( ! $show_buttons ){
+                    &nbsp;
+%                }else{
+                         <a href="contactlist.html?id=<% $id %>&edit=contact&contact_id=<% $role->id %>">[edit]</a>
+		         <a href="contactlist.html?id=<% $id %>&_action=delete_role&role_id=<% $role->id %>">[delete role]</a>
+		         <a href="contactlist.html?id=<% $id %>&_action=delete_person&person_id=<% $person->id %>">[delete person]</a>
+%                }
+		     </div>
+                 <div class="containerbodyoutside">
+
+%        $ui->add_to_fields(o=>$role, edit=>$editct, fields=>['contacttype', 'notify_email', 'notify_pager', 'notify_voice'], 
+%		            field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0,
+%		            linkpages=>['view.html','','', '']);
+
+          <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
+                                             width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
+
+          <& form.mhtml, table=>'Person', id=>$person->id, edit=>$editct, short_field_names=>0 &>
+                 </div>
+              </div>
+           </div>
+%     }
+% }
+
+% if ( $edit eq 'newcontact' ){
+
+    <div class="containerbodyoutside">
+      <div class="container">
+        <div class="containerheadleft">New Contact</div>
+        <div class="containerheadright">&nbsp;</div>
+        <div class="containerbodyoutside">
+
+          <div class="container">
+
+<%perl>
+my (@headers, @data);
+$ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notify_email', 'notify_pager', 'notify_voice'], 
+		   field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0,
+		   linkpages=>['view.html','','', '']);
+</%perl>
+
+          <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
+                                             width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
+
+      
+          </div>			     
+
+	     <label id="personlabel">
+%            print $ui->col_descr_link('Contact', 'person', "Person: ");
+	     </label>
+	     <p>
+             <div id="existingperson" style="display:none">
+                 <select name="Contact__NEW__person" class="dropdown">
+                    <option value="0">-- Select --</option>
+%                   my @people = Person->retrieve_all;
+%                   foreach my $p (sort { $a->lastname cmp $b->lastname } @people) {
+                        <option value="<% $p->id %>"><% $p->get_label %></option>
+%                   }
+                 </select>
+                 <a href="#" onClick="toggleLayer('existingperson');toggleLayer('newperson');document.getElementById('personstatus').value='new';">[new]</a>
+             </div>
+
+             <div id="newperson" style="display:block">
+                    <a href="#" onClick="toggleLayer('newperson');toggleLayer('existingperson');document.getElementById('personstatus').value='existing';">[existing]</a>
+		    <& form.mhtml, table=>'Person', edit=>$edit, short_field_names=>0 &>
+             </div>	
+
+        </div>
+      </div>
+    </div>
+
+       <input type="hidden" name="personstatus" id="personstatus" value="new">
+       <input type="hidden" name="_action" value="new_contact">
+        
+% }
+
+
+% if ( $edit ){	 
+      <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+      <input type="submit" name="submit" value="save">
+    </form>
+% }
+
+</div>
+

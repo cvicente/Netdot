@@ -49,10 +49,11 @@ my (@headers, @data) = ();
 my (@comments_header, @comments_data) = ();
 print "<input type=\"hidden\" name=\"table\" value=\"$table\">";
 if( $id ) {
-    print "<input type=\"hidden\" name=\"id\" value=\"$id\">";
+    if ( $short_field_names ){
+	print "<input type=\"hidden\" name=\"id\" value=\"$id\">";
+    }
 }
 print "<script type=\"text/javascript\" language=\"javascript\">";
-print "var jspopoutstring=\"\";";
 
 foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     next if ( $c eq 'id' );
@@ -110,6 +111,7 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     print "jspopoutstring+=escape(\"".$jslabel." ".$jsvalue."<br>\");";
 
 } # foreach
+print "jspopoutstring+=escape(\"<br>\");";
 print "</script>";
 </%perl>
     <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
