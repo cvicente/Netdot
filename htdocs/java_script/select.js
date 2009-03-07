@@ -81,6 +81,7 @@
    }
 
 //      Opens a new browser window for viewing (e.g. contact)
+    var jspopoutstring="";
     function opentextwindow(data_string, format, urlargs) {
 	var textwindow;
 	var now = new Date();

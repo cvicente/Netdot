@@ -30,12 +30,14 @@ my $logger = Netdot->log->get_logger("Netdot::Model");
 
 # Some tables have a specific view page. 
 #
-my %VIEWPAGE = ( BinFile   => "../generic/display_bin.html",
-		 Closet    => "../cable_plant/closet.html",
-		 Ipblock   => "../management/ip.html",
-		 Device    => "../management/device.html",
-		 PhysAddr  => "../management/mac.html",
-		 Interface => "../management/interface.html",
+my %VIEWPAGE = ( BinFile     => "../generic/display_bin.html",
+		 Closet      => "../cable_plant/closet.html",
+		 Circuit     => "../cable_plant/circuit.html",
+		 Ipblock     => "../management/ip.html",
+		 Device      => "../management/device.html",
+		 PhysAddr    => "../management/mac.html",
+		 Interface   => "../management/interface.html",
+		 ContactList => "contactlist.html",
 		 );
 
 

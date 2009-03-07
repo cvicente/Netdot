@@ -140,43 +140,29 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
 
 <!-- Circuit Table -->
 <form name="netdotform" action="circuit.html" method="POST">
-<script language="javascript" src="../java_script/datechooser.js"></script>
-<input type="hidden" name="id" value="<% $id %>">
-<input type="hidden" name="_action" value="UPDATE_CIRCUIT">
-
 <div class="container">
-    <div class="containerheadleft">Circuit</div>
+    <div class="containerheadleft"><strong>Circuit</strong></div>
     <div class="containerheadright">
-%       if ($editCircuit) {
-        <input type="button" name="cancel_button" value="Cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="Save" type="submit">
-%           } else {
-        <a href="circuit.html?id=NEW">[new]</a>  <a href="circuit.html?id=<% $id %>&edit=circuitinfo">[edit]</a>  <a href="delete.html?table=Circuit&id=<% $id %>">[delete]</a>
-%           }
+          <a href="edit.html?table=Circuit">[new]</a>
+          <a href="edit.html?table=Circuit&id=<% $o->id %>">[edit]</a>
+          <a href="delete.html?table=Circuit&id=<% $o->id %>">[delete]</a>
+          <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
-    <div class="containerbody">
-
-<div class="left">
-<%perl>
-my (@field_headers, @cell_data);
-{
-    my @fields = ('cid','linkid','vendor','nearend','farend','type','dlci','speed','installdate','status');
-    my @linkpages = ('', 'view.html', 'view.html', '../management/interface.html', '../management/interface.html');
-    $ui->add_to_fields(o=>$o, table=>"Circuit", edit=>$editCircuit, fields=>\@fields, linkpages=>\@linkpages, 
-		       field_headers=>\@field_headers, cell_data=>\@cell_data);
-}
-$m->comp('/generic/attribute_table.mhtml', field_headers=>\@field_headers, data=>\@cell_data, width=>2);
-
-my %comments = $ui->form_field(object=>$o, table=>"Circuit", column=>"info", edit=>$editCircuit, 
-			       htmlExtra=>"rows='3' cols='80'");
-</%perl>
-
-       <div class="containerseparator"><% $comments{label} %></div>
-       <% $comments{value} %>
-    </div> <!-- close containerbody -->
-</div> <!-- close container -->
-
+    <div class="containerbodyoutside">
+        <& /generic/form.mhtml, table=>"Circuit", id=>$o->id, edit=>$edit &>
+    </div>
+</div>
 </form>
 <!-- End Circuit Table -->
+
+% my $cl;
+% if ( $o->vendor && int($cl = $o->vendor->contactlist) ){
+<!-- Contacts Table -->
+<div class="container">
+    <& /generic/contactlist.mhtml, id=>$cl->id, edit=>0, show_buttons=>0 &>
+</div>
+<!-- End Contacts Table -->
+% }
 
 
 <!-- Begin Cable Strand Sequence Table -->
