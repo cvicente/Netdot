@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::Dell - SNMP Interface to Dell devices
-# $Id: Dell.pm,v 1.14 2008/08/02 03:21:47 jeneric Exp $
+# $Id: Dell.pm,v 1.15 2009/03/06 20:07:41 fenner Exp $
 #
 # Copyright (c) 2008 Eric Miller
 # All rights reserved.
@@ -154,7 +154,7 @@ sub interfaces {
     my $partial = shift;
 
     my $i_descr = $dell->i_description($partial) || {};
-    my $i_name  = $dell->i_name($partial)        || {};
+    my $i_name  = $dell->orig_i_name($partial)   || {};
 
     # Descriptions are all the same on some Dells, so use name instead if
     # available
