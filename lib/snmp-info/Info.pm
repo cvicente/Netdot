@@ -1250,7 +1250,7 @@ sub device_type {
         $objtype = 'SNMP::Info::Layer3::C6500'
             if ( $desc =~ /cisco/i and $desc =~ /3750/ );
         $objtype = 'SNMP::Info::Layer3::C6500'
-            if $desc =~ /(s72033_rp|s3223_rp|s222_rp)/;
+            if $desc =~ /(s72033_rp|s3223_rp|s32p3_rp|s222_rp)/;
 
         # HP, Foundry OEM
         $objtype = 'SNMP::Info::Layer3::HP9300'
