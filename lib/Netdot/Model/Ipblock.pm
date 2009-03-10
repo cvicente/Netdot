@@ -511,7 +511,10 @@ sub get_covering_block {
 
 
 ##################################################################
-=head2 get_roots - Get a list of root blocks
+=head2 get_roots - Get a list of root IP blocks
+
+    Root IP blocks are blocks at the top of the hierarchy.  
+    This list does not include end node addresses.
 
  Arguments:   
     IP version [4|6|all]
@@ -529,12 +532,13 @@ sub get_roots {
 
     my @ipb;
     if ( $version =~ /^4|6$/ ){
-	@ipb = __PACKAGE__->search(version => $version, parent => 0, {order_by => 'address'});
+	@ipb = $class->search(version => $version, parent => 0, {order_by => 'address'});
     }elsif ( $version eq "all" ){
-	@ipb = __PACKAGE__->search(parent => 0, {order_by => 'address'});
+	@ipb = $class->search(parent => 0, {order_by => 'address'});
     }else{
 	$class->throw_fatal("Unknown version: $version");
     }
+    @ipb = grep { !$_->is_address } @ipb;
     wantarray ? ( @ipb ) : $ipb[0]; 
 
 }
