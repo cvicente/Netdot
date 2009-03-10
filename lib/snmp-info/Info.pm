@@ -1,5 +1,5 @@
 # SNMP::Info - Max Baker
-# $Id: Info.pm,v 1.144 2009/03/06 22:30:53 fenner Exp $
+# $Id: Info.pm,v 1.145 2009/03/10 01:25:52 cvicente Exp $
 #
 # Copyright (c) 2003-2008 Max Baker
 # All rights reserved.

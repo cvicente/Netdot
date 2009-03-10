@@ -171,12 +171,12 @@ sub mau_i_duplex_admin {
     my $partial = shift;
 
     my $mau_index = $mau->mau_index() || {};
-    
+
     if ($partial) {
         my %rev_mau_index = reverse %$mau_index;
         $partial = $rev_mau_index{$partial};
     }
-    
+
     my $mau_autostat   = $mau->mau_autostat($partial)   || {};
     my $mau_type_admin = $mau->mau_type_admin($partial) || {};
 

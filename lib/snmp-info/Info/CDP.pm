@@ -80,6 +80,7 @@ $VERSION = '2.00';
     'c_ver'          => \&SNMP::Info::munge_null,
     'c_ip'           => \&SNMP::Info::munge_ip,
     'c_power'        => \&munge_power,
+
 );
 
 sub munge_power {

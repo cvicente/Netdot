@@ -27,7 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package SNMP::Info::CiscoStpExtensions;
-$VERSION = '1.07';
+$VERSION = '2.00';
 
 use strict;
 
@@ -238,7 +238,7 @@ SNMP::Info::CiscoStpExtensions - SNMP Interface to CISCO-STP-EXTENSIONS-MIB
 
 =head1 AUTHOR
 
-
+Carlos Vicente
 
 =head1 SYNOPSIS
 

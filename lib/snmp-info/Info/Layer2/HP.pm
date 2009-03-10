@@ -569,16 +569,16 @@ sub c_id {
     foreach my $iid ( keys %$cdp ) {
         my $id = $cdp->{$iid};
         next unless defined $id;
-
+	
         $c_id{$iid} = $id;
     }
     
-   foreach my $iid (keys %$lldp){
-       my $id = $lldp->{$iid};
-       next unless defined $id;
-
-       $c_id{$iid} = $id;
-   }
+    foreach my $iid ( keys %$lldp ) {
+	my $id = $lldp->{$iid};
+	next unless defined $id;
+	
+	$c_id{$iid} = $id;
+    }
     return \%c_id;
 }
 
