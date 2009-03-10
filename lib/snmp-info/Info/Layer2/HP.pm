@@ -1,5 +1,5 @@
 # SNMP::Info::Layer2::HP - SNMP Interface to HP ProCurve Switches
-# $Id: HP.pm,v 1.45 2008/08/02 03:21:57 jeneric Exp $
+# $Id: HP.pm,v 1.46 2009/03/10 16:57:37 cvicente Exp $
 #
 # Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 #

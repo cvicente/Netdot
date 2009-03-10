@@ -1,5 +1,5 @@
 # SNMP::Info::Bridge
-# $Id: Bridge.pm,v 1.38 2008/08/02 03:21:25 jeneric Exp $
+# $Id: Bridge.pm,v 1.39 2009/03/10 16:52:08 cvicente Exp $
 #
 # Changes since Version 0.7 Copyright (c) 2004 Max Baker
 # All rights reserved.

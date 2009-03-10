@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::C3550
-# $Id: C3550.pm,v 1.31 2008/08/02 03:21:47 jeneric Exp $
+# $Id: C3550.pm,v 1.32 2009/03/10 16:52:08 cvicente Exp $
 #
 # Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 # Copyright (c) 2004 Regents of the University of California

@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::C6500
-# $Id: C6500.pm,v 1.25 2008/08/02 03:21:47 jeneric Exp $
+# $Id: C6500.pm,v 1.26 2009/03/10 16:52:08 cvicente Exp $
 #
 # Copyright (c) 2008 Max Baker
 # All rights reserved.
