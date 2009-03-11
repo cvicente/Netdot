@@ -1,0 +1,22 @@
+<%doc>
+    Show a tree representation of the address space of the given container or subnet.
+</%doc>
+
+<%args>
+$network
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $list = $network->get_descendants();
+if ( $DEBUG ){
+    print "<pre>";
+    print Dumper($list);
+    print "</pre>";
+}
+
+print $ui->build_ip_tree_graph_html(id=>$network->id, list=>$list, web_path=>$r->dir_config('NetdotPath'));
+
+</%init>
+
+

@@ -29,6 +29,7 @@ $edit_children     => undef
 $submit            => undef
 $rootversion       => 4 
 $view_availability => 0
+$view_tree         => 0
 $rowsize           => 22
 $dividefreespace   => 'max'
 $arp_limit         => 10
@@ -841,9 +842,27 @@ if ($o->status->name eq "Subnet") {
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
          	<a href="ip.html?id=<% $id %>">[List View]</a>
+		<a href="ip.html?id=<% $id %>&view_tree=1">[Tree View]</a>
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& container.mhtml, network => $o, rowsize => $rowsize, dividefreespace => $dividefreespace &>  
+          </div>  
+       </div>  
+%     }  
+% }elsif( $view_tree == 1 ) {  
+%     if( $o->status->name eq "Subnet" || $o->status->name eq "Container" ) {  
+       <div class="container">  
+          <div class="containerheadleft"> 
+             Tree View
+          </div>  
+          <div class="containerheadright">
+%	        if ( $o->version == 4 ){
+         	    <a href="ip.html?id=<% $id %>&view_availability=1">[Graphical View]</a>
+%               }
+         	<a href="ip.html?id=<% $id %>">[List View]</a>
+          </div>
+          <div class="containerbody" id="ipaddresstable">  
+          <& tree.mhtml, network => $o &>  
           </div>  
        </div>  
 %     }  
@@ -870,9 +889,12 @@ if ($o->status->name eq "Subnet") {
 %		 }else{
 %		     print '<a href="ip.html?id='.$id.'&edit_children=1">[edit]</a>&nbsp;';
 %		     print '<a href="ip.html?id='.$id.'&view_availability=1">[Graphical View]</a>';
+%                    if ( $o->status->name eq 'Container' ){
+%		         print '<a href="ip.html?id='.$id.'&view_tree=1">[Tree View]</a>';
+%                    }
 %		 }
 %             } else {
-%          	 print '&nbsp;';
+%	            print '<a href="ip.html?id='.$id.'&view_tree=1">[Tree View]</a>';
 %             }
           </div>
           <div class="containerbody">
