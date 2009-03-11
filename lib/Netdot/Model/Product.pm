@@ -137,17 +137,29 @@ sub find_or_create {
 }
 
 ############################################################################
-# Get lists of products
+# Get lists of products, counting the number of devices
 __PACKAGE__->set_sql(by_type => qq{
-    SELECT p.name, p.id, COUNT(d.id) AS numdevs
-        FROM device d, product p, producttype t
-        WHERE d.product = p.id AND
-        p.type = t.id AND
-        t.id = ?
+        SELECT p.name, p.id, COUNT(d.id) AS numdevs
+        FROM   device d, product p, producttype t
+        WHERE  d.product = p.id 
+           AND p.type = t.id 
+           AND t.id = ?
         GROUP BY p.name, p.id
         ORDER BY numdevs DESC
     });
 
+############################################################################
+# Get lists of products, counting the number of devices that are monitored
+__PACKAGE__->set_sql(monitored_by_type => qq{
+        SELECT p.name, p.id, COUNT(d.id) AS numdevs
+        FROM   device d, product p, producttype t
+        WHERE  d.product = p.id 
+           AND p.type = t.id 
+           AND d.monitored = 1
+           AND t.id = ?
+        GROUP BY p.name, p.id
+        ORDER BY numdevs DESC
+    });
 
 =head1 INSTANCE METHODS
 

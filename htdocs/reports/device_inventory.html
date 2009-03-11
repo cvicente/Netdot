@@ -24,6 +24,7 @@ my (@headers, @rows) = ();
       <form name="report_form" action="device_inventory.html" method="POST">
          By <select name="report_type" onChange="document.report_form.submit()">
          <option value="product" <% ($report_type eq "product")?"SELECTED":"" %>>Type/Model</option>
+         <option value="product_monitored" <% ($report_type eq "product_monitored")?"SELECTED":"" %>>Type/Model (monitored)</option>
          <option value="os" <% ($report_type eq "os")?"SELECTED":"" %>>Model/OS</option>
          <option value="downtime" <% ($report_type eq "downtime")?"SELECTED":"" %>>Downtime</option>
          <option value="duplex" <% ($report_type eq "duplex")?"SELECTED":"" %>>Duplex Mismatches</option>
@@ -32,13 +33,18 @@ my (@headers, @rows) = ();
       </form>
 
 <%perl>
-if ( $report_type eq 'product' ){
+if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     my %t;
     my $grandtotal = 0;
     foreach my $pt ( sort { $a->name cmp $b->name } ProductType->retrieve_all ){
 	$t{$pt->name}{total} = 0;
 	$t{$pt->name}{id}    = $pt->id;
-	my @prods            = Product->search_by_type($pt);
+	my @prods;
+	if ( $report_type eq 'product' ){
+	    @prods = Product->search_by_type($pt);
+	}elsif ( $report_type eq 'product_monitored' ){
+	    @prods = Product->search_monitored_by_type($pt);
+	}
 	foreach my $o ( @prods ){
 	    $t{$pt->name}{prod}{$o->name}{id}   = $o->id;
 	    $t{$pt->name}{prod}{$o->name}{num}  = $o->{numdevs};
