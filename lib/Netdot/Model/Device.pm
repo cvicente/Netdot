@@ -906,12 +906,17 @@ sub get_snmp_info {
 	    }
 	}
 
+	#
 	# IP addresses and masks 
-	foreach my $ip ( keys %{ $hashes{'ip_index'} } ){
-	    if ( $hashes{'ip_index'}->{$ip} eq $iid ){
-		$dev{interface}{$iid}{ips}{$ip}{address} = $ip;
-		if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
-		    $dev{interface}{$iid}{ips}{$ip}{mask} = $mask;
+	#
+	# Ignore IP addresses from Interfaces that are 'admin down'
+	if ( $dev{interface}{$iid}{admin_status} eq 'up' ){
+	    foreach my $ip ( keys %{ $hashes{'ip_index'} } ){
+		if ( $hashes{'ip_index'}->{$ip} eq $iid ){
+		    $dev{interface}{$iid}{ips}{$ip}{address} = $ip;
+		    if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
+			$dev{interface}{$iid}{ips}{$ip}{mask} = $mask;
+		    }
 		}
 	    }
 	}
@@ -3522,7 +3527,7 @@ sub _get_main_ip {
 	unless scalar @methods;
 
     my %allips;
-    my @allints = grep { $info->{interface}->{$_}->{oper_status} eq 'up' } keys %{$info->{interface}};
+    my @allints = keys %{$info->{interface}};
     map { map { $allips{$_} = '' } keys %{$info->{interface}->{$_}->{ips}} } @allints;
     
     my $ip;
