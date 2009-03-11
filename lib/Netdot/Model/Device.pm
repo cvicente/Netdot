@@ -337,7 +337,6 @@ sub search_like {
 
   Arguments:  
     host    - hostname or IP address (string)
-    sysname - sysName value from SNMP (string)
   Returns:    
     RR object if successful
 
@@ -349,10 +348,9 @@ sub assign_name {
     my ($class, %argv) = @_;
     $class->isa_class_method('assign_name');
     my $host    = $argv{host};
-    my $sysname = $argv{sysname};
 
-    $class->throw_fatal("Model::Device::assign_name: Missing arguments: host or sysname")
-	unless $host || $sysname;
+    $class->throw_fatal("Model::Device::assign_name: Missing arguments: host")
+	unless $host;
 
     # An RR record might already exist
     if ( defined $host && (my @rrs = RR->search(name=>$host)) ){
@@ -361,14 +359,7 @@ sub assign_name {
 	    return $rrs[0];
 	}
     }
-    if ( defined $sysname && (my @rrs = RR->search(name=>$sysname)) ){
-	if ( scalar @rrs == 1 ){
-	    $logger->debug(sub{"Name $sysname exists in DB"});
-	    return $rrs[0];
-	}
-    }
-    
-    # An RR matching $host or $sysname does not exist
+    # An RR matching $host does not exist
     my $ip;
     if ( $host =~ /^($IPV4)|($IPV6)$/ ){
 	# we were given an IP address
@@ -387,11 +378,6 @@ sub assign_name {
 	}else{
 	    $logger->debug(sub{"Device::assign_name: $host does not resolve"});
 	}
-	if ( defined $sysname && ($ip = ($dns->resolve_name($sysname))[0]) ){
-	    $logger->debug(sub{"Device::assign_name: $sysname resolves to $ip"});
-	}else{
-	    $logger->debug(sub{"Device::assign_name: $sysname does not resolve"});
-	}
     }
     my $fqdn;
     my %args;
@@ -408,7 +394,7 @@ sub assign_name {
 	    $logger->debug(sub{"Device::assign_name: $ip does not resolve"} );
 	}
     }
-    $fqdn ||= (defined $sysname)? $sysname : $host;
+    $fqdn ||= $host;
     $fqdn = lc($fqdn);
 
     # Check if we have a matching domain
@@ -1245,7 +1231,7 @@ sub discover {
 	# Set some values in the new Device based on the SNMP info obtained
 	my $main_ip = $class->_get_main_ip($info);
 	my $host    = $main_ip || $name;
-	my $newname = $class->assign_name(host=>$host, sysname=>$info->{sysname} );
+	my $newname = $class->assign_name(host=>$host);
 	my %devtmp = (snmp_managed  => 1,
 		      snmp_polling  => 1,
 		      canautoupdate => 1,
@@ -3535,10 +3521,10 @@ sub _get_main_ip {
     $class->throw_fatal("Model::Device::_get_main_ip: Missing or invalid configuration variable: DEVICE_NAMING_METHOD_ORDER")
 	unless scalar @methods;
 
-    my @allints = keys %{$info->{interface}};
     my %allips;
+    my @allints = grep { $info->{interface}->{$_}->{oper_status} eq 'up' } keys %{$info->{interface}};
     map { map { $allips{$_} = '' } keys %{$info->{interface}->{$_}->{ips}} } @allints;
-
+    
     my $ip;
     if ( scalar(keys %allips) == 1 ){
 	$ip = (keys %allips)[0];
