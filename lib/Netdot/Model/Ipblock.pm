@@ -1163,6 +1163,38 @@ sub get_ancestors {
 }
 
 ##################################################################
+=head2 get_descendants - Get parents recursively
+    
+ Arguments: 
+    None
+ Returns:   
+    arrayref of descendant children IDs
+  Examples:
+    my $descendants = $ip->get_descendants();
+
+=cut
+sub get_descendants {
+    my ($self, $t) = @_;
+    $self->isa_object_method('get_descendants');
+    my $class = ref($self);
+   
+    my $n = $class->_tree_find(version  => $self->version, 
+			       address  => $self->address_numeric,
+			       prefix   => $self->prefix);
+    my $list = ();
+    my $code = sub { 
+	my $node = shift @_; 
+	push @$list, $node; 
+    };
+    if ( $self->version == 4 ){
+	$tree4->traverse(root=>$n, code=>$code);
+    }elsif ( $self->version == 6 ){
+	$tree6->traverse(root=>$n, code=>$code);
+    }
+    return $list;
+}
+
+##################################################################
 =head2 num_addr - Return the number of usable addresses in a subnet
 
  Arguments:

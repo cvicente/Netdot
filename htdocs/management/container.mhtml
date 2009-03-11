@@ -90,7 +90,10 @@ EOF
             $class = "ipaddr_" . lc($status);
             if ($prevclass eq $class) { $class .= "_2"; }
             $rowtitle = $child->address;
-            $title = $child->cidr  ." (". $child->description() .")" ;
+	    $title = $child->cidr;
+	    if ( $child->description ){
+		$title .= " (". $child->description() .")" ;
+	    }
             $width = 2**(32-$child->prefix);
             $count += $width;
             $link = "ip.html?id=$child";

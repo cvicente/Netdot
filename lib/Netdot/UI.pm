@@ -1350,16 +1350,103 @@ sub table_view_page {
     return $VIEWPAGE{$table};
 }
 
+############################################################################
+=head2 build_ip_tree_graph
+
+  Arguments:
+    ipblock descendants hashref
+    filename
+  Returns:
+    GraphViz object
+  Examples:
+    my $g = $ui->build_ip_tree_graph(%argv);
+
+=cut
+sub build_ip_tree_graph {
+    my ($self, %argv) = @_;
+    my ($list, $filename) = @argv{'list', 'filename'};
+    
+    my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>"1", 
+			  node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
+			  edge=>{dir=>'none', labelfontsize=>8} );
+    my %seen;
+    foreach my $n ( @$list ){
+ 	my $ip = Ipblock->retrieve($n->data);
+
+	# Make sure we don't include end addresses in the tree
+	next if $ip->is_address;
+
+        $g->add_node(name  => $ip->get_label, 
+		     shape => "record",
+		     URL   => "ip.html?id=".$ip->id,
+            );
+	
+	if ( $n->parent ){
+	    my $parent = Ipblock->retrieve($n->parent->data);
+	    
+	    if ( !$seen{$parent->id} ){
+		$g->add_node(name  => $parent->get_label, 
+			     shape => "record",
+			     URL   => "ip.html?id=".$ip->id,
+		    );
+		$seen{$parent->id} = 1;
+	    }
+	    $g->add_edge($parent->get_label => $ip->get_label,
+			 color          => 'black',
+		);
+	}
+    }
+    $g->as_png($filename);
+    
+    return $g;
+}
+
+############################################################################
+=head2 build_ip_tree_graph_html
+
+  Arguments:
+    ipblock id
+    Arrayref of Net::IPTrie nodes
+    web_path string
+    filename
+  Returns:
+    html img code
+  Examples:
+    print $ui->build_ip_tree_graph_html(id=>$network->id, list=>$list, web_path=>$r->dir_config('NetdotPath'));
+
+=cut
+sub build_ip_tree_graph_html {
+    my ($self, %argv) = @_;
+    my ($id, $list, $web_path, $filename) = 
+	@argv{'id', 'list', 'web_path', 'filename'};
+    
+    my $img_name      = $filename || "Ipblock-tree-$id.png";
+    my $graph_path    = "img/graphs/$img_name";
+    my $img           = $web_path . $graph_path;
+    my $netdot_path   = Netdot->config->get('NETDOT_PATH');
+    $argv{filename}   = "$netdot_path/htdocs/" . $graph_path;
+    
+    my $g = $self->build_ip_tree_graph(%argv);
+
+    return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" . $g->as_cmapx;
+}
+
 
 ############################################################################
 =head2 build_device_topology_graph
 
   Arguments:
-    
+    device id
+    depth
+    view
+    showvlans
+    shownames
+    filename
+    vlans
   Returns:
-
+    GraphViz object
   Examples:
-
+    my $g = $ui->build_device_topology_graph(%argv);
 
 =cut
 sub build_device_topology_graph {
@@ -1493,7 +1580,9 @@ sub build_device_topology_graph {
   Returns:
     A string containing an img tag, a cmap, and a bunch of vlans
   Examples:
-    See htdocs/management/device.html
+    print $ui->build_device_topology_graph_html(id=>$id, view=>$view, depth=>$topodepth, 
+                                                   web_path=>$r->dir_config('NetdotPath'), 
+                                                   show_vlans=>$topovlans, show_names=>$toponames);
 
 =cut
 sub build_device_topology_graph_html {
