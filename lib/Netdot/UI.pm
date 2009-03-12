@@ -1376,18 +1376,32 @@ sub build_ip_tree_graph {
 	# Make sure we don't include end addresses in the tree
 	next if $ip->is_address;
 
-        $g->add_node(name  => $ip->get_label, 
-		     shape => "record",
-		     URL   => "ip.html?id=".$ip->id,
+	my @lbls;
+	push @lbls, $ip->get_label;
+	push @lbls, $ip->description if $ip->description;
+	my $lbl = join '\n', @lbls;
+
+        $g->add_node(
+	    name   => $ip->get_label,
+	    label  => $lbl,
+	    shape  => "record",
+	    URL    => "ip.html?id=".$ip->id,
             );
 	
 	if ( $n->parent ){
 	    my $parent = Ipblock->retrieve($n->parent->data);
+
+	    my @lbls;
+	    push @lbls, $parent->get_label;
+	    push @lbls, $parent->description if $parent->description;
+	    my $lbl = join '\n', @lbls;
 	    
 	    if ( !$seen{$parent->id} ){
-		$g->add_node(name  => $parent->get_label, 
-			     shape => "record",
-			     URL   => "ip.html?id=".$ip->id,
+		$g->add_node(
+		    name   => $parent->get_label,
+		    label  => $lbl,
+		    shape  => "record",
+		    URL    => "ip.html?id=".$parent->id,
 		    );
 		$seen{$parent->id} = 1;
 	    }
