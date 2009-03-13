@@ -1349,6 +1349,94 @@ sub table_view_page {
     
     return $VIEWPAGE{$table};
 }
+############################################################################
+=head2 build_backbone_graph
+
+  Arguments:
+    filename
+  Returns:
+    GraphViz object
+  Examples:
+    my $g = $ui->build_backbone_graph(%argv);
+
+=cut
+sub build_backbone_graph {
+    my ($self, %argv) = @_;
+    my ($filename) = @argv{'filename'};
+    
+    my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>"1", 
+			  node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
+			  edge=>{dir=>'none', labelfontsize=>8} );
+    my %seen;
+    foreach my $bb ( BackboneCable->retrieve_all() ){
+	# Get end closets and end sites
+	my @eclosets     = ($bb->start_closet, $bb->end_closet);
+	my @esites       = ($bb->start_closet->site, $bb->end_closet->site);
+	my @strands      = $bb->strands;
+	my $num_strands  = scalar @strands;
+	my $st           = (StrandStatus->search(name=>'used'))->first;
+	my $used_strands = CableStrand->search(status=>$st, cable=>$bb)->count;
+
+	# Create a node for each site
+	foreach my $site ( @esites ){
+	    if ( !$seen{$site->id} ){
+		$g->add_node(
+		    name   => $site->get_label,
+		    shape  => "record",
+		    URL    => "view.html?table=Site&id=".$site->id,
+		    );
+		$seen{$site->get_label} = 1;
+	    }
+	}
+
+	# Create the cables
+	if ( defined $esites[0] && defined $esites[1] && 
+	     defined $eclosets[0] && defined $eclosets[1] ){
+	    
+	    $g->add_edge($esites[0]->get_label => $esites[1]->get_label,
+			 label     => $bb->name." (".$used_strands."/".$num_strands.")",
+			 fontsize  => '10',
+			 labelURL  => "../cable_plant/cable_backbone.html?id=".$bb->id,
+			 tailURL   => "../cable_plant/closet.html?id=".$eclosets[0]->id,
+			 taillabel => "[".$eclosets[0]->name."]",
+			 headURL   => "../cable_plant/closet.html?id=".$eclosets[1]->id,
+			 headlabel => "[".$eclosets[1]->name."]",
+			 color     => 'black',
+		);
+	}
+    }
+    $g->as_png($filename);
+    
+    return $g;
+}
+
+############################################################################
+=head2 build_backbone_graph_html
+
+  Arguments:
+    web_path string
+    filename (optional)
+  Returns:
+    html img code
+  Examples:
+    print $ui->build_backbone_graph_html(web_path=>$r->dir_config('NetdotPath'));
+
+=cut
+sub build_backbone_graph_html {
+    my ($self, %argv) = @_;
+    my ($web_path, $filename) = 
+	@argv{'web_path', 'filename'};
+    
+    my $img_name      = $filename || "Backbone-cable-plant.png";
+    my $graph_path    = "img/graphs/$img_name";
+    my $img           = $web_path . $graph_path;
+    my $netdot_path   = Netdot->config->get('NETDOT_PATH');
+    $argv{filename}   = "$netdot_path/htdocs/" . $graph_path;
+    
+    my $g = $self->build_backbone_graph(%argv);
+
+    return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" . $g->as_cmapx;
+}
 
 ############################################################################
 =head2 build_ip_tree_graph
