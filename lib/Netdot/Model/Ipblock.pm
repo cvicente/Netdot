@@ -190,7 +190,7 @@ sub keyword_search {
 
 
 ##################################################################
-=head2 get_unused_subnets - Retrieve subnets with no device interfaces
+=head2 get_unused_subnets - Retrieve subnets with no addresses
 
   Arguments:
     version - 4 or 6 (defaults to all)
@@ -204,10 +204,9 @@ sub get_unused_subnets {
     my ($class, %args) = @_;
     $class->isa_class_method('get_unused_subnets');
     my @ids;
-    my $query = "SELECT    subnet.id, address.id, interface.id 
+    my $query = "SELECT    subnet.id, address.id 
                  FROM       ipblockstatus, ipblock subnet
                  LEFT JOIN  ipblock address ON (address.parent=subnet.id)
-                 LEFT JOIN  interface ON (interface.id=address.interface)
                  WHERE      subnet.status=ipblockstatus.id 
                     AND     ipblockstatus.name='Subnet'";
 
@@ -220,9 +219,9 @@ sub get_unused_subnets {
     my $rows = $sth->fetchall_arrayref();
     my %subs;
     foreach my $row ( @$rows ){
-	my ($subnet, $address, $interface) = @$row;
+	my ($subnet, $address) = @$row;
 	if ( defined $address ){
-	    $subs{$subnet}{$address} = $interface;
+	    $subs{$subnet}{$address} = 1;
 	}else{
 	    $subs{$subnet} = {};
 	}
@@ -231,22 +230,18 @@ sub get_unused_subnets {
     foreach my $subnet ( keys %subs ){
 	if ( !keys %{$subs{$subnet}} ){
 	    push @ids, $subnet;
-	}else{
-	    my $has_ints = 0;
-	    foreach my $address ( keys %{$subs{$subnet}} ){
-		if ( defined $subs{$subnet}{$address} ){
-		    $has_ints = 1;
-		    last;
-		}
-	    }
-	    if ( !$has_ints ) {
-		push @ids, $subnet;
-	    }
 	}
     }
     my @result;
     foreach my $id ( @ids ){
-	push @result, Ipblock->retrieve($id);
+	my $ip = Ipblock->retrieve($id);
+	if ( $args{version} == 4 ){
+	    # Ignore IPv4 multicast blocks
+	    if ( $ip->_netaddr->within(new NetAddr::IP "224.0.0.0/4") ){
+		next;
+	    }
+	}
+	push @result, $ip;
     }
     @result = sort { $a->address_numeric <=> $b->address_numeric } @result;
     return @result;
