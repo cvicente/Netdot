@@ -49,41 +49,6 @@ if ( $edit ) { $show_buttons = 0; }
       <input type="hidden" name="_action" value="edit_contact">
 % }
 
-
-% if ( my @contacts = $obj->contacts ){
-%     foreach my $role ( @contacts ){
-%         my (@headers, @data);
-%         my $person = $role->person;
-%         my $editct = ($edit eq 'contact' && $contact_id eq $role->id)? 1 : 0;
-
-         <div class="containerbodyoutside">
-             <div class="container">
-                 <div class="containerheadleft"><% $person->get_label %></div>
-                     <div class="containerheadright">
-%		 if ( ! $show_buttons ){
-                    &nbsp;
-%                }else{
-                         <a href="contactlist.html?id=<% $id %>&edit=contact&contact_id=<% $role->id %>">[edit]</a>
-		         <a href="contactlist.html?id=<% $id %>&_action=delete_role&role_id=<% $role->id %>">[delete role]</a>
-		         <a href="contactlist.html?id=<% $id %>&_action=delete_person&person_id=<% $person->id %>">[delete person]</a>
-%                }
-		     </div>
-                 <div class="containerbodyoutside">
-
-%        $ui->add_to_fields(o=>$role, edit=>$editct, fields=>['contacttype', 'notify_email', 'notify_pager', 'notify_voice'], 
-%		            field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0,
-%		            linkpages=>['view.html','','', '']);
-
-          <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
-                                             width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
-
-          <& form.mhtml, table=>'Person', id=>$person->id, edit=>$editct, short_field_names=>0 &>
-                 </div>
-              </div>
-           </div>
-%     }
-% }
-
 % if ( $edit eq 'newcontact' ){
 
     <div class="containerbodyoutside">
@@ -111,7 +76,7 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
 %            print $ui->col_descr_link('Contact', 'person', "Person: ");
 	     </label>
 	     <p>
-             <div id="existingperson" style="display:none">
+             <div id="existingperson" style="display:block">
                  <select name="Contact__NEW__person" class="dropdown">
                     <option value="0">-- Select --</option>
 %                   my @people = Person->retrieve_all;
@@ -122,8 +87,9 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
                  <a href="#" onClick="toggleLayer('existingperson');toggleLayer('newperson');document.getElementById('personstatus').value='new';">[new]</a>
              </div>
 
-             <div id="newperson" style="display:block">
-                    <a href="#" onClick="toggleLayer('newperson');toggleLayer('existingperson');document.getElementById('personstatus').value='existing';">[existing]</a>
+             <div id="newperson" style="display:none">
+                    <a href="#" onClick="toggleLayer('newperson');toggleLayer('existingperson');document.getElementById('personstatus').value='existing';">[choose existing]</a>
+		    <p><br>
 		    <& form.mhtml, table=>'Person', edit=>$edit, short_field_names=>0 &>
              </div>	
 
@@ -134,13 +100,51 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
        <input type="hidden" name="personstatus" id="personstatus" value="new">
        <input type="hidden" name="_action" value="new_contact">
         
+%     if ( $edit eq 'newcontact' ){	 
+	   <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+	   <input type="submit" name="submit" value="save">
+           </form>
+%     }
+
 % }
 
+% foreach my $role ( sort { $a->person->lastname cmp $b->person->lastname } $obj->contacts ){
+%     my (@headers, @data);
+%     my $person = $role->person;
+%     my $editct = ($edit eq 'contact' && $contact_id eq $role->id)? 1 : 0;
 
-% if ( $edit ){	 
-      <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-      <input type="submit" name="submit" value="save">
-    </form>
+         <div class="containerbodyoutside">
+             <div class="container">
+                 <div class="containerheadleft"><% $person->get_label %></div>
+                     <div class="containerheadright">
+%		 if ( ! $show_buttons ){
+                    &nbsp;
+%                }else{
+                         <a href="contactlist.html?id=<% $id %>&edit=contact&contact_id=<% $role->id %>">[edit]</a>
+		         <a href="contactlist.html?id=<% $id %>&_action=delete_role&role_id=<% $role->id %>">[delete role]</a>
+		         <a href="contactlist.html?id=<% $id %>&_action=delete_person&person_id=<% $person->id %>">[delete person]</a>
+%                }
+		     </div>
+                 <div class="containerbodyoutside">
+
+%     $ui->add_to_fields(o=>$role, edit=>$editct, fields=>['contacttype', 'notify_email', 'notify_pager', 'notify_voice'], 
+%	                 field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0,
+%		         linkpages=>['view.html','','', '']);
+
+          <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
+                                             width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
+
+          <& form.mhtml, table=>'Person', id=>$person->id, edit=>$editct, short_field_names=>0 &>
+                 </div>
+              </div>
+           </div>
+
+%     if ( $editct ){
+          <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+          <input type="submit" name="submit" value="save">
+        </form>
+%     }
+
 % }
 
 </div>
