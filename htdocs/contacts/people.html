@@ -71,7 +71,7 @@ my $personid = -1;
             </form>
         </fieldset>
         <fieldset class="medium">
-            <legend>Add A New Person</legend>
+            <legend>Add a New Person</legend>
             <form action="people.html" method="POST">
                 <p>
                 <label for="new">Last Name<font color="red">*</font>:</label>
@@ -126,12 +126,40 @@ if ( $_action eq "SEARCH" && $submit ){
     # Remove trailing and leading spaces
     if ( $search_people ){
 	$search = $search_people;
-	$search =~ s/^\s*(.*)\s*$/$1/g;
-	my %idx;
-        map { $idx{$_->id} = $_ } Person->search_like(firstname  => $search);
-        map { $idx{$_->id} = $_ } Person->search_like(lastname   => $search);
-	map { $idx{$_->id} = $_ } Person->search_like(aliases    => $search);
-	@list = values %idx;
+	$search =~ s/^\s*(.*?)\s*$/$1/g;
+	#print "====";
+	#print $search;
+	#print "======";
+	my %idx1;
+	my %idx2;
+	my %resultidx;
+	my $firstpass = 1;
+	
+	#support searches with more than 1 keywords (we do an intersection on results)
+	for my $keyword (split(/ +/, $search)) {
+	    if ($firstpass) {
+		map { $resultidx{$_->id} = $_ } Person->search_like(firstname  => $keyword);
+		map { $resultidx{$_->id} = $_ } Person->search_like(lastname   => $keyword);
+		map { $resultidx{$_->id} = $_ } Person->search_like(aliases    => $keyword);
+		$firstpass = 0;
+	    } else {
+		for my $r (keys %resultidx) {
+		    $idx1{$r} = $resultidx{$r};
+		}
+		%resultidx = ();
+		map { $idx2{$_->id} = $_ } Person->search_like(firstname  => $keyword);
+		map { $idx2{$_->id} = $_ } Person->search_like(lastname   => $keyword);
+		map { $idx2{$_->id} = $_ } Person->search_like(aliases    => $keyword);
+		for my $key (keys %idx1) {
+		    if (exists $idx2{$key}) {
+			$resultidx{$key} = $idx1{$key};
+		    }
+		}
+	    }
+	    %idx1 = ();
+	    %idx2 = ();
+	}
+	@list = values %resultidx;
     }else {
 	$m->comp('/generic/no_search_criteria.html');
     }
