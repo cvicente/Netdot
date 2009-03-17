@@ -1542,10 +1542,9 @@ sub build_ip_tree_graph {
 =cut
 sub build_ip_tree_graph_html {
     my ($self, %argv) = @_;
-    my ($list, $web_path, $filename) = 
-	@argv{'list', 'web_path', 'filename'};
+    my ($id, $list, $web_path, $filename) = 
+	@argv{'id', 'list', 'web_path', 'filename'};
     
-    my $id            = $root->id;
     my $img_name      = $filename || "Ipblock-tree-$id.png";
     my $graph_path    = "img/graphs/$img_name";
     my $img           = $web_path . $graph_path;
