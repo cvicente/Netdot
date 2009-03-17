@@ -1368,6 +1368,7 @@ sub build_backbone_graph {
 			  node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
 			  edge=>{dir=>'none', labelfontsize=>8} );
     my %seen;
+    my %site_closets;
     foreach my $bb ( BackboneCable->retrieve_all() ){
 	# Get end closets and end sites
 	my @eclosets     = ($bb->start_closet, $bb->end_closet);
@@ -1377,19 +1378,31 @@ sub build_backbone_graph {
 	my $st           = (StrandStatus->search(name=>'used'))->first;
 	my $used_strands = CableStrand->search(status=>$st, cable=>$bb)->count;
 
+
 	# Create a node for each site
 	foreach my $site ( @esites ){
 	    if ( !$seen{$site->id} ){
+
+		# Create an array of closets to display per Site
+		# First element is the Site name
+		my @sclosets = ($site->get_label);
+		map { push @sclosets, $_->name } sort { $a->name cmp $b->name } $site->closets;
+
+		for ( my $i=0; $i < scalar(@sclosets); $i++ ){
+		    $site_closets{$site->id}{$sclosets[$i]} = $i;
+		}
+
 		$g->add_node(
 		    name   => $site->get_label,
+		    label  => \@sclosets,
 		    shape  => "record",
 		    URL    => "view.html?table=Site&id=".$site->id,
 		    );
-		$seen{$site->get_label} = 1;
+		$seen{$site->id} = 1;
 	    }
 	}
 
-	# Create the cables
+	# Create an edge for each cable
 	if ( defined $esites[0] && defined $esites[1] && 
 	     defined $eclosets[0] && defined $eclosets[1] ){
 	    
@@ -1397,10 +1410,8 @@ sub build_backbone_graph {
 			 label     => $bb->name." (".$used_strands."/".$num_strands.")",
 			 fontsize  => '10',
 			 labelURL  => "../cable_plant/cable_backbone.html?id=".$bb->id,
-			 tailURL   => "../cable_plant/closet.html?id=".$eclosets[0]->id,
-			 taillabel => "[".$eclosets[0]->name."]",
-			 headURL   => "../cable_plant/closet.html?id=".$eclosets[1]->id,
-			 headlabel => "[".$eclosets[1]->name."]",
+			 from_port => $site_closets{$esites[0]->id}{$eclosets[0]->name},
+			 to_port   => $site_closets{$esites[1]->id}{$eclosets[1]->name},
 			 color     => 'black',
 		);
 	}
@@ -1454,31 +1465,42 @@ sub build_ip_tree_graph {
     my ($self, %argv) = @_;
     my ($list, $filename) = @argv{'list', 'filename'};
     
+    # These should match whatever is on the stylesheet
+    my %colors = (
+	Subnet    => '#ff6666',
+	Container => '#ffee77',
+	Reserved  => '#cccccc',
+        Available => '#bbddbb',
+	);
+    
     my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>"1", 
 			  node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
 			  edge=>{dir=>'none', labelfontsize=>8} );
+    
     my %seen;
-    foreach my $n ( @$list ){
- 	my $ip = Ipblock->retrieve($n->data);
 
+    foreach my $n ( @$list ){
+	my $ip = Ipblock->retrieve($n->data);
+	
 	# Make sure we don't include end addresses in the tree
 	next if $ip->is_address;
-
+	
 	my @lbls;
 	push @lbls, $ip->get_label;
 	push @lbls, $ip->description if $ip->description;
 	my $lbl = join '\n', @lbls;
-
-        $g->add_node(
+	
+	$g->add_node(
 	    name   => $ip->get_label,
 	    label  => $lbl,
 	    shape  => "record",
+	    fillcolor => $colors{$ip->status->name},
 	    URL    => "ip.html?id=".$ip->id,
-            );
+	    );
 	
 	if ( $n->parent ){
 	    my $parent = Ipblock->retrieve($n->parent->data);
-
+	    
 	    my @lbls;
 	    push @lbls, $parent->get_label;
 	    push @lbls, $parent->description if $parent->description;
@@ -1494,10 +1516,11 @@ sub build_ip_tree_graph {
 		$seen{$parent->id} = 1;
 	    }
 	    $g->add_edge($parent->get_label => $ip->get_label,
-			 color          => 'black',
+			 color              => 'black',
 		);
 	}
     }
+
     $g->as_png($filename);
     
     return $g;
@@ -1514,14 +1537,15 @@ sub build_ip_tree_graph {
   Returns:
     html img code
   Examples:
-    print $ui->build_ip_tree_graph_html(id=>$network->id, list=>$list, web_path=>$r->dir_config('NetdotPath'));
+    print $ui->build_ip_tree_graph_html(list=>$list, web_path=>$r->dir_config('NetdotPath'));
 
 =cut
 sub build_ip_tree_graph_html {
     my ($self, %argv) = @_;
-    my ($id, $list, $web_path, $filename) = 
-	@argv{'id', 'list', 'web_path', 'filename'};
+    my ($list, $web_path, $filename) = 
+	@argv{'list', 'web_path', 'filename'};
     
+    my $id            = $root->id;
     my $img_name      = $filename || "Ipblock-tree-$id.png";
     my $graph_path    = "img/graphs/$img_name";
     my $img           = $web_path . $graph_path;

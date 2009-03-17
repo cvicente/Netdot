@@ -841,8 +841,6 @@ if ($o->status->name eq "Subnet") {
             Legend:
             <span class="ipaddr_available">Available</span>
             <span class="ipaddr_container">Container</span>
-            <span class="ipaddr_discovered">Discovered</span>
-            <span class="ipaddr_dynamic">Dynamic</span>
             <span class="ipaddr_static">Static</span>
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
@@ -861,8 +859,13 @@ if ($o->status->name eq "Subnet") {
              Tree View
           </div>  
           <div class="containerheadright">
+            Legend:
+            <span class="ipaddr_container">Container</span>
+            <span class="ipaddr_static">Static</span>
+            <span class="ipaddr_reserved">Reserved</span>
+			&nbsp;&nbsp;
 %	        if ( $o->version == 4 ){
-         	    <a href="ip.html?id=<% $id %>&view_availability=1">[Graphical View]</a>
+         	    <a href="ip.html?id=<% $id %>&view_availability=1">[Block View]</a>
 %               }
          	<a href="ip.html?id=<% $id %>">[List View]</a>
           </div>
@@ -893,9 +896,9 @@ if ($o->status->name eq "Subnet") {
 			 <input type="submit" name="submit" value="save">
 %		 }else{
 %		     print '<a href="ip.html?id='.$id.'&edit_children=1">[edit]</a>&nbsp;';
-%		     print '<a href="ip.html?id='.$id.'&view_availability=1">[Graphical View]</a>';
+%		     print '<a href="ip.html?id='.$id.'&view_availability=1">[Block View]</a>';
 %                    if ( $o->status->name eq 'Container' ){
-%		         print '<a href="ip.html?id='.$id.'&view_tree=1">[Tree View]</a>';
+                         <a href="ip.html?id=<% $id %>&view_tree=1">[Tree View]</a>
 %                    }
 %		 }
 %             } else {
