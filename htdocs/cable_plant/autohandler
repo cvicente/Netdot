@@ -90,7 +90,9 @@ if( !$showheader ) {
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
-        <table><tr><td>
+    <table>
+      <tr>
+	<td>
         <fieldset class="large">
             <legend>Find</legend>
             <form name="backbone_form" action="cable_plant.html" method="POST">
@@ -129,12 +131,17 @@ if( !$showheader ) {
                </p>
            </form>
         </fieldset>
-        </td></tr></table>
+        </td>
+      </tr>
+    </table>
 
     </div> <!-- close containerbody -->
  </div> <!-- close container -->
 </div> <!-- close sectiontools -->
 
+%     if ( $m->request_comp->name eq 'index.html' ){
+%         $m->comp('backbone_graph.html');
+%     }
 
 % } elsif ( $page eq "HORIZONTAL" ) {
 
