@@ -38,7 +38,7 @@ my $pos     = 0;
 my $colwidth = int(100/$width);
 </%init>
 
-
+% my $jsstring = "jspopoutstring+=encodeURIComponent(\"";
  <table border="0" width="100%">
     <tr>
 %    for ( my($w)=1; $w <= $width; $w++ ){
@@ -47,7 +47,21 @@ my $colwidth = int(100/$width);
 %	    for ( my($r)=1; $r <= $nrows; $r++ ){
 		<tr>
 		    <td <% $headerwidthstr %> class="formtablec1"><% $field_headers[$pos] %></td>
-		    <td <% $datawidthstr %> class="formtablec2"><% $data[$pos] %></td>		    
+		    <td <% $datawidthstr %> class="formtablec2"><% $data[$pos] %></td>
+
+%                   #append to the plaintext version using javascript
+%                   my $jslabel = $field_headers[$pos];
+%                   my $jsvalue = $data[$pos];
+%                   $jslabel =~ s/<.*?>//g;
+%                   $jsvalue =~ s/<.*?>//g;
+%                   $jslabel =~ s/"/\\"/g;
+%                   $jsvalue =~ s/"/\\"/g;
+%                   $jslabel =~ s/[\r\n]//g;
+%                   $jsvalue =~ s/\r\n/<br>/g;
+%                   $jsvalue =~ s/\n/<br>/g;
+%                   $jsvalue =~ s/((<br>)*\s*<br>\s*)+$//;
+%                   $jsstring .= $jslabel." ".$jsvalue."<br>" if ($jslabel);
+
 		</tr>
 %		$pos++;
 %	    }
@@ -56,3 +70,9 @@ my $colwidth = int(100/$width);
 %    }
     </tr>
  </table>
+
+% $jsstring .= "<br>\");";
+
+<script type="text/javascript" language="javascript">
+%  print $jsstring;
+</script>
