@@ -53,7 +53,6 @@ if( $id ) {
 	print "<input type=\"hidden\" name=\"id\" value=\"$id\">";
     }
 }
-print "<script type=\"text/javascript\" language=\"javascript\">";
 
 foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     next if ( $c eq 'id' );
@@ -97,22 +96,9 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 	push(@comments_header, pop @headers);
 	push(@comments_data,   pop @data);
     }
-    
-    #append to the plaintext version using javascript
-    my $jslabel = $field{'label'};
-    my $jsvalue = $field{'value'};
-    $jslabel =~ s/<.*?>//g;
-    $jsvalue =~ s/<.*?>//g;
-    $jslabel =~ s/"/\\"/g;
-    $jsvalue =~ s/"/\\"/g;
-    $jslabel =~ s/[\n\r]//g;
-    $jsvalue =~ s/\r\n/<br>/g;
-    $jsvalue =~ s/\n/<br>/g;
-    print "jspopoutstring+=escape(\"".$jslabel." ".$jsvalue."<br>\");";
 
 } # foreach
-print "jspopoutstring+=escape(\"<br>\");";
-print "</script>";
+
 </%perl>
     <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
     width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
