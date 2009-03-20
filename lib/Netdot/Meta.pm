@@ -10,6 +10,10 @@ use Carp;
 my $DEFAULT_META_FILE = "<<Make:PREFIX>>/etc/netdot.meta";
 my $ALT_META_FILE     = catpath( ( splitpath( rel2abs $0 ) )[ 0, 1 ] ) . "../etc/netdot.meta";
 
+my %DERIVED_CLASSES = (
+    'CiscoFW' => 'Device',
+    );
+
 # Some private class data and related methods
 {
     # Cache Meta::Table objects
@@ -298,6 +302,9 @@ sub _get_table_info{
     if ( exists $tables->{$name} ){
 	%info = %{ $tables->{$name} };
 	$info{name} = $name;
+    }elsif ( exists $DERIVED_CLASSES{$name} ){
+	%info = %{ $tables->{$DERIVED_CLASSES{$name}} };
+	$info{name} = $name;
     }else{
 	# We might have been given the table's db name
 	foreach my $t ( keys %$tables ){
@@ -308,7 +315,7 @@ sub _get_table_info{
 	    }
 	}
     }
-    croak "_get_table_info: Table $name does not exist." 
+    croak "Netdot::Meta::_get_table_info: Table $name does not exist." 
 	unless %info;
 
     return \%info;
