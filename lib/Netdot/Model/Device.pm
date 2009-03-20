@@ -1682,7 +1682,7 @@ sub get_arp {
 	bless $self, $OID2CLASSMAP{$oid};
 	$cache = $self->get_arp();
     }else{
-	$cache = $self->_get_arp_from_snmp($argv{session});
+	$cache = $self->_get_arp_from_snmp(session=>$argv{session});
     }
 	
     map { $arp_count+= scalar(keys %{$cache->{$_}}) } keys %$cache;
