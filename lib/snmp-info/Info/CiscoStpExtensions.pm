@@ -1,6 +1,6 @@
 # SNMP::Info::CiscoStpExtensions
 #
-# Copyright (c)2003,2004,2006 Max Baker 
+# Copyright (c)2009 Carlos Vicente
 # All rights reserved.  
 #
 # Redistribution and use in source and binary forms, with or without 
