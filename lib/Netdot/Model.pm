@@ -71,7 +71,7 @@ BEGIN {
 	    $h_table->SUPER::insert(\%current_data);
 	};
 	if ( my $e = $@ ){
-	    $logger->error("Could not insert history record for $table id ".$self->id);
+	    $logger->error("Could not insert history record for $table id ".$self->id.": $e");
 	}
 	1;
     }
