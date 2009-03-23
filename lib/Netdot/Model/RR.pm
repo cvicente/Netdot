@@ -46,9 +46,9 @@ sub search {
 
     my ($rr, @sections);
     if ( (exists $argv{name}) && ($argv{name} =~ /\./)  && !exists $argv{zone} ){
-	if ( my $zone = (Zone->search(mname=>$argv{name}))[0] ){
-	    my $mname = $zone->mname;
-	    $argv{name} =~ s/\.$mname//;
+	if ( my $zone = (Zone->search(name=>$argv{name}))[0] ){
+	    my $name = $zone->name;
+	    $argv{name} =~ s/\.$name//;
 	    $argv{zone} = $zone->id;
 	    return $class->SUPER::search(%argv);
 	}else{
@@ -86,9 +86,9 @@ sub search_like {
 
     my ($rr, @sections);
     if ( (exists $argv{name}) && ($argv{name} =~ /\./)  && !exists $argv{zone} ){
-	if ( my $zone = (Zone->search(mname=>$argv{name}))[0] ){
-	    my $mname = $zone->mname;
-	    $argv{name} =~ s/\.$mname//;
+	if ( my $zone = (Zone->search(name=>$argv{name}))[0] ){
+	    my $name = $zone->name;
+	    $argv{name} =~ s/\.$name//;
 	    $argv{zone} = $zone->id;
 	    return $class->SUPER::search_like(%argv);
 	}else{
@@ -136,15 +136,15 @@ sub insert {
     my $zone;
     if ( (ref( $zone = $argv->{zone} ) =~ /Zone/)
 	 || ( $zone = (Zone->search(id   =>$argv->{zone}))[0] )
-	 || ( $zone = (Zone->search(mname=>$argv->{zone}))[0] )
+	 || ( $zone = (Zone->search(name=>$argv->{zone}))[0] )
 	){
     }else{
 	$logger->debug(sub{ sprintf("Zone not found: \"%s\".  Inserting.", $argv->{zone}) });
-	$zone = Zone->insert({ mname => $argv->{zone} });
+	$zone = Zone->insert({ name => $argv->{zone} });
 	$logger->info(sprintf("Inserted new Zone: %s", $zone->get_label));
     }
     if ( my $rr = $class->search(name=>$argv->{name}, zone=>$zone)->first ){
-	$class->throw_user(sprintf("RR::Insert: %s.%s already exists!", $rr->name, $rr->zone->mname));
+	$class->throw_user(sprintf("RR::Insert: %s.%s already exists!", $rr->name, $rr->zone->name));
     }
     # Set some defaults
     my %state = (name        => $argv->{name},
@@ -178,7 +178,7 @@ sub insert {
 sub get_label {
     my $self = shift;
     if ( $self->zone ){
-	return sprintf("%s.%s", $self->name, $self->zone->mname);
+	return sprintf("%s.%s", $self->name, $self->zone->name);
     }else{
 	return $self->name;
     }

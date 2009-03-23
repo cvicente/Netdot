@@ -1692,7 +1692,7 @@ sub _prevalidate {
 	$class->throw_user("IP: $address does not match valid patterns");
     }
     if ( $address eq '1.1.1.1' ) {
-	$class->throw_user("IP $address is bogus");
+	$logger->warn("IP $address is bogus");
     }
     my $ip;
     my $str;
@@ -1706,10 +1706,6 @@ sub _prevalidate {
     # of the block, and not an address within the block
     unless( $ip->network == $ip ){
 	$class->throw_user("IP: $str is not base address of block");
-    }
-    if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
-	 || $ip eq '::1' ) {
-	$class->throw_user("IP $address is a loopback");
     }
     return $ip;
 }

@@ -68,7 +68,7 @@ sub gather_data{
 
     my $dbh = Netdot::Model->db_Main();
     $q1 = $dbh->selectall_arrayref("
-                SELECT     d.serialnumber, d.rack, d.info, site.name, dr.name, rr.name, zone.mname, 
+                SELECT     d.serialnumber, d.rack, d.info, site.name, dr.name, rr.name, zone.name, 
                            i.id, i.name, i.number, i.description, i.neighbor, i.room_char, i.jack_char, 
                            hc.jackid, p.name, pt.name, e.name, ir.name
                  FROM      rr, zone, product p, producttype pt, entity e, interface i 
@@ -87,7 +87,7 @@ sub gather_data{
     &debug("Executing SQL query 2");
 
     $q2 = $dbh->selectall_arrayref("
-                SELECT  i1.id, i2.id, i2.name, rr2.name, zone2.mname
+                SELECT  i1.id, i2.id, i2.name, rr2.name, zone2.name
                 FROM    device d1, device d2, interface i1, interface i2,
                         rr rr1, rr rr2, zone zone1, zone zone2
                 WHERE   i1.device = d1.id AND i2.device = d2.id

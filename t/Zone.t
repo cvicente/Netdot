@@ -4,10 +4,10 @@ use lib "lib";
 
 BEGIN { use_ok('Netdot::Model::Zone'); }
 
-my $obj = Zone->insert({mname=>'domain.name'});
+my $obj = Zone->insert({name=>'domain.name'});
 isa_ok($obj, 'Netdot::Model::Zone', 'insert');
 
-is(Zone->search(mname=>'sub.domain.name')->first, $obj, 'search' );
+is(Zone->search(name=>'sub.domain.name')->first, $obj, 'search' );
 
 my $serial = $obj->serial;
 $obj->update();

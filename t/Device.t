@@ -5,7 +5,7 @@ use lib "lib";
 BEGIN { use_ok('Netdot::Model::Device'); }
 
 my $dd = Netdot->config->get('DEFAULT_DNSDOMAIN');
-my $ddn = (Zone->search(mname=>$dd)->first)->mname;
+my $ddn = (Zone->search(name=>$dd)->first)->name;
 
 my $obj = Device->insert({name=>'localhost'});
 isa_ok($obj, 'Netdot::Model::Device', 'insert');

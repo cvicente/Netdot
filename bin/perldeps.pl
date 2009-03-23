@@ -37,6 +37,7 @@ my @DEPS = (
     'Net::IRR',
     'Time::Local',
     'File::Spec',
+    'Net::Appliance::Session',
     );
 
 if ( $action eq 'test' ){

@@ -6,6 +6,7 @@ use strict;
 use SNMP::Info;
 use Netdot::Util::DNS;
 use Parallel::ForkManager;
+use Netdot::Model::Device::CiscoFW;
 
 # Timeout seconds for SNMP queries 
 # (different from SNMP connections)
@@ -219,7 +220,7 @@ sub search_address_live {
     foreach my $dev ( @arp_devs ){
 	my $cache;
 	eval {
-	    $cache = $class->_exec_timeout($dev->fqdn, sub{ return $dev->_get_arp_from_snmp() });
+	    $cache = $class->_exec_timeout($dev->fqdn, sub{ return $dev->get_arp() });
 	};
 	$logger->debug($@) if $@;
 	if ( $cache ){
@@ -402,8 +403,8 @@ sub assign_name {
    	# Notice that we search the whole string.  That's because
 	# the hostname part might have dots.  The Zone search method
 	# will take care of that.
-	if ( my $zone = (Zone->search(mname=>$fqdn))[0] ){
-            $args{zone} = $zone->mname;
+	if ( my $zone = (Zone->search(name=>$fqdn))[0] ){
+            $args{zone} = $zone->name;
 	    $args{name}  = $fqdn;
 	    $args{name}  =~ s/\.$args{zone}//;
         }else{
@@ -719,7 +720,7 @@ sub get_snmp_info {
 								       'communities' => [$sinfo->snmp_comm . '@' . $vid],
 								       'version'     => $sinfo->snmp_ver,
 								       'sclass'      => $sinfo->class);
-				my $stp_p_info = $self->_exec_timeout( $args{host}, 
+				my $stp_p_info = $class->_exec_timeout( $args{host}, 
 								       sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
 				foreach my $method ( keys %$stp_p_info ){
 				    $dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
@@ -742,7 +743,7 @@ sub get_snmp_info {
 								   'communities' => [$sinfo->snmp_comm . '@' . $vid],
 								   'version'     => $sinfo->snmp_ver,
 								   'sclass'      => $sinfo->class);
-			    my $stp_p_info = $self->_exec_timeout( $args{host}, 
+			    my $stp_p_info = $class->_exec_timeout( $args{host}, 
 								   sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
 			    foreach my $method ( keys %$stp_p_info ){
 				$dev{stp_instances}{$vid}{$method} = $stp_p_info->{$method};
@@ -1555,6 +1556,7 @@ sub list_layers {
 sub arp_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('arp_update');
+    my $class = ref($self);
 
     my $host      = $self->fqdn;
     my $dbh       = $self->db_Main;
@@ -1570,7 +1572,7 @@ sub arp_update {
     }
 
     # Fetch from SNMP if necessary
-    my $cache = $argv{cache} || $self->_exec_timeout($host, sub{ return $self->_get_arp_from_snmp(session=>$argv{session}) });
+    my $cache = $argv{cache} || $class->_exec_timeout($host, sub{ return $self->get_arp(session=>$argv{session}) });
     
     unless ( keys %$cache ){
 	$logger->debug("$host: ARP cache empty");
@@ -1633,6 +1635,66 @@ sub arp_update {
     return 1;
 }
 
+############################################################################
+=head2 get_arp - Fetch ARP tables
+
+  Arguments:
+    session - SNMP session (optional)
+  Returns:
+    Hashref
+  Examples:
+    my $cache = $self->get_arp(%args)
+=cut
+sub get_arp {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('_get_arp');
+    my $host = $self->fqdn;
+    my $cache;
+
+    unless ( $self->collect_arp ){
+	$logger->debug(sub{"Device::_get_arp: $host excluded from ARP collection. Skipping"});
+	return;
+    }
+    if ( $self->is_in_downtime ){
+	$logger->debug(sub{"Device::_get_arp: $host in downtime. Skipping"});
+	return;
+    }
+
+    my $oid = ($self->product)? $self->product->sysobjectid : undef;
+    $logger->debug("$host: Unknown product or sysObjectID not found") 
+	unless $oid;
+    
+    my %OID2CLASSMAP  = ( 
+	'1.3.6.1.4.1.9.1.392' => 'Netdot::Model::Device::CiscoFW', 
+	'1.3.6.1.4.1.9.1.451' => 'Netdot::Model::Device::CiscoFW', 
+	'1.3.6.1.4.1.9.1.669' => 'Netdot::Model::Device::CiscoFW', 
+	'1.3.6.1.4.1.9.1.670' => 'Netdot::Model::Device::CiscoFW', 
+	'1.3.6.1.4.1.9.1.672' => 'Netdot::Model::Device::CiscoFW', 
+	'1.3.6.1.4.1.9.1.745' => 'Netdot::Model::Device::CiscoFW', 
+	'1.3.6.1.4.1.9.1.753' => 'Netdot::Model::Device::CiscoFW',
+	);
+
+    my $start     = time;
+    my $arp_count = 0;
+
+    if ( $oid && exists $OID2CLASSMAP{$oid} ){
+	# Reconsacrate
+	bless $self, $OID2CLASSMAP{$oid};
+	$cache = $self->get_arp();
+    }else{
+	$cache = $self->_get_arp_from_snmp(session=>$argv{session});
+    }
+	
+    map { $arp_count+= scalar(keys %{$cache->{$_}}) } keys %$cache;
+
+    my $end = time;
+    $logger->debug(sub{ sprintf("$host: ARP cache fetched. %s entries in %s", 
+				$arp_count, $self->sec2dhms($end-$start) ) });
+   return $cache;
+}
+
+
+
 #########################################################################
 =head2 fwt_update - Update Forwarding Table in DB
     
@@ -1652,6 +1714,7 @@ sub arp_update {
 sub fwt_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('fwt_update');
+    my $class = ref($self);
 
     my $host      = $self->fqdn;
     my $dbh       = $self->db_Main;
@@ -1667,7 +1730,7 @@ sub fwt_update {
     }
 
     # Fetch from SNMP if necessary
-    my $fwt = $argv{fwt} || $self->_exec_timeout($host, sub{ return $self->_get_fwt_from_snmp(session=>$argv{session}) } );
+    my $fwt = $argv{fwt} || $class->_exec_timeout($host, sub{ return $self->_get_fwt_from_snmp(session=>$argv{session}) } );
 
     unless ( keys %$fwt ){
 	$logger->debug("$host: FWT empty");
@@ -2046,7 +2109,7 @@ sub update_bgp_peering {
 sub snmp_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('snmp_update');
-
+    my $class = ref($self);
     unless ( $argv{do_info} || $argv{do_fwt} || $argv{do_arp} ){
 	$argv{do_info} = 1;
     }
@@ -2067,8 +2130,8 @@ sub snmp_update {
     
     if ( $argv{do_info} ){
 	my $info = $argv{info} || 
-	    $self->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
-									 bgp_peers => $argv{bgp_peers}) });
+	    $class->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
+									  bgp_peers => $argv{bgp_peers}) });
 	    
 	if ( $atomic && !$argv{pretend} ){
 	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets  => $argv{add_subnets},
@@ -4000,15 +4063,6 @@ sub _get_arp_from_snmp {
     $self->isa_object_method('_get_arp_from_snmp');
     my $host = $self->fqdn;
 
-    unless ( $self->collect_arp ){
-	$logger->debug(sub{"Device::_get_arp_from_snmp: $host excluded from ARP collection. Skipping"});
-	return;
-    }
-    if ( $self->is_in_downtime ){
-	$logger->debug(sub{"Device::_get_arp_from_snmp: $host in downtime. Skipping"});
-	return;
-    }
-
     my %cache;
     
     my $sinfo = $argv{session} || $self->_get_snmp_session();
@@ -4019,11 +4073,8 @@ sub _get_arp_from_snmp {
 	$devints{$int->number} = $int->id;
     }
 
-    # Fetch ARP Cache
-    $logger->debug(sub{"$host: Fetching ARP cache" });
-    my $start     = time;
+    $logger->debug(sub{"$host: Fetching ARP cache via SNMP" });
     my $at_paddr  = $sinfo->at_paddr();
-    my $arp_count = 0;
     foreach my $key ( keys %$at_paddr ){
 	my ($ip, $idx, $mac);
 	# Notice that the following regexp allows us to query only one
@@ -4049,7 +4100,7 @@ sub _get_arp_from_snmp {
 	}
 	my $intid = $devints{$idx} if exists $devints{$idx};
 	unless ( $intid  ){
-	    $logger->warn("Device::get_snmp_arp: $host: Interface $idx not in database. Skipping");
+	    $logger->warn("Device::get_arp_from_snmp: $host: Interface $idx not in database. Skipping");
 	    next;
 	}
 	unless ( $mac ){
@@ -4067,14 +4118,9 @@ sub _get_arp_from_snmp {
 	# Store in hash
 	$cache{$intid}{$ip} = $mac;
 
-	$logger->debug(sub{"Device::get_snmp_arp: $host: $idx -> $ip -> $mac" });
+	$logger->debug(sub{"Device::get_arp_from_snmp: $host: $idx -> $ip -> $mac" });
     }
     
-    map { $arp_count+= scalar(keys %{$cache{$_}}) } keys %cache;
-
-    my $end = time;
-    $logger->debug(sub{ sprintf("$host: ARP cache fetched. %s entries in %s", 
-				$arp_count, $self->sec2dhms($end-$start) ) });
     return \%cache;
 }
 
@@ -4128,12 +4174,12 @@ sub _get_fwt_from_snmp {
     # easiest way to append more info later using the same function (see below).
     my %fwt; 
     $logger->debug(sub{"$host: Fetching forwarding table" });
-    $self->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $sinfo,
-							     sints   => $sints,
-							     devints => \%devints,
-							     fwt     => \%fwt,
-					 ); 
-			 });
+    $class->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $sinfo,
+							      sints   => $sints,
+							      devints => \%devints,
+							      fwt     => \%fwt,
+					  ); 
+			  });
     
     # For certain Cisco switches you have to connect to each
     # VLAN and get the forwarding table out of it.
@@ -4170,11 +4216,11 @@ sub _get_fwt_from_snmp {
                 $logger->error("$host: Error getting SNMP session for VLAN: $vlan");
                 next;
             }
-            $self->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $vlan_sinfo,
-								     sints   => $sints,
-								     devints => \%devints,
-								     fwt     => \%fwt);
-				 });
+            $class->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $vlan_sinfo,
+								      sints   => $sints,
+								      devints => \%devints,
+								      fwt     => \%fwt);
+				  });
         }
     }
 	    
@@ -4298,6 +4344,8 @@ sub _walk_fwt {
 #
 sub _exec_timeout {
     my ($class, $host, $code) = @_;
+    $class->isa_class_method("_exec_timeout");
+
     $class->throw_fatal("Model::Device::_exec_timeout: Missing required argument: code") unless $code;
     $class->throw_fatal("Model::Device::_exec_timeout: Invalid code reference") unless ( ref($code) eq 'CODE' );
     my @result;

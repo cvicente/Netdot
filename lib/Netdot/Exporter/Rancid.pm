@@ -71,7 +71,7 @@ sub generate_configs {
     my ($self) = @_;
 
     my $query = $self->{_dbh}->selectall_arrayref("
-                SELECT     rr.name, zone.mname, p.name, p.sysobjectid, e.name,
+                SELECT     rr.name, zone.name, p.name, p.sysobjectid, e.name,
                            d.monitor_config, d.monitor_config_group, d.down_from, d.down_until
                  FROM      device d, rr, zone, product p, entity e
                 WHERE      d.name=rr.id

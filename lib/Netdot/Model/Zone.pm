@@ -28,7 +28,7 @@ Netdot::Model::Zone - DNS Zone Class
     
       If given:
 
-         mname=>dns.cs.local.domain
+         name=>dns.cs.local.domain
 
       we will look for a Zone object in this order:
 
@@ -42,7 +42,7 @@ Netdot::Model::Zone - DNS Zone Class
   Returns: 
     See Class::DBI search
   Examples:
-    Zone->search(mname=>'some.domain.name')
+    Zone->search(name=>'some.domain.name')
 
 =cut
 sub search {
@@ -55,15 +55,15 @@ sub search {
     } 
     if ( $class->SUPER::search(%argv) ){
 	return $class->SUPER::search(%argv);
-    }elsif ( defined $argv{mname} && $argv{mname} =~ /\./ && $argv{mname} !~ /^($IPV4)$/ ){
-	my @sections = split '\.', $argv{mname};
+    }elsif ( defined $argv{name} && $argv{name} =~ /\./ && $argv{name} !~ /^($IPV4)$/ ){
+	my @sections = split '\.', $argv{name};
 	while ( @sections ){
-	    $argv{mname} = join '.', @sections;
-	    $logger->debug(sub{ "Zone::search: $argv{mname}" });
+	    $argv{name} = join '.', @sections;
+	    $logger->debug(sub{ "Zone::search: $argv{name}" });
 	    if ( $class->SUPER::search(%argv) ){
 		# We call the method again to not mess
 		# with CDBI's wantarray checks
-		$logger->debug(sub{ "Zone::search: found: ", $argv{mname} });
+		$logger->debug(sub{ "Zone::search: found: ", $argv{name} });
 		return $class->SUPER::search(%argv);
 	    }
 	    shift @sections;
@@ -80,7 +80,8 @@ sub search {
     We override the insert method for extra functionality
 
  Args: 
-    mname     domain name *(required)
+    name      domain name *(required)
+    mname     server name
     rname     mailbox name
     serial    YYYYMMDD+two digit serial number
     refresh   time before the zone should be refreshed
@@ -93,36 +94,37 @@ sub search {
   Returns: 
     Zone object
   Examples:
-    Zone->insert( { mname=>{'newzone.tld'} } );
+    Zone->insert( { name=>{'newzone.domain'} } );
 
 =cut
 sub insert {
     my ($class, $argv) = @_;
     $class->throw_fatal("Model::Zone::insert: Missing required arguments")
-	unless ( $argv->{mname} );
+	unless ( $argv->{name} );
 
     # Some defaults
-    my %state = (mname     => $argv->{mname},
-		 rname     => $argv->{rname}   || "hostmaster.".$argv->{mname},
-		 serial    => $argv->{serial}  || $class->_dateserial . "00",
-		 refresh   => $argv->{refresh} || $class->config->get('DEFAULT_DNSREFRESH'),
-                 retry     => $argv->{retry}   || $class->config->get('DEFAULT_DNSRETRY'),
-                 expire    => $argv->{expire}  || $class->config->get('DEFAULT_DNSEXPIRE'),
-                 minimum   => $argv->{minimum} || $class->config->get('DEFAULT_DNSMINIMUM'),
-                 active    => $argv->{active}  || 1,
-		 reverse   => $argv->{reverse} || 0,
-		 );
+    my %state = (
+	name      => $argv->{name},
+	mname     => $argv->{mname}   || 'localhost',
+	rname     => $argv->{rname}   || "hostmaster.".$argv->{name},
+	serial    => $argv->{serial}  || $class->_dateserial . "00",
+	refresh   => $argv->{refresh} || $class->config->get('DEFAULT_DNSREFRESH'),
+	retry     => $argv->{retry}   || $class->config->get('DEFAULT_DNSRETRY'),
+	expire    => $argv->{expire}  || $class->config->get('DEFAULT_DNSEXPIRE'),
+	minimum   => $argv->{minimum} || $class->config->get('DEFAULT_DNSMINIMUM'),
+	active    => $argv->{active}  || 1,
+	);
 
     my $newzone = $class->SUPER::insert( \%state );
     
     # We want all the existing RR's to fall under this new zone when appropriate
-    my $mname = $newzone->mname;
+    my $name = $newzone->name;
     if ( my @rrs = RR->retrieve_all() ){
 	foreach my $rr ( @rrs ){
 	    my $fqdn = $rr->get_label;
-	    if ( $fqdn =~ /\.$mname$/ ){
+	    if ( $fqdn =~ /\.$name$/ ){
 		my $newname = $fqdn;
-		$newname =~ s/\.$mname$//;
+		$newname =~ s/\.$name$//;
 		$rr->update({name=>$newname, zone=>$newzone});
 	    }
 	}
@@ -146,7 +148,7 @@ sub insert {
   Returns: 
     Zone object
   Examples:
-    Zone->update( { mname=>{'some.other.name'} } );
+    Zone->update( { name=>{'some.other.name'} } );
 
 =cut
 sub update {

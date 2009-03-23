@@ -2233,7 +2233,7 @@ $meta = {
         'down_until',
         'info'
       ],
-      brief => ['name', 'product', 'site', 'serialnumber', 'inventorynumber' ]
+      brief => ['name', 'product', 'site', 'serialnumber', 'inventorynumber', 'snmp_target' ]
     }
   },
   DeviceModule => {
@@ -4714,7 +4714,7 @@ $meta = {
       email => {
         default => '',
         description => 'E-mail address',
-        length => '64',
+        length => '255',
         nullable => 1,
         tag => 'Email',
         type => 'varchar'
@@ -4722,7 +4722,7 @@ $meta = {
       emailpager => {
         default => '',
         description => 'Email address used for paging (via a pager gateway)',
-        length => '32',
+        length => '255',
         nullable => 1,
         tag => 'Pager Email',
         type => 'varchar'
@@ -5202,7 +5202,7 @@ $meta = {
     },
     description => 'DNS Resource Record',
     has_history => 0,
-    index => [ ['name'], ['zone'], ['expiration'] ],
+    index => [ ['name'], ['expiration'] ],
     isjoin => '0',
     label => [
       'name',
@@ -5273,19 +5273,14 @@ $meta = {
     },
     description => 'DNS A or AAAA Record',
     has_history => 0,
-    index => [],
+    index => [ ['ipblock'] ],
     isjoin => '0',
     label => [
       'ipblock',
       'rr'
     ],
     primary_key => 'id',
-    unique => [
-      [
-        'rr',
-        'ipblock'
-      ]
-    ],
+    unique => [ [ 'rr', 'ipblock' ] ],
     views => {
       all => [
         'ipblock',
@@ -5303,24 +5298,24 @@ $meta = {
     columns => {
       alias => {
         default => '',
-        description => '',
-        length => '128',
-        nullable => 0,
-        tag => 'Alias',
-        type => 'varchar'
-      },
-      cname => {
-        default => '',
-        description => '',
+        description => 'Alias',
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'aliases',
+          method => 'cnames',
           table => 'RR'
         },
         nullable => 0,
-        tag => 'CNAME',
+        tag => 'Alias',
         type => 'integer'
+      },
+      cname => {
+        default => '',
+        description => 'A domain-name which specifies the canonical or primary name for the owner.',
+        length => '128',
+        nullable => 0,
+        tag => 'CNAME',
+        type => 'varchar'
       },
       id => {
         default => '',
@@ -5341,19 +5336,14 @@ $meta = {
     },
     description => 'DNS CNAME Record',
     has_history => 0,
-    index => [],
+    index => [ ['cname'] ],
     isjoin => '0',
     label => [
       'alias',
       'cname'
     ],
     primary_key => 'id',
-    unique => [
-      [
-        'alias',
-        'cname'
-      ]
-    ],
+    unique => [ [ 'alias' ] ],
     views => {
       all => [
         'alias',
@@ -5399,7 +5389,7 @@ $meta = {
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'hinforecords',
+          method => 'hinfo_records',
           table => 'RR'
         },
         nullable => 0,
@@ -5449,16 +5439,11 @@ $meta = {
     columns => {
       exchange => {
         default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Nullify',
-          method => 'mxrecords',
-          table => 'RR'
-        },
+        description => 'A domain-name which specifies a host willing to act as a mail exchange for the owner name.',
         nullable => 0,
         tag => 'Exchange',
-        type => 'integer'
+        type => 'varchar',
+        length => '255',
       },
       id => {
         default => '',
@@ -5469,10 +5454,10 @@ $meta = {
         type => 'integer'
       },
       preference => {
-        default => '',
-        description => '',
+        default => 0,
+        description => 'A 16 bit integer which specifies the preference given to this RR among others at the same owner.  Lower values are preferred.',
         length => '',
-        nullable => 1,
+        nullable => 0,
         tag => 'Preference',
         type => 'integer'
       },
@@ -5482,7 +5467,7 @@ $meta = {
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'mxrecords',
+          method => 'mx_records',
           table => 'RR'
         },
         nullable => 0,
@@ -5500,7 +5485,7 @@ $meta = {
     },
     description => 'DNS MX Record',
     has_history => 0,
-    index => [],
+    index => [ ['exchange'] ],
     isjoin => '0',
     label => [
       'preference',
@@ -5528,6 +5513,118 @@ $meta = {
       ]
     }
   },
+  RRNAPTR => {
+    table_db_name => 'rrnaptr',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      flags => {
+        default => '',
+        description => 'A <character-string> containing flags to control aspects of the rewriting and interpretation of the fields in the record.  Flags are single characters from the set A-Z and 0-9.  The case of the alphabetic characters is not significant.  The field can be empty.',
+        length => '1',
+        nullable => 1,
+        tag => 'Flags',
+        type => 'varchar'
+      },
+      order => {
+        default => 0,
+        description => 'A 16-bit unsigned integer specifying the order in which the NAPTR records MUST be processed in order to accurately represent the ordered list of Rules.  The ordering is from lowest to highest.',
+        length => '',
+        nullable => 0,
+        tag => 'Order',
+        type => 'integer'
+      },
+      preference => {
+        default => 0,
+        description => 'A 16-bit unsigned integer that specifies the order in which NAPTR records with equal Order values SHOULD be processed, low numbers being processed before high numbers',
+        length => '',
+        nullable => 0,
+        tag => 'Preference',
+        type => 'integer'
+      },
+      regexpr => {
+        default => '',
+        description => 'A <character-string> containing a substitution expression that is applied to the original string held by the client in order to construct the next domain name to lookup.  See the DDDS Algorithm specification for the syntax of this field',
+        length => '255',
+        nullable => 0,
+        tag => 'Regexp',
+        type => 'varchar'
+      },
+      replacement => {
+        default => '',
+        description => 'A <domain-name> which is the next domain-name to query for depending on the potential values found in the flags field.  This field is used when the regular expression is a simple replacement operation.  Any value in this field MUST be a fully qualified domain-name',
+        length => '255',
+        nullable => 0,
+        tag => 'Replacement',
+        type => 'varchar'
+      },
+      services => {
+        default => '',
+        description => 'A <character-string> that specifies the Service Parameters applicable to this this delegation path.  It is up to the Application Specification to specify the values found in this field.',
+        length => '255',
+        nullable => 0,
+        tag => 'Services',
+        type => 'varchar'
+      },
+      rr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'naptr_records',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Resource Record',
+        type => 'integer'
+      },
+      ttl => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'TTL',
+        type => 'integer'
+      }
+    },
+    description => 'Naming Authority Pointer (NAPTR) Resource Record (RFC3403)',
+    has_history => 0,
+    index => [ ['rr'], ['services'] ],
+    isjoin => '0',
+    label => [
+      'rr',
+      'services',
+      'regexpr',
+      'replacement',
+    ],
+    primary_key => 'id',
+    unique => [[ ]],
+    views => {
+      all => [
+        'order',
+        'preference',
+        'flags',
+        'services',
+        'regexpr',
+        'replacement',
+        'rr',
+        'ttl'
+      ],
+      brief => [
+      'rr',
+      'services',
+      'regexpr',
+      'replacement',
+      ]
+    }
+  },
   RRNS => {
     table_db_name => 'rrns',
     columns => {
@@ -5541,16 +5638,11 @@ $meta = {
       },
       nsdname => {
         default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Nullify',
-          method => 'nsrecords',
-          table => 'RR'
-        },
+        description => 'A domain-name which specifies a host which should be authoritative for the specified class and domain.',
+        length => '255',
         nullable => 0,
         tag => 'Name Server',
-        type => 'integer'
+        type => 'varchar'
       },
       rr => {
         default => '',
@@ -5558,7 +5650,7 @@ $meta = {
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'nsrecords',
+          method => 'ns_records',
           table => 'RR'
         },
         nullable => 0,
@@ -5576,7 +5668,7 @@ $meta = {
     },
     description => 'DNS NS Record',
     has_history => 0,
-    index => [],
+    index => [ ['nsdname'] ],
     isjoin => '0',
     label => [
       'nsdname',
@@ -5618,12 +5710,20 @@ $meta = {
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'ptrrecords',
+          method => 'ptr_records',
           table => 'Ipblock'
         },
         nullable => 0,
         tag => 'IP',
         type => 'integer'
+      },
+      ptrdname => {
+        default => '',
+        description => 'A domain-name which points to some location in the domain name space',
+        length => '255',
+        nullable => 0,
+        tag => 'Domain Name',
+        type => 'varchar'
       },
       rr => {
         default => '',
@@ -5631,7 +5731,7 @@ $meta = {
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'ptrrecords',
+          method => 'ptr_records',
           table => 'RR'
         },
         nullable => 0,
@@ -5649,29 +5749,31 @@ $meta = {
     },
     description => 'DNS PTR Record',
     has_history => 0,
-    index => [],
+    index => [ ['ipblock'], ['rr'], ],
     isjoin => '0',
     label => [
+      'rr',
       'ipblock',
-      'rr'
+      'ptrdname'
     ],
     primary_key => 'id',
     unique => [
       [
-        'rr',
+        'ptrdname',
         'ipblock'
       ]
     ],
     views => {
       all => [
-        'ipblock',
         'rr',
-        '',
+        'ipblock',
+        'ptrdname',
         'ttl'
       ],
       brief => [
+        'rr',
         'ipblock',
-        'rr'
+        'ptrdname'
       ]
     }
   },
@@ -5686,47 +5788,58 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
+      name => {
+        default => '',
+        description => 'The domain this SRV record refers to.',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'srv_records',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Name',
+        type => 'integer'
+      },
       port => {
         default => '',
-        description => '',
+        description => 'The port on this target host of this service.  The range is 0-65535',
         length => '',
-        nullable => 1,
+        nullable => 0,
         tag => 'Port',
         type => 'integer'
       },
       priority => {
-        default => '',
-        description => '',
+        default => '0',
+        description => 'The priority of this target host.  A client MUST attempt to contact the target host with the lowest-numbered priority it can reach; target hosts with the same priority SHOULD be tried in an order defined by the weight field.  The range is 0-65535',
         length => '',
-        nullable => 1,
+        nullable => 0,
         tag => 'Priority',
         type => 'integer'
       },
-      rr => {
+      proto => {
         default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'srvrecords',
-          table => 'RR'
-        },
+        description => 'The symbolic name of the desired protocol, with an underscore (_) prepended to prevent collisions with DNS labels that occur in nature. _TCP and _UDP are at present the most useful values for this field',
+        length => '32',
         nullable => 0,
-        tag => 'Resource Record',
-        type => 'integer'
+        tag => 'Protocol',
+        type => 'varchar'
+      },
+      service => {
+        default => '',
+        description => 'The symbolic name of the desired service, as defined in Assigned Numbers or locally.  An underscore (_) is prepended to the service identifier to avoid collisions with DNS labels that occur in nature.',
+        length => '255',
+        nullable => 0,
+        tag => 'Service',
+        type => 'varchar'
       },
       target => {
         default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Nullify',
-          method => 'srvrecords',
-          table => 'RR'
-        },
+        description => 'The domain name of the target host.  There MUST be one or more address records for this name, the name MUST NOT be an alias (in the sense of RFC 1034 or RFC 2181)',
+        length => '255',
         nullable => 0,
         tag => 'Target',
-        type => 'integer'
+        type => 'varchar'
       },
       ttl => {
         default => '',
@@ -5737,32 +5850,31 @@ $meta = {
         type => 'integer'
       },
       weight => {
-        default => '',
-        description => '',
+        default => '0',
+        description => 'A server selection mechanism.  The weight field specifies a relative weight for entries with the same priority. Larger weights SHOULD be given a proportionately higher probability of being selected. The range of this number is 0-65535',
         length => '',
-        nullable => 1,
+        nullable => 0,
         tag => 'Weight',
         type => 'integer'
       }
     },
-    description => 'DNS SRV Record',
+    description => 'DNS SRV Record (RFC 2782)',
     has_history => 0,
-    index => [],
+    index => [ ['service'], ['proto'], ['name'], ['target'] ],
     isjoin => '0',
     label => [
+      'service',
+      'proto',
+      'name',
       'target',
-      'rr'
     ],
     primary_key => 'id',
-    unique => [
-      [
-        'rr',
-        'target'
-      ]
-    ],
+    unique => [[ ]],
     views => {
       all => [
-        'rr',
+        'service',
+        'proto',
+        'name',
         'ttl',
         'priority',
         'weight',
@@ -5770,8 +5882,10 @@ $meta = {
         'target'
       ],
       brief => [
-        'target',
-        'rr'
+        'service',
+        'proto',
+        'name',
+        'target'
       ]
     }
   },
@@ -5792,7 +5906,7 @@ $meta = {
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'txtrecords',
+          method => 'txt_records',
           table => 'RR'
         },
         nullable => 0,
@@ -5809,20 +5923,16 @@ $meta = {
       },
       txt => {
         default => '',
-        description => '',
+        description => 'One or more character-strings',
         length => '128',
         nullable => 1,
         tag => 'Text',
         type => 'varchar'
       }
     },
-    description => 'DNS TXT Record',
+    description => 'TXT RRs are used to hold descriptive text.  The semantics of the text depends on the domain where it is found.',
     has_history => 0,
-    index => [
-      [
-        'rr'
-      ]
-    ],
+    index => [[ 'rr' ], ['txt']],
     isjoin => '0',
     label => [
       'txt',
@@ -5839,58 +5949,6 @@ $meta = {
       brief => [
         'txt',
         'rr'
-      ]
-    }
-  },
-  RRType => {
-    table_db_name => 'rrtype',
-    columns => {
-      id => {
-        default => '',
-        description => '',
-        length => '',
-        nullable => 0,
-        tag => undef,
-        type => 'integer'
-      },
-      name => {
-        default => '',
-        description => '',
-        length => '64',
-        nullable => 0,
-        tag => 'Name',
-        type => 'varchar'
-      },
-      tablename => {
-        default => '',
-        description => '',
-        length => '64',
-        nullable => 0,
-        tag => 'Table',
-        type => 'varchar'
-      }
-    },
-    description => 'Resource Record Types and their tables',
-    has_history => 0,
-    index => [],
-    isjoin => '0',
-    label => [
-      'name'
-    ],
-    primary_key => 'id',
-    unique => [
-      [
-        'name'
-      ]
-    ],
-    views => {
-      all => [
-        'name',
-        'tablename'
-      ],
-      brief => [
-        'name',
-        'tablename'
       ]
     }
   },
@@ -6941,7 +6999,7 @@ $meta = {
       },
       expire => {
         default => '',
-        description => '',
+        description => 'A 32 bit time value that specifies the upper limit on the time interval that can elapse before the zone is no longer authoritative.',
         length => '',
         nullable => 0,
         tag => 'Expire',
@@ -6963,22 +7021,9 @@ $meta = {
         tag => 'Comments',
         type => 'blob'
       },
-      masterserver => {
-        default => '',
-        description => 'Reference to an IP service.',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'zones',
-          table => 'IpService'
-        },
-        nullable => 0,
-        tag => 'Master Server',
-        type => 'integer'
-      },
       minimum => {
         default => '',
-        description => '',
+        description => 'The unsigned 32 bit minimum TTL field that should be exported with any RR from this zone.',
         length => '',
         nullable => 0,
         tag => 'Minimum',
@@ -6986,7 +7031,15 @@ $meta = {
       },
       mname => {
         default => '',
-        description => '',
+        description => 'The domain-name of the name server that was the original or primary source of data for this zone',
+        length => '128',
+        nullable => 0,
+        tag => 'Server Name',
+        type => 'varchar'
+      },
+      name => {
+        default => '',
+        description => 'The zone or domain name',
         length => '128',
         nullable => 0,
         tag => 'Domain Name',
@@ -6994,7 +7047,7 @@ $meta = {
       },
       refresh => {
         default => '',
-        description => '',
+        description => 'A 32 bit time interval before the zone should be refreshed.',
         length => '',
         nullable => 0,
         tag => 'Refresh',
@@ -7002,23 +7055,15 @@ $meta = {
       },
       retry => {
         default => '',
-        description => '',
+        description => 'A 32 bit time interval that should elapse before a failed refresh should be retried.',
         length => '',
         nullable => 0,
         tag => 'Retry',
         type => 'integer'
       },
-      reverse => {
-        default => '',
-        description => '',
-        length => '',
-        nullable => 0,
-        tag => 'Reverse?',
-        type => 'bool'
-      },
       rname => {
         default => '',
-        description => '',
+        description => 'A <domain-name> which specifies the mailbox of the person responsible for this zone.',
         length => '128',
         nullable => 0,
         tag => 'Mail Box',
@@ -7026,7 +7071,7 @@ $meta = {
       },
       serial => {
         default => '',
-        description => '',
+        description => 'The unsigned 32 bit version number of the original copy of the zone.  Zone transfers preserve this value.  This value wraps and should be compared using sequence space arithmetic.',
         length => '',
         nullable => 0,
         tag => 'Serial',
@@ -7038,16 +7083,17 @@ $meta = {
     index => [],
     isjoin => '0',
     label => [
-      'mname'
+      'name'
     ],
     primary_key => 'id',
     unique => [
       [
-        'mname'
+        'name'
       ]
     ],
     views => {
       all => [
+        'name',
         'mname',
         'rname',
         'serial',
@@ -7057,13 +7103,10 @@ $meta = {
         'minimum',
         'contactlist',
         'active',
-        'reverse',
-        'masterserver',
         'info'
       ],
       brief => [
-        'mname',
-        'masterserver'
+        'name',
       ]
     }
   }

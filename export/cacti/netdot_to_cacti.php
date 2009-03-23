@@ -89,7 +89,7 @@ if (!$netdot_db) {
  }
 
 $q = $netdot_db->Execute("
-                SELECT     rr.name, zone.mname, ipblock.address, site.name, p.name, p.sysobjectid, pt.name, 
+                SELECT     rr.name, zone.name, ipblock.address, site.name, p.name, p.sysobjectid, pt.name, 
                            d.id, d.snmp_managed, d.snmp_polling, d.community, d.snmp_version, e.name, m.name 
                 FROM      rr, zone, producttype pt, device d
                 LEFT JOIN (site) ON (d.site=site.id)
