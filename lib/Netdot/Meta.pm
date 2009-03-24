@@ -304,7 +304,7 @@ sub _get_table_info{
 	$info{name} = $name;
     }elsif ( exists $DERIVED_CLASSES{$name} ){
 	%info = %{ $tables->{$DERIVED_CLASSES{$name}} };
-	$info{name} = $name;
+	$info{name} = $DERIVED_CLASSES{$name};
     }else{
 	# We might have been given the table's db name
 	foreach my $t ( keys %$tables ){
