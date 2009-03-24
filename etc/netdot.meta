@@ -6973,6 +6973,72 @@ $meta = {
       ]
     }
   },
+  ZoneAlias => {
+    table_db_name => 'zonealias',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+      name => {
+        default => '',
+        description => 'The zone or domain name',
+        length => '128',
+        nullable => 0,
+        tag => 'Domain Name',
+        type => 'varchar'
+      },
+      zone => {
+        default => '',
+        description => 'Zone',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'aliases',
+          table => 'Zone'
+        },
+        nullable => 0,
+        tag => 'Zone',
+        type => 'integer'
+      },
+    },
+    description => 'An alias of an existing zone',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'zone',
+        'info'
+      ],
+      brief => [
+        'name',
+        'zone',
+      ]
+    }
+  },
   Zone => {
     table_db_name => 'zone',
     columns => {
@@ -7004,6 +7070,14 @@ $meta = {
         nullable => 0,
         tag => 'Expire',
         type => 'integer'
+      },
+      export_file => {
+        default => '',
+        description => 'Path and file name to export records to.',
+        length => '255',
+        nullable => 0,
+        tag => 'Export File',
+        type => 'varchar'
       },
       id => {
         default => '',

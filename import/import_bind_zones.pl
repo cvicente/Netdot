@@ -56,7 +56,7 @@ if ( $self{domain} && $self{zonefile} ){
 }elsif ( $self{dir} && $self{config} ){
 
     open(FILE, $self{config}) or die "Cannot open $self{config}: $!\n";
-    my %zones;
+    my (%zones, %files);
     my ($zone, $file);
     
     my @lines = <FILE>;
@@ -69,7 +69,10 @@ if ( $self{domain} && $self{zonefile} ){
 	if ( $block =~ /type\s+master/ ){
 	    if ( $block =~ /file\s*"(.+)"/ ){
 		$file = $1;
-		$zones{$zone} = $file;
+		if ( !exists $files{$file} ){
+		    $zones{$zone} = $file;
+		}
+		push @{$files{$file}}, $zone;
 	    }
 	}
     }
@@ -77,6 +80,23 @@ if ( $self{domain} && $self{zonefile} ){
 	my $file = $zones{$zone};
 	&import_zone("$self{dir}/$file", $zone);
     }
+
+    my %aliases;
+    foreach my $file ( %files ){
+	if ( scalar @{$files{$file}} > 1 ){
+	    my $main_zone = shift @$files{$file};
+	    $zones{$main_zone} || die "$main_zone not found in hash\n";
+	    foreach my $alias ( @{$files{$file}} ){
+		&debug("Adding zone $alias as alias of $main_zone");
+		if ( my $zone = Netdot::Model::Zone->search(name=>$main_zone)->first ){
+		    Netdot::Model::ZoneAlias->insert({name=>$alias, zone=>$zone});
+		}else{
+		    warn "Zone $main_zone not found in DB!.  Can't create alias $alias.\n";
+		}
+	    }
+    	}
+    }
+    
 
 }else{
     die $usage;
