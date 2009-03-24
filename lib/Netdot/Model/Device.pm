@@ -427,7 +427,7 @@ sub assign_name {
     # Make sure name has an associated IP and A record
     if ( $ip ){
 	my $ipb = Ipblock->search(address=>$ip)->first ||
-	    Ipblock->insert({address=>$ip});
+	    Ipblock->insert({address=>$ip, status=>'Static'});
 	my $rraddr = RRADDR->find_or_create({ipblock=>$ipb, rr=>$rr});
     }
     return $rr;
@@ -1679,6 +1679,7 @@ sub get_arp {
 
     if ( $oid && exists $OID2CLASSMAP{$oid} ){
 	# Reconsacrate
+	$logger->debug("$host: $oid matches class: $OID2CLASSMAP{$oid}"); 
 	bless $self, $OID2CLASSMAP{$oid};
 	$cache = $self->get_arp();
     }else{
