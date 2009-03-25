@@ -590,7 +590,8 @@ sub update_ip {
 				      status  => "Static", interface  => $self});
 	};
 	if ( my $e = $@ ){
-	    $logger->debug(sub{"$label: $e"});
+	    $logger->warn(sprintf("%s: Could not insert IP %s: %s", 
+				   $label, $address, $e));
 	    return;
 	}else{
 	    $logger->info(sprintf("%s: Inserted new IP %s", $label, $ipobj->address));

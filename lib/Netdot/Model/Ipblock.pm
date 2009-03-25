@@ -330,8 +330,7 @@ sub is_loopback{
 
     my $ip;
     my $str;
-    if ( !($ip = NetAddr::IP->new($address, $prefix)) ||
-	 $ip->numeric == 0 ){
+    if ( !($ip = NetAddr::IP->new($address, $prefix))){
 	$str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
 	$class->throw_user("Invalid IP: $str");
     }

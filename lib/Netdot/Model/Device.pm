@@ -6,7 +6,6 @@ use strict;
 use SNMP::Info;
 use Netdot::Util::DNS;
 use Parallel::ForkManager;
-use Netdot::Model::Device::CiscoFW;
 
 # Timeout seconds for SNMP queries 
 # (different from SNMP connections)
@@ -18,7 +17,6 @@ $SIG{ALRM} = sub{ die "timeout" };
 # Some regular expressions
 my $IPV4        = Netdot->get_ipv4_regex();
 my $IPV6        = Netdot->get_ipv6_regex();
-my $AIRESPACEIF = '(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\.\d';
 
 # Other fixed variables
 my $MAXPROCS    = Netdot->config->get('SNMP_MAX_PROCS');
@@ -599,6 +597,8 @@ sub get_snmp_info {
 	$sinfo = $self->_get_snmp_session(%sess_args);
     }
 
+    $dev{_sclass} = $sinfo->class();
+
     # Get both name and IP for better error reporting
     my ($ip, $name)   = $dns->resolve_any($args{host});
     $dev{snmp_target} = $ip if defined $ip;
@@ -775,13 +775,6 @@ sub get_snmp_info {
 	$dev{type} |= "Unknown";
     }
 
-    if ( $sinfo->class =~ /Airespace/ ){
-	$dev{type} = 'Wireless Controller';
-	$dev{airespace} = {};
-	# Fetch Airespace SNMP info
-	$self->_get_airespace_snmp($sinfo, \%hashes);
-    }
-
     # Set some defaults specific to device types
     if ( $dev{ipforwarding} ){
 	$dev{bgplocalas}  =  $sinfo->bgp_local_as();
@@ -825,7 +818,7 @@ sub get_snmp_info {
     ################################################################
     # Modules
 
-    if ( $self->config->get('GET_DEVICE_MODULE_INFO') && !defined $dev{airespace} ){
+    if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
 	# DeviceModule field name to SNMP::Info method conversion table
 	my %MFIELDS = ( name         => 'e_name',    type         => 'e_type',
 			contained_in => 'e_parent',  class        => 'e_class',    
@@ -910,8 +903,10 @@ sub get_snmp_info {
 	#
 	# IP addresses and masks 
 	#
-	# Ignore IP addresses from Interfaces that are 'admin down'
-	if ( $dev{interface}{$iid}{admin_status} eq 'up' ){
+	if ( defined $dev{interface}{$iid}{admin_status} &&
+	     $dev{interface}{$iid}{admin_status} eq 'down' ){
+	    # Ignore IP addresses in this case
+	}else{
 	    foreach my $ip ( keys %{ $hashes{'ip_index'} } ){
 		if ( $hashes{'ip_index'}->{$ip} eq $iid ){
 		    $dev{interface}{$iid}{ips}{$ip}{address} = $ip;
@@ -922,27 +917,6 @@ sub get_snmp_info {
 	    }
 	}
   
-	# Airespace Interfaces that represent thin APs
-	if ( exists $dev{airespace} ){
-    
-	    # i_index value is different from iid in this case
-	    my $ifindex = $hashes{'i_index'}->{$iid};
-	    
-	    if ( $ifindex =~ /$AIRESPACEIF/ ){
-		my $ifname = $hashes{'i_name'}->{$iid};         # this has the name of the AP
-		$dev{interface}{$iid}{name}        = $ifindex;  
-		$dev{interface}{$iid}{description} = $ifname;
-
-		# Notice that we pass a hashref to get the results appended.
-		# This is somewhat confusing but necessary, since each AP might have
-		# more than one interface, which would rewrite the local hash
-		# if we were to just assign the result
-		$self->_get_airespace_ap_info(hashes => \%hashes, 
-					      iid    => $iid , 
-					      info   => \%{$dev{airespace}{$ifname}} );
-	    }
-	}
-
 	################################################################
 	# Vlan info
 	# 
@@ -1678,7 +1652,7 @@ sub get_arp {
     my $arp_count = 0;
 
     if ( $oid && exists $OID2CLASSMAP{$oid} ){
-	# Reconsacrate
+	# Rebless
 	$logger->debug("$host: $oid matches class: $OID2CLASSMAP{$oid}"); 
 	bless $self, $OID2CLASSMAP{$oid};
 	$cache = $self->get_arp();
@@ -2107,6 +2081,7 @@ sub update_bgp_peering {
     my $device = $device->snmp_update(do_info=>1, do_fwt=>1);
 
 =cut
+
 sub snmp_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('snmp_update');
@@ -2133,11 +2108,18 @@ sub snmp_update {
 	my $info = $argv{info} || 
 	    $class->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
 									  bgp_peers => $argv{bgp_peers}) });
-	    
+
+	if ( defined $info->{_sclass} && $info->{_sclass} =~ /Airespace/ ){
+	    my $newclass = 'Netdot::Model::Device::Airespace';
+	    $logger->debug("$host: reblessing as $newclass"); 
+	    bless $self, $newclass;
+	}
+	
 	if ( $atomic && !$argv{pretend} ){
 	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets  => $argv{add_subnets},
 									  subs_inherit => $argv{subs_inherit},
 									  bgp_peers    => $argv{bgp_peers},
+									  session      => $sinfo,
 									  info         => $info,
 						    ) } );
 	}else{
@@ -2145,6 +2127,7 @@ sub snmp_update {
 			       subs_inherit => $argv{subs_inherit},
 			       bgp_peers    => $argv{bgp_peers},
 			       pretend      => $argv{pretend},
+			       session      => $sinfo,
 			       info         => $info,
 		);
 	}
@@ -2167,6 +2150,7 @@ sub snmp_update {
 	}
     }
 }
+
 
 ############################################################################
 =head2 info_update - Update Device in Database using SNMP info
@@ -2201,9 +2185,6 @@ sub info_update {
     
     my $class = ref $self;
     my $start = time;
-
-    $argv{bgp_peers} = defined($argv{bgp_peers}) ? 
-	$argv{bgp_peers} : $self->config->get('ADD_BGP_PEERS');
 
     # Show full name in output
     my $host = $self->fqdn;
@@ -2253,38 +2234,16 @@ sub info_update {
     # Data that will be passed to the update method
     my %devtmp;
 
-    # Assign Base MAC
-    if ( $info->{physaddr} && (my $address = PhysAddr->validate($info->{physaddr})) ) {
-	# Look it up
-	my $mac;
-	if ( $mac = PhysAddr->search(address=>$address)->first ){
-	    # The address exists
-	    # (may have been discovered in fw tables/arp cache)
-	    $mac->update({static=>1});
-	    $logger->debug(sub{"$host: Using existing $address as base bridge address"});
-	    $devtmp{physaddr} = $mac->id;
-	}else{
-	    # address is new.  Add it
-	    eval {
-		$mac = PhysAddr->insert({address=>$address, static=>1});
-	    };
-	    if ( my $e = $@ ){
-		$logger->debug(sprintf("%s: Could not insert base MAC: %s: %s",
-				       $host, $address, $e));
-	    }else{
-		$logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
-		$devtmp{physaddr} = $mac->id;
-	    }
-	}
-    }else{
-	$logger->debug(sub{"$host did not return base MAC"});
-    }
+    ##############################################################
+    $devtmp{physaddr} = $self->_assign_base_mac($info);
 
+    ##############################################################
     # Serial Number
     unless ( $devtmp{serialnumber} = $info->{serialnumber} ){
     	$logger->debug(sub{"$host did not return serial number" });
     }
     
+    ##############################################################
     # Fill in some basic device info
     foreach my $field ( qw( community snmp_version layers ipforwarding sysname 
                             sysdescription syslocation os collect_arp collect_fwt ) ){
@@ -2292,440 +2251,40 @@ sub info_update {
     }
     
     ##############################################################
-    # Assign the snmp_target address if it's not there yet
-    #
-    if ( $self->snmp_managed && (!defined($self->snmp_target) || int($self->snmp_target) == 0) 
-	 && defined($info->{snmp_target}) ){
-	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first;
-	unless ( $ipb ){
-	    eval {
-		$ipb = Ipblock->insert({address=>$info->{snmp_target}, status=>'Static'});
-	    };
-	    if ( my $e = $@ ){
-		$logger->warn("Device::info_update: $host: Could not insert snmp_target address: ". 
-			      $info->{snmp_target} .": ", $e);
-	    }
-	}
-	if ( $ipb ){
-	    $devtmp{snmp_target} = $ipb;
-	    $logger->info(sprintf("%s: SNMP target address set to %s", 
-				  $host, $ipb->address));
-	}
-    }
+    $devtmp{snmp_target} = $self->_assign_snmp_target($info);
 
-    # Assign Product
-    my $name = $info->{model} || $info->{productname};
-    my %args;
-    if ( defined $name ){
-	$args{name}        = $name;
-	$args{description} = $name;
-    }
-    $args{sysobjectid}   = $info->{sysobjectid}  if defined $info->{sysobjectid};
-    $args{type}          = $info->{type}         if defined $info->{type};
-    $args{manufacturer}  = $info->{manufacturer} if defined $info->{manufacturer}; 
-    $args{hostname}      = $host;
+    ##############################################################
+    $devtmp{product} = $self->_assign_product($info);
     
-    $devtmp{product} = Product->find_or_create(%args);
-    
-    if ( $self->monitor_config && (!$self->monitor_config_group || $self->monitor_config_group eq "") ){
-	# Assign monitor_config_group
-	my $monitor_config_map = $self->config->get('DEV_MONITOR_CONFIG_GROUP_MAP') || {};
-	my $config_group;
-	unless ( $devtmp{monitor_config_group} ){
-	    if ( my $type = $info->{type} ){
-		if ( exists $monitor_config_map->{$type} ){
-		    $devtmp{monitor_config_group} = $monitor_config_map->{$type};
-		}
-	    }
-	}
-    }
+    ##############################################################
+    $devtmp{monitor_config_group} = $self->_assign_monitor_config_group($info);
 
-    # Set Local BGP info
-    if( defined $info->{bgplocalas} ){
-	$logger->debug(sub{ sprintf("%s: BGP Local AS is %s", $host, $info->{bgplocalas}) });
-	$devtmp{bgplocalas} = $info->{bgplocalas};
-    }
-    if( defined $info->{bgpid} ){
-	$logger->debug(sub{ sprintf("%s: BGP ID is %s", $host, $info->{bgpid})});
-	$devtmp{bgpid} = $info->{bgpid};
-    }
+    ##############################################################
+    # Spanning Tree
+    $self->_update_stp_info($info, \%devtmp);
     
-    # Global Spanning Tree Info
-    $devtmp{stp_type}    = $info->{stp_type};
-    $devtmp{stp_enabled} = 1 if ( defined $info->{stp_type} && $info->{stp_type} ne 'unknown' );
-    # MST-specific
-    foreach my $field ( qw( stp_mst_region stp_mst_rev stp_mst_digest ) ){
-	if ( exists $info->{$field} ){
-	    $devtmp{$field} = $info->{$field};
-	    # Notify if these have changed
-	    if ( $field eq 'stp_mst_region' || $field eq 'stp_mst_digest' ){
-		if ( defined($self->$field) && ($self->$field ne $devtmp{$field}) ){
-		    $logger->warn(sprintf("%s: $field has changed: %s -> %s", 
-					  $host, $self->$field, $devtmp{$field}));
-		}
-	    }
-	}
-    }
-    # Deal with STP instances
-    if ( $devtmp{stp_enabled} ){
-	$logger->debug(sub{ sprintf("%s: STP is enabled", $host)});
-	$logger->debug(sub{ sprintf("%s: STP type is: %s", $host, $devtmp{stp_type})});
-	
-	# Get all current instances, hash by number
-	my %old_instances;
-	map { $old_instances{$_->number} = $_ } $self->stp_instances();
-
-	# Go over all STP instances
-	foreach my $instn ( keys %{$info->{stp_instances}} ){
-		my $stpinst;
-		my %args = (device=>$self->id, number=>$instn);
-		# Create if it does not exist
-		unless ( $stpinst = STPInstance->search(%args)->first ){
-		    $stpinst = STPInstance->insert(\%args);
-		    $logger->info("$host: STP Instance $instn created");
-		}
-		# update arguments for this instance
-		my %uargs;
-		if ( my $root_bridge = $info->{stp_instances}->{$instn}->{stp_root} ){
-		    if ( defined $stpinst->root_bridge && ($root_bridge ne $stpinst->root_bridge) ){
-			$logger->warn(sprintf("%s: STP instance %s: Root Bridge changed: %s -> %s", 
-					      $host, $stpinst->number, $stpinst->root_bridge, $root_bridge));
-		    }
-		    $uargs{root_bridge} = $root_bridge;
-		}else{
-		    $logger->debug(sub{ "$host: STP Designated Root not defined for instance $instn"});
-		}
-		
-		if ( my $root_p = $info->{stp_instances}->{$instn}->{stp_root_port} ){
-		    if ( defined $stpinst->root_port && $stpinst->root_port != 0 &&
-			 ( $root_p != $stpinst->root_port) ){
-			# Do not notify if this is the first time it's set
-			$logger->warn(sprintf("%s: STP instance %s: Root Port changed: %s -> %s", 
-					      $host, $stpinst->number, $stpinst->root_port, $root_p));
-		    }
-		    $uargs{root_port} = $root_p;
-		}else{
-		    $logger->debug(sub{"$host: STP Root Port not defined for instance $instn"});
-		}
-		# Finally, just get the priority
-		$uargs{bridge_priority} = $info->{stp_instances}->{$instn}->{stp_priority};
-		if ( defined $stpinst->bridge_priority && $stpinst->bridge_priority ne $uargs{bridge_priority} ){
-		    $logger->warn(sprintf("%s: STP instance %s: Bridge Priority Changed: %s -> %s", 
-					  $host, $stpinst->number, $stpinst->bridge_priority, $uargs{bridge_priority}));
-		}
-
-		# Update the instance
-		$stpinst->update(\%uargs);
-		
-		# Remove this one from the old list
-		delete $old_instances{$instn};
-	}
-	# Remove any non-existing STP instances
-	foreach my $i ( keys %old_instances ){
-	    $logger->info("$host: Removing STP instance $i");
-	    $old_instances{$i}->delete;
-	}
-    }else{
-	if ( my @instances = $self->stp_instances() ){
-	    $logger->debug(sub{"$host: STP appears disabled.  Removing all existing STP instances"});
-	    foreach my $i ( @instances ){
-		$i->delete();
-	    }
-	}
-    }
-    
+    ##############################################################
     # Update Device object
     $self->update( \%devtmp );
     
-    ##############################################
-    # Add/Update Modules
-    #
-    # Get old modules (if any)
-    my %oldmodules;
-    map { $oldmodules{$_->number} = $_ } $self->modules();
-
-    foreach my $number ( sort { $a <=> $b } keys %{ $info->{module} } ){
-	my %args = %{$info->{module}->{$number}};
-	$args{device} = $self->id;
-	my $name = $args{name} || $args{description};
-	# See if it exists
-	my $module;
-	if ( exists $oldmodules{$number} ){
-	    $module = $oldmodules{$number};
-	    # Update
-	    $module->update(\%args);
-	}else{
-	    # Create new object
-	    $logger->info("$host: New module $number ($name) found. Inserting.");
-	    $module = DeviceModule->insert(\%args);
-	}
-	delete $oldmodules{$number};
-    }
-    # Remove modules that no longer exist
-    foreach my $number ( keys %oldmodules ){
-	my $module = $oldmodules{$number};
-	$logger->info("$host:  Module no longer exists: $number.  Removing.");
-	$module->delete();
-    }
+    ##############################################################
+    $self->_update_modules($info);
 
     ##############################################
-    # Add/Update Interfaces
-    #
-    # Do not update interfaces for these devices
-    # (specified in config file)
-    #
-    my %IGNORED;
-    map { $IGNORED{$_}++ } @{ $self->config->get('IGNOREPORTS') };
-    if ( defined $info->{sysobjectid} && exists $IGNORED{$info->{sysobjectid}} ){
-	$logger->debug(sub{"Device::info_update: $host ports ignored per configuration option (IGNOREPORTS)"});
-    }else{
-	
-	# How to deal with new subnets
-	# First grab defaults from config file
-	my $add_subnets_default  = $self->config->get('ADDSUBNETS');
-	my $subs_inherit_default = $self->config->get('SUBNET_INHERIT_DEV_INFO');
-	
-	# Then check what was passed
-	my $add_subnets   = ( defined($info->{type}) && $info->{ipforwarding} && defined($argv{add_subnets}) ) ? 
-	    $argv{add_subnets} : $add_subnets_default;
-	my $subs_inherit = ( $add_subnets && defined($argv{subs_inherit}) ) ? 
-	    $argv{subs_inherit} : $subs_inherit_default;
-	
- 	# Get old IPs (if any)
- 	my %oldips;
-	if ( my $devips = $self->get_ips ){
-	    map { $oldips{$_->address} = $_ } @{ $devips };
-	}
-	
-	# Flag for determining if IP info has changed
-	my $ipv4_changed = 0;
-	my $ipv6_changed = 0;
-	
-	##############################################
-	# Try to solve the problem with devices that change ifIndex
-	# We use the name as the most stable key to identify interfaces
-	# If names are not unique, use number
-	
- 	# Get old Interfaces (if any).
- 	my ( %oldifs, %oldifsbynumber, %oldifsbyname );
-
-        # Index by object id. 	
-	map { $oldifs{$_->id} = $_ } $self->interfaces();
-	
-	# Index by interface name (ifDescr) and number (ifIndex)
-	foreach my $id ( keys %oldifs ){
-	    $oldifsbynumber{$oldifs{$id}->number} = $oldifs{$id}
-	    if ( defined($oldifs{$id}->number) );
-	    
-	    $oldifsbyname{$oldifs{$id}->name} = $oldifs{$id}
-	    if ( defined($oldifs{$id}->name) );
-	}
-	
-	# Index new interfaces by name to check if any names are repeated
-	my $ifkey = 'name';
-	my %newifsbyname;
-	foreach my $int ( keys %{$info->{interface}} ){
-	    if ( defined $info->{interface}->{$int}->{name} ){
-		my $n = $info->{interface}->{$int}->{name};
-		$newifsbyname{$n}++;
-		if ( $newifsbyname{$n} > 1 ){
-		    $ifkey = 'number';
-		}
-	    }
-	}
-	foreach my $newif ( sort keys %{ $info->{interface} } ) {
-	    my $newname   = $info->{interface}->{$newif}->{name};
-	    my $newnumber = $info->{interface}->{$newif}->{number};
-	    my $oldif;
-	    if ( $ifkey eq 'name' ){
-		if ( defined $newname && ($oldif = $oldifsbyname{$newname}) ){
-		    # Found one with the same name
-		    $logger->debug(sub{ sprintf("%s: Interface with name %s found", 
-						$host, $oldif->name)});
-		    
-		    if ( $oldif->number ne $newnumber ){
-			# New and old numbers do not match for this name
-			$logger->info(sprintf("%s: Interface %s had number: %s, now has: %s", 
-					      $host, $oldif->name, $oldif->number, $newnumber));
-		    }
-		}elsif ( exists $oldifsbynumber{$newnumber} ){
-		    # Name not found, but found one with the same number
-		    $oldif = $oldifsbynumber{$newnumber};
-		    $logger->debug(sub{ sprintf("%s: Interface with number %s found", 
-						$host, $oldif->number)});
-		}
-	    }else{
-		# Using number as unique reference
-		if ( exists $oldifsbynumber{$newnumber} ){
-		    $oldif = $oldifsbynumber{$newnumber};
-		    $logger->debug(sub{ sprintf("%s: Interface with number %s found", 
-						$host, $oldif->number)});
-		}
-	    }	    
-	    my $if;
-	    if ( $oldif ){
-		# Remove the new interface's ip addresses from list to delete
-		foreach my $newaddr ( keys %{$info->{interface}->{$newif}->{ips}} ){
-		    delete $oldips{$newaddr} if exists $oldips{$newaddr};
-		}
-		$if = $oldif;
-	    }else{
-		# Interface does not exist.  Add it.
-		my $ifname = $info->{interface}->{$newif}->{name} || $newnumber;
-		my %args = (device      => $self, 
-			    number      => $newif, 
-			    name        => $ifname,
-			    doc_status  => 'snmp',
-		    );
-		# Make sure we can write to the description field when
-		# device is airespace - we store the AP name as the int description
-		# Also, if device is a router
-		$args{overwrite_descr} = 1 if ( $info->{airespace} || $info->{ipforwarding} );
-		
-		$if = Interface->insert(\%args);
-		
-		$logger->info(sprintf("%s: New Interface Inserted", $if->get_label));
-		
-	    }
-	    
-	    $self->throw_fatal("Model::Device::info_update: $host: Could not find or create interface: $newnumber")
-		unless $if;
-	    
-	    # Now update it with snmp info
-	    $if->snmp_update(info          => $info->{interface}->{$newif},
-			     add_subnets   => $add_subnets,
-			     subs_inherit  => $subs_inherit,
-			     ipv4_changed  => \$ipv4_changed,
-			     ipv6_changed  => \$ipv6_changed,
-			     stp_instances => $info->{stp_instances},
-		);
-	    
-	    # Remove this interface from list to delete
-	    delete $oldifs{$if->id} if exists $oldifs{$if->id};  
-	    
-	} #end foreach my newif
-	
-	##############################################
-	# Mark each interface that no longer exists
-	#
-	foreach my $id ( keys %oldifs ) {
-	    my $iface = $oldifs{$id};
-	    if ( $iface->doc_status eq "snmp" ){
-		$logger->info(sprintf("%s: Interface %s no longer exists.  Marking as removed.", 
-				      $host, $iface->get_label));
-		$iface->update({doc_status=>'removed'});
-		$iface->remove_neighbor() if $iface->neighbor();
-	    }
-	}
-	
-	##############################################
-	# remove ip addresses that no longer exist
-	while ( my ($address, $obj) = each %oldips ){
-	    # Check that it still exists 
-	    # (could have been deleted if its interface was deleted)
-	    next unless ( defined $obj );
-	    next if ( ref($obj) =~ /deleted/i );
-	    
-	    $logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
-				  $host, $obj->address));
-	    $obj->delete(no_update_tree=>1);
-	    $ipv4_changed = 1;
-	}
-	
-	# Rebuild IP space tree
-	# Notice we do this at the end instead of per IP to speed things up
-	Ipblock->build_tree(4) if $ipv4_changed;
-	Ipblock->build_tree(6) if $ipv6_changed;
-    }
-
+    $self->_update_interfaces(info            => $info, 
+			      add_subnets     => $argv{add_subnets}, 
+			      subs_inherit    => $argv{subs_inherit},
+			      overwrite_descr => ($info->{ipforwarding})? 1 : 0,
+	);
+    
     ###############################################################
-    # Add/Update/Delete BGP Peerings
+    # Update BGP info
     #
-   if ( $argv{bgp_peers} ){
-	
-	# Get current bgp peerings
-	#
-	my %oldpeerings;
-	map { $oldpeerings{ $_->id } = $_ } $self->bgppeers();
-	
-	# Update BGP Peerings
-	#
-	foreach my $peer ( keys %{$info->{bgppeer}} ){
-	    $self->update_bgp_peering(peer        => $info->{bgppeer}->{$peer},
-				      oldpeerings => \%oldpeerings);
-	}
-	# remove each BGP Peering that no longer exists
-	#
-	foreach my $peerid ( keys %oldpeerings ) {
-	    my $p = $oldpeerings{$peerid};
-	    $logger->info(sprintf("%s: BGP Peering with %s (%s) no longer exists.  Removing.", 
-				   $host, $p->entity->name, $p->bgppeeraddr));
-	    $p->delete();
-	}
-    }
+    my $update_bgp = defined($argv{bgp_peers}) ? 
+	$argv{bgp_peers} : $self->config->get('ADD_BGP_PEERS');
     
-    ##############################################################
-    # Update A records for each IP address
-    #
-    # Get addresses that the main Device name resolves to
-    my @hostnameips;
-    if ( @hostnameips = $dns->resolve_name($host) ){
-	$logger->debug(sub{ sprintf("Device::info_update: %s resolves to: %s",
-				    $host, (join ", ", @hostnameips))});
-    }
-    
-    foreach my $ip ( @{ $self->get_ips() } ){
-	$ip->update_a_records(\@hostnameips);
-    }
-    
-    ##############################################################
-    # Airespace APs
-    #
-    if ( exists $info->{airespace} ){
-
-	my %oldaps;
-
-	# Get all the APs we already had
-	foreach my $int ( $self->interfaces ){
-	    if ( $int->name =~ /$AIRESPACEIF/ ){
-		my $apmac = $int->number;
-		$apmac =~ s/^(.*)\.\d$/$1/;
-		$oldaps{$apmac}++;
-	    }
-	}
-		
-	# Insert or update the APs returned
-	# When creating, we turn off snmp_managed because
-	# the APs don't actually do SNMP
-	# We also inherit some values from the Controller
-	$logger->debug("Creating any new Access Points");
-	foreach my $ap ( keys %{ $info->{airespace} } ){
-	    my $dev;
-	    my @contacts = map { $_->contactlist } $self->contacts;
-	    $dev = $class->discover(name          => $ap,
-				    snmp_managed  => 0,
-				    canautoupdate => 0,
-				    owner         => $self->owner,
-				    used_by       => $self->used_by,
-				    contacts      => @contacts,
-				    info          => $info->{airespace}->{$ap},
-		);
-	    my $apmac = $info->{airespace}->{$ap}->{physaddr};
-	    delete $oldaps{$apmac};
-	}
-
-	# Notify about the APs no longer associated with this controller
-	# Note: If the AP was removed from the network, it will have
-	# to be removed from Netdot manually.  This avoids the unwanted case of
-	# removing APs that change controllers, thus losing their manually-entered information
-	# (location, links, etc)
-	foreach my $mac ( keys %oldaps ){
-	    if ( my $dev = Device->search(physaddr=>$mac)->first ){
-		$logger->warn(sprintf("AP %s (%s) no longer associated with controller: %s", 
-				      $mac, $dev->short_name, $host));
-	    }
-	}
-	
+    if ( $update_bgp ){
+	$self->_update_bgp_info($info, \%devtmp);
     }
 
     my $end = time;
@@ -3572,7 +3131,7 @@ sub _get_snmp_session {
     $munge->{'stp_root'}     = sub{ return $self->_stp2mac(@_) };
     $munge->{'stp_p_bridge'} = sub{ return $self->_stp2mac(@_) };
     foreach my $m ('i_mac', 'fw_mac', 'mac', 'b_mac', 'at_paddr', 'rptrAddrTrackNewLastSrcAddress',
-		   'airespace_ap_mac', 'airespace_bl_mac', 'airespace_if_mac', 'stp_p_port'){
+		   'stp_p_port'){
 	$munge->{$m} = sub{ return $self->_oct2hex(@_) };
     }
     return $sinfo;
@@ -4561,116 +4120,6 @@ sub _update_ips_from_arp_cache {
     return 1;
 }
 
-#####################################################################
-# Add more specific info to the SNMP hashes
-#
-sub _get_airespace_snmp {
-    my ($self, $sinfo, $hashes) = @_;
-    
-    my @METHODS = ('airespace_apif_slot', 'airespace_ap_model', 'airespace_ap_mac', 'bsnAPEthernetMacAddress',
-		   'airespace_ap_ip', 'bsnAPNetmask', 'airespace_apif_type', 'bsnAPIOSVersion',
-		   'airespace_apif', 'airespace_apif_admin', 'airespace_ap_serial', 'airespace_ap_name',
-		   'airespace_ap_loc'
-	);
-    
-    foreach my $method ( @METHODS ){
-	$hashes->{$method} = $sinfo->$method;
-    }
-    
-    return 1;
-}
-
-#####################################################################
-# Given Airespace interfaces info, create a hash with the necessary
-# info to create a Device for each AP
-#
-sub _get_airespace_ap_info {
-    my ($self, %argv) = @_;
-
-    my ($hashes, $iid, $info) = @argv{"hashes", "iid", "info"};
-    
-    my $idx = $iid;
-    $idx =~ s/\.\d+$//;
-    
-    if ( defined(my $model = $hashes->{'airespace_ap_model'}->{$idx}) ){
-	$info->{model} = $model;
-    }
-    if ( defined(my $os = $hashes->{'bsnAPIOSVersion'}->{$idx}) ){
-	$info->{os} = $os;
-    }
-    if ( defined(my $serial = $hashes->{'airespace_ap_serial'}->{$idx}) ){
-	$info->{serialnumber} = $serial;
-    }
-    if ( defined(my $sysname = $hashes->{'airespace_ap_name'}->{$idx}) ){
-	$info->{sysname} = $sysname;
-    }
-
-    $info->{type}         = "Access Point";
-    $info->{manufacturer} = "Cisco";
-
-    # AP Ethernet MAC
-    if ( my $basemac = $hashes->{'airespace_ap_mac'}->{$idx} ){
-	my $validmac = PhysAddr->validate($basemac);
-	if ( $validmac ){
-	    $info->{physaddr} = $validmac;
-	}else{
-	    $logger->debug(sub{"Device::get_airespace_if_info: iid $iid: Invalid MAC: $basemac" });
-	}
-    } 
-
-    # Interfaces in this AP
-    if ( defined( my $slot = $hashes->{'airespace_apif_slot'}->{$iid} ) ){
-
-	my $radio = $hashes->{'airespace_apif_type'}->{$iid};
-	if ( $radio eq "dot11b" ){
-	    $radio = "802.11b/g";
-	}elsif ( $radio eq "dot11a" ){
-	    $radio = "802.11a";
-	}elsif ( $radio eq "uwb" ){
-	    $radio = "uwb";
-	}
-	my $name      = $radio;
-	my $apifindex = $slot + 1;
-	$info->{interface}{$apifindex}{name}   = $name;
-	$info->{interface}{$apifindex}{number} = $apifindex;
-	if ( defined(my $oper = $hashes->{'airespace_apif'}->{$iid}) ){
-	    $info->{interface}{$apifindex}{oper_status} = $oper;
-	}
-	if ( defined(my $admin = $hashes->{'airespace_apif_admin'}->{$iid}) ){
-	    $info->{interface}{$apifindex}{admin_status} = $admin;
-	}
-    }
-
-    # Add an Ethernet interface
-    my $ethidx = 3;
-    $info->{interface}{$ethidx}{name}   = 'FastEthernet0';
-    $info->{interface}{$ethidx}{number} = $ethidx;
-    
-    if ( my $mac = $hashes->{'bsnAPEthernetMacAddress'}->{$idx}){
-	$mac = $self->_oct2hex($mac);
-	$info->{interface}{$ethidx}{physaddr} = $mac;
-    }
-
-    # Add the Null0 interface
-    my $nullidx = 4;
-    $info->{interface}{$nullidx}{name}   = 'Null0';
-    $info->{interface}{$nullidx}{number} = 4;
-
-    # Add the BVI interface
-    my $bviidx = 5;
-    $info->{interface}{$bviidx}{name}   = 'BVI1';
-    $info->{interface}{$bviidx}{number} = $bviidx;
-
-    # Assign the IP and Netmask to the BVI1 interface
-    if ( my $ip = $hashes->{'airespace_ap_ip'}->{$idx}  ){
-	$info->{interface}{$bviidx}{ips}{$ip}{address} = $ip;
-	if ( my $mask = $hashes->{'bsnAPNetmask'}->{$idx}  ){
-	    $info->{interface}{$bviidx}{ips}{$ip}{mask} = $mask;
-	}
-    }
-    
-    return 1;
-}
 
 #####################################################################
 # Convert octet stream values returned from SNMP into an ASCII HEX string
@@ -4703,6 +4152,523 @@ sub _munge_speed_high {
     my ($self, $v) = @_;
     return $v * 1000000;
 }
+
+##############################################################
+# Assign Base MAC
+#
+# Arguments
+#   snmp info hashref
+# Returns
+#   PhysAddr object
+#
+sub _assign_base_mac {
+    my ($self, $info) = @_;
+    
+    my $host = $self->fqdn;
+    if ( $info->{physaddr} && (my $address = PhysAddr->validate($info->{physaddr})) ) {
+	# Look it up
+	my $mac;
+	if ( $mac = PhysAddr->search(address=>$address)->first ){
+	    # The address exists
+	    # (may have been discovered in fw tables/arp cache)
+	    $mac->update({static=>1});
+	    $logger->debug(sub{"$host: Using existing $address as base bridge address"});
+	    return $mac;
+	}else{
+	    # address is new.  Add it
+	    eval {
+		$mac = PhysAddr->insert({address=>$address, static=>1});
+	    };
+	    if ( my $e = $@ ){
+		$logger->debug(sprintf("%s: Could not insert base MAC: %s: %s",
+				       $host, $address, $e));
+	    }else{
+		$logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
+		return $mac;
+	    }
+	}
+    }else{
+	$logger->debug(sub{"$host did not return base MAC"});
+    }
+}
+
+##############################################################
+# Assign the snmp_target address if it's not there yet
+#
+# Arguments
+#   snmp info hashref
+# Returns
+#   Ipblock object
+#
+sub _assign_snmp_target {
+    my ($self, $info) = @_;
+    my $host = $self->fqdn;
+    if ( $self->snmp_managed && (!defined($self->snmp_target) || int($self->snmp_target) == 0) 
+	 && defined($info->{snmp_target}) ){
+	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first;
+	unless ( $ipb ){
+	    eval {
+		$ipb = Ipblock->insert({address=>$info->{snmp_target}, status=>'Static'});
+	    };
+	    if ( my $e = $@ ){
+		$logger->warn("Device::assign_snmp_target: $host: Could not insert snmp_target address: ". 
+			      $info->{snmp_target} .": ", $e);
+	    }
+	}
+	if ( $ipb ){
+	    $logger->info(sprintf("%s: SNMP target address set to %s", 
+				  $host, $ipb->address));
+	    return $ipb;
+	}
+    }
+}
+
+##############################################################
+# Assign Product
+#
+# Arguments
+#   snmp info hashref
+# Returns
+#   Product object
+#
+sub _assign_product {
+    my ($self, $info) = @_;
+
+    my $host = $self->fqdn;
+
+    my $name = $info->{model} || $info->{productname};
+    my %args;
+    if ( defined $name ){
+	$args{name}        = $name;
+	$args{description} = $name;
+    }
+    $args{sysobjectid}   = $info->{sysobjectid}  if defined $info->{sysobjectid};
+    $args{type}          = $info->{type}         if defined $info->{type};
+    $args{manufacturer}  = $info->{manufacturer} if defined $info->{manufacturer}; 
+    $args{hostname}      = $host;
+    
+    return Product->find_or_create(%args);
+}
+    
+
+##############################################################
+# Assign monitor_config_group
+#
+# Arguments
+#   snmp info hashref
+# Returns
+#   String
+#
+sub _assign_monitor_config_group{
+    my ($self, $info) = @_;
+    if ( $self->monitor_config && (!$self->monitor_config_group || $self->monitor_config_group eq "") ){
+	my $monitor_config_map = $self->config->get('DEV_MONITOR_CONFIG_GROUP_MAP') || {};
+	my $config_group;
+	if ( my $type = $info->{type} ){
+	    if ( exists $monitor_config_map->{$type} ){
+		return $monitor_config_map->{$type};
+	    }
+	}
+    }
+}
+
+
+##############################################################
+# Update Spanning Tree information
+#
+# Arguments
+#   snmp info hashref
+#   Device object arguments hashref
+# Returns
+#   Nothing
+#
+sub _update_stp_info {
+    my ($self, $info, $devtmp) = @_;
+    my $host = $self->fqdn;
+
+    ##############################################################
+    # Global Spanning Tree Info
+    $devtmp->{stp_type}    = $info->{stp_type};
+    $devtmp->{stp_enabled} = 1 if ( defined $info->{stp_type} && $info->{stp_type} ne 'unknown' );
+
+    
+    ##############################################################
+    # Assign MST-specific values
+    foreach my $field ( qw( stp_mst_region stp_mst_rev stp_mst_digest ) ){
+	if ( exists $info->{$field} ){
+	    $devtmp->{$field} = $info->{$field};
+	    # Notify if these have changed
+	    if ( $field eq 'stp_mst_region' || $field eq 'stp_mst_digest' ){
+		if ( defined($self->$field) && ($self->$field ne $devtmp->{$field}) ){
+		    $logger->warn(sprintf("%s: $field has changed: %s -> %s", 
+					  $host, $self->$field, $devtmp->{$field}));
+		}
+	    }
+	}
+    }
+
+    ##############################################################
+    # Deal with STP instances
+    if ( $devtmp->{stp_enabled} ){
+	$logger->debug(sub{ sprintf("%s: STP is enabled", $host)});
+	$logger->debug(sub{ sprintf("%s: STP type is: %s", $host, $devtmp->{stp_type})});
+	
+	# Get all current instances, hash by number
+	my %old_instances;
+	map { $old_instances{$_->number} = $_ } $self->stp_instances();
+
+	# Go over all STP instances
+	foreach my $instn ( keys %{$info->{stp_instances}} ){
+	    my $stpinst;
+	    my %args = (device=>$self->id, number=>$instn);
+	    # Create if it does not exist
+	    unless ( $stpinst = STPInstance->search(%args)->first ){
+		$stpinst = STPInstance->insert(\%args);
+		$logger->info("$host: STP Instance $instn created");
+	    }
+	    # update arguments for this instance
+	    my %uargs;
+	    if ( my $root_bridge = $info->{stp_instances}->{$instn}->{stp_root} ){
+		if ( defined $stpinst->root_bridge && ($root_bridge ne $stpinst->root_bridge) ){
+		    $logger->warn(sprintf("%s: STP instance %s: Root Bridge changed: %s -> %s", 
+					  $host, $stpinst->number, $stpinst->root_bridge, $root_bridge));
+		}
+		$uargs{root_bridge} = $root_bridge;
+	    }else{
+		$logger->debug(sub{ "$host: STP Designated Root not defined for instance $instn"});
+	    }
+	    
+	    if ( my $root_p = $info->{stp_instances}->{$instn}->{stp_root_port} ){
+		if ( defined $stpinst->root_port && $stpinst->root_port != 0 &&
+		     ( $root_p != $stpinst->root_port) ){
+		    # Do not notify if this is the first time it's set
+		    $logger->warn(sprintf("%s: STP instance %s: Root Port changed: %s -> %s", 
+					  $host, $stpinst->number, $stpinst->root_port, $root_p));
+		}
+		$uargs{root_port} = $root_p;
+	    }else{
+		$logger->debug(sub{"$host: STP Root Port not defined for instance $instn"});
+	    }
+	    # Finally, just get the priority
+	    $uargs{bridge_priority} = $info->{stp_instances}->{$instn}->{stp_priority};
+	    if ( defined $stpinst->bridge_priority && $stpinst->bridge_priority ne $uargs{bridge_priority} ){
+		$logger->warn(sprintf("%s: STP instance %s: Bridge Priority Changed: %s -> %s", 
+				      $host, $stpinst->number, $stpinst->bridge_priority, $uargs{bridge_priority}));
+	    }
+	    
+	    # Update the instance
+	    $stpinst->update(\%uargs);
+	    
+	    # Remove this one from the old list
+	    delete $old_instances{$instn};
+	}
+	# Remove any non-existing STP instances
+	foreach my $i ( keys %old_instances ){
+	    $logger->info("$host: Removing STP instance $i");
+	    $old_instances{$i}->delete;
+	}
+    }else{
+	if ( my @instances = $self->stp_instances() ){
+	    $logger->debug(sub{"$host: STP appears disabled.  Removing all existing STP instances"});
+	    foreach my $i ( @instances ){
+		$i->delete();
+	    }
+	}
+    }
+}
+
+
+##############################################
+# Add/Update Modules
+#
+# Arguments
+#   snmp info hashref
+# Returns
+#   Nothing
+#
+#
+sub _update_modules {
+    my ($self, $info) = @_;
+
+    my $host = $self->fqdn;
+
+    # Get old modules (if any)
+    my %oldmodules;
+    map { $oldmodules{$_->number} = $_ } $self->modules();
+
+    foreach my $number ( sort { $a <=> $b } keys %{ $info->{module} } ){
+	my %args = %{$info->{module}->{$number}};
+	$args{device} = $self->id;
+	my $name = $args{name} || $args{description};
+	# See if it exists
+	my $module;
+	if ( exists $oldmodules{$number} ){
+	    $module = $oldmodules{$number};
+	    # Update
+	    $module->update(\%args);
+	}else{
+	    # Create new object
+	    $logger->info("$host: New module $number ($name) found. Inserting.");
+	    $module = DeviceModule->insert(\%args);
+	}
+	delete $oldmodules{$number};
+    }
+    # Remove modules that no longer exist
+    foreach my $number ( keys %oldmodules ){
+	my $module = $oldmodules{$number};
+	$logger->info("$host:  Module no longer exists: $number.  Removing.");
+	$module->delete();
+    }
+}
+
+##############################################
+# Add/Update Interfaces
+#
+# Arguments
+#   Hahref with following keys:
+#      info            - snmp information
+#      add_subnets     - Flag.  Whether to add subnets if layer3 and ipforwarding
+#      subs_inherit    - Flag.  Whether subnets inherit parent info.
+#      overwrite_descr - Flag.  What to set this field to by default.
+# Returns
+#   PhysAddr
+#
+sub _update_interfaces {
+    my ($self, %argv) = @_;
+
+    my $host = $self->fqdn;
+
+    my $info = $argv{info};
+
+    # Do not update interfaces for these devices
+    # (specified in config file)
+    my %IGNORED;
+    map { $IGNORED{$_}++ } @{ $self->config->get('IGNOREPORTS') };
+    if ( defined $info->{sysobjectid} && exists $IGNORED{$info->{sysobjectid}} ){
+	$logger->debug(sub{"Device::info_update: $host ports ignored per configuration option (IGNOREPORTS)"});
+	return;
+    }
+    
+    # How to deal with new subnets
+    # First grab defaults from config file
+    my $add_subnets_default  = $self->config->get('ADDSUBNETS');
+    my $subs_inherit_default = $self->config->get('SUBNET_INHERIT_DEV_INFO');
+    
+    # Then check what was passed
+    my $add_subnets   = ( defined($info->{type}) && $info->{ipforwarding} && defined($argv{add_subnets}) ) ? 
+	$argv{add_subnets} : $add_subnets_default;
+    my $subs_inherit = ( $add_subnets && defined($argv{subs_inherit}) ) ? 
+	$argv{subs_inherit} : $subs_inherit_default;
+    
+    # Get old IPs (if any)
+    my %oldips;
+    if ( my $devips = $self->get_ips ){
+	map { $oldips{$_->address} = $_ } @{ $devips };
+    }
+    
+    # Flag for determining if IP info has changed
+    my $ipv4_changed = 0;
+    my $ipv6_changed = 0;
+    
+    ##############################################
+    # Try to solve the problem with devices that change ifIndex
+    # We use the name as the most stable key to identify interfaces
+    # If names are not unique, use number
+    
+    # Get old Interfaces (if any).
+    my ( %oldifs, %oldifsbynumber, %oldifsbyname );
+
+    # Index by object id. 	
+    map { $oldifs{$_->id} = $_ } $self->interfaces();
+    
+    # Index by interface name (ifDescr) and number (ifIndex)
+    foreach my $id ( keys %oldifs ){
+	$oldifsbynumber{$oldifs{$id}->number} = $oldifs{$id}
+	if ( defined($oldifs{$id}->number) );
+	
+	$oldifsbyname{$oldifs{$id}->name} = $oldifs{$id}
+	if ( defined($oldifs{$id}->name) );
+    }
+    
+    # Index new interfaces by name to check if any names are repeated
+    my $ifkey = 'name';
+    my %newifsbyname;
+    foreach my $int ( keys %{$info->{interface}} ){
+	if ( defined $info->{interface}->{$int}->{name} ){
+	    my $n = $info->{interface}->{$int}->{name};
+	    $newifsbyname{$n}++;
+	    if ( $newifsbyname{$n} > 1 ){
+		$ifkey = 'number';
+	    }
+	}
+    }
+    foreach my $newif ( sort keys %{ $info->{interface} } ) {
+	my $newname   = $info->{interface}->{$newif}->{name};
+	my $newnumber = $info->{interface}->{$newif}->{number};
+	my $oldif;
+	if ( $ifkey eq 'name' ){
+	    if ( defined $newname && ($oldif = $oldifsbyname{$newname}) ){
+		# Found one with the same name
+		$logger->debug(sub{ sprintf("%s: Interface with name %s found", 
+					    $host, $oldif->name)});
+		
+		if ( $oldif->number ne $newnumber ){
+		    # New and old numbers do not match for this name
+		    $logger->info(sprintf("%s: Interface %s had number: %s, now has: %s", 
+					  $host, $oldif->name, $oldif->number, $newnumber));
+		}
+	    }elsif ( exists $oldifsbynumber{$newnumber} ){
+		# Name not found, but found one with the same number
+		$oldif = $oldifsbynumber{$newnumber};
+		$logger->debug(sub{ sprintf("%s: Interface with number %s found", 
+					    $host, $oldif->number)});
+	    }
+	}else{
+	    # Using number as unique reference
+	    if ( exists $oldifsbynumber{$newnumber} ){
+		$oldif = $oldifsbynumber{$newnumber};
+		$logger->debug(sub{ sprintf("%s: Interface with number %s found", 
+					    $host, $oldif->number)});
+	    }
+	}	    
+	my $if;
+	if ( $oldif ){
+	    # Remove the new interface's ip addresses from list to delete
+	    foreach my $newaddr ( keys %{$info->{interface}->{$newif}->{ips}} ){
+		delete $oldips{$newaddr} if exists $oldips{$newaddr};
+	    }
+	    $if = $oldif;
+	}else{
+	    # Interface does not exist.  Add it.
+	    my $ifname = $info->{interface}->{$newif}->{name} || $newnumber;
+	    my %args = (device      => $self, 
+			number      => $newif, 
+			name        => $ifname,
+			doc_status  => 'snmp',
+		);
+	    # Make sure we can write to the description field when
+	    # device is is a router
+	    $args{overwrite_descr} = 1 if $argv{overwrite_descr}; 
+	    
+	    $if = Interface->insert(\%args);
+	    
+	    $logger->info(sprintf("%s: New Interface Inserted", $if->get_label));
+	    
+	}
+	
+	$self->throw_fatal("Model::Device::info_update: $host: Could not find or create interface: $newnumber")
+	    unless $if;
+	
+	# Now update it with snmp info
+	$if->snmp_update(info          => $info->{interface}->{$newif},
+			 add_subnets   => $add_subnets,
+			 subs_inherit  => $subs_inherit,
+			 ipv4_changed  => \$ipv4_changed,
+			 ipv6_changed  => \$ipv6_changed,
+			 stp_instances => $info->{stp_instances},
+	    );
+	
+	# Remove this interface from list to delete
+	delete $oldifs{$if->id} if exists $oldifs{$if->id};  
+	
+    } #end foreach my newif
+    
+    ##############################################
+    # Mark each interface that no longer exists
+    #
+    foreach my $id ( keys %oldifs ) {
+	my $iface = $oldifs{$id};
+	if ( $iface->doc_status eq "snmp" ){
+	    $logger->info(sprintf("%s: Interface %s no longer exists.  Marking as removed.", 
+				  $host, $iface->get_label));
+	    $iface->update({doc_status=>'removed'});
+	    $iface->remove_neighbor() if $iface->neighbor();
+	}
+    }
+    
+    ##############################################
+    # remove ip addresses that no longer exist
+    while ( my ($address, $obj) = each %oldips ){
+	# Check that it still exists 
+	# (could have been deleted if its interface was deleted)
+	next unless ( defined $obj );
+	next if ( ref($obj) =~ /deleted/i );
+	
+	$logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
+			      $host, $obj->address));
+	$obj->delete(no_update_tree=>1);
+	$ipv4_changed = 1;
+    }
+    
+    # Rebuild IP space tree
+    # Notice we do this at the end instead of per IP to speed things up
+    Ipblock->build_tree(4) if $ipv4_changed;
+    Ipblock->build_tree(6) if $ipv6_changed;
+
+
+    ##############################################################
+    # Update A records for each IP address
+    #
+    # Get addresses that the main Device name resolves to
+    my @hostnameips;
+    if ( @hostnameips = $dns->resolve_name($host) ){
+	$logger->debug(sub{ sprintf("Device::info_update: %s resolves to: %s",
+				    $host, (join ", ", @hostnameips))});
+    }
+    
+    foreach my $ip ( @{ $self->get_ips() } ){
+	$ip->update_a_records(\@hostnameips);
+    }
+    
+}
+
+###############################################################
+# Add/Update/Delete BGP Peerings
+#
+# Arguments
+#   snmp info hashref
+#   Device object arguments hashref
+# Returns
+#   Nothing
+#
+
+sub _update_bgp_info {
+    my ($self, $info, $devtmp) = @_;
+
+    my $host = $self->fqdn;
+
+    # Set Local BGP info
+    if( defined $info->{bgplocalas} ){
+	$logger->debug(sub{ sprintf("%s: BGP Local AS is %s", $host, $info->{bgplocalas}) });
+	$devtmp->{bgplocalas} = $info->{bgplocalas};
+    }
+    if( defined $info->{bgpid} ){
+	$logger->debug(sub{ sprintf("%s: BGP ID is %s", $host, $info->{bgpid})});
+	$devtmp->{bgpid} = $info->{bgpid};
+    }
+    
+    # Get current BGP peerings
+    #
+    my %oldpeerings;
+    map { $oldpeerings{ $_->id } = $_ } $self->bgppeers();
+    
+    # Update BGP Peerings
+    #
+    foreach my $peer ( keys %{$info->{bgppeer}} ){
+	$self->update_bgp_peering(peer        => $info->{bgppeer}->{$peer},
+				  oldpeerings => \%oldpeerings);
+    }
+    # remove each BGP Peering that no longer exists
+    #
+    foreach my $peerid ( keys %oldpeerings ) {
+	my $p = $oldpeerings{$peerid};
+	$logger->info(sprintf("%s: BGP Peering with %s (%s) no longer exists.  Removing.", 
+			      $host, $p->entity->name, $p->bgppeeraddr));
+	$p->delete();
+    }
+}
+    
+
 
 ############################################################################
 #
