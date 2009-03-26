@@ -142,13 +142,17 @@ sub info_update {
     }
     
     ##############################################################
-    $dev{snmp_target} = $self->_assign_snmp_target($info);
+    if ( my $ipb = $self->_assign_snmp_target($info) ){
+	$dev{snmp_target} = $ipb;
+    }
 
     ##############################################################
     $dev{product} = $self->_assign_product($info);
     
     ##############################################################
-    $dev{monitor_config_group} = $self->_assign_monitor_config_group($info);
+    if ( my $g = $self->_assign_monitor_config_group($info) ){
+	$dev{monitor_config_group} = $g;
+    }
 
     ##############################################################
     # Spanning Tree

@@ -2241,7 +2241,7 @@ sub info_update {
     # Serial Number
     unless ( $devtmp{serialnumber} = $info->{serialnumber} ){
     	$logger->debug(sub{"$host did not return serial number" });
-    }
+   }
     
     ##############################################################
     # Fill in some basic device info
@@ -2251,13 +2251,17 @@ sub info_update {
     }
     
     ##############################################################
-    $devtmp{snmp_target} = $self->_assign_snmp_target($info);
+    if ( my $ipb = $self->_assign_snmp_target($info) ){
+	$devtmp{snmp_target} = $ipb;
+    }
 
     ##############################################################
     $devtmp{product} = $self->_assign_product($info);
     
     ##############################################################
-    $devtmp{monitor_config_group} = $self->_assign_monitor_config_group($info);
+    if ( my $g = $self->_assign_monitor_config_group($info) ){
+	$devtmp{monitor_config_group} = $g;
+    }
 
     ##############################################################
     # Spanning Tree
