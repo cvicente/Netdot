@@ -1690,9 +1690,6 @@ sub _prevalidate {
     unless ( $address =~ /^$IPV4$/ || $address =~ /^$IPV6$/ ) {
 	$class->throw_user("IP: $address does not match valid patterns");
     }
-    if ( $address eq '1.1.1.1' ) {
-	$class->throw_user("IP $address is bogus");
-    }
     my $ip;
     my $str;
     if ( !($ip = NetAddr::IP->new($address, $prefix)) ||
