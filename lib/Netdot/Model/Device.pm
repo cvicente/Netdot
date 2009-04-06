@@ -4553,9 +4553,36 @@ sub _update_interfaces {
 	    # Make sure we can write to the description field when
 	    # device is is a router
 	    $args{overwrite_descr} = 1 if $argv{overwrite_descr}; 
+
+	    ############################################
+	    # Determine Monitored flag value
+	    $args{monitored} = 0; 
+	    my $IFM = $self->config->get('IF_MONITORED');
+	    if ( defined $IFM ){
+		if ( $IFM == 0 ){
+		    # do nothing
+		}elsif ( $IFM == 1 ){
+		    $args{monitored} = 1;
+		}elsif ( $IFM == 2 ){
+		    if ( scalar keys %{$info->{interface}->{$newif}->{ips}} ){
+			$args{monitored} = 1;
+		    }
+		}elsif ( $IFM == 3 ){
+		    if ( defined $info->{interface}->{$newif}->{ips} && 
+			 (my $snmp_target = $self->snmp_target) ){
+			foreach my $address ( keys %{ $info->{interface}->{$newif}->{ips} } ){
+			    if ( $address eq $snmp_target->address ){
+				$args{monitored} = 1;
+				last;
+			    }
+			}
+		    }
+		}else{
+		    $logger->warn("Configured IF_MONITORED value: $IFM not recognized");
+		}
+	    }
 	    
 	    $if = Interface->insert(\%args);
-	    
 	    $logger->info(sprintf("%s: New Interface Inserted", $if->get_label));
 	    
 	}
