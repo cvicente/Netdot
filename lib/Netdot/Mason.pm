@@ -27,9 +27,12 @@ sub handler
 
     # As instructed by Ima::DBI's documentation
     $r->push_handlers(PerlCleanupHandler => sub {
-	Netdot::Model->dbi_rollback();
+	if ( Netdot::Model->db_auto_commit == 0 ){
+	    Netdot::Model->dbi_rollback();
+	    Netdot::Model->db_auto_commit(1);
+	}
 		      });
-
+    
     # We don't need to handle non-text items
     return -1 if $r->content_type && $r->content_type !~ m|^text/|i;
 

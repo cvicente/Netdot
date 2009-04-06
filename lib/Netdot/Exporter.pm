@@ -13,6 +13,7 @@ my %types = (
     'Nagios' => 'Netdot::Exporter::Nagios',
     'Sysmon' => 'Netdot::Exporter::Sysmon',
     'Rancid' => 'Netdot::Exporter::Rancid',
+    'BIND'   => 'Netdot::Exporter::BIND',
     );
 
 my %_class_data;

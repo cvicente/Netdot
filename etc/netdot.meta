@@ -3157,7 +3157,7 @@ $meta = {
           table => 'Entity'
         },
         nullable => 0,
-        tag => undef,
+        tag => 'Entity',
         type => 'integer'
       },
       id => {
@@ -3178,7 +3178,7 @@ $meta = {
           table => 'Site'
         },
         nullable => 0,
-        tag => undef,
+        tag => 'Site',
         type => 'integer'
       }
     },
@@ -5241,7 +5241,7 @@ $meta = {
         description => '',
         length => '',
         linksto => {
-          cascade => 'Delete',
+          cascade => 'Nullify',
           method => 'arecords',
           table => 'Ipblock'
         },
@@ -5264,11 +5264,11 @@ $meta = {
       },
       ttl => {
         default => '',
-        description => '',
-        length => '',
+        description => 'Record TTL',
+        length => '32',
         nullable => 1,
         tag => 'TTL',
-        type => 'integer'
+        type => 'varchar'
       }
     },
     description => 'DNS A or AAAA Record',
@@ -5288,17 +5288,17 @@ $meta = {
         'ttl'
       ],
       brief => [
+        'rr',
         'ipblock',
-        'rr'
       ]
     }
   },
   RRCNAME => {
     table_db_name => 'rrcname',
     columns => {
-      alias => {
+      name => {
         default => '',
-        description => 'Alias',
+        description => 'Alias Name',
         length => '',
         linksto => {
           cascade => 'Delete',
@@ -5327,11 +5327,11 @@ $meta = {
       },
       ttl => {
         default => '',
-        description => '',
-        length => '',
+        description => 'Record TTL',
+        length => '32',
         nullable => 1,
         tag => 'TTL',
-        type => 'integer'
+        type => 'varchar'
       }
     },
     description => 'DNS CNAME Record',
@@ -5339,19 +5339,19 @@ $meta = {
     index => [ ['cname'] ],
     isjoin => '0',
     label => [
-      'alias',
+      'name',
       'cname'
     ],
     primary_key => 'id',
-    unique => [ [ 'alias' ] ],
+    unique => [ [ 'name' ] ],
     views => {
       all => [
-        'alias',
+        'name',
         'cname',
         'ttl'
       ],
       brief => [
-        'alias',
+        'name',
         'cname'
       ]
     }
@@ -5398,11 +5398,11 @@ $meta = {
       },
       ttl => {
         default => '',
-        description => '',
-        length => '',
+        description => 'Record TTL',
+        length => '32',
         nullable => 1,
         tag => 'TTL',
-        type => 'integer'
+        type => 'varchar'
       }
     },
     description => 'DNS HINFO Record',
@@ -5431,6 +5431,114 @@ $meta = {
         'cpu',
         'os',
         'rr'
+      ]
+    }
+  },
+  RRLOC => {
+    table_db_name => 'rrloc',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      rr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'loc_records',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Resource Record',
+        type => 'integer'
+      },
+      ttl => {
+        default => '',
+        description => 'Record TTL',
+        length => '32',
+        nullable => 1,
+        tag => 'TTL',
+        type => 'varchar'
+      },
+      size => {
+        default => '',
+        description => 'The diameter of a sphere enclosing the described entity.',
+        length => '32',
+        nullable => 1,
+        tag => 'Size',
+        type => 'varchar'
+      },
+      horiz_pre => {
+        default => '',
+        description => 'The horizontal precision of the data, in centimeters, expressed using the same representation as SIZE',
+        length => '32',
+        nullable => 1,
+        tag => 'Horizontal Precision',
+        type => 'varchar'
+      },
+      vert_pre => {
+        default => '',
+        description => 'The vertical precision of the data, in centimeters, expressed using the same representation as SIZE',
+        length => '32',
+        nullable => 1,
+        tag => 'Vertical Precision',
+        type => 'varchar'
+      },
+      latitude => {
+        default => '',
+        description => 'The latitude of the center of the sphere described by SIZE, in thousandths of a second of arc. 2**31 represents the equator; numbers above that are north latitude.',
+        length => '',
+        nullable => 0,
+        tag => 'Latitude',
+        type => 'integer'
+      },
+      longitude => {
+        default => '',
+        description => 'The longitude of the center of the sphere described by SIZE, in thousandths of a second of arc. 2**31 represents the prime meridian; numbers above that are east longitude.',
+        length => '',
+        nullable => 0,
+        tag => 'Longitude',
+        type => 'integer'
+      },
+      altitude => {
+        default => '',
+        description => 'The altitude of the center of the sphere described by SIZE, in centimeters, from a base of 100,000m below the WGS 84 reference spheroid used by GPS.',
+        length => '',
+        nullable => 0,
+        tag => 'Altitude',
+        type => 'integer'
+      },
+    },
+    description => 'Location Information. See RFC1876',
+    has_history => 0,
+    index => [[]],
+    isjoin => '0',
+    label => [
+      'rr'
+    ],
+    primary_key => 'id',
+    unique => [['rr']],
+    views => {
+      all => [
+        'rr',
+        'size',
+        'horiz_pre',
+        'vert_pre',
+        'latitude',
+        'longitude',
+        'altitude',
+      ],
+      brief => [
+        'rr',
+        'latitude',
+        'longitude',
+        'altitude',
       ]
     }
   },
@@ -5476,11 +5584,11 @@ $meta = {
       },
       ttl => {
         default => '',
-        description => '',
-        length => '',
+        description => 'Record TTL',
+        length => '32',
         nullable => 1,
         tag => 'TTL',
-        type => 'integer'
+        type => 'varchar'
       }
     },
     description => 'DNS MX Record',
@@ -5532,7 +5640,7 @@ $meta = {
         tag => 'Flags',
         type => 'varchar'
       },
-      order => {
+      order_field => {
         default => 0,
         description => 'A 16-bit unsigned integer specifying the order in which the NAPTR records MUST be processed in order to accurately represent the ordered list of Rules.  The ordering is from lowest to highest.',
         length => '',
@@ -5587,11 +5695,11 @@ $meta = {
       },
       ttl => {
         default => '',
-        description => '',
-        length => '',
+        description => 'Record TTL',
+        length => '32',
         nullable => 1,
         tag => 'TTL',
-        type => 'integer'
+        type => 'varchar'
       }
     },
     description => 'Naming Authority Pointer (NAPTR) Resource Record (RFC3403)',
@@ -5608,7 +5716,7 @@ $meta = {
     unique => [[ ]],
     views => {
       all => [
-        'order',
+        'order_field',
         'preference',
         'flags',
         'services',
@@ -5659,11 +5767,11 @@ $meta = {
       },
       ttl => {
         default => '',
-        description => '',
-        length => '',
+        description => 'Record TTL',
+        length => '32',
         nullable => 1,
         tag => 'TTL',
-        type => 'integer'
+        type => 'varchar'
       }
     },
     description => 'DNS NS Record',
@@ -5709,7 +5817,7 @@ $meta = {
         description => '',
         length => '',
         linksto => {
-          cascade => 'Delete',
+          cascade => 'Nullify',
           method => 'ptr_records',
           table => 'Ipblock'
         },
@@ -5719,7 +5827,7 @@ $meta = {
       },
       ptrdname => {
         default => '',
-        description => 'A domain-name which points to some location in the domain name space',
+        description => 'A domain-name which points to some location in the domain name space.',
         length => '255',
         nullable => 0,
         tag => 'Domain Name',
@@ -5740,11 +5848,11 @@ $meta = {
       },
       ttl => {
         default => '',
-        description => '',
-        length => '',
+        description => 'Record TTL',
+        length => '32',
         nullable => 1,
         tag => 'TTL',
-        type => 'integer'
+        type => 'varchar'
       }
     },
     description => 'DNS PTR Record',
@@ -5817,22 +5925,6 @@ $meta = {
         tag => 'Priority',
         type => 'integer'
       },
-      proto => {
-        default => '',
-        description => 'The symbolic name of the desired protocol, with an underscore (_) prepended to prevent collisions with DNS labels that occur in nature. _TCP and _UDP are at present the most useful values for this field',
-        length => '32',
-        nullable => 0,
-        tag => 'Protocol',
-        type => 'varchar'
-      },
-      service => {
-        default => '',
-        description => 'The symbolic name of the desired service, as defined in Assigned Numbers or locally.  An underscore (_) is prepended to the service identifier to avoid collisions with DNS labels that occur in nature.',
-        length => '255',
-        nullable => 0,
-        tag => 'Service',
-        type => 'varchar'
-      },
       target => {
         default => '',
         description => 'The domain name of the target host.  There MUST be one or more address records for this name, the name MUST NOT be an alias (in the sense of RFC 1034 or RFC 2181)',
@@ -5843,11 +5935,11 @@ $meta = {
       },
       ttl => {
         default => '',
-        description => '',
-        length => '',
+        description => 'Record TTL',
+        length => '32',
         nullable => 1,
         tag => 'TTL',
-        type => 'integer'
+        type => 'varchar'
       },
       weight => {
         default => '0',
@@ -5860,20 +5952,16 @@ $meta = {
     },
     description => 'DNS SRV Record (RFC 2782)',
     has_history => 0,
-    index => [ ['service'], ['proto'], ['name'], ['target'] ],
+    index => [ ['target'] ],
     isjoin => '0',
     label => [
-      'service',
-      'proto',
       'name',
       'target',
     ],
     primary_key => 'id',
-    unique => [[ ]],
+    unique => [ ['name', 'port', 'target'] ],
     views => {
       all => [
-        'service',
-        'proto',
         'name',
         'ttl',
         'priority',
@@ -5882,9 +5970,10 @@ $meta = {
         'target'
       ],
       brief => [
-        'service',
-        'proto',
         'name',
+        'priority',
+        'weight',
+        'port',
         'target'
       ]
     }
@@ -5915,13 +6004,13 @@ $meta = {
       },
       ttl => {
         default => '',
-        description => '',
-        length => '',
+        description => 'Record TTL',
+        length => '32',
         nullable => 1,
         tag => 'TTL',
-        type => 'integer'
+        type => 'varchar'
       },
-      txt => {
+      txtdata => {
         default => '',
         description => 'One or more character-strings',
         length => '128',
@@ -5932,22 +6021,22 @@ $meta = {
     },
     description => 'TXT RRs are used to hold descriptive text.  The semantics of the text depends on the domain where it is found.',
     has_history => 0,
-    index => [[ 'rr' ], ['txt']],
+    index => [[ 'rr' ], ['txtdata']],
     isjoin => '0',
     label => [
-      'txt',
+      'txtdata',
       'rr'
     ],
     primary_key => 'id',
     unique => [],
     views => {
       all => [
-        'txt',
+        'txtdata',
         'rr',
         'ttl'
       ],
       brief => [
-        'txt',
+        'txtdata',
         'rr'
       ]
     }
@@ -6762,7 +6851,7 @@ $meta = {
           table => 'Ipblock'
         },
         nullable => 0,
-        tag => undef,
+        tag => 'Subnet',
         type => 'integer'
       },
       zone => {
@@ -7063,6 +7152,14 @@ $meta = {
         tag => 'Contact List',
         type => 'integer'
       },
+      default_ttl => {
+        default => '',
+        description => 'Default TTL to apply to records when exporting the zone file',
+        length => '',
+        nullable => 0,
+        tag => 'Default TTL',
+        type => 'integer'
+      },
       expire => {
         default => '',
         description => 'A 32 bit time value that specifies the upper limit on the time interval that can elapse before the zone is no longer authoritative.',
@@ -7177,6 +7274,8 @@ $meta = {
         'minimum',
         'contactlist',
         'active',
+        'export_file',
+        'default_ttl',
         'info'
       ],
       brief => [

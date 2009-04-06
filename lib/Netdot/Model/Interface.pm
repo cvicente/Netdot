@@ -40,7 +40,7 @@ sub insert {
     
     # Set some defaults
     $argv->{speed}           ||= 0;
-    $argv->{monitored}       ||= $self->config->get('IF_MONITORED');
+    $argv->{monitored}       ||= 0;
     $argv->{snmp_managed}    ||= $self->config->get('IF_SNMP');
     $argv->{overwrite_descr} ||= $self->config->get('IF_OVERWRITE_DESCR');
     $argv->{doc_status}      ||= 'manual';
@@ -590,7 +590,8 @@ sub update_ip {
 				      status  => "Static", interface  => $self});
 	};
 	if ( my $e = $@ ){
-	    $logger->debug(sub{"$label: $e"});
+	    $logger->warn(sprintf("%s: Could not insert IP %s: %s", 
+				   $label, $address, $e));
 	    return;
 	}else{
 	    $logger->info(sprintf("%s: Inserted new IP %s", $label, $ipobj->address));

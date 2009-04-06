@@ -147,7 +147,7 @@ sub _get_arp_from_cli {
 		}
 	    }
 	    unless ( $intid ) {
-		$logger->warning("Device::CiscoFW::_get_arp_from_cli: $host: Could not match $iname to any interface name");
+		$logger->warn("Device::CiscoFW::_get_arp_from_cli: $host: Could not match $iname to any interface name");
 		next;
 	    }
 	    my $validmac = PhysAddr->validate($mac); 

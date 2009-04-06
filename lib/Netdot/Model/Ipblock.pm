@@ -50,6 +50,58 @@ my $tree6;
 =cut
 
 ##################################################################
+=head int2ip - Convert a decimal IP into a string address
+
+  Arguments:
+    address (decimal)
+    version (4 or 6)
+  Returns:
+    string
+  Example:
+    my $address = Ipblock->int2ip($number, $version);
+
+=cut
+sub int2ip {
+    my ($class, $address, $version) = @_;
+    
+    if ( !defined($address) || !defined($version) ){
+	$class->throw_fatal(sprintf("Missing required arguments: address and/or version "));
+    }
+    
+    my $val;
+    if ( $version == 4 ){
+	$val = (new NetAddr::IP $address)->addr();
+    }elsif ( $version == 6 ) {
+	# This code adapted from Net::IP::ip_inttobin()
+	
+	my $dec = new Math::BigInt $address;
+	my @hex = (0..9,'a'..'f');
+	my $ipv6 = "";
+	
+	# Set warnings off, use integers only (loathe Math::BigInt)
+	local $^W = 0;
+	use integer;
+	foreach my $i (0..31)	# 32 hex digits in 128 bits
+	{
+	    # There is colon separating every group of 4 hex digits
+	    $ipv6 = ':' . $ipv6 if ($i > 0 and $i % 4 == 0);
+	    # Last hex digit is in low 4 bits
+	    $ipv6 =  $hex[$dec % 16] . $ipv6;
+	    # Chop off low 4 bits
+	    $dec /= 16;
+	}
+	no integer;
+
+	# Use the compressed version
+	$val = (new NetAddr::IP $ipv6)->short();
+
+    }else{
+	$class->throw_fatal(sprintf("Invalid IP version: ", $version));
+    }
+    return $val;
+}
+
+##################################################################
 =head2 search - Search Ipblock objects
 
     We override the base search method for these reasons:
@@ -330,8 +382,7 @@ sub is_loopback{
 
     my $ip;
     my $str;
-    if ( !($ip = NetAddr::IP->new($address, $prefix)) ||
-	 $ip->numeric == 0 ){
+    if ( !($ip = NetAddr::IP->new($address, $prefix))){
 	$str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
 	$class->throw_user("Invalid IP: $str");
     }
@@ -1691,9 +1742,6 @@ sub _prevalidate {
     unless ( $address =~ /^$IPV4$/ || $address =~ /^$IPV6$/ ) {
 	$class->throw_user("IP: $address does not match valid patterns");
     }
-    if ( $address eq '1.1.1.1' ) {
-	$logger->warn("IP $address is bogus");
-    }
     my $ip;
     my $str;
     if ( !($ip = NetAddr::IP->new($address, $prefix)) ||
@@ -2081,37 +2129,8 @@ sub _obj_int2ip {
     my $id   = $self->id;
     $address = ($dbh->selectrow_array("SELECT address FROM ipblock WHERE id = $id"))[0];
 
-    if ($self->version == 4){
-	$val = (new NetAddr::IP $address)->addr();
-    }elsif ($self->version == 6) {
-	# This code adapted from Net::IP::ip_inttobin()
+    $val = $self->int2ip($address, $self->version);
 
-	my $dec = new Math::BigInt $address;
-	my @hex = (0..9,'a'..'f');
-	my $ipv6 = "";
-
-	# Set warnings off, use integers only (loathe Math::BigInt)
-	local $^W = 0;
-	use integer;
-	foreach my $i (0..31)	# 32 hex digits in 128 bits
-	{
-	    # There is colon separating every group of 4 hex digits
-	    $ipv6 = ':' . $ipv6 if ($i > 0 and $i % 4 == 0);
-	    # Last hex digit is in low 4 bits
-	    $ipv6 =  $hex[$dec % 16] . $ipv6;
-	    # Chop off low 4 bits
-	    $dec /= 16;
-	}
-	no integer;
-
-	# Use the compressed version
-	$val = (new NetAddr::IP $ipv6)->short();
-
-    }elsif (defined $self->version){
-	$self->throw_fatal(sprintf("Invalid IP version: ", $self->version));
-    }else {
-	$self->throw_fatal(sprintf("Ipblock id %s (%s) has no version", $self->id, $address ));
-    }
     $self->_attribute_store( address => $val );    
     return 1;
 }

@@ -11,7 +11,8 @@ my $DEFAULT_META_FILE = "<<Make:PREFIX>>/etc/netdot.meta";
 my $ALT_META_FILE     = catpath( ( splitpath( rel2abs $0 ) )[ 0, 1 ] ) . "../etc/netdot.meta";
 
 my %DERIVED_CLASSES = (
-    'CiscoFW' => 'Device',
+    'CiscoFW'   => 'Device',
+    'Airespace' => 'Device',
     );
 
 # Some private class data and related methods

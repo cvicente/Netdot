@@ -112,10 +112,12 @@ sub search_like {
     zone        Zone object, id or name. If not defined, will assume 
                 'DEFAULT_DNSDOMAIN' from config file
                 If defined, will create if necessary.
-    The rest of RR table fields
-
+    type        <A|AAAA|TXT|HINFO|CNAME|NS|MX|NAPTR|SRV|PTR|LOC> 
+                Create records for these types 
+                (need to pass their specific arguments)
+    
   Returns: 
-    New RR object
+    New RR object, or RRADDR, RRTXT, etc. if type is specified.
 
   Examples:
     my $newrr = RR->insert( { name=> $name } );
@@ -143,20 +145,137 @@ sub insert {
 	$zone = Zone->insert({ name => $argv->{zone} });
 	$logger->info(sprintf("Inserted new Zone: %s", $zone->get_label));
     }
-    if ( my $rr = $class->search(name=>$argv->{name}, zone=>$zone)->first ){
-	$class->throw_user(sprintf("RR::Insert: %s.%s already exists!", $rr->name, $rr->zone->name));
+
+    my $rr;
+
+    if ( $rr = $class->search(name=>$argv->{name}, zone=>$zone)->first ){
+	if ( !defined $argv->{type} ){
+	    $class->throw_user(sprintf("RR::Insert: %s.%s already exists!", $rr->name, $rr->zone->name));
+	}
+    }else{
+	# Set some defaults
+	my $auto_update = defined($argv->{auto_update})? 
+	    $argv->{auto_update} : Netdot->config->get('DEVICE_IP_NAME_AUTO_UPDATE_DEFAULT');
+	
+	my %state = (name        => $argv->{name},
+		     zone        => $zone->id,
+		     active      => defined($argv->{active})? $argv->{active} : 1,
+		     auto_update => $auto_update,
+	    );
+	
+	$rr = $class->SUPER::insert(\%state);
+	
+	if ( !defined $argv->{type} ){
+	    return $rr;
+	}
     }
-    # Set some defaults
-    my %state = (name        => $argv->{name},
-		 zone        => $zone->id,
-		 active      => $argv->{active}      || 1,
-		 auto_update => $argv->{auto_update} || 1,
-		 );
     
-    if ( my $newrr = $class->SUPER::insert(\%state) ){
-	return $newrr;
+    if ( $argv->{type} eq 'A' || $argv->{type} eq 'AAAA' ){
+	$class->throw_user("Missing required argument: ipblock")
+	    unless defined $argv->{ipblock};
+	# We handle both an ipblock object and a plain address string
+	my $ipb;
+	if ( ref($argv->{ipblock}) ){
+	    $ipb = $argv->{ipblock};
+	}elsif ( !($ipb = Netdot::Model::Ipblock->search(address=>$argv->{ipblock})->first) ){
+	    $ipb = Netdot::Model::Ipblock->insert({ address => $argv->{ipblock},
+						    status  => 'static' });
+	}
+	my %args = (rr=>$rr, ipblock=>$ipb);
+
+	if ( defined $argv->{ttl} ){
+	    if ( $argv->{ttl} =~ /^(?:\d+[WDHMS]?)+$/i ){
+		$args{ttl} = $argv->{ttl};
+	    }else{
+		$logger->warn("Invalid TTL: ".$argv->{ttl});
+	    }
+	}
+	# Use the Zone's default TTL as a last resort
+	$args{ttl} ||= $zone->default_ttl;
+	
+	return RRADDR->insert(\%args);
+    
+    }elsif ( $argv->{type} eq 'TXT' ){
+	$class->throw_user("Missing required argument: txtdata")
+	    unless defined $argv->{txtdata};
+	my %args = (rr=>$rr, txtdata=>$argv->{txtdata});
+	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
+	return RRTXT->insert(\%args);
+    
+    }elsif ( $argv->{type} eq 'HINFO' ){
+	$class->throw_user("Missing required arguments: cpu and/or os")
+	    unless ( defined $argv->{cpu} && defined $argv->{os} );
+	my %args = (rr=>$rr, cpu=>$argv->{cpu}, os=>$argv->{os});
+	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
+	return RRHINFO->insert(\%args);
+    
+    }elsif ( $argv->{type} eq 'MX' ){
+	$class->throw_user("Missing required argument: exchange")
+	    unless defined $argv->{exchange};
+	my %args = (rr=>$rr, exchange=>$argv->{exchange});
+	$args{preference} = $argv->{preference} || 0;
+	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
+	return RRMX->insert(\%args);
+	
+    }elsif ( $argv->{type} eq 'CNAME' ){
+	$class->throw_user("Missing required argument: cname")
+	    unless defined $argv->{cname};
+	my %args = (name=>$rr, cname=>$argv->{cname});
+	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
+	return RRCNAME->insert(\%args);
+
+    }elsif ( $argv->{type} eq 'NS' ){
+	$class->throw_user("Missing required argument: nsdname")
+	    unless defined $argv->{nsdname};
+	my %args = (rr=>$rr, nsdname=>$argv->{nsdname});
+	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
+	return RRNS->insert(\%args);
+
+    }elsif ( $argv->{type} eq 'PTR' ){
+	$class->throw_user("Missing required arguments: ptrdname, ipblock")
+	    unless ( defined $argv->{ptrdname} && defined $argv->{ipblock} );
+	my $ipb;
+	if ( !($ipb = Netdot::Model::Ipblock->search(address=>$argv->{ipblock})->first) ){
+	    $ipb = Netdot::Model::Ipblock->insert({ address => $argv->{ipblock},
+						    status  => 'Static' });
+	}
+	my %args = (rr=>$rr, ptrdname=>$argv->{ptrdname}, ipblock=>$ipb);
+	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
+	return RRPTR->insert(\%args);
+
+    }elsif ( $argv->{type} eq 'LOC' ){
+	my %args = (rr=>$rr); 
+	foreach my $field ( qw/size horiz_pre vert_pre latitude longitude altitude/ ){
+	    $class->throw_user("Missing required argument: $field")
+		unless (defined $argv->{$field});
+	    $args{$field} = $argv->{$field};
+	}
+	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
+	return RRLOC->insert(\%args);    
+    }elsif ( $argv->{type} eq 'NAPTR' ){
+	my %args = (rr=>$rr); 
+	foreach my $field ( qw/order_field preference flags services regexpr replacement/ ){
+	    $class->throw_user("Missing required argument: $field")
+		unless (defined $argv->{$field});
+	    $args{$field} = $argv->{$field};
+	}
+	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
+	return RRNAPTR->insert(\%args);    
+
+    }elsif ( $argv->{type} eq 'SRV' ){
+	my %args = (name=>$rr); 
+	foreach my $field ( qw/port priority target weight/ ){
+	    $class->throw_user("Missing required argument: $field")
+		unless (defined $argv->{$field});
+	    $args{$field} = $argv->{$field};
+	}
+	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
+	return RRSRV->insert(\%args);    
+
+    }else{
+	$class->throw_user("Unrecognized type: $argv->{type}");
     }
-    return;
+
 }
 
 =head1 INSTANCE METHODS
@@ -177,11 +296,49 @@ sub insert {
 =cut
 sub get_label {
     my $self = shift;
+    my $name = ($self->name eq '@')? "" : $self->name;
     if ( $self->zone ){
-	return sprintf("%s.%s", $self->name, $self->zone->name);
+	if ( $name ){
+	    return sprintf("%s.%s", $name, $self->zone->name);
+	}else{
+	    return $self->zone->name;
+	}
     }else{
-	return $self->name;
+	return $name;
     }
+}
+
+##################################################################
+=head2 as_text
+
+    Returns text representation of this RR (owner) and all its 
+    related records
+
+  Arguments:
+    None
+  Returns:
+    string
+  Examples:
+    print $rr->as_text();
+
+=cut
+sub as_text {
+    my $self = shift;
+    $self->isa_object_method('as_text');
+    my $text = "";
+    my @records;
+
+    foreach my $m ( qw/arecords txt_records hinfo_records cnames ns_records 
+                     mx_records ptr_records naptr_records srv_records/ ){
+	push @records, $self->$m;
+    }
+    
+    foreach my $record ( @records ){
+	$text .= $record->as_text;
+	$text .= "\n";
+    }
+
+    return $text;
 }
 
 

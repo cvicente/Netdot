@@ -8,12 +8,15 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 
 my $USAGE = <<EOF;
- usage: $0 -t "<Type1, Type2...>"
+ usage: $0 -t "<Type1, Type2...>" 
+         [ -z|--zones <zone1,zone2...> ]
+         [ -n|--nopriv ]
     
-    Available types:
-      Nagios
-      Sysmon
-      Rancid
+    Available types:  Nagios, Sysmon, Rancid, BIND
+
+    BIND exporter Options:
+       zones  - Comma-separated list of zone names, or the word 'all'
+       nopriv - Exclude private data from zone file (TXT and HINFO)
 
 EOF
     
@@ -22,6 +25,8 @@ my %self;
 # handle cmdline args
 my $result = GetOptions( 
     "t|types=s"       => \$self{types},
+    "z|zones=s"       => \$self{zones},
+    "n|nopriv"        => \$self{nopriv},
     "h|help"          => \$self{help},
     "d|debug"         => \$self{debug},
     );
@@ -45,9 +50,21 @@ $logger->add_appender($logscr);
 $logger->level($DEBUG) 
     if ( $self{debug} ); 
 
-# Here's the beauty of OO  :-)
 foreach my $type ( split ',', $self{types} ){
     $type =~ s/\s+//g;
     my $exporter = Netdot::Exporter->new(type=>$type);
-    $exporter->generate_configs();
+    if ( $type eq 'BIND' ){
+	unless ( $self{zones} ){
+	    print $USAGE;
+	    die "Missing required argument 'zones' for BIND export";
+	}
+	my @zones = split ',', $self{zones};
+	if ( scalar(@zones) == 1 && $zones[0] eq 'all' ){
+	    $exporter->generate_configs(all=>1);
+	}else{
+	    $exporter->generate_configs(zones=>\@zones, nopriv=>$self{nopriv});
+	}
+    }else{
+	$exporter->generate_configs();
+    }
 }

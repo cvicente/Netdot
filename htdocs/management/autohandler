@@ -67,7 +67,7 @@ if( !$showheader ) {
 		{ section => 'DEVICE',   title => 'Devices' },
 		{ section => 'VLANS',    title => 'VLANs' },
 		{ section => 'ADDRESS',  title => 'Address Space' },
-		{ section => 'SERVICES', title => 'Services' },
+		{ section => 'HOSTINFO', title => 'DNS/DHCP' },
 	    ]
         };
     </%init>
@@ -86,6 +86,10 @@ if ( ($page eq "DEVICE" || $page eq "") && $m->request_comp->name ne "device_tas
 } elsif ($page eq "VLANS" && $m->request_comp->name ne "vlan_tasks.html" ) {
 
     $m->comp('vlan_tasks.html', user=>$user, showheader=>$showheader);
+
+} elsif ($page eq "HOSTINFO" && $m->request_comp->name ne "hostinfo_tasks.html" ) {
+
+    $m->comp('hostinfo_tasks.html', user=>$user, showheader=>$showheader);
 
 }
 

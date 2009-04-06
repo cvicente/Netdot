@@ -480,26 +480,26 @@ if ( my @parents = $o->get_ancestors ){
 %}
 
 <div class="container">
-    <div class="containerheadleft">DNS Records</div>
+    <div class="containerheadleft">DNS A/AAAA Records</div>
     <div class="containerheadright">
 	<a href="edit.html?table=RRADDR&ipblock=<% $o %>">[add]</a>
     </div>
-<%perl>
-    my @rows;
-        my %tmp1;
-        my %tmp2;
-    foreach my $ar ($o->arecords){
-        %tmp1 = $ui->form_field(object=>$ar->rr, column=>"name", edit=>$edit_ip, linkPage=>"view.html", 
-				returnAsVar=>1, htmlExtra=>"style=\"width: 20em;\"" );
-        %tmp2 = $ui->form_field(object=>$ar->rr, column=>"zone", lookup=>"Zone", edit=>$edit_ip, 
-				linkPage=>"view.html", returnAsVar=>1 );
-    	push( @rows, [ $tmp1{'value'}, $tmp2{'value'} ] );
-    } 
-    my @headers = ($tmp1{'label'},$tmp2{'label'});
-    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
-</%perl>
+
+% my @rrs = $o->arecords;
+<& /generic/sortresults.mhtml, object=>\@rrs, view => "row" &>
+
 </div>
 
+<div class="container">
+    <div class="containerheadleft">DNS PTR Records</div>
+    <div class="containerheadright">
+	<a href="edit.html?table=RRPTR&ipblock=<% $o %>">[add]</a>
+    </div>
+
+% my @ptrs = $o->ptr_records;
+<& /generic/sortresults.mhtml, object=>\@ptrs, view => "row" &>
+
+</div>
 
 <div class="container">
     <div class="containerheadleft">Services</div>
@@ -507,8 +507,8 @@ if ( my @parents = $o->get_ancestors ){
 	<a href="edit.html?table=IpService&ip=<% $o %>">[add]</a>
     </div>
 <%perl>
-    @headers = ("Service", "Contact List");
-    @rows = ();
+    my @headers = ("Service", "Contact List");
+    my @rows = ();
     foreach my $ipservice ($o->services){
 	push( @rows,
 	      [ eval {

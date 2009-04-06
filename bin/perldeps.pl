@@ -38,6 +38,9 @@ my @DEPS = (
     'Time::Local',
     'File::Spec',
     'Net::Appliance::Session',
+    'BIND::Config::Parser',
+    'Net::DNS',
+    'Text::ParseWords',
     );
 
 if ( $action eq 'test' ){

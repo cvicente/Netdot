@@ -1,4 +1,4 @@
-package Netdot::Model::RRADDR;
+package Netdot::Model::RRSRV;
 
 use base 'Netdot::Model';
 use warnings;
@@ -6,9 +6,7 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
-=head1 Netdot::Model::RRADDR - DNS Adress Class
-
-RRADDR represent either A or AAAA records.
+=head1 Netdot::Model::RRSRV - DNS SRV record Class
 
 =head1 SYNOPSIS
 
@@ -18,39 +16,10 @@ RRADDR represent either A or AAAA records.
 
 =head1 INSTANCE METHODS
 =cut
-
-############################################################################
-=head2 delete - Delete object
-    
-    We override the delete method for extra functionality:
-    - When removing an address record, most likely the RR (name)
-    associated with it needs to be deleted too, unless it has
-    more adddress records associated with it.
-
-  Arguments:
-    None
-  Returns:
-    True if successful. 
-  Example:
-    $rraddr->delete;
-
-=cut
-
-sub delete {
-    my $self = shift;
-    $self->isa_object_method('delete');
-    my $rr = $self->rr;
-    $self->SUPER::delete();
-    $rr->delete() unless ( $rr->arecords || $rr->devices );
-
-    return 1;
-}
-
-
 ##################################################################
 =head2 as_text
 
-    Returns the text representation of this A/AAAA record
+    Returns the text representation of this record
 
   Arguments:
     None
@@ -68,8 +37,6 @@ sub as_text {
 }
 
 
-
-
 ##################################################################
 # Private methods
 ##################################################################
@@ -78,14 +45,16 @@ sub as_text {
 ##################################################################
 sub _net_dns {
     my $self = shift;
-    my $type = ($self->ipblock->version == 4)? 'A' : 'AAAA';
 
     my $ndo = Net::DNS::RR->new(
-	name    => $self->rr->get_label,
-	ttl     => $self->ttl,
-	class   => 'IN',
-	type    => $type,
-	address => $self->ipblock->address,
+	name        => $self->name->get_label,
+	ttl         => $self->ttl,
+	class       => 'IN',
+	type        => 'SRV',
+	priority    => $self->priority,
+	weight      => $self->weight,
+	port        => $self->port,
+	target      => $self->target,
 	);
     
     return $ndo;
