@@ -108,7 +108,7 @@ sub _get_arp_from_cli {
 	
 	$s->do_paging(0);
 
-	$s->connect(Name     => $login, 
+	$s->connect(Name      => $login, 
 		    Password  => $password,
 		    SHKC      => 0,
 	    );
@@ -135,33 +135,54 @@ sub _get_arp_from_cli {
 	$iface_names{$iface->name} = $iface->id;
     }
 
+    my ($iname, $ip, $mac, $intid);
     foreach my $line ( @output ) {
 	if ( $line =~ /^\s+(\w+)\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s(\w{4}\.\w{4}\.\w{4}).*$/ ) {
-	    my $iname = $1;
-	    my $ip    = $2;
-	    my $mac   = $3;
-	    my $intid;
-	    foreach my $name ( keys %iface_names ){
-		if ( $name =~ /$iname/ ){
-		    $intid = $iface_names{$name};
-		}
-	    }
-	    unless ( $intid ) {
-		$logger->warn("Device::CiscoFW::_get_arp_from_cli: $host: Could not match $iname to any interface name");
-		next;
-	    }
-	    my $validmac = PhysAddr->validate($mac); 
-	    if ( $validmac ){
-		$mac = $validmac;
+	    $iname = $1;
+	    $ip    = $2;
+	    $mac   = $3;
+	}elsif ( $line =~ /^\s+(\w+)\s([\w\._-]+)\s(\w{4}\.\w{4}\.\w{4}).*$/ ){
+	    # The 'dns domain-lookup outside' option causes outside-facing entries to be reported as hostnames
+	    $iname       = $1;
+	    my $hostname = $2;
+	    $mac         = $3;
+	    if ( my @ips = Netdot->dns->resolve_name($hostname) ){
+		# Just grab the first one
+		$ip = $ips[0];
 	    }else{
-		$logger->debug(sub{"Device::CiscoFW::_get_arp_from_cli: $host: Invalid MAC: $mac" });
+		$logger->debug(sub{"Device::CiscoFW::_get_arp_from_cli: Cannot get IP for $hostname" });
 		next;
-	    }	
-	    # Store in hash
-	    $cache{$intid}{$ip} = $mac;
-	    $logger->debug(sub{"Device::get_arp_from_cli: $host: $iname -> $ip -> $mac" });
+	    }
+	}else{
+	    $logger->debug(sub{"Device::CiscoFW::_get_arp_from_cli: line did not match criteria: $line" });
+	    next;
 	}
-    }
 
+	# The failover interface appears in the arp output but it's not in the IF-MIB output
+	next if ($iname eq 'failover');
+
+	foreach my $name ( keys %iface_names ){
+	    if ( $name =~ /$iname/ ){
+		$intid = $iface_names{$name};
+		last;
+	    }
+	}
+	unless ( $intid ) {
+	    $logger->warn("Device::CiscoFW::_get_arp_from_cli: $host: Could not match $iname to any interface name");
+	    next;
+	}
+	
+	my $validmac = PhysAddr->validate($mac); 
+	if ( $validmac ){
+	    $mac = $validmac;
+	}else{
+	    $logger->debug(sub{"Device::CiscoFW::_get_arp_from_cli: $host: Invalid MAC: $mac" });
+	    next;
+	}	
+	# Store in hash
+	$cache{$intid}{$ip} = $mac;
+	$logger->debug(sub{"Device::get_arp_from_cli: $host: $iname -> $ip -> $mac" });
+    }
+    
     return \%cache;
 }

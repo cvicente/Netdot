@@ -2235,7 +2235,9 @@ sub info_update {
     my %devtmp;
 
     ##############################################################
-    $devtmp{physaddr} = $self->_assign_base_mac($info);
+    if ( my $bm = $self->_assign_base_mac($info) ){
+	$devtmp{physaddr} = $bm;
+    }
 
     ##############################################################
     # Serial Number
@@ -4193,6 +4195,7 @@ sub _assign_base_mac {
 	}
     }else{
 	$logger->debug(sub{"$host did not return base MAC"});
+	delete $info->{physaddr};
     }
 }
 
