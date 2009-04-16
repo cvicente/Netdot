@@ -1,6 +1,22 @@
 #
 # Make the necessary modifications to upgrade Netdot's schema and data
 #
+#
+# This script modifies a 0.8.* schema into current version (0.9)
+#
+# To developers:
+# In the future we can consider:
+#   1. making a temp table (in the same db) with the new table definition
+#   2. copy data over
+#   3. delete the old table and rename the new one over
+# We can explicitly specify the names of tables that have changed.
+# This method should work, and it's probably easier than current method.
+#
+# Also note: 0.7->0.8 updatedb uses a different approach:
+# It creates a new database and copy everything over.
+# See /tags/netdot-0.8.1/bin/updatedb for more info
+#
+
 use strict;
 use lib "../lib";
 use DBUTIL;
@@ -8,7 +24,6 @@ use Netdot;
 use Netdot::Model;
 
 my %CONFIG;
-$CONFIG{olddb}             = 'netdot-0712';
 $CONFIG{debug}             = 1;
 $CONFIG{keep_history}      = 1;
 $CONFIG{keep_dependencies} = 0;
@@ -18,222 +33,113 @@ foreach my $var ( qw /DB_TYPE DB_HOME DB_HOST DB_PORT DB_DBA DB_DBA_PASSWORD
     $CONFIG{$var} = Netdot->config->get($var);
 }
 
-
-my $olddbh = &dbconnect($CONFIG{DB_TYPE}, $CONFIG{DB_HOST}, $CONFIG{DB_PORT}, 
-			$CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}, $CONFIG{olddb});
-
-my $newdbh = &dbconnect($CONFIG{DB_TYPE}, $CONFIG{DB_HOST}, $CONFIG{DB_PORT}, 
+my $dbh = &dbconnect($CONFIG{DB_TYPE}, $CONFIG{DB_HOST}, $CONFIG{DB_PORT}, 
 			$CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}, $CONFIG{DB_DATABASE});
 
 
-my %table_skips = (
-    'BinFile'       => 1,
-    'ClosetPicture' => 1,
-    'FloorPlan'     => 1,
-    'InterfaceDep'  => 1,
-    'Meta'          => 1,
+my @statements = (
+    "ALTER TABLE `person` MODIFY `email` varchar(255)",
+    "ALTER TABLE `person` MODIFY `emailpager` varchar(255)",
+    "ALTER TABLE `person_history` MODIFY `email` varchar(255)",
+    "ALTER TABLE `person_history` MODIFY `emailpager` varchar(255)",
+    "ALTER TABLE `rr` DROP INDEX RR3",
+    "ALTER TABLE `rr` DROP INDEX RR4",
+    "ALTER TABLE `rr` ADD INDEX RR3 (`expiration`)",
+    "ALTER TABLE `rraddr` ADD INDEX RRADDR2 (`ipblock`)",
+    "ALTER TABLE `rrcname` CHANGE `cname` `name` integer NOT NULL",
+    "ALTER TABLE `rrcname` CHANGE `alias` `cname` varchar(128) NOT NULL",
+    "ALTER TABLE `rrcname` DROP INDEX rrcname1",
+    "ALTER TABLE `rrcname` ADD UNIQUE INDEX rrcname1 (`name`)",
+    "ALTER TABLE `rrcname` ADD INDEX RRCNAME2 (`cname`)",
+    "ALTER TABLE `rrmx` MODIFY `exchange` varchar(255) NOT NULL",
+    "ALTER TABLE `rrmx` MODIFY `preference` integer NOT NULL DEFAULT '0'",
+    "ALTER TABLE `rrmx` ADD INDEX RRMX2 (`exchange`)",
+    "ALTER TABLE `rrns` MODIFY `nsdname` varchar(255) NOT NULL",
+    "ALTER TABLE `rrns` ADD INDEX RRNS2 (`nsdname`)",
+    "ALTER TABLE `rrptr` ADD COLUMN `ptrdname` varchar(255) NOT NULL",
+    "ALTER TABLE `rrptr` DROP INDEX rrptr1",
+    "ALTER TABLE `rrptr` ADD UNIQUE INDEX rrptr1 (`ptrdname`, `ipblock`)",
+    "ALTER TABLE `rrptr` ADD INDEX RRPTR2 (`ipblock`)",
+    "ALTER TABLE `rrptr` ADD INDEX RRPTR3 (`rr`)",
+    "ALTER TABLE `rrsrv` CHANGE `rr` `name` integer NOT NULL",
+    "ALTER TABLE `rrsrv` MODIFY `port` integer NOT NULL",
+    "ALTER TABLE `rrsrv` MODIFY `priority` integer NOT NULL DEFAULT '0'",
+    "ALTER TABLE `rrsrv` MODIFY `target` varchar(255) NOT NULL",
+    "ALTER TABLE `rrsrv` MODIFY `weight` integer NOT NULL DEFAULT '0'",
+    "ALTER TABLE `rrsrv` DROP INDEX rrsrv1",
+    "ALTER TABLE `rrsrv` ADD UNIQUE INDEX rrsrv1 (`name`, `port`, `target`)",
+    "ALTER TABLE `rrsrv` ADD INDEX RRSRV2 (`target`)",
+    "ALTER TABLE `rrtxt` CHANGE `txt` `txtdata` varchar(128)",
+    "ALTER TABLE `rrtxt` ADD INDEX RRTXT2 (`txtdata`)",
+    "ALTER TABLE `zone` ADD COLUMN `default_ttl` integer NOT NULL",
+    "ALTER TABLE `zone` ADD COLUMN `export_file` varchar(255) NOT NULL",
+    "ALTER TABLE `zone` DROP COLUMN `masterserver`",
+    "ALTER TABLE `zone` ADD COLUMN `name` varchar(128) NOT NULL",
+    "ALTER TABLE `zone` DROP COLUMN `reverse`",
+    "ALTER TABLE `zone` DROP INDEX zone1",
+    "ALTER TABLE `zone` ADD UNIQUE INDEX zone1 (`name`)",
+    "DROP TABLE `rrtype`",
+    "CREATE TABLE `rrloc` (
+       `altitude` integer NOT NULL,
+       `horiz_pre` varchar(32),
+       `id` integer NOT NULL auto_increment,
+       `latitude` integer NOT NULL,
+       `longitude` integer NOT NULL,
+       `rr` integer NOT NULL,
+       `size` varchar(32),
+       `ttl` varchar(32),
+       `vert_pre` varchar(32),
+       UNIQUE INDEX rrloc1 (`rr`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
+    "CREATE TABLE `rrnaptr` (
+       `flags` varchar(1),
+       `id` integer NOT NULL auto_increment,
+       `order_field` integer NOT NULL DEFAULT '0',
+       `preference` integer NOT NULL DEFAULT '0',
+       `regexpr` varchar(255) NOT NULL,
+       `replacement` varchar(255) NOT NULL,
+       `rr` integer NOT NULL,
+       `services` varchar(255) NOT NULL,
+       `ttl` varchar(32),
+       INDEX RRNAPTR2 (`rr`),
+       INDEX RRNAPTR3 (`services`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
+    "CREATE TABLE `zonealias` (
+       `id` integer NOT NULL auto_increment,
+       `info` blob,
+       `name` varchar(128) NOT NULL,
+       `zone` integer NOT NULL,
+       UNIQUE INDEX zonealias1 (`name`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;"
     );
 
-my %table_renames = ( 
-    'NetConnection'         => 'sitelink',
-    'NetConnection_history' => 'sitelink_history',
+my @ttlchange = ("rraddr",
+		 "rrcname",
+		 "rrhinfo",
+		 "rrmx",
+		 "rrns",
+		 "rrptr",
+		 "rrsrv",
+		 "rrtxt",
     );
-
-my %field_skips = (
-    'Device'           => { 
-	'natted'         => 1,
-	'maint_covered'  => 1,
-	'part_of'        => 1,
-    },
-    'Device_history'   => { 
-	'natted'         => 1,
-	'maint_covered'  => 1,
-	'part_of'        => 1,
-    },
-    'Entity' => {
-	'type' => 1,
-    },
-    'Entity_history' => {
-	'type' => 1,
-    },
-    'Ipblock' => {
-	'dns_delegated' => 1,
-	'physaddr'      => 1,
-    },
-    'RR' => {
-	'contactlist'   => 1,
-	'origin'        => 1,
-    },
-    'Vlan' => {
-	'subnet' => 1,
-    }
-    );
-
-my %field_renames = (
-    'Circuit'          => { 'connectionid' => 'linkid'    },
-    'Circuit_history'  => { 'connectionid' => 'linkid'    },
-    'Closet'           => { 
-	'110_blocks'   => 'ot_blocks',
-	'66_blocks'    => 'ss_blocks'  
-    },
-    'Closet_history' => { 
-	'110_blocks'   => 'ot_blocks',
-	'66_blocks'    => 'ss_blocks' 
-    },
-    'Device' => { 
-	'lastupdated'   => 'last_updated',
-	'dateinstalled' => 'date_installed',
-	'productname'   => 'product',
-    },
-    'Device_history' => { 
-	'lastupdated'   => 'last_updated',
-	'dateinstalled' => 'date_installed',
-	'productname'   => 'product',
-    },
-    'NetConnection_history' => { 
-	'connection_id'   => 'sitelink_id',
-    },
-    );
-
-foreach my $oldtable ( $olddbh->tables() ){
-    
-    $oldtable =~ s/`//g;
-    $oldtable =~ s/$CONFIG{olddb}\.//;
-
-    if ( $oldtable =~ /_history/ ){
-	if ( !$CONFIG{keep_history} ){
-	    &debug("Ignoring history table: $oldtable");
-	    next;
-	}
-    }
-
-    my $newtable;
-    
-    if ( exists $table_skips{$oldtable} ){
-	next;
-    }elsif ( exists $table_renames{$oldtable} ){
-	$newtable = $table_renames{$oldtable};
-    }else{
-	# New database has all lowercase table names
-	$newtable = lc($oldtable);
-    }
-    
-    &debug("oldtable: $oldtable");
-    &debug("newtable: $newtable");
-    
-    # overwrite default data
-    &debug("Deleting all rows from $newtable");
-    $newdbh->do("DELETE FROM $newtable");
-    
-    # Get column metadata
-    my $mtable = Netdot->meta->get_table($newtable) 
-	|| die "Cannot get table metadata for $newtable";
-    my $class = $mtable->name;
-    my %meta_columns;
-    map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
-    
-    &debug("Inserting data into $newtable");
-    my $sth = $olddbh->prepare("SELECT * FROM $oldtable");
-    $sth->execute();
-    my @statements;
-    while ( my $href = $sth->fetchrow_hashref() ){
-	my %args;
-	foreach my $field ( keys %$href ){
-	    my $f;
-	    if ( exists $field_renames{$oldtable}{$field} ){
-		$f = $field_renames{$oldtable}{$field};
-	    }elsif ( exists $field_skips{$oldtable}{$field} ){
-		next;
-	    }else{
-		$f = $field;
-	    }
-	    # Metacolumn object
-	    my $mcol = $meta_columns{$f};
-	    die "Cannot get metadata for column $f in table $newtable\n"
-		unless defined $mcol && ref($mcol);
-
-	    my $value = $href->{$field};
-	    if ( !defined $value && !$mcol->is_nullable && $mcol->sql_type =~ /integer|bool/i ){
-		$args{$f} = 0;
-	    }else{
-		$args{$f} = $value;
-	    }
-	}
-	my $fields = join (',', keys %args);
-	my $values = join (',', map { $newdbh->quote($_) } values %args);
-	push @statements, "INSERT INTO $newtable ($fields) VALUES ($values);";
-    }
-    &processdata($newdbh, \@statements);
+foreach my $t (@ttlchange) {
+    push (@statements, "ALTER TABLE `$t` MODIFY `ttl` varchar(32)");
 }
 
-#####################
-# Special Cases
-#####################
-
-#####################
-# ClosetPicture
-
-my $bf = $olddbh->selectall_arrayref("SELECT id, bindata, filename, filesize, filetype, info
-                                      FROM BinFile
-                                     ");
-my %map;
-foreach my $row ( @$bf ){
-    my ($id, $bindata, $filename, $filesize, $filetype, $info) = @$row;
-    next unless ($bindata && $filename && $filesize && $filetype);
-    $map{$id}{bindata}  = $bindata;
-    $map{$id}{filename} = $filename;
-    $map{$id}{filesize} = $filesize;
-    $map{$id}{filetype} = $filetype;
-    $map{$id}{info}     = $info;
-}
-my $cp = $olddbh->selectall_arrayref("SELECT id, closet, binfile FROM ClosetPicture");
-
-my $st = $newdbh->prepare("INSERT INTO closetpicture (closet,bindata,filename,filesize,filetype,info)
-                           VALUES (?,?,?,?,?,?);");
-
-$newdbh->do("DELETE FROM closetpicture");
-foreach my $row ( @$cp ){
-    my ($id, $closet, $binfile) = @$row;
-    my $data = $map{$binfile};
-    unless ( $data ){
-	&debug("closetpicture $id refers to unexistent binfile $binfile");
-	next;
+foreach my $st (@statements) {
+    my $sth = $dbh->prepare($st);
+    eval {
+	$dbh->do($st);
+    };
+    if ( $@ ) {
+	print "FAILED STATEMENT: $st\n";
     }
-    
-    $st->execute($closet, $data->{bindata}, $data->{filename}, $data->{filesize}, $data->{filetype}, $data->{info});
 }
 
-#####################
-# EntityRole
-
-my @statements;
-my $ent = $olddbh->selectall_arrayref("SELECT id, type FROM Entity");
-&debug("Inserting existing Entity types into EntityRole");
-foreach my $row ( @$ent ){
-    my ($id, $type) = @$row;
-    push @statements, "INSERT INTO entityrole (entity,type) VALUES ($id,$type);";
-}
-&processdata($newdbh, \@statements);
-
-#####################
-# Mark all interfaces as snmp
-$newdbh->do("UPDATE interface SET doc_status='snmp';");
-
-#####################
-# Insert missing default data
-$newdbh->do("INSERT INTO ipblockstatus (name) VALUES ('Discovered');");
-
-#####################
-# Get rid of 'na' value for admin_duplex and oper_duplex
-# (has undesired effects on duplex mismatch finder)
-$newdbh->do("UPDATE interface SET admin_duplex=NULL WHERE admin_duplex='na';");
-$newdbh->do("UPDATE interface SET oper_duplex=NULL WHERE oper_duplex='na';");
-
-# Set all devices to SNMPv2 by default
-$newdbh->do("UPDATE device SET snmp_version=2 WHERE snmp_managed=1");
-
-&dbdisconnect($olddbh);
-&dbdisconnect($newdbh);
+&dbdisconnect($dbh);
 
 
 sub debug {
