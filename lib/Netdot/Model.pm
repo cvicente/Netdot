@@ -802,7 +802,7 @@ sub _convert_search_keyword {
     # Remove leading and trailing spaces
     $keyword =~ s/^\s*(.*)\s*$/$1/;
 
-    if ( $keyword =~ /^'(.*)'$/ ){
+    if ( $keyword =~ /^['"](.*)['"]$/ ){
 	# User wants exact match
 	$new = $1;
     }elsif( $keyword =~ /[\*\?]/ ){
