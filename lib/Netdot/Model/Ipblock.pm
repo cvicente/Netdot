@@ -451,7 +451,6 @@ sub insert {
     $argv->{prefix}        ||= undef;
     $argv->{status}        ||= "Container";
     $argv->{interface}     ||= 0; 
-    $argv->{dhcp_enabled}  ||= 0; 
     $argv->{owner}         ||= 0; 
     $argv->{used_by}       ||= 0; 
     $argv->{parent}        ||= 0; 
@@ -800,7 +799,7 @@ sub fast_update{
 	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
 	my $sth = $dbh->prepare_cached("INSERT INTO ipblock
                                         (address,prefix,version,status,first_seen,last_seen,
-                                        dhcp_enabled,interface,owner,parent,used_by,vlan)
+                                        interface,owner,parent,used_by,vlan)
                                         VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0')
                                         ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");
 
@@ -820,7 +819,7 @@ sub fast_update{
 	
 	my $sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
                                           (address,prefix,version,status,first_seen,last_seen,
-                                           dhcp_enabled,interface,owner,parent,used_by,vlan)
+                                           interface,owner,parent,used_by,vlan)
                                            VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0','0')");
 	
 	# Now walk our list and do the right thing
@@ -921,6 +920,93 @@ sub get_maxed_out_subnets {
 	}
     }
     return @result;
+}
+
+################################################################
+=head2 add_range - Add or update a range of addresses
+    
+
+  Arguments: 
+    Hash with following keys:
+      start  - First IP in range
+      end    - Last IP in range
+      status - Ipblock status
+      parent - Parent Ipblock id (optional)
+  Returns:   
+
+  Examples:
+
+=cut
+sub add_range{
+    my ($class, %argv) = @_;
+    $class->isa_class_method('add_range');
+
+    my $ipstart  = NetAddr::IP->new($argv{start});
+    my $ipend    = NetAddr::IP->new($argv{end});
+    unless ( $ipstart <= $ipend ){
+	$class->throw_user("Invalid range: $argv{start} - $argv{end}");
+    }
+    
+    # Validate parent argument
+    if ( $argv{parent} ){
+	my $p;
+	if ( ref($argv{parent}) ){
+	    $p = $argv{parent};
+	}else{
+	    $p = Ipblock->retrieve($argv{parent});
+	}
+	my $np = $p->_netaddr();
+	unless ( $ipstart->within($np) && $ipend->within($np) ){
+	    $class->throw_user("Ipblock::add_range: start and/or end IPs not within given subnet: ".$p->get_label);
+	}
+    }
+
+    # We want this to happen atomically (all or nothing)
+    my @newips;
+    eval {
+	Netdot::Model->do_transaction(sub {
+	    for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
+		my $ip = NetAddr::IP->new($i);
+		my $decimal = $ip->numeric;
+		my %args = (status      => $argv{status},
+			    used_by     => $argv{used_by},
+			    description => $argv{description},
+		    );
+		$args{parent} = $argv{parent} if defined $argv{parent};
+		if ( my $ipb = Ipblock->search(address=>$decimal)->first ){
+		    $ipb->update(\%args);
+		    push @newips, $ipb;
+		    
+		}else{
+		    $args{address} = $ip->addr;
+		    $args{no_update_tree} = 1 if $args{parent};
+		    push @newips, Ipblock->insert(\%args);
+		}
+	    }
+				      });
+    };
+    if ( my $e = $@ ){
+	$class->throw_user($e);
+    }
+    $logger->info("Ipblock::add_range: Added/Modified address range: $argv{start} - $argv{end}");
+    
+    if ( $argv{parent} ){
+	if ( ref($argv{parent}) ){
+	    return $argv{parent};
+	}else{
+	    return Ipblock->retrieve($argv{parent});
+	}
+    }else{
+	# Build hierarchy and return parent block
+	my $version = $newips[0]->version;
+	$class->build_tree($version);
+	if ( my $parent = $newips[0]->parent ){
+	    my $id = $parent->id;
+	    if ( $id != 0 ){
+		return Ipblock->retrieve($id); 
+	    }
+	}
+    }
 }
 
 
@@ -1127,7 +1213,7 @@ sub update {
     # Now check for rules
     # We do it after updating and rebuilding the tree because 
     # it makes things much simpler. Workarounds welcome.
-    if ( $validate ){
+    if ( $validate && ($argv->{address} || $argv->{prefix} || $argv->{status}) ){
 	# If this fails, We need to roll back the object before bailing out
 	eval { 
 	    $self->_validate($argv) ;
@@ -1713,12 +1799,173 @@ sub get_last_n_arp {
     return $dbh->selectall_arrayref($q2);
 }
 
+################################################################
+=head2 shared_network_subnets
+
+    Determine if this subnet shares a physical link with another
+    subnet based on router interfaces with multiple subnet addresses.
+
+  Arguments: 
+    None
+  Returns:   
+    Array of Ipblock objects or undef if not sharing a link
+  Examples:
+    my @shared = $subnet->shared_network_subnets();
+=cut
+sub shared_network_subnets{
+    my ($self, %argv) = @_;
+    $self->isa_object_method('enable_dhcp');
+    my $dbh = $self->db_Main();
+    
+    my $query = 'SELECT  other.id 
+                 FROM    ipblock me, ipblock other, ipblock myaddr, ipblock otheraddr 
+                 WHERE   me.id=? AND myaddr.parent=? AND otheraddr.parent=other.id 
+                     AND myaddr.interface=otheraddr.interface 
+                     AND myaddr.interface != 0 AND other.id!=me.id';
+
+    my $sth = $dbh->prepare_cached($query);
+    $sth->execute($self->id, $self->id);
+    my $rows = $sth->fetchall_arrayref();
+    my @subnets;
+    foreach my $row ( @$rows ){
+	my $b = Ipblock->retrieve($row->[0]);
+	push @subnets, $b if $b->status->name eq 'Subnet';
+    }
+    
+    return @subnets if scalar @subnets;
+    return;
+}
+
+################################################################
+=head2 enable_dhcp
+    
+    Create a subnet dhcp scope and assign given attributes.
+    This method will create a shared-network scope if necessary.
+
+  Arguments: 
+    Hash containing the following key/value pairs:
+      container       - Container (probably global) Scope
+      shared_nets     - Hashref with:
+                          key = ipblock id
+                          value = hashref with attributes
+      attributes      - Optional.  This must be a hashref with:
+                          key   = attribute name, 
+                          value = attribute value
+ 
+  Returns:   
+    Scope object (subnet or shared-network)
+  Examples:
+    $subnet->enable_dhcp(%options);
+
+=cut
+sub enable_dhcp{
+    my ($self, %argv) = @_;
+    $self->isa_object_method('enable_dhcp');
+    
+    $self->throw_user("Missing required arguments: container")
+	unless (defined $argv{container});
+
+    $self->throw_fatal("Ipblock::enable_dhcp: Invalid call to this method on a non-subnet")
+	if ( $self->status->name ne 'Subnet' );
+    
+    my $container = $argv{container};
+    my $scope;
+
+    if ( $argv{shared_nets} ){
+	# Create a shared-network scope that will contain the other subnet scopes
+
+	$self->throw_fatal("Ipblock::enable_dhcp: Argument shared_nets must be hashref")
+	    unless ( ref($argv{shared_nets}) eq 'HASH' );
+
+	my @shared_subnets;
+	my $name = 'net_' . $self->address;
+	foreach my $id ( keys %{$argv{shared_nets}} ){
+	    next if $id == $self->id;
+	    my $s = Ipblock->retrieve($id);
+	    $self->throw_user("Ipblock::enable_dhcp: Shared network ".$s->get_label." is not a Subnet")
+		unless $s->status->name eq 'Subnet';
+	    $name .= '_'.$s->address;
+	    push @shared_subnets, $s;
+	}
+
+	# Create the shared-network scope
+	my $sn_scope;
+	if ( !($sn_scope = DhcpScope->search(name=>$name)->first) ){
+	    $sn_scope = DhcpScope->insert({name      => $name, 
+					   type      => 'shared-network', 
+					   container => $container});
+	}
+	$scope = $sn_scope;
+	
+	# Insert this subnet's scope
+	$self->_insert_dhcp_scope(container=>$sn_scope, attributes=>$argv{attributes});
+
+	# Insert a subnet scope for each other subnet
+	foreach my $s ( @shared_subnets ){
+	    my %args = (container=>$sn_scope);
+	    if ( my $attrs = $argv{shared_nets}->{$s->id} ){
+		$args{attributes} = $attrs;
+	    }
+	    $s->_insert_dhcp_scope(%args);
+	}
+    }else{
+	$scope = $self->_insert_dhcp_scope(%argv);
+    }
+    
+    return $scope;
+}
+
+
 
 ##################################################################
 #
 # Private Methods
 #
 ##################################################################
+
+##################################################################
+#     Create a subnet dhcp scope and assign given attributes
+#
+#   Arguments: 
+#     Hash containing the following key/value pairs:
+#       container       - Container (probably global) Scope
+#       attributes      - Optional.  Hashref with dhcp attributes.
+#   Returns:   
+#     Scope object
+#   Examples:
+#     $subnet->_insert_dhcp_scope(%options);
+#
+sub _insert_dhcp_scope {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('insert_dhcp_scope');
+    
+    $self->throw_user("Missing required arguments: container")
+	unless (defined $argv{container});
+
+    $self->throw_fatal("Ipblock::_insert_dhcp_scope: Invalid call to this method on a non-subnet")
+	if ( $self->status->name ne 'Subnet' );
+    
+    my $container = $argv{container};
+    my $scope;
+    my $scope_name = "subnet ".$self->address." netmask ".$self->_netaddr->mask;
+    if ( !($scope = DhcpScope->search(name=>$scope_name)->first) ){
+	$logger->debug("Ipblock::enable_dhcp: ".$self->get_label.": Inserting DhcpScope: $scope_name");
+	$scope = DhcpScope->insert({name      => $scope_name, 
+				    type      =>'Subnet', 
+				    ipblock   => $self,
+				    container => $container});
+    }
+    if ( $argv{attributes} ){
+	while ( my($key, $val) = each %{$argv{attributes}} ){
+	    my $attr;
+	    if ( !($attr = DhcpAttr->search(name=>$key, value=>$val, scope=>$scope->id)->first) ){
+		$logger->debug("Ipblock::enable_dhcp: ".$self->get_label.": Inserting DhcpAttr $key: $val");
+		DhcpAttr->find_or_create({name=>$key, value=>$val, scope=>$scope->id});
+	    }
+	}
+    }
+    return $scope;
+}
 
 ##################################################################
 # _prevalidate - Validate block before creating and updating
@@ -1781,8 +2028,6 @@ sub _validate {
     my $statusname = $self->status->name || "unknown";
     $logger->debug("Ipblock::_validate: " . $self->get_label . " has status: $statusname");
 
-    $args->{dhcp_enabled} ||= $self->dhcp_enabled;
-   
     my ($pstatus, $parent);
     if ( ($parent = $self->parent) && $parent->id ){
 	$logger->debug("Ipblock::_validate: " . $self->get_label . " parent is ", $parent->get_label);
@@ -1824,16 +2069,9 @@ sub _validate {
 				      $addr, $prefix));
 	    }
 	}
-    }elsif ( $statusname eq "Container" ){
-	if ( $args->{dhcp_enabled} ){
-		$self->throw_user($self->get_label.": Can't enable DHCP in Container blocks");
-	}
     }elsif ( $statusname eq "Reserved" ){
 	if ( $self->children ){
 	    $self->throw_user($self->get_label.": Reserved blocks can't contain other blocks");
-	}
-	if ( $args->{dhcp_enabled} ){
-		$self->throw_user($self->get_label.": Can't enable DHCP on Reserved blocks");
 	}
     }elsif ( $statusname eq "Dynamic" ) {
 	unless ( $self->is_address($self) ){
@@ -1842,9 +2080,7 @@ sub _validate {
 	unless ( $pstatus eq "Subnet" ){
 		$self->throw_user($self->get_label.": Dynamic addresses must be within Subnet blocks");
 	}
-	unless ( $self->parent->dhcp_enabled ){
-		$self->throw_user($self->get_label.": Parent Subnet must have DHCP enabled");
-	}
+
     }elsif ( $statusname eq "Static" ) {
 	unless ( $self->is_address($self) ){
 	    $self->throw_user($self->get_label.": Only addresses can be set to Static");

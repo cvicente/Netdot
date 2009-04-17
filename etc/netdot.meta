@@ -2589,11 +2589,7 @@ $meta = {
       'value'
     ],
     primary_key => 'id',
-    unique => [
-      [
-        'name'
-      ]
-    ],
+    unique => [ ['name', 'scope'] ],
     views => {
       all => [
         'name',
@@ -2687,38 +2683,46 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
-      info => {
+      text => {
         default => '',
-        description => '',
+        description => 'Free-form text for this scope.  The contents of this field will be included in the configuration file.',
         length => '',
         nullable => 1,
-        tag => 'Comments',
+        tag => 'Free-form Text',
         type => 'blob'
       },
-      fixed_address => {
+      ipblock => {
         default => '',
-        description => 'Reference to an IPblock object.  Only applies to host scopes.',
+        description => 'Reference to an IPblock object.  This only applies to host and subnet scopes.',
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'dhcp_hosts',
+          method => 'dhcp_scopes',
           table => 'Ipblock'
         },
         nullable => 0,
-        tag => 'Fixed Address',
+        tag => 'IP block',
         type => 'integer'
       },
-      subnet => {
+      name => {
         default => '',
-        description => 'Reference to an IPblock object.  Only applies to subnet scopes.',
+        description => 'Name of the Scope.  For example, a host name is the name of a scope of type "host".',
+        length => '128',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      container => {
+        default => '',
+        description => 'Reference to the container (parent) scope in the hierarchy.  Global scopes are at the top.',
         length => '',
         linksto => {
           cascade => 'Delete',
-          method => 'dhcp_subnets',
-          table => 'Ipblock'
+          method => 'contained_scopes',
+          table => 'DhcpScope'
         },
         nullable => 0,
-        tag => 'Subnet',
+        tag => 'Container Scope',
         type => 'integer'
       },
       physaddr => {
@@ -2731,33 +2735,12 @@ $meta = {
           table => 'PhysAddr'
         },
         nullable => 0,
-        tag => 'Hardware Ethernet',
-        type => 'integer'
-      },
-      name => {
-        default => '',
-        description => 'Name of the Scope.  For example, a host name is the name of a scope of type "host".',
-        length => '128',
-        nullable => 0,
-        tag => 'Name',
-        type => 'varchar'
-      },
-      parent => {
-        default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'children',
-          table => 'DhcpScope'
-        },
-        nullable => 0,
-        tag => 'Parent Scope',
+        tag => 'Ethernet',
         type => 'integer'
       },
       type => {
         default => '',
-        description => '',
+        description => 'Type of this scope.',
         length => '',
         linksto => {
           cascade => 'Delete',
@@ -2772,7 +2755,7 @@ $meta = {
     description => 'A DHCP Scope',
     has_history => 0,
     index => [
-      ['fixed_address'], ['type' ]
+      ['ipblock'], ['type' ],
     ],
     isjoin => '0',
     label => [
@@ -2783,68 +2766,120 @@ $meta = {
     unique => [ ['name'] ],
     views => {
       all => [
-        'type',
         'name',
-        'parent',
-        'fixed_address',
-        'subnet',
+        'type',
+        'container',
+        'ipblock',
         'physaddr',
-        'info'
+        'text'
       ],
       class => [
-        'type',
         'name',
-        'parent',
-        'info'
+        'type',
+        'container',
+        'text'
       ],
       global => [
-        'type',
         'name',
-        'parent',
-        'info'
+        'type',
+        'container',
+        'text'
       ],
       group => [
-        'type',
         'name',
-        'parent',
-        'info'
+        'type',
+        'container',
+        'text'
       ],
       host => [
-        'type',
         'name',
-        'parent',
-        'fixed_address',
+        'type',
+        'container',
+        'ipblock',
         'physaddr',
-        'info'
+        'text'
       ],
       pool => [
-        'type',
         'name',
-        'parent',
-        'info'
+        'type',
+        'container',
+        'text'
       ],
       'shared-network' => [
-        'type',
         'name',
-        'parent',
-        'info'
+        'type',
+        'container',
+        'text'
       ],
       subclass => [
-        'type',
         'name',
-        'parent',
-        'info'
+        'type',
+        'container',
+        'text'
       ],
       subnet => [
+        'name',
         'type',
-        'subnet',
-        'parent',
+        'ipblock',
+        'container',
         'info'
       ],
       brief => [
+        'name',
         'type',
-        'name'
       ]
+    }
+  },
+  DhcpScopeUse => {
+    table_db_name => 'dhcpscopeuse',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      scope => {
+        default => '',
+        description => 'DHCP scope where template will be used',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'templates',
+          table => 'DhcpScope'
+        },
+        nullable => 0,
+        tag => 'Scope',
+        type => 'integer'
+      },
+      template => {
+        default => '',
+        description => 'DHCP template scope',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'derived_scopes',
+          table => 'DhcpScope'
+        },
+        nullable => 0,
+        tag => 'Template',
+        type => 'integer'
+      },
+    },
+    description => 'Relationship between a scopes and scope templates',
+    has_history => 0,
+    index => [ ['template'] ],
+    isjoin => '1',
+    label => [
+      'scope, template'
+    ],
+    primary_key => 'id',
+    unique => [ ['scope', 'template'] ],
+    views => {
+      all => ['scope', 'template' ],
+      brief => ['scope', 'template']
     }
   },
   DhcpScopeType => {
@@ -2868,7 +2903,7 @@ $meta = {
       },
       name => {
         default => '',
-        description => '',
+        description => 'The name of this Scope type.',
         length => '64',
         nullable => 0,
         tag => 'Name',
@@ -4299,14 +4334,6 @@ $meta = {
         tag => 'Description',
         type => 'varchar'
       },
-      dhcp_enabled => {
-        default => '',
-        description => 'Whether this address should be offered via DHCP',
-        length => '',
-        nullable => 0,
-        tag => 'Enable DHCP?',
-        type => 'bool'
-      },
       first_seen => {
         default => '1970-01-01 00:00:00',
         description => 'Date that this address or block was first seen',
@@ -4435,7 +4462,7 @@ $meta = {
         type => 'integer'
       },
     },
-    description => 'An IP (v4 or v6) Address',
+    description => 'An IP (v4 or v6) CIDR block, which can represent both individual addresses and blocks of addresses (subnets, etc).',
     has_history => 0,
     index => [
       [
@@ -4483,7 +4510,6 @@ $meta = {
         'description',
         'first_seen',
         'last_seen',
-        'dhcp_enabled',
         'info'
       ],
       brief => [

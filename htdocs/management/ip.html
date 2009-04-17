@@ -21,6 +21,7 @@ $add_range_prefix  => undef
 $range_status      => undef
 $range_used_by     => undef
 $range_description => undef
+$range_parent      => undef
 $newblock          => undef
 $parent            => undef
 $length            => undef
@@ -28,7 +29,7 @@ $edit              => undef
 $edit_children     => undef
 $submit            => undef
 $rootversion       => 4 
-$view_availability => 0
+$view_availability => 1
 $view_tree         => 0
 $rowsize           => 22
 $dividefreespace   => 'max'
@@ -68,7 +69,7 @@ if ( $id ){
 
 # By default, view object after any operation
 # ( some exceptions will override )
-my $view       = 1;
+my $view = 1;
 
 </%init>
 %
@@ -191,10 +192,36 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
 
 #######################################################################################
-# ADD/MODIFY BLOCK OR RANGE
+# ADD/MODIFY RANGE
 #
 #######################################################################################
-}elsif ( $_action eq "ADD_RANGE" ){
+}elsif ( $_action eq 'EDIT_RANGE'){
+    
+    if ( $add_range_start && $add_range_end ){
+	eval {
+	    $o = Ipblock->add_range(start       => $add_range_start, 
+				    end         => $add_range_end,
+				    status      => $range_status,
+				    used_by     => $range_used_by,
+				    description => $range_description,
+				    parent      => $range_parent,
+		);
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}else{
+	    $m->comp('.show_message', title=>"Action Message", msg=>"Address Range Added/Modified Successfully");
+	    $id = $o->id;
+	}
+    }else{
+	$m->comp('/generic/error.mhtml', error=>"You need to specify start and end addresses");
+    }
+
+#######################################################################################
+# ADD/MODIFY BLOCK
+#
+#######################################################################################
+}elsif ( $_action eq "ADD_BLOCK" ){
     
     if ( $add_range_prefix ){
 	unless ( $add_range_prefix =~ /\// ){
@@ -203,7 +230,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	my ($address, $prefix) = split /\//, $add_range_prefix;
 	if ( (($address =~ $IPV4 && $prefix ne '32') ||
 	      ($address =~ $IPV6 && $prefix ne '128')) &&
-	      ($range_status eq 'Dynamic' || $range_status eq 'Static') ){
+	     ($range_status eq 'Dynamic' || $range_status eq 'Static') ){
 	    $m->comp('/generic/error.mhtml', error=>"IP block cannot be 'Dynamic' or 'Static'.  Specify IP Range instead.");
         }
 	my $block;
@@ -233,56 +260,48 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 		$added_block = 1;
 	    }
 	}
-    }elsif ( $add_range_start && $add_range_end ){
-	if ( $range_status eq 'Subnet' ){
-	    $m->comp('/generic/error.mhtml', error=>"IP range cannot be 'Subnet'.  Specify IP/prefix instead.");
-	}
-	my $ipstart  = NetAddr::IP->new($add_range_start);
-	my $ipend    = NetAddr::IP->new($add_range_end);
-	unless ( $ipstart < $ipend ){
-	    $m->comp('/generic/error.mhtml', error=>"Invalid range: $add_range_start - $add_range_end");
-	}
-	# We want this to happen atomically (all or nothing)
-	my @newips;
-	eval {
-	    Netdot::Model->do_transaction(sub {
-		for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
-		    my $ip = NetAddr::IP->new($i);
-		    my $decimal = $ip->numeric;
-		    if ( my $ipb = Ipblock->search(address=>$decimal)->first ){
-			$ipb->update({status      => $range_status,
-				      used_by     => $range_used_by,
-				      description => $range_description,
-				     });
-			push @newips, $ipb;
-			
+    }else{
+	$m->comp('/generic/error.mhtml', error=>"You need to specify IP/prefix");
+    }
+
+#######################################################################################
+# ENABLE DHCP
+#
+#######################################################################################
+}elsif ( $_action eq 'ENABLE_DHCP'){
+    
+    if ( $ARGS{dhcp_global_scope} ){
+	my %args = (container=>$ARGS{dhcp_global_scope});
+
+	# Grab all the dhcp options & declarations
+	foreach my $arg ( %ARGS ){
+	    if ( $arg =~ /^dhcp_/ ){
+		next if $arg eq 'dhcp_global_scope';
+		my $value = $ARGS{$arg};
+		if ( $arg =~ /^dhcp_(.*)_(\d+)$/ ){
+		    my $attr = $1;
+		    my $sid  = $2;
+		    $attr =~ s/^option_/option /;
+		    $attr =~ s/_/-/g;
+		    if ( $sid eq $id ){
+			$args{attributes}{$attr} = $value;
 		    }else{
-			push @newips, Ipblock->insert({address     => $ip->addr,
-						       status      => $range_status,
-						       used_by     => $range_used_by,
-						       description => $range_description,
-						      });
+			$args{shared_nets}{$id}{$attr} = $value;
 		    }
-		}
-					  });
+		};
+	    }
+	}
+	eval {
+	    $o->enable_dhcp(%args);
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
-	}
-	$m->comp('.show_message', title=>"Action Message", msg=>"Address Range Added/Modified Successfully");
-	# Show parent block
-	if ( my $parent = $newips[0]->parent ){
-	    $id = $parent->id;
-	    if ( $id != 0 ){
-		$o = Ipblock->retrieve($id) 
-		    || $m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
-	    }
+	}else{
+	    $m->comp('.show_message', title=>"Action Message", msg=>"DHCP enabled Successfully");
 	}
     }else{
-	$m->comp('/generic/error.mhtml', error=>"You need to specify either a IP/prefix or range of addresses");
+	$m->comp('/generic/error.mhtml', error=>"You need to specify at least the global scope");
     }
-    
-    
 
 #######################################################################################
 # Delete
@@ -358,7 +377,9 @@ if ( $id && $view ){
 
     <form name="netdotform" action="ip.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
-    <input type="hidden" name="_action" value="UPDATE">
+%    if ( $edit_ip || $edit_block ){
+	 <input type="hidden" name="_action" value="UPDATE">
+%    }
 
 %    }
 
@@ -486,7 +507,7 @@ if ( my @parents = $o->get_ancestors ){
     </div>
 
 % my @rrs = $o->arecords;
-<& /generic/sortresults.mhtml, object=>\@rrs, view => "row" &>
+<& /generic/sortresults.mhtml, object=>\@rrs &>
 
 </div>
 
@@ -497,7 +518,7 @@ if ( my @parents = $o->get_ancestors ){
     </div>
 
 % my @ptrs = $o->ptr_records;
-<& /generic/sortresults.mhtml, object=>\@ptrs, view => "row" &>
+<& /generic/sortresults.mhtml, object=>\@ptrs &>
 
 </div>
 
@@ -584,16 +605,133 @@ if ( my @parents = $o->get_ancestors ){
     	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 %        }
     <input type="submit" name="submit" value="save">
+
+%  }elsif ( $edit ){
+    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+    <input type="submit" name="submit" value="save">
+
 %  }else{
     <a href="ip.html?id=<% $id %>">[refresh]</a>
 	<a href="ip.html?id=<% $id %>&edit=blockinfo">[edit]</a>
+	<a href="ip.html?id=<% $id %>&edit=address_range">[range]</a>
 	<a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
 %  }
     </div>
 
     <div class="containerbody">
 
+% if ( $edit eq 'address_range' ){
+
+    <p><b>Add/Modify Address Range</b>
+    <input type="hidden" name="_action" value="EDIT_RANGE">
+    <input type="hidden" name="range_parent" value="<% $id %>">
+
+<%perl>	
+    my @fields;
+    my @data;     
+    push @fields,'P Range:';
+    push @data, '<input type="text" name="add_range_start" class="txt" value=""> - <input type="text" name="add_range_end" class="txt" value="">';
+    
+    push @fields, 'Status:';
+    push (@data, &{sub{ 
+	my $x;
+	$x .= '<select name="range_status" id="range_used_by">';
+        $x .= '<option value="0">-- Select --</option>';
+	my @allstatus = qw( Dynamic Reserved Static ); 
+	foreach my $status ( @allstatus ){
+	    $x .= '<option value="'.$status.'">'.$status.'</option>';
+	}
+	$x .= '</select>';
+	$x;
+    }});
+
+    my @allents = sort { $a->name cmp $b->name } Entity->retrieve_all; 
+
+    push @fields, 'Owner:';
+    push (@data, &{sub{
+	my $x;
+	$x .= '<select name="range_owner" id="range_owner">';
+	$x .= '<option value="0">-- Select --</option>';
+	foreach my $ent ( @allents ){
+	    $x .= '<option value="'. $ent->id .'">'. $ent->name .'</option>';
+	}
+	$x .= '</select>';
+	$x .= '<a class="hand" onClick="openinsertwindow(\'table=Entity&select_id=range_owner&selected=1&dowindow=1\')">[new]</a>';
+	$x;
+    }});
+
+    push @fields, 'Used By:';
+    push (@data, &{sub{
+	my $x;
+	$x .= '<select name="range_used_by" id="range_used_by">';
+	$x .= '<option value="0">-- Select --</option>';
+	foreach my $ent ( @allents ){
+	    $x .= '<option value="'. $ent->id .'">'. $ent->name .'</option>';
+	}
+	$x .= '</select>';
+	$x .= '<a class="hand" onClick="openinsertwindow(\'table=Entity&select_id=range_used_by&selected=1&dowindow=1\')">[new]</a>';
+	$x;
+    }});
+
+    push @fields, 'Description:';
+    push @data, '<input type="text" class="longtxt" name="range_description">';
+
+</%perl>
+
+<& /generic/attribute_table.mhtml, field_headers=>\@fields, data=>\@data,
+	                            width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
+
+
+
+% }elsif ( $edit eq 'enable_dhcp' ){
+
+    <p><b>Create a DHCP Scope for this subnet</b>
+    <input type="hidden" name="_action" value="ENABLE_DHCP">
+
 <%perl>
+
+    my @fields;
+    my @data;     
+
+    push @fields,'Global Scope:';
+    push (@data, &{sub{
+	my $x;
+	$x .= '<select name="dhcp_global_scope" id="dhcp_global_scope">';
+	$x .= '<option value="0">-- Select --</option>';
+	foreach my $ent ( DhcpScope->search(type=>'global') ){
+	    $x .= '<option value="'. $ent->id .'">'. $ent->name .'</option>';
+	}
+	$x .= '</select>';
+	$x .= '<a class="hand" onClick="openinsertwindow(\'table=DhcpScope&select_id=dhcp_global_scope&selected=1&dowindow=1\')">[new]</a>';
+	$x;
+    }});
+
+    my @shared_subs = $o->shared_network_subnets();
+    my @subs = ($o);
+    if ( @shared_subs ){
+	print "<p> (*) It looks like this is a shared network<p>";
+	push @subs, @shared_subs;
+    }
+    foreach my $s ( @subs ){
+	push @fields, "&nbsp;";
+	push @data,   "&nbsp;";
+	push @fields, "Subnet:";
+	push @data,   $s->get_label();
+	push @fields, 'Option routers:';
+	push @data,   '<input type="text" name="dhcp_option_routers_'.$s->id.'" class="txt" value="'.($s->_netaddr->network+1)->addr().'">';
+	push @fields, 'Option broadcast-address:';
+	push @data,   '<input type="text" name="dhcp_option_broadcast_address_'.$s->id.'" class="txt" value="'.($s->_netaddr->broadcast)->addr().'">';
+    }
+
+</%perl>	
+
+<& /generic/attribute_table.mhtml, field_headers=>\@fields, data=>\@data,
+	                            width=>"1", headercolwidth=>"15%", datacolwidth=>"35%" &>
+
+    
+<%perl>
+
+ }else{
 
 my @field_headers = ( );
 my @cell_data = ( );
@@ -737,11 +875,12 @@ if ($o->status->name eq "Subnet") {
         .'<div class="small">'.$available_text.'</div>' );
 
 ################
-# Enable DHCP?
-    {
-    my @fields = ('dhcp_enabled');
-    $ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-    }
+# DHCP
+
+      if ( !$edit && !($o->dhcp_scopes) ){
+	  push( @field_headers, "DHCP:" );
+	  push( @cell_data, "<a href=\"ip.html?id=$id&edit=enable_dhcp\">[enable]</a>");
+      }
 
 } elsif( $o->status->name eq "Container" ) {
       my $total = new Math::BigInt($o->num_addr);
@@ -798,6 +937,8 @@ if ($o->status->name eq "Subnet") {
 <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data,
 	                            width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
+% }
+
     </div>
 </div>
 
@@ -805,7 +946,19 @@ if ($o->status->name eq "Subnet") {
     </form>
 % }
 
+%################################################################
+%# DHCP Scopes
+%################################################################
+% if ( my @scopes = $o->dhcp_scopes ){
+    <div class="container">
+    <div class="containerhead">DHCP Scopes</div>
+       <& /generic/sortresults.mhtml, object=>\@scopes &>
+    </div>
+% }
 
+%################################################################
+%# Graphical Views
+%################################################################
 % if( $view_availability == 1 ) {  
 %     if( $o->status->name eq "Subnet" ) {  
        <div class="container">  

@@ -62,13 +62,17 @@ sub keyword_search {
 
     my $response = $form_field."&";
 
-    if ( $field ){
-	my @r = $table->search($field=>$terms[0]);
+    if ( $table eq 'Ipblock' ){
+	my @r = Ipblock->search(address=>$keywords);
 	map { $r->{$_->id} = $_ } @r;
     }else{
-	$r = $ui->select_query(table => $table, terms => \@terms);
+	if ( $field ){
+	    my @r = $table->search($field=>$terms[0]);
+	    map { $r->{$_->id} = $_ } @r;
+	}else{
+	    $r = $ui->select_query(table => $table, terms => \@terms);
+	}
     }
-
 
     if (my $n = scalar (keys %$r) ){
         my $count = 0;

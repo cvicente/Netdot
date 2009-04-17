@@ -169,7 +169,9 @@ sub insert {
     $class->throw_fatal("insert needs field/value parameters") 
 	unless ( keys %{$argv} );
     
-    $class->_adjust_vals(args=>$argv, action=>'insert');
+    if ( Netdot->config->get('DB_TYPE') =~ /^pg$/i ){
+	$class->_adjust_vals(args=>$argv, action=>'insert');
+    }
     my $obj;
     eval {
 	$obj = $class->SUPER::insert($argv);
@@ -488,11 +490,13 @@ sub update {
     my $class = ref($self);
     my @changed_keys;
     if ( $argv ){
-	$class->_adjust_vals(args=>$argv, action=>'update');
+	if ( Netdot->config->get('DB_TYPE') =~ /^pg$/i ){
+	    $class->_adjust_vals(args=>$argv, action=>'update');
+	}
 	while ( my ($col, $val) = each %$argv ){
 	    my $a = ref($self->$col) ? $self->$col->id : $self->$col;
 	    my $b = ref($val)        ? $val->id        : $val;
-	    if ( !defined $a || $a ne $b ){
+	    if ( defined $b && (!defined $a || $a ne $b) ){
 		$self->set($col=>$b);
 		push @changed_keys, $col;
 	    }
@@ -761,7 +765,10 @@ sub _adjust_vals{
 	if ( !ref($args->{$field}) && 
 	     (!defined($args->{$field}) || $args->{$field} eq 'null' || 
 	      $args->{$field} eq 'NULL' || $args->{$field} eq "") ){
-	    if ( $mcol->sql_type eq 'integer' || $mcol->sql_type eq 'bool' ){
+	    if ( !defined($mcol->sql_type) ){
+		$class->throw_fatal("sql_type not defined for $field");
+	    }
+	    if ( ($mcol->sql_type eq 'integer') || ($mcol->sql_type eq 'bool') ){
 		$logger->debug(sub{sprintf("Model::_adjust_vals: Setting empty field '%s' type '%s' to 0.", 
 					   $field, $mcol->sql_type) });
 		$args->{$field} = 0;

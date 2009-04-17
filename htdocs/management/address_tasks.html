@@ -24,6 +24,7 @@ $user            => undef
 $submit          => undef
 $show_tasks      => undef
 $showheader      => 1
+$task            => 'search'
 </%args>
 %
 %
@@ -58,44 +59,46 @@ my $live_info;
     </div>
     <div class="containerheadright">
 %       print_showtaskslink($show_tasks);
-    </div>
+     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
-        <table><tr><td>
-        <fieldset class="medium">
+
+    <table><tr><td>
+    <div id="search_ip" style="display:block">
+        <fieldset class="large">
             <legend>Search</legend>
             <form action="address_tasks.html" method="POST">
                 <p>
                 <label for="Find">IP[/prefix]:</label>
-                <input type="text" name="search_address" class="txt" value=""> 
+                <input type="text" name="search_address" class="longtxt" value=""> 
                 <input name="submit" value="Search" class="btn" type="submit">
                 </p>
             </form>
             <form action="address_tasks.html" method="POST">
                 <p>
                 <label for="Find">IP regex:</label>
-                <input type="text" name="search_regex" class="txt" value=""> 
+                <input type="text" name="search_regex" class="longtxt" value=""> 
                 <input name="submit" value="Search" class="btn" type="submit">
                 </p>
             </form>
             <form action="address_tasks.html" method="POST">
                 <p>
                 <label for="Find">Keywords:</label>
-                <input type="text" name="search_other" class="txt" value=""> 
+                <input type="text" name="search_other" class="longtxt" value=""> 
                 <input name="submit" value="Search" class="btn" type="submit">
                 </p>
             </form>
         </fieldset>
-        <fieldset class="medium">
-            <legend>Add/Modify Block or Address Range</legend>
+       <a href="#" onClick="toggleLayer('search_ip');toggleLayer('new_ip');">[new]</a>
+     </div>				     
+
+    <div id="new_ip" style="display:none">
+        <fieldset class="large">
+            <legend>Add IP Block</legend>
             <form action="ip.html" method="POST">
-                <input type="hidden" name="_action" value="ADD_RANGE">
+                <input type="hidden" name="_action" value="ADD_BLOCK">
                 <p>
                 <label for="add_range">IP/prefix:</label>
-                <input type="text" name="add_range_prefix" class="txt" value="">
-                </p>
-                <p>
-                <label for="add_range">Or IP Range:</label>
-                <input type="text" name="add_range_start" class="txt" value=""> - <input type="text" name="add_range_end" class="txt" value="">
+                <input type="text" name="add_range_prefix" class="longtxt" value="">
                 </p>
                 <p>
                 <label for="range_owner">Owner:</label>
@@ -123,22 +126,23 @@ my $live_info;
                 <label for="range_status">Status:</label>
                 <select name="range_status" id="range_used_by">
                 <option value="0">-- Select --</option>
-%               my @allstatus = qw( Subnet Container Dynamic Reserved Static ); 
+%               my @allstatus = qw( Subnet Container Reserved ); 
 %               foreach my $status ( @allstatus ){
                     <option value="<% $status %>"><% $status %></option>                
 %               }
                 </select>
-                <a class="hand" onClick="openinsertwindow('table=Entity&select_id=range_used_by&selected=1&dowindow=1')">[new]</a>
                 </p>
                 <p>
                 <label for="range_status">Description:</label>
                 <input type="text" class="longtxt" name="range_description">
                 </p>
 		<p>
-                <center><input name="submit" value="Save" class="btn" type="submit"></center>
+                <input name="submit" value="Save" class="btn" type="submit">
                 </p>
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_ip');toggleLayer('new_ip');">[search]</a>
+	</div>
         </td></tr></table>
     </div> <!-- close containerbody -->
   </div> <!-- close container -->

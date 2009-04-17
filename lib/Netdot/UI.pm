@@ -300,6 +300,9 @@ sub form_field {
     $self->throw_fatal("You need to pass a valid object or a table name") 
 	unless ( ref($o) || $args{table} );
 
+    $self->throw_fatal("You need to pass a column name") 
+	unless ( $column );
+    
     my ($label, $value); # return values
     
     my $table   = ($o ? $o->short_class : $args{table});
