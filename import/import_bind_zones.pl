@@ -343,7 +343,8 @@ sub import_zone {
 		$rrloc = Netdot::Model::RRLOC->insert(\%args);
 	    }
 	}else{
-	    warn "Type ". $rr->type. " not currently supported.\n";
+	    warn "Type ". $rr->type. " not currently supported.\n"
+		unless ( $rr->type eq 'SOA' );
 	}
     }
     

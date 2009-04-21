@@ -1950,19 +1950,12 @@ sub _insert_dhcp_scope {
     my $scope_name = "subnet ".$self->address." netmask ".$self->_netaddr->mask;
     if ( !($scope = DhcpScope->search(name=>$scope_name)->first) ){
 	$logger->debug("Ipblock::enable_dhcp: ".$self->get_label.": Inserting DhcpScope: $scope_name");
-	$scope = DhcpScope->insert({name      => $scope_name, 
-				    type      =>'Subnet', 
-				    ipblock   => $self,
-				    container => $container});
-    }
-    if ( $argv{attributes} ){
-	while ( my($key, $val) = each %{$argv{attributes}} ){
-	    my $attr;
-	    if ( !($attr = DhcpAttr->search(name=>$key, value=>$val, scope=>$scope->id)->first) ){
-		$logger->debug("Ipblock::enable_dhcp: ".$self->get_label.": Inserting DhcpAttr $key: $val");
-		DhcpAttr->find_or_create({name=>$key, value=>$val, scope=>$scope->id});
-	    }
-	}
+	my %args = (name      => $scope_name, 
+		    type      =>'Subnet', 
+		    ipblock   => $self,
+		    container => $container);
+	$args{attributes} = $argv{attributes} if ( $argv{attributes} );
+	$scope = DhcpScope->insert(\%args);
     }
     return $scope;
 }
