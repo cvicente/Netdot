@@ -21,16 +21,31 @@ Netdot::Ipblock - Manipulate IP Address Space
     
 =cut
 
-my $logger = Netdot->log->get_logger('Netdot::Model::Device');
+my $logger = Netdot->log->get_logger('Netdot::Model::Ipblock');
 
 BEGIN{
-    # Load plugin at compile time
+    # Load plugins at compile time
+
     my $ip_name_plugin_class = __PACKAGE__->config->get('DEVICE_IP_NAME_PLUGIN');
     eval  "require $ip_name_plugin_class";
+    if ( my $e = $@ ){
+	die $e;
+    }
     
     sub load_ip_name_plugin{
 	$logger->debug("Loading IP_NAME_PLUGIN: $ip_name_plugin_class");
 	return $ip_name_plugin_class->new();
+    }
+
+    my $range_dns_plugin_class = __PACKAGE__->config->get('IP_RANGE_DNS_PLUGIN');
+    eval  "require $range_dns_plugin_class";
+    if ( my $e = $@ ){
+	die $e;
+    }
+    
+    sub load_range_dns_plugin{
+	$logger->debug("Loading IP_RANGE_DNS_PLUGIN: $range_dns_plugin_class");
+	return $range_dns_plugin_class->new();
     }
 }
 
@@ -39,7 +54,8 @@ my $IPV6 = Netdot->get_ipv6_regex();
 
 my $dns = Netdot::Util::DNS->new();
 
-my $ip_name_plugin = __PACKAGE__->load_ip_name_plugin();
+my $ip_name_plugin   = __PACKAGE__->load_ip_name_plugin();
+my $range_dns_plugin = __PACKAGE__->load_range_dns_plugin();
 
 # The binary tree will reside in memory to speed things up 
 # when inserting/deleting individual objects
@@ -928,10 +944,13 @@ sub get_maxed_out_subnets {
 
   Arguments: 
     Hash with following keys:
-      start  - First IP in range
-      end    - Last IP in range
-      status - Ipblock status
-      parent - Parent Ipblock id (optional)
+      start   - First IP in range
+      end     - Last IP in range
+      status  - Ipblock status
+      parent  - Parent Ipblock id (optional)
+      gen_dns - Boolean.  Auto generate A/AAAA and PTR records
+      fzone   - Forward Zone id for DNS records
+      rzone   - Reverse Zone id for DNS records
   Returns:   
 
   Examples:
@@ -989,6 +1008,18 @@ sub add_range{
 	$class->throw_user($e);
     }
     $logger->info("Ipblock::add_range: Added/Modified address range: $argv{start} - $argv{end}");
+
+    #########################################
+    # Call the plugin that generates DNS records
+    #
+    if ( $argv{gen_dns} && $argv{fzone} && $argv{rzone} ){
+	my $fzone = Zone->retrieve($argv{fzone});
+	my $rzone = Zone->retrieve($argv{rzone});
+	$logger->info("Ipblock::add_range: Generating DNS records: $argv{start} - $argv{end}");
+	$range_dns_plugin->generate_records(status=>$argv{status}, 
+					    start=>$ipstart, end=>$ipend, 
+					    fzone=>$fzone, rzone=>$rzone );
+    }
     
     if ( $argv{parent} ){
 	if ( ref($argv{parent}) ){
@@ -1009,6 +1040,46 @@ sub add_range{
     }
 }
 
+
+################################################################
+=head2 remove_range - Remove a range of addresses
+    
+
+  Arguments: 
+    Hash with following keys:
+      start   - First IP in range
+      end     - Last IP in range
+  Returns:   
+    True
+  Examples:
+    Ipblock->remove_range(start=>$addr1, end=>addr2);
+=cut
+sub remove_range{
+    my ($class, %argv) = @_;
+    $class->isa_class_method('remove_range');
+
+    my $ipstart  = NetAddr::IP->new($argv{start});
+    my $ipend    = NetAddr::IP->new($argv{end});
+    unless ( $ipstart <= $ipend ){
+	$class->throw_user("Invalid range: $argv{start} - $argv{end}");
+    }
+    
+    # We want this to happen atomically (all or nothing)
+    eval {
+	Netdot::Model->do_transaction(sub {
+	    for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
+		my $ip = NetAddr::IP->new($i);
+		my $ipb = Ipblock->search(address=>$ip)->first;
+		$ipb->delete();
+	    }
+				      });
+    };
+    if ( my $e = $@ ){
+	$class->throw_user($e);
+    }
+    $logger->info("Ipblock::remove_range: Removed address range: $argv{start} - $argv{end}");
+    
+}
 
 =head1 INSTANCE METHODS
 =cut
@@ -1916,6 +1987,34 @@ sub enable_dhcp{
 }
 
 
+################################################################
+=head2 dns_zones - Get DNS zones related to this block
+    
+    If this block does not have zones assigned via the SubnetZone
+    join table, this method checks this block's ancestors
+    and returns the first set of matching zones
+
+  Arguments: 
+    None
+  Returns:   
+    Array of Zone objects
+  Examples:
+    my @zones = $ipblock->dns_zones;
+=cut
+sub dns_zones {
+    my ($self) = @_;
+    my @szones = $self->zones;
+    unless ( @szones ){
+	foreach my $p ( $self->get_ancestors ){
+	    if ( @szones = $p->zones ){
+		last;
+	    }
+	}
+    }
+    if ( @szones ){
+	return map { $_->zone } @szones;
+    }
+}
 
 ##################################################################
 #
@@ -2435,7 +2534,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >> with contributions from Nath
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2009 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

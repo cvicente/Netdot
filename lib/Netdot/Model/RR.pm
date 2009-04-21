@@ -235,7 +235,9 @@ sub insert {
 	$class->throw_user("Missing required arguments: ptrdname, ipblock")
 	    unless ( defined $argv->{ptrdname} && defined $argv->{ipblock} );
 	my $ipb;
-	if ( !($ipb = Netdot::Model::Ipblock->search(address=>$argv->{ipblock})->first) ){
+	if ( ref($argv->{ipblock}) ){
+	    $ipb = $argv->{ipblock};
+	}elsif ( !($ipb = Netdot::Model::Ipblock->search(address=>$argv->{ipblock})->first) ){
 	    $ipb = Netdot::Model::Ipblock->insert({ address => $argv->{ipblock},
 						    status  => 'Static' });
 	}
@@ -252,6 +254,7 @@ sub insert {
 	}
 	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRLOC->insert(\%args);    
+
     }elsif ( $argv->{type} eq 'NAPTR' ){
 	my %args = (rr=>$rr); 
 	foreach my $field ( qw/order_field preference flags services regexpr replacement/ ){

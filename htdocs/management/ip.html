@@ -17,11 +17,14 @@ $delete            => undef
 $recursivedel      => undef
 $add_range_start   => undef
 $add_range_end     => undef
-$add_range_prefix  => undef
+$add_block_prefix  => undef
 $range_status      => undef
 $range_used_by     => undef
 $range_description => undef
 $range_parent      => undef
+$range_gen_ptr     => undef
+$range_fw_zone     => undef
+$range_rev_zone    => undef
 $newblock          => undef
 $parent            => undef
 $length            => undef
@@ -29,8 +32,7 @@ $edit              => undef
 $edit_children     => undef
 $submit            => undef
 $rootversion       => 4 
-$view_availability => 1
-$view_tree         => 0
+$view_format       => 'block'
 $rowsize           => 22
 $dividefreespace   => 'max'
 $arp_limit         => 10
@@ -198,19 +200,27 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 }elsif ( $_action eq 'EDIT_RANGE'){
     
     if ( $add_range_start && $add_range_end ){
-	eval {
-	    $o = Ipblock->add_range(start       => $add_range_start, 
-				    end         => $add_range_end,
-				    status      => $range_status,
-				    used_by     => $range_used_by,
-				    description => $range_description,
-				    parent      => $range_parent,
-		);
-	};
+	if ( $range_status eq 'Available' ){
+	    Ipblock->remove_range(start => $add_range_start, 
+				  end   => $add_range_end);
+	}else{
+	    eval {
+		$o = Ipblock->add_range(start       => $add_range_start, 
+					end         => $add_range_end,
+					status      => $range_status,
+					used_by     => $range_used_by,
+					description => $range_description,
+					parent      => $range_parent,
+					gen_dns     => $range_gen_ptr,
+					fzone       => $range_fw_zone,
+					rzone       => $range_rev_zone,
+		    );
+	    };
+	}
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}else{
-	    $m->comp('.show_message', title=>"Action Message", msg=>"Address Range Added/Modified Successfully");
+	    $m->comp('.show_message', title=>"Action Message", msg=>"Address Range Modified Successfully");
 	    $id = $o->id;
 	}
     }else{
@@ -223,11 +233,11 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 #######################################################################################
 }elsif ( $_action eq "ADD_BLOCK" ){
     
-    if ( $add_range_prefix ){
-	unless ( $add_range_prefix =~ /\// ){
-	    $m->comp('/generic/error.mhtml', error=> "$add_range_prefix not a valid CIDR string.");
+    if ( $add_block_prefix ){
+	unless ( $add_block_prefix =~ /\// ){
+	    $m->comp('/generic/error.mhtml', error=> "$add_block_prefix not a valid CIDR string.");
 	}
-	my ($address, $prefix) = split /\//, $add_range_prefix;
+	my ($address, $prefix) = split /\//, $add_block_prefix;
 	if ( (($address =~ $IPV4 && $prefix ne '32') ||
 	      ($address =~ $IPV6 && $prefix ne '128')) &&
 	     ($range_status eq 'Dynamic' || $range_status eq 'Static') ){
@@ -377,9 +387,9 @@ if ( $id && $view ){
 
     <form name="netdotform" action="ip.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
-%    if ( $edit_ip || $edit_block ){
+%      if ( $edit_ip || $edit_block ){
 	 <input type="hidden" name="_action" value="UPDATE">
-%    }
+%      }
 
 %    }
 
@@ -390,7 +400,7 @@ if ( my @parents = $o->get_ancestors ){
     foreach my $par ( reverse @parents ){
     	push (@line, "<a href=\"ip.html?id=" . $par->id . "\">" . $par->get_label . "</a>");
     }
-    if( $view_availability == 1 ) {  
+    if( $view_format eq 'block' ) {  
   	    push (@line, "<a href=\"ip.html?id=" . $o->id . "\">" . $o->get_label . "</a>");  
         push (@line, "Addresses");  
     } else {  
@@ -613,7 +623,9 @@ if ( my @parents = $o->get_ancestors ){
 %  }else{
     <a href="ip.html?id=<% $id %>">[refresh]</a>
 	<a href="ip.html?id=<% $id %>&edit=blockinfo">[edit]</a>
-	<a href="ip.html?id=<% $id %>&edit=address_range">[range]</a>
+%	if ( $o->status->name eq 'Subnet' ){
+	    <a href="ip.html?id=<% $id %>&edit=address_range">[range]</a>
+%       }
 	<a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
 %  }
     </div>
@@ -629,7 +641,7 @@ if ( my @parents = $o->get_ancestors ){
 <%perl>	
     my @fields;
     my @data;     
-    push @fields,'P Range:';
+    push @fields,'IP Range:';
     push @data, '<input type="text" name="add_range_start" class="txt" value=""> - <input type="text" name="add_range_end" class="txt" value="">';
     
     push @fields, 'Status:';
@@ -637,7 +649,7 @@ if ( my @parents = $o->get_ancestors ){
 	my $x;
 	$x .= '<select name="range_status" id="range_used_by">';
         $x .= '<option value="0">-- Select --</option>';
-	my @allstatus = qw( Dynamic Reserved Static ); 
+	my @allstatus = qw( Dynamic Reserved Static Available ); 
 	foreach my $status ( @allstatus ){
 	    $x .= '<option value="'.$status.'">'.$status.'</option>';
 	}
@@ -675,6 +687,48 @@ if ( my @parents = $o->get_ancestors ){
 
     push @fields, 'Description:';
     push @data, '<input type="text" class="longtxt" name="range_description">';
+
+    push @fields, 'Auto-generate PTR records:';
+    push @data, '<input type="checkbox" name="range_gen_ptr" checked="checked">';
+
+    my @zones = $o->dns_zones();
+    my @allzones = Zone->retrieve_all();
+
+    push @fields, 'Forward Zone';
+    push (@data, &{sub{
+	my $x;
+	$x .= '<select name="range_fw_zone" id="range_fw_zone">';
+	$x .= '<option value="0">-- Select --</option>';
+	foreach my $z ( @zones ){
+	    next if ( $z->name =~ /arpa$|int$/ );
+	    $x .= '<option value="'. $z->id .'" SELECTED>'. $z->name .'</option>';
+	}
+	foreach my $z ( @allzones ){
+	    next if ( $z->name =~ /arpa$|int$/ );
+	    $x .= '<option value="'. $z->id .'">'. $z->name .'</option>';
+	}
+	$x .= '</select>';
+	$x .= '<a class="hand" onClick="openinsertwindow(\'table=Zone&select_id=range_fw_zone&selected=1&dowindow=1\')">[new]</a>';
+	$x;
+    }});
+
+    push @fields, 'Rerverse Zone';
+    push (@data, &{sub{
+	my $x;
+	$x .= '<select name="range_rev_zone" id="range_rev_zone">';
+	$x .= '<option value="0">-- Select --</option>';
+	foreach my $z ( @zones ){
+	    next unless ( $z->name =~ /arpa$|int$/ );
+	    $x .= '<option value="'. $z->id .'" SELECTED>'. $z->name .'</option>';
+	}
+	foreach my $z ( @allzones ){
+	    next if ( $z->name =~ /arpa$|int$/ );
+	    $x .= '<option value="'. $z->id .'">'. $z->name .'</option>';
+	}
+	$x .= '</select>';
+	$x .= '<a class="hand" onClick="openinsertwindow(\'table=Zone&select_id=range_rev_zone&selected=1&dowindow=1\')">[new]</a>';
+	$x;
+    }});
 
 </%perl>
 
@@ -959,7 +1013,7 @@ if ($o->status->name eq "Subnet") {
 %################################################################
 %# Graphical Views
 %################################################################
-% if( $view_availability == 1 ) {  
+% if( $view_format eq 'block' ) {  
 %     if( $o->status->name eq "Subnet" ) {  
        <div class="container">  
           <div class="containerheadleft"> 
@@ -973,7 +1027,7 @@ if ($o->status->name eq "Subnet") {
             <span class="ipaddr_static">Static</span>
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
-         	<a href="ip.html?id=<% $id %>">[List View]</a>
+         	<a href="ip.html?id=<% $id %>&view_format=list">[List View]</a>
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& subnet.mhtml, network => $o &>  
@@ -992,15 +1046,15 @@ if ($o->status->name eq "Subnet") {
             <span class="ipaddr_static">Static</span>
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
-         	<a href="ip.html?id=<% $id %>">[List View]</a>
-		<a href="ip.html?id=<% $id %>&view_tree=1">[Tree View]</a>
+         	<a href="ip.html?id=<% $id %>&view_format=list">[List View]</a>
+		<a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& container.mhtml, network => $o, rowsize => $rowsize, dividefreespace => $dividefreespace &>  
           </div>  
        </div>  
 %     }  
-% }elsif( $view_tree == 1 ) {  
+% }elsif( $view_format eq 'tree' ) {  
 %     if( $o->status->name eq "Subnet" || $o->status->name eq "Container" ) {  
        <div class="container">  
           <div class="containerheadleft"> 
@@ -1013,16 +1067,16 @@ if ($o->status->name eq "Subnet") {
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
 %	        if ( $o->version == 4 ){
-         	    <a href="ip.html?id=<% $id %>&view_availability=1">[Block View]</a>
+         	    <a href="ip.html?id=<% $id %>&view_format=block">[Block View]</a>
 %               }
-         	<a href="ip.html?id=<% $id %>">[List View]</a>
+         	<a href="ip.html?id=<% $id %>&view_format=list">[List View]</a>
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& tree.mhtml, network => $o &>  
           </div>  
        </div>  
 %     }  
-% } else {  
+% } elsif ( $view_format eq 'list' ) {  
 %   #  
 %   # Get children  
 %   #  
@@ -1044,13 +1098,13 @@ if ($o->status->name eq "Subnet") {
 			 <input type="submit" name="submit" value="save">
 %		 }else{
 %		     print '<a href="ip.html?id='.$id.'&edit_children=1">[edit]</a>&nbsp;';
-%		     print '<a href="ip.html?id='.$id.'&view_availability=1">[Block View]</a>';
+%		     print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
 %                    if ( $o->status->name eq 'Container' ){
-                         <a href="ip.html?id=<% $id %>&view_tree=1">[Tree View]</a>
+                         <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
 %                    }
 %		 }
 %             } else {
-%	            print '<a href="ip.html?id='.$id.'&view_tree=1">[Tree View]</a>';
+%	            print '<a href="ip.html?id='.$id.'&view_format=tree">[Tree View]</a>';
 %             }
           </div>
           <div class="containerbody">
@@ -1067,9 +1121,11 @@ if ($o->status->name eq "Subnet") {
      </div>
 
 %   }
+% }else{
+%    $m->comp('/generic/error.mhtml', error => "Unknown view format: $view_format");
 % }
 <!-- End Block Info Table -->
-% } 
+% }
 
 % }
 </div>
