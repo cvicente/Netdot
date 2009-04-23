@@ -38,6 +38,15 @@ my $dbh = &dbconnect($CONFIG{DB_TYPE}, $CONFIG{DB_HOST}, $CONFIG{DB_PORT},
 
 
 my @statements = (
+    "ALTER TABLE `dhcpattr` DROP INDEX dhcpattr1",
+    "ALTER TABLE `dhcpattr` ADD INDEX dhcpattr1 (`name`, `scope`)",
+    "ALTER TABLE `dhcpscope` CHANGE `fixed_address` `ipblock` integer NOT NULL",
+    "ALTER TABLE `dhcpscope` CHANGE `info` `text` blob",
+    "ALTER TABLE `dhcpscope` DROP COLUMN `parent`",
+    "ALTER TABLE `dhcpscope` DROP COLUMN `subnet`",
+    "ALTER TABLE `dhcpscope` DROP INDEX DhcpScope2",
+    "ALTER TABLE `dhcpscope` ADD INDEX DhcpScope2 (`ipblock`)",
+    "ALTER TABLE `ipblock` DROP COLUMN `dhcp_enabled`",
     "ALTER TABLE `person` MODIFY `email` varchar(255)",
     "ALTER TABLE `person` MODIFY `emailpager` varchar(255)",
     "ALTER TABLE `person_history` MODIFY `email` varchar(255)",
@@ -113,7 +122,15 @@ my @statements = (
        `zone` integer NOT NULL,
        UNIQUE INDEX zonealias1 (`name`),
        PRIMARY KEY (`id`)
-     ) ENGINE=InnoDB;"
+     ) ENGINE=InnoDB;",
+    "CREATE TABLE `dhcpscopeuse` (
+       `id` integer NOT NULL auto_increment,
+       `scope` integer NOT NULL,
+       `template` integer NOT NULL,
+       UNIQUE INDEX dhcpscopeuse1 (`scope`, `template`),
+       INDEX DhcpScopeUse2 (`template`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
     );
 
 my @ttlchange = ("rraddr",
@@ -125,8 +142,37 @@ my @ttlchange = ("rraddr",
 		 "rrsrv",
 		 "rrtxt",
     );
+
+my %timeStampChangeNotNull = ( "arpcache"     => "tstamp",
+			       "devicemodule" => "date_installed",
+			       "devicemodule" => "last_updated",
+			       "fwtable"      => "tstamp",
+			       "ipblock"      => "first_seen",
+			       "ipblock"      => "last_seen",
+			       "physaddr"     => "first_seen",
+			       "physaddr"     => "last_seen",
+    );
+
+my %timeStampChangeNull = ( "device"         => "date_installed",
+			    "device"         => "last_arp",
+			    "device"         => "last_fwt",
+			    "device"         => "last_updated",
+			    "device_history" => "date_installed",
+			    "device_history" => "last_arp",
+			    "device_history" => "last_fwt",
+			    "device_history" => "last_updated",
+    );
+
 foreach my $t (@ttlchange) {
     push (@statements, "ALTER TABLE `$t` MODIFY `ttl` varchar(32)");
+}
+
+foreach my $t (keys %timeStampChangeNotNull) {
+    push (@statements, "ALTER TABLE `$t` MODIFY `$timeStampChangeNotNull{$t}` timestamp NOT NULL DEFAULT '1970-01-01 00:00:01'");
+}
+
+foreach my $t (keys %timeStampChangeNull) {
+    push (@statements, "ALTER TABLE `$t` MODIFY `$timeStampChangeNull{$t}` timestamp DEFAULT '1970-01-01 00:00:01'");
 }
 
 foreach my $st (@statements) {
