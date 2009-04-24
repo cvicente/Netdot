@@ -1567,10 +1567,12 @@ sub build_ip_tree_graph_html {
     device id
     depth
     view
-    showvlans
-    shownames
-    filename
+    showvlans    Boolean
     vlans
+    shownames    Boolean
+    filename     
+    format       (text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)
+    direction    (up_down|left_right)
   Returns:
     GraphViz object
   Examples:
@@ -1579,8 +1581,8 @@ sub build_ip_tree_graph_html {
 =cut
 sub build_device_topology_graph {
     my ($self, %argv) = @_;
-    my ($id, $depth, $view, $showvlans, $shownames, $filename, $vlans) = 
-	@argv{'id', 'depth', 'view', 'show_vlans', 'show_names', 'filename', 'vlans'};
+    my ($id, $depth, $view, $showvlans, $shownames, $filename, $vlans, $format, $direction) = 
+	@argv{'id', 'depth', 'view', 'show_vlans', 'show_names', 'filename', 'vlans', 'format', 'direction'};
     
     # Guard against malicious input
     $depth = (int($depth) > 0) ? int($depth) : 0;
@@ -1676,11 +1678,20 @@ sub build_device_topology_graph {
             &dfs($g, $nd, $hops-1, $seen, $vlans, $showvlans, $shownames, $view);
         }
     }
+    
+    my %args = (layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0,
+		node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', 
+		       fontsize=>10, height=>.25},
+		edge=>{dir=>'none', labelfontsize=>8} );
 
+    $argv{direction} ||= 'up_down';
+
+    if ( $argv{direction} eq 'left_right' ){
+	$args{rankdir} = 1;
+    }
+    
     # Actually do the searching
-    my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>"LR", 
-			  node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
-			  edge=>{dir=>'none', labelfontsize=>8} );
+    my $g = GraphViz->new();
     
     my $start = Device->retrieve($id);
     &add_node(graph       => $g,
@@ -1696,7 +1707,13 @@ sub build_device_topology_graph {
 
     &dfs($g, $start, $depth, $seen, $vlans, $showvlans, $shownames, $view);
 
-    $g->as_png($filename);
+    $argv{format} ||= 'png';
+    if ( $argv{format} =~ /^(text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
+	my $method = 'as_'.$format;
+	$g->$method($filename);
+    }else{
+	$self->throw_user("Unrecognized format: $argv{format}");
+    }
 
     return $g;
 }
