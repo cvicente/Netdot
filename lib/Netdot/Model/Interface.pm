@@ -111,6 +111,41 @@ sub find_duplex_mismatches {
     }
 }
 
+#################################################################
+=head2 get_macs_from_all
+    
+    Retrieve all MAC addresses that belong to Interfaces
+
+  Arguments: 
+    None
+  Returns:   
+    Hashref with key=address, value=device
+  Examples:
+   my $intmacs = Interface->get_macs_from_all();
+
+=cut
+sub get_macs_from_all {
+    my ($class) = @_;
+    $class->isa_class_method('get_macs_from_all');
+
+    # Build the SQL query
+    $logger->debug(sub{ "Interface::get_macs_from_all: Retrieving all MACs"});
+    
+    my $dbh = $class->db_Main();
+    my $aref = $dbh->selectall_arrayref("SELECT p.address, i.id
+                                         FROM   physaddr p, interface i
+                                         WHERE  i.physaddr=p.id
+                                         ");
+    
+    # Build a hash of mac addresses to interface ids
+    my %macs;
+    foreach my $row ( @$aref ){
+	my ($address, $id) = @$row;
+	$macs{$address} = $id;
+    }
+    return \%macs;
+}
+
 =head1 OBJECT METHODS
 =cut
 ################################################################
