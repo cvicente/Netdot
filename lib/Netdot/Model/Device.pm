@@ -1002,6 +1002,14 @@ sub get_snmp_info {
     }else{
 	$logger->debug(sub{"Device::get_snmp_info: BGP Peer discovery not enabled"});
     }
+
+    # Remove whitespace at beginning and end
+    while ( my ($key, $val) = each %dev){
+	$val =~ s/^\s+//;
+	$val =~ s/\s+$//;
+	$dev{$key} = $val;
+    }
+
     $logger->debug(sub{"Device::get_snmp_info: Finished getting SNMP info from $name ($ip)"});
     return \%dev;
 }

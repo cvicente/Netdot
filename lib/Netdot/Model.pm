@@ -47,11 +47,16 @@ BEGIN {
     #  - After creating
     # This must be defined here (before loading the classes).  
     ###########################################################
-    __PACKAGE__->add_trigger( before_update => \&_historize );
+    __PACKAGE__->add_trigger( after_update => \&_historize );
     __PACKAGE__->add_trigger( after_create  => \&_historize );
     
     sub _historize {
-	my $self     = shift;
+	my ($self, %args) = @_;
+	my $changed_columns = $args{discard_columns};
+	if ( scalar(@$changed_columns) == 1  && 
+	     $changed_columns->[0] eq 'last_updated' ){
+	    return;
+	}
 	my $table    = $self->table;
 	my $h_table  = $self->meta_data->get_history_table_name();
 	return unless $h_table;  # this object does not have a history table
@@ -167,8 +172,10 @@ sub insert {
 
     $class->throw_fatal("insert needs field/value parameters") 
 	unless ( keys %{$argv} );
-    
-    $class->_adjust_vals(args=>$argv, action=>'insert');
+
+    if ( Netdot->config->get('DB_TYPE') =~ /^pg$/i ){
+	$class->_adjust_vals(args=>$argv, action=>'insert');
+    }
     my $obj;
     eval {
 	$obj = $class->SUPER::insert($argv);
@@ -487,11 +494,13 @@ sub update {
     my $class = ref($self);
     my @changed_keys;
     if ( $argv ){
-	$class->_adjust_vals(args=>$argv, action=>'update');
+        if ( Netdot->config->get('DB_TYPE') =~ /^pg$/i ){
+	    $class->_adjust_vals(args=>$argv, action=>'update');
+	}
 	while ( my ($col, $val) = each %$argv ){
 	    my $a = ref($self->$col) ? $self->$col->id : $self->$col;
 	    my $b = ref($val)        ? $val->id        : $val;
-	    if ( !defined $a || $a ne $b ){
+	    if ( (!defined $a && defined $b) || $a ne $b ){
 		$self->set($col=>$b);
 		push @changed_keys, $col;
 	    }
@@ -521,8 +530,9 @@ sub update {
 	# For some reason, we (with some classes) get an empty object after updating (weird)
 	# so we re-read the object from the DB to make sure we have the id value below:
 	$self = $class->retrieve($id);
-	$logger->debug( sub { sprintf("Model::update: Updated table: %s, id: %s, fields: %s", 
-				      $self->table, $self->id, (join ", ", @changed_keys) ) } );
+	my @values = map { $self->$_ } @changed_keys;
+	$logger->debug( sub { sprintf("Model::update: Updated table: %s, id: %s, fields: (%s), values: (%s)", 
+				      $self->table, $self->id, (join ", ", @changed_keys), (join ", ", @values) ) } );
     }
     return $res;
 }
