@@ -75,8 +75,8 @@ if ( $submit ){
     $logger->add_appender($logstr);
 
     foreach my $type ( @config_types ){
-	my $exporter = Netdot::Exporter->new(type=>$type);
 	eval {
+	    my $exporter = Netdot::Exporter->new(type=>$type);
 	    $exporter->generate_configs();
 	};
 	if ( my $e = $@ ){

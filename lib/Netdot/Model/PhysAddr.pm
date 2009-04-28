@@ -30,13 +30,16 @@ Netdot::Model::PhysAddr - Physical Address Class
 =cut
 
 sub search {
-    my $self = shift;
-    my $args = ref $_[0] eq "HASH" ? shift : {@_};
+    my ($class, @args) = @_;
+    $class->isa_class_method('search');
+
+    my $opts = @args % 2 ? pop @args : {}; 
+    my %argv = @args;
     
-    if ( $args->{address} ){
-	$args->{address} = $self->format_address($args->{address});
+    if ( $argv{address} ){
+	$argv{address} = $class->format_address($argv{address});
     }
-    return $self->SUPER::search($args);
+    return $class->SUPER::search(%argv, $opts);
 }
 
 
@@ -559,13 +562,12 @@ sub find_edge_port {
     my ($sth, $sth2, $rows, $rows2);
     eval {
 	my $dbh = $self->db_Main();
-	$sth = $dbh->prepare_cached('SELECT   i.id, ft.id
+	$sth = $dbh->prepare_cached('SELECT   DISTINCT(i.id), ft.id
                                      FROM     interface i, fwtableentry fte, fwtable ft 
                                      WHERE    fte.physaddr=? 
                                        AND    fte.interface=i.id 
                                        AND    fte.fwtable=ft.id
                                        AND    ft.tstamp=?
-                                     GROUP BY i.id
                                      ');
 	
 	$sth2 = $dbh->prepare_cached('SELECT COUNT(i.id) 

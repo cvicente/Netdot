@@ -46,30 +46,33 @@ Netdot::Model::Zone - DNS Zone Class
 
 =cut
 sub search {
-    my ($class, %argv) = @_;
+    my ($class, @args) = @_;
     $class->isa_class_method('search');
+
+    my $opts = @args % 2 ? pop @args : {}; 
+    my %argv = @args;
 
     if ( exists $argv{id} && $argv{id} =~ /\D+/ ){
 	# No use searching for non-digits in id field
 	$argv{id} = 0;
     } 
-    if ( $class->SUPER::search(%argv) ){
-	return $class->SUPER::search(%argv);
+    if ( $class->SUPER::search(%argv, $opts) ){
+	return $class->SUPER::search(%argv, $opts);
     }elsif ( defined $argv{mname} && $argv{mname} =~ /\./ && $argv{mname} !~ /^($IPV4)$/ ){
 	my @sections = split '\.', $argv{mname};
 	while ( @sections ){
 	    $argv{mname} = join '.', @sections;
 	    $logger->debug(sub{ "Zone::search: $argv{mname}" });
-	    if ( $class->SUPER::search(%argv) ){
+	    if ( $class->SUPER::search(%argv, $opts) ){
 		# We call the method again to not mess
 		# with CDBI's wantarray checks
 		$logger->debug(sub{ "Zone::search: found: ", $argv{mname} });
-		return $class->SUPER::search(%argv);
+		return $class->SUPER::search(%argv, $opts);
 	    }
 	    shift @sections;
 	}
     }else{
-	return $class->SUPER::search(%argv);
+	return $class->SUPER::search(%argv, $opts);
     }
 }
 

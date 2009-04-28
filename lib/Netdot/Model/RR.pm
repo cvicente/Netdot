@@ -39,10 +39,11 @@ Netdot::Model::RR - DNS Resource Record Class
 
 =cut
 sub search {
-    my ($class, %argv) = @_;
+    my ($class, @args) = @_;
     $class->isa_class_method('search');
-    $class->throw_fatal('Model::RR::search: Missing required arguments')
-	unless %argv;
+
+    my $opts = @args % 2 ? pop @args : {}; 
+    my %argv = @args;
 
     my ($rr, @sections);
     if ( (exists $argv{name}) && ($argv{name} =~ /\./)  && !exists $argv{zone} ){
@@ -56,7 +57,7 @@ sub search {
 	    return $class->SUPER::search(%argv);
 	}
     }else{
-	return $class->SUPER::search(%argv);
+	return $class->SUPER::search(%argv, $opts);
     }
     return;
 }

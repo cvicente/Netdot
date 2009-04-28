@@ -155,7 +155,7 @@ __PACKAGE__->set_sql(monitored_by_type => qq{
         FROM   device d, product p, producttype t
         WHERE  d.product = p.id 
            AND p.type = t.id 
-           AND d.monitored = 1
+           AND d.monitored='1'
            AND t.id = ?
         GROUP BY p.name, p.id
         ORDER BY numdevs DESC

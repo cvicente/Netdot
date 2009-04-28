@@ -45,7 +45,7 @@ sub new{
 	croak "Netdot::Exporter::Nagios: NMS_DEVICE not defined";
 
     $self->{MONITOR} = Device->search(name=>$self->{NMS_DEVICE})->first 
-	|| croak "Netdot::Exporter::Nagios: Monitoring device not found in DB: " . $self->{NMS_DEVICE};
+	|| croak "Netdot::Exporter::Nagios: Monitoring device '" . $self->{NMS_DEVICE}. "' not found in DB";
     
     ref($self->{NAGIOS_FILES}) eq 'ARRAY' || 
 	croak "Netdot::Exporter::Nagios: NAGIOS_FILES not configured or invalid.";
