@@ -98,10 +98,15 @@ if ( $page eq "POLLSTATS" ) {
 	<div class="containerhead">Database Reports</div>
 	<div class="containerbody">
 	
+%    if ( Netdot->config->get('DB_DATABASE') eq 'mysql' ){
 	<br>
 	<a href="mysql_stats.html">Table Information</a><br>
 	Shows information about all the tables in the database including size, number of rows, and last update times.<br>
-	
+
+%    }else{
+	<br>
+	Sorry.  Only MySQL report available at this time.
+%    }
 	<br>
 	
 	</div>
