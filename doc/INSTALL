@@ -6,11 +6,16 @@ REQUIREMENTS
 * Apache2 with mod_perl2
 
 * MySQL (5.x preferred) or PostgreSQL
-  
-* A Radius server (for authentication).  We recommend FreeRadius, 
-  available at:
+
+* Authentication Server.  Netdot supports both Radius and LDAP.
+
+  * For Radius, we recommend FreeRadius, available at:
 	
 	http://www.freeradius.org/
+
+  * For LDAP, you can try OpenLDAP, available at:
+     
+        http://www.openldap.org/
 	
 * The GraphViz package, available at
 
@@ -135,12 +140,10 @@ INSTALLING THE PACKAGE FOR THE FIRST TIME
 APACHE CONFIGURATION
 ----------------------------------------------------------------------
 
-* Edit the supplied template etc/netdot_apache2_radius.conf copy it to
-  your apache config dir and and include it somewhere in your 
-  Apache config (e.g.):
+* Edit the supplied template etc/netdot_apache2_<radius|ldap>.conf copy it to
+  your apache config dir and include it somewhere in your Apache config (e.g.):
 
-	Include conf/netdot_apache2_radius.conf	
-
+	Include conf/netdot_apache2_<radius|ldap>.conf	
 
 * Edit lib/Netdot/Mason.pm to your needs.  
   Pay attention to the Apache2-only directives, and also the paths.

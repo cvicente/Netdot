@@ -1002,6 +1002,14 @@ sub get_snmp_info {
     }else{
 	$logger->debug(sub{"Device::get_snmp_info: BGP Peer discovery not enabled"});
     }
+
+    # Remove whitespace at beginning and end
+    while ( my ($key, $val) = each %dev){
+	$val =~ s/^\s+//;
+	$val =~ s/\s+$//;
+	$dev{$key} = $val;
+    }
+
     $logger->debug(sub{"Device::get_snmp_info: Finished getting SNMP info from $name ($ip)"});
     return \%dev;
 }
@@ -1394,12 +1402,12 @@ sub get_ips_from_all {
     $class->isa_class_method('get_ips_from_all');
 
     # Build the SQL query
-    $logger->debug(sub{ "Device::get_macs_from_all: Retrieving all Device IPs..." });
+    $logger->debug(sub{ "Device::get_ips_from_all: Retrieving all Device IPs..." });
 
     my $dbh = $class->db_Main;
     my $aref = $dbh->selectall_arrayref("SELECT ip.address, d.id
-                                         FROM ipblock ip, device d, interface i
-                                         WHERE i.device=d.id AND ip.interface=i.id
+                                         FROM   ipblock ip, device d, interface i
+                                         WHERE  i.device=d.id AND ip.interface=i.id
                                          ");
     # Build a hash of mac addresses to device ids
     my %dev_ips;
