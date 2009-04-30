@@ -53,7 +53,8 @@ BEGIN {
     sub _historize {
 	my ($self, %args) = @_;
 	my $changed_columns = $args{discard_columns};
-	if ( scalar(@$changed_columns) == 1  && 
+	if ( defined $changed_columns && 
+	     scalar(@$changed_columns) == 1  && 
 	     $changed_columns->[0] eq 'last_updated' ){
 	    return;
 	}
