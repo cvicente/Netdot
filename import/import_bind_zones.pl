@@ -69,9 +69,11 @@ if ( $self{domain} && $self{zonefile} ){
 	my $zone = shift @$zones;
 	&import_zone("$self{dir}/$file", $zone);
 	while ( my $alias = shift @$zones ){
-	    &debug("Adding zone $alias as alias of $zone");
 	    if ( my $zoneobj = Netdot::Model::Zone->search(name=>$zone)->first ){
-		Netdot::Model::ZoneAlias->insert({name=>$alias, zone=>$zoneobj});
+		if ( !(Netdot::Model::ZoneAlias->search(name=>$alias, zone=>$zoneobj)->first) ){
+		    &debug("Adding zone $alias as alias of $zone");
+		    Netdot::Model::ZoneAlias->insert({name=>$alias, zone=>$zoneobj});
+		}
 	    }else{
 		warn "Zone $zone not found in DB!.  Can't create alias $alias.\n";
 	    }
@@ -195,8 +197,10 @@ sub import_zone {
 	    debug("$domain: RR $name already exists in DB");
 	    $nrr = $nrrs{$name};
 	}else{
-	    &debug("$domain: Inserting RR $name");
-	    $nrr = Netdot::Model::RR->insert({name=>$name, zone=>$nzone});
+	    if ( !($nrr = Netdot::Model::RR->search(name=>$name, zone=>$nzone)->first ) ){
+		&debug("$domain: Inserting RR $name");
+		$nrr = Netdot::Model::RR->insert({name=>$name, zone=>$nzone});
+	    }
 	    $nrrs{$name} = $nrr;
 	}
 

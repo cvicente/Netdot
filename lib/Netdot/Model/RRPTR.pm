@@ -14,8 +14,64 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =head1 CLASS METHODS
 =cut
 
+##################################################################
+=head2 as_text
+
+    Override the base method to:
+      - If not given, figure out the name of the record, using the 
+        zone and the IP address
+    
+  Arguments:
+    None
+  Returns:
+    RRPTR object
+  Examples:
+
+=cut
+sub insert {
+    my($class, $argv) = @_;
+    $class->isa_class_method('insert');
+
+    $class->throw_fatal("Missing required arguments")
+	unless ( defined $argv->{ptrdname} && defined $argv->{ipblock} );
+    
+    my $ipb  = ref($argv->{ipblock})? $argv->{ipblock} : Ipblock->retrieve($argv->{ipblock});
+
+    if ( !defined $argv->{rr} ){
+	$class->throw_fatal("Figuring out the rr field requires passing zone")
+	    unless ( defined $argv->{zone} );
+
+	my $zone = ref($argv->{zone}) ? $argv->{zone} : Zone->retrieve($argv->{zone});
+	my $p = $zone->name;
+	$p =~ s/(.*)\.in-addr.arpa$/$1/ || 
+	    $p =~ s/(.*)\.ip6.arpa$/$1/ ||
+	    $p =~ s/(.*)\.ip6.int$/$1/ ;
+
+	my $name;
+	if ( $ipb->version eq '4' ){
+	    $name = join('.', reverse split(/\./, $ipb->address));
+	}elsif ( $ipb->version eq '6' ){
+	    $name = $ipb->full_address;
+	    $name =~ s/://g;
+	    $name = join('.', reverse split(//, $name));
+	}
+	$name =~ s/\.$p$//;
+	$argv->{rr} = RR->find_or_create({zone=>$argv->{zone}, name=>$name});
+    }
+    
+    # We'll wipe out whatever PTR records there are for this IP
+    foreach my $r ( $ipb->ptr_records ){
+	$r->delete;
+    }
+
+    delete $argv->{zone};
+    return $class->SUPER::insert($argv);
+    
+}
+
 =head1 INSTANCE METHODS
 =cut
+
 ##################################################################
 =head2 as_text
 

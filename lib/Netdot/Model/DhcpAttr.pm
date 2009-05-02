@@ -74,7 +74,24 @@ sub insert {
 =head1 INSTANCE METHODS
 =cut
 
+############################################################################
+=head2 as_text - Generate definition as text
 
+  Argsuments: 
+  Returns: 
+  Examples:
+    
+=cut
+sub as_text {
+    my ($self, %argv) = @_;
+    
+    my $out = $self->name->as_text;
+    $out .=  " " . $self->value if ( defined $self->value );
+    $out .= ";\n";
+
+    return $out;
+}
+    
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>

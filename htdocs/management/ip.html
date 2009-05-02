@@ -400,9 +400,8 @@ if ( my @parents = $o->get_ancestors ){
     foreach my $par ( reverse @parents ){
     	push (@line, "<a href=\"ip.html?id=" . $par->id . "\">" . $par->get_label . "</a>");
     }
-    if( $view_format eq 'block' ) {  
-  	    push (@line, "<a href=\"ip.html?id=" . $o->id . "\">" . $o->get_label . "</a>");  
-        push (@line, "Addresses");  
+    if( $view_format eq 'block' && !$o->is_address ) {  
+	push (@line, "<a href=\"ip.html?id=" . $o->id . "\">" . $o->get_label . "</a>");  
     } else {  
         push (@line, $o->get_label);  
     }
@@ -510,27 +509,6 @@ if ( my @parents = $o->get_ancestors ){
   </form>
 %}
 
-<div class="container">
-    <div class="containerheadleft">DNS A/AAAA Records</div>
-    <div class="containerheadright">
-	<a href="edit.html?table=RRADDR&ipblock=<% $o %>">[add]</a>
-    </div>
-
-% my @rrs = $o->arecords;
-<& /generic/sortresults.mhtml, object=>\@rrs &>
-
-</div>
-
-<div class="container">
-    <div class="containerheadleft">DNS PTR Records</div>
-    <div class="containerheadright">
-	<a href="edit.html?table=RRPTR&ipblock=<% $o %>">[add]</a>
-    </div>
-
-% my @ptrs = $o->ptr_records;
-<& /generic/sortresults.mhtml, object=>\@ptrs &>
-
-</div>
 
 <div class="container">
     <div class="containerheadleft">Services</div>
@@ -598,7 +576,6 @@ if ( my @parents = $o->get_ancestors ){
 
 %     }
 <!-- End Display ARP -->
-
 
 %} else {     
 %#######################################################################################
@@ -691,7 +668,8 @@ if ( my @parents = $o->get_ancestors ){
     push @fields, 'Auto-generate PTR records:';
     push @data, '<input type="checkbox" name="range_gen_ptr" checked="checked">';
 
-    my @zones = $o->dns_zones();
+    my $fwzone   = $o->forward_zone();
+    my $revzone  = $o->reverse_zone();
     my @allzones = Zone->retrieve_all();
 
     push @fields, 'Forward Zone';
@@ -699,9 +677,8 @@ if ( my @parents = $o->get_ancestors ){
 	my $x;
 	$x .= '<select name="range_fw_zone" id="range_fw_zone">';
 	$x .= '<option value="0">-- Select --</option>';
-	foreach my $z ( @zones ){
-	    next if ( $z->name =~ /arpa$|int$/ );
-	    $x .= '<option value="'. $z->id .'" SELECTED>'. $z->name .'</option>';
+	if ( $fwzone ){
+	    $x .= '<option value="'. $fwzone->id .'" SELECTED>'. $fwzone->name .'</option>';
 	}
 	foreach my $z ( @allzones ){
 	    next if ( $z->name =~ /arpa$|int$/ );
@@ -717,12 +694,11 @@ if ( my @parents = $o->get_ancestors ){
 	my $x;
 	$x .= '<select name="range_rev_zone" id="range_rev_zone">';
 	$x .= '<option value="0">-- Select --</option>';
-	foreach my $z ( @zones ){
-	    next unless ( $z->name =~ /arpa$|int$/ );
-	    $x .= '<option value="'. $z->id .'" SELECTED>'. $z->name .'</option>';
+	if ( $revzone ){
+	    $x .= '<option value="'. $revzone->id .'" SELECTED>'. $revzone->name .'</option>';
 	}
 	foreach my $z ( @allzones ){
-	    next if ( $z->name =~ /arpa$|int$/ );
+	    next unless ( $z->name =~ /arpa$|int$/ );
 	    $x .= '<option value="'. $z->id .'">'. $z->name .'</option>';
 	}
 	$x .= '</select>';

@@ -48,16 +48,20 @@ Netdot::Model::Zone - DNS Zone Class
 
 =cut
 sub search {
-    my ($class, %argv) = @_;
+    my ($class, @args) = @_;
     $class->isa_class_method('search');
+
+    @args = %{ $args[0] } if ref $args[0] eq "HASH";
+    my $opts = @args % 2 ? pop @args : {}; 
+    my %argv = @args;
 
     if ( exists $argv{id} && $argv{id} =~ /\D+/ ){
 	# No use searching for non-digits in id field
 	$argv{id} = 0;
     }
     
-    if ( $class->SUPER::search(%argv) ){
-	return $class->SUPER::search(%argv);
+    if ( $class->SUPER::search(%argv, $opts) ){
+	return $class->SUPER::search(%argv, $opts);
     }elsif ( defined $argv{name} ){
 	if ( my $alias = ZoneAlias->search(name=>$argv{name})->first ) {
 	    return $class->SUPER::search(id=>$alias->zone->id);
@@ -77,7 +81,7 @@ sub search {
 	}
     }
     else{
-	return $class->SUPER::search(%argv);
+	return $class->SUPER::search(%argv, $opts);
     }
 }
 
@@ -301,7 +305,7 @@ sub print_to_file{
 	    }
 	}
     }
-
+    close($fh);
     $logger->info("Zone ".$self->name." written to file: $path");
     1;
 }

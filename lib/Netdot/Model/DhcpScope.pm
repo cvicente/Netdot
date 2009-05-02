@@ -52,13 +52,14 @@ sub search {
 =head2 insert - Insert new Scope
 
     Override base method to:
-      - Assign DhcpScopeType based on give text or id
+      - Assign DhcpScopeType based on given text or id
       - Insert given attributes
 
  Argsuments: 
-    name
-    type
-    attributes
+    Hashref with following keys:
+      name
+      type        - DhcpScopeType name, id or object
+      attributes  - A hash ref with attribute key/value pairs
   Returns: 
     DhcpScope object
   Examples:
@@ -97,7 +98,91 @@ sub insert {
 =head1 INSTANCE METHODS
 =cut
 
+############################################################################
+=head2 as_text - Generate scope definition as text
 
+    Output will include other scopes contained within given scope.
+
+  Argsuments: 
+  Returns: 
+  Examples:
+    
+=cut
+sub as_text {
+    my ($self, %argv) = @_;
+
+    my $out;
+    my $indent;
+
+    # Open scope definition
+    if ( $self->type->name ne 'global' ){
+	$out .= $self->type->name." ".$self->name." {\n";
+	$indent .= " " x 4;
+    }
+
+    if ( $self->type->name eq 'host' ){
+	# We don't store these attributes
+	if ( $self->physaddr && $self->ipblock ){
+	    $out .= $indent.'hardware ethernet '.$self->physaddr->colon_address.";\n";
+	    $out .= $indent.'fixed-address '.$self->ipblock->address.";\n";
+	}
+    }
+
+    # Any free-form text goes verbatim first
+    if ( defined $self->text ){
+	$out .= $self->text."\n";
+    }
+    
+    # Now print all my own attributes
+    foreach my $attr ( $self->attributes ){
+	$out .= $indent if defined $indent;
+	$out .= $attr->as_text;
+    }
+
+    # Now do the same for each contained scope
+    if ( my @sub_scopes = $self->contained_scopes ){
+	foreach my $s ( @sub_scopes ){
+	    $out .= $s->as_text();
+	}
+    }
+
+    # Close scope definition
+    if ( $self->type->name ne 'global' ){
+	$out .= "}\n";
+    }
+
+    return $out;
+}
+
+############################################################################
+=head2 print_to_file -  Print the config file as text
+
+ Args: 
+  Returns: 
+    True
+  Examples:
+    $scope->print_to_file();
+
+=cut
+sub print_to_file{
+    my ($self, %argv) = @_;
+    $self->isa_object_method('print_to_file');
+    
+    my $dir = Netdot->config->get('DHCPD_EXPORT_DIR') 
+	|| $self->throw_user('DHCPD_EXPORT_DIR not defined in config file!');
+    
+    my $filename = $self->export_file;
+    unless ( $filename ){
+	$logger->warn('Export filename not defined for this global scope: '. $self->name.' Using scope name.');
+	$filename = $self->name;
+    }
+    my $path = "$dir/$filename";
+    my $fh = Netdot::Exporter->open_and_lock($path);
+    
+    print $fh $self->as_text, "\n";
+
+    close($fh);
+}
 
 =head1 AUTHOR
 

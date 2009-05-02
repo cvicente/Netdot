@@ -39,10 +39,12 @@ Netdot::Model::RR - DNS Resource Record Class
 
 =cut
 sub search {
-    my ($class, %argv) = @_;
+    my ($class, @args) = @_;
     $class->isa_class_method('search');
-    $class->throw_fatal('Model::RR::search: Missing required arguments')
-	unless %argv;
+
+    @args = %{ $args[0] } if ref $args[0] eq "HASH";
+    my $opts = @args % 2 ? pop @args : {}; 
+    my %argv = @args;
 
     my ($rr, @sections);
     if ( (exists $argv{name}) && ($argv{name} =~ /\./)  && !exists $argv{zone} ){
@@ -56,7 +58,7 @@ sub search {
 	    return $class->SUPER::search(%argv);
 	}
     }else{
-	return $class->SUPER::search(%argv);
+	return $class->SUPER::search(%argv, $opts);
     }
     return;
 }
@@ -194,7 +196,7 @@ sub insert {
 	$args{ttl} ||= $zone->default_ttl;
 	
 	return RRADDR->insert(\%args);
-    
+
     }elsif ( $argv->{type} eq 'TXT' ){
 	$class->throw_user("Missing required argument: txtdata")
 	    unless defined $argv->{txtdata};
@@ -241,7 +243,7 @@ sub insert {
 	    $ipb = Netdot::Model::Ipblock->insert({ address => $argv->{ipblock},
 						    status  => 'Static' });
 	}
-	my %args = (rr=>$rr, ptrdname=>$argv->{ptrdname}, ipblock=>$ipb);
+	my %args = (rr=>$rr, ipblock=>$ipb, ptrdname=>$argv->{ptrdname});
 	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRPTR->insert(\%args);
 
@@ -285,6 +287,41 @@ sub insert {
 =cut
 
 ##################################################################
+=head2 update
+
+    Override base method to:
+      - If RRADDR records exist: 
+           - make sure that RRPTR records' ptrdnames match RR name
+           - Update name on DHCP host scope if it exists
+
+  Arguments:
+    Hashref
+  Returns:
+    Number of rows updated or -1
+  Examples:
+    $rr->update(\%args)
+
+=cut
+sub update {
+    my ($self, $argv) = @_;
+    $self->isa_object_method('update');
+    
+    my @res = $self->SUPER::update($argv);
+
+    if ( my @arecords = $self->arecords ){
+	foreach my $rraddr ( @arecords ){
+	    my $ip = $rraddr->ipblock;
+	    if ( my $ptr = ($ip->ptr_records)[0] ){
+		$ptr->update({ptrdname=>$self->get_label})
+		    if ( $ptr->ptrdname ne $self->get_label );
+	    }
+	}
+    }
+    
+    return @res;
+}
+
+##################################################################
 =head2 get_label - Override get_label method
 
     Returns the full Resource Record name
@@ -299,6 +336,7 @@ sub insert {
 =cut
 sub get_label {
     my $self = shift;
+    $self->isa_object_method('get_label');
     my $name = ($self->name eq '@')? "" : $self->name;
     if ( $self->zone ){
 	if ( $name ){

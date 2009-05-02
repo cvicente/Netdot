@@ -1,51 +1,51 @@
-package Netdot::Model::Site;
+package Netdot::Model::DhcpAttrName;
 
 use base 'Netdot::Model';
 use warnings;
 use strict;
 
-# Make sure to return 1
-1;
+my $logger = Netdot->log->get_logger('Netdot::Model');
 
 =head1 NAME
 
-Netdot::Module::Site
+Netdot::Model::DhcpAttrName - DHCP Attribute Name Class
 
 =head1 SYNOPSIS
 
-See Netdot::Model::Site
 
 =head1 CLASS METHODS
 =cut
 
-=head2 with_backbones
 
+=head1 INSTANCE METHODS
 =cut
 
-__PACKAGE__->set_sql(with_backbones => qq{
-SELECT   site.id 
-FROM     site, closet, backbonecable 
-WHERE    (backbonecable.start_closet=closet.id OR backbonecable.end_closet=closet.id) 
-  AND    closet.site=site.id 
-GROUP BY site.id, site.name    
-ORDER BY site.name
-});
+############################################################################
+=head2 as_text - Generate attribute name text
 
-__PACKAGE__->set_sql(with_closets => qq{
-SELECT   site.id 
-FROM     site, closet
-WHERE    closet.site=site.id 
-GROUP BY site.id, site.name    
-ORDER BY site.name
-});
-
+  Argsuments: 
+  Returns: 
+  Examples:
+    
+=cut
+sub as_text {
+    my ($self, %argv) = @_;
+    
+    my $out = $self->name;
+    
+    if ( defined $self->code && defined $self->format ){
+	$out .= 'code '.$self->code.' ='.$self->format;
+    }
+    return $out;
+}
+    
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright University of Oregon, all rights reserved.
+Copyright 2009 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -63,4 +63,6 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =cut
 
+#Be sure to return 1
 1;
+

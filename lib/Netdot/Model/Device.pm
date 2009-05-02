@@ -1894,7 +1894,8 @@ sub get_label {
 sub is_in_downtime {
     my ($self) = @_;
 
-    if ( $self->down_from && $self->down_until ){
+    if ( $self->down_from && $self->down_until && 
+	 $self->down_from ne '0000-00-00' && $self->down_until ne '0000-00-00' ){
 	my $time1 = $self->sqldate2time($self->down_from);
 	my $time2 = $self->sqldate2time($self->down_until);
 	my $now = time;

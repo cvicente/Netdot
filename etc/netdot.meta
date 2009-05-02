@@ -2683,6 +2683,14 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
+      export_file => {
+        default => '',
+        description => 'Path and file name to export config to.',
+        length => '255',
+        nullable => 0,
+        tag => 'Export File',
+        type => 'varchar'
+      },
       text => {
         default => '',
         description => 'Free-form text for this scope.  The contents of this field will be included in the configuration file.',
@@ -2754,9 +2762,7 @@ $meta = {
     },
     description => 'A DHCP Scope',
     has_history => 0,
-    index => [
-      ['ipblock'], ['type' ],
-    ],
+    index => [ ['ipblock'], ['type' ], ['physaddr'] ],
     isjoin => '0',
     label => [
       'type',
@@ -2771,7 +2777,8 @@ $meta = {
         'container',
         'ipblock',
         'physaddr',
-        'text'
+        'text',
+        'export_file',
       ],
       class => [
         'name',

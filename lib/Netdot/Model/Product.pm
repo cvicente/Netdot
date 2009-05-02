@@ -47,8 +47,10 @@ Netdot::Model::Product - Netdot Device Product Class
 =cut
 
 sub find_or_create {
-    my ($class, %argv) = @_;
+    my ($class) = shift;
     $class->isa_class_method('find_or_create');
+
+    my %argv = ref $_[0] eq "HASH" ? %{$_[0]} : @_;
 
     my ($name, $description, $sysobjectid, $type, $manufacturer, $hostname) 
 	= @argv{"name", "description", "sysobjectid", "type", "manufacturer", "hostname"};
@@ -155,7 +157,7 @@ __PACKAGE__->set_sql(monitored_by_type => qq{
         FROM   device d, product p, producttype t
         WHERE  d.product = p.id 
            AND p.type = t.id 
-           AND d.monitored = 1
+           AND d.monitored='1'
            AND t.id = ?
         GROUP BY p.name, p.id
         ORDER BY numdevs DESC

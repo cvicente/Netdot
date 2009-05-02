@@ -16,8 +16,61 @@ RRADDR represent either A or AAAA records.
 =head1 CLASS METHODS
 =cut
 
+
+############################################################################
+=head2 insert - Insert new RRADDR object
+
+    We override the base method to:
+     - Create or update the corresponding RRPTR object
+    
+  Arguments:
+    Hashref with key/value pairs
+  Returns:
+    RRADDR object
+  Example:
+    my $arecord = RRADDR->insert(\%args)
+
+=cut
+sub insert {
+    my($class, $argv) = @_;
+    
+    my $rraddr = $class->SUPER::insert($argv);
+
+    my $ipb =  $rraddr->ipblock;
+    
+    # Create/update PTR record for this IP
+    $rraddr->_update_rrptr();
+
+    return $rraddr;
+    
+}
 =head1 INSTANCE METHODS
 =cut
+
+############################################################################
+=head2 update
+
+    We override the base method to:
+     - Create or update the corresponding RRPTR object
+    
+  Arguments:
+    Hashref with key/value pairs
+  Returns:
+    Number of rows updated or -1
+  Example:
+    $arecord->update(\%args)
+
+=cut
+sub update {
+    my($self, $argv) = @_;
+    $self->isa_object_method('update');
+
+    my @res = $self->SUPER::update($argv);
+
+    $self->_update_rrptr();
+
+    return @res;
+}
 
 ############################################################################
 =head2 delete - Delete object
@@ -73,6 +126,33 @@ sub as_text {
 ##################################################################
 # Private methods
 ##################################################################
+
+############################################################################
+#
+# When an RRADDR record is inserted or updated, we make sure to 
+# update the corresponding PTR record
+#
+sub _update_rrptr {
+    my ($self) = @_;
+    $self->isa_object_method('_update_rrptr');
+
+    my $rrptr;
+    if ( !($rrptr = ($self->ipblock->ptr_records)[0]) ){
+	# We *need* to have a SubnetZone relationship.
+	# Otherwise it's hard to tell where the PTR record goes
+	if ( my $rev_zone = $self->ipblock->reverse_zone() ){
+	    # Notice that we don't pass the rr field because
+	    # the RRPTR class can figure that out.
+	    $rrptr = RRPTR->insert({ptrdname => $self->rr->get_label, 
+				    ipblock  => $self->ipblock, 
+				    zone     => $rev_zone,
+				    ttl      => $self->ttl});
+	}
+    }elsif ( $rrptr->ptrdname ne $self->rr->get_label ){
+	$rrptr->update({ptrdname=>$self->rr->get_label});
+    }
+    return 1;
+}
 
 
 ##################################################################

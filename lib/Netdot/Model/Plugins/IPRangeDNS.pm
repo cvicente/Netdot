@@ -93,19 +93,15 @@ sub _generate {
 		$r->delete;
 	    }
 	    
-	    my $ptr = Netdot::Model::RR->insert({type    => 'PTR',
-						 name     => $name, 
-						 ptrdname => $ptrdname, 
-						 ipblock  => $ipb, 
-						 zone     => $rzone});
-	    
+	    my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
+						    ipblock  => $ipb, 
+						    zone     => $rzone});
 	    push @rrs, $ptr;
 	    
 	    my $rraddr = Netdot::Model::RR->insert({type    => 'A',
 						    name    => $name, 
 						    ipblock => $ipb, 
 						    zone    => $fzone});
-	    
 	    push @rrs, $rraddr;
 	    
 	}elsif ( $ip->version eq '6' ){

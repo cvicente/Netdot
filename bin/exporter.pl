@@ -9,14 +9,19 @@ use Log::Log4perl::Level;
 
 my $USAGE = <<EOF;
  usage: $0 -t "<Type1, Type2...>" 
-         [ -z|--zones <zone1,zone2...> ]
-         [ -n|--nopriv ]
-    
-    Available types:  Nagios, Sysmon, Rancid, BIND
+         [ -z|--zones <zone1,zone2...> ] [ -n|--nopriv ]
+         [ -d|--debug ] [ -h|--help ]
+         [ -s|--scope <scope1, scope2>]
+
+    Available types:  Nagios, Sysmon, Rancid, BIND, DHCPD
 
     BIND exporter Options:
        zones  - Comma-separated list of zone names, or the word 'all'
        nopriv - Exclude private data from zone file (TXT and HINFO)
+
+    DHCPD exporter options:
+       scopes - Comma-separated list of global scope names.  If not
+                specified, all global scopes will be exported.
 
 EOF
     
@@ -26,6 +31,7 @@ my %self;
 my $result = GetOptions( 
     "t|types=s"       => \$self{types},
     "z|zones=s"       => \$self{zones},
+    "s|scopes=s"      => \$self{scopes},
     "n|nopriv"        => \$self{nopriv},
     "h|help"          => \$self{help},
     "d|debug"         => \$self{debug},
@@ -60,9 +66,16 @@ foreach my $type ( split ',', $self{types} ){
 	}
 	my @zones = split ',', $self{zones};
 	if ( scalar(@zones) == 1 && $zones[0] eq 'all' ){
-	    $exporter->generate_configs(all=>1);
+	    $exporter->generate_configs(all=>1, nopriv=>$self{nopriv});
 	}else{
 	    $exporter->generate_configs(zones=>\@zones, nopriv=>$self{nopriv});
+	}
+    }elsif ( $type eq 'DHCPD' ){
+	if ( $self{scopes} ){
+	    my @scopes = split ',', $self{scopes};
+	    $exporter->generate_configs(scopes=>\@scopes);
+	}else{
+	    $exporter->generate_configs();
 	}
     }else{
 	$exporter->generate_configs();

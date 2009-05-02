@@ -1143,6 +1143,26 @@ sub cidr {
 }
 
 ##################################################################
+=head2 full_address
+
+    Returns the address part in FULL notation for ipV4 and ipV6 respectively.
+    See NetAddr::IP::full()
+
+  Arguments:
+    None
+  Returns:
+    string
+  Examples:
+    print $ipblock->full_address();
+
+=cut
+sub full_address {
+    my $self = shift;
+    $self->isa_object_method('full_address');
+    return $self->_netaddr->full()
+}
+
+##################################################################
 =head2 get_label - Override get_label method
 
     Returns the address in CIDR notation if it is a net address:
@@ -1279,6 +1299,15 @@ sub update {
     # Only rebuild the tree if address/prefix have changed
     if ( $self->address ne $bak{address} || $self->prefix ne $bak{prefix} ){
 	$self->_update_tree();
+    }
+
+    # Update name on dhcp host scope if needed
+    if ( $self->address ne $bak{address} ){
+	if ( my @scopes = $self->dhcp_scopes ){
+	    foreach my $scope ( @scopes ){
+		$scope->update({name=>$self->address});
+	    }
+	}
     }
 
     # Now check for rules
@@ -2003,6 +2032,7 @@ sub enable_dhcp{
 =cut
 sub dns_zones {
     my ($self) = @_;
+    $self->isa_object_method('dns_zones');
     my @szones = $self->zones;
     unless ( @szones ){
 	foreach my $p ( $self->get_ancestors ){
@@ -2013,6 +2043,52 @@ sub dns_zones {
     }
     if ( @szones ){
 	return map { $_->zone } @szones;
+    }
+}
+
+################################################################
+=head2 forward_zone - Find the forward zone for this ip or block
+    
+  Arguments: 
+    None
+  Returns:   
+    Zone object
+  Examples:
+    my $zone = $ipb->forward_zone();
+=cut
+sub forward_zone {
+    my ($self) = @_;
+    $self->isa_object_method('forward_zone');
+
+    if ( my @zones = $self->dns_zones ){
+	foreach my $z ( @zones ){
+	    if ( $z->name !~ /\.arpa$|\.int$/ ){
+		return $z;
+	    }
+	}
+    }
+}
+
+################################################################
+=head2 reverse_zone - Find the in-addr.arpa zone for this ip or block
+    
+  Arguments: 
+    None
+  Returns:   
+    Zone object
+  Examples:
+    my $r_zone = $ipb->reverse_zone();
+=cut
+sub reverse_zone {
+    my ($self) = @_;
+    $self->isa_object_method('reverse_zone');
+
+    if ( my @zones = $self->dns_zones ){
+	foreach my $z ( @zones ){
+	    if ( $z->name =~ /\.arpa$|\.int$/ ){
+		return $z;
+	    }
+	}
     }
 }
 
@@ -2046,7 +2122,7 @@ sub _insert_dhcp_scope {
     
     my $container = $argv{container};
     my $scope;
-    my $scope_name = "subnet ".$self->address." netmask ".$self->_netaddr->mask;
+    my $scope_name = $self->address." netmask ".$self->_netaddr->mask;
     if ( !($scope = DhcpScope->search(name=>$scope_name)->first) ){
 	$logger->debug("Ipblock::enable_dhcp: ".$self->get_label.": Inserting DhcpScope: $scope_name");
 	my %args = (name      => $scope_name, 

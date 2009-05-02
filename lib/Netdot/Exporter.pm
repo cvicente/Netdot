@@ -14,6 +14,7 @@ my %types = (
     'Sysmon' => 'Netdot::Exporter::Sysmon',
     'Rancid' => 'Netdot::Exporter::Rancid',
     'BIND'   => 'Netdot::Exporter::BIND',
+    'DHCPD'  => 'Netdot::Exporter::DHCPD',
     );
 
 my %_class_data;
@@ -147,7 +148,8 @@ sub get_monitored_ips {
 	next unless ( $int_monitored && $dev_monitored );
 	
 	# Check downtime dates to see if this device should be excluded
-	if ( $down_from && $down_until ){
+	if ( $down_from && $down_until && 
+	     $down_from ne '0000-00-00' && $down_until ne '0000-00-00' ){
 	    my $time1 = Netdot::Model->sqldate2time($down_from);
 	    my $time2 = Netdot::Model->sqldate2time($down_until);
 	    my $now = time;

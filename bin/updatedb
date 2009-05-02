@@ -13,7 +13,7 @@
 # This method should work, and it's probably easier than current method.
 #
 # Also note: 0.7->0.8 updatedb uses a different approach:
-# It creates a new database and copy everything over.
+# It creates a new database and copies everything over.
 # See /tags/netdot-0.8.1/bin/updatedb for more info
 #
 
@@ -42,11 +42,12 @@ my @statements = (
     "ALTER TABLE `dhcpattr` ADD INDEX dhcpattr1 (`name`, `scope`)",
     "ALTER TABLE `dhcpscope` CHANGE `fixed_address` `ipblock` integer NOT NULL",
     "ALTER TABLE `dhcpscope` CHANGE `info` `text` blob",
-    "ALTER TABLE `dhcpscope` DROP COLUMN `parent`",
+    "ALTER TABLE `dhcpscope` CHANGE `parent` `container` integer NOT NULL",
     "ALTER TABLE `dhcpscope` DROP COLUMN `subnet`",
-    "ALTER TABLE `dhcpscope` ADD COLUMN `container` integer NOT NULL",
+    "ALTER TABLE `dhcpscope` ADD COLUMN `export_file` varchar(255) NOT NULL",
     "ALTER TABLE `dhcpscope` DROP INDEX DhcpScope2",
     "ALTER TABLE `dhcpscope` ADD INDEX DhcpScope2 (`ipblock`)",
+    "ALTER TABLE `dhcpscope` ADD INDEX DhcpScope4 (`physaddr`)",
     "ALTER TABLE `ipblock` DROP COLUMN `dhcp_enabled`",
     "ALTER TABLE `person` MODIFY `email` varchar(255)",
     "ALTER TABLE `person` MODIFY `emailpager` varchar(255)",
@@ -84,7 +85,8 @@ my @statements = (
     "ALTER TABLE `zone` ADD COLUMN `default_ttl` integer NOT NULL",
     "ALTER TABLE `zone` ADD COLUMN `export_file` varchar(255) NOT NULL",
     "ALTER TABLE `zone` DROP COLUMN `masterserver`",
-    "ALTER TABLE `zone` ADD COLUMN `name` varchar(128) NOT NULL",
+    "ALTER TABLE `zone` CHANGE COLUMN `mname` `name` varchar(128) NOT NULL",
+    "ALTER TABLE `zone` ADD COLUMN `mname` varchar(128) NOT NULL",
     "ALTER TABLE `zone` DROP COLUMN `reverse`",
     "ALTER TABLE `zone` DROP INDEX zone1",
     "ALTER TABLE `zone` ADD UNIQUE INDEX zone1 (`name`)",
@@ -132,6 +134,7 @@ my @statements = (
        INDEX DhcpScopeUse2 (`template`),
        PRIMARY KEY (`id`)
      ) ENGINE=InnoDB;",
+    "INSERT INTO DhcpScopeType (name) VALUES ('template')",
     );
 
 my @ttlchange = ("rraddr",
@@ -177,6 +180,7 @@ foreach my $t (keys %timeStampChangeNull) {
 }
 
 foreach my $st (@statements) {
+    &debug($st);
     my $sth = $dbh->prepare($st);
     eval {
 	$dbh->do($st);
