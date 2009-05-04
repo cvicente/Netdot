@@ -1709,7 +1709,7 @@ sub build_device_topology_graph {
 
     $argv{format} ||= 'png';
     if ( $argv{format} =~ /^(text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
-	my $method = 'as_'.$format;
+	my $method = 'as_'.$argv{format};
 	$g->$method($filename);
     }else{
 	$self->throw_user("Unrecognized format: $argv{format}");

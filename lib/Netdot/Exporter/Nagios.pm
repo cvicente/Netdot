@@ -88,8 +88,8 @@ sub generate_configs {
     foreach my $row ( @$device_ips ){
 	my ($deviceid, $ipid, $address, $hostname) = @$row;
 	
-	my $ipobj  = Ipblock->retrieve($ipid);
-	my $device = Device->retrieve($deviceid);
+	my $ipobj  = Ipblock->retrieve($ipid)    || next;
+	my $device = Device->retrieve($deviceid) || next;
 	
 	# Determine the group name for this device
 	my $group;
