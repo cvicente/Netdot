@@ -200,7 +200,7 @@ sub soa_string{
     Hashref with following key/value pairs:
         nopriv  - Flag.  Exclude private data (TXT and HINFO)
   Returns: 
-    True
+    Path of file written to
   Examples:
     $zone->print_to_file();
 
@@ -306,8 +306,8 @@ sub print_to_file{
 	}
     }
     close($fh);
-    $logger->info("Zone ".$self->name." written to file: $path");
-    1;
+    $logger->debug("Zone ".$self->name." written to file: $path");
+    return $path;
 }
 
 

@@ -44,13 +44,13 @@ BEGIN {
 
     ###########################################################
     # Copy stored object in corresponding history table 
-    #  - Before updating
+    #  - After updating
     #  - After creating
     # This must be defined here (before loading the classes).  
     ###########################################################
     __PACKAGE__->add_trigger( after_update => \&_historize );
-    __PACKAGE__->add_trigger( after_create  => \&_historize );
-    
+    __PACKAGE__->add_trigger( after_create => \&_historize );
+
     sub _historize {
 	my ($self, %args) = @_;
 	
@@ -80,6 +80,55 @@ BEGIN {
 	};
 	if ( my $e = $@ ){
 	    $logger->error("Could not insert history record for $table id ".$self->id.": $e");
+	}
+	1;
+    }
+
+    ###########################################################
+    # Keep audit trail of DNS changes.  The contents of the 
+    # zoneaudit table are flushed each time a new zonefile is
+    # generated.  This avoids unnecessarily generating zone
+    # files and logs details
+    ###########################################################
+    __PACKAGE__->add_trigger( after_update => \&_zone_audit );
+    __PACKAGE__->add_trigger( after_create => \&_zone_audit );
+        
+    sub _zone_audit {
+	my ($self, %args) = @_;
+	if ( $self->table =~ /^rr/ || $self->table eq 'zone' ){
+	    my $changed_columns = $args{discard_columns};
+	    $logger->debug("Netdot::Model::_zone_audit: _zone_audit: ".$self->table);
+	    if ( defined $changed_columns && scalar(@$changed_columns) ){
+		my $zone;
+		my $user = $ENV{REMOTE_USER} || "unknown";
+		if ( $self->table eq 'zone' ){
+		    $zone = $self;   
+		}elsif ( $self->table eq 'rr' ){
+		    $zone = $self->zone;
+		}elsif ( $self->table eq 'rrcname' || $self->table eq 'rrsrv' ){
+		    $zone = $self->name->zone;
+		}else{
+		    $zone = $self->rr->zone;
+		}
+		my $fields = join ',', @$changed_columns;
+		my @values = map { $self->$_ } @$changed_columns;
+		$values    = join ',', map { "'$_'" } @values;
+		my %data = (zone        => $zone,
+			    tstamp      => $self->timestamp,
+			    record_type => $self->table,
+			    user        => $user,
+			    fields      => $fields,
+			    vals        => $values,
+		    );
+		eval {
+		    ZoneAudit->insert(\%data);
+		};
+		if ( my $e = $@ ){
+		    $logger->error("Netdot::Model::_zone_audit: Could not insert ZoneAudit record about $table id ".$self->id.": $e");
+		}else{
+		    $logger->info("Netdot::Model::_zone_audit: zone: ".$zone->name.", user: $user, fields: ($fields), values: ($values)");
+		}
+	    }
 	}
 	1;
     }

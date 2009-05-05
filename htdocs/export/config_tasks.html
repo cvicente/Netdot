@@ -20,6 +20,10 @@ $user           => undef
 $submit         => undef
 $showheader     => 1
 $hideheader     => undef
+@zones          => undef
+$bind_force     => undef
+$bind_no_priv   => undef
+@scopes         => undef
 </%args>
 %
 %
@@ -34,32 +38,68 @@ $hideheader     => undef
 use Netdot::Exporter;
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
-my @types = qw /Nagios Sysmon Rancid/;
+my @types = qw /Nagios Sysmon Rancid BIND DHCPD/;
 my $logstr;
 
 </%init>
 
+<form action="config_tasks.html" method="POST">
 <div id="sectiontools" <% $hideheader %>>
 <div class="container">
     <div class="containerhead">
         Export third party configurations from Netdot
     </div>
     <div class="containerbody" id="tasks">
-        <p><br>
-        <table><tr><td>
-        <fieldset class="medium">
-            <legend>Export Options</legend>
-            <form action="config_tasks.html" method="POST">
-                Select one or more of:
+    <p><br>
+    <table>
+     <tr>
+      <td>
+        <fieldset class="small">
+            <legend>Export Classes</legend>
+                <p>
+                <label>Select one or more of:</label>
                 <select name="config_types" MULTIPLE>
 %               foreach my $type ( @types ){
         	    <option value="<% $type %>"><% $type %></option> 
 %               } 
                 </select>
-                <input type="submit" name="submit" class="btn" value="submit" >
-            </form>
+                </p>
         </fieldset>
-        </td></tr></table>
+        <fieldset class="small">
+            <legend>BIND Options</legend>
+                <p>
+                <label>Select specific zones</strong> (default is ALL):</label>
+                <select name="zones" size="6" MULTIPLE>
+%               foreach my $zone ( Zone->retrieve_all ){
+        	    <option value="<% $zone %>"><% $zone->name %></option> 
+%               } 
+                </select>
+                </p>
+                <p>
+                   <label for="bind_force">Force</label>
+                   <input type="checkbox" name="bind_force">
+                </p>
+                <p>
+                   <label for="bind_no_priv">Exclude Private Data</label> 
+                   <input type="checkbox" name="bind_no_priv" CHECKED>
+                </p>
+        </fieldset>
+        <fieldset class="small">
+            <legend>DHCPD Options</legend>
+                <p>
+                <label>Select specific scopes</strong> (default is ALL):</label>
+                <select name="scopes" size="6" MULTIPLE>
+%               foreach my $scope ( DhcpScope->search(type=>'global') ){
+        	    <option value="<% $scope %>"><% $scope->name %></option> 
+%               } 
+                </select>
+                </p>
+        </fieldset>
+     </td>
+    </tr>
+    </table>
+    <input type="submit" name="submit" class="btn" value="Export" >
+</form>
 
 <%perl>
 if ( $submit ){
@@ -75,9 +115,17 @@ if ( $submit ){
     $logger->add_appender($logstr);
 
     foreach my $type ( @config_types ){
+	my %args;
+	if ( $type eq 'BIND' ){
+	    $args{zone_ids} = \@zones if @zones;
+	    $args{force}    = 1 if ($bind_force);
+	    $args{nopriv}   = 1 if ($bind_no_priv);
+	}elsif ( $type eq 'DHCPD' ){
+	    $args{scopes} = \@scopes if @scopes;	    
+	}
 	eval {
 	    my $exporter = Netdot::Exporter->new(type=>$type);
-	    $exporter->generate_configs();
+	    $exporter->generate_configs(%args);
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);

@@ -135,6 +135,19 @@ my @statements = (
        PRIMARY KEY (`id`)
      ) ENGINE=InnoDB;",
     "INSERT INTO DhcpScopeType (name) VALUES ('template')",
+    "CREATE TABLE `zoneaudit` (
+       `fields` varchar(255),
+       `id` integer NOT NULL auto_increment,
+       `record_type` varchar(255),
+       `tstamp` timestamp NOT NULL DEFAULT '1970-01-01 00:00:01',
+       `user` varchar(255),
+       `vals` varchar(255),
+       `zone` integer NOT NULL,
+       INDEX ZoneAudit2 (`zone`),
+       INDEX ZoneAudit3 (`user`),
+       INDEX ZoneAudit4 (`record_type`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
     );
 
 my @ttlchange = ("rraddr",

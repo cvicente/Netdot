@@ -9,15 +9,17 @@ use Log::Log4perl::Level;
 
 my $USAGE = <<EOF;
  usage: $0 -t "<Type1, Type2...>" 
-         [ -z|--zones <zone1,zone2...> ] [ -n|--nopriv ]
-         [ -d|--debug ] [ -h|--help ]
+         [ -z|--zones <zone1,zone2...> ] [ -n|--nopriv ] [-f|--force]
          [ -s|--scope <scope1, scope2>]
+         [ -d|--debug ] [ -h|--help ]
 
     Available types:  Nagios, Sysmon, Rancid, BIND, DHCPD
 
     BIND exporter Options:
-       zones  - Comma-separated list of zone names, or the word 'all'
+       zones  - Comma-separated list of zone names.  If not 
+                specified, all zones will be exported
        nopriv - Exclude private data from zone file (TXT and HINFO)
+       force  - Force export, even if there are no pending changes
 
     DHCPD exporter options:
        scopes - Comma-separated list of global scope names.  If not
@@ -31,6 +33,7 @@ my %self;
 my $result = GetOptions( 
     "t|types=s"       => \$self{types},
     "z|zones=s"       => \$self{zones},
+    "f|force"         => \$self{force},
     "s|scopes=s"      => \$self{scopes},
     "n|nopriv"        => \$self{nopriv},
     "h|help"          => \$self{help},
@@ -60,16 +63,15 @@ foreach my $type ( split ',', $self{types} ){
     $type =~ s/\s+//g;
     my $exporter = Netdot::Exporter->new(type=>$type);
     if ( $type eq 'BIND' ){
-	unless ( $self{zones} ){
-	    print $USAGE;
-	    die "Missing required argument 'zones' for BIND export";
+	my %args = (nopriv => $self{nopriv},
+		    force  => $self{force},
+	    );
+	if ( $self{zones} ){
+	    my @zones = split ',', $self{zones};
+	    $args{zones} = \@zones;
 	}
-	my @zones = split ',', $self{zones};
-	if ( scalar(@zones) == 1 && $zones[0] eq 'all' ){
-	    $exporter->generate_configs(all=>1, nopriv=>$self{nopriv});
-	}else{
-	    $exporter->generate_configs(zones=>\@zones, nopriv=>$self{nopriv});
-	}
+	$exporter->generate_configs(%args);
+
     }elsif ( $type eq 'DHCPD' ){
 	if ( $self{scopes} ){
 	    my @scopes = split ',', $self{scopes};

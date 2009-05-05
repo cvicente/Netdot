@@ -7313,6 +7313,97 @@ $meta = {
         'name',
       ]
     }
-  }
+  },
+  ZoneAudit => {
+    table_db_name => 'zoneaudit',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      zone => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'audit_records',
+          table => 'Zone'
+        },
+        nullable => 0,
+        tag => 'Zone',
+        type => 'integer'
+      },
+      tstamp => {
+        default => '1970-01-01 00:00:01',
+        description => 'When this change happened',
+        length => '',
+        nullable => 0,
+        tag => 'Timestamp',
+        type => 'timestamp'
+      },
+      user => {
+        default => '',
+        description => 'User that made the change',
+        length => '255',
+        nullable => 1,
+        tag => 'User',
+        type => 'varchar'
+      },
+      record_type => {
+        default => '',
+        description => 'Record Type',
+        length => '255',
+        nullable => 1,
+        tag => 'Record Type',
+        type => 'varchar'
+      },
+      fields => {
+        default => '',
+        description => 'Fields changed',
+        length => '255',
+        nullable => 1,
+        tag => 'Fields',
+        type => 'varchar'
+      },
+      vals => {
+        default => '',
+        description => 'Values changed',
+        length => '255',
+        nullable => 1,
+        tag => 'Values',
+        type => 'varchar'
+      },
+    },
+    description => 'Zone Record changes',
+    has_history => 0,
+    index => [ ['zone'], ['user'], ['record_type'] ],
+    isjoin => '0',
+    label => [
+      'zone',
+    ],
+    primary_key => 'id',
+    unique => [ [ ] ],
+    views => {
+      all => [
+        'zone',
+        'tstamp',
+        'user',
+        'record_type',
+        'fields',
+        'values',
+      ],
+      brief => [
+        'zone',
+        'tstamp',
+        'user',
+        'record_type',
+      ]
+    }
+  },
  }
 }

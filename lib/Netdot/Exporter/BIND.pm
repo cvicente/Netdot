@@ -43,7 +43,6 @@ sub new{
 
   Arguments:
     Hashref with the following keys:
-      all    - boolean.  Export all zones.
       zones  - Array ref.  List of zone names to export.
       nopriv - Exclude private data from zone file (TXT and HINFO)
   Returns:
@@ -53,15 +52,10 @@ sub new{
 =cut
 sub generate_configs {
     my ($self, %argv) = @_;
-
+    
     my @zones;
-
-    if ( $argv{all} ){
-	@zones = Zone->retrieve_all();
-    }else{
-	if ( !$argv{zones} ){
-	    $self->throw_fatal("zones argument is required if 'all' flag is off");
-	}
+    
+    if ( $argv{zones} ){
 	unless ( ref($argv{zones}) eq 'ARRAY' ){
 	    $self->throw_fatal("zones argument must be arrayref!");
 	}
@@ -72,11 +66,35 @@ sub generate_configs {
 		$self->throw_user("Zone $name not found");
 	    }
 	}
-    }
+    }elsif ( $argv{zone_ids} ){
+	unless ( ref($argv{zone_ids}) eq 'ARRAY' ){
+	    $self->throw_fatal("zone_ids argument must be arrayref!");
+	}
+	foreach my $id ( @{$argv{zone_ids}} ){
+	    if ( my $zone = Zone->retrieve($id) ){
+		push @zones, $zone;
+	    }else{
+		$self->throw_user("Zone $id not found");
+	    }
+	}
 
+    }else{
+	@zones = Zone->retrieve_all();
+    }
+    
     foreach my $zone ( @zones ){
-	$zone->print_to_file(nopriv=>$argv{nopriv})
-	    if $zone->active;
+	if ( $zone->audit_records() || $argv{force} ){
+	    if ( $zone->active ){
+		my $path = $zone->print_to_file(nopriv=>$argv{nopriv});
+		$logger->info("Zone ".$zone->name." written to file: $path");
+	    }
+	    
+	    # Flush audit records for this zone
+	    map { $_->delete } $zone->audit_records;
+
+	}else{
+	    $logger->debug($zone->name.": No pending changes.  Use -f to force.");
+	}
     }
 }
 
