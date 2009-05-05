@@ -498,7 +498,7 @@ sub _get_columns_hash{
 	
 	$ret{modifier} = {default     => '',
 			  description => 'Netdot user who last modified this record',
-			  length      => '32',
+			  length      => '255',
 			  nullable    => 1,
 			  tag         => 'Modifier',
 			  type        => 'varchar'};
