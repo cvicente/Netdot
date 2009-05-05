@@ -1589,6 +1589,8 @@ sub build_device_topology_graph {
     $showvlans = ($showvlans == 1) ? 1 : 0;
     $shownames = ($shownames == 1) ? 1 : 0;
 
+    $direction = ($direction eq 'up_down')? 0 : 1;
+
     # Declare some useful functions
     sub add_node {
         my (%argv) = @_;
@@ -1619,6 +1621,9 @@ sub build_device_topology_graph {
         foreach my $iface ( sort { int($a) cmp int($b) }  @ifaces) {
             my $neighbor = $iface->neighbor;
             next unless int($neighbor);  # If there's no neighbor, skip ahead
+
+	    my $name          = ($shownames ? $iface->name :    $iface->number)    || $iface->number;
+	    my $neighbor_name = ($shownames ? $neighbor->name : $neighbor->number) || $neighbor->number;
 
             my $nd = $neighbor->device;
             unless (scalar($nd)) {
@@ -1657,9 +1662,9 @@ sub build_device_topology_graph {
 
                     $g->add_edge($device->short_name => $nd->short_name,
 				 tailURL             => "view.html?table=Interface&id=".$iface->id,
-				 taillabel           => ($shownames ? $iface->name : $iface->number), 
+				 taillabel           => $name, 
 				 headURL             => "view.html?table=Interface&id=".$neighbor->id, 
-				 headlabel           => ($shownames ? $neighbor->name : $neighbor->number),
+				 headlabel           => $neighbor_name,
 				 color               => $color,
 				 style               => $style,
                         );
@@ -1667,9 +1672,9 @@ sub build_device_topology_graph {
             } else {
                 $g->add_edge($device->short_name => $nd->short_name,
 			     tailURL             => "view.html?table=Interface&id=".$iface->id,
-			     taillabel           => ($shownames ? $iface->name : $iface->number),
+			     taillabel           => $name,
 			     headURL             => "view.html?table=Interface&id=".$neighbor->id, 
-			     headlabel           => ($shownames ? $neighbor->name : $neighbor->number),
+			     headlabel           => $neighbor_name,
 			     color               => 'black',
                     );
             }
@@ -1682,16 +1687,10 @@ sub build_device_topology_graph {
     my %args = (layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0,
 		node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', 
 		       fontsize=>10, height=>.25},
-		edge=>{dir=>'none', labelfontsize=>8} );
+		edge=>{dir=>'none', labelfontsize=>8}, rankdir=>$direction );
 
-    $argv{direction} ||= 'up_down';
-
-    if ( $argv{direction} eq 'left_right' ){
-	$args{rankdir} = 1;
-    }
-    
     # Actually do the searching
-    my $g = GraphViz->new();
+    my $g = GraphViz->new(%args);
     
     my $start = Device->retrieve($id);
     &add_node(graph       => $g,
