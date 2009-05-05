@@ -119,7 +119,6 @@ sub insert {
 	name        => $argv->{name},
 	mname       => $argv->{mname}       || 'localhost',
 	rname       => $argv->{rname}       || "hostmaster.".$argv->{name},
-	serial      => $argv->{serial}      || $class->_dateserial . "00",
 	refresh     => $argv->{refresh}     || $class->config->get('DEFAULT_DNSREFRESH'),
 	retry       => $argv->{retry}       || $class->config->get('DEFAULT_DNSRETRY'),
 	expire      => $argv->{expire}      || $class->config->get('DEFAULT_DNSEXPIRE'),
@@ -130,7 +129,9 @@ sub insert {
 	);
 
     my $newzone = $class->SUPER::insert( \%state );
-    
+
+    $newzone->_update_serial();
+
     return $newzone;
 }
 
@@ -351,17 +352,28 @@ sub _dateserial {
 sub _update_serial {
     my ($self, $argv) = @_;
     $self->isa_object_method('_update_serial');
-    
-    my $date   = $self->_dateserial();
+
     my $serial = $self->serial;
-    
-    # If current serial is from today, increment
-    # the counter.  Otherwise, use today's date and 00.
-    if ( $serial =~ /$date(\d{2})/ ){
-	my $inc = sprintf("%02d", $1+1);
-	$serial = $date . $inc;
+
+    my $format = Netdot->config->get('ZONE_SERIAL_FORMAT') || 'dateserial';
+
+    if ( $format eq 'dateserial' ){
+	# If current serial is from today, increment
+	# the counter.  Otherwise, use today's date and 00.
+	my $date   = $self->_dateserial();
+	if ( $serial =~ /$date(\d{2})/ ){
+	    my $inc = sprintf("%02d", $1+1);
+	    $serial = $date . $inc;
+	}else{
+	    $serial = $date . '00';
+	}
+    }elsif ( $format eq 'epoch' ){
+	$serial = time;
+
+    }elsif ( $format eq 'plain' ){
+	$serial++;
     }else{
-	$serial = $date . '00';
+	$self->throw_fatal("Unrecognized value for ZONE_SERIAL_FORMAT in config file");
     }
     
     return $self->update({serial=>$serial});
