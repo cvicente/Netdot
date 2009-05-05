@@ -11,6 +11,7 @@ section => 'Management'
 %
 <%args>
 $id
+$view => 'undef'
 </%args>
 %
 %
@@ -48,7 +49,7 @@ my %linksfrom = Interface->meta_data->get_links_from;
 %	      if ( $view eq "all" ){
 		  [all]
 %	      }elsif ( keys %linksfrom > 1 ){
-		  <a href="view.html?table=Interface&id=<% $obj %>&view=all">[all]</a>
+		  <a href="interface.html?id=<% $obj %>&view=all">[all]</a>
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
 %               next if ( $i =~ 'circuits' );
@@ -132,8 +133,8 @@ if( $view eq 'all' || $view eq 'arp_entries' ){
 $sth2->execute($id);
 my $arp_tstamps = $sth2->fetchall_arrayref();
 my $arp_count = scalar(@$arp_tstamps);
-@headers = ("Timestamp");
-@rows = ();
+my @headers = ("Timestamp");
+my @rows = ();
 </%perl>
 
 %  if ( $arp_count ){
@@ -151,5 +152,13 @@ my $arp_count = scalar(@$arp_tstamps);
 
 <!-- End Display has_many objects -->
 
+<!-- Display history objects associated with this object-->
+%if ( $view eq 'all' || $view eq 'history' ){
+<div class="container">
+%    my @ho = $obj->get_history;
+     <& /generic/sortresults.mhtml, object => \@ho , view => "row", sort => 0 &>
+</div>
+%} 
+<!-- End Display history objects -->
 
 </div>
