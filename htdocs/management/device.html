@@ -47,6 +47,7 @@ $newip      => undef
 $topodepth  => 1
 $topovlans  => 0
 $toponames  => 0
+$topodirection  => 'left_right'
 </%args>
 %
 %
@@ -1197,26 +1198,49 @@ if ( $ipeers ){
 %
 % if ( $view eq "Topology" || $view eq "All" ){
 %
+
+<form name="change_topo_view_form" action="device.html" method="GET">
+      <input type="hidden" name="id" value="<% $id %>">
+      <input type="hidden" name="view" value="<% $view %>">
+<table>
+  <tr>
+      <th>Show Vlans?</th>
+      <th>Show Interface Names?</th>
+      <th>Search depth</th>
+      <th>Direction</th>
+      <th>&nbsp;</th>
+  </tr>
+  <tr>
+      <td><input type="checkbox" name="topovlans" value="1" <% ($topovlans ? "checked" : "") %>></td>
+      <td><input type="checkbox" name="toponames" value="1"  <% ($toponames ? "checked" : "") %>></td>
+      <td><input type="text" name="topodepth" size=2 value="<% $topodepth %>">
+      <small>(Deeper than 2 may take a long time to render)</small></td>
+      <td><select name="topodirection">
+%        if ( $topodirection eq 'up_down' ){
+          <option value="up_down" "selected">Up/Down</option>
+          <option value="left_right">Left/Right</option>
+%        }else{
+          <option value="up_down">Up/Down</option>
+          <option value="left_right" "selected">Left/Right</option>
+%        }
+      </select></td>
+    <td><input type="submit" value="Change View"></td>
+  </tr>
+</table>
+</form>
+
 <!-- Topology drawing -->
 <div class="container">
     <div class="containerhead">
         Topology - Layer 2
     </div>
     <div class="containerbody">
-    <table><tr><td>
-    <form name="change_topo_view_form" action="device.html" method="GET">
-      <input type="hidden" name="id" value="<% $id %>">
-      <input type="hidden" name="view" value="<% $view %>">
-        Show Vlans? <input type="checkbox" name="topovlans" value="1" <% ($topovlans ? "checked" : "") %><br>
-        Show Interface Names? <input type="checkbox" name="toponames" value="1"  <% ($toponames ? "checked" : "") %>><br>
-        Search depth: <input type="text" name="topodepth" size=2 value="<% $topodepth %>"><br>
-        <small>(Deeper than 2 may take a long time to render)</small> <br>
-      <input type="submit" value="Change View">
-    </form></td><td style="text-align:center">
+    <center>
 %       print $ui->build_device_topology_graph_html(id=>$id, view=>$view, depth=>$topodepth, 
 %                                                   web_path=>$r->dir_config('NetdotPath'), 
-%                                                   show_vlans=>$topovlans, show_names=>$toponames);
-    </td></tr></table>
+%                                                   show_vlans=>$topovlans, show_names=>$toponames, 
+%                                                   direction=>$topodirection);
+    <center>
     </div>
 </div>
 
