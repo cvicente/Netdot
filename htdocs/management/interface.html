@@ -11,6 +11,7 @@ section => 'Management'
 %
 <%args>
 $id
+$view => 'undef'
 </%args>
 %
 %
@@ -20,6 +21,7 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my $obj = Interface->retrieve($id);
 my $dbh = Netdot::Model->db_Main();
 my $fdb_tstamps;
+my %linksfrom = Interface->meta_data->get_links_from;
 </%init>
 
 <div id="sectiondetail">
@@ -39,10 +41,36 @@ my $fdb_tstamps;
 </div>
 <!-- End Display main object values -->
 
+<!-- Display has_many possibilities-->
+
+      <div class="container">
+	<div class="containerhead">View</div>
+	   <div class="containerbody">
+%	      if ( $view eq "all" ){
+		  [all]
+%	      }elsif ( keys %linksfrom > 1 ){
+		  <a href="interface.html?id=<% $obj %>&view=all">[all]</a>
+%             }
+%             foreach my $i ( sort keys %linksfrom ){
+%               next if ( $i =~ 'circuits' );
+%               if ( $view eq $i ){
+                   [<% $i %>]
+%               }else{
+                   <a href="interface.html?id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
+%               }   
+%             }
+              <a href="interface.html?id=<% $obj %>&view=circuits">[circuits]</a>
+              <a href="interface.html?id=<% $obj %>&view=history">[history]</a>
+	   </div>
+	</div>
+      </div>
+<!-- End Display has_many possibilities-->
+
+
 <!-- Display has_many objects -->
 
 %##############################################################################################
-% if( my @ivlans = $obj->vlans ){
+% if( ($view eq 'all' || $view eq 'vlans') && (my @ivlans = $obj->vlans) ){
 %     my @vlans = map { $_->vlan } @ivlans;
       <div class="containerhead">VLANs</div>
 	  <div class="container">
@@ -52,19 +80,22 @@ my $fdb_tstamps;
 % }
 
 %##############################################################################################
-% my @nearcirc = $obj->nearcircuits();
-% my @farcirc  = $obj->farcircuits();
-% my @circuits = (@nearcirc, @farcirc);
-% if( @circuits  ){
-      <div class="containerhead">Circuits</div>
-	  <div class="container">
-	      <& /generic/sortresults.mhtml, object => \@circuits &>
+% if( $view eq 'all' || $view eq 'circuits' ){
+%     my @nearcirc = $obj->nearcircuits();
+%     my @farcirc  = $obj->farcircuits();
+%     my @circuits = (@nearcirc, @farcirc);
+%     if ( @circuits ){
+          <div class="containerhead">Circuits</div>
+	      <div class="container">
+	          <& /generic/sortresults.mhtml, object => \@circuits &>
+              </div>
           </div>
-      </div>
+%     }
 % }
 
 %##############################################################################################
 <%perl>
+if( $view eq 'all' || $view eq 'fwt_entries' ){
     my $sth1 = $dbh->prepare("SELECT   ft.tstamp 
                               FROM     interface i, fwtable ft, fwtableentry fte 
                               WHERE    fte.interface=i.id 
@@ -79,7 +110,7 @@ my @headers = ("Timestamp");
 my @rows;
 </%perl>
 
-% if ( $fdb_count ){
+%  if ( $fdb_count ){
     <div class="containerhead">FWT entries</div>
 %    foreach my $row (@$fdb_tstamps){
 %	my ($tstamp) = @$row;
@@ -87,9 +118,11 @@ my @rows;
 %    }
 %    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
     </div>
+%  }
 % }
 %##############################################################################################
 <%perl>
+if( $view eq 'all' || $view eq 'arp_entries' ){
     my $sth2 = $dbh->prepare("SELECT   arp.tstamp 
                               FROM     interface i, arpcache arp, arpcacheentry arpe
                               WHERE    arpe.interface=i.id 
@@ -100,11 +133,11 @@ my @rows;
 $sth2->execute($id);
 my $arp_tstamps = $sth2->fetchall_arrayref();
 my $arp_count = scalar(@$arp_tstamps);
-@headers = ("Timestamp");
-@rows = ();
+my @headers = ("Timestamp");
+my @rows = ();
 </%perl>
 
-% if ( $arp_count ){
+%  if ( $arp_count ){
     <div class="containerhead">ARP entries</div>
 %    foreach my $row (@$arp_tstamps){
 %	my ($tstamp) = @$row;
@@ -112,11 +145,20 @@ my $arp_count = scalar(@$arp_tstamps);
 %    }
 %    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
     </div>
+%  }
 % }
 </div>
 
 
 <!-- End Display has_many objects -->
 
+<!-- Display history objects associated with this object-->
+%if ( $view eq 'all' || $view eq 'history' ){
+<div class="container">
+%    my @ho = $obj->get_history;
+     <& /generic/sortresults.mhtml, object => \@ho , view => "row", sort => 0 &>
+</div>
+%} 
+<!-- End Display history objects -->
 
 </div>

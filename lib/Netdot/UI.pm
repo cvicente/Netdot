@@ -1341,13 +1341,17 @@ sub select_query {
   Returns:
     String with component path
   Examples:
-    my $page = $ui->table_view_page{$table};
+    my $page = $ui->table_view_page($table);
 
 =cut
 sub table_view_page {
     my ($self, $table) = @_;
     
-    return $VIEWPAGE{$table};
+    if ( exists $VIEWPAGE{$table} ){
+	return $VIEWPAGE{$table};
+    }else{
+	return "../generic/view.html";
+    }
 }
 ############################################################################
 =head2 build_backbone_graph

@@ -100,6 +100,8 @@ if( $DEBUG ) {
 #
 if ( $table ){
 
+    my $page = $ui->table_view_page($table);
+
     # Special cases
     if ( $table =~ /Picture/ ){
 	if ( $args{upload} ){
@@ -130,7 +132,7 @@ if ( $table ){
 	    if ( my $e = $@ ){
 		$m->comp('error.mhtml', error=>$e);
 	    }
-	    $m->comp('view.html', table=>$table, id=>$id);
+	    $m->comp($page, table=>$table, id=>$id);
 	    
 	}else{
 	    $m->comp('.show_form', table=>$table, id=>$id, 
@@ -149,7 +151,7 @@ if ( $table ){
 		$m->comp('.show_inserted', table=>$table, id=>$new->id,
 			 showheader=>$showheader, select_id=>$select_id, selected=>$selected);
 	    }else{
-		$m->comp('view.html', table=>$table, id=>$new->id);
+		$m->comp($page, table=>$table, id=>$new->id);
 	    }
 
 	}else{
