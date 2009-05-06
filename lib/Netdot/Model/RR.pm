@@ -181,7 +181,7 @@ sub insert {
 	    $ipb = $argv->{ipblock};
 	}elsif ( !($ipb = Netdot::Model::Ipblock->search(address=>$argv->{ipblock})->first) ){
 	    $ipb = Netdot::Model::Ipblock->insert({ address => $argv->{ipblock},
-						    status  => 'static' });
+						    status  => 'Static' });
 	}
 	my %args = (rr=>$rr, ipblock=>$ipb);
 

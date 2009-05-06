@@ -465,11 +465,17 @@ sub insert {
 	unless ( exists $argv->{address} );
 
     $argv->{prefix}        ||= undef;
-    $argv->{status}        ||= "Container";
     $argv->{interface}     ||= 0; 
     $argv->{owner}         ||= 0; 
     $argv->{used_by}       ||= 0; 
     $argv->{parent}        ||= 0; 
+    
+    #if if IP is not a Container then make it Static
+    if ((defined $argv->{prefix}) && (($argv->{address} =~ $IPV4 && $argv->{prefix} eq '32') || ($argv->{address} =~ $IPV6 && $argv->{prefix} eq '128'))) {
+	$argv->{status} ||= "Static";
+    } else {
+	$argv->{status} ||= "Container";
+    }
     
     # $ip is a NetAddr::IP object;
     my $ip;
@@ -1190,7 +1196,7 @@ sub get_label {
 ##################################################################
 =head2 is_address - Is this a host address?  
 
-    Hos addresses are v4 blocks with a /32 prefix or v6 blocks with a /128 prefix
+    Host addresses are v4 blocks with a /32 prefix or v6 blocks with a /128 prefix
 
  Arguments: 
     None
@@ -2044,6 +2050,7 @@ sub dns_zones {
     if ( @szones ){
 	return map { $_->zone } @szones;
     }
+    return;
 }
 
 ################################################################

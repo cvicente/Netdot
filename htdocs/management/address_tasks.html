@@ -101,8 +101,8 @@ my $live_info;
                 <input type="text" name="add_block_prefix" class="longtxt" value="">
                 </p>
                 <p>
-                <label for="range_owner">Owner:</label>
-                <select name="range_owner" id="range_owner">
+                <label for="block_owner">Owner:</label>
+                <select name="block_owner" id="block_owner">
                 <option value="0">-- Select --</option>
 %               my @allents = Entity->retrieve_all; 
 %               @allents = sort { $a->name cmp $b->name } @allents;
@@ -110,21 +110,21 @@ my $live_info;
                     <option value="<% $ent->id %>"><% $ent->name %></option>                
 %               }
                 </select>
-                <a class="hand" onClick="openinsertwindow('table=Entity&select_id=range_owner&selected=1&dowindow=1')">[new]</a>
+                <a class="hand" onClick="openinsertwindow('table=Entity&select_id=block_owner&selected=1&dowindow=1')">[new]</a>
                 </p>
                 <p>
-                <label for="range_used_by">Used By:</label>
-                <select name="range_used_by" id="range_used_by">
+                <label for="block_used_by">Used By:</label>
+                <select name="block_used_by" id="block_used_by">
                 <option value="0">-- Select --</option>
 %               foreach my $ent ( @allents ){
                     <option value="<% $ent->id %>"><% $ent->name %></option>                
 %               }
                 </select>
-                <a class="hand" onClick="openinsertwindow('table=Entity&select_id=range_used_by&selected=1&dowindow=1')">[new]</a>
+                <a class="hand" onClick="openinsertwindow('table=Entity&select_id=block_used_by&selected=1&dowindow=1')">[new]</a>
                 </p>
                 <p>
-                <label for="range_status">Status:</label>
-                <select name="range_status" id="range_used_by">
+                <label for="block_status">Status:</label>
+                <select name="block_status" id="block_used_by">
                 <option value="0">-- Select --</option>
 %               my @allstatus = qw( Subnet Container Reserved ); 
 %               foreach my $status ( @allstatus ){
@@ -133,8 +133,8 @@ my $live_info;
                 </select>
                 </p>
                 <p>
-                <label for="range_status">Description:</label>
-                <input type="text" class="longtxt" name="range_description">
+                <label for="block_description">Description:</label>
+                <input type="text" class="longtxt" name="block_description">
                 </p>
 		<p>
                 <input name="submit" value="Save" class="btn" type="submit">

@@ -18,6 +18,7 @@ $recursivedel      => undef
 $add_range_start   => undef
 $add_range_end     => undef
 $add_block_prefix  => undef
+$range_owner       => undef
 $range_status      => undef
 $range_used_by     => undef
 $range_description => undef
@@ -25,6 +26,10 @@ $range_parent      => undef
 $range_gen_ptr     => undef
 $range_fw_zone     => undef
 $range_rev_zone    => undef
+$block_owner       => undef
+$block_status      => undef
+$block_used_by     => undef
+$block_description => undef
 $newblock          => undef
 $parent            => undef
 $length            => undef
@@ -208,6 +213,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 		$o = Ipblock->add_range(start       => $add_range_start, 
 					end         => $add_range_end,
 					status      => $range_status,
+					owner       => $range_owner,
 					used_by     => $range_used_by,
 					description => $range_description,
 					parent      => $range_parent,
@@ -240,22 +246,24 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	my ($address, $prefix) = split /\//, $add_block_prefix;
 	if ( (($address =~ $IPV4 && $prefix ne '32') ||
 	      ($address =~ $IPV6 && $prefix ne '128')) &&
-	     ($range_status eq 'Dynamic' || $range_status eq 'Static') ){
+	     ($block_status eq 'Dynamic' || $block_status eq 'Static') ){
 	    $m->comp('/generic/error.mhtml', error=>"IP block cannot be 'Dynamic' or 'Static'.  Specify IP Range instead.");
         }
 	my $block;
 	eval {
 	    if ( $block = Ipblock->search(address=>$address, prefix=>$prefix)->first ){
-		$block->update({status      => $range_status,
-				used_by     => $range_used_by,
-				description => $range_description,
+		$block->update({status      => $block_status,
+				owner       => $block_owner,
+				used_by     => $block_used_by,
+				description => $block_description,
 			       });
 	    }else{
 		$block = Ipblock->insert({address     => $address,
 					  prefix      => $prefix,
-					  status      => $range_status,
-					  used_by     => $range_used_by,
-					  description => $range_description,
+					  status      => $block_status,
+					  owner       => $block_owner,
+					  used_by     => $block_used_by,
+					  description => $block_description,
 					 });
 	    }
 	};
@@ -502,6 +510,7 @@ if ( my @parents = $o->get_ancestors ){
 %# actually output the table to the browser
 <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data,
                           width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
+<a href="hostinfo_tasks.html?ip=<% $o->get_label %>&action=EDIT">[Configure Host Info!]</a>
     </div>
 </div>
 
@@ -509,73 +518,9 @@ if ( my @parents = $o->get_ancestors ){
   </form>
 %}
 
+<& /management/host.mhtml, id=>$id,  edit=>$added_ip, arp_limit=>$arp_limit &>
 
-<div class="container">
-    <div class="containerheadleft">Services</div>
-    <div class="containerheadright">
-	<a href="edit.html?table=IpService&ip=<% $o %>">[add]</a>
-    </div>
-<%perl>
-    my @headers = ("Service", "Contact List");
-    my @rows = ();
-    foreach my $ipservice ($o->services){
-	push( @rows,
-	      [ eval {
-		  if ($edit eq "ipinfo"){	 
-		      $ui->form_field(object=>$ipservice, column=>"service", edit=>$edit_ip, returnValOnly=>1);
-		  }else{
-		      qq(<a href="view.html?table=Service&id=).$ipservice->service->id.qq(">).$ipservice->service->name."</td></a>";
-		  }
-	      } ,
-		eval {
-                    if ($edit eq "ipinfo"){
-                        $ui->form_field(object=>$ipservice, column=>"contactlist", edit=>$edit_ip, returnValOnly=>1);
-                    }elsif ($o->used_by){
-                        qq(<a href="view.html?table=ContactList&id=).$ipservice->contactlist.qq(">).$ipservice->contactlist->name."</td></a>";
-                    }
-		}
-                ]  );
-    } 
-    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows ) if ( $o->services ); 
-</%perl>
-</div>
 
-<!-- Display ARP -->
-<%perl>
-# Get latest arp entries
-    if ( my $arp = $o->get_last_n_arp($arp_limit) ){
-        my @rows;
-	my %tstamps;
-        foreach my $row ( @$arp ){
-            my ($iid, $macid, $tstamp) = @$row;
-            my $lbl    = Interface->retrieve($iid)->get_label;
-            my $lnk   = "<a href=\"interface.html?id=$iid\">$lbl</a>";
-	    push @{$tstamps{$tstamp}{$macid}}, $lnk;
-        }
-	foreach my $tstamp ( reverse sort keys %tstamps ){
-	    foreach my $macid ( keys %{$tstamps{$tstamp}} ){
-		my $maclbl   = PhysAddr->retrieve($macid)->get_label;
-		my $maclnk   = "<a href=\"../management/mac.html?id=$macid\">$maclbl</a>";
-		push @rows, [$tstamp, $maclnk, (join ', ', @{$tstamps{$tstamp}{$macid}})];
-	    }
-	}
-       
-</%perl>
-<div class="container">
-    <div class="containerheadleft"><strong>Last <% $arp_limit %> ARP entries</strong></div>
-          <div class="containerheadright">
-	    <form name="netdotform" action="ip.html" method="POST">
-	      <input type="hidden" name="id" value="<% $id %>">
-	      Last <input type="text" size="3" name="arp_limit" value="<% $arp_limit %>"> ARP entries <input type="submit" name="submit" value="show">
-            </form>
-	  </div>
-    <div class="containerbodyoutside">
-        <& /generic/data_table.mhtml, field_headers=>['Time Seen', 'MAC', 'Interfaces'], data=>\@rows, style=>['', '', 'width: 60%'] &>
-    </div>
-</div>
-
-%     }
-<!-- End Display ARP -->
 
 %} else {     
 %#######################################################################################
@@ -681,6 +626,7 @@ if ( my @parents = $o->get_ancestors ){
 	    $x .= '<option value="'. $fwzone->id .'" SELECTED>'. $fwzone->name .'</option>';
 	}
 	foreach my $z ( @allzones ){
+	    next unless defined $z;
 	    next if ( $z->name =~ /arpa$|int$/ );
 	    $x .= '<option value="'. $z->id .'">'. $z->name .'</option>';
 	}
@@ -698,6 +644,7 @@ if ( my @parents = $o->get_ancestors ){
 	    $x .= '<option value="'. $revzone->id .'" SELECTED>'. $revzone->name .'</option>';
 	}
 	foreach my $z ( @allzones ){
+	    next unless defined $z;
 	    next unless ( $z->name =~ /arpa$|int$/ );
 	    $x .= '<option value="'. $z->id .'">'. $z->name .'</option>';
 	}

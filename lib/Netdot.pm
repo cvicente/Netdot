@@ -12,7 +12,7 @@ use Carp;
 use RRDs;
 use Data::Dumper;
 
-my $IPV4 = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}';
+my $IPV4 = '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,2})*$';
 my $HD   = '[0-9A-Fa-f]{1,4}'; # Hexadecimal digits, 2 bytes
 my $V6P1 = "$HD:$HD:$HD:$HD:$HD:$HD:$HD:$HD";
 my $V6P2 = "($HD(:$HD){0,6})?::($HD(:$HD){0,6})?";
