@@ -1307,15 +1307,13 @@ sub update {
 	$self->_update_tree();
     }
 
-    # Update name on dhcp host scope if needed
-    if ( $self->address ne $bak{address} ){
-	if ( my @scopes = $self->dhcp_scopes ){
-	    foreach my $scope ( @scopes ){
-		$scope->update({name=>$self->address});
-	    }
+    # Update DHCP scope if needed
+    if ( $self->dhcp_scopes ){
+	if ( $self->address ne $bak{address} || $self->prefix ne $bak{prefix} ){
+	    $self->_update_dhcp_scope();
 	}
     }
-
+	
     # Now check for rules
     # We do it after updating and rebuilding the tree because 
     # it makes things much simpler. Workarounds welcome.
@@ -2141,6 +2139,33 @@ sub _insert_dhcp_scope {
     }
     return $scope;
 }
+
+##################################################################
+#
+#
+#   Arguments: 
+#     None
+#   Returns:   
+#     Scope object
+#   Examples:
+#     $subnet->_update_dhcp_scope();
+#
+sub _update_dhcp_scope {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('update_dhcp_scope');
+    
+    if ( my $scope = ($self->dhcp_scopes)[0] ){
+	# There should not be more than one anyways
+	if ( $self->is_address ){
+	    $scope->update({name=>$self->address});
+	}elsif ( $self->status->name eq 'Subnet' ){
+	    my $scope_name = $self->address." netmask ".$self->_netaddr->mask;
+	    $scope->update({name=>$scope_name});
+	}
+	return $scope;
+    }
+}
+
 
 ##################################################################
 # _prevalidate - Validate block before creating and updating
