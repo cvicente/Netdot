@@ -33,11 +33,12 @@ my $logger = Netdot->log->get_logger("Netdot::Model");
 my %VIEWPAGE = ( BinFile     => "../generic/display_bin.html",
 		 Closet      => "../cable_plant/closet.html",
 		 Circuit     => "../cable_plant/circuit.html",
-		 Ipblock     => "../management/ip.html",
-		 Device      => "../management/device.html",
-		 PhysAddr    => "../management/mac.html",
-		 Interface   => "../management/interface.html",
 		 ContactList => "contactlist.html",
+		 Device      => "../management/device.html",
+		 Interface   => "../management/interface.html",
+		 Ipblock     => "../management/ip.html",
+		 PhysAddr    => "../management/mac.html",
+		 Zone        => "../management/zone.html",
 		 );
 
 

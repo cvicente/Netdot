@@ -1,0 +1,94 @@
+<%doc>
+Zone UI
+</%doc>
+%
+%
+<%attr>
+title   => 'Zone' 
+section => 'Management'
+</%attr>
+%
+%
+<%args>
+$id
+$view => 'undef'
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+my $obj = Zone->retrieve($id);
+my $count = $obj->get_record_count();
+</%init>
+
+<div id="sectiondetail">
+
+%###########################################################################
+<!-- Display main object values -->
+<div class="container">
+    <div class="containerheadleftoutside"><strong>Zone <% $obj->name %></strong></div>
+    <div class="containerheadrightoutside">
+          <a href="zone.html?id=<% $id %>">[refresh]</a>
+          <a href="edit.html?table=Zone">[new]</a>
+          <a href="edit.html?table=Zone&id=<% $id %>">[edit]</a>
+          <a href="delete.html?table=Zone&id=<% $id %>">[delete]</a>
+          <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
+    </div>
+    <div class="containerbodyoutside">
+        <& /generic/form.mhtml, table=>"Zone", id=>$id, edit=>0 &>
+    </div>
+</div>
+<!-- End Display main object values -->
+
+%###########################################################################
+% my @headers;
+% my @rows;
+
+ <div class="container">
+   <div class="containerhead">Record Count</div>
+%   foreach my $rtype ( sort keys %$count ){
+%        push @headers, uc($rtype);
+%        push @rows, $count->{$rtype};
+%    }
+%    $m->comp('/generic/attribute_table.mhtml', width=>"4", field_headers=>\@headers, data=>\@rows);
+    </div>
+</div>
+
+
+
+%###########################################################################
+%# This zone's records
+% if ( my $at = RR->search(name=>'@', zone=>$id)->first ){
+
+%    if ( my @a_records = $at->arecords ){
+    <div class="container">
+       <div class="containerhead">Address Records</div>
+          <& /generic/sortresults.mhtml, object=>\@a_records &>
+     </div>
+%    }
+
+%    if ( my @nslist = $at->ns_records ){
+    <div class="container">
+       <div class="containerhead">Name Servers (NS)</div>
+          <& /generic/sortresults.mhtml, object=>\@nslist &>
+     </div>
+%    }
+
+%    if ( my @mxlist = $at->mx_records ){
+    <div class="container">
+       <div class="containerhead">Mail Exchangers (MX)</div>
+          <& /generic/sortresults.mhtml, object=>\@mxlist &>
+     </div>
+%    }
+
+% }
+
+%###########################################################################
+% if ( my @sz = $obj->subnets ){
+%     my @subnets = map { $_->subnet } @sz;
+      <div class="container">
+        <div class="containerhead">IP Blocks</div>
+          <& /generic/sortresults.mhtml, object=>\@subnets &>
+      </div>
+% }
