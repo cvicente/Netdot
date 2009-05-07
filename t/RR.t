@@ -91,8 +91,16 @@ my $rrsrv = RR->insert({type=>'SRV', name=>'_sip._tcp', zone=>$domain, ttl=>3600
 isa_ok($rrsrv, 'Netdot::Model::RRSRV', 'insert_srv');
 is($rrsrv->as_text, '_sip._tcp.testdomain.	3600	IN	SRV	0 5 5060 sipserver.testdomain.', 'as_text');
 
-# Clean up
 my $zone = $rr->zone;
+
+# We should have one of each in this zone (except a PTR)
+my $count = $zone->get_record_count;
+foreach my $rtype ( keys %$count ){
+    next if ( $rtype eq 'ptr' );
+    is($count->{$rtype}, 1, $rtype.'_record_count');
+}
+
+# Clean up
 $zone->delete;
 $rrptr->rr->zone->delete();
 Ipblock->search(address=>$v4address)->first->delete;

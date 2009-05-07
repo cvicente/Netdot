@@ -312,6 +312,64 @@ sub print_to_file{
 }
 
 
+############################################################################
+=head2 get_record_count
+    
+  Args: 
+    None
+  Returns: 
+    Hashref with key=record type, value=count
+  Examples:
+    $zone->get_record_count();
+
+=cut
+sub get_record_count {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('get_record_count');
+    my $id = $self->id;
+    
+    my $q1 = "SELECT COUNT(DISTINCT rrtxt.id), 
+             COUNT(DISTINCT rrhinfo.id), COUNT(DISTINCT rrptr.id), 
+             COUNT(DISTINCT rrns.id), COUNT(DISTINCT rrmx.id), 
+             COUNT(DISTINCT rrcname.id), COUNT(DISTINCT rrloc.id), 
+             COUNT(DISTINCT rrsrv.id), COUNT(DISTINCT rrnaptr.id)
+             FROM     zone z, rr rr
+                      LEFT OUTER JOIN rrptr   ON rr.id=rrptr.rr
+                      LEFT OUTER JOIN rrtxt   ON rr.id=rrtxt.rr
+                      LEFT OUTER JOIN rrhinfo ON rr.id=rrhinfo.rr
+                      LEFT OUTER JOIN rrns    ON rr.id=rrns.rr
+                      LEFT OUTER JOIN rrmx    ON rr.id=rrmx.rr
+                      LEFT OUTER JOIN rrcname ON rr.id=rrcname.name
+                      LEFT OUTER JOIN rrnaptr ON rr.id=rrnaptr.rr
+                      LEFT OUTER JOIN rrsrv   ON rr.id=rrsrv.name
+                      LEFT OUTER JOIN rrloc   ON rr.id=rrloc.rr
+             WHERE    rr.zone=z.id AND z.id=$id";
+
+    my $q2 = "SELECT COUNT(DISTINCT ipv4.id)
+             FROM     zone z, rr rr
+                      LEFT OUTER JOIN (ipblock ipv4, rraddr) 
+                      ON (rr.id=rraddr.rr AND ipv4.id=rraddr.ipblock AND ipv4.version=4)
+             WHERE    rr.zone=z.id AND z.id=$id";
+    
+    my $q3 = "SELECT COUNT(DISTINCT ipv6.id)
+             FROM     zone z, rr rr
+                      LEFT OUTER JOIN (ipblock ipv6, rraddr) 
+                      ON (rr.id=rraddr.rr AND ipv6.id=rraddr.ipblock AND ipv6.version=6)
+             WHERE    rr.zone=z.id AND z.id=$id";
+
+    my $dbh = $self->db_Main;
+    my $r1  = $dbh->selectall_arrayref($q1);
+    my $r2  = $dbh->selectall_arrayref($q2);
+    my $r3  = $dbh->selectall_arrayref($q3);
+    my %count;
+    ($count{txt}, $count{hinfo}, $count{ptr}, $count{ns}, $count{mx}, 
+     $count{cname}, $count{loc}, $count{srv}, $count{rrnaptr}) = @{$r1->[0]};
+
+    ($count{a})    = @{$r2->[0]};
+    ($count{aaaa}) = @{$r3->[0]};
+
+    return \%count;
+}
 
 ############################################################################
 #
