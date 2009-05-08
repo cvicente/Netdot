@@ -347,36 +347,6 @@ sub get_subnet_addr {
 }
 
 ##################################################################
-=head2 get_host_addrs - Get host addresses for a given block
-
-  Note: This returns the list of possible host addresses in any 
-    given IP block, not from the database.
-
-  Arguments:
-    Subnet address in CIDR notation
-  Returns: 
-    Arrayref of host addresses (strings)
-  Examples:
-    my $hosts = Ipblock->get_host_addrs( $address );
-
-=cut
-sub get_host_addrs {
-    my ($class, $subnet) = @_;
-    $class->isa_class_method('get_host_addrs');
-
-    my $s;
-    unless( $s = NetAddr::IP->new($subnet) ){
-	$class->throw_fatal("Invalid Subnet: $subnet");
-    }
-    my $hosts = $s->hostenumref();
-
-    # Remove the prefix.  We just want the addresses
-    map { $_ =~ s/(.*)\/\d{2}/$1/ } @$hosts;
-
-    return $hosts;
-}
-
-##################################################################
 =head2 is_loopback - Check if address is a loopback address
 
   Arguments:
@@ -470,11 +440,14 @@ sub insert {
     $argv->{used_by}       ||= 0; 
     $argv->{parent}        ||= 0; 
     
-    #if if IP is not a Container then make it Static
-    if ((defined $argv->{prefix}) && (($argv->{address} =~ $IPV4 && $argv->{prefix} eq '32') || ($argv->{address} =~ $IPV6 && $argv->{prefix} eq '128'))) {
-	$argv->{status} ||= "Static";
-    } else {
-	$argv->{status} ||= "Container";
+    unless ( $argv->{status} ){
+	if (defined $argv->{prefix} && 
+	    (($argv->{address} =~ $IPV4 && $argv->{prefix} eq '32') || 
+	     ($argv->{address} =~ $IPV6 && $argv->{prefix} eq '128'))) {
+	    $argv->{status} = "Static";
+	} else {
+	    $argv->{status} = "Container";
+	}
     }
     
     # $ip is a NetAddr::IP object;
@@ -1246,35 +1219,19 @@ sub update {
 
     # Extract non-column options from $argv
     my $validate  = 1;
-    my $recursive = 0;
     if ( defined $argv->{validate} ){
 	$validate = $argv->{validate};
 	delete $argv->{validate};
     }
-    if ( defined $argv->{recursive} ){
-	$recursive = $argv->{recursive};
-	delete $argv->{recursive};
-    }
 
-    if ( $recursive ){
-	my %data = %{ $argv };
-        map { 
-	    if ( /^address|prefix|version|interface|status$/ ){
-		$self->throw_fatal("$_ is not a valid field for a recursive update");
-	    }
-	} keys %data;
-	
-	$self->SUPER::update(\%data);
-	$_->update( $argv ) foreach $self->children;
-	return 1;
-    }
+    my $recursive = delete $argv->{recursive};
 
     # We need at least these args before proceeding
     # If not passed, use current values
-    $argv->{status}  ||= $self->status;
-    $argv->{prefix}  ||= $self->prefix;
+    $argv->{status} ||= $self->status;
+    $argv->{prefix} = $self->prefix unless $argv->{prefix};
 
-    if ( $argv->{address} ){
+    if ( $argv->{address} && $argv->{prefix} ){
 	my $ip = $class->_prevalidate($argv->{address}, $argv->{prefix});
 	if ( my $tmp = $class->search(address => $ip->addr,
 				      prefix  => $ip->masklen)->first ){
@@ -1307,13 +1264,6 @@ sub update {
 	$self->_update_tree();
     }
 
-    # Update DHCP scope if needed
-    if ( $self->dhcp_scopes ){
-	if ( $self->address ne $bak{address} || $self->prefix ne $bak{prefix} ){
-	    $self->_update_dhcp_scope();
-	}
-    }
-	
     # Now check for rules
     # We do it after updating and rebuilding the tree because 
     # it makes things much simpler. Workarounds welcome.
@@ -1328,6 +1278,26 @@ sub update {
 	    $e->rethrow();
 	}
     }
+
+    # Update DHCP scope if needed
+    if ( $self->dhcp_scopes ){
+	if ( $self->address ne $bak{address} || $self->prefix ne $bak{prefix} ){
+	    $self->_update_dhcp_scope();
+	}
+    }
+	
+    if ( $recursive ){
+	my %data = %{ $argv };
+	foreach my $key ( keys %data ){
+	    if ( $key =~ /^(address|prefix|parent|version|interface|status)$/ ){
+		delete $data{$key};
+	    }
+	}
+	$data{recursive} = $recursive;
+	$data{validate}  = 0;
+	$_->update(\%data) foreach $self->children;
+    }
+
     return $result;
 }
 
@@ -1356,7 +1326,12 @@ sub delete {
      
     if ( $args{recursive} ){
 	foreach my $ch ( $self->children ){
-           $ch->delete(recursive=>1, stack=>$stack+1);
+	    if ( $ch->id == $self->id ){
+		$logger->warn("Ipblock::delete: ".$self->get_label()." is parent of itself!. Removing parent.");
+		$self->update({parent=>0});
+		return;
+	    }
+	    $ch->delete(recursive=>1, stack=>$stack+1);
 	}
 	my $version = $self->version;
 	$self->SUPER::delete();
@@ -1389,7 +1364,13 @@ sub get_ancestors {
     my ($self, $parents) = @_;
     $self->isa_object_method('get_ancestors');
 
-    if ( int($self->parent) != 0 ){
+    if ( $self->parent && int($self->parent) != 0 ){
+	if ( $self->parent->id == $self->id ){
+	    $logger->warn("Ipblock::get_ancestors: ".$self->get_label()." is parent of itself!. Removing parent.");
+	    $self->update({parent=>0});
+	    return;
+	}
+	$logger->debug("Ipblock::get_ancestors: ".$self->get_label()." parent: ".$self->parent->get_label());
 	push @$parents, $self->parent;
 	$self->parent->get_ancestors($parents);
 	wantarray ? ( @$parents ) : $parents->[0]; 
@@ -2093,6 +2074,84 @@ sub reverse_zone {
 	    if ( $z->name =~ /\.arpa$|\.int$/ ){
 		return $z;
 	    }
+	}
+    }
+}
+
+##################################################################
+=head2 get_host_addrs - Get host addresses for a given block
+
+  Note: This returns the list of possible host addresses in any 
+    given IP block, not from the database.
+
+  Arguments:
+    Subnet address in CIDR notation (not required if called on an object)
+  Returns: 
+    Arrayref of host addresses (strings)
+  Examples:
+    Class method:
+      my $hosts = Ipblock->get_host_addrs( $address );
+    Instance method:
+      my $hosts = $subnet->get_host_addrs();
+
+=cut
+sub get_host_addrs {
+    my ($self) = shift;
+    my $class = ref($self);
+    my $subnet;
+    if ( $class ){
+	$subnet = $self->cidr;
+    }else{
+	$subnet = shift;
+    }
+        
+    my $s;
+    unless( $s = NetAddr::IP->new($subnet) ){
+	$class->throw_fatal("Invalid Subnet: $subnet");
+    }
+    my $hosts = $s->hostenumref();
+
+    # Remove the prefix.  We just want the addresses
+    map { $_ =~ s/(.*)\/\d{2}/$1/ } @$hosts;
+
+    return $hosts;
+}
+
+################################################################
+=head2 get_next_free - Get next free address in this subnet
+
+  Arguments: 
+    Hash with following keys:
+      strategy (first|last)
+  Returns:   
+    New address record
+  Examples:
+    my $ipb = $subnet->get_next_free()
+=cut
+sub get_next_free {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('get_next_free');
+
+    $self->throw_fatal("Invalid call to this method on a non-subnet")
+	unless ( $self->status->name eq 'Subnet' );
+
+    $logger->debug("Getting next free address in ".$self->get_label);
+
+    my %used;
+    foreach my $ip ( $self->children ){
+	$used{$ip->address} = $ip;
+    }
+    my $strategy = $argv{strategy} || 'first';
+
+    my @host_addrs = ($strategy eq 'first')? 
+	@{$self->get_host_addrs} : reverse @{$self->get_host_addrs};
+
+    foreach my $h ( @host_addrs ){
+	if ( exists $used{$h} || $h eq $self->address ||
+ 	     $h eq $self->_netaddr->broadcast ){
+	    next;
+	}else{
+	    return Ipblock->insert({address=>$h});
 	}
     }
 }

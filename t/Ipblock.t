@@ -57,11 +57,18 @@ is(((Ipblock->keyword_search('test subnet'))[0])->id, $subnet->id, 'keyword_sear
 my $descr = 'test blocks';
 $container->update({description=>$descr, recursive=>1});
 is($container->description, $descr, 'update_recursive');
+my $subnet_id = $subnet->id;
+undef($subnet);
+$subnet = Ipblock->retrieve($subnet_id);
 is($subnet->description, $descr, 'update_recursive');
+my $address_id = $address->id;
+undef($address);
+$address = Ipblock->retrieve($address_id);
 is($address->description, $descr, 'update_recursive');
 
-is(($address->get_ancestors)[0], $subnet, 'get_ancestors');
-is(($address->get_ancestors)[1], $container, 'get_ancestors');
+my @ancestors = $address->get_ancestors();
+is($ancestors[0], $subnet, 'get_ancestors');
+is($ancestors[1], $container, 'get_ancestors');
  
 my ($s,$p) = Ipblock->get_subnet_addr( address => $address->address,
 				       prefix  => 23 );
@@ -89,7 +96,8 @@ is(Ipblock->subnetmask(256), 24, 'subnetmask');
 
 is(Ipblock->subnetmask_v6(4), 126, 'subnetmask_v6');
 
-# TODO: auto_allocate
+is($subnet->get_next_free->address, '192.168.60.1', 'get_next_free');
+is($subnet->get_next_free(strategy=>'last')->address, '192.168.61.254', 'get_next_free');
 
 my $all = Ipblock->retrieve_all_hashref();
 is($all->{$container->address_numeric}, $container->id, 'retrieve_all_hashref');
