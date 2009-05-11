@@ -1350,7 +1350,7 @@ sub table_view_page {
     if ( exists $VIEWPAGE{$table} ){
 	return $VIEWPAGE{$table};
     }else{
-	return "../generic/view.html";
+	return "view.html";
     }
 }
 ############################################################################
