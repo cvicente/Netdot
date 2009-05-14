@@ -56,6 +56,39 @@ sub insert_strands {
     return $strand_count;
 }
 
+
+##################################################################
+=head2 update_range - Update a range of strands
+
+  Arguments:
+    Hash with fields/values plus:
+    - start: id of starting strand.
+    - end:   id of ending strand.
+  Returns:
+    True
+  Examples:
+     $bbcable->update_range(%argv);
+
+=cut
+sub update_range{
+    my ($self, %argv) = @_;
+    $self->isa_object_method('update_range');
+    $self->throw_user("Missing required arguments: start/end") 
+	unless ($argv{start} && $argv{end});
+
+    my $start = delete $argv{start};
+    my $end   = delete $argv{end};
+
+    for ( my $i=$start; $i<=$end; $i++ ){
+	if ( my $strand = CableStrand->search(cable=>$self, number=>$i)->first ){
+	    $strand->update(\%argv);
+	}else{
+	    $self->throw_user("Cannot find strand $i in this backbone");
+	}
+    }
+}
+
+
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
