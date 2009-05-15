@@ -24,7 +24,8 @@ RRADDR represent either A or AAAA records.
      - Create or update the corresponding RRPTR object
     
   Arguments:
-    Hashref with key/value pairs
+    Hashref with key/value pairs, plus:
+      update_ptr - Update corresponding RRPTR object
   Returns:
     RRADDR object
   Example:
@@ -34,12 +35,14 @@ RRADDR represent either A or AAAA records.
 sub insert {
     my($class, $argv) = @_;
     
+    my $update_ptr = delete $argv->{update_ptr};
+ 
     my $rraddr = $class->SUPER::insert($argv);
 
     my $ipb =  $rraddr->ipblock;
     
     # Create/update PTR record for this IP
-    $rraddr->_update_rrptr();
+    $rraddr->_update_rrptr() if $update_ptr;
 
     return $rraddr;
     
@@ -54,7 +57,8 @@ sub insert {
      - Create or update the corresponding RRPTR object
     
   Arguments:
-    Hashref with key/value pairs
+    Hashref with RRADDR key/value pairs, plus:
+      update_ptr - Update corresponding RRPTR object
   Returns:
     Number of rows updated or -1
   Example:
@@ -65,9 +69,11 @@ sub update {
     my($self, $argv) = @_;
     $self->isa_object_method('update');
 
+    my $update_ptr = delete $argv->{update_ptr};
+
     my @res = $self->SUPER::update($argv);
 
-    $self->_update_rrptr();
+    $self->_update_rrptr() if $update_ptr;
 
     return @res;
 }

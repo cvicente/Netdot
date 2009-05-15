@@ -290,12 +290,10 @@ sub insert {
 =head2 update
 
     Override base method to:
-      - If RRADDR records exist: 
-           - make sure that RRPTR records' ptrdnames match RR name
-           - Update name on DHCP host scope if it exists
-
+       - Add option to update related RRPTR if name changes
   Arguments:
-    Hashref
+    Hashref with key/value pairs, plus:
+       update_ptr - (flag)
   Returns:
     Number of rows updated or -1
   Examples:
@@ -306,14 +304,18 @@ sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
     
+    my $update_ptr = delete $argv->{update_ptr};
+
     my @res = $self->SUPER::update($argv);
 
-    if ( my @arecords = $self->arecords ){
-	foreach my $rraddr ( @arecords ){
-	    my $ip = $rraddr->ipblock;
-	    if ( my $ptr = ($ip->ptr_records)[0] ){
-		$ptr->update({ptrdname=>$self->get_label})
-		    if ( $ptr->ptrdname ne $self->get_label );
+    if ( $update_ptr ){
+	if ( my @arecords = $self->arecords ){
+	    foreach my $rraddr ( @arecords ){
+		my $ip = $rraddr->ipblock;
+		if ( my $ptr = ($ip->ptr_records)[0] ){
+		    $ptr->update({ptrdname=>$self->get_label})
+			if ( $ptr->ptrdname ne $self->get_label );
+		}
 	    }
 	}
     }
