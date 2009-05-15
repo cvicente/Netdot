@@ -1354,7 +1354,7 @@ sub table_view_page {
     if ( exists $VIEWPAGE{$table} ){
 	return $VIEWPAGE{$table};
     }else{
-	return "../generic/view.html";
+	return "view.html";
     }
 }
 ############################################################################
@@ -1383,7 +1383,7 @@ sub build_backbone_graph {
 	my @esites       = ($bb->start_closet->site, $bb->end_closet->site);
 	my @strands      = $bb->strands;
 	my $num_strands  = scalar @strands;
-	my $st           = (StrandStatus->search(name=>'used'))->first;
+	my $st           = StrandStatus->search(name=>'In Use')->first;
 	my $used_strands = CableStrand->search(status=>$st, cable=>$bb)->count;
 
 
@@ -1417,7 +1417,7 @@ sub build_backbone_graph {
 	    $g->add_edge($esites[0]->get_label => $esites[1]->get_label,
 			 label     => $bb->name." (".$used_strands."/".$num_strands.")",
 			 fontsize  => '10',
-			 labelURL  => "../cable_plant/cable_backbone.html?id=".$bb->id,
+			 URL       => "../cable_plant/cable_backbone.html?id=".$bb->id,
 			 from_port => $site_closets{$esites[0]->id}{$eclosets[0]->name},
 			 to_port   => $site_closets{$esites[1]->id}{$eclosets[1]->name},
 			 color     => 'black',

@@ -155,16 +155,6 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
 </form>
 <!-- End Circuit Table -->
 
-% my $cl;
-% if ( $o->vendor && int($cl = $o->vendor->contactlist) ){
-<!-- Contacts Table -->
-<div class="container">
-    <& /generic/contactlist.mhtml, id=>$cl->id, edit=>0, show_buttons=>0 &>
-</div>
-<!-- End Contacts Table -->
-% }
-
-
 <!-- Begin Cable Strand Sequence Table -->
 %   if ( defined($o) ) {
     <form name="sequence_form" action="circuit.html" method="POST">
@@ -258,6 +248,17 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
     </div> <!-- close container -->
 %   }
 <!-- End Cable Strand Table -->
+
+
+% my $cl;
+% if ( $o->vendor && int($cl = $o->vendor->contactlist) ){
+<!-- Contacts Table -->
+<div class="container">
+    <& /generic/contactlist.mhtml, id=>$cl->id, edit=>0, show_buttons=>0 &>
+</div>
+<!-- End Contacts Table -->
+% }
+
 
 % if (defined($o) && $o->linkid) {
     </div> <!-- close containerbodyoutside -->

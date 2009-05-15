@@ -16,6 +16,7 @@ $fiber_type     => undef
 $range1         => undef
 $range2         => undef
 $splice_bb_end  => undef
+$strand_range   => undef
 </%args>
 
 <%flags>
@@ -104,12 +105,35 @@ if (defined($_action) && ($_action eq "UPDATE" || $_action eq "STRAND_UPDATE")) 
     }
 }
 
+# Edit range
+elsif ( defined($_action) && $_action eq "EDIT_RANGE" ){
+    $m->comp("../generic/error.mhtml", error => "Strand Range not specified.") 
+	if (!$strand_range);
+    
+    my ($start, $end) = split(/\-/o, $strand_range);
+    $m->comp("../generic/error.mhtml", error => "Invalid Range: $strand_range.") 
+	unless ($start && $end);
+    
+    my %args = (start=>$start, end=>$end);
+    foreach my $key ( qw/fiber_type status/ ){
+	$args{$key} = $ARGS{$key} if ( exists $ARGS{$key} && $ARGS{$key} ne "null" );
+    }
+    eval {
+	$o->update_range(%args);
+    };
+    if ( my $e = $@ ){
+	$m->comp("../generic/error.mhtml", error=>"$e");
+    }
+}
+
 # insert N number of strands...
 elsif ( defined($_action) && $_action eq "ADD_STRANDS" ){
     eval{
 	$o->insert_strands($number_strands, $fiber_type);
     };
-    $m->comp("../generic/error.mhtml", error=>"$@") if $@;
+    if ( my $e = $@ ){
+	$m->comp("../generic/error.mhtml", error=>"$e");
+    }
 }
 
 # splice cables by a range of strands
@@ -259,6 +283,7 @@ function suggestName()
 	    &nbsp;&nbsp; 
 	    <input name="submit" value="save" type="submit" />
 %         } else {
+            <a href="cable_backbone.html?id=<% $id %>">[refresh]</a> 
             <a href="cable_backbone.html?id=NEW">[new]</a> 
 	    <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a> 
 	    <a href="delete.html?table=BackboneCable&id=<% $id %>">[delete]</a>
@@ -602,6 +627,40 @@ HERE
 </div>	<!-- containerbody -->
 </div>  <!-- container -->
 <!-- End Cable Strands Table -->
+
+
+<!-- Edit Strand Range  -->
+%if ($edit ne "strandinfo") {
+  <div class="container">
+    
+    <div class="containerhead">
+       Edit Strand Range
+    </div>
+
+    <div class="containerbody">
+      <form action="cable_backbone.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>" />
+	<input type="hidden" name="_action" value="EDIT_RANGE" />
+	Range (i.e., strands 1-12)&nbsp; <input type="text" name="strand_range" value="" size="5" />
+      Type:
+	<select name="fiber_type">
+	  <option value="null" selected>Select Type</option>
+	  <option value="1">Multimode</option>
+	  <option value="2">Singlemode</option>
+        </select>
+      Status:
+	<select name="status">
+        <option value="null" selected>Select Status</option>
+%       foreach my $st ( StrandStatus->retrieve_all() ){
+            <option value="<% $st %>"><% $st->name %></option>
+%       }
+        </select>
+	&nbsp;<input type="submit" name="edit_range" value="Save" />&nbsp;
+      </form>
+    </div>
+  </div>
+
+%}
 
 <!-- Manually Add Strands  -->
 %if ($edit ne "strandinfo") {
