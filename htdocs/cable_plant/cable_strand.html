@@ -99,10 +99,6 @@ if (defined($ARGS{_action})) {
 </div>
 <!-- End Header Table -->
 <div class="containerbody">
-        <table> <!-- Two column layout table -->
-        <tr>
-            <td width="50%">
-
 	      <%perl>
 	      (@field_headers, @cell_data) = ();
 	      push( @field_headers, "Name: " );
@@ -213,44 +209,15 @@ if (defined($ARGS{_action})) {
               push( @cell_data, $ui->form_field(object=>$o, column=>"circuit_id", lookup=>"Circuit", 
 						   edit=>$editStrand, returnValOnly=>1, linkPage => "circuit.html") );
 
-	      </%perl>
-
-	      <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
-
-            </td>
-            <td width="50%">
-           
-	      <%perl>
-	      (@field_headers, @cell_data) = ();
-	      push( @field_headers, 'Tested on: <font size="-1">(yyyy-mm-dd)</font>: ' );
-	      push( @cell_data, $ui->form_field(object=>$o, column=>"datetested", edit=>$editStrand, returnValOnly=>1) );
 	      push( @field_headers, "Fiber Type: " );
 	      push( @cell_data, $ui->form_field(object=>$o, column=>"fiber_type", lookup=>"FiberType", edit=>$editStrand, returnValOnly=>1) );
-	      push( @field_headers, "Loss: " );
-	      push( @cell_data, $ui->form_field(object=>$o, column=>"loss", edit=>$editStrand, returnValOnly=>1) );
-	      push( @field_headers, "Direction: " );
-	      </%perl>
-
-	      <&| "/generic/HERE.mhtml" &>
-%               if ($editStrand) {
-%                   my $dir_name = "CableStrand__" . $id . "__direction";
-	            <input type="radio" name="<% $dir_name %>" value="0" <% ($o && int($o->direction) == 0 ? "CHECKED" : "") %>>TX &nbsp;&nbsp;&nbsp; 
-	            <input type="radio" name="<% $dir_name %>" value="1" <% ($o && int($o->direction) == 1 ? "CHECKED" : "") %>>RX
-%               } elsif (defined($o)) {
-	            <% (int($o->direction) == 1 ? "RX" : "TX") %>
-%               }
-	      </&>
-	      <%perl>
 	      push( @cell_data, $_ );
 	      push( @field_headers, "Description: " );
 	      push( @cell_data, $ui->form_field(object=>$o, column=>"description", edit=>$editStrand, returnValOnly=>1) );
 	      </%perl>
 
-	      <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
+	      <& /generic/attribute_table.mhtml, width=>"2", field_headers=>\@field_headers, data=>\@cell_data &>
 
-	    </td>
-	  </tr>
-	</table>
 	<div class="containerseparator">Comments:</div>
         <% $ui->form_field(object=>$o, column=>"info", edit=>$editStrand, htmlExtra=>"rows='3' cols='80'", returnValOnly=>1) %>
         </form>

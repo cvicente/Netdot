@@ -16,6 +16,32 @@ Netdot::Model::BackboneCable
 =head1 CLASS METHODS
 =cut
 
+##################################################################
+=head2 insert
+
+  Arguments:
+    Hashref with key/value pairs plus:
+      - numstrands: number of strands to insert.
+  Returns:
+    New BackboneCable object
+  Examples:
+     my $bc = BackboneCable->insert(\%args);
+
+=cut
+sub insert {
+    my ($class, $argv) = @_;
+
+    my $numstrands = delete $argv->{numstrands};
+    
+    my $bc = $class->SUPER::insert($argv);
+    
+    if ( $numstrands ){
+	$bc->insert_strands($numstrands);
+    }
+    
+    return $bc;
+}
+
 =head1 INSTANCE METHODS
 =cut
 
@@ -26,7 +52,8 @@ Netdot::Model::BackboneCable
     
     Insert N number of CableStrands for a given Backbone.
   Arguments:
-    - number: number of strands to insert.
+    - number:  number of strands to insert.
+    - type:    Type of fiber (multimode/singlemode)
   Returns:
     Number of strands inserted    
   Examples:
@@ -46,7 +73,7 @@ sub insert_strands {
     my %tmp_strands;
    
     $tmp_strands{cable}      = $self->id;
-    $tmp_strands{fiber_type} = $type;
+    $tmp_strands{fiber_type} = $type if defined $type;
 
     for (my $i = 0; $i < $number; ++$i) {
         $tmp_strands{name} = $backbone_name . "." . (++$strand_count);

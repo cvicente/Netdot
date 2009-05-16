@@ -533,14 +533,6 @@ $meta = {
         tag => 'Circuit',
         type => 'integer'
       },
-      datetested => {
-        default => '',
-        description => 'Date that this strand was last tested (YYYY-MM-DD)',
-        length => '',
-        nullable => 1,
-        tag => 'Date Tested',
-        type => 'date'
-      },
       description => {
         default => '',
         description => 'A text description of this strand',
@@ -548,14 +540,6 @@ $meta = {
         nullable => 1,
         tag => 'Description',
         type => 'varchar'
-      },
-      direction => {
-        default => '',
-        description => 'Does this strand transmit?',
-        length => '',
-        nullable => 0,
-        tag => 'Transmit?',
-        type => 'bool'
       },
       fiber_type => {
         default => '',
@@ -585,14 +569,6 @@ $meta = {
         nullable => 1,
         tag => 'Comments',
         type => 'blob'
-      },
-      loss => {
-        default => '',
-        description => 'Tested loss (dbm)',
-        length => '32',
-        nullable => 1,
-        tag => 'Loss',
-        type => 'varchar'
       },
       name => {
         default => '',
@@ -657,9 +633,6 @@ $meta = {
         'number',
         'cable',
         'status',
-        'datetested',
-        'loss',
-        'direction',
         'fiber_type',
         'circuit_id',
         'description',
@@ -668,7 +641,6 @@ $meta = {
       brief => [
         'name',
         'cable',
-        'direction',
         'status'
       ]
     }
@@ -748,6 +720,14 @@ $meta = {
         tag => 'Site Link',
         type => 'integer'
       },
+      datetested => {
+        default => '',
+        description => 'Date that this circuit was last tested (YYYY-MM-DD)',
+        length => '',
+        nullable => 1,
+        tag => 'Date Tested',
+        type => 'date'
+      },
       dlci => {
         default => '',
         description => 'Data Link Connection Identifier',
@@ -792,6 +772,14 @@ $meta = {
         nullable => 1,
         tag => 'Installed on',
         type => 'date'
+      },
+      loss => {
+        default => '',
+        description => 'Tested loss (dbm)',
+        length => '32',
+        nullable => 1,
+        tag => 'Loss',
+        type => 'varchar'
       },
       nearend => {
         default => '',
@@ -889,6 +877,8 @@ $meta = {
         'speed',
         'dlci',
         'installdate',
+        'datetested',
+        'loss',
         'vendor',
         'info'
       ],

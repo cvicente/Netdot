@@ -323,9 +323,11 @@ function suggestName()
     $ui->add_to_fields(o=>$o, table=>"BackboneCable", edit=>$editBackbone, fields=>['owner', 'installdate', 'length'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data);
 
-#    %tmp = $ui->form_field(object=>$o, table=>"BackboneCable", column=>"length", edit=>$editBackbone);
-#    push( @field_headers, $tmp{label} );
-#    push( @cell_data, $tmp{value} );
+
+    if ( $id eq 'NEW' ){
+        push( @field_headers, "Number of Strands:" );
+        push( @cell_data, '<input type="text" name="BackboneCable__NEW__numstrands">' );
+    }
 
 </%perl>
 
@@ -447,7 +449,6 @@ function editSelected(id)
 		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=name#cable_strand">Name</a>',
 		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=type#cable_strand">Type</a>',
 		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=status#cable_strand">Status</a>',
-		     '<a href="cable_backbone.html?id=' . $id . '&strand_sort=direction#cable_strand">Direction</a>',
 	             'Spliced With',
 		     );
 
@@ -471,10 +472,6 @@ function editSelected(id)
 	    # sort by status
 	    # -----------------------------------------------------------
 	    @sorted_strands = sort { uc($a->fiber_type->name) cmp uc($b->fiber_type->name) } @strands;
-	} elsif ($strand_sort eq "direction") {
-	    # sort by direction
-	    # -----------------------------------------------------------
-	    @sorted_strands = sort { int($a->direction) <=> int($b->direction) } @strands;
 	}
 	</%perl>
 
@@ -501,20 +498,6 @@ function editSelected(id)
 	    %tmp = $ui->form_field(object=>$st, column=>"status", edit=>$editStrand);
 	    push( @row, $tmp{value} );
 
-	    push( @row, 
-		  &{sub{
-		      my $ac = "";
-		      if ($editStrand) {
-			  my $dir_name = "CableStrand__" . $st->id . "__direction";
-			  $ac .= '<input type="radio" name="' . $dir_name . '" value="0" ' 
-			      . ($st && int($st->direction) == 0 ? "CHECKED" : "") . '>TX &nbsp;&nbsp;&nbsp; ';
-			  $ac .= '<input type="radio" name="' . $dir_name . '" value="1" ' 
-			      . ($st && int($st->direction) == 1 ? "CHECKED" : "") . '>RX';
-		      } elsif (defined($st)) {
-			  $ac .=  (int($st->direction) == 1 ? "RX" : "TX") ;
-		      }
-		      $ac;
-		  }} );
 	    push( @row, 
 		  &{sub{
 		      my $ac = "";
