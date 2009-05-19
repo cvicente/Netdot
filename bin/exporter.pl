@@ -10,7 +10,7 @@ use Log::Log4perl::Level;
 my $USAGE = <<EOF;
  usage: $0 -t "<Type1, Type2...>" 
          [ -z|--zones <zone1,zone2...> ] [ -n|--nopriv ] [-f|--force]
-         [ -s|--scope <scope1, scope2>]
+         [ -s|--scopes <scope1, scope2>]
          [ -d|--debug ] [ -h|--help ]
 
     Available types:  Nagios, Sysmon, Rancid, BIND, DHCPD

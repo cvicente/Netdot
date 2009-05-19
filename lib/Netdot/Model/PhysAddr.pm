@@ -480,18 +480,28 @@ sub update {
 ################################################################
 =head2 colon_address - Return address with octets separated by colons
 
+    This can be either an instance method or class method
+
   Arguments: 
-    None
+    None if called as instance method
+    address string if called as class method
   Returns:   
     String (e.g. 'DE:AD:DE:AD:BE:EF')
   Examples:
     print $physaddr->colon_address;
+    print PhysAddr->colon_address('DEADDEADBEEF');
 
 =cut
 sub colon_address {
-    my ($self) = @_;
-    $self->isa_object_method('colon_address');
-    my $addr = $self->address;
+    my ($self, $address) = @_;
+    my $class = ref($self);
+    my $addr;
+    if ( $class ){
+	$addr = $self->address;
+    }else{
+	$addr = $address || 
+	    $self->throw_fatal("PhysAddr::colon_address: Missing address string");
+    }
     my @octets  = unpack("A2" x 6, $addr);
     return join ':', @octets;
 }

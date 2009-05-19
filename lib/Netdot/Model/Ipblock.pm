@@ -1899,7 +1899,7 @@ sub get_last_n_arp {
 =cut
 sub shared_network_subnets{
     my ($self, %argv) = @_;
-    $self->isa_object_method('enable_dhcp');
+    $self->isa_object_method('shared_network_subnets');
     my $dbh = $self->db_Main();
     
     my $query = 'SELECT  other.id 
@@ -2000,6 +2000,61 @@ sub enable_dhcp{
     return $scope;
 }
 
+################################################################
+=head2 get_dynamic_ranges - List of dynamic ip address ranges for a given subnet
+    
+    Used by DHCPD configs
+
+  Arguments: 
+    None
+  Returns:   
+    Array of strings (e.g. "192.168.0.10 192.168.0.20")
+  Examples:
+    my @ranges = $subnet->get_dynamic_ranges();
+=cut
+sub get_dynamic_ranges {
+    my ($self) = @_;
+
+    $self->isa_object_method('enable_dhcp');
+    
+    $self->throw_fatal("Ipblock::get_dynamic_ranges: Invalid call to this method on a non-subnet")
+	if ( $self->status->name ne 'Subnet' );
+    
+    my $id = $self->id;
+    my $version = $self->version;
+    my $st = IpblockStatus->search(name=>'Dynamic')->first;
+    my $status_id = $st->id;
+    my $dbh = $self->db_Main;
+    my $rows = $dbh->selectall_arrayref("
+                SELECT address FROM ipblock
+                WHERE  parent = $id AND
+                       status = $status_id   
+                ORDER BY address
+	");
+    my @ips = map { $_->[0] } @$rows;
+
+    my @ranges;
+    my ($start, $end, $pos);
+    $start = shift @ips;
+    $end   = $start;
+    foreach my $address ( @ips ){
+	if ( $address != $end+1 ){
+	    my $sa = Ipblock->int2ip($start, $version);
+	    my $ea = Ipblock->int2ip($end, $version);
+	    push @ranges, "$sa $ea";
+	    $start = $address;
+	}
+	$end = $address;
+    }
+    if ( $start && $end ){
+	my $sa = Ipblock->int2ip($start, $version);
+	my $ea = Ipblock->int2ip($end, $version);
+	push @ranges, "$sa $ea";
+    }
+
+    return @ranges if scalar @ranges;
+    return;
+}
 
 ################################################################
 =head2 dns_zones - Get DNS zones related to this block
@@ -2188,7 +2243,7 @@ sub _insert_dhcp_scope {
     my $scope;
     my $scope_name = $self->address." netmask ".$self->_netaddr->mask;
     if ( !($scope = DhcpScope->search(name=>$scope_name)->first) ){
-	$logger->debug("Ipblock::enable_dhcp: ".$self->get_label.": Inserting DhcpScope: $scope_name");
+	$logger->debug("Ipblock::_insert_dhcp_scope: ".$self->get_label.": Inserting DhcpScope: $scope_name");
 	my %args = (name      => $scope_name, 
 		    type      =>'Subnet', 
 		    ipblock   => $self,

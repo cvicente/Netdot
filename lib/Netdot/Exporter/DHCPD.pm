@@ -43,7 +43,7 @@ sub new{
 
   Arguments:
     Hash with the following keys:
-      gscope - Global scope name or 'all'
+      scopes - Global scope names or 'all'
       
   Returns:
     True if successful
@@ -54,13 +54,15 @@ sub generate_configs {
     my ($self, %argv) = @_;
     
     my @gscopes;
-    if ( !defined $argv{gscope} ){
+    if ( !defined $argv{scopes} ){
 	@gscopes = DhcpScope->search(type=>'global');
     }else{
-	if ( my $gscope = DhcpScope->search(type=>'global', name=>$argv{gscope})->first ){
-	    push @gscopes, $gscope;
-	}else{
-	    $self->throw_user("Global Scope $gscope not found");
+	foreach my $scope_name ( @{$argv{scopes}} ){
+	    if ( my $gscope = DhcpScope->search(type=>'global', name=>$scope_name)->first ){
+		push @gscopes, $gscope;
+	    }else{
+		$self->throw_user("Global Scope $scope_name not found");
+	    }
 	}
     }
     foreach my $s ( @gscopes ){
