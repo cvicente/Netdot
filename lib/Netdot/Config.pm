@@ -6,7 +6,7 @@ use File::Spec::Functions qw( catpath splitpath rel2abs );
 my %config;
 
 my $default_config_dir = "<<Make:PREFIX>>/etc";
-my $alt_config_dir     = catpath( ( splitpath( rel2abs $0 ) )[ 0, 1 ] ) . "../etc";
+my $alt_config_dir     = catpath( ( splitpath( rel2abs $0 ) )[ 0, 1 ], '' ) . "../etc";
 
 #Be sure to return 1
 1;
