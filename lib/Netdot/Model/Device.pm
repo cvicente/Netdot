@@ -1005,6 +1005,7 @@ sub get_snmp_info {
 
     # Remove whitespace at beginning and end
     while ( my ($key, $val) = each %dev){
+	next unless defined $val;
 	$val =~ s/^\s+//;
 	$val =~ s/\s+$//;
 	$dev{$key} = $val;
