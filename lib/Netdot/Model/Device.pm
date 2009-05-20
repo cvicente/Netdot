@@ -772,8 +772,10 @@ sub get_snmp_info {
 	$dev{type}  = "Router"  if ( $sinfo->class =~ /Layer3/ && $dev{ipforwarding} );
 	$dev{type}  = "Switch"  if ( $sinfo->class =~ /Layer2/ );
 	$dev{type}  = "Hub"     if ( $sinfo->class =~ /Layer1/ );
-	$dev{type} |= "Unknown";
+	$dev{type}  = "Unknown" unless defined $dev{type};
     }
+    
+    $logger->debug(sub{"$name ($ip) type is $dev{type}"});
 
     # Set some defaults specific to device types
     if ( $dev{ipforwarding} ){
