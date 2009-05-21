@@ -4654,18 +4654,22 @@ sub _update_interfaces {
 
     ##############################################################
     # Update A records for each IP address
-    #
-    # Get addresses that the main Device name resolves to
-    my @hostnameips;
-    if ( @hostnameips = $dns->resolve_name($host) ){
-	$logger->debug(sub{ sprintf("Device::info_update: %s resolves to: %s",
-				    $host, (join ", ", @hostnameips))});
-    }
     
-    foreach my $ip ( @{ $self->get_ips() } ){
-	$ip->update_a_records(\@hostnameips);
+    if ( $self->config->get('UPDATE_DEVICE_IP_NAMES') ){
+	
+	# Get addresses that the main Device name resolves to
+	my @hostnameips;
+	if ( @hostnameips = $dns->resolve_name($host) ){
+	    $logger->debug(sub{ sprintf("Device::info_update: %s resolves to: %s",
+					$host, (join ", ", @hostnameips))});
+	}
+	
+	my $my_ips = $self->get_ips();
+	my $num_ips = scalar(@$my_ips);
+	foreach my $ip ( @$my_ips ){
+	    $ip->update_a_records(hostname_ips=>\@hostnameips, num_ips=>$num_ips);
+	}
     }
-    
 }
 
 ###############################################################
