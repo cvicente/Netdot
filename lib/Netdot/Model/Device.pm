@@ -772,8 +772,10 @@ sub get_snmp_info {
 	$dev{type}  = "Router"  if ( $sinfo->class =~ /Layer3/ && $dev{ipforwarding} );
 	$dev{type}  = "Switch"  if ( $sinfo->class =~ /Layer2/ );
 	$dev{type}  = "Hub"     if ( $sinfo->class =~ /Layer1/ );
-	$dev{type} |= "Unknown";
+	$dev{type}  = "Unknown" unless defined $dev{type};
     }
+    
+    $logger->debug(sub{"$name ($ip) type is $dev{type}"});
 
     # Set some defaults specific to device types
     if ( $dev{ipforwarding} ){
@@ -1005,6 +1007,7 @@ sub get_snmp_info {
 
     # Remove whitespace at beginning and end
     while ( my ($key, $val) = each %dev){
+	next unless defined $val;
 	$val =~ s/^\s+//;
 	$val =~ s/\s+$//;
 	$dev{$key} = $val;
@@ -4651,18 +4654,22 @@ sub _update_interfaces {
 
     ##############################################################
     # Update A records for each IP address
-    #
-    # Get addresses that the main Device name resolves to
-    my @hostnameips;
-    if ( @hostnameips = $dns->resolve_name($host) ){
-	$logger->debug(sub{ sprintf("Device::info_update: %s resolves to: %s",
-				    $host, (join ", ", @hostnameips))});
-    }
     
-    foreach my $ip ( @{ $self->get_ips() } ){
-	$ip->update_a_records(\@hostnameips);
+    if ( $self->config->get('UPDATE_DEVICE_IP_NAMES') ){
+	
+	# Get addresses that the main Device name resolves to
+	my @hostnameips;
+	if ( @hostnameips = $dns->resolve_name($host) ){
+	    $logger->debug(sub{ sprintf("Device::info_update: %s resolves to: %s",
+					$host, (join ", ", @hostnameips))});
+	}
+	
+	my $my_ips = $self->get_ips();
+	my $num_ips = scalar(@$my_ips);
+	foreach my $ip ( @$my_ips ){
+	    $ip->update_a_records(hostname_ips=>\@hostnameips, num_ips=>$num_ips);
+	}
     }
-    
 }
 
 ###############################################################

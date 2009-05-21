@@ -108,7 +108,7 @@ sub find_or_create {
 	}
 	
 	# Try to guess product type based on hostname
-	if ( $hostname && !$type ){
+	if ( $hostname && !$ptype ){
 	    my $typename;
 	    my %name2type = %{ $class->config->get('DEV_NAME2TYPE') };
 	    foreach my $str ( keys %name2type ){

@@ -1639,22 +1639,24 @@ sub subnet_usage {
     which can, for example, derive the names based on device/interface information.
     
   Arguments:
-    arrayref of ip addresses to which main hostname resolves
+    Hash with following keys:
+       hostname_ips   - arrayref of ip addresses to which main hostname resolves to
+       num_ips        - Number of IPs in Device
   Returns:
     True if successful
   Example:
-    $self->update_a_records(\@addrs);
+    $self->update_a_records(hostname_ips=>\@ips, num_ips=>$num);
 
 =cut
 sub update_a_records {
-    my ($self, $addrs) = @_;
+    my ($self, %argv) = @_;
     $self->isa_object_method('update_a_records');
     
     $self->throw_fatal("Ipblock::update_a_records: Missing required arguments")
-	unless $addrs;
-
+	unless ( $argv{hostname_ips} && $argv{num_ips} );
+    
     my %hostnameips;
-    map { $hostnameips{$_}++ } @$addrs;
+    map { $hostnameips{$_}++ } @{$argv{hostname_ips}};
 
     unless ( $self->interface && $self->interface->device ){
 	# No reason to go further
@@ -1717,40 +1719,56 @@ sub update_a_records {
 	}else{
 	    my $ar = $arecords[0];
 	    my $rr = $ar->rr;
+
 	    # User might not want this updated
 	    if ( $rr->auto_update ){
-		# We won't update the RR for the IP that the 
-		# device name points to
-		if ( !exists $hostnameips{$self->address} ){
-		    # Check if the name already exists
-		    my $other;
-		    if ( $other = RR->search(%rrstate)->first ){
-			if ( $other->id != $rr->id ){
-			    # This means we need to assign the other
-			    # name to this IP, not update the current name
-			    $ar->update({rr=>$other});
-			    $logger->debug(sub{ sprintf("%s: Assigned existing name %s to %s", 
-							$host, $name, $self->address)} );
-			    
-			    # And get rid of the old name
-			    $rr->delete() unless $rr->arecords;
-			}
-		    }else{
-			# The desired name does not exist
-			# Now, is pointing to the main name?
-			if ( $rr->id == $device->name->id ) {
-			    # In that case we have to create a different name
-			    my $newrr = RR->insert(\%rrstate);
+
+		# If this is the only IP, or the snmp_target IP, make sure that it uses 
+		# the same record that the device uses as its main name
+		if ( $argv{num_ips} == 1 ||
+		     (int($self->interface->device->snmp_target) &&
+		      $self->interface->device->snmp_target->id == $self->id) ){
 		    
-			    # And link it with this IP
-			    $ar->update({rr=>$newrr});
-			    $logger->info( sprintf("%s: Updated DNS record for %s: %s", 
-						   $host, $self->address, $name) );
+		    if ( $rr->id != $self->interface->device->name->id ){
+			$ar->delete;
+			RRADDR->insert({rr=>$device->name, ipblock=>$self});
+			$logger->info(sprintf("%s: UpdatedDNS A record for main device IP %s: %s", 
+					      $host, $self->address, $device->name->name));
+		    }
+		}else{
+		    # We won't update the RR for the IP that the 
+		    # device name points to
+		    if ( !exists $hostnameips{$self->address} ){
+			# Check if the name already exists
+			my $other;
+			if ( $other = RR->search(%rrstate)->first ){
+			    if ( $other->id != $rr->id ){
+				# This means we need to assign the other
+				# name to this IP, not update the current name
+				$ar->update({rr=>$other});
+				$logger->debug(sub{ sprintf("%s: Assigned existing name %s to %s", 
+							    $host, $name, $self->address)} );
+				
+				# And get rid of the old name
+				$rr->delete() unless $rr->arecords;
+			    }
 			}else{
-			    # Just update the current name, then
-			    $rr->update(\%rrstate);
-			    $logger->debug(sub{ sprintf("%s: Updated DNS record for %s: %s", 
-							$host, $self->address, $name) });
+			    # The desired name does not exist
+			    # Now, is pointing to the main name?
+			    if ( $rr->id == $device->name->id ) {
+				# In that case we have to create a different name
+				my $newrr = RR->insert(\%rrstate);
+				
+				# And link it with this IP
+				$ar->update({rr=>$newrr});
+				$logger->info( sprintf("%s: Updated DNS record for %s: %s", 
+						       $host, $self->address, $name) );
+			    }else{
+				# Just update the current name, then
+				$rr->update(\%rrstate);
+				$logger->debug(sub{ sprintf("%s: Updated DNS record for %s: %s", 
+							    $host, $self->address, $name) });
+			    }
 			}
 		    }
 		}
