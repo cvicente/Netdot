@@ -4885,6 +4885,19 @@ $meta = {
         tag => 'Room',
         type => 'integer'
       },
+      user_type => {
+        default => '',
+        description => 'User type',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'people',
+          table => 'UserType'
+        },
+        nullable => 1,
+        tag => 'User Type',
+        type => 'integer'
+      }
     },
     description => 'Information about an individual',
     has_history => 1,
@@ -4911,6 +4924,7 @@ $meta = {
         'lastname',
         'firstname',
         'aliases',
+        'user_type',
         'position',
         'entity',
         'location',
@@ -6930,6 +6944,57 @@ $meta = {
       brief => [
         'subnet',
         'zone'
+      ]
+    }
+  },
+  UserType => {
+    table_db_name => 'usertype',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'Types of Netdot users',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
       ]
     }
   },
