@@ -193,16 +193,18 @@ sub _print {
     }
     
     # Print free-form text
-    print $fh $indent.$data->{$id}->{text}, "\n" if defined $data->{$id}->{text};
+    print $fh $indent.$data->{$id}->{text}, "\n" if $data->{$id}->{text};
     
     # Print attributes
-    foreach my $attr_id ( keys %{$data->{$id}->{attrs}} ){
+    foreach my $attr_id ( sort { $data->{$id}->{attrs}->{$a}->{name} cmp 
+				     $data->{$id}->{attrs}->{$b}->{name} }
+			  keys %{$data->{$id}->{attrs}} ){
 	if ( $attr_id eq 'hardware ethernet' ){
 	    my $addr = $data->{$id}->{attrs}->{$attr_id}->{value};
-	    print $fh $indent."$attr_id ".PhysAddr->colon_address($addr)."\n";
+	    print $fh $indent."$attr_id ".PhysAddr->colon_address($addr).";\n";
 	}elsif ( $attr_id eq 'fixed-address' ){
 	    my $addr = $data->{$id}->{attrs}->{$attr_id}->{value};
-	    print $fh $indent."$attr_id $addr\n";
+	    print $fh $indent."$attr_id $addr;\n";
 	}else{
 	    my $name   = $data->{$id}->{attrs}->{$attr_id}->{name};
 	    my $code   = $data->{$id}->{attrs}->{$attr_id}->{code};
@@ -237,18 +239,25 @@ sub _print {
 	my $ipb = $s->ipblock;
 	my @ranges = $ipb->get_dynamic_ranges();
 
-	if ( @ranges && $failover_enabled && $failover_peer ne ""){
-	    print $fh $indent."pool {\n";
-	    my $nindent = $indent . " " x 4;
-	    print $fh $nindent."deny dynamic bootp clients;\n";
-	    print $fh $nindent."failover peer \"$failover_peer\";\n";
-	    foreach my $range ( @ranges ){
-		print $fh $nindent."range $range;\n";
+	if ( @ranges ){
+	    if ( $failover_enabled && $failover_peer ne ""){
+		print $fh $indent."pool {\n";
+		my $nindent = $indent . " " x 4;
+		# This is a requirement of ISC DHCPD:
+		print $fh $nindent."deny dynamic bootp clients;\n";
+		print $fh $nindent."failover peer \"$failover_peer\";\n";
+		foreach my $range ( @ranges ){
+		    print $fh $nindent."range $range;\n";
+		}
+		print $fh $indent."}\n";
+	    }else{
+		foreach my $range ( @ranges ){
+		    print $fh $indent."range $range;\n";
+		}
 	    }
-	    print $fh $indent."}\n";
 	}
     }
-
+    
     # Recurse for each child scope
     if ( defined $data->{$id}->{children} ){
 	foreach my $child_id ( sort { $data->{$a}->{type} cmp $data->{$b}->{type} 
@@ -315,8 +324,12 @@ sub _get_all_data {
 	    $data{$scope_id}{attrs}{$attr_id}{format}    = $attr_format if $attr_format;
 	    $data{$scope_id}{attrs}{$attr_id}{value}     = $attr_value  if $attr_value;
 	}
-	$data{$scope_id}{attrs}{'hardware ethernet'}{value} = $mac if $mac;
-	$data{$scope_id}{attrs}{'fixed-address'}{value}     = Ipblock->int2ip($ip, $ipversion) if $ip;
+	if ( $scope_type eq 'host' ){
+	    $data{$scope_id}{attrs}{'hardware ethernet'}{name}  = 'hardware ethernet';
+	    $data{$scope_id}{attrs}{'hardware ethernet'}{value} = $mac if $mac;
+	    $data{$scope_id}{attrs}{'fixed-address'}{name}      = 'fixed-address';
+	    $data{$scope_id}{attrs}{'fixed-address'}{value}     = Ipblock->int2ip($ip, $ipversion) if $ip;
+	}
     }
 
     # Make children lists
