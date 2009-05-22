@@ -64,6 +64,57 @@
 
 $meta = {
 'tables' => {
+  AccessRight => {
+    table_db_name => 'accessright',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'Acess rights for Netdot authorization',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
   ArpCache => {
     table_db_name => 'arpcache',
     columns => {
@@ -3558,6 +3609,70 @@ $meta = {
       ]
     }
   },
+  GroupRight => {
+    table_db_name => 'groupright',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      group => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'rights',
+          table => 'ContactList'
+        },
+        nullable => 0,
+        tag => 'ContactList',
+        type => 'integer'
+      },
+      right => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'groups',
+          table => 'AccessRight'
+        },
+        nullable => 0,
+        tag => 'Access Right',
+        type => 'integer'
+      }
+    },
+    description => 'Join between a ContactList and its Access Rights',
+    has_history => 0,
+    index => [],
+    isjoin => '1',
+    label => [
+      'group',
+      'right'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'group',
+        'right'
+      ]
+    ],
+    views => {
+      all => [
+        'group',
+        'right'
+      ],
+      brief => [
+        'group',
+        'right'
+      ]
+    }
+  },
   HorizontalCable => {
     table_db_name => 'horizontalcable',
     columns => {
@@ -6995,6 +7110,70 @@ $meta = {
       ],
       brief => [
         'name'
+      ]
+    }
+  },
+  UserRight => {
+    table_db_name => 'userright',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      user => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'rights',
+          table => 'Person'
+        },
+        nullable => 0,
+        tag => 'User',
+        type => 'integer'
+      },
+      right => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'users',
+          table => 'AccessRight'
+        },
+        nullable => 0,
+        tag => 'Access Right',
+        type => 'integer'
+      }
+    },
+    description => 'Join between a Person and his/her Access Rights',
+    has_history => 0,
+    index => [],
+    isjoin => '1',
+    label => [
+      'user',
+      'right'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'user',
+        'right'
+      ]
+    ],
+    views => {
+      all => [
+        'user',
+        'right'
+      ],
+      brief => [
+        'user',
+        'right'
       ]
     }
   },
