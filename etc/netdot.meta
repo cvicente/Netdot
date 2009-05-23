@@ -3620,26 +3620,26 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
-      group => {
+      contactlist => {
         default => '',
         description => '',
         length => '',
         linksto => {
           cascade => 'Nullify',
-          method => 'rights',
+          method => 'access_rights',
           table => 'ContactList'
         },
         nullable => 0,
         tag => 'ContactList',
         type => 'integer'
       },
-      right => {
+      accessright => {
         default => '',
         description => '',
         length => '',
         linksto => {
           cascade => 'Nullify',
-          method => 'groups',
+          method => 'group_rights',
           table => 'AccessRight'
         },
         nullable => 0,
@@ -3652,24 +3652,24 @@ $meta = {
     index => [],
     isjoin => '1',
     label => [
-      'group',
-      'right'
+      'contactlist',
+      'accessright'
     ],
     primary_key => 'id',
     unique => [
       [
-        'group',
-        'right'
+        'contactlist',
+        'accessright'
       ]
     ],
     views => {
       all => [
-        'group',
-        'right'
+        'contactlist',
+        'accessright'
       ],
       brief => [
-        'group',
-        'right'
+        'contactlist',
+        'accessright'
       ]
     }
   },
@@ -7124,26 +7124,26 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
-      user => {
+      person => {
         default => '',
         description => '',
         length => '',
         linksto => {
           cascade => 'Nullify',
-          method => 'rights',
+          method => 'access_rights',
           table => 'Person'
         },
         nullable => 0,
         tag => 'User',
         type => 'integer'
       },
-      right => {
+      accessright => {
         default => '',
         description => '',
         length => '',
         linksto => {
           cascade => 'Nullify',
-          method => 'users',
+          method => 'user_rights',
           table => 'AccessRight'
         },
         nullable => 0,
@@ -7156,24 +7156,24 @@ $meta = {
     index => [],
     isjoin => '1',
     label => [
-      'user',
-      'right'
+      'person',
+      'accessright'
     ],
     primary_key => 'id',
     unique => [
       [
-        'user',
-        'right'
+        'person',
+        'accessright'
       ]
     ],
     views => {
       all => [
-        'user',
-        'right'
+        'person',
+        'accessright'
       ],
       brief => [
-        'user',
-        'right'
+        'person',
+        'accessright'
       ]
     }
   },
