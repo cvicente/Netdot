@@ -21,7 +21,7 @@ $user       => undef
 $submit     => undef
 $show_tasks => undef
 $showheader => 1
-$ip         => undef
+$ipblock_id => undef
 </%args>
 %
 %
@@ -46,8 +46,6 @@ my $hideheader = 'style="display:none"' if ( !$showheader );
 
 my @list;
 
-my $IPV4 = Netdot->get_ipv4_regex();
-my $IPV6 = Netdot->get_ipv6_regex();
 </%init>
 
 <div id="sectiontools" <% $hideheader %>>
@@ -128,18 +126,22 @@ if ( $action eq "SEARCH" && $submit ){
 #
 #######################################################################################
 
-} elsif ( $action eq "EDIT" && $ip) {
-    #verify IP
-    if (!($ip =~ $IPV4 || $ip =~ $IPV6)) {
-	$m->comp('/generic/error.mhtml', error => "IP $ip is not valid.");
-    }
-    
-    
+} elsif ( $action eq "EDIT" && $ipblock_id) {
+    $m->comp('/management/host.html', ipblock=>$ipblock_id, edit=>1);
 }
+
+#######################################################################################
+# New host from single IP
+#
+#######################################################################################
+
+# } elsif ( $action eq "NEW" && $ipblock_id) {
+#     my @rraddrs = RRADDR->search(ipblock=>$ipblock_id);
+#     foreach my $rraddr (@rraddrs){
+# 	$m->comp('/management/host.html', rrid=>$rraddr->rr, edit=>1);
+#     }
+# }
+
+
 </%perl>
 
-
-% #Displaying search results
-% if ( $search ){
-
-% }

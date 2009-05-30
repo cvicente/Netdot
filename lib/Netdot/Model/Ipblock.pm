@@ -1373,10 +1373,11 @@ sub get_ancestors {
 	$logger->debug("Ipblock::get_ancestors: ".$self->get_label()." parent: ".$self->parent->get_label());
 	push @$parents, $self->parent;
 	$self->parent->get_ancestors($parents);
-	wantarray ? ( @$parents ) : $parents->[0]; 
+	return wantarray ? ( @$parents ) : $parents->[0]; 
     }else{
 	return;
     }
+    return;
 }
 
 ##################################################################

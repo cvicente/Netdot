@@ -1,0 +1,602 @@
+<%doc>
+
+    
+</%doc>
+
+<%args>
+$rr        => undef
+$ipblock   => undef
+#$arp_limit => 10
+$action    => undef
+$submit    => undef
+</%args>
+
+<%init>
+my $DEBUG   = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+my @rraddrs;
+my @rrs;
+my $edit;
+if ($submit) {
+    # insert/update
+    eval {
+	my %ret = $ui->form_to_db(%ARGS);
+	print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+	
+	if (exists $ret{RR}) {
+	    my $id = (keys %{$ret{RR}{id}})[0];
+	    print $id;
+	    if ($ret{RR}{id}{$id}{action} eq 'INSERTED' && defined $ipblock) {
+		RRADDR->insert({rr=>$id, ipblock=>$ipblock});
+	    }
+	}
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }
+}
+
+if ($rr && !ref $rr) {
+    $rr = RR->retrieve($rr);
+}
+if ($ipblock && !ref $ipblock) {
+    $ipblock = Ipblock->retrieve($ipblock);
+}
+
+unless ($rr || $ipblock) {
+    $m->comp('/generic/error.mhtml', error=>"Missing required arguments: an RR or an Ipblock");
+}
+
+#if ($action eq 'edit' && $rr) {
+#    $edit = $rr;
+#}
+
+if ($ipblock && (my @arecords = $ipblock->arecords())) {
+    foreach my $arecord (@arecords) {
+	push (@rrs, $arecord->rr);
+    }
+} elsif ($rr) {
+    push (@rrs, $rr);
+}
+
+</%init>
+
+<%perl>
+my (@field_headers, @cell_data);
+
+print '<div class="container">';
+if ($action eq 'new') {
+    print '<form name="netdotform" action="host.html" method="POST">';
+}
+print '<div class="containerheadleft"><b>DNS Records</b></div>';
+print '<div class="containerheadright">';
+if ($action eq 'new') {
+    if ($ipblock) {
+	print '<input type="hidden" name="ipblock" value="'.$ipblock.'">';
+    }
+    
+    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
+    print '<input type="submit" name="submit" value="save" >';
+#    print '</form>';
+} else {
+    if ($ipblock) {
+	print '<a href="host.html?ipblock='.$ipblock.'&action=new">[new]</a>';
+    }
+}
+
+print '</div>'; #close containderheadright
+print '<div class="containerbody"><br>';
+
+
+my %comphash = (field_headers=>\@field_headers, data=>\@cell_data, 
+		width=>"1", headercolwidth=>"15%", datacolwidth=>"85%");
+
+if ($action eq 'new') {
+    print '<div class="container" style="width:60%;margin-left:20px">';
+    print '<div class="containerhead"><b>New Record</b></div>';
+    print '<div class="containerbody">';
+    $ui->add_to_fields(edit=>1, table=>'RR', fields=>['name', 'zone'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['view.html', 'zone.html']);
+    $m->comp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+
+    print '</div>'; #close containerbody of 'new'
+    print '</div>'; #close container of 'new'
+}
+
+</%perl>
+
+<script type="text/javascript" language="javascript">
+var uricomponents = new Array();
+function dynamicAdd(table, id, toAdd, rrFieldName) {
+    if (toAdd == 1) {
+	document.getElementById(table+"_div_"+id).innerHTML=decodeURIComponent(uricomponents[table+"_"+id.toString()+"_content"]);
+	document.getElementById(table+"_"+id).innerHTML="<input type='hidden' name='"+table.toUpperCase()+"__NEW__"+rrFieldName+"' value='"+id+"'><input type='button' name='cancel_button' value='cancel' onClick='dynamicAdd(\""+table+"\", \""+id+"\", 0)'><input type='submit' name='submit' value='save'>";
+    } else {
+	document.getElementById(table+"_div_"+id).innerHTML="";
+	document.getElementById(table+"_"+id).innerHTML="<a href='#' onClick='dynamicAdd(\""+table+"\", \""+id+"\", 1)'>[add]</a>";
+    }
+}
+</script>
+
+
+<%perl>
+
+foreach my $o (@rrs) {
+    if ($action eq 'edit' && $rr->id == $o->id) {
+	$edit = 1;
+    } else {
+	$edit = 0;
+    }
+
+#    if ( $edit ) {
+	print '<form name="netdotform" action="host.html" method="POST">';
+	print '<input type="hidden" name="rr" value="'.$o.'">';
+#    }
+    
+    print '<div class="container" style="width:60%;margin-left:20px">';
+    print '<div class="containerheadleft"><b>'.$o->get_label.'</b></div>';
+    print '<div class="containerheadright">';
+    if ( $edit ) {
+	print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
+	print '<input type="submit" name="submit" value="save" >';
+    } else {
+	print '<a href="host.html?rr='.$o.'&action=edit">[edit]</a>';
+    }
+    print '</div>';
+
+    $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['view.html', 'zone.html']);
+    $m->comp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+
+    
+    #RRADDR
+    print '<div class="container" style="margin-left:10px">';
+    print '<div class="containerheadleft"><b>A/AAAA</b></div>';
+    print '<div class="containerheadright">';
+
+    #new rraddr
+    push( @field_headers, ("IP", "TTL") );
+    push( @cell_data, "<input name='RRADDR__NEW__ipblock' value='' type='text'>" );
+    push( @cell_data, "<input name='RRADDR__NEW__ttl' value='' type='text'>" );
+    my $newrraddr = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+    $newrraddr =~ s/\n//g;
+    $newrraddr =~ s/<script.*<\/script>//g;
+    $newrraddr =~ s/'/\\'/g;
+    print '<script type="text/javascript" language="javascript">uricomponents[\'rraddr_'.$o.'_content\']=encodeURIComponent(\''.$newrraddr.'\');</script>';
+    print '<div id="rraddr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rraddr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+    print '</div>';  #close containerheadright
+
+    #display/edit rraddr
+    print '<div class="containerbody">';
+    if (my @arecs = $o->arecords()) {
+	foreach my $arecord (@arecs) {
+	    push( @field_headers, "IP");
+	    if ($edit) {
+		push( @cell_data, "<input name='RRADDR__".$arecord."__ipblock' value='".$arecord->ipblock->address."' type='text'>" );
+	    } else {
+		push( @cell_data, "<a href='ip.html?id=".$arecord->ipblock."'>".$arecord->ipblock->address."</a>");
+	    }
+	    $ui->add_to_fields(o=>$arecord, edit=>$edit, fields=>['ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['']);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
+    }
+    
+    print '<div id="rraddr_div_'.$o.'"></div>';
+    print '</div></div>';
+
+
+    #RRHINFO
+    print '<div class="container" style="margin-left:10px">';
+    print '<div class="containerheadleft"><b>HINFO</b></div>';
+    print '<div class="containerheadright">';
+
+    #new rrhinfo
+    $ui->add_to_fields(table=>'RRHINFO', edit=>1, fields=>['cpu', 'os', 'ttl'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['view.html','view.html','']);
+    my $newhinfo = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+    $newhinfo =~ s/\n//g;
+    $newhinfo =~ s/<script.*<\/script>//g;
+    $newhinfo =~ s/'/\\'/g;
+    print '<script type="text/javascript" language="javascript">uricomponents[\'rrhinfo_'.$o.'_content\']=encodeURIComponent(\''.$newhinfo.'\');</script>';
+    print '<div id="rrhinfo_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrhinfo\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+    print '</div>';  #close containerheadright
+
+    #display/edit
+    print '<div class="containerbody">';
+    if (my @hinfos = $o->hinfo_records()) {
+	foreach my $hinfo (@hinfos) {
+	    $ui->add_to_fields(o=>$hinfo, edit=>$edit, fields=>['cpu', 'os', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['view.html','view.html','']);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
+    }
+
+    print '<div id="rrhinfo_div_'.$o.'"></div>';
+    print '</div></div>';
+
+
+    #RRTXT
+    print '<div class="container" style="margin-left:10px">';
+    print '<div class="containerheadleft"><b>TXT</b></div>';
+    print '<div class="containerheadright">';
+
+    #new rrtxt
+    $ui->add_to_fields(table=>'RRTXT', edit=>1, fields=>['txtdata', 'ttl'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['view.html','']);
+    my $newtxt = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+    $newtxt =~ s/\n//g;
+    $newtxt =~ s/<script.*<\/script>//g;
+    $newtxt =~ s/'/\\'/g;
+    print '<script type="text/javascript" language="javascript">uricomponents[\'rrtxt_'.$o.'_content\']=encodeURIComponent(\''.$newtxt.'\');</script>';
+    print '<div id="rrtxt_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrtxt\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+    print '</div>';  #close containerheadright
+
+    #display/edit
+    print '<div class="containerbody">';
+    if (my @txts = $o->txt_records()) {
+	foreach my $txt (@txts) {
+	    $ui->add_to_fields(o=>$txt, edit=>$edit, fields=>['txtdata', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['view.html','']);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
+    }
+
+    print '<div id="rrtxt_div_'.$o.'"></div>';
+    print '</div></div>';
+
+#     #SHOW MORE
+#     print '<a id="anchor_'.$o.'" href="#dns_'.$o.'" onClick="toggleLayer(\'dns_'.$o.'\');document.getElementById(\'anchor_'.$o.'\').innerHTML=((document.getElementById(\'anchor_'.$o.'\').innerHTML==\'[Show More]\')?\'[Show Less]\':\'[Show More]\')">[Show More]</a>';
+#     print '<div id="dns_'.$o.'" style="display:none">';
+    
+#     #These below are only shown if 'show more' is clicked on
+    
+#     #we keep a tally of how many there are. If there are none then we don't show the [show more] button
+#     my $optionalCount = 0;
+    
+    #RRCNAME
+    print '<div class="container" style="margin-left:10px">';
+    print '<div class="containerheadleft"><b>CNAME</b></div>';
+    print '<div class="containerheadright">';
+
+    #new rrcname
+    $ui->add_to_fields(table=>'RRCNAME', edit=>1, fields=>['cname', 'ttl'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['view.html','']);
+    my $newcname = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+    $newcname =~ s/\n//g;
+    $newcname =~ s/<script.*<\/script>//g;
+    $newcname =~ s/'/\\'/g;
+    print '<script type="text/javascript" language="javascript">uricomponents[\'rrcname_'.$o.'_content\']=encodeURIComponent(\''.$newcname.'\');</script>';
+    print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.$o.'\', 1, \'name\')">[add]</a></div>';
+    print '</div>';  #close containerheadright
+
+    #display/edit
+    print '<div class="containerbody">';
+    if (my @cnames = $o->cnames()) {
+	foreach my $cname (@cnames) {
+	    $ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['cname', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['view.html','']);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
+    }
+
+    print '<div id="rrcname_div_'.$o.'"></div>';
+    print '</div></div>';
+
+    
+    #RRLOC
+    print '<div class="container" style="margin-left:10px">';
+    print '<div class="containerheadleft"><b>LOC</b></div>';
+    print '<div class="containerheadright">';
+
+    #new
+    $ui->add_to_fields(table=>'RRLOC', edit=>1, fields=>['latitude', 'longitude', 'altitude', 'size', 'horiz_pre', 'vert_pre', 'ttl'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['view.html', 'view.html', 'view.html', 'view.html', 'view.html', 'view.html', '']);
+    my $newloc = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+    $newloc =~ s/\n//g;
+    $newloc =~ s/<script.*<\/script>//g;
+    $newloc =~ s/'/\\'/g;
+    print '<script type="text/javascript" language="javascript">uricomponents[\'rrloc_'.$o.'_content\']=encodeURIComponent(\''.$newloc.'\');</script>';
+    print '<div id="rrloc_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrloc\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+    print '</div>';  #close containerheadright
+
+    #display/edit
+    print '<div class="containerbody">';
+    if (my @locs = $o->loc_records()) {
+	foreach my $loc (@locs) {
+	    $ui->add_to_fields(o=>$loc, edit=>$edit, fields=>['latitude', 'longitude', 'altitude', 'size', 'horiz_pre', 'vert_pre', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['view.html', 'view.html', 'view.html', 'view.html', 'view.html', 'view.html', '']);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
+    }
+
+    print '<div id="rrloc_div_'.$o.'"></div>';
+    print '</div></div>';
+
+    
+    #RRMX
+    print '<div class="container" style="margin-left:10px">';
+    print '<div class="containerheadleft"><b>MX</b></div>';
+    print '<div class="containerheadright">';
+
+    #new rrmx
+    $ui->add_to_fields(table=>'RRMX', edit=>1, fields=>['exchange', 'preference', 'ttl'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['view.html','view.html','']);
+    my $newmx = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+    $newmx =~ s/\n//g;
+    $newmx =~ s/<script.*<\/script>//g;
+    $newmx =~ s/'/\\'/g;
+    print '<script type="text/javascript" language="javascript">uricomponents[\'rrmx_'.$o.'_content\']=encodeURIComponent(\''.$newmx.'\');</script>';
+    print '<div id="rrmx_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrmx\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+    print '</div>';  #close containerheadright
+
+    #display/edit
+    print '<div class="containerbody">';
+    if (my @mxs = $o->mx_records()) {
+	foreach my $mx (@mxs) {
+	    $ui->add_to_fields(o=>$mx, edit=>$edit, fields=>['exchange', 'preference', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['view.html','view.html','']);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
+    }
+
+    print '<div id="rrmx_div_'.$o.'"></div>';
+    print '</div></div>';
+
+    
+    #RRNAPTR
+    print '<div class="container" style="margin-left:10px">';
+    print '<div class="containerheadleft"><b>NAPTR</b></div>';
+    print '<div class="containerheadright">';
+
+    #new rrnaptr
+    $ui->add_to_fields(table=>'RRNAPTR', edit=>1, fields=>['order_field', 'preference', 'flags', 'services', 'regexpr', 'replacement', 'ttl'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['view.html','']);
+    my $newnaptr = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+    $newnaptr =~ s/\n//g;
+    $newnaptr =~ s/<script.*<\/script>//g;
+    $newnaptr =~ s/'/\\'/g;
+    print '<script type="text/javascript" language="javascript">uricomponents[\'rrnaptr_'.$o.'_content\']=encodeURIComponent(\''.$newnaptr.'\');</script>';
+    print '<div id="rrnaptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrnaptr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+    print '</div>';  #close containerheadright
+
+    #display/edit
+    print '<div class="containerbody">';
+    if (my @naptrs = $o->naptr_records()) {
+	foreach my $naptr (@naptrs) {
+	    $ui->add_to_fields(o=>$naptr, edit=>$edit, fields=>['order_field', 'preference', 'flags', 'services', 'regexpr', 'replacement', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['view.html','view.html','']);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
+    }
+
+    print '<div id="rrnaptr_div_'.$o.'"></div>';
+    print '</div></div>';
+
+    
+    #RRNS
+    print '<div class="container" style="margin-left:10px">';
+    print '<div class="containerheadleft"><b>RRNS</b></div>';
+    print '<div class="containerheadright">';
+
+    #new rrns
+    $ui->add_to_fields(table=>'RRNS', edit=>1, fields=>['nsdname', 'ttl'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['view.html','']);
+    my $newns = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+    $newns =~ s/\n//g;
+    $newns =~ s/<script.*<\/script>//g;
+    $newns =~ s/'/\\'/g;
+    print '<script type="text/javascript" language="javascript">uricomponents[\'rrns_'.$o.'_content\']=encodeURIComponent(\''.$newns.'\');</script>';
+    print '<div id="rrns_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrns\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+    print '</div>';  #close containerheadright
+
+    #display/edit
+    print '<div class="containerbody">';
+    if (my @nss = $o->ns_records()) {
+	foreach my $ns (@nss) {
+	    $ui->add_to_fields(o=>$ns, edit=>$edit, fields=>['nsdname', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['view.html','']);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
+    }
+
+    print '<div id="rrns_div_'.$o.'"></div>';
+    print '</div></div>';
+
+    
+    #RRPTR
+    print '<div class="container" style="margin-left:10px">';
+    print '<div class="containerheadleft"><b>PTR</b></div>';
+    print '<div class="containerheadright">';
+
+    #new rrptr
+    push( @field_headers, "IP");
+    push( @cell_data, "<input name='RRPTR__NEW__ipblock' value='' type='text'>");
+    $ui->add_to_fields(table=>'RRPTR', edit=>1, fields=>['ttl'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['']);
+    my $newptr = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+    $newptr =~ s/\n//g;
+    $newptr =~ s/<script.*<\/script>//g;
+    $newptr =~ s/'/\\'/g;
+    print '<script type="text/javascript" language="javascript">uricomponents[\'rrptr_'.$o.'_content\']=encodeURIComponent(\''.$newptr.'\');</script>';
+    print '<div id="rrptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrptr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+    print '</div>';  #close containerheadright
+
+    #display/edit
+    print '<div class="containerbody">';
+    if (my @ptrs = $o->ptr_records()) {
+	foreach my $ptr (@ptrs) {
+	    push( @field_headers, "IP");
+	    if ($edit) {
+		push( @cell_data, "<input name='RRPTR__".$ptr."__ipblock' value='".$ptr->ipblock->address."' type='text'>" );
+	    } else {
+		push( @cell_data, "<a href='ip.html?id=".$ptr->ipblock->id."'>".$ptr->ipblock->address."</a>");
+	    }
+	    $ui->add_to_fields(o=>$ptr, edit=>$edit, fields=>['ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['']);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
+    }
+
+    print '<div id="rrptr_div_'.$o.'"></div>';
+    print '</div></div>';
+
+    
+    #RRSRV
+    print '<div class="container" style="margin-left:10px">';
+    print '<div class="containerheadleft"><b>SRV</b></div>';
+    print '<div class="containerheadright">';
+
+    #new rrsrv
+    $ui->add_to_fields(table=>'RRSRV', edit=>1, fields=>['priority', 'weight', 'port', 'target', 'ttl'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       linkpages=>['view.html','view.html','view.html','view.html','']);
+    my $newsrv = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+    $newsrv =~ s/\n//g;
+    $newsrv =~ s/<script.*<\/script>//g;
+    $newsrv =~ s/'/\\'/g;
+    print '<script type="text/javascript" language="javascript">uricomponents[\'rrsrv_'.$o.'_content\']=encodeURIComponent(\''.$newsrv.'\');</script>';
+    print '<div id="rrsrv_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrsrv\', \''.$o.'\', 1, \'name\')">[add]</a></div>';
+    print '</div>';  #close containerheadright
+
+    #display/edit
+    print '<div class="containerbody">';
+    if (my @srvs = $o->srv_records()) {
+	foreach my $srv (@srvs) {
+	    $ui->add_to_fields(o=>$srv, edit=>$edit, fields=>['priority', 'weight', 'port', 'target', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['view.html','view.html','view.html','view.html','']);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
+    }
+
+    print '<div id="rrsrv_div_'.$o.'"></div>';
+    print '</div></div>';
+
+
+#     if ($optionalCount == 0) {
+# 	print '<script type="text/javascript">document.getElementById("anchor_'.$rrid.'").innerHTML="";</script>';
+#     }
+
+#    print '</div>'; #close show more div
+    print '</div>'; #close container
+#    if ( $edit ) {
+	print '</form>';
+#    }
+}
+
+print '</div>'; #close outer containerbody
+print '</div>'; #close outer container
+
+#
+# What are these things below?
+#
+
+# @headers = ("Service", "Contact List");
+# @rows = ();
+# foreach my $ipservice ($o->services){
+#     push( @rows,
+# 	  [ eval {
+# 	      if ($edit){	 
+# 		  $ui->form_field(object=>$ipservice, column=>"service", edit=>$edit, returnValOnly=>1);
+# 	      }else{
+# 		  qq(<a href="view.html?table=Service&id=).$ipservice->service->id.qq(">).$ipservice->service->name."</td></a>";
+# 	      }
+# 	    } ,
+# 	    eval {
+# 		if ($edit){
+# 		    $ui->form_field(object=>$ipservice, column=>"contactlist", edit=>$edit, returnValOnly=>1);
+# 		}elsif ($o->used_by){
+# 		    qq(<a href="view.html?table=ContactList&id=).$ipservice->contactlist.qq(">).$ipservice->contactlist->name."</td></a>";
+# 		}
+# 	    }
+# 	  ]  );
+# }
+# $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows ) if ( $o->services ); 
+
+# print '</div>';
+
+# #Display ARP
+# print '<!-- Display ARP -->';
+
+# # Get latest arp entries
+# if ( my $arp = $o->get_last_n_arp($arp_limit) ){
+#     my @rows;
+#     my %tstamps;
+#     foreach my $row ( @$arp ){
+# 	my ($iid, $macid, $tstamp) = @$row;
+# 	my $lbl    = Interface->retrieve($iid)->get_label;
+# 	my $lnk   = "<a href=\"interface.html?id=$iid\">$lbl</a>";
+# 	push @{$tstamps{$tstamp}{$macid}}, $lnk;
+#     }
+#     foreach my $tstamp ( reverse sort keys %tstamps ){
+# 	foreach my $macid ( keys %{$tstamps{$tstamp}} ){
+# 	    my $maclbl   = PhysAddr->retrieve($macid)->get_label;
+# 		my $maclnk   = "<a href=\"../management/mac.html?id=$macid\">$maclbl</a>";
+# 		push @rows, [$tstamp, $maclnk, (join ', ', @{$tstamps{$tstamp}{$macid}})];
+# 	    }
+# 	}
+    
+#     print '<div class="container">';
+#     print '<div class="containerheadleft"><strong>Last '.$arp_limit.' ARP entries</strong></div>';
+#     print '<div class="containerheadright">';
+#     print '<form name="netdotform" action="ip.html" method="POST">';
+#     print '<input type="hidden" name="id" value="'.$id.'">';
+#     print 'Last <input type="text" size="3" name="arp_limit" value="'.$arp_limit.'"> ARP entries <input type="submit" name="submit" value="show">';
+#     print '</form>';
+#     print '</div>';
+#     print '<div class="containerbodyoutside">';
+#     $m->comp('/generic/data_table.mhtml', field_headers=>['Time Seen', 'MAC', 'Interfaces'], data=>\@rows, style=>['', '', 'width: 60%']);
+#     print '</div>';
+#     print '</div>';
+
+# }
+# print '<!-- End Display ARP -->';
+
+
+
+
+</%perl>
+

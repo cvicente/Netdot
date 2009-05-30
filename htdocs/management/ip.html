@@ -428,7 +428,7 @@ if ( my @parents = $o->get_ancestors ){
 %     }
     </div>
 
-% if ( $o->is_address ){  
+% if ( $o->is_address ){
 
 %#######################################################################################
 %# View IP address
@@ -510,15 +510,20 @@ if ( my @parents = $o->get_ancestors ){
 %# actually output the table to the browser
 <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data,
                           width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
-<a href="hostinfo_tasks.html?ip=<% $o->get_label %>&action=EDIT">[Configure Host Info!]</a>
+
+% my @rraddrs = $o->arecords();
+% if (!@rraddrs) {
+    <a href="host.html?ipblock=<% $o->id %>&action=new">[Add DNS Records]</a>
+% } else {
+%    $m->comp('/management/host.html', ipblock=>$o->id);
+% }
+
     </div>
 </div>
 
 %if ( $edit ){
   </form>
 %}
-
-<& /management/host.mhtml, id=>$id,  edit=>$added_ip, arp_limit=>$arp_limit &>
 
 
 

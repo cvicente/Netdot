@@ -34,6 +34,7 @@ RRADDR represent either A or AAAA records.
 =cut
 sub insert {
     my($class, $argv) = @_;
+    $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
     
     my $update_ptr = delete $argv->{update_ptr};
  
@@ -68,7 +69,8 @@ sub insert {
 sub update {
     my($self, $argv) = @_;
     $self->isa_object_method('update');
-
+    $argv->{ipblock} = $self->_convert_ipblock($argv->{ipblock});
+    
     my $update_ptr = delete $argv->{update_ptr};
 
     my @res = $self->SUPER::update($argv);
@@ -176,6 +178,23 @@ sub _net_dns {
     
     return $ndo;
 }
+
+
+##################################################################
+# check if IP is an address string, if so then convert into object
+sub _convert_ipblock {
+    my ($self, $ip) = @_;
+    if (!(ref $ip) && ($ip =~ /\D/)) {
+	if (my $ipblock = Ipblock->search(address=>$ip)->first) {
+	    return $ipblock;
+	} else {
+	    return Ipblock->insert({address=>$ip});
+	}
+    } else {
+	return $ip;
+    }
+}
+
 
 =head1 AUTHOR
 
