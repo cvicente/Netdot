@@ -4,6 +4,7 @@
 </%doc>
 
 <%args>
+$id        => undef
 $rr        => undef
 $ipblock   => undef
 #$arp_limit => 10
@@ -12,7 +13,7 @@ $submit    => undef
 </%args>
 
 <%init>
-my $DEBUG   = 1;
+my $DEBUG   = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 my @rraddrs;
@@ -44,7 +45,8 @@ if ($ipblock && !ref $ipblock) {
     $ipblock = Ipblock->retrieve($ipblock);
 }
 
-unless ($rr || $ipblock) {
+
+unless ($id || $rr || $ipblock) {
     $m->comp('/generic/error.mhtml', error=>"Missing required arguments: an RR or an Ipblock");
 }
 
@@ -58,6 +60,10 @@ if ($ipblock && (my @arecords = $ipblock->arecords())) {
     }
 } elsif ($rr) {
     push (@rrs, $rr);
+} elsif ($id){
+    if ( $rr = RR->retrieve($id) ){
+	push (@rrs, $rr);
+    }
 }
 
 </%init>
@@ -79,10 +85,10 @@ if ($action eq 'new') {
     print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
     print '<input type="submit" name="submit" value="save" >';
 #    print '</form>';
-} else {
-    if ($ipblock) {
+} elsif ($ipblock) {
 	print '<a href="host.html?ipblock='.$ipblock.'&action=new">[new]</a>';
-    }
+}else{
+    print '&nbsp;';
 }
 
 print '</div>'; #close containderheadright
@@ -98,7 +104,7 @@ if ($action eq 'new') {
     print '<div class="containerbody">';
     $ui->add_to_fields(edit=>1, table=>'RR', fields=>['name', 'zone'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
-		       linkpages=>['view.html', 'zone.html']);
+		       linkpages=>['', 'zone.html']);
     $m->comp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
 
@@ -152,7 +158,7 @@ foreach my $o (@rrs) {
 
     $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
-		       linkpages=>['view.html', 'zone.html']);
+		       linkpages=>['', 'zone.html']);
     $m->comp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
 
@@ -285,7 +291,7 @@ foreach my $o (@rrs) {
     #new rrcname
     $ui->add_to_fields(table=>'RRCNAME', edit=>1, fields=>['name', 'ttl'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
-		       linkpages=>['view.html','']);
+		       linkpages=>['host.html','']);
     my $newcname = $m->scomp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
     $newcname =~ s/\n//g;
@@ -301,7 +307,7 @@ foreach my $o (@rrs) {
 	foreach my $cname (@cnames) {
 	    $ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['name', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['view.html','']);
+			       linkpages=>['host.html','']);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 	}
@@ -339,11 +345,16 @@ foreach my $o (@rrs) {
     print '<div class="containerbody">';
     if (my @cnames = $o->cnames()) {
 	foreach my $cname (@cnames) {
-	    $ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['cname', 'ttl'],
-			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['view.html','']);
-	    $m->comp('/generic/attribute_table.mhtml', %comphash);
-	    (@field_headers, @cell_data) = ((),());
+	    if ( my $cnamerr = RR->search(name=>$cname->cname)->first ){
+# 		$ui->add_to_fields(o=>$cnamerr, edit=>$edit, fields=>['name'],
+# 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
+# 				   linkpages=>['host.html']);
+		(@field_headers, @cell_data) = ((),());
+		push @field_headers, "Name:";
+		push @cell_data, "<a href=\"host.html?id=$cnamerr\">".$cnamerr->get_label."</a>";
+		$m->comp('/generic/attribute_table.mhtml', %comphash);
+		(@field_headers, @cell_data) = ((),());
+	    }
 	}
     }
 
@@ -457,7 +468,7 @@ foreach my $o (@rrs) {
     
     #RRNS
     print '<div class="container" style="margin-left:10px">';
-    print '<div class="containerheadleft"><b>RRNS</b></div>';
+    print '<div class="containerheadleft"><b>NS</b></div>';
     print '<div class="containerheadright">';
 
     #new rrns
