@@ -665,7 +665,13 @@ sub get_snmp_info {
     }
     ################################################################
     # Get STP (Spanning Tree Protocol) stuff
-    if ( $self->config->get('GET_DEVICE_STP_INFO') ){
+
+    my $collect_stp = 1;
+    if ( ref($self) && !$self->collect_stp ){
+	$collect_stp = 0;
+    }
+    
+    if ( $self->config->get('GET_DEVICE_STP_INFO') && $collect_stp ){
 	if ( defined $dev{physaddr} ){
 	    $dev{stp_type} = $sinfo->stp_ver();
 	    
@@ -3070,7 +3076,7 @@ sub _get_snmp_session {
 		      Timeout       => (defined $argv{timeout}) ? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
 		      Retries       => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
 		      AutoSpecify   => 1,
-#		      Debug         => ( $logger->is_debug() )? 1 : 0,
+		      Debug         => ( $logger->is_debug() )? 1 : 0,
 		      BulkWalk      => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
 		      BulkRepeaters => 20,
 		      MibDirs       => \@MIBDIRS,
