@@ -261,6 +261,25 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %#######################################################################
 
 % if ( $view eq "Basics" || $view eq "All" ){
+
+<script language="javascript">
+<!--
+
+// Chooses the 0 valued option in a select box.  Used to enforce the
+// mutual exclusivity of the room and closet options in the
+// group/location form below.
+function setNull(select){
+    for (var i = 0; i < select.options.length || alert("No null in list.  This means nathan screwed up dynamic_list.js"); ++i){
+	if (select.options[i].value == 0) {
+	    select.options[i].selected = true;
+	    break;
+	}
+    }
+}
+
+-->
+</script>
+
 % if ( $editgen || $editloc || $editcomments || $editmgmt ) {
         <form name="netdotform" action="device.html" method="POST">
             <script language="javascript" src="../java_script/datechooser.js"></script>
@@ -355,9 +374,14 @@ push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_ta
 				       makeLink=>1, linkPage=>"contactlist.html", returnAsVar=>1 ) );
       
 
-$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>['site'], 
-		   field_headers=>\@field_headers, cell_data=>\@cell_data, 
-		   linkpages=>['view.html']);
+
+push( @field_headers, $ui->col_descr_link('Device', 'site', 'Site:')  );
+push( @cell_data, &{sub{
+    my $js = sprintf("onChange=\"jsrsSendquery('Room', 'Device__%d__room', this.options[selectedIndex].text);jsrsSendquery('Closet', 'Device__%d__closet', this.options[selectedIndex].text);\"", $o->id, $o->id);
+    $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site",
+		       edit=>$editloc, linkPage=>"view.html", htmlExtra=>$js, returnAsVar=>1)
+    }} );
+
 
 push( @field_headers, $ui->col_descr_link('Device', 'room', 'Room:')  );
 push( @cell_data, &{sub{ 
@@ -529,23 +553,6 @@ print $tmp{value};
 function showVlan(){
     var name = document.showvlans.showvlan.value;
     window.location = "device.html?id=<% $id %>&view=<% $view %>&showvlan="+name;
-}
-
-var closetList = new DynamicList("netdotform", "Device__<% $id %>__closet", "site", "Closet", "Device__<% $id %>__site");
-var roomList = new DynamicList("netdotform", "Device__<% $id %>__room", "floor", "Room", "Device__<% $id %>__site");
-roomList.setQueryURL("room_site_query.html");
-LIST_MANAGER.addList(closetList, roomList);
-
-// Chooses the 0 valued option in a select box.  Used to enforce the
-// mutual exclusivity of the room and closet options in the
-// group/location form below.
-function setNull(select){
-    for (var i = 0; i < select.options.length || alert("No null in list.  This means nathan screwed up dynamic_list.js"); ++i){
-	if (select.options[i].value == 0) {
-	    select.options[i].selected = true;
-	    break;
-	}
-    }
 }
 
 -->

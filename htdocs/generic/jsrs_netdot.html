@@ -48,7 +48,7 @@ sub keyword_search {
     my ( $table, $form_field, $keywords, $field ) = @_;
     my $r;
     my @terms;
-    my $MAX   = 100;
+    my $MAX   = $ui->config->get('DEFAULT_SELECTMAX');
 
     if ( $keywords =~ /\w+/ ){
 	if ( $keywords =~ s/^\s*(.*)\s*$/$1/ ){
@@ -81,13 +81,7 @@ sub keyword_search {
 	    # Always order interfaces by ifIndex
 	    @objs = sort { $a->number <=> $b->number } @objs;
 	}else{
-	    my $lblfield = ( $table->meta_data->get_labels )[0];
-	    my $type = $table->meta_data->get_column($lblfield)->sql_type;
-	    if ( $type eq 'integer' ){
-		@objs = sort { $a->$lblfield <=> $b->$lblfield } @objs;
-	    }else {
-		@objs = sort { $a->$lblfield cmp $b->$lblfield } @objs;
-	    }
+	    @objs = sort { $a->get_label cmp $b->get_label } @objs;
 	}
         # Added this select tag so that the user is able to select
         # something which will trigger updating of related select
