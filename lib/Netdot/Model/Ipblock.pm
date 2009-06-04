@@ -235,7 +235,7 @@ sub get_unused_subnets {
     my @result;
     foreach my $id ( @ids ){
 	my $ip = Ipblock->retrieve($id);
-	if ( $args{version} == 4 ){
+	if ( defined $args{version} && $args{version} == 4 ){
 	    # Ignore IPv4 multicast blocks
 	    if ( $ip->_netaddr->within(new NetAddr::IP "224.0.0.0/4") ){
 		next;
