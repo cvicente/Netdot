@@ -197,6 +197,9 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 }elsif ( $_action eq "ADD_RANGE" ){
     
     if ( $add_range_prefix ){
+
+	$add_range_prefix =~ s/\s+//g; # Remove spaces
+
 	unless ( $add_range_prefix =~ /\// ){
 	    $m->comp('/generic/error.mhtml', error=> "$add_range_prefix not a valid CIDR string.");
 	}
