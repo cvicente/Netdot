@@ -35,7 +35,7 @@ Netdot - Network Documentation Tool
 
 =head1 VERSION
 
-Version 0.8
+Version 0.8.4
 
 =cut
 
