@@ -4,7 +4,7 @@ include $(SRCROOT)/etc/utility-Makefile
 # makefile for etc/
 
 
-FILES = Default.conf netdot_apache2_radius.conf netdot_apache2_ldap.conf netdot.meta
+FILES = Default.conf netdot_apache2_radius.conf netdot_apache2_ldap.conf netdot_apache2_local.conf netdot.meta
 
 all: 
 	$(substitute)

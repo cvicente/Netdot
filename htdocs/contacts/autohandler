@@ -27,31 +27,55 @@ my $SECTION = "Contacts";
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
-my $caller_args = $m->caller_args(-1);
+my $page;
 
-if (exists($caller_args->{page})){
-    $user->setAttribute($r, "$PAGE_ATTRIBUTE", $caller_args->{page});
-}
-my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
+my $manager = $ui->get_permission_manager($r);
+if ( $manager && $manager->can($user, "access_section") ){
 
-
-if (exists($caller_args->{tasks})){
-    $user->setAttribute($r, "SHOW_TASKS", $caller_args->{tasks});
-}
-my $show_tasks = $user->getAttribute("SHOW_TASKS");
-if ($show_tasks eq "") {
-    $user->setAttribute($r, "SHOW_TASKS", "show");
-    $show_tasks = "show";
-}
-*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
-
-my $hideheader;
-if( !$showheader ) {
-    $hideheader = 'style="display:none"';
+    my $caller_args = $m->caller_args(-1);
+    if (exists($caller_args->{page})){
+	$user->setAttribute($r, "$PAGE_ATTRIBUTE", $caller_args->{page});
+    }
+    $page = $user->getAttribute("$PAGE_ATTRIBUTE");
+    
+    
+    if (exists($caller_args->{tasks})){
+	$user->setAttribute($r, "SHOW_TASKS", $caller_args->{tasks});
+    }
+    my $show_tasks = $user->getAttribute("SHOW_TASKS");
+    if ($show_tasks eq "") {
+	$user->setAttribute($r, "SHOW_TASKS", "show");
+	$show_tasks = "show";
+    }
+    *print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+    
+    my $hideheader;
+    if( !$showheader ) {
+	$hideheader = 'style="display:none"';
+    }
+    if ( ($page eq "ENTITIES" || $page eq "") && $m->request_comp->name ne "entities.html" ) {
+	
+	$m->comp('entities.html', user=>$user, showheader=>$showheader);
+	
+    } elsif ( $page eq "PEOPLE" && $m->request_comp->name ne "people.html" ) {
+	
+	$m->comp('people.html', user=>$user, showheader=>$showheader);
+	
+    }
 }
 </%init>
-%
-%
+
+<%perl>
+if ( my $next = $m->fetch_next ){
+    if ( $page ){
+	$m->call_next(page => $page);
+    }else{
+	$m->call_next();
+    }
+}
+</%perl>
+
+
 %# Methods can be called externally.
 <%method .section_meta_data>
     <%doc>
@@ -71,20 +95,4 @@ if( !$showheader ) {
     </%init>
 </%method>
 
-<%perl>
-
-if ( ($page eq "ENTITIES" || $page eq "") && $m->request_comp->name ne "entities.html" ) {
-
-    $m->comp('entities.html', user=>$user, showheader=>$showheader);
-
-} elsif ( $page eq "PEOPLE" && $m->request_comp->name ne "people.html" ) {
-
-    $m->comp('people.html', user=>$user, showheader=>$showheader);
-
-}
-
-if ( my $next = $m->fetch_next ){
-     $m->call_next(page => $page);
-}
-</%perl>
 

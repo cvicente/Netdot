@@ -34,6 +34,7 @@ section => 'Generic'
 <%args>
 $table       => undef
 $id          => undef
+$user        => $ui->get_current_user($r)
 $submit      => undef
 $cancel      => undef
 $showheader  => 1
@@ -58,6 +59,7 @@ my %reserved = (submit     => '',
 		page       => '',
 		);
 
+my $manager = $ui->get_permission_manager($r);
 
 ##################################################
 # grab arguments to this script
@@ -125,6 +127,11 @@ if ( $table ){
 
     if ( $id ){
 	my $obj = $table->retrieve($id);
+
+	unless ( $manager && $manager->can($user, "edit", $obj) ){
+	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
+	}
+
 	if ( $submit eq "Update" ){
 	    eval{
 		$obj->update(\%args);
@@ -174,11 +181,21 @@ if ( $table ){
 % ########################################################
 
 
+<%def .show_form>
+<%perl>
+    if ( $ARGS{table} eq 'UserRight' || $ARGS{table} eq 'GroupRight'){
+	$m->comp('access_right_form.html', %ARGS);
+    }else{
+	$m->comp('.show_generic_form', %ARGS);
+    }
+</%perl>
+</%def>
+
 % ########################################################
 % # HTML form wrapper for the form component
 % ########################################################
 
-<%def .show_form>
+<%def .show_generic_form>
 <%args>
 $table
 $id         => undef
@@ -243,7 +260,6 @@ my $title = "$table " . $ui->table_descr_link($table, "[?]");
 % }
 
 </%def>
-
 
 
 % ########################################################

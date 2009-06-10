@@ -77,7 +77,7 @@ sub get_name {
     my $ipaddr = $ip->address;
 
     if ( int($ip->parent) && $ip->address_numeric == $ip->parent->address_numeric + 1 ){
-	$logger->debug("Plugins::DeviceIpNamesByInt::get_name: $ipaddr is first it its subnet");
+	$logger->debug("Plugins::DeviceIpNamesByInt::get_name: $ipaddr is first in its subnet");
 	if ( int($ip->parent->vlan) ){
 	    # Make the name reflect the vlan number
 	    my $vlan = $ip->parent->vlan;

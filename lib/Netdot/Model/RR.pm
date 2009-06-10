@@ -117,6 +117,8 @@ sub search_like {
     type        <A|AAAA|TXT|HINFO|CNAME|NS|MX|NAPTR|SRV|PTR|LOC> 
                 Create records for these types 
                 (need to pass their specific arguments)
+    rr          Owner RR (if already created)
+    update_ptr  If Creating a A/AAAA, automatically insert corresponding PTR
     
   Returns: 
     New RR object, or RRADDR, RRTXT, etc. if type is specified.
@@ -129,8 +131,8 @@ sub search_like {
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
-    $class->throw_fatal('Model::RR::insert: Missing required parameters: name')
-	unless ( defined $argv->{name} );
+    $class->throw_fatal('Model::RR::insert: Missing required parameters: name or rr')
+	unless ( defined $argv->{name} || defined $argv->{rr} );
 
     # Set default zone if needed
     $argv->{zone} = $class->config->get('DEFAULT_DNSDOMAIN') 
@@ -150,7 +152,9 @@ sub insert {
 
     my $rr;
 
-    if ( $rr = $class->search(name=>$argv->{name}, zone=>$zone)->first ){
+    if ( $argv->{rr} ){
+	$rr = (ref($argv->{rr}))? $argv->{rr} : RR->retrieve($argv->{rr});
+    }elsif ( $rr = $class->search(name=>$argv->{name}, zone=>$zone)->first ){
 	if ( !defined $argv->{type} ){
 	    $class->throw_user(sprintf("RR::Insert: %s.%s already exists!", $rr->name, $rr->zone->name));
 	}
@@ -172,6 +176,15 @@ sub insert {
 	}
     }
     
+    my %args;
+    if ( defined $argv->{ttl} ){
+	if ( $argv->{ttl} =~ /^(?:\d+[WDHMS]?)+$/i ){
+	    $args{ttl} = $argv->{ttl};
+	}else{
+	    $logger->warn("Invalid TTL: ".$argv->{ttl});
+	}
+    }
+
     if ( $argv->{type} eq 'A' || $argv->{type} eq 'AAAA' ){
 	$class->throw_user("Missing required argument: ipblock")
 	    unless defined $argv->{ipblock};
@@ -183,18 +196,8 @@ sub insert {
 	    $ipb = Netdot::Model::Ipblock->insert({ address => $argv->{ipblock},
 						    status  => 'Static' });
 	}
-	my %args = (rr=>$rr, ipblock=>$ipb);
-
-	if ( defined $argv->{ttl} ){
-	    if ( $argv->{ttl} =~ /^(?:\d+[WDHMS]?)+$/i ){
-		$args{ttl} = $argv->{ttl};
-	    }else{
-		$logger->warn("Invalid TTL: ".$argv->{ttl});
-	    }
-	}
-	# Use the Zone's default TTL as a last resort
-	$args{ttl} ||= $zone->default_ttl;
-	
+	%args = (rr=>$rr, ipblock=>$ipb);
+	$args{update_ptr} = 1 if $argv->{update_ptr};
 	return RRADDR->insert(\%args);
 
     }elsif ( $argv->{type} eq 'TXT' ){

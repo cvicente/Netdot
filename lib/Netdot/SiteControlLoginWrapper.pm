@@ -1,3 +1,9 @@
+package Netdot::SiteControlLoginWrapper;
+use base qw(Apache2::SiteControl);
+
+use Apache2::Request;	# To get at POST args.
+use strict;
+
 =head1 NAME
 
 Netdot::SiteControlLoginWrapper
@@ -19,13 +25,8 @@ In the apache configuration:
 
 =cut
 
-package Netdot::SiteControlLoginWrapper;
-
-use Apache2::SiteControl;
-use base qw(Apache2::SiteControl);
-
-use Apache2::Request;	# To get at POST args.
-use strict;
+# Make sure to return true
+1;
 
 =head2 login - Wraps Apache2::SiteControl::login
 
@@ -69,7 +70,5 @@ sub login {
 
     # Let SiteControl do its thing.
     $self->SUPER::login($r);
-}
 
-# This is braindead
-1;
+}

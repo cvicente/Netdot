@@ -1,0 +1,147 @@
+<%doc>
+
+-- HOST tasks --
+
+</%doc>
+%
+<%attr>
+title        => 'Host Tasks' 
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
+<%args>
+$action     => undef
+$search     => undef
+$user       => undef
+$submit     => undef
+$show_tasks => undef
+$show_zone  => undef
+$show_ipblock  => undef
+$showheader => 1
+</%args>
+%
+%
+%
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+$show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
+if ( $show_tasks eq "" ) {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+my $hideheader = 'style="display:none"' if ( !$showheader );
+
+</%init>
+
+<div id="sectiontools" <% $hideheader %>>
+  <div class="container">
+    <div class="containerheadleft">
+        DNS/DHCP Tasks
+    </div>
+    <div class="containerheadright">
+%       print_showtaskslink($show_tasks);
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+
+<%perl>
+my (@zones, @ipblocks);
+my $ao = $ui->get_allowed_objects($r, $user);
+if ( exists $ao->{Zone} ){
+    foreach my $id ( keys %{$ao->{Zone}} ){
+	if ( my $zone = Zone->retrieve($id) ){
+	    push @zones, $zone;
+	}else{
+	    delete $ao->{Zone}->{$id};
+	}
+    }
+}
+if ( exists $ao->{Ipblock} ){
+    foreach my $id ( keys %{$ao->{Ipblock}} ){
+	if ( my $ip = Ipblock->retrieve($id) ){
+	    push @ipblocks, $ip;
+	}else{
+	    delete $ao->{Ipblock}->{$id};
+	}
+    }
+}
+</%perl>
+
+<p>
+
+<table><tr><td>
+    <fieldset class="small">
+        <legend>Add new host in</legend>
+% if ( @ipblocks ){
+        <form name="add_host_form" action="add_host.html" method="POST">
+        <select name="add_host_block" onChange="document.add_host_form.submit()">
+            <option value="0">- Select Block -</option>
+%       foreach my $o ( sort { $a->get_label cmp $b->get_label } @ipblocks ){
+            <option value="<% $o %>"><% $o->get_label %></option>
+%       }
+        </select>
+        </form>
+% }else{
+     No IP blocks available for this user.
+% }
+
+    </fieldset>
+
+    <fieldset class="small">
+        <legend>My Zones</legend>
+
+% if ( @zones ){
+        <form name="zone_form" action="hostinfo_tasks.html" method="POST">
+        <select name="show_zone" onChange="document.zone_form.submit()">
+            <option value="0">- Select Zone -</option>
+%       foreach my $o ( sort { $a->get_label cmp $b->get_label } @zones ){
+            <option value="<% $o %>"><% $o->get_label %></option>
+%       }
+        </select>
+        </form>
+% }else{
+     No zones available for this user.
+% }
+
+    </fieldset>
+    <fieldset class="small">
+        <legend>My IP Blocks</legend>
+
+% if ( @ipblocks ){
+        <form name="ipblock_form" action="hostinfo_tasks.html" method="POST">
+        <select name="show_ipblock" onChange="document.ipblock_form.submit()">
+            <option value="0">- Select Block -</option>
+%       foreach my $o ( sort { $a->get_label cmp $b->get_label } @ipblocks ){
+            <option value="<% $o %>"><% $o->get_label %></option>
+%       }
+        </select>
+        </form>
+% }else{
+     No IP blocks available for this user.
+% }
+
+    </fieldset>
+</td></tr></table>
+
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+% if ( $show_zone ){
+%    $m->comp('../management/zone.html', id=>$show_zone, user=>$user);
+% }elsif ( $show_ipblock ){
+%    $m->comp('../management/ip.html', id=>$show_ipblock, user=>$user);
+% }

@@ -26,7 +26,7 @@ if ( $edit ) { $show_buttons = 0; }
 </%init>
 
 
-% if ( $edit ) {
+% if ( $edit eq 'contact' or $edit eq 'newcontact' ) {
     <form name="netdotform" action="contactlist.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
 % }
@@ -76,7 +76,7 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
 %            print $ui->col_descr_link('Contact', 'person', "Person: ");
 	     </label>
 	     <p>
-             <div id="existingperson" style="display:block">
+             <div id="existingperson" style="display:none">
                  <select name="Contact__NEW__person" class="dropdown">
                     <option value="0">-- Select --</option>
 %                   my @people = Person->retrieve_all;
@@ -87,7 +87,7 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
                  <a href="#" onClick="toggleLayer('existingperson');toggleLayer('newperson');document.getElementById('personstatus').value='new';">[new]</a>
              </div>
 
-             <div id="newperson" style="display:none">
+             <div id="newperson" style="display:block">
                     <a href="#" onClick="toggleLayer('newperson');toggleLayer('existingperson');document.getElementById('personstatus').value='existing';">[choose existing]</a>
 		    <p><br>
 		    <& form.mhtml, table=>'Person', edit=>$edit, short_field_names=>0 &>
@@ -100,7 +100,7 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
        <input type="hidden" name="personstatus" id="personstatus" value="new">
        <input type="hidden" name="_action" value="new_contact">
         
-%     if ( $edit eq 'newcontact' ){	 
+%     if ( $edit eq 'contact' || $edit eq 'newcontact' ){	 
 	   <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 	   <input type="submit" name="submit" value="save">
            </form>

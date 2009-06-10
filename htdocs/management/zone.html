@@ -11,14 +11,23 @@ section => 'Management'
 %
 <%args>
 $id
-$view => 'undef'
+$user => $ui->get_current_user($r)
+$view => undef
 </%args>
 %
 %
 <%init>
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
 my $obj = Zone->retrieve($id);
+
+# Check if user can view this object
+my $manager = $ui->get_permission_manager($r);
+unless ( $manager && $manager->can($user, "view", $obj) ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+}
+
 my $count = $obj->get_record_count();
 </%init>
 
@@ -30,9 +39,12 @@ my $count = $obj->get_record_count();
     <div class="containerheadleftoutside"><strong>Zone <% $obj->name %></strong></div>
     <div class="containerheadrightoutside">
           <a href="zone.html?id=<% $id %>">[refresh]</a>
-          <a href="edit.html?table=Zone">[new]</a>
-          <a href="edit.html?table=Zone&id=<% $id %>">[edit]</a>
-          <a href="delete.html?table=Zone&id=<% $id %>">[delete]</a>
+%         if ( $manager && $manager->can($user, "access_section") ){
+%           # Only admins can do this
+            <a href="edit.html?table=Zone">[new]</a>
+            <a href="edit.html?table=Zone&id=<% $id %>">[edit]</a>
+            <a href="delete.html?table=Zone&id=<% $id %>">[delete]</a>
+%         }
           <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">
@@ -91,4 +103,25 @@ my $count = $obj->get_record_count();
         <div class="containerhead">IP Blocks</div>
           <& /generic/sortresults.mhtml, object=>\@subnets &>
       </div>
+% }
+
+
+<!-- Display view menu -->
+   <div class="container">
+% if ( $view eq 'records' ){
+      <div class="containerhead">[View Records]</div>
+% }else{
+      <div class="containerhead"><a href="zone.html?id=<% $id %>&view=records">[View Records]</a></div>
+% }
+   </div>
+
+<!-- Display list of records -->
+% if ( $view eq 'records' ){
+%  my @records = $obj->records;
+   <div class="container">
+      <div class="containerhead">Records</div>
+      <div class="containerbody">
+      <& /generic/sortresults.mhtml, object =>\@records  &>
+      </div>
+   </div>
 % }

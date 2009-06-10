@@ -24,9 +24,10 @@ use Netdot::Model;
 use Apache::Session::File;
 use Apache::Session::Lock::File;
 use GraphViz;
+use Apache2::SiteControl;
 use strict;
 
-my $logger = Netdot->log->get_logger("Netdot::Model");
+my $logger = Netdot->log->get_logger("Netdot::UI");
 
 # Some tables have a specific view page. 
 #
@@ -38,6 +39,7 @@ my %VIEWPAGE = ( BinFile     => "../generic/display_bin.html",
 		 Interface   => "../management/interface.html",
 		 Ipblock     => "../management/ip.html",
 		 PhysAddr    => "../management/mac.html",
+		 RR          => "../management/host.html",
 		 Zone        => "../management/zone.html",
 		 );
 
@@ -400,7 +402,7 @@ sub form_field {
 =cut
 sub table_descr_link{
     my ($self, $table, $text) = @_;
-    return "<a class=\"hand\" onClick=\"window.open('descr.html?table=$table&showheader=0', 'Help', 'width=600,height=200');\">$text</a>";
+    return $self->help_link("descr.html?table=$table&showheader=0", 'Help', 'width=600,height=200', $text);
 }
 
 ############################################################################
@@ -418,7 +420,31 @@ sub table_descr_link{
 =cut
 sub col_descr_link{
     my ($self, $table, $column, $text) = @_;
-    return "<a class=\"hand\" onClick=\"window.open('descr.html?table=$table&col=$column&showheader=0', 'Help', 'width=600,height=200');\">$text</a>";
+    return $self->help_link("descr.html?table=$table&col=$column&showheader=0", 'Help', 'width=600,height=200', $text);
+}
+
+############################################################################
+=head2 help_link - Generate link for help popop page
+
+  Arguments:
+    url
+    window title
+    window size
+    text string for link
+  Returns:
+    HTML link string
+    
+=cut
+sub help_link {
+    my ($self, $url, $title, $size, $text) = @_;
+    $title ||= 'Netdot Help Window';
+    $size  ||= 'width=600,height=400';
+    $text  ||= '[?]';
+    $self->throw_fatal("Missing required arguments: URL")
+	unless ($url);
+
+    return "<a class=\"hand\" onClick=\"window.open('$url', '$title', '$size');\">$text</a>";
+  
 }
 
 ############################################################################
@@ -548,7 +574,7 @@ sub select_lookup{
 	    # ...otherwise provide tools to narrow the selection to a managable size.
             my $srchf = "_" . $id . "_" . $column . "_srch";
             $output .= "<nobr>";   # forces the text field and button to be on the same line
-            $output .= sprintf("<input type=\"text\" name=\"%s\" id=\"%s\" value=\"Keywords\" %s onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">", $srchf, $srchf, $args{htmlExtra});
+            $output .= sprintf("<input type=\"text\" name=\"%s\" id=\"%s\" value=\"Keywords\" %s onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">", $srchf, $srchf);
             $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"jsrsSendquery(\'%s\', \'%s\', %s.value);\">\n", time(), $args{lookup}, $name, $srchf );
             $output .= "</nobr>";
             $output .= "<nobr>";   # forces the select box and "new" link to be on the same line
@@ -850,16 +876,20 @@ sub text_field($@){
     $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
 	unless ($o || $table) ;
 
-    if ($isEditing){
-        $output .= sprintf("<input type=\"text\" name=\"%s\" value=\"%s\" %s>\n", $name, $value, $htmlExtra);
-    }elsif ( $linkPage && $value){
+    my $input_type = ($column eq 'password')? 'password' : 'text';
+
+    if ( $isEditing ){
+	$output .= sprintf("<input type=\"%s\" name=\"%s\" value=\"%s\" %s>\n", $input_type, $name, $value, $htmlExtra);
+    }elsif ( $linkPage && $value ){
 	if ( $linkPage eq "1" || $linkPage eq "view.html" ){
 	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $table, $o->id, $value);
 	}else{
     	    $output .= sprintf("<a href=\"$linkPage?id=%s\"> %s </a>\n", $o->id, $value);
 	}
     }else{
-        $output .= sprintf("%s", $value);
+	if ( $column ne 'password' ){
+	    $output .= sprintf("%s", $value);
+	}
     }
 
     if ($returnAsVar==1) {
@@ -1867,13 +1897,180 @@ sub rrd_graph{
     return "<img src=\"$img\" border=\"0\">";
 }
 
+############################################################################
+=head2 get_current_user - Return current user object
+
+  Arguments:
+    $r = Apache request object
+  Returns:
+    Apache2::SiteControl::User object
+  Examples:
+    $ui->get_current_user($r)
+
+=cut
+sub get_current_user{
+    my ($self, $r) = @_;
+    return Apache2::SiteControl->getCurrentUser($r);
+}
+
+############################################################################
+=head2 get_permission_manager - Return PermissionManager object
+
+  Arguments:
+    $r = Apache request object
+  Returns:
+    Apache2::SiteControl::PermissionManager object
+  Examples:
+    $ui->get_permission_manager($r)
+
+=cut
+sub get_permission_manager{
+    my ($self, $r) = @_;
+    return Apache2::SiteControl->getPermissionManager($r);
+}
+
+
+############################################################################
+=head2 get_user_person
+
+
+  Arguments:
+    $user  = Apache2::SiteControl::User object
+  Returns:
+    Person object
+  Examples:
+    my $person = $self->get_user_person($user);
+
+=cut
+sub get_user_person {
+    my ($self, $user) = @_;
+
+    my $username = $user->getUsername() || 
+	$self->throw_user("Cannot get username for given user object");
+
+    my $person;
+    $person = Person->search(username=>$username)->first ||
+	$self->throw_user("Username $username not found in Person table");
+
+    return $person;
+}
+
+############################################################################
+=head2 set_user_rights - Set user permissions 
+
+    Store user type as an attribute of Apache2::SiteControl::User
+    objects, which are then evaluated by the various SiteControl rules that
+    control what users can do.  This attribute can be loaded from the Netdot
+    database or from external sources such as LDAP.  This behavior
+    is controlled by the 'AUTHORIZATION_METHOD' configuration item.
+
+  Arguments:
+    $user = Apache2::SiteControl::User object
+    $r    = Apache request object
+  Returns:
+    True
+  Examples:
+    $ui->set_user_type($user, $r)
+
+=cut
+sub set_user_type{
+    my ($self, $r, $user) = @_;
+
+    $self->throw_fatal("Missing required arguments: user object and/or Apache request object")
+	unless ( $user && $r);
+
+    my $person = $self->get_user_person($user);
+
+    my $user_type;
+    my %rights;
+    my $authorization_method = Netdot->config->get('AUTHORIZATION_METHOD');
+    
+    if (  $authorization_method =~ /^LOCAL$/i ){
+
+	if ( defined $person->user_type ) {
+	    $user_type = $person->user_type->name;
+	    $user->setAttribute($r, 'USER_TYPE', $user_type);
+	}else{
+	    $self->throw_fatal($person->get_label." has no user_type set");
+	}
+	
+    }elsif ( $authorization_method =~ /^LDAP$/i ){
+	# Not yet implemented
+    }
+    return 1;
+}
+
+############################################################################
+=head2 get_allowed_objects
+
+    Retrieve list of objects for which user has access.
+
+  Arguments:
+    $r     = Apache request object
+    $user  = Apache2::SiteControl::User object
+  Returns:
+    Hashref with key=Object class, 
+                 value=Hashref with key=Object id, value=access right
+  Examples:
+    $ui->get_allowed_objects($user, 'Device')
+
+=cut
+sub get_allowed_objects{
+    my ($self, $r, $user, $type) = @_;
+
+    $self->throw_fatal("Netdot::UI::get_allowed_objects: Missing required arguments")
+	unless ( $r, $user );
+    
+    if ( !defined $user->getAttribute('ALLOWED_OBJECTS') ){
+	my $person  = $self->get_user_person($user);
+	my $objects = $person->get_allowed_objects();
+	# Set as user attribute to avoid querying DB again
+	# This means that users will have to re-login when their
+	# access rights change.
+	$user->setAttribute($r, 'ALLOWED_OBJECTS', $objects);
+    }
+    my $aohref = $user->getAttribute('ALLOWED_OBJECTS');
+    return $aohref;
+}
+
+############################################################################
+=head2 url_encode
+
+  Arguments:
+  Returns:
+  Examples:
+
+=cut
+sub url_encode {
+    my ($self, $url) = @_;
+    $url =~ s/([\W])/"%" . uc(sprintf("%2.2x",ord($1)))/eg;
+    return $url;
+}
+
+############################################################################
+=head2 url_decode
+
+  Arguments:
+  Returns:
+  Examples:
+
+=cut
+sub url_decode {
+    my ($self, $url) = @_;
+    $url =~ tr/+/ /;
+    $url =~ s/%([a-fA-F0-9]{2,2})/chr(hex($1))/eg;
+    $url =~ s/<!--(.|\n)*-->//g;
+    return $url;
+}
+
+
 =head1 AUTHORS
 
 Carlos Vicente, Nathan Collins, Aaron Parecki, Peter Boothe.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2009 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

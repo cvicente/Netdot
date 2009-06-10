@@ -8,7 +8,17 @@ $title  => undef
 $user
 </%args>
 <%init>
-my $default_page = $r->dir_config('NetdotPath') . "management/";
+my $default_page;
+
+if ( $user->getAttribute('USER_TYPE') eq 'Admin' || $user->getAttribute('USER_TYPE') eq 'Operator') {
+
+    $default_page = $r->dir_config('NetdotPath') . "management/";
+
+}elsif ( $user->getAttribute('USER_TYPE') eq 'User' ){
+
+    $default_page = $r->dir_config('NetdotPath') . "user_management/";
+   
+}
 </%init>
 
 % $m->redirect($default_page);

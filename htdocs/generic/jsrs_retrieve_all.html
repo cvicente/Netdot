@@ -1,0 +1,64 @@
+<%doc>
+
+Performs retrieve_all queries whose return values are used to fill in objects in HTML pages
+via asynnchronous javascript calls.
+
+</%doc>
+
+
+<%flags>
+inherit => undef
+</%flags>
+
+<%shared>
+my $DEBUG = 0;
+</%shared>
+
+<%perl>
+if ( $DEBUG ){
+    use Data::Dumper;
+    print "<pre> ", Dumper(%ARGS), "</pre><br>";
+}else{
+    # Do not use 'require' here.  
+    # We need to make sure the file is read *each time*
+    do "jsrsServer.pm";
+    jsrsDispatch("retrieve_all");
+}
+
+
+# Arguments:
+# - table:      Table to search.
+# - form_field: Name of the form field to add the results into
+sub retrieve_all {
+    my ( $table, $form_field ) = @_;
+    my $MAX = $ui->config->get('DEFAULT_SELECTMAX');
+    my $response = $form_field."&";
+
+    my @r = $table->retrieve_all();
+
+    if ( my $n = scalar @r ){
+
+        my $count = 0;
+
+	if ($n >= $MAX){
+            $response .= "0=".$ui->url_encode("More than ".$MAX." matches.  Refine search")."&";
+        }
+	my @objs = sort { $a->get_label cmp $b->get_label } @r;
+
+        $response .= "0=-- Select --&";
+
+        foreach my $o ( @objs ){
+           my $lbl = $o->get_label();
+           $response .= $o->id."=".$ui->url_encode($lbl)."&";
+           last if ($count++) == $MAX;
+        }
+    }else{
+        $response .= "0=".$ui->url_encode("No matches");
+    }
+
+    return $response;    
+}
+
+
+</%perl>
+

@@ -15,6 +15,7 @@ $caller => $ARGS{self};
 <%init>
 my $DEBUG = 1;
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+my $MAX   = $ui->config->get('DEFAULT_SELECTMAX');
 </%init>
 
 <%perl>
@@ -35,7 +36,6 @@ sub backbone_search {
     my $crit = shift;
     my $val = $crit;
     my @terms;
-    my $MAX_RESULTS = 2000;
     
     if ( $val =~ /\w+/ ) {
 	if ( $val =~ /\w+\s+\w+/ ){
@@ -99,31 +99,16 @@ sub backbone_search {
     if ( scalar(@results ) < $MAX_RESULTS) {
 	@results = sort { $a->name cmp $b->name } @results;
 	
-	$response .= "0=".URLEncode("No matches") unless (scalar(@results));
+	$response .= "0=".$ui->url_encode("No matches") unless (scalar(@results));
 	
 	foreach my $end_site ( @results ){
-	    $response .= $end_site->id."=".URLEncode($end_site->name)."&";
+	    $response .= $end_site->id."=".$ui->url_encode($end_site->name)."&";
 	}
     }else{
-	$response .= "0=".URLEncode("Too Many Results");
+	$response .= "0=".$ui->url_encode("Too Many Results");
     }
     
     return $response;    
-}
-
-
-sub URLEncode {
-   my $theURL = $_[0];
-   $theURL =~ s/([\W])/"%" . uc(sprintf("%2.2x",ord($1)))/eg;
-   return $theURL;
-}
-
-sub URLDecode {
-    my $theURL = $_[0];
-    $theURL =~ tr/+/ /;
-    $theURL =~ s/%([a-fA-F0-9]{2,2})/chr(hex($1))/eg;
-    $theURL =~ s/<!--(.|\n)*-->//g;
-    return $theURL;
 }
 
 </%shared>

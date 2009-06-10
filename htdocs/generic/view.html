@@ -12,6 +12,7 @@
 <%args>
 $table
 $id
+$user    => $ui->get_current_user($r)
 $view    => 'all'
 $edit    => undef
 </%args>
@@ -28,6 +29,11 @@ my %ftables;
 
 unless ( $obj = $table->retrieve($id) ){
    $m->comp('error.mhtml', error => "Nonexistent record: $id");
+}
+# Check if user can view this object
+my $manager = $ui->get_permission_manager($r);
+unless ( $manager && $manager->can($user, "view", $obj) ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
 }
 
 my $labelstr  = $obj->get_label;
@@ -49,10 +55,14 @@ if ( $DEBUG ){
     <div class="containerheadright">
 %       if ( ! $table->meta_data->is_history() ){
             <a href="edit.html?table=<% $table %>">[new]</a>
-            <a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
+%	    if ( $manager && $manager->can($user, "edit", $obj) ){
+		<a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
+%	    }
 %	}
-          <a href="delete.html?table=<% $table %>&id=<% $obj %>">[delete]</a>
-          <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
+%	if ( $manager && $manager->can($user, "delete", $obj) ){
+            <a href="delete.html?table=<% $table %>&id=<% $obj %>">[delete]</a>
+%       }
+        <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">
         <& form.mhtml, table=>$table, id=>$id, edit=>0 &>

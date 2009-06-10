@@ -1,0 +1,338 @@
+<%doc>
+
+-- Add Host form --
+
+</%doc>
+%
+<%attr>
+title  => 'Add Host' 
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
+<%args>
+$add_host_block
+$user          => $ui->get_current_user($r)
+$zone_id       => undef
+$hostname      => undef
+$cpu           => undef
+$os            => undef
+$site_id       => undef
+$site_name     => undef
+$room_id       => undef
+$room_number   => undef
+$ethernet      => undef
+$submit        => undef
+$address       => undef
+$contact_name  => undef
+$contact_email => undef
+$contact_phone => undef
+</%args>
+%
+%
+%
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+my $manager = $ui->get_permission_manager($r);
+
+my $block = Ipblock->retrieve($add_host_block);
+unless ( $block ){
+    $m->comp('/generic/error.mhtml', error=>"Could not retrieve Ipblock: $add_host_block");
+}
+
+# Do this early so that user does not waste time filling out the form if there are
+# no addresses available
+unless ( $address ){
+    my $ip_strategy = Netdot->config->get("IP_ALLOCATION_STRATEGY");
+    unless ( $address = $block->get_next_free(strategy=>$ip_strategy) ){
+	$m->comp('/generic/error.mhtml', error=>"Could not get an available address from ".$block->get_label);
+    }
+}
+
+unless ( $manager && $manager->can($user, "edit", $block) ){
+    $m->comp('/generic//generic/error.mhtml', error=>"You don't have permission to edit this object");
+}
+
+my $zone;
+if ( $zone_id ){
+    $zone = Zone->retrieve($zone_id);
+}else{
+    $zone = $block->forward_zone();
+}
+
+if ( $submit ){
+
+    unless ( $zone ){
+	$m->comp('/generic/error.mhtml', error=>"A DNS Domain (Zone) is required");
+    }
+    
+    unless ( $hostname ){
+	$m->comp('/generic/error.mhtml', error=>"A hostname is required");
+    }
+    
+    if ( my $h = RR->search(name=>$hostname, zone=>$zone)->first ){
+	$m->comp('/generic/error.mhtml', error=>$h->get_label." is already taken");
+    }
+
+    # We do not want two host scopes with the same physical address in the same subnet
+    if ( $ethernet ){
+	if ( my $physaddr = PhysAddr->search(address=>$ethernet)->first ){
+	    if ( my @host_scopes = $physaddr->dhcp_hosts ){
+		foreach my $host ( @host_scopes ){
+		    if ( $host->ipblock->parent && $host->ipblock->parent->id == $block->id ){
+			my $hname = $host->ipblock->address;
+			my $ipid  = $host->ipblock->id;
+			$m->comp('/generic/error.mhtml', error=>"Host <strong><a href=\"../management/host.html?ipblock=$ipid\">$hname</a></strong> is already registered with Ethernet: $ethernet in this subnet");
+		    }
+		}
+	    }
+	}
+    }
+
+
+    # We want this to be atomic
+    my $rr;
+    eval {
+	Netdot::Model->do_transaction(
+	    sub{
+		my $rraddr = RR->insert({type       => 'A', # The RR class would do the right thing if it's v6
+					 ipblock    => $address, 
+					 name       => $hostname, 
+					 zone       => $zone,
+					 update_ptr => 1,
+					});
+		
+		$rr = $rraddr->rr;
+
+		# HINFO
+		if ( $cpu && $os ){
+		    my %hinfo = (rr  => $rr, 
+				 type=> 'HINFO',
+				 cpu => $cpu,
+				 os  => $os);
+		    RR->insert(\%hinfo);
+		}
+
+		# LOCATION
+		if ( $site_id || $site_name ){
+		    my $sname = ($site_id)? Site->retrieve($site_id)->get_label : $site_name;
+		    my $txtdata =  "LOC: $sname";
+		    if ( $room_id || $room_number ){
+			my $room = ($room_id)? Room->retrieve($room_id)->get_label : $room_number;
+			$txtdata .= " ".$room;
+		    }
+		    RR->insert({rr      => $rr, 
+				type    =>'TXT',
+				txtdata => $txtdata,
+			       });
+		}
+
+		# CONTACTS
+		# We always add the current user as a contact
+		my $person = $ui->get_user_person($user);
+		my $txtdata = "CON: ".$person->get_label;
+		$txtdata .= " <".$person->email.">" if $person->email; 
+		$txtdata .= ", ".$person->office if $person->office;
+		RR->insert({rr      => $rr, 
+			    type    =>'TXT',
+			    txtdata => $txtdata,
+			   });
+
+		# Add additional contact info
+		if ( $contact_name ){
+		    $txtdata = "";
+		    $txtdata =  "CON: $contact_name";
+		    $txtdata .= " (".$contact_email.")" if $contact_email; 
+		    $txtdata .= ", ".$contact_phone if $contact_phone; 
+		    if ( $room_id || $room_number ){
+			my $room = ($room_id)? Room->retrieve($room_id)->get_label : $room_number;
+			$txtdata .= " ".$room;
+		    }
+		    RR->insert({rr      => $rr, 
+				type    =>'TXT',
+				txtdata => $txtdata,
+			       });
+		}
+		
+		# DHCP
+		if ( $ethernet ){
+		    my $physaddr = PhysAddr->find_or_create({address=>$ethernet});
+		    
+		    # Create host scope
+		    my $container;
+		    unless ( $container = ($block->dhcp_scopes)[0] ){
+			$ui->throw_user("Subnet ".$block->get_label." not dhcp-enabled (no Subnet scope found).");
+		    }
+		    my $host;
+		    if ( $host = DhcpScope->search(name=>$address)->first ){
+			$ui->throw_user("A DHCP scope for host $address already exists!");
+		    }else{
+			$host = DhcpScope->insert({name      => $address,
+						  type      => 'host',
+						  ipblock   => $rraddr->ipblock,
+						  physaddr  => $physaddr,
+						  container => $container});
+		    }
+		}
+		
+	    });
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }else{
+	$m->comp("../management/host.html", rr=>$rr); 
+    }
+}
+
+</%init>
+
+% if ( !$submit ){
+%    my $subnet_description = $block->get_label;
+%    $subnet_description .= " (".$block->description.")" if $block->description;
+
+<div id="sectiontools">
+  <div class="container">
+    <div class="containerhead">
+        Add New Host in <% $subnet_description %>
+    </div>
+    <div class="containerbody" id="tasks">
+
+    <form name="add_host_form" action="add_host.html" method="POST">
+    <input type="hidden" name="add_host_block" value="<% $add_host_block %>">
+    <input type="hidden" name="address" value="<% $address %>">
+    <table><tr><td>
+    <p>
+    <fieldset class="medium">
+        <legend>Host Identification</legend>
+        <p>
+        <label for="domain">Domain</label>
+%       if ( $zone ){
+            <input type="hidden" name="zone" value="<% $zone->id %>">
+            <% $zone->get_label %>
+%       }else{
+            <select name="zone_id" id="zone">
+%           my $default_domain = Netdot->config->get('DEFAULT_DNSDOMAIN');
+%           my $default_zone = (Zone->search(name=>$default_domain))[0];
+%	    # Show only zones that this user has access to
+%           my $ao = $ui->get_allowed_objects($r, $user);
+%           my @zones;
+%           if ( exists $ao->{Zone} ){
+%               foreach my $id ( keys %{$ao->{Zone}} ){
+%	            if ( my $zone = Zone->retrieve($id) ){
+%	                push @zones, $zone;
+%	            }
+%               }
+%           }
+            <option value="0">-- Select --</option>
+%           foreach my $z ( sort { $a->get_label cmp $b->get_label } @zones ){
+%               if ( $default_zone && $default_zone->id == $z->id ){
+                    <option value="<% $z->id %>" SELECTED><% $z->get_label %></option>
+%               }else{
+                    <option value="<% $z->id %>"><% $z->get_label %></option>
+%		}
+%           }
+            </select>
+%       }
+        </p>
+        <p>
+        <label for="name">Host Name</label>
+        <input type="text" name="hostname" class="longtxt" value=""> <% $ui->help_link('hostinfo_help.html#Hostname') %>
+        </p>
+        <p>
+        <label for="ethernet">Ethernet Address</label>
+        <input type="text" name="ethernet" class="ethertxt" value=""> <% $ui->help_link('hostinfo_help.html#Ethernet') %>
+        </p>
+    </fieldset>
+
+    <p>
+    <fieldset class="medium">
+        <legend>Hardware Information</legend>
+        <p>
+        <label for="cpu">CPU</label>
+        <select name="cpu" id="cpu">
+            <option value="0">-- Select --</option>
+            <option value="PC-INTEL">PC-Intel</option>
+            <option value="MAC-INTEL">Mac-Intel</option>
+            <option value="MAC-PPC">Mac-PowerPC</option>
+            <option value="OTHER">Other</option>
+        </select>
+        </p>
+        <p>
+        <label for="os">Operating System</label>
+        <select name="os" id="os">
+            <option value="0">-- Select --</option>
+            <option value="WINDOWS">Windows</option>
+            <option value="MACOS">Mac OS</option>
+            <option value="OTHER">Other</option>
+        </select>
+        </p>
+    </fieldset>
+
+    <p>
+    <fieldset class="medium">
+        <legend>Location</legend>
+        <p>
+        <label for="site_id">Site</label>
+        <select name="site_id" id="site_id" onChange="jsrsSendquery('Room', 'room_id', this.options[selectedIndex].text);">
+%       my @all_sites = Site->retrieve_all();
+        <option value="0">-- Select --</option>
+%       foreach my $site ( sort { $a->get_label cmp $b->get_label } @all_sites ){
+            <option value="<% $site->id %>"><% $site->get_label %></option>
+%       }
+        </select>
+        </p>
+        <p>
+        <label for="site_name">Site Name</label>
+        <input type="text" name="site_name" class="longtxt" value=""> (if not listed)
+        </p>
+        <p>
+        <label for="room_id">Room</label>
+        <select name="room_id" id="room_id">
+            <option value="0">-- Select --</option>
+        </select>
+        </p>
+        <p>
+        <label for="room_number">Room Number</label>
+        <input type="text" name="room_number" class="shorttxt" value=""> (if not listed)
+        </p>
+    </fieldset>
+
+    <p>
+    <fieldset class="medium">
+        <legend>Contact (other than you)</legend>
+        <p>
+        <label for="contact_name">Name</label>
+        <input type="text" name="contact_name" class="longtxt" value="">
+        </p>
+        <p>
+        <label for="contact_email">Email</label>
+        <input type="text" name="contact_email" class="longtxt" value="">
+        </p>
+        <p>
+        <label for="contat_phone">Phone</label>
+        <input type="text" name="contact_phone" class="txt" value="">
+    </fieldset>
+
+    <p>
+    <input type="button" name="cancel_button" value="Cancel" onClick="history.go(-1);">
+    <input type="submit" name="submit" value="Submit">
+
+    </td></tr></table>
+    </form>
+
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+% }

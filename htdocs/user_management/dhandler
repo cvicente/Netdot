@@ -1,0 +1,28 @@
+<%doc>
+    This default handler is particularly different because we want to provide
+    more restricted access to components outside this directory
+</%doc>
+
+<%perl>
+    my $request = $m->dhandler_arg;
+    my %comp_path_map = (
+	'device.html'    => '../management',
+	'host.html'      => '../management',
+	'interface.html' => '../management',
+	'ip.html'        => '../management',
+	'zone.html'      => '../management',
+    );
+
+    my $generic_pages_path = "../generic";
+    my $comp_path = (exists $comp_path_map{$request})? "$comp_path_map{$request}/$request" : "$generic_pages_path/$request";
+
+    if ( $m->comp_exists($comp_path) ){
+        # $m->dhandler_arg returns the path portion after "./", but not
+        # the get/post args (e.g. ?foo=bar&baz=fraz).  The args are passed
+        # along in %ARGS.
+        $m->comp( $comp_path, %ARGS );
+    }else{
+	$r->content_type('text/html');
+        $m->comp('/generic/error.mhtml', error => "The requested page: \"$request\" does not exist");
+    }
+</%perl>

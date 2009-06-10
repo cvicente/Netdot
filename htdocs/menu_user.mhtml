@@ -1,0 +1,123 @@
+<%doc>
+
+Menu for non-privileged users
+
+</%doc>
+%
+<%args>
+$title
+$section
+$user
+$showheader
+</%args>
+%
+%
+<%init>
+my %caller_args = $m->caller_args(-1);
+my $page = "";
+
+my $hideheader;
+if( !$showheader ) {
+    $hideheader = 'style="display:none"';
+}
+
+# This is the stuff that varies in the different sections of the
+# navbar.  Notice that section, attribute, and page could probably be
+# unified into a single string (use upcase to make attribute upcase if
+# upcase is wanted.  append ``section_'' and ``.html'' to page).
+
+# Arrays are used, as opposed to, say, keying on ``section'', because
+# arrays order their entries.
+
+# Here we import the meta_data for the sections.  They provide their
+# own metadata in a method.  An attribute could have been used, but we
+# might as well keep it flexible (attributes are pretty limited).  The
+# order we list the sections determines the order they appear in the
+# header.
+
+my $section_meta_data = [ 
+    map { $m->comp("/$_/autohandler:.section_meta_data") }
+        ("user_management", "help")
+];
+</%init>
+%
+%
+<%def .make_section>
+    <%doc>
+    Makes a section\'s link given the sections meta data
+    </%doc>
+%
+%
+    <%args>
+    $section
+    $current_section
+    $meta_data
+    %caller_args
+    $user
+    </%args>
+%
+%
+    <%init>
+    my $sub_section_html = "";
+    my $class_html = "";
+    my $page = "";
+    if ( $section eq $current_section ) {
+        $class_html = qq(class="current");
+	if ( exists($caller_args{page}) ) {
+	    $user->setAttribute($r, $meta_data->{attribute}, $caller_args{page});
+        }
+	eval { $page = $user->getAttribute($meta_data->{attribute}) };
+	if ($@) {
+	    $m->comp( "error.mhtml", error => <<HERE );
+
+You have just encountered a bug which currently has us stumped.
+Please report in detail what you were doing around the time the error
+occured (e.g. if you were eating lunch what kind of lettuce did you
+have on your sandwhich) and tell us what time netdot says it is right
+now (upper right corner).  Thanks.
+
+The perl error was\:
+$@
+HERE
+	}
+        # Build a link for each subsection
+	for my $sub_section (@{ $meta_data->{sub_sections} }) {
+	    # Need to specify these paths absolutely, since they are
+	    # top level (above the individual subsections). $r->dir_config('NetdotPath') .
+	    my $target = $r->dir_config('NetdotPath') . $meta_data->{page};
+	    my $title = $sub_section->{title};
+	    my $class_html = ($page eq $sub_section->{section} || $page eq "") ?
+			     qq(class="subnav_selected") : "";
+	    $sub_section_html .= 
+		qq(<li><a href="$target?page=@{[ $sub_section->{section} ]}" $class_html>$title</a></li>\n)
+	    }
+    }
+    </%init>
+%
+%
+    <a href="<% $r->dir_config('NetdotPath') . $meta_data->{page} %>" <% $class_html %>><% $meta_data->{title} %></a>\
+%   if ($sub_section_html ne "") {
+    <ul id="subnavigation">
+    <% $sub_section_html %>
+    </ul>
+%   }
+</%def>
+%
+%
+%   if ($user) {
+<div id="navbar" <% $hideheader %>>
+    <ul id="navigation">
+<%perl>
+    for my $meta_data (@{ $section_meta_data }) { 
+	$m->comp('.make_section', 
+		 current_section => $meta_data->{section},
+		 meta_data       => $meta_data,
+		 caller_args     => \%caller_args, 
+		 page            => $page, 
+		 %ARGS
+		 );
+    }
+</%perl>
+    </ul>
+</div>
+%   } #end if($user)

@@ -11,6 +11,7 @@ section => 'Management'
 %
 <%args>
 $id                => undef
+$user              => $ui->get_current_user($r)
 $search            => undef
 $_action           => 'SHOW_ROOTS'
 $delete            => undef
@@ -58,17 +59,25 @@ my $max_ips     = Netdot->config->get('SHOW_COUNT_THRESHOLD');
 my $added_ip    = 0;
 my $added_block = 0;
 my $covering_block;
+
 # Some regular expressions
 my $IPV4 = Netdot->get_ipv4_regex();
 my $IPV6 = Netdot->get_ipv6_regex();
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
+my $manager = $ui->get_permission_manager($r);
+
 if ( $id ){
-    unless ( $o = Ipblock->retrieve($id) ){
-	$m->comp('/generic/error.mhtml', error => "Could not retrieve Ipblock id: $id");
-    }else{
+    if ( $o = Ipblock->retrieve($id) ){
+	# Check if user can view this object
+	my $manager = $ui->get_permission_manager($r);
+	unless ( $manager && $manager->can($user, "view", $o) ){
+	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+	}
 	$title = $o->get_label;
+    }else{
+	$m->comp('/generic/error.mhtml', error => "Could not retrieve Ipblock id: $id");
     }
 }else{
     $title = "Search";
@@ -203,6 +212,10 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 #
 #######################################################################################
 }elsif ( $_action eq 'EDIT_RANGE'){
+
+    unless ( $manager && $manager->can($user, "edit", $o) ){
+        $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
+    }
     
     if ( $add_range_start && $add_range_end ){
 	if ( $range_status eq 'Available' ){
@@ -240,6 +253,9 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 }elsif ( $_action eq "ADD_BLOCK" ){
     
     if ( $add_block_prefix ){
+
+	$add_block_prefix =~ s/\s+//g; # Remove spaces
+
 	unless ( $add_block_prefix =~ /\// ){
 	    $m->comp('/generic/error.mhtml', error=> "$add_block_prefix not a valid CIDR string.");
 	}
@@ -288,6 +304,10 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 #######################################################################################
 }elsif ( $_action eq 'ENABLE_DHCP'){
     
+    unless ( $manager && $manager->can($user, "edit", $o) ){
+        $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
+    }
+
     if ( $ARGS{dhcp_global_scope} ){
 	my %args = (container=>$ARGS{dhcp_global_scope});
 
@@ -329,6 +349,10 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 
 </%perl>
 
+%  unless ( $manager && $manager->can($user, "delete", $o) ){
+%      $m->comp('/generic/error.mhtml', error=>"You don't have permission to delete this object");
+%  }
+
   <form action="ip.html">
     <input type="hidden" name="_action" value="CONFIRM_DELETE">
     <input type="hidden" name="id" value="<% $id %>">
@@ -339,7 +363,9 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
       </div>
       <div class="containerbody">  
         <p>Are you sure you want to delete <strong><em><% $o->get_label %></em></strong> ?
-        <p>Delete children blocks <input type="checkbox" name="recursivedel">
+%	if ( $o->children ){
+            <p>Delete children blocks <input type="checkbox" name="recursivedel">
+%       }
         <p><input type="submit" name="submit" value="Yes" >
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
       </div>
@@ -358,6 +384,10 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 #######################################################################################
 }elsif ( $_action eq "CONFIRM_DELETE" ){
   
+    unless ( $manager && $manager->can($user, "delete", $o) ){
+	$m->comp('/generic/error.mhtml', error=>"You don't have permission to delete this object");
+    }
+
     my ($address, $prefix, $version) = ($o->address, $o->prefix, $o->version);
     my $parentid = $o->parent->id if ( $o->parent );
     # Remove from Database
@@ -447,8 +477,12 @@ if ( my @parents = $o->get_ancestors ){
          <input type="submit" name="submit" value="save">
 %	 }else{
             <a href="ip.html?id=<% $id %>">[refresh]</a>
-            <a href="ip.html?id=<% $id %>&edit=ipinfo">[edit]</a>
-            <a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
+%           if ( $manager && $manager->can($user, "edit", $o) ){
+                <a href="ip.html?id=<% $id %>&edit=ipinfo">[edit]</a>
+%           }
+%           if ( $manager && $manager->can($user, "delete", $o) ){
+                <a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
+%           }
 %	 }
     </div>
 
@@ -549,17 +583,25 @@ if ( my @parents = $o->get_ancestors ){
 
 %  }else{
     <a href="ip.html?id=<% $id %>">[refresh]</a>
-	<a href="ip.html?id=<% $id %>&edit=blockinfo">[edit]</a>
-%	if ( $o->status->name eq 'Subnet' ){
-	    <a href="ip.html?id=<% $id %>&edit=address_range">[range]</a>
+%       if ( $manager && $manager->can($user, "edit", $o) ){
+	    <a href="ip.html?id=<% $id %>&edit=blockinfo">[edit]</a>
+%	    if ( $o->status->name eq 'Subnet' ){
+	        <a href="ip.html?id=<% $id %>&edit=address_range">[range]</a>
+%           }
 %       }
-	<a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
+%       if ( $manager && $manager->can($user, "delete", $o) ){
+	    <a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
+%       }
 %  }
     </div>
 
     <div class="containerbody">
 
 % if ( $edit eq 'address_range' ){
+
+%     unless ( $manager && $manager->can($user, "edit", $o) ){
+%          $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
+%     }
 
     <p><b>Add/Modify Address Range</b>
     <input type="hidden" name="_action" value="EDIT_RANGE">
@@ -937,6 +979,17 @@ if ($o->status->name eq "Subnet") {
        <& /generic/sortresults.mhtml, object=>\@scopes &>
     </div>
 % }
+
+%################################################################
+%# Zones
+%################################################################
+%   my @sz = $o->zones;
+%   my @zones = map { $_->zone } @sz;
+    <div class="container">
+    <div class="containerheadleft">DNS Zones</div>
+    <div class="containerheadright"><a href="edit.html?table=SubnetZone&subnet=<% $o %>">[add]</a></div>
+       <& /generic/sortresults.mhtml, object=>\@zones &>
+    </div>
 
 %################################################################
 %# Graphical Views

@@ -620,7 +620,17 @@ sub delete {
     }
     $logger->debug( sub { sprintf("Model::delete: Deleted record %i, from table: %s", 
 				  $id, $table) } );
-    
+
+    # Remove any access rights for this object
+    $logger->debug( sub { sprintf("Model::delete: Searching Access Rights for table %s id %s", 
+				  $table, $id) } );
+    if ( my @access_rights = AccessRight->search(object_class=>$table, object_id=>$id) ){
+	foreach my $ar ( @access_rights ){
+	    $logger->debug( sub { sprintf("Model::delete: Deleting AccessRight: %s for table %s id %s", 
+					  $ar->access, $table, $id) } );
+	    $ar->SUPER::delete();
+	}
+    }
     return 1;
 }
 

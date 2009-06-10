@@ -11,6 +11,7 @@ section => 'Generic'
 %
 <%args>
 $id
+$user       => $ui->get_current_user($r)
 $view       => undef
 $edit       => undef
 $submit     => undef
@@ -26,6 +27,13 @@ $personstatus => undef
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my $obj       = ContactList->retrieve($id);
+
+# Check if user can view this object
+my $manager = $ui->get_permission_manager($r);
+unless ( $manager && $manager->can($user, "view", $obj) ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+}
+
 my %linksfrom = ContactList->meta_data->get_links_from;
 
 if ( $_action ){
@@ -156,23 +164,9 @@ foreach my $i ( keys %linksfrom ){
     my $ffattrs = $j->meta_data->get_column($ffield)->links_to_attrs();
     my $ffield_order = $ffattrs->{order_by} if ( defined $ffattrs && exists $ffattrs->{order_by} );
     
-    my (@robjs, $dtbl, $ctbl);
-    if ( $j->meta_data->is_join ){
-	# Foreign table is a join table
-	# Get has_a entries 
-	my %jlinksto = $j->meta_data->get_links_to();
-	# Column in join table that points to third table
-	my $col;
-	map { $col = $_ if ($_ ne $linksfrom{$i}{$j}) } keys %jlinksto;
-	map { push @robjs, $_->$col } $obj->$i;
-	$dtbl = $jlinksto{$col};  # table to display
-	$ctbl = $j;               # table to pass to create.html
-    }else{  
-	# table is not a join table
-	@robjs = $obj->$i;
-	$dtbl = $j;
-	$ctbl = $j; 
-    }
+    my @robjs = $obj->$i;
+    my $dtbl = $j;
+    my $ctbl = $j; 
 
     my $num = scalar(@robjs);
 </%perl>

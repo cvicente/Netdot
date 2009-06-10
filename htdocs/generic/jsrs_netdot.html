@@ -48,7 +48,7 @@ sub keyword_search {
     my ( $table, $form_field, $keywords, $field ) = @_;
     my $r;
     my @terms;
-    my $MAX   = 100;
+    my $MAX   = $ui->config->get('DEFAULT_SELECTMAX');
 
     if ( $keywords =~ /\w+/ ){
 	if ( $keywords =~ s/^\s*(.*)\s*$/$1/ ){
@@ -78,20 +78,14 @@ sub keyword_search {
         my $count = 0;
 
         if ($n >= $MAX){
-            $response .= "0=".URLEncode("More than ".$MAX." matches.  Refine search")."&";
+            $response .= "0=".$ui->url_encode("More than ".$MAX." matches.  Refine search")."&";
         }
         my @objs = map { $r->{$_} } keys %$r;
 	if ( $table eq 'Interface' ){
 	    # Always order interfaces by ifIndex
 	    @objs = sort { $a->number <=> $b->number } @objs;
 	}else{
-	    my $lblfield = ( $table->meta_data->get_labels )[0];
-	    my $type = $table->meta_data->get_column($lblfield)->sql_type;
-	    if ( $type eq 'integer' ){
-		@objs = sort { $a->$lblfield <=> $b->$lblfield } @objs;
-	    }else {
-		@objs = sort { $a->$lblfield cmp $b->$lblfield } @objs;
-	    }
+	    @objs = sort { $a->get_label cmp $b->get_label } @objs;
 	}
         # Added this select tag so that the user is able to select
         # something which will trigger updating of related select
@@ -103,28 +97,14 @@ sub keyword_search {
 
         foreach my $o ( @objs ){
            my $lbl = $o->get_label();
-           $response .= $o->id."=".URLEncode($lbl)."&";
+           $response .= $o->id."=".$ui->url_encode($lbl)."&";
            last if ($count++) == $MAX;
         }
     }else{
-        $response .= "0=".URLEncode("No matches");
+        $response .= "0=".$ui->url_encode("No matches");
     }
 
     return $response;    
-}
-
-sub URLEncode {
-    my $theURL = $_[0];
-   $theURL =~ s/([\W])/"%" . uc(sprintf("%2.2x",ord($1)))/eg;
-   return $theURL;
-}
-
-sub URLDecode {
-    my $theURL = $_[0];
-    $theURL =~ tr/+/ /;
-    $theURL =~ s/%([a-fA-F0-9]{2,2})/chr(hex($1))/eg;
-    $theURL =~ s/<!--(.|\n)*-->//g;
-    return $theURL;
 }
 
 </%perl>

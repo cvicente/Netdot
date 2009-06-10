@@ -41,6 +41,8 @@ my @DEPS = (
     'BIND::Config::Parser',
     'Net::DNS',
     'Text::ParseWords',
+    'Carp::Assert',
+    'Digest::SHA',
     );
 
 if ( $action eq 'test' ){

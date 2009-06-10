@@ -1,0 +1,95 @@
+<%doc>
+
+-- Device tasks for regular users --
+
+    Show drop-down box with devices for which user has permissions
+
+</%doc>
+
+<%attr>
+title => 'Device Tasks for End Users' 
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
+<%args>
+$user           => undef
+$submit         => undef
+$show_device    => undef
+$show_tasks     => undef
+$showheader     => 1
+</%args>
+%
+%
+%
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+$show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
+if ( $show_tasks eq "" ) {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+my $hideheader = 'style="display:none"' if ( !$showheader );
+$ARGS{show_tasks} = $show_tasks;
+</%init>
+
+
+<div id="sectiontools" <% $hideheader %>>
+  <div class="container">
+    <div class="containerheadleft">
+       My devices
+    </div>
+    <div class="containerheadright">
+%       print_showtaskslink($show_tasks);
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+
+<%perl>
+my @devs;
+my $ao = $ui->get_allowed_objects($r, $user);
+if ( exists $ao->{Device} ){
+    foreach my $id ( keys %{$ao->{Device}} ){
+	if ( my $dev = Device->retrieve($id) ){
+	    push @devs, $dev;
+	}else{
+	    delete $ao->{Device}->{$id};
+	}
+    }
+}
+</%perl>
+
+<p>
+
+% if ( @devs ){
+        <form name="device_form" action="device_tasks.html" method="POST">
+        <select name="show_device" onChange="document.device_form.submit()">
+            <option value="0">- Select Device -</option>
+%       foreach my $dev ( sort { $a->get_label cmp $b->get_label } @devs ){
+            <option value="<% $dev %>"><% $dev->get_label %></option>
+%       }
+        </select>
+        </form>
+% }else{
+     No devices available for this user.
+% }
+
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+% if ( $show_device ){
+%    $m->comp('../management/device.html', id=>$show_device, user=>$user );    
+% }
+

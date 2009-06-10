@@ -19,6 +19,7 @@ section      => 'Management'
 %#
 %#######################################################################
 <%args>
+$user       => $ui->get_current_user($r)
 $id         => undef
 $search     => undef
 $edit       => undef
@@ -34,7 +35,6 @@ $editbgp    => undef
 $ipsort     => "address"
 $ifsort     => "number"
 $peersort   => "ip"
-$user       => undef
 $showvlan   => "all"
 $intadd     => undef
 $intaddnum  => undef
@@ -78,21 +78,36 @@ my %ifacecolors = (
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
-if( $intadd ){
-    $o = Device->retrieve($id);
-    eval { $o->add_interfaces($intaddnum) };
-    if ( my $e = $@ ){
-	$m->comp('/generic/error.mhtml', error=>$e);	
-    }
-    
-}elsif( defined $overwrite_if_descr ){
-    $o = Device->retrieve($id);
-    eval { $o->set_overwrite_if_descr($overwrite_if_descr); };
-    if ( my $e = $@ ){
-	$m->comp('/generic/error.mhtml', error=>$e);	
+my $manager = $ui->get_permission_manager($r);
+
+if ( $id ){
+    unless ($o = Device->retrieve($id)){
+	$m->comp('/generic/error.mhtml', error=>"Could not retrieve Device with id $id");
+    }   
+}
+if ( $o ){
+
+    # Check if user can view this object
+    unless ( $manager && $manager->can($user, "view", $o) ){
+	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
     }
 
-}elsif( $deviceadd && $newhost ){
+    if( $intadd ){
+	eval { $o->add_interfaces($intaddnum) };
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
+	}
+	
+    }elsif( defined $overwrite_if_descr ){
+	eval { $o->set_overwrite_if_descr($overwrite_if_descr); };
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
+	}
+    }
+    
+}
+
+if( $deviceadd && $newhost ){
     if ( Device->search(name=>$newhost) ){
 	# It's already there
 	print "<p><b>Device $newhost already exists in DB</b>";   
@@ -115,18 +130,8 @@ if( $intadd ){
     if ( my $e = $@ ){
 	$m->comp('/generic/error.mhtml', error=>$e);
     }
-
 }
 
-if ( $id ){
-    unless ($o = Device->retrieve($id)){
-	$m->comp('/generic/error.mhtml', error=>"Could not retrieve Device with id $id");
-    }   
-}elsif ( $o ){
-    unless ( $id = $o->id ){
-	$m->comp('/generic/error.mhtml', error=>"Object passed was not a valid Device object");
-    }   
-}
 if ( $o && $o->name ){
     $name = (defined $o->name->name) ? $o->name->name : "Name N/A!";
     $fqdn = $name . "." . $o->name->zone->name;
@@ -173,7 +178,9 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %    if ( $o->snmp_managed ){
 	<a href="updatedevice.html?device=<% $id %>&action=discover">[snmp-update]</a>
 %    }
-    <a href="delete.html?table=Device&id=<% $id %>"> [delete]</a>
+%    if ( $manager && $manager->can($user, "delete", $o) ){
+	<a href="delete.html?table=Device&id=<% $id %>"> [delete]</a>
+%    }
  </div> <!-- close containerheadrightoutside -->
 
 %#######################################################################
@@ -261,6 +268,25 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %#######################################################################
 
 % if ( $view eq "Basics" || $view eq "All" ){
+
+<script language="javascript">
+<!--
+
+// Chooses the 0 valued option in a select box.  Used to enforce the
+// mutual exclusivity of the room and closet options in the
+// group/location form below.
+function setNull(select){
+    for (var i = 0; i < select.options.length || alert("No null in list.  This means nathan screwed up dynamic_list.js"); ++i){
+	if (select.options[i].value == 0) {
+	    select.options[i].selected = true;
+	    break;
+	}
+    }
+}
+
+-->
+</script>
+
 % if ( $editgen || $editloc || $editcomments || $editmgmt ) {
         <form name="netdotform" action="device.html" method="POST">
             <script language="javascript" src="../java_script/datechooser.js"></script>
@@ -275,7 +301,9 @@ my $refresh_url = "device.html?id=$id&view=$view";
 	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 	    <input type="submit" name="submit" value="save" >
 % }else{
+%    if ( $manager && $manager->can($user, "edit", $o) ){
             <a href="device.html?id=<% $id %>&view=<% $view %>&editgen=1">[edit]</a>
+%    }
 % }
         </div>
         <div class="containerbody">
@@ -283,7 +311,7 @@ my $refresh_url = "device.html?id=$id&view=$view";
 my (@field_headers, @cell_data);
 
 $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>['name'], field_headers=>\@field_headers, 
-		   cell_data=>\@cell_data, linkpages=>['view.html']);
+		   cell_data=>\@cell_data, linkpages=>['host.html']);
 
 # The type field is special because it does not belong to the Device table, but to the
 # Product table
@@ -336,7 +364,9 @@ $ui->add_to_fields(o=>$o, edit=>$editgen,
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
         <input type="submit" name="submit" value="save">
 %	}else{
-        <a href="device.html?id=<% $id %>&view=<% $view %>&editloc=1">[edit]</a>
+%           if ( $manager && $manager->can($user, "edit", $o) ){
+                <a href="device.html?id=<% $id %>&view=<% $view %>&editloc=1">[edit]</a>
+%           }
 %	}
     </div>
     <div class="containerbody">
@@ -355,9 +385,14 @@ push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_ta
 				       makeLink=>1, linkPage=>"contactlist.html", returnAsVar=>1 ) );
       
 
-$ui->add_to_fields(o=>$o, edit=>$editloc, fields=>['site'], 
-		   field_headers=>\@field_headers, cell_data=>\@cell_data, 
-		   linkpages=>['view.html']);
+
+push( @field_headers, $ui->col_descr_link('Device', 'site', 'Site:')  );
+push( @cell_data, &{sub{
+    my $js = sprintf("onChange=\"jsrsSendquery('Room', 'Device__%d__room', this.options[selectedIndex].text);jsrsSendquery('Closet', 'Device__%d__closet', this.options[selectedIndex].text);\"", $o->id, $o->id);
+    $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site",
+		       edit=>$editloc, linkPage=>"view.html", htmlExtra=>$js, returnAsVar=>1)
+    }} );
+
 
 push( @field_headers, $ui->col_descr_link('Device', 'room', 'Room:')  );
 push( @cell_data, &{sub{ 
@@ -415,7 +450,9 @@ $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@fie
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
         <input type="submit" name="submit" value="save">
 %	 }else{
-        <a href="device.html?id=<% $id %>&view=<% $view %>&editmgmt=1">[edit]</a>
+%           if ( $manager && $manager->can($user, "edit", $o) ){
+                <a href="device.html?id=<% $id %>&view=<% $view %>&editmgmt=1">[edit]</a>
+%           }
 %	 }
     </div>
     <div class="containerbody">
@@ -490,7 +527,9 @@ if ( $o->snmp_managed ){
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
         <input type="submit" name="submit" value="save">
 %	}else{
-        <a href="device.html?id=<% $id %>&view=<% $view %>&editcomments=1">[edit]</a>
+%           if ( $manager && $manager->can($user, "edit", $o) ){
+                <a href="device.html?id=<% $id %>&view=<% $view %>&editcomments=1">[edit]</a>
+%           }
 %	}
     </div>
     <div class="containerbody">
@@ -529,23 +568,6 @@ print $tmp{value};
 function showVlan(){
     var name = document.showvlans.showvlan.value;
     window.location = "device.html?id=<% $id %>&view=<% $view %>&showvlan="+name;
-}
-
-var closetList = new DynamicList("netdotform", "Device__<% $id %>__closet", "site", "Closet", "Device__<% $id %>__site");
-var roomList = new DynamicList("netdotform", "Device__<% $id %>__room", "floor", "Room", "Device__<% $id %>__site");
-roomList.setQueryURL("room_site_query.html");
-LIST_MANAGER.addList(closetList, roomList);
-
-// Chooses the 0 valued option in a select box.  Used to enforce the
-// mutual exclusivity of the room and closet options in the
-// group/location form below.
-function setNull(select){
-    for (var i = 0; i < select.options.length || alert("No null in list.  This means nathan screwed up dynamic_list.js"); ++i){
-	if (select.options[i].value == 0) {
-	    select.options[i].selected = true;
-	    break;
-	}
-    }
 }
 
 -->
@@ -728,7 +750,9 @@ function setNull(select){
 	    <span style="background-color: #<% $ifacecolors{$status} %>;"><% $status %></span>
 %       }
 	&nbsp;&nbsp;
-        <a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=<% $ifsort %>&editints=1">[edit]</a>
+%       if ( $manager && $manager->can($user, "edit", $o) ){
+            <a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=<% $ifsort %>&editints=1">[edit]</a>
+%       }
 %  }
 
     </div>
@@ -874,8 +898,10 @@ $objects
           <input type="submit" name="submit" value="save">
 %   }
 %   if ( !$editips && !$addips ){
+%       if ( $manager && $manager->can($user, "edit", $o) ){
           <a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=<% $ipsort %>&editips=1">[edit]</a>
           <a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=<% $ipsort %>&addips=1">[add]</a>
+%       }
 %   }
     </div>
     <div class="containerbody">
@@ -938,7 +964,7 @@ $objects
 			      $a .= '<input type="checkbox" name="' . "RR__" . $ar->rr->id . "__delete" . '" >[del] ';
 			  }
 			  $a .=  $ui->form_field(object=>$ar->rr, column=>"name", edit=>0, 
-						 linkPage=>"view.html", returnValOnly=>1);
+						 linkPage=>"host.html", returnValOnly=>1);
 		      }
 		  }
 		  $a;
@@ -1037,7 +1063,9 @@ if ( !$editips ){
 	      <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 	      <input type="submit" name="submit" value="save">
 %         }else{
-              <a href="device.html?id=<% $id %>&view=<% $view %>&editdevbgp=1">[edit]</a>
+%             if ( $manager && $manager->can($user, "edit", $o) ){
+                  <a href="device.html?id=<% $id %>&view=<% $view %>&editdevbgp=1">[edit]</a>
+%             }
 %         }
    </div>
    <div class="containerbody">
@@ -1070,7 +1098,9 @@ if ( !$editips ){
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 	<input type="submit" name="submit" value="save">
 %     }else{
-        <a href="device.html?id=<% $id %>&view=<% $view %>&editbgp=1">[edit]</a>
+%         if ( $manager && $manager->can($user, "edit", $o) ){
+              <a href="device.html?id=<% $id %>&view=<% $view %>&editbgp=1">[edit]</a>
+%         }
 %     }
     </div>
     <div class="containerbody">

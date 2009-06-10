@@ -1,0 +1,159 @@
+<%doc>
+
+ HTML form for access rights (special case of edit)
+
+</%doc>
+
+<%args>
+$table
+$id           => undef
+$select_id    => undef
+$selected     => undef
+$showheader   => undef
+$dowindow     => 0
+$object_class => undef
+@object_id    => undef
+$person       => undef
+$contactlist  => undef
+@access       => undef
+$submit       => undef
+%args         => undef
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my $title = "$table " . $ui->table_descr_link($table, "[?]");
+
+# Consolidate args variables
+foreach my $arg ( %args ){
+    $ARGS{$arg} = $args{$arg};
+}
+
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+if ( $submit ){
+    eval {
+	if ( $object_class && @object_id ){
+	    foreach my $object_id ( @object_id ){
+		foreach my $access ( @access ){
+		    my $accessright = AccessRight->find_or_create({object_class => $object_class, 
+								   object_id    => $object_id, 
+								   access       => $access});
+		    if ( $table eq 'Person' ){
+			UserRight->insert({accessright=>$accessright, person=>$id});
+		    }elsif ( $table eq 'ContactList' ){
+			GroupRight->insert({accessright=>$accessright, contactlist=>$id, view=>'access_rights'});
+		    }
+		}
+	    }
+	}
+    };
+    if ( my $e = $@ ){
+	$m->comp('error.mhtml', error=>$e);
+    }
+}
+
+</%init>
+
+% if( $id ) {
+%     if ( $table eq 'Person' ){
+%         $m->comp('view.html', table=>$table, id=>$id);
+%     }else{
+%         $m->comp('contactlist.html', id=>$id);
+%     }
+% }else{
+
+%     if ( ! $showheader ){
+%         $m->clear_buffer;
+<html>
+  <head>
+      <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
+  </head>      
+% my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
+% for my $script qw( select jsrsClient ) {
+  <script language="JavaScript" src="<% $js_prefix %>/<% $script %>.js"></script>
+% }
+  <body class="bodytag">
+%}
+
+
+<div class="container">
+    <div class="containerhead">
+        <% $title %>
+    </div>
+    <div class="containerbody">
+   
+      <form name="netdotform" action="access_right_form.html" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="showheader" value="<% $showheader %>"> 
+      <input type="hidden" name="select_id" value="<% $select_id %>">
+      <input type="hidden" name="selected" value="<% $selected %>">
+      <input type="hidden" name="dowindow" value="<% $dowindow %>">
+
+<%perl>
+
+         my (@field_headers, @cell_data);
+         if ( $ARGS{person} ){
+             my $person = Person->retrieve($ARGS{person});
+             push @field_headers, 'User:';
+	     push @cell_data, $person->get_label;
+	     print "<input type=\"hidden\" name=\"table\" value=\"Person\">";
+	     print "<input type=\"hidden\" name=\"id\" value=\"$person\">";
+         }elsif ( $ARGS{contactlist} ){
+             my $cl = ContactList->retrieve($ARGS{contactlist});
+             push @field_headers, 'Contact List:';
+	     push @cell_data, $cl->get_label;
+	     print "<input type=\"hidden\" name=\"table\" value=\"ContactList\">";
+	     print "<input type=\"hidden\" name=\"id\" value=\"$cl\">";
+         }
+
+	 push @field_headers, 'Object Class:';
+	 my @classes = qw(ContactList Device Ipblock Zone);
+	 push @cell_data, 
+	 &{sub{
+	     my $out;
+	     $out .= "<select name=\"object_class\" onChange=\"jsrsSendqueryRA(this.options[selectedIndex].text, 'object_id');\">";
+	     $out .= "<option value=\"0\">-- Select --</option SELECTED>";
+	     foreach my $class ( @classes ){
+		 $out .= "<option name=\"$class\" >$class</option>";
+	     }
+	     $out .= "</select>";
+	   }};
+	 push @field_headers, 'Object:';
+	 push @cell_data, "<select id=\"object_id\" name=\"object_id\" MULTIPLE></select>";
+
+	 push @field_headers, 'Permissions:';
+	 push @cell_data, 
+	 &{sub{
+	     my $out;
+	     $out .= "<select name=\"access\" MULTIPLE>";
+	     foreach my $perm ( qw(view edit delete) ){
+		 $out .= "<option name=\"\">$perm</option>";
+	     }
+	     $out .= "</select>";
+	   }};
+	 
+</%perl>
+	  <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, 
+ 	                                     width=>"1", headercolwidth=>"15%", datacolwidth=>"35%" &>
+
+      <br>
+      <input name="submit" type="submit" value="Insert">
+
+%    if ( $dowindow ){
+	<input name="cancel" value="Cancel" onClick="window.close()" type="button">
+%    }else{
+    	<input name="cancel" value="Cancel" onClick="history.go(-1)" type="button">
+%    }
+      </form>
+    </div>
+</div>
+
+%     if ( $showheader ){
+         </div>
+%     }else{
+          </body>
+          </html>
+%     }
+% }
+
+

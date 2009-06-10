@@ -75,43 +75,48 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
-      info => {
+      access => {
         default => '',
-        description => '',
-        length => '',
-        nullable => 1,
-        tag => 'Comments',
-        type => 'blob'
-      },
-      name => {
-        default => '',
-        description => '',
+        description => 'Type of access granted for the given object or class (view|edit|delete)',
         length => '128',
         nullable => 0,
-        tag => 'Name',
+        tag => 'Access',
         type => 'varchar'
-      }
+      },
+      object_class => {
+        default => '',
+        description => 'The class of object for which access is granted',
+        length => '128',
+        nullable => 0,
+        tag => 'Object Class',
+        type => 'varchar'
+      },
+      object_id => {
+        default => '',
+        description => 'Object ID for which access right applies',
+        length => '',
+        nullable => 0,
+        tag => 'Object ID',
+        type => 'integer'
+      },
     },
-    description => 'Acess rights for Netdot authorization',
+    description => 'Acess rights for Netdot authorization.  Rights are tied to individual users (Person objects) or groups (Contact List objects)',
     has_history => 0,
     index => [],
     isjoin => '0',
-    label => [
-      'name'
-    ],
+    label => [ 'access', 'object_class', 'object_id' ],
     primary_key => 'id',
-    unique => [
-      [
-        'name'
-      ]
-    ],
+    unique => [ [ ] ],
     views => {
       all => [
-        'name',
-        'info'
+        'access',
+        'object_class',
+        'object_id'
       ],
       brief => [
-        'name'
+        'access',
+        'object_class',
+        'object_id'
       ]
     }
   },
@@ -3625,12 +3630,12 @@ $meta = {
         description => '',
         length => '',
         linksto => {
-          cascade => 'Nullify',
+          cascade => 'Delete',
           method => 'access_rights',
           table => 'ContactList'
         },
         nullable => 0,
-        tag => 'ContactList',
+        tag => 'Contact List',
         type => 'integer'
       },
       accessright => {
@@ -4971,6 +4976,14 @@ $meta = {
         tag => 'Work Phone',
         type => 'varchar'
       },
+      password => {
+        default => '',
+        description => 'User Password.  Not necessary if this person is not a Netdot user.',
+        length => '255',
+        nullable => 1,
+        tag => 'Password',
+        type => 'varchar'
+      },
       pager => {
         default => '',
         description => 'Pager number',
@@ -5012,7 +5025,15 @@ $meta = {
         nullable => 1,
         tag => 'User Type',
         type => 'integer'
-      }
+      },
+      username => {
+        default => '',
+        description => 'User name.  Only necessary if this person needs access to Netdot.',
+        length => '128',
+        nullable => 1,
+        tag => 'Username',
+        type => 'varchar'
+      },
     },
     description => 'Information about an individual',
     has_history => 1,
@@ -5027,18 +5048,14 @@ $meta = {
       'firstname'
     ],
     primary_key => 'id',
-    unique => [
-      [
-        'firstname',
-        'lastname',
-        'entity'
-      ]
-    ],
+    unique => [[ 'firstname', 'lastname', 'entity'], [ 'username' ]],
     views => {
       all => [
         'lastname',
         'firstname',
         'aliases',
+	'username',
+	'password',
         'user_type',
         'position',
         'entity',
@@ -6254,7 +6271,7 @@ $meta = {
     ],
     isjoin => '0',
     label => [
-      'name'
+      'floor', 'name'
     ],
     primary_key => 'id',
     unique => [
@@ -7129,7 +7146,7 @@ $meta = {
         description => '',
         length => '',
         linksto => {
-          cascade => 'Nullify',
+          cascade => 'Delete',
           method => 'access_rights',
           table => 'Person'
         },
@@ -7142,7 +7159,7 @@ $meta = {
         description => '',
         length => '',
         linksto => {
-          cascade => 'Nullify',
+          cascade => 'Delete',
           method => 'user_rights',
           table => 'AccessRight'
         },

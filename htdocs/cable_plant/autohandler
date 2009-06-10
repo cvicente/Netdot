@@ -26,8 +26,12 @@ my $SECTION = "Plant";
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
-my $caller_args = $m->caller_args(-1);
+my $manager = $ui->get_permission_manager($r);
+unless ( $manager && $manager->can($user, "access_section") ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this section");
+}
 
+my $caller_args = $m->caller_args(-1);
 if (exists($caller_args->{page})) {
     $user->setAttribute($r, $PAGE_ATTRIBUTE, $caller_args->{page});
 }

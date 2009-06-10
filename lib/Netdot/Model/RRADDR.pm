@@ -137,8 +137,8 @@ sub as_text {
 
 ############################################################################
 #
-# When an RRADDR record is inserted or updated, we make sure to 
-# update the corresponding PTR record
+# When an RRADDR record is inserted or updated, we can automatically
+# update the corresponding PTR record if told to do so
 #
 sub _update_rrptr {
     my ($self) = @_;

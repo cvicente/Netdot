@@ -25,6 +25,7 @@ if( !$showheader ) {
 if( $onload ) {
     $onload = ' onload="'.$onload.'"';
 }
+my $manager = Apache2::SiteControl->getPermissionManager($r);
 </%init>
 %
 %
@@ -57,12 +58,13 @@ if( $onload ) {
     <span class="headright">
 %
 %   if( $user ) {
-      <form action="search.html" method="post">
-        <label for="q"><b>search</b>:</label>
-        <input type="text" name="q" size="13" value="" style="color:#003300;border:1px inset #006600;width:10em;">
-      </form>
-        <br />
-
+%       if ( $manager && $manager->can($user, "access_section") ){
+            <form action="search.html" method="post">
+                <label for="q"><b>search</b>:</label>
+                <input type="text" name="q" size="13" value="" style="color:#003300;border:1px inset #006600;width:10em;">
+            </form>
+            <br />
+%       }
         <B>user</B>: <% $user->getUsername() %> &nbsp;
         [<a href="<% $r->dir_config('NetdotPath') %>logout.html">logout</a>]
 %   }

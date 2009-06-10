@@ -19,20 +19,46 @@ my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my $title      = $m->base_comp->attr('title')   || "Network Documentation Tool";
 my $section    = $m->base_comp->attr('section') || "Main";
-my $user       = Apache2::SiteControl->getCurrentUser($r);
+
+my $user = $ui->get_current_user($r);
+    
 if ( my $show = $m->base_comp->attr_if_exists('showheader') ){
     $showheader = defined($showheader) ?  $showheader : $show;
 }
 my $meta_refresh = 0;
 $meta_refresh = $m->base_comp->attr_if_exists('meta_refresh');
 
+print "base comp: ", $m->base_comp->name, "<br>"  if $DEBUG;
+print "req comp: ", $m->request_comp->name, "<br>"  if $DEBUG;
 </%init>
-%
-%
-% print "base comp: ", $m->base_comp->name, "<br>"  if $DEBUG;
-% print "req comp: ", $m->request_comp->name, "<br>"  if $DEBUG;
+
+%# Always show the header
 <& header.mhtml,   title => $title, section => $section, user => $user, showheader=>$showheader, onload=>$onload, meta_refresh=>$meta_refresh &>
-<& section1.mhtml, title => $title, section => $section, user => $user, showheader=>$showheader &>
+
+<%perl>
+# Set user type if needed
+if ( defined $user && !defined $user->getAttribute('USER_TYPE') ){
+    eval {
+	$ui->set_user_type($r, $user);
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }
+}
+</%perl>
+
+%# Admin/Operator menu
+% if ( defined $user ){
+%     if ( $user->getAttribute('USER_TYPE') eq 'Admin' || $user->getAttribute('USER_TYPE') eq 'Operator') {
+          <& menu_admin.mhtml, title => $title, section => $section, user => $user, showheader=>$showheader &>
+
+%     }elsif ( $user->getAttribute('USER_TYPE') eq 'User' ){
+          <& menu_user.mhtml, title => $title, section => $section, user => $user, showheader=>$showheader &>
+%     }else{
+%        #error here    
+%     }
+% }
+
 <div id="content">
 % $m->call_next(user => $user, showheader => $showheader);
 </div> <!-- close content -->
@@ -77,9 +103,7 @@ $meta_refresh = $m->base_comp->attr_if_exists('meta_refresh');
 
 <%method .sub_print_showtaskslink>
     <%doc>
-    This is just a subroutine that was defined in multiple places.  It
-    belongs in a perl module, not here, but I wasn\'t sure what perl
-    module to put it in, so I am putting it here for now.
+    This is used in multiple places.
     </%doc>
     <%init> 
     return sub {

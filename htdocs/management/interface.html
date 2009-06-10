@@ -11,14 +11,23 @@ section => 'Management'
 %
 <%args>
 $id
-$view => 'undef'
+$user => $ui->get_current_user($r)
+$view => undef
 </%args>
 %
 %
 <%init>
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
 my $obj = Interface->retrieve($id);
+
+# Check if user can view this object
+my $manager = $ui->get_permission_manager($r);
+unless ( $manager && $manager->can($user, "view", $obj) ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+}
+
 my $dbh = Netdot::Model->db_Main();
 my $fdb_tstamps;
 my %linksfrom = Interface->meta_data->get_links_from;

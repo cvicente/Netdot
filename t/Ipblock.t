@@ -96,8 +96,8 @@ is(Ipblock->subnetmask(256), 24, 'subnetmask');
 
 is(Ipblock->subnetmask_v6(4), 126, 'subnetmask_v6');
 
-is($subnet->get_next_free->address, '192.168.60.1', 'get_next_free');
-is($subnet->get_next_free(strategy=>'last')->address, '192.168.61.254', 'get_next_free');
+is($subnet->get_next_free, '192.168.60.1', 'get_next_free');
+is($subnet->get_next_free(strategy=>'last'), '192.168.61.254', 'get_next_free');
 
 my $all = Ipblock->retrieve_all_hashref();
 is($all->{$container->address_numeric}, $container->id, 'retrieve_all_hashref');

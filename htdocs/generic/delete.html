@@ -5,6 +5,7 @@
 <%args>
 $table         => undef
 $id            => undef
+$user          => $ui->get_current_user($r)
 $submit        => "Delete"
 $sid           => undef
 $selectall     => undef
@@ -12,12 +13,13 @@ $selectall_ids => undef
 </%args>
 
 <%init>
+my $DEBUG = 0;
 my $session;
 my @objs;
-#my $TMP = Netdot->config->get('TMP');
-my $DEBUG = 0;
-
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+my $manager = $ui->get_permission_manager($r);
+
 </%init>
 
 <div id="sectiondetail">
@@ -86,6 +88,9 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
     }
     my @lbls = map { "$table " . $_->get_label } @objs;
     foreach my $obj ( @objs ){
+	unless ( $manager && $manager->can($user, "delete", $obj) ){
+	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to delete this object");
+	}
 	eval {
 	    $obj->delete();
 	};

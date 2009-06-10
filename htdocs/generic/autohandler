@@ -10,6 +10,7 @@ section => 'Advanced'
 </%attr>
 
 <%args>
+$user
 $sql        => undef
 $action     => undef
 $showheader => 1
@@ -43,8 +44,12 @@ my $SECTION = "Advanced";
         };
     </%init>
 </%method>
-<div id="sectiontools" <% $hideheader %>>
 
+
+% my $manager = $ui->get_permission_manager($r);
+% if ( $manager && $manager->can($user, "access_section") ){
+
+<div id="sectiontools" <% $hideheader %>>
 <div class="container">
     <div class="containerhead">
         Advanced Database Operations
@@ -105,6 +110,8 @@ my $SECTION = "Advanced";
 <& /generic/raw_sql.html, sql => $sql, action => $action  &>
 
 </div> <!-- close sectiontools -->
+
+% }
 
 % if ( $m->fetch_next ){
 %  $m->call_next();

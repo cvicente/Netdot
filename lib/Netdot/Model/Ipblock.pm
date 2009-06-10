@@ -10,7 +10,7 @@ use Net::IPTrie;
 
 =head1 NAME
 
-Netdot::Ipblock - Manipulate IP Address Space
+Netdot::Model::Ipblock - Manipulate IP Address Space
 
 =head1 SYNOPSIS
     
@@ -303,7 +303,7 @@ sub get_unused_subnets {
     my @result;
     foreach my $id ( @ids ){
 	my $ip = Ipblock->retrieve($id);
-	if ( $args{version} == 4 ){
+	if ( defined $args{version} && $args{version} == 4 ){
 	    # Ignore IPv4 multicast blocks
 	    if ( $ip->_netaddr->within(new NetAddr::IP "224.0.0.0/4") ){
 		next;
@@ -2198,9 +2198,9 @@ sub get_host_addrs {
     Hash with following keys:
       strategy (first|last)
   Returns:   
-    New address record
+    Address string or undef if none available
   Examples:
-    my $ipb = $subnet->get_next_free()
+    my $address = $subnet->get_next_free()
 =cut
 sub get_next_free {
     my ($self, %argv) = @_;
@@ -2217,15 +2217,21 @@ sub get_next_free {
     }
     my $strategy = $argv{strategy} || 'first';
 
-    my @host_addrs = ($strategy eq 'first')? 
-	@{$self->get_host_addrs} : reverse @{$self->get_host_addrs};
+    my @host_addrs;
+    if ( $strategy eq 'first'){
+	@host_addrs = @{$self->get_host_addrs};
+    }elsif  ( $strategy eq 'last' ){
+	@host_addrs = reverse @{$self->get_host_addrs};
+    }else{
+	$self->throw_fatal("Ipblock::get_next_free: Invalid strategy: $strategy");
+    }
 
     foreach my $h ( @host_addrs ){
 	if ( exists $used{$h} || $h eq $self->address ||
  	     $h eq $self->_netaddr->broadcast ){
 	    next;
 	}else{
-	    return Ipblock->insert({address=>$h});
+	    return $h;
 	}
     }
 }
@@ -2689,18 +2695,17 @@ sub _obj_ip2int {
 #
 sub _obj_int2ip {
     my $self = shift;
-    my ($address, $bin, $val);
     $self->throw_fatal("Invalid object") unless $self;
 
     return unless ( $self->id );
 
     my $dbh  = $self->db_Main;
     my $id   = $self->id;
-    $address = ($dbh->selectrow_array("SELECT address FROM ipblock WHERE id = $id"))[0];
 
-    $val = $self->int2ip($address, $self->version);
-
-    $self->_attribute_store( address => $val );    
+    if ( my ($address) = ($dbh->selectrow_array("SELECT address FROM ipblock WHERE id=$id"))[0] ){
+	my $val = $self->int2ip($address, $self->version);
+	$self->_attribute_store( address => $val );    
+    }
     return 1;
 }
 

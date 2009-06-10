@@ -5,9 +5,9 @@
 
 <%args>
 $id        => undef
+$user      => $ui->get_current_user($r)
 $rr        => undef
 $ipblock   => undef
-#$arp_limit => 10
 $action    => undef
 $submit    => undef
 </%args>
@@ -38,33 +38,41 @@ if ($submit) {
     }
 }
 
-if ($rr && !ref $rr) {
+unless ($id || $rr || $ipblock) {
+    $m->comp('/generic/error.mhtml', error=>"Missing required arguments: RR id, RR object or Ipblock");
+}
+
+if ($id) {
+    $rr = RR->retrieve($id);
+}elsif ($rr && !ref $rr) {
     $rr = RR->retrieve($rr);
+}
+
+my $manager = $ui->get_permission_manager($r);
+
+if ( $rr ){
+    # Check if user can view this object 
+    unless ( $manager && $manager->can($user, "view", $rr) ){
+	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+    }
+    push (@rrs, $rr);
 }
 if ($ipblock && !ref $ipblock) {
     $ipblock = Ipblock->retrieve($ipblock);
-}
-
-
-unless ($id || $rr || $ipblock) {
-    $m->comp('/generic/error.mhtml', error=>"Missing required arguments: an RR or an Ipblock");
-}
-
-#if ($action eq 'edit' && $rr) {
-#    $edit = $rr;
-#}
-
-if ($ipblock && (my @arecords = $ipblock->arecords())) {
-    foreach my $arecord (@arecords) {
-	push (@rrs, $arecord->rr);
+    
+    # Check if user can view this object 
+    unless ( $manager && $manager->can($user, "view", $ipblock) ){
+	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
     }
-} elsif ($rr) {
-    push (@rrs, $rr);
-} elsif ($id){
-    if ( $rr = RR->retrieve($id) ){
-	push (@rrs, $rr);
+    
+    if (my @arecords = $ipblock->arecords()) {
+	foreach my $arecord (@arecords) {
+	    push (@rrs, $arecord->rr);
+	}
     }
 }
+
+
 
 </%init>
 
