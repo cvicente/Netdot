@@ -307,7 +307,11 @@ sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
     
-    my $update_ptr = delete $argv->{update_ptr};
+    my $update_ptr = 1; # On by default
+    if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
+	$update_ptr = 0;
+	delete $argv->{update_ptr};
+    }
 
     my @res = $self->SUPER::update($argv);
 

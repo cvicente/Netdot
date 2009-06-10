@@ -15,7 +15,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =cut
 
 ##################################################################
-=head2 as_text
+=head2 insert
 
     Override the base method to:
       - If not given, figure out the name of the record, using the 
@@ -41,6 +41,8 @@ sub insert {
 	$class->throw_fatal("Figuring out the rr field requires passing zone")
 	    unless ( defined $argv->{zone} );
 
+	$logger->debug("Netdot::Model::RRPTR: Figuring out owner for ".$ipb->get_label);
+
 	my $zone = ref($argv->{zone}) ? $argv->{zone} : Zone->retrieve($argv->{zone});
 	my $p = $zone->name;
 	$p =~ s/(.*)\.in-addr.arpa$/$1/ || 
@@ -56,7 +58,10 @@ sub insert {
 	    $name = join('.', reverse split(//, $name));
 	}
 	$name =~ s/\.$p$//;
-	$argv->{rr} = RR->find_or_create({zone=>$argv->{zone}, name=>$name});
+	my $rr = RR->find_or_create({zone=>$zone, name=>$name});
+	$logger->debug("Netdot::Model::RRPTR: Created owner RR for IP: ".
+		       $ipb->get_label." as: ".$rr->get_label);
+	$argv->{rr} = $rr;
     }
     
     # We'll wipe out whatever PTR records there are for this IP

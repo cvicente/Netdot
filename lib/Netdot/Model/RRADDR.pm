@@ -25,7 +25,7 @@ RRADDR represent either A or AAAA records.
     
   Arguments:
     Hashref with key/value pairs, plus:
-      update_ptr - Update corresponding RRPTR object
+      update_ptr - Update corresponding RRPTR object (default: ON)
   Returns:
     RRADDR object
   Example:
@@ -36,7 +36,11 @@ sub insert {
     my($class, $argv) = @_;
     $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
     
-    my $update_ptr = delete $argv->{update_ptr};
+    my $update_ptr = 1; # On by default
+    if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
+	$update_ptr = 0;
+	delete $argv->{update_ptr};
+    }
  
     my $rraddr = $class->SUPER::insert($argv);
 
@@ -59,7 +63,7 @@ sub insert {
     
   Arguments:
     Hashref with RRADDR key/value pairs, plus:
-      update_ptr - Update corresponding RRPTR object
+      update_ptr - Update corresponding RRPTR object (default: ON)
   Returns:
     Number of rows updated or -1
   Example:
@@ -71,7 +75,11 @@ sub update {
     $self->isa_object_method('update');
     $argv->{ipblock} = $self->_convert_ipblock($argv->{ipblock});
     
-    my $update_ptr = delete $argv->{update_ptr};
+    my $update_ptr = 1; # On by default
+    if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
+	$update_ptr = 0;
+	delete $argv->{update_ptr};
+    }
 
     my @res = $self->SUPER::update($argv);
 
@@ -155,6 +163,9 @@ sub _update_rrptr {
 				    ipblock  => $self->ipblock, 
 				    zone     => $rev_zone,
 				    ttl      => $self->ttl});
+	}else{
+	    $logger->warn("Netdot::Model::RRADDR::_update_rrptr: Ipblock: "
+			  .$self->ipblock->get_label." reverse zone not found");
 	}
     }elsif ( $rrptr->ptrdname ne $self->rr->get_label ){
 	$rrptr->update({ptrdname=>$self->rr->get_label});
