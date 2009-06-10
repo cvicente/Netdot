@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Authen::Radius;
 use APR::SockAddr;
+use Netdot::AuthLocal;
 
 =head1 NAME
 
@@ -22,6 +23,7 @@ In Apache configuration:
        PerlSetVar NetdotRadiusSecret "testing123"
        PerlSetVar NetdotRadiusHost2 "otherhost"
        PerlSetVar NetdotRadiusSecret2 "testing123"
+       PerlSetVar NetdotRadiusFailToLocal "yes"
    </Location>
     
 =back
@@ -37,18 +39,61 @@ In Apache configuration:
 #Be sure to return 1
 1;
 
-############################################################################
-=head2 connect - Connect to an available Radius server
 
+############################################################################
+=head2 check_credentials
+    
   Arguments:
     Apache Request Object
+    Username
+    Password
   Returns:
-    Authen::Radius object
+    True or false
   Examples:
-    my $radius = Netdot::Radius::connect($r);
+    if ( Netdot::Radius::check_credentials($r, $user, $pass) {...}
 
 =cut
-sub connect {
+sub check_credentials {
+    my ($r, $username, $password) = @_;
+    unless ( $username && $password ){
+	$r->log_error("Missing username and/or password");
+	return 0;
+    }
+    my $radius = Netdot::Radius::_connect($r) || return 0;
+    
+
+    # Get my IP address to pass as the Source IP and NAS IP Address
+    my $c = $r->connection;
+    my $sockaddr = $c->local_addr if defined($c);
+    my $nas_ip_address = $sockaddr->ip_get if defined($sockaddr);
+
+    my $fail_to_local = ($r->dir_config("NetdotRadiusFailToLocal") eq "yes")? 1 : 0;
+    
+    if ( $radius->check_pwd($username, $password, $nas_ip_address) ) {
+	return 1;
+    }else{
+	$r->log_error("Netdot::Radius::check_credentials: User $username failed Radius authentication: " 
+		      . $radius->strerror);
+	if ( $fail_to_local ){
+	    $r->log_error("Netdot::Radius::check_credentials: Trying local auth");
+	    return Netdot::AuthLocal::check_credentials($r, $username, $password);
+	}
+    }
+    return 0;
+}
+
+############################################################################
+# _connect - Connect to an available Radius server
+#
+#   Arguments:
+#     Apache Request Object
+#   Returns:
+#     Authen::Radius object
+#   Examples:
+#     my $radius = Netdot::Radius::connect($r);
+#
+#
+sub _connect {
     my ($r) = @_;
     
     my $host     = $r->dir_config("NetdotRadiusHost")    || "localhost";
@@ -75,39 +120,6 @@ sub connect {
 	}  
     }
     return $radius;
-}
-
-############################################################################
-=head2 check_credentials
-    
-  Arguments:
-    Apache Request Object
-    Username
-    Password
-  Returns:
-    True or false
-  Examples:
-    if ( Netdot::Apache2::check_credentials($r, $user, $pass) {...}
-
-=cut
-sub check_credentials {
-    my ($r, $username, $password) = @_;
-    unless ( $username && $password ){
-	$r->log_error("Missing username and/or password");
-	return 0;
-    }
-    my $radius = Netdot::Radius::connect($r) || return 0;
-    
-    # Get my IP address to pass as the Source IP and NAS IP Address
-    my $c = $r->connection;
-    my $sockaddr = $c->local_addr if defined($c);
-    my $nas_ip_address = $sockaddr->ip_get if defined($sockaddr);
-    
-    if ( $radius->check_pwd($username, $password, $nas_ip_address) ) {
-	return 1;
-    }
-    $r->log_error("User $username failed authentication:" . $radius->strerror);
-    return 0;
 }
 
 =head1 SEE ALSO

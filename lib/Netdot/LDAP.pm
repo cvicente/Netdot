@@ -2,64 +2,11 @@ package Netdot::LDAP;
 use strict;
 use warnings;
 use Net::LDAP;
-
-sub check_credentials {
-    my ($r, $username, $password) = @_;
-    
-    unless ( $r && $username && $password ){
-	$r->log_error("Netdot::LDAP::check_credentials: Missing required arguments");
-	return 0;
-    }
-    
-    my $server = $r->dir_config("LDAPSiteControlServer");
-    unless ( $server ){
-	$r->log_error("WARNING: LDAP server is not set. Set LDAPSiteControlServer in httpd.conf");
-	$server = "ldaps://localhost";
-    }
-    
-    my $user_dn = $r->dir_config("LDAPSiteControlUserDN");
-    unless ( $user_dn ){
-	$r->log_error("ERROR: DN is not set. Use LDAPSiteControlUserDN in httpd.conf");
-	return 0;
-    }
-
-    $user_dn =~ s/<username>/$username/;
-    
-    my $base_dn = $r->dir_config("LDAPSiteControlSearchBase");
-    if ( $base_dn ){
-	$user_dn .= ",$base_dn";
-    }
-
-    my $version = $r->dir_config("LDAPSiteControlVersion") || 3;
-    my %args = (version=>$version, verify=>'none');
-    my $cafile = $r->dir_config("LDAPSiteControlCACert");
-    if ( $cafile ){
-	$args{cafile} = $cafile;
-	$args{verify} = 'require';
-    }
-    my $ldap = Net::LDAP->new($server, %args);
-    if ( !$ldap ) {
-	$r->log_error("Could not contact LDAP server $server: $@");
-	return 0;
-    }
-
-    my $auth = $ldap->bind($user_dn, password=>$password);
-    if ( $auth->code ) {
-	$r->log_error("User $username failed authentication: " . $auth->error);
-	return 0;
-    }
-    return 1;
-}
-
-#Be sure to return 1
-1;
-
-__END__
+use Netdot::AuthLocal;
 
 =head1 NAME
 
 Netdot::LDAP - LDAP authentication module for Netdot via Apache2::SiteControl
-
 
 =head1 SYNOPSIS
 
@@ -70,11 +17,13 @@ In Apache configuration:
    PerlSetVar SiteControlMethod Netdot::LDAP
 
    <Location /netdot/NetdotLogin>
-      PerlSetVar LDAPSiteControlServer "ldaps://server.local.domain:636"
-      PerlSetVar LDAPSiteControlUserDN "uid=<username>"
-      PerlSetVar LDAPSiteControlSearchBase "ou=people,dc=domain,dc=local"
-      PerlSetVar LDAPSiteControlVersion "3"
-      PerlSetVar LDAPSiteControlCACert "/usr/local/ssl/certs/cacert.pem"
+      PerlSetVar NetdotLDAPServer  "ldaps://server.local.domain:636"
+      PerlSetVar NetdotLDAPServer2 "ldaps://server2.local.domain:636"
+      PerlSetVar NetdotLDAPUserDN "uid=<username>"
+      PerlSetVar NetdotLDAPSearchBase "ou=people,dc=domain,dc=local"
+      PerlSetVar NetdotLDAPVersion "3"
+      PerlSetVar NetdotLDAPCACert "/usr/local/ssl/certs/cacert.pem"
+      PerlSetVar NetdotLDAPFailToLocal "yes"
    </Location>
     
 =back
@@ -89,23 +38,137 @@ as entered by the Netdot user.
     
 The following variables can be set in httpd.conf:
 
-LDAPSiteControlServer
+NetdotLDAPServer
     e.g. ldaps://server.local.domain:[port]
     
-LDAPSiteControlUserDN         
+NetdotLDAPServer2  
+    A backup server in case the first one is not available
+    e.g. ldaps://server2.local.domain:[port]
+    
+NetdotLDAPUserDN         
     e.g. uid=<username>.  
     The string "<username>" is replaced with the username supplied at the login prompt
     
-LDAPSiteControlSearchBase 
+NetdotLDAPSearchBase 
     Optional. Will be appended to UserDN.
     e.g. "ou=people,dc=domain,dc=local"
 
-LDAPSiteControlCACert
+NetdotLDAPCACert
     Optional.  If set, the module will require verification of the server's certificate.
     e.g. "/usr/local/ssl/certs/cacert.pem"
 
-LDAPSiteControlVersion
+NetdotLDAPVersion
     Optional.  Defaults to "3".
+
+NetdotLDAPFailToLocal
+    If LDAP authentication fails, authenticate against local (Netdot DB) credentials.
+    
+=cut
+
+##########################################################################################
+=head2 check_credentials
+    
+  Arguments:
+    Apache Request Object
+    Username
+    Password
+  Returns:
+    True or false
+  Examples:
+    if ( Netdot::LDAP::check_credentials($r, $user, $pass) {...}
+
+=cut
+sub check_credentials {
+    my ($r, $username, $password) = @_;
+    
+    unless ( $r && $username && $password ){
+	$r->log_error("Netdot::LDAP::check_credentials: Missing required arguments");
+	return 0;
+    }
+    
+    my $fail_to_local = ($r->dir_config("NetdotLDAPFailToLocal") eq "yes")? 1 : 0;
+
+    my $user_dn = $r->dir_config("NetdotLDAPUserDN");
+    unless ( $user_dn ){
+	$r->log_error("Netdot::LDAP::check_credentials: ERROR: DN is not set. Use NetdotLDAPUserDN in httpd.conf");
+	return 0;
+    }
+
+    $user_dn =~ s/<username>/$username/;
+    
+    my $base_dn = $r->dir_config("NetdotLDAPSearchBase");
+    if ( $base_dn ){
+	$user_dn .= ",$base_dn";
+    }
+
+    my $ldap;
+    unless ( $ldap = Netdot::LDAP::_connect($r) ){
+	return 0;
+    }
+
+    my $auth = $ldap->bind($user_dn, password=>$password);
+    if ( $auth->code ) {
+	$r->log_error("Netdot::LDAP::check_credentials: User $username failed LDAP authentication: " . $auth->error);
+	if  ( $fail_to_local ){
+	    $r->log_error("Netdot::LDAP::check_credentials: Trying local auth");
+	    return Netdot::AuthLocal::check_credentials($r, $username, $password);
+	}
+    }else{
+	return 1;
+    }
+}
+
+##########################################################################################
+# _connect - Connect to an available LDAP server
+#    
+#   Arguments:
+#     Apache Request Object
+#   Returns:
+#     Net::LDAP object or 0
+#   Examples:
+#     my $ldap = Netdot::LDAP::_connect($r);
+#
+sub _connect {
+    my ($r) = @_;
+
+    my (@servers, $server1);
+
+    $server1 = $r->dir_config("NetdotLDAPServer");
+    unless ( $server1 ){
+	$r->log_error("Netdot::LDAP::check_credentials: WARNING: LDAP server is not set. Set NetdotLDAPServer in httpd.conf");
+	$server1 = "ldaps://localhost";
+    }
+    push @servers, $server1;
+
+    # This is optional
+    if ( my $server2 = $r->dir_config("NetdotLDAPServer") ){
+	push @servers, $server2;
+    }
+
+    my $version = $r->dir_config("NetdotLDAPVersion") || 3;
+    my %args = (version=>$version, verify=>'none');
+    my $cafile = $r->dir_config("NetdotLDAPCACert");
+    if ( $cafile ){
+	$args{cafile} = $cafile;
+	$args{verify} = 'require';
+    }
+    
+    foreach my $server ( @servers ){
+	my $ldap = Net::LDAP->new($server, %args);
+	if ( $ldap ) {
+	    return $ldap;
+	}else{
+	    $r->log_error("Netdot::LDAP::check_credentials: ERROR: Could not contact LDAP server $server: $@");
+	}
+    }
+
+    return 0;
+}
+
+
+#Be sure to return 1
+1;
+
 
 =head1 SEE ALSO
 
