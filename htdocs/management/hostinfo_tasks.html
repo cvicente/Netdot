@@ -22,6 +22,7 @@ $submit     => undef
 $show_tasks => undef
 $showheader => 1
 $ipblock_id => undef
+$ip         => undef
 </%args>
 %
 %
@@ -63,7 +64,7 @@ my @list;
             <form action="hostinfo_tasks.html" method="POST">
                 <p>
                 <label for="Find">Host:</label>
-                <input type="hidden" name="action" value="SEARCH">
+                <input type="hidden" name="action" value="search">
                 <input type="text" name="search" class="txt" value="<% $search %>"> 
                 <input name="submit" value="Find" class="btn" type="submit">
                 </p>
@@ -71,17 +72,20 @@ my @list;
         </fieldset>
         <fieldset class="medium">
             <legend>Add New Host</legend>
-            <form action="hostinfo.html" method="POST">
-                <p>
-                <label for="new">Name:</label>
-                <input type="text" name="name" class="txt" value="">
-                </p>
-		<p>
-                <label for="new">IP:</label>
-                <input type="text" name="ip" class="txt" value="">
-                <input name="submit" value="Add" class="btn" type="submit">
-                <input type="hidden" name="_action" value="INSERT">
-                </p>
+            <form action="hostinfo_tasks.html" method="POST">
+% my (@field_headers, @cell_data) = ((),());
+% $ui->add_to_fields(table=>'RR', edit=>1, fields=>['name', 'zone'],
+%		     field_headers=>\@field_headers, cell_data=>\@cell_data,
+%		     linkpages=>['view.html','view.html']);
+% push (@field_headers, ("IP", ""));
+% push (@cell_data, "<input type='text' name='ip' class='txt' value=''>");
+% push (@cell_data, "<input name='submit' value='Add' class='btn' type='submit'>");
+% my $newrr = $m->scomp('/generic/attribute_table.mhtml', field_headers=>\@field_headers, data=>\@cell_data,
+%	   width=>"1", headercolwidth=>"10%", datacolwidth=>"90%");
+% $newrr =~ s/type="text"/type="text" class="txt"/g;
+% $newrr =~ s/type="button"/type="button" class="btn"/g;
+% print $newrr;
+                <input type="hidden" name="action" value="new">
             </form>
         </fieldset>
         </td></tr></table>
@@ -98,7 +102,7 @@ my @list;
 #
 #######################################################################################
 
-if ( $action eq "SEARCH" && $submit ){
+if ( $action eq "search" && $submit ){
     # Remove trailing and leading spaces
     my %idx;
     if ( $search ){
@@ -126,21 +130,28 @@ if ( $action eq "SEARCH" && $submit ){
 #
 #######################################################################################
 
-} elsif ( $action eq "EDIT" && $ipblock_id) {
+} elsif ( $action eq "edit" && $ipblock_id) {
     $m->comp('/management/host.html', ipblock=>$ipblock_id, edit=>1);
-}
+
 
 #######################################################################################
-# New host from single IP
+# New host
 #
 #######################################################################################
 
-# } elsif ( $action eq "NEW" && $ipblock_id) {
+} elsif ( $action eq "new" ) {
+    if (defined $ip && $ip ne "" && $submit) {
+	$m->comp('/management/host.html', ipblock=>$ip, %ARGS);
+    } elsif (defined $ARGS{RR__NEW__name} && $ARGS{RR__NEW__name} ne "" && $submit) {
+	$m->comp('/management/host.html', %ARGS);
+    } else {
+	$m->comp('/management/host.html', submit=>0);
+    }
 #     my @rraddrs = RRADDR->search(ipblock=>$ipblock_id);
 #     foreach my $rraddr (@rraddrs){
 # 	$m->comp('/management/host.html', rrid=>$rraddr->rr, edit=>1);
 #     }
-# }
+}
 
 
 </%perl>

@@ -19,27 +19,38 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my @rraddrs;
 my @rrs;
 my $edit;
-if ($submit) {
+if ($submit && ($rr || $id || $ipblock || $action eq 'new')) {
     # insert/update
     eval {
 	my %ret = $ui->form_to_db(%ARGS);
 	print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
 	
 	if (exists $ret{RR}) {
-	    my $id = (keys %{$ret{RR}{id}})[0];
-	    print $id;
-	    if ($ret{RR}{id}{$id}{action} eq 'INSERTED' && defined $ipblock) {
-		RRADDR->insert({rr=>$id, ipblock=>$ipblock});
+	    my $newid = (keys %{$ret{RR}{id}})[0];
+	    if ($ret{RR}{id}{$newid}{action} eq 'INSERTED') {
+		$id = $newid;
+		$rr = $newid;
+		if (defined $ipblock) {
+		    RRADDR->insert({rr=>$newid, ipblock=>$ipblock});
+		}
 	    }
 	}
     };
     if ( my $e = $@ ){
 	$m->comp('/generic/error.mhtml', error=>$e);
+    } else {
+	$submit = 0;
+	$action = "";
     }
 }
 
-unless ($id || $rr || $ipblock) {
-    $m->comp('/generic/error.mhtml', error=>"Missing required arguments: RR id, RR object or Ipblock");
+# unless ($id || $rr || $ipblock) {
+#     $m->comp('/generic/error.mhtml', error=>"Missing required arguments: an RR or an Ipblock");
+# }
+
+if (!($id || $rr || $ipblock)) {
+#    $action = "new";
+    print '<a href="host.html?action=new">[Add DNS Records]</a>';
 }
 
 if ($id) {
@@ -57,6 +68,7 @@ if ( $rr ){
     }
     push (@rrs, $rr);
 }
+
 if ($ipblock && !ref $ipblock) {
     $ipblock = Ipblock->retrieve($ipblock);
     
@@ -80,9 +92,8 @@ if ($ipblock && !ref $ipblock) {
 my (@field_headers, @cell_data);
 
 print '<div class="container">';
-if ($action eq 'new') {
-    print '<form name="netdotform" action="host.html" method="POST">';
-}
+print '<form name="netdotform" action="host.html" method="POST">';
+
 print '<div class="containerheadleft"><b>DNS Records</b></div>';
 print '<div class="containerheadright">';
 if ($action eq 'new') {
@@ -92,30 +103,33 @@ if ($action eq 'new') {
     
     print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
     print '<input type="submit" name="submit" value="save" >';
-#    print '</form>';
+    print '<input type="hidden" name="action" value="new" >';
 } elsif ($ipblock) {
 	print '<a href="host.html?ipblock='.$ipblock.'&action=new">[new]</a>';
-}else{
+} else {
     print '&nbsp;';
 }
 
 print '</div>'; #close containderheadright
-print '<div class="containerbody"><br>';
+print '<div class="containerbody" align="center"><br>';
 
 
 my %comphash = (field_headers=>\@field_headers, data=>\@cell_data, 
 		width=>"1", headercolwidth=>"15%", datacolwidth=>"85%");
 
 if ($action eq 'new') {
-    print '<div class="container" style="width:60%;margin-left:20px">';
+    print '<div class="container" style="width:80%;margin-left:20px">';
     print '<div class="containerhead"><b>New Record</b></div>';
     print '<div class="containerbody">';
     $ui->add_to_fields(edit=>1, table=>'RR', fields=>['name', 'zone'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
 		       linkpages=>['', 'zone.html']);
-    $m->comp('/generic/attribute_table.mhtml', %comphash);
+    my $newfields = $m->scomp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
 
+    $newfields =~ s/'RR__NEW__zone'/'RR__NEW__zone__id'/;
+    $newfields =~ s/id="RR__NEW__zone"/id="RR__NEW__zone__id"/;
+    print $newfields;
     print '</div>'; #close containerbody of 'new'
     print '</div>'; #close container of 'new'
 }
@@ -148,12 +162,9 @@ foreach my $o (@rrs) {
 	$edit = 0;
     }
 
-#    if ( $edit ) {
-	print '<form name="netdotform" action="host.html" method="POST">';
-	print '<input type="hidden" name="rr" value="'.$o.'">';
-#    }
+    print '<input type="hidden" name="rr" value="'.$o.'">';
     
-    print '<div class="container" style="width:60%;margin-left:20px">';
+    print '<div class="container" style="width:80%;margin-left:20px">';
     print '<div class="containerheadleft"><b>'.$o->get_label.'</b></div>';
     print '<div class="containerheadright">';
     if ( $edit ) {
@@ -590,12 +601,10 @@ foreach my $o (@rrs) {
 
 #    print '</div>'; #close show more div
     print '</div>'; #close container
-#    if ( $edit ) {
-	print '</form>';
-#    }
 }
 
 print '</div>'; #close outer containerbody
+print '</form>';
 print '</div>'; #close outer container
 
 #
