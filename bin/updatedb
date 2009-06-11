@@ -121,6 +121,34 @@ my @statements = (
     "ALTER TABLE `zone` DROP INDEX zone1",
     "ALTER TABLE `zone` ADD UNIQUE INDEX zone1 (`name`)",
     "DROP TABLE `rrtype`",
+    "CREATE TABLE `accessright` (
+       `access` varchar(128) NOT NULL,
+       `id` integer NOT NULL auto_increment,
+       `object_class` varchar(128) NOT NULL,
+       `object_id` integer NOT NULL,
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
+    "CREATE TABLE `userright` (
+       `accessright` integer NOT NULL,
+       `id` integer NOT NULL auto_increment,
+       `person` integer NOT NULL,
+       UNIQUE INDEX userright1 (`person`, `accessright`),
+       PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;",
+    "CREATE TABLE `usertype` (
+       `id` integer NOT NULL auto_increment,
+       `info` blob,
+       `name` varchar(128) NOT NULL,
+       UNIQUE INDEX usertype1 (`name`),
+       PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;",
+    "CREATE TABLE `groupright` (
+      `accessright` integer NOT NULL,
+      `contactlist` integer NOT NULL,
+      `id` integer NOT NULL auto_increment,
+      UNIQUE INDEX groupright1 (`contactlist`, `accessright`),
+      PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
     "CREATE TABLE `rrloc` (
        `altitude` integer NOT NULL,
        `horiz_pre` varchar(32),
