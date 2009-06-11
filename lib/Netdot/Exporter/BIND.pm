@@ -85,7 +85,7 @@ sub generate_configs {
     foreach my $zone ( @zones ){
 	if ( $zone->audit_records() || $argv{force} ){
 	    if ( $zone->active ){
-		my $path = $zone->print_to_file(nopriv=>$argv{nopriv});
+		my $path = $self->print_zone_to_file(zone=>$zone, nopriv=>$argv{nopriv});
 		$logger->info("Zone ".$zone->name." written to file: $path");
 	    }
 	    
@@ -96,6 +96,74 @@ sub generate_configs {
 	    $logger->debug($zone->name.": No pending changes.  Use -f to force.");
 	}
     }
+}
+
+############################################################################
+=head2 print_zone_to_file -  Print the zone file using BIND syntax
+
+ Args: 
+    Hashref with following key/value pairs:
+        zone    - Zone object
+        nopriv  - Flag.  Exclude private data (TXT and HINFO)
+  Returns: 
+    Path of file written to
+  Examples:
+    my $path = $bind->print_to_file(zone=>$zone, nopriv=>1);
+
+=cut
+sub print_zone_to_file {
+    my ($self, %argv) = @_;
+
+    my $zone = $argv{zone};
+
+    $self->throw_fatal("Missing required argument: zone")
+	unless $zone;
+
+    my $rec = $zone->get_all_records();
+
+    my $dir = Netdot->config->get('BIND_EXPORT_DIR') 
+	|| $self->throw_user('BIND_EXPORT_DIR not defined in config file!');
+    
+    my $filename = $zone->export_file;
+    unless ( $filename ){
+	$logger->warn('Export filename not defined for this zone: '. $zone->name.' Using zone name.');
+	$filename = $zone->name;
+    }
+    my $path = "$dir/$filename";
+    my $fh = $self->open_and_lock($path);
+    $zone->_update_serial();
+
+    # Print the default TTL
+    print $fh '$TTL '.$zone->default_ttl."\n" if (defined $zone->default_ttl);
+
+    # Print the SOA record
+    print $fh $zone->soa_string . "\n";
+    
+    foreach my $name ( sort {$a cmp $b} keys %$rec ){
+	foreach my $type ( qw/A AAAA TXT HINFO NS MX CNAME PTR NAPTR SRV LOC/ ){
+	    if ( defined $rec->{$name}->{$type} ){
+		# Special cases.  These are relatively rare and hard to print.
+		if ( $type =~ /(LOC|SRV|NAPTR)/ ){
+		    my $rrclass = 'RR'.$type;
+		    my $id = $rec->{$name}->{$type}->{id};
+		    my $rr = $rrclass->retrieve($id);
+		    print $fh $rr->as_text, "\n";
+		}else{
+		    next if ( $type =~ /(HINFO|TXT)/ && $argv{nopriv} );
+		    foreach my $data ( keys %{$rec->{$name}->{$type}} ){
+			my $ttl = $rec->{$name}->{$type}->{$data};
+			if ( !defined $ttl || $ttl !~ /\d+/ ){
+			    $logger->debug("$name $type: TTL not defined or invalid. Using Zone default");
+			    $ttl = $zone->default_ttl;
+			}
+			print $fh "$name\t$ttl\tIN\t$type\t$data\n";
+		    }
+		}
+	    }
+	}
+    }
+    close($fh);
+    return $path;
 }
 
 =head1 AUTHOR

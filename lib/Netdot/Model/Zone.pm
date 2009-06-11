@@ -142,7 +142,7 @@ sub insert {
 #########################################################################
 =head2 as_text
     
-    Return the text representation of the Zone file. 
+    Return the text representation (BIND syntax) of the Zone file. 
     This is highly inefficient for large zones.
 
  Args: 
@@ -195,42 +195,23 @@ sub soa_string{
 }
 
 ############################################################################
-=head2 print_to_file -  Print the zone file as text
+=head2 get_all_records - Get all records for export
 
- Args: 
-    Hashref with following key/value pairs:
-        nopriv  - Flag.  Exclude private data (TXT and HINFO)
+   Iterating over each RR and its sub-RRs and calling as_text is too slow
+   for large zones.  This method uses direct SQL for faster exports.
+
+  Args: 
+    None
   Returns: 
-    Path of file written to
+    Hashref
   Examples:
-    $zone->print_to_file();
+    $zone->get_all_records();
 
 =cut
-sub print_to_file{
+sub get_all_records {
     my ($self, %argv) = @_;
     $self->isa_object_method('print_to_file');
     
-    my $dir = Netdot->config->get('BIND_EXPORT_DIR') 
-	|| $self->throw_user('BIND_EXPORT_DIR not defined in config file!');
-    
-    my $filename = $self->export_file;
-    unless ( $filename ){
-	$logger->warn('Export filename not defined for this zone: '. $self->name.' Using zone name.');
-	$filename = $self->name;
-    }
-    my $path = "$dir/$filename";
-    my $fh = Netdot::Exporter->open_and_lock($path);
-    $self->_update_serial();
-
-    # Print the default TTL
-    print $fh '$TTL '.$self->default_ttl."\n" if (defined $self->default_ttl);
-
-    # Print the SOA record
-    print $fh $self->soa_string . "\n";
-
-    # Unfortunately, iterating over each RR and getting its as_text is too slow
-    # for large zones, so we do this crazy query
-
     my $dbh = $self->db_Main;
     my $id = $self->id;
     my $q = "SELECT   rr.name, zone.name, ipblock.version, ipblock.address, rrtxt.txtdata, rrhinfo.cpu, rrhinfo.os,
@@ -275,40 +256,14 @@ sub print_to_file{
 	$rec{$name}{MX}{"$mxpref $exchange."}  = $rrmxttl    if (defined($mxpref) && $exchange);
 	$rec{$name}{CNAME}{"$cname."}          = $rrcnamettl if ($cname);
 	$rec{$name}{PTR}{"$ptrdname."}         = $rrptrttl   if ($ptrdname);
-	unless ( $argv{nopriv} ){
-	    $rec{$name}{TXT}{"\"$txtdata\""}       = $rrtxtttl   if ($txtdata);
-	    $rec{$name}{HINFO}{"\"$cpu\" \"$os\""} = $rrhinfottl if ($cpu && $os);
-	}
+	$rec{$name}{TXT}{"\"$txtdata\""}       = $rrtxtttl   if ($txtdata);
+	$rec{$name}{HINFO}{"\"$cpu\" \"$os\""} = $rrhinfottl if ($cpu && $os);
 	$rec{$name}{LOC}{id}   = $rrlocid   if ($rrlocid);
 	$rec{$name}{SRV}{id}   = $rrsrvid   if ($rrsrvid);
 	$rec{$name}{NAPTR}{id} = $rrnaptrid if ($rrnaptrid);
     }
 
-    foreach my $name ( sort {$a cmp $b} keys %rec ){
-	foreach my $type ( qw/A AAAA TXT HINFO NS MX CNAME PTR NAPTR SRV LOC/ ){
-	    if ( defined $rec{$name}{$type} ){
-		# Special cases.  These are relatively rare and hard to print.
-		if ( $type =~ /(LOC|SRV|NAPTR)/ ){
-		    my $rrclass = 'RR'.$type;
-		    my $id = $rec{$name}{$type}{id};
-		    my $rr = $rrclass->retrieve($id);
-		    print $fh $rr->as_text, "\n";
-		}else{ 
-		    foreach my $data ( keys %{$rec{$name}{$type}} ){
-			my $ttl = $rec{$name}{$type}{$data};
-			if ( !defined $ttl || $ttl !~ /\d+/ ){
-			    $logger->debug("$name $type: TTL not defined or invalid. Using Zone default");
-			    $ttl = $self->default_ttl;
-			}
-			print $fh "$name\t$ttl\tIN\t$type\t$data\n";
-		    }
-		}
-	    }
-	}
-    }
-    close($fh);
-    $logger->debug("Zone ".$self->name." written to file: $path");
-    return $path;
+    return \%rec;
 }
 
 
