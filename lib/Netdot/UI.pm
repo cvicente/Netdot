@@ -1931,7 +1931,7 @@ sub get_permission_manager{
 
 
 ############################################################################
-=head2 get_user_person
+=head2 get_user_person - Get Person object associated with SiteControl user
 
 
   Arguments:
@@ -1960,9 +1960,7 @@ sub get_user_person {
 
     Store user type as an attribute of Apache2::SiteControl::User
     objects, which are then evaluated by the various SiteControl rules that
-    control what users can do.  This attribute can be loaded from the Netdot
-    database or from external sources such as LDAP.  This behavior
-    is controlled by the 'AUTHORIZATION_METHOD' configuration item.
+    control what users can do.  
 
   Arguments:
     $user = Apache2::SiteControl::User object
@@ -1981,22 +1979,9 @@ sub set_user_type{
 
     my $person = $self->get_user_person($user);
 
-    my $user_type;
-    my %rights;
-    my $authorization_method = Netdot->config->get('AUTHORIZATION_METHOD');
-    
-    if (  $authorization_method =~ /^LOCAL$/i ){
+    my $user_type = $person->get_user_type();
+    $user->setAttribute($r, 'USER_TYPE', $user_type);
 
-	if ( defined $person->user_type ) {
-	    $user_type = $person->user_type->name;
-	    $user->setAttribute($r, 'USER_TYPE', $user_type);
-	}else{
-	    $self->throw_fatal($person->get_label." has no user_type set");
-	}
-	
-    }elsif ( $authorization_method =~ /^LDAP$/i ){
-	# Not yet implemented
-    }
     return 1;
 }
 

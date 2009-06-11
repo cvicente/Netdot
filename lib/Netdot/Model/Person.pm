@@ -43,7 +43,7 @@ sub verify_passwd {
 =head2 get_allowed_objects
 
     'Allowed' objects are objects for which this Person, or a group
-    to which this Person belongs, has access rights, either RO or RW.
+    to which this Person belongs, has access rights to
 
   Arguments:
     None
@@ -56,34 +56,73 @@ sub verify_passwd {
 sub get_allowed_objects {
     my ($self, %argv) = @_;
     
-    my $id  = $self->id;
-    my $dbh = $self->db_Main();
-
     my %results;
 
-    my $gq  = "SELECT  accessright.object_class, accessright.object_id, accessright.access
-               FROM    contact, contactlist, accessright, groupright
-               WHERE   contact.person=$id
-                   AND contact.contactlist=contactlist.id
-                   AND groupright.contactlist=contactlist.id
-                   AND groupright.accessright=accessright.id";
+    my $authorization_method = Netdot->config->get('AUTHORIZATION_METHOD');
+    
+    if (  $authorization_method =~ /^LOCAL$/i ){
+	my $id  = $self->id;
+	my $dbh = $self->db_Main();
+	my $gq  = "SELECT  accessright.object_class, accessright.object_id, accessright.access
+                   FROM    contact, contactlist, accessright, groupright
+                   WHERE   contact.person=$id
+                       AND contact.contactlist=contactlist.id
+                       AND groupright.contactlist=contactlist.id
+                       AND groupright.accessright=accessright.id";
+	
+	my $gqr = $dbh->selectall_arrayref($gq);
+	
+	my $uq = "SELECT    accessright.object_class, accessright.object_id, accessright.access
+                  FROM      accessright, userright 
+                  WHERE     userright.person=$id 
+                     AND    userright.accessright=accessright.id";
+	
+	my $uqr = $dbh->selectall_arrayref($uq);
+	
+	foreach my $row ( @$gqr, @$uqr ){
+	    my ($oclass, $oid, $access) = @$row;
+	    $results{$oclass}{$oid}{$access} = 1;
+	}
 
-    my $gqr = $dbh->selectall_arrayref($gq);
-
-    my $uq = "SELECT    accessright.object_class, accessright.object_id, accessright.access
-              FROM      accessright, userright 
-              WHERE     userright.person=$id 
-                 AND    userright.accessright=accessright.id";
-
-    my $uqr = $dbh->selectall_arrayref($uq);
-
-    foreach my $row ( @$gqr, @$uqr ){
-	my ($oclass, $oid, $access) = @$row;
-	$results{$oclass}{$oid}{$access} = 1;
+    }elsif ( $authorization_method =~ /^LDAP$/i ){
+	# Not yet implemented
     }
+
     return \%results;
 }
 
+##################################################################
+=head2 get_user_type
+
+    This attribute can be loaded from the Netdot
+    database or from external sources such as LDAP.  This behavior
+    is controlled by the 'AUTHORIZATION_METHOD' configuration item.
+
+  Arguments:
+    None
+  Returns:
+    String
+  Example:
+    my $user_type = $person->get_user_type();
+
+=cut
+sub get_user_type {
+    my ($self, $r) = @_;
+
+    my $user_type;
+    my $authorization_method = Netdot->config->get('AUTHORIZATION_METHOD');
+    
+    if (  $authorization_method =~ /^LOCAL$/i ){
+	if ( defined $self->user_type ) {
+	    $user_type = $self->user_type->name;
+	}else{
+	    $self->throw_user($self->get_label." user_type is not set");
+	}
+	
+    }elsif ( $authorization_method =~ /^LDAP$/i ){
+	# Not yet implemented
+    }
+}
 ##################################################################
 # PRIVATE METHODS
 ##################################################################
