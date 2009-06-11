@@ -31,26 +31,17 @@ if ( $DEBUG ){
 # - form_field: Name of the form field to add the results into
 sub retrieve_all {
     my ( $table, $form_field ) = @_;
-    my $MAX = $ui->config->get('DEFAULT_SELECTMAX');
     my $response = $form_field."&";
 
     my @r = $table->retrieve_all();
 
     if ( my $n = scalar @r ){
-
         my $count = 0;
-
-	if ($n >= $MAX){
-            $response .= "0=".$ui->url_encode("More than ".$MAX." matches.  Refine search")."&";
-        }
 	my @objs = sort { $a->get_label cmp $b->get_label } @r;
-
         $response .= "0=-- Select --&";
-
         foreach my $o ( @objs ){
            my $lbl = $o->get_label();
            $response .= $o->id."=".$ui->url_encode($lbl)."&";
-           last if ($count++) == $MAX;
         }
     }else{
         $response .= "0=".$ui->url_encode("No matches");
