@@ -15,14 +15,17 @@ title        => 'HOST Tasks'
 %#
 %#######################################################################
 <%args>
+$user       => $ui->get_current_user($r)
 $action     => undef
 $search     => undef
-$user       => undef
 $submit     => undef
+$hostname   => undef
+$zone_id    => undef
 $show_tasks => undef
 $showheader => 1
 $ipblock_id => undef
 $ip         => undef
+$add_host_block => undef
 </%args>
 %
 %
@@ -73,18 +76,41 @@ my @list;
         <fieldset class="medium">
             <legend>Add New Host</legend>
             <form action="hostinfo_tasks.html" method="POST">
-% my (@field_headers, @cell_data) = ((),());
-% $ui->add_to_fields(table=>'RR', edit=>1, fields=>['name', 'zone'],
-%		     field_headers=>\@field_headers, cell_data=>\@cell_data,
-%		     linkpages=>['view.html','view.html']);
-% push (@field_headers, ("IP", ""));
-% push (@cell_data, "<input type='text' name='ip' class='txt' value=''>");
-% push (@cell_data, "<input name='submit' value='Add' class='btn' type='submit'>");
-% my $newrr = $m->scomp('/generic/attribute_table.mhtml', field_headers=>\@field_headers, data=>\@cell_data,
-%	   width=>"1", headercolwidth=>"10%", datacolwidth=>"90%");
-% $newrr =~ s/type="text"/type="text" class="txt"/g;
-% $newrr =~ s/type="button"/type="button" class="btn"/g;
-% print $newrr;
+                <p>
+                <label for="Name">Name:</label>
+                <input name="hostname" type="text" class="txt" value="">
+                </p>
+                <p>
+                <label for="Zone">Zone:</label>
+                <select name="zone_id" id="zone">
+%           my $default_domain = Netdot->config->get('DEFAULT_DNSDOMAIN');
+%           my $default_zone = (Zone->search(name=>$default_domain))[0];
+%           my @zones = Zone->retrieve_all();
+            <option value="0">-- Select --</option>
+%           foreach my $z ( sort { $a->get_label cmp $b->get_label } @zones ){
+%               if ( $default_zone && $default_zone->id == $z->id ){
+                    <option value="<% $z->id %>" SELECTED><% $z->get_label %></option>
+%               }else{
+                    <option value="<% $z->id %>"><% $z->get_label %></option>
+%		}
+%           }
+                </select>
+                </p>
+
+                <p>
+                <label for="Subnet">Subnet:</label>
+                <select name="add_host_block">
+                <option value="0">- Select Block -</option>
+%#           my $type = IpblockStatus->search(name=>"Subnet");
+%           my @subnets = Ipblock->search(status=>"Subnet");
+%           foreach my $o ( sort { $a->get_label cmp $b->get_label } @subnets ){
+                <option value="<% $o %>"><% $o->get_label %></option>
+%           }
+                </select>
+                </p>
+                <p>
+                <input name="submit" value="Add" class="btn" type="submit">
+                </p>
                 <input type="hidden" name="action" value="new">
             </form>
         </fieldset>
@@ -116,7 +142,7 @@ if ( $action eq "search" && $submit ){
 	    print "Query <em>$search</em> returned: ".scalar(@list)." matches";
 	    print "</div>";
 	    print '<div class="containerbody">';
-	    $m->comp('/generic/sortresults.mhtml', object=>\@list, page=>'view.html', withedit=>0);
+	    $m->comp('/generic/sortresults.mhtml', object=>\@list, withedit=>0);
 	    print "</div>\n</div>";
 	} else {
 	    $m->comp('/generic/no_search_results.html', search=>$search);
@@ -140,16 +166,63 @@ if ( $action eq "search" && $submit ){
 #######################################################################################
 
 } elsif ( $action eq "new" ) {
-    if (defined $ip && $ip ne "" && $submit) {
-	$m->comp('/management/host.html', ipblock=>$ip, %ARGS);
-    } elsif (defined $ARGS{RR__NEW__name} && $ARGS{RR__NEW__name} ne "" && $submit) {
-	$m->comp('/management/host.html', %ARGS);
-    } else {
-	$m->comp('/management/host.html', submit=>0);
+#     if (defined $ip && $ip ne "" && $submit) {
+# 	$m->comp('/management/host.html', ipblock=>$ip, %ARGS);
+#     } elsif (defined $ARGS{RR__NEW__name} && $ARGS{RR__NEW__name} ne "" && $submit) {
+# 	$m->comp('/management/host.html', %ARGS);
+#     } else {
+# 	$m->comp('/management/host.html', submit=>0);
+#     }
+    if (!(defined $add_host_block && $add_host_block!=0)) {
+	$m->comp('/generic/error.mhtml', error=>"You need to specify a subnet");
     }
+    if (!(defined $hostname)) {
+	$m->comp('/generic/error.mhtml', error=>"You need to specify a hostname");
+    }
+    my $block = Ipblock->retrieve($add_host_block);
+    unless ( $block ){
+	$m->comp('/generic/error.mhtml', error=>"Could not retrieve Ipblock: $add_host_block");
+    }
+    
+    my $ip_strategy = Netdot->config->get("IP_ALLOCATION_STRATEGY");
+    my $address;
+    unless ( $address = $block->get_next_free(strategy=>$ip_strategy) ){
+	$m->comp('/generic/error.mhtml', error=>"Could not get an available address from ".$block->get_label);
+    }
+
+    my $zone;
+    if ( $zone_id ){
+	$zone = Zone->retrieve($zone_id);
+    }else{
+	$zone = $block->forward_zone();
+    }
+
+
+    my $person = $ui->get_user_person($user);
+    
+    my %args;
+    $args{zone} = $zone;
+    $args{person} = $person;
+    $args{block} = $block;
+    $args{address} = $address;
+    $args{hostname} = $hostname;
+    
+    my $rr;
+    eval {
+	$rr = RR->add_host(%args);
+    };
+    if ( my $e = $@ ){
+	$m->comp("/generic/error.mhtml", error=>$e);
+    }else{
+	$m->comp("../management/host.html", rr=>$rr);
+    }
+
+
+
+
 #     my @rraddrs = RRADDR->search(ipblock=>$ipblock_id);
 #     foreach my $rraddr (@rraddrs){
-# 	$m->comp('/management/host.html', rrid=>$rraddr->rr, edit=>1);
+#        $m->comp('/management/host.html', rrid=>$rraddr->rr, edit=>1);
 #     }
 }
 

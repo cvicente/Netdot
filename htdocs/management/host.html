@@ -111,7 +111,7 @@ if ($action eq 'new') {
 }
 
 print '</div>'; #close containderheadright
-print '<div class="containerbody" align="center"><br>';
+print '<div class="containerbody"><br>';
 
 
 my %comphash = (field_headers=>\@field_headers, data=>\@cell_data, 
@@ -171,7 +171,14 @@ foreach my $o (@rrs) {
 	print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
 	print '<input type="submit" name="submit" value="save" >';
     } else {
-	print '<a href="host.html?rr='.$o.'&action=edit">[edit]</a>';
+	print '<a href="host.html?rr='.$o.'">[refresh]</a>&nbsp;';
+	if ( $manager && $manager->can($user, "delete", $o) ){
+	    print '<a href="delete.html?table=RR&id='.$o.'">[delete]</a>';
+	}
+	print '&nbsp;';
+	if ( $manager && $manager->can($user, "edit", $o) ){
+	    print '<a href="host.html?rr='.$o.'&action=edit">[edit]</a>';
+	}
     }
     print '</div>';
 
@@ -184,7 +191,7 @@ foreach my $o (@rrs) {
     
     #RRADDR
     print '<div class="container" style="margin-left:10px">';
-    print '<div class="containerheadleft"><b>A/AAAA</b></div>';
+    print '<div class="containerheadleft"><b>A/AAAA/PTR</b></div>';
     print '<div class="containerheadright">';
 
     #new rraddr
@@ -208,6 +215,8 @@ foreach my $o (@rrs) {
     print '<div class="containerbody">';
     if (my @arecs = $o->arecords()) {
 	foreach my $arecord (@arecs) {
+	    next if $arecord->ipblock == 0;
+	    
 	    push( @field_headers, "IP");
 	    if ($edit) {
 		push( @cell_data, "<input name='RRADDR__".$arecord."__ipblock' value='".$arecord->ipblock->address."' type='text'>" );
@@ -219,6 +228,19 @@ foreach my $o (@rrs) {
 			       linkpages=>['']);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
+
+	    my $ipblock = $arecord->ipblock;
+	    my $ptr = $ipblock->ptr_records()->first;
+	    print '<div class="container" style="margin-left:10px">';
+	    print '<div class="containerhead"><b>PTR</b></div>';
+	    print '<div class="containerbody">';
+	    $ui->add_to_fields(o=>$ptr, edit=>0, fields=>['rr', 'ptrdname', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['host.html', '', '']);
+	    
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	    print '</div></div>';
 	}
     }
     
@@ -293,14 +315,12 @@ foreach my $o (@rrs) {
     print '<div id="rrtxt_div_'.$o.'"></div>';
     print '</div></div>';
 
-#     #SHOW MORE
-#     print '<a id="anchor_'.$o.'" href="#dns_'.$o.'" onClick="toggleLayer(\'dns_'.$o.'\');document.getElementById(\'anchor_'.$o.'\').innerHTML=((document.getElementById(\'anchor_'.$o.'\').innerHTML==\'[Show More]\')?\'[Show Less]\':\'[Show More]\')">[Show More]</a>';
-#     print '<div id="dns_'.$o.'" style="display:none">';
+    #SHOW MORE
+    print '<a id="anchor_'.$o.'" href="#dns_'.$o.'" onClick="toggleLayer(\'dns_'.$o.'\');this.innerHTML=((this.innerHTML==\'[Show More]\')?\'[Show Less]\':\'[Show More]\')">[Show More]</a>';
+
+    print '<div id="dns_'.$o.'" style="display:none">';
     
-#     #These below are only shown if 'show more' is clicked on
-    
-#     #we keep a tally of how many there are. If there are none then we don't show the [show more] button
-#     my $optionalCount = 0;
+    #These below are only shown if 'show more' is clicked on
     
     #RRCNAME for somewhere pointing to $o
     print '<div class="container" style="margin-left:10px">';
@@ -368,7 +388,7 @@ foreach my $o (@rrs) {
 # 		$ui->add_to_fields(o=>$cnamerr, edit=>$edit, fields=>['name'],
 # 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
 # 				   linkpages=>['host.html']);
-		(@field_headers, @cell_data) = ((),());
+#		(@field_headers, @cell_data) = ((),());
 		push @field_headers, "Name:";
 		push @cell_data, "<a href=\"host.html?id=$cnamerr\">".$cnamerr->get_label."</a>";
 		$m->comp('/generic/attribute_table.mhtml', %comphash);
@@ -549,9 +569,9 @@ foreach my $o (@rrs) {
 	    } else {
 		push( @cell_data, "<a href='ip.html?id=".$ptr->ipblock->id."'>".$ptr->ipblock->address."</a>");
 	    }
-	    $ui->add_to_fields(o=>$ptr, edit=>$edit, fields=>['ttl'],
+	    $ui->add_to_fields(o=>$ptr, edit=>$edit, fields=>['ptrdname', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['']);
+			       linkpages=>['', '']);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 	}
@@ -594,85 +614,13 @@ foreach my $o (@rrs) {
     print '<div id="rrsrv_div_'.$o.'"></div>';
     print '</div></div>';
 
-
-#     if ($optionalCount == 0) {
-# 	print '<script type="text/javascript">document.getElementById("anchor_'.$rrid.'").innerHTML="";</script>';
-#     }
-
-#    print '</div>'; #close show more div
+    print '</div>'; #close show more div
     print '</div>'; #close container
 }
 
 print '</div>'; #close outer containerbody
 print '</form>';
 print '</div>'; #close outer container
-
-#
-# What are these things below?
-#
-
-# @headers = ("Service", "Contact List");
-# @rows = ();
-# foreach my $ipservice ($o->services){
-#     push( @rows,
-# 	  [ eval {
-# 	      if ($edit){	 
-# 		  $ui->form_field(object=>$ipservice, column=>"service", edit=>$edit, returnValOnly=>1);
-# 	      }else{
-# 		  qq(<a href="view.html?table=Service&id=).$ipservice->service->id.qq(">).$ipservice->service->name."</td></a>";
-# 	      }
-# 	    } ,
-# 	    eval {
-# 		if ($edit){
-# 		    $ui->form_field(object=>$ipservice, column=>"contactlist", edit=>$edit, returnValOnly=>1);
-# 		}elsif ($o->used_by){
-# 		    qq(<a href="view.html?table=ContactList&id=).$ipservice->contactlist.qq(">).$ipservice->contactlist->name."</td></a>";
-# 		}
-# 	    }
-# 	  ]  );
-# }
-# $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows ) if ( $o->services ); 
-
-# print '</div>';
-
-# #Display ARP
-# print '<!-- Display ARP -->';
-
-# # Get latest arp entries
-# if ( my $arp = $o->get_last_n_arp($arp_limit) ){
-#     my @rows;
-#     my %tstamps;
-#     foreach my $row ( @$arp ){
-# 	my ($iid, $macid, $tstamp) = @$row;
-# 	my $lbl    = Interface->retrieve($iid)->get_label;
-# 	my $lnk   = "<a href=\"interface.html?id=$iid\">$lbl</a>";
-# 	push @{$tstamps{$tstamp}{$macid}}, $lnk;
-#     }
-#     foreach my $tstamp ( reverse sort keys %tstamps ){
-# 	foreach my $macid ( keys %{$tstamps{$tstamp}} ){
-# 	    my $maclbl   = PhysAddr->retrieve($macid)->get_label;
-# 		my $maclnk   = "<a href=\"../management/mac.html?id=$macid\">$maclbl</a>";
-# 		push @rows, [$tstamp, $maclnk, (join ', ', @{$tstamps{$tstamp}{$macid}})];
-# 	    }
-# 	}
-    
-#     print '<div class="container">';
-#     print '<div class="containerheadleft"><strong>Last '.$arp_limit.' ARP entries</strong></div>';
-#     print '<div class="containerheadright">';
-#     print '<form name="netdotform" action="ip.html" method="POST">';
-#     print '<input type="hidden" name="id" value="'.$id.'">';
-#     print 'Last <input type="text" size="3" name="arp_limit" value="'.$arp_limit.'"> ARP entries <input type="submit" name="submit" value="show">';
-#     print '</form>';
-#     print '</div>';
-#     print '<div class="containerbodyoutside">';
-#     $m->comp('/generic/data_table.mhtml', field_headers=>['Time Seen', 'MAC', 'Interfaces'], data=>\@rows, style=>['', '', 'width: 60%']);
-#     print '</div>';
-#     print '</div>';
-
-# }
-# print '<!-- End Display ARP -->';
-
-
 
 
 </%perl>

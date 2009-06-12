@@ -72,7 +72,6 @@ if ( $zone_id ){
 }
 
 if ( $submit ){
-
     unless ( $zone ){
 	$m->comp('/generic/error.mhtml', error=>"A DNS Domain (Zone) is required");
     }
@@ -84,7 +83,7 @@ if ( $submit ){
     if ( my $h = RR->search(name=>$hostname, zone=>$zone)->first ){
 	$m->comp('/generic/error.mhtml', error=>$h->get_label." is already taken");
     }
-
+    
     # We do not want two host scopes with the same physical address in the same subnet
     if ( $ethernet ){
 	if ( my $physaddr = PhysAddr->search(address=>$ethernet)->first ){
@@ -99,99 +98,25 @@ if ( $submit ){
 	    }
 	}
     }
+    my $person = $ui->get_user_person($user);
 
-
-    # We want this to be atomic
+    my %args;
+    foreach my $key qw(hostname cpu os site_name site_id room_number room_id person contact_name contact_email contact_phone ethernet) {
+	$args{$key} = $ARGS{$key};
+    }
+    $args{zone} = $zone;
+    $args{person} = $person;
+    $args{block} = $block;
+    $args{address} = $address;
+    
     my $rr;
     eval {
-	Netdot::Model->do_transaction(
-	    sub{
-		my $rraddr = RR->insert({type       => 'A', # The RR class would do the right thing if it's v6
-					 ipblock    => $address, 
-					 name       => $hostname, 
-					 zone       => $zone,
-					 update_ptr => 1,
-					});
-		
-		$rr = $rraddr->rr;
-
-		# HINFO
-		if ( $cpu && $os ){
-		    my %hinfo = (rr  => $rr, 
-				 type=> 'HINFO',
-				 cpu => $cpu,
-				 os  => $os);
-		    RR->insert(\%hinfo);
-		}
-
-		# LOCATION
-		if ( $site_id || $site_name ){
-		    my $sname = ($site_id)? Site->retrieve($site_id)->get_label : $site_name;
-		    my $txtdata =  "LOC: $sname";
-		    if ( $room_id || $room_number ){
-			my $room = ($room_id)? Room->retrieve($room_id)->get_label : $room_number;
-			$txtdata .= " ".$room;
-		    }
-		    RR->insert({rr      => $rr, 
-				type    =>'TXT',
-				txtdata => $txtdata,
-			       });
-		}
-
-		# CONTACTS
-		# We always add the current user as a contact
-		my $person = $ui->get_user_person($user);
-		my $txtdata = "CON: ".$person->get_label;
-		$txtdata .= " <".$person->email.">" if $person->email; 
-		$txtdata .= ", ".$person->office if $person->office;
-		RR->insert({rr      => $rr, 
-			    type    =>'TXT',
-			    txtdata => $txtdata,
-			   });
-
-		# Add additional contact info
-		if ( $contact_name ){
-		    $txtdata = "";
-		    $txtdata =  "CON: $contact_name";
-		    $txtdata .= " (".$contact_email.")" if $contact_email; 
-		    $txtdata .= ", ".$contact_phone if $contact_phone; 
-		    if ( $room_id || $room_number ){
-			my $room = ($room_id)? Room->retrieve($room_id)->get_label : $room_number;
-			$txtdata .= " ".$room;
-		    }
-		    RR->insert({rr      => $rr, 
-				type    =>'TXT',
-				txtdata => $txtdata,
-			       });
-		}
-		
-		# DHCP
-		if ( $ethernet ){
-		    my $physaddr = PhysAddr->find_or_create({address=>$ethernet});
-		    
-		    # Create host scope
-		    my $container;
-		    unless ( $container = ($block->dhcp_scopes)[0] ){
-			$ui->throw_user("Subnet ".$block->get_label." not dhcp-enabled (no Subnet scope found).");
-		    }
-		    my $host;
-		    if ( $host = DhcpScope->search(name=>$address)->first ){
-			$ui->throw_user("A DHCP scope for host $address already exists!");
-		    }else{
-			$host = DhcpScope->insert({name      => $address,
-						  type      => 'host',
-						  ipblock   => $rraddr->ipblock,
-						  physaddr  => $physaddr,
-						  container => $container});
-		    }
-		}
-		
-	    });
+	$rr = RR->add_host(%args);
     };
     if ( my $e = $@ ){
-	$m->comp('/generic/error.mhtml', error=>$e);
+	$m->comp("/generic/error.mhtml", error=>$e);
     }else{
-	$m->comp("../management/host.html", rr=>$rr); 
+	$m->comp("../management/host.html", rr=>$rr);
     }
 }
 

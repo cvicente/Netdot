@@ -391,6 +391,117 @@ sub as_text {
     return $text;
 }
 
+##################################################################
+=head2 add_host
+
+    Adds a host
+
+  Arguments:
+    None
+  Returns:
+    RR id
+  Examples:
+    print RR->add_host();
+
+=cut
+
+sub add_host {
+    my ($class, %argv) = @_;
+    
+    if (!($argv{address} && $argv{hostname} && $argv{zone} && $argv{block})) {
+	$class->throw_fatal("Missing required arguments.");
+    }
+    
+    # We want this to be atomic
+    my $rr;
+    Netdot::Model->do_transaction(
+	sub{
+	    my $rraddr = RR->insert({type       => 'A', # The RR class would do the right thing if it's v6
+				     ipblock    => $argv{address}, 
+				     name       => $argv{hostname}, 
+				     zone       => $argv{zone},
+				     update_ptr => 1,
+				    });
+	    
+	    $rr = $rraddr->rr;
+	    
+	    # HINFO
+	    if ( $argv{cpu} && $argv{os} ){
+		my %hinfo = (rr  => $rr, 
+			     type=> 'HINFO',
+			     cpu => $argv{cpu},
+			     os  => $argv{os});
+		RR->insert(\%hinfo);
+	    }
+	    
+	    # LOCATION
+	    if ( $argv{site_id} || $argv{site_name} ){
+		my $sname = ($argv{site_id})? Site->retrieve($argv{site_id})->get_label : $argv{site_name};
+		my $txtdata =  "LOC: $sname";
+		if ( $argv{room_id} || $argv{room_number} ){
+		    my $room = ($argv{room_id})? Room->retrieve($argv{room_id})->get_label : $argv{room_number};
+		    $txtdata .= " ".$room;
+		}
+		RR->insert({rr      => $rr, 
+			    type    =>'TXT',
+			    txtdata => $txtdata,
+			   });
+	    }
+	    
+	    # CONTACTS
+	    # We always add the current user as a contact
+	    my $txtdata = "CON: ".$argv{person}->get_label;
+	    $txtdata .= " <".$argv{person}->email.">" if $argv{person}->email; 
+	    $txtdata .= ", ".$argv{person}->office if $argv{person}->office;
+	    RR->insert({rr      => $rr, 
+			type    =>'TXT',
+			txtdata => $txtdata,
+		       });
+	    
+	    # Add additional contact info
+	    if ( $argv{contact_name} ){
+		$txtdata = "";
+		$txtdata =  "CON: ".$argv{contact_name};
+		$txtdata .= " (".$argv{contact_email}.")" if $argv{contact_email}; 
+		$txtdata .= ", ".$argv{contact_phone} if $argv{contact_phone}; 
+		if ( $argv{room_id} || $argv{room_number} ){
+		    my $room = ($argv{room_id})? Room->retrieve($argv{room_id})->get_label : $argv{room_number};
+		    $txtdata .= " ".$room;
+		}
+		RR->insert({rr      => $rr, 
+			    type    =>'TXT',
+			    txtdata => $txtdata,
+			   });
+	    }
+	    
+	    # DHCP
+	    if ( $argv{ethernet} ){
+		my $physaddr = PhysAddr->find_or_create({address=>$argv{ethernet}});
+		
+		# Create host scope
+		my $container;
+		unless ( $container = ($argv{block}->dhcp_scopes)[0] ){
+		    $class->throw_user("Subnet ".$argv{block}->get_label." not dhcp-enabled (no Subnet scope found).");
+		}
+		my $host;
+		if ( $host = DhcpScope->search(name=>$argv{address})->first ){
+		    $class->throw_user("A DHCP scope for host $argv{address} already exists!");
+		}else{
+		    $host = DhcpScope->insert({name      => $argv{address},
+					       type      => 'host',
+					       ipblock   => $rraddr->ipblock,
+					       physaddr  => $physaddr,
+					       container => $container});
+		}
+	    }
+	    
+	});
+    return $rr;
+}
+
+
+
+
 
 =head1 AUTHOR
 

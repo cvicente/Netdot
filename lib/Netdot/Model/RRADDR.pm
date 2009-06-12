@@ -39,8 +39,8 @@ sub insert {
     my $update_ptr = 1; # On by default
     if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
 	$update_ptr = 0;
-	delete $argv->{update_ptr};
     }
+    delete $argv->{update_ptr};
  
     my $rraddr = $class->SUPER::insert($argv);
 
