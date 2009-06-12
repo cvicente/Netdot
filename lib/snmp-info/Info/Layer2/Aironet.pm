@@ -1,5 +1,5 @@
 # SNMP::Info::Layer2::Aironet
-# $Id: Aironet.pm,v 1.27 2008/08/02 03:21:57 jeneric Exp $
+# $Id: Aironet.pm,v 1.28 2009/03/23 21:29:11 fenner Exp $
 #
 # Copyright (c) 2008 Max Baker changes from version 0.8 and beyond.
 #
@@ -38,12 +38,13 @@ use SNMP::Info::Layer2;
 use SNMP::Info::Entity;
 use SNMP::Info::EtherLike;
 use SNMP::Info::CiscoStats;
+use SNMP::Info::CiscoConfig;
 use SNMP::Info::CDP;
 use SNMP::Info::IEEE802dot11;
 
 @SNMP::Info::Layer2::Aironet::ISA
     = qw/SNMP::Info::Layer2 SNMP::Info::Entity SNMP::Info::EtherLike
-    SNMP::Info::CiscoStats SNMP::Info::CDP Exporter/;
+    SNMP::Info::CiscoStats SNMP::Info::CiscoConfig SNMP::Info::CDP Exporter/;
 @SNMP::Info::Layer2::Aironet::EXPORT_OK = qw//;
 
 use vars qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE/;
@@ -56,6 +57,7 @@ $VERSION = '2.00';
     %SNMP::Info::Entity::GLOBALS,
     %SNMP::Info::EtherLike::GLOBALS,
     %SNMP::Info::CiscoStats::GLOBALS,
+    %SNMP::Info::CiscoConfig::GLOBALS,
     %SNMP::Info::CDP::GLOBALS,
     'serial' => 'entPhysicalSerialNum.1',
     'descr'  => 'sysDescr'
@@ -67,11 +69,11 @@ $VERSION = '2.00';
     %SNMP::Info::Entity::FUNCS,
     %SNMP::Info::EtherLike::FUNCS,
     %SNMP::Info::CiscoStats::FUNCS,
+    %SNMP::Info::CiscoConfig::FUNCS,
     %SNMP::Info::CDP::FUNCS,
-    'i_ssidlist'       => 'cd11IfAuxSsid',
-    'i_ssidbcast'      => 'cd11IfAuxSsidBroadcastSsid',
     'i_80211channel'   => 'cd11IfPhyDsssCurrentChannel',
     'c_dot11subif'     => 'cDot11ClientSubIfIndex',
+    'cd11_rateset'     => 'cDot11ClientDataRateSet',
     'cd11_txrate'      => 'cDot11ClientCurrentTxRateSet',
     'cd11_uptime'      => 'cDot11ClientUpTime',
     'cd11_sigstrength' => 'cDot11ClientSignalStrength',
@@ -89,7 +91,7 @@ $VERSION = '2.00';
     %SNMP::Info::Entity::MIBS,
     %SNMP::Info::EtherLike::MIBS,
     %SNMP::Info::CiscoStats::MIBS,
-    %SNMP::Info::CiscoVTP::MIBS,
+    %SNMP::Info::CiscoConfig::MIBS,
     %SNMP::Info::CDP::MIBS,
     'CISCO-DOT11-IF-MIB'                  => 'cd11IfAuxSsid',
     'CISCO-DOT11-ASSOCIATION-MIB'         => 'cDot11ClientSubIfIndex',
@@ -103,8 +105,10 @@ $VERSION = '2.00';
     %SNMP::Info::Entity::MUNGE,
     %SNMP::Info::EtherLike::MUNGE,
     %SNMP::Info::CiscoStats::MUNGE,
+    %SNMP::Info::CiscoConfig::MUNGE,
     %SNMP::Info::CDP::MUNGE,
     'cd11_txrate'   => \&munge_cd11_txrate,
+    'cd11_rateset'  => \&munge_cd11_txrate,
     'mbss_mac_addr' => \&SNMP::Info::munge_mac,
 );
 
@@ -314,6 +318,19 @@ sub cd11_mac {
     return \%ret;
 }
 
+# Map VLAN N on interface I to its actual ifIndex.
+sub _vlan_map_n_stack {
+    my $aironet  = shift;
+    my $vlan_idx = $aironet->cviRoutedVlanIfIndex();
+
+    my $vlan_map = {};
+    foreach my $idx ( keys %$vlan_idx ) {
+        my ( $vlan, $num ) = split( /\./, $idx );
+        $vlan_map->{$vlan}->{$num} = $vlan_idx->{$idx};
+    }
+    return $vlan_map;
+}
+
 # When using MBSS, the ifTable reports the
 # base MAC address, but the actual association is
 # with a different MAC address for MBSS.
@@ -361,6 +378,63 @@ sub i_mac {
     }
 
     return $mbss_mac;
+}
+
+sub i_ssidlist {
+    my $aironet = shift;
+
+    # no partial is possible due to the levels
+    # of indirection.
+    my $ssid_row  = $aironet->cdot11SecInterfSsidRowStatus();
+    my $ssid_vlan = $aironet->cdot11SecAuxSsidVlan();
+    if ( !defined($ssid_row) || !defined($ssid_vlan) ) {
+        return $aironet->cd11IfAuxSsid();
+    }
+    my $ssidlist     = {};
+    my $if_ssidcount = {};
+    my $vlan_map     = $aironet->_vlan_map_n_stack();
+    foreach my $idx ( keys %$ssid_row ) {
+        next unless $ssid_row->{$idx} eq 'active';
+
+        # ssid_row index is radio.ssid
+        my ( $interface, $ssid ) = split( /\./, $idx, 2 );
+        my ( $len, @ssidt ) = split( /\./, $ssid );
+        my $mappedintf = $vlan_map->{ $ssid_vlan->{$ssid} }->{$interface};
+        next unless $mappedintf;
+        if ( !$if_ssidcount->{$mappedintf} ) {
+            $if_ssidcount->{$mappedintf} = 1;
+        }
+        my $ssidlist_idx
+            = sprintf( "%s.%d", $mappedintf, $if_ssidcount->{$mappedintf} );
+        $ssidlist->{$ssidlist_idx} = pack( "C*", @ssidt );
+        $if_ssidcount->{$mappedintf}++;
+    }
+    return $ssidlist;
+}
+
+sub i_ssidbcast {
+    my $aironet    = shift;
+    my $partial    = shift;
+    my $mbss_bcast = $aironet->cdot11SecAuxSsidMbssidBroadcast();
+    if ( !defined($mbss_bcast) ) {
+        return $aironet->cd11IfAuxSsidBroadcastSsid($partial);
+    }
+    my $map = {};
+    foreach my $key ( keys %$mbss_bcast ) {
+        my (@idx) = split( /\./, $key );
+        my $len = shift(@idx);
+        $map->{ pack( "C*", @idx ) } = $mbss_bcast->{$key};
+    }
+
+    # This needs to return the same indexes as i_ssidlist.
+    # mbss_bcast maps ssid -> broadcasting
+    #  so we just replace the i_ssidlist values with the mbss_bcast ones.
+    my $i_ssidlist  = $aironet->i_ssidlist();
+    my $i_ssidbcast = {};
+    foreach my $key ( keys %$i_ssidlist ) {
+        $i_ssidbcast->{$key} = $map->{ $i_ssidlist->{$key} };
+    }
+    return $i_ssidbcast;
 }
 
 1;
@@ -424,7 +498,9 @@ my $aironet = new SNMP::Info::Layer2::Aironet(...);
 
 =item SNMP::Info::EtherLike
 
-=item SNMP::Info::CiscoVTP
+=item SNMP::Info::CiscoStats
+
+=item SNMP::Info::CiscoConfig
 
 =back
 
@@ -535,6 +611,17 @@ Returns VLAN IDs
 =item $aironet->v_name()
 
 Returns VLAN names
+
+=item $aironet->i_ssidlist()
+
+Returns a list of SSIDs associated with interfaces.  This function
+is MBSSID aware, so when using MBSSID can map SSIDs to the sub-interface
+to which they belong.
+
+=item $aironet->i_ssidbcast()
+
+With the same keys as i_ssidlist, returns whether the given SSID is
+being broadcasted.
 
 =back
 

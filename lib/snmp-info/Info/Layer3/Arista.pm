@@ -1,5 +1,5 @@
 # SNMP::Info::Layer3::Arista
-# $Id: Arista.pm,v 1.1 2009/03/06 20:09:38 fenner Exp $
+# $Id: Arista.pm,v 1.2 2009/03/23 19:30:30 fenner Exp $
 #
 # Copyright (c) 2008 Arista Networks, Inc.
 # All rights reserved.
@@ -77,7 +77,7 @@ $VERSION = '2.00';
     = \&SNMP::Info::MAU::mau_i_speed_admin;
 
 sub vendor {
-    return 'Arista Networks, Inc.';
+    return 'arista';
 }
 
 sub os {

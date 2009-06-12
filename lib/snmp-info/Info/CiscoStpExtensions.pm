@@ -278,6 +278,8 @@ Values: pvstPlus, mistp, mistpPvstPlus, mst, rapidPvstPlus
 
 (stpxSpanningTreeType)
 
+=back
+
 =head1 TABLE METHODS
 
 These are methods that return tables of information in the form of a reference
@@ -337,3 +339,5 @@ Format is a hash reference with key = ifIndex, value = [1|0]
 (stpxFastStartBpduFilterEnable)
 
 =back
+
+=cut

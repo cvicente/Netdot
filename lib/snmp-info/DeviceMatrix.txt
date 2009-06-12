@@ -4,7 +4,7 @@
 # This file is meant to detail the cababilities
 # of network devices to supply data via SNMP.  
 
-# $Id: DeviceMatrix.txt,v 1.31 2007/11/27 03:00:25 jeneric Exp $
+# $Id: DeviceMatrix.txt,v 1.32 2009/06/07 23:35:05 maxbaker Exp $
 
 # Airespace (pre-Cisco)
 device-vendor: Airespace
@@ -90,6 +90,17 @@ note: Aironet based device
 
 device: AP350, AP340, CAP350, CAP340, 1200, AP4800
 note: Aironet based device
+
+device-family: Altiga
+class: Layer3::Altiga
+
+device: VPN3000
+note: The Cisco 3000 device can return duplicate interface names, while
+note: Netdisco expects unique interface names.  To ensure unique device names, I took a different approach than
+note: the Microsoft class; while the Microsoft class prepends the iid to each
+note: interface, I chose to append numbers only when an interface name would
+note: not be unique without one. Interfaces with unique names keer their
+note: ifDescr name.
 
 device-family: 1000
 duplex: no

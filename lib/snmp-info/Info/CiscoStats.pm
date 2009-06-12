@@ -1,5 +1,5 @@
 # SNMP::Info::CiscoStats
-# $Id: CiscoStats.pm,v 1.22 2008/08/02 03:21:25 jeneric Exp $
+# $Id: CiscoStats.pm,v 1.23 2009/06/08 02:28:31 maxbaker Exp $
 #
 # Changes since Version 0.7 Copyright (c) 2008 Max Baker
 # All rights reserved.
@@ -42,7 +42,7 @@ use SNMP::Info;
 
 use vars qw/$VERSION %MIBS %FUNCS %GLOBALS %MUNGE/;
 
-$VERSION = '2.00';
+$VERSION = '2.01';
 
 %MIBS = (
     'SNMPv2-MIB'            => 'sysDescr',
@@ -50,6 +50,7 @@ $VERSION = '2.00';
     'CISCO-MEMORY-POOL-MIB' => 'ciscoMemoryPoolUsed',
     'OLD-CISCO-SYSTEM-MIB'  => 'writeMem',
     'CISCO-PRODUCTS-MIB'    => 'sysName',
+    'ENTITY-MIB'            => 'entPhysicalSoftwareRev',
 
     # some older catalysts live here
     'CISCO-STACK-MIB'                 => 'wsc1900sysID',
@@ -59,6 +60,7 @@ $VERSION = '2.00';
 
 %GLOBALS = (
     'description' => 'sysDescr',
+    'ent_physical_software_rev' => 'entPhysicalSoftwareRev.1',
 
     # We will use the numeric OID's so that we don't require people
     # to install v1 MIBs, which can conflict.
@@ -88,6 +90,10 @@ $VERSION = '2.00';
 
 %MUNGE = ();
 
+sub vendor {
+    return 'cisco';
+}
+
 sub os {
     my $l2 = shift;
     my $descr = $l2->description() || '';
@@ -96,7 +102,36 @@ sub os {
     # in their description field.
     return 'ios'      if ( $descr =~ /IOS/ );
     return 'catalyst' if ( $descr =~ /catalyst/i );
-    return;
+    return 'css'      if ( $descr =~ /Content Switch SW/ );
+    return 'css-sca'  if ( $descr =~ /Cisco Systems Inc CSS-SCA-/ );
+    return 'pix'      if ( $descr =~ /Cisco PIX Security Appliance/ );
+    return 'asa'      if ( $descr =~ /Cisco Adaptive Security Appliance/ );
+
+    if ( $descr =~ /Application Control Engine Service Module/ ) {
+        # Only the admin context implements the entity MIB
+        return 'ace-admin' if defined $l2->ent_physical_software_rev();
+        return 'ace-context';
+    }
+
+    # Pre-version 3 FWSMs
+    return 'fwsm'     if ( $descr =~ /Cisco Secure FWSM Firewall/ );
+
+    # Version 3+ FWSMs (currently untested against version 4)
+    if ( $descr =~ /Firewall Services Module/ ) {
+
+        my $model = $l2->model();
+
+        if ( defined $model && $model eq "WsSvcFwm1sc" ) {
+            # Only the admin context implements the entity MIB
+            return 'fwsm-admin' if defined $l2->ent_physical_software_rev();
+            return 'fwsm-context';
+        }
+
+        # Non context mode FWSM
+        return 'fwsm';
+    }
+
+    return undef;
 }
 
 sub os_ver {
@@ -113,13 +148,61 @@ sub os_ver {
         return $1;
     }
 
+    if ( defined $os
+        and $os eq 'css'
+        and defined $descr
+        and $descr =~ m/Content Switch SW Version ([0-9\.\(\)]+) with SNMPv1\/v2c Agent/ )
+    {
+        return $1;
+    }
+
+    if ( defined $os
+        and $os eq 'css-sca'
+        and defined $descr
+        and $descr =~ m/Cisco Systems Inc CSS-SCA-2FE-K9, ([0-9\.\(\)]+) Release / )
+    {
+        return $1;
+    }
+
+    if ( defined $os
+        and $os eq 'pix'
+        and defined $descr
+        and $descr =~ m/Cisco PIX Security Appliance Version ([0-9\.\(\)]+)/ )
+    {
+        return $1;
+    }
+
+    if ( defined $os
+        and $os eq 'asa'
+        and defined $descr
+        and $descr =~ m/Cisco Adaptive Security Appliance Version ([0-9\.\(\)]+)/ )
+    {
+        return $1;
+    }
+
+    if ( defined $os
+        and $os =~ /^ace/ )
+    {
+        return $l2->ent_physical_software_rev();
+    }
+
+    if ( defined $os
+        and $os =~ /^fwsm/
+        and defined $descr
+        and $descr =~ m/Version (\d+\.\d+(\(\d+\)){0,1})/ )
+    {
+        return $1;
+    }
+
+
     # Newer Catalysts and IOS devices
     if ( defined $descr
         and $descr =~ m/Version (\d+\.\d+\([^)]+\)[^,\s]*)(,|\s)+/ )
     {
         return $1;
     }
-    return;
+
+    return undef;
 }
 
 sub cpu {
@@ -214,7 +297,7 @@ Devices
 
 =head1 AUTHOR
 
-Max Baker
+Eric Miller, Max Baker, Sam Stickland
 
 =head1 SYNOPSIS
 
@@ -263,6 +346,8 @@ None.
 
 =item F<CISCO-FLASH-MIB>
 
+=item F<ENTITY-MIB>
+
 =back
 
 MIBs can be found at ftp://ftp.cisco.com/pub/mibs/v2/v2.tar.gz
@@ -290,6 +375,49 @@ Returns mem_free() + mem_used()
 =item $ciscostats->os()
 
 Tries to parse if device is running IOS or CatOS from description()
+
+Available values :
+
+=over
+
+=item pix
+
+Cisco PIX
+
+=item asa
+
+Cisco ASA
+
+=item fwsm
+
+Single-mode FWSM
+
+=item fwsm-admin
+
+Admin context of multi-context FWSM
+
+=item fwsm-context
+
+Standard context of multi-context FWSM
+
+=item ace-admin
+
+Admin context of ACE module
+
+=item ace-context
+
+Standard context of ACE module (NB: No OS version detection
+is available, but will be the same as it's 'ace admin')
+
+=item css
+
+Cisco Content Switch
+
+=item css-sca
+
+Cisco Content Switch Secure Content Acceleration
+
+=back
 
 =item $ciscostats->os_ver()
 

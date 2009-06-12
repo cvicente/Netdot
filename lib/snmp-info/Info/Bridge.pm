@@ -1,5 +1,5 @@
 # SNMP::Info::Bridge
-# $Id: Bridge.pm,v 1.39 2009/03/10 16:52:08 cvicente Exp $
+# $Id: Bridge.pm,v 1.40 2009/06/11 21:48:11 maxbaker Exp $
 #
 # Changes since Version 0.7 Copyright (c) 2004 Max Baker
 # All rights reserved.
@@ -105,6 +105,7 @@ $VERSION = '2.00';
 
     # Q-BRIDGE-MIB : dot1qVlanStaticTable
     'v_name'           => 'dot1qVlanStaticName',
+    'qb_v_name'        => 'dot1qVlanStaticName',
     'qb_v_egress'      => 'dot1qVlanStaticEgressPorts',
     'qb_v_fbdn_egress' => 'dot1qVlanForbiddenEgressPorts',
     'qb_v_untagged'    => 'dot1qVlanStaticUntaggedPorts',

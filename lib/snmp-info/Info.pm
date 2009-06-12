@@ -1,8 +1,8 @@
 # SNMP::Info - Max Baker
-# $Id: Info.pm,v 1.145 2009/03/10 01:25:52 cvicente Exp $
 #
-# Copyright (c) 2003-2008 Max Baker
+# Copyright (c) 2003-2009 Max Baker
 # All rights reserved.
+#
 # Portions Copyright (c) 2002-2003, Regents of the University of California
 # All rights reserved.
 #
@@ -20,10 +20,11 @@ use Math::BigInt;
 @SNMP::Info::EXPORT_OK = qw//;
 
 use vars
-    qw/$VERSION %FUNCS %GLOBALS %MIBS %MUNGE $AUTOLOAD $INIT $DEBUG %SPEED_MAP
+    qw/$VERSION $VERSION_CVS %FUNCS %GLOBALS %MIBS %MUNGE $AUTOLOAD $INIT $DEBUG %SPEED_MAP
     $NOSUCH $BIGINT $REPEATERS/;
 
 $VERSION = '2.00';
+$VERSION_CVS = '$Id: Info.pm,v 1.149 2009/06/11 18:06:15 maxbaker Exp $';
 
 =head1 NAME
 
@@ -1179,10 +1180,6 @@ sub device_type {
     $desc =~ s/[\r\n\l]+/ /g;
     my $id = $info->id() || 'undef';
 
-    $info->debug()
-        and print
-        "SNMP::Info::device_type() layers:$layers id:$id sysDescr:\"$desc\"\n";
-
     # Hash for generic fallback to a device class if unable to determine using
     # the sysDescr regex.
     my %l3sysoidmap = (
@@ -1199,6 +1196,7 @@ sub device_type {
         2272 => 'SNMP::Info::Layer3::Passport',
         2636 => 'SNMP::Info::Layer3::Juniper',
         2925 => 'SNMP::Info::Layer1::Cyclades',
+        3076 => 'SNMP::Info::Layer3::Altiga',
         5624 => 'SNMP::Info::Layer3::Enterasys',
         6486 => 'SNMP::Info::Layer3::AlcatelLucent',
         6527 => 'SNMP::Info::Layer3::Timetra',
@@ -1224,6 +1222,11 @@ sub device_type {
 
     # Get just the enterprise number for generic mapping
     $id = $1 if ( defined($id) && $id =~ /^\.1\.3\.6\.1\.4\.1\.(\d+)/ );
+
+    if ($info->debug()) {
+        print "SNMP::Info $VERSION ($VERSION_CVS)\n";
+        print "SNMP::Info::device_type() layers:$layers id:$id sysDescr:\"$desc\"\n";
+    }
 
     # Layer 3 Supported
     #   (usually has layer2 as well, so we check for 3 first)
@@ -1421,6 +1424,11 @@ sub device_type {
         # Cisco ASA
         $objtype = 'SNMP::Info::Layer3::Cisco'
             if ( $desc =~ /Cisco Adaptive Security Appliance/i );
+
+        # Cisco FWSM
+        $objtype = 'SNMP::Info::Layer3::Cisco'
+            if ( $desc =~ /Cisco Firewall Services Module/i );
+
     }
 
     return $objtype;

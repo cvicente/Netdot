@@ -1,7 +1,7 @@
 # SNMP::Info::Layer3::C6500
-# $Id: C6500.pm,v 1.26 2009/03/10 16:52:08 cvicente Exp $
+# $Id: C6500.pm,v 1.27 2009/06/11 21:49:37 maxbaker Exp $
 #
-# Copyright (c) 2008 Max Baker
+# Copyright (c) 2008-2009 Max Baker
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,6 @@ package SNMP::Info::Layer3::C6500;
 
 use strict;
 use Exporter;
-use SNMP::Info::CiscoVTP;
 use SNMP::Info::CiscoStack;
 use SNMP::Info::CDP;
 use SNMP::Info::CiscoStats;
@@ -42,32 +41,43 @@ use SNMP::Info::CiscoConfig;
 use SNMP::Info::CiscoPower;
 use SNMP::Info::Layer3;
 use SNMP::Info::CiscoStpExtensions;
+use SNMP::Info::CiscoVTP;
 
 use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
 
-@SNMP::Info::Layer3::C6500::ISA
-    = qw/SNMP::Info::CiscoVTP SNMP::Info::CiscoStack
-    SNMP::Info::CDP SNMP::Info::CiscoStats
+# NOTE : Top-most items gets precedence for @ISA
+@SNMP::Info::Layer3::C6500::ISA = qw/
+    SNMP::Info::CiscoVTP 
+    SNMP::Info::CiscoStpExtensions
+    SNMP::Info::CiscoStack
+    SNMP::Info::CDP 
     SNMP::Info::CiscoImage
+    SNMP::Info::CiscoStats
     SNMP::Info::CiscoPortSecurity
     SNMP::Info::CiscoConfig
     SNMP::Info::CiscoPower
     SNMP::Info::Layer3
-    SNMP::Info::CiscoStpExtensions
-    Exporter/;
+    Exporter
+/;
 
 @SNMP::Info::Layer3::C6500::EXPORT_OK = qw//;
 
 use vars qw/$VERSION %GLOBALS %MIBS %FUNCS %MUNGE/;
 
-$VERSION = '2.00';
+$VERSION = '2.01';
+
+# NOTE: Order creates precedence
+#       Example: v_name exists in Bridge.pm and CiscoVTP.pm
+#       Bridge is called from Layer3 and CiscoStpExtensions
+#       So we want CiscoVTP to come last to get the right one.
+# The @ISA order should match these orders.
 
 %MIBS = (
-    %SNMP::Info::Layer3::MIBS,      %SNMP::Info::CiscoPower::MIBS,
-    %SNMP::Info::CiscoConfig::MIBS, %SNMP::Info::CiscoPortSecurity::MIBS,
-    %SNMP::Info::CiscoImage::MIBS,  %SNMP::Info::CiscoStats::MIBS,
-    %SNMP::Info::CDP::MIBS,         %SNMP::Info::CiscoStack::MIBS,
-    %SNMP::Info::CiscoVTP::MIBS,    %SNMP::Info::CiscoStpExtensions::MIBS,
+    %SNMP::Info::Layer3::MIBS,             %SNMP::Info::CiscoPower::MIBS,
+    %SNMP::Info::CiscoConfig::MIBS,        %SNMP::Info::CiscoPortSecurity::MIBS,
+    %SNMP::Info::CiscoImage::MIBS,         %SNMP::Info::CiscoStats::MIBS,
+    %SNMP::Info::CDP::MIBS,                %SNMP::Info::CiscoStack::MIBS,
+    %SNMP::Info::CiscoStpExtensions::MIBS, %SNMP::Info::CiscoVTP::MIBS,    
 );
 
 %GLOBALS = (
@@ -79,25 +89,25 @@ $VERSION = '2.00';
     %SNMP::Info::CiscoStats::GLOBALS,
     %SNMP::Info::CDP::GLOBALS,
     %SNMP::Info::CiscoStack::GLOBALS,
-    %SNMP::Info::CiscoVTP::GLOBALS,
     %SNMP::Info::CiscoStpExtensions::GLOBALS,
+    %SNMP::Info::CiscoVTP::GLOBALS,
 );
 
 %FUNCS = (
-    %SNMP::Info::Layer3::FUNCS,      %SNMP::Info::CiscoPower::FUNCS,
-    %SNMP::Info::CiscoConfig::FUNCS, %SNMP::Info::CiscoPortSecurity::FUNCS,
-    %SNMP::Info::CiscoImage::FUNCS,  %SNMP::Info::CiscoStats::FUNCS,
-    %SNMP::Info::CDP::FUNCS,         %SNMP::Info::CiscoStack::FUNCS,
-    %SNMP::Info::CiscoVTP::FUNCS,    %SNMP::Info::CiscoStpExtensions::FUNCS,
+    %SNMP::Info::Layer3::FUNCS,             %SNMP::Info::CiscoPower::FUNCS,
+    %SNMP::Info::CiscoConfig::FUNCS,        %SNMP::Info::CiscoPortSecurity::FUNCS,
+    %SNMP::Info::CiscoImage::FUNCS,         %SNMP::Info::CiscoStats::FUNCS,
+    %SNMP::Info::CDP::FUNCS,                %SNMP::Info::CiscoStack::FUNCS,
+    %SNMP::Info::CiscoStpExtensions::FUNCS, %SNMP::Info::CiscoVTP::FUNCS,    
 );
 
 
 %MUNGE = (
-    %SNMP::Info::Layer3::MUNGE,      %SNMP::Info::CiscoPower::MUNGE,
-    %SNMP::Info::CiscoConfig::MUNGE, %SNMP::Info::CiscoPortSecurity::MUNGE,
-    %SNMP::Info::CiscoImage::MUNGE,  %SNMP::Info::CiscoStats::MUNGE,
-    %SNMP::Info::CDP::MUNGE,         %SNMP::Info::CiscoStack::MUNGE,
-    %SNMP::Info::CiscoVTP::MUNGE,    %SNMP::Info::CiscoStpExtensions::MUNGE,
+    %SNMP::Info::Layer3::MUNGE,             %SNMP::Info::CiscoPower::MUNGE,
+    %SNMP::Info::CiscoConfig::MUNGE,        %SNMP::Info::CiscoPortSecurity::MUNGE,
+    %SNMP::Info::CiscoImage::MUNGE,         %SNMP::Info::CiscoStats::MUNGE,
+    %SNMP::Info::CDP::MUNGE,                %SNMP::Info::CiscoStack::MUNGE,
+    %SNMP::Info::CiscoStpExtensions::MUNGE, %SNMP::Info::CiscoVTP::MUNGE,    
 );
 
 sub vendor {
