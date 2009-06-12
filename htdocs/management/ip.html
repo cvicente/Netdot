@@ -549,17 +549,78 @@ if ( my @parents = $o->get_ancestors ){
     </div>
 </div>
 
-%if ( $edit ){
-  </form>
-%} else {
-%
-%   my @rraddrs = $o->arecords();
-%   if (!@rraddrs) {
-      <a href="host.html?ipblock=<% $o->id %>&action=new">[Add DNS Records]</a>
-%   } else {
-%      $m->comp('/management/host.html', ipblock=>$o->id);
-%   }
+<%perl>
 
+if (!$edit){
+    my @rraddrs = $o->arecords();
+    if (!@rraddrs) {
+	print "<a href=\"host.html?ipblock=$o->id&action=new\">[Add DNS Records]</a>";
+    } else {
+	$m->comp('/management/host.html', ipblock=>$o->id);
+    }
+}
+
+if ($o->parent && $o->parent->dhcp_scopes) {
+    my $global_scope = $o->parent->dhcp_scopes->first->container;
+    my $scope = $o->dhcp_scopes->first;
+    
+    my %comphash = (field_headers=>\@field_headers, data=>\@cell_data, 
+		    width=>"1", headercolwidth=>"15%", datacolwidth=>"85%");
+    
+    
+    (@field_headers, @cell_data) = ((),());
+    print '<div class="container">';
+    print '<div class="containerheadleft"><b>DHCP Host</b></div>';
+    print '<div class="containerheadright">';
+    if ($edit ne "dhcp") {
+	print "<a href=\"ip.html?id=$id&edit=dhcp\">[edit]</a>";
+    } else {
+	print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
+	print '<input type="submit" name="submit" value="save">';
+	print '<input type="hidden" name="_action" value="UPDATE">';
+    }
+    print '</div>';
+    print '<div class="containerbody" style="width:80%;margin-left:20px">';
+
+
+    if ($edit eq "dhcp") {
+	push (@field_headers, "Ethernet");
+	if (defined $scope && (my $phys = $scope->physaddr())) {
+	    push (@cell_data, "<input name='DhcpScope__".$scope."__physaddr' value='".$phys->address."' type='text'>");
+	} else {
+	    push (@cell_data, "<input name='DhcpScope__NEW__physaddr' value='' type='text'>");
+	}
+	print '<input type="hidden" name="DhcpScope__NEW__name" value="'.$o->address.'">';
+	print '<input type="hidden" name="DhcpScope__NEW__type" value="host">';
+	print '<input type="hidden" name="DhcpScope__NEW__ipblock" value="'.$o->id.'">';
+    } else {
+	if (defined $scope) {
+	    $ui->add_to_fields(o=>$scope, edit=>0, fields=>['physaddr'], field_headers=>\@field_headers, cell_data=>\@cell_data, linkpages=>['mac.html']);
+	}
+    }
+
+    $m->comp('/generic/attribute_table.mhtml', %comphash);
+    (@field_headers, @cell_data) = ((),());
+
+    print '<div class="container">';
+    print '<div class="containerheadleft">Attributes</div>';
+	print '<div class="containerheadright">';
+    print "<a href=\"edit.html?table=DhcpAttr&scope=$scope\">[add]</a></div>";
+    my @attrs = $scope->attributes;
+    print '<div class="containerbody">';
+    $m->comp('/generic/sortresults.mhtml', object=>\@attrs, withedit=>($edit eq 'dhcp')? 1 : 0);
+    print '</div>'; #close containerbody of DhcpAttr
+    print '</div>'; #close container of DhcpAttr
+
+
+    print '</div>'; #close containerbody of DHCP
+}
+
+if ( $edit ){
+    print '</form>';
+}
+
+</%perl>
 
 <div class="container">
     <div class="containerheadleft">Services</div>
@@ -628,7 +689,6 @@ if ( my @parents = $o->get_ancestors ){
 %     }
 <!-- End Display ARP -->
 
-%}
 
 %} else {     
 %#######################################################################################

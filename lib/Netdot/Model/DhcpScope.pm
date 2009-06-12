@@ -55,6 +55,7 @@ sub search {
       - Assign DhcpScopeType based on given text or id
       - Inherit failover properties from global scope if inserting subnet scope
       - Insert given attributes
+      - Convert ethernet string into object
 
  Argsuments: 
     Hashref with following keys:
@@ -73,6 +74,9 @@ sub insert {
     $class->throw_fatal('DhcpScope::insert: Missing required parameters')
 	unless ( defined $argv->{name} && defined $argv->{type} );
 
+    $argv->{physaddr} = $class->_objectify_physaddr($argv->{physaddr})
+	if ( exists $argv->{physaddr} );
+    
     if ( $argv->{type} =~ /\D+/ ){
 	my $type = DhcpScopeType->search(name=>$argv->{type})->first;
 	$class->throw_user("DhcpScope::insert: Unknown type: $argv->{type}")
@@ -106,6 +110,30 @@ sub insert {
 =head1 INSTANCE METHODS
 =cut
 
+############################################################################
+=head2 update
+
+    We override the base method to:
+      - Convert ethernet string into object
+    
+  Arguments:
+  Returns:
+    Number of rows updated or -1
+  Example:
+    $scope->update(\%args)
+
+=cut
+sub update {
+    my($self, $argv) = @_;
+    $self->isa_object_method('update');
+
+    $argv->{physaddr} = $self->_objectify_physaddr($argv->{physaddr})
+	if ( exists $argv->{physaddr} );
+    
+    my @res = $self->SUPER::update($argv);
+
+    return @res;
+}
 
 ############################################################################
 =head2 print_to_file -  Print the config file as text
@@ -360,6 +388,22 @@ sub _get_all_data {
 
     return \%data;
 }
+
+##################################################################
+# check if physaddr is a string, if so then convert into object
+sub _objectify_physaddr {
+    my ($self, $physaddr) = @_;
+    if (!(ref $physaddr) && ($physaddr =~ /\D/)) {
+	if (my $obj = PhysAddr->search(address=>$physaddr)->first) {
+	    return $obj;
+	} else {
+	    return PhysAddr->insert({address=>$physaddr});
+	}
+    } else {
+	return $physaddr;
+    }
+}
+
 
 =head1 AUTHOR
 

@@ -230,17 +230,18 @@ foreach my $o (@rrs) {
 	    (@field_headers, @cell_data) = ((),());
 
 	    my $ipblock = $arecord->ipblock;
-	    my $ptr = $ipblock->ptr_records()->first;
-	    print '<div class="container" style="margin-left:10px">';
-	    print '<div class="containerhead"><b>PTR</b></div>';
-	    print '<div class="containerbody">';
-	    $ui->add_to_fields(o=>$ptr, edit=>0, fields=>['rr', 'ptrdname', 'ttl'],
-			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['host.html', '', '']);
-	    
-	    $m->comp('/generic/attribute_table.mhtml', %comphash);
-	    (@field_headers, @cell_data) = ((),());
-	    print '</div></div>';
+	    if (my $ptr = $ipblock->ptr_records()->first) {
+		print '<div class="container" style="margin-left:10px">';
+		print '<div class="containerhead"><b>PTR</b></div>';
+		print '<div class="containerbody">';
+		$ui->add_to_fields(o=>$ptr, edit=>0, fields=>['rr', 'ptrdname', 'ttl'],
+				   field_headers=>\@field_headers, cell_data=>\@cell_data,
+				   linkpages=>['host.html', '', '']);
+		
+		$m->comp('/generic/attribute_table.mhtml', %comphash);
+		(@field_headers, @cell_data) = ((),());
+		print '</div></div>';
+	    }
 	}
     }
     
@@ -621,6 +622,14 @@ foreach my $o (@rrs) {
 print '</div>'; #close outer containerbody
 print '</form>';
 print '</div>'; #close outer container
+
+
+
+#
+#DHCP Scope
+#
+
+
 
 
 </%perl>
