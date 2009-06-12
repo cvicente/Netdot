@@ -1,17 +1,92 @@
 <%doc>
 
- Contacts Management
+ Manage Contact Lists (unprviledged users)
 
 </%doc>
 
+
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
 <%args>
 $user
-$showheader => 1
+$submit           => undef
+$show_contactlist => undef
+$show_tasks       => undef
+$showheader       => 1
 </%args>
-
+%
+%
+%
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
 <%init>
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+$show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
+if ( $show_tasks eq "" ) {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+my $hideheader = 'style="display:none"' if ( !$showheader );
+$ARGS{show_tasks} = $show_tasks;
 </%init>
 
-My Contact Lists
+% if ( $show_contactlist ){
+%    $m->comp('../generic/contactlist.html', id=>$show_contactlist, user=>$user );    
+% }else{
+
+<div id="sectiontools" <% $hideheader %>>
+  <div class="container">
+    <div class="containerheadleft">
+       My Contact Lists
+    </div>
+    <div class="containerheadright">
+%       print_showtaskslink($show_tasks);
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+
+<%perl>
+my @objs;
+my $objt = 'ContactList';
+my $ao = $ui->get_allowed_objects($r, $user);
+if ( exists $ao->{$objt} ){
+    foreach my $id ( keys %{$ao->{$objt}} ){
+	if ( my $obj = ContactList->retrieve($id) ){
+	    push @objs, $obj;
+	}else{
+	    delete $ao->{$objt}->{$id};
+	}
+    }
+}
+</%perl>
+
+<p>
+
+% if ( @objs ){
+        <form name="contacts_form" action="contacts_tasks.html" method="POST">
+        <select name="show_contactlist" onChange="document.contacts_form.submit()">
+            <option value="0">- Select List -</option>
+%       foreach my $obj ( sort { $a->get_label cmp $b->get_label } @objs ){
+            <option value="<% $obj %>"><% $obj->get_label %></option>
+%       }
+        </select>
+        </form>
+% }else{
+     No Contact Lists available for this user.
+% }
+
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+% }
+
+

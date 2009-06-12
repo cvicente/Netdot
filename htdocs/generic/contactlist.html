@@ -123,6 +123,7 @@ if ( $_action ){
 </div>
 <!-- End Display main object values -->
 
+% if ( $manager && $manager->can($user, "access_section") ){
 <!-- Display has_many possibilities-->
 %  if ( keys %linksfrom ){
       <div class="container">
@@ -197,8 +198,9 @@ foreach my $i ( keys %linksfrom ){
 %         }
      </div>
 %    }
-%}
+% }
 <!-- End Display has_many objects -->
+% }
 
 </div>
 

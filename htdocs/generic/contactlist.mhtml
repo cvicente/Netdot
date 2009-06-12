@@ -11,6 +11,7 @@ section => 'Generic'
 %
 <%args>
 $id
+$user         => $ui->get_current_user($r)
 $edit         => undef
 $show_buttons => 1
 $contact_id   => undef
@@ -22,7 +23,7 @@ my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my $obj = ContactList->retrieve($id);
 if ( $edit ) { $show_buttons = 0; }
-
+my $manager = $ui->get_permission_manager($r);
 </%init>
 
 
@@ -37,9 +38,15 @@ if ( $edit ) { $show_buttons = 0; }
 % if ( ! $show_buttons ) {
     &nbsp;
 % }else{
-          <a href="edit.html?table=ContactList">[new list]</a>
-          <a href="contactlist.html?id=<% $id %>&edit=newcontact">[new contact]</a>
-          <a href="delete.html?table=ContactList&id=<% $id %>">[delete]</a>
+%         if ( $manager && $manager->can($user, "access_section") ){
+              <a href="edit.html?table=ContactList">[new list]</a>
+%         }
+%         if ( $manager && $manager->can($user, "edit", $obj) ){
+              <a href="contactlist.html?id=<% $id %>&edit=newcontact">[new contact]</a>
+%         }
+%         if ( $manager && $manager->can($user, "delete", $obj) ){
+              <a href="delete.html?table=ContactList&id=<% $id %>">[delete]</a>
+%         }
           <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
 % }
 
@@ -120,9 +127,13 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
 %		 if ( ! $show_buttons ){
                     &nbsp;
 %                }else{
-                         <a href="contactlist.html?id=<% $id %>&edit=contact&contact_id=<% $role->id %>">[edit]</a>
-		         <a href="contactlist.html?id=<% $id %>&_action=delete_role&role_id=<% $role->id %>">[delete role]</a>
-		         <a href="contactlist.html?id=<% $id %>&_action=delete_person&person_id=<% $person->id %>">[delete person]</a>
+%                        if ( $manager && $manager->can($user, "edit", $obj) ){
+                             <a href="contactlist.html?id=<% $id %>&edit=contact&contact_id=<% $role->id %>">[edit]</a>
+%                        }
+%                        if ( $manager && $manager->can($user, "delete", $obj) ){
+		             <a href="contactlist.html?id=<% $id %>&_action=delete_role&role_id=<% $role->id %>">[delete role]</a>
+		             <a href="contactlist.html?id=<% $id %>&_action=delete_person&person_id=<% $person->id %>">[delete person]</a>
+%                        }
 %                }
 		     </div>
                  <div class="containerbodyoutside">
