@@ -67,6 +67,23 @@ sub denies(){
 		 exists $access->{'Device'}->{$dev->id} ){
 		return &_deny_action_access($action, $access->{'Device'}->{$dev->id});
 	    }
+	}elsif ( $otype eq 'Contact' ){
+	    # Grant access to roles (contacts) of an allowed ContactList
+	    my $cl = $object->contactlist;
+	    if ( exists $access->{'ContactList'} && 
+		 exists $access->{'ContactList'}->{$cl->id} ){
+		return &_deny_action_access($action, $access->{'ContactList'}->{$cl->id});
+	    }
+	}elsif ( $otype eq 'Person' ){
+	    # Grant access to Person objects with roles (contacts) in a allowed ContactList
+	    foreach my $role ( $object->roles ){
+		my $cl = $role->contactlist;
+		if ( exists $access->{'ContactList'} && 
+		     exists $access->{'ContactList'}->{$cl->id} ){
+		    return 0 if ( !&_deny_action_access($action, $access->{'ContactList'}->{$cl->id}) );
+		}
+	    }
+	    return 1;
 	}elsif ( $otype eq 'Ipblock' ){
 	    # Grant access to Block's children
 	    my $parent = $object->parent;
