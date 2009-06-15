@@ -52,7 +52,7 @@ sub search {
 =head2 insert - Insert new Scope
 
     Override base method to:
-      - Assign DhcpScopeType based on given text or id
+      - Objectify some arguments
       - Inherit failover properties from global scope if inserting subnet scope
       - Insert given attributes
       - Convert ethernet string into object
@@ -74,15 +74,9 @@ sub insert {
     $class->throw_fatal('DhcpScope::insert: Missing required parameters')
 	unless ( defined $argv->{name} && defined $argv->{type} );
 
-    $argv->{physaddr} = $class->_objectify_physaddr($argv->{physaddr})
-	if ( exists $argv->{physaddr} );
-    
-    if ( $argv->{type} =~ /\D+/ ){
-	my $type = DhcpScopeType->search(name=>$argv->{type})->first;
-	$class->throw_user("DhcpScope::insert: Unknown type: $argv->{type}")
-	    unless $type;
-	$argv->{type} = $type;
-    }
+    $class->_objectify_args($argv);
+    $class->_validate_args($argv);
+
     my $attributes = delete $argv->{attributes} if defined $argv->{attributes};
 
     my $scope = $class->SUPER::insert($argv);
@@ -111,32 +105,30 @@ sub insert {
 =cut
 
 ############################################################################
-=head2 update
-
-    We override the base method to:
-      - Convert ethernet string into object
+=head2 update 
     
-  Arguments:
-  Returns:
-    Number of rows updated or -1
-  Example:
-    $scope->update(\%args)
+    Override parent method to:
+    - Objectify some arguments
+    - Validate arguments
 
+  Args: 
+    Hashref
+  Returns: 
+    See Class::DBI
+  Examples:
+    $dhcp_scope->update(\%args);
 =cut
-sub update {
-    my($self, $argv) = @_;
-    $self->isa_object_method('update');
+sub update{
+    my ($self, $argv) = @_;
 
-    $argv->{physaddr} = $self->_objectify_physaddr($argv->{physaddr})
-	if ( exists $argv->{physaddr} );
-    
-    my @res = $self->SUPER::update($argv);
+    $self->_objectify_args($argv);
+    $self->_validate_args($argv);
 
-    return @res;
+    return $self->SUPER::update($argv);
 }
 
 ############################################################################
-=head2 print_to_file -  Print the config file as text
+=head2 print_to_file -  Print the config file as text (ISC DHCPD format)
 
   Args: 
     Hash with following keys:
@@ -191,6 +183,106 @@ sub print_to_file{
 ############################################################################
 # Private methods
 ############################################################################
+
+############################################################################
+=head2 _objectify_args
+
+    Convert following arguments into objects:
+    - type
+    - physaddr
+    - ipblock
+    
+  Args: 
+    hashref
+  Returns: 
+    True
+  Examples:
+    $class->_objectify_args($argv);
+
+=cut
+sub _objectify_args {
+    my ($self, $argv) = @_;
+
+    if ( defined $argv->{type} && !ref($argv->{type}) ){
+	if ( $argv->{type} =~ /\D+/ ){
+	    my $type = DhcpScopeType->search(name=>$argv->{type})->first;
+	    $self->throw_user("DhcpScope::objectify_args: Unknown type: $argv->{type}")
+		unless $type;
+	    $argv->{type} = $type;
+	}else{
+	    $argv->{type} = DhcpScopeType->retrieve($argv->{type});
+	}
+    }
+
+    if ( defined $argv->{physaddr} && !ref($argv->{physaddr}) ){
+	if ( $argv->{physaddr} =~ /\D+/ ){
+	    my $physaddr;
+	    unless ( $physaddr = PhysAddr->search(address=>$argv->{physaddr})->first ){
+		$physaddr = PhysAddr->insert({address=>$argv->{physaddr}});
+	    }
+	    $argv->{physaddr} = $physaddr;
+	}else{
+	    $argv->{physaddr} = DhcpScopeType->retrieve($argv->{physaddr});
+	}
+    }
+
+    if ( defined $argv->{ipblock} && !ref($argv->{ipblock}) ){
+	if ( $argv->{ipblock} =~ /\D+/ ){
+	    my $ipblock;
+	    unless ( $ipblock = Ipblock->search(address=>$argv->{ipblock})->first ){
+		$ipblock = Ipblock->insert({address=>$argv->{ipblock}});
+		if ( $ipblock->is_address ){
+		    $ipblock->update({status=>'Static'});
+		}else{
+		    $ipblock->update({status=>'Subnet'});
+		}
+	    }
+	    $argv->{ipblock} = $ipblock;
+	}else{
+	    $argv->{ipblock} = DhcpScopeType->retrieve($argv->{ipblock});
+	}
+    }
+    1;
+}
+
+############################################################################
+=head2 _validate_args
+
+  Args: 
+    hashref
+  Returns: 
+    True, or throws exception if validation fails
+  Examples:
+    $class->_validate_args($argv);
+
+=cut
+sub _validate_args {
+    my ($self, $argv) = @_;
+    
+    my %fields;
+    foreach my $field ( qw(name type physaddr ipblock container) ){
+	if ( ref($self) ){
+	    $fields{$field} = $self->$field;
+	}
+	# Overrides current value with given argument
+	$fields{$field} = $argv->{$field}
+    }
+
+    if ( !defined $fields{container} && $fields{type}->name ne 'global' ){
+	$self->throw_user("DhcpScope::_validate_args: $fields{name}: Container scope required unless type is global");
+    }
+    if ( defined $fields{physaddr} && $fields{type}->name ne 'host' ){
+	$self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign physical address to a non-host scope");
+    }
+    if ( defined $fields{ipblock} ){
+	if ( ($fields{ipblock}->status eq 'Subnet') && $fields{type}->name ne 'subnet' ){
+	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign a subnet to a non-subnet scope");
+	}elsif ( ($fields{ipblock}->status eq 'Static') && $fields{type}->name ne 'host'  ){
+	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign an IP address to a non-host scope");
+	}
+    }
+    1;
+}
 
 ############################################################################
 # _print - Generate text file with scope definitions
@@ -387,21 +479,6 @@ sub _get_all_data {
     }
 
     return \%data;
-}
-
-##################################################################
-# check if physaddr is a string, if so then convert into object
-sub _objectify_physaddr {
-    my ($self, $physaddr) = @_;
-    if (!(ref $physaddr) && ($physaddr =~ /\D/)) {
-	if (my $obj = PhysAddr->search(address=>$physaddr)->first) {
-	    return $obj;
-	} else {
-	    return PhysAddr->insert({address=>$physaddr});
-	}
-    } else {
-	return $physaddr;
-    }
 }
 
 
