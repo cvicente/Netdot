@@ -199,7 +199,7 @@ sub _convert_ipblock {
 	if (my $ipblock = Ipblock->search(address=>$ip)->first) {
 	    return $ipblock;
 	} else {
-	    return Ipblock->insert({address=>$ip});
+	    return Ipblock->insert({address=>$ip, status=>'Static'});
 	}
     } else {
 	return $ip;

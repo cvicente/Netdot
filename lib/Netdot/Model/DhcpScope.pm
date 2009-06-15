@@ -222,7 +222,7 @@ sub _objectify_args {
 	    }
 	    $argv->{physaddr} = $physaddr;
 	}else{
-	    $argv->{physaddr} = DhcpScopeType->retrieve($argv->{physaddr});
+	    $argv->{physaddr} = PhysAddr->retrieve($argv->{physaddr});
 	}
     }
 
@@ -239,7 +239,7 @@ sub _objectify_args {
 	    }
 	    $argv->{ipblock} = $ipblock;
 	}else{
-	    $argv->{ipblock} = DhcpScopeType->retrieve($argv->{ipblock});
+	    $argv->{ipblock} = Ipblock->retrieve($argv->{ipblock});
 	}
     }
     1;

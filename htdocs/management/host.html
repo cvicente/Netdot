@@ -44,12 +44,8 @@ if ($submit && ($rr || $id || $ipblock || $action eq 'new')) {
     }
 }
 
-# unless ($id || $rr || $ipblock) {
-#     $m->comp('/generic/error.mhtml', error=>"Missing required arguments: an RR or an Ipblock");
-# }
 
 if (!($id || $rr || $ipblock)) {
-#    $action = "new";
     print '<a href="host.html?action=new">[Add DNS Records]</a>';
 }
 
@@ -189,9 +185,10 @@ foreach my $o (@rrs) {
     (@field_headers, @cell_data) = ((),());
 
     
+    #####################################################################################################
     #RRADDR
     print '<div class="container" style="margin-left:10px">';
-    print '<div class="containerheadleft"><b>A/AAAA/PTR</b></div>';
+    print '<div class="containerheadleft"><b>A/AAAA</b></div>';
     print '<div class="containerheadright">';
 
     #new rraddr
@@ -249,6 +246,7 @@ foreach my $o (@rrs) {
     print '</div></div>';
 
 
+    #####################################################################################################
     #RRHINFO
     print '<div class="container" style="margin-left:10px">';
     print '<div class="containerheadleft"><b>HINFO</b></div>';
@@ -283,6 +281,7 @@ foreach my $o (@rrs) {
     print '</div></div>';
 
 
+    #####################################################################################################
     #RRTXT
     print '<div class="container" style="margin-left:10px">';
     print '<div class="containerheadleft"><b>TXT</b></div>';
@@ -317,13 +316,16 @@ foreach my $o (@rrs) {
     print '</div></div>';
 
     #SHOW MORE
+    print '<p>';
     print '<a id="anchor_'.$o.'" href="#dns_'.$o.'" onClick="toggleLayer(\'dns_'.$o.'\');this.innerHTML=((this.innerHTML==\'[Show More]\')?\'[Show Less]\':\'[Show More]\')">[Show More]</a>';
 
     print '<div id="dns_'.$o.'" style="display:none">';
     
     #These below are only shown if 'show more' is clicked on
     
+    #####################################################################################################
     #RRCNAME for somewhere pointing to $o
+    print '<p>';
     print '<div class="container" style="margin-left:10px">';
     print '<div class="containerheadleft"><b>CNAME (Aliases of '.$o->get_label.')</b></div>';
     print '<div class="containerheadright">';
@@ -356,7 +358,7 @@ foreach my $o (@rrs) {
     print '<div id="rrcname_div_'.$o.'"></div>';
     print '</div></div>';
 
-
+    #####################################################################################################
     #RRCNAME for aliases of $o ($o pointing to somewhere)
     # cannot have an A/AAAA record at the same time
     # the $o is unique in the cname table
@@ -376,6 +378,7 @@ foreach my $o (@rrs) {
 	$newcname =~ s/'/\\'/g;
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrcname_'.$o.'_content\']=encodeURIComponent(\''.$newcname.'\');</script>';
 	print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.$o.'\', 1, \'name\')">[add]</a></div>';
+
     } else {
 	print "&nbsp;";
     }
@@ -386,10 +389,6 @@ foreach my $o (@rrs) {
     if (my @cnames = $o->cnames()) {
 	foreach my $cname (@cnames) {
 	    if ( my $cnamerr = RR->search(name=>$cname->cname)->first ){
-# 		$ui->add_to_fields(o=>$cnamerr, edit=>$edit, fields=>['name'],
-# 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
-# 				   linkpages=>['host.html']);
-#		(@field_headers, @cell_data) = ((),());
 		push @field_headers, "Name:";
 		push @cell_data, "<a href=\"host.html?id=$cnamerr\">".$cnamerr->get_label."</a>";
 		$m->comp('/generic/attribute_table.mhtml', %comphash);
@@ -404,6 +403,7 @@ foreach my $o (@rrs) {
     print '</div></div>';
 
     
+    #####################################################################################################
     #RRLOC
     print '<div class="container" style="margin-left:10px">';
     print '<div class="containerheadleft"><b>LOC</b></div>';
@@ -438,6 +438,7 @@ foreach my $o (@rrs) {
     print '</div></div>';
 
     
+    #####################################################################################################
     #RRMX
     print '<div class="container" style="margin-left:10px">';
     print '<div class="containerheadleft"><b>MX</b></div>';
@@ -472,6 +473,7 @@ foreach my $o (@rrs) {
     print '</div></div>';
 
     
+    #####################################################################################################
     #RRNAPTR
     print '<div class="container" style="margin-left:10px">';
     print '<div class="containerheadleft"><b>NAPTR</b></div>';
@@ -506,6 +508,7 @@ foreach my $o (@rrs) {
     print '</div></div>';
 
     
+    #####################################################################################################
     #RRNS
     print '<div class="container" style="margin-left:10px">';
     print '<div class="containerheadleft"><b>NS</b></div>';
@@ -540,6 +543,7 @@ foreach my $o (@rrs) {
     print '</div></div>';
 
     
+    #####################################################################################################
     #RRPTR
     print '<div class="container" style="margin-left:10px">';
     print '<div class="containerheadleft"><b>PTR</b></div>';
@@ -582,6 +586,7 @@ foreach my $o (@rrs) {
     print '</div></div>';
 
     
+    #####################################################################################################
     #RRSRV
     print '<div class="container" style="margin-left:10px">';
     print '<div class="containerheadleft"><b>SRV</b></div>';
@@ -622,14 +627,6 @@ foreach my $o (@rrs) {
 print '</div>'; #close outer containerbody
 print '</form>';
 print '</div>'; #close outer container
-
-
-
-#
-#DHCP Scope
-#
-
-
 
 
 </%perl>

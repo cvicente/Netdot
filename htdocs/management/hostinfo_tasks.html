@@ -15,17 +15,18 @@ title        => 'HOST Tasks'
 %#
 %#######################################################################
 <%args>
-$user       => $ui->get_current_user($r)
-$action     => undef
-$search     => undef
-$submit     => undef
-$hostname   => undef
-$zone_id    => undef
-$show_tasks => undef
-$showheader => 1
-$ipblock_id => undef
-$ip         => undef
+$user           => $ui->get_current_user($r)
+$action         => undef
+$search         => undef
+$submit         => undef
+$hostname       => undef
+$zone_id        => undef
+$show_tasks     => undef
+$showheader     => 1
+$ipblock_id     => undef
+$ip             => undef
 $add_host_block => undef
+$ethernet       => undef
 </%args>
 %
 %
@@ -80,6 +81,23 @@ my @list;
                 <label for="Name">Name:</label>
                 <input name="hostname" type="text" class="txt" value="">
                 </p>
+
+                <p>
+                <label for="Name">Ethernet:</label>
+                <input name="ethernet" type="text" class="txt" value=""> (optional)
+                </p>
+
+                <p>
+                <label for="Subnet">Subnet:</label>
+                <select name="add_host_block">
+                <option value="0">- Select Block -</option>
+%           my @subnets = Ipblock->search(status=>"Subnet");
+%           foreach my $o ( sort { $a->get_label cmp $b->get_label } @subnets ){
+                <option value="<% $o %>"><% $o->get_label %></option>
+%           }
+                </select>
+                </p>
+
                 <p>
                 <label for="Zone">Zone:</label>
                 <select name="zone_id" id="zone">
@@ -97,17 +115,6 @@ my @list;
                 </select>
                 </p>
 
-                <p>
-                <label for="Subnet">Subnet:</label>
-                <select name="add_host_block">
-                <option value="0">- Select Block -</option>
-%#           my $type = IpblockStatus->search(name=>"Subnet");
-%           my @subnets = Ipblock->search(status=>"Subnet");
-%           foreach my $o ( sort { $a->get_label cmp $b->get_label } @subnets ){
-                <option value="<% $o %>"><% $o->get_label %></option>
-%           }
-                </select>
-                </p>
                 <p>
                 <input name="submit" value="Add" class="btn" type="submit">
                 </p>
@@ -166,13 +173,6 @@ if ( $action eq "search" && $submit ){
 #######################################################################################
 
 } elsif ( $action eq "new" ) {
-#     if (defined $ip && $ip ne "" && $submit) {
-# 	$m->comp('/management/host.html', ipblock=>$ip, %ARGS);
-#     } elsif (defined $ARGS{RR__NEW__name} && $ARGS{RR__NEW__name} ne "" && $submit) {
-# 	$m->comp('/management/host.html', %ARGS);
-#     } else {
-# 	$m->comp('/management/host.html', submit=>0);
-#     }
     if (!(defined $add_host_block && $add_host_block!=0)) {
 	$m->comp('/generic/error.mhtml', error=>"You need to specify a subnet");
     }
@@ -197,15 +197,12 @@ if ( $action eq "search" && $submit ){
 	$zone = $block->forward_zone();
     }
 
-
-    my $person = $ui->get_user_person($user);
-    
     my %args;
-    $args{zone} = $zone;
-    $args{person} = $person;
-    $args{block} = $block;
-    $args{address} = $address;
+    $args{zone}     = $zone;
+    $args{block}    = $block;
+    $args{address}  = $address;
     $args{hostname} = $hostname;
+    $args{ethernet} = $ethernet;
     
     my $rr;
     eval {
@@ -217,13 +214,6 @@ if ( $action eq "search" && $submit ){
 	$m->comp("../management/host.html", rr=>$rr);
     }
 
-
-
-
-#     my @rraddrs = RRADDR->search(ipblock=>$ipblock_id);
-#     foreach my $rraddr (@rraddrs){
-#        $m->comp('/management/host.html', rrid=>$rraddr->rr, edit=>1);
-#     }
 }
 
 

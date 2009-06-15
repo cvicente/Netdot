@@ -553,16 +553,27 @@ if ( my @parents = $o->get_ancestors ){
 
 if (!$edit){
     my @rraddrs = $o->arecords();
-    if (!@rraddrs) {
-	print "<a href=\"host.html?ipblock=$o->id&action=new\">[Add DNS Records]</a>";
-    } else {
-	$m->comp('/management/host.html', ipblock=>$o->id);
-    }
+
+	my @rrs = map { $_->rr } @rraddrs;
+	print '<div class="container">';
+	print '<div class="containerheadleft">DNS Records</div>';
+	print '<div class="containerheadright">';
+        if (!@rraddrs) {
+	    print "<a href=\"host.html?ipblock=$o->id&action=new\">[add]</a>";
+	}else{
+	    print '&nbsp;';
+	}
+	print '</div>';
+	print '<div class="containerbody">';
+	$m->comp('/generic/sortresults.mhtml', object=>\@rrs);
+	print '</div>';
+	print '</div>';
 }
 
+# Do not show DHCP scope unless the subnet has DHCP enabled
 if ($o->parent && $o->parent->dhcp_scopes) {
-    my $global_scope = $o->parent->dhcp_scopes->first->container;
-    my $scope = $o->dhcp_scopes->first;
+    my $gscope = $o->parent->dhcp_scopes->first->container;
+    my $scope  = $o->dhcp_scopes->first;
     
     my %comphash = (field_headers=>\@field_headers, data=>\@cell_data, 
 		    width=>"1", headercolwidth=>"15%", datacolwidth=>"85%");
@@ -573,7 +584,13 @@ if ($o->parent && $o->parent->dhcp_scopes) {
     print '<div class="containerheadleft"><b>DHCP Host</b></div>';
     print '<div class="containerheadright">';
     if ($edit ne "dhcp") {
-	print "<a href=\"ip.html?id=$id&edit=dhcp\">[edit]</a>";
+	if ( $scope ){
+	    print "<a href=\"delete.html?table=DhcpScope&id=$scope\">[delete]</a>";
+	    print "&nbsp;";
+	    print "<a href=\"ip.html?id=$id&edit=dhcp\">[edit]</a>";
+	}else{
+	    print "<a href=\"ip.html?id=$id&edit=dhcp\">[add]</a>";
+	}
     } else {
 	print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
 	print '<input type="submit" name="submit" value="save">';
@@ -593,6 +610,7 @@ if ($o->parent && $o->parent->dhcp_scopes) {
 	print '<input type="hidden" name="DhcpScope__NEW__name" value="'.$o->address.'">';
 	print '<input type="hidden" name="DhcpScope__NEW__type" value="host">';
 	print '<input type="hidden" name="DhcpScope__NEW__ipblock" value="'.$o->id.'">';
+	print '<input type="hidden" name="DhcpScope__NEW__container" value="'.$gscope->id.'">';
     } else {
 	if (defined $scope) {
 	    $ui->add_to_fields(o=>$scope, edit=>0, fields=>['physaddr'], field_headers=>\@field_headers, cell_data=>\@cell_data, linkpages=>['mac.html']);
@@ -602,18 +620,31 @@ if ($o->parent && $o->parent->dhcp_scopes) {
     $m->comp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
 
-    print '<div class="container">';
-    print '<div class="containerheadleft">Attributes</div>';
-	print '<div class="containerheadright">';
-    print "<a href=\"edit.html?table=DhcpAttr&scope=$scope\">[add]</a></div>";
-    my @attrs = $scope->attributes;
-    print '<div class="containerbody">';
-    $m->comp('/generic/sortresults.mhtml', object=>\@attrs, withedit=>($edit eq 'dhcp')? 1 : 0);
-    print '</div>'; #close containerbody of DhcpAttr
-    print '</div>'; #close container of DhcpAttr
+    if ( $scope ){
 
+	my @attrs = $scope->attributes;
+	print '<div class="container">';
+	print '<div class="containerheadleft">Attributes</div>';
+	print '<div class="containerheadright">';
+	print "<a href=\"edit.html?table=DhcpAttr&scope=$scope\">[add]</a></div>";
+	print '<div class="containerbody">';
+	$m->comp('/generic/sortresults.mhtml', object=>\@attrs, withedit=>($edit eq 'dhcp')? 1 : 0);
+	print '</div>'; #close containerbody of DhcpAttr
+	print '</div>'; #close container of DhcpAttr
+	
+	my @templates = $scope->templates;
+	print '<div class="container">';
+	print '<div class="containerheadleft">Templates</div>';
+	print '<div class="containerheadright">';
+	print "<a href=\"edit.html?table=DhcpScopeUse&scope=$scope\">[add]</a></div>";
+	print '<div class="containerbody">';
+	$m->comp('/generic/sortresults.mhtml', object=>\@templates, withedit=>($edit eq 'dhcp')? 1 : 0);
+	print '</div>'; #close containerbody of Dhcp templates
+	print '</div>'; #close container of Dhcp templates
+    }
 
     print '</div>'; #close containerbody of DHCP
+    print '</div>'; #close container of DHCP
 }
 
 if ( $edit ){
@@ -1117,7 +1148,7 @@ if ($o->status->name eq "Subnet") {
     <div class="container">
     <div class="containerheadleft">DNS Zones</div>
     <div class="containerheadright"><a href="edit.html?table=SubnetZone&subnet=<% $o %>">[add]</a></div>
-       <& /generic/sortresults.mhtml, object=>\@zones &>
+       <& /generic/sortresults.mhtml, object=>\@zones, withedit=>$edit_block &>
     </div>
 
 %################################################################

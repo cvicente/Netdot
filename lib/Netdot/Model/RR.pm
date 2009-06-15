@@ -397,7 +397,16 @@ sub as_text {
     Adds a host
 
   Arguments:
-    None
+    Hash with following keys:
+    address
+    hostname
+    zone
+    block
+    ethernet
+    person
+    contact_name
+    contact_email
+    contact_phone
   Returns:
     RR id
   Examples:
@@ -449,18 +458,20 @@ sub add_host {
 	    }
 	    
 	    # CONTACTS
-	    # We always add the current user as a contact
-	    my $txtdata = "CON: ".$argv{person}->get_label;
-	    $txtdata .= " <".$argv{person}->email.">" if $argv{person}->email; 
-	    $txtdata .= ", ".$argv{person}->office if $argv{person}->office;
-	    RR->insert({rr      => $rr, 
-			type    =>'TXT',
-			txtdata => $txtdata,
-		       });
+	    if ( $argv{person} ){
+		# Add the current user as a contact
+		my $txtdata = "CON: ".$argv{person}->get_label;
+		$txtdata .= " (".$argv{person}->email.")" if $argv{person}->email; 
+		$txtdata .= ", ".$argv{person}->office if $argv{person}->office;
+		RR->insert({rr      => $rr, 
+			    type    =>'TXT',
+			    txtdata => $txtdata,
+			   });
+	    }
 	    
 	    # Add additional contact info
 	    if ( $argv{contact_name} ){
-		$txtdata = "";
+		my $txtdata = "";
 		$txtdata =  "CON: ".$argv{contact_name};
 		$txtdata .= " (".$argv{contact_email}.")" if $argv{contact_email}; 
 		$txtdata .= ", ".$argv{contact_phone} if $argv{contact_phone}; 
