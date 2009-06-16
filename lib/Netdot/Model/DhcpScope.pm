@@ -101,6 +101,51 @@ sub insert {
     return $scope;
 }
 
+############################################################################
+=head2 get_containers
+
+    This method returns all scopes which can contain other scopes.  
+    Scope types that can contain other scopes are:
+      global
+      group
+      pool
+      shared-network
+
+  Arguments:
+    None
+  Returns:
+    Array of DhcpScope objects
+  Example:
+    DhcpScope->get_containers();
+
+=cut
+sub get_containers {
+    my ($class) = @_;
+    $class->isa_class_method('get_containers');
+
+    my @res;
+
+    my $q = "SELECT  dhcpscope.id
+             FROM    dhcpscopetype, dhcpscope
+             WHERE   dhcpscopetype.id=dhcpscope.type
+                AND  (dhcpscopetype.name='global' OR
+                     dhcpscopetype.name='group' OR
+                     dhcpscopetype.name='pool' OR
+                     dhcpscopetype.name='shared-network')
+       ";
+
+    my $dbh  = $class->db_Main();
+    my $rows = $dbh->selectall_arrayref($q);
+
+    foreach my $r ( @$rows ){
+	my $id = $r->[0];
+	if ( my $obj = DhcpScope->retrieve($id) ){
+	    push @res, $obj;
+	}
+    }
+    return @res;
+}
+
 =head1 INSTANCE METHODS
 =cut
 

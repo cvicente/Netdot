@@ -1,0 +1,165 @@
+<%doc>
+
+-- DHCP tasks --
+
+</%doc>
+%
+<%attr>
+title  => 'DHCP Tasks' 
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
+<%args>
+$user            => $ui->get_current_user($r)
+$action          => undef
+$search          => undef
+$scope_id        => undef
+$scope_name      => undef
+$scope_type      => undef
+$scope_container => undef
+$submit          => undef
+$show_tasks      => undef
+$showheader      => 1
+</%args>
+%
+%
+%
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+$show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
+if ( $show_tasks eq "" ) {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+my $hideheader = 'style="display:none"' if ( !$showheader );
+
+my @global_scopes = DhcpScope->search(type=>'global');
+
+my @containers = DhcpScope->get_containers();
+
+</%init>
+
+<div id="sectiontools" <% $hideheader %>>
+  <div class="container">
+    <div class="containerheadleft">
+        DHCP Tasks
+    </div>
+    <div class="containerheadright">
+%       print_showtaskslink($show_tasks);
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+        <table><tr><td>
+
+        <fieldset class="medium">
+            <legend>Search</legend>
+            <form name="scope_search_form" action="dhcp_tasks.html" method="POST">
+                <label for="Search">Scope Name:</label>
+                <input type="hidden" name="action" value="search">
+                <input type="text" name="search" class="txt" value="<% $search %>"> 
+                <input name="submit" value="Find" class="btn" type="submit">
+            </form>
+        </fieldset>
+
+        <fieldset class="medium">
+            <legend>Add New Scope</legend>
+            <form name="scope_add_form" action="dhcp_tasks.html" method="POST">
+                <input type="hidden" name="action" value="new">
+                <p>
+                <label for="Name">Name:</label>
+                <input name="scope_name" type="text" class="txt" value="">
+                </p>
+                <p>
+                <label for="Name">Type:</label>
+                <select name="scope_type">
+%               foreach my $type ( sort { $a->name cmp $b->name } DhcpScopeType->retrieve_all() ){
+      	            <option value="<% $type->id %>"><% $type->name %></option>
+%               }
+                </select>
+                </p>
+                <p>
+                <label for="Container">Container:</label>
+                <select name="scope_container">
+                    <option value="0">-- Select --</option>
+%               foreach my $cont ( @containers ){
+      	            <option value="<% $cont->id %>"><% $cont->name %></option>
+%               }
+                </select> (required unless global)
+                </p>
+                <p>
+                <input name="submit" value="Add" class="btn" type="submit">
+                </p>
+            </form>
+        </fieldset>
+        </td></tr></table>
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+<%perl>
+
+
+if ( $scope_id ){
+    $m->comp("/generic/view.html", table=>'DhcpScope', id=>$scope_id);
+}
+
+#######################################################################################
+# Search
+#
+#######################################################################################
+elsif ( $action eq "search" ) {
+    if (!(defined $search)) {
+	$m->comp('/generic/error.mhtml', error=>"You need to specify a scope name");
+    }
+    my @scopes = DhcpScope->search_like(name=>$search);
+    print '<div class="container">';
+    print '<div class="containerhead"><b>DHCP Scopes</b></div>';
+    print '<div class="containerbody">';
+    if ( @scopes ){
+	$m->comp('/generic/sortresults.mhtml', object=>\@scopes, withedit=>1);
+    }else{
+	print "No matches";
+    }
+    print '</div>';
+    print '</div>';
+}
+
+#######################################################################################
+# New zone
+#
+#######################################################################################
+elsif ( $action eq "new" ) {
+    if (!(defined $scope_name)) {
+	$m->comp('/generic/error.mhtml', error=>"You need to specify a scope name");
+    }
+
+    my $scope;
+    eval {
+	$scope = DhcpScope->insert({name      => $scope_name, 
+				    type      => $scope_type,
+				    container => $scope_container,
+				   });
+    };
+    if ( my $e = $@ ){
+	$m->comp("/generic/error.mhtml", error=>$e);
+    }else{
+	$m->comp("/generic/view.html", table=>'DhcpScope', id=>$scope->id);
+    }
+}
+
+
+</%perl>
+

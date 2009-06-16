@@ -1,0 +1,149 @@
+<%doc>
+
+-- DNS Zone tasks --
+
+</%doc>
+%
+<%attr>
+title  => 'Zone Tasks' 
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
+<%args>
+$user           => $ui->get_current_user($r)
+$action         => undef
+$search         => undef
+$zone_id        => undef
+$zone_name      => undef
+$submit         => undef
+$show_tasks     => undef
+$showheader     => 1
+</%args>
+%
+%
+%
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+$show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
+if ( $show_tasks eq "" ) {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+my $hideheader = 'style="display:none"' if ( !$showheader );
+
+my @all_zones = Zone->retrieve_all();
+
+</%init>
+
+<div id="sectiontools" <% $hideheader %>>
+  <div class="container">
+    <div class="containerheadleft">
+        DNS Zone Tasks
+    </div>
+    <div class="containerheadright">
+%       print_showtaskslink($show_tasks);
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+        <table><tr><td>
+
+        <fieldset class="medium">
+            <legend>Find</legend>
+            <form name="zone_select_form" action="zone_tasks.html" method="POST">
+                <label for="Select">Zone:</label>
+                <select name="zone_id" onChange="document.zone_select_form.submit();">
+                <option value="0">-- Select --</option>
+%               foreach my $zone ( sort { $a->name cmp $b->name } @all_zones ){
+                    <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%               }
+                </select>
+            </form>
+            <p>
+
+            <form name="zone_search_form" action="zone_tasks.html" method="POST">
+                <label for="Search">Zone:</label>
+                <input type="hidden" name="action" value="search">
+                <input type="text" name="search" class="longtxt" value="<% $search %>"> 
+                <input name="submit" value="Find" class="btn" type="submit">
+            </form>
+        </fieldset>
+
+        <fieldset class="medium">
+            <legend>Add New Zone</legend>
+            <form name="zone_add_form" action="zone_tasks.html" method="POST">
+                <input type="hidden" name="action" value="new">
+                <label for="Name">Name:</label>
+                <input name="zone_name" type="text" class="longtxt" value="">
+                <input name="submit" value="Add" class="btn" type="submit">
+            </form>
+        </fieldset>
+
+        </td></tr></table>
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+<%perl>
+
+
+if ( $zone_id ){
+    $m->comp("zone.html", id=>$zone_id);
+}
+
+#######################################################################################
+# Search
+#
+#######################################################################################
+elsif ( $action eq "search" ) {
+    if (!(defined $search)) {
+	$m->comp('/generic/error.mhtml', error=>"You need to specify a zone name");
+    }
+    my @zones = Zone->search_like(name=>$search);
+    print '<div class="container">';
+    print '<div class="containerhead"><b>Zones</b></div>';
+    print '<div class="containerbody">';
+    if ( @zones ){
+	$m->comp('/generic/sortresults.mhtml', object=>\@zones, withedit=>1);
+    }else{
+	print "No matches";
+    }
+    print '</div>';
+    print '</div>';
+}
+
+#######################################################################################
+# New zone
+#
+#######################################################################################
+elsif ( $action eq "new" ) {
+    if (!(defined $zone_name)) {
+	$m->comp('/generic/error.mhtml', error=>"You need to specify a zone name");
+    }
+
+    my $zone;
+    eval {
+	$zone = Zone->insert({name=>$zone_name});
+    };
+    if ( my $e = $@ ){
+	$m->comp("/generic/error.mhtml", error=>$e);
+    }else{
+	$m->comp("zone.html", id=>$zone->id);
+    }
+}
+
+
+</%perl>
+

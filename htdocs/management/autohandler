@@ -54,21 +54,17 @@ if ( $manager && $manager->can($user, "access_section") ){
     }
     
     if ( ($page eq "DEVICE" || $page eq "") && $m->request_comp->name ne "device_tasks.html" ) {
-	
 	$m->comp('device_tasks.html', user=>$user, showheader=>$showheader);
-	
     } elsif ( $page eq "ADDRESS" && $m->request_comp->name ne "address_tasks.html" ) {
-	
 	$m->comp('address_tasks.html', user=>$user, showheader=>$showheader);
-	
     } elsif ($page eq "VLANS" && $m->request_comp->name ne "vlan_tasks.html" ) {
-	
 	$m->comp('vlan_tasks.html', user=>$user, showheader=>$showheader);
-	
-    } elsif ($page eq "HOSTINFO" && $m->request_comp->name ne "hostinfo_tasks.html" ) {
-	
-	$m->comp('hostinfo_tasks.html', user=>$user, showheader=>$showheader);
-	
+    } elsif ($page eq "HOSTS" && $m->request_comp->name ne "host_tasks.html" ) {
+	$m->comp('host_tasks.html', user=>$user, showheader=>$showheader);
+    } elsif ($page eq "ZONES" && $m->request_comp->name ne "zone_tasks.html" ) {
+	$m->comp('zone_tasks.html', user=>$user, showheader=>$showheader);
+    } elsif ($page eq "DHCP" && $m->request_comp->name ne "dhcp_tasks.html" ) {
+	$m->comp('dhcp_tasks.html', user=>$user, showheader=>$showheader);
     }
 }
 </%init>
@@ -100,7 +96,9 @@ if ( my $next = $m->fetch_next ){
 		{ section => 'DEVICE',   title => 'Devices' },
 		{ section => 'VLANS',    title => 'VLANs' },
 		{ section => 'ADDRESS',  title => 'Address Space' },
-		{ section => 'HOSTINFO', title => 'Hosts' },
+		{ section => 'HOSTS',    title => 'Hosts' },
+		{ section => 'ZONES',    title => 'Zones' },
+		{ section => 'DHCP',     title => 'DHCP' },
 	    ]
         };
     </%init>
