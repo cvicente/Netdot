@@ -1135,8 +1135,10 @@ if ($o->status->name eq "Subnet") {
 %################################################################
 % if ( my @scopes = $o->dhcp_scopes ){
     <div class="container">
-    <div class="containerhead">DHCP Scopes</div>
-       <& /generic/sortresults.mhtml, object=>\@scopes &>
+      <div class="containerhead">DHCP Scopes</div>
+      <div class="containerbody">
+         <& /generic/sortresults.mhtml, object=>\@scopes &>
+      </div>
     </div>
 % }
 
@@ -1144,12 +1146,20 @@ if ($o->status->name eq "Subnet") {
 %# Zones
 %################################################################
 %   my @sz = $o->zones;
-%   my @zones = map { $_->zone } @sz;
-    <div class="container">
+  <div class="container">
     <div class="containerheadleft">DNS Zones</div>
-    <div class="containerheadright"><a href="edit.html?table=SubnetZone&subnet=<% $o %>">[add]</a></div>
-       <& /generic/sortresults.mhtml, object=>\@zones, withedit=>$edit_block &>
+    <div class="containerheadright">
+%   if ( $edit eq 'edit_zones' ){
+        &nbsp;
+%   }else{
+        <a href="ip.html?id=<% $o %>&edit=edit_zones">[edit]</a>
+        <a href="edit.html?table=SubnetZone&subnet=<% $o %>">[add]</a>
+%   }
     </div>
+    <div class="containerbody">
+       <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'edit_zones')? 1 : 0 &>
+    </div>
+  </div>
 
 %################################################################
 %# Graphical Views
