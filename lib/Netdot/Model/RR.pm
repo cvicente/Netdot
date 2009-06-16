@@ -168,6 +168,8 @@ sub insert {
 		     active      => defined($argv->{active})? $argv->{active} : 1,
 		     auto_update => $auto_update,
 	    );
+
+	$class->_validate_args(\%state);
 	
 	$rr = $class->SUPER::insert(\%state);
 	
@@ -312,6 +314,8 @@ sub update {
 	$update_ptr = 0;
 	delete $argv->{update_ptr};
     }
+
+    $self->_validate_args($argv);
 
     my @res = $self->SUPER::update($argv);
 
@@ -510,6 +514,58 @@ sub add_host {
     return $rr;
 }
 
+############################################################################
+=head2 _validate_args - Validate arguments to insert and update
+
+  Args: 
+    hashref
+  Returns: 
+    True, or throws exception if validation fails
+  Examples:
+    $class->_validate_args($argv);
+
+=cut
+sub _validate_args {
+    my ($self, $argv) = @_;
+    
+    my $zone;
+    if (ref($self)){
+	$zone = $self->zone;
+    }
+    if ( defined $argv->{zone} ){
+	if ( !ref($argv->{zone}) ){
+	    if ( $argv->{zone} =~ /\D+/ ){
+		$zone = Zone->search(name=>$zone)->first;
+	    }else{
+		Zone->retrieve($argv->{zone});
+	    }
+	}
+    }
+    if ( defined $argv->{name} ){
+	my $name = $argv->{name};
+
+	# Length restrictions
+	unless ( length($name) > 1 && length($name ) < 64){
+	    $self->throw_user("Invalid name: $name. Length must be between 1 and 63 characters");
+	}
+	if ( $zone ){
+	    my $fqdn = $name.".".$zone->name;
+	    if ( length($fqdn) > 255 ){
+		$self->throw_user("Invalid FQDN: $fqdn. Length exceeds 255 characters");
+	    }
+	}
+
+	# Character restrictions
+	if ( Netdot->config->get('DNS_NAME_ENFORCE_RFC1123') ){
+	    if ( $name =~ /[^\w\.\-]/ ){
+		$self->throw_user("Invalid name: $name. Name contains invalid characters");
+	    }elsif ( $name =~ /[\.\-_]$/ || $name =~ /^[\.\-_]/ ){
+		$self->throw_user("Invalid name: $name. First and last characters must be either letter or digit");
+	    }
+	}
+    }
+    1;
+}
 
 
 
@@ -520,7 +576,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2009 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
