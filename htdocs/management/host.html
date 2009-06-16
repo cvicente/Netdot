@@ -1,5 +1,6 @@
 <%doc>
 
+User Interface for DNS records
     
 </%doc>
 
@@ -9,6 +10,7 @@ $user      => $ui->get_current_user($r)
 $rr        => undef
 $ipblock   => undef
 $action    => undef
+$zone      => undef
 $submit    => undef
 </%args>
 
@@ -44,10 +46,6 @@ if ($submit && ($rr || $id || $ipblock || $action eq 'new')) {
     }
 }
 
-
-if (!($id || $rr || $ipblock)) {
-    print '<a href="host.html?action=new">[Add DNS Records]</a>';
-}
 
 if ($id) {
     $rr = RR->retrieve($id);
@@ -103,7 +101,10 @@ if ($action eq 'new') {
 } elsif ($ipblock) {
 	print '<a href="host.html?ipblock='.$ipblock.'&action=new">[new]</a>';
 } else {
-    print '&nbsp;';
+    if (!($id || $rr || $ipblock)) {
+	print '<a href="host.html?action=new">[add]</a>';
+    }
+
 }
 
 print '</div>'; #close containderheadright
@@ -117,15 +118,26 @@ if ($action eq 'new') {
     print '<div class="container" style="width:80%;margin-left:20px">';
     print '<div class="containerhead"><b>New Record</b></div>';
     print '<div class="containerbody">';
-    $ui->add_to_fields(edit=>1, table=>'RR', fields=>['name', 'zone'],
-		       field_headers=>\@field_headers, cell_data=>\@cell_data,
-		       linkpages=>['', 'zone.html']);
-    my $newfields = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+
+    $ui->add_to_fields(edit=>1, table=>'RR', fields=>['name'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+    if ( defined $zone ){
+	unless ( ref($zone) ){
+	    $zone = Zone->retrieve($zone);
+	}
+	print '<input type="hidden" name="RR__NEW__zone" value="'.$zone.'">';
+	push @field_headers, 'Zone:';
+	push @cell_data, $zone->get_label;
+    }else{
+	$ui->add_to_fields(edit=>1, table=>'RR', fields=>['zone'],
+			   field_headers=>\@field_headers, cell_data=>\@cell_data,
+			   linkpages=>['zone.html']);
+    }
+
+    $m->comp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
 
-    $newfields =~ s/'RR__NEW__zone'/'RR__NEW__zone__id'/;
-    $newfields =~ s/id="RR__NEW__zone"/id="RR__NEW__zone__id"/;
-    print $newfields;
     print '</div>'; #close containerbody of 'new'
     print '</div>'; #close container of 'new'
 }

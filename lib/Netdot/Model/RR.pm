@@ -545,7 +545,7 @@ sub _validate_args {
 	my $name = $argv->{name};
 
 	# Length restrictions
-	unless ( length($name) > 1 && length($name ) < 64){
+	unless ( length($name) >= 1 && length($name ) < 64){
 	    $self->throw_user("Invalid name: $name. Length must be between 1 and 63 characters");
 	}
 	if ( $zone ){
@@ -557,7 +557,9 @@ sub _validate_args {
 
 	# Character restrictions
 	if ( Netdot->config->get('DNS_NAME_ENFORCE_RFC1123') ){
-	    if ( $name =~ /[^\w\.\-]/ ){
+	    # Notice that I will intentionally include '@' and _ as valid
+	    # @ represents the zone and _ is used in SRV records
+	    if ( $name =~ /[^\w\.\-\@]/ ){
 		$self->throw_user("Invalid name: $name. Name contains invalid characters");
 	    }elsif ( $name =~ /[\.\-_]$/ || $name =~ /^[\.\-_]/ ){
 		$self->throw_user("Invalid name: $name. First and last characters must be either letter or digit");

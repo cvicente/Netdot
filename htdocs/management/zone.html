@@ -117,17 +117,19 @@ my $count = $obj->get_record_count();
 
 <!-- Display view menu -->
    <div class="container">
-% if ( $view eq 'records' ){
       <div class="containerheadleft">Records</div>
-%      if ( $edit eq 'records' ){
-	  <div class="containerheadright">&nbsp;</div>
-%      }else{
-	  <div class="containerheadright"><a href="zone.html?id=<% $id %>&edit=records">[edit]</a></div>
-%      }
-% }else{
-      <div class="containerheadleft"><a href="zone.html?id=<% $id %>&view=records">[view records]</a></div>
-      <div class="containerheadright">&nbsp;</div>
-% }
+      <div class="containerheadright">
+      <a href="host.html?action=new&zone=<% $id %>">[add]</a> 
+%     if ( $view eq 'records' ){
+%         if ( $edit eq 'records' ){
+	      &nbsp;
+%         }else{
+	      <a href="zone.html?id=<% $id %>&edit=records">[edit]</a>
+%         }
+%     }else{
+          <a href="zone.html?id=<% $id %>&view=records">[view]</a>
+%     }
+      </div>
 
 <!-- Display list of records -->
 % if ( $view eq 'records' || $edit eq 'records' ){
