@@ -13,6 +13,7 @@ section => 'Management'
 $id
 $user => $ui->get_current_user($r)
 $view => undef
+$edit => undef
 </%args>
 %
 %
@@ -59,10 +60,14 @@ my $count = $obj->get_record_count();
 
  <div class="container">
    <div class="containerhead">Record Count</div>
+%   my $total = 0;
 %   foreach my $rtype ( sort keys %$count ){
+%        $total += $count->{$rtype};
 %        push @headers, uc($rtype);
 %        push @rows, $count->{$rtype};
 %    }
+%    push @headers, '<b>TOTAL</b>';
+%    push @rows, $total;
 %    $m->comp('/generic/attribute_table.mhtml', width=>"4", field_headers=>\@headers, data=>\@rows);
     </div>
 </div>
@@ -96,32 +101,39 @@ my $count = $obj->get_record_count();
 
 % }
 
+<!-- Display list of SubnetZone relationships -->
 %###########################################################################
 % if ( my @sz = $obj->subnets ){
-%     my @subnets = map { $_->subnet } @sz;
       <div class="container">
-        <div class="containerhead">IP Blocks</div>
-          <& /generic/sortresults.mhtml, object=>\@subnets &>
+        <div class="containerheadleft">IP Blocks</div>
+%       if ( $edit eq 'ipblocks' ){
+	  <div class="containerheadright">&nbsp;</div>
+%       }else{
+	  <div class="containerheadright"><a href="zone.html?id=<% $id %>&edit=ipblocks">[edit]</a></div>
+%       }
+        <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'ipblocks')? 1 : 0  &>
       </div>
 % }
-
 
 <!-- Display view menu -->
    <div class="container">
 % if ( $view eq 'records' ){
-      <div class="containerhead">[View Records]</div>
+      <div class="containerheadleft">Records</div>
+%      if ( $edit eq 'records' ){
+	  <div class="containerheadright">&nbsp;</div>
+%      }else{
+	  <div class="containerheadright"><a href="zone.html?id=<% $id %>&edit=records">[edit]</a></div>
+%      }
 % }else{
-      <div class="containerhead"><a href="zone.html?id=<% $id %>&view=records">[View Records]</a></div>
+      <div class="containerheadleft"><a href="zone.html?id=<% $id %>&view=records">[view records]</a></div>
+      <div class="containerheadright">&nbsp;</div>
 % }
-   </div>
 
 <!-- Display list of records -->
-% if ( $view eq 'records' ){
-%  my @records = $obj->records;
-   <div class="container">
-      <div class="containerhead">Records</div>
+% if ( $view eq 'records' || $edit eq 'records' ){
+%     my @records = $obj->records;
       <div class="containerbody">
-      <& /generic/sortresults.mhtml, object =>\@records  &>
+      <& /generic/sortresults.mhtml, object =>\@records, withedit=>($edit eq 'records')? 1 : 0, return_args=>"?id=$id" &>
       </div>
    </div>
 % }

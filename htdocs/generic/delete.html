@@ -10,6 +10,7 @@ $submit        => "Delete"
 $sid           => undef
 $selectall     => undef
 $selectall_ids => undef
+$return_url    => undef
 </%args>
 
 <%init>
@@ -66,6 +67,7 @@ my $manager = $ui->get_permission_manager($r);
     <br>
     <form method="POST" action="delete.html">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
+    <input type="hidden" name="return_url" value="<% $return_url %>">
     <input name="submit" value="Confirm" type="submit">
     <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
     </form>
@@ -103,6 +105,11 @@ my $manager = $ui->get_permission_manager($r);
 	print "<li>$lbl has been deleted</li>";
     }
     print "</ul>\n";
+
+    if ( $return_url ){
+	print '<p><br>';
+	print "&nbsp; <a href=\"../$return_url\"><strong>[return]</strong></a>";
+    }
     
 }elsif ( $submit eq "Cancel" ){
     print "<p><br>";
