@@ -1,0 +1,55 @@
+<%doc>
+
+Help section for unpriviledged users
+
+</%doc>
+
+<%args>
+$user
+</%args>
+
+<%attr>
+title   => 'Netdot Help' 
+section => 'Help'
+</%attr>
+
+<%shared>
+my $PAGE_ATTRIBUTE = "HELP_PAGE";
+my $SECTION = "Help";
+</%shared>
+
+<%init>
+my %caller_args = $m->caller_args(-1);
+
+if (exists($caller_args{page})){
+    $user->setAttribute($r, "$PAGE_ATTRIBUTE", $caller_args{page});
+}
+
+my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
+</%init>
+
+<%method .section_meta_data>
+    <%doc>
+        Returns the meta data used to generate this sections header in section1.mhtml
+    </%doc>
+    <%init>
+        return {  
+	    section      => $SECTION,
+	    page         => 'user_help/',
+	    title        => 'Help',
+	    attribute    => $PAGE_ATTRIBUTE,
+	    sub_sections => [		
+	        { section => 'HOSTS', title => 'Hosts' },
+            ],
+        };
+    </%init>
+</%method>
+
+<%perl>
+    if (($page eq "HOSTS" || $page eq "")  && $m->request_comp->name ne "hosts.html" ) {
+	$m->comp('hosts.html', user=>$user);
+    }
+if ( $m->fetch_next ){
+    $m->call_next;
+}
+</%perl>
