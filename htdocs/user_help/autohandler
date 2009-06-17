@@ -46,9 +46,10 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 </%method>
 
 <%perl>
-    if (($page eq "HOSTS" || $page eq "")  && $m->request_comp->name ne "hosts.html" ) {
-	$m->comp('hosts.html', user=>$user);
-    }
+if (($page eq "HOSTS")  && $m->request_comp->name ne "hosts.html" ) {
+    $m->comp('hosts.html', user=>$user, dowindow=>0);
+}
+
 if ( $m->fetch_next ){
     $m->call_next;
 }
