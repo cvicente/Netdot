@@ -23,7 +23,7 @@ my @DEPS = (
     'DBIx::DataSource' ,
     'GraphViz 2.02' ,
     'SQL::Translator 0.07' ,
-    'SNMP::Info' ,
+    'SNMP::Info 2.01' ,
     'NetAddr::IP' ,
     'Apache2::SiteControl 1.0' ,
     'Log::Dispatch' ,
