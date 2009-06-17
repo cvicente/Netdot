@@ -539,6 +539,10 @@ sub update_ip {
 		$iargs{address} = $subnetaddr;
 		$iargs{prefix}  = $subnetprefix;
 		
+		# We will update tree once at the end of all interface updates 
+		# (in Device.pm)
+		$iargs{no_update_tree} = 1;
+
 		# Ipblock validation might throw an exception
 		my $newblock;
 		eval {
@@ -587,7 +591,9 @@ sub update_ip {
 	# This could also go wrong, but we don't want to bail out
 	eval {
 	    $ipobj = Ipblock->insert({address => $address, prefix => $prefix, 
-				      status  => "Static", interface  => $self});
+				      status  => "Static", interface  => $self,
+				      no_update_tree => 1,
+				     });
 	};
 	if ( my $e = $@ ){
 	    $logger->warn(sprintf("%s: Could not insert IP %s: %s", 
