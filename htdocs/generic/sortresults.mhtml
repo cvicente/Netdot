@@ -160,12 +160,13 @@ if ( defined($object) && scalar @$object ){
     }
 
     $session = $ui->mk_session();
-    $session->{objindex}   = \%objindex;
-    $session->{table}      = $table;
-    $session->{orderbrief} = \@orderbrief;
-    $session->{page}       = $page;
-    $session->{withedit}   = $withedit;
-    $session->{total}      = $total;
+    $session->{objindex}    = \%objindex;
+    $session->{table}       = $table;
+    $session->{orderbrief}  = \@orderbrief;
+    $session->{page}        = $page;
+    $session->{withedit}    = $withedit;
+    $session->{caller_path} = $caller_path;
+    $session->{total}       = $total;
 
     
 #########################################################
@@ -182,7 +183,9 @@ if ( defined($object) && scalar @$object ){
     @orderbrief = @{ $session->{orderbrief} };
     $page       = $session->{page};
     $withedit   = $session->{withedit};
-    $total      = $session->{total};    
+    $total      = $session->{total};   
+    $caller_path = $session->{caller_path};
+ 
 }
 
 #########################################################

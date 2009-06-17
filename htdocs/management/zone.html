@@ -14,6 +14,9 @@ $id
 $user => $ui->get_current_user($r)
 $view => undef
 $edit => undef
+$submit => undef
+$bulk_import_data => undef
+$import_overwrite => undef
 </%args>
 %
 %
@@ -29,8 +32,28 @@ unless ( $manager && $manager->can($user, "view", $obj) ){
     $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
 }
 
-my $count = $obj->get_record_count();
+if ( $submit ){
+    if ($edit eq 'bulk_import'){
+	unless ( $bulk_import_data ){
+	    $m->comp('/generic/error.mhtml', error=>"Empty import data");
+	}
+	# Do this atomically
+	eval {
+	    Netdot::Model->do_transaction(sub{
+		$obj->import_records(text=>$bulk_import_data, overwrite=>$import_overwrite)
+					  });
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}else{
+	    $submit = 0; # So we display zone below
+	}
+    }
+}
+
 </%init>
+
+% if ( !$submit ){
 
 <div id="sectiondetail">
 
@@ -57,6 +80,7 @@ my $count = $obj->get_record_count();
 %###########################################################################
 % my @headers;
 % my @rows;
+% my $count = $obj->get_record_count();
 
  <div class="container">
    <div class="containerhead">Record Count</div>
@@ -120,6 +144,7 @@ my $count = $obj->get_record_count();
       <div class="containerheadleft">Records</div>
       <div class="containerheadright">
       <a href="host.html?action=new&zone=<% $id %>">[add]</a> 
+      <a href="zone.html?id=<% $id %>&view=bulk_import">[bulk]</a>
 %     if ( $view eq 'records' ){
 %         if ( $edit eq 'records' ){
 	      &nbsp;
@@ -139,3 +164,23 @@ my $count = $obj->get_record_count();
       </div>
    </div>
 % }
+
+<!-- Show Bulk Import Interface -->
+
+% if ( $view eq 'bulk_import' ){
+    <p>
+    <div align="center">
+    <form action="zone.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>"
+	<input type="hidden" name="edit" value="bulk_import">
+	<textarea name="bulk_import_data" cols="80" rows="20">; Copy zone data here (BIND format)</textarea>
+	<p>
+	Overwrite existing records <input type="checkbox" name="import_overwrite" CHECKED>
+	<p>
+	<input type="submit" name="submit" value="Import">
+    </form>
+    </div>
+% }
+
+% }
+

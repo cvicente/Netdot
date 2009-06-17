@@ -65,7 +65,22 @@ my @containers = DhcpScope->get_containers();
         <table><tr><td>
 
         <fieldset class="medium">
-            <legend>Search</legend>
+            <legend>Find</legend>
+
+            <form name="scope_select_form" action="dhcp_tasks.html" method="POST">
+                <label for="Select">Global Scope:</label>
+                <select name="scope_id" onChange="document.scope_select_form.submit();">
+                <option value="0">-- Select --</option>
+%               foreach my $scope ( sort { $a->name cmp $b->name } @global_scopes ){
+%                   if ( $scope->id eq $scope_id ){
+                        <option value="<% $scope->id %>" SELECTED><% $scope->get_label %></option>
+%                   }else{
+                        <option value="<% $scope->id %>"><% $scope->get_label %></option>
+%                   }
+%               }
+                </select>
+            </form>
+            <p>
             <form name="scope_search_form" action="dhcp_tasks.html" method="POST">
                 <label for="Search">Scope Name:</label>
                 <input type="hidden" name="action" value="search">
@@ -113,7 +128,7 @@ my @containers = DhcpScope->get_containers();
 
 
 if ( $scope_id ){
-    $m->comp("/generic/view.html", table=>'DhcpScope', id=>$scope_id);
+    $m->comp("scope.html", id=>$scope_id);
 }
 
 #######################################################################################
@@ -156,7 +171,7 @@ elsif ( $action eq "new" ) {
     if ( my $e = $@ ){
 	$m->comp("/generic/error.mhtml", error=>$e);
     }else{
-	$m->comp("/generic/view.html", table=>'DhcpScope', id=>$scope->id);
+	$m->comp("scope.html", id=>$scope->id);
     }
 }
 

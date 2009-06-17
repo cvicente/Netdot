@@ -224,6 +224,63 @@ sub print_to_file{
 }
 
 
+############################################################################
+=head2 import_hosts
+    
+  Args: 
+    text
+    overwrite
+  Returns: 
+    Nothing
+  Examples:
+    $dhcp_scope->import_hosts(text=>$data);
+=cut
+sub import_hosts{
+    my ($self, %argv) = @_;
+    $self->isa_object_method('import_hosts');
+
+    my $IPV4 = Netdot->get_ipv4_regex();
+   
+    $self->throw_fatal("Missing required argument: text")
+	unless $argv{text};
+    
+    my @lines = split $/, $argv{text};
+
+    foreach my $line ( @lines ){
+	my ($mac, $ip) = split /\s+/, $line;
+	$mac =~ s/\s+//g;
+	$ip  =~ s/\s+//g;
+	$self->throw_user("Invalid line: $line")
+	    unless ($mac && $ip);
+	
+	$self->throw_user("Invalid mac: $mac")
+	    unless ( PhysAddr->validate($mac) );
+
+	$self->throw_user("Invalid IP: $ip")
+	    unless ( $ip =~ /$IPV4/ );
+
+	if ( $argv{overwrite} ){
+	    if ( my $phys = PhysAddr->search(address=>$mac)->first ){
+		foreach my $scope ( $phys->dhcp_hosts ){
+		    $scope->delete();
+		}
+	    } 
+	    if ( my $ipb = Ipblock->search(address=>$ip)->first ){
+		foreach my $scope ( $ipb->dhcp_scopes ){
+		    $scope->delete();
+		}
+	    } 
+	}
+    	DhcpScope->insert({
+	    name      => $ip,
+	    type      => 'host',
+	    ipblock   => $ip,
+	    physaddr  => $mac,
+	    container => $self,
+			  });
+    }
+}
+
 
 ############################################################################
 # Private methods

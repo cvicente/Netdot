@@ -3,6 +3,7 @@ package Netdot::Model::Zone;
 use base 'Netdot::Model';
 use warnings;
 use strict;
+use Netdot::Util::ZoneFile;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
@@ -324,6 +325,240 @@ sub get_record_count {
     ($count{aaaa}) = @{$r3->[0]};
 
     return \%count;
+}
+
+
+############################################################################
+=head2 import_records - Import records into zone
+    
+  Args: 
+    rrs       -  Arrayref containing Net:DNS::RR objects (required unless text is passed)
+    text      -  Text containing records (BIND format) (required unless rrs is passed)
+    overwrite -  Overwrite any existing records
+  Returns: 
+    Nothing
+  Examples:
+    $zone->import_records(text=>$text);
+
+=cut
+sub import_records {
+    my ($self, %argv) = @_;
+    
+    unless ( $argv{text} || $argv{rrs} ){
+	$self->throw_fatal('Missing required arguments: text or rrs');
+    }
+    
+    my $domain = $self->name;
+    my ($rrs, $default_ttl);
+
+    if ( $argv{text } ){
+	($rrs, $default_ttl) = Netdot::Util::ZoneFile::parse(text=>$argv{text}, origin=>$domain);
+    }else{
+	$self->throw_fatal("rrs parameter must be arrayref")
+	    unless ( ref($argv{rrs}) eq 'ARRAY' );
+	$rrs = $argv{rrs};
+    }
+
+    $self->throw_user("No records to work with")
+	unless scalar @$rrs;
+    
+    # Keep all current records in hash for faster lookups
+    my %nrrs;
+    foreach my $r ( $self->records ){
+	$nrrs{$r->name} = $r;
+    }
+    
+    my $new_ips = 0;
+
+    foreach my $rr ( @$rrs ){
+	my $name = $rr->name;
+	if ( $name eq $domain ){
+	    $name = '@';
+	}else {
+	    if ( $name =~ /\.$domain/ ){
+		$name =~ s/\.$domain\.?//;
+	    }else{
+		debug("Zone $domain: Ignoring out of zone data: $name");
+		next;
+	    }
+	}
+
+	my $nrr;
+	my $ttl = $rr->ttl;
+	if ( exists $nrrs{$name} ){
+	    $logger->debug("$domain: RR $name already exists in DB");
+	    $nrr = $nrrs{$name};
+	    if ( $argv{overwrite} ){
+		$logger->debug("$domain: $name: Overwriting current records");
+		$nrr->delete;
+		delete $nrrs{$name};
+	    }
+	}
+
+	if ( !exists $nrrs{$nrr} ){
+	    if ( !($nrr = RR->search(name=>$name, zone=>$self)->first ) ){
+		$logger->debug("$domain: Inserting RR $name");
+		$nrr = RR->insert({name=>$name, zone=>$self});
+	    }
+	    $nrrs{$name} = $nrr;
+	}
+
+	if ( $rr->type eq 'A' || $rr->type eq 'AAAA' ){
+	    my $address = $rr->address;
+	    my $ipb;
+	    if ( !($ipb = Ipblock->search(address=>$address)->first) ){
+		$logger->debug("$domain: Inserting Ipblock $address");
+		$ipb = Ipblock->insert({ address        => $address,
+					 status         => 'static',
+					 no_update_tree => 1});
+	    }
+	    my $rraddr;
+	    my %args = (rr=>$nrr, ipblock=>$ipb);
+	    if ( $argv{overwrite} || !($rraddr = RRADDR->search(%args)->first) ){
+		$args{ttl} = $ttl;
+		$logger->debug("$domain: Inserting RRADDR $name, $address, ttl: $ttl");
+		$rraddr = RRADDR->insert(\%args);
+	    }
+	}elsif ( $rr->type eq 'TXT' ){
+	    my $rrtxt;
+	    my %args = (rr=>$nrr, txtdata=>$rr->txtdata);
+	    if ( $argv{overwrite} || !($rrtxt = RRTXT->search(%args)->first) ){
+		$args{ttl} = $ttl;
+		$logger->debug("$domain: Inserting RRTXT $name, ".$rr->txtdata);
+		$rrtxt = RRTXT->insert(\%args);
+	    }
+	}elsif ( $rr->type eq 'HINFO' ){
+	    my $rrhinfo;
+	    my %args = (rr=>$nrr);
+	    if ( $argv{overwrite} || !($rrhinfo = RRHINFO->search(%args)->first) ){
+		$args{cpu} = $rr->cpu;
+		$args{os}  = $rr->os;
+		$args{ttl} = $ttl;
+		$logger->debug("$domain: Inserting RRHINFO $name, $args{cpu}, $args{os}, ttl: $ttl");
+		$rrhinfo = RRHINFO->insert(\%args);
+	    }
+	}elsif ( $rr->type eq 'MX' ){
+	    my $rrmx;
+	    my %args = (rr=>$nrr, exchange=>$rr->exchange);
+	    if ( $argv{overwrite} || !($rrmx = RRMX->search(%args)->first) ){
+		$args{preference} = $rr->preference;
+		$args{exchange}   = $rr->exchange;
+		$args{ttl}        = $ttl;
+		$logger->debug("$domain: Inserting RRMX $name, ".$rr->exchange.", ttl: $ttl");
+		$rrmx = RRMX->insert(\%args);
+	    }
+	}elsif ( $rr->type eq 'NS' ){
+	    my $rrns;
+	    my %args = (rr=>$nrr, nsdname=>$rr->nsdname);
+	    if ( !($rrns = RRNS->search(%args)->first) ){
+		$logger->debug("$domain: Inserting RRNS $name, ".$rr->nsdname);
+		$args{ttl} = $ttl;
+		$rrns = RRNS->insert(\%args);
+	    }
+	}elsif ( $rr->type eq 'CNAME' ){
+	    my $rrcname;
+	    my %args = (name=>$nrr, cname=>$rr->cname);
+	    if ( $argv{overwrite} || !($rrcname = RRCNAME->search(%args)->first) ){
+		$args{ttl} = $ttl;
+		$logger->debug("$domain: Inserting RRCNAME $name, ".$rr->cname.", ttl: $ttl");
+		$rrcname = RRCNAME->insert(\%args);
+	    }
+	}elsif ( $rr->type eq 'PTR' ){
+	    my $rrptr;
+	    my $prefix = $domain;
+	    my $ipversion;
+	    if ( $prefix =~ s/(.*)\.in-addr.arpa/$1/ ){
+		$ipversion = 4;
+	    }elsif ( $prefix =~ s/(.*)\.ip6.arpa/$1/ ){
+		$ipversion = 6;
+	    }elsif ( $prefix =~ s/(.*)\.ip6.int/$1/ ){
+		$ipversion = 6;
+	    }
+	    
+	    my $ipaddr = "$name.$prefix";
+	    
+	    if ( $ipversion eq '4' ){
+		$ipaddr = join '.', (reverse split '\.', $ipaddr);
+	    }elsif ( $ipversion eq '6' ){
+		my @n = reverse split '\.', $ipaddr;
+		my @g; my $m;
+		for (my $i=1; $i<=scalar(@n); $i++){
+		    $m .= $n[$i-1];
+		    if ( $i % 4 == 0 ){
+			push @g, $m;
+			$m = "";
+		    }
+		}
+		$ipaddr = join ':', @g;		
+	    }
+	    
+	    $logger->debug("$domain: Inserting Ipblock $ipaddr");
+	    my $ipb;
+	    if ( !($ipb = Ipblock->search(address=>$ipaddr)->first) ){
+		$ipb = Ipblock->insert({ address        => $ipaddr,
+					 status         => 'Static',
+					 no_update_tree => 1 });
+		$new_ips++;
+	    }
+	    my %args = (rr=>$nrr, ptrdname=>$rr->ptrdname, ipblock=>$ipb);
+	    if ( $argv{overwrite} || !($rrptr = RRPTR->search(%args)->first) ){
+		$logger->debug("$domain: Inserting RRPTR $name, ".$rr->ptrdname.", ttl: $ttl");
+		$args{ttl} = $ttl;
+		$rrptr = RRPTR->insert(\%args);
+	    }
+	}elsif ( $rr->type eq 'NAPTR' ){
+	    my $rrnaptr;
+	    my %args = (rr=>$nrr, services=>$rr->service);
+	    if ( $argv{overwrite} || !($rrnaptr = RRNAPTR->search(%args)->first) ){
+		$args{order_field} = $rr->order;
+		$args{preference}  = $rr->preference;
+		$args{flags}       = $rr->flags;
+		$args{services}    = $rr->service;
+		$args{regexpr}     = $rr->regexp;
+		$args{replacement} = $rr->replacement;
+		$args{ttl} = $ttl;
+		$logger->debug("$domain: Inserting RRNAPTR $name, $args{services}, $args{regexpr}, ttl: $ttl");
+		$rrnaptr = RRNAPTR->insert(\%args);
+	    }
+	}elsif ( $rr->type eq 'SRV' ){
+	    my $rrsrv;
+	    my %args = (rr=>$nrr);
+	    if ( $argv{overwrite} || !($rrsrv = RRSRV->search(%args)->first) ){
+		$args{priority} = $rr->priority;
+		$args{weight}   = $rr->weight;
+		$args{port}     = $rr->port;
+		$args{target}   = $rr->target;
+		$args{ttl} = $ttl;
+		$logger->debug("$domain: Inserting RRSRV $name, $args{port}, $args{target}, ttl: $ttl");
+		$rrsrv = RRSRV->insert(\%args);
+	    }
+	}elsif ( $rr->type eq 'LOC' ){
+	    my $rrloc;
+	    my %args = (rr=>$nrr);
+	    if ( $argv{overwrite} || !($rrloc = RRLOC->search(%args)->first) ){
+		$args{ttl}       = $ttl;
+		$args{size}      = $rr->size;
+		$args{horiz_pre} = $rr->horiz_pre;
+		$args{vert_pre}  = $rr->vert_pre;
+		$args{latitude}  = $rr->latitude;
+		$args{longitude} = $rr->longitude;
+		$args{altitude}  = $rr->altitude;
+		$logger->debug("$domain: Inserting RRLOC $name");
+		$rrloc = RRLOC->insert(\%args);
+	    }
+	}else{
+	    $logger->warn("Type ". $rr->type. " not currently supported.\n")
+		unless ( $rr->type eq 'SOA' );
+	}
+    }
+
+    if ( $new_ips ){
+	# Update IP space hierarchy
+	Ipblock->build_tree(4);
+	Ipblock->build_tree(6);
+    }
+
+    1;
 }
 
 ############################################################################

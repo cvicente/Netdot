@@ -67,7 +67,11 @@ my @all_zones = Zone->retrieve_all();
                 <select name="zone_id" onChange="document.zone_select_form.submit();">
                 <option value="0">-- Select --</option>
 %               foreach my $zone ( sort { $a->name cmp $b->name } @all_zones ){
-                    <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%                   if ( $zone->id eq $zone_id ){
+                        <option value="<% $zone->id %>" SELECTED><% $zone->get_label %></option>
+%                   }else{
+                        <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%                   }
 %               }
                 </select>
             </form>

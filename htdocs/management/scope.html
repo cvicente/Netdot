@@ -1,20 +1,17 @@
 <%doc>
 
-  Generic object view
-  Uses metadata to display all fields with their values
-  and lists of each group of 'has_many' related objects
-
-  Required Arguments:
-    table name and either id or position
+Specific page for DhcpScope objects
 
 </%doc>
 
 <%args>
-$table
 $id
-$user    => $ui->get_current_user($r)
-$view    => 'all'
-$edit    => undef
+$user             => $ui->get_current_user($r)
+$view             => 'all'
+$edit             => undef
+$submit           => undef
+$bulk_import_data => undef
+$import_overwrite => undef
 </%args>
 
 <%attr>
@@ -22,6 +19,7 @@ title   => 'View Object'
 </%attr>
 
 <%init>
+my $table = 'DhcpScope';
 my $DEBUG = 0;
 my($obj, $prevobj );
 my %ftables;
@@ -45,6 +43,27 @@ if ( $DEBUG ){
     print '%linksfrom is  <pre>', Dumper(%linksfrom), '</pre><br>';
     print '%order is  <pre>', Dumper(%order), '</pre><br>';
 }
+
+if ( $submit ){
+    if ($edit eq 'bulk_import'){
+	unless ( $bulk_import_data ){
+	    $m->comp('/generic/error.mhtml', error=>"Empty import data");
+	}
+	# Do this atomically
+	eval {
+	    Netdot::Model->do_transaction(
+		sub{
+		    $obj->import_hosts(text=>$bulk_import_data, overwrite=>$import_overwrite);
+		});
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}else{
+	    $submit = 0; # So we display stuff below
+	}
+    }
+}
+
 </%init>
 
 <div id="sectiondetail">
@@ -65,7 +84,7 @@ if ( $DEBUG ){
         <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">
-        <& form.mhtml, table=>$table, id=>$id, edit=>0 &>
+        <& /generic/form.mhtml, table=>$table, id=>$id, edit=>0 &>
     </div>
 </div>
 <!-- End Display main object values -->
@@ -79,18 +98,16 @@ if ( $DEBUG ){
 %	      if ( $view eq "all" ){
 		  [all]
 %	      }elsif ( keys %linksfrom > 1 ){
-		  <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">[all]</a>
+		  <a href="scope.html?id=<% $obj %>&view=all">[all]</a>
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
-                   <a href="view.html?table=<% $table %>&id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
+                   <a href="scope.html?id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
 %               }   
 %             }
-%           if ( $has_history_table ){
-              <a href="view.html?table=<% $table %>&id=<% $obj %>&view=history">[history]</a>
-%	    }
+              <a href="scope.html?id=<% $obj %>&view=bulk_import">[bulk import]</a>
 	   </div>
 	</div>
       </div>
@@ -141,23 +158,44 @@ foreach my $i ( keys %linksfrom ){
 %         }
 %	  if ( $num ) {
 %             $args{return_args} = "?id=$id&view=$view";
-%             $m->comp('sortresults.mhtml', %args);
+%             $m->comp('/generic/sortresults.mhtml', %args);
 %         }
      </div>
 %    }
 %}
 <!-- End Display has_many objects -->
 
-
-
-<!-- Display history objects associated with this object-->
-%if ( $view eq 'history' && $table->meta_data->has_history() ){
-<div class="container">
-%    my @ho = $obj->get_history;
-     <& sortresults.mhtml, object => \@ho , view => "row", sort => 0 &>
-</div>
-%} 
-<!-- End Display history objects -->
+<!-- Display bulk import -->
+% if ( $view eq 'bulk_import' ){
+   <div class="container">
+      <div class="containerhead">Bulk Import</div>
+      <div class="containerbody">
+%     if ( $obj->type->name ne 'global' && $obj->type->name ne 'group' ){
+	 <p>At this time, only host scopes can be imported, which can only be contained in global or group scopes
+%     }else{
+      <p>
+      <div align="center">
+      <p>
+      Create fixed-address host scopes in bulk by adding lines containing ethernet and IP address, separated by spaces.
+      <br> For example:
+      <p>00:23:45:67:89:AB 192.168.0.1
+      <br>00:23:45:67:89:CD 192.168.0.2
+      <p>
+      <form action="scope.html" method="POST">
+	  <input type="hidden" name="id" value="<% $id %>"
+	  <input type="hidden" name="edit" value="bulk_import">
+	  <textarea name="bulk_import_data" cols="80" rows="20"></textarea>
+	  <p>
+	  Overwrite existing records <input type="checkbox" name="import_overwrite" CHECKED>
+	  <p>
+	  <input type="submit" name="submit" value="Import">
+      </form>
+      </div>
+%   }
+     </div>
+    </div>
+% }
+<!-- End Display bulk import -->
 
 
 </div>
