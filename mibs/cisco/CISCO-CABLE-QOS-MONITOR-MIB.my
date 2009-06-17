@@ -1,0 +1,688 @@
+--
+-- ********************************************************************
+-- CISCO-CABLE-QOS-MONITOR-MIB.my:
+--       Cisco Cable QoS Monitoring MIB file 
+--
+-- Jan 2003, Sunethra Jawahar
+--
+-- Copyright (c) 2003 by Cisco Systems, Inc.
+-- All rights reserved.
+-- ********************************************************************
+--
+--
+-- This is the MIB module for subscriber QoS monitoring for 
+-- DOCSIS-compliant Cable Modem Termination Systems (CMTS).
+-- 
+-- QoS Monitoring is a software feature provided in the CMTS so that 
+-- the CMTS may identify subscribers who over consume resources 
+-- based on their QoS parameters, report them to a management 
+-- entity, and automatically mitigate the problem where possible.
+-- This is done by penalyzing the violating subscribers by changing 
+-- their QoS parameters to enforced QoS parameters. 
+-- 
+-- The MIB allows to create enforce rules which are used to determine the
+-- over consumption of resources. The enforce rule contains monitoring 
+-- and enforced QoS parameters. 
+--
+-- The MIB also provides a unified view of all over-consuming subscribers.
+-- 
+-- 
+
+CISCO-CABLE-QOS-MONITOR-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY,
+        OBJECT-TYPE,
+        Unsigned32,
+        NOTIFICATION-TYPE
+                FROM SNMPv2-SMI
+        TEXTUAL-CONVENTION,
+        TruthValue,
+        MacAddress,
+        RowStatus,
+        DisplayString,
+        DateAndTime
+                FROM SNMPv2-TC
+        OBJECT-GROUP,
+        MODULE-COMPLIANCE,
+        NOTIFICATION-GROUP
+                FROM SNMPv2-CONF
+        ifIndex
+                FROM IF-MIB
+        ciscoMgmt
+                FROM CISCO-SMI;
+      
+
+ciscoCableQosMonitorMIB MODULE-IDENTITY
+        LAST-UPDATED    "200304030000Z"
+        ORGANIZATION    "Cisco Systems, Inc."
+        CONTACT-INFO
+            "        Cisco Systems
+                     Customer Service
+
+             Postal: Cisco Systems
+                     170 West Tasman Drive
+                     San Jose, CA 95134
+                     U.S.A.
+             Phone:  +1 800 553-NETS
+             E-mail: cs-ubr@cisco.com"
+
+        DESCRIPTION
+            "This is the MIB module for subscriber QoS monitoring 
+             for DOCSIS-compliant Cable Modem Termination Systems 
+             (CMTS).
+
+             Several subscriber behaviour can be monitored:
+             1. When the subscriber requests for more resources than 
+             as defined by its QoS parameters. In this case, though
+             requested for more rate-limiting happens in the CMTS,
+             hence, the subscriber will get only as much resources
+             as defined by its registered QoS.  
+
+             2.	When the subscriber continuously utilizes the resources
+             to the upper limit or very near to the upper limit as 
+             defined by its QoS parameter. 
+             
+             3.	When the subscriber sometimes or never utilizes the 
+             resources as defined by the upper limit of the QoS 
+             parameters. 
+
+             In the first two cases, we need to monitor the subscribers 
+             as upstream/downstream is a shared medium, and if all 
+             subscribers start consuming resources as per their peak
+             rate, or a percentage of it, CMTS will be hard pressed for
+             resources. So, even though such subscribers are using 
+             resources within the limits as defined by their QoS 
+             parameters, from the CMTS point of view, they are over 
+             consuming. 
+             Through out this MIB, we refer to this behavior of 
+             subscribers as over consumption of resources and such 
+             subscribers will be the violating subscribers. 
+
+             The subscriber QoS Monitoring is a software feature 
+             provided on the CMTS so that the CMTS may identify such 
+             subscribers who over consume resources based on their QoS 
+             parameters, report them to a management entity, and 
+             automatically mitigate the problem where possible. 
+             This is done by penalizing the violating subscribers by 
+             changing their QoS parameters to enforced QoS parameters.
+
+             The MIB allows to create enforce rules which are used to 
+             determine the over consumption of resources. The enforce 
+             rule contains monitoring and enforced QoS parameters.
+
+             The subscribers who over consume their bandwidth are 
+             flagged and NMS notified of all such violations.
+             The MIB also provides a unified view of all over-consuming 
+             subscribers."
+
+        REVISION        "200304030000Z"
+        DESCRIPTION
+            "Changed ranges of few objects."
+
+        REVISION        "200303040000Z"
+        DESCRIPTION
+            "Initial version of this MIB module."
+
+        ::= { ciscoMgmt 341 }
+
+CCQMRuleDirection ::= TEXTUAL-CONVENTION
+   STATUS      current
+   DESCRIPTION
+       "The CCQMRuleDirection is used to indicate the direction to
+       which the enforce rule applies to. 
+       It has the following defined values:
+       - 'upstream', is used for an enforce rule in the direction from 
+          subscriber to CMTS 
+       - 'downstream', is used for an enforce rule in the direction from
+          CMTS to the subscriber.
+       - 'bidirection', which can mean neither upstream or downstream
+          but a combined enforce rule. "
+
+   SYNTAX      INTEGER {
+                  upstream(1),
+                  downstream(2),
+                  bidirection(3)
+               }
+
+
+ciscoCableQosMonitorMIBObjects 
+         OBJECT IDENTIFIER ::= { ciscoCableQosMonitorMIB 1 }
+
+ccqmEnforceRuleObjects   
+         OBJECT IDENTIFIER ::= { ciscoCableQosMonitorMIBObjects 1 }
+
+ccqmRuleViolateObjects
+         OBJECT IDENTIFIER ::= { ciscoCableQosMonitorMIBObjects 2 }
+
+
+--
+-- Cmts Qos Enforce Rule Table
+--
+-- CMTS maintains a list of QoS enforce rules. 
+-- These enforce rules define :
+-- 1) Criteria for identifying violating subscribers: 
+--    This criteria could be as simple as bytes transmitted over
+--    the last monitoring duration and checked at a rate equal
+--    to the sample rate.
+--    In the sliding window concept used, the monitoring duration
+--    is the size of the window. This window slides by an amount 
+--    that is equal to the sample rate. At every sample rate the bytes
+--    transmitted in the time equal to a monitoring duration is  
+--    checked. If this is found to be larger than the defined 
+--    byte count limit per monitoring duration, the subscriber
+--    is flagged as over consuming or violating the enforce rule.
+--    Else the monitoring will continue.
+--    For example let the monitoring duration be 360 minutes and
+--    sample rate be 30 minutes. If the byte count is 100000 bytes
+--    then every 30 minutes we check if the bytes transmitted in the
+--    last 360 minutes exceeded 100000 bytes. If so, the subscriber
+--    is over consuming. 
+--
+--    |< Monitoring duration     >|
+--
+--    |S rate |
+--    |___________________________|
+--            |____________________________|
+--                     |_____________________________|
+--                              |______________________________|
+--    X       X        X        X          X         X         X
+--
+--    X -> Check made to see if byte count is exceeded.
+--    S rate -> Sample rate
+--   
+-- 2) Registered and Enforced QoS parameters: 
+--    Enforce rules have a one to one mapping to QoS profiles
+--    that subscribers have registered with. If found to violate
+--    parameters as defined by their Registered Qos the Enforced 
+--    Qos will be enforced on such subscribers. The rule can be
+--    configured such that the enforcement happens automatically
+--    or based on some manual settings by NMS.
+-- 3) Penalty Period: 
+--    This defines the time period for which the  Enforced Qos 
+--    will be applicable. The registered QoS will be restored
+--    when the penalty period expires again based on whether
+--    automation was desired.
+--     
+-- This table allows configuration of QoS enforce rules that can be
+-- applied to qos-profiles in case of DOCSIS1.0.
+--
+
+ccqmCmtsEnforceRuleTable  OBJECT-TYPE
+       SYNTAX      SEQUENCE OF CcqmCmtsEnforceRuleEntry
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       DESCRIPTION
+           "This table contains the attributes of the QoS enforce rules
+           present on the CMTS. 
+
+           These enforce rules define the criteria for identifying 
+           subscribers who over consume resources. 
+           This could be as simple as bytes transmitted over  
+           the last monitoring duration and checked at a rate equal
+           to the sample rate.
+
+           In the sliding window concept used, the monitoring duration
+           is the size of the window. This window slides by an amount
+           that is equal to the sample rate. At every sample rate the 
+           bytes transmitted in the time equal to a monitoring duration 
+           is  checked. If this is found to be larger than the defined 
+           byte count limit per monitoring duration, the subscriber
+           is flagged as over consuming.  Else the monitoring will 
+           continue.
+
+           For example let the monitoring duration be 360 minutes and
+           sample rate be 30 minutes. If the byte count is 100,000 
+           bytes then every 30 minutes we check if the bytes 
+           transmitted in the last 360 minutes exceeded 100,000 bytes.
+           If so, the subscriber is over consuming.
+
+           The enforce rule has a one to one mapping to QoS profiles 
+           in case of DOCSIS1.0.
+
+           It defines the registered QoS and an enforced QoS to 
+           be applied if found to be violating the registered QoS.
+           The enforce rule also defines a penalty period for which
+           the enforced Qos will be applied.
+           The registered QoS will be restored when the penalty 
+           period expires."
+       ::= { ccqmEnforceRuleObjects 1 }
+
+ccqmCmtsEnforceRuleEntry OBJECT-TYPE
+        SYNTAX      CcqmCmtsEnforceRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "A set of attributes of a enforce rule on the CMTS.
+            One entry exists for each QoS enforce rule. It is 
+            indexed by ccqmCmtsEnfRuleName as each enforce rule
+            is associated with a unique name."
+        INDEX { ccqmCmtsEnfRuleName }
+        ::= { ccqmCmtsEnforceRuleTable 1 }
+
+CcqmCmtsEnforceRuleEntry ::= SEQUENCE {
+            ccqmCmtsEnfRuleName             DisplayString, 
+            ccqmCmtsEnfRuleRegQoS           Unsigned32,
+            ccqmCmtsEnfRuleEnfQos           Unsigned32,
+            ccqmCmtsEnfRuleMonDuration      Unsigned32,
+            ccqmCmtsEnfRuleSampleRate       Unsigned32,
+            ccqmCmtsEnfRulePenaltyPeriod    Unsigned32,
+            ccqmCmtsEnfRuleByteCount        Unsigned32,
+            ccqmCmtsEnfRuleDirection        CCQMRuleDirection,
+            ccqmCmtsEnfRuleAutoEnforce      TruthValue,
+            ccqmCmtsEnfRuleRowStatus        RowStatus
+        }
+
+
+ccqmCmtsEnfRuleName OBJECT-TYPE
+        SYNTAX      DisplayString (SIZE(1..15))
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "The name of the enforce rule."
+        ::= { ccqmCmtsEnforceRuleEntry 1 }
+
+ccqmCmtsEnfRuleRegQoS OBJECT-TYPE
+        SYNTAX      Unsigned32 (0..16383)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object represents a pointer to the object
+            describing the quality of service attributes 
+            associated with the registered service of the 
+            subscriber.
+            For DOCSIS1.0 subscribers it is the index in 
+            the docsIfQosProfileTable. If no associated 
+            entry in docsIfQosProfileTable exists, this object
+            returns a value of zero. Similarly this object
+            can be set to 0 to indicate no entry in the
+            docsIfQosProfileTable associated with this QoS profile.
+            This object cannot be changed when the rule is 
+            active or ccqmCmtsEnfRuleRowStatus is active(1)."
+        REFERENCE
+            "docsIfQosProfIndex from 
+             draft-ietf-ipcdn-docs-rfmibv2-05.txt"
+        ::= { ccqmCmtsEnforceRuleEntry 2 }
+
+ccqmCmtsEnfRuleEnfQos OBJECT-TYPE
+        SYNTAX      Unsigned32 (0..16383)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object represents a pointer to the object
+            describing the quality of service attributes 
+            associated with the registered service of the 
+            subscriber.
+            For DOCSIS1.0 subscribers it is the index in 
+            the docsIfQosProfileTable. If no associated 
+            entry in docsIfQosProfileTable exists, this object
+            returns a value of zero. Similarly this object
+            can be set to 0 to indicate no entry in the
+            docsIfQosProfileTable associated with this QoS profile.
+            This object cannot be changed when the rule is
+            active or ccqmCmtsEnfRuleRowStatus is active(1)."
+        REFERENCE
+            "docsIfQosProfIndex from 
+             draft-ietf-ipcdn-docs-rfmibv2-05.txt"
+        DEFVAL      { 0 }
+        ::= { ccqmCmtsEnforceRuleEntry 3 }
+
+ccqmCmtsEnfRuleMonDuration OBJECT-TYPE
+        SYNTAX      Unsigned32(10..10080)
+        UNITS       "minutes"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object represents the duration for which 
+            subscribers would be monitored to determine if they 
+            were over consuming resources.
+            This object cannot be changed when the rule is
+            active or ccqmCmtsEnfRuleRowStatus is active(1)."
+        DEFVAL      { 360 }
+        ::= { ccqmCmtsEnforceRuleEntry 4 }
+
+ccqmCmtsEnfRuleSampleRate OBJECT-TYPE
+        SYNTAX      Unsigned32(10..120)
+        UNITS       "minutes"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object represents the interval at which a decision 
+            would be made to check if the subscriber over consumed his
+            resources based on the subscriber usage in the past 
+            duration as defined by ccqmCmtsEnfRuleMonDuration.
+            This object cannot be changed when the rule is
+            active or ccqmCmtsEnfRuleRowStatus is active(1)."
+        DEFVAL      { 15 }
+        ::= { ccqmCmtsEnforceRuleEntry 5 }
+
+ccqmCmtsEnfRulePenaltyPeriod OBJECT-TYPE
+        SYNTAX      Unsigned32(1..10080)
+        UNITS       "minutes"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object represents the period in which the 
+            enforced QoS will be in effect from the time of detection.
+            When the time as defined by this object expires, the
+            registered QoS would be restored. 
+            This object cannot be changed when the rule is
+            active or ccqmCmtsEnfRuleRowStatus is active(1)."
+        DEFVAL      { 10080 }
+        ::= { ccqmCmtsEnforceRuleEntry 6 }
+
+
+ccqmCmtsEnfRuleByteCount OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "1000 bytes"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The number of kbytes that the subscriber can transmit in 
+             the monitoring duration as indicated by 
+             ccqmCmtsEnfRuleMonDuration before being flagged as over 
+             consuming.
+             This object cannot be changed when the rule is
+             active or ccqmCmtsEnfRuleRowStatus is active(1)."
+        ::= { ccqmCmtsEnforceRuleEntry 7 }
+
+ccqmCmtsEnfRuleDirection OBJECT-TYPE
+        SYNTAX      CCQMRuleDirection 
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "Specifies if the byte-count as specified by 
+             ccqmCmtsEnfRuleByteCount is for the 
+             upstream/downstream direction or bidirectional. 
+             This object cannot be changed when the rule is
+             active or ccqmCmtsEnfRuleRowStatus is active(1)."
+        ::= { ccqmCmtsEnforceRuleEntry 8 }
+
+ccqmCmtsEnfRuleAutoEnforce OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "If the ccqmCmtsEnfRuleAutoEnforce is TRUE, the enforced QoS
+             profile as specified by ccqmCmtsEnfRuleEnfQos will be
+             automatically enforced when an over consuming subscriber is
+             detected. Otherwise the change should be done manually. 
+             This object cannot be changed when the rule is
+             active or ccqmCmtsEnfRuleRowStatus is active(1)."
+       DEFVAL        { false }
+        ::= { ccqmCmtsEnforceRuleEntry 9 }
+
+ccqmCmtsEnfRuleRowStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The object controls and reflects the status of rows in this
+            table. All row status values are supported. 
+            The status of the row needs to be changed from active(1) to 
+            notInService(2) in cases when any of the enforce rule 
+            objects need to be changed. If there is any monitoring 
+            associated with this enforce rule ongoing at this time, it 
+            will be aborted.
+            All statistics collected over the sample rate and monitoring
+            duration will be cleared. The monitoring will start again 
+            only when the row status is changed to active(1). "
+        ::= { ccqmCmtsEnforceRuleEntry 10 }
+
+--
+-- ccqmEnfRuleViolateTable provides a snapshot of all the 
+-- subscribers who violated their enforce rule over the
+-- monitoring period. 
+--
+-- A sliding window, the size of the monitoring duration
+-- is used. This window slides by an amount that is equal
+-- to the sample rate. At every sample rate the bytes
+-- transmitted in the time equal to a monitoring duration is
+-- checked. If this is found to be larger than the defined
+-- byte count limit per monitoring duration, the subscriber
+-- is flagged as over consuming or violating the enforce rule.
+--
+-- This table will show all violating
+-- subscribers irrespective if they are associated with
+-- an enforced QoS or not.  
+--
+
+ccqmEnfRuleViolateTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF CcqmEnfRuleViolateEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table contains information of the subscribers 
+            who violated their enforce rule over the   
+            monitoring duration.
+            In the sliding window concept used, the monitoring duration
+            is the size of the window. This window slides by an amount
+            that is equal to the sample rate. At every sample rate 
+            the bytes transmitted in the time equal to a monitoring 
+            duration is checked. If this is found to be larger than 
+            the defined byte count limit per monitoring duration, the 
+            subscriber is flagged as over consuming or to have violated
+            his enforce rule. 
+            This table has entries for each of these violating 
+            subscribers. In case the violating subscriber has
+            a enforced QoS, the QoS parameters for such subscribers
+            will be changed to the enforced QoS for the penalty
+            time. When the penalty time expires, the subscriber
+            gets his registered QoS restored and will no longer 
+            appear in this table but will be monitored. "
+        ::= { ccqmRuleViolateObjects 2 }
+
+ccqmEnfRuleViolateEntry OBJECT-TYPE
+        SYNTAX      CcqmEnfRuleViolateEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "A set of attributes of a subscriber who violated
+            his enforce rule in the monitoring period. 
+            An entry in this table exists for each subscriber
+            who over-consumed resources based on his configured
+            QoS parameters. However those subscribers who
+            have an enforced QoS associated with their enforce
+            rule, will be removed from this table once their
+            penalty time expires. An entry in this table can exist 
+            for ifEntry with an ifType of docsCableMaclayer(127)."
+        INDEX { ifIndex, ccqmEnfRuleViolateID }
+        ::= { ccqmEnfRuleViolateTable 1 }
+
+CcqmEnfRuleViolateEntry ::= SEQUENCE {
+             ccqmEnfRuleViolateID              Unsigned32,
+             ccqmEnfRuleViolateMacAddr         MacAddress,
+             ccqmEnfRuleViolateRuleName        DisplayString,
+             ccqmEnfRuleViolateByteCount       Unsigned32,
+             ccqmEnfRuleViolateLastDetectTime  DateAndTime,
+             ccqmEnfRuleViolatePenaltyExpTime  DateAndTime
+        }
+
+ccqmEnfRuleViolateID  OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "An index assigned to the service flow by the CMTS.
+            In case of DOCSIS1.0 this represents an internal 
+            service flow ID."
+        ::= { ccqmEnfRuleViolateEntry 1 }
+
+ccqmEnfRuleViolateMacAddr OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "MAC address of this subscriber. If the subscriber has
+            multiple MAC addresses, this is the MAC address associated
+            with the Cable interface."
+        ::= { ccqmEnfRuleViolateEntry 2 }  
+
+ccqmEnfRuleViolateRuleName  OBJECT-TYPE
+        SYNTAX      DisplayString (SIZE(1..15))
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "A pointer to the enforce rule associated with this 
+             subscriber. It provides for referencing the enforce rule 
+             to determine the QoS monitoring parameters. "
+        ::= { ccqmEnfRuleViolateEntry 3 }
+
+ccqmEnfRuleViolateByteCount  OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "1000 bytes"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total kbytes consumed by the subscriber in the
+            monitoring duration as specified in the corresponding 
+            enforce rule object ccqmCmtsEnfRuleMonDuration. If the
+            monitoring is restarted due to change in enforce rule
+            or any other circumstance this count will be reset."
+        ::= { ccqmEnfRuleViolateEntry 4 }
+
+ccqmEnfRuleViolateLastDetectTime  OBJECT-TYPE
+        SYNTAX      DateAndTime
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The time at which the subscriber was found to have violated
+            his enforce rule and the time from which the enforced QoS, 
+            if any, was in effect. "
+        ::= { ccqmEnfRuleViolateEntry 5 }
+
+ccqmEnfRuleViolatePenaltyExpTime  OBJECT-TYPE
+        SYNTAX      DateAndTime
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The time when the original QoS parameters will be restored
+            for this violating subscriber. If there was no enforced QoS 
+            configured for this subscriber this object returns 0."
+        ::= { ccqmEnfRuleViolateEntry 6 }
+
+--
+-- Object to enable and disable sending traps to indicate Enforce Rule 
+-- violations
+--
+ccqmEnfRuleViolateNotifEnable  OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+            "An indication of whether the ccqmEnfRuleViolateNotification
+            is enabled or disabled."
+        DEFVAL { false }
+        ::= { ccqmRuleViolateObjects 3 }
+
+
+--
+-- The Cisco Cable QoS Monitoring MIB Notifications
+--
+
+ccqmMIBNotificationsPrefix   OBJECT IDENTIFIER
+                ::= { ciscoCableQosMonitorMIB  2 }
+
+ccqmMIBNotifications         OBJECT IDENTIFIER
+                ::= { ccqmMIBNotificationsPrefix 0 }
+
+ccqmEnfRuleViolateNotification  NOTIFICATION-TYPE
+       OBJECTS {
+            ccqmEnfRuleViolateMacAddr,         
+            ccqmEnfRuleViolateRuleName,
+            ccqmEnfRuleViolatePenaltyExpTime,
+            ccqmEnfRuleViolateByteCount  
+       }
+       STATUS current
+       DESCRIPTION
+           "A notification that is sent when the subscriber
+           if found to have violated his enforce rule. This
+           indicates that this subscriber was found to be 
+           over consuming resources. If the enforce rule 
+           associated with this subscriber has a enforced QoS
+           configured, the trap also indicates that the
+           QoS parameters of this subscriber are changed to 
+           the enforced QoS. "
+       ::= { ccqmMIBNotifications 1 }
+
+
+ccqmMIBConformance         OBJECT IDENTIFIER
+                ::= { ciscoCableQosMonitorMIB 3 }
+
+ccqmMIBCompliances         OBJECT IDENTIFIER
+                ::= { ccqmMIBConformance 1 }
+
+ccqmMIBGroups              OBJECT IDENTIFIER
+                ::= { ccqmMIBConformance 2 }
+
+-- compliance statements
+
+ccqmCompliance  MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION
+            "The compliance statement for CMTS devices that implement
+            the Qos Monitoring feature. "
+        MODULE -- this module
+                MANDATORY-GROUPS {
+                        ccqmEnfRuleGroup,
+                        ccqmEnfRuleViolateGroup,
+                        ccqmEnfRuleViolateNotifGroup
+                        }
+        OBJECT       ccqmCmtsEnfRuleSampleRate
+        WRITE-SYNTAX Unsigned32 (10..30)
+        DESCRIPTION
+            "Currently only the range 10 to 30 minutes 
+            is supported." 
+        ::= { ccqmMIBCompliances 1 }
+
+-- units of conformance
+
+ccqmEnfRuleGroup OBJECT-GROUP
+        OBJECTS {
+              ccqmCmtsEnfRuleRegQoS,
+              ccqmCmtsEnfRuleEnfQos,
+              ccqmCmtsEnfRuleMonDuration,
+              ccqmCmtsEnfRuleSampleRate,
+              ccqmCmtsEnfRulePenaltyPeriod,
+              ccqmCmtsEnfRuleByteCount,
+              ccqmCmtsEnfRuleDirection,
+              ccqmCmtsEnfRuleAutoEnforce,
+              ccqmCmtsEnfRuleRowStatus
+             }
+        STATUS    current
+        DESCRIPTION
+            "Group of objects implemented in CMTS
+            providing enforce rule and QoS monitoring
+            information. "
+        ::= { ccqmMIBGroups 1 }
+
+ccqmEnfRuleViolateGroup OBJECT-GROUP
+        OBJECTS {
+              ccqmEnfRuleViolateRuleName,
+              ccqmEnfRuleViolateMacAddr,
+              ccqmEnfRuleViolateByteCount,
+              ccqmEnfRuleViolateLastDetectTime,
+              ccqmEnfRuleViolatePenaltyExpTime,
+              ccqmEnfRuleViolateNotifEnable
+             }
+        STATUS    current
+        DESCRIPTION
+            "Group of objects implemented in CMTS
+            providing information of enforce rule
+            violations. "
+        ::= { ccqmMIBGroups 2 }
+
+ccqmEnfRuleViolateNotifGroup NOTIFICATION-GROUP
+        NOTIFICATIONS {
+             ccqmEnfRuleViolateNotification
+             }
+        STATUS        current
+        DESCRIPTION
+            "The notification which a CISCO-CABLE-QOS-MONITOR-MIB
+            is required to implement."
+        ::= { ccqmMIBGroups 3 }
+
+
+END
+
+

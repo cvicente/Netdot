@@ -1,0 +1,281 @@
+-- *******************************************************************
+-- CISCO-LWAPP-DOT11-CLIENT-CALIB-MIB.my: Dot11 Wireless Clients
+--                                        Calibration MIB
+-- December 2005, Devesh Pujari, Prasanna Viswakumar
+--
+-- Copyright (c) 2005-2006 by Cisco Systems, Inc.
+-- All rights reserved.
+-- *******************************************************************
+--
+CISCO-LWAPP-DOT11-CLIENT-CALIB-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS 
+        MODULE-IDENTITY, 
+        OBJECT-TYPE,
+        Unsigned32
+                FROM SNMPv2-SMI
+        MODULE-COMPLIANCE, 
+        OBJECT-GROUP
+                FROM SNMPv2-CONF
+        MacAddress,
+        TimeInterval,
+        RowStatus 
+                FROM SNMPv2-TC 
+        ciscoMgmt
+                FROM CISCO-SMI;
+
+--********************************************************************
+--*  MODULE IDENTITY
+--********************************************************************
+
+ciscoLwappDot11ClientCalibMIB MODULE-IDENTITY
+        LAST-UPDATED    "200604110000Z"
+        ORGANIZATION    "Cisco Systems Inc."
+        CONTACT-INFO  
+               "        Cisco Systems,
+                        Customer Service
+                Postal: 170 West Tasman Drive
+                        San Jose, CA  95134
+                        USA
+                   Tel: +1 800 553-NETS
+
+                 Email: cs-wnbu-snmp@cisco.com"
+
+        DESCRIPTION             
+                "This MIB is intended to be implemented on all those
+                devices operating as Central controllers, that
+                terminate the Light Weight Access Point Protocol
+                tunnel from Cisco Light-weight LWAPP Access Points.
+
+                Information provided by this MIB is about the
+                configuration and monitoring of 802.11 wireless
+                clients in the network.
+
+                The relationship between CC and the LWAPP APs
+                can be depicted as follows:
+
+        +......+     +......+     +......+           +......+
+        +      +     +      +     +      +           +      +
+        +  CC  +     +  CC  +     +  CC  +           +  CC  +
+        +      +     +      +     +      +           +      +
+        +......+     +......+     +......+           +......+
+          ..            .             .                 .
+          ..            .             .                 .
+         .  .            .             .                 .
+        .    .            .             .                 .
+       .      .            .             .                 .
+      .        .            .             .                 .
+   +......+ +......+     +......+      +......+          +......+
+   +      + +      +     +      +      +      +          +      +
+   +  AP  + +  AP  +     +  AP  +      +  AP  +          +  AP  +
+   +      + +      +     +      +      +      +          +      +
+   +......+ +......+     +......+      +......+          +......+
+              .              .             .                 .
+            .  .              .             .                 .
+           .    .              .             .                 .
+          .      .              .             .                 .
+         .        .              .             .                 .
+      +......+ +......+     +......+      +......+          +......+
+      +      + +      +     +      +      +      +          +      +
+      +  MN  + +  MN  +     +  MN  +      +  MN  +          +  MN  +
+      +      + +      +     +      +      +      +          +      +
+      +......+ +......+     +......+      +......+          +......+
+
+                The LWAPP tunnel exists between the controller and
+                the APs.  The MNs communicate with the APs through
+                the protocol defined by the 802.11 standard.
+
+                LWAPP APs, upon bootup, discover and join one of the
+                controllers and the controller pushes the configuration,
+                that includes the WLAN parameters, to the LWAPP APs.
+                The APs then encapsulate all the 802.11 frames from
+                wireless clients inside LWAPP frames and forward
+                the LWAPP frames to the controller.
+
+                                   GLOSSARY
+
+                Access Point ( AP )
+
+                An entity that contains an 802.11 medium access
+                control ( MAC ) and physical layer ( PHY ) interface
+                and provides access to the distribution services via
+                the wireless medium for associated clients.  
+
+                LWAPP APs encapsulate all the 802.11 frames in
+                LWAPP frames and sends them to the controller to which
+                it is logically connected.
+
+                Light Weight Access Point Protocol ( LWAPP ) 
+
+                This is a generic protocol that defines the 
+                communication between the Access Points and the
+                Central Controller.
+
+                Mobile Node ( MN )
+
+                A roaming 802.11 wireless device in a wireless
+                network associated with an access point. Mobile Node,
+                Mobile Station(Ms) and client are used 
+                interchangeably. 
+ 
+                REFERENCE
+ 
+                [1] Wireless LAN Medium Access Control ( MAC ) and
+                Physical Layer ( PHY ) Specifications 
+  
+                [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
+                Weight Access Point Protocol "
+           
+        REVISION      "200604110000Z"
+        DESCRIPTION
+                "Initial version of this MIB module. "
+        ::= { ciscoMgmt 522 }
+        
+ciscoLwappDot11ClientCalibMIBNotifs  OBJECT IDENTIFIER
+        ::= { ciscoLwappDot11ClientCalibMIB 0 }
+
+ciscoLwappDot11ClientCalibMIBObjects OBJECT IDENTIFIER 
+        ::= { ciscoLwappDot11ClientCalibMIB 1 }
+
+ciscoLwappDot11ClientCalibMIBConform OBJECT IDENTIFIER
+        ::= { ciscoLwappDot11ClientCalibMIB 2 }
+
+cldccConfig OBJECT IDENTIFIER
+    ::= { ciscoLwappDot11ClientCalibMIBObjects 1 }
+    
+--********************************************************************
+-- Wireless Client Calibration 
+--********************************************************************
+
+cLD11ClientCalibTable OBJECT-TYPE
+        SYNTAX     SEQUENCE OF CLD11ClientCalibEntry
+        MAX-ACCESS not-accessible
+        STATUS     current
+        DESCRIPTION
+                "This table represents the calibration for the
+                802.11 wireless clients that would associate
+                to the APs that have joined this controller.
+
+                An entry is created through an explicit management
+                action initiated by the administrator through a
+                network management station by specifying the
+                calibration parameters for a particular client
+                identified by cLD11ClientCalibMacAddress and setting
+                the RowStatus object to 'createAndGo'.  An existing
+                entry is deleted by setting the RowStatus object to 
+                'destroy'.  The object cLD11ClientCalibTableMaxEntries
+                represents the maximum number of entries in this
+                table. " 
+    ::= { cldccConfig 1 }
+    
+cLD11ClientCalibEntry OBJECT-TYPE
+        SYNTAX     CLD11ClientCalibEntry
+        MAX-ACCESS not-accessible
+        STATUS     current
+        DESCRIPTION
+                "Each entry represents a conceptual row in this
+                table and provides the information about the
+                calibration parameters for wireless clients. "
+        INDEX { cLD11ClientCalibMacAddress }
+        ::= { cLD11ClientCalibTable 1 }
+     
+CLD11ClientCalibEntry ::= 
+        SEQUENCE {
+             cLD11ClientCalibMacAddress     MacAddress,
+             cLD11ClientCalibBeaconInterval TimeInterval,
+             cLD11ClientCalibRowStatus      RowStatus
+        }
+   
+cLD11ClientCalibMacAddress OBJECT-TYPE
+        SYNTAX     MacAddress
+        MAX-ACCESS not-accessible
+        STATUS     current
+        DESCRIPTION
+                "This object specifies the MAC address of the
+                802.11 wireless client for which the 
+                calibration parameters in this entry are 
+                applicable and uniquely identifies this entry. "
+        ::= { cLD11ClientCalibEntry 1 }
+
+cLD11ClientCalibBeaconInterval OBJECT-TYPE
+        SYNTAX     TimeInterval (400..3240000)
+        UNITS      "hundredths-seconds"
+        MAX-ACCESS read-create
+        STATUS     current 
+        DESCRIPTION
+                "This object specifies the time interval, expressed
+                here in hundredths of a second at which an AP
+                issues radio measurement request messages to a
+                client for every SSID.  It is not recommended to
+                configure values less than 10 seconds (1000).
+                The value configured through this object is
+                reflected in the operation of the LWAPP APs only if
+                cLD11ClientCalibBeaconEnabled is set to 'true'. "
+        DEFVAL { 60000 }
+        ::= { cLD11ClientCalibEntry 2 }
+           
+cLD11ClientCalibRowStatus OBJECT-TYPE
+        SYNTAX     RowStatus
+        MAX-ACCESS read-create
+        STATUS     current
+        DESCRIPTION
+                "The object that represents the status of a
+                specific instance of a row in this table.
+                Initially set to a value of 'createAndGo' by
+                the User when a row is created, the status
+                as represented by this object is automatically
+                set to 'active' if and when the row creation
+                is successful.  To delete the specific instance
+                of a row, User should set this object to
+                'destroy'. "
+        ::= { cLD11ClientCalibEntry 3 }
+
+cLD11ClientCalibTableMaxEntries OBJECT-TYPE
+        SYNTAX     Unsigned32 (1..25)
+        MAX-ACCESS read-write
+        STATUS     current
+        DESCRIPTION
+                "This object represents the upper limit on the
+                number of entries in cLD11ClientCalibTable. "
+        DEFVAL  { 5 }
+    ::= { cldccConfig 2 }     
+
+--******************************************************************* 
+--*    Compliance statements  
+--********************************************************************
+
+ciscoLwappDot11ClientCalibMIBCompliances OBJECT IDENTIFIER
+        ::= { ciscoLwappDot11ClientCalibMIBConform 1 }
+
+ciscoLwappDot11ClientCalibMIBGroups OBJECT IDENTIFIER
+        ::= { ciscoLwappDot11ClientCalibMIBConform 2 }
+
+ciscoLwappDot11ClientCalibMIBCompliance MODULE-COMPLIANCE
+        STATUS     current 
+        DESCRIPTION
+                "The compliance statement for the SNMP entities that
+                implement this MIB. " 
+        MODULE MANDATORY-GROUPS {                
+                ciscoLwappDot11ClientCalibMIBConfigGroup
+        }
+        ::= { ciscoLwappDot11ClientCalibMIBCompliances 1 }
+
+--********************************************************************
+--*    Units of conformance  
+--********************************************************************
+
+ciscoLwappDot11ClientCalibMIBConfigGroup OBJECT-GROUP
+        OBJECTS {
+                cLD11ClientCalibBeaconInterval,
+                cLD11ClientCalibRowStatus,
+                cLD11ClientCalibTableMaxEntries
+        }                
+        STATUS     current
+        DESCRIPTION
+                "This collection of objects specifies the required
+                calibration parameters for the 802.11 wireless 
+                clients. "
+        ::= { ciscoLwappDot11ClientCalibMIBGroups 1 }
+
+END
+

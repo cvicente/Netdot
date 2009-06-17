@@ -1,0 +1,104 @@
+RADLAN-rndMng DEFINITIONS ::= BEGIN
+
+-- Title:      Management Private Extension
+-- Version:    7.37.00.00
+-- Date:       17 May 2004
+
+IMPORTS
+    rnd                                                     FROM RADLAN-MIB
+    DisplayString                                           FROM SNMPv2-TC
+    Unsigned32,
+    MODULE-IDENTITY, OBJECT-TYPE                            FROM SNMPv2-SMI
+    RowStatus, TruthValue,
+    TEXTUAL-CONVENTION                                      FROM SNMPv2-TC;
+
+
+rndMng  MODULE-IDENTITY
+        LAST-UPDATED "200406010000Z"
+        ORGANIZATION ""
+        CONTACT-INFO
+             ""
+        DESCRIPTION
+             "The private MIB module definition for general management MIB."
+        REVISION "200406010000Z"
+        DESCRIPTION
+             "Initial version of this MIB."
+        ::= { rnd 1 }
+
+
+rndSysId OBJECT-TYPE
+    SYNTAX  INTEGER
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+      "Identification of an RND device. The device type for each
+      integer clarifies the sysObjectID in MIB - II."
+    ::= { rndMng 1  }
+
+rndAction OBJECT-TYPE
+    SYNTAX  INTEGER {
+       reset(1),
+       sendNetworkTab(2),
+       deleteNetworkTab(3),
+       sendRoutingTab(4),    -- Level II
+       deleteRoutingTab(5),
+       sendLanTab(6),
+       deleteLanTab(7),
+       deleteArpTab(8),
+       sendArpTab(9),
+       deleteRouteTab(10),   -- Level III
+       sendRouteTab(11),
+       backupSPFRoutingTab(12),
+       backupIPRoutingTab(13),
+       backupNetworkTab(14),
+       backupLanTab(15),
+       backupArpTab(16),
+       backupIPXRipTab(17),
+       backupIPXSAPTab(18),
+       resetStartupCDB(19),
+       eraseStartupCDB(20),
+       deleteZeroHopRoutingAllocTab(21),
+       slipDisconnect(22),
+       deleteDynamicLanTab(23),
+       eraseRunningCDB(24),
+       copyStartupToRunning(25)
+     }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+      "This variable enables the operator to perform one of the
+      specified actions on the tables maintained by the network device.
+      Send actions require support of proprietery File exchange
+      protocol."
+   ::= { rndMng 2  }
+
+rndFileName OBJECT-TYPE
+    SYNTAX OCTET STRING -- SIZE 256
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+      "The name of the file used internally by RND for transferring
+      tables maintained by network devices, using a prorietary File
+      exchange protocol."
+    ::=  { rndMng 3  }
+
+rlSnmpVersionSupported OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE(1))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the snmp versions that are supported by
+        this device."
+    ::= { rndMng 4 }
+
+rlSnmpMibVersion OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the snmp support version that is supported by
+        this device."
+    ::= { rndMng 5 }
+
+END
+

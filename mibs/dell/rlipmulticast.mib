@@ -1,0 +1,334 @@
+RADLAN-rlIPMulticast-MIB DEFINITIONS ::= BEGIN
+
+-- Date:       10 Nov 2004
+--
+-- 10-Nov-2004 Used rndNotifications instead of 0
+
+IMPORTS
+    rnd, rndErrorDesc, rndErrorSeverity,rndNotifications FROM RADLAN-MIB
+    InterfaceIndex                                       FROM IF-MIB
+    RowStatus                                            FROM SNMPv2-TC
+    TimeTicks, IpAddress, NOTIFICATION-TYPE,
+    MODULE-IDENTITY, OBJECT-TYPE                         FROM SNMPv2-SMI;
+
+
+rlIPmulticast MODULE-IDENTITY
+              LAST-UPDATED "200404190000Z"
+              ORGANIZATION ""
+              CONTACT-INFO
+                      ""
+              DESCRIPTION
+                      "The private MIB module definition for IP Multicast support."
+              REVISION "200404190000Z"
+              DESCRIPTION
+                      "Initial version of this MIB."
+          ::= { rnd 46 }
+
+
+rlIpmRouterEnable OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The enabled status of IP Multicast routing on this router."
+    ::= { rlIPmulticast 1 }
+
+rlIgmp      OBJECT IDENTIFIER ::= { rlIPmulticast 2 }
+
+rlIgmpMibVersion OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "MIB's version, the current version is 1."
+::= { rlIgmp 1 }
+
+rlPim       OBJECT IDENTIFIER ::= { rlIPmulticast 3 }
+
+rlPimMibVersion OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "MIB's version, the current version is 1."
+    ::= { rlPim 2 }
+
+--
+--  pim enable disable
+--
+rlPimEnable OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The enabled status of PIM protocol on this router."
+    ::= { rlPim 7 }
+
+--
+-- rlDvmrp
+--
+
+rlDvmrp OBJECT IDENTIFIER ::= { rlIPmulticast  4 }
+--
+-- rl IGMP PROXY
+--
+
+rlIgmpProxy      OBJECT IDENTIFIER ::= { rlIPmulticast 5 }
+
+rlIgmpProxyEnable OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The enabled status of IGMP Proxy on this router."
+    ::= { rlIgmpProxy 1 }
+
+--
+-- The IGMP Filter
+--
+
+rlIgmpFilter OBJECT IDENTIFIER ::= { rlIPmulticast  6 }
+
+rlIgmpFilterEnable OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The enabled status of Igmp filter on this router."
+::= { rlIgmpFilter 1 }
+
+rlIgmpFilterTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF RlIgmpFilterEntry
+    MAX-ACCESS not-accessible
+    STATUS      current
+    DESCRIPTION
+            "The (conceptual) table listing the IP multicast groups which
+             are permited or denied from the particular interface."
+    ::= { rlIgmpFilter 2 }
+
+rlIgmpFilterEntry OBJECT-TYPE
+    SYNTAX     RlIgmpFilterEntry
+    MAX-ACCESS not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry (conceptual row) in the igmpFilterTable."
+    INDEX      { rlIgmpFilterIfIndex, rlIgmpFilterAddressFrom, rlIgmpFilterAddressTo  }
+    ::= { rlIgmpFilterTable 1 }
+
+RlIgmpFilterEntry ::= SEQUENCE {
+    rlIgmpFilterIfIndex           InterfaceIndex,
+    rlIgmpFilterAddressFrom       IpAddress,
+    rlIgmpFilterAddressTo         IpAddress,
+    rlIgmpFilterUpTime            TimeTicks,
+    rlIgmpFilterStatus            RowStatus,
+    rlIgmpFilterAction            INTEGER
+}
+
+rlIgmpFilterIfIndex OBJECT-TYPE
+    SYNTAX     InterfaceIndex
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+            "The interface for which this entry contains information for
+            an IP multicast group address."
+    ::= { rlIgmpFilterEntry 1 }
+
+rlIgmpFilterAddressFrom OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS not-accessible
+    STATUS      current
+    DESCRIPTION
+            "The first IP multicast group address for which this entry
+            contains information."
+    ::= { rlIgmpFilterEntry 2 }
+
+rlIgmpFilterAddressTo OBJECT-TYPE
+    SYNTAX     IpAddress
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+            "The last IP multicast group address for which this entry
+            contains information."
+    ::= { rlIgmpFilterEntry 3 }
+
+rlIgmpFilterUpTime OBJECT-TYPE
+    SYNTAX     TimeTicks
+    MAX-ACCESS read-only
+    STATUS      current
+    DESCRIPTION
+            "The time elapsed since this entry was created."
+    ::= { rlIgmpFilterEntry 4 }
+
+rlIgmpFilterStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-write
+    STATUS      current
+    DESCRIPTION
+            "The status of this entry."
+    ::= { rlIgmpFilterEntry 5 }
+
+rlIgmpFilterAction OBJECT-TYPE
+    SYNTAX     INTEGER {
+        deny(1),
+        permit(2)
+    }
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+            " Filter action - permit/deny for the group received
+              from the interface."
+    ::= { rlIgmpFilterEntry 6 }
+
+--
+-- The PIM SM
+--
+
+rlPimSM OBJECT IDENTIFIER ::= { rlIPmulticast  7 }
+
+rlPimSMEnable OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The enabled status of PIM SM on this router."
+::= { rlPimSM 1 }
+
+rlPimSMMibVersion OBJECT-TYPE
+    SYNTAX      INTEGER
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The Mib version , current version 2."
+::= { rlPimSM 2 }
+
+--rlPimSMBootStrapInfoEnable OBJECT-TYPE
+--    SYNTAX      INTEGER { enabled(1), disabled(2) }
+--    MAX-ACCESS  read-write
+--    STATUS      current
+--    DESCRIPTION
+--        "The enabled status of PIM SM Boot Strap Info on this router.the router can be configured dynamicly"
+--::= { rlPimSM 3 }
+
+rlPimSMDREnable OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The enabled status of PIM SM Designated Router on this router."
+::= { rlPimSM 4}
+
+rlPimSMDirectedConnectedSourceEnable OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The enabled status of  Directed Connected Source on this router.
+         If disable, the router not work with direct connected sources."
+::= { rlPimSM 5}
+
+rlPimSMRPEnable OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The enabled status of PIM SM Randevouz Point on this router."
+::= { rlPimSM 6}
+
+rlPimSMSPTSwitchEnable OBJECT-TYPE
+    SYNTAX      INTEGER { enabled(1), disabled(2) }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The enabled status of PIM SM SPT Switch on this router.
+         If disable ,the router will work only through the RPT"
+::= { rlPimSM 7}
+
+rlPimSmRPSetConfigurationType OBJECT-TYPE
+      SYNTAX  INTEGER {
+        manual(1),
+        bootstrap(2)
+    }
+    MAX-ACCESS  read-write
+    STATUS  current
+    DESCRIPTION
+      "Type of RP set configuration:manualy or through boot stap message ."
+    DEFVAL  { manual }
+    ::=  { rlPimSM 8 }
+
+
+rlIgmpTableOverflow NOTIFICATION-TYPE
+    OBJECTS   { rndErrorDesc, rndErrorSeverity }
+    STATUS  current
+    DESCRIPTION
+        "An IGMP Table overflow."
+    ::= { rndNotifications 143 }
+
+rlPimTableOverflow NOTIFICATION-TYPE
+    OBJECTS   { rndErrorDesc, rndErrorSeverity }
+    STATUS  current
+    DESCRIPTION
+        "An IGMP Table overflow."
+    ::= { rndNotifications 144 }
+
+rlPimSmInterfaceTableOverflow NOTIFICATION-TYPE
+    OBJECTS   {rndErrorDesc, rndErrorSeverity}
+    STATUS  current
+    DESCRIPTION
+        "The PIM interface table Table overflows."
+    ::= { rndNotifications 163 }
+
+rlPimSmNextHopTableOverflow NOTIFICATION-TYPE
+    OBJECTS   {rndErrorDesc, rndErrorSeverity}
+    STATUS  current
+    DESCRIPTION
+        "The PIM SM Next Hop Table overflows."
+    ::= { rndNotifications 164 }
+
+rlPimSmMulticastRouteTableOverflow NOTIFICATION-TYPE
+    OBJECTS   {rndErrorDesc, rndErrorSeverity}
+    STATUS  current
+    DESCRIPTION
+        "The PIM SM  Multicast Route Table overflows."
+    ::= { rndNotifications 165 }
+
+rlPimSmTableOverflow NOTIFICATION-TYPE
+    OBJECTS   {rndErrorDesc, rndErrorSeverity}
+    STATUS  current
+    DESCRIPTION
+        "The PIM SM Table(Not include the Interface, Next Hop,
+        Multicast Route Tables) overflows."
+    ::= { rndNotifications 166 }
+
+rlPimSmSrcUnreacable  NOTIFICATION-TYPE
+    OBJECTS   {rndErrorDesc, rndErrorSeverity}
+    STATUS  current
+    DESCRIPTION
+        "An RPF source unreacable."
+    ::= { rndNotifications 167 }
+
+rlPimSmParallelPathToLAN  NOTIFICATION-TYPE
+    OBJECTS   {rndErrorDesc, rndErrorSeverity}
+    STATUS  current
+    DESCRIPTION
+        "Two Pim ifIndexes connect to the same LAN"
+    ::= { rndNotifications 168 }
+
+rlPimSmNotSMUpstreamNeighbor  NOTIFICATION-TYPE
+    OBJECTS   {rndErrorDesc, rndErrorSeverity}
+    STATUS  current
+    DESCRIPTION
+        "An RPF Upstream Neighbor is not support the PIM SM."
+    ::= { rndNotifications 169 }
+
+rlIpmAddOutgoingInterfaceFailed NOTIFICATION-TYPE
+    OBJECTS   { rndErrorDesc, rndErrorSeverity }
+    STATUS  current
+    DESCRIPTION
+        "Adding an Ipm outgoing interface has failed."
+    ::= { rndNotifications 182 }
+
+
+
+END
+
+

@@ -1,0 +1,240 @@
+-- *******************************************************************
+-- CISCO-LWAPP-ROGUE-MIB.my
+-- February 2007, Devesh Pujari, Srinath Candadai
+--   
+-- Copyright (c) 2007 by Cisco Systems, Inc.
+-- All rights reserved.
+-- *******************************************************************
+
+CISCO-LWAPP-ROGUE-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    NOTIFICATION-TYPE,
+    OBJECT-TYPE
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    NOTIFICATION-GROUP,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    TruthValue
+        FROM SNMPv2-TC
+    ciscoMgmt
+        FROM CISCO-SMI
+    cLApName
+        FROM CISCO-LWAPP-AP-MIB;
+
+
+ciscoLwappRogueMIB MODULE-IDENTITY
+    LAST-UPDATED    "200702060000Z"
+    ORGANIZATION    "Cisco Systems Inc."
+    CONTACT-INFO
+            "Cisco Systems,
+            Customer Service
+            Postal: 170 West Tasman Drive
+            San Jose, CA  95134
+            USA
+            Tel: +1 800 553-NETS
+
+            Email: cs-wnbu-snmp@cisco.com"
+    DESCRIPTION
+        "This MIB is intended to be implemented on all those
+        devices operating as Central Controllers, that
+        terminate the Light Weight Access Point Protocol
+        tunnel from Cisco Light-weight LWAPP Access Points.
+
+        This MIB provides information about the Rogue APs
+        and Clients that are detected by the controller.
+
+        The relationship between CC and the LWAPP APs
+        can be depicted as follows:
+
+              +......+     +......+     +......+
+              +      +     +      +     +      +
+              +  CC  +     +  CC  +     +  CC  +
+              +      +     +      +     +      +
+              +......+     +......+     +......+
+                ..            .             .
+                ..            .             .
+               .  .            .             .
+              .    .            .             .
+             .      .            .             .
+            .        .            .             .
+        +......+ +......+     +......+      +......+
+        +      + +      +     +      +      +      +
+        +  AP  + +  AP  +     +  AP  +      +  AP  +
+        +      + +      +     +      +      +      +
+        +......+ +......+     +......+      +......+
+                   .              .             .
+                 .  .              .             .
+                .    .              .             .
+               .      .              .             .
+              .        .              .             .
+           +......+ +......+     +......+      +......+
+           +      + +      +     +      +      +      +
+           +  MN  + +  MN  +     +  MN  +      +  MN  +
+           +      + +      +     +      +      +      +
+           +......+ +......+     +......+      +......+
+
+
+        The LWAPP tunnel exists between the controller and
+        the APs.  The MNs communicate with the APs through
+        the protocol defined by the 802.11 standard.
+
+        LWAPP APs, upon bootup, discover and join one of the
+        controllers and the controller pushes the configuration,
+        that includes the WLAN parameters, to the LWAPP APs.
+        The APs then encapsulate all the 802.11 frames from
+        wireless clients inside LWAPP frames and forward
+        the LWAPP frames to the controller.
+
+                           GLOSSARY
+
+        Access Point ( AP )
+
+        An entity that contains an 802.11 medium access
+        control ( MAC ) and physical layer ( PHY ) interface
+        and provides access to the distribution services via
+        the wireless medium for associated clients.  
+
+        LWAPP APs encapsulate all the 802.11 frames in
+        LWAPP frames and sends them to the controller to which
+        it is logically connected.
+
+        Light Weight Access Point Protocol ( LWAPP )
+
+        This is a generic protocol that defines the 
+        communication between the Access Points and the
+        Central Controller. 
+
+        Mobile Node ( MN )
+
+        A roaming 802.11 wireless device in a wireless
+        network associated with an access point. Mobile Node 
+        and client are used interchangeably. 
+
+        Rogue
+
+        Any 802.11 device which is not part of the RF network 
+        is a Rogue device.
+
+        Ad-hoc Network 
+
+        A set of mobile devices within direct communication 
+        range establishing a network among themselves for 
+        transmitting data, without the use of a Access point 
+        is called a ad-hoc network. 
+
+        Rogue Ad-hoc Client
+
+        Any 802.11 client which is part of that ad-hoc network, 
+        but not in the trusted list.
+
+        REFERENCE
+
+        [1] Wireless LAN Medium Access Control ( MAC ) and
+            Physical Layer ( PHY ) Specifications.
+
+        [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
+            Weight Access Point Protocol."
+    REVISION        "200702060000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 610 }
+
+
+ciscoLwappRogueMIBNotifs  OBJECT IDENTIFIER
+    ::= { ciscoLwappRogueMIB 0 }
+
+ciscoLwappRogueMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoLwappRogueMIB 1 }
+
+ciscoLwappRogueMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoLwappRogueMIB 2 }
+
+cLRogueConfig  OBJECT IDENTIFIER
+    ::= { ciscoLwappRogueMIBObjects 1 }
+
+cLRoguePolicyConfig  OBJECT IDENTIFIER
+    ::= { cLRogueConfig 1 }
+
+
+cLRogueAdhocRogueReportEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to turn on and off ad-hoc
+        rogue reporting.  Setting this object to 'true' 
+        will enable ad-hoc rogue reporting. Setting to 
+        'false' will disable ad-hoc rogue reporting."
+    DEFVAL          { true } 
+    ::= { cLRoguePolicyConfig 1 }
+
+cLRogueAdhocRogueNotifEnabled OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The object to control the generation of
+        cLRogueAdhocDetected notification.
+
+        A value of 'true' indicates that the agent generates
+        cLRogueAdhocDetected notification.
+
+        A value of 'false' indicates that the agent doesn't
+        generate cLRogueAdhocDetected notification."
+    DEFVAL          { false } 
+    ::= { cLRogueConfig 2 }
+
+
+cLRogueAdhocRogueDetected NOTIFICATION-TYPE
+    OBJECTS         { cLApName }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated by the controller when a
+        a rogue is detected.  The name of the AP that  
+        detected this rogue is sent in the notification."
+   ::= { ciscoLwappRogueMIBNotifs 1 }
+ciscoLwappRogueMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoLwappRogueMIBConform 1 }
+
+ciscoLwappRogueMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoLwappRogueMIBConform 2 }
+
+
+ciscoLwappRogueMIBCompliance MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for the SNMP entities that
+        implement the ciscoLwappRogueMIB module."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoLwappRogueConfigGroup,
+                        ciscoLwappRogueNotifsGroup
+                    }
+    ::= { ciscoLwappRogueMIBCompliances 1 }
+
+ciscoLwappRogueConfigGroup OBJECT-GROUP
+    OBJECTS         {
+                        cLRogueAdhocRogueReportEnable,
+                        cLRogueAdhocRogueNotifEnabled
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represent the
+        rogue configuration on the controller."
+    ::= { ciscoLwappRogueMIBGroups 1 }
+
+ciscoLwappRogueNotifsGroup NOTIFICATION-GROUP
+   NOTIFICATIONS    { cLRogueAdhocRogueDetected }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects specifies the
+        notifications for rogue detection."
+    ::= { ciscoLwappRogueMIBGroups 2 }
+
+END
+
+
+

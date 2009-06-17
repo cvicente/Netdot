@@ -1,0 +1,2453 @@
+ATI-MIB DEFINITIONS ::= BEGIN
+
+-- Combination of this MIB :
+   -- Title:    Allied Telesis Inc. MIB
+   -- Date:     April 4, 1991
+   -- By:       Keith Franklin/ATI
+   -- Edited    Version 4.1 Firmware
+-- And this one :
+    --   AThub-mib
+    --   Release 4.0
+    --   Supported by AT-S4 rev 3.2, AT-S5 rev 3.2, and AT-S10 rev 4.0
+
+-- put together by hand by max baker. Damn them for recycling mib names
+--      11/1/04
+
+IMPORTS
+        enterprises, OBJECT-TYPE, NetworkAddress, IpAddress,
+        Counter, Gauge, TimeTicks, mib-2
+               FROM SNMPv2-SMI
+         DisplayString
+               FROM SNMPv2-TC
+         TRAP-TYPE
+               FROM RFC-1215
+         rptrAddrTrackNewLastSrcAddress
+               FROM SNMP-REPEATER-MIB;
+
+  --
+  --  General Definitions
+  --
+
+   MacAddress ::= OCTET STRING (SIZE (6))    -- a 6 octet address
+
+  --
+  -- Enterprise specific
+  --
+
+   alliedTelesyn OBJECT IDENTIFIER ::= { enterprises 207 }
+
+   products OBJECT IDENTIFIER      ::= { alliedTelesyn 1 }
+
+   bridge OBJECT IDENTIFIER        ::= { products 1 }
+   repeater OBJECT IDENTIFIER      ::= { products 2 }
+
+   atiBridgeagent      OBJECT IDENTIFIER ::= { bridge 1 }
+
+
+   bridgesnmpd          OBJECT IDENTIFIER ::= { atiBridgeagent 1 }
+
+   atiBridge        OBJECT IDENTIFIER ::= { bridgesnmpd 1 }
+
+   filterTable          OBJECT IDENTIFIER ::= { alliedTelesyn 2 }
+
+   spanningTree       OBJECT IDENTIFIER ::= { alliedTelesyn 6 }
+
+   mibObject OBJECT IDENTIFIER     ::= { alliedTelesyn 8 }
+   atiTrapAttrs OBJECT IDENTIFIER  ::= { alliedTelesyn 9 }
+
+--- hub mib
+   hub3600 OBJECT IDENTIFIER       ::= { repeater 1 }
+   hub3100 OBJECT IDENTIFIER       ::= { repeater 10 }
+   hubTurboStack OBJECT IDENTIFIER ::= { repeater 65 }
+
+   hubMib OBJECT IDENTIFIER        ::= { mibObject 1 }
+
+   rptrInfo OBJECT IDENTIFIER      ::= { hubMib 1 }
+   groupInfo OBJECT IDENTIFIER     ::= { hubMib 2 }
+   portInfo OBJECT IDENTIFIER      ::= { hubMib 3 }
+   rptrStat OBJECT IDENTIFIER      ::= { hubMib 4 }
+   groupStat OBJECT IDENTIFIER     ::= { hubMib 5 }
+   groupSAT OBJECT IDENTIFIER      ::= { hubMib 6 }
+ 
+  --
+  -- Following are configuration parameters for the entire managed repeater.
+  --
+
+   actualIPAddr OBJECT-TYPE
+       SYNTAX IpAddress
+       ACCESS read-only
+       STATUS mandatory
+       DESCRIPTION  "The actual IP Address that is currently being used by the
+             hub. This could be the same value as hubIPAddr, or it may
+             be different if another IP Address was received via Bootp."
+       ::= { rptrInfo 1 }
+
+   hubIPAddr OBJECT-TYPE
+       SYNTAX IpAddress
+       ACCESS read-write
+       STATUS mandatory
+       DESCRIPTION  "The configured IP Address of the hub."
+       ::= { rptrInfo 2 }
+
+   subnetMask OBJECT-TYPE
+       SYNTAX IpAddress
+       ACCESS read-write
+       STATUS mandatory
+       DESCRIPTION  "Subnet mask of the hub."
+       ::= { rptrInfo 3 }
+
+   routerAddr OBJECT-TYPE
+       SYNTAX IpAddress
+       ACCESS read-write
+       STATUS mandatory
+       DESCRIPTION  "Gateway/router address of the hub."
+       ::= { rptrInfo 4 }
+
+  snmpManager OBJECT-TYPE
+       SYNTAX IpAddress
+       ACCESS read-write
+       STATUS deprecated
+       DESCRIPTION  "IP Address of the hub's SNMP manager to which Traps
+             will be sent."
+       ::= { rptrInfo 5 }
+ 
+   softwareProduct OBJECT-TYPE
+       SYNTAX DisplayString (SIZE (0..255))
+       ACCESS read-only
+       STATUS mandatory
+       DESCRIPTION  "The ATI software product model number running in the hub."
+      ::= { rptrInfo 6 }
+
+   softwareLevel OBJECT-TYPE
+       SYNTAX DisplayString (SIZE (0..255))
+       ACCESS read-only
+       STATUS mandatory
+       DESCRIPTION  "The software release level running in the hub."
+       ::= { rptrInfo 7 }
+
+   configurationChanged  OBJECT-TYPE
+       SYNTAX  INTEGER {
+             changed(1),
+             nochange(2)
+         }
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION  "A flag, set to the value changed(1) when any of the
+             hub's status or configuration has been changed.
+             When this object is read, then the value is reset
+             to nochange(2)."
+       ::= { rptrInfo 8 }
+
+
+       rptrNmMgrTable   OBJECT-TYPE
+            SYNTAX  SEQUENCE OF RptrNmMgrEntry
+            ACCESS  not-accessible
+            STATUS  mandatory
+            DESCRIPTION
+                "
+                A list of SNMP Trap Manager stations Entries.
+                The number of entries is given by the
+                rptrNmMgrTotal mib object.
+                "
+            ::= { rptrInfo 9 }
+ 
+      rptrNmMgrEntry OBJECT-TYPE
+            SYNTAX  RptrNmMgrEntry
+            ACCESS  not-accessible
+            STATUS  mandatory
+            DESCRIPTION
+                "
+                An Trap receipt Manager Entry containing ipaddress of 
+                the configured NMS's to which Traps are sent.
+                "
+            INDEX { rptrNmMgrIndex }
+            ::= { rptrNmMgrTable 1 }
+ 
+     RptrNmMgrEntry ::=
+            SEQUENCE {
+                    rptrNmMgrIndex  INTEGER,
+                    rptrNmMgrIpAddr IpAddress
+            }
+ 
+    rptrNmMgrIndex OBJECT-TYPE
+            SYNTAX  INTEGER(1..4)
+            ACCESS  read-only
+            STATUS  mandatory
+            DESCRIPTION
+                "
+                The Index of SNMP Managers IP Address.
+                "
+            ::= { rptrNmMgrEntry 1 }
+
+    rptrNmMgrIpAddr OBJECT-TYPE
+            SYNTAX  IpAddress
+            ACCESS  read-write
+            STATUS  mandatory
+            DESCRIPTION
+                "
+                The IP Address of the NMS host configured.
+                "
+            ::= { rptrNmMgrEntry 2 }
+
+--
+-- Following is table for all devices in the chassis.
+--
+
+    deviceTable OBJECT-TYPE
+        SYNTAX  SEQUENCE OF DeviceEntry
+        ACCESS  not-accessible
+        STATUS  mandatory
+        DESCRIPTION
+        "The table contains the mapping of all devices
+         in the chassis. For all hubs and switches, the
+         object 'deviceQuadrant' returns 'right' (1).
+         For docking devices, then it will reflect the 
+         position of the device in the docking station.
+         This object is specific to Turbo Stack.
+        "
+        ::= { rptrInfo  10}
+ 
+    deviceEntry OBJECT-TYPE
+        SYNTAX  DeviceEntry
+        ACCESS  not-accessible
+        STATUS  mandatory
+        DESCRIPTION
+        "The device entry in the DeviceTable. 
+        "
+        INDEX { deviceIndex, deviceQuadrant }
+        ::= { deviceTable 1 }
+ 
+     DeviceEntry ::=
+        SEQUENCE {
+            deviceIndex     
+            INTEGER,
+            deviceQuadrant          
+            INTEGER,
+            deviceDescr
+            DisplayString,
+            deviceObjectID
+            OBJECT IDENTIFIER,
+            deviceIpAddr    
+            IpAddress,
+            devicePortCapacity
+            INTEGER
+            }
+
+    deviceIndex  OBJECT-TYPE
+        SYNTAX    INTEGER(1..8)
+        ACCESS    read-only
+        STATUS    mandatory
+        DESCRIPTION 
+        "
+          The Slot number in the chassis where the device is 
+          installed.
+        "
+    ::=  { deviceEntry 1 }
+
+    
+    deviceQuadrant  OBJECT-TYPE
+        SYNTAX    INTEGER {
+            right(1),
+            left(2)
+            }
+        ACCESS    read-only
+        STATUS    mandatory
+        DESCRIPTION 
+        "The Quadrant of the device.
+        "
+    ::=  { deviceEntry 2 }
+
+      
+    deviceDescr     OBJECT-TYPE
+        SYNTAX    DisplayString (SIZE (0..255))
+        ACCESS    read-only
+        STATUS    mandatory
+        DESCRIPTION
+        "TurboStack product family only.
+         A textual description of the device.
+         For devices that are repeaters, this value is identical to
+        the rptrGroupDescr object.
+        "
+    ::=  { deviceEntry 3 }
+    
+
+    deviceObjectID OBJECT-TYPE
+        SYNTAX    OBJECT IDENTIFIER
+        ACCESS    read-only
+        STATUS    mandatory
+        DESCRIPTION
+        "TurboStack product family only.
+         The sysObject identification of the device.
+         For devices that are repeaters, this value is identical to
+         the rptrGroupObjectID object.
+        "
+       ::= { deviceEntry 4 }
+
+    deviceIpAddr OBJECT-TYPE
+        SYNTAX    IpAddress
+        ACCESS    read-only
+        STATUS    mandatory
+        DESCRIPTION
+        "TurboStack product family only.
+         The IP address (if present) of the device.
+         For hubs devices, this object will return the same
+         value as hubIPAddr.
+        "
+       ::= { deviceEntry 5 }
+
+   devicePortCapacity OBJECT-TYPE
+        SYNTAX    INTEGER (1..1024)
+        ACCESS    read-only
+        STATUS    mandatory
+        DESCRIPTION
+        "TurboStack product family only.
+         The number of ports contained within the device.
+         Valid range is 1-1024.  Within each device, the
+         ports are uniquely numbered in the range from
+         1 to devicePortCapacity.
+         For devices that are repeaters, this value is identical to
+         the rptrGroupPortCapacity object."
+       ::= { deviceEntry 6}
+
+   localOmegaState    OBJECT-TYPE
+        SYNTAX    INTEGER {
+            enabled(1),
+            disabled(2)
+            }
+        ACCESS    read-write
+        STATUS    mandatory
+        DESCRIPTION 
+        "
+         This object enables the Local Omega to be enabled or disabled.
+        "
+    ::=  { rptrInfo 11 }
+
+   remoteOmegaState    OBJECT-TYPE
+        SYNTAX    INTEGER {
+            enabled(1),
+            disabled(2)
+            }
+        ACCESS    read-write
+        STATUS    mandatory
+        DESCRIPTION 
+        "
+         This object enables the Remote Omega to be enabled or disabled.
+        "
+    ::=  { rptrInfo 12 }
+
+--
+-- Following are statistics collected for the entire repeater.
+--
+
+  hubReadableFrames  OBJECT-TYPE
+       SYNTAX    Counter
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION  "The sum total of the Readable Frames Counters
+             of all ports on all modules/groups"
+       ::= { rptrStat 1 }
+
+  hubReadableOctets  OBJECT-TYPE
+       SYNTAX    Counter
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION  "The sum total of the Readable Octets (bytes) Counters
+             of all ports on all modules/groups"
+       ::= { rptrStat 2 }
+
+  hubFCSError  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the FCS (CRC) Error Counters of all
+             ports on all modules/groups"
+      ::= { rptrStat 3 }
+
+  hubAlignError  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Alignment Error Counters of all
+             ports on all modules/groups"
+      ::= { rptrStat 4 }
+
+  hubFrameTooLong  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Frame Too Long Error Counters of all
+             ports on all modules/groups"
+      ::= { rptrStat 5 }
+
+  hubShortEvent  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Short Event Error Counters of all
+             ports on all modules/groups"
+      ::= { rptrStat 6 }
+
+  hubRunt  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Runt Error Counters of all
+             ports on all modules/groups"
+      ::= { rptrStat 7 }
+
+  hubLateEvent  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Late Event Error Counters of all
+             ports on all modules/groups"
+      ::= { rptrStat 8 }
+
+  hubVeryLongEvent  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Very Long Event Error (Jabber)
+             Counters of all ports on all modules/groups"
+      ::= { rptrStat 9 }
+
+  hubDataRateMism  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Data Rate Mismatch Error Counters
+             of all ports on all modules/groups"
+      ::= { rptrStat 10 }
+
+  hubAutoPartition  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Auto Port Partition Counters
+             of all ports on all modules/groups"
+      ::= { rptrStat 11 }
+
+  hubTotalError  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of all Error Counters
+             of all ports on all modules/groups"
+      ::= { rptrStat 12 }
+
+  hubPortCollision  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Port Collision Counters
+             of all ports on all modules/groups"
+      ::= { rptrStat 13 }
+
+
+  hubFrames-64-127bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The sum total number of readable frames received
+        on all ports on all modules/groups, where
+        the frame length was in the range 64 through 127 octets."
+       ::= { rptrStat 14 }
+
+  hubFrames-128-255bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The sum total number of readable frames received
+        on all ports on all modules/groups, where
+        the frame length was in the range 128 through 255 octets."
+       ::= { rptrStat 15 }
+
+  hubFrames-256-511bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The sum total number of readable frames received
+        on all ports on all modules/groups, where
+        the frame length was in the range 256 through 511 octets."
+       ::= { rptrStat 16 }
+
+  hubFrames-512-1023bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The sum total number of readable frames received
+        on all ports on all modules/groups, where
+        the frame length was in the range 512 through 1023 octets."
+       ::= { rptrStat 17 }
+
+  hubFrames-1024-1518bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The sum total number of readable frames received
+        on all ports on all modules/groups, where
+        the frame length was in the range 1024 through 1518 octets."
+       ::= { rptrStat 18 }
+
+   ledInfo  OBJECT-TYPE
+       SYNTAX OCTET STRING
+       ACCESS read-only
+       STATUS deprecated
+       DESCRIPTION  "See groupLEDInfo"
+       ::= { groupInfo 1 }
+
+   groupInfoTable OBJECT-TYPE
+       SYNTAX    SEQUENCE OF GroupInfoEntry
+       ACCESS    not-accessible
+       STATUS    mandatory
+       DESCRIPTION  "Table of group specific information."
+       ::= { groupInfo 2 }
+
+   groupInfoEntry OBJECT-TYPE
+       SYNTAX    GroupInfoEntry
+       ACCESS    not-accessible
+       STATUS    mandatory
+       DESCRIPTION
+           "An entry in the table, containing information
+        about a single group of ports."
+       INDEX    { groupInfoIndex }
+       ::= { groupInfoTable 1 }
+
+   GroupInfoEntry ::=
+       SEQUENCE {
+       groupInfoIndex
+           INTEGER,
+       groupLEDInfo
+           OCTET STRING,
+       groupSegmentation
+           INTEGER,
+       groupSecurity
+           INTEGER,
+       groupIntruderProtection
+           INTEGER,
+       groupSrcAddrLearningMode
+           INTEGER,
+       groupIntruderTrap
+           INTEGER,
+       groupIntruderDisable
+           INTEGER,
+       groupOperStatus
+           INTEGER,
+       groupDescr
+           DisplayString,
+       groupObjectID
+           OBJECT IDENTIFIER,
+       groupIPAddress
+           IpAddress,
+       groupPortCapacity
+           INTEGER,
+       groupEraseSourceAddressTable
+           INTEGER,
+       groupAddSourceAddress
+           OCTET STRING,
+       groupDeleteSourceAddress
+           OCTET STRING,
+       groupLimitAddressPerPort
+           INTEGER,
+       groupCheckPrimaryTimer
+           INTEGER,
+       groupReceiveFailureTimer
+           INTEGER,
+       groupCheckResampleTimer
+           INTEGER
+       }
+
+   groupInfoIndex OBJECT-TYPE
+       SYNTAX    INTEGER (1..1024)
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "This object identifies the group within the
+        repeater for which this entry contains information."
+       ::= { groupInfoEntry 1 }
+
+   groupLEDInfo  OBJECT-TYPE
+       SYNTAX OCTET STRING
+       ACCESS read-only
+       STATUS mandatory
+       DESCRIPTION
+           "This information encodes the current state of the module
+        per-port LEDs."
+       ::= { groupInfoEntry 2 }
+
+   groupSegmentation OBJECT-TYPE
+       SYNTAX   INTEGER {
+             segmented(1),
+             connected(2),
+             external(3)
+        }
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+        "AT-3100 product family only.
+         This object controls the segmentation option for this group.
+         It may be segmented, connected, or using the module's
+         external segmentation switch."
+       ::= { groupInfoEntry 3 }
+
+   groupSecurity OBJECT-TYPE
+       SYNTAX   INTEGER {
+             enabled(1),
+             disabled(2),
+             external(3)
+        }
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+           "AT-3100 product family only.
+        This object controls the Security option for this group.
+        It may be enabled, disabled, or using module's external
+        security switch."
+       ::= { groupInfoEntry 4 }
+
+
+   groupIntruderProtection OBJECT-TYPE
+       SYNTAX   INTEGER {
+             enabled(1),
+             disabled(2)
+        }
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+           "AT-3100 and TurboStack product families only.
+        This object controls the Intruder Protection option for this
+        group/module.  For TurboStack products, disabled turns off
+        Intruder Protection and places the module into source address
+        Learning Mode.  Enabled turns on Intruder Protection and places
+        the module into Secure Mode."
+       ::= { groupInfoEntry 5 }
+
+
+
+   groupSrcAddrLearningMode OBJECT-TYPE
+       SYNTAX   INTEGER {
+             mode1(1),
+             mode2(2),
+             mode3(3),
+             mode4(4)
+        }
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+          "AT-3100 product family only.
+           This object indicates the Source Address Learning Mode.
+           Mode1 : Automatic; passive devices:  Automatic MAC address
+               learning.  Re-learn port MAC address after a port is
+               disabled/re-enabled.  Passive devices connected to a
+               port will see all backbone traffic.
+           Mode2 : Automatic; passive devices:  Automatic MAC address
+               learning.  Re-learn port MAC address after link test
+               fails (cable removed).  Passive devices connected to a
+               port will see all backbone traffic.
+           Mode3 : Manual:  No automatic MAC address learning (disabled).
+           Mode4 : Automatic; active devices:  Automatic MAC address
+               learning.  Re-learn port MAC address after a port is
+               disabled/re-enabled.  Passive devices connected to a
+               port will see no backbone traffic."
+       ::= { groupInfoEntry 6 }
+
+
+
+   groupIntruderTrap OBJECT-TYPE
+       SYNTAX   INTEGER {
+             enabled(1),
+             disabled(2)
+        }
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+           "AT-3100 and TurboStack product families only.
+        This object controls the action to be taken by this group/module
+        when an Intruder Alert event occurs.  When this option is
+        enabled, the detection of an intruder (a received packet with
+        an unlearned or undefined source address) causes a Trap to be
+        sent to the configured host manager.  When this option is
+        disabled then no Trap is sent on an Intruder Alert event."
+       ::= { groupInfoEntry 7 }
+
+   groupIntruderDisable OBJECT-TYPE
+       SYNTAX   INTEGER {
+             enabled(1),
+             disabled(2)
+        }
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+           "AT-3100 and TurboStack product families only.
+        This object controls the action to be taken by this group/module
+        when an Intruder Alert event occurs.  When this option is
+        enabled, the detection of an intruder (a received packet with
+        an unlearned or undefined source address) causes the port where
+        the intruder was detected to be automatically disabled.  When
+        this option is disabled then the port will not be disabled on
+        an Intruder Alert event."
+       ::= { groupInfoEntry 8 }
+
+
+
+   groupOperStatus OBJECT-TYPE
+       SYNTAX    INTEGER {
+             operational(2),
+             malfunctioning(3),
+             notPresent(4)
+         }
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        An object that indicates the operational status of the module.
+        For modules that are repeaters, this value is identical to
+        the rptrGroupOperStatus object.
+        A status of operational(2) indicates that the
+        module is present and functional within the chassis.
+        A status of malfunctioning(3) indicates that the
+        module is present within the chassis but is not functional.
+        A status of notPresent(4) indicates that the module is
+        temporarily or permanently physically and/or logically
+        not a part of the chassis."
+       ::= { groupInfoEntry 9 }
+
+   groupDescr OBJECT-TYPE
+       SYNTAX    DisplayString (SIZE (0..255))
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        A textual description of the module.
+        For modules that are repeaters, this value is identical to
+        the rptrGroupDescr object."
+       ::= { groupInfoEntry 10 }
+
+   groupObjectID OBJECT-TYPE
+       SYNTAX    OBJECT IDENTIFIER
+       ACCESS    read-only
+       STATUS    deprecated
+       DESCRIPTION
+           "TurboStack product family only.
+        The sysObject identification of the module.
+        For modules that are repeaters, this value is identical to
+        the rptrGroupObjectID object."
+       ::= { groupInfoEntry 11 }
+
+   groupIPAddress OBJECT-TYPE
+       SYNTAX    IpAddress
+       ACCESS    read-only
+       STATUS    deprecated
+       DESCRIPTION
+           "TurboStack product family only.
+        The IP address (if any) of the module.
+        For modules that are repeaters, this value is identical to
+        the actualIPAddr object.  For non-repeater modules, this
+        object identifies the IP address that may be used to
+        communicate directly with the module."
+       ::= { groupInfoEntry 12 }
+
+   groupPortCapacity OBJECT-TYPE
+       SYNTAX    INTEGER (1..1024)
+       ACCESS    read-only
+       STATUS    deprecated
+       DESCRIPTION
+           "TurboStack product family only.
+        The number of ports contained within the module.  Valid range
+        range is 1-1024.  Within each module, the ports are uniquely
+        numbered in the range from 1 to groupPortCapacity.
+        For modules that are repeaters, this value is identical to
+        the rptrGroupPortCapacity object."
+       ::= { groupInfoEntry 13 }
+
+   groupEraseSourceAddressTable OBJECT-TYPE
+       SYNTAX   INTEGER {
+             noerase(1),
+             erase(2)
+        }
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        This object, when Set to the erase value, will clear (empty)
+        the module Source Address Table, deleting all learned MAC
+        addresses;  this object will then automatically revert back to
+        the noerase state.  When Set to noerase, no action is taken and
+        the Source Address Table remains unmodified.  A Get of this
+        object will always return the noerase value."
+       ::= { groupInfoEntry 14 }
+
+   groupAddSourceAddress OBJECT-TYPE
+       SYNTAX    OCTET STRING (SIZE(6))
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        This object, when Set with a 48-bit MAC address value, will
+        add the new MAC address to the module Source Address Table.
+        A Get of this object will return a string of length zero."
+       ::= { groupInfoEntry 15 }
+
+   groupDeleteSourceAddress OBJECT-TYPE
+       SYNTAX    OCTET STRING (SIZE(6))
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        This object, when Set with a 48-bit MAC address value, will
+        delete the MAC address from the module Source Address Table.
+        A Get of this object will return a string of length zero."
+       ::= { groupInfoEntry 16 }
+
+   groupLimitAddressPerPort OBJECT-TYPE
+       SYNTAX   INTEGER {
+             noLimit(1),
+             limit1Address(2)
+        }
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        This object configures the module to allow no limitation
+        on number of source addresses on its ports, or limit to
+        only 1 source address per port."
+       ::= { groupInfoEntry 17 }
+
+  groupCheckPrimaryTimer  OBJECT-TYPE
+    SYNTAX   INTEGER (0..65535)
+    ACCESS   read-write
+    STATUS   mandatory
+    DESCRIPTION
+        "
+         TurboStack product family only.
+         The Check Primary Timer is the timer value in seconds 
+         which determines how long to wait before checking if
+         the primary port could receive again. This timer applies
+         when the secondary port is enabled, and the primary port's
+         failure is NOT due to loss of link.
+         Range: 1 - 65535 in seconds, 0 means don't check receives.
+         Default is 60 seconds.
+        "
+     ::= { groupInfoEntry 18 }
+
+  groupReceiveFailureTimer  OBJECT-TYPE
+    SYNTAX   INTEGER (0..65535)
+    ACCESS   read-write
+    STATUS   mandatory
+    DESCRIPTION
+        "
+         TurboStack product family only.
+         The Receive Failure Timer is the timer value in seconds
+         which determines how long to wait before the secondary port
+         takes over when the primary port is not receiving data.
+         This timer applies only when the primary port's failure
+         is NOT due to loss of link.
+         Range: 0 - 65535 in seconds, 0 means don't check receives.
+         Default is 60 seconds.
+        "
+     ::= { groupInfoEntry 19 }
+
+  groupCheckResampleTimer  OBJECT-TYPE
+    SYNTAX   INTEGER (100..65535)
+    ACCESS   read-write
+    STATUS   mandatory
+    DESCRIPTION
+        "
+         TurboStack product family only.
+         The Resample Timer is the timer value in milliseconds
+         which determines how long to sample/test if the primary
+         port could receive data or is no longer partitioned.
+         This timer begins once groupCheckPrimaryTimer has expired,
+         and during this sampling time, the secondary port cannot
+         repeat data.
+         Range: 100 - 65535 milliseconds. Default is 200 milliseconds.
+        "
+     ::= { groupInfoEntry 20 }
+
+
+--
+-- Following are statistics collected for each module/group in the repeater.
+--
+
+   groupStatTable OBJECT-TYPE
+       SYNTAX    SEQUENCE OF GroupStatEntry
+       ACCESS    not-accessible
+       STATUS    mandatory
+       DESCRIPTION
+           "Table of performance and error statistics for the groups."
+       ::= { groupStat 1 }
+
+   groupStatEntry OBJECT-TYPE
+       SYNTAX    GroupStatEntry
+       ACCESS    not-accessible
+       STATUS    mandatory
+       DESCRIPTION
+           "An entry in the table, containing total
+        performance and error statistics for a single
+        group.  Regular retrieval of the information in
+        this table provides a means of tracking the
+        performance and health of the networked devices
+        attached to this group's ports.
+
+        The counters in this table are redundant in the
+        sense that they are the summations of information
+        already available through other objects.  However,
+        these sums provide a considerable optimization of
+        network management traffic over the otherwise
+        necessary retrieval of the individual counters
+        included in each sum."
+       INDEX    { groupStatIndex }
+       ::= { groupStatTable 1 }
+
+   GroupStatEntry ::=
+       SEQUENCE {
+       groupStatIndex
+           INTEGER,
+       groupFCSError
+           Counter,
+       groupAlignError
+           Counter,
+       groupFrameTooLong
+           Counter,
+       groupShortEvent
+           Counter,
+       groupRunt
+           Counter,
+       groupPortCollision
+           Counter,
+       groupLateEvent
+           Counter,
+       groupVeryLongEvent
+           Counter,
+       groupDataRateMism
+           Counter,
+       groupAutoPartition
+           Counter
+,
+       groupFrames-64-127bytes
+           Counter,
+       groupFrames-128-255bytes
+           Counter,
+       groupFrames-256-511bytes
+           Counter,
+       groupFrames-512-1023bytes
+           Counter,
+       groupFrames-1024-1518bytes
+           Counter
+       }
+
+   groupStatIndex OBJECT-TYPE
+       SYNTAX    INTEGER (1..1024)
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "This object identifies the group within the
+        repeater for which this entry contains information."
+       ::= { groupStatEntry 1 }
+
+  groupFCSError  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the FCS (CRC) Error Counters of all
+             ports on this module/group"
+      ::= { groupStatEntry 2 }
+
+  groupAlignError  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Alignment Error Counters of all
+             ports on this module/group"
+      ::= { groupStatEntry 3 }
+
+  groupFrameTooLong  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Frame Too Long Error Counters of all
+             ports on this module/group"
+      ::= { groupStatEntry 4 }
+
+  groupShortEvent  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Short Event Error Counters of all
+             ports on this module/group"
+      ::= { groupStatEntry 5 }
+
+  groupRunt  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Runt Error Counters of all
+             ports on this module/group"
+      ::= { groupStatEntry 6 }
+
+  groupPortCollision  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Port Collision Counters
+             of all ports on this module/group"
+      ::= { groupStatEntry 7 }
+
+  groupLateEvent  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Late Event Error Counters of all
+             ports on this module/group"
+      ::= { groupStatEntry 8 }
+
+  groupVeryLongEvent  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Very Long Event Error (Jabber)
+             Counters of all ports on this module/group"
+      ::= { groupStatEntry 9 }
+
+  groupDataRateMism  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Data Rate Mismatch Error Counters
+             of all ports on this module/group"
+      ::= { groupStatEntry 10 }
+
+  groupAutoPartition  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION  "The sum total of the Auto Port Partition Counters
+             of all ports on this module/group"
+      ::= { groupStatEntry 11 }
+
+
+  groupFrames-64-127bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The sum total number of readable frames received
+        on all ports on this module/group, where
+        the frame length was in the range 64 through 127 octets."
+      ::= { groupStatEntry 12}
+
+  groupFrames-128-255bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The sum total number of readable frames received
+        on all ports on this module/group, where
+        the frame length was in the range 128 through 255 octets."
+      ::= { groupStatEntry 13 }
+
+  groupFrames-256-511bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The sum total number of readable frames received
+        on all ports on this module/group, where
+        the frame length was in the range 256 through 511 octets."
+      ::= { groupStatEntry 14 }
+
+  groupFrames-512-1023bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The sum total number of readable frames received
+        on all ports on this module/group, where
+        the frame length was in the range 512 through 1023 octets."
+      ::= { groupStatEntry 15 }
+
+  groupFrames-1024-1518bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The sum total number of readable frames received
+        on all ports on this module/group, where
+        the frame length was in the range 1024 through 1518 octets."
+      ::= { groupStatEntry 16 }
+
+
+
+--
+-- TurboStack product family only:
+-- Following is the Source Address Table for each module/group in the repeater.
+--
+
+   groupSourceAddressTable  OBJECT-TYPE
+       SYNTAX  SEQUENCE OF GroupSATEntry
+       ACCESS  not-accessible
+       STATUS  mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        Table of learned and/or configured source MAC addresses which
+        defines the only valid and allowable source addresses for
+        this module (if Intruder Protection is enabled)."
+       ::= { groupSAT 1 }
+
+   groupSATEntry  OBJECT-TYPE
+       SYNTAX  GroupSATEntry
+       ACCESS  not-accessible
+       STATUS  mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        An entry in the Source Address Table, containing information
+        about a single source MAC address."
+       INDEX   { groupSATModule, groupSATIndex }
+       ::= { groupSourceAddressTable 1 }
+
+   GroupSATEntry  ::=
+      SEQUENCE {
+       groupSATModule
+           INTEGER,
+       groupSATIndex
+           INTEGER,
+       groupSATMacAddress
+           OCTET STRING,
+       groupSATPort
+           INTEGER
+       }
+
+   groupSATModule OBJECT-TYPE
+       SYNTAX    INTEGER (1..1024)
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        This object identifies the group within the
+        repeater for which this entry contains information."
+       ::= { groupSATEntry 1 }
+
+   groupSATIndex OBJECT-TYPE
+       SYNTAX    INTEGER (1..1024)
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        This object identifies the index within the Source Address
+        Table for which this entry contains information."
+       ::= { groupSATEntry 2 }
+
+   groupSATMacAddress OBJECT-TYPE
+       SYNTAX    OCTET STRING (SIZE(6))
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        This object is the learned or configured source MAC address.
+        If no MAC address has been learned for this table entry (if
+        this is beyond the logical end of the table) then a string
+        of zero length will be returned."
+       ::= { groupSATEntry 3 }
+
+   groupSATPort OBJECT-TYPE
+       SYNTAX    INTEGER (0..1024)
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        This object is the port number where the source MAC address
+        was last detected.  If the MAC address has not been detected
+        since the system was last started, then this object will
+        be zero."
+       ::= { groupSATEntry 4 }
+
+
+--
+--  Following are controls and statistics for each port within the repeater.
+--
+
+   atiPortTable  OBJECT-TYPE
+       SYNTAX  SEQUENCE OF AtiPortEntry
+       ACCESS  not-accessible
+       STATUS  mandatory
+       DESCRIPTION
+           "Table of descriptive and status information about
+        the ports."
+       ::= { portInfo 1 }
+
+   atiPortEntry  OBJECT-TYPE
+       SYNTAX  AtiPortEntry
+       ACCESS  not-accessible
+       STATUS  mandatory
+       DESCRIPTION
+           "An entry in the table, containing information
+        about a single port."
+       INDEX   { atiPortGroupIndex, atiPortIndex }
+       ::= { atiPortTable 1 }
+
+   AtiPortEntry  ::=
+      SEQUENCE {
+       atiPortGroupIndex
+           INTEGER,
+       atiPortIndex
+           INTEGER,
+       portName
+           DisplayString,
+       portState
+           INTEGER,
+       linkTest
+           INTEGER,
+       altReconnection
+           INTEGER,
+       polarityCorrection
+           INTEGER,
+       partitionedLED
+           INTEGER,
+       linkTestLED
+           INTEGER,
+       polarityLED
+           INTEGER,
+       portMACAddress
+           MacAddress,
+       portFrames-64-127bytes
+           Counter,
+       portFrames-128-255bytes
+           Counter,
+       portFrames-256-511bytes
+           Counter,
+       portFrames-512-1023bytes
+           Counter,
+       portFrames-1024-1518bytes
+           Counter,
+       portRedundantPort
+           INTEGER,
+       portRedundantPosition
+           INTEGER,
+       portLearningState
+           INTEGER
+      }
+   atiPortGroupIndex OBJECT-TYPE
+       SYNTAX    INTEGER (1..1024)
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "This object identifies the group containing the
+        port for which this entry contains information."
+       ::= { atiPortEntry 1 }
+
+   atiPortIndex OBJECT-TYPE
+       SYNTAX    INTEGER (1..1024)
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "This object identifies the port within the group
+        for which this entry contains information.
+        This value can never be greater than
+        rptrGroupPortCapacity for the associated group."
+       ::= { atiPortEntry 2 }
+
+   portName   OBJECT-TYPE
+       SYNTAX  DisplayString (SIZE (0..255))
+       ACCESS  read-write
+       STATUS  mandatory
+       DESCRIPTION  "Port Name"
+       ::= { atiPortEntry 3 }
+
+   portState  OBJECT-TYPE
+       SYNTAX  INTEGER {
+             enabled(1),
+             disabled(2),
+             enabledByRedund(3),
+             disabledByRedund(4)
+         }
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+          "Port State option:  enabled allow repeating of packets
+           through the port;  disabled turns off the port and prevents
+           packets repeating through the port."
+       ::= { atiPortEntry 4 }
+
+   linkTest  OBJECT-TYPE
+       SYNTAX   INTEGER {
+             enabled(1),
+             disabled(2)
+        }
+       ACCESS   read-write
+       STATUS   mandatory
+       DESCRIPTION
+          "Link Test option:  enabled turns on checking for link test
+           signals for the port;  disabled turns off checking for
+           link test signals."
+       ::= { atiPortEntry 5 }
+
+   altReconnection  OBJECT-TYPE
+       SYNTAX   INTEGER {
+             standardIEEE(1),
+             alternate(2)
+         }
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+          "Reconnection Method: 1=IEEE Standard, 2=Alternate."
+       ::= { atiPortEntry 6 }
+
+   polarityCorrection  OBJECT-TYPE
+       SYNTAX   INTEGER {
+             enabled(1),
+             disabled(2)
+         }
+       ACCESS   read-write
+       STATUS   mandatory
+       DESCRIPTION
+          "Polarity Correction option:  enabled turns on automatic
+           polarity correction for the port;  disabled turns off automatic
+           polarity correction."
+       ::= { atiPortEntry 7 }
+
+   partitionedLED  OBJECT-TYPE
+       SYNTAX    INTEGER {
+             notpartitioned(1),
+             partitioned(2)
+         }
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "This object reflects the current actual partitioning state of
+        the port.  The notpartitioned value means that the port is
+        operational and repeating through the port is enabled.
+        The partitioned value means that the port is not operational
+        and repeating through the port is disabled."
+       ::= { atiPortEntry 8 }
+
+   linkTestLED  OBJECT-TYPE
+       SYNTAX    INTEGER {
+             nolinktesterror(1),
+             linktesterror(2)
+         }
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "This object reflects the current actual link test state of
+        the port.  The nolinktesterror value means that valid
+        link integrity test signals have been detected on the port,
+        indicating that an operable device is cabled to the port.
+        The linktesterror value means that no link integrity test
+        signals have been detected, indicating removal or failure
+        of the port-to-device cable, or that the device is not
+        operational.  This object applies only to UTP (twisted pair)
+        and fiber optic ports (not AUI or BNC ports)."
+       ::= { atiPortEntry 9 }
+
+   polarityLED  OBJECT-TYPE
+       SYNTAX    INTEGER {
+             notreversed(1),
+             reversed(2)
+         }
+       ACCESS    read-only
+       STATUS    mandatory
+       DESCRIPTION
+           "This object reflects the current actual polarity state of
+        the port.  The notreversed value means that the port-to-device
+        cable connection is properly polarized.  The reversed value
+        means that the cable connection has reversed polarity.
+        This object applies only to UTP (twisted pair) and
+        fiber optic ports (not AUI or BNC ports)."
+       ::= { atiPortEntry 10 }
+
+   portMACAddress OBJECT-TYPE
+       SYNTAX    MacAddress
+       ACCESS    read-write
+       STATUS    mandatory
+       DESCRIPTION
+           "AT-3100 product family only.
+        This object is either the MAC address of the
+        last readable frame (i.e., counted by
+        rptrMonitorPortReadableFrames) received by this
+        port, or a manually input MAC address. If neither
+        of those exists, then a string of length zero is
+        returned. If a 'read' operation is performed on
+        this object, the value it returns is the same as
+        the value returned by object
+        'rptrAddrTrackNewLastSrcAddress' in the Standard
+        Repeater MIB (RFC1516)."
+       ::= { atiPortEntry 11 }
+
+
+  portFrames-64-127bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The number of readable frames received on this port where
+        the frame length was in the range 64 through 127 octets."
+       ::= { atiPortEntry 12 }
+
+  portFrames-128-255bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The number of readable frames received on this port where
+        the frame length was in the range 128 through 255 octets."
+       ::= { atiPortEntry 13 }
+
+  portFrames-256-511bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The number of readable frames received on this port where
+        the frame length was in the range 256 through 511 octets."
+       ::= { atiPortEntry 14 }
+
+  portFrames-512-1023bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The number of readable frames received on this port where
+        the frame length was in the range 512 through 1023 octets."
+       ::= { atiPortEntry 15 }
+
+  portFrames-1024-1518bytes  OBJECT-TYPE
+       SYNTAX     Counter
+       ACCESS     read-only
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        The number of readable frames received on this port where
+        the frame length was in the range 1024 through 1518 octets."
+       ::= { atiPortEntry 16 }
+
+  portRedundantPort  OBJECT-TYPE
+       SYNTAX     INTEGER
+       ACCESS     read-write
+       STATUS     mandatory
+       DESCRIPTION
+           "TurboStack product family only.
+        This is the redundant port for atiPortIndex.
+        If the port is a secondary port as indicated in
+        portRedundantPosition, then it serves as a backup port.
+        This would indicate paired ports with redundant link."
+       ::= { atiPortEntry 17 }
+
+  portRedundantPosition   OBJECT-TYPE
+    SYNTAX   INTEGER {
+           primary(1),
+           secondary(2),
+           notapplicable(3)
+         }
+    ACCESS   read-only
+    STATUS   mandatory
+    DESCRIPTION
+         "TurboStack product family only.
+          This object will retrieve the redundant position of the
+          port, primary or secondary port, if the port has a
+          redundant link to it."
+     ::= { atiPortEntry 18 }
+
+  portLearningState   OBJECT-TYPE
+    SYNTAX   INTEGER {
+           enabled(1),
+           disabled(2)
+         }
+    ACCESS   read-write
+    STATUS   mandatory
+    DESCRIPTION
+        "
+         TurboStack product family only.
+         This object enable the learning on a port to be shut ON or OFF.
+         Once the learning is Shut Off, the learning of MAC Address 
+         will stop.
+         "
+     ::= { atiPortEntry 19 }
+    
+
+--  ATI Enterprise Trap --
+
+-- These are the object I am adding where the Intruder is reported to the
+-- Manager when sending a trap.
+-- The objects are to track down the MAC address, the module 
+-- on which this appeared and the port on which the intruder was seen.
+
+
+atiTrapIntruderMacAddress OBJECT-TYPE
+      SYNTAX    OCTET STRING (SIZE(6))
+       ACCESS   not-accessible
+       STATUS mandatory
+    DESCRIPTION
+    " The Mac address of the Intruder which is different from the rfc1516 
+     object rptrAddrTrackLastSourceAddress is seen on port which is the 
+     the next object"
+    ::= { atiTrapAttrs  1 }
+
+
+atiTrapIntruderModuleNumber OBJECT-TYPE
+       SYNTAX   INTEGER 
+       ACCESS   not-accessible
+       STATUS mandatory
+    DESCRIPTION
+    " This is the module number on which an intruder was seen."
+    ::= { atiTrapAttrs  2 }
+
+atiTrapIntruderPortNumber OBJECT-TYPE
+       SYNTAX   INTEGER 
+       ACCESS   not-accessible
+       STATUS mandatory
+    DESCRIPTION
+    " This is the port number on which an intruder was seen."
+    ::= { atiTrapAttrs  3 }
+
+atiPortChangeDirection OBJECT-TYPE
+       SYNTAX    INTEGER {
+             primarytosecondary(1),
+             secondarytoprimary(2)
+         }
+       ACCESS   not-accessible
+       STATUS mandatory
+    DESCRIPTION
+    " This is the direction of redundant port change. These two
+      values are used in the trap atiRedundantPortChangeTrap.
+    "
+    ::= { atiTrapAttrs  4 }
+
+   intruderProtectionTrap TRAP-TYPE
+       ENTERPRISE  repeater
+       VARIABLES   { rptrAddrTrackNewLastSrcAddress }
+       DESCRIPTION
+           "This trap is replaced by atiIntruderProtectionTrap starting from
+        firmware ver 3.0.
+        AT-3100 and TurboStack product families only.
+        This trap is sent when an Intruder Alert occurs on a port due
+        to a received packet with an unauthorized source MAC address.
+        Intruder Protection for the module must be enabled.
+        The varBind list contains the MAC address of the intruder."
+       ::= 20
+
+   atiIntruderProtectionTrap TRAP-TYPE
+       ENTERPRISE  repeater
+       VARIABLES   { atiTrapIntruderModuleNumber, atiTrapIntruderPortNumber,
+             atiTrapIntruderMacAddress  }
+       DESCRIPTION
+       "AT-3100 and TurboStack product families only.
+        This trap is sent when an Intruder Alert occurs on a module/port due
+        to a received packet with an unauthorized source MAC address.
+        Intruder Protection for the module must be enabled.
+        The varBind list contains the module number, port number,
+        and the MAC address of the intruder."
+       ::= 21
+
+   atiRedundantPortChangeTrap TRAP-TYPE
+       ENTERPRISE  repeater
+       VARIABLES   { atiPortGroupIndex, atiPortIndex,
+             portRedundantPort, atiPortChangeDirection }
+       DESCRIPTION
+       "TurboStack product family only.
+        This trap is sent when ports, which are configured for
+        redundant links, change from primary to secondary or
+        secondary to primary."
+       ::= 22
+
+-- switch mib
+
+
+   ftConfig        OBJECT-TYPE
+                      SYNTAX SEQUENCE OF FtConfig
+                      ACCESS not-accessible
+                      STATUS mandatory
+                      DESCRIPTION "Bridge FT operational parameters"
+                      ::= { filterTable 1 }
+
+   FtConfig   ::= SEQUENCE {
+                        ftMaxAge
+                           INTEGER,
+                        ftMaxRemove
+                           INTEGER,
+                        ftMaxFilter
+                           INTEGER,
+                        ftAgeTime
+                           INTEGER,
+                        ftMaxPerm
+                           INTEGER,
+                        ftForwMBcast
+                           INTEGER,
+                        ftSecureMode
+                           INTEGER
+                }
+
+  ftMaxAge   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Seconds before an unreferenced dynamic FT
+             entry is removed"
+                ::= { ftConfig 1}
+  ftMaxRemove   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "Max number table entries removed each
+                time table overflows"
+                ::= { ftConfig 2}
+  ftMaxFilter   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Max number FT entries"
+                ::= { ftConfig 3}
+  ftAgeTime   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "Seconds between FT table entries"
+                ::= { ftConfig 4}
+  ftMaxPerm   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "Max number of permanent FT entries. May be set
+                 to zero which causes all non-system FT entries 
+                 to be deleted"
+                ::= { ftConfig 5}
+  ftForwMBcast  OBJECT-TYPE
+                SYNTAX  INTEGER {
+                forwardmulticast (1),
+                filtermulticast (0)
+        }
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "Flag indicates if multicast (including broadcast)
+                 packets are to be forwarded (1) or discarded (0)"
+                ::= { ftConfig 6}
+  ftSecureMode   OBJECT-TYPE
+                SYNTAX  INTEGER {
+                 staticaddr(1),
+                 dynamicaddr(0)
+        }
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "Flag indicates if bridge will learn addresses"
+                ::= { ftConfig 7}
+
+   FdbConfig   ::= SEQUENCE {
+                        ftMaxFilter
+                           INTEGER,
+                        ftMaxPerm
+                           INTEGER,
+                        ftForwMBcast
+                           INTEGER,
+                        ftSecureMode
+                           INTEGER
+                }
+
+  ftEntry    OBJECT-TYPE
+                SYNTAX SEQUENCE OF FtEntry
+                ACCESS not-accessible
+                STATUS mandatory
+                DESCRIPTION "Bridge FT entries each selected by destination 
+                address"    
+        INDEX { ftAddr } -- dummy index
+                ::= {  filterTable 2}
+
+  FtEntry    ::=
+                SEQUENCE {
+             ftAddr
+            OCTET STRING,
+                     ftAge
+                        INTEGER,
+                     ftDisp
+                        INTEGER
+                }
+  ftAddr   OBJECT-TYPE
+                SYNTAX  OCTET STRING (SIZE (6))
+                ACCESS  not-accessible
+                STATUS  mandatory
+                DESCRIPTION "destination address (dummy index)"
+                ::= { ftEntry 91 }
+
+  ftAge   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "FT entry age since last referenced in seconds"
+                ::= { ftEntry 1 }
+
+  ftDisp  OBJECT-TYPE
+                SYNTAX  INTEGER {
+                    dynamicForwardP1 (4),
+                    dynamicForwardP2 (8),
+                    dynamicFlood     (16),
+                    dynamicDiscard   (32),
+                    staticForwardP1  (5),
+                    staticForwardP2  (9),
+                    staticFlood      (17),
+                    staticDiscard    (33),
+                    sysSendup        (67),
+                    sysDiscard       (35),
+                    sysFlood         (83)
+                }
+                ACCESS read-write
+                STATUS mandatory
+                DESCRIPTION "FT entry disposition. Can be more than one OR'ed together"
+                ::= { ftEntry 2 }
+
+   interfaceErrors  OBJECT-TYPE
+                SYNTAX InterfaceErrors
+                ACCESS not-accessible
+                STATUS mandatory
+                DESCRIPTION "Set of Ethernet link level errors"
+        INDEX { ifePort }  -- dummy index
+        ::= {alliedTelesyn 3}
+
+   InterfaceErrors ::=
+                SEQUENCE {
+            ifePort    
+               INTEGER,
+                        ifeInBusErr
+                           Counter,
+                        ifeInShortPkt
+                           Counter,
+                        ifeInAlgError
+                           Counter,
+                        ifeInBadSize
+                           Counter,
+                        ifeInOverflow
+                           Counter,
+                        ifeInCRCErr
+                           Counter,
+                        ifeOutColl16
+                           Counter,
+                        ifeOutCol
+                           Counter,
+                        ifeOutShortPkt
+                           Counter,
+                        ifeOutUnderflow
+                           Counter,
+                        ifeOutBusErr
+                           Counter
+                }
+
+-- dummy index
+  ifePort   OBJECT-TYPE
+                SYNTAX  INTEGER {
+            Port1 (1),
+            Port2 (2)
+        }
+                ACCESS  not-accessible
+                STATUS  mandatory
+                ::= { interfaceErrors 91 }
+
+  ifeInBusErr   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of EtherStar read bus errors that
+                 have occurred"
+                ::= { interfaceErrors 1 }
+  ifeInShortPkt   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of short packets received"
+                ::= { interfaceErrors 2 }
+  ifeInAlgError   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of packets received with alignment errors"
+                ::= { interfaceErrors 3 }
+  ifeInBadSize   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of packets received greater than 1518 bytes"
+                ::= { interfaceErrors 4 }
+  ifeInOverflow   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of times receive buffer overflowed"
+                ::= { interfaceErrors 5 }
+  ifeInCRCErr   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of CRC errors detected"
+                ::= { interfaceErrors 6 }
+  ifeOutColl16   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of packets discarded due to excessive
+                 collisions"
+                ::= { interfaceErrors 7 }
+  ifeOutCol   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of collisions detected"
+                ::= { interfaceErrors 8 }
+  ifeOutShortPkt   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of short packets transmitted"
+                ::= { interfaceErrors 9 }
+  ifeOutUnderflow   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of packets transmitted w/programmed 
+                 length > buffered transmitted data"
+                ::= { interfaceErrors 10 }
+  ifeOutBusErr   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of EtherStar write bus errors"
+                ::= { interfaceErrors 11 }
+
+
+  forwardCounters  OBJECT-TYPE
+                SYNTAX ForwardCounters
+                ACCESS read-only
+                STATUS mandatory
+                DESCRIPTION "Counters associated with bridge entity"
+        INDEX { fcPort } -- dummy index
+        ::= {alliedTelesyn 4}
+
+  ForwardCounters ::=
+                SEQUENCE {
+            fcPort
+               INTEGER,
+                        fcInOctets
+                           Counter,
+                        fcInPkts
+                           Counter,
+                        fcInNUcastPkts
+                           Counter,
+                        fcForwOctets
+                           Counter,
+                        fcForwPkts
+                           Counter,
+                        fcFiltOctets
+                           Counter,
+                        fcFiltPkts
+                           Counter
+                }
+
+-- dummy index
+  fcPort   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  not-accessible
+                STATUS  mandatory
+                ::= { forwardCounters 91 }
+
+  fcInOctets   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number bytes received by bridge entity on 
+                 specified port"
+                ::= { forwardCounters 1 }
+  fcInPkts   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number packets received by bridge entity on
+                 specified port"
+                ::= { forwardCounters 2 }
+  fcInNUcastPkts   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number multicast/broadcast packets received by
+                 bridge enity on specified port"
+                ::= { forwardCounters 3 }
+  fcForwOctets OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number bytes forwarded by bridge entity onto
+                 specified port"
+                ::= { forwardCounters 4 }
+  fcForwPkts   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of packets forwarded by bridge enity 
+                onto specified port"
+                ::= { forwardCounters 5 }
+  fcFiltOctets   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of bytes received on specified port
+                 that were discarded by bridge enity"
+                ::= { forwardCounters 6 }
+  fcFiltPkts   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of packets dicarded by filtering by
+                 bridge enity"
+                ::= { forwardCounters 7 }
+
+  systemCounters  OBJECT-TYPE
+                SYNTAX SystemCounters
+                ACCESS read-only
+                STATUS mandatory
+                DESCRIPTION "System operating s/w counters"
+        ::= {alliedTelesyn 5}
+
+  SystemCounters ::=
+                SEQUENCE {
+                        sysMemFree
+                           Counter,
+                        sysMemAllocFail
+                           Counter,
+                        sysMemTotAllocFail
+                           Counter,
+                        sysMemAllocTooBig
+                           Counter,
+                        sysMemFreeFail
+                           Counter,
+                        sysTimeToReset
+                           Counter,
+                        sysPanicMesg
+                           OCTET STRING,
+                        sysResetCount
+                           Counter
+                }
+
+
+  sysMemFree   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of buffers of a particular size on 
+                the memory free list"
+                ::= { systemCounters 1 }
+  sysMemAllocFail  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of allocation failures for a particular 
+                buffer size"
+                ::= { systemCounters 2 }
+  sysMemTotAllocFail   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Total number of memory allocation failures"
+                ::= { systemCounters 3 }
+  sysMemAllocTooBig  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of memory allocation requests that failed"
+                ::= { systemCounters 4 }
+  sysMemFreeFail   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of memory free requests that failed"
+                ::= { systemCounters 5 }
+  sysTimeToReset   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "Number of seconds unit bridge reset"
+                ::= { systemCounters 6 }
+  sysPanicMesg   OBJECT-TYPE
+                SYNTAX  OCTET STRING
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Error message associated with last s/w 
+                generated reset"
+                ::= { systemCounters 7 }
+  sysResetCount   OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of times bridge has been reset other
+                 than power on/off"
+                ::= { systemCounters 8 }
+
+
+  stBridge  OBJECT-TYPE
+                SYNTAX SEQUENCE OF StBridge
+                ACCESS not-accessible
+                STATUS mandatory
+                DESCRIPTION "Bridge specific parameters related to 
+                operation of Spanning Tree Protocol"
+                ::= { spanningTree 1 }
+
+  StBridge ::=
+                SEQUENCE {
+                        stBrName
+                           DisplayString,
+                        stBrIdent
+                           OCTET STRING,
+                        stBrMaxAge
+                           INTEGER,
+                        stBrHelloTime
+                           INTEGER,
+                        stBrForwDelay
+                           INTEGER,
+                        stBrIsRoot
+                           INTEGER,
+                        stBrIsDesig
+                           INTEGER,
+                        stBrSpanAddr
+                           OCTET STRING,
+                        stBrPriority
+                           INTEGER,
+                        stBrSTPDisabled
+                           INTEGER
+                }
+
+
+  stBrName   OBJECT-TYPE
+                SYNTAX  DisplayString
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "Comment string denoting the bridge"
+                ::= { stBridge 1 }
+  stBrIdent   OBJECT-TYPE
+                SYNTAX  OCTET STRING
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "802.1 Bridge ID"
+                ::= { stBridge 2 }
+  stBrMaxAge   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "802.1 Max BPDU Age (sec) for bridge"
+                ::= { stBridge 3 }
+  stBrHelloTime   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "802.1 Hello Time (sec) for bridge"
+                ::= { stBridge 4 }
+  stBrForwDelay   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "802.1 Forward Delay Time (sec) for bridge"
+                ::= { stBridge 5 }
+  stBrIsRoot   OBJECT-TYPE
+                SYNTAX  INTEGER {
+                  isroot(1),
+                  notroot(0)
+        }
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Bridge is root (1=yes 0=no)"
+                ::= { stBridge 6 }
+  stBrIsDesig   OBJECT-TYPE
+                SYNTAX  INTEGER {
+                  isdesigbridge(1),
+                  notdesigbridge(0)
+        }
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Flag indicating status of bridge as designated 
+                bridge (1=yes 0=no)"
+                ::= { stBridge 7 }
+  stBrSpanAddr   OBJECT-TYPE
+                SYNTAX  OCTET STRING
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "MAC address used as Spanning Tree Protocol 
+                multicast address"
+                ::= { stBridge 8 }
+  stBrPriority   OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "802.1 bridge priority"
+                ::= { stBridge 9 }
+  stBrSTPDisabled   OBJECT-TYPE
+                SYNTAX  INTEGER {
+                   stpdisabled(1),
+                   stpenable(0)
+        }
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "Variable to enable/disable operation of Spanning
+                 Tree (1=STP on 0=STP off)"
+                ::= { stBridge 10 }
+
+  stRoot   OBJECT-TYPE
+                SYNTAX SEQUENCE OF StRoot
+                ACCESS not-accessible
+                STATUS mandatory
+                DESCRIPTION "Parameters related to operation of Spanning
+                 Tree Protocol for Root bridge"
+                ::= { spanningTree 2 }
+
+  StRoot ::=
+                SEQUENCE {
+                        stRtIdent
+                           OCTET STRING,
+                        stRtCost
+                           INTEGER,
+                        stRtPort
+                           INTEGER,
+                        stRtMaxAge
+                           INTEGER,
+                        stRtHelloTime
+                           INTEGER,
+                        stRtForwDelay
+                           INTEGER
+                }
+
+  stRtIdent  OBJECT-TYPE
+                SYNTAX  OCTET STRING
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "802.1 Bridge ID of current Root bridge"
+                ::= { stRoot 1 }
+  stRtCost  OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "802.1 Root Path Cost of current Root bridge"
+                ::= { stRoot 2 }
+  stRtPort  OBJECT-TYPE
+                SYNTAX  INTEGER {
+            RootPort1(1),
+            RoorPort2(2)
+        }
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Port number of port that provides path to
+                 current Root bridge"
+                ::= { stRoot 3 }
+  stRtMaxAge  OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "802.1 Max BPDU Age specified by current known Root bridge"
+                ::= { stRoot 4 }
+  stRtHelloTime  OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "802.1 Hello Time specified by current Root bridge"
+                ::= { stRoot 5 }
+  stRtForwDelay  OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "802.1 Forward Delay specified by current Root
+                 bridge"
+                ::= { stRoot 6 }
+
+
+
+
+  stPort   OBJECT-TYPE
+                SYNTAX SEQUENCE OF StPort
+                ACCESS not-accessible
+                STATUS mandatory
+                DESCRIPTION "Port specific parameters related to operation of
+                Spanning Tree Protocol"
+        INDEX { stPrtPort } -- dummy indeex
+                ::= { spanningTree 3 }
+
+  StPort ::=
+                SEQUENCE {
+            stPrtPort
+               INTEGER,
+                        stPrtState
+                           INTEGER,
+                        stPrtCost
+                           INTEGER,
+                        stPrtIsDesig
+                           INTEGER,
+                        stPrtIsRoot
+                           INTEGER,
+                        stPrtDesigRoot
+                           OCTET STRING,
+                        stPrtDesigCost
+                           INTEGER,
+                        stPrtDesigBridge
+                           OCTET STRING,
+                        stPrtDesigPort
+                           INTEGER,
+                        stPrtPriority
+                           INTEGER
+                }
+
+-- dummy index
+  stPrtPort OBJECT-TYPE
+        SYNTAX INTEGER {
+            Port1(1),
+            Port2(2)
+        }
+        ACCESS not-accessible
+        STATUS mandatory
+                ::= { stPort 91 }
+
+  stPrtState  OBJECT-TYPE
+                SYNTAX  INTEGER {
+                  disabled(0),
+                  blocked(1),
+                  listen(2),
+                  learn(4),
+                  forward(8)
+
+        }
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "802.1 Port State disable and blocked states"
+                ::= { stPort 1 }
+
+  stPrtCost  OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "802.1 Port Path Cost"
+                ::= { stPort 2 }
+  stPrtIsDesig  OBJECT-TYPE
+                SYNTAX  INTEGER {
+            isDesig(1),
+            notDesig(0)
+        }
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Status of port as designated port for LAN"
+                ::= { stPort 3 }
+  stPrtIsRoot  OBJECT-TYPE
+                SYNTAX  INTEGER {
+            isRoot(1),
+            notRoot(0)
+        }
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Status of port as Root Port"
+                ::= { stPort 4 }
+  stPrtDesigRoot  OBJECT-TYPE
+                SYNTAX  OCTET STRING
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Bridge ID of Root brigde"
+                ::= { stPort 5 }
+  stPrtDesigCost  OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Path Cost to Root bridge as advertised by the designated bridge"
+                ::= { stPort 6 }
+  stPrtDesigBridge  OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Bridge ID of designated bridge"
+                 ::={ stPort 7}
+  stPrtDesigPort  OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Port ID of designated port"
+                ::= { stPort 8 }
+
+  stPrtPriority  OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  read-write
+                STATUS  mandatory
+                DESCRIPTION "802.1 Port Priority"
+                ::= { stPort 9 }
+
+
+  spanTreeStats   OBJECT-TYPE
+                SYNTAX SEQUENCE OF SpanTreeStats
+                ACCESS read-only
+                STATUS mandatory
+                DESCRIPTION "Spanning Tree stats on counters"
+        INDEX { stsPort } -- dummy index
+                ::= { spanningTree 4 }
+
+  SpanTreeStats  ::=
+                SEQUENCE {
+            stsPort
+               INTEGER,
+                        stsPortDisable
+                           Counter,
+                        stsPortEnable
+                           Counter,
+                        stsInBadLen
+                           Counter,
+                        stsInUnknown
+                           Counter,
+                        stsIn8021Man
+                           Counter,
+                        stsInConfig
+                           Counter,
+                        stsOutConfig
+                           Counter,
+                        stsOutTopoChg
+                           Counter
+                }
+
+-- dummy index
+  stsPort  OBJECT-TYPE
+                SYNTAX  INTEGER
+                ACCESS  not-accessible
+                STATUS  mandatory
+                ::= { spanTreeStats 91 }
+
+  stsTopoChanges  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of topology changes that have occured
+                 since power-on"
+                ::= { spanTreeStats 1 }
+
+  stsConfigTimeout  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of timeouts due to config BPDU not received"
+                ::= { spanTreeStats 2 }
+  stsPortDisable  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of times port has been disabled since
+                 power-on"
+                ::= { spanTreeStats 3 }
+  stsPortEnable  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of times port has been enabled since 
+                power-on"
+                ::= { spanTreeStats 4 }
+  stsInBadLen  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of STP frames received with bad lenth
+                 by this port"
+                ::= { spanTreeStats 5 }
+  stsInUnknown  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Packets received with bad 802.3 LSAP number by
+                 this port"
+                ::= { spanTreeStats 6 }
+  stsIn8021Man  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Packets received with 802.1 Management LSAP
+                 (discarded)"
+                ::= { spanTreeStats 7 }
+  stsInConfig  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of config BPDUs received by this port"
+                ::= { spanTreeStats 8 }
+  stsOutConfig  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of config BPDUs transmitted by this port"
+                ::= { spanTreeStats 9 }
+  stsOutTopoChg  OBJECT-TYPE
+                SYNTAX  Counter
+                ACCESS  read-only
+                STATUS  mandatory
+                DESCRIPTION "Number of Topology Change Notification BPDU
+                 transmitted by this port"
+                ::= { spanTreeStats 10 }
+
+  StpGenStats ::= SEQUENCE {
+        stsTopoChanges     Counter,
+        stsConfigTimeout     Counter
+    }
+
+    --
+    -- Filter range table
+    --
+    filterRange OBJECT IDENTIFIER ::= { alliedTelesyn 7 }
+
+    --
+    -- The maximum number of filter range table entries when read
+    -- (GET). Set to zero to delete all filter range table entries.
+    -- A set with any other value is ignored.
+    --
+    frNumRange OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION "The maximum number of filter range table entries when
+             read (GET). Set to zero to delete all filter range 
+             table entries. A set with any other value is ignored."
+        ::=  { filterRange 1 }
+
+    --
+    -- Filter range table entry. Instance is the range table number
+    -- (1 to crFr_NumRange). Each entry has the following format:
+    --
+    --    uchar   fr_LowDest[6];    /* low bound of destination */
+    --    uchar   fr_LowSrc[6];    /* low bound of source */
+    --    ushort    fr_LowType;    /* low bound of type */
+    --    uchar   fr_HighDest[6];    /* high bound of destination */
+    --    uchar    fr_HighSrc[6];    /* high bound of source */
+    --    ushort    fr_HighType;    /* high bound of type */
+    --    uchar     fr_flag;    /* disposition flag */
+    --    unchar    fr_fill;        /* round up size */
+    --
+    -- The LowType and  HighType are in network byte order
+    -- (motorola 68K). The flag is one of the bridge filter
+    -- table disposition values.
+    --
+    frEntry OBJECT-TYPE
+        SYNTAX  SEQUENCE OF OCTET STRING
+        ACCESS  read-write
+        STATUS  mandatory
+        INDEX { frIndex }
+        ::=  { filterRange 2 }
+
+    frIndex OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  not-accessible
+        STATUS  mandatory
+        ::=  { filterRange 91 }
+
+    filterRangeEntry ::= SEQUENCE {
+        frIndex        INTEGER,
+        frEntry        OCTET STRING
+    }
+
+END
+

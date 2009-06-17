@@ -1,0 +1,962 @@
+-- *******************************************************************
+-- Juniper enterprise specific Class-Of-Service (COS) MIB. 
+--
+-- Copyright (c) 2001-2005, Juniper Networks, Inc.
+-- All rights reserved.
+--
+-- The contents of this document are subject to change without notice.
+-- *******************************************************************
+
+
+    JUNIPER-COS-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE,
+        Integer32, Counter64                 FROM SNMPv2-SMI
+
+        TEXTUAL-CONVENTION                   FROM SNMPv2-TC
+        CounterBasedGauge64                  FROM HCNUM-TC
+        InterfaceIndex                       FROM IF-MIB
+        jnxMibs                              FROM JUNIPER-SMI;
+
+
+    jnxCos MODULE-IDENTITY
+        LAST-UPDATED "200307182153Z" -- Fri Jul 18 21:53:47 2003 UTC      
+        ORGANIZATION "Juniper Networks, Inc."
+        CONTACT-INFO
+                "Juniper Technical Assistance Center
+                      Juniper Networks, Inc.
+                      1194 N. Mathilda Avenue
+                      Sunnyvale, CA 94089
+                      E-mail: support@juniper.net"
+
+        DESCRIPTION
+                "The Juniper enterprise MIB for COS (Class Of Service)
+                 infrastructure. For detailed information on COS,
+                 Junos Documentation is recommended as the reference. 
+
+                 Abbreviations:
+                     COS  - Class Of Service
+                     RED  - Random Early Detection
+                     PLP  - Packet Loss Priority
+                     DSCP - Differential Service Code Point. "
+
+        REVISION     "200306130000Z"    -- Jun 13, 2003
+        DESCRIPTION  "Deprecated jnxCosIfqStatsTable.
+                      Added new table jnxCosQstatTable.
+                      Added new object jnxCosFcQueueNr."
+
+        REVISION     "200209090000Z"    -- Sep 09, 2002
+        DESCRIPTION  "Added 'jnxCosFcIdTable' table."
+
+        REVISION     "200201100000Z"    -- 10 Jan, 2002
+        DESCRIPTION  "Initial Version"
+
+        ::= { jnxMibs 15 }    
+
+
+    -- ***************************************************************
+    --  Textual Conventions
+    -- ***************************************************************
+
+    JnxCosAdminString ::= TEXTUAL-CONVENTION 
+        STATUS      current
+        DESCRIPTION "A string of up to 127 characters. This is
+                     syntactically similar to 'DisplayString' except
+                     that the length is limited to 127 octets. An
+                     object with such a syntax may have max-access of
+                     read-write." 
+        SYNTAX      OCTET STRING (SIZE (0..127)) 
+
+    JnxCosFcIdentifier ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION "A number identifying the forwarding class."
+        SYNTAX      Integer32(0..7)
+
+
+
+    -- ***************************************************************
+    --  Interface queue (ifq) stats table
+    -- ***************************************************************
+
+    jnxCosIfqStatsTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF JnxCosIfqStatsEntry
+        MAX-ACCESS  not-accessible
+        STATUS      deprecated
+        DESCRIPTION
+            "This table exposes the per interface and per forwarding
+             class output queue stats. Only those physical interfaces
+             that support output queue stats appear in this table.
+             
+             This table is deprecated. `jnxCosQstatTable` should be
+             used for per queue stats."
+        ::= { jnxCos 1 }
+    
+    jnxCosIfqStatsEntry OBJECT-TYPE
+        SYNTAX      JnxCosIfqStatsEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This entry contains interface-output-queue stats for a
+             given forwarding class on the output queue of the
+             specified interface."
+        INDEX       { jnxCosIfqIfIndex, jnxCosIfqFc}
+        ::= { jnxCosIfqStatsTable 1 }
+    
+    JnxCosIfqStatsEntry ::=
+        SEQUENCE {
+            jnxCosIfqIfIndex                     InterfaceIndex,
+            jnxCosIfqFc                          JnxCosAdminString, 
+
+            -- Queued packet/byte stats
+            jnxCosIfqQedPkts                     Counter64, 
+            jnxCosIfqQedPktRate                  CounterBasedGauge64, 
+            jnxCosIfqQedBytes                    Counter64,
+            jnxCosIfqQedByteRate                 CounterBasedGauge64,
+
+            -- Transmitted packet/byte stats
+            jnxCosIfqTxedPkts                    Counter64,
+            jnxCosIfqTxedPktRate                 CounterBasedGauge64,
+            jnxCosIfqTxedBytes                   Counter64,
+            jnxCosIfqTxedByteRate                CounterBasedGauge64,
+
+            -- Tail-dropped stats
+            jnxCosIfqTailDropPkts                Counter64,
+            jnxCosIfqTailDropPktRate             CounterBasedGauge64,
+
+            -- RED-dropped packet stats
+            jnxCosIfqTotalRedDropPkts            Counter64,
+            jnxCosIfqTotalRedDropPktRate         CounterBasedGauge64,
+
+            jnxCosIfqLpNonTcpRedDropPkts         Counter64,
+            jnxCosIfqLpNonTcpRedDropPktRate      CounterBasedGauge64,
+            jnxCosIfqLpTcpRedDropPkts            Counter64,
+            jnxCosIfqLpTcpRedDropPktRate         CounterBasedGauge64,
+
+            jnxCosIfqHpNonTcpRedDropPkts         Counter64,
+            jnxCosIfqHpNonTcpRedDropPktRate      CounterBasedGauge64,
+            jnxCosIfqHpTcpRedDropPkts            Counter64,
+            jnxCosIfqHpTcpRedDropPktRate         CounterBasedGauge64,
+
+            -- RED-dropped byte stats
+            jnxCosIfqTotalRedDropBytes           Counter64,
+            jnxCosIfqTotalRedDropByteRate        CounterBasedGauge64,
+
+            jnxCosIfqLpNonTcpRedDropBytes        Counter64,
+            jnxCosIfqLpNonTcpRedDropByteRate     CounterBasedGauge64,
+            jnxCosIfqLpTcpRedDropBytes           Counter64,
+            jnxCosIfqLpTcpRedDropByteRate        CounterBasedGauge64,
+
+            jnxCosIfqHpNonTcpRedDropBytes        Counter64,
+            jnxCosIfqHpNonTcpRedDropByteRate     CounterBasedGauge64,
+            jnxCosIfqHpTcpRedDropBytes           Counter64,
+            jnxCosIfqHpTcpRedDropByteRate        CounterBasedGauge64
+    }
+
+    jnxCosIfqIfIndex OBJECT-TYPE 
+        SYNTAX      InterfaceIndex 
+        MAX-ACCESS  not-accessible 
+        STATUS      current
+        DESCRIPTION
+            "The ifIndex of the interface." 
+        ::= { jnxCosIfqStatsEntry 1 }
+
+    jnxCosIfqFc OBJECT-TYPE 
+        SYNTAX      JnxCosAdminString
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "The name of the forwarding class."
+        ::= { jnxCosIfqStatsEntry 2 }
+
+    -- Queued packet/byte stats
+    jnxCosIfqQedPkts OBJECT-TYPE 
+        SYNTAX      Counter64 
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of packets of specified forwarding class
+             queued at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 3 }
+
+    jnxCosIfqQedPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which
+             packets belonging to the the specified forwarding class
+             were queued at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 4 }
+
+    jnxCosIfqQedBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Number of bytes of specified forwarding class queued at
+             the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 5 }
+
+    jnxCosIfqQedByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which bytes
+             belonging to the specified forwarding class were queued at
+             the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 6 }
+
+    -- Transmitted packet/byte stats
+    jnxCosIfqTxedPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Number of packets of specified forwarding class
+             transmitted on the given interface."
+        ::= { jnxCosIfqStatsEntry 7 }
+
+    jnxCosIfqTxedPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which
+             packets of specified forwarding class are transmitted on
+             the given interface."
+        ::= { jnxCosIfqStatsEntry 8 }
+
+    jnxCosIfqTxedBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Total number of bytes belonging to specified forwarding
+             class, transmitted on the given interface."
+        ::= { jnxCosIfqStatsEntry 9 }
+
+    jnxCosIfqTxedByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The current output byte rate (expressed in bytes per
+             second) for the specified forwarding class on the given
+             interface."
+        ::= { jnxCosIfqStatsEntry 10 }
+
+    -- Tail-dropped packet stats
+    jnxCosIfqTailDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of packets of specified forwarding class
+             dropped due to tail dropping at the output on the given
+             interface."
+        ::= { jnxCosIfqStatsEntry 11 }
+
+    jnxCosIfqTailDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which
+             packets belonging to the specified forwarding class were
+             taildropped at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 12 }
+
+    -- RED-dropped packet stats
+    jnxCosIfqTotalRedDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Total number of packets belonging to the specified
+             forwarding class dropped due to RED (Random Early
+             Detection) at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 13 }
+
+    jnxCosIfqTotalRedDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The most recent estimate of per-second RED-dropped
+             packets for the specified forwarding class at the output
+             on the given interface"
+        ::= { jnxCosIfqStatsEntry 14 }
+
+    jnxCosIfqLpNonTcpRedDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of low PLP (Packet Loss Priority) non
+             TCP packets belonging to the specified forwarding class
+             RED-dropped at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 15 }
+
+    jnxCosIfqLpNonTcpRedDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which low
+             PLP (Packet Loss Priority) non TCP packets belonging to
+             the specified forwarding class, were RED-dropped at the
+             output on the given interface."
+        ::= { jnxCosIfqStatsEntry 16 }
+
+    jnxCosIfqLpTcpRedDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of low PLP (Packet Loss Priority) TCP
+             packets belonging to the specified forwarding class
+             RED-dropped at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 17 }
+
+    jnxCosIfqLpTcpRedDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which low
+             PLP (Packet Loss Priority) TCP packets belonging to the
+             specified forwarding class, were RED-dropped at the
+             output on the given interface."
+        ::= { jnxCosIfqStatsEntry 18 }
+
+    jnxCosIfqHpNonTcpRedDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of high PLP (Packet Loss Priority) non
+             TCP packets belonging to the specified forwarding class
+             RED-dropped at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 19 }
+
+    jnxCosIfqHpNonTcpRedDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which high
+             PLP (Packet Loss Priority) non TCP packets belonging to
+             the specified forwarding class, were RED-dropped at the
+             output on the given interface."
+        ::= { jnxCosIfqStatsEntry 20 }
+
+    jnxCosIfqHpTcpRedDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of high PLP (Packet Loss Priority) TCP
+             packets belonging to the specified forwarding class
+             RED-dropped at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 21 }
+
+    jnxCosIfqHpTcpRedDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which high
+             PLP (Packet Loss Priority) TCP packets belonging to the
+             specified forwarding class, were RED-dropped at the
+             output on the given interface."
+        ::= { jnxCosIfqStatsEntry 22 }
+
+    -- RED-dropped byte stats
+    jnxCosIfqTotalRedDropBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of bytes belonging to the specified
+             forwarding class RED-dropped at the output on the given
+             interface."
+         ::= { jnxCosIfqStatsEntry 23 }
+
+    jnxCosIfqTotalRedDropByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which bytes
+             belonging to the specified forwarding class were
+             RED-dropped at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 24 }
+
+    jnxCosIfqLpNonTcpRedDropBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of low PLP (Packet Loss Priority) non
+             TCP bytes belonging to the specified forwarding class
+             RED-dropped at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 25 }
+
+    jnxCosIfqLpNonTcpRedDropByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which low PLP
+             (Packet Loss Priority) non TCP bytes belonging to the
+             specified forwarding class, were RED-dropped at the
+             output on the given interface."
+        ::= { jnxCosIfqStatsEntry 26 }
+
+    jnxCosIfqLpTcpRedDropBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of low PLP (Packet Loss Priority) TCP
+             bytes belonging to the specified forwarding class
+             RED-dropped at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 27 }
+
+    jnxCosIfqLpTcpRedDropByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which low PLP
+             (Packet Loss Priority) TCP bytes belonging to the
+             specified forwarding class, were RED-dropped at the
+             output on the given interface."
+        ::= { jnxCosIfqStatsEntry 28 }
+
+    jnxCosIfqHpNonTcpRedDropBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of high PLP (Packet Loss Priority) non
+             TCP bytes belonging to the specified forwarding class
+             RED-dropped at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 29 }
+
+    jnxCosIfqHpNonTcpRedDropByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which high
+             PLP (Packet Loss Priority) non TCP bytes belonging to the
+             specified forwarding class, were RED-dropped at the
+             output on the given interface."
+        ::= { jnxCosIfqStatsEntry 30 }
+
+    jnxCosIfqHpTcpRedDropBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of high PLP (Packet Loss Priority) TCP
+             bytes belonging to the specified forwarding class
+             RED-dropped at the output on the given interface."
+        ::= { jnxCosIfqStatsEntry 31 }
+
+    jnxCosIfqHpTcpRedDropByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which high
+             PLP (Packet Loss Priority) TCP bytes belonging to the
+             specified forwarding class, were RED-dropped at the
+             output on the given interface."
+        ::= { jnxCosIfqStatsEntry 32 }
+
+
+
+    -- ***************************************************************
+    --  Forwarding-class to Output-queue-number mapping
+    -- ***************************************************************
+
+    jnxCosFcTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF JnxCosFcEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table exposes the mapping between forwarding class
+             and output queue number."
+        ::= { jnxCos 2 }
+    
+    jnxCosFcEntry OBJECT-TYPE
+        SYNTAX      JnxCosFcEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This entry presents the output queue number for a
+             specified forwarding class."
+        INDEX       { jnxCosFcName }
+        ::= { jnxCosFcTable 1 }
+    
+    JnxCosFcEntry ::=
+        SEQUENCE {
+            jnxCosFcName         JnxCosAdminString, 
+            jnxCosFcQueueNr      Integer32,
+            jnxCosRestrictedQNr  Integer32
+    }
+
+    jnxCosFcName OBJECT-TYPE 
+        SYNTAX      JnxCosAdminString 
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "Name of the forwarding class."
+        ::= { jnxCosFcEntry 1}
+
+    jnxCosFcQueueNr OBJECT-TYPE 
+        SYNTAX      Integer32 (0..63) 
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The output queue number."
+        ::= { jnxCosFcEntry 2}
+
+    jnxCosRestrictedQNr OBJECT-TYPE
+        SYNTAX      Integer32 (0..63) 
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The configured restricted output queue number for the
+            specified forwarding class."
+        ::= { jnxCosFcEntry 3}
+
+
+    -- ***************************************************************
+    -- FcId (Forwarding-class-identifiers) table.
+    -- ***************************************************************
+    jnxCosFcIdTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF JnxCosFcIdEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table presents information on forwarding-classes
+            configured on the system. Each entry is indexed using
+            a unique forwarding-class-identifier (FcId)."
+        ::= { jnxCos 3 }
+    
+    jnxCosFcIdEntry OBJECT-TYPE
+        SYNTAX      JnxCosFcIdEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "Each entry represents information on a forwarding-class.
+            The entries are indexed using FcId."
+        INDEX       { jnxCosFcId }
+        ::= { jnxCosFcIdTable 1 }
+    
+    JnxCosFcIdEntry ::=
+        SEQUENCE {
+            jnxCosFcId                  JnxCosFcIdentifier,
+            jnxCosFcIdToFcName          JnxCosAdminString,
+            jnxCosFcFabricPriority      INTEGER
+            }
+
+   jnxCosFcId OBJECT-TYPE
+       SYNTAX      JnxCosFcIdentifier    
+       MAX-ACCESS  not-accessible
+       STATUS      current
+       DESCRIPTION
+           "An Id that identifies a forwarding class."
+       ::= { jnxCosFcIdEntry 1 }
+
+   jnxCosFcIdToFcName OBJECT-TYPE
+       SYNTAX      JnxCosAdminString 
+       MAX-ACCESS  read-only
+       STATUS      current
+       DESCRIPTION
+           "The name of the forwarding class for a given FcId." 
+       ::= { jnxCosFcIdEntry 2 }
+
+   jnxCosFcFabricPriority OBJECT-TYPE
+       SYNTAX     INTEGER {
+                      low(0),
+                      high(1)
+                   }
+       MAX-ACCESS  read-only
+       STATUS      current
+       DESCRIPTION
+           "The fabric priority for packets belonging to the specified
+           forwarding-class."
+       ::= { jnxCosFcIdEntry 3 }
+
+
+
+    -- ***************************************************************
+    --  Per queue stats table
+    -- ***************************************************************
+    jnxCosQstatTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF JnxCosQstatEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table presents the per queue stats. Only those
+            physical interfaces that support output queue stats appear
+            in this table."
+        ::= { jnxCos 4 }
+    
+    jnxCosQstatEntry OBJECT-TYPE
+        SYNTAX      JnxCosQstatEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This entry contains interface output queue stats for a
+             given output queue on the specified interface."
+        INDEX       { jnxCosQstatIfIndex, jnxCosQstatQueueNr}
+        ::= { jnxCosQstatTable 1 }
+    
+    JnxCosQstatEntry ::=
+        SEQUENCE {
+            jnxCosQstatIfIndex                     InterfaceIndex,
+            jnxCosQstatQueueNr                     Integer32,
+
+            -- Queued packet/byte stats
+            jnxCosQstatQedPkts                     Counter64, 
+            jnxCosQstatQedPktRate                  CounterBasedGauge64, 
+            jnxCosQstatQedBytes                    Counter64,
+            jnxCosQstatQedByteRate                 CounterBasedGauge64,
+
+            -- Transmitted packet/byte stats
+            jnxCosQstatTxedPkts                    Counter64,
+            jnxCosQstatTxedPktRate                 CounterBasedGauge64,
+            jnxCosQstatTxedBytes                   Counter64,
+            jnxCosQstatTxedByteRate                CounterBasedGauge64,
+
+            -- Tail-dropped stats
+            jnxCosQstatTailDropPkts                Counter64,
+            jnxCosQstatTailDropPktRate             CounterBasedGauge64,
+
+            -- RED-dropped packet stats
+            jnxCosQstatTotalRedDropPkts            Counter64,
+            jnxCosQstatTotalRedDropPktRate         CounterBasedGauge64,
+
+            jnxCosQstatLpNonTcpRedDropPkts         Counter64,
+            jnxCosQstatLpNonTcpRDropPktRate        CounterBasedGauge64,
+            jnxCosQstatLpTcpRedDropPkts            Counter64,
+            jnxCosQstatLpTcpRedDropPktRate         CounterBasedGauge64,
+
+            jnxCosQstatHpNonTcpRedDropPkts         Counter64,
+            jnxCosQstatHpNonTcpRDropPktRate        CounterBasedGauge64,
+            jnxCosQstatHpTcpRedDropPkts            Counter64,
+            jnxCosQstatHpTcpRedDropPktRate         CounterBasedGauge64,
+
+            -- RED-dropped byte stats
+            jnxCosQstatTotalRedDropBytes           Counter64,
+            jnxCosQstatTotalRedDropByteRate        CounterBasedGauge64,
+
+            jnxCosQstatLpNonTcpRedDropBytes        Counter64,
+            jnxCosQstatLpNonTcpRDropByteRate       CounterBasedGauge64,
+            jnxCosQstatLpTcpRedDropBytes           Counter64,
+            jnxCosQstatLpTcpRedDropByteRate        CounterBasedGauge64,
+
+            jnxCosQstatHpNonTcpRedDropBytes        Counter64,
+            jnxCosQstatHpNonTcpRDropByteRate       CounterBasedGauge64,
+            jnxCosQstatHpTcpRedDropBytes           Counter64,
+            jnxCosQstatHpTcpRedDropByteRate        CounterBasedGauge64
+    }
+
+    jnxCosQstatIfIndex OBJECT-TYPE 
+        SYNTAX      InterfaceIndex 
+        MAX-ACCESS  not-accessible 
+        STATUS      current
+        DESCRIPTION
+            "The ifIndex of the interface." 
+        ::= { jnxCosQstatEntry 1 }
+
+    jnxCosQstatQueueNr OBJECT-TYPE 
+        SYNTAX      Integer32(0..63)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "The output queue number."
+        ::= { jnxCosQstatEntry 2 }
+
+    -- Queued packet/byte stats
+    jnxCosQstatQedPkts OBJECT-TYPE 
+        SYNTAX      Counter64 
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of packets queued at the output queue."
+        ::= { jnxCosQstatEntry 3 }
+
+    jnxCosQstatQedPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which packets
+            were queued at the output queue."
+        ::= { jnxCosQstatEntry 4 }
+
+    jnxCosQstatQedBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Number of bytes queued at the output queue."
+        ::= { jnxCosQstatEntry 5 }
+
+    jnxCosQstatQedByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which bytes
+            were queued at the output queue."
+        ::= { jnxCosQstatEntry 6 }
+
+    -- Transmitted packet/byte stats
+    jnxCosQstatTxedPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Number of packets transmitted on the queue."
+        ::= { jnxCosQstatEntry 7 }
+
+    jnxCosQstatTxedPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The output queue's packet transmit rate, expressed in
+            packets per second."
+        ::= { jnxCosQstatEntry 8 }
+
+    jnxCosQstatTxedBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Number of bytes transmitted on the queue."
+        ::= { jnxCosQstatEntry 9 }
+
+    jnxCosQstatTxedByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The queue's current transmit rate in bytes per second."
+        ::= { jnxCosQstatEntry 10 }
+
+    -- Tail-dropped packet stats
+    jnxCosQstatTailDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The number of packets trail dropped at the output queue." 
+        ::= { jnxCosQstatEntry 11 }
+
+    jnxCosQstatTailDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The tail drop packet rate (expressed in packets per second)
+            for the queue."
+        ::= { jnxCosQstatEntry 12 }
+
+    -- RED-dropped packet stats
+    jnxCosQstatTotalRedDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Total number of packets dropped due to RED (Random Early
+             Detection) at the output on the given interface."
+        ::= { jnxCosQstatEntry 13 }
+
+    jnxCosQstatTotalRedDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The most recent estimate of per-second RED-dropped packets
+            at the output queue on the given interface"
+        ::= { jnxCosQstatEntry 14 }
+
+    jnxCosQstatLpNonTcpRedDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of low PLP non TCP packets RED-dropped."
+        ::= { jnxCosQstatEntry 15 }
+
+    jnxCosQstatLpNonTcpRDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which low
+            PLP non TCP packets were RED-dropped."
+        ::= { jnxCosQstatEntry 16 }
+
+    jnxCosQstatLpTcpRedDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of low PLP  TCP packets RED-dropped at
+            the output on the given interface."
+        ::= { jnxCosQstatEntry 17 }
+
+    jnxCosQstatLpTcpRedDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which low PLP
+            TCP packets were RED-dropped at the output on the given
+            interface."
+        ::= { jnxCosQstatEntry 18 }
+
+    jnxCosQstatHpNonTcpRedDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of high PLP  non TCP packets RED-dropped
+            at the output on the given interface."
+        ::= { jnxCosQstatEntry 19 }
+
+    jnxCosQstatHpNonTcpRDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which high
+            PLP  non TCP packets  were RED-dropped
+            at the output on the given interface."
+        ::= { jnxCosQstatEntry 20 }
+
+    jnxCosQstatHpTcpRedDropPkts OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of high PLP  TCP packets RED-dropped at
+            the output on the given interface."
+        ::= { jnxCosQstatEntry 21 }
+
+    jnxCosQstatHpTcpRedDropPktRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in packets per second) at which high
+            PLP TCP packets were RED-dropped at the output."
+        ::= { jnxCosQstatEntry 22 }
+
+    -- RED-dropped byte stats
+    jnxCosQstatTotalRedDropBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of bytes RED-dropped at the output on the
+            given interface."
+         ::= { jnxCosQstatEntry 23 }
+
+    jnxCosQstatTotalRedDropByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which bytes
+            were RED-dropped at the output on the given interface."
+        ::= { jnxCosQstatEntry 24 }
+
+    jnxCosQstatLpNonTcpRedDropBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of low PLP non TCP bytes RED-dropped at
+            the output on the given interface."
+        ::= { jnxCosQstatEntry 25 }
+
+    jnxCosQstatLpNonTcpRDropByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which low PLP
+            non TCP bytes were RED-dropped at the output on the given
+            interface."
+        ::= { jnxCosQstatEntry 26 }
+
+    jnxCosQstatLpTcpRedDropBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of low PLP  TCP
+            bytes RED-dropped at the output on the given interface."
+        ::= { jnxCosQstatEntry 27 }
+
+    jnxCosQstatLpTcpRedDropByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which low PLP
+            TCP bytes were RED-dropped at the output on the given
+            interface."
+        ::= { jnxCosQstatEntry 28 }
+
+    jnxCosQstatHpNonTcpRedDropBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of high PLP non TCP bytes RED-dropped at
+            the output on the given interface."
+        ::= { jnxCosQstatEntry 29 }
+
+    jnxCosQstatHpNonTcpRDropByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which high
+            PLP non TCP bytes were RED-dropped at the output queue on
+            the given interface."
+        ::= { jnxCosQstatEntry 30 }
+
+    jnxCosQstatHpTcpRedDropBytes OBJECT-TYPE 
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number of high PLP TCP bytes RED-dropped at the
+            output queue on the given interface."
+        ::= { jnxCosQstatEntry 31 }
+
+    jnxCosQstatHpTcpRedDropByteRate OBJECT-TYPE 
+        SYNTAX      CounterBasedGauge64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The rate (expressed in bytes per second) at which high PLP
+            TCP bytes were RED-dropped at the output on the given
+            interface."
+        ::= { jnxCosQstatEntry 32 }
+
+END

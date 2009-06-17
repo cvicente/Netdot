@@ -1,0 +1,1317 @@
+-- *------------------------------------------------------------------
+-- * CISCO-DIGITAL-MEDIA-SYSTEMS-MIB.my:  Cisco Digital Media Systems MIB
+-- *
+-- * Mar 2008, S Ramakrishnan
+-- *
+-- * Copyright (c) 2007-2008 by cisco Systems Inc.
+-- * All rights reserved.
+-- *
+-- *------------------------------------------------------------------
+
+CISCO-DIGITAL-MEDIA-SYSTEMS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    NOTIFICATION-TYPE,
+    Counter64,
+    Gauge32,
+    Unsigned32
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP,
+    NOTIFICATION-GROUP
+        FROM SNMPv2-CONF
+    TEXTUAL-CONVENTION,
+    DateAndTime,
+    MacAddress,
+    TruthValue,
+    RowStatus
+        FROM SNMPv2-TC
+    InetAddressType,
+    InetAddress
+        FROM INET-ADDRESS-MIB
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
+
+
+ciscoDigitalMediaSystemsMIB MODULE-IDENTITY
+    LAST-UPDATED    "200805150000Z"
+    ORGANIZATION    "Cisco Systems"
+    CONTACT-INFO
+            "Cisco Systems
+            Customer Service
+
+            Postal: 170 W Tasman Drive
+            San Jose, CA  95134-1700
+            USA
+
+            Tel: +1 800 553-NETS
+            E-mail: cs-dms@cisco.com"
+    DESCRIPTION
+        "Acronyms and Definitions
+
+        The following acronyms and terms are used in this
+        document:
+
+          DMS:   Digital Media Systems
+
+          DAM:   Digital Asset Management System
+
+          DMM:   Digital Media Manager Application
+
+          VP :   Video Portal Application
+
+          DSM:   Digital Signage Manager Application
+
+          ETV:   Enterprise TV Manager Application
+
+          DMP:   Cisco Digital Media Player
+
+          LAN:   Local Area Network
+
+          Group: A collection of DMS users grouped and
+                 managed together as a single entity for
+                 administrative convenience.
+
+
+        Overview of the MIB
+
+        This is a MIB Module for managing and monitoring the physical
+        and logical structures in Cisco Digital Media Management System.
+        The MIB reflects the structure as follows:
+            * show DMS as an coherent, abstract media management system
+            * indicate the physical inventory of DMS
+            * indicate the media management features active (licensed)
+              in the system.
+            * show the streaming and storage components and their
+              activity
+            * elements of DMS security
+            * external servers used by the system
+            * events and alarms
+
+        Hence, the MIB contains eight major groups of objects organized
+        as follows:
+         a) DMS System Group:
+              This section models distributed DMS as a single abstract
+              system.
+
+         b) DMS Features Group:
+              This section lists the DMS functions that this
+              installation is licensed to perform and those that it
+              is not.
+
+         c) DMS Inventory Group:
+              This section lists the physical elements that this
+              installation of DMS comprises.
+
+         d) Servers Group:
+              This section models the external servers used by this
+              installation of DMS.
+
+         e) Digital Asset Management (DAM) Services Group:
+              This section models the state and activity of various
+              content management services that this installation of
+              DMS is equipped with. The loose term 'content management'
+              has been intentionally used to as to be able to
+              accommodate more content management services in this
+              model as they evolve.
+
+         f) Security Group:
+              This section defines the security configuration and
+              activity of this installation of DMS.
+
+         g) Fault Tolerance Group:
+              This section models the redundancy (failover and
+              load balancing) configuration of this installation of
+              DMS and the associated activity.
+
+         h) User Management Group:
+              This section models the configured DMS users, groups
+              and the associated activity.
+
+         i) Events and Faults Group:
+              This section models the events, alarms and notifications
+              reported by this installation of DMS.
+
+         j) Capacity Group:
+              This section is planned for the future and would define
+              the limits and/capacities of functions of DMS. These
+              include limits such as the type of media encodings that
+              are supported, the maximum number of media players that
+              may be managed etc.
+
+         k) Resource Usage Group:
+              This section is planned for the future and would define
+              the current resource usage by DMS.
+              This would include the amount of storage used by DMS,
+              the number of encoders currently in use etc.
+
+         l) Threshold group (allows definition of high water marks)
+              This section is planned for the future and would allow
+              the management entity to define thresholds to set high
+              water marks on critical metrics.
+
+         m) Notifications
+              This section defines notifications to signal
+              significant events pertaining to this installation of
+              DMS."
+    REVISION        "200805150000Z"
+    DESCRIPTION
+        "Initial version of this module."
+    ::= { ciscoMgmt 655 }
+
+
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Local Textual Conventions
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++
+
+CDmsUserAuthenMethod ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "The mechanism used to authenticate the user.
+
+        radius: User authentication is performed using
+                RADIUS protocol.
+
+        tacacsPlus: Authentication is performed using TACACS+
+                    protocol.
+
+        kerberos: Authentication is performed using Kerberos
+                  protocol.
+
+        local: Authentication is performed using local
+               username/password database.
+
+        ldap: Authentication is performed using the
+              Lightweight Directory Access Protocol.
+
+        ntlm: Authentication is performed using the
+              NT LAN Manager Protocol.
+
+        sdi: Authentication is performed using the
+             RSA SecurId Authentication Protocol.
+
+        The value 'other' has been listed to allow for the
+        MIB to support proprietary authentication methods
+        not listed here.
+
+        When the authentication method is 'none', authentication
+        is disabled for all appliances of DMS except for the
+        administrative module (DMM), which is still secured using
+        local authentication."
+    SYNTAX          INTEGER  {
+                        none(1),
+                        other(2),
+                        radius(3),
+                        tacacsPlus(4),
+                        kerberos(5),
+                        local(6),
+                        ldap(7),
+                        ntlm(8),
+                        sdi(9)
+                    }
+
+CDmsServerType ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "The type of the external server used by DMS."
+    SYNTAX          INTEGER  {
+                        other(1),
+                        dnsServer(2),
+                        ldapServer(3),
+                        snmpServer(4),
+                        smtpServer(5),
+                        syslogServer(6),
+                        aaaServer(7),
+                        ntpServer(8)
+                    }
+
+CDmsElementType ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "The type of the DMS inventory element.
+
+        DMS supports the following inventory element types
+        among other types: encoders, media players and video
+        portals."
+    SYNTAX          INTEGER  {
+                        other(1),
+                        encoder(2),
+                        videoPortal(3),
+                        mediaPlayer(4),
+                        transCoder(5),
+                        storageServer(6),
+                        streamingServer(7)
+                    }
+
+CDmsFunctionalStatus ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "The status of a DMS functional component.
+
+        other: the component is in an unknown status.
+
+        initialize: the component is in the process
+                    of starting up.
+
+        active: the component is active and servicing
+                requests.
+
+        shutdown: the component is shut down or is
+                  shutting down.
+
+        Objects of this type may be used to reboot a DMS
+        element by setting value of the object to initialize(1).
+
+        Management entity may not write values initialize(1)
+        or active(2) onto objects of this type. Doing so
+        would cause the managed entity to return an error
+        condition."
+    SYNTAX          INTEGER  {
+                        other(1),
+                        initialize(2),
+                        active(3),
+                        shutdown(4)
+                    }
+
+CDmsEmailAddress ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "The type used to denote the email address."
+    SYNTAX          OCTET STRING (SIZE (0..128))
+
+CDmsLicensedFeature ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "The identity of a licensed features of DMS.
+
+        other : a product function not covered by
+                any of the other enumerations listed
+                below.
+
+        base : DMS base license.
+
+        deskTopVideo : the function to deliver video to desktops.
+
+        digitalSignage : the function to deliver content to digital
+                         media players.
+
+        enterpriseTv : the function to deliver live TV programs
+                       to digital media players.
+
+        digitalMediaPlayer : the facility to use a Cisco Digital Media
+                       Player to render streaming media."
+    SYNTAX          INTEGER  {
+                        other(1),
+                        base(2),
+                        deskTopVideo(3),
+                        liveWebcastEnabler(4),
+                        digitalSignage(5),
+                        enterpriseTv(6),
+                        snmpManagement(7),
+                        digitalMediaPlayer(8) -- This product feature
+                                              -- pertains to the usage of
+                                              -- digital media player to
+                                              -- render streaming media.                        
+                    }
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DMS MIB Object Groups
+--   
+-- This MIB module contains the following groups:
+-- 1) DMS System Group
+-- 2) Features Group
+-- 3) Inventory Group
+-- 4) Servers Group
+-- 5) Security Group
+-- 6) Digital Asset Management Services Group
+-- 7) Fault Tolerance Group
+-- 8) User Management Group
+-- 9) Events and Faults Group
+-- 10) Threshold group (allows definition of high/low water marks)
+-- 11) Notifications:
+-- 11a) Controls
+-- 11b) Notification definitions
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+ciscoDmsMonitorMIBNotifs  OBJECT IDENTIFIER
+    ::= { ciscoDigitalMediaSystemsMIB 0 }
+
+ciscoDmsMonitorMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoDigitalMediaSystemsMIB 1 }
+
+ciscoDmsMonitorMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoDigitalMediaSystemsMIB 2 }
+
+cdmsSystem  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBObjects 1 }
+
+cdmsFeatures  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBObjects 2 }
+
+cdmsInventory  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBObjects 3 }
+
+cdmsServers  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBObjects 4 }
+
+cdmsDamServices  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBObjects 5 }
+
+cdmsSecurity  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBObjects 6 }
+
+cdmsUserGroup  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBObjects 7 }
+
+cdmsEvents  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBObjects 8 }
+
+-- cdmsResourceUsage  OBJECT IDENTIFIER
+-- ::=      { ciscoDmsMonitorMIBObjects 11 }
+--   
+-- cdmsThresholds      OBJECT IDENTIFIER
+-- ::=      { ciscoDmsMonitorMIBObjects 12 }
+
+cdmsNotifControl  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBObjects 13 }
+
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DMS Systems Group
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsMajorVersion OBJECT-TYPE
+    SYNTAX          SnmpAdminString (SIZE  (2))
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "A string which indicates the major version of
+        this managed instance of Digital Media System." 
+    ::= { cdmsSystem 1 }
+
+cdmsMinorVersion OBJECT-TYPE
+    SYNTAX          SnmpAdminString (SIZE  (2))
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "A string which indicates the minor version of
+        this managed instance of Digital Media System." 
+    ::= { cdmsSystem 2 }
+
+cdmsPatchVersion OBJECT-TYPE
+    SYNTAX          SnmpAdminString (SIZE  (2))
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "A string which indicates the patch version of
+        this managed instance of Digital Media System." 
+    ::= { cdmsSystem 3 }
+
+cdmsAdministrator OBJECT-TYPE
+    SYNTAX          CDmsEmailAddress
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The email address of the administrator of this
+        DMS system." 
+    ::= { cdmsSystem 4 }
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DMS installed feature summary
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsFeatureSummary  OBJECT IDENTIFIER
+    ::= { cdmsFeatures 1 }
+
+
+cdmsLicensableFeatures OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The total number of licensable features available
+        in this version of DMS." 
+    ::= { cdmsFeatureSummary 1 }
+
+cdmsLicensedFeatures OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of licensable features licensed in
+        this installation of DMS." 
+    ::= { cdmsFeatureSummary 2 }
+
+cdmsLastLicenseUpdate OBJECT-TYPE
+    SYNTAX          DateAndTime
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The date on which the last license upgrade was
+        performed." 
+    ::= { cdmsFeatureSummary 3 }
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DMS Licensed      Feature      table
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsLicensedFeatureTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CdmsLicensedFeatureEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table lists all the DMS features licensed
+        by this installation of DMS."
+    ::= { cdmsFeatures 2 }
+
+cdmsLicensedFeatureEntry OBJECT-TYPE
+    SYNTAX          CdmsLicensedFeatureEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry contains the attributes of one DMS licensed
+        feature. An entry in this table is created for each licensed
+        feature detected by the system."
+    INDEX           {
+                        cdmsLicensedFeature,
+                        cdmsLicensedFeatureIndex
+                    } 
+    ::= { cdmsLicensedFeatureTable 1 }
+
+CdmsLicensedFeatureEntry ::= SEQUENCE {
+        cdmsLicensedFeature            CDmsLicensedFeature,
+        cdmsLicensedFeatureIndex       Unsigned32,
+        cdmsLicensedFeatureLimit       Unsigned32,
+        cdmsLicensedFeatureDescription SnmpAdminString,
+        cdmsLicensedFeatureInstallDate DateAndTime
+}
+
+cdmsLicensedFeature OBJECT-TYPE
+    SYNTAX          CDmsLicensedFeature
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The identity of a DMS feature which is licensed by this
+        installation." 
+    ::= { cdmsLicensedFeatureEntry 1 }
+
+cdmsLicensedFeatureIndex OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4096 )
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The unique identifier of the DMS feature licensed by
+        this installation. The same feature may be licensed multiple
+        times with different limits. Hence this discriminator is
+        required." 
+    ::= { cdmsLicensedFeatureEntry 2 }
+
+cdmsLicensedFeatureLimit OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..2147483647 )
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The limit on this licensed features in terms of number
+        of elements that may be operational with this DMS feature.
+        Limits do not apply to all DMS features; where the limit
+        is inapplicable, the value of this object will be set to
+        0." 
+    ::= { cdmsLicensedFeatureEntry 3 }
+
+cdmsLicensedFeatureDescription OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "A human readable description of this DMS feature and its
+        limits." 
+    ::= { cdmsLicensedFeatureEntry 4 }
+
+cdmsLicensedFeatureInstallDate OBJECT-TYPE
+    SYNTAX          DateAndTime
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The date on which the DMS licensed feature corresponding
+        this conceptual row was enabled." 
+    ::= { cdmsLicensedFeatureEntry 5 }
+ 
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DMS inventory summary
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsInventoryGlobalCounters  OBJECT IDENTIFIER
+    ::= { cdmsInventory 1 }
+
+
+cdmsNumMediaIngestionDevices OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "Encoders"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of media ingestion devices managed by
+        this installation of DMS." 
+    ::= { cdmsInventoryGlobalCounters 1 }
+
+cdmsNumMediaPlayerDevices OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "Media Players"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of media player devices managed by
+        this installation of DMS." 
+    ::= { cdmsInventoryGlobalCounters 2 }
+
+cdmsNumVideoPortalDevices OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "Video Portals"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of video portal devices managed by
+        this installation of DMS." 
+    ::= { cdmsInventoryGlobalCounters 3 }
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DMS inventory table
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsInventoryTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CdmsInventoryEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table lists all the inventory elements
+        currently managed by this installation of DMS."
+    ::= { cdmsInventory 2 }
+
+cdmsInventoryEntry OBJECT-TYPE
+    SYNTAX          CdmsInventoryEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry contains the attributes of one
+        inventory element of DMS."
+    INDEX           {
+                        cdmsInventoryElementType,
+                        cdmsInventoryElementId
+                    } 
+    ::= { cdmsInventoryTable 1 }
+
+CdmsInventoryEntry ::= SEQUENCE {
+        cdmsInventoryElementType       CDmsElementType,
+        cdmsInventoryElementId         SnmpAdminString,
+        cdmsInventoryElementMacAddress MacAddress,
+        cdmsInventoryElementAddrType   InetAddressType,
+        cdmsInventoryElementAddress    InetAddress,
+        cdmsInventoryElementMetadata   SnmpAdminString,
+        cdmsInventoryElementState      CDmsFunctionalStatus
+}
+
+cdmsInventoryElementType OBJECT-TYPE
+    SYNTAX          CDmsElementType
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The type of the DMS inventory element that this conceptual
+        row corresponds to." 
+    ::= { cdmsInventoryEntry 1 }
+
+cdmsInventoryElementId OBJECT-TYPE
+    SYNTAX          SnmpAdminString (SIZE  (1..100))
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The unique identifier of the DMS inventory element that this
+        conceptual row corresponds to. For instance, in case of a
+        media player, this identifier would be the unique symbolic name
+        of the player. In case of a Video Portal instance, this would
+        be the name of the Video Portal instance." 
+    ::= { cdmsInventoryEntry 2 }
+
+cdmsInventoryElementMacAddress OBJECT-TYPE
+    SYNTAX          MacAddress
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The MAC address of the DMS inventory element.
+        This object may not be supportable for all 
+        inventory elements. For an element where the 
+        MAC address is not available, the value of this 
+        object would be empty." 
+    ::= { cdmsInventoryEntry 3 }
+
+cdmsInventoryElementAddrType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The type of Internet address of the DMS inventory
+        element." 
+    ::= { cdmsInventoryEntry 4 }
+
+cdmsInventoryElementAddress OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The Internet address of the DMS inventory element.
+        The type of this address is determined by the value of
+        'cdmsInventoryElementAddrType' object." 
+    ::= { cdmsInventoryEntry 5 }
+
+cdmsInventoryElementMetadata OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "A metadata string associated with this inventory element.
+        This information is interpreted by the DMS functional
+        components using inventory elements programmatically
+        within the system." 
+    ::= { cdmsInventoryEntry 6 }
+
+cdmsInventoryElementState OBJECT-TYPE
+    SYNTAX          CDmsFunctionalStatus
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The state of the inventory element corresponding to this
+        conceptual row as seen by the DMS server.
+
+        Set operations on this object are not supported for all
+        inventory element types. Where it is not supported,
+        the server would yield an error.
+
+        The effect of setting this object to the value 'initializing'
+        would be to reboot the element corresponding to this
+        conceptual row, if the element type supports this operation." 
+    ::= { cdmsInventoryEntry 7 }
+ 
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- External servers used by DMS
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsServerTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CdmsServerEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table lists all the external servers
+        used by this installation of DMS."
+    ::= { cdmsServers 1 }
+
+cdmsServerEntry OBJECT-TYPE
+    SYNTAX          CdmsServerEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry contains the attributes of one
+        external server used by DMS."
+    INDEX           {
+                        cdmsServerType,
+                        cdmsServerAddrType,
+                        cdmsServerAddress
+                    } 
+    ::= { cdmsServerTable 1 }
+
+CdmsServerEntry ::= SEQUENCE {
+        cdmsServerType     CDmsServerType,
+        cdmsServerAddrType InetAddressType,
+        cdmsServerAddress  InetAddress,
+        cdmsServerState    CDmsFunctionalStatus,
+        cdmsServerStatus   RowStatus
+}
+
+cdmsServerType OBJECT-TYPE
+    SYNTAX          CDmsServerType
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The type of the external server corresponding to this
+        conceptual row used by DMS." 
+    ::= { cdmsServerEntry 1 }
+
+cdmsServerAddrType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The type of Internet address of the external server." 
+    ::= { cdmsServerEntry 2 }
+
+cdmsServerAddress OBJECT-TYPE
+    SYNTAX          InetAddress (SIZE  (1..64))
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The Internet address of the external server.
+        The type of this address is determined by the value
+        of the cdmsServerAddrType object." 
+    ::= { cdmsServerEntry 3 }
+
+cdmsServerState OBJECT-TYPE
+    SYNTAX          CDmsFunctionalStatus
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The state of the external server." 
+    ::= { cdmsServerEntry 4 }
+
+cdmsServerStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used to manage creation, deletion
+        and modification of external servers in this table." 
+    ::= { cdmsServerEntry 5 }
+ 
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DMS Digital Asset Management group. DAM is a system that
+-- manages digital media as assets of an enterprise.
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsDamGlobalCounters  OBJECT IDENTIFIER
+    ::= { cdmsDamServices 1 }
+
+
+cdmsNumContentElements OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "content elements"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of content elements in the DMS catalog." 
+    ::= { cdmsDamGlobalCounters 1 }
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DMS Security      group
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsSecurityGlobalCounters  OBJECT IDENTIFIER
+    ::= { cdmsSecurity 1 }
+
+
+cdmsNumAuthenRequests OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of user authentication requests processed
+        by DMS since last reboot." 
+    ::= { cdmsSecurityGlobalCounters 1 }
+
+cdmsNumAuthenRequestsApproved OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of user authentication requests
+        approved by DMS since last reboot." 
+    ::= { cdmsDamGlobalCounters 2 }
+
+cdmsNumAuthenRequestsDeclined OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of user authentication requests
+        declined by DMS since last reboot." 
+    ::= { cdmsDamGlobalCounters 3 }
+cdmsSecurityConfiguration  OBJECT IDENTIFIER
+    ::= { cdmsSecurity 2 }
+
+
+cdmsAuthenticationMode OBJECT-TYPE
+    SYNTAX          CDmsUserAuthenMethod
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The mode of authenticating users in use by DMS." 
+    ::= { cdmsSecurityConfiguration 1 }
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DMS User group
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsNumUsers OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "Users"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of users who have access to this
+        installation of DMS." 
+    ::= { cdmsUserGroup 1 }
+
+cdmsNumActiveDmmUsers OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "Users"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of users who are logged into DMS
+        administrative appliance." 
+    ::= { cdmsUserGroup 2 }
+
+cdmsNumActiveVpUsers OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "Users"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of users who are logged into DMS
+        Video Portal appliance." 
+    ::= { cdmsUserGroup 3 }
+
+cdmsLastUserLastChange OBJECT-TYPE
+    SYNTAX          DateAndTime
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The date and time at which the last user was added
+        or deleted." 
+    ::= { cdmsUserGroup 4 }
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- DMS Events and Alarms.
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsEventConfiguration  OBJECT IDENTIFIER
+    ::= { cdmsEvents 1 }
+
+cdmsEventStatistics  OBJECT IDENTIFIER
+    ::= { cdmsEvents 2 }
+
+
+cdmsNumEvents OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Events"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of events generated by this installation
+        of DMS since last reboot." 
+    ::= { cdmsEventStatistics 1 }
+
+cdmsNumEventRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "Events per minute"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of events per minute generated by
+        this installation of DMS since last reboot." 
+    ::= { cdmsEventStatistics 2 }
+
+cdmsNumAlarms OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Alarms"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of events of severity greater than 'warning'
+        ('alarms') generated by this installation of DMS since
+        last reboot." 
+    ::= { cdmsEventStatistics 3 }
+
+cdmsNumAlarmRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "Alarms per minute"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of alarms per minute generated by
+        this installation of DMS since last reboot." 
+    ::= { cdmsEventStatistics 4 }
+
+cdmsNumNotifications OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Notifications"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of notifications emitted by this installation
+        of DMS since last reboot." 
+    ::= { cdmsEventStatistics 5 }
+
+cdmsNumNotificationRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "Notifications per minute"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of notifications emitted per minute
+        by this installation of DMS since last reboot." 
+    ::= { cdmsEventStatistics 6 }
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Notification Control Group
+--   
+-- This group of objects controls the sending of
+-- DMS MIB notifications.
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+cdmsMediaPlayerRegisteredEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object defines the administrative state of
+        sending the 'ciscoDmsMediaPlayerRegistered' notification
+        to signal the fact that a digital media player which
+        was shutdown is now operational."
+    DEFVAL          { false } 
+    ::= { cdmsNotifControl 1 }
+
+cdmsMediaPlayerUpEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the administrative state of
+        sending the 'ciscoDmsMediaPlayerUp' notification to signal
+        the fact that a digital media player which is registered
+        with this installation of DMS has become operational."
+    DEFVAL          { false } 
+    ::= { cdmsNotifControl 2 }
+
+cdmsMediaPlayerDownEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the administrative state of
+        sending the 'ciscoDmsMediaPlayerDown' notification to signal
+        the fact that a digital media player which was operational
+        and is registered with this installation of DMS is now
+        shutdown."
+    DEFVAL          { false } 
+    ::= { cdmsNotifControl 3 }
+
+cdmsMediaPlayerAddrTakenEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the administrative state of
+        sending the 'ciscoDmsMediaPlayerAddrTaken' notification to
+        signal the fact that the IP address assigned to a managed
+        digital media player has been acquired by another media
+        player."
+    DEFVAL          { false } 
+    ::= { cdmsNotifControl 4 }
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Cisco DMS Notifications
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+ciscoDmsMediaPlayerRegistered NOTIFICATION-TYPE
+    OBJECTS         {
+                        cdmsNumMediaPlayerDevices,
+                        cdmsInventoryElementMacAddress,
+                        cdmsInventoryElementAddrType,
+                        cdmsInventoryElementAddress
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated when a media player
+        is registered into this installation of DMS."
+   ::= { ciscoDmsMonitorMIBNotifs 1 }
+
+ciscoDmsMediaPlayerUp NOTIFICATION-TYPE
+    OBJECTS         {
+                        cdmsNumMediaPlayerDevices,
+                        cdmsInventoryElementMacAddress,
+                        cdmsInventoryElementAddrType,
+                        cdmsInventoryElementAddress
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated when a media player
+        which is registered with DMS becomes operational."
+   ::= { ciscoDmsMonitorMIBNotifs 2 }
+
+ciscoDmsMediaPlayerDown NOTIFICATION-TYPE
+    OBJECTS         {
+                        cdmsNumMediaPlayerDevices,
+                        cdmsInventoryElementAddrType,
+                        cdmsInventoryElementAddress
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated when a media player
+        which is registered with DMS and which was operational
+        is shutdown."
+   ::= { ciscoDmsMonitorMIBNotifs 3 }
+
+ciscoDmsMediaPlayerAddrTaken NOTIFICATION-TYPE
+    OBJECTS         {
+                        cdmsInventoryElementAddrType,
+                        cdmsInventoryElementAddress
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated when it is detected
+        that the network address of a media player is
+        taken by a different media player."
+   ::= { ciscoDmsMonitorMIBNotifs 4 }
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Conformance Information
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+ciscoDmsMonitorMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBConform 1 }
+
+ciscoDmsMonitorMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoDmsMonitorMIBConform 2 }
+
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Compliance Statements
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+ciscoDmsMonitorMIBCompliance MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for SNMP entities
+        the Cisco Digital Media System MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoDmsSystemGroup,
+                        ciscoDmsFeatureGroup,
+                        ciscoDmsInventoryGroup
+                    }
+
+    GROUP           ciscoDmsFeatureAdvancedGroup
+    DESCRIPTION
+        "This group is optional."
+
+    GROUP           ciscoDmsServerGroup
+    DESCRIPTION
+        "This group is optional."
+
+    GROUP           ciscoDamGroup
+    DESCRIPTION
+        "This group is optional."
+
+    GROUP           ciscoDmsSecurityGroup
+    DESCRIPTION
+        "This group is optional."
+
+    GROUP           ciscoDmsUserGroup
+    DESCRIPTION
+        "This group is optional."
+
+    GROUP           ciscoDmsEventGroup
+    DESCRIPTION
+        "This group is optional."
+
+    GROUP           ciscoDmsNotificationCntlGroup
+    DESCRIPTION
+        "This group is optional."
+
+    GROUP           ciscoDmsNotificationsGroup
+    DESCRIPTION
+        "This group is optional."
+
+    OBJECT          cdmsAdministrator
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cdmsInventoryElementState
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cdmsInventoryElementMetadata
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cdmsServerStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cdmsAuthenticationMode
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cdmsMediaPlayerRegisteredEnable
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cdmsMediaPlayerUpEnable
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cdmsMediaPlayerDownEnable
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cdmsMediaPlayerAddrTakenEnable
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+    ::= { ciscoDmsMonitorMIBCompliances 1 }
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Units of Conformance
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+ciscoDmsSystemGroup OBJECT-GROUP
+    OBJECTS         {
+                        cdmsMajorVersion,
+                        cdmsMinorVersion,
+                        cdmsPatchVersion,
+                        cdmsAdministrator
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS system parameters."
+    ::= { ciscoDmsMonitorMIBGroups 1 }
+
+ciscoDmsFeatureGroup OBJECT-GROUP
+    OBJECTS         {
+                        cdmsLicensableFeatures,
+                        cdmsLicensedFeatures,
+                        cdmsLastLicenseUpdate,
+                        cdmsLicensedFeatureLimit,
+                        cdmsLicensedFeatureDescription
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS licensed features."
+    ::= { ciscoDmsMonitorMIBGroups 2 }
+
+ciscoDmsFeatureAdvancedGroup OBJECT-GROUP
+    OBJECTS         { cdmsLicensedFeatureInstallDate }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS advanced licensed features."
+    ::= { ciscoDmsMonitorMIBGroups 3 }
+
+ciscoDmsInventoryGroup OBJECT-GROUP
+    OBJECTS         {
+                        cdmsNumMediaIngestionDevices,
+                        cdmsNumMediaPlayerDevices,
+                        cdmsNumVideoPortalDevices,
+                        cdmsInventoryElementMacAddress,
+                        cdmsInventoryElementAddrType,
+                        cdmsInventoryElementAddress,
+                        cdmsInventoryElementMetadata,
+                        cdmsInventoryElementState
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS inventory."
+    ::= { ciscoDmsMonitorMIBGroups 4 }
+
+ciscoDmsServerGroup OBJECT-GROUP
+    OBJECTS         {
+                        cdmsServerState,
+                        cdmsServerStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS external servers."
+    ::= { ciscoDmsMonitorMIBGroups 5 }
+
+ciscoDamGroup OBJECT-GROUP
+    OBJECTS         { cdmsNumContentElements }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS group."
+    ::= { ciscoDmsMonitorMIBGroups 6 }
+
+ciscoDmsSecurityGroup OBJECT-GROUP
+    OBJECTS         {
+                        cdmsNumAuthenRequests,
+                        cdmsNumAuthenRequestsApproved,
+                        cdmsNumAuthenRequestsDeclined,
+                        cdmsAuthenticationMode
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS security."
+    ::= { ciscoDmsMonitorMIBGroups 7 }
+
+ciscoDmsUserGroup OBJECT-GROUP
+    OBJECTS         {
+                        cdmsNumUsers,
+                        cdmsNumActiveDmmUsers,
+                        cdmsNumActiveVpUsers,
+                        cdmsLastUserLastChange
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS users and user groups."
+    ::= { ciscoDmsMonitorMIBGroups 8 }
+
+ciscoDmsEventGroup OBJECT-GROUP
+    OBJECTS         {
+                        cdmsNumEvents,
+                        cdmsNumEventRate,
+                        cdmsNumAlarms,
+                        cdmsNumAlarmRate,
+                        cdmsNumNotifications,
+                        cdmsNumNotificationRate
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS events."
+    ::= { ciscoDmsMonitorMIBGroups 9 }
+
+ciscoDmsNotificationCntlGroup OBJECT-GROUP
+    OBJECTS         {
+                        cdmsMediaPlayerRegisteredEnable,
+                        cdmsMediaPlayerUpEnable,
+                        cdmsMediaPlayerDownEnable,
+                        cdmsMediaPlayerAddrTakenEnable
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS notification control."
+    ::= { ciscoDmsMonitorMIBGroups 10 }
+
+ciscoDmsNotificationsGroup NOTIFICATION-GROUP
+   NOTIFICATIONS    {
+                        ciscoDmsMediaPlayerRegistered,
+                        ciscoDmsMediaPlayerUp,
+                        ciscoDmsMediaPlayerDown,
+                        ciscoDmsMediaPlayerAddrTaken
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provides information
+        about DMS notifications."
+    ::= { ciscoDmsMonitorMIBGroups 11 }
+
+END
+
+
+
