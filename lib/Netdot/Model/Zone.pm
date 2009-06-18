@@ -395,7 +395,7 @@ sub import_records {
 	    }
 	}
 
-	if ( !exists $nrrs{$nrr} ){
+	if ( !exists $nrrs{$name} ){
 	    if ( !($nrr = RR->search(name=>$name, zone=>$self)->first ) ){
 		$logger->debug("$domain: Inserting RR $name");
 		$nrr = RR->insert({name=>$name, zone=>$self});
