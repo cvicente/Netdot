@@ -40,9 +40,9 @@ if ( $submit ){
 								   object_id    => $object_id, 
 								   access       => $access});
 		    if ( $table eq 'Person' ){
-			UserRight->insert({accessright=>$accessright, person=>$id});
+			UserRight->find_or_create({accessright=>$accessright, person=>$id});
 		    }elsif ( $table eq 'ContactList' ){
-			GroupRight->insert({accessright=>$accessright, contactlist=>$id, view=>'access_rights'});
+			GroupRight->find_or_create({accessright=>$accessright, contactlist=>$id, view=>'access_rights'});
 		    }
 		}
 	    }

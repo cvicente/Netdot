@@ -24,6 +24,19 @@ my $edit;
 if ($submit && ($rr || $id || $ipblock || $action eq 'new')) {
     # insert/update
     eval {
+
+	my $user_type = $user->getAttribute('USER_TYPE');
+	# For unprivileged users, we apply restrictions
+	# on RR names
+	if ( $user_type eq 'user' ){
+	    foreach my $key ( %ARGS ){
+		if ( $key =~ /RR__(?:NEW|\d+)__(.*)$/ ){
+		    my $name = $1;
+		    RR->validate_name($name);
+		}
+	    }
+	}
+
 	my %ret = $ui->form_to_db(%ARGS);
 	print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
 	

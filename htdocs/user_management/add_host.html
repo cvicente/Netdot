@@ -61,7 +61,7 @@ unless ( $address ){
 }
 
 unless ( $manager && $manager->can($user, "edit", $block) ){
-    $m->comp('/generic//generic/error.mhtml', error=>"You don't have permission to edit this object");
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
 }
 
 my $zone;
@@ -80,6 +80,13 @@ if ( $submit ){
 	$m->comp('/generic/error.mhtml', error=>"A hostname is required");
     }
     
+    eval {
+	RR->validate_name($hostname);
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }
+
     if ( my $h = RR->search(name=>$hostname, zone=>$zone)->first ){
 	$m->comp('/generic/error.mhtml', error=>$h->get_label." is already taken");
     }

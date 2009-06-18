@@ -515,16 +515,46 @@ sub add_host {
 }
 
 ############################################################################
-=head2 _validate_args - Validate arguments to insert and update
-
+=head2 validate_name - Name validation for unprivileged users
+    
+    This method is called from specific UI components that take
+    RR name input from unpriviledged users.  The regular expression
+    is a configuration item.
+    
   Args: 
-    hashref
+    RR name string
   Returns: 
     True, or throws exception if validation fails
   Examples:
-    $class->_validate_args($argv);
+    RR->validate_name($name);
 
 =cut
+sub validate_name {
+    my ($self, $name) = @_;
+    
+    if ( my $regex = Netdot->config->get('DNS_NAME_USER_INPUT_REGEX') ){
+	if ( $name =~ /$regex/ ){
+	    $self->throw_user("Invalid name: $name. Name contains invalid characters");
+	}
+    }
+    1;
+}
+
+
+############################################################################
+# PRIVATE METHODS
+############################################################################
+
+############################################################################
+# _validate_args - Validate arguments to insert and update
+#
+#  Args: 
+#    hashref
+#  Returns: 
+#    True, or throws exception if validation fails
+#  Examples:
+#    $class->_validate_args($argv);
+#
 sub _validate_args {
     my ($self, $argv) = @_;
     
@@ -554,23 +584,9 @@ sub _validate_args {
 		$self->throw_user("Invalid FQDN: $fqdn. Length exceeds 255 characters");
 	    }
 	}
-
-	# Character restrictions
-	if ( Netdot->config->get('DNS_NAME_ENFORCE_RFC1123') ){
-	    # Notice that I will intentionally include '@' and _ as valid
-	    # @ represents the zone and _ is used in SRV records
-	    if ( $name =~ /[^\w\.\-\@]/ ){
-		$self->throw_user("Invalid name: $name. Name contains invalid characters");
-	    }elsif ( $name =~ /[\.\-_]$/ || $name =~ /^[\.\-_]/ ){
-		$self->throw_user("Invalid name: $name. First and last characters must be either letter or digit");
-	    }
-	}
     }
     1;
 }
-
-
-
 
 =head1 AUTHOR
 
