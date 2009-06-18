@@ -83,6 +83,17 @@ if ( exists $ao->{Ipblock} ){
 <p>
 
 <table><tr><td>
+
+    <fieldset class="small">
+        <legend>Search</legend>
+        <form action="hostinfo_tasks.html" method="POST">
+        <p>
+        <label for="Find">Host:</label>
+        <input type="text" name="search" class="longtxt" value="<% $search %>"> 
+        </p>
+        </form>
+    </fieldset>
+
     <fieldset class="small">
         <legend>Add new host in</legend>
 % if ( @ipblocks ){
@@ -97,7 +108,6 @@ if ( exists $ao->{Ipblock} ){
 % }else{
      No IP blocks available for this user.
 % }
-
     </fieldset>
 
     <fieldset class="small">
@@ -132,16 +142,37 @@ if ( exists $ao->{Ipblock} ){
 % }else{
      No IP blocks available for this user.
 % }
-
     </fieldset>
+
 </td></tr></table>
 
     </div> <!-- close containerbody -->
   </div> <!-- close container -->
 </div> <!-- close sectiontools -->
 
-% if ( $show_zone ){
-%    $m->comp('../management/zone.html', id=>$show_zone, user=>$user);
-% }elsif ( $show_ipblock ){
-%    $m->comp('../management/ip.html', id=>$show_ipblock, user=>$user);
-% }
+<%perl>
+if ( $show_zone ){
+    $m->comp('../management/zone.html', id=>$show_zone, user=>$user);
+
+}elsif ( $show_ipblock ){
+    $m->comp('../management/ip.html', id=>$show_ipblock, user=>$user);
+
+}elsif ( $search ){
+    $search =~ s/^\s*(.*)\s*$/$1/g;
+    my @list = RR->search_like(name=>$search);
+    
+    # Display search results
+    if ( @list ){
+	print '<div class="container">';
+	print '<div class="containerhead">';
+	print "Query <em>$search</em> returned: ".scalar(@list)." matches";
+	print "</div>";
+	print '<div class="containerbody">';
+	$m->comp('/generic/sortresults.mhtml', object=>\@list, withedit=>0);
+	print "</div>\n</div>";
+	} else {
+	    $m->comp('/generic/no_search_results.html', search=>$search);
+        }
+}
+
+</%perl>
