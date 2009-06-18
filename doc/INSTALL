@@ -63,41 +63,9 @@ overwriting your site-specific configuration.
 UPGRADING
 ----------------------------------------------------------------------
 
-* Back up your existing database and put it in a safe place.
-
-        # mysqldump netdot > /home/dir/netdot-bak.sql
-
-* Rename the database:
-        
-	# /etc/init.d/mysqld stop
-	# cd /var/lib/mysql (or wherever your mysql database directory resides)
-	# mv netdot netdot-0712
-
-        * Alternatively, you could also do it this (slower) way:
-
-	# mysqladmin create netdot-0712
-	# cat /home/dir/netdot-bak.sql | mysql netdot-0712
-	
-* Run the upgrade process to move your data from the old db to the new db:
-
-        # make dropdb      (did you back up????!!!!)
-        # make installdb   (creates a new database called 'netdot')
-        # make upgrade     (moves data from 'netdot-0712' to 'nedot')
-	# make install
-	# stop and start Apache
-
-* Take a look at /etc/Default.conf for new variables.  If you need to 
-  adjust any variables, copy the relevant lines into etc/Site.conf 
-  and edit their values.
-
-* If things go really bad, you can always reinstall netdot-0.7.12 
-  and put back your old database in place:
-
-        # Re-install netdot-0.7.12, then:
-        # make dropdb
-        # mysqladmin create netdot
-        # mysqldump -c netdot-bak.sql | mysql netdot
-        # mysqladmin drop netdot-0712
+Check the UPGRADE file.  Depending on which version you are upgrading
+to, you might or might not need to run an upgrade process to modify
+the DB schema.
 
 ----------------------------------------------------------------------
 INSTALLING THE PACKAGE FOR THE FIRST TIME
