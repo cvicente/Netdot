@@ -406,11 +406,14 @@ sub import_records {
 	if ( $rr->type eq 'A' || $rr->type eq 'AAAA' ){
 	    my $address = $rr->address;
 	    my $ipb;
-	    if ( !($ipb = Ipblock->search(address=>$address)->first) ){
+	    if ( $ipb = Ipblock->search(address=>$address)->first ){
+		$ipb->update({status=>'Static'});
+	    }else{
 		$logger->debug("$domain: Inserting Ipblock $address");
 		$ipb = Ipblock->insert({ address        => $address,
 					 status         => 'static',
 					 no_update_tree => 1});
+		$new_ips++;
 	    }
 	    my $rraddr;
 	    my %args = (rr=>$nrr, ipblock=>$ipb);
@@ -494,7 +497,9 @@ sub import_records {
 	    
 	    $logger->debug("$domain: Inserting Ipblock $ipaddr");
 	    my $ipb;
-	    if ( !($ipb = Ipblock->search(address=>$ipaddr)->first) ){
+	    if ( $ipb = Ipblock->search(address=>$ipaddr)->first ){
+		$ipb->update({status=>'Static'});
+	    }else{
 		$ipb = Ipblock->insert({ address        => $ipaddr,
 					 status         => 'Static',
 					 no_update_tree => 1 });
