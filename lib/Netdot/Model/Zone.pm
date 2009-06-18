@@ -407,7 +407,8 @@ sub import_records {
 	    my $address = $rr->address;
 	    my $ipb;
 	    if ( $ipb = Ipblock->search(address=>$address)->first ){
-		$ipb->update({status=>'Static'});
+		$ipb->update({status=>'Static'}) 
+		    if $ipb->status->name eq 'Discovered';
 	    }else{
 		$logger->debug("$domain: Inserting Ipblock $address");
 		$ipb = Ipblock->insert({ address        => $address,
@@ -498,7 +499,8 @@ sub import_records {
 	    $logger->debug("$domain: Inserting Ipblock $ipaddr");
 	    my $ipb;
 	    if ( $ipb = Ipblock->search(address=>$ipaddr)->first ){
-		$ipb->update({status=>'Static'});
+		$ipb->update({status=>'Static'})
+		    if $ipb->status->name eq 'Discovered';
 	    }else{
 		$ipb = Ipblock->insert({ address        => $ipaddr,
 					 status         => 'Static',
