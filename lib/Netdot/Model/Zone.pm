@@ -378,7 +378,7 @@ sub import_records {
 	    if ( $name =~ /\.$domain/ ){
 		$name =~ s/\.$domain\.?//;
 	    }else{
-		debug("Zone $domain: Ignoring out of zone data: $name");
+		$logger->debug("Zone $domain: Ignoring out of zone data: $name");
 		next;
 	    }
 	}
