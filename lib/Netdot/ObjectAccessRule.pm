@@ -122,6 +122,7 @@ sub denies(){
 		if ( my $crr = RR->search(name=>$object->cname)->first ){
 		    if ( my @ipbs = &_get_rr_ipblocks($crr) ){
 			foreach my $ipb ( @ipbs ){
+			    return 1 unless $ipb;
 			    return 1 if ( &_deny_action_rr_access($action, $access, $ipb, $crr->zone) );
 			}
 			return 0;
@@ -135,6 +136,7 @@ sub denies(){
 	    }else{
 		if ( my @ipbs = &_get_rr_ipblocks($rr) ){
 		    foreach my $ipb ( @ipbs ){
+			return 1 unless $ipb;
 			return 1 if ( &_deny_action_rr_access($action, $access, $ipb, $zone) );
 		    }
 		    return 0;
