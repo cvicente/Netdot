@@ -9,6 +9,7 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use BIND::Config::Parser;
 use strict;
 use Data::Dumper;
+use Log::Log4perl::Level;
 
 my %self;
 my $usage = <<EOF;
@@ -44,6 +45,12 @@ if ( $self{help} ) {
     print $usage;
     exit;
 }
+
+# Add a log appender 
+my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
+my $logscr = Netdot::Util::Log->new_appender('Screen', stderr=>0);
+$logger->add_appender($logscr);
+$logger->level($DEBUG) if ( $self{debug} ); # Notice that $DEBUG is imported from Log::Log4perl
 
 my %netdot_zones;
 foreach my $z ( Netdot::Model::Zone->retrieve_all ){
