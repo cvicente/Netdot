@@ -78,7 +78,7 @@ if ( $self{domain} && $self{zonefile} ){
 	while ( my $alias = shift @$zones ){
 	    if ( my $zoneobj = Netdot::Model::Zone->search(name=>$zone)->first ){
 		if ( !(Netdot::Model::ZoneAlias->search(name=>$alias, zone=>$zoneobj)->first) ){
-		    &debug("Adding zone $alias as alias of $zone");
+		    $logger->debug("Adding zone $alias as alias of $zone");
 		    Netdot::Model::ZoneAlias->insert({name=>$alias, zone=>$zoneobj});
 		}
 	    }else{
@@ -155,10 +155,10 @@ sub import_zone {
 	    my $do_insert = 1;
 	    if ( exists $netdot_zones{$name} ){
 		if ( $self{wipe} ){
-		    &debug("Wiping out Zone $name from DB");
+		    $logger->debug("Wiping out Zone $name from DB");
 		    $netdot_zones{$name}->delete();
 		}else{
-		    &debug( "Zone $name already exists in DB");
+		    $logger->debug( "Zone $name already exists in DB");
 		    $nzone = $netdot_zones{$name};
 		    $do_insert = 0;
 		}
@@ -181,9 +181,4 @@ sub import_zone {
     }
 
     $nzone->import_records(rrs=>$rrs, overwrite=>$self{wipe});
-}
-
-sub debug {
-    my ($msg) = @_;
-    print $msg, "\n" if $self{debug};
 }
