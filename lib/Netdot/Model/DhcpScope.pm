@@ -367,7 +367,7 @@ sub _validate_args {
 	    $fields{$field} = $self->$field;
 	}
 	# Overrides current value with given argument
-	$fields{$field} = $argv->{$field}
+	$fields{$field} = $argv->{$field} if exists $argv->{$field};
     }
 
     if ( !defined $fields{container} && $fields{type}->name ne 'global' ){
