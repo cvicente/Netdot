@@ -376,10 +376,10 @@ sub _validate_args {
     if ( !defined $fields{container} && $fields{type}->name ne 'global' ){
 	$self->throw_user("DhcpScope::_validate_args: $fields{name}: Container scope required unless type is global");
     }
-    if ( defined $fields{physaddr} && $fields{type}->name ne 'host' ){
+    if ( $fields{physaddr} && $fields{type}->name ne 'host' ){
 	$self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign physical address to a non-host scope");
     }
-    if ( defined $fields{ipblock} ){
+    if ( $fields{ipblock} ){
 	if ( ($fields{ipblock}->status->name eq 'Subnet') && $fields{type}->name ne 'subnet' ){
 	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign a subnet to a non-subnet scope");
 	}elsif ( ($fields{ipblock}->status->name eq 'Static') && $fields{type}->name ne 'host'  ){
