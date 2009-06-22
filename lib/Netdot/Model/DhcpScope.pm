@@ -380,9 +380,9 @@ sub _validate_args {
 	$self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign physical address to a non-host scope");
     }
     if ( defined $fields{ipblock} ){
-	if ( ($fields{ipblock}->status eq 'Subnet') && $fields{type}->name ne 'subnet' ){
+	if ( ($fields{ipblock}->status->name eq 'Subnet') && $fields{type}->name ne 'subnet' ){
 	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign a subnet to a non-subnet scope");
-	}elsif ( ($fields{ipblock}->status eq 'Static') && $fields{type}->name ne 'host'  ){
+	}elsif ( ($fields{ipblock}->status->name eq 'Static') && $fields{type}->name ne 'host'  ){
 	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign an IP address to a non-host scope");
 	}
     }
