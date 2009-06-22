@@ -370,6 +370,9 @@ sub _validate_args {
 	$fields{$field} = $argv->{$field} if exists $argv->{$field};
     }
 
+    $self->throw_user("DhcpScope::_validate_args: type not defined")
+	unless defined $fields{type};
+
     if ( !defined $fields{container} && $fields{type}->name ne 'global' ){
 	$self->throw_user("DhcpScope::_validate_args: $fields{name}: Container scope required unless type is global");
     }

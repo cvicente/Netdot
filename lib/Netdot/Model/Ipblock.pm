@@ -2262,7 +2262,7 @@ sub _insert_dhcp_scope {
 	unless (defined $argv{container});
 
     $self->throw_fatal("Ipblock::_insert_dhcp_scope: Invalid call to this method on a non-subnet")
-	if ( $self->status->name ne 'Subnet' );
+	if ( $self->status->name ne 'subnet' );
     
     my $container = $argv{container};
     my $scope;
@@ -2270,7 +2270,7 @@ sub _insert_dhcp_scope {
     if ( !($scope = DhcpScope->search(name=>$scope_name)->first) ){
 	$logger->debug("Ipblock::_insert_dhcp_scope: ".$self->get_label.": Inserting DhcpScope: $scope_name");
 	my %args = (name      => $scope_name, 
-		    type      =>'Subnet', 
+		    type      =>'subnet', 
 		    ipblock   => $self,
 		    container => $container);
 	$args{attributes} = $argv{attributes} if ( $argv{attributes} );
