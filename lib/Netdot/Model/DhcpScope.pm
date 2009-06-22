@@ -305,30 +305,34 @@ sub import_hosts{
 sub _objectify_args {
     my ($self, $argv) = @_;
 
-    if ( defined $argv->{type} && !ref($argv->{type}) ){
+    if ( $argv->{type} && !ref($argv->{type}) ){
 	if ( $argv->{type} =~ /\D+/ ){
 	    my $type = DhcpScopeType->search(name=>$argv->{type})->first;
 	    $self->throw_user("DhcpScope::objectify_args: Unknown type: $argv->{type}")
 		unless $type;
 	    $argv->{type} = $type;
+	}elsif ( my $type = DhcpScopeType->retrieve($argv->{type}) ){
+	    $argv->{type} = $type;
 	}else{
-	    $argv->{type} = DhcpScopeType->retrieve($argv->{type});
+	    $self->throw_user("Invalid type argument ".$argv->{type});
 	}
     }
 
-    if ( defined $argv->{physaddr} && !ref($argv->{physaddr}) ){
+    if ( $argv->{physaddr} && !ref($argv->{physaddr}) ){
 	if ( $argv->{physaddr} =~ /\D+/ ){
 	    my $physaddr;
 	    unless ( $physaddr = PhysAddr->search(address=>$argv->{physaddr})->first ){
 		$physaddr = PhysAddr->insert({address=>$argv->{physaddr}});
 	    }
 	    $argv->{physaddr} = $physaddr;
+	}elsif ( my $phys = PhysAddr->retrieve($argv->{physaddr}) ){
+	    $argv->{physaddr} = $phys;
 	}else{
-	    $argv->{physaddr} = PhysAddr->retrieve($argv->{physaddr});
+	    $self->throw_user("Invalid physaddr argument ".$argv->{physaddr});
 	}
     }
 
-    if ( defined $argv->{ipblock} && !ref($argv->{ipblock}) ){
+    if ( $argv->{ipblock} && !ref($argv->{ipblock}) ){
 	if ( $argv->{ipblock} =~ /\D+/ ){
 	    my $ipblock;
 	    unless ( $ipblock = Ipblock->search(address=>$argv->{ipblock})->first ){
@@ -340,8 +344,10 @@ sub _objectify_args {
 		}
 	    }
 	    $argv->{ipblock} = $ipblock;
+	}elsif ( my $ipb = Ipblock->retrieve($argv->{ipblock}) ){
+		$argv->{ipblock} = $ipb;
 	}else{
-	    $argv->{ipblock} = Ipblock->retrieve($argv->{ipblock});
+	    $self->throw_user("Invalid ipblock argument ".$argv->{ipblock});
 	}
     }
     1;
