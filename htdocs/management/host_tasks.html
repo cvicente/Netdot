@@ -49,6 +49,9 @@ if ( $show_tasks eq "" ) {
 *print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
 my $hideheader = 'style="display:none"' if ( !$showheader );
 
+my $IPV4 = Netdot->get_ipv4_regex();
+my $IPV6 = Netdot->get_ipv6_regex();
+my $MAC  = Netdot->get_mac_regex();
 my @list;
 
 </%init>
@@ -67,7 +70,7 @@ my @list;
             <legend>Search</legend>
             <form action="host_tasks.html" method="POST">
                 <p>
-                <label for="Find">Host:</label>
+                <label for="Find">Name/IP/MAC:</label>
                 <input type="hidden" name="action" value="search">
                 <input type="text" name="search" class="longtxt" value="<% $search %>"> 
                 <input name="submit" value="Find" class="btn" type="submit">
@@ -140,8 +143,13 @@ if ( $action eq "search" && $submit ){
     my %idx;
     if ( $search ){
 	$search =~ s/^\s*(.*)\s*$/$1/g;
-        @list = RR->search_like(name=>$search);
-	
+	if ( $search =~ /$MAC/ ){
+	    @list = PhysAddr->search(address=>$search);
+	}elsif ( $search =~ /$IPV4|$IPV6/ ){
+	    @list = Ipblock->search(address=>$search);
+	}else{
+	    @list = RR->search_like(name=>$search);
+	}
 	# Display search results
 	if ( @list ){
 	    print '<div class="container">';
