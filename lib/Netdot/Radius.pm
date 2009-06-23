@@ -23,6 +23,7 @@ In Apache configuration:
        PerlSetVar NetdotRadiusSecret "testing123"
        PerlSetVar NetdotRadiusHost2 "otherhost"
        PerlSetVar NetdotRadiusSecret2 "testing123"
+       PerlSetVar NetdotRadiusTimeOut "5"
        PerlSetVar NetdotRadiusFailToLocal "yes"
    </Location>
     
@@ -100,12 +101,13 @@ sub _connect {
     my $host2    = $r->dir_config("NetdotRadiusHost2");
     my $secret   = $r->dir_config("NetdotRadiusSecret")  || "unknown";
     my $secret2  = $r->dir_config("NetdotRadiusSecret2") || "unknown";
+    my $timeout  = $r->dir_config("NetdotRadiusTimeOut") || "5";
     my $radius;
     
     $r->log_error("WARNING: Shared secret is not set. Use RadiusSiteControlSecret in httpd.conf") 
 	if $secret eq "unknown";
     
-    $radius = new Authen::Radius(Host=>$host, Secret => $secret);
+    $radius = new Authen::Radius(Host=>$host, Secret=>$secret, TimeOut=>$timeout);
     if ( !$radius ) {
 	$r->log_error("Could not contact radius server: $host.");
 	if ( $host2 ){
