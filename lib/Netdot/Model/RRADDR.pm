@@ -34,6 +34,11 @@ RRADDR represent either A or AAAA records.
 =cut
 sub insert {
     my($class, $argv) = @_;
+    $class->isa_class_method('insert');
+
+    $class->throw_fatal('Missing required arguments')
+	unless ( $argv->{ipblock} && $argv->{rr} );
+
     $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
     
     my $update_ptr = 1; # On by default
@@ -73,7 +78,8 @@ sub insert {
 sub update {
     my($self, $argv) = @_;
     $self->isa_object_method('update');
-    $argv->{ipblock} = $self->_convert_ipblock($argv->{ipblock});
+    $argv->{ipblock} = $self->_convert_ipblock($argv->{ipblock})
+	if defined $argv->{ipblock};
     
     my $update_ptr = 1; # On by default
     if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
