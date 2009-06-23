@@ -127,17 +127,19 @@ if ( $submit ){
 
 <!-- Display list of SubnetZone relationships -->
 %###########################################################################
-% if ( my @sz = $obj->subnets ){
+%     my @sz = $obj->subnets;
       <div class="container">
         <div class="containerheadleft">IP Blocks</div>
 %       if ( $edit eq 'ipblocks' ){
 	  <div class="containerheadright">&nbsp;</div>
 %       }else{
-	  <div class="containerheadright"><a href="zone.html?id=<% $id %>&edit=ipblocks">[edit]</a></div>
+	  <div class="containerheadright">
+	      <a href="zone.html?id=<% $id %>&edit=ipblocks">[edit]</a>
+              <a href="edit.html?table=SubnetZone&zone=<% $id %>">[add]</a>
+	  </div>
 %       }
         <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'ipblocks')? 1 : 0  &>
       </div>
-% }
 
 <!-- Display view menu -->
    <div class="container">
