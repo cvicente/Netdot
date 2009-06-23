@@ -106,9 +106,19 @@ BEGIN {
 		}elsif ( $self->table eq 'rr' ){
 		    $zone = $self->zone;
 		}elsif ( $self->table eq 'rrcname' || $self->table eq 'rrsrv' ){
-		    $zone = $self->name->zone;
+		    if ( defined $self->name && $self->name != 0 ){
+			$zone = $self->name->zone;
+		    }else{
+			$logger->error("Netdot::Model::_zone_audit: $table id ".$self->id." has invalid name");
+			return;
+		    }
 		}else{
-		    $zone = $self->rr->zone;
+		    if ( defined $self->rr && $self->rr != 0 ){
+			$zone = $self->rr->zone;
+		    }else{
+			$logger->error("Netdot::Model::_zone_audit: $table id ".$self->id." has invalid rr");
+			return;
+		    }
 		}
 		my $fields = join ',', @$changed_columns;
 		my @values = map { $self->$_ } @$changed_columns;
