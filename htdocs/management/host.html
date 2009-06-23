@@ -5,68 +5,89 @@ User Interface for DNS records
 </%doc>
 
 <%args>
-$id        => undef
-$user      => $ui->get_current_user($r)
-$rr        => undef
-$ipblock   => undef
-$action    => undef
-$zone      => undef
-$submit    => undef
+$id             => undef
+$user           => $ui->get_current_user($r)
+$rr             => undef
+$ipblock        => undef
+$action         => undef
+$zone           => undef
+$submit         => undef
+$delete_ip      => undef
 </%args>
 
 <%init>
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
-
 my @rraddrs;
 my %rrs;
 my $edit;
-if ($submit && ($rr || $id || $ipblock || $action eq 'new')) {
-    # insert/update
-    eval {
+my $deleted_label;
 
-	my $user_type = $user->getAttribute('USER_TYPE');
-	# For unprivileged users, we apply restrictions
-	# on RR names
-	if ( $user_type eq 'user' ){
-	    foreach my $key ( %ARGS ){
-		if ( $key =~ /RR__(?:NEW|\d+)__(.*)$/ ){
-		    my $name = $1;
-		    RR->validate_name($name);
-		}
-	    }
-	}
-
-	my %ret = $ui->form_to_db(%ARGS);
-	print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
-	
-	if (exists $ret{RR}) {
-	    my $newid = (keys %{$ret{RR}{id}})[0];
-	    if ($ret{RR}{id}{$newid}{action} eq 'INSERTED') {
-		$id = $newid;
-		$rr = $newid;
-		if (defined $ipblock) {
-		    RRADDR->insert({rr=>$newid, ipblock=>$ipblock});
-		}
-	    }
-	}
-    };
-    if ( my $e = $@ ){
-	$m->comp('/generic/error.mhtml', error=>$e);
-    } else {
-	$submit = 0;
-	$action = "";
-    }
-}
-
+my $manager = $ui->get_permission_manager($r);
 
 if ($id) {
     $rr = RR->retrieve($id);
 }elsif ($rr && !ref $rr) {
     $rr = RR->retrieve($rr);
+    $id = $rr->id;
 }
 
-my $manager = $ui->get_permission_manager($r);
+if ( $submit ){
+    if ( $rr && $action eq 'delete_confirm' ){
+
+	# Check if user can delete this object 
+	unless ( $manager && $manager->can($user, "delete", $rr) ){
+	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to delete this object");
+	}
+	my @ips = map { $_->ipblock } $rr->arecords();
+	$deleted_label = $rr->get_label();
+	$rr->delete();
+	if ( @ips && $delete_ip ){
+	    foreach my $ip ( @ips ){
+		$ip->delete();
+	    }
+	}
+	undef $rr;
+	$action = 'deleted';
+    }elsif ($rr || $id || $ipblock || $action eq 'new') {
+	# insert/update
+	eval {
+	    
+	    my $user_type = $user->getAttribute('USER_TYPE');
+	    # For unprivileged users, we apply restrictions
+	    # on RR names
+	    if ( $user_type eq 'user' ){
+		foreach my $key ( %ARGS ){
+		    if ( $key =~ /RR__(?:NEW|\d+)__(.*)$/ ){
+			my $name = $1;
+			RR->validate_name($name);
+		    }
+		}
+	    }
+	    
+	    my %ret = $ui->form_to_db(%ARGS);
+	    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+	    
+	    if (exists $ret{RR}) {
+		my $newid = (keys %{$ret{RR}{id}})[0];
+		if ($ret{RR}{id}{$newid}{action} eq 'INSERTED') {
+		    $id = $newid;
+		    $rr = $newid;
+		    if (defined $ipblock) {
+			RRADDR->insert({rr=>$newid, ipblock=>$ipblock});
+		    }
+		}
+	    }
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	} else {
+	    $submit = 0;
+	    $action = "";
+	}
+    }
+}
+
 
 if ( $rr ){
     # Check if user can view this object 
@@ -78,7 +99,6 @@ if ( $rr ){
 
 if ($ipblock && !ref $ipblock) {
     $ipblock = Ipblock->retrieve($ipblock);
-    
     # Check if user can view this object 
     unless ( $manager && $manager->can($user, "view", $ipblock) ){
 	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
@@ -90,16 +110,35 @@ if ($ipblock && !ref $ipblock) {
 	}
     }
 }
-
-
-
 </%init>
 
 <%perl>
-my (@field_headers, @cell_data);
-
-print '<div class="container">';
 print '<form name="netdotform" action="host.html" method="POST">';
+
+if ( $rr && $action eq 'delete' ){
+    print '<div class="container">';
+    print '<div class="containerhead"><b>Delete Records</b></div>';
+    print '<div class="containerbody">';
+   
+    print '<p>';
+    print '<strong>Are you sure you want to delete the records below?</strong>';
+    print '<p>';
+    if ( $rr->arecords ){
+	print '<p>';
+	print 'Delete associated IP(s) too <input type="checkbox" name="delete_ip" CHECKED>';
+    }
+    print '<p>';
+    print '<input type="hidden" name="id" value="'.$rr.'">';
+    print '<input type="hidden" name="action" value="delete_confirm" >';
+    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> ';
+    print '<input type="submit" name="submit" value="yes" >';
+    print '</div>';
+    print '</div>';
+    print '<p>';
+}
+print '<div class="container">';
+
+my (@field_headers, @cell_data);
 
 print '<div class="containerheadleft"><b>DNS Records</b></div>';
 print '<div class="containerheadright">';
@@ -107,17 +146,15 @@ if ($action eq 'new') {
     if ($ipblock) {
 	print '<input type="hidden" name="ipblock" value="'.$ipblock.'">';
     }
-    
     print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
     print '<input type="submit" name="submit" value="save" >';
     print '<input type="hidden" name="action" value="new" >';
 } elsif ($ipblock) {
 	print '<a href="host.html?ipblock='.$ipblock.'&action=new">[new]</a>';
-} else {
-    if (!($id || $rr || $ipblock)) {
+} elsif (!($id || $rr || $ipblock)) {
 	print '<a href="host.html?action=new">[add]</a>';
-    }
-
+}else{
+    print '&nbsp;'
 }
 
 print '</div>'; #close containderheadright
@@ -164,6 +201,13 @@ if ($action eq 'new') {
 
     print '</div>'; #close containerbody of 'new'
     print '</div>'; #close container of 'new'
+
+}elsif ( $action eq 'deleted' ){
+    print '<p>';
+    print 'Record '.$deleted_label.' has been deleted';
+    print '</div>';
+    print '</div>';
+    print '<p>';
 }
 
 </%perl>
@@ -205,7 +249,7 @@ foreach my $o ( values %rrs ) {
     } else {
 	print '<a href="host.html?rr='.$o.'">[refresh]</a>&nbsp;';
 	if ( $manager && $manager->can($user, "delete", $o) ){
-	    print '<a href="delete.html?table=RR&id='.$o.'">[delete]</a>';
+	    print '<a href="host.html?id='.$o.'&action=delete">[delete]</a>';
 	}
 	print '&nbsp;';
 	if ( $manager && $manager->can($user, "edit", $o) ){
@@ -288,12 +332,19 @@ foreach my $o ( values %rrs ) {
     print '<div class="containerheadleft"><b>HINFO</b></div>';
     print '<div class="containerheadright">';
 
+    my $defaults = [ {'PC-INTEL'=>'PC-Intel' , 'MAC-INTEL'=>'Mac-Intel', 
+		      'MAC-PPC'=>'Mac-PowerPC', 'OTHER'=>'Other'}, 
+		     {'WINDOWS'=>'Windows', 'MACOS'=>'Mac OS', 
+		      'LINUX'=>'Linux', 'OTHER'=>'Other'} ];
     #new rrhinfo
     $ui->add_to_fields(table=>'RRHINFO', edit=>1, fields=>['cpu', 'os', 'ttl'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
+		       defaults =>$defaults,
 		       linkpages=>['view.html','view.html','']);
+
     my $newhinfo = $m->scomp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
+
     $newhinfo =~ s/\n//g;
     $newhinfo =~ s/<script.*?<\/script>//g;
     $newhinfo =~ s/'/\\'/g;
@@ -307,7 +358,9 @@ foreach my $o ( values %rrs ) {
 	foreach my $hinfo (@hinfos) {
 	    $ui->add_to_fields(o=>$hinfo, edit=>$edit, fields=>['cpu', 'os', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['view.html','view.html','']);
+			       defaults =>$defaults,
+			       linkpages=>['view.html','view.html','']		
+		);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 	}

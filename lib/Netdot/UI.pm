@@ -333,7 +333,8 @@ sub form_field {
 
 	if ( $type =~ /^varchar|timestamp|integer|numeric|bigint$/ ){
 	    $value = $self->text_field(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
-				       default=>$args{default}, linkPage=>$args{linkPage}, returnAsVar=>1, 
+				       default=>$args{default}, defaults=>$args{defaults}, linkPage=>$args{linkPage}, 
+				       returnAsVar=>1, 
 				       htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
 	    
 	}elsif ( $type eq 'date' ){
@@ -843,6 +844,8 @@ the value from the DB (if any).
    - table:          Name of table in DB. (required if object is null)
    - column:         Name of field in DB.
    - default:        Default value to display if no value is defined in DB.
+   - defaults:       Hashref with default values to show in a select box
+                     where key=option value, value=option text
    - edit:           True if editing, false otherwise.
    - htmlExtra:      Extra html you want included in the output. Common use
                      would be to include style="width: 150px;" and the like.
@@ -863,9 +866,9 @@ the value from the DB (if any).
 
 sub text_field($@){
     my ($self, %args) = @_;
-    my ($o, $table, $column, $isEditing, $htmlExtra, $linkPage, $default, $returnAsVar, $shortFieldName) = 
+    my ($o, $table, $column, $isEditing, $htmlExtra, $linkPage, $defaults, $default, $returnAsVar, $shortFieldName) = 
 	($args{object}, $args{table}, $args{column}, $args{edit}, $args{htmlExtra}, 
-	 $args{linkPage}, $args{default}, $args{returnAsVar}, $args{shortFieldName} );
+	 $args{linkPage}, $args{defaults}, $args{default}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
     $table  = ($o ? $o->short_class : $table);
@@ -880,7 +883,22 @@ sub text_field($@){
     my $input_type = ($column eq 'password')? 'password' : 'text';
 
     if ( $isEditing ){
-	$output .= sprintf("<input type=\"%s\" name=\"%s\" value=\"%s\" %s>\n", $input_type, $name, $value, $htmlExtra);
+	if ( $defaults && ref($defaults) eq "HASH" ){
+	    # Show a select tag instead
+	    $output .= "<select name=\"$name\">";
+	    foreach my $key ( sort { $defaults->{$a} cmp $defaults->{$b} } 
+			      keys %$defaults ){
+		my $v = $defaults->{$key};
+		if ( $value eq $key ){
+		    $output .= "<option value=\"$key\" SELECTED>$v</option>";
+		}else{
+		    $output .= "<option value=\"$key\">$v</option>";
+		}
+	    }
+	    $output .= '</select>';
+	}else{
+	    $output .= sprintf("<input type=\"%s\" name=\"%s\" value=\"%s\" %s>\n", $input_type, $name, $value, $htmlExtra);
+	}
     }elsif ( $linkPage && $value ){
 	if ( $linkPage eq "1" || $linkPage eq "view.html" ){
 	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $table, $o->id, $value);
@@ -1272,6 +1290,7 @@ sub format_size {
     - o:              A reference to a DBI object
     - edit:           True if editing, false otherwise
     - fields:         Reference to an array of column names in the database
+    - defaults:       Reference to an array containing default objects or values
     - linkpages:      Reference to an array of the same size as @fields, with optional pages to link to
     - field_headers:  Reference to the array to add the names of the columns to
     - cell_data:      Reference to the array to add the form fields to
@@ -1292,8 +1311,8 @@ sub format_size {
 =cut
 sub add_to_fields {
     my ($self, %args) = @_;
-    my ($o, $table, $edit, $fields, $linkpages, $field_headers, $cell_data) = 
-	@args{ 'o', 'table', 'edit', 'fields', 'linkpages', 'field_headers', 'cell_data'};
+    my ($o, $table, $edit, $fields, $linkpages, $defaults, $field_headers, $cell_data) = 
+	@args{ 'o', 'table', 'edit', 'fields', 'linkpages', 'defaults', 'field_headers', 'cell_data'};
     
     $self->throw_fatal("You need to pass either a valid object or a table name")
 	unless ( ref($o) || $table );
@@ -1302,7 +1321,11 @@ sub add_to_fields {
         my $field = ${$fields}[$i];
         my $linkpage = ${$linkpages}[$i];
         my %tmp;
-        %tmp = $self->form_field(object=>$o, table=>$table, column=>$field, edit=>$edit, linkPage=>$linkpage);
+	my %args = (object=>$o, table=>$table, column=>$field, edit=>$edit, 
+		    linkPage=>$linkpage);
+	$args{defaults} = $defaults->[$i] 
+	    if ( defined $defaults && defined $defaults->[$i] );
+        %tmp = $self->form_field(%args);
         push( @{$field_headers}, $tmp{label} );
         push( @{$cell_data}, $tmp{value} );
     }
