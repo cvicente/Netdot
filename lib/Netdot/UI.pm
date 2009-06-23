@@ -1292,6 +1292,7 @@ sub format_size {
     - fields:         Reference to an array of column names in the database
     - defaults:       Reference to an array containing default objects or values
     - linkpages:      Reference to an array of the same size as @fields, with optional pages to link to
+    - with_delete:    Add a checkbox at the end to delete object when editing (requires passing object)
     - field_headers:  Reference to the array to add the names of the columns to
     - cell_data:      Reference to the array to add the form fields to
   Returns:
@@ -1311,8 +1312,8 @@ sub format_size {
 =cut
 sub add_to_fields {
     my ($self, %args) = @_;
-    my ($o, $table, $edit, $fields, $linkpages, $defaults, $field_headers, $cell_data) = 
-	@args{ 'o', 'table', 'edit', 'fields', 'linkpages', 'defaults', 'field_headers', 'cell_data'};
+    my ($o, $table, $edit, $fields, $linkpages, $defaults, $with_delete, $field_headers, $cell_data) = 
+	@args{ 'o', 'table', 'edit', 'fields', 'linkpages', 'defaults', 'with_delete', 'field_headers', 'cell_data'};
     
     $self->throw_fatal("You need to pass either a valid object or a table name")
 	unless ( ref($o) || $table );
@@ -1328,6 +1329,11 @@ sub add_to_fields {
         %tmp = $self->form_field(%args);
         push( @{$field_headers}, $tmp{label} );
         push( @{$cell_data}, $tmp{value} );
+    }
+    if ( $edit && $o && $with_delete ){
+	$table ||= $o->short_class;
+        push( @{$field_headers}, 'Delete' );
+        push( @{$cell_data}, '<input type="checkbox" name="'.$table.'__'.$o.'__DELETE">' );
     }
     1;
 }

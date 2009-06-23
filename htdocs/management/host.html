@@ -162,7 +162,7 @@ print '<div class="containerbody"><br>';
 
 
 my %comphash = (field_headers=>\@field_headers, data=>\@cell_data, 
-		width=>"2", headercolwidth=>"15%", datacolwidth=>"85%");
+		width=>"1", headercolwidth=>"15%", datacolwidth=>"85%");
 
 if ($action eq 'new') {
     print '<div class="container" style="width:80%;margin-left:20px">';
@@ -293,7 +293,7 @@ foreach my $o ( values %rrs ) {
     if (my @arecs = $o->arecords()) {
 	foreach my $arecord (@arecs) {
 	    next if $arecord->ipblock == 0;
-	    
+
 	    push( @field_headers, "IP");
 	    if ($edit) {
 		push( @cell_data, "<input name='RRADDR__".$arecord."__ipblock' value='".$arecord->ipblock->address."' type='text'>" );
@@ -303,6 +303,11 @@ foreach my $o ( values %rrs ) {
 	    $ui->add_to_fields(o=>$arecord, edit=>$edit, fields=>['ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
 			       linkpages=>['']);
+
+	    if ( $edit ){
+ 		push @field_headers, 'Delete';
+		push @cell_data, '<input type="checkbox" name="RRADDR__'.$arecord.'__DELETE">';
+	    }
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 
@@ -313,7 +318,7 @@ foreach my $o ( values %rrs ) {
 		print '<div class="containerbody">';
 		$ui->add_to_fields(o=>$ptr, edit=>0, fields=>['rr', 'ptrdname', 'ttl'],
 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
-				   linkpages=>['host.html', '', '']);
+				   linkpages=>['host.html', '', ''], with_delete=>1);
 		
 		$m->comp('/generic/attribute_table.mhtml', %comphash);
 		(@field_headers, @cell_data) = ((),());
@@ -359,7 +364,7 @@ foreach my $o ( values %rrs ) {
 	    $ui->add_to_fields(o=>$hinfo, edit=>$edit, fields=>['cpu', 'os', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
 			       defaults =>$defaults,
-			       linkpages=>['view.html','view.html','']		
+			       linkpages=>['view.html','view.html',''], with_delete=>1		
 		);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
@@ -395,7 +400,7 @@ foreach my $o ( values %rrs ) {
 	foreach my $txt (@txts) {
 	    $ui->add_to_fields(o=>$txt, edit=>$edit, fields=>['txtdata', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['view.html','']);
+			       linkpages=>['view.html',''], with_delete=>1);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 	}
@@ -438,7 +443,7 @@ foreach my $o ( values %rrs ) {
 	foreach my $cname (@cnames) {
 	    $ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['name', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['host.html','']);
+			       linkpages=>['host.html',''], with_delete=>1);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 	}
@@ -499,9 +504,12 @@ foreach my $o ( values %rrs ) {
     print '<div class="containerheadright">';
 
     #new
-    $ui->add_to_fields(table=>'RRLOC', edit=>1, fields=>['latitude', 'longitude', 'altitude', 'size', 'horiz_pre', 'vert_pre', 'ttl'],
+    $ui->add_to_fields(table=>'RRLOC', edit=>1, 
+		       fields=>['latitude', 'longitude', 'altitude', 'size', 
+				'horiz_pre', 'vert_pre', 'ttl'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
-		       linkpages=>['view.html', 'view.html', 'view.html', 'view.html', 'view.html', 'view.html', '']);
+		       linkpages=>['view.html', 'view.html', 'view.html', 'view.html', 'view.html', 'view.html', ''], 
+	);
     my $newloc = $m->scomp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
     $newloc =~ s/\n//g;
@@ -515,9 +523,13 @@ foreach my $o ( values %rrs ) {
     print '<div class="containerbody">';
     if (my @locs = $o->loc_records()) {
 	foreach my $loc (@locs) {
-	    $ui->add_to_fields(o=>$loc, edit=>$edit, fields=>['latitude', 'longitude', 'altitude', 'size', 'horiz_pre', 'vert_pre', 'ttl'],
+	    $ui->add_to_fields(o=>$loc, edit=>$edit, 
+			       fields=>['latitude', 'longitude', 'altitude', 
+					'size', 'horiz_pre', 'vert_pre', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['view.html', 'view.html', 'view.html', 'view.html', 'view.html', 'view.html', '']);
+			       linkpages=>['view.html', 'view.html', 'view.html', 'view.html', 'view.html', 'view.html', ''], 
+			       with_delete=>1
+		);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 	}
@@ -569,7 +581,9 @@ foreach my $o ( values %rrs ) {
     print '<div class="containerheadright">';
 
     #new rrnaptr
-    $ui->add_to_fields(table=>'RRNAPTR', edit=>1, fields=>['order_field', 'preference', 'flags', 'services', 'regexpr', 'replacement', 'ttl'],
+    $ui->add_to_fields(table=>'RRNAPTR', edit=>1, 
+		       fields=>['order_field', 'preference', 'flags', 
+				'services', 'regexpr', 'replacement', 'ttl'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
 		       linkpages=>['view.html','']);
     my $newnaptr = $m->scomp('/generic/attribute_table.mhtml', %comphash);
@@ -585,9 +599,11 @@ foreach my $o ( values %rrs ) {
     print '<div class="containerbody">';
     if (my @naptrs = $o->naptr_records()) {
 	foreach my $naptr (@naptrs) {
-	    $ui->add_to_fields(o=>$naptr, edit=>$edit, fields=>['order_field', 'preference', 'flags', 'services', 'regexpr', 'replacement', 'ttl'],
+	    $ui->add_to_fields(o=>$naptr, edit=>$edit, 
+			       fields=>['order_field', 'preference', 'flags', 
+					'services', 'regexpr', 'replacement', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['view.html','view.html','']);
+			       linkpages=>['view.html','view.html',''], with_delete=>1);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 	}
@@ -622,7 +638,7 @@ foreach my $o ( values %rrs ) {
 	foreach my $ns (@nss) {
 	    $ui->add_to_fields(o=>$ns, edit=>$edit, fields=>['nsdname', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['view.html','']);
+			       linkpages=>['view.html',''], with_delete=>1);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 	}
@@ -665,7 +681,7 @@ foreach my $o ( values %rrs ) {
 	    }
 	    $ui->add_to_fields(o=>$ptr, edit=>$edit, fields=>['ptrdname', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['', '']);
+			       linkpages=>['', ''], with_delete=>1);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 	}
@@ -700,7 +716,7 @@ foreach my $o ( values %rrs ) {
 	foreach my $srv (@srvs) {
 	    $ui->add_to_fields(o=>$srv, edit=>$edit, fields=>['priority', 'weight', 'port', 'target', 'ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['view.html','view.html','view.html','view.html','']);
+			       linkpages=>['view.html','view.html','view.html','view.html',''], with_delete=>1);
 	    $m->comp('/generic/attribute_table.mhtml', %comphash);
 	    (@field_headers, @cell_data) = ((),());
 	}
