@@ -65,7 +65,7 @@ sub search {
 	return $class->SUPER::search(%argv, $opts);
     }elsif ( defined $argv{name} ){
 	if ( my $alias = ZoneAlias->search(name=>$argv{name})->first ) {
-	    return $class->SUPER::search(id=>$alias->zone->id);
+	    return $class->retrieve($alias->zone->id);
 	}elsif ( $argv{name} =~ /\./ && $argv{name} !~ /^($IPV4)$/ ){
 	    my @sections = split '\.', $argv{name};
 	    while ( @sections ){
@@ -83,6 +83,37 @@ sub search {
     }
     else{
 	return $class->SUPER::search(%argv, $opts);
+    }
+}
+
+############################################################################
+=head2 search_like - Search for Zone objects
+
+    We override the base method to add functionality:
+
+    - Search the ZoneAlias table in addition to the Zone table.
+
+  Arguments: 
+    Hash with key/value pairs
+  Returns: 
+    See Class::DBI search_like
+  Examples:
+    Zone->search_like(name=>$search)
+
+=cut
+sub search_like {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('search');
+
+    my @res;
+    if ( @res = $class->SUPER::search_like(%argv) ){
+	return @res;
+    }elsif ( defined $argv{name} ){
+	if ( my $alias = ZoneAlias->search_like(name=>$argv{name})->first ) {
+	    return $class->retrieve($alias->zone->id);
+	}
+    }else{
+	return $class->SUPER::search_like(%argv);
     }
 }
 
