@@ -8,6 +8,12 @@ $rowsize         => 22
 $dividefreespace => 'max'
 </%args>
 
+<%init>
+if ( $network->version == 6 ){
+    $m->comp('/generic/error.mhtml', error=>"This component cannot currently handle IPv6 blocks");
+}
+</%init>
+
 
 <%perl>
     my $mask = $network->prefix;

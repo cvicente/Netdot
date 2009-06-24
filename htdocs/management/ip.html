@@ -76,6 +76,10 @@ if ( $id ){
 	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
 	}
 	$title = $o->get_label;
+	if ( $o->version == 6 ){
+	    $view_format = 'list' 
+		if $view_format eq 'block';
+	}
     }else{
 	$m->comp('/generic/error.mhtml', error => "Could not retrieve Ipblock id: $id");
     }
@@ -292,6 +296,9 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 		$added_ip  = 1;
 	    }else {
 		$added_block = 1;
+	    }
+	    if ( $o->version == 6 ){
+		$view_format = 'list';
 	    }
 	}
     }else{
