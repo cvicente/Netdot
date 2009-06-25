@@ -53,6 +53,7 @@ sub get_arp {
 	    $args{password}   = $cred->{password};
 	    $args{privileged} = $cred->{privileged};
 	    $args{transport}  = $cred->{transport} || 'SSH';
+	    $args{timeout}    = $cred->{timeout}   || '5';
 	    
 	    $cache = $self->_get_arp_from_cli(%args);
 	    last;
@@ -84,8 +85,8 @@ sub get_arp {
 #
 sub _get_arp_from_cli {
     my ($self, %argv) = @_;
-    my ($login, $password, $privileged, $transport) = 
-	@argv{'login', 'password', 'privileged', 'transport'};
+    my ($login, $password, $privileged, $transport, $timeout) = 
+	@argv{'login', 'password', 'privileged', 'transport', 'timeout'};
     
     $self->isa_object_method('_get_arp_from_cli');
 
@@ -96,8 +97,6 @@ sub _get_arp_from_cli {
     
     my %cache;
     
-    # Temporarily until a bug is fixed in Net::Appliance::Session
-
     my ($s, @output);
     eval {
 	$logger->debug(sub{"$host: Fetching ARP cache via CLI"});
@@ -111,6 +110,9 @@ sub _get_arp_from_cli {
 	$s->connect(Name      => $login, 
 		    Password  => $password,
 		    SHKC      => 0,
+		    Opts      => [
+			'-o', "ConnectTimeout=$timeout",
+		    ],
 	    );
 	
 	if ( $privileged ){
@@ -122,6 +124,7 @@ sub _get_arp_from_cli {
 	if ( $privileged ){
 	    $s->end_privileged;
 	}
+	$s->cmd('termi pager 36');
 	$s->close;
 	
     };
