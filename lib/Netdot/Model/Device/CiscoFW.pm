@@ -120,11 +120,11 @@ sub _get_arp_from_cli {
 	}
 	$s->cmd('termi pager 0');
 	@output = $s->cmd('show arp');
+	$s->cmd('termi pager 36');
 	
 	if ( $privileged ){
 	    $s->end_privileged;
 	}
-	$s->cmd('termi pager 36');
 	$s->close;
 	
     };
