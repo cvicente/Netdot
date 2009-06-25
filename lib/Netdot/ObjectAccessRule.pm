@@ -117,12 +117,12 @@ sub denies(){
 		return 1;
 	    }
 
-	    if ( $otype eq 'CNAME' ){
+	    if ( $otype eq 'RRCNAME' ){
 		# Search for the record that the CNAME points to
 		if ( my $crr = RR->search(name=>$object->cname)->first ){
 		    if ( my @ipbs = &_get_rr_ipblocks($crr) ){
 			foreach my $ipb ( @ipbs ){
-			    return 1 unless $ipb;
+			    next if $ipb == 0;
 			    return 1 if ( &_deny_action_rr_access($action, $access, $ipb, $crr->zone) );
 			}
 			return 0;
@@ -136,10 +136,21 @@ sub denies(){
 	    }else{
 		if ( my @ipbs = &_get_rr_ipblocks($rr) ){
 		    foreach my $ipb ( @ipbs ){
-			return 1 unless $ipb;
+			next if $ipb == 0;
 			return 1 if ( &_deny_action_rr_access($action, $access, $ipb, $zone) );
 		    }
 		    return 0;
+		}elsif ( my $cname = $object->cnames->first ){
+		    # This RR is the alias of something else
+		    if ( my $crr = RR->search(name=>$cname->cname)->first ){
+			if ( my @ipbs = &_get_rr_ipblocks($crr) ){
+			    foreach my $ipb ( @ipbs ){
+				next if $ipb == 0;
+				return 1 if ( &_deny_action_rr_access($action, $access, $ipb, $zone) );
+			    }
+			    return 0;
+			}
+		    }
 		}else{
 		    return &_deny_action_zone_access($action, $access, $zone);
 		}
@@ -204,7 +215,7 @@ sub _deny_action_rr_access {
 	return ( &_deny_action_zone_access($action, $access, $zone) ||
 		 &_deny_action_access($action, $access->{'Ipblock'}->{$ipblock->id}) );
     }else{
-	$logger->debug("Netdot::ObjectAccessRule::_deny_action_rr_access: $zone or ipblock not allowed.  Denying access.");
+	$logger->debug("Netdot::ObjectAccessRule::_deny_action_rr_access: zone ".$zone->get_label." or ipblock ".$ipblock->get_label." not allowed.  Denying access.");
 	return 1;
     }
 }

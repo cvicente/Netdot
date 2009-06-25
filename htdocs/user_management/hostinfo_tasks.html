@@ -45,6 +45,10 @@ if ( $show_tasks eq "" ) {
 *print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
 my $hideheader = 'style="display:none"' if ( !$showheader );
 
+my $IPV4 = Netdot->get_ipv4_regex();
+my $IPV6 = Netdot->get_ipv6_regex();
+my $MAC  = Netdot->get_mac_regex();
+
 </%init>
 
 <div id="sectiontools" <% $hideheader %>>
@@ -82,15 +86,14 @@ if ( exists $ao->{Ipblock} ){
 
 <p>
 
-<table><tr><td>
-
+<table>
+ <tr>
+  <td>
     <fieldset class="small">
         <legend>Search</legend>
         <form action="hostinfo_tasks.html" method="POST">
-        <p>
         <label for="Find">Host:</label>
         <input type="text" name="search" class="longtxt" value="<% $search %>"> 
-        </p>
         </form>
     </fieldset>
 
@@ -144,7 +147,9 @@ if ( exists $ao->{Ipblock} ){
 % }
     </fieldset>
 
-</td></tr></table>
+  </td>
+ </tr>
+</table>
 
     </div> <!-- close containerbody -->
   </div> <!-- close container -->
@@ -159,20 +164,45 @@ if ( $show_zone ){
 
 }elsif ( $search ){
     $search =~ s/^\s*(.*)\s*$/$1/g;
-    my @list = RR->search_like(name=>$search);
-    
+    my @list;
+    if ( $search =~ /$MAC/ ){
+	my @macs = PhysAddr->search(address=>$search);
+	foreach my $mac ( @macs ){
+	    if ( my @dhcp_hosts = $mac->dhcp_hosts ){
+		foreach my $host ( @dhcp_hosts ){
+		    push @list, $host->ipblock;
+		}
+	    }
+	}
+    }elsif ( $search =~ /$IPV4|$IPV6/ ){
+	@list = Ipblock->search(address=>$search);
+    }else{
+	@list = RR->search_like(name=>$search);
+    }
     # Display search results
     if ( @list ){
-	print '<div class="container">';
-	print '<div class="containerhead">';
-	print "Query <em>$search</em> returned: ".scalar(@list)." matches";
-	print "</div>";
-	print '<div class="containerbody">';
-	$m->comp('/generic/sortresults.mhtml', object=>\@list, withedit=>0);
-	print "</div>\n</div>";
-	} else {
-	    $m->comp('/generic/no_search_results.html', search=>$search);
-        }
+	if ( scalar @list == 1 ){
+	    my $obj = $list[0];
+	    my $class = $obj->short_class;
+	    if ( $class eq 'RR' ){
+		$m->comp('/management/host.html', id=>$obj->id);
+	    }elsif ( $class eq 'Ipblock' ){
+		$m->comp('/management/ip.html', id=>$obj->id);
+	    }elsif ( $class eq 'PhysAddr' ){
+		$m->comp('/management/mac.html', id=>$obj->id);
+	    } 
+	}else{
+	    print '<div class="container">';
+	    print '<div class="containerhead">';
+	    print "Query <em>$search</em> returned: ".scalar(@list)." matches";
+	    print "</div>";
+	    print '<div class="containerbody">';
+	    $m->comp('/generic/sortresults.mhtml', object=>\@list, withedit=>0);
+	    print "</div>\n</div>";
+	}
+    } else {
+	$m->comp('/generic/no_search_results.html', search=>$search);
+    }
 }
 
 </%perl>

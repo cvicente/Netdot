@@ -37,6 +37,32 @@ sub as_text {
 }
 
 
+############################################################################
+=head2 delete - Delete object
+    
+    We override the delete method for extra functionality:
+    - When removing a RRCNAME object, the RR (name)
+    associated with it needs to be deleted too.
+
+  Arguments:
+    None
+  Returns:
+    True if successful. 
+  Example:
+    $rrcname->delete;
+
+=cut
+
+sub delete {
+    my $self = shift;
+    $self->isa_object_method('delete');
+    my $rr = $self->name;
+    $self->SUPER::delete();
+    $rr->delete();
+
+    return 1;
+}
+
 ##################################################################
 # Private methods
 ##################################################################
