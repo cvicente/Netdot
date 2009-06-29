@@ -44,20 +44,7 @@ sub insert {
 	$logger->debug("Netdot::Model::RRPTR: Figuring out owner for ".$ipb->get_label);
 
 	my $zone = ref($argv->{zone}) ? $argv->{zone} : Zone->retrieve($argv->{zone});
-	my $p = $zone->name;
-	$p =~ s/(.*)\.in-addr.arpa$/$1/ || 
-	    $p =~ s/(.*)\.ip6.arpa$/$1/ ||
-	    $p =~ s/(.*)\.ip6.int$/$1/ ;
-
-	my $name;
-	if ( $ipb->version eq '4' ){
-	    $name = join('.', reverse split(/\./, $ipb->address));
-	}elsif ( $ipb->version eq '6' ){
-	    $name = $ipb->full_address;
-	    $name =~ s/://g;
-	    $name = join('.', reverse split(//, $name));
-	}
-	$name =~ s/\.$p$//;
+	my $name = $class->get_name(ipblock=>$ipb, zone=>$zone);
 	my $rr = RR->find_or_create({zone=>$zone, name=>$name});
 	$logger->debug("Netdot::Model::RRPTR: Created owner RR for IP: ".
 		       $ipb->get_label." as: ".$rr->get_label);
@@ -72,6 +59,43 @@ sub insert {
     delete $argv->{zone};
     return $class->SUPER::insert($argv);
     
+}
+
+##################################################################
+=head2 get_name - Figure out record name given IP and zone
+
+  Arguments:
+    Hashref containing:
+    ipblock - ipblock object
+    zone    - zone object
+  Returns:
+    String
+  Examples:
+    my $name = RRPTR->get_name($ipb, $zone);
+=cut
+sub get_name {
+    my ($class, %argv) = @_;
+
+    my ($ipblock, $zone) = @argv{'ipblock', 'zone'};
+    unless ( $ipblock && $zone ){
+	$class->throw_fatal("RRPTR::get_name: Missing required arguments");
+    }
+
+    my $p = $zone->name;
+    $p =~ s/(.*)\.in-addr.arpa$/$1/ || 
+	$p =~ s/(.*)\.ip6.arpa$/$1/ ||
+	$p =~ s/(.*)\.ip6.int$/$1/ ;
+    
+    my $name;
+    if ( $ipblock->version eq '4' ){
+	$name = join('.', reverse split(/\./, $ipblock->address));
+    }elsif ( $ipblock->version eq '6' ){
+	$name = $ipblock->full_address;
+	$name =~ s/://g;
+	$name = join('.', reverse split(//, $name));
+    }
+    $name =~ s/\.$p$//;
+    return $name;
 }
 
 =head1 INSTANCE METHODS

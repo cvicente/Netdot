@@ -1,6 +1,6 @@
 <%doc>
 
-User Interface for DNS records
+User Interface for Hosts
     
 </%doc>
 
@@ -13,6 +13,7 @@ $action         => undef
 $zone           => undef
 $submit         => undef
 $delete_ip      => undef
+$add_ptr        => undef
 </%args>
 
 <%init>
@@ -32,6 +33,14 @@ if ($id) {
     $id = $rr->id;
 }
 
+if ( $rr ){
+    # Check if user can view this object 
+    unless ( $manager && $manager->can($user, "view", $rr) ){
+	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+    }
+    $rrs{$rr->id} = $rr;
+}
+
 if ( $submit ){
     if ( $rr && $action eq 'delete_confirm' ){
 
@@ -49,6 +58,7 @@ if ( $submit ){
 	}
 	undef $rr;
 	$action = 'deleted';
+
     }elsif ($rr || $id || $ipblock || $action eq 'new') {
 	# insert/update
 	eval {
@@ -89,14 +99,6 @@ if ( $submit ){
 }
 
 
-if ( $rr ){
-    # Check if user can view this object 
-    unless ( $manager && $manager->can($user, "view", $rr) ){
-	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
-    }
-    $rrs{$rr->id} = $rr;
-}
-
 if ($ipblock && !ref $ipblock) {
     $ipblock = Ipblock->retrieve($ipblock);
     # Check if user can view this object 
@@ -114,6 +116,7 @@ if ($ipblock && !ref $ipblock) {
 
 <%perl>
 print '<form name="netdotform" action="host.html" method="POST">';
+print '<script language="javascript" src="../java_script/datechooser.js"></script>';
 
 if ( $rr && $action eq 'delete' ){
     print '<div class="container">';
@@ -140,7 +143,7 @@ print '<div class="container">';
 
 my (@field_headers, @cell_data);
 
-print '<div class="containerheadleft"><b>DNS Records</b></div>';
+print '<div class="containerheadleft"><b>Host</b></div>';
 print '<div class="containerheadright">';
 if ($action eq 'new') {
     if ($ipblock) {
@@ -257,19 +260,20 @@ foreach my $o ( values %rrs ) {
     }
     print '</div>';
 
-    $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone'],
+    $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone', 'expiration'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
-		       linkpages=>['', 'zone.html']);
+		       linkpages=>['', 'zone.html', '']);
     $m->comp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
 
     
+    my @arecs = $o->arecords();
+
     #####################################################################################################
     #RRADDR
     if ( !$o->cnames ){
-
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>A/AAAA</b></div>';
+	print '<div class="containerheadleft"><b>Address(es)</b></div>';
 	print '<div class="containerheadright">';
 
 	#new rraddr
@@ -291,50 +295,72 @@ foreach my $o ( values %rrs ) {
 
 	#display/edit rraddr
 	print '<div class="containerbody">';
-	if (my @arecs = $o->arecords()) {
-	    foreach my $arecord (@arecs) {
-		next if $arecord->ipblock == 0;
-
-		push( @field_headers, "IP");
-		if ($edit) {
-		    push( @cell_data, "<input name='RRADDR__".$arecord."__ipblock' value='".$arecord->ipblock->address."' type='text'>" );
-		} else {
-		    push( @cell_data, "<a href='ip.html?id=".$arecord->ipblock."'>".$arecord->ipblock->address."</a>");
-		}
-		$ui->add_to_fields(o=>$arecord, edit=>$edit, fields=>['ttl'],
-				   field_headers=>\@field_headers, cell_data=>\@cell_data,
-				   linkpages=>['']);
-
-		if ( $edit ){
-		    push @field_headers, 'Delete';
-		    push @cell_data, '<input type="checkbox" name="RRADDR__'.$arecord.'__DELETE">';
-		}
-		$m->comp('/generic/attribute_table.mhtml', %comphash);
-		(@field_headers, @cell_data) = ((),());
-
-		my $ipblock = $arecord->ipblock;
-		if (my $ptr = $ipblock->ptr_records()->first) {
-		    print '<div class="container" style="margin-left:10px">';
-		    print '<div class="containerhead"><b>PTR</b></div>';
-		    print '<div class="containerbody">';
-		    $ui->add_to_fields(o=>$ptr, edit=>0, fields=>['rr', 'ptrdname', 'ttl'],
-				       field_headers=>\@field_headers, cell_data=>\@cell_data,
-				       linkpages=>['host.html', '', ''], with_delete=>1);
-		    
-		    $m->comp('/generic/attribute_table.mhtml', %comphash);
-		    (@field_headers, @cell_data) = ((),());
-		    print '</div></div>';
-		}
+	foreach my $arecord (@arecs) {
+	    my $ipblock = $arecord->ipblock;
+	    if ( $ipblock == 0 ){
+		# This record should not exist then
+		$arecord->delete;
+		next;
 	    }
+
+	    push( @field_headers, "IP");
+	    if ($edit) {
+		push( @cell_data, "<input name='RRADDR__".$arecord."__ipblock' value='".$ipblock->address."' type='text'>" );
+	    } else {
+		push( @cell_data, "<a href='ip.html?id=".$ipblock."'>".$ipblock->address."</a>");
+	    }
+	    $ui->add_to_fields(o=>$arecord, edit=>$edit, fields=>['ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['']);
+
+	    if ( $edit ){
+		push @field_headers, 'Delete';
+		push @cell_data, '<input type="checkbox" name="RRADDR__'.$arecord.'__DELETE">';
+	    }
+	    
+	    ################################################################
+	    # DHCP host scope
+	    # Do not show ethernet field unless the subnet has DHCP enabled
+	    if ( ($ipblock->parent != 0) && $ipblock->parent->dhcp_scopes ) {
+		my $gscope = $ipblock->parent->dhcp_scopes->first->container;
+		
+		push @field_headers, 'Ethernet: ';
+		if ( my $scope  = $ipblock->dhcp_scopes->first ){
+		    my $phys = $scope->physaddr();
+		    if ( $phys == 0 ){
+			# This scope should not exist then
+			$scope->delete();
+		    }else{
+			if ( $edit ){
+			    push( @cell_data, '<input name="DhcpScope__'.$scope.'__physaddr" value="'.$phys->address.'" type="text">' );
+			}else{
+			    push( @cell_data, '<a href="mac.html?id='.$phys.'">'.$phys->address.'</a>' );
+			}
+		    }
+		}else{
+		    if ( $edit ){
+			print '<input name="DhcpScope__NEW__container" value="'.$gscope.'" type="hidden">';
+			print '<input name="DhcpScope__NEW__type" value="host" type="hidden">';
+			print '<input name="DhcpScope__NEW__name" value="'.$ipblock->address.'" type="hidden">';
+			print '<input name="DhcpScope__NEW__ipblock" value="'.$ipblock.'" type="hidden">';
+			push( @cell_data, '<input name="DhcpScope__NEW__physaddr" value="" type="text">' );
+		    }else{
+			push( @cell_data, '&nbsp;' );
+		    }
+		}
+		
+	    }
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+		
 	}
-	
+
 	print '<div id="rraddr_div_'.$o.'"></div>';
 	print '</div></div>';
-    }
 
-    #####################################################################################################
-    #RRHINFO
-    if ( !$o->cnames ){
+
+	#####################################################################################################
+	#RRHINFO
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>HINFO</b></div>';
 	print '<div class="containerheadright">';
@@ -380,11 +406,9 @@ foreach my $o ( values %rrs ) {
 
 	print '<div id="rrhinfo_div_'.$o.'"></div>';
 	print '</div></div>';
-    }
 
-    #####################################################################################################
-    #RRTXT
-    if ( !$o->cnames ){
+	#####################################################################################################
+	#RRTXT
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>TXT</b></div>';
 	print '<div class="containerheadright">';
@@ -416,11 +440,9 @@ foreach my $o ( values %rrs ) {
 
 	print '<div id="rrtxt_div_'.$o.'"></div>';
 	print '</div></div>';
-    }
-    #####################################################################################################
-    #RRCNAME for somewhere pointing to $o
 
-    if ( !$o->cnames ){
+	#####################################################################################################
+	#RRCNAME for somewhere pointing to $o
 	print '<p>';
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>CNAME (Aliases of '.$o->get_label.')</b></div>';
@@ -453,13 +475,14 @@ foreach my $o ( values %rrs ) {
 
 	print '<div id="rrcname_div_'.$o.'"></div>';
 	print '</div></div>';
+
     }
 
     #####################################################################################################
     #RRCNAME for aliases of $o ($o pointing to somewhere)
     # cannot have an A/AAAA record at the same time
     # the $o is unique in the cname table
-
+    
     #new rrcname
     if (!$o->arecords() ) {
 	print '<div class="container" style="margin-left:10px">';
@@ -498,15 +521,78 @@ foreach my $o ( values %rrs ) {
 	print '</div></div>';
     }
     
-    #SHOW MORE
-    if ( !$o->cnames ){
-	print '<p>';
-	print '<a id="anchor_'.$o.'" href="#dns_'.$o.'" onClick="toggleLayer(\'dns_'.$o.'\');this.innerHTML=((this.innerHTML==\'[Show More]\')?\'[Show Less]\':\'[Show More]\')">[Show More]</a>';
-	
-    }
-    print '<div id="dns_'.$o.'" style="display:none">';
-    #These below are only shown if 'show more' is clicked on
+
+    #####################################################################################################
+    # Restrict access to the following records
+    if ( !$o->cnames && ($manager && $manager->can($user, "access", 'section')) ){
     
+    #####################################################################################################
+    #RRPTR
+    foreach my $arecord ( @arecs ) {
+	next if $arecord->ipblock == 0;
+	my $ipblock = $arecord->ipblock;
+
+	# We can assume there is only one per IP
+	my $ptr = $ipblock->ptr_records->first;
+
+	print '<div class="container" style="margin-left:10px">';
+	print '<div class="containerheadleft"><b>PTR for '.$ipblock->get_label.'</b></div>';
+	print '<div class="containerheadright">';
+	if ( !$ptr ){
+	    print '<a href="host.html?id='.$id.'&add_ptr='.$ipblock.'">[add]</a>';
+	}else{
+	    print '&nbsp;';
+	}
+	print '</div>';  #close containerheadright
+	print '<div class="containerbody">';
+
+	if ( $add_ptr == $ipblock->id ){
+	    # new rrptr
+	    my $rzone;
+	    if ( ($ipblock->parent != 0) && $ipblock->parent->reverse_zone ){
+		$rzone = $ipblock->parent->reverse_zone;
+	    }
+	    push( @field_headers, ("Name", "Zone", "Domain Name", "TTL") );
+	    print '<input name="RR__NEW__type" value="PTR" type="hidden">';
+	    print '<input name="RR__NEW__ipblock" value="'.$ipblock.'" type="hidden">';
+	    if ( $rzone ){
+		my $name = RRPTR->get_name(ipblock=>$ipblock, zone=>$rzone);
+		push( @cell_data, '<input name="RR__NEW__name" value="'.$name.'" type="text">' );
+	    }else{
+		push( @cell_data, '<input name="RR__NEW__name" value="" type="text">' );
+	    }
+	    my $zone_select = '<select name="RR__NEW__zone">';
+	    foreach my $z ( sort { $a->name cmp $b->name } Zone->retrieve_all ){
+		if ( $rzone && $rzone->id == $z->id ){
+		    $zone_select .= '<option value="'.$z.'" SELECTED>'.$z->get_label.'</option>';
+		}else{
+		    $zone_select .= '<option value="'.$z.'">'.$z->get_label.'</option>';
+		}
+	    }
+	    $zone_select .= "</select>";
+	    push( @cell_data, $zone_select );
+	    push( @cell_data, '<input name="RR__NEW__ptrdname" value="'.$rr->get_label.'" type="text">' );
+	    push( @cell_data, '<input name="RR__NEW__ttl" value="" type="text">' );
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+
+	    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
+	    print '<input type="submit" name="submit" value="save" >';
+	}
+
+	# display/edit
+	if ( $ptr ) {
+	    $ui->add_to_fields(o=>$ptr, edit=>0, fields=>['rr', 'ptrdname', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['host.html', '', ''], with_delete=>1);
+	    
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	    
+	}
+	print '</div></div>';
+    }
+
     #####################################################################################################
     #RRLOC
     print '<div class="container" style="margin-left:10px">';
@@ -735,7 +821,7 @@ foreach my $o ( values %rrs ) {
     print '<div id="rrsrv_div_'.$o.'"></div>';
     print '</div></div>';
 
-    print '</div>'; #close show more div
+    } # close restrict if
     print '</div>'; #close container
 }
 

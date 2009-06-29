@@ -560,21 +560,29 @@ if ( my @parents = $o->get_ancestors ){
 
 if (!$edit){
     my @rraddrs = $o->arecords();
+    my @rrs = map { $_->rr } @rraddrs;
+    print '<div class="container">';
+    print '<div class="containerheadleft">DNS A Records</div>';
+    print '<div class="containerheadright">';
+    if (!@rraddrs) {
+	print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
+    }else{
+	print '&nbsp;';
+    }
+    print '</div>';
+    print '<div class="containerbody">';
+    $m->comp('/generic/sortresults.mhtml', object=>\@rrs);
+    print '</div>';
+    print '</div>';
 
-	my @rrs = map { $_->rr } @rraddrs;
-	print '<div class="container">';
-	print '<div class="containerheadleft">DNS Records</div>';
-	print '<div class="containerheadright">';
-        if (!@rraddrs) {
-	    print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
-	}else{
-	    print '&nbsp;';
-	}
-	print '</div>';
-	print '<div class="containerbody">';
-	$m->comp('/generic/sortresults.mhtml', object=>\@rrs);
-	print '</div>';
-	print '</div>';
+    my @ptrs = $o->ptr_records();
+    my @prrs = map { $_->rr } @ptrs;
+    print '<div class="container">';
+    print '<div class="containerhead">DNS PTR Records</div>';
+    print '<div class="containerbody">';
+    $m->comp('/generic/sortresults.mhtml', object=>\@prrs);
+    print '</div>';
+    print '</div>';
 }
 
 # Do not show DHCP scope unless the subnet has DHCP enabled

@@ -242,7 +242,7 @@ sub insert {
 	$class->throw_user("Missing required arguments: ptrdname, ipblock")
 	    unless ( defined $argv->{ptrdname} && defined $argv->{ipblock} );
 	my $ipb;
-	if ( ref($argv->{ipblock}) ){
+	if ( ref($argv->{ipblock}) || $argv->{ipblock} !~ /\D/ ){
 	    $ipb = $argv->{ipblock};
 	}elsif ( !($ipb = Netdot::Model::Ipblock->search(address=>$argv->{ipblock})->first) ){
 	    $ipb = Netdot::Model::Ipblock->insert({ address => $argv->{ipblock},
