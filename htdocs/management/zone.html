@@ -165,7 +165,7 @@ if ( $view eq 'records' || $edit eq 'records' ){
     # If user has privileges, show all records, otherwise, show only 
     # records with IPs in allowed blocks
     my @records;
-    if ( $manager && $manager->can($user, "access", 'section') ){
+    if ( $manager && $manager->can($user, "access_section") ){
 	@records = $obj->records;
     }else{
 	my $ao = $ui->get_allowed_objects($r, $user);

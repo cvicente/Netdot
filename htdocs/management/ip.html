@@ -68,6 +68,10 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 my $manager = $ui->get_permission_manager($r);
 
+unless ( $manager && $manager->can($user, "access_section") ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this section");
+}
+
 if ( $id ){
     if ( $o = Ipblock->retrieve($id) ){
 	# Check if user can view this object

@@ -66,6 +66,8 @@ if ( $manager && $manager->can($user, "access_section") ){
     } elsif ($page eq "DHCP" && $m->request_comp->name ne "dhcp_tasks.html" ) {
 	$m->comp('dhcp_tasks.html', user=>$user, showheader=>$showheader);
     }
+}else{
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this section");
 }
 </%init>
 
