@@ -158,14 +158,31 @@ if ( $submit ){
 %     }
       </div>
 
+
 <!-- Display list of records -->
-% if ( $view eq 'records' || $edit eq 'records' ){
-%     my @records = $obj->records;
-      <div class="containerbody">
-      <& /generic/sortresults.mhtml, object =>\@records, withedit=>($edit eq 'records')? 1 : 0, return_args=>"?id=$id" &>
-      </div>
-   </div>
-% }
+<%perl>
+if ( $view eq 'records' || $edit eq 'records' ){
+    # If user has privileges, show all records, otherwise, show only 
+    # records with IPs in allowed blocks
+    my @records;
+    if ( $manager && $manager->can($user, "access", 'section') ){
+	@records = $obj->records;
+    }else{
+	my $ao = $ui->get_allowed_objects($r, $user);
+	if ( exists $ao->{Ipblock} ){
+	    foreach my $id ( keys %{$ao->{Ipblock}} ){
+		if ( my $ip = Ipblock->retrieve($id) ){
+		    push @records, $obj->get_records_in_ipblock($ip);
+		}
+	    }
+	}
+    }
+    print '<div class="containerbody">';
+    $m->comp('/generic/sortresults.mhtml', object =>\@records, withedit=>($edit eq 'records')? 1 : 0, return_args=>"?id=$id");
+    print '</div>';
+    print '</div>';
+} 
+</%perl>
 
 <!-- Show Bulk Import Interface -->
 

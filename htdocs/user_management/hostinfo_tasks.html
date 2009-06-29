@@ -130,22 +130,6 @@ if ( exists $ao->{Ipblock} ){
 % }
 
     </fieldset>
-    <fieldset class="small">
-        <legend>My IP Blocks</legend>
-
-% if ( @ipblocks ){
-        <form name="ipblock_form" action="hostinfo_tasks.html" method="POST">
-        <select name="show_ipblock" onChange="document.ipblock_form.submit();">
-            <option value="0">- Select Block -</option>
-%       foreach my $o ( sort { $a->get_label cmp $b->get_label } @ipblocks ){
-            <option value="<% $o %>"><% $o->get_label %></option>
-%       }
-        </select>
-        </form>
-% }else{
-     No IP blocks available for this user.
-% }
-    </fieldset>
 
   </td>
  </tr>

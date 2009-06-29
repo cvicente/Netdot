@@ -374,6 +374,7 @@ sub get_record_count {
 =cut
 sub import_records {
     my ($self, %argv) = @_;
+    $self->isa_object_method('import_records');
     
     unless ( $argv{text} || $argv{rrs} ){
 	$self->throw_fatal('Missing required arguments: text or rrs');
@@ -597,6 +598,42 @@ sub import_records {
     }
 
     1;
+}
+
+############################################################################
+=head2 get_records_in_ipblock
+
+    Get RR objects for A records whose IPs are within the given Ipblock
+
+  Args: 
+    None
+  Returns: 
+    Array
+  Examples:
+    $zone->get_records_in_ipblock();
+
+=cut
+sub get_records_in_ipblock {
+    my ($self, $ipblock) = @_;
+    $self->isa_object_method('get_records_in_ipblock');
+
+    my $id = $self->id;
+    my $q = "SELECT   DISTINCT(rr.id)
+             FROM     rr, rraddr, ipblock, zone 
+             WHERE    zone=$id 
+                AND   rraddr.rr=rr.id 
+                AND   rraddr.ipblock=ipblock.id 
+                AND   ipblock.parent=$ipblock";
+
+    my $dbh  = $self->db_Main;
+    my $rows = $dbh->selectall_arrayref($q);
+    my @rrs;
+    foreach my $row ( @$rows ){
+	my ($rrid) = $row->[0];
+	my $rr = RR->retrieve($rrid);
+	push @rrs, $rr;
+    }
+    return @rrs if scalar @rrs;
 }
 
 ############################################################################
