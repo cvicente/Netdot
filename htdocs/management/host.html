@@ -33,12 +33,17 @@ if ($id) {
     $id = $rr->id;
 }
 
+# Check if user can view this object 
 if ( $rr ){
-    # Check if user can view this object 
     unless ( $manager && $manager->can($user, "view", $rr) ){
 	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
     }
-    $rrs{$rr->id} = $rr;
+}
+if ($ipblock && !ref $ipblock) {
+    $ipblock = Ipblock->retrieve($ipblock);
+    unless ( $manager && $manager->can($user, "view", $ipblock) ){
+	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+    }
 }
 
 if ( $submit ){
@@ -96,22 +101,18 @@ if ( $submit ){
 	    $action = "";
 	}
     }
-}
+}else{
+    $rrs{$rr->id} = $rr if $rr;
 
-
-if ($ipblock && !ref $ipblock) {
-    $ipblock = Ipblock->retrieve($ipblock);
-    # Check if user can view this object 
-    unless ( $manager && $manager->can($user, "view", $ipblock) ){
-	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
-    }
-    
-    if (my @arecords = $ipblock->arecords()) {
-	foreach my $arecord (@arecords) {
-	    $rrs{$arecord->rr->id} = $arecord->rr;
+    if ( $ipblock ){
+        if (my @arecords = $ipblock->arecords()) {
+	    foreach my $arecord (@arecords) {
+		$rrs{$arecord->rr->id} = $arecord->rr;
+	    }
 	}
     }
 }
+
 </%init>
 
 <%perl>
