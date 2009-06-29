@@ -745,48 +745,51 @@ foreach my $o ( values %rrs ) {
 
     
     #####################################################################################################
-    #RRPTR
-    print '<div class="container" style="margin-left:10px">';
-    print '<div class="containerheadleft"><b>PTR</b></div>';
-    print '<div class="containerheadright">';
-
-    #new rrptr
-    push( @field_headers, "IP");
-    push( @cell_data, "<input name='RRPTR__NEW__ipblock' value='' type='text'>");
-    $ui->add_to_fields(table=>'RRPTR', edit=>1, fields=>['ttl'],
-		       field_headers=>\@field_headers, cell_data=>\@cell_data,
-		       linkpages=>['']);
-    my $newptr = $m->scomp('/generic/attribute_table.mhtml', %comphash);
-    (@field_headers, @cell_data) = ((),());
-    $newptr =~ s/\n//g;
-    $newptr =~ s/<script.*?<\/script>//g;
-    $newptr =~ s/'/\\'/g;
-    print '<script type="text/javascript" language="javascript">uricomponents[\'rrptr_'.$o.'_content\']=encodeURIComponent(\''.$newptr.'\');</script>';
-    print '<div id="rrptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrptr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
-    print '</div>';  #close containerheadright
-
-    #display/edit
-    print '<div class="containerbody">';
-    if (my @ptrs = $o->ptr_records()) {
-	foreach my $ptr (@ptrs) {
-	    push( @field_headers, "IP");
-	    if ($edit) {
-		push( @cell_data, "<input name='RRPTR__".$ptr."__ipblock' value='".$ptr->ipblock->address."' type='text'>" );
-	    } else {
-		push( @cell_data, "<a href='ip.html?id=".$ptr->ipblock->id."'>".$ptr->ipblock->address."</a>");
-	    }
-	    $ui->add_to_fields(o=>$ptr, edit=>$edit, fields=>['ptrdname', 'ttl'],
-			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['', ''], with_delete=>1);
-	    $m->comp('/generic/attribute_table.mhtml', %comphash);
-	    (@field_headers, @cell_data) = ((),());
-	}
-    }
-
-    print '<div id="rrptr_div_'.$o.'"></div>';
-    print '</div></div>';
-
+    #RRPTR (when the name is the PTR record's name)
+    if ( !$o->arecords ){
     
+	print '<div class="container" style="margin-left:10px">';
+	print '<div class="containerheadleft"><b>PTR</b></div>';
+	print '<div class="containerheadright">';
+
+	#new rrptr
+	push( @field_headers, "IP");
+	push( @cell_data, "<input name='RRPTR__NEW__ipblock' value='' type='text'>");
+	$ui->add_to_fields(table=>'RRPTR', edit=>1, fields=>['ttl'],
+			   field_headers=>\@field_headers, cell_data=>\@cell_data,
+			   linkpages=>['']);
+	my $newptr = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+	(@field_headers, @cell_data) = ((),());
+	$newptr =~ s/\n//g;
+	$newptr =~ s/<script.*?<\/script>//g;
+	$newptr =~ s/'/\\'/g;
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrptr_'.$o.'_content\']=encodeURIComponent(\''.$newptr.'\');</script>';
+	print '<div id="rrptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrptr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '</div>';  #close containerheadright
+
+	#display/edit
+	print '<div class="containerbody">';
+	if (my @ptrs = $o->ptr_records()) {
+	    foreach my $ptr (@ptrs) {
+		push( @field_headers, "IP");
+		if ($edit) {
+		    push( @cell_data, "<input name='RRPTR__".$ptr."__ipblock' value='".$ptr->ipblock->address."' type='text'>" );
+		} else {
+		    push( @cell_data, "<a href='ip.html?id=".$ptr->ipblock->id."'>".$ptr->ipblock->address."</a>");
+		}
+		$ui->add_to_fields(o=>$ptr, edit=>$edit, fields=>['ptrdname', 'ttl'],
+				   field_headers=>\@field_headers, cell_data=>\@cell_data,
+				   linkpages=>['', ''], with_delete=>1);
+		$m->comp('/generic/attribute_table.mhtml', %comphash);
+		(@field_headers, @cell_data) = ((),());
+	    }
+	}
+
+	print '<div id="rrptr_div_'.$o.'"></div>';
+	print '</div></div>';
+
+    }    
+
     #####################################################################################################
     #RRSRV
     print '<div class="container" style="margin-left:10px">';
