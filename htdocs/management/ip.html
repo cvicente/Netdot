@@ -1162,9 +1162,28 @@ if ($o->status->name eq "Subnet") {
 % }
 
 %################################################################
+%# Sites
+%################################################################
+% my @ss = $o->sites;
+  <div class="container">
+    <div class="containerheadleft">Sites</div>
+    <div class="containerheadright">
+%   if ( $edit eq 'edit_sites' ){
+        &nbsp;
+%   }else{
+        <a href="ip.html?id=<% $o %>&edit=edit_sites">[edit]</a>
+        <a href="edit.html?table=SiteSubnet&subnet=<% $o %>">[add]</a>
+%   }
+    </div>
+    <div class="containerbody">
+       <& /generic/sortresults.mhtml, object=>\@ss, withedit=>($edit eq 'edit_sites')? 1 : 0 &>
+    </div>
+  </div>
+
+%################################################################
 %# Zones
 %################################################################
-%   my @sz = $o->zones;
+% my @sz = $o->zones;
   <div class="container">
     <div class="containerheadleft">DNS Zones</div>
     <div class="containerheadright">
@@ -1179,6 +1198,7 @@ if ($o->status->name eq "Subnet") {
        <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'edit_zones')? 1 : 0 &>
     </div>
   </div>
+
 
 %################################################################
 %# Graphical Views

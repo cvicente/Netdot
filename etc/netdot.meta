@@ -6515,6 +6515,70 @@ $meta = {
       ]
     }
   },
+  SiteSubnet => {
+    table_db_name => 'sitesubnet',
+    columns => {
+      site => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'subnets',
+          table => 'Site'
+        },
+        nullable => 0,
+        tag => 'Site',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      subnet => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'sites',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => 'Subnet',
+        type => 'integer'
+      }
+    },
+    description => 'Site to Subnet join table',
+    has_history => 0,
+    index => [],
+    isjoin => '1',
+    label => [
+      'subnet',
+      'site'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'subnet',
+        'site'
+      ]
+    ],
+    views => {
+      all => [
+        'subnet',
+        'site'
+      ],
+      brief => [
+        'subnet',
+        'site'
+      ]
+    }
+  },
   STPInstance => {
     table_db_name => 'stpinstance',
     columns => {
