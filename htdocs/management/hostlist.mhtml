@@ -1,0 +1,271 @@
+<%doc>
+
+Takes the results of Zone::get_hosts(), sorts by given criteria and prints a page with the essential columns.
+Performs paging by passing the sorted/indexed list to itself, together with the current offset
+
+Supported arguments:
+   
+  records:     Arrayref of arrayrefs containing host info
+  withedit:    Add checkboxes to allow user to edit or delete selected objects
+  return_args: Caller arguments to pass to delete.html so user can return after deleting objects
+
+  # The following are passed to itself in subsequent calls
+  per_page:   Maximum entries displayed per page
+  offset:     Current position
+  total:      Total number of items in list
+  sid:        Session id
+</%doc>
+
+<%args>
+$records     => undef
+$withedit    => 0
+$per_page    => 50
+$offset      => 0
+$total       => undef
+$sid         => undef
+$osid        => undef
+$sort        => 'Name'
+$view        => 'html'
+$return_args => undef
+</%args>
+
+<%init>
+my $DEBUG = 0;
+my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
+my $ci         = 1;
+my $last_item;
+my $session;
+my $osession;
+my %index;
+my $caller_path;
+
+print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
+
+if ( $return_args ){
+    $caller_path = $m->caller->path;
+    $caller_path .= $return_args;
+}
+
+if ( $osid ){
+    $osession = $ui->get_session($osid);
+    print "<pre> Session $osid contains:", Dumper($osession), "</pre>" if $DEBUG;
+    $records = $osession->{records};
+}
+
+#########################################################
+#
+# This happens on first call
+#
+#########################################################
+
+if ( $records && scalar @$records ){
+
+    if ( ! $osid ){
+	$osession = $ui->mk_session();
+	$osession->{records} = $records;
+	$osid = $osession->{_session_id};
+    }
+
+    #  The rows contain:
+    #  rr.id, rr.name, ip.id, ip.address, ip.version, pysaddr.id, physaddr.address
+
+    my $i = 0;
+    if ( $sort eq 'Name' ){
+	map { $index{$i++} = $_ } sort { $a->[1] cmp $b->[1] } @$records;
+    }elsif ( $sort eq 'IP' ){
+	# The values are decimal
+	map { $index{$i++} = $_ } sort { $a->[3] <=> $b->[3] } @$records;
+    }elsif ( $sort eq 'Ethernet' ){
+	map { $index{$i++} = $_ } sort { $a->[6] cmp $b->[6] } @$records;
+    }
+
+    # Total number of items
+    $total = $i;
+    
+    $session = $ui->mk_session();
+    $session->{index}    = \%index;
+    $session->{withedit}    = $withedit;
+    $session->{caller_path} = $caller_path;
+    $session->{total}       = $total;
+    $session->{osid}        = $osid;
+
+    
+#########################################################
+#
+# This happens on subsequent calls (paging)
+#
+#########################################################
+}elsif( $sid ) {
+    $session = $ui->get_session($sid);
+    print "<pre> Session $sid contains:", Dumper($session), "</pre>" if $DEBUG;
+    
+    %index       = %{ $session->{index} };
+    $withedit    = $session->{withedit};
+    $total       = $session->{total};   
+    $caller_path = $session->{caller_path};
+    $osid        = $session->{osid};
+ 
+}
+
+#########################################################
+#
+# This happens always
+#
+#########################################################
+
+# Calculate last item to show
+$last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
+
+</%init>
+
+%
+% if ( %index ) {
+
+<!-- begin hostlist -->
+
+<%perl>
+
+if ( $view eq 'csv' ){
+    #####################################################################
+    # CSV format
+    $m->clear_buffer; # We don't want headers
+    foreach my $row ( values %index ){
+	my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth) = @$row;
+	my @cols;
+	push @cols, $name;
+	if ( $ip && $version ){
+	    $ip = Ipblock->int2ip($ip, $version);
+	    push @cols, $ip;
+	}else{
+	    push @cols, "";
+	}
+	push @cols, ($eth);
+	print join ',', @cols;
+	print "<br>";
+    }
+    $m->abort; # We don't want footers either
+}else{
+    #####################################################################
+    # HTML format
+
+</%perl>
+
+% my @columns = qw(Name IP Ethernet);
+% my $numcols  = scalar(@columns);
+% $numcols++ if $withedit;
+
+%     if ( $withedit ) {
+         <form name="host_list_form" method="POST" >
+%	 if ( $caller_path ){
+	     <input type="hidden" name="return_url" value="<% $caller_path %>">
+%        }
+%     }
+
+      <table border="0" cellspacing="0" cellpadding="0" class="tablebackground">
+
+%     #####################################################################
+%     # Header row
+      <tr class="rowtitle2">
+%
+%     foreach my $c ( @columns ) {
+          <th><a href="hostlist.html?osid=<% $osid %>&sort=<% $c %>&withedit=<% $withedit %>"><% $c %></a></th>
+%     }
+%     if ( $withedit ){
+          <th align="center">Select</th>
+%     }
+      </tr>
+%     ####################################################################
+%     # Loop around the window of items that we are showing in this page
+%     ####################################################################
+
+%     my $pos = $offset;
+%     while ( $pos < $last_item ) {
+%         my $row;
+%         unless ( $row = $index{$pos} ){
+%             $m->comp("error.mhtml", error=>"Row not valid at index $pos");
+%         }
+%         $pos++;
+%         $ci = ($ci + 1) % 2;
+%         my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth) = @$row;
+          <tr class="<% $cssitem{$ci} %>">
+              <td align="left" valign="middle"><a href="../management/host.html?id=<% $rrid %>"><% $name %></a></td>
+%             if ( $ip && $version ){
+%                 $ip = Ipblock->int2ip($ip, $version);
+                  <td align="left" valign="middle"><a href="../management/ip.html?id=<% $ipid %>"><% $ip %></a></td>
+%             }else{
+                  <td align="left" valign="middle">&nbsp;</td>
+%	      }
+              <td align="left" valign="middle"><a href="../management/mac.html?id=<% $ethid %>"><% $eth %></a></td>
+
+%             if ( $withedit ){
+                  <td style="text-align:center" valign="middle" width="40">
+                     <input type="checkbox" name="RR__<% $rrid %>">
+                  </td>
+%             }
+          </tr>
+
+%     } # end while
+
+% ## Last row
+% if( $withedit ) {
+%     my $selectall_ids = join ', ', map { $index{$_}->[0] } keys %index;
+      <tr class="rowtitle">
+%         for( my $i=0; $i<($numcols-2); $i++ ) {
+              <td>&nbsp;</td>
+%         }
+          <td>
+            <div align="right" valign="middle">Select All <% $total %> results:</div>
+            <input type="hidden" name="selectall_ids" value="<% $selectall_ids %>">
+          </td>
+          <td style="text-align:center" valign="middle" width="40">
+	      <input type="checkbox" name="selectall" id="selectall">
+          </td>
+      </tr>
+% }
+% ## Empty row
+      <tr class="rowtitle">
+%      for( my $i=0; $i<$numcols; $i++ ) {
+           <td>&nbsp;</td>
+%      }
+      </tr>
+  </table>
+
+  <div class="containerheadright">
+% if ( $total > $per_page ){
+      Results: [<% $offset+1 %>-<% $last_item %>] of <% $total %> 
+%     my $prev_offset = $offset - $per_page; 
+%     if ( $sid && $prev_offset >= 0 ){
+          <a href="hostlist.html?sid=<% $sid %>&offset=<% $prev_offset %>">[<<] </a>
+%     }
+%     unless ( $last_item == $total ){
+          <a href="hostlist.html?sid=<% $session->{_session_id} %>&offset=<% $last_item %>">[>>] </a>
+%     }
+% }
+
+    <a href="hostlist.html?view=csv&osid=<% $osid %>">[csv]</a>
+
+% if ( $withedit ){
+      <p>
+      <input type="button" name="Edit" value="Edit" onClick="document.host_list_form.action='edit-multiple.html';document.host_list_form.submit();">
+      <input type="button" name="Delete" value="Delete" onClick="document.host_list_form.action='delete.html';document.host_list_form.submit();">
+      <input type="button" name="Cancel" value="Cancel" onClick="history.go(-1)">
+      </form>
+      </p>
+% }
+
+% if ( $session && ($total > $per_page) ){
+    <form name="form_sortresults" method="POST" action="hostlist.html">
+      <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
+      <input type="hidden" name="offset" value="<% $offset %>">
+      <input type="submit" name="Show" value="Show"> <input type="text" size="3" name="per_page" value="<% $per_page %>"> items per page
+    </form>
+% }
+
+  </div>
+
+% } #end html format
+
+<!-- end hostlist -->
+
+% } # endif %index
+
