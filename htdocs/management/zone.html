@@ -146,7 +146,7 @@ if ( $submit ){
       <div class="containerheadleft">Records</div>
       <div class="containerheadright">
       <a href="host.html?action=new&zone=<% $id %>">[add]</a> 
-      <a href="zone.html?id=<% $id %>&view=bulk_import">[bulk]</a>
+      <a href="zone.html?id=<% $id %>&view=bulk_import">[import]</a>
 %     if ( $view eq 'records' ){
 %         if ( $edit eq 'records' ){
 	      &nbsp;
@@ -162,27 +162,26 @@ if ( $submit ){
 <!-- Display list of records -->
 <%perl>
 if ( $view eq 'records' || $edit eq 'records' ){
-    # If user has privileges, show all records, otherwise, show only 
-    # records with IPs in allowed blocks
-    my @records;
+    my $records;
     if ( $manager && $manager->can($user, "access_section") ){
-	@records = $obj->records;
+	$records = $obj->get_hosts();
     }else{
 	my $ao = $ui->get_allowed_objects($r, $user);
 	if ( exists $ao->{Ipblock} ){
+	    my @r;
 	    foreach my $id ( keys %{$ao->{Ipblock}} ){
-		if ( my $ip = Ipblock->retrieve($id) ){
-		    push @records, $obj->get_records_in_ipblock($ip);
-		}
+		push @r, @{ $obj->get_hosts($id) };
 	    }
+	    $records = \@r;
 	}
     }
     print '<div class="containerbody">';
-    $m->comp('/generic/sortresults.mhtml', object =>\@records, withedit=>($edit eq 'records')? 1 : 0, return_args=>"?id=$id");
+    $m->comp('/management/hostlist.mhtml', records=>$records, withedit=>($edit eq 'records')? 1 : 0, return_args=>"?id=$id");
     print '</div>';
     print '</div>';
 } 
 </%perl>
+
 
 <!-- Show Bulk Import Interface -->
 

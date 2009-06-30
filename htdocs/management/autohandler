@@ -67,7 +67,8 @@ if ( $manager && $manager->can($user, "access_section") ){
 	$m->comp('dhcp_tasks.html', user=>$user, showheader=>$showheader);
     }
 }else{
-    $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this section");
+    # We intentionally do not call the error page here so that some components
+    # in this directory can be executed if called from within unprivileged areas
 }
 </%init>
 

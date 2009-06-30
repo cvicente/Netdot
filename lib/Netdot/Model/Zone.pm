@@ -601,39 +601,45 @@ sub import_records {
 }
 
 ############################################################################
-=head2 get_records_in_ipblock
+=head2 get_hosts - Retrieve a list of hosts in a given subnet or in all subnets.  
 
-    Get RR objects for A records whose IPs are within the given Ipblock
+    The rows contain:
+    rr.id, rr.name, ip.id, ip.address, ip.version, pysaddr.id, physaddr.address
 
   Args: 
-    None
+    ipblock object or ID  (optional)
   Returns: 
-    Array
+    Arrayref of arrayrefs
   Examples:
-    $zone->get_records_in_ipblock();
+    $zone->get_hosts_in_ipblock();
 
 =cut
-sub get_records_in_ipblock {
+sub get_hosts {
     my ($self, $ipblock) = @_;
-    $self->isa_object_method('get_records_in_ipblock');
+    $self->isa_object_method('get_hosts_in_ipblock');
 
     my $id = $self->id;
-    my $q = "SELECT   DISTINCT(rr.id)
-             FROM     rr, rraddr, ipblock, zone 
-             WHERE    zone=$id 
-                AND   rraddr.rr=rr.id 
-                AND   rraddr.ipblock=ipblock.id 
-                AND   ipblock.parent=$ipblock";
+    my $q = "SELECT          rr.id, rr.name, 
+                             ip.id, ip.address, ip.version, 
+                             physaddr.id, physaddr.address
+             FROM            zone, rr
+             LEFT OUTER JOIN (ipblock ip, ipblock subnet, rraddr) 
+                          ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock 
+                              AND ip.parent=subnet.id)
+             LEFT OUTER JOIN (physaddr, dhcpscope) 
+                          ON (dhcpscope.ipblock=ip.id 
+                              AND dhcpscope.physaddr=physaddr.id)
+             WHERE           zone=$id";
+
+    if ( $ipblock ){
+	$q .=  " AND subnet.id=$ipblock";
+    }
+    
+    $q .= ' GROUP BY rr.id';
 
     my $dbh  = $self->db_Main;
     my $rows = $dbh->selectall_arrayref($q);
-    my @rrs;
-    foreach my $row ( @$rows ){
-	my ($rrid) = $row->[0];
-	my $rr = RR->retrieve($rrid);
-	push @rrs, $rr;
-    }
-    return @rrs if scalar @rrs;
+    return $rows;
 }
 
 ############################################################################
