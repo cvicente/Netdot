@@ -52,19 +52,10 @@ if ($csv && $sid) {
 }
 </%init>
 
+% $m->clear_buffer;
+
 <html>
-<head>
-    <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
-</head>      
-<body class="bodytag" >
-
-<div class="container">
-    <div class="containerhead"> View</div>
-    <div class="containerbody">
-
-<p>
-
-<div id="datadiv">
+<body>
 
 %   if ($csv) {
         <b>
@@ -111,15 +102,6 @@ if ($csv && $sid) {
 %       }
 %   }
 
-</div> <!-- close datadiv -->
-
-
-<center>
-<a class="hand" onClick="window.close();">[close]</a>
-</center>
-
-    </div> <!-- close containerbody -->
-</div> <!-- close container -->
 
 % if($js){
     <script language="javascript">
@@ -134,3 +116,5 @@ if ($csv && $sid) {
  
 </body>
 </html>
+
+% $m->abort;
