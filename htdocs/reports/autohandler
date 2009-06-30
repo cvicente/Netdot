@@ -25,7 +25,7 @@ my $SECTION = "Reports";
 <%init>
 
 my $manager = $ui->get_permission_manager($r);
-unless ( $manager && $manager->can($user, "access_section") ){
+unless ( $manager && $manager->can($user, "access_section", 'reports') ){
     $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this section");
 }
 

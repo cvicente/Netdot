@@ -16,12 +16,14 @@ sub grants()
    return 0;
 }
 
+# Deny access to UI sections only available to Admins and Operators
 sub denies(){
     my ($this, $user, $action, $resource) = @_;
 
     my $user_type = $user->getAttribute('USER_TYPE');
     my $username  = $user->getUsername();
-    $logger->debug("Netdot::SectionAccessRule::denies: Requesting $action on behalf of $username ($user_type)");
+    $resource ||= '(n/a)';
+    $logger->debug("Netdot::SectionAccessRule::denies: Requesting $action $resource on behalf of $username ($user_type)");
 
     if ( $action eq "access_section" && ($user_type ne "Admin" && $user_type ne "Operator") ){
 	$logger->debug("Netdot::SectionAccessRule::denies: Denying $action for $username ($user_type)");

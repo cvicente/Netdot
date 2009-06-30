@@ -63,7 +63,7 @@ if ( $submit ){
     <div class="containerheadleftoutside"><strong>Zone <% $obj->name %></strong></div>
     <div class="containerheadrightoutside">
           <a href="zone.html?id=<% $id %>">[refresh]</a>
-%         if ( $manager && $manager->can($user, "access_section") ){
+%         if ( $manager && $manager->can($user, "access_section, 'zone.html:buttons'") ){
 %           # Only admins can do this
             <a href="edit.html?table=Zone">[new]</a>
             <a href="edit.html?table=Zone&id=<% $id %>">[edit]</a>
@@ -146,7 +146,9 @@ if ( $submit ){
       <div class="containerheadleft">Records</div>
       <div class="containerheadright">
       <a href="host.html?action=new&zone=<% $id %>">[add]</a> 
-      <a href="zone.html?id=<% $id %>&view=bulk_import">[import]</a>
+%     if ( $manager && $manager->can($user, "access_section", 'zone.html:bulk_import') ){
+          <a href="zone.html?id=<% $id %>&view=bulk_import">[import]</a>
+%     }
 %     if ( $view eq 'records' ){
 %         if ( $edit eq 'records' ){
 	      &nbsp;
@@ -163,7 +165,7 @@ if ( $submit ){
 <%perl>
 if ( $view eq 'records' || $edit eq 'records' ){
     my $records;
-    if ( $manager && $manager->can($user, "access_section") ){
+    if ( $manager && $manager->can($user, "access_section", 'zone.html:view_all_records') ){
 	$records = $obj->get_hosts();
     }else{
 	my $ao = $ui->get_allowed_objects($r, $user);

@@ -30,7 +30,7 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my $page;
 
 my $manager = $ui->get_permission_manager($r);
-if ( $manager && $manager->can($user, "access_section") ){
+if ( $manager && $manager->can($user, "access_section", 'contacts') ){
 
     my $caller_args = $m->caller_args(-1);
     if (exists($caller_args->{page})){
