@@ -404,6 +404,7 @@ sub as_text {
     Hash with following keys:
     address
     hostname
+    aliases (array)
     zone
     block
     ethernet
@@ -438,6 +439,19 @@ sub add_host {
 	    
 	    $rr = $rraddr->rr;
 	    
+	    # CNAMES
+	    if ( $argv{aliases} ){
+		$logger->debug("RR::add_host: aliases passed");
+		foreach my $alias ( @{$argv{aliases}} ){
+		    $logger->debug("RR::add_host: Creating Alias $alias");
+		    RR->insert({name  => $alias,
+			       zone  => $argv{zone},
+			       type  => 'CNAME',
+			       cname => $rr->get_label,
+			});
+		}
+	    }
+
 	    # HINFO
 	    if ( $argv{cpu} && $argv{os} ){
 		my %hinfo = (rr  => $rr, 

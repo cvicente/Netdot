@@ -14,6 +14,7 @@ $zone           => undef
 $submit         => undef
 $delete_ip      => undef
 $add_ptr        => undef
+$add_alias      => undef
 </%args>
 
 <%init>
@@ -38,11 +39,18 @@ if ( $rr ){
     unless ( $manager && $manager->can($user, "view", $rr) ){
 	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
     }
+    $rrs{$rr->id} = $rr;
 }
+
 if ($ipblock && !ref $ipblock) {
     $ipblock = Ipblock->retrieve($ipblock);
     unless ( $manager && $manager->can($user, "view", $ipblock) ){
 	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+    }
+    if (my @arecords = $ipblock->arecords()) {
+	foreach my $arecord (@arecords) {
+	    $rrs{$arecord->rr->id} = $arecord->rr;
+	}
     }
 }
 
@@ -55,6 +63,7 @@ if ( $submit ){
 	}
 	my @ips = map { $_->ipblock } $rr->arecords();
 	$deleted_label = $rr->get_label();
+	delete $rrs{$rr->id};
 	$rr->delete();
 	if ( @ips && $delete_ip ){
 	    foreach my $ip ( @ips ){
@@ -86,8 +95,8 @@ if ( $submit ){
 	    if (exists $ret{RR}) {
 		my $newid = (keys %{$ret{RR}{id}})[0];
 		if ($ret{RR}{id}{$newid}{action} eq 'INSERTED') {
-		    $id = $newid;
-		    $rr = $newid;
+		    $id = $newid unless defined $id;
+		    $rr = $newid unless defined $rr;
 		    if (defined $ipblock) {
 			RRADDR->insert({rr=>$newid, ipblock=>$ipblock});
 		    }
@@ -101,17 +110,8 @@ if ( $submit ){
 	    $action = "";
 	}
     }
-}else{
-    $rrs{$rr->id} = $rr if $rr;
-
-    if ( $ipblock ){
-        if (my @arecords = $ipblock->arecords()) {
-	    foreach my $arecord (@arecords) {
-		$rrs{$arecord->rr->id} = $arecord->rr;
-	    }
-	}
-    }
 }
+
 
 </%init>
 
@@ -444,23 +444,28 @@ foreach my $o ( values %rrs ) {
 
 	#####################################################################################################
 	#RRCNAME for somewhere pointing to $o
-	print '<p>';
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>Aliases of '.$o->get_label.' (CNAME)</b></div>';
 	print '<div class="containerheadright">';
+	if ( $add_alias ){
+	    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
+	    print '<input type="submit" name="submit" value="save" >';
+	}else{
+	    print '<a href="host.html?id='.$rr.'&add_alias=1">[add]</a>';
+	}
+ 	print '</div>';  #close containerheadright
 
 	#new rrcname
-	$ui->add_to_fields(table=>'RRCNAME', edit=>1, fields=>['name', 'ttl'],
-			   field_headers=>\@field_headers, cell_data=>\@cell_data,
-			   linkpages=>['host.html','']);
-	my $newcname = $m->scomp('/generic/attribute_table.mhtml', %comphash);
-	(@field_headers, @cell_data) = ((),());
-	$newcname =~ s/\n//g;
-	$newcname =~ s/<script.*?<\/script>//g;
-	$newcname =~ s/'/\\'/g;
-	print '<script type="text/javascript" language="javascript">uricomponents[\'rrcname_'.$o.'_content\']=encodeURIComponent(\''.$newcname.'\');</script>';
-	print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.$o.'\', 1, \'cname\');netdotform.RRCNAME__NEW__cname.value=\''.$o->get_label.'\'">[add]</a></div>';
-	print '</div>';  #close containerheadright
+	if ( $add_alias ){
+	    push( @field_headers, ("Name", "TTL") );
+	    print '<input name="id" value="'.$rr.'" type="hidden">';
+	    print '<input name="RR__NEW__type" value="CNAME" type="hidden">';
+	    print '<input name="RR__NEW__cname" value="'.$o->get_label.'" type="hidden">';
+	    push( @cell_data, '<input name="RR__NEW__name" value="" type="text">' );
+	    push( @cell_data, '<input name="RR__NEW__ttl" value="" type="text">' );
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	}
 
 	#display/edit
 	print '<div class="containerbody">';
@@ -484,28 +489,31 @@ foreach my $o ( values %rrs ) {
     # cannot have an A/AAAA record at the same time
     # the $o is unique in the cname table
     
-    #new rrcname
     if ( !$o->arecords() ) {
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>'.$o->get_label.' is an alias of (CNAME)</b></div>';
 	print '<div class="containerheadright">';
 	
-	$ui->add_to_fields(table=>'RRCNAME', edit=>1, fields=>['cname', 'ttl'],
-			   field_headers=>\@field_headers, cell_data=>\@cell_data,
-			   linkpages=>['view.html','']);
-	my $newcname = $m->scomp('/generic/attribute_table.mhtml', %comphash);
-	(@field_headers, @cell_data) = ((),());
-	$newcname =~ s/\n//g;
-	$newcname =~ s/<script.*?<\/script>//g;
-	$newcname =~ s/'/\\'/g;
-	print '<script type="text/javascript" language="javascript">uricomponents[\'rrcname_'.$o.'_content\']=encodeURIComponent(\''.$newcname.'\');</script>';
-	print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.$o.'\', 1, \'name\')">[add]</a></div>';
+	my @cnames = $o->cnames();
+	if ( !@cnames ){
+	    #new rrcname (only add if there isn't one)
+	    $ui->add_to_fields(table=>'RRCNAME', edit=>1, fields=>['cname', 'ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data,
+			       linkpages=>['view.html','']);
+	    my $newcname = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
+	    $newcname =~ s/\n//g;
+	    $newcname =~ s/<script.*?<\/script>//g;
+	    $newcname =~ s/'/\\'/g;
+	    print '<script type="text/javascript" language="javascript">uricomponents[\'rrcname_'.$o.'_content\']=encodeURIComponent(\''.$newcname.'\');</script>';
+	    print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.$o.'\', 1, \'name\')">[add]</a></div>';
 
+	}
 	print '</div>';  #close containerheadright
 	
 	#display/edit
 	print '<div class="containerbody">';
-	if (my @cnames = $o->cnames()) {
+	if ( @cnames ) {
 	    foreach my $cname (@cnames) {
 		if ( my $cnamerr = RR->search(name=>$cname->cname)->first ){
 		    push @field_headers, "Name:";

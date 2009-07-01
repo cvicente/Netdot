@@ -19,6 +19,7 @@ $add_host_block
 $user          => $ui->get_current_user($r)
 $zone_id       => undef
 $hostname      => undef
+$aliases       => undef
 $cpu           => undef
 $os            => undef
 $site_id       => undef
@@ -90,7 +91,7 @@ if ( $submit ){
     if ( my $h = RR->search(name=>$hostname, zone=>$zone)->first ){
 	$m->comp('/generic/error.mhtml', error=>$h->get_label." is already taken");
     }
-    
+
     # We do not want two host scopes with the same physical address in the same subnet
     if ( $ethernet ){
 	if ( my $physaddr = PhysAddr->search(address=>$ethernet)->first ){
@@ -108,12 +109,29 @@ if ( $submit ){
     my $person = $ui->get_user_person($user);
 
     my %args;
+    if ( $aliases ){
+	my @aliases = split ',', $aliases;
+	foreach my $alias ( @aliases ){
+	    $alias =~ s/\s+//g;
+	    if ( my $h = RR->search(name=>$alias, zone=>$zone)->first ){
+		$m->comp('/generic/error.mhtml', error=>$h->get_label." is already taken");
+	    }
+	    eval {
+		RR->validate_name($alias);
+	    };
+	    if ( my $e = $@ ){
+		$m->comp('/generic/error.mhtml', error=>"Invalid Alias $alias: $e");
+	    }
+	    push @{$args{aliases}}, $alias;
+	}
+    }
+    
     foreach my $key qw(hostname cpu os site_name site_id room_number room_id person contact_name contact_email contact_phone ethernet) {
 	$args{$key} = $ARGS{$key};
     }
-    $args{zone} = $zone;
-    $args{person} = $person;
-    $args{block} = $block;
+    $args{zone}    = $zone;
+    $args{person}  = $person;
+    $args{block}   = $block;
     $args{address} = $address;
     
     my $rr;
@@ -184,6 +202,10 @@ if ( $submit ){
         <p>
         <label for="ethernet">Ethernet Address</label>
         <input type="text" name="ethernet" class="ethertxt" value=""> <% $ui->help_link('../user_help/hosts.html#Ethernet') %>
+        </p>
+        <p>
+        <label for="name">Aliases</label>
+        <input type="text" name="aliases" class="longtxt" value=""> <% $ui->help_link('../user_help/hosts.html#Cnames') %>
         </p>
     </fieldset>
 
