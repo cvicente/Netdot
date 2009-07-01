@@ -206,6 +206,13 @@ my @statements = (
        INDEX ZoneAudit4 (`record_type`),
        PRIMARY KEY (`id`)
      ) ENGINE=InnoDB;",
+     "CREATE TABLE `sitesubnet` (
+       `id` integer NOT NULL auto_increment,
+       `site` integer NOT NULL,
+       `subnet` integer NOT NULL,
+       UNIQUE INDEX sitesubnet1 (`subnet`, `site`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
     "INSERT INTO dhcpscopetype (name) VALUES ('template');",
     "INSERT INTO usertype (name, info) VALUES ('Admin', 'An Admin user has full access to Netdot');",
     "INSERT INTO usertype (name, info) VALUES ('Operator', 'Operators have the same view as Admins, but have read-only access');",
