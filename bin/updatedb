@@ -213,6 +213,22 @@ my @statements = (
        UNIQUE INDEX sitesubnet1 (`subnet`, `site`),
        PRIMARY KEY (`id`)
      ) ENGINE=InnoDB;",
+    "CREATE TABLE `physaddrattr` (
+       `id` integer NOT NULL auto_increment,
+       `name` integer NOT NULL,
+       `physaddr` integer NOT NULL,
+       `value` varchar(255) NOT NULL,
+       UNIQUE INDEX physaddrattr1 (`name`, `physaddr`),
+       INDEX PhysAddrAttr2 (`physaddr`),
+       PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;",
+    "CREATE TABLE `physaddrattrname` (
+       `id` integer NOT NULL auto_increment,
+       `info` blob,
+       `name` varchar(128) NOT NULL,
+       UNIQUE INDEX physaddrattrname1 (`name`),
+       PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;",
     "INSERT INTO dhcpscopetype (name) VALUES ('template');",
     "INSERT INTO usertype (name, info) VALUES ('Admin', 'An Admin user has full access to Netdot');",
     "INSERT INTO usertype (name, info) VALUES ('Operator', 'Operators have the same view as Admins, but have read-only access');",
