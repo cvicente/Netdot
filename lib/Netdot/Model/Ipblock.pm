@@ -2275,6 +2275,12 @@ sub _insert_dhcp_scope {
 		    container => $container);
 	$args{attributes} = $argv{attributes} if ( $argv{attributes} );
 	$scope = DhcpScope->insert(\%args);
+    }else{
+	$logger->info("Ipblock::_insert_dhcp_scope: Scope $scope_name already exists!");
+	# Check if it is assigned to this subnet
+	unless ( $scope->ipblock != 0 && $scope->ipblock->id == $self->id ){
+	    $scope->update({ipblock=>$self});
+	}
     }
     return $scope;
 }

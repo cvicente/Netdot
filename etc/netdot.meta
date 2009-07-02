@@ -5151,6 +5151,131 @@ $meta = {
       ]
     }
   },
+  PhysAddrAttr => {
+    table_db_name => 'physaddrattr',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      name => {
+        default => '',
+        description => 'Name of this attribute',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'attributes',
+          table => 'PhysAddrAttrName'
+        },
+        nullable => 0,
+        tag => 'Name',
+        type => 'integer'
+      },
+      physaddr => {
+        default => '',
+        description => 'Physiscal Address to which this attribute is assigned',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'attributes',
+          table => 'PhysAddr'
+        },
+        nullable => 0,
+        tag => 'Physical Address',
+        type => 'integer'
+      },
+      value => {
+        default => '',
+        description => 'Value for this attribute',
+        length => '255',
+        nullable => 0,
+        tag => 'Value',
+        type => 'varchar'
+      }
+    },
+    description => 'Custom attributes can be assigned to physical (MAC) addresses',
+    has_history => 0,
+    index => [
+      [
+        'physaddr'
+      ],
+    ],
+    isjoin => '0',
+    label => [
+      'name',
+      'value',
+      'physaddr',
+    ],
+    primary_key => 'id',
+    unique => [ ['name', 'physaddr'] ],
+    views => {
+      all => [
+        'name',
+        'value',
+        'physaddr'
+      ],
+      brief => [
+        'name',
+        'value',
+        'physaddr'
+      ]
+    }
+  },
+  PhysAddrAttrName => {
+    table_db_name => 'physaddrattrname',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'Custom attribute name for physical (MAC) addresses',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
   Product => {
     table_db_name => 'product',
     columns => {
