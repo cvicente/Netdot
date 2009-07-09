@@ -24,15 +24,17 @@ sub denies(){
     return 0 if ( $user_type eq "Admin" );
 
     my $otype;
-    if ( !$object ){
+    if ( !$object || !ref($object) ){
 	return 0;
     }
-    if ( !($otype = ref($object)) ){
+
+    my $otype = $object->short_class();
+
+    if ( !$otype ){
 	$logger->debug("Netdot::ObjectAccessRule::denies: object not valid");
 	return 1;
     }
     
-    $otype =~ s/^Netdot::Model:://;
     my $oid = $object->id;
     my $username  = $user->getUsername();
     $logger->debug("Netdot::ObjectAccessRule::denies: Requesting permission to '$action' $otype id $oid on behalf of $username ($user_type)");
@@ -97,62 +99,46 @@ sub denies(){
 		}
 	    }
 	}elsif ( $otype =~ /^RR/ ){
-	    # Grant access to any RR within an allowed Zone
-	    # only if the records are associated with an IP 
+	    # Grant access to any RR  only if the records are associated with an IP 
 	    # in an allowed IP block
-	    my ($rr, $zone);
+	    my $rr;
 	    if ( $otype eq 'RR' ){
 		$rr   = $object;
-		$zone = $object->zone;
 	    }elsif ( $otype eq 'RRCNAME' || $otype eq 'RRSRV' ){
 		$rr   = $object->name;
-		$zone = $rr->zone;
 	    }else{
 		$rr   = $object->rr;
-		$zone = $rr->zone;
 	    }
 	    
-	    unless ( $zone && ref($zone) ){
-		$logger->debug("Netdot::ObjectAccessRule::denies: Zone not found.  Denying access.");
-		return 1;
-	    }
-
 	    if ( $otype eq 'RRCNAME' ){
 		# Search for the record that the CNAME points to
 		if ( my $crr = RR->search(name=>$object->cname)->first ){
-		    if ( my @ipbs = &_get_rr_ipblocks($crr) ){
+		    if ( my @ipbs = &_get_rr_subnets($crr) ){
 			foreach my $ipb ( @ipbs ){
 			    next if $ipb == 0;
-			    return 1 if ( &_deny_action_rr_access($action, $access, $ipb, $crr->zone) );
+			    return 1 if ( &_deny_action_access($action, $access->{'Ipblock'}->{$ipb->id}) );
 			}
 			return 0;
-		    }else{
-			return &_deny_action_zone_access($action, $access, $zone);
 		    }
-		}else{
-		    # the canonical record is not local, so only Zone restrictions apply
-		    return &_deny_action_zone_access($action, $access, $zone);
 		}
 	    }else{
-		if ( my @ipbs = &_get_rr_ipblocks($rr) ){
+		if ( my @ipbs = &_get_rr_subnets($rr) ){
 		    foreach my $ipb ( @ipbs ){
 			next if $ipb == 0;
-			return 1 if ( &_deny_action_rr_access($action, $access, $ipb, $zone) );
+			return 1 if ( &_deny_action_access($action, $access->{'Ipblock'}->{$ipb->id}) );
 		    }
 		    return 0;
 		}elsif ( my $cname = $object->cnames->first ){
 		    # This RR is the alias of something else
 		    if ( my $crr = RR->search(name=>$cname->cname)->first ){
-			if ( my @ipbs = &_get_rr_ipblocks($crr) ){
+			if ( my @ipbs = &_get_rr_subnets($crr) ){
 			    foreach my $ipb ( @ipbs ){
 				next if $ipb == 0;
-				return 1 if ( &_deny_action_rr_access($action, $access, $ipb, $zone) );
+				return 1 if ( &_deny_action_access($action, $access->{'Ipblock'}->{$ipb->id}) );
 			    }
 			    return 0;
 			}
 		    }
-		}else{
-		    return &_deny_action_zone_access($action, $access, $zone);
 		}
 	    }
 	}
@@ -164,7 +150,7 @@ sub denies(){
 ##################################################################################
 # Given an RR object, return the list of subnets where its A/AAAA records are
 #
-sub _get_rr_ipblocks {
+sub _get_rr_subnets {
     my ($rr) = @_;
 
     Netdot->throw_fatal("Missing arguments")
@@ -179,45 +165,10 @@ sub _get_rr_ipblocks {
 	if ( %ipblocks ){
 	    return values %ipblocks;
 	}else{
-	    $logger->debug("Netdot::ObjectAccessRule::_get_rr_ipblocks: no ipblocks found for RR: ".$rr->id);
+	    $logger->debug("Netdot::ObjectAccessRule::_get_rr_subnets: no ipblocks found for RR: ".$rr->id);
 	    return;
 	}
     }	    
-}
-
-##################################################################################
-# Allow user to delete records if they have 'edit' access to the zone
-sub _deny_action_zone_access {
-    my ($action, $access, $zone) = @_;
-
-    Netdot->throw_fatal("Invalid arguments")
-	unless ( $action && ref($access) && ref($zone) );
-
-    if ( $action eq 'delete' ){
-	return &_deny_action_access('edit', $access->{'Zone'}->{$zone->id});
-    }else{
-	return &_deny_action_access($action, $access->{'Zone'}->{$zone->id});
-    }
-}
-
-##################################################################################
-# Check the combination of permissions for the given ipblock & zone
-#
-sub _deny_action_rr_access {
-    my ($action, $access, $ipblock, $zone) = @_;
-    
-    Netdot->throw_fatal("Invalid rguments")
-	unless ( $action && ref($access) && ref($ipblock) && ref($zone) );
-
-    if ( exists $access->{'Zone'}->{$zone->id} &&
-	 exists $access->{'Ipblock'}->{$ipblock->id} ){
-    
-	return ( &_deny_action_zone_access($action, $access, $zone) ||
-		 &_deny_action_access($action, $access->{'Ipblock'}->{$ipblock->id}) );
-    }else{
-	$logger->debug("Netdot::ObjectAccessRule::_deny_action_rr_access: zone ".$zone->get_label." or ipblock ".$ipblock->get_label." not allowed.  Denying access.");
-	return 1;
-    }
 }
 
 ##################################################################################

@@ -112,7 +112,7 @@ sub int2ip {
 	$val = (new NetAddr::IP $ipv6)->short();
 
     }else{
-	$class->throw_fatal(sprintf("Invalid IP version: ", $version));
+	$class->throw_fatal(sprintf("Invalid IP version: %s", $version));
     }
     return $val;
 }

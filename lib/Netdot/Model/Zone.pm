@@ -452,6 +452,7 @@ sub import_records {
 	    my %args = (rr=>$nrr, ipblock=>$ipb);
 	    if ( $argv{overwrite} || !($rraddr = RRADDR->search(%args)->first) ){
 		$args{ttl} = $ttl;
+		$args{update_ptr} = 0;
 		$logger->debug("$domain: Inserting RRADDR $name, $address, ttl: $ttl");
 		$rraddr = RRADDR->insert(\%args);
 	    }
