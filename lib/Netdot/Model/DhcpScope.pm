@@ -332,6 +332,19 @@ sub _objectify_args {
 	}
     }
 
+    if ( $argv->{container} && !ref($argv->{container}) ){
+	my $container;
+	if ( $argv->{container} =~ /\D+/ ){
+	    if ( $container = DhcpScope->search(name=>$argv->{container})->first ){
+		$argv->{container} = $container;
+	    }
+	}elsif ( $container = DhcpScope->retrieve($argv->{container}) ){
+	    $argv->{container} = $container;
+	}else{
+	    $self->throw_user("Invalid container argument ".$argv->{container});
+	}
+    }
+
     if ( $argv->{ipblock} && !ref($argv->{ipblock}) ){
 	if ( $argv->{ipblock} =~ /\D+/ ){
 	    my $ipblock;
@@ -376,12 +389,12 @@ sub _validate_args {
 	$fields{$field} = $argv->{$field} if exists $argv->{$field};
     }
 
+    $self->throw_user("DhcpScope::_validate_args: A scope name is required")
+	unless ( defined $fields{name} && $fields{name} ne "" );
+
     $self->throw_user("DhcpScope::_validate_args: type not defined")
 	unless defined $fields{type};
 
-    if ( (!defined($fields{container}) || $fields{container} == 0) && $fields{type}->name ne 'global' ){
-	$self->throw_user("DhcpScope::_validate_args: $fields{name}: Container scope required unless type is global");
-    }
     if ( defined $fields{physaddr} && $fields{physaddr} != 0 && $fields{type}->name ne 'host' ){
 	$self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign physical address ($fields{physaddr}) to a non-host scope");
     }
@@ -392,6 +405,41 @@ sub _validate_args {
 	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign an IP address to a non-host scope");
 	}
     }
+
+    my $type = $fields{type}->name;
+    $self->throw_user("DhcpScope::_validate_args: type not defined")
+	unless defined $type;
+
+    if ( $fields{container} != 0 ){
+	my $ctype = $fields{container}->type->name;
+	$self->throw_user("DhcpScope::_validate_args: container type not defined")
+	    unless defined $ctype;
+
+	if ( $type eq 'global' ){
+	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a global scope cannot exist within another scope");
+	}
+	if ( $type eq 'host' && !($ctype eq 'global' || $ctype eq 'group') ){
+	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a host scope can only exist within a global or group scope");
+	}
+	if ( $type eq 'group' && $ctype ne 'global' ){
+	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a group scope can only exist within a global scope");
+	}
+	if ( $type eq 'subnet' && !($ctype eq 'global' || $ctype eq 'shared-network') ){
+	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a subnet scope can only exist within a global or shared-network scope");
+	}
+	if ( $type eq 'shared-network' && $ctype ne 'global' ){
+	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a shared-network scope can only exist within a global scope");
+	}
+	if ( $type eq 'pool' && !($ctype eq 'subnet' || $ctype eq 'shared-network') ){
+	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a pool scope can only exist within a subnet or shared-network scope");
+	}
+	if ( ($type eq 'class' || $type eq 'subclass') && $ctype ne 'global' ){
+	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a class or subclass scope can only exist within a global scope");
+	}
+    }elsif ( $type ne 'global' && $type ne 'template' ){
+	$self->throw_user("DhcpScope::_validate_args: $fields{name}: A container scope is required except for global and template scopes");
+    }
+
     1;
 }
 
