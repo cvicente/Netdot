@@ -51,11 +51,6 @@ sub insert {
 	$argv->{rr} = $rr;
     }
     
-    # We'll wipe out whatever PTR records there are for this IP
-    foreach my $r ( $ipb->ptr_records ){
-	$r->delete;
-    }
-
     delete $argv->{zone};
     return $class->SUPER::insert($argv);
     

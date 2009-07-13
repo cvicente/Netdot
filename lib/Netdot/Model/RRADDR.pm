@@ -101,6 +101,7 @@ sub update {
     - When removing an address record, most likely the RR (name)
     associated with it needs to be deleted too, unless it has
     more adddress records associated with it.
+    - Also, delete any RRPTR(s) with corresponding ptrdname
 
   Arguments:
     None
@@ -115,9 +116,12 @@ sub delete {
     my $self = shift;
     $self->isa_object_method('delete');
     my $rr = $self->rr;
+    my $rr_name = $rr->get_label;
     $self->SUPER::delete();
     $rr->delete() unless ( $rr->arecords || $rr->devices );
-
+    foreach my $ptr ( RRPTR->search(ptrdname=>$rr_name) ){
+	$ptr->rr->delete();
+    }
     return 1;
 }
 
