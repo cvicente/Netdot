@@ -57,7 +57,9 @@ my @list;
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
-        <fieldset class="medium">
+ 
+       <div id="search_vlan" style="display:block">
+       <fieldset class="medium">
             <legend>Search</legend>
             <form action="vlan_tasks.html" method="POST">
                 <p>
@@ -74,6 +76,10 @@ my @list;
                 </p>
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_vlan');toggleLayer('add_vlan_group');">[new]</a>
+        </div>
+
+        <div id="add_vlan_group" style="display:none">
         <fieldset class="medium">
             <legend>Add Vlan Group</legend>
             <form action="vlan.html" method="POST">
@@ -90,6 +96,9 @@ my @list;
                 </p>
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_vlan');toggleLayer('add_vlan_group');">[search]</a>
+        </div>
+
         </td></tr></table>
     </div> <!-- close containerbody -->
   </div> <!-- close container -->

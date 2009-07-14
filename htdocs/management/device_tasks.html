@@ -123,7 +123,9 @@ $mac_search     => undef
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
-        <fieldset class="small">
+
+        <div id="search_device" style="display:block">
+        <fieldset class="medium">
             <legend>Find Devices</legend>
             <form action="device_tasks.html" method="POST">
                 <label for="search">Name/IP/MAC:</label>
@@ -131,7 +133,11 @@ $mac_search     => undef
                 <input type="submit" name="submit" class="btn" value="search" >
             </form>
         </fieldset>
-        <fieldset class="small">
+        <a href="#" onClick="toggleLayer('search_device');toggleLayer('discover_device');">[new]</a>
+        </div>
+
+        <div id="discover_device" style="display:none">
+        <fieldset class="medium">
             <legend>Discover/Add a Device</legend>
             <form action="updatedevice.html" method="POST">
                 <label for="host">Name/IP:</label>
@@ -148,6 +154,8 @@ $mac_search     => undef
                 <input type="submit" name="submit" class="btn" value="add">
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_device');toggleLayer('discover_device');">[search]</a>
+        </div>
 
         </td></tr></table>
     </div> <!-- close containerbody -->

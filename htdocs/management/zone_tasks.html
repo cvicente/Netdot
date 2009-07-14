@@ -60,6 +60,7 @@ my @all_zones = Zone->retrieve_all();
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
 
+        <div id="search_zone" style="display:block">
         <fieldset class="medium">
             <legend>Find</legend>
             <form name="zone_select_form" action="zone_tasks.html" method="POST">
@@ -84,7 +85,10 @@ my @all_zones = Zone->retrieve_all();
                 <input name="submit" value="Find" class="btn" type="submit">
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_zone');toggleLayer('add_zone');">[new]</a>
+        </div>
 
+        <div id="add_zone" style="display:none">
         <fieldset class="medium">
             <legend>Add New Zone</legend>
             <form name="zone_add_form" action="zone_tasks.html" method="POST">
@@ -94,6 +98,8 @@ my @all_zones = Zone->retrieve_all();
                 <input name="submit" value="Add" class="btn" type="submit">
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_zone');toggleLayer('add_zone');">[search]</a>
+       </div>
 
         </td></tr></table>
     </div> <!-- close containerbody -->

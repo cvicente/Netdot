@@ -64,6 +64,7 @@ my @containers = DhcpScope->get_containers();
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
 
+        <div id="search_scope" style="display:block">
         <fieldset class="medium">
             <legend>Find</legend>
 
@@ -88,7 +89,10 @@ my @containers = DhcpScope->get_containers();
                 <input name="submit" value="Find" class="btn" type="submit">
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_scope');toggleLayer('add_scope');">[new]</a>
+        </div>
 
+        <div id="add_scope" style="display:none">
         <fieldset class="medium">
             <legend>Add New Scope</legend>
             <form name="scope_add_form" action="dhcp_tasks.html" method="POST">
@@ -119,6 +123,9 @@ my @containers = DhcpScope->get_containers();
                 </p>
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_scope');toggleLayer('add_scope');">[search]</a>
+        </div>
+
         </td></tr></table>
     </div> <!-- close containerbody -->
   </div> <!-- close container -->

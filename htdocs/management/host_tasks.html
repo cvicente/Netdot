@@ -66,6 +66,8 @@ my @list;
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
+
+       <div id="search_host" style="display:block">
         <fieldset class="medium">
             <legend>Search</legend>
             <form action="host_tasks.html" method="POST">
@@ -77,6 +79,10 @@ my @list;
                 </p>
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_host');toggleLayer('add_host');">[new]</a>
+        </div>
+
+        <div id="add_host" style="display:none">
         <fieldset class="medium">
             <legend>Add New Host</legend>
             <form action="host_tasks.html" method="POST">
@@ -124,6 +130,9 @@ my @list;
                 <input type="hidden" name="action" value="new">
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_host');toggleLayer('add_host');">[search]</a>
+        </div>
+
         </td></tr></table>
     </div> <!-- close containerbody -->
   </div> <!-- close container -->
