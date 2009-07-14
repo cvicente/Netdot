@@ -189,9 +189,12 @@ sub _net_dns {
     my $self = shift;
     my $type = ($self->ipblock->version == 4)? 'A' : 'AAAA';
 
+    # If TTL is not set, use Zone's default
+    my $ttl = (defined $self->ttl && $self->ttl =~ /\d+/)? $self->ttl : $self->name->zone->default_ttl;
+
     my $ndo = Net::DNS::RR->new(
 	name    => $self->rr->get_label,
-	ttl     => $self->ttl,
+	ttl     => $ttl,
 	class   => 'IN',
 	type    => $type,
 	address => $self->ipblock->address,

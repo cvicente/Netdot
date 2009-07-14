@@ -72,9 +72,12 @@ sub delete {
 sub _net_dns {
     my $self = shift;
 
+    # If TTL is not set, use Zone's default
+    my $ttl = (defined $self->ttl && $self->ttl =~ /\d+/)? $self->ttl : $self->name->zone->default_ttl;
+
     my $ndo = Net::DNS::RR->new(
 	name    => $self->name->get_label,
-	ttl     => $self->ttl,
+	ttl     => $ttl,
 	class   => 'IN',
 	type    => 'CNAME',
 	cname   => $self->cname,

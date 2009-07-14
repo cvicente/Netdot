@@ -562,7 +562,7 @@ sub import_records {
 	    }
 	}elsif ( $rr->type eq 'SRV' ){
 	    my $rrsrv;
-	    my %args = (rr=>$nrr);
+	    my %args = (name=>$nrr);
 	    if ( $argv{overwrite} || !($rrsrv = RRSRV->search(%args)->first) ){
 		$args{priority} = $rr->priority;
 		$args{weight}   = $rr->weight;

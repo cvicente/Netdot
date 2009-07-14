@@ -97,6 +97,8 @@ if ( $submit ){
 		if ($ret{RR}{id}{$newid}{action} eq 'INSERTED') {
 		    $id = $newid unless defined $id;
 		    $rr = $newid unless defined $rr;
+		    my $newrr = RR->retrieve($newid);
+		    $rrs{$newrr->id} = $newrr;
 		    if (defined $ipblock) {
 			RRADDR->insert({rr=>$newid, ipblock=>$ipblock});
 		    }
