@@ -128,16 +128,17 @@ if ( $submit eq 'Edit' ) {
 	$m->comp('error.mhtml', error=>$e);
     }
     %objs = %{ $session->{objs} };
-    
+
     print "<pre>", Dumper(%objs), "</pre>" if $DEBUG;
+
+    unless ( defined $objs{$table} && ref($objs{$table}) eq 'ARRAY'){
+	$m->comp('error.mhtml', error=>"Invalid key or value at objs hash: $table");
+    }
+    
     my $numobjs = scalar @{$objs{$table}};
 
     my (@headers, @rows);
     my $showeditbuttons;
-
-#    if ( !ref($tablefields) ) {
-#        tablefields = [$ARGS{'tablefields'}];
-#    }
 
      if ( @tablefields ) {
 	 
@@ -171,7 +172,6 @@ if ( $submit eq 'Edit' ) {
 	 } else {
 	     
 	     foreach my $obj ( @{$objs{$table}} ) {
-#		 my $obj = $table->retrieve($id);
 		 my @row = ();
 		 push( @row, $obj->get_label );
 		 foreach my $field ( @tablefields ) {
