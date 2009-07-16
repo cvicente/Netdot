@@ -61,20 +61,29 @@ sub update {
 ###########################################################################
 # _validate - Validate arguments before inserting/updating
 #  
+#    Check for required fields
 #    Automatically assign site field according to floor setting
 
 sub _validate {
     my ($self, $argv) = @_;
     if ( ref($self) ){
-	$argv->{site}  = $self->site  unless ( defined $argv->{site}  );
-	$argv->{floor} = $self->floor unless ( defined $argv->{floor} );
+	$argv->{site}   = $self->site   unless ( defined $argv->{site}  );
+	$argv->{floor}  = $self->floor  unless ( defined $argv->{floor} );
+	$argv->{name}   = $self->name   unless ( defined $argv->{name} );
+	$argv->{number} = $self->number unless ( defined $argv->{number} );
     }
+
+    $self->throw_user("A Closet name is required")
+	unless ( $argv->{name} );
+    $self->throw_user("A Closet number is required")
+	unless ( $argv->{number} );
+
     if ( $argv->{floor} ){
 	my $floor = Floor->retrieve(int($argv->{floor}));
 	$argv->{site} = $floor->site if ( defined $floor && defined $floor->site );
     }else{
-	# Means that floor is zero or undef
-	$argv->{site} = 0;
+	$self->throw_user("A Closet Site is required")
+	    unless ( $argv->{site} );
     }
     return 1;
 }
