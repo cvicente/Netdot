@@ -68,6 +68,8 @@ sub find_duplex_mismatches {
     my $mismatches = $dbh->selectall_arrayref("SELECT  i.id, r.id
                                                FROM    interface i, interface r
                                                WHERE   i.neighbor=r.id  
+                                                 AND   i.oper_status='up'
+                                                 AND   r.oper_status='up'
                                                  AND   i.oper_duplex!=r.oper_duplex");
 
     # SQL returns pairs in both orders. Until I figure out how 
