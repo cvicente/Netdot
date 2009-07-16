@@ -43,6 +43,8 @@ sub find_sequences{
 	$st->execute($start);
 	my $closet_ids = join(",", $st->fetchrow_array());
 	
+	return unless ($closet_ids);
+
 	my $bb_st = $dbh->prepare_cached("SELECT backbonecable.id 
                                           FROM   backbonecable 
                                           WHERE  start_closet IN ($closet_ids) 
@@ -97,7 +99,9 @@ sub find_sequences{
 	$site_st1->finish();
 	$site_st2->finish();
     };
-    $class->throw_user("$@") if ($@);
+    if ( my $e = $@ ){
+	$class->throw_fatal("$e");
+    }
 
     return %sequences;
 }

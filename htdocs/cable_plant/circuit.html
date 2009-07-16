@@ -5,16 +5,13 @@ Circuit Interface
 </%doc>
 
 <%args>
-
-$id          => undef;
-$edit        => undef;
-$strand_sort => undef;
-$search      => undef;
+$id            => undef;
+$edit          => undef;
+$strand_sort   => undef;
+$search        => undef;
+$_action       => undef;
+$sequence_list => undef;
 </%args>
-
-<%flags>
-
-</%flags>
 
 <%attr>
 title   => 'Circuit' 
@@ -24,7 +21,6 @@ section => 'Plant'
 <%init>
 
 my $DEBUG       = 0;
-my %cssitem     = (0 => "formtablec1", 1 => "formtablec2");
 my $o           = undef;
 my $editCircuit = 0;
 my $editStrand  = 0;
@@ -35,72 +31,76 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 $o              = Circuit->retrieve($id) if ($id && $id ne "NEW");
 $editCircuit    = 1 if ($id eq "NEW" || $edit eq "circuitinfo");
 $editStrand     = 1 if ($edit eq "strandinfo");
-
     
-if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
+if ( $_action ){
+    if ( $_action eq "SEARCH" ) {
 
-    if ( $search =~ /\w+/ ){
-	# remove spaces at beginning and end
-	$search =~ s/^\s*(.*)\s*$/$1/;
-	unless ( @list = Circuit->search_by_keyword($search) ){
-	    print  "<p><b>No results</b>";
+	if ( $search =~ /\w+/ ){
+	    # remove spaces at beginning and end
+	    $search =~ s/^\s*(.*)\s*$/$1/;
+	    unless ( @list = Circuit->search_by_keyword($search) ){
+		print  "<p><b>No results</b>";
+		$m->abort;
+	    }
+	    my $num = scalar(@list);
+	    if ( $num == 1 ){
+		# Don't offer list.  Just display this circuit
+		$o      = $list[0];
+		$id     = $o->id;
+		$search = undef;
+	    }
+	}else{
+	    print "<p><b>No search criteria</b>";   
 	    $m->abort;
 	}
-	my $num = scalar(@list);
-	if ( $num == 1 ){
-	    # Don't offer list.  Just display this circuit
-	    $o      = $list[0];
-	    $id     = $o->id;
-	    $search = undef;
+	
+	# code for inserting/updating
+	# -----------------------------------------------------------------------------
+    }elsif( $_action eq "UPDATE_CIRCUIT" ){
+	my %update_info = ();
+	print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+	if (!(%update_info = $ui->form_to_db(%ARGS))) {
+	    $m->comp("error.mhtml", $ui->error());
 	}
-    }else{
-	print "<p><b>No search criteria</b>";   
-	$m->abort;
-    }
-
-# code for inserting/updating
-# -----------------------------------------------------------------------------
-}elsif( defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_CIRCUIT" ){
-    my %update_info = ();
-    print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-    if (!(%update_info = $ui->form_to_db(%ARGS))) {
-	$m->comp("error.mhtml", $ui->error());
-    }
-    
-    if ($update_info{Circuit}{id}) {
-	$id = (keys %{$update_info{Circuit}{id}})[0];
-	$editCircuit = 0;
-    }
-    
-    # Do this to 'flush' the values associated with the object
-    # before redisplaying
-    $o = undef;
-    if ($id && $id ne "NEW") {
-	$o = Circuit->retrieve($id);
-    }
-}elsif( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_STRANDS" && $ARGS{sequence_list} ){
-    my @sequences;
-    if (UNIVERSAL::isa($ARGS{sequence_list}, "ARRAY")) {
-	@sequences = @{$ARGS{sequence_list}};
-    } else {
-	push(@sequences, $ARGS{sequence_list});
-    }
-    
-    foreach my $seq ( @sequences ){
-	my @strands = split(/,/o, $seq);
-	foreach my $strandid ( @strands ){
-	    my $strand = CableStrand->retrieve($strandid);
-	    $strand->update(circuit_id=>$o);
+	
+	if ($update_info{Circuit}{id}) {
+	    $id = (keys %{$update_info{Circuit}{id}})[0];
+	    $editCircuit = 0;
 	}
-    }
-}elsif( defined($ARGS{_action}) && $ARGS{_action} eq "UPDATE_SEQUENCES" ){
-    foreach my $key ( keys(%ARGS) ) {
-	next if ($key !~ /^__unassign_(\d+)/o);
-	my @strands = split(/,/o, $ARGS{"__sequence_" . $1});
-	foreach my $strandid ( @strands ){
-	    my $strand = CableStrand->retrieve($strandid);
-	    $strand->update(circuit_id=>0);
-	}	    
+	
+	# Do this to 'flush' the values associated with the object
+	# before redisplaying
+	$o = undef;
+	if ($id && $id ne "NEW") {
+	    $o = Circuit->retrieve($id);
+	}
+    }elsif( $_action eq "ADD_STRANDS" && $sequence_list ){
+	my @sequences;
+	if ( ref($sequence_list) eq "ARRAY" ) {
+	    @sequences = @{$sequence_list};
+	}else {
+	    push(@sequences, $sequence_list);
+	}
+	if ( scalar @sequences ){
+	    foreach my $seq ( @sequences ){
+		my @strands = split(/,/o, $seq);
+		foreach my $strandid ( @strands ){
+		    my $strand = CableStrand->retrieve($strandid);
+		    $strand->update({circuit_id=>$o});
+		}
+	    }
+	}else{
+	    $m->comp("error.mhtml", error=>"Empty sequence list");
+	}
+    }elsif( $_action eq "UPDATE_SEQUENCES" ){
+	foreach my $key ( keys(%ARGS) ) {
+	    next if ($key !~ /^__unassign_(\d+)/o);
+	    my @strands = split(/,/o, $ARGS{"__sequence_" . $1});
+	    foreach my $strandid ( @strands ){
+		my $strand = CableStrand->retrieve($strandid);
+		$strand->update({circuit_id=>0});
+	    }	    
+	}
     }
 }
 
@@ -120,12 +120,10 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
   </div>
 </div>
 
-% }else{  # we're not searching
-
+% }elsif ( $o ){
 
 <div id="sectiondetail">
 
-% if ( $o ) {
 <!-- Header Table -->
 <div class="containeroutside">
     <div class="containerheadoutside">
@@ -136,7 +134,6 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
 %    }
     </div>
     <div class="containerbodyoutside">
-% }
 
 <!-- Circuit Table -->
 <form name="netdotform" action="circuit.html" method="POST">
@@ -145,7 +142,7 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
     <div class="containerheadright">
           <a href="edit.html?table=Circuit">[new]</a>
           <a href="edit.html?table=Circuit&id=<% $o->id %>">[edit]</a>
-          <a href="delete.html?table=Circuit&id=<% $o->id %>">[delete]</a>
+	  <a href="delete.html?table=Circuit&id=<% $o->id %>">[delete]</a>
           <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">
@@ -156,7 +153,6 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
 <!-- End Circuit Table -->
 
 <!-- Begin Cable Strand Sequence Table -->
-%   if ( defined($o) ) {
     <form name="sequence_form" action="circuit.html" method="POST">
     <input type="hidden" name="_action" value="UPDATE_SEQUENCES">
     <input type="hidden" name="id" value="<% $id %>">
@@ -166,13 +162,12 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
 %   }    
     </form>
     <P>
-%   }
 
 %   # Allow the user to add strands to this circuit by backbone.
 %   # First select a start site, then an end site, and then a backbone
 %   # from the populated list. Hit submit and all strands for that backbone
 %   # are associated with this circuit.
-%	if (defined($o) && $edit ne "strandinfo") {
+%   if ( $edit ne "strandinfo" ) {
     <script language="JavaScript">
     <!--
         /* getStrandList()
@@ -197,13 +192,12 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
             url += "&form_name=add_strand_form";
             var wind = window.open(url, "tmp", "width=1,height=1");
             wind.blur();
-        }
+        }   
     -->
     </script>
 
-
     <div class="container">
-        <div class="containerhead">Add Strands</div>
+        <div class="containerhead">Add</div>
         <div class="containerbody">
 
         <form name="add_strand_form" action="circuit.html" method="POST">
@@ -260,11 +254,8 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "SEARCH" ) {
 % }
 
 
-% if (defined($o) && $o->linkid) {
     </div> <!-- close containerbodyoutside -->
 </div> <!-- close containeroutside -->
-% }
-
 </div> <!-- close sectiondetail -->
 
 %}
