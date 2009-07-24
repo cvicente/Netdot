@@ -68,7 +68,6 @@ my $name;
 my %ifvlans;
 my %vlans;
 my $fqdn;
-my $whois_url = Netdot->config->get('BGP_AS_WHOIS_URL');
 my (@arp_caches, @fwt);
 my @modules;
 my %ifacecolors = ( 
@@ -1063,6 +1062,8 @@ if ( !$editips ){
 
 %   if ( $ipeers || $epeers ){
 
+my $whois_url = Netdot->config->get('BGP_AS_WHOIS_URL');
+
 <!-- BGP Peers Table -->
 <div class="container">
     <div class="containerheadleft">
@@ -1103,13 +1104,13 @@ if ( $epeers ){
 	push( @row, $peer->bgppeerid  );
 	push( @row, '<a href="view.html?table=Entity&id=' . $peer->entity->id . '">' . $peer->entity->name . '</a>' );
 	push( @row, $peer->entity->asname  );
-	if ( $whois_url ){
-	    my $asn = $peer->entity->asnumber;
+	my $asn = $peer->entity->asnumber;
+	if ( $whois_url && ($asn >= 64512 && $asn <= 65535) ){
 	    my $url = $whois_url;
 	    $url =~ s/<ASNUMBER>/$asn/;
 	    push( @row, "<a target=\"#\" href=\"$url\">$asn</a>" );
 	}else{
-	    push( @row, $peer->entity->asnumber );
+	    push( @row, $asn );
 	}
 	push( @row, $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp, returnAsVar=>1) );
 	push( @rows, \@row );
